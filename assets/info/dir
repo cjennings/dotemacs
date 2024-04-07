@@ -1,0 +1,71 @@
+This is the file .../info/dir, which contains the
+topmost node of the Info hierarchy, called (dir)Top.
+The first time you invoke Info you start off looking at this node.
+
+File: dir,	Node: Top	This is the top of the INFO tree
+
+  This (the Directory node) gives a menu of major topics.
+  Typing "q" exits, "H" lists all Info commands, "d" returns here,
+  "h" gives a primer for first-timers,
+  "mEmacs<Return>" visits the Emacs manual, etc.
+
+  In Emacs, you can click mouse button 2 on a menu item or cross reference
+  to select it.
+
+* Menu:
+
+Lisp
+* Emacs Lisp Intro: (eintr).    A Simple Introduction to Emacs Lisp Programming.
+* SICP: (sicp).                 Structure and Interpretation of Computer Programs
+* ERT: (ert).                   Emacs Lisp regression testing tool.
+
+Emacs Features
+* Calc: (calc).                 Advanced desk calculator and mathematical tool.
+* Ediff: (ediff).               A visual interface for comparing and merging programs.
+
+Development Tools
+* Git: (git).                   A fast distributed revision control system
+* Make: (make).                 Remake files automatically.
+
+LaTeX
+* LaTeX2e: (latex2e).           Unofficial LaTeX reference manual.
+
+Python
+* Python 3.8.9: (python38).     Python Reference
+* Python Packaging Guide: (pythonpackagingguide). Python Packaging User Guide
+* Python Packaging Authority: (setuptools).  Python Packaging Authority
+
+Shells
+* Bash: (bash).                 The GNU Bourne-Again SHell.
+* ZSH: (zsh).                   The Z Shell Manual.
+
+Texinfo documentation system
+* Texinfo: (texinfo).           The GNU documentation format.
+* install-info: (texinfo)Invoking install-info. Update info/dir entries.
+* makeinfo: (texinfo)Invoking makeinfo. Translate Texinfo source.
+* pdftexi2dvi: (texinfo)PDF Output. PDF output for Texinfo.
+* texi2dvi: (texinfo)Format with texi2dvi. Print Texinfo documents.
+* texi2pdf: (texinfo)PDF Output. PDF output for Texinfo.
+* texindex: (texinfo)Format with tex/texindex. Sort Texinfo index files.
+
+Utilities
+* Diffutils: (diffutils).       Comparing and merging files.
+* Grep: (grep).                 Print lines that match patterns.
+* Gzip: (gzip).                 General (de)compression of files (lzw).
+* Stow: (stow).                 GNU Stow.
+* Wget: (wget).                 Non-interactive network downloader.
+* awk: (gawk)Invoking Gawk.     Text scanning and processing.
+* cmp: (diffutils)Invoking cmp.                 Compare 2 files byte by byte.
+* diff3: (diffutils)Invoking diff3.             Compare 3 files line by line.
+* diff: (diffutils)Invoking diff.               Compare 2 files line by line.
+* gunzip: (gzip)Overview.                       Compression / Decompression.
+* gzexe: (gzip)Overview.                        Compress executables.
+* patch: (diffutils)Invoking patch.             Apply a patch to a file.
+* sdiff: (diffutils)Invoking sdiff.             Merge 2 files side-by-side.
+* sed: (sed).                   Stream EDitor.  
+* zcat: (gzip)Overview.                         Decompression to stdout.
+* zdiff: (gzip)Overview.                        Compare compressed files.
+* zforce: (gzip)Overview.                       Force .gz extension on files.
+* zgrep: (gzip)Overview.                        Search compressed files.
+* zmore: (gzip)Overview.                        Decompression output by pages.
+

@@ -1,0 +1,2 @@
+(1 (name . "Elisp") (slug . "elisp") (type . "elisp") (links (home . "https://www.gnu.org/software/emacs/manual/elisp") (code . "https://git.savannah.gnu.org/cgit/emacs.git")) (release . "28.2") (mtime . 1664309572) (db_size . 4910863) (attribution . "Copyright &copy; 1990-1996, 1998-2022 Free Software Foundation, Inc. <br>
+      Licensed under the GNU GPL license."))

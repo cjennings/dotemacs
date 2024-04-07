@@ -1,0 +1,4 @@
+(1 (name . "Docker") (slug . "docker") (type . "simple") (links (home . "https://docker.com/") (code . "https://github.com/docker/docker")) (version . "") (release . "20.10.16") (mtime . 1654206621) (db_size . 4328150) (attribution . "&copy; 2019 Docker, Inc.<br>
+      Licensed under the Apache License, Version 2.0.<br>
+      Docker and the Docker logo are trademarks or registered trademarks of Docker, Inc. in the United States and/or other countries.<br>
+      Docker, Inc. and other parties may also have trademark rights in other terms used herein."))

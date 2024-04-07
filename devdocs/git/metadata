@@ -1,0 +1,2 @@
+(1 (name . "Git") (slug . "git") (type . "git") (links (home . "https://git-scm.com/") (code . "https://github.com/git/git")) (release . "2.43.1") (mtime . 1707592340) (db_size . 4606248) (attribution . "&copy; 2012&ndash;2024 Scott Chacon and others<br>
+      Licensed under the MIT License."))

@@ -1,0 +1,2 @@
+(1 (name . "Python") (slug . "python~3.12") (type . "python") (links (home . "https://www.python.org/") (code . "https://github.com/python/cpython")) (version . "3.12") (release . "3.12.1") (mtime . 1704473584) (db_size . 17684105) (attribution . "&copy; 2001&ndash;2023 Python Software Foundation<br>
+      Licensed under the PSF License."))

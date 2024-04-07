@@ -1,0 +1,2 @@
+(1 (name . "Bash") (slug . "bash") (type . "bash") (links (home . "https://www.gnu.org/software/bash/") (code . "http://git.savannah.gnu.org/cgit/bash.git")) (release . "5.2") (mtime . 1675584533) (db_size . 820421) (attribution . "Copyright &copy; 2000, 2001, 2002, 2007, 2008 Free Software Foundation, Inc.<br>
+      Licensed under the GNU Free Documentation License."))
