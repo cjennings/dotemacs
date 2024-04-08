@@ -95,31 +95,6 @@ This function won't work with more than one split window."
 ;; SWAP WINDOW POSITIONS
 (global-set-key (kbd "M-S") 'window-swap-states)
 
-;; ------------------------------ Killing Windows ------------------------------
-
-;; KILL THIS WINDOW
-(global-set-key (kbd "M-C") 'kill-buffer-and-window)
-
-;; KILL OTHER WINDOW
-(defun cj/kill-other-window ()
-  "Close the next window and kill any buffer in it."
-  (interactive)
-  (other-window 1)
-  (kill-this-buffer)
-  (if (not (one-window-p))
-      (delete-window)))
-(global-set-key (kbd "M-O") 'cj/kill-other-window)
-
-
-;; KILL-ALL-OTHER-BUFFERS
-(defun cj/kill-all-other-buffers-and-windows ()
-  "Save buffers, then kill all other buffers and windows."
-  (interactive)
-  (save-some-buffers)
-  (delete-other-windows)
-  (mapc 'kill-buffer (delq (current-buffer) (buffer-list))))
-(global-set-key (kbd "M-M") 'cj/kill-all-other-buffers-and-windows)
-
 ;; ---------------------------- Buffer Manipulation ----------------------------
 
 ;; MOVE BUFFER

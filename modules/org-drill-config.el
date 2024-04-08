@@ -14,6 +14,7 @@
 
 
 ;;; Code:
+(require 'custom-functions) ;; for cj/merge-list-to-list
 
 (defvar org-drill-files (directory-files (concat sync-dir "drill/")
 										 t directory-files-no-dot-files-regexp))

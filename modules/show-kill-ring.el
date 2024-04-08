@@ -1,10 +1,8 @@
 ;;; show-kill-ring --- Displays Previous Kill Ring Entries -*- lexical-binding: t; -*-;; Show Kill Ring
 ;; Stolen from Steve Yegge when he wasn't looking
 
-
 ;;; Commentary:
 ;; Browse items you've previously killed.
-
 
 ;;; Code:
 
@@ -12,9 +10,14 @@
 (require 'cl-lib)
 
 (defvar show-kill-max-item-size 1000
-  "This represents the size of a \\='kill ring\\=' entry.
-A positive number means to limit the display of \\='kill-ring\\=' items to
+  "This represents the size of a \='kill ring\=' entry.
+A positive number means to limit the display of \='kill-ring\=' items to
 that number of characters.")
+
+(defun show-kill-ring-exit ()
+  "Exit the show-kill-ring buffer."
+  (interactive)
+  (quit-window t))
 
 (defun show-kill-ring ()
   "Show the current contents of the kill ring in a separate buffer.
@@ -39,7 +42,7 @@ This makes it easy to figure out which prefix to pass to yank."
     ;; show each of the items in the kill ring, in order
     (while temp
       ;; insert our little divider
-      (insert (concat "\n" bar item (prin1-to-string count) "  "
+	  (insert (concat "\n" bar item (prin1-to-string count) "  "
 					  (if (< count 10) bar2 bar) "\n"))
 
       ;; if this is the yank pointer target, grab it
@@ -52,12 +55,16 @@ This makes it easy to figure out which prefix to pass to yank."
       (setq temp (cdr temp)))
 
     ;; show info about yank item
-    (show-kill-insert-footer yptr ynum)
+	(show-kill-insert-footer yptr ynum)
+
+	(use-local-map (make-sparse-keymap))
+	(local-set-key "q" 'show-kill-ring-exit)
 
     ;; show it
-    (goto-char (point-min))
-    (set-buffer-modified-p nil)
-    (display-buffer buf)))
+	(goto-char (point-min))
+	(setq buffer-read-only t)
+	(set-buffer-modified-p nil)
+	(pop-to-buffer buf)))
 
 (defun show-kill-insert-item (item)
   "Insert an ITEM from the kill ring into the current buffer.

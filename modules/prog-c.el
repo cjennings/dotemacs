@@ -8,7 +8,7 @@
 ;;;; ------------------------------ C-Mode Settings ------------------------------
 
 (defun cj/c-mode-settings ()
-  "Settings for \\='c-mode\\='."
+  "Settings for \='c-mode\='."
   (setq-default indent-tabs-mode nil)                 ;; spaces, not tabs
   (setq-default c-basic-offset 4)                     ;; 4 spaces offset
   (setq c-default-style "stroustrup")                 ;; k&r c, 2nd edition

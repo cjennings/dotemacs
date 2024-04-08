@@ -10,7 +10,7 @@
 
 (global-set-key (kbd "C-h P") 'list-packages) ;; bring up the package menu
 
-;;;; ---------------------------- Helpful ----------------------------
+;; ---------------------------------- Helpful ----------------------------------
 
 (use-package helpful
   :defer .5
@@ -27,7 +27,7 @@
   (setq counsel-describe-variable-function #'helpful-variable))
 
 
-;;;; ------------------------------ Man ------------------------------
+;; ------------------------------------ Man ------------------------------------
 
 (use-package man
   :defer 1
@@ -35,7 +35,7 @@
   :bind ("C-h M" . man))
 
 
-;;;; ------------------------------ Info -----------------------------
+;; ------------------------------------ Info -----------------------------------
 
 (use-package info
   :defer 1
@@ -58,7 +58,7 @@
   (push (concat user-emacs-directory "assets/info") Info-directory-list)
   (add-to-list 'auto-mode-alist '("\\.info\\'" . open-with-info-mode)))
 
-;;;; ---------------------------- Devdocs ----------------------------
+;; ---------------------------------- Devdocs ----------------------------------
 
 (use-package devdocs
   :defer 1
@@ -72,18 +72,17 @@
   (define-key devdocs-mode-map "b" 'devdocs-go-back)
   (define-key devdocs-mode-map "f" 'devdocs-go-forward))
 
-;;;; ------------------------------- TLDR ------------------------------
+;; ------------------------------------ TLDR -----------------------------------
 
 (use-package tldr
   :defer 1
   :bind ("C-h T" . tldr))
 
-;;;; -------------------------- Wiki-Summary -------------------------
+;; -------------------------------- Wiki Summary -------------------------------
 
 (use-package wiki-summary
   :defer 1
   :bind ("C-h W" . wiki-summary))
-
 
 (provide 'help-utils)
 ;;; help-utils.el ends here

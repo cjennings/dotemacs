@@ -130,6 +130,32 @@ buffer."
       (indent-region start-pos end-pos nil)
       (untabify start-pos end-pos))))
 
+;; ------------------- Remove Leading And Trailing Whitespace ------------------
+;; removes leading and trailing whitespace on line, region, or buffer.
+
+(defun cj/remove-leading-trailing-whitespace (start end)
+  "Remove leading and trailing whitespace in a region or buffer.
+When called interactively, if a region is active, remove leading
+and trailing spaces in the region. Else, remove from the current line.
+If called with a prefix argument (C-u), remove throughout the entire buffer.
+START and END define region."
+  (interactive "r")
+  (let (deactivate-mark)
+	(if (or (use-region-p) current-prefix-arg)
+		(save-restriction
+		  (if current-prefix-arg
+			  (progn (widen) (setq start (point-min) end (point-max)))
+			(narrow-to-region start end))
+		  (goto-char (point-min))
+		  (while (re-search-forward "^[ \t]+" nil t) (replace-match ""))
+		  (goto-char (point-min))
+		  (while (re-search-forward "[ \t]+$" nil t) (replace-match "")))
+	  (beginning-of-line)
+	  (while (looking-at "^[ \t]+") (replace-match ""))
+	  (end-of-line)
+	  (while (re-search-backward "[ \t]+$" (line-beginning-position) t)
+		(replace-match "")))))
+
 ;; --------------------------- Arrayify / Unarrayify ---------------------------
 ;; unquoted text on newlines to quoted comma separated strings (and vice-versa).
 
@@ -137,7 +163,7 @@ buffer."
   "Turn unquoted text on newlines into quoted comma-separated strings.
 START and END indicate the region selected.
 QUOTE is the characters used for quotations (i.e, \=' or \")"
-  (interactive "r\nMQuote: ")
+  (interactive "r\nMQuotation character to use for array element: ")
   (let ((insertion
          (mapconcat
           (lambda (x) (format "%s%s%s" quote x quote))
@@ -456,7 +482,16 @@ Uses `sortable-time-format' for the formatting the date/time."
 (defadvice align-regexp (around align-regexp-with-spaces activate)
   "Avoid tabs when aligning text."
   (let ((indent-tabs-mode nil))
-    ad-do-it))
+	ad-do-it))
+
+;; ----------------------------- Merge List To List ----------------------------
+;; Convenience method for merging two lists together
+;; https://emacs.stackexchange.com/questions/38008/adding-many-items-to-a-list/68048#68048
+
+(defun cj/merge-list-to-list (dst src)
+  "Merge content of the 2nd list SRC with the 1st one DST."
+  (set dst
+	   (append (eval dst) src)))
 
 ;; ------------------------------ Personal Keymap ------------------------------
 ;; a keymap to use the above functions. prefix key: "C-;"
@@ -472,20 +507,20 @@ Uses `sortable-time-format' for the formatting the date/time."
     (define-key map "D" 'cj/remove-duplicate-lines-from-region-or-buffer)
 
 	(define-key map ")" #'cj/jump-to-matching-paren)
-	(define-key map "-" #'cj/hyphenate-whitespace-in-region)
-    (define-key map "p" 'cj/append-to-lines-in-region-or-buffer)
-    (define-key map "1" 'cj/alphabetize-and-replace-regibon)
-    (define-key map "C" 'display-fill-column-indicator-mode)
-    (define-key map "w" 'cj/wrap-region-as-code-span)
-    (define-key map "f" 'cj/format-region-or-buffer)
-    (define-key map "h" 'cj/hyphenate-region)
-    (define-key map "j" 'cj/join-line-or-region)
-    (define-key map "J" 'cj/join-paragraph)
-    (define-key map "r" 'align-regexp)
-    (define-key map "l" 'downcase-dwim)
-    (define-key map "u" 'cj/title-case-region)
-    (define-key map "U" 'upcase-region)
-    (define-key map "#" 'cj/count-words-buffer-or-region)
+	(define-key map "-" #'cj/hyphenate-region)
+	(define-key map "U" 'upcase-region)
+	(define-key map "w" 'cj/remove-leading-trailing-whitespace)
+	(define-key map "#" 'cj/count-words-buffer-or-region)
+	(define-key map "1" 'cj/alphabetize-and-replace-region)
+	(define-key map "C" 'display-fill-column-indicator-mode)
+	(define-key map "J" 'cj/join-paragraph)
+	(define-key map "f" 'cj/format-region-or-buffer)
+	(define-key map "j" 'cj/join-line-or-region)
+	(define-key map "l" 'downcase-dwim)
+	(define-key map "p" 'cj/append-to-lines-in-region-or-buffer)
+	(define-key map "r" 'align-regexp)
+	(define-key map "u" 'cj/title-case-region)
+	(define-key map "c" 'cj/wrap-region-as-code-span)
     map)
   "My personal key map.")
 (global-set-key (kbd "C-;") personal-keymap)

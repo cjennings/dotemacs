@@ -8,7 +8,7 @@
 ;; ------------------------------- Text Settings -------------------------------
 
 (defun cj/text-mode-settings ()
-  "Personal settings for \\='text-mode\\='."
+  "Personal settings for \='text-mode\='."
   (turn-on-visual-line-mode)            ;; wrap text in text modes (additional modes set elsewhere)
   (setq-default indent-tabs-mode nil)   ;; indentation should not insert tabs
   (setq sentence-end-double-space nil)) ;; in the 21st century, sentences may end w/ a single space

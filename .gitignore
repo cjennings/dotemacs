@@ -37,3 +37,4 @@ auto-save-list/
 /.elpa-mirrors/
 /forge-database.sqlite
 /.scratch
+/.elfeed-db/

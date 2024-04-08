@@ -5,46 +5,52 @@
 
 ;;; Code:
 
-;; ------------------------- General Settings ------------------------
+;; -------------------------------- Python Setup -------------------------------
+;; preferences for Python programming
 
-(add-hook 'python-mode-hook (lambda () (setq indent-tabs-mode nil))) ;; use spaces, not tabs
+(defun cj/python-setup ()
+  "My default code preferences for Python coding."
+  (tree-sitter-hl-mode)               ;; use tree-sitter's highlighting
+  (hs-minor-mode)                     ;; folding
+  (company-mode)                      ;; completion framework
+  (flyspell-prog-mode)                ;; spell check comments
+  (superword-mode)                    ;; see-this-as-one-word
+  (setq-default fill-column 80)       ;; wrap at 80 columns
+  (setq-default tab-width 4)          ;; set the tab width to 4 spaces
+  (setq-default standard-indent 4)    ;; indent 4 spaces
+  (setq-default indent-tabs-mode nil) ;; disable tab characters
+  (electric-pair-mode t))             ;; match delimiters automatically
 
 ;; ----------------------------------- Python ----------------------------------
-;; remove the guess indent python message
+;; configuration for Emacs' built-in Python editing support
 
 (use-package python
-  :config
-  (setq python-indent-guess-indent-offset-verbose nil))
-
-;; --------------------------- Python Mode ---------------------------
-
-(use-package python-mode
   :ensure nil ;; built-in
   :hook
-  ((python-mode . flyspell-prog-mode)
-   (python-mode . superword-mode)
-   (python-mode . company-mode)
-   (python-mode . electric-pair-mode))   ;; auto-complete braces and pairs
+  (python-mode . cj/python-setup)
   :custom
   (python-shell-interpreter "python3")
-  (setq python-indent-offset 4)) ;; 4 spaces default indent
+  :config
+  ;; remove the "guess indent" python message
+  (setq python-indent-guess-indent-offset-verbose nil))
 
 ;; ----------------------------------- Poetry ----------------------------------
 ;; virtual environments and dependencies
 
-;; (use-package poetry
-;;   :defer t
-;;   :config
-;;   ;; Checks for the correct virtualenv. Better strategy IMO because the default
-;;   ;; one is quite slow.
-;;   (setq poetry-tracking-strategy 'switch-buffer)
-;;   :hook (python-mode . poetry-tracking-mode))
+(use-package poetry
+  :defer t
+  :after (python)
+  :hook (python-mode . poetry-tracking-mode)
+  :config
+  ;; Checks for the correct virtualenv. Better strategy IMO because the default
+  ;; one is quite slow.
+  (setq poetry-tracking-strategy 'switch-buffer))
 
 ;; ---------------------------------- Blacken ----------------------------------
 ;; formatting on save
 
 (use-package blacken
-  :defer t
+  :defer 1
   :custom
   (blacken-allow-py36 t)
   (blacken-skip-string-normalization t)
@@ -54,20 +60,21 @@
 ;; automatically insert NumPy style docstrings in Python function definitions
 
 (use-package numpydoc
-  :defer t
+  :defer 1
   :custom
   (numpydoc-insert-examples-block nil)
   (numpydoc-template-long nil)
   :bind (:map python-mode-map
 			  ("C-c C-n" . numpydoc-generate)))
 
-;; ------------------------------------ Toml -----------------------------------
+;; ------------------------------------ TOML -----------------------------------
+;; editing support and documentation for TOML files
 
 (use-package toml-mode
-  :defer .5)
+  :defer 1)
 
 (use-package eldoc-toml
-  :defer .5)
+  :defer 1)
 
 
 (provide 'prog-python)

@@ -94,7 +94,7 @@ ARGS represents the node name to link."
 ;; -------------------------- Org Roam Find Functions --------------------------
 
 (defun cj/org-roam-find-node (tag template-key template-file)
-  "List all node of type \\=`TAG\\=` in completing read for selection or creation."
+  "List all node of type \='TAG\=' in completing read for selection or creation."
   (interactive)
   ;; Add the project file to the agenda after capture is finished
   (add-hook 'org-capture-after-finalize-hook #'cj/org-roam-add-node-to-agenda-files-finalize-hook)
@@ -111,24 +111,24 @@ ARGS represents the node name to link."
 					:unnarrowed t))))
 
 (defun cj/org-roam-find-topic ()
-  "List all node of type \\=`topic\\=` in completing read for selection or creation."
+  "List all node of type \=`topic\=` in completing read for selection or creation."
   (interactive)
   (cj/org-roam-find-node "Topic" "t" "~/sync/org/roam/templates/topic.org"))
 
 (defun cj/org-roam-find-recipe ()
-  "List all node of type \\=`recipe\\=` in completing read for selection or creation."
+  "List all node of type \=`recipe\=` in completing read for selection or creation."
   (interactive)
   (cj/org-roam-find-node "Recipe" "r" "~/sync/org/roam/templates/recipe.org"))
 
 (defun cj/org-roam-find-project ()
-  "List all node of type \\='project\\=' in completing read for selection or creation."
+  "List all node of type \='project\=' in completing read for selection or creation."
   (interactive)
   (cj/org-roam-find-node "Project" "p" "~/sync/org/roam/templates/project.org"))
 
 ;; ---------------------- Org Capture After Finalize Hook ----------------------
 
 (defun cj/org-roam-add-node-to-agenda-files-finalize-hook ()
-  "Add the captured project file to \\='org-agenda-files\\='."
+  "Add the captured project file to \='org-agenda-files\='."
   ;; Remove the hook since it was added temporarily
   (remove-hook 'org-capture-after-finalize-hook #'cj/org-roam-add-node-to-agenda-files-finalize-hook)
 

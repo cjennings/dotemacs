@@ -48,11 +48,6 @@
 *** [[https://drewdevault.com/blog/index.xml][Drew Devault's Blog]]                                              :tech:
 *** [[https://registerspill.thorstenball.com/feed][Thorsten Ball's Register Spill]]                                   :tech:
 ** Tech News Sites                                                :technews:
-*** Wired                                                           :wired:
-**** [[https://www.wired.com/feed/category/ideas/latest/rss][Wired Ideas]]
-**** [[https://www.wired.com/feed/category/backchannel/latest/rss][Wired Backchannel]]
-**** [[https://www.wired.com/feed/category/business/latest/rss][Wired Business]]
-**** [[https://www.wired.com/feed/tag/ai/latest/rss][Wired AI]]                                                         :ai:
 *** The Register                                              :theregister:
 **** [[https://www.theregister.co.uk/headlines.atom][The Register Headlines]]
 *** Ars Technica                                              :arstechnica:

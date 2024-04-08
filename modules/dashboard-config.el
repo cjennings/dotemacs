@@ -94,11 +94,6 @@
   (setq dashboard-set-footer nil)  ;; don't show footer and quotes
 
   ;; == banner
-  (custom-set-faces '(dashboard-banner-logo-title
-					  ((t(:slant oblique
-								 :height 170
-								 :family "Merriweather")))))
-
   (setq dashboard-startup-banner (concat user-emacs-directory "assets/M-x_butterfly.png"))
   (setq dashboard-banner-logo-title "Emacs: The Editor That Saves Your Soul")
 

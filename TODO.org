@@ -156,50 +156,53 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING v0.7 Bug Fixing (ends 2024.04.18) [5/10]
-*** TODO [#C] Ripgrep Should Put Point on Results Buffer
-*** TODO [#A] Remove Security Keys
-**** Remove OpenAPI Key From ai-config.el
-***** 2024-04-07 Sun @ 13:21:22 -0500 Issue in ai-config.el
-  ;; BUG: .authinfo.gpg not accessed for this key
-**** Purge History to Remove Historical Issues
-Do this after other secrets are removed
-***** Google OAuth file in assets
-****** 2024-04-07 Sun @ 13:23:51 -0500 This One's in History. Fix by Purging History
-***** OpenAPI Key in help-utils.el
-****** 2024-04-07 Sun @ 13:19:10 -0500 Need to Erase History
-Originally, I thought this was a duplicate use-package declaration.
-Now it appears this is in history. I can simply:
-- force delete the .git file
-- recommit everything
-- force push back to github and git.cjennings.net
-- check the security section again to ensure it's gone.
-***** Google OAuth Client ID and Client Secret in org-agenda-config.el
+** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/6]
+*** DOING [#B] Mu4e Doesn't Launch Properly on Fresh Archinstall
+Error was something about the mu server exiting.
+**** DOING Setup Virtualbox Testing
+***** DONE Create ArchBase and ArchSetup Images
+CLOSED: [2024-04-07 Sun 13:48]
+***** DOING Run Archsetup in ArchSetup Image
+***** TODO Run Mu4e Install Found in ~/.emacs.d/scripts/
+***** TODO Snapshot the Image
 *** TODO [#A] S-<right> is Undefined Error in Org Mode
 (should be org-agenda-todo-nextset)
 **** 2024-04-07 Sun @ 11:48:44 -0500 it's simply undefined in org-mode
 Looks like I just added it to org-agenda-mode?
 *** TODO [#A] Error When Starting org-drill in cj/org-drill-start
 let: Symbol’s function definition is void: org-drill
-*** TODO [#B] Kill All Windows Also Kills Invisible Buffers
-*** TODO [#B] Mu4e Doesn't Launch Properly on Fresh Archinstall
-Error was something about the mu server exiting.
-**** TODO Setup Archbase for Virtualbox Testing
-**** TODO Run Archsetup
-**** TODO Run Mu4e Install Found in ~/.emacs.d/scripts/
 *** TODO [#C] Dashboard Icons Aren't Correct or Sized Correctly on Fractal
 *** TODO [#C] Check if Including Dired Buffers in Autorevert-mode Slows Tramp
-*** DONE [#B] cj/kill-buffers renamed
+*** [#D] Completed v.07 Fit and Finish
+**** DONE [#A] Remove Security Keys
+CLOSED: [2024-04-07 Sun 13:46]
+***** Remove OpenAPI Key From ai-config.el
+****** 2024-04-07 Sun @ 13:21:22 -0500 Issue in ai-config.el
+  ;; BUG: .authinfo.gpg not accessed for this key
+***** Purge History to Remove Historical Issues
+Do this after other secrets are removed
+****** Google OAuth file in assets
+******* 2024-04-07 Sun @ 13:23:51 -0500 This One's in History. Fix by Purging History
+****** OpenAPI Key in help-utils.el
+******* 2024-04-07 Sun @ 13:19:10 -0500 Need to Erase History
+Originally, I thought this was a duplicate use-package declaration.
+Now it appears this is in history. I can simply:
+- force delete the .git file
+- recommit everything
+- force push back to github and git.cjennings.net
+- check the security section again to ensure it's gone.
+****** Google OAuth Client ID and Client Secret in org-agenda-config.el
+**** DONE [#B] cj/kill-buffers renamed
 CLOSED: [2024-04-04 Thu 19:17]
-*** DONE [#B] cj/kill-buffers doesn't select current buffer in completing read by default
+**** DONE [#B] cj/kill-buffers doesn't select current buffer in completing read by default
 CLOSED: [2024-04-04 Thu 19:17]
-*** DONE [#B] cj/kill-buffers should allow adding to invincible-buffers with C-u prefix
+**** DONE [#B] cj/kill-buffers should allow adding to invincible-buffers with C-u prefix
 CLOSED: [2024-04-04 Thu 19:33]
-*** DONE [#B] Mu4e Reply All Should Be Default
+**** DONE [#B] Mu4e Reply All Should Be Default
 CLOSED: [2024-04-04 Thu 20:45]
 make 'r' reply-all (or wide reply) and 'R' reply
 no need to remove 'W' (for wide reply)
-**** 2024-04-04 Thu @ 20:36:56 -0500 Solution Tested to Be Working
+***** 2024-04-04 Thu @ 20:36:56 -0500 Solution Tested to Be Working
 Need to adjust 'mu4e-view-mode'. Within that mode:
 - the reply method is named "mu4e-compose-reply"
 - the reply-all method is named "mu4e-compose-wide-reply"
@@ -212,19 +215,31 @@ There doesn't seem to be anything already mapped to "R", so adding the following
 #+end_src
 
 Tested both keys on a mail that had many recipients and it behaved in the way I expected.
-*** DONE [#B] cj/hyphenate-whitespace-in-region should leave point where it started
+**** DONE [#B] cj/hyphenate-whitespace-in-region should leave point where it started
 CLOSED: [2024-04-04 Thu 22:07]
-** DOING Complete v0.7 Release Checklist [7/10]
-- [X] No Open Work
-- [X] WIP Code Empty/Disabled
-- [X] Emacs Config Inbox Zero
-- [X] Perf Testing: Sub-Second Launch Time
-- [X] Successful Launch from Git Clone
-- [ ] Successful Launch from Archsetup
-- [X] Merged cleanly into main branch
-- [X] Main Branch Pushed to github and git.cjennings.net
-- [ ] 2 Week Scenario Testing and Bug Fixing ends: Thursday, April 18, 2024
-- [ ] Mark Release as DONE and Create Tag on Repo
+**** DONE [#C] Remove unnecessary .gitmodule file
+CLOSED: [2024-04-07 Sun 14:07]
+**** DONE [#C] move files in project root to assets
+CLOSED: [2024-04-07 Sun 14:21]
+***** 2024-04-07 Sun @ 14:07:56 -0500 files to move
+abbrev_defs
+elfeed-dashboard
+**** DONE [#B] Kill All Windows Also Kills Invisible Buffers
+CLOSED: [2024-04-08 Mon 16:14]
+**** DONE [#C] Ripgrep Should Finish with Point on Results Buffer
+CLOSED: [2024-04-08 Mon 16:14]
+** DOING Complete v0.7 Release Checklist [8/11]
+*** DOING 2 Week Fit and Finish (ends 2024.04.18)
+*** TODO Clean Launch from Archsetup
+*** TODO Close Release and Create Tag on Repo
+*** DONE No Open Work
+*** DONE WIP Code Empty/Disabled
+*** DONE Emacs Config Inbox Zero
+*** DONE Perf Testing: Sub-Second Launch Time
+*** DONE Security Check for Keys
+*** DONE Clean Launch from Git Clone
+*** DONE Merged Cleanly Into Main Branch
+*** DONE Main Branch Pushed to github and git.cjennings.net
 * Emacs Config v0.8
 ** VERIFY Add Around Word or Region
 *** 2024-04-04 Thu @ 22:12:04 -0500 Scenario Testing Verification
@@ -326,19 +341,9 @@ I'm starting from scratch, but here are my (currently simple) requirements
 
 And yes, this means I also need to find and host an online calendar that sync's with an Android app.
 ** TODO Ledger Workflow
-** TODO Emacs Config v0.8 Bug Fixes
-** TODO Emacs Config v0.8 Release Checklist [0/9]
-- [ ] No Open Work
-- [ ] WIP Code Empty/Disabled
-- [ ] Empty Emacs Config Inbox of Issues
-- [ ] Keep Sub-Second Launch Time
-- [ ] Successful Launch from Git Clone
-- [ ] Merged cleanly into main branch
-- [ ] Main Branch Pushed to github and git.cjennings.net
-- [ ] 2 Weeks of Use and Bug Fixing
-- [ ] Mark Release as DONE and Create Tag on Repo
-
-** TODO Consider the Flyspell Correct Ivy Interface for spelling
+** TODO Miscellaneous Work
+*** TODO Fix Show Kill Ring
+*** TODO Consider the Flyspell Correct Ivy Interface for spelling
 #+BEGIN_QUOTE
 flyspell-correct-ivy interface
 In order to use flyspell-correct-ivy interface you have to install flyspell-correct-ivy package in any preferred way and then add following snippet to relevant part of your init.el file.
@@ -360,9 +365,12 @@ Note that in order to access actions in ivy interface you need to press M-o. Mor
 #+END_QUOTE
 [[https://github.com/d12frosted/flyspell-correct?tab=readme-ov-file#screenshots][d12frosted/flyspell-correct: Distraction-free words correction with flyspell via selected interface.]]
 Captured On: [2024-04-05 Fri 13:49]
-** TODO Consider Actively Developed Awesome Tray Instead of Unsupported Feebleline
+*** TODO Consider Actively Developed Awesome Tray Instead of Unsupported Feebleline
 [[https://github.com/manateelazycat/awesome-tray?tab=readme-ov-file][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
 Captured On: [2024-04-06 Sat 11:09]
+** TODO Emacs Config v0.8 Bug Fixes
+** TODO Emacs Config v0.8 Release Checklist
+(add latest release checklist here)
 * Emacs Config v0.9
 ** TODO VC Installs from Github
 ** TODO Prog Go Workflow

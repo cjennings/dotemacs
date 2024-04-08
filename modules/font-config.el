@@ -41,10 +41,18 @@
 		   :default-family "Codelia Ligatures")
 		  (Liberation_Mono-Only
 		   :default-family "Liberation Mono")
+		  (12-point-font
+		   :default-height 120)
+		  (13-point-font
+		   :default-height 130)
+		  (11-point-font
+		   :default-height 110)
+		  (10-point-font
+		   :default-height 100)
 		  (t                                ;; shared fallback properties go here
 		   :default-family "Berkeley Mono"
 		   :default-weight regular
-		   :default-height 130
+		   :default-height 110
 		   :fixed-pitch-family nil          ;; falls back to :default-family
 		   :fixed-pitch-weight nil          ;; falls back to :default-weight
 		   :fixed-pitch-height 1.0
@@ -70,7 +78,7 @@ Note that server-after-make-frame-hook is available only in Emacs 27+."
 	(interactive)
 	(fontaine-set-preset 'Berkeley-Only)
 	(if (daemonp)
-		(remove-hook 'server-after-make-frame-hook #'cj/apply-font-settings-after-ui-creation)))
+        (remove-hook 'server-after-make-frame-hook #'cj/apply-font-settings-after-ui-creation)))
 
   (if (daemonp)
 	  (add-hook 'server-after-make-frame-hook #'cj/apply-font-settings-after-ui-creation)
@@ -141,7 +149,7 @@ Note that server-after-make-frame-hook is available only in Emacs 27+."
   (interactive)
   (pop-to-buffer "*Available Fonts*" '(display-buffer-in-side-window . ((side . right)(window-width . fit-window-to-buffer))))
   (let ((font-list (font-family-list)))
-    (setq font-list (remove-duplicates (cl-sort font-list 'string-lessp :key 'downcase)))
+    (setq font-list (cl-remove-duplicates (cl-sort font-list 'string-lessp :key 'downcase)))
     (with-current-buffer "*Available Fonts*"
       (erase-buffer)
       (dolist (font-family font-list)

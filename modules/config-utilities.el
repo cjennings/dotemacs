@@ -45,7 +45,7 @@ Will recompile natively if supported, or byte-compiled if not."
 ;; removes all compiled files and deletes the eln directory
 
 (defun cj/delete-emacs-home-compiled-files ()
-  "Delete all compiled files recursively in \\='user-emacs-directory\\='."
+  "Delete all compiled files recursively in \='user-emacs-directory\='."
   (interactive)
   (message "Deleting compiled files under %s. This may take a while." user-emacs-directory)
   (require 'find-lisp)    ;; make sure the package is required

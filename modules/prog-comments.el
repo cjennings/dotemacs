@@ -30,47 +30,46 @@
 ;; per major mode.
 
 (defun cj/comment-centered (&optional comment-char)
-  "Insert comment text centered around the 'COMMENT-CHAR' character.
-Will default to the '#' character if called with no arguments. Uses
-\\="fill-column"\\= or 80 (whichever is less) to calculate the comment length.
-Will begin and end the line  with the appropriate comment symbols based on
-programming mode."
+  "Insert comment text centered around the COMMENT-CHAR character.
+Will default to the '#' character if called with no arguments. Uses the value of
+fill-column or 80 (whichever is less) to calculate the comment length. Will
+begin and end the line with the appropriate comment symbols based on programming mode."
   (interactive)
   (if (not (char-or-string-p comment-char))
-      (setq comment-char "#"))
+	  (setq comment-char "#"))
   (let* ((comment (capitalize (string-trim (read-from-minibuffer "Comment: "))))
-         (fill-column (min fill-column 80))
-         (comment-length (length comment))
-         (comment-start-length (length comment-start))
-         (comment-end-length (length comment-end))
-         (current-column-pos (current-column))
-         (space-on-each-side (/ (- fill-column
-                                   current-column-pos
-                                   comment-length
-                                   (length comment-start)
-                                   (length comment-end)
-                                   ;; Single space on each side of comment
-                                   (if (> comment-length 0) 2 0)
-                                   ;; Single space after comment syntax sting
-                                   1)
-                                2)))
+		 (fill-column (min fill-column 80))
+		 (comment-length (length comment))
+		 (comment-start-length (length comment-start))
+		 (comment-end-length (length comment-end))
+		 (current-column-pos (current-column))
+		 (space-on-each-side (/ (- fill-column
+								   current-column-pos
+								   comment-length
+								   (length comment-start)
+								   (length comment-end)
+								   ;; Single space on each side of comment
+								   (if (> comment-length 0) 2 0)
+								   ;; Single space after comment syntax sting
+								   1)
+								2)))
     (if (< space-on-each-side 2)
-        (message "Comment string is too big to fit in one line")
-      (progn
-        (insert comment-start)
-        (when (equal comment-start ";") ; emacs-lisp line comments are ;;
-          (insert comment-start))       ; so insert comment-char again
-        (insert " ")
-        (dotimes (_ space-on-each-side) (insert comment-char))
-        (when (> comment-length 0) (insert " "))
-        (insert comment)
-        (when (> comment-length 0) (insert " "))
-        (dotimes (_ (if (= (% comment-length 2) 0)
-                        (- space-on-each-side 1)
-                      space-on-each-side))
-          (insert comment-char))
-        (insert " ")
-        (insert comment-end)))))
+		(message "Comment string is too big to fit in one line")
+	  (progn
+		(insert comment-start)
+		(when (equal comment-start ";") ; emacs-lisp line comments are ;;
+		  (insert comment-start))       ; so insert comment-char again
+		(insert " ")
+		(dotimes (_ space-on-each-side) (insert comment-char))
+		(when (> comment-length 0) (insert " "))
+		(insert comment)
+		(when (> comment-length 0) (insert " "))
+		(dotimes (_ (if (= (% comment-length 2) 0)
+						(- space-on-each-side 1)
+					  space-on-each-side))
+		  (insert comment-char))
+		(insert " ")
+		(insert comment-end)))))
 (global-set-key (kbd "C-z c l") 'cj/comment-line)
 
 ;; ------------------------------- Comment Hyphen ------------------------------

@@ -118,25 +118,7 @@ otherwise use the default location in `cj/recording-location'."
   :after xterm-color
   :load-path ("~/code/emacs-wttrin")
   :bind
-  ("C-c w" . wttrin)
-  :custom
-  (wttrin-unit-system "u")
-  (wttrin-default-cities '(
-						   "Albuquerque, New Mexico"
-						   "Berkeley, CA"
-						   "Boston, Massachussetts"
-						   "Chicago, Illinois"
-						   "Huntington Beach, CA"
-						   "Littlestown, PA"
-						   "London, UK"
-						   "New Orleans, LA"
-						   "New York, New York"
-						   "Oakland, California"
-						   "Paris, FR"
-						   "San Francisco, California"
-						   "Santa Fe, New Mexico"
-						   "Yerevan, AM"
-						   )))
+  ("M-W" . wttrin))
 
 ;; dependency for wttrin
 (use-package xterm-color

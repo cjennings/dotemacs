@@ -41,11 +41,26 @@
 	 . "You are a large language model and a careful programmer. Provide code
   and only code as output without any additional text, prompt or note.")
 	(writing
-	 . "You are a large language model and a writing assistant. Respond concisely.")
+	 . "You are a large language model and a writing assistant. Respond
+  concisely.")
 	(chat
-	 . "You are a large language model and a conversation partner. Respond concisely.")))
+	 . "You are a large language model and a conversation partner. Respond
+  concisely.")))
 
+  ;; grab the secret from ~/.authinfo.gpg
   (setq gptel-api-key (auth-source-pick-first-password :host "api.openai.com")))
 
+;; ----------------------------- Gptel Send Region -----------------------------
+;; convenience function to send a selection to Gptel.
+
+(defun cj/gptel-send-region (&optional prefix)
+  "Verify a region is selected and call gptel-send with PREFIX."
+  (interactive "P")
+  (if (use-region-p)
+      (gptel-send (prefix-numeric-value prefix))
+	(error "No region selected")))
+
+(global-set-key (kbd "C-; g") 'cj/gptel-send-region)
+
 (provide 'ai-config)
-;;; ai-config.el ends here.
+;;; ai-config.el ends here

@@ -49,19 +49,16 @@
               ("<backtab>" . bicycle-cycle-global)))
 
 ;; --------------------------- Project Switch Actions --------------------------
-;; if there's a todo or readme file in the project, display it when switching
+;; when switching projects, display the todo file if it exists, or display
+;; magit-status if it doesn't.
 
 (defun cj/project-switch-actions ()
   "Opens TODO or README file on projectile switch project.
 If none exists, it opens magit-status."
-  ;; (dired-sidebar-hide-sidebar)
-  ;; (dired-sidebar-show-sidebar)
-  (let ((todo-file
-         (cond
-          ((file-exists-p (concat (projectile-project-root) "TODO.org")) "TODO.org")
-          ((file-exists-p (concat (projectile-project-root) "todo.org")) "todo.org")
-          ((file-exists-p (concat (projectile-project-root) "TODO.md")) "TODO.md")
-		  ((file-exists-p (concat (projectile-project-root) "TODO.txt")) "TODO.txt"))))
+  (let* ((files (directory-files (projectile-project-root)))
+         (todo-file (seq-find (lambda (file)
+                                (string-match-p "todo\\.\\(org\\|md\\|txt\\)\\'"
+                                                (downcase file))) files)))
     (if todo-file
         (find-file (concat (projectile-project-root) todo-file))
       (magit-status))))
@@ -69,16 +66,11 @@ If none exists, it opens magit-status."
 ;; --------------------------------- Projectile --------------------------------
 ;; project support
 
-;; notify user when scanning for projects
-(defun cj/projectile-identify-projects ()
-  (message "No project cache found. Identifying projects....")
-  (projectile-discover-projects-in-search-path))
-
 ;; only run discover projects when there's no bookmarks file
 (defun cj/projectile-schedule-project-discovery ()
-  (let ((bookmark-file (concat user-emacs-directory "/projectile-bookmarks.eld")))
-    (unless (file-exists-p bookmark-file)
-      (run-at-time "3" nil 'cj/projectile-identify-projects))))
+  (let ((projectile-bookmark-file (concat user-emacs-directory "/projectile-bookmarks.eld")))
+    (unless (file-exists-p projectile-bookmark-file)
+      (run-at-time "3" nil 'projectile-discover-projects-in-search-path))))
 
 (use-package projectile
   :defer .5
@@ -92,7 +84,9 @@ If none exists, it opens magit-status."
   (projectile-project-search-path '("~/code"
                                     "~/projects"))
   :config
+  ;; scan for projects if none are defined
   (cj/projectile-schedule-project-discovery)
+
   ;; don't reuse comp buffers between projects
   (setq projectile-per-project-compilation-buffer t)
   (projectile-mode)
@@ -120,7 +114,15 @@ If none exists, it opens magit-status."
   :after projectile
   :bind
   (:map projectile-command-map
-        ("G" . projectile-ripgrep)))
+        ("G" . projectile-ripgrep))
+  :config
+
+  ;; when running ripgrep searches, end with the results window selected
+  (defun switch-to-ripgrep-results (&rest _)
+    "Switch to *ripgrep-search* buffer in other window."
+    (pop-to-buffer "*ripgrep-search*"))
+
+  (advice-add 'ripgrep-regexp :after #'switch-to-ripgrep-results))
 
 ;; ---------------------------------- Snippets ---------------------------------
 ;; reusable code and text.
@@ -174,7 +176,7 @@ If none exists, it opens magit-status."
           ("WIP"   .  "#1E90FF"))))
 
 ;; --------------------------- Whitespace Management ---------------------------
-;; when saving your file, trims unneeded whitespace only from lines you've modified
+;; trims trailing whitespace only from lines you've modified when saving buffer
 
 (use-package ws-butler
   :defer .5
@@ -187,7 +189,7 @@ If none exists, it opens magit-status."
   (setq ws-butler-convert-leading-tabs-or-spaces t))
 
 ;; ----------------- Auto-Close Successful Compilation Windows -----------------
-;; from 'enberg' on #emacs
+;; close compilation windows when successful. from 'enberg' on #emacs
 
 (add-hook 'compilation-finish-functions
           (lambda (buf str)

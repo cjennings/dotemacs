@@ -18,27 +18,61 @@
   (setq nerd-icons-ibuffer-color-icon t)
   (setq  nerd-icons-ibuffer-human-readable-size t))
 
-;; ------------------------------ Bury Alive List ------------------------------
-;; buries buffers on the 'cj/bury-alive-list' list rather than killing them. The
-;; keybinding for kill-buffer is remapped to this function.
+;; ------------------------ Killing Buffers And Windows ------------------------
+;; Accidentally killing buffers can lose data. these functions override common
+;; buffer killing functions and  buries buffers on the 'cj/buffer-bury-alive-list' list
+;; rather than killing them. Allows for interactive adding to the
+;; 'cj/buffer-bury-alive-list' via 'C-u C-x k'
 
-(defvar cj/bury-alive-list '("*dashboard*" "*scratch*" "*Messages*")
+;; BUFFER BURY ALIVE LIST
+(defvar cj/buffer-bury-alive-list '("*dashboard*" "*scratch*" "*Messages*")
   "Buffers that shouldn't be killed, but buried instead.")
 
-(defun cj/kill-or-bury-alive (target-buffer)
+;; KILL BUFFER AND WINDOW
+(defun cj/kill-buffer-and-window ()
+  "Kill current buffer and window.
+Buries buffers instead if they are on the cj/buffer-bury-alive-list."
+  (interactive)
+  (let ((target-buffer (current-buffer)))
+    (delete-window)
+    (cj/kill-buffer-or-bury-alive target-buffer)))
+(global-set-key (kbd "M-C") 'cj/kill-buffer-and-window)
+
+;; KILL OTHER WINDOW
+(defun cj/kill-other-window ()
+  "Close the next window and kill any buffer in it.
+Buries buffers instead if they are on the cj/buffer-bury-alive-list."
+  (interactive)
+  (other-window 1)
+  (let ((target-buffer (current-buffer)))
+    (if (not (one-window-p)) (delete-window))
+    (cj/kill-buffer-or-bury-alive target-buffer)))
+(global-set-key (kbd "M-O") 'cj/kill-other-window)
+
+;; KILL ALL OTHER BUFFERS AND WINDOWS
+(defun cj/kill-all-other-buffers-and-windows ()
+  "Save buffers, then kill all other buffers and windows.
+Buries buffers instead if they are on the cj/buffer-bury-alive-list."
+  (interactive)
+  (save-some-buffers)
+  (delete-other-windows)
+  (mapc 'cj/kill-buffer-or-bury-alive (delq (current-buffer) (buffer-list))))
+(global-set-key (kbd "M-M") 'cj/kill-all-other-buffers-and-windows)
+
+;; KILL BUFFER OR BURY ALIVE
+(defun cj/kill-buffer-or-bury-alive (target-buffer)
   "Bury buffers on the bury-instead-list rather than killing them.
-With a prefix argument, add the TARGET-BUFFER to \='cj/bury-alive-list\='."
+With a prefix argument, add the TARGET-BUFFER to \='cj/buffer-bury-alive-list\='."
   (interactive "bKill or Add to bury (don't kill) buffer list: ")
   (with-current-buffer target-buffer
     (if current-prefix-arg
         (progn
-          (add-to-list 'cj/bury-alive-list (buffer-name (current-buffer)))
+          (add-to-list 'cj/buffer-bury-alive-list (buffer-name (current-buffer)))
           (message "Added %s to bury-alive-list" (buffer-name (current-buffer))))
-      (if (member (buffer-name (current-buffer)) cj/bury-alive-list)
+      (if (member (buffer-name (current-buffer)) cj/buffer-bury-alive-list)
           (bury-buffer)
         (kill-buffer (current-buffer))))))
-
-(global-set-key [remap kill-buffer] #'cj/kill-or-bury-alive)
+(global-set-key [remap kill-buffer] #'cj/kill-buffer-or-bury-alive)
 
 ;; --------------------------- Emacs Server Shutdown ---------------------------
 ;; shuts down the Emacs server. useful with emacsclient.
@@ -243,14 +277,16 @@ The function offers the option to open the `macros-file' for editing when called
     (write-region ";;; -*- lexical-binding: t -*-\n" nil macros-file)
     (message "Saved macros file not found, so created: %s" macros-file)))
 
-;; ----------------------------- Merge List To List ----------------------------
-;; Convenience method for merging two lists together
-;; https://emacs.stackexchange.com/questions/38008/adding-many-items-to-a-list/68048#68048
+;; -------------------------------- Abbrev Mode --------------------------------
+;; word abbreviations mode. used to auto-correct spelling (see flyspell-config)
 
-(defun cj/merge-list-to-list (dst src)
-  "Merge content of the 2nd list SRC with the 1st one DST."
-  (set dst
-       (append (eval dst) src)))
+(use-package abbrev-mode
+  :ensure nil ;; built-in
+  :defer .5
+  :custom
+  (abbrev-file-name (concat user-emacs-directory "assets/abbrev_defs")) ;; keep project root clean
+  :config
+  (abbrev-mode)) ;; use abbrev mode everywhere
 
 ;; -------------------------------- Log Silently -------------------------------
 ;; utility function to log silently to the Messages buffer (for debugging/warning)
