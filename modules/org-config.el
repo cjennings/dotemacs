@@ -54,7 +54,6 @@
   (:map org-mode-map
 		("C-c ?"     . hydra-general/body)   ;; was org-table-field-info
 		("C-c I"     . org-table-field-info) ;; was C-c ?
-		("C-c w"     . cj/org-refile-in-file)
 		("C-\\"      . org-match-sparse-tree)
 		("C-c t"     . org-set-tags-command)
 		("C-c l"     . org-store-link)

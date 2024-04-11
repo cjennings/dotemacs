@@ -4,25 +4,26 @@
 ;;; Commentary:
 
 ;; Agenda views are tied to the F8 (fate) key.
-;; f8   - A daily schedule with task items with a scheduled date or deadline of
-;;        the current day. This is followed by a task list containing tasks from
-;;        all agenda sources.
-;; C-f8 - A task list containing all tasks from all agenda sources
-;; M-f8 - A task list containing all tasks from the current org-mode buffer.
+
+;; f8   - DAILY SCHEDULE containing a events with a scheduled date or deadline of
+;;        the current day. This is followed by...
+;;      - TASK LIST containing tasks from  all agenda sources.
+
+;; C-f8 - TASK LIST containing all tasks from all agenda sources
+
+;; M-f8 - TASK LIST containing all tasks from the current org-mode buffer.
 
 ;; NOTE:
 ;; Files that contain information relevant to the agenda will be found in the
-;; following places: the schedule-file, org-roam notes tagged as 'projects' and
-;; project todo.org files found in project-dir and code-dir. The function
-;; that rebuilds the agenda list.
+;; following places: the schedule-file, org-roam notes tagged as 'Projects' and
+;; project todo.org files found in project-dir and code-dir.
 
 ;; How the agenda is created:
-;; In order to stay current, the files containing agenda information are queried
-;; before calling the functions in the section org-agenda functions to display
-;; the data.
-
-;; This way, we can maximize flexibility and limit the agenda-files to a smaller
-;; set of files for a scoped agenda.
+;; The inbox and schedule files are always included first. However, in order to
+;; stay current, the files containing agenda information are queried before
+;; calling the functions in the section org-agenda functions to display the
+;; data. This way, any newly created events from project todo.org files, or
+;; org-roam Project files will be included.
 
 ;;; Code:
 
@@ -66,8 +67,8 @@
   ;; ------------------ Org TODO Next/Previous Set Keybindings -----------------
 
   (add-hook 'org-agenda-mode-hook (lambda ()
-                                  (local-set-key (kbd "s-<right>")  #'org-agenda-todo-nextset)
-                                  (local-set-key (kbd "s-<left>")  #'org-agenda-todo-previousset)))
+									(local-set-key (kbd "s-<right>")  #'org-agenda-todo-nextset)
+									(local-set-key (kbd "s-<left>")  #'org-agenda-todo-previousset)))
 
   ;; ------------------------------ Org Super Agenda -----------------------------
 
@@ -170,35 +171,39 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   ;; org-agenda-files list.
 
   (defun cj/add-files-to-org-agenda-files (directory)
-	"Recursively searches for files named 'todo.org'.
-Searches in DIRECTORY and adds them to org-project-files."
-    (interactive "D")
+	"Recursively searches for files named 'todo.org',
+  Searches in DIRECTORY and adds them to org-project-files."
+	(interactive "D")
 	(setq org-agenda-files
-		  (append org-agenda-files
-				  (directory-files-recursively directory "^[Tt][Oo][Dd][Oo]\\.[Oo][Rr][Gg]$" t))))
+		  (append (directory-files-recursively directory
+											   "^[Tt][Oo][Dd][Oo]\\.[Oo][Rr][Gg]$" t)
+				  org-agenda-files)))
+
 
   ;; NOTE: the following functions require org-roam functionality
   (with-eval-after-load 'org-roam-config
 
-  ;; ---------------------------- Rebuild Org Agenda ---------------------------
+	;; ---------------------------- Rebuild Org Agenda ---------------------------
 
-  (defun cj/build-org-agenda-list ()
-    "Rebuilds the org agenda list."
-	(interactive)
-	;; reset org-agenda-files to inbox-file
-	(setq org-agenda-files (list inbox-file))
-    (let ((new-files
-           (append
-            (cj/org-roam-list-notes-by-tag "Project"))))
-      (dolist (file new-files)
-        (unless (member file org-agenda-files)
-          (setq org-agenda-files (cons file org-agenda-files)))))
+	(defun cj/build-org-agenda-list ()
+	  "Rebuilds the org agenda list.
+Begins with the inbox-file and schedule-file, then searches for org-roam
+Projects and adds all todo.org files from code and project directories."
+	  (interactive)
+	  ;; reset org-agenda-files to inbox-file
+	  (setq org-agenda-files (list inbox-file schedule-file))
+	  (let ((new-files
+			 (append
+			  (cj/org-roam-list-notes-by-tag "Project"))))
+		(dolist (file new-files)
+		  (unless (member file org-agenda-files)
+			(setq org-agenda-files (cons file org-agenda-files)))))
 
-	(cj/add-files-to-org-agenda-files projects-dir)
-	(cj/add-files-to-org-agenda-files code-dir))
+	  (cj/add-files-to-org-agenda-files projects-dir)
+	  (cj/add-files-to-org-agenda-files code-dir))
 
-  ;; build org-agenda-list for the first time once emacs init is complete.
-  (add-hook 'emacs-startup-hook 'cj/build-org-agenda-list)
+	;; build org-agenda-list for the first time once emacs init is complete.
+	(add-hook 'emacs-startup-hook 'cj/build-org-agenda-list)
 
     ;; ------------------------ Org Agenda Display Functions -----------------------
 

@@ -140,9 +140,42 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [16/19]
-*** TODO [#B] Saving an Event for Today and Today's Calendar Doesn't Show the Event
-**** 2024-04-11 Thu @ 01:28:15 -0500 Reproduction
+** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/3]
+*** TODO [#B] Neither Feebleline nor Moodline Displays on Archsetup Fresh Install
+*** TODO [#C] Theme Doesn't Fallback on Wombat Correctly if No Theme Persist File
+*** TODO [#C] Check if Including Dired Buffers in Autorevert-mode Slows Tramp
+*** [#D] Resolved v0.7 Fit and Finish Work [16/16]
+**** DONE [#A] Remove Keys
+CLOSED: [2024-04-07 Sun 13:46]
+***** Remove OpenAPI Key From ai-config.el
+****** 2024-04-07 Sun @ 13:21:22 -0500 Issue in ai-config.el
+;; BUG: .authinfo.gpg not accessed for this key
+***** Purge History to Remove Historical Issues
+Do this after other secrets are removed
+****** Google OAuth file in assets
+******* 2024-04-07 Sun @ 13:23:51 -0500 This One's in History. Fix by Purging History
+****** OpenAPI Key in help-utils.el
+******* 2024-04-07 Sun @ 13:19:10 -0500 Need to Erase History
+Originally, I thought this was a duplicate use-package declaration.
+Now it appears this is in history. I can simply:
+- force delete the .git file
+- recommit everything
+- force push back to github and git.cjennings.net
+- check the security section again to ensure it's gone.
+****** Google OAuth Client ID and Client Secret in org-agenda-config.el
+**** DONE [#A] S-<right> is Undefined Error in Org Mode
+CLOSED: [2024-04-08 Mon 21:30]
+(should be org-agenda-todo-nextset)
+***** 2024-04-07 Sun @ 11:48:44 -0500 it's simply undefined in org-mode
+Looks like I just added it to org-agenda-mode?
+**** DONE [#A] Error When Starting org-drill in cj/org-drill-start
+CLOSED: [2024-04-10 Wed 16:50]
+let: Symbol’s function definition is void: org-drill
+**** DONE [#B] Saving an Event for Today and Today's Calendar Doesn't Show the Event
+Fix was to include schedule-file alongside inbox in cj/build-org-agenda-list ()
+***** 2024-04-11 Thu @ 01:48:07 -0500 Observation
+Relaunching Emacs doesn't matter. Is the schedule file included in the agenda targets?
+***** 2024-04-11 Thu @ 01:28:15 -0500 Reproduction
 - C-c c to bring up the capture templates
 - Select 'e' for event
 - Enter an event for the same day, then choose some time in the future (11:00pm)
@@ -152,37 +185,17 @@ Expected Behavior: Agenda shows with no events.
 
 I checked the schedule file and the event was properly entered.
 Tested on a fresh archsetup, but replicates on current laptop.
-*** TODO [#A] Fix Incorrect Refile Targets After Launch
-*** TODO [#C] Check if Including Dired Buffers in Autorevert-mode Slows Tramp
-*** DONE [#A] Remove Keys
-CLOSED: [2024-04-07 Sun 13:46]
-**** Remove OpenAPI Key From ai-config.el
-***** 2024-04-07 Sun @ 13:21:22 -0500 Issue in ai-config.el
-;; BUG: .authinfo.gpg not accessed for this key
-**** Purge History to Remove Historical Issues
-Do this after other secrets are removed
-***** Google OAuth file in assets
-****** 2024-04-07 Sun @ 13:23:51 -0500 This One's in History. Fix by Purging History
-***** OpenAPI Key in help-utils.el
-****** 2024-04-07 Sun @ 13:19:10 -0500 Need to Erase History
-Originally, I thought this was a duplicate use-package declaration.
-Now it appears this is in history. I can simply:
-- force delete the .git file
-- recommit everything
-- force push back to github and git.cjennings.net
-- check the security section again to ensure it's gone.
-***** Google OAuth Client ID and Client Secret in org-agenda-config.el
-*** DONE [#B] Rename cj/kill-buffers
+**** DONE [#B] Rename cj/kill-buffers
 CLOSED: [2024-04-04 Thu 19:17]
-*** DONE [#B] cj/kill-buffers Doesn't Select Current Buffer in Completing Read by Default
+**** DONE [#B] cj/kill-buffers Doesn't Select Current Buffer in Completing Read by Default
 CLOSED: [2024-04-04 Thu 19:17]
-*** DONE [#B] cj/kill-buffers Should Allow Adding to Invincible-buffers With C-u Prefix
+**** DONE [#B] cj/kill-buffers Should Allow Adding to Invincible-buffers With C-u Prefix
 CLOSED: [2024-04-04 Thu 19:33]
-*** DONE [#B] Mu4e Reply All Should Be Default
+**** DONE [#B] Mu4e Reply All Should Be Default
 CLOSED: [2024-04-04 Thu 20:45]
 make 'r' reply-all (or wide reply) and 'R' reply
 no need to remove 'W' (for wide reply)
-**** 2024-04-04 Thu @ 20:36:56 -0500 Solution Tested to Be Working
+***** 2024-04-04 Thu @ 20:36:56 -0500 Solution Tested to Be Working
 Need to adjust 'mu4e-view-mode'. Within that mode:
 - the reply method is named "mu4e-compose-reply"
 - the reply-all method is named "mu4e-compose-wide-reply"
@@ -195,24 +208,17 @@ There doesn't seem to be anything already mapped to "R", so adding the following
 #+end_src
 
 Tested both keys on a mail that had many recipients and it behaved in the way I expected.
-*** DONE [#B] Hyphenating Whitespace Should Leave Point Where It Started
+**** DONE [#B] Hyphenating Whitespace Should Leave Point Where It Started
 CLOSED: [2024-04-04 Thu 22:07]
-*** DONE [#C] Move Non Init Visible Files in Emacs Config Root to Assets
-CLOSED: [2024-04-07 Sun 14:21]
-**** 2024-04-07 Sun @ 14:07:56 -0500 files to move
-abbrev_defs
-elfeed-dashboard
-*** DONE [#B] Kill All Windows Also Kills Invisible Buffers
+**** DONE [#B] Kill All Windows Also Kills Invisible Buffers
 CLOSED: [2024-04-08 Mon 16:14]
-*** DONE [#C] Ripgrep Should Finish with Point on Results Buffer
-CLOSED: [2024-04-08 Mon 16:14]
-*** DONE [#B] Dictionary Doesn't Work Via C-h d
+**** DONE [#B] Dictionary Doesn't Work Via C-h d
 CLOSED: [2024-04-08 Mon 20:00]
-**** 2024-04-08 Mon @ 19:23:13 -0500 There's a Package on Melpa
+***** 2024-04-08 Mon @ 19:23:13 -0500 There's a Package on Melpa
 https://melpa.org/#/sdcv
 
 Also, it mentioned I needed stardict. I installed it, but it didn't change the error
-**** 2024-04-08 Mon @ 19:23:01 -0500 Issue
+***** 2024-04-08 Mon @ 19:23:01 -0500 Issue
 Tried to look up agency and the dictionary failed.
 
 Found 1 items, similar to agency.
@@ -245,32 +251,33 @@ agentis: cf. F. agence. See {Agent}.]
 
    This was from cut and paste, the actual text didn't show.
 
-*** DONE [#A] S-<right> is Undefined Error in Org Mode
-CLOSED: [2024-04-08 Mon 21:30]
-(should be org-agenda-todo-nextset)
-**** 2024-04-07 Sun @ 11:48:44 -0500 it's simply undefined in org-mode
-Looks like I just added it to org-agenda-mode?
-*** DONE [#A] Error When Starting org-drill in cj/org-drill-start
-CLOSED: [2024-04-10 Wed 16:50]
-let: Symbol’s function definition is void: org-drill
-*** DONE [#C] Dashboard Icons Aren't Correct or Sized Correctly on Fractal
-CLOSED: [2024-04-10 Wed 17:16]
-*** DONE [#B] Fresh Install: Error When No Macros File Found
+**** DONE [#B] Fresh Install: Error When No Macros File Found
 CLOSED: [2024-04-11 Thu 01:11]
 default location: ~/sync/org/macros.el
-*** DONE [#B] Mu4e Doesn't Launch Properly on Fresh Archinstall
+**** DONE [#B] Mu4e Doesn't Launch Properly on Fresh Archinstall
 CLOSED: [2024-04-11 Thu 01:18]
 Error was something about the mu server exiting.
-**** DONE Setup Virtualbox Testing
+***** DONE Setup Virtualbox Testing
 CLOSED: [2024-04-11 Thu 01:18]
-***** DONE Create ArchBase and AqrchSetup Images
+****** DONE Create ArchBase and AqrchSetup Images
 CLOSED: [2024-04-07 Sun 13:48]
-***** DONE Run Archsetup in ArchSetup Image
+****** DONE Run Archsetup in ArchSetup Image
 CLOSED: [2024-04-10 Wed 19:11]
-***** DONE Run Mu4e Install Found in ~/.emacs.d/scripts/
+****** DONE Run Mu4e Install Found in ~/.emacs.d/scripts/
 CLOSED: [2024-04-11 Thu 01:17]
-***** DONE Snapshot the Image
+****** DONE Snapshot the Image
 CLOSED: [2024-04-11 Thu 01:18]
+**** DONE [#C] Move Non Init Visible Files in Emacs Config Root to Assets
+CLOSED: [2024-04-07 Sun 14:21]
+***** 2024-04-07 Sun @ 14:07:56 -0500 files to move
+abbrev_defs
+elfeed-dashboard
+**** DONE [#C] Ripgrep Should Finish with Point on Results Buffer
+CLOSED: [2024-04-08 Mon 16:14]
+**** DONE [#C] Dashboard Icons Aren't Correct or Sized Correctly on Fractal
+CLOSED: [2024-04-10 Wed 17:16]
+**** DONE [#A] Fix Incorrect Refile Targets After Launch
+CLOSED: [2024-04-11 Thu 03:21]
 ** DOING Complete v0.7 Release Checklist [8/11]
 *** DOING 2 Week Fit and Finish (ends 2024.04.18)
 *** TODO Clean Launch from Archsetup
@@ -1303,7 +1310,11 @@ should pull in m3u files in ~/music directory
 ; do a completing-read with gnuchess, fruit, crafty, stockfish, etc.
 ;; (ideally based on what's found on the system's path)
 
-** Emacs General Backlog [0/29]
+** Emacs General Backlog [0/31
+*** TODO Consider Collapsing Code and Project Directories Into One List
+You don't actually treat them any differently.
+Ideally, code-dir is where cloning repositories would go to, but even then, the user should choose as there are non-code git repositories.
+Having a list would also make the setup more flexible in case you wanted to use another directory in your agenda or as a refile target.
 *** TODO Add Current Directory Into Load-path in Emacs
 #+BEGIN_QUOTE
 Add current directory into load-path in Emacs
