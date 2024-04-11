@@ -52,6 +52,9 @@
 ;; log warnings, but don't popup the warnings buffer
 (setq native-comp-async-report-warnings-errors 'silent)
 
+;; skip warnings but notify me about errors
+(setq warning-minimum-level :error)
+
 ;; --------------------------- Use Online Repos Flag ---------------------------
 ;; set to nil to only use localrepo or the local elpa-mirrors
 
@@ -102,8 +105,10 @@
 (defconst user-home-dir (getenv "HOME")
   "The user's home directory per the environment variable.")
 
-(defconst elpa-mirror-location (concat user-emacs-directory ".elpa-mirrors/")
-  "The path to the elpa mirror location.")
+(defconst elpa-mirror-location "~/.elpa-mirrors/"
+"The path to the elpa mirror location.")
+
+(setq package-archives nil) ;; package-archives will be added below
 
 ;; LOCAL REPOSITORY (packages in version control)
 (if (file-accessible-directory-p (concat user-emacs-directory "localrepo"))

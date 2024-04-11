@@ -24,7 +24,8 @@
 		   :variable-pitch-family "Hack Nerd Font Mono")
 		  (Berkeley-Only
 		   :default-family "Berkeley Mono"
-           :variable-pitch-family "Berkeley Mono")
+		   :default-height 120
+		   :variable-pitch-family "Berkeley Mono")
           (Merriweather-Only
            :default-family "Merriweather"
 		   :variable-pitch-family "Merriweather")
@@ -58,7 +59,7 @@
 		  (t                                ;; shared fallback properties go here
 		   :default-family "Berkeley Mono"
 		   :default-weight regular
-		   :default-height 110
+		   :default-height 120
 		   :fixed-pitch-family nil          ;; falls back to :default-family
 		   :fixed-pitch-weight nil          ;; falls back to :default-weight
 		   :fixed-pitch-height 1.0

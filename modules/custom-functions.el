@@ -238,7 +238,54 @@ User is prompted for the optional descriptor."
       (unless (bolp) (insert "\n"))
       (insert "```\n")
       (goto-char start)
-      (insert (concat "```" lang "\n")))))
+	  (insert (concat "```" lang "\n")))))
+
+;; ------------------------ Insert Around Word Or Region -----------------------
+
+(defun cj/insert-around-word-or-region ()
+  "Prompt for a string, insert it before and after the word at point or selected region."
+  (interactive)
+  (let ((str (read-string "Enter a string: "))
+		(regionp (use-region-p)))
+	(save-excursion
+	  (if regionp
+		  (let ((beg (region-beginning))
+				(end (region-end)))
+			(goto-char end)
+			(insert str)
+			(goto-char beg)
+			(insert str))
+		(if (thing-at-point 'word)
+			(let ((bounds (bounds-of-thing-at-point 'word)))
+			  (goto-char (cdr bounds))
+			  (insert str)
+			  (goto-char (car bounds))
+			  (insert str))
+		  (message "Can't insert around. No word at point and no region selected."))))))
+
+(global-set-key (kbd "C-; i a") 'cj/insert-around-word-or-region)
+;; ------------------------ Insert Around Word Or Region -----------------------
+
+(defun cj/insert-around-word-or-region ()
+  "Prompt for a string, insert it before and after the word at point or selected region."
+  (interactive)
+  (let ((str (read-string "Enter a string: "))
+		(regionp (use-region-p)))
+	(save-excursion
+	  (if regionp
+		  (let ((beg (region-beginning))
+				(end (region-end)))
+			(goto-char end)
+			(insert str)
+			(goto-char beg)
+			(insert str))
+		(if (thing-at-point 'word)
+			(let ((bounds (bounds-of-thing-at-point 'word)))
+			  (goto-char (cdr bounds))
+			  (insert str)
+			  (goto-char (car bounds))
+			  (insert str))
+		  (message "Can't insert around. No word at point and no region selected."))))))
 
 ;; -------------------- Append To Lines In Region Or Buffer --------------------
 ;; append characters to the end of all lines in the region or the whole buffer.
@@ -536,6 +583,8 @@ Uses `sortable-time-format' for the formatting the date/time."
 (global-set-key (kbd "C-; b m") 'cj/move-buffer-and-file)
 ;; copy link to source file
 (global-set-key (kbd "C-; b l") 'cj/copy-link-to-source-file)
+;; insert around
+(global-set-key (kbd "C-; i a") 'cj/insert-around-word-or-region)
 
 (provide 'custom-functions)
 ;;; custom-functions.el ends here.

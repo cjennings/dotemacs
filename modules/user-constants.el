@@ -9,7 +9,7 @@
 
 ;; ------------------------ Directory And File Constants -----------------------
 
-## DIRECTORIES
+;; DIRECTORIES
 (defconst emacs-init-file (concat user-emacs-directory "init.el")
   "The location of Emacs's main init file.")
 
@@ -34,7 +34,7 @@
 (defconst snippets-dir    (concat sync-dir "snippets/")
   "The location of ya-snippet snippets.")
 
-### FILES
+;; FILES
 (defvar schedule-file     (concat sync-dir "schedule.org")
   "The location of the org file containing scheduled events.")
 

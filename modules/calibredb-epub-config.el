@@ -44,7 +44,7 @@
 ;;  :hook (nov-mode . cj/nov-apply-preferences)
   :bind
   (:map nov-mode-map
-        ("m" . cj/bookmark-set-and-save)
+		("m" . bookmark-set)
         ("b" . bookmark-bmenu-list)
         ("r" . nov-render-document)
         ("l" . recenter-top-bottom)

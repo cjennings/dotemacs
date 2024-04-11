@@ -29,6 +29,23 @@
   :config
   (setf yeetube-mpv-disable-video nil))
 
+;; --------------------------------- Easy Hugo ---------------------------------
+
+(use-package easy-hugo
+  :defer .5
+  :init
+  (setq easy-hugo-basedir "~/code/cjennings.net/")
+  (setq easy-hugo-url "https://cjennings.net")
+  (setq easy-hugo-sshdomain "cjennings.net")
+  (setq easy-hugo-root "/var/www/cjennings/")
+  (setq easy-hugo-previewtime "300")
+  (setq easy-hugo-postdir "content")
+  (setq easy-hugo-server-flags "-D")
+  (setq easy-hugo-default-ext ".md")
+  :bind ("C-c H" . easy-hugo)
+  :config
+  (easy-hugo-enable-menu))
+
 
 ;; --------------------------------- Recording ---------------------------------
 
@@ -78,51 +95,9 @@ otherwise use the default location in `cj/recording-location'."
 	(setq cj/ffmpeg-process nil)
 	(message "Stopped recording process.")))
 
-;; ------------------------ Insert Around Word Or Region -----------------------
-
-(defun cj/insert-around-word-or-region ()
-  "Prompt for a string, insert it before and after the word at point or selected region."
-  (interactive)
-  (let ((str (read-string "Enter a string: "))
-		(regionp (use-region-p)))
-	(save-excursion
-	  (if regionp
-		  (let ((beg (region-beginning))
-				(end (region-end)))
-			(goto-char end)
-			(insert str)
-			(goto-char beg)
-			(insert str))
-		(if (thing-at-point 'word)
-			(let ((bounds (bounds-of-thing-at-point 'word)))
-			  (goto-char (cdr bounds))
-			  (insert str)
-			  (goto-char (car bounds))
-			  (insert str))
-		  (message "Can't insert around. No word at point and no region selected."))))))
-
-(global-set-key (kbd "C-; i a") 'cj/insert-around-word-or-region)
-
-;; --------------------------------- Easy Hugo ---------------------------------
-
-(use-package easy-hugo
-  :defer .5
-  :init
-  (setq easy-hugo-basedir "~/code/cjennings.net/")
-  (setq easy-hugo-url "https://cjennings.net")
-  (setq easy-hugo-sshdomain "cjennings.net")
-  (setq easy-hugo-root "/var/www/cjennings/")
-  (setq easy-hugo-previewtime "300")
-  (setq easy-hugo-postdir "content")
-  (setq easy-hugo-server-flags "-D")
-  (setq easy-hugo-default-ext ".md")
-  :bind ("C-c H" . easy-hugo)
-  :config
-  (easy-hugo-enable-menu))
 
 ;; -------------------------------- Google This --------------------------------
 
-;; BUG: Fix warnings and errors thrown
 (use-package google-this
   :load-path "~/code/emacs-google-this/"
   :defer 1

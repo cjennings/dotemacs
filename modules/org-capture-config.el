@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; Customizations related to org-capture and org-refile is here.
-;; This includes 'org-webpage-clipper' functionality.
+;; This includes 'cj/org-webpage-clipper' functionality.
 
 ;; To ensure the code below is only loaded after org-mode, all code is wrapped in an
 ;; eval-after-load function.
@@ -17,7 +17,7 @@
   ;; Saves a copy of the page eww is visiting in the 'articles'-file for offline
   ;; reading. In other words, it's a "Poor Man's Pocket/Instapaper"
 
-  (defun org-webpage-clipper ()
+  (defun cj/org-webpage-clipper ()
     "Capture a web page for later viewing in an org-file.
 Encodes all links and marks that may interfere with org mode
 display, then inserts the content into a file for later offline use.
@@ -26,7 +26,7 @@ This is meant to be used in coordination with an org-capture-template.
 Example Template:
 
 ,@
-(\"w\" \"Website\" plain (function org-webpage-clipper)
+(\"w\" \"Website\" plain (function cj/org-webpage-clipper)
 \"* %a\\nArticle Link: %L\\nCaptured On: %U\\n\\n\" :immediate-finish t)
 '@"
     (interactive)
@@ -98,8 +98,8 @@ Intended to be called within an org capture template."
            "* TODO %?%(if (string= \"%i\" \"\") \"\" \"\n#+BEGIN_QUOTE\n%i\n#+END_QUOTE\")\n[[%:link][%:description]]\nCaptured On: %U"
            :prepend t)
 
-          ("w" "Website" plain
-           (function org-webpage-clipper)
+		  ("w" "Web Page Clipper" plain
+		   (function cj/org-webpage-clipper)
            "* %a\nArticle Link: %L\nCaptured On: %U\n\n" :immediate-finish t)))
 
   ) ;; end with-eval-after-load 'org

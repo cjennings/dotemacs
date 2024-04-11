@@ -2,6 +2,9 @@
 === Emacs Config Tasks ===
 
 * Emacs Config Inbox
+** TODO Consider uses for shrface Emacs web browsing package
+[[https://github.com/chenyanming/shrface][chenyanming/shrface: Extend eww/nov with org-mode features, archive web pages to org files with shr.]]
+Captured On: [2024-04-11 Thu 15:57]
 * DOING Emacs Config v0.7 [2/4]
 ** DONE Supplement Existing Functionality [9/9]
 *** DONE [#B] Make sure eshell has same path as other shells
@@ -140,8 +143,9 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/7]
-*** TODO [#B] Get Org Gcal Working
+** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/6]
+*** TODO [#B] Test Emacs in a Terminal
+The number and complexity of bugs will tell me whether terminal Emacs is supported in this tag.
 *** TODO [#B] Neither Feebleline nor Moodline Displays on Archsetup Fresh Install
 *** TODO [#B] Move org-todo items into org-config use-package statement
 *** TODO [#B] Separate org-agenda items into use-package statement
@@ -196,7 +200,6 @@ ripgrep on "~/ to find the following.
 ./modules/calibredb-epub-config.el:28:  (setq calibredb-library-alist '(("~/sync/books/")))
 ./modules/elfeed-config.el:129:  (let ((default-directory "~/videos"))
 *** TODO [#C] Theme Doesn't Fallback on Wombat Correctly if No Theme Persist File
-*** TODO [#C] Check if Including Dired Buffers in Autorevert-mode Slows Tramp
 *** [#D] Resolved v0.7 Fit and Finish Work [16/16]
 **** DONE [#A] Remove Keys
 CLOSED: [2024-04-07 Sun 13:46]
@@ -440,6 +443,7 @@ While completing, mu4e-view-completion-minor-mode is active, which offers mu4e-v
 Not all email workflows are working (attachments, for instance).
 There are also some major longstanding bugs (not-yet-sent messages location)
 ** TODO Calendaring Solution
+*** TODO [#B] Get Org Gcal Working
 *** 2024-04-04 Thu @ 16:51:25 -0500 Current Requirements
 I'm starting from scratch, but here are my (currently simple) requirements
 - Download events from online calendar and include them in my agenda.
@@ -476,6 +480,7 @@ Captured On: [2024-04-05 Fri 13:49]
 [[https://github.com/manateelazycat/awesome-tray?tab=readme-ov-file][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
 Captured On: [2024-04-06 Sat 11:09]
 ** TODO Emacs Config v0.8 Bug Fixes
+*** TODO [#C] Check if Including Dired Buffers in Autorevert-mode Slows Tramp
 ** TODO Emacs Config v0.8 Release Checklist
 (add latest release checklist here)
 * Emacs Config v0.9

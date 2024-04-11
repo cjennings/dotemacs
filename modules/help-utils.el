@@ -42,7 +42,7 @@
   :ensure nil ;; built-in
   :bind
   (:map Info-mode-map
-		("m" . cj/bookmark-set-and-save) ;; note:overrides menu selection
+		("m" . bookmark-set) ;; note:overrides menu selection
 		("M" . Info-menu)) ;; so menu selection goes here
   :preface
   (defun open-with-info-mode ()
