@@ -39,7 +39,7 @@
 
 (use-package nov
   :defer .5
-  :after (visual-fill-column)
+  :after visual-fill-column
   :mode ("\\.epub\\'" . nov-mode)
 ;;  :hook (nov-mode . cj/nov-apply-preferences)
   :bind
@@ -48,7 +48,7 @@
         ("b" . bookmark-bmenu-list)
         ("r" . nov-render-document)
         ("l" . recenter-top-bottom)
-        ("d" . sdcv-search)
+		("d" . sdcv-search-input)
 		("." . cj/forward-paragraph-and-center)
         ("<" . nov-history-back)
         (">" . nov-history-forward)

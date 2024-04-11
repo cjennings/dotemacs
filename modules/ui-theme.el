@@ -60,7 +60,7 @@ If FILENAME isn't readable, return nil."
       (with-temp-buffer
 		(insert-file-contents filename)
 		(buffer-string))
-    'nil))
+	nil))
 
 (defun cj/write-file-contents (content filename)
   "Write CONTENT to FILENAME.
@@ -70,8 +70,8 @@ If FILENAME isn't writeable, return nil. If successful, return t."
 		(with-temp-buffer
 		  (insert content)
 		  (write-file filename))
-		't)
-    'nil))
+		t)
+	nil))
 
 (defun cj/get-active-theme-name ()
   "Return the name of the active UI theme as a string."
@@ -79,7 +79,7 @@ If FILENAME isn't writeable, return nil. If successful, return t."
 
 (defun cj/save-theme-to-file ()
   "Save the string representing the current theme to the theme-file."
-  (if (equal (cj/write-file-contents (cj/get-active-theme-name) theme-file) 'nil)
+  (if (equal (cj/write-file-contents (cj/get-active-theme-name) theme-file) nil)
       (message "Cannot save theme: %s is unwriteable" theme-file)
     (message "%s theme saved to %s" (cj/get-active-theme-name) theme-file)))
 
@@ -94,15 +94,17 @@ Used to handle errors with loading persisted theme."
 If the theme is nil, it disables all current themes. If an error occurs
 loading the file name, the fallback-theme-name is applied and saved."
   (let ((theme-name (cj/read-file-contents theme-file)))
-    ;; if theme-name is nil, unload all themes
-    (if (string= theme-name "nil")
-		(mapcar #'disable-theme custom-enabled-themes)
-      ;; apply theme name or if error, load fallback theme
-      (progn
-		(condition-case err
-			(load-theme (intern theme-name) t)
-		  (error
-		   (cj/load-fallback-theme (concat "Error loading " theme-name "."))))))))
+	;; if theme-name is nil, unload all themes and load fallback theme
+	(if (or (string= theme-name "nil") (not theme-name))
+		(progn
+			(mapcar #'disable-theme custom-enabled-themes)
+			(cj/load-fallback-theme "Theme file not found or theme name in it is nil."))
+	  ;; apply theme name or if error, load fallback theme
+	  (condition-case err
+		  (load-theme (intern theme-name) t)
+		(error
+		   (cj/load-fallback-theme (concat "Error loading " theme-name
+										   ".")))))))
 
 (cj/load-theme-from-file)
 

@@ -15,7 +15,7 @@
   ("d" dunnet          "Dunnet    : Emacs' Built-n Text Adventure" :column "Game")
   ("g" gomoku          "Gomoku    : Tic Tac Toe, but Five in a Row" :column "Game")
   ("m" malyon          "Malyon    : The Text Adventure Player" :column "Game")
-  ("t" tetris          "Tetris    : Combine falling blocks and scoreq" :column "Game"))
+  ("t" tetris          "Tetris    : Combine falling blocks and score" :column "Game"))
 (global-set-key (kbd "M-G") 'hydra-games/body)
 
 ;; ----------------------------------- Malyon ----------------------------------

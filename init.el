@@ -17,30 +17,13 @@
 (defvar user-mail-address "c@cjennings.net"
   "The user's email address.")
 
-;; ------------------------- Directory / File Constants ------------------------
-
-(defconst code-dir        (concat user-home-dir "/code/"))
-(defconst projects-dir    (concat user-home-dir "/projects/"))
-(defconst sync-dir        (concat user-home-dir "/sync/org/"))                     ;; emacs data to be sync'd across machines
-(defconst roam-dir        (concat sync-dir "/roam/"))                              ;; emacs org roam data
-(defconst snippets-dir    (concat sync-dir "snippets"))                            ;; snippets
-
-(defconst emacs-init-file (concat user-emacs-directory "init.el"))                 ;; 'user-init-file' might be compiled
-(defconst emacs-early-init-file (concat user-emacs-directory "early-init.el"))
-(defvar schedule-file     (concat sync-dir "schedule.org"))                        ;; scheduled events & appointments
-(defvar inbox-file        (concat roam-dir "inbox.org"))                           ;; tasks and task inbox
-(defvar contacts-file     (concat sync-dir "contacts.org"))                        ;; org-contacts
-(defvar article-file      (concat sync-dir "article-queue.org"))                   ;; articles to read
-(defvar article-archive   (concat sync-dir "article-archive.org"))                 ;; articles to keep
-(defvar ledger-file       (concat user-home-dir "/projects/finances/main.ledger")) ;; $$$
-(defvar macros-file       (concat sync-dir "macros.el"))                           ;; macros with cj/save-macro are saved here
-
 ;; ---------------------------- System Configuration ---------------------------
 
-(add-to-list 'load-path (concat user-emacs-directory "modules"))
 (add-to-list 'load-path (concat user-emacs-directory "assets"))
 (add-to-list 'load-path (concat user-emacs-directory "custom"))
+(add-to-list 'load-path (concat user-emacs-directory "modules"))
 
+(require 'user-constants)
 (require 'config-utilities)  ;; functions useful when modifying Emacs config
 (require 'host-environment)  ;; convenience functions re: host environment
 (require 'system-defaults)

@@ -37,12 +37,6 @@
   :ensure nil ;; built-in
   :defer .5
   :config
-  ;; for plan 9 smart shell functionality
-  (require 'em-smart)
-  (setq eshell-where-to-jump 'begin)
-  (setq eshell-review-quick-commands nil)
-  (setq eshell-smart-space-goes-to-end t)
-
   (setq eshell-banner-message "")
   (setq eshell-scroll-to-bottom-on-input 'all)
   (setq eshell-error-if-no-glob t)
@@ -50,6 +44,12 @@
   (setq eshell-save-history-on-exit t)
   (setq eshell-prefer-lisp-functions nil)
   (setq eshell-destroy-buffer-when-process-dies t)
+
+  (add-hook
+   'eshell-mode-hook
+   (lambda ()
+	 (setq pcomplete-cycle-completions nil)))
+  (setq eshell-cmpl-cycle-completions nil)
 
   (add-to-list 'eshell-modules-list 'eshell-tramp)
 
@@ -101,11 +101,10 @@
 (use-package xterm-color
   :defer .5
   :after eshell
-  :hook (eshell-before-prompt-hook . (lambda ()
-									   (setq xterm-color-preserve-properties t)))
+  :hook
+  (eshell-before-prompt-hook . (lambda ()
+							   (setq xterm-color-preserve-properties t)))
   :config
-  (add-to-list 'eshell-preoutput-filter-functions 'xterm-color-filter)
-  (setq eshell-output-filter-functions (remove 'eshell-handle-ansi-color eshell-output-filter-functions))
   (setenv "TERM" "xterm-256color"))
 
 ;; ------------------------------ Vterm ------------------------------
@@ -138,15 +137,15 @@
   :config
   (setq vterm-toggle-fullscreen-p nil)
   (add-to-list 'display-buffer-alist
-			   '((lambda (buffer-or-name _)
-				   (let ((buffer (get-buffer buffer-or-name)))
-					 (with-current-buffer buffer
-					   (or (equal major-mode 'vterm-mode)
-						   (string-prefix-p vterm-buffer-name (buffer-name buffer))))))
-				 (display-buffer-reuse-window display-buffer-at-bottom)
+               '((lambda (buffer-or-name _)
+                   (let ((buffer (get-buffer buffer-or-name)))
+                     (with-current-buffer buffer
+                       (or (equal major-mode 'vterm-mode)
+                           (string-prefix-p vterm-buffer-name (buffer-name buffer))))))
+                 (display-buffer-reuse-window display-buffer-at-bottom)
                  (dedicated . t) ;dedicated is supported in Emacs 27+
-				 (reusable-frames . visible)
-				 (window-height . 0.3))))
+                 (reusable-frames . visible)
+                 (window-height . 0.3))))
 
 (provide 'eshell-vterm-config)
 ;;; eshell-vterm-config.el ends here.

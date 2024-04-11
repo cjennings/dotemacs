@@ -37,13 +37,20 @@
 ;; -------------------------------- Debug Flags --------------------------------
 ;; debugging enabled during emacs startup. disabled after emacs startup.
 
-(setq debug-on-error nil)    ;; default nil. turn on to debug issues only.
-(setq debug-on-quit nil)     ;; debug on C-g (breaking out of hangs/freezes)
+;; set these values now
+(setq debug-on-error t)    ;; default nil. turn on to debug issues only.
+(setq debug-on-quit t)     ;; debug on C-g (breaking out of hangs/freezes)
 
-(add-hook 'after-init-hook
+;; reset to these values after startup
+(add-hook 'emacs-startup-hook
           (lambda ()
-            (setq debug-on-error nil)
+			(setq debug-on-error nil)
 			(setq debug-on-quit nil)))
+
+;; ------------------------------ Compile Warnings -----------------------------
+
+;; log warnings, but don't popup the warnings buffer
+(setq native-comp-async-report-warnings-errors 'silent)
 
 ;; --------------------------- Use Online Repos Flag ---------------------------
 ;; set to nil to only use localrepo or the local elpa-mirrors

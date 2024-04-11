@@ -1,23 +1,7 @@
 
-
 === Emacs Config Tasks ===
 
 * Emacs Config Inbox
-** TODO Check into spacious padding mode
-
-Sample Config from Damien Cassou's Emacs Config
-#+BEGIN_QUOTE
-(use-package spacious-padding
-  :demand t
-  :hook (server-after-make-frame . spacious-padding-mode)
-  :config
-  (progn
-    (setq spacious-padding-subtle-mode-line
-          '(:mode-line-active error :mode-line-inactive shadow))))
-
-#+END_QUOTE
-[[https://raw.githubusercontent.com/DamienCassou/emacs.d/master/init.el][]]
-Captured On: [2024-04-06 Sat 10:54]
 * DOING Emacs Config v0.7 [2/4]
 ** DONE Supplement Existing Functionality [9/9]
 *** DONE [#B] Make sure eshell has same path as other shells
@@ -156,53 +140,49 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/6]
-*** DOING [#B] Mu4e Doesn't Launch Properly on Fresh Archinstall
-Error was something about the mu server exiting.
-**** DOING Setup Virtualbox Testing
-***** DONE Create ArchBase and ArchSetup Images
-CLOSED: [2024-04-07 Sun 13:48]
-***** DOING Run Archsetup in ArchSetup Image
-***** TODO Run Mu4e Install Found in ~/.emacs.d/scripts/
-***** TODO Snapshot the Image
-*** TODO [#A] S-<right> is Undefined Error in Org Mode
-(should be org-agenda-todo-nextset)
-**** 2024-04-07 Sun @ 11:48:44 -0500 it's simply undefined in org-mode
-Looks like I just added it to org-agenda-mode?
-*** TODO [#A] Error When Starting org-drill in cj/org-drill-start
-let: Symbol’s function definition is void: org-drill
-*** TODO [#C] Dashboard Icons Aren't Correct or Sized Correctly on Fractal
+** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [16/19]
+*** TODO [#B] Saving an Event for Today and Today's Calendar Doesn't Show the Event
+**** 2024-04-11 Thu @ 01:28:15 -0500 Reproduction
+- C-c c to bring up the capture templates
+- Select 'e' for event
+- Enter an event for the same day, then choose some time in the future (11:00pm)
+- Once completed, select f8
+Actual Behavior: Agenda shows and event isn't listed.
+Expected Behavior: Agenda shows with no events.
+
+I checked the schedule file and the event was properly entered.
+Tested on a fresh archsetup, but replicates on current laptop.
+*** TODO [#A] Fix Incorrect Refile Targets After Launch
 *** TODO [#C] Check if Including Dired Buffers in Autorevert-mode Slows Tramp
-*** [#D] Completed v.07 Fit and Finish
-**** DONE [#A] Remove Security Keys
+*** DONE [#A] Remove Keys
 CLOSED: [2024-04-07 Sun 13:46]
-***** Remove OpenAPI Key From ai-config.el
-****** 2024-04-07 Sun @ 13:21:22 -0500 Issue in ai-config.el
-  ;; BUG: .authinfo.gpg not accessed for this key
-***** Purge History to Remove Historical Issues
+**** Remove OpenAPI Key From ai-config.el
+***** 2024-04-07 Sun @ 13:21:22 -0500 Issue in ai-config.el
+;; BUG: .authinfo.gpg not accessed for this key
+**** Purge History to Remove Historical Issues
 Do this after other secrets are removed
-****** Google OAuth file in assets
-******* 2024-04-07 Sun @ 13:23:51 -0500 This One's in History. Fix by Purging History
-****** OpenAPI Key in help-utils.el
-******* 2024-04-07 Sun @ 13:19:10 -0500 Need to Erase History
+***** Google OAuth file in assets
+****** 2024-04-07 Sun @ 13:23:51 -0500 This One's in History. Fix by Purging History
+***** OpenAPI Key in help-utils.el
+****** 2024-04-07 Sun @ 13:19:10 -0500 Need to Erase History
 Originally, I thought this was a duplicate use-package declaration.
 Now it appears this is in history. I can simply:
 - force delete the .git file
 - recommit everything
 - force push back to github and git.cjennings.net
 - check the security section again to ensure it's gone.
-****** Google OAuth Client ID and Client Secret in org-agenda-config.el
-**** DONE [#B] cj/kill-buffers renamed
+***** Google OAuth Client ID and Client Secret in org-agenda-config.el
+*** DONE [#B] Rename cj/kill-buffers
 CLOSED: [2024-04-04 Thu 19:17]
-**** DONE [#B] cj/kill-buffers doesn't select current buffer in completing read by default
+*** DONE [#B] cj/kill-buffers Doesn't Select Current Buffer in Completing Read by Default
 CLOSED: [2024-04-04 Thu 19:17]
-**** DONE [#B] cj/kill-buffers should allow adding to invincible-buffers with C-u prefix
+*** DONE [#B] cj/kill-buffers Should Allow Adding to Invincible-buffers With C-u Prefix
 CLOSED: [2024-04-04 Thu 19:33]
-**** DONE [#B] Mu4e Reply All Should Be Default
+*** DONE [#B] Mu4e Reply All Should Be Default
 CLOSED: [2024-04-04 Thu 20:45]
 make 'r' reply-all (or wide reply) and 'R' reply
 no need to remove 'W' (for wide reply)
-***** 2024-04-04 Thu @ 20:36:56 -0500 Solution Tested to Be Working
+**** 2024-04-04 Thu @ 20:36:56 -0500 Solution Tested to Be Working
 Need to adjust 'mu4e-view-mode'. Within that mode:
 - the reply method is named "mu4e-compose-reply"
 - the reply-all method is named "mu4e-compose-wide-reply"
@@ -215,19 +195,82 @@ There doesn't seem to be anything already mapped to "R", so adding the following
 #+end_src
 
 Tested both keys on a mail that had many recipients and it behaved in the way I expected.
-**** DONE [#B] cj/hyphenate-whitespace-in-region should leave point where it started
+*** DONE [#B] Hyphenating Whitespace Should Leave Point Where It Started
 CLOSED: [2024-04-04 Thu 22:07]
-**** DONE [#C] Remove unnecessary .gitmodule file
-CLOSED: [2024-04-07 Sun 14:07]
-**** DONE [#C] move files in project root to assets
+*** DONE [#C] Move Non Init Visible Files in Emacs Config Root to Assets
 CLOSED: [2024-04-07 Sun 14:21]
-***** 2024-04-07 Sun @ 14:07:56 -0500 files to move
+**** 2024-04-07 Sun @ 14:07:56 -0500 files to move
 abbrev_defs
 elfeed-dashboard
-**** DONE [#B] Kill All Windows Also Kills Invisible Buffers
+*** DONE [#B] Kill All Windows Also Kills Invisible Buffers
 CLOSED: [2024-04-08 Mon 16:14]
-**** DONE [#C] Ripgrep Should Finish with Point on Results Buffer
+*** DONE [#C] Ripgrep Should Finish with Point on Results Buffer
 CLOSED: [2024-04-08 Mon 16:14]
+*** DONE [#B] Dictionary Doesn't Work Via C-h d
+CLOSED: [2024-04-08 Mon 20:00]
+**** 2024-04-08 Mon @ 19:23:13 -0500 There's a Package on Melpa
+https://melpa.org/#/sdcv
+
+Also, it mentioned I needed stardict. I installed it, but it didn't change the error
+**** 2024-04-08 Mon @ 19:23:01 -0500 Issue
+Tried to look up agency and the dictionary failed.
+
+Found 1 items, similar to agency.
+-->Webster's Revised Unabridged Dictionary (1913)
+
+===
+Above this section the text is displayed.
+When copying and pasting the text, the rest of the text is displayed below
+===
+
+Found 1 items, similar to agency.
+-->Webster's Revised Unabridged Dictionary (1913)
+-->Agency
+
+Agency \A"gen*cy\, n.; pl. {Agencies}. [agentia, fr. L. agens,
+agentis: cf. F. agence. See {Agent}.]
+   1. The faculty of acting or of exerting power; the state of
+      being in action; action; instrumentality.
+
+      The superintendence and agency of Providence in the
+      natural world.                        --Woodward.
+
+   2. The office of an agent, or factor; the relation between a
+      principal and his agent; business of one intrusted with
+      the concerns of another.
+
+   3. The place of business of am agent.
+
+      Syn: Action; operation; efficiency; management.
+
+   This was from cut and paste, the actual text didn't show.
+
+*** DONE [#A] S-<right> is Undefined Error in Org Mode
+CLOSED: [2024-04-08 Mon 21:30]
+(should be org-agenda-todo-nextset)
+**** 2024-04-07 Sun @ 11:48:44 -0500 it's simply undefined in org-mode
+Looks like I just added it to org-agenda-mode?
+*** DONE [#A] Error When Starting org-drill in cj/org-drill-start
+CLOSED: [2024-04-10 Wed 16:50]
+let: Symbol’s function definition is void: org-drill
+*** DONE [#C] Dashboard Icons Aren't Correct or Sized Correctly on Fractal
+CLOSED: [2024-04-10 Wed 17:16]
+*** DONE [#B] Fresh Install: Error When No Macros File Found
+CLOSED: [2024-04-11 Thu 01:11]
+default location: ~/sync/org/macros.el
+*** DONE [#B] Mu4e Doesn't Launch Properly on Fresh Archinstall
+CLOSED: [2024-04-11 Thu 01:18]
+Error was something about the mu server exiting.
+**** DONE Setup Virtualbox Testing
+CLOSED: [2024-04-11 Thu 01:18]
+***** DONE Create ArchBase and AqrchSetup Images
+CLOSED: [2024-04-07 Sun 13:48]
+***** DONE Run Archsetup in ArchSetup Image
+CLOSED: [2024-04-10 Wed 19:11]
+***** DONE Run Mu4e Install Found in ~/.emacs.d/scripts/
+CLOSED: [2024-04-11 Thu 01:17]
+***** DONE Snapshot the Image
+CLOSED: [2024-04-11 Thu 01:18]
 ** DOING Complete v0.7 Release Checklist [8/11]
 *** DOING 2 Week Fit and Finish (ends 2024.04.18)
 *** TODO Clean Launch from Archsetup
@@ -353,13 +396,13 @@ In order to use flyspell-correct-ivy interface you have to install flyspell-corr
 Or via use-package.
 
 (use-package flyspell-correct
-  :after flyspell
-  :bind (:map flyspell-mode-map ("C-;" . flyspell-correct-wrapper)))
+:after flyspell
+:bind (:map flyspell-mode-map ("C-;" . flyspell-correct-wrapper)))
 
 (use-package flyspell-correct-ivy
-  :after flyspell-correct)
+:after flyspell-correct)
 If you do not want any binding, just replace :bind (:map
-  flyspell-mode-map ("C-;" . flyspell-correct-wrapper)) with :defer t to use lazy loading.
+flyspell-mode-map ("C-;" . flyspell-correct-wrapper)) with :defer t to use lazy loading.
 
 Note that in order to access actions in ivy interface you need to press M-o. More on ivy mini buffer key bindings you can read in official documentation.
 #+END_QUOTE
@@ -622,40 +665,40 @@ Captured On: [2023-11-18 Sat 08:06]
 *** TODO Dired Config with Sorting
 #+BEGIN_QUOTE
 (use-package dired
-  :bind (
-         :map dired-mode-map
-         ("C-a" . my/dired-move-beginning-of-line)
-         ("k" . dired-do-delete)
-         ("D" . nil)
-         ("s" . cc/dired-sort-by))
-  :hook (dired-mode . dired-hide-details-mode)
-  :init
-  (progn
-    (setq dired-auto-revert-buffer t)
-    (setq dired-dwim-target t)
-    (setq dired-listing-switches "-alh")
-    (setq dired-recursive-deletes 'always)
-    (setq dired-mouse-drag-files t)
+:bind (
+:map dired-mode-map
+("C-a" . my/dired-move-beginning-of-line)
+("k" . dired-do-delete)
+("D" . nil)
+("s" . cc/dired-sort-by))
+:hook (dired-mode . dired-hide-details-mode)
+:init
+(progn
+(setq dired-auto-revert-buffer t)
+(setq dired-dwim-target t)
+(setq dired-listing-switches "-alh")
+(setq dired-recursive-deletes 'always)
+(setq dired-mouse-drag-files t)
 
-    (defun my/dired-move-beginning-of-line ()
-      (interactive)
-      (let ((point (point)))
-        (dired-move-to-filename)
-        (when (= point (point))
-          (move-beginning-of-line nil)))))
-  :config
-  (progn
-    ;; http://yummymelon.com/devnull/enhancing-dired-sorting-with-transient.html
-    (defun cc/--dired-sort-by (criteria &optional prefix-args)
-      "Sort current Dired buffer according to CRITERIA and PREFIX-ARGS.
+(defun my/dired-move-beginning-of-line ()
+(interactive)
+(let ((point (point)))
+(dired-move-to-filename)
+(when (= point (point))
+(move-beginning-of-line nil)))))
+:config
+(progn
+;; http://yummymelon.com/devnull/enhancing-dired-sorting-with-transient.html
+(defun cc/--dired-sort-by (criteria &optional prefix-args)
+"Sort current Dired buffer according to CRITERIA and PREFIX-ARGS.
 
 This function will invoke `dired-sort-other' with arguments built from
 CRITERIA and PREFIX-ARGS.
 
 CRITERIA is a keyword of which the following are supported:
-  :name             :date-added             :version
-  :kind             :date-metadata-changed  :size
-  :date-last-opened :date-modified
+:name             :date-added             :version
+:kind             :date-metadata-changed  :size
+:date-last-opened :date-modified
 
 PREFIX-ARGS is a list of GNU ls arguments. If nil, then it will use the value
 of `cc-dired-listing-switches'. Otherwise this is typically populated by the
@@ -664,117 +707,117 @@ Transient menu `cc/dired-sort-by'.
 This function requires GNU ls from coreutils installed.
 
 See the man page `ls(1)' for details."
-      (let ((arg-list (list "-l")))
-        (if prefix-args
-            (nconc arg-list prefix-args)
-          (nconc arg-list cc-dired-listing-switches))
-        (cond
-         ((eq criteria :name)
-          (message "Sorted by name"))
+(let ((arg-list (list "-l")))
+(if prefix-args
+(nconc arg-list prefix-args)
+(nconc arg-list cc-dired-listing-switches))
+(cond
+((eq criteria :name)
+(message "Sorted by name"))
 
-         ((eq criteria :kind)
-          (message "Sorted by kind")
-          (push "--sort=extension" arg-list))
+((eq criteria :kind)
+(message "Sorted by kind")
+(push "--sort=extension" arg-list))
 
-         ((eq criteria :date-last-opened)
-          (message "Sorted by date last opened")
-          (push "--sort=time" arg-list)
-          (push "--time=access" arg-list))
+((eq criteria :date-last-opened)
+(message "Sorted by date last opened")
+(push "--sort=time" arg-list)
+(push "--time=access" arg-list))
 
-         ((eq criteria :date-added)
-          (message "Sorted by date added")
-          (push "--sort=time" arg-list)
-          (push "--time=creation" arg-list))
+((eq criteria :date-added)
+(message "Sorted by date added")
+(push "--sort=time" arg-list)
+(push "--time=creation" arg-list))
 
-         ((eq criteria :date-modified)
-          (message "Sorted by date modified")
-          (push "--sort=time" arg-list)
-          (push "--time=modification" arg-list))
+((eq criteria :date-modified)
+(message "Sorted by date modified")
+(push "--sort=time" arg-list)
+(push "--time=modification" arg-list))
 
-         ((eq criteria :date-metadata-changed)
-          (message "Sorted by date metadata changed")
-          (push "--sort=time" arg-list)
-          (push "--time=status" arg-list))
+((eq criteria :date-metadata-changed)
+(message "Sorted by date metadata changed")
+(push "--sort=time" arg-list)
+(push "--time=status" arg-list))
 
-         ((eq criteria :version)
-          (message "Sorted by version")
-          (push "--sort=version" arg-list))
+((eq criteria :version)
+(message "Sorted by version")
+(push "--sort=version" arg-list))
 
-         ((eq criteria :size)
-          (message "Sorted by size")
-          (push "-S" arg-list))
+((eq criteria :size)
+(message "Sorted by size")
+(push "-S" arg-list))
 
-         (t
-          (message "Default sorted by name")))
+(t
+(message "Default sorted by name")))
 
-        (dired-sort-other (mapconcat 'identity arg-list " "))))
+(dired-sort-other (mapconcat 'identity arg-list " "))))
 
-    (require 'transient)
-    (transient-define-prefix cc/dired-sort-by ()
-      "Transient menu to sort Dired buffer by different criteria.
+(require 'transient)
+(transient-define-prefix cc/dired-sort-by ()
+"Transient menu to sort Dired buffer by different criteria.
 
 This function requires GNU ls from coreutils installed."
-      :value '("--human-readable"
-               "--group-directories-first"
-               "--time-style=long-iso")
-                                        ; TODO: support cc-dired-listing-switches
-      [["Arguments"
-        ("-a" "all" "--all")
-        ("g" "group directories first" "--group-directories-first")
-        ("-r" "reverse" "--reverse")
-        ("-h" "human readable" "--human-readable")
-        ("t" "time style" "--time-style="
-         :choices ("full-iso" "long-iso" "iso" "locale"))]
+:value '("--human-readable"
+"--group-directories-first"
+"--time-style=long-iso")
+; TODO: support cc-dired-listing-switches
+[["Arguments"
+("-a" "all" "--all")
+("g" "group directories first" "--group-directories-first")
+("-r" "reverse" "--reverse")
+("-h" "human readable" "--human-readable")
+("t" "time style" "--time-style="
+:choices ("full-iso" "long-iso" "iso" "locale"))]
 
-       ["Sort By"
-        ("n"
-         "Name"
-         (lambda () (interactive)
-           (cc/--dired-sort-by :name
-                               (transient-args transient-current-command)))
-         :transient nil)
-        ("k"
-         "Kind"
-         (lambda () (interactive)
-           (cc/--dired-sort-by :kind
-                               (transient-args transient-current-command)))
-         :transient nil)
-        ("l"
-         "Date Last Opened"
-         (lambda () (interactive)
-           (cc/--dired-sort-by :date-last-opened
-                               (transient-args transient-current-command)))
-         :transient nil)
-        ("a"
-         "Date Added"
-         (lambda () (interactive)
-           (cc/--dired-sort-by :date-added
-                               (transient-args transient-current-command)))
-         :transient nil)
-        ("m"
-         "Date Modified"
-         (lambda () (interactive)
-           (cc/--dired-sort-by :date-modified
-                               (transient-args transient-current-command)))
-         :transient nil)
-        ("M"
-         "Date Metadata Changed"
-         (lambda () (interactive)
-           (cc/--dired-sort-by :date-metadata-changed
-                               (transient-args transient-current-command)))
-         :transient nil)
-        ("v"
-         "Version"
-         (lambda () (interactive)
-           (cc/--dired-sort-by :version
-                               (transient-args transient-current-command)))
-         :transient nil)
-        ("s"
-         "Size"
-         (lambda () (interactive)
-           (cc/--dired-sort-by :size
-                               (transient-args transient-current-command)))
-         :transient nil)]])))
+["Sort By"
+("n"
+"Name"
+(lambda () (interactive)
+(cc/--dired-sort-by :name
+(transient-args transient-current-command)))
+:transient nil)
+("k"
+"Kind"
+(lambda () (interactive)
+(cc/--dired-sort-by :kind
+(transient-args transient-current-command)))
+:transient nil)
+("l"
+"Date Last Opened"
+(lambda () (interactive)
+(cc/--dired-sort-by :date-last-opened
+(transient-args transient-current-command)))
+:transient nil)
+("a"
+"Date Added"
+(lambda () (interactive)
+(cc/--dired-sort-by :date-added
+(transient-args transient-current-command)))
+:transient nil)
+("m"
+"Date Modified"
+(lambda () (interactive)
+(cc/--dired-sort-by :date-modified
+(transient-args transient-current-command)))
+:transient nil)
+("M"
+"Date Metadata Changed"
+(lambda () (interactive)
+(cc/--dired-sort-by :date-metadata-changed
+(transient-args transient-current-command)))
+:transient nil)
+("v"
+"Version"
+(lambda () (interactive)
+(cc/--dired-sort-by :version
+(transient-args transient-current-command)))
+:transient nil)
+("s"
+"Size"
+(lambda () (interactive)
+(cc/--dired-sort-by :size
+(transient-args transient-current-command)))
+:transient nil)]])))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 15:15]
@@ -1201,42 +1244,42 @@ Captured On: [2023-11-04 Sat 17:24]
 *** TODO Review Interesting Modus Themes Settings for Ideas
 #+BEGIN_QUOTE
 (use-package modus-themes
-  :demand t
-  :init
-  (progn
-    (setq modus-themes-bold-constructs t)
-    (setq modus-themes-org-blocks 'greyscale)
-    (setq modus-themes-italic-constructs t)
+:demand t
+:init
+(progn
+(setq modus-themes-bold-constructs t)
+(setq modus-themes-org-blocks 'greyscale)
+(setq modus-themes-italic-constructs t)
 
-    (setq modus-themes-headings
-          '((1 . (1.6))
-            (2 . (background 1.5))
-            (3 . (background bold 1.2))
-            (4 . (1.1))
-            (t . ())))
+(setq modus-themes-headings
+'((1 . (1.6))
+(2 . (background 1.5))
+(3 . (background bold 1.2))
+(4 . (1.1))
+(t . ())))
 
-    (load-theme 'modus-operandi))
-  :config
-  (progn
-    (with-eval-after-load 'pdf-tools
-      ;; Configure PDF page colors. The code below comes from Modus
-      ;; Info manual (Backdrop for pdf-tools (DIY)).
-      (defun my/pdf-tools-backdrop ()
-        "Change background to be different from standard background."
-        (face-remap-add-relative
-         'default
-         `(:background ,(modus-themes-color 'bg-alt))))
+(load-theme 'modus-operandi))
+:config
+(progn
+(with-eval-after-load 'pdf-tools
+;; Configure PDF page colors. The code below comes from Modus
+;; Info manual (Backdrop for pdf-tools (DIY)).
+(defun my/pdf-tools-backdrop ()
+"Change background to be different from standard background."
+(face-remap-add-relative
+'default
+`(:background ,(modus-themes-color 'bg-alt))))
 
-      (defun my/pdf-tools-midnight-mode-toggle ()
-        "Change background of pdf-view-mode to adapt to current Modus theme."
-        (when (eq major-mode 'pdf-view-mode)
-          (if (eq (car custom-enabled-themes) 'modus-vivendi)
-              (pdf-view-midnight-minor-mode 1)
-            (pdf-view-midnight-minor-mode -1))
-          (my/pdf-tools-backdrop)))
+(defun my/pdf-tools-midnight-mode-toggle ()
+"Change background of pdf-view-mode to adapt to current Modus theme."
+(when (eq major-mode 'pdf-view-mode)
+(if (eq (car custom-enabled-themes) 'modus-vivendi)
+(pdf-view-midnight-minor-mode 1)
+(pdf-view-midnight-minor-mode -1))
+(my/pdf-tools-backdrop)))
 
-      (add-hook 'pdf-tools-enabled-hook #'my/pdf-tools-midnight-mode-toggle)
-      (add-hook 'modus-themes-after-load-theme-hook #'my/pdf-tools-midnight-mode-toggle))))
+(add-hook 'pdf-tools-enabled-hook #'my/pdf-tools-midnight-mode-toggle)
+(add-hook 'modus-themes-after-load-theme-hook #'my/pdf-tools-midnight-mode-toggle))))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 14:30]
@@ -1504,18 +1547,18 @@ If this variable is non-nil, every stack frame of the backtrace is displayed as 
 With debugger-stack-frame-as-list non-nil, the above example would look as follows:
 
 ----------- Buffer: backtrace-output ------------
-  (backtrace)
-  (list 'testing (backtrace))
-  (progn ...)
-  (eval (progn (1+ var) (list 'testing (backtrace))))
-  (setq ...)
-  (save-excursion ...)
-  (let ...)
-  (with-output-to-temp-buffer ...)
-  (eval (with-output-to-temp-buffer ...))
-  (eval-last-sexp-1 nil)
-  (eval-last-sexp nil)
-  (call-interactively eval-last-sexp)
+(backtrace)
+(list 'testing (backtrace))
+(progn ...)
+(eval (progn (1+ var) (list 'testing (backtrace))))
+(setq ...)
+(save-excursion ...)
+(let ...)
+(with-output-to-temp-buffer ...)
+(eval (with-output-to-temp-buffer ...))
+(eval-last-sexp-1 nil)
+(eval-last-sexp nil)
+(call-interactively eval-last-sexp)
 ----------- Buffer: backtrace-output ------------
 #+END_QUOTE
 [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Internals-of-Debugger.html][Internals of Debugger (GNU Emacs Lisp Reference Manual)]]
@@ -1523,8 +1566,8 @@ Captured On: [2024-04-05 Fri 14:20]
 *** TODO Print larger lists before abbreviating in edebug
 #+BEGIN_QUOTE
 (use-package edebug
-  :init
-  (setq edebug-print-length 5000))
+:init
+(setq edebug-print-length 5000))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 14:24]
@@ -1534,133 +1577,133 @@ Captured On: [2024-04-05 Fri 15:28]
 *** TODO Evaluate saveplace mode for Emacs
 #+BEGIN_QUOTE
 (use-package saveplace
-  :demand t
-  :config
-  (progn
-    (save-place-mode)))
+:demand t
+:config
+(progn
+(save-place-mode)))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 14:33]
 *** TODO Avy config for issuing other commands
 #+BEGIN_QUOTE
 (use-package avy
-  :bind* (("C-," . avy-goto-char-timer)
-          :map isearch-mode-map
-          ("C-," . avy-isearch))
-  :bind (("M-g g" . avy-goto-line))
-  :init
-  (progn
-    ;; home row on a Colemak keyboard:
-    (setq avy-keys '(?a ?r ?s ?t ?d ?h ?n ?e ?i ?o))
-    ;; Let me easily use actions beyond jump:
-    (setq avy-single-candidate-jump nil)
-    (setq avy-flyspell-correct-function #'ispell-word)
-    (setq avy-timeout-seconds 0.4))
-  :config
-  (progn
-    (defmacro my/avy-without-moving-point (point &rest body)
-      "Move point to POINT than execute BODY and restore previous location."
-      (declare (indent 1))
-      `(unwind-protect
-           (save-excursion
-             (goto-char point)
-             ,@body)
-         (select-window (cdr (ring-ref avy-ring 0)))))
+:bind* (("C-," . avy-goto-char-timer)
+:map isearch-mode-map
+("C-," . avy-isearch))
+:bind (("M-g g" . avy-goto-line))
+:init
+(progn
+;; home row on a Colemak keyboard:
+(setq avy-keys '(?a ?r ?s ?t ?d ?h ?n ?e ?i ?o))
+;; Let me easily use actions beyond jump:
+(setq avy-single-candidate-jump nil)
+(setq avy-flyspell-correct-function #'ispell-word)
+(setq avy-timeout-seconds 0.4))
+:config
+(progn
+(defmacro my/avy-without-moving-point (point &rest body)
+"Move point to POINT than execute BODY and restore previous location."
+(declare (indent 1))
+`(unwind-protect
+(save-excursion
+(goto-char point)
+,@body)
+(select-window (cdr (ring-ref avy-ring 0)))))
 
-    (defun my/avy-action-help (point)
-      "Show the Emacs help for thing at POINT."
-      (my/avy-without-moving-point point
-        (helpful-at-point)))
+(defun my/avy-action-help (point)
+"Show the Emacs help for thing at POINT."
+(my/avy-without-moving-point point
+(helpful-at-point)))
 
-    (defun my/avy-action-kill-whole-line (point)
-      "Kill the whole line at POINT."
-      (my/avy-without-moving-point point
-        (kill-whole-line)))
+(defun my/avy-action-kill-whole-line (point)
+"Kill the whole line at POINT."
+(my/avy-without-moving-point point
+(kill-whole-line)))
 
-    (defun my/avy-action-embark (point)
-      "Start `embark-act' at POINT."
-      (my/avy-without-moving-point point
-        (embark-act)))
+(defun my/avy-action-embark (point)
+"Start `embark-act' at POINT."
+(my/avy-without-moving-point point
+(embark-act)))
 
-    (setq avy-dispatch-alist
-          '(
-            ;; (?a) in avy-keys
-            ;; (?b)
-            ;; (?c)
-            ;; (?d) in avy-keys
-            ;; (?e) in avy-keys
-            ;; (?f)
-            ;; (?g)
-            ;; (?h) in avy-keys
-            ;; (?i) in avy-keys
-            ;; (?j)
-            ;; (?k)
-            ;; (?l)
-            ;; (?m)
-            ;; (?n) in avy-keys
-            ;; (?o) in avy-keys
-            ;; (?p)
-            ;; (?q)
-            ;; (?r) in avy-keys
-            ;; (?s) in avy-keys
-            ;; (?t) in avy-keys
-            ;; (?u)
-            ;; (?v)
-            ;; (?w)
-            ;; (?x)
-            ;; (?y)
-            ;; (?z)
-            ;; (?A)
-            ;; (?B)
-            ;; (?C)
-            ;; (?D)
-            ;; (?E)
-            ;; (?F)
-            ;; (?G)
-            ;; (?H)
-            ;; (?I)
-            ;; (?J)
-            ;; (?K)
-            ;; (?L)
-            ;; (?M)
-            ;; (?N)
-            ;; (?O)
-            ;; (?P)
-            ;; (?Q)
-            ;; (?R)
-            ;; (?S)
-            ;; (?T)
-            ;; (?U)
-            ;; (?V)
-            ;; (?W)
-            ;; (?X)
-            ;; (?Y)
-            ;; (?Z)
-            (?$ . avy-action-ispell)
-            (?? . my/avy-action-help)
-            (?\C-w . avy-action-kill-stay)
-            (?\C-k . my/avy-action-kill-whole-line)
-            (?\M-w . avy-action-copy)
-            (?\C-\S-a . my/avy-action-embark)))))
+(setq avy-dispatch-alist
+'(
+;; (?a) in avy-keys
+;; (?b)
+;; (?c)
+;; (?d) in avy-keys
+;; (?e) in avy-keys
+;; (?f)
+;; (?g)
+;; (?h) in avy-keys
+;; (?i) in avy-keys
+;; (?j)
+;; (?k)
+;; (?l)
+;; (?m)
+;; (?n) in avy-keys
+;; (?o) in avy-keys
+;; (?p)
+;; (?q)
+;; (?r) in avy-keys
+;; (?s) in avy-keys
+;; (?t) in avy-keys
+;; (?u)
+;; (?v)
+;; (?w)
+;; (?x)
+;; (?y)
+;; (?z)
+;; (?A)
+;; (?B)
+;; (?C)
+;; (?D)
+;; (?E)
+;; (?F)
+;; (?G)
+;; (?H)
+;; (?I)
+;; (?J)
+;; (?K)
+;; (?L)
+;; (?M)
+;; (?N)
+;; (?O)
+;; (?P)
+;; (?Q)
+;; (?R)
+;; (?S)
+;; (?T)
+;; (?U)
+;; (?V)
+;; (?W)
+;; (?X)
+;; (?Y)
+;; (?Z)
+(?$ . avy-action-ispell)
+(?? . my/avy-action-help)
+(?\C-w . avy-action-kill-stay)
+(?\C-k . my/avy-action-kill-whole-line)
+(?\M-w . avy-action-copy)
+(?\C-\S-a . my/avy-action-embark)))))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 16:04]
 *** TODO Investigate auto-compile package
 #+BEGIN_QUOTE
 (use-package auto-compile
-  :demand t
-  :init
-  (progn
-    (setq auto-compile-display-buffer nil)
-    (setq auto-compile-source-recreate-deletes-dest t)
-    (setq auto-compile-toggle-deletes-nonlib-dest t)
-    (setq auto-compile-update-autoloads t))
-  :hook (auto-compile-inhibit-compile . auto-compile-inhibit-compile-detached-git-head)
-  :config
-  (progn
-    (auto-compile-on-load-mode)
-    (auto-compile-on-save-mode)
-    (auto-compile-use-mode-line-set nil nil)))
+:demand t
+:init
+(progn
+(setq auto-compile-display-buffer nil)
+(setq auto-compile-source-recreate-deletes-dest t)
+(setq auto-compile-toggle-deletes-nonlib-dest t)
+(setq auto-compile-update-autoloads t))
+:hook (auto-compile-inhibit-compile . auto-compile-inhibit-compile-detached-git-head)
+:config
+(progn
+(auto-compile-on-load-mode)
+(auto-compile-on-save-mode)
+(auto-compile-use-mode-line-set nil nil)))
 
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el][emacs.d/init.el at master · DamienCassou/emacs.d]]
@@ -1669,7 +1712,7 @@ Captured On: [2024-04-05 Fri 14:16]
 Looks like it makes scripts executable on save
 #+BEGIN_QUOTE
 (use-package executable
-  :hook (after-save . executable-make-buffer-file-executable-if-script-p))
+:hook (after-save . executable-make-buffer-file-executable-if-script-p))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 14:25]
@@ -1677,13 +1720,13 @@ Captured On: [2024-04-05 Fri 14:25]
 perhaps you can also move it across to a specific column?
 #+BEGIN_QUOTE
 (use-package drag-stuff
-  :demand t
-  :config
-  (progn
-    (drag-stuff-global-mode)
-    (drag-stuff-define-keys)
-    (dolist (mode '(org-mode rebase-mode emacs-lisp-mode mpdel-playlist-current-playlist-mode))
-      (add-to-list 'drag-stuff-except-modes mode))))
+:demand t
+:config
+(progn
+(drag-stuff-global-mode)
+(drag-stuff-define-keys)
+(dolist (mode '(org-mode rebase-mode emacs-lisp-mode mpdel-playlist-current-playlist-mode))
+(add-to-list 'drag-stuff-except-modes mode))))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 15:26]
@@ -1694,11 +1737,11 @@ Captured On: [2024-04-05 Fri 15:23]
 [[https://github.com/thamer/runner][thamer/runner: Improved "open with" suggestions for dired mode in Emacs]]
 
 (use-package runner
-  :demand t
-  :after dired
-  :init
-  (progn
-    (setq runner-run-in-background t)))
+:demand t
+:after dired
+:init
+(progn
+(setq runner-run-in-background t)))
 
 
 Captured On: [2024-04-05 Fri 15:16]
@@ -1706,24 +1749,24 @@ Captured On: [2024-04-05 Fri 15:16]
 #+BEGIN_QUOTE
 Package lin is available.
 
-     Status: Available from gnu-local -- Install
-    Archive: gnu-local
-    Version: 1.0.0
-     Commit: 09cf249c78385502a2ead30c4fa1468cf96939f7
-    Summary: Make `hl-line-mode' more suitable for selection UIs
-   Requires: emacs-27.1
-    Website: https://git.sr.ht/~protesilaos/lin
-   Keywords: convenience faces theme
- Maintainer: Lin Development <~protesilaos/lin@lists.sr.ht>
-     Author: Protesilaos Stavrou <info@protesilaos.com>
+Status: Available from gnu-local -- Install
+Archive: gnu-local
+Version: 1.0.0
+Commit: 09cf249c78385502a2ead30c4fa1468cf96939f7
+Summary: Make `hl-line-mode' more suitable for selection UIs
+Requires: emacs-27.1
+Website: https://git.sr.ht/~protesilaos/lin
+Keywords: convenience faces theme
+Maintainer: Lin Development <~protesilaos/lin@lists.sr.ht>
+Author: Protesilaos Stavrou <info@protesilaos.com>
 Other versions: 1.0.0 (gnu).
 
-              ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-               LIN IS NOTICEABLE (LIN.EL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LIN IS NOTICEABLE (LIN.EL)
 
-              Protesilaos Stavrou
-              info@protesilaos.com
-              ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Protesilaos Stavrou
+info@protesilaos.com
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 This manual, written by Protesilaos Stavrou, describes the specifics of
@@ -1739,9 +1782,9 @@ Current development target is 1.1.0-dev.
 ⁃ Official manual: <https://protesilaos.com/emacs/lin>
 ⁃ Change log: <https://protesilaos.com/emacs/lin-changelog>
 ⁃ Git repo on SourceHut: <https://git.sr.ht/~protesilaos/lin>
-  • Mirrors:
-    ⁃ GitHub: <https://github.com/protesilaos/lin>
-    ⁃ GitLab: <https://gitlab.com/protesilaos/lin>
+• Mirrors:
+⁃ GitHub: <https://github.com/protesilaos/lin>
+⁃ GitLab: <https://gitlab.com/protesilaos/lin>
 ⁃ Mailing list: <https://lists.sr.ht/~protesilaos/lin>
 
 Table of Contents
@@ -1764,55 +1807,55 @@ Table of Contents
 1 COPYING
 ═════════
 
-  Copyright (C) 2021-2022 Free Software Foundation, Inc.
+Copyright (C) 2021-2022 Free Software Foundation, Inc.
 
-        Permission is granted to copy, distribute and/or modify
-        this document under the terms of the GNU Free
-        Documentation License, Version 1.3 or any later version
-        published by the Free Software Foundation; with no
-        Invariant Sections, with the Front-Cover Texts being “A
-        GNU Manual,” and with the Back-Cover Texts as in (a)
-        below.  A copy of the license is included in the section
-        entitled “GNU Free Documentation License.”
+Permission is granted to copy, distribute and/or modify
+this document under the terms of the GNU Free
+Documentation License, Version 1.3 or any later version
+published by the Free Software Foundation; with no
+Invariant Sections, with the Front-Cover Texts being “A
+GNU Manual,” and with the Back-Cover Texts as in (a)
+below.  A copy of the license is included in the section
+entitled “GNU Free Documentation License.”
 
-        (a) The FSF’s Back-Cover Text is: “You have the freedom to
-        copy and modify this GNU manual.”
+(a) The FSF’s Back-Cover Text is: “You have the freedom to
+copy and modify this GNU manual.”
 
 
 2 Overview LIN
 ══════════════
 
-  Lin is a stylistic enhancement for Emacs’ built-in `hl-line-mode'.  It
-  remaps the `hl-line' face (or equivalent) buffer-locally to a style
-  that is optimal for major modes where line selection is the primary
-  mode of interaction.
+Lin is a stylistic enhancement for Emacs’ built-in `hl-line-mode'.  It
+remaps the `hl-line' face (or equivalent) buffer-locally to a style
+that is optimal for major modes where line selection is the primary
+mode of interaction.
 
-  The idea is that `hl-line-mode' cannot work equally well for contexts
-  with competing priorities: (i) line selection, or (ii) simple line
-  highlight.  In the former case, the current line needs to be made
-  prominent because it carries a specific meaning of some significance
-  in the given context: the user has to select a line.  Whereas in the
-  latter case, the primary mode of interaction does not revolve around
-  the line highlight itself: it may be because the focus is on editing
-  text or reading through the buffer’s contents, so the current line
-  highlight is more of a reminder of the point’s location on the
-  vertical axis.
+The idea is that `hl-line-mode' cannot work equally well for contexts
+with competing priorities: (i) line selection, or (ii) simple line
+highlight.  In the former case, the current line needs to be made
+prominent because it carries a specific meaning of some significance
+in the given context: the user has to select a line.  Whereas in the
+latter case, the primary mode of interaction does not revolve around
+the line highlight itself: it may be because the focus is on editing
+text or reading through the buffer’s contents, so the current line
+highlight is more of a reminder of the point’s location on the
+vertical axis.
 
-  `lin-mode' enables `hl-line-mode' in the current buffer and remaps the
-  appropriate face to the `lin-face'.  The `lin-global-mode' follows the
-  same principle, though it applies to all hooks specified in the user
-  option `lin-mode-hooks'.
+`lin-mode' enables `hl-line-mode' in the current buffer and remaps the
+appropriate face to the `lin-face'.  The `lin-global-mode' follows the
+same principle, though it applies to all hooks specified in the user
+option `lin-mode-hooks'.
 
-  Users can select their preferred style by customizing the user option
-  `lin-face'.  Options include the faces `lin-red', `lin-green',
-  `lin-yellow', `lin-blue' (default), `lin-magenta', `lin-cyan',
-  `lin-mac', `lin-red-override-fg', `lin-green-override-fg',
-  `lin-yellow-override-fg', `lin-blue-override-fg',
-  `lin-magenta-override-fg', `lin-cyan-override-fg',
-  `lin-mac-override-fg', or any other face that preferably has a
-  background attribute.  The Lin faces with the `-override-fg' suffix
-  set a foreground value which replaces that of the underlying text.
-  Whereas the others only specify a background attribute.
+Users can select their preferred style by customizing the user option
+`lin-face'.  Options include the faces `lin-red', `lin-green',
+`lin-yellow', `lin-blue' (default), `lin-magenta', `lin-cyan',
+`lin-mac', `lin-red-override-fg', `lin-green-override-fg',
+`lin-yellow-override-fg', `lin-blue-override-fg',
+`lin-magenta-override-fg', `lin-cyan-override-fg',
+`lin-mac-override-fg', or any other face that preferably has a
+background attribute.  The Lin faces with the `-override-fg' suffix
+set a foreground value which replaces that of the underlying text.
+Whereas the others only specify a background attribute.
 
 
 3 Installation
@@ -1824,107 +1867,122 @@ Table of Contents
 3.1 GNU ELPA package
 ────────────────────
 
-  The package is available as `lin'.  Simply do:
+The package is available as `lin'.  Simply do:
 
-  ┌────
-  │ M-x package-refresh-contents
-  │ M-x package-install
-  └────
+┌────
+│ M-x package-refresh-contents
+│ M-x package-install
+└────
 
 
-  And search for it.
+And search for it.
 
-  GNU ELPA provides the latest stable release.  Those who prefer to
-  follow the development process in order to report bugs or suggest
-  changes, can use the version of the package from the GNU-devel ELPA
-  archive.  Read:
-  <https://protesilaos.com/codelog/2022-05-13-emacs-elpa-devel/>.
+GNU ELPA provides the latest stable release.  Those who prefer to
+follow the development process in order to report bugs or suggest
+changes, can use the version of the package from the GNU-devel ELPA
+archive.  Read:
+<https://protesilaos.com/codelog/2022-05-13-emacs-elpa-devel/>.
 
 
 3.2 Manual installation
 ───────────────────────
 
-  Assuming your Emacs files are found in `~/.emacs.d/', execute the
-  following commands in a shell prompt:
+Assuming your Emacs files are found in `~/.emacs.d/', execute the
+following commands in a shell prompt:
 
-  ┌────
-  │ cd ~/.emacs.d
-  │
-  │ # Create a directory for manually-installed packages
-  │ mkdir manual-packages
-  │
-  │ # Go to the new directory
-  │ cd manual-packages
-  │
-  │ # Clone this repo, naming it "lin"
-  │ git clone https://git.sr.ht/~protesilaos/lin lin
-  └────
+┌────
+│ cd ~/.emacs.d
+│
+│ # Create a directory for manually-installed packages
+│ mkdir manual-packages
+│
+│ # Go to the new directory
+│ cd manual-packages
+│
+│ # Clone this repo, naming it "lin"
+│ git clone https://git.sr.ht/~protesilaos/lin lin
+└────
 
-  Finally, in your `init.el' (or equivalent) evaluate this:
+Finally, in your `init.el' (or equivalent) evaluate this:
 
-  ┌────
-  │ ;; Make Elisp files in that directory available to the user.
-  │ (add-to-list 'load-path "~/.emacs.d/manual-packages/lin")
-  └────
+┌────
+│ ;; Make Elisp files in that directory available to the user.
+│ (add-to-list 'load-path "~/.emacs.d/manual-packages/lin")
+└────
 
-  Everything is in place to set up the package.
+Everything is in place to set up the package.
 
 
 4 Sample configuration
 ══════════════════════
 
-  ┌────
-  │ (require 'lin)
-  │
-  │ (setq lin-face 'lin-blue) ; check doc string for alternative styles
-  │
-  │ ;; You can use this to live update the face:
-  │ ;;
-  │ ;; (customize-set-variable 'lin-face 'lin-green)
-  │
-  │ (setq lin-mode-hooks
-  │       '(bongo-mode-hook
-  │     dired-mode-hook
-  │     elfeed-search-mode-hook
-  │     git-rebase-mode-hook
-  │     grep-mode-hook
-  │     ibuffer-mode-hook
-  │     ilist-mode-hook
-  │     ledger-report-mode-hook
-  │     log-view-mode-hook
-  │     magit-log-mode-hook
-  │     mu4e-headers-mode
-  │     notmuch-search-mode-hook
-  │     notmuch-tree-mode-hook
-  │     occur-mode-hook
-  │     org-agenda-mode-hook
-  │     pdf-outline-buffer-mode-hook
-  │     proced-mode-hook
-  │     tabulated-list-mode-hook))
-  │
-  │ (lin-global-mode 1)
-  └────
+┌────
+│ (require 'lin)
+│
+│ (setq lin-face 'lin-blue) ; check doc string for alternative styles
+│
+│ ;; You can use this to live update the face:
+│ ;;
+│ ;; (customize-set-variable 'lin-face 'lin-green)
+│
+│ (setq lin-mode-hooks
+│       '(bongo-mode-hook
+│     dired-mode-hook
+│     elfeed-search-mode-hook
+│     git-rebase-mode-hook
+│     grep-mode-hook
+│     ibuffer-mode-hook
+│     ilist-mode-hook
+│     ledger-report-mode-hook
+│     log-view-mode-hook
+│     magit-log-mode-hook
+│     mu4e-headers-mode
+│     notmuch-search-mode-hook
+│     notmuch-tree-mode-hook
+│     occur-mode-hook
+│     org-agenda-mode-hook
+│     pdf-outline-buffer-mode-hook
+│     proced-mode-hook
+│     tabulated-list-mode-hook))
+│
+│ (lin-global-mode 1)
+└────
 
-  Check out Christian Tietze’s blog post on integrating Lin with
-  Neotree: <https://christiantietze.de/posts/2022/03/hl-line-priority/>.
+Check out Christian Tietze’s blog post on integrating Lin with
+Neotree: <https://christiantietze.de/posts/2022/03/hl-line-priority/>.
 
 
 5 Acknowledgements
 ══════════════════
 
-  Lin is meant to be a collective effort.  Every bit of help matters.
+Lin is meant to be a collective effort.  Every bit of help matters.
 
-  Author/maintainer
-        Protesilaos Stavrou.
+Author/maintainer
+Protesilaos Stavrou.
 
-  Contributions to code or documentation
-        Christian Tietze, Damien Cassou, Federico Stilman, Gautier
-        Ponsinet, Kai von Fintel, Nicolas De Jaeghere.
+Contributions to code or documentation
+Christian Tietze, Damien Cassou, Federico Stilman, Gautier
+Ponsinet, Kai von Fintel, Nicolas De Jaeghere.
 
 
 #+END_QUOTE
 [[help:Package][]]
 Captured On: [2024-04-05 Fri 14:43]
+*** TODO Check into spacious padding mode
+
+Sample Config from Damien Cassou's Emacs Config
+#+BEGIN_QUOTE
+(use-package spacious-padding
+:demand t
+:hook (server-after-make-frame . spacious-padding-mode)
+:config
+(progn
+(setq spacious-padding-subtle-mode-line
+'(:mode-line-active error :mode-line-inactive shadow))))
+
+#+END_QUOTE
+[[https://raw.githubusercontent.com/DamienCassou/emacs.d/master/init.el][]]
+Captured On: [2024-04-06 Sat 10:54]
 ** Emacs Help Config Backlog [0/1]
 *** TODO Remap keys from regular help to these instead of overwriting them in help-config
 ** Emacs Host Environment Backlog [0/1]
@@ -2061,175 +2119,175 @@ Captured On: [2023-11-18 Sat 07:16]
 *** TODO Large Ledger Configuration
 #+BEGIN_QUOTE
 (use-package ledger-mode
-  :hook (ledger-mode . my/configure-ledger-mode)
-  :mode "\\.hledger\\'"
-  :bind (
-         :map ledger-mode-map
-         ("C-c C-r" . ledger-report)
-         ("C-c C-c" . my/ledger-lint)
-         ;; To get outline-minor-mode in ledger buffers:
-         ("TAB" . org-cycle)
-         :map ledger-report-mode-map
-         ("C-c C-r" . ledger-report))
-  :init
-  (progn
-    (setq ledger-reports
-          (mapcar
-           (lambda (pair)
-             (list (car pair)
-                   (format "%s %s"
-                           "%(binary) -f %(ledger-file)"
-                           (cdr pair))))
-           '(("Account statement" . "register --ignore-assertions --auto ^%(account)")
-             ("Income statement"  . "balance --ignore-assertions --auto --tree --period %(month) --invert ^income ^expense")
-             ("Balance sheet"     . "balance --ignore-assertions --auto --tree ^asset ^debt \"^equity:\"")
-             ("Budget"            . "balance --ignore-assertions --auto --tree --empty ^budget not:unbudgeted"))))
+:hook (ledger-mode . my/configure-ledger-mode)
+:mode "\\.hledger\\'"
+:bind (
+:map ledger-mode-map
+("C-c C-r" . ledger-report)
+("C-c C-c" . my/ledger-lint)
+;; To get outline-minor-mode in ledger buffers:
+("TAB" . org-cycle)
+:map ledger-report-mode-map
+("C-c C-r" . ledger-report))
+:init
+(progn
+(setq ledger-reports
+(mapcar
+(lambda (pair)
+(list (car pair)
+(format "%s %s"
+"%(binary) -f %(ledger-file)"
+(cdr pair))))
+'(("Account statement" . "register --ignore-assertions --auto ^%(account)")
+("Income statement"  . "balance --ignore-assertions --auto --tree --period %(month) --invert ^income ^expense")
+("Balance sheet"     . "balance --ignore-assertions --auto --tree ^asset ^debt \"^equity:\"")
+("Budget"            . "balance --ignore-assertions --auto --tree --empty ^budget not:unbudgeted"))))
 
-    ;; For hledger
-    (progn
-      (setq ledger-mode-should-check-version nil)
-      (setq ledger-binary-path (executable-find "hledger"))
-      (setq ledger-report-links-in-register nil)
-      (setq ledger-report-native-highlighting-arguments '("--color=always"))
-      (setq ledger-report-auto-width nil))
+;; For hledger
+(progn
+(setq ledger-mode-should-check-version nil)
+(setq ledger-binary-path (executable-find "hledger"))
+(setq ledger-report-links-in-register nil)
+(setq ledger-report-native-highlighting-arguments '("--color=always"))
+(setq ledger-report-auto-width nil))
 
-    (setq ledger-reconcile-default-commodity "EUR")
-    (setq ledger-report-use-header-line t)
-    (setq ledger-report-use-native-highlighting t)
-    (setq ledger-report-auto-refresh-sticky-cursor t)
-    (setq ledger-report-use-strict t)
-    (setq ledger-highlight-xact-under-point nil)
-    (setq ledger-copy-transaction-insert-blank-line-after t)
+(setq ledger-reconcile-default-commodity "EUR")
+(setq ledger-report-use-header-line t)
+(setq ledger-report-use-native-highlighting t)
+(setq ledger-report-auto-refresh-sticky-cursor t)
+(setq ledger-report-use-strict t)
+(setq ledger-highlight-xact-under-point nil)
+(setq ledger-copy-transaction-insert-blank-line-after t)
 
-    (defun my/ledger-configure-outline-minor-mode ()
-      "Configure a ledger buffer when `outline-minor-mode' is active."
-      (font-lock-add-keywords 'ledger-mode outline-font-lock-keywords)
-      (setq-local ;; copied from outline-mode major mode:
-       imenu-generic-expression
-       (list (list nil (concat "^\\(?:" outline-regexp "\\).*$") 0))))
+(defun my/ledger-configure-outline-minor-mode ()
+"Configure a ledger buffer when `outline-minor-mode' is active."
+(font-lock-add-keywords 'ledger-mode outline-font-lock-keywords)
+(setq-local ;; copied from outline-mode major mode:
+imenu-generic-expression
+(list (list nil (concat "^\\(?:" outline-regexp "\\).*$") 0))))
 
-    (defun my/configure-ledger-mode ()
-      "Configure the current Ledger buffer."
-      ;; use TAB to complete:
-      (setq-local tab-always-indent 'complete)
-      (add-hook 'outline-minor-mode-hook #'my/ledger-configure-outline-minor-mode nil t)))
-  :config
-  (progn
-    (let ((date-format "%A, %B %-e"))
-      (defun my/ledger-position-at-date (moment)
-        "Move point in current buffer to insert new transaction at MOMENT.
+(defun my/configure-ledger-mode ()
+"Configure the current Ledger buffer."
+;; use TAB to complete:
+(setq-local tab-always-indent 'complete)
+(add-hook 'outline-minor-mode-hook #'my/ledger-configure-outline-minor-mode nil t)))
+:config
+(progn
+(let ((date-format "%A, %B %-e"))
+(defun my/ledger-position-at-date (moment)
+"Move point in current buffer to insert new transaction at MOMENT.
 MOMENT is an encoded date."
-        (let ((heading (format "*** %s" (format-time-string date-format moment))))
-          (goto-char (point-min))
-          (search-forward heading)
-          (forward-line)
-          (re-search-forward "; \\*\\*\\*" nil t)
-          (goto-char (line-beginning-position)))))
+(let ((heading (format "*** %s" (format-time-string date-format moment))))
+(goto-char (point-min))
+(search-forward heading)
+(forward-line)
+(re-search-forward "; \\*\\*\\*" nil t)
+(goto-char (line-beginning-position)))))
 
-    (advice-add #'ledger-xact-find-slot :override #'my/ledger-position-at-date)
+(advice-add #'ledger-xact-find-slot :override #'my/ledger-position-at-date)
 
-    (defun my/ledger-lint ()
-      "Lint my ledger file."
-      (interactive)
-      (require 'autoclose-shell)
-      (save-buffer)
-      (autoclose-shell-start "lint-system" '("lint-system")))
+(defun my/ledger-lint ()
+"Lint my ledger file."
+(interactive)
+(require 'autoclose-shell)
+(save-buffer)
+(autoclose-shell-start "lint-system" '("lint-system")))
 
-    (defun my/ledger-insert-mortgage-transaction ()
-      "Read accounting data for MORTGAGE and write the ledger entry."
-      (interactive)
-      (ensure-empty-lines 1)
-      (let* ((description (read-string "Description: "))
-             (date (ledger-read-date "Date: "))
-             (begining (point)))
-        (insert (format "%s %s\n" date description))
-        (insert (format "  asset:current:couple  0\n"))
-        (insert (format "  expense:misc  0\n"))
-        (save-excursion
-          (goto-char begining)
-          (my/ledger-mortgage-rewrite))))
+(defun my/ledger-insert-mortgage-transaction ()
+"Read accounting data for MORTGAGE and write the ledger entry."
+(interactive)
+(ensure-empty-lines 1)
+(let* ((description (read-string "Description: "))
+(date (ledger-read-date "Date: "))
+(begining (point)))
+(insert (format "%s %s\n" date description))
+(insert (format "  asset:current:couple  0\n"))
+(insert (format "  expense:misc  0\n"))
+(save-excursion
+(goto-char begining)
+(my/ledger-mortgage-rewrite))))
 
-    (defun my/ledger-mortgage-read-numbers ()
-      "Returns the numbers of the current mortgage reimbursement transaction.
+(defun my/ledger-mortgage-read-numbers ()
+"Returns the numbers of the current mortgage reimbursement transaction.
 
 The returned value is of the form (:capital CAPITAL :insurance INSURANCE :interest INTEREST)."
-      (cl-labels ((parse-number (string) (string-to-number (string-replace "," "." string))))
-        (let* ((number-regexp (rx (1+ (any digit)) ?, (1+ (any digit))))
-               (regexp (rx "ECHEANCE PRET"
-                           (? " -")
-                           " DONT CAP "
-                           (group-n 1 (regexp number-regexp))
-                           " ASS. "
-                           (group-n 2 (regexp number-regexp))
-                           "E"
-                           (? " -")
-                           " INT. "
-                           (group-n 3 (regexp number-regexp))
-                           (? " COM. 0,00E"))))
-          (save-match-data
-            (save-excursion
-              (ledger-navigate-beginning-of-xact)
-              (when-let* (((re-search-forward regexp (line-end-position)))
-                          (capital (parse-number (match-string 1)))
-                          (insurance (parse-number (match-string 2)))
-                          (interest (parse-number (match-string 3))))
-                (list :capital capital :insurance insurance :interest interest)))))))
+(cl-labels ((parse-number (string) (string-to-number (string-replace "," "." string))))
+(let* ((number-regexp (rx (1+ (any digit)) ?, (1+ (any digit))))
+(regexp (rx "ECHEANCE PRET"
+(? " -")
+" DONT CAP "
+(group-n 1 (regexp number-regexp))
+" ASS. "
+(group-n 2 (regexp number-regexp))
+"E"
+(? " -")
+" INT. "
+(group-n 3 (regexp number-regexp))
+(? " COM. 0,00E"))))
+(save-match-data
+(save-excursion
+(ledger-navigate-beginning-of-xact)
+(when-let* (((re-search-forward regexp (line-end-position)))
+(capital (parse-number (match-string 1)))
+(insurance (parse-number (match-string 2)))
+(interest (parse-number (match-string 3))))
+(list :capital capital :insurance insurance :interest interest)))))))
 
-    (defun my/ledger-mortgage-guess-type (numbers)
-      "Return the type of the transaction with NUMBERS.
+(defun my/ledger-mortgage-guess-type (numbers)
+"Return the type of the transaction with NUMBERS.
 The type is either 'ecoptz, 'immo1 or 'immo2.
 
 NUMBERS is of the form (:capital CAPITAL :insurance INSURANCE :interest INTEREST)."
-      (cond
-       ((and (>= (map-elt numbers :insurance) 0.1)
-             (= (map-elt numbers :interest) 0))
-        'ecoptz)
-       ((or (>= (map-elt numbers :insurance) 0.1)
-            (= (map-elt numbers :interest) 0))
-        (user-error "Invalid numbers: %S" numbers))
-       ((>= (map-elt numbers :capital) 700) 'immo1)
-       (t 'immo2)))
+(cond
+((and (>= (map-elt numbers :insurance) 0.1)
+(= (map-elt numbers :interest) 0))
+'ecoptz)
+((or (>= (map-elt numbers :insurance) 0.1)
+(= (map-elt numbers :interest) 0))
+(user-error "Invalid numbers: %S" numbers))
+((>= (map-elt numbers :capital) 700) 'immo1)
+(t 'immo2)))
 
-    (defun my/ledger-mortgage-rewrite ()
-      "Rewrite the mortgage transaction at point."
-      (interactive)
-      (when-let* ((numbers (my/ledger-mortgage-read-numbers))
-                  (total (seq-reduce
-                          #'+
-                          (map-values (my/ledger-mortgage-read-numbers))
-                          0))
-                  (mortgage-type (my/ledger-mortgage-guess-type numbers)))
-        (save-match-data
-          (save-excursion
-            (ledger-navigate-beginning-of-xact)
-            (when (re-search-forward " .*$" (line-end-position)) ; skip date
-              (replace-match " banque populaire prêt" t)
-              (next-line)
-              (delete-region (line-beginning-position) (line-end-position))
-              (insert (format " asset:current:couple  %.2f" (- total)))
-              (ledger-navigate-end-of-xact)
-              (delete-region (line-beginning-position) (line-end-position))
-              (map-do
-               (lambda (number-type number)
-                 (when (> number 0)
-                   (let ((account (if (eq number-type :insurance)
-                                      "expense:util:insurance"
-                                    (format "expense:mortgage:%s%s" mortgage-type number-type))))
-                     (insert " " account "  " (number-to-string number) "\n"))))
-               numbers)
-              (delete-backward-char 1) ; remove additional newline
-              (ledger-post-align-dwim))))))))
+(defun my/ledger-mortgage-rewrite ()
+"Rewrite the mortgage transaction at point."
+(interactive)
+(when-let* ((numbers (my/ledger-mortgage-read-numbers))
+(total (seq-reduce
+#'+
+(map-values (my/ledger-mortgage-read-numbers))
+0))
+(mortgage-type (my/ledger-mortgage-guess-type numbers)))
+(save-match-data
+(save-excursion
+(ledger-navigate-beginning-of-xact)
+(when (re-search-forward " .*$" (line-end-position)) ; skip date
+(replace-match " banque populaire prêt" t)
+(next-line)
+(delete-region (line-beginning-position) (line-end-position))
+(insert (format " asset:current:couple  %.2f" (- total)))
+(ledger-navigate-end-of-xact)
+(delete-region (line-beginning-position) (line-end-position))
+(map-do
+(lambda (number-type number)
+(when (> number 0)
+(let ((account (if (eq number-type :insurance)
+"expense:util:insurance"
+(format "expense:mortgage:%s%s" mortgage-type number-type))))
+(insert " " account "  " (number-to-string number) "\n"))))
+numbers)
+(delete-backward-char 1) ; remove additional newline
+(ledger-post-align-dwim))))))))
 
 (use-package flymake-hledger
-  :config
-  (progn
-    (setq flymake-hledger-command '("hledger" "--auto"))
+:config
+(progn
+(setq flymake-hledger-command '("hledger" "--auto"))
 
-    ;; Enable 4 optional checks. See URL
-    ;; https://hledger.org/1.30/hledger.html#check for the meaning of
-    ;; each check and a list of all of them.
-    (dolist (check '("ordereddates" "payees" "recentassertions" "tags"))
-      (add-to-list 'flymake-hledger-checks check))))
+;; Enable 4 optional checks. See URL
+;; https://hledger.org/1.30/hledger.html#check for the meaning of
+;; each check and a list of all of them.
+(dolist (check '("ordereddates" "payees" "recentassertions" "tags"))
+(add-to-list 'flymake-hledger-checks check))))
 
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
@@ -2237,58 +2295,58 @@ Captured On: [2024-04-05 Fri 15:21]
 *** TODO Ledger Import Config
 #+BEGIN_QUOTE
 (use-package ledger-complete
-  :init
-  (progn
-    (setq ledger-complete-in-steps nil)))
+:init
+(progn
+(setq ledger-complete-in-steps nil)))
 
 (use-package ledger-import
-  :hook ((ledger-import-finished . my/ledger-import-finish))
-  :config
-  (progn
-    (setq ledger-import-boobank-import-from-date "2023-07-29")
-    (setq ledger-import-autosync-command
-          '("hledger-autosync" "--assertions"
-            "--payee-format" "{payee}"))
+:hook ((ledger-import-finished . my/ledger-import-finish))
+:config
+(progn
+(setq ledger-import-boobank-import-from-date "2023-07-29")
+(setq ledger-import-autosync-command
+'("hledger-autosync" "--assertions"
+"--payee-format" "{payee}"))
 
-    (defun my/ledger-import-alert ()
-      "Notify the user that import is finished."
-      (alert "Finished"
-             :title "Ledger-autosync"
-             :buffer (current-buffer)))
+(defun my/ledger-import-alert ()
+"Notify the user that import is finished."
+(alert "Finished"
+:title "Ledger-autosync"
+:buffer (current-buffer)))
 
-    (defun my/ledger-import-remove-EUR ()
-      "Remove the EUR commodity in the current buffer."
-      (goto-char (point-min))
-      (while (search-forward " EUR" nil t)
-        (replace-match ""))
-      (ledger-mode-clean-buffer))
+(defun my/ledger-import-remove-EUR ()
+"Remove the EUR commodity in the current buffer."
+(goto-char (point-min))
+(while (search-forward " EUR" nil t)
+(replace-match ""))
+(ledger-mode-clean-buffer))
 
-    (defun my/ledger-import-merge-autosync-transactions ()
-      "Merge all autosync transactions into just one."
-      (goto-char (point-min))
-      (search-forward "Autosync Balance Assertion")
-      (delete-matching-lines "Autosync Balance Assertion")
-      (delete-matching-lines "^$"))
+(defun my/ledger-import-merge-autosync-transactions ()
+"Merge all autosync transactions into just one."
+(goto-char (point-min))
+(search-forward "Autosync Balance Assertion")
+(delete-matching-lines "Autosync Balance Assertion")
+(delete-matching-lines "^$"))
 
-    (defun my/ledger-import-add-today-date-as-outline ()
-      "Add today's date as `outline-mode' markup."
-      (goto-char (point-min))
-      (search-forward "Autosync Balance Assertion")
-      (goto-char (line-beginning-position))
-      (insert (format "*** %s\n\n" (format-time-string "%B %-d"))))
+(defun my/ledger-import-add-today-date-as-outline ()
+"Add today's date as `outline-mode' markup."
+(goto-char (point-min))
+(search-forward "Autosync Balance Assertion")
+(goto-char (line-beginning-position))
+(insert (format "*** %s\n\n" (format-time-string "%B %-d"))))
 
-    (defun my/ledger-import-finish ()
-      "Some actions to do when ledger-import finishes."
-      (interactive)
-      (my/ledger-import-remove-EUR)
-      (my/ledger-import-merge-autosync-transactions)
-      (my/ledger-import-add-today-date-as-outline)
-      (my/ledger-import-alert))
+(defun my/ledger-import-finish ()
+"Some actions to do when ledger-import finishes."
+(interactive)
+(my/ledger-import-remove-EUR)
+(my/ledger-import-merge-autosync-transactions)
+(my/ledger-import-add-today-date-as-outline)
+(my/ledger-import-alert))
 
-    ;; Fill `ledger-import-accounts' and `ledger-import-ofx-rewrite-rules':
-    (let ((file (expand-file-name "~/.password-store/Secure_Notes/ledger-accounts.gpg")))
-      (when (file-exists-p file)
-        (load file t)))))
+;; Fill `ledger-import-accounts' and `ledger-import-ofx-rewrite-rules':
+(let ((file (expand-file-name "~/.password-store/Secure_Notes/ledger-accounts.gpg")))
+(when (file-exists-p file)
+(load file t)))))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 15:21]
@@ -2391,19 +2449,19 @@ People sometimes ask about having multi-character shortcuts for bookmarks; an ea
 With Hydra installed, we can add multi-character shortcuts, for instance:
 
 (defhydra my-mu4e-bookmarks-work (:color blue)
-  "work bookmarks"
-  ("b" (mu4e-search "banana AND maildir:/work") "banana")
-  ("u" (mu4e-search "flag:unread AND maildir:/work")   "unread"))
+"work bookmarks"
+("b" (mu4e-search "banana AND maildir:/work") "banana")
+("u" (mu4e-search "flag:unread AND maildir:/work")   "unread"))
 
 (defhydra my-mu4e-bookmarks-personal (:color blue)
-  "personal bookmarks"
-  ("c" (mu4e-search "capybara AND maildir:/personal") "capybara")
-  ("u" (mu4e-search "flag:unread AND maildir:/personal")  "unread"))
+"personal bookmarks"
+("c" (mu4e-search "capybara AND maildir:/personal") "capybara")
+("u" (mu4e-search "flag:unread AND maildir:/personal")  "unread"))
 
 (defhydra my-mu4e-bookmarks (:color blue)
-  "mu4e bookmarks"
-  ("p" (my-mu4e-bookmarks-personal/body) "Personal")
-  ("w" (my-mu4e-bookmarks-work/body) "Work"))
+"mu4e bookmarks"
+("p" (my-mu4e-bookmarks-personal/body) "Personal")
+("w" (my-mu4e-bookmarks-work/body) "Work"))
 
 Now, you can bind a convenient key to my-mu4e-bookmarks/body.
 #+END_QUOTE
@@ -2440,15 +2498,15 @@ Captured On: [2024-04-05 Fri 15:03]
 *** TODO Mail Settings for (Email) Address-at-point
 #+BEGIN_QUOTE
 (use-package goto-addr
-  :bind (
-         :map goto-address-highlight-keymap
-         ("C-c C-o" . goto-address-at-point))
-  :hook (((prog-mode magit-process-mode) . goto-address-mode))
-  :config
-  (progn
-    ;; Recommended by modus-themes (2.7.0 release notes):
-    (setq goto-address-mail-face 'link)
-    (setq goto-address-mail-mouse-face 'highlight)))
+:bind (
+:map goto-address-highlight-keymap
+("C-c C-o" . goto-address-at-point))
+:hook (((prog-mode magit-process-mode) . goto-address-mode))
+:config
+(progn
+;; Recommended by modus-themes (2.7.0 release notes):
+(setq goto-address-mail-face 'link)
+(setq goto-address-mail-mouse-face 'highlight)))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 14:35]
@@ -2506,21 +2564,21 @@ Birthdays aren't showing up in the agenda from org-contacts
 *** TODO Investigate Org Caldav to Integrate Calendar With Agenda
 #+BEGIN_QUOTE
 (use-package org-caldav
-  :bind (("C-. o S"   . org-caldav-sync))
-  :config
-  (progn
-    (setq org-caldav-url "https://licorne.ninja/remote.php/dav/calendars/DamienCassou"
-          org-caldav-calendar-id "personal"
-          org-caldav-inbox org-default-calendar-file
-          org-caldav-files '()
-          org-icalendar-timezone "Europe/Berlin"
-          org-caldav-sync-changes-to-org 'all)
+:bind (("C-. o S"   . org-caldav-sync))
+:config
+(progn
+(setq org-caldav-url "https://licorne.ninja/remote.php/dav/calendars/DamienCassou"
+org-caldav-calendar-id "personal"
+org-caldav-inbox org-default-calendar-file
+org-caldav-files '()
+org-icalendar-timezone "Europe/Berlin"
+org-caldav-sync-changes-to-org 'all)
 
-    (defun my/org-caldav-archive-year ()
-      "Archive a given year in my calendar."
-      (interactive)
-      (while (re-search-forward "^ *<2021-.*>$" nil t)
-        (org-archive-subtree)))))
+(defun my/org-caldav-archive-year ()
+"Archive a given year in my calendar."
+(interactive)
+(while (re-search-forward "^ *<2021-.*>$" nil t)
+(org-archive-subtree)))))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 15:24]
@@ -2778,7 +2836,7 @@ his is what I did:
 We want a small emacs window centred on the screen.
 
 #+BEGIN_SRC sh :tangle ~/scripts/emacs-capture :shebang "#!/bin/sh"
-emacsclient -c  -F "((name . \"emacs-capture\") (height . 10) (width . 80) (left . 632) (top . 452) (user-position . t) (menu-bar-lines . 0))" "$@"
+  emacsclient -c  -F "((name . \"emacs-capture\") (height . 10) (width . 80) (left . 632) (top . 452) (user-position . t) (menu-bar-lines . 0))" "$@"
 #+END_SRC
 
 The =left= and =top= cells do the centering for a 1920x1080
@@ -2788,14 +2846,14 @@ display.  For other sizes, =xwininfo= is yr friend: left =
 **** Register handler for org-protocol
 
 #+BEGIN_SRC sh :tangle ~/.local/share/applications/emacs-capture.desktop
-[Desktop Entry]
-Name=Org Capture
-Exec=/home/fran/scripts/emacs-capture %u
-Comment=Capture the web into org
-Icon=/usr/share/icons/hicolor/scalable/apps/emacs24.svg
-Type=Application
-Terminal=false
-MimeType=x-scheme-handler/org-protocol;
+  [Desktop Entry]
+  Name=Org Capture
+  Exec=/home/fran/scripts/emacs-capture %u
+  Comment=Capture the web into org
+  Icon=/usr/share/icons/hicolor/scalable/apps/emacs24.svg
+  Type=Application
+  Terminal=false
+  MimeType=x-scheme-handler/org-protocol;
 #+END_SRC
 
 After installing this, you need to evaluate (with =C-c C-c=)
@@ -2803,7 +2861,7 @@ the following to register the mime-type with the OS:
 
 #+NAME: update-block
 #+BEGIN_SRC sh
-update-desktop-database ~/.local/share/applications
+  update-desktop-database ~/.local/share/applications
 #+END_SRC
 #+END_QUOTE
 [[https://www.reddit.com/r/emacs/comments/fvlcqg/anyone_using_orgprotocol_with_only_a_window/][(3) Anyone using org-protocol with only a window manager but no desktop environment? : emacs]]
@@ -3175,16 +3233,16 @@ Captured On: [2023-08-01 Tue 07:48]
 *** TODO Review Interesting Elisp Settings
 #+BEGIN_QUOTE
 (use-package elisp-mode
-  :hook ((emacs-lisp-mode . my/elisp-mode-reduce-mode-name)
-         (emacs-lisp-mode . my/eldoc-shows-more-information))
-  :config
-  (progn
-    (defun my/elisp-mode-reduce-mode-name ()
-      (setq-local mode-name "Elisp"))
+:hook ((emacs-lisp-mode . my/elisp-mode-reduce-mode-name)
+(emacs-lisp-mode . my/eldoc-shows-more-information))
+:config
+(progn
+(defun my/elisp-mode-reduce-mode-name ()
+(setq-local mode-name "Elisp"))
 
-    (defun my/eldoc-shows-more-information ()
-      (remove-hook 'eldoc-documentation-functions #'elisp-eldoc-var-docstring t)
-      (add-hook 'eldoc-documentation-functions #'elisp-eldoc-var-docstring-with-value nil t))))
+(defun my/eldoc-shows-more-information ()
+(remove-hook 'eldoc-documentation-functions #'elisp-eldoc-var-docstring t)
+(add-hook 'eldoc-documentation-functions #'elisp-eldoc-var-docstring-with-value nil t))))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 14:31]
@@ -3330,18 +3388,18 @@ Identify those situations and fix.
 *** TODO replacement current yes-or-no replacement in Emacs Config?
 #+BEGIN_QUOTE
 (progn ; `map-ynp'
-  ;; Make all "yes or no" prompts show "y or n" instead
-  (setq read-answer-short t)
-  (setq use-short-answers t))
+;; Make all "yes or no" prompts show "y or n" instead
+(setq read-answer-short t)
+(setq use-short-answers t))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 14:17]
 *** TODO Don't allow the user to switch out of answering y/n questions in minibuffer
 #+BEGIN_QUOTE
 (progn ; `subr'
-  ;; recommended by
-  ;; (info "(embark) How does Embark call the actions?")
-  (setq y-or-n-p-use-read-key t))
+;; recommended by
+;; (info "(embark) How does Embark call the actions?")
+(setq y-or-n-p-use-read-key t))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 14:21]
@@ -3485,19 +3543,19 @@ Scroll text of selected window upward ARG lines; or near full screen if no ARG.
 *** TODO Consider implementing vundo package
 #+BEGIN_QUOTE
 (use-package vundo
-  :bind ("C-x u" . vundo)
-  :hook ((vundo-mode . my/vundo-setup))
-  :init
-  (progn
-    (setq vundo-window-max-height 5))
-  :config
-  (progn
-    (setq vundo-glyph-alist vundo-unicode-symbols)
+:bind ("C-x u" . vundo)
+:hook ((vundo-mode . my/vundo-setup))
+:init
+(progn
+(setq vundo-window-max-height 5))
+:config
+(progn
+(setq vundo-glyph-alist vundo-unicode-symbols)
 
-    (defun my/vundo-setup ()
-      "Remove mode-line and header-line."
-      (setq mode-line-format nil)
-      (setq header-line-format nil))))
+(defun my/vundo-setup ()
+"Remove mode-line and header-line."
+(setq mode-line-format nil)
+(setq header-line-format nil))))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 15:14]
@@ -3510,10 +3568,10 @@ https://github.com/zevlg/telega.el/wiki/Configuration-snippets
 *** TODO Consider Olivetti Settings
 #+BEGIN_QUOTE
 (use-package olivetti
-  :hook (((Info-mode help-mode helpful-mode eww-mode) . olivetti-mode))
-  :init
-  (progn
-    (setq olivetti-body-width 84)))
+:hook (((Info-mode help-mode helpful-mode eww-mode) . olivetti-mode))
+:init
+(progn
+(setq olivetti-body-width 84)))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 14:35]
@@ -3924,96 +3982,96 @@ Captured On: [2024-02-29 Thu 10:12]
 *** TODO Forge Config
 #+BEGIN_QUOTE
 (use-package forge
-  :demand t
-  :after magit
-  :hook (forge-post-submit-callback . my/forge-start-timer-for-draft-pullreq)
-  :config
-  (progn
-    (setq-default forge-buffer-draft-p t)
+:demand t
+:after magit
+:hook (forge-post-submit-callback . my/forge-start-timer-for-draft-pullreq)
+:config
+(progn
+(setq-default forge-buffer-draft-p t)
 
-    (defun my/forge-start-timer-for-draft-pullreq (pullreq &rest _)
-      "Start a `tmr' timer if PULLREQ is draft."
-      (when (map-elt pullreq 'draft)
-        (when-let* ((url (map-elt pullreq 'url))
-                    (minutes (cond
-                              ((string-match-p "foretagsplatsen/monitor" url) 15)
-                              (t 10))))
-          (require 'tmr)
-          (tmr minutes (format "Check draft %s" url) t))))))
+(defun my/forge-start-timer-for-draft-pullreq (pullreq &rest _)
+"Start a `tmr' timer if PULLREQ is draft."
+(when (map-elt pullreq 'draft)
+(when-let* ((url (map-elt pullreq 'url))
+(minutes (cond
+((string-match-p "foretagsplatsen/monitor" url) 15)
+(t 10))))
+(require 'tmr)
+(tmr minutes (format "Check draft %s" url) t))))))
 
 (use-package forge-topic
-  :init
-  (progn
-    (setq forge-topic-list-limit '(60 . -1))))
+:init
+(progn
+(setq forge-topic-list-limit '(60 . -1))))
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 15:18]
 *** TODO Magit Config to Review
 #+BEGIN_QUOTE
 (use-package magit
-  :bind ((
-          :map magit-mode-map
-          ("M-w" . magit-copy-section-value)))
-  :init
-  (progn
-    (setq magit-diff-refine-hunk t)
-    (setq magit-process-find-password-functions '(magit-process-password-auth-source))
-    (setq magit-branch-prefer-remote-upstream '("master"))
-    (setq magit-branch-adjust-remote-upstream-alist '(("origin/master" "master")
-                                                      ("origin/main" "main")))
-    (setq magit-module-sections-nested nil)
-    (setq magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-    (setq magit-no-confirm '(amend-published trash))
-    (setq magit-revision-insert-related-refs nil)
-    (setq magit-revision-show-gravatars t)
-    (setq magit-clone-set-remote.pushDefault t))
-  :config
-  (progn
-    ;; Enable magit-clean
-    (put 'magit-clean 'disabled nil)
+:bind ((
+:map magit-mode-map
+("M-w" . magit-copy-section-value)))
+:init
+(progn
+(setq magit-diff-refine-hunk t)
+(setq magit-process-find-password-functions '(magit-process-password-auth-source))
+(setq magit-branch-prefer-remote-upstream '("master"))
+(setq magit-branch-adjust-remote-upstream-alist '(("origin/master" "master")
+("origin/main" "main")))
+(setq magit-module-sections-nested nil)
+(setq magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+(setq magit-no-confirm '(amend-published trash))
+(setq magit-revision-insert-related-refs nil)
+(setq magit-revision-show-gravatars t)
+(setq magit-clone-set-remote.pushDefault t))
+:config
+(progn
+;; Enable magit-clean
+(put 'magit-clean 'disabled nil)
 
-    ;; Add modules in magit status buffer:
-    (magit-add-section-hook 'magit-status-sections-hook
-                            'magit-insert-modules
-                            'magit-insert-unpulled-from-upstream)
+;; Add modules in magit status buffer:
+(magit-add-section-hook 'magit-status-sections-hook
+'magit-insert-modules
+'magit-insert-unpulled-from-upstream)
 
-    ;; Only show the module sections I'm interested in
-    (with-eval-after-load "magit-submodule"
-      (remove-hook 'magit-module-sections-hook 'magit-insert-modules-overview)
-      (remove-hook 'magit-module-sections-hook 'magit-insert-modules-unpulled-from-pushremote)
-      (remove-hook 'magit-module-sections-hook 'magit-insert-modules-unpushed-to-upstream)
-      (remove-hook 'magit-module-sections-hook 'magit-insert-modules-unpushed-to-pushremote))
+;; Only show the module sections I'm interested in
+(with-eval-after-load "magit-submodule"
+(remove-hook 'magit-module-sections-hook 'magit-insert-modules-overview)
+(remove-hook 'magit-module-sections-hook 'magit-insert-modules-unpulled-from-pushremote)
+(remove-hook 'magit-module-sections-hook 'magit-insert-modules-unpushed-to-upstream)
+(remove-hook 'magit-module-sections-hook 'magit-insert-modules-unpushed-to-pushremote))
 
-    (transient-replace-suffix 'magit-commit 'magit-commit-autofixup
-      '("x" "Absorb changes" magit-commit-absorb))
+(transient-replace-suffix 'magit-commit 'magit-commit-autofixup
+'("x" "Absorb changes" magit-commit-absorb))
 
-    (dir-locals-set-class-variables 'my/magit-huge-git-repository
-                                    '((magit-status-mode
-                                       .
-                                       ((eval . (magit-disable-section-inserter 'magit-insert-tags-header))
-                                        (eval . (magit-disable-section-inserter 'magit-insert-untracked-files))
-                                        (eval . (magit-disable-section-inserter 'magit-insert-modules))))))
+(dir-locals-set-class-variables 'my/magit-huge-git-repository
+'((magit-status-mode
+.
+((eval . (magit-disable-section-inserter 'magit-insert-tags-header))
+(eval . (magit-disable-section-inserter 'magit-insert-untracked-files))
+(eval . (magit-disable-section-inserter 'magit-insert-modules))))))
 
-    (let ((huge-repos
-           '("~/Documents/projects/nix/nixpkgs-master"
-             "~/Documents/projects/nix-system/nixpkgs/")))
-      (dolist (repo huge-repos)
-        (dir-locals-set-directory-class
-         (expand-file-name repo)
-         'my/magit-huge-git-repository)))))
+(let ((huge-repos
+'("~/Documents/projects/nix/nixpkgs-master"
+"~/Documents/projects/nix-system/nixpkgs/")))
+(dolist (repo huge-repos)
+(dir-locals-set-directory-class
+(expand-file-name repo)
+'my/magit-huge-git-repository)))))
 
 (use-package magit-diff
-  :bind (
-         :map magit-diff-section-map
-         ;; disable binding that I use for begining of buffer
-         ("C-x a" . nil)))
+:bind (
+:map magit-diff-section-map
+;; disable binding that I use for begining of buffer
+("C-x a" . nil)))
 
 (use-package magit-extras
-  :demand (project magit))
+:demand (project magit))
 
 (use-package magit-tbdiff
-  :demand t
-  :after magit)
+:demand t
+:after magit)
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 15:19]
@@ -4200,7 +4258,7 @@ Captured On: [2024-03-20 Wed 09:11]
 TLDR: add
 
 #+begin_src sh
--xrm "emacs.synchronous: true"
+  -xrm "emacs.synchronous: true"
 #+end_src
 
 to the end of the emacs startup command

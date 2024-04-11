@@ -40,7 +40,13 @@
 		  (Codelia-Only
 		   :default-family "Codelia Ligatures")
 		  (Liberation_Mono-Only
-		   :default-family "Liberation Mono")
+           :default-family "Liberation Mono")
+          (24-point-font
+           :default-height 240)
+          (20-point-font
+           :default-height 200)
+          (16-point-font
+           :default-height 160)
 		  (12-point-font
 		   :default-height 120)
 		  (13-point-font

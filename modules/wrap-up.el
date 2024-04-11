@@ -22,7 +22,7 @@
 
 (defun cj/bury-buffers-after-delay ()
   "Run cj/bury-buffers after a delay."
-  (run-with-timer 10 nil 'cj/bury-buffers))
+  (run-with-timer 1 nil 'cj/bury-buffers))
 
 (add-hook 'emacs-startup-hook 'cj/bury-buffers-after-delay)
 

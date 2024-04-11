@@ -23,7 +23,8 @@
 ;; integration with ChatGPT and other large language models.
 
 (use-package gptel
-  :defer .5
+  :defer t
+  :commands (gptel gptel-send)
   :bind
   ("C-h G" . gptel)
   (:map gptel-mode-map
@@ -34,33 +35,22 @@
   (gptel-default-mode 'org-mode)
   :config
   (setq gptel-directives
-   '((default
-	 . "You are a large language model living in Emacs and a careful and
+		'((default
+		   . "You are a large language model living in Emacs and a careful and
   knowledgeable emacs-lisp programmer. Respond accurately and concisely.")
-	(programming
-	 . "You are a large language model and a careful programmer. Provide code
+		  (programming
+		   . "You are a large language model and a careful programmer. Provide code
   and only code as output without any additional text, prompt or note.")
-	(writing
-	 . "You are a large language model and a writing assistant. Respond
+		  (writing
+		   . "You are a large language model and a writing assistant. Respond
   concisely.")
-	(chat
-	 . "You are a large language model and a conversation partner. Respond
+		  (chat
+		   . "You are a large language model and a conversation partner. Respond
   concisely.")))
 
   ;; grab the secret from ~/.authinfo.gpg
+  (setq auth-sources '((:source "~/.authinfo.gpg")))
   (setq gptel-api-key (auth-source-pick-first-password :host "api.openai.com")))
-
-;; ----------------------------- Gptel Send Region -----------------------------
-;; convenience function to send a selection to Gptel.
-
-(defun cj/gptel-send-region (&optional prefix)
-  "Verify a region is selected and call gptel-send with PREFIX."
-  (interactive "P")
-  (if (use-region-p)
-      (gptel-send (prefix-numeric-value prefix))
-	(error "No region selected")))
-
-(global-set-key (kbd "C-; g") 'cj/gptel-send-region)
 
 (provide 'ai-config)
 ;;; ai-config.el ends here

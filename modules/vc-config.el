@@ -30,11 +30,6 @@
   (setq git-commit-major-mode 'org-mode) ;; edit commit messages in org-mode
   (setq magit-display-buffer-function 'magit-display-buffer-fullframe-status-topleft-v1))
 
-;; -------------------------------- Magit Forge --------------------------------
-
-(use-package forge
-  :after magit)
-
 ;; --------------------------------- Git Gutter --------------------------------
 ;; mark changed lines since last commit in the margin
 

@@ -38,3 +38,4 @@ auto-save-list/
 /forge-database.sqlite
 /.scratch
 /.elfeed-db/
+/persist/

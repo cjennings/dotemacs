@@ -31,12 +31,12 @@
   (interactive)
   (save-excursion
 	(ignore-errors
-		(progn
-		  (org-sort-entries t ?a)
-		  (org-sort-entries t ?p)
-		  (org-sort-entries t ?t)
-		  (org-cycle)
-		  (org-cycle)))))
+	  (progn
+		(org-sort-entries t ?a)
+		(org-sort-entries t ?p)
+		(org-sort-entries t ?t)
+		(org-cycle)
+		(org-cycle)))))
 
 ;; ---------------------------------- Org Mode ---------------------------------
 
@@ -45,7 +45,7 @@
   :ensure nil ;; use the built-in package
   :pin manual ;; never upgrade from the version built-into Emacs
   :preface
-  ;; create an org-table-map so you can use C-c t as prefix
+  ;; create an org-table-map so we can use C-c t as prefix
   (define-prefix-command 'org-table-map)
   (global-set-key (kbd "C-c T") 'org-table-map)
   :bind
@@ -117,7 +117,6 @@
   (unbind-key "C-'" org-mode-map)
   (unbind-key "C-," org-mode-map)
 
-
   ;; ORG-PROTOCOL
   ;; enable recognition of org-protocol:// as a parameter
   (require 'org-protocol)
@@ -131,16 +130,15 @@
   (setq org-list-allow-alphabetical t)      ;; allow alpha ordered lists (i.e., a), A), a., etc.)
 
   ;; INDENTATION
-  (setq org-startup-indented t)                                   ;; load org files indented
-  (setq org-adapt-indentation t)                                  ;; adapt indentation to outline node level
-  (setq org-indent-indentation-per-level 2)                       ;; indent two character-widths per level
+  (setq org-startup-indented t)             ;; load org files indented
+  (setq org-adapt-indentation t)            ;; adapt indentation to outline node level
+  (setq org-indent-indentation-per-level 2) ;; indent two character-widths per level
 
   ;; INLINE IMAGES
-  (setq org-startup-with-inline-images t)                         ;; preview images by default
-  (setq org-image-actual-width '(500))                            ;; keep image
-  ;; sizes in check
+  (setq org-startup-with-inline-images t)   ;; preview images by default
+  (setq org-image-actual-width '(500))      ;; keep image sizes in check
 
-  (setq org-bookmark-names-plist nil)                             ;; don't set org-capture bookmarks
+  (setq org-bookmark-names-plist nil)       ;; don't set org-capture bookmarks
 
   ;; force pdfs exported from org to open in emacs
   (add-to-list 'org-file-apps '("\\.pdf\\'" . emacs)))

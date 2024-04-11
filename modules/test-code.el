@@ -7,6 +7,28 @@
 
 ;;; Code:
 
+;; ---------------------------------- Yeetube ----------------------------------
+;; youtube frontend for emacs
+
+(use-package yeetube
+  :init (define-prefix-command 'cj/yeetube-map)
+  :bind (("C-c y" . 'cj/yeetube-map)
+		 :map cj/yeetube-map
+		 ("s" . 'yeetube-search)
+		 ("b" . 'yeetube-play-saved-video)
+		 ("d" . 'yeetube-download-videos)
+		 ("p" . 'yeetube-mpv-toggle-pause)
+		 ("v" . 'yeetube-mpv-toggle-video)
+		 ("V" . 'yeetube-mpv-toggle-no-video-flag)
+		 ("k" . 'yeetube-remove-saved-video))
+  :custom
+  (yeetube-results-limit 50)
+  (yeetube-download-directory (expand-file-name "videos" "~"))
+  (yeetube-filter "Views")
+  (setq yeetube-display-thumbnails nil)
+  :config
+  (setf yeetube-mpv-disable-video nil))
+
 
 ;; --------------------------------- Recording ---------------------------------
 
@@ -22,12 +44,12 @@ If called with a prefix arg C-u, choose the location on where to save the record
 otherwise use the default location in `cj/recording-location'."
   (interactive "P")
   (let* ((location (if arg
-                       (read-directory-name "Enter recording location: ")
-                     cj/recording-location))
-         (directory (file-name-directory location)))
-    (unless (file-directory-p directory)
-      (make-directory directory t))
-    (cj/ffmpeg-record location)))
+					   (read-directory-name "Enter recording location: ")
+					 cj/recording-location))
+		 (directory (file-name-directory location)))
+	(unless (file-directory-p directory)
+	  (make-directory directory t))
+	(cj/ffmpeg-record location)))
 
 (defun cj/ffmpeg-record (directory)
   "Start an ffmpeg recording. Save output to DIRECTORY."
@@ -39,13 +61,13 @@ otherwise use the default location in `cj/recording-location'."
 			(concat "ffmpeg -framerate 30 -f x11grab -i :0.0+ "
 					"-f pulse -i alsa_input.pci-0000_00_1b.0.analog-stereo "
 					"-ac 1 -f pulse -i alsa_output.pci-0000_00_1b.0.analog-stereo.monitor "
-                    "-ac 2 " filename)))
-      ;; start the recording
+					"-ac 2 " filename)))
+	  ;; start the recording
 	  (setq cj/ffmpeg-process
 			(start-process-shell-command "ffmpeg-recording"
 										 "*ffmpeg-recording*"
 										 ffmpeg-command))
-	  (set-process-query-on-exit-flag cj/ffmpeg-process nil)
+      (set-process-query-on-exit-flag cj/ffmpeg-process nil)
 	  (message "Started recording process."))))
 
 (defun cj/stop-recording ()
@@ -62,22 +84,22 @@ otherwise use the default location in `cj/recording-location'."
   "Prompt for a string, insert it before and after the word at point or selected region."
   (interactive)
   (let ((str (read-string "Enter a string: "))
-        (regionp (use-region-p)))
-    (save-excursion
-      (if regionp
-          (let ((beg (region-beginning))
-                (end (region-end)))
-            (goto-char end)
-            (insert str)
-            (goto-char beg)
-            (insert str))
-        (if (thing-at-point 'word)
-            (let ((bounds (bounds-of-thing-at-point 'word)))
-              (goto-char (cdr bounds))
-              (insert str)
-              (goto-char (car bounds))
-              (insert str))
-          (message "Can't insert around. No word at point and no region selected."))))))
+		(regionp (use-region-p)))
+	(save-excursion
+	  (if regionp
+		  (let ((beg (region-beginning))
+				(end (region-end)))
+			(goto-char end)
+			(insert str)
+			(goto-char beg)
+			(insert str))
+		(if (thing-at-point 'word)
+			(let ((bounds (bounds-of-thing-at-point 'word)))
+			  (goto-char (cdr bounds))
+			  (insert str)
+			  (goto-char (car bounds))
+			  (insert str))
+		  (message "Can't insert around. No word at point and no region selected."))))))
 
 (global-set-key (kbd "C-; i a") 'cj/insert-around-word-or-region)
 
@@ -115,19 +137,18 @@ otherwise use the default location in `cj/recording-location'."
 
 (use-package wttrin
   :defer .5
-  :after xterm-color
   :load-path ("~/code/emacs-wttrin")
+  :preface
+  ;; dependency for wttrin
+  (use-package xterm-color
+	:demand t)
   :bind
   ("M-W" . wttrin))
-
-;; dependency for wttrin
-(use-package xterm-color
-  :defer .5)
 
 ;; ------------------------------ ERC Yank To Gist -----------------------------
 ;; automatically create a Gist if pasting more than 5 lines
 ;; this module requires https://github.com/defunkt/gist
-;; via ruby: 'gem install gist'	via the aur: yay -S gist
+;; via ruby: 'gem install gist' via the aur: yay -S gist
 
 (use-package erc-yank
   :defer 1
@@ -144,9 +165,9 @@ otherwise use the default location in `cj/recording-location'."
 ;;   :after racket-mode
 ;;   :commands (org-babel-execute:racket)
 ;;   :quelpa (ob-racket
-;; 		 :fetcher github
-;; 		 :repo "hasu/emacs-ob-racket"
-;; 		 :files ("*.el" "*.rkt")))
+;;       :fetcher github
+;;       :repo "hasu/emacs-ob-racket"
+;;       :files ("*.el" "*.rkt")))
 
 (provide 'test-code)
 ;;; test-code.el ends here.

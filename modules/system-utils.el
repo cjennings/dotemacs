@@ -223,11 +223,9 @@ Don't automatically display output buffers, but keep them in buffer list."
 ;; install Webster's dictionary in StarDict format
 ;; http://jsomers.net/blog/dictionary
 
-(use-package sdcv-mode
+(use-package sdcv
   :defer 1
-  :ensure nil; custom-file
-  :load-path "custom/sdcv-mode.el"
-  :bind ("C-h d" . 'sdcv-search))
+  :bind ("C-h d" . 'sdcv-search-input))
 
 ;; ------------------------------ -Keyboard Macros -----------------------------
 ;; note that this leverages simple, easy to remember shortcuts
