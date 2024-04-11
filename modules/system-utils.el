@@ -168,14 +168,6 @@ Don't automatically display output buffers, but keep them in buffer list."
 ;; make scratch buffer an org-mode buffer
 (setq initial-major-mode 'org-mode)
 
-;; persists scratch contents between Emacs sessions
-(use-package persistent-scratch
-  :defer .5
-  :custom
-  (persistent-scratch-save-file (expand-file-name ".scratch" user-emacs-directory))
-  :config
-  (persistent-scratch-setup-default))
-
 ;; -------------------------------- World Clock --------------------------------
 ;; displays current time in various timezones
 

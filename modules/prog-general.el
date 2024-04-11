@@ -125,7 +125,7 @@ If none exists, it opens magit-status."
   (advice-add 'ripgrep-regexp :after #'switch-to-ripgrep-results))
 
 ;; ---------------------------------- Snippets ---------------------------------
-;; reusable code and text.
+;; reusable code and text
 
 (use-package yasnippet
   :defer 1
@@ -160,7 +160,8 @@ If none exists, it opens magit-status."
   (prog-mode . symbol-overlay-mode))
 
 ;; ------------------------------ Highlight TODOs ------------------------------
-;; Highlights todo keywords in code for easy spotting
+;; Highlights todo keywords in code for easy spotting.
+
 (use-package hl-todo
   :defer 1
   :hook

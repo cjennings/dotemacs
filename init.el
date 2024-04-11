@@ -24,8 +24,8 @@
 (add-to-list 'load-path (concat user-emacs-directory "modules"))
 
 (require 'user-constants)
-(require 'config-utilities)  ;; functions useful when modifying Emacs config
-(require 'host-environment)  ;; convenience functions re: host environment
+(require 'config-utilities) ;; functions useful when modifying Emacs config
+(require 'host-environment) ;; convenience functions re: host environment
 (require 'system-defaults)
 (require 'keybindings)
 
@@ -56,11 +56,11 @@
 (require 'eshell-vterm-config)
 (require 'eww-config)
 (require 'flyspell-config)
-(require 'graphviz-config)           ;; merge with latex module?
+(require 'graphviz-config)  ;; merge with latex module?
 (require 'help-utils)
 (require 'httpd-config)
 (require 'ledger-config)
-(require 'local-repository)          ;; wip
+(require 'local-repository) ;; wip
 (require 'mail-config)
 (require 'markdown-config)
 (require 'modeline-config)
@@ -68,7 +68,7 @@
 (require 'show-kill-ring)
 (require 'telegram-config)
 (require 'tramp-config)
-;; (require 'latex-config)           ;; need to fix
+(require 'latex-config)     ;; need to fix
 
 ;; -------------------------------- Programming --------------------------------
 
@@ -82,7 +82,7 @@
 (require 'prog-c)
 (require 'prog-go)
 (require 'prog-lisp)
-(require 'prog-shell) ;; combine elsewhere
+(require 'prog-shell)       ;; combine elsewhere
 (require 'prog-python)
 (require 'prog-webdev)
 (require 'prog-yaml)

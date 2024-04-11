@@ -40,7 +40,6 @@ Will recompile natively if supported, or byte-compiled if not."
 			(byte-recompile-directory user-emacs-directory 0)))
 	  (message "Cancelled recompilation of %s" user-emacs-directory))))
 
-
 ;; ---------------------- Delete Emacs Home Compiled Files ---------------------
 ;; removes all compiled files and deletes the eln directory
 

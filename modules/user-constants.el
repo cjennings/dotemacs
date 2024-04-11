@@ -1,13 +1,15 @@
 ;;; user-constants.el --- User Constants -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; user file locations are defined here.
-;; if they aren't found, they are created.
+
+;; User file locations are defined here. A file or directory is created if it
+;; doesn't exist. Note the keybindings at the bottom for quick access.
 
 ;;; Code:
 
 ;; ------------------------ Directory And File Constants -----------------------
 
+## DIRECTORIES
 (defconst emacs-init-file (concat user-emacs-directory "init.el")
   "The location of Emacs's main init file.")
 
@@ -32,7 +34,7 @@
 (defconst snippets-dir    (concat sync-dir "snippets/")
   "The location of ya-snippet snippets.")
 
-
+### FILES
 (defvar schedule-file     (concat sync-dir "schedule.org")
   "The location of the org file containing scheduled events.")
 
@@ -80,7 +82,23 @@
                                       article-file
                                       article-archive
                                       ledger-file
-                                      macros-file))
+									  macros-file))
+
+;; ------------------------------ Jump To Commands -----------------------------
+;; quick access for commonly used files
+
+(defvar jump-to-keymap nil "Jump-to commonly used files/directories/commands.")
+(setq jump-to-keymap (make-sparse-keymap))
+(global-set-key (kbd "C-c j") jump-to-keymap)
+(define-key jump-to-keymap (kbd "s") #'(lambda () (interactive) (find-file schedule-file)))
+(define-key jump-to-keymap (kbd "i") #'(lambda () (interactive) (find-file inbox-file)))
+(define-key jump-to-keymap (kbd "c") #'(lambda () (interactive) (find-file contacts-file)))
+(define-key jump-to-keymap (kbd "a") #'(lambda () (interactive) (find-file article-file)))
+(define-key jump-to-keymap (kbd "A") #'(lambda () (interactive) (find-file article-archive)))
+(define-key jump-to-keymap (kbd "$") #'(lambda () (interactive) (find-file ledger-file)))
+(define-key jump-to-keymap (kbd "m") #'(lambda () (interactive) (find-file macros-file)))
+(define-key jump-to-keymap (kbd "I") #'(lambda () (interactive) (find-file emacs-init-file)))
+
 
 (provide 'user-constants)
 ;;; user-constants.el ends here.

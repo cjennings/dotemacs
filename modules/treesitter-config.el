@@ -10,17 +10,6 @@
 
 (use-package tree-sitter
   :defer .5)
-  ;; :hook ((ruby-mode . tree-sitter-hl-mode)
-  ;; 		 (js-mode . tree-sitter-hl-mode)
-  ;; 		 (rust-mode . tree-sitter-hl-mode)
-  ;; 		 (sh-mode . tree-sitter-hl-mode)
-  ;; 		 (c-mode . tree-sitter-hl-mode)
-  ;; 		 (typescript-mode . tree-sitter-hl-mode)
-  ;; 		 (go-mode . tree-sitter-hl-mode)))
-
-;; (use-package tree-sitter-langs
-;;   :ensure 'nil ;; built-in
-;;   :after tree-sitter)
 
 ;; ----------------------- Grammar Installation ----------------------
 ;; installs tree-sitter grammars if they're absent

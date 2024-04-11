@@ -140,8 +140,61 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/3]
+** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/7]
+*** TODO [#B] Get Org Gcal Working
 *** TODO [#B] Neither Feebleline nor Moodline Displays on Archsetup Fresh Install
+*** TODO [#B] Move org-todo items into org-config use-package statement
+*** TODO [#B] Separate org-agenda items into use-package statement
+add after: org-roam for the function references
+*** TODO [#C] Remove all unnecessarily hardcoded filenames and paths
+ripgrep on "~/ to find the following.
+
+./modules/org-roam-config.el:16:  (org-roam-directory "~/sync/org/roam/")
+./modules/org-roam-config.el:27:     ("v" "v2mom" plain (file "~/sync/org/roam/templates/v2mom.org")
+./modules/org-roam-config.el:30:     ("r" "recipe" plain  (file "~/sync/org/roam/templates/recipe.org")
+./modules/org-roam-config.el:33:     ("p" "project" plain  (file "~/sync/org/roam/templates/project.org")
+./modules/org-roam-config.el:36:     ("t" "topic" plain  (file "~/sync/org/roam/templates/topic.org")
+./modules/org-roam-config.el:116:  (cj/org-roam-find-node "Topic" "t" "~/sync/org/roam/templates/topic.org"))
+./modules/org-roam-config.el:121:  (cj/org-roam-find-node "Recipe" "r" "~/sync/org/roam/templates/recipe.org"))
+./modules/org-roam-config.el:126:  (cj/org-roam-find-node "Project" "p" "~/sync/org/roam/templates/project.org"))
+./modules/org-roam-config.el:146:								   :if-new (file+head+olp "~/sync/org/roam/inbox.org"
+./modules/modeline-config.el:14:(defvar feebleline-working-directory "~/code/feebleline"
+./modules/epa-config.el:15:  (setq auth-sources '("~/.authinfo.gpg"))
+./modules/prog-general.el:84:  (projectile-project-search-path '("~/code"
+./modules/prog-general.el:85:                                    "~/projects"))
+./modules/prog-go.el:35:  (add-to-list 'exec-path "~/go/bin")
+./modules/dirvish-config.el:55:   '(("h" "~/"                                 "home")
+./modules/dirvish-config.el:58:     ("co" "~/code"                            "code")
+./modules/dirvish-config.el:59:     ("df" "~/.dotfiles/"                      "dotfiles")
+./modules/dirvish-config.el:60:     ("dn" "~/downloads/"                      "downloads")
+./modules/dirvish-config.el:61:     ("dr" "~/sync/org/drill/"                 "org drill files")
+./modules/dirvish-config.el:62:     ("dt" "~/downloads/torrents/complete/"    "torrents")
+./modules/dirvish-config.el:63:     ("dx" "~/documents/"                      "documents")
+./modules/dirvish-config.el:64:     ("gc" "~/code/golangcourse"               "golang course")
+./modules/dirvish-config.el:65:     ("lt" "~/.local/share/Trash"              "trash")
+./modules/dirvish-config.el:66:     ("mp" "~/sync/playlists/"                 "playlists")
+./modules/dirvish-config.el:67:     ("mv" "~/magic/video/"                    "magic/video")
+./modules/dirvish-config.el:68:     ("mx" "~/music/"                          "music")
+./modules/dirvish-config.el:69:     ("my" "~/magic/youtube/"                  "magic/youtube")
+./modules/dirvish-config.el:70:     ("or" "~/sync/org/"                       "sync")
+./modules/dirvish-config.el:71:     ("pl" "~/sync/playlists"                  "playlists")
+./modules/dirvish-config.el:72:     ("pr" "~/projects/"                       "projects")
+./modules/dirvish-config.el:73:     ("ps" "~/pictures/screenshots/"           "screenshots")
+./modules/dirvish-config.el:74:     ("pw" "~/pictures/wallpaper"              "wallpaper")
+./modules/dirvish-config.el:75:     ("px" "~/pictures/"                       "pictures")
+./modules/dirvish-config.el:76:     ("tg" "~/sync/org/text.games"             "text games")
+./modules/dirvish-config.el:77:     ("vx" "~/videos/"                         "videos")))
+./modules/ai-config.el:52:  (setq auth-sources '((:source "~/.authinfo.gpg")))
+./modules/eww-config.el:24:  (setq url-cookie-file "~/.local/share/cookies.txt")
+./modules/prog-training.el:25:  (setq leetcode-directory "~/code/leetcode")
+./modules/games-config.el:27:  (setq malyon-stories-directory "~/sync/org/text.games/"))
+./modules/prog-lisp.el:24:;; (load (expand-file-name "~/quicklisp/slime-helper.el"))
+./modules/mail-config.el:43:  (setq mu4e-root-maildir "~/.mail")                                        ;; root directory for all email accounts
+./modules/mail-config.el:195:  ;; (setq smtpmail-auth-credentials (expand-file-name "~/.authinfo.gpg"))
+./modules/mail-config.el:207:;; (setq smtpmail-queue-dir  "~/.mail/queued-mail/"))
+./modules/calibredb-epub-config.el:27:  (setq calibredb-root-dir "~/sync/books/")
+./modules/calibredb-epub-config.el:28:  (setq calibredb-library-alist '(("~/sync/books/")))
+./modules/elfeed-config.el:129:  (let ((default-directory "~/videos"))
 *** TODO [#C] Theme Doesn't Fallback on Wombat Correctly if No Theme Persist File
 *** TODO [#C] Check if Including Dired Buffers in Autorevert-mode Slows Tramp
 *** [#D] Resolved v0.7 Fit and Finish Work [16/16]
@@ -278,6 +331,10 @@ CLOSED: [2024-04-08 Mon 16:14]
 CLOSED: [2024-04-10 Wed 17:16]
 **** DONE [#A] Fix Incorrect Refile Targets After Launch
 CLOSED: [2024-04-11 Thu 03:21]
+**** DONE [#B] Emacs fails to open .scratch file
+CLOSED: [2024-04-11 Thu 09:15]
+I don't like peristent scratch as it defeats the purpose and has failed several times so far.
+I should remove it.
 ** DOING Complete v0.7 Release Checklist [8/11]
 *** DOING 2 Week Fit and Finish (ends 2024.04.18)
 *** TODO Clean Launch from Archsetup
@@ -4090,7 +4147,6 @@ Captured On: [2024-04-05 Fri 15:19]
 *** TODO Investigate Using Popper for Window Management
 Demo: https://www.youtube.com/watch?v=E-xUNlZi3rI
 Repo: https://github.com/karthink/popper
-* Emacs Config Resolved / Completed
 * Emacs Config Notes
 ** 2023-11-03 Fri @ 18:28:36 -0500 Break Code Into Divisions
 CLOSED: [2023-11-03 Fri 18:28]
