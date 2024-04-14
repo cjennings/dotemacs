@@ -8,7 +8,7 @@
 (require 'battery)
 
 (defun env-laptop-p ()
-  "Return t if host is a laptop (has a battery), nil if not."
+  "Return t if host is a laptop (i.e., has a battery), nil if not."
   (when (and battery-status-function
 			 (not (string-match-p "N/A"
 								  (battery-format "%B"
@@ -35,6 +35,10 @@
 (defun env-windows-p ()
   "Return t if host system is Windows."
   (memq system-type '(cygwin windows-nt ms-dos)))
+
+(defun env-x-p ()
+  "Return t if host system is running the X Window System"
+  (string= (window-system) "x"))
 
 (defun env-terminal-p ()
   "Return t if running in a terminal."

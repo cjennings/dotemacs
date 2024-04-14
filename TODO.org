@@ -142,15 +142,7 @@ CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
 ** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/7]
 *** TODO [#B] Save All Attachments Working in Mu4e
-<<<<<<< HEAD
-*** TODO [#B] Test Emacs in a Terminal
-The number and complexity of bugs will tell me whether terminal Emacs is supported in this tag.
-=======
-**** 2024-04-14 Sun @ 00:04:30 -0500 Post on Mu4e Save All Attachments in a Given Directory
-#+BEGIN_QUOTE
-Save all attachments in a given directory
-Mu4e only offer to save attachments one by one. This function allow one to save all attachments to a given directory. I just copied the mu4e-view-save-attachments function and generalized it.
-
+https://etienne.depar.is/emacs.d/mu4e.html
 (defun ed/mu4e-view-save-all-attachments (&optional arg)
   "Save all attachments of a given message.
 
@@ -193,9 +185,6 @@ choose a specific directory where to save all the files."
                              file))))
         (mu4e-message "No attached files found")))))
 (define-key mu4e-view-mode-map "X" #'ed/mu4e-view-save-all-attachments)
-#+END_QUOTE
-[[https://etienne.depar.is/emacs.d/mu4e.html][Mu4e customization]]
-Captured On: [2024-04-13 Sat 04:54]
 *** TODO [#B] Get queued email working with this msmtp feature
 **** using sendmail
 #+BEGIN_QUOTE
@@ -237,7 +226,6 @@ Adding /usr/local/bin to your PATH can save you some keystrokes if you are doing
 #+END_QUOTE
 [[https://wiki.archlinux.org/title/msmtp#Using_msmtp_offline][msmtp - ArchWiki]]
 Captured On: [2024-04-13 Sat 09:35]
->>>>>>> develop
 *** TODO [#B] Neither Feebleline nor Moodline Displays on Archsetup Fresh Install
 *** TODO [#B] Move org-todo items into org-config use-package statement
 *** TODO [#B] Separate org-agenda items into use-package statement
