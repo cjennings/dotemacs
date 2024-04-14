@@ -105,7 +105,7 @@
 (defconst user-home-dir (getenv "HOME")
   "The user's home directory per the environment variable.")
 
-(defconst elpa-mirror-location "~/.elpa-mirrors/"
+(defconst elpa-mirror-location (concat user-emacs-directory ".elpa-mirrors/")
 "The path to the elpa mirror location.")
 
 (setq package-archives nil) ;; package-archives will be added below
