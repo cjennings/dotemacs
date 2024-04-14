@@ -2,6 +2,7 @@
 # script for  Emacs config testing
 # - clears out all but necessary init/config files
 # - removes native ad bytecode files.
+
 rm -rf ~/.emacs.d/.cache/
 rm -rf ~/.emacs.d/auto-save-list/
 rm -rf ~/.emacs.d/backups/
@@ -28,5 +29,7 @@ rm ~/.emacs.d/forge-database.sqlite
 rm ~/.emacs.d/recentf
 rm ~/.emacs.d/tramp-connection-history
 rm ~/sync/org/emacs-theme.persist
+rm -rf ~/.cache/org-persist/
+
 find ~/.emacs.d -name "*.eln" -type f -delete
 find ~/.emacs.d -name "*.elc" -type f -delete
