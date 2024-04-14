@@ -87,7 +87,7 @@ If FILENAME isn't writeable, return nil. If successful, return t."
   "Display MSG and load ui-theme fallback-theme-name.
 Used to handle errors with loading persisted theme."
   (message (concat msg (format " Loading fallback theme %s" fallback-theme-name)))
-  (load-theme fallback-theme-name t))
+  (load-theme (intern fallback-theme-name) t))
 
 (defun cj/load-theme-from-file ()
   "Apply the thame name contained in theme-file as the active UI theme.
