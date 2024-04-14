@@ -143,7 +143,8 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/6]
+** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/7]
+*** TODO [#B] Save All Attachments Working in Mu4e
 *** TODO [#B] Test Emacs in a Terminal
 The number and complexity of bugs will tell me whether terminal Emacs is supported in this tag.
 *** TODO [#B] Neither Feebleline nor Moodline Displays on Archsetup Fresh Install
@@ -351,20 +352,6 @@ I should remove it.
 *** DONE Merged Cleanly Into Main Branch
 *** DONE Main Branch Pushed to github and git.cjennings.net
 * Emacs Config v0.8
-** VERIFY Add Around Word or Region
-*** 2024-04-04 Thu @ 22:12:04 -0500 Scenario Testing Verification
-- tested both cases in prog mode with quotes and character
-- tested undo on all the above
-*** 2024-04-04 Thu @ 22:00:49 -0500 Functionality
-
-This method:
-- Prompts the user for a string
-- If the point is on a word and there is no region selected, insert the character before and after the word at point.
-- If a region is selected, insert the character before and after the region
-- If the point is not on a word and there is no region selected, send a helpful appropriate message.
-
-Left in test-code.el
-
 ** TODO Hugo Blogging Workflow
 *** 2024-04-04 Thu @ 16:44:40 -0500 Thoughts on Functionality
 The whole blogging workflow should happen in Emacs.
@@ -374,8 +361,6 @@ The whole blogging workflow should happen in Emacs.
 - Checking into main should update website
 - Checking into any other branch name should not update website
 ** TODO Mu4e Mail Improvements
-*** TODO Make Default Reply, Reply-all
-I'll need to reply-all more often than not. So, the lowercase 'r' for Mu4e should be 'reply-all' not 'reply'.
 *** TODO Mail Attachment Adding and Saving All
 **** 2024-04-04 Thu @ 21:32:28 -0500 Reminder to Tie Save All With Save
 In order to make the mu4e save attachment feel natural, save and save all shouldn't be so separate.
