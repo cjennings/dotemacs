@@ -50,7 +50,7 @@
 
   (setq org-highest-priority ?A)
   (setq org-lowest-priority ?D)
-  (setq org-default-priority ?C)
+  (setq org-default-priority ?D)
   (setq org-priority-faces '((?A . (:foreground "Cyan" :weight bold))
                              (?B . (:foreground "Yellow"))
                              (?C . (:foreground "Green"))

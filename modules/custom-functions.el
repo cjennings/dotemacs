@@ -51,7 +51,7 @@ Region indicated with BEG and END."
   "Mark all text in a paragraph then run cj/join-line-or-region."
   (interactive)
   (er/mark-paragraph) ;; from package expand region
-  (cj/join-line-or-region)
+  (cj/join-line-or-region (region-beginning)(region-end))
   (forward-line))
 
 ;; ---------------------- Count Words In Buffer Or Region ----------------------
@@ -116,7 +116,6 @@ If no region is selected, operate on the whole buffer."
 If a region is selected, delete trailing whitespace, then indent and untabify
 the region. If no region is selected, perform the same actions across the
 buffer."
-
   (interactive)
   (let (start-pos end-pos)
     (if (use-region-p)

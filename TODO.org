@@ -2,10 +2,7 @@
 === Emacs Config Tasks ===
 
 * Emacs Config Inbox
-** TODO Consider uses for shrface Emacs web browsing package
-[[https://github.com/chenyanming/shrface][chenyanming/shrface: Extend eww/nov with org-mode features, archive web pages to org files with shr.]]
-Captured On: [2024-04-11 Thu 15:57]
-* DOING Emacs Config v0.7 [2/4]
+* DOING Emacs Config v0.7 [2/5]
 ** DONE Supplement Existing Functionality [9/9]
 *** DONE [#B] Make sure eshell has same path as other shells
 CLOSED: [2024-03-27 Wed 14:02]
@@ -145,8 +142,102 @@ CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
 ** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/7]
 *** TODO [#B] Save All Attachments Working in Mu4e
+<<<<<<< HEAD
 *** TODO [#B] Test Emacs in a Terminal
 The number and complexity of bugs will tell me whether terminal Emacs is supported in this tag.
+=======
+**** 2024-04-14 Sun @ 00:04:30 -0500 Post on Mu4e Save All Attachments in a Given Directory
+#+BEGIN_QUOTE
+Save all attachments in a given directory
+Mu4e only offer to save attachments one by one. This function allow one to save all attachments to a given directory. I just copied the mu4e-view-save-attachments function and generalized it.
+
+(defun ed/mu4e-view-save-all-attachments (&optional arg)
+  "Save all attachments of a given message.
+
+If ARG is nil, all attachments will be saved in
+`mu4e-attachment-dir'. When non-nil, user will be prompted to
+choose a specific directory where to save all the files."
+  (interactive "P")
+  (when (and (eq major-mode 'mu4e-view-mode)
+             (derived-mode-p 'gnus-article-mode))
+    (let ((parts (mu4e--view-gather-mime-parts))
+          (handles '())
+          (files '())
+          (directory (if arg
+                         (read-directory-name "Save to directory: ")
+                       mu4e-attachment-dir)))
+      (dolist (part parts)
+        (let ((fname (or (cdr (assoc 'filename (assoc "attachment" (cdr part))))
+                         (cl-loop for item in part
+                                  for name = (and (listp item) (assoc-default 'name item))
+                                  thereis (and (stringp name) name)))))
+          (when fname
+            (push `(,fname . ,(cdr part)) handles)
+            (push fname files))))
+      (if files
+          (cl-loop for (f . h) in handles
+                   when (member f files)
+                   do (mm-save-part-to-file
+                       h (let ((file (expand-file-name f directory)))
+                           (if (file-exists-p file)
+                               (let (newname (count 1))
+                                 (while (and
+                                         (setq newname
+                                               (format "%s-%s%s"
+                                                       (file-name-sans-extension file)
+                                                       count
+                                                       (file-name-extension file t)))
+                                         (file-exists-p newname))
+                                   (cl-incf count))
+                                 newname)
+                             file))))
+        (mu4e-message "No attached files found")))))
+(define-key mu4e-view-mode-map "X" #'ed/mu4e-view-save-all-attachments)
+#+END_QUOTE
+[[https://etienne.depar.is/emacs.d/mu4e.html][Mu4e customization]]
+Captured On: [2024-04-13 Sat 04:54]
+*** TODO [#B] Get queued email working with this msmtp feature
+**** using sendmail
+#+BEGIN_QUOTE
+Queuing mails for sending it later
+Mu4e supports a very nice feature which is mail queueing from smtpmail emacs client. To enable it, it requires two easy steps:
+
+In ~/.emacs:
+
+(setq
+  smtpmail-queue-mail t
+  smtpmail-queue-dir "~/Mail/queue/cur")
+In your shell:
+
+$ mu mkdir ~/Mail/queue
+$ touch ~/Mail/queue/.noindex
+Then, mu4e will be aware of the queueing, in the home screen of mu4e, you will be able to switch from queuing to direct sending by pressing m and flushing the queue by pressing f.
+
+Note: there is a bug (not sure it’s really a bug). When sending a mail into the queue, if your mail contains special characters, you will be asked to send it raw or to add a header containing the encoding.
+#+END_QUOTE
+[[https://dataswamp.org/~solene/2018-05-22-mu4esmtp.html][Solene'% : Sending mail with mu4e]]
+Captured On: [2024-04-13 Sat 05:23]
+
+**** with msmtp
+on archwiki: https://wiki.archlinux.org/title/msmtp#Using_msmtp_offline (read the whole page anyway)
+also here: https://www.reddit.com/r/emacs/comments/q2gl5h/queuing_emails_and_sending_them_autmatically/
+
+#+BEGIN_QUOTE
+Using msmtp offline
+Although msmtp is great, it requires that you be online to use it. This is not ideal for people on laptops with intermittent connections to the Internet or dialup users. Several scripts have been written to remedy this fact, collectively called msmtpqueue.
+
+The scripts are installed under /usr/share/doc/msmtp/msmtpqueue. You might want to copy the scripts to a convenient location on your computer, (/usr/local/bin is a good choice).
+
+Finally, change your MUA to use msmtp-enqueue.sh instead of msmtp when sending e-mail. By default, queued messages will be stored in ~/.msmtpqueue. To change this location, change the QUEUEDIR=$HOME/.msmtpqueue line in the scripts (or delete the line, and export the QUEUEDIR variable in .bash_profile like so: export QUEUEDIR="$XDG_DATA_HOME/msmtpqueue").
+
+When you want to send any mail that you have created and queued up run:
+
+$ /usr/local/bin/msmtp-runqueue.sh
+Adding /usr/local/bin to your PATH can save you some keystrokes if you are doing it manually. The README file that comes with the scripts has some handy information, reading it is recommended.
+#+END_QUOTE
+[[https://wiki.archlinux.org/title/msmtp#Using_msmtp_offline][msmtp - ArchWiki]]
+Captured On: [2024-04-13 Sat 09:35]
+>>>>>>> develop
 *** TODO [#B] Neither Feebleline nor Moodline Displays on Archsetup Fresh Install
 *** TODO [#B] Move org-todo items into org-config use-package statement
 *** TODO [#B] Separate org-agenda items into use-package statement
@@ -411,6 +502,7 @@ Then, mark the file(s) in dired you would like to attach and press C-c RET C-a, 
 Note: on hitting "e", then C-c C-a, it currently saves all attachments to the home directory. There's likely some directory setting I can use to choose a directory first (creating it if necessary).
 
 https://www.djcbsoftware.nl/code/mu/mu4e/MSGV-Attachments-and-MIME_002dparts.html
+
 5.4 Attachments and MIME-parts
 E-mail messages can be though as a series of “MIME-parts”, which are sections of the message. The most prominent is the ’body’, that is the main message your are reading. Many e-mail messages also contains attachments, which MIME-parts that contain files10.
 
@@ -466,6 +558,8 @@ Captured On: [2024-04-05 Fri 13:49]
 Captured On: [2024-04-06 Sat 11:09]
 ** TODO Emacs Config v0.8 Bug Fixes
 *** TODO [#C] Check if Including Dired Buffers in Autorevert-mode Slows Tramp
+*** TODO [#B] Test Emacs in a Terminal
+The number and complexity of bugs will tell me whether terminal Emacs is supported in this tag.
 ** TODO Emacs Config v0.8 Release Checklist
 (add latest release checklist here)
 * Emacs Config v0.9
@@ -576,6 +670,45 @@ this would amount to:
 - [ ] 2 Weeks of Use and Bug Fixing
 - [ ] Mark Release as DONE and Create Tag on Repo
 * Emacs Config Backlog Categories
+** Emacs AI Backlog
+*** TODO GPT Discussion on package compilation and first run
+#+BEGIN_QUOTE
+is there a way to tell using emacs-lisp  whether Emacs has been launched for the first time (i.e., it's installed new packages)?
+
+There's no direct method to detect if Emacs has been launched for the first time using Emacs Lisp. However, you can use a workaround: create a sentinel file when you first launch Emacs, then check for the existence of this file when Emacs starts.
+
+Here is an example that writes a file =.firstrun= in the =user-emacs-directory= the first time Emacs is run:
+
+#+begin_src elisp
+(let ((sentinel (expand-file-name ".firstrun" user-emacs-directory)))
+  (if (file-exists-p sentinel)
+      (message "Not the first run of Emacs.")
+    (message "First run of Emacs.")
+    (with-temp-buffer (write-file sentinel))))
+#+end_src
+
+Then based on the message, you can make decisions (like installing new packages).Note that this only works if Emacs can write to =user-emacs-directory=, and it considers "first run" to be "first run since the sentinel file was created".
+
+You might want to put such code in your init file so it's run every time Emacs starts.
+
+***** Is there a way to tell using emacs-lisp whether packages are done compiling?
+
+Emacs does not offer a built-in functionality to directly detect when package compilation is complete. However, you can create a workaround where you use a hook that gets triggered when Emacs is idle, meaning that it's done with all immediate tasks (including potentially compiling packages).
+
+Here is an example how to use =idle-timer=:
+
+#+begin_src elisp
+(run-with-idle-timer
+ 5 ;; idle time in seconds
+ nil ;; repeat? (t or nil)
+ (lambda ()
+   ;; your code to be executed when Emacs is idle
+   (message "Emacs is now idle (finished compiling packages).")))
+#+end_src
+
+#+END_QUOTE
+[[][]]
+Captured On: [2024-04-08 Mon 12:29]
 ** Emacs Browser Config Backlog  [0/3]
 *** TODO Toggle Opening Links between External or Internal Browser Emacs-Wide
 **** 2023-07-29 @ 10:46:04 -0500 Code that seemed to work
@@ -632,6 +765,31 @@ Captured On: [2023-11-02 Thu 11:44]
 *** TODO Investigage shrface
 [[https://github.com/chenyanming/shrface][chenyanming/shrface: Extend eww/nov with org-mode features, archive web pages to org files with shr.]]
 Captured On: [2024-04-05 Fri 16:14]
+*** TODO Mu4e Open a Url in a Firefox Private Window
+#+BEGIN_QUOTE
+Open an URL in a Firefox private window
+Sometime, I want to open an external link in a private window of Firefox. I will reuse here my function ed/cleanup-url
+
+(defun ed/mu4e-view-go-to-private-url (&optional multi)
+  "Offer to go to url(s) in a private window of Firefox.
+
+If MULTI (prefix-argument) is nil, go to a single one, otherwise,
+offer to go to a range of urls."
+  (interactive "P")
+  (mu4e~view-handle-urls
+   "URL to visit" multi
+   (lambda (url)
+     (start-process
+      "private-firefox" nil
+      "firefox" "--private-window" (ed/cleanup-url url)))))
+
+(define-key mu4e-view-mode-map "G" #'ed/mu4e-view-go-to-private-url)
+#+END_QUOTE
+[[https://etienne.depar.is/emacs.d/mu4e.html][Mu4e customization]]
+Captured On: [2024-04-13 Sat 04:55]
+*** TODO Consider uses for shrface Emacs web browsing package
+[[https://github.com/chenyanming/shrface][chenyanming/shrface: Extend eww/nov with org-mode features, archive web pages to org files with shr.]]
+Captured On: [2024-04-11 Thu 15:57]
 ** Emacs Calibre / Epub Backlog  [0/3]
 *** TODO Investigate Visual Fill Column for Ebooks
 [[https://melpa.org/#/visual-fill-column][visual-fill-column - MELPA]]
@@ -875,6 +1033,96 @@ This function requires GNU ls from coreutils installed."
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 15:15]
+*** Use Dired as the Default Desktop File Manager #2
+#+BEGIN_QUOTE
+This is how to make emacs as default file manager in ubuntu.
+
+First we have to write a script which will act as our file manager.
+
+#!/usr/bin/env python
+import os
+import sys
+
+
+def main():
+    if len(sys.argv) > 1:
+        dirname =  sys.argv[1]
+    else:
+        dirname = '~'
+    os.system('emacs --eval \'(dired "{}")\'%'.format(dirname))
+    # you can use emacsclient if you are running emacs server
+
+if __name__ == "__main__":
+    main()
+Save this as emacsfm in /usr/bin/. Now in terminal instead of using nautilus or nautilus /foo/bar, we can use emacsfm or emacsfm /foo/bar.
+
+Now we need to set this as default file manager. Install exo-utils using
+
+sudo apt-get install exo-utils
+and run it
+
+exo-preferred-applications
+It opens a new window. Go to Utilities -> File manager -> Other and enter /usr/bin/emacsfm "%s" in it.
+
+You can goto chrome downloads and if click show in folder it will open emacs dired :-)
+#+END_QUOTE
+[[https://emacs.stackexchange.com/questions/13927/how-to-set-emacs-as-the-default-file-manager][dired - How to set emacs as the default file manager? - Emacs Stack Exchange]]
+Captured On: [2024-04-12 Fri 10:53]
+*** Use Dired as the Default Desktop File Manager
+#+BEGIN_QUOTE
+Dependent on your desktop environment the method to set a default application may differ. That said, many desktop environments respect the associations in ~/.local/share/applications/mimeapps.list, where you can set up an association for the application/x-directory and/or inode/directory types.
+
+My mimeapps.list looks like this now:
+
+[Default Applications]
+application/x-directory=emacs-dired.desktop
+inode/directory=emacs-dired.desktop
+In the same directory I have a file called emacs-dired.desktop with the following contents:
+
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Type=Application
+NoDisplay=true
+Exec=emacsclient --eval '(dired "%f")'
+Name=Dired
+Comment=Emacs Dired
+When my long-lived instance of Emacs runs a server (M-x server-start) and I click on, say, the folder icon in the list of Downloads in Icecat a new dired buffer is opened.
+
+This actually works for me now. Thanks for asking the question --- otherwise I would not have set this up.
+#+END_QUOTE
+[[https://emacs.stackexchange.com/questions/13927/how-to-set-emacs-as-the-default-file-manager][dired - How to set emacs as the default file manager? - Emacs Stack Exchange]]
+Captured On: [2024-04-12 Fri 10:51]
+*** TODO Read Good Reddit Thread on Dired
+
+Figure out how to do 2 pane and different layouts
+
+[[https://www.reddit.com/r/emacs/comments/je9oha/do_you_use_emacs_as_a_file_manager/][(1) Do you use Emacs as a file manager? : emacs]]
+Captured On: [2024-04-12 Fri 11:46]
+*** TODO Read Through Dired as Default File Manager and Implement Tips
+[[https://truongtx.me/2013/04/24/dired-as-default-file-manager-1-introduction][Dired as Default File Manager - Introduction - TruongTX Blog]]
+Captured On: [2024-04-12 Fri 10:56]
+*** Recent History in Dired
+#+BEGIN_QUOTE
+(defun my-recent-directory (&optional n)
+  "Goto recent directories.
+If N is not nil, only list directories in current project."
+  (interactive "P")
+  (unless recentf-mode (recentf-mode 1))
+  (let* ((cands (delete-dups
+                 (append my-dired-directory-history
+                         (mapcar 'file-name-directory recentf-list)
+                         ;; fasd history
+                         (and (executable-find "fasd")
+                              (nonempty-lines (shell-command-to-string "fasd -ld"))))))
+         (root-dir (if (ffip-project-root) (file-truename (ffip-project-root)))))
+    (when (and n root-dir)
+      (setq cands (delq nil (mapcar (lambda (f) (path-in-directory-p f root-dir)) cands))))
+    (dired (completing-read "Directories: " cands))))
+
+#+END_QUOTE
+[[https://github.com/redguardtoo/emacs.d/blob/02a5680d082375e6ef4c7c93bac2e19d2b2e66a8/lisp/init-ivy.el#L149][emacs.d/lisp/init-ivy.el at 02a5680d082375e6ef4c7c93bac2e19d2b2e66a8 · redguardtoo/emacs.d]]
+Captured On: [2024-04-12 Fri 10:55]
 ** Emacs Ediff Backlog  [0/2]
 *** TODO Improve Ediff Configuration
 #+BEGIN_QUOTE
@@ -1031,6 +1279,7 @@ Captured On: [2023-10-21 Sat 08:47]
 *** TODO Web-clip an Elfeed Entry Via a Single Keybinding
 also consider an immediate refile
 also consider moving the contents to an org-roam entry, asking for the title.
+*** TODO Elfeed doesn't appear to update properly. Needs testing.
 ** Emacs ERC Backlog [0/1]
 *** TODO Fix Gist Creation on Paste > 5 Lines in ERC
 ** Emacs Eshell / Vterm / EAT Backlog  [0/11]
@@ -2041,6 +2290,13 @@ Sample Config from Damien Cassou's Emacs Config
 #+END_QUOTE
 [[https://raw.githubusercontent.com/DamienCassou/emacs.d/master/init.el][]]
 Captured On: [2024-04-06 Sat 10:54]
+*** TODO [#D] Google-this Warning Issues to Fix
+https://github.com/Malabarba/emacs-google-this/issues/31
+Warning (comp): google-this.el:105:1: Warning: custom-declare-variable `google-this-suspend-after-search' docstring wider than 80 characters Disable showing Disable logging
+Warning (comp): google-this.el:137:8: Warning: docstring wider than 80 characters Disable showing Disable logging
+Warning (comp): google-this.el:472:11: Warning: Use keywords rather than deprecated positional arguments to `define-minor-mode' Disable showing Disable logging
+Warning (comp): google-this.el:133:43: Warning: the function ‘google-maps’ is not known to be defined. Disable showing Disable logging
+Warning (comp): google-this.el:131:43: Warning: the function ‘google-this-maps’ is not known to be defined. Disable showing Disable logging
 ** Emacs Help Config Backlog [0/1]
 *** TODO Remap keys from regular help to these instead of overwriting them in help-config
 ** Emacs Host Environment Backlog [0/1]
@@ -2568,6 +2824,107 @@ Captured On: [2024-04-05 Fri 15:03]
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 14:35]
+*** TODO Interesting Package Mu4easy Setup Mu4e
+[[https://github.com/danielfleischer/mu4easy][danielfleischer/mu4easy: mu4e + mbsync configuration for multiple email accounts.]]
+Captured On: [2024-04-13 Sat 05:32]
+*** Reference: Sending Email Via Smtp Through Ssh (With Mu4e)
+#+BEGIN_QUOTE
+SMTP through SSH
+One setup I like and I use is to relay the mails directly to the outgoing SMTP server, this requires no authentication except a SSH access to the remote server.
+
+It requires the following emacs configuration in ~/.emacs:
+
+(setq
+  message-send-mail-function 'smtpmail-send-it
+  smtpmail-smtp-server "localhost"
+  smtpmail-smtp-service 2525)
+The configuration tells emacs to connect to the SMTP server on localhost port 2525 to send the mails. Of course, no mail daemon runs on this port on the local machine, it requires the following ssh command to be able to send mails.
+
+$ ssh -N -L 127.0.0.1:2525:127.0.0.1:25 remoteserver
+This will bind the port 127.0.0.1:25 from the remote server point of view on your address 127.0.0.1:2525 from your computer point of view.
+
+Your mail server should accept deliveries from local users of course.
+#+END_QUOTE
+[[https://dataswamp.org/~solene/2018-05-22-mu4esmtp.html][Solene'% : Sending mail with mu4e]]
+Captured On: [2024-04-13 Sat 05:25]
+*** TODO How to Use Email Lists in Mu4e
+[[https://pragmaticemacs.wordpress.com/2017/04/24/using-email-address-lists-in-mu4e/][Using email address lists in mu4e | Pragmatic Emacs]]
+Captured On: [2024-04-13 Sat 05:21]
+*** TODO Good Reddit Post on Mu4e Tips
+[[https://www.reddit.com/r/emacs/comments/8q84dl/tip_how_to_easily_manage_your_emails_with_mu4e/][(2) TIP: How to easily manage your emails with mu4e : emacs]]
+Captured On: [2024-04-13 Sat 05:15]
+*** TODO Review this mu4e configuration
+[[https://github.com/iqbalansari/dotEmacs/blob/master/config/mail.org][dotEmacs/config/mail.org at master · iqbalansari/dotEmacs]]
+Captured On: [2024-04-13 Sat 05:06]
+*** TODO Setup Emacs as a Mail Client
+#+BEGIN_QUOTE
+he following function setup Emacs as a possible email client.
+
+(defun ed/setup-emacs-mailto-target-desktop-file ()
+  "Write xdg desktop file allowing emacs to be used as mailto target."
+  (interactive)
+  (with-temp-file
+      (expand-file-name "~/.local/share/applications/emacs-mail.desktop")
+    (insert "[Desktop Entry]
+Name=Emacs (Mail with mu4e)
+Comment=Compose a new message with Mu4e in GNU Emacs
+MimeType=x-scheme-handler/mailto;
+Exec=emacs -l /usr/share/emacs/site-lisp/mu4e/mu4e.elc -f ed/compose-new-mail %u
+Icon=emacs
+Type=Application
+NoDisplay=true
+Terminal=false
+Categories=Network;Email;
+"))
+  (with-temp-buffer
+    (call-process "update-desktop-database" nil (current-buffer) nil
+                  (expand-file-name "~/.local/share/applications/"))
+    (buffer-string)))
+
+#+END_QUOTE
+[[https://etienne.depar.is/emacs.d/mu4e.html][Mu4e customization]]
+Captured On: [2024-04-13 Sat 04:57]
+*** TODO Mu4e and Gpg Functions
+#+BEGIN_QUOTE
+GPG related functions
+All the following functions interact with an email headers to expose or find out more about cryptography settings in use.
+
+(defun ed/get-openpgp-header (msg)
+  (let ((path (or (mu4e-message-field msg :path) "")))
+    (if (or (equal path "")
+            (not (file-readable-p path)))
+        "Mail file is not accessible"
+      (ed/get-mail-header "openpgp" path))))
+
+(defcustom ed/gpg-pub-keys '()
+  "List of GnuPG public keys used to sign or encrypt my email."
+  :type '(alist :key-type (string :tag "mu4e context name")
+                :value-type (string :tag "gpg mail header content"))
+  :group 'mu4e-crypto)
+(defun ed/insert-gpg-headers (sign-or-encrypt)
+  (save-excursion
+    (goto-char (point-min))
+    (let ((pgp-info
+           (cdr (assoc (mu4e-context-name (mu4e-context-current))
+                       ed/gpg-pub-keys))))
+      (when pgp-info
+        (insert "Openpgp: " pgp-info)
+        (if (equal sign-or-encrypt "encrypt")
+            (mml-secure-message-sign-encrypt)
+          (mml-secure-message-sign))))))
+
+(defun ed/sign-this-message ()
+  "Insert mml gpg command and gnupg header"
+  (interactive)
+  (ed/insert-gpg-headers "sign"))
+
+(defun ed/encrypt-this-message ()
+  "Insert mml gpg command and gnupg header"
+  (interactive)
+  (ed/insert-gpg-headers "encrypt"))
+#+END_QUOTE
+[[https://etienne.depar.is/emacs.d/mu4e.html][Mu4e customization]]
+Captured On: [2024-04-13 Sat 04:56]
 ** Emacs Markdown Config Backlog [0/1]
 *** TODO Finish Markdown Preview Functionality
 ** Emacs Modeline Backlog [0/3]
@@ -2881,6 +3238,12 @@ Captured On: [2023-11-01 Wed 11:38]
 *** TODO Consider Getting an Emacs-buddy Per This Site
 [[https://github.com/ag91/emacs-buddy][GitHub - ag91/emacs-buddy: Emacs Buddy initiative to help new Emacs users with their struggles]]
 Captured On: [2023-11-10 Fri 17:15]
+*** TODO Org Web Tools
+and a use for the package
+https://blog.nawaz.org/posts/2023/Mar/solving-a-scraping-problem-with-emacs-and-org-mode/
+
+[[https://github.com/alphapapa/org-web-tools][alphapapa/org-web-tools: View, capture, and archive Web pages in Org-mode]]
+Captured On: [2024-04-11 Thu 18:02]
 ** Emacs Org Refile Backlog [0/2]
 *** TODO Consider Using Hydras for Refile Targets
 [[https://mollermara.com/blog/Fast-refiling-in-org-mode-with-hydras/][Fast refiling in org-mode with hydras | Josh Moller-Mara]]

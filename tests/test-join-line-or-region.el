@@ -1,12 +1,12 @@
-;;; test-join-line-or-region.el --- Test Join Line/Region -*- lexical-binding: t; -*-
+;;; test-join-line-or-region.el --- Test cj/join-line-or-region -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the join-line-or-region function
+;; Tests for the cj/join-line-or-region function in custom-functions.el
 
-;;; Code:x
+;;; Code:
 
-;; (require 'custom-functions)
-
+(add-to-list 'load-path (concat user-emacs-directory "modules"))
+(require 'custom-functions)
 (require 'ert)
 
 (defun cj/join-line-or-region (beg end)
