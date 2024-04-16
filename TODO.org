@@ -1,22 +1,7 @@
-
+g
 === Emacs Config Tasks ===
 
 * Emacs Config Inbox
-** TODO Review these Web Page tools for Org-mode
-[[https://github.com/alphapapa/org-web-tools][alphapapa/org-web-tools: View, capture, and archive Web pages in Org-mode]]
-Captured On: [2024-04-15 Mon 22:55]
-** TODO Review Zzamboni's Emacs Config
-[[https://zzamboni.org/post/my-emacs-configuration-with-commentary/][zzamboni.org | My Emacs Configuration, With Commentary]]
-Captured On: [2024-04-15 Mon 22:54]
-** TODO Review Howard Abrams Dotfiles
-[[https://github.com/howardabrams/dot-files/blob/master/emacs-org.org][dot-files/emacs-org.org at master · howardabrams/dot-files]]
-Captured On: [2024-04-15 Mon 22:45]
-** TODO Investigate Org Mode's Web Archiver
-[[https://github.com/charlesroelli/org-board][charlesroelli/org-board: Org mode's web archiver.]]
-Captured On: [2024-04-15 Mon 22:33]
-** TODO read throguh capturing content for emacs
-[[https://howardism.org/Technical/Emacs/capturing-content.html][Capturing Content for Emacs]]
-Captured On: [2024-04-15 Mon 22:27]
 * DOING Emacs Config v0.7 [2/5]
 ** DONE Supplement Existing Functionality [9/9]
 *** DONE [#B] Make sure eshell has same path as other shells
@@ -155,7 +140,7 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/6]
+** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [1/7]
 *** TODO [#B] Save All Attachments Working in Mu4e
 https://etienne.depar.is/emacs.d/mu4e.html
 (defun ed/mu4e-view-save-all-attachments (&optional arg)
@@ -241,12 +226,26 @@ Adding /usr/local/bin to your PATH can save you some keystrokes if you are doing
 #+END_QUOTE
 [[https://wiki.archlinux.org/title/msmtp#Using_msmtp_offline][msmtp - ArchWiki]]
 Captured On: [2024-04-13 Sat 09:35]
-*** TODO [#B] Neither Feebleline nor Moodline Displays on Archsetup Fresh Install
 *** TODO [#B] Move org-todo items into org-config use-package statement
 *** TODO [#B] Separate org-agenda items into use-package statement
 add after: org-roam for the function references
-*** TODO [#C] Maybe Articles Should Be Saved Under todo.org TO READ Heading
-*** TODO [#C] Remove all unnecessarily hardcoded filenames and paths
+*** TODO [#C] Articles Should Be Saved Under todo.org TO READ Heading
+**** 2024-04-16 Tue @ 10:28:17 -0500 Notes
+This involves changing webclipper. Webclipper as it is now doesn't return the content, it actually yanks it into the article-file.
+What I want is something to return the content in the way that a template would expect it. This way, I can create templates that would work with org-roam as well, such as creating a separate org-roam node just by clicking an org-protocol bookmarklet.
+
+This might be too large to fit as a bug fix for v0.7. I began doing some research (below) yesterday to help me size the work.
+**** 2024-04-16 Tue @ 10:27:25 -0500 Research
+***** TODO read through capturing content for emacs
+[[https://howardism.org/Technical/Emacs/capturing-content.html][Capturing Content for Emacs]]
+Captured On: [2024-04-15 Mon 22:27]
+***** TODO Investigate Org Mode's Web Archiver
+[[https://github.com/charlesroelli/org-board][charlesroelli/org-board: Org mode's web archiver.]]
+Captured On: [2024-04-15 Mon 22:33]
+***** TODO Review these Web Page tools for Org-mode
+[[https://github.com/alphapapa/org-web-tools][alphapapa/org-web-tools: View, capture, and archive Web pages in Org-mode]]
+Captured On: [2024-04-15 Mon 22:55]
+*** DOING [#C] Remove all unnecessarily hardcoded filenames and paths
 **** DONE Fix hardcoded in org-roam
 
 (defconst roam-dir        (concat sync-dir "roam/")
@@ -480,6 +479,15 @@ CLOSED: [2024-04-11 Thu 03:21]
 CLOSED: [2024-04-11 Thu 09:15]
 I don't like peristent scratch as it defeats the purpose and has failed several times so far.
 I should remove it.
+**** CANCELLED [#B] Neither Feebleline nor Moodline Displays on Archsetup Fresh Install
+Looks like this has been resolved. I see moodline appearing after an archlinux install.
+CLOSED: [2024-04-16 Tue 10:18]
+**** DONE [#B] Get alerts working in Emacs
+CLOSED: [2024-04-16 Tue 11:46]
+***** 2024-04-16 Tue @ 10:31:07 -0500 Origin
+It's a bit crazy that I spend time each morning organizing and scheduling my day, then when the time comes, no notification happens.
+This is a bug fix, only insofar as it's fixing essentially broken in the Emacs workflow, but it's additional functionality.
+I'm hoping this is straightforward and I can spend a day on it to get this working, then move on to other bug fixes.
 ** DOING Complete v0.7 Release Checklist [8/11]
 *** DOING 2 Week Fit and Finish (ends 2024.04.18)
 *** TODO Clean Launch from Archsetup
@@ -4594,33 +4602,39 @@ updated Sunday, April 07, 2024 at 12:44:55 PM CDT
 *** TODO 2 Week Scenario Testing / Bug Fixing
 *** TODO Mark Release as DONE and version Create Tag on Repositories
 * Emacs Config Examples
+** Bodhizar Batsov's Emacs Configuration
+[[https://github.com/bbatsov/emacs.d][bbatsov/emacs.d: My personal Emacs configuration]]
+Captured On: [2023-11-04 Sat 23:30]
+** Brett Lempereur's Emacs Config
+[[https://github.com/brett-lempereur/.emacs.d][brett-lempereur/.emacs.d: Portable Emacs configuration]]
+Captured On: [2023-11-04 Sat 19:24]
 ** Damien Cassou's Emacs Config
 https://github.com/DamienCassou/emacs.d
 https://raw.githubusercontent.com/DamienCassou/emacs.d/master/init.el
+** Howard Abrams Dotfiles
+[[https://github.com/howardabrams/dot-files/blob/master/emacs-org.org][dot-files/emacs-org.org at master · howardabrams/dot-files]]
+Captured On: [2024-04-15 Mon 22:45]
 ** Jon Wiegley's Emacs Config
 [[https://github.com/jwiegley/dot-emacs/blob/master/init.org][dot-emacs/init.org at master · jwiegley/dot-emacs]]
 Captured On: [2023-11-01 Wed 12:01]
+** Protesilaos Stavrou's Emacs Config
+[[https://git.sr.ht/~protesilaos/dotfiles/tree/master/item/emacs/.emacs.d][~protesilaos/dotfiles: emacs/.emacs.d/ - sourcehut git]]
+Captured On: [2023-11-04 Sat 18:51]
+** Rememberyou's Emacs Config
+[[https://github.com/rememberYou/.emacs.d/blob/master/config.org][.emacs.d/config.org at master · rememberYou/.emacs.d]]
+Captured On: [2023-11-18 Sat 07:07]
 ** Snosov1's Emacs Config
 [[https://github.com/snosov1/dot-emacs][snosov1/dot-emacs: Emacs configuration]]
 Captured On: [2023-07-16 Sun 09:21]
 ** Steve Purcell's Emacs Config
 [[https://github.com/purcell/emacs.d][purcell/emacs.d: An Emacs configuration bundle with batteries included]]
 Captured On: [2023-11-04 Sat 18:48]
-** Protesilaos Stavrou's Emacs Config
-[[https://git.sr.ht/~protesilaos/dotfiles/tree/master/item/emacs/.emacs.d][~protesilaos/dotfiles: emacs/.emacs.d/ - sourcehut git]]
-Captured On: [2023-11-04 Sat 18:51]
-** Brett Lempereur's Emacs Config
-[[https://github.com/brett-lempereur/.emacs.d][brett-lempereur/.emacs.d: Portable Emacs configuration]]
-Captured On: [2023-11-04 Sat 19:24]
-** Bodhizar Batsov's Emacs Configuration
-[[https://github.com/bbatsov/emacs.d][bbatsov/emacs.d: My personal Emacs configuration]]
-Captured On: [2023-11-04 Sat 23:30]
-** Rememberyou's Emacs Config
-[[https://github.com/rememberYou/.emacs.d/blob/master/config.org][.emacs.d/config.org at master · rememberYou/.emacs.d]]
-Captured On: [2023-11-18 Sat 07:07]
 ** ThoughtBot's dotfiles
 [[https://github.com/thoughtbot/dotfiles][thoughtbot/dotfiles: A set of vim, zsh, git, and tmux configuration files.]]
 Captured On: [2024-03-14 Thu 04:36]
+** Zzamboni's Emacs Config
+[[https://zzamboni.org/post/my-emacs-configuration-with-commentary/][zzamboni.org | My Emacs Configuration, With Commentary]]
+Captured On: [2024-04-15 Mon 22:54]
 * Emacs FAQ/Reference
 ** Testing REST API with Emacs
 [[https://emacs.stackexchange.com/questions/2427/how-to-test-rest-api-with-emacs][package - How to test REST API with Emacs? - Emacs Stack Exchange]]
