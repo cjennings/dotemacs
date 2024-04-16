@@ -250,7 +250,29 @@ files that have project in their filetag."
             (org-agenda "a" "t"))
         (message (concat "Your org agenda request based on '" (buffer-name (current-buffer))
                          "' failed because it's not an org buffer."))))
-    (global-set-key (kbd "M-<f8>")    #'cj/todo-list-from-this-buffer)
+	(global-set-key (kbd "M-<f8>")    #'cj/todo-list-from-this-buffer)
+
+	;; --------------------------- Notifications / Alerts --------------------------
+	;; send libnotify notifications about agenda items
+
+	(use-package alert
+	  :defer .5
+	  :config
+	  (setq alert-fade-time 10) ;; secs to vanish alert
+	  (setq alert-default-style 'libnotify)) ;; work with dunst
+
+	(use-package org-alert
+	  :defer .5
+	  :bind
+	  ("C-c A" . org-alert-check)
+	  :config
+	  (setq alert-default-style 'libnotify) ;; work with dunst
+	  (setq org-alert-interval 300) ;; seconds checks agenda is checked (300 = 5 mins)
+	  (setq org-alert-notify-cutoff 5) ;; minutes before a deadline to send alert
+	  (setq org-alert-notify-after-event-cutoff 10) ;; mins post deadline to stop alerts
+	  (setq org-alert-notification-title "Reminder")
+	  (org-alert-enable))
+
 
     ) ;; end with-eval-after-load 'org-roam-config
   ) ;; end with-eval-after-load 'org-roam
