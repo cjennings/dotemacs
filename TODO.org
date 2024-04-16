@@ -2,6 +2,21 @@
 === Emacs Config Tasks ===
 
 * Emacs Config Inbox
+** TODO Review these Web Page tools for Org-mode
+[[https://github.com/alphapapa/org-web-tools][alphapapa/org-web-tools: View, capture, and archive Web pages in Org-mode]]
+Captured On: [2024-04-15 Mon 22:55]
+** TODO Review Zzamboni's Emacs Config
+[[https://zzamboni.org/post/my-emacs-configuration-with-commentary/][zzamboni.org | My Emacs Configuration, With Commentary]]
+Captured On: [2024-04-15 Mon 22:54]
+** TODO Review Howard Abrams Dotfiles
+[[https://github.com/howardabrams/dot-files/blob/master/emacs-org.org][dot-files/emacs-org.org at master · howardabrams/dot-files]]
+Captured On: [2024-04-15 Mon 22:45]
+** TODO Investigate Org Mode's Web Archiver
+[[https://github.com/charlesroelli/org-board][charlesroelli/org-board: Org mode's web archiver.]]
+Captured On: [2024-04-15 Mon 22:33]
+** TODO read throguh capturing content for emacs
+[[https://howardism.org/Technical/Emacs/capturing-content.html][Capturing Content for Emacs]]
+Captured On: [2024-04-15 Mon 22:27]
 * DOING Emacs Config v0.7 [2/5]
 ** DONE Supplement Existing Functionality [9/9]
 *** DONE [#B] Make sure eshell has same path as other shells
@@ -140,7 +155,7 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/7]
+** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [0/6]
 *** TODO [#B] Save All Attachments Working in Mu4e
 https://etienne.depar.is/emacs.d/mu4e.html
 (defun ed/mu4e-view-save-all-attachments (&optional arg)
@@ -230,9 +245,56 @@ Captured On: [2024-04-13 Sat 09:35]
 *** TODO [#B] Move org-todo items into org-config use-package statement
 *** TODO [#B] Separate org-agenda items into use-package statement
 add after: org-roam for the function references
+*** TODO [#C] Maybe Articles Should Be Saved Under todo.org TO READ Heading
 *** TODO [#C] Remove all unnecessarily hardcoded filenames and paths
-ripgrep on "~/ to find the following.
+**** DONE Fix hardcoded in org-roam
 
+(defconst roam-dir        (concat sync-dir "roam/")
+  "The location of org-roam files.")
+
+./modules/org-roam-config.el:16:  (org-roam-directory "~/sync/org/roam/")
+./modules/org-roam-config.el:27:     ("v" "v2mom" plain (file "~/sync/org/roam/templates/v2mom.org")
+./modules/org-roam-config.el:30:     ("r" "recipe" plain  (file "~/sync/org/roam/templates/recipe.org")
+./modules/org-roam-config.el:33:     ("p" "project" plain  (file "~/sync/org/roam/templates/project.org")
+./modules/org-roam-config.el:36:     ("t" "topic" plain  (file "~/sync/org/roam/templates/topic.org")
+./modules/org-roam-config.el:116:  (cj/org-roam-find-node "Topic" "t" "~/sync/org/roam/templates/topic.org"))
+./modules/org-roam-config.el:121:  (cj/org-roam-find-node "Recipe" "r" "~/sync/org/roam/templates/recipe.org"))
+./modules/org-roam-config.el:126:  (cj/org-roam-find-node "Project" "p" "~/sync/org/roam/templates/project.org"))
+./modules/org-roam-config.el:146:								   :if-new (file+head+olp "~/sync/org/roam/inbox.org"
+**** TODO Create constant for ~/.authinfo.gpg
+./modules/ai-config.el:52:  (setq auth-sources '((:source "~/.authinfo.gpg")))
+./modules/epa-config.el:15:  (setq auth-sources '("~/.authinfo.gpg")
+**** TODO Use constants for search path in prog-general
+./modules/prog-general.el:84:  (projectile-project-search-path '("~/code"
+./modules/prog-general.el:85:                                    "~/projects"))
+**** TODO Make initial go menu locations the constants
+./modules/dirvish-config.el:55:   '(("h" "~/"                                 "home")
+./modules/dirvish-config.el:58:     ("co" "~/code"                            "code")
+./modules/dirvish-config.el:59:     ("df" "~/.dotfiles/"                      "dotfiles")
+./modules/dirvish-config.el:60:     ("dn" "~/downloads/"                      "downloads")
+./modules/dirvish-config.el:61:     ("dr" "~/sync/org/drill/"                 "org drill files")
+./modules/dirvish-config.el:62:     ("dt" "~/downloads/torrents/complete/"    "torrents")
+./modules/dirvish-config.el:63:     ("dx" "~/documents/"                      "documents")
+./modules/dirvish-config.el:64:     ("gc" "~/code/golangcourse"               "golang course")
+./modules/dirvish-config.el:65:     ("lt" "~/.local/share/Trash"              "trash")
+./modules/dirvish-config.el:66:     ("mp" "~/sync/playlists/"                 "playlists")
+./modules/dirvish-config.el:67:     ("mv" "~/magic/video/"                    "magic/video")
+./modules/dirvish-config.el:68:     ("mx" "~/music/"                          "music")
+./modules/dirvish-config.el:69:     ("my" "~/magic/youtube/"                  "magic/youtube")
+./modules/dirvish-config.el:70:     ("or" "~/sync/org/"                       "sync")
+./modules/dirvish-config.el:71:     ("pl" "~/sync/playlists"                  "playlists")
+./modules/dirvish-config.el:72:     ("pr" "~/projects/"                       "projects")
+./modules/dirvish-config.el:73:     ("ps" "~/pictures/screenshots/"           "screenshots")
+./modules/dirvish-config.el:74:     ("pw" "~/pictures/wallpaper"              "wallpaper")
+./modules/dirvish-config.el:75:     ("px" "~/pictures/"                       "pictures")
+./modules/dirvish-config.el:76:     ("tg" "~/sync/org/text.games"             "text games")
+./modules/dirvish-config.el:77:     ("vx" "~/videos/"                         "videos")))
+**** TODO mu4e mail directory constant
+./modules/mail-config.el:43:  (setq mu4e-root-maildir "~/.mail")                                        ;; root directory for all email accounts
+./modules/mail-config.el:207:;; (setq smtpmail-queue-dir  "~/.mail/queued-mail/"))
+**** TODO create videos constant
+./modules/elfeed-config.el:129:  (let ((default-directory "~/videos"))
+**** full ripgrep results searching for "~/"
 ./modules/org-roam-config.el:16:  (org-roam-directory "~/sync/org/roam/")
 ./modules/org-roam-config.el:27:     ("v" "v2mom" plain (file "~/sync/org/roam/templates/v2mom.org")
 ./modules/org-roam-config.el:30:     ("r" "recipe" plain  (file "~/sync/org/roam/templates/recipe.org")
@@ -279,8 +341,8 @@ ripgrep on "~/ to find the following.
 ./modules/calibredb-epub-config.el:27:  (setq calibredb-root-dir "~/sync/books/")
 ./modules/calibredb-epub-config.el:28:  (setq calibredb-library-alist '(("~/sync/books/")))
 ./modules/elfeed-config.el:129:  (let ((default-directory "~/videos"))
-*** TODO [#C] Theme Doesn't Fallback on Wombat Correctly if No Theme Persist File
 *** [#D] Resolved v0.7 Fit and Finish Work [16/16]
+**** DONE [#C] Theme Doesn't Fallback on Wombat Correctly if No Theme Persist File
 **** DONE [#A] Remove Keys
 CLOSED: [2024-04-07 Sun 13:46]
 ***** Remove OpenAPI Key From ai-config.el

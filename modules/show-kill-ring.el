@@ -28,12 +28,12 @@ This makes it easy to figure out which prefix to pass to yank."
     (and buf (kill-buffer buf)))
 
   (let* ((buf (get-buffer-create "*Kill Ring*"))
-		 (temp kill-ring)
-		 (count 1)
-		 (bar (make-string 32 ?=))
-		 (bar2 (concat " " bar))
-		 (item "  Item ")
-		 (yptr nil) (ynum 1))
+         (temp kill-ring)
+         (count 1)
+         (bar (make-string 32 ?=))
+         (bar2 (concat " " bar))
+         (item "  Item ")
+         (yptr nil) (ynum 1))
     (set-buffer buf)
     (erase-buffer)
 
@@ -42,12 +42,12 @@ This makes it easy to figure out which prefix to pass to yank."
     ;; show each of the items in the kill ring, in order
     (while temp
       ;; insert our little divider
-	  (insert (concat "\n" bar item (prin1-to-string count) "  "
-					  (if (< count 10) bar2 bar) "\n"))
+      (insert (concat "\n" bar item (prin1-to-string count) "  "
+                      (if (< count 10) bar2 bar) "\n"))
 
       ;; if this is the yank pointer target, grab it
       (when (equal temp kill-ring-yank-pointer)
-		(setq yptr (car temp) ynum count))
+        (setq yptr (car temp) ynum count))
 
       ;; insert the item and loop
       (show-kill-insert-item (car temp))
@@ -55,16 +55,20 @@ This makes it easy to figure out which prefix to pass to yank."
       (setq temp (cdr temp)))
 
     ;; show info about yank item
-	(show-kill-insert-footer yptr ynum)
+    (show-kill-insert-footer yptr ynum)
 
-	(use-local-map (make-sparse-keymap))
-	(local-set-key "q" 'show-kill-ring-exit)
+    (use-local-map (make-sparse-keymap))
+    (local-set-key "q" 'show-kill-ring-exit)
 
     ;; show it
-	(goto-char (point-min))
-	(setq buffer-read-only t)
-	(set-buffer-modified-p nil)
-	(pop-to-buffer buf)))
+    (goto-char (point-min))
+    (setq buffer-read-only t)
+    (set-buffer-modified-p nil)
+
+    ;; it's better to leave the point in it's buffer
+    ;; so user can C-u (Item#) C-y in place.
+    ;; (pop-to-buffer buf)
+    ))
 
 (defun show-kill-insert-item (item)
   "Insert an ITEM from the kill ring into the current buffer.
@@ -72,15 +76,15 @@ If it's too long, truncate it first."
   (let ((max show-kill-max-item-size))
     (cond
      ((or (not (numberp max))
-		  (< max 0)
-		  (< (length item) max))
+          (< max 0)
+          (< (length item) max))
       (insert item))
      (t
       ;; put ellipsis on its own line if item is longer than 1 line
       (let ((preview (substring item 0 max)))
-		(if (< (length item) (- (frame-width) 5))
-			(insert (concat preview "..." ))
-		  (insert (concat preview "\n..."))))))))
+        (if (< (length item) (- (frame-width) 5))
+            (insert (concat preview "..." ))
+          (insert (concat preview "\n..."))))))))
 
 (defun show-kill-insert-header ()
   "Insert the show-kill-ring header or a notice if the kill ring is empty."
@@ -96,7 +100,7 @@ If it's too long, truncate it first."
     (insert "\n")
     (insert (make-string (length (match-string 1)) ?=))
     (insert (concat "\n\nItem " (int-to-string ynum)
-					" is the next to be yanked:\n\n"))
+                    " is the next to be yanked:\n\n"))
     (show-kill-insert-item yptr)
     (insert "\n\nThe prefix arg will yank relative to this item.")))
 
