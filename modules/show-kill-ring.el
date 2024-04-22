@@ -63,12 +63,11 @@ This makes it easy to figure out which prefix to pass to yank."
     ;; show it
     (goto-char (point-min))
     (setq buffer-read-only t)
-    (set-buffer-modified-p nil)
-
-    ;; it's better to leave the point in it's buffer
-    ;; so user can C-u (Item#) C-y in place.
-    ;; (pop-to-buffer buf)
-    ))
+	(set-buffer-modified-p nil)
+	;; display-buffer rather than pop-to-buffer
+	;; easier for user to C-u (item#) C-y
+	;; while the point is where they want to yank
+	(display-buffer buf)))
 
 (defun show-kill-insert-item (item)
   "Insert an ITEM from the kill ring into the current buffer.

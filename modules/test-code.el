@@ -34,13 +34,13 @@
 (use-package easy-hugo
   :defer .5
   :init
-  (setq easy-hugo-basedir "~/code/cjennings.net/")
+  (setq easy-hugo-basedir "~/code/cjennings-net/")
   (setq easy-hugo-url "https://cjennings.net")
   (setq easy-hugo-sshdomain "cjennings.net")
   (setq easy-hugo-root "/var/www/cjennings/")
   (setq easy-hugo-previewtime "300")
   (setq easy-hugo-postdir "content")
-  (setq easy-hugo-server-flags "-D")
+  (setq easy-hugo-server-flags "-D --noHTTPCache --disableFastRender")
   (setq easy-hugo-default-ext ".md")
   :bind ("C-c H" . easy-hugo)
   :config
@@ -113,6 +113,7 @@ otherwise use the default location in `cj/recording-location'."
 (use-package wttrin
   :defer .5
   :load-path ("~/code/emacs-wttrin")
+  :ensure nil ;; local package
   :preface
   ;; dependency for wttrin
   (use-package xterm-color

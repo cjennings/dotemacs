@@ -31,6 +31,35 @@
 
 ;; (add-hook 'dired-mode-hook 'auto-revert-mode)          ;; auto revert dired when files change
 
+;; -------------------------- Dired Copy Path As Kill --------------------------
+;; copies the full path of the file at point to the clipboard
+
+(defun cj/dired-copy-path-as-kill ()
+  "Copy the full path of file at point in dired to the clipboard."
+  (interactive)
+  (let ((filename (dired-get-file-for-visit)))
+	(if (and filename (file-exists-p filename))
+		(progn
+		  (kill-new filename)
+		  (message "Copied '%s' to clipboard." filename))
+	  (message "No file at point."))))
+
+;; ------------------------ Dired Convert Image To Jpeg ------------------------
+;; converts the image at point to a jpeg
+
+(defun cj/dired-convert-image-to-jpeg ()
+  (interactive)
+  (let* ((original-file (dired-get-file-for-visit))
+		 (file-extension (file-name-extension original-file))
+		 (jpeg-file (concat (file-name-sans-extension original-file) ".jpeg")))
+	(if (member file-extension '("png" "bmp" "gif" "tif" "tiff" "svg" "webp"))
+		(if (string= file-extension "jpeg")
+			(message "File is already in JPEG format.")
+		  (start-process "convert-to-jpeg" nil "convert" original-file jpeg-file)
+		  (message "Conversion started for %s" original-file))
+	  (message (concat "File is not a supported image file type."
+						"Current supported types: "
+						"'png' 'bmp' 'gif' 'tif' 'tiff' 'svg' 'webp'")))))
 
 ;; ------------------------ Dired Mark All Visible Files -----------------------
 ;; convenience function to mark all visible files in dired
@@ -55,7 +84,8 @@
    '(("h" "~/"                                 "home")
      ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
      ("rcj" "/sshx:cjennings@cjennings.net:~"  "remote cjennings.net")
-     ("co" "~/code"                            "code")
+	 ("co" "~/code"                            "code")
+	 ("cj" "~/code/cjennings-net"              "cjennings.net hugo")
      ("df" "~/.dotfiles/"                      "dotfiles")
      ("dn" "~/downloads/"                      "downloads")
      ("dr" "~/sync/org/drill/"                 "org drill files")
@@ -95,10 +125,12 @@
                   (shell-command (concat "nitrogen --save --set-zoom-fill "
                                          (dired-file-name-at-point) " >>/dev/null 2>&1" ))))
    ("Z"       . (lambda () (interactive) (cj/open-file-with-command "zathura")))
-   ("p"       . (lambda () (interactive) (cj/open-file-with-command "gimp")))
+   ("P"       . (lambda () (interactive) (cj/open-file-with-command "gimp")))
    ("<left>"  . dired-up-directory)
    ("<right>" . dired-find-file)
    ("f"       . dirvish-file-info-menu)
+   ("p"       . cj/dired-copy-path-as-kill)
+   ("C"       . cj/dired-convert-image-to-jpeg)
    ("y"       . dirvish-yank-menu)
    ("N"       . dirvish-narrow)
    ("M"       . cj/dired-mark-all-visible-files)

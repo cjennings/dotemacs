@@ -18,25 +18,88 @@
 
 ;;; Code:
 
-;;;; --------------------------- Constants ---------------------------
+;; --------------------------------- Constants ---------------------------------
 
 ;; note: some constants used here are defined in init.el
 (defvar org-archive-location (concat sync-dir "/archives/archive.org::datetree/"))  ;; location of archive file
 (defvar org-project-files (list schedule-file))
 
-;; ---------------------------- APT Sorting Function ---------------------------
+;; ---------------------------- Org General Settings ---------------------------
 
-(defun cj/org-reorder-list-apt ()
-  "Sort the org header by three criteria: alpha, pri, then todo."
-  (interactive)
-  (save-excursion
-	(ignore-errors
-	  (progn
-		(org-sort-entries t ?a)
-		(org-sort-entries t ?p)
-		(org-sort-entries t ?t)
-		(org-cycle)
-		(org-cycle)))))
+(defun cj/org-general-settings ()
+  "All general \='org-mode\=' settings are grouped and set in this function."
+
+  ;; Unbind org-cycle-agenda-files keys for use elsewhere
+  (unbind-key "C-'" org-mode-map)
+  (unbind-key "C-," org-mode-map)
+
+  ;; ORG-MODULES
+  ;; enable recognition of org-protocol:// as a parameter
+  ;; add org-habits
+  (require 'org-protocol)
+  (setq org-modules '(org-protocol ol-eww ol-w3m ol-info org-habit))
+
+  ;; GENERAL
+  (setq org-startup-folded t)               ;; all org files should start in the folded state
+  (setq org-cycle-open-archived-trees t)    ;; re-enable opening headings with archive tags with TAB
+  (setq org-outline-path-complete-in-steps nil)
+  (setq org-return-follows-link t)          ;; hit return to follow an org-link
+  (setq org-list-allow-alphabetical t)      ;; allow alpha ordered lists (i.e., a), A), a., etc.)
+
+  ;; INDENTATION
+  (setq org-startup-indented t)             ;; load org files indented
+  (setq org-adapt-indentation t)            ;; adapt indentation to outline node level
+  (setq org-indent-indentation-per-level 2) ;; indent two character-widths per level
+
+  ;; INLINE IMAGES
+  (setq org-startup-with-inline-images t)   ;; preview images by default
+  (setq org-image-actual-width '(500))      ;; keep image sizes in check
+
+  (setq org-bookmark-names-plist nil)       ;; don't set org-capture bookmarks
+
+  ;; force pdfs exported from org to open in emacs
+  (add-to-list 'org-file-apps '("\\.pdf\\'" . emacs)))
+
+;; ----------------------------- Org TODO Settings ---------------------------
+
+(defun cj/org-todo-settings ()
+  "All org-todo related settings are grouped and set in this function."
+
+  ;; logging task creation, task start, and task resolved states
+  (setq org-todo-keywords '((sequence "TODO(t!)" "PROJECT(p)" "DOING(i!)"
+									  "WAITING(w)" "VERIFY(v)" "STALLED(s)"
+									  "DELEGATED(x)" "|"
+									  "FAILED(f!)" "DONE(d!)" "CANCELLED(c!)")))
+
+  (setq org-todo-keyword-faces
+		'(("TODO"      . "green")
+		  ("PROJECT"   . "blue")
+		  ("DOING"     . "yellow")
+		  ("WAITING"   . "white")
+		  ("VERIFY"    . "orange")
+		  ("STALLED"   . "light blue")
+		  ("DELEGATED" . "green")
+		  ("FAILED"    . "red")
+		  ("DONE"      . "dark grey")
+		  ("CANCELLED" . "dark grey")))
+
+  (setq org-highest-priority ?A)
+  (setq org-lowest-priority ?D)
+  (setq org-default-priority ?D)
+  (setq org-priority-faces '((?A . (:foreground "Cyan" :weight bold))
+							 (?B . (:foreground "Yellow"))
+							 (?C . (:foreground "Green"))
+							 (?D . (:foreground "Grey"))))
+
+  (setq org-enforce-todo-dependencies t)
+  (setq org-enforce-todo-checkbox-dependencies t)
+  (setq org-deadline-warning-days 7)    ;; warn me w/in a week of deadlines
+  (setq org-treat-insert-todo-heading-as-state-change t) ;; log task creation
+  (setq org-log-into-drawer t) ;; log into the drawer
+  (setq org-habit-graph-column 75) ;; allow space for task name
+
+  ;; inherit parents properties (sadly not schedules or deadlines)
+  (setq org-use-property-inheritance t))
 
 ;; ---------------------------------- Org Mode ---------------------------------
 
@@ -57,7 +120,6 @@
 		("C-\\"      . org-match-sparse-tree)
 		("C-c t"     . org-set-tags-command)
 		("C-c l"     . org-store-link)
-		("C-c r"     . cj/org-reorder-list-apt)
 		("C-c C-l"   . org-insert-link)
 		("s-<up>"    . org-priority-up)
 		("s-<down>"  . org-priority-down)
@@ -112,40 +174,38 @@
   (org-mode . (lambda () (interactive) (company-mode -1))) ;; no company-mode in org
 
   :config
-  ;; Unbind org-cycle-agenda-files keys for use elsewhere
-  (unbind-key "C-'" org-mode-map)
-  (unbind-key "C-," org-mode-map)
+  (cj/org-general-settings)
+  (cj/org-todo-settings))
 
-  ;; ORG-PROTOCOL
-  ;; enable recognition of org-protocol:// as a parameter
-  (require 'org-protocol)
-  (setq org-modules '(org-protocol ol-eww ol-w3m ol-info))
+;; ------------------------------- Org-Checklist -------------------------------
+;; needed for org-habits to reset checklists once task is complete
+;; this was a part of org-contrib which was deprecated
 
-  ;; GENERAL
-  (setq org-startup-folded t)               ;; all org files should start in the folded state
-  (setq org-cycle-open-archived-trees t)    ;; re-enable opening headings with archive tags with TAB
-  (setq org-outline-path-complete-in-steps nil)
-  (setq org-return-follows-link t)          ;; hit return to follow an org-link
-  (setq org-list-allow-alphabetical t)      ;; allow alpha ordered lists (i.e., a), A), a., etc.)
+(use-package org-checklist
+  :ensure nil ;; in custom folder
+  :after org
+  :load-path "custom/org-checklist.el")
 
-  ;; INDENTATION
-  (setq org-startup-indented t)             ;; load org files indented
-  (setq org-adapt-indentation t)            ;; adapt indentation to outline node level
-  (setq org-indent-indentation-per-level 2) ;; indent two character-widths per level
+;; -------------------------- Org Link To Current File -------------------------
+;; get a link to the file the current buffer is associated with.
 
-  ;; INLINE IMAGES
-  (setq org-startup-with-inline-images t)   ;; preview images by default
-  (setq org-image-actual-width '(500))      ;; keep image sizes in check
+(defun cj/org-link-to-current-buffer-file ()
+  "Create an Org mode link to the current file and copy it to the clipboard.
 
-  (setq org-bookmark-names-plist nil)       ;; don't set org-capture bookmarks
+The link is formatted as [[file:<file-path>][<file-name>]],
+where <file-path> is the full path to the current file and <file-name>
+is the name of the current file without any directory information.
 
-  ;; force pdfs exported from org to open in emacs
-  (add-to-list 'org-file-apps '("\\.pdf\\'" . emacs)))
-
-
-;; https://www.reddit.com/r/orgmode/comments/n56fcv/important_the_contrib_directory_now_lives_outside/
-;; (use-package org-contrib
-;;   :after org)
+If the current buffer is not associated with a file, the function will throw an
+error."
+  (interactive)
+  (if (buffer-file-name)
+      (let* ((filename (buffer-file-name))
+             (description (file-name-nondirectory filename))
+             (link (format "[[file:%s][%s]]" filename description)))
+        (kill-new link)
+        (message "Copied Org link to current file to clipboard: %s" link))
+    (user-error "Buffer isn't associated with a file, so no link sent to clipboard")))
 
 (provide 'org-config)
 ;;; org-config.el ends here

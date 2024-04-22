@@ -28,7 +28,14 @@
   (setf vc-handled-backends nil) ;; magit is the only vc interface I use
   (setq magit-bury-buffer-function 'magit-restore-window-configuration)
   (setq git-commit-major-mode 'org-mode) ;; edit commit messages in org-mode
-  (setq magit-display-buffer-function 'magit-display-buffer-fullframe-status-topleft-v1))
+  (setq magit-display-buffer-function
+		'magit-display-buffer-fullframe-status-topleft-v1)
+
+  ;; CLONING
+  (setq magit-clone-default-directory code-dir)  ;; cloned repositories go here by default
+  (setq magit-clone-set-remote-head t)           ;; do as git does for remote heads
+  (setq magit-clone-set-remote.pushDefault 'ask) ;; ask if origin is default
+  ) ;; end use-package magit
 
 ;; --------------------------------- Git Gutter --------------------------------
 ;; mark changed lines since last commit in the margin

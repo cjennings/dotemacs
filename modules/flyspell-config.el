@@ -180,12 +180,5 @@ handled appropriately."
 (global-set-key (kbd "C-c f") 'flyspell-toggle )
 
 
-;; -------------------------------- Ispell STFU --------------------------------
-;; tell ispell where to send it's spurious error messages
-
-(advice-add 'ispell-lookup-words :around
-            (lambda (orig &rest args)
-			  (shut-up (apply orig args))))
-
 (provide 'flyspell-config)
 ;;; flyspell-config.el ends here.

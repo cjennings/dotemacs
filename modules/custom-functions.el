@@ -438,7 +438,7 @@ Uses `sortable-time-format' for the formatting the date/time."
   (interactive)
   (insert (format-time-string sortable-time-format (current-time))))
 
-(defvar sortable-date-format "%Y-%m-%d "
+(defvar sortable-date-format "%Y-%m-%d %a"
   "Time format to insert with `insert-current-time' func.
 See help of `format-time-string' for possible replacements")
 
@@ -556,6 +556,7 @@ Uses `sortable-time-format' for the formatting the date/time."
 	(define-key map "-" #'cj/hyphenate-region)
 	(define-key map "U" 'upcase-region)
 	(define-key map "w" 'cj/remove-leading-trailing-whitespace)
+	(define-key map "W" 'fixup-whitespace)
 	(define-key map "#" 'cj/count-words-buffer-or-region)
 	(define-key map "1" 'cj/alphabetize-and-replace-region)
 	(define-key map "C" 'display-fill-column-indicator-mode)

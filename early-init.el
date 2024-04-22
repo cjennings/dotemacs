@@ -47,7 +47,12 @@
 			(setq debug-on-error nil)
 			(setq debug-on-quit nil)))
 
-;; ------------------------------ Compile Warnings -----------------------------
+;; -------------------------------- Compilation --------------------------------
+
+;; Remove any .eln files inapplicable to this invocation
+(setq native-compile-prune-cache t)
+
+;; --------------------------- Warning Notifications ---------------------------
 
 ;; log warnings, but don't popup the warnings buffer
 (setq native-comp-async-report-warnings-errors 'silent)
@@ -56,7 +61,7 @@
 (setq warning-minimum-level :error)
 
 ;; --------------------------- Use Online Repos Flag ---------------------------
-;; set to nil to only use localrepo or the local elpa-mirrors
+;; set to nil to only use localrepo and local elpa-mirrors (see script directory)
 
 (defvar cj/use-online-repos nil
   "Whether to check for network connectivity and use online package repositories.")
@@ -106,7 +111,7 @@
   "The user's home directory per the environment variable.")
 
 (defconst elpa-mirror-location (concat user-emacs-directory ".elpa-mirrors/")
-"The path to the elpa mirror location.")
+  "The path to the elpa mirror location.")
 
 (setq package-archives nil) ;; package-archives will be added below
 
@@ -139,17 +144,17 @@
 
 ;; ONLINE REPOSITORIES
 (when (and (boundp 'cj/use-online-repos) cj/use-online-repos (internet-up-p))
-    (progn
-      (add-to-list 'package-archives '("gnu". "https://elpa.gnu.org/packages/") t)
-      (add-to-list 'package-archive-priorities '("gnu" . 25))
-      (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/") t)
-      (add-to-list 'package-archive-priorities '("nongnu" . 20))
-      (add-to-list 'package-archives '("melpa". "https://melpa.org/packages/") t)
-      (add-to-list 'package-archive-priorities '("melpa" . 15))
-      ;; (add-to-list 'package-archives '("org". "https://orgmode.org/packages/") t)
-      ;; (add-to-list 'package-archive-priorities '("org" . 10))
-      (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
-      (add-to-list 'package-archive-priorities '("melpa-stable" . 5))))
+  (progn
+	(add-to-list 'package-archives '("gnu". "https://elpa.gnu.org/packages/") t)
+	(add-to-list 'package-archive-priorities '("gnu" . 25))
+	(add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/") t)
+	(add-to-list 'package-archive-priorities '("nongnu" . 20))
+	(add-to-list 'package-archives '("melpa". "https://melpa.org/packages/") t)
+	(add-to-list 'package-archive-priorities '("melpa" . 15))
+	;; (add-to-list 'package-archives '("org". "https://orgmode.org/packages/") t)
+	;; (add-to-list 'package-archive-priorities '("org" . 10))
+	(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+	(add-to-list 'package-archive-priorities '("melpa-stable" . 5))))
 (package-initialize)
 
 ;; only run refresh when there's no cache

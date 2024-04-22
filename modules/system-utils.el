@@ -25,7 +25,10 @@
 ;; 'cj/buffer-bury-alive-list' via 'C-u C-x k'
 
 ;; BUFFER BURY ALIVE LIST
-(defvar cj/buffer-bury-alive-list '("*dashboard*" "*scratch*" "*Messages*")
+(defvar cj/buffer-bury-alive-list '("*dashboard*"
+									"*scratch*"
+									"*Messages*"
+									"*ChatGPT*")
   "Buffers that shouldn't be killed, but buried instead.")
 
 ;; KILL BUFFER AND WINDOW

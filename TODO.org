@@ -1,7 +1,571 @@
-g
+
 === Emacs Config Tasks ===
 
 * Emacs Config Inbox
+** Emacs: modern minibuffer packages (Vertico, Consult, etc.) - Emacs - System Crafters
+[[https://forum.systemcrafters.net/t/emacs-modern-minibuffer-packages-vertico-consult-etc/294][Emacs: modern minibuffer packages (Vertico, Consult, etc.) - Emacs - System Crafters]]
+Captured On: [2024-04-19 Fri 05:46]
+** Using auto-fill-mode vs. visual-line-mode - Emacs - System Crafters
+[[https://forum.systemcrafters.net/t/using-auto-fill-mode-vs-visual-line-mode/275/3][Using auto-fill-mode vs. visual-line-mode - Emacs - System Crafters]]
+Captured On: [2024-04-19 Fri 05:46]
+** Check which version of the refile advice-add you have
+#+BEGIN_QUOTE
+I had this bit of code I got from one of Dave’s streams to save all buffers after refiling so you wouldn’t have to save each buffer by hand.
+
+(advice-add 'org-refile :after 'org-save-all-org-buffers)
+Unfortunately, with org-ql, it gives an error. (It still refiles though).
+
+So, I found the solution here:
+
+emacs.stackexchange.com
+
+Org-mode: Getting errors when auto-saving after refiling 2
+org-mode
+asked by wiuah on 09:50PM - 07 Sep 16 UTC
+Which is this:
+
+(advice-add 'org-refile :after
+        (lambda (&rest _)
+        (org-save-all-org-buffers)))
+I tested it with org-ql refiling and it does work perfectly. So any of you who were using that previous code and have issues with org-ql refiling, you can replace it with this and it should work.
+#+END_QUOTE
+[[https://forum.systemcrafters.net/t/save-all-buffers-on-org-refile/292][Save all buffers on org refile - Emacs - System Crafters]]
+Captured On: [2024-04-19 Fri 05:45]
+** Thread: Close all refile targets in ibuffer after refiling - Emacs - System Crafters
+#+BEGIN_QUOTE
+Close all refile targets in ibuffer after refiling
+Emacs
+Feb 15
+1 / 3
+Feb 15
+Feb 15
+
+​
+
+summeremacs
+
+1
+Feb 15
+Hi everyone
+
+Okay, so I have this problem where I always had a few hundred buffers open in ibuffer, and I couldn’t figure out what was doing it - since YEARS. Well, I finally figured it out the other day! Org refiling was the culprit. See, I didn’t know this but whenever you refile, when it says getting all targets, it’s opening them up (at least it did in my ibuffer behind the scenes).
+
+To counter this, I asked an AI to help me, and it did. It wrote the code but it couldn’t get the last part right about not opening ibuffer to kill everything. I fixed that up myself. So this is a collaboration between an AI and me, but the code works.
+
+The only “issue” now is that if you have a lot of targets, it will take a few seconds each time to do the gathering part. For me, that’s not a big deal, but maybe it is for you. And if you’re on here, there is a high likelihood of you being able to fix it so this becomes even better and faster. So here is my code. Please use it as you want. And if you can make it better, or faster somehow for repeated steps, then let me know (the closing part isn’t an issue - that takes a second on my machine, or less).
+
+(Note that the comment says that it’s bound to C-z o r but that isn’t shown in the code. It’s at the bottom of my config in custom key binds).
+
+;; This function uses C-z o r (listed at the end of config) to refile. It opens all the refile targets, and then closes them after refiling, so it keeps ibuffer clean.
+  (defun my/org-refile-and-close-buffers ()
+    "Refile using org-refile and close related buffers in ibuffer."
+    (interactive)
+    ;; Get the list of open buffers before the refile
+    (let ((before-buffers (buffer-list))
+      (org-refile-use-outline-path nil)) ; Disable outline path
+      (call-interactively 'org-refile) ; Call org-refile interactively
+
+      ;; Get the list of open buffers after the refile
+      (let ((after-buffers (buffer-list)))
+    ;; Close only the buffers opened during the refile
+    (dolist (buffer before-buffers)
+      (setq after-buffers (delete buffer after-buffers)))
+    (mapc 'kill-buffer after-buffers))))
+I hope this helps! Now you can keep your ibuffer clean when you refile!
+
+
+
+
+
+
+#+END_QUOTE
+[[https://forum.systemcrafters.net/t/close-all-refile-targets-in-ibuffer-after-refiling/280][Close all refile targets in ibuffer after refiling - Emacs - System Crafters]]
+Captured On: [2024-04-19 Fri 05:40]
+** armindarvish/consult-mu: Consult Mu4e asynchronously in GNU Emacs
+[[https://github.com/armindarvish/consult-mu][armindarvish/consult-mu: Consult Mu4e asynchronously in GNU Emacs]]
+Captured On: [2024-04-19 Fri 05:33]
+** Comment on Why Emacs will NEVER be popular! - Emacs - System Crafters
+#+BEGIN_QUOTE
+Emacs has a vibrant and active community that engages its entire member base. Furthermore, new mediums for outreach (such as Systemcrafters) are attracting newer, younger members, so it’s a base that is replenishing. What is the appeal to moving beyond that?
+
+Ease-of-use oriented distros could be double-edged. If we have a distro that’s intuitive and easy to use for the causal notepad/word processor user, that’s almost certain to widen the appeal of Emacs, and consequently increase its user-base. On the other hand, these people are going to be coming to Emacs for very different reasons than current Emacs users. Even if at first the new crowd is limited to a distro, if they influence the popularity of Emacs to the degree that it’s noticeable I don’t see how it won’t eventually influence the main editor itself. Outreach, concerted inclusion, and continued appeal to these folks will likely change the future trajectory that the editor takes. I’m not sure that’s a good thing. The things I like about Emacs are all distinctive from the alternatives out there, but I’m not sure those things would matter as much to the new crowd. After all, that’s not why they’re here.
+
+I do think distros have their place. Doom and Spacemacs (and Rational? Haven’t tried it in a while) strike a happy medium – they make it appealing to folks who want to give it a go, but they don’t change it to such a degree that those folks who try it and stick around have an alien perspective on what Emacs should be.
+#+END_QUOTE
+[[https://forum.systemcrafters.net/t/why-emacs-will-never-be-popular/432/7][Why Emacs will NEVER be popular! - Emacs - System Crafters]]
+Captured On: [2024-04-19 Fri 05:32]
+** alphapapa/listen.el: Audio/music player for Emacs
+[[https://github.com/alphapapa/listen.el][alphapapa/listen.el: Audio/music player for Emacs]]
+Captured On: [2024-04-19 Fri 05:28]
+** alphapapa's flyspell setup
+#+BEGIN_QUOTE
+(use-package flyspell
+  :hook (org-mode . flyspell-mode)
+  :config
+  (define-advice flyspell-goto-next-error
+      (:around (oldfun &optional previous) ap/flyspell-goto-next-error)
+    "Go to next or previous misspelled word, or to previous position.
+When no misspellings remain, goes to the position before
+`flyspell-goto-next-error' was called."
+    (cl-labels ((next-error-pos (&optional previous)
+                  (save-excursion
+                    (pcase (funcall oldfun previous)
+                      ("No more miss-spelled words" nil)
+                      (_ (point))))))
+      (if-let ((pos (or (next-error-pos)
+                        (next-error-pos 'previous))))
+          (progn
+            (pcase last-command
+              ((or 'flyspell-auto-correct-word 'flyspell-goto-next-error)
+               nil)
+              (_ (push-mark)))
+            (goto-char pos))
+        (goto-char (mark-marker))
+        (pop-mark)))))
+#+END_QUOTE
+[[https://forum.systemcrafters.net/t/emacs-config-request-for-feedback/425/4][Emacs config, request for feedback - Emacs - System Crafters]]
+Captured On: [2024-04-19 Fri 05:23]
+** Tips to investigate
+#+BEGIN_QUOTE
+For Org, I recommend installing org-ql and using org-ql-find as your primary way to find things in Org files.
+I recommend using my new activities package. It makes it much easier to switch to and resume tasks that you do repeatedly in Emacs.
+#+END_QUOTE
+[[https://forum.systemcrafters.net/t/emacs-config-request-for-feedback/425][Emacs config, request for feedback - Emacs - System Crafters]]
+Captured On: [2024-04-19 Fri 05:23]
+** mhayashi1120/Emacs-wgrep: Writable grep buffer and apply the changes to files
+[[https://github.com/mhayashi1120/Emacs-wgrep][mhayashi1120/Emacs-wgrep: Writable grep buffer and apply the changes to files]]
+Captured On: [2024-04-19 Fri 05:08]
+** Wilfred/deadgrep: fast, friendly searching with ripgrep and Emacs
+[[https://github.com/Wilfred/deadgrep][Wilfred/deadgrep: fast, friendly searching with ripgrep and Emacs]]
+Captured On: [2024-04-19 Fri 05:08]
+** check this versus google this
+#+BEGIN_QUOTE
+(use-package search-web
+  :general
+  (bmj-leader-keys
+    "sw" '(:ignore t :which-key "web")
+    "sww" '(search-web :which-key "search")
+    "swd" '(search-web-dwim :which-key "dwim")
+    "swr" '(search-web-region :which-key "region")))
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-search.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-search.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 05:07]
+** idle highlight mode instead of your hl setup?
+#+BEGIN_QUOTE
+(use-package idle-highlight-mode
+  :hook (prog-mode . idle-highlight-mode)
+  :config
+  (setopt idle-highlight-idle-time 0.5)
+  (defface idle-highlight '((t :inherit highlight :underline t))
+    "Face used to highlight other occurrences of the word at point."))
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-lang.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-lang.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 05:05]
+** beniot's flycheck setup
+note that he's putting the display-buffer-alist in the init section
+#+BEGIN_QUOTE
+(use-package flycheck
+  :init
+  (add-to-list 'display-buffer-alist
+               `(,(rx bos "*Flycheck errors*" eos)
+                 (display-buffer-reuse-window
+                  display-buffer-in-side-window)
+                 (side            . bottom)
+                 (reusable-frames . visible)
+                 (window-height   . 0.15)))
+  :config
+  (global-flycheck-mode)
+  (evil-set-initial-state 'flycheck 'emacs))
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-lang.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-lang.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 05:04]
+** beniot's org-download config
+#+BEGIN_QUOTE
+(use-package org-download
+  :after org
+  :general
+  (bmj-local-leader-keys
+    :states '(normal insert)
+    :keymaps 'org-mode-map
+    "i" '(:ignore t :which-key "insert")
+    "id" '(:ignore t :which-key "download")
+    "idu" '(org-download-yank :which-key "url")
+    "idd" '(org-download-clipboard :which-key "clipboard"))
+
+  :config
+  (customize-set-variable 'org-download-method 'attach)
+  ;; (customize-set-variable 'org-download-backend "curl")
+
+  (add-hook 'dired-mode-hook 'org-download-enable))
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-lang-org.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-lang-org.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 05:02]
+** abo-abo/org-download: Drag and drop images to Emacs org-mode
+[[https://github.com/abo-abo/org-download][abo-abo/org-download: Drag and drop images to Emacs org-mode]]
+Captured On: [2024-04-19 Fri 05:01]
+** awth13/org-appear: Toggle visibility of hidden Org mode element parts upon entering and leaving an element
+[[https://github.com/awth13/org-appear][awth13/org-appear: Toggle visibility of hidden Org mode element parts upon entering and leaving an element]]
+Captured On: [2024-04-19 Fri 04:59]
+** beniot's lsp and dap setup
+#+BEGIN_QUOTE
+(use-package lsp-mode
+  :commands (lsp lsp-deferred)
+  :hook ((lsp-mode . lsp-enable-which-key-integration)
+     (lsp-mode .  lsp-lens-mode))
+   :bind
+   (:map lsp-mode-map
+         (("M-RET" . lsp-execute-code-action)))
+  :general
+  (bmj-leader-keys
+    "cl" '(:keymap lsp-command-map :which-key "lsp"))
+  :custom
+  (lsp-highlight-symbol-at-point nil)   ; delegated to idle-highlight
+  (lsp-eldoc-render-all nil)
+  :init
+  (setq lsp-keymap-prefix "C-c l"))
+
+(use-package lsp-ui
+  :commands lsp-ui-mode
+  :custom
+  (lsp-ui-doc-delay 5.0)
+  (lsp-ui-sideline-enable t)
+  (lsp-ui-sideline-show-symbol nil))
+
+(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+
+(use-package dap-mode
+  :after lsp-mode
+;;   :custom
+;;   (dap-java-terminal 'integratedTerminal)
+;;   (dap-internal-terminal #'dap-internal-terminal-vterm)
+  :config
+  (dap-auto-configure-mode))
+
+(use-package consult-lsp
+  :general
+  (general-define-key :keymaps 'lsp-mode-map [remap xref-find-apropos] #'consult-lsp-symbols))
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-lang-lsp.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-lang-lsp.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:56]
+** ~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-lang-js-ts.el - sourcehut git
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-lang-js-ts.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-lang-js-ts.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:54]
+** beniot setting up editor configuration for a language
+#+BEGIN_QUOTE
+(defun bmj-default-java-code-style-hook ()
+  "My default editor configuration for java."
+  (setq c-basic-offset 2
+        c-label-offset 0
+        tab-width 2
+        indent-tabs-mode nil
+        compile-command "mvn -q -o verify"
+        require-final-newline nil))
+
+(add-hook 'java-mode-hook 'bmj-default-java-code-style-hook)
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-lang-java.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-lang-java.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:53]
+** setup devdocs context when coding
+#+BEGIN_QUOTE
+ (add-hook 'emacs-lisp-mode-hook
+            (lambda () (setq-local devdocs-current-docs '("elisp"))))
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-lang-el.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-lang-el.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:51]
+** look into new shortdoc feature
+
+Version 28 of emacs introduced a new feature called shortdoc. It gives an overview over available elisp functions in a few select categories. Use the command M-x shortdoc-display-group and then type in which category you want to view and a buffer pops up giving you a brief overview.
+
+#+BEGIN_QUOTE
+;; TODO we can generate our own cheatsheet with this
+;; see https://www.masteringemacs.org/article/emacs-builtin-elisp-cheat-sheet
+(use-package shortdoc
+  :ensure nil
+  :straight nil
+  :config
+  (evil-set-initial-state 'shortdoc 'emacs))
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-help.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-help.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:49]
+** does explain pause mode even work?
+beniot has it in his config
+#+BEGIN_QUOTE
+(use-package explain-pause-mode
+  :general
+  (bmj-leader-keys
+    "ze" '(:ignore t :which-key "profile")
+    "zet" '(explain-pause-mode :which-key "toggle")
+    "zee" '(explain-pause-top :which-key "top"))
+  :config
+  (evil-set-initial-state 'explain-pause 'emacs))
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-help.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-help.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:47]
+** example of putting emacs files in the ~/.cache
+#+BEGIN_QUOTE
+(use-package undo-tree
+  ;; TODO: find a better way to defer it
+  :diminish undo-tree-mode
+  :demand t
+  :custom
+  (undo-tree-history-directory-alist '(("." . "~/.cache/emacs/undo")))
+  :config
+  (global-undo-tree-mode))
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-editor.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-editor.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:46]
+** setup autoinsert for .el files for header/footer
+#+BEGIN_QUOTE
+(use-package autoinsert
+  :straight nil
+  :ensure nil
+  :demand t
+  :config
+  (setq auto-insert-directory (expand-file-name "~/.config/emacs/auto-insert/"))
+  (add-to-list 'auto-insert-alist '("shell\\.nix" . "shell.nix"))
+  (auto-insert-mode 1))
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-editor.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-editor.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:43]
+** beniot's selection framework setup
+#+BEGIN_QUOTE
+(use-package vertico
+  :demand t
+  :config
+  (evil-set-initial-state 'vertico 'emacs)
+  (setopt vertico-cycle t)
+  (vertico-mode 1))
+
+;; this works also for CAP
+(use-package orderless
+  :demand t
+  :config
+  ;; Define orderless style with initialism by default
+  (orderless-define-completion-style +orderless-with-initialism
+    (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp)))
+
+  (setq completion-styles '(orderless basic)
+        completion-category-overrides '((file (styles basic partial-completion))
+                                        ;; enable initialism by default for symbols
+                    ;        (command (styles +orderless-with-initialism))
+                    ;       (variable (styles +orderless-with-initialism))
+                    ;      (symbol (styles +orderless-with-initialism))
+                    )
+    orderless-matching-styles '(orderless-literal orderless-initialism orderless-regexp ;; orderless-flex
+                              )
+        orderless-component-separator #'orderless-escapable-split-on-space ;; allow escaping space with backslash!
+    ))
+
+(use-package marginalia
+  :hook (minibuffer-mode . marginalia-mode)
+  :custom
+  (marginalia-annotators '(marginalia-annotators-heavy
+                           marginalia-annotators-light
+                           nil))
+  :config
+  (add-to-list 'marginalia-annotator-registry
+           '(symbol-help marginalia-annotate-variable)
+           '(buffer marginalia-annotate-buffer))
+  (add-to-list 'marginalia-prompt-categories '("Buffer: " . buffer))
+  (marginalia-mode 1))
+
+
+(use-package consult
+  :general
+  (general-define-key
+   [remap recentf-open-files]            #'consult-recent-file
+   [remap bookmark-jump]                 #'consult-bookmark
+   [remap evil-show-marks]               #'consult-mark
+   [remap evil-show-jumps]               #'+vertico/jump-list
+   [remap goto-line]                     #'consult-goto-line
+   [remap imenu]                         #'consult-imenu
+   [remap locate]                        #'consult-locate
+   [remap load-theme]                    #'consult-theme
+   ;; TODO consult-man does not work
+   [remap man]                           #'consult-man
+   [remap switch-to-buffer-other-window] #'consult-buffer-other-window
+   [remap switch-to-buffer-other-frame]  #'consult-buffer-other-frame
+   [remap yank-pop]                      #'consult-yank-pop
+   [remap isearch-forward]               #'consult-line
+   ;; [remap evil-redo]
+   ;; #'consult-history
+   )
+  (bmj-leader-keys
+    "ss" '(consult-ripgrep :which-key "ripgrep"))
+  :config
+  (setq completion-in-region-function #'consult-completion-in-region
+    consult-async-min-input 1)
+  (evil-set-initial-state 'consult 'emacs))
+
+;; TODO: https://karthinks.com/software/fifteen-ways-to-use-embark/
+
+(use-package embark
+  :general
+  (general-define-key
+   [remap describe-bindings]      #'embark-bindings)
+
+  :bind
+  (("C-." . embark-act)
+   ("C-," . embark-export))
+  ;; TODO conflict with iedit
+                    ;("C-;" . embark-dwim))
+
+  :config
+  (evil-set-initial-state 'embark 'emacs)
+  (evil-set-initial-state 'vertico 'emacs)
+
+  ;; Hide the mode line of the Embark live/completions buffers
+  (add-to-list 'display-buffer-alist
+               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                 nil
+                 (window-parameters (mode-line-format . none)))))
+
+;; allow to export grep results into a occur like buffer
+(use-package embark-consult
+  :hook ((embark-collect-mode . consult-preview-at-point-mode)
+     (minibuffer-mode . (lambda () nil))))
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-completion.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-completion.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:39]
+** alphapapa/hammy.el: Programmable, interactive interval timers (e.g. for working/resting)
+[[https://github.com/alphapapa/hammy.el][alphapapa/hammy.el: Programmable, interactive interval timers (e.g. for working/resting)]]
+Captured On: [2024-04-19 Fri 04:36]
+** SqrtMinusOne/pomm.el: Implementation of Pomodoro and Third Time techniques for Emacs
+[[https://github.com/SqrtMinusOne/pomm.el][SqrtMinusOne/pomm.el: Implementation of Pomodoro and Third Time techniques for Emacs]]
+Captured On: [2024-04-19 Fri 04:34]
+** wbolster/emacs-direnv: direnv integration for emacs
+[[https://github.com/wbolster/emacs-direnv][wbolster/emacs-direnv: direnv integration for emacs]]
+Captured On: [2024-04-19 Fri 04:31]
+** emacsmirror/0x0: Upload sharing to 0x0.st
+
+Easily share images on erc, etc.
+[[https://github.com/emacsmirror/0x0][emacsmirror/0x0: Upload sharing to 0x0.st]]
+Captured On: [2024-04-19 Fri 04:28]
+** walseb/blimp: A complete wrapper around all imagemagick commands with autocompletion, descriptions and hints displayed in prompt
+[[https://github.com/walseb/blimp][walseb/blimp: A complete wrapper around all imagemagick commands with autocompletion, descriptions and hints displayed in prompt]]
+Captured On: [2024-04-19 Fri 04:27]
+** simple music setup to consider
+#+BEGIN_QUOTE
+(use-package mpc
+  :commands (mpc))
+
+(use-package mpdel
+  :general
+  (bmj-leader-keys
+    "aM" '(mpdel-browser-open :which-key "mpdel")))
+
+(use-package simple-mpc)
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-app-media.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-app-media.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:25]
+** Investigate disk-usage and trashed
+#+BEGIN_QUOTE
+(use-package disk-usage
+  :general
+  (bmj-leader-keys
+    "fu" '(:ignore t :which-key "disk usage")
+    "fuu" '(disk-usage :which-key "somewhere")
+    "fu." '(disk-usage :which-key "here")
+    "fup" '((lambda () disk-usage (project-root (project-current))) :which-key "project"))
+  :config
+  (evil-set-initial-state 'disk-usage 'emacs)
+  )
+
+(use-package trashed
+  :general
+  (bmj-leader-keys
+    "ft" '(trashed :which-key "trashed"))
+  :config
+  (evil-set-initial-state 'trashed 'emacs))
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-app-file-mgmt.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-app-file-mgmt.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:23]
+** rest client config from beniot
+#+BEGIN_QUOTE
+(eval-when-compile
+  (require 'cl))
+
+(use-package restclient
+  :straight
+  (restclient :type git :host github
+          :repo "pashky/restclient.el"
+          :files ("restclient.el" "restclient-jq.el"))
+  :mode (("\\.rest\\'" . restclient-mode))
+  :config
+  (require 'restclient-jq)
+  (evil-set-initial-state 'restclient 'emacs))
+
+(use-package restclient-test
+  :hook (restclient-mode . restclient-test-mode)
+  :general
+  (bmj-local-leader-keys
+   :states '(normal insert)
+   :keymaps 'restclient-mode-map
+   "t" '(:ignore t :which-key "test")
+   "tt" '(restclient-test-buffer :which-key "buffer")
+   "tc" '(restclient-test-current :which-key "current")))
+
+(use-package plz)
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-app-http.el][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-app-http.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:22]
+** 10sr/git-walktree-el: Browse Git Tree and Blob Objects
+[[https://github.com/10sr/git-walktree-el][10sr/git-walktree-el: Browse Git Tree and Blob Objects]]
+Captured On: [2024-04-19 Fri 04:20]
+** Mastodon Packages and setup from benoit
+#+BEGIN_QUOTE
+(use-package mastodon
+  :commands (mastodon)
+  :general
+  (bmj-leader-keys
+    "ax" '(mastodon :which-key "mastodon"))
+  :config
+  (setopt mastodon-instance-url "https://fosstodon.org")
+  (setopt mastodon-active-user "@benoitj")
+  (setopt mastodon-auth-source-file "~/.authinfo.gpg")
+  (setopt mastodon-tl--show-avatars t)
+  (setopt mastodon-media--avatar-height 50)
+  (mastodon-alt-tl-activate)
+  (mastodon-async-mode))
+
+
+(use-package mastodon-alt
+  :demand t
+  :after (mastodon)
+  :straight (mastodon-alt :host github
+              :repo "rougier/mastodon-alt")
+  :commands (mastodon-alt-tl-activate
+         mastodon-alt-tl-deactivate))
+
+#+END_QUOTE
+[[https://git.sr.ht/~benoit/dotfiles/tree/main/item/home/dotfiles/config/emacs/modules/config-app-social.el#L84][~benoit/dotfiles (main): home/dotfiles/config/emacs/modules/config-app-social.el - sourcehut git]]
+Captured On: [2024-04-19 Fri 04:09]
+** Tiny Tiny RSS
+[[https://tt-rss.org/][Tiny Tiny RSS]]
+Captured On: [2024-04-19 Fri 04:04]
+** fasheng/elfeed-protocol: make standalone RSS aggregators work with elfeed
+[[https://github.com/fasheng/elfeed-protocol?tab=readme-ov-file][fasheng/elfeed-protocol: Provide extra protocols to make like Fever, NewsBlur, Nextcloud/ownCloud News and Tiny Tiny RSS work with elfeed]]
+Captured On: [2024-04-19 Fri 04:03]
+** TODO Create a fontaine set for more Serif fonts.
+- Georgia
+- Garamond
+** sprig/org-capture-extension: A Chrome and firefox extension facilitating org-capture in emacs
+** TODO Add this grep to org-drill
+#+BEGIN_QUOTE
+how would I use grep to search recursively for any instance of "epdfinfo" in files called todo.org where the filename could also be TODO.org (case insensitive)?
+
+You can use =grep= with the =-r= (or =--recursive=) option to search recursively, and the =-i= (or =--ignore-case=) option to ignore case. The =-E= option allows you to use extended regular expressions, which is especially helpful when searching case-insensitive extension. Here's how you can do it:
+
+#+begin_src bash
+  grep -ri --include=\*.[Tt][Oo][Dd][Oo].[Oo][Rr][Gg] 'epdfinfo' .
+#+end_src
+
+This will search for the term "epdfinfo" in all files named =todo.org= or =TODO.org= (or any other case variations like =Todo.org=, =tOdO.org=, etc.) in the current directory (denoted by =.=) and its subdirectories.
+
+Please note that =-i= is case-insensitive for the searched term, not for the file extension. We use =[Tt][Oo][Dd][Oo].[Oo][Rr][Gg]= to manually handle case-insensitive file extensions.
+#+END_QUOTE
+[[][]]
+Captured On: [2024-04-18 Thu 06:15]
 * DOING Emacs Config v0.7 [2/5]
 ** DONE Supplement Existing Functionality [9/9]
 *** DONE [#B] Make sure eshell has same path as other shells
@@ -140,8 +704,44 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING Open v0.7 Fit and Finish (ends 2024.04.18) [1/7]
-*** TODO [#B] Save All Attachments Working in Mu4e
+** DOING Open v0.7 Fit and Finish (ends 2024.04.20) [1/6]
+*** DOING [#B] Modularize all org-mode config files into use-package statements
+- [X] org-config
+- [X] org-agenda
+- [ ] org-roam
+- [ ] org-appearance
+- [ ] org-babel
+- [ ] org-capture
+- [ ] org-refile
+- [ ] org-contacts
+- [ ] org-drill
+- [ ] org-export
+*** DOING [#B] Save All Attachments Working in Mu4e
+**** 2024-04-18 Thu @ 05:55:32 -0500 The Documentation Suggests A Path Forward
+This suggests that if I'm writing another function, I should
+- first query the user to select/create the directory
+- make sure mu4e-view-completion-minor-mode is on
+- call mu4e-view-complete-all to get all the files
+- within the context of mu4e-view-save-attachments
+
+#+BEGIN_QUOTE
+E-mail messages can be though as a series of “MIME-parts”, which are sections of the message. The most prominent is the ’body’, that is the main message your are reading. Many e-mail messages also contains attachments, which MIME-parts that contain files10.
+
+To save such attachments as files on your file systems, the mu4e message-view offers the command mu4e-view-save-attachments; default keybinding is e (think extract). After invoking the command, you can enter the file names to save, comma-separated, and using the completion support. Press RET to save the chosen files to your file-system.
+
+With a prefix argument, you get to choose the target-directory, otherwise, mu4e determines it following the variable mu4e-attachment-dir (which can be file-system path or a function; see its docstring for details.
+
+While completing, mu4e-view-completion-minor-mode is active, which offers mu4e-view-complete-all (bound to C-c C-a to complete all files11.
+#+END_QUOTE
+[[https://www.djcbsoftware.nl/code/mu/mu4e/MSGV-Attachments-and-MIME_002dparts.html][MSGV Attachments and MIME-parts (Mu4e 1.12.3 user manual)]]
+
+**** 2024-04-18 Thu @ 05:05:03 -0500 Etienne's config failed
+It relies on this line to find all the mime-parts:
+
+(let ((parts (mu4e--view-gather-mime-parts))
+
+and that doesn't exist any longer.
+**** Test Etienne's Configuration
 https://etienne.depar.is/emacs.d/mu4e.html
 (defun ed/mu4e-view-save-all-attachments (&optional arg)
   "Save all attachments of a given message.
@@ -185,8 +785,8 @@ choose a specific directory where to save all the files."
                              file))))
         (mu4e-message "No attached files found")))))
 (define-key mu4e-view-mode-map "X" #'ed/mu4e-view-save-all-attachments)
-*** TODO [#B] Get queued email working with this msmtp feature
-**** using sendmail
+*** TODO [#B] Get queued email working for both mail accounts
+**** using sendmail for gmail
 #+BEGIN_QUOTE
 Queuing mails for sending it later
 Mu4e supports a very nice feature which is mail queueing from smtpmail emacs client. To enable it, it requires two easy steps:
@@ -207,7 +807,7 @@ Note: there is a bug (not sure it’s really a bug). When sending a mail into th
 [[https://dataswamp.org/~solene/2018-05-22-mu4esmtp.html][Solene'% : Sending mail with mu4e]]
 Captured On: [2024-04-13 Sat 05:23]
 
-**** with msmtp
+**** with msmtp for cmail
 on archwiki: https://wiki.archlinux.org/title/msmtp#Using_msmtp_offline (read the whole page anyway)
 also here: https://www.reddit.com/r/emacs/comments/q2gl5h/queuing_emails_and_sending_them_autmatically/
 
@@ -226,25 +826,6 @@ Adding /usr/local/bin to your PATH can save you some keystrokes if you are doing
 #+END_QUOTE
 [[https://wiki.archlinux.org/title/msmtp#Using_msmtp_offline][msmtp - ArchWiki]]
 Captured On: [2024-04-13 Sat 09:35]
-*** TODO [#B] Move org-todo items into org-config use-package statement
-*** TODO [#B] Separate org-agenda items into use-package statement
-add after: org-roam for the function references
-*** TODO [#C] Articles Should Be Saved Under todo.org TO READ Heading
-**** 2024-04-16 Tue @ 10:28:17 -0500 Notes
-This involves changing webclipper. Webclipper as it is now doesn't return the content, it actually yanks it into the article-file.
-What I want is something to return the content in the way that a template would expect it. This way, I can create templates that would work with org-roam as well, such as creating a separate org-roam node just by clicking an org-protocol bookmarklet.
-
-This might be too large to fit as a bug fix for v0.7. I began doing some research (below) yesterday to help me size the work.
-**** 2024-04-16 Tue @ 10:27:25 -0500 Research
-***** TODO read through capturing content for emacs
-[[https://howardism.org/Technical/Emacs/capturing-content.html][Capturing Content for Emacs]]
-Captured On: [2024-04-15 Mon 22:27]
-***** TODO Investigate Org Mode's Web Archiver
-[[https://github.com/charlesroelli/org-board][charlesroelli/org-board: Org mode's web archiver.]]
-Captured On: [2024-04-15 Mon 22:33]
-***** TODO Review these Web Page tools for Org-mode
-[[https://github.com/alphapapa/org-web-tools][alphapapa/org-web-tools: View, capture, and archive Web pages in Org-mode]]
-Captured On: [2024-04-15 Mon 22:55]
 *** DOING [#C] Remove all unnecessarily hardcoded filenames and paths
 **** DONE Fix hardcoded in org-roam
 
@@ -340,7 +921,23 @@ Captured On: [2024-04-15 Mon 22:55]
 ./modules/calibredb-epub-config.el:27:  (setq calibredb-root-dir "~/sync/books/")
 ./modules/calibredb-epub-config.el:28:  (setq calibredb-library-alist '(("~/sync/books/")))
 ./modules/elfeed-config.el:129:  (let ((default-directory "~/videos"))
-*** [#D] Resolved v0.7 Fit and Finish Work [16/16]
+*** TODO [#C] Articles Should Be Saved Under todo.org TO READ Heading
+**** 2024-04-16 Tue @ 10:28:17 -0500 Notes
+This involves changing webclipper. Webclipper as it is now doesn't return the content, it actually yanks it into the article-file.
+What I want is something to return the content in the way that a template would expect it. This way, I can create templates that would work with org-roam as well, such as creating a separate org-roam node just by clicking an org-protocol bookmarklet.
+
+This might be too large to fit as a bug fix for v0.7. I began doing some research (below) yesterday to help me size the work.
+**** 2024-04-16 Tue @ 10:27:25 -0500 Research
+***** TODO read through capturing content for emacs
+[[https://howardism.org/Technical/Emacs/capturing-content.html][Capturing Content for Emacs]]
+Captured On: [2024-04-15 Mon 22:27]
+***** TODO Investigate Org Mode's Web Archiver
+[[https://github.com/charlesroelli/org-board][charlesroelli/org-board: Org mode's web archiver.]]
+Captured On: [2024-04-15 Mon 22:33]
+***** TODO Review these Web Page tools for Org-mode
+[[https://github.com/alphapapa/org-web-tools][alphapapa/org-web-tools: View, capture, and archive Web pages in Org-mode]]
+Captured On: [2024-04-15 Mon 22:55]
+*** [#D] Resolved v0.7 Fit and Finish Work [25/25]
 **** DONE [#C] Theme Doesn't Fallback on Wombat Correctly if No Theme Persist File
 **** DONE [#A] Remove Keys
 CLOSED: [2024-04-07 Sun 13:46]
@@ -488,6 +1085,84 @@ CLOSED: [2024-04-16 Tue 11:46]
 It's a bit crazy that I spend time each morning organizing and scheduling my day, then when the time comes, no notification happens.
 This is a bug fix, only insofar as it's fixing essentially broken in the Emacs workflow, but it's additional functionality.
 I'm hoping this is straightforward and I can spend a day on it to get this working, then move on to other bug fixes.
+**** DONE [#B] Show kill ring no longer works
+CLOSED: [2024-04-18 Thu 05:39]
+**** DONE [#B] Move org-todo items into org-config use-package statement
+CLOSED: [2024-04-18 Thu 06:01]
+**** DONE [#C] Fix company error message
+CLOSED: [2024-04-18 Thu 06:03]
+This is because I removed the shut-up function earlier but failed to remove this particular use of it.
+Now removed, so closing
+***** What's the Issue?
+Company: An error occurred in auto-begin
+Company: backend company-capf error "Symbol’s function definition is void: shut-up" with args (prefix)
+**** DONE [#B] Rework org agenda
+CLOSED: [2024-04-18 Thu 20:26]
+:LOGBOOK:
+- State "DONE"       from "PROJECT"    [2024-04-18 Thu 20:26]
+- State "TODO"       from              [2024-04-18 Thu 12:35]
+:END:
+***** DONE [#B] Create All Tasks List
+CLOSED: [2024-04-18 Thu 20:25]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-04-18 Thu 20:25]
+- State "TODO"       from              [2024-04-18 Thu 16:42]
+:END:
+
+***** DONE [#B] Create All Tasks Current Buffer List
+CLOSED: [2024-04-18 Thu 20:25]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-04-18 Thu 20:25]
+- State "TODO"       from              [2024-04-18 Thu 16:43]
+:END:
+***** DONE [#B] Remove Org-Super-Agenda Code and Test
+CLOSED: [2024-04-18 Thu 20:26]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-04-18 Thu 20:26]
+- State "TODO"       from              [2024-04-18 Thu 17:02]
+:END:
+To do after all other tasks have been created
+- [X] Quick search for super agenda methods that need removing
+- [X] Remove org-super-agenda
+- [X] Test all various f8 functions work
+- [X] Remove org-super-agenda from elpa
+      Reboot to ensure it's not reinstalled
+- [X] Regenerate localrepo after restarting
+      This ensures any dependencies are gone
+***** DONE [#B] Reword Commentary for Accuracy
+CLOSED: [2024-04-18 Thu 20:26]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-04-18 Thu 20:26]
+- State "TODO"       from              [2024-04-18 Thu 18:06]
+:END:
+
+***** DONE [#B] Create Main Agenda
+CLOSED: [2024-04-18 Thu 17:02]
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-04-18 Thu 17:02]
+- State "DOING"      from "TODO"       [2024-04-18 Thu 16:41]
+- State "TODO"       from              [2024-04-18 Thu 16:40]
+:END:
+Bind it and test all custom functions used.
+***** 2024-04-18 Thu @ 12:42:31 -0500 Project Scope
+This is with an eye to remove org-super-agenda.
+I really just need:
+- an agenda with all pri A tasks, the week's schedule, all B & C tasks
+  this should be bound to f8
+- all tasks and projects
+  bound to C-f8
+- all tasks and projects for this buffer
+  bound to M-f8
+
+**** DONE [#C] Fix Simple Task Capture
+CLOSED: [2024-04-18 Thu 22:14]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-04-18 Thu 22:14]
+:END:
+Now mapped to C-S-t at the bottom of org-capture-config.el
+***** 2024-04-18 Thu @ 20:31:44 -0500 Issue
+It's now failing with
+org-roam-capture--fill-template: Wrong type argument: char-or-string-p, (expand-file-name (concat roam-dir "/inbox.org"))
 ** DOING Complete v0.7 Release Checklist [8/11]
 *** DOING 2 Week Fit and Finish (ends 2024.04.18)
 *** TODO Clean Launch from Archsetup
@@ -500,7 +1175,7 @@ I'm hoping this is straightforward and I can spend a day on it to get this worki
 *** DONE Clean Launch from Git Clone
 *** DONE Merged Cleanly Into Main Branch
 *** DONE Main Branch Pushed to github and git.cjennings.net
-* Emacs Config v0.8
+* PROJECT Emacs Config v0.8
 ** TODO Hugo Blogging Workflow
 *** 2024-04-04 Thu @ 16:44:40 -0500 Thoughts on Functionality
 The whole blogging workflow should happen in Emacs.
@@ -620,7 +1295,7 @@ Captured On: [2024-04-06 Sat 11:09]
 The number and complexity of bugs will tell me whether terminal Emacs is supported in this tag.
 ** TODO Emacs Config v0.8 Release Checklist
 (add latest release checklist here)
-* Emacs Config v0.9
+* PROJECT Emacs Config v0.9
 ** TODO VC Installs from Github
 ** TODO Prog Go Workflow
 ** TODO Prog Python Workflow
@@ -634,7 +1309,7 @@ The number and complexity of bugs will tell me whether terminal Emacs is support
 - [ ] Main Branch Pushed to github and git.cjennings.net
 - [ ] 2 Weeks of Use and Bug Fixing
 - [ ] Mark Release as DONE and Create Tag on Repo
-* Emacs Config v0.10
+* PROJECT Emacs Config v0.10
 ** TODO Complete "Localrepo" Functionality
 *** 2024-04-04 Thu @ 21:11:04 -0500 Considering Renaming "Localrepo"
 I worry that "localrepo" will be confused with elpa-mirrors, both local and remote.
@@ -2983,6 +3658,15 @@ All the following functions interact with an email headers to expose or find out
 #+END_QUOTE
 [[https://etienne.depar.is/emacs.d/mu4e.html][Mu4e customization]]
 Captured On: [2024-04-13 Sat 04:56]
+*** TODO Ensure you can attach items to an email message using dired
+#+BEGIN_QUOTE
+It is possible to attach files to mu4e messages using dired (emacs), using the following steps (based on a post on the mu-discuss mailing list by Stephen Eglen).
+
+(add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
+Then, mark the file(s) in dired you would like to attach and press C-c RET C-a, and you’ll be asked whether to attach them to an existing message, or create a new one.
+#+END_QUOTE
+[[https://www.djcbsoftware.nl/code/mu/mu4e/Dired.html][Dired (Mu4e 1.12.3 user manual)]]
+Captured On: [2024-04-18 Thu 05:52]
 ** Emacs Markdown Config Backlog [0/1]
 *** TODO Finish Markdown Preview Functionality
 ** Emacs Modeline Backlog [0/3]
@@ -3055,6 +3739,9 @@ org-caldav-sync-changes-to-org 'all)
 #+END_QUOTE
 [[https://github.com/DamienCassou/emacs.d/blob/master/init.el#L352][emacs.d/init.el at master · DamienCassou/emacs.d]]
 Captured On: [2024-04-05 Fri 15:24]
+*** TODO This org-gcal appears to be more recent
+[[https://github.com/kidd/org-gcal.el][kidd/org-gcal.el: Org sync with Google Calendar. (active maintained project as of 2019-11-06)]]
+Captured On: [2024-04-18 Thu 08:27]
 ** Emacs Org Babel Backlog [0/3]
 *** TODO Add Org Babel Support for PGN
 [[https://gist.github.com/larrasket/4188cac7d0d034eda6ea99160e94dc57][Add org babel support for Portable Game Notation]]
@@ -3078,6 +3765,9 @@ Captured On: [2023-11-01 Wed 12:34]
 -  'article-archive' should be 'saved-articles'
 -  'article-file' should be 'article-inbox' or something else
 
+*** TODO Put a generic org capture on Capture Templates
+This is for use when it's not a TODO item and you want to capture it via the browser.
+Captured On: [2024-04-16 Tue 20:03]
 ** Emacs Org Drill Backlog [0/6]
 *** TODO Create Emacs Drill Questions From This Post About Adding to Lists
 #+BEGIN_QUOTE
@@ -3345,6 +4035,9 @@ the following to register the mime-type with the OS:
 #+END_QUOTE
 [[https://www.reddit.com/r/emacs/comments/fvlcqg/anyone_using_orgprotocol_with_only_a_window/][(3) Anyone using org-protocol with only a window manager but no desktop environment? : emacs]]
 Captured On: [2024-04-02 Tue 16:54]
+*** TODO Add refile mode to the right mu4e mail view mode
+[[][]]
+Captured On: [2024-04-16 Tue 20:04]
 ** Emacs Org Roam Backlog [0/5]
 *** TODO Compare Orgrr versus Org-Roam
 [[https://github.com/rtrppl/orgrr][GitHub - rtrppl/orgrr: Orgrr is a minimalist but complete note-taking system for Emacs. Its intended purpose is the creation and management of a Zettelkasten-like system.]]
@@ -3423,6 +4116,12 @@ Captured On: [2023-10-21 Sat 08:41]
 *** TODO Look into Delve for Org-Roam
 [[https://github.com/publicimageltd/delve][publicimageltd/delve: Delve into your org-roam zettelkasten]]
 Captured On: [2024-04-05 Fri 13:57]
+*** TODO Can't export from recipes due to formatting
+Org mode needs a single all-encompassing header, otherwise it will just export that particular section on it's own.
+If you can't find an easy workaround, you will need to:
+- change all the current recipes
+- set a property at the top of the buffer telling org to expand the top node so the buffer doesn't appear empty.
+- change the template, including adding the property
 ** Emacs PDF Backlog [0/2]
 *** TODO Double Check PDF-tools Settings Across All Emacs Functionality
 [[https://emacs.stackexchange.com/questions/19686/how-to-use-pdf-tools-pdf-view-mode-in-emacs][gnus - How to use pdf-tools (pdf-view-mode) in emacs? - Emacs Stack Exchange]]
@@ -4755,3 +5454,464 @@ When I run Emacs (with xwidget-webkit support enabled) like this:
 
 ~/.local/opt/emacs/bin/emacs --init-directory ~/.config/emacs -xrm "emacs.synchronous: true"
 xwidget-webkit works!
+** Set up Emacs to work with gpg files for authentication
+Article Link: http://prodissues.com/2016/02/emacs-gpg-for-dummies.html
+Captured On: [2024-04-13 Sat 05:29]
+[[http://prodissues.com/][prodissues]]
+
+• [[http://prodissues.com/about/][about]]
+• [[http://prodissues.com/about/#contact][contact]]
+• [[https://twitter.com/prodissues][twitter]]
+• [[http://prodissues.com/feeds/all.atom.xml][feed]]
+
+Emacs GPG For Dummies
+
+Tue 16 February 2016 by yaniv
+
+I've [[https://prodissues.com/2016/02/adding-mu4e-support-to-emacs.html][set up mu4e]], and have my Gmail credentials stored in two files:
+
+1 .offlineimaprc - this file is used by Offlineimap to connect to my Gmail and sync my inbox with mu4e.
+2 .authinfo - that file stores my Gmail credential, and used by Emacs to send emails.
+
+Unfortunately, both of those files are plain text, and though I’m not a security freak, I’m uncomfortable
+storing my passwords out in the open. So, I went ahead to find out how to encrypt them. Most of the
+tutorials I read were too technical, and covered much more than my simple usecase. It’s not that I
+couldn’t follow theme, but I know I wouldn’t have retained the information, and able to retract my steps
+if I needed to in the future.
+
+My goal with this post was to create a simple guide on how to install gpg, generate a key, and use it in
+mu4e. I failed... I thought I will be able to it non-technical for the most part, but once getting to
+configure Emacs and mu4e to work with gpg, I had to delve into some heavy configuration, which included
+the creation of a python script to work along Offlineimap... The good thing is that this guide will help
+you get Emacs and mu4e work with an encrypted version of a .authinfo file, and your credentials will remain
+secret.
+
+Now that our expectations are set, and assuming you're up for the ride, lets start this journey.
+
+Installing GPG
+
+~ $ brew install gpg
+
+Let's make sure gpg was installed:
+
+~ $ gpg --version
+
+gpg--version.png
+
+Figure 1: gpg version information along with the list of supported algorithms
+
+Now really, the most informative source of information is gpg's help. Go ahead and skim it:
+
+~ $ gpg -h
+
+Create a key
+
+~ $ gpg --gen-key
+
+There’s a simple wizard that lets you set the encryption type, and asks for your name, email address and
+other comments. Those details will be associated with your key.
+
+Next, you’ll be asked to create a passphrase. This is like the password to your secret key. If you lose
+it, you’ll have no access to any of the information encrypted with this key. So don’t ever lose it…
+
+Here’s how this flow looks like:
+
+~ $ gpg --gen-key
+gpg (GnuPG) 1.4.19; Copyright (C) 2015 Free Software Foundation, Inc.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+Please select what kind of key you want:
+   (1) RSA and RSA (default)
+   (2) DSA and Elgamal
+   (3) DSA (sign only)
+   (4) RSA (sign only)
+Your selection? 1
+RSA keys may be between 1024 and 4096 bits long.
+What keysize do you want? (2048)
+Requested keysize is 2048 bits
+Please specify how long the key should be valid.
+         0 = key does not expire
+      <n>  = key expires in n days
+      <n>w = key expires in n weeks
+      <n>m = key expires in n months
+      <n>y = key expires in n years
+Key is valid for? (0)
+Key does not expire at all
+Is this correct? (y/N) y
+
+You need a user ID to identify your key; the software constructs the user ID
+from the Real Name, Comment and Email Address in this form:
+    "Heinrich Heine (Der Dichter) <heinrichh@duesseldorf.de>"
+
+Real name: Jane Roe
+Email address: jane@example.com
+Comment: lorem ipsum
+You selected this USER-ID:
+    "Jane Roe (lorem ipsum) <jane@example.com>"
+
+Change (N)ame, (C)omment, (E)mail or (O)kay/(Q)uit? O
+You need a Passphrase to protect your secret key.
+
+We need to generate a lot of random bytes. It is a good idea to perform
+some other action (type on the keyboard, move the mouse, utilize the
+disks) during the prime generation; this gives the random number
+generator a better chance to gain enough entropy.
+..........+++++
+.+++++
+We need to generate a lot of random bytes. It is a good idea to perform
+some other action (type on the keyboard, move the mouse, utilize the
+disks) during the prime generation; this gives the random number
+generator a better chance to gain enough entropy.
+..........+++++
+...+++++
+gpg: key 86B62C98 marked as ultimately trusted
+public and secret key created and signed.
+
+gpg: checking the trustdb
+gpg: 3 marginal(s) needed, 1 complete(s) needed, PGP trust model
+gpg: depth: 0  valid:   2  signed:   0  trust: 0-, 0q, 0n, 0m, 0f, 2u
+pub   2048R/86B62C98 2016-02-17
+      Key fingerprint = 42FD C031 BD51 4CC8 7C02  EA14 35D4 80A2 86B6 2C98
+uid                  Jane Roe (lorem ipsum) <jane@example.com>
+sub   2048R/8C0D5E5D 2016-02-17
+
+~ $
+
+Now that you've created a key, you can go ahead and sign the .authinfo file.
+
+Sign and encrypt the .authinfo file[[http://prodissues.com/2016/02/emacs-gpg-for-dummies.html#fn-1][1]]
+
+~ $ gpg -se .authinfo
+
+You'll be asked for your passphrase. Enter it, and the .authinfo will be signed, and renamed to .
+authinfo.gpg
+
+[[https://www.emacswiki.org/emacs/GnusAuthinfo][EmacsWiki]] suggests to limit permission to this file. I find it important:
+
+~ $ chmod 600 .authinfo.gpg
+
+Back in Emacs, there are couple of changes we need to make in order for mu4e to start working with the ,
+authinfo.gpg file. I wish I read [[https://gist.github.com/areina/3879626][this gist]] before, because it covers those changes succinctly, but here is
+a summary of those modifications:
+
+Changes to .offlineimaprc
+
+Two additions:
+
+1 A reference to a python file where you'll store a function to fetch your credentials from the .
+ authinfo.gpg file
+2 Under the [Repository Remote] section add the call to the get_password_emac function
+
+Here's how your .offlineimaprc file will look like afterwards:
+
+[general]
+accounts = Gmail
+maxsyncaccounts = 3
+pythonfile = ~/.offlineimap.py
+
+[Account Gmail]
+localrepository = Local
+remoterepository = Remote
+
+[Repository Local]
+type = Maildir
+localfolders = ~/Maildir
+[Repository Remote]
+type = IMAP
+remoteuser = yanivdll@gmail.com
+remotehost = imap.gmail.com
+remotepasseval = get_password_emacs("imap.gmail.com", "yanivdll@gmail.com", "993")
+ssl = yes
+sslcacertfile = /usr/local/etc/openssl/certs/ca-bundle.crt
+maxconnections = 1
+realdelete = no
+
+Add a .offlineimap.py file
+
+This file will define the get_password_emac function:
+
+#!/usr/bin/python
+import re, os
+
+def get_password_emacs(machine, login, port):
+    s = "machine %s login %s port %s password ([^ ]*)\n" % (machine, login, port)
+    p = re.compile(s)
+    authinfo = os.popen("gpg -q --no-tty -d ~/.authinfo.gpg").read()
+    return p.search(authinfo).group(1)
+
+Changes to mu4e config
+
+-------------------------------------------------------------------------------------------------------------------------
+
+Lastly, in your Emacs config, under the mu4e smtp settings, add a reference to the encrypted auth file:
+
+...
+(setq message-send-mail-function 'smtpmail-send-it
+      starttls-use-gnutls t
+      smtpmail-starttls-credentials
+      '(("smtp.gmail.com" 465 nil nil))
+      smtpmail-auth-credentials
+      (expand-file-name "~/.authinfo.gpg")
+      smtpmail-default-smtp-server "smtp.gmail.com"
+      smtpmail-smtp-server "smtp.gmail.com"
+      smtpmail-smtp-service 465
+      smtpmail-debug-info t)
+...
+
+Now, you're emails should be sent using the .authinfo.gpg file. Go on and try it[[http://prodissues.com/2016/02/emacs-gpg-for-dummies.html#fn-2][2]]. Note that before
+actually sending the email, Emacs will ask for your pass-phrase[[http://prodissues.com/2016/02/emacs-gpg-for-dummies.html#fn-3][3]]
+
+Extras
+
+Backup private key
+
+I stored all the information related to my gpg key, as well as a backup file in my [[https://agilebits.com/onepassword][1password]]. Here's how I
+created the key backup:
+
+~ $ gpg --export-secret-keys --armor jane@example.com > jroe-privkey.asc
+
+Important: Make sure to store the output file in a secure place; it contains your private key in plain
+text.
+
+Encrypt text in Emacs
+
+1 Mark the text you would like to encrypt
+2 Run M-x epa-encrypt-region
+3 Mark the key you would like to use for encryption
+
+Now the encrypted text will replace the original, plain, text:
+
+encrypted-text.png
+
+Figure 2: M-x epa-encrypt-region will encrypt a region of text in Emacs
+
+Decrypt text
+
+To decrypt a message, or a file you've encrypted:
+
+1 Mark the text you would like to decrypt (you'll have to mark also the header and footer of the message)
+2 Run M-x epa-decrypt-region
+
+decrypt-text.png
+
+ Figure 3: M-x epa-decrypt-region will decrypt a region of text in Emacs
+
+3 Enter your pass-phrase
+
+4 Emacs will ask if you want the decrypted text to replace the original text. If you choose "No", it will
+ open the text in a second window.
+
+decrypted-text-2.png
+
+Figure 4: The decrypted text in a second window
+
+That's it. If you're interested in more than the basics that I went through above, try the links bellow.
+
+Reference
+
+• [[https://www.gnupg.org/documentation/howtos.html][Gnupg - documentation]]
+• Using gpg in emacs - [[https://www.gnu.org/software/emacs/manual/html_mono/epa.html#Quick-start][EasyPG Assistant user’s manual]]
+• [[https://fedoraproject.org/wiki/Creating_GPG_Keys#ExportCLI][Fedora Wiki pages]] - GPG essentials
+• [[https://www.emacswiki.org/emacs/GnusAuthinfo][EmacsWiki - GnusAuthinfo]]
+• [[http://danzorx.tumblr.com/post/11976550618/easypg-for-emacs-on-os-x-or-sometimes-emacs][Tricotism - EasyPG for Emacs on OS X, or sometimes Emacs doesn’t load the env paths you might expect]]
+• [[http://ubuntuforums.org/showthread.php?t=2155060][ubuntu forums]] Encrypting and decrypting a message
+
+-------------------------------------------------------------------------------------------------------------------------
+
+1 Made an edit here (initially, I only signed the file, without encrypting it). Thanks [[https://www.reddit.com/user/aminb][/u/aminab]] for [[https://www.reddit.com/r/emacs/comments/46fi6f/adding_mu4e_support_to_emacs_part_two_configuring/d04szm3][the
+ correction]]. [[http://prodissues.com/2016/02/emacs-gpg-for-dummies.html#fnref-1][↩]]
+
+2 If you still have the .authinfo file, rename it. Once we see that mu4e sends emails using the encrypted
+ version of the auth file, we can dispose this, decrypted, version of it. [[http://prodissues.com/2016/02/emacs-gpg-for-dummies.html#fnref-2][↩]]
+
+3 If Emacs asks for your passphrase too often, you might find this [[https://www.reddit.com/r/emacs/comments/45lx1s/adding_mu4e_support_to_emacs_the_hard_way/d01b1hu][comment in Reddit]], by [[https://www.reddit.com/user/aminb][/u/aminb]],
+ helpful. [[http://prodissues.com/2016/02/emacs-gpg-for-dummies.html#fnref-3][↩]]
+
+Powered by [[http://getpelican.com/][Pelican]]. Written in [[http://python.org][Python]]. Codebase on [[https://github.com/yanivdll/prodissues][Github]]
+** [[https://xenodium.com/emacs-chaining-org-babel-blocks/][Emacs: chaining org babel blocks]]
+Article Link: https://xenodium.com/emacs-chaining-org-babel-blocks/
+Captured On: [2024-04-13 Sat 04:11]
+Álvaro Ramírez
+
+27 October 2020 Emacs: chaining org babel blocks
+
+Recently wanted to chain org babel blocks. That is, aggregate separate source blocks and execute as one
+combined block.
+
+chain.gif
+
+I wanted the chaining primarily driven through header arguments as follows:
+
+#+name: block-0
+#+begin_src swift
+  print("hello 0")
+#+end_src
+
+#+name: block-1
+#+begin_src swift :include block-0
+  print("hello 1")
+#+end_src
+
+#+RESULTS: block-1
+: hello 0
+: hello 1
+
+I didn't find the above syntax and behaviour supported out of the box (or didn't search hard enough?).
+Fortunately, this is our beloved and malleable editor, so we can always bend it our way! Wasn't quite sure
+how to go about it, so I looked at other babel packages for inspiration. [[https://github.com/astahlman/ob-async][ob-async]] was great for that.
+
+Turns out, advicing org-babel-execute-src-block did the job:
+
+(defun adviced:org-babel-execute-src-block (&optional orig-fun arg info params)
+  (let ((body (nth 1 info))
+        (include (assoc :include (nth 2 info)))
+        (named-blocks (org-element-map (org-element-parse-buffer)
+                          'src-block (lambda (item)
+                                       (when (org-element-property :name item)
+                                         (cons (org-element-property :name item)
+                                               item))))))
+    (while include
+      (unless (cdr include)
+        (user-error ":include without value" (cdr include)))
+      (unless (assoc (cdr include) named-blocks)
+        (user-error "source block \"%s\" not found" (cdr include)))
+      (setq body (concat (org-element-property :value (cdr (assoc (cdr include) named-blocks)))
+                         body))
+      (setf (nth 1 info) body)
+      (setq include (assoc :include
+                           (org-babel-parse-header-arguments
+                            (org-element-property :parameters (cdr (assoc (cdr include) named-blocks)))))))
+    (funcall orig-fun arg info params)))
+
+(advice-add 'org-babel-execute-src-block :around 'adviced:org-babel-execute-src-block)
+
+Before I built my own support, I did find that [[https://orgmode.org/manual/Noweb-Reference-Syntax.html][noweb]] got me most of what I needed, but required sprinkling
+blocks with placeholder references.
+
+noweb.gif
+
+Combining [[https://orgmode.org/manual/Noweb-Reference-Syntax.html][:noweb]] and [[https://org-babel.readthedocs.io/en/latest/header-args/#prologue][:prologue]] would have been a great match, if only prologue did expand the noweb
+reference. I'm sure there's an alternative I'm missing. Either way, it was fun to poke at babel blocks and
+build my own chaining support.
+** [[https://xenodium.com/emacs-password-protect-current-pdf-revisited/][Emacs: Password-protect current pdf (revisited)]]
+Article Link: https://xenodium.com/emacs-password-protect-current-pdf-revisited/
+Captured On: [2024-04-13 Sat 04:18]
+Álvaro Ramírez
+
+09 July 2022 Emacs: Password-protect current pdf (revisited)
+
+UPDATE: [[https://github.com/xenodium/dwim-shell-command][dwim-shell-command]] is now available on [[https://melpa.org/#/dwim-shell-command][melpa]].
+
+passprotect.gif
+
+With a recent look at writing [[https://xenodium.com/emacs-dwim-shell-command/][DWIM shell commands]], I've been revisiting my custom Emacs functions invoking
+command line utilities.
+
+Take this [[https://xenodium.com/emacs-password-protect-current-pdf/][post]], for example, where I invoke [[https://github.com/qpdf/qpdf][qpdf]] via a elisp. Using the new
+dwim-shell-command--on-marked-files in [[https://github.com/xenodium/dwim-shell-command/blob/main/dwim-shell-command.el][dwim-shell-command.el]], the code is stripped down to a bare minimum:
+
+(defun dwim-shell-commands-pdf-password-protect ()
+  "Password protect pdf."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+   "Password protect pdf"
+   (format "qpdf --verbose --encrypt '%s' '%s' 256 -- '<<f>>' '<<fne>>_enc.<<e>>'"
+           (read-passwd "user-password: ")
+           (read-passwd "owner-password: "))
+   :utils "qpdf"
+   :extensions "pdf"))
+
+Compare the above dwim-shell-command--on-marked-files usage to my [[https://xenodium.com/emacs-password-protect-current-pdf/][previous implementation]]:
+
+(defun pdf-password-protect ()
+  "Password protect current pdf in buffer or `dired' file."
+  (interactive)
+  (unless (executable-find "qpdf")
+    (user-error "qpdf not installed"))
+  (unless (equal "pdf"
+                 (or (when (buffer-file-name)
+                       (downcase (file-name-extension (buffer-file-name))))
+                     (when (dired-get-filename nil t)
+                       (downcase (file-name-extension (dired-get-filename nil t))))))
+    (user-error "no pdf to act on"))
+  (let* ((user-password (read-passwd "user-password: "))
+         (owner-password (read-passwd "owner-password: "))
+         (input (or (buffer-file-name)
+                    (dired-get-filename nil t)))
+         (output (concat (file-name-sans-extension input)
+                         "_enc.pdf")))
+    (message
+     (string-trim
+      (shell-command-to-string
+       (format "qpdf --verbose --encrypt '%s' '%s' 256 -- '%s' '%s'"
+               user-password owner-password input output))))))
+
+This really changes things for me. I'll be more inclined to add more of these tiny integrations to lots of
+great command line utilities. Take this recent [[https://news.ycombinator.com/item?id=32028752][Hacker News post]] on [[https://github.com/ocrmypdf/OCRmyPDF][ocrmypdf]] as an example. Their [[https://ocrmypdf.readthedocs.io/en/latest/cookbook.html][cookbook]]
+has lots of examples that can be easily used via dwim-shell-command--on-marked-files.
+
+What command line utils would you use?
+** [[https://xenodium.com/emacs-dwim-shell-command-multi-language/][Emacs: DWIM shell command (multi-language)]]
+Article Link: https://xenodium.com/emacs-dwim-shell-command-multi-language/
+Captured On: [2024-04-13 Sat 04:19]
+Álvaro Ramírez
+
+10 July 2022 Emacs: DWIM shell command (multi-language)
+
+UPDATE: [[https://github.com/xenodium/dwim-shell-command][dwim-shell-command]] is now available on [[https://melpa.org/#/dwim-shell-command][melpa]].
+
+csv.gif
+
+I keep on [[https://xenodium.com/png-to-icns-emacs-dwim-style/][goofying around]] with [[https://github.com/xenodium/dwim-shell-command][dwim-shell-command]] and it's sibling dwim-shell-command-on-marked-files from
+[[https://github.com/xenodium/dwim-shell-command/blob/main/dwim-shell-command.el][dwim-shell-command.el]].
+
+In addition to defaulting to [[https://en.wikipedia.org/wiki/Z_shell][zsh]], dwim-shell-command-on-marked-files now support other shells and languages.
+This comes in handy if you have snippets in different languages and would like to easily invoke them from
+Emacs. Multi-language support enables "using the best tool for the job" kinda thing. Or maybe you just
+happen to know how to solve a particular problem in a specific language.
+
+Let's assume you have an existing Python snippet to convert files from csv to json. With
+dwim-shell-command-on-marked-files, you can invoke the Python snippet to operate on either [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Dired.html][dired]] or buffer
+files.
+
+(defun dwim-shell-command-csv-to-json-via-python ()
+  "Convert csv file to json (via Python)."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+   "Convert csv file to json (via Python)."
+   "
+import csv
+import json
+text = json.dumps({ \"values\": list(csv.reader(open('<<f>>')))})
+fpath = '<<fne>>.json'
+with open(fpath , 'w') as f:
+  f.write(text)"
+   :shell-util "python"
+   :shell-args "-c"))
+
+Or, maybe you prefer Swift and already had a snippet for the same thing?
+
+(defun dwim-shell-command-csv-to-json-via-swift ()
+  "Convert csv file to json (via Swift)."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+   "Convert csv file to json (via Swift)."
+   "
+    import Foundation
+    import TabularData
+    let filePath = \"<<f>>\"
+    print(\"reading \\(filePath)\")
+    let content = try String(contentsOfFile: filePath).trimmingCharacters(in: .whitespacesAndNewlines)
+    let parsedCSV = content.components(separatedBy: CSVWritingOptions().newline).map{
+      $0.components(separatedBy: \",\")
+    }
+    let jsonEncoder = JSONEncoder()
+    let jsonData = try jsonEncoder.encode([\"value\": parsedCSV])
+    let json = String(data: jsonData, encoding: String.Encoding.utf8)
+    let outURL = URL(fileURLWithPath:\"<<fne>>.json\")
+    try json!.write(to: outURL, atomically: true, encoding: String.Encoding.utf8)
+    print(\"wrote \\(outURL)\")"
+   :shell-pipe "swift -"))
+
+You can surely solve the same problem in elisp, but hey it's nice to have options and flexibility.

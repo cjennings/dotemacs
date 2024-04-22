@@ -31,15 +31,17 @@
 ;; $ rlwrap sbcl
 
 ;;; Code:
+(require 'ert)
 
 ;; -------------------------------- Elisp Setup --------------------------------
 ;; run this on editing an elisp file
 
 (defun cj/elisp-setup ()
   "My default code preferences for emacs-lisp."
-  (setq-default tab-width 4)                ;; set the tab width to 4 spaces
-  (setq-default indent-tabs-mode -1)        ;; disable tab characters
-  (setq-default fill-column 80))
+  (setq-default tab-width 4)            ;; set the tab width to 4 spaces
+  (setq-default indent-tabs-mode -1)    ;; disable tab characters
+  (setq-default fill-column 80)         ;; default column for gnu projects
+  (display-fill-column-indicator-mode)) ;; show where the 80th column is
 (add-hook 'emacs-lisp-mode-hook 'cj/elisp-setup)
 
 ;; ------------------------------ Emacs Lisp REPL ------------------------------
@@ -85,7 +87,7 @@
 
 
 (defun cj/eval-and-run-all-tests-in-buffer ()
-  "Delete loaded tests, evaluate current buffer. and run all loaded ERT tests."
+  "Delete any loaded tests, evaluate current buffer, and run loaded ERT tests."
   (interactive)
   (ert-delete-all-tests)
   (eval-buffer)

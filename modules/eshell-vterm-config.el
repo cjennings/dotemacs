@@ -65,20 +65,26 @@
               (add-to-list 'eshell-visual-options '("git" "--help" "--paginate"))
 
               ;; aliases
-              (eshell/alias "clear"  "clear 1")    ;; leaves the prompt at the top of the window
-              (eshell/alias "e"      "find-file $*")
+              (eshell/alias "clear"  "clear 1") ;; leaves prompt at the top of the window
+              (eshell/alias "e"      "find-file $1")
               (eshell/alias "gocj"   "cd /sshx:cjennings@cjennings.net:/var/cjennings/")
               (eshell/alias "gosb"   "cd /sshx:cjennings@wolf.usbx.me:/home/cjennings/")
               (eshell/alias "gowolf" "cd /sshx:cjennings@wolf.usbx.me:/home/cjennings/")
               (eshell/alias "v"      "eshell-exec-visual $*")
-              (eshell/alias "ff"     "find-file-other-window $*")
-              (eshell/alias "f"      "cj/eshell-find-using-dired $1")
+              (eshell/alias "ff"     "find-file-other-window $1")
+              (eshell/alias "f"      "find-using-dired $1")
               (eshell/alias "r"      "ranger")
-              (eshell/alias "em"     "find-file $*")
-              (eshell/alias "emacs"  "find-file $*")
+              (eshell/alias "em"     "find-file $1")
+              (eshell/alias "emacs"  "find-file $1")
               (eshell/alias "ll"     "ls -l"))))
 
-(defun cj/eshell-find-using-dired (file-pattern)
+(defun eshell/find-file-other-window (file)
+  (find-file-other-window (mapconcat 'identity file " ")))
+
+(defun eshell/find-file (file)
+  (find-file-other-window (mapconcat 'identity file " ")))
+
+(defun eshell/find-using-dired (file-pattern)
   "Find a file FILE-PATTERN' using 'find-name-dired'."
   (let ((escaped-pattern (regexp-quote file-pattern)))
     (find-name-dired . escaped-pattern)))

@@ -45,13 +45,15 @@ Unloads any other applied themes before applying the chosen theme."
 ;; persistence utility functions used by switch themes.
 
 (defvar theme-file (concat sync-dir "emacs-theme.persist")
-  "The location of the file to persist the theme name.")
+  "The location of the file to persist the theme name.
+If you want your theme change to persist across instances, put this in a
+directory that is sync'd across machines with this configuration.")
 
-(defvar fallback-theme-name "wombat"
+(defvar fallback-theme-name "modus-vivendi"
   "The name of the theme to fallback on.
 This is used then there's no file, or the theme name doesn't match
-any of the installed themes. If theme name is 'nil', there will be
-no theme.")
+any of the installed themes. This should be a built-in theme. If theme name is
+'nil', there will be no theme.")
 
 (defun cj/read-file-contents (filename)
   "Read FILENAME and return its content as a string.
@@ -97,14 +99,14 @@ loading the file name, the fallback-theme-name is applied and saved."
 	;; if theme-name is nil, unload all themes and load fallback theme
 	(if (or (string= theme-name "nil") (not theme-name))
 		(progn
-			(mapcar #'disable-theme custom-enabled-themes)
-			(cj/load-fallback-theme "Theme file not found or theme name in it is nil."))
+		  (mapcar #'disable-theme custom-enabled-themes)
+		  (cj/load-fallback-theme "Theme file not found or theme name in it is nil."))
 	  ;; apply theme name or if error, load fallback theme
 	  (condition-case err
 		  (load-theme (intern theme-name) t)
 		(error
-		   (cj/load-fallback-theme (concat "Error loading " theme-name
-										   ".")))))))
+		 (cj/load-fallback-theme (concat "Error loading " theme-name
+										 ".")))))))
 
 (cj/load-theme-from-file)
 

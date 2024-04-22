@@ -78,31 +78,57 @@ Intended to be called within an org capture template."
   ;; ORG-CAPTURE TEMPLATES
   (setq org-protocol-default-template-key "L")
   (setq org-capture-templates
-        '(
+        '(("t" "Task" entry (file+headline inbox-file "Inbox")
+           "* TODO %?" :prepend t)
+
           ("e" "Event" entry (file+headline schedule-file "Scheduled Events")
            "* %?\nWHEN: %^t" :prepend t)
 
           ("E" "Epub Text" entry (file+headline inbox-file "Inbox")
-           "* %?\n#+BEGIN_QUOTE\n %i\n#+END_QUOTE\nSource: [[%:link][%(buffer-name (org-capture-get :original-buffer))]]\nCaptured On: %U" :prepend t)
+           "* %?
+#+BEGIN_QUOTE\n %i\n#+END_QUOTE
+Source: [[%:link][%(buffer-name (org-capture-get :original-buffer))]]
+Captured On: %U" :prepend t)
 
           ("P" "PDF Text" entry (file+headline inbox-file "Inbox")
-           "* %?\n#+BEGIN_QUOTE\n %(org-capture-pdf-active-region)\n#+END_QUOTE\nSource:[[%L][%(buffer-name (org-capture-get :original-buffer))]]\nCaptured On: %U" :prepend t)
+           "* %?
+#+BEGIN_QUOTE\n%(org-capture-pdf-active-region)\n#+END_QUOTE
+Source:[[%L][%(buffer-name (org-capture-get :original-buffer))]]
+Captured On: %U" :prepend t)
 
           ("p" "Link with Selection" entry (file+headline inbox-file "Inbox")
-           "* TODO %?\n#+BEGIN_QUOTE\n%i\n#+END_QUOTE\n[[%:link][%:description]]\nCaptured On: %U" :prepend t)
+           "* %?%:description
+#+BEGIN_QUOTE\n%i\n#+END_QUOTE
+[[%:link][%:description]]
+Captured On: %U\n" :prepend t)
 
           ("L" "Link" entry (file+headline inbox-file "Inbox")
-           "* TODO %?\n[[%:link][%:description]]\nCaptured On: %U" :prepend t)
+           "* %?%:description
+[[%:link][%:description]]\nCaptured On: %U" :prepend t :immediate-finish t)
 
           ("m" "Mu4e Email" entry (file+headline inbox-file "Inbox")
-           "* TODO %?%(if (string= \"%i\" \"\") \"\" \"\n#+BEGIN_QUOTE\n%i\n#+END_QUOTE\")\n[[%:link][%:description]]\nCaptured On: %U"
+           "* TODO %?
+%(if (string= \"%i\" \"\") \"\" \"\n#+BEGIN_QUOTE\n%i\n#+END_QUOTE\")
+[[%:link][%:description]]
+Captured On: %U"
            :prepend t)
 
-		  ("w" "Web Page Clipper" plain
-		   (function cj/org-webpage-clipper)
+          ("g" "Grocery List Item" item
+           (file+headline inbox-file "Grocery List") "%?")
+
+          ("s" "Shopping List Entry" entry
+           (file+headline inbox-file "Shopping List") "* %?")
+
+          ("w" "Web Page Clipper" plain
+           (function cj/org-webpage-clipper)
            "* %a\nArticle Link: %L\nCaptured On: %U\n\n" :immediate-finish t)))
 
   ) ;; end with-eval-after-load 'org
+
+;; ---------------------------- Simple Task Capture ----------------------------
+;; the simplest way to capture a task. Also a simple way to write this function.
+
+(define-key global-map (kbd "C-S-t") (kbd "C-c c t"))
 
 (provide 'org-capture-config)
 ;;; org-capture-config.el ends here.

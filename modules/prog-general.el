@@ -141,6 +141,28 @@ If none exists, it opens magit-status."
   :bind
   ("C-c s i" . ivy-yasnippet))
 
+;; ----------------------- Export Org To Markdown On Save ----------------------
+;; if the file has the proper header, saving an org file will also export to
+;; markdown with a timestamp. The header is this:
+;; # -*- org-auto-export-to-md: t; -*-
+;; #+DATE:
+;; and is available as the org-export-md snippet
+
+(defvar org-auto-export-to-md nil)
+
+(defun cj/export-org-to-md-on-save ()
+  "Export the current org file to Markdown format on save."
+  (when (and (eq major-mode 'org-mode)
+             org-auto-export-to-md)
+    (save-excursion
+      (goto-char (point-min))
+      (search-forward "#+DATE:")
+      (kill-line)
+      (insert (format-time-string " %Y-%m-%d %H:%M"))
+      (org-md-export-to-markdown))))
+
+(add-hook 'after-save-hook 'cj/export-org-to-md-on-save)
+
 ;; --------------------- Display Color On Color Declaration --------------------
 ;; display the actual color as highlight to color hex code
 
