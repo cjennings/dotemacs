@@ -18,11 +18,14 @@
 
 ;;; Code:
 
-;; --------------------------------- Constants ---------------------------------
+;; ------------------------------- Org Constants -------------------------------
 
 ;; note: some constants used here are defined in init.el
-(defvar org-archive-location (concat sync-dir "/archives/archive.org::datetree/"))  ;; location of archive file
-(defvar org-project-files (list schedule-file))
+(defvar org-archive-location
+  (concat sync-dir "/archives/archive.org::datetree/")
+  "Location of the archive file.
+The archive file is where org entries that are archived via
+org-archive-subtree-default are placed.")
 
 ;; ---------------------------- Org General Settings ---------------------------
 
@@ -59,6 +62,36 @@
 
   ;; force pdfs exported from org to open in emacs
   (add-to-list 'org-file-apps '("\\.pdf\\'" . emacs)))
+
+;; -------------------------- Org Appearance Settings --------------------------
+
+(defun cj/org-appearance-settings()
+  "Set foreground, background, and font styles for org mode."
+  (interactive)
+  ;; org-hide should use fix-pitch to align indents for proportional fonts
+  (set-face-attribute 'org-hide nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-meta-line nil :inherit 'shadow)
+
+  ;; Remove foreground and background from block faces
+  (set-face-attribute 'org-block nil :foreground 'unspecified :background 'unspecified)
+  (set-face-attribute 'org-block-begin-line nil :foreground 'unspecified :background 'unspecified)
+  (set-face-attribute 'org-block-end-line nil :foreground 'unspecified :background 'unspecified)
+
+  ;; Get rid of the background on column views
+  (set-face-attribute 'org-column nil :background 'unspecified)
+  (set-face-attribute 'org-column-title nil :background 'unspecified)
+
+  ;; make sure org-links are underlined
+  (set-face-attribute 'org-link nil :underline t)
+
+  (setq org-ellipsis " ▾")                                  ;; change ellipses to down arrow
+  (setq org-hide-emphasis-markers t)                        ;; remove emphasis markers to keep the screen clean
+  (setq org-hide-leading-stars t)                           ;; hide leading stars, just show one per line
+  (setq org-pretty-entities t)                              ;; render special symbols
+  (setq org-pretty-entities-include-sub-superscripts nil)   ;; ...except superscripts and subscripts
+  (setq org-fontify-emphasized-text nil)                    ;; ...and don't render bold and italic markup
+  (setq org-fontify-whole-heading-line t)                   ;; fontify the whole line for headings (for face-backgrounds)
+  (add-hook 'org-mode-hook 'prettify-symbols-mode))
 
 ;; ----------------------------- Org TODO Settings ---------------------------
 
@@ -175,7 +208,19 @@
 
   :config
   (cj/org-general-settings)
+  (cj/org-appearance-settings)
   (cj/org-todo-settings))
+
+
+;; ------------------------------- Org Superstar -------------------------------
+
+;; nicer bullets than simple asterisks.
+(use-package org-superstar
+  :after org
+  :config
+  (org-superstar-configure-like-org-bullets)
+  (setq org-superstar-leading-bullet ?\s)
+  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
 
 ;; ------------------------------- Org-Checklist -------------------------------
 ;; needed for org-habits to reset checklists once task is complete

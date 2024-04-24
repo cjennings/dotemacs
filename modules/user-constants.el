@@ -10,6 +10,9 @@
 ;; ------------------------ Directory And File Constants -----------------------
 
 ;; DIRECTORIES
+(defconst user-home-dir (getenv "HOME")
+  "The user's home directory per the environment variable.")
+
 (defconst emacs-init-file (concat user-emacs-directory "init.el")
   "The location of Emacs's main init file.")
 
@@ -83,22 +86,6 @@
                                       article-archive
                                       ledger-file
 									  macros-file))
-
-;; ------------------------------ Jump To Commands -----------------------------
-;; quick access for commonly used files
-
-(defvar jump-to-keymap nil "Jump-to commonly used files/directories/commands.")
-(setq jump-to-keymap (make-sparse-keymap))
-(global-set-key (kbd "C-c j") jump-to-keymap)
-(define-key jump-to-keymap (kbd "s") #'(lambda () (interactive) (find-file schedule-file)))
-(define-key jump-to-keymap (kbd "i") #'(lambda () (interactive) (find-file inbox-file)))
-(define-key jump-to-keymap (kbd "c") #'(lambda () (interactive) (find-file contacts-file)))
-(define-key jump-to-keymap (kbd "a") #'(lambda () (interactive) (find-file article-file)))
-(define-key jump-to-keymap (kbd "A") #'(lambda () (interactive) (find-file article-archive)))
-(define-key jump-to-keymap (kbd "$") #'(lambda () (interactive) (find-file ledger-file)))
-(define-key jump-to-keymap (kbd "m") #'(lambda () (interactive) (find-file macros-file)))
-(define-key jump-to-keymap (kbd "I") #'(lambda () (interactive) (find-file emacs-init-file)))
-
 
 (provide 'user-constants)
 ;;; user-constants.el ends here.

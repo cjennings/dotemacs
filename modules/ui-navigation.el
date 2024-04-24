@@ -116,7 +116,8 @@ This function won't work with more than one split window."
         (buffer-files-list
          (delq nil (mapcar (lambda (buf)
                              (when (buffer-file-name buf)
-                               (expand-file-name (buffer-file-name buf)))) (buffer-list)))))
+							   (expand-file-name (buffer-file-name buf))))
+						   (buffer-list)))))
     (mapc
      (lambda (buf-file)
        (setq recently-killed-list
@@ -134,7 +135,7 @@ This function won't work with more than one split window."
 (use-package winner-mode
   :ensure nil ;; built-in
   :defer .5
-  :bind ("C-z C-z" . winner-undo))
+  :bind ("<f5>" . winner-undo))
 
   (provide 'ui-navigation)
 ;;; ui-navigation.el ends here

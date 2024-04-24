@@ -7,6 +7,16 @@
 
 ;;; Code:
 
+;; -------------------------------- Geiser Guile -------------------------------
+;; Guile support in Emacs
+
+(use-package geiser-guile
+  :defer 1
+  :commands (geiser-guile)
+  :bind ("C-c G" . geiser-guile)
+  :config
+  (setq geiser-guile-binary "/usr/bin/guile"))
+
 ;; ---------------------------------- Yeetube ----------------------------------
 ;; youtube frontend for emacs
 

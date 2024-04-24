@@ -12,20 +12,20 @@
 
 (defvar user-whole-name "Craig Jennings"
   "The user's full name.")
-(defconst user-name         (getenv "USER")
+(defconst user-name (getenv "USER")
   "The user's name retrieved from the environment variable.")
 (defvar user-mail-address "c@cjennings.net"
   "The user's email address.")
 
 ;; ---------------------------- System Configuration ---------------------------
 
-(add-to-list 'load-path (concat user-emacs-directory "assets"))
-(add-to-list 'load-path (concat user-emacs-directory "custom"))
-(add-to-list 'load-path (concat user-emacs-directory "modules"))
+(add-to-list 'load-path (concat user-emacs-directory "assets/"))
+(add-to-list 'load-path (concat user-emacs-directory "custom/"))
+(add-to-list 'load-path (concat user-emacs-directory "modules/"))
 
 (require 'user-constants)
-(require 'config-utilities) ;; functions useful when modifying Emacs config
 (require 'host-environment) ;; convenience functions re: host environment
+(require 'config-utilities) ;; functions useful when modifying Emacs config
 (require 'system-defaults)
 (require 'keybindings)
 
@@ -91,7 +91,6 @@
 
 (require 'org-config)
 (require 'org-agenda-config)
-(require 'org-appearance-config)
 (require 'org-babel-config)
 (require 'org-capture-config)
 (require 'org-refile-config)

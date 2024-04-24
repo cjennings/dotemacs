@@ -47,11 +47,6 @@
 			(setq debug-on-error nil)
 			(setq debug-on-quit nil)))
 
-;; -------------------------------- Compilation --------------------------------
-
-;; Remove any .eln files inapplicable to this invocation
-(setq native-compile-prune-cache t)
-
 ;; --------------------------- Warning Notifications ---------------------------
 
 ;; log warnings, but don't popup the warnings buffer
