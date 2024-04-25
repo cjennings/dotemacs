@@ -10,9 +10,9 @@
 ;; create a new bookmark and add "Drill Entry" to the name field and the above
 ;; snippet to the URL field.
 
-;; ----------------------------------- Tasks -----------------------------------
-
 ;;; Code:
+
+;; --------------------------------- Org Drill ---------------------------------
 
 (use-package org-drill
   :after org
@@ -20,6 +20,7 @@
   ;; create an org-drill-map so you can use C-d as prefix
   (define-prefix-command 'org-drill-map)
   (global-set-key (kbd "C-d") 'org-drill-map)
+
   :bind
   (:map org-drill-map
 		("s" . cj/drill-start)
@@ -37,32 +38,33 @@
   (setq org-drill-add-random-noise-to-intervals-p t)    ;; slightly vary number of days to repetition
 
   (defun cj/drill-start ()
-  "Prompt user to pick a drill org file, then starts an org-drill session."
-  (interactive)
-  (let ((choices (directory-files drill-dir nil "^[^.].*\\.org$")))
-    (setq chosen-drill-file (completing-read "Choose Flashcard File:" choices))
-    (find-file (concat drill-dir chosen-drill-file))
-    (require 'org-drill)
-    (org-drill)))
+	"Prompt user to pick a drill org file, then start an org-drill session."
+	(interactive)
+	(let* ((choices (directory-files drill-dir nil "^[^.].*\\.org$"))
+		   (chosen-drill-file (completing-read "Choose Flashcard File:" choices)))
+	  (find-file (concat drill-dir chosen-drill-file))
+      (require 'cl) ;; for the first function
+      (org-drill)))
 
   (defun cj/drill-edit ()
-    "Prompts the user to pick a drill org file, then opens it for editing."
-    (interactive)
-    (let* ((choices drill-dir)
-           (chosen-drill-file (completing-read "Choose Flashcards to Edit:" choices)))
-      (find-file chosen-drill-file)))
+	"Prompts the user to pick a drill org file, then opens it for editing."
+	(interactive)
+	(let* ((choices drill-dir)
+		   (chosen-drill-file (completing-read "Choose Flashcards to Edit:" choices)))
+	  (find-file chosen-drill-file)))
 
   (defun cj/drill-capture ()
-    "Quickly capture a drill question."
-    (interactive)
-    (org-capture nil "d"))
+	"Quickly capture a drill question."
+	(interactive)
+	(org-capture nil "d"))
 
   (defun cj/drill-refile ()
-    "Refile to a drill file."
-    (interactive)
-    (setq org-refile-targets '((nil :maxlevel . 1)
-                               (drill-dir :maxlevel . 1)))
-    (call-interactively 'org-refile))
+	"Refile to a drill file."
+	(interactive)
+	(setq org-refile-targets '((nil :maxlevel . 1)
+							   (drill-dir :maxlevel . 1)))
+	(call-interactively 'org-refile))
+
 
   ;; add useful org drill capture templates
   (require 'custom-functions)

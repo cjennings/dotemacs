@@ -704,18 +704,7 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING Open v0.7 Fit and Finish (ends 2024.04.20) [1/6]
-*** DOING [#B] Modularize all org-mode config files into use-package statements
-- [X] org-config
-- [X] org-agenda
-- [ ] org-roam
-- [ ] org-appearance
-- [ ] org-babel
-- [ ] org-capture
-- [ ] org-refile
-- [ ] org-contacts
-- [ ] org-drill
-- [ ] org-export
+** DOING Open v0.7 Fit and Finish (ends 2024.04.20) [1/5]
 *** DOING [#B] Save All Attachments Working in Mu4e
 **** 2024-04-18 Thu @ 05:55:32 -0500 The Documentation Suggests A Path Forward
 This suggests that if I'm writing another function, I should
@@ -1163,8 +1152,23 @@ Now mapped to C-S-t at the bottom of org-capture-config.el
 ***** 2024-04-18 Thu @ 20:31:44 -0500 Issue
 It's now failing with
 org-roam-capture--fill-template: Wrong type argument: char-or-string-p, (expand-file-name (concat roam-dir "/inbox.org"))
+**** DONE [#B] Modularize all org-mode config files into use-package statements [10/10]
+CLOSED: [2024-04-25 Thu 14:15]
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-04-25 Thu 14:15]
+:END:
+- [X] org-config
+- [X] org-agenda
+- [X] org-roam
+- [X] org-appearance
+- [X] org-babel
+- [X] org-capture
+- [X] org-refile
+- [X] org-contacts
+- [X] org-drill
+- [X] org-export
 ** DOING Complete v0.7 Release Checklist [8/11]
-*** DOING 2 Week Fit and Finish (ends 2024.04.18)
+*** DOING Fit and Finish Period
 *** TODO Clean Launch from Archsetup
 *** TODO Close Release and Create Tag on Repo
 *** DONE No Open Work

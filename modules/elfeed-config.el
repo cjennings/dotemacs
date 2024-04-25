@@ -15,7 +15,8 @@
         ("w"   . cj/elfeed-eww-open)                ;; opens in eww
         ("b"   . cj/elfeed-browser-open)            ;; opens in external browser
         ("d"   . cj/elfeed-youtube-dl)              ;; async download with yt-dlp and tsp
-        ("p"   . cj/play-with-mpv)                  ;; async play with mpv
+		("p"   . cj/play-with-mpv)                  ;; async play with mpv
+		("v"   . cj/play-with-mpv)                  ;; async play with mpv
         ("R"   . cj/elfeed-mark-all-as-read)        ;; capital marks all as read, since upper case marks one as read
         ("U"   . cj/elfeed-mark-all-as-unread))     ;; capital marks all as unread, since lower case marks one as unread
   :config
