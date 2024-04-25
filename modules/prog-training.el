@@ -22,7 +22,7 @@
   (url-debug t)
   :config
   (setq leetcode-prefer-language "golang")
-  (setq leetcode-directory "~/code/leetcode")
+  (setq leetcode-directory (concat code-dir "/leetcode"))
   (setq leetcode-save-solutions t))
 
 

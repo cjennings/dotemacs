@@ -81,8 +81,7 @@ If none exists, it opens magit-status."
         ("r" . projectile-replace-regexp))
   :custom
   (projectile-auto-discover nil)
-  (projectile-project-search-path '("~/code"
-                                    "~/projects"))
+  (projectile-project-search-path `(,code-dir ,projects-dir))
   :config
   ;; scan for projects if none are defined
   (cj/projectile-schedule-project-discovery)

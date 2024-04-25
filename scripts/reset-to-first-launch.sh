@@ -18,7 +18,7 @@ rm -rf ~/.emacs.d/eshell/
 rm -rf ~/.emacs.d/nov-places/
 rm -rf ~/.emacs.d/persist/
 rm -rf ~/.emacs.d/quelpa/
-rm -rf ~/.emacs.d/tramp-autosave/
+rm -rf ~/.emacs.d/tramp-auto-save/
 rm -rf ~/.emacs.d/transient/
 rm -rf ~/.emacs.d/tree-sitter/
 rm -rf ~/.emacs.d/url/

@@ -11,11 +11,13 @@
 
 ;;; Code:
 
-(defvar feebleline-working-directory "~/code/feebleline"
+(defvar feebleline-working-directory (concat code-dir "/feebleline")
   "The working directory for the feebleline mode line.")
 
 ;; --------------------------------- Feebleline --------------------------------
 ;; ultrathin simple modeline. adds only useful info to echo area.
+;; working on a	patch to fix a few issues
+;; load the non-packaged version only if the directory exists
 
 (use-package feebleline
   :if (file-readable-p feebleline-working-directory)

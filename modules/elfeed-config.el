@@ -127,7 +127,7 @@
 
 (defun cj/yt-dl-it (url)
   "Downloads the URL in an async shell."
-  (let ((default-directory "~/videos"))
+  (let ((default-directory videos-dir))
     (save-window-excursion
       (async-shell-command (format "tsp yt-dlp --add-metadata -ic -o '%%(channel)s-%%(title)s.%%(ext)s' '%s'" url)))))
 

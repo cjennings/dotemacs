@@ -40,7 +40,7 @@
   (setq mu4e-confirm-quit nil)                                              ;; don't ask when quitting
   (setq mu4e-context-policy 'pick-first)                                    ;; start with the first (default) context
   (setq mu4e-headers-auto-update nil)                                       ;; updating headers buffer on email is too jarring
-  (setq mu4e-root-maildir "~/.mail")                                        ;; root directory for all email accounts
+  (setq mu4e-root-maildir mail-dir)                                         ;; root directory for all email accounts
   (setq mu4e-sent-messages-behavior 'delete)                                ;; don't save to "Sent", IMAP does this already
   (setq mu4e-show-images t)                                                 ;; show embedded images
   (setq mu4e-update-interval nil)                                           ;; don't update automatically
@@ -149,15 +149,14 @@
 
 
 ;; ----------------------------- Compose Mode Hydra ----------------------------
-;; menu available in compose mode
+;; WIP: menu available in compose mode
 
 (defhydra hydra-mu4e-compose (:color blue :timeout 10 :hint nil)
   "Compose Mode Menu\n\n"
   ("q" quit-window                   "Quit" :column "")
   ("a" mail-add-attachment           "Add Attachment" :column "")
   ("r" message-new-line-and-reformat "Newline and Reformat" :column "")
-  ("d" message-delete-not-region     "Delete Outside Region" :column "")
-  )
+  ("d" message-delete-not-region     "Delete Outside Region" :column ""))
 
 (defun mu4e-compose-mode-hook-hydra-setup ()
   "Create hydra/menu keybinding when entering compose mode."
@@ -177,34 +176,17 @@ Prompts user for the action when executing."
 
 ;;; ------------------ Smtpmail & Easy PG Assistant -----------------
 
-;; Send Mail to smtp host from smtpmail temp buffer.
+;; send mail to smtp host from smtpmail temp buffer.
 (use-package smtpmail
   :ensure nil ;; built-in
   :defer .5
   :config
-  ;; (require 'epa-file)
-  ;; (epa-file-enable)
-  ;; (setq epa-pinentry-mode 'loopback)
-  ;; (auth-source-forget-all-cached)
-
   (setq message-kill-buffer-on-exit t) ;; don't keep compose buffers after sending
   (setq sendmail-program (executable-find "msmtp"))
   (setq send-mail-function 'message-send-mail-with-sendmail
         message-send-mail-function 'message-send-mail-with-sendmail)
   (setq message-sendmail-envelope-from 'header)
-  ;; (setq smtpmail-auth-credentials (expand-file-name "~/.authinfo.gpg"))
-  ;; (setq starttls-use-gnutls t)
-  ;; (setq smtpmail-starttls-credentials '(("smtp.gmail.com" 587 nil nil)))
-  ;; (setq smtpmail-default-smtp-server "smtp.gmail.com")
-  ;; (setq smtpmail-smtp-server "smtp.gmail.com")
-  ;; (setq smtpmail-smtp-service 587)
   (setq smtpmail-debug-info t))
-
-;; BUG: queuing mu4e email doesn't currently work.
-;; if you need offline mode, set these -- and create the queue dir
-;; with 'mu mkdir', i.e.. mu mkdir ~/.mail/queued-mail/"
-;; (setq smtpmail-queue-mail  nil)
-;; (setq smtpmail-queue-dir  "~/.mail/queued-mail/"))
 
 (provide 'mail-config)
 ;;; mail-config.el ends here

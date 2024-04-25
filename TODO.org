@@ -566,7 +566,7 @@ Please note that =-i= is case-insensitive for the searched term, not for the fil
 #+END_QUOTE
 [[][]]
 Captured On: [2024-04-18 Thu 06:15]
-* DOING Emacs Config v0.7 [2/5]
+* DOING Emacs Config v0.7 [2/4]
 ** DONE Supplement Existing Functionality [9/9]
 *** DONE [#B] Make sure eshell has same path as other shells
 CLOSED: [2024-03-27 Wed 14:02]
@@ -704,7 +704,7 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING Open v0.7 Fit and Finish (ends 2024.04.20) [1/5]
+** DOING Open v0.7 Fit and Finish (ends 2024.04.20) [0/3]
 *** DOING [#B] Save All Attachments Working in Mu4e
 **** 2024-04-18 Thu @ 05:55:32 -0500 The Documentation Suggests A Path Forward
 This suggests that if I'm writing another function, I should
@@ -815,101 +815,6 @@ Adding /usr/local/bin to your PATH can save you some keystrokes if you are doing
 #+END_QUOTE
 [[https://wiki.archlinux.org/title/msmtp#Using_msmtp_offline][msmtp - ArchWiki]]
 Captured On: [2024-04-13 Sat 09:35]
-*** DOING [#C] Remove all unnecessarily hardcoded filenames and paths
-**** DONE Fix hardcoded in org-roam
-
-(defconst roam-dir        (concat sync-dir "roam/")
-  "The location of org-roam files.")
-
-./modules/org-roam-config.el:16:  (org-roam-directory "~/sync/org/roam/")
-./modules/org-roam-config.el:27:     ("v" "v2mom" plain (file "~/sync/org/roam/templates/v2mom.org")
-./modules/org-roam-config.el:30:     ("r" "recipe" plain  (file "~/sync/org/roam/templates/recipe.org")
-./modules/org-roam-config.el:33:     ("p" "project" plain  (file "~/sync/org/roam/templates/project.org")
-./modules/org-roam-config.el:36:     ("t" "topic" plain  (file "~/sync/org/roam/templates/topic.org")
-./modules/org-roam-config.el:116:  (cj/org-roam-find-node "Topic" "t" "~/sync/org/roam/templates/topic.org"))
-./modules/org-roam-config.el:121:  (cj/org-roam-find-node "Recipe" "r" "~/sync/org/roam/templates/recipe.org"))
-./modules/org-roam-config.el:126:  (cj/org-roam-find-node "Project" "p" "~/sync/org/roam/templates/project.org"))
-./modules/org-roam-config.el:146:								   :if-new (file+head+olp "~/sync/org/roam/inbox.org"
-**** TODO Create constant for ~/.authinfo.gpg
-./modules/ai-config.el:52:  (setq auth-sources '((:source "~/.authinfo.gpg")))
-./modules/epa-config.el:15:  (setq auth-sources '("~/.authinfo.gpg")
-**** TODO Use constants for search path in prog-general
-./modules/prog-general.el:84:  (projectile-project-search-path '("~/code"
-./modules/prog-general.el:85:                                    "~/projects"))
-**** TODO Make initial go menu locations the constants
-./modules/dirvish-config.el:55:   '(("h" "~/"                                 "home")
-./modules/dirvish-config.el:58:     ("co" "~/code"                            "code")
-./modules/dirvish-config.el:59:     ("df" "~/.dotfiles/"                      "dotfiles")
-./modules/dirvish-config.el:60:     ("dn" "~/downloads/"                      "downloads")
-./modules/dirvish-config.el:61:     ("dr" "~/sync/org/drill/"                 "org drill files")
-./modules/dirvish-config.el:62:     ("dt" "~/downloads/torrents/complete/"    "torrents")
-./modules/dirvish-config.el:63:     ("dx" "~/documents/"                      "documents")
-./modules/dirvish-config.el:64:     ("gc" "~/code/golangcourse"               "golang course")
-./modules/dirvish-config.el:65:     ("lt" "~/.local/share/Trash"              "trash")
-./modules/dirvish-config.el:66:     ("mp" "~/sync/playlists/"                 "playlists")
-./modules/dirvish-config.el:67:     ("mv" "~/magic/video/"                    "magic/video")
-./modules/dirvish-config.el:68:     ("mx" "~/music/"                          "music")
-./modules/dirvish-config.el:69:     ("my" "~/magic/youtube/"                  "magic/youtube")
-./modules/dirvish-config.el:70:     ("or" "~/sync/org/"                       "sync")
-./modules/dirvish-config.el:71:     ("pl" "~/sync/playlists"                  "playlists")
-./modules/dirvish-config.el:72:     ("pr" "~/projects/"                       "projects")
-./modules/dirvish-config.el:73:     ("ps" "~/pictures/screenshots/"           "screenshots")
-./modules/dirvish-config.el:74:     ("pw" "~/pictures/wallpaper"              "wallpaper")
-./modules/dirvish-config.el:75:     ("px" "~/pictures/"                       "pictures")
-./modules/dirvish-config.el:76:     ("tg" "~/sync/org/text.games"             "text games")
-./modules/dirvish-config.el:77:     ("vx" "~/videos/"                         "videos")))
-**** TODO mu4e mail directory constant
-./modules/mail-config.el:43:  (setq mu4e-root-maildir "~/.mail")                                        ;; root directory for all email accounts
-./modules/mail-config.el:207:;; (setq smtpmail-queue-dir  "~/.mail/queued-mail/"))
-**** TODO create videos constant
-./modules/elfeed-config.el:129:  (let ((default-directory "~/videos"))
-**** full ripgrep results searching for "~/"
-./modules/org-roam-config.el:16:  (org-roam-directory "~/sync/org/roam/")
-./modules/org-roam-config.el:27:     ("v" "v2mom" plain (file "~/sync/org/roam/templates/v2mom.org")
-./modules/org-roam-config.el:30:     ("r" "recipe" plain  (file "~/sync/org/roam/templates/recipe.org")
-./modules/org-roam-config.el:33:     ("p" "project" plain  (file "~/sync/org/roam/templates/project.org")
-./modules/org-roam-config.el:36:     ("t" "topic" plain  (file "~/sync/org/roam/templates/topic.org")
-./modules/org-roam-config.el:116:  (cj/org-roam-find-node "Topic" "t" "~/sync/org/roam/templates/topic.org"))
-./modules/org-roam-config.el:121:  (cj/org-roam-find-node "Recipe" "r" "~/sync/org/roam/templates/recipe.org"))
-./modules/org-roam-config.el:126:  (cj/org-roam-find-node "Project" "p" "~/sync/org/roam/templates/project.org"))
-./modules/org-roam-config.el:146:								   :if-new (file+head+olp "~/sync/org/roam/inbox.org"
-./modules/modeline-config.el:14:(defvar feebleline-working-directory "~/code/feebleline"
-./modules/epa-config.el:15:  (setq auth-sources '("~/.authinfo.gpg"))
-./modules/prog-general.el:84:  (projectile-project-search-path '("~/code"
-./modules/prog-general.el:85:                                    "~/projects"))
-./modules/prog-go.el:35:  (add-to-list 'exec-path "~/go/bin")
-./modules/dirvish-config.el:55:   '(("h" "~/"                                 "home")
-./modules/dirvish-config.el:58:     ("co" "~/code"                            "code")
-./modules/dirvish-config.el:59:     ("df" "~/.dotfiles/"                      "dotfiles")
-./modules/dirvish-config.el:60:     ("dn" "~/downloads/"                      "downloads")
-./modules/dirvish-config.el:61:     ("dr" "~/sync/org/drill/"                 "org drill files")
-./modules/dirvish-config.el:62:     ("dt" "~/downloads/torrents/complete/"    "torrents")
-./modules/dirvish-config.el:63:     ("dx" "~/documents/"                      "documents")
-./modules/dirvish-config.el:64:     ("gc" "~/code/golangcourse"               "golang course")
-./modules/dirvish-config.el:65:     ("lt" "~/.local/share/Trash"              "trash")
-./modules/dirvish-config.el:66:     ("mp" "~/sync/playlists/"                 "playlists")
-./modules/dirvish-config.el:67:     ("mv" "~/magic/video/"                    "magic/video")
-./modules/dirvish-config.el:68:     ("mx" "~/music/"                          "music")
-./modules/dirvish-config.el:69:     ("my" "~/magic/youtube/"                  "magic/youtube")
-./modules/dirvish-config.el:70:     ("or" "~/sync/org/"                       "sync")
-./modules/dirvish-config.el:71:     ("pl" "~/sync/playlists"                  "playlists")
-./modules/dirvish-config.el:72:     ("pr" "~/projects/"                       "projects")
-./modules/dirvish-config.el:73:     ("ps" "~/pictures/screenshots/"           "screenshots")
-./modules/dirvish-config.el:74:     ("pw" "~/pictures/wallpaper"              "wallpaper")
-./modules/dirvish-config.el:75:     ("px" "~/pictures/"                       "pictures")
-./modules/dirvish-config.el:76:     ("tg" "~/sync/org/text.games"             "text games")
-./modules/dirvish-config.el:77:     ("vx" "~/videos/"                         "videos")))
-./modules/ai-config.el:52:  (setq auth-sources '((:source "~/.authinfo.gpg")))
-./modules/eww-config.el:24:  (setq url-cookie-file "~/.local/share/cookies.txt")
-./modules/prog-training.el:25:  (setq leetcode-directory "~/code/leetcode")
-./modules/games-config.el:27:  (setq malyon-stories-directory "~/sync/org/text.games/"))
-./modules/prog-lisp.el:24:;; (load (expand-file-name "~/quicklisp/slime-helper.el"))
-./modules/mail-config.el:43:  (setq mu4e-root-maildir "~/.mail")                                        ;; root directory for all email accounts
-./modules/mail-config.el:195:  ;; (setq smtpmail-auth-credentials (expand-file-name "~/.authinfo.gpg"))
-./modules/mail-config.el:207:;; (setq smtpmail-queue-dir  "~/.mail/queued-mail/"))
-./modules/calibredb-epub-config.el:27:  (setq calibredb-root-dir "~/sync/books/")
-./modules/calibredb-epub-config.el:28:  (setq calibredb-library-alist '(("~/sync/books/")))
-./modules/elfeed-config.el:129:  (let ((default-directory "~/videos"))
 *** TODO [#C] Articles Should Be Saved Under todo.org TO READ Heading
 **** 2024-04-16 Tue @ 10:28:17 -0500 Notes
 This involves changing webclipper. Webclipper as it is now doesn't return the content, it actually yanks it into the article-file.
@@ -1167,6 +1072,126 @@ CLOSED: [2024-04-25 Thu 14:15]
 - [X] org-contacts
 - [X] org-drill
 - [X] org-export
+**** DONE [#C] Remove all unnecessarily hardcoded filenames and paths [6/6]
+CLOSED: [2024-04-25 Thu 16:53]
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-04-25 Thu 16:53]
+:END:
+
+***** DONE mu4e mail directory constant
+CLOSED: [2024-04-25 Thu 16:53]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-04-25 Thu 16:53]
+:END:
+./modules/mail-config.el:43:  (setq mu4e-root-maildir "~/.mail")                                        ;; root directory for all email accounts
+./modules/mail-config.el:207:;; (setq smtpmail-queue-dir  "~/.mail/queued-mail/"))
+***** DONE create videos constant
+CLOSED: [2024-04-25 Thu 16:28]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-04-25 Thu 16:28]
+:END:
+./modules/elfeed-config.el:129:  (let ((default-directory "~/videos"))
+***** DONE Create constant for ~/.authinfo.gpg
+CLOSED: [2024-04-25 Thu 15:59]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-04-25 Thu 15:59]
+:END:
+./modules/ai-config.el:52:  (setq auth-sources '((:source "~/.authinfo.gpg")))
+./modules/epa-config.el:15:  (setq auth-sources '("~/.authinfo.gpg")
+***** DONE Fix hardcoded in org-roam
+
+(defconst roam-dir        (concat sync-dir "roam/")
+  "The location of org-roam files.")
+
+./modules/org-roam-config.el:16:  (org-roam-directory "~/sync/org/roam/")
+./modules/org-roam-config.el:27:     ("v" "v2mom" plain (file "~/sync/org/roam/templates/v2mom.org")
+./modules/org-roam-config.el:30:     ("r" "recipe" plain  (file "~/sync/org/roam/templates/recipe.org")
+./modules/org-roam-config.el:33:     ("p" "project" plain  (file "~/sync/org/roam/templates/project.org")
+./modules/org-roam-config.el:36:     ("t" "topic" plain  (file "~/sync/org/roam/templates/topic.org")
+./modules/org-roam-config.el:116:  (cj/org-roam-find-node "Topic" "t" "~/sync/org/roam/templates/topic.org"))
+./modules/org-roam-config.el:121:  (cj/org-roam-find-node "Recipe" "r" "~/sync/org/roam/templates/recipe.org"))
+./modules/org-roam-config.el:126:  (cj/org-roam-find-node "Project" "p" "~/sync/org/roam/templates/project.org"))
+./modules/org-roam-config.el:146:								   :if-new (file+head+olp "~/sync/org/roam/inbox.org"
+***** DONE Make initial go menu locations the constants
+CLOSED: [2024-04-25 Thu 15:52]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-04-25 Thu 15:52]
+:END:
+./modules/dirvish-config.el:55:   '(("h" "~/"                                 "home")
+./modules/dirvish-config.el:58:     ("co" "~/code"                            "code")
+./modules/dirvish-config.el:59:     ("df" "~/.dotfiles/"                      "dotfiles")
+./modules/dirvish-config.el:60:     ("dn" "~/downloads/"                      "downloads")
+./modules/dirvish-config.el:61:     ("dr" "~/sync/org/drill/"                 "org drill files")
+./modules/dirvish-config.el:62:     ("dt" "~/downloads/torrents/complete/"    "torrents")
+./modules/dirvish-config.el:63:     ("dx" "~/documents/"                      "documents")
+./modules/dirvish-config.el:64:     ("gc" "~/code/golangcourse"               "golang course")
+./modules/dirvish-config.el:65:     ("lt" "~/.local/share/Trash"              "trash")
+./modules/dirvish-config.el:66:     ("mp" "~/sync/playlists/"                 "playlists")
+./modules/dirvish-config.el:67:     ("mv" "~/magic/video/"                    "magic/video")
+./modules/dirvish-config.el:68:     ("mx" "~/music/"                          "music")
+./modules/dirvish-config.el:69:     ("my" "~/magic/youtube/"                  "magic/youtube")
+./modules/dirvish-config.el:70:     ("or" "~/sync/org/"                       "sync")
+./modules/dirvish-config.el:71:     ("pl" "~/sync/playlists"                  "playlists")
+./modules/dirvish-config.el:72:     ("pr" "~/projects/"                       "projects")
+./modules/dirvish-config.el:73:     ("ps" "~/pictures/screenshots/"           "screenshots")
+./modules/dirvish-config.el:74:     ("pw" "~/pictures/wallpaper"              "wallpaper")
+./modules/dirvish-config.el:75:     ("px" "~/pictures/"                       "pictures")
+./modules/dirvish-config.el:76:     ("tg" "~/sync/org/text.games"             "text games")
+./modules/dirvish-config.el:77:     ("vx" "~/videos/"                         "videos")))
+***** DONE Use constants for search path in prog-general
+CLOSED: [2024-04-25 Thu 14:44]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-04-25 Thu 14:44]
+:END:
+./modules/prog-general.el:84:  (projectile-project-search-path '("~/code"
+./modules/prog-general.el:85:                                    "~/projects"))
+***** full ripgrep results searching for "~/"
+./modules/org-roam-config.el:16:  (org-roam-directory "~/sync/org/roam/")
+./modules/org-roam-config.el:27:     ("v" "v2mom" plain (file "~/sync/org/roam/templates/v2mom.org")
+./modules/org-roam-config.el:30:     ("r" "recipe" plain  (file "~/sync/org/roam/templates/recipe.org")
+./modules/org-roam-config.el:33:     ("p" "project" plain  (file "~/sync/org/roam/templates/project.org")
+./modules/org-roam-config.el:36:     ("t" "topic" plain  (file "~/sync/org/roam/templates/topic.org")
+./modules/org-roam-config.el:116:  (cj/org-roam-find-node "Topic" "t" "~/sync/org/roam/templates/topic.org"))
+./modules/org-roam-config.el:121:  (cj/org-roam-find-node "Recipe" "r" "~/sync/org/roam/templates/recipe.org"))
+./modules/org-roam-config.el:126:  (cj/org-roam-find-node "Project" "p" "~/sync/org/roam/templates/project.org"))
+./modules/org-roam-config.el:146:								   :if-new (file+head+olp "~/sync/org/roam/inbox.org"
+./modules/modeline-config.el:14:(defvar feebleline-working-directory "~/code/feebleline"
+./modules/epa-config.el:15:  (setq auth-sources '("~/.authinfo.gpg"))
+./modules/prog-general.el:84:  (projectile-project-search-path '("~/code"
+./modules/prog-general.el:85:                                    "~/projects"))
+./modules/prog-go.el:35:  (add-to-list 'exec-path "~/go/bin")
+./modules/dirvish-config.el:55:   '(("h" "~/"                                 "home")
+./modules/dirvish-config.el:58:     ("co" "~/code"                            "code")
+./modules/dirvish-config.el:59:     ("df" "~/.dotfiles/"                      "dotfiles")
+./modules/dirvish-config.el:60:     ("dn" "~/downloads/"                      "downloads")
+./modules/dirvish-config.el:61:     ("dr" "~/sync/org/drill/"                 "org drill files")
+./modules/dirvish-config.el:62:     ("dt" "~/downloads/torrents/complete/"    "torrents")
+./modules/dirvish-config.el:63:     ("dx" "~/documents/"                      "documents")
+./modules/dirvish-config.el:64:     ("gc" "~/code/golangcourse"               "golang course")
+./modules/dirvish-config.el:65:     ("lt" "~/.local/share/Trash"              "trash")
+./modules/dirvish-config.el:66:     ("mp" "~/sync/playlists/"                 "playlists")
+./modules/dirvish-config.el:67:     ("mv" "~/magic/video/"                    "magic/video")
+./modules/dirvish-config.el:68:     ("mx" "~/music/"                          "music")
+./modules/dirvish-config.el:69:     ("my" "~/magic/youtube/"                  "magic/youtube")
+./modules/dirvish-config.el:70:     ("or" "~/sync/org/"                       "sync")
+./modules/dirvish-config.el:71:     ("pl" "~/sync/playlists"                  "playlists")
+./modules/dirvish-config.el:72:     ("pr" "~/projects/"                       "projects")
+./modules/dirvish-config.el:73:     ("ps" "~/pictures/screenshots/"           "screenshots")
+./modules/dirvish-config.el:74:     ("pw" "~/pictures/wallpaper"              "wallpaper")
+./modules/dirvish-config.el:75:     ("px" "~/pictures/"                       "pictures")
+./modules/dirvish-config.el:76:     ("tg" "~/sync/org/text.games"             "text games")
+./modules/dirvish-config.el:77:     ("vx" "~/videos/"                         "videos")))
+./modules/ai-config.el:52:  (setq auth-sources '((:source "~/.authinfo.gpg")))
+./modules/eww-config.el:24:  (setq url-cookie-file "~/.local/share/cookies.txt")
+./modules/prog-training.el:25:  (setq leetcode-directory "~/code/leetcode")
+./modules/games-config.el:27:  (setq malyon-stories-directory "~/sync/org/text.games/"))
+./modules/prog-lisp.el:24:;; (load (expand-file-name "~/quicklisp/slime-helper.el"))
+./modules/mail-config.el:43:  (setq mu4e-root-maildir "~/.mail")                                        ;; root directory for all email accounts
+./modules/mail-config.el:195:  ;; (setq smtpmail-auth-credentials (expand-file-name "~/.authinfo.gpg"))
+./modules/mail-config.el:207:;; (setq smtpmail-queue-dir  "~/.mail/queued-mail/"))
+./modules/calibredb-epub-config.el:27:  (setq calibredb-root-dir "~/sync/books/")
+./modules/calibredb-epub-config.el:28:  (setq calibredb-library-alist '(("~/sync/books/")))
+./modules/elfeed-config.el:129:  (let ((default-directory "~/videos"))
 ** DOING Complete v0.7 Release Checklist [8/11]
 *** DOING Fit and Finish Period
 *** TODO Clean Launch from Archsetup

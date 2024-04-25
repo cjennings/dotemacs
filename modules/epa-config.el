@@ -12,8 +12,7 @@
   :ensure nil ;; built in
   :demand t ;; load this package early
   :config
-  (setq auth-sources '("~/.authinfo.gpg"))
-  ;;  (setq auth-sources '((:source "~/.authinfo.gpg")))
+  (setq auth-sources `(,authinfo-file))
   (setenv "GPG_AGENT_INFO" nil) ;; emacs use internal prompt, not gpg agent
   (setq auth-source-debug t))    ;; echo debug info to Messages
 

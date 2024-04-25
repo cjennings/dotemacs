@@ -24,7 +24,7 @@
 (use-package malyon
   :defer 1
   :config
-  (setq malyon-stories-directory "~/sync/org/text.games/"))
+  (setq malyon-stories-directory (concat sync-dir "text.games/"))
 
 ;; ------------------------------------ 2048 -----------------------------------
 ;; combine numbered tiles to create the elusive number 2048.
@@ -37,7 +37,8 @@
   :defer 1
   :config
   (setq chess-default-display 'chess-images)
-  (setq chess-images-directory (concat user-emacs-directory "assets/chess/pieces/xboard/"))
+  (setq chess-images-directory
+		(concat user-emacs-directory "assets/chess/pieces/xboard/"))
   (setq chess-images-dark-color "#779556")
   (setq chess-images-light-color "#EBECD0")
   (setq chess-images-default-size 100)

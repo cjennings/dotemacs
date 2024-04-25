@@ -50,8 +50,8 @@
 		   . "You are a large language model and a conversation partner. Respond
   concisely.")))
 
-  ;; grab the secret from ~/.authinfo.gpg
-  (setq auth-sources '((:source "~/.authinfo.gpg")))
+  ;; grab the secret from the auth file
+  (setq auth-sources `((:source ,authinfo-file)))
   (setq gptel-api-key (auth-source-pick-first-password :host "api.openai.com")))
 
 (provide 'ai-config)

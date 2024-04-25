@@ -106,10 +106,11 @@ With a prefix argument, add the TARGET-BUFFER to \='cj/buffer-bury-alive-list\='
 ;; opens the current buffer's file with a command. Prompts if interactive.
 
 (defun cj/open-file-with-command (command)
-  "Asynchronously open the file for the current buffer with a specified COMMAND.
+  "Asynchronously open the file assocated with the current buffer with COMMAND.
 Don't automatically display output buffers, but keep them in buffer list."
   (interactive "MOpen with program: ")
-  (let ((display-buffer-keywords '(("*Async Shell Command*" display-buffer-no-window (nil)))))
+  (let ((display-buffer-keywords
+		 '(("*Async Shell Command*" display-buffer-no-window (nil)))))
     (add-to-list 'display-buffer-alist display-buffer-keywords))
   (async-shell-command (format "%s \"%s\"" command buffer-file-name)))
 

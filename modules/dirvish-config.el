@@ -17,7 +17,7 @@
   (:map dired-mode-map
         ([remap dired-summary] . which-key-show-major-mode)
         ("E" . wdired-change-to-wdired-mode)           ;; edit names/properties in buffer
-		("e" . cj/dired-ediff-files))                       ;; ediff files
+        ("e" . cj/dired-ediff-files))                       ;; ediff files
   :custom
   (dired-use-ls-dired nil)                             ;; non GNU FreeBSD doesn't support a "--dired" switch
   :config
@@ -31,6 +31,20 @@
 
 ;; (add-hook 'dired-mode-hook 'auto-revert-mode)          ;; auto revert dired when files change
 
+;; ------------------------------ Dired Open With ------------------------------
+
+
+(defun cj/dired-open-with (command)
+  "Open the dired file at point with a user-specified COMMAND.
+This function is meant to be called interactively. It prompts for the command to
+open the file with if called without a parameter. The command runs
+asynchronously and its output is saved in a buffer, but the buffer is not
+automatically displayed."
+  (interactive "sCommand to use to open the file: ")
+  (let* ((file (dired-get-file-for-visit))
+         (buff (generate-new-buffer (concat "*dired-open-with output: " file "*"))))
+    (start-process-shell-command command buff (concat command " " file))))
+
 ;; -------------------------- Dired Copy Path As Kill --------------------------
 ;; copies the full path of the file at point to the clipboard
 
@@ -38,11 +52,11 @@
   "Copy the full path of file at point in dired to the clipboard."
   (interactive)
   (let ((filename (dired-get-file-for-visit)))
-	(if (and filename (file-exists-p filename))
-		(progn
-		  (kill-new filename)
-		  (message "Copied '%s' to clipboard." filename))
-	  (message "No file at point."))))
+    (if (and filename (file-exists-p filename))
+        (progn
+          (kill-new filename)
+          (message "Copied '%s' to clipboard." filename))
+      (message "No file at point."))))
 
 ;; ------------------------ Dired Convert Image To Jpeg ------------------------
 ;; converts the image at point to a jpeg
@@ -50,16 +64,16 @@
 (defun cj/dired-convert-image-to-jpeg ()
   (interactive)
   (let* ((original-file (dired-get-file-for-visit))
-		 (file-extension (file-name-extension original-file))
-		 (jpeg-file (concat (file-name-sans-extension original-file) ".jpeg")))
-	(if (member file-extension '("png" "bmp" "gif" "tif" "tiff" "svg" "webp"))
-		(if (string= file-extension "jpeg")
-			(message "File is already in JPEG format.")
-		  (start-process "convert-to-jpeg" nil "convert" original-file jpeg-file)
-		  (message "Conversion started for %s" original-file))
-	  (message (concat "File is not a supported image file type."
-						"Current supported types: "
-						"'png' 'bmp' 'gif' 'tif' 'tiff' 'svg' 'webp'")))))
+         (file-extension (file-name-extension original-file))
+         (jpeg-file (concat (file-name-sans-extension original-file) ".jpeg")))
+    (if (member file-extension '("png" "bmp" "gif" "tif" "tiff" "svg" "webp"))
+        (if (string= file-extension "jpeg")
+            (message "File is already in JPEG format.")
+          (start-process "convert-to-jpeg" nil "convert" original-file jpeg-file)
+          (message "Conversion started for %s" original-file))
+      (message (concat "File is not a supported image file type."
+                       "Current supported types: "
+                       "'png' 'bmp' 'gif' 'tif' 'tiff' 'svg' 'webp'")))))
 
 ;; ------------------------ Dired Mark All Visible Files -----------------------
 ;; convenience function to mark all visible files in dired
@@ -81,30 +95,26 @@
   :after dired
   :custom
   (dirvish-quick-access-entries
-   '(("h" "~/"                                 "home")
+   `(("h"  ,user-home-dir                         "home")
+     ("cx" ,code-dir                              "code diredtory")
+     ("ws" ,(concat code-dir "/website")          "website staging")
+     ("dr" ,(concat sync-dir "/drill/")           "drill files")
+     ("s"   ,sync-dir                             "sync directory")
+     ("mp" ,(concat sync-dir "/playlists")        "music playlists")
+     ("px" ,projects-dir                          "projects directory")
+     ("tg" ,(concat sync-dir "/text.games")       "text games")
+     ("ps" ,(concat pix-dir "/screenshots/")      "pictures screenshots")
+     ("pw" ,(concat pix-dir "/wallpaper/")        "pictures wallpaper")
+     ("px" ,pix-dir                               "pictures directory")
+     ("dl" ,dl-dir                                "downloads")
+     ("dt" ,(concat dl-dir "/torrents/complete/")  "torrents")
+     ("vx" ,videos-dir                            "videos")
+     ("df" "~/.dotfiles/"                         "dotfiles")
+     ("dx" "~/documents/"                         "documents")
+     ("mx" "~/music/"                             "music")
+     ("rcj" "/sshx:cjennings@cjennings.net:~"     "remote cjennings.net")
      ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
-     ("rcj" "/sshx:cjennings@cjennings.net:~"  "remote cjennings.net")
-	 ("co" "~/code"                            "code")
-	 ("cj" "~/code/cjennings-net"              "cjennings.net hugo")
-     ("df" "~/.dotfiles/"                      "dotfiles")
-     ("dn" "~/downloads/"                      "downloads")
-     ("dr" "~/sync/org/drill/"                 "org drill files")
-     ("dt" "~/downloads/torrents/complete/"    "torrents")
-     ("dx" "~/documents/"                      "documents")
-     ("gc" "~/code/golangcourse"               "golang course")
-     ("lt" "~/.local/share/Trash"              "trash")
-     ("mp" "~/sync/playlists/"                 "playlists")
-     ("mv" "~/magic/video/"                    "magic/video")
-     ("mx" "~/music/"                          "music")
-     ("my" "~/magic/youtube/"                  "magic/youtube")
-     ("or" "~/sync/org/"                       "sync")
-     ("pl" "~/sync/playlists"                  "playlists")
-     ("pr" "~/projects/"                       "projects")
-     ("ps" "~/pictures/screenshots/"           "screenshots")
-     ("pw" "~/pictures/wallpaper"              "wallpaper")
-     ("px" "~/pictures/"                       "pictures")
-     ("tg" "~/sync/org/text.games"             "text games")
-     ("vx" "~/videos/"                         "videos")))
+     )) ;; end dirvish-quick-access-entries
   (dirvish-attributes '(vscode-icon file-size))
   (dirvish-override-dired-mode t)
   (dirvish-preview-dispatchers '(image gif video audio epub pdf archive))
@@ -124,8 +134,9 @@
    ("bg"      . (lambda () (interactive)  ; set background image
                   (shell-command (concat "nitrogen --save --set-zoom-fill "
                                          (dired-file-name-at-point) " >>/dev/null 2>&1" ))))
-   ("Z"       . (lambda () (interactive) (cj/open-file-with-command "zathura")))
-   ("P"       . (lambda () (interactive) (cj/open-file-with-command "gimp")))
+   ("Z"       . (lambda () (interactive) (cj/dired-open-with "zathura")))
+   ("P"       . (lambda () (interactive) (cj/dired-open-with "gimp")))
+   ("O"       . (lambda () (interactive) (call-interactively 'cj/dired-open-with)))
    ("<left>"  . dired-up-directory)
    ("<right>" . dired-find-file)
    ("f"       . dirvish-file-info-menu)
@@ -194,20 +205,20 @@
   "Ediff two selected files within Dired."
   (interactive)
   (let ((files (dired-get-marked-files))
-		(wnd (current-window-configuration)))
-	(if (<= (length files) 2)
-		(let ((file1 (car files))
-			  (file2 (if (cdr files)
-						 (cadr files)
-					   (read-file-name
-						"file: "
-						(dired-dwim-target-directory)))))
-		  (if (file-newer-than-file-p file1 file2)
-			  (ediff-files file2 file1)
-			(ediff-files file1 file2))
-		  (add-hook 'ediff-after-quit-hook-internal
-					(lambda ()
-					  (setq ediff-after-quit-hook-internal nil)
+        (wnd (current-window-configuration)))
+    (if (<= (length files) 2)
+        (let ((file1 (car files))
+              (file2 (if (cdr files)
+                         (cadr files)
+                       (read-file-name
+                        "file: "
+                        (dired-dwim-target-directory)))))
+          (if (file-newer-than-file-p file1 file2)
+              (ediff-files file2 file1)
+            (ediff-files file1 file2))
+          (add-hook 'ediff-after-quit-hook-internal
+                    (lambda ()
+                      (setq ediff-after-quit-hook-internal nil)
 					  (set-window-configuration wnd))))
 	  (error "No more than 2 files should be marked"))))
 
