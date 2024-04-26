@@ -786,76 +786,7 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING Open v0.7 Fit and Finish (ends 2024.04.20) [0/2]
-*** DOING [#B] Save All Attachments Working in Mu4e
-**** 2024-04-18 Thu @ 05:55:32 -0500 The Documentation Suggests A Path Forward
-This suggests that if I'm writing another function, I should
-- first query the user to select/create the directory
-- make sure mu4e-view-completion-minor-mode is on
-- call mu4e-view-complete-all to get all the files
-- within the context of mu4e-view-save-attachments
-
-#+BEGIN_QUOTE
-E-mail messages can be though as a series of “MIME-parts”, which are sections of the message. The most prominent is the ’body’, that is the main message your are reading. Many e-mail messages also contains attachments, which MIME-parts that contain files10.
-
-To save such attachments as files on your file systems, the mu4e message-view offers the command mu4e-view-save-attachments; default keybinding is e (think extract). After invoking the command, you can enter the file names to save, comma-separated, and using the completion support. Press RET to save the chosen files to your file-system.
-
-With a prefix argument, you get to choose the target-directory, otherwise, mu4e determines it following the variable mu4e-attachment-dir (which can be file-system path or a function; see its docstring for details.
-
-While completing, mu4e-view-completion-minor-mode is active, which offers mu4e-view-complete-all (bound to C-c C-a to complete all files11.
-#+END_QUOTE
-[[https://www.djcbsoftware.nl/code/mu/mu4e/MSGV-Attachments-and-MIME_002dparts.html][MSGV Attachments and MIME-parts (Mu4e 1.12.3 user manual)]]
-
-**** 2024-04-18 Thu @ 05:05:03 -0500 Etienne's config failed
-It relies on this line to find all the mime-parts:
-
-(let ((parts (mu4e--view-gather-mime-parts))
-
-and that doesn't exist any longer.
-**** Test Etienne's Configuration
-https://etienne.depar.is/emacs.d/mu4e.html
-(defun ed/mu4e-view-save-all-attachments (&optional arg)
-  "Save all attachments of a given message.
-
-If ARG is nil, all attachments will be saved in
-`mu4e-attachment-dir'. When non-nil, user will be prompted to
-choose a specific directory where to save all the files."
-  (interactive "P")
-  (when (and (eq major-mode 'mu4e-view-mode)
-             (derived-mode-p 'gnus-article-mode))
-    (let ((parts (mu4e--view-gather-mime-parts))
-          (handles '())
-          (files '())
-          (directory (if arg
-                         (read-directory-name "Save to directory: ")
-                       mu4e-attachment-dir)))
-      (dolist (part parts)
-        (let ((fname (or (cdr (assoc 'filename (assoc "attachment" (cdr part))))
-                         (cl-loop for item in part
-                                  for name = (and (listp item) (assoc-default 'name item))
-                                  thereis (and (stringp name) name)))))
-          (when fname
-            (push `(,fname . ,(cdr part)) handles)
-            (push fname files))))
-      (if files
-          (cl-loop for (f . h) in handles
-                   when (member f files)
-                   do (mm-save-part-to-file
-                       h (let ((file (expand-file-name f directory)))
-                           (if (file-exists-p file)
-                               (let (newname (count 1))
-                                 (while (and
-                                         (setq newname
-                                               (format "%s-%s%s"
-                                                       (file-name-sans-extension file)
-                                                       count
-                                                       (file-name-extension file t)))
-                                         (file-exists-p newname))
-                                   (cl-incf count))
-                                 newname)
-                             file))))
-        (mu4e-message "No attached files found")))))
-(define-key mu4e-view-mode-map "X" #'ed/mu4e-view-save-all-attachments)
+** DOING Open v0.7 Fit and Finish (ends 2024.04.20) [0/1]
 *** TODO [#B] Get queued email working for both mail accounts
 **** using sendmail for gmail
 #+BEGIN_QUOTE
@@ -1269,6 +1200,80 @@ This involves changing webclipper. Webclipper as it is now doesn't return the co
 What I want is something to return the content in the way that a template would expect it. This way, I can create templates that would work with org-roam as well, such as creating a separate org-roam node just by clicking an org-protocol bookmarklet.
 
 This might be too large to fit as a bug fix for v0.7. I began doing some research (below) yesterday to help me size the work.
+**** DONE [#B] Save All Attachments Working in Mu4e
+CLOSED: [2024-04-26 Fri 17:04]
+:LOGBOOK:
+- State "DONE"       from "DOING"      [2024-04-26 Fri 17:04]
+:END:
+
+***** 2024-04-18 Thu @ 05:55:32 -0500 The Documentation Suggests A Path Forward
+This suggests that if I'm writing another function, I should
+- first query the user to select/create the directory
+- make sure mu4e-view-completion-minor-mode is on
+- call mu4e-view-complete-all to get all the files
+- within the context of mu4e-view-save-attachments
+
+#+BEGIN_QUOTE
+E-mail messages can be though as a series of “MIME-parts”, which are sections of the message. The most prominent is the ’body’, that is the main message your are reading. Many e-mail messages also contains attachments, which MIME-parts that contain files10.
+
+To save such attachments as files on your file systems, the mu4e message-view offers the command mu4e-view-save-attachments; default keybinding is e (think extract). After invoking the command, you can enter the file names to save, comma-separated, and using the completion support. Press RET to save the chosen files to your file-system.
+
+With a prefix argument, you get to choose the target-directory, otherwise, mu4e determines it following the variable mu4e-attachment-dir (which can be file-system path or a function; see its docstring for details.
+
+While completing, mu4e-view-completion-minor-mode is active, which offers mu4e-view-complete-all (bound to C-c C-a to complete all files11.
+#+END_QUOTE
+[[https://www.djcbsoftware.nl/code/mu/mu4e/MSGV-Attachments-and-MIME_002dparts.html][MSGV Attachments and MIME-parts (Mu4e 1.12.3 user manual)]]
+
+***** 2024-04-18 Thu @ 05:05:03 -0500 Etienne's config failed
+It relies on this line to find all the mime-parts:
+
+(let ((parts (mu4e--view-gather-mime-parts))
+
+and that doesn't exist any longer.
+***** Test Etienne's Configuration
+https://etienne.depar.is/emacs.d/mu4e.html
+(defun ed/mu4e-view-save-all-attachments (&optional arg)
+  "Save all attachments of a given message.
+
+If ARG is nil, all attachments will be saved in
+`mu4e-attachment-dir'. When non-nil, user will be prompted to
+choose a specific directory where to save all the files."
+  (interactive "P")
+  (when (and (eq major-mode 'mu4e-view-mode)
+             (derived-mode-p 'gnus-article-mode))
+    (let ((parts (mu4e--view-gather-mime-parts))
+          (handles '())
+          (files '())
+          (directory (if arg
+                         (read-directory-name "Save to directory: ")
+                       mu4e-attachment-dir)))
+      (dolist (part parts)
+        (let ((fname (or (cdr (assoc 'filename (assoc "attachment" (cdr part))))
+                         (cl-loop for item in part
+                                  for name = (and (listp item) (assoc-default 'name item))
+                                  thereis (and (stringp name) name)))))
+          (when fname
+            (push `(,fname . ,(cdr part)) handles)
+            (push fname files))))
+      (if files
+          (cl-loop for (f . h) in handles
+                   when (member f files)
+                   do (mm-save-part-to-file
+                       h (let ((file (expand-file-name f directory)))
+                           (if (file-exists-p file)
+                               (let (newname (count 1))
+                                 (while (and
+                                         (setq newname
+                                               (format "%s-%s%s"
+                                                       (file-name-sans-extension file)
+                                                       count
+                                                       (file-name-extension file t)))
+                                         (file-exists-p newname))
+                                   (cl-incf count))
+                                 newname)
+                             file))))
+        (mu4e-message "No attached files found")))))
+(define-key mu4e-view-mode-map "X" #'ed/mu4e-view-save-all-attachments)
 ** DOING Complete v0.7 Release Checklist [8/11]
 *** DOING Fit and Finish Period
 *** TODO Clean Launch from Archsetup

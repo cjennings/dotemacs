@@ -9,6 +9,73 @@
 
 ;;; Code:
 
+;; ----------------------- Mu4e View Save All Attachments ----------------------
+;; replacement for the extract function which saves all attachments
+
+(defun cj/mu4e-view-save-all-attachments (&optional msg)
+  "Save all attachments from the current email.
+Prompt user for directory, creating if necessary, select all attachments in the
+email, and save them in the specified directory. The optional MSG is only
+provided when calling this function from mu4e's action context. This function is
+intended to be used as a `mu4e-view-action' and/or bound to a key in
+mu4e-view-mode-map."
+  (interactive)
+  (let ((msg (or msg (mu4e-message-at-point))))
+	(let* ((parts (mu4e-view-mime-parts))
+		   ;; build cons list of candidate mime parts
+		   (candidates (seq-map
+						(lambda (attachment-part)
+						  (cons ;; (filename . annotation)
+						   (plist-get attachment-part :filename)
+						   attachment-part))
+						;; scope to parts with a filename
+						(seq-filter
+						 (lambda (part) (plist-get part :attachment-like))
+						 parts)))
+		   (candidates (or candidates (mu4e-warn "No attachments for this message")))
+		   (files (mapcar 'car candidates)) ;; Select all attachments
+		   (custom-dir (read-directory-name "Save to directory: ")))
+	  (unless (file-exists-p custom-dir)
+		(make-directory custom-dir t)) ;; t creates parent dirs if needed
+	  ;; iterate over each file
+	  (seq-do
+	   (lambda (fname)
+		 (let* ((part (cdr (assoc fname candidates)))
+				;; build unique full file path
+				(path (mu4e--uniqify-file-name
+					   (mu4e-join-paths
+						custom-dir
+						(plist-get part :filename)))))
+		   ;; save the file
+		   (mm-save-part-to-file (plist-get part :handle) path)))
+	   files))))
+
+;; ------------------------- Mark All Headers ------------------------
+;; convenience function to mark all headers for an action
+
+(defun cj/mu4e-mark-all-headers ()
+  "Mark all headers for a later action.
+Prompts user for the action when executing."
+  (interactive)
+  (mu4e-headers-mark-for-each-if
+   (cons 'something nil)
+   (lambda (_msg _param) t)))
+
+;;; ------------------ Smtpmail & Easy PG Assistant -----------------
+;; send mail to smtp host from smtpmail temp buffer.
+(use-package smtpmail
+  :ensure nil ;; built-in
+  :defer .5
+  :config
+  (setq message-kill-buffer-on-exit t) ;; don't keep compose buffers after sending
+  (setq sendmail-program (executable-find "msmtp"))
+  (setq send-mail-function 'message-send-mail-with-sendmail
+        message-send-mail-function 'message-send-mail-with-sendmail)
+  (setq message-sendmail-envelope-from 'header)
+  (setq smtpmail-debug-info t))
+
+;; --------------------------------- Mu4e Email --------------------------------
+
 (use-package mu4e
   :ensure nil  ;; mu4e gets installed by installing 'mu' via the system package manager
   :load-path "/usr/share/emacs/site-lisp/mu4e/"
@@ -18,10 +85,11 @@
   (:map mu4e-headers-mode-map
         ("M" . cj/mu4e-mark-all-headers)
         ("D" . mu4e-headers-mark-for-trash)
-		("d" . mu4e-headers-mark-for-delete))
+        ("d" . mu4e-headers-mark-for-delete))
   (:map mu4e-view-mode-map
-		("r" . mu4e-compose-wide-reply)
-		("R" . mu4e-compose-reply))
+        ("r" . mu4e-compose-wide-reply)
+        ("R" . mu4e-compose-reply)
+		("e" . cj/mu4e-view-save-all-attachments))
   :hook
   (mu4e-view-mode . turn-on-visual-line-mode)
   :config
@@ -52,7 +120,6 @@
 
   (setq mu4e-contexts
         (list
-
          (make-mu4e-context
           :name "gmail.com"
           :match-func
@@ -115,6 +182,10 @@
               "My settings for message composition."
               (set-fill-column 72)))
 
+  ;; add save-all-attachments to view actions list
+  (add-to-list 'mu4e-view-actions
+               '("save all attachments" . cj/mu4e-view-save-all-attachments))
+
   ;; Always BCC myself
   ;; http://www.djcbsoftware.nl/code/mu/mu4e/Compose-hooks.html
   (defun cj/add-header ()
@@ -133,20 +204,21 @@
 
   ;; use imagemagick to render images, if available
   (when (fboundp 'imagemagick-register-types)
-	(imagemagick-register-types)))
+    (imagemagick-register-types))
 
-;; xwidgets not able to be built into emacs on linux
-;; ;; view in xwidget html rendererer
-;; (add-to-list 'mu4e-headers-actions
-;; 			   '("xWidget" . mu4e-action-view-with-xwidget) t)
-;; (add-to-list 'mu4e-view-actions
-;; 			   '("xWidget" . mu4e-action-view-with-xwidget) t))
+  ;; xwidgets not able to be built into emacs on linux
+  ;; ;; view in xwidget html rendererer
+  ;; (add-to-list 'mu4e-headers-actions
+  ;;               '("xWidget" . mu4e-action-view-with-xwidget) t)
+  ;; (add-to-list 'mu4e-view-actions
+  ;;               '("xWidget" . mu4e-action-view-with-xwidget) t))
+
+  ) ;; end use-package mu4e
 
 (defun no-auto-fill ()
   "Turn off \'auto-fill-mode\'."
   (auto-fill-mode -1))
 (add-hook 'mu4e-compose-mode-hook #'no-auto-fill)
-
 
 ;; ----------------------------- Compose Mode Hydra ----------------------------
 ;; WIP: menu available in compose mode
@@ -162,31 +234,6 @@
   "Create hydra/menu keybinding when entering compose mode."
   (local-set-key (kbd "C-c ?") 'hydra-mu4e-compose/body))
 (add-hook 'mu4e-compose-mode-hook 'mu4e-compose-mode-hook-hydra-setup)
-
-;; ------------------------- Mark All Headers ------------------------
-;; convenience function to mark all headers for an action
-
-(defun cj/mu4e-mark-all-headers ()
-  "Mark all headers for a later action.
-Prompts user for the action when executing."
-  (interactive)
-  (mu4e-headers-mark-for-each-if
-   (cons 'something nil)
-   (lambda (_msg _param) t)))
-
-;;; ------------------ Smtpmail & Easy PG Assistant -----------------
-
-;; send mail to smtp host from smtpmail temp buffer.
-(use-package smtpmail
-  :ensure nil ;; built-in
-  :defer .5
-  :config
-  (setq message-kill-buffer-on-exit t) ;; don't keep compose buffers after sending
-  (setq sendmail-program (executable-find "msmtp"))
-  (setq send-mail-function 'message-send-mail-with-sendmail
-        message-send-mail-function 'message-send-mail-with-sendmail)
-  (setq message-sendmail-envelope-from 'header)
-  (setq smtpmail-debug-info t))
 
 (provide 'mail-config)
 ;;; mail-config.el ends here
