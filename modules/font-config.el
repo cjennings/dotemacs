@@ -19,13 +19,19 @@
 		  (variable-pitch "Literata" "Novaletra Serif CF" "FiraGO" "Nimbus Roman" "Nimbus Sans")))
   (setq fontaine-presets
 		'(
-		  (Hack-Only
-		   :default-family "Hack Nerd Font Mono"
-		   :variable-pitch-family "Hack Nerd Font Mono")
-		  (Berkeley-Only
+          (Berkeley-Merriweather
 		   :default-family "Berkeley Mono"
-		   :default-height 120
-		   :variable-pitch-family "Berkeley Mono")
+		   :default-weight regular
+		   :default-height 130
+		   :fixed-pitch-family nil          ;; falls back to :default-family
+		   :fixed-pitch-weight nil          ;; falls back to :default-weight
+		   :fixed-pitch-height 1.0
+           :variable-pitch-family "Merriweather"
+           :variable-pitch-weight light
+           :variable-pitch-height 1.0)
+          (Hack-Only
+           :default-family "Hack Nerd Font Mono"
+           :variable-pitch-family "Hack Nerd Font Mono")
           (Merriweather-Only
            :default-family "Merriweather"
 		   :variable-pitch-family "Merriweather")
@@ -48,10 +54,12 @@
            :default-height 200)
           (16-point-font
            :default-height 160)
-		  (12-point-font
-		   :default-height 120)
+		  (14-point-font
+		   :default-height 140)
 		  (13-point-font
 		   :default-height 130)
+		  (12-point-font
+		   :default-height 120)
 		  (11-point-font
 		   :default-height 110)
 		  (10-point-font
@@ -59,7 +67,7 @@
 		  (t                                ;; shared fallback properties go here
 		   :default-family "Berkeley Mono"
 		   :default-weight regular
-		   :default-height 120
+		   :default-height 130
 		   :fixed-pitch-family nil          ;; falls back to :default-family
 		   :fixed-pitch-weight nil          ;; falls back to :default-weight
 		   :fixed-pitch-height 1.0
@@ -171,8 +179,8 @@ Note that server-after-make-frame-hook is available only in Emacs 27+."
         (insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
                             'face `((:family, font-family :slant italic))))
         (insert (concat "\n\n"))))
-      (move-to-window-line 0)
-      (special-mode)))
+    (move-to-window-line 0)
+    (special-mode)))
 
 (global-set-key (kbd "C-z F") 'cj/display-available-fonts)
 
