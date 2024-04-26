@@ -566,6 +566,88 @@ Please note that =-i= is case-insensitive for the searched term, not for the fil
 #+END_QUOTE
 [[][]]
 Captured On: [2024-04-18 Thu 06:15]
+** mpdel/mpdel: Emacs user interface for MPD
+[[https://github.com/mpdel/mpdel][mpdel/mpdel: Emacs user interface for MPD]]
+Captured On: [2024-04-21 Sun 18:02]
+** Consult-web: A package to get web and omni search results directly in emacs minibuffer! - Emacs / Emacs Lisp - System Crafters
+#+BEGIN_QUOTE
+armindarvish
+4d
+
+
+My new package, consult-web 4 allows you to get search results from both online sources (google, bing, brave, wikipedia, …) and local sources (buffers, org notes, elfeed feeds, gptel ai chatbots, …) directly in minibuffer. It provides similar functionality to consult-buffer but on steroid! It uses consult, url-retrieve and API services form online sources.
+
+GitHub Repo: https://github.com/armindarvish/consult-web 4
+
+For detailed demonstration of features, comparison with other packages, and usage examples see the YouTube video and the blog post below.
+
+YouTube Video: https://www.youtube.com/watch?v=7pDfyqBZwvo
+Blog Post: https://www.armindarvish.com/post/web_omni_search_in_emacs_with_consult-web/ 1
+
+
+#+END_QUOTE
+[[https://forum.systemcrafters.net/t/consult-web-a-package-to-get-web-and-omni-search-results-directly-in-emacs-minibuffer/603][Consult-web: A package to get web and omni search results directly in emacs minibuffer! - Emacs / Emacs Lisp - System Crafters]]
+Captured On: [2024-04-22 Mon 22:06]
+** Tell Org-Alerts to ignore all day events
+** emake.el: Test Elisp without the hoops
+https://github.com/vermiculus/emake.el
+#+BEGIN_QUOTE
+emake.el: Test Elisp without the hoops
+Test Elisp with services like Travis CI without the fuss of Cask – just you, your project, and (Emacs-)Make.
+
+Things EMake does:
+
+parses, installs, and runs tests for your package
+provides all the power of Elisp to extend its capabilities on-demand
+Things EMake will never do (or ‘reasons you may still need Cask’):
+
+manage your development environment or provide tools to do so
+provide ’bundler-like’ exec abilities (this includes Cask’s emacs and eval commands)
+#+END_QUOTE
+[[https://github.com/alphapapa/emacs-package-dev-handbook?tab=readme-ov-file#good-style-in-modern-emacs-packages][alphapapa/emacs-package-dev-handbook: An Emacs package development handbook. Built with Emacs, by Emacs package developers, for Emacs package developers.]]
+Captured On: [2024-04-21 Sun 17:43]
+** Wilfred/suggest.el: discover elisp functions that do what you want
+[[https://github.com/Wilfred/suggest.el][Wilfred/suggest.el: discover elisp functions that do what you want]]
+Captured On: [2024-04-21 Sun 16:42]
+** Emacs function: Byte Compile and Load Directory
+#+BEGIN_QUOTE
+Byte-compile and load directory
+Byte-compile and load all elisp files in DIRECTORY. Interactively, directory defaults to default-directory and asks for confirmation.
+
+;;;###autoload
+(defun epdh/byte-compile-and-load-directory (directory)
+  "Byte-compile and load all elisp files in DIRECTORY.
+Interactively, directory defaults to `default-directory' and asks
+for confirmation."
+  (interactive (list default-directory))
+  (if (or (not (called-interactively-p))
+          (yes-or-no-p (format "Compile and load all files in %s?" directory)))
+      ;; Not sure if binding `load-path' is necessary.
+      (let* ((load-path (cons directory load-path))
+             (files (directory-files directory 't (rx ".el" eos))))
+        (dolist (file files)
+          (byte-compile-file file 'load)))))
+#+END_QUOTE
+[[https://github.com/alphapapa/emacs-package-dev-handbook?tab=readme-ov-file#byte-compile-and-load-directory][alphapapa/emacs-package-dev-handbook: An Emacs package development handbook. Built with Emacs, by Emacs package developers, for Emacs package developers.]]
+Captured On: [2024-04-21 Sun 16:40]
+** emacs-package-checker
+https://github.com/akirak/emacs-package-checker
+#+BEGIN_QUOTE
+emacs-package-checker: Check Emacs Lisp packages in a clean environment
+Emacs Package Checker lets you quickly configure typical linters (i.e. package-lint, byte-compile, and checkdoc) for your Emacs package.
+
+There are existing solutions in this field like emake.el and makel. Emacs Package Checker is not any more capable than those existing solutions, but it is based on Nix package manager and runs tests in a pure, sandboxed environment. This is useful for testing Emacs packages on local machines.
+#+END_QUOTE
+[[https://github.com/alphapapa/emacs-package-dev-handbook?tab=readme-ov-file#good-style-in-modern-emacs-packages][alphapapa/emacs-package-dev-handbook: An Emacs package development handbook. Built with Emacs, by Emacs package developers, for Emacs package developers.]]
+Captured On: [2024-04-21 Sun 17:41]
+** emacs-refactor: language-specific refactoring
+#+BEGIN_QUOTE
+https://github.com/Wilfred/emacs-refactor
+emacs-refactor: language-specific refactoring
+Emacs Refactor (EMR) is a framework for providing language-specific refactoring in Emacs. It includes refactoring commands for a variety of languages, including elisp itself!
+#+END_QUOTE
+[[https://github.com/alphapapa/emacs-package-dev-handbook?tab=readme-ov-file#refactoring][alphapapa/emacs-package-dev-handbook: An Emacs package development handbook. Built with Emacs, by Emacs package developers, for Emacs package developers.]]
+Captured On: [2024-04-21 Sun 17:45]
 * DOING Emacs Config v0.7 [2/4]
 ** DONE Supplement Existing Functionality [9/9]
 *** DONE [#B] Make sure eshell has same path as other shells
@@ -704,7 +786,7 @@ This is the result of overriding that function in cj/invincible-buffers in syste
 *** DONE [#C] Bookmark-save-flag Replaces Bookmark-set-and-save
 CLOSED: [2024-04-03 Wed 15:00]
 remove cj/bookmark-set-and-save if setting bookmark-save-flat to 1 saves when adding/modifying a bookmark
-** DOING Open v0.7 Fit and Finish (ends 2024.04.20) [0/3]
+** DOING Open v0.7 Fit and Finish (ends 2024.04.20) [0/2]
 *** DOING [#B] Save All Attachments Working in Mu4e
 **** 2024-04-18 Thu @ 05:55:32 -0500 The Documentation Suggests A Path Forward
 This suggests that if I'm writing another function, I should
@@ -815,22 +897,6 @@ Adding /usr/local/bin to your PATH can save you some keystrokes if you are doing
 #+END_QUOTE
 [[https://wiki.archlinux.org/title/msmtp#Using_msmtp_offline][msmtp - ArchWiki]]
 Captured On: [2024-04-13 Sat 09:35]
-*** TODO [#C] Articles Should Be Saved Under todo.org TO READ Heading
-**** 2024-04-16 Tue @ 10:28:17 -0500 Notes
-This involves changing webclipper. Webclipper as it is now doesn't return the content, it actually yanks it into the article-file.
-What I want is something to return the content in the way that a template would expect it. This way, I can create templates that would work with org-roam as well, such as creating a separate org-roam node just by clicking an org-protocol bookmarklet.
-
-This might be too large to fit as a bug fix for v0.7. I began doing some research (below) yesterday to help me size the work.
-**** 2024-04-16 Tue @ 10:27:25 -0500 Research
-***** TODO read through capturing content for emacs
-[[https://howardism.org/Technical/Emacs/capturing-content.html][Capturing Content for Emacs]]
-Captured On: [2024-04-15 Mon 22:27]
-***** TODO Investigate Org Mode's Web Archiver
-[[https://github.com/charlesroelli/org-board][charlesroelli/org-board: Org mode's web archiver.]]
-Captured On: [2024-04-15 Mon 22:33]
-***** TODO Review these Web Page tools for Org-mode
-[[https://github.com/alphapapa/org-web-tools][alphapapa/org-web-tools: View, capture, and archive Web pages in Org-mode]]
-Captured On: [2024-04-15 Mon 22:55]
 *** [#D] Resolved v0.7 Fit and Finish Work [25/25]
 **** DONE [#C] Theme Doesn't Fallback on Wombat Correctly if No Theme Persist File
 **** DONE [#A] Remove Keys
@@ -1192,6 +1258,17 @@ CLOSED: [2024-04-25 Thu 14:44]
 ./modules/calibredb-epub-config.el:27:  (setq calibredb-root-dir "~/sync/books/")
 ./modules/calibredb-epub-config.el:28:  (setq calibredb-library-alist '(("~/sync/books/")))
 ./modules/elfeed-config.el:129:  (let ((default-directory "~/videos"))
+**** DONE [#C] Save articles under inbox.org TO READ Heading
+CLOSED: [2024-04-26 Fri 12:41]
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2024-04-26 Fri 12:41]
+:END:
+
+***** 2024-04-16 Tue @ 10:28:17 -0500 Notes
+This involves changing webclipper. Webclipper as it is now doesn't return the content, it actually yanks it into the article-file.
+What I want is something to return the content in the way that a template would expect it. This way, I can create templates that would work with org-roam as well, such as creating a separate org-roam node just by clicking an org-protocol bookmarklet.
+
+This might be too large to fit as a bug fix for v0.7. I began doing some research (below) yesterday to help me size the work.
 ** DOING Complete v0.7 Release Checklist [8/11]
 *** DOING Fit and Finish Period
 *** TODO Clean Launch from Archsetup
