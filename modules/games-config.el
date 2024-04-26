@@ -24,7 +24,7 @@
 (use-package malyon
   :defer 1
   :config
-  (setq malyon-stories-directory (concat sync-dir "text.games/"))
+  (setq malyon-stories-directory (concat sync-dir "text.games/")))
 
 ;; ------------------------------------ 2048 -----------------------------------
 ;; combine numbered tiles to create the elusive number 2048.
