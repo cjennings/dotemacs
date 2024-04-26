@@ -67,11 +67,21 @@
 ;; replacing the word l-a-m-b-d-a with a symbol, just because
 
 (setq-default prettify-symbols-alist
-			  '(("#+begin_src" . "λ")
-				("#+BEGIN_SRC" . "λ")
-				("#+end_src" . "λ")
-				("#+END_SRC" . "λ")
-				("lambda" . "λ")))
+			  (let ((mapping (lambda (pair)
+							   (let ((k (car pair))
+									 (v (cdr pair)))
+								 (list (cons (downcase k) v)
+									   (cons (upcase k) v))))))
+				(apply #'append
+					   (mapcar mapping
+							   '(
+								 ("#+begin_src" . "λ")
+								 ("#+begin_src" . "λ")
+								 ("#+end_src" . "λ")
+								 ("#+begin_quote" . " ")
+								 ("#+end_quote" . "")
+								 ("lambda" . "λ"))))))
+
 
 (add-hook 'prog-mode-hook 'turn-on-prettify-symbols-mode)
 (add-hook 'org-mode-hook 'turn-on-prettify-symbols-mode)
