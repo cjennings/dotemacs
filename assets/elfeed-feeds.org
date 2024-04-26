@@ -36,16 +36,17 @@
 **** [[https://lobste.rs/t/job.rss][Lobsters Jobs]] Employment Opportunities                         :jobs:
 **** [[https://lobste.rs/t/culture.rss][Lobsters Culture]] Technical Communities and Culture
 **** [[https://lobste.rs/t/philosophy.rss][Lobsters Philosophy]] Philosophy
-**** [[https://lobste.rs/t/testing.rss][Lobsters Testing]] Software Testing                              :code:
+**** [[https://lobste.rs/t/testing.rss][Lobsters Testing]] Software Testing                      :code:testing:
 **** [[https://lobste.rs/t/ai.rss][Lobsters AI]] Artificial Intelligence                              :ai:
 **** [[https://lobste.rs/t/privacy.rss][Lobsters Privacy]] Privacy
 **** [[https://lobste.rs/t/linux.rss][Lobsters Linux]] The Linux Kernel and Its Distributions
 **** [[https://lobste.rs/t/unix.rss][Lobsters Unix]] *nix
 ** Blogs                                                             :blogs:
-*** [[http://www.jgwkia.com/feeds/posts/default][JG Will Kick It's Ass]]                                        :mustread:
-*** [[http://dtrace.org/blogs/bmc/feed/][Brian Cantrill's The Observation Deck]]                   :mustread:tech:
 *** [[https://blog.aaronbieber.com/posts/index.xml][Aaron Bieber's The Chronicle]]                               :tech:emacs:
+*** [[http://dtrace.org/blogs/bmc/feed/][Brian Cantrill's The Observation Deck]]                   :mustread:tech:
 *** [[https://drewdevault.com/blog/index.xml][Drew Devault's Blog]]                                              :tech:
+*** [[https://feeds.feedburner.com/blogspot/RLXA][Google Testing Blog]]                                      :testing:code:
+*** [[http://www.jgwkia.com/feeds/posts/default][JG Will Kick It's Ass]]                                        :mustread:
 *** [[https://registerspill.thorstenball.com/feed][Thorsten Ball's Register Spill]]                                   :tech:
 ** Tech News Sites                                                :technews:
 *** The Register                                              :theregister:

@@ -11,26 +11,27 @@
 
 * Bookmarks
 
- [u] All Unread  ([[elfeed:+unread][     3]]/[[elfeed:][  2266]])
- [m] Must Read   ([[elfeed:+unread +mustread][     1]]/[[elfeed:+mustread][    31]])
+ [u] All Unread  ([[elfeed:+unread][   402]]/[[elfeed:][  2648]])
+ [m] Must Read   ([[elfeed:+unread +mustread][     0]]/[[elfeed:+mustread][    31]])
 
 ** Sources
- [p] Podcasts    ([[elfeed:+unread +podcasts][     0]]/[[elfeed:+podcasts][  1758]])
- [v] Videos      ([[elfeed:+unread +videos][     0]]/[[elfeed:+videos][   261]])
+ [p] Podcasts    ([[elfeed:+unread +podcasts][     0]]/[[elfeed:+podcasts][  1765]])
+ [v] Videos      ([[elfeed:+unread +videos][     4]]/[[elfeed:+videos][   265]])
 
 ** Tech Aggregators
- [h] Hacker News ([[elfeed:+unread +hackernews][     0]]/[[elfeed:+hackernews][    24]])
- [l] Lobsters    ([[elfeed:+unread +lobsters][     0]]/[[elfeed:+lobsters][     0]])
+ [h] Hacker News ([[elfeed:+unread +hackernews][   113]]/[[elfeed:+hackernews][   113]])
+ [l] Lobsters    ([[elfeed:+unread +lobsters][   115]]/[[elfeed:+lobsters][   294]])
 
 ** Topics
- [t] Tech News   ([[elfeed:+unread +technews][     2]]/[[elfeed:+technews][   172]])
- [T] Tech        ([[elfeed:+unread +tech][     0]]/[[elfeed:+tech][    65]])
- [b] Blogs       ([[elfeed:+unread +blogs][     1]]/[[elfeed:+blogs][    71]])
- [e] Emacs       ([[elfeed:+unread +emacs][     0]]/[[elfeed:+emacs][    91]])
- [c] Code        ([[elfeed:+unread +code][     0]]/[[elfeed:+code][   135]])
+ [t] Tech News   ([[elfeed:+unread +technews][   115]]/[[elfeed:+technews][   115]])
+ [T] Tech        ([[elfeed:+unread +tech][   258]]/[[elfeed:+tech][   468]])
+ [b] Blogs       ([[elfeed:+unread +blogs][    75]]/[[elfeed:+blogs][   116]])
+ [e] Emacs       ([[elfeed:+unread +emacs][     1]]/[[elfeed:+emacs][    77]])
+ [X] Testing     ([[elfeed:+unread +testing][    25]]/[[elfeed:+testing][    25]])
+ [c] Code        ([[elfeed:+unread +code][    41]]/[[elfeed:+code][   212]])
  [C] Cooking     ([[elfeed:+unread +cooking][     0]]/[[elfeed:+cooking][    11]])
- [M] Comedy      ([[elfeed:+unread +comedy][     0]]/[[elfeed:+comedy][    15]])
- [j] Jobs        ([[elfeed:+unread +jobs][     0]]/[[elfeed:+jobs][     0]])
+ [M] Comedy      ([[elfeed:+unread +comedy][     0]]/[[elfeed:+comedy][    39]])
+ [j] Jobs        ([[elfeed:+unread +jobs][     0]]/[[elfeed:+jobs][    25]])
 
 * Configuration
   :PROPERTIES:
@@ -50,6 +51,7 @@
   #+KEYMAP: T | elfeed-dashboard-query "+unread +tech"
   #+KEYMAP: b | elfeed-dashboard-query "+unread +blogs"
   #+KEYMAP: e | elfeed-dashboard-query "+unread +emacs"
+  #+KEYMAP: X | elfeed-dashboard-query "+unread +testing"
   #+KEYMAP: c | elfeed-dashboard-query "+unread +code"
   #+KEYMAP: C | elfeed-dashboard-query "+unread +cooking"
   #+KEYMAP: M | elfeed-dashboard-query "+unread +comedy"
