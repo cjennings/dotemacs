@@ -104,8 +104,14 @@ Will recompile natively if supported, or byte-compiled if not."
       (cl-sort features-vec 'string-lessp)
       (cl-loop for x across features-vec
                do (insert (format "  - %-25s: %s\n" x
-                                  (locate-library (symbol-name x))))))
-    (goto-char (point-min))))
+								  (locate-library (symbol-name x))))))
+	(goto-char (point-min))))
+
+;; ------------------------------ Font Lock Studio -----------------------------
+;; debugger for font lock keywords
+
+(use-package font-lock-studio
+  :demand t)
 
 (provide 'config-utilities)
 ;;; config-utilities.el ends here

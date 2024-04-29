@@ -35,15 +35,13 @@
 ;;; Code:
 
 ;; -------------------------------- Debug Flags --------------------------------
-;; debugging enabled during emacs startup. disabled after emacs startup.
+;; debugging enabled during Emacs startup. disabled again after Emacs startup.
 
-;; set these values now
 (setq debug-on-error t)    ;; default nil. turn on to debug issues only.
 (setq debug-on-quit t)     ;; debug on C-g (breaking out of hangs/freezes)
 
-;; reset to these values after startup
 (add-hook 'emacs-startup-hook
-          (lambda ()
+		  (lambda ()
 			(setq debug-on-error nil)
 			(setq debug-on-quit nil)))
 
@@ -105,15 +103,20 @@
 (defconst user-home-dir (getenv "HOME")
   "The user's home directory per the environment variable.")
 
-(defconst elpa-mirror-location (concat user-emacs-directory ".elpa-mirrors/")
+(defconst elpa-mirror-location "/media/repos/elpa-mirror/"
   "The path to the elpa mirror location.")
+
+(defconst localrepo-location (concat user-emacs-directory ".localrepo/")
+  "The path to your local Emacs package repository.
+For more information about the local Emacs package repository, see comments in
+early-init.el.")
 
 (setq package-archives nil) ;; package-archives will be added below
 
 ;; LOCAL REPOSITORY (packages in version control)
-(if (file-accessible-directory-p (concat user-emacs-directory "localrepo"))
+(if (file-accessible-directory-p localrepo-location)
     (progn
-      (add-to-list 'package-archives (cons "localrepo" (concat user-emacs-directory "localrepo/"))t)
+      (add-to-list 'package-archives (cons "localrepo" localrepo-location) t)
       (add-to-list 'package-archive-priorities '(("localrepo". 200)))))
 
 ;; LOCAL REPOSITORY ELPA MIRRORS

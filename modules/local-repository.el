@@ -24,7 +24,8 @@ Used for the package-archive and package-archive-priorities lists.")
 A higher value means higher priority. If you want your local packages to be
 preferred, this must be a higher number than any other repositories.")
 
-(defcustom localrepo-repository-location (concat user-emacs-directory "/localrepo")
+(defcustom localrepo-repository-location
+  (concat user-emacs-directory "/.localrepo")
   "The location of the local repository.
 It's a good idea to keep this with the rest of your configuration files and
 keep them in source control.")
@@ -43,8 +44,6 @@ keep them in source control.")
   (unless (car-member localrepo-repository-id package-archive-priorities)
 	(add-to-list 'package-archive-priorities
 				 (localrepo-repository-id . localrepo-repository-priority))))
-
-
 
 (provide 'local-repository)
 ;;; local-repository.el ends here.

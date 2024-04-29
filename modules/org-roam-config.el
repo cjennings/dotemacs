@@ -13,7 +13,7 @@
   :defer .5
   :custom
   (org-roam-directory roam-dir)
-  (org-roam-dailies-directory "journal/")
+  (org-roam-dailies-directory journals-dir)
   (org-roam-completion-everywhere t)
   (org-roam-dailies-capture-templates
    '(("d" "default" entry "* %<%I:%M:%S %p %Z> %?"

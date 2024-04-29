@@ -25,7 +25,6 @@
   :custom
   (magit-define-global-key-bindings 'default)
   :config
-  (setf vc-handled-backends nil) ;; magit is the only vc interface I use
   (setq magit-bury-buffer-function 'magit-restore-window-configuration)
   (setq git-commit-major-mode 'org-mode) ;; edit commit messages in org-mode
   (setq magit-display-buffer-function

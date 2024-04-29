@@ -46,6 +46,9 @@
 (defconst roam-dir      (concat sync-dir "roam/")
   "The location of org-roam files.")
 
+(defconst journals-dir  (concat roam-dir "journals/")
+  "The location of org-roam dailies or journals files.")
+
 (defconst drill-dir     (concat sync-dir "drill/")
   "The location of org-drill org files.")
 
@@ -94,7 +97,8 @@
 ;; ------------------------- Verify Or Create Constants ------------------------
 
 (mapc 'cj/verify-or-create-dir (list sync-dir
-                                     roam-dir
+									 roam-dir
+									 journals-dir
                                      snippets-dir))
 
 (mapc 'cj/verify-or-create-file (list schedule-file
