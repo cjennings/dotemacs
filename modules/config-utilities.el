@@ -107,11 +107,6 @@ Will recompile natively if supported, or byte-compiled if not."
 								  (locate-library (symbol-name x))))))
 	(goto-char (point-min))))
 
-;; ------------------------------ Font Lock Studio -----------------------------
-;; debugger for font lock keywords
-
-(use-package font-lock-studio
-  :demand t)
 
 (provide 'config-utilities)
 ;;; config-utilities.el ends here

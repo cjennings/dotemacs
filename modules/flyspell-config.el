@@ -88,42 +88,42 @@
 ;; ------------------------------ Flyspell Toggle ------------------------------
 ;; easy toggling flyspell and also leverage the 'for-buffer-type' functionality.
 
-(defun flyspell-toggle ()
-  "Turn Flyspell on if it is off, or off if it is on.
-When turning on,it uses `flyspell-on-for-buffer-type' so code-vs-text is
-handled appropriately."
-  (interactive)
-  (if (symbol-value flyspell-mode)
-      (progn ; flyspell is on, turn it off
-        (message "Flyspell off")
-        (flyspell-mode -1))
-    ;; else - flyspell is off, turn it on
-    (progn
-      (flyspell-on-for-buffer-type)
-      (message "Flyspell on"))))
-(define-key global-map (kbd "C-c f") 'flyspell-toggle )
+;; (defun flyspell-toggle ()
+;;   "Turn Flyspell on if it is off, or off if it is on.
+;; When turning on,it uses `flyspell-on-for-buffer-type' so code-vs-text is
+;; handled appropriately."
+;;   (interactive)
+;;   (if (symbol-value flyspell-mode)
+;;       (progn ; flyspell is on, turn it off
+;;         (message "Flyspell off")
+;;         (flyspell-mode -1))
+;;     ;; else - flyspell is off, turn it on
+;;     (progn
+;;       (flyspell-on-for-buffer-type)
+;;       (message "Flyspell on"))))
+;; (define-key global-map (kbd "C-c f") 'flyspell-toggle )
 
 ;; ------------------------ Flyspell On For Buffer Type ------------------------
 ;; check strings and comments in prog mode; check everything in text mode
 
-(defun flyspell-on-for-buffer-type ()
-  "Enable Flyspell for the major mode and check the current buffer.
-If flyspell is already enabled, do nothing.  If the mode is derived from
-`prog-mode', enable `flyspell-prog-mode' so only strings and comments get
-checked.  If the buffer is text based `flyspell-mode' is enabled to check
-all text."
-  (interactive)
-  (unless flyspell-mode ; if not already on
-	(cond
-	 ((derived-mode-p 'prog-mode)
-	  (flyspell-prog-mode)
-	  (flyspell-buffer)
-	  ((derived-mode-p 'text-mode)
-	   (flyspell-mode 1)
-	   (flyspell-buffer))))))
+;; (defun flyspell-on-for-buffer-type ()
+;;   "Enable Flyspell for the major mode and check the current buffer.
+;; If flyspell is already enabled, do nothing.  If the mode is derived from
+;; `prog-mode', enable `flyspell-prog-mode' so only strings and comments get
+;; checked.  If the buffer is text based `flyspell-mode' is enabled to check
+;; all text."
+;;   (interactive)
+;;   (unless flyspell-mode ; if not already on
+;; 	(cond
+;; 	 ((derived-mode-p 'prog-mode)
+;; 	  (flyspell-prog-mode)
+;; 	  (flyspell-buffer)
+;; 	  ((derived-mode-p 'text-mode)
+;; 	   (flyspell-mode 1)
+;; 	   (flyspell-buffer))))))
 
-(add-hook 'after-change-major-mode-hook 'flyspell-on-for-buffer-type)
-(add-hook 'find-file-hook 'flyspell-on-for-buffer-type)
+;; (add-hook 'after-change-major-mode-hook 'flyspell-on-for-buffer-type)
+;; (add-hook 'find-file-hook 'flyspell-on-for-buffer-type)
 
 ;; ---------------------------- Flyspell Then Abbrev ---------------------------
 ;; Spell check the buffer and create abbrevs to avoid future misspellings.

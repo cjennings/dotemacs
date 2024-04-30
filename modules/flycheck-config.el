@@ -10,25 +10,26 @@
   (interactive)
   (if (not (abbrev-mode))
 	  (abbrev-mode))
-  (flyspell-on-for-buffer-type)
+  ;;  (flyspell-on-for-buffer-type)
   (if (not (flycheck-mode))
 	  (flycheck-mode)))
 
-;;;; ---------------------------------- Linting --------------------------------
+;; ---------------------------------- Linting ----------------------------------
+
+(defun cj/flycheck-list-errors ()
+  "Display flycheck's error list and switch to its buffer."
+  (interactive)
+  (flycheck-list-errors)
+  (switch-to-buffer-other-window "*Flycheck errors*"))
 
 (use-package flycheck
   :defer .5
   :hook (sh-mode emacs-lisp-mode)
-  :preface
-  (defun cj/flycheck-list-errors ()
-	"Display flycheck's error list and switch to its buffer."
-	(interactive)
-	(flycheck-list-errors)
-	(switch-to-buffer-other-window "*Flycheck errors*"))
   :bind ("C-; ?" . cj/flycheck-list-errors)
   :config
   ;; don't warn about double-spaces after period.
-  (setq-default checkdoc-arguments '("sentence-end-double-space" nil "warn-escape" nil))
+  (setq-default checkdoc-arguments '("sentence-end-double-space" nil
+									 "warn-escape" nil))
 
   ;; proselint must be installed via the OS
   (flycheck-define-checker proselint
