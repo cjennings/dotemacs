@@ -20,9 +20,9 @@
 
 ;; ------------------------ Killing Buffers And Windows ------------------------
 ;; Accidentally killing buffers can lose data. these functions override common
-;; buffer killing functions and  buries buffers on the 'cj/buffer-bury-alive-list' list
-;; rather than killing them. Allows for interactive adding to the
-;; 'cj/buffer-bury-alive-list' via 'C-u C-x k'
+;; buffer killing functions and  buries buffers on the
+;; 'cj/buffer-bury-alive-list' list rather than killing them. Allows for
+;; interactive adding to the 'cj/buffer-bury-alive-list' via 'C-u C-x k'
 
 ;; BUFFER BURY ALIVE LIST
 (defvar cj/buffer-bury-alive-list '("*dashboard*"
@@ -65,7 +65,7 @@ Buries buffers instead if they are on the cj/buffer-bury-alive-list."
 ;; KILL BUFFER OR BURY ALIVE
 (defun cj/kill-buffer-or-bury-alive (target-buffer)
   "Bury buffers on the bury-instead-list rather than killing them.
-With a prefix argument, add the TARGET-BUFFER to \='cj/buffer-bury-alive-list\='."
+With a prefix, add the TARGET-BUFFER to \='cj/buffer-bury-alive-list\='."
   (interactive "bKill or Add to bury (don't kill) buffer list: ")
   (with-current-buffer target-buffer
     (if current-prefix-arg
@@ -245,7 +245,8 @@ Don't automatically display output buffers, but keep them in buffer list."
   "Save a macro in `macros-file'.
 Save the last defined macro as NAME at the end of your `macros-file'
 The `macros-file' is defined in the constants section of the `init.el').
-The function offers the option to open the `macros-file' for editing when called with a prefix argument."
+The function offers the option to open the `macros-file' for editing when called
+with a prefix argument."
   (interactive "SName of the macro (w/o spaces): ")
   (kmacro-name-last-macro name)
   (find-file macros-file)
@@ -256,7 +257,7 @@ The function offers the option to open the `macros-file' for editing when called
   ;; Save changes and switch back to previous buffer
   (save-buffer)
   (switch-to-buffer (other-buffer (current-buffer) 1))
-  ;; Check for presence of a prefix argument and open the macros-file for editing if exists
+  ;; Check for the prefix argument and open the macros-file to edit
   (if current-prefix-arg
       (progn
         (find-file macros-file)
@@ -278,12 +279,12 @@ The function offers the option to open the `macros-file' for editing when called
   :ensure nil ;; built-in
   :defer .5
   :custom
-  (abbrev-file-name (concat user-emacs-directory "assets/abbrev_defs")) ;; keep project root clean
+  (abbrev-file-name (concat user-emacs-directory "assets/abbrev_defs"))
   :config
   (abbrev-mode)) ;; use abbrev mode everywhere
 
 ;; -------------------------------- Log Silently -------------------------------
-;; utility function to log silently to the Messages buffer (for debugging/warning)
+;; utility to silently log to the Messages buffer (for debugging/warning)
 
 (defun cj/log-silently (text)
   "Send TEXT to the Messages buffer bypassing the echo area."
@@ -298,7 +299,7 @@ The function offers the option to open the `macros-file' for editing when called
         (insert "\n")))))
 
 ;; ----------------------------------- Proced ----------------------------------
-;; yes, a process monitor in Emacs
+;; yes, there's a process monitor in Emacs
 
 (use-package proced
   :defer .5
