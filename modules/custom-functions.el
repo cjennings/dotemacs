@@ -263,6 +263,7 @@ User is prompted for the optional descriptor."
 		  (message "Can't insert around. No word at point and no region selected."))))))
 
 (global-set-key (kbd "C-; i a") 'cj/insert-around-word-or-region)
+
 ;; ------------------------ Insert Around Word Or Region -----------------------
 
 (defun cj/insert-around-word-or-region ()
@@ -385,7 +386,8 @@ and all articles are considered minor words."
                        ;; Check the beginning of the previous word doesn't reset first.
                        (save-excursion
                          (and
-                          (not (zerop (skip-chars-backward "[:blank:]" prev-word-end)))
+						  (not (zerop
+								(skip-chars-backward "[:blank:]" prev-word-end)))
                           (memq (char-before (point)) chars-skip-reset))))
                     (delete-region (point) (1+ (point)))
                     (insert c-up))))))
@@ -397,13 +399,38 @@ and all articles are considered minor words."
 ;; --------------------------- Buffer Strip Control M --------------------------
 ;; remove windows carriage return control characters from the buffer
 
-(defun buffer-strip-ctrl-m ()
+(defun cj/buffer-strip-ctrl-m ()
   "Remove ^M from the current buffer."
   (interactive)
   (save-excursion
 	(goto-char (point-min))
-    (while (search-forward "^M" nil t)
+	(while (search-forward "" nil t)
       (replace-match "" nil t))))
+
+;; ---------------------- Fixup Whitespace Line Or Region ----------------------
+
+(defun cj/fixup-whitespace-line-or-region (&optional region)
+  "Fix up whitespace in the current line, or region if selected.
+Ensure there is exactly one space between words, and remove leading and trailing
+whitespace. When called with a prefix argument, it operates on the current
+REGION."
+  (interactive "P")
+  (save-excursion
+	(let* ((beg (if region (region-beginning) (line-beginning-position)))
+		   (end (if region (region-end) (line-end-position))))
+	  (save-restriction
+        (narrow-to-region beg end)
+        ;; Replace all tabs with space
+        (goto-char (point-min))
+        (replace-string "\t" " " nil beg end)
+		;; Remove leading and trailing spaces
+		(goto-char (point-min))
+		(while (re-search-forward "^\\s-+\\|\\s-+$" nil t)
+		  (replace-match "" nil nil))
+		;; Ensure only one space between words/symbols.
+		(goto-char (point-min))
+		(while (re-search-forward "\\s-\\{2,\\}" nil t)
+		  (replace-match " " nil nil))))))
 
 ;; ------------------------------ Insert Date Time -----------------------------
 ;; insert a sortable or a readable datestamp or timestamp
