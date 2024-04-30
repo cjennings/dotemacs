@@ -542,7 +542,12 @@ Uses `sortable-time-format' for the formatting the date/time."
 ;; ------------------------------ Personal Keymap ------------------------------
 ;; a keymap to use the above functions. prefix key: "C-;"
 
+
+;; Unset Flyspell's greedy keybinding C-; so it can be used for personal-keymap
 (global-unset-key (kbd "C-;"))
+(eval-after-load "flyspell"
+  '(define-key flyspell-mode-map (kbd "C-;") nil))
+
 (defvar personal-keymap
   (let ((map (make-sparse-keymap)))
     ;; un/arrayify

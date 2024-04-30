@@ -3,166 +3,90 @@
 ;;; Commentary:
 
 ;; Spell-Checking: Flyspell
-;; C-' is now my main interface for all spell checking. It checks one word, then
-;; you may proceed to your next misspelling by selecting 'C-' again.
 
-;; Flyspell will automatically run in a mode that's appropriate for the buffer type
+;; C-' is now my main interface for all spell checking.
+
+;; The workflow is that it finds the nearest misspelled word above where the
+;; cursor is, allows for saving or correcting, then stops. You may proceed to
+;; the next misspelling by selecting C-' again.
+
+;; Flyspell will automatically run in a mode appropriate for the buffer type
 ;; - if it's a programming mode, it will only check comments
 ;; - if in text mode, it will check everything
 ;; - otherwise it will turn off.
 ;; This check happens on every mode switch.
 
-;; If you want flyspell on in another mode (say fundamental mode), or you'd like it off
-;; to keep it from distracting, you can toggle flyspell's state with 'C-c f'
+;; If you want flyspell on in another mode (say fundamental mode), or you want
+;; to turn it off, you can toggle flyspell's state with 'C-c f'
 
-;; The nicest thing is that each spell correction creates an abbrev. This essentially is a shortcut
-;; that expands that same misspelling to the correct spelling the next time it's typed. That
-;; idea comes courtesy Artur Malabarba, and it's increased my overall typing speed.
+;; The nicest thing is that each spell correction creates an abbrev. This
+;; essentially is a shortcut that expands that same misspelling to the correct
+;; spelling the next time it's typed. That idea comes courtesy Artur Malabarba,
+;; and it's increased my overall typing speed.
+
+;; Original idea here:
+;; http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html
+
+;; The code below is my refactoring of Artur Malabarba's code, and using
+;; flyspell rather than ispell.
+
 ;;
-;; Use M-o to get to 'other options', including saving to your personal dictionary.
+;; Use M-o to get to 'other options', like saving to your personal dictionary.
+
+;; Note that the keybinding typically taken for the flyspell-mode-map "C-;" has
+;; been deliberately hijacked in custom-functions.el for my personal-keymap.
+;; This is the code run there:
+
+;; (eval-after-load "flyspell"
+;;   '(define-key flyspell-mode-map (kbd "C-;") nil))
 
 ;;; Code:
 
-;; ------------------------ Reclaim Flyspell Keybinding ------------------------
-;; remove one of flyspell's many greedy keyboard bindings
-;; this is now used for my personal-keymap
+;; ---------------------------- Ispell And Flyspell ----------------------------
 
-(eval-after-load "flyspell"
-  '(define-key flyspell-mode-map (kbd "C-;") nil))
 
-;; --------------------------------- Flyspell --------------------------------
-;; there's some ispell settings here as well.
-
-(use-package flyspell
+(use-package ispell
   :defer .5
   :ensure nil ;; built-in
   :config
-  (setq ispell-alternate-dictionary (concat user-emacs-directory "assets/english-words.txt"))
+  (setq ispell-alternate-dictionary
+		(concat user-emacs-directory "assets/english-words.txt"))
   (setq ispell-dictionary "american") ; better for aspell
+  ;; use aspell rather than ispell
+  (setq ispell-program-name "aspell")
+  ;; in aspell "-l" means --list, not --lang
+  (setq ispell-list-command "--list")
   (setq ispell-extra-args '("--sug-mode=ultra" "-W" "3" "--lang=en_US"))
-  (setq ispell-list-command "--list")                                       ;; in aspell "-l" means --list, not --lang
   (setq ispell-local-dictionary "en_US")
-  (setq ispell-program-name "aspell")                                       ;; use aspell instead of ispell
-  (setq ispell-local-dictionary-alist '(("en_US" "[[:alpha:]]" "[^[:alpha:]]" "['‘’]"
-										 t ; Many other characters
-										 ("-d" "en_US") nil utf-8)))
-
+  (setq ispell-local-dictionary-alist
+		'(("en_US" "[[:alpha:]]" "[^[:alpha:]]" "['‘’]"
+		   t ;; Many other characters
+		   ("-d" "en_US") nil utf-8)))
+  ;; personal directory goes with sync'd files
   (setq ispell-personal-dictionary
-		(concat sync-dir "aspell-personal-dictionary"))                     ;; personal directory goes with sync'd files
-  (setq flyspell-issue-message-flag nil)                                    ;; don't print message for every word when checking
-  (add-to-list 'ispell-skip-region-alist '("^#+BEGIN_SRC" . "^#+END_SRC"))) ;; skip code blocks in org mode
+		(concat sync-dir "aspell-personal-dictionary"))
+  ;; skip code blocks in org mode
+  (add-to-list 'ispell-skip-region-alist '("^#+BEGIN_SRC" . "^#+END_SRC")))
 
+
+(use-package flyspell
+  :defer .5
+  :after ispell
+  :ensure nil ;; built-in
+  :config
+  ;; don't print message for every word when checking
+  (setq flyspell-issue-message-flag nil))
 
 (use-package flyspell-correct
-  :defer 1
   :after flyspell
-  :bind
-  (:map flyspell-mode-map
-		("C-'" . cj/flyspell-then-abbrev)))                                 ;; disallow other entries to spelling corrections
-
+  :defer .5)
 
 (use-package flyspell-correct-ivy
-  :defer 1
-  :after (ivy flyspell-correct)
-  :init
-  (setq flyspell-correct-interface #'flyspell-correct-ivy))                  ;; use ivy as the flyspell interface
-
-
-;; ------------------------ Flyspell On For Buffer Type ------------------------
-;; check strings and comments in prog mode; everything in text mode
-
-(defun flyspell-on-for-buffer-type ()
-  "Enable Flyspell appropriately for the major mode and check the current buffer.
-If flyspell is already enabled, do nothing.  If the mode is derived from
-`prog-mode', enable `flyspell-prog-mode' so only strings and comments get
-checked.  If the buffer is text based `flyspell-mode' is enabled to check
-all text.  Otherwise, flyspell is turned off."
-  (interactive)
-  (if (not (symbol-value flyspell-mode)) ; if not already on
-      (progn
-        (if (derived-mode-p 'prog-mode)
-            (progn
-              (flyspell-prog-mode)
-              (flyspell-buffer)))
-        (if (derived-mode-p 'text-mode)
-            (progn
-              (flyspell-mode 1)
-              (flyspell-buffer))
-          ;; else
-          (progn
-            (flyspell-mode 0))))))
-(add-hook 'after-change-major-mode-hook 'flyspell-on-for-buffer-type)
-(add-hook 'find-file-hook 'flyspell-on-for-buffer-type)
-
-;; ---------------------------- Flyspell Then Abbrev ---------------------------
-;; A stroke of genius from Artur Malabarba.
-;; http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html
-;; Spell checks backwards (after you've noticed a typo). Corrects, then automatically
-;; creates an abbrev to autocorrect the same misspelling.
-;; Bound to C-; above.
-
-(setq save-abbrevs 'silently)
-(setq-default abbrev-mode t)
-
-(defun cj/flyspell-then-abbrev (p)
-  "Call `ispell-word', then create an abbrev for it.
-With prefix P, create local abbrev. Otherwise it will
-be global."
-  (interactive "P")
-  (save-excursion
-    (if (flyspell-goto-previous-word (point))
-        (let ((bef (downcase (or (thing-at-point 'word)
-                                 "")))
-              aft)
-          (call-interactively 'flyspell-correct-at-point)
-          (setq aft (downcase
-                     (or (thing-at-point 'word) "")))
-          (unless (or (string= aft bef)
-                      (string= aft "")
-                      (string= bef ""))
-            (message "\"%s\" now expands to \"%s\" %sally"
-                     bef aft (if p "loc" "glob"))
-            (define-abbrev
-              (if p local-abbrev-table global-abbrev-table)
-              bef aft)))
-      (message "Cannot find a misspelled word"))))
-
-(defun flyspell-goto-previous-word (position)
-  "Go to the first misspelled word that occurs before point.
-But don't look beyond what's visible on the screen."
-  (interactive "d")
-  (let ((top (window-start))
-        (bot (window-end)))
-    (save-restriction
-      (narrow-to-region top bot)
-      (overlay-recenter (point))
-      (add-hook 'pre-command-hook
-                (function flyspell-auto-correct-previous-hook) t t)
-      (unless flyspell-auto-correct-previous-pos
-        ;; only reset if a new overlay exists
-        (setq flyspell-auto-correct-previous-pos nil)
-        (let ((overlay-list (overlays-in (point-min) position))
-              (new-overlay 'dummy-value))
-          ;; search for previous (new) flyspell overlay
-          (while (and new-overlay
-                      (or (not (flyspell-overlay-p new-overlay))
-                          ;; check if its face has changed
-                          (not (eq (get-char-property
-                                    (overlay-start new-overlay) 'face)
-                                   'flyspell-incorrect))))
-            (setq new-overlay (car-safe overlay-list))
-            (setq overlay-list (cdr-safe overlay-list)))
-          ;; if nothing new exits new-overlay should be nil
-          (if new-overlay ;; the length of the word may change so go to the start
-              (setq flyspell-auto-correct-previous-pos
-                    (overlay-start new-overlay)))))
-      (if (not flyspell-auto-correct-previous-pos)
-          nil
-        (goto-char flyspell-auto-correct-previous-pos)
-        t))))
+  :after flyspell-correct
+  :defer .5)
 
 ;; ------------------------------ Flyspell Toggle ------------------------------
-;; easy toggling flyspell which also leverages the 'for-buffer-type' functionality.
+;; easy toggling flyspell and also leverage the 'for-buffer-type' functionality.
 
 (defun flyspell-toggle ()
   "Turn Flyspell on if it is off, or off if it is on.
@@ -177,8 +101,97 @@ handled appropriately."
     (progn
       (flyspell-on-for-buffer-type)
       (message "Flyspell on"))))
-(global-set-key (kbd "C-c f") 'flyspell-toggle )
+(define-key global-map (kbd "C-c f") 'flyspell-toggle )
 
+;; ------------------------ Flyspell On For Buffer Type ------------------------
+;; check strings and comments in prog mode; check everything in text mode
+
+(defun flyspell-on-for-buffer-type ()
+  "Enable Flyspell for the major mode and check the current buffer.
+If flyspell is already enabled, do nothing.  If the mode is derived from
+`prog-mode', enable `flyspell-prog-mode' so only strings and comments get
+checked.  If the buffer is text based `flyspell-mode' is enabled to check
+all text."
+  (interactive)
+  (unless flyspell-mode ; if not already on
+	(cond
+	 ((derived-mode-p 'prog-mode)
+	  (flyspell-prog-mode)
+	  (flyspell-buffer)
+	  ((derived-mode-p 'text-mode)
+	   (flyspell-mode 1)
+	   (flyspell-buffer))))))
+
+(add-hook 'after-change-major-mode-hook 'flyspell-on-for-buffer-type)
+(add-hook 'find-file-hook 'flyspell-on-for-buffer-type)
+
+;; ---------------------------- Flyspell Then Abbrev ---------------------------
+;; Spell check the buffer and create abbrevs to avoid future misspellings.
+
+(require 'files)
+(setq save-abbrevs 'silently)
+(setq-default abbrev-mode t)
+
+(defun cj/find-previous-flyspell-overlay (position)
+  "Locate the Flyspell overlay immediately previous to a given POSITION."
+  ;; sort the overlays into position order
+  (let ((overlay-list (sort (overlays-in (point-min) position)
+							(lambda (a b)
+							  (> (overlay-start a) (overlay-start b))))))
+    ;; search for previous flyspell overlay
+	(while (and overlay-list
+				(or (not (flyspell-overlay-p (car overlay-list)))
+					;; check if its face has changed
+					(not (eq (get-char-property
+							  (overlay-start (car overlay-list)) 'face)
+							 'flyspell-incorrect))))
+	  (setq overlay-list (cdr overlay-list)))
+    ;; if no previous overlay exists, return nil
+    (when overlay-list
+      ;; otherwise, return the overlay start position
+      (overlay-start (car overlay-list)))))
+
+
+(defun cj/flyspell-goto-previous-misspelling (position)
+  "Go to the first misspelled word before the given POSITION.
+Return the misspelled word if found or nil if not. Leave the point at the
+beginning of the misspelled word. Setting the hook on pre-command ensures that
+any started Flyspell corrections complete before running other commands in the
+buffer."
+  (interactive "d")
+  (add-hook 'pre-command-hook
+            (function flyspell-auto-correct-previous-hook) t t)
+  (let* ((overlay-position (cj/find-previous-flyspell-overlay position))
+         (misspelled-word (when overlay-position
+                            (goto-char overlay-position)
+                            (thing-at-point 'word))))
+    (if misspelled-word
+        (downcase misspelled-word)
+      nil)))
+
+(defun cj/flyspell-then-abbrev (p)
+  "Call \='flyspell-correct-at-point\=' and create abbrev for future corrections.
+The abbrev is created in the local dictionary unless the prefix P
+argument is provided, when it's created in the global dictionary."
+  (interactive "P")
+  (flyspell-buffer)
+  (save-excursion
+	(let (misspelled-word corrected-word)
+	  (while (setq misspelled-word
+				   (cj/flyspell-goto-previous-misspelling (point)))
+		(call-interactively 'flyspell-correct-at-point)
+		(setq corrected-word (downcase (or (thing-at-point 'word) "")))
+		(when (and misspelled-word corrected-word
+				   (not (string= corrected-word misspelled-word)))
+		  (message "\"%s\" now expands to \"%s\" %sally"
+				   misspelled-word corrected-word (if p "loc" "glob"))
+		  (define-abbrev
+			(if p local-abbrev-table global-abbrev-table)
+			misspelled-word corrected-word))
+		(goto-char (point-min))))
+	(message "Spell check complete.")))
+
+(define-key global-map (kbd "C-'") 'cj/flyspell-then-abbrev)
 
 (provide 'flyspell-config)
 ;;; flyspell-config.el ends here.
