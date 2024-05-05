@@ -28,9 +28,9 @@
   ;; provide proper casing even if I don't.
   (company-dabbrev-ignore-case t)
   ;; company completion wait
-  (company-idle-delay 0.2)
+  ( company-idle-delay 0.7)
   ;; use vscode icons in the margin
-  (setq company-format-margin-function #'company-vscode-light-icons-margin)
+  (company-format-margin-function #'company-vscode-light-icons-margin)
   ;; no company-mode in shell & eshell
   (company-global-modes '(not eshell-mode shell-mode)))
 

@@ -42,26 +42,27 @@
 
 ;; ------------------------- Re-Enabling Functionality -------------------------
 
+(put 'narrow-to-region 'disabled nil) ;; narrow-to-region is extremely useful!
 (put 'upcase-region 'disabled nil) ;; upcase region is useful
 (put 'erase-buffer 'disabled nil)  ;; and so is erase-buffer
 
 ;; ------------------------------ Non UI Settings ------------------------------
 
-(setq ring-bell-function 'ignore)                       ;; disable the bell ring.
-(setq default-directory user-home-dir)                  ;; consider user home the default directory
+(setq ring-bell-function 'ignore)            ;; disable the bell ring.
+(setq default-directory user-home-dir)       ;; consider user home the default directory
 
-(global-auto-revert-mode)                               ;; update the buffer when the associated file has changed
-(setq global-auto-revert-non-file-buffers t)            ;; do so for all buffer types (e.g., ibuffer)
-(setq bidi-display-reordering nil)                      ;; don't reorder bidirectional text for display
-(setq bidi-paragraph-direction t)                       ;; forces directionality of text for performance.
+(global-auto-revert-mode)                    ;; update the buffer when the associated file has changed
+(setq global-auto-revert-non-file-buffers t) ;; do so for all buffer types (e.g., ibuffer)
+(setq bidi-display-reordering nil)           ;; don't reorder bidirectional text for display
+(setq bidi-paragraph-direction t)            ;; forces directionality of text for performance.
 
-(setq system-time-locale "C")                           ;; use en_US locale to format time.
+(setq system-time-locale "C")                ;; use en_US locale to format time.
 
 ;; --------------------------------- Clipboard ---------------------------------
 
-(setq select-enable-clipboard t)                        ;; cut and paste using clipboard
-(setq yank-pop-change-selection t)                      ;; update system clipboard when yanking in emacs
-(setq save-interprogram-paste-before-kill t)            ;; saves existing clipboard to kill ring before replacing
+(setq select-enable-clipboard t)             ;; cut and paste using clipboard
+(setq yank-pop-change-selection t)           ;; update system clipboard when yanking in emacs
+(setq save-interprogram-paste-before-kill t) ;; saves existing clipboard to kill ring before replacing
 
 ;; -------------------------------- Tab Settings -------------------------------
 ;; use spaces, not tabs
@@ -77,9 +78,9 @@
 ;; ----------------------------- Case Insensitivity ----------------------------
 ;; make user interfaces case insensitive
 
-(setq case-fold-search t)                               ;; case-insensitive searches
-(setq completion-ignore-case t)                         ;; case-insensitive completion
-(setq read-file-name-completion-ignore-case t)          ;; case-insensitive file completion
+(setq case-fold-search t)                      ;; case-insensitive searches
+(setq completion-ignore-case t)                ;; case-insensitive completion
+(setq read-file-name-completion-ignore-case t) ;; case-insensitive file completion
 
 ;; ------------------------------- Async Commands ------------------------------
 ;; always create new async command buffers silently
@@ -94,9 +95,9 @@
 ;; ------------------------ Mouse And Trackpad Settings ------------------------
 ;; provide smoothest scrolling and avoid accidental gestures
 
-(setq mouse-wheel-follow-mouse 't)                  ;; scroll window under mouse
-(setq scroll-margin 5)                              ;; scroll w/in 10 lines of top/bottom
-(setq scroll-step 1)                                ;; keyboard scroll one line at a time
+(setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+(setq scroll-margin 5)             ;; scroll w/in 10 lines of top/bottom
+(setq scroll-step 1)               ;; keyboard scroll one line at a time
 
 ;; disable pasting with mouse-wheel click
 (global-unset-key (kbd "<mouse-2>"))
@@ -108,19 +109,19 @@
 ;; ------------------------------- Be Quiet(er)! -------------------------------
 ;; reduces "helpful" instructions that distract Emacs power users.
 
-(setq-default vc-follow-symlinks)                       ;; don't ask to follow symlinks if target is version controlled
-(setq kill-buffer-query-functions                       ;; don't ask about killing buffers with processes, just kill them
+(setq-default vc-follow-symlinks)             ;; don't ask to follow symlinks if target is version controlled
+(setq kill-buffer-query-functions             ;; don't ask about killing buffers with processes, just kill them
       (remq 'process-kill-buffer-query-function
             kill-buffer-query-functions))
-(setq confirm-kill-processes nil)                       ;; automatically kill running processes on exit
-(setq confirm-nonexistent-file-or-buffer nil)           ;; don't ask if a file I visit with C-x C-f or C-x b doesn't exist
-(setq ad-redefinition-action 'accept)                   ;; silence warnings about advised functions getting redefined.
-(setq large-file-warning-threshold nil)                 ;; open files regardless of size
-(fset 'yes-or-no-p 'y-or-n-p)                           ;; require a single letter for binary answers
-(setq use-short-answers t)                              ;; same as above with Emacs 28+
-(setq auto-revert-verbose nil)                          ;; turn off auto revert messages
-(setq custom-safe-themes t)                             ;; treat all themes as safe (stop asking)
-(setq server-client-instructions nil)                   ;; I already know what to do when done with the frame
+(setq confirm-kill-processes nil)             ;; automatically kill running processes on exit
+(setq confirm-nonexistent-file-or-buffer nil) ;; don't ask if a file I visit with C-x C-f or C-x b doesn't exist
+(setq ad-redefinition-action 'accept)         ;; silence warnings about advised functions getting redefined.
+(setq large-file-warning-threshold nil)       ;; open files regardless of size
+(fset 'yes-or-no-p 'y-or-n-p)                 ;; require a single letter for binary answers
+(setq use-short-answers t)                    ;; same as above with Emacs 28+
+(setq auto-revert-verbose nil)                ;; turn off auto revert messages
+(setq custom-safe-themes t)                   ;; treat all themes as safe (stop asking)
+(setq server-client-instructions nil)         ;; I already know what to do when done with the frame
 
 ;; ------------------ Reduce Garbage Collections In Minibuffer -----------------
 ;; triggers garbage collection when it won't impact user minibuffer entries
@@ -174,13 +175,13 @@
 	(make-directory cj/backup-directory t))
 
 ;; BACKUP SETTINGS
-(setq make-backup-files t)                                         ;; do make backup files
-(setq backup-directory-alist `(("." . ,cj/backup-directory)))      ;; put all originals in backup directory
-(setq backup-by-copying t)                                         ;; don't clobber symlinks
-(setq version-control t)                                           ;; make numeric backup versions
-(setq delete-old-versions t)                                       ;; delete excess backup files w/o asking
-(setq kept-new-versions 25)                                        ;; keep 25  of the newest backups made (default: 2)
-(setq vc-make-backup-files t)                                      ;; also backup any files in version control
+(setq make-backup-files t)                                    ;; do make backup files
+(setq backup-directory-alist `(("." . ,cj/backup-directory))) ;; put all originals in backup directory
+(setq backup-by-copying t)                                    ;; don't clobber symlinks
+(setq version-control t)                                      ;; make numeric backup versions
+(setq delete-old-versions t)                                  ;; delete excess backup files w/o asking
+(setq kept-new-versions 25)                                   ;; keep 25  of the newest backups made (default: 2)
+(setq vc-make-backup-files t)                                 ;; also backup any files in version control
 
 ;; ---------------------------- Exec Path From Shell ---------------------------
 ;; ensure $PATH is the same between your normal shell and your Emacs shells.

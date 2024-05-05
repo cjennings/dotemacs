@@ -94,12 +94,12 @@
   :config
   (setq-default olivetti-body-width 100))
 
-;; --------------------------- Acccent (Diacriticals) --------------------------
+;; --------------------------- Accent (Diacriticals) ---------------------------
 ;; an easy way to enter diacritical marks
 
 (use-package accent
   :defer 1
-  :bind ("C-c C-a" . accent-company))
+  :bind ("C-`" . accent-company))
 
 ;; ----------------------------- Visual Fill Column ----------------------------
 ;; text wrapping

@@ -42,6 +42,7 @@
 **** [[https://lobste.rs/t/linux.rss][Lobsters Linux]] The Linux Kernel and Its Distributions
 **** [[https://lobste.rs/t/unix.rss][Lobsters Unix]] *nix
 ** Blogs                                                             :blogs:
+*** [[https://theluddite.org/feed.rss][The Luddite]]                                                 :tech:blog:
 *** [[https://blog.aaronbieber.com/posts/index.xml][Aaron Bieber's The Chronicle]]                               :tech:emacs:
 *** [[http://dtrace.org/blogs/bmc/feed/][Brian Cantrill's The Observation Deck]]                   :mustread:tech:
 *** [[https://drewdevault.com/blog/index.xml][Drew Devault's Blog]]                                              :tech:

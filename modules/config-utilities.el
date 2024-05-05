@@ -6,6 +6,24 @@
 
 ;;; Code:
 
+
+;; ------------------------------- Load ERT Tests ------------------------------
+
+(defun cj/load-all-tests ()
+  "`load' all ert libraries in test which are not already loaded."
+  (interactive)
+  (require 'ert)
+  (setq ert--tests (make-hash-table :test 'equal)) ;; forget all existing tests
+  (eval-buffer)
+  (let ((libraries-loaded (mapcar #'file-name-sans-extension
+								  (delq nil (mapcar #'car load-history))))
+		(dir (concat user-emacs-directory "tests/")))
+	(dolist (file (directory-files dir t ".+\\.elc?$"))
+	  (let ((library (file-name-sans-extension file)))
+		(unless (member library libraries-loaded)
+		  (load library nil t)
+		  (push library libraries-loaded))))))
+
 ;; ------------------------------ Reload Init File -----------------------------
 ;; it does what it says it does.
 
@@ -23,13 +41,19 @@
 Will recompile natively if supported, or byte-compiled if not."
   (interactive)
   (let* ((native-comp-supported (boundp 'native-compile-async))
-		 (elt-dir (expand-file-name (if native-comp-supported "eln" "elc") user-emacs-directory))
-		 (message-format (format "Please confirm recursive %s recompilation of %%s: " (if native-comp-supported "native" "byte")))
-		 (compile-message (format "%scompiling all emacs-lisp files in %%s" (if native-comp-supported "Natively " "Byte-"))))
+		 (elt-dir
+		  (expand-file-name (if native-comp-supported "eln" "elc")
+							user-emacs-directory))
+		 (message-format
+		  (format "Please confirm recursive %s recompilation of %%s: "
+				  (if native-comp-supported "native" "byte")))
+		 (compile-message (format "%scompiling all emacs-lisp files in %%s"
+								  (if native-comp-supported "Natively " "Byte-"))))
 	(if (yes-or-no-p (format message-format user-emacs-directory))
 		(progn
 		  (message "Deleting all compiled files in %s" user-emacs-directory)
-		  (dolist (file (directory-files-recursively user-emacs-directory "\\(\\.elc\\|\\.eln\\)$"))
+		  (dolist (file (directory-files-recursively user-emacs-directory
+													 "\\(\\.elc\\|\\.eln\\)$"))
 			(delete-file file))
 		  (when (file-directory-p elt-dir)
 			(delete-directory elt-dir t t))
@@ -46,7 +70,8 @@ Will recompile natively if supported, or byte-compiled if not."
 (defun cj/delete-emacs-home-compiled-files ()
   "Delete all compiled files recursively in \='user-emacs-directory\='."
   (interactive)
-  (message "Deleting compiled files under %s. This may take a while." user-emacs-directory)
+  (message "Deleting compiled files under %s. This may take a while."
+		   user-emacs-directory)
   (require 'find-lisp)    ;; make sure the package is required
   (mapc (lambda (path)
 		  (when (or (string-suffix-p ".elc" path)

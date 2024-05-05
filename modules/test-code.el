@@ -7,15 +7,14 @@
 
 ;;; Code:
 
-;; -------------------------------- Geiser Guile -------------------------------
-;; Guile support in Emacs
+;; ----------------------------------- Mpdel -----------------------------------
 
-(use-package geiser-guile
-  :defer 1
-  :commands (geiser-guile)
-  :bind ("C-c G" . geiser-guile)
+(use-package mpdel
+  :defer .5
   :config
-  (setq geiser-guile-binary "/usr/bin/guile"))
+  (setq mpdel-prefix-key (kbd "M-p"))
+  (mpdel-mode))
+
 
 ;; ---------------------------------- Yeetube ----------------------------------
 ;; youtube frontend for emacs
@@ -55,56 +54,6 @@
   :bind ("C-c H" . easy-hugo)
   :config
   (easy-hugo-enable-menu))
-
-
-;; --------------------------------- Recording ---------------------------------
-
-(defvar cj/ffmpeg-process nil
-  "Variable to store the process of the ffmpeg recording.")
-
-(defvar cj/recording-location "~/videos/recordings"
-  "The location to save the ffmpeg recordings.")
-
-(defun cj/start-recording (arg)
-  "Starts the ffmpeg recording.
-If called with a prefix arg C-u, choose the location on where to save the recording,
-otherwise use the default location in `cj/recording-location'."
-  (interactive "P")
-  (let* ((location (if arg
-					   (read-directory-name "Enter recording location: ")
-					 cj/recording-location))
-		 (directory (file-name-directory location)))
-	(unless (file-directory-p directory)
-	  (make-directory directory t))
-	(cj/ffmpeg-record location)))
-
-(defun cj/ffmpeg-record (directory)
-  "Start an ffmpeg recording. Save output to DIRECTORY."
-  (unless cj/ffmpeg-process
-	(let* ((location (expand-file-name directory))
-		   (name (format-time-string "%Y-%m-%d-%H-%M-%S"))
-		   (filename (concat location "/" name ".mkv"))
-		   (ffmpeg-command
-			(concat "ffmpeg -framerate 30 -f x11grab -i :0.0+ "
-					"-f pulse -i alsa_input.pci-0000_00_1b.0.analog-stereo "
-					"-ac 1 -f pulse -i alsa_output.pci-0000_00_1b.0.analog-stereo.monitor "
-					"-ac 2 " filename)))
-	  ;; start the recording
-	  (setq cj/ffmpeg-process
-			(start-process-shell-command "ffmpeg-recording"
-										 "*ffmpeg-recording*"
-										 ffmpeg-command))
-      (set-process-query-on-exit-flag cj/ffmpeg-process nil)
-	  (message "Started recording process."))))
-
-(defun cj/stop-recording ()
-  "Stop the ffmpeg recording process."
-  (interactive)
-  (when cj/ffmpeg-process
-	(delete-process cj/ffmpeg-process)
-	(setq cj/ffmpeg-process nil)
-	(message "Stopped recording process.")))
-
 
 ;; -------------------------------- Google This --------------------------------
 

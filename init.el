@@ -65,6 +65,7 @@
 (require 'markdown-config)
 (require 'modeline-config)
 (require 'pdf-config)
+(require 'record-desktop)
 (require 'show-kill-ring)
 (require 'telegram-config)
 (require 'tramp-config)

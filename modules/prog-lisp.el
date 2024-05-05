@@ -80,8 +80,11 @@
 	(ert t))
 
   (keymap-global-unset "C-r" t)
+  (keymap-global-unset "C-R" t)
   (define-key emacs-lisp-mode-map (kbd "C-r") 'ert-all-tests)
-  (define-key lisp-interaction-mode-map (kbd "C-r") 'ert-all-tests))
+  (define-key emacs-lisp-mode-map (kbd "C-R") 'ert-run-tests-interactively)
+  (define-key lisp-interaction-mode-map (kbd "C-r") 'ert-all-tests)
+  (define-key lisp-interaction-mode-map (kbd "C-R") 'ert-run-tests-interactively))
 
 (use-package el-mock) ;; mock/stub framework
 
@@ -125,6 +128,15 @@
   (set-face-foreground 'rainbow-delimiters-depth-8-face "#999")     ;; medium gray
   (set-face-foreground 'rainbow-delimiters-depth-9-face "#666"))    ;; dark gray
 
+;; -------------------------------- Geiser Guile -------------------------------
+;; Guile support in Emacs
+
+(use-package geiser-guile
+  :defer 1
+  :commands (geiser-guile)
+  :bind ("C-c G" . geiser-guile)
+  :config
+  (setq geiser-guile-binary "/usr/bin/guile"))
 
 (provide 'prog-lisp)
 ;;; prog-lisp.el ends here

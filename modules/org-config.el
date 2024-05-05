@@ -204,7 +204,6 @@ org-archive-subtree-default are placed.")
   (org-mode . flyspell-mode)
   (org-mode . turn-on-visual-line-mode)
   (org-mode . org-indent-mode)
-  (org-mode . (lambda () (interactive) (company-mode -1))) ;; no company-mode in org
 
   :config
   (cj/org-general-settings)

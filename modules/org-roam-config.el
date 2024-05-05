@@ -30,7 +30,7 @@
      ("r" "recipe" plain
       (function (lambda () (concat roam-dir "templates/recipe.org")))
       :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}
-      #+CATEGORY: ${title}\n#+FILETAGS: Recipe")
+	  #+CATEGORY: ${title}\n#+FILETAGS: Recipe\n#+STARTUP: showall")
       :unnarrowed t)
      ("p" "project" plain
       (function (lambda () (concat roam-dir "templates/project.org")))

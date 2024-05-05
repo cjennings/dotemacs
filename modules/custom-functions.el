@@ -25,7 +25,7 @@
         (t (message "Cursor doesn't follow parenthesis, so there's no match."))))
 
 ;; ---------------------------- Join Line Or Region ----------------------------
-;; joins all selected lines	and fixes up the whitespace.
+;; joins all selected lines and fixes up the whitespace.
 
 (defun cj/join-line-or-region (beg end)
   "Apply \='join-line\=' over the marked region or join with previous line.
@@ -112,22 +112,16 @@ If no region is selected, operate on the whole buffer."
 ;; reindent, untabify, and delete trailing whitespace across region or buffer
 
 (defun cj/format-region-or-buffer ()
-  "Reformat the region or the entire buffer.
-If a region is selected, delete trailing whitespace, then indent and untabify
-the region. If no region is selected, perform the same actions across the
-buffer."
+  "Reformat the region or the entire buffer."
   (interactive)
-  (let (start-pos end-pos)
-    (if (use-region-p)
-        (progn
-          (setq start-pos (region-beginning))
-          (setq end-pos (region-end)))
-      (setq start-pos (point-min))
-      (setq end-pos (point-max)))
-    (save-excursion
-      (delete-trailing-whitespace start-pos end-pos)
-      (indent-region start-pos end-pos nil)
-      (untabify start-pos end-pos))))
+  (let ((start-pos (if (use-region-p) (region-beginning) (point-min)))
+		(end-pos (if (use-region-p) (region-end) (point-max))))
+	(save-excursion
+	  (save-restriction
+		(narrow-to-region start-pos end-pos)
+		(delete-trailing-whitespace)
+		(indent-region (point-min) (point-max))
+		(untabify (point-min) (point-max))))))
 
 ;; ------------------- Remove Leading And Trailing Whitespace ------------------
 ;; removes leading and trailing whitespace on line, region, or buffer.
@@ -263,6 +257,7 @@ User is prompted for the optional descriptor."
 		  (message "Can't insert around. No word at point and no region selected."))))))
 
 (global-set-key (kbd "C-; i a") 'cj/insert-around-word-or-region)
+
 ;; ------------------------ Insert Around Word Or Region -----------------------
 
 (defun cj/insert-around-word-or-region ()
@@ -302,6 +297,26 @@ User is prompted for the optional descriptor."
       (goto-char start-pos)
       (while (< (point) end-pos)
         (move-end-of-line 1)
+        (insert str)
+        (forward-line 1)))))
+
+;; -------------------- Prepend To Lines In Region Or Buffer --------------------
+;; prepend characters to the beginning of all lines in the region or the buffer.
+;; should probably be collapsed into the append lines function. .
+
+(defun cj/prepend-to-lines-in-region-or-buffer (str)
+  "Prompt for STR and prepend it to the start of each line in region or buffer."
+  (interactive "sEnter string to prepend: ")
+  (let ((start-pos (if (use-region-p)
+                       (region-beginning)
+                     (point-min)))
+        (end-pos (if (use-region-p)
+                     (region-end)
+                   (point-max))))
+    (save-excursion
+      (goto-char start-pos)
+      (while (< (point) end-pos)
+        (beginning-of-line 1)
         (insert str)
         (forward-line 1)))))
 
@@ -385,7 +400,8 @@ and all articles are considered minor words."
                        ;; Check the beginning of the previous word doesn't reset first.
                        (save-excursion
                          (and
-                          (not (zerop (skip-chars-backward "[:blank:]" prev-word-end)))
+						  (not (zerop
+								(skip-chars-backward "[:blank:]" prev-word-end)))
                           (memq (char-before (point)) chars-skip-reset))))
                     (delete-region (point) (1+ (point)))
                     (insert c-up))))))
@@ -397,13 +413,67 @@ and all articles are considered minor words."
 ;; --------------------------- Buffer Strip Control M --------------------------
 ;; remove windows carriage return control characters from the buffer
 
-(defun buffer-strip-ctrl-m ()
+(defun cj/buffer-strip-ctrl-m ()
   "Remove ^M from the current buffer."
   (interactive)
   (save-excursion
 	(goto-char (point-min))
-    (while (search-forward "^M" nil t)
+	(while (search-forward "" nil t)
       (replace-match "" nil t))))
+
+;; ----------------------------- Clear Blank Lines -----------------------------
+
+(defun cj/clear-blank-lines (beginning end)
+  "Remove blank lines in the region or the buffer if no region is selected.
+BEGINNING and END describe the selected region."
+  (interactive "r")
+  (save-excursion
+	(goto-char beginning)
+	(while (re-search-forward "^[ \t]*\n" end t)
+	  (replace-match ""))))
+
+;; ---------------------- Fixup Whitespace Line Or Region ----------------------
+
+(defun cj/fixup-whitespace-line-or-region (&optional region)
+  "Fix up whitespace in the current line, or region if selected.
+Ensure there is exactly one space between words, and remove leading and trailing
+whitespace. When called with a prefix argument, it operates on the current
+REGION."
+  (interactive "P")
+  (save-excursion
+	(let* ((beg (if region (region-beginning) (line-beginning-position)))
+		   (end (if region (region-end) (line-end-position))))
+	  (save-restriction
+        (narrow-to-region beg end)
+        ;; Replace all tabs with space
+        (goto-char (point-min))
+        (replace-string "\t" " " nil beg end)
+		;; Remove leading and trailing spaces
+		(goto-char (point-min))
+		(while (re-search-forward "^\\s-+\\|\\s-+$" nil t)
+		  (replace-match "" nil nil))
+		;; Ensure only one space between words/symbols.
+		(goto-char (point-min))
+		(while (re-search-forward "\\s-\\{2,\\}" nil t)
+		  (replace-match " " nil nil))))))
+
+;; -------------------------- Replace Fraction Glyphs --------------------------
+
+(defun cj/replace-fraction-glyphs (start end)
+  "Replace common fraction glyphs with their spelled out format.
+Operates in the buffer or region (as identified with START and END) if selected.
+Replaces the text with the glyphs if called with C-u."
+  (interactive "r")
+  (let ((replacements (if current-prefix-arg
+                          '(("1/4" . "¼") ("1/2" . "½") ("3/4" . "¾")
+                            ("1/3" .  "⅓") ("2/3" . "⅔"))
+                        '(("¼" . "1/4") ("½" . "1/2") ("¾" . "3/4")
+                          ("⅓" . "1/3") ("⅔" . "2/3")))))
+	(save-excursion
+		(dolist (r replacements)
+		  (goto-char start)
+		  (while (search-forward (car r) end t)
+			(replace-match (cdr r)))))))
 
 ;; ------------------------------ Insert Date Time -----------------------------
 ;; insert a sortable or a readable datestamp or timestamp
@@ -557,11 +627,12 @@ Uses `sortable-time-format' for the formatting the date/time."
     (define-key map "d" 'cj/duplicate-line-or-region)
     (define-key map "D" 'cj/remove-duplicate-lines-from-region-or-buffer)
 
-	(define-key map ")" #'cj/jump-to-matching-paren)
+    (define-key map ")" #'cj/jump-to-matching-paren)
+    (define-key map "/" #'cj/replace-fraction-glyphs)
+    (define-key map "L" #'cj/clear-blank-lines)
 	(define-key map "-" #'cj/hyphenate-region)
 	(define-key map "U" 'upcase-region)
-	(define-key map "w" 'cj/remove-leading-trailing-whitespace)
-	(define-key map "W" 'fixup-whitespace)
+	(define-key map "w" 'cj/fixup-whitespace-line-or-region)
 	(define-key map "#" 'cj/count-words-buffer-or-region)
 	(define-key map "1" 'cj/alphabetize-and-replace-region)
 	(define-key map "C" 'display-fill-column-indicator-mode)
@@ -570,6 +641,7 @@ Uses `sortable-time-format' for the formatting the date/time."
 	(define-key map "j" 'cj/join-line-or-region)
 	(define-key map "l" 'downcase-dwim)
 	(define-key map "p" 'cj/append-to-lines-in-region-or-buffer)
+	(define-key map "P" 'cj/prepend-to-lines-in-region-or-buffer)
 	(define-key map "r" 'align-regexp)
 	(define-key map "u" 'cj/title-case-region)
 	(define-key map "c" 'cj/wrap-region-as-code-span)
@@ -583,7 +655,7 @@ Uses `sortable-time-format' for the formatting the date/time."
 (global-set-key (kbd "C-; i t") 'cj/insert-sortable-time)
 (global-set-key (kbd "C-; i d") 'cj/insert-sortable-date)
 ;; buffer and file operations
-(global-set-key (kbd "C-; b r") 'cj/rename-buffer-and-file)
+(global-set-key (kbd "C-; b r") 'cj/renameq-buffer-and-file)
 (global-set-key (kbd "C-; b d") 'cj/delete-buffer-and-file)
 (global-set-key (kbd "C-; b m") 'cj/move-buffer-and-file)
 ;; copy link to source file

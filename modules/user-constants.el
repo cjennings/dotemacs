@@ -55,6 +55,10 @@
 (defconst snippets-dir  (concat sync-dir "snippets/")
   "The location of ya-snippet snippets.")
 
+(defconst video-recordings-dir "~/videos/recordings"
+  "The location to save the ffmpeg recordings.")
+
+
 ;; FILES
 (defvar schedule-file   (concat sync-dir "schedule.org")
   "The location of the org file containing scheduled events.")
@@ -99,7 +103,8 @@
 (mapc 'cj/verify-or-create-dir (list sync-dir
 									 roam-dir
 									 journals-dir
-                                     snippets-dir))
+									 video-recordings-dir
+									 snippets-dir))
 
 (mapc 'cj/verify-or-create-file (list schedule-file
                                       inbox-file
