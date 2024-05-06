@@ -7,6 +7,14 @@
 
 ;;; Code:
 
+
+;; ------------------------------------ Pomm -----------------------------------
+
+(use-package pomm
+  :defer .5
+  :bind	("M-p" . pomm)
+  :commands (pomm pomm-third-time))
+
 ;; ----------------------------------- Mpdel -----------------------------------
 
 (use-package mpdel
