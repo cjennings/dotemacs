@@ -19,6 +19,8 @@
   (:map pdf-view-mode-map
         ("M" . pdf-view-midnight-minor-mode)
 		("m" . bookmark-set)
+		("C-=" . pdf-view-enlarge)
+		("C--" . pdf-view-shrink)
         ("z" . (lambda () (interactive) (cj/open-file-with-command "zathura")))
         ("e" . (lambda () (interactive) (cj/open-file-with-command "evince")))
         ("j" . pdf-view-next-line-or-next-page)
