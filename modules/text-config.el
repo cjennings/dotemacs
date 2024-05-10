@@ -30,7 +30,7 @@
   (move-text-default-bindings))
 
 ;; ------------------------------- Expand Region -------------------------------
-;; increase the selected region by semantic units
+;; increase the region by semantic units
 
 (use-package expand-region
   :defer .5
