@@ -96,7 +96,7 @@ automatically displayed."
   :custom
   (dirvish-quick-access-entries
    `(("h"  ,user-home-dir                         "home")
-     ("cx" ,code-dir                              "code diredtory")
+	 ("cx" ,code-dir                              "code directory")
      ("ws" ,(concat code-dir "/website")          "website staging")
      ("dr" ,(concat sync-dir "/drill/")           "drill files")
      ("s"  ,sync-dir                              "sync directory")
@@ -112,7 +112,8 @@ automatically displayed."
 	 ("pl" "~/sync/playlists/"                    "playlists directory")
      ("df" "~/.dotfiles/"                         "dotfiles")
      ("dx" "~/documents/"                         "documents")
-     ("mx" "~/music/"                             "music")
+	 ("mx" "~/music/"                             "music")
+	 ("mb" "/media/backup/"                       "backup directory")
      ("rcj" "/sshx:cjennings@cjennings.net:~"     "remote cjennings.net")
      ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
      )) ;; end dirvish-quick-access-entries
