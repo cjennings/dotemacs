@@ -59,6 +59,7 @@
 (require 'graphviz-config)  ;; merge with latex module?
 (require 'help-utils)
 (require 'httpd-config)
+(require 'latex-config)     ;; need to fix
 (require 'ledger-config)
 (require 'local-repository) ;; wip
 (require 'mail-config)
@@ -69,7 +70,7 @@
 (require 'show-kill-ring)
 (require 'telegram-config)
 (require 'tramp-config)
-(require 'latex-config)     ;; need to fix
+(require 'weather-config)
 
 ;; -------------------------------- Programming --------------------------------
 

@@ -12,7 +12,7 @@
 
 (use-package pomm
   :defer .5
-  :bind	("M-p" . pomm)
+  :bind ("M-p" . pomm)
   :commands (pomm pomm-third-time))
 
 ;; ----------------------------------- Mpdel -----------------------------------
@@ -74,19 +74,6 @@
   (google-this-mode 1)
   (setq google-this-browse-url-function 'eww-browse-url))
 
-;; ----------------------------------- Wttrin ----------------------------------
-;; show the weather forecast in an Emacs buffer
-
-(use-package wttrin
-  :defer .5
-  :load-path ("~/code/emacs-wttrin")
-  :ensure nil ;; local package
-  :preface
-  ;; dependency for wttrin
-  (use-package xterm-color
-	:demand t)
-  :bind
-  ("M-W" . wttrin))
 
 ;; ------------------------------ ERC Yank To Gist -----------------------------
 ;; automatically create a Gist if pasting more than 5 lines
