@@ -37,6 +37,10 @@
 ;; -------------------------------- Debug Flags --------------------------------
 ;; debugging enabled during Emacs startup. disabled again after Emacs startup.
 
+
+;; uncomment when repo signatures expire and package installation is necessary
+;; (setq package-check-signature nil)
+
 (setq debug-on-error t)    ;; default nil. turn on to debug issues only.
 (setq debug-on-quit t)     ;; debug on C-g (breaking out of hangs/freezes)
 
@@ -57,7 +61,7 @@
 ;; set to nil to only use localrepo and local elpa-mirrors (see script directory)
 
 (defvar cj/use-online-repos t
-  "Whether to check for network connectivity and use online package repositories.")
+  "Whether to check for network connectivity & use online package repositories.")
 
 ;; ---------------------------- Startup Performance ----------------------------
 ;; increases garbage collection threshold, and turns off file-name-handler and
@@ -103,7 +107,7 @@
 (defconst user-home-dir (getenv "HOME")
   "The user's home directory per the environment variable.")
 
-(defconst elpa-mirror-location "/media/repos/elpa-mirror/"
+(defconst elpa-mirror-location "/media/backup/repositories/elpa-mirror/"
   "The path to the elpa mirror location.")
 
 (defconst localrepo-location (concat user-emacs-directory ".localrepo/")

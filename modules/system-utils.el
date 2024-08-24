@@ -315,7 +315,19 @@ with a prefix argument."
   :config
   (add-to-list
    'proced-format-alist
-   '(custom user pid ppid sess tree pcpu pmem rss start time state (args comm))))
+   '(custom user pid ppid sess tree pcpu pmem rss start time state (args
+																	comm))))
+
+;; ------------------------------------ TMR ------------------------------------
+
+(use-package tmr
+  :defer .5
+  :bind ("M-t" . tmr-prefix-map)
+  :config
+   (setq tmr-sound-file
+		 "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga")
+   (setq tmr-notification-urgency 'normal)
+   (setq tmr-descriptions-list 'tmr-description-history))
 
 ;; ------------------------------- Who Called Me? ------------------------------
 ;; convenience function to display which function called a message

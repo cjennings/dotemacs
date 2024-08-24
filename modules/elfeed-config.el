@@ -58,7 +58,7 @@
 ;; -------------------------- Elfeed Filter Functions --------------------------
 
 (defun cj/elfeed-mark-all-as-read ()
-  "Temove the 'unread' tag from all elfeed entries visible in the elfeed search buffer."
+  "Remove the 'unread' tag from all elfeed entries visible in the elfeed search buffer."
   (interactive)
   (mark-whole-buffer)
   (elfeed-search-untag-all-unread))

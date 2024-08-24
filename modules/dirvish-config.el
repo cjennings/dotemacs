@@ -154,7 +154,7 @@ automatically displayed."
    ("C-,"     . dirvish-history-go-backward)
    ("M-l"     . dirvish-ls-switches-menu)
    ("M-m"     . dirvish-mark-menu)
-   ("M-t"     . dirvish-layout-toggle)
+;;   ("M-t"     . dirvish-layout-toggle) ;; todo find another key; M-t is contentious
    ("M-s"     . dirvish-setup-menu)
    ("M-e"     . dirvish-emerge-menu)))
 

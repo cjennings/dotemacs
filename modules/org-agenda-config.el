@@ -191,7 +191,7 @@ This allows a line to show in an agenda without being scheduled or a deadline."
     (open-line 1)
     (forward-line 1)
     (insert (concat "<" (format-time-string cj/timeformat (current-time)) " " s ">" ))))
-(global-set-key (kbd "M-t")       #'cj/add-timestamp-to-org-entry)
+;;(global-set-key (kbd "M-t")       #'cj/add-timestamp-to-org-entry)
 
 ;; --------------------------- Notifications / Alerts --------------------------
 ;; send libnotify notifications about agenda items
