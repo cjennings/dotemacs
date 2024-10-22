@@ -21,8 +21,8 @@
 
 ;; -------------------------------- Transparency -------------------------------
 
-(set-frame-parameter (selected-frame) 'alpha '(84 84))
-(add-to-list 'default-frame-alist '(alpha 84 84))
+;; (set-frame-parameter (selected-frame) 'alpha '(84 84))
+;; (add-to-list 'default-frame-alist '(alpha 84 84))
 
 ;; ----------------------------------- Cursor ----------------------------------
 ;; set cursor color according to mode
