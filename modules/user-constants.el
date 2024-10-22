@@ -19,28 +19,28 @@
 (defconst user-home-dir (getenv "HOME")
   "The user's home directory per the environment variable.")
 
-(defconst books-dir     (concat user-home-dir "/sync/books/")
+(defconst books-dir     (concat user-home-dir "/Sync/books/")
   "The location of org-roam files.")
 
-(defconst code-dir      (concat user-home-dir "/code/")
+(defconst code-dir      (concat user-home-dir "/Code/")
   "Code repositories are located in this directory.")
 
-(defconst dl-dir        (concat user-home-dir "/downloads/")
+(defconst dl-dir        (concat user-home-dir "/Downloads/")
   "Location of the general downloads directory.")
 
-(defconst pix-dir       (concat user-home-dir "/pictures/")
+(defconst pix-dir       (concat user-home-dir "/Pictures/")
   "Location of where pictures and images are stored.")
 
-(defconst projects-dir  (concat user-home-dir "/projects/")
+(defconst projects-dir  (concat user-home-dir "/Projects/")
   "Non-code projects and repositories are located in this directory.")
 
-(defconst videos-dir    (concat user-home-dir "/videos/")
+(defconst videos-dir    (concat user-home-dir "/Videos/")
   "Location of where videos are stored.")
 
 (defconst mail-dir      (concat user-home-dir ".mail/")
   "Root directory where the mail folders are located.")
 
-(defconst sync-dir      (concat user-home-dir "/sync/org/")
+(defconst sync-dir      (concat user-home-dir "/Sync/org/")
   "This directory is synchronized across machines.")
 
 (defconst roam-dir      (concat sync-dir "roam/")
@@ -55,7 +55,7 @@
 (defconst snippets-dir  (concat sync-dir "snippets/")
   "The location of ya-snippet snippets.")
 
-(defconst video-recordings-dir "~/videos/recordings"
+(defconst video-recordings-dir "~/Videos/recordings"
   "The location to save the ffmpeg recordings.")
 
 
