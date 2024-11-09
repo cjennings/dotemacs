@@ -36,11 +36,11 @@ if ! [ -f $CMAIL ]; then echo "creating cmail directory" && mkdir -p $CMAIL; fi
 #  -------------------------- Initial Sync -------------------------
 
 # sync
-echo "syncing email... Note: You will be asked for your password."
+echo "syncing email... Note: You will be asked for your password"
 $MBSYNC -aV
 
 # init
-echo "running mu init.."
+echo "running mu init..."
 $MU init --maildir="$HOME/.mail" --my-address=craigmartinjennings@gmail.com --my-address=c@cjennings.net
 
 # index
