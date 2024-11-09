@@ -3,7 +3,7 @@
 # Craig Jennings <c@cjennings.net>
 #
 # this mu4e mail setup script is particular to my own setup
-# ===== this will not work for you =====
+# ===== this will not work for you without adjustments =====
 
 MBSYNC=/usr/bin/mbsync
 MBSYNCRC="$HOME/.mbsyncrc"
