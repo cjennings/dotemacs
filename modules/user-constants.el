@@ -19,28 +19,28 @@
 (defconst user-home-dir (getenv "HOME")
   "The user's home directory per the environment variable.")
 
-(defconst books-dir     (concat user-home-dir "/Sync/books/")
+(defconst books-dir     (concat user-home-dir "/sync/books/")
   "The location of org-roam files.")
 
-(defconst code-dir      (concat user-home-dir "/Code/")
+(defconst code-dir      (concat user-home-dir "/code/")
   "Code repositories are located in this directory.")
 
-(defconst dl-dir        (concat user-home-dir "/Downloads/")
+(defconst dl-dir        (concat user-home-dir "/downloads/")
   "Location of the general downloads directory.")
 
-(defconst pix-dir       (concat user-home-dir "/Pictures/")
+(defconst pix-dir       (concat user-home-dir "/pictures/")
   "Location of where pictures and images are stored.")
 
-(defconst projects-dir  (concat user-home-dir "/Projects/")
+(defconst projects-dir  (concat user-home-dir "/projects/")
   "Non-code projects and repositories are located in this directory.")
 
-(defconst videos-dir    (concat user-home-dir "/Videos/")
+(defconst videos-dir    (concat user-home-dir "/videos/")
   "Location of where videos are stored.")
 
 (defconst mail-dir      (concat user-home-dir ".mail/")
   "Root directory where the mail folders are located.")
 
-(defconst sync-dir      (concat user-home-dir "/Sync/org/")
+(defconst sync-dir      (concat user-home-dir "/sync/org/")
   "This directory is synchronized across machines.")
 
 (defconst roam-dir      (concat sync-dir "roam/")
