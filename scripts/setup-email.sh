@@ -6,13 +6,13 @@
 # ===== this will not work for you =====
 
 MBSYNC=/usr/bin/mbsync
-MBSYNCRC=~/.mbsyncrc
+MBSYNCRC="$HOME/.mbsyncrc"
 MU4E_DIR=/usr/share/emacs/site-lisp/mu4e/
 MSMTP=/usr/bin/msmtp
-MSMTPRC=~/.msmtprc
+MSMTPRC="$HOME/.msmtprc"
 MU=/usr/bin/mu
-GMAIL=~/.mail/gmail
-CMAIL=~/.mail/cmail
+GMAIL="$HOME/.mail/gmail"
+CMAIL="$HOME/.mail/cmail"
 
 #  ----------------------- Preliminary Checks ----------------------
 # is mbsync installed?
@@ -41,7 +41,7 @@ $MBSYNC -aV
 
 # init
 echo "running mu init.."
-$MU init --maildir=~/.mail --my-address=craigmartinjennings@gmail.com --my-address=c@cjennings.net
+$MU init --maildir="$HOME/.mail" --my-address=craigmartinjennings@gmail.com --my-address=c@cjennings.net
 
 # index
 echo "running mu index..."
