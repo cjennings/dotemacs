@@ -55,7 +55,7 @@
 (defconst snippets-dir  (concat sync-dir "snippets/")
   "The location of ya-snippet snippets.")
 
-(defconst video-recordings-dir "~/Videos/recordings"
+(defconst video-recordings-dir "~/videos/recordings"
   "The location to save the ffmpeg recordings.")
 
 
