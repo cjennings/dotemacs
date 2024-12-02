@@ -3,24 +3,63 @@
 *** [[https://files.manager-tools.com/files/public/feeds/manager-tools-podcasts.xml][Manager Tools Podcast]]                                          :career:
 *** [[https://files.manager-tools.com/files/public/feeds/career_tools_podcasts.xml][Career Tools Podcast]]                                           :career:
 *** [[https://www.patreon.com/rss/sipandfeast?auth=0VNsTslk1yGXna_oPrjMbhwDevoojlGZ][Sip and Feast Podcast]]                                         :cooking:
+*** [["https://www.youtube.com/feeds/videos.xml?channel_id=UCkdnY2hNC0sdlVXPtWuNQ8g][New York Times Podcasts]]
 ** Videos                                                           :videos:
+*** [["https://www.youtube.com/feeds/videos.xml?channel_id=UC7kIy8fZavEni8Gzl8NLjOQ][Alex O'Connor]]                                              :commentary:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCXUPKJO5MZQN11PqgIvyuvQ][Andrej Karpathy]]                                             :tech:code:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC0PBefyEK7qQ7HN325nUamQ][Brent Westbrook]]                                                  :code:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCngn7SVujlvskHRvRKc1cTw][Bugswriter]] Suraj Kushwah                                   :linux:code:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC8butISFwT-Wl7EV0hUK0BQ][Code Camp]]                                                        :code:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCtw7q4SyOeoCwM1i_3x8lDg][Comedy Central Standup]]                                         :comedy:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCfa-XVztQrDlf-2v1UUdkwg][David Canterbury]]                                                 :camp:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC7MgijK9WL_EqCo1juUERwg][Don't Tell Comedy]]                                              :comedy:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCvlVuntLjdURVD3b3Hx7kxw][Dry Bar Comedy]]                                                 :comedy:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCZ4AMrDcNrfy3X6nsU8-rPg][Economics Explained]]                                         :economics:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCwuyodzTl_KdEKNuJmeo99A][Emacs Conference Videos]]                                         :emacs:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCvPXiKxH-eH9xq-80vpgmKQ][Epic History]]                                                  :history:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCTYmTYuan0fSGccYXBxc8cA][Flash Point History]]                                           :history:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC61NF20ZcIsbzJB7_IyURsQ][Gates of Imagination]]                                            :books:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCs_tLP3AiwYKwdUHpltJPuA][GOTO Conferences]]                                                 :code:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC8MX9ECowgDMTOnFTE8EUJw][History Marche]]                                                :history:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC_hukbByJP7OZ3Xm2tszacQ][Jeffrey Kaplan]]                                             :philosophy:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCmGSJVG3mCRXVOP4yZrU1Dw][Johnny Harris]]                                      :history:commentary:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCbh_g91w0T6OYp40xFrtnhA][Karthik Chikmagalur]]                                             :emacs:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCMmaBzfCCwZ2KqaBJjkj0fw][Kings and Generals]]                                            :history:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCuCuEKq1xuRA0dFQj1qg9-Q][Knowledgia]]                                                    :history:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCSHZKyawb77ixDdsGog4iWA"][Lex Fridman]]                                                :interviews:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC3pasXoRUTKPpQaKtlJz62g][Linux Dabbler]]                                                   :linux:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC2eYFnH61tmytImy1mTYvhA][Luke Smith]]                                                 :code:linux:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCXat06LvIYIyE2SpV_IuVjA][Malcolm Guite]]                                                   :books:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC0TnW9acNxqeojxXDMbohcA][Mark Manson]]                                     :interviews:commentary:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC7YOGHUfC1Tb6E4pudI9STA][Mental Outlaw]]                                                :security:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCxkMDXQ5qzYOgXPRnOBrp1w][Mike Zamansky]]                                                   :emacs:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCSuHzQ3GrHSzoBbwrIq3LLA][Naomi Brockwell]]                                              :security:
-*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC_mYaQAE6-71rjSN6CeCA-g][Neet Code]]                                                        :code:
-*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCevUmOfLTUX9MNGJQKsPdIA][Neet Code IO]]                                                     :code:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UClakdY321DmXjjieiA8Bqag][People's Profile Extra]]                                        :history:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC1E1SVcVyU3ntWMSQEp38Yw][Prof G]] Scott Galloway                           :commentary:interviews:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC0uTPqBCFIpZxlz_Lv1tk_g][Protesilaos Stavrou]]                                             :emacs:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCpjlh0e319ksmoOD7bQFSiw][Rich Roll]]                                                  :interviews:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCsxwneBx6apV1mQ7CbWKfXQ][Robinson Erhardt]]                                           :interviews:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCJm2TgUqtK1_NLBrjNQ1P-w][Second Thought]]                                             :commentary:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC6S5a3MQtr_PSWZxysXkOCg][Serious Eats]]                                                  :cooking:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCbyjYRUS9gADwAGuUxcfVcA][Sip and Feast Videos]]                                          :cooking:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC2RCcnTltR3HMQOYVqwmweA][Steve Yegge]]                                                 :code:tech:
-*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCAiiOTio8Yu69c3XnR7nQBQ][Systemcrafters]]                                                  :emacs:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCAiiOTio8Yu69c3XnR7nQBQ][Systemcrafters]] David Wilson                                     :emacs:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCK0z0_5uL7mb9IjntOKi5XQ][The Atlantic]]                                               :commentary:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCwWhs_6x42TyRM4Wstoq8HA][The Daily Show]]                                                 :comedy:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC0p5jTq6Xx_DosDFxVXnWaQ][The Economist]]                                              :commentary:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCMtFAi84ehTSYSE9XoHefig][The Late Show with Stephen Colbert]]                             :comedy:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCqnbDFdCpuN8CMEg0VuEBqA][The New York Times]]                                    :news:commentary:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCIq2xNjGAof0cCUaKbco6HQ][Theory and Philosophy]]                                      :philosophy:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCD6TPU-PvTMvqgzC_AM7_uA][The People's Profiles]]                                         :history:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCPbwhExawYrn9xxI21TFfyw][The Pragmatic Engineer]]                                    :code:career:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCFp5RFtZyBpmTCcXmib1x9g][The Register]]                                                     :tech:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCd0n53aFGZoXxiz_sH74O4A][The Subtle Art of Not Giving a Fuck]]                        :interviews:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCTHsQd-vRXK1bp4vpifl6yA][Trae Crowder]]                                                   :comedy:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC29ju8bIPH5as8OGnQzwJyA][Traversy Media]]                                            :code:career:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCrFIk7g_riIm2G2Vi90pxDA][Tropical Tidbits]]                                              :weather:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCoO1EFmoLg892aciLAjUCiQ][Turtleneck Philosophy]]                                      :philosophy:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCo71RUe6DX4w-Vd47rFLXPg][Typecraft]]                                                        :code:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCLXo7UDZvByw2ixzpQCufnA][Vox]]                                                        :commentary:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCsnGwSIHyoYN0kiINAGUKxg][Wolfgang's Channel]]                                         :code:linux:
 ** Tech Aggregators                                                   :tech:
 *** Hacker News                                                :hackernews:
