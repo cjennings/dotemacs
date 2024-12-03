@@ -5,6 +5,7 @@
 *** [[https://www.patreon.com/rss/sipandfeast?auth=0VNsTslk1yGXna_oPrjMbhwDevoojlGZ][Sip and Feast Podcast]]                                         :cooking:
 *** [["https://www.youtube.com/feeds/videos.xml?channel_id=UCkdnY2hNC0sdlVXPtWuNQ8g][New York Times Podcasts]]
 ** Videos                                                           :videos:
+*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC0QwGb6erlvTQE_bFbrGmKw][You Can't Unhear This]]                                           :music:
 *** [["https://www.youtube.com/feeds/videos.xml?channel_id=UC7kIy8fZavEni8Gzl8NLjOQ][Alex O'Connor]]                                              :commentary:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCXUPKJO5MZQN11PqgIvyuvQ][Andrej Karpathy]]                                             :tech:code:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC0PBefyEK7qQ7HN325nUamQ][Brent Westbrook]]                                                  :code:
