@@ -129,8 +129,9 @@
   :hook (vterm-mode . cj/turn-off-chrome-for-vterm)
   :bind
   (:map vterm-mode-map
+        ("<f12>"     . nil)
         ("C-y"     . vterm-yank)
-        ("C-p"     . vterm-copy-mode)
+        ("C-p"     . vtermf-copy-mode)
         ("<pause>" . vterm-copy-mode))
   :custom
   (vterm-kill-buffer-on-exit t)
