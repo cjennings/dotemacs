@@ -127,8 +127,9 @@ org-archive-subtree-default are placed.")
   (setq org-enforce-todo-dependencies t)
   (setq org-enforce-todo-checkbox-dependencies t)
   (setq org-deadline-warning-days 7)    ;; warn me w/in a week of deadlines
-  (setq org-treat-insert-todo-heading-as-state-change t) ;; log task creation
-  (setq org-log-into-drawer t) ;; log into the drawer
+  (setq org-treat-insert-todo-heading-as-state-change nil) ;; log task creation
+  (setq org-log-into-drawer nil) ;; log into the drawer
+  (setq org-log-done nil) ;; don't log completions
   (setq org-habit-graph-column 75) ;; allow space for task name
 
   ;; inherit parents properties (sadly not schedules or deadlines)
