@@ -102,7 +102,7 @@
   (eshell-toggle-run-command nil)
   (eshell-toggle-init-function #'eshell-toggle-init-eshell)
   :bind
-  ("<f12>" . eshell-toggle))
+  ("C-<f12>" . eshell-toggle))
 
 (use-package xterm-color
   :defer .5
@@ -139,7 +139,7 @@
 (use-package vterm-toggle
   :defer .5
   :bind
-  ("C-<f12>" . vterm-toggle)
+  ("<f12>" . vterm-toggle)
   :config
   (setq vterm-toggle-fullscreen-p nil)
   (add-to-list 'display-buffer-alist
@@ -151,7 +151,7 @@
                  (display-buffer-reuse-window display-buffer-at-bottom)
                  (dedicated . t) ;dedicated is supported in Emacs 27+
                  (reusable-frames . visible)
-                 (window-height . 0.3))))
+                 (window-height . 0.5))))
 
 (provide 'eshell-vterm-config)
 ;;; eshell-vterm-config.el ends here.
