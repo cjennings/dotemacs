@@ -48,7 +48,7 @@
   (add-hook
    'eshell-mode-hook
    (lambda ()
-	 (setq pcomplete-cycle-completions nil)))
+     (setq pcomplete-cycle-completions nil)))
   (setq eshell-cmpl-cycle-completions nil)
 
   (add-to-list 'eshell-modules-list 'eshell-tramp)
@@ -109,7 +109,7 @@
   :after eshell
   :hook
   (eshell-before-prompt-hook . (lambda ()
-							   (setq xterm-color-preserve-properties t)))
+                                 (setq xterm-color-preserve-properties t)))
   :config
   (setenv "TERM" "xterm-256color"))
 
@@ -134,7 +134,9 @@
         ("<pause>" . vterm-copy-mode))
   :custom
   (vterm-kill-buffer-on-exit t)
-  (vterm-max-scrollback 100000))
+  (vterm-max-scrollback 100000)
+  :config
+  (setq vterm-timer-delay nil))
 
 (use-package vterm-toggle
   :defer .5
