@@ -73,7 +73,6 @@
     ("calender" "calendar" nil :count 0)
     ("camoflage" "camouflage" nil :count 0)
     ("camoflague" "camouflage" nil :count 0)
-    ("cancelled" "is" nil :count 0)
     ("carribean" "caribbean" nil :count 0)
     ("catagory" "category" nil :count 0)
     ("caugt" "caught" nil :count 0)
