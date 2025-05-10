@@ -192,5 +192,11 @@
   (when (daemonp)
 	(exec-path-from-shell-initialize)))
 
+;; ------------------------------- GNU Ls On BSD -------------------------------
+;; when on BSD use the ls from FSF sysutils/coreutils: pkg install coreutils
+
+(cond ((eq system-type 'berkeley-unix)
+		  (setq insert-directory-program "/usr/local/bin/gls")))
+
 (provide 'system-defaults)
 ;;; system-defaults.el ends here
