@@ -60,7 +60,7 @@
 ;; --------------------------- Use Online Repos Flag ---------------------------
 ;; set to nil to only use localrepo and local elpa-mirrors (see script directory)
 
-(defvar cj/use-online-repos nil
+(defvar cj/use-online-repos t
   "Whether to check for network connectivity & use online package repositories.")
 
 ;; ---------------------------- Startup Performance ----------------------------
