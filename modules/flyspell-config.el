@@ -54,6 +54,10 @@
   (setq ispell-dictionary "american") ; better for aspell
   ;; use aspell rather than ispell
   (setq ispell-program-name "aspell")
+  ;; aspell is in /usr/local/ on BSD
+  (cond ((eq system-type 'berkeley-unix)
+		  (setq ispell-program-name "/usr/local/bin/aspell")))
+
   ;; in aspell "-l" means --list, not --lang
   (setq ispell-list-command "--list")
   (setq ispell-extra-args '("--sug-mode=ultra" "-W" "3" "--lang=en_US"))
