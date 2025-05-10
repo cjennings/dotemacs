@@ -5,6 +5,11 @@
 
 ;;; Code:
 
+(use-package disable-mouse
+  :config
+  (global-disable-mouse-mode))
+
+
 ;; ---------------------------------- Ibuffer ----------------------------------
 
 (global-set-key [remap list-buffers] 'ibuffer) ;; use ibuffer, not list-buffers
