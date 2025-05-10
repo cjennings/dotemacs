@@ -68,7 +68,6 @@
 (require 'pdf-config)
 (require 'record-desktop)
 (require 'show-kill-ring)
-(require 'telegram-config)
 (require 'tramp-config)
 (require 'weather-config)
 

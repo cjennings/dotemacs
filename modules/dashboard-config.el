@@ -120,9 +120,9 @@
 			"IRC" "Emacs Relay Chat"
 			(lambda (&rest _) (cj/erc-start-or-switch)))
 
-		   (,(nerd-icons-faicon "nf-fae-telegram")
-			"Telegram" "Telega Chat Client"
-			(lambda (&rest _) (telega)))
+		   ;; (,(nerd-icons-faicon "nf-fae-telegram")
+		   ;; 	"Telegram" "Telega Chat Client"
+		   ;; 	(lambda (&rest _) (telega)))
 
 		   (,(nerd-icons-faicon "nf-fa-folder_o")
 			"Files" "Dirvish File Manager"
