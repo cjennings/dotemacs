@@ -13,35 +13,25 @@
   :bind
   ("M-F" . fontaine-set-preset)
   :config
-  (setq fontaine-font-families
-		'((default "Hack Nerd Font Mono" "Fira Code Nerd Font" "MonoLisa" "Codelia Ligatures" "JetBrains Mono Nerd Font")
-		  (fixed-pitch "Fira Code Nerd Font" "Hack Nerd Font" "JetBrains Mono Nerd Font" "Liberation Mono")
-		  (variable-pitch "Literata" "Novaletra Serif CF" "FiraGO" "Nimbus Roman" "Nimbus Sans")))
   (setq fontaine-presets
 		'(
-          (Berkeley-Merriweather
-		   :default-family "Berkeley Mono"
+          (default
+		   :default-family "FiraCode Nerd Font Mono"
 		   :default-weight regular
-		   :default-height 130
+		   :default-height 110
 		   :fixed-pitch-family nil          ;; falls back to :default-family
 		   :fixed-pitch-weight nil          ;; falls back to :default-weight
 		   :fixed-pitch-height 1.0
            :variable-pitch-family "Merriweather"
            :variable-pitch-weight light
            :variable-pitch-height 1.0)
-          (Hack-Only
+          (Hack
            :default-family "Hack Nerd Font Mono"
            :variable-pitch-family "Hack Nerd Font Mono")
-          (Merriweather-Only
-           :default-family "Merriweather"
-		   :variable-pitch-family "Merriweather")
-		  (MonoLisa-Novaletra
-		   :default-family "MonoLisa"
-		   :variable-pitch-family "Novaletra Serif CF")
 		  (FiraCode-Literata
 		   :default-family "Fira Code Nerd Font"
 		   :variable-pitch-family "Literata")
-		  (JetBrains0Lato
+		  (JetBrains-Lato
 		   :default-family "JetBrains Mono"
 		   :variable-pitch-family "Lato")
 		  (Codelia-Only
@@ -65,9 +55,9 @@
 		  (10-point-font
 		   :default-height 100)
 		  (t                                ;; shared fallback properties go here
-		   :default-family "Berkeley Mono"
+		   :default-family "FiraCode Nerd Font Mono"
 		   :default-weight regular
-		   :default-height 130
+		   :default-height 110
 		   :fixed-pitch-family nil          ;; falls back to :default-family
 		   :fixed-pitch-weight nil          ;; falls back to :default-weight
 		   :fixed-pitch-height 1.0
@@ -91,7 +81,7 @@ exists yet to apply these settings.  This solution requests Emacsclient
 to apply the default font settings after the server creates a frame.
 Note that server-after-make-frame-hook is available only in Emacs 27+."
 	(interactive)
-	(fontaine-set-preset 'Berkeley-Only)
+	(fontaine-set-preset 'default)
 	(if (daemonp)
         (remove-hook 'server-after-make-frame-hook #'cj/apply-font-settings-after-ui-creation)))
 
