@@ -40,8 +40,8 @@
   "My default code preferences for emacs-lisp."
   (setq-default tab-width 4)            ;; set the tab width to 4 spaces
   (setq-default indent-tabs-mode -1)    ;; disable tab characters
-  (setq-default fill-column 80)         ;; default column for gnu projects
-  (display-fill-column-indicator-mode)) ;; show where the 80th column is
+  (setq-default fill-column 120)        ;; wrap code at this column
+  (display-fill-column-indicator-mode)) ;; show where the fill-column is
 (add-hook 'emacs-lisp-mode-hook 'cj/elisp-setup)
 
 ;; ------------------------------ Emacs Lisp REPL ------------------------------
