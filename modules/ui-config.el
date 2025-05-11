@@ -12,7 +12,7 @@
 (setq pixel-scroll-precision-mode nil)							;; smooth scroll past images - enabled if nil!
 
 (setq-default frame-inhibit-implied-resize t)					;; don't resize frames when setting ui-elements
-(setq frame-title-format '("Emacs: %b"))	                  	;; the title is just the buffer name
+(setq frame-title-format '("Emacs " emacs-version" : %b"))	    ;; the title is emacs with version and buffer name
 
 (setq use-file-dialog nil)										;; no file dialog
 (setq use-dialog-box nil)										;; no dialog boxes either
