@@ -99,7 +99,7 @@ org-archive-subtree-default are placed.")
   "All org-todo related settings are grouped and set in this function."
 
   ;; logging task creation, task start, and task resolved states
-  (setq org-todo-keywords '((sequence "TODO(t!)" "PROJECT(p)" "DOING(i!)"
+  (setq org-todo-keywords '((sequence "TODO(t)" "PROJECT(p)" "DOING(i)"
 									  "WAITING(w)" "VERIFY(v)" "STALLED(s)"
 									  "DELEGATED(x)" "|"
 									  "FAILED(f!)" "DONE(d!)" "CANCELLED(c!)")))
