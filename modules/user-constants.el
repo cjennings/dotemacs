@@ -69,6 +69,9 @@
 (defvar contacts-file   (concat sync-dir "contacts.org")
   "The location of the org file containing org-contacts information.")
 
+(defvar reference-file   (concat sync-dir "reference.org")
+  "The location of the org file containing reference information.")
+
 (defvar article-file    (concat sync-dir "article-inbox.org")
   "The location of the org file containing new clipped pages to review.")
 

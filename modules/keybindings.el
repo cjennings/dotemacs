@@ -41,10 +41,10 @@
       ^Applications^            ^Communication^        ^Utilities^            ^Entertainment
       ^^^^^^^^--------------------------------------------------------------------------------
 	  _f_: Feed Reader          _m_: Mu4e Email        _p_: Open Project      _r_: Play Radio
-	  _b_: Ebook Manager        _t_: Telegram          _c_: Calculator        _g_: Games Menu
-	  _F_: File Manager         _i_: IRC               _W_: World Clock
-	  _l_: Ledger Accounting    ^^                     _z_: Diff Directories
-	  _d_: Flashcard Drill      ^^                     ^^
+	  _b_: Ebook Manager        _i_: IRC               _c_: Calculator        _g_: Games Menu
+	  _F_: File Manager         ^^                     _W_: World Clock
+	  _d_: Flashcard Drill      ^^                     _z_: Diff Directories
+	  ^^                        ^^
 	  ^^                        ^^                     ^^                     _q_: quit
 \n\n
 "
@@ -53,12 +53,10 @@
   ("f" elfeed-dashboard)
   ("b" calibredb)
   ("F" (dirvish user-home-dir))
-  ("l" (find-file ledger-file))
   ("d" cj/drill-start)
 
   ;; Communication
   ("m" mu4e)
-  ("t" telega)
   ("i" cj/erc-start-or-switch)
 
   ;; Utilities
@@ -81,6 +79,8 @@
   "Jump-to commonly used files/directories/commands.")
 (global-set-key (kbd "C-c j") jump-to-keymap)
 
+(define-key jump-to-keymap (kbd "r")
+			#'(lambda () (interactive) (find-file reference-file)))
 (define-key jump-to-keymap (kbd "s")
 			#'(lambda () (interactive) (find-file schedule-file)))
 (define-key jump-to-keymap (kbd "i")
