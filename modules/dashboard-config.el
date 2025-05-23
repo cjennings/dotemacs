@@ -86,7 +86,7 @@
 
   ;; == general
   (dashboard-setup-startup-hook)                                 ;; run dashboard post emacs init
-  (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*"))) ;; display dashboard on startup
+  ;; (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*"))) ;; display dashboard on startup
   (setq dashboard-display-icons-p t)                             ;; display icons on both GUI and terminal
   (setq dashboard-icon-type 'nerd-icons)                         ;; use `nerd-icons' package
   (setq dashboard-center-content t)                              ;; horizontally center dashboard content
