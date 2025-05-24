@@ -24,15 +24,14 @@
   (setq dired-listing-switches "-hl --almost-all --group-directories-first")
   (setq dired-dwim-target t)
   (setq dired-clean-up-buffers-too t)                  ;; offer to kill buffers associated deleted files and dirs
-  (setq dired-clean-confirm-killing-deleted-buffers t) ;; don't ask whether to kill buffers associated with deleted files.
-  (setq dired-kill-when-opening-new-dired-buffer t)    ;; stop littering buffers while navigating a directory tree
+  (setq dired-clean-confirm-killing-deleted-buffers t) ;; don't ask; just kill buffers associated with deleted files
+  ;; (setq dired-kill-when-opening-new-dired-buffer t)    ;; stop littering buffers while navigating a directory tree
   (setq dired-recursive-copies (quote always))         ;; “always” means no asking
   (setq dired-recursive-deletes (quote top)))          ;; “top” means ask once
 
-;; (add-hook 'dired-mode-hook 'auto-revert-mode)          ;; auto revert dired when files change
+(add-hook 'dired-mode-hook 'auto-revert-mode)          ;; auto revert dired when files change
 
 ;; ------------------------------ Dired Open With ------------------------------
-
 
 (defun cj/dired-open-with (command)
   "Open the dired file at point with a user-specified COMMAND.
@@ -91,34 +90,38 @@ automatically displayed."
 ;; ---------------------------------- Dirvish ----------------------------------
 
 (use-package dirvish
-  :defer .5
-  :after dired
+  :init
+  (add-to-list 'load-path (concat user-emacs-directory "elpa/dirvish-2.3.0"))
+  (add-to-list 'load-path (concat user-emacs-directory "elpa/dirvish-2.3.0/extensions"))
+  (require 'dirvish)
+  (require 'dirvish-icons)
+  (require 'dirvish-quick-access)
+  (require 'dirvish-yank)
+  (dirvish-override-dired-mode)
   :custom
   (dirvish-quick-access-entries
-   `(("h"  ,user-home-dir                         "home")
+   `(("h"  "~/"                                   "home")
 	 ("cx" ,code-dir                              "code directory")
-     ("ws" ,(concat code-dir "/website")          "website staging")
-     ("dr" ,(concat sync-dir "/drill/")           "drill files")
-     ("s"  ,sync-dir                              "sync directory")
-     ("vr" ,video-recordings-dir                  "video recordings directory")
-     ("px" ,projects-dir                          "projects directory")
-     ("tg" ,(concat sync-dir "/text.games")       "text games")
-     ("ps" ,(concat pix-dir "/screenshots/")      "pictures screenshots")
-     ("pw" ,(concat pix-dir "/wallpaper/")        "pictures wallpaper")
-     ("px" ,pix-dir                               "pictures directory")
-     ("dl" ,dl-dir                                "downloads")
-     ("dt" ,(concat dl-dir "/torrents/complete/") "torrents")
-     ("vx" ,videos-dir                            "videos")
+	 ("dr" ,(concat sync-dir "/drill/")           "drill files")
+	 ("s"  ,sync-dir                              "sync directory")
+	 ("vr" ,video-recordings-dir                  "video recordings directory")
+	 ("px" ,projects-dir                          "projects directory")
+	 ("tg" ,(concat sync-dir "/text.games")       "text games")
+	 ("ps" ,(concat pix-dir "/screenshots/")      "pictures screenshots")
+	 ("pw" ,(concat pix-dir "/wallpaper/")        "pictures wallpaper")
+	 ("px" ,pix-dir                               "pictures directory")
+	 ("dl" ,dl-dir                                "downloads")
+	 ("dt" ,(concat dl-dir "/torrents/complete/") "torrents")
+	 ("vx" ,videos-dir                            "videos")
 	 ("pl" "~/sync/playlists/"                    "playlists directory")
-     ("df" "~/.dotfiles/"                         "dotfiles")
-     ("dx" "~/documents/"                         "documents")
+	 ("dx" "~/documents/"                         "documents")
 	 ("mx" "~/music/"                             "music")
 	 ("mb" "/media/backup/"                       "backup directory")
-     ("rcj" "/sshx:cjennings@cjennings.net:~"     "remote cjennings.net")
-     ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
-     )) ;; end dirvish-quick-access-entries
+	 ("rcj" "/sshx:cjennings@cjennings.net:~"     "remote cjennings.net")
+	 ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
+	 )) ;; end dirvish-quick-access-entries
+  ;; (dirvish-attributes '(file-size))
   (dirvish-attributes '(vscode-icon file-size))
-  (dirvish-override-dired-mode t)
   (dirvish-preview-dispatchers '(image gif video audio epub pdf archive))
   :hook (dirvish-setup . dirvish-emerge-mode)
   :config
@@ -134,8 +137,8 @@ automatically displayed."
    ("g"       . dirvish-quick-access)
    ("G"       . revert-buffer)
    ("bg"      . (lambda () (interactive)  ; set background image
-                  (shell-command (concat "nitrogen --save --set-zoom-fill "
-                                         (dired-file-name-at-point) " >>/dev/null 2>&1" ))))
+				  (shell-command (concat "nitrogen --save --set-zoom-fill "
+										 (dired-file-name-at-point) " >>/dev/null 2>&1" ))))
    ("Z"       . (lambda () (interactive) (cj/dired-open-with "zathura")))
    ("P"       . (lambda () (interactive) (cj/dired-open-with "gimp")))
    ("O"       . (lambda () (interactive) (call-interactively 'cj/dired-open-with)))
@@ -154,22 +157,30 @@ automatically displayed."
    ("C-,"     . dirvish-history-go-backward)
    ("M-l"     . dirvish-ls-switches-menu)
    ("M-m"     . dirvish-mark-menu)
-;;   ("M-t"     . dirvish-layout-toggle) ;; todo find another key; M-t is contentious
+   ;;   ("M-t"     . dirvish-layout-toggle) ;; todo find another key; M-t is contentious
    ("M-s"     . dirvish-setup-menu)
    ("M-e"     . dirvish-emerge-menu)))
 
-;; -------------------------------- VSCode-Icons -------------------------------
+;; -------------------------------- Icons -------------------------------
+
+(use-package nerd-icons
+  :defer .5)
+
+(use-package nerd-icons-dired
+  :commands (nerd-icons-dired-mode))
 
 (use-package vscode-icon
   :defer .5
-  :commands (vscode-icon-for-file))
+  :commands (vscode-icon-for-file)
+  :config
+  (push '("jpg" . "image") vscode-icon-file-alist))
 
 ;; -------------------------------- Dired Rsync --------------------------------
 
 (use-package dired-rsync
   :after dired
   :bind (:map dired-mode-map
-              ("r" . dired-rsync)))
+			  ("r" . dired-rsync)))
 
 ;; ---------------------------- Dired Hide Dotfiles ----------------------------
 
