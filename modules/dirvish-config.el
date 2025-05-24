@@ -121,7 +121,7 @@ automatically displayed."
 	 ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
 	 )) ;; end dirvish-quick-access-entries
   ;; (dirvish-attributes '(file-size))
-  (dirvish-attributes '(vscode-icon file-size))
+  (dirvish-attributes '(nerd-icons file-size))
   (dirvish-preview-dispatchers '(image gif video audio epub pdf archive))
   :hook (dirvish-setup . dirvish-emerge-mode)
   :config
@@ -161,19 +161,13 @@ automatically displayed."
    ("M-s"     . dirvish-setup-menu)
    ("M-e"     . dirvish-emerge-menu)))
 
-;; -------------------------------- Icons -------------------------------
+;; -------------------------------- Nerd Icons -------------------------------
 
 (use-package nerd-icons
   :defer .5)
 
 (use-package nerd-icons-dired
   :commands (nerd-icons-dired-mode))
-
-(use-package vscode-icon
-  :defer .5
-  :commands (vscode-icon-for-file)
-  :config
-  (push '("jpg" . "image") vscode-icon-file-alist))
 
 ;; -------------------------------- Dired Rsync --------------------------------
 
@@ -206,7 +200,7 @@ automatically displayed."
   (push 'rotate-windows dired-sidebar-toggle-hidden-commands)      ; don't allow rotating windows when sidebar is showing
   (setq dired-sidebar-subtree-line-prefix "  ")                    ; two spaces give simple and aesthetic indentation
   (setq dired-sidebar-no-delete-other-windows t)                   ; don't close when calling 'delete other windows'
-  (setq dired-sidebar-theme 'vscode)                               ; fancy icons, please
+  (setq dired-sidebar-theme 'nerd-icons)                               ; fancy icons, please
   (setq dired-sidebar-use-custom-font 'nil)                        ; keep the same font as the rest of Emacs
   (setq dired-sidebar-delay-auto-revert-updates 'nil)              ; don't delay auto-reverting
   (setq dired-sidebar-pop-to-sidebar-on-toggle-open 'nil))         ; don't jump to sidebar when it's toggled on
