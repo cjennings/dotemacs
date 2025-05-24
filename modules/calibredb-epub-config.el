@@ -25,10 +25,10 @@
   :config
   ;; basic config
   (setq calibredb-root-dir books-dir)
-  (setq calibredb-library-alist (list books-dir))
   (setq calibredb-db-dir (expand-file-name "metadata.db" calibredb-root-dir))
   (setq calibredb-program "/usr/bin/calibredb")
   (setq calibredb-preferred-format "epub")
+  (setq calibredb-search-page-max-rows 20000)
 
   ;; search window display
   (setq calibredb-size-show nil)
