@@ -31,14 +31,7 @@
 		  (FiraCode-Literata
 		   :default-family "Fira Code Nerd Font"
 		   :variable-pitch-family "Literata")
-		  (JetBrains-Lato
-		   :default-family "JetBrains Mono"
-		   :variable-pitch-family "Lato")
-		  (Codelia-Only
-		   :default-family "Codelia Ligatures")
-		  (Liberation_Mono-Only
-           :default-family "Liberation Mono")
-          (24-point-font
+		  (24-point-font
            :default-height 240)
           (20-point-font
            :default-height 200)
