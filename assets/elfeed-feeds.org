@@ -1,11 +1,12 @@
 * Feeds                                                              :elfeed:
 ** Podcasts                                                       :podcasts:
-*** [[https://files.manager-tools.com/files/public/feeds/manager-tools-podcasts.xml][Manager Tools Podcast]]                                          :career:
-*** [[https://files.manager-tools.com/files/public/feeds/career_tools_podcasts.xml][Career Tools Podcast]]                                           :career:
-*** [[https://www.patreon.com/rss/sipandfeast?auth=0VNsTslk1yGXna_oPrjMbhwDevoojlGZ][Sip and Feast Podcast]]                                         :cooking:
-*** [["https://www.youtube.com/feeds/videos.xml?channel_id=UCkdnY2hNC0sdlVXPtWuNQ8g][New York Times Podcasts]]
+*** [["https://www.youtube.com/feeds/videos.xml?channel_id=UCkdnY2hNC0sdlVXPtWuNQ8g][New York Times Podcasts]]                                          :news:
+*** [[https://feeds.simplecast.com/82FI35Px][Ezra Klein Show]]                                                  :news:
+*** [[https://feeds.megaphone.fm/WWO6655869236][Prof G Podcast]]                                                   :news:
+*** [[https://feeds.megaphone.fm/pivot][Pivot]]                                                            :news:
+*** [[https://feeds.megaphone.fm/WMHY7703459968][Fareed Zakaria GPS]]                                               :news:
+*** [[https://podcasts.files.bbci.co.uk/p02nq0gn.rss][BBC Global News Podcast]]                                          :news:
 ** Videos                                                           :videos:
-*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC0QwGb6erlvTQE_bFbrGmKw][You Can't Unhear This]]                                           :music:
 *** [["https://www.youtube.com/feeds/videos.xml?channel_id=UC7kIy8fZavEni8Gzl8NLjOQ][Alex O'Connor]]                                              :commentary:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCXUPKJO5MZQN11PqgIvyuvQ][Andrej Karpathy]]                                             :tech:code:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC0PBefyEK7qQ7HN325nUamQ][Brent Westbrook]]                                                  :code:
@@ -36,7 +37,6 @@
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCxkMDXQ5qzYOgXPRnOBrp1w][Mike Zamansky]]                                                   :emacs:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCSuHzQ3GrHSzoBbwrIq3LLA][Naomi Brockwell]]                                              :security:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UClakdY321DmXjjieiA8Bqag][People's Profile Extra]]                                        :history:
-*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC1E1SVcVyU3ntWMSQEp38Yw][Prof G]] Scott Galloway                           :commentary:interviews:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC0uTPqBCFIpZxlz_Lv1tk_g][Protesilaos Stavrou]]                                             :emacs:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCpjlh0e319ksmoOD7bQFSiw][Rich Roll]]                                                  :interviews:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCsxwneBx6apV1mQ7CbWKfXQ][Robinson Erhardt]]                                           :interviews:
@@ -54,9 +54,7 @@
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCD6TPU-PvTMvqgzC_AM7_uA][The People's Profiles]]                                         :history:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCPbwhExawYrn9xxI21TFfyw][The Pragmatic Engineer]]                                    :code:career:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCFp5RFtZyBpmTCcXmib1x9g][The Register]]                                                     :tech:
-*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCd0n53aFGZoXxiz_sH74O4A][The Subtle Art of Not Giving a Fuck]]                        :interviews:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCTHsQd-vRXK1bp4vpifl6yA][Trae Crowder]]                                                   :comedy:
-*** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC29ju8bIPH5as8OGnQzwJyA][Traversy Media]]                                            :code:career:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCrFIk7g_riIm2G2Vi90pxDA][Tropical Tidbits]]                                              :weather:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCoO1EFmoLg892aciLAjUCiQ][Turtleneck Philosophy]]                                      :philosophy:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCo71RUe6DX4w-Vd47rFLXPg][Typecraft]]                                                        :code:
