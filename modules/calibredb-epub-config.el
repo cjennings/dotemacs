@@ -41,7 +41,7 @@
   :defer .5
   :after visual-fill-column
   :mode ("\\.epub\\'" . nov-mode)
-;;  :hook (nov-mode . cj/nov-apply-preferences)
+  :hook (nov-mode . cj/nov-apply-preferences)
   :bind
   (:map nov-mode-map
 		("m" . bookmark-set)
