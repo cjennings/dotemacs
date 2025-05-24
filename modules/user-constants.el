@@ -46,7 +46,7 @@
 (defconst roam-dir      (concat sync-dir "roam/")
   "The location of org-roam files.")
 
-(defconst journals-dir  (concat roam-dir "journals/")
+(defconst journals-dir  (concat roam-dir "journal/")
   "The location of org-roam dailies or journals files.")
 
 (defconst drill-dir     (concat sync-dir "drill/")
