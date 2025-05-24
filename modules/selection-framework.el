@@ -12,7 +12,8 @@
 (use-package company
   :defer .5
   :hook
-  ((text-mode . company-mode)
+  (
+   ;; (text-mode . company-mode) ;; also disables in org mode
    (prog-mode . company-mode)
    (lisp-interaction-mode . company-mode))
   :custom
@@ -28,7 +29,7 @@
   ;; provide proper casing even if I don't.
   (company-dabbrev-ignore-case t)
   ;; company completion wait
-  ( company-idle-delay 0.7)
+  ( company-idle-delay 2)
   ;; use vscode icons in the margin
   (company-format-margin-function #'company-vscode-light-icons-margin)
   ;; no company-mode in shell & eshell
