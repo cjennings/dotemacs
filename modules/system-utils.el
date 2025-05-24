@@ -3,7 +3,7 @@
 
 ;;; Commentary:
 
-;;; Code:
+g;;; Code:
 
 (use-package disable-mouse
   :config
@@ -187,11 +187,11 @@ Don't automatically display output buffers, but keep them in buffer list."
   :config
   (setq world-clock-list
         '(("Pacific/Honolulu"       "  Honolulu")
-          ("America/Los_Angeles"    "  San Francisco")
+		  ("America/Los_Angeles"    "  San Francisco, Los Angeles")
           ("America/Chicago"        "  New Orleans, Chicago")
-          ("America/New_York"       "  New York")
+		  ("America/New_York"       "  New York, Boston")
           ("Etc/UTC"                "  UTC ====================================")
-          ("Europe/London"          "  London")
+		  ("Europe/London"          "  London, Lisbon")
           ("Europe/Paris"           "  Paris, Berlin, Rome, Barcelona")
           ("Europe/Athens"          "  Athens, Istanbul, Kyiv, Moscow, Tel Aviv")
           ("Asia/Yerevan"           "  Yerevan")
