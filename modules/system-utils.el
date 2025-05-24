@@ -3,7 +3,7 @@
 
 ;;; Commentary:
 
-g;;; Code:
+;;; Code:
 
 (use-package disable-mouse
   :config
