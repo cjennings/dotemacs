@@ -7,6 +7,8 @@
 
 ;;; Code:
 
+
+
 ;; ------------------------ Dashboard Bookmarks Override -----------------------
 ;; overrides the bookmark insertion from the dashboard package to provide an
 ;; option that only shows the bookmark name, avoiding the path. Paths are often
@@ -86,7 +88,9 @@
 
   ;; == general
   (dashboard-setup-startup-hook)                                 ;; run dashboard post emacs init
-  ;; (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*"))) ;; display dashboard on startup
+
+  (if (< (length command-line-args) 2)
+	  (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*"))))  ;; don't display dashboard if opening a file
   (setq dashboard-display-icons-p t)                             ;; display icons on both GUI and terminal
   (setq dashboard-icon-type 'nerd-icons)                         ;; use `nerd-icons' package
   (setq dashboard-center-content t)                              ;; horizontally center dashboard content
