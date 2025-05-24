@@ -1,15 +1,13 @@
 .emacs.d
 
 * Emacs Open Work
-** TODO [#B] Emacs: Don't Autocomplete in Org Mode
 ** TODO [#B] Stop Emacs Dropping State Information Underneath the Header of Each Branch
 ** TODO [#B] Fix Emacs Color on Eshell to Be Green
 ** TODO [#B] Fix Emacs Alarm for Scheduled Events
-** TODO [#B] Add past due to F8 agenda summary in Emacs
-** TODO [#B] adjust eshell colors
+** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
+** TODO [#B] Adjust Eshell Colors
 the prompt is pink?
-** TODO [#C] Emacs games menu doesn't work
-** TODO [#C] Make Emacs Popups Wait 3 Seconds Before Appearing
-** TODO [#C] Emacs autocomplete popups shouldn't be less than 3 seconds.
-** TODO [#C] Emacs eshell doesn't inherit environment variables
+** TODO [#C] Emacs Games Menu Doesn't Work
+** TODO [#C] Emacs Eshell Doesn't Inherit Environment Variables
+** TODO [#C] Rename 'sync-dir' Variable in Init File to 'org-dir'
 * Emacs Resolved
