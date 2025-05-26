@@ -15,7 +15,9 @@
   (interactive)
   (let (new-files)
 	;; Start with the inbox and the schedule files.
-	(setq new-files `((,inbox-file . (:maxlevel . 1)) (,schedule-file . (:maxlevel . 1))))
+	(setq new-files `((,inbox-file . (:maxlevel . 1))
+					  (,reference-file . (:maxlevel . 2))
+					  (,schedule-file . (:maxlevel . 1))))
 
 	;; Extend new-files with the project and topic files.
 	(let ((project-and-topic-files (append (cj/org-roam-list-notes-by-tag "Project")
