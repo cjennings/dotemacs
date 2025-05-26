@@ -7,6 +7,12 @@
 ;; To ensure the code below is only loaded after org-mode, all code is wrapped in an
 ;; eval-after-load function.
 
+;; bookmarklet code:
+;; text
+;; javascript:location.href='org-protocol://capture?template=L&url=%27+encodeURIComponent(location.href)+%27&title=%27+encodeURIComponent(document.title)+%27&body=%27+encodeURIComponent(window.getSelection())
+
+;; text + selection
+;; javascript:location.href='org-protocol://capture?template=p&url=%27+encodeURIComponent(location.href)+%27&title=%27+encodeURIComponent(document.title)+%27&body=%27+encodeURIComponent(window.getSelection())
 
 ;;; Code:
 
