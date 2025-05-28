@@ -49,6 +49,12 @@
 			(setq debug-on-error nil)
 			(setq debug-on-quit nil)))
 
+
+;; ------------------------------ Bug Workarounds ------------------------------
+
+;; Prevent org-element from being natively compiled again by adding the line
+(setq native-comp-jit-compilation-deny-list '(".*org-element.*"))
+
 ;; --------------------------- Warning Notifications ---------------------------
 
 ;; log warnings, but don't popup the warnings buffer
