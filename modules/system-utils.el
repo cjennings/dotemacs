@@ -6,6 +6,7 @@
 ;;; Code:
 
 (use-package disable-mouse
+  :disabled nil
   :config
   (global-disable-mouse-mode))
 
