@@ -22,7 +22,7 @@
  [l] Lobsters    ([[elfeed:+unread +lobsters][   343]]/[[elfeed:+lobsters][   343]])
 
 ** Topics
- [n] News        ([[elfeed:+unread +news][  2571]]/ [[elfeed:+news][  2581]])
+ [n] News        ([[elfeed:+unread +news][  2571]]/[[elfeed:+news][  2581]])
  [t] Tech News   ([[elfeed:+unread +technews][   174]]/[[elfeed:+technews][   174]])
  [T] Tech        ([[elfeed:+unread +tech][  1044]]/[[elfeed:+tech][  1044]])
  [b] Blogs       ([[elfeed:+unread +blogs][   507]]/[[elfeed:+blogs][   532]])
