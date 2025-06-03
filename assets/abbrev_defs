@@ -51,6 +51,7 @@
     ("atention" "attention" nil :count 0)
     ("athiest" "atheist" nil :count 0)
     ("athist" "atheist" nil :count 0)
+    ("autopayments" "auto-payments" nil :count 0)
     ("availabilty" "availability" nil :count 0)
     ("balconly" "open" nil :count 0)
     ("beatiful" "beautiful" nil :count 0)
