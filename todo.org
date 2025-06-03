@@ -14,3 +14,4 @@ The category value seems unaligned
 ** TODO [#C] Emacs Games Menu Doesn't Work
 ** TODO [#C] Emacs Eshell Doesn't Inherit Environment Variables
 ** TODO [#C] Rename 'sync-dir' Variable in Init File to 'org-dir'
+** TODO [#B] git timemachine should list checkins by date descending
