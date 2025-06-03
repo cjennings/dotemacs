@@ -5,6 +5,9 @@
 
 ;;; Code:
 
+;; ------------------------------- Disable Mouse -------------------------------
+;; prevents accidental mouse moves resulting in modifying unwanted text
+
 (use-package disable-mouse
   :config
   (global-disable-mouse-mode))
