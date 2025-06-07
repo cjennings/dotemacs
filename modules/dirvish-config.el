@@ -48,8 +48,6 @@ automatically displayed."
 ;; -------------------------- Dired Copy Path As Kill --------------------------
 ;; copies the full path of the file at point to the clipboard
 
-
-original function
 (defun cj/dired-copy-path-as-kill ()
   "Copy the full path of file at point in Dired to the clipboard."
   (interactive)
