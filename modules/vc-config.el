@@ -1,4 +1,3 @@
-
 ;;; vc-config.el --- Version Control Configuration -*- lexical-binding: t; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
@@ -50,9 +49,7 @@
 
 ;; ------------------------------ Git Timemachine ------------------------------
 ;; walk through revisions of the current file in your buffer
-
-;; this function from:
-;; https://blog.binchen.org/posts/new-git-timemachine-ui-based-on-ivy-mode/
+;; also: https://blog.binchen.org/posts/new-git-timemachine-ui-based-on-ivy-mode/
 (defun cj/git-timemachine-show-selected-revision ()
   "Show last (current) revision of file."
   (interactive)
