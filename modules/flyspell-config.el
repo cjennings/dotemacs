@@ -1,4 +1,5 @@
 ;;; flyspell-config.el --- Spell Check Configuration -*- lexical-binding: t; -*-
+;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 

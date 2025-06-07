@@ -1,5 +1,5 @@
 ;;; prog-webdev.el --- Web Development Packages and Settings -*- lexical-binding: t; -*-
-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;;
 

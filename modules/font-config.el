@@ -31,6 +31,9 @@
 		  (FiraCode-Literata
 		   :default-family "Fira Code Nerd Font"
 		   :variable-pitch-family "Literata")
+		  (Merriweather
+		   :default-family "Merriweather"
+		   :variable-pitch-family "Merriweather")
 		  (24-point-font
            :default-height 240)
           (20-point-font

@@ -1,5 +1,5 @@
 ;;; user-constants.el --- User Constants -*- lexical-binding: t; -*-
-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 
 ;; User file locations are defined here. A file or directory is created if it

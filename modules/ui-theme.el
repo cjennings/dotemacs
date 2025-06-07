@@ -1,5 +1,5 @@
 ;;; ui-theme.el ---  UI Theme Configuration and Persistence -*- lexical-binding: t; -*-
-;; Craig Jennings <c@cjennings.net>
+;; author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
 

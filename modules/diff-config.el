@@ -1,4 +1,5 @@
 ;;; ediff-config.el --- diff Configuration  -*- lexical-binding: t; -*-
+;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 ;; highly useful setup for configuring ediff

@@ -130,19 +130,16 @@ Don't automatically display output buffers, but keep them in buffer list."
   (setq openwith-associations
         (list
          (list (openwith-make-extension-regexp
-                '("mpg" "mpeg" "mp3" "mp4" "webp"
-                  "avi" "wmv" "wav" "mov" "flv"
-                  "ogm" "ogg" "mkv"))
+				'("mpg" "mpeg" "mp3" "mp4" "webm" "avi" "wmv" "wav" "mov" "flv" "ogm" "ogg" "mkv"))
                "mpv"
                '(file))
          ;; removed jpg from list below as dashboard was opening nxiv
          (list (openwith-make-extension-regexp
-                '("xbm" "pbm" "pgm" "ppm" "pnm"
-                  "png" "gif" "bmp" "tif"))
+				'("xbm" "pbm" "pgm" "ppm" "pnm" "png" "gif" "bmp" "tif"))
                "nsxiv"
                '(file))
          (list (openwith-make-extension-regexp
-                '("odt" "odf"))
+				'("odt" "odf" "xls" "xlsx" "doc" "docx"))
                "libreoffice"
                '(file))
          (list (openwith-make-extension-regexp

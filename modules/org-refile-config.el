@@ -1,5 +1,5 @@
 ;;; org-refile-config.el --- Org Refile Customizations -*- lexical-binding: t; -*-
-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;; Configuration and custom functions for org-mode refiling.
 

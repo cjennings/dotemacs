@@ -1,4 +1,5 @@
 ;;; tramp-config.el --- Tramp Configuration -*- lexical-binding: t; -*-
+;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 ;;

@@ -1,5 +1,5 @@
 ;;; prog-comments.el --- Comments and Underscores -*- lexical-binding: t; -*-
-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;; Simple utility functions for creating and managing comments.
 

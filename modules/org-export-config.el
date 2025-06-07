@@ -1,5 +1,5 @@
 ;;; org-export-config.el --- Org Export Configuration -*- lexical-binding: t; -*-
-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 
 ;;; Code:

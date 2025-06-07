@@ -1,4 +1,5 @@
 ;;; dashboard-config.el --- Dashboard Configuration -*- lexical-binding: t; -*-
+;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 

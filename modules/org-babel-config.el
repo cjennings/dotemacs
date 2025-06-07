@@ -1,4 +1,5 @@
 ;;; org-babel-config.el --- Org Babel/Tempo Config -*- lexical-binding: t; -*-
+;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 ;; All Org-Babel and Org-Tempo Packages, Settings, and Languages.

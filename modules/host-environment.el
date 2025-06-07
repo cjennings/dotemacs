@@ -1,4 +1,5 @@
 ﻿;;; host-environment.el --- Host Environment Convenience Functions -*- lexical-binding: t; -*-
+;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 ;; Convenience functions to report about the host environment

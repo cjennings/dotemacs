@@ -1,4 +1,5 @@
 ;;; org-drill-config.el --- Org Drill Settings -*- lexical-binding: t; -*-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;;
 ;; Notes: Org-Drill

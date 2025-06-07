@@ -1,4 +1,5 @@
 ;;; games-config.el --- emacs games -*- lexical-binding: t; -*-
+;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 ;; The games menu is the easiest entry. "Shift-Alt-G" will get you there. Enjoy!

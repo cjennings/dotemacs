@@ -1,4 +1,5 @@
 ;;; custom-functions.el --- My Custom Functions and Keymaps -*- lexical-binding: t; -*-
+;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 ;;

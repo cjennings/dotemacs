@@ -1,5 +1,5 @@
 ;;; record-desktop.el --- Video Record desktop -*- lexical-binding: t; -*-
-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;; Use ffmpeg to video record your desktop.
 ;; with audio from mic and audio from default audio sink

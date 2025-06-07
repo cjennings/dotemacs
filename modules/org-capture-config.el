@@ -1,4 +1,5 @@
 ;;; org-capture-config.el --- Org Capture Configuration  -*- lexical-binding: t; -*-
+;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 ;; Customizations related to org-capture and org-refile is here.

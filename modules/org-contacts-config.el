@@ -1,5 +1,5 @@
 ;;; org-contacts-config.el --- Org Contacts Customizations -*- lexical-binding: t; -*-
-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;; Configuration for Org Contacts.
 

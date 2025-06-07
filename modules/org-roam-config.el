@@ -1,5 +1,5 @@
 ﻿;;; org-roam-config.el --- Org-Roam Config -*- lexical-binding: t; -*-
-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;; Currently a work in progress. The initial version of this was taken from David Wilson:
 ;; https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/

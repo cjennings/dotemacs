@@ -1,4 +1,5 @@
 ﻿;;; local-repository.el --- local repository functionality -*- lexical-binding: t; -*-
+;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 

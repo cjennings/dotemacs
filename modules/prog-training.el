@@ -1,5 +1,5 @@
 ;;; prog-training.el --- Training -*- lexical-binding: t; -*-
-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;;
 

@@ -1,5 +1,5 @@
 ;;; weather-config.el ---  -*- lexical-binding: t; -*-
-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;;
 

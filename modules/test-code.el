@@ -1,4 +1,5 @@
 ;;; test-code.el --- test code -*- lexical-binding: t; -*-
+;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 ;; This is where you should put config code you want to test.

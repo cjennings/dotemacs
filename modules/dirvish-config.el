@@ -1,4 +1,4 @@
-;;; dirvish-config.el --- Configuration for Tramp and the Dired File Manager -*- lexical-binding: t; -*-
+;;; dirvish-config.el --- Configuration for the Dired and Dirvish File Managers -*- lexical-binding: t; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -95,6 +95,7 @@ automatically displayed."
   (add-to-list 'load-path (concat user-emacs-directory "elpa/dirvish-2.3.0/extensions"))
   (require 'dirvish)
   (require 'dirvish-icons)
+  (require 'dirvish-emerge)
   (require 'dirvish-quick-access)
   (require 'dirvish-yank)
   (dirvish-override-dired-mode)
@@ -116,7 +117,8 @@ automatically displayed."
 	 ("pw" ,(concat pix-dir "/wallpaper/")        "pictures wallpaper")
 	 ("px" ,pix-dir                               "pictures directory")
 	 ("rcj" "/sshx:cjennings@cjennings.net:~"     "remote cjennings.net")
-	 ("s"  ,sync-dir                              "sync directory")
+	 ("sx" ,sync-dir                              "sync directory")
+	 ("sv" "~/sync/videos/"                       "sync/videos directory")
 	 ("tg" ,(concat sync-dir "/text.games")       "text games")
 	 ("vr" ,video-recordings-dir                  "video recordings directory")
 	 ("vx" ,videos-dir                            "videos")
@@ -143,6 +145,7 @@ automatically displayed."
 										 (dired-file-name-at-point) " >>/dev/null 2>&1" ))))
    ("Z"       . (lambda () (interactive) (cj/dired-open-with "zathura")))
    ("L"       . (lambda () (interactive) (cj/dired-open-with "libreoffice")))
+   ("o"       . (lambda () (interactive) (cj/dired-open-with "xdg-open")))
    ("P"       . (lambda () (interactive) (cj/dired-open-with "gimp")))
    ("O"       . (lambda () (interactive) (call-interactively 'cj/dired-open-with)))
    ("<left>"  . dired-up-directory)

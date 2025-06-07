@@ -1,6 +1,62 @@
-.emacs.d
-
 * Emacs Open Work
+** TODO [#A] Dirvish Issues Opening Images and Video
+*** 2025-06-06 Fri @ 23:15:27 -0500 Problem: Binary Files Open in Emacs Instead of xdg-open
+This is despite having an "open with" extension which allows you to indicate which program to open via the file's extension.
+*** Reference Ideas
+**** https://www.reddit.com/r/emacs/comments/1cdhum7/how_to_make_emacs_open_certain_files_using/
+(defun my/dired-open()
+  (interactive)
+  (let ((filext '("mp4" "rar" "zip" "gz" "epub" "xz" "sig" "pdf" "jpg" "png" "7z")))
+    (cond
+     ((file-directory-p (dired-get-file-for-visit))
+      (dired-find-file))
+
+     ((member (f-ext (dired-get-file-for-visit)) filext)
+      (call-process "xdg-open" nil nil nil (dired-get-file-for-visit)))
+
+     (t (dired-find-file)))))
+**** https://www.reddit.com/r/emacs/comments/1cdhum7/how_to_make_emacs_open_certain_files_using/
+(defun xdg-open (&optional filename)
+  (interactive)
+  (let ((process-connection-type))
+    (start-process
+     "" nil (cond ((eq system-type 'gnu/linux) "xdg-open")
+                  ((eq system-type 'darwin) "open")
+                  ((eq system-type 'windows-nt) "start")
+                  (t "")) (expand-file-name
+                  (or filename (dired-file-name-at-point))))))
+
+(defun find-file-auto (orig-fun &rest args)
+  (let ((filename (car args)))
+    (if (cl-find-if
+         (lambda (regexp) (string-match regexp filename))
+         '("\\.pdf\\'" "\\.mp4\\'" "\\.wav\\'" "\\.avi\\'" "\\.gif\\'" "\\.docx?\\'"))
+        (xdg-open filename)
+      (apply orig-fun args))))
+
+(advice-add 'find-file :around 'find-file-auto)
+**** https://pastebin.com/HShdkFrY
+;; Dired "native open": Use the OS-native program for opening the file
+;; type from Dired
+
+(defvar dired-native-open-program nil "The OS-native program for opening files.")
+
+(cond ((eq system-type 'darwin)
+       (setq dired-native-open-program "/usr/bin/open"))
+      ((eq system-type 'gnu/linux)
+       (setq dired-native-open-program "xdg-open"))
+      ((eq system-type 'windows-nt)
+       (setq dired-native-open-program "explorer.exe")))
+
+(defun dired-open-with-native-open-program ()
+  "Open the marked files with the program associated with those file types."
+  (interactive)
+  (let ((file-list (dired-get-marked-files)))
+    (dired-run-shell-command
+     (dired-shell-stuff-it dired-native-open-program file-list t))))
+
+(define-key dired-mode-map (kbd "M-o") #'dired-open-with-native-open-program)
+(define-key locate-mode-map (kbd "M-o") #'dired-open-with-native-open-program)
 ** TODO [#A] Mu4e Working with Proton and Gmail
 ** TODO [#B] Fix Emacs Alarm for Scheduled Events
 *** 2025-06-03 Tue @ 15:12:51 -0500 Problem

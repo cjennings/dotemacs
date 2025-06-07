@@ -1,4 +1,5 @@
 ;;; treesitter-config.el --- Treesitter Code Highlighting Configuration -*- lexical-binding: t; -*-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 
 ;; Tree-sitter's now built into Emacs 29+

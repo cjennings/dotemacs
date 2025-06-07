@@ -1,5 +1,5 @@
 ;;; telegram-config.el --- Configuration for the Telegram Client -*- lexical-binding: t; -*-
-
+;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 
 ;; Telegram Client Setup Notes

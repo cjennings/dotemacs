@@ -1,4 +1,5 @@
 ;;; ai-config.el --- Configuration for AI Integrations -*- lexical-binding: t; -*-
+;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 

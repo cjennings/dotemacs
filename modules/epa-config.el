@@ -1,4 +1,5 @@
 ;;; epa-config.el --- EasyPG Configuration -*- lexical-binding: t; -*-
+;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 ;;
