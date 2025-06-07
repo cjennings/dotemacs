@@ -2,6 +2,7 @@
 ** News                                                               :news:
 *** [[https://newrepublic.com/rss.xml][The New Republic]]                                                 :news:
 *** [[https://podcasts.files.bbci.co.uk/p02nq0gn.rss][BBC Global News Podcast]]                                          :news:
+*** [[https://www.rollingstone.com/feed/][Rolling Stone]]                                                    :news:
 ** Videos                                                           :videos:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UCkdnY2hNC0sdlVXPtWuNQ8g][New York Times Podcasts]]                                          :news:
 *** [[https://www.youtube.com/feeds/videos.xml?channel_id=UC7kIy8fZavEni8Gzl8NLjOQ][Alex O'Connor]]                                              :commentary:
