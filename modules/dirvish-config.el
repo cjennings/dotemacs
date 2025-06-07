@@ -21,7 +21,7 @@
   :custom
   (dired-use-ls-dired nil)                             ;; non GNU FreeBSD doesn't support a "--dired" switch
   :config
-  (setq dired-listing-switches "-hl --almost-all --group-directories-first")
+  (setq dired-listing-switches "-l --almost-all --group-directories-first")
   (setq dired-dwim-target t)
   (setq dired-clean-up-buffers-too t)                  ;; offer to kill buffers associated deleted files and dirs
   (setq dired-clean-confirm-killing-deleted-buffers t) ;; don't ask; just kill buffers associated with deleted files
@@ -41,21 +41,24 @@ asynchronously and its output is saved in a buffer, but the buffer is not
 automatically displayed."
   (interactive "sCommand to use to open the file: ")
   (let* ((file (dired-get-file-for-visit))
-         (buff (generate-new-buffer (concat "*dired-open-with output: " file "*"))))
-    (start-process-shell-command command buff (concat command " " file))))
+		 (buff (generate-new-buffer (concat "*dired-open-with output: " file "*"))))
+	(start-process-shell-command command buff (concat command " \"" file "\""))))
+
 
 ;; -------------------------- Dired Copy Path As Kill --------------------------
 ;; copies the full path of the file at point to the clipboard
 
+
+original function
 (defun cj/dired-copy-path-as-kill ()
   "Copy the full path of file at point in Dired to the clipboard."
   (interactive)
   (let ((filename (dired-get-file-for-visit)))
-    (if (and filename (file-exists-p filename))
-        (progn
-          (kill-new filename)
-          (message "Copied '%s' to clipboard." filename))
-      (message "No file at point."))))
+	(if (and filename (file-exists-p filename))
+		(progn
+		  (kill-new filename)
+		  (message "Copied '%s' to clipboard." filename))
+	  (message "No file at point."))))
 
 ;; ------------------------ Dired Convert Image To Jpeg ------------------------
 ;; converts the image at point to a jpeg by typing "C" within dirvish
@@ -80,7 +83,7 @@ Alert if the file is already a JPEG; notify the user when converstion is done."
 ;; convenience function to mark all visible files by typing "M" in dirvish
 
 (defun cj/dired-mark-all-visible-files ()
-  "Mark all visible files for deletion in Dired mode."
+  "Mark all visible files in Dired mode."
   (interactive)
   (save-excursion
     (goto-char (point-min))
@@ -118,13 +121,13 @@ Alert if the file is already a JPEG; notify the user when converstion is done."
      ("ps" ,(concat pix-dir "/screenshots/")      "pictures screenshots")
      ("pw" ,(concat pix-dir "/wallpaper/")        "pictures wallpaper")
      ("px" ,pix-dir                               "pictures directory")
-     ("rcj" "/sshx:cjennings@cjennings.net:~"     "remote cjennings.net")
-     ("sx" ,sync-dir                              "sync directory")
-     ("sv" "~/sync/videos/"                       "sync/videos directory")
-     ("tg" ,(concat sync-dir "/text.games")       "text games")
-     ("vr" ,video-recordings-dir                  "video recordings directory")
-     ("vx" ,videos-dir                            "videos")
-     ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
+	 ("rcj" "/sshx:cjennings@cjennings.net:~"     "remote cjennings.net")
+	 ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
+	 ("sx" ,sync-dir                              "sync directory")
+	 ("sv" "~/sync/videos/"                       "sync/videos directory")
+	 ("tg" ,(concat sync-dir "/text.games")       "text games")
+	 ("vr" ,video-recordings-dir                  "video recordings directory")
+	 ("vx" ,videos-dir                            "videos")
      )) ;; end dirvish-quick-access-entries
   ;; (dirvish-attributes '(file-size))
   (dirvish-attributes '(nerd-icons file-size))
@@ -204,14 +207,14 @@ Alert if the file is already a JPEG; notify the user when converstion is done."
               (unless (file-remote-p default-directory)
                 (auto-revert-mode))))
   :config
-  (push 'toggle-window-split dired-sidebar-toggle-hidden-commands) ; don't allow splitting dired window when it's showing
-  (push 'rotate-windows dired-sidebar-toggle-hidden-commands)      ; don't allow rotating windows when sidebar is showing
-  (setq dired-sidebar-subtree-line-prefix "  ")                    ; two spaces give simple and aesthetic indentation
-  (setq dired-sidebar-no-delete-other-windows t)                   ; don't close when calling 'delete other windows'
-  (setq dired-sidebar-theme 'nerd-icons)                               ; fancy icons, please
-  (setq dired-sidebar-use-custom-font 'nil)                        ; keep the same font as the rest of Emacs
-  (setq dired-sidebar-delay-auto-revert-updates 'nil)              ; don't delay auto-reverting
-  (setq dired-sidebar-pop-to-sidebar-on-toggle-open 'nil))         ; don't jump to sidebar when it's toggled on
+  (push 'toggle-window-split dired-sidebar-toggle-hidden-commands) ;; disallow splitting dired window when it's showing
+  (push 'rotate-windows dired-sidebar-toggle-hidden-commands)      ;; disallow rotating windows when sidebar is showing
+  (setq dired-sidebar-subtree-line-prefix "  ")                    ;; two spaces give simple and aesthetic indentation
+  (setq dired-sidebar-no-delete-other-windows t)                   ;; don't close when calling 'delete other windows'
+  (setq dired-sidebar-theme 'nerd-icons)                           ;; gimme fancy icons, please
+  (setq dired-sidebar-use-custom-font 'nil)                        ;; keep the same font as the rest of Emacs
+  (setq dired-sidebar-delay-auto-revert-updates 'nil)              ;; don't delay auto-reverting
+  (setq dired-sidebar-pop-to-sidebar-on-toggle-open 'nil))         ;; don't jump to sidebar when it's toggled on
 
 ;; ----------------------------- Dired Ediff Files -----------------------------
 ;; mark two files within dirvish, then ediff them by typing "e" (see above keybinding)
