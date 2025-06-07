@@ -1,5 +1,17 @@
 * Emacs Open Work
-** TODO [#A] Dirvish Issues Opening Images and Video
+** VERIFY [#B] Dirvish should open not showing hidden files by default
+simply take off the h with the directory listings
+** VERIFY [#A] Dirvish Issues Opening Images and Video
+*** 2025-06-07 Sat @ 02:06:45 -0500 Solution: quote the whole filename
+*** 2025-06-07 Sat @ 01:54:16 -0500 Clue: open with vlc shows issues with filenames with spaces
+Your input can't be opened:
+VLC is unable to open the MRL 'file:///home/cjennings/sync/videos/Academy'. Check the log for details.
+Your input can't be opened:
+VLC is unable to open the MRL 'file:///home/cjennings/sync/videos/Software'. Check the log for details.
+Your input can't be opened:
+VLC is unable to open the MRL 'file:///home/cjennings/sync/videos/Foundation-OpenColorIO'. Check the log for details.
+Your input can't be opened:
+VLC is unable to open the MRL 'file:///home/cjennings/sync/videos/Reel.mkv'. Check the log for details.
 *** 2025-06-06 Fri @ 23:15:27 -0500 Problem: Binary Files Open in Emacs Instead of xdg-open
 This is despite having an "open with" extension which allows you to indicate which program to open via the file's extension.
 *** Reference Ideas

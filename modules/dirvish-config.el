@@ -25,9 +25,11 @@
   (setq dired-dwim-target t)
   (setq dired-clean-up-buffers-too t)                  ;; offer to kill buffers associated deleted files and dirs
   (setq dired-clean-confirm-killing-deleted-buffers t) ;; don't ask; just kill buffers associated with deleted files
-  (setq dired-kill-when-opening-new-dired-buffer t)    ;; don't litter by leaving buffers when navigating directories
   (setq dired-recursive-copies (quote always))         ;; “always” means no asking
   (setq dired-recursive-deletes (quote top)))          ;; “top” means ask once
+
+;; note: disabled as it prevents marking and moving files to another directory
+;; (setq dired-kill-when-opening-new-dired-buffer t)   ;; don't litter by leaving buffers when navigating directories
 
 (add-hook 'dired-mode-hook 'auto-revert-mode)          ;; auto revert dired when files change
 
@@ -121,7 +123,7 @@ Alert if the file is already a JPEG; notify the user when converstion is done."
      ("px" ,pix-dir                               "pictures directory")
 	 ("rcj" "/sshx:cjennings@cjennings.net:~"     "remote cjennings.net")
 	 ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
-	 ("sx" ,sync-dir                              "sync directory")
+     ("sx" ,sync-dir                              "sync directory")
 	 ("sv" "~/sync/videos/"                       "sync/videos directory")
 	 ("tg" ,(concat sync-dir "/text.games")       "text games")
 	 ("vr" ,video-recordings-dir                  "video recordings directory")
