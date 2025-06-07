@@ -64,6 +64,7 @@
 
 (use-package dashboard
   :demand t ;; needed to startup quickly
+  :bind ("<f9>" . dashboard-open)
   :custom
   (dashboard-projects-backend 'projectile)
 
