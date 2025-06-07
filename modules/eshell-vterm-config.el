@@ -45,6 +45,20 @@
   (setq eshell-prefer-lisp-functions nil)
   (setq eshell-destroy-buffer-when-process-dies t)
 
+  (setq eshell-prompt-function
+		(lambda ()
+		  (concat
+		   (propertize (format-time-string "[%d-%m-%y %T]") 'face '(:foreground "gray"))
+		   " "
+		   (propertize (user-login-name) 'face '(:foreground "gray"))
+		   " "
+		   (propertize (system-name) 'face '(:foreground "gray"))
+		   ":"
+		   (propertize (abbreviate-file-name (eshell/pwd)) 'face '(:foreground "gray"))
+		   "\n"
+		   (propertize "%"  'face '(:foreground "white"))
+		   " ")))
+
   (add-hook
    'eshell-mode-hook
    (lambda ()
@@ -67,16 +81,16 @@
               ;; aliases
               (eshell/alias "clear"  "clear 1") ;; leaves prompt at the top of the window
               (eshell/alias "e"      "find-file $1")
-              (eshell/alias "gocj"   "cd /sshx:cjennings@cjennings.net:/var/cjennings/")
-              (eshell/alias "gosb"   "cd /sshx:cjennings@wolf.usbx.me:/home/cjennings/")
-              (eshell/alias "gowolf" "cd /sshx:cjennings@wolf.usbx.me:/home/cjennings/")
-              (eshell/alias "v"      "eshell-exec-visual $*")
-              (eshell/alias "ff"     "find-file-other-window $1")
-              (eshell/alias "f"      "find-using-dired $1")
-              (eshell/alias "r"      "ranger")
-              (eshell/alias "em"     "find-file $1")
-              (eshell/alias "emacs"  "find-file $1")
-              (eshell/alias "ll"     "ls -l"))))
+			  (eshell/alias "em"     "find-file $1")
+			  (eshell/alias "emacs"  "find-file $1")
+			  (eshell/alias "gocj"   "cd /sshx:cjennings@cjennings.net:/var/cjennings/")
+			  (eshell/alias "gosb"   "cd /sshx:cjennings@wolf.usbx.me:/home/cjennings/")
+			  (eshell/alias "gowolf" "cd /sshx:cjennings@wolf.usbx.me:/home/cjennings/")
+			  (eshell/alias "v"      "eshell-exec-visual $*")
+			  (eshell/alias "ff"     "find-file-other-window $1")
+			  (eshell/alias "f"      "find-using-dired $1")
+			  (eshell/alias "r"      "ranger")
+			  (eshell/alias "ll"     "ls -laF"))))
 
 (defun eshell/find-file-other-window (file)
   (find-file-other-window (mapconcat 'identity file " ")))
