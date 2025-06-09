@@ -77,3 +77,25 @@ The category value seems unaligned
 ** TODO Install ZOxide Integration into Emacs
 [[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
 Captured On: [2025-06-07 Sat 17:11]
+* Emacs Project Ideas/References
+** emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources
+[[https://github.com/emacs-tw/awesome-elisp][emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources]]
+Captured On: [2025-06-07 Sat 13:42]
+** emacs-tw/awesome-emacs: A community driven list of useful Emacs packages, libraries and other items.
+[[https://github.com/emacs-tw/awesome-emacs#layout][emacs-tw/awesome-emacs: A community driven list of useful Emacs packages, libraries and other items.]]
+Captured On: [2025-06-07 Sat 13:30]
+** ryuslash/mode-icons: Show icons instead of mode names
+[[https://github.com/ryuslash/mode-icons][ryuslash/mode-icons: Show icons instead of mode names]]
+Captured On: [2025-06-07 Sat 13:29]
+** manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.
+[[https://github.com/manateelazycat/awesome-tray][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
+Captured On: [2025-06-07 Sat 13:29]
+** bastibe/org-static-blog: A static site generator using org-mode
+[[https://github.com/bastibe/org-static-blog][bastibe/org-static-blog: A static site generator using org-mode]]
+Captured On: [2025-05-29 Thu 04:32]
+** an emacs packages hat trick
+[[https://jao.io/blog/emacs-packages-hat-trick.html][an emacs packages hat trick]]
+Captured On: [2025-05-29 Thu 04:28]
+** a high signal to noise emacs command: buffer-same-mode
+[[https://jao.io/blog/high-signal-to-noise-emacs-command.html][a high signal to noise emacs command]]
+Captured On: [2025-05-29 Thu 04:33]
