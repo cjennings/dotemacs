@@ -77,6 +77,14 @@ The category value seems unaligned
 ** TODO Install ZOxide Integration into Emacs
 [[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
 Captured On: [2025-06-07 Sat 17:11]
+** TODO [#C] Emacs Signal Client
+*** TODO investigate: net/signel.org · master · undefined · GitLab
+[[https://gitlab.com/jaor/elibs/-/blob/master/net/signel.org][net/signel.org · master · undefined · GitLab]]
+Captured On: [2025-05-29 Thu 04:24]
+*** TODO investigate: signel, a barebones signal chat on top of signal-cli
+[[https://jao.io/blog/signel.html][signel, a barebones signal chat on top of signal-cli]]
+Captured On: [2025-05-29 Thu 04:23]
+
 * Emacs Project Ideas/References
 ** emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources
 [[https://github.com/emacs-tw/awesome-elisp][emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources]]
