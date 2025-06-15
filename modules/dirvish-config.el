@@ -21,7 +21,7 @@
   :custom
   (dired-use-ls-dired nil)                             ;; non GNU FreeBSD doesn't support a "--dired" switch
   :config
-  (setq dired-listing-switches "-l --almost-all --group-directories-first")
+  (setq dired-listing-switches "-l -almost-all --human-readable --dired --group-directories-first")
   (setq dired-dwim-target t)
   (setq dired-clean-up-buffers-too t)                  ;; offer to kill buffers associated deleted files and dirs
   (setq dired-clean-confirm-killing-deleted-buffers t) ;; don't ask; just kill buffers associated with deleted files
@@ -111,7 +111,8 @@ Alert if the file is already a JPEG; notify the user when converstion is done."
      ("dl" ,dl-dir                                "downloads")
      ("dr" ,(concat sync-dir "/drill/")           "drill files")
      ("dt" ,(concat dl-dir "/torrents/complete/") "torrents")
-     ("dx" "~/documents/"                         "documents")
+	 ("dx" "~/documents/"                         "documents")
+	 ("lx" "~/lectures/"                          "lectures")
      ("mb" "/media/backup/"                       "backup directory")
      ("mx" "~/music/"                             "music")
      ("pd" "~/projects/documents/"                "project documents")
