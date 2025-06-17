@@ -21,7 +21,7 @@
   :custom
   (dired-use-ls-dired nil)                             ;; non GNU FreeBSD doesn't support a "--dired" switch
   :config
-  (setq dired-listing-switches "-l -almost-all --human-readable --dired --group-directories-first")
+  (setq dired-listing-switches "-l --almost-all --human-readable --dired --group-directories-first")
   (setq dired-dwim-target t)
   (setq dired-clean-up-buffers-too t)                  ;; offer to kill buffers associated deleted files and dirs
   (setq dired-clean-confirm-killing-deleted-buffers t) ;; don't ask; just kill buffers associated with deleted files
