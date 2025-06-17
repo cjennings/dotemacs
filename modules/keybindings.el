@@ -21,8 +21,11 @@
 ;; is undefined' message. Finally, I'm providing messages to train me to use
 ;; faster keybindings and provide feedback when evaluating buffers.
 
+
 ;;; Code:
 
+;; remap Shift Backspace to Delete
+(global-set-key (kbd "S-<backspace>") 'delete-forward-char)
 
 ;; ----------------------------------- Hydra -----------------------------------
 ;; provides ability to create menus
