@@ -43,7 +43,6 @@
   #+STARTUP: showall showstars indent
   #+KEYMAP: u | elfeed-dashboard-query "+unread"
   #+KEYMAP: m | elfeed-dashboard-query "+unread +mustread"
-  #+KEYMAP: p | elfeed-dashboard-query "+unread +podcasts"
   #+KEYMAP: v | elfeed-dashboard-query "+unread +videos"
   #+KEYMAP: h | elfeed-dashboard-query "+unread +hackernews"
   #+KEYMAP: l | elfeed-dashboard-query "+unread +lobsters"
