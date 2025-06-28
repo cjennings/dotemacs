@@ -1,16 +1,60 @@
 ;;; system-utils --- System-Wide Utilities -*- lexical-binding: t; -*-
+;; -------------------------------- Use Xdg-Open -------------------------------
 ;; author Craig Jennings <c@cjennings.net>
-
 ;;; Commentary:
 
 ;;; Code:
 
 ;; ------------------------------- Disable Mouse -------------------------------
-;; prevents accidental mouse moves resulting in modifying unwanted text
+;; prevents accidental mouse moves resulting in accidentally modifying text
 
 (use-package disable-mouse
   :config
   (global-disable-mouse-mode))
+
+;; ---------------------------------- Xdg-Open ---------------------------------
+;; open specific file extensions with the system's default mime-type handler
+
+(defun cj/xdg-open (&optional filename)
+  (interactive)
+  (let ((command (cond ((eq system-type 'gnu/linux) "xdg-open")
+                       ((eq system-type 'darwin) "open")
+                       ((eq system-type 'windows-nt) "start")
+                       (t ""))))
+	(with-current-buffer (get-buffer-create "xdg-open.log")
+	  (goto-char (point-max))
+	  (insert (format "Running command %s\n" command))
+	  (let ((exit-code (call-process command nil t t (expand-file-name
+													  (or filename (dired-file-name-at-point))))))
+		(insert (format "Exit code: %s\n" exit-code))))))
+
+(defun cj/find-file-auto (orig-fun &rest args)
+  (let ((filename (car args)))
+	(if (cl-find-if
+         (lambda (regexp) (string-match regexp filename))
+		 '("\\.avi\\'"
+           "\\.mp4\\'"
+           "\\.divx\\'"
+           "\\.flv\\'"
+           "\\.mkv\\'"
+           "\\.mpeg\\'"
+           "\\.mov\\'"
+		   "\\.wav\\'"
+		   "\\.webm\\'"
+		   "\\.mp3\\'"
+		   "\\.opus\\'"
+		   "\\.ogg\\'"
+		   "\\.flac\\'"
+		   "\\.docx?\\'"
+		   "\\.pptx?\\'"
+		   "\\.xlsx?\\'"
+		   ))
+        (progn
+		  (cj/xdg-open filename))
+      (progn
+		(apply orig-fun args)))))
+
+(advice-add 'find-file :around 'cj/find-file-auto)
 
 ;; ---------------------------------- Ibuffer ----------------------------------
 
@@ -328,10 +372,10 @@ with a prefix argument."
   :defer .5
   :bind ("M-t" . tmr-prefix-map)
   :config
-   (setq tmr-sound-file
-		 "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga")
-   (setq tmr-notification-urgency 'normal)
-   (setq tmr-descriptions-list 'tmr-description-history))
+  (setq tmr-sound-file
+		"/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga")
+  (setq tmr-notification-urgency 'normal)
+  (setq tmr-descriptions-list 'tmr-description-history))
 
 ;; ------------------------------- Who Called Me? ------------------------------
 ;; convenience function to display which function called a message
