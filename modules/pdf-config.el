@@ -17,12 +17,13 @@
   (pdf-tools-install :no-query) ;; automatically compile on first launch
   :bind
   (:map pdf-view-mode-map
-        ("M" . pdf-view-midnight-minor-mode)
+		("M" . pdf-view-midnight-minor-mode)
 		("m" . bookmark-set)
 		("C-=" . pdf-view-enlarge)
 		("C--" . pdf-view-shrink)
         ("z" . (lambda () (interactive) (cj/open-file-with-command "zathura")))
-        ("e" . (lambda () (interactive) (cj/open-file-with-command "evince")))
+		("e" . (lambda () (interactive) (cj/open-file-with-command "evince")))
+		("C-c l" . org-store-link)
         ("j" . pdf-view-next-line-or-next-page)
 		("k" . pdf-view-previous-line-or-previous-page)))
 
@@ -48,6 +49,15 @@
   (pdf-view-mode . pdf-view-restore-mode)
   :config
   (setq pdf-view-restore-filename (concat user-emacs-directory "/.pdf-view-restore")))
+
+;; --------------------------- PDF Continuous Scroll ---------------------------
+
+;; provides continuous scrolling of PDF documents in PDF View
+(use-package pdf-continuous-scroll-mode
+  :ensure nil ;; in custom folder
+  :after pdf-tools
+  :hook (pdf-view-mode . pdf-continuous-scroll-mode)
+  :load-path "custom/pdf-continuous-scroll-mode.el")
 
 (provide 'pdf-config)
 ;;; pdf-config.el ends here
