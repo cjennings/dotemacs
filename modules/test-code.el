@@ -9,6 +9,9 @@
 ;;; Code:
 
 
+(use-package org-noter
+  :load-path ("custom/org-noter.el"))
+
 ;; ------------------------------------ Pomm -----------------------------------
 
 (use-package pomm
