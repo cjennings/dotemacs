@@ -3,33 +3,14 @@
 ** TODO [#B] Dirvish should open not showing hidden files by default
 *** 2025-06-07 Sat @ 12:25:28 -0500 It isn't omitting the h switch on directory listings
 No. Didn't help
-** TODO [#B] Fix Emacs Alarm for Scheduled Events
+** TODO [#B] Fix Emacs Alarms for Scheduled Events
 *** 2025-06-03 Tue @ 15:12:51 -0500 Problem
-Emacs Alarm seems to sound off periodically after the
-** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
-** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
-** TODO [#B] Fix Emacs Org Roam Recipe Error
-C-c n i then type a recipe name.
-org-element--get-category: Invalid function: org-element-with-disabled-cache
-The file was created, but does not come to the front
-The category value seems unaligned
-** TODO [#B] Emacs Eshell Doesn't Inherit Environment Variables
-** TODO [#C] Rename 'sync-dir' Variable in Init File to 'org-dir'
-** TODO Install ZOxide Integration into Emacs
-[[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
-Captured On: [2025-06-07 Sat 17:11]
-** TODO [#C] Emacs Signal Client
-*** TODO investigate: net/signel.org · master · undefined · GitLab
-[[https://gitlab.com/jaor/elibs/-/blob/master/net/signel.org][net/signel.org · master · undefined · GitLab]]
-Captured On: [2025-05-29 Thu 04:24]
-*** TODO investigate: signel, a barebones signal chat on top of signal-cli
-[[https://jao.io/blog/signel.html][signel, a barebones signal chat on top of signal-cli]]
-Captured On: [2025-05-29 Thu 04:23]
+Emacs Alarm seems to sound off periodically after the alarm rang the first time.
+It should ring once at the beginning of the event, and that's it.
+*** 2025-06-28 Sat @ 12:42:19 -0500 User's Method for Alarms In Emacs
+This is more than I actually want, but leaving here for reference.
 
-** TODO Test This Method for Alarms In Emacs
 #+BEGIN_QUOTE
-
-
 I am quite happy with the system I use, which does (I think) exactly what you want. It has two parts: an Emacs part that uses appt.el to schedule the reminders and a small shell program (I'm using Linux) that creates the popup + sound notification. Here I share the code for both parts.
 
 A) Code in ~/.emacs.d/init.el
@@ -88,7 +69,34 @@ espeak "Appointment in $TIME minutes: $MSG"
 #+END_QUOTE
 [[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
 Captured On: [2025-06-19 Thu 12:29]
+** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
+** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
+** TODO [#B] Fix Emacs Org Roam Recipe Error
+C-c n i then type a recipe name.
+org-element--get-category: Invalid function: org-element-with-disabled-cache
+The file was created, but does not come to the front
+The category value seems unaligned
+** TODO [#B] Emacs Eshell Doesn't Inherit Environment Variables
 ** TODO [#C] Emacs: Should adding tasks add it to Projects and Tasks in the inbox file?
+* Emacs Next Release/Label
+** TODO Emacs Signal Client
+*** TODO investigate: net/signel.org · master · undefined · GitLab
+[[https://gitlab.com/jaor/elibs/-/blob/master/net/signel.org][net/signel.org · master · undefined · GitLab]]
+Captured On: [2025-05-29 Thu 04:24]
+*** TODO investigate: signel, a barebones signal chat on top of signal-cli
+[[https://jao.io/blog/signel.html][signel, a barebones signal chat on top of signal-cli]]
+Captured On: [2025-05-29 Thu 04:23]
+
+** TODO Install ZOxide Integration into Emacs
+[[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
+Captured On: [2025-06-07 Sat 17:11]
+** TODO manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.
+[[https://github.com/manateelazycat/awesome-tray][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
+Captured On: [2025-06-07 Sat 13:29]
+** TODO Rename 'sync-dir' Variable in Init File to 'org-dir'
+** TODO ryuslash/mode-icons: Show icons instead of mode names
+[[https://github.com/ryuslash/mode-icons][ryuslash/mode-icons: Show icons instead of mode names]]
+Captured On: [2025-06-07 Sat 13:29]
 * Emacs Project Ideas/References
 ** emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources
 [[https://github.com/emacs-tw/awesome-elisp][emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources]]
@@ -96,12 +104,6 @@ Captured On: [2025-06-07 Sat 13:42]
 ** emacs-tw/awesome-emacs: A community driven list of useful Emacs packages, libraries and other items.
 [[https://github.com/emacs-tw/awesome-emacs#layout][emacs-tw/awesome-emacs: A community driven list of useful Emacs packages, libraries and other items.]]
 Captured On: [2025-06-07 Sat 13:30]
-** ryuslash/mode-icons: Show icons instead of mode names
-[[https://github.com/ryuslash/mode-icons][ryuslash/mode-icons: Show icons instead of mode names]]
-Captured On: [2025-06-07 Sat 13:29]
-** manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.
-[[https://github.com/manateelazycat/awesome-tray][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
-Captured On: [2025-06-07 Sat 13:29]
 ** bastibe/org-static-blog: A static site generator using org-mode
 [[https://github.com/bastibe/org-static-blog][bastibe/org-static-blog: A static site generator using org-mode]]
 Captured On: [2025-05-29 Thu 04:32]
