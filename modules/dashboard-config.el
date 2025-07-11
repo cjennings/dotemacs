@@ -73,7 +73,7 @@
 	 (bookmarks . dashboard-insert-bookmarks)))
 
   (dashboard-items '((projects . 5)
-                     (bookmarks . 7)))
+					 (bookmarks . 15)))
 
   (dashboard-startupify-list
    '(dashboard-insert-banner
