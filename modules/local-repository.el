@@ -31,7 +31,7 @@ preferred, this must be a higher number than any other repositories.")
 It's a good idea to keep this with the rest of your configuration files and
 keep them in source control.")
 
-(defun localrepo-update-repository ()
+(defun cj/update-localrepo-repository ()
   "Update the local repository with currently installed packages."
   (interactive)
   (elpamr-create-mirror-for-installed localrepo-repository-location t))
