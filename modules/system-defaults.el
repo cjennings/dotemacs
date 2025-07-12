@@ -96,7 +96,7 @@
 ;; provide smoothest scrolling and avoid accidental gestures
 
 (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
-(setq scroll-margin 5)             ;; scroll w/in 10 lines of top/bottom
+(setq scroll-margin 3)             ;; start scrolling at 3 lines from top/bottom
 (setq scroll-step 1)               ;; keyboard scroll one line at a time
 
 ;; disable pasting with mouse-wheel click
