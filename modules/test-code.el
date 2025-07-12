@@ -22,7 +22,6 @@
   (setq org-noter-separate-notes-from-heading t)
   (org-noter-enable-org-roam-integration))
 
-
 ;; ------------------------------------ Pomm -----------------------------------
 
 (use-package pomm
@@ -32,34 +31,11 @@
 
 ;; ----------------------------------- Mpdel -----------------------------------
 
-(use-package mpdel
-  :defer .5
-  :config
-  (setq mpdel-prefix-key (kbd "M-p"))
-  (mpdel-mode))
-
-
-;; ---------------------------------- Yeetube ----------------------------------
-;; youtube frontend for emacs
-
-(use-package yeetube
-  :init (define-prefix-command 'cj/yeetube-map)
-  :bind (("C-c y" . 'cj/yeetube-map)
-         :map cj/yeetube-map
-         ("s" . 'yeetube-search)
-         ("b" . 'yeetube-play-saved-video)
-         ("d" . 'yeetube-download-videos)
-         ("p" . 'yeetube-mpv-toggle-pause)
-         ("v" . 'yeetube-mpv-toggle-video)
-         ("V" . 'yeetube-mpv-toggle-no-video-flag)
-         ("k" . 'yeetube-remove-saved-video))
-  :custom
-  (yeetube-results-limit 50)
-  (yeetube-download-directory (expand-file-name "videos" "~"))
-  (yeetube-filter "Views")
-  (setq yeetube-display-thumbnails nil)
-  :config
-  (setf yeetube-mpv-disable-video nil))
+;; (use-package mpdel
+;;   :defer .5
+;;   :config
+;;   (setq mpdel-prefix-key (kbd "M-p"))
+;;   (mpdel-mode))
 
 ;; --------------------------------- Easy Hugo ---------------------------------
 
