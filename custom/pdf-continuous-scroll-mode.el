@@ -417,18 +417,18 @@ windows."
 ;;;###autoload
 (define-minor-mode pdf-continuous-scroll-mode
   "Emulate continuous scroll with two synchronized buffers"
-  nil
-  " Continuous"
-  pdf-continuous-scroll-mode-map
+
+  :init-value nil
+  :lighter " Continuous"
+  :keymap pdf-continuous-scroll-mode-map
   (unless pdf-continuous-scroll-mode
-    (pdf-cscroll-close-window-when-dual))
+	(pdf-cscroll-close-window-when-dual))
   (set-window-parameter nil 'pdf-scroll-window-status 'single)
   (defun pdf-outline-imenu-activate-link (&rest args)
-    ;; bug #14029
-    (pdf-cscroll-close-window-when-dual)
-    (when (eq (nth 2 args) 'pdf-outline-imenu-activate-link)
-      (setq args (cdr args)))
-    (pdf-links-action-perform (nth 2 args))))
-
+	;; bug #14029
+	(pdf-cscroll-close-window-when-dual)
+	(when (eq (nth 2 args) 'pdf-outline-imenu-activate-link)
+	  (setq args (cdr args)))
+	(pdf-links-action-perform (nth 2 args))))
 
 (provide 'pdf-continuous-scroll-mode)
