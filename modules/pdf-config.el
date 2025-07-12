@@ -30,6 +30,8 @@
 (use-package pdf-view
   :ensure nil ;; built-in
   :after pdf-tools
+  :hook
+  (pdf-view-mode . pdf-view-midnight-minor-mode)
   :custom
   (pdf-view-display-size 'fit-page)
   (pdf-view-resize-factor 1.1)
