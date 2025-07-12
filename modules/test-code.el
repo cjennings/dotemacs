@@ -10,7 +10,18 @@
 
 
 (use-package org-noter
-  :load-path ("custom/org-noter.el"))
+  ;; :ensure nil ;; custom code
+  ;; :load-path "custom/org-noter.el"
+  :after (:any org pdf-view)
+  :commands org-noter
+  :bind ("<f6>" . org-noter)
+  :config
+  (setq org-noter-doc-split-fraction '(0.75 . 0.75))
+  (setq org-noter-notes-search-path        '("~/sync/org/org-noter/"))
+  (setq org-noter-default-notes-file-names '("notes.org"))
+  (setq org-noter-separate-notes-from-heading t)
+  (org-noter-enable-org-roam-integration))
+
 
 ;; ------------------------------------ Pomm -----------------------------------
 
@@ -34,14 +45,14 @@
 (use-package yeetube
   :init (define-prefix-command 'cj/yeetube-map)
   :bind (("C-c y" . 'cj/yeetube-map)
-		 :map cj/yeetube-map
-		 ("s" . 'yeetube-search)
-		 ("b" . 'yeetube-play-saved-video)
-		 ("d" . 'yeetube-download-videos)
-		 ("p" . 'yeetube-mpv-toggle-pause)
-		 ("v" . 'yeetube-mpv-toggle-video)
-		 ("V" . 'yeetube-mpv-toggle-no-video-flag)
-		 ("k" . 'yeetube-remove-saved-video))
+         :map cj/yeetube-map
+         ("s" . 'yeetube-search)
+         ("b" . 'yeetube-play-saved-video)
+         ("d" . 'yeetube-download-videos)
+         ("p" . 'yeetube-mpv-toggle-pause)
+         ("v" . 'yeetube-mpv-toggle-video)
+         ("V" . 'yeetube-mpv-toggle-no-video-flag)
+         ("k" . 'yeetube-remove-saved-video))
   :custom
   (yeetube-results-limit 50)
   (yeetube-download-directory (expand-file-name "videos" "~"))
@@ -89,7 +100,7 @@
   :after erc
   :bind
   (:map erc-mode-map
-		("C-y" . erc-yank)))
+        ("C-y" . erc-yank)))
 
 ;; --------------------------------- Ob-Racket ---------------------------------
 
