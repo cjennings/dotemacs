@@ -91,6 +91,18 @@
   :config
   (add-to-list 'erc-modules 'hl-nicks))
 
+;; ------------------------------ ERC Yank To Gist -----------------------------
+;; automatically create a Gist if pasting more than 5 lines
+;; this module requires https://github.com/defunkt/gist
+;; via ruby: 'gem install gist' via the aur: yay -S gist
+
+(use-package erc-yank
+  :defer 1
+  :after erc
+  :bind
+  (:map erc-mode-map
+		("C-y" . erc-yank)))
+
 ;; -------------------------------- Connect IRC --------------------------------
 ;; convenience function to auto-connect to irc.libera.chat
 

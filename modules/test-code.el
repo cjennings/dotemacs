@@ -56,27 +56,15 @@
 
 ;; -------------------------------- Google This --------------------------------
 
-(use-package google-this
-  :load-path "~/code/emacs-google-this/"
-  :defer 1
-  :bind
-  ("C-h g" . 'google-this-search)
-  :config
-  (google-this-mode 1)
-  (setq google-this-browse-url-function 'eww-browse-url))
-
-
-;; ------------------------------ ERC Yank To Gist -----------------------------
-;; automatically create a Gist if pasting more than 5 lines
-;; this module requires https://github.com/defunkt/gist
-;; via ruby: 'gem install gist' via the aur: yay -S gist
-
-(use-package erc-yank
-  :defer 1
-  :after erc
-  :bind
-  (:map erc-mode-map
-        ("C-y" . erc-yank)))
+;; not working as-is
+;; (use-package google-this
+;;   :load-path "~/code/emacs-google-this/"
+;;   :defer 1
+;;   :bind
+;;   ("C-h g" . google-this-search)
+;;   :config
+;;   (google-this-mode 1)
+;;   (setq google-this-browse-url-function 'eww-browse-url))
 
 ;; --------------------------------- Ob-Racket ---------------------------------
 
