@@ -10,17 +10,23 @@
 
 
 (use-package org-noter
-  ;; :ensure nil ;; custom code
-  ;; :load-path "custom/org-noter.el"
   :after (:any org pdf-view)
   :commands org-noter
   :bind ("<f6>" . org-noter)
   :config
+  (setq org-noter-always-create-frame nil)
+  (setq org-noter-notes-window-location 'vertical-split)
+  (setq org-noter-notes-window-behavior 'scroll)
   (setq org-noter-doc-split-fraction '(0.75 . 0.75))
-  (setq org-noter-notes-search-path        '("~/sync/org/org-noter/"))
-  (setq org-noter-default-notes-file-names '("notes.org"))
+  (setq org-noter-notes-search-path (concat sync-dir "/org-noter/"))
+  (setq org-noter-default-notes-file-names '("reading-notes.org"))
   (setq org-noter-separate-notes-from-heading t)
   (org-noter-enable-org-roam-integration))
+
+
+(use-package org-pdftools
+  :after (org pdf-view)
+  :hook (org-mode . org-pdftools-setup-link))
 
 ;; ------------------------------------ Pomm -----------------------------------
 
