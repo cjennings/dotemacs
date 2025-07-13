@@ -11,7 +11,7 @@
   :defer 1
   :mode (("\\.pdf\\'" . pdf-view-mode))
   :init
-  (setq pdf-view-display-size 'fit-page)
+  (setq pdf-view-display-size 'fit-width)
   (setq pdf-view-midnight-colors '( "#F1D5AC" . "#0F0E06")) ;; fg . bg
   :config
   (pdf-tools-install :no-query) ;; automatically compile on first launch
