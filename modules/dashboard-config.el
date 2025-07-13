@@ -53,18 +53,21 @@
 (defun cj/display-dashboard ()
   "Display dashboard, create if it doesn't exist."
   (interactive)
-  (dired-sidebar-hide-sidebar) ;; hide dired-sidebar if displaying
-  (get-buffer-create "*dashboard*")
-  (pop-to-buffer "*dashboard*")
-  (delete-other-windows))
-(global-set-key (kbd "<f4>") 'cj/display-dashboard)
+  (dired-sidebar-hide-sidebar)
+  (if (get-buffer "*dashboard*")
+	  (progn
+		(pop-to-buffer "*dashboard*")
+		(delete-other-windows))
+	(dashboard-open)))
 
 ;; --------------------------------- Dashboard ---------------------------------
 ;; a useful startup screen for Emacs
 
 (use-package dashboard
   :demand t ;; needed to startup quickly
-  :bind ("<f9>" . dashboard-open)
+  :init
+  (global-unset-key (kbd "<f4>"))
+  :bind ("<f4>" . cj/display-dashboard)
   :custom
   (dashboard-projects-backend 'projectile)
 
