@@ -23,39 +23,53 @@
 ;; ----------------------------------- GPTel -----------------------------------
 ;; integration with ChatGPT and other large language models.
 
+(defvar default-directive
+  "You are a large language model living in Emacs. You understand philosophy, critical theory, and comparative
+  literature at a university graduate student level. You are concise and always provide references to source material.")
+
+(defvar code-only-directive
+  "You are a large language model living in Emacs. You are an expert in emacs-lisp, Python, Golang, and Shell scripting.
+  You encourage unit testing and always provide unit tests when you provide code.")
+
+(defvar writing-directive
+  "You are a large language model and a writing assistant. Respond concisely.")
+
+(defvar chat-directive
+  "You are a large language model and a funny conversation partner who asks good questions.")
+
+
+(defun toggle-gptel ()
+  "Toggle the visibility of the ChatGPT buffer."
+  (interactive)
+  (let ((buffer (get-buffer "*ChatGPT*")))
+	(if (and buffer (get-buffer-window buffer))
+		(delete-window (get-buffer-window buffer))
+	  (if buffer
+		  (display-buffer-in-side-window buffer '((side . right) (window-width . 0.4)))
+		(gptel)))))
+
 (use-package gptel
   :defer t
   :commands (gptel gptel-send)
   :bind
-  ("C-h G" . gptel)
-  (:map gptel-mode-map
-        ("C-<return>" . gptel-send))
+  (("C-h G" . gptel)
+   ("<f9>" . toggle-gptel)
+   (:map gptel-mode-map
+		 ("C-<return>" . gptel-send)))
   :custom
-  ;;  (gptel-model "gpt-3.5-turbo-16k") ;; next best alternative
   (gptel-model "gpt-4")
   (gptel-default-mode 'org-mode)
   :config
   (setq gptel-directives
-		'((default
-		   . "You are a large language model living in Emacs. You are an expert
-  in emacs-lisp, Python, Golang, and Shell scripting. You encourage unit testing
-  code and propose unit tests when you provide code. Please be accurate and
-  concise in your responses.")
-		  (code-only
-		   . "You are a large language model living in Emacs. You are an expert
-  in emacs-lisp, Python, Golang, and Shell scripting. You encourage unit testing
-  code and propose unit tests when you provide code. Please be accurate and
-  concise in your responses.")
-		  (writing
-		   . "You are a large language model and a writing assistant. Respond
-  concisely.")
-		  (chat
-		   . "You are a large language model and a conversation partner. Respond
-  concisely.")))
+		`((default   . ,default-directive)
+		  (code-only . ,code-only-directive)
+		  (writing   . ,writing-directive)
+		  (chat      . ,chat-directive)))
 
-  ;; grab the secret from the auth file
+  ;; Grab the secret from the auth file
   (setq auth-sources `((:source ,authinfo-file)))
   (setq gptel-api-key (auth-source-pick-first-password :host "api.openai.com")))
+
 
 (provide 'ai-config)
 ;;; ai-config.el ends here
