@@ -8,6 +8,76 @@
 
 ;;; Code:
 
+;; ------------------------ Org-Branch To Org-Roam-Node ------------------------
+
+;; (defun cj/move-org-branch-to-roam ()
+;;   (interactive)
+;;   (when (eq (org-element-type (org-element-at-point)) 'headline)
+;; 	(let* ((headline-components (org-heading-components))
+;; 		   (title (nth 4 headline-components)))
+;; 	  (setq cj/point (point))
+;; 	  (org-cut-subtree)
+;; 	  ;; Switch to org-roam buffer, fill in new node's title
+;; 	  ;; Pass the current headline title as the default value
+;; 	  (org-roam-node-insert
+;; 	   :immediate-finish t
+;; 	   :no-edit t
+;; 	   :region (cons (point)
+;; 					 (save-excursion
+;; 					   (insert title)
+;; 					   (point))))
+;; 	  (newline)
+;; 	  ;; Paste the 'cut' subtree and save buffer
+;; 	  (org-yank)
+;; 	  (save-buffer)
+;; 	  ;; Go back to the initial buffer and position
+;; 	  (switch-to-buffer (other-buffer))
+;; 	  (goto-char cj/point))))
+
+(defun cj/move-org-branch-to-roam ()
+  (interactive)
+  (when (eq (org-element-type (org-element-at-point)) 'headline)
+    (let* ((headline-components (org-heading-components))
+           (title (nth 4 headline-components)))
+      (setq cj/point (point))
+      (org-cut-subtree)
+      ;; Switch to org-roam buffer, fill in new node's title.
+      (org-roam-node-insert
+       :immediate-finish t
+       :no-edit t
+       ;; Pass the current headline title as the default value.
+       :region (cons (point)
+                     (save-excursion
+                       (insert title)
+                       (point))))
+      (newline)
+      ;; Paste the 'cut' subtree and save buffer.
+      (org-yank)
+      (save-buffer)
+      ;; Go back to the initial buffer and position.
+      (switch-to-buffer (other-buffer))
+      (goto-char cj/point)
+      ;; Kill the org-roam link leftover.
+      (kill-whole-line))))
+
+;; (defun cj/move-org-branch-to-roam ()
+;;   (interactive)
+;;   (when (eq (org-element-type (org-element-at-point)) 'headline)
+;; 	;; Save position to come back after branch cut
+;; 	(setq cj/point (point))
+;; 	;; Cut the whole subtree
+;; 	(org-cut-subtree)
+;; 	;; Switch to org-roam buffer, prompt for new node's title
+;; 	(org-roam-node-insert)
+;; 	(newline)
+;; 	;; Paste the 'cut' subtree and save buffer
+;; 	(org-yank)
+;; 	(save-buffer)
+;; 	;; Go back to the initial buffer and position
+;; 	(switch-to-buffer (other-buffer))
+;; 	(goto-char cj/point)))
+
+;; --------------------------------- Org Noter ---------------------------------
 
 (use-package org-noter
   :after (:any org pdf-view)
