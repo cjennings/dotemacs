@@ -78,6 +78,7 @@ The file was created, but does not come to the front
 The category value seems unaligned
 ** TODO [#B] Emacs Eshell Doesn't Inherit Environment Variables
 ** TODO [#C] Emacs: Should adding tasks add it to Projects and Tasks in the inbox file?
+** TODO Turn Off Remove Whitespace in Org Mode
 * Emacs Next Release/Label
 ** TODO Emacs Signal Client
 *** TODO investigate: net/signel.org · master · undefined · GitLab
