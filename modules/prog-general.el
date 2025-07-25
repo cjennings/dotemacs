@@ -205,8 +205,7 @@ If none exists, it opens magit-status."
   :commands (ws-butler-mode)
   :init
   (add-hook 'prog-mode-hook #'ws-butler-mode)
-  (add-hook 'org-mode-hook #'ws-butler-mode)
-  (add-hook 'text-mode-hook #'ws-butler-mode)
+  ;; no org and text mode as org branches occasionally move up a line and become invalid
   :config
   (setq ws-butler-convert-leading-tabs-or-spaces t))
 

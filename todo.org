@@ -1,5 +1,6 @@
 * Emacs Open Work
-** TODO [#B] Mu4e Working with Proton and Gmail
+** TODO [#A] Add Templates Back to Emacs Repository!
+** TODO [#A] Add Org Capture Template for Vocabulary Words
 ** TODO [#B] Dirvish should open not showing hidden files by default
 *** 2025-06-07 Sat @ 12:25:28 -0500 It isn't omitting the h switch on directory listings
 No. Didn't help
@@ -78,7 +79,6 @@ The file was created, but does not come to the front
 The category value seems unaligned
 ** TODO [#B] Emacs Eshell Doesn't Inherit Environment Variables
 ** TODO [#C] Emacs: Should adding tasks add it to Projects and Tasks in the inbox file?
-** TODO Turn Off Remove Whitespace in Org Mode
 * Emacs Next Release/Label
 ** TODO Emacs Signal Client
 *** TODO investigate: net/signel.org · master · undefined · GitLab
