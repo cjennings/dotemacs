@@ -46,6 +46,17 @@
   (setq password-cache t)
   (setq password-cache-expiry nil)
 
+  ;; set tramp-direct-async-process locally in all ssh connections
+  (connection-local-set-profile-variables
+   'remote-direct-async-process
+   '((tramp-direct-async-process . t)))
+  (connection-local-set-profiles
+   '(:application tramp :protocol "ssh")
+   'remote-direct-async-process)
+  (connection-local-set-profiles
+   '(:application tramp :protocol "sshx")
+   'remote-direct-async-process)
+
   ;; don't determine remote files vc status (for a performance gain)
   (setq vc-ignore-dir-regexp tramp-file-name-regexp))
 
