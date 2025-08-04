@@ -79,6 +79,8 @@ The file was created, but does not come to the front
 The category value seems unaligned
 ** TODO [#B] Emacs Eshell Doesn't Inherit Environment Variables
 ** TODO [#C] Emacs: Should adding tasks add it to Projects and Tasks in the inbox file?
+** TODO Fix exporting documents to HTML.
+This appears to work with emacs -q. What's up with your config? 
 * Emacs Next Release/Label
 ** TODO Emacs Signal Client
 *** TODO investigate: net/signel.org · master · undefined · GitLab
@@ -114,3 +116,18 @@ Captured On: [2025-05-29 Thu 04:28]
 ** a high signal to noise emacs command: buffer-same-mode
 [[https://jao.io/blog/high-signal-to-noise-emacs-command.html][a high signal to noise emacs command]]
 Captured On: [2025-05-29 Thu 04:33]
+** How I batch apply and save one-liners
+[[https://xenodium.com/how-i-batch-apply-and-save-one-liners][How I batch apply and save one-liners]]
+Captured On: [2025-08-01 Fri 03:11]
+** Better org-mode Agenda display-buffer-alist Settings • Christian Tietze
+[[https://christiantietze.de/posts/2022/12/updated-org-mode-agenda-display-buffer-alist/][Better org-mode Agenda display-buffer-alist Settings • Christian Tietze]]
+Captured On: [2025-08-01 Fri 03:21]
+** GitHub - xenodium/dwim-shell-command: Save your shell commands/scripts and apply from Emacs with ease.
+[[https://github.com/xenodium/dwim-shell-command][GitHub - xenodium/dwim-shell-command: Save your shell commands/scripts and apply from Emacs with ease.]]
+Captured On: [2025-08-01 Fri 03:10]
+** GitHub - hyakt/emacs-dashboard-hackernews: Display a topstories of Hacker News on Dashboard.
+[[https://github.com/hyakt/emacs-dashboard-hackernews][GitHub - hyakt/emacs-dashboard-hackernews: Display a topstories of Hacker News on Dashboard.]]
+Captured On: [2025-08-01 Fri 02:47]
+** org mode - org-link to the exact page-position in a pdf file - Emacs Stack Exchange
+[[https://emacs.stackexchange.com/questions/68013/org-link-to-the-exact-page-position-in-a-pdf-file][org mode - org-link to the exact page-position in a pdf file - Emacs Stack Exchange]]
+Captured On: [2025-07-11 Fri 18:17]
