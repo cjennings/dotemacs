@@ -1,5 +1,4 @@
 ;;; system-utils --- System-Wide Utilities -*- lexical-binding: t; -*-
-;; -------------------------------- Use Xdg-Open -------------------------------
 ;; author Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 
@@ -347,7 +346,7 @@ with a prefix argument."
         (insert "\n")))))
 
 ;; ----------------------------------- Proced ----------------------------------
-;; yes, there's a process monitor in Emacs
+;; yes, there's a process monitor built-into Emacs. It's just not configured.
 
 (use-package proced
   :defer .5
@@ -376,27 +375,6 @@ with a prefix argument."
 		"/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga")
   (setq tmr-notification-urgency 'normal)
   (setq tmr-descriptions-list 'tmr-description-history))
-
-;; ------------------------------- Who Called Me? ------------------------------
-;; convenience function to display which function called a message
-
-(defun who-called-me? (old-fun format &rest args)
-  "Display the function that called a message.
-OLD-FUN: The original function that is being overridden.
-FORMAT : The format string used in the original function's `message` call.
-ARGS   : The variables to populate the placeholders in the format string.
-
-This function works by overriding an existing function, usually `message`,
-with a new version that prints a trace of the function call stack before the
-original message."
-  (let ((trace nil) (n 1) (frame nil))
-    (while (setf frame (backtrace-frame n))
-      (setf n     (1+ n)
-            trace (cons (cadr frame) trace)) )
-    (apply old-fun (concat "<<%S>>\n" format) (cons trace args))))
-
-;; uncomment this line for the underlying function
-;; (advice-add 'message :around #'who-called-me?)
 
 (provide 'system-utils)
 ;;; system-utils.el ends here
