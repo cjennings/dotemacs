@@ -36,39 +36,39 @@
 
 ;; CUSTOMIZATIONS
 ;; All customizations should be declared in Emacs init files.
-;; any customizations go into a temp file that's never read.
+;; Add accidental customizations via the customization interface to a temp file that's never read.
 (setq custom-file (make-temp-file
 				   "emacs-customizations-trashbin"))
 
 ;; ------------------------- Re-Enabling Functionality -------------------------
 
-(put 'narrow-to-region 'disabled nil) ;; narrow-to-region is extremely useful!
-(put 'upcase-region 'disabled nil) ;; upcase region is useful
-(put 'erase-buffer 'disabled nil)  ;; and so is erase-buffer
+(put 'narrow-to-region 'disabled nil)               ;; narrow-to-region is extremely useful!
+(put 'upcase-region 'disabled nil)                  ;; upcase region is useful
+(put 'erase-buffer 'disabled nil)                   ;; and so is erase-buffer
 
 ;; ------------------------------ Non UI Settings ------------------------------
 
-(setq ring-bell-function 'ignore)            ;; disable the bell ring.
-(setq default-directory user-home-dir)       ;; consider user home the default directory
+(setq ring-bell-function 'ignore)                   ;; disable the bell ring.
+(setq default-directory user-home-dir)              ;; consider user home the default directory
 
-(global-auto-revert-mode)                    ;; update the buffer when the associated file has changed
-(setq global-auto-revert-non-file-buffers t) ;; do so for all buffer types (e.g., ibuffer)
-(setq bidi-display-reordering nil)           ;; don't reorder bidirectional text for display
-(setq bidi-paragraph-direction t)            ;; forces directionality of text for performance.
+(global-auto-revert-mode)                           ;; update the buffer when the associated file has changed
+(setq global-auto-revert-non-file-buffers t)        ;; do so for all buffer types (e.g., ibuffer)
+(setq bidi-display-reordering nil)                  ;; don't reorder bidirectional text for display
+(setq bidi-paragraph-direction t)                   ;; forces directionality of text for performance.
 
-(setq system-time-locale "C")                ;; use en_US locale to format time.
+(setq system-time-locale "C")                       ;; use en_US locale to format time.
 
 ;; --------------------------------- Clipboard ---------------------------------
 
-(setq select-enable-clipboard t)             ;; cut and paste using clipboard
-(setq yank-pop-change-selection t)           ;; update system clipboard when yanking in emacs
-(setq save-interprogram-paste-before-kill t) ;; saves existing clipboard to kill ring before replacing
+(setq select-enable-clipboard t)                    ;; cut and paste using clipboard
+(setq yank-pop-change-selection t)                  ;; update system clipboard when yanking in emacs
+(setq save-interprogram-paste-before-kill t)        ;; saves existing clipboard to kill ring before replacing
 
 ;; -------------------------------- Tab Settings -------------------------------
-;; use spaces, not tabs
+													;; use spaces, not tabs
 
-(setq-default tab-width 4)          ;; if tab, make them 4 spaces default
-(setq-default indent-tabs-mode nil) ;; but turn off tabs by default
+(setq-default tab-width 4)                          ;; if tab, make them 4 spaces default
+(setq-default indent-tabs-mode nil)                 ;; but turn off tabs by default
 
 ;; ------------------------------ Scroll Settings ------------------------------
 
@@ -78,9 +78,9 @@
 ;; ----------------------------- Case Insensitivity ----------------------------
 ;; make user interfaces case insensitive
 
-(setq case-fold-search t)                      ;; case-insensitive searches
-(setq completion-ignore-case t)                ;; case-insensitive completion
-(setq read-file-name-completion-ignore-case t) ;; case-insensitive file completion
+(setq case-fold-search t)                           ;; case-insensitive searches
+(setq completion-ignore-case t)                     ;; case-insensitive completion
+(setq read-file-name-completion-ignore-case t)      ;; case-insensitive file completion
 
 ;; ------------------------------- Async Commands ------------------------------
 ;; always create new async command buffers silently
@@ -105,6 +105,11 @@
 ;; disable pinching gesture or mouse-wheel changing font size
 (global-unset-key (kbd "<pinch>"))
 (global-set-key [remap mouse-wheel-text-scale] 'cj/disabled)
+
+;; disabling mouse prevents accidental mouse moves modifying text
+(use-package disable-mouse
+  :config
+  (global-disable-mouse-mode))
 
 ;; ------------------------------- Be Quiet(er)! -------------------------------
 ;; reduces "helpful" instructions that distract Emacs power users.

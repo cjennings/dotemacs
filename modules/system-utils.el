@@ -4,12 +4,6 @@
 
 ;;; Code:
 
-;; ------------------------------- Disable Mouse -------------------------------
-;; prevents accidental mouse moves resulting in accidentally modifying text
-
-(use-package disable-mouse
-  :config
-  (global-disable-mouse-mode))
 
 ;; ---------------------------------- Xdg-Open ---------------------------------
 ;; open specific file extensions with the system's default mime-type handler
