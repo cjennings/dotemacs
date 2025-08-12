@@ -38,7 +38,7 @@
   (memq system-type '(cygwin windows-nt ms-dos)))
 
 (defun env-x-p ()
-  "Return t if host system is running the X Window System"
+  "Return t if host system is running the X Window System."
   (string= (window-system) "x"))
 
 (defun env-terminal-p ()
