@@ -5,6 +5,40 @@
 
 ;;; Code:
 
+
+;; -------------------------- Native Comp Preferences --------------------------
+;; After async compiler starts, set preferences and warning level
+
+(with-eval-after-load 'comp-run
+  (setopt native-comp-async-jobs-number 8) ; parallel compile workers
+  (setopt native-comp-speed 3)             ; highest optimization level
+  (setopt native-comp-always-compile t))   ; always native-compile
+
+;; -------------------------- Log Native Comp Warnings -------------------------
+;; Log native comp warnings rather than cluttering the buffer
+
+(defvar comp-warnings-log
+  (expand-file-name "comp-warnings.log" user-emacs-directory)
+  "File where native-comp warnings will be appended.")
+
+(defun cj/log-comp-warning (type message &rest args)
+  "Log native-comp warnings of TYPE with MESSAGE & ARGS to 'comp-warnings-log'.
+Suppress them from appearing in the *Warnings* buffer. If TYPE contains 'comp',
+log the warning with a timestamp to the file specified by 'comp-warnings-log'.
+Return non-nil to indicate the warning was handled."
+  (when (memq 'comp (if (listp type) type (list type)))
+	(with-temp-buffer
+	  (insert (format-time-string "[%Y-%m-%d %H:%M:%S] "))
+	  (insert (if (stringp message)
+				  (apply #'format message args)
+				(format "%S %S" message args)))
+	  (insert "\n")
+      (append-to-file (point-min) (point-max) comp-warnings-log))
+	;; Return non-nil to tell `display-warning' “we handled it.”
+	t))
+
+(advice-add 'display-warning :before-until #'cj/log-comp-warning)
+
 ;; ---------------------------------- Unicode ----------------------------------
 
 (set-locale-environment "en_US.UTF-8")
@@ -197,7 +231,7 @@
   (when (daemonp)
 	(exec-path-from-shell-initialize)))
 
-;; ------------------------------- GNU Ls On BSD -------------------------------
+;; ------------------------------- GNU 'ls' On BSD -------------------------------
 ;; when on BSD use the ls from FSF sysutils/coreutils: pkg install coreutils
 
 (cond ((eq system-type 'berkeley-unix)
