@@ -141,6 +141,7 @@
     ("diffrence" "difference" nil :count 0)
     ("dilema" "dilemma" nil :count 0)
     ("direcories" "directories" nil :count 0)
+    ("directirve" "the" nil :count 0)
     ("discorage" "discourage" nil :count 0)
     ("dissapoint" "disappoint" nil :count 0)
     ("distaseful" "distasteful" nil :count 0)
