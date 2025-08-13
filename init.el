@@ -23,16 +23,16 @@
 (add-to-list 'load-path (concat user-emacs-directory "custom/"))
 (add-to-list 'load-path (concat user-emacs-directory "modules/"))
 
-(require 'user-constants)
+(require 'user-constants)   ;; named paths for locating files
 (require 'host-environment) ;; convenience functions re: host environment
 (require 'config-utilities) ;; functions useful when modifying Emacs config
-(require 'system-defaults)
-(require 'keybindings)
+(require 'system-defaults)  ;; native comp; log; unicode, backup, exec path
+(require 'keybindings)      ;; system-wide keybindings
 
 ;; -------------------------- Utilities And Libraries --------------------------
 
 (require 'custom-functions) ;; custom function library w/ keybindings
-(require 'system-utils)
+(require 'system-utils)     ;; external file handlers, timers, process monitor
 (require 'epa-config)       ;; emacs gnupg integration
 (require 'text-config)      ;; text settings and functionality
 
@@ -42,34 +42,38 @@
 (require 'ui-theme)
 (require 'ui-navigation)
 (require 'font-config)
-(require 'selection-framework)
 
-;; ------------------------------- Functionality -------------------------------
+;; --------------------------- Internal Functionality --------------------------
 
-(require 'ai-config)
-(require 'calibredb-epub-config)
-(require 'dashboard-config)
-(require 'diff-config)
-(require 'dirvish-config)
+(require 'diff-config)         ;; ediff and ztree configuration
+(require 'eshell-vterm-config) ;; shell and terminal configuration
+(require 'flyspell-config)     ;; spell check configuration
+(require 'graphviz-config)     ;; merge with latex module?
+(require 'help-utils)          ;; search: arch-wiki, devdoc, tldr, wikipedia
+(require 'help-config)         ;; info, man, help config
+(require 'latex-config)        ;; need to fix
+(require 'modeline-config)     ;; modeline (status-bar) config
+(require 'pdf-config)          ;; pdf display settings
+(require 'selection-framework) ;; menu config
+(require 'tramp-config)        ;; remote shell connections
+(require 'show-kill-ring)      ;; utility to display history of kill ring
+
+;; ------------------------- Features And Integrations -------------------------
+
+(require 'ai-config)             ;; LLM integration
+(require 'calibredb-epub-config) ;; ebook reader/manager settings
+(require 'dashboard-config)      ;; first page on launch
+(require 'dirvish-config) ;; file manager configuration
 (require 'elfeed-config)
 (require 'erc-config)
-(require 'eshell-vterm-config)
 (require 'eww-config)
-(require 'flyspell-config)
-(require 'graphviz-config)  ;; merge with latex module?
-(require 'help-utils)
 (require 'httpd-config)
-(require 'latex-config)     ;; need to fix
-(require 'ledger-config)
+;; (require 'ledger-config) ;; consider removing as you're not using this
 (require 'local-repository) ;; wip
 (require 'mail-config)
 (require 'markdown-config)
-(require 'modeline-config)
-(require 'pdf-config)
 (require 'record-desktop)
-(require 'show-kill-ring)
-(require 'tramp-config)
-(require 'weather-config)
+(require 'weather-config) ;; utility to display the weather
 
 ;; -------------------------------- Programming --------------------------------
 
