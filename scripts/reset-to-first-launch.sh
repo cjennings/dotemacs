@@ -30,6 +30,7 @@ rm ~/.emacs.d/.scratch
 rm ~/.emacs.d/forge-database.sqlite
 rm ~/.emacs.d/nov-places
 rm ~/.emacs.d/org-roam.db
+rm ~/.emacs.d/pomm
 rm ~/.emacs.d/projectile-bookmarks.eld
 rm ~/.emacs.d/recentf
 rm ~/.emacs.d/tramp-connection-history
