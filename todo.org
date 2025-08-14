@@ -42,6 +42,7 @@ Can be used with the `gptel-post-response-functions' hook."
 *** TODO Use C-c g to copy the current selection into the ChatGPT buffer, starting one if one doesn't exist
 *** TODO Change the Prompt: C-c g p
 *** TODO Change the Directive: C-c g d
+*** TODO Default should be coding
 ** TODO [#A] Add Templates Back to Emacs Repository!
 ** TODO [#A] Add Org Capture Template for Vocabulary Words
 ** TODO [#B] Dirvish should open not showing hidden files by default
