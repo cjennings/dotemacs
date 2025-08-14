@@ -1,4 +1,47 @@
 * Emacs Open Work
+** PROJECT [#A] Reconfigure ai-config.el
+*** DONE Rewire commands to use base keybinding of C-c g, which is currently unused.
+CLOSED: [2025-08-13 Wed 16:45]
+*** DONE Toggle gptel's side window with C-c g t 
+CLOSED: [2025-08-13 Wed 16:45]
+*** DONE Erase the Chatgpt Buffer Altogether With C-c g e 
+CLOSED: [2025-08-13 Wed 16:45]
+*** DONE AI Assistant's Answers Should Be Underneath a Labeled Org Heading
+CLOSED: [2025-08-13 Wed 16:46]
+**** The time should also be a component of the org heading
+**** Reference
+modified from: https://github.com/gregoryg/emacs-gregoryg?tab=readme-ov-file#return-gptel-backend--model
+
+(defun cj/gptel-backend-and-model ()
+  "Return gptel backend and model (if any)."
+  (let ((backend (if  (boundp 'gptel-backend)  (aref gptel-backend 1)))
+        (model (if  (boundp 'gptel-model) gptel-model)))
+    (format "(%s %s)" backend model)))
+
+(defun cj/gptel-insert-model-in-non-gptel-buffers ()
+  "This function will add the backend and model in the \"dynamic\" buffers, not in dedicated chat buffers.
+To be used in `gptel-pre-response-hook'."
+  (unless (member 'gptel-mode local-minor-modes)
+    (goto-char (point-max))
+    (insert (format "\n%s: " (cj/gptel-backend-and-model)))
+    (goto-char (point-max))))
+(add-hook 'gptel-pre-response-hook 'cj/gptel-insert-model-in-non-gptel-buffers)
+
+(defun cj/gptel-insert-model-in-chat-buffers (response-begin-pos response-end-pos)
+  "This function adds the backend and model in dedicated chat buffers.
+Can be used with the `gptel-post-response-functions' hook."
+  (let* ((gptel-org-prefix (alist-get 'org-mode gptel-prompt-prefix-alist))
+         (inserted-string (format "%s %s\n"
+                                  (substring gptel-org-prefix 0 (string-match " " gptel-org-prefix))
+                                  (cj/gptel-backend-and-model)))
+         (len-inserted (length inserted-string )))
+    (goto-char response-begin-pos)
+    (insert inserted-string)
+    (goto-char (+ response-end-pos len-inserted))))
+(add-hook 'gptel-post-response-functions 'cj/gptel-insert-model-in-chat-buffers)
+*** TODO Use C-c g to copy the current selection into the ChatGPT buffer, starting one if one doesn't exist
+*** TODO Change the Prompt: C-c g p
+*** TODO Change the Directive: C-c g d
 ** TODO [#A] Add Templates Back to Emacs Repository!
 ** TODO [#A] Add Org Capture Template for Vocabulary Words
 ** TODO [#B] Dirvish should open not showing hidden files by default
@@ -77,9 +120,9 @@ C-c n i then type a recipe name.
 org-element--get-category: Invalid function: org-element-with-disabled-cache
 The file was created, but does not come to the front
 The category value seems unaligned
-** TODO [#B] Emacs Eshell Doesn't Inherit Environment Variables
+** TODO [#C] Check and test native comp logging changes in 
 ** TODO [#C] Emacs: Should adding tasks add it to Projects and Tasks in the inbox file?
-** TODO Fix exporting documents to HTML.
+** TODO [#C] Fix exporting documents to HTML.
 This appears to work with emacs -q. What's up with your config? 
 * Emacs Next Release/Label
 ** TODO Emacs Signal Client
