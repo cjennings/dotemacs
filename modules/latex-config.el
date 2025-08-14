@@ -10,7 +10,7 @@
 
 ;;; Code:
 
-;;;; ----------------------------- Auctex ----------------------------
+;; ----------------------------- Auctex And Related ----------------------------
 
 (use-package tex
   :ensure auctex
@@ -34,6 +34,19 @@
   :config
   (auctex-latexmk-setup)
   (setq auctex-latexmk-inherit-TeX-PDF-mode t))
+
+(use-package company-auctex
+  :ensure t
+  :init (company-auctex-init))
+
+
+;; ----------------------------- Graphviz Dot Mode -----------------------------
+
+(use-package graphviz-dot-mode
+  :config
+  (setq graphviz-dot-indent-width 4))
+
+
 
 (provide 'latex-config)
 ;;; latex-config.el ends here

@@ -48,7 +48,6 @@
 (require 'diff-config)         ;; ediff and ztree configuration
 (require 'eshell-vterm-config) ;; shell and terminal configuration
 (require 'flyspell-config)     ;; spell check configuration
-(require 'graphviz-config)     ;; merge with latex module?
 (require 'help-utils)          ;; search: arch-wiki, devdoc, tldr, wikipedia
 (require 'help-config)         ;; info, man, help config
 (require 'latex-config)        ;; need to fix
