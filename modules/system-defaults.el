@@ -27,15 +27,15 @@ Suppress them from appearing in the *Warnings* buffer. If TYPE contains 'comp',
 log the warning with a timestamp to the file specified by 'comp-warnings-log'.
 Return non-nil to indicate the warning was handled."
   (when (memq 'comp (if (listp type) type (list type)))
-	(with-temp-buffer
-	  (insert (format-time-string "[%Y-%m-%d %H:%M:%S] "))
-	  (insert (if (stringp message)
-				  (apply #'format message args)
-				(format "%S %S" message args)))
-	  (insert "\n")
+    (with-temp-buffer
+      (insert (format-time-string "[%Y-%m-%d %H:%M:%S] "))
+      (insert (if (stringp message)
+                  (apply #'format message args)
+                (format "%S %S" message args)))
+      (insert "\n")
       (append-to-file (point-min) (point-max) comp-warnings-log))
-	;; Return non-nil to tell `display-warning' “we handled it.”
-	t))
+    ;; Return non-nil to tell `display-warning' “we handled it.”
+    t))
 
 (advice-add 'display-warning :before-until #'cj/log-comp-warning)
 
@@ -72,7 +72,7 @@ Return non-nil to indicate the warning was handled."
 ;; All customizations should be declared in Emacs init files.
 ;; Add accidental customizations via the customization interface to a temp file that's never read.
 (setq custom-file (make-temp-file
-				   "emacs-customizations-trashbin"))
+                   "emacs-customizations-trashbin-"))
 
 ;; ------------------------- Re-Enabling Functionality -------------------------
 
@@ -99,7 +99,7 @@ Return non-nil to indicate the warning was handled."
 (setq save-interprogram-paste-before-kill t)        ;; saves existing clipboard to kill ring before replacing
 
 ;; -------------------------------- Tab Settings -------------------------------
-													;; use spaces, not tabs
+;; use spaces, not tabs
 
 (setq-default tab-width 4)                          ;; if tab, make them 4 spaces default
 (setq-default indent-tabs-mode nil)                 ;; but turn off tabs by default
@@ -141,9 +141,16 @@ Return non-nil to indicate the warning was handled."
 (global-set-key [remap mouse-wheel-text-scale] 'cj/disabled)
 
 ;; disabling mouse prevents accidental mouse moves modifying text
-(use-package disable-mouse
+(use-package inhibit-mouse
+  :commands inhibit-mouse-mode
+  :hook (after-init . inhibit-mouse-mode)
+  :custom
+  (inhibit-mouse-adjust-mouse-highlight t)
+  (inhibit-mouse-adjust-show-help-function t)
   :config
-  (global-disable-mouse-mode))
+  (if (daemonp)
+      (add-hook 'server-after-make-frame-hook #'inhibit-mouse-mode)
+    (inhibit-mouse-mode 1)))
 
 ;; ------------------------------- Be Quiet(er)! -------------------------------
 ;; reduces "helpful" instructions that distract Emacs power users.
@@ -211,7 +218,7 @@ Return non-nil to indicate the warning was handled."
 ;; BACKUP DIRECTORY CREATION
 (defvar cj/backup-directory (concat user-emacs-directory "backups"))
 (if (not (file-exists-p cj/backup-directory))
-	(make-directory cj/backup-directory t))
+    (make-directory cj/backup-directory t))
 
 ;; BACKUP SETTINGS
 (setq make-backup-files t)                                    ;; do make backup files
@@ -229,13 +236,13 @@ Return non-nil to indicate the warning was handled."
   :defer .5
   :config
   (when (daemonp)
-	(exec-path-from-shell-initialize)))
+    (exec-path-from-shell-initialize)))
 
 ;; ------------------------------- GNU 'ls' On BSD -------------------------------
 ;; when on BSD use the ls from FSF sysutils/coreutils: pkg install coreutils
 
 (cond ((eq system-type 'berkeley-unix)
-		  (setq insert-directory-program "/usr/local/bin/gls")))
+       (setq insert-directory-program "/usr/local/bin/gls")))
 
 (provide 'system-defaults)
 ;;; system-defaults.el ends here
