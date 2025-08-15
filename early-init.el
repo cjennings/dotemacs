@@ -57,9 +57,6 @@
 
 ;; --------------------------- Warning Notifications ---------------------------
 
-;; log warnings, but don't popup the warnings buffer
-(setq native-comp-async-report-warnings-errors 'silent)
-
 ;; skip warnings but notify me about errors
 (setq warning-minimum-level :error)
 

@@ -3,8 +3,6 @@
 
 ;;; Commentary:
 
-;; Use C-c ? in ledger mode for discoverability.
-
 ;; Unlike Mu4e and Elfeed (with Elfeed dashboard), there's no landing page for
 ;; Ledger. You're thrown immediately into your financial data file in edit mode.
 ;; Ok, but might be frightening for someone learning how to use Ledger. The
