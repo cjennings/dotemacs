@@ -220,20 +220,20 @@ Prompts user for the action when executing."
   (auto-fill-mode -1))
 (add-hook 'mu4e-compose-mode-hook #'no-auto-fill)
 
-;; ----------------------------- Compose Mode Hydra ----------------------------
-;; WIP: menu available in compose mode
+;; ;; ----------------------------- Compose Mode Hydra ----------------------------
+;; ;; WIP: menu available in compose mode
 
-(defhydra hydra-mu4e-compose (:color blue :timeout 10 :hint nil)
-  "Compose Mode Menu\n\n"
-  ("q" quit-window                   "Quit" :column "")
-  ("a" mail-add-attachment           "Add Attachment" :column "")
-  ("r" message-new-line-and-reformat "Newline and Reformat" :column "")
-  ("d" message-delete-not-region     "Delete Outside Region" :column ""))
+;; (defhydra hydra-mu4e-compose (:color blue :timeout 10 :hint nil)
+;;   "Compose Mode Menu\n\n"
+;;   ("q" quit-window                   "Quit" :column "")
+;;   ("a" mail-add-attachment           "Add Attachment" :column "")
+;;   ("r" message-new-line-and-reformat "Newline and Reformat" :column "")
+;;   ("d" message-delete-not-region     "Delete Outside Region" :column ""))
 
-(defun mu4e-compose-mode-hook-hydra-setup ()
-  "Create hydra/menu keybinding when entering compose mode."
-  (local-set-key (kbd "C-c ?") 'hydra-mu4e-compose/body))
-(add-hook 'mu4e-compose-mode-hook 'mu4e-compose-mode-hook-hydra-setup)
+;; (defun mu4e-compose-mode-hook-hydra-setup ()
+;;   "Create hydra/menu keybinding when entering compose mode."
+;;   (local-set-key (kbd "C-c ?") 'hydra-mu4e-compose/body))
+;; (add-hook 'mu4e-compose-mode-hook 'mu4e-compose-mode-hook-hydra-setup)
 
 (provide 'mail-config)
 ;;; mail-config.el ends here

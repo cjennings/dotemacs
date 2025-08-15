@@ -9,15 +9,15 @@
 
 ;; --------------------------------- Games Menu --------------------------------
 
-(defhydra hydra-games (:color blue :hint nil)
-  "\n"
-  ("2" 2048-game       "2048      : Combine the Numbered Tiles to get to 2048" :column "Game")
-  ("c" chess           "Chess     : Play the 64 Squares and Checkmate the King" :column "Game")
-  ("d" dunnet          "Dunnet    : Emacs' Built-n Text Adventure" :column "Game")
-  ("g" gomoku          "Gomoku    : Tic Tac Toe, but Five in a Row" :column "Game")
-  ("m" malyon          "Malyon    : The Text Adventure Player" :column "Game")
-  ("t" tetris          "Tetris    : Combine falling blocks and score" :column "Game"))
-(global-set-key (kbd "M-G") 'hydra-games/body)
+;; (defhydra hydra-games (:color blue :hint nil)
+;;   "\n"
+;;   ("2" 2048-game       "2048      : Combine the Numbered Tiles to get to 2048" :column "Game")
+;;   ("c" chess           "Chess     : Play the 64 Squares and Checkmate the King" :column "Game")
+;;   ("d" dunnet          "Dunnet    : Emacs' Built-n Text Adventure" :column "Game")
+;;   ("g" gomoku          "Gomoku    : Tic Tac Toe, but Five in a Row" :column "Game")
+;;   ("m" malyon          "Malyon    : The Text Adventure Player" :column "Game")
+;;   ("t" tetris          "Tetris    : Combine falling blocks and score" :column "Game"))
+;; (global-set-key (kbd "M-G") 'hydra-games/body)
 
 ;; ----------------------------------- Malyon ----------------------------------
 ;; text based adventure player
@@ -34,17 +34,17 @@
 
 ;; ----------------------------------- Chess -----------------------------------
 ;; play the 64 squares and checkmate the opponent's king
-(use-package chess
-  :defer 1
-  :config
-  (setq chess-default-display 'chess-images)
-  (setq chess-images-directory
-		(concat user-emacs-directory "assets/chess/pieces/xboard/"))
-  (setq chess-images-dark-color "#779556")
-  (setq chess-images-light-color "#EBECD0")
-  (setq chess-images-default-size 100)
-  (setq chess-full-name user-whole-name)
-  (setq chess-default-engine 'chess-fruit))
+;; (use-package chess
+;;   :defer 1
+;;   :config
+;;   (setq chess-default-display 'chess-images)
+;;   (setq chess-images-directory
+;; 		(concat user-emacs-directory "assets/chess/pieces/xboard/"))
+;;   (setq chess-images-dark-color "#779556")
+;;   (setq chess-images-light-color "#EBECD0")
+;;   (setq chess-images-default-size 100)
+;;   (setq chess-full-name user-whole-name)
+;;   (setq chess-default-engine 'chess-fruit))
 
 
 ;; Notes from source code
