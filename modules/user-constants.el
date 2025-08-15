@@ -77,13 +77,7 @@
 
 (defvar article-archive (concat sync-dir "article-archive.org")
   "The location of the org file that stores saved articples to keep.")
-                                        ;
-(defvar ledger-file     (concat sync-dir  "main.ledger")
-  "The location of the user's ledger file.")
-
-(defvar macros-file     (concat sync-dir "macros.el")
-  "The location of the macros file for recorded saved macros via M-f3.")
-
+										;
 (defvar authinfo-file   (concat user-home-dir "/.authinfo.gpg")
   "The location of the encrypted .authinfo or .netrc file.")
 
@@ -113,9 +107,7 @@
                                       inbox-file
                                       contacts-file
                                       article-file
-                                      article-archive
-                                      ledger-file
-									  macros-file))
+									  article-archive))
 
 (provide 'user-constants)
 ;;; user-constants.el ends here.

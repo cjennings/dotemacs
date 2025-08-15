@@ -1,40 +1,40 @@
-;;; flyspell-config.el --- Spell Check Configuration -*- lexical-binding: t; -*-
+;;; flyspell-and-abbrev.el --- Spell Check Configuration -*- lexical-binding: t; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 
-;; Spell-Checking: Flyspell
-
+;; WORKFLOW:
 ;; C-' is now my main interface for all spell checking.
-
+;;
 ;; The workflow is that it finds the nearest misspelled word above where the
 ;; cursor is, allows for saving or correcting, then stops. You may proceed to
 ;; the next misspelling by selecting C-' again.
-
+;;
+;; Use M-o to get to 'other options', like saving to your personal dictionary.
+;;
 ;; Flyspell will automatically run in a mode appropriate for the buffer type
 ;; - if it's a programming mode, it will only check comments
 ;; - if in text mode, it will check everything
 ;; - otherwise it will turn off.
 ;; This check happens on every mode switch.
-
+;;
 ;; If you want flyspell on in another mode (say fundamental mode), or you want
 ;; to turn it off, you can toggle flyspell's state with 'C-c f'
-
+;;
 ;; The nicest thing is that each spell correction creates an abbrev. This
 ;; essentially is a shortcut that expands that same misspelling to the correct
 ;; spelling the next time it's typed. That idea comes courtesy Artur Malabarba,
 ;; and it's increased my overall typing speed.
-
+;;
 ;; Original idea here:
 ;; http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html
-
+;;
 ;; The code below is my refactoring of Artur Malabarba's code, and using
 ;; flyspell rather than ispell.
-
 ;;
-;; Use M-o to get to 'other options', like saving to your personal dictionary.
-
-;; Note that the keybinding typically taken for the flyspell-mode-map "C-;" has
+;; NOTES:
+;;
+;; FYI, the keybinding typically taken for the flyspell-mode-map "C-;" has
 ;; been deliberately hijacked in custom-functions.el for my personal-keymap.
 ;; This is the code run there:
 
@@ -43,8 +43,17 @@
 
 ;;; Code:
 
-;; ---------------------------- Ispell And Flyspell ----------------------------
+;; ----------------------------------- Abbrev ----------------------------------
 
+(use-package abbrev-mode
+  :ensure nil
+  :defer 0.5
+  :custom
+  (abbrev-file-name (concat user-emacs-directory "assets/abbrev_defs"))
+  :config
+  (abbrev-mode 1))
+
+;; ---------------------------- Ispell And Flyspell ----------------------------
 
 (use-package ispell
   :defer .5
@@ -198,5 +207,5 @@ argument is provided, when it's created in the global dictionary."
 
 (define-key global-map (kbd "C-'") 'cj/flyspell-then-abbrev)
 
-(provide 'flyspell-config)
-;;; flyspell-config.el ends here.
+(provide 'flyspell-and-abbrev)
+;;; flyspell-and-abbrev.el ends here.

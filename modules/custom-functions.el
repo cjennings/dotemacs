@@ -548,7 +548,6 @@ Uses `sortable-time-format' for the formatting the date/time."
         (message "Buffer '%s' is not visiting a file!" name)
       (progn  (copy-file filename newname 1)  (delete-file filename)
               (set-visited-file-name newname)  (set-buffer-modified-p nil)  t))))
-(global-set-key (kbd "C-x x m") 'cj/move-buffer-and-file)
 
 ;; RENAME BUFFER + FILE
 (defun cj/rename-buffer-and-file (new-name)
@@ -566,8 +565,7 @@ Uses `sortable-time-format' for the formatting the date/time."
           (rename-file filename new-name 1)
           (rename-buffer new-name)
           (set-visited-file-name new-name)
-          (set-buffer-modified-p nil))))))
-(global-set-key (kbd "C-x x r") 'cj/rename-buffer-and-file)
+		  (set-buffer-modified-p nil))))))
 
 ;; DELETE BUFFER + FILE
 (defun cj/delete-buffer-and-file ()
@@ -581,7 +579,6 @@ Uses `sortable-time-format' for the formatting the date/time."
           (delete-file filename t)
           (message "Deleted file %s" filename)
           (kill-buffer))))))
-(global-set-key (kbd "C-x x d") 'cj/delete-buffer-and-file)
 
 ;; ------------------------------- Ordinal Suffix ------------------------------
 ;; add the proper ordinal to a number (e.g., 1st, 2nd, 3rd, 4th).
@@ -656,7 +653,7 @@ Uses `sortable-time-format' for the formatting the date/time."
 (global-set-key (kbd "C-; i t") 'cj/insert-sortable-time)
 (global-set-key (kbd "C-; i d") 'cj/insert-sortable-date)
 ;; buffer and file operations
-(global-set-key (kbd "C-; b r") 'cj/renameq-buffer-and-file)
+(global-set-key (kbd "C-; b r") 'cj/rename-buffer-and-file)
 (global-set-key (kbd "C-; b d") 'cj/delete-buffer-and-file)
 (global-set-key (kbd "C-; b m") 'cj/move-buffer-and-file)
 ;; copy link to source file

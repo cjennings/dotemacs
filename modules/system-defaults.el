@@ -142,15 +142,16 @@ Return non-nil to indicate the warning was handled."
 
 ;; disabling mouse prevents accidental mouse moves modifying text
 (use-package inhibit-mouse
-  :commands inhibit-mouse-mode
   :hook (after-init . inhibit-mouse-mode)
   :custom
   (inhibit-mouse-adjust-mouse-highlight t)
   (inhibit-mouse-adjust-show-help-function t)
+  :bind
+  ("C-c M-m" . inhibit-mouse-mode)  ;; toggle with C-c M-m
   :config
   (if (daemonp)
-      (add-hook 'server-after-make-frame-hook #'inhibit-mouse-mode)
-    (inhibit-mouse-mode 1)))
+	  (add-hook 'server-after-make-frame-hook #'inhibit-mouse-mode)
+	(inhibit-mouse-mode 1)))
 
 ;; ------------------------------- Be Quiet(er)! -------------------------------
 ;; reduces "helpful" instructions that distract Emacs power users.

@@ -101,6 +101,21 @@
 (define-key jump-to-keymap (kbd "I")
 			#'(lambda () (interactive) (find-file emacs-init-file)))
 
+
+;; ---------------------------- Keybinding Discovery ---------------------------
+
+(use-package free-keys
+  :defer 1
+  :bind ("C-h C-k" . free-keys))
+
+(use-package which-key
+  :defer 1
+  :config
+  (setq which-key-idle-delay 3.0
+		which-key-popup-type 'side-window)
+  (which-key-setup-side-window-right-bottom)
+  (which-key-mode 1))
+
 ;; ---------------------------- General Keybindings ----------------------------
 
 ;; Avoid hostile bindings

@@ -23,18 +23,21 @@
 (add-to-list 'load-path (concat user-emacs-directory "custom/"))
 (add-to-list 'load-path (concat user-emacs-directory "modules/"))
 
-(require 'user-constants)   ;; named paths for locating files
+(require 'user-constants)   ;; paths for files referenced in this config
 (require 'host-environment) ;; convenience functions re: host environment
 (require 'config-utilities) ;; functions useful when modifying Emacs config
 (require 'system-defaults)  ;; native comp; log; unicode, backup, exec path
-(require 'keybindings)      ;; system-wide keybindings
+(require 'keybindings)      ;; system-wide keybindings and keybinding discovery
 
 ;; -------------------------- Utilities And Libraries --------------------------
 
+(require 'auth-config)      ;; emacs gnupg integration
 (require 'custom-functions) ;; custom function library w/ keybindings
-(require 'system-utils)     ;; external file handlers, timers, process monitor
-(require 'epa-config)       ;; emacs gnupg integration
+(require 'file-config)      ;; files to open outside of Emacs
+(require 'keyboard-macros)  ;; keyboard macro management
+(require 'system-utils)     ;; timers, process monitor
 (require 'text-config)      ;; text settings and functionality
+(require 'undead-buffers)   ;; bury rather than kill specific buffers
 
 ;; ------------------------------- User Interface ------------------------------
 
@@ -47,7 +50,7 @@
 
 (require 'diff-config)         ;; ediff and ztree configuration
 (require 'eshell-vterm-config) ;; shell and terminal configuration
-(require 'flyspell-config)     ;; spell check configuration
+(require 'flyspell-and-abbrev) ;; spell check and auto-correct
 (require 'help-utils)          ;; search: arch-wiki, devdoc, tldr, wikipedia
 (require 'help-config)         ;; info, man, help config
 (require 'latex-config)        ;; need to fix
