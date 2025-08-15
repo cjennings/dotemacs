@@ -29,18 +29,18 @@
       :unnarrowed t)
      ("r" "recipe" plain
       (function (lambda () (concat roam-dir "templates/recipe.org")))
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}
-	  #+CATEGORY: ${title}\n#+FILETAGS: Recipe\n#+STARTUP: showall")
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                         "#+TITLE: ${title}\n#+CATEGORY: ${title}\n#+FILETAGS: Recipe\n#+STARTUP: showall")
       :unnarrowed t)
      ("p" "project" plain
       (function (lambda () (concat roam-dir "templates/project.org")))
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}
-      #+CATEGORY: ${title}\n#+FILETAGS: Project")
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                         "#+TITLE: ${title}\n#+CATEGORY: ${title}\n#+FILETAGS: Project")
       :unnarrowed t)
      ("t" "topic" plain
       (function (lambda () (concat roam-dir "templates/topic.org")))
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}
-      #+CATEGORY: ${title}\n#+FILETAGS: Topic")
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                         "#+TITLE: ${title}\n#+CATEGORY: ${title}\n#+FILETAGS: Topic")
       :unnarrowed t)))
   :bind (("C-c n ?" . org-roam-hydra/body)
          ("C-c n l" . org-roam-buffer-toggle)
@@ -120,8 +120,7 @@ created nodes are added to the agenda and follow a template defined by
    :templates
    `((,template-key ,tag plain  (file ,template-file)
                     :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-                                       ,(concat "#+TITLE: ${title}
-#+CATEGORY: ${title}\n#+FILETAGS: " tag))
+                                       ,(concat "#+TITLE: ${title}\n#+CATEGORY: ${title}\n#+FILETAGS: " tag))
                     :unnarrowed t))))
 
 (defun cj/org-roam-find-node-topic ()
@@ -170,9 +169,7 @@ created nodes are added to the agenda and follow a template defined by
           (cj/org-roam-filter-by-tag "Project"))
    :templates '(("p" "project" plain "** TODO %?"
                  :if-new (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
-                                        "#+TITLE: ${title}
-#+CATEGORY: ${title}
-#+FILETAGS: Project"
+                                        "#+TITLE: ${title}\n#+CATEGORY: ${title}\n#+FILETAGS: Project"
                                         ("${title}"))))))
 (global-set-key (kbd "C-c n t") #'cj/org-roam-capture-task-into-project)
 
