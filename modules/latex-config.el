@@ -2,12 +2,17 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; WORKFLOW:
+;;
+;; Opening any tex file will put you into LaTeX mode.
+;;
 ;; C-c C-m to enter macros
 ;; C-c C-e to enter environment
-
-;; C-c C-c to compile a tex document
+;;
+;; C-c C-c to compile a tex document using latexmk
 ;; C-c C-v to view the resulting pdf
-
+;;
 ;;; Code:
 
 ;; ----------------------------- Auctex And Related ----------------------------
@@ -39,14 +44,11 @@
   :ensure t
   :init (company-auctex-init))
 
-
 ;; ----------------------------- Graphviz Dot Mode -----------------------------
 
 (use-package graphviz-dot-mode
   :config
   (setq graphviz-dot-indent-width 4))
-
-
 
 (provide 'latex-config)
 ;;; latex-config.el ends here

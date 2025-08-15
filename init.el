@@ -70,7 +70,6 @@
 (require 'erc-config)
 (require 'eww-config)
 (require 'httpd-config)
-;; (require 'ledger-config) ;; consider removing as you're not using this
 (require 'local-repository) ;; wip
 (require 'mail-config)
 (require 'markdown-config)
