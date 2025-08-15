@@ -16,18 +16,33 @@
 # ...and I'm avoiding native compilation at the moment
 #./configure --with-native-compilation \
 
-set -e
+# debugging assistance
+set -euo pipefail
+#   -e: exit on any (non-zero) return‐code
+#   -u: treat unset variables as errors
+#   -o pipefail: if any stage of a pipeline fails, the whole pipeline fails
+
+# optional: show each command as you go, prefixed with file:line
+# export PS4='+ ${BASH_SOURCE[0]}:${LINENO}: '
+# set -x
+
+# trap all errors and identify line
+trap 'echo "❌ ERROR at ${BASH_SOURCE[0]}:${LINENO}: $BASH_COMMAND" >&2' ERR
 
 # Review These Variables
 
 src_dir="$HOME/code/emacs"
 emacs_repo="https://github.com/mirrors/emacs.git"
-emacs_tag="emacs-29.1"
+emacs_tag="emacs-30.2"
 logfile="$HOME/emacs_build.log"
 
 # Function to remove + recreate directory, and clone source
 nuke_and_clone () {
     cd "$HOME"
+    if [ -f "$logfile" ]l then
+       rm "$logfile"
+    fi
+
     if [ -d "$src_dir" ]; then
         printf "...removing directory %s\n\n" "$src_dir"
         rm -rf "$src_dir" >> "$logfile" 2>&1
@@ -71,7 +86,7 @@ else
     nuke_and_clone
 fi
 
-if [ ! $1 == "latest" ]; then
+if [ ! "${$1:-}" == "latest" ]; then
     printf "...checking out tag: %s\n" "$emacs_tag"  | tee -a "$logfile"
     git checkout "$emacs_tag"  >> "$logfile" 3>&1
 else
