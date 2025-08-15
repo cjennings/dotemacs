@@ -1,2 +1,0 @@
-(1 (name . "Vagrant") (slug . "vagrant") (type . "simple") (links (home . "https://www.vagrantup.com/") (code . "https://github.com/mitchellh/vagrant")) (release . "2.2.0") (mtime . 1541375199) (db_size . 620133) (attribution . "&copy; 2010&ndash;2018 Mitchell Hashimoto<br>
-      Licensed under the MPL 2.0 License."))

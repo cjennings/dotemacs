@@ -1,2 +1,0 @@
-(1 (name . "HTML") (slug . "html") (type . "mdn") (links (home . "https://developer.mozilla.org/en-US/docs/Web/HTML") (code . "https://github.com/mdn/content/tree/main/files/en-us/web/html")) (mtime . 1698162724) (db_size . 5207458) (attribution . "&copy; 2005&ndash;2023 MDN contributors.<br>
-      Licensed under the Creative Commons Attribution-ShareAlike License v2.5 or later."))
