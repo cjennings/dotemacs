@@ -43,10 +43,22 @@ Can be used with the `gptel-post-response-functions' hook."
 *** TODO Change the Prompt: C-c g p
 *** TODO Change the Directive: C-c g d
 *** TODO Default should be coding
-** TODO [#A] Revisit and refactor localrepo functionality
-** TODO [#A] Fix org-contacts functionality
-** TODO [#A] Add Templates Back to Emacs Repository!
-** TODO [#A] Add Org Capture Template for Vocabulary Words
+** PROJECT [#A] Work on mu4e email
+*** TODO [#A] mu4e contacts not expanding on forwarding emails
+*** TODO [#A] Fix org-contacts functionality
+*** TODO [#A] Add org-msg
+https://github.com/jeremy-compostella/org-msg
+** PROJECT [#B] Org Agenda Work
+*** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
+*** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
+** PROJECT [#B] Org Roam and Org Template Fixes
+*** TODO [#B] Fix Emacs Org Roam Recipe Error
+C-c n i then type a recipe name.
+org-element--get-category: Invalid function: org-element-with-disabled-cache
+The file was created, but does not come to the front
+The category value seems unaligned
+*** TODO [#A] Add Org Templates Back to Emacs Repository!
+*** TODO [#B] Add Org Capture Template for Vocabulary Words
 ** TODO [#B] Dirvish should open not showing hidden files by default
 *** 2025-06-07 Sat @ 12:25:28 -0500 It isn't omitting the h switch on directory listings
 No. Didn't help
@@ -116,19 +128,23 @@ espeak "Appointment in $TIME minutes: $MSG"
 #+END_QUOTE
 [[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
 Captured On: [2025-06-19 Thu 12:29]
-** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
-** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
-** TODO [#B] Fix Emacs Org Roam Recipe Error
-C-c n i then type a recipe name.
-org-element--get-category: Invalid function: org-element-with-disabled-cache
-The file was created, but does not come to the front
-The category value seems unaligned
-** TODO [#C] Check and test native comp logging changes in 
+** TODO [#C] Revisit and refactor localrepo functionality
+** TODO [#C] Check and test native comp logging changes 
 ** TODO [#C] Emacs: Should adding tasks add it to Projects and Tasks in the inbox file?
 ** TODO [#C] Fix exporting documents to HTML.
 This appears to work with emacs -q. What's up with your config? 
-* Emacs Next Release/Label
-** TODO Emacs Signal Client
+** TODO [#C] Rename 'sync-dir' Variable in Init File to 'org-dir'
+
+[[https://github.com/ryuslash/mode-icons][ryuslash/mode-icons: Show icons instead of mode names]]
+Captured On: [2025-06-07 Sat 13:29]
+** TODO [#D] Install ZOxide Integration into Emacs
+[[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
+Captured On: [2025-06-07 Sat 17:11]
+** TODO [#D] manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.
+[[https://github.com/manateelazycat/awesome-tray][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
+Captured On: [2025-06-07 Sat 13:29]
+** TODO [#D] ryuslash/mode-icons: Show icons instead of mode names
+** TODO [#D] Emacs Signal Client
 *** TODO investigate: net/signel.org · master · undefined · GitLab
 [[https://gitlab.com/jaor/elibs/-/blob/master/net/signel.org][net/signel.org · master · undefined · GitLab]]
 Captured On: [2025-05-29 Thu 04:24]
@@ -136,16 +152,6 @@ Captured On: [2025-05-29 Thu 04:24]
 [[https://jao.io/blog/signel.html][signel, a barebones signal chat on top of signal-cli]]
 Captured On: [2025-05-29 Thu 04:23]
 
-** TODO Install ZOxide Integration into Emacs
-[[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
-Captured On: [2025-06-07 Sat 17:11]
-** TODO manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.
-[[https://github.com/manateelazycat/awesome-tray][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
-Captured On: [2025-06-07 Sat 13:29]
-** TODO Rename 'sync-dir' Variable in Init File to 'org-dir'
-** TODO ryuslash/mode-icons: Show icons instead of mode names
-[[https://github.com/ryuslash/mode-icons][ryuslash/mode-icons: Show icons instead of mode names]]
-Captured On: [2025-06-07 Sat 13:29]
 * Emacs Project Ideas/References
 ** emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources
 [[https://github.com/emacs-tw/awesome-elisp][emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources]]
