@@ -20,7 +20,6 @@
  (change-inner . [(20250320 1600) ((expand-region (0 7))) "Change contents based on semantic units." tar])
  (company . [(1 0 2) ((emacs (25 1))) "Modular text completion framework" tar])
  (company-auctex . [(20200529 1835) ((yasnippet (0 8 0)) (company (0 8 0)) (auctex (11 87))) "Companycompletion for AUCTeX." tar])
- (compile-angel . [(20250815 1246) ((emacs (26 3))) "Automatically Compile Elisp files (auto-compile alternative)." tar])
  (counsel . [(0 15 1) ((emacs (24 5)) (ivy (0 15 1)) (swiper (0 15 1))) "Various completion functions using Ivy" tar])
  (css-eldoc . [(20220415 1629) nil "An eldoc-mode plugin for CSS source code." tar])
  (dash . [(2 20 0) ((emacs (24))) "A modern list library for Emacs" tar])

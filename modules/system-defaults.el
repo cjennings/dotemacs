@@ -13,15 +13,6 @@
   (setopt native-comp-speed 3)             ; highest optimization level
   (setopt native-comp-always-compile t))   ; always native-compile
 
-
-(use-package compile-angel
-  :demand t ;; start immediately
-  :custom
-  (compile-angel-verbose nil)
-  :config
-  (compile-angel-on-load-mode)
-  (add-hook 'emacs-lisp-mode-hook #'compile-angel-on-save-local-mode))
-
 ;; -------------------------- Log Native Comp Warnings -------------------------
 ;; Log native comp warnings rather than cluttering the buffer
 
