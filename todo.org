@@ -1,4 +1,166 @@
 * Emacs Open Work
+** PROJECT [#B] Fix Up Dupre Theme
+Here are some ideas for making dupre-theme a bit more “complete” and future-proof as an Emacs theme.  You don’t have to do all of them, of course, but most “modern” themes ship a fair number of these extra faces and integrations.
+*** Example Sample Faces
+Below is a small excerpt showing how you might start adding some of the “missing” standard faces and a couple org faces:
+
+#+begin_src elisp
+(custom-theme-set-faces
+ 'dupre
+
+ ;; … your existing faces …
+
+ ;; standard global faces
+ `(error   ((t (:foreground ,dupre-intense-red :weight bold))))
+ `(warning ((t (:foreground ,dupre-yellow+1 :weight bold))))
+ `(success ((t (:foreground ,dupre-green+1 :weight bold))))
+ `(link    ((t (:foreground ,dupre-blue+1 :underline t))))
+ `(shadow  ((t (:foreground ,dupre-gray))))
+ `(highlight ((t (:background ,dupre-bg+1))))
+ `(tooltip ((t (:foreground ,dupre-fg :background ,dupre-bg+2))))
+ `(tooltip-selection ((t (:background ,dupre-bg+0))))
+
+ ;; Org-mode sample
+ `(org-document-title       ((t (:foreground ,dupre-yellow+2 :weight bold :height 1.2))))
+ `(org-level-1              ((t (:foreground ,dupre-blue+2 :weight bold))))
+ `(org-level-2              ((t (:foreground ,dupre-green+1))))
+ `(org-checkbox             ((t (:foreground ,dupre-yellow :weight bold))))
+ `(org-todo                 ((t (:foreground ,dupre-red :weight bold))))
+ `(org-done                 ((t (:foreground ,dupre-green+2 :weight bold))))
+ )
+#+end_src
+
+*** TODO [#A] Fill out the “standard” Emacs faces  
+   • error / warning / success  
+   • link / link-visited / shadow  
+   • highlight / secondary-selection  
+   • tooltip / tooltip-selection / tooltip-tip  
+   • underline / strike-through  
+   • match / search / lazy-highlight (you already have some isearch)  
+   • info-title-1…info-title-5, info-header-node, help-*-face  
+*** TODO [#C] Support the built-in “tab-bar” and “tab-group” faces (Emacs 27+)  
+   • tab-bar              / tab-bar-tab / tab-bar-tab-inactive  
+   • tab-bar-close        / tab-bar-separator  
+   • tab-group-title      / tab-group-separator  
+*** TODO [#C] Add faces for =dired=, =diff=, =flycheck=/=flymake=, =magit= (or git-gutter),  
+   =ediff=, =erc= etc.  For example:  
+   • diff-added, diff-removed, diff-context, diff-file-header  
+   • flycheck-error, flycheck-warning, flycheck-info  
+   • magit-section, magit-log, magit-hunk-heading, magit-branch, etc.  
+*** TODO [#C] Org-mode  
+   • org-level-1…org-level-8, org-document-title  
+   • org-checkbox, org-code, org-date, org-todo, org-done, org-warning  
+   • org-block, org-block-begin-line, org-block-end-line  
+*** TODO [#C] Completion frameworks & minibuffer enhancements  
+   • ivy-current-match / ivy-minibuffer-match-face-1…4  
+   • swiper-line-face  
+   • vertico-current / marginalia-…  
+   • corfu-default / corfu-bar / cape / orderless-match-face-…  
+*** TODO [#C] LSP / tree-sitter / syntax-aware faces  
+   • lsp-face-highlight-textual, lsp-face-highlight-read, etc.  
+   • tree-sitter-hl-face:variable, :function, :property, etc.  
+*** TODO [#C] Which-Key, Hydras, rainbow-delimiters, etc.  
+   • which-key-key-face, which-key-local-map-description-face  
+   • hydra-face-red / teal / blue  
+   • rainbow-delimiters-depth-1…9  
+
+*** TODO [#B] Make sure you define a “minimum package” set of faces so that folks don’t see glaring unstyled text in any part of Emacs, even if they never install extra packages.
+
+*** TODO [#B] Improve terminal support:  
+   • Detect true-color (=(display-graphic-p)=) vs 256-color vs 16-color and fall-back gracefully.  
+   • Provide “256-color” approximations (you already do this), but you might want a simpler palette for legacy terminals.
+
+*** TODO [#C] Theme Metadata & Packaging  
+   • Add =;; Package-Requires: ((emacs "26.1"))= if you need a minimum.  
+   • Consider adding a README with screenshots.  
+   • A simple Makefile or script to refresh “theme metadata” (=M-x theme-inspect=, MELPA recipe).
+
+*** TODO [#C] Tests  
+   • Extend your ERT suite to cover more faces (org, diff, flycheck…).  
+   • You might write a small helper that loops over a list of faces and asserts they’re defined without errors.
+
+*** TODO [#A] Cosmetic / code-style notes  
+   • Factor out a helper macro to reduce repetition:  
+     #+begin_src elisp
+     (defmacro dupre-face (face &rest specs)
+       `(,face ((t ,specs))))
+     #+end_src
+   • Use =custom-theme-set-faces= only once; wrap your =when (>= emacs-major-version…)= inside it rather than nesting top-level.  
+   • Move your ERT tests into a separate file like =dupre-theme-test.el= so that the main theme file stays lean.
+
+*** TODO [#B] Other Packages
+The rest is just more of the same—pick the most common modes/packages you and your users rely on and give them a quick coat of paint.  Once you’ve rounded out those faces you’ll have hit what most people expect from a “complete” modern Emacs theme.
+
+Based on a quick skim of your modules/ directory (and the packages they pull in via use-package), here’s a non-exhaustive list of the major packages you’re using—along with the faces you should think about adding to dupre-theme so that nothing ends up looking “unstyled.”
+
+1. completion/mini-frameworks  
+   • vertico (vertico-current, vertico-group-title, vertico-separator, vertico-doc)  
+   • orderless (orderless-match-face-0…3)  
+   • consult (consult-preview-line, consult-narrow, consult-region, consult-file)  
+   • marginalia (marginalia-annotation, marginalia-document, marginalia-cache)  
+   • embark (embark-general, embark-heading, embark-target, embark-helpful)  
+   • corfu + cape (corfu-default, corfu-current, corfu-bar, cape-file, cape-keyword etc.)  
+   • company (company-tooltip, company-tooltip-selection, company-scrollbar­-thumb)  
+
+2. ivy/counsel/swiper (if you ever load them side-by-side)  
+   • ivy-current-match, ivy-minibuffer-match-face-1…4  
+   • counsel-outline, swiper-match-face-1…  
+
+3. syntax checkers & LSP  
+   • flycheck (flycheck-error, flycheck-warning, flycheck-info)  
+   • eglot or lsp-mode (lsp-face-highlight-textual, lsp-face-highlight-read, lsp-face-semantic-type-…)  
+   • tree-sitter (tree-sitter-hl-face:function, :variable, :property, …)  
+
+4. git & diffs  
+   • magit (magit-section, magit-section-title, magit-hunk-heading, magit-branch, magit-log)  
+   • diff-hl / git-gutter (diff-hl-face-insert, diff-hl-face-delete, git-gutter:added, git-gutter:deleted)  
+   • diff-mode (diff-added, diff-removed, diff-context, diff-file-header)  
+
+5. project management & navigation  
+   • projectile (projectile-project-name, projectile-project-root)  
+   • treemacs (treemacs-root-face, treemacs-directory-face, treemacs-file-face)  
+
+6. Org-mode  
+   • org-document-title, org-level-1…org-level-8  
+   • org-checkbox, org-todo, org-done, org-warning, org-date, org-code, org-block  
+   • plus any “pretty” add-ons you use (org-bullets, org-modern, etc.)  
+
+7. Hydra / which-key / key-help  
+   • which-key (which-key-key-face, which-key-group-description-face, which-key-local-map-description-face)  
+   • hydra (hydra-face-red, hydra-face-blue, hydra-face-teal, hydra-face-amaranth)  
+
+8. visual helpers  
+   • rainbow-delimiters-depth-1…9  
+   • highlight-indent-guides-odd/even  
+   • highlight-parentheses-/  
+   • beacon (beacon), whitespace (whitespace-space, whitespace-tab, whitespace-newline)  
+   • display-line-numbers (line-number, line-number-current-line—you already have these)  
+
+9. UI polishers  
+   • all-the-icons (all-the-icons-blue, all-the-icons-red, …) on modeline or treemacs  
+   • doom-modeline (doom-modeline-bar, doom-modeline-buffer-path)  
+   • fancy-splash/dashboard-faces if you use a startup screen  
+
+10. terminals & shells  
+   • vterm (vterm-copy-region-highlight)  
+   • ansi-colors (ansi-color-face-bold, ansi-color-face-italic, ansi-color-[0…7])  
+
+To figure out exactly which ones you have in your modules, you can do for example:
+
+#+begin_src elisp
+;; from your ~/.emacs.d
+(let (pkgs)
+  (dolist (f (directory-files "~/.emacs.d/modules" t "\\.el$"))
+    (with-temp-buffer
+      (insert-file-contents f)
+      (goto-char (point-min))
+      (while (re-search-forward "use-package +\\([^ ]+\\)" nil t)
+        (push (intern (match-string 1)) pkgs))))
+  (delete-dups pkgs))
+#+end_src
+
+Then for each of those packages, grep in their repo for =defface= or check their manual to see which faces they define, and add reasonable dupre-colours for them. Once you’ve covered that list, you’ll have a “complete” theme that won’t leave any of your modules half-unstyled.
+
 ** PROJECT [#A] Reconfigure ai-config.el
 *** DONE Rewire commands to use base keybinding of C-c g, which is currently unused.
 CLOSED: [2025-08-13 Wed 16:45]
