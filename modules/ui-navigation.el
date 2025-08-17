@@ -3,9 +3,9 @@
 
 ;;; Commentary:
 
-;; Window/Frame Navigation
+;; Window Navigation
 
-;; This section handles situations where we're nagivating with more than one window
+;; This section handles situations where we're navigating or arranging windows
 
 ;; Shift + arrow keys           =  move the cursors around the windows/buffers
 ;; Control + Shift + arrow keys = resize the windows
@@ -17,9 +17,17 @@
 ;; M-S - swap window positions
 ;; M-C - kill the current window
 ;; M-O - kill the other window
+;; M-Z - undo kill buffer
+;; M-U - winner undo (revert to the previous layout)
+
+;; Adjusting Window Sizes
+;; Note: C-s is pressing Control + Super keys
+;; C-s-<left>  move window left
+;; C-s-<right> move window right
+;; C-s-<up>    move window up
+;; C-s-<down>  move window down
 
 ;;; Code:
-
 
 ;; ------------------------------ Window Placement -----------------------------
 
@@ -32,8 +40,11 @@
 
 (use-package windsize
   :defer .5
-  :config
-  (windsize-default-keybindings))
+  :bind
+  ("C-s-<left>"  . windsize-left)
+  ("C-s-<right>" . windsize-right)
+  ("C-s-<up>"    . windsize-up)
+  ("C-s-<down>"  . windsize-down))
 
 ;; M-shift = to balance multiple split windows
 (global-set-key (kbd "M-+") 'balance-windows)
@@ -69,27 +80,27 @@ If it's vertical, change the split to be to horizontal.
 This function won't work with more than one split window."
   (interactive)
   (if (= (count-windows) 2)
-      (let* ((this-win-buffer (window-buffer))
-             (next-win-buffer (window-buffer (next-window)))
-             (this-win-edges (window-edges (selected-window)))
-             (next-win-edges (window-edges (next-window)))
-             (this-win-2nd (not (and (<= (car this-win-edges)
-                                         (car next-win-edges))
-                                     (<= (cadr this-win-edges)
-                                         (cadr next-win-edges)))))
-             (splitter
-              (if (= (car this-win-edges)
-                     (car (window-edges (next-window))))
-                  'split-window-horizontally
-                'split-window-vertically)))
-        (delete-other-windows)
-        (let ((first-win (selected-window)))
-          (funcall splitter)
-          (if this-win-2nd (other-window 1))
-          (set-window-buffer (selected-window) this-win-buffer)
-          (set-window-buffer (next-window) next-win-buffer)
-          (select-window first-win)
-          (if this-win-2nd (other-window 1))))))
+	  (let* ((this-win-buffer (window-buffer))
+			 (next-win-buffer (window-buffer (next-window)))
+			 (this-win-edges (window-edges (selected-window)))
+			 (next-win-edges (window-edges (next-window)))
+			 (this-win-2nd (not (and (<= (car this-win-edges)
+										 (car next-win-edges))
+									 (<= (cadr this-win-edges)
+										 (cadr next-win-edges)))))
+			 (splitter
+			  (if (= (car this-win-edges)
+					 (car (window-edges (next-window))))
+				  'split-window-horizontally
+				'split-window-vertically)))
+		(delete-other-windows)
+		(let ((first-win (selected-window)))
+		  (funcall splitter)
+		  (if this-win-2nd (other-window 1))
+		  (set-window-buffer (selected-window) this-win-buffer)
+		  (set-window-buffer (next-window) next-win-buffer)
+		  (select-window first-win)
+		  (if this-win-2nd (other-window 1))))))
 (global-set-key (kbd "M-T") 'toggle-window-split)
 
 ;; SWAP WINDOW POSITIONS
@@ -98,6 +109,7 @@ This function won't work with more than one split window."
 ;; ---------------------------- Buffer Manipulation ----------------------------
 
 ;; MOVE BUFFER
+;; allows you to move between buffers
 (use-package buffer-move
   ;; :straight (buffer-move :type git :host github :repo "lukhas/buffer-move"
   ;;                        :fork (:host github :repo "cjennings/buffer-move"))
@@ -113,19 +125,19 @@ This function won't work with more than one split window."
   "Re-open the last buffer killed.  With ARG, re-open the nth buffer."
   (interactive "p")
   (let ((recently-killed-list (copy-sequence recentf-list))
-        (buffer-files-list
-         (delq nil (mapcar (lambda (buf)
-                             (when (buffer-file-name buf)
+		(buffer-files-list
+		 (delq nil (mapcar (lambda (buf)
+							 (when (buffer-file-name buf)
 							   (expand-file-name (buffer-file-name buf))))
 						   (buffer-list)))))
-    (mapc
-     (lambda (buf-file)
-       (setq recently-killed-list
-             (delq buf-file recently-killed-list)))
-     buffer-files-list)
-    (find-file
-     (if arg (nth arg recently-killed-list)
-       (car recently-killed-list)))))
+	(mapc
+	 (lambda (buf-file)
+	   (setq recently-killed-list
+			 (delq buf-file recently-killed-list)))
+	 buffer-files-list)
+	(find-file
+	 (if arg (nth arg recently-killed-list)
+	   (car recently-killed-list)))))
 (global-set-key (kbd "M-Z") 'cj/undo-kill-buffer)
 
 ;; ---------------------------- Undo Layout Changes ----------------------------
@@ -135,7 +147,7 @@ This function won't work with more than one split window."
 (use-package winner-mode
   :ensure nil ;; built-in
   :defer .5
-  :bind ("<f5>" . winner-undo))
+  :bind ("M-U" . winner-undo))
 
-  (provide 'ui-navigation)
+(provide 'ui-navigation)
 ;;; ui-navigation.el ends here
