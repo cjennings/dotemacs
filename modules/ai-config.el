@@ -60,6 +60,8 @@
   (let ((map (make-sparse-keymap)))
 	(define-key map (kbd "t") #'cj/toggle-gptel)
 	(define-key map (kbd "c") #'cj/gptel-clear-buffer)
+	(define-key map (kbd "m") #'gptel-menu)
+	(define-key map (kbd "p") #'gptel-system-prompt)
 	map)
   "Keymap for AI commands, bound to C-h g…")
 (global-set-key (kbd "C-h g") ai-keymap)
