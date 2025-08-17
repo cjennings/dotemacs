@@ -8,11 +8,8 @@
 ;; - Launch GPTel via F9 or C-h g t, and chat with the AI in the side window.
 ;;   Remember that sending the message requires C-<return>.
 
-
-
 ;; Note that you can save a file, then turn on gptel-mode to resume your
 ;; conversation.
-
 
 
 ;;; ------------------------------- Directives ---------------------------------
@@ -75,6 +72,7 @@
   (:map gptel-mode-map
 		("C-<return>" . gptel-send))
   :custom
+  (gptel-default-directive 'code-only)
   (gptel-default-mode 'org-mode)
   (gptel-expert-commands t)
   (gptel-track-media t)
