@@ -134,8 +134,9 @@ Note that server-after-make-frame-hook is available only in Emacs 27+."
   :custom
   (emojify-download-emojis-p t) ;; don't ask, just download emojis
   :bind
-  ("C-c e i" . emojify-insert-emoji)  ;; emoji insert
-  ("C-c e l" . emojify-list-emojis)   ;; emoji list
+  ;; using this keybinding for ediff
+  ;; ("C-c e i" . emojify-insert-emoji)  ;; emoji insert
+  ;; ("C-c e l" . emojify-list-emojis)   ;; emoji list
   :config
   (setq emojify-show-help nil)
   (setq emojify-point-entered-behaviour 'uncover)
