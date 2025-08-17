@@ -41,9 +41,9 @@
 
 ;; ------------------------------- User Interface ------------------------------
 
-(require 'ui-config)
-(require 'ui-theme)
-(require 'ui-navigation)
+(require 'ui-config)        ;; transparency, cursor color, icons, &c.
+(require 'ui-theme)         ;; themes and theme persistency
+(require 'ui-navigation)    ;; the movement and navigation of windows
 (require 'font-config)
 
 ;; --------------------------- Internal Functionality --------------------------
