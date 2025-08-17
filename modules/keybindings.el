@@ -24,6 +24,10 @@
 
 ;;; Code:
 
+
+;; make org-store-link binding global
+(global-set-key (kbd "C-c l") 'org-store-link)
+
 ;; remap Shift Backspace to Delete
 (global-set-key (kbd "S-<backspace>") 'delete-forward-char)
 
