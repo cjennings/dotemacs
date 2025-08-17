@@ -141,6 +141,7 @@ Return non-nil to indicate the warning was handled."
 
 ;; disabling mouse prevents accidental mouse moves modifying text
 (use-package inhibit-mouse
+  :demand t ;; run immediately
   :hook (after-init . inhibit-mouse-mode)
   :custom
   (inhibit-mouse-adjust-mouse-highlight t)
