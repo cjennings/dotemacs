@@ -169,6 +169,9 @@ early-init.el.")
 ;; always ensure package installation
 (setq use-package-always-ensure t)
 
+;; turn on for use-package debugging
+;; (setq use-package-verbose t)
+
 ;; ---------------------------------- Unicode ----------------------------------
 ;; unicode all the things
 
