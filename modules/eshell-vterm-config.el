@@ -131,7 +131,6 @@
 ;; faster and highly dependable, but not extensible
 
 (use-package vterm
-  :disable t
   :defer .5
   :commands (vterm vterm-other-window)
   :init
