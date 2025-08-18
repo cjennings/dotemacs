@@ -130,46 +130,46 @@
 ;; ------------------------------ Vterm ------------------------------
 ;; faster and highly dependable, but not extensible
 
-;; (use-package vterm
-;;   :disable t
-;;   :defer .5
-;;   :commands (vterm vterm-other-window)
-;;   :init
-;;   (setq vterm-always-compile-module t)
+(use-package vterm
+  :disable t
+  :defer .5
+  :commands (vterm vterm-other-window)
+  :init
+  (setq vterm-always-compile-module t)
 
-;;   (defun cj/turn-off-chrome-for-vterm ()
-;;     (hl-line-mode -1)
-;;     (display-line-numbers-mode -1))
+  (defun cj/turn-off-chrome-for-vterm ()
+	(hl-line-mode -1)
+	(display-line-numbers-mode -1))
 
-;;   :hook (vterm-mode . cj/turn-off-chrome-for-vterm)
-;;   :bind
-;;   (:map vterm-mode-map
-;;         ("<f12>"     . nil)
-;;         ("C-y"     . vterm-yank)
-;;         ("C-p"     . vtermf-copy-mode)
-;;         ("<pause>" . vterm-copy-mode))
-;;   :custom
-;;   (vterm-kill-buffer-on-exit t)
-;;   (vterm-max-scrollback 100000)
-;;   :config
-;;   (setq vterm-timer-delay nil))
+  :hook (vterm-mode . cj/turn-off-chrome-for-vterm)
+  :bind
+  (:map vterm-mode-map
+		("<f12>"   . nil)
+		("C-y"     . vterm-yank)
+		("C-p"     . vtermf-copy-mode)
+		("<pause>" . vterm-copy-mode))
+  :custom
+  (vterm-kill-buffer-on-exit t)
+  (vterm-max-scrollback 100000)
+  :config
+  (setq vterm-timer-delay nil))
 
-;; (use-package vterm-toggle
-;;   :defer .5
-;;   :bind
-;;   ("C-<f12>" . vterm-toggle)
-;;   :config
-;;   (setq vterm-toggle-fullscreen-p nil)
-;;   (add-to-list 'display-buffer-alist
-;;                '((lambda (buffer-or-name _)
-;;                    (let ((buffer (get-buffer buffer-or-name)))
-;;                      (with-current-buffer buffer
-;;                        (or (equal major-mode 'vterm-mode)
-;;                            (string-prefix-p vterm-buffer-name (buffer-name buffer))))))
-;;                  (display-buffer-reuse-window display-buffer-at-bottom)
-;;                  (dedicated . t) ;dedicated is supported in Emacs 27+
-;;                  (reusable-frames . visible)
-;;                  (window-height . 0.5))))
+(use-package vterm-toggle
+  :defer .5
+  :bind
+  ("C-<f12>" . vterm-toggle)
+  :config
+  (setq vterm-toggle-fullscreen-p nil)
+  (add-to-list 'display-buffer-alist
+			   '((lambda (buffer-or-name _)
+				   (let ((buffer (get-buffer buffer-or-name)))
+					 (with-current-buffer buffer
+					   (or (equal major-mode 'vterm-mode)
+						   (string-prefix-p vterm-buffer-name (buffer-name buffer))))))
+				 (display-buffer-reuse-window display-buffer-at-bottom)
+				 (dedicated . t) ;dedicated is supported in Emacs 27+
+				 (reusable-frames . visible)
+				 (window-height . 0.25))))
 
 (provide 'eshell-vterm-config)
 ;;; eshell-vterm-config.el ends here.
