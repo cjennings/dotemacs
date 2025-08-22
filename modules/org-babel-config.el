@@ -21,8 +21,8 @@
   (setq org-src-window-setup 'current-window)                           ;; don't split window when source editing wih C-c '
   (setq org-confirm-babel-evaluate nil)                                 ;; just evaluate the source code
   (setq org-babel-default-header-args
-		(cons '(:tangle . "yes")
-			  (assq-delete-all :tangle org-babel-default-header-args)))) ;; default header args for babel
+        (cons '(:tangle . "yes")
+              (assq-delete-all :tangle org-babel-default-header-args)))) ;; default header args for babel
 
 
 ;; ------------------- Babel Execution Confirmation Toggle -------------------
@@ -33,9 +33,9 @@
    If invoked with C-u, toggle the setting."
   (interactive "P")
   (if (equal flag '(4))
-	  (setq org-confirm-babel-evaluate (not org-confirm-babel-evaluate)))
+      (setq org-confirm-babel-evaluate (not org-confirm-babel-evaluate)))
   (message "Babel evaluation confirmation is %s"
-		   (if org-confirm-babel-evaluate "on" "off")))
+           (if org-confirm-babel-evaluate "on" "off")))
 
 
 ;; ---------------------------- Org Babel Languages ----------------------------
@@ -133,6 +133,9 @@
 
 ;; requires ob-racket, not yet in repositories
 ;;   (add-to-list 'org-structure-template-alist '("sicp"   . "src racket :lang sicp"))
+
+;; drop Org’s default footnote list at the end
+(setq org-html-footnote-separator "")
 
 (provide 'org-babel-config)
 ;;; org-babel-config.el ends here.
