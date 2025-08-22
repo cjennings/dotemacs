@@ -1,0 +1,29 @@
+* My Document Title
+** Level 1
+Text under level 1
+- Bullet item 1 level 1
+*** TODO First Task
+Text under first task
+- Bullet item 1 first task
+*** Level 2
+Test under level 2
+- Bullet item 1 level 2
+**** TODO [#B] Second Task : Bullets and Checkboxes
+Text under second task
+More text under second task
+- Bullet item 1 second task
+- Bullet item 2 second task
+- [ ] unchecked second task
+- [X] checked second task
+**** Level 3: babel
+Text under level 3
+#+begin_src emacs-lisp
+  elisp code
+#+end_src
+
+#+begin_src latex
+  latex code
+#+end_src
+
+***** TODO Third Task
+Text under third task
