@@ -1,4 +1,86 @@
 * Emacs Open Work
+** TODO [#B] Get Tufte.css working
+Below is one way to get Org-mode’s HTML exporter to play nicely with Tufte-CSS.  The basic recipe is:
+
+  1. Inject Tufte’s stylesheet into every HTML export  
+  2. Teach Org to emit the little “margin-toggle” + “sidenote” markup that tufte.css expects for footnotes  
+  3. (Optionally) wrap images in <figure> so you get tufte-style captions out of the box  
+
+Along the way you’ll see where Org’s default HTML‐classes line up with tufte.css and where you have to override them.
+
+— 1 Inject tufte.css into your exports  
+Put tufte.css somewhere your exported HTML can see it (for example  
+~/.emacs.d/assets/tufte.css or a URL on your webserver).  Then in your init.el:
+
+   (with-eval-after-load 'ox-html
+     ;; 1a) tell Org to link in your tufte.css
+     (setq org-html-head-extra
+           "<link rel=\"stylesheet\" href=\"/assets/tufte.css\" type=\"text/css\"/>")
+     ;; 1b) enable HTML5 “fancy” output (so you get <figure> around images)
+     (setq org-html-html5-fancy t
+           org-html-inline-images  t))
+
+— 2 Turn Org footnotes into Tufte sidenotes  
+By default Org emits  
+   <sup class=…><a href="#fn:1" id="fnref:1">[1]</a></sup>  
+   …and then a big =<div id="footnotes">= at the bottom.  
+
+Tufte-CSS wants each footnote inline, wrapped in  
+   <label class="margin-toggle">⊕</label>  
+   <input type="checkbox" class="margin-toggle"/>  
+   <span class="sidenote">…your note…</span>  
+
+We can override two Org variables:
+
+   (with-eval-after-load 'ox-html
+     ;; format of each inline footnote reference
+     (setq org-html-footnote-format
+           (concat
+             "<label for=\"%1$s\" class=\"margin-toggle\">"
+               "&#8853;</label>"
+             "<input type=\"checkbox\" id=\"%1$s\" class=\"margin-toggle\"/>"
+             "<span class=\"sidenote\">%2$s</span>"))
+     ;; drop Org’s default footnote list at the end
+     (setq org-html-footnote-separator ""))
+
+Once you do that, exporting an Org file with footnotes will generate the markup tufte.css needs to float them in the margin.
+
+— 3 (Optionally) get <figure> + <figcaption> around images  
+If you set =org-html-html5-fancy= to t (see step 1) Org will automatically emit:
+
+  <figure>
+    <img src="…"/>
+    <figcaption>Your caption</figcaption>
+  </figure>
+
+and tufte.css already has rules for =<figure class="figure">= etc.
+
+— 4 Common pitfalls  
+ • Make sure your href in =org-html-head-extra= actually points to the css that the browser can load (absolute vs. relative).  
+ • If you still see a “Footnotes” section at the bottom, double-check that =org-html-footnote-separator= is set to the empty string and that your init-file got re-evaluated.  
+ • On Windows or if you’re testing locally, run e.g. =python3 -m http.server= inside your export folder so your browser can fetch the CSS.
+
+— 5 Unit test for your footnote hack  
+Drop this in =~/.emacs.d/tests/test-org-tufte.el= and run =M-x ert RET t RET=:
+
+   (require 'ert)
+   ;; load your config; adjust the path if necessary
+   (load-file "~/.emacs.d/init.el")
+
+   (ert-deftest org-tufte-footnote-format-test ()
+     "Ensure each footnote reference becomes a margin-toggle + sidenote."
+     (let/ ((id      "fn:42")
+            (content "My note.")
+            (html    (format org-html-footnote-format id content)))
+       (should (string-match-p "class=\"margin-toggle\"" html))
+       (should (string-match-p "<span class=\"sidenote\">My note\\.</span>" html))
+       ;; it must not accidentally reintroduce Org’s bottom-of-page footnote div
+       (should-not (string-match-p "div id=\"footnotes\"" html))))
+
+Once that test passes, you know your footnotes are being rewritten into Tufte-style side notes.  From there, you can sprinkle in additional filters (e.g. wrap =<blockquote>= in a =.sidenote= class, override list/p table styles, etc.) or just let the rest of tufte.css style Org’s default tags (h1, p, ul, table, code, etc.).  
+
+Enjoy your beautifully-typeset Org → HTML exports in true Tufte style!
+
 ** PROJECT [#B] Fix Dupre Theme
 Here are some ideas for making dupre-theme a bit more “complete” and future-proof as an Emacs theme.  You don’t have to do all of them, of course, but most “modern” themes ship a fair number of these extra faces and integrations.
 *** TODO [#A] Fill out the “standard” Emacs faces  
