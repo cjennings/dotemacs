@@ -82,7 +82,7 @@
 (require 'prog-comments)
 (require 'vc-config)
 (require 'treesitter-config)
-(require 'flycheck-config)
+(require 'flycheck-config)       ;; linting for all languages including human ones
 (require 'prog-lsp)
 (require 'prog-training)
 (require 'prog-c)
