@@ -415,10 +415,13 @@ Can be used with the `gptel-post-response-functions' hook."
 *** TODO Change the Directive: C-c g d
 *** TODO Default should be coding
 ** PROJECT [#A] Work on mu4e email
-*** TODO [#A] mu4e contacts not expanding on forwarding emails
-*** TODO [#A] Fix org-contacts functionality
-*** TODO [#A] Add org-msg
+*** DONE [#A] mu4e contacts not expanding on forwarding emails
+CLOSED: [2025-08-29 Fri 16:09]
+removed org-contacts functionaality and it returned! 
+*** DONE [#A] Add org-msg
+CLOSED: [2025-08-30 Sat 12:12]
 https://github.com/jeremy-compostella/org-msg
+*** TODO [#A] Fix org-contacts functionality
 ** PROJECT [#B] Org Agenda Work
 *** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
 *** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs

@@ -64,7 +64,11 @@
   "I want you to act as an email writing assistant. I will provide you some direction on what the
 email should consist of, the tone of the email, and my guess as to the DISC profile of the email recipient. You will use
 the DISC profile information to guide the tone and wording of the email. However, always lean towards simple,
-straightforward, and clear language with little ambiguity. Ask questions to make any part of the email clearer if needed.")
+straightforward, and clear language with little ambiguity. Ask questions to make any part of the email clearer if
+  needed.")
+
+(defvar historian-directive
+  "I want you to act as a historian and political scientist. You will research and analyze cultural, economic, political, and social events in the past, collect data from primary sources, and use the information to explain what happened during various periods of history, identify historical patterns, and explain plainly how the events of history inform our times today.")
 
 (defvar chat-directive
   "I want you to act as an old friend and highly intelligent person who is good at conversation. You are deeply
@@ -137,7 +141,7 @@ straightforward, and clear language with little ambiguity. Ask questions to make
   (:map gptel-mode-map
         ("C-<return>" . gptel-send))
   :custom
-  (gptel-default-directive 'code-only)
+  (gptel-default-directive 'default-directive)
   (gptel-default-mode 'org-mode)
   (gptel-expert-commands t)
   (gptel-track-media t)
@@ -150,12 +154,15 @@ straightforward, and clear language with little ambiguity. Ask questions to make
   (setq gptel-directives
         `((default     . ,default-directive)
           (coder       . ,coder-directive)
-          (reviewer    . ,reviewer-directive)
-          (qa          . ,qa-directive)
-          (proofreader . ,proofreader-directive)
+		  (chat        . ,chat-directive)
+		  (accountant  . ,accountant-directive)
+		  (proofreader . ,proofreader-directive)
 		  (email       . ,email-directive)
+		  (qa          . ,qa-directive)
 		  (contractor  . ,contractor-directive)
-          (chat        . ,chat-directive)))
+		  (historian   . ,historian-directive)
+		  (reviewer    . ,reviewer-directive)
+		  ))
 
   ;;  Dynamic user prefix for org-mode heading (string, refreshed just before send)
   (defun cj/gptel--fresh-org-prefix ()

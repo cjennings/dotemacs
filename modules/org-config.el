@@ -53,6 +53,7 @@ org-archive-subtree-default are placed.")
   (setq org-startup-indented t)             ;; load org files indented
   (setq org-adapt-indentation t)            ;; adapt indentation to outline node level
   (setq org-indent-indentation-per-level 2) ;; indent two character-widths per level
+  (setq tab-width 8)                  ;; org-mode complains when tabs aren't @ 8
 
   ;; INLINE IMAGES
   (setq org-startup-with-inline-images t)   ;; preview images by default

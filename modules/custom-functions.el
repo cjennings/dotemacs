@@ -435,16 +435,31 @@ and all articles are considered minor words."
     (while (search-forward "" nil t)
       (replace-match "" nil t))))
 
-;; ----------------------------- Clear Blank Lines -----------------------------
+;; -------------------- Remove Blank Lines Region Or Buffer --------------------
+;; removes lines contiaining whitespace from region or buffer.
 
-(defun cj/clear-blank-lines (beginning end)
-  "Remove blank lines in the region or the buffer if no region is selected.
-BEGINNING and END describe the selected region."
-  (interactive "r")
+(defun cj/delete-blank-lines-region-or-buffer (start end)
+  "Delete all blank lines in the region between START and END.
+Blank lines are lines that contain only whitespace (spaces or tabs).
+If called interactively with an active region, operate on that region.
+If no active region, prompt user before operating on the whole buffer.
+Otherwise signal a user-error and do nothing. The point is restored
+to its original position after deletion."
+  (interactive
+   (if (use-region-p)
+	   ;; grab its boundaries if there's a region
+	   (list (region-beginning) (region-end))
+	 ;; or ask if user intended operating on whole buffer
+	 (if (yes-or-no-p "Delete blank lines in entire buffer? ")
+		 (list (point-min) (point-max))
+	   (user-error "Aborted"))))
   (save-excursion
-    (goto-char beginning)
-    (while (re-search-forward "^[ \t]*\n" end t)
-      (replace-match ""))))
+	(save-restriction
+	  (widen)
+	  ;; Regexp "^[[:space:]]*$" matches lines of zero or more spaces/tabs.
+	  (flush-lines "^[[:space:]]*$" start end)))
+  ;; Return nil (Emacs conventions). Point is already restored.
+  nil)
 
 ;; ---------------------- Fixup Whitespace Line Or Region ----------------------
 
@@ -635,8 +650,9 @@ Uses `sortable-time-format' for the formatting the date/time."
     (define-key map "A" 'cj/unarrayify)
     ;; de/duplicate lines
     (define-key map "d" 'cj/duplicate-line-or-region)
-    (define-key map "D" 'cj/remove-duplicate-lines-from-region-or-buffer)
+	(define-key map "D" 'cj/remove-duplicate-lines-from-region-or-buffer)
 
+	(define-key map "D" 'cj/remove-duplicate-lines-from-region-or-buffer)
     (define-key map ")" #'cj/jump-to-matching-paren)
     (define-key map "/" #'cj/replace-fraction-glyphs)
     (define-key map "L" #'cj/clear-blank-lines)
