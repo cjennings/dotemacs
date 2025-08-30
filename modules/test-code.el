@@ -14,6 +14,18 @@
 
 (require 'user-constants)
 
+;; ------------------------------ Buffer Same Mode -----------------------------
+
+(defun cj/buffer-same-mode (&rest modes)
+  "Pop to a buffer with a mode among MODES, or the current one if not given."
+  (interactive)
+  (let* ((modes (or modes (list major-mode)))
+		 (pred (lambda (b)
+				 (let ((b (get-buffer (if (consp b) (car b) b))))
+				   (member (buffer-local-value 'major-mode b) modes)))))
+	(pop-to-buffer (read-buffer "Buffer: " nil t pred))))
+(global-set-key (kbd "C-x B") 'cj/buffer-same-mode)
+
 ;; --------------------------------- Org Noter ---------------------------------
 
 (use-package org-noter
