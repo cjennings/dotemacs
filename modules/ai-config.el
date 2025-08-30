@@ -5,12 +5,15 @@
 
 ;; Here is my basic workflow:
 
-;; - Launch GPTel via F9 or C-h g t, and chat with the AI in the side window.
+;; - Launch GPTel via F9 or M-a t, and chat with the AI in the side window.
 ;;   Remember that sending the message requires C-<return>.
+;; ... or ...
+;; - Select a region to rewrite, key M-a r, and add the directive in the menu.
 
 ;; Note that you can save a file, then turn on gptel-mode to resume your
 ;; conversation.
 
+;;; Code:
 
 ;;; ------------------------------- Directives ---------------------------------
 
@@ -125,13 +128,14 @@ straightforward, and clear language with little ambiguity. Ask questions to make
 
 (defvar ai-keymap
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "t") #'cj/toggle-gptel)
-    (define-key map (kbd "c") #'cj/gptel-clear-buffer)
-    (define-key map (kbd "m") #'gptel-menu)
-    (define-key map (kbd "p") #'gptel-system-prompt)
-    map)
-  "Keymap for AI commands, bound to C-h g…")
-(global-set-key (kbd "C-h g") ai-keymap)
+	(define-key map (kbd "t") #'cj/toggle-gptel)
+	(define-key map (kbd "c") #'cj/gptel-clear-buffer)
+	(define-key map (kbd "m") #'gptel-menu)
+	(define-key map (kbd "r") #'gptel-rewrite)
+	(define-key map (kbd "p") #'gptel-system-prompt)
+	map)
+  "Keymap for AI-related commands (prefix \\<ai-keymap>).")
+(global-set-key (kbd "M-a") ai-keymap)
 
 (use-package gptel
   :defer 0.5
