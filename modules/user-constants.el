@@ -60,26 +60,23 @@
 
 
 ;; FILES
+(defvar authinfo-file   (concat user-home-dir "/.authinfo.gpg")
+  "The location of the encrypted .authinfo or .netrc file.")
+
 (defvar schedule-file   (concat sync-dir "schedule.org")
   "The location of the org file containing scheduled events.")
-
-(defvar inbox-file      (concat roam-dir "inbox.org")
-  "The location of the org file that serves as the task inbox.")
-
-(defvar contacts-file   (concat sync-dir "contacts.org")
-  "The location of the org file containing org-contacts information.")
 
 (defvar reference-file   (concat sync-dir "reference.org")
   "The location of the org file containing reference information.")
 
-(defvar article-file    (concat sync-dir "article-inbox.org")
-  "The location of the org file containing new clipped pages to review.")
-
 (defvar article-archive (concat sync-dir "article-archive.org")
   "The location of the org file that stores saved articples to keep.")
+
+(defvar inbox-file      (concat roam-dir "inbox.org")
+  "The location of the org file that serves as the task inbox.")
 										;
-(defvar authinfo-file   (concat user-home-dir "/.authinfo.gpg")
-  "The location of the encrypted .authinfo or .netrc file.")
+(defvar reading-notes-file (concat roam-dir "reading-notes.org")
+  "The default notes file for org-noter.")
 
 ;; ------------------------- Verify Or Create Functions ------------------------
 
@@ -105,8 +102,6 @@
 
 (mapc 'cj/verify-or-create-file (list schedule-file
                                       inbox-file
-                                      contacts-file
-                                      article-file
 									  article-archive))
 
 (provide 'user-constants)
