@@ -1,9 +1,135 @@
 * Emacs Open Work
+** DOING [#A] Refactor Custom Functions
+Custom Function Refactor Notes
+
+Note: all operations must indicate when completed in minibuffer
+
+Main prefix is C-; 
+
+Miscellaneous  (no prefix, but must not conflict with others)
+   "M" cj/merge-list-to-list
+   ")" cj/jump-to-matching-paren  
+   "f" cj/format-region-or-buffer
+   "W" cj/count-words-buffer-or-region  (pull out into statistics)
+   "/" cj/replace-fraction-glyphs       (pull out into sanitation)
+   "m" cj/buffer-strip-ctrl-m           (pull out into sanitation)
+
+   
+"l" Line & paragraph operations 
+   "j" cj/join-line-or-region  "j"
+   "J" cj/join-paragraph       "J"
+   "d" cj/duplicate-line-or-region "d"  
+   "u" cj/underscore-line "u"
+   
+"w" Whitespace
+   • cj/remove-leading-trailing-whitespace  
+   • cj/fixup-whitespace-line-or-region  
+   • cj/delete-blank-lines-region-or-buffer  
+   • cj/hyphenate-region (rename to hyphenate-whitespace-in-region)
+   consider changing this to replace all whitespace with a char. 
+
+"o" Ordering 
+   • cj/arrayify  
+   • cj/unarrayify  
+   • cj/comma-separated-text-to-lines  (rename text-to-lines)
+   • (new) create lines to text 
+   • cj/alphabetize-and-replace-region (rename alphabetize-region)
+   • (new) create reverse region
+
+"s" Surrounding
+   • cj/insert-around-word-or-region  
+   • cj/append-to-lines-in-region-or-buffer  
+   • cj/prepend-to-lines-in-region-or-buffer  
+
+"c" Case-change   
+   • cj/title-case-region  
+   • upcase-region  
+   • downcase-dwim  
+
+"i" Date & time insertion  
+   • cj/insert-readable-date-time  
+   • cj/insert-sortable-date-time  
+   • cj/insert-sortable-time  
+   • cj/insert-sortable-date  
+
+"b" Buffer-and-file operations  
+   • cj/copy-link-to-source-file  
+   • cj/move-buffer-and-file  
+   • cj/rename-buffer-and-file  
+   • cj/delete-buffer-and-file  
+   • cj/copy-buffer  
+
 ** TODO [#A] Delete whitespace from region is broken
-** TODO [#B] Add all tests in separate directory
+** PROJECT [#A] Reconfigure ai-config.el
+*** DONE Toggle gptel's side window with <prefix> t or <f9>
+CLOSED: [2025-08-13 Wed 16:45]
+*** DONE AI Assistant's Answers Should Be Underneath a Labeled Org Heading
+CLOSED: [2025-08-13 Wed 16:46]
+**** The time should also be a component of the org heading
+**** Reference
+modified from: https://github.com/gregoryg/emacs-gregoryg?tab=readme-ov-file#return-gptel-backend--model
+
+(defun cj/gptel-backend-and-model ()
+  "Return gptel backend and model (if any)."
+  (let ((backend (if  (boundp 'gptel-backend)  (aref gptel-backend 1)))
+        (model (if  (boundp 'gptel-model) gptel-model)))
+    (format "(%s %s)" backend model)))
+
+(defun cj/gptel-insert-model-in-non-gptel-buffers ()
+  "This function will add the backend and model in the \"dynamic\" buffers, not in dedicated chat buffers.
+To be used in `gptel-pre-response-hook'."
+  (unless (member 'gptel-mode local-minor-modes)
+    (goto-char (point-max))
+    (insert (format "\n%s: " (cj/gptel-backend-and-model)))
+    (goto-char (point-max))))
+(add-hook 'gptel-pre-response-hook 'cj/gptel-insert-model-in-non-gptel-buffers)
+
+(defun cj/gptel-insert-model-in-chat-buffers (response-begin-pos response-end-pos)
+  "This function adds the backend and model in dedicated chat buffers.
+Can be used with the `gptel-post-response-functions' hook."
+  (let* ((gptel-org-prefix (alist-get 'org-mode gptel-prompt-prefix-alist))
+         (inserted-string (format "%s %s\n"
+                                  (substring gptel-org-prefix 0 (string-match " " gptel-org-prefix))
+                                  (cj/gptel-backend-and-model)))
+         (len-inserted (length inserted-string )))
+    (goto-char response-begin-pos)
+    (insert inserted-string)
+    (goto-char (+ response-end-pos len-inserted))))
+(add-hook 'gptel-post-response-functions 'cj/gptel-insert-model-in-chat-buffers)
+*** DONE Erase the Chatgpt Buffer With <prefix> e 
+CLOSED: [2025-08-13 Wed 16:45]
+*** DONE Rewire commands to use base keybinding <prefix> of M-a.
+CLOSED: [2025-08-30 Sat 16:28]
+It's currently used in org-mode, so check whether it needs unbinding. 
+*** TODO AI Rewrite selected region: r
+*** TODO AI Copy current selection to AI Assistant buffer, toggling if it's not open: C
+*** TODO AI Prompt change: p
+*** TODO AI Add file: f
+*** TODO AI Add directory: d
+** PROJECT [#A] Mu4e Fixes
+*** DONE [#A] mu4e contacts not expanding on forwarding emails
+CLOSED: [2025-08-29 Fri 16:09]
+removed org-contacts functionaality and it returned! 
+*** DONE [#A] Add org-msg
+CLOSED: [2025-08-30 Sat 12:12]
+https://github.com/jeremy-compostella/org-msg
+*** TODO [#A] Fix org-contacts functionality
+** TODO [#A] file-config.el cj/xdg-open blocks further Emacs use
+Should change to non-blocking process
+** TODO [#A] Buffer move direction doesn't work in org-mode
+(alt+shift+arrow) is the keybindings
+** PROJECT [#A] Org Roam and Org Template Fixes
+*** TODO [#B] Fix Emacs Org Roam Recipe Error
+C-c n i then type a recipe name.
+org-element--get-category: Invalid function: org-element-with-disabled-cache
+The file was created, but does not come to the front
+The category value seems unaligned
+*** TODO [#A] Add Org Templates Back to Emacs Repository!
+*** TODO [#B] Add Org Capture Template for Vocabulary Words
+** TODO [#B] Add all ert tests into separate directory
 Tests should be added to a separate directory rather than the end of each elisp file.
 Gather them together, move them there, and make it easy to run tests per module and workflow. 
-** TODO [#B] Get Tufte.css working
+** TODO [#B] Get Tufte.css working and as a separate entry
 Below is one way to get Org-mode’s HTML exporter to play nicely with Tufte-CSS.  The basic recipe is:
 
   1. Inject Tufte’s stylesheet into every HTML export  
@@ -85,7 +211,113 @@ Once that test passes, you know your footnotes are being rewritten into Tufte-st
 
 Enjoy your beautifully-typeset Org → HTML exports in true Tufte style!
 
-** PROJECT [#B] Evolve Dupre Theme
+** PROJECT [#B] Org Agenda Work
+*** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
+*** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
+** TODO [#B] Dirvish should open not showing hidden files by default
+*** 2025-06-07 Sat @ 12:25:28 -0500 It isn't omitting the h switch on directory listings
+No. Didn't help
+** TODO [#B] Fix Emacs Alarms for Scheduled Events
+*** 2025-06-03 Tue @ 15:12:51 -0500 Problem
+Emacs Alarm seems to sound off periodically after the alarm rang the first time.
+It should ring once at the beginning of the event, and that's it.
+*** 2025-06-28 Sat @ 12:42:19 -0500 User's Method for Alarms In Emacs
+This is more than I actually want, but leaving here for reference.
+
+#+BEGIN_QUOTE
+I am quite happy with the system I use, which does (I think) exactly what you want. It has two parts: an Emacs part that uses appt.el to schedule the reminders and a small shell program (I'm using Linux) that creates the popup + sound notification. Here I share the code for both parts.
+
+A) Code in ~/.emacs.d/init.el
+
+(require 'appt)
+(appt-activate t)
+
+(setq appt-message-warning-time 5) ; Show notification 5 minutes before event
+(setq appt-display-interval appt-message-warning-time) ; Disable multiple reminders
+(setq appt-display-mode-line nil)
+
+; Use appointment data from org-mode
+(defun my-org-agenda-to-appt ()
+  (interactive)
+  (setq appt-time-msg-list nil)
+  (org-agenda-to-appt))
+
+; Update alarms when...
+; (1) ... Starting Emacs
+(my-org-agenda-to-appt)
+
+; (2) ... Everyday at 12:05am (useful in case you keep Emacs always on)
+(run-at-time "12:05am" (* 24 3600) 'my-org-agenda-to-appt)
+
+; (3) ... When TODO.txt is saved
+(add-hook 'after-save-hook
+          '(lambda ()
+             (if (string= (buffer-file-name) (concat (getenv "HOME") "/ideas/TODO.txt"))
+                 (my-org-agenda-to-appt))))
+
+; Display appointments as a window manager notification
+(setq appt-disp-window-function 'my-appt-display)
+(setq appt-delete-window-function (lambda () t))
+
+(setq my-appt-notification-app (concat (getenv "HOME") "/bin/appt-notification"))
+
+(defun my-appt-display (min-to-app new-time msg)
+  (if (atom min-to-app)
+    (start-process "my-appt-notification-app" nil my-appt-notification-app min-to-app msg)
+  (dolist (i (number-sequence 0 (1- (length min-to-app))))
+    (start-process "my-appt-notification-app" nil my-appt-notification-app (nth i min-to-app) (nth i msg)))))
+
+B) Code in ~/bin/appt-notification
+
+#!/bin/sh
+
+TIME="$1"
+MSG="$2"
+
+notify-send -t 0 "<br>Appointment in $TIME minutes:<br>$MSG<br>"
+play "~/bin/alarm.wav"
+
+To get voice notifications you could replace the last line (play) with the following:
+
+espeak "Appointment in $TIME minutes: $MSG"
+#+END_QUOTE
+[[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
+Captured On: [2025-06-19 Thu 12:29]
+** TODO [#B] Emacs add difftastic functionality
+
+Linux Binary Install
+https://github.com/Wilfred/difftastic
+https://www.wilfred.me.uk/blog/2022/09/06/difftastic-the-fantastic-diff/
+https://difftastic.wilfred.me.uk/installation.html (basically $ sudo pacman -S difftastic)
+
+Emacs Package
+https://github.com/pkryger/difftastic.el
+#+begin_src emacs-lisp
+(use-package difftastic
+  :defer t
+  :vc (:url "https://github.com/pkryger/difftastic.el.git"
+       :rev :newest)))
+#+end_src
+
+** TODO [#B] Emacs Add forge functionality
+
+https://github.com/magit/forge
+https://magit.vc/manual/forge/Setup-for-Githubcom.html
+
+Example usage from sqrtminusone
+#+begin_src emacs-lisp
+(use-package forge
+  :after magit
+  :straight t
+  :config
+  (add-to-list 'forge-alist '("gitlab.etu.ru"
+                              "gitlab.etu.ru/api/v4"
+                              "gitlab.etu.ru"
+                              forge-gitlab-repository)))
+#+end_src
+
+** TODO [#B] Change elfeed to be about playing podcasts
+** PROJECT [#C] Evolve Dupre Theme
 Here are some ideas for making dupre-theme a bit more “complete” and future-proof as an Emacs theme.  You don’t have to do all of them, of course, but most “modern” themes ship a fair number of these extra faces and integrations.
 *** TODO [#A] Fill out the “standard” Emacs faces  
    • error / warning / success  
@@ -374,140 +606,6 @@ Below is a small excerpt showing how you might start adding some of the “missi
  )
 #+end_src
 
-** PROJECT [#A] Reconfigure ai-config.el
-*** DONE Toggle gptel's side window with <prefix> t or <f9>
-CLOSED: [2025-08-13 Wed 16:45]
-*** DONE AI Assistant's Answers Should Be Underneath a Labeled Org Heading
-CLOSED: [2025-08-13 Wed 16:46]
-**** The time should also be a component of the org heading
-**** Reference
-modified from: https://github.com/gregoryg/emacs-gregoryg?tab=readme-ov-file#return-gptel-backend--model
-
-(defun cj/gptel-backend-and-model ()
-  "Return gptel backend and model (if any)."
-  (let ((backend (if  (boundp 'gptel-backend)  (aref gptel-backend 1)))
-        (model (if  (boundp 'gptel-model) gptel-model)))
-    (format "(%s %s)" backend model)))
-
-(defun cj/gptel-insert-model-in-non-gptel-buffers ()
-  "This function will add the backend and model in the \"dynamic\" buffers, not in dedicated chat buffers.
-To be used in `gptel-pre-response-hook'."
-  (unless (member 'gptel-mode local-minor-modes)
-    (goto-char (point-max))
-    (insert (format "\n%s: " (cj/gptel-backend-and-model)))
-    (goto-char (point-max))))
-(add-hook 'gptel-pre-response-hook 'cj/gptel-insert-model-in-non-gptel-buffers)
-
-(defun cj/gptel-insert-model-in-chat-buffers (response-begin-pos response-end-pos)
-  "This function adds the backend and model in dedicated chat buffers.
-Can be used with the `gptel-post-response-functions' hook."
-  (let* ((gptel-org-prefix (alist-get 'org-mode gptel-prompt-prefix-alist))
-         (inserted-string (format "%s %s\n"
-                                  (substring gptel-org-prefix 0 (string-match " " gptel-org-prefix))
-                                  (cj/gptel-backend-and-model)))
-         (len-inserted (length inserted-string )))
-    (goto-char response-begin-pos)
-    (insert inserted-string)
-    (goto-char (+ response-end-pos len-inserted))))
-(add-hook 'gptel-post-response-functions 'cj/gptel-insert-model-in-chat-buffers)
-*** DONE Erase the Chatgpt Buffer With <prefix> e 
-CLOSED: [2025-08-13 Wed 16:45]
-*** DONE Rewire commands to use base keybinding <prefix> of M-a.
-CLOSED: [2025-08-30 Sat 16:28]
-It's currently used in org-mode, so check whether it needs unbinding. 
-*** TODO AI Rewrite selected region: r
-*** TODO AI Copy current selection to AI Assistant buffer, toggling if it's not open: C
-*** TODO AI Prompt change: p
-*** TODO AI Add file: f
-*** TODO AI Add directory: d
-** PROJECT [#A] Mu4e Fixes
-*** DONE [#A] mu4e contacts not expanding on forwarding emails
-CLOSED: [2025-08-29 Fri 16:09]
-removed org-contacts functionaality and it returned! 
-*** DONE [#A] Add org-msg
-CLOSED: [2025-08-30 Sat 12:12]
-https://github.com/jeremy-compostella/org-msg
-*** TODO [#A] Fix org-contacts functionality
-** PROJECT [#B] Org Agenda Work
-*** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
-*** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
-** PROJECT [#B] Org Roam and Org Template Fixes
-*** TODO [#B] Fix Emacs Org Roam Recipe Error
-C-c n i then type a recipe name.
-org-element--get-category: Invalid function: org-element-with-disabled-cache
-The file was created, but does not come to the front
-The category value seems unaligned
-*** TODO [#A] Add Org Templates Back to Emacs Repository!
-*** TODO [#B] Add Org Capture Template for Vocabulary Words
-** TODO [#B] Dirvish should open not showing hidden files by default
-*** 2025-06-07 Sat @ 12:25:28 -0500 It isn't omitting the h switch on directory listings
-No. Didn't help
-** TODO [#B] Fix Emacs Alarms for Scheduled Events
-*** 2025-06-03 Tue @ 15:12:51 -0500 Problem
-Emacs Alarm seems to sound off periodically after the alarm rang the first time.
-It should ring once at the beginning of the event, and that's it.
-*** 2025-06-28 Sat @ 12:42:19 -0500 User's Method for Alarms In Emacs
-This is more than I actually want, but leaving here for reference.
-
-#+BEGIN_QUOTE
-I am quite happy with the system I use, which does (I think) exactly what you want. It has two parts: an Emacs part that uses appt.el to schedule the reminders and a small shell program (I'm using Linux) that creates the popup + sound notification. Here I share the code for both parts.
-
-A) Code in ~/.emacs.d/init.el
-
-(require 'appt)
-(appt-activate t)
-
-(setq appt-message-warning-time 5) ; Show notification 5 minutes before event
-(setq appt-display-interval appt-message-warning-time) ; Disable multiple reminders
-(setq appt-display-mode-line nil)
-
-; Use appointment data from org-mode
-(defun my-org-agenda-to-appt ()
-  (interactive)
-  (setq appt-time-msg-list nil)
-  (org-agenda-to-appt))
-
-; Update alarms when...
-; (1) ... Starting Emacs
-(my-org-agenda-to-appt)
-
-; (2) ... Everyday at 12:05am (useful in case you keep Emacs always on)
-(run-at-time "12:05am" (* 24 3600) 'my-org-agenda-to-appt)
-
-; (3) ... When TODO.txt is saved
-(add-hook 'after-save-hook
-          '(lambda ()
-             (if (string= (buffer-file-name) (concat (getenv "HOME") "/ideas/TODO.txt"))
-                 (my-org-agenda-to-appt))))
-
-; Display appointments as a window manager notification
-(setq appt-disp-window-function 'my-appt-display)
-(setq appt-delete-window-function (lambda () t))
-
-(setq my-appt-notification-app (concat (getenv "HOME") "/bin/appt-notification"))
-
-(defun my-appt-display (min-to-app new-time msg)
-  (if (atom min-to-app)
-    (start-process "my-appt-notification-app" nil my-appt-notification-app min-to-app msg)
-  (dolist (i (number-sequence 0 (1- (length min-to-app))))
-    (start-process "my-appt-notification-app" nil my-appt-notification-app (nth i min-to-app) (nth i msg)))))
-
-B) Code in ~/bin/appt-notification
-
-#!/bin/sh
-
-TIME="$1"
-MSG="$2"
-
-notify-send -t 0 "<br>Appointment in $TIME minutes:<br>$MSG<br>"
-play "~/bin/alarm.wav"
-
-To get voice notifications you could replace the last line (play) with the following:
-
-espeak "Appointment in $TIME minutes: $MSG"
-#+END_QUOTE
-[[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
-Captured On: [2025-06-19 Thu 12:29]
 ** TODO [#C] Revisit and refactor localrepo functionality
 ** TODO [#C] Check and test native comp logging changes 
 ** TODO [#C] Emacs: Should adding tasks add it to Projects and Tasks in the inbox file?
@@ -517,6 +615,89 @@ This appears to work with emacs -q. What's up with your config?
 
 [[https://github.com/ryuslash/mode-icons][ryuslash/mode-icons: Show icons instead of mode names]]
 Captured On: [2025-06-07 Sat 13:29]
+** TODO [#C] Emacs Change appropriate use-package installs to :vc
+especially where you're cloning them to provide fixes
+** TODO [#C] Emacs: Add reverso functionality
+https://sqrtminusone.xyz/packages/reverso/
+check his config for a usage example
+
+Reverso
+
+reverso.el is a package of mine that provides Emacs interface for https://reverso.net.
+#+begin_src emacs-lisp
+(use-package reverso
+  :straight (:host github :repo "SqrtMinusOne/reverso.el")
+  :init
+  (my-leader-def "ar" #'reverso)
+  :commands (reverso)
+  :config
+  (setq reverso-languages '(russian english german))
+  (reverso-history-mode))
+#+end_src
+
+** TODO [#C] Emacs Config: Narrowing Org doesn't allow refresh by type
+After generating an org agenda list, I can narrow the type to all DONE or IN-PROGRESS. However when I use my custom functions to just get the agenda for the current buffer, I can't. The scope has now widened and the refresh is for all buffers. 
+** TODO [#C] Add a restrict to subtree org agenda command
+In Org-mode the “agenda” machinery by default doesn’t pay any attention to your buffer­narrow — it always scans whole files in your =org-agenda-files=.  However, you can teach Org-agenda to only look between two points (the start and end of your current subtree) by using the built-in “restrict” hooks:
+
+  1.  =org‐agenda‐restrict=         – turn on restriction
+  2.  =org‐agenda‐restrict‐begin=  – a marker or position where scanning begins
+  3.  =org‐agenda‐restrict‐end=    – where it ends
+  4.  (optionally) set =org-agenda-files= to just your current file
+
+Here is a drop-in =org-agenda-custom-commands= entry that will give you a “Subtree TODOs” view limited to the subtree you’re on.  Put this in your Emacs init:
+
+#+begin_src  emacs-lisp
+;; -------------------------------------------------------------------
+;; 1) Define a custom agenda command "C" (hit C-c a C)
+;;    that shows only TODO entries in the current subtree.
+;; -------------------------------------------------------------------
+(with-eval-after-load 'org
+  (add-to-list 'org-agenda-custom-commands
+    '("C"                                ; the key you press after C-c a
+      "Subtree TODOs"                   ; a descriptive name
+      ((todo ""                         ; match any TODO keyword
+         ;; === per-block settings ===
+         ;; only look in this file
+         (org-agenda-files (list buffer-file-name))
+         ;; enable the restriction engine
+         (org-agenda-restrict t)
+         ;; start at the top of the current heading
+         (org-agenda-restrict-begin
+          (progn (org-back-to-heading t) (point)))
+         ;; end at the end of this subtree
+         (org-agenda-restrict-end
+          (progn (org-end-of-subtree t) (point))))
+       ;; you can add more blocks here if you like
+       ))))
+#+end_src
+
+How this works, step by step:
+
+  • We bind a new custom command under the key “C” (so you’ll type =C-c a C=).  
+  • In that command we use the =todo= matcher =""= to catch every headline whose state is one of your TODO keywords.  
+  • We dynamically set  
+     – =org-agenda-files= to just the current buffer’s file,  
+     – =org-agenda-restrict= to non-nil so Org will honor the begin/end markers,  
+     – =org-agenda-restrict-begin= to the position of the current heading,  
+     – =org-agenda-restrict-end= to the end of the subtree.  
+
+When you invoke it (=C-c a C=), Org will only scan headlines in that slice of the file and will build you a mini-agenda of TODO items from exactly that subtree.
+
+Quick alternative: if you don’t need the full agenda machinery (dates, deadlines, etc.) but just want a fast outline of your TODOs under the current heading, you can also use the sparse-tree command:
+
+  • =C-c / t=  ⇒ shows only the TODO headings in the narrowed or whole buffer as an indented outline.
+
+— Tips & Pitfalls —
+
+  • Make sure your file is saved and in =org-agenda-files= (the snippet above forces it).  
+  • Remember to call =org-narrow-to-subtree= (or let the command compute its own begin/end via =org-back-to-heading=/=org-end-of-subtree=).  
+  • If you rename or move your file, Emacs must still see =buffer-file-name= valid.  
+  • You can duplicate the above snippet for other TODO states, agenda views, or matchers (deadlines, tags, etc.)  
+
+With this in place you effectively get an agenda tailored to exactly the bit of tree you’re working on.
+
+** TODO [#C] Find another keymapping for emojify
 ** TODO [#D] Install ZOxide Integration into Emacs
 [[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
 Captured On: [2025-06-07 Sat 17:11]
@@ -532,7 +713,11 @@ Captured On: [2025-05-29 Thu 04:24]
 [[https://jao.io/blog/signel.html][signel, a barebones signal chat on top of signal-cli]]
 Captured On: [2025-05-29 Thu 04:23]
 
-* Emacs Project Ideas/References
+** TODO [#D] Add test document to test graphviz-dot-mode
+** TODO [#D] Consider Replicating Some of This Auctex and PDF Tools Code 
+[[https://www.reddit.com/r/emacs/comments/cd6fe2/how_to_make_emacs_a_latex_ide/][How to make Emacs a Latex IDE? : r/emacs]]
+Captured On: [2025-08-14 Thu 03:43]
+* Emacs Config Ideas/References
 ** emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources
 [[https://github.com/emacs-tw/awesome-elisp][emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources]]
 Captured On: [2025-06-07 Sat 13:42]
@@ -560,3 +745,21 @@ Captured On: [2025-08-01 Fri 02:47]
 ** org mode - org-link to the exact page-position in a pdf file - Emacs Stack Exchange
 [[https://emacs.stackexchange.com/questions/68013/org-link-to-the-exact-page-position-in-a-pdf-file][org mode - org-link to the exact page-position in a pdf file - Emacs Stack Exchange]]
 Captured On: [2025-07-11 Fri 18:17]
+** Craft an Email Workflow with Org Mode - YouTube
+[[https://www.youtube.com/watch?v=dSZu4jwvaSs][Craft an Email Workflow with Org Mode - YouTube]]
+Captured On: [2025-08-30 Sat 11:42]
+** Enhance Your Emails with Org Mode - System Crafters
+[[https://systemcrafters.net/emacs-mail/enhance-email-with-org-mode/][Enhance Your Emails with Org Mode - System Crafters]]
+Captured On: [2025-08-30 Sat 11:42]
+** Emacs As Mail Client Specifically as Mu4E | Unixbhaskar's Blog
+[[https://unixbhaskar.wordpress.com/2023/09/05/emacs-as-mail-client-specifically-as-mu4e/][Emacs As Mail Client Specifically as Mu4E | Unixbhaskar's Blog]]
+Captured On: [2025-08-29 Fri 16:12]
+** Blogging with Emacs, and Emacs only | Diego Vicente
+[[https://diego.codes/post/blogging-with-org/][Blogging with Emacs, and Emacs only | Diego Vicente]]
+Captured On: [2025-08-18 Mon 17:57]
+** Using Emacs and Org-mode as a static site generator
+[[https://ogbe.net/blog/emacs_org_static_site][Using Emacs and Org-mode as a static site generator]]
+Captured On: [2025-08-18 Mon 17:54]
+** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
+[[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
+Captured On: [2025-08-18 Mon 14:36]
