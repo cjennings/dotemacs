@@ -70,18 +70,15 @@
 (require 'erc-config)
 (require 'eww-config)
 (require 'httpd-config)
-(require 'local-repository)      ;; wip
-(require 'mail-config)
+(require 'mail-config)           ;; email using mu4e and org-msg
 (require 'markdown-config)
-(require 'record-desktop)
 (require 'weather-config)        ;; utility to display the weather
 
 ;; -------------------------------- Programming --------------------------------
 
 (require 'prog-general)
-(require 'prog-comments)
-(require 'vc-config)
-(require 'treesitter-config)
+(require 'vc-config)             ;; version control packages and keybindings
+(require 'treesitter-config)     ;; treesitter language syntax highlighting
 (require 'flycheck-config)       ;; linting for all languages including human ones
 (require 'prog-lsp)
 (require 'prog-training)
@@ -112,10 +109,15 @@
 ;; ------------------------- Personal Workflow Related -------------------------
 
 (require 'reconcile-open-repos)
+(require 'record-desktop)
+(require 'local-repository)
 
 ;; ---------------------------------- Wrap Up ----------------------------------
 
-(require 'test-code)
 (require 'wrap-up)
+
+;; ---------------------------------- In Test ----------------------------------
+
+(require 'test-code)
 
 ;;; init.el ends here

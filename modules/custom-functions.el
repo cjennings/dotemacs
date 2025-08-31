@@ -3,142 +3,237 @@
 
 ;;; Commentary:
 ;;
-;;These are custom utility functions which I use frequently. They are bound to a
-;;personal keymap with a prefix of "C-;" created at the end of this file.
+;; These are custom utility functions I use frequently.
+;; For convenience, they are bound to a custom keymap with a prefix of "C-;".
+;; Additional keymaps are created on top of this prefix to collect similar operations.
+;;
+;; C-; --- Custom Key Map
+;;   C-; )    → jump to matching parenthesis
+;;   C-; f    → re-formats region or buffer (delete trailing whitespace, reindent, and untabify).
+;;   C-; c    → copy the entire buffer to the kill ring
+;;   C-; W    → counts words in region or buffer displaying results in echo area.
+;;   C-; /    → replace common glyph fractions (½) to text (1/2) (text to glyph with C-u).
+;;   C-; r    → align text by regexp with spaces
+;;   C-; |    → toggle visibility of the fill-column indicator
+;;
+;; C-; b --- Buffer & File Operations
+;;   C-; b m  → move buffer and file to another directory
+;;   C-; b r  → rename buffer and its file simultaneously
+;;   C-; b d  → delete buffer and its file simultaneously
+;;   C-; b l  → copy file:// link of buffer’s source file
+;;
+;; C-; w --- Whitespace Operations
+;;   C-; w r  → remove leading/trailing whitespace from line or region (buffer with C-u).
+;;   C-; w c  → collapses runs of whitespace to one space.
+;;   C-; w l  → delete all blank lines in region or buffer
+;;   C-; w h  → hyphenate all whitespace in region
+;;
+;; C-; s --- Surround, Append & Prepend
+;;   C-; s s  → surround word or region with string
+;;   C-; s a  → append a string to each line
+;;   C-; s p  → prepend a string to each line
+;;
+;; C-; d --- Date/Time Insertion
+;;   C-; d r  → readable date and time : Sunday, August 31, 2025 at 04:07:02 PM CDT
+;;   C-; d s  → sortable date and time : 2025-08-31 Sun @ 16:07:30 -0500
+;;   C-; d t  → sortable time only     : 04:07:50 PM CDT
+;;   C-; d D  → readable time only     : 4:08 PM
+;;   C-; d T  → readable date only     : Sunday, August 31, 2025
+;;   C-; d d  → sortable date only     : 2025-08-31 Sun
+;;
+;; C-; l --- Line & Paragraph Operations
+;;   C-; l j  → join lines (or selected region of lines)
+;;   C-; l J  → join entire paragraph. guesses at the lines that constitute paragraph.
+;;   C-; l d  → duplicates the line or region
+;;   C-; l r  → remove duplicate lines from the buffer, keepinf the first occurrence.
+;;   C-; l u  → "underline" current line: repeat a chosen character to same length on line below.
+;;
+;; C-; m --- Comment Styling & Removal
+;;   C-; m r  → reformats selecton into a commented paragraph re-wrapping at fill column width.
+;;   C-; m c  → insert centered comment
+;;   C-; m -  → insert hyphen-style comment
+;;   C-; m b  → draw a comment box
+;;   C-; m D  → delete all comments in buffer
+;;
+;; C-; o --- Ordering & Sorting
+;;   C-; o a  → arrayify lines into quoted list
+;;   C-; o u  → unarrayify list into lines
+;;   C-; o A  → alphabetize items in region
+;;   C-; o l  → split comma-separated text onto lines
+;;
+;; C-; c --- Case-Change Operations
+;;   C-; c t  → Change selected text to Title Case  : This is the Title of a Movie
+;;   C-; c u  → Change word or region to Upper Case : THIS IS THE TITLE OF A MOVIE
+;;   C-; c d  → Change word or region to Lower Case : this is the title of a movie
 
 ;;; Code:
 
-(use-package subr-x
-  :ensure nil) ;; built-in
+(require 'subr-x)
+
 (use-package expand-region
-  :demand t)
+  :demand t) ;; used w/in join paragraph
 
-
-;; -------------------------------- Copy Buffer --------------------------------
-;; copies the contents of the buffer to the kill ring
-
-(defun cj/copy-buffer ()
-  "Copy the entire contents of the current buffer to the kill ring.
-Point and mark are left exactly where they were.  No transient region
-is created.  A message is displayed when done."
-  (interactive)
-  (let ((contents (buffer-substring-no-properties (point-min) (point-max))))
-    (kill-new contents)
-    (message "Buffer contents copied to kill ring")))
-
-;; ------------------------ Jump To Matching Parentheses -----------------------
-;; shows you the other matching parenthesis by jumping to it.
+;;; ----------------- Miscellaneous Functions And Custom Keymap -----------------
 
 (defun cj/jump-to-matching-paren ()
-  "If on a parenthesis, jump to it's match.  Otherwise, complain."
+  "If point is on a parenthesis, jump to it's match.
+Otherwise, complain."
   (interactive)
   (cond ((looking-at "\\s\(\\|\\s\{\\|\\s\[")
-         (forward-list))
-        ((looking-back "\\s\)\\|\\s\}\\|\\s\\]")
-         (backward-list))
-        (t (message "Cursor doesn't follow parenthesis, so there's no match."))))
+		 (forward-list))
+		((looking-back "\\s\)\\|\\s\}\\|\\s\\]")
+		 (backward-list))
+		(t (message "Cursor doesn't follow parenthesis, so there's no match."))))
 
-;; ---------------------------- Join Line Or Region ----------------------------
-;; joins all selected lines and fixes up the whitespace.
-
-(defun cj/join-line-or-region (beg end)
-  "Apply \='join-line\=' over the marked region or join with previous line.
-Region indicated with BEG and END."
-  (interactive "r")
-  ;; in region
-  (if mark-active
-      (let ((beg (region-beginning))
-            (end (copy-marker (region-end))))
-        (goto-char beg)
-        ;; apply join lines until point => end
-        (while (< (point) end)
-          (join-line 1))
-        (goto-char end)
-        (newline)))
-  ;; outside region
-  (join-line)(newline))
-
-;; ------------------------------- Join Paragraph ------------------------------
-;; expands the region to the paragraph, then joins lines and fixes whitespace.
-
-(defun cj/join-paragraph ()
-  "Mark all text in a paragraph then run cj/join-line-or-region."
+(defun cj/format-region-or-buffer ()
+  "Reformat the region or the entire buffer.
+Deletes all trailing whitespace, reindents the region, and replaces tabs with spaces."
   (interactive)
-  (er/mark-paragraph) ;; from package expand region
-  (cj/join-line-or-region (region-beginning)(region-end))
-  (forward-line))
-
-;; ---------------------- Count Words In Buffer Or Region ----------------------
-;; minibuffer messages the number of words in the buffer (or region if selected).
+  (let ((start-pos (if (use-region-p) (region-beginning) (point-min)))
+		(end-pos (if (use-region-p) (region-end) (point-max))))
+	(save-excursion
+	  (save-restriction
+		(narrow-to-region start-pos end-pos)
+		(delete-trailing-whitespace)
+		(indent-region (point-min) (point-max))
+		(untabify (point-min) (point-max))))))
 
 (defun cj/count-words-buffer-or-region ()
   "Count the number of words in buffer or region.
 Displays result as a message in the minibuffer and *Messasges* buffer."
   (interactive)
   (let ((begin (point-min))
-        (end (point-max))
-        (area_type "the buffer"))
-    (when mark-active
-      (setq begin (region-beginning)
-            end (region-end)
-            area_type "the region"))
-    (message (format "There are %d words in %s." (count-words begin end) area_type))))
+		(end (point-max))
+		(area_type "the buffer"))
+	(when mark-active
+	  (setq begin (region-beginning)
+			end (region-end)
+			area_type "the region"))
+	(message (format "There are %d words in %s." (count-words begin end) area_type))))
 
-;; -------------------------- Duplicate Line Or Region -------------------------
-;; duplicates the current line on a new line below. With "C-u" the new line's
-;; commented. when a region is selected, the whole region is duplicated.
+(defun cj/replace-fraction-glyphs (start end)
+  "Replace common fraction glyphs (½) with their text format (1/2).
+Operates in the buffer or region (as identified with START and END) if selected.
+Replaces the text versions with the glyphs if function prefaced by 'C-u'."
+  (interactive "r")
+  (let ((replacements (if current-prefix-arg
+						  '(("1/4" . "¼")
+							("1/2" . "½")
+							("3/4" . "¾")
+							("1/3" .  "⅓")
+							("2/3" . "⅔"))
+						'(("¼" . "1/4")
+						  ("½" . "1/2")
+						  ("¾" . "3/4")
+						  ("⅓" . "1/3")
+						  ("⅔" . "2/3")))))
+	(save-excursion
+	  (dolist (r replacements)
+		(goto-char start)
+		(while (search-forward (car r) end t)
+		  (replace-match (cdr r)))))))
 
-(defun cj/duplicate-line-or-region (&optional comment)
-  "Duplicate the line or region below.
-Comment the duplicated line if prefix argument COMMENT is passed."
-  (interactive "P")
-  (let* ((b (if (region-active-p) (region-beginning) (line-beginning-position)))
-         (e (if (region-active-p) (region-end) (line-end-position)))
-         (lines (split-string (buffer-substring-no-properties b e) "\n")))
-    (save-excursion
-      (goto-char e)
-      (dolist (line lines)
-        (open-line 1)
-        (forward-line 1)
-        (insert line)
-        ;; If the COMMENT prefix argument is non-nil, comment the inserted text
-        (when comment
-          (comment-region (line-beginning-position) (line-end-position)))))))
-
-;; ---------------- Remove Duplicate Lines From Region Or Buffer ---------------
-;; removes all duplicate lines from the region or buffer
-
-(defun cj/remove-duplicate-lines-from-region-or-buffer (start end)
-  "Find duplicate lines in region START to END keeping the first occurrence.
-If no region is selected, operate on the whole buffer."
-  (interactive "*r\nP")
-  (save-excursion
-    (unless (region-active-p)
-      (setq start (point-min) end (point-max)))
-    (setq end (copy-marker end))
-    (while
-        (progn
-          (goto-char start)
-          (re-search-forward "^\\(.*\\)\n\\(\\(.*\n\\)*\\)\\1\n" end t))
-      (replace-match "\\1\n\\2"))))
-
-;; -------------------------- Format Region Or Buffer --------------------------
-;; reindent, untabify, and delete trailing whitespace across region or buffer
-
-(defun cj/format-region-or-buffer ()
-  "Reformat the region or the entire buffer."
+(defun cj/copy-whole-buffer ()
+  "Copy the entire contents of the current buffer to the kill ring.
+Point and mark are left exactly where they were.  No transient region
+is created.  A message is displayed when done."
   (interactive)
-  (let ((start-pos (if (use-region-p) (region-beginning) (point-min)))
-        (end-pos (if (use-region-p) (region-end) (point-max))))
-    (save-excursion
-      (save-restriction
-        (narrow-to-region start-pos end-pos)
-        (delete-trailing-whitespace)
-        (indent-region (point-min) (point-max))
-        (untabify (point-min) (point-max))))))
+  (let ((contents (buffer-substring-no-properties (point-min) (point-max))))
+    (kill-new contents)
+	(message "Buffer contents copied to kill ring")))
 
-;; ------------------- Remove Leading And Trailing Whitespace ------------------
-;; removes leading and trailing whitespace on line, region, or buffer.
+(defun cj/align-regexp-with-spaces (orig-fun &rest args)
+  "Around-advice for =align-regexp' to disable tabs during alignment.
+ORIG-FUN is the original =align-regexp'; ARGS are its arguments."
+  (let ((indent-tabs-mode nil))
+	(apply orig-fun args)))
+
+(advice-remove 'align-regexp #'align-regexp-with-spaces) ; in case this is reloaded
+(advice-add    'align-regexp :around #'cj/align-regexp-with-spaces)
+
+;; Must unbind Flyspell's  'C-;' keybinding before it's assigned to cj/custom-keymap
+(global-unset-key (kbd "C-;"))
+(eval-after-load "flyspell"
+  '(define-key flyspell-mode-map (kbd "C-;") nil))
+
+(defvar cj/custom-keymap
+  (let ((map (make-sparse-keymap)))
+	(define-key map ")" 'cj/jump-to-matching-paren)
+    (define-key map "f" 'cj/format-region-or-buffer)
+    (define-key map "c" 'cj/copy-whole-buffer)
+    (define-key map "W" 'cj/count-words-buffer-or-region)
+    (define-key map "/" 'cj/replace-fraction-glyphs)
+	(define-key map "r" 'align-regexp)
+    (define-key map "|" 'display-fill-column-indicator-mode)
+    map)
+  "The base key map for custom elisp functions holding miscellaneous functions.
+Other key maps extend from this key map to hold categorized functions.")
+(global-set-key (kbd "C-;") cj/custom-keymap)
+
+;;; ------------------- Buffer And File Operations And Keymap -------------------
+
+(defun cj/move-buffer-and-file (dir)
+  "Move both current buffer and the file it visits to DIR."
+  (interactive "DMove buffer and file (to new directory): ")
+  (let* ((name (buffer-name))
+         (filename (buffer-file-name))
+         (dir
+          (if (string-match dir "\\(?:/\\|\\\\)$")
+              (substring dir 0 -1) dir))
+         (newname (concat dir "/" name)))
+    (if (not filename)
+        (message "Buffer '%s' is not visiting a file!" name)
+      (progn  (copy-file filename newname 1)  (delete-file filename)
+              (set-visited-file-name newname)  (set-buffer-modified-p nil)  t))))
+
+(defun cj/rename-buffer-and-file (new-name)
+  "Rename both current buffer and the file it visits to NEW-NAME."
+  (interactive
+   (list (read-string "Rename buffer and file (to new name): "
+                      (file-name-nondirectory (buffer-file-name)))))
+  (let ((name (buffer-name))
+        (filename (buffer-file-name)))
+    (if (not filename)
+        (message "Buffer '%s' is not visiting a file!" name)
+      (if (get-buffer new-name)
+          (message "A buffer named '%s' already exists!" new-name)
+        (progn
+          (rename-file filename new-name 1)
+          (rename-buffer new-name)
+          (set-visited-file-name new-name)
+          (set-buffer-modified-p nil))))))
+
+(defun cj/delete-buffer-and-file ()
+  "Kill the current buffer and delete the file it visits."
+  (interactive)
+  (let ((filename (buffer-file-name)))
+    (when filename
+      (if (vc-backend filename)
+          (vc-delete-file filename)
+        (progn
+          (delete-file filename t)
+          (message "Deleted file %s" filename)
+          (kill-buffer))))))
+
+(defun cj/copy-link-to-buffer-file ()
+  "Copy the full file:// path of the current buffer's source file to the kill ring."
+  (interactive)
+  (let ((file-path (buffer-file-name)))
+    (when file-path
+      (setq file-path (concat "file://" file-path))
+      (kill-new file-path)
+      (message "Copied file link to kill ring: %s" file-path))))
+
+;; Buffer & file operations prefix and keymap
+(define-prefix-command 'cj/buffer-and-file-map nil
+					   "Keymap for buffer-and-file operations.")
+(define-key cj/custom-keymap "b" 'cj/buffer-and-file-map)
+(define-key cj/buffer-and-file-map "m" 'cj/move-buffer-and-file)
+(define-key cj/buffer-and-file-map "r" 'cj/rename-buffer-and-file)
+(define-key cj/buffer-and-file-map "d" 'cj/delete-buffer-and-file)
+(define-key cj/buffer-and-file-map "l" 'cj/copy-link-to-buffer-file)
+
+;;; ---------------------- Whitespace Operations And Keymap ---------------------
 
 (defun cj/remove-leading-trailing-whitespace (start end)
   "Remove leading and trailing whitespace in a region or buffer.
@@ -163,308 +258,8 @@ START and END define region."
       (while (re-search-backward "[ \t]+$" (line-beginning-position) t)
         (replace-match "")))))
 
-;; --------------------------- Arrayify / Unarrayify ---------------------------
-;; unquoted text on newlines to quoted comma separated strings (and vice-versa).
-
-(defun cj/arrayify (start end quote)
-  "Turn unquoted text on newlines into quoted comma-separated strings.
-START and END indicate the region selected.
-QUOTE is the characters used for quotations (i.e, \=' or \")"
-  (interactive "r\nMQuotation character to use for array element: ")
-  (let ((insertion
-         (mapconcat
-          (lambda (x) (format "%s%s%s" quote x quote))
-          (split-string (buffer-substring start end)) ", ")))
-    (delete-region start end)
-    (insert insertion)))
-
-(defun cj/unarrayify (start end)
-  "Turn quoted comma-separated strings into unquoted text on newlines.
-START and END indicate the region selected."
-  (interactive "r")
-  (let ((insertion
-         (mapconcat
-          (lambda (x) (replace-regexp-in-string "[\"']" "" x))
-          (split-string (buffer-substring start end) ", ") "\n")))
-    (delete-region start end)
-    (insert insertion)))
-
-;; ----------------------- Comma Separated Text To Lines -----------------------
-;; like arrayify, just without the quotes
-
-(defun cj/comma-separated-text-to-lines ()
-  "Breaks up text between commas in a region and places each text on its own line."
-  (interactive)
-  (if (not (region-active-p))
-      (error "No region selected"))
-
-  (let ((beg (region-beginning))
-        (end (region-end))
-        (text (buffer-substring-no-properties (region-beginning) (region-end))))
-    (with-temp-buffer
-      (insert text)
-      (goto-char (point-min))
-      (while (search-forward "," nil t)
-        (replace-match "\n" nil t))
-      (delete-trailing-whitespace)
-      (setq text (buffer-string)))
-
-    (delete-region beg end)
-    (goto-char beg)
-    (insert text)))
-
-;; ----------------------- Alphabetize And Replace Region ----------------------
-;; sorts selected words into alphabetical order, then replaces the region.
-
-(defun cj/alphabetize-and-replace-region ()
-  "Alphabetize strings (words/tokens) in region replacing the original region.
-The result will be comma separated."
-  (interactive)
-  (let ((start (region-beginning))
-        (end (region-end))
-        (string (buffer-substring-no-properties (region-beginning) (region-end))))
-    (delete-region start end)
-    (goto-char start)
-    (insert
-     (mapconcat #'identity
-                (sort (split-string string "[[:space:],]+" t)
-                      #'string-lessp)
-                ", "))))
-
-;; --------------------- Wrap Region As Markdown Code Block --------------------
-;; wrap the selection in triple backslash and indicate the language for markdown
-
-(defun cj/wrap-region-as-code-span (start end)
-  "Wraps the region between START and END with triple backticks and descriptor.
-Triple backicks are often used to indicate a code-span block in markdown.
-User is prompted for the optional descriptor."
-  (interactive "r")
-  (let ((lang (read-string "Descriptor (e.g., code, bash, python): ")))
-    (save-excursion
-      (goto-char end)
-      (unless (bolp) (insert "\n"))
-      (insert "```\n")
-      (goto-char start)
-      (insert (concat "```" lang "\n")))))
-
-;; ------------------------ Insert Around Word Or Region -----------------------
-
-(defun cj/insert-around-word-or-region ()
-  "Prompt for a string, insert it before and after the word at point or selected region."
-  (interactive)
-  (let ((str (read-string "Enter a string: "))
-        (regionp (use-region-p)))
-    (save-excursion
-      (if regionp
-          (let ((beg (region-beginning))
-                (end (region-end)))
-            (goto-char end)
-            (insert str)
-            (goto-char beg)
-            (insert str))
-        (if (thing-at-point 'word)
-            (let ((bounds (bounds-of-thing-at-point 'word)))
-              (goto-char (cdr bounds))
-              (insert str)
-              (goto-char (car bounds))
-              (insert str))
-          (message "Can't insert around. No word at point and no region selected."))))))
-
-(global-set-key (kbd "C-; i a") 'cj/insert-around-word-or-region)
-
-;; ------------------------ Insert Around Word Or Region -----------------------
-
-(defun cj/insert-around-word-or-region ()
-  "Prompt for a string, insert it before and after the word at point or selected region."
-  (interactive)
-  (let ((str (read-string "Enter a string: "))
-        (regionp (use-region-p)))
-    (save-excursion
-      (if regionp
-          (let ((beg (region-beginning))
-                (end (region-end)))
-            (goto-char end)
-            (insert str)
-            (goto-char beg)
-            (insert str))
-        (if (thing-at-point 'word)
-            (let ((bounds (bounds-of-thing-at-point 'word)))
-              (goto-char (cdr bounds))
-              (insert str)
-              (goto-char (car bounds))
-              (insert str))
-          (message "Can't insert around. No word at point and no region selected."))))))
-
-;; -------------------- Append To Lines In Region Or Buffer --------------------
-;; append characters to the end of all lines in the region or the whole buffer.
-
-(defun cj/append-to-lines-in-region-or-buffer (str)
-  "Prompt for STR and append it to the end of each line in region or buffer."
-  (interactive "sEnter string to append: ")
-  (let ((start-pos (if (use-region-p)
-                       (region-beginning)
-                     (point-min)))
-        (end-pos (if (use-region-p)
-                     (region-end)
-                   (point-max))))
-    (save-excursion
-      (goto-char start-pos)
-      (while (< (point) end-pos)
-        (move-end-of-line 1)
-        (insert str)
-        (forward-line 1)))))
-
-;; -------------------- Prepend To Lines In Region Or Buffer --------------------
-;; prepend characters to the beginning of all lines in the region or the buffer.
-;; should probably be collapsed into the append lines function. .
-
-(defun cj/prepend-to-lines-in-region-or-buffer (str)
-  "Prompt for STR and prepend it to the start of each line in region or buffer."
-  (interactive "sEnter string to prepend: ")
-  (let ((start-pos (if (use-region-p)
-                       (region-beginning)
-                     (point-min)))
-        (end-pos (if (use-region-p)
-                     (region-end)
-                   (point-max))))
-    (save-excursion
-      (goto-char start-pos)
-      (while (< (point) end-pos)
-        (beginning-of-line 1)
-        (insert str)
-        (forward-line 1)))))
-
-;; ------------------------------ Hyphenate Region -----------------------------
-;; hyphenates any empty space in a region; complains if no region selected
-
-(defun cj/hyphenate-region (start end)
-  "Hyphenate all continuous whitespace in the region.
-START and END represent the region selected."
-  (interactive "*r")
-  (if (use-region-p)
-      (save-excursion
-        (save-restriction
-          (narrow-to-region start end)
-          (goto-char (point-min))
-          (while (re-search-forward "[ \t\n\r]+" nil t)
-            (replace-match "-"))))
-    (message "No region; nothing to hyphenate.")))
-
-;; ----------------------------- Title Case Region -----------------------------
-;; a literate version of capitalize region for prose text.
-
-(defun cj/title-case-region ()
-  "Capitalize the region in title case format.
-Title case is a capitalization convention where major words
-are capitalized,and most minor words are lowercase.  Nouns,
-verbs (including linking verbs), adjectives, adverbs,pronouns,
-and all words of four letters or more are considered major words.
-Short (i.e., three letters or fewer) conjunctions, short prepositions,
-and all articles are considered minor words."
-  (interactive)
-  (let ((beg nil)
-        (end nil)
-        (prev-word-end nil)
-        ;; Allow capitals for skip characters after this, so:
-        ;;   Warning: An Example
-        ;; Capitalizes the `An'.
-        (chars-skip-reset '(?: ?! ??))
-        ;; Don't capitalize characters directly after these. e.g.
-        ;; "Foo-bar" or "Foo\bar" or "Foo's".
-        (chars-separator '(?\\ ?- ?' ?.))
-
-        (word-chars "[:alnum:]")
-        (word-skip
-         (list "a" "an" "and" "as" "at" "but" "by"
-               "for" "if" "in" "is" "nor" "of"
-               "on" "or" "so" "the" "to" "yet"))
-        (is-first t))
-    (cond
-     ((region-active-p)
-      (setq beg (region-beginning))
-      (setq end (region-end)))
-     (t
-      (setq beg (line-beginning-position))
-      (setq end (line-end-position))))
-    (save-excursion
-      ;; work on uppercased text (e.g., headlines) by downcasing first
-      (downcase-region beg end)
-
-      (goto-char beg)
-
-      (while (< (point) end)
-        (setq prev-word-end (point))
-        (skip-chars-forward (concat "^" word-chars) end)
-        (let ((word-end
-               (save-excursion
-                 (skip-chars-forward word-chars end)
-                 (point))))
-
-          (unless (memq (char-before (point)) chars-separator)
-            (let* ((c-orig (char-to-string (char-after (point))))
-                   (c-up (capitalize c-orig)))
-              (unless (string-equal c-orig c-up)
-                (let ((word (buffer-substring-no-properties (point) word-end)))
-                  (when
-                      (or
-                       ;; Always allow capitalization.
-                       is-first
-                       ;; If it's not a skip word, allow.
-                       (not (member word word-skip))
-                       ;; Check the beginning of the previous word doesn't reset first.
-                       (save-excursion
-                         (and
-                          (not (zerop
-                                (skip-chars-backward "[:blank:]" prev-word-end)))
-                          (memq (char-before (point)) chars-skip-reset))))
-                    (delete-region (point) (1+ (point)))
-                    (insert c-up))))))
-          (goto-char word-end)
-          (setq is-first nil))))))
-;; replace the capitalize-region keybinding to call title-case
-(global-set-key [remap capitalize-region] 'cj/title-case-region)
-
-;; --------------------------- Buffer Strip Control M --------------------------
-;; remove windows carriage return control characters from the buffer
-
-(defun cj/buffer-strip-ctrl-m ()
-  "Remove ^M from the current buffer."
-  (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (while (search-forward "" nil t)
-      (replace-match "" nil t))))
-
-;; -------------------- Remove Blank Lines Region Or Buffer --------------------
-;; removes lines contiaining whitespace from region or buffer.
-
-(defun cj/delete-blank-lines-region-or-buffer (start end)
-  "Delete all blank lines in the region between START and END.
-Blank lines are lines that contain only whitespace (spaces or tabs).
-If called interactively with an active region, operate on that region.
-If no active region, prompt user before operating on the whole buffer.
-Otherwise signal a user-error and do nothing. The point is restored
-to its original position after deletion."
-  (interactive
-   (if (use-region-p)
-	   ;; grab its boundaries if there's a region
-	   (list (region-beginning) (region-end))
-	 ;; or ask if user intended operating on whole buffer
-	 (if (yes-or-no-p "Delete blank lines in entire buffer? ")
-		 (list (point-min) (point-max))
-	   (user-error "Aborted"))))
-  (save-excursion
-	(save-restriction
-	  (widen)
-	  ;; Regexp "^[[:space:]]*$" matches lines of zero or more spaces/tabs.
-	  (flush-lines "^[[:space:]]*$" start end)))
-  ;; Return nil (Emacs conventions). Point is already restored.
-  nil)
-
-;; ---------------------- Fixup Whitespace Line Or Region ----------------------
-
-(defun cj/fixup-whitespace-line-or-region (&optional region)
-  "Fix up whitespace in the current line, or region if selected.
+(defun cj/collapse-whitespace-line-or-region (&optional region)
+  "Collapse whitespace to one space in the current line, or region if selected.
 Ensure there is exactly one space between words, and remove leading and trailing
 whitespace. When called with a prefix argument, it operates on the current
 REGION."
@@ -486,26 +281,116 @@ REGION."
         (while (re-search-forward "\\s-\\{2,\\}" nil t)
           (replace-match " " nil nil))))))
 
-;; -------------------------- Replace Fraction Glyphs --------------------------
+(defun cj/delete-blank-lines-region-or-buffer (start end)
+  "Delete all blank lines in the region between START and END.
+Blank lines contain nothing or only whitespace (spaces or tabs).
+If called with an active region, operate on that region.
+If no region is selected, prompt before operating on the whole buffer.
+Otherwise signal a user-error and do nothing. The point is restored
+to its original position after deletion."
+  (interactive
+   (if (use-region-p)
+       ;; grab its boundaries if there's a region
+       (list (region-beginning) (region-end))
+     ;; or ask if user intended operating on whole buffer
+     (if (yes-or-no-p "Delete blank lines in entire buffer? ")
+         (list (point-min) (point-max))
+       (user-error "Aborted"))))
+  (save-excursion
+    (save-restriction
+      (widen)
+      ;; Regexp "^[[:space:]]*$" matches lines of zero or more spaces/tabs.
+      (flush-lines "^[[:space:]]*$" start end)))
+  ;; Return nil (Emacs conventions). Point is already restored.
+  nil)
 
-(defun cj/replace-fraction-glyphs (start end)
-  "Replace common fraction glyphs with their spelled out format.
-Operates in the buffer or region (as identified with START and END) if selected.
-Replaces the text with the glyphs if called with C-u."
-  (interactive "r")
-  (let ((replacements (if current-prefix-arg
-                          '(("1/4" . "¼") ("1/2" . "½") ("3/4" . "¾")
-                            ("1/3" .  "⅓") ("2/3" . "⅔"))
-                        '(("¼" . "1/4") ("½" . "1/2") ("¾" . "3/4")
-                          ("⅓" . "1/3") ("⅔" . "2/3")))))
+(defun cj/hyphenate-whitespace-in-region (start end)
+  "Hyphenate all continuous whitespace in the region.
+START and END represent the region selected."
+  (interactive "*r")
+  (if (use-region-p)
+      (save-excursion
+        (save-restriction
+          (narrow-to-region start end)
+          (goto-char (point-min))
+          (while (re-search-forward "[ \t\n\r]+" nil t)
+            (replace-match "-"))))
+    (message "No region; nothing to hyphenate.")))
+
+
+;; Whitespace operations prefix and keymap
+(define-prefix-command 'cj/whitespace-map nil
+					   "Keymap for whitespace operations.")
+(define-key cj/custom-keymap "w" 'cj/whitespace-map)
+(define-key cj/whitespace-map "r" 'cj/remove-leading-trailing-whitespace)
+(define-key cj/whitespace-map "c" 'cj/collapse-whitespace-line-or-region)
+(define-key cj/whitespace-map "l" 'cj/delete-blank-lines-region-or-buffer)
+(define-key cj/whitespace-map "h" 'cj/hyphenate-whitespace-in-region)
+
+;;; ------------------------- Surround, Append, Prepend -------------------------
+
+(defun cj/surround-word-or-region ()
+  "Prompt for a string, insert it before and after the word at point or selected region."
+  (interactive)
+  (let ((str (read-string "Surround with: "))
+        (regionp (use-region-p)))
     (save-excursion
-        (dolist (r replacements)
-          (goto-char start)
-          (while (search-forward (car r) end t)
-            (replace-match (cdr r)))))))
+      (if regionp
+          (let ((beg (region-beginning))
+                (end (region-end)))
+            (goto-char end)
+            (insert str)
+            (goto-char beg)
+            (insert str))
+        (if (thing-at-point 'word)
+            (let ((bounds (bounds-of-thing-at-point 'word)))
+              (goto-char (cdr bounds))
+              (insert str)
+              (goto-char (car bounds))
+              (insert str))
+          (message "Can't insert around. No word at point and no region selected."))))))
 
-;; ------------------------------ Insert Date Time -----------------------------
-;; insert a sortable or a readable datestamp or timestamp
+(defun cj/append-to-lines-in-region-or-buffer (str)
+  "Prompt for STR and append it to the end of each line in region or buffer."
+  (interactive "sEnter string to append: ")
+  (let ((start-pos (if (use-region-p)
+                       (region-beginning)
+                     (point-min)))
+        (end-pos (if (use-region-p)
+                     (region-end)
+                   (point-max))))
+    (save-excursion
+      (goto-char start-pos)
+      (while (< (point) end-pos)
+        (move-end-of-line 1)
+        (insert str)
+        (forward-line 1)))))
+
+(defun cj/prepend-to-lines-in-region-or-buffer (str)
+  "Prompt for STR and prepend it to the start of each line in region or buffer."
+  (interactive "sEnter string to prepend: ")
+  (let ((start-pos (if (use-region-p)
+                       (region-beginning)
+                     (point-min)))
+        (end-pos (if (use-region-p)
+                     (region-end)
+                   (point-max))))
+    (save-excursion
+      (goto-char start-pos)
+      (while (< (point) end-pos)
+        (beginning-of-line 1)
+        (insert str)
+        (forward-line 1)))))
+
+;; Surround, append, prepend prefix keymap
+(define-prefix-command 'cj/surround-map nil
+					   "Keymap for surrounding, appending, and prepending operations.")
+(define-key cj/custom-keymap "s" 'cj/surround-map)
+(define-key cj/surround-map "s" 'cj/surround-word-or-region)
+(define-key cj/surround-map "a" 'cj/append-to-lines-in-region-or-buffer)
+(define-key cj/surround-map "p" 'cj/prepend-to-lines-in-region-or-buffer)
+
+;;; -------------------------- Date And Time Insertion --------------------------
 
 (defvar readable-date-time-format "%A, %B %d, %Y at %I:%M:%S %p %Z "
   "Format of date to insert with `insert-readable-date-time' func.
@@ -537,6 +422,16 @@ Uses `sortable-time-format' for the formatting the date/time."
   (interactive)
   (insert (format-time-string sortable-time-format (current-time))))
 
+(defvar readable-time-format  "%-I:%M %p "
+  "Time format to insert with `insert-readable-time' func.
+See help of `format-time-string' for possible replacements")
+
+(defun cj/insert-readable-time ()
+  "Insert the current time into current buffer.
+Uses `readable-time-format' for the formatting the date/time."
+  (interactive)
+  (insert (format-time-string readable-time-format (current-time))))
+
 (defvar sortable-date-format "%Y-%m-%d %a"
   "Time format to insert with `insert-current-time' func.
 See help of `format-time-string' for possible replacements")
@@ -547,149 +442,390 @@ Uses `sortable-time-format' for the formatting the date/time."
   (interactive)
   (insert (format-time-string sortable-date-format (current-time))))
 
-;; -------------------------- Copy Link To Source File -------------------------
-;; find the source file for the current buffer and place it's URL in the clipboard
+(defvar readable-date-format "%A, %B %d, %Y"
+  "Time format to insert with `insert-readable-time' func.
+See help of `format-time-string' for possible replacements")
 
-(defun cj/copy-link-to-source-file ()
-  "Copy the full file:// path of the underlying source file to the kill ring."
+(defun cj/insert-readable-date ()
+  "Insert the current date into current buffer.
+Uses `readable-time-format' for the formatting the date/time."
   (interactive)
-  (let ((file-path (buffer-file-name)))
-    (when file-path
-      (setq file-path (concat "file://" file-path))
-      (kill-new file-path)
-      (message "Copied file link to kill ring: %s" file-path))))
+  (insert (format-time-string readable-date-format (current-time))))
 
-;; ------------------------- Buffer And File Operations ------------------------
-;; move, rename, or delete the underlying source file for the current buffer.
+;; Date/time insertion prefix and keymap
+(define-prefix-command 'cj/datetime-map nil
+					   "Keymap for inserting various date/time formats.")
+(define-key cj/custom-keymap "d" 'cj/datetime-map)
+(define-key cj/datetime-map "r" 'cj/insert-readable-date-time)
+(define-key cj/datetime-map "s" 'cj/insert-sortable-date-time)
+(define-key cj/datetime-map "t" 'cj/insert-sortable-time)
+(define-key cj/datetime-map "T" 'cj/insert-readable-time)
+(define-key cj/datetime-map "d" 'cj/insert-sortable-date)
+(define-key cj/datetime-map "D" 'cj/insert-readable-date)
 
-;; MOVE BUFFER + FILE
-(defun cj/move-buffer-and-file (dir)
-  "Move both current buffer and the file it visits to DIR."
-  (interactive "DMove buffer and file (to new directory): ")
-  (let* ((name (buffer-name))
-         (filename (buffer-file-name))
-         (dir
-          (if (string-match dir "\\(?:/\\|\\\\)$")
-              (substring dir 0 -1) dir))
-         (newname (concat dir "/" name)))
-    (if (not filename)
-        (message "Buffer '%s' is not visiting a file!" name)
-      (progn  (copy-file filename newname 1)  (delete-file filename)
-              (set-visited-file-name newname)  (set-buffer-modified-p nil)  t))))
+;;; ----------------------- Line And Paragraph Operations -----------------------
 
-;; RENAME BUFFER + FILE
-(defun cj/rename-buffer-and-file (new-name)
-  "Rename both current buffer and the file it visits to NEW-NAME."
-  (interactive
-   (list (read-string "Rename buffer and file (to new name): "
-                      (file-name-nondirectory (buffer-file-name)))))
-  (let ((name (buffer-name))
-        (filename (buffer-file-name)))
-    (if (not filename)
-        (message "Buffer '%s' is not visiting a file!" name)
-      (if (get-buffer new-name)
-          (message "A buffer named '%s' already exists!" new-name)
-        (progn
-          (rename-file filename new-name 1)
-          (rename-buffer new-name)
-          (set-visited-file-name new-name)
-          (set-buffer-modified-p nil))))))
+(defun cj/join-line-or-region (beg end)
+  "Apply \='join-line\=' over the marked region or join with previous line.
+Region indicated with BEG and END."
+  (interactive "r")
+  ;; in region
+  (if mark-active
+      (let ((beg (region-beginning))
+            (end (copy-marker (region-end))))
+        (goto-char beg)
+        ;; apply join lines until point => end
+        (while (< (point) end)
+          (join-line 1))
+        (goto-char end)
+        (newline)))
+  ;; outside region
+  (join-line)(newline))
 
-;; DELETE BUFFER + FILE
-(defun cj/delete-buffer-and-file ()
-  "Kill the current buffer and delete the file it visits."
+(defun cj/join-paragraph ()
+  "Mark all text in a paragraph then run cj/join-line-or-region."
   (interactive)
-  (let ((filename (buffer-file-name)))
-    (when filename
-      (if (vc-backend filename)
-          (vc-delete-file filename)
-        (progn
-          (delete-file filename t)
-          (message "Deleted file %s" filename)
-          (kill-buffer))))))
+  (er/mark-paragraph) ;; from package expand region
+  (cj/join-line-or-region (region-beginning)(region-end))
+  (forward-line))
 
-;; ------------------------------- Ordinal Suffix ------------------------------
-;; add the proper ordinal to a number (e.g., 1st, 2nd, 3rd, 4th).
-;; Stolen from `diary.el' (`diary-ordinal-suffix').
+(defun cj/duplicate-line-or-region (&optional comment)
+  "Duplicate the line or region below.
+Comment the duplicated line if prefix argument COMMENT is passed."
+  (interactive "P")
+  (let* ((b (if (region-active-p) (region-beginning) (line-beginning-position)))
+         (e (if (region-active-p) (region-end) (line-end-position)))
+         (lines (split-string (buffer-substring-no-properties b e) "\n")))
+    (save-excursion
+      (goto-char e)
+      (dolist (line lines)
+        (open-line 1)
+        (forward-line 1)
+        (insert line)
+        ;; If the COMMENT prefix argument is non-nil, comment the inserted text
+        (when comment
+		  (comment-region (line-beginning-position) (line-end-position)))))))
 
-(defun ordinal-suffix (n)
-  "Ordinal suffix for N.  That is, `st', `nd', `rd', or `th', as appropriate."
-  (if (or (memq (% n 100) '(11 12 13)) (< 3 (% n 10)))
-      "th"
-    (aref ["th" "st" "nd" "rd"] (% n 10))))
+(defun cj/remove-duplicate-lines-region-or-buffer (start end)
+  "Find duplicate lines in region START to END keeping the first occurrence.
+If no region is selected, operate on the whole buffer."
+  (interactive "*r\nP")
+  (save-excursion
+	(unless (region-active-p)
+	  (setq start (point-min) end (point-max)))
+	(setq end (copy-marker end))
+	(while
+		(progn
+		  (goto-char start)
+		  (re-search-forward "^\\(.*\\)\n\\(\\(.*\n\\)*\\)\\1\n" end t))
+	  (replace-match "\\1\n\\2"))))
 
-;; -------------------------------- Align-Regexp -------------------------------
-;; the built-in align regexp shouldn't use tabs
+(defun cj/underscore-line ()
+  "Underline the current line by inserting a row of characters below it.
+If the line is empty or contains only whitespace, abort with a message."
+  (interactive)
+  (let ((line (buffer-substring-no-properties
+               (line-beginning-position)
+               (line-end-position))))
+    (if (string-match-p "^[[:space:]]*$" line)
+        (message "Line empty or only whitespace. Aborting.")
+      (let* ((char (read-char "Enter character for underlining: "))
+             (len  (save-excursion
+                     (goto-char (line-end-position))
+                     (current-column))))
+        (save-excursion
+          (end-of-line)
+          (insert "\n" (make-string len char)))))))
 
-(defadvice align-regexp (around align-regexp-with-spaces activate)
-  "Avoid tabs when aligning text."
-  (let ((indent-tabs-mode nil))
-    ad-do-it))
 
-;; ----------------------------- Merge List To List ----------------------------
-;; Convenience method for merging two lists together
-;; https://emacs.stackexchange.com/questions/38008/adding-many-items-to-a-list/68048#68048
+;; Line & paragraph operations prefix and keymap
+(define-prefix-command 'cj/line-and-paragraph-map nil
+					   "Keymap for line and paragraph manipulation.")
+(define-key cj/custom-keymap "l" 'cj/line-and-paragraph-map)
+(define-key cj/line-and-paragraph-map "j" 'cj/join-line-or-region)
+(define-key cj/line-and-paragraph-map "J" 'cj/join-paragraph)
+(define-key cj/line-and-paragraph-map "d" 'cj/duplicate-line-or-region)
+(define-key cj/line-and-paragraph-map "r" 'cj/remove-duplicate-lines-region-or-buffer)
+(define-key cj/line-and-paragraph-map "u" 'cj/underscore-line)
 
-(defun cj/merge-list-to-list (dst src)
-  "Merge content of the 2nd list SRC with the 1st one DST."
-  (set dst
-       (append (eval dst) src)))
+;;; ---------------------------------- Comments ---------------------------------
 
-;; ------------------------------ Personal Keymap ------------------------------
-;; a keymap to use the above functions. prefix key: "C-;"
+(defun cj/comment-reformat ()
+  "Reformats commented text into a single paragraph."
+  (interactive)
 
-;; Unset Flyspell's greedy keybinding C-; so it can be used for personal-keymap
-(global-unset-key (kbd "C-;"))
-(eval-after-load "flyspell"
-  '(define-key flyspell-mode-map (kbd "C-;") nil))
+  (if mark-active
+	  (let ((beg (region-beginning))
+			(end (copy-marker (region-end)))
+			(orig-fill-column fill-column))
+		(uncomment-region beg end)
+		(setq fill-column (- fill-column 3))
+		(cj/join-line-or-region beg end)
+		(comment-region beg end)
+		(setq fill-column orig-fill-column )))
+  ;; if no region
+  (message "No region was selected. Select the comment lines to reformat."))
 
-(defvar personal-keymap
-  (let ((map (make-sparse-keymap)))
-    ;; un/arrayify
-    (define-key map "a" 'cj/arrayify)
-    (define-key map "A" 'cj/unarrayify)
-    ;; de/duplicate lines
-    (define-key map "d" 'cj/duplicate-line-or-region)
-	(define-key map "D" 'cj/remove-duplicate-lines-from-region-or-buffer)
+(defun cj/comment-centered (&optional comment-char)
+  "Insert comment text centered around the COMMENT-CHAR character.
+Will default to the '#' character if called with no arguments. Uses the value of
+fill-column or 80 (whichever is less) to calculate the comment length. Will
+begin and end the line with the appropriate comment symbols based on programming mode."
+  (interactive)
+  (if (not (char-or-string-p comment-char))
+	  (setq comment-char "#"))
+  (let* ((comment (capitalize (string-trim (read-from-minibuffer "Comment: "))))
+		 (fill-column (min fill-column 80))
+		 (comment-length (length comment))
+		 (comment-start-length (length comment-start))
+		 (comment-end-length (length comment-end))
+		 (current-column-pos (current-column))
+		 (space-on-each-side (/ (- fill-column
+								   current-column-pos
+								   comment-length
+								   (length comment-start)
+								   (length comment-end)
+								   ;; Single space on each side of comment
+								   (if (> comment-length 0) 2 0)
+								   ;; Single space after comment syntax sting
+								   1)
+								2)))
+    (if (< space-on-each-side 2)
+		(message "Comment string is too big to fit in one line")
+	  (progn
+		(insert comment-start)
+		(when (equal comment-start ";") ; emacs-lisp line comments are ;;
+		  (insert comment-start))       ; so insert comment-char again
+		(insert " ")
+		(dotimes (_ space-on-each-side) (insert comment-char))
+		(when (> comment-length 0) (insert " "))
+		(insert comment)
+		(when (> comment-length 0) (insert " "))
+		(dotimes (_ (if (= (% comment-length 2) 0)
+						(- space-on-each-side 1)
+					  space-on-each-side))
+		  (insert comment-char))
+		(insert " ")
+		(insert comment-end)))))
 
-	(define-key map "D" 'cj/remove-duplicate-lines-from-region-or-buffer)
-    (define-key map ")" #'cj/jump-to-matching-paren)
-    (define-key map "/" #'cj/replace-fraction-glyphs)
-    (define-key map "L" #'cj/clear-blank-lines)
-    (define-key map "-" #'cj/hyphenate-region)
-    (define-key map "U" 'upcase-region)
-    (define-key map "w" 'cj/fixup-whitespace-line-or-region)
-    (define-key map "#" 'cj/count-words-buffer-or-region)
-    (define-key map "1" 'cj/alphabetize-and-replace-region)
-    (define-key map "C" 'display-fill-column-indicator-mode)
-    (define-key map "J" 'cj/join-paragraph)
-    (define-key map "f" 'cj/format-region-or-buffer)
-    (define-key map "j" 'cj/join-line-or-region)
-    (define-key map "l" 'downcase-dwim)
-    (define-key map "p" 'cj/append-to-lines-in-region-or-buffer)
-    (define-key map "P" 'cj/prepend-to-lines-in-region-or-buffer)
-    (define-key map "r" 'align-regexp)
-    (define-key map "u" 'cj/title-case-region)
-    (define-key map "c" 'cj/wrap-region-as-code-span)
-    map)
-  "My personal key map.")
-(global-set-key (kbd "C-;") personal-keymap)
+(defun cj/comment-box ()
+  "Insert a comment with '#' drawn around a string the user inputs.
+The box extends to the fill column.  Places the point on the line after the
+comment box."
+  (interactive)
+  (let* ((comment-char "#")
+		 (comment-pad 4) ; 4 = 2 comment chars & 2 spaces
+		 (comment (capitalize (string-trim (read-from-minibuffer "Comment: "))))
+		 (comment-length (length comment)))
 
-;; timestamp insertion
-(global-set-key (kbd "C-; i h") 'cj/insert-readable-date-time)
-(global-set-key (kbd "C-; i s") 'cj/insert-sortable-date-time)
-(global-set-key (kbd "C-; i t") 'cj/insert-sortable-time)
-(global-set-key (kbd "C-; i d") 'cj/insert-sortable-date)
-;; buffer and file operations
-(global-set-key (kbd "C-; b r") 'cj/rename-buffer-and-file)
-(global-set-key (kbd "C-; b d") 'cj/delete-buffer-and-file)
-(global-set-key (kbd "C-; b m") 'cj/move-buffer-and-file)
-(global-set-key (kbd "C-; b c") 'cj/copy-buffer)
-;; copy link to source file
-(global-set-key (kbd "C-; b l") 'cj/copy-link-to-source-file)
-;; insert around
-(global-set-key (kbd "C-; i a") 'cj/insert-around-word-or-region)
+	;; message if the comment doesn't fit on a single line
+	(if (> comment-length (- fill-column comment-pad))
+		(message "Comment string is too big to fit in one line")
+	  (progn
+		(dotimes (_ (- fill-column 1)) (insert comment-char))
+		(newline)
+		(insert comment-char)
+		(insert " ")
+		(insert comment)
+		(dotimes(_ (- fill-column comment-length comment-pad)) (insert " ")))
+	  (insert comment-char)
+	  (newline)
+	  (dotimes (_ (- fill-column 1)) (insert comment-char)))))
 
+(defun cj/comment-hyphen()
+  "Insert a centered comment with '-' (hyphens) on each side."
+  (interactive)
+  (cj/comment-centered "-"))
+
+(defun cj/delete-buffer-comments ()
+  "Delete all comments within the current buffer."
+  (interactive)
+  (goto-char (point-min))
+  (let (kill-ring)
+	(comment-kill (count-lines (point-min) (point-max)))))
+
+;; Comment styles & removal prefix and keymap
+(define-prefix-command 'cj/comment-map nil
+					   "Keymap for comment styling and removal.")
+(define-key cj/custom-keymap "m" 'cj/comment-map)
+(define-key cj/comment-map "r" 'cj/comment-reformat)
+(define-key cj/comment-map "c" 'cj/comment-centered)
+(define-key cj/comment-map "-" 'cj/comment-hyphen)
+(define-key cj/comment-map "b" 'cj/comment-box)
+(define-key cj/comment-map "D" 'cj/delete-buffer-comments)
+
+;;; ---------------------- Ordering And Sorting Operations ----------------------
+
+(defun cj/arrayify (start end quote)
+  "Turn unquoted text on newlines into quoted comma-separated strings.
+START and END indicate the region selected.
+QUOTE is the characters used for quotations (i.e, \=' or \")"
+  (interactive "r\nMQuotation character to use for array element: ")
+  (let ((insertion
+		 (mapconcat
+		  (lambda (x) (format "%s%s%s" quote x quote))
+		  (split-string (buffer-substring start end)) ", ")))
+	(delete-region start end)
+	(insert insertion)))
+
+(defun cj/unarrayify (start end)
+  "Turn quoted comma-separated strings into unquoted text on newlines.
+START and END indicate the region selected."
+  (interactive "r")
+  (let ((insertion
+		 (mapconcat
+		  (lambda (x) (replace-regexp-in-string "[\"']" "" x))
+		  (split-string (buffer-substring start end) ", ") "\n")))
+	(delete-region start end)
+	(insert insertion)))
+
+(defun cj/alphabetize-region ()
+  "Alphabetize strings (words/tokens) in region replacing the original region.
+The result will be comma separated."
+  (interactive)
+  (let ((start (region-beginning))
+		(end (region-end))
+		(string (buffer-substring-no-properties (region-beginning) (region-end))))
+	(delete-region start end)
+	(goto-char start)
+	(insert
+	 (mapconcat #'identity
+				(sort (split-string string "[[:space:],]+" t)
+					  #'string-lessp)
+				", "))))
+
+(defun cj/comma-separated-text-to-lines ()
+  "Breaks up text between commas in a region and places each text on its own line."
+  (interactive)
+  (if (not (region-active-p))
+	  (error "No region selected"))
+
+  (let ((beg (region-beginning))
+		(end (region-end))
+		(text (buffer-substring-no-properties (region-beginning) (region-end))))
+	(with-temp-buffer
+	  (insert text)
+	  (goto-char (point-min))
+	  (while (search-forward "," nil t)
+		(replace-match "\n" nil t))
+	  (delete-trailing-whitespace)
+	  (setq text (buffer-string)))
+
+	(delete-region beg end)
+	(goto-char beg)
+	(insert text)))
+
+
+;; Ordering & sorting prefix and keymap
+(define-prefix-command 'cj/ordering-map nil
+					   "Keymap for text ordering and sorting operations.")
+(define-key cj/custom-keymap "o" 'cj/ordering-map)
+(define-key cj/ordering-map "a" 'cj/arrayify)
+(define-key cj/ordering-map "u" 'cj/unarrayify)
+(define-key cj/ordering-map "A" 'cj/alphabetize-region)
+(define-key cj/ordering-map "l" 'cj/comma-separated-text-to-lines)
+
+;;; --------------------------- Case Change Operations --------------------------
+
+(defun cj/title-case-region ()
+  "Capitalize the region in title case format.
+Title case is a capitalization convention where major words
+are capitalized,and most minor words are lowercase.  Nouns,
+verbs (including linking verbs), adjectives, adverbs,pronouns,
+and all words of four letters or more are considered major words.
+Short (i.e., three letters or fewer) conjunctions, short prepositions,
+and all articles are considered minor words."
+  (interactive)
+  (let ((beg nil)
+		(end nil)
+		(prev-word-end nil)
+		;; Allow capitals for skip characters after this, so:
+		;;   Warning: An Example
+		;; Capitalizes the `An'.
+		(chars-skip-reset '(?: ?! ??))
+		;; Don't capitalize characters directly after these. e.g.
+		;; "Foo-bar" or "Foo\bar" or "Foo's".
+		(chars-separator '(?\\ ?- ?' ?.))
+
+		(word-chars "[:alnum:]")
+		(word-skip
+		 (list "a" "an" "and" "as" "at" "but" "by"
+			   "for" "if" "in" "is" "nor" "of"
+			   "on" "or" "so" "the" "to" "yet"))
+		(is-first t))
+	(cond
+	 ((region-active-p)
+	  (setq beg (region-beginning))
+	  (setq end (region-end)))
+	 (t
+	  (setq beg (line-beginning-position))
+	  (setq end (line-end-position))))
+	(save-excursion
+	  ;; work on uppercased text (e.g., headlines) by downcasing first
+	  (downcase-region beg end)
+
+	  (goto-char beg)
+
+	  (while (< (point) end)
+		(setq prev-word-end (point))
+		(skip-chars-forward (concat "^" word-chars) end)
+		(let ((word-end
+			   (save-excursion
+				 (skip-chars-forward word-chars end)
+				 (point))))
+
+		  (unless (memq (char-before (point)) chars-separator)
+			(let* ((c-orig (char-to-string (char-after (point))))
+				   (c-up (capitalize c-orig)))
+			  (unless (string-equal c-orig c-up)
+				(let ((word (buffer-substring-no-properties (point) word-end)))
+				  (when
+					  (or
+					   ;; Always allow capitalization.
+					   is-first
+					   ;; If it's not a skip word, allow.
+					   (not (member word word-skip))
+					   ;; Check the beginning of the previous word doesn't reset first.
+					   (save-excursion
+						 (and
+						  (not (zerop
+								(skip-chars-backward "[:blank:]" prev-word-end)))
+						  (memq (char-before (point)) chars-skip-reset))))
+					(delete-region (point) (1+ (point)))
+					(insert c-up))))))
+		  (goto-char word-end)
+		  (setq is-first nil))))))
+
+;; replace the capitalize-region keybinding to call title-case
+(global-set-key [remap capitalize-region] 'cj/title-case-region)
+
+(defun cj/upcase-dwim ()
+  "Upcase the active region, or upcase the symbol at point if no region."
+  (interactive)
+  (if (use-region-p)
+	  (upcase-region (region-beginning) (region-end))
+	(let ((bounds (bounds-of-thing-at-point 'symbol)))
+	  (if bounds
+		  (upcase-region (car bounds) (cdr bounds))
+		(user-error "No symbol at point")))))
+
+(defun cj/downcase-dwim ()
+  "Downcase the active region, or downcase the symbol at point if no region."
+  (interactive)
+  (if (use-region-p)
+	  (downcase-region (region-beginning) (region-end))
+	(let ((bounds (bounds-of-thing-at-point 'symbol)))
+	  (if bounds
+		  (downcase-region (car bounds) (cdr bounds))
+		(user-error "No symbol at point")))))
+
+;; Case-change operations prefix and keymap
+(define-prefix-command 'cj/case-map nil
+					   "Keymap for case-change operations.")
+(define-key cj/custom-keymap "c" 'cj/case-map)
+(define-key cj/case-map "t" 'cj/title-case-region)
+(define-key cj/case-map "u" 'cj/upcase-dwim)
+(define-key cj/case-map "l" 'cj/downcase-dwim) ;; for "lower" case
 
 (provide 'custom-functions)
 ;;; custom-functions.el ends here.
