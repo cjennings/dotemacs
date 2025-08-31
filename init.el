@@ -64,7 +64,7 @@
 
 (require 'ai-config)             ;; LLM integration. note: ai-directives.el
 (require 'calibredb-epub-config) ;; ebook reader/manager settings
-(require 'dashboard-config)      ;; first page on launch
+(require 'dashboard-config)      ;; the nice landing page with links
 (require 'dirvish-config)        ;; file manager configuration
 (require 'elfeed-config)
 (require 'erc-config)
