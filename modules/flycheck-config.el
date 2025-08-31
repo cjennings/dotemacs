@@ -44,11 +44,14 @@
 ;; ---------------------------------- Linting ----------------------------------
 
 (use-package flycheck
+  :after custom-functions ;; for keymap binding
   :defer t
   :commands (flycheck-list-errors
              cj/flycheck-list-errors)
   :hook ((sh-mode emacs-lisp-mode) . flycheck-mode)
-  :bind (("C-; ?" . cj/flycheck-list-errors))
+  :bind
+   (:map cj/custom-keymap
+			  ("?" . cj/flycheck-list-errors))
   :custom
   ;; Only disable these two Checkdoc warnings; leave all others intact.
   (checkdoc-arguments
