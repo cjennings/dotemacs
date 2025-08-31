@@ -3,8 +3,8 @@
 
 ;;; Commentary:
 
-;; Note: This init.el file has an early-init.el file associated with it. That
-;; file defines some variables and settings used within the rest of this config.
+;; Note: This init.el file has an early-init.el file associated with it.
+;; That file defines variables and settings used within the rest of the config.
 
 ;;; Code:
 
@@ -62,7 +62,7 @@
 
 ;; ------------------------- Features And Integrations -------------------------
 
-(require 'ai-config)             ;; LLM integration
+(require 'ai-config)             ;; LLM integration. note: ai-directives.el
 (require 'calibredb-epub-config) ;; ebook reader/manager settings
 (require 'dashboard-config)      ;; first page on launch
 (require 'dirvish-config)        ;; file manager configuration

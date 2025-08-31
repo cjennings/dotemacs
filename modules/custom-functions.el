@@ -87,7 +87,7 @@ Otherwise, complain."
 
 (defun cj/format-region-or-buffer ()
   "Reformat the region or the entire buffer.
-Deletes all trailing whitespace, reindents the region, and replaces tabs with spaces."
+Deletes trailing whitespace, reindents the region, and replaces tabs with spaces."
   (interactive)
   (let ((start-pos (if (use-region-p) (region-beginning) (point-min)))
 		(end-pos (if (use-region-p) (region-end) (point-max))))
