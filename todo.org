@@ -13,54 +13,66 @@ Miscellaneous  (no prefix, but must not conflict with others)
    "W" cj/count-words-buffer-or-region  (pull out into statistics)
    "/" cj/replace-fraction-glyphs       (pull out into sanitation)
    "m" cj/buffer-strip-ctrl-m           (pull out into sanitation)
+   "c" cj/copy-buffer
+   "r" align-regexp
 
+"b" Buffer-and-file operations  
+   "m" cj/move-buffer-and-file  
+   "r" cj/rename-buffer-and-file  
+   "d" cj/delete-buffer-and-file  
+   "c" cj/copy-link-to-source-file  
+
+"w" Whitespace
+   "r" cj/remove-leading-trailing-whitespace  
+   "c" cj/collapse-whitespace-line-or-region (rename to collapse
+   "l" cj/delete-blank-lines-region-or-buffer  
+   "h" cj/hyphenate-region (rename to hyphenate-whitespace-in-region)
+   consider changing this to replace all whitespace with a char.    
+
+"s" Surround, Append, Prepend 
+   "s" cj/surround-word-or-region  
+   "a" cj/append-to-lines-in-region-or-buffer  
+   "p" cj/prepend-to-lines-in-region-or-buffer  
+
+"d" Date & time insertion  
+   "r" cj/insert-readable-date-time  
+   "s" cj/insert-sortable-date-time  
+   "t" cj/insert-sortable-time  
+   "T" cj/insert-readable-time  
+   "d" cj/insert-sortable-date  
+   "D" cj/insert-readable-date  
    
 "l" Line & paragraph operations 
    "j" cj/join-line-or-region  "j"
    "J" cj/join-paragraph       "J"
    "d" cj/duplicate-line-or-region "d"  
    "u" cj/underscore-line "u"
+
+"m" Comment Operations
+   "r" cj/comment-reformat
+   "c" cj/comment-centered
+   "-" cj/comment-hyphen
+   "b" cj/comment-box
+   "R" cj/remove-buffer-comments
+
    
-"w" Whitespace
-   • cj/remove-leading-trailing-whitespace  
-   • cj/fixup-whitespace-line-or-region  
-   • cj/delete-blank-lines-region-or-buffer  
-   • cj/hyphenate-region (rename to hyphenate-whitespace-in-region)
-   consider changing this to replace all whitespace with a char. 
-
 "o" Ordering 
-   • cj/arrayify  
-   • cj/unarrayify  
-   • cj/comma-separated-text-to-lines  (rename text-to-lines)
+   "a" cj/arrayify  
+   "y" cj/unarrayify  
+   "," cj/comma-separated-text-to-lines
+   "A" cj/alphabetize-region
    • (new) create lines to text 
-   • cj/alphabetize-and-replace-region (rename alphabetize-region)
    • (new) create reverse region
-
-"s" Surrounding
-   • cj/insert-around-word-or-region  
-   • cj/append-to-lines-in-region-or-buffer  
-   • cj/prepend-to-lines-in-region-or-buffer  
 
 "c" Case-change   
    • cj/title-case-region  
    • upcase-region  
    • downcase-dwim  
 
-"i" Date & time insertion  
-   • cj/insert-readable-date-time  
-   • cj/insert-sortable-date-time  
-   • cj/insert-sortable-time  
-   • cj/insert-sortable-date  
 
-"b" Buffer-and-file operations  
-   • cj/copy-link-to-source-file  
-   • cj/move-buffer-and-file  
-   • cj/rename-buffer-and-file  
-   • cj/delete-buffer-and-file  
-   • cj/copy-buffer  
-
+** DOING [#A] Refactor Comment Boxes
 ** TODO [#A] Delete whitespace from region is broken
-** PROJECT [#A] Reconfigure ai-config.el
+** TODO [#A] Reconfigure ai-config.el
 *** DONE Toggle gptel's side window with <prefix> t or <f9>
 CLOSED: [2025-08-13 Wed 16:45]
 *** DONE AI Assistant's Answers Should Be Underneath a Labeled Org Heading
@@ -106,7 +118,7 @@ It's currently used in org-mode, so check whether it needs unbinding.
 *** TODO AI Prompt change: p
 *** TODO AI Add file: f
 *** TODO AI Add directory: d
-** PROJECT [#A] Mu4e Fixes
+** TODO [#A] Mu4e Fixes
 *** DONE [#A] mu4e contacts not expanding on forwarding emails
 CLOSED: [2025-08-29 Fri 16:09]
 removed org-contacts functionaality and it returned! 
@@ -118,7 +130,7 @@ https://github.com/jeremy-compostella/org-msg
 Should change to non-blocking process
 ** TODO [#A] Buffer move direction doesn't work in org-mode
 (alt+shift+arrow) is the keybindings
-** PROJECT [#A] Org Roam and Org Template Fixes
+** TODO [#A] Org Roam and Org Template Fixes
 *** TODO [#B] Fix Emacs Org Roam Recipe Error
 C-c n i then type a recipe name.
 org-element--get-category: Invalid function: org-element-with-disabled-cache
@@ -211,7 +223,7 @@ Once that test passes, you know your footnotes are being rewritten into Tufte-st
 
 Enjoy your beautifully-typeset Org → HTML exports in true Tufte style!
 
-** PROJECT [#B] Org Agenda Work
+** TODO [#B] Org Agenda Work
 *** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
 *** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
 ** TODO [#B] Dirvish should open not showing hidden files by default
@@ -317,7 +329,7 @@ Example usage from sqrtminusone
 #+end_src
 
 ** TODO [#B] Change elfeed to be about playing podcasts
-** PROJECT [#C] Evolve Dupre Theme
+** TODO [#C] Evolve Dupre Theme
 Here are some ideas for making dupre-theme a bit more “complete” and future-proof as an Emacs theme.  You don’t have to do all of them, of course, but most “modern” themes ship a fair number of these extra faces and integrations.
 *** TODO [#A] Fill out the “standard” Emacs faces  
    • error / warning / success  
