@@ -129,7 +129,6 @@
 
 ;; Add commonly-used general keybindings
 (global-set-key (kbd "C-x C-f") 'find-file)
-(global-set-key (kbd "C-c u")   'capitalize-region)
 (global-set-key (kbd "C-c f")   'link-hint-open-link-at-point)
 (global-set-key (kbd "M-*")     'calculator)
 
