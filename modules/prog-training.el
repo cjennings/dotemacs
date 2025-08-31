@@ -9,6 +9,7 @@
 ;; ----------------------------- Exercism ----------------------------
 
 (use-package exercism
+  :defer t
   :commands (exercism)
   :bind
   ("C-h E" . exercism))
@@ -17,7 +18,9 @@
 ;;; ----------------------------- Leetcode ----------------------------
 
 (use-package leetcode
+  :defer t
   :commands (leetcode)
+  :bind ("C-h L" . leetcode)
   :custom
   (url-debug t)
   :config
