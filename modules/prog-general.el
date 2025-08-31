@@ -101,9 +101,10 @@ If none exists, it opens magit-status."
 (use-package flycheck-projectile
   :defer .5
   :after projectile
+  :commands flycheck-projectile-list-errors
   :bind
   (:map projectile-command-map
-        ("X" . flycheck-projectile-list-errors)))
+		("x" . flycheck-projectile-list-errors)))
 
 ;; ---------------------------------- Ripgrep ----------------------------------
 ;; allows fast searching for text anywhere in the project with C-c p G (grep)
