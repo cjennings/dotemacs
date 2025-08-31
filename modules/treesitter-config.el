@@ -2,7 +2,7 @@
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 
-;; Tree-sitter's now built into Emacs 29+
+;; Tree-sitter's now built into Emacs 29+!
 
 ;;; Code:
 
@@ -19,7 +19,7 @@
   :defer .5
   :custom
   (treesit-auto-install t)
-;;  (treesit-auto-install 'prompt)
+;;  (treesit-auto-install 'prompt) ;; optional prompt instead of auto-install
   :config
   (treesit-auto-add-to-auto-mode-alist 'all)
   (global-treesit-auto-mode))
