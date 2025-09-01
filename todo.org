@@ -1,4 +1,11 @@
 * Emacs Open Work
+** DOING [#A] Test Webclipper Functionality
+1. *From eww*: Navigate to a webpage in eww, then use =C-c c w= to capture it
+2. *Check the result*: The webpage should be saved as a new org-roam node in your roam-dir with:
+   - Timestamp-based filename
+   - "webclipped" tag
+   - Full page content captured
+3. *Browse webclips*: Use =C-c n w= to list and filter all your webclipped nodes
 ** DOING [#A] Org Roam and Org Template Fixes
 *** TODO [#B] Fix Emacs Org Roam Recipe Error
 **** TODO Fix category alignment
@@ -19,58 +26,8 @@ The category value seems unaligned
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
 *** DONE [#A] Add Org Templates Back to Emacs Repository!
 CLOSED: [2025-09-01 Mon 12:51]
+** TODO [#A] Gptel Add Ability to Save and Reload Conversations
 ** TODO [#A] Delete whitespace from region is broken
-** TODO [#A] Reconfigure ai-config.el
-*** DONE Toggle gptel's side window with <prefix> t or <f9>
-CLOSED: [2025-08-13 Wed 16:45]
-*** DONE AI Assistant's Answers Should Be Underneath a Labeled Org Heading
-CLOSED: [2025-08-13 Wed 16:46]
-**** The time should also be a component of the org heading
-**** Reference
-modified from: https://github.com/gregoryg/emacs-gregoryg?tab=readme-ov-file#return-gptel-backend--model
-
-(defun cj/gptel-backend-and-model ()
-  "Return gptel backend and model (if any)."
-  (let ((backend (if  (boundp 'gptel-backend)  (aref gptel-backend 1)))
-        (model (if  (boundp 'gptel-model) gptel-model)))
-    (format "(%s %s)" backend model)))
-
-(defun cj/gptel-insert-model-in-non-gptel-buffers ()
-  "This function will add the backend and model in the \"dynamic\" buffers, not in dedicated chat buffers.
-To be used in `gptel-pre-response-hook'."
-  (unless (member 'gptel-mode local-minor-modes)
-    (goto-char (point-max))
-    (insert (format "\n%s: " (cj/gptel-backend-and-model)))
-    (goto-char (point-max))))
-(add-hook 'gptel-pre-response-hook 'cj/gptel-insert-model-in-non-gptel-buffers)
-
-(defun cj/gptel-insert-model-in-chat-buffers (response-begin-pos response-end-pos)
-  "This function adds the backend and model in dedicated chat buffers.
-Can be used with the `gptel-post-response-functions' hook."
-  (let* ((gptel-org-prefix (alist-get 'org-mode gptel-prompt-prefix-alist))
-         (inserted-string (format "%s %s\n"
-                                  (substring gptel-org-prefix 0 (string-match " " gptel-org-prefix))
-                                  (cj/gptel-backend-and-model)))
-         (len-inserted (length inserted-string )))
-    (goto-char response-begin-pos)
-    (insert inserted-string)
-    (goto-char (+ response-end-pos len-inserted))))
-(add-hook 'gptel-post-response-functions 'cj/gptel-insert-model-in-chat-buffers)
-*** DONE Erase the Chatgpt Buffer With <prefix> e 
-CLOSED: [2025-08-13 Wed 16:45]
-*** DONE Rewire commands to use base keybinding <prefix> of M-a.
-CLOSED: [2025-08-30 Sat 16:28]
-It's currently used in org-mode, so check whether it needs unbinding. 
-*** DONE AI Rewrite selected region: r
-CLOSED: [2025-08-31 Sun 19:09]
-*** DONE Configured Anthropic's claude
-CLOSED: [2025-08-31 Sun 20:09]
-*** DONE AI Prompt change: p
-CLOSED: [2025-08-31 Sun 19:09]
-*** DONE AI Add file: f
-CLOSED: [2025-08-31 Sun 19:09]
-*** TODO AI Copy current selection to AI Assistant buffer, toggling if it's not open: C
-*** TODO AI Add directory: d
 ** TODO [#A] Mu4e Fixes
 *** DONE [#A] mu4e contacts not expanding on forwarding emails
 CLOSED: [2025-08-29 Fri 16:09]
@@ -79,9 +36,9 @@ removed org-contacts functionaality and it returned!
 CLOSED: [2025-08-30 Sat 12:12]
 https://github.com/jeremy-compostella/org-msg
 *** TODO [#A] Fix org-contacts functionality
-** TODO [#A] file-config.el cj/xdg-open blocks further Emacs use
-Should change to non-blocking process
-** TODO [#B] Add all ert tests into separate directory
+** TODO [#A] file-config.el cj/xdg-open blocks Emacs process
+Should change to non-blocking -- maybe use Emacs internal async? 
+** TODO [#B] Add All Ert Tests Into Separate Directory
 Tests should be added to a separate directory rather than the end of each elisp file.
 Gather them together, move them there, and make it easy to run tests per module and workflow. 
 ** TODO [#B] Get Tufte.css working and as a separate entry
@@ -169,7 +126,7 @@ Enjoy your beautifully-typeset Org → HTML exports in true Tufte style!
 ** TODO [#B] Org Agenda Work
 *** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
 *** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
-** TODO [#B] Dirvish should open not showing hidden files by default
+** TODO [#B] Dirvish Should Open Not Showing Hidden Files by Default
 *** 2025-06-07 Sat @ 12:25:28 -0500 It isn't omitting the h switch on directory listings
 No. Didn't help
 ** TODO [#B] Fix Emacs Alarms for Scheduled Events
@@ -238,7 +195,7 @@ espeak "Appointment in $TIME minutes: $MSG"
 #+END_QUOTE
 [[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
 Captured On: [2025-06-19 Thu 12:29]
-** TODO [#B] Emacs add difftastic functionality
+** TODO [#B] Emacs Add Difftastic Functionality
 
 Linux Binary Install
 https://github.com/Wilfred/difftastic
@@ -254,7 +211,7 @@ https://github.com/pkryger/difftastic.el
        :rev :newest)))
 #+end_src
 
-** TODO [#B] Emacs Add forge functionality
+** TODO [#B] Emacs Add Magit Forge Functionality
 
 https://github.com/magit/forge
 https://magit.vc/manual/forge/Setup-for-Githubcom.html
@@ -271,7 +228,7 @@ Example usage from sqrtminusone
                               forge-gitlab-repository)))
 #+end_src
 
-** TODO [#B] Change elfeed to be about playing podcasts
+** TODO [#B] Change Elfeed to Be About Playing Podcasts
 ** TODO [#C] Evolve Dupre Theme
 Here are some ideas for making dupre-theme a bit more “complete” and future-proof as an Emacs theme.  You don’t have to do all of them, of course, but most “modern” themes ship a fair number of these extra faces and integrations.
 *** TODO [#A] Fill out the “standard” Emacs faces  
@@ -561,18 +518,16 @@ Below is a small excerpt showing how you might start adding some of the “missi
  )
 #+end_src
 
-** TODO [#C] Revisit and refactor localrepo functionality
-** TODO [#C] Check and test native comp logging changes 
-** TODO [#C] Emacs: Should adding tasks add it to Projects and Tasks in the inbox file?
-** TODO [#C] Fix exporting documents to HTML.
+** TODO [#C] Revisit and Refactor Localrepo Functionality
+** TODO [#C] Fix Exporting Documents to HTML.
 This appears to work with emacs -q. What's up with your config? 
 ** TODO [#C] Rename 'sync-dir' Variable in Init File to 'org-dir'
 
 [[https://github.com/ryuslash/mode-icons][ryuslash/mode-icons: Show icons instead of mode names]]
 Captured On: [2025-06-07 Sat 13:29]
-** TODO [#C] Emacs Change appropriate use-package installs to :vc
+** TODO [#C] Emacs Change Appropriate Use-package Installs to :vc
 especially where you're cloning them to provide fixes
-** TODO [#C] Emacs: Add reverso functionality
+** TODO [#C] Emacs: Add Reverso Functionality
 https://sqrtminusone.xyz/packages/reverso/
 check his config for a usage example
 
@@ -592,7 +547,7 @@ reverso.el is a package of mine that provides Emacs interface for https://revers
 
 ** TODO [#C] Emacs Config: Narrowing Org doesn't allow refresh by type
 After generating an org agenda list, I can narrow the type to all DONE or IN-PROGRESS. However when I use my custom functions to just get the agenda for the current buffer, I can't. The scope has now widened and the refresh is for all buffers. 
-** TODO [#C] Add a restrict to subtree org agenda command
+** TODO [#C] Add a Restrict to Subtree Org Agenda Command
 In Org-mode the “agenda” machinery by default doesn’t pay any attention to your buffer­narrow — it always scans whole files in your =org-agenda-files=.  However, you can teach Org-agenda to only look between two points (the start and end of your current subtree) by using the built-in “restrict” hooks:
 
   1.  =org‐agenda‐restrict=         – turn on restriction
@@ -652,7 +607,7 @@ Quick alternative: if you don’t need the full agenda machinery (dates, deadlin
 
 With this in place you effectively get an agenda tailored to exactly the bit of tree you’re working on.
 
-** TODO [#C] Find another keymapping for emojify
+** TODO [#C] Find Another Keymapping for Emojify
 ** TODO [#D] Install ZOxide Integration into Emacs
 [[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
 Captured On: [2025-06-07 Sat 17:11]
