@@ -8,6 +8,8 @@
 
 ;;; Code:
 
+(require 'seq)
+
 ;; ---------------------- General Prog Settings ----------------------
 ;; keybindings, minor-modes, and prog-mode settings
 
@@ -48,25 +50,47 @@
               ;; backtab is shift-tab
               ("<backtab>" . bicycle-cycle-global)))
 
-;; --------------------------- Project Switch Actions --------------------------
-;; when switching projects, display the todo file if it exists, or display
-;; magit-status if it doesn't.
+;; ----------------------------- Project Todo Files ----------------------------
+;; allows the project todo file to be opened via keybinding or on project open.
+;; if there's a project todo.org file, open it when the project launches.
+;; if theres no project todo.org file, open magit status on project launch.
+
+(defun cj/find-project-root-file (regexp)
+  "Return first file in the current Projectile project root matching REGEXP.
+Match is done against (downcase file) for case-insensitivity.
+REGEXP must be a string or an rx form."
+  (when-let ((root (projectile-project-root)))
+    (seq-find (lambda (file)
+                (string-match-p (if (stringp regexp)
+                                    regexp
+                                  (rx-to-string regexp))
+                                (downcase file)))
+              (directory-files root))))
+
+(defun cj/open-project-root-todo ()
+  "Open todo.org in the current Projectile project root.
+If no such file exists there, display a message."
+  (interactive)
+  (let ((file (cj/find-project-root-file "^todo\\.org$")))
+    (if file
+        (find-file (expand-file-name file (projectile-project-root)))
+      (message "No todo.org in project root: %s"
+               (or (projectile-project-root) "<no project>")))))
 
 (defun cj/project-switch-actions ()
-  "Opens TODO or README file on projectile switch project.
-If none exists, it opens magit-status."
-  (let* ((files (directory-files (projectile-project-root)))
-         (todo-file (seq-find (lambda (file)
-                                (string-match-p "todo\\.\\(org\\|md\\|txt\\)\\'"
-                                                (downcase file))) files)))
-    (if todo-file
-        (find-file (concat (projectile-project-root) todo-file))
-      (magit-status))))
+  "On =projectile-after-switch-project-hook=, open TODO.{org,md,txt} or fall back to Magit."
+  (let ((file (cj/find-project-root-file
+               (rx bos "todo." (or "org" "md" "txt") eos))))
+    (if file
+        (find-file (expand-file-name file (projectile-project-root)))
+      (magit-status (projectile-project-root)))))
+
+(define-key projectile-command-map (kbd "t") #'cj/open-project-root-todo)
 
 ;; --------------------------------- Projectile --------------------------------
 ;; project support
 
-;; only run discover projects when there's no bookmarks file
+;; only discover projects when there's no bookmarks file
 (defun cj/projectile-schedule-project-discovery ()
   (let ((projectile-bookmark-file (concat user-emacs-directory "/projectile-bookmarks.eld")))
     (unless (file-exists-p projectile-bookmark-file)
