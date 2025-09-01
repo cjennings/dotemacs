@@ -1,5 +1,4 @@
 * Emacs Open Work
-** DOING [#A] Refactor Comment Boxes
 ** TODO [#A] Delete whitespace from region is broken
 ** TODO [#A] Reconfigure ai-config.el
 *** DONE Toggle gptel's side window with <prefix> t or <f9>
@@ -42,10 +41,15 @@ CLOSED: [2025-08-13 Wed 16:45]
 *** DONE Rewire commands to use base keybinding <prefix> of M-a.
 CLOSED: [2025-08-30 Sat 16:28]
 It's currently used in org-mode, so check whether it needs unbinding. 
-*** TODO AI Rewrite selected region: r
+*** DONE AI Rewrite selected region: r
+CLOSED: [2025-08-31 Sun 19:09]
+*** DONE Configured Anthropic's claude
+CLOSED: [2025-08-31 Sun 20:09]
+*** DONE AI Prompt change: p
+CLOSED: [2025-08-31 Sun 19:09]
+*** DONE AI Add file: f
+CLOSED: [2025-08-31 Sun 19:09]
 *** TODO AI Copy current selection to AI Assistant buffer, toggling if it's not open: C
-*** TODO AI Prompt change: p
-*** TODO AI Add file: f
 *** TODO AI Add directory: d
 ** TODO [#A] Mu4e Fixes
 *** DONE [#A] mu4e contacts not expanding on forwarding emails
@@ -57,8 +61,6 @@ https://github.com/jeremy-compostella/org-msg
 *** TODO [#A] Fix org-contacts functionality
 ** TODO [#A] file-config.el cj/xdg-open blocks further Emacs use
 Should change to non-blocking process
-** TODO [#A] Buffer move direction doesn't work in org-mode
-(alt+shift+arrow) is the keybindings
 ** TODO [#A] Org Roam and Org Template Fixes
 *** TODO [#B] Fix Emacs Org Roam Recipe Error
 C-c n i then type a recipe name.
