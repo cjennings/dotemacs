@@ -84,8 +84,7 @@
 
 
 (use-package flyspell
-  :defer .5
-  :after ispell
+  :after (ispell abbrev)
   :ensure nil ;; built-in
   :config
   ;; don't print message for every word when checking
