@@ -17,7 +17,6 @@
 
 ;;; Code:
 
-
 ;; ---------------------------- Org Webpage Clipper ----------------------------
 ;; Allows saving a copy of the page eww is visiting for offline reading.
 ;; In other words, it's a "Pocket/Instapaper" that keeps the article in Emacs.
@@ -110,12 +109,33 @@ Captured On: %U"
            (file+headline inbox-file "Shopping List") "* %?")
 
           ;; requires cj/org-web-clipper function defined above
-          ("w" "Web Page Clipper" entry
-           (file+headline inbox-file "To Read")
-           "* %a\nURL: %L\nCaptured On:%U\n%(cj/org-webpage-clipper)\n"
-           :prepend t :immediate-finish t)
+          ("w" "Web Page Clipper" plain
+           (function cj/org-roam-capture-webclip)
+           "" :immediate-finish t)
           )) ;; end setq
   ) ;; end use-package org-protocol
+
+;; -------------------------- Org-Roam-Capture-Webclip -------------------------
+
+(defun cj/org-roam-capture-webclip ()
+  "Capture current webpage as an org-roam node with webclipped tag."
+  (let* ((url (plist-get org-store-link-plist :link))
+         (title (or (plist-get org-store-link-plist :description) ""))
+         (body (cj/org-webpage-clipper)))
+    (org-roam-capture- :node (org-roam-node-create :title title)
+                       :templates '(("w" "webclip" plain "%?"
+                                     :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                                                        "#+TITLE: ${title}
+#+FILETAGS: webclipped
+#+ROAM_KEY: ${url}
+URL: ${url}
+Captured On: %U
+
+${body}")
+                                     :unnarrowed t
+                                     :immediate-finish t))
+                       :props =(:url ,url
+                                     :body ,body))))
 
 ;; ---------------------------- Simple Task Capture ----------------------------
 ;; the simplest way to capture a task. Also a simple way to write this function.
