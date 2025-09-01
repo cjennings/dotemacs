@@ -52,14 +52,14 @@
 
 (defvar ai-keymap
   (let ((map (make-sparse-keymap)))
-	(define-key map (kbd "t") #'cj/toggle-gptel)
-	(define-key map (kbd "x") #'cj/gptel-clear-buffer)
-	(define-key map (kbd "m") #'gptel-menu)
+    (define-key map (kbd "t") #'cj/toggle-gptel)
+    (define-key map (kbd "x") #'cj/gptel-clear-buffer)
+    (define-key map (kbd "m") #'gptel-menu)
     (define-key map (kbd "r") #'gptel-rewrite)
     (define-key map (kbd "f") #'gptel-add-file)
     (define-key map (kbd "b") #'gptel-add-buffer)
-	(define-key map (kbd "p") #'gptel-system-prompt)
-	map)
+    (define-key map (kbd "p") #'gptel-system-prompt)
+    map)
   "Keymap for AI-related commands (prefix \\<ai-keymap>).")
 (global-set-key (kbd "M-a") ai-keymap)
 
@@ -76,24 +76,24 @@
   (gptel-expert-commands t)
   (gptel-track-media t)
   (gptel-include-reasoning 'ignore)
-  (gptel-model 'o4-mini)     ;; keep or change to your preferred model
+  (gptel-model 'o4-mini)     ;; default only - may change in config below
   (gptel-log-level 'info)
   (gptel--debug nil)
   :config
-  ;; Directives
+  ;; Directives -- see ai-directives.el in modules directory.
   (setq gptel-directives
-		`((default     . ,default-directive)
-		  (accountant  . ,accountant-directive)
-		  (coder       . ,coder-directive)
-		  (chat        . ,chat-directive)
-		  (contractor  . ,contractor-directive)
-		  (emacs       . ,emacs-directive)
-		  (email       . ,email-directive)
-		  (historian   . ,historian-directive)
-		  (proofreader . ,proofreader-directive)
-		  (llm-prompt  . ,prompt-directive)
-		  (qa          . ,qa-directive)
-		  (reviewer    . ,reviewer-directive)))
+        `((default     . ,default-directive)
+          (accountant  . ,accountant-directive)
+          (coder       . ,coder-directive)
+          (chat        . ,chat-directive)
+          (contractor  . ,contractor-directive)
+          (emacs       . ,emacs-directive)
+          (email       . ,email-directive)
+          (historian   . ,historian-directive)
+          (proofreader . ,proofreader-directive)
+          (llm-prompt  . ,prompt-directive)
+          (qa          . ,qa-directive)
+          (reviewer    . ,reviewer-directive)))
 
   ;;  Dynamic user prefix for org-mode heading (string, refreshed just before send)
   (defun cj/gptel--fresh-org-prefix ()
@@ -109,12 +109,12 @@
           (cj/gptel--fresh-org-prefix)))
   (advice-add 'gptel-send :before #'cj/gptel--refresh-org-prefix)
 
-  ;; AI header on each reply: (e.g. "*** ChatGPT: <model> [timestamp]")
+  ;; AI header on each reply: (e.g. "*** AI: <model> [timestamp]")
   (defun cj/gptel-backend-and-model ()
     "Return backend, model, and timestamp as a single string."
     (let* ((backend (pcase (bound-and-true-p gptel-backend)
                       ((and v (pred vectorp)) (aref v 1))  ;; display name if vector
-                      (_ "ChatGPT")))
+                      (_ "AI")))
            (model   (format "%s" (or (bound-and-true-p gptel-model) "")))
            (ts      (format-time-string "[%Y-%m-%d %H:%M:%S]")))
       (format "%s: %s %s" backend model ts)))
@@ -126,7 +126,7 @@
       (insert (format "*** %s\n" (cj/gptel-backend-and-model)))))
 
   (defun cj/gptel-clear-buffer ()
-	"Erase the contents of the *AI-Assistant* buffer leaving initial org heading."
+    "Erase the contents of the *AI-Assistant* buffer leaving initial org heading."
     (interactive)
     (let ((buf (get-buffer "*AI-Assistant*")))
       (if (not buf)
@@ -142,13 +142,23 @@
 
   ;; ---- Auth: pick the API key from your auth source
   (setq auth-sources `((:source ,authinfo-file)))
-  (setq gptel-api-key (auth-source-pick-first-password :host "api.openai.com")))
+  (setq gptel-api-key (auth-source-pick-first-password :host "api.openai.com"))
+  (setq anthropic-api-key (auth-source-pick-first-password :host "api.anthropic.com"))
+
+  ;; Setup Anthropic's Claude
+  (setq gptel-backend (gptel-make-anthropic "Claude"
+                        :stream t :key anthropic-api-key))
+  (setq gptel-model 'claude-3-opus-4-20250514)
+
+  )
 
 ;; -------------------------------- GPTel-Magit --------------------------------
 
 (use-package gptel-magit
   :defer t
   :hook (magit-mode . gptel-magit-install))
+
+
 
 (provide 'ai-config)
 ;;; ai-config.el ends here
