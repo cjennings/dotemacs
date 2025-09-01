@@ -1,4 +1,24 @@
 * Emacs Open Work
+** DOING [#A] Org Roam and Org Template Fixes
+*** TODO [#B] Fix Emacs Org Roam Recipe Error
+**** TODO Fix category alignment
+**** TODO Fix added path to template file
+**** TODO Fix having template outline in file
+**** 2025-09-01 Mon @ 12:49:21 -0500 Fixed org-element issue
+it's a bug in not loading org-element. Added this to my config
+
+  ;; bug workaround for org-element--get-category: Invalid function: org-element-with-disabled-cache
+  ;; https://github.com/doomemacs/doomemacs/issues/7347
+  (load-library "org-element.el")
+
+**** Problem Statement
+C-c n i then type a recipe name.
+org-element--get-category: Invalid function: org-element-with-disabled-cache
+The file was created, but does not come to the front
+The category value seems unaligned
+*** TODO [#B] Add Org Capture Template for Vocabulary Words
+*** DONE [#A] Add Org Templates Back to Emacs Repository!
+CLOSED: [2025-09-01 Mon 12:51]
 ** TODO [#A] Delete whitespace from region is broken
 ** TODO [#A] Reconfigure ai-config.el
 *** DONE Toggle gptel's side window with <prefix> t or <f9>
@@ -61,14 +81,6 @@ https://github.com/jeremy-compostella/org-msg
 *** TODO [#A] Fix org-contacts functionality
 ** TODO [#A] file-config.el cj/xdg-open blocks further Emacs use
 Should change to non-blocking process
-** TODO [#A] Org Roam and Org Template Fixes
-*** TODO [#B] Fix Emacs Org Roam Recipe Error
-C-c n i then type a recipe name.
-org-element--get-category: Invalid function: org-element-with-disabled-cache
-The file was created, but does not come to the front
-The category value seems unaligned
-*** TODO [#A] Add Org Templates Back to Emacs Repository!
-*** TODO [#B] Add Org Capture Template for Vocabulary Words
 ** TODO [#B] Add all ert tests into separate directory
 Tests should be added to a separate directory rather than the end of each elisp file.
 Gather them together, move them there, and make it easy to run tests per module and workflow. 

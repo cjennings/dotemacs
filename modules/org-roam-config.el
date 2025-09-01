@@ -23,6 +23,16 @@
    '(("d" "default" plain "%?"
       :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}\n")
       :unnarrowed t)
+     ("w" "webclip" plain "%?"
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}
+#+FILETAGS: webclipped
+#+ROAM_KEY: ${url}
+URL: ${url}
+Captured On: %U
+
+${body}")
+      :unnarrowed t
+      :immediate-finish t)
      ("v" "v2mom" plain
       (function (lambda () (concat roam-dir "templates/v2mom.org")))
       :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}\n")
@@ -30,7 +40,7 @@
      ("r" "recipe" plain
       (function (lambda () (concat roam-dir "templates/recipe.org")))
       :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}
-	  #+CATEGORY: ${title}\n#+FILETAGS: Recipe\n#+STARTUP: showall")
+      #+CATEGORY: ${title}\n#+FILETAGS: Recipe\n#+STARTUP: showall")
       :unnarrowed t)
      ("p" "project" plain
       (function (lambda () (concat roam-dir "templates/project.org")))
@@ -49,6 +59,7 @@
          ("C-c n r" . cj/org-roam-find-node-recipe)
          ("C-c n t" . cj/org-roam-find-node-topic)
          ("C-c n i" . org-roam-node-insert)
+         ("C-c n w" . cj/org-roam-find-node-webclip)
          :map org-mode-map
          ("C-M-i" . completion-at-point)
          :map org-roam-dailies-map
@@ -139,6 +150,15 @@ created nodes are added to the agenda and follow a template defined by
 
   (interactive)
   (cj/org-roam-find-node "Project" "p" (concat roam-dir "templates/project.org")))
+
+(defun cj/org-roam-find-node-webclip ()
+  "List nodes of type 'webclipped' in completing read for selection."
+  (interactive)
+  (org-roam-node-find
+   nil
+   nil
+   (cj/org-roam-filter-by-tag "webclipped")
+   nil))
 
 ;; ---------------------- Org Capture After Finalize Hook ----------------------
 
