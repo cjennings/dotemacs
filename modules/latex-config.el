@@ -36,17 +36,20 @@
   (setq-default TeX-master t)) ; Assume the file is the master file itself
 
 (use-package auctex-latexmk
+  :defer t
   :config
   (auctex-latexmk-setup)
   (setq auctex-latexmk-inherit-TeX-PDF-mode t))
 
 (use-package company-auctex
+  :after tex
   :ensure t
   :init (company-auctex-init))
 
 ;; ----------------------------- Graphviz Dot Mode -----------------------------
 
 (use-package graphviz-dot-mode
+  :defer t
   :config
   (setq graphviz-dot-indent-width 4))
 
