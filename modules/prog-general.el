@@ -50,43 +50,6 @@
               ;; backtab is shift-tab
               ("<backtab>" . bicycle-cycle-global)))
 
-;; ----------------------------- Project Todo Files ----------------------------
-;; allows the project todo file to be opened via keybinding or on project open.
-;; if there's a project todo.org file, open it when the project launches.
-;; if theres no project todo.org file, open magit status on project launch.
-
-(defun cj/find-project-root-file (regexp)
-  "Return first file in the current Projectile project root matching REGEXP.
-Match is done against (downcase file) for case-insensitivity.
-REGEXP must be a string or an rx form."
-  (when-let ((root (projectile-project-root)))
-    (seq-find (lambda (file)
-                (string-match-p (if (stringp regexp)
-                                    regexp
-                                  (rx-to-string regexp))
-                                (downcase file)))
-              (directory-files root))))
-
-(defun cj/open-project-root-todo ()
-  "Open todo.org in the current Projectile project root.
-If no such file exists there, display a message."
-  (interactive)
-  (let ((file (cj/find-project-root-file "^todo\\.org$")))
-    (if file
-        (find-file (expand-file-name file (projectile-project-root)))
-      (message "No todo.org in project root: %s"
-               (or (projectile-project-root) "<no project>")))))
-
-(defun cj/project-switch-actions ()
-  "On =projectile-after-switch-project-hook=, open TODO.{org,md,txt} or fall back to Magit."
-  (let ((file (cj/find-project-root-file
-               (rx bos "todo." (or "org" "md" "txt") eos))))
-    (if file
-        (find-file (expand-file-name file (projectile-project-root)))
-      (magit-status (projectile-project-root)))))
-
-(define-key projectile-command-map (kbd "t") #'cj/open-project-root-todo)
-
 ;; --------------------------------- Projectile --------------------------------
 ;; project support
 
@@ -102,11 +65,42 @@ If no such file exists there, display a message."
   ("C-c p" . projectile-command-map)
   :bind
   (:map projectile-command-map
-        ("r" . projectile-replace-regexp))
+        ("r" . projectile-replace-regexp)
+        ("t" . cj/open-project-root-todo))
   :custom
   (projectile-auto-discover nil)
   (projectile-project-search-path `(,code-dir ,projects-dir))
   :config
+  (defun cj/find-project-root-file (regexp)
+    "Return first file in the current Projectile project root matching REGEXP.
+Match is done against (downcase file) for case-insensitivity.
+REGEXP must be a string or an rx form."
+    (when-let ((root (projectile-project-root)))
+      (seq-find (lambda (file)
+                  (string-match-p (if (stringp regexp)
+                                      regexp
+                                    (rx-to-string regexp))
+                                  (downcase file)))
+                (directory-files root))))
+
+  (defun cj/open-project-root-todo ()
+    "Open todo.org in the current Projectile project root.
+If no such file exists there, display a message."
+    (interactive)
+    (let ((file (cj/find-project-root-file "^todo\\.org$")))
+      (if file
+          (find-file (expand-file-name file (projectile-project-root)))
+        (message "No todo.org in project root: %s"
+                 (or (projectile-project-root) "<no project>")))))
+
+  (defun cj/project-switch-actions ()
+    "On =projectile-after-switch-project-hook=, open TODO.{org,md,txt} or fall back to Magit."
+    (let ((file (cj/find-project-root-file
+                 (rx bos "todo." (or "org" "md" "txt") eos))))
+      (if file
+          (find-file (expand-file-name file (projectile-project-root)))
+        (magit-status (projectile-project-root)))))
+
   ;; scan for projects if none are defined
   (cj/projectile-schedule-project-discovery)
 
@@ -128,7 +122,7 @@ If no such file exists there, display a message."
   :commands flycheck-projectile-list-errors
   :bind
   (:map projectile-command-map
-		("x" . flycheck-projectile-list-errors)))
+        ("x" . flycheck-projectile-list-errors)))
 
 ;; ---------------------------------- Ripgrep ----------------------------------
 ;; allows fast searching for text anywhere in the project with C-c p G (grep)
