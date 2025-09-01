@@ -607,30 +607,74 @@ begin and end the line with the appropriate comment symbols based on programming
 		  (insert comment-char))
 		(insert " ")
 		(insert comment-end)))))
-
 (defun cj/comment-box ()
-  "Insert a comment with '#' drawn around a string the user inputs.
-The box extends to the fill column.  Places the point on the line after the
-comment box."
+  "Insert a comment box around text that the user inputs.
+The box extends to the fill column, centers the text, and uses the current
+mode's comment syntax at both the beginning and end of each line. The box
+respects the current indentation level and avoids trailing whitespace."
   (interactive)
-  (let* ((comment-char "#")
-		 (comment-pad 4) ; 4 = 2 comment chars & 2 spaces
+  (let* ((comment-char (if (equal comment-start ";") ";;"
+						  (string-trim comment-start)))
+		 (comment-end-char (if (string-empty-p comment-end)
+							  comment-char
+							(string-trim comment-end)))
+		 (line-char (if (equal comment-char ";;") "-" "#"))
 		 (comment (capitalize (string-trim (read-from-minibuffer "Comment: "))))
-		 (comment-length (length comment)))
+		 (comment-length (length comment))
+		 (current-column-pos (current-column))
+		 (max-width (min fill-column 80))
+		 ;; Calculate available width between comment markers
+		 (available-width (- max-width
+							current-column-pos
+							(length comment-char)
+							(length comment-end-char)))
+		 ;; Inner width is the width without the spaces after comment start and before comment end
+		 (inner-width (- available-width 2))
+		 ;; Calculate padding for each side of the centered text
+		 (padding-each-side (max 1 (/ (- inner-width comment-length) 2)))
+		 ;; Adjust for odd-length comments
+		 (right-padding (if (= (% (- inner-width comment-length) 2) 0)
+						   padding-each-side
+						 (1+ padding-each-side))))
 
-	;; message if the comment doesn't fit on a single line
-	(if (> comment-length (- fill-column comment-pad))
+	;; Check if we have enough space
+	(if (< inner-width (+ comment-length 4)) ; minimum sensible width
 		(message "Comment string is too big to fit in one line")
 	  (progn
-		(dotimes (_ (- fill-column 1)) (insert comment-char))
-		(newline)
+		;; Top line - fill entirely with line characters except for space after comment start
 		(insert comment-char)
 		(insert " ")
+		(dotimes (_ inner-width) (insert line-char))
+		(insert " ")
+		(insert comment-end-char)
+		(newline)
+
+		;; Add indentation on the new line to match current column
+		(dotimes (_ current-column-pos) (insert " "))
+
+		;; Middle line with centered text
+		(insert comment-char)
+		(insert " ")
+		;; Left padding
+		(dotimes (_ padding-each-side) (insert " "))
+		;; The comment text
 		(insert comment)
-		(dotimes(_ (- fill-column comment-length comment-pad)) (insert " ")))
-	  (insert comment-char)
-	  (newline)
-	  (dotimes (_ (- fill-column 1)) (insert comment-char)))))
+		;; Right padding
+		(dotimes (_ right-padding) (insert " "))
+		(insert " ")
+		(insert comment-end-char)
+		(newline)
+
+		;; Add indentation on the new line to match current column
+		(dotimes (_ current-column-pos) (insert " "))
+
+		;; Bottom line - same as top line
+		(insert comment-char)
+		(insert " ")
+		(dotimes (_ inner-width) (insert line-char))
+		(insert " ")
+		(insert comment-end-char)
+		(newline)))))
 
 (defun cj/comment-hyphen()
   "Insert a centered comment with '-' (hyphens) on each side."
@@ -642,11 +686,11 @@ comment box."
   (interactive)
   (goto-char (point-min))
   (let (kill-ring)
-	(comment-kill (count-lines (point-min) (point-max)))))
+    (comment-kill (count-lines (point-min) (point-max)))))
 
 ;; Comment styles & removal prefix and keymap
 (define-prefix-command 'cj/comment-map nil
-					   "Keymap for comment styling and removal.")
+                       "Keymap for comment styling and removal.")
 (define-key cj/custom-keymap "m" 'cj/comment-map)
 (define-key cj/comment-map "r" 'cj/comment-reformat)
 (define-key cj/comment-map "c" 'cj/comment-centered)
