@@ -1,4 +1,4 @@
-;;; dirvish-config.el --- Configuration for the Dired and Dirvish File Managers -*- lexical-binding: t; -*-
+;;; dirvish-config.el --- Dired/Dirvish Configuration -*- lexical-binding: t; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -115,16 +115,18 @@ Alert if the file is already a JPEG; notify the user when converstion is done."
 	 ("lx" "~/lectures/"                          "lectures")
      ("mb" "/media/backup/"                       "backup directory")
      ("mx" "~/music/"                             "music")
-     ("pd" "~/projects/documents/"                "project documents")
+	 ("pD" "~/projects/documents/"                "project documents")
+	 ("pd" "~/projects/danneel/"                  "project danneel")
      ("pl" "~/projects/elibrary/"                 "project elibrary")
      ("pf" "~/projects/finances/"                 "project finances")
-     ("pj" "~/projects/jr-estate/"                "project jr-estate")
+	 ("pjr" "~/projects/jr-estate/"                "project jr-estate")
      ("ps" ,(concat pix-dir "/screenshots/")      "pictures screenshots")
      ("pw" ,(concat pix-dir "/wallpaper/")        "pictures wallpaper")
      ("px" ,pix-dir                               "pictures directory")
 	 ("rcj" "/sshx:cjennings@cjennings.net:~"     "remote cjennings.net")
 	 ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
-     ("sx" ,sync-dir                              "sync directory")
+	 ("sx" ,sync-dir                              "sync directory")
+	 ("so" "~/sync/org"                           "org directory")
 	 ("sv" "~/sync/videos/"                       "sync/videos directory")
 	 ("tg" ,(concat sync-dir "/text.games")       "text games")
 	 ("vr" ,video-recordings-dir                  "video recordings directory")
