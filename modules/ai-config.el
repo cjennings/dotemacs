@@ -143,12 +143,12 @@
   ;; ---- Auth: pick the API key from your auth source
   (setq auth-sources `((:source ,authinfo-file)))
   (setq gptel-api-key (auth-source-pick-first-password :host "api.openai.com"))
-  (setq anthropic-api-key (auth-source-pick-first-password :host "api.anthropic.com"))
+  ;; (setq anthropic-api-key (auth-source-pick-first-password :host "api.anthropic.com"))
 
-  ;; Setup Anthropic's Claude
-  (setq gptel-backend (gptel-make-anthropic "Claude"
-                        :stream t :key anthropic-api-key))
-  (setq gptel-model 'claude-3-opus-4-20250514)
+  ;; ;; Setup Anthropic's Claude
+  ;; (setq gptel-backend (gptel-make-anthropic "Claude"
+  ;;                       :stream t :key anthropic-api-key))
+  ;; (setq gptel-model 'claude-3-opus-4-20250514)
 
   )
 
