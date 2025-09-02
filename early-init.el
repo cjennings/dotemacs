@@ -1,4 +1,4 @@
-﻿;;; early-init.el --- Emacs Early Init -*- no-byte-compile: t; lexical-binding: t; -*-
+;;; early-init.el ---  -*- lexical-binding: t; coding: utf-8-unix; no-byte-compile: t; lexical-binding: t; -*-
 
 ;;; Commentary:
 
