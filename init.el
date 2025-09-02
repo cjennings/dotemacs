@@ -1,4 +1,4 @@
-﻿;;; init --- Emacs Init File -*- lexical-binding: t -*-
+;;; init --- Emacs Init File -*- lexical-binding: t; coding: utf-8-unix; -*-
 ;;  author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
