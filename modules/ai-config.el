@@ -140,14 +140,30 @@
   ;; ---- Auth: pick the API key from your auth source
   (setq auth-sources `((:source ,authinfo-file)))
   (setq gptel-api-key (auth-source-pick-first-password :host "api.openai.com"))
-  ;; (setq anthropic-api-key (auth-source-pick-first-password :host "api.anthropic.com"))
+  (setq anthropic-api-key (auth-source-pick-first-password :host "api.anthropic.com"))
 
-  ;; ;; Setup Anthropic's Claude
-  ;; (setq gptel-backend (gptel-make-anthropic "Claude"
-  ;;                       :stream t :key anthropic-api-key))
-  ;; (setq gptel-model 'claude-3-opus-4-20250514)
+  ;; Setup Anthropic's Claude
+  (setq gptel-backend (gptel-make-anthropic "Claude"
+                        :stream t :key anthropic-api-key))
+  (setq gptel-model 'claude-3-opus-4-20250514)
+  ) ;; end use-package declaration
 
-  )
+
+(with-eval-after-load 'projectile
+  (defun cj/gptel-add-file ()
+    "Add a file to the GPTel context.
+If inside a Projectile project, prompt from the project's file list;
+otherwise use =read-file-name'."
+    (interactive)
+	(let* ((in-proj (and (fboundp 'projectile-project-p)
+                        (projectile-project-p)))
+          (file    (if in-proj
+                       (projectile-completing-read
+                        "GPTel add file: "
+                        (projectile-current-project-files))
+                     (read-file-name "GPTel add file: "))))
+      (gptel-add-file file)))
+  (define-key ai-keymap (kbd "f") #'cj/gptel-add-file))
 
 ;; -------------------------------- GPTel-Magit --------------------------------
 
