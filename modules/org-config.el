@@ -210,7 +210,7 @@ org-archive-subtree-default are placed.")
   :config
   ;; bug workaround for org-element--get-category: Invalid function: org-element-with-disabled-cache
   ;; https://github.com/doomemacs/doomemacs/issues/7347
-  (load-library "org-element.el")
+  ;;(load-library "org-element.el")
 
 
   (cj/org-general-settings)
