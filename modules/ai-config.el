@@ -45,9 +45,6 @@
       (with-current-buffer buffer
         (goto-char (point-max))))))
 
-;; retry if authinfo.gpg authentication fails
-(advice-add 'cj/toggle-gptel :before #'cj/ensure-auth-before)
-
 ;; ------------------------- GPTel Config And AI-Keymap ------------------------
 
 (defvar ai-keymap
