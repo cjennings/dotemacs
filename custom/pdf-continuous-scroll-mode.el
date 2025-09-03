@@ -2,11 +2,11 @@
 ;; Copyright (C) 2020  Daniel Laurens Nicolai
 
 ;; Author: Daniel Laurens Nicolai <dalanicolai@gmail.com>
+;; with modifications by: Craig Jennings <c@ecjennings.net>
 ;; Version: 0
-;; Keywords: pdf-tools,
+;; Keywords: files
 ;; Package-Requires: ((emacs "27.1"))
 ;; URL: https://github.com/dalanicolai/pdf-continuous-scroll-mode.el
-
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -33,28 +33,28 @@
 (defvar pdf-cscroll-mode-line-format)
 (defvar pdf-cscroll-mode-line-original-face)
 
-(defcustom pdf-continuous-step-size 4
-  "Step size in lines (integer) for continuous scrolling"
+(defcustom pdf-continuous-scroll-step-size 4
+  "Step size in lines (integer) for continuous scrolling."
   :group 'pdf-continuous-scroll
   :type 'integer)
 
-(defcustom pdf-cs-reverse-scrolling nil
-  "Reverse default scrolling direction"
+(defcustom pdf-continuous-scroll-reverse-scrolling nil
+  "Reverse default scrolling direction."
   :group 'pdf-continuous-scroll
   :type 'boolean)
 
-(defcustom pdf-cs-custom-min-height nil
-  "Reverse default scrolling direction"
+(defcustom pdf-continuous-scroll-custom-min-height nil
+  "Reverse default scrolling direction."
   :group 'pdf-continuous-scroll
   :type 'number)
 
-(defun pdf-cscroll-window-dual-p ()
+(defun pdf-continuous-scroll-window-dual-p ()
   "Return t if current scroll window status is dual, else nil."
     (or (equal 'upper (alist-get 'pdf-scroll-window-status (window-parameters)))
         (equal 'lower (alist-get 'pdf-scroll-window-status (window-parameters)))))
 
-(defun pdf-cscroll-close-window-when-dual ()
-  (when (pdf-cscroll-window-dual-p)
+(defun pdf-continuous-scroll-close-window-when-dual ()
+  (when (pdf-continuous-scroll-window-dual-p)
     (let ((window-status (alist-get 'pdf-scroll-window-status (window-parameters))))
       (save-excursion
         (if (equal window-status 'upper)
@@ -126,14 +126,14 @@ next line: vscroll value, second next line: output value (image-next-line)"
 
 (defun pdf-continuous-scroll-forward (arg)
   (interactive "P")
-  (let ((arg (or arg pdf-continuous-step-size)))
+  (let ((arg (or arg pdf-continuous-scroll-step-size)))
     (dotimes (_ arg) (pdf-continuous-scroll-forward-line 1))))
 
-(defun pdf-cs-mouse-scroll-forward ()
+(defun pdf-continuous-scroll-mouse-scroll-forward ()
   (interactive)
   (with-selected-window
       (or (caadr last-input-event) (selected-window))
-  (if pdf-cs-reverse-scrolling
+  (if pdf-continuous-scroll-reverse-scrolling
       (pdf-continuous-scroll-backward nil)
     (pdf-continuous-scroll-forward nil))))
 
@@ -147,7 +147,7 @@ To increase the step size for scrolling use the ARG in
   (if pdf-continuous-scroll-mode
       (let ((hscroll (window-hscroll))
             (cur-page (pdf-view-current-page))
-            (window-min-height (or pdf-cs-custom-min-height
+			(window-min-height (or pdf-continuous-scroll-custom-min-height
                                    window-min-height)))
         (print
          (format
@@ -201,14 +201,14 @@ next line: vscroll value, second next line: output value (image-previous-line)"
 
 (defun pdf-continuous-scroll-backward (arg)
   (interactive "P")
-  (let ((arg (or arg pdf-continuous-step-size)))
+  (let ((arg (or arg pdf-continuous-scroll-step-size)))
     (dotimes (_ arg) (pdf-continuous-scroll-backward-line 1))))
 
-(defun pdf-cs-mouse-scroll-backward ()
+(defun pdf-continuous-scroll-mouse-scroll-backwards ()
   (interactive)
   (with-selected-window
       (or (caadr last-input-event) (selected-window))
-  (if pdf-cs-reverse-scrolling
+  (if pdf-continuous-scroll-reverse-scrolling
       (pdf-continuous-scroll-forward nil)
     (pdf-continuous-scroll-backward nil))))
 
@@ -275,22 +275,22 @@ windows."
   (unless (and (>= page 1)
                (<= page (pdf-cache-number-of-pages)))
     (error "No such page: %d" page))
-  (pdf-cscroll-close-window-when-dual)
+  (pdf-continuous-scroll-close-window-when-dual)
   (pdf-view-goto-page page window))
 
 (defun pdf-cscroll-first-page ()
   (interactive)
-  (pdf-cscroll-close-window-when-dual)
+  (pdf-continuous-scroll-close-window-when-dual)
   (pdf-view-goto-page 1))
 
 (defun pdf-cscroll-last-page ()
   (interactive)
-  (pdf-cscroll-close-window-when-dual)
+  (pdf-continuous-scroll-close-window-when-dual)
   (pdf-view-goto-page (pdf-cache-number-of-pages)))
 
 (defun pdf-cscroll-kill-buffer-and-windows ()
   (interactive)
-  (pdf-cscroll-close-window-when-dual)
+  (pdf-continuous-scroll-close-window-when-dual)
   (kill-this-buffer))
 
 (defun pdf-cscroll-image-forward-hscroll (&optional n)
@@ -349,26 +349,26 @@ windows."
 
 (defun pdf-cscroll-imenu ()
   (interactive)
-  (pdf-cscroll-close-window-when-dual)
+  (pdf-continuous-scroll-close-window-when-dual)
   (cond ((fboundp 'counsel-imenu) (counsel-imenu))
         ((fboundp 'helm-imenu) (helm-imenu))
         (t (imenu (list (imenu-choose-buffer-index))))))
 
 (defun pdf-cscroll-annot-list-annotations ()
   (interactive)
-  (pdf-cscroll-close-window-when-dual)
+  (pdf-continuous-scroll-close-window-when-dual)
   (pdf-annot-list-annotations))
 
 
 (setq pdf-continuous-scroll-mode-map (make-sparse-keymap))
 (define-key pdf-continuous-scroll-mode-map  (kbd "C-n") #'pdf-continuous-scroll-forward)
 (define-key pdf-continuous-scroll-mode-map  (kbd "<down>") #'pdf-continuous-scroll-forward)
-(define-key pdf-continuous-scroll-mode-map (kbd "<wheel-down>") #'pdf-cs-mouse-scroll-forward)
-(define-key pdf-continuous-scroll-mode-map  (kbd "<mouse-5>") #'pdf-cs-mouse-scroll-forward)
+(define-key pdf-continuous-scroll-mode-map (kbd "<wheel-down>") #'pdf-continuous-scroll-mouse-scroll-forward)
+(define-key pdf-continuous-scroll-mode-map  (kbd "<mouse-5>") #'pdf-continuous-scroll-mouse-scroll-forward)
 (define-key pdf-continuous-scroll-mode-map  (kbd "C-p") #'pdf-continuous-scroll-backward)
 (define-key pdf-continuous-scroll-mode-map  (kbd "<up>") #'pdf-continuous-scroll-backward)
-(define-key pdf-continuous-scroll-mode-map (kbd "<wheel-up>") #'pdf-cs-mouse-scroll-backward)
-(define-key pdf-continuous-scroll-mode-map  (kbd "<mouse-4>") #'pdf-cs-mouse-scroll-backward)
+(define-key pdf-continuous-scroll-mode-map (kbd "<wheel-up>") #'pdf-continuous-scroll-mouse-scroll-backwards)
+(define-key pdf-continuous-scroll-mode-map  (kbd "<mouse-4>") #'pdf-continuous-scroll-mouse-scroll-backwards)
 (define-key pdf-continuous-scroll-mode-map  "n" #'pdf-continuous-next-page)
 (define-key pdf-continuous-scroll-mode-map  "p" #'pdf-continuous-previous-page)
 (define-key pdf-continuous-scroll-mode-map (kbd "<prior>") 'pdf-continuous-previous-page)
@@ -384,7 +384,7 @@ windows."
 (define-key pdf-continuous-scroll-mode-map  [remap left-char] #'pdf-cscroll-image-backward-hscroll)
 (define-key pdf-continuous-scroll-mode-map  "T" #'pdf-cscroll-toggle-mode-line)
 (define-key pdf-continuous-scroll-mode-map  "h" #'pdf-cscroll-toggle-narrow-mode-line)
-(define-key pdf-continuous-scroll-mode-map (kbd "q") '(lambda ()  (interactive) (pdf-continuous-scroll-mode -1)))
+(define-key pdf-continuous-scroll-mode-map (kbd "q") #'(lambda ()  (interactive) (pdf-continuous-scroll-mode -1)))
 (define-key pdf-continuous-scroll-mode-map  "Q" #'pdf-cscroll-kill-buffer-and-windows)
 (define-key pdf-continuous-scroll-mode-map  (kbd "C-c C-a l") #'pdf-cscroll-annot-list-annotations)
 
@@ -395,9 +395,9 @@ windows."
 (when (boundp 'spacemacs-version)
   (evil-define-minor-mode-key 'evilified 'pdf-continuous-scroll-mode
     "j" #'pdf-continuous-scroll-forward
-    (kbd "<mouse-5>") #'pdf-cs-mouse-scroll-forward
+	(kbd "<mouse-5>") #'pdf-continuous-scroll-mouse-scroll-forward
     "k" #'pdf-continuous-scroll-backward
-    (kbd "<mouse-4>") #'pdf-cs-mouse-scroll-backward
+	(kbd "<mouse-4>") #'pdf-continuous-scroll-mouse-scroll-backwards
     "J" #'pdf-continuous-next-page
     "K" #'pdf-continuous-previous-page
     ;; (kbd "C-j") #'pdf-view-scroll-up-or-next-page
@@ -411,8 +411,7 @@ windows."
     "h" #'pdf-cscroll-image-backward-hscroll)
   (spacemacs/set-leader-keys-for-minor-mode
     'pdf-continuous-scroll-mode
-    (kbd "a l") #'pdf-cscroll-annot-list-annotations)
-  )
+	(kbd "a l") #'pdf-cscroll-annot-list-annotations))
 
 ;;;###autoload
 (define-minor-mode pdf-continuous-scroll-mode
@@ -422,13 +421,14 @@ windows."
   :lighter " Continuous"
   :keymap pdf-continuous-scroll-mode-map
   (unless pdf-continuous-scroll-mode
-	(pdf-cscroll-close-window-when-dual))
+	(pdf-continuous-scroll-close-window-when-dual))
   (set-window-parameter nil 'pdf-scroll-window-status 'single)
   (defun pdf-outline-imenu-activate-link (&rest args)
 	;; bug #14029
-	(pdf-cscroll-close-window-when-dual)
+	(pdf-continuous-scroll-close-window-when-dual)
 	(when (eq (nth 2 args) 'pdf-outline-imenu-activate-link)
 	  (setq args (cdr args)))
 	(pdf-links-action-perform (nth 2 args))))
 
 (provide 'pdf-continuous-scroll-mode)
+;;; pdf-continuous-scroll-mode.el ends here
