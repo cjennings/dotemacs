@@ -14,6 +14,12 @@
 
 (require 'user-constants)
 
+;; ----------------------------------- Efrit -----------------------------------
+;; not working as of Wednesday, September 03, 2025 at 12:44:09 AM CDT
+
+;; (add-to-list 'load-path "~/code/efrit/lisp")
+;; (require 'efrit)
+
 ;; ------------------------------ Buffer Same Mode -----------------------------
 
 (defun cj/buffer-same-mode (&rest modes)
