@@ -75,7 +75,7 @@
 (defvar inbox-file      (concat roam-dir "inbox.org")
   "The location of the org file that serves as the task inbox.")
 										;
-(defvar reading-notes-file (concat roam-dir "reading-notes.org")
+(defvar reading-notes-file (concat roam-dir "20250830141440-reading_notes.org")
   "The default notes file for org-noter.")
 
 ;; ------------------------- Verify Or Create Functions ------------------------

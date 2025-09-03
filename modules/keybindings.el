@@ -21,7 +21,6 @@
 ;; is undefined' message. Finally, I'm providing messages to train me to use
 ;; faster keybindings and provide feedback when evaluating buffers.
 
-
 ;;; Code:
 
 
@@ -101,7 +100,9 @@
 (define-key jump-to-keymap (kbd "$")
 			#'(lambda () (interactive) (find-file ledger-file)))
 (define-key jump-to-keymap (kbd "m")
-			#'(lambda () (interactive) (find-file macros-file)))
+            #'(lambda () (interactive) (find-file macros-file)))
+(define-key jump-to-keymap (kbd "n")
+            #'(lambda () (interactive) (find-file reading-notes-file)))
 (define-key jump-to-keymap (kbd "I")
 			#'(lambda () (interactive) (find-file emacs-init-file)))
 
