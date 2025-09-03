@@ -3,6 +3,7 @@
   '(
     ("Benedictine" "Bénédictine" nil :count 1)
     ("Treme" "Tremé" nil :count 2)
+    ("souffle" "soufflé" nil :count 0)
     ("abcense" "absence" nil :count 0)
     ("absance" "absence" nil :count 0)
     ("absense" "absence" nil :count 0)
