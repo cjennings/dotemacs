@@ -110,19 +110,21 @@ Depending on context, can I add the
 - First few words of the line
 Do we think the reordering behavior when deleting locations might confuse users? How to simplify?
 What happens if a buffer is deleted that doesn't have a file associated with it? If we're using registers underneath, how do registers handle this?
-
-** DOING [#A] Test Webclipper Functionality
-1. *From eww*: Navigate to a webpage in eww, then use =C-c c w= to capture it
-2. *Check the result*: The webpage should be saved as a new org-roam node in your roam-dir with:
-   - Timestamp-based filename
-   - "webclipped" tag
-   - Full page content captured
-3. *Browse webclips*: Use =C-c n w= to list and filter all your webclipped nodes
 ** DOING [#A] Org Roam and Org Template Fixes
-*** TODO [#B] Fix Emacs Org Roam Recipe Error
-**** TODO Fix category alignment
-**** TODO Fix added path to template file
-**** TODO Fix having template outline in file
+*** TODO [#B] Org Branch to Org Roam
+*** TODO [#B] Add Org Capture Template for Vocabulary Words
+*** DONE [#B] Fix Emacs Org Roam Template Errors
+CLOSED: [2025-09-03 Wed 14:00]
+- State "DONE"       from "TODO"       [2025-09-03 Wed 14:00]
+**** DONE Fix category alignment
+CLOSED: [2025-09-03 Wed 14:00]
+- State "DONE"       from "TODO"       [2025-09-03 Wed 14:00]
+**** DONE Fix added path to template file
+CLOSED: [2025-09-03 Wed 14:00]
+- State "DONE"       from "TODO"       [2025-09-03 Wed 14:00]
+**** DONE Fix having template outline in file
+CLOSED: [2025-09-03 Wed 14:00]
+- State "DONE"       from "TODO"       [2025-09-03 Wed 14:00]
 **** 2025-09-01 Mon @ 12:49:21 -0500 Fixed org-element issue
 it's a bug in not loading org-element. Added this to my config
 
@@ -135,11 +137,10 @@ C-c n i then type a recipe name.
 org-element--get-category: Invalid function: org-element-with-disabled-cache
 The file was created, but does not come to the front
 The category value seems unaligned
-*** TODO [#B] Add Org Capture Template for Vocabulary Words
 *** DONE [#A] Add Org Templates Back to Emacs Repository!
 CLOSED: [2025-09-01 Mon 12:51]
-** TODO [#A] GPTel Add Ability to Save and Reload Conversations
-** TODO [#A] Delete whitespace from region is broken
+** TODO [#A] AI-Config: GPTel Add Ability to Save and Reload Conversations
+** TODO [#A] Custom Function: Delete Whitespace From Region is Broken
 ** TODO [#A] Mu4e Fixes
 *** DONE [#A] mu4e contacts not expanding on forwarding emails
 CLOSED: [2025-08-29 Fri 16:09]
@@ -150,7 +151,247 @@ https://github.com/jeremy-compostella/org-msg
 *** TODO [#A] Fix org-contacts functionality
 ** TODO [#A] file-config.el cj/xdg-open blocks Emacs process
 Should change to non-blocking -- maybe use Emacs internal async?
-** TODO [#B] Add All Ert Tests Into Separate Directory
+** TODO [#A] Make org mode buffers swap with shift-meta
+(org-shiftmetaright) should be overridden with  (buf-move-right)
+(org-shiftmetaleft) should be overridden with  (buf-move-left)
+
+** DOING [#B] Eshell Improvements
+*** Understanding Your Current Setup
+
+I can see you have a well-structured eshell and vterm configuration. Your eshell setup includes:
+
+- Custom prompt configuration
+- Aliases for common operations
+- Integration with remote servers via TRAMP
+- Visual command handling
+- History management
+- Integration with xterm-color for proper ANSI colors
+
+*** Clarifying Questions
+
+1. Are you experiencing any specific issues with your eshell setup?
+2. Do you have any particular workflows you'd like to optimize with eshell?
+3. Are there any terminal features you miss when using eshell?
+
+*** Recommended Approach
+
+Without knowing your specific pain points, I'll recommend several high-value improvements that would enhance your eshell experience:
+
+1. Add command completion enhancements
+2. Improve directory navigation
+3. Add better history searching
+4. Include directory tracking and shell command integration
+5. Enhance visual output handling
+6. Improve eshell buffer management
+7. Add helpful utility functions
+
+*** Recommended Code Changes
+
+**** 1. Enhanced Command Completion with =pcomplete= and =company-mode=
+
+#+begin_src emacs-lisp
+;; Better completion for eshell
+(use-package pcmpl-args
+  :after eshell)
+
+;; Company mode integration for eshell
+(use-package company-shell
+  :after (eshell company)
+  :config
+  (add-to-list 'company-backends 'company-shell)
+  (add-hook 'eshell-mode-hook
+            (lambda ()
+              (setq-local company-minimum-prefix-length 2)
+              (setq-local company-idle-delay 0.1)
+              (company-mode 1))))
+#+end_src
+
+**** 2. Improved Directory Navigation with =eshell-z=
+
+#+begin_src emacs-lisp
+(use-package eshell-z
+  :after eshell
+  :config
+  (add-hook 'eshell-mode-hook
+            (lambda () (require 'eshell-z))))
+#+end_src
+
+
+**** 3. Better History with =eshell-up= and Enhanced History Search
+
+#+begin_src emacs-lisp
+(use-package eshell-up
+  :after eshell
+  :config
+  (defalias 'eshell/up 'eshell-up)
+  (defalias 'eshell/up-peek 'eshell-up-peek))
+
+;; Enhance history searching
+(defun cj/eshell-history-search ()
+  "Search eshell history with completion."
+  (interactive)
+  (insert
+   (completing-read "Eshell history: "
+                    (delete-dups
+                     (ring-elements eshell-history-ring)))))
+
+(add-hook 'eshell-mode-hook
+          (lambda ()
+            (define-key eshell-mode-map (kbd "C-r") 'cj/eshell-history-search)))
+#+end_src
+
+**** 4. Directory Tracking and Shell Command Execution Improvements
+
+#+begin_src emacs-lisp
+;; Allow Eshell to track directory changes in external shells
+(use-package eshell-prompt-extras
+  :after eshell
+  :config
+  (setq eshell-highlight-prompt nil
+        eshell-prompt-function 'epe-theme-lambda))
+
+;; Utility to run shell commands from anywhere
+(defun cj/eshell-command-on-region-file (command)
+  "Run shell COMMAND on the contents of region or current line.
+If region is active, use that, otherwise use the current line."
+  (interactive (list (read-shell-command "Shell command on region: ")))
+  (let* ((text (if (use-region-p)
+                   (buffer-substring-no-properties (region-beginning) (region-end))
+                 (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+         (temp-file (make-temp-file "eshell-cmd-"))
+         (output-buffer (generate-new-buffer "*Shell Command Output*")))
+    (with-temp-file temp-file
+      (insert text))
+    (with-current-buffer output-buffer
+      (insert (shell-command-to-string (format "%s %s" command temp-file)))
+      (pop-to-buffer output-buffer))
+    (delete-file temp-file)))
+
+(global-set-key (kbd "C-c !") 'cj/eshell-command-on-region-file)
+#+end_src
+
+**** 5. Enhanced Visual Output and ANSI Colors
+
+#+begin_src emacs-lisp
+;; Improve how eshell handles ANSI escape sequences
+(use-package eshell-syntax-highlighting
+  :after esh-mode
+  :config
+  (eshell-syntax-highlighting-global-mode +1))
+
+;; Better handling of visual commands
+(defun cj/eshell-exec-visual-and-kill ()
+  "Execute the command via `eshell-exec-visual' and then kill the eshell buffer."
+  (interactive)
+  (let ((command (buffer-substring-no-properties
+                  eshell-last-output-end (point-max))))
+    (kill-buffer)
+    (eshell-exec-visual command)))
+
+;; Add this to your eshell aliases
+(add-hook 'eshell-mode-hook
+          (lambda ()
+            (eshell/alias "vk" 'cj/eshell-exec-visual-and-kill)))
+#+end_src
+
+
+**** 6. Buffer Management and Layout Improvements
+
+#+begin_src emacs-lisp
+;; Auto rename eshell buffers based on current directory
+(defun cj/eshell-rename-buffer-as-dir ()
+  "Rename the eshell buffer to include the current directory."
+  (let ((dir (abbreviate-file-name (eshell/pwd))))
+    (rename-buffer (format "*eshell: %s*" dir) t)))
+
+(add-hook 'eshell-directory-change-hook 'cj/eshell-rename-buffer-as-dir)
+
+;; Split eshell in a sensible way based on window size
+(defun cj/eshell-pop-window ()
+  "Open eshell in a sensible way depending on window dimensions."
+  (interactive)
+  (let ((width-percentage 0.3)
+        (height-percentage 0.3)
+        (current-window-width (window-width))
+        (current-window-height (window-height)))
+    (if (> current-window-width (* 2 current-window-height))
+        ;; For wide windows, split side by side
+        (let ((width (floor (* current-window-width width-percentage))))
+          (split-window-horizontally (- current-window-width width))
+          (other-window 1)
+          (eshell))
+      ;; For tall windows, split top/bottom
+      (let ((height (floor (* current-window-height height-percentage))))
+        (split-window-vertically (- current-window-height height))
+        (other-window 1)
+        (eshell)))))
+
+(global-set-key (kbd "C-c e") 'cj/eshell-pop-window)
+#+end_src
+
+
+**** 7. Useful Utility Functions
+
+#+begin_src emacs-lisp
+;; Enhanced eshell clear that preserves history
+(defun cj/eshell-clear-buffer ()
+  "Clear the eshell buffer, preserving the prompt and history."
+  (interactive)
+  (let ((inhibit-read-only t))
+    (erase-buffer)
+    (eshell-send-input)))
+(add-hook 'eshell-mode-hook
+          (lambda () (local-set-key (kbd "C-l") 'cj/eshell-clear-buffer)))
+
+;; Function to insert the output of elisp expressions into eshell
+(defun cj/eshell-insert-elisp-output (elisp)
+  "Evaluate ELISP expression and insert its value at point in eshell."
+  (interactive "sEval Elisp: ")
+  (let ((result (eval (read elisp))))
+    (insert (if (stringp result)
+                result
+              (format "%S" result)))))
+(add-hook 'eshell-mode-hook
+          (lambda () (local-set-key (kbd "C-c C-e") 'cj/eshell-insert-elisp-output)))
+
+;; Quick file manager in eshell
+(defun eshell/fman (file)
+  "Open FILE in a file manager."
+  (cond
+   ((eq system-type 'darwin)    (shell-command (format "open %s" (expand-file-name default-directory))))
+   ((eq system-type 'gnu/linux) (shell-command (format "xdg-open %s" (expand-file-name default-directory))))))
+
+;; Enhanced cd command that respects projects
+(defun eshell/pcd ()
+  "Change directory to the project root."
+  (let ((dir (cond 
+              ((fboundp 'projectile-project-root) (projectile-project-root))
+              ((fboundp 'project-root) (project-root (project-current)))
+              (t (error "No project system available")))))
+    (if dir
+        (eshell/cd dir)
+      (error "Not in a project"))))
+#+end_src
+
+*** Explanation of Key Improvements
+
+1. *pcmpl-args*: Provides better argument completion for command-line tools.
+
+2. *company-shell*: Brings Emacs' powerful completion framework to eshell with support for commands, environment variables, and more.
+
+3. *eshell-z*: Implements z/autojump functionality, allowing you to jump to frequently visited directories with minimal keystrokes.
+
+4. *eshell-up*: Makes navigating up directories easier with the =up= command.
+
+5. *History searching*: The custom function provides interactive history searching with completion.
+
+6. *Directory tracking and buffer naming*: Renames eshell buffers to include the current directory, making multiple eshell sessions easier to manage.
+
+7. *Layout improvements*: The smart window splitting function determines the best way to display eshell based on your current window configuration.
+
+These enhancements should make your eshell experience more productive while maintaining the flexibility and integration with Emacs that makes eshell valuable.
+
+** TODO [#B] Add All ERT Tests Into Separate Directory
 Tests should be added to a separate directory rather than the end of each elisp file.
 Gather them together, move them there, and make it easy to run tests per module and workflow.
 ** TODO [#B] Get Tufte.css working and as a separate entry
@@ -341,6 +582,12 @@ Example usage from sqrtminusone
 #+end_src
 
 ** TODO [#B] Change Elfeed to Be About Playing Podcasts
+** TODO [#B] Capture and Refile to drill files
+This code actually exists in org-drill-config, but it doesn't seem to work
+** TODO [#B] Emacs Display an error if no file in buffer-and-file operations
+** TODO [#C] Review Titlecase Functionality
+added in custom. Came from: https://codeberg.org/acdw/titlecase.el
+Originally seen at https://emacselements.com/true-titlecase-in-emacs.html
 ** TODO [#C] Evolve Dupre Theme
 Here are some ideas for making dupre-theme a bit more “complete” and future-proof as an Emacs theme.  You don’t have to do all of them, of course, but most “modern” themes ship a fair number of these extra faces and integrations.
 *** TODO [#A] Fill out the “standard” Emacs faces
@@ -740,7 +987,7 @@ Captured On: [2025-05-29 Thu 04:23]
 [[https://www.reddit.com/r/emacs/comments/cd6fe2/how_to_make_emacs_a_latex_ide/][How to make Emacs a Latex IDE? : r/emacs]]
 Captured On: [2025-08-14 Thu 03:43]
 * Emacs Config Ideas/References
-** emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources
+** emacs-tw/awesome-elisp: A curated list of Emacs Lisp development resources
 [[https://github.com/emacs-tw/awesome-elisp][emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources]]
 Captured On: [2025-06-07 Sat 13:42]
 ** emacs-tw/awesome-emacs: A community driven list of useful Emacs packages, libraries and other items.
@@ -785,3 +1032,15 @@ Captured On: [2025-08-18 Mon 17:54]
 ** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
 [[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
 Captured On: [2025-08-18 Mon 14:36]
+** My PDF Tools Settings
+[[https://emacselements.com/pdf-tools-settings.html][My PDF Tools Settings]]
+Captured On: [2025-09-03 Wed 11:49]
+** Emacs: Backup Current File 📜
+[[http://xahlee.info/emacs/emacs/elisp_make-backup.html][Emacs: Backup Current File 📜]]
+Captured On: [2025-09-03 Wed 11:48]
+** The best latex Editor : r/emacs
+[[https://www.reddit.com/r/emacs/comments/akmwko/the_best_latex_editor/][The best latex Editor : r/emacs]]
+Captured On: [2025-08-13 Wed 19:29]
+** gregoryg/emacs-gregoryg: My emacs settings for use across Linux, Windows, OS X
+[[https://github.com/gregoryg/emacs-gregoryg?tab=readme-ov-file#gptel---llms-in-markdown-and-org-mode][gregoryg/emacs-gregoryg: My emacs settings for use across Linux, Windows, OS X]]
+Captured On: [2025-08-12 Tue 16:31]
