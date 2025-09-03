@@ -20,10 +20,10 @@
   "Pop to a buffer with a mode among MODES, or the current one if not given."
   (interactive)
   (let* ((modes (or modes (list major-mode)))
-		 (pred (lambda (b)
-				 (let ((b (get-buffer (if (consp b) (car b) b))))
-				   (member (buffer-local-value 'major-mode b) modes)))))
-	(pop-to-buffer (read-buffer "Buffer: " nil t pred))))
+         (pred (lambda (b)
+                 (let ((b (get-buffer (if (consp b) (car b) b))))
+                   (member (buffer-local-value 'major-mode b) modes)))))
+    (pop-to-buffer (read-buffer "Buffer: " nil t pred))))
 (global-set-key (kbd "C-x B") 'cj/buffer-same-mode)
 
 ;; --------------------------------- Org Noter ---------------------------------
@@ -75,28 +75,28 @@
 (defun cj/move-org-branch-to-roam ()
   (interactive)
   (when (eq (org-element-type (org-element-at-point)) 'headline)
-	(let* ((headline-components (org-heading-components))
-		   (title (nth 4 headline-components)))
-	  (setq cj/point (point))
-	  (org-cut-subtree)
-	  ;; Switch to org-roam buffer, fill in new node's title.
-	  (org-roam-node-insert
-	   :immediate-finish t
-	   :no-edit t
-	   ;; Pass the current headline title as the default value.
-	   :region (cons (point)
-					 (save-excursion
-					   (insert title)
-					   (point))))
-	  (newline)
-	  ;; Paste the 'cut' subtree and save buffer.
-	  (org-yank)
-	  (save-buffer)
-	  ;; Go back to the initial buffer and position.
-	  (switch-to-buffer (other-buffer))
-	  (goto-char cj/point)
-	  ;; Kill the org-roam link leftover.
-	  (kill-whole-line))))
+    (let* ((headline-components (org-heading-components))
+           (title (nth 4 headline-components)))
+      (setq cj/point (point))
+      (org-cut-subtree)
+      ;; Switch to org-roam buffer, fill in new node's title.
+      (org-roam-node-insert
+       :immediate-finish t
+       :no-edit t
+       ;; Pass the current headline title as the default value.
+       :region (cons (point)
+                     (save-excursion
+                       (insert title)
+                       (point))))
+      (newline)
+      ;; Paste the 'cut' subtree and save buffer.
+      (org-yank)
+      (save-buffer)
+      ;; Go back to the initial buffer and position.
+      (switch-to-buffer (other-buffer))
+      (goto-char cj/point)
+      ;; Kill the org-roam link leftover.
+      (kill-whole-line))))
 
 ;; ----------------------------------- Mpdel -----------------------------------
 
@@ -118,6 +118,38 @@
 ;;   (google-this-mode 1)
 ;;   (setq google-this-browse-url-function 'eww-browse-url))
 
+;; ------------------------------ Mouse Trap Mode ------------------------------
+
+(defvar mouse-trap-mode-map
+  (let* ((prefixes '("" "C-" "M-" "S-" "C-M-" "C-S-" "M-S-" "C-M-S-")) ; modifiers
+         (buttons  (number-sequence 1 5))                             ; mouse-1..5
+         (types    '("mouse" "down-mouse" "drag-mouse"
+                     "double-mouse" "triple-mouse"))
+         (wheel    '("wheel-up" "wheel-down" "wheel-left" "wheel-right"))
+         (map (make-sparse-keymap)))
+    ;; clicks, drags, double, triple
+    (dolist (type types)
+      (dolist (pref prefixes)
+        (dolist (n buttons)
+          (define-key map (kbd (format "<%s%s-%d>" pref type n)) #'ignore))))
+    ;; wheel
+    (dolist (evt wheel)
+      (dolist (pref prefixes)
+        (define-key map (kbd (format "<%s%s>" pref evt)) #'ignore)))
+    map)
+  "Keymap for `mouse-trap-mode'. Unbinds almost every mouse event.
+Disabling mouse prevents accidental mouse moves modifying text.")
+
+(define-minor-mode mouse-trap-mode
+  "Globally disable most mouse and trackpad events.
+When active, <mouse-*>, <down-mouse-*>, <drag-mouse-*>,
+<double-mouse-*>, <triple-mouse-*>, and wheel events are bound to `ignore',
+with or without C-, M-, S- modifiers."
+  :global t
+  :lighter " 🐭"
+  :keymap mouse-trap-mode-map)
+(global-set-key (kbd "C-c M") #'mouse-trap-mode)
+(mouse-trap-mode 1)
 
 (provide 'test-code)
 ;;; test-code.el ends here.

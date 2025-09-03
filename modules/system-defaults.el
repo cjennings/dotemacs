@@ -1,4 +1,4 @@
-;;; system-defaults --- Emacs Non-UI Preferences -*- lexical-binding: t; -*-
+;;; system-defaults --- Emacs Non-UI Preferences -*- lexical-binding: t; coding: utf-8-unix; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -138,20 +138,6 @@ Return non-nil to indicate the warning was handled."
 ;; disable pinching gesture or mouse-wheel changing font size
 (global-unset-key (kbd "<pinch>"))
 (global-set-key [remap mouse-wheel-text-scale] 'cj/disabled)
-
-;; disabling mouse prevents accidental mouse moves modifying text
-(use-package inhibit-mouse
-  :demand t ;; run immediately
-  :hook (after-init . inhibit-mouse-mode)
-  :custom
-  (inhibit-mouse-adjust-mouse-highlight t)
-  (inhibit-mouse-adjust-show-help-function t)
-  :bind
-  ("C-c M-m" . inhibit-mouse-mode)  ;; toggle with C-c M-m
-  :config
-  (if (daemonp)
-	  (add-hook 'server-after-make-frame-hook #'inhibit-mouse-mode)
-	(inhibit-mouse-mode 1)))
 
 ;; ------------------------------- Be Quiet(er)! -------------------------------
 ;; reduces "helpful" instructions that distract Emacs power users.
