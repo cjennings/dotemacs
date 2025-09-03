@@ -3,7 +3,6 @@
   '(
     ("Benedictine" "Bénédictine" nil :count 1)
     ("Treme" "Tremé" nil :count 2)
-    ("souffle" "soufflé" nil :count 0)
     ("abcense" "absence" nil :count 0)
     ("absance" "absence" nil :count 0)
     ("absense" "absence" nil :count 0)
@@ -217,6 +216,7 @@
     ("independant" "independent" nil :count 0)
     ("indispensible" "indispensable" nil :count 0)
     ("infomration" "information" nil :count 0)
+    ("initialisation" "initialization" nil :count 0)
     ("inspoection" "inspection" nil :count 0)
     ("instaances" "instances" nil :count 0)
     ("inteligence" "intelligence" nil :count 0)
@@ -360,6 +360,7 @@
     ("snoer" "snore" nil :count 1)
     ("soley" "solely" nil :count 0)
     ("solutoin" "solution" nil :count 0)
+    ("souffle" "soufflé" nil :count 0)
     ("specfiic" "specific" nil :count 0)
     ("specificaly" "specifically" nil :count 0)
     ("sreen" "screen" nil :count 0)
