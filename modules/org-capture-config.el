@@ -101,12 +101,6 @@ Captured On: %U\n" :prepend t)
 Captured On: %U"
            :prepend t)
 
-          ("g" "Grocery List Item" item
-           (file+headline inbox-file "Grocery List") "%?")
-
-          ("s" "Shopping List Entry" entry
-           (file+headline inbox-file "Shopping List") "* %?")
-
 		  ;; requires cj/org-web-clipper function defined above
 		  ("w" "Web Page Clipper" entry
 		   (file+headline inbox-file "To Read")
