@@ -17,41 +17,36 @@
   (org-roam-completion-everywhere t)
   (org-roam-dailies-capture-templates
    '(("d" "default" entry "* %<%I:%M:%S %p %Z> %?"
-      :if-new (file+head "%<%Y-%m-%d>.org" "#+FILETAGS: Journal
-#+TITLE: %<%Y-%m-%d>"))))
+	  :if-new (file+head "%<%Y-%m-%d>.org"
+						 "#+FILETAGS: Journal #+TITLE: %<%Y-%m-%d>"))))
+
   (org-roam-capture-templates
    '(("d" "default" plain "%?"
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}\n")
-      :unnarrowed t)
-     ("w" "webclip" plain "%?"
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}
-#+FILETAGS: webclipped
-#+ROAM_KEY: ${url}
-URL: ${url}
-Captured On: %U
+	  :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+						 "#+TITLE: ${title}\n")
+	  :unnarrowed t)
 
-${body}")
-      :unnarrowed t
-      :immediate-finish t)
-     ("v" "v2mom" plain
-      (function (lambda () (concat roam-dir "templates/v2mom.org")))
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}\n")
-      :unnarrowed t)
-     ("r" "recipe" plain
-      (function (lambda () (concat roam-dir "templates/recipe.org")))
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}
-      #+CATEGORY: ${title}\n#+FILETAGS: Recipe\n#+STARTUP: showall")
-      :unnarrowed t)
-     ("p" "project" plain
-      (function (lambda () (concat roam-dir "templates/project.org")))
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}
-      #+CATEGORY: ${title}\n#+FILETAGS: Project")
-      :unnarrowed t)
-     ("t" "topic" plain
-      (function (lambda () (concat roam-dir "templates/topic.org")))
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+TITLE: ${title}
-      #+CATEGORY: ${title}\n#+FILETAGS: Topic")
-      :unnarrowed t)))
+	 ("v" "v2mom" plain
+	  (function (lambda () (concat roam-dir "templates/v2mom.org")))
+	  :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "")
+	  :unnarrowed t)
+
+	 ("r" "recipe" plain
+	  (function (lambda () (concat roam-dir "templates/recipe.org")))
+	  :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "")
+	  :unnarrowed t)
+
+	 ("p" "project" plain
+	  (function (lambda () (concat roam-dir "templates/project.org")))
+	  :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "")
+	  :unnarrowed t)
+
+	 ("t" "topic" plain
+	  (function (lambda () (concat roam-dir "templates/topic.org")))
+	  :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "")
+	  :unnarrowed t)))
+
+
   :bind (("C-c n ?" . org-roam-hydra/body)
          ("C-c n l" . org-roam-buffer-toggle)
          ("C-c n f" . org-roam-node-find)
@@ -130,9 +125,8 @@ created nodes are added to the agenda and follow a template defined by
    nil
    :templates
    `((,template-key ,tag plain  (file ,template-file)
-                    :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-                                       ,(concat "#+TITLE: ${title}
-#+CATEGORY: ${title}\n#+FILETAGS: " tag))
+					:if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+									   "")
                     :unnarrowed t))))
 
 (defun cj/org-roam-find-node-topic ()
@@ -151,14 +145,6 @@ created nodes are added to the agenda and follow a template defined by
   (interactive)
   (cj/org-roam-find-node "Project" "p" (concat roam-dir "templates/project.org")))
 
-(defun cj/org-roam-find-node-webclip ()
-  "List nodes of type 'webclipped' in completing read for selection."
-  (interactive)
-  (org-roam-node-find
-   nil
-   nil
-   (cj/org-roam-filter-by-tag "webclipped")
-   nil))
 
 ;; ---------------------- Org Capture After Finalize Hook ----------------------
 
