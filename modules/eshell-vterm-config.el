@@ -127,6 +127,30 @@
   :config
   (setenv "TERM" "xterm-256color"))
 
+(use-package eshell-syntax-highlighting
+  :after esh-mode
+  :config
+  (eshell-syntax-highlighting-global-mode +1))
+
+(use-package eshell-up
+  :after eshell
+  :config
+  (defalias 'eshell/up 'eshell-up)
+  (defalias 'eshell/up-peek 'eshell-up-peek))
+
+;; Enhance history searching
+(defun cj/eshell-history-search ()
+  "Search eshell history with completion."
+  (interactive)
+  (insert
+   (completing-read "Eshell history: "
+					(delete-dups
+					 (ring-elements eshell-history-ring)))))
+
+(add-hook 'eshell-mode-hook
+		  (lambda ()
+			(define-key eshell-mode-map (kbd "C-r") 'cj/eshell-history-search)))
+
 ;; ------------------------------ Vterm ------------------------------
 ;; faster and highly dependable, but not extensible
 
