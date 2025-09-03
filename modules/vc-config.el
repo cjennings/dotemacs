@@ -50,13 +50,24 @@
 ;; ------------------------------ Git Timemachine ------------------------------
 ;; walk through revisions of the current file in your buffer
 ;; also: https://blog.binchen.org/posts/new-git-timemachine-ui-based-on-ivy-mode/
+
 (defun cj/git-timemachine-show-selected-revision ()
   "Show last (current) revision of file."
   (interactive)
   (let* ((collection
 		  (mapcar (lambda (rev)
+					;; First, let's debug the structure of a revision
+					(message "Revision structure: %S" rev)
 					;; re-shape list for the ivy-read
-					(cons (concat (substring-no-properties (nth 0 rev) 0 7) " | " (nth 5 rev) " | " (nth 6 rev)) rev))
+					(cons (concat (substring-no-properties (nth 0 rev) 0 7)
+								 " | "
+								 ;; Use the date-time string directly if available
+								 (or (nth 3 rev) "No date")
+								 " | "
+								 (nth 5 rev)
+								 " | "
+								 (nth 6 rev))
+						  rev))
 				  (git-timemachine--revisions))))
 	(ivy-read "commits:"
 			  collection
@@ -64,7 +75,28 @@
 						;; compatible with ivy 9+ and ivy 8
 						(unless (string-match-p "^[a-z0-9]*$" (car rev))
 						  (setq rev (cdr rev)))
-						(git-timemachine-show-revision rev)))))
+						(git-timemachine-show-revision rev))
+			  :sort nil
+			  :preselect 0)))
+
+;; (defun cj/git-timemachine-show-selected-revision ()
+;;   "Show last (current) revision of file."
+;;   (interactive)
+;;   (let* ((collection
+;; 		  (mapcar (lambda (rev)
+;; 					;; re-shape list for the ivy-read
+;; 					(cons (concat (substring-no-properties (nth 0 rev) 0 7) " | " (nth 5 rev) " | " (nth 6 rev)) rev))
+;; 				  (git-timemachine--revisions))))
+;; 	(ivy-read "commits:"
+;; 			  collection
+;; 			  :action (lambda (rev)
+;; 						;; compatible with ivy 9+ and ivy 8
+;; 						(unless (string-match-p "^[a-z0-9]*$" (car rev))
+;; 						  (setq rev (cdr rev)))
+;; 						(git-timemachine-show-revision rev))
+;; 			  :sort nil  ;; Disable sorting
+;; 			  :preselect 0)))  ;; Preselect the most recent commit
+
 
 (defun cj/git-timemachine ()
   "Open git snapshot with the selected version. Based on ivy-mode."
