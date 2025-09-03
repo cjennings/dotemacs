@@ -51,7 +51,11 @@
 (use-package counsel
   :defer .5
   :bind
-  ("C-c U" . counsel-unicode-char))
+  ("C-c U" . counsel-unicode-char)
+  :config
+  ;; Remap org-set-tag to counsel-org-tag
+  (with-eval-after-load 'org
+	(define-key org-mode-map [remap org-set-tags-command] 'counsel-org-tag)))
 
 ;; ------------------------------------ Ivy ------------------------------------
 ;; A generic completion mechanism for Emacs. https://github.com/abo-abo/swiper#ivy
