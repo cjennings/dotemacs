@@ -119,5 +119,6 @@
 ;; ---------------------------------- In Test ----------------------------------
 
 (require 'test-code)
+(require 'jumper)
 
 ;;; init.el ends here
