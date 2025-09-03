@@ -28,19 +28,18 @@
   and Returns the yanked content as a string."
   (interactive)
   (let* ((source-buffer (org-capture-get :original-buffer))
-         (source-mode (with-current-buffer source-buffer major-mode)))
-    (cond
-     ((eq source-mode 'w3m-mode)
-      (with-current-buffer source-buffer
-        (org-w3m-copy-for-org-mode)))
-     ((eq source-mode 'eww-mode)
-      (with-current-buffer source-buffer
-        (org-eww-copy-for-org-mode)))
-     (t
-      (error "Not valid -- must be in w3m or eww mode")))
-    ;; extract the webpage content from the kill ring
-    (car kill-ring)))
-
+		 (source-mode (with-current-buffer source-buffer major-mode)))
+	(cond
+	 ((eq source-mode 'w3m-mode)
+	  (with-current-buffer source-buffer
+		(org-w3m-copy-for-org-mode)))
+	 ((eq source-mode 'eww-mode)
+	  (with-current-buffer source-buffer
+		(org-eww-copy-for-org-mode)))
+	 (t
+	  (error "Not valid -- must be in w3m or eww mode")))
+	;; extract the webpage content from the kill ring
+	(car kill-ring)))
 
 ;; ----------------------- Org Capture PDF Active Region -----------------------
 ;; allows capturing the selected region from within a PDF file.
@@ -108,34 +107,14 @@ Captured On: %U"
           ("s" "Shopping List Entry" entry
            (file+headline inbox-file "Shopping List") "* %?")
 
-          ;; requires cj/org-web-clipper function defined above
-          ("w" "Web Page Clipper" plain
-           (function cj/org-roam-capture-webclip)
-           "" :immediate-finish t)
+		  ;; requires cj/org-web-clipper function defined above
+		  ("w" "Web Page Clipper" entry
+		   (file+headline inbox-file "To Read")
+		   "* %a\nURL: %L\nCaptured On:%U\n%(cj/org-webpage-clipper)\n"
+		   :prepend t :immediate-finish t)
+		  
           )) ;; end setq
   ) ;; end use-package org-protocol
-
-;; -------------------------- Org-Roam-Capture-Webclip -------------------------
-
-(defun cj/org-roam-capture-webclip ()
-  "Capture current webpage as an org-roam node with webclipped tag."
-  (let* ((url (plist-get org-store-link-plist :link))
-         (title (or (plist-get org-store-link-plist :description) ""))
-         (body (cj/org-webpage-clipper)))
-    (org-roam-capture- :node (org-roam-node-create :title title)
-                       :templates '(("w" "webclip" plain "%?"
-                                     :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-                                                        "#+TITLE: ${title}
-#+FILETAGS: webclipped
-#+ROAM_KEY: ${url}
-URL: ${url}
-Captured On: %U
-
-${body}")
-                                     :unnarrowed t
-                                     :immediate-finish t))
-                       :props =(:url ,url
-                                     :body ,body))))
 
 ;; ---------------------------- Simple Task Capture ----------------------------
 ;; the simplest way to capture a task. Also a simple way to write this function.
