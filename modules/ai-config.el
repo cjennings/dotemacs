@@ -95,7 +95,7 @@
 
   ;;  Dynamic user prefix for org-mode heading (string, refreshed just before send)
   (defun cj/gptel--fresh-org-prefix ()
-    (concat "*** cj " (format-time-string "[%Y-%m-%d %H:%M:%S]") "\n"))
+    (concat "*** " user-login-name " " (format-time-string "[%Y-%m-%d %H:%M:%S]") "\n"))
 
   ;; Initialize as a string (GPTel expectation)
   (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
