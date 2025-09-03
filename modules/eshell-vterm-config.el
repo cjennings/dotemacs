@@ -151,6 +151,22 @@
 		  (lambda ()
 			(define-key eshell-mode-map (kbd "C-r") 'cj/eshell-history-search)))
 
+;; Better completion for eshell
+(use-package pcmpl-args
+  :after eshell)
+
+;; Company mode integration for eshell
+(use-package company-shell
+  :after (eshell company)
+  :config
+  (add-to-list 'company-backends 'company-shell)
+  (add-hook 'eshell-mode-hook
+			(lambda ()
+			  (setq-local company-minimum-prefix-length 2)
+			  (setq-local company-idle-delay 2)
+			  (company-mode 1))))
+
+
 ;; ------------------------------ Vterm ------------------------------
 ;; faster and highly dependable, but not extensible
 
