@@ -133,15 +133,6 @@ Replaces the text versions with the glyphs if function prefaced by 'C-u'."
 		(while (search-forward (car r) end t)
 		  (replace-match (cdr r)))))))
 
-(defun cj/copy-whole-buffer ()
-  "Copy the entire contents of the current buffer to the kill ring.
-Point and mark are left exactly where they were.  No transient region
-is created.  A message is displayed when done."
-  (interactive)
-  (let ((contents (buffer-substring-no-properties (point-min) (point-max))))
-    (kill-new contents)
-	(message "Buffer contents copied to kill ring")))
-
 (defun cj/align-regexp-with-spaces (orig-fun &rest args)
   "Around-advice for =align-regexp' to disable tabs during alignment.
 ORIG-FUN is the original =align-regexp'; ARGS are its arguments."
@@ -160,8 +151,7 @@ ORIG-FUN is the original =align-regexp'; ARGS are its arguments."
   (let ((map (make-sparse-keymap)))
 	(define-key map ")" 'cj/jump-to-matching-paren)
     (define-key map "f" 'cj/format-region-or-buffer)
-    (define-key map "c" 'cj/copy-whole-buffer)
-    (define-key map "W" 'cj/count-words-buffer-or-region)
+	(define-key map "W" 'cj/count-words-buffer-or-region)
     (define-key map "/" 'cj/replace-fraction-glyphs)
 	(define-key map "r" 'align-regexp)
     (define-key map "|" 'display-fill-column-indicator-mode)
@@ -225,11 +215,29 @@ Other key maps extend from this key map to hold categorized functions.")
 	  (message "Copied file link to kill ring: %s" file-path))))
 
 
+(defun cj/copy-whole-buffer ()
+  "Copy the entire contents of the current buffer to the kill ring.
+Point and mark are left exactly where they were.  No transient region
+is created.  A message is displayed when done."
+  (interactive)
+  (let ((contents (buffer-substring-no-properties (point-min) (point-max))))
+	(kill-new contents)
+	(message "Buffer contents copied to kill ring")))
+
+
 (defun cj/clear-to-end-of-buffer ()
   "Delete all text from point to the end of the current buffer.
 This does not save the deleted text in the kill ring."
   (interactive)
-  (delete-region (point) (point-max)))
+  (delete-region (point) (point-max))
+  (message "Buffer contents removed to the end of the buffer."))
+
+(defun cj/clear-to-beginning-of-buffer ()
+  "Delete all text from point to the end of the current buffer.
+This does not save the deleted text in the kill ring."
+  (interactive)
+  (delete-region (point) (point-min))
+  (message "Buffer contents removed to the beginning of the buffer."))b
 
 
 ;; Buffer & file operations prefix and keymap
@@ -239,7 +247,9 @@ This does not save the deleted text in the kill ring."
 (define-key cj/buffer-and-file-map "m" 'cj/move-buffer-and-file)
 (define-key cj/buffer-and-file-map "r" 'cj/rename-buffer-and-file)
 (define-key cj/buffer-and-file-map "d" 'cj/delete-buffer-and-file)
+(define-key cj/buffer-and-file-map "c" 'cj/copy-whole-buffer)
 (define-key cj/buffer-and-file-map "e" 'cj/clear-to-end-of-buffer)
+(define-key cj/buffer-and-file-map "b" 'cj/clear-to-beginning-of-buffer)
 (define-key cj/buffer-and-file-map "l" 'cj/copy-link-to-buffer-file)
 
 ;;; ---------------------- Whitespace Operations And Keymap ---------------------
