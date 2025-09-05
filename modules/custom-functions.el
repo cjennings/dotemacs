@@ -222,7 +222,15 @@ Other key maps extend from this key map to hold categorized functions.")
     (when file-path
       (setq file-path (concat "file://" file-path))
       (kill-new file-path)
-      (message "Copied file link to kill ring: %s" file-path))))
+	  (message "Copied file link to kill ring: %s" file-path))))
+
+
+(defun cj/clear-to-end-of-buffer ()
+  "Delete all text from point to the end of the current buffer.
+This does not save the deleted text in the kill ring."
+  (interactive)
+  (delete-region (point) (point-max)))
+
 
 ;; Buffer & file operations prefix and keymap
 (define-prefix-command 'cj/buffer-and-file-map nil
@@ -231,6 +239,7 @@ Other key maps extend from this key map to hold categorized functions.")
 (define-key cj/buffer-and-file-map "m" 'cj/move-buffer-and-file)
 (define-key cj/buffer-and-file-map "r" 'cj/rename-buffer-and-file)
 (define-key cj/buffer-and-file-map "d" 'cj/delete-buffer-and-file)
+(define-key cj/buffer-and-file-map "e" 'cj/clear-to-end-of-buffer)
 (define-key cj/buffer-and-file-map "l" 'cj/copy-link-to-buffer-file)
 
 ;;; ---------------------- Whitespace Operations And Keymap ---------------------
