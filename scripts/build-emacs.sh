@@ -115,11 +115,19 @@ say "...compiling (jobs=$MAKE_JOBS)"
   run "make -j${MAKE_JOBS}"
 )
 
+# Build documentation (info files)
+say "...building info files"
+(
+  cd "$SRC_DIR"
+  run "make info"
+)
+
 # Install to user-local prefix
 say "...installing to ${PREFIX}"
 (
   cd "$SRC_DIR"
   run "make install"
+  run "make install-info"
 )
 
 # ymlink all installed executables (emacs, emacsclient, etags, etc.)
