@@ -10,7 +10,6 @@
 ;; C-; --- Custom Key Map
 ;;   C-; )    → jump to matching parenthesis
 ;;   C-; f    → re-formats region or buffer (delete trailing whitespace, reindent, and untabify).
-;;   C-; c    → copy the entire buffer to the kill ring
 ;;   C-; W    → counts words in region or buffer displaying results in echo area.
 ;;   C-; /    → replace common glyph fractions (½) to text (1/2) (text to glyph with C-u).
 ;;   C-; r    → align text by regexp with spaces
@@ -21,6 +20,9 @@
 ;;   C-; b r  → rename buffer and its file simultaneously
 ;;   C-; b d  → delete buffer and its file simultaneously
 ;;   C-; b l  → copy file:// link of buffer’s source file
+;;   C-; b c  → copy entire buffer to the kill rung
+;;   C-; b b  → clear contents of buffer from point to beginnning
+;;   C-; b e  → clear contents of buffer from point to end
 ;;
 ;; C-; w --- Whitespace Operations
 ;;   C-; w r  → remove leading/trailing whitespace from line or region (buffer with C-u).
@@ -212,8 +214,7 @@ Other key maps extend from this key map to hold categorized functions.")
     (when file-path
       (setq file-path (concat "file://" file-path))
       (kill-new file-path)
-	  (message "Copied file link to kill ring: %s" file-path))))
-
+      (message "Copied file link to kill ring: %s" file-path))))
 
 (defun cj/copy-whole-buffer ()
   "Copy the entire contents of the current buffer to the kill ring.
@@ -222,8 +223,7 @@ is created.  A message is displayed when done."
   (interactive)
   (let ((contents (buffer-substring-no-properties (point-min) (point-max))))
 	(kill-new contents)
-	(message "Buffer contents copied to kill ring")))
-
+    (message "Buffer contents copied to kill ring")))
 
 (defun cj/clear-to-end-of-buffer ()
   "Delete all text from point to the end of the current buffer.
@@ -237,8 +237,7 @@ This does not save the deleted text in the kill ring."
 This does not save the deleted text in the kill ring."
   (interactive)
   (delete-region (point) (point-min))
-  (message "Buffer contents removed to the beginning of the buffer."))b
-
+  (message "Buffer contents removed to the beginning of the buffer."))
 
 ;; Buffer & file operations prefix and keymap
 (define-prefix-command 'cj/buffer-and-file-map nil
