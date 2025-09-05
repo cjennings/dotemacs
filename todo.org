@@ -110,35 +110,9 @@ Depending on context, can I add the
 - First few words of the line
 Do we think the reordering behavior when deleting locations might confuse users? How to simplify?
 What happens if a buffer is deleted that doesn't have a file associated with it? If we're using registers underneath, how do registers handle this?
-** DOING [#A] Org Roam and Org Template Fixes                          :bug:
+** DOING [#A] Org Roam Enhancements                            :enhancement:
 *** TODO [#B] Org Branch to Org Roam
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
-*** DONE [#B] Fix Emacs Org Roam Template Errors
-CLOSED: [2025-09-03 Wed 14:00]
-- State "DONE"       from "TODO"       [2025-09-03 Wed 14:00]
-**** DONE Fix category alignment
-CLOSED: [2025-09-03 Wed 14:00]
-- State "DONE"       from "TODO"       [2025-09-03 Wed 14:00]
-**** DONE Fix added path to template file
-CLOSED: [2025-09-03 Wed 14:00]
-- State "DONE"       from "TODO"       [2025-09-03 Wed 14:00]
-**** DONE Fix having template outline in file
-CLOSED: [2025-09-03 Wed 14:00]
-- State "DONE"       from "TODO"       [2025-09-03 Wed 14:00]
-**** 2025-09-01 Mon @ 12:49:21 -0500 Fixed org-element issue
-it's a bug in not loading org-element. Added this to my config
-
-;; bug workaround for org-element--get-category: Invalid function: org-element-with-disabled-cache
-;; https://github.com/doomemacs/doomemacs/issues/7347
-(load-library "org-element.el")
-
-**** Problem Statement
-C-c n i then type a recipe name.
-org-element--get-category: Invalid function: org-element-with-disabled-cache
-The file was created, but does not come to the front
-The category value seems unaligned
-*** DONE [#A] Add Org Templates Back to Emacs Repository!
-CLOSED: [2025-09-01 Mon 12:51]
 ** TODO [#A]  GPTel Add Ability to Save and Reload Conversations :enhancement:
 ** TODO [#A] Custom Function: Delete Whitespace From Region is Broken  :bug:
 ** TODO [#A] Mu4e Fixes                                                :bug:
