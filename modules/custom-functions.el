@@ -623,8 +623,11 @@ begin and end the line with the appropriate comment symbols based on programming
 						(- space-on-each-side 1)
 					  space-on-each-side))
 		  (insert comment-char))
-		(insert " ")
-		(insert comment-end)))))
+		;; Only insert trailing space and comment-end if comment-end is not empty
+		(when (not (string-empty-p comment-end))
+		  (insert " ")
+		  (insert comment-end))))))
+
 (defun cj/comment-box ()
   "Insert a comment box around text that the user inputs.
 The box extends to the fill column, centers the text, and uses the current
