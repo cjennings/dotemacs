@@ -113,7 +113,6 @@ What happens if a buffer is deleted that doesn't have a file associated with it?
 ** DOING [#A] Org Roam Enhancements                            :enhancement:
 *** TODO [#B] Org Branch to Org Roam
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
-** TODO [#A] GPTel Add Ability to Save and Reload Conversations :enhancement:
 ** TODO [#A] Custom Function: Delete Whitespace From Region is Broken  :bug:
 ** TODO [#A] Mu4e Fixes                                                :bug:
 *** DONE [#A] mu4e contacts not expanding on forwarding emails
@@ -130,7 +129,7 @@ Should change to non-blocking -- maybe use Emacs internal async?
 (org-shiftmetaright) should be overridden with  (buf-move-right)
 (org-shiftmetaleft) should be overridden with  (buf-move-left)
 
-** DOING [#B] Eshell Improvements
+** DOING [#B] Eshell Improvements                              :enhancement:
 *** TODO [#C] Add mu4e add file as attachment                 :enhancement:
 *** AI Suggested
 **** Improved Directory Navigation with =eshell-z=
@@ -269,16 +268,16 @@ If region is active, use that, otherwise use the current line."
       (error "Not in a project"))))
 #+end_src
 
-** TODO [#B] Add All ERT Tests Into Separate Directory
+** TODO [#B] Add All ERT Tests Into Separate Directory                 :bug:
 Tests should be added to a separate directory rather than the end of each elisp file.
 Gather them together, move them there, and make it easy to run tests per module and workflow.
-** TODO [#B] Org Agenda Work
+** TODO [#B] Org Agenda Work                                   :enhancement:
 *** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
 *** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
-** TODO [#B] Dirvish Should Open Not Showing Hidden Files by Default
+** TODO [#B] Dirvish Should Open Not Showing Hidden Files by Default   :bug:
 *** 2025-06-07 Sat @ 12:25:28 -0500 It isn't omitting the h switch on directory listings
 No. Didn't help
-** TODO [#B] Fix Emacs Alarms for Scheduled Events
+** TODO [#B] Fix Emacs Alarms for Scheduled Events                     :bug:
 *** 2025-06-03 Tue @ 15:12:51 -0500 Problem
 Emacs Alarm seems to sound off periodically after the alarm rang the first time.
 It should ring once at the beginning of the event, and that's it.
@@ -344,7 +343,7 @@ espeak "Appointment in $TIME minutes: $MSG"
 #+END_QUOTE
 [[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
 Captured On: [2025-06-19 Thu 12:29]
-** TODO [#B] Emacs Add Difftastic Functionality
+** TODO [#B] Emacs Add Difftastic Functionality                :enhancement:
 
 Linux Binary Install
 https://github.com/Wilfred/difftastic
@@ -360,7 +359,7 @@ https://github.com/pkryger/difftastic.el
               :rev :newest))
 #+end_src
 
-** TODO [#B] Emacs Add Magit Forge Functionality
+** TODO [#B] Emacs Add Magit Forge Functionality               :enhancement:
 
 https://github.com/magit/forge
 https://magit.vc/manual/forge/Setup-for-Githubcom.html
@@ -377,14 +376,11 @@ Example usage from sqrtminusone
                                 forge-gitlab-repository)))
 #+end_src
 
-** TODO [#B] Change Elfeed to Be About Playing Podcasts
-** TODO [#B] Capture and Refile to drill files
+** TODO [#B] Change Elfeed to Be About Playing Podcasts        :enhancement:
+** TODO [#B] Capture and Refile to drill files                 :enhancement:
 This code actually exists in org-drill-config, but it doesn't seem to work
-** TODO [#B] Emacs Display an error if no file in buffer-and-file operations
-** TODO [#C] Review Titlecase Functionality
-added in custom. Came from: https://codeberg.org/acdw/titlecase.el
-Originally seen at https://emacselements.com/true-titlecase-in-emacs.html
-** TODO [#C] Evolve Dupre Theme
+** TODO [#B] Emacs error if no file in buffer-and-file operations      :bug:
+** TODO [#B] Get Dupre Theme Working                                   :bug:
 Here are some ideas for making dupre-theme a bit more “complete” and future-proof as an Emacs theme.  You don’t have to do all of them, of course, but most “modern” themes ship a fair number of these extra faces and integrations.
 *** TODO [#A] Fill out the “standard” Emacs faces
 • error / warning / success
@@ -673,6 +669,29 @@ Below is a small excerpt showing how you might start adding some of the “missi
    )
 #+end_src
 
+** TODO [#B] Add Hugo Blogging Functionality                   :enhancement:
+** TODO [#C] Emacs: Add Reverso Functionality                  :enhancement:
+https://sqrtminusone.xyz/packages/reverso/
+check his config for a usage example
+
+Reverso
+
+reverso.el is a package of mine that provides Emacs interface for https://reverso.net.
+#+begin_src emacs-lisp
+  (use-package reverso
+    :straight (:host github :repo "SqrtMinusOne/reverso.el")
+    :init
+    (my-leader-def "ar" #'reverso)
+    :commands (reverso)
+    :config
+    (setq reverso-languages '(russian english german))
+    (reverso-history-mode))
+#+end_src
+
+* Emacs Next Release: 0.9
+** TODO [#C] Review Titlecase Functionality
+added in custom. Came from: https://codeberg.org/acdw/titlecase.el
+Originally seen at https://emacselements.com/true-titlecase-in-emacs.html
 ** TODO [#C] Revisit and Refactor Localrepo Functionality
 ** TODO [#C] Fix Exporting Documents to HTML.
 This appears to work with emacs -q. What's up with your config?
@@ -757,6 +776,7 @@ Captured On: [2025-05-29 Thu 04:23]
 ** TODO [#D] Consider Replicating Some of This Auctex and PDF Tools Code
 [[https://www.reddit.com/r/emacs/comments/cd6fe2/how_to_make_emacs_a_latex_ide/][How to make Emacs a Latex IDE? : r/emacs]]
 Captured On: [2025-08-14 Thu 03:43]
+
 * Emacs Config Ideas/References
 ** emacs-tw/awesome-elisp: A curated list of Emacs Lisp development resources
 [[https://github.com/emacs-tw/awesome-elisp][emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources]]
@@ -822,24 +842,6 @@ Captured On: [2025-06-07 Sat 13:29]
 [[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
 Captured On: [2025-06-07 Sat 17:11]
 ** TODO [#D] ryuslash/mode-icons: Show icons instead of mode names
-** TODO [#C] Emacs: Add Reverso Functionality
-https://sqrtminusone.xyz/packages/reverso/
-check his config for a usage example
-
-Reverso
-
-reverso.el is a package of mine that provides Emacs interface for https://reverso.net.
-#+begin_src emacs-lisp
-  (use-package reverso
-    :straight (:host github :repo "SqrtMinusOne/reverso.el")
-    :init
-    (my-leader-def "ar" #'reverso)
-    :commands (reverso)
-    :config
-    (setq reverso-languages '(russian english german))
-    (reverso-history-mode))
-#+end_src
-
 ** TODO [#B] Get Tufte.css working and as a separate entry
 Below is one way to get Org-mode’s HTML exporter to play nicely with Tufte-CSS.  The basic recipe is:
 
