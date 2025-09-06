@@ -337,6 +337,7 @@
     ("remeditation" "schedule" nil :count 0)
     ("rememeber" "remember" nil :count 0)
     ("removign" "removing" nil :count 0)
+    ("remvoe" "remove" nil :count 0)
     ("repitition" "repetition" nil :count 0)
     ("requireemnts" "requirements" nil :count 0)
     ("restarant" "restaurant" nil :count 0)
