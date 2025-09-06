@@ -113,7 +113,7 @@ What happens if a buffer is deleted that doesn't have a file associated with it?
 ** DOING [#A] Org Roam Enhancements                            :enhancement:
 *** TODO [#B] Org Branch to Org Roam
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
-** TODO [#A]  GPTel Add Ability to Save and Reload Conversations :enhancement:
+** TODO [#A] GPTel Add Ability to Save and Reload Conversations :enhancement:
 ** TODO [#A] Custom Function: Delete Whitespace From Region is Broken  :bug:
 ** TODO [#A] Mu4e Fixes                                                :bug:
 *** DONE [#A] mu4e contacts not expanding on forwarding emails
@@ -123,7 +123,7 @@ removed org-contacts functionaality and it returned!
 CLOSED: [2025-08-30 Sat 12:12]
 https://github.com/jeremy-compostella/org-msg
 *** TODO [#A] Fix org-contacts functionality
-** TODO [#A] Add "save all attachments" to mu4e                :enhancement:
+** TODO [#A] mu4e: Add "save all attachments"                  :enhancement:
 ** TODO [#A] file-config.el cj/xdg-open blocks Emacs process           :bug:
 Should change to non-blocking -- maybe use Emacs internal async?
 ** TODO [#A] Make org mode buffers swap with shift-meta        :enhancement:
@@ -131,38 +131,9 @@ Should change to non-blocking -- maybe use Emacs internal async?
 (org-shiftmetaleft) should be overridden with  (buf-move-left)
 
 ** DOING [#B] Eshell Improvements
-*** Understanding Your Current Setup
-
-I can see you have a well-structured eshell and vterm configuration. Your eshell setup includes:
-
-- Custom prompt configuration
-- Aliases for common operations
-- Integration with remote servers via TRAMP
-- Visual command handling
-- History management
-- Integration with xterm-color for proper ANSI colors
-
-*** Clarifying Questions
-
-1. Are you experiencing any specific issues with your eshell setup?
-2. Do you have any particular workflows you'd like to optimize with eshell?
-3. Are there any terminal features you miss when using eshell?
-
-*** Recommended Approach
-
-Without knowing your specific pain points, I'll recommend several high-value improvements that would enhance your eshell experience:
-
-1. Add command completion enhancements
-2. Improve directory navigation
-3. Add better history searching
-4. Include directory tracking and shell command integration
-5. Enhance visual output handling
-6. Improve eshell buffer management
-7. Add helpful utility functions
-
-*** Recommended Code Changes
-
-**** 2. Improved Directory Navigation with =eshell-z=
+*** TODO [#C] Add mu4e add file as attachment                 :enhancement:
+*** AI Suggested
+**** Improved Directory Navigation with =eshell-z=
 
 #+begin_src emacs-lisp
 (use-package eshell-z
@@ -172,8 +143,7 @@ Without knowing your specific pain points, I'll recommend several high-value imp
             (lambda () (require 'eshell-z))))
 #+end_src
 
-
-**** 4. Directory Tracking and Shell Command Execution Improvements
+**** Directory Tracking and Shell Command Execution Improvements
 
 #+begin_src emacs-lisp
 ;; Allow Eshell to track directory changes in external shells
@@ -203,7 +173,7 @@ If region is active, use that, otherwise use the current line."
 (global-set-key (kbd "C-c !") 'cj/eshell-command-on-region-file)
 #+end_src
 
-**** 5. Enhanced Visual Output and ANSI Colors
+**** Enhanced Visual Output and ANSI Colors
 
 #+begin_src emacs-lisp
 
@@ -222,8 +192,7 @@ If region is active, use that, otherwise use the current line."
             (eshell/alias "vk" 'cj/eshell-exec-visual-and-kill)))
 #+end_src
 
-
-**** 6. Buffer Management and Layout Improvements
+**** Buffer Management and Layout Improvements
 
 #+begin_src emacs-lisp
 ;; Auto rename eshell buffers based on current directory
@@ -257,8 +226,7 @@ If region is active, use that, otherwise use the current line."
 (global-set-key (kbd "C-c e") 'cj/eshell-pop-window)
 #+end_src
 
-
-**** 7. Useful Utility Functions
+**** Useful Utility Functions
 
 #+begin_src emacs-lisp
 ;; Enhanced eshell clear that preserves history
