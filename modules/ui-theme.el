@@ -23,10 +23,6 @@
 (use-package github-dark-vscode-theme)
 (use-package madhat2r-theme)
 (use-package adwaita-dark-theme)
-(use-package tron-legacy-theme
-  :config
-  (setq tron-legacy-theme-vivid-cursor t)
-  (load-theme 'tron-legacy t))
 
 
 ;; ------------------------------- Switch Themes -------------------------------
