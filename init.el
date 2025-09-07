@@ -78,7 +78,6 @@
 
 (require 'prog-general)
 (require 'vc-config)             ;; version control packages and keybindings
-(require 'treesitter-config)     ;; treesitter language syntax highlighting
 (require 'flycheck-config)       ;; linting for all languages including human ones
 (require 'prog-lsp)
 (require 'prog-training)

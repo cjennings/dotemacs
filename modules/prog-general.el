@@ -28,6 +28,23 @@
 (add-hook 'yaml-mode-hook #'cj/general-prog-settings)
 (add-hook 'toml-mode-hook #'cj/general-prog-settings)
 
+
+;; --------------------------------- Treesitter --------------------------------
+;; incremental language syntax parser
+
+(use-package tree-sitter
+  :defer .5)
+
+;; installs tree-sitter grammars if they're absent
+(use-package treesit-auto
+  :defer .5
+  :custom
+  (treesit-auto-install t)
+;;  (treesit-auto-install 'prompt) ;; optional prompt instead of auto-install
+  :config
+  (treesit-auto-add-to-auto-mode-alist 'all)
+  (global-treesit-auto-mode))
+
 ;; -------------------------------- Code Folding -------------------------------
 
 ;; BICYCLE
