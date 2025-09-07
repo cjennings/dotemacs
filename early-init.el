@@ -1,4 +1,4 @@
-;;; early-init.el ---  -*- lexical-binding: t; coding: utf-8-unix; no-byte-compile: t; lexical-binding: t; -*-
+;;; early-init.el ---  -*- lexical-binding: t; coding: utf-8-unix; no-byte-compile: t; -*-
 
 ;;; Commentary:
 
@@ -37,7 +37,6 @@
 ;; -------------------------------- Debug Flags --------------------------------
 ;; debugging enabled during Emacs startup. disabled again after Emacs startup.
 
-
 ;; uncomment when repo signatures expire and package installation is necessary
 ;; (setq package-check-signature nil)
 
@@ -48,7 +47,6 @@
 		  (lambda ()
 			(setq debug-on-error nil)
 			(setq debug-on-quit nil)))
-
 
 ;; ------------------------------ Bug Workarounds ------------------------------
 
@@ -65,6 +63,10 @@
 
 (defvar cj/use-online-repos t
   "Whether to check for network connectivity & use online package repositories.")
+
+;; Cache network status to avoid repeated checks
+(defvar cj/network-available nil
+  "Cached network availability status.")
 
 ;; ---------------------------- Startup Performance ----------------------------
 ;; increases garbage collection threshold, and turns off file-name-handler and
@@ -83,10 +85,10 @@
 (setq vc-handled-backends nil)
 
 (add-hook 'emacs-startup-hook
-          (lambda ()
-            (setq gc-cons-threshold cj/orig-gc-cons-threshold
-                  file-name-handler-alist cj/orig-file-name-handler-alist
-                  vc-handled-backends cj/orig-vc-handled-backends)))
+		  (lambda ()
+			(setq gc-cons-threshold cj/orig-gc-cons-threshold
+				  file-name-handler-alist cj/orig-file-name-handler-alist
+				  vc-handled-backends cj/orig-vc-handled-backends)))
 
 ;; ------------------------------ Site Start Files -----------------------------
 ;; don't load site-start or default.el files
@@ -97,9 +99,13 @@
 ;; checks if the network is available. used for online repo enablement.
 
 (defun internet-up-p (&optional host)
-  "Test for network connectivity by pinging HOST."
-  (= 0 (call-process "ping" nil nil nil "-c" "1" "-W" "1"
-                     (if host host "www.google.com"))))
+  "Test for network connectivity by pinging HOST.
+Results are cached in =cj/network-available' to avoid repeated checks."
+  (if (boundp 'cj/network-available)
+	  cj/network-available
+	(setq cj/network-available
+		  (= 0 (call-process "ping" nil nil nil "-c" "1" "-W" "1"
+							 (if host host "www.google.com"))))))
 
 ;; ----------------------------- Package Management ----------------------------
 ;; detect the availability of online and local repositories before adding them.
@@ -121,52 +127,62 @@ early-init.el.")
 (setq package-archives nil) ;; package-archives will be added below
 
 ;; LOCAL REPOSITORY (packages in version control)
-(if (file-accessible-directory-p localrepo-location)
-    (progn
-      (add-to-list 'package-archives (cons "localrepo" localrepo-location) t)
-      (add-to-list 'package-archive-priorities '(("localrepo". 200)))))
+(when (file-accessible-directory-p localrepo-location)
+  (add-to-list 'package-archives (cons "localrepo" localrepo-location) t)
+  (add-to-list 'package-archive-priorities '("localrepo" . 200)))
 
 ;; LOCAL REPOSITORY ELPA MIRRORS
-(if (file-accessible-directory-p (concat elpa-mirror-location "gnu"))
-    (progn
-      (add-to-list 'package-archives (cons "gnu-local" (concat elpa-mirror-location "gnu/"))t)
-      (add-to-list 'package-archive-priorities '("gnu-local" . 125))))
+(when (file-accessible-directory-p (concat elpa-mirror-location "gnu"))
+  (add-to-list 'package-archives (cons "gnu-local" (concat elpa-mirror-location "gnu/")) t)
+  (add-to-list 'package-archive-priorities '("gnu-local" . 125)))
 
-(if (file-accessible-directory-p (concat elpa-mirror-location "nongnu"))
-    (progn
-      (add-to-list 'package-archives (cons "nongnu-local" (concat elpa-mirror-location "nongnu/"))t)
-      (add-to-list 'package-archive-priorities '("nongnu-local" . 120))))
+(when (file-accessible-directory-p (concat elpa-mirror-location "nongnu"))
+  (add-to-list 'package-archives (cons "nongnu-local" (concat elpa-mirror-location "nongnu/")) t)
+  (add-to-list 'package-archive-priorities '("nongnu-local" . 120)))
 
-(if (file-accessible-directory-p (concat elpa-mirror-location "melpa"))
-    (progn
-      (add-to-list 'package-archives (cons "melpa-local" (concat elpa-mirror-location "melpa/"))t)
-      (add-to-list 'package-archive-priorities '("melpa-local" . 115))))
+(when (file-accessible-directory-p (concat elpa-mirror-location "melpa"))
+  (add-to-list 'package-archives (cons "melpa-local" (concat elpa-mirror-location "melpa/")) t)
+  (add-to-list 'package-archive-priorities '("melpa-local" . 115)))
 
-(if (file-accessible-directory-p (concat elpa-mirror-location "stable-melpa"))
-    (progn
-      (add-to-list 'package-archives (cons "melpa-stable-local" (concat elpa-mirror-location "stable-melpa/"))t)
-      (add-to-list 'package-archive-priorities '("melpa-stable" . 100))))
+(when (file-accessible-directory-p (concat elpa-mirror-location "stable-melpa"))
+  (add-to-list 'package-archives (cons "melpa-stable-local" (concat elpa-mirror-location "stable-melpa/")) t)
+  (add-to-list 'package-archive-priorities '("melpa-stable-local" . 100)))
 
 ;; ONLINE REPOSITORIES
-(when (and (boundp 'cj/use-online-repos) cj/use-online-repos (internet-up-p))
-  (progn
-	(add-to-list 'package-archives '("gnu". "https://elpa.gnu.org/packages/") t)
-	(add-to-list 'package-archive-priorities '("gnu" . 25))
-	(add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/") t)
-	(add-to-list 'package-archive-priorities '("nongnu" . 20))
-	(add-to-list 'package-archives '("melpa". "https://melpa.org/packages/") t)
-	(add-to-list 'package-archive-priorities '("melpa" . 15))
-	;; (add-to-list 'package-archives '("org". "https://orgmode.org/packages/") t)
-	;; (add-to-list 'package-archive-priorities '("org" . 10))
-	(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
-	(add-to-list 'package-archive-priorities '("melpa-stable" . 5))))
+(when (and cj/use-online-repos (internet-up-p))
+  (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/") t)
+  (add-to-list 'package-archive-priorities '("gnu" . 25))
+  (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/") t)
+  (add-to-list 'package-archive-priorities '("nongnu" . 20))
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+  (add-to-list 'package-archive-priorities '("melpa" . 15))
+  ;; (add-to-list 'package-archives '("org" . "https://orgmode.org/packages/") t)
+  ;; (add-to-list 'package-archive-priorities '("org" . 10))
+  (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+  (add-to-list 'package-archive-priorities '("melpa-stable" . 5)))
+
+;; Initialize package system
 (package-initialize)
 
-;; only run refresh when there's no cache
-(when (not package-archive-contents)
-  (package-refresh-contents))
+;; Check if we need to refresh package contents
+;; This checks for the actual cache file existence rather than just the variable
+(let ((cache-file (expand-file-name "archives" package-user-dir)))
+  (unless (and (file-exists-p cache-file)
+			   (< (float-time (time-subtract (current-time)
+											  (file-attribute-modification-time
+											   (file-attributes cache-file))))
+				  (/ 24 60 60))) ; cache is less than 24 hours old
+	(condition-case nil
+		(package-refresh-contents)
+	  (error (message "Failed to refresh package contents")))))
 
-;; always ensure package installation
+;; Ensure use-package is installed before configuring it
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+
+;; Configure use-package
+(require 'use-package)
 (setq use-package-always-ensure t)
 
 ;; turn on for use-package debugging
@@ -184,7 +200,7 @@ early-init.el.")
 (setq locale-coding-system   'utf-8)
 (set-charset-priority 'unicode)
 (setq x-select-request-type
-      '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
+	  '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
 
 ;; ---------------------------- Inhibit UI Elements ----------------------------
 ;; setting UI preferences here before the UI is displayed
@@ -199,4 +215,4 @@ early-init.el.")
 (setq inhibit-startup-echo-area-message t)
 
 (provide 'early-init)
-;;; early-init.el ends here.
+;;; early-init.el ends here
