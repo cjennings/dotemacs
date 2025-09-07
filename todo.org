@@ -1,115 +1,4 @@
 * Emacs Open Work
-** DOING [#A] Jumper Package                                   :enhancement:
-*** Specification
-**** variable:custom: jumper-max-locations
-maximum number of locations to store: default 10
-**** variable:internal: jumper--registers
-vector of used registers:
-(make-register jumper-max-locations nil)
-**** variable:internal: jumper--last-location-register
-register used to store the last location: ?z
-**** method:internal: jumper--point-matches-register
-#+begin_src emacs-lisp
-  ;; First store a position in register 'a'
-  (point-to-register ?a)
-
-  ;; Later, check if current position matches what's in register 'a'
-  (if (cj/point-matches-register ?a)
-      (message "Current position matches register 'a'")
-    (message "Current position differs from register 'a'"))
-
-
-  (defun cj/point-matches-register (register)
-    "Return t if current position matches position stored in REGISTER.
-      REGISTER is a character representing the register to check against.
-      Returns nil if the register doesn't exist or doesn't contain position information."
-    (let ((reg-val (get-register register)))
-      (when (and reg-val
-                 (markerp reg-val)
-                 (marker-buffer reg-val)
-                 (eq (current-buffer) (marker-buffer reg-val))
-                 (= (point) (marker-position reg-val)))
-        t)))
-#+end_src
-**** method: 
-**** method: save-last-position
-saves location to register z: (point-to-register ?z)
-**** method: save-to-next-register
-gets next free register in the sequence
-calls (save-last-position)
-saves using (point-to-register REGISTER &optional ARG)
-*** 2025-09-02 Tue @ 14:06:03 -0500 Functionality Description
-Tentative Package Name: Jumper
-I typically use registers to jump between places, but I often forget the keybindings. Also, I sometimes overwrite registers by hitting the wrong key. Many Emacs users  don't even know about registers. I've seen posts from software developers asking how to conveniently store and jump to specific locations in a large code base.
-
-To solve this I'd like to write a little elisp package that leverages Emacs vanilla register functionality to make jumping between locations using registers simple and transparent. The user won't have to think about registers or what character they've stored their location in at all. All keybindings will be based on keys from home row of the keyboard.
-
-Preliminaries:
-We will map the functionality to the keybinding prefix C-; j, but the prefix should be easy to configure.
-
-Let's imagine a set of characters in a sequence. They could be any characters, but for the sake of simplicity we'll use the numbers from 0 to 9, and a one more character used for the "last location" -- the character "z".
-
-What follows is a description of the workflow:
-**** Adding Locations
-keybinding: <prefix> space (store destination)
-If the user is visiting a buffer and presses <prefix> space,
-- the current location is stored in the next free register. if this is the first time they are storing a location, the first free register is 0.
-user feedback: a message is displayed in the echo area saying "location stored."
-If the user stays on the same location and presses prefix <space> again, they should receive a message in the echo area saying the location is already stored, and no changes to the register is made.
-
-If the user moves to a new location and presses prefix <space> again, the next free register is used to store the location, in this case it would be 1. They can then iterate and store additional locations up to the last character in the sequence up to the limit of 10 registers (0 through 9). If they try to store a register after all 10 registers are filled, they will receive a message ("sorry - all jump locations are filled!").
-**** Jump-To A Location
-keybinding: <prefix> j (jump to destination)
-NOTE: Whenever the user presses <prefix> j, that location is automatically stored in the "last location" register z.
-***** When only one location is stored, and the user presses <prefix> j:
-If there is only one location stored, the user IS at the location, and they press <prefix> j, they see an echo area message "you're already at the stored location."
-If there is only one location stored in the sequence, and the user is NOT at that location, their location is stored in register z, then the user is immediately to their destination location via (jump-to-register).
-user feedback: a message is displayed in the echo area saying "jumped to location."
-If the user presses <prefix> J again, they are automatically taken back to the location in register z. and the same user feedback message is displayed.
-In other words, after the user stores one location and moves elsewhere, pressing <prefix> j will jump back and forth between the two places.
-***** When multiple locations are stored, and the user presses <prefix> j:
-A completing read is displayed with all the locations between 0 and 9 along with register z (their last location) at the bottom.
-Each line contains the letter as well as the content that the register would normally display. In other words, it could just be the register list is displayed, but narrowed down to 0 - 9 and z.
-
-When the user chooses a location 0 -9, z from completing read:
-- The current location is stored in register z, replacing their last location
-- They are taken to the location via (jump-to-register).
-user feedback: a message is displayed in the echo area saying "jumped to location."
-**** Removing Locations
-keybinding: <prefix> d
-A completing read is displayed with the first item (where the cursor is on) being "Cancel".
-The rest of the registers are displayed in descending order, i.e., from 9 to 0.
-Note: the z register is not displayed.
-Selecting a register from the list:
-- removes that item from the list, and removes the location stored in the register.
-- if the item is NOT the top one in the register, it reorders the rest of the sequence
-  in other words, if 0 - 9 are all stored, and:
-  the user removes item 7:
-  - location 8 is restored in 7
-  - location 9 is stored in 8
-  the user removes item 0
-  - location 1 is stored in 0
-  - location 2 is stored in 1
-  - location 3 is stored in 2
-  - location 4 is stored in 3
-  - location 5 is stored in 4
-  - location 6 is stored in 5
-  - location 7 is stored in 6
-  - location 8 is stored in 7
-  - location 9 is stored in 8
-user feedback: a message is displayed in the echo area saying "location removed."
-**** Open Questions
-- Are there buffers which the user should not be able to store in a register?
-- How can we prevent the user from creating issues by adding to the registers 0 through 9 by M-x point-to-register or it's keybinding? Is there a way to block or reserve those registers? Or is it better to just choose a sequence that is the least likely to be used by a human user? If so, what would that sequence be?
-- Is 10 registers enough for a normal developer?
-- I should probably
-- Can I use a vector/list internally and map to registers behind the scenes?
-Depending on context, can I add the
-- Function name at point
-- File name + line number
-- First few words of the line
-Do we think the reordering behavior when deleting locations might confuse users? How to simplify?
-What happens if a buffer is deleted that doesn't have a file associated with it? If we're using registers underneath, how do registers handle this?
 ** DOING [#A] Org Roam Enhancements                            :enhancement:
 *** TODO [#B] Org Branch to Org Roam
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
@@ -121,8 +10,13 @@ removed org-contacts functionaality and it returned!
 *** DONE [#A] Add org-msg
 CLOSED: [2025-08-30 Sat 12:12]
 https://github.com/jeremy-compostella/org-msg
+*** TODO [#A] Fix org-msg barfing when replying to html file
 *** TODO [#A] Fix org-contacts functionality
+*** TODO [#B] Fix up action menu
+- remove xwidgets
+- add "add attachment" to compose message buffer
 ** TODO [#A] mu4e: Add "save all attachments"                  :enhancement:
+- add to action menu for view message buffer
 ** TODO [#A] file-config.el cj/xdg-open blocks Emacs process           :bug:
 Should change to non-blocking -- maybe use Emacs internal async?
 ** TODO [#A] Make org mode buffers swap with shift-meta        :enhancement:
@@ -670,6 +564,7 @@ Below is a small excerpt showing how you might start adding some of the “missi
 #+end_src
 
 ** TODO [#B] Add Hugo Blogging Functionality                   :enhancement:
+** TODO [#B] Ability to switch models easily in GPTel          :enhancement:
 ** TODO [#C] Emacs: Add Reverso Functionality                  :enhancement:
 https://sqrtminusone.xyz/packages/reverso/
 check his config for a usage example
@@ -687,8 +582,128 @@ reverso.el is a package of mine that provides Emacs interface for https://revers
     (setq reverso-languages '(russian english german))
     (reverso-history-mode))
 #+end_src
+** TODO [#C] Org keyword discolored until reapplying theme             :bug:
+** TODO [#B] Decent HTML exports from org mode with inline css
+*** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
+[[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
+Captured On: [2025-08-18 Mon 14:36]
+** TODO [#C] Implement Backup file in dirvish/eshell
+*** Emacs: Backup Current File 📜
+[[http://xahlee.info/emacs/emacs/elisp_make-backup.html][Emacs: Backup Current File 📜]]
+Captured On: [2025-09-03 Wed 11:48]
 
 * Emacs Next Release: 0.9
+** DOING [#A] Jumper Package                                   :enhancement:
+*** Specification
+**** variable:custom: jumper-max-locations
+maximum number of locations to store: default 10
+**** variable:internal: jumper--registers
+vector of used registers:
+(make-register jumper-max-locations nil)
+**** variable:internal: jumper--last-location-register
+register used to store the last location: ?z
+**** method:internal: jumper--point-matches-register
+#+begin_src emacs-lisp
+  ;; First store a position in register 'a'
+  (point-to-register ?a)
+
+  ;; Later, check if current position matches what's in register 'a'
+  (if (cj/point-matches-register ?a)
+      (message "Current position matches register 'a'")
+    (message "Current position differs from register 'a'"))
+
+
+  (defun cj/point-matches-register (register)
+    "Return t if current position matches position stored in REGISTER.
+      REGISTER is a character representing the register to check against.
+      Returns nil if the register doesn't exist or doesn't contain position information."
+    (let ((reg-val (get-register register)))
+      (when (and reg-val
+                 (markerp reg-val)
+                 (marker-buffer reg-val)
+                 (eq (current-buffer) (marker-buffer reg-val))
+                 (= (point) (marker-position reg-val)))
+        t)))
+#+end_src
+**** method: 
+**** method: save-last-position
+saves location to register z: (point-to-register ?z)
+**** method: save-to-next-register
+gets next free register in the sequence
+calls (save-last-position)
+saves using (point-to-register REGISTER &optional ARG)
+*** 2025-09-02 Tue @ 14:06:03 -0500 Functionality Description
+Tentative Package Name: Jumper
+I typically use registers to jump between places, but I often forget the keybindings. Also, I sometimes overwrite registers by hitting the wrong key. Many Emacs users  don't even know about registers. I've seen posts from software developers asking how to conveniently store and jump to specific locations in a large code base.
+
+To solve this I'd like to write a little elisp package that leverages Emacs vanilla register functionality to make jumping between locations using registers simple and transparent. The user won't have to think about registers or what character they've stored their location in at all. All keybindings will be based on keys from home row of the keyboard.
+
+Preliminaries:
+We will map the functionality to the keybinding prefix C-; j, but the prefix should be easy to configure.
+
+Let's imagine a set of characters in a sequence. They could be any characters, but for the sake of simplicity we'll use the numbers from 0 to 9, and a one more character used for the "last location" -- the character "z".
+
+What follows is a description of the workflow:
+**** Adding Locations
+keybinding: <prefix> space (store destination)
+If the user is visiting a buffer and presses <prefix> space,
+- the current location is stored in the next free register. if this is the first time they are storing a location, the first free register is 0.
+user feedback: a message is displayed in the echo area saying "location stored."
+If the user stays on the same location and presses prefix <space> again, they should receive a message in the echo area saying the location is already stored, and no changes to the register is made.
+
+If the user moves to a new location and presses prefix <space> again, the next free register is used to store the location, in this case it would be 1. They can then iterate and store additional locations up to the last character in the sequence up to the limit of 10 registers (0 through 9). If they try to store a register after all 10 registers are filled, they will receive a message ("sorry - all jump locations are filled!").
+**** Jump-To A Location
+keybinding: <prefix> j (jump to destination)
+NOTE: Whenever the user presses <prefix> j, that location is automatically stored in the "last location" register z.
+***** When only one location is stored, and the user presses <prefix> j:
+If there is only one location stored, the user IS at the location, and they press <prefix> j, they see an echo area message "you're already at the stored location."
+If there is only one location stored in the sequence, and the user is NOT at that location, their location is stored in register z, then the user is immediately to their destination location via (jump-to-register).
+user feedback: a message is displayed in the echo area saying "jumped to location."
+If the user presses <prefix> J again, they are automatically taken back to the location in register z. and the same user feedback message is displayed.
+In other words, after the user stores one location and moves elsewhere, pressing <prefix> j will jump back and forth between the two places.
+***** When multiple locations are stored, and the user presses <prefix> j:
+A completing read is displayed with all the locations between 0 and 9 along with register z (their last location) at the bottom.
+Each line contains the letter as well as the content that the register would normally display. In other words, it could just be the register list is displayed, but narrowed down to 0 - 9 and z.
+
+When the user chooses a location 0 -9, z from completing read:
+- The current location is stored in register z, replacing their last location
+- They are taken to the location via (jump-to-register).
+user feedback: a message is displayed in the echo area saying "jumped to location."
+**** Removing Locations
+keybinding: <prefix> d
+A completing read is displayed with the first item (where the cursor is on) being "Cancel".
+The rest of the registers are displayed in descending order, i.e., from 9 to 0.
+Note: the z register is not displayed.
+Selecting a register from the list:
+- removes that item from the list, and removes the location stored in the register.
+- if the item is NOT the top one in the register, it reorders the rest of the sequence
+  in other words, if 0 - 9 are all stored, and:
+  the user removes item 7:
+  - location 8 is restored in 7
+  - location 9 is stored in 8
+  the user removes item 0
+  - location 1 is stored in 0
+  - location 2 is stored in 1
+  - location 3 is stored in 2
+  - location 4 is stored in 3
+  - location 5 is stored in 4
+  - location 6 is stored in 5
+  - location 7 is stored in 6
+  - location 8 is stored in 7
+  - location 9 is stored in 8
+user feedback: a message is displayed in the echo area saying "location removed."
+**** Open Questions
+- Are there buffers which the user should not be able to store in a register?
+- How can we prevent the user from creating issues by adding to the registers 0 through 9 by M-x point-to-register or it's keybinding? Is there a way to block or reserve those registers? Or is it better to just choose a sequence that is the least likely to be used by a human user? If so, what would that sequence be?
+- Is 10 registers enough for a normal developer?
+- I should probably
+- Can I use a vector/list internally and map to registers behind the scenes?
+Depending on context, can I add the
+- Function name at point
+- File name + line number
+- First few words of the line
+Do we think the reordering behavior when deleting locations might confuse users? How to simplify?
+What happens if a buffer is deleted that doesn't have a file associated with it? If we're using registers underneath, how do registers handle this?
 ** TODO [#C] Review Titlecase Functionality
 added in custom. Came from: https://codeberg.org/acdw/titlecase.el
 Originally seen at https://emacselements.com/true-titlecase-in-emacs.html
@@ -777,71 +792,23 @@ Captured On: [2025-05-29 Thu 04:23]
 [[https://www.reddit.com/r/emacs/comments/cd6fe2/how_to_make_emacs_a_latex_ide/][How to make Emacs a Latex IDE? : r/emacs]]
 Captured On: [2025-08-14 Thu 03:43]
 
-* Emacs Config Ideas/References
-** emacs-tw/awesome-elisp: A curated list of Emacs Lisp development resources
-[[https://github.com/emacs-tw/awesome-elisp][emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources]]
-Captured On: [2025-06-07 Sat 13:42]
-** emacs-tw/awesome-emacs: A community driven list of useful Emacs packages, libraries and other items.
-[[https://github.com/emacs-tw/awesome-emacs#layout][emacs-tw/awesome-emacs: A community driven list of useful Emacs packages, libraries and other items.]]
-Captured On: [2025-06-07 Sat 13:30]
-** bastibe/org-static-blog: A static site generator using org-mode
-[[https://github.com/bastibe/org-static-blog][bastibe/org-static-blog: A static site generator using org-mode]]
-Captured On: [2025-05-29 Thu 04:32]
-** a high signal to noise emacs command: buffer-same-mode
-[[https://jao.io/blog/high-signal-to-noise-emacs-command.html][a high signal to noise emacs command]]
-Captured On: [2025-05-29 Thu 04:33]
-** How I batch apply and save one-liners
-[[https://xenodium.com/how-i-batch-apply-and-save-one-liners][How I batch apply and save one-liners]]
-Captured On: [2025-08-01 Fri 03:11]
-** Better org-mode Agenda display-buffer-alist Settings • Christian Tietze
-[[https://christiantietze.de/posts/2022/12/updated-org-mode-agenda-display-buffer-alist/][Better org-mode Agenda display-buffer-alist Settings • Christian Tietze]]
-Captured On: [2025-08-01 Fri 03:21]
 ** GitHub - xenodium/dwim-shell-command: Save your shell commands/scripts and apply from Emacs with ease.
 [[https://github.com/xenodium/dwim-shell-command][GitHub - xenodium/dwim-shell-command: Save your shell commands/scripts and apply from Emacs with ease.]]
-Captured On: [2025-08-01 Fri 03:10]
-** GitHub - hyakt/emacs-dashboard-hackernews: Display a topstories of Hacker News on Dashboard.
-[[https://github.com/hyakt/emacs-dashboard-hackernews][GitHub - hyakt/emacs-dashboard-hackernews: Display a topstories of Hacker News on Dashboard.]]
-Captured On: [2025-08-01 Fri 02:47]
-** org mode - org-link to the exact page-position in a pdf file - Emacs Stack Exchange
-[[https://emacs.stackexchange.com/questions/68013/org-link-to-the-exact-page-position-in-a-pdf-file][org mode - org-link to the exact page-position in a pdf file - Emacs Stack Exchange]]
-Captured On: [2025-07-11 Fri 18:17]
-** Craft an Email Workflow with Org Mode - YouTube
-[[https://www.youtube.com/watch?v=dSZu4jwvaSs][Craft an Email Workflow with Org Mode - YouTube]]
-Captured On: [2025-08-30 Sat 11:42]
-** Enhance Your Emails with Org Mode - System Crafters
-[[https://systemcrafters.net/emacs-mail/enhance-email-with-org-mode/][Enhance Your Emails with Org Mode - System Crafters]]
-Captured On: [2025-08-30 Sat 11:42]
-** Emacs As Mail Client Specifically as Mu4E | Unixbhaskar's Blog
-[[https://unixbhaskar.wordpress.com/2023/09/05/emacs-as-mail-client-specifically-as-mu4e/][Emacs As Mail Client Specifically as Mu4E | Unixbhaskar's Blog]]
-Captured On: [2025-08-29 Fri 16:12]
-** Blogging with Emacs, and Emacs only | Diego Vicente
-[[https://diego.codes/post/blogging-with-org/][Blogging with Emacs, and Emacs only | Diego Vicente]]
-Captured On: [2025-08-18 Mon 17:57]
-** Using Emacs and Org-mode as a static site generator
-[[https://ogbe.net/blog/emacs_org_static_site][Using Emacs and Org-mode as a static site generator]]
-Captured On: [2025-08-18 Mon 17:54]
-** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
-[[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
-Captured On: [2025-08-18 Mon 14:36]
-** My PDF Tools Settings
-[[https://emacselements.com/pdf-tools-settings.html][My PDF Tools Settings]]
-Captured On: [2025-09-03 Wed 11:49]
-** Emacs: Backup Current File 📜
-[[http://xahlee.info/emacs/emacs/elisp_make-backup.html][Emacs: Backup Current File 📜]]
-Captured On: [2025-09-03 Wed 11:48]
-** The best latex Editor : r/emacs
-[[https://www.reddit.com/r/emacs/comments/akmwko/the_best_latex_editor/][The best latex Editor : r/emacs]]
-Captured On: [2025-08-13 Wed 19:29]
-** gregoryg/emacs-gregoryg: My emacs settings for use across Linux, Windows, OS X
-[[https://github.com/gregoryg/emacs-gregoryg?tab=readme-ov-file#gptel---llms-in-markdown-and-org-mode][gregoryg/emacs-gregoryg: My emacs settings for use across Linux, Windows, OS X]]
-Captured On: [2025-08-12 Tue 16:31]
-** TODO [#D] manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.
-[[https://github.com/manateelazycat/awesome-tray][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
-Captured On: [2025-06-07 Sat 13:29]
+[[https://xenodium.com/how-i-batch-apply-and-save-one-liners][How I batch apply and save one-liners]]
+Captured On: [2025-08-01 Fri 03:11]
 ** TODO [#D] Install ZOxide Integration into Emacs
 [[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
 Captured On: [2025-06-07 Sat 17:11]
+
+** My PDF Tools Settings
+[[https://emacselements.com/pdf-tools-settings.html][My PDF Tools Settings]]
+Captured On: [2025-09-03 Wed 11:49]
+
+** TODO [#D] manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.
+[[https://github.com/manateelazycat/awesome-tray][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
+Captured On: [2025-06-07 Sat 13:29]
 ** TODO [#D] ryuslash/mode-icons: Show icons instead of mode names
+
 ** TODO [#B] Get Tufte.css working and as a separate entry
 Below is one way to get Org-mode’s HTML exporter to play nicely with Tufte-CSS.  The basic recipe is:
 
@@ -924,3 +891,40 @@ Once that test passes, you know your footnotes are being rewritten into Tufte-st
 
 Enjoy your beautifully-typeset Org → HTML exports in true Tufte style!
 
+* Emacs Config Ideas/References
+** emacs-tw/awesome-elisp: A curated list of Emacs Lisp development resources
+[[https://github.com/emacs-tw/awesome-elisp][emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources]]
+Captured On: [2025-06-07 Sat 13:42]
+** emacs-tw/awesome-emacs: A community driven list of useful Emacs packages, libraries and other items.
+[[https://github.com/emacs-tw/awesome-emacs#layout][emacs-tw/awesome-emacs: A community driven list of useful Emacs packages, libraries and other items.]]
+Captured On: [2025-06-07 Sat 13:30]
+** bastibe/org-static-blog: A static site generator using org-mode
+[[https://github.com/bastibe/org-static-blog][bastibe/org-static-blog: A static site generator using org-mode]]
+Captured On: [2025-05-29 Thu 04:32]
+** Better org-mode Agenda display-buffer-alist Settings • Christian Tietze
+[[https://christiantietze.de/posts/2022/12/updated-org-mode-agenda-display-buffer-alist/][Better org-mode Agenda display-buffer-alist Settings • Christian Tietze]]
+Captured On: [2025-08-01 Fri 03:21]
+** org mode - org-link to the exact page-position in a pdf file - Emacs Stack Exchange
+[[https://emacs.stackexchange.com/questions/68013/org-link-to-the-exact-page-position-in-a-pdf-file][org mode - org-link to the exact page-position in a pdf file - Emacs Stack Exchange]]
+Captured On: [2025-07-11 Fri 18:17]
+** Craft an Email Workflow with Org Mode - YouTube
+[[https://www.youtube.com/watch?v=dSZu4jwvaSs][Craft an Email Workflow with Org Mode - YouTube]]
+Captured On: [2025-08-30 Sat 11:42]
+** Enhance Your Emails with Org Mode - System Crafters
+[[https://systemcrafters.net/emacs-mail/enhance-email-with-org-mode/][Enhance Your Emails with Org Mode - System Crafters]]
+Captured On: [2025-08-30 Sat 11:42]
+** Emacs As Mail Client Specifically as Mu4E | Unixbhaskar's Blog
+[[https://unixbhaskar.wordpress.com/2023/09/05/emacs-as-mail-client-specifically-as-mu4e/][Emacs As Mail Client Specifically as Mu4E | Unixbhaskar's Blog]]
+Captured On: [2025-08-29 Fri 16:12]
+** Blogging with Emacs, and Emacs only | Diego Vicente
+[[https://diego.codes/post/blogging-with-org/][Blogging with Emacs, and Emacs only | Diego Vicente]]
+Captured On: [2025-08-18 Mon 17:57]
+** Using Emacs and Org-mode as a static site generator
+[[https://ogbe.net/blog/emacs_org_static_site][Using Emacs and Org-mode as a static site generator]]
+Captured On: [2025-08-18 Mon 17:54]
+** The best latex Editor : r/emacs
+[[https://www.reddit.com/r/emacs/comments/akmwko/the_best_latex_editor/][The best latex Editor : r/emacs]]
+Captured On: [2025-08-13 Wed 19:29]
+** gregoryg/emacs-gregoryg: My emacs settings for use across Linux, Windows, OS X
+[[https://github.com/gregoryg/emacs-gregoryg?tab=readme-ov-file#gptel---llms-in-markdown-and-org-mode][gregoryg/emacs-gregoryg: My emacs settings for use across Linux, Windows, OS X]]
+Captured On: [2025-08-12 Tue 16:31]
