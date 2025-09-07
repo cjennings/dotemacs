@@ -117,23 +117,25 @@ Displays result as a message in the minibuffer and *Messasges* buffer."
   "Replace common fraction glyphs (½) with their text format (1/2).
 Operates in the buffer or region (as identified with START and END) if selected.
 Replaces the text versions with the glyphs if function prefaced by 'C-u'."
-  (interactive "r")
+  (interactive (if (use-region-p)
+                   (list (region-beginning) (region-end))
+                 (list (point-min) (point-max))))
   (let ((replacements (if current-prefix-arg
-						  '(("1/4" . "¼")
-							("1/2" . "½")
-							("3/4" . "¾")
-							("1/3" .  "⅓")
-							("2/3" . "⅔"))
-						'(("¼" . "1/4")
-						  ("½" . "1/2")
-						  ("¾" . "3/4")
-						  ("⅓" . "1/3")
-						  ("⅔" . "2/3")))))
-	(save-excursion
-	  (dolist (r replacements)
-		(goto-char start)
-		(while (search-forward (car r) end t)
-		  (replace-match (cdr r)))))))
+                          '(("1/4" . "¼")
+                            ("1/2" . "½")
+                            ("3/4" . "¾")
+                            ("1/3" .  "⅓")
+                            ("2/3" . "⅔"))
+                        '(("¼" . "1/4")
+                          ("½" . "1/2")
+                          ("¾" . "3/4")
+                          ("⅓" . "1/3")
+                          ("⅔" . "2/3")))))
+    (save-excursion
+      (dolist (r replacements)
+        (goto-char start)
+        (while (search-forward (car r) end t)
+          (replace-match (cdr r)))))))
 
 (defun cj/align-regexp-with-spaces (orig-fun &rest args)
   "Around-advice for =align-regexp' to disable tabs during alignment.
@@ -253,51 +255,50 @@ This does not save the deleted text in the kill ring."
 
 ;;; ---------------------- Whitespace Operations And Keymap ---------------------
 
-(defun cj/remove-leading-trailing-whitespace (start end)
-  "Remove leading and trailing whitespace in a region or buffer.
-When called interactively, if a region is active, remove leading
-and trailing spaces in the region. Else, remove from the current line.
-If called with a prefix argument (C-u), remove throughout the entire buffer.
-START and END define region."
-  (interactive "r")
-  (let (deactivate-mark)
-    (if (or (use-region-p) current-prefix-arg)
-        (save-restriction
-          (if current-prefix-arg
-              (progn (widen) (setq start (point-min) end (point-max)))
-            (narrow-to-region start end))
-          (goto-char (point-min))
-          (while (re-search-forward "^[ \t]+" nil t) (replace-match ""))
-          (goto-char (point-min))
-          (while (re-search-forward "[ \t]+$" nil t) (replace-match "")))
-      (beginning-of-line)
-      (while (looking-at "^[ \t]+") (replace-match ""))
-      (end-of-line)
-      (while (re-search-backward "[ \t]+$" (line-beginning-position) t)
-        (replace-match "")))))
+(defun cj/remove-leading-trailing-whitespace ()
+  "Remove leading and trailing whitespace in a region, line, or buffer.
+When called interactively:
+- If a region is active, operate on the region
+- If called with C-u prefix, operate on entire buffer
+- Otherwise, operate on current line."
+  (interactive)
+  (let ((start (cond (current-prefix-arg (point-min))
+                     ((use-region-p) (region-beginning))
+                     (t (line-beginning-position))))
+        (end (cond (current-prefix-arg (point-max))
+                   ((use-region-p) (region-end))
+                   (t (line-end-position)))))
+    (save-excursion
+      (save-restriction
+        (narrow-to-region start end)
+        (goto-char (point-min))
+        (while (re-search-forward "^[ \t]+" nil t) (replace-match ""))
+        (goto-char (point-min))
+        (while (re-search-forward "[ \t]+$" nil t) (replace-match ""))))))
 
-(defun cj/collapse-whitespace-line-or-region (&optional region)
+(defun cj/collapse-whitespace-line-or-region ()
   "Collapse whitespace to one space in the current line, or region if selected.
 Ensure there is exactly one space between words, and remove leading and trailing
-whitespace. When called with a prefix argument, it operates on the current
-REGION."
-  (interactive "P")
+whitespace."
+  (interactive)
   (save-excursion
-    (let* ((beg (if region (region-beginning) (line-beginning-position)))
-           (end (if region (region-end) (line-end-position))))
-      (save-restriction
-        (narrow-to-region beg end)
-        ;; Replace all tabs with space
-        (goto-char (point-min))
-        (replace-string "\t" " " nil beg end)
-        ;; Remove leading and trailing spaces
-        (goto-char (point-min))
-        (while (re-search-forward "^\\s-+\\|\\s-+$" nil t)
-          (replace-match "" nil nil))
-        ;; Ensure only one space between words/symbols.
-        (goto-char (point-min))
-        (while (re-search-forward "\\s-\\{2,\\}" nil t)
-          (replace-match " " nil nil))))))
+	(let* ((region-active (use-region-p))
+		   (beg (if region-active (region-beginning) (line-beginning-position)))
+		   (end (if region-active (region-end) (line-end-position))))
+	  (save-restriction
+		(narrow-to-region beg end)
+		;; Replace all tabs with space
+		(goto-char (point-min))
+		(while (search-forward "\t" nil t)
+		  (replace-match " " nil t))
+		;; Remove leading and trailing spaces
+		(goto-char (point-min))
+		(while (re-search-forward "^\\s-+\\|\\s-+$" nil t)
+		  (replace-match "" nil nil))
+		;; Ensure only one space between words/symbols
+		(goto-char (point-min))
+		(while (re-search-forward "\\s-\\{2,\\}" nil t)
+		  (replace-match " " nil nil))))))
 
 (defun cj/delete-blank-lines-region-or-buffer (start end)
   "Delete all blank lines in the region between START and END.
@@ -483,22 +484,21 @@ Uses `readable-time-format' for the formatting the date/time."
 
 ;;; ----------------------- Line And Paragraph Operations -----------------------
 
-(defun cj/join-line-or-region (beg end)
-  "Apply \='join-line\=' over the marked region or join with previous line.
-Region indicated with BEG and END."
-  (interactive "r")
-  ;; in region
-  (if mark-active
+(defun cj/join-line-or-region ()
+  "Apply 'join-line' over the marked region or join with previous line."
+  (interactive)
+  (if (use-region-p)
       (let ((beg (region-beginning))
             (end (copy-marker (region-end))))
         (goto-char beg)
-        ;; apply join lines until point => end
         (while (< (point) end)
           (join-line 1))
         (goto-char end)
-        (newline)))
-  ;; outside region
-  (join-line)(newline))
+        (newline))
+    ;; No region - just join with previous line
+    (join-line)
+    (newline)))
+
 
 (defun cj/join-paragraph ()
   "Mark all text in a paragraph then run cj/join-line-or-region."
@@ -524,19 +524,19 @@ Comment the duplicated line if prefix argument COMMENT is passed."
         (when comment
 		  (comment-region (line-beginning-position) (line-end-position)))))))
 
-(defun cj/remove-duplicate-lines-region-or-buffer (start end)
-  "Find duplicate lines in region START to END keeping the first occurrence.
-If no region is selected, operate on the whole buffer."
-  (interactive "*r\nP")
-  (save-excursion
-	(unless (region-active-p)
-	  (setq start (point-min) end (point-max)))
-	(setq end (copy-marker end))
-	(while
-		(progn
-		  (goto-char start)
-		  (re-search-forward "^\\(.*\\)\n\\(\\(.*\n\\)*\\)\\1\n" end t))
-	  (replace-match "\\1\n\\2"))))
+(defun cj/remove-duplicate-lines-region-or-buffer ()
+  "Find duplicate lines in region or buffer keeping the first occurrence.
+If a region is selected, operate on the region. Otherwise, operate on the whole buffer."
+  (interactive)
+  (let ((start (if (use-region-p) (region-beginning) (point-min)))
+        (end (if (use-region-p) (region-end) (point-max))))
+    (save-excursion
+      (let ((end-marker (copy-marker end)))
+        (while
+            (progn
+              (goto-char start)
+              (re-search-forward "^\\(.*\\)\n\\(\\(.*\n\\)*\\)\\1\n" end-marker t))
+          (replace-match "\\1\n\\2"))))))
 
 (defun cj/underscore-line ()
   "Underline the current line by inserting a row of characters below it.
@@ -635,10 +635,10 @@ mode's comment syntax at both the beginning and end of each line. The box
 respects the current indentation level and avoids trailing whitespace."
   (interactive)
   (let* ((comment-char (if (equal comment-start ";") ";;"
-						  (string-trim comment-start)))
+						 (string-trim comment-start)))
 		 (comment-end-char (if (string-empty-p comment-end)
-							  comment-char
-							(string-trim comment-end)))
+							   comment-char
+							 (string-trim comment-end)))
 		 (line-char (if (equal comment-char ";;") "-" "#"))
 		 (comment (capitalize (string-trim (read-from-minibuffer "Comment: "))))
 		 (comment-length (length comment))
@@ -646,17 +646,17 @@ respects the current indentation level and avoids trailing whitespace."
 		 (max-width (min fill-column 80))
 		 ;; Calculate available width between comment markers
 		 (available-width (- max-width
-							current-column-pos
-							(length comment-char)
-							(length comment-end-char)))
+							 current-column-pos
+							 (length comment-char)
+							 (length comment-end-char)))
 		 ;; Inner width is the width without the spaces after comment start and before comment end
 		 (inner-width (- available-width 2))
 		 ;; Calculate padding for each side of the centered text
 		 (padding-each-side (max 1 (/ (- inner-width comment-length) 2)))
 		 ;; Adjust for odd-length comments
 		 (right-padding (if (= (% (- inner-width comment-length) 2) 0)
-						   padding-each-side
-						 (1+ padding-each-side))))
+							padding-each-side
+						  (1+ padding-each-side))))
 
 	;; Check if we have enough space
 	(if (< inner-width (+ comment-length 4)) ; minimum sensible width
@@ -664,8 +664,8 @@ respects the current indentation level and avoids trailing whitespace."
 	  (progn
 		;; Top line - fill entirely with line characters except for space after comment start
 		(insert comment-char)
-		(insert " ")
-		(dotimes (_ inner-width) (insert line-char))
+        (insert " ")
+        (insert (make-string inner-width (string-to-char line-char)))
 		(insert " ")
 		(insert comment-end-char)
 		(newline)
@@ -748,9 +748,11 @@ START and END indicate the region selected."
   "Alphabetize strings (words/tokens) in region replacing the original region.
 The result will be comma separated."
   (interactive)
+  (unless (use-region-p)
+    (user-error "No region selected"))
   (let ((start (region-beginning))
-		(end (region-end))
-		(string (buffer-substring-no-properties (region-beginning) (region-end))))
+        (end (region-end))
+        (string (buffer-substring-no-properties (region-beginning) (region-end))))
 	(delete-region start end)
 	(goto-char start)
 	(insert
@@ -827,8 +829,7 @@ and all articles are considered minor words."
 	  (setq end (line-end-position))))
 	(save-excursion
 	  ;; work on uppercased text (e.g., headlines) by downcasing first
-	  (downcase-region beg end)
-
+      (downcase-region beg end)
 	  (goto-char beg)
 
 	  (while (< (point) end)
