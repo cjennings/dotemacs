@@ -1,4 +1,4 @@
-;;; prog-general --- General Programming Functionality and Settings -*- lexical-binding: t; -*-
+;;; prog-general --- General Programming Settings -*- lexical-binding: t; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -10,7 +10,7 @@
 
 (require 'seq)
 
-;; ---------------------- General Prog Settings ----------------------
+;; --------------------- General Programming Mode Settings ---------------------
 ;; keybindings, minor-modes, and prog-mode settings
 
 (defun cj/general-prog-settings ()
@@ -28,16 +28,7 @@
 (add-hook 'yaml-mode-hook #'cj/general-prog-settings)
 (add-hook 'toml-mode-hook #'cj/general-prog-settings)
 
-;; --------------------------- Header Folding --------------------------
-
-;; dependencies for bicycle
-(use-package outline-minor-mode
-  :ensure nil ;; built-in part of org mode
-  :hook prog-mode)
-
-(use-package hs-minor-mode
-  :ensure nil ;; built-in
-  :hook prog-mode)
+;; -------------------------------- Code Folding -------------------------------
 
 ;; BICYCLE
 ;; cycle visibility of outline sections and code blocks.
@@ -45,10 +36,12 @@
 (use-package bicycle
   :after outline
   :defer 1
+  :hook ((prog-mode . outline-minor-mode)
+		 (prog-mode . hs-minor-mode))
   :bind (:map outline-minor-mode-map
-              ("C-<tab>" . bicycle-cycle)
-              ;; backtab is shift-tab
-              ("<backtab>" . bicycle-cycle-global)))
+			  ("C-<tab>" . bicycle-cycle)
+			  ;; backtab is shift-tab
+			  ("<backtab>" . bicycle-cycle-global)))
 
 ;; --------------------------------- Projectile --------------------------------
 ;; project support
@@ -56,8 +49,8 @@
 ;; only discover projects when there's no bookmarks file
 (defun cj/projectile-schedule-project-discovery ()
   (let ((projectile-bookmark-file (concat user-emacs-directory "/projectile-bookmarks.eld")))
-    (unless (file-exists-p projectile-bookmark-file)
-      (run-at-time "3" nil 'projectile-discover-projects-in-search-path))))
+	(unless (file-exists-p projectile-bookmark-file)
+	  (run-at-time "3" nil 'projectile-discover-projects-in-search-path))))
 
 (use-package projectile
   :defer .5
@@ -65,41 +58,42 @@
   ("C-c p" . projectile-command-map)
   :bind
   (:map projectile-command-map
-        ("r" . projectile-replace-regexp)
-        ("t" . cj/open-project-root-todo))
+		("r" . projectile-replace-regexp)
+		("t" . cj/open-project-root-todo))
   :custom
   (projectile-auto-discover nil)
   (projectile-project-search-path `(,code-dir ,projects-dir))
   :config
   (defun cj/find-project-root-file (regexp)
-    "Return first file in the current Projectile project root matching REGEXP.
+	"Return first file in the current Projectile project root matching REGEXP.
 Match is done against (downcase file) for case-insensitivity.
 REGEXP must be a string or an rx form."
-    (when-let ((root (projectile-project-root)))
-      (seq-find (lambda (file)
-                  (string-match-p (if (stringp regexp)
-                                      regexp
-                                    (rx-to-string regexp))
-                                  (downcase file)))
-                (directory-files root))))
+	(when-let ((root (projectile-project-root)))
+	  (seq-find (lambda (file)
+				  (string-match-p (if (stringp regexp)
+									  regexp
+									(rx-to-string regexp))
+								  (downcase file)))
+				(directory-files root))))
 
   (defun cj/open-project-root-todo ()
-    "Open todo.org in the current Projectile project root.
+	"Open todo.org in the current Projectile project root.
 If no such file exists there, display a message."
-    (interactive)
-    (let ((file (cj/find-project-root-file "^todo\\.org$")))
-      (if file
-          (find-file (expand-file-name file (projectile-project-root)))
-        (message "No todo.org in project root: %s"
-                 (or (projectile-project-root) "<no project>")))))
+	(interactive)
+	(if-let ((root (projectile-project-root)))
+		(let ((file (cj/find-project-root-file "^todo\\.org$")))
+		  (if file
+			  (find-file (expand-file-name file root))
+			(message "No todo.org in project root: %s" root)))
+	  (message "Not in a Projectile project")))
 
   (defun cj/project-switch-actions ()
-    "On =projectile-after-switch-project-hook=, open TODO.{org,md,txt} or fall back to Magit."
-    (let ((file (cj/find-project-root-file
-                 (rx bos "todo." (or "org" "md" "txt") eos))))
-      (if file
-          (find-file (expand-file-name file (projectile-project-root)))
-        (magit-status (projectile-project-root)))))
+	"On =projectile-after-switch-project-hook=, open TODO.{org,md,txt} or fall back to Magit."
+	(let ((file (cj/find-project-root-file
+				 (rx bos "todo." (or "org" "md" "txt") eos))))
+	  (if file
+		  (find-file (expand-file-name file (projectile-project-root)))
+		(magit-status (projectile-project-root)))))
 
   ;; scan for projects if none are defined
   (cj/projectile-schedule-project-discovery)
@@ -122,7 +116,7 @@ If no such file exists there, display a message."
   :commands flycheck-projectile-list-errors
   :bind
   (:map projectile-command-map
-        ("x" . flycheck-projectile-list-errors)))
+		("x" . flycheck-projectile-list-errors)))
 
 ;; ---------------------------------- Ripgrep ----------------------------------
 ;; allows fast searching for text anywhere in the project with C-c p G (grep)
@@ -132,13 +126,16 @@ If no such file exists there, display a message."
   :after projectile
   :bind
   (:map projectile-command-map
-        ("G" . projectile-ripgrep))
+		("G" . projectile-ripgrep))
   :config
 
   ;; when running ripgrep searches, end with the results window selected
   (defun switch-to-ripgrep-results (&rest _)
-    "Switch to *ripgrep-search* buffer in other window."
-    (pop-to-buffer "*ripgrep-search*"))
+	"Switch to *ripgrep-search* buffer in other window."
+	(run-with-timer 0.1 nil
+					(lambda ()
+					  (when (get-buffer "*ripgrep-search*")
+						(pop-to-buffer "*ripgrep-search*")))))
 
   (advice-add 'ripgrep-regexp :after #'switch-to-ripgrep-results))
 
@@ -158,28 +155,6 @@ If no such file exists there, display a message."
   :after yasnippet
   :bind
   ("C-c s i" . ivy-yasnippet))
-
-;; ----------------------- Export Org To Markdown On Save ----------------------
-;; if the file has the proper header, saving an org file will also export to
-;; markdown with a timestamp. The header is this:
-;; # -*- org-auto-export-to-md: t; -*-
-;; #+DATE:
-;; and is available as the org-export-md snippet
-
-(defvar org-auto-export-to-md nil)
-
-(defun cj/export-org-to-md-on-save ()
-  "Export the current org file to Markdown format on save."
-  (when (and (eq major-mode 'org-mode)
-             org-auto-export-to-md)
-    (save-excursion
-      (goto-char (point-min))
-      (search-forward "#+DATE:")
-      (kill-line)
-      (insert (format-time-string " %Y-%m-%d %H:%M"))
-      (org-md-export-to-markdown))))
-
-(add-hook 'after-save-hook 'cj/export-org-to-md-on-save)
 
 ;; --------------------- Display Color On Color Declaration --------------------
 ;; display the actual color as highlight to color hex code
@@ -208,13 +183,13 @@ If no such file exists there, display a message."
   (prog-mode . hl-todo-mode)
   :config
   (setq hl-todo-keyword-faces
-        '(("FIXME"  . "#FF0000")
-          ("BUG"    . "#FF0000")
-          ("HACK"   . "#FF0000")
-          ("ISSUE"  . "#DAA520")
-          ("TASK"   . "#DAA520")
-          ("NOTE"   . "#2C780E")
-          ("WIP"   .  "#1E90FF"))))
+		'(("FIXME"  . "#FF0000")
+		  ("BUG"    . "#FF0000")
+		  ("HACK"   . "#FF0000")
+		  ("ISSUE"  . "#DAA520")
+		  ("TASK"   . "#DAA520")
+		  ("NOTE"   . "#2C780E")
+		  ("WIP"   .  "#1E90FF"))))
 
 ;; --------------------------- Whitespace Management ---------------------------
 ;; trims trailing whitespace only from lines you've modified when saving buffer
@@ -232,13 +207,13 @@ If no such file exists there, display a message."
 ;; close compilation windows when successful. from 'enberg' on #emacs
 
 (add-hook 'compilation-finish-functions
-          (lambda (buf str)
-            (if (null (string-match ".*exited abnormally.*" str))
-                ;;no errors, make the compilation window go away in a few seconds
-                (progn
-                  (run-at-time
-                   "1.5 sec" nil 'delete-windows-on
-                   (get-buffer-create "*compilation*"))))))
+		  (lambda (buf str)
+			(if (null (string-match ".*exited abnormally.*" str))
+				;;no errors, make the compilation window go away in a few seconds
+				(progn
+				  (run-at-time
+				   "1.5 sec" nil 'delete-windows-on
+				   (get-buffer-create "*compilation*"))))))
 
 
 (provide 'prog-general)
