@@ -40,7 +40,6 @@
   :type 'integer
   :group 'ui-config)
 
-
 (defconst cj/cursor-colors
   '((read-only . "#f06a3f")  ; red   – buffer is read-only
 	(overwrite . "#c48702")  ; gold  – overwrite mode
@@ -135,7 +134,6 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 
 (use-package nerd-icons
   :demand t)
-
 
 (provide 'ui-config)
 ;;; ui-config.el ends here

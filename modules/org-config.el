@@ -2,19 +2,8 @@
 ;; author Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 
-;; Note:
 ;; Setting org-modules to org-protocol, ol-eww, ol-w3m, and ol-info removes
 ;; several modules that org would otherwise load automatically.
-
-;; For clarity and reference sake, this is what's removed in Emacs 29.1:
-;; ol-doi     - links to Digital Object Identifiers. See: https://www.doi.org/
-;; ol-bbdb    - implements links to BBDB database entries
-;; ol-bibtex  - implements links to database entries in BibTeX files
-;; ol-docview - implements links to open files in doc-view-mode
-;; ol-gnus    - implements links to Gnus groups and messages
-;; ol-irc     - implements links to an IRC session
-;; ol-mhe     - implements links to MH-E (Rand Mail Handler) messages
-;; ol-rmail   - implements links to Rmail messages
 
 ;;; Code:
 
