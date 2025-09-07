@@ -17,7 +17,7 @@
 ;; Global text settings
 (setq-default indent-tabs-mode nil)   ;; indentation should not insert tabs
 (setq require-final-newline nil)      ;; don't require newlines at the end of files
-(setq sentence-end-double-space nil)  ;; in the 21st century, sentences may end w/ a single space
+(setq sentence-end-double-space nil)  ;; in the 21st century, sentences end w/ a single space
 
 (defun cj/text-mode-settings ()
   "Personal settings for `text-mode'."
@@ -112,7 +112,7 @@
 (use-package visual-fill-column
   :defer 0.5
   :config
-  (setq-default visual-fill-column-center-text t)
+  (setq-default visual-fill-column-center-text nil)
   (setq-default visual-fill-column-width 100)
   :hook
   (visual-line-mode . visual-fill-column-mode))
