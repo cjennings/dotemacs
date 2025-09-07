@@ -6,7 +6,7 @@
 ;;
 ;; Main Features:
 ;; - Quick toggle for AI assistant window (F9 or M-a t)
-;; - Custom keymap (M-a prefix) for all AI-related commands
+;; - Custom keymap (M-a prefix, overrides 'backwards-sentence') for AI-related commands.
 ;; - Enhanced org-mode conversation formatting with timestamps
 ;;   allows switching models and easily compare and track responses.
 ;; - Various specialized AI directives (coder, reviewer, etc.)
@@ -46,7 +46,8 @@
     (define-key map (kbd "s") #'cj/gptel-save-conversation) ;; save conversation
     (define-key map (kbd "l") #'cj/gptel-load-conversation) ;; load and continue conversation
     map)
-  "Keymap for AI-related commands (prefix \\<ai-keymap>).")
+  "Keymap for AI-related commands (prefix \\<ai-keymap>).
+Binds global M-a (overriding default 'backward-sentence').")
 (global-set-key (kbd "M-a") ai-keymap)
 
 (use-package gptel
@@ -58,12 +59,10 @@
         ("C-<return>" . gptel-send))
   :custom
   ;; don't single quote directive as we want to send the content
-  (gptel-default-directive default-directive)
   (gptel-default-mode 'org-mode)
   (gptel-expert-commands t)
   (gptel-track-media t)
   (gptel-include-reasoning 'ignore)
-  (gptel-model 'o4-mini)     ;; default only - may change in config below
   (gptel-log-level 'info)
   (gptel--debug nil)
   :config
