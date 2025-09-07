@@ -54,17 +54,27 @@
 (defun cj/split-and-follow-right ()
   "Like =ivy-switch-buffer-other-window' but always split horizontally."
   (interactive)
-  (let ((split-height-threshold nil)  ; Disable vertical splitting
-        (split-width-threshold 0))    ; Always prefer horizontal splitting
-    (ivy-switch-buffer-other-window)))
+  (if (fboundp 'ivy-switch-buffer-other-window)
+	  (let ((split-height-threshold nil)  ; Disable vertical splitting
+			(split-width-threshold 0))    ; Always prefer horizontal splitting
+		(ivy-switch-buffer-other-window))
+	;; Fallback if ivy is not available
+	(split-window-right)
+	(other-window 1)
+	(switch-to-buffer (other-buffer))))
 (global-set-key (kbd "M-V") 'cj/split-and-follow-right)
 
 (defun cj/split-and-follow-below ()
   "Like =ivy-switch-buffer-other-window' but always split vertically."
   (interactive)
-  (let ((split-height-threshold 0)  ; Always prefer vertical splitting
-		(split-width-threshold nil)) ; Disable horizontal splitting
-	(ivy-switch-buffer-other-window)))
+  (if (fboundp 'ivy-switch-buffer-other-window)
+	  (let ((split-height-threshold 0)  ; Always prefer vertical splitting
+			(split-width-threshold nil)) ; Disable horizontal splitting
+		(ivy-switch-buffer-other-window))
+	;; Fallback if ivy is not available
+	(split-window-below)
+	(other-window 1)
+	(switch-to-buffer (other-buffer))))
 (global-set-key (kbd "M-H") 'cj/split-and-follow-below)
 
 ;; (defun cj/split-and-follow-right ()
@@ -126,16 +136,19 @@ This function won't work with more than one split window."
   ;; :straight (buffer-move :type git :host github :repo "lukhas/buffer-move"
   ;;                        :fork (:host github :repo "cjennings/buffer-move"))
   :bind
-  ("M-S-<down>"  . 'buf-move-down)
-  ("M-S-<up>"    . 'buf-move-up)
-  ("M-S-<left>"  . 'buf-move-left)
-  ("M-S-<right>" . 'buf-move-right))
+  ("M-S-<down>"  . buf-move-down)
+  ("M-S-<up>"    . buf-move-up)
+  ("M-S-<left>"  . buf-move-left)
+  ("M-S-<right>" . buf-move-right))
 
 
 ;; UNDO KILL BUFFER
 (defun cj/undo-kill-buffer (arg)
   "Re-open the last buffer killed.  With ARG, re-open the nth buffer."
   (interactive "p")
+  (require 'recentf)
+  (unless recentf-mode
+	(recentf-mode 1))
   (let ((recently-killed-list (copy-sequence recentf-list))
 		(buffer-files-list
 		 (delq nil (mapcar (lambda (buf)
@@ -147,19 +160,22 @@ This function won't work with more than one split window."
 	   (setq recently-killed-list
 			 (delq buf-file recently-killed-list)))
 	 buffer-files-list)
-	(find-file
-	 (if arg (nth arg recently-killed-list)
-	   (car recently-killed-list)))))
+	(when recently-killed-list
+	  (find-file
+	   (if arg (nth arg recently-killed-list)
+		 (car recently-killed-list))))))
 (global-set-key (kbd "M-Z") 'cj/undo-kill-buffer)
 
 ;; ---------------------------- Undo Layout Changes ----------------------------
 ;; allows you to restore your window setup with C-c left-arrow
 ;; or redo a window change with C-c right-arrow if you change your mind
 
-(use-package winner-mode
+(use-package winner
   :ensure nil ;; built-in
   :defer .5
-  :bind ("M-U" . winner-undo))
+  :bind ("M-U" . winner-undo)
+  :config
+  (winner-mode 1))
 
 (provide 'ui-navigation)
 ;;; ui-navigation.el ends here
