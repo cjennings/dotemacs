@@ -1,8 +1,13 @@
 * Emacs Open Work
-** DOING [#A] Org Roam Enhancements                            :enhancement:
-*** TODO [#B] Org Branch to Org Roam
-*** TODO [#B] Add Org Capture Template for Vocabulary Words
 ** TODO [#A] Custom Function: Delete Whitespace From Region is Broken  :bug:
+** TODO [#A] file-config.el cj/xdg-open blocks Emacs process           :bug:
+Should change to non-blocking -- maybe use Emacs internal async?
+** TODO [#A] Make org mode buffers swap with shift-meta        :enhancement:
+(org-shiftmetaright) should be overridden with  (buf-move-right)
+(org-shiftmetaleft) should be overridden with  (buf-move-left)
+
+** TODO [#A] mu4e: Add "save all attachments"                  :enhancement:
+- add to action menu for view message buffer
 ** TODO [#A] Mu4e Fixes                                                :bug:
 *** DONE [#A] mu4e contacts not expanding on forwarding emails
 CLOSED: [2025-08-29 Fri 16:09]
@@ -15,14 +20,58 @@ https://github.com/jeremy-compostella/org-msg
 *** TODO [#B] Fix up action menu
 - remove xwidgets
 - add "add attachment" to compose message buffer
-** TODO [#A] mu4e: Add "save all attachments"                  :enhancement:
-- add to action menu for view message buffer
-** TODO [#A] file-config.el cj/xdg-open blocks Emacs process           :bug:
-Should change to non-blocking -- maybe use Emacs internal async?
-** TODO [#A] Make org mode buffers swap with shift-meta        :enhancement:
-(org-shiftmetaright) should be overridden with  (buf-move-right)
-(org-shiftmetaleft) should be overridden with  (buf-move-left)
+** DOING [#A] Org Roam Enhancements                            :enhancement:
+*** TODO [#B] Org Branch to Org Roam
+*** TODO [#B] Add Org Capture Template for Vocabulary Words
+** TODO [#B] Ability to switch models easily in GPTel          :enhancement:
+** TODO [#B] Add All ERT Tests Into Separate Directory                 :bug:
+Tests should be added to a separate directory rather than the end of each elisp file.
+Gather them together, move them there, and make it easy to run tests per module and workflow.
+** TODO [#B] Add Hugo Blogging Functionality                   :enhancement:
+** TODO [#B] Capture and Refile to drill files                 :enhancement:
+This code actually exists in org-drill-config, but it doesn't seem to work
+** TODO [#B] Change Elfeed to Be About Playing Podcasts        :enhancement:
+** TODO [#B] Decent HTML exports from org mode with inline css
+*** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
+[[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
+Captured On: [2025-08-18 Mon 14:36]
+** TODO [#B] Dirvish Should Open Not Showing Hidden Files by Default   :bug:
+*** 2025-06-07 Sat @ 12:25:28 -0500 It isn't omitting the h switch on directory listings
+No. Didn't help
+** TODO [#B] Emacs Add Difftastic Functionality                :enhancement:
 
+Linux Binary Install
+https://github.com/Wilfred/difftastic
+https://www.wilfred.me.uk/blog/2022/09/06/difftastic-the-fantastic-diff/
+https://difftastic.wilfred.me.uk/installation.html (basically $ sudo pacman -S difftastic)
+
+Emacs Package
+https://github.com/pkryger/difftastic.el
+#+begin_src emacs-lisp
+  (use-package difftastic
+    :defer t
+    :vc (:url "https://github.com/pkryger/difftastic.el.git"
+              :rev :newest))
+#+end_src
+
+** TODO [#B] Emacs Add Magit Forge Functionality               :enhancement:
+
+https://github.com/magit/forge
+https://magit.vc/manual/forge/Setup-for-Githubcom.html
+
+Example usage from sqrtminusone
+#+begin_src emacs-lisp
+  (use-package forge
+    :after magit
+    :straight t
+    :config
+    (add-to-list 'forge-alist '("gitlab.etu.ru"
+                                "gitlab.etu.ru/api/v4"
+                                "gitlab.etu.ru"
+                                forge-gitlab-repository)))
+#+end_src
+
+** TODO [#B] Emacs error if no file in buffer-and-file operations      :bug:
 ** DOING [#B] Eshell Improvements                              :enhancement:
 *** TODO [#C] Add mu4e add file as attachment                 :enhancement:
 *** AI Suggested
@@ -162,15 +211,6 @@ If region is active, use that, otherwise use the current line."
       (error "Not in a project"))))
 #+end_src
 
-** TODO [#B] Add All ERT Tests Into Separate Directory                 :bug:
-Tests should be added to a separate directory rather than the end of each elisp file.
-Gather them together, move them there, and make it easy to run tests per module and workflow.
-** TODO [#B] Org Agenda Work                                   :enhancement:
-*** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
-*** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
-** TODO [#B] Dirvish Should Open Not Showing Hidden Files by Default   :bug:
-*** 2025-06-07 Sat @ 12:25:28 -0500 It isn't omitting the h switch on directory listings
-No. Didn't help
 ** TODO [#B] Fix Emacs Alarms for Scheduled Events                     :bug:
 *** 2025-06-03 Tue @ 15:12:51 -0500 Problem
 Emacs Alarm seems to sound off periodically after the alarm rang the first time.
@@ -237,46 +277,10 @@ espeak "Appointment in $TIME minutes: $MSG"
 #+END_QUOTE
 [[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
 Captured On: [2025-06-19 Thu 12:29]
-** TODO [#B] Emacs Add Difftastic Functionality                :enhancement:
-
-Linux Binary Install
-https://github.com/Wilfred/difftastic
-https://www.wilfred.me.uk/blog/2022/09/06/difftastic-the-fantastic-diff/
-https://difftastic.wilfred.me.uk/installation.html (basically $ sudo pacman -S difftastic)
-
-Emacs Package
-https://github.com/pkryger/difftastic.el
-#+begin_src emacs-lisp
-  (use-package difftastic
-    :defer t
-    :vc (:url "https://github.com/pkryger/difftastic.el.git"
-              :rev :newest))
-#+end_src
-
-** TODO [#B] Emacs Add Magit Forge Functionality               :enhancement:
-
-https://github.com/magit/forge
-https://magit.vc/manual/forge/Setup-for-Githubcom.html
-
-Example usage from sqrtminusone
-#+begin_src emacs-lisp
-  (use-package forge
-    :after magit
-    :straight t
-    :config
-    (add-to-list 'forge-alist '("gitlab.etu.ru"
-                                "gitlab.etu.ru/api/v4"
-                                "gitlab.etu.ru"
-                                forge-gitlab-repository)))
-#+end_src
-
-** TODO [#B] Change Elfeed to Be About Playing Podcasts        :enhancement:
-** TODO [#B] Capture and Refile to drill files                 :enhancement:
-This code actually exists in org-drill-config, but it doesn't seem to work
-** TODO [#B] Emacs error if no file in buffer-and-file operations      :bug:
 ** TODO [#B] Get Dupre Theme Working                                   :bug:
+*** AI Suggestioms
 Here are some ideas for making dupre-theme a bit more “complete” and future-proof as an Emacs theme.  You don’t have to do all of them, of course, but most “modern” themes ship a fair number of these extra faces and integrations.
-*** TODO [#A] Fill out the “standard” Emacs faces
+**** TODO [#A] Fill out the “standard” Emacs faces
 • error / warning / success
 • link / link-visited / shadow
 • highlight / secondary-selection
@@ -284,7 +288,7 @@ Here are some ideas for making dupre-theme a bit more “complete” and future-
 • underline / strike-through
 • match / search / lazy-highlight (you already have some isearch)
 • info-title-1…info-title-5, info-header-node, help-*-face
-*** TODO [#A] Cosmetic / code-style notes
+**** TODO [#A] Cosmetic / code-style notes
 • Factor out a helper macro to reduce repetition:
 #+begin_src elisp
   (defmacro dupre-face (face &rest specs)
@@ -293,8 +297,8 @@ Here are some ideas for making dupre-theme a bit more “complete” and future-
 • Use =custom-theme-set-faces= only once; wrap your =when (>= emacs-major-version…)= inside it rather than nesting top-level.
 • Move your ERT tests into a separate file like =dupre-theme-test.el= so that the main theme file stays lean.
 
-*** TODO [#A] Fix launch problem with dupre
-**** cj [2025-08-16 23:45:50]
+**** TODO [#A] Fix launch problem with dupre
+***** cj [2025-08-16 23:45:50]
 [[file:.emacs.d/themes/dupre-theme.el::;;; dupre-theme.el --- A dark and elegant theme for Emacs -*- lexical-binding: t -*-][dupre-theme.el]]
 
 I have an issue launching "emacsclient -c -a ''" with this theme. With the built-in wombat theme, emacsclient launches fine. When I specify this theme to load during launch, emacsclient does not launch.
@@ -328,7 +332,7 @@ Is there something about how this theme is written that may be causing this? If 
 
 
 
-**** ChatGPT: o4-mini [2025-08-16 23:51:03]
+***** ChatGPT: o4-mini [2025-08-16 23:51:03]
 It turns out that nothing mystical is happening in your =dupre-theme.el= that would prevent the Emacs server from creating its socket.  When =emacsclient= says:
 
 emacsclient: can't find socket; have you started the server?
@@ -420,13 +424,13 @@ emacsclient -c   # or with your favorite fallback: -a "emacs --daemon"
 
 just works, whether you are on wombat, solarized, or good old dupre.
 
-*** TODO [#B] Make sure you define a “minimum package” set of faces so that folks don’t see glaring unstyled text in any part of Emacs, even if they never install extra packages.
+**** TODO [#B] Make sure you define a “minimum package” set of faces so that folks don’t see glaring unstyled text in any part of Emacs, even if they never install extra packages.
 
-*** TODO [#B] Improve terminal support:
+**** TODO [#B] Improve terminal support:
 • Detect true-color (=(display-graphic-p)=) vs 256-color vs 16-color and fall-back gracefully.
 • Provide “256-color” approximations (you already do this), but you might want a simpler palette for legacy terminals.
 
-*** TODO [#B] Other Packages
+**** TODO [#B] Other Packages
 The rest is just more of the same—pick the most common modes/packages you and your users rely on and give them a quick coat of paint.  Once you’ve rounded out those faces you’ll have hit what most people expect from a “complete” modern Emacs theme.
 
 Based on a quick skim of your modules/ directory (and the packages they pull in via use-package), here’s a non-exhaustive list of the major packages you’re using—along with the faces you should think about adding to dupre-theme so that nothing ends up looking “unstyled.”
@@ -499,42 +503,42 @@ To figure out exactly which ones you have in your modules, you can do for exampl
 
 Then for each of those packages, grep in their repo for =defface= or check their manual to see which faces they define, and add reasonable dupre-colours for them. Once you’ve covered that list, you’ll have a “complete” theme that won’t leave any of your modules half-unstyled.
 
-*** TODO [#C] Support the built-in “tab-bar” and “tab-group” faces (Emacs 27+)
+**** TODO [#C] Support the built-in “tab-bar” and “tab-group” faces (Emacs 27+)
 • tab-bar              / tab-bar-tab / tab-bar-tab-inactive
 • tab-bar-close        / tab-bar-separator
 • tab-group-title      / tab-group-separator
-*** TODO [#C] Add faces for =dired=, =diff=, =flycheck=/=flymake=, =magit= (or git-gutter),
+**** TODO [#C] Add faces for =dired=, =diff=, =flycheck=/=flymake=, =magit= (or git-gutter),
 =ediff=, =erc= etc.  For example:
 • diff-added, diff-removed, diff-context, diff-file-header
 • flycheck-error, flycheck-warning, flycheck-info
 • magit-section, magit-log, magit-hunk-heading, magit-branch, etc.
-*** TODO [#C] Org-mode
+**** TODO [#C] Org-mode
 • org-level-1…org-level-8, org-document-title
 • org-checkbox, org-code, org-date, org-todo, org-done, org-warning
 • org-block, org-block-begin-line, org-block-end-line
-*** TODO [#C] Completion frameworks & minibuffer enhancements
+**** TODO [#C] Completion frameworks & minibuffer enhancements
 • ivy-current-match / ivy-minibuffer-match-face-1…4
 • swiper-line-face
 • vertico-current / marginalia-…
 • corfu-default / corfu-bar / cape / orderless-match-face-…
-*** TODO [#C] LSP / tree-sitter / syntax-aware faces
+**** TODO [#C] LSP / tree-sitter / syntax-aware faces
 • lsp-face-highlight-textual, lsp-face-highlight-read, etc.
 • tree-sitter-hl-face:variable, :function, :property, etc.
-*** TODO [#C] Which-Key, Hydras, rainbow-delimiters, etc.
+**** TODO [#C] Which-Key, Hydras, rainbow-delimiters, etc.
 • which-key-key-face, which-key-local-map-description-face
 • hydra-face-red / teal / blue
 • rainbow-delimiters-depth-1…9
 
-*** TODO [#C] Theme Metadata & Packaging
+**** TODO [#C] Theme Metadata & Packaging
 • Add =;; Package-Requires: ((emacs "26.1"))= if you need a minimum.
 • Consider adding a README with screenshots.
 • A simple Makefile or script to refresh “theme metadata” (=M-x theme-inspect=, MELPA recipe).
 
-*** TODO [#C] Tests
+**** TODO [#C] Tests
 • Extend your ERT suite to cover more faces (org, diff, flycheck…).
 • You might write a small helper that loops over a list of faces and asserts they’re defined without errors.
 
-*** Example Sample Faces
+**** Example Sample Faces
 Below is a small excerpt showing how you might start adding some of the “missing” standard faces and a couple org faces:
 
 #+begin_src elisp
@@ -563,8 +567,11 @@ Below is a small excerpt showing how you might start adding some of the “missi
    )
 #+end_src
 
-** TODO [#B] Add Hugo Blogging Functionality                   :enhancement:
-** TODO [#B] Ability to switch models easily in GPTel          :enhancement:
+** TODO [#B] Org Agenda Work                                   :enhancement:
+*** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
+*** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
+** TODO [#B] Review/Implement AI keyboard macros suggestions   :enhancement:
+[[file:ai-conversations/keyboard-macro-improvements_20250906-230640.gptel::+STARTUP: showeverything][keyboard macros conversation]]
 ** TODO [#C] Emacs: Add Reverso Functionality                  :enhancement:
 https://sqrtminusone.xyz/packages/reverso/
 check his config for a usage example
@@ -582,16 +589,12 @@ reverso.el is a package of mine that provides Emacs interface for https://revers
     (setq reverso-languages '(russian english german))
     (reverso-history-mode))
 #+end_src
-** TODO [#C] Org keyword discolored until reapplying theme             :bug:
-** TODO [#B] Decent HTML exports from org mode with inline css
-*** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
-[[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
-Captured On: [2025-08-18 Mon 14:36]
-** TODO [#C] Implement Backup file in dirvish/eshell
+** TODO [#C] Implement Backup file in dirvish/eshell           :enhancement:
 *** Emacs: Backup Current File 📜
 [[http://xahlee.info/emacs/emacs/elisp_make-backup.html][Emacs: Backup Current File 📜]]
 Captured On: [2025-09-03 Wed 11:48]
 
+** TODO [#C] Org keyword discolored until reapplying theme             :bug:
 * Emacs Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
 *** Specification
