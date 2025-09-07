@@ -3,6 +3,43 @@
 
 ;;; Commentary:
 
+;; This module provides font configuration, including:
+;;
+;; 1. Font Management:
+;;    - Dynamic font preset switching via `fontaine' package
+;;    - Separate configurations for fixed-pitch and variable-pitch fonts
+;;    - Multiple size presets for different viewing contexts
+;;    - Per-frame font configuration tracking for daemon mode compatibility
+;;
+;; 2. Icon Support:
+;;    - All-the-icons integration with automatic font installation
+;;    - Nerd fonts support for enhanced icons in terminals and GUI
+;;    - Platform-specific emoji font configuration (Noto, Apple, Segoe)
+;;    - Emojify package for emoji rendering and insertion
+;;
+;; 3. Typography Enhancements:
+;;    - Programming ligatures via `ligature' package
+;;    - Mode-specific ligature rules for markdown and programming
+;;    - Text scaling keybindings for quick size adjustments
+;;
+;; 4. Utility Functions:
+;;    - `cj/font-installed-p': Check font availability
+;;    - `cj/display-available-fonts': Interactive font browser with samples
+;;    - Frame-aware font application for client/server setups
+;;
+;; Configuration Notes:
+;; - Default font: FiraCode Nerd Font Mono at 110 height
+;; - Variable pitch: Merriweather Light for prose-heavy modes
+;; - Handles both standalone and daemon mode Emacs instances
+;; - Emoji fonts selected based on OS availability
+;;
+;; Keybindings:
+;; - M-F: Select font preset
+;; - C-z F: Display available fonts
+;; - C-+/C-=: Increase text scale
+;; - C--/C-_: Decrease text scale
+;;
+;;
 ;;; Code:
 
 ;; ----------------------- Font Family And Size Selection ----------------------
@@ -15,19 +52,19 @@
   :config
   (setq fontaine-presets
 		'(
-          (default
+		  (default
 		   :default-family "FiraCode Nerd Font Mono"
 		   :default-weight regular
 		   :default-height 110
 		   :fixed-pitch-family nil          ;; falls back to :default-family
 		   :fixed-pitch-weight nil          ;; falls back to :default-weight
 		   :fixed-pitch-height 1.0
-           :variable-pitch-family "Merriweather"
-           :variable-pitch-weight light
-           :variable-pitch-height 1.0)
-          (Hack
-           :default-family "Hack Nerd Font Mono"
-           :variable-pitch-family "Hack Nerd Font Mono")
+		   :variable-pitch-family "Merriweather"
+		   :variable-pitch-weight light
+		   :variable-pitch-height 1.0)
+		  (Hack
+		   :default-family "Hack Nerd Font Mono"
+		   :variable-pitch-family "Hack Nerd Font Mono")
 		  (FiraCode-Literata
 		   :default-family "Fira Code Nerd Font"
 		   :variable-pitch-family "Literata")
@@ -35,11 +72,11 @@
 		   :default-family "Merriweather"
 		   :variable-pitch-family "Merriweather")
 		  (24-point-font
-           :default-height 240)
-          (20-point-font
-           :default-height 200)
-          (16-point-font
-           :default-height 160)
+		   :default-height 240)
+		  (20-point-font
+		   :default-height 200)
+		  (16-point-font
+		   :default-height 160)
 		  (14-point-font
 		   :default-height 140)
 		  (13-point-font
@@ -70,24 +107,40 @@
 		   :line-spacing nil))))
 
 (with-eval-after-load 'fontaine
-  (defun cj/apply-font-settings-after-ui-creation()
-	"Apply font settings when Emacsclient is run in daemon mode.
-Emacsclient connects to a headless Emacs daemon, when no UI
-exists yet to apply these settings.  This solution requests Emacsclient
-to apply the default font settings after the server creates a frame.
-Note that server-after-make-frame-hook is available only in Emacs 27+."
-	(interactive)
-	(fontaine-set-preset 'default)
-	(if (daemonp)
-        (remove-hook 'server-after-make-frame-hook #'cj/apply-font-settings-after-ui-creation)))
+  ;; Track which frames have had fonts applied
+  (defvar cj/fontaine-configured-frames nil
+	"List of frames that have had fontaine configuration applied.")
 
+  (defun cj/apply-font-settings-to-frame (&optional frame)
+	"Apply font settings to FRAME if not already configured.
+If FRAME is nil, uses the selected frame."
+	(let ((target-frame (or frame (selected-frame))))
+	  (unless (member target-frame cj/fontaine-configured-frames)
+		(with-selected-frame target-frame
+		  (when (display-graphic-p target-frame)
+			(fontaine-set-preset 'default)
+			(push target-frame cj/fontaine-configured-frames))))))
+
+  (defun cj/cleanup-frame-list (frame)
+	"Remove FRAME from the configured frames list when deleted."
+	(setq cj/fontaine-configured-frames
+		  (delq frame cj/fontaine-configured-frames)))
+
+  ;; Handle daemon mode and regular mode
   (if (daemonp)
-	  (add-hook 'server-after-make-frame-hook #'cj/apply-font-settings-after-ui-creation)
-	(cj/apply-font-settings-after-ui-creation)))
+	  (progn
+		;; Apply to each new frame in daemon mode
+		(add-hook 'server-after-make-frame-hook #'cj/apply-font-settings-to-frame)
+		;; Clean up deleted frames from tracking list
+		(add-hook 'delete-frame-functions #'cj/cleanup-frame-list))
+	;; Apply immediately in non-daemon mode
+	(when (display-graphic-p)
+	  (cj/apply-font-settings-to-frame))))
 
 ;; ----------------------------- Font Install Check ----------------------------
 ;; convenience function to indicate whether a font is available by name.
 
+;;;###autoload
 (defun cj/font-installed-p (font-name)
   "Check if font with FONT-NAME is available."
   (if (find-font (font-spec :name font-name))
@@ -100,9 +153,19 @@ Note that server-after-make-frame-hook is available only in Emacs 27+."
 (use-package all-the-icons
   :demand t
   :config
-  (when (and (not (cj/font-installed-p "all-the-icons"))
-			 (window-system))
-	(all-the-icons-install-fonts t)))
+  ;; Check for font installation after frame creation
+  (defun cj/maybe-install-all-the-icons-fonts (&optional _frame)
+	"Install all-the-icons fonts if needed and we have a GUI."
+	(when (and (display-graphic-p)
+			   (not (cj/font-installed-p "all-the-icons")))
+	  (all-the-icons-install-fonts t)
+	  ;; Remove this hook after successful installation
+	  (remove-hook 'server-after-make-frame-hook #'cj/maybe-install-all-the-icons-fonts)))
+
+  ;; Handle both daemon and non-daemon modes
+  (if (daemonp)
+	  (add-hook 'server-after-make-frame-hook #'cj/maybe-install-all-the-icons-fonts)
+	(cj/maybe-install-all-the-icons-fonts)))
 
 (use-package all-the-icons-nerd-fonts
   :after all-the-icons
@@ -111,63 +174,71 @@ Note that server-after-make-frame-hook is available only in Emacs 27+."
   (all-the-icons-nerd-fonts-prefer))
 
 ;; ----------------------------- Emoji Fonts Per OS ----------------------------
-;; these are in reverse order of priority
+;; Set emoji fonts in priority order (first found wins)
 
-(when (member "Segoe UI Emoji" (font-family-list))
-  (set-fontset-font
-   t 'symbol (font-spec :family "Segoe UI Emoji") nil 'prepend))
-(when (member "Apple Color Emoji" (font-family-list))
-  (set-fontset-font
-   t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
-(when (member "Noto Color Emoji" (font-family-list))
-  (set-fontset-font
-   t 'symbol (font-spec :family "Noto Color Emoji") nil 'prepend))
+(cond
+ ;; Prefer Noto Color Emoji (Linux)
+ ((member "Noto Color Emoji" (font-family-list))
+  (set-fontset-font t 'symbol (font-spec :family "Noto Color Emoji") nil 'prepend))
+ ;; Then Apple Color Emoji (macOS)
+ ((member "Apple Color Emoji" (font-family-list))
+  (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
+ ;; Finally Segoe UI Emoji (Windows)
+ ((member "Segoe UI Emoji" (font-family-list))
+  (set-fontset-font t 'symbol (font-spec :family "Segoe UI Emoji") nil 'prepend)))
 
 ;; ---------------------------------- Emojify ----------------------------------
 ;; converts emoji identifiers into emojis; allows for easy emoji entry.
 
 (use-package emojify
   :hook ((erc-mode . emojify-mode)
-		 (org-mode . emojify-mode)
-		 (prog-mode . (lambda () (emojify-mode -1)))
-		 (gptel-mode . (lambda () (emojify-mode -1))))
+		 (org-mode . emojify-mode))
   :custom
   (emojify-download-emojis-p t) ;; don't ask, just download emojis
   :bind
-  ;; using this keybinding for ediff
-  ;; ("C-c e i" . emojify-insert-emoji)  ;; emoji insert
-  ;; ("C-c e l" . emojify-list-emojis)   ;; emoji list
+  ("C-c E i" . emojify-insert-emoji)  ;; emoji insert
+  ("C-c E l" . emojify-list-emojis)   ;; emoji list
   :config
   (setq emojify-show-help nil)
   (setq emojify-point-entered-behaviour 'uncover)
   (setq emojify-display-style 'image)
-  (setq emojify-emoji-styles '(ascii unicode github)))
+  (setq emojify-emoji-styles '(ascii unicode github))
+
+  ;; Disable emojify in programming and gptel modes
+  (defun cj/disable-emojify-mode ()
+	"Disable emojify-mode in the current buffer."
+	(emojify-mode -1))
+
+  (add-hook 'prog-mode-hook #'cj/disable-emojify-mode)
+  (add-hook 'gptel-mode-hook #'cj/disable-emojify-mode))
 
 ;; -------------------------- Display Available Fonts --------------------------
 ;; display all available fonts on the system in a side panel
 
+;;;###autoload
 (defun cj/display-available-fonts ()
   "Display a list of all font faces with sample text in another read-only buffer."
   (interactive)
-  (pop-to-buffer "*Available Fonts*" '(display-buffer-in-side-window . ((side . right)(window-width . fit-window-to-buffer))))
+  (pop-to-buffer "*Available Fonts*"
+				 '(display-buffer-in-side-window . ((side . right)(window-width . fit-window-to-buffer))))
   (let ((font-list (font-family-list)))
-    (setq font-list (cl-remove-duplicates (cl-sort font-list 'string-lessp :key 'downcase)))
-    (with-current-buffer "*Available Fonts*"
-      (erase-buffer)
-      (dolist (font-family font-list)
-        (insert (propertize (concat font-family) 'face `((:foreground "Light Blue" :weight bold))))
-        (insert (concat "\n"(propertize "Regular: ")))
-        (insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
-                            'face `((:family, font-family))))
-        (insert (concat "\n" (propertize "Bold: ")))
-        (insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
-                            'face `((:family, font-family :weight bold))))
-        (insert (concat "\n" (propertize "Italic: ")))
-        (insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
-                            'face `((:family, font-family :slant italic))))
-        (insert (concat "\n\n"))))
-    (move-to-window-line 0)
-    (special-mode)))
+	(setq font-list (cl-remove-duplicates (cl-sort font-list 'string-lessp :key 'downcase)))
+	(with-current-buffer "*Available Fonts*"
+	  (erase-buffer)
+	  (dolist (font-family font-list)
+		(insert (propertize (concat font-family) 'face `((:foreground "Light Blue" :weight bold))))
+		(insert (concat "\n"(propertize "Regular: ")))
+		(insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
+							'face `((:family, font-family))))
+		(insert (concat "\n" (propertize "Bold: ")))
+		(insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
+							'face `((:family, font-family :weight bold))))
+		(insert (concat "\n" (propertize "Italic: ")))
+		(insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
+							'face `((:family, font-family :slant italic))))
+		(insert (concat "\n\n"))))
+	(move-to-window-line 0)
+	(special-mode)))
 
 (global-set-key (kbd "C-z F") 'cj/display-available-fonts)
 
@@ -180,7 +251,7 @@ Note that server-after-make-frame-hook is available only in Emacs 27+."
 (global-set-key (kbd "C-_") 'text-scale-decrease)
 (global-set-key (kbd "C--") 'text-scale-decrease)
 
-;; --------------------------------- Ligatures --------------------------------- '
+;; --------------------------------- Ligatures ---------------------------------
 ;; fancy programming glyphs make code easier to read
 
 (use-package ligature
