@@ -44,7 +44,7 @@
 (require 'ui-config)             ;; transparency, cursor color, icons, &c.
 (require 'ui-theme)              ;; themes and theme persistency
 (require 'ui-navigation)         ;; the movement and navigation of windows
-(require 'font-config)
+(require 'font-config)           ;; font and emoji configuration
 
 ;; --------------------------- Internal Functionality --------------------------
 
@@ -53,12 +53,12 @@
 (require 'flyspell-and-abbrev)   ;; spell check and auto-correct
 (require 'help-utils)            ;; search: arch-wiki, devdoc, tldr, wikipedia
 (require 'help-config)           ;; info, man, help config
-(require 'latex-config)          ;; need to fix
+(require 'latex-config)          ;; WIP need to fix
 (require 'modeline-config)       ;; modeline (status-bar) config
 (require 'pdf-config)            ;; pdf display settings
 (require 'selection-framework)   ;; menu config
 (require 'tramp-config)          ;; remote shell connections
-(require 'show-kill-ring)        ;; utility to display history of kill ring
+(require 'show-kill-ring)        ;; displays and facilitates pasting from history
 
 ;; ------------------------- Features And Integrations -------------------------
 
@@ -67,7 +67,7 @@
 (require 'dashboard-config)      ;; the nice landing page with links
 (require 'dirvish-config)        ;; file manager configuration
 (require 'elfeed-config)
-(require 'erc-config)
+(require 'erc-config)            ;; erc allows access to irc
 (require 'eww-config)
 (require 'httpd-config)
 (require 'mail-config)           ;; email using mu4e and org-msg
@@ -76,7 +76,7 @@
 
 ;; -------------------------------- Programming --------------------------------
 
-(require 'prog-general)
+(require 'prog-general)          ;; general programming functionality/settings
 (require 'vc-config)             ;; version control packages and keybindings
 (require 'flycheck-config)       ;; linting for all languages including human ones
 (require 'prog-lsp)
