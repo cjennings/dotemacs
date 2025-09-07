@@ -116,7 +116,7 @@ Results are cached in =cj/network-available' to avoid repeated checks."
 (defconst user-home-dir (getenv "HOME")
   "The user's home directory per the environment variable.")
 
-(defconst elpa-mirror-location "/media/backup/repositories/elpa-mirror/"
+(defconst elpa-mirror-location (concat user-home-dir "/.elpa-mirrors/")
   "The path to the elpa mirror location.")
 
 (defconst localrepo-location (concat user-emacs-directory ".localrepo/")
