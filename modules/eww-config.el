@@ -5,22 +5,6 @@
 
 ;;; Code:
 
-;; -------------------------------- Eww Copy Url -------------------------------
-
-(defun cj/eww-copy-url ()
-  "Copies the eww url to clipboard"
-  (interactive)
-  (when (string= major-mode "eww-mode")
-	(let ((current-url (plist-get eww-data :url)))
-	  (when current-url
-		(kill-new current-url)))))
-
-;; (defun cj/eww-copy-url ()
-;;   "Copies the eww url to clipboard"
-;;   (interactive)
-;;   (when (string= major-mode "eww-mode") ; Ensure we're in eww-mode
-;; 	(kill-new eww-current-url))) ; Copy to clipboard
-
 ;; ------------------------------------ EWW ------------------------------------
 
 (use-package eww
@@ -34,6 +18,16 @@
 		("u" . cj/eww-copy-url)
         ("o" . eww-open-in-new-buffer))
   :config
+  (defun cj/eww-copy-url ()
+	"Copies the eww url to clipboard"
+	(interactive)
+	(when (string= major-mode "eww-mode")
+	  (let ((current-url (plist-get eww-data :url)))
+		(when current-url
+		  (kill-new current-url)))))
+
+
+
   (setq shr-use-colors nil)                          ;; respect colors in the html
   (setq shr-bullet "• ")                             ;; unordered lists use bullet glyph
   (setq shr-folding-mode t)

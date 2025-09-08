@@ -27,12 +27,6 @@
 (add-to-list 'custom-theme-load-path
              (concat user-emacs-directory "themes"))
 
-(use-package ef-themes)
-(use-package github-dark-vscode-theme)
-(use-package madhat2r-theme)
-(use-package adwaita-dark-theme)
-
-
 ;; ------------------------------- Switch Themes -------------------------------
 ;; loads themes in completing read, then persists via the functions below
 

@@ -1,11 +1,54 @@
 * Emacs Open Work
+** TODO [#A] Migrate selection framework                       :enhancement:
+*** References
+https://github.com/minad/consult/wiki/Auxiliary-packages
+https://www.reddit.com/r/emacs/comments/1aguy8g/how_to_get_consultripgrep_to_remember_previous/
+*** Auxiliary Packages to Explore
+https://gitlab.com/OlMon/consult-flyspell
+https://github.com/ghosty141/consult-git-log-grep
+https://github.com/minad/affe
+*** Errors to Fix
+**** TODO Git Timemachine No Longer Displays in Descending Time Order
+*** Manual Testing
+Here's a comprehensive test checklist we should verify after migration:
+**** Core Functionality Tests
+- [ ] =M-x= (execute-extended-command) with rich annotations
+- [ ] =C-x C-f= (find-file) with file preview
+- [ ] =C-x b= (switch-to-buffer) with buffer annotations
+- [ ] =C-s= (isearch) replacement with consult-line
+- [ ] =C-h f= (helpful-callable) with completing-read
+- [ ] =C-h v= (helpful-variable) with completing-read
+**** Project/File Navigation Tests
+- [ ] =C-c p f= (projectile-find-file)
+- [ ] =C-c p p= (projectile-switch-project) 
+- [ ] =C-c p G= (projectile-ripgrep)
+- [ ] Recent files access
+- [ ] Bookmarks
+**** Window/Buffer Management Tests
+- [ ] =M-V= (cj/split-and-follow-right) - buffer selection in new window
+- [ ] =M-H= (cj/split-and-follow-below) - buffer selection in new window
+- [ ] Kill-ring browsing
+- [ ] Imenu navigation
+**** Integration Tests
+- [ ] =C-c s i= (ivy-yasnippet → consult-yasnippet)
+- [ ] Git timemachine revision selection
+- [ ] Helpful integration (counsel-describe-/ functions)
+- [ ] Projectile integration
+**** Search/Replace Tests
+- [ ] In-buffer search 
+- [ ] Project-wide search
+- [ ] Search with preview
+- [ ] Occur-like functionality
+*** Mu4e - Save All Attachments Testing
+It's pretty easy if you use vertico+embark. After running mu4e-view-save-attachments, invoke embark-act-all in the completion menu followed by RET (mu4e-view-save-attachments) to save all attachments, or TAB (vertico-insert) followed by , (comma) next to each file you want to save, then RET (vertico-exit), to save selected attachments. 
 ** TODO [#A] Custom Function: Delete Whitespace From Region is Broken  :bug:
+** TODO [#B] Implement dwim-shell-command for dirvish workflows :enhancement:
+https://github.com/xenodium/dwim-shell-command
 ** TODO [#A] file-config.el cj/xdg-open blocks Emacs process           :bug:
 Should change to non-blocking -- maybe use Emacs internal async?
 ** TODO [#A] Make org mode buffers swap with shift-meta        :enhancement:
 (org-shiftmetaright) should be overridden with  (buf-move-right)
 (org-shiftmetaleft) should be overridden with  (buf-move-left)
-
 ** TODO [#A] mu4e: Add "save all attachments"                  :enhancement:
 - add to action menu for view message buffer
 ** TODO [#A] Mu4e Fixes                                                :bug:
@@ -31,7 +74,7 @@ Gather them together, move them there, and make it easy to run tests per module 
 ** TODO [#B] Capture and Refile to drill files                 :enhancement:
 This code actually exists in org-drill-config, but it doesn't seem to work
 ** TODO [#B] Change Elfeed to Be About Playing Podcasts        :enhancement:
-** TODO [#B] Decent HTML exports from org mode with inline css
+** TODO [#B] Decent HTML exports from org mode with inline css :enhancement:
 *** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
 [[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
 Captured On: [2025-08-18 Mon 14:36]
@@ -39,12 +82,10 @@ Captured On: [2025-08-18 Mon 14:36]
 *** 2025-06-07 Sat @ 12:25:28 -0500 It isn't omitting the h switch on directory listings
 No. Didn't help
 ** TODO [#B] Emacs Add Difftastic Functionality                :enhancement:
-
 Linux Binary Install
 https://github.com/Wilfred/difftastic
 https://www.wilfred.me.uk/blog/2022/09/06/difftastic-the-fantastic-diff/
 https://difftastic.wilfred.me.uk/installation.html (basically $ sudo pacman -S difftastic)
-
 Emacs Package
 https://github.com/pkryger/difftastic.el
 #+begin_src emacs-lisp
@@ -53,12 +94,9 @@ https://github.com/pkryger/difftastic.el
     :vc (:url "https://github.com/pkryger/difftastic.el.git"
               :rev :newest))
 #+end_src
-
 ** TODO [#B] Emacs Add Magit Forge Functionality               :enhancement:
-
 https://github.com/magit/forge
 https://magit.vc/manual/forge/Setup-for-Githubcom.html
-
 Example usage from sqrtminusone
 #+begin_src emacs-lisp
   (use-package forge
@@ -70,13 +108,11 @@ Example usage from sqrtminusone
                                 "gitlab.etu.ru"
                                 forge-gitlab-repository)))
 #+end_src
-
 ** TODO [#B] Emacs error if no file in buffer-and-file operations      :bug:
 ** DOING [#B] Eshell Improvements                              :enhancement:
 *** TODO [#C] Add mu4e add file as attachment                 :enhancement:
 *** AI Suggested
 **** Improved Directory Navigation with =eshell-z=
-
 #+begin_src emacs-lisp
 (use-package eshell-z
   :after eshell
@@ -84,9 +120,7 @@ Example usage from sqrtminusone
   (add-hook 'eshell-mode-hook
             (lambda () (require 'eshell-z))))
 #+end_src
-
 **** Directory Tracking and Shell Command Execution Improvements
-
 #+begin_src emacs-lisp
 ;; Allow Eshell to track directory changes in external shells
 (use-package eshell-prompt-extras
@@ -94,7 +128,6 @@ Example usage from sqrtminusone
   :config
   (setq eshell-highlight-prompt nil
         eshell-prompt-function 'epe-theme-lambda))
-
 ;; Utility to run shell commands from anywhere
 (defun cj/eshell-command-on-region-file (command)
   "Run shell COMMAND on the contents of region or current line.
@@ -111,14 +144,10 @@ If region is active, use that, otherwise use the current line."
       (insert (shell-command-to-string (format "%s %s" command temp-file)))
       (pop-to-buffer output-buffer))
     (delete-file temp-file)))
-
 (global-set-key (kbd "C-c !") 'cj/eshell-command-on-region-file)
 #+end_src
-
 **** Enhanced Visual Output and ANSI Colors
-
 #+begin_src emacs-lisp
-
 ;; Better handling of visual commands
 (defun cj/eshell-exec-visual-and-kill ()
   "Execute the command via `eshell-exec-visual' and then kill the eshell buffer."
@@ -127,24 +156,19 @@ If region is active, use that, otherwise use the current line."
                   eshell-last-output-end (point-max))))
     (kill-buffer)
     (eshell-exec-visual command)))
-
 ;; Add this to your eshell aliases
 (add-hook 'eshell-mode-hook
           (lambda ()
             (eshell/alias "vk" 'cj/eshell-exec-visual-and-kill)))
 #+end_src
-
 **** Buffer Management and Layout Improvements
-
 #+begin_src emacs-lisp
 ;; Auto rename eshell buffers based on current directory
 (defun cj/eshell-rename-buffer-as-dir ()
   "Rename the eshell buffer to include the current directory."
   (let ((dir (abbreviate-file-name (eshell/pwd))))
     (rename-buffer (format "*eshell: %s*" dir) t)))
-
 (add-hook 'eshell-directory-change-hook 'cj/eshell-rename-buffer-as-dir)
-
 ;; Split eshell in a sensible way based on window size
 (defun cj/eshell-pop-window ()
   "Open eshell in a sensible way depending on window dimensions."
@@ -164,12 +188,9 @@ If region is active, use that, otherwise use the current line."
         (split-window-vertically (- current-window-height height))
         (other-window 1)
         (eshell)))))
-
 (global-set-key (kbd "C-c e") 'cj/eshell-pop-window)
 #+end_src
-
 **** Useful Utility Functions
-
 #+begin_src emacs-lisp
 ;; Enhanced eshell clear that preserves history
 (defun cj/eshell-clear-buffer ()
@@ -180,7 +201,6 @@ If region is active, use that, otherwise use the current line."
     (eshell-send-input)))
 (add-hook 'eshell-mode-hook
           (lambda () (local-set-key (kbd "C-l") 'cj/eshell-clear-buffer)))
-
 ;; Function to insert the output of elisp expressions into eshell
 (defun cj/eshell-insert-elisp-output (elisp)
   "Evaluate ELISP expression and insert its value at point in eshell."
@@ -191,14 +211,12 @@ If region is active, use that, otherwise use the current line."
               (format "%S" result)))))
 (add-hook 'eshell-mode-hook
           (lambda () (local-set-key (kbd "C-c C-e") 'cj/eshell-insert-elisp-output)))
-
 ;; Quick file manager in eshell
 (defun eshell/fman (file)
   "Open FILE in a file manager."
   (cond
    ((eq system-type 'darwin)    (shell-command (format "open %s" (expand-file-name default-directory))))
    ((eq system-type 'gnu/linux) (shell-command (format "xdg-open %s" (expand-file-name default-directory))))))
-
 ;; Enhanced cd command that respects projects
 (defun eshell/pcd ()
   "Change directory to the project root."
@@ -210,69 +228,51 @@ If region is active, use that, otherwise use the current line."
         (eshell/cd dir)
       (error "Not in a project"))))
 #+end_src
-
 ** TODO [#B] Fix Emacs Alarms for Scheduled Events                     :bug:
 *** 2025-06-03 Tue @ 15:12:51 -0500 Problem
 Emacs Alarm seems to sound off periodically after the alarm rang the first time.
 It should ring once at the beginning of the event, and that's it.
 *** 2025-06-28 Sat @ 12:42:19 -0500 User's Method for Alarms In Emacs
 This is more than I actually want, but leaving here for reference.
-
 #+BEGIN_QUOTE
 I am quite happy with the system I use, which does (I think) exactly what you want. It has two parts: an Emacs part that uses appt.el to schedule the reminders and a small shell program (I'm using Linux) that creates the popup + sound notification. Here I share the code for both parts.
-
 A) Code in ~/.emacs.d/init.el
-
 (require 'appt)
 (appt-activate t)
-
 (setq appt-message-warning-time 5) ; Show notification 5 minutes before event
 (setq appt-display-interval appt-message-warning-time) ; Disable multiple reminders
 (setq appt-display-mode-line nil)
-
 ; Use appointment data from org-mode
 (defun my-org-agenda-to-appt ()
 (interactive)
 (setq appt-time-msg-list nil)
 (org-agenda-to-appt))
-
 ; Update alarms when...
 ; (1) ... Starting Emacs
 (my-org-agenda-to-appt)
-
 ; (2) ... Everyday at 12:05am (useful in case you keep Emacs always on)
 (run-at-time "12:05am" (* 24 3600) 'my-org-agenda-to-appt)
-
 ; (3) ... When TODO.txt is saved
 (add-hook 'after-save-hook
 '(lambda ()
 (if (string= (buffer-file-name) (concat (getenv "HOME") "/ideas/TODO.txt"))
 (my-org-agenda-to-appt))))
-
 ; Display appointments as a window manager notification
 (setq appt-disp-window-function 'my-appt-display)
 (setq appt-delete-window-function (lambda () t))
-
 (setq my-appt-notification-app (concat (getenv "HOME") "/bin/appt-notification"))
-
 (defun my-appt-display (min-to-app new-time msg)
 (if (atom min-to-app)
 (start-process "my-appt-notification-app" nil my-appt-notification-app min-to-app msg)
 (dolist (i (number-sequence 0 (1- (length min-to-app))))
 (start-process "my-appt-notification-app" nil my-appt-notification-app (nth i min-to-app) (nth i msg)))))
-
 B) Code in ~/bin/appt-notification
-
 #!/bin/sh
-
 TIME="$1"
 MSG="$2"
-
 notify-send -t 0 "<br>Appointment in $TIME minutes:<br>$MSG<br>"
 play "~/bin/alarm.wav"
-
 To get voice notifications you could replace the last line (play) with the following:
-
 espeak "Appointment in $TIME minutes: $MSG"
 #+END_QUOTE
 [[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
@@ -296,20 +296,15 @@ Here are some ideas for making dupre-theme a bit more “complete” and future-
 #+end_src
 • Use =custom-theme-set-faces= only once; wrap your =when (>= emacs-major-version…)= inside it rather than nesting top-level.
 • Move your ERT tests into a separate file like =dupre-theme-test.el= so that the main theme file stays lean.
-
 **** TODO [#A] Fix launch problem with dupre
 ***** cj [2025-08-16 23:45:50]
 [[file:.emacs.d/themes/dupre-theme.el::;;; dupre-theme.el --- A dark and elegant theme for Emacs -*- lexical-binding: t -*-][dupre-theme.el]]
-
 I have an issue launching "emacsclient -c -a ''" with this theme. With the built-in wombat theme, emacsclient launches fine. When I specify this theme to load during launch, emacsclient does not launch.
-
 Here is what I see in the terminal when launching:
-
 [25-08-16 23:44:44] cjennings velox:~ [1]
 % emacsclient -c -a ''
 emacsclient: can't find socket; have you started the server?
 emacsclient: To start the server in Emacs, type "M-x server-start".
-
 #+begin_src shell
   Warning: due to a long standing Gtk+ bug
   https://gitlab.gnome.org/GNOME/gtk/issues/221
@@ -327,88 +322,52 @@ emacsclient: To start the server in Emacs, type "M-x server-start".
   [25-08-16 23:44:56] cjennings velox:~
   % sudo killall emacs
 #+end_src
-
 Is there something about how this theme is written that may be causing this? If it's unlikely, how would you recommend I diagnose this problem?
-
-
-
 ***** ChatGPT: o4-mini [2025-08-16 23:51:03]
 It turns out that nothing mystical is happening in your =dupre-theme.el= that would prevent the Emacs server from creating its socket.  When =emacsclient= says:
-
 emacsclient: can't find socket; have you started the server?
-
 it really does mean “there is no running Emacs –daemon laying down =<…>/server/= for me to talk to.”  By itself, loading a custom theme (even one with a few Unicode ellipses or =display-graphic-p= branches) will not stop the server socket from being created.  What is much more often the culprit is:
-
 1.  Mis-using =emacsclient -a ''= so that it never actually starts the server, or
 2.  Having a startup error in your init file (or theme) that aborts =server-start= before the socket ever gets written.
-
 Here is how I’d go about diagnosing (and fixing) the situation:
-
 1)  Make sure you can start Emacs –daemon cleanly, /without/ any of your custom code.
-
    From a shell, run
-
    emacs --daemon --debug-init --eval "(message \"daemon ok\")"
-
    – you should see a process stick around, and if you look at =~/.emacs.d/server/= you should find a valid socket file.
-
    If that does not happen, Emacs itself is aborting in your init.  Remove or comment out your calls to =load-theme=, your theme-specific code, all your =custom-set-…= blocks, and any other ELisp until you can get a clean daemon start.  Once that is rock-solid, re-introduce your theme.
-
 2)  Once you can start the daemon by hand, verify that =emacsclient -c= can actually talk to it:
-
    emacsclient -c -n
-
    The =-n= is “don’t wait for the client buffer to finish,” so you’ll get your GUI frame immediately.  If that works, the server is up and your sockets are good.
-
 3)  If you /really/ want =emacsclient -c -a ''= to both start Emacs –daemon /and/ immediately pop a graphical frame, you have two choices:
-
    •  Let =-a= fall back to =emacs --daemon=.  On many platforms simply omitting the =-a= will do this.
    •  Explicitly tell it:
-
    emacsclient -c -a "emacs --daemon"  # note the command in quotes
-
    On macOS/Homebrew, for instance, people often do
-
    alias ec='emacsclient -c -a "emacs --daemon"'
-
    so that if there is no server, emacsclient will shell out to =emacs --daemon=, launch it, and /then/ connect.
-
 4)  If you still suspect your theme is triggering a startup error (and killing the daemon before it gets to =(server-start)=), you can sprinkle a tiny bit of ELisp into your init:
-
    #+begin_src elisp
      ;; very early in ~/.emacs or init.el
      (setq debug-on-error t)
      (add-hook 'after-init-hook
                (lambda ()
                  (message "finished init; about to (server-start)")))
-
      (require 'server)
      (unless (server-running-p)
        (server-start))
    #+end_src
-
    Then run:
-
    emacs --daemon --debug-init
-
    and watch =~/.emacs.d/server/server= get created or watch the =*Messages*= buffer or your =~/.emacs.d/emacs-debug.log= (if you redirect =--debug-init= output).  If there is a hard error in your theme, you will get a backtrace in your =*Backtrace*= buffer.
-
 5)  Finally, a sanity check for your theme file.  Launch Emacs /without/ your init:
-
    emacs -Q
-
    Then:
-
    M-x load-file RET /path/to/dupre-theme.el RET
    M-x load-theme RET dupre RET
-
    If this produces any errors or warnings in =*Messages*= or =*Warnings*=, you have your smoking gun.
-
 ---
-
 Summary
 -------
-
 •  *The theme itself isn’t going to silently block server-socket creation.*
 •  *You almost certainly have either:*
 –  A mis-invocation of =emacsclient -a ''= so that it never starts Emacs –daemon.
@@ -417,24 +376,16 @@ Summary
 emacs --daemon --debug-init
 plus removing chunks of your init until you find the offending form.
 •  *Test your theme in a vanilla Emacs (=-Q=)* to see any compile/load errors.
-
 Once you have a clean =emacs --daemon= up and running you will find that
-
 emacsclient -c   # or with your favorite fallback: -a "emacs --daemon"
-
 just works, whether you are on wombat, solarized, or good old dupre.
-
 **** TODO [#B] Make sure you define a “minimum package” set of faces so that folks don’t see glaring unstyled text in any part of Emacs, even if they never install extra packages.
-
 **** TODO [#B] Improve terminal support:
 • Detect true-color (=(display-graphic-p)=) vs 256-color vs 16-color and fall-back gracefully.
 • Provide “256-color” approximations (you already do this), but you might want a simpler palette for legacy terminals.
-
 **** TODO [#B] Other Packages
 The rest is just more of the same—pick the most common modes/packages you and your users rely on and give them a quick coat of paint.  Once you’ve rounded out those faces you’ll have hit what most people expect from a “complete” modern Emacs theme.
-
 Based on a quick skim of your modules/ directory (and the packages they pull in via use-package), here’s a non-exhaustive list of the major packages you’re using—along with the faces you should think about adding to dupre-theme so that nothing ends up looking “unstyled.”
-
 1. completion/mini-frameworks
    • vertico (vertico-current, vertico-group-title, vertico-separator, vertico-doc)
    • orderless (orderless-match-face-0…3)
@@ -443,52 +394,41 @@ Based on a quick skim of your modules/ directory (and the packages they pull in 
    • embark (embark-general, embark-heading, embark-target, embark-helpful)
    • corfu + cape (corfu-default, corfu-current, corfu-bar, cape-file, cape-keyword etc.)
    • company (company-tooltip, company-tooltip-selection, company-scrollbar­-thumb)
-
 2. ivy/counsel/swiper (if you ever load them side-by-side)
    • ivy-current-match, ivy-minibuffer-match-face-1…4
    • counsel-outline, swiper-match-face-1…
-
 3. syntax checkers & LSP
    • flycheck (flycheck-error, flycheck-warning, flycheck-info)
    • eglot or lsp-mode (lsp-face-highlight-textual, lsp-face-highlight-read, lsp-face-semantic-type-…)
    • tree-sitter (tree-sitter-hl-face:function, :variable, :property, …)
-
 4. git & diffs
    • magit (magit-section, magit-section-title, magit-hunk-heading, magit-branch, magit-log)
    • diff-hl / git-gutter (diff-hl-face-insert, diff-hl-face-delete, git-gutter:added, git-gutter:deleted)
    • diff-mode (diff-added, diff-removed, diff-context, diff-file-header)
-
 5. project management & navigation
    • projectile (projectile-project-name, projectile-project-root)
    • treemacs (treemacs-root-face, treemacs-directory-face, treemacs-file-face)
-
 6. Org-mode
    • org-document-title, org-level-1…org-level-8
    • org-checkbox, org-todo, org-done, org-warning, org-date, org-code, org-block
    • plus any “pretty” add-ons you use (org-bullets, org-modern, etc.)
-
 7. Hydra / which-key / key-help
    • which-key (which-key-key-face, which-key-group-description-face, which-key-local-map-description-face)
    • hydra (hydra-face-red, hydra-face-blue, hydra-face-teal, hydra-face-amaranth)
-
 8. visual helpers
    • rainbow-delimiters-depth-1…9
    • highlight-indent-guides-odd/even
    • highlight-parentheses-/
    • beacon (beacon), whitespace (whitespace-space, whitespace-tab, whitespace-newline)
    • display-line-numbers (line-number, line-number-current-line—you already have these)
-
 9. UI polishers
    • all-the-icons (all-the-icons-blue, all-the-icons-red, …) on modeline or treemacs
    • doom-modeline (doom-modeline-bar, doom-modeline-buffer-path)
    • fancy-splash/dashboard-faces if you use a startup screen
-
 10. terminals & shells
     • vterm (vterm-copy-region-highlight)
     • ansi-colors (ansi-color-face-bold, ansi-color-face-italic, ansi-color-[0…7])
-
 To figure out exactly which ones you have in your modules, you can do for example:
-
 #+begin_src elisp
   ;; from your ~/.emacs.d
   (let (pkgs)
@@ -500,9 +440,7 @@ To figure out exactly which ones you have in your modules, you can do for exampl
           (push (intern (match-string 1)) pkgs))))
     (delete-dups pkgs))
 #+end_src
-
 Then for each of those packages, grep in their repo for =defface= or check their manual to see which faces they define, and add reasonable dupre-colours for them. Once you’ve covered that list, you’ll have a “complete” theme that won’t leave any of your modules half-unstyled.
-
 **** TODO [#C] Support the built-in “tab-bar” and “tab-group” faces (Emacs 27+)
 • tab-bar              / tab-bar-tab / tab-bar-tab-inactive
 • tab-bar-close        / tab-bar-separator
@@ -528,25 +466,19 @@ Then for each of those packages, grep in their repo for =defface= or check their
 • which-key-key-face, which-key-local-map-description-face
 • hydra-face-red / teal / blue
 • rainbow-delimiters-depth-1…9
-
 **** TODO [#C] Theme Metadata & Packaging
 • Add =;; Package-Requires: ((emacs "26.1"))= if you need a minimum.
 • Consider adding a README with screenshots.
 • A simple Makefile or script to refresh “theme metadata” (=M-x theme-inspect=, MELPA recipe).
-
 **** TODO [#C] Tests
 • Extend your ERT suite to cover more faces (org, diff, flycheck…).
 • You might write a small helper that loops over a list of faces and asserts they’re defined without errors.
-
 **** Example Sample Faces
 Below is a small excerpt showing how you might start adding some of the “missing” standard faces and a couple org faces:
-
 #+begin_src elisp
   (custom-theme-set-faces
    'dupre
-
    ;; … your existing faces …
-
    ;; standard global faces
    `(error   ((t (:foreground ,dupre-intense-red :weight bold))))
    `(warning ((t (:foreground ,dupre-yellow+1 :weight bold))))
@@ -556,7 +488,6 @@ Below is a small excerpt showing how you might start adding some of the “missi
    `(highlight ((t (:background ,dupre-bg+1))))
    `(tooltip ((t (:foreground ,dupre-fg :background ,dupre-bg+2))))
    `(tooltip-selection ((t (:background ,dupre-bg+0))))
-
    ;; Org-mode sample
    `(org-document-title       ((t (:foreground ,dupre-yellow+2 :weight bold :height 1.2))))
    `(org-level-1              ((t (:foreground ,dupre-blue+2 :weight bold))))
@@ -566,7 +497,6 @@ Below is a small excerpt showing how you might start adding some of the “missi
    `(org-done                 ((t (:foreground ,dupre-green+2 :weight bold))))
    )
 #+end_src
-
 ** TODO [#B] Org Agenda Work                                   :enhancement:
 *** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
 *** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
@@ -575,9 +505,7 @@ Below is a small excerpt showing how you might start adding some of the “missi
 ** TODO [#C] Emacs: Add Reverso Functionality                  :enhancement:
 https://sqrtminusone.xyz/packages/reverso/
 check his config for a usage example
-
 Reverso
-
 reverso.el is a package of mine that provides Emacs interface for https://reverso.net.
 #+begin_src emacs-lisp
   (use-package reverso
@@ -593,7 +521,6 @@ reverso.el is a package of mine that provides Emacs interface for https://revers
 *** Emacs: Backup Current File 📜
 [[http://xahlee.info/emacs/emacs/elisp_make-backup.html][Emacs: Backup Current File 📜]]
 Captured On: [2025-09-03 Wed 11:48]
-
 ** TODO [#C] Org keyword discolored until reapplying theme             :bug:
 * Emacs Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
@@ -609,13 +536,10 @@ register used to store the last location: ?z
 #+begin_src emacs-lisp
   ;; First store a position in register 'a'
   (point-to-register ?a)
-
   ;; Later, check if current position matches what's in register 'a'
   (if (cj/point-matches-register ?a)
       (message "Current position matches register 'a'")
     (message "Current position differs from register 'a'"))
-
-
   (defun cj/point-matches-register (register)
     "Return t if current position matches position stored in REGISTER.
       REGISTER is a character representing the register to check against.
@@ -638,14 +562,10 @@ saves using (point-to-register REGISTER &optional ARG)
 *** 2025-09-02 Tue @ 14:06:03 -0500 Functionality Description
 Tentative Package Name: Jumper
 I typically use registers to jump between places, but I often forget the keybindings. Also, I sometimes overwrite registers by hitting the wrong key. Many Emacs users  don't even know about registers. I've seen posts from software developers asking how to conveniently store and jump to specific locations in a large code base.
-
 To solve this I'd like to write a little elisp package that leverages Emacs vanilla register functionality to make jumping between locations using registers simple and transparent. The user won't have to think about registers or what character they've stored their location in at all. All keybindings will be based on keys from home row of the keyboard.
-
 Preliminaries:
 We will map the functionality to the keybinding prefix C-; j, but the prefix should be easy to configure.
-
 Let's imagine a set of characters in a sequence. They could be any characters, but for the sake of simplicity we'll use the numbers from 0 to 9, and a one more character used for the "last location" -- the character "z".
-
 What follows is a description of the workflow:
 **** Adding Locations
 keybinding: <prefix> space (store destination)
@@ -653,7 +573,6 @@ If the user is visiting a buffer and presses <prefix> space,
 - the current location is stored in the next free register. if this is the first time they are storing a location, the first free register is 0.
 user feedback: a message is displayed in the echo area saying "location stored."
 If the user stays on the same location and presses prefix <space> again, they should receive a message in the echo area saying the location is already stored, and no changes to the register is made.
-
 If the user moves to a new location and presses prefix <space> again, the next free register is used to store the location, in this case it would be 1. They can then iterate and store additional locations up to the last character in the sequence up to the limit of 10 registers (0 through 9). If they try to store a register after all 10 registers are filled, they will receive a message ("sorry - all jump locations are filled!").
 **** Jump-To A Location
 keybinding: <prefix> j (jump to destination)
@@ -667,7 +586,6 @@ In other words, after the user stores one location and moves elsewhere, pressing
 ***** When multiple locations are stored, and the user presses <prefix> j:
 A completing read is displayed with all the locations between 0 and 9 along with register z (their last location) at the bottom.
 Each line contains the letter as well as the content that the register would normally display. In other words, it could just be the register list is displayed, but narrowed down to 0 - 9 and z.
-
 When the user chooses a location 0 -9, z from completing read:
 - The current location is stored in register z, replacing their last location
 - They are taken to the location via (jump-to-register).
@@ -714,7 +632,6 @@ Originally seen at https://emacselements.com/true-titlecase-in-emacs.html
 ** TODO [#C] Fix Exporting Documents to HTML.
 This appears to work with emacs -q. What's up with your config?
 ** TODO [#C] Rename 'sync-dir' Variable in Init File to 'org-dir'
-
 [[https://github.com/ryuslash/mode-icons][ryuslash/mode-icons: Show icons instead of mode names]]
 Captured On: [2025-06-07 Sat 13:29]
 ** TODO [#C] Emacs Change Appropriate Use-package Installs to :vc
@@ -723,14 +640,11 @@ especially where you're cloning them to provide fixes
 After generating an org agenda list, I can narrow the type to all DONE or IN-PROGRESS. However when I use my custom functions to just get the agenda for the current buffer, I can't. The scope has now widened and the refresh is for all buffers.
 ** TODO [#C] Add a Restrict to Subtree Org Agenda Command
 In Org-mode the “agenda” machinery by default doesn’t pay any attention to your buffer­narrow — it always scans whole files in your =org-agenda-files=.  However, you can teach Org-agenda to only look between two points (the start and end of your current subtree) by using the built-in “restrict” hooks:
-
 1.  =org‐agenda‐restrict=         – turn on restriction
 2.  =org‐agenda‐restrict‐begin=  – a marker or position where scanning begins
 3.  =org‐agenda‐restrict‐end=    – where it ends
 4.  (optionally) set =org-agenda-files= to just your current file
-
 Here is a drop-in =org-agenda-custom-commands= entry that will give you a “Subtree TODOs” view limited to the subtree you’re on.  Put this in your Emacs init:
-
 #+begin_src  emacs-lisp
   ;; -------------------------------------------------------------------
   ;; 1) Define a custom agenda command "C" (hit C-c a C)
@@ -755,9 +669,7 @@ Here is a drop-in =org-agenda-custom-commands= entry that will give you a “Sub
                     ;; you can add more blocks here if you like
                     ))))
 #+end_src
-
 How this works, step by step:
-
 • We bind a new custom command under the key “C” (so you’ll type =C-c a C=).
 • In that command we use the =todo= matcher =""= to catch every headline whose state is one of your TODO keywords.
 • We dynamically set
@@ -765,22 +677,15 @@ How this works, step by step:
 – =org-agenda-restrict= to non-nil so Org will honor the begin/end markers,
 – =org-agenda-restrict-begin= to the position of the current heading,
 – =org-agenda-restrict-end= to the end of the subtree.
-
 When you invoke it (=C-c a C=), Org will only scan headlines in that slice of the file and will build you a mini-agenda of TODO items from exactly that subtree.
-
 Quick alternative: if you don’t need the full agenda machinery (dates, deadlines, etc.) but just want a fast outline of your TODOs under the current heading, you can also use the sparse-tree command:
-
 • =C-c / t=  ⇒ shows only the TODO headings in the narrowed or whole buffer as an indented outline.
-
 — Tips & Pitfalls —
-
 • Make sure your file is saved and in =org-agenda-files= (the snippet above forces it).
 • Remember to call =org-narrow-to-subtree= (or let the command compute its own begin/end via =org-back-to-heading=/=org-end-of-subtree=).
 • If you rename or move your file, Emacs must still see =buffer-file-name= valid.
 • You can duplicate the above snippet for other TODO states, agenda views, or matchers (deadlines, tags, etc.)
-
 With this in place you effectively get an agenda tailored to exactly the bit of tree you’re working on.
-
 ** TODO [#C] Find Another Keymapping for Emojify
 ** TODO [#D] Emacs Signal Client
 *** TODO investigate: net/signel.org · master · undefined · GitLab
@@ -789,12 +694,10 @@ Captured On: [2025-05-29 Thu 04:24]
 *** TODO investigate: signel, a barebones signal chat on top of signal-cli
 [[https://jao.io/blog/signel.html][signel, a barebones signal chat on top of signal-cli]]
 Captured On: [2025-05-29 Thu 04:23]
-
 ** TODO [#D] Add test document to test graphviz-dot-mode
 ** TODO [#D] Consider Replicating Some of This Auctex and PDF Tools Code
 [[https://www.reddit.com/r/emacs/comments/cd6fe2/how_to_make_emacs_a_latex_ide/][How to make Emacs a Latex IDE? : r/emacs]]
 Captured On: [2025-08-14 Thu 03:43]
-
 ** GitHub - xenodium/dwim-shell-command: Save your shell commands/scripts and apply from Emacs with ease.
 [[https://github.com/xenodium/dwim-shell-command][GitHub - xenodium/dwim-shell-command: Save your shell commands/scripts and apply from Emacs with ease.]]
 [[https://xenodium.com/how-i-batch-apply-and-save-one-liners][How I batch apply and save one-liners]]
@@ -802,29 +705,22 @@ Captured On: [2025-08-01 Fri 03:11]
 ** TODO [#D] Install ZOxide Integration into Emacs
 [[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
 Captured On: [2025-06-07 Sat 17:11]
-
 ** My PDF Tools Settings
 [[https://emacselements.com/pdf-tools-settings.html][My PDF Tools Settings]]
 Captured On: [2025-09-03 Wed 11:49]
-
 ** TODO [#D] manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.
 [[https://github.com/manateelazycat/awesome-tray][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
 Captured On: [2025-06-07 Sat 13:29]
 ** TODO [#D] ryuslash/mode-icons: Show icons instead of mode names
-
 ** TODO [#B] Get Tufte.css working and as a separate entry
 Below is one way to get Org-mode’s HTML exporter to play nicely with Tufte-CSS.  The basic recipe is:
-
 1. Inject Tufte’s stylesheet into every HTML export
 2. Teach Org to emit the little “margin-toggle” + “sidenote” markup that tufte.css expects for footnotes
 3. (Optionally) wrap images in <figure> so you get tufte-style captions out of the box
-
 Along the way you’ll see where Org’s default HTML‐classes line up with tufte.css and where you have to override them.
-
 — 1 Inject tufte.css into your exports
 Put tufte.css somewhere your exported HTML can see it (for example
 ~/.emacs.d/assets/tufte.css or a URL on your webserver).  Then in your init.el:
-
 (with-eval-after-load 'ox-html
 ;; 1a) tell Org to link in your tufte.css
 (setq org-html-head-extra
@@ -832,19 +728,15 @@ Put tufte.css somewhere your exported HTML can see it (for example
 ;; 1b) enable HTML5 “fancy” output (so you get <figure> around images)
 (setq org-html-html5-fancy t
 org-html-inline-images  t))
-
 — 2 Turn Org footnotes into Tufte sidenotes
 By default Org emits
 <sup class=…><a href="#fn:1" id="fnref:1">[1]</a></sup>
 …and then a big =<div id="footnotes">= at the bottom.
-
 Tufte-CSS wants each footnote inline, wrapped in
 <label class="margin-toggle">⊕</label>
 <input type="checkbox" class="margin-toggle"/>
 <span class="sidenote">…your note…</span>
-
 We can override two Org variables:
-
 (with-eval-after-load 'ox-html
 ;; format of each inline footnote reference
 (setq org-html-footnote-format
@@ -855,31 +747,23 @@ We can override two Org variables:
 "<span class=\"sidenote\">%2$s</span>"))
 ;; drop Org’s default footnote list at the end
 (setq org-html-footnote-separator ""))
-
 Once you do that, exporting an Org file with footnotes will generate the markup tufte.css needs to float them in the margin.
-
 — 3 (Optionally) get <figure> + <figcaption> around images
 If you set =org-html-html5-fancy= to t (see step 1) Org will automatically emit:
-
 <figure>
 <img src="…"/>
 <figcaption>Your caption</figcaption>
 </figure>
-
 and tufte.css already has rules for =<figure class="figure">= etc.
-
 — 4 Common pitfalls
 • Make sure your href in =org-html-head-extra= actually points to the css that the browser can load (absolute vs. relative).
 • If you still see a “Footnotes” section at the bottom, double-check that =org-html-footnote-separator= is set to the empty string and that your init-file got re-evaluated.
 • On Windows or if you’re testing locally, run e.g. =python3 -m http.server= inside your export folder so your browser can fetch the CSS.
-
 — 5 Unit test for your footnote hack
 Drop this in =~/.emacs.d/tests/test-org-tufte.el= and run =M-x ert RET t RET=:
-
 (require 'ert)
 ;; load your config; adjust the path if necessary
 (load-file "~/.emacs.d/init.el")
-
 (ert-deftest org-tufte-footnote-format-test ()
 "Ensure each footnote reference becomes a margin-toggle + sidenote."
 (let/ ((id      "fn:42")
@@ -889,11 +773,8 @@ Drop this in =~/.emacs.d/tests/test-org-tufte.el= and run =M-x ert RET t RET=:
 (should (string-match-p "<span class=\"sidenote\">My note\\.</span>" html))
 ;; it must not accidentally reintroduce Org’s bottom-of-page footnote div
 (should-not (string-match-p "div id=\"footnotes\"" html))))
-
 Once that test passes, you know your footnotes are being rewritten into Tufte-style side notes.  From there, you can sprinkle in additional filters (e.g. wrap =<blockquote>= in a =.sidenote= class, override list/p table styles, etc.) or just let the rest of tufte.css style Org’s default tags (h1, p, ul, table, code, etc.).
-
 Enjoy your beautifully-typeset Org → HTML exports in true Tufte style!
-
 * Emacs Config Ideas/References
 ** emacs-tw/awesome-elisp: A curated list of Emacs Lisp development resources
 [[https://github.com/emacs-tw/awesome-elisp][emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources]]

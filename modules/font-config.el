@@ -191,6 +191,7 @@ If FRAME is nil, uses the selected frame."
 ;; converts emoji identifiers into emojis; allows for easy emoji entry.
 
 (use-package emojify
+  :defer 1
   :hook ((erc-mode . emojify-mode)
 		 (org-mode . emojify-mode))
   :custom

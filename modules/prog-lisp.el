@@ -88,7 +88,6 @@
 
 (use-package el-mock) ;; mock/stub framework
 
-
 (defun cj/eval-and-run-all-tests-in-buffer ()
   "Delete any loaded tests, evaluate current buffer, and run loaded ERT tests."
   (interactive)

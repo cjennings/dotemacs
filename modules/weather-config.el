@@ -9,7 +9,7 @@
 ;; show the weather forecast in an Emacs buffer
 
 (use-package wttrin
-  :defer .5
+  :defer t
   :load-path ("~/code/wttrin")
   :ensure nil ;; local package
   :preface
