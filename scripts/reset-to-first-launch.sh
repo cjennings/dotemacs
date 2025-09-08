@@ -25,6 +25,7 @@ rm -rf ~/.emacs.d/url/
 rm ~/.emacs.d/.lsp-session*
 rm ~/.emacs.d/forge-database.sqlite
 rm ~/.emacs.d/.org-id-locations
+rm ~/.emacs.d/.emacs-history
 rm ~/.emacs.d/.pdf-view-restore
 rm ~/.emacs.d/.scratch
 rm ~/.emacs.d/forge-database.sqlite
