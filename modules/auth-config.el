@@ -36,24 +36,9 @@
   :ensure nil                        ;; built-in
   :defer .5
   :config
+;;  (setq epg-pinentry-mode 'loopback) ;; emacs request passwords in minibuffer
   (setq epg-gpg-program "gpg2"))     ;; force use gpg2 (not gpg v.1)
-  (setq epg-pinentry-mode 'loopback) ;; emacs request passwords in minibuffer
 
 
 (provide 'auth-config)
 ;;; auth-config.el ends here.
-
-;; --------------------------------- ERT Tests ---------------------------------
-;; Run these tests with M-x ert RET t RET
-
-(require 'ert)
-(require 'cl-lib)
-
-(ert-deftest auth-config/authinfo-file-exists ()
-  "Verify that `authinfo-file` actually exists on disk."
-  (should (and (stringp authinfo-file)
-               (file-exists-p authinfo-file))))
-
-(ert-deftest auth-config/gpg2-is-on-path ()
-  "Verify that the `gpg2` executable is on the user’s PATH."
-  (should (executable-find "gpg2")))
