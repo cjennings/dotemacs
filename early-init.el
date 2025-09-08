@@ -61,7 +61,7 @@
 ;; --------------------------- Use Online Repos Flag ---------------------------
 ;; set to nil to only use localrepo and local elpa-mirrors (see script directory)
 
-(defvar cj/use-online-repos t
+(defvar cj/use-online-repos nil
   "Whether to check for network connectivity & use online package repositories.")
 
 ;; Cache network status to avoid repeated checks
@@ -156,37 +156,54 @@ early-init.el.")
   (add-to-list 'package-archive-priorities '("nongnu" . 20))
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
   (add-to-list 'package-archive-priorities '("melpa" . 15))
-  ;; (add-to-list 'package-archives '("org" . "https://orgmode.org/packages/") t)
-  ;; (add-to-list 'package-archive-priorities '("org" . 10))
   (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
   (add-to-list 'package-archive-priorities '("melpa-stable" . 5)))
 
 ;; Initialize package system
 (package-initialize)
 
-;; Check if we need to refresh package contents
-;; This checks for the actual cache file existence rather than just the variable
-(let ((cache-file (expand-file-name "archives" package-user-dir)))
-  (unless (and (file-exists-p cache-file)
-			   (< (float-time (time-subtract (current-time)
-											  (file-attribute-modification-time
-											   (file-attributes cache-file))))
-				  (/ 24 60 60))) ; cache is less than 24 hours old
-	(condition-case nil
-		(package-refresh-contents)
-	  (error (message "Failed to refresh package contents")))))
+;; Package refresh logic - refresh only if:
+;; 1. Online repos are enabled AND network is available
+;; 2. Any online repo cache doesn't exist or is older than 7 days
 
-;; Ensure use-package is installed before configuring it
+(when (and cj/use-online-repos (internet-up-p))
+  (let ((cache-age-days 7)
+		(needs-refresh nil))
+	;; Check each online repository's cache
+	(dolist (archive '("gnu" "nongnu" "melpa" "melpa-stable"))
+	  (let ((cache-file (expand-file-name
+						 (format "archives/%s/archive-contents" archive)
+						 package-user-dir)))
+		(when (or (not (file-exists-p cache-file))
+				  (> (/ (float-time (time-subtract
+									 (current-time)
+									 (file-attribute-modification-time
+									  (file-attributes cache-file))))
+						86400.0) ;; == 7 days
+                     cache-age-days))
+          (setq needs-refresh t))))
+
+	;; Only refresh if needed
+	(when needs-refresh
+	  (condition-case nil
+		  (package-refresh-contents)
+		(error (message "Failed to refresh package contents"))))))
+
+;; Ensure use-package is installed
 (unless (package-installed-p 'use-package)
-  (package-refresh-contents)
+  (unless package-archive-contents
+	(package-refresh-contents))
   (package-install 'use-package))
 
-;; Configure use-package
-(require 'use-package)
-(setq use-package-always-ensure t)
+;;(require 'use-package-ensure)  ; Needed for :ensure to work
+(setq use-package-always-ensure t)  ; Auto-install packages
+
+;; Optional but recommended for better error messages during config loading
+;;(setq use-package-expand-minimally nil)  ; Better error reporting
+;;(setq use-package-compute-statistics t)  ; Set to t if you want timing info
 
 ;; turn on for use-package debugging
-;; (setq use-package-verbose t)
+;;(setq use-package-verbose nil)
 
 ;; ---------------------------------- Unicode ----------------------------------
 ;; unicode all the things
@@ -213,6 +230,14 @@ early-init.el.")
 (setq-default inhibit-splash-screen t)
 (setq-default initial-scratch-message nil)
 (setq inhibit-startup-echo-area-message t)
+
+;; Disable bidirectional text rendering for slight performance boost
+(setq-default bidi-display-reordering 'left-to-right
+			  bidi-paragraph-direction 'left-to-right)
+
+;; Disable global font lock mode until after initialization
+(setq-default global-font-lock-mode nil)
+(add-hook 'emacs-startup-hook #'global-font-lock-mode)
 
 (provide 'early-init)
 ;;; early-init.el ends here
