@@ -69,11 +69,9 @@
 ;; ------------------------------- Org Tufte CSS -------------------------------
 ;; Hacks to inline a superior tufte.css style sheet into your generated html files.
 
-;;
-;; Inline tufte.css into all generated HTML documents
-;; Note: the tufte.css file in my configuration has an extra style for
-;; TODO and DONE task items.
-;;
+;; WIP
+;; Optionally inline some css into all generated HTML documents
+;; NOTE You should be able to choose what css you want inlined first!
 
 (defun cj/org-inline-css (path)
   "Return the contents of the file at PATH as a string.
@@ -91,13 +89,13 @@ If the file doesn’t exist, return an empty string."
   (setq org-html-postamble nil)
 
   ;; inject tufte.css from the assets folder.
-  (setq org-html-html5-fancy              t
-		org-html-head-include-default-style nil
-		org-html-head-extra
-		(let* ((css-file (expand-file-name "assets/tufte.css"
-										   user-emacs-directory))
-			   (css      (cj/org-inline-css css-file)))
-		  (format "<style type=\"text/css\">\n%s\n</style>" css))))
+  (setq org-html-html5-fancy t)
+  (setq org-html-head-include-default-style nil))
+;; org-html-head-extra
+;; (let* ((css-file (expand-file-name "assets/tufte.css"
+;;                                 user-emacs-directory))
+;;     (css      (cj/org-inline-css css-file)))
+;;   (format "<style type=\"text/css\">\n%s\n</style>" css))))
 ;;
 ;; Don't allow Table of Contents to link to TODO items
 ;;
