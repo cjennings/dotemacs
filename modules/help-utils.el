@@ -1,8 +1,26 @@
 ;;; help-utils --- Help Integrations and Searches -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
-
+;;
 ;;; Commentary:
-
+;;
+;; This module provides various utilities for accessing documentation and help resources
+;; directly within Emacs.
+;; DevDocs for programming documentation
+;; TLDR command line cheat sheets
+;; Wikipedia pages through the `wiki-summary` package.
+;; ArchWiki pages are also browsable via EWW.
+;;
+;;; Keybindings:
+;; - C-h D s: Search DevDocs for documentation.
+;; - C-h D b: Peruse DevDocs browsing through documentation.
+;; - C-h D l: Lookup specific documentation in DevDocs.
+;; - C-h D i: Install documentation for a chosen library in DevDocs.
+;; - C-h D d: Delete documentation from DevDocs.
+;; - C-h D u: Update all installed DevDocs documentation.
+;; - C-h T: Access TLDR (cheat sheets for command-line tools).
+;; - C-h W: Summarize wiki pages with the wiki-summary package.
+;; - C-h A: Search and browse local Arch Wiki topics in EWW.
+;;
 ;;; Code:
 
 ;; ---------------------------------- Devdocs ----------------------------------
