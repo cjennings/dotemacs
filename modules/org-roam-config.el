@@ -1,4 +1,4 @@
-﻿;;; org-roam-config.el --- Org-Roam Config -*- lexical-binding: t; coding: utf-8; -*-
+;;; org-roam-config.el --- Org-Roam Config -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;; Currently a work in progress. The initial version of this was taken from David Wilson:
@@ -45,10 +45,7 @@
 	  (function (lambda () (concat roam-dir "templates/topic.org")))
 	  :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "")
 	  :unnarrowed t)))
-
-
-  :bind (("C-c n ?" . org-roam-hydra/body)
-         ("C-c n l" . org-roam-buffer-toggle)
+  :bind (("C-c n l" . org-roam-buffer-toggle)
          ("C-c n f" . org-roam-node-find)
          ("C-c n p" . cj/org-roam-find-node-project)
          ("C-c n r" . cj/org-roam-find-node-recipe)

@@ -7,17 +7,6 @@
 
 ;;; Code:
 
-;; --------------------------------- Games Menu --------------------------------
-
-;; (defhydra hydra-games (:color blue :hint nil)
-;;   "\n"
-;;   ("2" 2048-game       "2048      : Combine the Numbered Tiles to get to 2048" :column "Game")
-;;   ("c" chess           "Chess     : Play the 64 Squares and Checkmate the King" :column "Game")
-;;   ("d" dunnet          "Dunnet    : Emacs' Built-n Text Adventure" :column "Game")
-;;   ("g" gomoku          "Gomoku    : Tic Tac Toe, but Five in a Row" :column "Game")
-;;   ("m" malyon          "Malyon    : The Text Adventure Player" :column "Game")
-;;   ("t" tetris          "Tetris    : Combine falling blocks and score" :column "Game"))
-;; (global-set-key (kbd "M-G") 'hydra-games/body)
 
 ;; ----------------------------------- Malyon ----------------------------------
 ;; text based adventure player

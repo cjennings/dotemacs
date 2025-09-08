@@ -30,54 +30,6 @@
 ;; remap Shift Backspace to Delete
 (global-set-key (kbd "S-<backspace>") 'delete-forward-char)
 
-;; ----------------------------------- Hydra -----------------------------------
-;; provides ability to create menus
-
-(use-package hydra
-  :demand t) ;; used in init, so load it now
-
-;; --------------------------------- Main Hydra --------------------------------
-;; convenience menu for commonly used apps
-
-(defhydra hydra-general (:color blue :hint nil)
-  "
-
-                                         Main Menu
-
-      ^Applications^            ^Communication^        ^Utilities^            ^Entertainment
-      ^^^^^^^^--------------------------------------------------------------------------------
-	  _f_: Feed Reader          _m_: Mu4e Email        _p_: Open Project      _r_: Play Radio
-	  _b_: Ebook Manager        _i_: IRC               _c_: Calculator        _g_: Games Menu
-	  _F_: File Manager         ^^                     _W_: World Clock
-	  _d_: Flashcard Drill      ^^                     _z_: Diff Directories
-	  ^^                        ^^
-	  ^^                        ^^                     ^^                     _q_: quit
-\n\n
-"
-  ("q" nil)
-  ;; Applications
-  ("f" elfeed-dashboard)
-  ("b" calibredb)
-  ("F" (dirvish user-home-dir))
-  ("d" cj/drill-start)
-
-  ;; Communication
-  ("m" mu4e)
-  ("i" cj/erc-start-or-switch)
-
-  ;; Utilities
-  ("p" projectile-switch-project)
-  ("c" calc)
-  ("W" world-clock)
-  ("z" ztree-diff)
-
-  ;; Entertainment
-  ("r" eradio-play)
-  ("g" hydra-games/body))
-
-(global-set-key (kbd "C-c ?") 'hydra-general/body)
-
-
 ;; ------------------------------ Jump To Commands -----------------------------
 ;; quick access for commonly used files
 

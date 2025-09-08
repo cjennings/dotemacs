@@ -139,7 +139,6 @@ org-archive-subtree-default are placed.")
   ("C-c c" . org-capture)
   ("C-c a" . org-agenda)
   (:map org-mode-map
-		("C-c ?"     . hydra-general/body)   ;; was org-table-field-info
 		("C-c I"     . org-table-field-info) ;; was C-c ?
 		("C-\\"      . org-match-sparse-tree)
 		("C-c t"     . org-set-tags-command)
