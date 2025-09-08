@@ -74,10 +74,11 @@ Prompts user for the action when executing."
   (setq mu4e-show-images t)                                                 ;; show embedded images
   (setq mu4e-update-interval nil)                                           ;; disallow automatic checking for new emails
 
+  ;; Format=flowed for better plain text email handling
+  ;; This will be automatically disabled when org-msg is active
+  (setq mu4e-compose-format-flowed t)
 
-  (setq mu4e-compose-format-flowed nil
-        mu4e-html2text-command 'mu4e-shr2text)  ;; email conversion to html via shr2text
-
+  (setq mu4e-html2text-command 'mu4e-shr2text)  ;; email conversion to html via shr2text
   (setq mu4e-mu-binary (executable-find "mu"))
   (setq mu4e-get-mail-command (concat (executable-find "mbsync") " -a"))    ;; command to sync mail
   (setq mu4e-user-mail-address-list '("c@cjennings.net" "craigmartinjennings@gmail.com"))
@@ -172,6 +173,46 @@ Prompts user for the action when executing."
   (when (fboundp 'imagemagick-register-types)
     (imagemagick-register-types))
 
+  ;; Prefer HTML over plain text when both are available
+  (setq mu4e-view-prefer-html t)
+
+  ;; Use a better HTML renderer with more control
+  (setq mu4e-html2text-command
+		(cond
+		 ;; Best option: pandoc (if available)
+		 ((executable-find "pandoc")
+		  "pandoc -f html -t plain --reference-links")
+		 ;; Good option: w3m (better tables/formatting)
+		 ((executable-find "w3m")
+		  "w3m -dump -T text/html -cols 72 -o display_link_number=true")
+		 ;; Fallback: built-in shr
+		 (t 'mu4e-shr2text)))
+
+  ;; Configure shr (built-in HTML renderer) for better display
+  (setq shr-use-colors nil)          ; Don't use colors in terminal
+  (setq shr-use-fonts nil)           ; Don't use variable fonts
+  (setq shr-max-image-proportion 0.7) ; Limit image size
+  (setq shr-width 72)                ; Set width for HTML rendering
+  (setq shr-bullet "• ")             ; Nice bullet points
+
+  ;; Block remote images by default (privacy/security)
+  (setq mu4e-view-show-images t)
+  (setq mu4e-view-image-max-width 800)
+
+  ;; Custom function to toggle remote content
+  (defun cj/mu4e-toggle-remote-images ()
+	"Toggle display of remote images in current message."
+	(interactive)
+	(setq-local gnus-blocked-images
+				(if (equal gnus-blocked-images "http")
+					nil
+				  "http"))
+	(mu4e-view-refresh))
+
+  ;; Bind it in view mode
+  (with-eval-after-load 'mu4e
+	(define-key mu4e-view-mode-map (kbd "I") #'cj/mu4e-toggle-remote-images))
+
   ) ;; end use-package mu4e
 
 
@@ -200,6 +241,20 @@ Prompts user for the action when executing."
 
   ;; Convert Org Citations to Blockquote
   (setq org-msg-convert-citation t)
+
+  ;; enforce css usage; default renders too small
+  (setq org-msg-enforce-css t)
+
+  ;; Override just the problematic styles with important tags
+  (setq org-msg-extra-css
+		(concat
+		 "<style type=\"text/css\">\n"
+		 "body { font-size: 14px !important; line-height: 1.6 !important; }\n"
+		 "p { font-size: 14px !important; margin: 10px 0 !important; }\n"
+		 "li { font-size: 14px !important; }\n"
+		 "pre { font-size: 13px !important; }\n"
+		 "code { font-size: 13px !important; }\n"
+		 "</style>"))
 
   ;; Signature (Org Syntax)
   (setq org-msg-signature "\nCraig\n\n")
