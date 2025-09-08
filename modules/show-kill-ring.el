@@ -1,4 +1,4 @@
-;;; show-kill-ring --- Displays Previous Kill Ring Entries -*- lexical-binding: t; -*-
+;;; show-kill-ring --- Displays Previous Kill Ring Entries -*- lexical-binding: t; coding: utf-8; -*-
 ;; Show Kill Ring
 ;; Stolen from Steve Yegge when he wasn't looking
 

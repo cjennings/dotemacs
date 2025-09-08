@@ -1,4 +1,4 @@
-;;; flyspell-and-abbrev.el --- Spell Check Configuration -*- lexical-binding: t; -*-
+;;; flyspell-and-abbrev.el --- Spell Check Configuration -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

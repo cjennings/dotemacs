@@ -1,4 +1,4 @@
-;;; dirvish-config.el --- Dired/Dirvish Configuration -*- lexical-binding: t; -*-
+;;; dirvish-config.el --- Dired/Dirvish Configuration -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

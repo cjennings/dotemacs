@@ -1,4 +1,4 @@
-;;; keybindings --- General Keyboard Shortcuts -*- lexical-binding: t; -*-
+;;; keybindings --- General Keyboard Shortcuts -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

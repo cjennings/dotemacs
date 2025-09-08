@@ -1,4 +1,4 @@
-﻿;;; host-environment.el --- Host Environment Convenience Functions -*- lexical-binding: t; -*-
+﻿;;; host-environment.el --- Host Environment Convenience Functions -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

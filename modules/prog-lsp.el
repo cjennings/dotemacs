@@ -1,4 +1,4 @@
-;;; prog-lsp --- Setup for LSP Mode -*- lexical-binding: t; -*-
+;;; prog-lsp --- Setup for LSP Mode -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

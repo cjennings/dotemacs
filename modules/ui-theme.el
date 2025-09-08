@@ -1,4 +1,4 @@
-;;; ui-theme.el --- UI Theme Configuration and Persistence -*- lexical-binding: t; -*-
+;;; ui-theme.el --- UI Theme Configuration and Persistence -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:

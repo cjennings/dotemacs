@@ -1,4 +1,4 @@
-;;; ledger-config.el --- Ledger Configuration -*- lexical-binding: t; -*-
+;;; ledger-config.el --- Ledger Configuration -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

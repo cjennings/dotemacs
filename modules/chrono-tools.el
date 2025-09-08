@@ -1,5 +1,6 @@
-;;; chrono-tools.el --- Config for Date and Time-Related Utils -*- lexical-binding: t; -*-
+;;; chrono-tools.el --- Config for Date and Time-Related Utils -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
+;;
 ;;; Commentary:
 ;;
 ;; This module centralizes configuration for Emacs time-related tools:

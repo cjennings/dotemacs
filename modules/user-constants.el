@@ -1,4 +1,4 @@
-;;; user-constants.el --- User Constants -*- lexical-binding: t; -*-
+;;; user-constants.el --- User Constants -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 

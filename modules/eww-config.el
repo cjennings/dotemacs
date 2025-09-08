@@ -1,4 +1,4 @@
-;;; eww-config --- EWW Text Browser Settings -*- lexical-binding: t; -*-
+;;; eww-config --- EWW Text Browser Settings -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

@@ -1,4 +1,4 @@
-;;; weather-config.el ---  -*- lexical-binding: t; -*-
+;;; weather-config.el ---  -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;;

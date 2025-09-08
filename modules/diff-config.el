@@ -1,4 +1,4 @@
-;;; diff-config.el --- diff Configuration  -*- lexical-binding: t; -*-
+;;; diff-config.el --- diff Configuration  -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

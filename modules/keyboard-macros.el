@@ -1,4 +1,4 @@
-;;; keyboard-macros.el --- Keyboard Macro Management  -*- lexical-binding: t; -*-
+;;; keyboard-macros.el --- Keyboard Macro Management  -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

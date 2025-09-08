@@ -1,4 +1,4 @@
-;;; system-utils --- System-Wide Utilities -*- lexical-binding: t; -*-
+;;; system-utils --- System-Wide Utilities -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 
@@ -12,6 +12,8 @@
 (use-package sudo-edit
   :defer 1
   :bind ("C-x M-f" . sudo-edit))
+
+;; ------------------------------- Open File With ------------------------------
 
 (defun cj/open-file-with (command)
   "Asynchronously run COMMAND on the current buffer's file."

@@ -1,4 +1,4 @@
-;;; tramp-config.el --- Tramp Configuration -*- lexical-binding: t; -*-
+;;; tramp-config.el --- Tramp Configuration -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

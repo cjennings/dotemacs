@@ -1,4 +1,4 @@
-;;; org-drill-config.el --- Org Drill Settings -*- lexical-binding: t; -*-
+;;; org-drill-config.el --- Org Drill Settings -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;;

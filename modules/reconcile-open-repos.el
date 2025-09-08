@@ -1,4 +1,4 @@
-;;; reconcile-open-repos.el --- reconcile open repos -*- lexical-binding: t; -*-
+;;; reconcile-open-repos.el --- reconcile open repos -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;; I have tried to keep this Emacs config as general as possible, and move all

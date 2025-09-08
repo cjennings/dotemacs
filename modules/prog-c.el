@@ -1,4 +1,4 @@
-;;; prog-c --- C Programming Settings and Functionality -*- lexical-binding: t; -*-
+;;; prog-c --- C Programming Settings and Functionality -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

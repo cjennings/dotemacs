@@ -1,4 +1,4 @@
-;;; org-export-config.el --- Org Export Configuration -*- lexical-binding: t; -*-
+;;; org-export-config.el --- Org Export Configuration -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 

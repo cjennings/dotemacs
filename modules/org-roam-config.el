@@ -1,4 +1,4 @@
-﻿;;; org-roam-config.el --- Org-Roam Config -*- lexical-binding: t; -*-
+﻿;;; org-roam-config.el --- Org-Roam Config -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;; Currently a work in progress. The initial version of this was taken from David Wilson:

@@ -1,4 +1,4 @@
-;;; eshell-vterm-config --- Settings for the Emacs Shell -*- lexical-binding: t; -*-
+;;; eshell-vterm-config --- Settings for the Emacs Shell -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

@@ -1,4 +1,4 @@
-;;; custom-functions.el --- My Custom Functions and Keymaps -*- lexical-binding: t; -*-
+;;; custom-functions.el --- My Custom Functions and Keymaps -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

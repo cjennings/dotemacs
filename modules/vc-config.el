@@ -1,4 +1,4 @@
-;;; vc-config.el --- Version Control Configuration -*- lexical-binding: t; -*-
+;;; vc-config.el --- Version Control Configuration -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;; C-x g is my general entry to Magit's version control via the status page.

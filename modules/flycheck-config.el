@@ -1,4 +1,4 @@
-;;; flycheck-config --- Syntax/Grammar Check -*- lexical-binding: t; -*-
+;;; flycheck-config --- Syntax/Grammar Check -*- lexical-binding: t; coding: utf-8; -*-
 ;;  author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

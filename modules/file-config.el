@@ -1,4 +1,4 @@
-;;; file-config.el --- Open Files Using Default OS Handler -*- lexical-binding: t; -*-
+;;; file-config.el --- Open Files Using Default OS Handler -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:

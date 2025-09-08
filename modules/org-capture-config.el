@@ -1,4 +1,4 @@
-;;; org-capture-config.el --- Org Capture Configuration  -*- lexical-binding: t; -*-
+;;; org-capture-config.el --- Org Capture Configuration  -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

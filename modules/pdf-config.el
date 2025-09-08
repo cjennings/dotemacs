@@ -1,4 +1,4 @@
-;;; pdf-config --- PDF Viewer Setup -*- lexical-binding: t; -*-
+;;; pdf-config --- PDF Viewer Setup -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -58,8 +58,8 @@
 (use-package pdf-continuous-scroll-mode
   :ensure nil ;; in custom folder
   :after pdf-tools
-  :hook (pdf-view-mode . pdf-continuous-scroll-mode)
-  :load-path "custom/pdf-continuous-scroll-mode.el")
+  :load-path "custom/pdf-continuous-scroll-mode-latest.el"
+  :hook (pdf-view-mode . pdf-continuous-scroll-mode))
 
 (provide 'pdf-config)
 ;;; pdf-config.el ends here

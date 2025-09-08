@@ -1,4 +1,4 @@
-;;; prog-general --- General Programming Settings -*- lexical-binding: t; -*-
+;;; prog-general --- General Programming Settings -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

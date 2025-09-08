@@ -1,4 +1,4 @@
-;;; record-desktop.el --- Video Record desktop -*- lexical-binding: t; -*-
+;;; record-desktop.el --- Video Record desktop -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;; Use ffmpeg to video record your desktop.

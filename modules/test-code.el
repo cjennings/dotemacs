@@ -1,4 +1,4 @@
-;;; test-code.el --- test code -*- lexical-binding: t; -*-
+;;; test-code.el --- test code -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

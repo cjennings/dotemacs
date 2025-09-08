@@ -1,4 +1,4 @@
-;;; text-config --- Text Settings and Functionality -*- lexical-binding: t; -*-
+;;; text-config --- Text Settings and Functionality -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -109,13 +109,13 @@
 ;; ----------------------------- Visual Fill Column ----------------------------
 ;; text wrapping
 
-(use-package visual-fill-column
-  :defer 0.5
-  :config
-  (setq-default visual-fill-column-center-text nil)
-  (setq-default visual-fill-column-width 100)
-  :hook
-  (visual-line-mode . visual-fill-column-mode))
+;; (use-package visual-fill-column
+;;   :defer 0.5
+;;   :config
+;;   (setq-default visual-fill-column-center-text nil)
+;;   (setq-default visual-fill-column-width 100)
+;;   :hook
+;;   (visual-line-mode . visual-fill-column-mode))
 
 (provide 'text-config)
 ;;; text-config.el ends here

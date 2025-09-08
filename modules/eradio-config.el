@@ -1,4 +1,4 @@
-;;; eradio-config --- Simple Internet Radio Setup -*- lexical-binding: t; -*-
+;;; eradio-config --- Simple Internet Radio Setup -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

@@ -1,4 +1,4 @@
-;;; wrapup --- Functions Run Before Init Completion -*- lexical-binding: t; -*-
+;;; wrapup --- Functions Run Before Init Completion -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

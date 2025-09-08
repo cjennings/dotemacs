@@ -1,4 +1,4 @@
-;;; httpd-config --- Setup for a Simple HTTP Server -*- lexical-binding: t; -*-
+;;; httpd-config --- Setup for a Simple HTTP Server -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

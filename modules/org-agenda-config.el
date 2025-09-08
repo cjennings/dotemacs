@@ -1,4 +1,4 @@
-;;; org-agenda-config --- Org-Agenda/Todo Config -*- lexical-binding: t; -*-
+;;; org-agenda-config --- Org-Agenda/Todo Config -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

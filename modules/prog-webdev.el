@@ -1,4 +1,4 @@
-;;; prog-webdev.el --- Web Development Packages and Settings -*- lexical-binding: t; -*-
+;;; prog-webdev.el --- Web Development Packages and Settings -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;;

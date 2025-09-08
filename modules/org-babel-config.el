@@ -1,4 +1,4 @@
-;;; org-babel-config.el --- Org Babel/Tempo Config -*- lexical-binding: t; -*-
+;;; org-babel-config.el --- Org Babel/Tempo Config -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

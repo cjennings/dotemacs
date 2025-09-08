@@ -1,4 +1,4 @@
-;;; early-init.el ---  -*- lexical-binding: t; coding: utf-8-unix; no-byte-compile: t; -*-
+;;; early-init.el ---  -*- lexical-binding: t; coding: utf-8; no-byte-compile: t; -*-
 
 ;;; Commentary:
 

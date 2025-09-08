@@ -1,4 +1,4 @@
-;;; prog-training.el --- Training -*- lexical-binding: t; -*-
+;;; prog-training.el --- Training -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;;

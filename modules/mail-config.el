@@ -1,4 +1,4 @@
-;;; mail-config --- Settings for Mu4e Email -*- lexical-binding: t; -*-
+;;; mail-config --- Settings for Mu4e Email -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

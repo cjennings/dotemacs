@@ -1,4 +1,4 @@
-;;; prog-python --- Python Specific Setup and Functionality -*- lexical-binding: t; -*-
+;;; prog-python --- Python Specific Setup and Functionality -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

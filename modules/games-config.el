@@ -1,4 +1,4 @@
-;;; games-config.el --- emacs games -*- lexical-binding: t; -*-
+;;; games-config.el --- emacs games -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

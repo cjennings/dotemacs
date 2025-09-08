@@ -1,4 +1,4 @@
-;; auth-config.el --- Configuration for Authentication Utilities -*- lexical-binding: t; -*-
+;; auth-config.el --- Configuration for Authentication Utilities -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

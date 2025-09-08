@@ -1,4 +1,4 @@
-;;; ui-config --- User Interface Preferences -*- lexical-binding: t; -*-
+;;; ui-config --- User Interface Preferences -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

@@ -1,4 +1,4 @@
-;;; erc-config --- Preferences for Emacs Relay Chat (IRC Client) -*- lexical-binding: t; -*-
+;;; erc-config --- Preferences for Emacs Relay Chat (IRC Client) -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

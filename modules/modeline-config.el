@@ -1,4 +1,4 @@
-;;; modeline-config --- Modeline Settings -*- lexical-binding: t; -*-
+;;; modeline-config --- Modeline Settings -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

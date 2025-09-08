@@ -1,4 +1,4 @@
-;;; ui-navigation --- Managing Cursor Placement, Buffers, and Windows -*- lexical-binding: t; -*-
+;;; ui-navigation --- Managing Cursor Placement, Buffers, and Windows -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

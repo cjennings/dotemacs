@@ -1,4 +1,4 @@
-;;; undead-buffers.el --- Bury Rather Than Kill These Buffers -*- lexical-binding: t; -*-
+;;; undead-buffers.el --- Bury Rather Than Kill These Buffers -*- lexical-binding: t; coding: utf-8; -*-
 
 ;;; Commentary:
 ;;

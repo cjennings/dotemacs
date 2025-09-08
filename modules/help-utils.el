@@ -1,4 +1,4 @@
-;;; help-utils --- Help Integrations and Searches -*- lexical-binding: t; -*-
+;;; help-utils --- Help Integrations and Searches -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -34,7 +34,6 @@
 ;; --------------------------- Browse Local Arch Wiki --------------------------
 ;; on Arch: yay (or whatever your AUR package manager is) -S  arch-wiki-docs
 ;; browse the arch wiki topics offline
-
 
 (defun cj/local-arch-wiki-search ()
   "Prompt for an ArchWiki topic and open its local HTML copy in EWW.

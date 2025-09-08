@@ -1,4 +1,4 @@
-;;; latex-config --- Setup for LaTeX and Related Software -*- lexical-binding: t; -*-
+;;; latex-config --- Setup for LaTeX and Related Software -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

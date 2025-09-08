@@ -1,4 +1,5 @@
-;;; ai-directives.el --- Directives required by ai-config.el -*- lexical-binding: t; -*-
+;;; ai-directives.el --- Directives required by ai-config.el -*- lexical-binding: t; coding: utf-8; -*-
+;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 ;;
