@@ -52,46 +52,20 @@
 ;; ------------------------------ Window Splitting -----------------------------
 
 (defun cj/split-and-follow-right ()
-  "Like =ivy-switch-buffer-other-window' but always split horizontally."
+  "Split window horizontally and select a buffer to display."
   (interactive)
-  (if (fboundp 'ivy-switch-buffer-other-window)
-	  (let ((split-height-threshold nil)  ; Disable vertical splitting
-			(split-width-threshold 0))    ; Always prefer horizontal splitting
-		(ivy-switch-buffer-other-window))
-	;; Fallback if ivy is not available
-	(split-window-right)
-	(other-window 1)
-	(switch-to-buffer (other-buffer))))
+  (split-window-right)
+  (other-window 1)
+  (consult-buffer))
 (global-set-key (kbd "M-V") 'cj/split-and-follow-right)
 
 (defun cj/split-and-follow-below ()
-  "Like =ivy-switch-buffer-other-window' but always split vertically."
+  "Split window vertically and select a buffer to display."
   (interactive)
-  (if (fboundp 'ivy-switch-buffer-other-window)
-	  (let ((split-height-threshold 0)  ; Always prefer vertical splitting
-			(split-width-threshold nil)) ; Disable horizontal splitting
-		(ivy-switch-buffer-other-window))
-	;; Fallback if ivy is not available
-	(split-window-below)
-	(other-window 1)
-	(switch-to-buffer (other-buffer))))
+  (split-window-below)
+  (other-window 1)
+  (consult-buffer))
 (global-set-key (kbd "M-H") 'cj/split-and-follow-below)
-
-;; (defun cj/split-and-follow-right ()
-;;   "Open a new window horizontally to the right of the current window.
-;; Open ibuffer in the other window for easy buffer selection."
-;;   (interactive)
-;;   (split-window-right)
-;;   (other-window 1)
-;;   (ibuffer))
-
-;; (defun cj/split-and-follow-below ()
-;;   "Open a new window vertically below the current window.
-;; Open ibuffer in the other window for easy buffer selection."
-;;   (interactive)
-;;   (split-window-below)
-;;   (other-window 1)
-;;   (ibuffer))
 
 ;; ------------------------- Split Window Reorientation ------------------------
 

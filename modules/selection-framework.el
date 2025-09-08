@@ -1,160 +1,234 @@
-;;; selection-framework --- Search/Narrowing and Related Functionality -*- lexical-binding: t; coding: utf-8; -*-
-;; author: Craig Jennings <c@cjennings.net>
+;;; selection-framework.el --- Completion and Selection Framework -*- lexical-binding: t; coding: utf-8; -*-
+;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; This module configures the completion and selection framework using:
+;; - Vertico: Vertical completion UI
+;; - Marginalia: Rich annotations in minibuffer
+;; - Consult: Practical commands based on completing-read
+;; - Orderless: Advanced completion style
+;; - Embark: Contextual actions
+;; - Company: In-buffer completion
+;;
+;; The configuration provides a modern, fast, and feature-rich completion
+;; experience that enhances Emacs' built-in completing-read functionality.
+;;
 ;;; Code:
 
+;; ---------------------------------- Vertico ----------------------------------
+;; Vertical completion UI
 
-;; ---------------------------------- Company ----------------------------------
-;; Company is a modular in-buffer tool-tip-style completion front-end framework.
-
-(use-package company
-  :defer .5
-  :hook
-  (
-   ;; (text-mode . company-mode) ;; also disables in org mode
-   (prog-mode . company-mode)
-   (lisp-interaction-mode . company-mode))
+(use-package vertico
+  :defer 0.5
+  :init
+  (vertico-mode)
   :custom
-  ;; search other buffers =with the same mode= for completion
-  (company-dabbrev-other-buffers t)
-  (company-dabbrev-code-other-buffers t)
-  ;; M-<num> to select an option according to its number.
-  (company-show-numbers t)
-  ;; 2 letters required for completion to activate.
-  (company-minimum-prefix-length 3)
-  ;; don't downcase completions by default.
-  (company-dabbrev-downcase nil)
-  ;; provide proper casing even if I don't.
-  (company-dabbrev-ignore-case t)
-  ;; company completion wait
-  ( company-idle-delay 2)
-  ;; use vscode icons in the margin
-  (company-format-margin-function #'company-vscode-light-icons-margin)
-  ;; no company-mode in shell & eshell
-  (company-global-modes '(not eshell-mode shell-mode)))
-
-(with-eval-after-load 'company
-  (define-key company-active-map
-			  (kbd "TAB")
-			  #'company-complete-common-or-cycle)
-  (define-key company-active-map
-			  (kbd "<backtab>")
-			  (lambda ()
-				(interactive)
-				(company-complete-common-or-cycle -1))))
-
-;; ---------------------------------- Counsel ----------------------------------
-;; part of the counsel/ivy/swiper trio. ivy-enhanced versions of Emacs commands.
-
-(use-package counsel
-  :defer .5
-  :bind
-  ("C-c U" . counsel-unicode-char)
-  :config
-  ;; Remap org-set-tag to counsel-org-tag
-  (with-eval-after-load 'org
-	(define-key org-mode-map [remap org-set-tags-command] 'counsel-org-tag)))
-
-;; ------------------------------------ Ivy ------------------------------------
-;; A generic completion mechanism for Emacs. https://github.com/abo-abo/swiper#ivy
-
-(use-package ivy
-  :defer .5
-  :bind (("C-c u" . ivy-resume))
-  (:map ivy-occur-grep-mode-map
-		("n" . ivy-occur-next-line)
-		("p" . ivy-occur-previous-line)
-		("b" . backward-char)
-		("f" . forward-char)
-		("v" . ivy-occur-press)
-		("RET" . ivy-occur-press))
-  :config
-  (setq ivy-action-wrap t)              ;; wrap next and previous actions
-  (setq ivy-count-format "%d/%d ")      ;; show index as well as count
-  (setq ivy-extra-directories nil)      ;; don't show ./ and ../ in lists
-  (setq ivy-height 13)                  ;; 13 lines high
-  (setq ivy--regex-ignore-order t)      ;; ignore word order
-  (setq ivy-use-selectable-prompt t)    ;; prompt becomes selectable
-  (setq ivy-use-virtual-buffers t)      ;; ivy-switch-buffer shows recently killed buffers
-  (setq ivy-virtual-abbreviate 'full)   ;; show the full virtual file path
-  (setq ivy-wrap t)                     ;; wrap list when finished to start and vice-versa
-  (ivy-mode)
-
-  ;; modify default search behaviour of ivy
-  (setq ivy-re-builders-alist
-		'((t . ivy--regex-plus))))
-
-;; ALL THE ICONS IVY
-;; Shows icons while using Ivy and Counsel
-;; https://github.com/asok/all-the-icons-ivy
-(use-package all-the-icons-ivy
-  :defer .5
-  :after ivy
-  :init (add-hook 'after-init-hook 'all-the-icons-ivy-setup))
-
-;; IVY-RICH
-;; comes with rich transformers for commands from ivy and counsel.
-;; https://github.com/Yevgnen/ivy-rich
-(use-package ivy-rich
-  :after ivy
-  :defer .5
-  :hook (counsel-mode . ivy-rich-mode)
-  :config
-  ;; For better performance
-  ;; Better experience with icons
-  (setq ivy-rich-parse-remote-buffer nil))
-
-
-;; ALL THE ICONS IVY RICH
-;; extracted from Centaur Emacs and leverages ivy-rich and all-the-icons.
-;; https://github.com/seagle0128/all-the-icons-ivy-rich
-(use-package all-the-icons-ivy-rich
-  :defer .5
-  :after (all-the-icons ivy-rich)
-  :config
-  (all-the-icons-ivy-rich-mode 1)
-  (setq all-the-icons-ivy-rich-icon-size 0.8))
-
-;; ----------------------------------- Swiper ----------------------------------
-;; Swiper displays an overview of all matches, leveraging Ivy.
-
-(use-package swiper
-  :defer .5
-  :bind
-  (("C-s" . swiper)
-   ("M-s" . swiper-isearch-thing-at-point))
-  :config
-  (setq swiper-action-recenter t)       ;; recenter after selection
-  (setq swiper-goto-start-of-match t))  ;; jump to the beginning of match after selection
+  (vertico-cycle t)                ; Cycle through candidates
+  (vertico-count 10)               ; Number of candidates to display
+  (vertico-resize nil)             ; Don't resize the minibuffer
+  :bind (:map vertico-map
+			  ("C-j" . vertico-next)    ; Match ivy's C-j behavior
+			  ("C-k" . vertico-previous)
+			  ("C-l" . vertico-insert)  ; Insert current candidate
+			  ("RET" . vertico-exit)
+			  ("C-RET" . vertico-exit-input)
+			  ("M-RET" . minibuffer-force-complete-and-exit)
+			  ("TAB" . minibuffer-complete)))
 
 ;; --------------------------------- Marginalia --------------------------------
-;; Enables richer annotations in the selection framework
+;; Rich annotations in the minibuffer
 
 (use-package marginalia
-  :defer .5
-  ;; Either bind `marginalia-cycle` globally or only in the minibuffer
-  :bind (("M-A" . marginalia-cycle)
-         :map minibuffer-local-map
-         ("M-A" . marginalia-cycle))
-  :config
+  :defer 0.5
+  :init
   (marginalia-mode))
 
-;; --------------------------------- Prescient ---------------------------------
-;; Sorts and filters candidates that appear when you use a package like Ivy or Company.
 
-(use-package prescient
-  :defer .5
+(use-package nerd-icons-completion
+  :defer 0.5
+  :after marginalia
   :config
-  (setq prescient-sort-full-matches-first t))
+  (nerd-icons-completion-mode)
+  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
 
-;; IVY PRESCIENT: Prescient integration with Ivy
-(use-package ivy-prescient
-  :defer .5
-  :after (ivy prescient)
+;; ---------------------------------- Consult ----------------------------------
+;; Practical commands based on completing-read
+
+(use-package consult
+  :defer 0.5
+  :bind (;; C-c bindings (mode-specific-map)
+		 ("C-c h" . consult-history)
+		 ;; C-x bindings (ctl-x-map)
+		 ("C-x M-:" . consult-complex-command)
+		 ("C-x b" . consult-buffer)
+		 ("C-x 4 b" . consult-buffer-other-window)
+		 ("C-x 5 b" . consult-buffer-other-frame)
+		 ("C-x r b" . consult-bookmark)
+		 ("C-x p b" . consult-project-buffer)
+		 ;; M-g bindings (goto-map)
+		 ("M-g e" . consult-compile-error)
+		 ("M-g f" . consult-flymake)
+		 ("M-g g" . consult-goto-line)
+		 ("M-g M-g" . consult-goto-line)
+		 ("M-g o" . consult-outline)
+		 ("M-g m" . consult-mark)
+		 ("M-g k" . consult-global-mark)
+		 ("M-g i" . consult-imenu)
+		 ("M-g I" . consult-imenu-multi)
+		 ;; M-s bindings (search-map)
+		 ("M-s d" . consult-find)
+		 ("M-s D" . consult-locate)
+		 ("M-s g" . consult-grep)
+		 ("M-s G" . consult-git-grep)
+		 ("M-s r" . consult-ripgrep)
+		 ("M-s l" . consult-line)
+		 ("M-s L" . consult-line-multi)
+		 ("M-s k" . consult-keep-lines)
+		 ("M-s u" . consult-focus-lines)
+		 ;; Isearch integration
+		 ("M-s e" . consult-isearch-history)
+		 :map isearch-mode-map
+		 ("M-e" . consult-isearch-history)
+		 ("M-s e" . consult-isearch-history)
+		 ("M-s l" . consult-line)
+		 ("M-s L" . consult-line-multi)
+		 ;; Minibuffer history
+		 :map minibuffer-local-map
+		 ("M-s" . consult-history)
+		 ("M-r" . consult-history))
+
+  :hook (completion-list-mode . consult-preview-at-point-mode)
+
+  :init
+  ;; Optionally configure the register formatting. This improves the register
+  ;; preview for =consult-register', =consult-register-load',
+  ;; =consult-register-store' and the Emacs built-ins.
+  (setq register-preview-delay 0.5
+		register-preview-function #'consult-register-format)
+
+  ;; Optionally tweak the register preview window.
+  (advice-add #'register-preview :override #'consult-register-window)
+
+  ;; Configure other variables and modes
+  (setq xref-show-xrefs-function #'consult-xref
+		xref-show-definitions-function #'consult-xref)
+
   :config
-  (ivy-prescient-mode 1))
+  ;; Configure preview. Default is 'any.
+  (setq consult-preview-key 'any)
+
+  ;; Configure narrowing key
+  (setq consult-narrow-key "<")
+
+  ;; Reset to defaults to avoid issues
+  (setq consult-point-placement 'match-beginning)
+
+  ;; Use Consult for completion-at-point
+  (setq completion-in-region-function #'consult-completion-in-region))
+
+(global-unset-key (kbd "C-s"))
+(global-set-key (kbd "C-s") 'consult-line)
+
+;; --------------------------------- Orderless ---------------------------------
+;; Advanced completion style - provides space-separated, out-of-order matching
+
+(use-package orderless
+  :defer 0.5
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil)
+  (completion-category-overrides '((file (styles partial-completion))))
+  (orderless-matching-styles '(orderless-literal
+							   orderless-regexp
+							   orderless-initialism
+							   orderless-prefixes)))
+
+;; ---------------------------------- Embark -----------------------------------
+;; Contextual actions - provides right-click like functionality
+
+(use-package embark
+  :defer 0.5
+  :bind
+  (("C-." . embark-act)         ;; pick an action to run
+   ("C->" . embark-act-all)     ;; pick an action to run on all candidates
+   ("C-," . embark-dwim)        ;; do what I mean
+   ("C-h B" . embark-bindings)) ;; alternative for =describe-bindings'
+
+  :init
+  ;; Optionally replace the key help with a completing-read interface
+  (setq prefix-help-command #'embark-prefix-help-command)
+
+  :config
+  ;; Hide the mode line of the Embark live/completions buffers
+  (add-to-list 'display-buffer-alist
+			   '("\\=\\*Embark Collect \\(Live\\|Completions\\)\\*"
+				 nil
+				 (window-parameters (mode-line-format . none)))))
+
+;; Consult integration with Embark
+(use-package embark-consult
+  :after (embark consult)
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+
+;; --------------------------- Consult Integration ----------------------------
+;; Additional integrations for specific features
+
+;; Yasnippet integration - replaces ivy-yasnippet
+(use-package consult-yasnippet
+  :after yasnippet
+  :bind ("C-c s i" . consult-yasnippet))
+
+;; Projectile integration - replaces counsel-projectile
+(use-package consult-projectile
+  :after projectile
+  :bind
+  (:map projectile-command-map
+		("b" . consult-projectile-switch-to-buffer)
+		("f" . consult-projectile-find-file)
+		("p" . consult-projectile-switch-project)
+		("d" . consult-projectile-find-dir)
+		("r" . consult-projectile-recentf)))
+
+;; Flycheck integration
+(use-package consult-flycheck
+  :after flycheck
+  :bind (:map flycheck-mode-map
+			  ("C-c ! c" . consult-flycheck)))
+
+;; ---------------------------------- Company ----------------------------------
+;; In-buffer completion (retained from original configuration)
+
+(use-package company
+  :defer 0.5
+  :hook (after-init . global-company-mode)
+  :bind
+  (:map company-active-map
+		("<tab>" . company-complete-selection)
+		("C-n" . company-select-next)
+		("C-p" . company-select-previous))
+  :custom
+  (company-backends '(company-capf company-files company-keywords))
+  (company-idle-delay 2)
+  (company-minimum-prefix-length 2)
+  (company-show-numbers t)
+  (company-tooltip-align-annotations t)
+  (company-tooltip-flip-when-above t)
+  (company-tooltip-limit 10)
+  (company-selection-wrap-around t)
+  (company-require-match nil))
+
+;; Company quickhelp for documentation popups
+(use-package company-quickhelp
+  :after company
+  :config
+  (company-quickhelp-mode))
+
+;; Icons for company
+(use-package company-box
+  :after company
+  :hook (company-mode . company-box-mode))
 
 (provide 'selection-framework)
 ;;; selection-framework.el ends here

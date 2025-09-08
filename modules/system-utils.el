@@ -32,6 +32,17 @@
 (global-set-key (kbd "C-<f10>") #'server-shutdown)
 (global-set-key (kbd "<f10>")     #'save-buffers-kill-terminal)
 
+
+;; ---------------------------- History Persistence ----------------------------
+;; Persist history over Emacs restarts
+
+(use-package savehist
+  :ensure nil  ; built-in
+  :init
+  (savehist-mode)
+  :config
+  (setq savehist-file  "~/.emacs.d/.emacs-history"))
+
 ;; ------------------------ List Buffers With Nerd Icons -----------------------
 
 (global-set-key [remap list-buffers] #'ibuffer)
