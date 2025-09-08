@@ -1,5 +1,84 @@
 * Emacs Open Work
-** DOING [#A] Migrate selection framework                      :enhancement:
+** DOING [#A] Implement Performance Recommendations                    :bug:
+*** Lazy-load configuration modules                      :complex4:impact5:
+Loading every module with `require` forces all code and packages to initialize during startup. Switching to `use-package` with `:defer` or `:commands` loads modules only when their functionality is invoked, greatly reducing startup time.
+#+begin_src emacs-lisp
+(use-package dirvish-config
+  :load-path "modules"
+  :commands (dirvish dirvish-side))
+#+end_src
+*** DONE Defer Dashboard initialization                  :complex2:impact4:
+CLOSED: [2025-09-08 Mon 14:09]
+The dashboard package is loaded eagerly via `:demand`, adding a noticeable delay. Load it after startup and open it on the first idle event instead.
+#+begin_src emacs-lisp
+(use-package dashboard
+  :defer t
+  :hook (emacs-startup . dashboard-open))
+#+end_src
+*** CANCELLED Replace synchronous network ping with non-blocking check :complex3:impact2:
+CLOSED: [2025-09-08 Mon 16:07]
+- State "CANCELLED"  from              [2025-09-08 Mon 16:07]
+`internet-up-p` spawns a blocking `ping` process at startup. Using `make-network-process` avoids shelling out and lets the check run asynchronously.
+#+begin_src emacs-lisp
+(defun internet-up-p (&optional host)
+  "Non-blocking network availability check."
+  (make-network-process
+   :name "net-check" :host (or host "www.google.com") :service 80
+   :sentinel (lambda (proc _)
+               (setq cj/network-available (eq (process-status proc) 'open))
+               (delete-process proc))))
+#+end_src
+
+This actually added 15 seconds to the launch time. 
+*** Postpone package refreshing to idle time             :complex1:impact3:
+Refreshing ELPA archives during startup adds I/O overhead. Defer this check to an idle timer so it runs after Emacs is ready.
+#+begin_src emacs-lisp
+(add-hook 'emacs-startup-hook
+          (lambda () (run-with-idle-timer 60 nil #'package-refresh-contents)))
+#+end_src
+
+*** Enable package quickstart caching                    :complex1:impact2:
+Precomputing autoloads with package quickstart reduces the cost of loading package code.
+#+begin_src emacs-lisp
+(setq package-quickstart t)
+(package-quickstart-refresh)
+#+end_src
+
+*** Byte-compile configuration files                     :complex1:impact2:
+Byte-compiled Emacs Lisp loads faster than source. Recompile the configuration directory when changes are made.
+#+begin_src emacs-lisp
+(byte-recompile-directory user-emacs-directory 0)
+#+end_src
+
+*** Manage garbage collection with GCMH                  :complex1:impact2:
+After startup, `gcmh` dynamically adjusts GC thresholds to minimize pauses without manual tuning.
+#+begin_src emacs-lisp
+(use-package gcmh
+  :hook (after-init . gcmh-mode)
+  :config
+  (setq gcmh-idle-delay 5
+        gcmh-high-cons-threshold (* 16 1024 1024)))
+#+end_src
+
+*** Load Dirvish on demand                               :complex2:impact3:
+`dirvish-config` requires Dirvish during initialization, negating deferral. Let `use-package` autoload the commands and enable overrides when Dired loads.
+#+begin_src emacs-lisp
+(use-package dirvish
+  :commands (dirvish dirvish-side)
+  :hook (dired-mode . dirvish-override-dired-mode))
+#+end_src
+
+*** DONE Start Org-roam lazily                           :complex3:impact3:
+CLOSED: [2025-09-08 Mon 16:10]
+Org-roam and its database sync run at startup. Load Org-roam only when Org is active, and start autosync after initialization.
+#+begin_src emacs-lisp
+(use-package org-roam
+  :after org
+  :commands (org-roam-node-find org-roam-node-insert)
+  :hook (after-init . org-roam-db-autosync-mode))
+#+end_src
+
+** DOING [#A] Migrate selection framework                     :enhancement:
 *** References
 https://github.com/minad/consult/wiki/Auxiliary-packages
 https://www.reddit.com/r/emacs/comments/1aguy8g/how_to_get_consultripgrep_to_remember_previous/
@@ -47,17 +126,17 @@ After running mu4e-view-save-attachments,
 - followed by RET (mu4e-view-save-attachments) to save all attachments,
 - or TAB (vertico-insert) followed by (comma) next to each file you want to save,
 - then RET (vertico-exit), to save selected attachments. 
-** TODO [#A] Custom Function: Delete Whitespace From Region is Broken  :bug:
+** TODO [#A] Custom Function: Delete Whitespace From Region is Broken :bug:
 ** TODO [#B] Implement dwim-shell-command for dirvish workflows :enhancement:
 https://github.com/xenodium/dwim-shell-command
-** TODO [#A] file-config.el cj/xdg-open blocks Emacs process           :bug:
+** TODO [#A] file-config.el cj/xdg-open blocks Emacs process          :bug:
 Should change to non-blocking -- maybe use Emacs internal async?
-** TODO [#A] Make org mode buffers swap with shift-meta        :enhancement:
+** TODO [#A] Make org mode buffers swap with shift-meta       :enhancement:
 (org-shiftmetaright) should be overridden with  (buf-move-right)
 (org-shiftmetaleft) should be overridden with  (buf-move-left)
-** TODO [#A] mu4e: Add "save all attachments"                  :enhancement:
+** TODO [#A] mu4e: Add "save all attachments"                 :enhancement:
 - add to action menu for view message buffer
-** TODO [#A] Mu4e Fixes                                                :bug:
+** TODO [#A] Mu4e Fixes                                               :bug:
 *** DONE [#A] mu4e contacts not expanding on forwarding emails
 CLOSED: [2025-08-29 Fri 16:09]
 removed org-contacts functionaality and it returned!
@@ -69,25 +148,25 @@ https://github.com/jeremy-compostella/org-msg
 *** TODO [#B] Fix up action menu
 - remove xwidgets
 - add "add attachment" to compose message buffer
-** DOING [#A] Org Roam Enhancements                            :enhancement:
+** DOING [#A] Org Roam Enhancements                           :enhancement:
 *** TODO [#B] Org Branch to Org Roam
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
-** TODO [#B] Ability to switch models easily in GPTel          :enhancement:
-** TODO [#B] Add All ERT Tests Into Separate Directory                 :bug:
+** TODO [#B] Ability to switch models easily in GPTel         :enhancement:
+** TODO [#B] Add All ERT Tests Into Separate Directory                :bug:
 Tests should be added to a separate directory rather than the end of each elisp file.
 Gather them together, move them there, and make it easy to run tests per module and workflow.
-** TODO [#B] Add Hugo Blogging Functionality                   :enhancement:
-** TODO [#B] Capture and Refile to drill files                 :enhancement:
+** TODO [#B] Add Hugo Blogging Functionality                  :enhancement:
+** TODO [#B] Capture and Refile to drill files                :enhancement:
 This code actually exists in org-drill-config, but it doesn't seem to work
-** TODO [#B] Change Elfeed to Be About Playing Podcasts        :enhancement:
+** TODO [#B] Change Elfeed to Be About Playing Podcasts       :enhancement:
 ** TODO [#B] Decent HTML exports from org mode with inline css :enhancement:
 *** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
 [[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
 Captured On: [2025-08-18 Mon 14:36]
-** TODO [#B] Dirvish Should Open Not Showing Hidden Files by Default   :bug:
+** TODO [#B] Dirvish Should Open Not Showing Hidden Files by Default  :bug:
 *** 2025-06-07 Sat @ 12:25:28 -0500 It isn't omitting the h switch on directory listings
 No. Didn't help
-** TODO [#B] Emacs Add Difftastic Functionality                :enhancement:
+** TODO [#B] Emacs Add Difftastic Functionality               :enhancement:
 Linux Binary Install
 https://github.com/Wilfred/difftastic
 https://www.wilfred.me.uk/blog/2022/09/06/difftastic-the-fantastic-diff/
@@ -100,7 +179,7 @@ https://github.com/pkryger/difftastic.el
     :vc (:url "https://github.com/pkryger/difftastic.el.git"
               :rev :newest))
 #+end_src
-** TODO [#B] Emacs Add Magit Forge Functionality               :enhancement:
+** TODO [#B] Emacs Add Magit Forge Functionality              :enhancement:
 https://github.com/magit/forge
 https://magit.vc/manual/forge/Setup-for-Githubcom.html
 Example usage from sqrtminusone
@@ -114,8 +193,8 @@ Example usage from sqrtminusone
                                 "gitlab.etu.ru"
                                 forge-gitlab-repository)))
 #+end_src
-** TODO [#B] Emacs error if no file in buffer-and-file operations      :bug:
-** DOING [#B] Eshell Improvements                              :enhancement:
+** TODO [#B] Emacs error if no file in buffer-and-file operations     :bug:
+** DOING [#B] Eshell Improvements                             :enhancement:
 *** TODO [#C] Add mu4e add file as attachment                 :enhancement:
 *** AI Suggested
 **** Improved Directory Navigation with =eshell-z=
@@ -234,7 +313,7 @@ If region is active, use that, otherwise use the current line."
         (eshell/cd dir)
       (error "Not in a project"))))
 #+end_src
-** TODO [#B] Fix Emacs Alarms for Scheduled Events                     :bug:
+** TODO [#B] Fix Emacs Alarms for Scheduled Events                    :bug:
 *** 2025-06-03 Tue @ 15:12:51 -0500 Problem
 Emacs Alarm seems to sound off periodically after the alarm rang the first time.
 It should ring once at the beginning of the event, and that's it.
@@ -283,7 +362,7 @@ espeak "Appointment in $TIME minutes: $MSG"
 #+END_QUOTE
 [[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
 Captured On: [2025-06-19 Thu 12:29]
-** TODO [#B] Get Dupre Theme Working                                   :bug:
+** TODO [#B] Get Dupre Theme Working                                  :bug:
 *** AI Suggestioms
 Here are some ideas for making dupre-theme a bit more “complete” and future-proof as an Emacs theme.  You don’t have to do all of them, of course, but most “modern” themes ship a fair number of these extra faces and integrations.
 **** TODO [#A] Fill out the “standard” Emacs faces
@@ -503,12 +582,12 @@ Below is a small excerpt showing how you might start adding some of the “missi
    `(org-done                 ((t (:foreground ,dupre-green+2 :weight bold))))
    )
 #+end_src
-** TODO [#B] Org Agenda Work                                   :enhancement:
+** TODO [#B] Org Agenda Work                                  :enhancement:
 *** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
 *** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
-** TODO [#B] Review/Implement AI keyboard macros suggestions   :enhancement:
+** TODO [#B] Review/Implement AI keyboard macros suggestions  :enhancement:
 [[file:ai-conversations/keyboard-macro-improvements_20250906-230640.gptel::+STARTUP: showeverything][keyboard macros conversation]]
-** TODO [#C] Emacs: Add Reverso Functionality                  :enhancement:
+** TODO [#C] Emacs: Add Reverso Functionality                 :enhancement:
 https://sqrtminusone.xyz/packages/reverso/
 check his config for a usage example
 Reverso
@@ -523,11 +602,11 @@ reverso.el is a package of mine that provides Emacs interface for https://revers
     (setq reverso-languages '(russian english german))
     (reverso-history-mode))
 #+end_src
-** TODO [#C] Implement Backup file in dirvish/eshell           :enhancement:
+** TODO [#C] Implement Backup file in dirvish/eshell          :enhancement:
 *** Emacs: Backup Current File 📜
 [[http://xahlee.info/emacs/emacs/elisp_make-backup.html][Emacs: Backup Current File 📜]]
 Captured On: [2025-09-03 Wed 11:48]
-** TODO [#C] Org keyword discolored until reapplying theme             :bug:
+** TODO [#C] Org keyword discolored until reapplying theme            :bug:
 * Emacs Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
 *** Specification
