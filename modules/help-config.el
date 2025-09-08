@@ -1,7 +1,18 @@
-;;; help-config --- Help Functionality Configuration -*- lexical-binding: t; -*-
+;;; help-config --- Help Functionality Configuration -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; This module enhances Emacs' built-in help system and documentation features.
+;; It configures:
+;;
+;; 1. Helpful - A better help buffer that provides context, examples, and source code
+;; 2. Man - Man page viewing integration
+;; 3. Info - Enhanced Info mode with custom keybindings and directory configuration
+;;
+;; The configuration prioritizes discoverability and improves the experience of
+;; reading documentation within Emacs. Custom keybindings maintain the C-h prefix
+;; convention for help-related commands.
 
 ;;; Code:
 
@@ -23,9 +34,10 @@
   ("C-h ." . helpful-at-point)
   ("C-h o" . helpful-symbol) ;; overrides 'describe-symbol' keybinding
   :config
-  (setq counsel-describe-function-function #'helpful-callable)
-  (setq counsel-describe-variable-function #'helpful-variable))
-
+  ;; These variables are set by counsel which is loaded in selection-framework.el
+  (with-eval-after-load 'counsel
+	(setq counsel-describe-function-function #'helpful-callable)
+	(setq counsel-describe-variable-function #'helpful-variable)))
 
 ;; ------------------------------------ Man ------------------------------------
 
@@ -34,30 +46,42 @@
   :ensure nil ;; built-in
   :bind ("C-h M" . man))
 
-
 ;; ------------------------------------ Info -----------------------------------
 
 (use-package info
-  :defer 1
   :ensure nil ;; built-in
   :bind
   (:map Info-mode-map
-		("m" . bookmark-set) ;; note:overrides menu selection
-		("M" . Info-menu)) ;; so menu selection goes here
+		("m" . bookmark-set) ;; Rebind 'm' from Info-menu to bookmark-set
+		("M" . Info-menu))   ;; Move Info-menu to 'M' instead
   :preface
-  (defun open-with-info-mode ()
-    (interactive)
-    (let ((file-name (buffer-file-name)))
-      (kill-buffer (current-buffer))
-      (info file-name)))
+  (defun cj/open-with-info-mode ()
+	"Open the current buffer's file in Info mode if it's a valid info file.
+Preserves any unsaved changes and checks if the file exists."
+	(interactive)
+	(let ((file-name (buffer-file-name)))
+	  (when file-name
+		(if (and (file-exists-p file-name)
+				 (string-match-p "\\.info\\'" file-name))
+			(progn
+			  (when (buffer-modified-p)
+				(if (y-or-n-p "Buffer has unsaved changes. Save before opening in Info? ")
+					(save-buffer)
+				  (message "Operation canceled")
+				  (cl-return-from cj/open-with-info-mode)))
+			  (kill-buffer (current-buffer))
+			  (info file-name))
+		  (message "Not a valid info file: %s" file-name)))))
   :hook
   (info-mode . info-persist-history-mode)
-  :init
-  ;; add personal info files in emacs config assets directory
-  ;; BUG: This causes an error on launch
-  (push (concat user-emacs-directory "assets/info") Info-directory-list)
-  (add-to-list 'auto-mode-alist '("\\.info\\'" . open-with-info-mode)))
+  :config
+  ;; Add personal info files in emacs config assets directory
+  (let ((personal-info-dir (concat user-emacs-directory "assets/info")))
+	(when (file-directory-p personal-info-dir)
+	  (add-to-list 'Info-directory-list personal-info-dir))))
+
+(add-to-list 'auto-mode-alist '("\\.info\\'" . cj/open-with-info-mode))
 
 
 (provide 'help-config)
-;;; help-utils.el ends here
+;;; help-config.el ends here
