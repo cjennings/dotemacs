@@ -130,6 +130,16 @@
 (global-unset-key (kbd "C-s"))
 (global-set-key (kbd "C-s") 'consult-line)
 
+(use-package consult-dir
+  :ensure t
+  :bind (("C-x C-d" . consult-dir)
+		 :map vertico-map
+		 ("C-x C-d" . consult-dir)
+		 ("C-x C-j" . consult-dir-jump-file))
+  :config
+  (add-to-list 'consult-dir-sources 'consult-dir--source-tramp-ssh t)
+  (setq consult-dir-project-list-function #'consult-dir-projectile-dirs))
+
 ;; --------------------------------- Orderless ---------------------------------
 ;; Advanced completion style - provides space-separated, out-of-order matching
 
