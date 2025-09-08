@@ -10,7 +10,8 @@
 
 (use-package org-roam
   :after org
-  :defer .5
+  :commands (org-roam-node-find org-roam-node-insert)
+  :hook (after-init . org-roam-db-autosync-mode))
   :custom
   (org-roam-directory roam-dir)
   (org-roam-dailies-directory journals-dir)
