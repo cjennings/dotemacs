@@ -16,8 +16,9 @@
   :bind
   (:map dired-mode-map
         ([remap dired-summary] . which-key-show-major-mode)
-        ("E" . wdired-change-to-wdired-mode)           ;; edit names and properties in buffer
-        ("e" . cj/dired-ediff-files))                  ;; ediff files
+		("E" . wdired-change-to-wdired-mode) ;; edit names and properties in buffer
+		("B"       . cj/make-backup)         ;; copy file as backup with date
+		("D" . cj/dired-ediff-files))        ;; ediff files
   :custom
   (dired-use-ls-dired nil)                             ;; non GNU FreeBSD doesn't support a "--dired" switch
   :config
@@ -243,6 +244,32 @@ Alert if the file is already a JPEG; notify the user when converstion is done."
                       (setq ediff-after-quit-hook-internal nil)
                       (set-window-configuration wnd))))
       (error "No more than 2 files should be marked"))))
+
+;; -------------------------------- Make Backup --------------------------------
+
+(defun cj/make-backup ()
+  "Make a backup copy of current file or dired marked files.
+The backup file name is the original name with the datetime
+.yyyymmddhhmmss~ appended."
+  (interactive)
+  (let ((timestamp (format-time-string "%Y%m%d%H%M%S")))
+	(cond
+	 (buffer-file-name
+	  (let ((backup-name (concat buffer-file-name "." timestamp "~")))
+		(copy-file buffer-file-name backup-name t)
+		(message "Backup saved at: %s" backup-name)))
+
+	 ((eq major-mode 'dired-mode)
+	  (let ((marked-files (dired-get-marked-files)))
+		(if (null marked-files)
+			(message "No files marked for backup")
+		  (dolist (file marked-files)
+			(let ((backup-name (concat file "." timestamp "~")))
+			  (copy-file file backup-name t)
+			  (message "Backup saved at: %s" backup-name)))
+		  (revert-buffer))))
+
+	 (t (user-error "Cannot backup: buffer is not associated with a file or dired")))))
 
 (provide 'dirvish-config)
 ;;; dirvish-config.el ends here
