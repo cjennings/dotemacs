@@ -1,0 +1,77 @@
+* Performance Recommendations (2025-09-08 17:58 UTC)
+
+** Lazy-load configuration modules                                           :complex4:impact5:
+Loading every module with `require` forces all code and packages to initialize during startup. Switching to `use-package` with `:defer` or `:commands` loads modules only when their functionality is invoked, greatly reducing startup time.
+#+begin_src emacs-lisp
+(use-package dirvish-config
+  :load-path "modules"
+  :commands (dirvish dirvish-side))
+#+end_src
+
+** Defer Dashboard initialization                                            :complex2:impact4:
+The dashboard package is loaded eagerly via `:demand`, adding a noticeable delay. Load it after startup and open it on the first idle event instead.
+#+begin_src emacs-lisp
+(use-package dashboard
+  :defer t
+  :hook (emacs-startup . dashboard-open))
+#+end_src
+
+** Replace synchronous network ping with non-blocking check                  :complex3:impact2:
+`internet-up-p` spawns a blocking `ping` process at startup. Using `make-network-process` avoids shelling out and lets the check run asynchronously.
+#+begin_src emacs-lisp
+(defun internet-up-p (&optional host)
+  "Non-blocking network availability check."
+  (make-network-process
+   :name "net-check" :host (or host "www.google.com") :service 80
+   :sentinel (lambda (proc _)
+               (setq cj/network-available (eq (process-status proc) 'open))
+               (delete-process proc))))
+#+end_src
+
+** Postpone package refreshing to idle time                                  :complex1:impact3:
+Refreshing ELPA archives during startup adds I/O overhead. Defer this check to an idle timer so it runs after Emacs is ready.
+#+begin_src emacs-lisp
+(add-hook 'emacs-startup-hook
+          (lambda () (run-with-idle-timer 60 nil #'package-refresh-contents)))
+#+end_src
+
+** Enable package quickstart caching                                         :complex1:impact2:
+Precomputing autoloads with package quickstart reduces the cost of loading package code.
+#+begin_src emacs-lisp
+(setq package-quickstart t)
+(package-quickstart-refresh)
+#+end_src
+
+** Byte-compile configuration files                                         :complex1:impact2:
+Byte-compiled Emacs Lisp loads faster than source. Recompile the configuration directory when changes are made.
+#+begin_src emacs-lisp
+(byte-recompile-directory user-emacs-directory 0)
+#+end_src
+
+** Manage garbage collection with GCMH                                      :complex1:impact2:
+After startup, `gcmh` dynamically adjusts GC thresholds to minimize pauses without manual tuning.
+#+begin_src emacs-lisp
+(use-package gcmh
+  :hook (after-init . gcmh-mode)
+  :config
+  (setq gcmh-idle-delay 5
+        gcmh-high-cons-threshold (* 16 1024 1024)))
+#+end_src
+
+** Load Dirvish on demand                                                   :complex2:impact3:
+`dirvish-config` requires Dirvish during initialization, negating deferral. Let `use-package` autoload the commands and enable overrides when Dired loads.
+#+begin_src emacs-lisp
+(use-package dirvish
+  :commands (dirvish dirvish-side)
+  :hook (dired-mode . dirvish-override-dired-mode))
+#+end_src
+
+** Start Org-roam lazily                                                    :complex3:impact3:
+Org-roam and its database sync run at startup. Load Org-roam only when Org is active, and start autosync after initialization.
+#+begin_src emacs-lisp
+(use-package org-roam
+  :after org
+  :commands (org-roam-node-find org-roam-node-insert)
+  :hook (after-init . org-roam-db-autosync-mode))
+#+end_src
+
