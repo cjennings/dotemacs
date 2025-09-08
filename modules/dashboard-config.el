@@ -8,8 +8,6 @@
 
 ;;; Code:
 
-
-
 ;; ------------------------ Dashboard Bookmarks Override -----------------------
 ;; overrides the bookmark insertion from the dashboard package to provide an
 ;; option that only shows the bookmark name, avoiding the path. Paths are often
@@ -55,38 +53,36 @@
   (interactive)
   (dired-sidebar-hide-sidebar)
   (if (get-buffer "*dashboard*")
-	  (progn
-		(pop-to-buffer "*dashboard*")
-		(delete-other-windows))
-	(dashboard-open)))
+      (progn
+        (pop-to-buffer "*dashboard*")
+        (delete-other-windows))
+    (dashboard-open)))
 
 ;; --------------------------------- Dashboard ---------------------------------
 ;; a useful startup screen for Emacs
 
 (use-package dashboard
-  :demand t ;; needed to startup quickly
-  :init
-  (global-unset-key (kbd "<f4>"))
-  :bind ("<f4>" . cj/display-dashboard)
+  :defer t
+  :hook (emacs-startup . cj/display-dashboard)
   :custom
   (dashboard-projects-backend 'projectile)
 
   (dashboard-item-generators
    '((projects . dashboard-insert-projects)
-	 (bookmarks . dashboard-insert-bookmarks)))
+     (bookmarks . dashboard-insert-bookmarks)))
 
   (dashboard-items '((projects . 5)
-					 (bookmarks . 15)))
+                     (bookmarks . 15)))
 
   (dashboard-startupify-list
    '(dashboard-insert-banner
      dashboard-insert-banner-title
-	 dashboard-insert-newline
-	 dashboard-insert-newline
-	 dashboard-insert-navigator
-	 dashboard-insert-init-info
-	 dashboard-insert-newline
-	 dashboard-insert-newline
+     dashboard-insert-newline
+     dashboard-insert-newline
+     dashboard-insert-navigator
+     dashboard-insert-init-info
+     dashboard-insert-newline
+     dashboard-insert-newline
      dashboard-insert-items
      dashboard-insert-newline))
   :config
@@ -95,7 +91,7 @@
   (dashboard-setup-startup-hook)                                 ;; run dashboard post emacs init
 
   (if (< (length command-line-args) 2)
-	  (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*"))))  ;; don't display dashboard if opening a file
+      (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*"))))  ;; don't display dashboard if opening a file
   (setq dashboard-display-icons-p t)                             ;; display icons on both GUI and terminal
   (setq dashboard-icon-type 'nerd-icons)                         ;; use `nerd-icons' package
   (setq dashboard-center-content t)                              ;; horizontally center dashboard content
@@ -109,33 +105,33 @@
   ;; == navigation
   (setq dashboard-set-navigator t)
   (setq dashboard-navigator-buttons
-		`(((,(nerd-icons-faicon  "nf-fa-envelope")
-			"Email" "Mu4e Email Client"
-			(lambda (&rest _) (mu4e)))
+        `(((,(nerd-icons-faicon  "nf-fa-envelope")
+            "Email" "Mu4e Email Client"
+            (lambda (&rest _) (mu4e)))
 
-		   (,(nerd-icons-faicon "nf-fae-book_open_o")
-			"Ebooks" "Calibre Ebook Reader"
-			(lambda (&rest _) (calibredb)))
+           (,(nerd-icons-faicon "nf-fae-book_open_o")
+            "Ebooks" "Calibre Ebook Reader"
+            (lambda (&rest _) (calibredb)))
 
-		   (,(nerd-icons-mdicon "nf-md-school")
-			"Flashcards" "Org-Drill"
-			(lambda (&rest _) (cj/drill-start)))
+           (,(nerd-icons-mdicon "nf-md-school")
+            "Flashcards" "Org-Drill"
+            (lambda (&rest _) (cj/drill-start)))
 
-		   (,(nerd-icons-faicon "nf-fa-rss_square")
-			"Feeds" "Elfeed Feed Reader"
-			(lambda (&rest _) (elfeed-dashboard)))
+           (,(nerd-icons-faicon "nf-fa-rss_square")
+            "Feeds" "Elfeed Feed Reader"
+            (lambda (&rest _) (elfeed-dashboard)))
 
-		   (,(nerd-icons-faicon "nf-fa-comments")
-			"IRC" "Emacs Relay Chat"
-			(lambda (&rest _) (cj/erc-start-or-switch)))
+           (,(nerd-icons-faicon "nf-fa-comments")
+            "IRC" "Emacs Relay Chat"
+            (lambda (&rest _) (cj/erc-start-or-switch)))
 
-		   ;; (,(nerd-icons-faicon "nf-fae-telegram")
-		   ;; 	"Telegram" "Telega Chat Client"
-		   ;; 	(lambda (&rest _) (telega)))
+           ;; (,(nerd-icons-faicon "nf-fae-telegram")
+           ;;     "Telegram" "Telega Chat Client"
+           ;;     (lambda (&rest _) (telega)))
 
-		   (,(nerd-icons-faicon "nf-fa-folder_o")
-			"Files" "Dirvish File Manager"
-			(lambda (&rest _) (dirvish user-home-dir))))))
+           (,(nerd-icons-faicon "nf-fa-folder_o")
+            "Files" "Dirvish File Manager"
+            (lambda (&rest _) (dirvish user-home-dir))))))
 
   ;; == content
   (setq dashboard-show-shortcuts nil) ;; don't show dashboard item abbreviations
