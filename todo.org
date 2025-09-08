@@ -1,5 +1,5 @@
 * Emacs Open Work
-** TODO [#A] Migrate selection framework                       :enhancement:
+** DOING [#A] Migrate selection framework                      :enhancement:
 *** References
 https://github.com/minad/consult/wiki/Auxiliary-packages
 https://www.reddit.com/r/emacs/comments/1aguy8g/how_to_get_consultripgrep_to_remember_previous/
