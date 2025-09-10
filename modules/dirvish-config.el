@@ -12,7 +12,7 @@
 
 (use-package dired
   :ensure nil ;; built-in
-  :defer 0.5
+  :defer t
   :bind
   (:map dired-mode-map
         ([remap dired-summary] . which-key-show-major-mode)
@@ -96,7 +96,7 @@ Alert if the file is already a JPEG; notify the user when converstion is done."
 ;; ---------------------------------- Dirvish ----------------------------------
 
 (use-package dirvish
-  :defer 0.5
+  :defer t
   :init
   (add-to-list 'load-path (concat user-emacs-directory "elpa/dirvish-2.3.0"))
   (add-to-list 'load-path (concat user-emacs-directory "elpa/dirvish-2.3.0/extensions"))
