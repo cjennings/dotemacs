@@ -17,7 +17,7 @@
 ;; ---------------------------- Magit Configuration ----------------------------
 
 (use-package magit
-  :defer .5
+  :defer t
   :bind ("C-x g" . magit-status)
   :hook
   (magit-log-mode . display-line-numbers-mode)
@@ -39,7 +39,7 @@
 ;; mark changed lines since last commit in the margin
 
 (use-package git-gutter
-  :defer .5
+  :defer t
   :hook (prog-mode . git-gutter-mode)
   :custom
   (git-gutter:modified-sign "~")
@@ -50,7 +50,6 @@
 ;; ------------------------------ Git Timemachine ------------------------------
 ;; walk through revisions of the current file in your buffer
 ;; also: https://blog.binchen.org/posts/new-git-timemachine-ui-based-on-ivy-mode/
-
 
 (defun cj/git-timemachine-show-selected-revision ()
   "Show last (current) revision of file."
@@ -72,14 +71,14 @@
 		(git-timemachine-show-revision (nth index revisions))))))
 
 (defun cj/git-timemachine ()
-  "Open git snapshot with the selected version. Based on ivy-mode."
+  "Open git snapshot with the selected version."
   (interactive)
   (unless (featurep 'git-timemachine)
 	(require 'git-timemachine))
   (git-timemachine--start #'cj/git-timemachine-show-selected-revision))
 
 (use-package git-timemachine
-  :defer .5)
+  :defer t)
 
 ;; --------------------------------- VC Keymap ---------------------------------
 ;; version control keymap
