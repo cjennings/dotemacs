@@ -8,7 +8,7 @@
 ;; --------------------------------- PDF Tools ---------------------------------
 
 (use-package pdf-tools
-  :defer 1
+  :defer t
   :mode (("\\.pdf\\'" . pdf-view-mode))
   :init
   (setq pdf-view-display-size 'fit-width)
