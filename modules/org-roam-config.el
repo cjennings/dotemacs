@@ -6,12 +6,15 @@
 
 ;;; Code:
 
+(require 'user-constants)
+
 ;; ---------------------------------- Org Roam ---------------------------------
 
 (use-package org-roam
   :after org
+  :defer t
   :commands (org-roam-node-find org-roam-node-insert)
-  :hook (after-init . org-roam-db-autosync-mode))
+  :hook (after-init . org-roam-db-autosync-mode)
   :custom
   (org-roam-directory roam-dir)
   (org-roam-dailies-directory journals-dir)
@@ -142,7 +145,6 @@ created nodes are added to the agenda and follow a template defined by
 
   (interactive)
   (cj/org-roam-find-node "Project" "p" (concat roam-dir "templates/project.org")))
-
 
 ;; ---------------------- Org Capture After Finalize Hook ----------------------
 
