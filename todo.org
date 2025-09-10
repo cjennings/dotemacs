@@ -120,22 +120,20 @@ Here's a comprehensive test checklist we should verify after migration:
 - [ ] Search with preview
 - [ ] Occur-like functionality
 *** Mu4e - Save All Attachments Testing
-It's pretty easy if you use vertico+embark.
+It's pretty easy if you use vertico + embark.
 After running mu4e-view-save-attachments,
 - invoke embark-act-all in the completion menu
 - followed by RET (mu4e-view-save-attachments) to save all attachments,
 - or TAB (vertico-insert) followed by (comma) next to each file you want to save,
 - then RET (vertico-exit), to save selected attachments. 
 ** TODO [#A] Custom Function: Delete Whitespace From Region is Broken :bug:
-** TODO [#B] Implement dwim-shell-command for dirvish workflows :enhancement:
+** TODO [#A] Implement dwim-shell-command for dirvish workflows :enhancement:
 https://github.com/xenodium/dwim-shell-command
 ** TODO [#A] file-config.el cj/xdg-open blocks Emacs process          :bug:
 Should change to non-blocking -- maybe use Emacs internal async?
 ** TODO [#A] Make org mode buffers swap with shift-meta       :enhancement:
 (org-shiftmetaright) should be overridden with  (buf-move-right)
 (org-shiftmetaleft) should be overridden with  (buf-move-left)
-** TODO [#A] mu4e: Add "save all attachments"                 :enhancement:
-- add to action menu for view message buffer
 ** TODO [#A] Mu4e Fixes                                               :bug:
 *** DONE [#A] mu4e contacts not expanding on forwarding emails
 CLOSED: [2025-08-29 Fri 16:09]
