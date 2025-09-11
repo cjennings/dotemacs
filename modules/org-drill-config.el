@@ -66,20 +66,34 @@
 							   (drill-dir :maxlevel . 1)))
 	(call-interactively 'org-refile))
 
-
   ;; add useful org drill capture templates
   (require 'custom-functions)
   (cj/merge-list-to-list
    'org-capture-templates
    '(("d" "Drill Question - Web" entry
-      (file (lambda () (completing-read "Choose file: " drill-dir)))
-      "* Item   :drill:\n%?\n** Answer\n%i\nSource: [[%:link][%:description]]\nCaptured On: %U" :prepend t)
-     ("b" "Drill Question - EPUB" entry
-      (file (lambda () (completing-read "Choose file: " drill-dir)))
-      "* Item   :drill:\n%?\n** Answer\n%i\nSource: [[%:link][%(buffer-name (org-capture-get :original-buffer))]]\nCaptured On: %U" :prepend t)
-     ("f" "Drill Question - PDF" entry
-      (file (lambda () (completing-read "Choose file: " drill-dir)))
-      "* Item   :drill:\n%?\n** Answer\n%(org-capture-pdf-active-region)\nSource:[[%L][%(buffer-name (org-capture-get :original-buffer))]]\nCaptured On: %U" :prepend t))))
+	  (file (lambda ()
+			  (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
+				(expand-file-name
+				 (completing-read "Choose file: " files)
+				 drill-dir))))
+	  "* Item   :drill:\n%?\n** Answer\n%i\nSource: [[%:link][%:description]]\nCaptured On: %U" :prepend t)
+
+	 ("b" "Drill Question - EPUB" entry
+	  (file (lambda ()
+			  (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
+				(expand-file-name
+				 (completing-read "Choose file: " files)
+				 drill-dir))))
+	  "* Item   :drill:\n%?\n** Answer\n%i\nSource: [[%:link][%(buffer-name (org-capture-get :original-buffer))]]\nCaptured On: %U" :prepend t)
+
+	 ("f" "Drill Question - PDF" entry
+	  (file (lambda ()
+			  (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
+				(expand-file-name
+				 (completing-read "Choose file: " files)
+				 drill-dir))))
+	  "* Item   :drill:\n%?\n** Answer\n%(cj/org-capture-pdf-active-region)\nSource:[[%L][%(buffer-name (org-capture-get :original-buffer))]]\nCaptured On: %U" :prepend t))))
+
 
 (provide 'org-drill-config)
 ;;; org-drill-config.el ends here.
