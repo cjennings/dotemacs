@@ -15,31 +15,29 @@
   (interactive)
   (let (new-files)
 	;; Start with the inbox and the schedule files.
-	(setq new-files `((,inbox-file . (:maxlevel . 1))
+	(setq new-files '((,inbox-file . (:maxlevel . 1))
 					  (,reference-file . (:maxlevel . 2))
 					  (,schedule-file . (:maxlevel . 1))))
 
-	;; Extend new-files with the project and topic files.
-	(let ((project-and-topic-files (append (cj/org-roam-list-notes-by-tag "Project")
-										   (cj/org-roam-list-notes-by-tag "Topic"))))
-	  (let ((file-rule `(:level . 1)))
-		(dolist (file project-and-topic-files)
-		  (unless (assoc file new-files)
-			(push `(,file . ,file-rule) new-files)))))
+	;; Only extend with org-roam files if org-roam is loaded
+	(when (fboundp 'cj/org-roam-list-notes-by-tag)
+	  (let ((project-and-topic-files (append (cj/org-roam-list-notes-by-tag "Project")
+											 (cj/org-roam-list-notes-by-tag "Topic"))))
+		(let ((file-rule '(:level . 1)))
+		  (dolist (file project-and-topic-files)
+			(unless (assoc file new-files)
+			  (push =(,file . ,file-rule) new-files))))))
 
 	;; Extend new-files with todo.org files in the specified directories.
 	(dolist (dir (list user-emacs-directory code-dir projects-dir))
 	  (let ((todo-files (directory-files-recursively dir "^[Tt][Oo][Dd][Oo]\\.[Oo][Rr][Gg]$")))
-		(let ((file-rule `(:level . 1)))
+		(let ((file-rule '(:level . 1)))
 		  (dolist (file todo-files)
 			(unless (assoc file new-files)
-			  (push `(,file . ,file-rule) new-files))))))
+			  (push =(,file . ,file-rule) new-files))))))
 
 	;; Set org-refile-targets.
 	(setq org-refile-targets (nreverse new-files))))
-
-;; -------------------------------- Org-Refile -------------------------------
-;; used in place of org-refile to ensure the refile targets are rebuilt.
 
 (defun cj/org-refile (&optional ARG DEFAULT-BUFFER RFLOC MSG)
   "Simply rebuilds the refile targets before calling org-refile.
