@@ -190,6 +190,21 @@ org-archive-subtree-default are placed.")
        ([(shift down)]          . [(super down)])
        ([(control shift right)] . [(meta shift +)])
 	   ([(control shift left)]  . [(meta shift -)]))))
+
+  (defun cj/org-narrow-forward ()
+	"Narrow to the next subtree at the same level."
+	(interactive)
+	(widen)
+	(org-forward-heading-same-level 1)
+	(org-narrow-to-subtree))
+
+  (defun cj/org-narrow-backwards ()
+	"Narrow to the previous subtree at the same level."
+	(interactive)
+	(widen)
+	(org-backward-heading-same-level 1)
+	(org-narrow-to-subtree))
+
   :hook
   (org-mode . flyspell-mode)
   (org-mode . turn-on-visual-line-mode)
@@ -199,7 +214,6 @@ org-archive-subtree-default are placed.")
   ;; bug workaround for org-element--get-category: Invalid function: org-element-with-disabled-cache
   ;; https://github.com/doomemacs/doomemacs/issues/7347
   ;;(load-library "org-element.el")
-
 
   (cj/org-general-settings)
   (cj/org-appearance-settings)
