@@ -99,6 +99,7 @@
 (require 'org-drill-config)
 (require 'org-export-config)
 (require 'org-roam-config)
+(require 'org-contacts-config)
 
 ;; ------------------------------- Entertainment -------------------------------
 

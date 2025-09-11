@@ -90,6 +90,9 @@
 (defvar reading-notes-file (expand-file-name "reading_notes.org" roam-dir)
   "The default notes file for org-noter.")
 
+(defvar contacts-file (expand-file-name "contacts.org" sync-dir)
+  "The location of the org file containing contact information.")
+
 ;; ------------------------- Verify Or Create Functions ------------------------
 
 (defun cj/directory-writable-p (dir)
@@ -130,7 +133,8 @@ and portable across different machines."
   (mapc 'cj/verify-or-create-file (list schedule-file
                                         inbox-file
 										article-archive
-										reading-notes=file
+										reading-notes-file
+										contacts-file
                                         reference-file)))
 
 ;; Initialize directories and files when this module is loaded
