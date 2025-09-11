@@ -24,6 +24,8 @@
 ;;; Code:
 
 
+(require 'user-constants)
+
 ;; make org-store-link binding global
 (global-set-key (kbd "C-c l") 'org-store-link)
 
@@ -52,7 +54,7 @@
 (define-key jump-to-keymap (kbd "$")
 			#'(lambda () (interactive) (find-file ledger-file)))
 (define-key jump-to-keymap (kbd "m")
-            #'(lambda () (interactive) (find-file macros-file)))
+			#'(lambda () (interactive) (find-file macros-file)))
 (define-key jump-to-keymap (kbd "n")
             #'(lambda () (interactive) (find-file reading-notes-file)))
 (define-key jump-to-keymap (kbd "I")

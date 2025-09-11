@@ -87,7 +87,7 @@
 (defvar inbox-file (expand-file-name "inbox.org" roam-dir)
   "The location of the org file that serves as the task inbox.")
 
-(defvar reading-notes-file (expand-file-name "20250830141440-reading_notes.org" roam-dir)
+(defvar reading-notes-file (expand-file-name "reading_notes.org" roam-dir)
   "The default notes file for org-noter.")
 
 ;; ------------------------- Verify Or Create Functions ------------------------
@@ -129,7 +129,8 @@ and portable across different machines."
                                        drill-dir))
   (mapc 'cj/verify-or-create-file (list schedule-file
                                         inbox-file
-                                        article-archive
+										article-archive
+										reading-notes=file
                                         reference-file)))
 
 ;; Initialize directories and files when this module is loaded
