@@ -46,6 +46,7 @@
 	(define-key map (kbd "o") #'cj/gptel-change-model)      ;; change AI model
 	(define-key map (kbd "p") #'gptel-system-prompt)        ;; change prompt
 	(define-key map (kbd "s") #'cj/gptel-save-conversation) ;; save conversation
+	(define-key map (kbd "d") #'cj/gptel-delete-conversation) ;; save conversation
 	(define-key map (kbd "l") #'cj/gptel-load-conversation) ;; load and continue conversation
     map)
   "Keymap for AI-related commands (prefix \\<ai-keymap>).
@@ -336,6 +337,42 @@ Offers existing conversation topics as options but allows entering new topics."
 		(cj/gptel--save-buffer-to-file buf filepath)
 		(message "Conversation saved to: %s" filepath)))))
 
+
+
+(with-eval-after-load 'gptel
+  (defun cj/gptel-delete-conversation ()
+	"Delete a saved GPTel conversation file.
+Presents a list of .gptel files for selection and confirms before deletion."
+	(interactive)
+
+	;; Check directory exists
+	(unless (file-exists-p cj/gptel-conversations-directory)
+	  (user-error "Conversations directory doesn't exist: %s"
+				  cj/gptel-conversations-directory))
+
+	;; Get all .gptel files
+	(let* ((files (directory-files cj/gptel-conversations-directory nil "\\.gptel$"))
+		   (files-with-dates
+			(mapcar (lambda (f)
+					  (let* ((full-path (expand-file-name f cj/gptel-conversations-directory))
+							 (mod-time (nth 5 (file-attributes full-path)))
+							 (time-str (format-time-string "%Y-%m-%d %H:%M" mod-time)))
+						(cons (format "%-40s [%s]" f time-str) f)))
+					files)))
+
+	  (unless files
+		(user-error "No saved conversations found in %s"
+					cj/gptel-conversations-directory))
+
+	  ;; Let user select a file
+	  (let* ((selection (completing-read "Delete conversation: " files-with-dates nil t))
+			 (filename (cdr (assoc selection files-with-dates)))
+			 (filepath (expand-file-name filename cj/gptel-conversations-directory)))
+
+		;; Confirm deletion
+		(when (y-or-n-p (format "Really delete %s? " filename))
+		  (delete-file filepath)
+		  (message "Deleted conversation: %s" filename))))))
 
 (with-eval-after-load 'gptel
   (defun cj/gptel-load-conversation ()
