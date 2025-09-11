@@ -33,11 +33,12 @@
 ;; integration, and automatic encryption/decryption of *.gpg files.
 
 (use-package epa
-  :ensure nil                        ;; built-in
-  :defer .5
+  :ensure nil ;; built-in
+  :demand t
   :config
-;;  (setq epg-pinentry-mode 'loopback) ;; emacs request passwords in minibuffer
-  (setq epg-gpg-program "gpg2"))     ;; force use gpg2 (not gpg v.1)
+  (epa-file-enable)
+  (setq epa-pinentry-mode 'loopback)  ;; emacs request passwords in minibuffer
+  (setq epg-gpg-program "gpg2"))  ;; force use gpg2 (not gpg v.1)
 
 
 (provide 'auth-config)
