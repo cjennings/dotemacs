@@ -46,13 +46,17 @@
   (add-to-list 'mu4e-view-actions
 			   '("add contact" . cj/mu4e-action-add-org-contact) t))
 
+
 (defun cj/mu4e-action-add-org-contact (msg)
   "Add contact from email MSG to org-contacts."
   (let* ((from (plist-get msg :from))
 		 (name (or (car (car from)) ""))
 		 (email (cdr (car from)))
 		 (subject (plist-get msg :subject)))
-	(org-capture nil "C")))
+	(let ((cj/contact-name name)
+		  (cj/contact-email email)
+		  (cj/contact-note (or subject "")))
+	  (org-capture nil "C"))))
 
 ;; ---------------------------- Capture Templates ------------------------------
 
@@ -67,8 +71,7 @@
 :BIRTHDAY:
 :NOTE: %^{Note}
 :END:
-Added: %U
-Source: %a" :prepend t)))
+Added: %U")))
 
 ;; Helper functions for capture templates
 (defun cj/org-contacts-template-name ()
@@ -128,9 +131,9 @@ Source: %a" :prepend t)))
 	(when (eq major-mode 'org-mode)
 	  (let ((contact-name (org-entry-get (point) "ITEM")))
 		(org-set-property "ROAM_REFS"
-						 (org-roam-node-id
-						  (org-roam-node-read nil nil nil nil
-											 :initial-input contact-name)))))))
+						  (org-roam-node-id
+						   (org-roam-node-read nil nil nil nil
+											   :initial-input contact-name)))))))
 
 ;; ----------------------------- Birthday Agenda --------------------------------
 
@@ -145,14 +148,73 @@ Source: %a" :prepend t)))
 							 ((org-agenda-overriding-header "Upcoming Birthdays and Anniversaries")
 							  (org-agenda-sorting-strategy '(time-up))))))))
 
+;; ---------------------------- Insert Contact Email ---------------------------
+
+
+(defun cj/org-contacts--prop (entry key)
+  "Return property KEY from org-contacts ENTRY. KEY is an uppercase string, e.g. \"EMAIL\"."
+  (let* ((props (nth 2 entry))
+		 (cell (assoc key props)))
+	(and cell (cdr cell))))
+
+(defun cj/insert-contact-email ()
+  "Select and insert a contact's email address at point."
+  (interactive)
+  (let* ((contacts (org-contacts-db))
+		 (items (delq nil
+					  (mapcar (lambda (e)
+								(let* ((name (car e))
+									   (email (cj/org-contacts--prop e "EMAIL")))
+								  (when (and email (string-match-p "[^[:space:]]" email))
+									(format "%s <%s>" name
+											(car (split-string email "[,;[:space:]]+" t))))))
+							  contacts)))
+		 (selected (completing-read "Contact: " items nil t)))
+	(insert selected)))
+
+;; ------------------------------ Mu4e Integration -----------------------------
+
+
+(defun cj/setup-org-contacts-completion ()
+  "Setup org-contacts as the completion source for email addresses."
+  ;; Clear any existing completion functions first
+  (setq-local completion-at-point-functions nil)
+  ;; Add our custom completion function
+  (add-hook 'completion-at-point-functions
+			#'cj/org-contacts-company-complete
+			nil t))
+
+;; Apply to all relevant modes
+(add-hook 'message-mode-hook #'cj/setup-org-contacts-completion)
+(add-hook 'mu4e-compose-mode-hook #'cj/setup-org-contacts-completion)
+(add-hook 'org-msg-edit-mode-hook #'cj/setup-org-contacts-completion)
+
+;; Also ensure company-mode uses the right backend with proper filtering
+(with-eval-after-load 'company
+  (defun cj/mu4e-compose-company-setup ()
+	;; Use capf with our custom completion function
+	(setq-local company-backends '(company-capf))
+	(setq-local company-idle-delay 0.2)
+	(setq-local company-minimum-prefix-length 1)  ; Changed to 1 for better responsiveness
+	;; Ensure company filters properly
+	(setq-local company-transformers '(company-sort-by-occurrence))
+	;; Make sure company respects our filtering
+	(setq-local company-require-match nil)
+	(setq-local company-frontends '(company-pseudo-tooltip-frontend
+									company-echo-metadata-frontend)))
+
+  (add-hook 'mu4e-compose-mode-hook #'cj/mu4e-compose-company-setup)
+  (add-hook 'org-msg-edit-mode-hook #'cj/mu4e-compose-company-setup))
+
 ;; ---------------------------- Org-Contacts Keymap ----------------------------
 
 
 ;; Keymap for `org-contacts' commands
 (defvar cj/org-contacts-map
   (let ((map (make-sparse-keymap)))
-	(define-key map "f" 'cj/org-contacts-find)    ;; find contact
-	(define-key map "n" 'cj/org-contacts-new)     ;; new contact
+	(define-key map "f" 'cj/org-contacts-find)     ;; find contact
+	(define-key map "n" 'cj/org-contacts-new)      ;; new contact
+	(define-key map "m" 'cj/insert-contact-email)  ;; inserts email from org-contact
 	(define-key map "v" 'cj/org-contacts-view-all) ;; view all contacts
 	map)
   "Keymap for `org-contacts' commands.")
