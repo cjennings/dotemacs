@@ -47,7 +47,8 @@
 ;;   C-; l j  → join lines (or selected region of lines)
 ;;   C-; l J  → join entire paragraph. guesses at the lines that constitute paragraph.
 ;;   C-; l d  → duplicates the line or region
-;;   C-; l r  → remove duplicate lines from the buffer, keepinf the first occurrence.
+;;   C-; l r  → remove duplicate lines from the buffer, keeping the first occurrence.
+;;   C-; l R  → remove lines containing specific text from the region or buffer.
 ;;   C-; l u  → "underline" current line: repeat a chosen character to same length on line below.
 ;;
 ;; C-; m --- Comment Styling & Removal
@@ -538,6 +539,34 @@ If a region is selected, operate on the region. Otherwise, operate on the whole 
               (re-search-forward "^\\(.*\\)\n\\(\\(.*\n\\)*\\)\\1\n" end-marker t))
           (replace-match "\\1\n\\2"))))))
 
+
+(defun cj/remove-lines-containing (text)
+  "Remove all lines containing TEXT.
+If region is active, operate only on the region, otherwise on entire buffer.
+The operation is undoable."
+  (interactive "sRemove lines containing: ")
+  (save-excursion
+	(save-restriction
+	  (let ((region-active (use-region-p))
+			(count 0))
+		(when region-active
+		  (narrow-to-region (region-beginning) (region-end)))
+		(goto-char (point-min))
+		;; Count lines before deletion
+		(while (re-search-forward (regexp-quote text) nil t)
+		  (setq count (1+ count))
+		  (beginning-of-line)
+		  (forward-line))
+		;; Go back and delete
+		(goto-char (point-min))
+		(delete-matching-lines (regexp-quote text))
+		;; Report what was done
+		(message "Removed %d line%s containing '%s' from %s"
+				 count
+				 (if (= count 1) "" "s")
+				 text
+				 (if region-active "region" "buffer"))))))
+
 (defun cj/underscore-line ()
   "Underline the current line by inserting a row of characters below it.
 If the line is empty or contains only whitespace, abort with a message."
@@ -563,7 +592,8 @@ If the line is empty or contains only whitespace, abort with a message."
 (define-key cj/line-and-paragraph-map "j" 'cj/join-line-or-region)
 (define-key cj/line-and-paragraph-map "J" 'cj/join-paragraph)
 (define-key cj/line-and-paragraph-map "d" 'cj/duplicate-line-or-region)
-(define-key cj/line-and-paragraph-map "r" 'cj/remove-duplicate-lines-region-or-buffer)
+(define-key cj/line-and-paragraph-map "R" 'cj/remove-duplicate-lines-region-or-buffer)
+(define-key cj/line-and-paragraph-map "r" 'cj/remove-lines-containing)
 (define-key cj/line-and-paragraph-map "u" 'cj/underscore-line)
 
 ;;; ---------------------------------- Comments ---------------------------------
