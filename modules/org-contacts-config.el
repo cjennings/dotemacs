@@ -216,7 +216,7 @@ Added: %U")))
   (let ((map (make-sparse-keymap)))
 	(define-key map "f" 'cj/org-contacts-find)     ;; find contact
 	(define-key map "n" 'cj/org-contacts-new)      ;; new contact
-	(define-key map "m" 'cj/insert-contact-email)  ;; inserts email from org-contact
+	(define-key map "i" 'cj/insert-contact-email)  ;; inserts email from org-contact
 	(define-key map "v" 'cj/org-contacts-view-all) ;; view all contacts
 	map)
   "Keymap for `org-contacts' commands.")
