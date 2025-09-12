@@ -94,7 +94,7 @@ Binds global M-a (overriding default 'backward-sentence').")
 
   ;; Optional OpenAI backend
   (setq cj/openai-api-key (cj/auth-source-secret "api.openai.com" "apikey"))
-  (defvar gptel-openai-backend
+  (defvar gptel-chatgpt-backend
     (gptel-make-openai
 		"OpenAI - ChatGPT"
       :key cj/openai-api-key
@@ -105,7 +105,7 @@ Binds global M-a (overriding default 'backward-sentence').")
   ;; Named backend list for switching
   (defvar cj/gptel-backends
 	`(("Anthropic - Claude" . ,gptel-claude-backend)
-      ("OpenAI" . ,gptel-openai-backend))
+	  ("OpenAI - ChatGPT" . ,gptel-chatgpt-backend))
     "Alist of GPTel backends for interactive switching.")
 
   (defun cj/gptel-switch-backend ()
@@ -121,7 +121,8 @@ Binds global M-a (overriding default 'backward-sentence').")
             (message "GPTel backend set to: %s" choice))
 		(user-error "Invalid GPTel backend: %s" choice))))
 
-  (setq gptel-backend gptel-claude-backend) ;; use Claude as default
+  ;; (setq gptel-backend gptel-claude-backend) ;; use Claude as default
+  (setq gptel-backend gptel-chatgpt-backend) ;; use ChatGPT as default
 
   (setq gptel-directives
 		`((default     . ,default-directive)
