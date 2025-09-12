@@ -123,10 +123,6 @@ created nodes are added to the agenda and follow a template defined by
 	  :if-new (file+head ,(concat (or subdir "") "%<%Y%m%d%H%M%S>-${slug}.org") "")
 	  :unnarrowed t))))
 
-;; Add the project file to the agenda after capture is finished
-  (add-hook 'org-capture-after-finalize-hook
-			#'cj/org-roam-add-node-to-agenda-files-finalize-hook)
-
 (defun cj/org-roam-find-node-topic ()
   "List nodes of type \=`topic\=` in completing read for selection or creation."
   (interactive)
