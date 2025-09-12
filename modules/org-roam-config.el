@@ -12,7 +12,7 @@
 
 (use-package org-roam
   :after org
-  :defer t
+  :defer 1
   :commands (org-roam-node-find org-roam-node-insert)
   :hook (after-init . org-roam-db-autosync-mode)
   :custom
@@ -37,7 +37,7 @@
 
 	 ("r" "recipe" plain
 	  (function (lambda () (concat roam-dir "templates/recipe.org")))
-	  :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "")
+	  :if-new (file+head "recipes/%<%Y%m%d%H%M%S>-${slug}.org" "")
 	  :unnarrowed t)
 
 	 ("p" "project" plain
@@ -107,28 +107,25 @@ the arguments that org-roam-node-insert expects."
 
 ;; -------------------------- Org Roam Find Functions --------------------------
 
-(defun cj/org-roam-find-node (tag template-key template-file)
+(defun cj/org-roam-find-node (tag template-key template-file &optional subdir)
   "List all nodes of type \='TAG\=' in completing read for selection or creation.
 Interactively find or create an Org-roam node with a given \='TAG\='. Newly
 created nodes are added to the agenda and follow a template defined by
 \='TEMPLATE-KEY\=' and \='TEMPLATE-FILE\='."
 
   (interactive)
-  ;; Add the project file to the agenda after capture is finished
   (add-hook 'org-capture-after-finalize-hook
-            #'cj/org-roam-add-node-to-agenda-files-finalize-hook)
-
-  ;; Select a project file to open, creating it if necessary
+			#'cj/org-roam-add-node-to-agenda-files-finalize-hook)
   (org-roam-node-find
-   nil
-   nil
-   (cj/org-roam-filter-by-tag tag)
-   nil
+   nil nil (cj/org-roam-filter-by-tag tag) nil
    :templates
-   `((,template-key ,tag plain  (file ,template-file)
-					:if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-									   "")
-                    :unnarrowed t))))
+   `((,template-key ,tag plain (file ,template-file)
+	  :if-new (file+head ,(concat (or subdir "") "%<%Y%m%d%H%M%S>-${slug}.org") "")
+	  :unnarrowed t))))
+
+;; Add the project file to the agenda after capture is finished
+  (add-hook 'org-capture-after-finalize-hook
+			#'cj/org-roam-add-node-to-agenda-files-finalize-hook)
 
 (defun cj/org-roam-find-node-topic ()
   "List nodes of type \=`topic\=` in completing read for selection or creation."
@@ -136,9 +133,8 @@ created nodes are added to the agenda and follow a template defined by
   (cj/org-roam-find-node "Topic" "t" (concat roam-dir "templates/topic.org")))
 
 (defun cj/org-roam-find-node-recipe ()
-  "List nodes of type \=`recipe\=` in completing read for selection or creation."
   (interactive)
-  (cj/org-roam-find-node "Recipe" "r" (concat roam-dir "templates/recipe.org")))
+  (cj/org-roam-find-node "Recipe" "r" (concat roam-dir "templates/recipe.org") "recipes/"))
 
 (defun cj/org-roam-find-node-project ()
   "List nodes of type \='project\=' in completing read for selection or creation."
