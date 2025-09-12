@@ -157,5 +157,24 @@ with or without C-, M-, S- modifiers."
 (global-set-key (kbd "C-c M") #'mouse-trap-mode)
 (mouse-trap-mode 1)
 
+;; --------------------- Debug Code For Package Signatures ---------------------
+;; from https://emacs.stackexchange.com/questions/233/how-to-proceed-on-package-el-signature-check-failure
+
+
+;; Set package-check-signature to nil, e.g., M-: (setq package-check-signature nil) RET.
+;; Download the package gnu-elpa-keyring-update and run the function with the same name, e.g., M-x package-install RET gnu-elpa-keyring-update RET.
+;; Reset package-check-signature to the default value allow-unsigned, e.g., M-: (setq package-check-signature 'allow-unsigned) RET.
+
+;; (setq package-check-signature nil)
+;; (setq package-check-signature 'allow-unsigned)
+
+;; ----------------------------- Reset-Auth-Sources ----------------------------
+
+(defun cj/reset-auth-cache ()
+  "Clear Emacs auth-source cache."
+  (interactive)
+  (auth-source-forget-all-cached)
+  (message "Emacs auth-source cache cleared."))
+
 (provide 'test-code)
 ;;; test-code.el ends here.
