@@ -104,16 +104,16 @@
 
 (require 'ai-config)             ;; LLM integration. note: ai-directives.el
 
-;; ------------------------------- Entertainment -------------------------------
-
-(require 'eradio-config)
-(require 'games-config)
-
 ;; ------------------------- Personal Workflow Related -------------------------
 
 (require 'reconcile-open-repos)
 (require 'record-desktop)
 (require 'local-repository)
+
+;; ------------------------------- Entertainment -------------------------------
+
+(require 'eradio-config)
+(require 'games-config)
 
 ;; ---------------------------------- Wrap Up ----------------------------------
 
