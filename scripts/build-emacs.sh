@@ -6,29 +6,87 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-# ---------- Config (override via env) ----------
+#  ------------------------ Config (overwrite via ENV) -----------------------
+
 SRC_DIR="${SRC_DIR:-$HOME/code/emacs-src}"
 EMACS_REPO="${EMACS_REPO:-https://git.savannah.gnu.org/git/emacs.git}"
 CHECKOUT_REF="${CHECKOUT_REF:-emacs-30.2}"
+# CHECKOUT_REF="${CHECKOUT_REF:-636f166cfc8}"
 PREFIX_BASE="${PREFIX_BASE:-$HOME/.local/src/emacs}"
 PREFIX="${PREFIX:-$PREFIX_BASE/${CHECKOUT_REF}}"
-LOG_DIR="${LOG_DIR:-$HOME/.cache/emacs-build-logs}"
+# LOG_DIR="${LOG_DIR:-$HOME/.cache/emacs-build-logs}"
+LOG_DIR="${LOG_DIR:-$HOME/}"
 ENABLE_NATIVE="${ENABLE_NATIVE:-1}"
-WITH_PGTK="${WITH_PGTK:-auto}"
+# WITH_PGTK="${WITH_PGTK:-auto}"
+WITH_PGTK="${WITH_PGTK:-0}"
 JOBS="${JOBS:-auto}"
 EXTRA_CONFIG="${EXTRA_CONFIG:-}"
 
-# ---------- Preflight ----------
+#  --------------------------------- Preflight ---------------------------------
+
 umask 022
 mkdir -p "$LOG_DIR" "$PREFIX_BASE" "$HOME/.local/bin"
 : "${LOGFILE:=$LOG_DIR/emacs-build-$(date +%Y%m%d-%H%M%S)-${CHECKOUT_REF}.log}"
 
 say() { printf '>>> %s\n' "$*" | tee -a "$LOGFILE" ; }
-run() { say "+ $*"; eval "$@" >>"$LOGFILE" 2>&1; }
-on_err(){ ec=$?; echo "ERROR [$ec] - see $LOGFILE" >&2; tail -n 80 "$LOGFILE" >&2 || true; exit "$ec"; }
+run() {
+	say "+ $*"
+	if ! eval "$@" >>"$LOGFILE" 2>&1; then
+		echo "ERROR: Command failed: $*" >&2
+		echo "Last 20 lines of output:" >&2
+		tail -n 20 "$LOGFILE" >&2
+		return 1
+	fi
+}
+
+on_err(){ 
+    ec=$?
+	echo "ERROR [$ec] - Full log at: $LOGFILE" >&2
+	echo "Last 100 lines of log:" >&2
+	tail -n 100 "$LOGFILE" >&2 || true
+	exit "$ec"
+}
+
 trap on_err ERR
 
-# ---------- Clone/update ----------
+#  -------------------------- Arch Linux Dependencies --------------------------
+
+if [[ -r /etc/os-release ]]; then
+  . /etc/os-release
+fi
+
+if [[ "${ID:-}" == "arch" || "${ID_LIKE:-}" == *arch* ]]; then
+  say "Arch Linux detected; checking required build/runtime packages"
+
+  # Base packages needed for the requested configure flags
+  pkgs=(jansson tree-sitter imagemagick mailutils harfbuzz cairo gnutls libxml2 texinfo gtk3)
+
+  # Only if native-compilation is enabled
+  if [[ "${ENABLE_NATIVE:-1}" == "1" ]]; then
+	pkgs+=(libgccjit)
+  fi
+
+  # List packages that are not installed
+  missing="$(pacman -T "${pkgs[@]}" || true)"
+
+  if [[ -z "$missing" ]]; then
+	say "All required packages are already installed."
+  else
+	say "Missing packages: $missing"
+	if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+	  run "sudo -n pacman -Sy --needed --noconfirm $missing"
+	else
+	  say "sudo (passwordless) not available; please install missing packages manually:"
+	  echo "  sudo pacman -Sy --needed $missing"
+	  exit 70
+	fi
+  fi
+else
+  say "Non-Arch system detected; skipping Arch-specific dependency check."
+fi
+
+#  ----------------------------- Clone And Update ----------------------------
+
 if [[ -d "$SRC_DIR/.git" ]]; then
   run "git -C '$SRC_DIR' fetch --tags --prune"
 else
@@ -41,12 +99,14 @@ run "git -C '$SRC_DIR' clean -fdx"
 run "git -C '$SRC_DIR' checkout -f '$CHECKOUT_REF'"
 run "git -C '$SRC_DIR' submodule update --init --recursive || true"
 
-# ---------- Autogen ----------
+#  ---------------------------------- Autogen ----------------------------------
+
 if [[ -x "$SRC_DIR/autogen.sh" ]]; then
   run "cd '$SRC_DIR' && ./autogen.sh"
 fi
 
-# ---------- Configure flags (ARRAY!) ----------
+#  ------------------------------ Configure Flags ------------------------------
+
 conf_flags=(
   "--prefix=${PREFIX}"
   "--with-json"
@@ -60,7 +120,7 @@ fi
 if [[ "$WITH_PGTK" == "yes" ]]; then
   conf_flags+=("--with-pgtk")
 else
-  conf_flags+=("--with-x-toolkit=lucid")
+  conf_flags+=("--with-x-toolkit=gtk3")
 fi
 
 # Native-compilation
@@ -85,7 +145,8 @@ if [[ -n "$EXTRA_CONFIG" ]]; then
   conf_flags+=($EXTRA_CONFIG)
 fi
 
-# ---------- Build & install ----------
+#  ----------------------------- Build And Install -----------------------------
+
 mkdir -p "$PREFIX"
 
 # Temporarily change IFS to space for configure argument expansion
@@ -109,16 +170,44 @@ say "...building info files"
 run "cd '$SRC_DIR' && make install"
 run "cd '$SRC_DIR' && make install-info"
 
-# ---------- Symlinks ----------
+#  --------------------------------- Symlinks --------------------------------
+
 run "ln -sfn '$PREFIX' '$PREFIX_BASE/emacs-current'"
-tmpdir="$(mktemp -d)"
-for exe in "$PREFIX/bin/emacs" "$PREFIX/bin/emacsclient"; do
-  [[ -x "$exe" ]] || continue
-  ln -s "$exe" "$tmpdir/$(basename "$exe")"
+
+# Remove old symlinks first, then create new ones
+for exe in emacs emacsclient; do
+	target="$PREFIX/bin/$exe"
+	link="$HOME/.local/bin/$exe"
+	if [[ -x "$target" ]]; then
+		run "rm -f '$link'"
+		run "ln -s '$target' '$link'"
+	fi
 done
-mv -f "$tmpdir"/* "$HOME/.local/bin/" || { echo "Failed to install shims to ~/.local/bin" >&2; exit 72; }
-rmdir "$tmpdir"
+
+#  ---------------------------------- Wrap Up ----------------------------------
 
 command -v emacs >/dev/null && emacs --version | head -n1 || true
 command -v emacsclient >/dev/null && emacsclient --version | head -n1 || true
+
+#  ----------------------------- Show Build Features ----------------------------
+
+say "Launching Emacs to display version and build features..."
+"$HOME/.local/bin/emacs" -Q --batch --eval '
+(progn
+  (princ (format "Emacs version: %s\n" emacs-version))
+  (princ (format "Build configuration:\n"))
+  (princ (format "  Native compilation: %s\n"
+				 (if (and (fboundp (quote native-comp-available-p))
+						  (native-comp-available-p))
+					 "yes" "no")))
+  (princ (format "  PGTK: %s\n" (if (featurep (quote pgtk)) "yes" "no")))
+  (princ (format "  Tree-sitter: %s\n"
+				 (if (fboundp (quote treesit-available-p)) "yes" "no")))
+  (princ (format "  JSON: %s\n" (if (fboundp (quote json-parse-string)) "yes" "no")))
+  (princ (format "  ImageMagick: %s\n" (if (image-type-available-p (quote imagemagick)) "yes" "no")))
+  (princ (format "  Cairo: %s\n" (if (featurep (quote cairo)) "yes" "no")))
+  (princ (format "\nFull system configuration:\n%s\n" system-configuration))
+  (princ (format "\nConfigured features:\n%s\n" system-configuration-features)))
+' 2>&1 | tee -a "$LOGFILE"
+
 echo "Done. See $LOGFILE"
