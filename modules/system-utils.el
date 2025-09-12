@@ -59,8 +59,8 @@
 
 ;; Customize the scratch buffer
 (defvar scratch-emacs-version-and-system
-  (concat ";; Welcome to Emacs " emacs-version
-		  " running on " system-configuration ".\n"))
+  (concat ";; Emacs " emacs-version
+		  " on " system-configuration ".\n"))
 (defvar scratch-greet
   (concat ";; Emacs ♥ you, " user-login-name ". Happy Hacking!\n\n"))
 (setq initial-scratch-message
