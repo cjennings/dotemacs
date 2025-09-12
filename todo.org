@@ -1,6 +1,7 @@
 * Emacs Open Work
-** DOING [#A] Test and Fix Org-Contacts
-
+** TODO [#A] Web Clips Go in Read Which Should Be Jumpable             :bug:
+** TODO [#A] Fix Org-msg Issue With Undo Outside                       :bug:
+** DOING [#A] Test and Fix Org-Contacts                                :bug:
 *** TODO Consider utility of org-contacts view table
 I doubt I'll use this. 
 *** TODO Consider adding keymap for adding contact to org-roam node
@@ -144,6 +145,9 @@ After running mu4e-view-save-attachments,
 - followed by RET (mu4e-view-save-attachments) to save all attachments,
 - or TAB (vertico-insert) followed by (comma) next to each file you want to save,
 - then RET (vertico-exit), to save selected attachments. 
+** DOING [#A] Org Roam Enhancements                           :enhancement:
+*** TODO [#B] Org Branch to Org Roam
+*** TODO [#B] Add Org Capture Template for Vocabulary Words
 ** TODO [#A] Custom Function: Delete Whitespace From Region is Broken :bug:
 ** TODO [#A] Implement dwim-shell-command for dirvish workflows :enhancement:
 https://github.com/xenodium/dwim-shell-command
@@ -163,10 +167,6 @@ https://github.com/jeremy-compostella/org-msg
 *** TODO [#B] Fix up action menu
 - remove xwidgets
 - add "add attachment" to compose message buffer
-** DOING [#A] Org Roam Enhancements                           :enhancement:
-*** TODO [#B] Org Branch to Org Roam
-*** TODO [#B] Add Org Capture Template for Vocabulary Words
-** TODO [#B] Ability to switch models easily in GPTel         :enhancement:
 ** TODO [#B] Add All ERT Tests Into Separate Directory                :bug:
 Tests should be added to a separate directory rather than the end of each elisp file.
 Gather them together, move them there, and make it easy to run tests per module and workflow.
@@ -366,7 +366,8 @@ A) Code in ~/.emacs.d/init.el
 (start-process "my-appt-notification-app" nil my-appt-notification-app min-to-app msg)
 (dolist (i (number-sequence 0 (1- (length min-to-app))))
 (start-process "my-appt-notification-app" nil my-appt-notification-app (nth i min-to-app) (nth i msg)))))
-B) Code in ~/bin/appt-notification
+
+(;;B) Code in ~/bin/appt-notification
 #!/bin/sh
 TIME="$1"
 MSG="$2"
@@ -396,89 +397,6 @@ Here are some ideas for making dupre-theme a bit more “complete” and future-
 #+end_src
 • Use =custom-theme-set-faces= only once; wrap your =when (>= emacs-major-version…)= inside it rather than nesting top-level.
 • Move your ERT tests into a separate file like =dupre-theme-test.el= so that the main theme file stays lean.
-**** TODO [#A] Fix launch problem with dupre
-***** cj [2025-08-16 23:45:50]
-[[file:.emacs.d/themes/dupre-theme.el::;;; dupre-theme.el --- A dark and elegant theme for Emacs -*- lexical-binding: t -*-][dupre-theme.el]]
-I have an issue launching "emacsclient -c -a ''" with this theme. With the built-in wombat theme, emacsclient launches fine. When I specify this theme to load during launch, emacsclient does not launch.
-Here is what I see in the terminal when launching:
-[25-08-16 23:44:44] cjennings velox:~ [1]
-% emacsclient -c -a ''
-emacsclient: can't find socket; have you started the server?
-emacsclient: To start the server in Emacs, type "M-x server-start".
-#+begin_src shell
-  Warning: due to a long standing Gtk+ bug
-  https://gitlab.gnome.org/GNOME/gtk/issues/221
-  Emacs might crash when run in daemon mode and the X11 connection is unexpectedly lost.
-  Using an Emacs configured with --with-x-toolkit=lucid does not have this problem.
-  .emacs.d/elpa/hydra-0.15.0/hydra.el: Warning: ‘defadvice’ is an obsolete macro (as of 30.1); use ‘advice-add’ or ‘define-advice’
-  Loading delsel (native compiled elisp)...
-  Loading delsel (native compiled elisp)...done
-  [yas] Prepared just-in-time loading of snippets successfully.
-  Starting new Ispell process aspell with en_US dictionary... \
-           Starting new Ispell process aspell with en_US dictionary...done
-  Starting Emacs daemon.
-  Emacs daemon should have started, trying to connect again
-  Waiting for Emacs...
-  [25-08-16 23:44:56] cjennings velox:~
-  % sudo killall emacs
-#+end_src
-Is there something about how this theme is written that may be causing this? If it's unlikely, how would you recommend I diagnose this problem?
-***** ChatGPT: o4-mini [2025-08-16 23:51:03]
-It turns out that nothing mystical is happening in your =dupre-theme.el= that would prevent the Emacs server from creating its socket.  When =emacsclient= says:
-emacsclient: can't find socket; have you started the server?
-it really does mean “there is no running Emacs –daemon laying down =<…>/server/= for me to talk to.”  By itself, loading a custom theme (even one with a few Unicode ellipses or =display-graphic-p= branches) will not stop the server socket from being created.  What is much more often the culprit is:
-1.  Mis-using =emacsclient -a ''= so that it never actually starts the server, or
-2.  Having a startup error in your init file (or theme) that aborts =server-start= before the socket ever gets written.
-Here is how I’d go about diagnosing (and fixing) the situation:
-1)  Make sure you can start Emacs –daemon cleanly, /without/ any of your custom code.
-   From a shell, run
-   emacs --daemon --debug-init --eval "(message \"daemon ok\")"
-   – you should see a process stick around, and if you look at =~/.emacs.d/server/= you should find a valid socket file.
-   If that does not happen, Emacs itself is aborting in your init.  Remove or comment out your calls to =load-theme=, your theme-specific code, all your =custom-set-…= blocks, and any other ELisp until you can get a clean daemon start.  Once that is rock-solid, re-introduce your theme.
-2)  Once you can start the daemon by hand, verify that =emacsclient -c= can actually talk to it:
-   emacsclient -c -n
-   The =-n= is “don’t wait for the client buffer to finish,” so you’ll get your GUI frame immediately.  If that works, the server is up and your sockets are good.
-3)  If you /really/ want =emacsclient -c -a ''= to both start Emacs –daemon /and/ immediately pop a graphical frame, you have two choices:
-   •  Let =-a= fall back to =emacs --daemon=.  On many platforms simply omitting the =-a= will do this.
-   •  Explicitly tell it:
-   emacsclient -c -a "emacs --daemon"  # note the command in quotes
-   On macOS/Homebrew, for instance, people often do
-   alias ec='emacsclient -c -a "emacs --daemon"'
-   so that if there is no server, emacsclient will shell out to =emacs --daemon=, launch it, and /then/ connect.
-4)  If you still suspect your theme is triggering a startup error (and killing the daemon before it gets to =(server-start)=), you can sprinkle a tiny bit of ELisp into your init:
-   #+begin_src elisp
-     ;; very early in ~/.emacs or init.el
-     (setq debug-on-error t)
-     (add-hook 'after-init-hook
-               (lambda ()
-                 (message "finished init; about to (server-start)")))
-     (require 'server)
-     (unless (server-running-p)
-       (server-start))
-   #+end_src
-   Then run:
-   emacs --daemon --debug-init
-   and watch =~/.emacs.d/server/server= get created or watch the =*Messages*= buffer or your =~/.emacs.d/emacs-debug.log= (if you redirect =--debug-init= output).  If there is a hard error in your theme, you will get a backtrace in your =*Backtrace*= buffer.
-5)  Finally, a sanity check for your theme file.  Launch Emacs /without/ your init:
-   emacs -Q
-   Then:
-   M-x load-file RET /path/to/dupre-theme.el RET
-   M-x load-theme RET dupre RET
-   If this produces any errors or warnings in =*Messages*= or =*Warnings*=, you have your smoking gun.
----
-Summary
--------
-•  *The theme itself isn’t going to silently block server-socket creation.*
-•  *You almost certainly have either:*
-–  A mis-invocation of =emacsclient -a ''= so that it never starts Emacs –daemon.
-–  A genuine startup error in your init or in the theme that kills Emacs before =(server-start)= runs.
-•  *Use*
-emacs --daemon --debug-init
-plus removing chunks of your init until you find the offending form.
-•  *Test your theme in a vanilla Emacs (=-Q=)* to see any compile/load errors.
-Once you have a clean =emacs --daemon= up and running you will find that
-emacsclient -c   # or with your favorite fallback: -a "emacs --daemon"
-just works, whether you are on wombat, solarized, or good old dupre.
 **** TODO [#B] Make sure you define a “minimum package” set of faces so that folks don’t see glaring unstyled text in any part of Emacs, even if they never install extra packages.
 **** TODO [#B] Improve terminal support:
 • Detect true-color (=(display-graphic-p)=) vs 256-color vs 16-color and fall-back gracefully.
@@ -617,11 +535,7 @@ reverso.el is a package of mine that provides Emacs interface for https://revers
     (setq reverso-languages '(russian english german))
     (reverso-history-mode))
 #+end_src
-** TODO [#C] Implement Backup file in dirvish/eshell          :enhancement:
-*** Emacs: Backup Current File 📜
-[[http://xahlee.info/emacs/emacs/elisp_make-backup.html][Emacs: Backup Current File 📜]]
-Captured On: [2025-09-03 Wed 11:48]
-** TODO [#C] Org keyword discolored until reapplying theme            :bug:
+** TODO [#C] Org Keyword Discolored Until Reapplying Theme            :bug:
 * Emacs Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
 *** Specification
