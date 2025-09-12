@@ -1,4 +1,22 @@
 * Emacs Open Work
+** DOING [#A] Test and Fix Org-Contacts
+
+*** TODO Consider utility of org-contacts view table
+I doubt I'll use this. 
+*** TODO Consider adding keymap for adding contact to org-roam node
+*** Tests
+- [X] Complete addresses with org-contact in to, cc, bcc
+- [ ] Complete addresses with new org-contact in to, cc, bcc
+- [ ] Complete with forwards/replies in to, cc, bcc
+- [ ] Add contact from mail (with new native mu4e function)
+- [ ] Create contact via org-contacts capture template "C"
+- [ ] Insert a contact in any buffer via keymap C-c C i
+- [ ] Add a new contact from anywhere via keymap C-c C n
+- [ ] Look up a contact from anywhere via keymap C-c C f
+- [ ] View all contacts from anywhere via keymap C-c C v
+- [ ] Verify birthdays showing on agenda
+- [ ] Verify birthdays showing on agenda after adding new contact
+- [ ] Link a contact to an org-roam node (cj/org-contacts-link-to-roam)
 ** DOING [#A] Implement Performance Recommendations                    :bug:
 *** Lazy-load configuration modules                      :complex4:impact5:
 Loading every module with `require` forces all code and packages to initialize during startup. Switching to `use-package` with `:defer` or `:commands` loads modules only when their functionality is invoked, greatly reducing startup time.
@@ -142,7 +160,6 @@ removed org-contacts functionaality and it returned!
 CLOSED: [2025-08-30 Sat 12:12]
 https://github.com/jeremy-compostella/org-msg
 *** TODO [#A] Fix org-msg barfing when replying to html file
-*** TODO [#A] Fix org-contacts functionality
 *** TODO [#B] Fix up action menu
 - remove xwidgets
 - add "add attachment" to compose message buffer
