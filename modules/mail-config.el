@@ -62,6 +62,13 @@ Prompts user for the action when executing."
   (setq mu4e-change-filenames-when-moving t)                                ;; avoid gmail dup UID issues: https://goo.gl/RTCgVa
   (setq mu4e-completing-read-function 'completing-read)                     ;; use generic completing read, rather than ido
   (setq mu4e-compose-context-policy 'ask)                                   ;; ask for context if no context matches
+
+  ;; don't complete from previous mail (use org-contacts only)
+  (setq mu4e-compose-complete-addresses nil)  ; Don't use mu4e's address completion
+  (setq mu4e-compose-complete-only-personal nil)  ; This won't matter but set for clarity
+  (setq mu4e-compose-complete-only-after nil)  ; Disable date-based filtering
+
+
   ;; (setq mu4e-compose-format-flowed t)                                       ;; plain text mails must flow correctly for recipients
   (setq mu4e-compose-keep-self-cc t)                                        ;; keep me in the cc list
   (setq mu4e-compose-signature-auto-include nil)                            ;; don't include signature by default
