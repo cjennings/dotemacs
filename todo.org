@@ -1,10 +1,11 @@
 * Emacs Open Work
 ** TODO [#A] Web Clips Go in Read Which Should Be Jumpable             :bug:
+
 ** TODO [#A] Fix Org-msg Issue With Undo Outside                       :bug:
 ** DOING [#A] Test and Fix Org-Contacts                                :bug:
 *** TODO Consider utility of org-contacts view table
 I doubt I'll use this. 
-*** TODO Consider adding keymap for adding contact to org-roam node
+*** TODO Consider Adding Keymap for Adding Contact to Org-roam Node
 *** Tests
 - [X] Complete addresses with org-contact in to, cc, bcc
 - [ ] Complete addresses with new org-contact in to, cc, bcc
@@ -18,7 +19,7 @@ I doubt I'll use this.
 - [ ] Verify birthdays showing on agenda
 - [ ] Verify birthdays showing on agenda after adding new contact
 - [ ] Link a contact to an org-roam node (cj/org-contacts-link-to-roam)
-** DOING [#A] Implement Performance Recommendations                    :bug:
+** DOING [#B] Implement Performance Recommendations                    :bug:
 *** Lazy-load configuration modules                      :complex4:impact5:
 Loading every module with `require` forces all code and packages to initialize during startup. Switching to `use-package` with `:defer` or `:commands` loads modules only when their functionality is invoked, greatly reducing startup time.
 #+begin_src emacs-lisp
@@ -536,6 +537,8 @@ reverso.el is a package of mine that provides Emacs interface for https://revers
     (reverso-history-mode))
 #+end_src
 ** TODO [#C] Org Keyword Discolored Until Reapplying Theme            :bug:
+** TODO [#C] Emacs: org project should be yellow or perhaps green like project
+** TODO [#A] Projectile switch should leave you at magit or todo
 * Emacs Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
 *** Specification
