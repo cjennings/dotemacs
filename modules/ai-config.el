@@ -121,8 +121,8 @@ Binds global M-a (overriding default 'backward-sentence').")
             (message "GPTel backend set to: %s" choice))
 		(user-error "Invalid GPTel backend: %s" choice))))
 
-  ;; (setq gptel-backend gptel-claude-backend) ;; use Claude as default
-  (setq gptel-backend gptel-chatgpt-backend) ;; use ChatGPT as default
+  (setq gptel-backend gptel-claude-backend) ;; use Claude as default
+  ;; (setq gptel-backend gptel-chatgpt-backend) ;; use ChatGPT as default
 
   (setq gptel-directives
 		`((default     . ,default-directive)
@@ -378,7 +378,6 @@ Offers existing conversation topics as options but allows entering new topics."
         ;; Save the buffer
         (cj/gptel--save-buffer-to-file buf filepath)
         (message "Conversation saved to: %s" filepath)))))
-
 
 
 (with-eval-after-load 'gptel
