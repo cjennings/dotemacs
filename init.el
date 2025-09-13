@@ -65,9 +65,10 @@
 (require 'calibredb-epub-config) ;; ebook reader/manager settings
 (require 'dashboard-config)      ;; the nice landing page with links
 (require 'dirvish-config)        ;; file manager configuration
+(require 'dwim-shell-commands)   ;; shell commands brought to dirvish/dired
 (require 'elfeed-config)
 (require 'erc-config)            ;; erc allows access to irc
-(require 'eww-config)
+(require 'eww-confi`g)
 (require 'httpd-config)
 (require 'mail-config)           ;; email using mu4e and org-msg
 (require 'markdown-config)
@@ -122,6 +123,6 @@
 ;; ---------------------------------- In Test ----------------------------------
 
 (require 'test-code)
-(require 'jumper)
+;;(require 'jumper)
 
 ;;; init.el ends here
