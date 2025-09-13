@@ -67,6 +67,9 @@
   (setq org-log-done  'time)
   (setq org-agenda-timegrid-use-ampm t)
 
+  (when (fboundp 'cj/build-org-refile-targets)
+	(cj/build-org-refile-targets))
+
   ;; remove/disable if performance slows
   ;; (setq org-element-use-cache nil) ;; disables caching org files
 
@@ -152,27 +155,29 @@ created nodes are added to the agenda and follow a template defined by
     (with-current-buffer (org-capture-get :buffer)
       (add-to-list 'org-agenda-files (buffer-file-name)))))
 
-;; -------------------------------- Capture Task -------------------------------
+;; --------------------- Capture Task Into Org-Roam Project --------------------
+;; here for reference. currently unused as projects have asset files
+;; which means I need them git-versioned and sync'd to remote for backup.
 
-(defun cj/org-roam-capture-task-into-project ()
-  "Create a new project and add a task immediately to it."
-  (interactive)
-  ;; Add the project file to the agenda after capture is finished
-  (add-hook 'org-capture-after-finalize-hook
-            #'cj/org-roam-add-node-to-agenda-files-finalize-hook)
+;; (defun cj/org-roam-capture-task-into-roam-project ()
+;;   "Create a new project and add a task immediately to it."
+;;   (interactive)
+;;   ;; Add the project file to the agenda after capture is finished
+;;   (add-hook 'org-capture-after-finalize-hook
+;;             #'cj/org-roam-add-node-to-agenda-files-finalize-hook)
 
-  ;; Capture the new task, creating the project file if necessary
-  (org-roam-capture-
-   :node (org-roam-node-read
-          nil
-          (cj/org-roam-filter-by-tag "Project"))
-   :templates '(("p" "project" plain "** TODO %?"
-                 :if-new (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
-                                        "#+TITLE: ${title}
-#+CATEGORY: ${title}
-#+FILETAGS: Project"
-                                        ("${title}"))))))
-(global-set-key (kbd "C-c n t") #'cj/org-roam-capture-task-into-project)
+;;   ;; Capture the new task, creating the project file if necessary
+;;   (org-roam-capture-
+;;    :node (org-roam-node-read
+;;           nil
+;;           (cj/org-roam-filter-by-tag "Project"))
+;;    :templates '(("p" "project" plain "** TODO %?"
+;;                  :if-new (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
+;;                                         "#+TITLE: ${title}
+;; #+CATEGORY: ${title}
+;; #+FILETAGS: Project"
+;;                                         ("${title}"))))))
+;; (global-set-key (kbd "C-c n T") #'cj/org-roam-capture-task-into-roam-project)
 
 ;; ------------------------ Org Roam Copy Done To Daily ------------------------
 

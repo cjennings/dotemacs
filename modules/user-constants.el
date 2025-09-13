@@ -93,6 +93,10 @@
 (defvar contacts-file (expand-file-name "contacts.org" sync-dir)
   "The location of the org file containing contact information.")
 
+(defvar webclipped-file (expand-file-name "webclipped.org" sync-dir)
+  "The location of the org file that keeps webclips to read.
+For more information, see org webclipper section of org-capture-config.el")
+
 ;; ------------------------- Verify Or Create Functions ------------------------
 
 (defun cj/directory-writable-p (dir)
@@ -135,6 +139,7 @@ and portable across different machines."
 										article-archive
 										reading-notes-file
 										contacts-file
+										webclipped-file
                                         reference-file)))
 
 ;; Initialize directories and files when this module is loaded

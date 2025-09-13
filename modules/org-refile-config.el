@@ -10,7 +10,6 @@
 ;; - adds project files in org-roam to the refile targets
 ;; - adds todo.org files in subdirectories of the code and project directories
 
-
 (defun cj/build-org-refile-targets ()
   "Build =org-refile-targets=."
   (interactive)
@@ -19,8 +18,9 @@
 		  (cons inbox-file     '(:maxlevel . 1))
 		  (cons reference-file '(:maxlevel . 2))
 		  (cons schedule-file  '(:maxlevel . 1)))))
-	;; Extend with org-roam files if available.
-	(when (fboundp 'cj/org-roam-list-notes-by-tag)
+	;; Extend with org-roam files if available AND org-roam is loaded
+	(when (and (fboundp 'cj/org-roam-list-notes-by-tag)
+			   (fboundp 'org-roam-node-list))  ; <-- Add this check
 	  (let* ((project-and-topic-files
 			  (append (cj/org-roam-list-notes-by-tag "Project")
 					  (cj/org-roam-list-notes-by-tag "Topic")))
@@ -37,6 +37,7 @@
 		  (unless (assoc file new-files)
 			(push (cons file file-rule) new-files)))))
 	(setq org-refile-targets (nreverse new-files))))
+
 (add-hook 'emacs-startup-hook #'cj/build-org-refile-targets)
 
 (defun cj/org-refile (&optional ARG DEFAULT-BUFFER RFLOC MSG)

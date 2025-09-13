@@ -56,7 +56,9 @@
 (define-key jump-to-keymap (kbd "m")
 			#'(lambda () (interactive) (find-file macros-file)))
 (define-key jump-to-keymap (kbd "n")
-            #'(lambda () (interactive) (find-file reading-notes-file)))
+			#'(lambda () (interactive) (find-file reading-notes-file)))
+(define-key jump-to-keymap (kbd "w")
+			#'(lambda () (interactive) (find-file webclipped-file)))
 (define-key jump-to-keymap (kbd "I")
 			#'(lambda () (interactive) (find-file emacs-init-file)))
 

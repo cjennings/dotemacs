@@ -103,10 +103,10 @@ Captured On: %U"
 
 		  ;; requires cj/org-web-clipper function defined above
 		  ("w" "Web Page Clipper" entry
-		   (file+headline inbox-file "To Read")
+		   (file+headline webclipped-file "Webclipped Inbox")
 		   "* %a\nURL: %L\nCaptured On:%U\n%(cj/org-webpage-clipper)\n"
 		   :prepend t :immediate-finish t)
-		  
+
           )) ;; end setq
   ) ;; end use-package org-protocol
 
