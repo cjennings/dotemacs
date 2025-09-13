@@ -190,17 +190,6 @@
   :after yasnippet
   :bind ("C-c s i" . consult-yasnippet))
 
-;; Projectile integration - replaces counsel-projectile
-(use-package consult-projectile
-  :after projectile
-  :bind
-  (:map projectile-command-map
-		("b" . consult-projectile-switch-to-buffer)
-		("f" . consult-projectile-find-file)
-		("p" . consult-projectile-switch-project)
-		("d" . consult-projectile-find-dir)
-		("r" . consult-projectile-recentf)))
-
 ;; Flycheck integration
 (use-package consult-flycheck
   :after flycheck
