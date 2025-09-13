@@ -228,14 +228,14 @@ is created.  A message is displayed when done."
 	(kill-new contents)
     (message "Buffer contents copied to kill ring")))
 
-(defun cj/clear-to-end-of-buffer ()
+(defun cj/clear-to-bottom-of-buffer ()
   "Delete all text from point to the end of the current buffer.
 This does not save the deleted text in the kill ring."
   (interactive)
   (delete-region (point) (point-max))
   (message "Buffer contents removed to the end of the buffer."))
 
-(defun cj/clear-to-beginning-of-buffer ()
+(defun cj/clear-to-top-of-buffer ()
   "Delete all text from point to the end of the current buffer.
 This does not save the deleted text in the kill ring."
   (interactive)
@@ -250,8 +250,9 @@ This does not save the deleted text in the kill ring."
 (define-key cj/buffer-and-file-map "r" 'cj/rename-buffer-and-file)
 (define-key cj/buffer-and-file-map "d" 'cj/delete-buffer-and-file)
 (define-key cj/buffer-and-file-map "c" 'cj/copy-whole-buffer)
-(define-key cj/buffer-and-file-map "e" 'cj/clear-to-end-of-buffer)
-(define-key cj/buffer-and-file-map "b" 'cj/clear-to-beginning-of-buffer)
+(define-key cj/buffer-and-file-map "t" 'cj/clear-to-top-of-buffer)
+(define-key cj/buffer-and-file-map "b" 'cj/clear-to-bottom-of-buffer)
+(define-key cj/buffer-and-file-map "x" 'erase-buffer)
 (define-key cj/buffer-and-file-map "l" 'cj/copy-link-to-buffer-file)
 
 ;;; ---------------------- Whitespace Operations And Keymap ---------------------
