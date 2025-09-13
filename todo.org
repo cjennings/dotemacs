@@ -1,6 +1,4 @@
 * Emacs Open Work
-** TODO [#A] Web Clips Go in Read Which Should Be Jumpable             :bug:
-
 ** TODO [#A] Fix Org-msg Issue With Undo Outside                       :bug:
 ** DOING [#A] Test and Fix Org-Contacts                                :bug:
 *** TODO Consider utility of org-contacts view table
@@ -19,6 +17,76 @@ I doubt I'll use this.
 - [ ] Verify birthdays showing on agenda
 - [ ] Verify birthdays showing on agenda after adding new contact
 - [ ] Link a contact to an org-roam node (cj/org-contacts-link-to-roam)
+** DOING [#A] Migrate Selection Framework                      :enhancement:
+*** References
+https://github.com/minad/consult/wiki/Auxiliary-packages
+https://www.reddit.com/r/emacs/comments/1aguy8g/how_to_get_consultripgrep_to_remember_previous/
+*** Auxiliary Packages to Explore
+https://gitlab.com/OlMon/consult-flyspell
+https://github.com/ghosty141/consult-git-log-grep
+https://github.com/minad/affe
+*** Errors to Fix
+**** TODO Git Timemachine No Longer Displays in Descending Time Order
+**** TODO Switching Project No Longer Brings Up Project File
+*** Manual Testing
+Here's a comprehensive test checklist we should verify after migration:
+**** Core Functionality Tests
+- [ ] =M-x= (execute-extended-command) with rich annotations
+- [ ] =C-x C-f= (find-file) with file preview
+- [ ] =C-x b= (switch-to-buffer) with buffer annotations
+- [ ] =C-s= (isearch) replacement with consult-line
+- [ ] =C-h f= (helpful-callable) with completing-read
+- [ ] =C-h v= (helpful-variable) with completing-read
+**** Project/File Navigation Tests
+- [ ] =C-c p f= (projectile-find-file)
+- [ ] =C-c p p= (projectile-switch-project) 
+- [ ] =C-c p G= (projectile-ripgrep)
+- [ ] Recent files access
+- [ ] Bookmarks
+**** Window/Buffer Management Tests
+- [ ] =M-V= (cj/split-and-follow-right) - buffer selection in new window
+- [ ] =M-H= (cj/split-and-follow-below) - buffer selection in new window
+- [ ] Kill-ring browsing
+- [ ] Imenu navigation
+**** Integration Tests
+- [ ] =C-c s i= (ivy-yasnippet → consult-yasnippet)
+- [ ] Git timemachine revision selection
+- [ ] Helpful integration (counsel-describe-/ functions)
+- [ ] Projectile integration
+**** Search/Replace Tests
+- [ ] In-buffer search 
+- [ ] Project-wide search
+- [ ] Search with preview
+- [ ] Occur-like functionality
+*** Mu4e - Save All Attachments Testing
+It's pretty easy if you use vertico + embark.
+After running mu4e-view-save-attachments,
+- invoke embark-act-all in the completion menu
+- followed by RET (mu4e-view-save-attachments) to save all attachments,
+- or TAB (vertico-insert) followed by (comma) next to each file you want to save,
+- then RET (vertico-exit), to save selected attachments. 
+** DOING [#A] Org Roam Enhancements                            :enhancement:
+*** TODO [#B] Org Branch to Org Roam
+*** TODO [#B] Add Org Capture Template for Vocabulary Words
+** TODO [#A] Custom Function: Delete Whitespace From Region is Broken  :bug:
+** TODO [#A] Implement dwim-shell-command for dirvish workflows :enhancement:
+https://github.com/xenodium/dwim-shell-command
+** TODO [#A] file-config.el cj/xdg-open blocks Emacs process          :bug:
+Should change to non-blocking -- maybe use Emacs internal async?
+** TODO [#A] Make org mode buffers swap with shift-meta       :enhancement:
+(org-shiftmetaright) should be overridden with  (buf-move-right)
+(org-shiftmetaleft) should be overridden with  (buf-move-left)
+** TODO [#A] Mu4e Fixes                                               :bug:
+*** DONE [#A] mu4e contacts not expanding on forwarding emails
+CLOSED: [2025-08-29 Fri 16:09]
+removed org-contacts functionaality and it returned!
+*** DONE [#A] Add org-msg
+CLOSED: [2025-08-30 Sat 12:12]
+https://github.com/jeremy-compostella/org-msg
+*** TODO [#A] Fix org-msg barfing when replying to html file
+*** TODO [#B] Fix up action menu
+- remove xwidgets
+- add "add attachment" to compose message buffer
 ** DOING [#B] Implement Performance Recommendations                    :bug:
 *** Lazy-load configuration modules                      :complex4:impact5:
 Loading every module with `require` forces all code and packages to initialize during startup. Switching to `use-package` with `:defer` or `:commands` loads modules only when their functionality is invoked, greatly reducing startup time.
@@ -98,84 +166,14 @@ Org-roam and its database sync run at startup. Load Org-roam only when Org is ac
   :hook (after-init . org-roam-db-autosync-mode))
 #+end_src
 
-** DOING [#A] Migrate selection framework                     :enhancement:
-*** References
-https://github.com/minad/consult/wiki/Auxiliary-packages
-https://www.reddit.com/r/emacs/comments/1aguy8g/how_to_get_consultripgrep_to_remember_previous/
-*** Auxiliary Packages to Explore
-https://gitlab.com/OlMon/consult-flyspell
-https://github.com/ghosty141/consult-git-log-grep
-https://github.com/minad/affe
-*** Errors to Fix
-**** TODO Git Timemachine No Longer Displays in Descending Time Order
-**** TODO Switching Project No Longer Brings Up Project File
-*** Manual Testing
-Here's a comprehensive test checklist we should verify after migration:
-**** Core Functionality Tests
-- [ ] =M-x= (execute-extended-command) with rich annotations
-- [ ] =C-x C-f= (find-file) with file preview
-- [ ] =C-x b= (switch-to-buffer) with buffer annotations
-- [ ] =C-s= (isearch) replacement with consult-line
-- [ ] =C-h f= (helpful-callable) with completing-read
-- [ ] =C-h v= (helpful-variable) with completing-read
-**** Project/File Navigation Tests
-- [ ] =C-c p f= (projectile-find-file)
-- [ ] =C-c p p= (projectile-switch-project) 
-- [ ] =C-c p G= (projectile-ripgrep)
-- [ ] Recent files access
-- [ ] Bookmarks
-**** Window/Buffer Management Tests
-- [ ] =M-V= (cj/split-and-follow-right) - buffer selection in new window
-- [ ] =M-H= (cj/split-and-follow-below) - buffer selection in new window
-- [ ] Kill-ring browsing
-- [ ] Imenu navigation
-**** Integration Tests
-- [ ] =C-c s i= (ivy-yasnippet → consult-yasnippet)
-- [ ] Git timemachine revision selection
-- [ ] Helpful integration (counsel-describe-/ functions)
-- [ ] Projectile integration
-**** Search/Replace Tests
-- [ ] In-buffer search 
-- [ ] Project-wide search
-- [ ] Search with preview
-- [ ] Occur-like functionality
-*** Mu4e - Save All Attachments Testing
-It's pretty easy if you use vertico + embark.
-After running mu4e-view-save-attachments,
-- invoke embark-act-all in the completion menu
-- followed by RET (mu4e-view-save-attachments) to save all attachments,
-- or TAB (vertico-insert) followed by (comma) next to each file you want to save,
-- then RET (vertico-exit), to save selected attachments. 
-** DOING [#A] Org Roam Enhancements                           :enhancement:
-*** TODO [#B] Org Branch to Org Roam
-*** TODO [#B] Add Org Capture Template for Vocabulary Words
-** TODO [#A] Custom Function: Delete Whitespace From Region is Broken :bug:
-** TODO [#A] Implement dwim-shell-command for dirvish workflows :enhancement:
-https://github.com/xenodium/dwim-shell-command
-** TODO [#A] file-config.el cj/xdg-open blocks Emacs process          :bug:
-Should change to non-blocking -- maybe use Emacs internal async?
-** TODO [#A] Make org mode buffers swap with shift-meta       :enhancement:
-(org-shiftmetaright) should be overridden with  (buf-move-right)
-(org-shiftmetaleft) should be overridden with  (buf-move-left)
-** TODO [#A] Mu4e Fixes                                               :bug:
-*** DONE [#A] mu4e contacts not expanding on forwarding emails
-CLOSED: [2025-08-29 Fri 16:09]
-removed org-contacts functionaality and it returned!
-*** DONE [#A] Add org-msg
-CLOSED: [2025-08-30 Sat 12:12]
-https://github.com/jeremy-compostella/org-msg
-*** TODO [#A] Fix org-msg barfing when replying to html file
-*** TODO [#B] Fix up action menu
-- remove xwidgets
-- add "add attachment" to compose message buffer
 ** TODO [#B] Add All ERT Tests Into Separate Directory                :bug:
 Tests should be added to a separate directory rather than the end of each elisp file.
 Gather them together, move them there, and make it easy to run tests per module and workflow.
 ** TODO [#B] Add Hugo Blogging Functionality                  :enhancement:
-** TODO [#B] Capture and Refile to drill files                :enhancement:
+** TODO [#B] Capture and Refile to Drill Files                :enhancement:
 This code actually exists in org-drill-config, but it doesn't seem to work
 ** TODO [#B] Change Elfeed to Be About Playing Podcasts       :enhancement:
-** TODO [#B] Decent HTML exports from org mode with inline css :enhancement:
+** TODO [#B] Decent HTML Exports From Org Mode With Inline CSS :enhancement:
 *** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
 [[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
 Captured On: [2025-08-18 Mon 14:36]
@@ -521,7 +519,7 @@ Below is a small excerpt showing how you might start adding some of the “missi
 *** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
 ** TODO [#B] Review/Implement AI keyboard macros suggestions  :enhancement:
 [[file:ai-conversations/keyboard-macro-improvements_20250906-230640.gptel::+STARTUP: showeverything][keyboard macros conversation]]
-** TODO [#C] Emacs: Add Reverso Functionality                 :enhancement:
+** TOIDO [#C] Emacs: Add Reverso Functionality                 :enhancement:
 https://sqrtminusone.xyz/packages/reverso/
 check his config for a usage example
 Reverso
@@ -538,7 +536,6 @@ reverso.el is a package of mine that provides Emacs interface for https://revers
 #+end_src
 ** TODO [#C] Org Keyword Discolored Until Reapplying Theme            :bug:
 ** TODO [#C] Emacs: org project should be yellow or perhaps green like project
-** TODO [#A] Projectile switch should leave you at magit or todo
 * Emacs Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
 *** Specification
