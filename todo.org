@@ -167,6 +167,9 @@ Org-roam and its database sync run at startup. Load Org-roam only when Org is ac
 #+end_src
 
 ** TODO [#B] Add All ERT Tests Into Separate Directory                :bug:
+*** 2025-09-13 Sat @ 12:18:26 -0500 Gave this task to Codex
+Move all ERT tests out of individual files in the modules directories, and move them all to files in the test directories. The files should be named after the functions they test.  Move existing ERT tests in the test directories to these files as well, removing those original test files. Provide another elisp file that will read all ERT files, and offer to run all the ERT tests in that file, or all ERT tests from all the files.
+*** Goals
 Tests should be added to a separate directory rather than the end of each elisp file.
 Gather them together, move them there, and make it easy to run tests per module and workflow.
 ** TODO [#B] Add Hugo Blogging Functionality                  :enhancement:

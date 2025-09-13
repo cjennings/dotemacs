@@ -57,7 +57,6 @@
 
 ;; -------------------------- Scratch Buffer Happiness -------------------------
 
-;; Customize the scratch buffer
 (defvar scratch-emacs-version-and-system
   (concat ";; Emacs " emacs-version
 		  " on " system-configuration ".\n"))
