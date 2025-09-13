@@ -18,7 +18,7 @@
 ;;   upon visit.
 ;; • Optional interactive commands for manually invoking an external open on
 ;;   point or on a user-chosen file.
-
+;;
 ;;; Code:
 
 (require 'host-environment) ;; environment information functions
@@ -67,12 +67,14 @@ Logs output and exit code to buffer *cj-xdg-open.log*."
   "If file is media or Office, open via xdg-open, else call ORIG-FUN with ARGS."
   (let ((file (car args))
 		(exts '("\\.avi\\'"
-				"\\.mp4\\'"
+				"\\.docx?\\'"
+				"\\.m4a\\'"
 				"\\.mkv\\'"
 				"\\.mov\\'"
 				"\\.mp3\\'"
+				"\\.mp4\\'"
 				"\\.ogg\\'"
-				"\\.docx?\\'"
+				"\\.opus\\'"
 				"\\.pptx?\\'"
 				"\\.xlsx?\\'")))
 	(if (cl-find-if (lambda (re) (string-match re file)) exts)
@@ -88,7 +90,6 @@ Logs output and exit code to buffer *cj-xdg-open.log*."
 
 (require 'ert)
 (require 'cl-lib)
-
 
 (ert-deftest file-config/open-this-file-with-invokes-async-shell-command ()
   "Ensure `cj/open-this-file-with` calls `async-shell-command` with the
