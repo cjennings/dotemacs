@@ -44,12 +44,13 @@
 
 (use-package tmr
   :defer 0.5
+  :init
+  (global-unset-key (kbd "M-t"))
   :bind ("M-t" . tmr-prefix-map)
   :config
-  (setq tmr-sound-file "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga"
-		tmr-notification-urgency 'normal
-		tmr-descriptions-list 'tmr-description-history))
-
+  (setq tmr-sound-file (concat user-emacs-directory "assets/sounds/ding.opus"))
+  (setq tmr-notification-urgency 'normal)
+  (setq tmr-descriptions-list 'tmr-description-history))
 
 (provide 'chrono-tools)
 ;;; chrono-tools.el ends here.
