@@ -37,7 +37,7 @@
   :demand t
   :config
   (epa-file-enable)
-  (setq epa-pinentry-mode 'loopback)  ;; emacs request passwords in minibuffer
+  ;; (setq epa-pinentry-mode 'loopback)  ;; emacs request passwords in minibuffer
   (setq epg-gpg-program "gpg2"))  ;; force use gpg2 (not gpg v.1)
 
 
