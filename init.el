@@ -68,7 +68,7 @@
 (require 'dwim-shell-commands)   ;; shell commands brought to dirvish/dired
 (require 'elfeed-config)
 (require 'erc-config)            ;; erc allows access to irc
-(require 'eww-confi`g)
+(require 'eww-config)
 (require 'httpd-config)
 (require 'mail-config)           ;; email using mu4e and org-msg
 (require 'markdown-config)
