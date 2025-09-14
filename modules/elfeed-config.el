@@ -1,50 +1,47 @@
 ;;; elfeed-config --- Settings and Enhancements to the Elfeed RSS Feed Reader -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
-
+;;
 ;;; Commentary:
-
+;;
+;;
 ;;; Code:
+
+(require 'user-constants)
 
 ;; ------------------------------- Elfeed Config -------------------------------
 
 (use-package elfeed
   :bind
+  ("M-R" . cj/elfeed-open)
   (:map elfeed-show-mode-map
-        ("w"  . eww-open-in-new-buffer))
+		("w"  . eww-open-in-new-buffer))
   (:map elfeed-search-mode-map
-        ("w"   . cj/elfeed-eww-open)            ;; opens in eww
-        ("b"   . cj/elfeed-browser-open)        ;; opens in external browser
-        ("d"   . cj/elfeed-youtube-dl)          ;; async download with yt-dlp and tsp
-        ("p"   . cj/play-with-mpv)              ;; async play with mpv
-        ("v"   . cj/play-with-mpv)              ;; async play with mpv
-        ("R"   . cj/elfeed-mark-all-as-read)    ;; capital marks all as read, since upper case marks one as read
-        ("U"   . cj/elfeed-mark-all-as-unread)) ;; capital marks all as unread, since lower case marks one as unread
+		("w"   . cj/elfeed-eww-open)            ;; opens in eww
+		("b"   . cj/elfeed-browser-open)        ;; opens in external browser
+		("d"   . cj/elfeed-youtube-dl)          ;; async download with yt-dlp and tsp
+		("p"   . cj/play-with-mpv)              ;; async play with mpv
+		("v"   . cj/play-with-mpv)              ;; async play with mpv
+		("R"   . cj/elfeed-mark-all-as-read)    ;; capital marks all as read, since upper case marks one as read
+		("U"   . cj/elfeed-mark-all-as-unread)) ;; capital marks all as unread, since lower case marks one as unread
   :config
   (setq elfeed-db-directory (concat user-emacs-directory ".elfeed-db"))
   (setq-default elfeed-search-title-max-width 150)
   (setq-default elfeed-search-title-min-width 80)
-  (setq-default elfeed-search-filter "+mustread +unread"))
+  (setq-default elfeed-search-filter "+unread")
+  (setq elfeed-feeds
+		'(
+		  ;; The Prof G Pod – Scott Galloway
+		  ("https://www.youtube.com/feeds/videos.xml?channel_id=UC1E1SVcVyU3ntWMSQEp38Yw" youtube prof-g)
 
-;; ---------------------------- Elfeed Org Feed List ---------------------------
+		  ;; The Daily
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLdMrbgYfVl-s16D_iT2BJCJ90pWtTO1A4" youtube the-daily)
 
-(use-package elfeed-org
-  :defer .5
-  :after elfeed
-  :config
-  (setq rmh-elfeed-org-files
-        (list (concat user-emacs-directory "assets/elfeed-feeds.org")))
-  (elfeed-org))
+		  ;; The Ezra Klein Show
+		  ("https://www.youtube.com/feeds/videos.xml?channel_id=UCnxuOd8obvLLtf5_-YKFbiQ" youtube ezra-klein)
 
-;; ------------------------------ Elfeed Dashboard -----------------------------
-
-(use-package elfeed-dashboard
-  :defer .5
-  :bind
-  ("M-R" . elfeed-dashboard)
-  :config
-  (setq elfeed-dashboard-file (concat user-emacs-directory "assets/elfeed-dashboard.org"))
-  ;; update feed counts on elfeed-quit
-  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links))
+		  ;; Pivot with Kara Swisher and Scott Galloway
+		  ("https://www.youtube.com/feeds/videos.xml?channel_id=UCBHGZpDF2fsqPIPi0pNyuTg" youtube pivot)
+		  )))
 
 ;; ------------------------------ Elfeed Functions -----------------------------
 
@@ -69,93 +66,189 @@
   (mark-whole-buffer)
   (elfeed-search-tag-all 'unread))
 
-(defun cj/elfeed-set-filter-and-update(filterstring)
-  "Set the Elfeed filter to 'FILTERSTRING' and update the the buffer."
-  (interactive "P")
+(defun cj/elfeed-set-filter-and-update (filterstring)
+  "Set the Elfeed filter to FILTERSTRING and update the buffer."
+  (interactive "sFilter: ")
   (setq elfeed-search-filter filterstring)
   (elfeed-search-update--force)
-  (elfeed-search-first-entry))
+  (goto-char (point-min)))
+
+;; -------------------------- Elfeed Core Processing ---------------------------
+
+(defun cj/elfeed-process-entries (action-fn action-name &optional skip-error-handling)
+  "Process selected Elfeed entries with ACTION-FN.
+ACTION-NAME is used for error messages. Marks entries as read and
+advances to the next line. If SKIP-ERROR-HANDLING is non-nil, errors
+are not caught (useful for actions that handle their own errors)."
+  (let ((entries (elfeed-search-selected)))
+	(unless entries
+	  (error "No entries selected"))
+	(cl-loop for entry in entries
+			 do (elfeed-untag entry 'unread)
+			 for link = (elfeed-entry-link entry)
+			 when link
+			 do (if skip-error-handling
+					(funcall action-fn link)
+				  (condition-case err
+					  (funcall action-fn link)
+					(error (message "Failed to %s %s: %s"
+									action-name
+									(truncate-string-to-width link 50)
+									(error-message-string err))))))
+	(mapc #'elfeed-search-update-entry entries)
+	(unless (use-region-p) (forward-line))))
 
 ;; -------------------------- Elfeed Browser Functions -------------------------
 
-(defun cj/elfeed-eww-open (&optional use-generic-p)
-"Opens the links of the currently selected Elfeed entries with EWW.
-If USE-GENERIC-P is non-nil, uses the generic method instead.
-Applies cj/eww-readable-nonce hook after EWW rendering. Updates the
-Elfeed search entries as read and moves to the next line."
-  (interactive "P")
-  (let ((entries (elfeed-search-selected)))
-    (cl-loop for entry in entries
-             do (elfeed-untag entry 'unread)
-             when (elfeed-entry-link entry)
-             do
-             (add-hook 'eww-after-render-hook #'cj/eww-readable-nonce)
-             (eww-browse-url it))
-    (mapc #'elfeed-search-update-entry entries)
-    (unless (use-region-p) (forward-line))))
+(defun cj/elfeed-eww-open ()
+  "Opens the links of the currently selected Elfeed entries with EWW.
+Applies cj/eww-readable-nonce hook after EWW rendering."
+  (interactive)
+  (cj/elfeed-process-entries
+   (lambda (link)
+	 (add-hook 'eww-after-render-hook #'cj/eww-readable-nonce)
+	 (eww-browse-url link))
+   "open in EWW"
+   t))  ; skip error handling since eww handles its own errors
 
-;; hook for cj/elfeed-eww-open to open entry in eww readable mode
-;; https://emacs.stackexchange.com/questions/36284/how-to-open-eww-in-readable-mode/47757
 (defun cj/eww-readable-nonce ()
   "Once-off call to eww-readable after EWW is done rendering."
   (unwind-protect
-      (progn
-        (eww-readable)
-        (goto-char (point-min)))
-    (remove-hook 'eww-after-render-hook #'cj/eww-readable-nonce)))
+	  (progn
+		(eww-readable)
+		(goto-char (point-min)))
+	(remove-hook 'eww-after-render-hook #'cj/eww-readable-nonce)))
 
-(defun cj/elfeed-browser-open (&optional use-generic-p)
-"Opens the link of the selected Elfeed entries in the default browser.
-If USE-GENERIC-P is non-nil, uses the generic method instead. Updates
-the Elfeed search entries as read and advances to the next line."
-  (interactive "P")
-  (let ((entries (elfeed-search-selected)))
-    (cl-loop for entry in entries
-             do (elfeed-untag entry 'unread)
-             when (elfeed-entry-link entry)
-             do (browse-url-default-browser it))
-    (mapc #'elfeed-search-update-entry entries)
-    (unless (use-region-p) (forward-line))))
+(defun cj/elfeed-browser-open ()
+  "Opens the link of the selected Elfeed entries in the default browser."
+  (interactive)
+  (cj/elfeed-process-entries
+   #'browse-url-default-browser
+   "open in browser"
+   t))  ; skip error handling since browser handles its own errors
 
-;; --------------------- Elfeed Plan And Download Functions --------------------
+;; --------------------- Elfeed Play And Download Functions --------------------
 
 (defun cj/yt-dl-it (url)
   "Downloads the URL in an async shell."
-  (let ((default-directory videos-dir))
+  (unless (executable-find "yt-dlp")
+	(error "yt-dlp is not installed or not in PATH"))
+  (unless (executable-find "tsp")
+	(error "tsp (task-spooler) is not installed or not in PATH"))
+  (let ((default-directory videos-dir)
+		(buffer-name (format "*yt-dlp: %s*" (truncate-string-to-width url 50))))
 	(save-window-excursion
-	  (async-shell-command (format "tsp yt-dlp --add-metadata -ic -o '%%(channel)s-%%(title)s.%%(ext)s' '%s'" url)))))
+	  (async-shell-command
+	   (format "tsp yt-dlp --add-metadata -ic -o '%%(channel)s-%%(title)s.%%(ext)s' '%s'" url)
+	   buffer-name))
+	;; Set up a process sentinel to kill the buffer when done
+	(when-let ((process (get-buffer-process buffer-name)))
+	  (set-process-sentinel process
+							(lambda (proc event)
+							  (when (string-match-p "finished\\|exited" event)
+								(kill-buffer (process-buffer proc))))))))
 
 (defun cj/mpv-play-it (url)
   "Play the URL with mpv in an async shell."
-  (async-shell-command  (format "mpv '%s'" url)))
+  (unless (executable-find "mpv")
+	(error "mpv is not installed or not in PATH"))
+  (let ((buffer-name (format "*mpv: %s*" (truncate-string-to-width url 50))))
+	(async-shell-command (format "mpv '%s'" url) buffer-name)
+	;; Set up a process sentinel to kill the buffer when done
+	(when-let ((process (get-buffer-process buffer-name)))
+	  (set-process-sentinel process
+							(lambda (proc event)
+							  (when (string-match-p "finished\\|exited" event)
+								(kill-buffer (process-buffer proc))))))))
 
-(defun cj/elfeed-youtube-dl (&optional use-generic-p)
-"Downloads the selected Elfeed entries' links with youtube-dl.
-If USE-GENERIC-P is non-nil, uses the generic download method
-instead. Updates the Elfeed search entries as read and moves to
-the next line."
-  (interactive "P")
-  (let ((entries (elfeed-search-selected)))
-	(cl-loop for entry in entries
-			 do (elfeed-untag entry 'unread)
-			 when (elfeed-entry-link entry)
-			 do (cj/yt-dl-it it))
-	(mapc #'elfeed-search-update-entry entries)
-	(unless (use-region-p) (forward-line))))
+(defun cj/elfeed-youtube-dl ()
+  "Downloads the selected Elfeed entries' links with youtube-dl."
+  (interactive)
+  (cj/elfeed-process-entries #'cj/yt-dl-it "download"))
 
-(defun cj/play-with-mpv (&optional use-generic-p)
-"Plays the selected Elfeed entries' links with MPV.
-If USE-GENERIC-P is non-nil, uses the generic player instead. Updates
-the Elfeed search entries as read and focuses on the next line."
-  (interactive "P")
-  (let ((entries (elfeed-search-selected)))
-	(cl-loop for entry in entries
-			 do (elfeed-untag entry 'unread)
-			 when (elfeed-entry-link entry)
-			 do (cj/mpv-play-it it))
-	(mapc #'elfeed-search-update-entry entries)
-	(unless (use-region-p) (forward-line))))
+(defun cj/play-with-mpv ()
+  "Plays the selected Elfeed entries' links with MPV."
+  (interactive)
+  (cj/elfeed-process-entries #'cj/mpv-play-it "play"))
 
+;; --------------------- Youtube Url To Elfeed Feed Format ---------------------
+
+(defun cj/youtube-channel-to-elfeed-feed-format (url)
+  "Convert YouTube URL to elfeed-feeds format and insert at point."
+  (interactive "sYouTube URL: ")
+  (let ((buffer (url-retrieve-synchronously url))
+		channel-id title)
+	(when buffer
+	  (with-current-buffer buffer
+		;; Decode the content as UTF-8
+		(set-buffer-multibyte t)
+		(decode-coding-region (point-min) (point-max) 'utf-8)
+
+		(goto-char (point-min))
+		;; Search for the channel_id in the RSS feed link
+		(when (re-search-forward "href=\"https://www\\.youtube\\.com/feeds/videos\\.xml\\?channel_id=\\([^\"]+\\)\"" nil t)
+		  (setq channel-id (match-string 1)))
+		;; Search for the title in og:title meta tag
+		(goto-char (point-min))
+		(when (re-search-forward "<meta property=\"og:title\" content=\"\\([^\"]+\\)\"" nil t)
+		  (setq title (match-string 1))
+		  ;; Simple HTML entity decoding
+		  (setq title (replace-regexp-in-string "&amp;" "&" title))
+		  (setq title (replace-regexp-in-string "&lt;" "<" title))
+		  (setq title (replace-regexp-in-string "&gt;" ">" title))
+		  (setq title (replace-regexp-in-string "&quot;" "\"" title))
+		  (setq title (replace-regexp-in-string "&#39;" "'" title))
+		  (setq title (replace-regexp-in-string "&#x27;" "'" title))))
+	  (kill-buffer buffer))
+	(if (and channel-id title)
+		(let ((result (format ";; %s\n(\"https://www.youtube.com/feeds/videos.xml?channel_id=%s\" youtube)"
+							  title channel-id)))
+		  (when (called-interactively-p 'interactive)
+			(insert result))
+		  result)
+	  (error "Could not extract channel information"))))
+
+(defun cj/youtube-playlist-to-elfeed-feed-format (url)
+  "Convert YouTube playlist URL to elfeed-feeds format and insert at point."
+  (interactive "sYouTube Playlist URL: ")
+  (let ((playlist-id nil)
+		(title nil)
+		(buffer nil))
+	;; Extract playlist ID from URL
+	(when (string-match "/playlist\\?list=\\([^&]+\\)" url)
+	  (setq playlist-id (match-string 1 url)))
+
+	(unless playlist-id
+	  (error "Could not extract playlist ID from URL"))
+
+	;; Fetch the page
+	(setq buffer (url-retrieve-synchronously url))
+	(when buffer
+	  (with-current-buffer buffer
+		;; Decode the content as UTF-8
+		(set-buffer-multibyte t)
+		(decode-coding-region (point-min) (point-max) 'utf-8)
+
+		;; Search for the title in og:title meta tag
+		(goto-char (point-min))
+		(when (re-search-forward "<meta property=\"og:title\" content=\"\\([^\"]+\\)\"" nil t)
+		  (setq title (match-string 1))
+		  ;; Simple HTML entity decoding
+		  (setq title (replace-regexp-in-string "&amp;" "&" title))
+		  (setq title (replace-regexp-in-string "&lt;" "<" title))
+		  (setq title (replace-regexp-in-string "&gt;" ">" title))
+		  (setq title (replace-regexp-in-string "&quot;" "\"" title))
+		  (setq title (replace-regexp-in-string "&#39;" "'" title))
+		  (setq title (replace-regexp-in-string "&#x27;" "'" title))))
+	  (kill-buffer buffer))
+
+    (if (and playlist-id title)
+		(let ((result (format ";; %s\n(\"https://www.youtube.com/feeds/videos.xml?playlist_id=%s\" youtube)"
+							  title playlist-id)))
+		  (when (called-interactively-p 'interactive)
+			(insert result))
+		  result)
+	  (error "Could not extract playlist information"))))
 
 (provide 'elfeed-config)
-;;; elfeed-config.el ends here
+;;; elfeed-config.el ends here.
