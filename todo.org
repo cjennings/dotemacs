@@ -1,4 +1,6 @@
 * Emacs Open Work
+** TODO [#A] EWW cannot load URLs any longer                           :bug:
+** TODO [#A] Remove all diagnostic and debug code from dirvish         :bug:
 ** TODO [#A] Fix Org-msg Issue With Undo Outside                       :bug:
 ** DOING [#A] Test and Fix Org-Contacts                                :bug:
 *** TODO Consider utility of org-contacts view table
@@ -69,9 +71,8 @@ After running mu4e-view-save-attachments,
 *** TODO [#B] Org Branch to Org Roam
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
 ** TODO [#A] Custom Function: Delete Whitespace From Region is Broken  :bug:
-** DOING [#B] Implement dwim-shell-command for dirvish workflows :enhancement:
+** DOING [#B] Test dwim-shell-commands                         :enhancement:
 https://github.com/xenodium/dwim-shell-command
-*** TODO [#B] Test dwim-shell-commands 
 ** TODO [#A] file-config.el cj/xdg-open blocks Emacs process          :bug:
 Should change to non-blocking -- maybe use Emacs internal async?
 ** TODO [#A] Make org mode buffers swap with shift-meta       :enhancement:
