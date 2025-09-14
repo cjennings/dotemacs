@@ -130,8 +130,13 @@
 (global-unset-key (kbd "C-s"))
 (global-set-key (kbd "C-s") 'consult-line)
 
+;; Consult integration with Embark
+(use-package embark-consult
+  :after (embark consult)
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+
 (use-package consult-dir
-  :ensure t
   :bind (("C-x C-d" . consult-dir)
 		 :map vertico-map
 		 ("C-x C-d" . consult-dir)
@@ -175,12 +180,6 @@
 			   '("\\=\\*Embark Collect \\(Live\\|Completions\\)\\*"
 				 nil
 				 (window-parameters (mode-line-format . none)))))
-
-;; Consult integration with Embark
-(use-package embark-consult
-  :after (embark consult)
-  :hook
-  (embark-collect-mode . consult-preview-at-point-mode))
 
 ;; --------------------------- Consult Integration ----------------------------
 ;; Additional integrations for specific features
