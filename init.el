@@ -65,7 +65,7 @@
 (require 'calibredb-epub-config) ;; ebook reader/manager settings
 (require 'dashboard-config)      ;; the nice landing page with links
 (require 'dirvish-config)        ;; file manager configuration
-(require 'dwim-shell-commands)   ;; shell commands brought to dirvish/dired
+(require 'dwim-shell-config)     ;; shell commands brought to dirvish/dired
 (require 'elfeed-config)
 (require 'erc-config)            ;; erc allows access to irc
 (require 'eww-config)

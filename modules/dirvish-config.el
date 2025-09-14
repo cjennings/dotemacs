@@ -8,6 +8,8 @@
 
 ;;; Code:
 
+(require 'user-constants)
+
 ;; ----------------------------------- Dired -----------------------------------
 
 (use-package dired
@@ -17,12 +19,11 @@
   (:map dired-mode-map
         ([remap dired-summary] . which-key-show-major-mode)
 		("E" . wdired-change-to-wdired-mode) ;; edit names and properties in buffer
-		("B"       . cj/make-backup)         ;; copy file as backup with date
-		("D" . cj/dired-ediff-files))        ;; ediff files
+		("e" . cj/dired-ediff-files))        ;; ediff files
   :custom
   (dired-use-ls-dired nil)                             ;; non GNU FreeBSD doesn't support a "--dired" switch
   :config
-  (setq dired-listing-switches "-l --almost-all --human-readable --dired --group-directories-first")
+  (setq dired-listing-switches "-l --almost-all --human-readable --group-directories-first")
   (setq dired-dwim-target t)
   (setq dired-clean-up-buffers-too t)                  ;; offer to kill buffers associated deleted files and dirs
   (setq dired-clean-confirm-killing-deleted-buffers t) ;; don't ask; just kill buffers associated with deleted files
@@ -61,25 +62,6 @@ automatically displayed."
 		  (message "Copied '%s' to clipboard." filename))
 	  (message "No file at point."))))
 
-;; ------------------------ Dired Convert Image To Jpeg ------------------------
-;; converts the image at point to a jpeg by typing "C" within dirvish
-
-(defun cj/dired-convert-image-to-jpeg ()
-  "Convert an image to JPEG via ImageMagick on the file at point.
-Alert if the file is already a JPEG; notify the user when converstion is done."
-  (interactive)
-  (let* ((original-file (dired-get-file-for-visit))
-         (file-extension (file-name-extension original-file))
-         (jpeg-file (concat (file-name-sans-extension original-file) ".jpeg")))
-    (if (member file-extension '("png" "bmp" "gif" "tif" "tiff" "svg" "webp"))
-        (if (string= file-extension "jpeg")
-            (message "File is already in JPEG format.")
-          (start-process "convert-to-jpeg" nil "convert" original-file jpeg-file)
-          (message "Conversion started for %s" original-file))
-      (message (concat "File is not a supported image file type."
-                       "Current supported types: "
-                       "'png' 'bmp' 'gif' 'tif' 'tiff' 'svg' 'webp'")))))
-
 ;; ------------------------ Dired Mark All Visible Files -----------------------
 ;; convenience function to mark all visible files by typing "M" in dirvish
 
@@ -96,84 +78,110 @@ Alert if the file is already a JPEG; notify the user when converstion is done."
 ;; ---------------------------------- Dirvish ----------------------------------
 
 (use-package dirvish
-  :defer t
+  :defer 1
   :init
-  (add-to-list 'load-path (concat user-emacs-directory "elpa/dirvish-2.3.0"))
-  (add-to-list 'load-path (concat user-emacs-directory "elpa/dirvish-2.3.0/extensions"))
-  (require 'dirvish)
-  (require 'dirvish-icons)
-  (require 'dirvish-emerge)
-  (require 'dirvish-quick-access)
-  (require 'dirvish-yank)
   (dirvish-override-dired-mode)
   :custom
+  ;; This MUST be in :custom section, not :config
   (dirvish-quick-access-entries
    `(("h"  "~/"                                   "home")
-     ("cx" ,code-dir                              "code directory")
-     ("dl" ,dl-dir                                "downloads")
-     ("dr" ,(concat sync-dir "/drill/")           "drill files")
-     ("dt" ,(concat dl-dir "/torrents/complete/") "torrents")
+	 ("cx" ,code-dir                              "code directory")
+	 ("dl" ,dl-dir                                "downloads")
+	 ("dr" ,(concat sync-dir "/drill/")           "drill files")
+	 ("dt" ,(concat dl-dir "/torrents/complete/") "torrents")
 	 ("dx" "~/documents/"                         "documents")
 	 ("lx" "~/lectures/"                          "lectures")
-     ("mb" "/media/backup/"                       "backup directory")
-     ("mx" "~/music/"                             "music")
-	 ("pD" "~/projects/documents/"                "project documents")
-	 ("pd" "~/projects/danneel/"                  "project danneel")
-     ("pl" "~/projects/elibrary/"                 "project elibrary")
-     ("pf" "~/projects/finances/"                 "project finances")
-	 ("pjr" "~/projects/jr-estate/"                "project jr-estate")
-     ("ps" ,(concat pix-dir "/screenshots/")      "pictures screenshots")
-     ("pw" ,(concat pix-dir "/wallpaper/")        "pictures wallpaper")
-     ("px" ,pix-dir                               "pictures directory")
-	 ("rcj" "/sshx:cjennings@cjennings.net:~"     "remote cjennings.net")
+	 ("mb" "/media/backup/"                       "backup directory")
+	 ("mx" "~/music/"                             "music")
+	 ("pD" "~/projects/documents/"               "project documents")
+	 ("pd" "~/projects/danneel/"                 "project danneel")
+	 ("pl" "~/projects/elibrary/"                "project elibrary")
+	 ("pf" "~/projects/finances/"                "project finances")
+	 ("pjr" "~/projects/jr-estate/"              "project jr-estate")
+	 ("ps" ,(concat pix-dir "/screenshots/")      "pictures screenshots")
+	 ("pw" ,(concat pix-dir "/wallpaper/")        "pictures wallpaper")
+	 ("px" ,pix-dir                               "pictures directory")
+	 ("rcj" "/sshx:cjennings@cjennings.net:~"    "remote cjennings.net")
 	 ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
 	 ("sx" ,sync-dir                              "sync directory")
 	 ("so" "~/sync/org"                           "org directory")
 	 ("sv" "~/sync/videos/"                       "sync/videos directory")
 	 ("tg" ,(concat sync-dir "/text.games")       "text games")
 	 ("vr" ,video-recordings-dir                  "video recordings directory")
-	 ("vx" ,videos-dir                            "videos")
-     )) ;; end dirvish-quick-access-entries
-  ;; (dirvish-attributes '(file-size))
-  (dirvish-attributes '(nerd-icons file-size))
-  (dirvish-preview-dispatchers '(image gif video audio epub pdf archive))
-  :hook (dirvish-setup . dirvish-emerge-mode)
+	 ("vx" ,videos-dir                            "videos")))
   :config
+  ;; Add the extensions directory to load-path
+  (let ((extensions-dir (expand-file-name "extensions"
+										  (file-name-directory (locate-library "dirvish")))))
+	(when (file-directory-p extensions-dir)
+	  (add-to-list 'load-path extensions-dir)
+	  (message "Added dirvish extensions directory to load-path: %s" extensions-dir)))
+
+  ;; Load dirvish modules with error checking
+  (let ((dirvish-modules '(dirvish-emerge
+						   dirvish-subtree
+						   dirvish-narrow
+						   dirvish-history
+						   dirvish-ls
+						   dirvish-yank
+						   dirvish-quick-access
+						   dirvish-collapse
+						   dirvish-rsync
+						   dirvish-vc
+						   dirvish-icons
+						   dirvish-side
+						   dirvish-peek)))
+	(dolist (module dirvish-modules)
+	  (condition-case err
+		  (progn
+			(require module)
+			(message "Successfully loaded: %s" module))
+		(error
+		 (message "Failed to load %s: %s" module (error-message-string err))))))
+
+  ;; Enable peek mode with error checking
+  (condition-case err
+	  (dirvish-peek-mode 1)
+	(error (message "Failed to enable dirvish-peek-mode: %s" (error-message-string err))))
+
+  ;; Enable side-follow mode with error checking
+  (condition-case err
+      (dirvish-side-follow-mode 1)
+    (error (message "Failed to enable dirvish-side-follow-mode: %s" (error-message-string err))))
+
+  ;; Your other configuration settings
+  (setq dirvish-attributes '(nerd-icons file-size))
+  (setq dirvish-preview-dispatchers '(image gif video audio epub pdf archive))
   (setq dirvish-use-mode-line nil)
   (setq dirvish-use-header-line nil)
   :bind
   (("C-x d"     . dirvish)
    ("C-x C-d"   . dirvish)
-   ("C-x D"     . dirvish-override-dired-mode)
+   ("C-x D"     . dirvish)
    ("<f11>"     . dirvish-side)
-
-   :map dirvish-mode-map ; note: Dirvish inherits `dired-mode-map'
+   :map dirvish-mode-map
    ("g"       . dirvish-quick-access)
    ("G"       . revert-buffer)
-   ("bg"      . (lambda () (interactive)  ; set background image
+   ("bg"      . (lambda () (interactive)
                   (shell-command (concat "nitrogen --save --set-zoom-fill "
-                                         (dired-file-name-at-point) " >>/dev/null 2>&1" ))))
-   ("Z"       . (lambda () (interactive) (cj/dired-open-with "zathura")))
-   ("L"       . (lambda () (interactive) (cj/dired-open-with "libreoffice")))
+										 (dired-file-name-at-point) " >>/dev/null 2>&1"))))
    ("o"       . (lambda () (interactive) (cj/dired-open-with "xdg-open")))
-   ("P"       . (lambda () (interactive) (cj/dired-open-with "gimp")))
    ("O"       . (lambda () (interactive) (call-interactively 'cj/dired-open-with)))
    ("<left>"  . dired-up-directory)
    ("<right>" . dired-find-file)
    ("f"       . dirvish-file-info-menu)
-   ("p"       . cj/dired-copy-path-as-kill)
-   ("C"       . cj/dired-convert-image-to-jpeg)
    ("y"       . dirvish-yank-menu)
-   ("N"       . dirvish-narrow)
+   ("/"       . dirvish-narrow)
    ("M"       . cj/dired-mark-all-visible-files)
-   ("s"       . dirvish-quicksort)    ; remapped `dired-sort-toggle-or-edit'
-   ("v"       . dirvish-vc-menu)      ; remapped `dired-view-file'
+   ("s"       . dirvish-quicksort)
+   ("v"       . dirvish-vc-menu)
+   ("r"       . dirvish-rsync)
    ("TAB"     . dirvish-subtree-toggle)
    ("C-."     . dirvish-history-go-forward)
    ("C-,"     . dirvish-history-go-backward)
    ("M-l"     . dirvish-ls-switches-menu)
    ("M-m"     . dirvish-mark-menu)
-   ;;   ("M-t"     . dirvish-layout-toggle) ;; todo find another key; M-t is contentious
+   ("M-p"     . dirvish-peek-toggle)
    ("M-s"     . dirvish-setup-menu)
    ("M-e"     . dirvish-emerge-menu)))
 
@@ -185,20 +193,17 @@ Alert if the file is already a JPEG; notify the user when converstion is done."
 (use-package nerd-icons-dired
   :commands (nerd-icons-dired-mode))
 
-;; -------------------------------- Dired Rsync --------------------------------
-
-(use-package dired-rsync
-  :after dired
-  :bind (:map dired-mode-map
-              ("r" . dired-rsync)))
-
 ;; ---------------------------- Dired Hide Dotfiles ----------------------------
 
 (use-package dired-hide-dotfiles
   :after dired
+  :hook
+  ;; Auto-hide dotfiles when entering dired/dirvish
+  ((dired-mode . dired-hide-dotfiles-mode)
+   (dirvish-mode . dired-hide-dotfiles-mode))
   :bind
-  (:map  dired-mode-map
-         ("h" . dired-hide-dotfiles-mode)))
+  (:map dired-mode-map
+		("h" . dired-hide-dotfiles-mode)))
 
 ;; ------------------------------- Dired Sidebar -------------------------------
 
@@ -208,9 +213,9 @@ Alert if the file is already a JPEG; notify the user when converstion is done."
   :commands (dired-sidebar-toggle-sidebar)
   :init
   (add-hook 'dired-sidebar-mode-hook
-            (lambda ()
-              (unless (file-remote-p default-directory)
-                (auto-revert-mode))))
+			(lambda ()
+			  (unless (file-remote-p default-directory)
+				(auto-revert-mode))))
   :config
   (push 'toggle-window-split dired-sidebar-toggle-hidden-commands) ;; disallow splitting dired window when it's showing
   (push 'rotate-windows dired-sidebar-toggle-hidden-commands)      ;; disallow rotating windows when sidebar is showing
@@ -228,48 +233,91 @@ Alert if the file is already a JPEG; notify the user when converstion is done."
   "Ediff two selected files within Dired."
   (interactive)
   (let ((files (dired-get-marked-files))
-        (wnd (current-window-configuration)))
-    (if (<= (length files) 2)
-        (let ((file1 (car files))
-              (file2 (if (cdr files)
-                         (cadr files)
-                       (read-file-name
-                        "file: "
-                        (dired-dwim-target-directory)))))
-          (if (file-newer-than-file-p file1 file2)
-              (ediff-files file2 file1)
-            (ediff-files file1 file2))
-          (add-hook 'ediff-after-quit-hook-internal
-                    (lambda ()
-                      (setq ediff-after-quit-hook-internal nil)
-                      (set-window-configuration wnd))))
-      (error "No more than 2 files should be marked"))))
+		(wnd (current-window-configuration)))
+	(if (<= (length files) 2)
+		(let ((file1 (car files))
+			  (file2 (if (cdr files)
+						 (cadr files)
+					   (read-file-name
+						"file: "
+						(dired-dwim-target-directory)))))
+		  (if (file-newer-than-file-p file1 file2)
+			  (ediff-files file2 file1)
+			(ediff-files file1 file2))
+		  (add-hook 'ediff-after-quit-hook-internal
+					(lambda ()
+					  (setq ediff-after-quit-hook-internal nil)
+					  (set-window-configuration wnd))))
+	  (error "No more than 2 files should be marked"))))
 
-;; -------------------------------- Make Backup --------------------------------
+;; ---------------------------- Dirvish Diagnostics ----------------------------
 
-(defun cj/make-backup ()
-  "Make a backup copy of current file or dired marked files.
-The backup file name is the original name with the datetime
-.yyyymmddhhmmss~ appended."
+(defun cj/dirvish-diagnose ()
+  "Diagnose dirvish installation and available features."
   (interactive)
-  (let ((timestamp (format-time-string "%Y%m%d%H%M%S")))
-	(cond
-	 (buffer-file-name
-	  (let ((backup-name (concat buffer-file-name "." timestamp "~")))
-		(copy-file buffer-file-name backup-name t)
-		(message "Backup saved at: %s" backup-name)))
+  (with-current-buffer (get-buffer-create "*Dirvish Diagnostic*")
+	(erase-buffer)
+	(insert "=== Dirvish Diagnostic Report ===\n\n")
 
-	 ((eq major-mode 'dired-mode)
-	  (let ((marked-files (dired-get-marked-files)))
-		(if (null marked-files)
-			(message "No files marked for backup")
-		  (dolist (file marked-files)
-			(let ((backup-name (concat file "." timestamp "~")))
-			  (copy-file file backup-name t)
-			  (message "Backup saved at: %s" backup-name)))
-		  (revert-buffer))))
+	;; Check if dirvish is loaded
+	(insert (format "Dirvish loaded: %s\n" (featurep 'dirvish)))
+	(insert (format "Dirvish version: %s\n\n" (if (boundp 'dirvish-version) dirvish-version "unknown")))
 
-	 (t (user-error "Cannot backup: buffer is not associated with a file or dired")))))
+	;; Check available modules
+	(insert "Module Status:\n")
+	(dolist (module '(dirvish-quick-access dirvish-emerge dirvish-subtree
+										   dirvish-narrow dirvish-history dirvish-ls dirvish-yank
+										   dirvish-layout dirvish-fd dirvish-icons dirvish-side
+										   dirvish-media dirvish-peek))
+	  (insert (format "  %s: %s\n"
+					  module
+					  (if (featurep module) "✓ loaded" "✗ not loaded"))))
+
+	;; Check key functions
+	(insert "\nKey Functions:\n")
+	(dolist (func '(dirvish-quick-access dirvish-yank-menu dirvish-emerge-menu
+										 dirvish-subtree-toggle dirvish-narrow dirvish-history-go-forward))
+	  (insert (format "  %s: %s\n"
+					  func
+					  (if (fboundp func) "✓ available" "✗ not available"))))
+
+	(switch-to-buffer (current-buffer))))
+
+(defun cj/dirvish-check-quick-access ()
+  "Check the dirvish quick access configuration and variables."
+  (interactive)
+  (with-current-buffer (get-buffer-create "*Dirvish Quick Access Check*")
+	(erase-buffer)
+	(insert "=== Dirvish Quick Access Configuration ===\n\n")
+
+	;; Check if variables are bound
+	(insert "Variable Status:\n")
+	(dolist (var '(code-dir dl-dir sync-dir pix-dir video-recordings-dir videos-dir))
+	  (insert (format "  %s: %s\n"
+					  var
+					  (if (boundp var)
+						  (format "✓ defined = %s" (symbol-value var))
+						"✗ not defined"))))
+
+	(insert "\n\nCurrent Quick Access Entries:\n")
+	(if (boundp 'dirvish-quick-access-entries)
+		(dolist (entry dirvish-quick-access-entries)
+		  (insert (format "  [%s] %s -> %s\n"
+						  (nth 0 entry)
+						  (nth 2 entry)
+						  (nth 1 entry))))
+	  (insert "  dirvish-quick-access-entries is not defined\n"))
+
+	(insert "\n\nDefault Quick Access Entries:\n")
+	(if (boundp 'dirvish-quick-access-alist)
+		(dolist (entry dirvish-quick-access-alist)
+		  (insert (format "  [%s] -> %s\n"
+						  (car entry)
+						  (cdr entry))))
+	  (insert "  dirvish-quick-access-alist is not defined\n"))
+
+	(switch-to-buffer (current-buffer))))
+
 
 (provide 'dirvish-config)
 ;;; dirvish-config.el ends here
