@@ -135,31 +135,41 @@ Applies cj/eww-readable-nonce hook after EWW rendering."
 	(error "yt-dlp is not installed or not in PATH"))
   (unless (executable-find "tsp")
 	(error "tsp (task-spooler) is not installed or not in PATH"))
-  (let ((default-directory videos-dir)
-		(buffer-name (format "*yt-dlp: %s*" (truncate-string-to-width url 50))))
-	(save-window-excursion
-	  (async-shell-command
-	   (format "tsp yt-dlp --add-metadata -ic -o '%%(channel)s-%%(title)s.%%(ext)s' '%s'" url)
-	   buffer-name))
-	;; Set up a process sentinel to kill the buffer when done
-	(when-let ((process (get-buffer-process buffer-name)))
-	  (set-process-sentinel process
-							(lambda (proc event)
-							  (when (string-match-p "finished\\|exited" event)
-								(kill-buffer (process-buffer proc))))))))
+  (let* ((default-directory videos-dir)
+		 (buffer-name (format "*yt-dlp: %s*" (truncate-string-to-width url 50)))
+		 (output-template (format "%s/%%(channel)s-%%(title)s.%%(ext)s" videos-dir))
+		 (url-display (truncate-string-to-width url 50))
+		 (process (start-process "yt-dlp" buffer-name
+								"tsp" "yt-dlp" "--add-metadata" "-ic"
+								"-o" output-template url)))
+	(message "Started downloading: %s" url-display)
+	(set-process-sentinel process
+						  (lambda (proc event)
+							(cond
+							 ((string-match-p "finished" event)
+							  (message "✓ Finished downloading: %s" url-display))
+							 ((string-match-p "exited abnormally" event)
+							  (message "✗ Download failed: %s" url-display)))
+							(when (string-match-p "finished\\|exited" event)
+							  (kill-buffer (process-buffer proc)))))))
 
 (defun cj/mpv-play-it (url)
   "Play the URL with mpv in an async shell."
   (unless (executable-find "mpv")
-	(error "mpv is not installed or not in PATH"))
-  (let ((buffer-name (format "*mpv: %s*" (truncate-string-to-width url 50))))
-	(async-shell-command (format "mpv '%s'" url) buffer-name)
-	;; Set up a process sentinel to kill the buffer when done
-	(when-let ((process (get-buffer-process buffer-name)))
-	  (set-process-sentinel process
-							(lambda (proc event)
-							  (when (string-match-p "finished\\|exited" event)
-								(kill-buffer (process-buffer proc))))))))
+    (error "mpv is not installed or not in PATH"))
+  (let* ((buffer-name (format "*mpv: %s*" (truncate-string-to-width url 50)))
+		 (url-display (truncate-string-to-width url 50))
+		 (process (start-process "mpv" buffer-name "mpv" url)))
+	(message "Started playing: %s" url-display)
+	(set-process-sentinel process
+						  (lambda (proc event)
+							(cond
+							 ((string-match-p "finished" event)
+							  (message "✓ Finished playing: %s" url-display))
+							 ((string-match-p "exited abnormally" event)
+							  (message "✗ Playback failed: %s" url-display)))
+							(when (string-match-p "finished\\|exited" event)
+							  (kill-buffer (process-buffer proc)))))))
 
 (defun cj/elfeed-youtube-dl ()
   "Downloads the selected Elfeed entries' links with youtube-dl."
@@ -173,21 +183,48 @@ Applies cj/eww-readable-nonce hook after EWW rendering."
 
 ;; --------------------- Youtube Url To Elfeed Feed Format ---------------------
 
-(defun cj/youtube-channel-to-elfeed-feed-format (url)
-  "Convert YouTube URL to elfeed-feeds format and insert at point."
-  (interactive "sYouTube URL: ")
-  (let ((buffer (url-retrieve-synchronously url))
-		channel-id title)
-	(when buffer
-	  (with-current-buffer buffer
-		;; Decode the content as UTF-8
-		(set-buffer-multibyte t)
-		(decode-coding-region (point-min) (point-max) 'utf-8)
+(defun cj/youtube-to-elfeed-feed-format (url type)
+  "Convert YouTube URL to elfeed-feeds format.
+TYPE should be either 'channel or 'playlist."
+  (let ((id nil)
+		(title nil)
+		(buffer nil)
+		(id-pattern (if (eq type 'channel)
+						"href=\"https://www\\.youtube\\.com/feeds/videos\\.xml\\?channel_id=\\([^\"]+\\)\""
+					  "/playlist\\?list=\\([^&]+\\)"))
+		(feed-format (if (eq type 'channel)
+						 "https://www.youtube.com/feeds/videos.xml?channel_id=%s"
+					   "https://www.youtube.com/feeds/videos.xml?playlist_id=%s"))
+		(error-msg (if (eq type 'channel)
+					   "Could not extract channel information"
+					 "Could not extract playlist information")))
 
-		(goto-char (point-min))
-		;; Search for the channel_id in the RSS feed link
-		(when (re-search-forward "href=\"https://www\\.youtube\\.com/feeds/videos\\.xml\\?channel_id=\\([^\"]+\\)\"" nil t)
-		  (setq channel-id (match-string 1)))
+	;; Extract ID based on type
+	(if (eq type 'channel)
+		;; For channels, we need to fetch the page to get the channel_id
+		(progn
+		  (setq buffer (url-retrieve-synchronously url))
+		  (when buffer
+			(with-current-buffer buffer
+			  ;; Decode the content as UTF-8
+			  (set-buffer-multibyte t)
+			  (decode-coding-region (point-min) (point-max) 'utf-8)
+			  (goto-char (point-min))
+			  ;; Search for the channel_id in the RSS feed link
+			  (when (re-search-forward id-pattern nil t)
+				(setq id (match-string 1))))))
+	  ;; For playlists, extract from URL first
+	  (when (string-match id-pattern url)
+		(setq id (match-string 1 url))
+		(setq buffer (url-retrieve-synchronously url))))
+
+	;; Get title from the page
+	(when (and buffer id)
+	  (with-current-buffer buffer
+		(unless (eq type 'channel)
+		  ;; Decode for playlist (already done for channel above)
+		  (set-buffer-multibyte t)
+		  (decode-coding-region (point-min) (point-max) 'utf-8))
 		;; Search for the title in og:title meta tag
 		(goto-char (point-min))
 		(when (re-search-forward "<meta property=\"og:title\" content=\"\\([^\"]+\\)\"" nil t)
@@ -200,55 +237,28 @@ Applies cj/eww-readable-nonce hook after EWW rendering."
 		  (setq title (replace-regexp-in-string "&#39;" "'" title))
 		  (setq title (replace-regexp-in-string "&#x27;" "'" title))))
 	  (kill-buffer buffer))
-	(if (and channel-id title)
-		(let ((result (format ";; %s\n(\"https://www.youtube.com/feeds/videos.xml?channel_id=%s\" youtube)"
-							  title channel-id)))
-		  (when (called-interactively-p 'interactive)
-			(insert result))
-		  result)
-	  (error "Could not extract channel information"))))
+
+	(if (and id title)
+		(format ";; %s\n(\"%s\" youtube)"
+				title
+				(format feed-format id))
+	  (error error-msg))))
+
+(defun cj/youtube-channel-to-elfeed-feed-format (url)
+  "Convert YouTube channel URL to elfeed-feeds format and insert at point."
+  (interactive "sYouTube Channel URL: ")
+  (let ((result (cj/youtube-to-elfeed-feed-format url 'channel)))
+	(when (called-interactively-p 'interactive)
+	  (insert result))
+	result))
 
 (defun cj/youtube-playlist-to-elfeed-feed-format (url)
   "Convert YouTube playlist URL to elfeed-feeds format and insert at point."
   (interactive "sYouTube Playlist URL: ")
-  (let ((playlist-id nil)
-		(title nil)
-		(buffer nil))
-	;; Extract playlist ID from URL
-	(when (string-match "/playlist\\?list=\\([^&]+\\)" url)
-	  (setq playlist-id (match-string 1 url)))
-
-	(unless playlist-id
-	  (error "Could not extract playlist ID from URL"))
-
-	;; Fetch the page
-	(setq buffer (url-retrieve-synchronously url))
-	(when buffer
-	  (with-current-buffer buffer
-		;; Decode the content as UTF-8
-		(set-buffer-multibyte t)
-		(decode-coding-region (point-min) (point-max) 'utf-8)
-
-		;; Search for the title in og:title meta tag
-		(goto-char (point-min))
-		(when (re-search-forward "<meta property=\"og:title\" content=\"\\([^\"]+\\)\"" nil t)
-		  (setq title (match-string 1))
-		  ;; Simple HTML entity decoding
-		  (setq title (replace-regexp-in-string "&amp;" "&" title))
-		  (setq title (replace-regexp-in-string "&lt;" "<" title))
-		  (setq title (replace-regexp-in-string "&gt;" ">" title))
-		  (setq title (replace-regexp-in-string "&quot;" "\"" title))
-		  (setq title (replace-regexp-in-string "&#39;" "'" title))
-		  (setq title (replace-regexp-in-string "&#x27;" "'" title))))
-	  (kill-buffer buffer))
-
-    (if (and playlist-id title)
-		(let ((result (format ";; %s\n(\"https://www.youtube.com/feeds/videos.xml?playlist_id=%s\" youtube)"
-							  title playlist-id)))
-		  (when (called-interactively-p 'interactive)
-			(insert result))
-		  result)
-	  (error "Could not extract playlist information"))))
+  (let ((result (cj/youtube-to-elfeed-feed-format url 'playlist)))
+	(when (called-interactively-p 'interactive)
+	  (insert result))
+	result))
 
 (provide 'elfeed-config)
 ;;; elfeed-config.el ends here.
