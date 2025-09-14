@@ -198,6 +198,10 @@ early-init.el.")
 ;;(require 'use-package-ensure)  ; Needed for :ensure to work
 (setq use-package-always-ensure t)  ; Auto-install packages
 
+;; Package signature checking
+(setq package-check-signature nil)
+;; (setq package-check-signature t)
+
 ;; Optional but recommended for better error messages during config loading
 ;;(setq use-package-expand-minimally nil)  ; Better error reporting
 ;;(setq use-package-compute-statistics t)  ; Set to t if you want timing info
