@@ -20,83 +20,97 @@
 ;;
 ;;; Code:
 
-;; --------------------------- EWW (Emacs Web Wowser) --------------------------
 
 (use-package eww
   :ensure nil ;; built-in
   :bind
-  ("M-E" . eww)
-  (:map eww-mode-map
-        ("<" . eww-back-url)                ;; in addition to 'l'
-        (">" . eww-forward-url)             ;; in addition to 'n'
-        ("i" . eww-toggle-images)           ;; toggle images on/off (default off)
-        ("u" . cj/eww-copy-url)             ;; copy url to clipboard
-        ("b" . cj/eww-bookmark-quick-add)   ;; quick add bookmark
-        ("B" . eww-list-bookmarks)          ;; list all eww bookmarks
-        ("/" . cj/eww-switch-search-engine) ;; swap the search engine
-        ("&" . cj/eww-open-in-external)     ;; open in external browser
-        ("o" . eww-open-in-new-buffer)
-        ("r" . cj/eww-readable))            ;; strip page down to readable content
+  (("M-E" . eww)
+   :map eww-mode-map
+   ("<" . eww-back-url)
+   (">" . eww-forward-url)
+   ("i" . eww-toggle-images)
+   ("u" . cj/eww-copy-url)
+   ("b" . cj/eww-bookmark-quick-add)
+   ("B" . eww-list-bookmarks)
+   ("/" . cj/eww-switch-search-engine)
+   ("&" . cj/eww-open-in-external)
+   ("o" . eww-open-in-new-buffer)
+   ("r" . eww-readable))
 
-  :init
+  :config
+  ;; Define search engines
   (defvar cj/eww-search-engines
-    '(("frog" . "http://frogfind.com/?q=")
-      ("ddg" . "https://duckduckgo.com/html?q=")
-      ("searx" . "https://searx.be/search?q="))
-    "List of search engines for EWW.")
+	'(("frog" . "http://frogfind.com/?q=")
+	  ("ddg" . "https://duckduckgo.com/html?q=")
+	  ("searx" . "https://searx.be/search?q="))
+	"List of search engines for EWW.")
 
+  (defvar cj/eww-current-search-engine "frog"
+	"Currently selected search engine.")
+
+  ;; Function definitions
   (defun cj/eww-switch-search-engine ()
-    "Switch between different search engines."
-    (interactive)
-    (let* ((engine (completing-read "Search engine: "
-                                    (mapcar #'car cj/eww-search-engines)))
-           (url (cdr (assoc engine cj/eww-search-engines))))
-      (setq eww-search-prefix url)
-      (message "Search engine set to: %s" engine)))
+	"Switch between different search engines."
+	(interactive)
+	(let* ((engine (completing-read "Search engine: "
+									(mapcar #'car cj/eww-search-engines)
+									nil t nil nil cj/eww-current-search-engine))
+		   (url (cdr (assoc engine cj/eww-search-engines))))
+	  (when url
+		(setq eww-search-prefix url)
+		(setq cj/eww-current-search-engine engine)
+		(message "Search engine set to: %s" engine))))
 
   (defun cj/eww-open-in-external ()
-    "Open current URL in external browser."
-    (interactive)
-    (when-let ((url (plist-get eww-data :url)))
-      (browse-url-xdg-open url)))
-
-  (defun cj/eww-readable ()
-    "Toggle readable mode for current page."
-    (interactive)
-    (let ((url (plist-get eww-data :url)))
-      (eww-readable)
-      (message "Readable mode applied")))
+	"Open current URL in external browser."
+	(interactive)
+	(unless (derived-mode-p 'eww-mode)
+	  (user-error "Not in EWW buffer"))
+	(if-let ((url (plist-get eww-data :url)))
+		(browse-url-xdg-open url)
+	  (user-error "No URL to open")))
 
   (defun cj/eww-bookmark-quick-add ()
-    "Quickly bookmark current page with minimal prompting."
-    (interactive)
-    (let ((url (plist-get eww-data :url))
-          (title (plist-get eww-data :title)))
-      (eww-add-bookmark url (read-string "Bookmark name: " title))
-      (message "Bookmarked: %s" title)))
+	"Quickly bookmark current page with minimal prompting."
+	(interactive)
+	(unless (derived-mode-p 'eww-mode)
+	  (user-error "Not in EWW buffer"))
+	(when-let ((title (plist-get eww-data :title)))
+	  (let ((eww-bookmarks-directory (expand-file-name "eww-bookmarks" user-emacs-directory)))
+		(unless (file-exists-p eww-bookmarks-directory)
+		  (make-directory eww-bookmarks-directory t))
+		(eww-add-bookmark)
+		(message "Bookmarked: %s" title))))
 
   (defun cj/eww-copy-url ()
-    "Copy the current EWW URL to clipboard."
-    (interactive)
-    (when (eq major-mode 'eww-mode)
-      (let ((current-url (plist-get eww-data :url)))
-        (if current-url
-            (progn
-              (kill-new current-url)
-              (message "URL copied: %s" current-url))
-          (message "No URL to copy")))))
+	"Copy the current EWW URL to clipboard."
+	(interactive)
+	(unless (derived-mode-p 'eww-mode)
+	  (user-error "Not in EWW buffer"))
+	(if-let ((current-url (plist-get eww-data :url)))
+		(progn
+		  (kill-new current-url)
+		  (message "URL copied: %s" current-url))
+	  (message "No URL to copy")))
 
-  (setq shr-use-colors nil)                          ;; disable colors in the html
-  (setq shr-bullet "• ")                             ;; unordered lists use bullet glyph
-  (setq eww-search-prefix "http://frogfind.com/?q=") ;; use Frog Find as search engine
-  (setq url-cookie-file "~/.local/share/cookies.txt")
-  (setq url-privacy-level '(email agent lastloc))   ;; don't send any info listed here
-
-  (setq shr-inhibit-images t)         ;; Don't load images by default
-  (setq shr-use-fonts nil)            ;; Don't use variable fonts
-  (setq shr-max-image-proportion 0.2) ;; Limit image size when enabled
-  (setq eww-retrieve-command nil))     ;; Use built-in URL retrieval
-
+  (defun cj/eww-clear-cookies ()
+	"Clear all cookies."
+	(interactive)
+	(setq url-cookie-storage nil)
+	(when (and url-cookie-file (file-exists-p url-cookie-file))
+	  (delete-file url-cookie-file))
+	(message "Cookies cleared"))
+  
+  ;; Configuration settings
+  (setq shr-use-colors nil)
+  (setq shr-bullet "• ")
+  (setq eww-search-prefix (cdr (assoc cj/eww-current-search-engine cj/eww-search-engines)))
+  (setq url-cookie-file (expand-file-name "~/.local/share/cookies.txt"))
+  (setq url-privacy-level '(email agent lastloc))
+  (setq shr-inhibit-images t)
+  (setq shr-use-fonts nil)
+  (setq shr-max-image-proportion 0.2)
+  (setq eww-retrieve-command nil))
 
 (provide 'eww-config)
 ;;; eww-config.el ends here
