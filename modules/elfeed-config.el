@@ -30,17 +30,23 @@
   (setq-default elfeed-search-filter "+unread")
   (setq elfeed-feeds
 		'(
-		  ;; The Prof G Pod – Scott Galloway
-		  ("https://www.youtube.com/feeds/videos.xml?channel_id=UC1E1SVcVyU3ntWMSQEp38Yw" youtube prof-g)
-
 		  ;; The Daily
-		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLdMrbgYfVl-s16D_iT2BJCJ90pWtTO1A4" youtube the-daily)
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLdMrbgYfVl-s16D_iT2BJCJ90pWtTO1A4" yt daily)
 
 		  ;; The Ezra Klein Show
-		  ("https://www.youtube.com/feeds/videos.xml?channel_id=UCnxuOd8obvLLtf5_-YKFbiQ" youtube ezra-klein)
+		  ("https://www.youtube.com/feeds/videos.xml?channel_id=UCnxuOd8obvLLtf5_-YKFbiQ" yt ezra-klein)
 
 		  ;; Pivot with Kara Swisher and Scott Galloway
-		  ("https://www.youtube.com/feeds/videos.xml?channel_id=UCBHGZpDF2fsqPIPi0pNyuTg" youtube pivot)
+		  ("https://www.youtube.com/feeds/videos.xml?channel_id=UCBHGZpDF2fsqPIPi0pNyuTg" yt pivot)
+
+		  ;; The Prof G Pod
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLtQ-jBytlXCasRuBG86m22rOQfrEPcctq" yt prof-g)
+
+		  ;; Raging Moderates
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLtQ-jBytlXCZRdJWyl1O_0Ee2ZBce6jCd" yt raging-moderates)
+
+		  ;; Prof G Markets
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLtQ-jBytlXCY28ucRF8P1mNMSG8uC06Aw" yt prof-g-markets)
 		  )))
 
 ;; ------------------------------ Elfeed Functions -----------------------------
@@ -140,8 +146,8 @@ Applies cj/eww-readable-nonce hook after EWW rendering."
 		 (output-template (format "%s/%%(channel)s-%%(title)s.%%(ext)s" videos-dir))
 		 (url-display (truncate-string-to-width url 50))
 		 (process (start-process "yt-dlp" buffer-name
-								"tsp" "yt-dlp" "--add-metadata" "-ic"
-								"-o" output-template url)))
+								 "tsp" "yt-dlp" "--add-metadata" "-ic"
+								 "-o" output-template url)))
 	(message "Started downloading: %s" url-display)
 	(set-process-sentinel process
 						  (lambda (proc event)
@@ -239,7 +245,7 @@ TYPE should be either 'channel or 'playlist."
 	  (kill-buffer buffer))
 
 	(if (and id title)
-		(format ";; %s\n(\"%s\" youtube)"
+		(format ";; %s\n(\"%s\" yt)"
 				title
 				(format feed-format id))
 	  (error error-msg))))
