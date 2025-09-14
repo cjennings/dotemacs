@@ -69,8 +69,9 @@ After running mu4e-view-save-attachments,
 *** TODO [#B] Org Branch to Org Roam
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
 ** TODO [#A] Custom Function: Delete Whitespace From Region is Broken  :bug:
-** TODO [#A] Implement dwim-shell-command for dirvish workflows :enhancement:
+** DOING [#B] Implement dwim-shell-command for dirvish workflows :enhancement:
 https://github.com/xenodium/dwim-shell-command
+*** TODO [#B] Test dwim-shell-commands 
 ** TODO [#A] file-config.el cj/xdg-open blocks Emacs process          :bug:
 Should change to non-blocking -- maybe use Emacs internal async?
 ** TODO [#A] Make org mode buffers swap with shift-meta       :enhancement:
@@ -148,7 +149,8 @@ After startup, `gcmh` dynamically adjusts GC thresholds to minimize pauses witho
         gcmh-high-cons-threshold (* 16 1024 1024)))
 #+end_src
 
-*** Load Dirvish on demand                               :complex2:impact3:
+*** DONE Load Dirvish on demand                          :complex2:impact3:
+CLOSED: [2025-09-13 Sat 20:56]
 `dirvish-config` requires Dirvish during initialization, negating deferral. Let `use-package` autoload the commands and enable overrides when Dired loads.
 #+begin_src emacs-lisp
 (use-package dirvish
@@ -180,9 +182,6 @@ This code actually exists in org-drill-config, but it doesn't seem to work
 *** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
 [[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
 Captured On: [2025-08-18 Mon 14:36]
-** TODO [#B] Dirvish Should Open Not Showing Hidden Files by Default  :bug:
-*** 2025-06-07 Sat @ 12:25:28 -0500 It isn't omitting the h switch on directory listings
-No. Didn't help
 ** TODO [#B] Emacs Add Difftastic Functionality               :enhancement:
 Linux Binary Install
 https://github.com/Wilfred/difftastic
@@ -522,7 +521,7 @@ Below is a small excerpt showing how you might start adding some of the “missi
 *** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
 ** TODO [#B] Review/Implement AI keyboard macros suggestions  :enhancement:
 [[file:ai-conversations/keyboard-macro-improvements_20250906-230640.gptel::+STARTUP: showeverything][keyboard macros conversation]]
-** TOIDO [#C] Emacs: Add Reverso Functionality                 :enhancement:
+** TODO [#C] Emacs: Add Reverso Functionality                  :enhancement:
 https://sqrtminusone.xyz/packages/reverso/
 check his config for a usage example
 Reverso
