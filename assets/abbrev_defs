@@ -85,6 +85,7 @@
     ("catagory" "category" nil :count 0)
     ("caugt" "caught" nil :count 0)
     ("cauhgt" "caught" nil :count 0)
+    ("ccosmetic" "cosmetic" nil :count 0)
     ("cematery" "cemetery" nil :count 0)
     ("cemetary" "cemetery" nil :count 0)
     ("changable" "changeable" nil :count 0)
