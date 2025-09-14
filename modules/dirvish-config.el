@@ -48,7 +48,6 @@ automatically displayed."
 		 (buff (generate-new-buffer (concat "*dired-open-with output: " file "*"))))
 	(start-process-shell-command command buff (concat command " \"" file "\""))))
 
-
 ;; -------------------------- Dired Copy Path As Kill --------------------------
 ;; copies the full path of the file at point to the clipboard
 
