@@ -1,5 +1,5 @@
 * Emacs Open Work
-** TODO [#A] EWW cannot load URLs any longer                           :bug:
+** TODO [#A] Fix build to install emacs.info file                      :bug:
 ** TODO [#A] Remove all diagnostic and debug code from dirvish         :bug:
 ** TODO [#A] Fix Org-msg Issue With Undo Outside                       :bug:
 ** DOING [#A] Test and Fix Org-Contacts                                :bug:
@@ -67,14 +67,15 @@ After running mu4e-view-save-attachments,
 - followed by RET (mu4e-view-save-attachments) to save all attachments,
 - or TAB (vertico-insert) followed by (comma) next to each file you want to save,
 - then RET (vertico-exit), to save selected attachments. 
+** TODO [#A] Org Agenda Work                                   :enhancement:
+*** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
+*** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
 ** DOING [#A] Org Roam Enhancements                            :enhancement:
 *** TODO [#B] Org Branch to Org Roam
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
 ** TODO [#A] Custom Function: Delete Whitespace From Region is Broken  :bug:
 ** DOING [#B] Test dwim-shell-commands                         :enhancement:
 https://github.com/xenodium/dwim-shell-command
-** TODO [#A] file-config.el cj/xdg-open blocks Emacs process          :bug:
-Should change to non-blocking -- maybe use Emacs internal async?
 ** TODO [#A] Make org mode buffers swap with shift-meta       :enhancement:
 (org-shiftmetaright) should be overridden with  (buf-move-right)
 (org-shiftmetaleft) should be overridden with  (buf-move-left)
@@ -178,7 +179,6 @@ Gather them together, move them there, and make it easy to run tests per module 
 ** TODO [#B] Add Hugo Blogging Functionality                  :enhancement:
 ** TODO [#B] Capture and Refile to Drill Files                :enhancement:
 This code actually exists in org-drill-config, but it doesn't seem to work
-** TODO [#B] Change Elfeed to Be About Playing Podcasts       :enhancement:
 ** TODO [#B] Decent HTML Exports From Org Mode With Inline CSS :enhancement:
 *** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
 [[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
@@ -517,9 +517,6 @@ Below is a small excerpt showing how you might start adding some of the “missi
    `(org-done                 ((t (:foreground ,dupre-green+2 :weight bold))))
    )
 #+end_src
-** TODO [#B] Org Agenda Work                                  :enhancement:
-*** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
-*** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
 ** TODO [#B] Review/Implement AI keyboard macros suggestions  :enhancement:
 [[file:ai-conversations/keyboard-macro-improvements_20250906-230640.gptel::+STARTUP: showeverything][keyboard macros conversation]]
 ** TODO [#C] Emacs: Add Reverso Functionality                  :enhancement:
@@ -538,7 +535,6 @@ reverso.el is a package of mine that provides Emacs interface for https://revers
     (reverso-history-mode))
 #+end_src
 ** TODO [#C] Org Keyword Discolored Until Reapplying Theme            :bug:
-** TODO [#C] Emacs: org project should be yellow or perhaps green like project
 * Emacs Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
 *** Specification
@@ -642,93 +638,6 @@ Depending on context, can I add the
 - First few words of the line
 Do we think the reordering behavior when deleting locations might confuse users? How to simplify?
 What happens if a buffer is deleted that doesn't have a file associated with it? If we're using registers underneath, how do registers handle this?
-** TODO [#C] Review Titlecase Functionality
-added in custom. Came from: https://codeberg.org/acdw/titlecase.el
-Originally seen at https://emacselements.com/true-titlecase-in-emacs.html
-** TODO [#C] Revisit and Refactor Localrepo Functionality
-** TODO [#C] Fix Exporting Documents to HTML.
-This appears to work with emacs -q. What's up with your config?
-** TODO [#C] Rename 'sync-dir' Variable in Init File to 'org-dir'
-[[https://github.com/ryuslash/mode-icons][ryuslash/mode-icons: Show icons instead of mode names]]
-Captured On: [2025-06-07 Sat 13:29]
-** TODO [#C] Emacs Change Appropriate Use-package Installs to :vc
-especially where you're cloning them to provide fixes
-** TODO [#C] Emacs Config: Narrowing Org doesn't allow refresh by type
-After generating an org agenda list, I can narrow the type to all DONE or IN-PROGRESS. However when I use my custom functions to just get the agenda for the current buffer, I can't. The scope has now widened and the refresh is for all buffers.
-** TODO [#C] Add a Restrict to Subtree Org Agenda Command
-In Org-mode the “agenda” machinery by default doesn’t pay any attention to your buffer­narrow — it always scans whole files in your =org-agenda-files=.  However, you can teach Org-agenda to only look between two points (the start and end of your current subtree) by using the built-in “restrict” hooks:
-1.  =org‐agenda‐restrict=         – turn on restriction
-2.  =org‐agenda‐restrict‐begin=  – a marker or position where scanning begins
-3.  =org‐agenda‐restrict‐end=    – where it ends
-4.  (optionally) set =org-agenda-files= to just your current file
-Here is a drop-in =org-agenda-custom-commands= entry that will give you a “Subtree TODOs” view limited to the subtree you’re on.  Put this in your Emacs init:
-#+begin_src  emacs-lisp
-  ;; -------------------------------------------------------------------
-  ;; 1) Define a custom agenda command "C" (hit C-c a C)
-  ;;    that shows only TODO entries in the current subtree.
-  ;; -------------------------------------------------------------------
-  (with-eval-after-load 'org
-    (add-to-list 'org-agenda-custom-commands
-                 '("C"                                ; the key you press after C-c a
-                   "Subtree TODOs"                   ; a descriptive name
-                   ((todo ""                         ; match any TODO keyword
-                          ;; === per-block settings ===
-                          ;; only look in this file
-                          (org-agenda-files (list buffer-file-name))
-                          ;; enable the restriction engine
-                          (org-agenda-restrict t)
-                          ;; start at the top of the current heading
-                          (org-agenda-restrict-begin
-                           (progn (org-back-to-heading t) (point)))
-                          ;; end at the end of this subtree
-                          (org-agenda-restrict-end
-                           (progn (org-end-of-subtree t) (point))))
-                    ;; you can add more blocks here if you like
-                    ))))
-#+end_src
-How this works, step by step:
-• We bind a new custom command under the key “C” (so you’ll type =C-c a C=).
-• In that command we use the =todo= matcher =""= to catch every headline whose state is one of your TODO keywords.
-• We dynamically set
-– =org-agenda-files= to just the current buffer’s file,
-– =org-agenda-restrict= to non-nil so Org will honor the begin/end markers,
-– =org-agenda-restrict-begin= to the position of the current heading,
-– =org-agenda-restrict-end= to the end of the subtree.
-When you invoke it (=C-c a C=), Org will only scan headlines in that slice of the file and will build you a mini-agenda of TODO items from exactly that subtree.
-Quick alternative: if you don’t need the full agenda machinery (dates, deadlines, etc.) but just want a fast outline of your TODOs under the current heading, you can also use the sparse-tree command:
-• =C-c / t=  ⇒ shows only the TODO headings in the narrowed or whole buffer as an indented outline.
-— Tips & Pitfalls —
-• Make sure your file is saved and in =org-agenda-files= (the snippet above forces it).
-• Remember to call =org-narrow-to-subtree= (or let the command compute its own begin/end via =org-back-to-heading=/=org-end-of-subtree=).
-• If you rename or move your file, Emacs must still see =buffer-file-name= valid.
-• You can duplicate the above snippet for other TODO states, agenda views, or matchers (deadlines, tags, etc.)
-With this in place you effectively get an agenda tailored to exactly the bit of tree you’re working on.
-** TODO [#C] Find Another Keymapping for Emojify
-** TODO [#D] Emacs Signal Client
-*** TODO investigate: net/signel.org · master · undefined · GitLab
-[[https://gitlab.com/jaor/elibs/-/blob/master/net/signel.org][net/signel.org · master · undefined · GitLab]]
-Captured On: [2025-05-29 Thu 04:24]
-*** TODO investigate: signel, a barebones signal chat on top of signal-cli
-[[https://jao.io/blog/signel.html][signel, a barebones signal chat on top of signal-cli]]
-Captured On: [2025-05-29 Thu 04:23]
-** TODO [#D] Add test document to test graphviz-dot-mode
-** TODO [#D] Consider Replicating Some of This Auctex and PDF Tools Code
-[[https://www.reddit.com/r/emacs/comments/cd6fe2/how_to_make_emacs_a_latex_ide/][How to make Emacs a Latex IDE? : r/emacs]]
-Captured On: [2025-08-14 Thu 03:43]
-** GitHub - xenodium/dwim-shell-command: Save your shell commands/scripts and apply from Emacs with ease.
-[[https://github.com/xenodium/dwim-shell-command][GitHub - xenodium/dwim-shell-command: Save your shell commands/scripts and apply from Emacs with ease.]]
-[[https://xenodium.com/how-i-batch-apply-and-save-one-liners][How I batch apply and save one-liners]]
-Captured On: [2025-08-01 Fri 03:11]
-** TODO [#D] Install ZOxide Integration into Emacs
-[[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
-Captured On: [2025-06-07 Sat 17:11]
-** My PDF Tools Settings
-[[https://emacselements.com/pdf-tools-settings.html][My PDF Tools Settings]]
-Captured On: [2025-09-03 Wed 11:49]
-** TODO [#D] manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.
-[[https://github.com/manateelazycat/awesome-tray][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
-Captured On: [2025-06-07 Sat 13:29]
-** TODO [#D] ryuslash/mode-icons: Show icons instead of mode names
 ** TODO [#B] Get Tufte.css working and as a separate entry
 Below is one way to get Org-mode’s HTML exporter to play nicely with Tufte-CSS.  The basic recipe is:
 1. Inject Tufte’s stylesheet into every HTML export
@@ -792,6 +701,94 @@ Drop this in =~/.emacs.d/tests/test-org-tufte.el= and run =M-x ert RET t RET=:
 (should-not (string-match-p "div id=\"footnotes\"" html))))
 Once that test passes, you know your footnotes are being rewritten into Tufte-style side notes.  From there, you can sprinkle in additional filters (e.g. wrap =<blockquote>= in a =.sidenote= class, override list/p table styles, etc.) or just let the rest of tufte.css style Org’s default tags (h1, p, ul, table, code, etc.).
 Enjoy your beautifully-typeset Org → HTML exports in true Tufte style!
+** TODO [#C] Review Titlecase Functionality
+added in custom. Came from: https://codeberg.org/acdw/titlecase.el
+Originally seen at https://emacselements.com/true-titlecase-in-emacs.html
+** TODO [#C] Revisit and Refactor Localrepo Functionality
+** TODO [#C] Fix Exporting Documents to HTML.
+This appears to work with emacs -q. What's up with your config?
+** TODO [#C] Rename 'sync-dir' Variable in Init File to 'org-dir'
+[[https://github.com/ryuslash/mode-icons][ryuslash/mode-icons: Show icons instead of mode names]]
+Captured On: [2025-06-07 Sat 13:29]
+** TODO [#C] Emacs Change Appropriate Use-package Installs to :vc
+especially where you're cloning them to provide fixes
+** TODO [#C] Emacs Config: Narrowing Org doesn't allow refresh by type
+After generating an org agenda list, I can narrow the type to all DONE or IN-PROGRESS. However when I use my custom functions to just get the agenda for the current buffer, I can't. The scope has now widened and the refresh is for all buffers.
+** TODO [#C] Add a Restrict to Subtree Org Agenda Command
+In Org-mode the “agenda” machinery by default doesn’t pay any attention to your buffer­narrow — it always scans whole files in your =org-agenda-files=.  However, you can teach Org-agenda to only look between two points (the start and end of your current subtree) by using the built-in “restrict” hooks:
+1.  =org‐agenda‐restrict=         – turn on restriction
+2.  =org‐agenda‐restrict‐begin=  – a marker or position where scanning begins
+3.  =org‐agenda‐restrict‐end=    – where it ends
+4.  (optionally) set =org-agenda-files= to just your current file
+Here is a drop-in =org-agenda-custom-commands= entry that will give you a “Subtree TODOs” view limited to the subtree you’re on.  Put this in your Emacs init:
+#+begin_src  emacs-lisp
+  ;; -------------------------------------------------------------------
+  ;; 1) Define a custom agenda command "C" (hit C-c a C)
+  ;;    that shows only TODO entries in the current subtree.
+  ;; -------------------------------------------------------------------
+  (with-eval-after-load 'org
+    (add-to-list 'org-agenda-custom-commands
+                 '("C"                                ; the key you press after C-c a
+                   "Subtree TODOs"                   ; a descriptive name
+                   ((todo ""                         ; match any TODO keyword
+                          ;; === per-block settings ===
+                          ;; only look in this file
+                          (org-agenda-files (list buffer-file-name))
+                          ;; enable the restriction engine
+                          (org-agenda-restrict t)
+                          ;; start at the top of the current heading
+                          (org-agenda-restrict-begin
+                           (progn (org-back-to-heading t) (point)))
+                          ;; end at the end of this subtree
+                          (org-agenda-restrict-end
+                           (progn (org-end-of-subtree t) (point))))
+                    ;; you can add more blocks here if you like
+                    ))))
+#+end_src
+How this works, step by step:
+• We bind a new custom command under the key “C” (so you’ll type =C-c a C=).
+• In that command we use the =todo= matcher =""= to catch every headline whose state is one of your TODO keywords.
+• We dynamically set
+– =org-agenda-files= to just the current buffer’s file,
+– =org-agenda-restrict= to non-nil so Org will honor the begin/end markers,
+– =org-agenda-restrict-begin= to the position of the current heading,
+– =org-agenda-restrict-end= to the end of the subtree.
+When you invoke it (=C-c a C=), Org will only scan headlines in that slice of the file and will build you a mini-agenda of TODO items from exactly that subtree.
+Quick alternative: if you don’t need the full agenda machinery (dates, deadlines, etc.) but just want a fast outline of your TODOs under the current heading, you can also use the sparse-tree command:
+• =C-c / t=  ⇒ shows only the TODO headings in the narrowed or whole buffer as an indented outline.
+— Tips & Pitfalls —
+• Make sure your file is saved and in =org-agenda-files= (the snippet above forces it).
+• Remember to call =org-narrow-to-subtree= (or let the command compute its own begin/end via =org-back-to-heading=/=org-end-of-subtree=).
+• If you rename or move your file, Emacs must still see =buffer-file-name= valid.
+• You can duplicate the above snippet for other TODO states, agenda views, or matchers (deadlines, tags, etc.)
+With this in place you effectively get an agenda tailored to exactly the bit of tree you’re working on.
+** TODO [#C] Find Another Keymapping for Emojify
+** TODO [#D] Emacs: org project should be yellow or green like todo
+** TODO [#D] Emacs Signal Client
+*** TODO investigate: net/signel.org · master · undefined · GitLab
+[[https://gitlab.com/jaor/elibs/-/blob/master/net/signel.org][net/signel.org · master · undefined · GitLab]]
+Captured On: [2025-05-29 Thu 04:24]
+*** TODO investigate: signel, a barebones signal chat on top of signal-cli
+[[https://jao.io/blog/signel.html][signel, a barebones signal chat on top of signal-cli]]
+Captured On: [2025-05-29 Thu 04:23]
+** TODO [#D] Add test document to test graphviz-dot-mode
+** TODO [#D] Consider Replicating Some of This Auctex and PDF Tools Code
+[[https://www.reddit.com/r/emacs/comments/cd6fe2/how_to_make_emacs_a_latex_ide/][How to make Emacs a Latex IDE? : r/emacs]]
+Captured On: [2025-08-14 Thu 03:43]
+** GitHub - xenodium/dwim-shell-command: Save your shell commands/scripts and apply from Emacs with ease.
+[[https://github.com/xenodium/dwim-shell-command][GitHub - xenodium/dwim-shell-command: Save your shell commands/scripts and apply from Emacs with ease.]]
+[[https://xenodium.com/how-i-batch-apply-and-save-one-liners][How I batch apply and save one-liners]]
+Captured On: [2025-08-01 Fri 03:11]
+** TODO [#D] Install ZOxide Integration into Emacs
+[[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
+Captured On: [2025-06-07 Sat 17:11]
+** My PDF Tools Settings
+[[https://emacselements.com/pdf-tools-settings.html][My PDF Tools Settings]]
+Captured On: [2025-09-03 Wed 11:49]
+** TODO [#D] manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.
+[[https://github.com/manateelazycat/awesome-tray][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
+Captured On: [2025-06-07 Sat 13:29]
+** TODO [#D] ryuslash/mode-icons: Show icons instead of mode names
 * Emacs Config Ideas/References
 ** emacs-tw/awesome-elisp: A curated list of Emacs Lisp development resources
 [[https://github.com/emacs-tw/awesome-elisp][emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources]]
