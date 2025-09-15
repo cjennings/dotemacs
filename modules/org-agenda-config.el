@@ -68,27 +68,27 @@ DIRECTORY is a string of the path to begin the search."
 
 ;; ---------------------------- Rebuild Org Agenda ---------------------------
 ;; builds the org agenda list from all agenda targets.
-;; agenda targets is the schedule, project todos, inbox, and org roam projects.
+;; agenda targets is the schedule, contacts, project todos,
+;; inbox, and org roam projects.
 
 (defun cj/build-org-agenda-list ()
   "Rebuilds the org agenda list.
 Begins with the inbox-file and schedule-file, then searches for org-roam
-Projects and adds all todo.org files from code and project directories."
+Projects and adds all todo.org files from code and project directories.
+Also includes contacts-file for birthdays/anniversaries."
   (interactive)
-  ;; reset org-agenda-files to inbox-file
-  (setq org-agenda-files (list inbox-file schedule-file))
+  ;; reset org-agenda-files to inbox-file, schedule-file, and contacts-file
+  (setq org-agenda-files (list inbox-file schedule-file contacts-file))
+
   (let ((new-files
-         (append
-          (cj/org-roam-list-notes-by-tag "Project"))))
-    (dolist (file new-files)
-      (unless (member file org-agenda-files)
-        (setq org-agenda-files (cons file org-agenda-files)))))
+		 (append
+		  (cj/org-roam-list-notes-by-tag "Project"))))
+	(dolist (file new-files)
+	  (unless (member file org-agenda-files)
+		(setq org-agenda-files (cons file org-agenda-files)))))
 
   (cj/add-files-to-org-agenda-files-list projects-dir)
   (cj/add-files-to-org-agenda-files-list code-dir))
-
-;; ------------------------------ Agenda List All ------------------------------
-;; an agenda listing tasks from all available agenda targets.
 
 (defun cj/todo-list-all-agenda-files ()
   "Displays an \\='org-agenda\\=' todo list.
