@@ -22,14 +22,9 @@
 (defcustom cj/media-players
   '((mpv . (:command "mpv"
 					 :args nil
-					 :name "mpv"
+					 :name "MPV"
 					 :needs-stream-url nil
-					 :yt-dlp-formats nil))  ; nil means mpv handles it internally
-	(mpv-ytdl . (:command "mpv"
-						  :args nil
-						  :name "mpv (via yt-dlp)"
-						  :needs-stream-url t
-						  :yt-dlp-formats ("best[height<=720]" "22" "18" "best")))
+					 :yt-dlp-formats nil))
 	(vlc . (:command "vlc"
 					 :args nil
 					 :name "VLC"
@@ -333,7 +328,7 @@ Applies cj/eww-readable-nonce hook after EWW rendering."
 			 (with-current-buffer (process-buffer proc)
 			   (goto-char (point-min))
 			   (when (re-search-forward "ERROR:" nil t)
-				 (message "DEBUG: yt-dlp error: %s"
+				 (messageq "DEBUG: yt-dlp error: %s"
 						  (buffer-substring-no-properties
 						   (line-beginning-position)
 						   (line-end-position)))))))
