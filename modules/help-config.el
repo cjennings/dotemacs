@@ -72,16 +72,18 @@ Preserves any unsaved changes and checks if the file exists."
 			  (kill-buffer (current-buffer))
 			  (info file-name))
 		  (message "Not a valid info file: %s" file-name)))))
+  :init
+  ;; Add personal info files BEFORE Info mode initializes
+  (let ((personal-info-dir (expand-file-name "assets/info" user-emacs-directory)))
+	(when (file-directory-p personal-info-dir)
+	  (setq Info-directory-list (list personal-info-dir))))
+  ;; the above makes the directory the info list. the below adds it to the default list
+  ;;      (add-to-list 'Info-default-directory-list personal-info-dir)))
   :hook
   (info-mode . info-persist-history-mode)
   :config
-  ;; Add personal info files in emacs config assets directory
-  (let ((personal-info-dir (concat user-emacs-directory "assets/info")))
-	(when (file-directory-p personal-info-dir)
-	  (add-to-list 'Info-directory-list personal-info-dir))))
-
-(add-to-list 'auto-mode-alist '("\\.info\\'" . cj/open-with-info-mode))
-
+  ;; Make .info files open with our custom function
+  (add-to-list 'auto-mode-alist '("\\.info\\'" . cj/open-with-info-mode)))
 
 (provide 'help-config)
-;;; help-config.el ends here
+;;; help-config.el ends here.
