@@ -48,7 +48,7 @@
 
 ;; --------------------------- Internal Functionality --------------------------
 
-(require 'diff-config)           ;; ediff and ztree configuration
+(require 'diff-config)           ;; diff and merge functionality w/in Emacs
 (require 'eshell-vterm-config)   ;; shell and terminal configuration
 (require 'flyspell-and-abbrev)   ;; spell check and auto-correct
 (require 'help-utils)            ;; search: arch-wiki, devdoc, tldr, wikipedia
@@ -66,9 +66,9 @@
 (require 'dashboard-config)      ;; the nice landing page with links
 (require 'dirvish-config)        ;; file manager configuration
 (require 'dwim-shell-config)     ;; shell commands brought to dirvish/dired
-(require 'elfeed-config)
-(require 'erc-config)            ;; erc allows access to irc
-(require 'eww-config)
+(require 'elfeed-config)         ;; feed reader and podcast player/downloader
+(require 'erc-config)            ;; seamless IRC client
+(require 'eww-config)            ;; text mode web browsing, w/o javascript
 (require 'httpd-config)
 (require 'mail-config)           ;; email using mu4e and org-msg
 (require 'markdown-config)
@@ -91,15 +91,15 @@
 
 ;; ---------------------------------- Org Mode ---------------------------------
 
-(require 'org-config)
-(require 'org-agenda-config)
-(require 'org-babel-config)
+(require 'org-config)            ;; basic org-mode settings
+(require 'org-agenda-config)     ;; agenda and task tracking
+(require 'org-babel-config)      ;; org-mode prog blocks; literate programming
 (require 'org-capture-config)
-(require 'org-refile-config)
+(require 'org-refile-config)     ;; refile org-branches
 (require 'org-drill-config)
 (require 'org-export-config)
-(require 'org-roam-config)
-(require 'org-contacts-config)
+(require 'org-roam-config)       ;; personal knowledge management in org mode
+(require 'org-contacts-config)   ;; fully integrated org-mode contacts management
 
 ;; ------------------------------- Ai Integration ------------------------------
 
