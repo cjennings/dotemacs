@@ -20,6 +20,7 @@
 ;; project todo.org files found in project-dir and code-dir.
 
 ;;; Code:
+(require 'user-constants)
 
 (use-package org-agenda
   :ensure nil ;; built-in
@@ -167,15 +168,20 @@ KEYWORDS must be a list of strings."
 		 ((org-agenda-compact-blocks nil)))))
 
 
-	(defun cj/main-agenda-display ()
-	  "Display the main \'org-agenda\' display.
-This uses all org-agenda targes and presents three sections:
-- all unfinished priority A tasks
-- the weekly schedule, including the habit consistency graph
-- all priority B and C tasks"
-	  (interactive)
-	  (cj/build-org-agenda-list)
-	  (org-agenda "a" "d"))
+(defun cj/main-agenda-display ()
+  "Display the main daily org-agenda view.
+This uses all org-agenda targets and presents three sections:
+- All unfinished priority A tasks
+- Today's schedule, including habits with consistency graphs
+- All priority B and C unscheduled/undeadlined tasks
+
+The agenda is rebuilt from all sources before display, including:
+- inbox-file and schedule-file
+- Org-roam nodes tagged as \"Project\"
+- All todo.org files in projects-dir and code-dir"
+  (interactive)
+  (cj/build-org-agenda-list)
+  (org-agenda "a" "d"))
 (global-set-key (kbd "<f8>") #'cj/main-agenda-display)
 
 ;; ------------------------- Add Timestamp To Org Entry ------------------------
