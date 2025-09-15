@@ -22,8 +22,8 @@
   (setq org-contacts-matcher "EMAIL<>\"\"|PHONE<>\"\"|ADDRESS<>\"\"")
 
   ;; Birthday and anniversary handling
-  (setq org-contacts-birthday-format "Birthday: %l (%Y)")
-  (setq org-contacts-anniversary-format "Anniversary: %l (%Y)")
+  (setq org-contacts-birthday-format "🎂 It's %l's birthday today! 🎂")
+  (setq org-contacts-anniversary-format "💑 %l's anniversary 💑")
 
   ;; Integration with completion frameworks
   (setq org-contacts-complete-functions
@@ -38,6 +38,30 @@
   (require 'org-vcard nil t))
 
 
+(with-eval-after-load 'org-agenda
+  ;; Remove the direct hook first (in case it's already added)
+  (remove-hook 'org-agenda-finalize-hook 'org-contacts-anniversaries)
+
+  ;; Add a wrapper function that ensures proper context
+  (defun cj/org-contacts-anniversaries-safe ()
+	"Safely call org-contacts-anniversaries with required bindings."
+	(require 'diary-lib)
+	;; These need to be dynamically bound for diary functions
+	(defvar date)
+	(defvar entry)
+	(defvar original-date)
+	(let ((date (calendar-current-date))
+		  (entry "")
+		  (original-date (calendar-current-date)))
+	  (ignore-errors
+		(org-contacts-anniversaries))))
+
+  ;; Use the safe wrapper instead
+  (add-hook 'org-agenda-finalize-hook 'cj/org-contacts-anniversaries-safe)
+
+  ;; Keep your other settings
+  (setq org-contacts-anniversary-agenda-days 7))
+
 ;;; ---------------------------- Capture Templates ------------------------------
 
 (with-eval-after-load 'org-capture
@@ -48,7 +72,7 @@
 :EMAIL: %(cj/org-contacts-template-email)
 :PHONE:
 :ADDRESS:
-:BIRTHDAY:
+:BIRTHDAY:  %^{YYYY-MM-DD}
 :NOTE: %^{Note}
 :END:
 Added: %U")))
@@ -224,5 +248,7 @@ Added: %U")))
 ;; Bind the org-contacts map to the C-c C prefix
 (global-set-key (kbd "C-c C") cj/org-contacts-map)
 
+
+
 (provide 'org-contacts-config)
-;;; org-contacts-config.el ends here
+;;; org-contacts-config.el ends here.
