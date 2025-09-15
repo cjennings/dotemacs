@@ -119,17 +119,22 @@
   :ensure nil ;; built-in
   :after ob-core
   :config
-  (add-to-list 'org-structure-template-alist '("awk"    . "src awk"))
-  (add-to-list 'org-structure-template-alist '("sed"    . "src sed"))
-  (add-to-list 'org-structure-template-alist '("bash"   . "src bash"))
-  (add-to-list 'org-structure-template-alist '("dot"    . "src dot :file temp.png :cmdline -Kdot -Tpng"))
-  (add-to-list 'org-structure-template-alist '("el"     . "src emacs-lisp"))
-  (add-to-list 'org-structure-template-alist '("json"   . "src json"))
-  (add-to-list 'org-structure-template-alist '("latex"  . "src latex"))
-  (add-to-list 'org-structure-template-alist '("py"     . "src python"))
-  (add-to-list 'org-structure-template-alist '("scheme" . "src scheme"))
-  (add-to-list 'org-structure-template-alist '("shell"  . "src shell"))
-  (add-to-list 'org-structure-template-alist '("yaml"   . "src yaml")))
+  (add-to-list 'org-structure-template-alist '("awk"     . "src awk"))
+  (add-to-list 'org-structure-template-alist '("sed"     . "src sed"))
+  (add-to-list 'org-structure-template-alist '("bash"    . "src bash"))
+  (add-to-list 'org-structure-template-alist '("zsh"     . "src zsh"))
+  (add-to-list 'org-structure-template-alist '("dot"     . "src dot :file temp.png :cmdline -Kdot -Tpng"))
+  (add-to-list 'org-structure-template-alist '("el"      . "src emacs-lisp"))
+  (add-to-list 'org-structure-template-alist '("json"    . "src json"))
+  (add-to-list 'org-structure-template-alist '("latex"   . "src latex"))
+  (add-to-list 'org-structure-template-alist '("py"      . "src python"))
+  (add-to-list 'org-structure-template-alist '("scheme"  . "src scheme"))
+  (add-to-list 'org-structure-template-alist '("shell"   . "src shell"))
+  (add-to-list 'org-structure-template-alist '("yaml"    . "src yaml"))
+  ;; miscellaneous
+  (add-to-list 'org-structure-template-alist '("example" . "example"))
+  (add-to-list 'org-structure-template-alist '("quote"   . "quote"))
+  (add-to-list 'org-structure-template-alist '("output"  . "output")))
 
 ;; requires ob-racket, not yet in repositories
 ;;   (add-to-list 'org-structure-template-alist '("sicp"   . "src racket :lang sicp"))
