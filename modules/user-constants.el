@@ -68,6 +68,9 @@
 (defconst snippets-dir (expand-file-name "snippets/" sync-dir)
   "The location of ya-snippet snippets.")
 
+(defvar sounds-dir (expand-file-name "assets/sounds/" user-emacs-directory)
+  "Directory containing sound files for notifications and timers.")
+
 (defconst video-recordings-dir (expand-file-name "recordings/" videos-dir)
   "The location to save the ffmpeg recordings.")
 
@@ -92,6 +95,9 @@
 
 (defvar contacts-file (expand-file-name "contacts.org" sync-dir)
   "The location of the org file containing contact information.")
+
+(defvar notification-sound (expand-file-name "BitWave.opus" sounds-dir)
+  "The location of the audio file to use as the default notification.")
 
 (defvar webclipped-file (expand-file-name "webclipped.org" sync-dir)
   "The location of the org file that keeps webclips to read.
@@ -128,13 +134,13 @@ This ensures that all directories and files required by the Emacs configuration
 exist, creating them if necessary. This makes the configuration more robust
 and portable across different machines."
   (interactive)
-  (mapc 'cj/verify-or-create-dir (list sync-dir
-                                       roam-dir
-                                       journals-dir
-                                       video-recordings-dir
-                                       snippets-dir
-                                       drill-dir))
-  (mapc 'cj/verify-or-create-file (list schedule-file
+  (mapc 'cj/verify-or-create-dir (list drill-dir
+									   journals-dir
+									   roam-dir
+									   snippets-dir
+									   video-recordings-dir
+									   sync-dir))
+ (mapc 'cj/verify-or-create-file (list schedule-file
                                         inbox-file
 										article-archive
 										reading-notes-file

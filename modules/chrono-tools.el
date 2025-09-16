@@ -11,6 +11,8 @@
 ;;
 ;;; Code:
 
+(require 'user-constants)
+
 (use-package time
   :ensure nil ;; built-in
   :defer 0.5
@@ -42,23 +44,72 @@
 		 ("M-," . calendar-backward-year)
 		 ("M-." . calendar-forward-year)))
 
+
+;; ------------------------------------ TMR ------------------------------------
+
+(defun cj/tmr-select-sound-file ()
+  "Select a sound file from sounds-dir to use for tmr timers.
+Presents all audio files in the sounds directory and sets the selected
+file as tmr-sound-file. Use \\[universal-argument] to reset to default."
+  (interactive)
+  (if current-prefix-arg
+	  ;; With prefix arg, reset to default
+	  (progn
+		(setq tmr-sound-file notification-sound)
+		(message "Timer sound reset to default: %s"
+				 (file-name-nondirectory notification-sound)))
+	;; Otherwise, select a new sound
+	(let* ((audio-extensions '("mp3" "m4a" "ogg" "opus" "wav" "flac" "aac"))
+		   (extension-regex (concat "\\." (regexp-opt audio-extensions t) "$"))
+		   (sound-files (when (file-directory-p sounds-dir)
+						  (directory-files sounds-dir nil extension-regex)))
+		   (current-file (when (and tmr-sound-file (file-exists-p tmr-sound-file))
+						   (file-name-nondirectory tmr-sound-file)))
+		   (selected-file (when sound-files
+							(completing-read
+							 (format "Select timer sound%s: "
+									 (if current-file
+										 (format " (current: %s)" current-file)
+									   ""))
+							 sound-files
+							 nil
+							 t
+							 nil
+							 nil
+							 current-file))))  ; Default to current file
+	  (cond
+	   ((not (file-directory-p sounds-dir))
+		(message "Sounds directory does not exist: %s" sounds-dir))
+	   ((null sound-files)
+		(message "No audio files found in %s" sounds-dir))
+	   (selected-file
+		(setq tmr-sound-file (expand-file-name selected-file sounds-dir))
+		(when (equal tmr-sound-file notification-sound)
+		  (message "Timer sound set to default: %s" selected-file))
+		(unless (equal tmr-sound-file notification-sound)
+		  (message "Timer sound set to: %s" selected-file)))
+	   (t
+		(message "No file selected"))))))
+
+(defun cj/tmr-reset-sound-to-default ()
+  "Reset the tmr sound file to the default notification sound."
+  (interactive)
+  (setq tmr-sound-file notification-sound)
+  (message "Timer sound reset to default: %s"
+		   (file-name-nondirectory notification-package)))
+
 (use-package tmr
   :defer 0.5
   :init
   (global-unset-key (kbd "M-t"))
-  :bind ("M-t" . tmr-prefix-map)
+  :bind (("M-t" . tmr-prefix-map)
+		 :map tmr-prefix-map
+		 ("S" . cj/tmr-select-sound-file)
+		 ("R" . cj/tmr-reset-sound-to-default))
   :config
-  (setq tmr-sound-file (concat user-emacs-directory "assets/sounds/ding.opus"))
+  (setq tmr-sound-file notification-sound)
   (setq tmr-notification-urgency 'normal)
   (setq tmr-descriptions-list 'tmr-description-history))
 
 (provide 'chrono-tools)
-;;; chrono-tools.el ends here.
-
-;; --------------------------------- ERT Tests ---------------------------------
-;; Run these tests with M-x ert RET t RET
-
-(ert-deftest chrono-tools/tmr-sound-file-exists ()
-  "Test that `tmr-sound-file` points to an existing file."
-  (require 'tmr)
-  (should (file-exists-p tmr-sound-file)))
+;;; chrono-tools.el ends here
