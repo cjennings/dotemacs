@@ -1,6 +1,8 @@
 * Emacs Open Work
 ** TODO [#A] Fix Org-msg Issue With Undo Outside                       :bug:
 ** DOING [#A] Test and Fix Org-Contacts                                :bug:
+*** TODO [#B] Finding Contact should only match Org Header text
+*** TODO [#B] Viewing Contacts should just bring up main contacts org file, not table
 *** Tests
 - [X] Complete addresses with org-contact in to, cc, bcc
 - [ ] Complete addresses with new org-contact in to, cc, bcc
@@ -22,9 +24,6 @@ https://www.reddit.com/r/emacs/comments/1aguy8g/how_to_get_consultripgrep_to_rem
 https://gitlab.com/OlMon/consult-flyspell
 https://github.com/ghosty141/consult-git-log-grep
 https://github.com/minad/affe
-*** Errors to Fix
-**** TODO Git Timemachine No Longer Displays in Descending Time Order
-**** TODO Switching Project No Longer Brings Up Project File
 *** Manual Testing
 Here's a comprehensive test checklist we should verify after migration:
 **** Core Functionality Tests
@@ -73,11 +72,9 @@ https://github.com/hakimel/reveal.js
 https://www.youtube.com/watch?v=psDpCpcIVYs&t=10s
 **** Install Org Reveal
 
-
 ** DOING [#B] Org Roam Enhancements                            :enhancement:
 *** TODO [#B] Org Branch to Org Roam
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
-** TODO [#B] Fix Custom Function: Delete Whitespace From Region        :bug:
 ** DOING [#B] Test dwim-shell-commands                         :enhancement:
 https://github.com/xenodium/dwim-shell-command
 ** TODO [#B] Make org mode buffers swap with shift-meta        :enhancement:
