@@ -96,7 +96,7 @@ Preserves any unsaved changes and checks if the file exists."
   ;; 	(when (file-directory-p personal-info-dir)
   ;;    (setq Info-directory-list (list personal-info-dir))))
   ;; the above makes the directory the info list. the below adds it to the default list
-		(add-to-list 'Info-default-directory-list personal-info-dir)))
+  ;;	(add-to-list 'Info-default-directory-list personal-info-dir)))
   :hook
   (info-mode . info-persist-history-mode)
   :config
