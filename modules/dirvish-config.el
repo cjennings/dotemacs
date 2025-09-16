@@ -74,6 +74,35 @@ automatically displayed."
           (dired-mark 1))
       (forward-line 1))))
 
+;; ----------------------- Dirvish Open File Manager Here ----------------------
+
+(defun cj/dirvish-open-file-manager-here ()
+  "Open system's default file manager in the current dired/dirvish directory.
+Always opens the file manager in the directory currently being displayed,
+regardless of what file or subdirectory the point is on."
+  (interactive)
+  (let ((current-dir (dired-current-directory)))
+	(if (and current-dir (file-exists-p current-dir))
+		(progn
+		  (message "Opening file manager in %s..." current-dir)
+		  ;; Use shell-command with & to run asynchronously and detached
+		  (let ((process-connection-type nil)) ; Use pipe instead of pty
+			(cond
+			 ;; Linux/Unix with xdg-open
+			 ((executable-find "xdg-open")
+			  (call-process "xdg-open" nil 0 nil current-dir))
+			 ;; macOS
+			 ((eq system-type 'darwin)
+			  (call-process "open" nil 0 nil current-dir))
+			 ;; Windows
+			 ((eq system-type 'windows-nt)
+			  (call-process "explorer" nil 0 nil current-dir))
+			 ;; Fallback to shell-command
+			 (t
+			  (shell-command (format "xdg-open %s &"
+								   (shell-quote-argument current-dir)))))))
+	  (message "Could not determine current directory."))))
+
 ;; ---------------------------------- Dirvish ----------------------------------
 
 (use-package dirvish
@@ -86,6 +115,7 @@ automatically displayed."
    `(("h"  "~/"                                             "home")
 	 ("cx" ,code-dir                                        "code directory")
 	 ("ex" ,user-emacs-directory                            "emacs home")
+	 ("es" ,sounds-dir                                      "notification sounds")
 	 ("dl" ,dl-dir                                          "downloads")
 	 ("dr" ,(concat sync-dir "/drill/")                     "drill files")
 	 ("dt" ,(concat dl-dir "/torrents/complete/")           "torrents")
@@ -169,7 +199,8 @@ automatically displayed."
    ("O"       . (lambda () (interactive) (call-interactively 'cj/dired-open-with)))
    ("<left>"  . dired-up-directory)
    ("<right>" . dired-find-file)
-   ("f"       . dirvish-file-info-menu)
+   ("F"       . dirvish-file-info-menu)
+   ("f"       . cj/dirvish-open-file-manager-here)
    ("y"       . dirvish-yank-menu)
    ("/"       . dirvish-narrow)
    ("M"       . cj/dired-mark-all-visible-files)
