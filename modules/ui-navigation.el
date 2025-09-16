@@ -105,15 +105,13 @@ This function won't work with more than one split window."
 ;; ---------------------------- Buffer Manipulation ----------------------------
 
 ;; MOVE BUFFER
-;; allows you to move between buffers
+;; allows changing buffer positions in a layout.
 (use-package buffer-move
-  ;; :straight (buffer-move :type git :host github :repo "lukhas/buffer-move"
-  ;;                        :fork (:host github :repo "cjennings/buffer-move"))
   :bind
-  ("M-S-<down>"  . buf-move-down)
-  ("M-S-<up>"    . buf-move-up)
-  ("M-S-<left>"  . buf-move-left)
-  ("M-S-<right>" . buf-move-right))
+  ("C-M-<down>"  . buf-move-down)
+  ("C-M-<up>"    . buf-move-up)
+  ("C-M-<left>"  . buf-move-left)
+  ("C-M-<right>" . buf-move-right))
 
 
 ;; UNDO KILL BUFFER
