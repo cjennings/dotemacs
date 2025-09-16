@@ -24,6 +24,7 @@
 ;; ---------------------------------- Helpful ----------------------------------
 
 (use-package helpful
+  :if (version< emacs-version "30")
   :defer .5
   :bind
   ("C-h f" . helpful-callable)
@@ -32,12 +33,7 @@
   ("C-h F" . helpful-function)
   ("C-h C" . helpful-command)
   ("C-h ." . helpful-at-point)
-  ("C-h o" . helpful-symbol) ;; overrides 'describe-symbol' keybinding
-  :config
-  ;; These variables are set by counsel which is loaded in selection-framework.el
-  (with-eval-after-load 'counsel
-	(setq counsel-describe-function-function #'helpful-callable)
-	(setq counsel-describe-variable-function #'helpful-variable)))
+  ("C-h o" . helpful-symbol)) ;; overrides 'describe-symbol' keybinding
 
 ;; ------------------------------------ Man ------------------------------------
 
@@ -48,13 +44,6 @@
 
 ;; ------------------------------------ Info -----------------------------------
 
-(use-package info
-  :ensure nil ;; built-in
-  :bind
-  (:map Info-mode-map
-		("m" . bookmark-set) ;; Rebind 'm' from Info-menu to bookmark-set
-		("M" . Info-menu))   ;; Move Info-menu to 'M' instead
-  :preface
   (defun cj/open-with-info-mode ()
 	"Open the current buffer's file in Info mode if it's a valid info file.
 Preserves any unsaved changes and checks if the file exists."
@@ -72,10 +61,39 @@ Preserves any unsaved changes and checks if the file exists."
 			  (kill-buffer (current-buffer))
 			  (info file-name))
 		  (message "Not a valid info file: %s" file-name)))))
+
+(defun cj/browse-info-files ()
+  "Browse and open .info or .info.gz files from user-emacs-directory."
+  (interactive)
+  (let* ((info-files (directory-files-recursively
+					  user-emacs-directory
+					  "\\.info\\(\\.gz\\)?$"))
+		 (files-alist (mapcar (lambda (f)
+								(cons (file-name-nondirectory f) f))
+							  info-files))
+		 (chosen-name (completing-read
+					   "Select Info file: "
+					   (mapcar #'car files-alist)
+					   nil t))
+		 (chosen-file (cdr (assoc chosen-name files-alist))))
+	(when chosen-file
+	  (info chosen-file))))
+
+(global-unset-key (kbd "C-h i"))
+(global-set-key (kbd "C-h i") #'cj/browse-info-files)
+
+
+(use-package info
+  :ensure nil ;; built-in
+  :bind
+  (:map Info-mode-map
+		("m" . bookmark-set) ;; Rebind 'm' from Info-menu to bookmark-set
+		("M" . Info-menu))   ;; Move Info-menu to 'M' instead
+  :preface
   :init
   ;; Add personal info files BEFORE Info mode initializes
-  (let ((personal-info-dir (expand-file-name "assets/info" user-emacs-directory)))
-	(when (file-directory-p personal-info-dir)
+  ;; (let ((personal-info-dir (expand-file-name "assets/info" user-emacs-directory)))
+  ;; 	(when (file-directory-p personal-info-dir)
   ;;    (setq Info-directory-list (list personal-info-dir))))
   ;; the above makes the directory the info list. the below adds it to the default list
 		(add-to-list 'Info-default-directory-list personal-info-dir)))
