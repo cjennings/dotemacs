@@ -183,7 +183,8 @@ Return non-nil to indicate the warning was handled."
 ;; don't suggest bookmarks, packages, indexes, or recentf in recent files.
 
 (use-package recentf
-  :defer .5
+  :init
+  (recentf-mode 1)
   :ensure nil ;;built-in
   :config
   (setq recentf-max-saved-items 1000)
