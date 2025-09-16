@@ -104,6 +104,8 @@ file as tmr-sound-file. Use \\[universal-argument] to reset to default."
   (global-unset-key (kbd "M-t"))
   :bind (("M-t" . tmr-prefix-map)
 		 :map tmr-prefix-map
+		 ("*" . tmr)
+		 ("t" . tmr-with-details)
 		 ("S" . cj/tmr-select-sound-file)
 		 ("R" . cj/tmr-reset-sound-to-default))
   :config
