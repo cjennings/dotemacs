@@ -124,7 +124,6 @@
 ;; ---------------------------------- In Test ----------------------------------
 
 (require 'test-code)
-(require 'org-reveal)
-;;(require 'jumper)
+;; (require 'jumper)
 
 ;;; init.el ends here
