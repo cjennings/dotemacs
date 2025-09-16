@@ -48,11 +48,9 @@
   (git-gutter:update-interval 0.05))
 
 ;; ------------------------------ Git Timemachine ------------------------------
-;; walk through revisions of the current file in your buffer
-;; also: https://blog.binchen.org/posts/new-git-timemachine-ui-based-on-ivy-mode/
 
 (defun cj/git-timemachine-show-selected-revision ()
-  "Show last (current) revision of file."
+  "Displays git revisions of file in chronological order adding metadata."
   (interactive)
   (let* ((revisions (git-timemachine--revisions))
 		 (candidates (mapcar
@@ -64,8 +62,16 @@
 								(nth 5 rev)
 								" | "
 								(nth 6 rev)))
-					  revisions)))
-	(let* ((selected (completing-read "Select revision: " candidates nil t))
+					  revisions))
+		 ;; Create completion table with metadata to prevent sorting
+		 (completion-table
+		  (lambda (string pred action)
+			(if (eq action 'metadata)
+				;; Tell vertico not to sort these candidates
+				'(metadata (display-sort-function . identity)
+						   (cycle-sort-function . identity))
+			  (complete-with-action action candidates string pred)))))
+	(let* ((selected (completing-read "Select revision: " completion-table nil t))
 		   (index (cl-position selected candidates :test #'string=)))
 	  (when index
 		(git-timemachine-show-revision (nth index revisions))))))
@@ -74,14 +80,13 @@
   "Open git snapshot with the selected version."
   (interactive)
   (unless (featurep 'git-timemachine)
-	(require 'git-timemachine))
+    (require 'git-timemachine))
   (git-timemachine--start #'cj/git-timemachine-show-selected-revision))
 
 (use-package git-timemachine
   :defer t)
 
 ;; --------------------------------- VC Keymap ---------------------------------
-;; version control keymap
 
 (global-unset-key (kbd "C-v"))
 (defvar cj/vc-keymap
