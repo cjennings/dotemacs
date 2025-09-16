@@ -27,6 +27,7 @@
   (vertico-cycle t)                ; Cycle through candidates
   (vertico-count 10)               ; Number of candidates to display
   (vertico-resize nil)             ; Don't resize the minibuffer
+  (vertico-sort-function #'vertico-sort-history-alpha) ; History first, then alphabetical
   :bind (:map vertico-map
 			  ("C-j" . vertico-next)    ; Match ivy's C-j behavior
 			  ("C-k" . vertico-previous)
@@ -35,9 +36,6 @@
 			  ("C-RET" . vertico-exit-input)
 			  ("M-RET" . minibuffer-force-complete-and-exit)
 			  ("TAB" . minibuffer-complete)))
-
-;; --------------------------------- Marginalia --------------------------------
-;; Rich annotations in the minibuffer
 
 (use-package marginalia
   :defer 0.5
