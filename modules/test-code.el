@@ -52,22 +52,22 @@
   :after (org pdf-view)
   :hook (org-mode . org-pdftools-setup-link))
 
-;; --------------------------------- Easy Hugo ---------------------------------
+;; ;; --------------------------------- Easy Hugo ---------------------------------
 
-(use-package easy-hugo
-  :defer .5
-  :init
-  (setq easy-hugo-basedir "~/code/cjennings-net/")
-  (setq easy-hugo-url "https://cjennings.net")
-  (setq easy-hugo-sshdomain "cjennings.net")
-  (setq easy-hugo-root "/var/www/cjennings/")
-  (setq easy-hugo-previewtime "300")
-  (setq easy-hugo-postdir "content")
-  (setq easy-hugo-server-flags "-D --noHTTPCache --disableFastRender")
-  (setq easy-hugo-default-ext ".md")
-  :bind ("C-c H" . easy-hugo)
-  :config
-  (easy-hugo-enable-menu))
+;; (use-package easy-hugo
+;;   :defer .5
+;;   :init
+;;   (setq easy-hugo-basedir "~/code/cjennings-net/")
+;;   (setq easy-hugo-url "https://cjennings.net")
+;;   (setq easy-hugo-sshdomain "cjennings.net")
+;;   (setq easy-hugo-root "/var/www/cjennings/")
+;;   (setq easy-hugo-previewtime "300")
+;;   (setq easy-hugo-postdir "content")
+;;   (setq easy-hugo-server-flags "-D --noHTTPCache --disableFastRender")
+;;   (setq easy-hugo-default-ext ".md")
+;;   :bind ("C-c H" . easy-hugo)
+;;   :config
+;;   (easy-hugo-enable-menu))
 
 ;; ------------------------------------ Pomm -----------------------------------
 
