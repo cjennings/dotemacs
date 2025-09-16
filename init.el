@@ -33,6 +33,7 @@
 
 (require 'auth-config)           ;; emacs gnupg integration
 (require 'custom-functions)      ;; custom function library w/ keybindings
+(require 'chrono-tools)          ;;	calendar, world clock, timers
 (require 'file-config)           ;; files to open outside of Emacs
 (require 'keyboard-macros)       ;; keyboard macro management
 (require 'system-utils)          ;; timers, process monitor
@@ -123,6 +124,7 @@
 ;; ---------------------------------- In Test ----------------------------------
 
 (require 'test-code)
+(require 'org-reveal)
 ;;(require 'jumper)
 
 ;;; init.el ends here
