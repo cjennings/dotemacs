@@ -52,9 +52,8 @@
 		("." . cj/forward-paragraph-and-center)
         ("<" . nov-history-back)
         (">" . nov-history-forward)
-        ("," . backward-paragraph)
-        ("z" . (lambda () (interactive) (cj/open-file-with-command "zathura")))
-        ("e" . (lambda () (interactive) (cj/open-file-with-command "evince")))
+		("," . backward-paragraph)
+		("z" . (lambda () (interactive) (cj/open-file-with-command "zathura")))
 		("t" . nov-goto-toc)))
 
 (defun cj/forward-paragraph-and-center()

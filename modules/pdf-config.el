@@ -21,10 +21,9 @@
 		("m" . bookmark-set)
 		("C-=" . pdf-view-enlarge)
 		("C--" . pdf-view-shrink)
-        ("z" . (lambda () (interactive) (cj/open-file-with-command "zathura")))
-		("e" . (lambda () (interactive) (cj/open-file-with-command "evince")))
 		("C-c l" . org-store-link)
-        ("j" . pdf-view-next-line-or-next-page)
+		("z" . (lambda () (interactive) (cj/open-file-with-command "zathura")))
+		("j" . pdf-view-next-line-or-next-page)
 		("k" . pdf-view-previous-line-or-previous-page)))
 
 (use-package pdf-view

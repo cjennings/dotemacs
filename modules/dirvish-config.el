@@ -10,14 +10,14 @@
 
 (require 'user-constants)
 
-;; ----------------------------------- Dired -----------------------------------
+;;; ----------------------------------- Dired -----------------------------------
 
 (use-package dired
   :ensure nil ;; built-in
   :defer t
   :bind
   (:map dired-mode-map
-        ([remap dired-summary] . which-key-show-major-mode)
+		([remap dired-summary] . which-key-show-major-mode)
 		("E" . wdired-change-to-wdired-mode) ;; edit names and properties in buffer
 		("e" . cj/dired-ediff-files))        ;; ediff files
   :custom
@@ -35,21 +35,17 @@
 
 (add-hook 'dired-mode-hook 'auto-revert-mode)          ;; auto revert dired when files change
 
-;; ------------------------------ Dired Open With ------------------------------
+;;; --------------------------- Dired Open HTML In EWW --------------------------
 
-(defun cj/dired-open-with (command)
-  "Open the Dired file at point with a user-specified COMMAND.
-This function is meant to be called interactively. It prompts for the command to
-open the file with if called without a parameter. The command runs
-asynchronously and its output is saved in a buffer, but the buffer is not
-automatically displayed."
-  (interactive "sCommand to use to open the file: ")
-  (let* ((file (dired-get-file-for-visit))
-		 (buff (generate-new-buffer (concat "*dired-open-with output: " file "*"))))
-	(start-process-shell-command command buff (concat command " \"" file "\""))))
+(defun cj/dirvish-open-html-in-eww ()
+  "Open HTML file at point in dired/dirvish using eww."
+  (interactive)
+  (let ((file (dired-get-file-for-visit)))
+	(if (string-match-p "\\.html?\\'" file)
+		(eww-open-file file)
+	  (message "Not an HTML file: %s" file))))
 
-;; -------------------------- Dired Copy Path As Kill --------------------------
-;; copies the full path of the file at point to the clipboard
+;;; -------------------------- Dired Copy Path As Kill --------------------------
 
 (defun cj/dired-copy-path-as-kill ()
   "Copy the full path of file at point in Dired to the clipboard."
@@ -61,8 +57,7 @@ automatically displayed."
 		  (message "Copied '%s' to clipboard." filename))
 	  (message "No file at point."))))
 
-;; ------------------------ Dired Mark All Visible Files -----------------------
-;; convenience function to mark all visible files by typing "M" in dirvish
+;;; ------------------------ Dired Mark All Visible Files -----------------------
 
 (defun cj/dired-mark-all-visible-files ()
   "Mark all visible files in Dired mode."
@@ -74,7 +69,7 @@ automatically displayed."
           (dired-mark 1))
       (forward-line 1))))
 
-;; ----------------------- Dirvish Open File Manager Here ----------------------
+;;; ----------------------- Dirvish Open File Manager Here ----------------------
 
 (defun cj/dirvish-open-file-manager-here ()
   "Open system's default file manager in the current dired/dirvish directory.
@@ -100,10 +95,10 @@ regardless of what file or subdirectory the point is on."
 			 ;; Fallback to shell-command
 			 (t
 			  (shell-command (format "xdg-open %s &"
-								   (shell-quote-argument current-dir)))))))
+									 (shell-quote-argument current-dir)))))))
 	  (message "Could not determine current directory."))))
 
-;; ---------------------------------- Dirvish ----------------------------------
+;;; ---------------------------------- Dirvish ----------------------------------
 
 (use-package dirvish
   :defer 1
@@ -177,7 +172,8 @@ regardless of what file or subdirectory the point is on."
   ;; Enable side-follow mode with error checking
   (condition-case err
       (dirvish-side-follow-mode 1)
-    (error (message "Failed to enable dirvish-side-follow-mode: %s" (error-message-string err))))
+	(error (message "Failed to enable dirvish-side-follow-mode: %s"
+					(error-message-string err))))
 
   ;; Your other configuration settings
   (setq dirvish-attributes '(nerd-icons file-size))
@@ -190,33 +186,35 @@ regardless of what file or subdirectory the point is on."
    ("C-x D"     . dirvish)
    ("<f11>"     . dirvish-side)
    :map dirvish-mode-map
-   ("g"       . dirvish-quick-access)
-   ("G"       . revert-buffer)
    ("bg"      . (lambda () (interactive)
-                  (shell-command (concat "nitrogen --save --set-zoom-fill "
-										 (dired-file-name-at-point) " >>/dev/null 2>&1"))))
-   ("o"       . (lambda () (interactive) (cj/dired-open-with "xdg-open")))
-   ("O"       . (lambda () (interactive) (call-interactively 'cj/dired-open-with)))
+				  (shell-command
+				   (concat "nitrogen --save --set-zoom-fill "
+						   (dired-file-name-at-point) " >>/dev/null 2>&1"))))
+   ("/"       . dirvish-narrow)
    ("<left>"  . dired-up-directory)
    ("<right>" . dired-find-file)
-   ("F"       . dirvish-file-info-menu)
-   ("f"       . cj/dirvish-open-file-manager-here)
-   ("y"       . dirvish-yank-menu)
-   ("/"       . dirvish-narrow)
-   ("M"       . cj/dired-mark-all-visible-files)
-   ("s"       . dirvish-quicksort)
-   ("v"       . dirvish-vc-menu)
-   ("r"       . dirvish-rsync)
-   ("TAB"     . dirvish-subtree-toggle)
-   ("C-."     . dirvish-history-go-forward)
    ("C-,"     . dirvish-history-go-backward)
+   ("C-."     . dirvish-history-go-forward)
+   ("F"       . dirvish-file-info-menu)
+   ("G"       . revert-buffer)
+   ("H"       . cj/dirvish-open-html-in-eww)  ;; it does what it says it does
+   ("M"       . cj/dired-mark-all-visible-files)
+   ("M-e"     . dirvish-emerge-menu)
    ("M-l"     . dirvish-ls-switches-menu)
    ("M-m"     . dirvish-mark-menu)
    ("M-p"     . dirvish-peek-toggle)
    ("M-s"     . dirvish-setup-menu)
-   ("M-e"     . dirvish-emerge-menu)))
+   ("TAB"     . dirvish-subtree-toggle)
+   ("f"       . cj/dirvish-open-file-manager-here)
+   ("g"       . dirvish-quick-access)
+   ("o" . (lambda () (interactive) (cj/open-file-with-command "xdg-open")))
+   ("O" . cj/open-file-with-command)  ; Prompts for command
+   ("r"       . dirvish-rsync)
+   ("s"       . dirvish-quicksort)
+   ("v"       . dirvish-vc-menu)
+   ("y"       . dirvish-yank-menu)))
 
-;; -------------------------------- Nerd Icons -------------------------------
+;;; -------------------------------- Nerd Icons -------------------------------
 
 (use-package nerd-icons
   :defer .5)
@@ -224,7 +222,7 @@ regardless of what file or subdirectory the point is on."
 (use-package nerd-icons-dired
   :commands (nerd-icons-dired-mode))
 
-;; ---------------------------- Dired Hide Dotfiles ----------------------------
+;;; ---------------------------- Dired Hide Dotfiles ----------------------------
 
 (use-package dired-hide-dotfiles
   :after dired
@@ -236,7 +234,7 @@ regardless of what file or subdirectory the point is on."
   (:map dired-mode-map
 		("h" . dired-hide-dotfiles-mode)))
 
-;; ------------------------------- Dired Sidebar -------------------------------
+;;; ------------------------------- Dired Sidebar -------------------------------
 
 (use-package dired-sidebar
   :after (dired projectile)
@@ -257,8 +255,7 @@ regardless of what file or subdirectory the point is on."
   (setq dired-sidebar-delay-auto-revert-updates 'nil)              ;; don't delay auto-reverting
   (setq dired-sidebar-pop-to-sidebar-on-toggle-open 'nil))         ;; don't jump to sidebar when it's toggled on
 
-;; ----------------------------- Dired Ediff Files -----------------------------
-;; mark two files within dirvish, then ediff them by typing "e" (see above keybinding)
+;;; ----------------------------- Dired Ediff Files -----------------------------
 
 (defun cj/dired-ediff-files ()
   "Ediff two selected files within Dired."
@@ -281,7 +278,7 @@ regardless of what file or subdirectory the point is on."
 					  (set-window-configuration wnd))))
 	  (error "No more than 2 files should be marked"))))
 
-;; ---------------------------- Dirvish Diagnostics ----------------------------
+;;; ---------------------------- Dirvish Diagnostics ----------------------------
 
 (defun cj/dirvish-diagnose ()
   "Diagnose dirvish installation and available features."
@@ -348,7 +345,6 @@ regardless of what file or subdirectory the point is on."
 	  (insert "  dirvish-quick-access-alist is not defined\n"))
 
 	(switch-to-buffer (current-buffer))))
-
 
 (provide 'dirvish-config)
 ;;; dirvish-config.el ends here

@@ -15,12 +15,42 @@
 
 ;; ------------------------------- Open File With ------------------------------
 
-(defun cj/open-file-with (command)
-  "Asynchronously run COMMAND on the current buffer's file."
-  (interactive "MOpen with program: ")
-  (let ((display-buffer-alist
-		 '(("\\*Async Shell Command\\*" display-buffer-no-window))))
-	(async-shell-command (format "%s \"%s\"" command buffer-file-name))))
+(defun cj/open-file-with-command (command)
+  "Open the current file with COMMAND.
+Works in both Dired buffers (opens file at point) and regular file buffers
+(opens the buffer's file). The command runs fully detached from Emacs."
+  (interactive "MOpen with command: ")
+  (let* ((file (cond
+				;; In dired/dirvish mode, get file at point
+				((derived-mode-p 'dired-mode)
+				 (dired-get-file-for-visit))
+				;; In a regular file buffer
+				(buffer-file-name
+				 buffer-file-name)
+				;; Fallback - prompt for file
+				(t
+				 (read-file-name "File to open: "))))
+		 ;; For xdg-open and similar launchers, we need special handling
+		 (is-launcher (member command '("xdg-open" "open" "start"))))
+	;; Validate file exists
+	(unless (and file (file-exists-p file))
+	  (error "No valid file found or selected"))
+	;; Use different approaches for launchers vs regular commands
+	(if is-launcher
+		;; For launchers, use call-process with 0 to fully detach
+		(progn
+		  (call-process command nil 0 nil file)
+		  (message "Opening %s with %s..." (file-name-nondirectory file) command))
+	  ;; For other commands, use start-process-shell-command for potential output
+	  (let* ((output-buffer-name (format "*Open with %s: %s*"
+										 command
+										 (file-name-nondirectory file)))
+			 (output-buffer (generate-new-buffer output-buffer-name)))
+		(start-process-shell-command
+		 command
+		 output-buffer
+		 (format "%s %s" command (shell-quote-argument file)))
+		(message "Running %s on %s..." command (file-name-nondirectory file))))))
 
 ;; ------------------------------ Server Shutdown ------------------------------
 
