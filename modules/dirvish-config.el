@@ -206,7 +206,7 @@ regardless of what file or subdirectory the point is on."
    ("TAB"     . dirvish-subtree-toggle)
    ("f"       . cj/dirvish-open-file-manager-here)
    ("g"       . dirvish-quick-access)
-   ("o"       . (lambda () (interactive) (cj/open-file-with-command "xdg-open")))
+   ("o"       . cj/xdg-open)
    ("O"       . cj/open-file-with-command)  ; Prompts for command
    ("r"       . dirvish-rsync)
    ("p"       . cj/dired-create-playlist-from-marked)
