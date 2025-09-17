@@ -1,7 +1,7 @@
-;;; test-ui-theme.el --- Tests the ui-theme module -*- lexical-binding: t; -*-
+;;; test-theme-theme-persistence.el --- Tests theme persistence mechanism -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; All the unit tests for the ui-theme.el module
+;; Unit tests for the persistence of the chosen theme
 
 ;;; Code:
 
@@ -131,5 +131,5 @@
 	(should (equal expected (cj/get-active-theme-name))))
   (cj/test-teardown))
 
-(provide 'test-ui-theme)
-;;; test-ui-theme.el ends here.
+(provide 'test-theme-theme-persistence)
+;;; test-theme-theme-persistence.el ends here.
