@@ -13,7 +13,7 @@
 ;; - PDF operations (merge, split, password protection, OCR)
 ;; - Archive management (zip/unzip)
 ;; - Document conversion (epub to org, docx to pdf, pdf to txt)
-;; - Git operations (clone from clipboard)
+1;; - Git operations (clone from clipboard)
 ;; - External file opening with context awareness
 ;;
 ;; Workflow:
@@ -131,7 +131,7 @@
 	"Convert all marked audio to opus(s)."
 	(interactive)
 	(dwim-shell-command-on-marked-files
-	 "Convert to mp3"
+	 "Convert to opus"
 	 "ffmpeg -stats -n -i '<<f>>' -c:a libopus -vbr on -compression_level 10 -b:a 256k '<<fne>>.opus'"
 	 :utils "ffmpeg"))
 
