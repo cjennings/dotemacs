@@ -8,14 +8,6 @@
 
 ;;; Code:
 
-;; -------------------------------- Contact Info -------------------------------
-
-(defvar user-whole-name "Craig Jennings"
-  "The user's full name.")
-(defconst user-name (getenv "USER")
-  "The user's name retrieved from the environment variable.")
-(defvar user-mail-address "c@cjennings.net"
-  "The user's email address.")
 
 ;; ---------------------------- System Configuration ---------------------------
 
