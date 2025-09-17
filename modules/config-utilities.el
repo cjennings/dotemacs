@@ -6,6 +6,7 @@
 
 ;;; Code:
 
+(require 'ert)
 ;; ------------------------------- Load ERT Tests ------------------------------
 
 (defun cj/load-all-tests ()
