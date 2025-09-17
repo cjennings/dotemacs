@@ -105,6 +105,9 @@
 (defvar reading-notes-file (expand-file-name "reading_notes.org" roam-dir)
   "The default notes file for org-noter.")
 
+(defvar macros-file (concat sync-dir "macros.el")
+  "The location of the macros file for recorded saved macros via M-f3.")
+
 (defvar contacts-file (expand-file-name "contacts.org" sync-dir)
   "The location of the org file containing contact information.")
 

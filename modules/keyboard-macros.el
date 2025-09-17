@@ -33,10 +33,7 @@
 ;;
 ;;; Code:
 
-(require 'user-constants) ;; definition of sync-dir constant is here.
-
-(defvar macros-file (concat sync-dir "macros.el")
-  "The location of the macros file for recorded saved macros via M-f3.")
+(require 'user-constants) ;; definitions of sync-dir and macros-file
 
 (defun ensure-macros-file (file)
   "Ensure FILE exists and its first line enables lexical-binding."
