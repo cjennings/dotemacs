@@ -1,5 +1,6 @@
 ;;; system-utils --- System-Wide Utilities -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
+;;
 ;;; Commentary:
 
 ;;; Code:
@@ -17,12 +18,13 @@
 
 (defun cj/open-file-with-command (command)
   "Open the current file with COMMAND.
-Works in both Dired buffers (opens file at point) and regular file buffers
-(opens the buffer's file). The command runs fully detached from Emacs."
+Works in both Dired buffers and regular file buffers. The command runs
+fully detached from Emacs."
   (interactive "MOpen with command: ")
   (let* ((file (cond
 				;; In dired/dirvish mode, get file at point
 				((derived-mode-p 'dired-mode)
+				 (require 'dired)
 				 (dired-get-file-for-visit))
 				;; In a regular file buffer
 				(buffer-file-name
@@ -98,9 +100,13 @@ Works in both Dired buffers (opens file at point) and regular file buffers
 
 ;; --------------------------------- Dictionary --------------------------------
 
-(use-package sdcv
+(use-package quick-sdcv
   :defer 1
-  :bind ("C-h d" . sdcv-search-input))
+  :bind
+  ("C-h d" . quick-sdcv-search-input)
+  :custom
+  (quick-sdcv-dictionary-prefix-symbol "►")
+  (quick-sdcv-ellipsis " ▼"))
 
 ;; -------------------------------- Log Silently -------------------------------
 
