@@ -486,21 +486,22 @@ Uses `readable-time-format' for the formatting the date/time."
 
 ;;; ----------------------- Line And Paragraph Operations -----------------------
 
+
 (defun cj/join-line-or-region ()
   "Apply 'join-line' over the marked region or join with previous line."
   (interactive)
   (if (use-region-p)
-      (let ((beg (region-beginning))
-            (end (copy-marker (region-end))))
-        (goto-char beg)
-        (while (< (point) end)
-          (join-line 1))
-        (goto-char end)
-        (newline))
-    ;; No region - just join with previous line
-    (join-line)
-    (newline)))
-
+	  (let ((beg (region-beginning))
+			(end (copy-marker (region-end))))
+		(goto-char beg)
+		(while (< (point) end)
+		  (join-line 1))
+		(goto-char end)
+		(newline))
+	;; No region - only join if there's a previous line
+	(when (> (line-number-at-pos) 1)
+	  (join-line))
+	(newline)))
 
 (defun cj/join-paragraph ()
   "Mark all text in a paragraph then run cj/join-line-or-region."
