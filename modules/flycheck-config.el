@@ -59,6 +59,9 @@
      ("warn-escape"               nil)))
   :config
 
+  ;; use the load-path of the currently running Emacs instance
+  (setq flycheck-emacs-lisp-load-path 'inherit)
+
   ;; Define the prose checker (installed separately via OS).
   (flycheck-define-checker proselint
     "A linter for prose."
