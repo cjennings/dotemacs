@@ -54,7 +54,8 @@ Return non-nil to indicate the warning was handled."
 ;; -------------------------- Disabling Functionality --------------------------
 
 (defun cj/disabled ()
-  "Do nothing. Functionality disabled."
+  "Do absolutely nothing and do it quickly.
+Used to disable functionality with defalias 'somefunc 'cj/disabled)."
   (interactive))
 
 ;; VIEW EMACS NEWS
