@@ -4,7 +4,7 @@
 ;;; Commentary:
 
 ;; Note: This init.el file has an early-init.el file associated with it.
-;; That file defines variables and settings used within the rest of the config.
+;; That file defines a few variables and settings used within the rest of the config.
 
 ;;; Code:
 
