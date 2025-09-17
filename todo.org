@@ -366,8 +366,75 @@ Captured On: [2025-06-19 Thu 12:29]
 [[file:ai-conversations/keyboard-macro-improvements_20250906-230640.gptel::+STARTUP: showeverything][keyboard macros conversation]]
 ** TODO [#C] Git timemachine litters empty buffers                    :bug:
 Don't choose a revision and you'll see a blank buffer that needs to be killed
-** TODO [#C] Fix all docstring and elisp linting issues               :bug:
-** TODO [#C] Remove all diagnostic and debug code from dirvish        :bug:
+** DOING [#C] Fix all docstring and elisp linting issues               :bug:
+- [X] user-constants  
+- [X] host-environment
+- [ ] config-utilities
+- [ ] system-defaults 
+- [ ] keybindings
+- [ ] auth-config     
+- [ ] custom-functions
+- [ ] chrono-tools    
+- [ ] file-config     
+- [ ] keyboard-macros 
+- [ ] system-utils    
+- [ ] text-config     
+- [ ] undead-buffers
+- [ ] ui-config     
+- [ ] ui-theme      
+- [ ] ui-navigation 
+- [ ] font-config
+- [ ] diff-config         
+- [ ] eshell-vterm-config 
+- [ ] flyspell-and-abbrev 
+- [ ] help-utils          
+- [ ] help-config         
+- [ ] latex-config        
+- [ ] modeline-config     
+- [ ] pdf-config          
+- [ ] selection-framework 
+- [ ] tramp-config        
+- [ ] show-kill-ring
+- [ ] calibredb-epub-config
+- [ ] dashboard-config     
+- [ ] dirvish-config       
+- [ ] dwim-shell-config    
+- [ ] elfeed-config        
+- [ ] erc-config           
+- [ ] eww-config           
+- [ ] httpd-config         
+- [ ] mail-config          
+- [ ] markdown-config      
+- [ ] weather-config
+- [ ] prog-general   
+- [ ] vc-config      
+- [ ] flycheck-config
+- [ ] prog-lsp       
+- [ ] prog-training  
+- [ ] prog-c         
+- [ ] prog-go        
+- [ ] prog-lisp      
+- [ ] prog-shell     
+- [ ] prog-python    
+- [ ] prog-webdev    
+- [ ] prog-yaml
+- [ ] org-config         
+- [ ] org-agenda-config  
+- [ ] org-babel-config   
+- [ ] org-capture-config 
+- [ ] org-refile-config  
+- [ ] org-drill-config   
+- [ ] org-export-config  
+- [ ] org-roam-config    
+- [ ] org-contacts-config
+- [ ] ai-config
+- [ ] reconcile-open-repos 
+- [ ] video-audio-recording
+- [ ] local-repository
+- [ ] eradio-config 
+- [ ] games-config
+- [ ] wrap-up
+
 ** TODO [#C] Emacs: Add Reverso Functionality                 :enhancement:
 https://sqrtminusone.xyz/packages/reverso/
 check his config for a usage example
@@ -380,7 +447,7 @@ reverso.el is a package of mine that provides Emacs interface for https://revers
     (my-leader-def "ar" #'reverso)
     :commands (reverso)
     :config
-    (setq reverso-languages '(russian english german))
+    (setq reverso-languages '(russian english german spanish french portuguese))
     (reverso-history-mode))
 #+end_src
 ** TODO [#C] Org Keyword Discolored Until Reapplying Theme            :bug:
