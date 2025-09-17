@@ -209,6 +209,7 @@ regardless of what file or subdirectory the point is on."
    ("o"       . (lambda () (interactive) (cj/open-file-with-command "xdg-open")))
    ("O"       . cj/open-file-with-command)  ; Prompts for command
    ("r"       . dirvish-rsync)
+   ("p"       . cj/dired-create-playlist-from-marked)
    ("s"       . dirvish-quicksort)
    ("v"       . dirvish-vc-menu)
    ("y"       . dirvish-yank-menu)))
@@ -276,6 +277,57 @@ regardless of what file or subdirectory the point is on."
 					  (setq ediff-after-quit-hook-internal nil)
 					  (set-window-configuration wnd))))
 	  (error "No more than 2 files should be marked"))))
+
+;; ------------------------ Create Playlist From Marked ------------------------
+
+(defvar cj/audio-file-extensions
+  '("mp3" "flac" "m4a" "wav" "ogg" "aac" "opus" "aiff" "alac" "wma")
+  "List of audio file extensions (lowercase, no dot). Used to filter files for M3U playlists.")
+
+(defun cj/dired-create-playlist-from-marked ()
+  "Create an .m3u playlist file from marked files in Dired (or Dirvish).
+Filters for audio files, prompts for the playlist name, and saves the resulting
+.m3u in the directory specified by =music-dir=. Interactive use only."
+  (interactive)
+  (let* ((marked-files (dired-get-marked-files))
+		 (audio-files
+		  (cl-remove-if-not
+		   (lambda (f)
+			 (let ((ext (file-name-extension f)))
+			   (and ext
+					(member (downcase ext) cj/audio-file-extensions))))
+		   marked-files))
+		 (count (length audio-files)))
+	(if (zerop count)
+		(user-error "No audio files marked (extensions: %s)"
+					(string-join cj/audio-file-extensions ", "))
+	  (let ((base-name nil)
+			(playlist-path nil)
+			(done nil))
+		(while (not done)
+		  (setq base-name (read-string
+						   (format "Playlist name (without .m3u): ")))
+		  ;; Sanitize: strip any trailing .m3u
+		  (setq base-name (replace-regexp-in-string "\\.m3u\\'" "" base-name))
+		  (setq playlist-path (expand-file-name (concat base-name ".m3u") music-dir))
+		  (cond
+		   ((not (file-exists-p playlist-path))
+			;; Safe to write
+			(setq done t))
+		   (t
+			(let ((choice (read-char-choice
+						   (format "Playlist '%s' exists. [o]verwrite, [c]ancel, [r]ename? "
+								   (file-name-nondirectory playlist-path))
+						   '(?o ?c ?r))))
+			  (cl-case choice
+				(?o (setq done t))
+				(?c (user-error "Cancelled playlist creation"))
+				(?r (setq done nil)))))))
+		;; Actually write the file
+		(with-temp-file playlist-path
+		  (dolist (af audio-files)
+			(insert af "\n")))
+		(message "Wrote playlist %s with %d tracks" (file-name-nondirectory playlist-path) count)))))
 
 (provide 'dirvish-config)
 ;;; dirvish-config.el ends here.
