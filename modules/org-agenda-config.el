@@ -1,19 +1,29 @@
 ;;; org-agenda-config --- Org-Agenda/Todo Config -*- lexical-binding: t; coding: utf-8; -*-
-;; author Craig Jennings <c@cjennings.net>
-
+;; author: Craig Jennings <c@cjennings.net>
+;;
 ;;; Commentary:
-
+;;
 ;; Agenda views are tied to the F8 (fate) key.
-
+;;
+;;  "We are what we repeatedly do.
+;;   Excellence, then, is not an act, but a habit"
+;;                        -- Aristotle
+;;
+;;  "...watch your actions, they become habits;
+;;    watch your habits, they become character;
+;;    watch your character, for it becomes your destiny."
+;;                        -- Lao Tzu
+;;
+;;
 ;; f8   - MAIN AGENDA which organizes all tasks and events into:
 ;;        - all unfinished priority A tasks
 ;;        - the weekly schedule, including the habit consistency graph
 ;;        - all priority B and C tasks
-
+;;
 ;; C-f8 - TASK LIST containing all tasks from all agenda targets.
-
+;;
 ;; M-f8 - TASK LIST containing all tasks from just the current org-mode buffer.
-
+;;
 ;; NOTE:
 ;; Files that contain information relevant to the agenda will be found in the
 ;; following places: the schedule-file, org-roam notes tagged as 'Projects' and
