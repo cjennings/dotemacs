@@ -86,6 +86,10 @@
 (defconst audio-recordings-dir (expand-file-name "sync/recordings/" user-home-dir)
   "The location to save audio recordings.")
 
+(defconst music-dir (expand-file-name "music/" user-home-dir)
+  "The location to save your music files.")
+
+
 ;; FILES
 (defvar authinfo-file (expand-file-name ".authinfo.gpg" user-home-dir)
   "The location of the encrypted .authinfo or .netrc file.")
