@@ -141,8 +141,7 @@ regardless of what file or subdirectory the point is on."
   (let ((extensions-dir (expand-file-name "extensions"
 										  (file-name-directory (locate-library "dirvish")))))
 	(when (file-directory-p extensions-dir)
-	  (add-to-list 'load-path extensions-dir)
-	  (message "Added dirvish extensions directory to load-path: %s" extensions-dir)))
+	  (add-to-list 'load-path extensions-dir)))
 
   ;; Load dirvish modules with error checking
   (let ((dirvish-modules '(dirvish-emerge
@@ -160,9 +159,7 @@ regardless of what file or subdirectory the point is on."
 						   dirvish-peek)))
 	(dolist (module dirvish-modules)
 	  (condition-case err
-		  (progn
-			(require module)
-			(message "Successfully loaded: %s" module))
+		  (require module)
 		(error
 		 (message "Failed to load %s: %s" module (error-message-string err))))))
 
@@ -173,7 +170,7 @@ regardless of what file or subdirectory the point is on."
 
   ;; Enable side-follow mode with error checking
   (condition-case err
-      (dirvish-side-follow-mode 1)
+	  (dirvish-side-follow-mode 1)
 	(error (message "Failed to enable dirvish-side-follow-mode: %s"
 					(error-message-string err))))
 
@@ -183,10 +180,10 @@ regardless of what file or subdirectory the point is on."
   (setq dirvish-use-mode-line nil)
   (setq dirvish-use-header-line nil)
   :bind
-  (("C-x d"     . dirvish)
-   ("C-x C-d"   . dirvish)
-   ("C-x D"     . dirvish)
-   ("<f11>"     . dirvish-side)
+  (("C-x d"   . dirvish)
+   ("C-x C-d" . dirvish)
+   ("C-x D"   . dirvish)
+   ("<f11>"   . dirvish-side)
    :map dirvish-mode-map
    ("bg"      . (lambda () (interactive)
 				  (shell-command
@@ -196,7 +193,7 @@ regardless of what file or subdirectory the point is on."
    ("<left>"  . dired-up-directory)
    ("<right>" . dired-find-file)
    ("C-,"     . dirvish-history-go-backward)
-   ("C-."     . dirvish-history-go-forward)
+   ("C-       ."     . dirvish-history-go-forward)
    ("F"       . dirvish-file-info-menu)
    ("G"       . revert-buffer)
    ("H"       . cj/dirvish-open-html-in-eww)  ;; it does what it says it does
@@ -209,8 +206,8 @@ regardless of what file or subdirectory the point is on."
    ("TAB"     . dirvish-subtree-toggle)
    ("f"       . cj/dirvish-open-file-manager-here)
    ("g"       . dirvish-quick-access)
-   ("o" . (lambda () (interactive) (cj/open-file-with-command "xdg-open")))
-   ("O" . cj/open-file-with-command)  ; Prompts for command
+   ("o"       . (lambda () (interactive) (cj/open-file-with-command "xdg-open")))
+   ("O"       . cj/open-file-with-command)  ; Prompts for command
    ("r"       . dirvish-rsync)
    ("s"       . dirvish-quicksort)
    ("v"       . dirvish-vc-menu)
@@ -280,73 +277,5 @@ regardless of what file or subdirectory the point is on."
 					  (set-window-configuration wnd))))
 	  (error "No more than 2 files should be marked"))))
 
-;;; ---------------------------- Dirvish Diagnostics ----------------------------
-
-(defun cj/dirvish-diagnose ()
-  "Diagnose dirvish installation and available features."
-  (interactive)
-  (with-current-buffer (get-buffer-create "*Dirvish Diagnostic*")
-	(erase-buffer)
-	(insert "=== Dirvish Diagnostic Report ===\n\n")
-
-	;; Check if dirvish is loaded
-	(insert (format "Dirvish loaded: %s\n" (featurep 'dirvish)))
-	(insert (format "Dirvish version: %s\n\n" (if (boundp 'dirvish-version) dirvish-version "unknown")))
-
-	;; Check available modules
-	(insert "Module Status:\n")
-	(dolist (module '(dirvish-quick-access dirvish-emerge dirvish-subtree
-										   dirvish-narrow dirvish-history dirvish-ls dirvish-yank
-										   dirvish-layout dirvish-fd dirvish-icons dirvish-side
-										   dirvish-media dirvish-peek))
-	  (insert (format "  %s: %s\n"
-					  module
-					  (if (featurep module) "✓ loaded" "✗ not loaded"))))
-
-	;; Check key functions
-	(insert "\nKey Functions:\n")
-	(dolist (func '(dirvish-quick-access dirvish-yank-menu dirvish-emerge-menu
-										 dirvish-subtree-toggle dirvish-narrow dirvish-history-go-forward))
-	  (insert (format "  %s: %s\n"
-					  func
-					  (if (fboundp func) "✓ available" "✗ not available"))))
-
-	(switch-to-buffer (current-buffer))))
-
-(defun cj/dirvish-check-quick-access ()
-  "Check the dirvish quick access configuration and variables."
-  (interactive)
-  (with-current-buffer (get-buffer-create "*Dirvish Quick Access Check*")
-	(erase-buffer)
-	(insert "=== Dirvish Quick Access Configuration ===\n\n")
-
-	;; Check if variables are bound
-	(insert "Variable Status:\n")
-	(dolist (var '(code-dir dl-dir sync-dir pix-dir video-recordings-dir videos-dir))
-	  (insert (format "  %s: %s\n"
-					  var
-					  (if (boundp var)
-						  (format "✓ defined = %s" (symbol-value var))
-						"✗ not defined"))))
-
-	(insert "\n\nCurrent Quick Access Entries:\n")
-	(if (boundp 'dirvish-quick-access-entries)
-		(dolist (entry dirvish-quick-access-entries)
-		  (insert (format "  [%s] %s -> %s\n"
-						  (nth 0 entry)
-						  (nth 2 entry)
-						  (nth 1 entry))))
-	  (insert "  dirvish-quick-access-entries is not defined\n"))
-
-	(insert "\n\nDefault Quick Access Entries:\n")
-	(if (boundp 'dirvish-quick-access-alist)
-		(dolist (entry dirvish-quick-access-alist)
-		  (insert (format "  [%s] -> %s\n"
-						  (car entry)
-						  (cdr entry))))
-	  (insert "  dirvish-quick-access-alist is not defined\n"))
-
-	(switch-to-buffer (current-buffer))))
-
 (provide 'dirvish-config)
-;;; dirvish-config.el ends here
+;;; dirvish-config.el ends here.
