@@ -400,6 +400,7 @@
     ("underate" "underrate" nil :count 0)
     ("understnading" "understanding" nil :count 0)
     ("undestand" "understand" nil :count 0)
+    ("unecessary" "unnecessary" nil :count 0)
     ("unexplanable" "unexplainable" nil :count 0)
     ("unncessary" "unnecessary" nil :count 0)
     ("upholstry" "upholstery" nil :count 0)
