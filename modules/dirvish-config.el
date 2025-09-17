@@ -111,6 +111,8 @@ regardless of what file or subdirectory the point is on."
 	 ("cx" ,code-dir                                        "code directory")
 	 ("ex" ,user-emacs-directory                            "emacs home")
 	 ("es" ,sounds-dir                                      "notification sounds")
+	 ("ra" ,video-recordings-dir                            "video recordings")
+	 ("rv" ,audio-recordings-dir                            "audio recordings")
 	 ("dl" ,dl-dir                                          "downloads")
 	 ("dr" ,(concat sync-dir "/drill/")                     "drill files")
 	 ("dt" ,(concat dl-dir "/torrents/complete/")           "torrents")

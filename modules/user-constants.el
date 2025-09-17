@@ -71,8 +71,11 @@
 (defvar sounds-dir (expand-file-name "assets/sounds/" user-emacs-directory)
   "Directory containing sound files for notifications and timers.")
 
-(defconst video-recordings-dir (expand-file-name "recordings/" videos-dir)
-  "The location to save the ffmpeg recordings.")
+(defconst video-recordings-dir (expand-file-name "sync/recordings/" user-home-dir)
+  "The location to save video recordings.")
+
+(defconst audio-recordings-dir (expand-file-name "sync/recordings/" user-home-dir)
+  "The location to save audio recordings.")
 
 ;; FILES
 (defvar authinfo-file (expand-file-name ".authinfo.gpg" user-home-dir)
@@ -139,6 +142,7 @@ and portable across different machines."
 									   roam-dir
 									   snippets-dir
 									   video-recordings-dir
+									   audio-recordings-dir
 									   sync-dir))
  (mapc 'cj/verify-or-create-file (list schedule-file
                                         inbox-file

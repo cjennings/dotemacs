@@ -109,7 +109,7 @@
 ;; ------------------------- Personal Workflow Related -------------------------
 
 (require 'reconcile-open-repos)
-(require 'record-desktop)
+(require 'video-audio-recording)
 (require 'local-repository)
 
 ;; ------------------------------- Entertainment -------------------------------
