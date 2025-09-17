@@ -7,22 +7,7 @@
 ;;; Code:
 
 (require 'ert)
-;; ------------------------------- Load ERT Tests ------------------------------
-
-(defun cj/load-all-tests ()
-  "`load' all ert libraries in test which are not already loaded."
-  (interactive)
-  (require 'ert)
-  (setq ert--tests (make-hash-table :test 'equal)) ;; forget all existing tests
-  (eval-buffer)
-  (let ((libraries-loaded (mapcar #'file-name-sans-extension
-								  (delq nil (mapcar #'car load-history))))
-		(dir (concat user-emacs-directory "tests/")))
-	(dolist (file (directory-files dir t ".+\\.elc?$"))
-	  (let ((library (file-name-sans-extension file)))
-		(unless (member library libraries-loaded)
-		  (load library nil t)
-		  (push library libraries-loaded))))))
+(require 'cl-lib)
 
 ;; ------------------------------ Reload Init File -----------------------------
 ;; it does what it says it does.
