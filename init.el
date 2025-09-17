@@ -123,7 +123,7 @@
 
 ;; ---------------------------------- In Test ----------------------------------
 
-(require 'test-code)
+(require 'wip)
 (require 'test-runner)
 ;; (require 'jumper)
 

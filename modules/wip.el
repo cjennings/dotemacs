@@ -1,4 +1,4 @@
-;;; test-code.el --- test code -*- lexical-binding: t; coding: utf-8; -*-
+;;; wip.el --- test code -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -176,5 +176,5 @@ with or without C-, M-, S- modifiers."
   (auth-source-forget-all-cached)
   (message "Emacs auth-source cache cleared."))
 
-(provide 'test-code)
-;;; test-code.el ends here.
+(provide 'wip)
+;;; wip.el ends here.
