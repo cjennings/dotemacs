@@ -1,5 +1,5 @@
 ;;; test-runner.el --- Test Runner for Emacs Configuration -*- lexical-binding: t; -*-
-;; Author: Craig Jennings <c@cjennings.net>
+;; author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
 ;; Provides utilities for running ERT tests with focus/unfocus workflow.
@@ -100,20 +100,43 @@ Either 'all (run all tests) or 'focused (run only focused tests).")
   (setq cj/test-focused-files '())
   (message "Cleared all focused test files"))
 
+(defun cj/test--extract-test-names (file)
+  "Extract test names from FILE.
+Returns a list of test name symbols defined in the file."
+  (let ((test-names '()))
+	(with-temp-buffer
+	  (insert-file-contents file)
+	  (goto-char (point-min))
+	  ;; Find all (ert-deftest NAME ...) forms
+	  (while (re-search-forward "^\\s-*(ert-deftest\\s-+\\(\\(?:\\sw\\|\\s_\\)+\\)" nil t)
+		(push (match-string 1) test-names)))
+	test-names))
+
 (defun cj/test-run-focused ()
   "Run only the focused test files."
   (interactive)
   (if (null cj/test-focused-files)
-	  (user-error "No focused files set. Use =cj/test-focus-add' first")
-	(let ((loaded-count 0))
-	  ;; Load only the focused files
+	  (user-error "No focused files set. Use `cj/test-focus-add' first")
+	(let ((all-test-names '())
+		  (loaded-count 0))
+	  ;; Load the focused files and collect their test names
 	  (dolist (file cj/test-focused-files)
 		(let ((full-path (expand-file-name file cj/test-directory)))
 		  (when (file-exists-p full-path)
 			(load-file full-path)
-			(setq loaded-count (1+ loaded-count)))))
-	  (message "Running tests from %d focused file(s)" loaded-count)
-	  (ert t))))
+			(setq loaded-count (1+ loaded-count))
+			;; Extract test names from this file
+			(let ((test-names (cj/test--extract-test-names full-path)))
+			  (setq all-test-names (append all-test-names test-names))))))
+
+	  (if (null all-test-names)
+		  (message "No tests found in focused files")
+		;; Build a regexp that matches any of our test names
+		(let ((pattern (regexp-opt all-test-names)))
+		  (message "Running %d test(s) from %d focused file(s)"
+				   (length all-test-names) loaded-count)
+		  ;; Run only the tests we found
+		  (ert (concat "^" pattern "$")))))))
 
 (defun cj/test-toggle-mode ()
   "Toggle between 'all and 'focused test execution modes."
@@ -121,8 +144,8 @@ Either 'all (run all tests) or 'focused (run only focused tests).")
   (setq cj/test-mode (if (eq cj/test-mode 'all) 'focused 'all))
   (message "Test mode: %s" cj/test-mode))
 
-(defun cj/test-view-focused ()
-  "Display currently focused test files."
+(defun cj/test-view-focus ()
+  "Display test files in focus."
   (interactive)
   (if (null cj/test-focused-files)
 	  (message "No focused test files")
@@ -142,11 +165,12 @@ Either 'all (run all tests) or 'focused (run only focused tests).")
 (define-prefix-command 'cj/test-map nil
 					   "Keymap for test-runner operations.")
 (define-key cj/custom-keymap "t" 'cj/test-map)
-(define-key cj/test-map "l" 'cj/test-load-all)
-(define-key cj/test-map "r" 'cj/test-run-all)
+(define-key cj/test-map "L" 'cj/test-load-all)
+(define-key cj/test-map "R" 'cj/test-run-all)
+(define-key cj/test-map "r" 'cj/test-run-smart)
 (define-key cj/test-map "a" 'cj/test-focus-add)
 (define-key cj/test-map "c" 'cj/test-focus-clear)
-(define-key cj/test-map "v" 'cj/test-view-focused)
+(define-key cj/test-map "v" 'cj/test-view-focus)
 (define-key cj/test-map "t" 'cj/test-toggle-mode)
 
 (provide 'test-runner)
