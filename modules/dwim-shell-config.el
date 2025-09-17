@@ -215,31 +215,21 @@
 	 "ffmpeg -i '<<f>>' -vcodec libwebp -filter:v fps=fps=10 -compression_level 3 -loop 0 -preset default -an -vsync 0 '<<fne>>'.webp"
 	 :utils "ffmpeg"))
 
-  (defun cj/dwim-shell-commands-convert-webp-to-mp4 ()
-	"Convert all marked webp(s) to video(s)."
+  (defun cj/dwim-shell-commands-convert-video-to-high-compatibility-mp4 ()
+	"Convert all marked video(s) to MP4 format with H.264/AAC."
 	(interactive)
 	(dwim-shell-command-on-marked-files
-	 "Convert webp to video"
-	 "convert '<<f>>' '<<td>>/<<bne>>.gif'
-	ffmpeg -i '<<td>>/<<bne>>.gif' -movflags faststart -pix_fmt yuv420p -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' '<<fne>>.mp4'"
-	 :utils '("ffmpeg" "convert")
-	 :extensions "webp"))
+	 "Convert to MP4"
+	 "ffmpeg -i '<<f>>' -c:v libx264 -preset slow -crf 23 -profile:v baseline -level 3.0 -c:a aac -b:a 128k '<<fne>>.mp4'"
+	 :utils "ffmpeg"))
 
   (defun cj/dwim-shell-commands-convert-video-to-hevc-mkv ()
-	"Convert all marked videos to hevc mkv."
+	"Convert all marked videos to HEVC (H.265) in MKV container."
 	(interactive)
 	(dwim-shell-command-on-marked-files
-	 "Convert video to h265 "
-	 "REPO_DIR=/tmp/other_video_transcoding
-	if ! [ -d \"$REPO_DIR\" ]
-	then
-	  git clone https://github.com/donmelton/other_video_transcoding.git $REPO_DIR
-	fi
-	pushd $REPO_DIR
-	git pull origin master || echo \"skipping repo update...\"
-	popd
-	ruby $REPO_DIR/bin/other-transcode --hevc '<<f>>'"
-	 :utils '("git" "ffmpeg" "mkvtoolnix" "mpv")))
+	 "Convert to HEVC/H.265"
+	 "ffmpeg -i '<<f>>' -c:v libx265 -preset slower -crf 22 -x265-params profile=main10:level=4.0 -c:a copy -c:s copy '<<fne>>.mkv'"
+	 :utils "ffmpeg"))
 
   (defun cj/dwim-shell-commands-extract-archive-smartly ()
 	"Unzip all marked archives (of any kind) using =atool'.
@@ -429,7 +419,7 @@ Supports docx, odt, and other pandoc-compatible formats."
 	(let ((algorithm (completing-read "Algorithm: "
 									  '("md5" "sha1" "sha256" "sha512")
 									  nil t)))
-	  (dwim-shell-command-on-marked-files
+      (dwim-shell-command-on-marked-files
 	   (format "Generate %s checksum" algorithm)
 	   (format "%ssum '<<f>>' | tee '<<f>>.%s'" algorithm algorithm)
 	   :utils (format "%ssum" algorithm))))
