@@ -109,7 +109,7 @@ Should be a key from `cj/media-players'."
   (setq elfeed-feeds
         '(
           ;; The Daily
-          ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLdMrbgYfVl-s16D_iT2BJCJ90pWtTO1A4" yt daily)
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLdMrbgYfVl-s16D_iT2BJCJ90pWtTO1A4" yt daily)
 
           ;; The Ezra Klein Show
           ("https://www.youtube.com/feeds/videos.xml?channel_id=UCnxuOd8obvLLtf5_-YKFbiQ" yt ezra-klein)
@@ -127,7 +127,10 @@ Should be a key from `cj/media-players'."
           ("https://www.youtube.com/feeds/videos.xml?channel_id=UCcvDWzvxz6Kn1iPQHMl2teA" yt raging-moderates)
 
           ;; Prof G Markets
-          ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLtQ-jBytlXCY28ucRF8P1mNMSG8uC06Aw" yt prof-g-markets)
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLtQ-jBytlXCY28ucRF8P1mNMSG8uC06Aw" yt prof-g-markets)
+
+		  ;; Trae Crowder Porch Rants
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PL45Mc1cDgnsB-u1iLPBYNF1fk-y1cVzTJ" yt traecrowdder)
           )))
 
 ;; ------------------------------ Elfeed Functions -----------------------------
@@ -142,13 +145,13 @@ Should be a key from `cj/media-players'."
 ;; -------------------------- Elfeed Filter Functions --------------------------
 
 (defun cj/elfeed-mark-all-as-read ()
-  "Remove the 'unread' tag from all elfeed entries visible in the elfeed search buffer."
+  "Remove the \='unread\=' tag from all visible entries in search buffer."
   (interactive)
   (mark-whole-buffer)
   (elfeed-search-untag-all-unread))
 
 (defun cj/elfeed-mark-all-as-unread ()
-  "Add the 'unread' tag from all elfeed entries visible in the elfeed search buffer."
+  "Add the \='unread\=' tag from all visible entries in the search buffer."
   (interactive)
   (mark-whole-buffer)
   (elfeed-search-tag-all 'unread))
@@ -167,7 +170,7 @@ Should be a key from `cj/media-players'."
   "Extract the direct stream URL from URL using yt-dlp with FORMAT.
 Returns the stream URL or nil on failure."
   (unless (executable-find "yt-dlp")
-	(error "yt-dlp is not installed or not in PATH"))
+	(error "The program yt-dlp is not installed or not in PATH"))
   (let* ((format-args (if format
 						  (list "-f" format)
 						nil))
@@ -254,9 +257,9 @@ Applies cj/eww-readable-nonce hook after EWW rendering."
 (defun cj/yt-dl-it (url)
   "Downloads the URL in an async shell."
   (unless (executable-find "yt-dlp")
-    (error "yt-dlp is not installed or not in PATH"))
+	(error "The program yt-dlp is not installed or not in PATH"))
   (unless (executable-find "tsp")
-    (error "tsp (task-spooler) is not installed or not in PATH"))
+	(error "The tsp (task-spooler) program is not installed or not in PATH"))
   (let* ((default-directory videos-dir)
          (buffer-name (format "*yt-dlp: %s*" (truncate-string-to-width url 50)))
          (output-template (format "%s/%%(channel)s-%%(title)s.%%(ext)s" videos-dir))
@@ -352,7 +355,7 @@ Note: Function name kept for backwards compatibility."
 
 (defun cj/youtube-to-elfeed-feed-format (url type)
   "Convert YouTube URL to elfeed-feeds format.
-TYPE should be either 'channel or 'playlist."
+TYPE should be either \='channel or \='playlist."
   (let ((id nil)
         (title nil)
         (buffer nil)
