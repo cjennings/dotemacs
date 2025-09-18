@@ -90,16 +90,16 @@ Otherwise, complain."
 
 (defun cj/format-region-or-buffer ()
   "Reformat the region or the entire buffer.
-Deletes trailing whitespace, reindents the region, and replaces tabs with spaces."
+Replaces tabs with spaces, deletes trailing whitespace, and reindents the region."
   (interactive)
   (let ((start-pos (if (use-region-p) (region-beginning) (point-min)))
 		(end-pos (if (use-region-p) (region-end) (point-max))))
 	(save-excursion
 	  (save-restriction
 		(narrow-to-region start-pos end-pos)
-		(delete-trailing-whitespace)
-		(indent-region (point-min) (point-max))
-		(untabify (point-min) (point-max))))))
+		(untabify (point-min) (point-max)))
+	  (indent-region (point-min) (point-max))
+	  (delete-trailing-whitespace))))
 
 (defun cj/count-words-buffer-or-region ()
   "Count the number of words in buffer or region.
