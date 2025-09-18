@@ -1,12 +1,14 @@
-;;; system-defaults --- Emacs Non-UI Preferences -*- lexical-binding: t; coding: utf-8-unix; -*-
+;;; system-defaults --- Non-UI Preferences -*- lexical-binding: t; coding: utf-8-unix; -*-
 ;; author: Craig Jennings <c@cjennings.net>
-
+;;
 ;;; Commentary:
-
+;;
+;;
+;;
 ;;; Code:
 
 ;; -------------------------- Native Comp Preferences --------------------------
-;; After async compiler starts, set preferences and warning level
+;; after async compiler starts, set preferences and warning level
 
 (with-eval-after-load 'comp-run
   (setopt native-comp-async-jobs-number 8) ; parallel compile workers
@@ -14,7 +16,7 @@
   (setopt native-comp-always-compile t))   ; always native-compile
 
 ;; -------------------------- Log Native Comp Warnings -------------------------
-;; Log native comp warnings rather than cluttering the buffer
+;; log native comp warnings rather than cluttering the buffer
 
 (defvar comp-warnings-log
   (expand-file-name "comp-warnings.log" user-emacs-directory)
@@ -39,6 +41,7 @@ Return non-nil to indicate the warning was handled."
 (advice-add 'display-warning :before-until #'cj/log-comp-warning)
 
 ;; ---------------------------------- Unicode ----------------------------------
+;; unicode everywhere
 
 (set-locale-environment "en_US.UTF-8")
 (prefer-coding-system        'utf-8)
@@ -93,13 +96,35 @@ Used to disable functionality with defalias 'somefunc 'cj/disabled)."
 (setq system-time-locale "C")                       ;; use en_US locale to format time.
 
 ;; --------------------------------- Clipboard ---------------------------------
+;; keep the clipboard and kill ring in sync
 
 (setq select-enable-clipboard t)                    ;; cut and paste using clipboard
 (setq yank-pop-change-selection t)                  ;; update system clipboard when yanking in emacs
-(setq save-interprogram-paste-before-kill t)        ;; saves existing clipboard to kill ring before replacing
+(setq save-interprogram-paste-before-kill t)        ;; save existing clipboard to kill ring before replacing
+
+;; Additional settings for better clipboard integration
+(setq select-enable-primary nil)                    ;; don't use X11 primary selection (no middle-click paste)
+(setq mouse-drag-copy-region nil)                   ;; don't copy region to clipboard by selecting with mouse
+
+;; Ensure clipboard content is available in kill ring when yanking
+(defun cj/sync-clipboard-to-kill-ring ()
+  "Add current system clipboard to kill ring if it's different from the last kill.
+Silently ignores media content that can't be converted to text."
+  ;; Use ignore-errors to suppress all selection conversion errors
+  (let ((clipboard-text (ignore-errors
+						  (gui-get-selection 'CLIPBOARD 'STRING))))
+	(when (and clipboard-text
+			   (not (string= clipboard-text ""))
+			   (or (null kill-ring)
+				   (not (string= clipboard-text (car kill-ring)))))
+	  (kill-new clipboard-text))))
+
+;; Sync before yanking to ensure external clipboard changes are captured
+(advice-add 'yank :before #'cj/sync-clipboard-to-kill-ring)
+(advice-add 'yank-pop :before #'cj/sync-clipboard-to-kill-ring)
 
 ;; -------------------------------- Tab Settings -------------------------------
-;; use spaces, not tabs
+;; spaces, not tabs
 
 (setq-default tab-width 4)                          ;; if tab, make them 4 spaces default
 (setq-default indent-tabs-mode nil)                 ;; but turn off tabs by default
