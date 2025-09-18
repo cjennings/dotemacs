@@ -131,148 +131,7 @@ This function should only be called AFTER gptel is loaded."
 	  ("OpenAI - ChatGPT" . ,gptel-chatgpt-backend))
     "Alist of GPTel backends for interactive switching.")
 
-  (defun cj/gptel-switch-backend ()
-	"Switch GPTel backend and select a model from that backend.
-This is a backend-first approach, whereas `cj/gptel-change-model'
-is model-first."
-	(interactive)
-	(let* ((choice (completing-read "Select GPTel backend: "
-									(mapcar #'car cj/gptel-backends)
-									nil t))
-           (backend (cdr (assoc choice cj/gptel-backends))))
-	  (if backend
-		  (let* ((models (gptel-backend-models backend))
-				 (selected-model
-				  (intern (completing-read
-						   (format "Select %s model: " choice)
-						   (mapcar #'symbol-name models)
-						   nil t))))
-			(setq gptel-backend backend)
-			(setq gptel-model selected-model)
-			(message "Switched to %s with model: %s" choice selected-model))
-		(user-error "Invalid GPTel backend: %s" choice))))
-
-  (setq gptel-backend gptel-claude-backend) ;; use Claude as default
-  ;; (setq gptel-backend gptel-chatgpt-backend) ;; use ChatGPT as default
-
-;;; -------------------- User And Model Names In Org Headers --------------------
-
-
-  ;;  Dynamic user prefix for org-mode heading (string, refreshed just before send)
-  (defun cj/gptel--fresh-org-prefix ()
-    "Generate a fresh org-mode header with current timestamp for user messages."
-    (concat "* " user-login-name " " (format-time-string "[%Y-%m-%d %H:%M:%S]") "\n"))
-
-  ;; Initialize as a string (GPTel expectation)
-  (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
-        (cj/gptel--fresh-org-prefix))
-
-  ;; Refresh immediately before each send for accurate timestamp
-  (defun cj/gptel--refresh-org-prefix (&rest _)
-    "Update the org-mode prefix with fresh timestamp before sending message."
-    (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
-          (cj/gptel--fresh-org-prefix)))
-  (advice-add 'gptel-send :before #'cj/gptel--refresh-org-prefix)
-
-  ;; AI header on each reply: (e.g. "*** AI: <model> [timestamp]")
-  (defun cj/gptel-backend-and-model ()
-    "Return backend, model, and timestamp as a single string."
-    (let* ((backend (pcase (bound-and-true-p gptel-backend)
-                      ((and v (pred vectorp)) (aref v 1))  ;; display name if vector
-                      (_ "AI")))
-           (model   (format "%s" (or (bound-and-true-p gptel-model) "")))
-           (ts      (format-time-string "[%Y-%m-%d %H:%M:%S]")))
-      (format "%s: %s %s" backend model ts)))
-
-  (defun cj/gptel-insert-model-heading (response-begin-pos _response-end-pos)
-    "Insert an Org heading for the AI reply at RESPONSE-BEGIN-POS."
-    (save-excursion
-      (goto-char response-begin-pos)
-	  (insert (format "* %s\n" (cj/gptel-backend-and-model)))))
-
-  (add-hook 'gptel-post-response-functions #'cj/gptel-insert-model-heading)
-
-;;; ---------------------------- Toggle GPTel Window ----------------------------
-
-  (defun cj/toggle-gptel ()
-    "Toggle the visibility of the AI-Assistant buffer, and place point at its end."
-    (interactive)
-    (let* ((buf-name "*AI-Assistant*")
-           (buffer   (get-buffer buf-name))
-           (win      (and buffer (get-buffer-window buffer))))
-      (if win
-          ;; If it's already visible, just close it
-          (delete-window win)
-        ;; Otherwise ensure the buffer exists
-        (unless buffer
-          (gptel buf-name gptel-model))
-        (setq buffer (get-buffer buf-name))
-        ;; Display in a side window, select it, and move point to end
-        (setq win
-              (display-buffer-in-side-window
-               buffer
-               '((side . right)
-                 (window-width . 0.4))))
-        (select-window win)
-        (with-current-buffer buffer
-		  (goto-char (point-max))))))
-
-;;; ----------------------------- Clear Gptel Buffer ----------------------------
-
-  (defun cj/gptel-clear-buffer ()
-    "Erase the contents of the current GPTel buffer leaving initial org heading.
-Only works in buffers with gptel-mode active."
-    (interactive)
-    (let ((is-gptel (bound-and-true-p gptel-mode))
-          (is-org (derived-mode-p 'org-mode)))
-      ;; debug info to Messages
-      ;; (message "Debug: gptel-mode: %s, org-mode: %s, major-mode: %s"
-      ;;          is-gptel is-org major-mode)
-
-      (if (and is-gptel is-org)
-          (progn
-            (erase-buffer)
-            ;; re-insert the user heading with fresh timestamp
-            (insert (cj/gptel--fresh-org-prefix))
-            (message "GPTel buffer cleared and heading reset"))
-		(message "Not a GPTel buffer in org-mode. Nothing cleared."))))
-
-;;; ---------------------------- Context Manipulation ---------------------------
-
-  (defun cj/gptel-add-buffer ()
-    "Add a buffer to the GPTel context.
-Prompts for a buffer name and adds its entire content as context.
-By default shows only regular buffers (not special buffers), but
-allows access to all buffers via completion."
-    (interactive)
-    (let* ((buffers (mapcar #'buffer-name (buffer-list)))
-           ;; Filter out special buffers by default (those starting with space or *)
-           ;; But keep them in the collection for completion
-           (default-buffers (cl-remove-if (lambda (name)
-                                            (or (string-prefix-p " " name)
-                                                (string-prefix-p "*" name)))
-                                          buffers))
-           (buffer-name (completing-read
-                         "Buffer to add as context: "
-                         buffers
-                         nil  ; No predicate
-                         t    ; Require match
-                         nil  ; No initial input
-                         nil  ; No history
-                         (car default-buffers))) ; Default to first regular buffer
-           (buffer (get-buffer buffer-name)))
-      (when buffer
-        (if (and (buffer-file-name buffer)
-                 (y-or-n-p "This buffer is associated with a file. Add file instead? "))
-            ;; If it's a file buffer and user confirms, add the file instead
-            (gptel-add-file (buffer-file-name buffer))
-          ;; Otherwise add the buffer content
-          (gptel-context--add-region
-           buffer
-           (with-current-buffer buffer (point-min))
-           (with-current-buffer buffer (point-max))
-           t)
-          (message "Buffer '%s' added as context." buffer-name)))))
+  ;; ---------------------------- Backend Management ---------------------------
 
   (defun cj/gptel-change-model ()
 	"Change the AI model and backend for gptel.
@@ -323,6 +182,85 @@ backend when needed. Prompts for scope (global or buffer-local)."
 		  (setq-local gptel-model model)
 		  (message "Changed to %s model: %s (buffer-local)" backend-name model)))))
 
+  (defun cj/gptel-switch-backend ()
+	"Switch GPTel backend and select a model from that backend.
+This is a backend-first approach, whereas `cj/gptel-change-model'
+is model-first."
+	(interactive)
+	(let* ((choice (completing-read "Select GPTel backend: "
+									(mapcar #'car cj/gptel-backends)
+									nil t))
+           (backend (cdr (assoc choice cj/gptel-backends))))
+	  (if backend
+		  (let* ((models (gptel-backend-models backend))
+				 (selected-model
+				  (intern (completing-read
+						   (format "Select %s model: " choice)
+						   (mapcar #'symbol-name models)
+						   nil t))))
+			(setq gptel-backend backend)
+			(setq gptel-model selected-model)
+			(message "Switched to %s with model: %s" choice selected-model))
+		(user-error "Invalid GPTel backend: %s" choice))))
+
+  ;; (setq gptel-backend gptel-claude-backend) ;; use Claude as default
+  (setq gptel-backend gptel-chatgpt-backend) ;; use ChatGPT as default
+
+;; -------------------------- Org Header Construction --------------------------
+
+  ;;  Dynamic user prefix for org-mode heading (string, refreshed just before send)
+  (defun cj/gptel--fresh-org-prefix ()
+    "Generate a fresh org-mode header with current timestamp for user messages."
+    (concat "* " user-login-name " " (format-time-string "[%Y-%m-%d %H:%M:%S]") "\n"))
+
+  ;; Initialize as a string (GPTel expectation)
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
+        (cj/gptel--fresh-org-prefix))
+
+  ;; Refresh immediately before each send for accurate timestamp
+  (defun cj/gptel--refresh-org-prefix (&rest _)
+    "Update the org-mode prefix with fresh timestamp before sending message."
+    (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
+          (cj/gptel--fresh-org-prefix)))
+  (advice-add 'gptel-send :before #'cj/gptel--refresh-org-prefix)
+
+  ;; AI header on each reply: (e.g. "*** AI: <model> [timestamp]")
+  (defun cj/gptel-backend-and-model ()
+    "Return backend, model, and timestamp as a single string."
+    (let* ((backend (pcase (bound-and-true-p gptel-backend)
+                      ((and v (pred vectorp)) (aref v 1))  ;; display name if vector
+                      (_ "AI")))
+           (model   (format "%s" (or (bound-and-true-p gptel-model) "")))
+           (ts      (format-time-string "[%Y-%m-%d %H:%M:%S]")))
+      (format "%s: %s %s" backend model ts)))
+
+  (defun cj/gptel-insert-model-heading (response-begin-pos _response-end-pos)
+    "Insert an Org heading for the AI reply at RESPONSE-BEGIN-POS."
+    (save-excursion
+      (goto-char response-begin-pos)
+	  (insert (format "* %s\n" (cj/gptel-backend-and-model)))))
+
+  (add-hook 'gptel-post-response-functions #'cj/gptel-insert-model-heading)
+
+  ;; ---------------------------- Context Management ---------------------------
+
+  (defun cj/gptel-clear-buffer ()
+    "Erase the contents of the current GPTel buffer leaving initial org heading.
+Only works in buffers with gptel-mode active."
+    (interactive)
+    (let ((is-gptel (bound-and-true-p gptel-mode))
+          (is-org (derived-mode-p 'org-mode)))
+      ;; debug info to Messages
+      ;; (message "Debug: gptel-mode: %s, org-mode: %s, major-mode: %s"
+      ;;          is-gptel is-org major-mode)
+
+      (if (and is-gptel is-org)
+          (progn
+            (erase-buffer)
+            ;; re-insert the user heading with fresh timestamp
+            (insert (cj/gptel--fresh-org-prefix))
+            (message "GPTel buffer cleared and heading reset"))
+		(message "Not a GPTel buffer in org-mode. Nothing cleared."))))
 
   (with-eval-after-load 'projectile
 	(defun cj/gptel-add-file ()
@@ -523,6 +461,31 @@ Presents a list of .gptel files for selection and loads the chosen file."
 		  (select-window (get-buffer-window ai-buffer))
 		  (message "Loaded conversation from: %s" filepath)))))) ;; end use-package
 
+;;; ---------------------------- Toggle GPTel Window ----------------------------
+
+(defun cj/toggle-gptel ()
+  "Toggle the visibility of the AI-Assistant buffer, and place point at its end."
+  (interactive)
+  (let* ((buf-name "*AI-Assistant*")
+		 (buffer   (get-buffer buf-name))
+		 (win      (and buffer (get-buffer-window buffer))))
+	(if win
+		;; If it's already visible, just close it
+		(delete-window win)
+	  ;; Otherwise ensure the buffer exists
+	  (unless buffer
+		(gptel buf-name gptel-model))
+	  (setq buffer (get-buffer buf-name))
+	  ;; Display in a side window, select it, and move point to end
+	  (setq win
+			(display-buffer-in-side-window
+			 buffer
+			 '((side . right)
+			   (window-width . 0.4))))
+	  (select-window win)
+	  (with-current-buffer buffer
+		(goto-char (point-max))))))
+
 ;;; -------------------------------- GPTel-Magit --------------------------------
 
 (use-package gptel-magit
@@ -534,14 +497,14 @@ Presents a list of .gptel files for selection and loads the chosen file."
 (defvar ai-keymap
   (let ((map (make-sparse-keymap)))
 	(define-key map (kbd "B") #'cj/gptel-switch-backend)    ;; Change the backend (OpenAI, Anthropic, etc.)
-	(define-key map (kbd "M") #'gptel-menu)                 ;; open the gptel transient menu
-	(define-key map (kbd "b") #'cj/gptel-add-buffer)        ;; add a buffer to context
-	(define-key map (kbd "d") #'cj/gptel-delete-conversation) ;; save conversation
+	(define-key map (kbd "M") #'gptel-menu)                 ;; gptel's transient menu
+	(define-key map (kbd "d") #'cj/gptel-delete-conversation) ;; delete conversation
 	(define-key map (kbd "f") #'cj/gptel-add-file)          ;; add a file to context
 	(define-key map (kbd "l") #'cj/gptel-load-conversation) ;; load and continue conversation
 	(define-key map (kbd "m") #'cj/gptel-change-model)      ;; change the LLM model
 	(define-key map (kbd "p") #'gptel-system-prompt)        ;; change prompt
-	(define-key map (kbd "r") #'gptel-rewrite)              ;; rewrite a region of code/text
+	(define-key map (kbd "&") #'gptel-rewrite)              ;; rewrite a region of code/text
+	(define-key map (kbd "r") #'gptel-context-remove-all)   ;; remove all context
 	(define-key map (kbd "s") #'cj/gptel-save-conversation) ;; save conversation
 	(define-key map (kbd "t") #'cj/toggle-gptel)            ;; toggles the ai-assistant window
 	(define-key map (kbd "x") #'cj/gptel-clear-buffer)      ;; clears the assistant buffer
