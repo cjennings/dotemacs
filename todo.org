@@ -1,4 +1,31 @@
 * Emacs Open Work
+** TODO [#B] Change mu4e view actions
+*** Goal: Add actions you use.
+the defaults are currently
+#+begin_src emacs-lisp
+  (("capture message" . mu4e-action-capture-message)
+   ("view in browser" . mu4e-action-view-in-browser)
+   ("browse online archive" . mu4e-action-browse-list-archive)
+   ("xview in xwidget" . mu4e-action-view-in-xwidget)
+   ("show this thread" . mu4e-action-show-thread)
+   ("org-contact-add" . mu4e-action-add-org-contact))
+  ;;  Original value was
+  (("capture message" . mu4e-action-capture-message)
+   ("view in browser" . mu4e-action-view-in-browser)
+   ("browse online archive" . mu4e-action-browse-list-archive)
+   ("xview in xwidget" . mu4e-action-view-in-xwidget)
+   ("show this thread" . mu4e-action-show-thread))
+#+end_src
+The only ones I use are:
+#+begin_src emacs-lisp
+  ("view in browser" . mu4e-action-view-in-browser)
+  ("capture message" . mu4e-action-capture-message)
+  ("org-contact-add" . mu4e-action-add-org-contact)
+#+end_src
+and I would like to add one for save-attachment(s)
+
+
+
 ** TODO [#A] Fix Org-msg Issue With Undo Outside                      :bug:
 ** DOING [#A] Test and Fix Org-Contacts                               :bug:
 *** TODO [#B] Finding Contact should only match Org Header text
@@ -35,7 +62,7 @@ Here's a comprehensive test checklist we should verify after migration:
 - [ ] =C-h v= (helpful-variable) with completing-read
 **** Project/File Navigation Tests
 - [ ] =C-c p f= (projectile-find-file)
-- [ ] =C-c p p= (projectile-switch-project) 
+- [ ] =C-c p p= (projectile-switch-project)
 - [ ] =C-c p G= (projectile-ripgrep)
 - [ ] Recent files access
 - [ ] Bookmarks
@@ -50,7 +77,7 @@ Here's a comprehensive test checklist we should verify after migration:
 - [ ] Helpful integration (counsel-describe-/ functions)
 - [ ] Projectile integration
 **** Search/Replace Tests
-- [ ] In-buffer search 
+- [ ] In-buffer search
 - [ ] Project-wide search
 - [ ] Search with preview
 - [ ] Occur-like functionality
@@ -60,7 +87,7 @@ After running mu4e-view-save-attachments,
 - invoke embark-act-all in the completion menu
 - followed by RET (mu4e-view-save-attachments) to save all attachments,
 - or TAB (vertico-insert) followed by (comma) next to each file you want to save,
-- then RET (vertico-exit), to save selected attachments. 
+- then RET (vertico-exit), to save selected attachments.
 ** TODO [#A] Org Agenda Work                                  :enhancement:
 *** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
 *** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
@@ -91,80 +118,80 @@ https://github.com/jeremy-compostella/org-msg
 *** Lazy-load configuration modules                      :complex4:impact5:
 Loading every module with `require` forces all code and packages to initialize during startup. Switching to `use-package` with `:defer` or `:commands` loads modules only when their functionality is invoked, greatly reducing startup time.
 #+begin_src emacs-lisp
-(use-package dirvish-config
-  :load-path "modules"
-  :commands (dirvish dirvish-side))
+  (use-package dirvish-config
+    :load-path "modules"
+    :commands (dirvish dirvish-side))
 #+end_src
 *** DONE Defer Dashboard initialization                  :complex2:impact4:
 CLOSED: [2025-09-08 Mon 14:09]
 The dashboard package is loaded eagerly via `:demand`, adding a noticeable delay. Load it after startup and open it on the first idle event instead.
 #+begin_src emacs-lisp
-(use-package dashboard
-  :defer t
-  :hook (emacs-startup . dashboard-open))
+  (use-package dashboard
+    :defer t
+    :hook (emacs-startup . dashboard-open))
 #+end_src
 *** CANCELLED Replace synchronous network ping with non-blocking check :complex3:impact2:
 CLOSED: [2025-09-08 Mon 16:07]
 - State "CANCELLED"  from              [2025-09-08 Mon 16:07]
 `internet-up-p` spawns a blocking `ping` process at startup. Using `make-network-process` avoids shelling out and lets the check run asynchronously.
 #+begin_src emacs-lisp
-(defun internet-up-p (&optional host)
-  "Non-blocking network availability check."
-  (make-network-process
-   :name "net-check" :host (or host "www.google.com") :service 80
-   :sentinel (lambda (proc _)
-               (setq cj/network-available (eq (process-status proc) 'open))
-               (delete-process proc))))
+  (defun internet-up-p (&optional host)
+    "Non-blocking network availability check."
+    (make-network-process
+     :name "net-check" :host (or host "www.google.com") :service 80
+     :sentinel (lambda (proc _)
+                 (setq cj/network-available (eq (process-status proc) 'open))
+                 (delete-process proc))))
 #+end_src
 
-This actually added 15 seconds to the launch time. 
+This actually added 15 seconds to the launch time.
 *** Postpone package refreshing to idle time             :complex1:impact3:
 Refreshing ELPA archives during startup adds I/O overhead. Defer this check to an idle timer so it runs after Emacs is ready.
 #+begin_src emacs-lisp
-(add-hook 'emacs-startup-hook
-          (lambda () (run-with-idle-timer 60 nil #'package-refresh-contents)))
+  (add-hook 'emacs-startup-hook
+            (lambda () (run-with-idle-timer 60 nil #'package-refresh-contents)))
 #+end_src
 
 *** Enable package quickstart caching                    :complex1:impact2:
 Precomputing autoloads with package quickstart reduces the cost of loading package code.
 #+begin_src emacs-lisp
-(setq package-quickstart t)
-(package-quickstart-refresh)
+  (setq package-quickstart t)
+  (package-quickstart-refresh)
 #+end_src
 
 *** Byte-compile configuration files                     :complex1:impact2:
 Byte-compiled Emacs Lisp loads faster than source. Recompile the configuration directory when changes are made.
 #+begin_src emacs-lisp
-(byte-recompile-directory user-emacs-directory 0)
+  (byte-recompile-directory user-emacs-directory 0)
 #+end_src
 
 *** Manage garbage collection with GCMH                  :complex1:impact2:
 After startup, `gcmh` dynamically adjusts GC thresholds to minimize pauses without manual tuning.
 #+begin_src emacs-lisp
-(use-package gcmh
-  :hook (after-init . gcmh-mode)
-  :config
-  (setq gcmh-idle-delay 5
-        gcmh-high-cons-threshold (* 16 1024 1024)))
+  (use-package gcmh
+    :hook (after-init . gcmh-mode)
+    :config
+    (setq gcmh-idle-delay 5
+          gcmh-high-cons-threshold (* 16 1024 1024)))
 #+end_src
 
 *** DONE Load Dirvish on demand                          :complex2:impact3:
 CLOSED: [2025-09-13 Sat 20:56]
 `dirvish-config` requires Dirvish during initialization, negating deferral. Let `use-package` autoload the commands and enable overrides when Dired loads.
 #+begin_src emacs-lisp
-(use-package dirvish
-  :commands (dirvish dirvish-side)
-  :hook (dired-mode . dirvish-override-dired-mode))
+  (use-package dirvish
+    :commands (dirvish dirvish-side)
+    :hook (dired-mode . dirvish-override-dired-mode))
 #+end_src
 
 *** DONE Start Org-roam lazily                           :complex3:impact3:
 CLOSED: [2025-09-08 Mon 16:10]
 Org-roam and its database sync run at startup. Load Org-roam only when Org is active, and start autosync after initialization.
 #+begin_src emacs-lisp
-(use-package org-roam
-  :after org
-  :commands (org-roam-node-find org-roam-node-insert)
-  :hook (after-init . org-roam-db-autosync-mode))
+  (use-package org-roam
+    :after org
+    :commands (org-roam-node-find org-roam-node-insert)
+    :hook (after-init . org-roam-db-autosync-mode))
 #+end_src
 
 ** TODO [#B] Add All ERT Tests Into Separate Directory                :bug:
@@ -198,119 +225,119 @@ Example usage from sqrtminusone
 *** AI Suggested
 **** Improved Directory Navigation with =eshell-z=
 #+begin_src emacs-lisp
-(use-package eshell-z
-  :after eshell
-  :config
-  (add-hook 'eshell-mode-hook
-            (lambda () (require 'eshell-z))))
+  (use-package eshell-z
+    :after eshell
+    :config
+    (add-hook 'eshell-mode-hook
+              (lambda () (require 'eshell-z))))
 #+end_src
 **** Directory Tracking and Shell Command Execution Improvements
 #+begin_src emacs-lisp
-;; Allow Eshell to track directory changes in external shells
-(use-package eshell-prompt-extras
-  :after eshell
-  :config
-  (setq eshell-highlight-prompt nil
-        eshell-prompt-function 'epe-theme-lambda))
-;; Utility to run shell commands from anywhere
-(defun cj/eshell-command-on-region-file (command)
-  "Run shell COMMAND on the contents of region or current line.
-If region is active, use that, otherwise use the current line."
-  (interactive (list (read-shell-command "Shell command on region: ")))
-  (let* ((text (if (use-region-p)
-                   (buffer-substring-no-properties (region-beginning) (region-end))
-                 (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
-         (temp-file (make-temp-file "eshell-cmd-"))
-         (output-buffer (generate-new-buffer "*Shell Command Output*")))
-    (with-temp-file temp-file
-      (insert text))
-    (with-current-buffer output-buffer
-      (insert (shell-command-to-string (format "%s %s" command temp-file)))
-      (pop-to-buffer output-buffer))
-    (delete-file temp-file)))
-(global-set-key (kbd "C-c !") 'cj/eshell-command-on-region-file)
+  ;; Allow Eshell to track directory changes in external shells
+  (use-package eshell-prompt-extras
+    :after eshell
+    :config
+    (setq eshell-highlight-prompt nil
+          eshell-prompt-function 'epe-theme-lambda))
+  ;; Utility to run shell commands from anywhere
+  (defun cj/eshell-command-on-region-file (command)
+    "Run shell COMMAND on the contents of region or current line.
+  If region is active, use that, otherwise use the current line."
+    (interactive (list (read-shell-command "Shell command on region: ")))
+    (let* ((text (if (use-region-p)
+                     (buffer-substring-no-properties (region-beginning) (region-end))
+                   (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+           (temp-file (make-temp-file "eshell-cmd-"))
+           (output-buffer (generate-new-buffer "*Shell Command Output*")))
+      (with-temp-file temp-file
+        (insert text))
+      (with-current-buffer output-buffer
+        (insert (shell-command-to-string (format "%s %s" command temp-file)))
+        (pop-to-buffer output-buffer))
+      (delete-file temp-file)))
+  (global-set-key (kbd "C-c !") 'cj/eshell-command-on-region-file)
 #+end_src
 **** Enhanced Visual Output and ANSI Colors
 #+begin_src emacs-lisp
-;; Better handling of visual commands
-(defun cj/eshell-exec-visual-and-kill ()
-  "Execute the command via `eshell-exec-visual' and then kill the eshell buffer."
-  (interactive)
-  (let ((command (buffer-substring-no-properties
-                  eshell-last-output-end (point-max))))
-    (kill-buffer)
-    (eshell-exec-visual command)))
-;; Add this to your eshell aliases
-(add-hook 'eshell-mode-hook
-          (lambda ()
-            (eshell/alias "vk" 'cj/eshell-exec-visual-and-kill)))
+  ;; Better handling of visual commands
+  (defun cj/eshell-exec-visual-and-kill ()
+    "Execute the command via `eshell-exec-visual' and then kill the eshell buffer."
+    (interactive)
+    (let ((command (buffer-substring-no-properties
+                    eshell-last-output-end (point-max))))
+      (kill-buffer)
+      (eshell-exec-visual command)))
+  ;; Add this to your eshell aliases
+  (add-hook 'eshell-mode-hook
+            (lambda ()
+              (eshell/alias "vk" 'cj/eshell-exec-visual-and-kill)))
 #+end_src
 **** Buffer Management and Layout Improvements
 #+begin_src emacs-lisp
-;; Auto rename eshell buffers based on current directory
-(defun cj/eshell-rename-buffer-as-dir ()
-  "Rename the eshell buffer to include the current directory."
-  (let ((dir (abbreviate-file-name (eshell/pwd))))
-    (rename-buffer (format "*eshell: %s*" dir) t)))
-(add-hook 'eshell-directory-change-hook 'cj/eshell-rename-buffer-as-dir)
-;; Split eshell in a sensible way based on window size
-(defun cj/eshell-pop-window ()
-  "Open eshell in a sensible way depending on window dimensions."
-  (interactive)
-  (let ((width-percentage 0.3)
-        (height-percentage 0.3)
-        (current-window-width (window-width))
-        (current-window-height (window-height)))
-    (if (> current-window-width (* 2 current-window-height))
-        ;; For wide windows, split side by side
-        (let ((width (floor (* current-window-width width-percentage))))
-          (split-window-horizontally (- current-window-width width))
+  ;; Auto rename eshell buffers based on current directory
+  (defun cj/eshell-rename-buffer-as-dir ()
+    "Rename the eshell buffer to include the current directory."
+    (let ((dir (abbreviate-file-name (eshell/pwd))))
+      (rename-buffer (format "*eshell: %s*" dir) t)))
+  (add-hook 'eshell-directory-change-hook 'cj/eshell-rename-buffer-as-dir)
+  ;; Split eshell in a sensible way based on window size
+  (defun cj/eshell-pop-window ()
+    "Open eshell in a sensible way depending on window dimensions."
+    (interactive)
+    (let ((width-percentage 0.3)
+          (height-percentage 0.3)
+          (current-window-width (window-width))
+          (current-window-height (window-height)))
+      (if (> current-window-width (* 2 current-window-height))
+          ;; For wide windows, split side by side
+          (let ((width (floor (* current-window-width width-percentage))))
+            (split-window-horizontally (- current-window-width width))
+            (other-window 1)
+            (eshell))
+        ;; For tall windows, split top/bottom
+        (let ((height (floor (* current-window-height height-percentage))))
+          (split-window-vertically (- current-window-height height))
           (other-window 1)
-          (eshell))
-      ;; For tall windows, split top/bottom
-      (let ((height (floor (* current-window-height height-percentage))))
-        (split-window-vertically (- current-window-height height))
-        (other-window 1)
-        (eshell)))))
-(global-set-key (kbd "C-c e") 'cj/eshell-pop-window)
+          (eshell)))))
+  (global-set-key (kbd "C-c e") 'cj/eshell-pop-window)
 #+end_src
 **** Useful Utility Functions
 #+begin_src emacs-lisp
-;; Enhanced eshell clear that preserves history
-(defun cj/eshell-clear-buffer ()
-  "Clear the eshell buffer, preserving the prompt and history."
-  (interactive)
-  (let ((inhibit-read-only t))
-    (erase-buffer)
-    (eshell-send-input)))
-(add-hook 'eshell-mode-hook
-          (lambda () (local-set-key (kbd "C-l") 'cj/eshell-clear-buffer)))
-;; Function to insert the output of elisp expressions into eshell
-(defun cj/eshell-insert-elisp-output (elisp)
-  "Evaluate ELISP expression and insert its value at point in eshell."
-  (interactive "sEval Elisp: ")
-  (let ((result (eval (read elisp))))
-    (insert (if (stringp result)
-                result
-              (format "%S" result)))))
-(add-hook 'eshell-mode-hook
-          (lambda () (local-set-key (kbd "C-c C-e") 'cj/eshell-insert-elisp-output)))
-;; Quick file manager in eshell
-(defun eshell/fman (file)
-  "Open FILE in a file manager."
-  (cond
-   ((eq system-type 'darwin)    (shell-command (format "open %s" (expand-file-name default-directory))))
-   ((eq system-type 'gnu/linux) (shell-command (format "xdg-open %s" (expand-file-name default-directory))))))
-;; Enhanced cd command that respects projects
-(defun eshell/pcd ()
-  "Change directory to the project root."
-  (let ((dir (cond 
-              ((fboundp 'projectile-project-root) (projectile-project-root))
-              ((fboundp 'project-root) (project-root (project-current)))
-              (t (error "No project system available")))))
-    (if dir
-        (eshell/cd dir)
-      (error "Not in a project"))))
+  ;; Enhanced eshell clear that preserves history
+  (defun cj/eshell-clear-buffer ()
+    "Clear the eshell buffer, preserving the prompt and history."
+    (interactive)
+    (let ((inhibit-read-only t))
+      (erase-buffer)
+      (eshell-send-input)))
+  (add-hook 'eshell-mode-hook
+            (lambda () (local-set-key (kbd "C-l") 'cj/eshell-clear-buffer)))
+  ;; Function to insert the output of elisp expressions into eshell
+  (defun cj/eshell-insert-elisp-output (elisp)
+    "Evaluate ELISP expression and insert its value at point in eshell."
+    (interactive "sEval Elisp: ")
+    (let ((result (eval (read elisp))))
+      (insert (if (stringp result)
+                  result
+                (format "%S" result)))))
+  (add-hook 'eshell-mode-hook
+            (lambda () (local-set-key (kbd "C-c C-e") 'cj/eshell-insert-elisp-output)))
+  ;; Quick file manager in eshell
+  (defun eshell/fman (file)
+    "Open FILE in a file manager."
+    (cond
+     ((eq system-type 'darwin)    (shell-command (format "open %s" (expand-file-name default-directory))))
+     ((eq system-type 'gnu/linux) (shell-command (format "xdg-open %s" (expand-file-name default-directory))))))
+  ;; Enhanced cd command that respects projects
+  (defun eshell/pcd ()
+    "Change directory to the project root."
+    (let ((dir (cond
+                ((fboundp 'projectile-project-root) (projectile-project-root))
+                ((fboundp 'project-root) (project-root (project-current)))
+                (t (error "No project system available")))))
+      (if dir
+          (eshell/cd dir)
+        (error "Not in a project"))))
 #+end_src
 ** TODO [#B] Fix Emacs Alarms for Scheduled Events                    :bug:
 *** 2025-06-03 Tue @ 15:12:51 -0500 Problem
@@ -367,71 +394,71 @@ Captured On: [2025-06-19 Thu 12:29]
 ** TODO [#C] Git timemachine litters empty buffers                    :bug:
 Don't choose a revision and you'll see a blank buffer that needs to be killed
 ** DOING [#C] Fix all docstring and elisp linting issues               :bug:
-- [X] user-constants  
+- [X] user-constants
 - [X] host-environment
 - [ ] config-utilities
-- [ ] system-defaults 
+- [ ] system-defaults
 - [ ] keybindings
-- [ ] auth-config     
+- [ ] auth-config
 - [ ] custom-functions
-- [ ] chrono-tools    
-- [ ] file-config     
-- [ ] keyboard-macros 
-- [ ] system-utils    
-- [ ] text-config     
+- [ ] chrono-tools
+- [ ] file-config
+- [ ] keyboard-macros
+- [ ] system-utils
+- [ ] text-config
 - [ ] undead-buffers
-- [ ] ui-config     
-- [ ] ui-theme      
-- [ ] ui-navigation 
+- [ ] ui-config
+- [ ] ui-theme
+- [ ] ui-navigation
 - [ ] font-config
-- [ ] diff-config         
-- [ ] eshell-vterm-config 
-- [ ] flyspell-and-abbrev 
-- [ ] help-utils          
-- [ ] help-config         
-- [ ] latex-config        
-- [ ] modeline-config     
-- [ ] pdf-config          
-- [ ] selection-framework 
-- [ ] tramp-config        
+- [ ] diff-config
+- [ ] eshell-vterm-config
+- [ ] flyspell-and-abbrev
+- [ ] help-utils
+- [ ] help-config
+- [ ] latex-config
+- [ ] modeline-config
+- [ ] pdf-config
+- [ ] selection-framework
+- [ ] tramp-config
 - [ ] show-kill-ring
 - [ ] calibredb-epub-config
-- [ ] dashboard-config     
-- [ ] dirvish-config       
-- [ ] dwim-shell-config    
-- [ ] elfeed-config        
-- [ ] erc-config           
-- [ ] eww-config           
-- [ ] httpd-config         
-- [ ] mail-config          
-- [ ] markdown-config      
+- [ ] dashboard-config
+- [ ] dirvish-config
+- [ ] dwim-shell-config
+- [ ] elfeed-config
+- [ ] erc-config
+- [ ] eww-config
+- [ ] httpd-config
+- [ ] mail-config
+- [ ] markdown-config
 - [ ] weather-config
-- [ ] prog-general   
-- [ ] vc-config      
+- [ ] prog-general
+- [ ] vc-config
 - [ ] flycheck-config
-- [ ] prog-lsp       
-- [ ] prog-training  
-- [ ] prog-c         
-- [ ] prog-go        
-- [ ] prog-lisp      
-- [ ] prog-shell     
-- [ ] prog-python    
-- [ ] prog-webdev    
+- [ ] prog-lsp
+- [ ] prog-training
+- [ ] prog-c
+- [ ] prog-go
+- [ ] prog-lisp
+- [ ] prog-shell
+- [ ] prog-python
+- [ ] prog-webdev
 - [ ] prog-yaml
-- [ ] org-config         
-- [ ] org-agenda-config  
-- [ ] org-babel-config   
-- [ ] org-capture-config 
-- [ ] org-refile-config  
-- [ ] org-drill-config   
-- [ ] org-export-config  
-- [ ] org-roam-config    
+- [ ] org-config
+- [ ] org-agenda-config
+- [ ] org-babel-config
+- [ ] org-capture-config
+- [ ] org-refile-config
+- [ ] org-drill-config
+- [ ] org-export-config
+- [ ] org-roam-config
 - [ ] org-contacts-config
 - [ ] ai-config
-- [ ] reconcile-open-repos 
+- [ ] reconcile-open-repos
 - [ ] video-audio-recording
 - [ ] local-repository
-- [ ] eradio-config 
+- [ ] eradio-config
 - [ ] games-config
 - [ ] wrap-up
 
@@ -483,7 +510,7 @@ register used to store the last location: ?z
                  (= (point) (marker-position reg-val)))
         t)))
 #+end_src
-**** method: 
+**** method:
 **** method: save-last-position
 saves location to register z: (point-to-register ?z)
 **** method: save-to-next-register

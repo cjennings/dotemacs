@@ -106,23 +106,6 @@ Used to disable functionality with defalias 'somefunc 'cj/disabled)."
 (setq select-enable-primary nil)                    ;; don't use X11 primary selection (no middle-click paste)
 (setq mouse-drag-copy-region nil)                   ;; don't copy region to clipboard by selecting with mouse
 
-;; Ensure clipboard content is available in kill ring when yanking
-(defun cj/sync-clipboard-to-kill-ring ()
-  "Add current system clipboard to kill ring if it's different from the last kill.
-Silently ignores media content that can't be converted to text."
-  ;; Use ignore-errors to suppress all selection conversion errors
-  (let ((clipboard-text (ignore-errors
-						  (gui-get-selection 'CLIPBOARD 'STRING))))
-	(when (and clipboard-text
-			   (not (string= clipboard-text ""))
-			   (or (null kill-ring)
-				   (not (string= clipboard-text (car kill-ring)))))
-	  (kill-new clipboard-text))))
-
-;; Sync before yanking to ensure external clipboard changes are captured
-(advice-add 'yank :before #'cj/sync-clipboard-to-kill-ring)
-(advice-add 'yank-pop :before #'cj/sync-clipboard-to-kill-ring)
-
 ;; -------------------------------- Tab Settings -------------------------------
 ;; spaces, not tabs
 
