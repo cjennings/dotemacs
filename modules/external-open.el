@@ -1,4 +1,4 @@
-;;; file-config.el --- Open Files Using Default OS Handler -*- lexical-binding: t; coding: utf-8; -*-
+;;; external-open.el --- Open Files Using Default OS Handler -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
@@ -6,7 +6,7 @@
 ;; This library provides a simple mechanism for opening files with specific
 ;; extensions using your operating system’s default application rather than
 ;; visiting them in an Emacs buffer.  It offers:
-
+;;
 ;; • A simple method to run a command on the current buffer's file
 ;;   "C-c x o" bound to cj/open-this-file-with
 ;; • A customizable list =default-open-extensions= of file‐type suffixes
@@ -35,14 +35,14 @@
 
 ;; ------------------------- Use Default File Handlers -------------------------
 
-(defun cj/xdg-open-command ()
+(defun cj/identify-external-open-command ()
   "Return the OS-default \"open\" command for this host.
 Signals an error if the host is unsupported."
   (cond
    ((env-linux-p)   "xdg-open")
    ((env-macos-p)   "open")
    ((env-windows-p) "start")
-   (t (error "cj/xdg-open: unsupported host environment"))))
+   (t (error "external-open: unsupported host environment"))))
 
 (defun cj/xdg-open (&optional filename)
   "Open FILENAME (or the file at point) with the OS default handler.
@@ -51,8 +51,8 @@ Logs output and exit code to buffer *cj-xdg-open.log*."
   (let* ((file (expand-file-name
 				(or filename
 					(dired-file-name-at-point))))
-		 (cmd  (cj/xdg-open-command))
-		 (logbuf (get-buffer-create "*cj-xdg-open.log*")))
+		 (cmd  (cj/identify-external-open-command))
+		 (logbuf (get-buffer-create "*external-open.log*")))
 	(with-current-buffer logbuf
 	  (goto-char (point-max))
 	  (insert (format-time-string "[%Y-%m-%d %H:%M:%S] " (current-time)))
@@ -65,7 +65,7 @@ Logs output and exit code to buffer *cj-xdg-open.log*."
 	nil))
 
 (defun cj/find-file-auto (orig-fun &rest args)
-  "If file is media or Office, open via xdg-open, else call ORIG-FUN with ARGS."
+  "If file is media or Office, open exernally, else call ORIG-FUN with ARGS."
   (let ((file (car args))
 		(exts '("\\.avi\\'"
 				"\\.docx?\\'"
@@ -84,5 +84,5 @@ Logs output and exit code to buffer *cj-xdg-open.log*."
 	  (apply orig-fun args))))
 (advice-add 'find-file :around #'cj/find-file-auto)
 
-(provide 'file-config)
-;;; file-config.el ends here.
+(provide 'external-open)
+;;; external-open.el ends here.
