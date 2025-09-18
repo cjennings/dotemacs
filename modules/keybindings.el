@@ -82,6 +82,7 @@
 (global-set-key (kbd "C-x C-f") 'find-file)
 (global-set-key (kbd "C-c f")   'link-hint-open-link-at-point)
 (global-set-key (kbd "M-*")     'calculator)
+(global-set-key (kbd "M-Y")     'yank-media)
 
 ;; Normally bound to ESC ESC ESC, hit ESC once to get out of unpleasant situations.
 (global-set-key (kbd "<escape>")  'keyboard-escape-quit)

@@ -44,9 +44,11 @@ org-archive-subtree-default are placed.")
   (setq org-indent-indentation-per-level 2) ;; indent two character-widths per level
   (setq tab-width 8)                  ;; org-mode complains when tabs aren't @ 8
 
-  ;; INLINE IMAGES
+  ;; IMAGES / MEDIA
   (setq org-startup-with-inline-images t)   ;; preview images by default
   (setq org-image-actual-width '(500))      ;; keep image sizes in check
+  (setq org-yank-image-save-method 'attach)  ;; attach images; save to data directory
+
 
   (setq org-bookmark-names-plist nil)       ;; don't set org-capture bookmarks
 
