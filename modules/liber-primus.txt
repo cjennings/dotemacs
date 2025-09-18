@@ -844,4 +844,96 @@ Quae cum dixisset, Explicavi, inquit, sententiam meam, et eo quidem
 consilio, tuum iudicium ut cognoscerem, quoniam mihi ea facultas, ut
 id meo arbitratu facerem, ante hoc tempus numquam est data.
 
-Video, patres conscripti, in me omnium vestrum ora atque oculos esse conversos, video vos non solunn de vestro ac rei publicae, verum etiam, si id depulsum sit, de meo periculo esse sollicitos. Est mihi iucunda in malis et grata in dolore vestra erga me voluntas, sed eam, per deos inmortales, deponite atque obliti salutis meae de vobis ac de vestris liberis cogitate. Mihi si haec condicio consulatus data est, ut omnis acerbitates, onunis dolores cruciatusque perferrem, feram non solum fortiter, verum etiam lubenter, dum modo meis laboribus vobis populoque Romano dignitas salusque pariatur. Ego sum ille consul, patres conscripti, cui non forum, iu quo omnis aequitas continetur, non campus consularibus auspiciis consecratus, non curia, summum auxilium omnium gentium, non domus, commune perfugium, non lectus ad quietem datus, non denique haec sedes honoris umquam vacua mortis periculo atque insidiis fuit. Ego multa tacui, multa pertuli, multa concessi, multa meo quodam dolore in vestro timore sanavi. Nunc si hunc exitum consulatus mei di inmortales esse voluerunt, ut vos populumque Romanum ex caede miserrima, coniuges liberosque vestros virginesque Vestales ex acerbissima vexatione, templa atque delubra, hanc pulcherrimam patriam omnium nostrum ex foedissima flamma, totam Italiam ex bello et vastitate eriperem, quaecumque mihi uni proponetur fortuna, subeatur. Etenim, suum nomen inductus a vatibus fatale ad perniciem rei publicae fore putavit, cur ego non laeter meum consulatum ad salutem populi Romani prope fatalem extitisse? Quare, patres conscripti, consulite vobis, prospicite patriae, conservate vos, coniuges, liberos fortunasque vestras, populi Romani nomen salutemque defendite; mihi parcere ac de me cogitare desinite. Nam primum debeo sperare omnis deos, qui huic urbi praesident, pro eo mihi, ac mereor, relaturos esse gratiam; deinde, si quid obtigerit, aequo animo paratoque moriar. Nam neque turpis mors forti viro potest accidere neque immatura consulari nec misera sapienti. Nec tamen ego sum ille ferreus, qui fratris carissimi atque amantissimi praesentis maerore non movear horumque omnium lacrumis, a quibus me circumsessum videtis Neque meam mentem non domum saepe revocat exanimata uxor et abiecta metu filia et parvulus filius quem mihi videtur amplecti res publica tamquam ob sidem consulatus mei, neque ille, qui expectans huius exitum diei stat in conspectu meo, gener. Moveo his rebus omnibus, sed in eam partem, uti salvi sint vobiscum omnes, etiamsi me vis aliqua oppresserit, potius, quam et illi et nos una rei publicae peste pereamus. Quare, patres conscripti, incumbite ad salutem rei publicae, circumspicite omnes procellas, quae inpendent, nisi providetis. Quod iterum tribunus plebis fieri voluit, quod agrarios concitare conatus est, in discrimen aliquod atque in vestrae severitatis iudicium adduciturtenentur ii, qui ad urbis incendium, ad vestram omnium caedem, tenentur litterae, signa manus, denique unius cuiusque confessio, servitia excitantur. Id est initum consilium, ut interfectis omnibus nemo ne ad deplorandum quidem populi Romani nomen atque ad lamentandam tanti imperii calamitatem relinquatur. Haec omnia indices detulerunt, rei confessi sunt, vos multis iam iudiciis iudicavistis, primum quod mihi gratias egistis singu laribus verbis et mea virtute atque diligentia perditorum hominum coniurationem patefactam esse decrevistis, deinde quod se abdicare praetura coegistis, tum quod eum et ceteros, de quibus iudicastis, in custodiam dandos censuistis, maximeque quod meo nomine supplicationem decrevistis, qui honos togato habitus ante me est nemini; postremo hesterno die praemia legatis Allobrogum Titoque Volturcio dedistis amplissima. Quae sunt omnia eius modi, ut ii, qui in custodiam nominatim dati sunt, sine ulla dubitatione a vobis damnati esse videantur.
+Video, patres conscripti, in me omnium vestrum ora atque oculos esse
+conversos, video vos non solunn de vestro ac rei publicae, verum
+etiam, si id depulsum sit, de meo periculo esse sollicitos. Est mihi
+iucunda in malis et grata in dolore vestra erga me voluntas, sed eam,
+per deos inmortales, deponite atque obliti salutis meae de vobis ac de
+vestris liberis cogitate. Mihi si haec condicio consulatus data est,
+ut omnis acerbitates, onunis dolores cruciatusque perferrem, feram non
+solum fortiter, verum etiam lubenter, dum modo meis laboribus vobis
+populoque Romano dignitas salusque pariatur. Ego sum ille consul,
+patres conscripti, cui non forum, iu quo omnis aequitas continetur,
+non campus consularibus auspiciis consecratus, non curia, summum
+auxilium omnium gentium, non domus, commune perfugium, non lectus ad
+quietem datus, non denique haec sedes honoris umquam vacua mortis
+periculo atque insidiis fuit. Ego multa tacui, multa pertuli, multa
+concessi, multa meo quodam dolore in vestro timore sanavi. Nunc si
+hunc exitum consulatus mei di inmortales esse voluerunt, ut vos
+populumque Romanum ex caede miserrima, coniuges liberosque vestros
+virginesque Vestales ex acerbissima vexatione, templa atque delubra,
+hanc pulcherrimam patriam omnium nostrum ex foedissima flamma, totam
+Italiam ex bello et vastitate eriperem, quaecumque mihi uni proponetur
+fortuna, subeatur. Etenim, suum nomen inductus a vatibus fatale ad
+perniciem rei publicae fore putavit, cur ego non laeter meum
+consulatum ad salutem populi Romani prope fatalem extitisse? Quare,
+patres conscripti, consulite vobis, prospicite patriae, conservate
+vos, coniuges, liberos fortunasque vestras, populi Romani nomen
+salutemque defendite; mihi parcere ac de me cogitare desinite. Nam
+primum debeo sperare omnis deos, qui huic urbi praesident, pro eo
+mihi, ac mereor, relaturos esse gratiam; deinde, si quid obtigerit,
+aequo animo paratoque moriar. Nam neque turpis mors forti viro potest
+accidere neque immatura consulari nec misera sapienti. Nec tamen ego
+sum ille ferreus, qui fratris carissimi atque amantissimi praesentis
+maerore non movear horumque omnium lacrumis, a quibus me circumsessum
+videtis Neque meam mentem non domum saepe revocat exanimata uxor et
+abiecta metu filia et parvulus filius quem mihi videtur amplecti res
+publica tamquam ob sidem consulatus mei, neque ille, qui expectans
+huius exitum diei stat in conspectu meo, gener. Moveo his rebus
+omnibus, sed in eam partem, uti salvi sint vobiscum omnes, etiamsi me
+vis aliqua oppresserit, potius, quam et illi et nos una rei publicae
+peste pereamus. Quare, patres conscripti, incumbite ad salutem rei
+publicae, circumspicite omnes procellas, quae inpendent, nisi
+providetis. Quod iterum tribunus plebis fieri voluit, quod agrarios
+concitare conatus est, in discrimen aliquod atque in vestrae
+severitatis iudicium adduciturtenentur ii, qui ad urbis incendium, ad
+vestram omnium caedem, tenentur litterae, signa manus, denique unius
+cuiusque confessio, servitia excitantur. Id est initum consilium, ut
+interfectis omnibus nemo ne ad deplorandum quidem populi Romani nomen
+atque ad lamentandam tanti imperii calamitatem relinquatur. Haec omnia
+indices detulerunt, rei confessi sunt, vos multis iam iudiciis
+iudicavistis, primum quod mihi gratias egistis singu laribus verbis et
+mea virtute atque diligentia perditorum hominum coniurationem
+patefactam esse decrevistis, deinde quod se abdicare praetura
+coegistis, tum quod eum et ceteros, de quibus iudicastis, in custodiam
+dandos censuistis, maximeque quod meo nomine supplicationem
+decrevistis, qui honos togato habitus ante me est nemini; postremo
+hesterno die praemia legatis Allobrogum Titoque Volturcio dedistis
+amplissima. Quae sunt omnia eius modi, ut ii, qui in custodiam
+nominatim dati sunt, sine ulla dubitatione a vobis damnati esse
+videantur.
+
+Nunc, antequam ad sententiam redeo, de me pauca dicam. Ego, quanta
+manus est coniuratorum, quam videtis esse permagnam, tantam me
+inimicorum multitudinem suscepisse video; sed eam esse iudico turpem
+et infirmam et [contemptam et] abiectam. Quodsi aliquando alicuius
+furore et scelere concitata manus ista plus valuerit quam vestra ac
+rei publicae dignitas, me tamen meorum factorum atque consiliorum
+numquam, patres conscripti, paenitebit. Etenim mors, quam illi [mihi]
+fortasse minitantur, omnibus est parata; vitae tantam laudem, quanta
+vos me vestris decretis honestastis, nemo est adsecutus. Ceteris enim
+bene gesta, mihi uni conservata re publica gratulationem decrevistis.
+Sit Scipio clarus ille, cuius consilio atque virtute Hannibal in
+Africam redire atque [ex] Italia decedere coactus est, ornetur alter
+eximia laude Africanus, qui duas urbes huic imperio infestissimas,
+Carthaginem Numantiamque, delevit, habeatur vir egregius Paulus ille,
+cuius currum rex potentissimus quondam et no bilissimus Perses
+honestavit, sit aeterna gloria Marius, qui bis Italiam obsidione et
+metu servitutis liberavit, anteponatur omnibus Pompeius, cuius res
+gestae atque virtutes isdem quibus solis cursus regionibus ac terminis
+continentur; erit profecto inter horum laudes aliquid loci nostrae
+gloriae, nisi forte maius est patefacere nobis provincias, quo exire
+possimus, quam curare, ut etiam illi, qui absunt, habeant, quo
+victores revertantur. Quamquam est uno loco condicio melior externae
+victoriae quam domesticae, quod hostes alienigenae aut oppressi
+serviunt aut recepti [in amicitiam] beneficio se obligatos putant; qui
+autem ex numero civium dementia aliqua depravati hostes patriae semel
+esse coeperunt, eos cum a pernicie rei publicae reppuleris, nec vi
+coercere nec beneficio placare possis. Quare mihi cum perditis civibus
+aeternum bellum susceptum esse video. Id ego vestro bonorumque omnium
+auxilio memoriaque tantorum periculorum, quae non modo in hoc populo,
+qui servatus est, sed in omnium gentium sermonibus ac mentibus semper
+haerebit, a me atque a meis facile propulsari posse confido. Neque
+ulla profecto tanta vis reperietur, quae coniunctionem vestram
+equitumque Romanorum et tantam conspirationem bonorum omnium
+confringere et labefactare possit.
