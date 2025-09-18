@@ -52,6 +52,7 @@
 
 (use-package ox-html
   :ensure nil ; Built into Org
+  :defer t
   :after ox
   :config
   (setq org-html-postamble nil)
@@ -61,6 +62,7 @@
 
 (use-package ox-texinfo
   :ensure nil  ; Built into Org
+  :defer t
   :after ox
   :config
   (setq org-texinfo-coding-system 'utf-8)
@@ -69,6 +71,7 @@
 
 (use-package ox-pandoc
   :ensure t
+  :defer t
   :after ox
   :config
   ;; Set default options for pandoc
