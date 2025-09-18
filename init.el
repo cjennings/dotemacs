@@ -117,6 +117,7 @@
 
 (require 'wip)
 (require 'test-runner)
+;; (require 'lipsum-generator)
 ;; (require 'jumper)
 
 ;;; init.el ends here
