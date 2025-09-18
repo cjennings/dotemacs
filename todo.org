@@ -452,6 +452,7 @@ reverso.el is a package of mine that provides Emacs interface for https://revers
 #+end_src
 ** TODO [#C] Org Keyword Discolored Until Reapplying Theme            :bug:
 ** TODO [#C] Move persistence and history files into subdir   :enhancement:
+** TODO [#B] Put updating agenda files on an idle timer on launch
 * Emacs Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
 *** Specification
