@@ -1,6 +1,6 @@
 ;;; ai-config.el --- Configuration for AI Integrations -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
-
+;;
 ;;; Commentary:
 ;; Configuration for AI integrations in Emacs, focused on GPTel.
 ;;
@@ -31,7 +31,7 @@
 
 (add-to-list 'load-path (concat user-emacs-directory "modules/"))
 
-;; ------------------------- Ai Config Helper Functions ------------------------
+;;; ------------------------- AI Config Helper Functions ------------------------
 
 ;; Define all our variables upfront
 (defvar cj/anthropic-api-key-cached nil "Cached Anthropic API key.")
@@ -91,7 +91,7 @@ This function should only be called AFTER gptel is loaded."
 ;; Since cj/toggle-gptel is bound to F9 but defined in :config
 (autoload 'cj/toggle-gptel "ai-config" "Toggle the AI-Assistant window" t)
 
-;; ---------------------------- Gptel Configuration ----------------------------
+;;; ---------------------------- GPTel Configuration ----------------------------
 
 (use-package gptel
   :defer t
@@ -131,7 +131,7 @@ This function should only be called AFTER gptel is loaded."
 	  ("OpenAI - ChatGPT" . ,gptel-chatgpt-backend))
     "Alist of GPTel backends for interactive switching.")
 
-  ;; ---------------------------- Backend Management ---------------------------
+  ;;; ---------------------------- Backend Management ---------------------------
 
   (defun cj/gptel-change-model ()
 	"Change the AI model and backend for gptel.
@@ -206,7 +206,7 @@ is model-first."
   ;; (setq gptel-backend gptel-claude-backend) ;; use Claude as default
   (setq gptel-backend gptel-chatgpt-backend) ;; use ChatGPT as default
 
-;; -------------------------- Org Header Construction --------------------------
+;;; -------------------------- Org Header Construction --------------------------
 
   ;;  Dynamic user prefix for org-mode heading (string, refreshed just before send)
   (defun cj/gptel--fresh-org-prefix ()
@@ -242,7 +242,7 @@ is model-first."
 
   (add-hook 'gptel-post-response-functions #'cj/gptel-insert-model-heading)
 
-  ;; ---------------------------- Context Management ---------------------------
+  ;;; ---------------------------- Context Management ---------------------------
 
   (defun cj/gptel-clear-buffer ()
     "Erase the contents of the current GPTel buffer leaving initial org heading.
@@ -492,7 +492,7 @@ Presents a list of .gptel files for selection and loads the chosen file."
   :defer t
   :hook (magit-mode . gptel-magit-install))
 
-;; --------------------------------- Ai Keymap ---------------------------------
+;;; --------------------------------- AI Keymap ---------------------------------
 
 (defvar ai-keymap
   (let ((map (make-sparse-keymap)))
