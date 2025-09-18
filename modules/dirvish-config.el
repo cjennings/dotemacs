@@ -196,7 +196,7 @@ regardless of what file or subdirectory the point is on."
    ("C-       ."     . dirvish-history-go-forward)
    ("F"       . dirvish-file-info-menu)
    ("G"       . revert-buffer)
-   ("H"       . cj/dirvish-open-html-in-eww)  ;; it does what it says it does
+   ("h"       . cj/dirvish-open-html-in-eww)  ;; it does what it says it does
    ("M"       . cj/dired-mark-all-visible-files)
    ("M-e"     . dirvish-emerge-menu)
    ("M-l"     . dirvish-ls-switches-menu)
@@ -207,7 +207,7 @@ regardless of what file or subdirectory the point is on."
    ("f"       . cj/dirvish-open-file-manager-here)
    ("g"       . dirvish-quick-access)
    ("o"       . cj/xdg-open)
-   ("O"       . cj/open-file-with-command)  ; Prompts for command
+   ("O"       . cj/open-file-with-command)  ; Prompts for command to run
    ("r"       . dirvish-rsync)
    ("p"       . cj/dired-create-playlist-from-marked)
    ("s"       . dirvish-quicksort)
@@ -232,7 +232,7 @@ regardless of what file or subdirectory the point is on."
    (dirvish-mode . dired-hide-dotfiles-mode))
   :bind
   (:map dired-mode-map
-		("h" . dired-hide-dotfiles-mode)))
+		("." . dired-hide-dotfiles-mode)))
 
 ;;; ------------------------------- Dired Sidebar -------------------------------
 
