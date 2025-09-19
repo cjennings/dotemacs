@@ -20,6 +20,41 @@
 ;;
 ;;; Code:
 
+;; ----------------------- EWW-Only User-Agent Injection -----------------------
+
+(require 'cl-lib)
+
+(defgroup my-eww-user-agent nil
+  "EWW-only User-Agent management."
+  :group 'eww)
+
+(defcustom my-eww-user-agent
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"
+  "User-Agent string to send for EWW requests only."
+  :type 'string
+  :group 'my-eww-user-agent)
+
+(defun my-eww--inject-user-agent (orig-fun &rest args)
+  "Set a User-Agent only when making requests from an EWW buffer."
+  (if (derived-mode-p 'eww-mode)
+	  (let* ((ua my-eww-user-agent)
+			 ;; Remove any existing UA header, then add ours.
+			 (url-request-extra-headers
+			  (cons (cons "User-Agent" ua)
+					(cl-remove-if (lambda (h)
+									(and (consp h)
+										 (stringp (car h))
+										 (string-equal (car h) "User-Agent")))
+								  url-request-extra-headers))))
+		(apply orig-fun args))
+	(apply orig-fun args)))
+
+(with-eval-after-load 'url
+  ;; Cover both async and sync fetches used by eww/shr (pages, images, etc.).
+  (advice-add 'url-retrieve :around #'my-eww--inject-user-agent)
+  (advice-add 'url-retrieve-synchronously :around #'my-eww--inject-user-agent))
+
+;; --------------------------------- EWW Config --------------------------------
 
 (use-package eww
   :ensure nil ;; built-in
@@ -100,13 +135,15 @@
 	(when (and url-cookie-file (file-exists-p url-cookie-file))
 	  (delete-file url-cookie-file))
 	(message "Cookies cleared"))
-  
+
   ;; Configuration settings
   (setq shr-use-colors nil)
   (setq shr-bullet "• ")
   (setq eww-search-prefix (cdr (assoc cj/eww-current-search-engine cj/eww-search-engines)))
   (setq url-cookie-file (expand-file-name "~/.local/share/cookies.txt"))
-  (setq url-privacy-level '(email agent lastloc))
+  ;; sets the user-agent for everything (e.g., package.el)
+  ;;(setq url-user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0")
+  (setq url-privacy-level '(email lastloc))
   (setq shr-inhibit-images t)
   (setq shr-use-fonts nil)
   (setq shr-max-image-proportion 0.2)

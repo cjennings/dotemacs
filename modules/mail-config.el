@@ -1,17 +1,26 @@
 ;;; mail-config --- Settings for Mu4e Email -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
-
+;;
 ;;; Commentary:
 ;; I found Aime Bertrand's blog post to be an excellent walkthrough of how to
 ;; setup a Mu4e config.
-
+;;
 ;; https://macowners.club/posts/email-emacs-mu4e-macos/
-
+;;
+;; on saving attachments:
+;; After running mu4e-view-save-attachments,
+;; - invoke embark-act-all in the completion menu
+;; - followed by RET (mu4e-view-save-attachments) to save all attachments
+;;
+;; - or TAB (vertico-insert)
+;; - followed by , (comma) next to each file you want to save,
+;; - then RET (vertico-exit), to save selected attachments.
+;;
 ;;; Code:
 
 (require 'user-constants)
 
-;; ------------------------- Mark All Headers ------------------------
+;; ------------------------------ Mark All Headers -----------------------------
 ;; convenience function to mark all headers for an action
 
 (defun cj/mu4e-mark-all-headers ()
@@ -22,7 +31,7 @@ Prompts user for the action when executing."
    (cons 'something nil)
    (lambda (_msg _param) t)))
 
-;;; ------------------ Smtpmail & Easy PG Assistant -----------------
+;; ---------------------------------- SMTPmail ---------------------------------
 ;; send mail to smtp host from smtpmail temp buffer.
 
 (use-package smtpmail
@@ -68,7 +77,6 @@ Prompts user for the action when executing."
   (setq mu4e-compose-complete-only-personal nil)  ; This won't matter but set for clarity
   (setq mu4e-compose-complete-only-after nil)  ; Disable date-based filtering
 
-
   ;; (setq mu4e-compose-format-flowed t)                                       ;; plain text mails must flow correctly for recipients
   (setq mu4e-compose-keep-self-cc t)                                        ;; keep me in the cc list
   (setq mu4e-compose-signature-auto-include nil)                            ;; don't include signature by default
@@ -76,7 +84,7 @@ Prompts user for the action when executing."
   (setq mu4e-context-policy 'pick-first)                                    ;; start with the first (default) context
   (setq mu4e-headers-auto-update nil)                                       ;; updating headers buffer on email is too jarring
   (setq mu4e-root-maildir mail-dir)                                         ;; root directory for all email accounts
-  (setq mu4e-maildir mail-dir)                                              ;; same as above (newer mu4e)
+  (setq mu4e-maildir mail-dir)                                              ;; same as above (for newer mu4e)
   (setq mu4e-sent-messages-behavior 'delete)                                ;; don't save to "Sent", IMAP does this already
   (setq mu4e-show-images t)                                                 ;; show embedded images
   (setq mu4e-update-interval nil)                                           ;; disallow automatic checking for new emails
@@ -90,6 +98,8 @@ Prompts user for the action when executing."
   (setq mu4e-get-mail-command (concat (executable-find "mbsync") " -a"))    ;; command to sync mail
   (setq mu4e-user-mail-address-list '("c@cjennings.net" "craigmartinjennings@gmail.com"))
   (setq mu4e-index-update-error-warning nil) ;; don't warn me about spurious sync issues
+
+  ;; ------------------------------ Mu4e Contexts ------------------------------
 
   (setq mu4e-contexts
         (list
@@ -123,7 +133,8 @@ Prompts user for the action when executing."
           ("/gmail/Inbox"       . ?I)
           ("/gmail/Sent"        . ?S)))
 
-  ;; bookmarks and their shortcuts
+  ;; ------------------------------ Mu4e Bookmarks -----------------------------
+
   (setq mu4e-bookmarks
         `((:name "cjennings inbox"
                  :query "maildir:/cmail/INBOX"
@@ -150,11 +161,6 @@ Prompts user for the action when executing."
                  :query "maildir:/gmail/INBOX AND size:5M..999M"
                  :key ?L)))
 
-  (add-hook 'mu4e-compose-mode-hook
-            (defun cj/set-mu4e-compose ()
-              "My settings for message composition."
-              (set-fill-column 72)))
-
   (defun no-auto-fill ()
     "Turn off \'auto-fill-mode\'."
     (auto-fill-mode -1))
@@ -178,7 +184,10 @@ Prompts user for the action when executing."
 
   ;; use imagemagick to render images, if available
   (when (fboundp 'imagemagick-register-types)
-    (imagemagick-register-types))
+	(imagemagick-register-types))
+
+  ;; ------------------------------ HTML Settings ------------------------------
+  ;; also see org-msg below
 
   ;; Prefer HTML over plain text when both are available
   (setq mu4e-view-prefer-html t)
@@ -206,19 +215,44 @@ Prompts user for the action when executing."
   (setq mu4e-view-show-images t)
   (setq mu4e-view-image-max-width 800)
 
-  ;; Custom function to toggle remote content
+  ;; ------------------------------- View Actions ------------------------------
+  ;; define view and article menus
+
+  (defun cj/search-for-sender (msg)
+	"Search for messages sent by the sender of the message at point."
+	(mu4e-search
+	 (concat "from:"
+			 (mu4e-contact-email (car (mu4e-message-field msg :from))))))
+
+  ;; Custom function to toggle remote content and bind it in view mode
   (defun cj/mu4e-toggle-remote-images ()
 	"Toggle display of remote images in current message."
 	(interactive)
+	(require 'mu4e-view)
 	(setq-local gnus-blocked-images
 				(if (equal gnus-blocked-images "http")
 					nil
 				  "http"))
 	(mu4e-view-refresh))
 
-  ;; Bind it in view mode
-  (with-eval-after-load 'mu4e
-	(define-key mu4e-view-mode-map (kbd "I") #'cj/mu4e-toggle-remote-images))
+  ;; first letter is the keybinding
+  (setq mu4e-headers-actions
+		'(("bview in browser"   . mu4e-action-view-in-browser)
+		  ("asave attachment"   . mu4e-view-mime-part-action)
+		  ("oorg-contact-add"   . mu4e-action-add-org-contact)
+		  ("xsearch for sender" . cj/search-for-sender)
+		  ("tshow this thread"  . mu4e-action-show-thread)
+		  ))
+
+  ;; first letter is the keybinding
+  (setq mu4e-view-actions
+		'(("bview in browser"      . mu4e-action-view-in-browser)
+		  ("asave attachments"     . mu4e-view-mime-part-action)
+		  ("esave attachments"     . mu4e-view-save-attachments)
+		  ("oorg-contact-add"      . mu4e-action-add-org-contact)
+		  ("Itoggle remote images" . cj/mu4e-toggle-remote-images)
+		  ))
+  ;;        ("ssave message to attach later" . mu4e-action-capture-message)
 
   ) ;; end use-package mu4e
 
@@ -242,9 +276,9 @@ Prompts user for the action when executing."
   ;; new and html emails get the option for both text and html,
   ;; text emails get text only replies
   (setq org-msg-default-alternatives
-        '((new      . (text html))
-          (reply-to-html    . (text html))
-          (reply-to-text    . (text))))
+		'((new      . (text html))
+		  (reply-to-html    . (text html))
+		  (reply-to-text    . (text))))
 
   ;; Convert Org Citations to Blockquote
   (setq org-msg-convert-citation t)
@@ -271,9 +305,9 @@ Prompts user for the action when executing."
 
 
 (advice-add #'mu4e-compose-reply
-            :after (lambda (&rest _) (org-msg-edit-mode)))
+			:after (lambda (&rest _) (org-msg-edit-mode)))
 (advice-add #'mu4e-compose-wide-reply
-            :after (lambda (&rest _) (org-msg-edit-mode)))
+			:after (lambda (&rest _) (org-msg-edit-mode)))
 
 
 (provide 'mail-config)

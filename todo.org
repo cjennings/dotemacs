@@ -61,8 +61,10 @@ After running mu4e-view-save-attachments,
 - followed by RET (mu4e-view-save-attachments) to save all attachments,
 - or TAB (vertico-insert) followed by (comma) next to each file you want to save,
 - then RET (vertico-exit), to save selected attachments.
+** DOING [#B] Test record audio/video with headphones                  :bug:
 ** TODO [#A] Org Agenda Work                                  :enhancement:
 *** TODO [#A] Add notifications for all events
+*** TODO [#B] In progress tasks (i.e., DOING) in separate section
 *** TODO [#B] Add Past Due to F8 Agenda Summary in Emacs
 *** TODO [#B] Separate B and C in F8 Agenda Summary in Emacs
 ** TODO [#A] Mu4e Fixes                                                :bug:

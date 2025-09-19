@@ -29,19 +29,19 @@
   (vertico-resize nil)             ; Don't resize the minibuffer
   (vertico-sort-function #'vertico-sort-history-alpha) ; History first, then alphabetical
   :bind (:map vertico-map
-			  ("C-j" . vertico-next)    ; Match ivy's C-j behavior
-			  ("C-k" . vertico-previous)
-			  ("C-l" . vertico-insert)  ; Insert current candidate
-			  ("RET" . vertico-exit)
+			  ;; Match ivy's C-j C-k behavior
+			  ("C-j"   . vertico-next)
+			  ("C-k"   . vertico-previous)
+			  ("C-l"   . vertico-insert)  ; Insert current candidate
+			  ("RET"   . vertico-exit)
 			  ("C-RET" . vertico-exit-input)
 			  ("M-RET" . minibuffer-force-complete-and-exit)
-			  ("TAB" . minibuffer-complete)))
+			  ("TAB"   . minibuffer-complete)))
 
 (use-package marginalia
   :defer 0.5
   :init
   (marginalia-mode))
-
 
 (use-package nerd-icons-completion
   :defer 0.5

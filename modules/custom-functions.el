@@ -159,6 +159,7 @@ ORIG-FUN is the original =align-regexp'; ARGS are its arguments."
 	(define-key map "W" 'cj/count-words-buffer-or-region)
     (define-key map "/" 'cj/replace-fraction-glyphs)
 	(define-key map "a" 'align-regexp)
+	(define-key map "B" 'toggle-debug-on-error)
     (define-key map "|" 'display-fill-column-indicator-mode)
     map)
   "The base key map for custom elisp functions holding miscellaneous functions.
