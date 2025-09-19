@@ -97,20 +97,50 @@
 
 ;; ------------------------------- Network Check -------------------------------
 ;; checks if the network is available. used for online repo enablement.
+(defvar cj/network-available :unknown
+  "Cached network availability status. Values: :unknown, t, or nil.")
 
-(defun internet-up-p (&optional host)
-  "Test for network connectivity by pinging HOST.
-Results are cached in =cj/network-available' to avoid repeated checks."
-  (if (boundp 'cj/network-available)
-	  cj/network-available
+(defun cj/reset-network-cache ()
+  "Reset cached network availability."
+  (setq cj/network-available :unknown))
+
+(defun internet-up-p (&optional host force)
+  "Return non-nil if the network seems available.
+If FORCE is non-nil, re-check even if cached.
+HOST defaults to a fast, reliable IP."
+  (when (or force (eq cj/network-available :unknown))
 	(setq cj/network-available
-		  (= 0 (call-process "ping" nil nil nil "-c" "1" "-W" "1"
-							 (if host host "www.google.com"))))))
+		  (condition-case _err
+			  (pcase system-type
+				;; Linux, *BSD
+				((or 'gnu/linux 'berkeley-unix 'gnu)
+				 (= 0 (call-process "ping" nil nil nil "-n" "-c" "1" "-W" "1"
+									(or host "1.1.1.1"))))
+				;; macOS: no -W; use -t 1 for TTL and rely on fast failure
+				('darwin
+				 (= 0 (call-process "ping" nil nil nil "-n" "-c" "1" "-t" "1"
+									(or host "1.1.1.1"))))
+				;; Windows
+				('windows-nt
+				 (= 0 (call-process "ping" nil nil nil "-n" "1" "-w" "1000"
+									(or host "1.1.1.1"))))
+				;; Fallback: try to open a UDP socket to DNS port with 1s timeout
+				(_
+				 (with-timeout (1.0 nil)
+				   (let ((p (ignore-errors
+							  (open-network-stream "net-test" nil
+												   (or host "1.1.1.1") 53
+												   :type 'datagram))))
+					 (prog1 (and p t)
+					   (when p (delete-process p)))))))
+			(error nil))))
+  cj/network-available)
 
 ;; ----------------------------- Package Management ----------------------------
 ;; detect the availability of online and local repositories before adding them.
 ;; the order and priority is localrepo, local mirrors, then online repositories.
 
+(setq package-enable-at-startup nil)
 (require 'package) ;; emacs built-in
 
 (defconst user-home-dir (getenv "HOME")
@@ -228,16 +258,17 @@ early-init.el.")
 
 (push '(menu-bar-lines . 0) default-frame-alist)
 (push '(tool-bar-lines . 0) default-frame-alist)
-(push '(vertical-scroll-bars) default-frame-alist)
+(push '(vertical-scroll-bars . nil) default-frame-alist)
 (setq-default inhibit-startup-screen t)
 (setq-default inhibit-startup-message t)
 (setq-default inhibit-splash-screen t)
 (setq-default initial-scratch-message nil)
-(setq inhibit-startup-echo-area-message t)
+(setq inhibit-startup-echo-area-message (user-login-name))
 
 ;; Disable bidirectional text rendering for slight performance boost
-(setq-default bidi-display-reordering 'left-to-right
-			  bidi-paragraph-direction 'left-to-right)
+(setq-default  bidi-display-reordering nil ;; disable bidi reordering for speed
+			   bidi-paragraph-direction 'left-to-right
+			   bidi-inhibit-bpa t)         ;; additional speedup
 
 ;; Disable global font lock mode until after initialization
 (setq-default global-font-lock-mode nil)
