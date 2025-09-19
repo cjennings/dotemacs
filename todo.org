@@ -60,7 +60,6 @@ After running mu4e-view-save-attachments,
 - followed by RET (mu4e-view-save-attachments) to save all attachments,
 - or TAB (vertico-insert) followed by (comma) next to each file you want to save,
 - then RET (vertico-exit), to save selected attachments.
-** TODO [#A] Fix Org-msg Issue With Undo Outside                      :bug:
 ** TODO [#A] Mu4e Fixes                                                :bug:
 *** DONE [#A] mu4e contacts not expanding on forwarding emails
 CLOSED: [2025-08-29 Fri 16:09]
@@ -541,6 +540,67 @@ Don't choose a revision and you'll see a blank buffer that needs to be killed
 ** TODO [#C] Move persistence and history files into subdir   :enhancement:
 ** TODO [#C] Org Keyword Discolored Until Reapplying Theme            :bug:
 ** TODO [#C] Write missing tests for each module                       :bug:
+** WAITING [#C] Fix Org-msg Issue With Undo Outside                    :bug:
+*** 2025-09-19 Fri @ 17:45:35 -0500 Submitted PR Waiting for Merge
+https://github.com/jeremy-compostella/org-msg/pull/213
+*** 2025-09-19 Fri @ 16:11:02 -0500 Fix in a PR with description.
+ROOT CAUSE
+On line 1556, in org-msg-edit-mode reads:
+```
+  (add-hook 'message-sent-hook 'undo t t)
+```  
+https://github.com/jeremy-compostella/org-msg/blob/59e2042e5f23e25f31c6aef0db1e70c6f54f117d/org-msg.el#L1556
+
+When sending messages that extend past the visible space, org-msg prepares the content and may narrow the buffer. When the message-sent-hook fires in a narrowed buffer, calling undo errors when attempting to undo changes recorded outside the visible restriction.
+
+PROPOSED FIX
+- Replace the raw undo hook with a helper which widens before performing the undo. Add that helper to message-send-hook based on the value of message-kill-buffer-on-exit.
+This way: 
+- If message-kill-buffer-on-exit is t, there’s no need to restore the buffer as it will be killed right after the hooks. No undo → no error → no need to widen.
+- If the buffer won’t be killed, we DO need to restore it, therefore we widen first and then perform the undo.
+
+ALTERNATIVES REJECTED
+- Removing undo entirely. This fixes the error, but was rejected as it changes org-msg's behavior for users who keep the buffer open post-send.
+- Saving/restoring the original buffer text explicitly. Rejected because this felt more invasive and might risk clobbering other transient state.
+- Always add the hook to widen before performing the undo. Rejected to avoid executing more code than necessary. 
+
+*** 2025-09-19 Fri @ 15:08:46 -0500 Tested workaround and posting it
+#+begin_src emacs-lisp
+(with-eval-after-load 'org-msg
+  (add-hook 'org-msg-edit-mode-hook
+            (lambda ()
+              (remove-hook 'message-sent-hook 'undo t))))
+#+end_src
+*** 2025-09-19 Fri @ 14:59:48 -0500 Current Status
+The bug I filed after tracking the issue down:
+https://github.com/jeremy-compostella/org-msg/issues/210
+
+First, thanks for conttributing this package. It's made email via Mu4E in Emacs possible for me and others.
+
+Description
+When sending long emails using org-msg, an error occurs after the message is successfully sent: "primitive-undo: Changes to be undone are outside visible portion of buffer". The email is sent successfully, but the compose buffer remains open in a mixed text+html state along with other buffers, instead of everything being closed as expected.
+
+Environment
+Emacs version: 30.1
+org-msg version: 20240902.447
+Mail client: mu4e
+OS: Linux, though I'd be surprised if it doesn't reproduce everywhere.
+Reproduction Steps
+Compose a new email with org-msg enabled
+Write a long email (content must exceed the visible window)
+Send the email with C-c C-c
+Error occurs after successful send
+Root Cause
+The issue is in org-msg.el at line 1747 in the org-msg-edit-mode definition:
+
+(add-hook 'message-sent-hook 'undo t t)
+During the sending process:
+
+org-msg-prepare-to-send processes the buffer and converts Org content to HTML/text
+This processing narrows the buffer (confirmed by debugging)
+After sending, message-sent-hook runs while the buffer is still narrowed
+The undo function fails because it tries to undo changes outside the narrowed region
+I'll work on this and hope to propose a fairly well tested fix soon.
 * Emacs Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
 *** Specification
