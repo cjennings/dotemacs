@@ -40,7 +40,7 @@
   :defer .5
   :custom
   (treesit-auto-install t)
-;;  (treesit-auto-install 'prompt) ;; optional prompt instead of auto-install
+  ;;  (treesit-auto-install 'prompt) ;; optional prompt instead of auto-install
   :config
   (treesit-auto-add-to-auto-mode-alist 'all)
   (global-treesit-auto-mode))
@@ -136,25 +136,55 @@ If no such file exists there, display a message."
 		("x" . flycheck-projectile-list-errors)))
 
 ;; ---------------------------------- Ripgrep ----------------------------------
-;; allows fast searching for text anywhere in the project with C-c p G (grep)
 
-(use-package ripgrep
-  :defer .5
+(use-package deadgrep
   :after projectile
   :bind
   (:map projectile-command-map
-		("G" . projectile-ripgrep))
+		("G" . deadgrep)                 ;; project-wide search
+		("g" . cj/deadgrep-here)     ;; search in context directory
+		("d" . cj/deadgrep-in-dir))  ;; prompt for directory
+
   :config
+  (require 'thingatpt)
 
-  ;; when running ripgrep searches, end with the results window selected
-  (defun switch-to-ripgrep-results (&rest _)
-	"Switch to *ripgrep-search* buffer in other window."
-	(run-with-timer 0.1 nil
-					(lambda ()
-					  (when (get-buffer "*ripgrep-search*")
-						(pop-to-buffer "*ripgrep-search*")))))
+  (defun cj/deadgrep--initial-term ()
+	(cond
+	 ((use-region-p)
+	  (buffer-substring-no-properties (region-beginning) (region-end)))
+	 (t (thing-at-point 'symbol t))))
 
-  (advice-add 'ripgrep-regexp :after #'switch-to-ripgrep-results))
+  (defun cj/deadgrep-here (&optional term)
+	"Search with Deadgrep in the most relevant directory at point."
+	(interactive)
+	(let* ((root
+			(cond
+			 ((derived-mode-p 'dired-mode)
+			  (let ((path (dired-get-filename nil t)))
+				(cond
+				 ;; If point is on a directory entry, search within that directory.
+				 ((and path (file-directory-p path)) path)
+				 ;; If point is on a file, search in its containing directory.
+				 ((and path (file-regular-p path)) (file-name-directory path))
+				 (t default-directory))))
+			 (buffer-file-name
+			  (file-name-directory (file-truename buffer-file-name)))
+			 (t default-directory)))
+		   (root (file-name-as-directory (expand-file-name root)))
+		   (term (or term (read-from-minibuffer "Search: " (cj/deadgrep--initial-term)))))
+		  (deadgrep term root)))
+
+  (defun cj/deadgrep-in-dir (&optional dir term)
+    "Prompt for a directory, then search there with Deadgrep."
+    (interactive)
+	(let* ((dir (or dir (read-directory-name "Search in directory: " default-directory nil t)))
+		   (dir (file-name-as-directory (expand-file-name dir)))
+		   (term (or term (read-from-minibuffer "Search: " (cj/deadgrep--initial-term)))))
+		  (deadgrep term dir))))
+
+(with-eval-after-load 'dired
+  (define-key dired-mode-map (kbd "d") #'cj/deadgrep-here))
+
 
 ;; ---------------------------------- Snippets ---------------------------------
 ;; reusable code and text
