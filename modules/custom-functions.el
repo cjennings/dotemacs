@@ -243,12 +243,41 @@ This does not save the deleted text in the kill ring."
   (delete-region (point) (point-min))
   (message "Buffer contents removed to the beginning of the buffer."))
 
+;; prints using postscript for much nicer output
+(use-package ps-print
+  :ensure nil                     ;; built-in
+  :config
+  (defun cj/print-buffer-ps ()
+	"Print the current buffer as PostScript (monochrome) to the system default printer.
+Sends directly to the spooler (no temp files), with no page header."
+	(interactive)
+	(let* ((spooler
+			(cond
+			 ((executable-find "lpr") "lpr")
+			 ((executable-find "lp")  "lp")
+			 (t (user-error "Cannot print: neither 'lpr' nor 'lp' found in PATH"))))
+		   ;; Configure spooler for this invocation
+		   (ps-lpr-command spooler)
+		   (ps-printer-name nil)      ;; nil => system default printer
+		   (ps-lpr-switches nil)
+		   ;; Force monochrome and ignore face backgrounds for this job
+		   (ps-print-color-p nil)
+		   (ps-use-face-background nil)
+		   ;; Ensure no headers
+		   (ps-print-header nil)
+		   (ps-header-lines 0)
+		   (ps-left-header nil)
+		   (ps-right-header nil))
+	  (ps-print-buffer-with-faces)
+	  (message "Sent print job via %s to default printer (no header)" spooler))))
+
 ;; Buffer & file operations prefix and keymap
 (define-prefix-command 'cj/buffer-and-file-map nil
 					   "Keymap for buffer-and-file operations.")
 (define-key cj/custom-keymap "b" 'cj/buffer-and-file-map)
 (define-key cj/buffer-and-file-map "m" 'cj/move-buffer-and-file)
 (define-key cj/buffer-and-file-map "r" 'cj/rename-buffer-and-file)
+(define-key cj/buffer-and-file-map "p" 'cj/print-buffer-ps)
 (define-key cj/buffer-and-file-map "d" 'cj/delete-buffer-and-file)
 (define-key cj/buffer-and-file-map "c" 'cj/copy-whole-buffer)
 (define-key cj/buffer-and-file-map "t" 'cj/clear-to-top-of-buffer)

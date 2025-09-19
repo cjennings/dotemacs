@@ -61,4 +61,4 @@
   :hook (pdf-view-mode . pdf-continuous-scroll-mode))
 
 (provide 'pdf-config)
-;;; pdf-config.el ends here
+;;; pdf-config.el ends here.

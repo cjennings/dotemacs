@@ -61,7 +61,6 @@ After running mu4e-view-save-attachments,
 - followed by RET (mu4e-view-save-attachments) to save all attachments,
 - or TAB (vertico-insert) followed by (comma) next to each file you want to save,
 - then RET (vertico-exit), to save selected attachments.
-** DOING [#B] Test record audio/video with headphones                  :bug:
 ** TODO [#A] Org Agenda Work                                  :enhancement:
 *** TODO [#A] Add notifications for all events
 *** TODO [#B] In progress tasks (i.e., DOING) in separate section
@@ -74,7 +73,7 @@ removed org-contacts functionaality and it returned!
 *** DONE [#A] Add org-msg
 CLOSED: [2025-08-30 Sat 12:12]
 https://github.com/jeremy-compostella/org-msg
-*** TODO [#A] Change mu4e view actions
+*** VERIFY [#A] Change mu4e view actions
 **** Goal: Add actions you use.
 the defaults are currently
 #+begin_src emacs-lisp
@@ -113,6 +112,69 @@ https://www.youtube.com/watch?v=psDpCpcIVYs&t=10s
 *** TODO [#B] Org Branch to Org Roam
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
 ** DOING [#B] Test all dwim-shell-commands                     :enhancement:
+This way you can also have test assets
+*** Test Status for Commands
+- [X] convert-audio-to-mp3 ()
+- [X] convert-audio-to-opus ()
+- [ ] view-image-exif-metadata ()
+- [ ] flip-image-horizontally ()
+- [ ] flip-image-vertically ()
+- [ ] convert-image-to ()
+- [ ] convert-svg-to-png ()
+- [ ] join-images-into-pdf ()
+- [ ] extract-pdf-page-number ()
+- [ ] ocr-text-from-image-using-tesseract ()
+- [ ] convert-video-to-webp ()
+- [ ] convert-video-to-high-compatibility-mp4 ()
+- [ ] convert-video-to-hevc-mkv ()
+- [ ] extract-archive-smartly ()
+- [ ] zip-file-or-directory ()
+- [ ] tar-gzip-file-or-directory ()
+- [ ] epub-to-org ()
+- [ ] document-to-pdf ()
+- [ ] pdf-to-txt ()
+- [ ] resize-image-by-factor ()
+- [ ] resize-image-in-pixels ()
+- [ ] pdf-password-protect ()
+- [ ] pdf-password-unprotect ()
+- [ ] video-trim ()
+- [ ] drop-audio-from-video ()
+- [ ] open-externally ()
+- [ ] git-clone-clipboard-url ()
+- [X] open-file-manager ()
+- [ ] count-words-lines ()
+- [ ] checksum ()
+- [ ] backup-with-timestamp ()
+- [ ] optimize-image-for-web ()
+- [ ] csv-to-json ()
+- [ ] json-to-yaml ()
+- [ ] extract-urls-from-file ()
+- [ ] extract-emails-from-file ()
+- [ ] create-gif-from-video ()
+- [ ] concatenate-videos ()
+- [ ] create-video-thumbnail ()
+- [ ] merge-pdfs ()
+- [ ] split-pdf-by-pages ()
+- [ ] compress-pdf ()
+- [ ] ascii-art ()
+- [ ] text-to-speech ()
+- [ ] remove-empty-directories ()
+- [ ] create-thumbnail-from-image ()
+- [ ] extract-audio-from-video ()
+- [ ] normalize-audio-volume ()
+- [ ] remove-zip-encryption ()
+- [ ] create-encrypted-zip ()
+- [ ] list-archive-contents ()
+- [ ] count-words-lines-in-text-file ()
+- [ ] make-executable ()
+- [ ] secure-delete ()
+- [ ] sanitize-filename ()
+- [ ] number-files-sequentially ()
+- [ ] git-history ()
+- [ ] encrypt-with-gpg ()
+- [ ] decrypt-with-gpg ()
+- [ ] kill-gpg-agent ()
+*** Reference
 https://github.com/xenodium/dwim-shell-command
 ** DOING [#B] Implement Performance Recommendations                   :bug:
 *** Lazy-load configuration modules                      :complex4:impact5:

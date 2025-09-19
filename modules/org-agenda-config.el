@@ -62,7 +62,6 @@
   ;; build org-agenda-list for the first time after emacs init completes.
   (add-hook 'emacs-startup-hook #'cj/build-org-agenda-list))
 
-
 ;; ------------------------ Add Files To Org Agenda List -----------------------
 ;; finds files named 'todo.org' (case insensitive) and adds them to
 ;; org-agenda-files list.
@@ -133,7 +132,7 @@ If the current buffer isn't an org buffer, inform the user."
 (defvar cj/main-agenda-schedule-title "\nSCHEDULE\n"
   "String to announce the schedule section of the main agenda.")
 
-(defvar cj/main-agenda-tasks-title "\nPRIORITY B AND C\n"
+(defvar cj/main-agenda-tasks-title "\nPRIORITY B\n"
   "String to announce the schedule section of the main agenda.")
 
 (defun cj/org-skip-subtree-if-habit ()
@@ -171,7 +170,8 @@ KEYWORDS must be a list of strings."
           (alltodo ""
                    ((org-agenda-skip-function '(or (cj/org-skip-subtree-if-habit)
                                                    (cj/org-skip-subtree-if-priority ?A)
-                                                   (cj/org-skip-subtree-if-priority ?D)
+												   (cj/org-skip-subtree-if-priority ?C)
+												   (cj/org-skip-subtree-if-priority ?D)
                                                    (cj/org-skip-subtree-if-keyword '("PROJECT"))
                                                    (org-agenda-skip-if nil '(scheduled deadline))))
                     (org-agenda-overriding-header cj/main-agenda-tasks-title))))
