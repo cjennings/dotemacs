@@ -70,7 +70,6 @@
   (add-to-list 'org-export-backends 'texinfo))
 
 (use-package ox-pandoc
-  :ensure t
   :defer t
   :after ox
   :config

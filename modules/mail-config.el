@@ -38,7 +38,6 @@ Prompts user for the action when executing."
   :ensure nil ;; built-in
   :defer .5
   :config
-  (setq message-kill-buffer-on-exit t) ;; don't keep compose buffers after sending
   (setq sendmail-program (executable-find "msmtp"))
   (setq send-mail-function 'message-send-mail-with-sendmail
         message-send-mail-function 'message-send-mail-with-sendmail)
@@ -262,7 +261,7 @@ Prompts user for the action when executing."
 
 (use-package org-msg
   :after (org mu4e)
-  :ensure t
+  :load-path "~/code/org-msg/"
   :config
   ;; automatic greetings for html
   (setq org-msg-greeting-fmt "\nHi%s,\n\n")
@@ -286,6 +285,9 @@ Prompts user for the action when executing."
   ;; enforce css usage; default renders too small
   (setq org-msg-enforce-css t)
 
+  ;; always kill buffers on exit
+  (setq message-kill-buffer-on-exit nil)
+
   ;; Override just the problematic styles with important tags
   (setq org-msg-extra-css
 		(concat
@@ -308,7 +310,6 @@ Prompts user for the action when executing."
 			:after (lambda (&rest _) (org-msg-edit-mode)))
 (advice-add #'mu4e-compose-wide-reply
 			:after (lambda (&rest _) (org-msg-edit-mode)))
-
 
 (provide 'mail-config)
 ;;; mail-config.el ends here

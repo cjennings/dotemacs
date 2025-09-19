@@ -43,7 +43,6 @@
 
 (use-package company-auctex
   :after tex
-  :ensure t
   :init (company-auctex-init))
 
 ;; ----------------------------- Graphviz Dot Mode -----------------------------
