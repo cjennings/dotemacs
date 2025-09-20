@@ -50,6 +50,26 @@ If displaying on top/bottom, this value is treated as a height fraction."
 (defvar-local cj/gptel-autosave-filepath nil
   "File path used for auto-saving the conversation buffer.")
 
+(defcustom cj/gptel-conversations-autosave-on-send t
+  "When non-nil, auto-save the conversation immediately after `gptel-send'."
+  :type 'boolean
+  :group 'cj/ai-conversations)
+
+(defun cj/gptel--autosave-after-send (&rest _args)
+  "Auto-save current GPTel buffer right after `gptel-send' if enabled."
+  (when (and cj/gptel-conversations-autosave-on-send
+			 (bound-and-true-p gptel-mode)
+			 cj/gptel-autosave-enabled
+			 (stringp cj/gptel-autosave-filepath)
+			 (> (length cj/gptel-autosave-filepath) 0))
+	(condition-case err
+		(cj/gptel--save-buffer-to-file (current-buffer) cj/gptel-autosave-filepath)
+	  (error (message "cj/gptel autosave-on-send failed: %s" (error-message-string err))))))
+
+(with-eval-after-load 'gptel
+  (unless (advice-member-p #'cj/gptel--autosave-after-send #'gptel-send)
+	(advice-add 'gptel-send :after #'cj/gptel--autosave-after-send)))
+
 (defun cj/gptel--slugify-topic (s)
   "Return a filesystem-friendly slug for topic string S."
   (let* ((down (downcase (or s "")))
