@@ -263,8 +263,6 @@ Prompts user for the action when executing."
   :after (org mu4e)
   :load-path "~/code/org-msg/"
   :config
-  ;; automatic greetings for html
-  (setq org-msg-greeting-fmt "\nHi%s,\n\n")
 
   ;; inline CSS, no postamble, no TOC, no stars or footers
   (setq org-msg-options "html-postamble:nil H:5 num:nil ^:{} toc:nil author:nil email:nil")
@@ -299,12 +297,8 @@ Prompts user for the action when executing."
 		 "code { font-size: 13px !important; }\n"
 		 "</style>"))
 
-  ;; Signature (Org Syntax)
-  (setq org-msg-signature "\nCraig\n\n")
-
   ;; turn on org-msg in all compose buffers
   (org-msg-mode +1))
-
 
 (advice-add #'mu4e-compose-reply
 			:after (lambda (&rest _) (org-msg-edit-mode)))
