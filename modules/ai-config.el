@@ -39,12 +39,6 @@
 (defvar gptel-claude-backend nil "Claude backend, lazy-initialized.")
 (defvar gptel-chatgpt-backend nil "ChatGPT backend, lazy-initialized.")
 
-(defvar ai-directives-loaded nil)
-(defun cj/ensure-ai-directives ()
-  "Load ai-directives when needed."
-  (unless ai-directives-loaded
-	(require 'ai-directives)
-	(setq ai-directives-loaded t)))
 
 (defun cj/auth-source-secret (host user)
   "Fetch secret from auth-source for HOST and USER."
@@ -70,7 +64,6 @@
 (defun cj/ensure-gptel-backends ()
   "Initialize GPTel backends if not already done.
 This function should only be called AFTER gptel is loaded."
-  (cj/ensure-ai-directives) ;; load all directives here
   (unless gptel-claude-backend
 	(setq gptel-claude-backend
 		  (gptel-make-anthropic
@@ -91,6 +84,276 @@ This function should only be called AFTER gptel is loaded."
 ;; Since cj/toggle-gptel is bound to F9 but defined in :config
 (autoload 'cj/toggle-gptel "ai-config" "Toggle the AI-Assistant window" t)
 
+;; ------------------ Gptel Conversation And Utility Commands ------------------
+
+(defun cj/gptel--available-backends ()
+  "Return an alist of (NAME . BACKEND), ensuring gptel and backends are initialized."
+  (unless (featurep 'gptel)
+	(require 'gptel))
+  (cj/ensure-gptel-backends)
+  (delq nil
+		(list (and (bound-and-true-p gptel-claude-backend)
+				   (cons "Anthropic - Claude" gptel-claude-backend))
+			  (and (bound-and-true-p gptel-chatgpt-backend)
+				   (cons "OpenAI - ChatGPT" gptel-chatgpt-backend)))))
+
+(defun cj/gptel--model->string (m)
+  (cond
+   ((stringp m) m)
+   ((symbolp m) (symbol-name m))
+   (t (format "%s" m))))
+
+;; Backend/model switching commands (moved out of use-package so they are commandp)
+(defun cj/gptel-change-model ()
+  "Change the AI model and backend for gptel.
+Presents all available models from all backends, automatically switching
+backend when needed. Prompts for scope (global or buffer-local)."
+  (interactive)
+  (let* ((backends (cj/gptel--available-backends))
+		 (all-models
+		  (mapcan
+		   (lambda (pair)
+			 (let* ((backend-name (car pair))
+					(backend (cdr pair))
+					(models (when (fboundp 'gptel-backend-models)
+							  (gptel-backend-models backend))))
+			   (mapcar (lambda (m)
+						 (list (format "%s: %s" backend-name (cj/gptel--model->string m))
+							   backend
+							   (cj/gptel--model->string m)
+							   backend-name))
+					   models)))
+		   backends))
+		 (current-backend-name (car (rassoc (bound-and-true-p gptel-backend) backends)))
+		 (current-selection (format "%s: %s"
+									(or current-backend-name "AI")
+									(cj/gptel--model->string (bound-and-true-p gptel-model))))
+		 (scope (completing-read "Set model for: " '("buffer" "global") nil t))
+		 (selected (completing-read
+					(format "Select model (current: %s): " current-selection)
+					(mapcar #'car all-models) nil t nil nil current-selection)))
+	(let* ((model-info (assoc selected all-models))
+		   (backend (nth 1 model-info))
+		   (model (nth 2 model-info))
+		   (backend-name (nth 3 model-info)))
+	  (if (string= scope "global")
+		  (progn
+			(setq gptel-backend backend)
+			(setq gptel-model model)
+			(message "Changed to %s model: %s (global)" backend-name model))
+		(setq-local gptel-backend backend)
+		(setq-local gptel-model model)
+		(message "Changed to %s model: %s (buffer-local)" backend-name model)))))
+
+(defun cj/gptel-switch-backend ()
+  "Switch GPTel backend and select a model from that backend."
+  (interactive)
+  (let* ((backends (cj/gptel--available-backends))
+		 (choice (completing-read "Select GPTel backend: " (mapcar #'car backends) nil t))
+		 (backend (cdr (assoc choice backends))))
+	(unless backend
+	  (user-error "Invalid GPTel backend: %s" choice))
+	(let* ((models (when (fboundp 'gptel-backend-models)
+					 (gptel-backend-models backend)))
+		   (model (completing-read (format "Select %s model: " choice)
+								   (mapcar #'cj/gptel--model->string models)
+								   nil t nil nil (cj/gptel--model->string (bound-and-true-p gptel-model)))))
+	  (setq gptel-backend backend
+			gptel-model model)
+	  (message "Switched to %s with model: %s" choice model))))
+
+;; Clear assistant buffer (moved out so it's always available)
+(defun cj/gptel-clear-buffer ()
+  "Erase the contents of the current GPTel buffer leaving initial org heading.
+Only works in buffers with gptel-mode active."
+  (interactive)
+  (let ((is-gptel (bound-and-true-p gptel-mode))
+		(is-org (derived-mode-p 'org-mode)))
+	(if (and is-gptel is-org)
+		(progn
+		  (erase-buffer)
+		  (when (fboundp 'cj/gptel--fresh-org-prefix)
+			(insert (cj/gptel--fresh-org-prefix)))
+		  (message "GPTel buffer cleared and heading reset"))
+	  (message "Not a GPTel buffer in org-mode. Nothing cleared."))))
+
+;; Add a file to GPTel context (made resilient to Projectile not being loaded)
+(defun cj/gptel-add-file ()
+  "Add a file to the GPTel context.
+If inside a Projectile project, prompt from the project's file list;
+otherwise use `read-file-name'."
+  (interactive)
+  (let* ((in-proj (and (featurep 'projectile)
+					   (fboundp 'projectile-project-p)
+					   (projectile-project-p)))
+		 (file-name (if in-proj
+						(let ((cands (projectile-current-project-files)))
+						  (if (fboundp 'projectile-completing-read)
+							  (projectile-completing-read "GPTel add file: " cands)
+							(completing-read "GPTel add file: " cands nil t)))
+					  (read-file-name "GPTel add file: ")))
+		 (file-path (if in-proj
+						(expand-file-name file-name (projectile-project-root))
+					  file-name)))
+	(gptel-add-file file-path)
+	(when (boundp 'gptel-context--alist)
+	  (message "Current context has %d sources" (length gptel-context--alist)))))
+
+;;; Conversation Management (moved out of use-package)
+
+(defcustom cj/gptel-conversations-directory
+  (expand-file-name "ai-conversations" user-emacs-directory)
+  "Directory where GPTel conversations are stored."
+  :type 'directory
+  :group 'gptel)
+
+(defun cj/gptel--save-buffer-to-file (buffer filepath)
+  "Save the BUFFER content to FILEPATH with org visibility properties."
+  (with-current-buffer buffer
+	(let ((content (buffer-string)))
+	  (with-temp-buffer
+		(insert "#+STARTUP: showeverything\n")
+		(insert "#+VISIBILITY: all\n\n")
+		(insert content)
+		(write-region (point-min) (point-max) filepath nil 'silent))))
+  filepath)
+
+(defun cj/gptel-save-conversation ()
+  "Save the current AI-Assistant buffer to a .gptel file.
+Also enables autosave for subsequent AI responses to this same file."
+  (interactive)
+  (let ((buf (get-buffer "*AI-Assistant*")))
+	(unless buf
+	  (user-error "No AI-Assistant buffer found"))
+	;; Ensure directory exists
+	(unless (file-exists-p cj/gptel-conversations-directory)
+	  (make-directory cj/gptel-conversations-directory t)
+	  (message "Created directory: %s" cj/gptel-conversations-directory))
+	;; Get existing topic names (without timestamps)
+	(let* ((files (directory-files cj/gptel-conversations-directory nil "\\.gptel$"))
+		   (topics (delete-dups
+					(mapcar (lambda (f)
+							  (replace-regexp-in-string "_[0-9]\\{8\\}-[0-9]\\{6\\}\\.gptel$" "" f))
+							files)))
+		   (topic (completing-read "Conversation topic: " topics nil nil))
+		   (clean-topic (replace-regexp-in-string "[^a-zA-Z0-9-_]" "-" topic))
+		   (existing-files (directory-files cj/gptel-conversations-directory nil
+											(format "^%s_[0-9]\\{8\\}-[0-9]\\{6\\}\\.gptel$"
+													(regexp-quote clean-topic))))
+		   (newest-file (car (sort existing-files #'string>)))
+		   (use-existing (and newest-file
+							  (y-or-n-p (format "Update existing file %s? " newest-file))))
+		   (filepath (if use-existing
+						 (expand-file-name newest-file cj/gptel-conversations-directory)
+					   (let* ((timestamp (format-time-string "%Y%m%d-%H%M%S"))
+							  (filename (format "%s_%s.gptel" clean-topic timestamp)))
+						 (expand-file-name filename cj/gptel-conversations-directory)))))
+	  ;; Save the buffer
+	  (cj/gptel--save-buffer-to-file buf filepath)
+	  ;; Enable/refresh autosave target in this buffer
+	  (with-current-buffer buf
+		(setq-local cj/gptel-autosave-filepath filepath)
+		(setq-local cj/gptel-autosave-enabled t))
+	  (message "Conversation saved to: %s" filepath))))
+
+(defun cj/gptel-delete-conversation ()
+  "Delete a saved GPTel conversation file."
+  (interactive)
+  (unless (file-exists-p cj/gptel-conversations-directory)
+	(user-error "Conversations directory doesn't exist: %s"
+				cj/gptel-conversations-directory))
+  (let* ((files (directory-files cj/gptel-conversations-directory nil "\\.gptel$")))
+	(unless files
+	  (user-error "No saved conversations found in %s"
+				  cj/gptel-conversations-directory))
+	(let* ((files-with-dates
+			(mapcar (lambda (f)
+					  (let* ((full-path (expand-file-name f cj/gptel-conversations-directory))
+							 (mod-time (nth 5 (file-attributes full-path)))
+							 (time-str (format-time-string "%Y-%m-%d %H:%M" mod-time)))
+						(cons (format "%-40s [%s]" f time-str) f)))
+					files))
+		   (selection (completing-read "Delete conversation: " files-with-dates nil t))
+		   (filename (cdr (assoc selection files-with-dates)))
+		   (filepath (expand-file-name filename cj/gptel-conversations-directory)))
+	  (when (y-or-n-p (format "Really delete %s? " filename))
+		(delete-file filepath)
+		(message "Deleted conversation: %s" filename)))))
+
+(defun cj/gptel-load-conversation ()
+  "Load a saved GPTel conversation into the AI-Assistant buffer.
+Prompts to save the current one if present, and enables autosave."
+  (interactive)
+  (let ((ai-buffer (get-buffer-create "*AI-Assistant*")))
+	;; Offer to save existing conversation
+	(when (and (with-current-buffer ai-buffer (> (buffer-size) 0))
+			   (with-current-buffer ai-buffer (bound-and-true-p gptel-mode)))
+	  (when (y-or-n-p "Save current conversation before loading new one? ")
+		(with-current-buffer ai-buffer
+		  (call-interactively #'cj/gptel-save-conversation))))
+	;; Ensure directory exists and has files
+	(unless (file-exists-p cj/gptel-conversations-directory)
+	  (user-error "Conversations directory doesn't exist: %s"
+				  cj/gptel-conversations-directory))
+	(let* ((files (directory-files cj/gptel-conversations-directory nil "\\.gptel$")))
+	  (unless files
+		(user-error "No saved conversations found in %s"
+					cj/gptel-conversations-directory))
+	  (let* ((files-with-dates
+			  (mapcar (lambda (f)
+						(let* ((full-path (expand-file-name f cj/gptel-conversations-directory))
+							   (mod-time (nth 5 (file-attributes full-path)))
+							   (time-str (format-time-string "%Y-%m-%d %H:%M" mod-time)))
+						  (cons (format "%-40s [%s]" f time-str) f)))
+					  files))
+			 (selection (completing-read "Load conversation: " files-with-dates nil t))
+			 (filename (cdr (assoc selection files-with-dates)))
+			 (filepath (expand-file-name filename cj/gptel-conversations-directory)))
+		;; Ensure gptel is initialized in the target buffer
+		(with-current-buffer ai-buffer
+		  (unless (bound-and-true-p gptel-mode)
+			(gptel "*AI-Assistant*")
+			(org-mode)
+			(gptel-mode 1))
+		  (erase-buffer)
+		  (insert-file-contents filepath)
+		  (goto-char (point-min))
+		  (when (looking-at "^#\\+STARTUP:.*\n#\\+VISIBILITY:.*\n\n")
+			(delete-region (point) (match-end 0)))
+		  (goto-char (point-max))
+		  (set-buffer-modified-p t)
+		  (setq-local cj/gptel-autosave-filepath filepath)
+		  (setq-local cj/gptel-autosave-enabled t))
+		;; Show buffer in a side window if not visible
+		(unless (get-buffer-window ai-buffer)
+		  (if (fboundp 'cj/toggle-gptel)
+			  (cj/toggle-gptel)
+			(display-buffer-in-side-window
+			 ai-buffer '((side . right) (window-width . 0.4)))))
+		(select-window (get-buffer-window ai-buffer))
+		(message "Loaded conversation from: %s" filepath)))))
+
+;;; Autosave after responses (define early, add hook after gptel loads)
+
+(defvar-local cj/gptel-autosave-enabled nil
+  "When non-nil in a GPTel conversation buffer, auto-save after each AI response.")
+
+(defvar-local cj/gptel-autosave-filepath nil
+  "File path used for auto-saving the conversation buffer.")
+
+(defun cj/gptel--autosave-after-response (&rest _args)
+  "Auto-save the current GPTel buffer when enabled."
+  (when (and (bound-and-true-p gptel-mode)
+			 cj/gptel-autosave-enabled
+			 (stringp cj/gptel-autosave-filepath)
+			 (> (length cj/gptel-autosave-filepath) 0))
+	(condition-case err
+		(cj/gptel--save-buffer-to-file (current-buffer) cj/gptel-autosave-filepath)
+	  (error (message "cj/gptel autosave failed: %s" (error-message-string err))))))
+
+(with-eval-after-load 'gptel
+  (add-hook 'gptel-post-response-functions #'cj/gptel--autosave-after-response))
+
 ;;; ---------------------------- GPTel Configuration ----------------------------
 
 (use-package gptel
@@ -110,21 +373,6 @@ This function should only be called AFTER gptel is loaded."
   :config
   (cj/ensure-gptel-backends)
 
-  (setq gptel-directives
-		`((default     . ,default-directive)
-		  (accountant  . ,accountant-directive)
-		  (coder       . ,coder-directive)
-		  (contractor  . ,contractor-directive)
-		  (emacs       . ,emacs-directive)
-		  (package-pm  . ,package-pm-directive)
-		  (email       . ,email-directive)
-		  (historian   . ,historian-directive)
-		  (proofreader . ,proofreader-directive)
-		  (llm-prompt  . ,prompt-directive)
-		  (qa          . ,qa-directive)
-		  (reviewer    . ,reviewer-directive)))
-  (setq gptel-default-directive default-directive)
-
   ;; Named backend list for switching
   (defvar cj/gptel-backends
 	`(("Anthropic - Claude" . ,gptel-claude-backend)
@@ -132,76 +380,6 @@ This function should only be called AFTER gptel is loaded."
     "Alist of GPTel backends for interactive switching.")
 
   ;;; ---------------------------- Backend Management ---------------------------
-
-  (defun cj/gptel-change-model ()
-	"Change the AI model and backend for gptel.
-Presents all available models from all backends, automatically switching
-backend when needed. Prompts for scope (global or buffer-local)."
-	(interactive)
-	(let* ((all-models '())
-		   ;; Collect all models from all backends
-		   (backends-models
-			(mapcar (lambda (backend-cons)
-					  (let* ((backend-name (car backend-cons))
-							 (backend (cdr backend-cons))
-							 (models (gptel-backend-models backend)))
-						(dolist (model models)
-						  (push (list (format "%s: %s" backend-name model)
-									  backend
-									  model
-									  backend-name)
-								all-models))
-						backend-cons))
-					cj/gptel-backends))
-		   ;; Current selection for default
-		   (current-backend-name
-			(car (rassoc gptel-backend cj/gptel-backends)))
-		   (current-selection
-			(format "%s: %s" current-backend-name gptel-model))
-		   ;; Prompt user
-		   (scope (completing-read "Set model for: " '("buffer" "global") nil t))
-		   (selected (completing-read
-					  (format "Select model (current: %s): " current-selection)
-					  (mapcar #'car all-models)
-					  nil t nil nil
-					  current-selection)))
-
-	  ;; Find the selected model info
-	  (let* ((model-info (assoc selected all-models))
-			 (backend (nth 1 model-info))
-			 (model (nth 2 model-info))
-			 (backend-name (nth 3 model-info)))
-
-		;; Apply changes based on scope
-		(if (string= scope "global")
-			(progn
-			  (setq gptel-backend backend)
-			  (setq gptel-model model)
-			  (message "Changed to %s model: %s (global)" backend-name model))
-		  (setq-local gptel-backend backend)
-		  (setq-local gptel-model model)
-		  (message "Changed to %s model: %s (buffer-local)" backend-name model)))))
-
-  (defun cj/gptel-switch-backend ()
-	"Switch GPTel backend and select a model from that backend.
-This is a backend-first approach, whereas `cj/gptel-change-model'
-is model-first."
-	(interactive)
-	(let* ((choice (completing-read "Select GPTel backend: "
-									(mapcar #'car cj/gptel-backends)
-									nil t))
-           (backend (cdr (assoc choice cj/gptel-backends))))
-	  (if backend
-		  (let* ((models (gptel-backend-models backend))
-				 (selected-model
-				  (intern (completing-read
-						   (format "Select %s model: " choice)
-						   (mapcar #'symbol-name models)
-						   nil t))))
-			(setq gptel-backend backend)
-			(setq gptel-model selected-model)
-			(message "Switched to %s with model: %s" choice selected-model))
-		(user-error "Invalid GPTel backend: %s" choice))))
 
   ;; (setq gptel-backend gptel-claude-backend) ;; use Claude as default
   (setq gptel-backend gptel-chatgpt-backend) ;; use ChatGPT as default
@@ -242,61 +420,7 @@ is model-first."
 
   (add-hook 'gptel-post-response-functions #'cj/gptel-insert-model-heading)
 
-  ;;; ---------------------------- Context Management ---------------------------
-
-  (defun cj/gptel-clear-buffer ()
-    "Erase the contents of the current GPTel buffer leaving initial org heading.
-Only works in buffers with gptel-mode active."
-    (interactive)
-    (let ((is-gptel (bound-and-true-p gptel-mode))
-          (is-org (derived-mode-p 'org-mode)))
-      ;; debug info to Messages
-      ;; (message "Debug: gptel-mode: %s, org-mode: %s, major-mode: %s"
-      ;;          is-gptel is-org major-mode)
-
-      (if (and is-gptel is-org)
-          (progn
-            (erase-buffer)
-            ;; re-insert the user heading with fresh timestamp
-            (insert (cj/gptel--fresh-org-prefix))
-            (message "GPTel buffer cleared and heading reset"))
-		(message "Not a GPTel buffer in org-mode. Nothing cleared."))))
-
-  (with-eval-after-load 'projectile
-	(defun cj/gptel-add-file ()
-	  "Add a file to the GPTel context.
-If inside a Projectile project, prompt from the project's file list;
-otherwise use `read-file-name'."
-	  (interactive)
-	  (let* ((in-proj (and (fboundp 'projectile-project-p)
-						   (projectile-project-p)))
-			 (file-name (if in-proj
-							(projectile-completing-read
-							 "GPTel add file: "
-							 (projectile-current-project-files))
-						  (read-file-name "GPTel add file: ")))
-			 ;; Ensure we have a full path when using projectile
-			 (file-path (if in-proj
-							(expand-file-name file-name (projectile-project-root))
-						  file-name)))
-		;; Debug output
-		(message "Adding file to context: %s" file-path)
-
-		;; Call the gptel built-in function directly
-		(gptel-add-file file-path)
-
-		;; Verify context was added
-		(message "Current context has %d sources"
-				 (length gptel-context--alist)))))
-
 ;;; ----------------------- GPTel Conversation Management -----------------------
-
-  (defcustom cj/gptel-conversations-directory
-	(expand-file-name "ai-conversations" user-emacs-directory)
-	"Directory where GPTel conversations are stored.
-Defaults to ~/.emacs.d/ai-conversations/"
-	:type 'directory
-	:group 'gptel)
 
   (defun cj/gptel--save-buffer-to-file (buffer filepath)
 	"Save the BUFFER content to FILEPATH with org visibility properties.
@@ -311,156 +435,7 @@ Adds org-mode startup properties to ensure content is visible when reopened."
 		  (insert content)
 		  (write-region (point-min) (point-max) filepath nil 'silent))))
 	filepath)
-
-  (defun cj/gptel-save-conversation ()
-	"Save the current AI-Assistant buffer to a file with .gptel extension.
-Offers existing conversation topics as options but allows entering new topics."
-	(interactive)
-	(let ((buf (get-buffer "*AI-Assistant*")))
-	  (unless buf
-		(user-error "No AI-Assistant buffer found"))
-
-	  ;; Ensure directory exists
-	  (unless (file-exists-p cj/gptel-conversations-directory)
-		(make-directory cj/gptel-conversations-directory t)
-		(message "Created directory: %s" cj/gptel-conversations-directory))
-
-	  ;; Get existing topic names (without timestamps)
-	  (let* ((files (directory-files cj/gptel-conversations-directory nil "\\.gptel$"))
-			 (topics (delete-dups
-					  (mapcar (lambda (f)
-								(replace-regexp-in-string "_[0-9]\\{8\\}-[0-9]\\{6\\}\\.gptel$" "" f))
-							  files)))
-			 (topic (completing-read "Conversation topic: " topics nil nil))
-			 (clean-topic (replace-regexp-in-string "[^a-zA-Z0-9-_]" "-" topic))
-			 (existing-files (directory-files cj/gptel-conversations-directory nil
-											  (format "^%s_[0-9]\\{8\\}-[0-9]\\{6\\}\\.gptel$"
-													  (regexp-quote clean-topic))))
-			 (newest-file (car (sort existing-files #'string>)))
-			 (use-existing (and newest-file
-								(y-or-n-p (format "Update existing file %s? " newest-file))))
-			 (filepath (if use-existing
-						   (expand-file-name newest-file cj/gptel-conversations-directory)
-						 ;; Create new file with timestamp
-						 (let* ((timestamp (format-time-string "%Y%m%d-%H%M%S"))
-								(filename (format "%s_%s.gptel" clean-topic timestamp)))
-						   (expand-file-name filename cj/gptel-conversations-directory)))))
-
-		;; Save the buffer
-		(cj/gptel--save-buffer-to-file buf filepath)
-		(message "Conversation saved to: %s" filepath))))
-
-  (defun cj/gptel-delete-conversation ()
-	"Delete a saved GPTel conversation file.
-Presents a list of .gptel files for selection and confirms before deletion."
-	(interactive)
-
-	;; Check directory exists
-	(unless (file-exists-p cj/gptel-conversations-directory)
-	  (user-error "Conversations directory doesn't exist: %s"
-				  cj/gptel-conversations-directory))
-
-	;; Get all .gptel files
-	(let* ((files (directory-files cj/gptel-conversations-directory nil "\\.gptel$"))
-		   (files-with-dates
-			(mapcar (lambda (f)
-					  (let* ((full-path (expand-file-name f cj/gptel-conversations-directory))
-							 (mod-time (nth 5 (file-attributes full-path)))
-							 (time-str (format-time-string "%Y-%m-%d %H:%M" mod-time)))
-						(cons (format "%-40s [%s]" f time-str) f)))
-					files)))
-
-      (unless files
-		(user-error "No saved conversations found in %s"
-					cj/gptel-conversations-directory))
-
-	  ;; Let user select a file
-	  (let* ((selection (completing-read "Delete conversation: " files-with-dates nil t))
-			 (filename (cdr (assoc selection files-with-dates)))
-			 (filepath (expand-file-name filename cj/gptel-conversations-directory)))
-
-		;; Confirm deletion
-		(when (y-or-n-p (format "Really delete %s? " filename))
-		  (delete-file filepath)
-		  (message "Deleted conversation: %s" filename)))))
-
-  (defun cj/gptel-load-conversation ()
-	"Load a saved GPTel conversation into the AI-Assistant buffer.
-If the current buffer has content, prompts to save it first.
-Presents a list of .gptel files for selection and loads the chosen file."
-	(interactive)
-
-	;; Check if AI-Assistant buffer exists, create if needed
-	(let ((ai-buffer (get-buffer-create "*AI-Assistant*")))
-
-	  ;; If buffer has content and gptel-mode is active, offer to save
-	  (when (and (with-current-buffer ai-buffer
-				   (> (buffer-size) 0))
-				 (with-current-buffer ai-buffer
-				   (bound-and-true-p gptel-mode)))
-		(when (y-or-n-p "Save current conversation before loading new one? ")
-		  (with-current-buffer ai-buffer
-			(call-interactively #'cj/gptel-save-conversation))))
-
-	  ;; Check directory exists
-	  (unless (file-exists-p cj/gptel-conversations-directory)
-		(user-error "Conversations directory doesn't exist: %s"
-					cj/gptel-conversations-directory))
-
-	  ;; Get all .gptel files
-	  (let* ((files (directory-files cj/gptel-conversations-directory nil "\\.gptel$"))
-			 (files-with-dates
-			  (mapcar (lambda (f)
-						(let* ((full-path (expand-file-name f cj/gptel-conversations-directory))
-							   (mod-time (nth 5 (file-attributes full-path)))
-							   (time-str (format-time-string "%Y-%m-%d %H:%M" mod-time)))
-						  (cons (format "%-40s [%s]" f time-str) f)))
-					  files)))
-
-		(unless files
-		  (user-error "No saved conversations found in %s"
-					  cj/gptel-conversations-directory))
-
-		;; Let user select a file
-		(let* ((selection (completing-read "Load conversation: " files-with-dates nil t))
-			   (filename (cdr (assoc selection files-with-dates)))
-			   (filepath (expand-file-name filename cj/gptel-conversations-directory)))
-
-		  ;; Clear buffer and insert file contents
-		  (with-current-buffer ai-buffer
-			;; Ensure gptel-mode is active
-			(unless (bound-and-true-p gptel-mode)
-			  (gptel "*AI-Assistant*")  ;; Initialize gptel if not already active
-			  (org-mode)
-			  (gptel-mode 1))
-
-			;; Clear and insert the conversation
-			(erase-buffer)
-			(insert-file-contents filepath)
-
-			;; Remove the org properties if present at the beginning
-			(goto-char (point-min))
-			(when (looking-at "^#\\+STARTUP:.*\n#\\+VISIBILITY:.*\n\n")
-			  (delete-region (point) (match-end 0)))
-
-			;; Position at end and mark as modified
-			(goto-char (point-max))
-			(set-buffer-modified-p t))
-
-		  ;; Show buffer in a side window if not already visible
-		  (unless (get-buffer-window ai-buffer)
-			(if (fboundp 'cj/toggle-gptel)
-				(cj/toggle-gptel)
-			  ;; Fallback to display in side window
-			  (display-buffer-in-side-window
-			   ai-buffer
-			   '((side . right)
-				 (window-width . 0.4)))))
-
-		  ;; Select the window
-		  (select-window (get-buffer-window ai-buffer))
-		  (message "Loaded conversation from: %s" filepath)))))) ;; end use-package
-
+)
 ;;; ---------------------------- Toggle GPTel Window ----------------------------
 
 (defun cj/toggle-gptel ()
@@ -492,6 +467,18 @@ Presents a list of .gptel files for selection and loads the chosen file."
   :defer t
   :hook (magit-mode . gptel-magit-install))
 
+;; ------------------------------ GPTel Directives -----------------------------
+
+(use-package gptel-prompts
+  :load-path "custom/gptel-prompts.el"
+  :after (gptel)
+  :custom
+  (gptel-prompts-directory (concat user-emacs-directory "ai-prompts"))
+  :config
+  (gptel-prompts-update)
+  ;; Ensure prompts are updated if prompt files change
+  (gptel-prompts-add-update-watchers))
+
 ;;; --------------------------------- AI Keymap ---------------------------------
 
 (defvar ai-keymap
@@ -512,7 +499,6 @@ Presents a list of .gptel files for selection and loads the chosen file."
   "Keymap for AI-related commands (prefix \\<ai-keymap>).
 Binds global M-a (overriding default \='backward-sentence\=').")
 (global-set-key (kbd "M-a") ai-keymap)
-
 
 (provide 'ai-config)
 ;;; ai-config.el ends here
