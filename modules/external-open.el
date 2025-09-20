@@ -22,15 +22,88 @@
 ;;; Code:
 
 (require 'host-environment) ;; environment information functions
+(require 'cl-lib)
+
+(defgroup external-open nil
+  "Open certain files with the OS default handler."
+  :group 'files)
+
+(defcustom default-open-extensions
+  '(
+	;; Video
+	"\\.3g2\\'" "\\.3gp\\'" "\\.asf\\'" "\\.avi\\'" "\\.divx\\'" "\\.dv\\'"
+	"\\.f4v\\'" "\\.flv\\'" "\\.m1v\\'" "\\.m2ts\\'" "\\.m2v\\'" "\\.m4v\\'"
+	"\\.mkv\\'" "\\.mov\\'" "\\.mpe\\'" "\\.mpeg\\'" "\\.mpg\\'" "\\.mp4\\'"
+	"\\.mts\\'" "\\.ogv\\'" "\\.rm\\'" "\\.rmvb\\'" "\\.ts\\'" "\\.vob\\'"
+	"\\.webm\\'" "\\.wmv\\'"
+
+	;; Audio
+	"\\.aac\\'" "\\.ac3\\'" "\\.aif\\'" "\\.aifc\\'" "\\.aiff\\'"
+	"\\.alac\\'" "\\.amr\\'" "\\.ape\\'" "\\.caf\\'"
+	"\\.dff\\'" "\\.dsf\\'" "\\.flac\\'" "\\.m4a\\'" "\\.mka\\'"
+	"\\.mid\\'" "\\.midi\\'" "\\.mp2\\'" "\\.mp3\\'" "\\.oga\\'"
+	"\\.ogg\\'" "\\.opus\\'" "\\.ra\\'" "\\.spx\\'" "\\.wav\\'"
+	"\\.wave\\'" "\\.weba\\'" "\\.wma\\'"
+
+	;; Microsoft Word
+	"\\.docx?\\'" "\\.docm\\'"
+	"\\.dotx?\\'" "\\.dotm\\'"
+	"\\.rtf\\'"
+
+	;; Microsoft Excel
+	"\\.xlsx?\\'" "\\.xlsm\\'" "\\.xlsb\\'"
+	"\\.xltx?\\'" "\\.xltm\\'"
+
+	;; Microsoft PowerPoint
+	"\\.pptx?\\'" "\\.pptm\\'"
+	"\\.ppsx?\\'" "\\.ppsm\\'"
+	"\\.potx?\\'" "\\.potm\\'"
+
+	;; Microsoft OneNote / Visio / Project / Access / Publisher
+	"\\.one\\'" "\\.onepkg\\'" "\\.onetoc2\\'"
+	"\\.vsdx?\\'" "\\.vsdm\\'" "\\.vstx?\\'" "\\.vstm\\'" "\\.vssx?\\'" "\\.vssm\\'"
+	"\\.mpp\\'" "\\.mpt\\'"
+	"\\.mdb\\'" "\\.accdb\\'" "\\.accde\\'" "\\.accdr\\'" "\\.accdt\\'"
+	"\\.pub\\'"
+
+	;; OpenDocument (LibreOffice/OpenOffice)
+	"\\.odt\\'" "\\.ott\\'"
+	"\\.ods\\'" "\\.ots\\'"
+	"\\.odp\\'" "\\.otp\\'"
+	"\\.odg\\'" "\\.otg\\'"
+	"\\.odm\\'" "\\.odf\\'"
+	;; Flat OpenDocument variants
+	"\\.fodt\\'" "\\.fods\\'" "\\.fodp\\'"
+
+	;; Apple iWork
+	"\\.pages\\'" "\\.numbers\\'" "\\.key\\'"
+
+	;; Microsoft’s fixed-layout formats
+	"\\.xps\\'" "\\.oxps\\'"
+	)
+  "Regexps matching file extensions that should be opened externally."
+  :type '(repeat (regexp :tag "File extension regexp"))
+  :group 'external-open)
 
 ;; ------------------------------- Open File With ------------------------------
 
 (defun cj/open-this-file-with (command)
-  "Asynchronously run COMMAND on the current buffer's file."
+  "Open this buffer's file with COMMAND, detached from Emacs."
   (interactive "MOpen with program: ")
-  (let ((display-buffer-alist
-		 '(("\\*Async Shell Command\\*" display-buffer-no-window))))
-	(async-shell-command (format "%s \"%s\"" command buffer-file-name))))
+  (unless buffer-file-name
+	(user-error "Current buffer is not visiting a file"))
+  (let ((file (expand-file-name buffer-file-name)))
+	(cond
+	 ;; Windows: launch via ShellExecute so the child isn't tied to Emacs.
+	 ((env-windows-p)
+	  (w32-shell-execute "open" command (format "\"%s\"" file)))
+	 ;; POSIX: disown with nohup + background. No child remains.
+	 (t
+	  (call-process-shell-command
+	   (format "nohup %s %s >/dev/null 2>&1 &"
+			   command (shell-quote-argument file))
+	   nil 0)))))
+
 (global-set-key (kbd "C-c x o") #'cj/open-this-file-with)
 
 ;; ------------------------- Use Default File Handlers -------------------------
@@ -46,43 +119,39 @@ Signals an error if the host is unsupported."
 
 (defun cj/xdg-open (&optional filename)
   "Open FILENAME (or the file at point) with the OS default handler.
-Logs output and exit code to buffer *cj-xdg-open.log*."
+Logs output and exit code to buffer *external-open.log*."
   (interactive)
-  (let* ((file (expand-file-name
-				(or filename
-					(dired-file-name-at-point))))
-		 (cmd  (cj/identify-external-open-command))
+  (let* ((file  (expand-file-name (or filename (dired-file-name-at-point))))
+		 (cmd   (cj/identify-external-open-command))
 		 (logbuf (get-buffer-create "*external-open.log*")))
 	(with-current-buffer logbuf
 	  (goto-char (point-max))
-	  (insert (format-time-string "[%Y-%m-%d %H:%M:%S] " (current-time)))
+	  (insert (format-time-string "[%Y-%m-%d %H:%M:%S] "))
 	  (insert (format "Opening: %s\n" file)))
-	;; Use call-process with nowait flag
-	(call-process cmd nil 0 nil file)
-	;; Log completion
-	(with-current-buffer logbuf
-	  (insert "  → Launched asynchronously\n"))
+	(cond
+	 ;; Windows: let the shell handle association; fully detached.
+	 ((env-windows-p)
+	  (w32-shell-execute "open" file))
+	 ;; macOS/Linux: run the opener synchronously; it returns immediately.
+	 (t
+	  (call-process cmd nil 0 nil file)
+	  (with-current-buffer logbuf
+		(insert "  → Launched asynchronously\n"))))
 	nil))
 
 (defun cj/find-file-auto (orig-fun &rest args)
-  "If file is media or Office, open exernally, else call ORIG-FUN with ARGS."
-  (let ((file (car args))
-		(exts '("\\.avi\\'"
-				"\\.docx?\\'"
-				"\\.m4a\\'"
-				"\\.mkv\\'"
-				"\\.webm\\'"
-				"\\.mov\\'"
-				"\\.flac\\'"
-				"\\.mp3\\'"
-				"\\.mp4\\'"
-				"\\.ogg\\'"
-				"\\.opus\\'"
-				"\\.pptx?\\'"
-				"\\.xlsx?\\'")))
-	(if (cl-find-if (lambda (re) (string-match re file)) exts)
+  "If file has an extension in `default-open-extensions', open externally.
+Else call ORIG-FUN with ARGS."
+  (let* ((file (car args))
+		 (case-fold-search t))
+	(if (and (stringp file)
+			 (cl-some (lambda (re) (string-match-p re file))
+					  default-open-extensions))
 		(cj/xdg-open file)
 	  (apply orig-fun args))))
+
+;; Make advice idempotent if you reevaluate this form.
+(advice-remove 'find-file #'cj/find-file-auto)
 (advice-add 'find-file :around #'cj/find-file-auto)
 
 (provide 'external-open)
