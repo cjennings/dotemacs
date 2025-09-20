@@ -1,31 +1,15 @@
-;;; ai-config.el --- Configuration for AI Integrations -*- lexical-binding: t; coding: utf-8; -*-
-;; author Craig Jennings <c@cjennings.net>
+;;; ai-conversations.el --- GPTel conversation persistence and autosave -*- lexical-binding: t; coding: utf-8; -*-
+;; Author: Craig Jennings <c@cjennings.net>
+;; Maintainer: Craig Jennings <c@cjennings.net>
+;; Version 0.1
+;; Package-Requires: ((emacs "27.1"))
+;; Keywords: convenience, tools
 ;;
 ;;; Commentary:
-;; Configuration for AI integrations in Emacs, focused on GPTel.
+;; Provides conversation save/load/delete, autosave after responses, and
+;; org-visibility headers for GPTel-powered assistant buffers.
 ;;
-;; Main Features:
-;; - Quick toggle for AI assistant window (F9 or M-a t)
-;; - Custom keymap (M-a prefix, overrides 'backwards-sentence') for AI-related commands.
-;; - Enhanced org-mode conversation formatting with timestamps
-;;   allows switching models and easily compare and track responses.
-;; - Various specialized AI directives (coder, reviewer, etc.)
-;; - Context management for adding files/buffers to conversations
-;; - Conversation persistence with save/load functionality
-;; - Integration with Magit for code review
-;;
-;; Basic Workflow
-;;
-;; Using a side-chat window:
-;; - Launch GPTel via F9 or M-a t, and chat in the AI-Assistant side window (C-<return> to send)
-;; - Change system prompt (expertise, personalities) with M-a p
-;; - Add context from files (M-a f) or buffers (M-a b)
-;; - Save conversations with M-a s, load previous ones with M-a l
-;; - Clear the conversation and start over with M-a x
-;; Or in any buffer:
-;; - Add directive as above, and select a region to rewrite with M-a r.
-;;
-;; Uses AI directives from ai-directives.el for specialized AI behaviors.
+;; Loads lazily via autoloads for the interactive entry points.
 
 ;;; Code:
 
@@ -58,11 +42,6 @@ If displaying on top/bottom, this value is treated as a height fraction."
   "Sort order for conversation selection prompts."
   :type '(choice (const :tag "Newest first" newest-first)
 				 (const :tag "Oldest first" oldest-first))
-  :group 'cj/ai-conversations)
-
-(defcustom cj/gptel-conversations-autosave-on-send t
-  "When non-nil, auto-save the conversation immediately after `gptel-send'."
-  :type 'boolean
   :group 'cj/ai-conversations)
 
 (defvar-local cj/gptel-autosave-enabled nil
@@ -129,7 +108,7 @@ If displaying on top/bottom, this value is treated as a height fraction."
 				  (let ((ta (plist-get a :time))
 						(tb (plist-get b :time)))
 					(if (eq cj/gptel-conversations-sort-order 'newest-first)
-						(time-less-p tb ta)
+						(time-less-p tb ta)  ;; tb earlier than ta => a first
 					  (time-less-p ta tb))))))
 		 (cands (mapcar (lambda (pl)
 						  (cons (plist-get pl :display)
@@ -256,7 +235,7 @@ Prompts to save the current one if present, and enables autosave."
 	  (message "Loaded conversation from: %s" filepath))))
 
 (defun cj/gptel--autosave-after-response (&rest _args)
-  "Auto-save the current GPTel buffer when enabled, after AI response."
+  "Auto-save the current GPTel buffer when enabled."
   (when (and (bound-and-true-p gptel-mode)
 			 cj/gptel-autosave-enabled
 			 (stringp cj/gptel-autosave-filepath)
@@ -265,22 +244,9 @@ Prompts to save the current one if present, and enables autosave."
 		(cj/gptel--save-buffer-to-file (current-buffer) cj/gptel-autosave-filepath)
 	  (error (message "cj/gptel autosave failed: %s" (error-message-string err))))))
 
-(defun cj/gptel--autosave-after-send (&rest _args)
-  "Auto-save the current GPTel buffer when enabled, immediately after `gptel-send'."
-  (when (and cj/gptel-conversations-autosave-on-send
-			 (bound-and-true-p gptel-mode)
-			 cj/gptel-autosave-enabled
-			 (stringp cj/gptel-autosave-filepath)
-			 (> (length cj/gptel-autosave-filepath) 0))
-	(condition-case err
-		(cj/gptel--save-buffer-to-file (current-buffer) cj/gptel-autosave-filepath)
-	  (error (message "cj/gptel autosave-on-send failed: %s" (error-message-string err))))))
-
 (with-eval-after-load 'gptel
   (unless (member #'cj/gptel--autosave-after-response gptel-post-response-functions)
-	(add-hook 'gptel-post-response-functions #'cj/gptel--autosave-after-response))
-  (unless (advice-member-p #'cj/gptel--autosave-after-send #'gptel-send)
-	(advice-add 'gptel-send :after #'cj/gptel--autosave-after-send)))
+	(add-hook 'gptel-post-response-functions #'cj/gptel--autosave-after-response)))
 
 (provide 'ai-conversations)
 ;;; ai-conversations.el ends here
