@@ -7,6 +7,7 @@
 ;;; Code:
 
 (require 'user-constants)
+(require 'system-utils)
 
 ;; ------------------------------ Media Player Config --------------------------
 
@@ -109,16 +110,16 @@ Should be a key from `cj/media-players'."
   (setq elfeed-feeds
         '(
           ;; The Daily
-		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLdMrbgYfVl-s16D_iT2BJCJ90pWtTO1A4" yt daily)
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLdMrbgYfVl-s16D_iT2BJCJ90pWtTO1A4" yt nytdaily)
 
           ;; The Ezra Klein Show
-          ("https://www.youtube.com/feeds/videos.xml?channel_id=UCnxuOd8obvLLtf5_-YKFbiQ" yt ezra-klein)
+		  ("https://www.youtube.com/feeds/videos.xml?channel_id=UCnxuOd8obvLLtf5_-YKFbiQ" yt ezra)
 
           ;; Pivot with Kara Swisher and Scott Galloway
           ("https://www.youtube.com/feeds/videos.xml?channel_id=UCBHGZpDF2fsqPIPi0pNyuTg" yt pivot)
 
           ;; The Prof G Pod
-          ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLtQ-jBytlXCasRuBG86m22rOQfrEPcctq" yt prof-g)
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLtQ-jBytlXCasRuBG86m22rOQfrEPcctq" yt profg)
 
           ;; On with Kara Swisher
           ("https://www.youtube.com/feeds/videos.xml?channel_id=UCMDxbhGcsE7EnknxPEzC_Iw" yt)
@@ -127,10 +128,16 @@ Should be a key from `cj/media-players'."
           ("https://www.youtube.com/feeds/videos.xml?channel_id=UCcvDWzvxz6Kn1iPQHMl2teA" yt raging-moderates)
 
           ;; Prof G Markets
-		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLtQ-jBytlXCY28ucRF8P1mNMSG8uC06Aw" yt prof-g-markets)
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLtQ-jBytlXCY28ucRF8P1mNMSG8uC06Aw" yt profg-markets)
 
 		  ;; Trae Crowder Porch Rants
-		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PL45Mc1cDgnsB-u1iLPBYNF1fk-y1cVzTJ" yt traecrowdder)
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PL45Mc1cDgnsB-u1iLPBYNF1fk-y1cVzTJ" yt trae)
+
+		  ;; Senator Bernie Sanders
+		  ("https://www.youtube.com/feeds/videos.xml?channel_id=UCD_DaKNac0Ta-2PeHuoQ1uA" yt bernie)
+
+		  ;; If You're Listening | ABC News In-depth
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLDTPrMoGHssAfgMMS3L5LpLNFMNp1U_Nq" yt listening)
           )))
 
 ;; ------------------------------ Elfeed Functions -----------------------------
@@ -178,8 +185,8 @@ Returns the stream URL or nil on failure."
 						   format-args
 						   (list url)))
 		 ;; DEBUG: Log the command
-		 (_ (message "DEBUG: Extracting with command: %s"
-                     (mapconcat #'shell-quote-argument cmd-args " ")))
+		 (_ (cj/log-silently "DEBUG: Extracting with command: %s"
+							 (mapconcat #'shell-quote-argument cmd-args " ")))
 		 (output (with-temp-buffer
 				   (let ((exit-code (apply #'call-process
 										   (car cmd-args) nil t nil
@@ -188,12 +195,12 @@ Returns the stream URL or nil on failure."
 						 (string-trim (buffer-string))
 					   (progn
 						 ;; DEBUG: Log failure
-						 (message "DEBUG: yt-dlp failed with exit code %d" exit-code)
-						 (message "DEBUG: Error output: %s" (buffer-string))
+						 (cj/log-silently "DEBUG: yt-dlp failed with exit code %d" exit-code)
+						 (cj/log-silently "DEBUG: Error output: %s" (buffer-string))
 						 nil))))))
     ;; DEBUG: Log the result
-	(message "DEBUG: Extracted URL: %s"
-             (if output (truncate-string-to-width output 100) "nil"))
+	(cj/log-silently "DEBUG: Extracted URL: %s"
+					 (if output (truncate-string-to-width output 100) "nil"))
     (when (and output (string-match-p "^https?://" output))
       output)))
 
@@ -300,7 +307,7 @@ Applies cj/eww-readable-nonce hook after EWW rendering."
 												 (mapconcat #'shell-quote-argument
 															yt-dlp-formats
 															"/"))
-									   "")))
+                                       "")))
 				  (format "%s %s $(%s %s -g %s)"
 						  command
 						  (or args "")
@@ -314,7 +321,7 @@ Applies cj/eww-readable-nonce hook after EWW rendering."
 					  (shell-quote-argument url)))))
 
 	  (message "Playing with %s: %s" player-name url-display)
-	  (message "DEBUG: Executing: %s" shell-command)
+	  (cj/log-silently "DEBUG: Executing: %s" shell-command)
 
 	  (let ((process (start-process-shell-command
 					  player-name
@@ -331,10 +338,10 @@ Applies cj/eww-readable-nonce hook after EWW rendering."
 			 (with-current-buffer (process-buffer proc)
 			   (goto-char (point-min))
 			   (when (re-search-forward "ERROR:" nil t)
-				 (messageq "DEBUG: yt-dlp error: %s"
-						  (buffer-substring-no-properties
-						   (line-beginning-position)
-						   (line-end-position)))))))
+				 (cj/log-silently "DEBUG: yt-dlp error: %s"
+								  (buffer-substring-no-properties
+								   (line-beginning-position)
+								   (line-end-position)))))))
 		   (when (string-match-p "finished\\|exited" event)
 			 (kill-buffer (process-buffer proc)))))))))
 
