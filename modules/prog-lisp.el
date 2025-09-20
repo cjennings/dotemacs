@@ -70,30 +70,15 @@
   :ensure nil ;; built-into emacs
   :defer 1)
 
-;; mocking/stub framework
-;; note: Find the documentation at M-x describe-function RET with-mock RET
-;; and M-x describe-function RET mocklet RET.testing
-(with-eval-after-load 'ert
-  (defun ert-all-tests ()
-	"Run all ert tests and display the results in a buffer."
-	(interactive)
-	(ert t))
+;; ---------------------------------- El-Mock ----------------------------------
 
-  (keymap-global-unset "C-r" t)
-  (keymap-global-unset "C-R" t)
-  (define-key emacs-lisp-mode-map (kbd "C-r") 'ert-all-tests)
-  (define-key emacs-lisp-mode-map (kbd "C-R") 'ert-run-tests-interactively)
-  (define-key lisp-interaction-mode-map (kbd "C-r") 'ert-all-tests)
-  (define-key lisp-interaction-mode-map (kbd "C-R") 'ert-run-tests-interactively))
+(use-package el-mock
+  :defer 1) ;; mock/stub framework
 
-(use-package el-mock) ;; mock/stub framework
+;; --------------------------------- Elisp Lint --------------------------------
 
-(defun cj/eval-and-run-all-tests-in-buffer ()
-  "Delete any loaded tests, evaluate current buffer, and run loaded ERT tests."
-  (interactive)
-  (ert-delete-all-tests)
-  (eval-buffer)
-  (ert 't))
+(use-package elisp-lint
+  :defer 1)
 
 ;; ------------------------------ Package Tooling ------------------------------
 
