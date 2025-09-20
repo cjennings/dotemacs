@@ -204,6 +204,7 @@ regardless of what file or subdirectory the point is on."
    ("M-p"     . dirvish-peek-toggle)
    ("M-s"     . dirvish-setup-menu)
    ("TAB"     . dirvish-subtree-toggle)
+   ("d".  dired-flag-file-deletion)
    ("f"       . cj/dirvish-open-file-manager-here)
    ("g"       . dirvish-quick-access)
    ("o"       . cj/xdg-open)
