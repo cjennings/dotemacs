@@ -83,6 +83,7 @@
   :config
   (defun cj/find-project-root-file (regexp)
 	"Return first file in the current Projectile project root matching REGEXP.
+
 Match is done against (downcase file) for case-insensitivity.
 REGEXP must be a string or an rx form."
 	(when-let ((root (projectile-project-root)))
@@ -95,6 +96,7 @@ REGEXP must be a string or an rx form."
 
   (defun cj/open-project-root-todo ()
 	"Open todo.org in the current Projectile project root.
+
 If no such file exists there, display a message."
 	(interactive)
 	(if-let ((root (projectile-project-root)))

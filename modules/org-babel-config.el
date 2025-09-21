@@ -29,8 +29,10 @@
 ;; org-babel verifies before each execution
 
 (defun babel-confirm (flag)
-  "Report the setting of org-confirm-babel-evaluate.
-   If invoked with C-u, toggle the setting."
+  "Report the setting of `org-confirm-babel-evaluate'.
+
+If invoked with \[universal-argument], toggle the setting based on FLAG.
+FLAG is the raw prefix argument passed interactively."
   (interactive "P")
   (if (equal flag '(4))
       (setq org-confirm-babel-evaluate (not org-confirm-babel-evaluate)))

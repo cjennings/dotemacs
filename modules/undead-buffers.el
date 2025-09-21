@@ -4,7 +4,6 @@
 ;;
 ;; This library allows for “burying” selected buffers instead of killing them.
 ;; Since they won't be killed, I'm calling them "undead buffers".
-;;
 ;; The main function cj/kill-buffer-or-bury-alive replaces kill-buffer.
 ;;
 ;; Additional helper commands and key bindings:

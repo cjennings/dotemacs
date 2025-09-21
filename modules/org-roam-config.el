@@ -86,6 +86,7 @@
 
 (defun cj/org-roam-node-insert-immediate (arg &rest args)
   "Create new node and insert its link immediately.
+
 This is mainly a wrapper around org-roam-node-insert to achieve immediate finish
 to the capture. The prefix ARG and ARGS are the filter function and the rest of
 the arguments that org-roam-node-insert expects."
@@ -112,6 +113,7 @@ the arguments that org-roam-node-insert expects."
 
 (defun cj/org-roam-find-node (tag template-key template-file &optional subdir)
   "List all nodes of type \='TAG\=' in completing read for selection or creation.
+
 Interactively find or create an Org-roam node with a given \='TAG\='. Newly
 created nodes are added to the agenda and follow a template defined by
 \='TEMPLATE-KEY\=' and \='TEMPLATE-FILE\='."

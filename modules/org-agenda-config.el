@@ -68,6 +68,7 @@
 
 (defun cj/add-files-to-org-agenda-files-list (directory)
   "Search for files named \\='todo.org\\=' add them to org-project-files.
+
 DIRECTORY is a string of the path to begin the search."
   (interactive "D")
   (setq org-agenda-files
@@ -82,6 +83,7 @@ DIRECTORY is a string of the path to begin the search."
 
 (defun cj/build-org-agenda-list ()
   "Rebuilds the org agenda list.
+
 Begins with the inbox-file and schedule-file, then searches for org-roam
 Projects and adds all todo.org files from code and project directories.
 Also includes contacts-file for birthdays/anniversaries."
@@ -101,6 +103,7 @@ Also includes contacts-file for birthdays/anniversaries."
 
 (defun cj/todo-list-all-agenda-files ()
   "Displays an \\='org-agenda\\=' todo list.
+
 The contents of the agenda will be built from org-project-files and org-roam
 files that have project in their filetag."
   (interactive)
@@ -113,6 +116,7 @@ files that have project in their filetag."
 
 (defun cj/todo-list-from-this-buffer ()
   "Displays an \\='org-agenda\\=' todo list built from the current buffer.
+
 If the current buffer isn't an org buffer, inform the user."
   (interactive)
   (if (eq major-mode 'org-mode)
@@ -144,6 +148,7 @@ If the current buffer isn't an org buffer, inform the user."
 
 (defun cj/org-skip-subtree-if-priority (priority)
   "Skip an agenda subtree if it has a priority of PRIORITY.
+
 PRIORITY may be one of the characters ?A, ?B, or ?C."
   (let ((subtree-end (save-excursion (org-end-of-subtree t)))
         (pri-value (* 1000 (- org-lowest-priority priority)))
@@ -154,6 +159,7 @@ PRIORITY may be one of the characters ?A, ?B, or ?C."
 
 (defun cj/org-skip-subtree-if-keyword (keywords)
   "Skip an agenda subtree if it has a TODO keyword in KEYWORDS.
+
 KEYWORDS must be a list of strings."
   (let ((subtree-end (save-excursion (org-end-of-subtree t))))
     (if (member (org-get-todo-state) keywords)
@@ -180,6 +186,7 @@ KEYWORDS must be a list of strings."
 
 (defun cj/main-agenda-display ()
   "Display the main daily org-agenda view.
+
 This uses all org-agenda targets and presents three sections:
 - All unfinished priority A tasks
 - Today's schedule, including habits with consistency graphs
@@ -199,6 +206,7 @@ The agenda is rebuilt from all sources before display, including:
 
 (defun cj/add-timestamp-to-org-entry (s)
   "Add an event with time S to appear underneath the line-at-point.
+
 This allows a line to show in an agenda without being scheduled or a deadline."
   (interactive "sTime: ")
   (defvar cj/timeformat "%Y-%m-%d %a")

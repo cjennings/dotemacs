@@ -28,12 +28,14 @@
 
 (defcustom cj/recording-mic-boost 2.0
   "Volume multiplier for microphone in recordings.
+
 1.0 = normal volume, 2.0 = double volume (+6dB), 0.5 = half volume (-6dB)."
   :type 'number
   :group 'cj-recording)
 
 (defcustom cj/recording-system-volume 0.5
   "Volume multiplier for system audio in recordings.
+
 1.0 = normal volume, 2.0 = double volume (+6dB), 0.5 = half volume (-6dB)."
   :type 'number
   :group 'cj-recording)
@@ -46,6 +48,7 @@
 
 (defun cj/video-recording-start (arg)
   "Starts the ffmpeg video recording.
+
 If called with a prefix arg C-u, choose the location on where to save the
 recording, otherwise use the default location in =video-recordings-dir'."
   (interactive "P")
@@ -59,6 +62,7 @@ recording, otherwise use the default location in =video-recordings-dir'."
 
 (defun cj/audio-recording-start (arg)
   "Starts the ffmpeg audio recording.
+
 If called with a prefix arg C-u, choose the location on where to save the
 recording, otherwise use the default location in =video-recordings-dir'."
   (interactive "P")

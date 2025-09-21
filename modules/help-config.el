@@ -46,6 +46,7 @@
 
   (defun cj/open-with-info-mode ()
 	"Open the current buffer's file in Info mode if it's a valid info file.
+
 Preserves any unsaved changes and checks if the file exists."
 	(interactive)
 	(let ((file-name (buffer-file-name)))

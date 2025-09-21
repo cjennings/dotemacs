@@ -55,6 +55,7 @@
 
 (defun cj/local-arch-wiki-search ()
   "Prompt for an ArchWiki topic and open its local HTML copy in EWW.
+
 Looks for “*.html” files under \"/usr/share/doc/arch-wiki/html/en\",
 lets you complete on their basenames, and displays the chosen file
 with `eww-browse-url'. If no file is found, reminds you to install

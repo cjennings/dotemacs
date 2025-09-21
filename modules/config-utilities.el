@@ -22,8 +22,9 @@
 ;; all emacs-lisp files natively if supported, or byte-compiles them if not.
 
 (defun cj/recompile-emacs-home()
-  "Delete all compiled files in Emacs home recursively before recompilation.
-Will recompile natively if supported, or byte-compiled if not."
+  "Delete all compiled files in the Emacs home before recompiling.
+
+Recompile natively when supported, otherwise fall back to byte compilation."
   (interactive)
   (let* ((native-comp-supported (boundp 'native-compile-async))
 		 (elt-dir

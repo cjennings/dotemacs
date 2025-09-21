@@ -113,6 +113,7 @@
 
   (defun cj/apply-font-settings-to-frame (&optional frame)
 	"Apply font settings to FRAME if not already configured.
+
 If FRAME is nil, uses the selected frame."
 	(let ((target-frame (or frame (selected-frame))))
 	  (unless (member target-frame cj/fontaine-configured-frames)

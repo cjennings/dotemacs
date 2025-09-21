@@ -124,7 +124,8 @@
 
 (defun cj/nov-center-images ()
   "Center images in the current Nov buffer without modifying text.
-Uses line-prefix/wrap-prefix with a space display property aligned to a
+
+Use line-prefix and wrap-prefix with a space display property aligned to a
 computed column based on the window text area width."
   (let ((inhibit-read-only t))
 	;; Clear any prior centering prefixes first (fresh render usually makes this
@@ -183,8 +184,9 @@ computed column based on the window text area width."
 
 (defun cj/nov-jump-to-calibredb ()
   "Open CalibreDB focused on the current EPUB's book entry.
-Tries to use the Calibre book id from the parent folder name (e.g., \"Title (123)\").
-Falls back to title/author search."
+
+Try to use the Calibre book id from the parent folder name (for example,
+\"Title (123)\"). Fall back to a title or author search when no id exists."
   (interactive)
   (require 'calibredb)
   (let* ((file (cj/nov--file-path))

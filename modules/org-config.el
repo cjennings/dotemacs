@@ -13,6 +13,7 @@
 (defvar org-archive-location
   (concat sync-dir "/archives/archive.org::datetree/")
   "Location of the archive file.
+
 The archive file is where org entries that are archived via
 org-archive-subtree-default are placed.")
 

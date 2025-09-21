@@ -19,6 +19,7 @@
 
 (defun cj/open-file-with-command (command)
   "Open the current file with COMMAND.
+
 Works in both Dired buffers and regular file buffers. The command runs
 fully detached from Emacs."
   (interactive "MOpen with command: ")

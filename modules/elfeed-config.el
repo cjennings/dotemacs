@@ -46,20 +46,21 @@
 					  :name "IINA"
 					  :needs-stream-url t
 					  :yt-dlp-formats ("best[height<=1080]" "22" "best"))))
-  "Alist of media players and their configurations.
-Each entry is (SYMBOL . PLIST) where PLIST contains:
-  :command - the executable name
-  :args - additional arguments (string or nil)
-  :name - human-readable name
-  :needs-stream-url - if t, extract stream URL with yt-dlp before playing
-  :yt-dlp-formats - list of format strings to try in order (nil for direct play)"
+  "Define media players and their configurations for Elfeed integration.
+
+Each entry is (SYMBOL . PLIST). The PLIST accepts the keys :command for the
+executable name, :args for optional arguments, :name for a human-readable
+label, :needs-stream-url for a boolean flag indicating whether to extract a
+stream URL with `yt-dlp', and :yt-dlp-formats for a prioritized list of format
+strings."
   :type '(alist :key-type symbol
 				:value-type (plist :key-type keyword
 								   :value-type sexp))
   :group 'elfeed)
 
 (defcustom cj/default-media-player 'mpv
-  "Default media player to use for elfeed videos.
+  "Choose the default media player to use for Elfeed videos.
+
 Should be a key from `cj/media-players'."
   :type 'symbol
   :group 'elfeed)
@@ -175,6 +176,7 @@ Should be a key from `cj/media-players'."
 
 (defun cj/extract-stream-url (url format)
   "Extract the direct stream URL from URL using yt-dlp with FORMAT.
+
 Returns the stream URL or nil on failure."
   (unless (executable-find "yt-dlp")
 	(error "The program yt-dlp is not installed or not in PATH"))
@@ -209,6 +211,7 @@ Returns the stream URL or nil on failure."
 
 (defun cj/elfeed-process-entries (action-fn action-name &optional skip-error-handling)
   "Process selected Elfeed entries with ACTION-FN.
+
 ACTION-NAME is used for error messages. Marks entries as read and
 advances to the next line. If SKIP-ERROR-HANDLING is non-nil, errors
 are not caught (useful for actions that handle their own errors)."
@@ -234,6 +237,7 @@ are not caught (useful for actions that handle their own errors)."
 
 (defun cj/elfeed-eww-open ()
   "Opens the links of the currently selected Elfeed entries with EWW.
+
 Applies cj/eww-readable-nonce hook after EWW rendering."
   (interactive)
   (cj/elfeed-process-entries
@@ -352,6 +356,7 @@ Applies cj/eww-readable-nonce hook after EWW rendering."
 
 (defun cj/play-with-video-player ()
   "Plays the selected Elfeed entries' links with the configured media player.
+
 Note: Function name kept for backwards compatibility."
   (interactive)
   (cj/elfeed-process-entries #'cj/media-play-it
@@ -362,6 +367,7 @@ Note: Function name kept for backwards compatibility."
 
 (defun cj/youtube-to-elfeed-feed-format (url type)
   "Convert YouTube URL to elfeed-feeds format.
+
 TYPE should be either \='channel or \='playlist."
   (let ((id nil)
         (title nil)

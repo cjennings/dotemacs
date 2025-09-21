@@ -233,6 +233,7 @@
 
   (defun cj/dwim-shell-commands-extract-archive-smartly ()
 	"Unzip all marked archives (of any kind) using =atool'.
+
 If there's only one file, unzip it to current directory.
 Otherwise, unzip it to an appropriately named subdirectory "
 	(interactive)
@@ -269,6 +270,7 @@ Otherwise, unzip it to an appropriately named subdirectory "
 
   (defun cj/dwim-shell-commands-document-to-pdf ()
 	"Convert document(s) to pdf (via latex).
+
 Supports docx, odt, and other pandoc-compatible formats."
 	(interactive)
 	(dwim-shell-command-on-marked-files
@@ -689,6 +691,7 @@ Supports docx, odt, and other pandoc-compatible formats."
 
   (defun cj/dwim-shell-commands-kill-gpg-agent ()
 	"Kill (thus restart) gpg agent.
+
 Useful for when you get this error:
 gpg: public key decryption failed: No pinentry
 gpg: decryption failed: No pinentry"

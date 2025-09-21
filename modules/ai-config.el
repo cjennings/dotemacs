@@ -49,7 +49,9 @@
 
 
 (defun cj/auth-source-secret (host user)
-  "Fetch secret from auth-source for HOST and USER."
+  "Fetch a secret from auth-source for HOST and USER.
+
+HOST and USER must be strings that identify the credential to return."
   (let* ((found (auth-source-search :host host :user user :require '(:secret) :max 1))
 		 (secret (plist-get (car found) :secret)))
 	(cond
@@ -58,20 +60,21 @@
 	 (t (error "No usable secret found for host %s and user %s" host user)))))
 
 (defun cj/anthropic-api-key ()
-  "Get Anthropic API key, caching result after first retrieval."
+  "Return the Anthropic API key, caching the result after first retrieval."
   (or cj/anthropic-api-key-cached
 	  (setq cj/anthropic-api-key-cached
 			(cj/auth-source-secret "api.anthropic.com" "apikey"))))
 
 (defun cj/openai-api-key ()
-  "Get OpenAI API key, caching result after first retrieval."
+  "Return the OpenAI API key, caching the result after first retrieval."
   (or cj/openai-api-key-cached
 	  (setq cj/openai-api-key-cached
 			(cj/auth-source-secret "api.openai.com" "apikey"))))
 
 (defun cj/ensure-gptel-backends ()
-  "Initialize GPTel backends if not already done.
-This function should only be called AFTER gptel is loaded."
+  "Initialize GPTel backends if they are not already available.
+
+Call this only after loading `gptel' so the backend constructors exist."
   (unless gptel-claude-backend
 	(setq gptel-claude-backend
 		  (gptel-make-anthropic
@@ -113,9 +116,10 @@ This function should only be called AFTER gptel is loaded."
 
 ;; Backend/model switching commands (moved out of use-package so they are commandp)
 (defun cj/gptel-change-model ()
-  "Change the AI model and backend for gptel.
-Presents all available models from all backends, automatically switching
-backend when needed. Prompts for scope (global or buffer-local)."
+  "Change the GPTel backend and select a model from that backend.
+
+Present all available models from every backend, switching backends when
+necessary. Prompt for whether to apply the selection globally or buffer-locally."
   (interactive)
   (let* ((backends (cj/gptel--available-backends))
 		 (all-models
@@ -154,7 +158,7 @@ backend when needed. Prompts for scope (global or buffer-local)."
 		(message "Changed to %s model: %s (buffer-local)" backend-name model)))))
 
 (defun cj/gptel-switch-backend ()
-  "Switch GPTel backend and select a model from that backend."
+  "Switch the GPTel backend and then choose one of its models."
   (interactive)
   (let* ((backends (cj/gptel--available-backends))
 		 (choice (completing-read "Select GPTel backend: " (mapcar #'car backends) nil t))
@@ -172,8 +176,10 @@ backend when needed. Prompts for scope (global or buffer-local)."
 
 ;; Clear assistant buffer (moved out so it's always available)
 (defun cj/gptel-clear-buffer ()
-  "Erase the contents of the current GPTel buffer leaving initial org heading.
-Only works in buffers with gptel-mode active."
+  "Erase the current GPTel buffer while preserving the initial Org heading.
+
+Operate only when `gptel-mode' is active in an Org buffer so the heading
+can be reinserted."
   (interactive)
   (let ((is-gptel (bound-and-true-p gptel-mode))
 		(is-org (derived-mode-p 'org-mode)))
@@ -188,8 +194,9 @@ Only works in buffers with gptel-mode active."
 ;; Add a file to GPTel context (made resilient to Projectile not being loaded)
 (defun cj/gptel-add-file ()
   "Add a file to the GPTel context.
-If inside a Projectile project, prompt from the project's file list;
-otherwise use `read-file-name'."
+
+If inside a Projectile project, prompt from that project's file list.
+Otherwise, prompt with `read-file-name'."
   (interactive)
   (let* ((in-proj (and (featurep 'projectile)
 					   (fboundp 'projectile-project-p)
@@ -341,21 +348,22 @@ otherwise use `read-file-name'."
 
 (defvar ai-keymap
   (let ((map (make-sparse-keymap)))
-	(define-key map (kbd "B") #'cj/gptel-switch-backend)      ;; Change the backend (OpenAI, Anthropic, etc.)
-	(define-key map (kbd "M") #'gptel-menu)                   ;; gptel's transient menu
-	(define-key map (kbd "d") #'cj/gptel-delete-conversation) ;; delete conversation
-	(define-key map (kbd "f") #'cj/gptel-add-file)            ;; add a file to context
-	(define-key map (kbd "l") #'cj/gptel-load-conversation)   ;; load and continue conversation
-	(define-key map (kbd "m") #'cj/gptel-change-model)        ;; change the LLM model
-	(define-key map (kbd "p") #'gptel-system-prompt)          ;; change prompt
-	(define-key map (kbd "&") #'gptel-rewrite)                ;; rewrite a region of code/text
-	(define-key map (kbd "r") #'cj/gptel-context-clear)       ;; remove all context
-	(define-key map (kbd "s") #'cj/gptel-save-conversation)   ;; save conversation
-	(define-key map (kbd "t") #'cj/toggle-gptel)              ;; toggles the ai-assistant window
-	(define-key map (kbd "x") #'cj/gptel-clear-buffer)        ;; clears the assistant buffer
-	map)
-  "Keymap for AI-related commands (prefix \\<ai-keymap>).
-Binds global M-a (overriding default \='backward-sentence\=').")
+        (define-key map (kbd "B") #'cj/gptel-switch-backend)      ;; Change the backend (OpenAI, Anthropic, etc.)
+        (define-key map (kbd "M") #'gptel-menu)                   ;; gptel's transient menu
+        (define-key map (kbd "d") #'cj/gptel-delete-conversation) ;; delete conversation
+        (define-key map (kbd "f") #'cj/gptel-add-file)            ;; add a file to context
+        (define-key map (kbd "l") #'cj/gptel-load-conversation)   ;; load and continue conversation
+        (define-key map (kbd "m") #'cj/gptel-change-model)        ;; change the LLM model
+        (define-key map (kbd "p") #'gptel-system-prompt)          ;; change prompt
+        (define-key map (kbd "&") #'gptel-rewrite)                ;; rewrite a region of code/text
+        (define-key map (kbd "r") #'cj/gptel-context-clear)       ;; remove all context
+        (define-key map (kbd "s") #'cj/gptel-save-conversation)   ;; save conversation
+        (define-key map (kbd "t") #'cj/toggle-gptel)              ;; toggles the ai-assistant window
+        (define-key map (kbd "x") #'cj/gptel-clear-buffer)        ;; clears the assistant buffer
+        map)
+  "Define the keymap for AI-related commands.
+
+Use the prefix \\<ai-keymap>, bound globally to M-a overriding the default `backward-sentence'.")
 (global-set-key (kbd "M-a") ai-keymap)
 
 (provide 'ai-config)

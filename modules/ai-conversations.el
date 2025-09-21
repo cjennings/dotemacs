@@ -33,8 +33,9 @@
   :group 'cj/ai-conversations)
 
 (defcustom cj/gptel-conversations-window-width 0.4
-  "Width for the side window when loading a conversation.
-If displaying on top/bottom, this value is treated as a height fraction."
+  "Set the side window width when loading a conversation.
+
+If displaying on the top or bottom, treat this value as a height fraction."
   :type 'number
   :group 'cj/ai-conversations)
 
@@ -45,13 +46,13 @@ If displaying on top/bottom, this value is treated as a height fraction."
   :group 'cj/ai-conversations)
 
 (defvar-local cj/gptel-autosave-enabled nil
-  "When non-nil in a GPTel conversation buffer, auto-save after each AI response.")
+  "Non-nil means auto-save after each AI response in GPTel buffers.")
 
 (defvar-local cj/gptel-autosave-filepath nil
   "File path used for auto-saving the conversation buffer.")
 
 (defcustom cj/gptel-conversations-autosave-on-send t
-  "When non-nil, auto-save the conversation immediately after `gptel-send'."
+  "Non-nil means auto-save the conversation immediately after `gptel-send'."
   :type 'boolean
   :group 'cj/ai-conversations)
 
@@ -78,7 +79,7 @@ If displaying on top/bottom, this value is treated as a height fraction."
 	(or (and (> (length trim) 0) trim) "conversation")))
 
 (defun cj/gptel--existing-topics ()
-  "Return a list of existing topic slugs (without timestamps) in conversations dir."
+  "Return topic slugs, without timestamps, present in the conversations directory."
   (when (file-exists-p cj/gptel-conversations-directory)
 	(let* ((files (directory-files cj/gptel-conversations-directory nil "\\.gptel$")))
 	  (delete-dups
@@ -88,7 +89,7 @@ If displaying on top/bottom, this value is treated as a height fraction."
 		files)))))
 
 (defun cj/gptel--latest-file-for-topic (topic-slug)
-  "Return newest saved conversation filename (not path) for TOPIC-SLUG, or nil."
+  "Return the newest saved conversation filename for TOPIC-SLUG, or nil."
   (let* ((rx (format "^%s_[0-9]\\{8\\}-[0-9]\\{6\\}\\.gptel$"
 					 (regexp-quote topic-slug)))
 		 (files (and (file-exists-p cj/gptel-conversations-directory)
@@ -96,7 +97,9 @@ If displaying on top/bottom, this value is treated as a height fraction."
 	(car (sort files #'string>))))
 
 (defun cj/gptel--timestamp-from-filename (filename)
-  "Parse and return Emacs time from FILENAME '..._YYYYMMDD-HHMMSS.gptel', or nil."
+  "Return an Emacs timestamp extracted from FILENAME, or nil.
+
+Expect FILENAME to match "..._YYYYMMDD-HHMMSS.gptel"."
   (when (string-match "_\\([0-9]\\{8\\}\\)-\\([0-9]\\{6\\}\\)\\.gptel\\'" filename)
 	(let* ((date (match-string 1 filename))
 		   (time (match-string 2 filename))
@@ -109,7 +112,7 @@ If displaying on top/bottom, this value is treated as a height fraction."
 	  (encode-time s m h D M Y))))
 
 (defun cj/gptel--conversation-candidates ()
-  "Return an alist of (DISPLAY . FILENAME) sorted per `cj/gptel-conversations-sort-order'."
+  "Return conversation candidates sorted per `cj/gptel-conversations-sort-order'."
   (unless (file-exists-p cj/gptel-conversations-directory)
 	(user-error "Conversations directory doesn't exist: %s" cj/gptel-conversations-directory))
   (let* ((files (directory-files cj/gptel-conversations-directory nil "\\.gptel$"))
@@ -137,7 +140,7 @@ If displaying on top/bottom, this value is treated as a height fraction."
     cands))
 
 (defun cj/gptel--save-buffer-to-file (buffer filepath)
-  "Save BUFFER content to FILEPATH with org visibility properties."
+  "Save BUFFER content to FILEPATH with Org visibility properties."
   (with-current-buffer buffer
 	(let ((content (buffer-string)))
 	  (with-temp-buffer
@@ -159,7 +162,8 @@ If displaying on top/bottom, this value is treated as a height fraction."
 ;;;###autoload
 (defun cj/gptel-save-conversation ()
   "Save the current AI-Assistant buffer to a .gptel file.
-Also enables autosave for subsequent AI responses to this same file."
+
+Enable autosave for subsequent AI responses to the same file."
   (interactive)
   (let ((buf (get-buffer "*AI-Assistant*")))
 	(unless buf
@@ -216,8 +220,9 @@ Also enables autosave for subsequent AI responses to this same file."
 
 ;;;###autoload
 (defun cj/gptel-load-conversation ()
-  "Load a saved GPTel conversation into the AI-Assistant buffer (chronologically sorted).
-Prompts to save the current one if present, and enables autosave."
+  "Load a saved GPTel conversation into the AI-Assistant buffer.
+
+Prompt to save the current conversation first when appropriate, then enable autosave."
   (interactive)
   (let ((ai-buffer (get-buffer-create "*AI-Assistant*")))
 	(when (and (with-current-buffer ai-buffer (> (buffer-size) 0))

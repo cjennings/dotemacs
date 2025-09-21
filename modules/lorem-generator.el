@@ -203,6 +203,7 @@
 ;;;###autoload
 (defun cj/lipsum-paragraphs (count &optional min max)
   "Insert COUNT paragraphs of lipsum.
+
 Each paragraph has a random length between MIN and MAX words.
 Defaults: MIN=30, MAX=80."
   (interactive "nNumber of paragraphs: ")
@@ -223,6 +224,7 @@ Defaults: MIN=30, MAX=80."
   (expand-file-name "latin.txt"
 					(file-name-directory (or load-file-name buffer-file-name)))
   "Default training file for cj-lipsum.
+
 This should be a plain UTF-8 text file with hundreds of Latin words
 or sentences.  By default it points to the bundled `latin.txt`."
   :type 'file

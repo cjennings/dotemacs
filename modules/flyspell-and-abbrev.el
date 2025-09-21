@@ -103,6 +103,7 @@
 
 ;; (defun flyspell-toggle ()
 ;;   "Turn Flyspell on if it is off, or off if it is on.
+
 ;; When turning on,it uses `flyspell-on-for-buffer-type' so code-vs-text is
 ;; handled appropriately."
 ;;   (interactive)
@@ -121,6 +122,7 @@
 
 ;; (defun flyspell-on-for-buffer-type ()
 ;;   "Enable Flyspell for the major mode and check the current buffer.
+
 ;; If flyspell is already enabled, do nothing.  If the mode is derived from
 ;; `prog-mode', enable `flyspell-prog-mode' so only strings and comments get
 ;; checked.  If the buffer is text based `flyspell-mode' is enabled to check
@@ -167,6 +169,7 @@
 
 (defun cj/flyspell-goto-previous-misspelling (position)
   "Go to the first misspelled word before the given POSITION.
+
 Return the misspelled word if found or nil if not. Leave the point at the
 beginning of the misspelled word. Setting the hook on pre-command ensures that
 any started Flyspell corrections complete before running other commands in the
@@ -184,6 +187,7 @@ buffer."
 
 (defun cj/flyspell-then-abbrev (p)
   "Call \='flyspell-correct-at-point\=' and create abbrev for future corrections.
+
 The abbrev is created in the local dictionary unless the prefix P
 argument is provided, when it's created in the global dictionary."
   (interactive "P")

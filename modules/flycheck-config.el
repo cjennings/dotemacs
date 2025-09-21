@@ -18,6 +18,7 @@
 ;; Note: I do use proselint quite a bit in emails and org-mode files. However, some
 ;; org-files can be large and running proselint on them will slow Emacs to a crawl.
 ;; Therefore, hitting "C-; ?" also runs cj/flycheck-prose-on-demand if in an org buffer.
+
 ;;
 ;; The cj/flycheck-prose-on-demand function:
 ;; - Turns on flycheck for the local buffer
@@ -75,6 +76,7 @@
 
   (defun cj/flycheck-list-errors ()
     "Display flycheck's error list and switch to its buffer.
+
 Runs flycheck-prose-on-demand if in an org-buffer."
     (interactive)
     (when (derived-mode-p 'org-mode)

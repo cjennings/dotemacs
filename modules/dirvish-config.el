@@ -73,6 +73,7 @@
 
 (defun cj/dirvish-open-file-manager-here ()
   "Open system's default file manager in the current dired/dirvish directory.
+
 Always opens the file manager in the directory currently being displayed,
 regardless of what file or subdirectory the point is on."
   (interactive)
@@ -287,6 +288,7 @@ regardless of what file or subdirectory the point is on."
 
 (defun cj/dired-create-playlist-from-marked ()
   "Create an .m3u playlist file from marked files in Dired (or Dirvish).
+
 Filters for audio files, prompts for the playlist name, and saves the resulting
 .m3u in the directory specified by =music-dir=. Interactive use only."
   (interactive)
