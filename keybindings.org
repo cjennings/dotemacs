@@ -1,0 +1,256 @@
+#+TITLE: Custom Keybindings Overview
+
+| Binding | Command | File | Description |
+|-
+| <f9> | cj/toggle-gptel | modules/ai-config.el | Toggle the visibility of the AI-Assistant buffer, and place point at its end. |
+| C-<return> | gptel-send | modules/ai-config.el | Run gptel send. |
+| M-a | ai-keymap | modules/ai-config.el | Prefix map for AI assistant commands. |
+| M-t * | tmr | modules/chrono-tools.el | Run tmr. |
+| , | calendar-backward-day | modules/chrono-tools.el | Run calendar backward day. |
+| . | calendar-forward-day | modules/chrono-tools.el | Run calendar forward day. |
+| < | calendar-backward-month | modules/chrono-tools.el | Run calendar backward month. |
+| > | calendar-forward-month | modules/chrono-tools.el | Run calendar forward month. |
+| C-x c | world-clock | modules/chrono-tools.el | Run world clock. |
+| M-# | calendar | modules/chrono-tools.el | Run calendar. |
+| M-, | calendar-backward-year | modules/chrono-tools.el | Run calendar backward year. |
+| M-. | calendar-forward-year | modules/chrono-tools.el | Run calendar forward year. |
+| M-t | unbound | modules/chrono-tools.el | Unbind this key. |
+| M-t | tmr-prefix-map | modules/chrono-tools.el | Prefix for quick timers. |
+| M-t R | cj/tmr-reset-sound-to-default | modules/chrono-tools.el | Reset the tmr sound file to the default notification sound. |
+| M-t S | cj/tmr-select-sound-file | modules/chrono-tools.el | Select a sound file from `sounds-dir' to use for tmr timers. |
+| M-t t | tmr-with-details | modules/chrono-tools.el | Run tmr with details. |
+| C-; | cj/custom-keymap | modules/custom-functions.el | Prefix map for custom utilities. |
+| C-; | unbound | modules/custom-functions.el | Unbind this key. |
+| C-; b | cj/buffer-and-file-map | modules/custom-functions.el | Prefix for buffer and file operations. |
+| C-; b b | cj/clear-to-bottom-of-buffer | modules/custom-functions.el | Delete all text from point to the end of the current buffer. |
+| C-; b c | cj/copy-whole-buffer | modules/custom-functions.el | Copy the entire contents of the current buffer to the kill ring. |
+| C-; b d | cj/delete-buffer-and-file | modules/custom-functions.el | Kill the current buffer and delete the file it visits. |
+| C-; b l | cj/copy-link-to-buffer-file | modules/custom-functions.el | Copy the full file:// path of the current buffer's source file to the kill ring. |
+| C-; b m | cj/move-buffer-and-file | modules/custom-functions.el | Move both current buffer and the file it visits to DIR. |
+| C-; b p | cj/print-buffer-ps | modules/custom-functions.el | Print the current buffer as PostScript (monochrome) to the system default printer. |
+| C-; b r | cj/rename-buffer-and-file | modules/custom-functions.el | Rename both current buffer and the file it visits to NEW-NAME. |
+| C-; b t | cj/clear-to-top-of-buffer | modules/custom-functions.el | Delete all text from point to the beginning of the current buffer. |
+| C-; b x | erase-buffer | modules/custom-functions.el | Run erase buffer. |
+| C-; c | cj/case-map | modules/custom-functions.el | Prefix for changing text case. |
+| C-; c l | cj/downcase-dwim | modules/custom-functions.el | Downcase the active region, or downcase the symbol at point if no region. |
+| C-; c t | cj/title-case-region | modules/custom-functions.el | Capitalize the region in title case format. |
+| C-; c u | cj/upcase-dwim | modules/custom-functions.el | Upcase the active region, or upcase the symbol at point if no region. |
+| C-; d | cj/datetime-map | modules/custom-functions.el | Prefix for inserting dates and times. |
+| C-; d D | cj/insert-readable-date | modules/custom-functions.el | Insert the current date into the current buffer. |
+| C-; d T | cj/insert-readable-time | modules/custom-functions.el | Insert the current time into the current buffer. |
+| C-; d d | cj/insert-sortable-date | modules/custom-functions.el | Insert the current date into the current buffer. |
+| C-; d r | cj/insert-readable-date-time | modules/custom-functions.el | Insert the current date and time into the current buffer. |
+| C-; d s | cj/insert-sortable-date-time | modules/custom-functions.el | Insert the current date and time into the current buffer. |
+| C-; d t | cj/insert-sortable-time | modules/custom-functions.el | Insert the current time into the current buffer. |
+| C-; l | cj/line-and-paragraph-map | modules/custom-functions.el | Prefix for line and paragraph editing tools. |
+| C-; l J | cj/join-paragraph | modules/custom-functions.el | Join all lines in the current paragraph using `cj/join-line-or-region'. |
+| C-; l R | cj/remove-duplicate-lines-region-or-buffer | modules/custom-functions.el | Remove duplicate lines in the region or buffer, keeping the first occurrence. |
+| C-; l d | cj/duplicate-line-or-region | modules/custom-functions.el | Duplicate the current line or active region below. |
+| C-; l j | cj/join-line-or-region | modules/custom-functions.el | Join lines in the active region or join the current line with the previous one. |
+| C-; l r | cj/remove-lines-containing | modules/custom-functions.el | Remove all lines containing TEXT. |
+| C-; l u | cj/underscore-line | modules/custom-functions.el | Underline the current line by inserting a row of characters below it. |
+| C-; m | cj/comment-map | modules/custom-functions.el | Prefix for comment formatting commands. |
+| C-; m - | cj/comment-hyphen | modules/custom-functions.el | Insert a centered comment with '-' (hyphens) on each side. |
+| C-; m D | cj/delete-buffer-comments | modules/custom-functions.el | Delete all comments within the current buffer. |
+| C-; m b | cj/comment-box | modules/custom-functions.el | Insert a comment box around text that the user inputs. |
+| C-; m c | cj/comment-centered | modules/custom-functions.el | Insert comment text centered around the COMMENT-CHAR character. |
+| C-; m r | cj/comment-reformat | modules/custom-functions.el | Reformat commented text into a single paragraph. |
+| C-; o | cj/ordering-map | modules/custom-functions.el | Prefix for sorting and ordering commands. |
+| C-; o A | cj/alphabetize-region | modules/custom-functions.el | Alphabetize words in the active region and replace the original text. |
+| C-; o a | cj/arrayify | modules/custom-functions.el | Convert lines between START and END into quoted, comma-separated strings. |
+| C-; o l | cj/comma-separated-text-to-lines | modules/custom-functions.el | Break up comma-separated text in the active region so each item is on its own line. |
+| C-; o u | cj/unarrayify | modules/custom-functions.el | Convert quoted, comma-separated strings between START and END into separate lines. |
+| C-; s | cj/surround-map | modules/custom-functions.el | Prefix for surround and line editing helpers. |
+| C-; s a | cj/append-to-lines-in-region-or-buffer | modules/custom-functions.el | Append STR to the end of each line in the region or entire buffer. |
+| C-; s p | cj/prepend-to-lines-in-region-or-buffer | modules/custom-functions.el | Prepend STR to the beginning of each line in the region or entire buffer. |
+| C-; s s | cj/surround-word-or-region | modules/custom-functions.el | Surround the word at point or active region with a string read from the minibuffer. |
+| C-; w | cj/whitespace-map | modules/custom-functions.el | Prefix for whitespace cleanup utilities. |
+| C-; w c | cj/collapse-whitespace-line-or-region | modules/custom-functions.el | Collapse whitespace to one space in the current line or active region. |
+| C-; w h | cj/hyphenate-whitespace-in-region | modules/custom-functions.el | Replace runs of whitespace between START and END with hyphens. |
+| C-; w l | cj/delete-blank-lines-region-or-buffer | modules/custom-functions.el | Delete blank lines between START and END. |
+| C-; w r | cj/remove-leading-trailing-whitespace | modules/custom-functions.el | Remove leading and trailing whitespace in a region, line, or buffer. |
+| [remap capitalize-region] | cj/title-case-region | modules/custom-functions.el | Capitalize the region in title case format. |
+| <f11> | dired-sidebar-toggle-sidebar | modules/dirvish-config.el | Run dired sidebar toggle sidebar. |
+| M-R | cj/elfeed-open | modules/elfeed-config.el | Open Elfeed, update all feeds, then move to the first entry. |
+| C-c r p | eradio-play | modules/eradio-config.el | Run eradio play. |
+| C-c e | cj/erc-command-map | modules/erc-config.el | Erc command map. |
+| & | cj/eww-open-in-external | modules/eww-config.el | Open current URL in external browser. |
+| / | cj/eww-switch-search-engine | modules/eww-config.el | Switch between different search engines. |
+| < | eww-back-url | modules/eww-config.el | Run eww back url. |
+| > | eww-forward-url | modules/eww-config.el | Run eww forward url. |
+| B | eww-list-bookmarks | modules/eww-config.el | Run eww list bookmarks. |
+| M-E | eww | modules/eww-config.el | Run eww. |
+| b | cj/eww-bookmark-quick-add | modules/eww-config.el | Quickly bookmark current page with minimal prompting. |
+| i | eww-toggle-images | modules/eww-config.el | Run eww toggle images. |
+| o | eww-open-in-new-buffer | modules/eww-config.el | Run eww open in new buffer. |
+| r | eww-readable | modules/eww-config.el | Run eww readable. |
+| u | cj/eww-copy-url | modules/eww-config.el | Copy the current EWW URL to clipboard. |
+| C-c x o | cj/open-this-file-with | modules/external-open.el | Open this buffer's file with COMMAND, detached from Emacs. |
+| C-; ? | cj/flycheck-list-errors | modules/flycheck-config.el | Display flycheck's error list and switch to its buffer. |
+| C-' | cj/flyspell-then-abbrev | modules/flyspell-and-abbrev.el | Call \='flyspell-correct-at-point\=' and create abbrev for future corrections. |
+| C-+ | text-scale-increase | modules/font-config.el | Run text scale increase. |
+| C-- | text-scale-decrease | modules/font-config.el | Run text scale decrease. |
+| C-= | text-scale-increase | modules/font-config.el | Run text scale increase. |
+| C-_ | text-scale-decrease | modules/font-config.el | Run text scale decrease. |
+| C-c E i | emojify-insert-emoji | modules/font-config.el | Run emojify insert emoji. |
+| C-z F | cj/display-available-fonts | modules/font-config.el | Display a list of all font faces with sample text in another read-only buffer. |
+| M-F | fontaine-set-preset | modules/font-config.el | Run fontaine set preset. |
+| C-h P | list-packages | modules/help-config.el | Open the package manager. |
+| C-h i | cj/browse-info-files | modules/help-config.el | Browse and open. |
+| C-h i | unbound | modules/help-config.el | Unbind this key. |
+| C-h A | cj/local-arch-wiki-search | modules/help-utils.el | Prompt for an ArchWiki topic and open its local HTML copy in EWW. |
+| C-h D b | devdocs-peruse | modules/help-utils.el | Browse DevDocs documentation. |
+| C-h D d | devdocs-delete | modules/help-utils.el | Remove a DevDocs documentation set. |
+| C-h D i | devdocs-install | modules/help-utils.el | Install a DevDocs documentation set. |
+| C-h D l | devdocs-lookup | modules/help-utils.el | Lookup a symbol in DevDocs. |
+| C-h D s | devdocs-search | modules/help-utils.el | Search DevDocs documentation. |
+| C-h D u | devdocs-update-all | modules/help-utils.el | Update all DevDocs documentation sets. |
+| C-h T | tldr | modules/help-utils.el | Run tldr. |
+| C-h W | wiki-summary | modules/help-utils.el | Run wiki summary. |
+| <escape> | keyboard-escape-quit | modules/keybindings.el | Quit the current command or minibuffer. |
+| C-c b | cj/eval-buffer-with-confirmation-or-error-message | modules/keybindings.el | Evaluate the buffer and display a message. |
+| C-c f | link-hint-open-link-at-point | modules/keybindings.el | Open the link at point via link-hint. |
+| C-c j | jump-to-keymap | modules/keybindings.el | Prefix for quick file jumping. |
+| C-c j I | (lambda | modules/keybindings.el | Custom lambda. |
+| C-c j c | (lambda | modules/keybindings.el | Custom lambda. |
+| C-c j i | (lambda | modules/keybindings.el | Custom lambda. |
+| C-c j m | (lambda | modules/keybindings.el | Custom lambda. |
+| C-c j n | (lambda | modules/keybindings.el | Custom lambda. |
+| C-c j r | (lambda | modules/keybindings.el | Custom lambda. |
+| C-c j s | (lambda | modules/keybindings.el | Custom lambda. |
+| C-c j w | (lambda | modules/keybindings.el | Custom lambda. |
+| C-c l | org-store-link | modules/keybindings.el | Org store link. |
+| C-h C-k | free-keys | modules/keybindings.el | Run free keys. |
+| C-x C-f | find-file | modules/keybindings.el | Open a file by name. |
+| C-x C-f | unbound | modules/keybindings.el | Unbind this key. |
+| C-x \\ | sort-lines | modules/keybindings.el | Sort lines in the region. |
+| C-x \\ | unbound | modules/keybindings.el | Unbind this key. |
+| C-x u | unbound | modules/keybindings.el | Unbind this key. |
+| C-x u | (lambda | modules/keybindings.el | Custom lambda. |
+| C-z | unbound | modules/keybindings.el | Unbind this key. |
+| M-* | calculator | modules/keybindings.el | Open the Emacs calculator. |
+| M-Y | yank-media | modules/keybindings.el | Paste previously yanked media. |
+| M-o | unbound | modules/keybindings.el | Unbind this key. |
+| S-<backspace> | delete-forward-char | modules/keybindings.el | Delete character ahead of point. |
+| <f3> | call-last-kbd-macro | modules/keyboard-macros.el | Run call last kbd macro. |
+| C-<f3> | cj/kbd-macro-start-or-end | modules/keyboard-macros.el | Toggle start/end of keyboard macro definition. |
+| M-<f3> | cj/save-maybe-edit-macro | modules/keyboard-macros.el | Save last macro as NAME in `macros-file'; edit if prefix arg. |
+| s-<f3> | cj/open-macros-file | modules/keyboard-macros.el | Open the keyboard macros file. |
+| <f8> | cj/main-agenda-display | modules/org-agenda-config.el | Display the main daily org-agenda view. |
+| C-<f8> | cj/todo-list-all-agenda-files | modules/org-agenda-config.el | Displays an \\='org-agenda\\=' todo list. |
+| M-<f8> | cj/todo-list-from-this-buffer | modules/org-agenda-config.el | Displays an \\='org-agenda\\=' todo list built from the current buffer. |
+| C-S-t | (kbd | modules/org-capture-config.el | Key translation. |
+| C-c T | org-table-map | modules/org-config.el | Prefix for Org table editing commands. |
+| C-c C | cj/org-contacts-map | modules/org-contacts-config.el | Prefix for Org contacts commands. |
+| C-d | org-drill-map | modules/org-drill-config.el | Prefix for Org Drill study commands. |
+| <f6> | org-noter | modules/org-noter-config.el | Org noter. |
+| C-M-i | completion-at-point | modules/org-roam-config.el | Run completion at point. |
+| C-c n I | cj/org-roam-node-insert-immediate | modules/org-roam-config.el | Create new node and insert its link immediately. |
+| C-c n f | org-roam-node-find | modules/org-roam-config.el | Org roam node find. |
+| C-c n i | org-roam-node-insert | modules/org-roam-config.el | Org roam node insert. |
+| C-c n l | org-roam-buffer-toggle | modules/org-roam-config.el | Org roam buffer toggle. |
+| C-c n p | cj/org-roam-find-node-project | modules/org-roam-config.el | List nodes of type \='project\=' in completing read for selection or creation. |
+| C-c n r | cj/org-roam-find-node-recipe | modules/org-roam-config.el | Org roam find node recipe. |
+| C-c n t | cj/org-roam-find-node-topic | modules/org-roam-config.el | List nodes of type \=`topic\=` in completing read for selection or creation. |
+| C-c n w | cj/org-roam-find-node-webclip | modules/org-roam-config.el | Org roam find node webclip. |
+| T | org-roam-dailies-capture-tomorrow | modules/org-roam-config.el | Org roam dailies capture tomorrow. |
+| Y | org-roam-dailies-capture-yesterday | modules/org-roam-config.el | Org roam dailies capture yesterday. |
+| C-h E | exercism | modules/prog-training.el | Run exercism. |
+| C-h L | leetcode | modules/prog-training.el | Run leetcode. |
+| M-P | cj/check-for-open-work | modules/reconcile-open-repos.el | Check all project directories for open work. |
+| C-, | embark-dwim | modules/selection-framework.el | Run embark dwim. |
+| C-. | embark-act | modules/selection-framework.el | Run embark act. |
+| C-> | embark-act-all | modules/selection-framework.el | Run embark act all. |
+| C-c h | consult-history | modules/selection-framework.el | Consult command for history. |
+| C-c s i | consult-yasnippet | modules/selection-framework.el | Consult command for yasnippet. |
+| C-h B | embark-bindings | modules/selection-framework.el | Run embark bindings. |
+| C-s | consult-line | modules/selection-framework.el | Consult command for line. |
+| C-s | unbound | modules/selection-framework.el | Unbind this key. |
+| C-x 4 b | consult-buffer-other-window | modules/selection-framework.el | Consult command for buffer other window. |
+| C-x 5 b | consult-buffer-other-frame | modules/selection-framework.el | Consult command for buffer other frame. |
+| C-x C-d | consult-dir | modules/selection-framework.el | Consult command for dir. |
+| C-x C-j | consult-dir-jump-file | modules/selection-framework.el | Consult command for dir jump file. |
+| C-x M-: | consult-complex-command | modules/selection-framework.el | Consult command for complex command. |
+| C-x b | consult-buffer | modules/selection-framework.el | Consult command for buffer. |
+| C-x p b | consult-project-buffer | modules/selection-framework.el | Consult command for project buffer. |
+| C-x r b | consult-bookmark | modules/selection-framework.el | Consult command for bookmark. |
+| M-e | consult-isearch-history | modules/selection-framework.el | Consult command for isearch history. |
+| M-g I | consult-imenu-multi | modules/selection-framework.el | Consult command for imenu multi. |
+| M-g M-g | consult-goto-line | modules/selection-framework.el | Consult command for goto line. |
+| M-g e | consult-compile-error | modules/selection-framework.el | Consult command for compile error. |
+| M-g f | consult-flymake | modules/selection-framework.el | Consult command for flymake. |
+| M-g g | consult-goto-line | modules/selection-framework.el | Consult command for goto line. |
+| M-g i | consult-imenu | modules/selection-framework.el | Consult command for imenu. |
+| M-g k | consult-global-mark | modules/selection-framework.el | Consult command for global mark. |
+| M-g m | consult-mark | modules/selection-framework.el | Consult command for mark. |
+| M-g o | consult-outline | modules/selection-framework.el | Consult command for outline. |
+| M-r | consult-history | modules/selection-framework.el | Consult command for history. |
+| M-s | consult-history | modules/selection-framework.el | Consult command for history. |
+| M-s D | consult-locate | modules/selection-framework.el | Consult command for locate. |
+| M-s G | consult-git-grep | modules/selection-framework.el | Consult command for git grep. |
+| M-s L | consult-line-multi | modules/selection-framework.el | Consult command for line multi. |
+| M-s d | consult-find | modules/selection-framework.el | Consult command for find. |
+| M-s e | consult-isearch-history | modules/selection-framework.el | Consult command for isearch history. |
+| M-s g | consult-grep | modules/selection-framework.el | Consult command for grep. |
+| M-s k | consult-keep-lines | modules/selection-framework.el | Consult command for keep lines. |
+| M-s l | consult-line | modules/selection-framework.el | Consult command for line. |
+| M-s r | consult-ripgrep | modules/selection-framework.el | Consult command for ripgrep. |
+| M-s u | consult-focus-lines | modules/selection-framework.el | Consult command for focus lines. |
+| M-K | show-kill-ring | modules/show-kill-ring.el | Show the current contents of the kill ring in a separate buffer. |
+| <mouse-2> | unbound | modules/system-defaults.el | Unbind this key. |
+| <pinch> | unbound | modules/system-defaults.el | Unbind this key. |
+| C-h g | unbound | modules/system-defaults.el | Unbind this key. |
+| C-h n | unbound | modules/system-defaults.el | Unbind this key. |
+| [remap mouse-wheel-text-scale] | cj/disabled | modules/system-defaults.el | Do absolutely nothing and do it quickly. |
+| <f10> | save-buffers-kill-terminal | modules/system-utils.el | Save buffers then exit Emacs. |
+| C-<f10> | server-shutdown | modules/system-utils.el | Save buffers, kill Emacs and shutdown the server. |
+| C-M-p | proced | modules/system-utils.el | Run proced. |
+| C-h d | quick-sdcv-search-input | modules/system-utils.el | Run quick sdcv search input. |
+| C-x M-f | sudo-edit | modules/system-utils.el | Run sudo edit. |
+| [remap list-buffers] | ibuffer | modules/system-utils.el | Open Ibuffer. |
+| C-; t | cj/test-map | modules/test-runner.el | Prefix for test runner commands. |
+| C-; t L | cj/test-load-all | modules/test-runner.el | Load all test files from the test directory. |
+| C-; t R | cj/test-run-all | modules/test-runner.el | Load and run all tests. |
+| C-; t a | cj/test-focus-add | modules/test-runner.el | Select test file(s) to add to the focused list. |
+| C-; t c | cj/test-focus-clear | modules/test-runner.el | Clear all focused test files. |
+| C-; t r | cj/test-run-smart | modules/test-runner.el | Run tests based on current mode (all or focused). |
+| C-; t t | cj/test-toggle-mode | modules/test-runner.el | Toggle between 'all and 'focused test execution modes. |
+| C-; t v | cj/test-view-focus | modules/test-runner.el | Display test files in focus. |
+| C-< | er/contract-region | modules/text-config.el | Run er/contract region. |
+| C-<down> | move-text-down | modules/text-config.el | Run move text down. |
+| C-<up> | move-text-up | modules/text-config.el | Run move text up. |
+| C-> | er/expand-region | modules/text-config.el | Run er/expand region. |
+| C-` | accent-company | modules/text-config.el | Run accent company. |
+| C-c i | change-inner | modules/text-config.el | Run change inner. |
+| C-c o | change-outer | modules/text-config.el | Run change outer. |
+| M-- | er/contract-region | modules/text-config.el | Run er/contract region. |
+| M-= | er/expand-region | modules/text-config.el | Run er/expand region. |
+| M-I | edit-indirect-region | modules/text-config.el | Edit the region BEG. |
+| M-+ | balance-windows | modules/ui-navigation.el | Balance window sizes. |
+| M-H | cj/split-and-follow-below | modules/ui-navigation.el | Split window vertically and select a buffer to display. |
+| M-S | window-swap-states | modules/ui-navigation.el | Run window swap states. |
+| M-T | toggle-window-split | modules/ui-navigation.el | Toggle the orientation of the current window split. |
+| M-V | cj/split-and-follow-right | modules/ui-navigation.el | Split window horizontally and select a buffer to display. |
+| M-Z | cj/undo-kill-buffer | modules/ui-navigation.el | Re-open the last buffer killed. |
+| M-L | cj/switch-themes | modules/ui-theme.el | Function to switch themes and save chosen theme name for persistence. |
+| M-C | cj/kill-buffer-and-window | modules/undead-buffers.el | Delete window and kill or bury its buffer. |
+| M-M | cj/kill-all-other-buffers-and-windows | modules/undead-buffers.el | Kill or bury all other buffers, then delete other windows. |
+| M-O | cj/kill-other-window | modules/undead-buffers.el | Delete the next window and kill or bury its buffer. |
+| [remap kill-buffer] | cj/kill-buffer-or-bury-alive | modules/undead-buffers.el | Kill BUFFER or bury it if it's in `cj/buffer-bury-alive-list'. |
+| C-v | cj/vc-keymap | modules/vc-config.el | Prefix for version control shortcuts. |
+| C-v | unbound | modules/vc-config.el | Unbind this key. |
+| C-x g | magit-status | modules/vc-config.el | Magit command. |
+| C-; r | cj/record-map | modules/video-audio-recording.el | Prefix for audio and video recording helpers. |
+| C-; r A | cj/audio-recording-stop | modules/video-audio-recording.el | Stop the ffmpeg audio recording process. |
+| C-; r V | cj/video-recording-stop | modules/video-audio-recording.el | Stop the ffmpeg video recording process. |
+| C-; r a | cj/audio-recording-start | modules/video-audio-recording.el | Starts the ffmpeg audio recording. |
+| C-; r l | cj/recording-adjust-volumes | modules/video-audio-recording.el | Interactively adjust recording volume levels. |
+| C-; r v | cj/video-recording-start | modules/video-audio-recording.el | Starts the ffmpeg video recording. |
+| M-W | wttrin | modules/weather-config.el | Run wttrin. |
+| C-c M | mouse-trap-mode | modules/wip.el | Run mouse trap mode. |
+| C-x B | cj/buffer-same-mode | modules/wip.el | Pop to a buffer with a mode among MODES, or the current one if not given. |
+
+* Suggestions
+- Several calendar and timer bindings such as ",", ".", "<", and ">" now operate globally; consider moving them under the `M-t` timer prefix so ordinary typing remains unaffected and related functions stay grouped together.
+- Many high-value utilities live on the `C-;` prefix already; evaluate pulling additional custom commands (e.g., `M-K` for `show-kill-ring` or `M-L` for theme switching) under related `C-;` submaps to reinforce the mnemonic structure.
+- The version-control prefix on `C-v` is powerful but overrides scrolling; experiment with placing it under a `C-; v` or similar submap so `C-v` can resume its vanilla paging role while keeping VC commands near the other custom prefixes.
