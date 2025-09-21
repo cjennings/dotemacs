@@ -1,7 +1,10 @@
 ;;; org-noter-config.el ---  -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
-;;
+;; Open a PDF or DjVu file, hit F6, and org-noter splits the frame with notes beside the document.
+;; Notes live under ~/sync/org-noter/reading-notes.org by default; adjust the path when prompted the first time.
+;; Use org-noter capture keys while annotating—`C-c n c` checks linked documents, and `C-c n u` rewrites stale paths after moving files.
+;; Sessions resume where you stopped thanks to automatic location saves.
 
 ;;; Code:
 

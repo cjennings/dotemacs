@@ -1,7 +1,9 @@
 ;;; prog-training.el --- Training -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
-;;
+;; Use C-h E to launch Exercism when you want to fetch or submit practice problems.
+;; Use C-h L for LeetCode sessions; the package drops solved files under ~/code/leetcode in Go format.
+;; Both bindings autoload their packages, so invoking the key is the whole workflow.
 
 ;;; Code:
 
