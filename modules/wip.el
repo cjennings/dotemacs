@@ -34,8 +34,11 @@
 
 ;; --------------------------------- Org Noter ---------------------------------
 
+(use-package djvu
+  :defer 0.5)
+
 (use-package org-noter
-  :after (:any org pdf-view)
+  :after (:any org pdf-view djvu)
   :commands org-noter
   :bind ("<f6>" . org-noter)
   :config

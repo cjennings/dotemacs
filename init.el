@@ -117,6 +117,7 @@
 
 (require 'wip)
 (require 'test-runner)
+(require 'org-noter-config)
 ;; (require 'lipsum-generator)
 ;; (require 'jumper)
 
