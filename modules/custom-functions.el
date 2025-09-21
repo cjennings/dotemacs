@@ -680,7 +680,7 @@ If the line is empty or contains only whitespace, abort with a message."
 (defun cj/comment-centered (&optional comment-char)
   "Insert comment text centered around the COMMENT-CHAR character.
 
-Default to the "#" character when COMMENT-CHAR is nil.
+Default to the hash character when COMMENT-CHAR is nil.
 
 Use the lesser of `fill-column' or 80 to calculate the comment length.
 Begin and end the line with the appropriate comment symbols for the current mode."
