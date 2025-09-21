@@ -212,9 +212,10 @@ otherwise use `read-file-name'."
 (use-package gptel
   :defer t
   :commands (gptel gptel-send gptel-menu)
-  :bind ("<f9>" . cj/toggle-gptel)
-  (:map gptel-mode-map
-		("C-<return>" . gptel-send))
+  :bind
+  (("<f9>" . cj/toggle-gptel)
+   :map gptel-mode-map
+   ("C-<return>" . gptel-send))
   :custom
   (gptel-default-mode 'org-mode)
   (gptel-expert-commands t)
@@ -234,8 +235,8 @@ otherwise use `read-file-name'."
 
   ;;; ---------------------------- Backend Management ---------------------------
 
-  ;; (setq gptel-backend gptel-claude-backend) ;; use Claude as default
   (setq gptel-backend gptel-chatgpt-backend) ;; use ChatGPT as default
+  ;; (setq gptel-backend gptel-claude-backend) ;; use Claude as default
 
 ;;; -------------------------- Org Header Construction --------------------------
 
@@ -282,13 +283,15 @@ otherwise use `read-file-name'."
 		 (buffer   (get-buffer buf-name))
 		 (win      (and buffer (get-buffer-window buffer))))
 	(if win
-		;; If it's already visible, just close it
 		(delete-window win)
-	  ;; Otherwise ensure the buffer exists
+	  ;; Ensure GPTel and our backends are initialized before creating the buffer
+	  (unless (featurep 'gptel)
+		(require 'gptel))
+	  (cj/ensure-gptel-backends)
 	  (unless buffer
-		(gptel buf-name gptel-model))
+		;; Pass backend, not model
+		(gptel buf-name gptel-backend))
 	  (setq buffer (get-buffer buf-name))
-	  ;; Display in a side window, select it, and move point to end
 	  (setq win
 			(display-buffer-in-side-window
 			 buffer
@@ -297,6 +300,24 @@ otherwise use `read-file-name'."
 	  (select-window win)
 	  (with-current-buffer buffer
 		(goto-char (point-max))))))
+
+;; ------------------------------- Clear Context -------------------------------
+
+(defun cj/gptel-context-clear ()
+  "Clear all GPTel context sources, with compatibility across GPTel versions."
+  (interactive)
+  (cond
+   ((fboundp 'gptel-context-remove-all)
+	(call-interactively 'gptel-context-remove-all)
+	(message "GPTel context cleared"))
+   ((fboundp 'gptel-context-clear)
+	(call-interactively 'gptel-context-clear)
+	(message "GPTel context cleared"))
+   ((boundp 'gptel-context--alist)
+	(setq gptel-context--alist nil)
+	(message "GPTel context cleared"))
+   (t
+	(message "No known GPTel context clearing function available"))))
 
 ;;; -------------------------------- GPTel-Magit --------------------------------
 
@@ -307,31 +328,31 @@ otherwise use `read-file-name'."
 ;; ------------------------------ GPTel Directives -----------------------------
 
 (use-package gptel-prompts
-  :load-path "custom/gptel-prompts.el"
-  :after (gptel)
+  :load-path (lambda () (expand-file-name "custom/" user-emacs-directory))
+  :after gptel
+  :if (file-exists-p (expand-file-name "custom/gptel-prompts.el" user-emacs-directory))
   :custom
   (gptel-prompts-directory (concat user-emacs-directory "ai-prompts"))
   :config
   (gptel-prompts-update)
-  ;; Ensure prompts are updated if prompt files change
   (gptel-prompts-add-update-watchers))
 
 ;;; --------------------------------- AI Keymap ---------------------------------
 
 (defvar ai-keymap
   (let ((map (make-sparse-keymap)))
-	(define-key map (kbd "B") #'cj/gptel-switch-backend)    ;; Change the backend (OpenAI, Anthropic, etc.)
-	(define-key map (kbd "M") #'gptel-menu)                 ;; gptel's transient menu
+	(define-key map (kbd "B") #'cj/gptel-switch-backend)      ;; Change the backend (OpenAI, Anthropic, etc.)
+	(define-key map (kbd "M") #'gptel-menu)                   ;; gptel's transient menu
 	(define-key map (kbd "d") #'cj/gptel-delete-conversation) ;; delete conversation
-	(define-key map (kbd "f") #'cj/gptel-add-file)          ;; add a file to context
-	(define-key map (kbd "l") #'cj/gptel-load-conversation) ;; load and continue conversation
-	(define-key map (kbd "m") #'cj/gptel-change-model)      ;; change the LLM model
-	(define-key map (kbd "p") #'gptel-system-prompt)        ;; change prompt
-	(define-key map (kbd "&") #'gptel-rewrite)              ;; rewrite a region of code/text
-	(define-key map (kbd "r") #'gptel-context-remove-all)   ;; remove all context
-	(define-key map (kbd "s") #'cj/gptel-save-conversation) ;; save conversation
-	(define-key map (kbd "t") #'cj/toggle-gptel)            ;; toggles the ai-assistant window
-	(define-key map (kbd "x") #'cj/gptel-clear-buffer)      ;; clears the assistant buffer
+	(define-key map (kbd "f") #'cj/gptel-add-file)            ;; add a file to context
+	(define-key map (kbd "l") #'cj/gptel-load-conversation)   ;; load and continue conversation
+	(define-key map (kbd "m") #'cj/gptel-change-model)        ;; change the LLM model
+	(define-key map (kbd "p") #'gptel-system-prompt)          ;; change prompt
+	(define-key map (kbd "&") #'gptel-rewrite)                ;; rewrite a region of code/text
+	(define-key map (kbd "r") #'cj/gptel-context-clear)       ;; remove all context
+	(define-key map (kbd "s") #'cj/gptel-save-conversation)   ;; save conversation
+	(define-key map (kbd "t") #'cj/toggle-gptel)              ;; toggles the ai-assistant window
+	(define-key map (kbd "x") #'cj/gptel-clear-buffer)        ;; clears the assistant buffer
 	map)
   "Keymap for AI-related commands (prefix \\<ai-keymap>).
 Binds global M-a (overriding default \='backward-sentence\=').")
