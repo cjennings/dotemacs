@@ -1,7 +1,9 @@
 ;;; weather-config.el ---  -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
-;;
+;; Call M-W to open wttrin with your preferred location list immediately.
+;; Adjust the city list by editing `wttrin-default-locations` or answering wttrin prompts when asked.
+;; Forecasts arrive in an Emacs buffer, so you can stay keyboard-only while checking weather.
 
 ;;; Code:
 

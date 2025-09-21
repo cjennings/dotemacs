@@ -2,7 +2,15 @@
 ;; author Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
+;; Launch Elfeed with M-R to update feeds and focus the newest entry right away.
+;; Inside the search buffer:
+;; - Use v to stream via the default player, d to download, w/b to open via EWW or browser.
+;; - Hit V to pick a different player for future launches.
+;; - Use R/U to mark all visible stories read or unread before narrowing again.
 ;;
+;; When a video needs streaming credentials the player selection drives yt-dlp format choices;
+;; use `cj/select-media-player` to swap profiles, or customize `cj/media-players` for your system.
+;; All commands assume yt-dlp and your players live on PATH.
 ;;
 ;;; Code:
 

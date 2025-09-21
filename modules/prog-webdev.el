@@ -1,7 +1,15 @@
 ;;; prog-webdev.el --- Web Development Packages and Settings -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
+;; Open a project file and Emacs selects the right helper:
+;; - *.json buffers drop into json-mode for quick structural edits.
+;; - *.js buffers jump into js2-mode for linty feedback.
+;; - Mixed HTML templates land in web-mode which chains Tide and CSS Eldoc.
 ;;
+;; Workflow:
+;; - Hit C-RET in web-mode to ask for completions; the command routes to Tide, company-css, or dabbrev based on the language at point.
+;; - Eldoc messages come from `cj/eldoc-web-mode`, so keeping point over JS, CSS, or markup swaps the doc source automatically.
+;; - New web buffers call `cj/setup-web-mode-mixed`, enabling Tide so goto-definition and rename are ready without extra setup.
 
 ;;; Code:
 

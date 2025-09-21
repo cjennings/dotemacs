@@ -2,7 +2,8 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-;;
+;; Open any *.sh buffer and sh-mode loads with Flycheck attached, so syntax errors appear immediately.
+;; Re-save or invoke C-c ! l to refresh diagnostics while you iterate on scripts.
 
 ;;; Code:
 

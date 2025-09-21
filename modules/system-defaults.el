@@ -2,9 +2,14 @@
 ;; author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
-;;
-;;
-;;
+;; Loads during init to set sane defaults: UTF-8 everywhere, quiet prompts, synced clipboards,
+;; and hands-off async shell buffers. Nothing to call—just launch Emacs and the environment is ready.
+;; Native compilation is tuned for performance and its warnings get logged to comp-warnings.log.
+
+;;; Implementation Notes:
+;; `cj/log-comp-warning` advices `display-warning` so native-comp notices land in the log instead of popping Messages.
+;; Remove the advice if you need stock warning buffers for debugging.
+
 ;;; Code:
 
 ;; -------------------------- Native Comp Preferences --------------------------
