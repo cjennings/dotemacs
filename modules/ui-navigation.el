@@ -70,9 +70,10 @@
 ;; ------------------------- Split Window Reorientation ------------------------
 
 (defun toggle-window-split ()
-  "Toggle the orientation fo the window split.
-If the window is split horizontally, change the split to be vertical.
-If it's vertical, change the split to be to horizontal.
+  "Toggle the orientation of the current window split.
+
+If the window is split horizontally, change the split to vertical.
+If it's vertical, change the split to horizontal.
 This function won't work with more than one split window."
   (interactive)
   (if (= (count-windows) 2)

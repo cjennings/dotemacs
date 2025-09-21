@@ -24,6 +24,7 @@
 
 (defun cj/log-comp-warning (type message &rest args)
   "Log native-comp warnings of TYPE with MESSAGE & ARGS to 'comp-warnings-log'.
+
 Suppress them from appearing in the *Warnings* buffer. If TYPE contains 'comp',
 log the warning with a timestamp to the file specified by 'comp-warnings-log'.
 Return non-nil to indicate the warning was handled."
@@ -58,6 +59,7 @@ Return non-nil to indicate the warning was handled."
 
 (defun cj/disabled ()
   "Do absolutely nothing and do it quickly.
+
 Used to disable functionality with defalias 'somefunc 'cj/disabled)."
   (interactive))
 

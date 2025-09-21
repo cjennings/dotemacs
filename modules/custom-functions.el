@@ -5,6 +5,7 @@
 ;;
 ;; These are custom utility functions I use frequently.
 ;; For convenience, they are bound to a custom keymap with a prefix of "C-;".
+
 ;; Additional keymaps are created on top of this prefix to collect similar operations.
 ;;
 ;; C-; --- Custom Key Map
@@ -50,6 +51,7 @@
 ;;   C-; l r  → remove duplicate lines from the buffer, keeping the first occurrence.
 ;;   C-; l R  → remove lines containing specific text from the region or buffer.
 ;;   C-; l u  → "underline" current line: repeat a chosen character to same length on line below.
+
 ;;
 ;; C-; m --- Comment Styling & Removal
 ;;   C-; m r  → reformats selecton into a commented paragraph re-wrapping at fill column width.
@@ -79,8 +81,9 @@
 ;;; ----------------- Miscellaneous Functions And Custom Keymap -----------------
 
 (defun cj/jump-to-matching-paren ()
-  "If point is on a parenthesis, jump to it's match.
-Otherwise, complain."
+  "Jump to the matching parenthesis when point is on one.
+
+Signal a message when point is not on a parenthesis."
   (interactive)
   (cond ((looking-at "\\s\(\\|\\s\{\\|\\s\[")
 		 (forward-list))
@@ -90,6 +93,7 @@ Otherwise, complain."
 
 (defun cj/format-region-or-buffer ()
   "Reformat the region or the entire buffer.
+
 Replaces tabs with spaces, deletes trailing whitespace, and reindents the region."
   (interactive)
   (let ((start-pos (if (use-region-p) (region-beginning) (point-min)))
@@ -102,8 +106,9 @@ Replaces tabs with spaces, deletes trailing whitespace, and reindents the region
 	  (delete-trailing-whitespace))))
 
 (defun cj/count-words-buffer-or-region ()
-  "Count the number of words in buffer or region.
-Displays result as a message in the minibuffer and *Messasges* buffer."
+  "Count the number of words in the buffer or region.
+
+Display the result in the minibuffer and *Messages* buffer."
   (interactive)
   (let ((begin (point-min))
 		(end (point-max))
@@ -115,9 +120,10 @@ Displays result as a message in the minibuffer and *Messasges* buffer."
 	(message (format "There are %d words in %s." (count-words begin end) area_type))))
 
 (defun cj/replace-fraction-glyphs (start end)
-  "Replace common fraction glyphs (½) with their text format (1/2).
-Operates in the buffer or region (as identified with START and END) if selected.
-Replaces the text versions with the glyphs if function prefaced by 'C-u'."
+  "Replace common fraction glyphs between START and END.
+
+Operate on the buffer or region designated by START and END.
+Replace the text representations with glyphs when called with a \[universal-argument] prefix."
   (interactive (if (use-region-p)
                    (list (region-beginning) (region-end))
                  (list (point-min) (point-max))))
@@ -139,8 +145,9 @@ Replaces the text versions with the glyphs if function prefaced by 'C-u'."
           (replace-match (cdr r)))))))
 
 (defun cj/align-regexp-with-spaces (orig-fun &rest args)
-  "Around-advice for =align-regexp' to disable tabs during alignment.
-ORIG-FUN is the original =align-regexp'; ARGS are its arguments."
+  "Call ORIG-FUN with ARGS while temporarily disabling tabs for alignment.
+
+This advice ensures `align-regexp' uses spaces by binding `indent-tabs-mode' to nil."
   (let ((indent-tabs-mode nil))
 	(apply orig-fun args)))
 
@@ -163,6 +170,7 @@ ORIG-FUN is the original =align-regexp'; ARGS are its arguments."
     (define-key map "|" 'display-fill-column-indicator-mode)
     map)
   "The base key map for custom elisp functions holding miscellaneous functions.
+
 Other key maps extend from this key map to hold categorized functions.")
 (global-set-key (kbd "C-;") cj/custom-keymap)
 
@@ -222,6 +230,7 @@ Other key maps extend from this key map to hold categorized functions.")
 
 (defun cj/copy-whole-buffer ()
   "Copy the entire contents of the current buffer to the kill ring.
+
 Point and mark are left exactly where they were.  No transient region
 is created.  A message is displayed when done."
   (interactive)
@@ -231,14 +240,16 @@ is created.  A message is displayed when done."
 
 (defun cj/clear-to-bottom-of-buffer ()
   "Delete all text from point to the end of the current buffer.
+
 This does not save the deleted text in the kill ring."
   (interactive)
   (delete-region (point) (point-max))
   (message "Buffer contents removed to the end of the buffer."))
 
 (defun cj/clear-to-top-of-buffer ()
-  "Delete all text from point to the end of the current buffer.
-This does not save the deleted text in the kill ring."
+  "Delete all text from point to the beginning of the current buffer.
+
+Do not save the deleted text in the kill ring."
   (interactive)
   (delete-region (point) (point-min))
   (message "Buffer contents removed to the beginning of the buffer."))
@@ -249,6 +260,7 @@ This does not save the deleted text in the kill ring."
   :config
   (defun cj/print-buffer-ps ()
 	"Print the current buffer as PostScript (monochrome) to the system default printer.
+
 Sends directly to the spooler (no temp files), with no page header."
 	(interactive)
 	(let* ((spooler
@@ -289,10 +301,11 @@ Sends directly to the spooler (no temp files), with no page header."
 
 (defun cj/remove-leading-trailing-whitespace ()
   "Remove leading and trailing whitespace in a region, line, or buffer.
+
 When called interactively:
-- If a region is active, operate on the region
-- If called with C-u prefix, operate on entire buffer
-- Otherwise, operate on current line."
+- If a region is active, operate on the region.
+- If called with a \[universal-argument] prefix, operate on the entire buffer.
+- Otherwise, operate on the current line."
   (interactive)
   (let ((start (cond (current-prefix-arg (point-min))
                      ((use-region-p) (region-beginning))
@@ -309,9 +322,9 @@ When called interactively:
         (while (re-search-forward "[ \t]+$" nil t) (replace-match ""))))))
 
 (defun cj/collapse-whitespace-line-or-region ()
-  "Collapse whitespace to one space in the current line, or region if selected.
-Ensure there is exactly one space between words, and remove leading and trailing
-whitespace."
+  "Collapse whitespace to one space in the current line or active region.
+
+Ensure there is exactly one space between words and remove leading and trailing whitespace."
   (interactive)
   (save-excursion
 	(let* ((region-active (use-region-p))
@@ -333,12 +346,13 @@ whitespace."
 		  (replace-match " " nil nil))))))
 
 (defun cj/delete-blank-lines-region-or-buffer (start end)
-  "Delete all blank lines in the region between START and END.
-Blank lines contain nothing or only whitespace (spaces or tabs).
-If called with an active region, operate on that region.
-If no region is selected, prompt before operating on the whole buffer.
-Otherwise signal a user-error and do nothing. The point is restored
-to its original position after deletion."
+  "Delete blank lines between START and END.
+
+Treat blank lines as lines that contain nothing or only whitespace.
+Operate on the active region when one exists.
+Prompt before operating on the whole buffer when no region is selected.
+Signal a user error and do nothing when the user declines.
+Restore point to its original position after deletion."
   (interactive
    (if (use-region-p)
        ;; grab its boundaries if there's a region
@@ -356,8 +370,9 @@ to its original position after deletion."
   nil)
 
 (defun cj/hyphenate-whitespace-in-region (start end)
-  "Hyphenate all continuous whitespace in the region.
-START and END represent the region selected."
+  "Replace runs of whitespace between START and END with hyphens.
+
+Operate on the active region designated by START and END."
   (interactive "*r")
   (if (use-region-p)
       (save-excursion
@@ -381,7 +396,7 @@ START and END represent the region selected."
 ;;; ------------------------- Surround, Append, Prepend -------------------------
 
 (defun cj/surround-word-or-region ()
-  "Prompt for a string, insert it before and after the word at point or selected region."
+  "Surround the word at point or active region with a string read from the minibuffer."
   (interactive)
   (let ((str (read-string "Surround with: "))
         (regionp (use-region-p)))
@@ -402,7 +417,7 @@ START and END represent the region selected."
           (message "Can't insert around. No word at point and no region selected."))))))
 
 (defun cj/append-to-lines-in-region-or-buffer (str)
-  "Prompt for STR and append it to the end of each line in region or buffer."
+  "Append STR to the end of each line in the region or entire buffer."
   (interactive "sEnter string to append: ")
   (let ((start-pos (if (use-region-p)
                        (region-beginning)
@@ -418,7 +433,7 @@ START and END represent the region selected."
         (forward-line 1)))))
 
 (defun cj/prepend-to-lines-in-region-or-buffer (str)
-  "Prompt for STR and prepend it to the start of each line in region or buffer."
+  "Prepend STR to the beginning of each line in the region or entire buffer."
   (interactive "sEnter string to prepend: ")
   (let ((start-pos (if (use-region-p)
                        (region-beginning)
@@ -444,62 +459,74 @@ START and END represent the region selected."
 ;;; -------------------------- Date And Time Insertion --------------------------
 
 (defvar readable-date-time-format "%A, %B %d, %Y at %I:%M:%S %p %Z "
-  "Format of date to insert with `insert-readable-date-time' func.
-See help of `format-time-string' for possible replacements")
+  "Format string used by `cj/insert-readable-date-time'.
+
+See `format-time-string' for possible replacements.")
 
 (defun cj/insert-readable-date-time ()
-  "Insert the current date and time into current buffer.
-Uses `readable-date-time-format' for the formatting the date/time."
+  "Insert the current date and time into the current buffer.
+
+Use `readable-date-time-format' for formatting."
   (interactive)
   (insert (format-time-string readable-date-time-format (current-time))))
 
 (defvar sortable-date-time-format "%Y-%m-%d %a @ %H:%M:%S %z "
-  "Format of date to insert with `insert-current-date-time' func.
-See help of `format-time-string' for possible replacements")
+  "Format string used by `cj/insert-sortable-date-time'.
+
+See `format-time-string' for possible replacements.")
 
 (defun cj/insert-sortable-date-time ()
-  "Insert the current date and time into current buffer.
-Uses `sortable-date-time-format' for the formatting the date/time."
+  "Insert the current date and time into the current buffer.
+
+Use `sortable-date-time-format' for formatting."
   (interactive)
   (insert (format-time-string sortable-date-time-format (current-time))))
 
 (defvar sortable-time-format "%I:%M:%S %p %Z "
-  "Time format to insert with `insert-current-time' func.
-See help of `format-time-string' for possible replacements")
+  "Format string used by `cj/insert-sortable-time'.
+
+See `format-time-string' for possible replacements.")
 
 (defun cj/insert-sortable-time ()
-  "Insert the current time into current buffer.
-Uses `sortable-time-format' for the formatting the date/time."
+  "Insert the current time into the current buffer.
+
+Use `sortable-time-format' for formatting."
   (interactive)
   (insert (format-time-string sortable-time-format (current-time))))
 
 (defvar readable-time-format  "%-I:%M %p "
-  "Time format to insert with `insert-readable-time' func.
-See help of `format-time-string' for possible replacements")
+  "Format string used by `cj/insert-readable-time'.
+
+See `format-time-string' for possible replacements.")
 
 (defun cj/insert-readable-time ()
-  "Insert the current time into current buffer.
-Uses `readable-time-format' for the formatting the date/time."
+  "Insert the current time into the current buffer.
+
+Use `readable-time-format' for formatting."
   (interactive)
   (insert (format-time-string readable-time-format (current-time))))
 
 (defvar sortable-date-format "%Y-%m-%d %a"
-  "Time format to insert with `insert-current-time' func.
-See help of `format-time-string' for possible replacements")
+  "Format string used by `cj/insert-sortable-date'.
+
+See `format-time-string' for possible replacements.")
 
 (defun cj/insert-sortable-date ()
-  "Insert the current time into current buffer.
-Uses `sortable-time-format' for the formatting the date/time."
+  "Insert the current date into the current buffer.
+
+Use `sortable-date-format' for formatting."
   (interactive)
   (insert (format-time-string sortable-date-format (current-time))))
 
 (defvar readable-date-format "%A, %B %d, %Y"
-  "Time format to insert with `insert-readable-time' func.
-See help of `format-time-string' for possible replacements")
+  "Format string used by `cj/insert-readable-date'.
+
+See `format-time-string' for possible replacements.")
 
 (defun cj/insert-readable-date ()
-  "Insert the current date into current buffer.
-Uses `readable-time-format' for the formatting the date/time."
+  "Insert the current date into the current buffer.
+
+Use `readable-date-format' for formatting."
   (interactive)
   (insert (format-time-string readable-date-format (current-time))))
 
@@ -518,7 +545,7 @@ Uses `readable-time-format' for the formatting the date/time."
 
 
 (defun cj/join-line-or-region ()
-  "Apply 'join-line' over the marked region or join with previous line."
+  "Join lines in the active region or join the current line with the previous one."
   (interactive)
   (if (use-region-p)
 	  (let ((beg (region-beginning))
@@ -534,15 +561,16 @@ Uses `readable-time-format' for the formatting the date/time."
 	(newline)))
 
 (defun cj/join-paragraph ()
-  "Mark all text in a paragraph then run cj/join-line-or-region."
+  "Join all lines in the current paragraph using `cj/join-line-or-region'."
   (interactive)
   (er/mark-paragraph) ;; from package expand region
   (cj/join-line-or-region (region-beginning)(region-end))
   (forward-line))
 
 (defun cj/duplicate-line-or-region (&optional comment)
-  "Duplicate the line or region below.
-Comment the duplicated line if prefix argument COMMENT is passed."
+  "Duplicate the current line or active region below.
+
+Comment the duplicated text when optional COMMENT is non-nil."
   (interactive "P")
   (let* ((b (if (region-active-p) (region-beginning) (line-beginning-position)))
          (e (if (region-active-p) (region-end) (line-end-position)))
@@ -558,8 +586,9 @@ Comment the duplicated line if prefix argument COMMENT is passed."
 		  (comment-region (line-beginning-position) (line-end-position)))))))
 
 (defun cj/remove-duplicate-lines-region-or-buffer ()
-  "Find duplicate lines in region or buffer keeping the first occurrence.
-If a region is selected, operate on the region. Otherwise, operate on the whole buffer."
+  "Remove duplicate lines in the region or buffer, keeping the first occurrence.
+
+Operate on the active region when one exists; otherwise operate on the whole buffer."
   (interactive)
   (let ((start (if (use-region-p) (region-beginning) (point-min)))
         (end (if (use-region-p) (region-end) (point-max))))
@@ -574,6 +603,7 @@ If a region is selected, operate on the region. Otherwise, operate on the whole 
 
 (defun cj/remove-lines-containing (text)
   "Remove all lines containing TEXT.
+
 If region is active, operate only on the region, otherwise on entire buffer.
 The operation is undoable."
   (interactive "sRemove lines containing: ")
@@ -601,6 +631,7 @@ The operation is undoable."
 
 (defun cj/underscore-line ()
   "Underline the current line by inserting a row of characters below it.
+
 If the line is empty or contains only whitespace, abort with a message."
   (interactive)
   (let ((line (buffer-substring-no-properties
@@ -631,7 +662,7 @@ If the line is empty or contains only whitespace, abort with a message."
 ;;; ---------------------------------- Comments ---------------------------------
 
 (defun cj/comment-reformat ()
-  "Reformats commented text into a single paragraph."
+  "Reformat commented text into a single paragraph."
   (interactive)
 
   (if mark-active
@@ -648,9 +679,11 @@ If the line is empty or contains only whitespace, abort with a message."
 
 (defun cj/comment-centered (&optional comment-char)
   "Insert comment text centered around the COMMENT-CHAR character.
-Will default to the '#' character if called with no arguments. Uses the value of
-fill-column or 80 (whichever is less) to calculate the comment length. Will
-begin and end the line with the appropriate comment symbols based on programming mode."
+
+Default to the "#" character when COMMENT-CHAR is nil.
+
+Use the lesser of `fill-column' or 80 to calculate the comment length.
+Begin and end the line with the appropriate comment symbols for the current mode."
   (interactive)
   (if (not (char-or-string-p comment-char))
 	  (setq comment-char "#"))
@@ -692,6 +725,7 @@ begin and end the line with the appropriate comment symbols based on programming
 
 (defun cj/comment-box ()
   "Insert a comment box around text that the user inputs.
+
 The box extends to the fill column, centers the text, and uses the current
 mode's comment syntax at both the beginning and end of each line. The box
 respects the current indentation level and avoids trailing whitespace."
@@ -784,9 +818,10 @@ respects the current indentation level and avoids trailing whitespace."
 ;;; ---------------------- Ordering And Sorting Operations ----------------------
 
 (defun cj/arrayify (start end quote)
-  "Turn unquoted text on newlines into quoted comma-separated strings.
-START and END indicate the region selected.
-QUOTE is the characters used for quotations (i.e, \=' or \")"
+  "Convert lines between START and END into quoted, comma-separated strings.
+
+START and END identify the active region.
+QUOTE specifies the quotation characters to surround each element."
   (interactive "r\nMQuotation character to use for array element: ")
   (let ((insertion
 		 (mapconcat
@@ -796,8 +831,9 @@ QUOTE is the characters used for quotations (i.e, \=' or \")"
 	(insert insertion)))
 
 (defun cj/unarrayify (start end)
-  "Turn quoted comma-separated strings into unquoted text on newlines.
-START and END indicate the region selected."
+  "Convert quoted, comma-separated strings between START and END into separate lines.
+
+START and END identify the active region."
   (interactive "r")
   (let ((insertion
 		 (mapconcat
@@ -807,8 +843,9 @@ START and END indicate the region selected."
 	(insert insertion)))
 
 (defun cj/alphabetize-region ()
-  "Alphabetize strings (words/tokens) in region replacing the original region.
-The result will be comma separated."
+  "Alphabetize words in the active region and replace the original text.
+
+Produce a comma-separated list as the result."
   (interactive)
   (unless (use-region-p)
     (user-error "No region selected"))
@@ -824,7 +861,7 @@ The result will be comma separated."
 				", "))))
 
 (defun cj/comma-separated-text-to-lines ()
-  "Breaks up text between commas in a region and places each text on its own line."
+  "Break up comma-separated text in the active region so each item is on its own line."
   (interactive)
   (if (not (region-active-p))
 	  (error "No region selected"))
@@ -858,6 +895,7 @@ The result will be comma separated."
 
 (defun cj/title-case-region ()
   "Capitalize the region in title case format.
+
 Title case is a capitalization convention where major words
 are capitalized,and most minor words are lowercase.  Nouns,
 verbs (including linking verbs), adjectives, adverbs,pronouns,
@@ -874,6 +912,7 @@ and all articles are considered minor words."
 		(chars-skip-reset '(?: ?! ??))
 		;; Don't capitalize characters directly after these. e.g.
 		;; "Foo-bar" or "Foo\bar" or "Foo's".
+
 		(chars-separator '(?\\ ?- ?' ?.))
 
 		(word-chars "[:alnum:]")

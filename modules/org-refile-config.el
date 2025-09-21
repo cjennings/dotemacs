@@ -42,6 +42,7 @@
 
 (defun cj/org-refile (&optional ARG DEFAULT-BUFFER RFLOC MSG)
   "Simply rebuilds the refile targets before calling org-refile.
+
 ARG DEFAULT-BUFFER RFLOC and MSG parameters passed to org-refile."
   (interactive "P")
   (cj/build-org-refile-targets)

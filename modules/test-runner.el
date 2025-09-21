@@ -18,10 +18,12 @@
 
 (defvar cj/test-focused-files '()
   "List of test files for focused test execution.
+
 Each element is a filename (without path) to run.")
 
 (defvar cj/test-mode 'all
   "Current test execution mode.
+
 Either 'all (run all tests) or 'focused (run only focused tests).")
 
 (defvar cj/test-last-results nil
@@ -102,6 +104,7 @@ Either 'all (run all tests) or 'focused (run only focused tests).")
 
 (defun cj/test--extract-test-names (file)
   "Extract test names from FILE.
+
 Returns a list of test name symbols defined in the file."
   (let ((test-names '()))
 	(with-temp-buffer

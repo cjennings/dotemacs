@@ -19,6 +19,7 @@
 
 (defcustom jumper-prefix-key "M-SPC"
   "Prefix key for jumper commands.
+
 Note that using M-SPC will override the default binding to just-one-space."
   :type 'string
   :group 'jumper)

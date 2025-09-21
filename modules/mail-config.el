@@ -25,6 +25,7 @@
 
 (defun cj/mu4e-mark-all-headers ()
   "Mark all headers for a later action.
+
 Prompts user for the action when executing."
   (interactive)
   (mu4e-headers-mark-for-each-if

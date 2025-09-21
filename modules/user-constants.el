@@ -120,6 +120,7 @@
 
 (defvar webclipped-file (expand-file-name "webclipped.org" sync-dir)
   "The location of the org file that keeps webclips to read.
+
 For more information, see org webclipper section of org-capture-config.el")
 
 ;; ------------------------- Verify Or Create Functions ------------------------
@@ -149,6 +150,7 @@ For more information, see org webclipper section of org-capture-config.el")
 
 (defun cj/initialize-user-directories-and-files ()
   "Initialize all necessary directories and files.
+
 This ensures that all directories and files required by the Emacs configuration
 exist, creating them if necessary. This makes the configuration more robust
 and portable across different machines."

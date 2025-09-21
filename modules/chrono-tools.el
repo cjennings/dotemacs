@@ -48,9 +48,10 @@
 ;; ------------------------------------ TMR ------------------------------------
 
 (defun cj/tmr-select-sound-file ()
-  "Select a sound file from sounds-dir to use for tmr timers.
-Presents all audio files in the sounds directory and sets the selected
-file as tmr-sound-file. Use \\[universal-argument] to reset to default."
+  "Select a sound file from `sounds-dir' to use for tmr timers.
+
+Present all audio files in the sounds directory and set the chosen file as
+`tmr-sound-file'. Use \\[universal-argument] to reset to the default sound."
   (interactive)
   (if current-prefix-arg
 	  ;; With prefix arg, reset to default

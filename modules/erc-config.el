@@ -114,6 +114,7 @@
 
 (defun cj/erc-join-channel-with-completion ()
   "Join a channel on the current server.
+
 If not in an active ERC server buffer, reconnect first."
   (interactive)
   (unless (cj/erc-server-buffer-active-p)
@@ -244,6 +245,7 @@ If not in an active ERC server buffer, reconnect first."
 
 (defun cj/erc-notify-on-mention (match-type nick message)
   "Display a notification when MATCH-TYPE is 'current-nick.
+
 NICK is the sender and MESSAGE is the message text."
   (when (and (eq match-type 'current-nick)
 			 (not (string= nick (erc-current-nick)))

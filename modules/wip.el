@@ -147,10 +147,12 @@
         (define-key map (kbd (format "<%s%s>" pref evt)) #'ignore)))
     map)
   "Keymap for `mouse-trap-mode'. Unbinds almost every mouse event.
+
 Disabling mouse prevents accidental mouse moves modifying text.")
 
 (define-minor-mode mouse-trap-mode
   "Globally disable most mouse and trackpad events.
+
 When active, <mouse-*>, <down-mouse-*>, <drag-mouse-*>,
 <double-mouse-*>, <triple-mouse-*>, and wheel events are bound to `ignore',
 with or without C-, M-, S- modifiers."

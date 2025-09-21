@@ -110,6 +110,7 @@
 
 (defun cj/identify-external-open-command ()
   "Return the OS-default \"open\" command for this host.
+
 Signals an error if the host is unsupported."
   (cond
    ((env-linux-p)   "xdg-open")
@@ -119,6 +120,7 @@ Signals an error if the host is unsupported."
 
 (defun cj/xdg-open (&optional filename)
   "Open FILENAME (or the file at point) with the OS default handler.
+
 Logs output and exit code to buffer *external-open.log*."
   (interactive)
   (let* ((file  (expand-file-name (or filename (dired-file-name-at-point))))
@@ -141,6 +143,7 @@ Logs output and exit code to buffer *external-open.log*."
 
 (defun cj/find-file-auto (orig-fun &rest args)
   "If file has an extension in `default-open-extensions', open externally.
+
 Else call ORIG-FUN with ARGS."
   (let* ((file (car args))
 		 (case-fold-search t))

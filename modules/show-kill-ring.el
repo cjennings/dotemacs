@@ -16,6 +16,7 @@
 
 (defvar show-kill-max-item-size 1000
   "This represents the size of a \='kill ring\=' entry.
+
 A positive number means to limit the display of \='kill-ring\=' items to
 that number of characters.")
 
@@ -26,6 +27,7 @@ that number of characters.")
 
 (defun show-kill-ring ()
   "Show the current contents of the kill ring in a separate buffer.
+
 This makes it easy to figure out which prefix to pass to yank."
   (interactive)
   ;; kill existing one, since erasing it doesn't work
@@ -77,6 +79,7 @@ This makes it easy to figure out which prefix to pass to yank."
 
 (defun show-kill-insert-item (item)
   "Insert an ITEM from the kill ring into the current buffer.
+
 If it's too long, truncate it first."
   (let ((max show-kill-max-item-size))
 	(cond

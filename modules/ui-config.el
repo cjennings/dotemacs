@@ -36,6 +36,7 @@
 
 (defcustom cj/transparency-level 84
   "Opacity level for Emacs frames when `cj/enable-transparency' is non-nil.
+
 100 = fully opaque, 0 = fully transparent."
   :type 'integer
   :group 'ui-config)
@@ -64,6 +65,7 @@
 
 (defun cj/apply-transparency ()
   "Apply `cj/transparency-level' to the selected frame and future frames.
+
 When `cj/enable-transparency' is nil, reset alpha to fully opaque."
   (let ((alpha (if cj/enable-transparency
 				   (cons cj/transparency-level cj/transparency-level)

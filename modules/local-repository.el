@@ -18,16 +18,19 @@
 
 (defcustom localrepo-repository-id "localrepo"
   "The name used to identify the local repository internally.
+
 Used for the package-archive and package-archive-priorities lists.")
 
 (defcustom localrepo-repository-priority 100
   "The value for the local repository in the package-archive-priority list.
+
 A higher value means higher priority. If you want your local packages to be
 preferred, this must be a higher number than any other repositories.")
 
 (defcustom localrepo-repository-location
   (concat user-emacs-directory "/.localrepo")
   "The location of the local repository.
+
 It's a good idea to keep this with the rest of your configuration files and
 keep them in source control.")
 

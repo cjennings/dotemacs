@@ -20,12 +20,14 @@
 ;; ---------------------------- Org Webpage Clipper ----------------------------
 ;; Allows saving a copy of the page eww is visiting for offline reading.
 ;; In other words, it's a "Pocket/Instapaper" that keeps the article in Emacs.
+
 ;; Used in conjuction with org-capture-template "w" "Web Page Clipper" below.
 
 
 (defun cj/org-webpage-clipper ()
-  "Capture a web page for later viewing in an org-file.
-  and Returns the yanked content as a string."
+  "Capture the current web page for later viewing in an Org file.
+
+Return the yanked content as a string so templates can insert it."
   (interactive)
   (let* ((source-buffer (org-capture-get :original-buffer))
 		 (source-mode (with-current-buffer source-buffer major-mode)))
@@ -46,6 +48,7 @@
 
 (defun cj/org-capture-pdf-active-region ()
   "Capture the active region of the pdf-view buffer.
+
 Intended to be called within an org capture template."
   (let* ((pdf-buf-name (plist-get org-capture-plist :original-buffer))
          (pdf-buf (get-buffer pdf-buf-name)))

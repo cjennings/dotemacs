@@ -52,6 +52,7 @@
 
 (defun cj/org-noter-check-document-path ()
   "Check if the document path in the current heading exists.
+
 This is just a temporary debug function."
   (interactive)
   (let ((doc-path (org-entry-get nil "NOTER_DOCUMENT" t)))
