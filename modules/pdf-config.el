@@ -53,12 +53,13 @@
 
 ;; --------------------------- PDF Continuous Scroll ---------------------------
 
+;; Note: This appears to behave badly in conjunction with org-noter
 ;; provides continuous scrolling of PDF documents in PDF View
-(use-package pdf-continuous-scroll-mode
-  :ensure nil ;; in custom folder
-  :after pdf-tools
-  :load-path "custom/pdf-continuous-scroll-mode-latest.el"
-  :hook (pdf-view-mode . pdf-continuous-scroll-mode))
+;; (use-package pdf-continuous-scroll-mode
+;;   :ensure nil ;; in custom folder
+;;   :after pdf-tools
+;;   :load-path "custom/pdf-continuous-scroll-mode-latest.el"
+;;   :hook (pdf-view-mode . pdf-continuous-scroll-mode))
 
 (provide 'pdf-config)
 ;;; pdf-config.el ends here.
