@@ -7,6 +7,7 @@
 
 (require 'cl-lib)
 (require 'host-environment)
+(require 'user-constants)
 
 ;; ---------------------------- Edit A File With Sudo ----------------------------
 
