@@ -20,9 +20,7 @@
 ;; Vertical completion UI
 
 (use-package vertico
-  :defer 0.5
-  :init
-  (vertico-mode)
+  :demand t
   :custom
   (vertico-cycle t)                ; Cycle through candidates
   (vertico-count 10)               ; Number of candidates to display
@@ -36,25 +34,30 @@
 			  ("RET"   . vertico-exit)
 			  ("C-RET" . vertico-exit-input)
 			  ("M-RET" . minibuffer-force-complete-and-exit)
-			  ("TAB"   . minibuffer-complete)))
+			  ("TAB"   . minibuffer-complete))
+  :init
+  (vertico-mode))
 
 (use-package marginalia
-  :defer 0.5
+  :demand t
+  :custom
+  (marginalia-max-relative-age 0)
+  (marginalia-align 'right)
   :init
   (marginalia-mode))
 
 (use-package nerd-icons-completion
-  :defer 0.5
+  :demand t
+  :hook (marginalia-mode nerd-icons-completion-marginalia-setup)
   :after marginalia
-  :config
-  (nerd-icons-completion-mode)
-  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
+  :init
+  (nerd-icons-completion-mode))
 
 ;; ---------------------------------- Consult ----------------------------------
 ;; Practical commands based on completing-read
 
 (use-package consult
-  :defer 0.5
+  :demand t
   :bind (;; C-c bindings (mode-specific-map)
 		 ("C-c h" . consult-history)
 		 ;; C-x bindings (ctl-x-map)
@@ -146,12 +149,14 @@
 ;; --------------------------------- Orderless ---------------------------------
 ;; Advanced completion style - provides space-separated, out-of-order matching
 
+
 (use-package orderless
-  :defer 0.5
+  :demand t
   :custom
-  (completion-styles '(orderless basic))
+  (completion-styles '(orderless))
   (completion-category-defaults nil)
-  (completion-category-overrides '((file (styles partial-completion))))
+  (completion-category-overrides '((file (styles partial-completion))
+								   (multi-category (styles orderless))))
   (orderless-matching-styles '(orderless-literal
 							   orderless-regexp
 							   orderless-initialism
@@ -161,7 +166,7 @@
 ;; Contextual actions - provides right-click like functionality
 
 (use-package embark
-  :defer 0.5
+  :demand t
   :bind
   (("C-." . embark-act)         ;; pick an action to run
    ("C->" . embark-act-all)     ;; pick an action to run on all candidates
@@ -197,7 +202,7 @@
 ;; In-buffer completion (retained from original configuration)
 
 (use-package company
-  :defer 0.5
+  :demand t
   :hook (after-init . global-company-mode)
   :bind
   (:map company-active-map
@@ -225,6 +230,23 @@
 (use-package company-box
   :after company
   :hook (company-mode . company-box-mode))
+
+;; --------------------------------- Prescient ---------------------------------
+
+(use-package prescient
+  :demand t
+  :config
+  (prescient-persist-mode))
+
+(use-package vertico-prescient
+  :demand t
+  :config
+  (vertico-prescient-mode))
+
+(use-package company-prescient
+  :demand t
+  :config
+  (company-prescient-mode))
 
 (provide 'selection-framework)
 ;;; selection-framework.el ends here
