@@ -59,35 +59,30 @@ Prompts user for the action when executing."
         ("d" . mu4e-headers-mark-for-delete))
   (:map mu4e-view-mode-map
         ("r" . mu4e-compose-wide-reply)
-        ("R" . mu4e-compose-reply))
+		("R" . mu4e-compose-reply))
   :hook
   (mu4e-view-mode . turn-on-visual-line-mode)
   :config
-  (setq gnus-blocked-images "http")                                         ;; block external images (i.e., 1 px trackers)
-  (setq mail-user-agent 'mu4e-user-agent)                                   ;; default to mu4e for email
-  (setq message-citation-line-format "On %a %d %b %Y at %R, %f wrote:\n")   ;; helps show up properly in Outlook/Gmail threads
+  (setq gnus-blocked-images "http")                                       ;; block external images (i.e., 1 px trackers)
+  (setq mail-user-agent 'mu4e-user-agent)                                 ;; default to mu4e for email
+  (setq message-citation-line-format "On %a %d %b %Y at %R, %f wrote:\n") ;; helps show up properly in Outlook/Gmail threads
   (setq message-citation-line-function 'message-insert-formatted-citation-line)
-  (setq message-kill-buffer-on-exit t)                                      ;; don't keep message buffers around
-  (setq mu4e-change-filenames-when-moving t)                                ;; avoid gmail dup UID issues: https://goo.gl/RTCgVa
-  (setq mu4e-completing-read-function 'completing-read)                     ;; use generic completing read, rather than ido
-  (setq mu4e-compose-context-policy 'ask)                                   ;; ask for context if no context matches
-
-  ;; don't complete from previous mail (use org-contacts only)
-  (setq mu4e-compose-complete-addresses nil)  ; Don't use mu4e's address completion
-  (setq mu4e-compose-complete-only-personal nil)  ; This won't matter but set for clarity
-  (setq mu4e-compose-complete-only-after nil)  ; Disable date-based filtering
+  (setq message-kill-buffer-on-exit t)                                    ;; don't keep message buffers around
+  (setq mu4e-change-filenames-when-moving t)                              ;; avoid gmail dup UID issues: https://goo.gl/RTCgVa
+  (setq mu4e-completing-read-function 'completing-read)                   ;; use generic completing read, rather than ido
+  (setq mu4e-compose-context-policy 'ask)                                 ;; ask for context if no context matches
 
   ;; (setq mu4e-compose-format-flowed t)                                       ;; plain text mails must flow correctly for recipients
-  (setq mu4e-compose-keep-self-cc t)                                        ;; keep me in the cc list
-  (setq mu4e-compose-signature-auto-include nil)                            ;; don't include signature by default
-  (setq mu4e-confirm-quit nil)                                              ;; don't ask when quitting
-  (setq mu4e-context-policy 'pick-first)                                    ;; start with the first (default) context
-  (setq mu4e-headers-auto-update nil)                                       ;; updating headers buffer on email is too jarring
-  (setq mu4e-root-maildir mail-dir)                                         ;; root directory for all email accounts
-  (setq mu4e-maildir mail-dir)                                              ;; same as above (for newer mu4e)
-  (setq mu4e-sent-messages-behavior 'delete)                                ;; don't save to "Sent", IMAP does this already
-  (setq mu4e-show-images t)                                                 ;; show embedded images
-  (setq mu4e-update-interval nil)                                           ;; disallow automatic checking for new emails
+  (setq mu4e-compose-keep-self-cc t)                                      ;; keep me in the cc list
+  (setq mu4e-compose-signature-auto-include nil)                          ;; don't include signature by default
+  (setq mu4e-confirm-quit nil)                                            ;; don't ask when quitting
+  (setq mu4e-context-policy 'pick-first)                                  ;; start with the first (default) context
+  (setq mu4e-headers-auto-update nil)                                     ;; updating headers buffer on email is too jarring
+  (setq mu4e-root-maildir mail-dir)                                       ;; root directory for all email accounts
+  (setq mu4e-maildir mail-dir)                                            ;; same as above (for newer mu4e)
+  (setq mu4e-sent-messages-behavior 'delete)                              ;; don't save to "Sent", IMAP does this already
+  (setq mu4e-show-images t)                                               ;; show embedded images
+  (setq mu4e-update-interval nil)                                         ;; disallow automatic checking for new emails
 
   ;; Format=flowed for better plain text email handling
   ;; This will be automatically disabled when org-msg is active

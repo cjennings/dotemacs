@@ -1,6 +1,6 @@
 ;;; org-contacts-config.el --- Org Contacts Configuration -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
-
+;;
 ;;; Commentary:
 ;; Configuration for org-contacts, providing contact management within org-mode.
 ;; Integrates with mu4e for email address completion and org-roam for linking
@@ -13,30 +13,37 @@
 ;;; -------------------------------- Org Contacts --------------------------------
 
 (use-package org-contacts
-  :after org
+  :after (org mu4e)
   :custom
   (org-contacts-files (list contacts-file))
   :config
+  (require 'mu4e)
   ;; Basic settings
   (setq org-contacts-icon-use-gravatar nil)  ; Don't fetch gravatars
-  (setq org-contacts-matcher "EMAIL<>\"\"|PHONE<>\"\"|ADDRESS<>\"\"")
 
   ;; Birthday and anniversary handling
   (setq org-contacts-birthday-format "🎂 It's %l's birthday today! 🎂")
   (setq org-contacts-anniversary-format "💑 %l's anniversary 💑")
 
-  ;; Integration with completion frameworks
-  (setq org-contacts-complete-functions
-		'(org-contacts-complete-name
-		  org-contacts-complete-email
-		  org-contacts-complete-tags))
-
   ;; Email address formatting
   (setq org-contacts-email-link-description-format "%s <%e>")
 
-  ;; Enable vCard export
-  (require 'org-vcard nil t))
+  (setq mu4e-org-contacts-file contacts-file)
+  (add-to-list 'mu4e-headers-actions
+			   '("org-contact-add" . mu4e-action-add-org-contact) t)
+  (add-to-list 'mu4e-view-actions
+			   '("org-contact-add" . mu4e-action-add-org-contact) t)
 
+  ;; Integration with completion frameworks
+  (setq org-contacts-complete-functions
+		'(org-contacts-complete-name
+		  org-contacts-complete-email))
+
+  (setq mu4e-compose-complete-addresses nil) ;; Don't use mu4e's address completion
+  (org-contacts-setup-completion-at-point))
+
+
+;; --------------------------- Org Agenda Integration --------------------------
 
 (with-eval-after-load 'org-agenda
   ;; Remove the direct hook first (in case it's already added)
@@ -57,10 +64,7 @@
 		(org-contacts-anniversaries))))
 
   ;; Use the safe wrapper instead
-  (add-hook 'org-agenda-finalize-hook 'cj/org-contacts-anniversaries-safe)
-
-  ;; Keep your other settings
-  (setq org-contacts-anniversary-agenda-days 7))
+  (add-hook 'org-agenda-finalize-hook 'cj/org-contacts-anniversaries-safe))
 
 ;;; ---------------------------- Capture Templates ------------------------------
 
@@ -113,7 +117,8 @@ Added: %U")))
 								   nil (list contacts-file)))))
 	(goto-char (point-min))
 	(search-forward contact)
-	(org-show-entry)))
+	(org-fold-show-entry)
+	(org-reveal)))
 
 (defun cj/org-contacts-new ()
   "Create a new contact."
@@ -154,84 +159,39 @@ Added: %U")))
 
 ;;; ---------------------------- Insert Contact Email ---------------------------
 
-(defun cj/org-contacts--prop (entry key)
-  "Return property KEY from org-contacts ENTRY. KEY is an uppercase string, e.g. \"EMAIL\"."
-  (let* ((props (nth 2 entry))
-		 (cell (assoc key props)))
-	(and cell (cdr cell))))
+(defun cj/org-contacts--props-matching (entry pattern)
+  "Return all property values from ENTRY whose keys match PATTERN (a regexp)."
+  (let ((props (nth 2 entry)))
+	(delq nil
+		  (mapcar (lambda (prop)
+					(when (string-match-p pattern (car prop))
+					  (cdr prop)))
+				  props))))
+
+(defun cj/get-all-contact-emails ()
+  "Retrieve all contact emails from org-contacts database.
+Returns a list of formatted strings like \"Name <email@example.com>\"."
+  (let ((contacts (org-contacts-db)))
+	(delq nil
+		  (mapcan (lambda (e)
+					(let* ((name (car e))
+						   ;; This returns a LIST of email strings
+						   (email-strings (cj/org-contacts--props-matching e "EMAIL")))
+					  ;; Need mapcan here to handle the list
+					  (mapcan (lambda (email-str)
+								(when (and email-str (string-match-p "[^[:space:]]" email-str))
+								  (mapcar (lambda (email)
+											(format "%s <%s>" name (string-trim email)))
+										  (split-string email-str "[,;[:space:]]+" t))))
+							  email-strings)))
+				  contacts))))
 
 (defun cj/insert-contact-email ()
   "Select and insert a contact's email address at point."
   (interactive)
-  (let* ((contacts (org-contacts-db))
-		 (items (delq nil
-					  (mapcar (lambda (e)
-								(let* ((name (car e))
-									   (email (cj/org-contacts--prop e "EMAIL")))
-								  (when (and email (string-match-p "[^[:space:]]" email))
-									(format "%s <%s>" name
-											(car (split-string email "[,;[:space:]]+" t))))))
-							  contacts)))
+  (let* ((items (cj/get-all-contact-emails))
 		 (selected (completing-read "Contact: " items nil t)))
 	(insert selected)))
-
-
-;;; ----------------------------- Mu4e Integration ------------------------------
-
-(with-eval-after-load 'mu4e
-  (setq mu4e-org-contacts-file contacts-file)
-  (add-to-list 'mu4e-headers-actions
-			   '("org-contact-add" . mu4e-action-add-org-contact) t)
-  (add-to-list 'mu4e-view-actions
-			   '("org-contact-add" . mu4e-action-add-org-contact) t))
-
-;; WIP: replaced the below with native mu4e functions
-;; (add-to-list 'mu4e-headers-actions
-;;             '("add contact" . cj/mu4e-action-add-org-contact) t)
-;; (add-to-list 'mu4e-view-actions
-;;             '("add contact" . cj/mu4e-action-add-org-contact) t))
-
-;; (defun cj/mu4e-action-add-org-contact (msg)
-;;   "Add contact from email MSG to org-contacts."
-;;   (let* ((from (plist-get msg :from))
-;;       (name (or (car (car from)) ""))
-;;       (email (cdr (car from)))
-;;       (subject (plist-get msg :subject)))
-;;  (let ((cj/contact-name name)
-;;        (cj/contact-email email)
-;;        (cj/contact-note (or subject "")))
-;;    (org-capture nil "C"))))
-
-(defun cj/setup-org-contacts-completion ()
-  "Setup org-contacts as the completion source for email addresses."
-  ;; Clear any existing completion functions first
-  (setq-local completion-at-point-functions nil)
-  ;; Add our custom completion function
-  (add-hook 'completion-at-point-functions
-			#'cj/org-contacts-company-complete
-			nil t))
-
-;; Apply to all relevant modes
-(add-hook 'message-mode-hook #'cj/setup-org-contacts-completion)
-(add-hook 'mu4e-compose-mode-hook #'cj/setup-org-contacts-completion)
-(add-hook 'org-msg-edit-mode-hook #'cj/setup-org-contacts-completion)
-
-;; Also ensure company-mode uses the right backend with proper filtering
-(with-eval-after-load 'company
-  (defun cj/mu4e-compose-company-setup ()
-	;; Use capf with our custom completion function
-	(setq-local company-backends '(company-capf))
-	(setq-local company-idle-delay 0.2)
-	(setq-local company-minimum-prefix-length 1)  ; Changed to 1 for better responsiveness
-	;; Ensure company filters properly
-	(setq-local company-transformers '(company-sort-by-occurrence))
-	;; Make sure company respects our filtering
-	(setq-local company-require-match nil)
-	(setq-local company-frontends '(company-pseudo-tooltip-frontend
-									company-echo-metadata-frontend)))
-
-  (add-hook 'mu4e-compose-mode-hook #'cj/mu4e-compose-company-setup)
-  (add-hook 'org-msg-edit-mode-hook #'cj/mu4e-compose-company-setup))
 
 ;;; ---------------------------- Org-Contacts Keymap ----------------------------
 
@@ -240,15 +200,13 @@ Added: %U")))
   (let ((map (make-sparse-keymap)))
 	(define-key map "f" 'cj/org-contacts-find)     ;; find contact
 	(define-key map "n" 'cj/org-contacts-new)      ;; new contact
-	(define-key map "i" 'cj/insert-contact-email)  ;; inserts email from org-contact
+	(define-key map "e" 'cj/insert-contact-email)  ;; inserts email from org-contact
 	(define-key map "v" 'cj/org-contacts-view-all) ;; view all contacts
 	map)
   "Keymap for `org-contacts' commands.")
 
 ;; Bind the org-contacts map to the C-c C prefix
 (global-set-key (kbd "C-c C") cj/org-contacts-map)
-
-
 
 (provide 'org-contacts-config)
 ;;; org-contacts-config.el ends here.
