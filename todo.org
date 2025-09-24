@@ -1,5 +1,8 @@
 * Emacs Open Work
 ** DOING [#A] Test and Fix Org-Contacts                               :bug:
+*** TODO [#B] Add tests for cj/get-all-contact-emails
+*** TODO [#B] Consider turning defun cj/get-all-contact-emails into key based finding
+Rather than just finding :EMAIL: matches, why not pass in key and have it find :PHONE: or :ADDRESS: also? 
 *** TODO [#B] Finding Contact should only match Org Header text
 *** TODO [#B] Viewing Contacts should just bring up main contacts org file, not table
 *** Tests
