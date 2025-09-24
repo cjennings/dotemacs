@@ -191,7 +191,7 @@ can be reinserted."
 		  (message "GPTel buffer cleared and heading reset"))
 	  (message "Not a GPTel buffer in org-mode. Nothing cleared."))))
 
-;; Add a file to GPTel context (made resilient to Projectile not being loaded)
+;; Add a file to GPTel context (resilient to Projectile not being loaded)
 (defun cj/gptel-add-file ()
   "Add a file to the GPTel context.
 
@@ -213,6 +213,7 @@ Otherwise, prompt with `read-file-name'."
 	(gptel-add-file file-path)
 	(when (boundp 'gptel-context--alist)
 	  (message "Current context has %d sources" (length gptel-context--alist)))))
+
 
 ;;; ---------------------------- GPTel Configuration ----------------------------
 
@@ -348,22 +349,24 @@ Otherwise, prompt with `read-file-name'."
 
 (defvar ai-keymap
   (let ((map (make-sparse-keymap)))
-        (define-key map (kbd "B") #'cj/gptel-switch-backend)      ;; Change the backend (OpenAI, Anthropic, etc.)
-        (define-key map (kbd "M") #'gptel-menu)                   ;; gptel's transient menu
-        (define-key map (kbd "d") #'cj/gptel-delete-conversation) ;; delete conversation
-        (define-key map (kbd "f") #'cj/gptel-add-file)            ;; add a file to context
-        (define-key map (kbd "l") #'cj/gptel-load-conversation)   ;; load and continue conversation
-        (define-key map (kbd "m") #'cj/gptel-change-model)        ;; change the LLM model
-        (define-key map (kbd "p") #'gptel-system-prompt)          ;; change prompt
-        (define-key map (kbd "&") #'gptel-rewrite)                ;; rewrite a region of code/text
-        (define-key map (kbd "r") #'cj/gptel-context-clear)       ;; remove all context
-        (define-key map (kbd "s") #'cj/gptel-save-conversation)   ;; save conversation
-        (define-key map (kbd "t") #'cj/toggle-gptel)              ;; toggles the ai-assistant window
-        (define-key map (kbd "x") #'cj/gptel-clear-buffer)        ;; clears the assistant buffer
+		(define-key map (kbd "B") #'cj/gptel-switch-backend)            ;; Change the backend (OpenAI, Anthropic, etc.)
+		(define-key map (kbd "M") #'gptel-menu)                         ;; gptel's transient menu
+		(define-key map (kbd "d") #'cj/gptel-delete-conversation)       ;; delete conversation
+		(define-key map (kbd "b") #'cj/gptel--infix-context-add-buffer) ;; add buffer to context
+		(define-key map (kbd "f") #'cj/gptel-add-file)                  ;; add a file to context
+		(define-key map (kbd "l") #'cj/gptel-load-conversation)         ;; load and continue conversation
+		(define-key map (kbd "m") #'cj/gptel-change-model)              ;; change the LLM model
+		(define-key map (kbd "p") #'gptel-system-prompt)                ;; change prompt
+		(define-key map (kbd "&") #'gptel-rewrite)                      ;; rewrite a region of code/text
+		(define-key map (kbd "r") #'cj/gptel-context-clear)             ;; remove all context
+		(define-key map (kbd "s") #'cj/gptel-save-conversation)         ;; save conversation
+		(define-key map (kbd "t") #'cj/toggle-gptel)                    ;; toggles the ai-assistant window
+		(define-key map (kbd "x") #'cj/gptel-clear-buffer)              ;; clears the assistant buffer
         map)
   "Define the keymap for AI-related commands.
 
-Use the prefix \\<ai-keymap>, bound globally to M-a overriding the default `backward-sentence'.")
+Use the prefix \\<ai-keymap>, bound globally to M-a.
+Overrides the default `backward-sentence'.")
 (global-set-key (kbd "M-a") ai-keymap)
 
 (provide 'ai-config)
