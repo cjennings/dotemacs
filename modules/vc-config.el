@@ -86,6 +86,41 @@
 (use-package git-timemachine
   :defer t)
 
+;; -------------------------------- Magit Forge --------------------------------
+;; GitHub/GitLab/etc integration for Magit
+
+
+(use-package forge
+  :after magit
+  :defer t
+  :init
+  ;; Set up forge database location
+  (setq forge-database-file
+		(expand-file-name "forge-database.sqlite" user-emacs-directory))
+
+  :config
+  ;; Performance: limit initial fetch depth
+  (setq forge-pull-notifications nil) ; Don't pull notifications by default
+
+  ;; Customize forge list columns if desired
+  (setq forge-topic-list-limit '(60 . 10))) ; Show 60 open and 10 closed items
+
+;; Update the VC keymap directly with forge commands
+(with-eval-after-load 'forge
+  (define-key cj/vc-keymap "i" 'forge-list-issues)
+  (define-key cj/vc-keymap "r" 'forge-list-pullreqs)
+  (define-key cj/vc-keymap "f" 'forge-pull) ; fetch forge data
+
+  ;; Optional: Add a custom function to quickly create issues
+  (defun cj/forge-create-issue ()
+	"Create a new issue in the current repository."
+	(interactive)
+	(if (forge-current-repository)
+		(forge-create-issue)
+	  (user-error "Not in a forge repository")))
+
+  (define-key cj/vc-keymap "c" 'cj/forge-create-issue))
+
 ;; --------------------------------- VC Keymap ---------------------------------
 
 (global-unset-key (kbd "C-v"))
