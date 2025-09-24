@@ -76,6 +76,8 @@
 
 ;;; Code:
 
+(require 'system-utils)
+
 ;; -------------------------- Dwim Shell Commands Menu -------------------------
 
 (defun dwim-shell-commands-menu ()
@@ -687,6 +689,30 @@ Supports docx, odt, and other pandoc-compatible formats."
 	 "gpg --decrypt '<<f>>' > '<<fne>>'"
 	 :extensions '("gpg" "asc" "pgp")
 	 :utils "gpg"))
+
+
+(defun cj/dwim-shell-commands-markdown-to-html5-and-open ()
+  "Convert markdown file to HTML in specified directory and open it."
+  (interactive)
+  (let ((files (dwim-shell-command--files)))
+	;; verify it's a markdown file
+	(unless (and files
+				 (= 1 (length files))
+				 (string-match-p "\\.\\(md\\|markdown\\|mkd\\|mdown\\)\\'" (car files)))
+	  (user-error "Please place cursor on a single markdown file"))
+	(let* ((dest-dir (expand-file-name (read-directory-name "Destination directory: " default-directory)))
+		   (base-name (file-name-sans-extension (file-name-nondirectory (car files))))
+		   (output-file (expand-file-name (concat base-name ".html") dest-dir)))
+	  (dwim-shell-command-on-marked-files
+	   "Convert markdown to HTML"
+	   (format "pandoc --standalone --from=markdown --to=html5 --metadata title='<<fne>>' '<<f>>' -o '%s'"
+			   output-file)
+	   :utils "pandoc"
+	   :on-completion (lambda (&rest args)
+						(when (file-exists-p output-file)
+						  (cj/xdg-open output-file)
+						  (message "Opened %s" output-file)))))))
+
 
 
   (defun cj/dwim-shell-commands-kill-gpg-agent ()

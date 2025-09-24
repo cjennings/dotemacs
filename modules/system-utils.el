@@ -56,6 +56,40 @@ fully detached from Emacs."
 		 (format "%s %s" command (shell-quote-argument file)))
 		(message "Running %s on %s..." command (file-name-nondirectory file))))))
 
+
+(defun cj/identify-external-open-command ()
+  "Return the OS-default \"open\" command for this host.
+
+Signals an error if the host is unsupported."
+  (cond
+   ((env-linux-p)   "xdg-open")
+   ((env-macos-p)   "open")
+   ((env-windows-p) "start")
+   (t (error "external-open: unsupported host environment"))))
+
+(defun cj/xdg-open (&optional filename)
+  "Open FILENAME (or the file at point) with the OS default handler.
+
+Logs output and exit code to buffer *external-open.log*."
+  (interactive)
+  (let* ((file  (expand-file-name (or filename (dired-file-name-at-point))))
+		 (cmd   (cj/identify-external-open-command))
+		 (logbuf (get-buffer-create "*external-open.log*")))
+	(with-current-buffer logbuf
+	  (goto-char (point-max))
+	  (insert (format-time-string "[%Y-%m-%d %H:%M:%S] "))
+	  (insert (format "Opening: %s\n" file)))
+	(cond
+	 ;; Windows: let the shell handle association; fully detached.
+	 ((env-windows-p)
+	  (w32-shell-execute "open" file))
+	 ;; macOS/Linux: run the opener synchronously; it returns immediately.
+	 (t
+	  (call-process cmd nil 0 nil file)
+	  (with-current-buffer logbuf
+		(insert "  → Launched asynchronously\n"))))
+	nil))
+
 ;; ------------------------------ Server Shutdown ------------------------------
 
 (defun server-shutdown ()

@@ -9,6 +9,7 @@
 ;;; Code:
 
 (require 'user-constants)
+(require 'system-utils)
 
 ;;; ----------------------------------- Dired -----------------------------------
 

@@ -30,6 +30,8 @@
 
 ;;; Code:
 
+(require 'system-utils)
+
 ;; ------------------------------ Eshell -----------------------------
 ;; the Emacs shell.
 
@@ -83,6 +85,7 @@
               (eshell/alias "e"      "find-file $1")
 			  (eshell/alias "em"     "find-file $1")
 			  (eshell/alias "emacs"  "find-file $1")
+			  (eshell/alias "open"   "cj/xdg-open $1")
 			  (eshell/alias "gocj"   "cd /sshx:cjennings@cjennings.net:/var/cjennings/")
 			  (eshell/alias "gosb"   "cd /sshx:cjennings@wolf.usbx.me:/home/cjennings/")
 			  (eshell/alias "gowolf" "cd /sshx:cjennings@wolf.usbx.me:/home/cjennings/")
