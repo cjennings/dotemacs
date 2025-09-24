@@ -45,18 +45,6 @@
 		(eww-open-file file)
 	  (message "Not an HTML file: %s" file))))
 
-;;; -------------------------- Dired Copy Path As Kill --------------------------
-
-(defun cj/dired-copy-path-as-kill ()
-  "Copy the full path of file at point in Dired to the clipboard."
-  (interactive)
-  (let ((filename (dired-get-file-for-visit)))
-	(if (and filename (file-exists-p filename))
-		(progn
-		  (kill-new filename)
-		  (message "Copied '%s' to clipboard." filename))
-	  (message "No file at point."))))
-
 ;;; ------------------------ Dired Mark All Visible Files -----------------------
 
 (defun cj/dired-mark-all-visible-files ()
@@ -197,6 +185,7 @@ regardless of what file or subdirectory the point is on."
    ("C-       ."     . dirvish-history-go-forward)
    ("F"       . dirvish-file-info-menu)
    ("G"       . revert-buffer)
+   ("L"       . (lambda () (interactive) (cj/dired-copy-path-as-kill t)))
    ("h"       . cj/dirvish-open-html-in-eww)  ;; it does what it says it does
    ("M"       . cj/dired-mark-all-visible-files)
    ("M-e"     . dirvish-emerge-menu)
@@ -279,6 +268,80 @@ regardless of what file or subdirectory the point is on."
 					  (setq ediff-after-quit-hook-internal nil)
 					  (set-window-configuration wnd))))
 	  (error "No more than 2 files should be marked"))))
+
+;; --------------------------------- Copy Path ---------------------------------
+
+(defun cj/dired-copy-path-as-kill (&optional as-org-link)
+  "Copy path of file at point in dired/dirvish.
+  Copies relative path from project root if in a project,
+  otherwise from home directory (with ~ prefix) if applicable,
+  otherwise the absolute path.
+
+  With prefix argument or when AS-ORG-LINK is non-nil,
+  format as an org-mode link."
+  (interactive "P")
+  (unless (derived-mode-p 'dired-mode)
+	(user-error "Not in a dired buffer"))
+
+  (let* ((file (dired-get-filename nil t))
+		 (file-name (file-name-nondirectory file))
+		 (project-root (cj/get-project-root))
+		 (home-dir (expand-file-name "~"))
+		 path path-type)
+
+	(unless file
+	  (user-error "No file at point"))
+
+	(cond
+	 ;; Project-relative path
+	 (project-root
+	  (setq path (file-relative-name file project-root)
+			path-type "project-relative"))
+
+	 ;; Home-relative path
+	 ((string-prefix-p home-dir file)
+	  (setq path (concat "~/" (file-relative-name file home-dir))
+			path-type "home-relative"))
+
+	 ;; Absolute path
+	 (t
+	  (setq path file
+			path-type "absolute")))
+
+	;; Format as org-link if requested
+	(when as-org-link
+	  (setq path (format "[[file:%s][%s]]" path file-name)))
+
+	;; Copy to kill-ring and clipboard
+	(kill-new path)
+
+	;; Provide feedback
+	(message "Copied %s path%s: %s"
+			 path-type
+			 (if as-org-link " as org-link" "")
+			 (if (> (length path) 60)
+				 (concat (substring path 0 57) "...")
+			   path))))
+
+(defun cj/get-project-root ()
+  "Get project root using projectile or project.el.
+  Returns nil if not in a project."
+  (cond
+   ;; Try projectile first if available
+   ((and (fboundp 'projectile-project-root)
+		 (ignore-errors (projectile-project-root))))
+
+   ;; Fallback to project.el
+   ((and (fboundp 'project-current)
+		 (project-current))
+	(let ((proj (project-current)))
+	  (if (fboundp 'project-root)
+		  (project-root proj)
+		;; Compatibility with older versions
+		(car (project-roots proj)))))
+
+   ;; No project found
+   (t nil)))
 
 ;; ------------------------ Create Playlist From Marked ------------------------
 

@@ -99,7 +99,7 @@ If displaying on the top or bottom, treat this value as a height fraction."
 (defun cj/gptel--timestamp-from-filename (filename)
   "Return an Emacs timestamp extracted from FILENAME, or nil.
 
-Expect FILENAME to match "..._YYYYMMDD-HHMMSS.gptel"."
+Expect FILENAME to match _YYYYMMDD-HHMMSS.gptel."
   (when (string-match "_\\([0-9]\\{8\\}\\)-\\([0-9]\\{6\\}\\)\\.gptel\\'" filename)
 	(let* ((date (match-string 1 filename))
 		   (time (match-string 2 filename))

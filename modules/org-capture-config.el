@@ -43,6 +43,51 @@ Return the yanked content as a string so templates can insert it."
 	;; extract the webpage content from the kill ring
 	(car kill-ring)))
 
+;; -------------------------- Event Capture Formatting -------------------------
+
+;; Formats event headlines with YY-MM-DD prefix extracted from the scheduled date
+
+(defun cj/org-capture-format-event-headline ()
+  "Format the event headline with YY-MM-DD prefix from the WHEN timestamp.
+This function is called during org-capture finalization to prepend the date
+to the event title for better organization in the schedule file."
+  (when (string= (plist-get org-capture-plist :key) "e")
+    (save-excursion
+      (goto-char (point-min))
+      ;; Find the WHEN: line with timestamp
+      (when (re-search-forward "^WHEN: \\(<[^>]+>\\)" nil t)
+        (let* ((timestamp (match-string 1))
+               ;; Parse the timestamp to extract date components
+               (parsed (org-parse-time-string timestamp))
+               (year (nth 5 parsed))
+               (month (nth 4 parsed))
+               (day (nth 3 parsed))
+               ;; Format as YY-MM-DD
+               (date-prefix (format "%02d-%02d-%02d: "
+                                    (mod year 100) month day)))
+          ;; Go back to the headline
+          (goto-char (point-min))
+          ;; Insert date prefix after the asterisks
+          (when (looking-at "^\\(\\*+ \\)\\(.*\\)$")
+            (replace-match (concat "\\1" date-prefix "\\2"))))))))
+
+(defun cj/org-capture-event-content ()
+  "Get the appropriate content for event capture based on context.
+Returns the selected text from either Emacs or browser (via org-protocol)
+formatted appropriately for insertion into the capture template."
+  (cond
+   ;; If called from org-protocol (browser), get the initial from org-store-link-plist
+   ((and (boundp 'org-store-link-plist)
+		 org-store-link-plist
+		 (plist-get org-store-link-plist :initial))
+	(concat "\n" (plist-get org-store-link-plist :initial)))
+   ;; If there's a selected region in Emacs, use it from capture plist
+   ((and (stringp (plist-get org-capture-plist :initial))
+		 (not (string= (plist-get org-capture-plist :initial) "")))
+	(concat "\n" (plist-get org-capture-plist :initial)))
+   ;; Otherwise, return empty string
+   (t "")))
+
 ;; ----------------------- Org Capture PDF Active Region -----------------------
 ;; allows capturing the selected region from within a PDF file.
 
@@ -71,8 +116,12 @@ Intended to be called within an org capture template."
         '(("t" "Task" entry (file+headline inbox-file "Inbox")
            "* TODO %?" :prepend t)
 
-          ("e" "Event" entry (file+headline schedule-file "Scheduled Events")
-           "* %?\nWHEN: %^t" :prepend t)
+		  ("e" "Event" entry (file+headline schedule-file "Scheduled Events")
+		   "* %?%:description
+WHEN: %^t%(cj/org-capture-event-content)
+Captured On: %U"
+           :prepend t
+           :prepare-finalize cj/org-capture-format-event-headline)
 
           ("E" "Epub Text" entry (file+headline inbox-file "Inbox")
            "* %?
@@ -105,7 +154,7 @@ Captured On: %U"
            :prepend t)
 
 		  ;; requires cj/org-web-clipper function defined above
-		  ("w" "Web Page Clipper" entry
+          ("w" "Web Page Clipper" entry
 		   (file+headline webclipped-file "Webclipped Inbox")
 		   "* %a\nURL: %L\nCaptured On:%U\n%(cj/org-webpage-clipper)\n"
 		   :prepend t :immediate-finish t)
