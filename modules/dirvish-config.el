@@ -183,7 +183,7 @@ regardless of what file or subdirectory the point is on."
    ("<left>"  . dired-up-directory)
    ("<right>" . dired-find-file)
    ("C-,"     . dirvish-history-go-backward)
-   ("C-       ."     . dirvish-history-go-forward)
+   ("C-."     . dirvish-history-go-forward)
    ("F"       . dirvish-file-info-menu)
    ("G"       . revert-buffer)
    ("L"       . (lambda () (interactive) (cj/dired-copy-path-as-kill t)))
