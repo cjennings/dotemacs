@@ -10,11 +10,17 @@
 (use-package pdf-tools
   :defer t
   :mode (("\\.pdf\\'" . pdf-view-mode))
-  :init
-  (setq pdf-view-display-size 'fit-width)
-  (setq pdf-view-midnight-colors '( "#F1D5AC" . "#0F0E06")) ;; fg . bg
-  :config
-  (pdf-tools-install :no-query) ;; automatically compile on first launch
+  :hook
+  (pdf-view-mode . pdf-view-midnight-minor-mode)
+  :custom
+  (pdf-view-display-size 'fit-page)
+  (pdf-view-resize-factor 1.1)
+  (pdf-view-midnight-colors '("#F1D5AC" . "#0F0E06")) ;; fg . bg
+  ;; Avoid searching for unicodes to speed up pdf-tools.
+  ;; ... and yes, 'ligther' is not a typo
+  (pdf-view-use-unicode-ligther nil)
+  ;; Enable HiDPI support, at the cost of memory.
+  (pdf-view-use-scaling t)
   :bind
   (:map pdf-view-mode-map
 		("M" . pdf-view-midnight-minor-mode)
@@ -24,21 +30,9 @@
 		("C-c l" . org-store-link)
 		("z" . (lambda () (interactive) (cj/open-file-with-command "zathura")))
 		("j" . pdf-view-next-line-or-next-page)
-		("k" . pdf-view-previous-line-or-previous-page)))
-
-(use-package pdf-view
-  :ensure nil ;; built-in
-  :after pdf-tools
-  :hook
-  (pdf-view-mode . pdf-view-midnight-minor-mode)
-  :custom
-  (pdf-view-display-size 'fit-page)
-  (pdf-view-resize-factor 1.1)
-  ;; Avoid searching for unicodes to speed up pdf-tools.
-  ;; ... and yes, 'ligther' is not a typo
-  (pdf-view-use-unicode-ligther nil)
-  ;; Enable HiDPI support, at the cost of memory.
-  (pdf-view-use-scaling t))
+		("k" . pdf-view-previous-line-or-previous-page))
+  :config
+  (pdf-tools-install :no-query)) ;; automatically compile on first launch
 
 ;; ------------------------------ PDF View Restore -----------------------------
 
