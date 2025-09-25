@@ -98,12 +98,12 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 ;; ----------------------------------- Cursor ----------------------------------
 
 (defvar cj/-cursor-last-color nil
-  "Last color applied by `cj/set-cursor-color-according-to-mode`.")
+  "Last color applied by `cj/set-cursor-color-according-to-mode'.")
 (defvar cj/-cursor-last-buffer nil
-  "Last buffer name where color was applied by `cj/set-cursor-color-according-to-mode`.")
+  "Last buffer name where cursor color was applied.")
 
 (defun cj/set-cursor-color-according-to-mode ()
-  "Change the cursor color according to 'buffer-read-only' or 'overwrite' state."
+  "Change cursor color according to \\='buffer-read-only or \\='overwrite state."
   (let* ((state (cond
 				 (buffer-read-only 'read-only)
 				 (overwrite-mode   'overwrite)
