@@ -11,13 +11,23 @@ IFS=$'\n\t'
 SRC_DIR="${SRC_DIR:-$HOME/code/emacs-src}"
 EMACS_REPO="${EMACS_REPO:-https://git.savannah.gnu.org/git/emacs.git}"
 CHECKOUT_REF="${CHECKOUT_REF:-emacs-30.2}"
-# CHECKOUT_REF="${CHECKOUT_REF:-636f166cfc8}"
 PREFIX_BASE="${PREFIX_BASE:-$HOME/.local/src/emacs}"
-PREFIX="${PREFIX:-$PREFIX_BASE/${CHECKOUT_REF}}"
-# LOG_DIR="${LOG_DIR:-$HOME/.cache/emacs-build-logs}"
+
+# Add DEBUG_BUILD flag
+DEBUG_BUILD="${DEBUG_BUILD:-1}"
+if [[ "$DEBUG_BUILD" == "1" ]]; then
+	PREFIX="${PREFIX:-$PREFIX_BASE/${CHECKOUT_REF}-debug}"
+	CFLAGS="${CFLAGS:--O0 -g}"
+	ENABLE_CHECKING="${ENABLE_CHECKING:-yes,glyphs}"
+	ENABLE_NATIVE="${ENABLE_NATIVE:-0}"  # Disable native comp for debug
+else
+	PREFIX="${PREFIX:-$PREFIX_BASE/${CHECKOUT_REF}}"
+	CFLAGS="${CFLAGS:--O2 -g}"
+	ENABLE_CHECKING="${ENABLE_CHECKING:-no}"
+	ENABLE_NATIVE="${ENABLE_NATIVE:-1}"
+fi
+
 LOG_DIR="${LOG_DIR:-$HOME/}"
-ENABLE_NATIVE="${ENABLE_NATIVE:-1}"
-# WITH_PGTK="${WITH_PGTK:-auto}"
 WITH_PGTK="${WITH_PGTK:-0}"
 JOBS="${JOBS:-auto}"
 EXTRA_CONFIG="${EXTRA_CONFIG:-}"
@@ -26,7 +36,7 @@ EXTRA_CONFIG="${EXTRA_CONFIG:-}"
 
 umask 022
 mkdir -p "$LOG_DIR" "$PREFIX_BASE" "$HOME/.local/bin"
-: "${LOGFILE:=$LOG_DIR/emacs-build-$(date +%Y%m%d-%H%M%S)-${CHECKOUT_REF}.log}"
+: "${LOGFILE:=$LOG_DIR/emacs-build-$(date +%Y%m%d-%H%M%S)-${CHECKOUT_REF}${DEBUG_BUILD:+-debug}.log}"
 
 say() { printf '>>> %s\n' "$*" | tee -a "$LOGFILE" ; }
 run() {
@@ -39,8 +49,8 @@ run() {
 	fi
 }
 
-on_err(){ 
-    ec=$?
+on_err(){
+	ec=$?
 	echo "ERROR [$ec] - Full log at: $LOGFILE" >&2
 	echo "Last 100 lines of log:" >&2
 	tail -n 100 "$LOGFILE" >&2 || true
@@ -113,6 +123,17 @@ conf_flags=(
   "--with-modules"
 )
 
+# Add debug-specific flags
+if [[ "$DEBUG_BUILD" == "1" ]]; then
+  say "Building DEBUG version with symbols and checking"
+  conf_flags+=(
+	"--enable-checking=${ENABLE_CHECKING}"
+	"--enable-check-lisp-object-type"
+	# Note the quotes around the entire CFLAGS assignment:
+	"CFLAGS=${CFLAGS}"  # This keeps it as a single argument
+  )
+fi
+
 # Wayland/X choice
 if [[ "$WITH_PGTK" == "auto" ]]; then
   if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then WITH_PGTK="yes"; else WITH_PGTK="no"; fi
@@ -130,7 +151,7 @@ else
   conf_flags+=("--with-native-compilation=no")
 fi
 
-# Useful extras (disable later via EXTRA_CONFIG if missing deps)
+# Useful extras
 conf_flags+=(
   "--with-cairo"
   "--with-harfbuzz"
@@ -141,7 +162,6 @@ conf_flags+=(
 
 # Optional extra flags from env
 if [[ -n "$EXTRA_CONFIG" ]]; then
-  # shellcheck disable=SC2206
   conf_flags+=($EXTRA_CONFIG)
 fi
 
@@ -152,7 +172,8 @@ mkdir -p "$PREFIX"
 # Temporarily change IFS to space for configure argument expansion
 old_ifs="$IFS"
 IFS=' '
-run "cd '$SRC_DIR' && ./configure ${conf_flags[*]}"
+cd "$SRC_DIR"
+"./configure" "${conf_flags[@]}"
 IFS="$old_ifs"
 
 if [[ "$JOBS" == "auto" ]]; then
@@ -172,17 +193,29 @@ run "cd '$SRC_DIR' && make install-info"
 
 #  --------------------------------- Symlinks --------------------------------
 
-run "ln -sfn '$PREFIX' '$PREFIX_BASE/emacs-current'"
-
-# Remove old symlinks first, then create new ones
-for exe in emacs emacsclient; do
-	target="$PREFIX/bin/$exe"
-	link="$HOME/.local/bin/$exe"
-	if [[ -x "$target" ]]; then
-		run "rm -f '$link'"
-		run "ln -s '$target' '$link'"
-	fi
-done
+if [[ "$DEBUG_BUILD" == "1" ]]; then
+	run "ln -sfn '$PREFIX' '$PREFIX_BASE/emacs-debug'"
+	# Create debug-specific symlinks
+	for exe in emacs emacsclient; do
+		target="$PREFIX/bin/$exe"
+		link="$HOME/.local/bin/${exe}-debug"
+		if [[ -x "$target" ]]; then
+			run "rm -f '$link'"
+			run "ln -s '$target' '$link'"
+		fi
+	done
+	say "Debug build available as 'emacs-debug' and 'emacsclient-debug'"
+else
+	run "ln -sfn '$PREFIX' '$PREFIX_BASE/emacs-current'"
+	for exe in emacs emacsclient; do
+		target="$PREFIX/bin/$exe"
+		link="$HOME/.local/bin/$exe"
+		if [[ -x "$target" ]]; then
+			run "rm -f '$link'"
+			run "ln -s '$target' '$link'"
+		fi
+	done
+fi
 
 #  ---------------------------------- Wrap Up ----------------------------------
 
