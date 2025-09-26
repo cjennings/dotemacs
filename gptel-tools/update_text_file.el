@@ -27,6 +27,7 @@
 ;;; Code:
 
 (require 'gptel)
+(require 'subr-x)
 
 ;; Helper function for building sed commands
 (defun cj/build-sed-command (operation pattern replacement line-num temp-file)
@@ -72,7 +73,7 @@
   (gptel-make-tool
    :name "update_text_file"
    :function (lambda (path operation &optional pattern replacement line-num)
-			   (let/ ((full-path (expand-file-name path "~"))
+			   (let* ((full-path (expand-file-name path "~"))
 					  (temp-file (make-temp-file "gptel-update-" nil ".tmp"))
 					  (backup-name (format "%s-%s.bak"
 										   full-path
@@ -96,7 +97,7 @@
 						   ;; Copy to temp file for operations
 						   (copy-file full-path temp-file t)
 						   ;; Execute operation and check diff
-						   (let/ ((sed-cmd (cj/build-sed-command operation pattern replacement line-num temp-file))
+						   (let* ((sed-cmd (cj/build-sed-command operation pattern replacement line-num temp-file))
 								  (result (shell-command-to-string sed-cmd))
 								  (diff-output (shell-command-to-string
 												(format "diff -u '%s' '%s' 2>/dev/null" full-path temp-file))))
