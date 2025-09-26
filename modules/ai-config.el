@@ -82,9 +82,9 @@ Call this only after loading `gptel' so the backend constructors exist."
   (unless gptel-chatgpt-backend
 	(setq gptel-chatgpt-backend
 		  (gptel-make-openai
-			  "OpenAI - ChatGPT"
+			  "ChatGPT"
 			:key (cj/openai-api-key)
-			:models '("gpt-5")
+			:models '("gpt-4.1-mini")
 			:stream t)))
   ;; Set default backend
   (setq gptel-backend (or gptel-claude-backend gptel-chatgpt-backend)))
