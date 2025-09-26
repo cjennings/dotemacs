@@ -94,9 +94,15 @@
 (require 'org-roam-config)       ;; personal knowledge management in org mode
 (require 'org-contacts-config)   ;; fully integrated org-mode contacts management
 
-;; ------------------------------- Ai Integration ------------------------------
+;; -------------------------- AI Integration And Tools -------------------------
 
-(require 'ai-config)             ;; LLM integration. note: ai-directives.el
+(require 'ai-config)            ;; LLM integration with GPTel and friends
+
+(with-eval-after-load 'gptel
+  (add-to-list 'load-path "~/.emacs.d/gptel-tools")
+  (require 'write_text_file)
+  (require 'read_text_file)
+  (require 'update_text_file))
 
 ;; ------------------------- Personal Workflow Related -------------------------
 

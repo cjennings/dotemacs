@@ -29,15 +29,12 @@
 
 ;;; Code:
 
-(add-to-list 'load-path (concat user-emacs-directory "modules/"))
-
 (autoload 'cj/gptel-save-conversation "ai-conversations" "Save the AI conversation to a file." t)
 (autoload 'cj/gptel-load-conversation "ai-conversations" "Load a saved AI conversation." t)
 (autoload 'cj/gptel-delete-conversation "ai-conversations" "Delete a saved AI conversation." t)
 
 (with-eval-after-load 'gptel
   (require 'ai-conversations))
-
 
 ;;; ------------------------- AI Config Helper Functions ------------------------
 
@@ -400,4 +397,4 @@ Overrides the default `backward-sentence'.")
 (global-set-key (kbd "M-a") ai-keymap)
 
 (provide 'ai-config)
-;;; ai-config.el ends here
+;;; ai-config.el ends here.
