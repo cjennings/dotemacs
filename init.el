@@ -100,9 +100,12 @@
 
 (with-eval-after-load 'gptel
   (add-to-list 'load-path "~/.emacs.d/gptel-tools")
+  (require 'read_buffer)
   (require 'write_text_file)
   (require 'read_text_file)
-  (require 'update_text_file))
+  (require 'update_text_file)
+  (require 'fetch_page)
+  )
 
 ;; ------------------------- Personal Workflow Related -------------------------
 
