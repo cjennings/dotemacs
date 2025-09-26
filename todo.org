@@ -1,11 +1,11 @@
 * Emacs Open Work
 ** DOING [#A] Test and Fix Org-Contacts                               :bug:
-*** TODO [#B] Add tests for cj/get-all-contact-emails
+*** TODO [#B] Add ERT tests for cj/get-all-contact-emails
 *** TODO [#B] Consider turning defun cj/get-all-contact-emails into key based finding
 Rather than just finding :EMAIL: matches, why not pass in key and have it find :PHONE: or :ADDRESS: also? 
 *** TODO [#B] Finding Contact should only match Org Header text
 *** TODO [#B] Viewing Contacts should just bring up main contacts org file, not table
-*** Tests
+*** Manual Tests
 - [X] Complete addresses with org-contact in to, cc, bcc
 - [ ] Complete addresses with new org-contact in to, cc, bcc
 - [ ] Complete with forwards/replies in to, cc, bcc
@@ -442,7 +442,6 @@ espeak "Appointment in $TIME minutes: $MSG"
 #+END_QUOTE
 [[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
 Captured On: [2025-06-19 Thu 12:29]
-** TODO [#B] Investigate source of Emacs crashes                       :bug:
 ** TODO [#B] Org Reveal.js Presentations from local org       :enhancement:
 *** References
 https://revealjs.com/
