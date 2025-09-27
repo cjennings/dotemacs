@@ -89,7 +89,7 @@
 							 (error "No read permission for file: %s" full-path))
 						   ;; Check file size
 						   (let ((size (file-attribute-size (file-attributes full-path))))
-							 (when (> size (/ 10 1024 1024))
+							 (when (> size (* 10 1024 1024))
 							   (error "File too large (%s): exceeds 10MB limit"
 									  (file-size-human-readable size))))
 						   ;; Create backup

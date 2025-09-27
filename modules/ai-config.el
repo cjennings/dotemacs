@@ -87,9 +87,10 @@ Call this only after loading `gptel' so the backend constructors exist."
 			:stream t)))
   ;; Set default backend
   (unless gptel-backend
-	(setq gptel-backend (or gptel-chatgpt-backend gptel-claude-backend)))
-  ;; Since cj/toggle-gptel is bound to F9 but defined in :config
-  (autoload 'cj/toggle-gptel "ai-config" "Toggle the AI-Assistant window" t)
+	(setq gptel-backend (or gptel-chatgpt-backend gptel-claude-backend))))
+
+;; Since cj/toggle-gptel is bound to F9 but defined in :config
+(autoload 'cj/toggle-gptel "ai-config" "Toggle the AI-Assistant window" t)
 
 ;; ------------------ Gptel Conversation And Utility Commands ------------------
 
@@ -267,7 +268,7 @@ message is displayed."
   (defvar cj/gptel-backends
 	`(("Anthropic - Claude" . ,gptel-claude-backend)
 	  ("OpenAI - ChatGPT" . ,gptel-chatgpt-backend))
-    "Alist of GPTel backends for interactive switching.")
+	"Alist of GPTel backends for interactive switching.")
 
   ;;; ---------------------------- Backend Management ---------------------------
 
@@ -278,34 +279,34 @@ message is displayed."
 
   ;;  Dynamic user prefix for org-mode heading (string, refreshed just before send)
   (defun cj/gptel--fresh-org-prefix ()
-    "Generate a fresh org-mode header with current timestamp for user messages."
-    (concat "* " user-login-name " " (format-time-string "[%Y-%m-%d %H:%M:%S]") "\n"))
+	"Generate a fresh org-mode header with current timestamp for user messages."
+	(concat "* " user-login-name " " (format-time-string "[%Y-%m-%d %H:%M:%S]") "\n"))
 
   ;; Initialize as a string (GPTel expectation)
   (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
-        (cj/gptel--fresh-org-prefix))
+		(cj/gptel--fresh-org-prefix))
 
   ;; Refresh immediately before each send for accurate timestamp
   (defun cj/gptel--refresh-org-prefix (&rest _)
-    "Update the org-mode prefix with fresh timestamp before sending message."
-    (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
-          (cj/gptel--fresh-org-prefix)))
+	"Update the org-mode prefix with fresh timestamp before sending message."
+	(setf (alist-get 'org-mode gptel-prompt-prefix-alist)
+		  (cj/gptel--fresh-org-prefix)))
   (advice-add 'gptel-send :before #'cj/gptel--refresh-org-prefix)
 
   ;; AI header on each reply: (e.g. "*** AI: <model> [timestamp]")
   (defun cj/gptel-backend-and-model ()
-    "Return backend, model, and timestamp as a single string."
-    (let* ((backend (pcase (bound-and-true-p gptel-backend)
-                      ((and v (pred vectorp)) (aref v 1))  ;; display name if vector
-                      (_ "AI")))
-           (model   (format "%s" (or (bound-and-true-p gptel-model) "")))
-           (ts      (format-time-string "[%Y-%m-%d %H:%M:%S]")))
-      (format "%s: %s %s" backend model ts)))
+	"Return backend, model, and timestamp as a single string."
+	(let* ((backend (pcase (bound-and-true-p gptel-backend)
+					  ((and v (pred vectorp)) (aref v 1))  ;; display name if vector
+					  (_ "AI")))
+		   (model   (format "%s" (or (bound-and-true-p gptel-model) "")))
+		   (ts      (format-time-string "[%Y-%m-%d %H:%M:%S]")))
+	  (format "%s: %s %s" backend model ts)))
 
   (defun cj/gptel-insert-model-heading (response-begin-pos _response-end-pos)
-    "Insert an Org heading for the AI reply at RESPONSE-BEGIN-POS."
-    (save-excursion
-      (goto-char response-begin-pos)
+	"Insert an Org heading for the AI reply at RESPONSE-BEGIN-POS."
+	(save-excursion
+	  (goto-char response-begin-pos)
 	  (insert (format "* %s\n" (cj/gptel-backend-and-model)))))
 
   (add-hook 'gptel-post-response-functions #'cj/gptel-insert-model-heading))
