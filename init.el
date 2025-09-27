@@ -102,10 +102,11 @@
   (add-to-list 'load-path "~/.emacs.d/gptel-tools")
   ;; Buffer Tools
   (require 'read_buffer)
-  ;; File CRUD
+  ;; Filesystem Tools
   (require 'read_text_file)
   (require 'write_text_file)
   (require 'update_text_file)
+  (require 'list_directory_files)
   (require 'move_to_trash)
   ;; Web Tools
   (require 'fetch_page))
