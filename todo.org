@@ -473,20 +473,6 @@ This code actually exists in org-drill-config, but it doesn't seem to work
 *** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
 [[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
 Captured On: [2025-08-18 Mon 14:36]
-** TODO [#B] Emacs Add Magit Forge Functionality              :enhancement:
-https://github.com/magit/forge
-https://magit.vc/manual/forge/Setup-for-Githubcom.html
-Example usage from sqrtminusone
-#+begin_src emacs-lisp
-  (use-package forge
-    :after magit
-    :straight t
-    :config
-    (add-to-list 'forge-alist '("gitlab.etu.ru"
-                                "gitlab.etu.ru/api/v4"
-                                "gitlab.etu.ru"
-                                forge-gitlab-repository)))
-#+end_src
 ** TODO [#B] Fix Emacs Alarms for Scheduled Events                    :bug:
 *** 2025-06-03 Tue @ 15:12:51 -0500 Problem
 Emacs Alarm seems to sound off periodically after the alarm rang the first time.
