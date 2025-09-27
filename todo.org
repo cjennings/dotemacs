@@ -93,7 +93,8 @@ Pull out the API key fetching, caching, and GPTel backend creation logic from ai
 ---
 
 ** DOING [#A] Add gptel tools                                  :enhancement:
-*** TODO Refactor tools into utilities
+*** TODO [#A] Add a list files tool                           :enhancement:
+*** TODO [#C] Refactor tools into utilities                           :bug:
 ** DOING [#A] Test and Fix Org-Contacts                               :bug:
 *** TODO [#B] Add ERT tests for cj/get-all-contact-emails
 *** TODO [#B] Consider turning defun cj/get-all-contact-emails into key based finding
