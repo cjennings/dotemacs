@@ -25,7 +25,6 @@
 ;; Or in any buffer:
 ;; - Add directive as above, and select a region to rewrite with M-a r.
 ;;
-;; Uses AI directives from ai-directives.el for specialized AI behaviors.
 
 ;;; Code:
 
@@ -87,10 +86,10 @@ Call this only after loading `gptel' so the backend constructors exist."
 			:models '("gpt-4.1-mini")
 			:stream t)))
   ;; Set default backend
-  (setq gptel-backend (or gptel-claude-backend gptel-chatgpt-backend)))
-
-;; Since cj/toggle-gptel is bound to F9 but defined in :config
-(autoload 'cj/toggle-gptel "ai-config" "Toggle the AI-Assistant window" t)
+  (unless gptel-backend
+	(setq gptel-backend (or gptel-chatgpt-backend gptel-claude-backend)))
+  ;; Since cj/toggle-gptel is bound to F9 but defined in :config
+  (autoload 'cj/toggle-gptel "ai-config" "Toggle the AI-Assistant window" t)
 
 ;; ------------------ Gptel Conversation And Utility Commands ------------------
 
@@ -261,6 +260,8 @@ message is displayed."
   (gptel--debug nil)
   :config
   (cj/ensure-gptel-backends)
+  ;; Set ChatGPT as default after initialization
+  (setq gptel-backend gptel-chatgpt-backend)
 
   ;; Named backend list for switching
   (defvar cj/gptel-backends
