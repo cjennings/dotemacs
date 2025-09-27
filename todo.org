@@ -1,4 +1,99 @@
 * Emacs Open Work
+** DOING [#A] Refactor ai-config
+*** 2025-09-26 Fri @ 21:4-:13 -0500 Goal and Plan Outline
+*Goal*
+
+Refactor to improve modularity, readability, and testability while keeping the current behavior and keybindings.
+
+---
+**** Refactoring Strategy
+***** 1. Separate Backend and API key Management
+- Put authentication helper functions and backend creation/initialization in a dedicated file, e.g., =ai-backends.el=.
+- This file would export functions like =cj/anthropic-api-key=, =cj/openai-api-key=, and =cj/ensure-gptel-backends=.
+- This modularization supports easier testing of API key retrieval and backend initialization logic.
+Note: Additional Work Post Refactor
+- Add Gemini Backend
+- Add Presets (see https://github.com/karthink/gptel?tab=readme-ov-file#option-presets)
+***** 2. Conversation and Context Management
+- Extract code related to adding files/buffers as context, clearing context, and conversation persistence (saving/loading) into =ai-conversations.el=.
+- Include commands like =cj/gptel-add-file=, =cj/gptel-add-buffer-file=, context clearing, and conversation loading or saving.
+Additional Work:
+- Create cj/gptel-new_conversation
+- Loading conversation also saves context, tools, etc.
+- Saving conversations also saves context, tools, etc. 
+***** 3. GPTel User Commands and Backend Switching
+- Isolate user-level commands to change backend, model, clear buffers, and toggle GPTel window into =ai-commands.el=.
+- This will allow unit testing of interactive functions separately and simpler maintenance.
+Additional Work
+- Consider removing one of the changing backends/models - two ways of doing the same thing. 
+***** 4. GPTel Configuration and Org-mode Enhancement
+- Have a file, e.g., =ai-gptel-config.el=, that contains all the =use-package= declarations, hooks, and GPTel-specific customizations like org-mode prompt prefixes and post-response functions.
+- This remains mostly configuration but separated from command implementations.
+***** 5. Keybindings and UI
+
+- Place the custom AI keymap and global keybindings into =ai-keymap.el=.
+- This file imports the commands from =ai-commands.el= and binds them.
+
+***** 6. Prompts Management
+- The GPTel prompts management can be extracted into a separate file.
+Additional Work
+- Make Prompts Management more stable
+
+---
+
+**** Ensuring Testability
+- Each module should export pure or mostly pure functions when possible.
+- Functions with side effects like modifying buffers or external state still should be isolated.
+- Provide interactive commands that call core helper functions internally.
+- Use ERT unit tests for key helper functions such as context addition/removal, backend initialization, model switching logic.
+- Use mock authentication backends or mock auth-source for API key tests.
+---
+**** Development and Testing Plan
+- First, refactor the code into the modules described, structuring with clean =provide= and =require=.
+- Next, write ERT tests especially for:
+  - API key fetching logic (including caching behavior)
+  - Backend initialization and backend switching commands
+  - Context addition/removal commands (mocking file system/buffer state)
+- Test that the keybindings are preserved and commands are correctly callable.
+- Then manually test integrated GPTel functionality through the side chat buffer and context commands.
+- Keep the public user interface stable while refactoring.
+---
+*** 2025-09-26 Fri @ 21:44:20 -0500 Current Plan for Step One
+
+Step 1: Extract API Key Helpers and Backend Initialization
+
+**** Goal
+Pull out the API key fetching, caching, and GPTel backend creation logic from ai-config.el into a new separate file, for example =ai-backends.el=.
+
+**** Responsibilities for =ai-backends.el=
+- Provide functions to fetch Anthropic and OpenAI API keys with caching (=cj/anthropic-api-key=, =cj/openai-api-key=).
+- Provide a function to lazily initialize the Anthropic and ChatGPT GPTel backends (=cj/ensure-gptel-backends=).
+- Maintain the =gptel-claude-backend= and =gptel-chatgpt-backend= variables scoped to this module.
+- Provide a common entrypoint to initialize and get available backends.
+
+**** Integration
+- Replace the relevant parts in =ai-config.el= with calls to the new module.
+- Adjust the code that calls =cj/ensure-gptel-backends= and sets the default =gptel-backend= to defer fully to the new module.
+- Ensure that =cj/toggle-gptel= and other commands rely on this properly.
+
+**** Testing
+- Break out key functionality into testable, side-effect isolated helper functions.
+- Write ERT tests for:
+  - API key retrieval with and without cached value
+  - Backend creation and caching behavior
+  - Backend availability and detection function correctness
+- Possibly mock auth-source for API key tests.
+
+**** Manual Verification
+- After extraction and integration, reload Emacs and verify:
+  - GPTel backends initialize properly on toggling AI buffer.
+  - No regressions in model switching or backend switching commands.
+  - Cached API keys are respected.
+
+---
+
+** DOING [#A] Add gptel tools                                  :enhancement:
+*** TODO Refactor tools into utilities
 ** DOING [#A] Test and Fix Org-Contacts                               :bug:
 *** TODO [#B] Add ERT tests for cj/get-all-contact-emails
 *** TODO [#B] Consider turning defun cj/get-all-contact-emails into key based finding
