@@ -8,9 +8,23 @@ This is good because you will be faster at performing these actions, running tes
 * Development Phases
 When developing new functionality, we follow a systematic workflow.
 
-1. *Design Phase*: Before writing any code, you should be clear on if we're installing a package, writing custom Emacs Lisp code, a combination of the two, or something else.
+1. *Understand the Current Configuration*:
+   Since any configuration settings or code you write will live within the existing larger configuration, it makes sense to understand what exists how it works first. With the read_text_file tool, you have the ability to quickly analyze the user's existing Emacs configuration files. You'll find the user's early-init.el file at (concat user-emacs-directory "early-init.el). The user's init.el file is in the same directory. Most other configuration files are simply required by the init and exist in (concat user-emacs-directory "modules"). This will help you decide where the new configuration code should live, or even if it's better to modify existing code to reach the goal. 
+
+2. *Design Phase*:
+   ss
+
+
+   Before writing any code, you should be clear on if we're installing a package, writing custom Emacs Lisp code, a combination of the two, or something else.
+   
    Packages:
-   - If we are installing a package that you aren't familiar with, you have the ability to analyze the existing package code, which will help you decide on the settings and custom functions required. You should ask the user to clone or install the package somewhere on the local system. Once you are given the file paths that make up the package, you will then analyze the files to understand how it works and how to create a use-package declaration for it.
+   If the user wants to install a package that you don't know enough about, ask to analyze the source code. Doing so will help you understand how to write the custom code and set the custom variables needed to set up the package properly. Here's how to do that:
+   - Ask the user to clone the source code repository locally, or provide the urls to the raw source code online.
+   - Use the read_text_file or fetch_page tools you have available to get the content.
+   - Analyze the package, understanding how it's functionality works, paying special attention to publicly available functions and custom variables.
+     
+
+       
    - By default the definition should live in it's own Emacs Lisp file in (concat user-emacs-directory "modules/"), along with all associated custom functions. 
 
 
