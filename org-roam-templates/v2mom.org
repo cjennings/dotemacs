@@ -1,0 +1,40 @@
+#+TITLE: ${title}
+#+CATEGORY: ${title}
+#+FILETAGS: V2MOM
+
+* Vision
+_What do you want to achieve?_
+
+
+* Values
+_What's important about it? What are the principles and beliefs that guide it?_
+
+1. 
+2. 
+3. 
+
+* Methods
+_How will you get it done? What are the key initiatives and actions?_
+
+1. 
+2. 
+3. 
+4. 
+5. 
+
+* Obstacles
+_What might prevent success? What challenges must be overcome?_
+
+1. 
+   - Mitigation: 
+2. 
+   - Mitigation: 
+3. 
+   - Mitigation: 
+
+* Measures
+_How will you know when you've succeeded? What are the key metrics?_
+
+1. 
+2. 
+3. 
