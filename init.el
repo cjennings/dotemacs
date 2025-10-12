@@ -22,8 +22,15 @@
 
 ;; -------------------------- Utilities And Libraries --------------------------
 
-(require 'custom-functions)      ;; custom function library w/ keybindings
+(require 'custom-case)           ;; operations for upper/lower/title case
+(require 'custom-comments)       ;; operations with comments
+(require 'custom-datetime)       ;; date/timestamps in various formats
 (require 'custom-file-buffer)    ;; custom buffer and file operations and keymap
+(require 'custom-line-paragraph) ;; operations on lines and paragraphs
+(require 'custom-misc)           ;; miscellaneous functions
+(require 'custom-ordering)       ;; ordering and sorting operations
+(require 'custom-text-enclose)   ;; operations to append, prepend, and surround text
+(require 'custom-whitespace)     ;; whitespace operations
 (require 'external-open)         ;; files to open outside of Emacs
 (require 'media-utils)           ;; download and play urls
 
