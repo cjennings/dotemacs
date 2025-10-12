@@ -22,9 +22,10 @@
 
 ;; -------------------------- Utilities And Libraries --------------------------
 
-(require 'media-utils)           ;; download and play urls
 (require 'custom-functions)      ;; custom function library w/ keybindings
+(require 'custom-file-buffer)    ;; custom buffer and file operations and keymap
 (require 'external-open)         ;; files to open outside of Emacs
+(require 'media-utils)           ;; download and play urls
 
 ;; ------------------------- System Level Functionality ------------------------
 
