@@ -27,26 +27,44 @@
 ;;
 ;; 6. View all your saved macros with s-<f3> (super-f3)
 ;;
-;; 7. All macros reload at startup automatically.
-;;    When this library is loaded, it will look for the save file and
-;;    re-establish all your named macros in your current session.
+;; 7. All macros are lazy-loaded when needed.
+;;    When you first use keyboard macro functionality or open the macros file,
+;;    all your previously saved macros are loaded into the current session.
 ;;
 ;;; Code:
 
 (require 'user-constants) ;; definitions of sync-dir and macros-file
 
+(defvar cj/macros-loaded nil
+  "Whether saved keyboard macros have been loaded from file.")
+
+(defun cj/ensure-macros-loaded ()
+  "Load keyboard macros from file if not already loaded.
+This function is idempotent and fast when macros are already loaded."
+  (when (and (not cj/macros-loaded)
+             (file-exists-p macros-file))
+    (condition-case err
+        (progn
+          (load macros-file)
+          (setq cj/macros-loaded t))
+      (error
+	   (message "Error loading keyboard macros file: %s"
+                (error-message-string err))))))
+
 (defun ensure-macros-file (file)
   "Ensure FILE exists and its first line enables lexical-binding."
   (unless (file-exists-p file)
-	(with-temp-file file
-	  (insert ";;; -*- lexical-binding: t -*-\n"))))
+    (with-temp-file file
+      (insert ";;; -*- lexical-binding: t -*-\n"))))
 
 (defun cj/kbd-macro-start-or-end ()
   "Toggle start/end of keyboard macro definition."
   (interactive)
+  ;; Lazy load macros on first use
+  (cj/ensure-macros-loaded)
   (if defining-kbd-macro
-	  (end-kbd-macro)
-	(start-kbd-macro nil)))
+      (end-kbd-macro)
+    (start-kbd-macro nil)))
 
 (defun cj/save-maybe-edit-macro (name)
   "Save last macro as NAME in `macros-file'; edit if prefix arg."
@@ -61,13 +79,15 @@
   (save-buffer)
   (switch-to-buffer (other-buffer (current-buffer) 1))
   (when current-prefix-arg
-	(find-file macros-file)
-	(goto-char (point-max)))
+    (find-file macros-file)
+    (goto-char (point-max)))
   name)
 
 (defun cj/open-macros-file ()
   "Open the keyboard macros file."
   (interactive)
+  ;; Ensure macros are loaded before opening the file
+  (cj/ensure-macros-loaded)
   (ensure-macros-file macros-file)
   (find-file macros-file))
 
@@ -81,17 +101,10 @@
 (defun cj/save-last-kbd-macro-on-exit ()
   "Save the last keyboard macro before exiting Emacs if it's not saved."
   (when (and last-kbd-macro (not (kmacro-name-last-macro)))
-	(when (y-or-n-p "Save last keyboard macro before exiting? ")
-	  (call-interactively #'cj/save-maybe-edit-macro))))
+    (when (y-or-n-p "Save last keyboard macro before exiting? ")
+      (call-interactively #'cj/save-maybe-edit-macro))))
 
 (add-hook 'kill-emacs-hook #'cj/save-last-kbd-macro-on-exit)
-
-;; Load existing macros file with proper error handling
-(when (file-exists-p macros-file)
-  (condition-case err
-	  (load macros-file)
-	(error
-	 (message "Error loading keyboard macros file: %s" (error-message-string err)))))
 
 (provide 'keyboard-macros)
 ;;; keyboard-macros.el ends here
