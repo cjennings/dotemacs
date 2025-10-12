@@ -3615,3 +3615,690 @@ UI series. Below are all the posts in this series:
   sorting]]
 
 [[https://kristofferbalintona.me/][Home]] [[https://kristofferbalintona.me/index.xml][RSS]] [[https://kristofferbalintona.me/tags/][Tags]] [[https://kristofferbalintona.me/categories/][Categories]] [[https://kristofferbalintona.me/series/]]Series
+** Consider Switching to Corfu from Company
+URL: https://kristofferbalintona.me/posts/202202270056/
+Captured On:[2025-09-23 Tue 01:39]
+[[https://kristofferbalintona.me/][Kristoffer Balintona]]
+[[https://kristofferbalintona.me/posts/][Archive]] Submit 
+
+Corfu, Kind-icon, and Corfu-doc
+
+Published Feb 27, 2022, last updated Mar 11, 2022 | 2261 words, 11
+minutes
+[[https://kristofferbalintona.me/categories/guides/][Guides]] [[https://kristofferbalintona.me/tags/emacs/][Emacs]]
+Table of Contents
+
+• [[https://kristofferbalintona.me/posts/202202270056/#synopsis][Synopsis]]
+• [[https://kristofferbalintona.me/posts/202202270056/#corfu][Corfu]]
+
+  • [[https://kristofferbalintona.me/posts/202202270056/#what-is-corfu-how-does-it-differ-from-company][What is corfu? How does it differ from company?]]
+  • [[https://kristofferbalintona.me/posts/202202270056/#basic][Basic]]
+  • [[https://kristofferbalintona.me/posts/202202270056/#working-with-the-recent-changes-to-corfu][Working with the recent changes to corfu]]
+  • [[https://kristofferbalintona.me/posts/202202270056/#further-configuration-in-minibuffers-and-with-lsp][Further configuration in minibuffers and with lsp]]
+  • [[https://kristofferbalintona.me/posts/202202270056/#end-product][End product]]
+
+• [[https://kristofferbalintona.me/posts/202202270056/#kind-icon][Kind-icon]]
+• [[https://kristofferbalintona.me/posts/202202270056/#corfu-doc][Corfu-doc]]
+• [[https://kristofferbalintona.me/posts/202202270056/#changelog][Changelog]]
+
+November 28, 2022 As is noted in the [[https://github.com/galeo/corfu-doc/issues/25][corfu-doc repository]], corfu-doc has
+been deprecated by the built-in corfu-popupinfo corfu extension.
+corfu-popupinfo’s functionality is roughly identical to corfu-doc’s,
+though its interface and code is naturally more idiomatic to corfu.
+
+Synopsis
+
+I will be going over my personal Emacs' text completion (e.g.
+company-mode and its accessories) configuration, which includes the
+following packages:
+
+• [[https://github.com/minad/corfu][Corfu]] by Minad — simpler alternative to company-mode
+• [[https://github.com/jdtsmith/kind-icon][Kind-icon]] by jdtsmith (u/JDRiverRun)— add icons to corfu popup (analog
+  to company-box-icons)
+• [[https://github.com/galeo/corfu-doc][Corfu-doc]] by Galeo — add documentation popup for corfu candidates
+  (analog to company-box-doc)
+
+Note: I use straight.el for package management and general.el to set my
+keybindings. Both of these packages have integration with use-package
+which come in the form of the :straight and :general keywords,
+respectively.
+
+Corfu
+
+What is corfu? How does it differ from company?
+
+Figure 1: The default corfu popup window. The GIF&rsquo;s framerate is
+low, which makes corfu appear less performant here than in actuality.
+
+Corfu is a text completion (e.g. completion-at-point, company-mode)
+package. In my opinion, since its release, corfu has not gotten the
+attention that it deserves. I prefer it to company for the following
+reasons:
+
+1 It is easier to configure since corfu’s internals rely on the built-in
+  completion-at-point. This also means that, unlike company,[[https://kristofferbalintona.me/posts/202202270056/#fn:1][1]]…
+
+  • any built-in invocation of completion-at-point or
+    completion-in-region leverages corfu,
+  • and any completion-style (e.g. orderless) can be used for filtering
+    candidates.
+
+2 Corfu has been more performant (i.e. fewer stutters, smoother cycling
+  of candidates) in my experience.
+3 Corfu can support any company backend via cape-company-to-capf,
+  provided by the complementary cape package. Thus, packages like
+  company-yasnippet can be used with corfu easily (see the next post in
+  my Text completion and minibuffer UI series for more details and
+  examples.)
+
+Basic
+
+The following is a basic corfu configuration with my preferred keybinds:
+
+  1  (use-package corfu  
+  2    :general  
+  3    (:keymaps 'corfu-map  
+  4              :states 'insert  
+  5              "C-n" #'corfu-next  
+  6              "C-p" #'corfu-previous  
+  7              "<escape>" #'corfu-quit  
+  8              "<return>" #'corfu-insert  
+  9              "M-d" #'corfu-show-documentation  
+ 10              "M-l" #'corfu-show-location)  
+ 11    :config  
+ 12    (corfu-global-mode))  
+
+These keybinds have C-n and C-p move through the candidates popup,
+<return> choose the current candidate, and <escape> close the corfu
+popup. Moreover, I have corfu’s documentation command
+(corfu-show-documentation; shows the available documentation for the
+current candidate, if any) bound to M-d, and corfu’s location command
+(corfu-show-location) to go to the location of the current candidate to
+M-l.
+
+Corfu offers a few variables to configure. You can take a look at each
+docstring to see its function. Here are my preferences:
+
+  1  :custom  
+  2  (corfu-auto nil)        ; Only use `corfu' when calling `completion-at-point' or  
+  3                                          ; `indent-for-tab-command'  
+  4  (corfu-auto-prefix 2)  
+  5  (corfu-auto-delay 0.25)  
+  6    
+  7  (corfu-min-width 80)  
+  8  (corfu-max-width corfu-min-width)       ; Always have the same width  
+  9  (corfu-count 14)  
+ 10  (corfu-scroll-margin 4)  
+ 11  (corfu-cycle nil)  
+ 12    
+ 13  ;; `nil' means to ignore `corfu-separator' behavior, that is, use the older  
+ 14  ;; `corfu-quit-at-boundary' = nil behavior. Set this to separator if using  
+ 15  ;; `corfu-auto' = `t' workflow (in that case, make sure you also set up  
+ 16  ;; `corfu-separator' and a keybind for `corfu-insert-separator', which my  
+ 17  ;; configuration already has pre-prepared). Necessary for manual corfu usage with  
+ 18  ;; orderless, otherwise first component is ignored, unless `corfu-separator'  
+ 19  ;; is inserted.  
+ 20  (corfu-quit-at-boundary nil)  
+ 21  (corfu-preselect-first t)        ; Preselect first candidate?  
+ 22    
+ 23  ;; Other  
+ 24  ;; NOTE 2022-02-05: In my actual configuration, I have this variable set to nil  
+ 25  ;; since I use `corfu-doc', whose configuration comes later. But if you don't  
+ 26  ;; use `corfu-doc', this might be helpful to you.  
+ 27  (corfu-echo-documentation t)            ; Show documentation in echo area?  
+ 28    
+
+Additionally, the following two variables not under corfu but related to
+completion-at-point will be useful to set:
+
+ 1  ;; Works with `indent-for-tab-command'. Make sure tab doesn't indent when you  
+ 2  ;; want to perform completion  
+ 3  (tab-always-indent 'complete)  
+ 4  (completion-cycle-threshold nil)      ; Always show all candidates in popup menu  
+
+Working with the recent changes to corfu
+
+On [[https://github.com/minad/corfu/commit/91feb66630eea6f36fee10576760c219896c1d05][February 7, 2022]], corfu introduced an important change[[https://kristofferbalintona.me/posts/202202270056/#fn:2][2]], particularly
+the interaction between corfu and orderless. You can read more [[https://github.com/minad/corfu#orderless-completion][on their
+README]], but, essentially, orderless now introduces the
+corfu-insert-separator command that inserts the corfu-separator
+character into the buffer. This character is what delimits orderless
+components (see [[https://www.reddit.com/r/emacs/comments/t38kkh/comment/hytmcpg/][this Reddit comment]] for a more lengthy description of
+this behavior.) A corfu workflow in which corfu-auto is set to t
+leverages this change, for without it users could not realistically use
+corfu with a multi-component completion-style like orderless.
+
+I do not use this workflow[[https://kristofferbalintona.me/posts/202202270056/#fn:3][3]], but if this behavior is desirable, you can
+set corfu-separator to your orderless separator character to properly
+delimit orderless components. I personally use the regular space
+character. You can make the following modifications to your
+configuration:
+
+  1  :general  
+  2  ;; NOTE 2022-02-28: `general-override-mode-map' is necessary to override local  
+  3  ;; binds to SPC in evil-mode's insert mode. May not be necessary if you don't use `evil'  
+  4  (:keymaps 'corfu-map  
+  5            :states 'insert  
+  6            "H-SPC" #'corfu-insert-separator ; I have a hyper key so this is an alternative keybind I use sometimes  
+  7            "SPC" #'corfu-insert-separator)  
+  8  :custom  
+  9  (corfu-quit-at-boundary 'separator)     ; a non-nil value is necessary  
+ 10  (corfu-separator ?\s)                   ; Use space  
+ 11  (corfu-quit-no-match 'separator) ; Don't quit if there is `corfu-separator' inserted  
+ 12  (corfu-preview-current 'insert)  ; Preview current candidate?  
+ 13  :config  
+ 14  ;; NOTE 2022-03-01: This allows for a more evil-esque way to have  
+ 15  ;; `corfu-insert-separator' work with space in insert mode without resorting to  
+ 16  ;; overriding keybindings with `general-override-mode-map'. See  
+ 17  ;; https://github.com/minad/corfu/issues/12#issuecomment-869037519  
+ 18  ;; Alternatively, add advice without `general.el':  
+ 19  ;; (advice-add 'corfu--setup :after 'evil-normalize-keymaps)  
+ 20  ;; (advice-add 'corfu--teardown :after 'evil-normalize-keymaps)  
+ 21  (general-add-advice '(corfu--setup corfu--teardown) :after 'evil-normalize-keymaps)  
+ 22  (evil-make-overriding-map corfu-map)  
+
+Further configuration in minibuffers and with lsp
+
+Corfu’s [[https://github.com/minad/corfu#completing-with-corfu-in-the-minibuffer][README]] provides a way to be able to use corfu completion in the
+minibuffer:
+
+  1  ;; Enable Corfu more generally for every minibuffer, as long as no other  
+  2  ;; completion UI is active. If you use Mct or Vertico as your main minibuffer  
+  3  ;; completion UI. From  
+  4  ;; https://github.com/minad/corfu#completing-with-corfu-in-the-minibuffer  
+  5  (defun corfu-enable-always-in-minibuffer ()  
+  6    "Enable Corfu in the minibuffer if Vertico/Mct are not active."  
+  7    (unless (or (bound-and-true-p mct--active) ; Useful if I ever use MCT  
+  8                (bound-and-true-p vertico--input))  
+  9      (setq-local corfu-auto nil)       ; Ensure auto completion is disabled  
+ 10      (corfu-mode 1)))  
+ 11  (add-hook 'minibuffer-setup-hook #'corfu-enable-always-in-minibuffer 1)  
+
+This means that in commands like eval-expression, corfu is able to be
+used (via <tab>) and provide completion.
+
+Figure 2: Using corfu in the minibuffer prompt for eval-expression.
+
+Figure 2: Using corfu in the minibuffer prompt for eval-expression.
+
+Additionally, for lsp-mode buffers, I have the following lines (this is
+entirely optional and preferential):
+
+  1  :hook (lsp-completion-mode . kb/corfu-setup-lsp) ; Use corfu for lsp completion  
+  2  :custom  
+  3  (lsp-completion-provider :none) ; Use corfu instead the default for lsp completions  
+  4  :config  
+  5  ;; Setup lsp to use corfu for lsp completion  
+  6  (defun kb/corfu-setup-lsp ()  
+  7    "Use orderless completion style with lsp-capf instead of the  
+  8    default lsp-passthrough."  
+  9    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))  
+ 10          '(orderless)))  
+
+End product
+
+Putting it together, we end with my actual configuration:
+
+  1  (use-package corfu  
+  2    :hook (lsp-completion-mode . kb/corfu-setup-lsp) ; Use corfu for lsp completion  
+  3    :general  
+  4    (:keymaps 'corfu-map  
+  5              :states 'insert  
+  6              "C-n" #'corfu-next  
+  7              "C-p" #'corfu-previous  
+  8              "<escape>" #'corfu-quit  
+  9              "<return>" #'corfu-insert  
+ 10              "H-SPC" #'corfu-insert-separator  
+ 11              ;; "SPC" #'corfu-insert-separator ; Use when `corfu-quit-at-boundary' is non-nil  
+ 12              "M-d" #'corfu-show-documentation  
+ 13              "C-g" #'corfu-quit  
+ 14              "M-l" #'corfu-show-location)  
+ 15    :custom  
+ 16    ;; Works with `indent-for-tab-command'. Make sure tab doesn't indent when you  
+ 17    ;; want to perform completion  
+ 18    (tab-always-indent 'complete)  
+ 19    (completion-cycle-threshold nil)      ; Always show candidates in menu  
+ 20    
+ 21    (corfu-auto nil)  
+ 22    (corfu-auto-prefix 2)  
+ 23    (corfu-auto-delay 0.25)  
+ 24    
+ 25    (corfu-min-width 80)  
+ 26    (corfu-max-width corfu-min-width)     ; Always have the same width  
+ 27    (corfu-count 14)  
+ 28    (corfu-scroll-margin 4)  
+ 29    (corfu-cycle nil)  
+ 30    
+ 31    ;; `nil' means to ignore `corfu-separator' behavior, that is, use the older  
+ 32    ;; `corfu-quit-at-boundary' = nil behavior. Set this to separator if using  
+ 33    ;; `corfu-auto' = `t' workflow (in that case, make sure you also set up  
+ 34    ;; `corfu-separator' and a keybind for `corfu-insert-separator', which my  
+ 35    ;; configuration already has pre-prepared). Necessary for manual corfu usage with  
+ 36    ;; orderless, otherwise first component is ignored, unless `corfu-separator'  
+ 37    ;; is inserted.  
+ 38    (corfu-quit-at-boundary nil)  
+ 39    (corfu-separator ?\s)            ; Use space  
+ 40    (corfu-quit-no-match 'separator) ; Don't quit if there is `corfu-separator' inserted  
+ 41    (corfu-preview-current 'insert)  ; Preview first candidate. Insert on input if only one  
+ 42    (corfu-preselect-first t)        ; Preselect first candidate?  
+ 43    
+ 44    ;; Other  
+ 45    (corfu-echo-documentation nil)        ; Already use corfu-doc  
+ 46    (lsp-completion-provider :none)       ; Use corfu instead for lsp completions  
+ 47    :init  
+ 48    (corfu-global-mode)  
+ 49    :config  
+ 50    ;; NOTE 2022-03-01: This allows for a more evil-esque way to have  
+ 51    ;; `corfu-insert-separator' work with space in insert mode without resorting to  
+ 52    ;; overriding keybindings with `general-override-mode-map'. See  
+ 53    ;; https://github.com/minad/corfu/issues/12#issuecomment-869037519  
+ 54    ;; Alternatively, add advice without `general.el':  
+ 55    ;; (advice-add 'corfu--setup :after 'evil-normalize-keymaps)  
+ 56    ;; (advice-add 'corfu--teardown :after 'evil-normalize-keymaps)  
+ 57    (general-add-advice '(corfu--setup corfu--teardown) :after 'evil-normalize-keymaps)  
+ 58    (evil-make-overriding-map corfu-map)  
+ 59    
+ 60    ;; Enable Corfu more generally for every minibuffer, as long as no other  
+ 61    ;; completion UI is active. If you use Mct or Vertico as your main minibuffer  
+ 62    ;; completion UI. From  
+ 63    ;; https://github.com/minad/corfu#completing-with-corfu-in-the-minibuffer  
+ 64    (defun corfu-enable-always-in-minibuffer ()  
+ 65      "Enable Corfu in the minibuffer if Vertico/Mct are not active."  
+ 66      (unless (or (bound-and-true-p mct--active) ; Useful if I ever use MCT  
+ 67                  (bound-and-true-p vertico--input))  
+ 68        (setq-local corfu-auto nil)       ; Ensure auto completion is disabled  
+ 69        (corfu-mode 1)))  
+ 70    (add-hook 'minibuffer-setup-hook #'corfu-enable-always-in-minibuffer 1)  
+ 71    
+ 72    ;; Setup lsp to use corfu for lsp completion  
+ 73    (defun kb/corfu-setup-lsp ()  
+ 74      "Use orderless completion style with lsp-capf instead of the  
+ 75  default lsp-passthrough."  
+ 76      (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))  
+ 77            '(orderless))))  
+
+Kind-icon
+
+Kind-icon is essentially company-box-icons for corfu. It adds icons to
+the left margin of the corfu popup that represent the ‘function’ (e.g.
+variable, method, file) of that candidate.
+
+Figure 3: Using corfu-doc in java-mode with completion candidates
+provided by lsp-mode.
+
+Figure 3: Using corfu-doc in java-mode with completion candidates
+provided by lsp-mode.
+
+The following is my configuration:
+
+  1  (use-package kind-icon  
+  2    :after corfu  
+  3    :custom  
+  4    (kind-icon-use-icons t)  
+  5    (kind-icon-default-face 'corfu-default) ; Have background color be the same as `corfu' face background  
+  6    (kind-icon-blend-background nil)  ; Use midpoint color between foreground and background colors ("blended")?  
+  7    (kind-icon-blend-frac 0.08)  
+  8    
+  9    ;; NOTE 2022-02-05: `kind-icon' depends `svg-lib' which creates a cache  
+ 10    ;; directory that defaults to the `user-emacs-directory'. Here, I change that  
+ 11    ;; directory to a location appropriate to `no-littering' conventions, a  
+ 12    ;; package which moves directories of other packages to sane locations.  
+ 13    (svg-lib-icons-dir (no-littering-expand-var-file-name "svg-lib/cache/")) ; Change cache dir  
+ 14    :config  
+ 15    (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter) ; Enable `kind-icon'  
+ 16    
+ 17    ;; Add hook to reset cache so the icon colors match my theme  
+ 18    ;; NOTE 2022-02-05: This is a hook which resets the cache whenever I switch  
+ 19    ;; the theme using my custom defined command for switching themes. If I don't  
+ 20    ;; do this, then the backgound color will remain the same, meaning it will not  
+ 21    ;; match the background color corresponding to the current theme. Important  
+ 22    ;; since I have a light theme and dark theme I switch between. This has no  
+ 23    ;; function unless you use something similar  
+ 24    (add-hook 'kb/themes-hooks #'(lambda () (interactive) (kind-icon-reset-cache))))  
+
+Corfu-doc
+
+Corfu-doc is basically company-quickhelp for corfu. It shows the
+documentation of the selected candidate in an adjacent popup window.
+
+Figure 4: Using corfu-doc in a corfu popup. Called from a java file with
+completion candidates provided by lsp-mode.
+
+Figure 4: Using corfu-doc in a corfu popup. Called from a java file with
+completion candidates provided by lsp-mode.
+
+Here is a sample configuration[[https://kristofferbalintona.me/posts/202202270056/#fn:4][4]]:
+
+  1  (use-package corfu-doc  
+  2    ;; NOTE 2022-02-05: At the time of writing, `corfu-doc' is not yet on melpa  
+  3    :straight (corfu-doc :type git :host github :repo "galeo/corfu-doc")  
+  4    :after corfu  
+  5    :hook (corfu-mode . corfu-doc-mode)  
+  6    :general (:keymaps 'corfu-map  
+  7                       ;; This is a manual toggle for the documentation popup.  
+  8                       [remap corfu-show-documentation] #'corfu-doc-toggle ; Remap the default doc command  
+  9                       ;; Scroll in the documentation window  
+ 10                       "M-n" #'corfu-doc-scroll-up  
+ 11                       "M-p" #'corfu-doc-scroll-down)  
+ 12    :custom  
+ 13    (corfu-doc-delay 0.5)  
+ 14    (corfu-doc-max-width 70)  
+ 15    (corfu-doc-max-height 20)  
+ 16    
+ 17    ;; NOTE 2022-02-05: I've also set this in the `corfu' use-package to be  
+ 18    ;; extra-safe that this is set when corfu-doc is loaded. I do not want  
+ 19    ;; documentation shown in both the echo area and in the `corfu-doc' popup.  
+ 20    (corfu-echo-documentation nil))  
+
+From my experience, corfu-doc is perfect for most. However, it should be
+noted that for those who have a high [[https://wiki.archlinux.org/title/Xorg/Keyboard_configuration#Adjusting_typematic_delay_and_rate][repeat rate]][[https://kristofferbalintona.me/posts/202202270056/#fn:5][5]], rapidly scrolling
+through candidates causes stuttering and/or lag. This is why I find
+setting a keybind for corfu-doc-toggle to be useful.
+
+------------------------------------------------------------------------
+
+Changelog
+
+• February 28, 2022
+
+  • Added link to Reddit comment in [[https://kristofferbalintona.me/posts/202202270056/#working-with-the-recent-changes-to-corfu][Working with the recent changes to
+    corfu]] section. Also update description of new corfu behavior.
+  • Added configuration for using corfu in the minibuffer.
+  • Listed more benefits to corfu, provided by u/JDRiverRun.
+
+• March 01, 2022
+
+  • Added link to relevant corfu GitHub Issue.
+  • Changed corfu configuration to avoid setting keybinds in
+    general-override-mode-map, suggested by a comment to this point.
+  • Added a note and GIF to corfu-doc section.
+
+• March 11, 2022
+
+  • Update to include new compatibility with corfu-insert-separator and
+    corfu-quit-at-boundary functionality.
+
+------------------------------------------------------------------------
+
+1 Kudos to u/JDRiverRun, the current maintainer of kind-icon for
+  [[https://www.reddit.com/r/emacs/comments/t38kkh/comment/hyturrd/][providing a few benefits]] I didn’t originally list. [[https://kristofferbalintona.me/posts/202202270056/#fnref:1][↩︎]]
+
+2 This change was initially motivated by jdtsmith (u/JDRiverRun) and is
+  described in [[https://github.com/minad/corfu/issues/119][this GitHub issue]]. [[https://kristofferbalintona.me/posts/202202270056/#fnref:2][↩︎]]
+
+3 See [[https://github.com/minad/corfu/commit/b71465fa6b6588babc98a1ae7034c9a41e5eaca7][this commit]]. Also see this [[https://github.com/minad/corfu/issues/138][GitHub issue]] which reimplemented the
+  old corfu-quit-at-boundary functionality alongside the then new
+  corfu-insert-separator functionality. [[https://kristofferbalintona.me/posts/202202270056/#fnref:3][↩︎]]
+
+4 This is not exactly my configuration, but is quite close to it. [[https://kristofferbalintona.me/posts/202202270056/#fnref:4][↩︎]]
+
+5 I personally use a repeat rate of 37 ms with a delay rate of 225, set
+  by xset r rate 225 37. [[https://kristofferbalintona.me/posts/202202270056/#fnref:5][↩︎]]
+
+Cross-references from other posts
+
+The posts below reference the current post:
+
+• [[https://kristofferbalintona.me/posts/202203130102/][Cape]]
+
+------------------------------------------------------------------------
+
+The Text Completion and Minibuffer UI series
+
+This post is just one installation of the Text Completion and Minibuffer
+UI series. Below are all the posts in this series:
+
+1 [[https://kristofferbalintona.me/posts/202202211546/][Vertico, Marginalia, All-the-icons-completion, and Orderless]]
+2 [[https://kristofferbalintona.me/posts/202202270056/][Corfu, Kind-icon, and Corfu-doc]] this post!
+3 [[https://kristofferbalintona.me/posts/202203130102/][Cape]]
+4 [[https://kristofferbalintona.me/posts/202504050923/][Complement corfu, vertico, and completion-preview with prescient.el
+  sorting]]
+
+[[https://kristofferbalintona.me/][Home]] [[https://kristofferbalintona.me/index.xml][RSS]] [[https://kristofferbalintona.me/tags/][Tags]] [[https://kristofferbalintona.me/categories/][Categories]] [[https://kristofferbalintona.me/series/]]Series
+** Ensure You Have Prescient Set Up Now, Add to Corfu Later
+URL: https://kristofferbalintona.me/posts/202504050923/
+Captured On:[2025-09-23 Tue 01:39]
+[[https://kristofferbalintona.me/][Kristoffer Balintona]]
+[[https://kristofferbalintona.me/posts/][Archive]] Submit 
+
+Complement corfu, vertico, and completion-preview with prescient.el
+sorting
+
+Published Apr 5, 2025, last updated Apr 22, 2025 | 1448 words, 7 minutes
+[[https://kristofferbalintona.me/categories/tips-and-tricks/][Tips and Tricks]] [[https://kristofferbalintona.me/tags/emacs/][Emacs]]
+April 07, 2025 With several commits made on April 6, 2025, vertico spun
+off its sorting functionality into an extension: [[https://github.com/minad/vertico/blob/main/extensions/vertico-sort.el][vertico-sort]]. As
+explained in vertico-sort.el’s commentary section, it includes a new
+feature: when history-delete-duplicates is nil, all sorting functions
+defined in vertico-sort.el now rank recently selected candidates above
+frequently selected candidates. This approximates the sorting strategy
+of prescient.el. I think I’ll stick with prescient.el sorting because I
+like history-delete-duplicates set to non-nil, but try it out yourself!
+April 22, 2025 Corfu now offers a similar functionality as vertic-sort
+does for vertico with the new [[https://github.com/minad/corfu/blob/main/extensions/corfu-history.el][corfu-sort]] extension. Like vertico-sort,
+corfu-sort requires history-delete-duplicates to be nil.
+
+[[https://github.com/radian-software/prescient.el][Prescient.el]] is a package that was popular during the era of ivy and
+helm. Nowadays, I don’t see it mentioned much because of the very
+popular corfu + vertico + marginalia + orderless combination which
+enhance built-in Emacs completion and overtaken ivy and helm in terms of
+popularity. (And it’s deserved! I use this combination, too.)[[https://kristofferbalintona.me/posts/202504050923/#fn:1][1]] But I’ve
+found prescient.el a noticeable convenience that complements this set of
+packages.
+
+The reason is prescient.el’s sorting. Roughly, we can think of
+completion as having two halves: filtering and sorting. Filtering is
+what completion-styles does: among the generated completion candidates,
+which are shown to the user? Sorting is the order in which the filtered
+candidates are shown. One might think that orderless, which is filters
+candidates with its completion-style, also sorts candidates—but it
+doesn’t. As explained in the [[https://github.com/oantolin/orderless?tab=readme-ov-file#prescient][orderless README]]:
+
+    The [[https://github.com/radian-software/prescient.el][prescient.el]] library also provides matching of space-separated
+    components in any order. It offers a completion-style that can be
+    used with Emacs’ default completion UI, Mct, Vertico or with
+    Icomplete. Furthermore Ivy is supported. The components can be
+    matched literally, as regexps, as initialisms or in the flex style
+    (called “fuzzy” in prescient). Prescient does not offer the same
+    flexibility as Orderless with its style dispatchers. However in
+    addition to matching, Prescient supports sorting of candidates,
+    while Orderless leaves that up to the candidate source and the
+    completion UI.
+
+As such, in the corfu + vertico + marginalia + orderless world, vertico
+(for minibuffer completions) and corfu (for in-inline completions) are
+responsible for sorting candidates.
+
+The problem is this: although orderless brilliantly narrows down
+candidates, both vertico and corfu have somewhat naive sorting
+algorithms (see vertico-sort-function and corfu-sort-function). Vertico
+offers vertico-sort-history-alpha and vertico-sort-history-length-alpha,
+and corfu offers corfu-history-mode. In my limited experience, however,
+I give prescient.el’s sorting algorithm an edge to both. (YMMV—feel free
+to try them!) Oftentimes vertico and corfu will consistently show the
+candidate you have in mind later in the list. This tends to be the case
+when using certain common commands and certain
+completion-at-point-functions: I would common seek out certain
+candidates that orderless would place third or fourth in the list.
+
+Prescient.el almost entirely solved this issue for me. Prescient.el
+offers a completion-style—this is its filtering functionality—but it
+also offers sorting functionality. The sorting functionality is what’s
+relevant here:
+
+    When sorting, the last few candidates you selected are displayed
+    first, followed by the most frequently selected ones, and then the
+    remaining candidates are sorted by length.
+
+Prescient.el is the core package, and there are several [[https://github.com/radian-software/prescient.el?tab=readme-ov-file#usage][auxiliary
+packages]] to integrate prescient with vertico, corfu, and others. We can
+enable prescient’s sorting for vertico and corfu (but not its filtering;
+I want to leave this to orderless) with something like the following:
+
+  1  ;; Core package  
+  2  (use-package prescient  
+  3    :custom  
+  4    ;; My settings for relevant user options:  
+  5    ;; (prescient-aggressive-file-save t)  
+  6    ;; (prescient-sort-length-enable nil)  
+  7    ;; (prescient-sort-full-matches-first t)  
+  8    ;; (prescient-history-length 200)  
+  9    ;; (prescient-frequency-decay 0.997)  
+ 10    ;; (prescient-frequency-threshold 0.05)  
+ 11    :config  
+ 12    ;; Optional: persist prescient statistics to an on-disk cache  
+ 13    ;; (`prescient-save-file')  
+ 14    (prescient-persist-mode 1))  
+ 15    
+ 16  ;; Integration with corfu  
+ 17  (use-package corfu-prescient  
+ 18    ;; The :after keyword defers loading this package, meaning this package is  
+ 19    ;; only loaded until something else wants something from it.  If we want  
+ 20    ;; `corfu-prescient-mode' to be enabled in the :config block, we need to  
+ 21    ;; prevent deferral with the :demand keyword. In combination with our :after  
+ 22    ;; block, the package is immediately loaded only after both corfu and  
+ 23    ;; prescient are loaded.  
+ 24    :demand t  
+ 25    :after corfu prescient  
+ 26    :custom  
+ 27    ;; Sorting.  These are the default values but I include them here to be  
+ 28    ;; explicit.  
+ 29    (corfu-prescient-enable-sorting t)  
+ 30    (corfu-prescient-override-sorting nil) ; Don't override `display-sort-function'  
+ 31    
+ 32    ;; Filtering  
+ 33    (corfu-prescient-enable-filtering nil) ; We want orderless to do the filtering  
+ 34    ;; See also `corfu-prescient-completion-styles',  
+ 35    ;; `corfu-prescient-completion-category-overrides' and  
+ 36    ;; `prescient--completion-recommended-overrides'.  Those options apply only  
+ 37    ;; when `corfu-prescient-enable-filtering' is non-nil.  
+ 38    :config  
+ 39    (corfu-prescient-mode 1))  
+ 40    
+ 41  ;; Integration with vertico  
+ 42  (use-package vertico-prescient  
+ 43    ;; The :after keyword defers loading this package, meaning this package is  
+ 44    ;; only loaded until something else wants something from it.  If we want  
+ 45    ;; `vertico-prescient-mode' to be enabled in the :config block, we need to  
+ 46    ;; prevent deferral with the :demand keyword. In combination with our :after  
+ 47    ;; block, the package is immediately loaded only after both vertico and  
+ 48    ;; prescient are loaded.  
+ 49    :demand t  
+ 50    :after vertico prescient  
+ 51    :custom  
+ 52    ;; Sorting.  These are the default values but I include them here to be  
+ 53    ;; explicit.  
+ 54    (vertico-prescient-enable-sorting t)  
+ 55    (vertico-prescient-override-sorting nil) ; Don't override `display-sort-function'  
+ 56    
+ 57    ;; Filtering  
+ 58    (vertico-prescient-enable-filtering nil) ; We want orderless to do the filtering  
+ 59    ;; See also `vertico-prescient-completion-styles',  
+ 60    ;; `vertico-prescient-completion-category-overrides', and  
+ 61    ;; `prescient--completion-recommended-overrides'.  Those options apply only  
+ 62    ;; when when `vertico-prescient-enable-filtering' is non-nil.  
+ 63    :config  
+ 64    (vertico-prescient-mode 1))  
+
+The result is using orderless for completion filtering and prescient for
+completion sorting everywhere—for in-line completions with corfu and
+minibuffer completions with vertico. With this, among the candidates
+filtered by orderless, the most recent and common ones will be bumped up
+to the beginning. Try it out!
+
+Bonus: integration with completion-preview-mode
+
+Emacs 30.1 ships with the new completion-preview-mode. You can read
+about it [[https://eshelyaron.com/posts/2023-11-17-completion-preview-in-emacs.html][in this blog post]] but also in the Emacs 30.1 news (i.e., C-u 30
+C-h n). Apparently, completion-preview-mode has its own sorting
+function—which makes sense, since it isn’t hooked into either corfu nor
+vertico (which we set up to use prescient above). The relevant user
+option to modify its sorting is completion-preview-sort-function. So we
+just have to make sure that function matches prescient’s. We can do that
+like this:
+
+ 1  (with-eval-after-load 'prescient  
+ 2    ;; Have `completion-preview-mode' use prescient's sorting algorithm  
+ 3    (setopt completion-preview-sort-function #'prescient-completion-sort))  
+
+But, if you also use corfu on top of completion-preview-mode, you’ll
+still notice a discrepancy between corfu’s first candidate and
+completion-preview’s candidate. They should be the same with the same
+sorting algorithm but they’re not! I’m not 100%, but I’m fairly
+confident that corfu-prescient keeps track of corfu-specific completion
+usage, which is separate from non-corfu-specific use. Consequently, the
+statistics used to sort candidates ends up different between corfu and
+prescient-completion-sort.
+
+In any case, below is a simple fix that gets corfu and
+completion-preview on the same page:
+
+  1  ;; We set completion-preview's sorting function  
+  2  ;; (`completion-preview-sort-function') to corfu's sorting function  
+  3  ;; (`corfu-sort-function').  
+  4  (with-eval-after-load 'corfu  
+  5    (setopt completion-preview-sort-function corfu-sort-function))  
+  6    
+  7  ;; Alternative: for a solution that ensures `completion-preview-sort-function'  
+  8  ;; always matches `corfu-sort-function', we can use a variable watcher.  This is  
+  9  ;; my preference.  
+ 10  ;;  
+ 11  ;; The below accounts for cases in which (i) the user has buffer-local values  
+ 12  ;; for `corfu-sort-function' or (ii) the user changes the global value of  
+ 13  ;; `corfu-sort-function' (e.g., from minor modes that disable/enable  
+ 14  ;; functionality).  It is a robust solution, and although I have not tested its  
+ 15  ;; performance overhead, it should cause no problems.  
+ 16  (add-variable-watcher 'corfu-sort-function  
+ 17                        (lambda (_symbol newval operation where)  
+ 18                          "Match the value of `completion-preview-sort-function' to `corfu-sort-function'.  
+ 19  If `corfu-sort-function' is set buffer-locally, also set  
+ 20  `completion-preview-sort-function' buffer-locally.  Otherwise, change  
+ 21  the default value of `completion-preview-sort-function' accordingly.  
+ 22    
+ 23  This action only applies when the value of `corfu-sort-function' is  
+ 24  set (i.e., OPERATION is \\='set).  This excludes, e.g., let bindings."  
+ 25                          (when (equal operation 'set)  
+ 26                            (if where  
+ 27                                (with-current-buffer where  
+ 28                                  (setq-local completion-preview-sort-function newval))  
+ 29                              (setopt completion-preview-sort-function newval)))))  
+
+Changelog
+
+• April 07, 2025
+
+  • Fixed several typos.
+  • Added clarity to several phrases.
+  • Added a note mentioning the new vertico-sort extension.
+
+• April 05, 2025
+
+  • Correction to explanation according to [[https://www.reddit.com/r/emacs/comments/1js6xvw/comment/mlkpge6/][r/JDRiverRun’s comment]].
+
+• April 22, 2025
+
+  • Added a note mentioning the new corfu-history extension.
+
+------------------------------------------------------------------------
+
+1 In my opinion, each package is much more modular than the helm or ivy
+  ecosystems while being more performant, integrated with existing Emacs
+  functionality, and just as useful, if not more. Though a bit dated,
+  I’ve previously written a big about how to configure this set of
+  packages: [[https://kristofferbalintona.me/posts/202202211546/][Vertico, Marginalia, All-the-icons-completion, and
+  Orderless]]. [[https://kristofferbalintona.me/posts/202504050923/#fnref:1][↩︎]]
+
+------------------------------------------------------------------------
+
+The Text Completion and Minibuffer UI series
+
+This post is just one installation of the Text Completion and Minibuffer
+UI series. Below are all the posts in this series:
+
+1 [[https://kristofferbalintona.me/posts/202202211546/][Vertico, Marginalia, All-the-icons-completion, and Orderless]]
+2 [[https://kristofferbalintona.me/posts/202202270056/][Corfu, Kind-icon, and Corfu-doc]]
+3 [[https://kristofferbalintona.me/posts/202203130102/][Cape]]
+4 [[https://kristofferbalintona.me/posts/202504050923/][Complement corfu, vertico, and completion-preview with prescient.el
+  sorting]] this post!
+
+[[https://kristofferbalintona.me/][Home]] [[https://kristofferbalintona.me/index.xml][RSS]] [[https://kristofferbalintona.me/tags/][Tags]] [[https://kristofferbalintona.me/categories/][Categories]] [[https://kristofferbalintona.me/series/]]Series
