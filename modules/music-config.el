@@ -226,7 +226,7 @@ Matching is case-insensitive."
 		 (choice-rel (completing-read "Choose music file or directory: "
 									  (cj/music--completion-table candidates)
 									  nil t))
-		 (cleaned-choice (if (string-suffix-p "/" choice-rel)
+         (cleaned-choice (if (string-suffix-p "/" choice-rel)
 							 (substring choice-rel 0 -1)
 						   choice-rel))
 		 (choice-abs (expand-file-name cleaned-choice cj/music-root)))
@@ -267,7 +267,7 @@ Tracks the saved file for future reference."
 		 (m3u-names-no-ext (mapcar (lambda (f)
 									 (file-name-sans-extension f))
 								   m3u-files))
-		 (chosen-name (completing-read "Save playlist as: "
+         (chosen-name (completing-read "Save playlist as: "
 									   m3u-names-no-ext
 									   nil nil nil nil
 									   (format-time-string "playlist-%Y%m%d-%H%M%S")))
@@ -569,29 +569,30 @@ in the current window and provides appropriate feedback."
 (global-unset-key (kbd "<f10>"))
 (global-set-key (kbd "<f10>")     #'cj/music-playlist-toggle)
 
-;; TASK: Complete the Dired / EMMS integration
-;; (defun cj/music-add-dired-selection ()
-;;   "Add selected files or directories in Dired/Dirvish to the EMMS playlist.
-;; If region is active, add marked files. Otherwise, add file at point.
-;; Directories are added recursively."
-;;   (interactive)
-;;   (unless (derived-mode-p 'dired-mode)
-;;     (user-error "This command must be run in a Dired buffer"))
-;;   (let ((files (if (use-region-p)
-;;                    (dired-get-marked-files)
-;;                  (list (dired-get-file-for-visit)))))
-;;     (when (null files)
-;;    (user-error "No files selected"))
-;;     (dolist (file files)
-;;       (if (file-directory-p file)
-;;           (cj/music-add-directory-recursive file)
-;;         (if (cj/music--valid-file-p file)
-;;             (emms-add-file file)
-;;           (message "Skipping non-music file: %s" file))))
-;;     (message "Added %d item(s) to EMMS playlist" (length files))))
-;;
-;; TASK: add the dired keymapping to the above function
-;;      ("^" . cj/music-add-dired-selection)
+;; ------------------------- Music Add Dired Selection -------------------------
+
+(defun cj/music-add-dired-selection ()
+  "Add selected files or directories in Dired/Dirvish to the EMMS playlist.
+If region is active, add marked files. Otherwise, add file at point.
+Directories are added recursively."
+  (interactive)
+  (unless (derived-mode-p 'dired-mode)
+	(user-error "This command must be run in a Dired buffer"))
+  (let ((files (if (use-region-p)
+				   (dired-get-marked-files)
+				 (list (dired-get-file-for-visit)))))
+	(when (null files)
+	  (user-error "No files selected"))
+	(dolist (file files)
+	  (if (file-directory-p file)
+		  (cj/music-add-directory-recursive file)
+		(if (cj/music--valid-file-p file)
+			(emms-add-file file)
+		  (message "Skipping non-music file: %s" file))))
+	(message "Added %d item(s) to EMMS playlist" (length files))))
+
+(with-eval-after-load 'dired
+  (define-key dirvish-mode-map "p" 'cj/music-add-dired-selection))
 
 (provide 'music-config)
 ;;; music-config.el ends here
