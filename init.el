@@ -42,6 +42,7 @@
 (require 'font-config)           ;; font and emoji configuration
 (require 'selection-framework)   ;; menu config
 (require 'modeline-config)       ;; modeline (status-bar) config
+(require 'mousetrap-mode)        ;; disables trackpad/mouse input only in Emacs
 
 ;; ----------------- Emacs Built-In Functionality Configuration ----------------
 
