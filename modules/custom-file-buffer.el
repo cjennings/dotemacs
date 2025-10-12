@@ -93,8 +93,6 @@ Do not save the deleted text in the kill ring."
   (delete-region (point) (point-min))
   (message "Buffer contents removed to the beginning of the buffer."))
 
-
-
 ;; ------------------------- Print Buffer As Postscript ------------------------
 
 ;; prints using postscript for much nicer output

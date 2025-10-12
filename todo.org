@@ -992,6 +992,11 @@ Org-roam and its database sync run at startup. Load Org-roam only when Org is ac
 ** TODO [#C] Git Timemachine Litters Empty Buffers                    :bug:
 Don't choose a revision and you'll see a blank buffer that needs to be killed
 ** TODO [#C] Org Keyword Discolored Until Reapplying Theme            :bug:
+** TODO [#B] Selecting enter on flac file in dirvish causes error
+cond: external-open: unsupported host environment
+** TODO [#B] m4a files in playlist play in external mplayer not in EMMS
+Nothing in Messages buffer
+
 * Emacs Config Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
 *** Specification
