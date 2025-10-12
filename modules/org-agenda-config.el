@@ -88,11 +88,11 @@ Then adds all todo.org files from projects-dir and code-dir.
 Reports elapsed time in the messages buffer."
   (interactive)
   (let ((start-time (current-time)))
-	;; reset org-agenda-files to inbox-file, schedule-file, contacts-file
-	(setq org-agenda-files (list inbox-file schedule-file gcal-file contacts-file))
+	;; reset org-agenda-files to inbox, schedule, and gcal
+	(setq org-agenda-files (list inbox-file schedule-file gcal-file))
 
+	;; check all projects for scheduled tasks
 	(cj/add-files-to-org-agenda-files-list projects-dir)
-	(cj/add-files-to-org-agenda-files-list code-dir)
 
 	(message "Rebuilt org-agenda-files in %.3f sec"
 			 (float-time (time-subtract (current-time) start-time)))))
