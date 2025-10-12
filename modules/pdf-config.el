@@ -1,0 +1,59 @@
+;;; pdf-config --- PDF Viewer Setup -*- lexical-binding: t; coding: utf-8; -*-
+;; author Craig Jennings <c@cjennings.net>
+
+;;; Commentary:
+
+;;; Code:
+
+;; --------------------------------- PDF Tools ---------------------------------
+
+(use-package pdf-tools
+  :defer t
+  :mode (("\\.pdf\\'" . pdf-view-mode))
+  :hook
+  (pdf-view-mode . pdf-view-midnight-minor-mode)
+  :custom
+  (pdf-view-display-size 'fit-page)
+  (pdf-view-resize-factor 1.1)
+  (pdf-view-midnight-colors '("#F1D5AC" . "#0F0E06")) ;; fg . bg
+  ;; Avoid searching for unicodes to speed up pdf-tools.
+  ;; ... and yes, 'ligther' is not a typo
+  (pdf-view-use-unicode-ligther nil)
+  ;; Enable HiDPI support, at the cost of memory.
+  (pdf-view-use-scaling t)
+  :bind
+  (:map pdf-view-mode-map
+		("M" . pdf-view-midnight-minor-mode)
+		("m" . bookmark-set)
+		("C-=" . pdf-view-enlarge)
+		("C--" . pdf-view-shrink)
+		("C-c l" . org-store-link)
+		("z" . (lambda () (interactive) (cj/open-file-with-command "zathura")))
+		("j" . pdf-view-next-line-or-next-page)
+		("k" . pdf-view-previous-line-or-previous-page))
+  :config
+  (pdf-tools-install :no-query)) ;; automatically compile on first launch
+
+;; ------------------------------ PDF View Restore -----------------------------
+
+;; restores the last known position on opening a pdf file.
+(use-package pdf-view-restore
+  :after pdf-tools
+  :defer 1
+  :hook
+  (pdf-view-mode . pdf-view-restore-mode)
+  :config
+  (setq pdf-view-restore-filename (concat user-emacs-directory "/.pdf-view-restore")))
+
+;; --------------------------- PDF Continuous Scroll ---------------------------
+
+;; Note: This appears to behave badly in conjunction with org-noter
+;; provides continuous scrolling of PDF documents in PDF View
+;; (use-package pdf-continuous-scroll-mode
+;;   :ensure nil ;; in custom folder
+;;   :after pdf-tools
+;;   :load-path "custom/pdf-continuous-scroll-mode-latest.el"
+;;   :hook (pdf-view-mode . pdf-continuous-scroll-mode))
+
+(provide 'pdf-config)
+;;; pdf-config.el ends here.

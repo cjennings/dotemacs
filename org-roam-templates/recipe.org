@@ -1,0 +1,17 @@
+#+TITLE: ${title}
+#+CATEGORY: ${title}
+#+FILETAGS: Recipe
+#+STARTUP: showall
+
+${title}
+
+* Mise En Place
+
+
+* Execution
+
+
+* Notes
+
+
+* Nutrition

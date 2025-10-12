@@ -1,0 +1,299 @@
+;;; prog-general --- General Programming Settings -*- lexical-binding: t; coding: utf-8; -*-
+;; author: Craig Jennings <c@cjennings.net>
+
+;;; Commentary:
+;; This module provides general programming functionality not related to a
+;; specific programming language, such as code-folding, project management,
+;; highlighting symbols, snippets, and whitespace management.
+
+;;; Code:
+
+(require 'seq)
+
+;; --------------------- General Programming Mode Settings ---------------------
+;; keybindings, minor-modes, and prog-mode settings
+
+(defun cj/general-prog-settings ()
+  "Keybindings, minor modes, and settings for programming mode."
+  (interactive)
+  (display-line-numbers-mode)                   ;; show line numbers
+  (setq display-line-numbers-type 'relative)    ;; display numbers relative to 'the point'
+  (setq-default display-line-numbers-width 3)   ;; 3 characters reserved for line numbers
+  (turn-on-visual-line-mode)                    ;; word-wrapping
+  (auto-fill-mode)                              ;; auto wrap at the fill column set
+  (local-set-key (kbd "M-;") 'comment-dwim))    ;; comment/uncomment region as appropriate
+
+(add-hook 'prog-mode-hook #'cj/general-prog-settings)
+(add-hook 'html-mode-hook #'cj/general-prog-settings)
+(add-hook 'yaml-mode-hook #'cj/general-prog-settings)
+(add-hook 'toml-mode-hook #'cj/general-prog-settings)
+
+
+;; --------------------------------- Treesitter --------------------------------
+;; incremental language syntax parser
+
+(use-package tree-sitter
+  :defer .5)
+
+;; installs tree-sitter grammars if they're absent
+(use-package treesit-auto
+  :defer .5
+  :custom
+  (treesit-auto-install t)
+  ;;  (treesit-auto-install 'prompt) ;; optional prompt instead of auto-install
+  :config
+  (treesit-auto-add-to-auto-mode-alist 'all)
+  (global-treesit-auto-mode))
+
+;; -------------------------------- Code Folding -------------------------------
+
+;; BICYCLE
+;; cycle visibility of outline sections and code blocks.
+;; additionally it can make use of the hideshow package.
+(use-package bicycle
+  :after outline
+  :defer 1
+  :hook ((prog-mode . outline-minor-mode)
+		 (prog-mode . hs-minor-mode))
+  :bind (:map outline-minor-mode-map
+			  ("C-<tab>" . bicycle-cycle)
+			  ;; backtab is shift-tab
+			  ("<backtab>" . bicycle-cycle-global)))
+
+;; --------------------------------- Projectile --------------------------------
+;; project support
+
+;; only discover projects when there's no bookmarks file
+(defun cj/projectile-schedule-project-discovery ()
+  (let ((projectile-bookmark-file (concat user-emacs-directory "/projectile-bookmarks.eld")))
+	(unless (file-exists-p projectile-bookmark-file)
+	  (run-at-time "3" nil 'projectile-discover-projects-in-search-path))))
+
+(use-package projectile
+  :defer .5
+  :bind-keymap
+  ("C-c p" . projectile-command-map)
+  :bind
+  (:map projectile-command-map
+		("r" . projectile-replace-regexp)
+		("t" . cj/open-project-root-todo))
+  :custom
+  (projectile-auto-discover nil)
+  (projectile-project-search-path `(,code-dir ,projects-dir))
+  :config
+  (defun cj/find-project-root-file (regexp)
+	"Return first file in the current Projectile project root matching REGEXP.
+
+Match is done against (downcase file) for case-insensitivity.
+REGEXP must be a string or an rx form."
+	(when-let ((root (projectile-project-root)))
+	  (seq-find (lambda (file)
+				  (string-match-p (if (stringp regexp)
+									  regexp
+									(rx-to-string regexp))
+								  (downcase file)))
+				(directory-files root))))
+
+  (defun cj/open-project-root-todo ()
+	"Open todo.org in the current Projectile project root.
+
+If no such file exists there, display a message."
+	(interactive)
+	(if-let ((root (projectile-project-root)))
+		(let ((file (cj/find-project-root-file "^todo\\.org$")))
+		  (if file
+			  (find-file (expand-file-name file root))
+			(message "No todo.org in project root: %s" root)))
+	  (message "Not in a Projectile project")))
+
+  (defun cj/project-switch-actions ()
+	"On =projectile-after-switch-project-hook=, open TODO.{org,md,txt} or fall back to Magit."
+	(let ((file (cj/find-project-root-file
+				 (rx bos "todo." (or "org" "md" "txt") eos))))
+	  (if file
+		  (find-file (expand-file-name file (projectile-project-root)))
+		(magit-status (projectile-project-root)))))
+
+  ;; scan for projects if none are defined
+  (cj/projectile-schedule-project-discovery)
+
+  ;; don't reuse comp buffers between projects
+  (setq projectile-per-project-compilation-buffer t)
+  (projectile-mode)
+  (setq projectile-switch-project-action #'cj/project-switch-actions))
+
+;; groups ibuffer by projects
+(use-package ibuffer-projectile
+  :defer .5
+  :after projectile
+  :hook (ibuffer-mode . ibuffer-projectile-set-filter-groups))
+
+;; list all errors project-wide
+(use-package flycheck-projectile
+  :defer .5
+  :after projectile
+  :commands flycheck-projectile-list-errors
+  :bind
+  (:map projectile-command-map
+		("x" . flycheck-projectile-list-errors)))
+
+;; ---------------------------------- Ripgrep ----------------------------------
+
+(use-package deadgrep
+  :after projectile
+  :bind
+  (:map projectile-command-map
+		("G" . deadgrep)                 ;; project-wide search
+		("g" . cj/deadgrep-here)     ;; search in context directory
+		("d" . cj/deadgrep-in-dir))  ;; prompt for directory
+
+  :config
+  (require 'thingatpt)
+
+  (defun cj/deadgrep--initial-term ()
+	(cond
+	 ((use-region-p)
+	  (buffer-substring-no-properties (region-beginning) (region-end)))
+	 (t (thing-at-point 'symbol t))))
+
+  (defun cj/deadgrep-here (&optional term)
+	"Search with Deadgrep in the most relevant directory at point."
+	(interactive)
+	(let* ((root
+			(cond
+			 ((derived-mode-p 'dired-mode)
+			  (let ((path (dired-get-filename nil t)))
+				(cond
+				 ;; If point is on a directory entry, search within that directory.
+				 ((and path (file-directory-p path)) path)
+				 ;; If point is on a file, search in its containing directory.
+				 ((and path (file-regular-p path)) (file-name-directory path))
+				 (t default-directory))))
+			 (buffer-file-name
+			  (file-name-directory (file-truename buffer-file-name)))
+			 (t default-directory)))
+		   (root (file-name-as-directory (expand-file-name root)))
+		   (term (or term (read-from-minibuffer "Search: " (cj/deadgrep--initial-term)))))
+	  (deadgrep term root)))
+
+  (defun cj/deadgrep-in-dir (&optional dir term)
+    "Prompt for a directory, then search there with Deadgrep."
+    (interactive)
+	(let* ((dir (or dir (read-directory-name "Search in directory: " default-directory nil t)))
+		   (dir (file-name-as-directory (expand-file-name dir)))
+		   (term (or term (read-from-minibuffer "Search: " (cj/deadgrep--initial-term)))))
+	  (deadgrep term dir))))
+
+(with-eval-after-load 'dired
+  (define-key dired-mode-map (kbd "d") #'cj/deadgrep-here))
+
+
+;; ---------------------------------- Snippets ---------------------------------
+;; reusable code and text
+
+(use-package yasnippet
+  :defer 1
+  :bind
+  ("C-c s n" . yas-new-snippet)
+  ("C-c s e" . yas-visit-snippet-file)
+  :config
+  (setq yas-snippet-dirs '(snippets-dir))
+  (yas-global-mode 1))
+
+(use-package ivy-yasnippet
+  :after yasnippet
+  :bind
+  ("C-c s i" . ivy-yasnippet))
+
+;; --------------------- Display Color On Color Declaration --------------------
+;; display the actual color as highlight to color hex code
+
+(use-package rainbow-mode
+  :defer .5
+  :hook (prog-mode . rainbow-mode))
+
+;; ---------------------------- Symbol Overlay Mode ----------------------------
+;; Highlight symbols with keymap-enabled overlays
+;; replaces highlight-symbol-mode
+
+(use-package symbol-overlay
+  :defer .5
+  :bind-keymap
+  ("C-c C-s" . symbol-overlay-map)
+  :hook
+  (prog-mode . symbol-overlay-mode))
+
+
+;; --------------------------- Highlight Indentation ---------------------------
+
+(use-package highlight-indent-guides
+  :ensure t
+  :hook (prog-mode . cj/highlight-indent-guides-enable)
+  :config
+  ;; Disable auto face coloring to use explicit faces for better visibility across themes
+  (setq highlight-indent-guides-auto-enabled nil)
+
+  ;; Set explicit face backgrounds and foreground for the indentation guides
+  (set-face-background 'highlight-indent-guides-odd-face "darkgray")
+  (set-face-background 'highlight-indent-guides-even-face "darkgray")
+  (set-face-foreground 'highlight-indent-guides-character-face "dimgray")
+
+  (defun cj/highlight-indent-guides-enable ()
+	"Enable highlight-indent-guides with preferred settings for programming modes."
+	(setq-local highlight-indent-guides-method 'bitmap)
+	(setq-local highlight-indent-guides-responsive nil)
+	(highlight-indent-guides-mode 1))
+
+  ;; Disable in non-prog-mode buffers
+  (defun cj/highlight-indent-guides-disable-in-non-prog-modes ()
+	"Disable highlight-indent-guides-mode outside programming modes."
+	(unless (derived-mode-p 'prog-mode)
+	  (highlight-indent-guides-mode -1)))
+
+  (add-hook 'after-change-major-mode-hook
+			#'cj/highlight-indent-guides-disable-in-non-prog-modes))
+
+;; ------------------------------ Highlight TODOs ------------------------------
+;; Highlights todo keywords in code for easy spotting.
+
+(use-package hl-todo
+  :defer 1
+  :hook
+  (prog-mode . hl-todo-mode)
+  :config
+  (setq hl-todo-keyword-faces
+		'(("FIXME"  . "#FF0000")
+		  ("BUG"    . "#FF0000")
+		  ("HACK"   . "#FF0000")
+		  ("ISSUE"  . "#DAA520")
+		  ("TASK"   . "#DAA520")
+		  ("NOTE"   . "#2C780E")
+		  ("WIP"   .  "#1E90FF"))))
+
+;; --------------------------- Whitespace Management ---------------------------
+;; trims trailing whitespace only from lines you've modified when saving buffer
+
+(use-package ws-butler
+  :defer .5
+  :commands (ws-butler-mode)
+  :init
+  (add-hook 'prog-mode-hook #'ws-butler-mode)
+  ;; no org and text mode as org branches occasionally move up a line and become invalid
+  :config
+  (setq ws-butler-convert-leading-tabs-or-spaces t))
+
+;; ----------------- Auto-Close Successful Compilation Windows -----------------
+;; close compilation windows when successful. from 'enberg' on #emacs
+
+(add-hook 'compilation-finish-functions
+		  (lambda (buf str)
+			(if (null (string-match ".*exited abnormally.*" str))
+				;;no errors, make the compilation window go away in a few seconds
+				(progn
+				  (run-at-time
+				   "1.5 sec" nil 'delete-windows-on
+				   (get-buffer-create "*compilation*"))))))
+
+
+(provide 'prog-general)
+;;; prog-general.el ends here

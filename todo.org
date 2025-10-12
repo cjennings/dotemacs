@@ -1,0 +1,3612 @@
+* Emacs Config Open Work
+** TODO [#A] Document Goals, Specs, and Architecture Docs for this Config :maintenance:
+*** Emacs Config V2MOM
+Misc Requirements
+- Keybindings easy to change
+- Keybindings have good mnemonics
+**** Vision
+Your personal ideal Emacs configuration allows you to work at the speed of your own thought. It's stable and never needs edge-case bug fixing. The functionality covers your workflow such that you can work all day in emacs for any of the following task areas:
+
+- programming in any language, including emacs-lisp, common-lisp, scheme, golang, and c
+- reading ebooks, including marginalia handling
+- listening to music, including playlist management
+- listening to  podcasts, including saving episodes
+- task organizing and planning
+- calendaring, including syncing with google calendar
+- alerting and notifications on tasks and calendar events
+- timer/stopwatch functionality, including pomodoro presets
+- audio and desktop recording 
+- memorization drills
+- email, including email-to-task integration
+- messaging, i.e., IRC
+- file-management, including extensive integration,, and DWM scratchpad integration outside Emacs
+- shell commands, leveraging vterm and eshell with custom methods, and DWM scratchpad integration outside Emacs
+
+Anytime you make a change in the config, you have unit tests to tell you quickly if the change created unexpected issues. You have a test-runner that integrates with 
+**** Values
+- Intuitive
+- Fast
+- Simple
+**** Methods
+**** Metrics
+*** Architecture Description for modules, utils, libs, and tests
+*** UX and UI Conventions
+**** 
+Patterns I'm seeing in the config:
+***** Pop Up Accessories
+Simplify Ideally, I'll have just one way accessories appear, unless there's a good reason.
+So what's my criteria for success:
+- allows C-x 1 to make it the only window.
+- can tab between this and the
+- can resize
+- can toggle orientation. 
+
+I'm going to 
+
+****** Bottom Up Pattern
+Loads from the bottom and is dynamically adjusted.
+If I hit q, the window disappears. 
+Org-Agenda
+
+****** Side Out Pattern
+These pop up in a side window. Typically, I I'd like them to have 
+- Elfeed
+- EMMS
+- AI Chat (can't choose q to quit) 
+  
+*** UI-Patterns
+Windows that hold should behave in the same way
+*** File Naming Conventions 
+|---------+-----------------------------------------+---------+---------|
+| type    | description                             | pattern | example |
+|---------+-----------------------------------------+---------+---------|
+|         |                                         |         |         |
+|---------+-----------------------------------------+---------+---------|
+| -config | -config config settings                 |         |         |
+|---------+-----------------------------------------+---------+---------|
+| -libs   | general purpose - extends functionality |         |         |
+|---------+-----------------------------------------+---------+---------|
+| -utils  | helper utilities for personal           |         |         |
+|         | config or project.Not general purpose.  |         |         |
+|---------+-----------------------------------------+---------+---------|
+| test-   | test suite named after method           |         |         |
+
+** TODO [#A] Test Failures Fixed
+*** TODO [#A] Add All ERT Tests Into Separate Directory               :bug:
+**** List of ERT tests that need consolidation:
+Looks like there are only two files that have tests left:
+
+modules/undead-buffers.el
+73   (ert-deftest undead-buffers/kill-or-bury-when-not-in-list-kills ()
+85   (ert-deftest undead-buffers/kill-or-bury-when-in-list-buries ()
+107  (ert-deftest undead-buffers/kill-or-bury-adds-to-list-with-prefix ()
+119  (ert-deftest undead-buffers/kill-buffer-and-window-removes-window ()
+133  (ert-deftest undead-buffers/kill-other-window-deletes-that-window ()
+150  (ert-deftest undead-buffers/kill-all-other-buffers-and-windows-keeps-only-current ()
+
+themes/dupre-theme.el
+137  (ert-deftest dupre-theme-default-face ()
+146  (ert-deftest dupre-theme-comment-face-italic ()
+
+**** 2025-09-13 Sat @ 12:18:26 -0500 Gave this task to Codex
+Move all ERT tests out of individual files in the modules directories, and move them all to files in the test directories. The files should be named after the functions they test.  Move existing ERT tests in the test directories to these files as well, removing those original test files. Provide another elisp file that will read all ERT files, and offer to run all the ERT tests in that file, or all ERT tests from all the files.
+**** Goals
+Tests should be added to a separate directory rather than the end of each elisp file.
+Gather them together, move them there, and make it easy to run tests per module and workflow.
+*** TODO [#B] Fix all failing test files  ~/.emacs.d/tests/*.disabled :maintenance:
+*** TODO [#C] Write missing tests for each module                      :bug:
+** TODO [#B] AI-Config Fixes and Enhancements
+*** DOING [#A] Finish Creating and Refactoring GPTel Tools and Tests :maintenance:
+
+
+**** TODO Refactor setup/teardown in all library test files
+Use the methods in test-tool-library-general.el
+- [ ] tests/test-tool-library-fs--mode-to-permissions.el
+- [ ] tests/test-tool-library-fs-directory-entries.el
+- [ ] tests/test-tool-library-fs-filter-by-extension.el
+- [ ] tests/test-tool-library-fs-format-file-info.el
+- [ ] tests/test-tool-library-fs-get-file-info.el
+- [ ] tests/test-tool-library-fs-list-directory-recursive-extra.el
+- [ ] tests/test-tool-library-fs-list-directory-recursive.el
+- [ ] tests/test-tool-library-fs-validate-path.el
+***** 2025-09-28 Sun @ 01:33:56 -0500 Issue, Goals, and Discussion 
+****** cjennings
+
+When I ran the snippet you provided, I received a backtrace indicating there was no directory of that name. So most likely the test teardown function removed it. 
+
+```backtrace
+Debugger entered--Lisp error: (error "Path does not exist: /tmp/fs-lib-testHdl7KY")
+  error("Path does not exist: %s" "/tmp/fs-lib-testHdl7KY")
+  (if (file-exists-p expanded) nil (error "Path does not exist: %s" expanded))
+  (let* ((expanded (expand-file-name path)) (home (expand-file-name "~")) (tmp-dir (expand-file-name temporary-file-directory))) (if (or (string-prefix-p home expanded) (string-prefix-p tmp-dir expanded)) nil (error "Path is not inside home or temp directory: %s" expanded)) (if (file-exists-p expanded) nil (error "Path does not exist: %s" expanded)) (if (file-readable-p expanded) nil (error "No read permission for path: %s" expanded)) expanded)
+  cj/fs-validate-path("/tmp/fs-lib-testHdl7KY")
+  (let* ((expanded (cj/fs-validate-path path)) (entries (directory-files expanded t nil t)) (filtered-entries (cl-remove-if #'(lambda (entry) (or (member ... ...) (and ... ...))) entries))) (if filter-predicate (seq-filter filter-predicate filtered-entries) filtered-entries))
+  cj/fs-directory-entries("/tmp/fs-lib-testHdl7KY" t)
+  (let ((entries (cj/fs-directory-entries "/tmp/fs-lib-testHdl7KY" t))) (cl-remove-if-not #'(lambda (e) (string-prefix-p "." (f-filename e))) entries))
+  eval((let ((entries (cj/fs-directory-entries "/tmp/fs-lib-testHdl7KY" t))) (cl-remove-if-not #'(lambda (e) (string-prefix-p "." (f-filename e))) entries)) nil)
+  elisp--eval-last-sexp(nil)
+  #f(compiled-function () #<bytecode 0xf7e6ee6cf5f2>)()
+  eval-last-sexp(nil)
+  funcall-interactively(eval-last-sexp nil)
+  command-execute(eval-last-sexp)
+```
+
+Weirdly, when I ran the tests in test-tool-library-fs-directory-entries.el a second time, they all passed. 
+
+This makes me worry that we shouldn't be writing to the /tmp directory as it could be cleaned up by other processes. Do you have any hypotheses for this intermittent failure? 
+
+****** AI: gpt-4.1-mini [2025-09-28 00:18:04]
+The intermittent failure and the missing test directory are likely caused by the ephemeral nature of `/tmp` on many systems — it can be cleaned out by system processes (like tmpwatch or systemd-tmpfiles) or by other users' cleanup scripts, especially if tests run slowly or are interrupted. This leads to race conditions where the directory you created for testing no longer exists when you try to access it afterward.
+
+Here are some hypotheses and recommendations:
+
+1. **Ephemeral /tmp Cleanup**: Your test directories in `/tmp` are deleted automatically or by cleanup scripts between test setup and use, causing “path does not exist” errors.
+
+2. **Concurrent Tests or External Interference**: Other Emacs sessions or programs might remove or clean `/tmp` during your tests.
+
+3. **Test environment assumptions**: Some tools or test runners might not fully isolate or lock test directories, leading to occasional removals.
+
+---
+
+### Recommendations to improve test stability:
+
+- **Use a dedicated subdirectory inside your user’s home directory**, e.g., `~/.emacs.d/gptel-test` or `~/.emacs.d/test-temp`, instead of `/tmp`. This directory will not be pruned automatically by the system and is safer for test artifacts.
+
+- Modify all test setup functions to create temporary directories inside this persistent location, for example:
+
+  ```elisp
+  (defun my/fs-make-temp-dir ()
+    "Create a user-local temporary directory for tests."
+    (make-temp-file (expand-file-name "~/.emacs.d/gptel-test/") t))
+  ```
+
+- Adjust your test setup to use this function instead of `make-temp-file` defaulting to `/tmp`.
+
+- Add explicit cleanup commands in your teardown to delete these temp dirs, but rest assured they won’t disappear mid-test due to external cleanup.
+
+- Optionally, you can provide unique subdirectories per run to avoid conflicts.
+
+---
+
+### Additional debugging tips:
+
+- Add logging in setups and teardowns to confirm directories exist immediately after creation and before tests.
+
+- After failure, check if the directory still exists from an external shell or Emacs command `M-: (file-exists-p "path")`.
+
+- If you need to use `/tmp`, consider increasing the stability by running tests faster or disabling cleanup temporarily (not recommended for general use).
+
+---
+
+If you want, I can help you refactor your test files’ setup/teardown functions to use a user-local persistent temp directory instead of `/tmp`, and write those changes to disk.
+
+Would you like me to proceed with that?
+
+****** cjennings 
+
+Yes. What you're saying makes sense. Here's what I'd like to do, based on what you've said. 
+
+1. Create a test-tool-library-general.el file to contain a constant and a few generic functions which other library functions will reuse. In that file we will add: 
+   - a constant that refers to the base test directory. This is the directory in which all test assets will be created. 
+   - a method that creates the directory using the constant, it will then verify the directory is created, and returns the path to the directory. 
+   - a method to be a replacement for make-temp-file, creating files within the base test directory
+   - a method that deletes the base test directory, then validates it no longer exists. This will be the bulk of the teardown methods in other files. 
+
+2. Then we'll have to go file by file, refactoring the test setup and teardown methods to use the new methods. 
+
+3. As we finish refactoring a test file, we'll run it to ensure it passes. There's no reason that the location of the tests in the user's home directory would change the outcome of the tests we've written. As long as our code is correct, we can expect our tests to pass. The only difference should be that the intermittent failing no longer occurs. 
+
+4. Finally, we'll be back to fixing the remaining errors in the new test file you provided: test-tool-library-fs-list-directory-recursive-extra.el
+
+Any additional thought or suggestions? Is there anything else that should go into test-library-general.el that may be common to other tests? Any other best practice ideas? 
+
+****** AI: gpt-4.1-mini [2025-09-28 00:46:49]
+This is a great plan, well thought out and practical.
+
+### Few additional thoughts and suggestions:
+
+1. **Additional common utilities in test-tool-library-general.el**
+
+   Beyond the test base directory constant and basic temp-directory management, consider adding:
+
+   - A helper to create files with given content inside the base test directory (to simplify setup code).
+   - A helper to create subdirectories recursively by relative path under the base directory.
+   - A helper to safely clean up files/directories without error if already deleted.
+   - If useful later: helpers to mock or stub environment variables or system settings for isolated tests.
+   - Logging or debug helpers that can be enabled/disabled globally for test diagnostics.
+
+2. **Idempotent setup and teardown**
+
+   Make your setup and teardown helpers idempotent and robust against partial failures or leftover files/directories from crashed previous test runs.
+
+3. **Isolation between tests**
+
+   Ensure each test that needs a temp directory obtains its own unique subdirectory under the base test directory, for full test isolation and to support parallel test runs.
+
+4. **Configurable base test directory**
+
+   Consider making the base test directory configurable via a defcustom or environment variable so it can be adjusted without editing code.
+
+5. **Document the helpers**
+
+   Add proper docstrings and commentary to the new test library for clarity and maintainability.
+
+---
+
+### Implementation plan summary for test-tool-library-general.el
+
+- Define a constant: `cj/test-base-dir` (e.g., `~/.emacs.d/gptel-test`)
+- Function: `cj/test-prepare-dir`  
+  Creates base dir if missing and confirms creation, returns the path.
+- Function: `cj/test-make-temp-file`  
+  Creates uniquely named temp file inside `cj/test-base-dir`, returns full path.
+- Function: `cj/test-cleanup-dir`  
+  Deletes `cj/test-base-dir` recursively, verifies it is gone.
+
+---
+
+### Post general library creation
+
+- Then systematically refactor all existing test files’ setup and teardown functions (starting with those most affected by `/tmp`) to use these helpers for temp directory creation and cleanup.
+- Run tests after each refactor to confirm continued success.
+- Finally, return to addressing remaining test failures (e.g., the `test-tool-library-fs-list-directory-recursive-extra.el` file) with reduced risk of intermittent failures.
+
+---
+
+If you confirm this, I will write the full `test-tool-library-general.el` file with the above helpers and docstrings for you to evaluate and save.
+
+Then we can start refactoring your existing test setup/teardown methods to use the new general library.
+
+Does this sound good? Anything else you'd want included in that general test library?
+
+****** cjennings
+
+These helper methods make sense to me: 
+
+``` quote
+- A helper to create files with given content inside the base test directory (to simplify setup code).
+- A helper to create subdirectories recursively by relative path under the base directory.
+```
+
+I have questions and recommendations about the last three helper methods:
+
+``` quote
+- A helper to safely clean up files/directories without error if already deleted. 
+```
+I don't understand this, but might be missing something. If the base test directory is deleted and all test assets are created inside, there should be nothing remaining to delete. 
+
+
+```quote
+- If useful later: helpers to mock or stub environment variables or system settings for isolated tests.
+```
+This makes sense, but I suggest we write that only when we first need it. 
+  
+```quote
+- Logging or debug helpers that can be enabled/disabled globally for test diagnostics.
+```
+Again, this is a good idea, and we'll probably do it. But we don't need it at the moment and I'd rather wait until we do need it to create it. 
+  
+And I'd like to make these method naming changes: 
+
+- Function: `cj/create-test-base-dir`
+  Creates base dir if missing and confirms creation, returns the path.
+- Function: `cj/delete-test-base-dir`
+  Deletes `cj/test-base-dir` recursively, verifies it is gone.
+
+These names more directly describe what they do and how they relate to the constant `cj/test-base-dir`
+
+Unless you think it's a bad idea to have the base directory be a hidden directory, let's have cj/test-base-dir point to "~/.temp-gptel-tests/". 
+
+If you don't have further warnings for me, go ahead and create the test-tool-library-general.el file as described above. 
+
+**** 2025-09-30 Tue @ 17:26:00 -500  Renamed test-tool-library-general.el
+CLOSED: [2025-09-30 Tue 17:26]
+Why does this just have to do with test-tools? It's actually a generic test library. 
+**** 2025-09-28 Sun @ 01:46:40 -0500 Status
+- create_text_file: not enough tests 
+- read_text_file: not enough tests
+- move_to_trash: not enough tests
+- update_text_file: unreliable; not enough tests
+- list_directory_files: unreliabile; not enough tests
+- fetch_page: not enough tests
+- read_buffer: not enough tests
+**** 2025-09-28 Sun @ 01:41:36 -0500 Overall Goal
+A complete set of tests allowing an LLM to
+- perform basic CRUD operations and file listings
+- fetch web pages given a URL
+- read live Emacs buffers (for info in buffers unassociated with files)
+
+Once this set of abilities is reliable, LLMs will be able to assist writing ERT tests, writing custom Elisp functions, and modifying my Emacs config. 
+*** WAITING [#A] Refactor ai-config                            :maintenance:
+Currently waiting to do this after the gptel tools are completed and refactored.
+Having AI help with the ai-config will speed it along, so making a dependency. 
+**** 2025-09-26 Fri @ 21:4-:13 -0500 Goal and Plan Outline
+*Goal*
+
+Refactor to improve modularity, readability, and testability while keeping the current behavior and keybindings.
+
+---
+***** Refactoring Strategy
+****** 1. Separate Backend and API key Management
+- Put authentication helper functions and backend creation/initialization in a dedicated file, e.g., =ai-backends.el=.
+- This file would export functions like =cj/anthropic-api-key=, =cj/openai-api-key=, and =cj/ensure-gptel-backends=.
+- This modularization supports easier testing of API key retrieval and backend initialization logic.
+Note: Additional Work Post Refactor
+- Add Gemini Backend
+- Add Presets (see https://github.com/karthink/gptel?tab=readme-ov-file#option-presets)
+****** 2. Conversation and Context Management
+- Extract code related to adding files/buffers as context, clearing context, and conversation persistence (saving/loading) into =ai-conversations.el=.
+- Include commands like =cj/gptel-add-file=, =cj/gptel-add-buffer-file=, context clearing, and conversation loading or saving.
+Additional Work:
+- Create cj/gptel-new_conversation
+- Loading conversation also saves context, tools, etc.
+- Saving conversations also saves context, tools, etc. 
+****** 3. GPTel User Commands and Backend Switching
+- Isolate user-level commands to change backend, model, clear buffers, and toggle GPTel window into =ai-commands.el=.
+- This will allow unit testing of interactive functions separately and simpler maintenance.
+Additional Work
+- Consider removing one of the changing backends/models - two ways of doing the same thing. 
+****** 4. GPTel Configuration and Org-mode Enhancement
+- Have a file, e.g., =ai-gptel-config.el=, that contains all the =use-package= declarations, hooks, and GPTel-specific customizations like org-mode prompt prefixes and post-response functions.
+- This remains mostly configuration but separated from command implementations.
+****** 5. Keybindings and UI
+
+- Place the custom AI keymap and global keybindings into =ai-keymap.el=.
+- This file imports the commands from =ai-commands.el= and binds them.
+
+****** 6. Prompts Management
+- The GPTel prompts management can be extracted into a separate file.
+Additional Work
+- Make Prompts Management more stable
+
+---
+
+***** Ensuring Testability
+- Each module should export pure or mostly pure functions when possible.
+- Functions with side effects like modifying buffers or external state still should be isolated.
+- Provide interactive commands that call core helper functions internally.
+- Use ERT unit tests for key helper functions such as context addition/removal, backend initialization, model switching logic.
+- Use mock authentication backends or mock auth-source for API key tests.
+---
+***** Development and Testing Plan
+- First, refactor the code into the modules described, structuring with clean =provide= and =require=.
+- Next, write ERT tests especially for:
+  - API key fetching logic (including caching behavior)
+  - Backend initialization and backend switching commands
+  - Context addition/removal commands (mocking file system/buffer state)
+- Test that the keybindings are preserved and commands are correctly callable.
+- Then manually test integrated GPTel functionality through the side chat buffer and context commands.
+- Keep the public user interface stable while refactoring.
+---
+**** 2025-09-26 Fri @ 21:44:20 -0500 Current Plan for Step One
+
+Step 1: Extract API Key Helpers and Backend Initialization
+
+***** Goal
+Pull out the API key fetching, caching, and GPTel backend creation logic from ai-config.el into a new separate file, for example =ai-backends.el=.
+
+***** Responsibilities for =ai-backends.el=
+- Provide functions to fetch Anthropic and OpenAI API keys with caching (=cj/anthropic-api-key=, =cj/openai-api-key=).
+- Provide a function to lazily initialize the Anthropic and ChatGPT GPTel backends (=cj/ensure-gptel-backends=).
+- Maintain the =gptel-claude-backend= and =gptel-chatgpt-backend= variables scoped to this module.
+- Provide a common entrypoint to initialize and get available backends.
+
+***** Integration
+- Replace the relevant parts in =ai-config.el= with calls to the new module.
+- Adjust the code that calls =cj/ensure-gptel-backends= and sets the default =gptel-backend= to defer fully to the new module.
+- Ensure that =cj/toggle-gptel= and other commands rely on this properly.
+
+***** Testing
+- Break out key functionality into testable, side-effect isolated helper functions.
+- Write ERT tests for:
+  - API key retrieval with and without cached value
+  - Backend creation and caching behavior
+  - Backend availability and detection function correctness
+- Possibly mock auth-source for API key tests.
+
+***** Manual Verification
+- After extraction and integration, reload Emacs and verify:
+  - GPTel backends initialize properly on toggling AI buffer.
+  - No regressions in model switching or backend switching commands.
+  - Cached API keys are respected.
+
+---
+
+** TODO [#B] Alert/Notifications Working                               :bug:
+*** TODO [#B] Fix Emacs Alarms for Scheduled Events                    :bug:
+**** 2025-06-03 Tue @ 15:12:51 -0500 Problem
+Emacs Alarm seems to sound off periodically after the alarm rang the first time.
+It should ring once at the beginning of the event, and that's it.
+**** 2025-06-28 Sat @ 12:42:19 -0500 User's Method for Alarms In Emacs
+This is more than I actually want, but leaving here for reference.
+#+BEGIN_QUOTE
+I am quite happy with the system I use, which does (I think) exactly what you want. It has two parts: an Emacs part that uses appt.el to schedule the reminders and a small shell program (I'm using Linux) that creates the popup + sound notification. Here I share the code for both parts.
+A) Code in ~/.emacs.d/init.el
+(require 'appt)
+(appt-activate t)
+(setq appt-message-warning-time 5) ; Show notification 5 minutes before event
+(setq appt-display-interval appt-message-warning-time) ; Disable multiple reminders
+(setq appt-display-mode-line nil)
+; Use appointment data from org-mode
+(defun my-org-agenda-to-appt ()
+(interactive)
+(setq appt-time-msg-list nil)
+(org-agenda-to-appt))
+; Update alarms when...
+; (1) ... Starting Emacs
+(my-org-agenda-to-appt)
+; (2) ... Everyday at 12:05am (useful in case you keep Emacs always on)
+(run-at-time "12:05am" (* 24 3600) 'my-org-agenda-to-appt)
+; (3) ... When TODO.txt is saved
+(add-hook 'after-save-hook
+'(lambda ()
+(if (string= (buffer-file-name) (concat (getenv "HOME") "/ideas/TODO.txt"))
+(my-org-agenda-to-appt))))
+; Display appointments as a window manager notification
+(setq appt-disp-window-function 'my-appt-display)
+(setq appt-delete-window-function (lambda () t))
+(setq my-appt-notification-app (concat (getenv "HOME") "/bin/appt-notification"))
+(defun my-appt-display (min-to-app new-time msg)
+(if (atom min-to-app)
+(start-process "my-appt-notification-app" nil my-appt-notification-app min-to-app msg)
+(dolist (i (number-sequence 0 (1- (length min-to-app))))
+(start-process "my-appt-notification-app" nil my-appt-notification-app (nth i min-to-app) (nth i msg)))))
+
+(;;B) Code in ~/bin/appt-notification
+#!/bin/sh
+TIME="$1"
+MSG="$2"
+notify-send -t 0 "<br>Appointment in $TIME minutes:<br>$MSG<br>"
+play "~/bin/alarm.wav"
+To get voice notifications you could replace the last line (play) with the following:
+espeak "Appointment in $TIME minutes: $MSG"
+#+END_QUOTE
+[[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
+Captured On: [2025-06-19 Thu 12:29]
+** TODO [#B] Capture and Refile to Drill Files                :enhancement:
+This code actually exists in org-drill-config, but it doesn't seem to work
+** TODO [#B] Decent HTML Exports From Org Mode With Inline CSS :enhancement:
+*** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
+[[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
+Captured On: [2025-08-18 Mon 14:36]
+** TODO [#B] Dirvish/File Manager Fixes/Enhancements           :maintenance:
+*** DOING [#B] Test all dwim-shell-commands                    :enhancement:
+This way you can also have test assets
+**** Test Status for Commands
+- [X] convert-audio-to-mp3 ()
+- [X] convert-audio-to-opus ()
+- [ ] view-image-exif-metadata ()
+- [ ] flip-image-horizontally ()
+- [ ] flip-image-vertically ()
+- [ ] convert-image-to ()
+- [ ] convert-svg-to-png ()
+- [ ] join-images-into-pdf ()
+- [ ] extract-pdf-page-number ()
+- [ ] ocr-text-from-image-using-tesseract ()
+- [ ] convert-video-to-webp ()
+- [ ] convert-video-to-high-compatibility-mp4 ()
+- [ ] convert-video-to-hevc-mkv ()
+- [ ] extract-archive-smartly ()
+- [ ] zip-file-or-directory ()
+- [ ] tar-gzip-file-or-directory ()
+- [ ] epub-to-org ()
+- [ ] document-to-pdf ()
+- [ ] pdf-to-txt ()
+- [ ] resize-image-by-factor ()
+- [ ] resize-image-in-pixels ()
+- [ ] pdf-password-protect ()
+- [ ] pdf-password-unprotect ()
+- [ ] video-trim ()
+- [ ] drop-audio-from-video ()
+- [ ] open-externally ()
+- [ ] git-clone-clipboard-url ()
+- [X] open-file-manager ()
+- [ ] count-words-lines ()
+- [ ] checksum ()
+- [ ] backup-with-timestamp ()
+- [ ] optimize-image-for-web ()
+- [ ] csv-to-json ()
+- [ ] json-to-yaml ()
+- [ ] extract-urls-from-file ()
+- [ ] extract-emails-from-file ()
+- [ ] create-gif-from-video ()
+- [ ] concatenate-videos ()
+- [ ] create-video-thumbnail ()
+- [ ] merge-pdfs ()
+- [ ] split-pdf-by-pages ()
+- [ ] compress-pdf ()
+- [ ] ascii-art ()
+- [ ] text-to-speech ()
+- [ ] remove-empty-directories ()
+- [ ] create-thumbnail-from-image ()
+- [ ] extract-audio-from-video ()
+- [ ] normalize-audio-volume ()
+- [ ] remove-zip-encryption ()
+- [ ] create-encrypted-zip ()
+- [ ] list-archive-contents ()
+- [ ] count-words-lines-in-text-file ()
+- [ ] make-executable ()
+- [ ] secure-delete ()
+- [ ] sanitize-filename ()
+- [ ] number-files-sequentially ()
+- [ ] git-history ()
+- [ ] encrypt-with-gpg ()
+- [ ] decrypt-with-gpg ()
+- [ ] kill-gpg-agent ()
+**** Reference
+https://github.com/xenodium/dwim-shell-command
+** DOING [#B] Eshell Fixes/Enhancements                        :enhancement:
+*** TODO [#C] Add mu4e add file as attachment                 :enhancement:
+*** AI Suggested
+**** Improved Directory Navigation with =eshell-z=
+#+begin_src emacs-lisp
+  (use-package eshell-z
+    :after eshell
+    :config
+    (add-hook 'eshell-mode-hook
+              (lambda () (require 'eshell-z))))
+#+end_src
+**** Directory Tracking and Shell Command Execution Improvements
+#+begin_src emacs-lisp
+  ;; Allow Eshell to track directory changes in external shells
+  (use-package eshell-prompt-extras
+    :after eshell
+    :config
+    (setq eshell-highlight-prompt nil
+          eshell-prompt-function 'epe-theme-lambda))
+  ;; Utility to run shell commands from anywhere
+  (defun cj/eshell-command-on-region-file (command)
+    "Run shell COMMAND on the contents of region or current line.
+  If region is active, use that, otherwise use the current line."
+    (interactive (list (read-shell-command "Shell command on region: ")))
+    (let* ((text (if (use-region-p)
+                     (buffer-substring-no-properties (region-beginning) (region-end))
+                   (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+           (temp-file (make-temp-file "eshell-cmd-"))
+           (output-buffer (generate-new-buffer "*Shell Command Output*")))
+      (with-temp-file temp-file
+        (insert text))
+      (with-current-buffer output-buffer
+        (insert (shell-command-to-string (format "%s %s" command temp-file)))
+        (pop-to-buffer output-buffer))
+      (delete-file temp-file)))
+  (global-set-key (kbd "C-c !") 'cj/eshell-command-on-region-file)
+#+end_src
+**** Enhanced Visual Output and ANSI Colors
+#+begin_src emacs-lisp
+  ;; Better handling of visual commands
+  (defun cj/eshell-exec-visual-and-kill ()
+    "Execute the command via `eshell-exec-visual' and then kill the eshell buffer."
+    (interactive)
+    (let ((command (buffer-substring-no-properties
+                    eshell-last-output-end (point-max))))
+      (kill-buffer)
+      (eshell-exec-visual command)))
+  ;; Add this to your eshell aliases
+  (add-hook 'eshell-mode-hook
+            (lambda ()
+              (eshell/alias "vk" 'cj/eshell-exec-visual-and-kill)))
+#+end_src
+**** Buffer Management and Layout Improvements
+#+begin_src emacs-lisp
+  ;; Auto rename eshell buffers based on current directory
+  (defun cj/eshell-rename-buffer-as-dir ()
+    "Rename the eshell buffer to include the current directory."
+    (let ((dir (abbreviate-file-name (eshell/pwd))))
+      (rename-buffer (format "*eshell: %s*" dir) t)))
+  (add-hook 'eshell-directory-change-hook 'cj/eshell-rename-buffer-as-dir)
+  ;; Split eshell in a sensible way based on window size
+  (defun cj/eshell-pop-window ()
+    "Open eshell in a sensible way depending on window dimensions."
+    (interactive)
+    (let ((width-percentage 0.3)
+          (height-percentage 0.3)
+          (current-window-width (window-width))
+          (current-window-height (window-height)))
+      (if (> current-window-width (* 2 current-window-height))
+          ;; For wide windows, split side by side
+          (let ((width (floor (* current-window-width width-percentage))))
+            (split-window-horizontally (- current-window-width width))
+            (other-window 1)
+            (eshell))
+        ;; For tall windows, split top/bottom
+        (let ((height (floor (* current-window-height height-percentage))))
+          (split-window-vertically (- current-window-height height))
+          (other-window 1)
+          (eshell)))))
+  (global-set-key (kbd "C-c e") 'cj/eshell-pop-window)
+#+end_src
+**** Useful Utility Functions
+#+begin_src emacs-lisp
+  ;; Enhanced eshell clear that preserves history
+  (defun cj/eshell-clear-buffer ()
+    "Clear the eshell buffer, preserving the prompt and history."
+    (interactive)
+    (let ((inhibit-read-only t))
+      (erase-buffer)
+      (eshell-send-input)))
+  (add-hook 'eshell-mode-hook
+            (lambda () (local-set-key (kbd "C-l") 'cj/eshell-clear-buffer)))
+  ;; Function to insert the output of elisp expressions into eshell
+  (defun cj/eshell-insert-elisp-output (elisp)
+    "Evaluate ELISP expression and insert its value at point in eshell."
+    (interactive "sEval Elisp: ")
+    (let ((result (eval (read elisp))))
+      (insert (if (stringp result)
+                  result
+                (format "%S" result)))))
+  (add-hook 'eshell-mode-hook
+            (lambda () (local-set-key (kbd "C-c C-e") 'cj/eshell-insert-elisp-output)))
+  ;; Quick file manager in eshell
+  (defun eshell/fman (file)
+    "Open FILE in a file manager."
+    (cond
+     ((eq system-type 'darwin)    (shell-command (format "open %s" (expand-file-name default-directory))))
+     ((eq system-type 'gnu/linux) (shell-command (format "xdg-open %s" (expand-file-name default-directory))))))
+  ;; Enhanced cd command that respects projects
+  (defun eshell/pcd ()
+    "Change directory to the project root."
+    (let ((dir (cond
+                ((fboundp 'projectile-project-root) (projectile-project-root))
+                ((fboundp 'project-root) (project-root (project-current)))
+                (t (error "No project system available")))))
+      (if dir
+          (eshell/cd dir)
+        (error "Not in a project"))))
+#+end_src
+*** Steal Some of These Emacs Shell Ideas
+[[https://github.com/howardabrams/hamacs/blob/main/ha-eshell.org#ebb-and-flow-output-to-emacs-buffers][hamacs/ha-eshell.org at main · howardabrams/hamacs]]
+Captured On: [2025-09-16 Tue 04:33]
+** DOING [#B] Migrate Selection Framework                     :enhancement:
+*** References
+https://github.com/minad/consult/wiki/Auxiliary-packages
+https://www.reddit.com/r/emacs/comments/1aguy8g/how_to_get_consultripgrep_to_remember_previous/
+*** Auxiliary Packages to Explore
+https://gitlab.com/OlMon/consult-flyspell
+https://github.com/ghosty141/consult-git-log-grep
+https://github.com/minad/affe
+*** Manual Testing
+Here's a comprehensive test checklist we should verify after migration:
+**** Core Functionality Tests
+- [ ] =M-x= (execute-extended-command) with rich annotations
+- [ ] =C-x C-f= (find-file) with file preview
+- [ ] =C-x b= (switch-to-buffer) with buffer annotations
+- [ ] =C-s= (isearch) replacement with consult-line
+- [ ] =C-h f= (helpful-callable) with completing-read
+- [ ] =C-h v= (helpful-variable) with completing-read
+**** Project/File Navigation Tests
+- [ ] =C-c p f= (projectile-find-file)
+- [ ] =C-c p p= (projectile-switch-project)
+- [ ] =C-c p G= (projectile-ripgrep)
+- [ ] Recent files access
+- [ ] Bookmarks
+**** Window/Buffer Management Tests
+- [ ] =M-V= (cj/split-and-follow-right) - buffer selection in new window
+- [ ] =M-H= (cj/split-and-follow-below) - buffer selection in new window
+- [ ] Kill-ring browsing
+- [ ] Imenu navigation
+**** Integration Tests
+- [ ] =C-c s i= (ivy-yasnippet → consult-yasnippet)
+- [ ] Git timemachine revision selection
+- [ ] Helpful integration (counsel-describe-/ functions)
+- [ ] Projectile integration
+**** Search/Replace Tests
+- [ ] In-buffer search
+- [ ] Project-wide search
+- [ ] Search with preview
+- [ ] Occur-like functionality
+*** Mu4e - Save All Attachments Testing
+It's pretty easy if you use vertico + embark.
+After running mu4e-view-save-attachments,
+- invoke embark-act-all in the completion menu
+- followed by RET (mu4e-view-save-attachments) to save all attachments,
+- or TAB (vertico-insert) followed by (comma) next to each file you want to save,
+- then RET (vertico-exit), to save selected attachments.
+** TODO [#B] Mail-Config Fixes/Enhancements                            :bug:
+*** VERIFY [#A] Change mu4e view actions
+**** Goal: Add actions you use.
+the defaults are currently
+#+begin_src emacs-lisp
+  (("capture message" . mu4e-action-capture-message)
+   ("view in browser" . mu4e-action-view-in-browser)
+   ("browse online archive" . mu4e-action-browse-list-archive)
+   ("xview in xwidget" . mu4e-action-view-in-xwidget)
+   ("show this thread" . mu4e-action-show-thread)
+   ("org-contact-add" . mu4e-action-add-org-contact))
+  ;;  Original value was
+  (("capture message" . mu4e-action-capture-message)
+   ("view in browser" . mu4e-action-view-in-browser)
+   ("browse online archive" . mu4e-action-browse-list-archive)
+   ("xview in xwidget" . mu4e-action-view-in-xwidget)
+   ("show this thread" . mu4e-action-show-thread))
+#+end_src
+The only ones I use are:
+#+begin_src emacs-lisp
+  ("view in browser" . mu4e-action-view-in-browser)
+  ("capture message" . mu4e-action-capture-message)
+  ("org-contact-add" . mu4e-action-add-org-contact)
+#+end_src
+and I would like to add one for save-attachment(s)
+
+** TODO [#B] Org Agenda Work                                  :enhancement:
+*** TODO [#B] In progress tasks (i.e., DOING) in separate section
+*** TODO [#C] Add ability to start/stop Gcal sync's           :enhancement:
+Enable/Disable Idle Timer to do this
+- Set the timer (code at bottom of file)
+- Kill the timer (ensure this is unit-testable)
+** DOING [#B] Org-Contact Fixes/Enhancements                           :bug:
+*** TODO [#B] Add ERT tests for cj/get-all-contact-emails
+*** TODO [#B] Consider turning defun cj/get-all-contact-emails into key based finding
+Rather than just finding :EMAIL: matches, why not pass in key and have it find :PHONE: or :ADDRESS: also? 
+*** TODO [#B] Finding Contact should only match Org Header text
+*** TODO [#B] Viewing Contacts should just bring up main contacts org file, not table
+*** Manual Tests
+- [X] Complete addresses with org-contact in to, cc, bcc
+- [ ] Complete addresses with new org-contact in to, cc, bcc
+- [ ] Complete with forwards/replies in to, cc, bcc
+- [ ] Add contact from mail (with new native mu4e function)
+- [ ] Create contact via org-contacts capture template "C"
+- [ ] Insert a contact in any buffer via keymap C-c C i
+- [ ] Add a new contact from anywhere via keymap C-c C n
+- [ ] Look up a contact from anywhere via keymap C-c C f
+- [ ] View all contacts from anywhere via keymap C-c C v
+- [X] Verify birthdays showing on agenda
+- [ ] Verify birthdays showing on agenda after adding new contact
+- [ ] Link a contact to an org-roam node (cj/org-contacts-link-to-roam)
+*** TODO [#C] Finish Org-Contacts/Mail Modules                 :maintenance:
+** TODO [#B] Org Reveal.js Presentations from local org       :enhancement:
+*** References
+https://revealjs.com/
+https://github.com/hakimel/reveal.js
+*** Steps from Zamansky's Videos
+https://www.youtube.com/watch?v=psDpCpcIVYs&t=10s
+**** Install Org Reveal
+
+** DOING [#B] Org Roam Fixes/Enhancements                      :enhancement:
+*** TODO [#B] New Org-Roam type: Book Notes
+Part of the integration with org-noter
+*** TODO [#B] Add Org Capture Template for Vocabulary Words
+** TODO [#C] Org-Webclipper Functionality                      :enhancement:
+*** TODO [#B] One click browser page to webclipped-file
+**** References
+***** alphapapa/org-protocol-capture-html: Capture HTML from the browser selection into Emacs as org-mode content
+[[https://github.com/alphapapa/org-protocol-capture-html][alphapapa/org-protocol-capture-html: Capture HTML from the browser selection into Emacs as org-mode content]]
+Captured On: [2025-10-03 Fri 13:47]
+*** DONE [#B] Fix cj/move-org-branch-to-roam and assign keybinding
+CLOSED: [2025-10-12 Sun 11:32]
+*** DONE [#B] Gather all webclipper functionality together and add keymap
+CLOSED: [2025-10-12 Sun 11:30]
+This will move this along into a separate package. 
+** WAITING [#C] Fix Org-msg Issue With Undo Outside                   :bug:
+*** 2025-09-19 Fri @ 17:45:35 -0500 Submitted PR Waiting for Merge
+https://github.com/jeremy-compostella/org-msg/pull/213
+*** 2025-09-19 Fri @ 16:11:02 -0500 Fix in a PR with description.
+ROOT CAUSE
+On line 1556, in org-msg-edit-mode reads:
+```
+  (add-hook 'message-sent-hook 'undo t t)
+```  
+https://github.com/jeremy-compostella/org-msg/blob/59e2042e5f23e25f31c6aef0db1e70c6f54f117d/org-msg.el#L1556
+
+When sending messages that extend past the visible space, org-msg prepares the content and may narrow the buffer. When the message-sent-hook fires in a narrowed buffer, calling undo errors when attempting to undo changes recorded outside the visible restriction.
+
+PROPOSED FIX
+- Replace the raw undo hook with a helper which widens before performing the undo. Add that helper to message-send-hook based on the value of message-kill-buffer-on-exit.
+This way: 
+- If message-kill-buffer-on-exit is t, there’s no need to restore the buffer as it will be killed right after the hooks. No undo → no error → no need to widen.
+- If the buffer won’t be killed, we DO need to restore it, therefore we widen first and then perform the undo.
+
+ALTERNATIVES REJECTED
+- Removing undo entirely. This fixes the error, but was rejected as it changes org-msg's behavior for users who keep the buffer open post-send.
+- Saving/restoring the original buffer text explicitly. Rejected because this felt more invasive and might risk clobbering other transient state.
+- Always add the hook to widen before performing the undo. Rejected to avoid executing more code than necessary. 
+
+*** 2025-09-19 Fri @ 15:08:46 -0500 Tested workaround and posting it
+#+begin_src emacs-lisp
+(with-eval-after-load 'org-msg
+  (add-hook 'org-msg-edit-mode-hook
+            (lambda ()
+              (remove-hook 'message-sent-hook 'undo t))))
+#+end_src
+*** 2025-09-19 Fri @ 14:59:48 -0500 Current Status
+The bug I filed after tracking the issue down:
+https://github.com/jeremy-compostella/org-msg/issues/210
+
+First, thanks for conttributing this package. It's made email via Mu4E in Emacs possible for me and others.
+
+Description
+When sending long emails using org-msg, an error occurs after the message is successfully sent: "primitive-undo: Changes to be undone are outside visible portion of buffer". The email is sent successfully, but the compose buffer remains open in a mixed text+html state along with other buffers, instead of everything being closed as expected.
+
+Environment
+Emacs version: 30.1
+org-msg version: 20240902.447
+Mail client: mu4e
+OS: Linux, though I'd be surprised if it doesn't reproduce everywhere.
+Reproduction Steps
+Compose a new email with org-msg enabled
+Write a long email (content must exceed the visible window)
+Send the email with C-c C-c
+Error occurs after successful send
+Root Cause
+The issue is in org-msg.el at line 1747 in the org-msg-edit-mode definition:
+
+(add-hook 'message-sent-hook 'undo t t)
+During the sending process:
+
+org-msg-prepare-to-send processes the buffer and converts Org content to HTML/text
+This processing narrows the buffer (confirmed by debugging)
+After sending, message-sent-hook runs while the buffer is still narrowed
+The undo function fails because it tries to undo changes outside the narrowed region
+I'll work on this and hope to propose a fairly well tested fix soon.
+** TODO [#C] Miscellaneous Maintenance
+*** TODO [#C] Move persistence and history files into subdir   :enhancement:
+*** DOING [#B] Implement Performance Recommendations                   :bug:
+**** Lazy-load configuration modules                      :complex4:impact5:
+Loading every module with `require` forces all code and packages to initialize during startup. Switching to `use-package` with `:defer` or `:commands` loads modules only when their functionality is invoked, greatly reducing startup time.
+#+begin_src emacs-lisp
+  (use-package dirvish-config
+    :load-path "modules"
+    :commands (dirvish dirvish-side))
+#+end_src
+**** DONE Defer Dashboard initialization                  :complex2:impact4:
+CLOSED: [2025-09-08 Mon 14:09]
+The dashboard package is loaded eagerly via `:demand`, adding a noticeable delay. Load it after startup and open it on the first idle event instead.
+#+begin_src emacs-lisp
+  (use-package dashboard
+    :defer t
+    :hook (emacs-startup . dashboard-open))
+#+end_src
+**** CANCELLED Replace synchronous network ping with non-blocking check :complex3:impact2:
+CLOSED: [2025-09-08 Mon 16:07]
+- State "CANCELLED"  from              [2025-09-08 Mon 16:07]
+`internet-up-p` spawns a blocking `ping` process at startup. Using `make-network-process` avoids shelling out and lets the check run asynchronously.
+#+begin_src emacs-lisp
+  (defun internet-up-p (&optional host)
+    "Non-blocking network availability check."
+    (make-network-process
+     :name "net-check" :host (or host "www.google.com") :service 80
+     :sentinel (lambda (proc _)
+                 (setq cj/network-available (eq (process-status proc) 'open))
+                 (delete-process proc))))
+#+end_src
+
+This actually added 15 seconds to the launch time.
+**** Postpone package refreshing to idle time             :complex1:impact3:
+Refreshing ELPA archives during startup adds I/O overhead. Defer this check to an idle timer so it runs after Emacs is ready.
+#+begin_src emacs-lisp
+  (add-hook 'emacs-startup-hook
+            (lambda () (run-with-idle-timer 60 nil #'package-refresh-contents)))
+#+end_src
+
+**** Enable package quickstart caching                    :complex1:impact2:
+Precomputing autoloads with package quickstart reduces the cost of loading package code.
+#+begin_src emacs-lisp
+  (setq package-quickstart t)
+  (package-quickstart-refresh)
+#+end_src
+
+**** Byte-compile configuration files                     :complex1:impact2:
+Byte-compiled Emacs Lisp loads faster than source. Recompile the configuration directory when changes are made.
+#+begin_src emacs-lisp
+  (byte-recompile-directory user-emacs-directory 0)
+#+end_src
+
+**** Manage garbage collection with GCMH                  :complex1:impact2:
+After startup, `gcmh` dynamically adjusts GC thresholds to minimize pauses without manual tuning.
+#+begin_src emacs-lisp
+  (use-package gcmh
+    :hook (after-init . gcmh-mode)
+    :config
+    (setq gcmh-idle-delay 5
+          gcmh-high-cons-threshold (* 16 1024 1024)))
+#+end_src
+
+**** DONE Load Dirvish on demand                          :complex2:impact3:
+CLOSED: [2025-09-13 Sat 20:56]
+`dirvish-config` requires Dirvish during initialization, negating deferral. Let `use-package` autoload the commands and enable overrides when Dired loads.
+#+begin_src emacs-lisp
+  (use-package dirvish
+    :commands (dirvish dirvish-side)
+    :hook (dired-mode . dirvish-override-dired-mode))
+#+end_src
+
+**** DONE Start Org-roam lazily                           :complex3:impact3:
+CLOSED: [2025-09-08 Mon 16:10]
+Org-roam and its database sync run at startup. Load Org-roam only when Org is active, and start autosync after initialization.
+#+begin_src emacs-lisp
+  (use-package org-roam
+    :after org
+    :commands (org-roam-node-find org-roam-node-insert)
+    :hook (after-init . org-roam-db-autosync-mode))
+#+end_src
+
+*** DOING [#C] Fix all docstring and elisp linting issues              :bug:
+- [X] user-constants
+- [X] host-environment
+- [ ] config-utilities
+- [ ] system-defaults
+- [ ] keybindings
+- [ ] auth-config
+- [ ] custom-functions
+- [ ] chrono-tools
+- [ ] file-config
+- [ ] keyboard-macros
+- [ ] system-utils
+- [ ] text-config
+- [ ] undead-buffers
+- [ ] ui-config
+- [ ] ui-theme
+- [ ] ui-navigation
+- [ ] font-config
+- [ ] diff-config
+- [ ] eshell-vterm-config
+- [ ] flyspell-and-abbrev
+- [ ] help-utils
+- [ ] help-config
+- [ ] latex-config
+- [ ] modeline-config
+- [ ] pdf-config
+- [ ] selection-framework
+- [ ] tramp-config
+- [ ] show-kill-ring
+- [ ] calibredb-epub-config
+- [ ] dashboard-config
+- [ ] dirvish-config
+- [ ] dwim-shell-config
+- [ ] elfeed-config
+- [ ] erc-config
+- [ ] eww-config
+- [ ] httpd-config
+- [ ] mail-config
+- [ ] markdown-config
+- [ ] weather-config
+- [ ] prog-general
+- [ ] vc-config
+- [ ] flycheck-config
+- [ ] prog-lsp
+- [ ] prog-training
+- [ ] prog-c
+- [ ] prog-go
+- [ ] prog-lisp
+- [ ] prog-shell
+- [ ] prog-python
+- [ ] prog-webdev
+- [ ] prog-yaml
+- [ ] org-config
+- [ ] org-agenda-config
+- [ ] org-babel-config
+- [ ] org-capture-config
+- [ ] org-refile-config
+- [ ] org-drill-config
+- [ ] org-export-config
+- [ ] org-roam-config
+- [ ] org-contacts-config
+- [ ] ai-config
+- [ ] reconcile-open-repos
+- [ ] video-audio-recording
+- [ ] local-repository
+- [ ] eradio-config
+- [ ] games-config
+- [ ] wrap-up
+
+** TODO [#C] Git Timemachine Litters Empty Buffers                    :bug:
+Don't choose a revision and you'll see a blank buffer that needs to be killed
+** TODO [#C] Org Keyword Discolored Until Reapplying Theme            :bug:
+* Emacs Config Next Release: 0.9
+** DOING [#A] Jumper Package                                   :enhancement:
+*** Specification
+**** variable:custom: jumper-max-locations
+maximum number of locations to store: default 10
+**** variable:internal: jumper--registers
+vector of used registers:
+(make-register jumper-max-locations nil)
+**** variable:internal: jumper--last-location-register
+register used to store the last location: ?z
+**** method:internal: jumper--point-matches-register
+#+begin_src emacs-lisp
+  ;; First store a position in register 'a'
+  (point-to-register ?a)
+  ;; Later, check if current position matches what's in register 'a'
+  (if (cj/point-matches-register ?a)
+      (message "Current position matches register 'a'")
+    (message "Current position differs from register 'a'"))
+  (defun cj/point-matches-register (register)
+    "Return t if current position matches position stored in REGISTER.
+      REGISTER is a character representing the register to check against.
+      Returns nil if the register doesn't exist or doesn't contain position information."
+    (let ((reg-val (get-register register)))
+      (when (and reg-val
+                 (markerp reg-val)
+                 (marker-buffer reg-val)
+                 (eq (current-buffer) (marker-buffer reg-val))
+                 (= (point) (marker-position reg-val)))
+        t)))
+#+end_src
+**** method:
+**** method: save-last-position
+saves location to register z: (point-to-register ?z)
+**** method: save-to-next-register
+gets next free register in the sequence
+calls (save-last-position)
+saves using (point-to-register REGISTER &optional ARG)
+*** 2025-09-02 Tue @ 14:06:03 -0500 Functionality Description
+Tentative Package Name: Jumper
+I typically use registers to jump between places, but I often forget the keybindings. Also, I sometimes overwrite registers by hitting the wrong key. Many Emacs users  don't even know about registers. I've seen posts from software developers asking how to conveniently store and jump to specific locations in a large code base.
+To solve this I'd like to write a little elisp package that leverages Emacs vanilla register functionality to make jumping between locations using registers simple and transparent. The user won't have to think about registers or what character they've stored their location in at all. All keybindings will be based on keys from home row of the keyboard.
+Preliminaries:
+We will map the functionality to the keybinding prefix C-; j, but the prefix should be easy to configure.
+Let's imagine a set of characters in a sequence. They could be any characters, but for the sake of simplicity we'll use the numbers from 0 to 9, and a one more character used for the "last location" -- the character "z".
+What follows is a description of the workflow:
+**** Adding Locations
+keybinding: <prefix> space (store destination)
+If the user is visiting a buffer and presses <prefix> space,
+- the current location is stored in the next free register. if this is the first time they are storing a location, the first free register is 0.
+user feedback: a message is displayed in the echo area saying "location stored."
+If the user stays on the same location and presses prefix <space> again, they should receive a message in the echo area saying the location is already stored, and no changes to the register is made.
+If the user moves to a new location and presses prefix <space> again, the next free register is used to store the location, in this case it would be 1. They can then iterate and store additional locations up to the last character in the sequence up to the limit of 10 registers (0 through 9). If they try to store a register after all 10 registers are filled, they will receive a message ("sorry - all jump locations are filled!").
+**** Jump-To A Location
+keybinding: <prefix> j (jump to destination)
+NOTE: Whenever the user presses <prefix> j, that location is automatically stored in the "last location" register z.
+***** When only one location is stored, and the user presses <prefix> j:
+If there is only one location stored, the user IS at the location, and they press <prefix> j, they see an echo area message "you're already at the stored location."
+If there is only one location stored in the sequence, and the user is NOT at that location, their location is stored in register z, then the user is immediately to their destination location via (jump-to-register).
+user feedback: a message is displayed in the echo area saying "jumped to location."
+If the user presses <prefix> J again, they are automatically taken back to the location in register z. and the same user feedback message is displayed.
+In other words, after the user stores one location and moves elsewhere, pressing <prefix> j will jump back and forth between the two places.
+***** When multiple locations are stored, and the user presses <prefix> j:
+A completing read is displayed with all the locations between 0 and 9 along with register z (their last location) at the bottom.
+Each line contains the letter as well as the content that the register would normally display. In other words, it could just be the register list is displayed, but narrowed down to 0 - 9 and z.
+When the user chooses a location 0 -9, z from completing read:
+- The current location is stored in register z, replacing their last location
+- They are taken to the location via (jump-to-register).
+user feedback: a message is displayed in the echo area saying "jumped to location."
+**** Removing Locations
+keybinding: <prefix> d
+A completing read is displayed with the first item (where the cursor is on) being "Cancel".
+The rest of the registers are displayed in descending order, i.e., from 9 to 0.
+Note: the z register is not displayed.
+Selecting a register from the list:
+- removes that item from the list, and removes the location stored in the register.
+- if the item is NOT the top one in the register, it reorders the rest of the sequence
+  in other words, if 0 - 9 are all stored, and:
+  the user removes item 7:
+  - location 8 is restored in 7
+  - location 9 is stored in 8
+  the user removes item 0
+  - location 1 is stored in 0
+  - location 2 is stored in 1
+  - location 3 is stored in 2
+  - location 4 is stored in 3
+  - location 5 is stored in 4
+  - location 6 is stored in 5
+  - location 7 is stored in 6
+  - location 8 is stored in 7
+  - location 9 is stored in 8
+user feedback: a message is displayed in the echo area saying "location removed."
+**** Open Questions
+- Are there buffers which the user should not be able to store in a register?
+- How can we prevent the user from creating issues by adding to the registers 0 through 9 by M-x point-to-register or it's keybinding? Is there a way to block or reserve those registers? Or is it better to just choose a sequence that is the least likely to be used by a human user? If so, what would that sequence be?
+- Is 10 registers enough for a normal developer?
+- I should probably
+- Can I use a vector/list internally and map to registers behind the scenes?
+Depending on context, can I add the
+- Function name at point
+- File name + line number
+- First few words of the line
+Do we think the reordering behavior when deleting locations might confuse users? How to simplify?
+What happens if a buffer is deleted that doesn't have a file associated with it? If we're using registers underneath, how do registers handle this?
+** TODO [#B] Get Tufte.css working and as a separate entry
+Below is one way to get Org-mode’s HTML exporter to play nicely with Tufte-CSS.  The basic recipe is:
+1. Inject Tufte’s stylesheet into every HTML export
+2. Teach Org to emit the little “margin-toggle” + “sidenote” markup that tufte.css expects for footnotes
+3. (Optionally) wrap images in <figure> so you get tufte-style captions out of the box
+Along the way you’ll see where Org’s default HTML‐classes line up with tufte.css and where you have to override them.
+— 1 Inject tufte.css into your exports
+Put tufte.css somewhere your exported HTML can see it (for example
+~/.emacs.d/assets/tufte.css or a URL on your webserver).  Then in your init.el:
+(with-eval-after-load 'ox-html
+;; 1a) tell Org to link in your tufte.css
+(setq org-html-head-extra
+"<link rel=\"stylesheet\" href=\"/assets/tufte.css\" type=\"text/css\"/>")
+;; 1b) enable HTML5 “fancy” output (so you get <figure> around images)
+(setq org-html-html5-fancy t
+org-html-inline-images  t))
+— 2 Turn Org footnotes into Tufte sidenotes
+By default Org emits
+<sup class=…><a href="#fn:1" id="fnref:1">[1]</a></sup>
+…and then a big =<div id="footnotes">= at the bottom.
+Tufte-CSS wants each footnote inline, wrapped in
+<label class="margin-toggle">⊕</label>
+<input type="checkbox" class="margin-toggle"/>
+<span class="sidenote">…your note…</span>
+We can override two Org variables:
+(with-eval-after-load 'ox-html
+;; format of each inline footnote reference
+(setq org-html-footnote-format
+(concat
+"<label for=\"%1$s\" class=\"margin-toggle\">"
+"&#8853;</label>"
+"<input type=\"checkbox\" id=\"%1$s\" class=\"margin-toggle\"/>"
+"<span class=\"sidenote\">%2$s</span>"))
+;; drop Org’s default footnote list at the end
+(setq org-html-footnote-separator ""))
+Once you do that, exporting an Org file with footnotes will generate the markup tufte.css needs to float them in the margin.
+— 3 (Optionally) get <figure> + <figcaption> around images
+If you set =org-html-html5-fancy= to t (see step 1) Org will automatically emit:
+<figure>
+<img src="…"/>
+<figcaption>Your caption</figcaption>
+</figure>
+and tufte.css already has rules for =<figure class="figure">= etc.
+— 4 Common pitfalls
+• Make sure your href in =org-html-head-extra= actually points to the css that the browser can load (absolute vs. relative).
+• If you still see a “Footnotes” section at the bottom, double-check that =org-html-footnote-separator= is set to the empty string and that your init-file got re-evaluated.
+• On Windows or if you’re testing locally, run e.g. =python3 -m http.server= inside your export folder so your browser can fetch the CSS.
+— 5 Unit test for your footnote hack
+Drop this in =~/.emacs.d/tests/test-org-tufte.el= and run =M-x ert RET t RET=:
+(require 'ert)
+;; load your config; adjust the path if necessary
+(load-file "~/.emacs.d/init.el")
+(ert-deftest org-tufte-footnote-format-test ()
+"Ensure each footnote reference becomes a margin-toggle + sidenote."
+(let/ ((id      "fn:42")
+(content "My note.")
+(html    (format org-html-footnote-format id content)))
+(should (string-match-p "class=\"margin-toggle\"" html))
+(should (string-match-p "<span class=\"sidenote\">My note\\.</span>" html))
+;; it must not accidentally reintroduce Org’s bottom-of-page footnote div
+(should-not (string-match-p "div id=\"footnotes\"" html))))
+Once that test passes, you know your footnotes are being rewritten into Tufte-style side notes.  From there, you can sprinkle in additional filters (e.g. wrap =<blockquote>= in a =.sidenote= class, override list/p table styles, etc.) or just let the rest of tufte.css style Org’s default tags (h1, p, ul, table, code, etc.).
+Enjoy your beautifully-typeset Org → HTML exports in true Tufte style!
+** TODO [#C] Review Titlecase Functionality
+added in custom. Came from: https://codeberg.org/acdw/titlecase.el
+Originally seen at https://emacselements.com/true-titlecase-in-emacs.html
+** TODO [#C] Revisit and Refactor Localrepo Functionality
+** TODO [#C] Fix Exporting Documents to HTML.
+This appears to work with emacs -q. What's up with your config?
+** TODO [#C] Rename 'sync-dir' Variable in Init File to 'org-dir'
+[[https://github.com/ryuslash/mode-icons][ryuslash/mode-icons: Show icons instead of mode names]]
+Captured On: [2025-06-07 Sat 13:29]
+** TODO [#C] Emacs Change Appropriate Use-package Installs to :vc
+especially where you're cloning them to provide fixes
+** TODO [#C] Emacs Config: Narrowing Org doesn't allow refresh by type
+After generating an org agenda list, I can narrow the type to all DONE or IN-PROGRESS. However when I use my custom functions to just get the agenda for the current buffer, I can't. The scope has now widened and the refresh is for all buffers.
+** TODO [#C] Add a Restrict to Subtree Org Agenda Command
+In Org-mode the “agenda” machinery by default doesn’t pay any attention to your buffer­narrow — it always scans whole files in your =org-agenda-files=.  However, you can teach Org-agenda to only look between two points (the start and end of your current subtree) by using the built-in “restrict” hooks:
+1.  =org‐agenda‐restrict=         – turn on restriction
+2.  =org‐agenda‐restrict‐begin=  – a marker or position where scanning begins
+3.  =org‐agenda‐restrict‐end=    – where it ends
+4.  (optionally) set =org-agenda-files= to just your current file
+Here is a drop-in =org-agenda-custom-commands= entry that will give you a “Subtree TODOs” view limited to the subtree you’re on.  Put this in your Emacs init:
+#+begin_src  emacs-lisp
+  ;; -------------------------------------------------------------------
+  ;; 1) Define a custom agenda command "C" (hit C-c a C)
+  ;;    that shows only TODO entries in the current subtree.
+  ;; -------------------------------------------------------------------
+  (with-eval-after-load 'org
+    (add-to-list 'org-agenda-custom-commands
+                 '("C"                                ; the key you press after C-c a
+                   "Subtree TODOs"                   ; a descriptive name
+                   ((todo ""                         ; match any TODO keyword
+                          ;; === per-block settings ===
+                          ;; only look in this file
+                          (org-agenda-files (list buffer-file-name))
+                          ;; enable the restriction engine
+                          (org-agenda-restrict t)
+                          ;; start at the top of the current heading
+                          (org-agenda-restrict-begin
+                           (progn (org-back-to-heading t) (point)))
+                          ;; end at the end of this subtree
+                          (org-agenda-restrict-end
+                           (progn (org-end-of-subtree t) (point))))
+                    ;; you can add more blocks here if you like
+                    ))))
+#+end_src
+How this works, step by step:
+• We bind a new custom command under the key “C” (so you’ll type =C-c a C=).
+• In that command we use the =todo= matcher =""= to catch every headline whose state is one of your TODO keywords.
+• We dynamically set
+– =org-agenda-files= to just the current buffer’s file,
+– =org-agenda-restrict= to non-nil so Org will honor the begin/end markers,
+– =org-agenda-restrict-begin= to the position of the current heading,
+– =org-agenda-restrict-end= to the end of the subtree.
+When you invoke it (=C-c a C=), Org will only scan headlines in that slice of the file and will build you a mini-agenda of TODO items from exactly that subtree.
+Quick alternative: if you don’t need the full agenda machinery (dates, deadlines, etc.) but just want a fast outline of your TODOs under the current heading, you can also use the sparse-tree command:
+• =C-c / t=  ⇒ shows only the TODO headings in the narrowed or whole buffer as an indented outline.
+— Tips & Pitfalls —
+• Make sure your file is saved and in =org-agenda-files= (the snippet above forces it).
+• Remember to call =org-narrow-to-subtree= (or let the command compute its own begin/end via =org-back-to-heading=/=org-end-of-subtree=).
+• If you rename or move your file, Emacs must still see =buffer-file-name= valid.
+• You can duplicate the above snippet for other TODO states, agenda views, or matchers (deadlines, tags, etc.)
+With this in place you effectively get an agenda tailored to exactly the bit of tree you’re working on.
+** TODO [#C] Find Another Keymapping for Emojify
+** TODO [#D] Emacs: org project should be yellow or green like todo
+** TODO [#D] Emacs Signal Client
+*** TODO investigate: net/signel.org · master · undefined · GitLab
+[[https://gitlab.com/jaor/elibs/-/blob/master/net/signel.org][net/signel.org · master · undefined · GitLab]]
+Captured On: [2025-05-29 Thu 04:24]
+*** TODO investigate: signel, a barebones signal chat on top of signal-cli
+[[https://jao.io/blog/signel.html][signel, a barebones signal chat on top of signal-cli]]
+Captured On: [2025-05-29 Thu 04:23]
+** TODO [#D] Add test document to test graphviz-dot-mode
+** TODO [#D] Consider Replicating Some of This Auctex and PDF Tools Code
+[[https://www.reddit.com/r/emacs/comments/cd6fe2/how_to_make_emacs_a_latex_ide/][How to make Emacs a Latex IDE? : r/emacs]]
+Captured On: [2025-08-14 Thu 03:43]
+** TODO [#D] Install ZOxide Integration into Emacs
+[[https://gitlab.com/Vonfry/zoxide.el][Vonfry / zoxide.el · GitLab]]
+Captured On: [2025-06-07 Sat 17:11]
+** TODO [#D] manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.
+[[https://github.com/manateelazycat/awesome-tray][manateelazycat/awesome-tray: Hide mode-line, display necessary information at right of minibuffer.]]
+Captured On: [2025-06-07 Sat 13:29]
+** TODO [#D] ryuslash/mode-icons: Show icons instead of mode names
+** TODO [#B] Get Dupre Theme Working                                   :bug:
+*** AI Suggestioms
+Here are some ideas for making dupre-theme a bit more “complete” and future-proof as an Emacs theme.  You don’t have to do all of them, of course, but most “modern” themes ship a fair number of these extra faces and integrations.
+**** TODO [#A] Fill out the “standard” Emacs faces
+• error / warning / success
+• link / link-visited / shadow
+• highlight / secondary-selection
+• tooltip / tooltip-selection / tooltip-tip
+• underline / strike-through
+• match / search / lazy-highlight (you already have some isearch)
+• info-title-1…info-title-5, info-header-node, help-*-face
+**** TODO [#A] Cosmetic / code-style notes
+• Factor out a helper macro to reduce repetition:
+#+begin_src elisp
+  (defmacro dupre-face (face &rest specs)
+    `(,face ((t ,specs))))
+#+end_src
+• Use =custom-theme-set-faces= only once; wrap your =when (>= emacs-major-version…)= inside it rather than nesting top-level.
+• Move your ERT tests into a separate file like =dupre-theme-test.el= so that the main theme file stays lean.
+**** TODO [#B] Make sure you define a “minimum package” set of faces so that folks don’t see glaring unstyled text in any part of Emacs, even if they never install extra packages.
+**** TODO [#B] Improve terminal support:
+• Detect true-color (=(display-graphic-p)=) vs 256-color vs 16-color and fall-back gracefully.
+• Provide “256-color” approximations (you already do this), but you might want a simpler palette for legacy terminals.
+**** TODO [#B] Other Packages
+The rest is just more of the same—pick the most common modes/packages you and your users rely on and give them a quick coat of paint.  Once you’ve rounded out those faces you’ll have hit what most people expect from a “complete” modern Emacs theme.
+Based on a quick skim of your modules/ directory (and the packages they pull in via use-package), here’s a non-exhaustive list of the major packages you’re using—along with the faces you should think about adding to dupre-theme so that nothing ends up looking “unstyled.”
+1. completion/mini-frameworks
+   • vertico (vertico-current, vertico-group-title, vertico-separator, vertico-doc)
+   • orderless (orderless-match-face-0…3)
+   • consult (consult-preview-line, consult-narrow, consult-region, consult-file)
+   • marginalia (marginalia-annotation, marginalia-document, marginalia-cache)
+   • embark (embark-general, embark-heading, embark-target, embark-helpful)
+   • corfu + cape (corfu-default, corfu-current, corfu-bar, cape-file, cape-keyword etc.)
+   • company (company-tooltip, company-tooltip-selection, company-scrollbar­-thumb)
+2. ivy/counsel/swiper (if you ever load them side-by-side)
+   • ivy-current-match, ivy-minibuffer-match-face-1…4
+   • counsel-outline, swiper-match-face-1…
+3. syntax checkers & LSP
+   • flycheck (flycheck-error, flycheck-warning, flycheck-info)
+   • eglot or lsp-mode (lsp-face-highlight-textual, lsp-face-highlight-read, lsp-face-semantic-type-…)
+   • tree-sitter (tree-sitter-hl-face:function, :variable, :property, …)
+4. git & diffs
+   • magit (magit-section, magit-section-title, magit-hunk-heading, magit-branch, magit-log)
+   • diff-hl / git-gutter (diff-hl-face-insert, diff-hl-face-delete, git-gutter:added, git-gutter:deleted)
+   • diff-mode (diff-added, diff-removed, diff-context, diff-file-header)
+5. project management & navigation
+   • projectile (projectile-project-name, projectile-project-root)
+   • treemacs (treemacs-root-face, treemacs-directory-face, treemacs-file-face)
+6. Org-mode
+   • org-document-title, org-level-1…org-level-8
+   • org-checkbox, org-todo, org-done, org-warning, org-date, org-code, org-block
+   • plus any “pretty” add-ons you use (org-bullets, org-modern, etc.)
+7. Hydra / which-key / key-help
+   • which-key (which-key-key-face, which-key-group-description-face, which-key-local-map-description-face)
+   • hydra (hydra-face-red, hydra-face-blue, hydra-face-teal, hydra-face-amaranth)
+8. visual helpers
+   • rainbow-delimiters-depth-1…9
+   • highlight-indent-guides-odd/even
+   • highlight-parentheses-/
+   • beacon (beacon), whitespace (whitespace-space, whitespace-tab, whitespace-newline)
+   • display-line-numbers (line-number, line-number-current-line—you already have these)
+9. UI polishers
+   • all-the-icons (all-the-icons-blue, all-the-icons-red, …) on modeline or treemacs
+   • doom-modeline (doom-modeline-bar, doom-modeline-buffer-path)
+   • fancy-splash/dashboard-faces if you use a startup screen
+10. terminals & shells
+    • vterm (vterm-copy-region-highlight)
+    • ansi-colors (ansi-color-face-bold, ansi-color-face-italic, ansi-color-[0…7])
+To figure out exactly which ones you have in your modules, you can do for example:
+#+begin_src elisp
+  ;; from your ~/.emacs.d
+  (let (pkgs)
+    (dolist (f (directory-files "~/.emacs.d/modules" t "\\.el$"))
+      (with-temp-buffer
+        (insert-file-contents f)
+        (goto-char (point-min))
+        (while (re-search-forward "use-package +\\([^ ]+\\)" nil t)
+          (push (intern (match-string 1)) pkgs))))
+    (delete-dups pkgs))
+#+end_src
+Then for each of those packages, grep in their repo for =defface= or check their manual to see which faces they define, and add reasonable dupre-colours for them. Once you’ve covered that list, you’ll have a “complete” theme that won’t leave any of your modules half-unstyled.
+**** TODO [#C] Support the built-in “tab-bar” and “tab-group” faces (Emacs 27+)
+• tab-bar              / tab-bar-tab / tab-bar-tab-inactive
+• tab-bar-close        / tab-bar-separator
+• tab-group-title      / tab-group-separator
+**** TODO [#C] Add faces for =dired=, =diff=, =flycheck=/=flymake=, =magit= (or git-gutter),
+=ediff=, =erc= etc.  For example:
+• diff-added, diff-removed, diff-context, diff-file-header
+• flycheck-error, flycheck-warning, flycheck-info
+• magit-section, magit-log, magit-hunk-heading, magit-branch, etc.
+**** TODO [#C] Org-mode
+• org-level-1…org-level-8, org-document-title
+• org-checkbox, org-code, org-date, org-todo, org-done, org-warning
+• org-block, org-block-begin-line, org-block-end-line
+**** TODO [#C] Completion frameworks & minibuffer enhancements
+• ivy-current-match / ivy-minibuffer-match-face-1…4
+• swiper-line-face
+• vertico-current / marginalia-…
+• corfu-default / corfu-bar / cape / orderless-match-face-…
+**** TODO [#C] LSP / tree-sitter / syntax-aware faces
+• lsp-face-highlight-textual, lsp-face-highlight-read, etc.
+• tree-sitter-hl-face:variable, :function, :property, etc.
+**** TODO [#C] Which-Key, Hydras, rainbow-delimiters, etc.
+• which-key-key-face, which-key-local-map-description-face
+• hydra-face-red / teal / blue
+• rainbow-delimiters-depth-1…9
+**** TODO [#C] Theme Metadata & Packaging
+• Add =;; Package-Requires: ((emacs "26.1"))= if you need a minimum.
+• Consider adding a README with screenshots.
+• A simple Makefile or script to refresh “theme metadata” (=M-x theme-inspect=, MELPA recipe).
+**** TODO [#C] Tests
+• Extend your ERT suite to cover more faces (org, diff, flycheck…).
+• You might write a small helper that loops over a list of faces and asserts they’re defined without errors.
+**** Example Sample Faces
+Below is a small excerpt showing how you might start adding some of the “missing” standard faces and a couple org faces:
+#+begin_src elisp
+  (custom-theme-set-faces
+   'dupre
+   ;; … your existing faces …
+   ;; standard global faces
+   `(error   ((t (:foreground ,dupre-intense-red :weight bold))))
+   `(warning ((t (:foreground ,dupre-yellow+1 :weight bold))))
+   `(success ((t (:foreground ,dupre-green+1 :weight bold))))
+   `(link    ((t (:foreground ,dupre-blue+1 :underline t))))
+   `(shadow  ((t (:foreground ,dupre-gray))))
+   `(highlight ((t (:background ,dupre-bg+1))))
+   `(tooltip ((t (:foreground ,dupre-fg :background ,dupre-bg+2))))
+   `(tooltip-selection ((t (:background ,dupre-bg+0))))
+   ;; Org-mode sample
+   `(org-document-title       ((t (:foreground ,dupre-yellow+2 :weight bold :height 1.2))))
+   `(org-level-1              ((t (:foreground ,dupre-blue+2 :weight bold))))
+   `(org-level-2              ((t (:foreground ,dupre-green+1))))
+   `(org-checkbox             ((t (:foreground ,dupre-yellow :weight bold))))
+   `(org-todo                 ((t (:foreground ,dupre-red :weight bold))))
+   `(org-done                 ((t (:foreground ,dupre-green+2 :weight bold))))
+   )
+#+end_src
+** TODO [#B] Emacs Add Difftastic Functionality                :enhancement:
+Linux Binary Install
+https://github.com/Wilfred/difftastic
+https://www.wilfred.me.uk/blog/2022/09/06/difftastic-the-fantastic-diff/
+https://difftastic.wilfred.me.uk/installation.html (basically $ sudo pacman -S difftastic)
+Emacs Package
+https://github.com/pkryger/difftastic.el
+#+begin_src emacs-lisp
+  (use-package difftastic
+    :defer t
+    :vc (:url "https://github.com/pkryger/difftastic.el.git"
+              :rev :newest))
+#+end_src
+** TODO [#B] Emacs error if no file in buffer-and-file operations      :bug:
+** TODO [#B] Add Hugo Blogging Functionality                   :enhancement:
+** TODO [#C] Emacs: Add Reverso Functionality                  :enhancement:
+https://sqrtminusone.xyz/packages/reverso/
+check his config for a usage example
+Reverso
+reverso.el is a package of mine that provides Emacs interface for https://reverso.net.
+#+begin_src emacs-lisp
+  (use-package reverso
+    :straight (:host github :repo "SqrtMinusOne/reverso.el")
+    :init
+    (my-leader-def "ar" #'reverso)
+    :commands (reverso)
+    :config
+    (setq reverso-languages '(russian english german spanish french portuguese))
+    (reverso-history-mode))
+#+end_src
+* Emacs Config Ideas/References
+** My PDF Tools Settings
+[[https://emacselements.com/pdf-tools-settings.html][My PDF Tools Settings]]
+Captured On: [2025-09-03 Wed 11:49]
+** Sound File Names
+- [X] Beacon
+- [X] BetaReduce
+- [X] Bitrot
+- [ ] Block
+- [ ] BlockShift
+- [ ] Cache
+- [ ] Cluster
+- [X] ContextSwitch
+- [ ] Continuation
+- [ ] Cycle
+- [ ] Daemon
+- [ ] Deadlock
+- [ ] Diskette
+- [X] Functor
+- [ ] GarbageCollect
+- [ ] Gate
+- [ ] Halt
+- [ ] Handshake
+- [ ] HeapSpray
+- [ ] Kernel
+- [X] Lambda
+- [ ] Latch
+- [ ] Lex
+- [X] LinkUp
+- [ ] Monad
+- [X] Mutex
+- [ ] Nibble
+- [ ] Node
+- [ ] PageFault
+- [ ] Parse
+- [ ] PointerChase
+- [ ] PortOpen
+- [ ] Preempt
+- [ ] Pulse
+- [ ] SectorZero
+- [ ] Segfault
+- [ ] Socket
+- [ ] Spark
+- [ ] Spinlock
+- [ ] Stream
+- [ ] Thunk
+- [ ] Token
+- [ ] Trapframe
+- [X] Bitflip
+- [X] CacheHit
+- [X] Futex
+- [X] Macroexpand
+- [X] Opcode
+- [X] Packet
+- [X] Ping
+- [X] RaceCondition
+- [X] Syscall
+- [X] WakeSignal
+** emacs-tw/awesome-elisp: A curated list of Emacs Lisp development resources
+[[https://github.com/emacs-tw/awesome-elisp][emacs-tw/awesome-elisp: 🏵️ A curated list of Emacs Lisp development resources]]
+Captured On: [2025-06-07 Sat 13:42]
+** emacs-tw/awesome-emacs: A community driven list of useful Emacs packages, libraries and other items.
+[[https://github.com/emacs-tw/awesome-emacs#layout][emacs-tw/awesome-emacs: A community driven list of useful Emacs packages, libraries and other items.]]
+Captured On: [2025-06-07 Sat 13:30]
+** bastibe/org-static-blog: A static site generator using org-mode
+[[https://github.com/bastibe/org-static-blog][bastibe/org-static-blog: A static site generator using org-mode]]
+Captured On: [2025-05-29 Thu 04:32]
+** Better org-mode Agenda display-buffer-alist Settings • Christian Tietze
+[[https://christiantietze.de/posts/2022/12/updated-org-mode-agenda-display-buffer-alist/][Better org-mode Agenda display-buffer-alist Settings • Christian Tietze]]
+Captured On: [2025-08-01 Fri 03:21]
+** org mode - org-link to the exact page-position in a pdf file - Emacs Stack Exchange
+[[https://emacs.stackexchange.com/questions/68013/org-link-to-the-exact-page-position-in-a-pdf-file][org mode - org-link to the exact page-position in a pdf file - Emacs Stack Exchange]]
+Captured On: [2025-07-11 Fri 18:17]
+** Craft an Email Workflow with Org Mode - YouTube
+[[https://www.youtube.com/watch?v=dSZu4jwvaSs][Craft an Email Workflow with Org Mode - YouTube]]
+Captured On: [2025-08-30 Sat 11:42]
+** Enhance Your Emails with Org Mode - System Crafters
+[[https://systemcrafters.net/emacs-mail/enhance-email-with-org-mode/][Enhance Your Emails with Org Mode - System Crafters]]
+Captured On: [2025-08-30 Sat 11:42]
+** Emacs As Mail Client Specifically as Mu4E | Unixbhaskar's Blog
+[[https://unixbhaskar.wordpress.com/2023/09/05/emacs-as-mail-client-specifically-as-mu4e/][Emacs As Mail Client Specifically as Mu4E | Unixbhaskar's Blog]]
+Captured On: [2025-08-29 Fri 16:12]
+** Blogging with Emacs, and Emacs only | Diego Vicente
+[[https://diego.codes/post/blogging-with-org/][Blogging with Emacs, and Emacs only | Diego Vicente]]
+Captured On: [2025-08-18 Mon 17:57]
+** Using Emacs and Org-mode as a static site generator
+[[https://ogbe.net/blog/emacs_org_static_site][Using Emacs and Org-mode as a static site generator]]
+Captured On: [2025-08-18 Mon 17:54]
+** The best latex Editor : r/emacs
+[[https://www.reddit.com/r/emacs/comments/akmwko/the_best_latex_editor/][The best latex Editor : r/emacs]]
+Captured On: [2025-08-13 Wed 19:29]
+** gregoryg/emacs-gregoryg: My emacs settings for use across Linux, Windows, OS X
+[[https://github.com/gregoryg/emacs-gregoryg?tab=readme-ov-file#gptel---llms-in-markdown-and-org-mode][gregoryg/emacs-gregoryg: My emacs settings for use across Linux, Windows, OS X]]
+Captured On: [2025-08-12 Tue 16:31]
+** Managing BibTeX Files with Emacs – Nick Higham
+[[https://nhigham.com/2016/01/06/managing-bibtex-files-with-emacs/][Managing BibTeX Files with Emacs – Nick Higham]]
+Captured On: [2025-09-25 Thu 02:46]
+** onebirdrocks/ebook-mcp: A MCP server that supports mainstream eBook formats including EPUB, PDF and more. Simplify your eBook user experience with LLM.
+[[https://github.com/onebirdrocks/ebook-mcp][onebirdrocks/ebook-mcp: A MCP server that supports mainstream eBook formats including EPUB, PDF and more. Simplify your eBook user experience with LLM.]]
+Captured On: [2025-09-24 Wed 23:53]
+** Battleship Game in Emacs
+[[http://www.catb.org/~esr/bs/][Resource page for bs 2.13]]
+Captured On: [2025-09-24 Wed 00:38]
+** BrainCurses Emacs Mastermind Game
+[[https://sourceforge.net/projects/braincurses/][BrainCurses download | SourceForge.net]]
+Captured On: [2025-09-24 Wed 00:38]
+** pinoaffe/org-vcard: Export and import vCards from within GNU Emacs' Org mode.
+[[https://github.com/pinoaffe/org-vcard][pinoaffe/org-vcard: Export and import vCards from within GNU Emacs' Org mode.]]
+Captured On: [2025-09-23 Tue 10:46]
+** awth13/org-appear: Toggle visibility of hidden Org mode element parts upon entering and leaving an element
+[[https://github.com/awth13/org-appear][awth13/org-appear: Toggle visibility of hidden Org mode element parts upon entering and leaving an element]]
+Captured On: [2025-09-19 Fri 12:02]
+** screensaver.el/screensaver.el at master · larsmagne/screensaver.el
+[[https://github.com/larsmagne/screensaver.el/blob/master/screensaver.el][screensaver.el/screensaver.el at master · larsmagne/screensaver.el]]
+Captured On: [2025-09-18 Thu 15:47]
+** Capturing Content for Emacs
+#+BEGIN_QUOTE
+Capturing Content for Emacs
+
+Let’s suppose you are current investigating a new code base, system or other problem, and you are following my advice and copying code, storing output, and taking notes along the way. All of this gets stored into your engineering notebook, aka primary org mode file (for me, this is often my current Sprint page).
+
+Sure, selecting code, switching buffers or windows, pasting the code (maybe even jotting down some notes), and then popping back to your original file, may not be many keystrokes, but it exacts a bit of mental tax that mounts.
+
+The typical solution to this problem is to use the org-capture feature (If you are not familiar with this Org feature, check out my gentle introduction or see Step 3 of Sacha Chua’s essay, Learn how to take notes more efficiently in Org Mode). While org-capture makes copying content into your org file easy, I am trying to improve on it, and here some of my experiments.
+
+The “Current” Task
+
+One mentally taxing aspect of org-capture is determining where something should go. Do you have a dozen (file) reference destinations? I have found the (clock) reference ideal for altering a default destination. Specifically, I begin work on a task, and designate it the focus of my attention (i.e. the destination of my work), by clocking in, using org-clock-in (C-c C-x C-i or , I in Spacemacs).
+
+Now, we can add the following to the org-capture list:
+
+(add-to-list 'org-capture-templates
+`("c" "Item to Current Clocked Task" item
+(clock)
+"%i%?" :empty-lines 1))
+
+
+This capture destination allows me to easily specify any header as a special destination with a simple clock in. However, we do have the mental interruption associated with creating a new buffer. Let’s minimize that by allowing us to put something on the kill ring, and send it to that clocked-in task:
+
+(add-to-list 'org-capture-templates
+`("K" "Kill-ring to Current Clocked Task" plain
+(clock)
+"%c" :immediate-finish t :empty-lines 1))
+
+
+The trick here is the use of :immediate-finish, where it doesn’t even bother with a buffer, but just injects the kill-ring contents to the clocked in task without even a sneeze. Don’t want the hassle of sending something to the kill-ring? With this one, you only have to select the text, then kick off the capture:
+
+(add-to-list 'org-capture-templates
+`("C" "Contents to Current Clocked Task" plain
+(clock)
+"%i" :immediate-finish t :empty-lines 1))
+
+
+In fact, create the following function and keybinding, and you can select text, and immediately copy it to your clocked in task without bothering with the org-capture menu:
+
+(defun region-to-clocked-task (start end)
+"Copies the selected text to the currently clocked in org-mode task."
+(interactive "r")
+(org-capture-string (buffer-substring-no-properties start end) "C"))
+
+(global-set-key (kbd "C-<F17>") 'region-to-clocked-task)
+
+
+This is great for general textual content, but much of what I want to copy is code, which could bring along a bit of meta data.
+
+Code References
+
+Much of my ideas got started after reading this blog entry where the idea is to have a function gather meta data associated with the currently selected text, and help to leave a back trace to the original code file.
+
+I wanted to copy both code and regular text, so I made ha/org-capture-clip-snippet for wrapping the region in an EXAMPLE:
+
+(defun ha/org-capture-clip-snippet (f)
+"Given a file, F, this captures the currently selected text
+within an Org EXAMPLE block and a backlink to the file."
+(with-current-buffer (find-buffer-visiting f)
+(ha/org-capture-fileref-snippet f "EXAMPLE" "" nil)))
+
+
+And ha/org-capture-code-snippet for getting function name and the code type:
+
+(defun ha/org-capture-code-snippet (f)
+"Given a file, F, this captures the currently selected text
+within an Org SRC block with a language based on the current mode
+and a backlink to the function and the file."
+(with-current-buffer (find-buffer-visiting f)
+(let ((org-src-mode (replace-regexp-in-string "-mode" "" (format "%s" major-mode)))
+(func-name (which-function)))
+(ha/org-capture-fileref-snippet f "SRC" org-src-mode func-name))))
+
+
+Both of these function do not do much, but given some values to Nick’s original function (which I’ve modified the format to fit my personal style):
+
+(defun ha/org-capture-fileref-snippet (f type headers func-name)
+(let* ((code-snippet
+(buffer-substring-no-properties (mark) (- (point) 1)))
+(file-name   (buffer-file-name))
+(file-base   (file-name-nondirectory file-name))
+(line-number (line-number-at-pos (region-beginning)))
+(initial-txt (if (null func-name)
+(format "From [[file:%s::%s][%s]]:"
+file-name line-number file-base)
+(format "From ~%s~ (in [[file:%s::%s][%s]]):"
+func-name file-name line-number
+file-base))))
+(format "
+%s
+
+#+BEGIN_%s %s
+%s
+#+END_%s" initial-txt type headers code-snippet type)))
+
+
+However, content I want to store in an org-mode comes from more than just Emacs buffers.
+
+Output from Terminal Commands
+
+What if the end result of a command sequence on the Terminal was a pipe to a program that could use cat to gather textual data from standard input, and then use emacsclient call org-capture to store it?
+
+Yeah, and interesting idea when sent to the current clocked in task:
+
+#!/bin/bash
+
+TITLE="$*"
+CONTENT="
+#+BEGIN_EXAMPLE
+$(cat | sed 's/^/     /g')
+#+END_EXAMPLE
+"
+
+if [[ -n $TITLE ]]
+then
+CONTENT="   - ${TITLE}\n${CONTENT}"
+fi
+
+/usr/local/bin/emacsclient -c -n \
+-e "(progn (org-capture-string \"$CONTENT\" \"C\") (delete-frame))"
+
+
+Here I’m using our latest C capture template to that just takes textual context and stores is. Let’s try it in action by typing the following in a shell:
+
+date | ec
+
+
+Works like a charm:
+
+#+BEGIN_EXAMPLE
+Thu Jun  7 22:45:23 PDT 2018
+#+END_EXAMPLE
+
+Content from Browsers
+
+Like many software people, I have a love-hate relationship with browsers. I often find myself copying/pasting information from a web site into my engineering notebook. Pasting text data into an org-mode file looses all text formatting as well as hyperlink references. But operating system clipboards can store some of this formatting data, so we just need to tap into it.
+
+The downside is that accessing this information is operating system dependent…
+
+Version for Mac
+
+Let’s start from the top and work our way down. I need a way, outside of Emacs, to run a command to copy the selected region to the clipboard, and then use emacsclient to start a function to copy that information into the currently clocked in task.
+
+I use Alfred to start a Workflow, as it will allow me to trigger these scripts in succession as shown in this diagram:
+
+The trigger (in this case, just about every meta-key on a laptop), will start the first script that basically issues the Command-C to copy the selected text to the clipboard:
+
+tell application "System Events" to keystroke "c" using command down
+
+
+This works with any Mac application, including browsers.
+
+The next script basically takes the contents of the clipboard (as HTML), render that to an org-compatible format with pandoc (which you’ll need to install), and then use emacsclient to call my org-capture routine with the “C” selection, so that the contents go directly to my clocked in task. My first attempt was a modified version from Roland Crosby:
+
+query=$(osascript -e 'the clipboard as "HTML"' | \
+perl -ne 'print chr foreach unpack("C*",pack("H*",substr($_,11,-3)))' | \
+/usr/local/bin/pandoc -f html -t org | \
+sed 's/"//g' | sed 's/^/   /' )
+
+/usr/local/bin/emacsclient -c -n \
+-e "(progn (org-capture-string \"${query}\" \"C\") (delete-frame))"
+
+
+While the above code works well from a browser, if I copy text from something else (like Slack), the as "HTML" bit throws an error, as the clipboard contains plain text. After working on a fairly involved Perl script (that didn’t handle Unicode characters well), I ended up writing the entire part in Emacs Lisp. Now the shell script is nothing more than:
+
+/usr/local/bin/emacsclient -c -n -e "(ha/external-capture-to-org)"
+
+
+Unpacking Apple’s encoding plus dealing with both HTML and Text content was a bit more involved, but you can see the functions on Gitlab. The end result is great. After selecting some text on the homepage at orgmode.org, and clocked this header as my current task, I ended up with this getting pasted:
+
+The stable version of Org is *9.1.13*, as of May 2018. See the
+[[https://orgmode.org/Changes.html][release notes]].
+
+Get it with =M-x package-install RET org RET= (see
+[[https://orgmode.org/elpa.html][Org ELPA]]).
+
+Or download it as a [[https://orgmode.org/org-9.1.13.tar.gz][tar.gz]] or
+[[https://orgmode.org/org-9.1.13.zip][zip]] archives.
+
+
+Keep in mind, that this copy/pasting business happens completely in the background while I am still surfin’ the web.
+
+Version for Linux
+
+Like everything, I suppose, getting this feature working on my Linux laptop is both easier and harder. Unlike the Mac, I can find no way to automatically copy the current selection to the clipboard like I can with an Applescript. However, once the content is on the clipboard, I can more easily grab it and throw it into Emacs.
+
+Under the Keyboard section of the Settings app (at least on Ubuntu), you can create shortcuts to run commands:
+
+Begin by scrolling to the bottom of the panel, and selecting the + button, and assigning your favorite hot-key (I decided to hold down the Control, Alt, and Super keys along with V since that seems most memorable to me), and have it run our function:
+
+Of course, we’ll need to modify our function to use xclip. This isn’t install by default on Ubuntu (but neither is pandoc), so install those first:
+
+sudo apt install xclip pandoc -y
+
+
+Now, let’s create a function to call xclip, and like before, we ask for HTML, and if it fails, we’ll get it as regular text:
+
+(defun ha/get-linux-clipboard ()
+"Return the clipbaard for a Unix-based system. See `ha/get-clipboard'."
+(destructuring-bind (exit-code contents)
+(shell-command-with-exit-code "xclip" "-o" "-t" "text/html")
+(if (= 0 exit-code)
+(list :html contents)
+(list :text (shell-command-to-string "xclip -o")))))
+
+
+Since I want my same code to work with both my Mac and my Linux systems, I create a simple little dispatcher:
+
+(defun ha/get-clipboard ()
+"Returns a list where the first entry is the content type,
+either :html or :text, and the second is the clipboard contents."
+(if (eq system-type 'darwin)
+(ha/get-mac-clipboard)
+(ha/get-linux-clipboard)))
+
+
+The rest of the code is same. See Gitlab for file updates.
+
+Summary
+
+My workflow proposal amounts to gathering data from a web browser, shell commands, and source code, and be able to fling it into my engineering notebook without switching out of that application.
+
+Later, I will return to my notebook in Emacs and clean up and summarize my capturing. Once clean, the issues or knowledge I wish to share can then be easily exported from org.
+
+The side-benefit, is that I automatically remind myself to clock in to my task.
+
+
+#+END_QUOTE
+[[https://howardism.org/Technical/Emacs/capturing-content.html][Capturing Content for Emacs]]
+Captured On: [2025-10-03 Fri 08:59]
+** A Refined Emacs LLM Environment with gpt.el & mcp.el | Kaoru's Blog
+[[https://blog.kaorubb.org/en/posts/gpt-mcp-setup/][A Refined Emacs LLM Environment with gpt.el & mcp.el | Kaoru's Blog]]
+Captured On: [2025-10-08 Wed 18:22]
+** Org as a spreadsheet system: a short introduction
+[[https://orgmode.org/worg/org-tutorials/org-spreadsheet-intro.html][Org as a spreadsheet system: a short introduction]]
+Captured On: [2025-09-16 Tue 03:36]
+** Capturing Content for Emacs
+[[https://www.howardism.org/Technical/Emacs/capturing-content.html][Capturing Content for Emacs]]
+Captured On: [2025-09-16 Tue 03:46]
+** howardabrams/hamacs: My personal VIM-like configuration of Emacs inspired by Doom and Spacemacs.
+[[https://github.com/howardabrams/hamacs/tree/main][howardabrams/hamacs: My personal VIM-like configuration of Emacs inspired by Doom and Spacemacs.]]
+Captured On: [2025-09-16 Tue 04:35]
+** Creating Timestamps (The Org Manual)
+[[https://orgmode.org/manual/Creating-Timestamps.html][Creating Timestamps (The Org Manual)]]
+Captured On: [2025-09-17 Wed 12:04]
+** jgru/consult-org-roam: A bunch of convenience functions for operating org-roam with the help of consult
+[[https://github.com/jgru/consult-org-roam][jgru/consult-org-roam: A bunch of convenience functions for operating org-roam with the help of consult]]
+Captured On: [2025-09-08 Mon 12:25]
+** Sending Emacs Emails Asynchronously
+
+dotfiles/emacs/.emacs.d/readme.org at 3aa87cc5c2e57895c03ec8b716065a9a6e56614a · joedicastro/dotfiles
+#+BEGIN_QUOTE
+Sending emails asynchronous
+
+This is useful to send emails with attachments and do not block emacs until end the transmission.
+
+(use-package smtpmail-async
+:config
+(setq
+send-mail-function 'async-smtpmail-send-it
+message-send-mail-function 'async-smtpmail-send-it))
+#+END_QUOTE
+[[https://github.com/joedicastro/dotfiles/blob/3aa87cc5c2e57895c03ec8b716065a9a6e56614a/emacs/.emacs.d/readme.org#L3973][dotfiles/emacs/.emacs.d/readme.org at 3aa87cc5c2e57895c03ec8b716065a9a6e56614a · joedicastro/dotfiles]]
+Captured On: [2025-09-11 Thu 21:28]
+** Update the header symbols in mu4e view
+dotfiles/emacs/.emacs.d/readme.org at 3aa87cc5c2e57895c03ec8b716065a9a6e56614a · joedicastro/dotfiles
+#+BEGIN_QUOTE
+;; more cool and practical than the default
+(setq mu4e-headers-from-or-to-prefix '("" . "➜ "))
+#+END_QUOTE
+[[https://github.com/joedicastro/dotfiles/blob/3aa87cc5c2e57895c03ec8b716065a9a6e56614a/emacs/.emacs.d/readme.org#L3973][dotfiles/emacs/.emacs.d/readme.org at 3aa87cc5c2e57895c03ec8b716065a9a6e56614a · joedicastro/dotfiles]]
+Captured On: [2025-09-11 Thu 21:29]
+** Add interactive delete-from alist-by-key
+#+BEGIN_QUOTE
+2.16.5. other tools
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+;; why isn't it a part of standart lib
+(defun delete-from-alist-by-key (list-var elem)
+"Interactively remove element from alist."
+(interactive
+(let ((var (helpful--read-symbol
+"Variable: "
+(helpful--variable-at-point)
+#'(lambda (symb) (and (boundp symb) (listp (symbol-value symb)) (helpful--variable-p symb))))))
+(list var
+(completing-read "Choose element to delete from: " (symbol-value var) nil t))))
+(message "deleting %s from %s=%s" elem list-var (symbol-value list-var))
+(set list-var (assoc-delete-all elem (symbol-value list-var))))
+#+END_QUOTE
+[[https://codefastdieyoung.com/knowledge-base/emacs-config/][Emacs config - codefastdieyoung]]
+Captured On: [2025-09-11 Thu 22:20]
+** Google Translate Integration
+#+BEGIN_QUOTE
+; crazy, finally it works
+(use-package google-translate
+:disabled
+:ensure
+;:init
+;(require 'google-translate)
+;(require 'google-translate-smooth-ui)
+;(defun google-translate--search-tkk () "Search TKK." (list 430675 2721866130))
+:functions (google-translate--search-tkk)
+:config
+(require 'google-translate-smooth-ui)
+(defun google-translate--search-tkk () "Search TKK." (list 430675 2721866130))
+;todo - fix minibuffer keymap with evil for directions
+;(evil-define-key '(motion normal insert) minibuffer-local-map)
+:custom
+(google-translate-input-method-auto-toggling t)
+(google-translate-preferable-input-methods-alist '((nil . ("en")) (ukrainian-computer . ("ru" "uk"))))
+(google-translate-translation-directions-alist '(("uk" . "en") ("ru" . "en") ("en" . "uk")))
+;(google-translate--tkk-url "http://translate.google.com/")
+;(google-translate-base-url "http://translate.google.com/")
+;(google-translate-backend-debug t)
+(google-translate-backend-method 'curl)
+(google-translate-show-phonetic t)
+:bind
+("C-c C-t t" . google-translate-smooth-translate)
+("C-c C-t p" . google-translate-at-point)
+("C-c C-t q" . google-translate-query-translate)
+("C-c C-t d" . google-translate-query-translate-using-directions)
+)
+#+END_QUOTE
+[[https://codefastdieyoung.com/knowledge-base/emacs-config/][Emacs config - codefastdieyoung]]
+Captured On: [2025-09-11 Thu 22:36]
+** dot-files/emacs-eshell.org at master · howardabrams/dot-files · GitHub
+[[https://github.com/howardabrams/dot-files/blob/master/emacs-eshell.org][dot-files/emacs-eshell.org at master · howardabrams/dot-files · GitHub]]
+Captured On: [2025-09-11 Thu 23:34]
+** dot-files/emacs-elisp.org at master · howardabrams/dot-files · GitHub
+#+BEGIN_QUOTE
+Suggesting
+Intrigued to play with Wilfred Hughes’ project, suggest:
+
+(use-package suggest
+:bind ((:prefix-map lisp-evaluation-map
+:prefix "C-c e"
+("s" . suggest))))
+#+END_QUOTE
+[[https://github.com/howardabrams/dot-files/blob/master/emacs-elisp.org][dot-files/emacs-elisp.org at master · howardabrams/dot-files · GitHub]]
+Captured On: [2025-09-11 Thu 23:30]
+** dot-files/emacs-client.org at master · howardabrams/dot-files · GitHub
+#+BEGIN_QUOTE
+Dimming and Finding Cursor
+When I type, I would rather not see the cursor, for at the point where I am typing, I know where I am typing. Of course, when I’m moving around the screen (or even when Emacs is idle), I want to know clearly the location of cursor.
+
+I’ve previously made the cursor an obnoxious color, and let’s save that value:
+
+(defvar cursor-initial-color (face-attribute 'cursor :background)
+"The initial value of the cursor that will be use when re-showing it.")
+If I type a character or maybe two, I don’t want to hide the cursor… only when I start to really get typing:
+
+(defvar cursor-number-chars-before-hiding 2
+"The number of characters one needs to type before we hide the cursor.")
+Of course, I need to have some sort of state variable that counts the number of characters that have been typed:
+
+(defvar cursor-current-number-chars 0)
+Now let’s have a couple of functions that will show and hide the cursor (or at least, lessen its visibility):
+
+(defun cursor-hide (&optional arg)
+"Hides cursor by setting the color to the background color.
+This only happens after a number of characters have been
+typed (defined by the `cursor-number-chars-before-hiding'
+variable)."
+(setq cursor-current-number-chars (1+ cursor-current-number-chars))
+(when (> cursor-current-number-chars cursor-number-chars-before-hiding)
+(set-cursor-color (or (background-color-at-point) "#1d1f21"))))
+
+(defun cursor-show ()
+"Shows the cursor. At least, sets it to a particular
+color (stored/defined in `cursor-initial-color'. Note: This also
+resets the `cursor-current-number-chars' variable, so that it
+won't be hid until a number of characters have been typed."
+(setq cursor-current-number-chars 0)
+(set-cursor-color cursor-initial-color))
+After entering a text that is inserted into a buffer, hide the cursor by using some advice:
+
+(advice-add 'self-insert-command :after #'cursor-hide)
+After I’m done typing (that is, when the cursor is idle), show the cursor:
+
+(setq my-cursor-timer (run-with-idle-timer 1 t #'cursor-show))
+Let’s make the cursor more noticeable whenever the window scrolls (which seems to be the time when I need to visually look for it):
+
+(use-package beacon
+:ensure t
+:defer  t
+:diminish 'beacon-mode
+:init  (beacon-mode +1)
+:config (setq beacon-color cursor-initial-color))
+#+END_QUOTE
+[[https://github.com/howardabrams/dot-files/blob/master/emacs-client.org][dot-files/emacs-client.org at master · howardabrams/dot-files · GitHub]]
+Captured On: [2025-09-11 Thu 23:23]
+** dot-files/emacs-browser.org at master · howardabrams/dot-files · GitHub
+#+BEGIN_QUOTE
+External Web Browsing
+Need to be able to switch and have a link in an org-mode file show up in the default, graphical browser:
+
+(defun ha-switch-default-browser ()
+"Switches the default browser between the internal and external web browser."
+(interactive)
+;;         | Variable                  | Function
+(if (equal browse-url-browser-function 'browse-url-default-browser)
+(if (fboundp 'w3m)
+(setq browse-url-browser-function 'w3m-browse-url)
+(setq browse-url-browser-function 'eww-browse-url))
+(setq browse-url-browser-function 'browse-url-default-browser))
+
+;; Now we need to display the current setting. The variables are
+;; pretty typical and have the goodies, but I just need to get rid
+;; of the word "url" or "browser", and the results are pretty close:
+(cl-flet ((remove-bad-parts (l)
+(-filter (lambda (s) (pcase s
+("url"     nil)
+("browse"  nil)
+("browser" nil)
+(_  t))) l)))
+(message "Browser set to: %s"
+(-> (symbol-name browse-url-browser-function)
+(split-string "-")
+remove-bad-parts
+car))))
+
+(global-set-key (kbd "C-c w d") 'ha-switch-default-browser)
+#+END_QUOTE
+[[https://github.com/howardabrams/dot-files/blob/master/emacs-browser.org][dot-files/emacs-browser.org at master · howardabrams/dot-files · GitHub]]
+Captured On: [2025-09-11 Thu 23:17]
+** GitHub - howardabrams/dot-files: My Emacs initialization code and standard scripts I use for client and servers alike.
+[[https://github.com/howardabrams/dot-files][GitHub - howardabrams/dot-files: My Emacs initialization code and standard scripts I use for client and servers alike.]]
+Captured On: [2025-09-11 Thu 23:12]
+** rememberYou/.emacs.d: 🎉 Personal GNU Emacs configuration
+[[https://github.com/rememberYou/.emacs.d][rememberYou/.emacs.d: 🎉 Personal GNU Emacs configuration]]
+Captured On: [2025-09-12 Fri 05:48]
+** Howardism: Tools to Focus
+[[https://www.howardism.org/Technical/Emacs/focused-work.html][Tools to Focus]]
+Captured On: [2025-09-16 Tue 04:24]
+** I created a tutorial for Org Mode Tables that contains lots of practical examples, check it out : r/orgmode
+[[https://www.reddit.com/r/orgmode/comments/1iaw2je/i_created_a_tutorial_for_org_mode_tables_that/][I created a tutorial for Org Mode Tables that contains lots of practical examples, check it out : r/orgmode]]
+Captured On: [2025-09-16 Tue 03:36]
+** dump-jump using xref-show-definitions-functions
+- codefastdieyoung
+#+BEGIN_QUOTE
+11.5. jump-to
+1
+2
+3
+4
+5
+(use-package dumb-jump
+:functions xref-show-definitions-completing-read
+:ensure
+:init (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
+:config (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+
+#+END_QUOTE
+[[https://codefastdieyoung.com/knowledge-base/emacs-config/][Emacs config - codefastdieyoung]]
+Captured On: [2025-09-11 Thu 22:31]
+** Good emacs config files - codefastdieyoung
+[[https://github.com/caisah/emacs.dz][GitHub - caisah/emacs.dz: Awesome emacs config files]]
+Captured On: [2025-09-11 Thu 22:39]
+[[https://codefastdieyoung.com/knowledge-base/emacs-config/][Emacs config - codefastdieyoung]]
+Captured On: [2025-09-11 Thu 22:11]
+** buffer/file compare: current version with saved via diff
+#+BEGIN_QUOTE
+Auxiliary functions for buffers management
+Some custom functions to manage buffers.
+
+(defun joe-alternate-buffers ()
+"Toggle between the last two buffers"
+(interactive)
+(switch-to-buffer (other-buffer (current-buffer) t)))
+
+(defun joe-revert-buffer ()
+"Revert the buffer to the save disk file state"
+(interactive)
+(revert-buffer nil t))
+
+(defun joe-diff-buffer-with-file ()
+"Compare the current modified buffer with the saved version."
+(interactive)
+(let ((diff-switches "-u"))
+(diff-buffer-with-file (current-buffer))))
+#+END_QUOTE
+[[https://github.com/joedicastro/dotfiles/blob/master/emacs/.emacs.d/readme.org][dotfiles/emacs/.emacs.d/readme.org at master · joedicastro/dotfiles · GitHub]]
+Captured On: [2025-09-11 Thu 23:01]
+** Async Module for Doing Asynchronous Processing
+#+BEGIN_QUOTE
+async
+async.el is a module for doing asynchronous processing in Emacs.
+
+(use-package async
+:defer t
+:ensure t
+:config
+(setq async-bytecomp-package-mode t))
+#+END_QUOTE
+[[https://github.com/joedicastro/dotfiles/blob/master/emacs/.emacs.d/readme.org][dotfiles/emacs/.emacs.d/readme.org at master · joedicastro/dotfiles · GitHub]]
+Captured On: [2025-09-11 Thu 23:03]
+** Review Org's New Citation Syntax
+URL: https://blog.tecosaur.com/tmio/2021-07-31-citations.html
+Captured On:[2025-09-25 Thu 02:39]
+[ ] 
+
+[[https://orgmode.org][*]]
+[[https://blog.tecosaur.com/tmio/][This Month in Org]] 
+[[https://blog.tecosaur.com/tmio/rss.xml][RSS icon]]
+
+2021-07-31, TEC
+
+July 2021
+
+Introducing citations!
+
+Last month I not-at-all-subtly hinted that a certain long-awaited
+feature was arriving imminently. At this point, I think it’s a good idea
+to set the tone for the rest of this post. 
+
+celebrate-citations.svg
+
+Citations[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citations][#]] 
+
+After years of (on and off) discussion[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#fn.1][1]], I am elated to be able to
+present Org’s new native citation syntax. Org has grown a thoroughly
+designed, modular, capable citation system. At last you can refer to Org
+for all your attribution needs. Special thanks must go to Nicolas
+Goaziou for leading the charge, John Kitchin for paving the way with the
+org-ref package, Bruce D’Arcus for driving a lot of careful
+consideration of design decisions and starting to document some of the
+details — and the many other denizens of the mailing list who have
+contributed to the discussion over the years. 
+
+András Simonyi’s also deserves a special mention for his work creating
+the Elisp CSL library Citeproc.el, which while not directly included in
+Org is crucial to providing robust CSL support, and integrates with
+oc-csl.el. 
+
+Outline[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#outline][#]] 
+
+Citations have been carefully designed in such a way that users and
+Elisp tinkerers will be able to easily adapt and extend it to fit their
+needs. To that end, Org Cite (or OC for short) has been split into two
+halves: 
+
+• oc.el which defines the syntax and provides some machinery to interact
+  with citations
+• Citation processors which interface with oc.el to produce
+  nicely-formatted citations to be inserted in your bibliography, within
+  the text, and even rendered in the buffer[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#fn.2][2]]
+
+There are four capabilities that Org Cite uses the processors for 
+
+1 Inserting and editing citations
+2 Following citations to their definition
+3 Fontifying the citations in the buffer
+4 Exporting the citations
+
+Each capability can have a particular citation processor assigned,
+independently of the others. Out of the box, Org uses the basic
+processor for all of these tasks. 
+
+The basic citation processor is one of four currently bundled with Org: 
+
+• basic, which has no dependencies and provides all four capabilities.
+  It export to all formats, but only provides very simple citations.
+• biblatex and natbib, which provide the export capability to create
+  citations via [[http://biblatex-biber.sourceforge.net/][Biber]] and (to a lesser extent) [[https://ctan.org/pkg/natbib][natbib]], but only for
+  LaTeX.
+• csl, which provides the export capability using the [[https://citationstyles.org/][Citation Style
+  Language]], and exports to HTML, LaTeX, Org, and plain text (with an
+  [[https://github.com/andras-simonyi/citeproc-el/issues/23][open issue]] for ODT) — but depends on [[https://github.com/andras-simonyi/citeproc-el][citeproc.el]].
+
+This provides a solid foundation for other packages to build off, and
+despite Org Cite being yet to be released or documented in the manual we
+are already seeing the development of packages like [[https://github.com/jkitchin/org-ref-cite][org-ref-cite]] (by
+John Kitchin). 
+
+Basic usage[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#basic-usage][#]] 
+
+To get started with Org Cite, we must have some form of bibliography.
+This can either be a BibTeX file or a CSL-JSON file. 
+
+As an example, say we have a file orgcite.bib containing the following 
+
+bibtex
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#basic-usage,code--1][#]] ⎘ 
+@article{OrgCitations,
+         author={org, mode and Syntax, Citation and List, Mailing and Effort, Time},
+         journal={Journal of Plain Text Formats},
+         title={Elegant Citations with Org-Mode},
+         year={2021},
+         month={7},
+         volume={42},
+         number={1},
+         pages={2-3}}
+
+First we need to let Org know about this bibliography file (which must
+have a .bib, .bibtex, or .json extension), which we do either via the
+#+bibliography keyword, or the variable org-cite-global-bibliography. 
+
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#org367f817][#]] ⎘ 
+
+#+bibliography: orgcite.bib
+
+Once you have a bibliography source, you can start referencing to your
+heart’s content! The basic citation syntax is as follows: 
+
+citation-structure-basic.svg
+Figure 1: The new citation syntax, for simple citations
+
+Using the default style [cite:@OrgCitations] produces ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org et al. 2021]]).
+For more information on the styles currently available, see [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#cite-styles][1]]. 
+
+Finally, to insert a bibliography somewhere, we just need to insert the
+#+print_bibliography keyword, like so: 
+
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#orgf39282d][#]] ⎘ 
+
+#+print_bibliography:
+org, mode, Citation Syntax, Mailing List, and Time Effort. 2021.
+“Elegant Citations with Org-Mode.” Journal of Plain Text Formats 42 (1):
+2–3.
+
+So, to summarise, all one needs to get started is: 
+
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#orgb88a259][#]] ⎘ 
+
+#+bibliography: references.bib
+[cite:@key]
+#+print_bibliography:
+
+That’s it! 🎉 
+
+The cite syntax[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#cite-syntax][#]] 
+
+Don’t let the simplicity in the examples above fool you, the new syntax
+is quite capable of expressing more complex forms. Here’s the full
+version of the new cite syntax: 
+
+citation-structure-full.svg
+Figure 2: The new citations syntax, in full
+
+• The style and variant determine what form the exported citation takes
+• The common prefix and suffix and put at the start and end of the
+  generated citation, respectively
+• The citation key refers to a Bib(La)TeX or CSL-JSON key 
+
+  • The citation prefix and suffix are put before and after the
+    reference to the key
+  • Some citation processors recognise locators, which refer to a
+    particular part of the work, for example: p. 7 to refer to page 7.
+
+Using the default CSL citation style (Chicago author-name) [cite/l/b:see
+@OrgCitations pp. 7 for fun] becomes see [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org et al. 2021, 7]] for fun. 
+
+The citation styles and variants, and recognised locators are handled by
+the citation processors. Org cite’s bundled processors currently
+supports the following citation styles. 
+
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#cite-styles][#]]
+
+ Table 1: The current set of supported citation styles with variants,  
+ with samples generated by oc-csl.el and citeproc.el.  
+  Style  Variant  Sample  Bib(La)TeX  NatBib    
+  a author  cf caps-full  ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][Org,]]  Citeauthor       
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][Syntax,]]        
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][List, and]]        
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][Effort]])        
+  a author  f full  ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org,]]  citeauthor  citeauthor*    
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][Syntax,]]        
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][List, and]]        
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][Effort]])        
+  a author  c caps  ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][Org et al.]])  Citeauthor*  Citeauthor    
+  a author     ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org et al.]])  citeauthor*  citeauthor    
+  na noauthor  b bare  [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]]     citeyear    
+  na noauthor     ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])  autocite*  citeyearpar    
+  l locators  bc bare-caps  [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][Org et al.]]  Notecite       
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021, 2]]        
+  l locators  b bare  [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org et al.]]  notecite       
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021, 2]]        
+  l locators  bc caps  , [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][Org et al.]]  Pnotecite       
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021, 2]]        
+  l locators     (, [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org et]]  pnotecite       
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][al. 2021, 2]])        
+  n nocite     ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org et al.]]  nocite  nocite    
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  t text  b bare  org et al.     citealp    
+      ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  t text  c caps  Org et al.  Textcite  Citep    
+      ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  t text  f full  org, Syntax,     citep*    
+      List, and        
+      Effort        
+      ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  t text  bc bare-caps  org et al.     Citealp    
+      ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  t text  bf bare-full  org et al.     citealp*    
+      ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  t text  cf caps-full  Org, Syntax,     Citep*    
+      List, and        
+      Effort        
+      ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  t text  bcf  org et al.     Citealp*    
+    bare-caps-full  ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  t text     org et al.  textcite       
+      ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  (default)  b bare  [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org et al.]]  cite  citealp    
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]]        
+  (default)  bc bare-caps  [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][Org et al.]]  Cite  Citealp    
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]]        
+  (default)  f full  ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org et al.]]     citep*    
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  (default)  bf bare-full  ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org et al.]]     citealp    
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  (default)  cf caps-full  ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org et al.]]     Citep*    
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  (default)  bcf  ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org et al.]]     Citealp*    
+    bare-caps-full  [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+  (default)     ([[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][org et al.]]  autocite  citep    
+      [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#citeproc_bib_item_1][2021]])        
+
+The CSL processor supports the following locators: 
+
+• book, bk., bks.
+• chapter, chap., chaps.
+• column, col., cols.
+• figure, fig., figs.
+• folio, fol., fols.
+• number, no., Os.
+• line, l., ll.
+• note, n., nn.
+• opus, op., opp.
+• page, p, p., pp.
+• paragraph, para., paras., ¶, ¶¶, §, §§
+• part, pt., pts.
+• section, sec., secs.
+• sub verbo, s.v., s.vv.
+• verse, v., vv.
+• volume, vol., vols.
+
+More on exporting[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#more-exporting][#]] 
+
+The style of the citations and the bibliography depend on three things: 
+
+1 The citation processor used
+2 The citation style
+3 The bibliography style
+
+The citation processor is automatically selected based on
+org-cite-export-processors based on the export format being used, but
+can be set on a per-document basis via the #+cite_export keyword. Here,
+I shall use the csl processor, 
+
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#org0920610][#]] ⎘ 
+
+#+cite_export: csl
+
+With org-cite-export-processors, you can also set the bibliography and
+citation style by giving a triplet of parameters (PROCESSOR
+BIBLIOGRAPHY-STYLE CITATION-STYLE) instead of just the processor. You
+can also use this triplet of values with the #+cite_export keyword 
+
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#orgf8da086][#]] ⎘ 
+
+#+cite_export: processor bibliography-style citation-style
+
+There are also some more options about how the bibliography is produced.
+These options are handled by the active citation processor. For example,
+while the CSL processor does not currently support any options, the
+BibLaTeX processor passes options to a \printbibliography command,
+allowing for the following: 
+
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#org29efa9f][#]] ⎘ 
+
+#+print_bibliography: :section 2 :heading subbibliography
+#+print_bibliography: :keyword abc,xyz :title "Primary Sources"
+
+Using CSL[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#using-csl][#]] 
+
+[[https://github.com/andras-simonyi/citeproc-el][Citeproc]] is currently available on [[https://melpa.org/#/citeproc][MELPA]], and so can be installed via
+your package manager of choice so long as MELPA is included in your
+package-archives. When available, it will be automatically loaded by
+oc-csl.el. 
+
+It currently supports exporting to: 
+
+• HTML
+• LaTeX
+• Org
+• Plain text
+
+Should you be interested in other formats, know that Citeproc is
+designed to easily support adding new formats (see
+citeproc-formatters.el for examples). 
+
+Citeproc can currently retrieve bibliographic information from the
+following formats: 
+
+• CSL-JSON
+• Bib(La)TeX
+• org-bibtex
+
+Though support for Bib(La)TeX and [[https://gewhere.github.io/org-bibtex][org-bibtex]] is rudimentary compared to
+CSL-JSON. 
+
+When exporting, you can set the style by providing a path to CSL style
+files, either absolute or relative to org-cite-csl-styles-dir. For
+example, if I download apa.csl I can use it like so: 
+
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#org678d1e6][#]] ⎘ 
+
+#+cite_export: csl ~/Downloads/apa.csl
+
+When no style is given org-cite-csl--fallback-style-file will be used,
+which defaults to a bundled Chicago author-date style. 
+
+Working with Zotero[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#working-with-zotero][#]] 
+
+There are quite a few reference managers available, however, the list
+rapidly shrinks if you restrict yourself to applications which are: 
+
+• somewhat feature-rich
+• open source software
+• not owned by a parasitic company[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#fn.3][3]]
+
+[[https://www.zotero.org/][Zotero]] is a good option, and if you’re using it it’s quite easy to use
+it with Org Cite. Out of the box, you can tell it to export your
+library, or parts of it, to a .bib file and automatically keep it in
+sync. I’d recommend installing the [[https://retorque.re/zotero-better-bibtex/][Better BibTeX]] extension though. 
+
+zotero-export-library.png
+Figure 3: Zotero library right click context menu, showing the export
+option
+zotero-export-options-prompt.png
+Figure 4: Zotero collection export dialog
+
+Zotero also works well with CSL. In addition to supporting CSL-JSON
+exports, Zotero also features an easy way to install CSL styles within
+the preferences. 
+
+zotero-cite-styles-menu.png
+Figure 5: Zotero CSL style management within preferences
+
+Since these files are put under ~/Zotero/styles, you can use them with
+Org Cite and Citeproc simply by setting org-cite-csl-styles-dir to the
+Zotero styles directory. 
+
+Emacs Lisp
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#working-with-zotero,code--1][#]] ⎘ 
+(setq org-cite-csl-styles-dir "~/Zotero/styles")
+
+To then use the citation style defined by ~/Zotero/styles/apa.csl one
+can then simply refer to apa.csl when using the #+cite_export keyword. 
+
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#org5f6c51c][#]] ⎘ 
+
+#+cite_export: csl apa.csl
+
+A bright future[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#bright-future][#]] 
+
+Org Cite has only just been merged in the past month, and is yet to be
+included in an Org release, but we’re seeing a tremendous degree of
+community interest. There are already promising developments with
+third-party packages, such as [[https://github.com/bdarcus/bibtex-actions][bibtex-actions]] and [[https://github.com/jkitchin/org-ref-cite][org-ref-cite]]. I can’t
+wait to see how the ecosystem continues to develop 😃. 
+
+Footnotes: 
+
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#fnr.1][1]]
+
+Citations were first being mentioned on the mailing list back in 2007,
+in [[https://lists.gnu.org/archive/html/emacs-orgmode/2007-05/msg00146.html][a thread about footnotes]]. 
+
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#fnr.2][2]]
+
+There is currently an [[https://github.com/andras-simonyi/org-cite-csl-activate][ongoing effort]] to use oc.el and citeproc.el to
+produce citation overlays in the buffer. 
+
+[[https://blog.tecosaur.com/tmio/2021-07-31-citations.html#fnr.3][3]]
+
+I’m talking about a certain company [[https://moneyweek.com/505757/great-frauds-in-history-robert-maxwell][created by a British Fraudster]] that
+has a [[https://www.theguardian.com/science/2017/jun/27/profitable-business-scientific-publishing-bad-for-science][40% profit margin, engages in blackmail-like practices with
+universities]], prompted [[http://thecostofknowledge.com/][19,000 researchers]] to boycott them, [[https://www.the-scientist.com/the-nutshell/elsevier-published-6-fake-journals-44160][published six
+fake journals]], vigorously [[https://web.archive.org/web/20200129202353/http://legacy.earlham.edu/~peters/fos/2007/08/publishers-launch-anti-oa-lobbying.html][lobbys against Open Access]], [[https://rossmounce.co.uk/2017/02/14/elsevier-selling-access-to-open-access-again/][charged for Open
+Acess articles]] (repeatedly), made [[https://www.michaeleisen.org/blog/?p=807][financial contributions to politicians
+who then tried to prevent publicly accesible reaserch]], and whose
+reference manager [[https://www.zotero.org/support/kb/mendeley_import#mendeley_database_encryption][encrypted reaserchers’ own databases]] “to comply with
+GDPR”. 
+
+[[http://creativecommons.org/publicdomain/zero/1.0/][CC0]]
+To the extent possible under law, [[https://blog.tecosaur.com/][TEC]] has waived all copyright and
+related or neighboring rights to This Month in Org. 
+** [[https://karthinks.com/software/fifteen-ways-to-use-embark/][Emacs: Fifteen ways to use Embark]]
+URL: https://karthinks.com/software/fifteen-ways-to-use-embark/
+Captured On:[2025-09-23 Tue 01:42]
+
+• [[https://karthinks.com/software/fifteen-ways-to-use-embark/#embark-act-actually-dot-dot-dot-dot-and-but-first-dot-dot-dot][embark-act: Actually…. & But first…]] 
+
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#open-any-buffer-by-splitting-any-window][Open any buffer by splitting any window]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#copy-a-file-to-a-remote-location-when-finding-a-file][Copy a file to a remote location when finding a file]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#insert-a-minibuffer-candidate-into-the-buffer][Insert a minibuffer candidate into the buffer]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#run-a-shell-command-on-a-minibuffer-candidate-file-without-losing-your-session][Run a shell command on a minibuffer candidate file without losing
+    your session]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#open-a-file-as-root-without-losing-your-session][Open a file as root without losing your session]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#upload-a-region-of-text-to-0x0][Upload a region of text to 0x0]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#visit-a-package-s-url-from-the-minibuffer][Visit a package’s URL from the minibuffer]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#set-a-variable-from-anywhere-it-appears-in-a-buffer][Set a variable from anywhere it appears in a buffer]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#add-a-keybinding-for-a-command-name-from-anywhere-it-appears][Add a keybinding for a command name from anywhere it appears]]
+
+• [[https://karthinks.com/software/fifteen-ways-to-use-embark/#embark-export-i-want-a-gist-so-give-me-a-list][embark-export: I want a gist, so give me a list]] 
+
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#export-emacs-package-candidates-to-a-package-menu][Export Emacs package candidates to a package menu]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#collect-imenu-candidates-in-an-imenu-list][Collect imenu candidates in an “imenu-list”]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#export-file-candidates-to-a-dired-buffer][Export file candidates to a dired-buffer]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#export-buffer-candidates-to-ibuffer][Export buffer candidates to ibuffer]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#export-variable-candidates-to-a-customize-buffer][Export variable candidates to a customize buffer]]
+  • [[https://karthinks.com/software/fifteen-ways-to-use-embark/#export-grep-or-line-candidates-to-a-grep-buffer][Export grep or line candidates to a grep buffer]]
+
+• [[https://karthinks.com/software/fifteen-ways-to-use-embark/#bonus-use-embark-actions-like-helm][BONUS: Use Embark Actions like Helm]]
+• [[https://karthinks.com/software/fifteen-ways-to-use-embark/#33][33%]]
+
+Fifteen ways to use Embark 
+
+2021-10-06
+[[https://karthinks.com/tags/emacs][emacs]] 
+
+Update (2024-10-02): Update for Emacs 29
+
+Update (2024-09-08): Read this article in Japanese at [[https://emacs-jp.github.io/tips/fifteen-ways-to-use-embark][Qiita]] or at
+[[https://emacs-jp.github.io/tips/fifteen-ways-to-use-embark][Emacs-JP]].
+
+Update (2021-10-16): While this list was intended as a demonstration of
+the kinds of things you can do with Embark, there has been some interest
+by readers in reproducing these demos exactly on their machines. So I
+have added a “Play by play” section under each demo listing the sequence
+of actions in the demo.
+
+[[https://github.com/oantolin/embark/tree/98121bacef39abaf6f6849f87a439ba2184c03e2][Embark]] is a fantastic and thoughtfully designed package for Emacs that
+flips Emacs’ action → object ordering without adding a learning curve.
+It’s completely changed how I use Emacs, and I’m going to show you why.
+
+By default, Emacs’ action model is to specify the action (find-file),
+then the object (the file): 
+[[https://karthinks.com/img/emacs-pattern.png][*]]
+
+This mirrors how one does things in a shell: 
+[[https://karthinks.com/img/shell-pattern.png][*]]
+The difference is that before you submit your shell command, you’re free
+to edit both the action and the object, since it’s just a line of text.
+In Emacs you can change the object freely, but to change the action
+you’d have to hit C-g and call a different command.
+
+Things work the other way in a GUI program like a file manager. You
+select some representation of the object (usually an icon), then choose
+the action you would like to perform on it: 
+[[https://karthinks.com/img/gui-pattern.png][*]]
+
+Either paradigm works fine, but this is Emacs, there’s no reason to
+choose just one! Embark lets you go back and forth between the two
+patterns. So you can call find-file (say) and pick a file, only to
+realize that you want to do something else with it, like open it in
+another window, or copy the file to a different directory:
+
+[[https://karthinks.com/img/embark-pattern.png][*]]
+
+With Embark, this is a breeze.
+
+embark-act: Actually…. & But first…
+
+embark-act is your “Actually…” command. As in, I called package-install
+and picked a package but actually I’d like to read the package
+description instead!
+
+embark-act is your “Yes, but first…” command as well. As in, I called
+find-file but first I’d like to copy it elsewhere to be safe, then
+continue to open this file!
+
+Or perhaps you want to think of it as a keyboard driven analog of a
+“right-click menu” in a GUI environment. That works too, but the former
+maps better to the idea of “late-binding” and laziness that I think of
+Embark as enabling.
+
+Emacs makes you specify and fix the action/verb first (find-file, say),
+then choose the thing it acts on (the file). If you call embark-act,
+this is reversed. Now the object (file) is fixed, and you’re free to
+choose the action.
+
+I know: It sounds like I’m describing Helm actions. The difference is
+that Embark works everywhere, across all types of “objects”, and with
+every initial and wait-I-changed-my-mind command. There is no
+predetermined set of alternative actions configured to work with another
+predetermined set of initial actions. No one (including yourself) needs
+to have anticipated in advance what actions go together.[[https://karthinks.com/software/fifteen-ways-to-use-embark/#fn:1][1]] This uniform,
+consistent integration into Emacs makes the difference between them one
+of kind and not of quantity, although it takes a bit of time to see
+this.
+
+This means you can start a command and select a candidate in the
+minibuffer, then call embark-act and M-x some-other-command to run that
+command on the candidate instead. If you are about to kill a buffer with
+C-x k but want to switch to it instead, you can call embark-act followed
+by C-x b. You can even do this without losing the kill-buffer prompt if
+you just want a quick peek at the buffer!
+
+The categories of objects Embark understands covers most common cases:
+filenames, buffers, bookmarks, URLs, text regions, variables, commands,
+symbols and more.
+
+When you call embark-act, Embark also activates a keymap with direct
+access to common actions you might want to run for each category of
+object. This makes it unnecessary to use M-x to run your
+I-changed-my-mind action all the time, although you always have that
+option. You can, of course, add your own commands to this keymap as I do
+below.
+
+I use embark-act literally hundreds of times every day. Here are a few
+of my common uses. A few of these are built in, others need some elisp
+to work, all are surprisingly useful. To be clear, this list barely
+scratches the surface of the sphere of possibilities with Embark.
+
+A recipe for reproducing these demos
+
+I use Embark in conjunction with various Consult commands (consult-grep,
+consult-locate, consult-dir etc) in Emacs 27.2. If you want to reproduce
+these demos exactly in your Emacs, you will need the following packages:
+
+• embark
+• marginalia
+• vertico
+• consult
+• embark-consult
+• orderless
+• consult-dir
+• ace-window
+• 0x0
+
+Additionally you may need to bind the relevant commands (embark-act,
+embark-export, consult-*) to suitable keys.
+
+Open any buffer by splitting any window
+
+This needs a little background. The ace-window package allows you to
+switch to a window based on keyboard hints. A less well known feature is
+that it also provides a “dispatch menu” that lets you act on windows in
+ways beyond simply switching to them:
+
+[[https://i.imgur.com/EWC4jNH.gifv][[video]​]]Play by play
+
+1 With two or more windows open, call ace-window
+2 Press ? to bring up the dispatch menu.
+3 Press the dispatch key to split a window horizontally (v in my video)
+4 Press the ace-window key corresponding to the buffer you want to split
+  (e in my video)
+5 Repeat steps 1 and 2
+6 Press the dispatch key to split a window vertically (s in my video)
+7 Press the ace-window key corresponding to the buffer you want to split
+  (w in my video)
+
+So you can kill windows, move them around, split them and more by using
+the dispatch keys. (Hit ? to bring up the dispatch menu.)
+
+Now: You can call ace-window via Embark to display a candidate anywhere,
+including in splits that you create using the above dispatch menu. This
+means any buffer/file/bookmark I open is always placed exactly where I
+want it to be on the screen.
+
+In the below demo, I open a bookmark (with consult-bookmark), a file
+(with find-file) and a buffer (with consult-buffer) in sequence. Each
+time, I run embark-act and select the ace-window action, which activates
+ace-window. You can then display the buffer in any existing window by
+making a selection with ace-window. I actually go one step further in
+the demo: I split one of the existing windows using ace-window’s
+dispatch feature from above and display the relevant buffer in that
+split!
+
+[[https://i.imgur.com/5hwqpQD.gifv][[video]​]]Play by play
+
+1 Run a command that requires selecting a file, bookmark or buffer,
+  perhaps switch-to-buffer
+2 Select one and run embark-act
+3 Run the my/embark-ace-action with o (see below)
+4 Select the window where you want the buffer to be placed, OR
+5 Split an existing window with v or b (see aw-dispatch-alist) followed
+  by a window selection, and display the buffer in the new split.
+
+Update for Emacs 29
+
+Emacs 29 provides a bunch of “window-prefix” actions: [[https://karthinks.com/software/emacs-window-management-almanac/#the-other-window-prefix--built-in][these are commands
+you can call to display the output of the next command in specified
+windows]]. For example, calling other-tab-prefix and then find-file will
+open the file you select in a new tab. Emacs provides
+same-window-prefix, other-window-prefix, other-tab-prefix and
+other-frame-prefix. We can [[https://karthinks.com/software/emacs-window-management-almanac/#a-window-prefix-command-for-ace-window][go one step further and define]] an
+ace-window-prefix. Calling it will activate ace-window after the next
+command and show its result in the window you select, including possibly
+in splits you create using ace-window actions:
+
+(defun ace-window-prefix ()
+    "Use `ace-window' to display the buffer of the next command.
+The next buffer is the buffer displayed by the next command invoked
+immediately after this command (ignoring reading from the minibuffer).
+Creates a new window before displaying the buffer.
+When `switch-to-buffer-obey-display-actions' is non-nil,
+`switch-to-buffer' commands are also supported."
+    (interactive)
+    (display-buffer-override-next-command
+     (lambda (buffer _)
+       (let (window type)
+         (setq
+          window (aw-select (propertize " ACE" 'face 'mode-line-highlight))
+          type 'reuse)
+         (cons window type)))
+     nil "[ace-window]")
+    (message "Use `ace-window' to display next command buffer..."))
+
+Now the interesting bit: Instead of defining separate Embark actions for
+opening files, bookmarks or buffers in specified windows or splits, we
+can embed the window prefix actions into Embark so they can be used with
+any category of object.
+
+First we define a keymap with these actions:
+
+(defvar-keymap my/window-prefix-map
+  :doc "Keymap for various window-prefix maps"
+  :suppress 'nodigits
+  "o" #'ace-window-prefix
+  "0" #'ace-window-prefix
+  "1" #'same-window-prefix
+  "2" #'split-window-vertically
+  "3" #'split-window-horizontally
+  "4" #'other-window-prefix
+  "5" #'other-frame-prefix
+  "6" #'other-tab-prefix
+  "t" #'other-tab-prefix)
+
+What we’d like: When running embark-act, pressing any of the keys in the
+above keymap should run Embark’s default action – i.e. the command that
+you originally invoked – but with the right window-prefix applied. This
+will supersede the below, older method of defining individual Embark
+commands for each kind of object. Getting there involves hooking into
+Embark’s event loop, so this is a little convoluted. Strap in!
+
+• We define a function that looks up keys in the above keymap and calls
+  the right -window-prefix command before running Embark’s default
+  action. This is intended as a hook function for Embark’s
+  embark-around-action-hooks, which lets you insert specific behavior
+  around each Embark action. This is the code we’d like Embark to
+  actually run:
+
+  ;; Look up the key in `my/window-prefix-map' and call that function first.
+  ;; Then run the default embark action.
+  (cl-defun my/embark--call-prefix-action (&rest rest &key run type &allow-other-keys)
+    (when-let ((cmd (keymap-lookup
+                     my/window-prefix-map
+                     (key-description (this-command-keys-vector)))))
+      (funcall cmd))
+    (funcall run :action (embark--default-action type) :type type rest))
+• But this behavior is not attached to any Embark action yet. To access
+  this behavior from Embark, we define a dummy Embark action whose
+  behavior will be replaced by the above function:
+
+  ;; Dummy function, will be overridden by running `embark-around-action-hooks'
+  (defun my/embark-set-window () (interactive))
+
+  ;; When running the dummy function, call the prefix action from above
+  (setf (alist-get 'my/embark-set-window embark-around-action-hooks)
+        '(my/embark--call-prefix-action))
+• A wrinkle: to support multi-category commands like those provided by
+  Consult (where the candidates can be a mix of bookmarks, buffers,
+  files and others), we need to explicitly set the “default” Embark
+  action for relevant categories:
+
+  (setf (alist-get 'buffer embark-default-action-overrides) #'pop-to-buffer-same-window
+        (alist-get 'file embark-default-action-overrides) #'find-file
+        (alist-get 'bookmark embark-default-action-overrides) #'bookmark-jump
+        (alist-get 'library embark-default-action-overrides) #'find-library)
+• Finally, we map this dummy embark action to all the keys in
+  my/window-prefix-map:
+
+  (map-keymap (lambda (key cmd)
+                (keymap-set embark-general-map (key-description (make-vector 1 key))
+                            #'my/embark-set-window))
+              my/window-prefix-map)
+
+  The fact that all keys in my/window-prefix-map are mapped to the same
+  action is not a problem – in my/embark--call-prefix-action we dispatch
+  on the key that was actually pressed.
+
+If you’re on Emacs 29 or later, you can enable behavior like the above
+for all commands and categories at once, without needing to define
+individual actions. The below is a more manual (and backward-compatible)
+approach.
+
+To get this to work, you’ll need to add a few ace-window functions to
+the Embark file actions map:
+
+(eval-when-compile
+  (defmacro my/embark-ace-action (fn)
+    `(defun ,(intern (concat "my/embark-ace-" (symbol-name fn))) ()
+      (interactive)
+      (with-demoted-errors "%s"
+       (require 'ace-window)
+       (let ((aw-dispatch-always t))
+        (aw-switch-to-window (aw-select nil))
+        (call-interactively (symbol-function ',fn)))))))
+
+(define-key embark-file-map     (kbd "o") (my/embark-ace-action find-file))
+(define-key embark-buffer-map   (kbd "o") (my/embark-ace-action switch-to-buffer))
+(define-key embark-bookmark-map (kbd "o") (my/embark-ace-action bookmark-jump))
+
+I also add actions to open the buffer in a vertical or horizontal split.
+But you probably don’t need this, since you can do this and a lot more
+with ace-window’s dispatch menu!
+
+(eval-when-compile
+  (defmacro my/embark-split-action (fn split-type)
+    `(defun ,(intern (concat "my/embark-"
+                      (symbol-name fn)
+                      "-"
+                      (car (last  (split-string
+                                   (symbol-name split-type) "-"))))) ()
+       (interactive)
+       (funcall #',split-type)
+       (call-interactively #',fn))))
+
+(define-key embark-file-map     (kbd "2") (my/embark-split-action find-file split-window-below))
+(define-key embark-buffer-map   (kbd "2") (my/embark-split-action switch-to-buffer split-window-below))
+(define-key embark-bookmark-map (kbd "2") (my/embark-split-action bookmark-jump split-window-below))
+
+(define-key embark-file-map     (kbd "3") (my/embark-split-action find-file split-window-right))
+(define-key embark-buffer-map   (kbd "3") (my/embark-split-action switch-to-buffer split-window-right))
+(define-key embark-bookmark-map (kbd "3") (my/embark-split-action bookmark-jump split-window-right))
+------------------------------------------------------------------------
+
+Copy a file to a remote location when finding a file
+
+[[https://i.imgur.com/mpArf9q.gifv][[video]​]]Play by play
+
+1 Run any command that requires selecting a file, perhaps
+  find-file-other-window
+2 Select one and run embark-act
+3 Run the copy-file action with c. Embark has a key for this but you can
+  also M-x copy-file here.
+4 Navigate to the destination path. In the video I used the [[https://github.com/karthink/consult-dir][consult-dir]]
+  package to instantly switch the path to one of my bookmarks, a remote
+  location.
+5 Press RET to copy the file. You can type in a name to copy it as.
+
+Here’s what happened. In any file prompt, you can call embark-act and
+select the copy action to copy the file instead. (You could just as well
+call M-x copy-file.) In this case I then use [[https://github.com/karthink/consult-dir][consult-dir]] to insert a
+bookmark that points to my server into the destination prompt, and the
+file is copied using Tramp.
+
+You can even do this without losing the find-file prompt! Calling
+embark-act with a prefix argument keeps the prompt alive:
+
+[[https://i.imgur.com/BIw0Tht.gifv][[video]​]]Play by play
+
+1 Run any command that requires selecting a file, perhaps
+  find-file-other-window
+2 Select one and run embark-act with a prefix argument. That is, if your
+  binding for embark-act is C-., run C-u C-..
+3 Run the copy-file action with c. Embark has a key for this but you can
+  also M-x copy-file here.
+4 Navigate to the destination path. In the video I used the [[https://github.com/karthink/consult-dir][consult-dir]]
+  package to instantly switch the path to one of my bookmarks, a remote
+  location.
+5 Press RET to copy the file. You can type in a name to copy it as.
+6 Continue to use your find-file-other-window prompt as before.
+
+At the end I quit the find-file prompt manually and check the remote
+directory to ensure that the file has been copied.
+
+------------------------------------------------------------------------
+
+Insert a minibuffer candidate into the buffer
+
+Simple but very convenient:
+
+[[https://i.imgur.com/SrAD4Oa.gifv][[video]​]]Play by play
+
+1 Run any command that requires you to make a selection using the
+  minibuffer. The selection can be anything, it just has to display some
+  text.
+2 In the video I chose a distant directory with consult-dir and selected
+  a file in that directory.
+3 Run embark-act
+4 Press i to insert the text of the selection into the main buffer. In
+  the video I used I instead to insert the selected file’s relative
+  path. I does different things based on the type of object you’re
+  selecting. For example, I with a buffer candidate inserts the contents
+  of the buffer instead.
+
+------------------------------------------------------------------------
+
+Run a shell command on a minibuffer candidate file without losing your
+session
+
+A perfect example of But First I need to…:
+
+[[https://i.imgur.com/9Wf6mQc.gifv][[video]​]]Play by play
+
+1 Run any command that requires selecting a file, perhaps find-file
+2 I switched to a distant directory using consult-dir.
+3 Select a file and run embark-act with a prefix argument. That is, if
+  your binding for embark-act is C-., run C-u C-..
+4 Press & to run the async-shell-command action. Embark has a key for
+  this in its keymaps but you could run M-x async-shell-command or call
+  its default keybinding (M-&) instead.
+5 Type in the command at the prompt. The file name is already filled in
+  for you. I used the file shell command for more info on a file.
+6 Press RET to run the command and return to the find-file prompt.
+
+I called the “file” shell command for more info on the file without
+ending the find-file prompt.
+
+------------------------------------------------------------------------
+
+Open a file as root without losing your session
+
+Emacs’ version of forgetting to add sudo before the command. In the
+shell you can go back to the start of the prompt and type it in, or
+engage in the sudo !! ritual. In Emacs I use an Embark action:
+
+[[https://i.imgur.com/ccjvizN.gifv][[video]​]]Play by play
+
+1 Run any command that requires selecting a file. I used consult-locate
+  to locate a root-owned file on my filesystem.
+2 Select one and run embark-act with a prefix argument. That is, if your
+  binding for embark-act is C-., run C-u C-..
+3 Select the sudo-find-file action with S. Note: You’ll need to add this
+  action to the keymap, see below. Alternatively you can run M-x
+  sudo-find-file or its global binding.
+
+Like before, this works from any file prompt but the command I started
+with was consult-locate. For the sudo program there is the sudo-edit
+package, although I used a snippet from my init file that I can’t
+ascertain the provenance of anymore:
+
+(defun sudo-find-file (file)
+  "Open FILE as root."
+  (interactive "FOpen file as root: ")
+  (when (file-writable-p file)
+    (user-error "File is user writeable, aborting sudo"))
+  (find-file (if (file-remote-p file)
+                 (concat "/" (file-remote-p file 'method) ":"
+                         (file-remote-p file 'user) "@" (file-remote-p file 'host)
+                         "|sudo:root@"
+                         (file-remote-p file 'host) ":" (file-remote-p file 'localname))
+               (concat "/sudo:root@localhost:" file))))
+
+To use sudo-find-file as an Embark action, you can run it (with M-x or a
+global keybinding) after calling embark-act, or shorten the process
+further by adding an entry to Embark’s file actions map:
+
+(define-key embark-file-map (kbd "S") 'sudo-find-file)
+------------------------------------------------------------------------
+
+Upload a region of text to 0x0
+
+[[https://i.imgur.com/i06G4vT.gifv][[video]​]]Play by play
+
+1 Select a region of text in a buffer.
+2 Run embark-act.
+3 Press U to choose the 0x0-dwim action. Note: You’ll need to add this
+  action to the keymap, see below.
+4 The region text will be uploaded to 0x0 and URL added to the
+  kill-ring. (See message at the end of the video.)
+
+I’m using the [[https://melpa.org/#/0x0][0x0]] package for the 0x0-dwim function. When called as an
+Embark action on a URL, this shortens it. When called on a file, it
+uploads the file. The echo area message at the end (from 0x0-dwim) tells
+me the upload URL has been copied to the kill ring. As with the other
+examples, you can call 0x0-dwim after running embark-act or define a
+short key for it in one of Embark’s keymaps:
+
+(define-key embark-region-map (kbd "U") '0x0-dwim)
+------------------------------------------------------------------------
+
+Visit a package’s URL from the minibuffer
+
+[[https://i.imgur.com/b6BTODS.gifv][[video]​]]Play by play
+
+1 Run any command that requires selecting a package, perhaps
+  describe-package (C-h P by default)
+2 Select a package and run embark-act
+3 Press u to run the embark-browse-package-url action.
+
+In this case I ran the describe-package command before going “Actually…
+URL please”, but in this example as all the others, there’s nothing
+special about describe-package. Any command that gives you a list of
+packages at the minibuffer will proffer the same set of Embark actions.
+
+------------------------------------------------------------------------
+
+Set a variable from anywhere it appears in a buffer
+
+Super handy for quickly setting variables, especially when testing code.
+
+[[https://i.imgur.com/wltZaGq.gifv][[video]​]]Play by play
+
+1 Move point to a variable in a buffer. (Alternatively, run a command
+  that requires selecting a variable at the minibuffer, like
+  describe-variable)
+2 Run embark-act.
+3 Press = to run the set-variable action. Embark has a key for this in
+  its keymaps, but you could call M-x set-variable instead.
+4 Set the new value of the variable.
+
+In this case Embark has an entry for set-variable in its variables
+keymap (bound to =), but you can just call M-x set-variable.
+
+------------------------------------------------------------------------
+
+Add a keybinding for a command name from anywhere it appears
+
+Set all the keys.
+
+[[https://i.imgur.com/A0hHGhi.gifv][[video]​]]Play by play
+
+1 Move point to a command name in a buffer. (Alternatively, run a
+  command that requires selecting a command at the minibuffer, like
+  describe-command)
+2 Run embark-act.
+3 Press g to run the global-set-key action. Embark has a key for this in
+  its keymaps, but you could call M-x global-set-key instead.
+4 Set the new keybinding for the command.
+
+Embark provides an action in its keymap to run global-set-key, but you
+could just call M-x global-set-key after running embark-act with the
+point on a command name. There is also local-set-key in the embark
+keymap.
+
+------------------------------------------------------------------------
+
+embark-export: I want a gist, so give me a list
+
+If that was everything Embark did I’d be a happy camper. But embark-act
+isn’t even its best feature. That would be the gem of composability that
+is embark-export (and its lesser kin embark-collect). These commands
+create persistent collections from minibuffer candidate lists: It’s one
+part ivy-occur and one part glue that ties together Emacs libraries
+better than Emacs does. The examples illustrate why.
+
+------------------------------------------------------------------------
+
+Export Emacs package candidates to a package menu
+
+Want a package-menu-mode buffer with all packages involving shells in
+Emacs? embark-export has you covered:
+
+[[https://i.imgur.com/oaDGV3X.gifv][[video]​]]Play by play
+
+1 Run any command that requires selecting a package, perhaps
+  describe-package (C-h P by default)
+2 (Optional) Type in some text to filter the completions list
+3 Run embark-export
+
+The clever idea behind embark-export is to reuse Emacs’ built-in
+functionality whenever possible: the package-menu library already
+handles displaying packages. If you’re generating a list of packages
+with user-specified conditions, why reinvent the wheel?
+
+------------------------------------------------------------------------
+
+Collect imenu candidates in an “imenu-list”
+
+embark-collect creates persistent collections of minibuffer completion
+candidates (filtered by user input) in a way that basically obsoletes
+every “listing” package for me. In this example I create a filtered list
+of imenu items that sticks around and that I can use to navigate around
+the file:
+
+[[https://i.imgur.com/MJlM9cL.gifv][[video]​]]Play by play
+
+1 When visiting any file, run imenu or a version of it (I ran
+  consult-imenu-all)
+2 (Optional) Type in some text to filter the completions list
+3 Run embark-export. (This actually runs embark-collect under the hood.
+  You could run embark-collect directly instead, but it’s simpler to
+  just use one command.)
+4 Press RET in the persistent collections buffer to navigate to that
+  symbol in the file.
+
+I didn’t show this in the demo, but all embark-act actions are available
+in the Collections buffer, and you can even call them directly (i.e.
+without calling embark-act first) by turning on
+embark-collect-direct-action-minor-mode.
+
+------------------------------------------------------------------------
+
+Export file candidates to a dired-buffer
+
+Have a list of files you arrived at in a tortuous manner that you want
+to keep around? dired was created to list files, and embark-export
+respects this:
+
+[[https://i.imgur.com/6ZY08H2.gifv][[video]​]]Play by play
+
+1 Run any command that requires selecting a file. I used consult-fd to
+  find all files matching a pattern below a directory.
+2 (Optional) Type in some text to filter the completions list. With
+  consult-fd you do this by adding a # to end the string to search on
+  and begin the string used to filter the results.
+3 Run embark-export.
+
+This obsoletes find-name-dired, another “listing” based feature.
+
+------------------------------------------------------------------------
+
+Export buffer candidates to ibuffer
+
+You saw this coming: Any list of buffers gets exported to an ibuffer.
+
+[[https://i.imgur.com/pmBTb6q.gifv][[video]​]]Play by play
+
+1 Run any command that requires selecting a buffer. I used
+  consult-buffer.
+2 Type in some text to filter the completions list: 
+
+  • I pressed b SPC to narrow the consult-buffer list to buffers, then
+  • typed in ! followed by * to omit all buffers[[https://karthinks.com/software/fifteen-ways-to-use-embark/#fn:2][2]] that begin with a *,
+    i.e. “special” buffers.
+
+3 Run embark-export.
+
+------------------------------------------------------------------------
+
+Export variable candidates to a customize buffer
+
+A list of variables is exported by embark-export into a customize
+buffer:
+
+[[https://i.imgur.com/NIQBwKS.gifv][[video]​]]Play by play
+
+1 Run a command that requires selecting a variable, like
+  describe-variable
+2 Type in some text to filter the completions list
+3 Run embark-export
+
+This is a great way to transition from looking up a variable to a
+full-fledged apropos on relevant items when you need to.
+
+------------------------------------------------------------------------
+
+Export grep or line candidates to a grep buffer
+
+Any occur-like results (from consult-line, grep, xref etc) get exported
+into a grep buffer.
+
+[[https://i.imgur.com/PjS1Yx6.gifv][[video]​]]Play by play
+
+1 Run a command that generates a list of grep-style matches. I used
+  consult-ripgrep in the demo. Other Consult-based options are
+  consult-grep, consult-git-grep and consult-line.
+2 Type in some text to find grep results.
+3 Not necessary: I flipped through the various files that matched with
+  vertico-next-group and vertico-previous-group.
+4 Run embark-export.
+5 Turn on next-error-follow-minor-mode in the grep buffer with C-c C-f.
+  This jumps each match as I…
+6 …navigate the grep buffer with M-n and M-p (compilation-next-error and
+  compilation-previous-error), and move to the next/previous matching
+  file with } and {.
+
+Note that this is a regular grep buffer, so you can use all your tricks,
+like wgrep to edit the grep buffer and save changes in all the files.
+
+------------------------------------------------------------------------
+
+BONUS: Use Embark Actions like Helm
+
+In the above examples, the available embark actions were displayed in
+some window in the frame. Embark has multiple “prompters” listing the
+preset actions, and with a little elbow grease you can set up something
+similar to Helm[[https://karthinks.com/software/fifteen-ways-to-use-embark/#fn:3][3]]:
+
+[[https://i.imgur.com/LH9uYM6.gifv][[video]​]]Play by play
+
+1 Run any command involving minibuffer selection, consult-buffer in the
+  video.
+2 (Optional) type in something to filter the completions list or select
+  a buffer.
+3 Press TAB to switch to the list of embark actions.
+4 Press TAB again to switch back to the list of candidates.
+5 Search for an action by name (in this case “kill”) to filter the list
+  of actions
+6 Erase and search for a different action (“diff”) and choose the
+  diff-buffer-with-file action
+7 Press RET to run diff-buffer-with-file on the selected buffer
+8 (Optional) Navigate the diff hunks with diff-hunk-next and
+  diff-hunk-prev
+9 (Optional) Fold the diff sections with outline-cycle
+10 Run consult-buffer again and select a buffer
+11 Switch to the actions list again with TAB
+12 Press @ to call an action by its keybinding instead of selecting it
+   by name
+13 Call the embark action for killing a buffer with k to kill the
+   selected buffer.
+
+Here I switch back and forth between the list of actions and the list of
+candidates (like in Helm) with C-<tab>. In the actions list you can
+either type the action (matched with completing-read), or call the
+action directly by prepending its keybinding with @.
+
+Elbow grease:
+
+(defun with-minibuffer-keymap (keymap)
+  (lambda (fn &rest args)
+    (minibuffer-with-setup-hook
+        (lambda ()
+          (use-local-map
+           (make-composed-keymap keymap (current-local-map))))
+      (apply fn args))))
+
+(defvar embark-completing-read-prompter-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "<tab>") 'abort-recursive-edit)
+    map))
+
+(advice-add 'embark-completing-read-prompter :around
+            (with-minibuffer-keymap embark-completing-read-prompter-map))
+(define-key vertico-map (kbd "<tab>") 'embark-act-with-completing-read)
+
+(defun embark-act-with-completing-read (&optional arg)
+  (interactive "P")
+  (let* ((embark-prompter 'embark-completing-read-prompter)
+         (embark-indicators '(embark-minimal-indicator)))
+    (embark-act arg)))
+
+Replace vertico-map above with your completion system of choice’s active
+minibuffer keymap. The default is minibuffer-local-completion-map.
+
+Remember that unlike with Helm, you’re not restricted to these actions
+when you use Embark! You can call literally any command that it makes
+sense to with its keybinding or with M-x after running embark-act.
+
+------------------------------------------------------------------------
+
+33%
+
+That’s fifteen useful Embark thingamajigs, and I didn’t get to mention
+embark-become. Or embark-prefix-help-map, embark-which-key-prompter, or
+Embark’s targets and target cycling, or half a dozen more thoughtful
+features and niceties about Embark. Maybe next time.
+
+I’ll conclude instead by mentioning the main packages I used in the
+above demos:
+
+• [[https://github.com/oantolin/embark][embark]] by Omar Antolin Camarena, who’s been a pleasure to interact
+  with and pester with my requests for features. To add custom actions
+  to the embark keymaps or otherwise customize Embark, I suggest
+  perusing the README. It’s as readable and informative as they come.
+• [[https://github.com/minad/consult][consult]] for its various enhancements to Emacs’ builtins.
+  consult-locate and consult-find (actually consult-fd) to find files,
+  consult-imenu for a colorful imenu with grouping and consult-ripgrep
+  to grep across a directory.
+• [[https://github.com/minad/marginalia][marginalia]] for the annotations in the minibuffer. Co-maintained by
+  Omar Antolin and Daniel Mendler.
+• [[https://github.com/minad/vertico][vertico]] as the minibuffer completion interface. Consult, Vertico and
+  Marginalia are all authored by Daniel Mendler, who I’m convinced never
+  sleeps. I didn’t even mention Corfu.
+• The [[https://github.com/oantolin/orderless][orderless]] completion style, also by Omar Antolin, to match pieces
+  of text against minibuffer candidates independently. Together these
+  five packages form the MOVEC pentagram, a composable enhancement suite
+  that integrates Emacs’ loosely bound libraries into a modern and
+  cohesive whole.
+• [[https://github.com/karthink/consult-dir][consult-dir]] to switch directories quickly. I used this multiple times
+  above to navigate to distant directories when in the minibuffer
+  prompt.
+• [[https://github.com/karthink/popper][popper]] to make embark-collect, help and other ephemeral buffers behave
+  when they appear on screen.
+• [[https://github.com/abo-abo/ace-window][ace-window]] by abo-abo, whose dispatch-keys idea in Ace-Window and Avy
+  I promptly ripped off for Popper. If I understand correctly his
+  Ivy-Occur was an early influence on what became Embark-Collect as
+  well.
+• [[https://git.sr.ht/~willvaughn/emacs-0x0][0x0]] by William Vaughn. I use this far more often than I thought I
+  would.
+
+Finally a quick note for Doom Emacs users: Doom ships with Embark out of
+the box (as of Sep 2021), you don’t need to do anything besides looking
+up the keys for embark-act and embark-collect.
+
+Despite what these examples suggest, I estimate that I use less than a
+third of what Embark provides. Even so, in allowing me to change or
+chain actions at any time, it lets me pilot Emacs by the seat of my
+pants. A second, unforeseen benefit is that it makes commands and
+listings that I would never use available in a frictionless way:
+commands like transpose-regions and apply-macro-to-region-lines, or
+custom dired, ibuffer and package-menu listings that are interactively
+inaccessible otherwise[[https://karthinks.com/software/fifteen-ways-to-use-embark/#fn:4][4]]. The ability to quickly whip up such buffers
+makes knowhing how to use dired or ibuffer pay off several fold. In
+composing such features seamlessly with minibuffer interaction or with
+text-regions, Embark acts as a lever to amplify the power of Emacs’
+myriad built in commands and libraries.
+
+------------------------------------------------------------------------
+
+1 Although of course, Helm and Embark both do a good job with their
+  presets. [[https://karthinks.com/software/fifteen-ways-to-use-embark/#fnref:1][↩︎]]
+
+2 To match the inverse of an input string with !, I used a [[https://github.com/oantolin/orderless#style-dispatchers][feature of
+  the orderless package]] for Emacs. [[https://karthinks.com/software/fifteen-ways-to-use-embark/#fnref:2][↩︎]]
+
+3 Yes, it’s not fully Helm-style since it still uses the minibuffer
+  instead of a buffer to show the candidates/actions. You could use
+  [[https://github.com/minad/vertico#extensions][vertico-buffer]] if that’s a sticking point. [[https://karthinks.com/software/fifteen-ways-to-use-embark/#fnref:3][↩︎]]
+
+4 Technically custom package-menu listings are accessible. From the full
+  package listing (M-x list-packages), you can filter package names by
+  regexp with / n. [[https://karthinks.com/software/fifteen-ways-to-use-embark/#fnref:4][↩︎]]
+
+[[https://karthinks.com/software/fifteen-ways-to-use-embark/#][Menu]] [[https://karthinks.com/software/fifteen-ways-to-use-embark/#][TOC]] [[https://karthinks.com/software/fifteen-ways-to-use-embark/#][share]] 
+Copyright © 2025 Karthik Chikmagalur 
+
+• [[https://karthinks.com/][Home]]
+• [[https://karthinks.com/about][About]]
+• [[https://karthinks.com/blog][Misc]]
+• [[https://karthinks.com/software][Coding]]
+** [[https://kristofferbalintona.me/posts/202203130102/][Cape | Kristoffer Balintona]]
+URL: https://kristofferbalintona.me/posts/202203130102/
+Captured On:[2025-09-23 Tue 01:41]
+[[https://kristofferbalintona.me/][Kristoffer Balintona]]
+[[https://kristofferbalintona.me/posts/][Archive]] Submit 
+
+Cape
+
+Published Mar 13, 2022 | 1461 words, 7 minutes
+[[https://kristofferbalintona.me/categories/guides/][Guides]] [[https://kristofferbalintona.me/tags/emacs/][Emacs]]
+Table of Contents
+
+• [[https://kristofferbalintona.me/posts/202203130102/#what-is-cape][What is cape?]]
+• [[https://kristofferbalintona.me/posts/202203130102/#basic-usage-keybinds][Basic usage: keybinds]]
+• [[https://kristofferbalintona.me/posts/202203130102/#adding-backends-to-completion-at-point-functions][Adding backends to completion-at-point-functions]]
+• [[https://kristofferbalintona.me/posts/202203130102/#cape-company-to-capf-and-cape-super-capf][Cape-company-to-capf and cape-super-capf]]
+• [[https://kristofferbalintona.me/posts/202203130102/#pcomplete-nicety][pcomplete nicety]]
+• [[https://kristofferbalintona.me/posts/202203130102/#my-completion-at-point-functions][My completion-at-point-functions]]
+• [[https://kristofferbalintona.me/posts/202203130102/#changelog][Changelog]]
+
+What is cape?
+
+I will be going over the basic usages of [[https://github.com/minad/cape][Cape]], namely how to add
+completion functions to completion-at-point-functions and how to use
+cape's built-in completion utilities (e.g. cape-company-to-capf and
+cape-capf-buster) to create backends with desired behavior. (Also see
+[[https://www.reddit.com/r/emacs/comments/td0nth/comment/i0hz6re/][u/JDRiverRun’s informative comment]] about the advantages of using
+completion-at-point-functions over company.)
+
+Cape is to corfu as company-backends are to company:
+
+    Cape provides a bunch of Completion At Point Extensions which can be
+    used in combination with my Corfu completion UI or the default
+    completion UI. The completion backends used by completion-at-point
+    are so called completion-at-point-functions (Capfs). In principle,
+    the Capfs provided by Cape can also be used by Company.
+
+Consequently, cape is only used if you utilize the built-in
+completion-at-point, which is best complemented by corfu text-completion
+[[https://kristofferbalintona.me/posts/202203130102/#fn:1][1]].
+
+You can also see the list of built-in completion-at-point-functions in
+[[https://github.com/minad/cape#available-capfs][the README]]. Several of these completion-at-point-functions are quite
+niche but others, such as cape-file and cape-symbol have common use
+cases.
+
+Note: I use straight.el for package management and general.el to set my
+keybindings. Both of these packages have integration with use-package
+which come in the form of the :straight and :general keywords,
+respectively.
+
+Basic usage: keybinds
+
+The most basic way to use cape is to bind its built-in
+completion-at-point-functions to their own keys. For instance:
+
+  1  (use-package cape  
+  2    :general (:prefix "M-c"              ; Choose a particular completion function  
+  3                      "p" 'completion-at-point  
+  4                      "t" 'complete-tag   ; etags  
+  5                      "d" 'cape-dabbrev   ; basically `dabbrev-completion'  
+  6                      "f" 'cape-file  
+  7                      "k" 'cape-keyword  
+  8                      "s" 'cape-symbol  
+  9                      "a" 'cape-abbrev  
+ 10                      "i" 'cape-ispell  
+ 11                      "l" 'cape-line  
+ 12                      "w" 'cape-dict  
+ 13                      "\\" 'cape-tex  
+ 14                      "_" 'cape-tex  
+ 15                      "^" 'cape-tex  
+ 16                      "&" 'cape-sgml  
+ 17                      "r" 'cape-rfc1345))  
+
+Additionally, if having completion-at-point-functions readily available
+through keybinds is desirable, then one can use cape-interactive-capf to
+turn an already existing completion-at-point-function into a command
+(i.e. interactive function) that can be bound.
+
+Adding backends to completion-at-point-functions
+
+However, cape is powerful because these functions can be added to
+completion-at-point-functions, meaning you can configure when each
+functions is used and where. The simplest way to accomplish this is by
+adding backends to completion-at-point-functions in a hook. Here is a
+simple example:
+
+ 1  (defun kb/cape-capf-setup-git-commit ()  
+ 2    (let ((result))  
+ 3      (dolist (element '(cape-symbol cape-dabbrev) result)  
+ 4        (add-to-list 'completion-at-point-functions element))))  
+
+I then add this to the appropriate hook:
+
+ 1  :hook (git-commit-mode . kb/cape-capf-setup-git-commit)  
+
+Consequently, when making commits to git, via magit, for instance,
+completion-at-point-functions looks like this[[https://kristofferbalintona.me/posts/202203130102/#fn:2][2]]:
+
+ 1  '(cape-symbol  
+ 2    cape-dabbrev  
+ 3    tags-completion-at-point-function)  
+
+There are a few additional things to keep in mind when adding backends
+to completion-function-at-point:
+
+1 add-to-list prepends elements to a list, that is, place an element at
+  the front of a list[[https://kristofferbalintona.me/posts/202203130102/#fn:3][3]].
+2 add-to-list is almost always preferable to push because push adds an
+  element to a list even if it already in the list, whereas add-to-list
+  will not.
+3 Elements earlier in dolist will be added to the list before later
+  elements. This means that elements which should be deeper within
+  completion-at-point-functions should be placed first. (Notice how
+  cape-dabbrev is added after cape-symbol.)
+
+Cape-company-to-capf and cape-super-capf
+
+I think the killer feature of cape is cape-company-to-capf. This
+function is able to convert any company backend and convert it into a
+completion-at-point-function which corfu can use[[https://kristofferbalintona.me/posts/202203130102/#fn:4][4]]. For this reason, I
+regard cape as quite an underrated package since it achieves almost full
+feature parity with company. Here is an example with company-yasnippet:
+
+ 1  (defun kb/cape-capf-setup-lsp ()  
+ 2    "Replace the default `lsp-completion-at-point' with its  
+ 3  `cape-capf-buster' version. Also add `cape-file' and  
+ 4  `company-yasnippet' backends."  
+ 5    (setf (elt (cl-member 'lsp-completion-at-point completion-at-point-functions) 0)  
+ 6          (cape-capf-buster #'lsp-completion-at-point))  
+ 7    (add-to-list 'completion-at-point-functions (cape-company-to-capf #'company-yasnippet))  
+ 8    (add-to-list 'completion-at-point-functions #'cape-dabbrev t))  
+
+Another useful function is cape-super-capf. This function combines
+multiple completion-at-point-functions into a single function.
+Effectively, this means candidates from multiple backends can appear
+jointly. For instance, one can combine cape-ispell and cape-dabbrev:
+
+  1  (defun kb/cape-capf-setup-org ()  
+  2    (require 'org-roam)  
+  3    (if (org-roam-file-p)  
+  4        (org-roam--register-completion-functions-h)  
+  5      (let (result)  
+  6        (dolist (element (list  
+  7                          (cape-super-capf #'cape-ispell #'cape-dabbrev)  
+  8                          (cape-company-to-capf #'company-yasnippet))  
+  9                         result)  
+ 10          (add-to-list 'completion-at-point-functions element)))  
+ 11      ))  
+
+For other cape transformers, see the [[https://github.com/minad/cape#other-capf-transformers][appropriate section of the README]].
+
+pcomplete nicety
+
+Finally, I have the following advice to make usage with pcomplete, what
+eshell uses for completion:
+
+  1  :config  
+  2  ;; For pcomplete. For now these two advices are strongly recommended to  
+  3  ;; achieve a sane Eshell experience. See  
+  4  ;; https://github.com/minad/corfu#completing-with-corfu-in-the-shell-or-eshell  
+  5    
+  6  ;; Silence the pcomplete capf, no errors or messages!  
+  7  (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-silent)  
+  8  ;; Ensure that pcomplete does not write to the buffer and behaves as a pure  
+  9  ;; `completion-at-point-function'.  
+ 10  (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-purify)  
+
+My completion-at-point-functions
+
+I have very hesitantly included my WIP code which leverages cape and
+completion-at-point utilities. I have not described in detail each of
+the following functions. I have, however, attempted to provide useful
+docstrings and comments.
+
+I hesitate to publish this code because it was very haphazardly written
+and highly dependent on my configuration. The reason for this is the
+order in which the completion-at-point-functions are added: any
+peculiarities in another’s configuration may lead to undesirable
+results. As a result, do not directly copy-and-paste this code and
+expect proper functionality. Rather, I put it here as a reference for
+what can be done.
+
+Here they are
+Warning! This code may produce undesirable effects! Copy at your own
+risk.
+
+   1  (use-package cape  
+   2    :hook ((emacs-lisp-mode .  kb/cape-capf-setup-elisp)  
+   3           (lsp-completion-mode . kb/cape-capf-setup-lsp)  
+   4           (org-mode . kb/cape-capf-setup-org)  
+   5           (eshell-mode . kb/cape-capf-setup-eshell)  
+   6           (git-commit-mode . kb/cape-capf-setup-git-commit)  
+   7           (LaTeX-mode . kb/cape-capf-setup-latex)  
+   8           (sh-mode . kb/cape-capf-setup-sh)  
+   9           )  
+  10    :general (:prefix "M-c"               ; Particular completion function  
+  11                      "p" 'completion-at-point  
+  12                      "t" 'complete-tag           ; etags  
+  13                      "d" 'cape-dabbrev           ; or dabbrev-completion  
+  14                      "f" 'cape-file  
+  15                      "k" 'cape-keyword  
+  16                      "s" 'cape-symbol  
+  17                      "a" 'cape-abbrev  
+  18                      "i" 'cape-ispell  
+  19                      "l" 'cape-line  
+  20                      "w" 'cape-dict  
+  21                      "\\"' cape-tex  
+  22                      "_" 'cape-tex  
+  23                      "^" 'cape-tex  
+  24                      "&" 'cape-sgml  
+  25                      "r" 'cape-rfc1345  
+  26                      )  
+  27    :custom  
+  28    (cape-dabbrev-min-length 3)  
+  29    :init  
+  30    ;; Elisp  
+  31    (defun kb/cape-capf-ignore-keywords-elisp (cand)  
+  32      "Ignore keywords with forms that begin with \":\" (e.g.  
+  33  :history)."  
+  34      (or (not (keywordp cand))  
+  35          (eq (char-after (car completion-in-region--data)) ?:)))  
+  36    (defun kb/cape-capf-setup-elisp ()  
+  37      "Replace the default `elisp-completion-at-point'  
+  38  completion-at-point-function. Doing it this way will prevent  
+  39  disrupting the addition of other capfs (e.g. merely setting the  
+  40  variable entirely, or adding to list).  
+  41    
+  42  Additionally, add `cape-file' as early as possible to the list."  
+  43      (setf (elt (cl-member 'elisp-completion-at-point completion-at-point-functions) 0)  
+  44            #'elisp-completion-at-point)  
+  45      (add-to-list 'completion-at-point-functions #'cape-symbol)  
+  46      ;; I prefer this being early/first in the list  
+  47      (add-to-list 'completion-at-point-functions #'cape-file)  
+  48      (require 'company-yasnippet)  
+  49      (add-to-list 'completion-at-point-functions (cape-company-to-capf #'company-yasnippet)))  
+  50    
+  51    ;; LSP  
+  52    (defun kb/cape-capf-setup-lsp ()  
+  53      "Replace the default `lsp-completion-at-point' with its  
+  54  `cape-capf-buster' version. Also add `cape-file' and  
+  55  `company-yasnippet' backends."  
+  56      (setf (elt (cl-member 'lsp-completion-at-point completion-at-point-functions) 0)  
+  57            (cape-capf-buster #'lsp-completion-at-point))  
+  58      ;; TODO 2022-02-28: Maybe use `cape-wrap-predicate' to have candidates  
+  59      ;; listed when I want?  
+  60      (add-to-list 'completion-at-point-functions (cape-company-to-capf #'company-yasnippet))  
+  61      (add-to-list 'completion-at-point-functions #'cape-dabbrev t))  
+  62    
+  63    ;; Org  
+  64    (defun kb/cape-capf-setup-org ()  
+  65      (require 'org-roam)  
+  66      (if (org-roam-file-p)  
+  67          (org-roam--register-completion-functions-h)  
+  68        (let (result)  
+  69          (dolist (element (list  
+  70                            (cape-super-capf #'cape-ispell #'cape-dabbrev)  
+  71                            (cape-company-to-capf #'company-yasnippet))  
+  72                           result)  
+  73            (add-to-list 'completion-at-point-functions element)))  
+  74        ))  
+  75    
+  76    ;; Eshell  
+  77    (defun kb/cape-capf-setup-eshell ()  
+  78      (let ((result))  
+  79        (dolist (element '(pcomplete-completions-at-point cape-file) result)  
+  80          (add-to-list 'completion-at-point-functions element))  
+  81        ))  
+  82    
+  83    ;; Git-commit  
+  84    (defun kb/cape-capf-setup-git-commit ()  
+  85      (general-define-key  
+  86       :keymaps 'local  
+  87       :states 'insert  
+  88       "<tab>" 'completion-at-point)      ; Keybinding for `completion-at-point'  
+  89      (let ((result))  
+  90        (dolist (element '(cape-dabbrev cape-symbol) result)  
+  91          (add-to-list 'completion-at-point-functions element))))  
+  92    
+  93    ;; LaTeX  
+  94    (defun kb/cape-capf-setup-latex ()  
+  95      (require 'company-auctex)  
+  96      (let ((result))  
+  97        (dolist (element (list  
+  98                          ;; First add `company-yasnippet'  
+  99                          (cape-company-to-capf #'company-yasnippet)  
+ 100                          ;; Then add `cape-tex'  
+ 101                          #'cape-tex  
+ 102                          ;; Then add `company-auctex' in the order it adds its  
+ 103                          ;; backends.  
+ 104                          (cape-company-to-capf #'company-auctex-bibs)  
+ 105                          (cape-company-to-capf #'company-auctex-labels)  
+ 106                          (cape-company-to-capf  
+ 107                           (apply-partially #'company--multi-backend-adapter  
+ 108                                            '(company-auctex-macros company-auctex-symbols company-auctex-environments))))  
+ 109                         result)  
+ 110          (add-to-list 'completion-at-point-functions element))))  
+ 111    
+ 112    
+ 113    ;; Sh  
+ 114    (defun kb/cape-capf-setup-sh ()  
+ 115      (require 'company-shell)  
+ 116      (add-to-list 'completion-at-point-functions (cape-company-to-capf #'company-shell)))  
+ 117    :config  
+ 118    ;; For pcomplete. For now these two advices are strongly recommended to  
+ 119    ;; achieve a sane Eshell experience. See  
+ 120    ;; https://github.com/minad/corfu#completing-with-corfu-in-the-shell-or-eshell  
+ 121    
+ 122    ;; Silence the pcomplete capf, no errors or messages!  
+ 123    (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-silent)  
+ 124    ;; Ensure that pcomplete does not write to the buffer and behaves as a pure  
+ 125    ;; `completion-at-point-function'.  
+ 126    (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-purify))  
+------------------------------------------------------------------------
+
+Changelog
+
+• March 13, 2022
+
+  • Fixed typo. Added link to [[https://www.reddit.com/r/emacs/comments/td0nth/comment/i0hz6re/][u/JDRiverRun’s informative Reddit comment]].
+
+------------------------------------------------------------------------
+
+1 See [[https://kristofferbalintona.me/posts/202202270056/][Corfu, Kind-icon, and Corfu-doc]] to see the basic usage of corfu
+  and several accessory packages. [[https://kristofferbalintona.me/posts/202203130102/#fnref:1][↩︎]]
+
+2 tags-completion-at-point-function is a default
+  completion-at-point-function [[https://kristofferbalintona.me/posts/202203130102/#fnref:2][↩︎]]
+
+3 See its docstring to learn how to append to a list [[https://kristofferbalintona.me/posts/202203130102/#fnref:3][↩︎]]
+
+4 This feature is currently listed as experimental but, for the most
+  part, the results are as expected. If anything, rare edge cases are
+  the only points of missing functionality. [[https://kristofferbalintona.me/posts/202203130102/#fnref:4][↩︎]]
+
+Cross-references from other posts
+
+The posts below reference the current post:
+
+• [[https://kristofferbalintona.me/posts/202108102130/][Windows]]
+• [[https://kristofferbalintona.me/posts/202112071230/][The "Great Books Idea" and liberal versus general education]]
+• [[https://kristofferbalintona.me/posts/202202211546/][Vertico, Marginalia, All-the-icons-completion, and Orderless]]
+• [[https://kristofferbalintona.me/posts/202202270056/][Corfu, Kind-icon, and Corfu-doc]]
+• [[https://kristofferbalintona.me/posts/202206141852/][Citations in org-mode: Org-cite and Citar]]
+• [[https://kristofferbalintona.me/posts/202301101610/][Think: A compelling introduction to philosophy by Simon Blackburn]]
+
+------------------------------------------------------------------------
+
+The Text Completion and Minibuffer UI series
+
+This post is just one installation of the Text Completion and Minibuffer
+UI series. Below are all the posts in this series:
+
+1 [[https://kristofferbalintona.me/posts/202202211546/][Vertico, Marginalia, All-the-icons-completion, and Orderless]]
+2 [[https://kristofferbalintona.me/posts/202202270056/][Corfu, Kind-icon, and Corfu-doc]]
+3 [[https://kristofferbalintona.me/posts/202203130102/][Cape]] this post!
+4 [[https://kristofferbalintona.me/posts/202504050923/][Complement corfu, vertico, and completion-preview with prescient.el
+  sorting]]
+
+[[https://kristofferbalintona.me/][Home]] [[https://kristofferbalintona.me/index.xml][RSS]] [[https://kristofferbalintona.me/tags/][Tags]] [[https://kristofferbalintona.me/categories/][Categories]] [[https://kristofferbalintona.me/series/]]Series
