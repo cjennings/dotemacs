@@ -277,7 +277,7 @@ regardless of what file or subdirectory the point is on."
    ("o"       . cj/xdg-open)
    ("O"       . cj/open-file-with-command)  ; Prompts for command to run
    ("r"       . dirvish-rsync)
-   ("p"       . cj/dired-create-playlist-from-marked)
+   ("P"       . cj/dired-create-playlist-from-marked)
    ("s"       . dirvish-quicksort)
    ("v"       . dirvish-vc-menu)
    ("y"       . dirvish-yank-menu)))
