@@ -154,26 +154,14 @@ This advice ensures `align-regexp' uses spaces by binding `indent-tabs-mode' to 
 (advice-remove 'align-regexp #'align-regexp-with-spaces) ; in case this is reloaded
 (advice-add    'align-regexp :around #'cj/align-regexp-with-spaces)
 
-;; Must unbind Flyspell's  'C-;' keybinding before it's assigned to cj/custom-keymap
-(global-unset-key (kbd "C-;"))
-(eval-after-load "flyspell"
-  '(define-key flyspell-mode-map (kbd "C-;") nil))
 
-(defvar cj/custom-keymap
-  (let ((map (make-sparse-keymap)))
-	(define-key map ")" 'cj/jump-to-matching-paren)
-    (define-key map "f" 'cj/format-region-or-buffer)
-	(define-key map "W" 'cj/count-words-buffer-or-region)
-    (define-key map "/" 'cj/replace-fraction-glyphs)
-	(define-key map "A" 'align-regexp)
-	(define-key map "B" 'toggle-debug-on-error)
-	(define-key map "|" 'display-fill-column-indicator-mode)
-
-	;; load debug helpers only on this keybinding
-    map)
-  "The base key map for custom elisp functions holding miscellaneous functions.
-Other key maps extend from this key map to hold categorized functions.")
-(global-set-key (kbd "C-;") cj/custom-keymap)
+(define-key cj/custom-keymap ")" 'cj/jump-to-matching-paren)
+(define-key cj/custom-keymap "f" 'cj/format-region-or-buffer)
+(define-key cj/custom-keymap "W" 'cj/count-words-buffer-or-region)
+(define-key cj/custom-keymap "/" 'cj/replace-fraction-glyphs)
+(define-key cj/custom-keymap "A" 'align-regexp)
+(define-key cj/custom-keymap "B" 'toggle-debug-on-error)
+(define-key cj/custom-keymap "|" 'display-fill-column-indicator-mode)
 
 ;;; ---------------------- Whitespace Operations And Keymap ---------------------
 

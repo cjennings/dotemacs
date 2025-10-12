@@ -3,8 +3,6 @@
 
 ;;; Commentary:
 
-
-
 ;; Commonly used files should be easy to jump to. The "jump-to" keymap has the
 ;; "C-c j" prefix and immediately opens files defined in user-constants.el.
 
@@ -23,6 +21,28 @@
 
 ;; remap Shift Backspace to Delete
 (global-set-key (kbd "S-<backspace>") 'delete-forward-char)
+
+;; ------------------------------- Custom Keymap -------------------------------
+
+(defvar cj/custom-keymap
+  (let ((map (make-sparse-keymap)))
+	map)
+  "The base key map for custom elisp functions holding miscellaneous functions.
+Other key maps extend from this key map to hold categorized functions.")
+
+;; Set the global binding
+(global-set-key (kbd "C-;") cj/custom-keymap)
+
+;; Override flyspell's binding when it loads
+(with-eval-after-load 'flyspell
+  (define-key flyspell-mode-map (kbd "C-;") nil))
+
+;; Unnecessary, but leaving here for reference.
+;; Optional: Ensure it stays unbound even if flyspell redefines it
+;; (add-hook 'flyspell-mode-hook
+;;           (lambda ()
+;;             (define-key flyspell-mode-map (kbd "C-;") nil)))
+
 
 ;; ------------------------------ Jump To Commands -----------------------------
 ;; quick access for commonly used files
@@ -49,7 +69,6 @@
 			#'(lambda () (interactive) (find-file gcal-file)))
 (define-key jump-to-keymap (kbd "I")
 			#'(lambda () (interactive) (find-file emacs-init-file)))
-
 
 ;; ---------------------------- Keybinding Discovery ---------------------------
 
@@ -94,7 +113,6 @@
 			#'(lambda () (interactive)
 				(message (concat "Seriously, " user-name
 								 "? Use 'C-/'. It's faster."))))
-
 
 (provide 'keybindings)
 ;;; keybindings.el ends here
