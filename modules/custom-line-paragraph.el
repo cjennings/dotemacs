@@ -28,7 +28,7 @@
   "Join all lines in the current paragraph using `cj/join-line-or-region'."
   (interactive)
   (er/mark-paragraph) ;; from package expand region
-  (cj/join-line-or-region (region-beginning)(region-end))
+  (cj/join-line-or-region)
   (forward-line))
 
 (defun cj/duplicate-line-or-region (&optional comment)
