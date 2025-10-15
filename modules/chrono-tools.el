@@ -37,12 +37,13 @@
   :defer 0.5
   :bind (("M-#" . calendar)
 		 :map calendar-mode-map
-		 (","   . calendar-backward-day)
-		 ("."   . calendar-forward-day)
-		 ("<"   . calendar-backward-month)
-		 (">"   . calendar-forward-month)
-		 ("M-," . calendar-backward-year)
-		 ("M-." . calendar-forward-year)))
+		 ("."   . calendar-goto-today)
+		 ("<left>"   . calendar-backward-day)
+		 ("<right>"   . calendar-forward-day)
+		 ("C-<left>"   . calendar-backward-month)
+		 ("C-<right>"   . calendar-forward-month)
+		 ("M-<left>" . calendar-backward-year)
+		 ("M-<right>" . calendar-forward-year)))
 
 
 ;; ------------------------------------ TMR ------------------------------------
