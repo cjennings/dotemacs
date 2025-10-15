@@ -1,4 +1,5 @@
 * Emacs Config Open Work
+** TODO [#A] Finish testing new org-webclipper
 ** TODO [#A] Document Goals, Specs, and Architecture Docs for this Config :maintenance:
 *** Emacs Config V2MOM
 Misc Requirements
@@ -997,6 +998,15 @@ cond: external-open: unsupported host environment
 ** TODO [#B] m4a files in playlist play in external mplayer not in EMMS
 Nothing in Messages buffer
 
+** TODO [#B] Emacs: EMMS: Fix music info in the modeline
+** TODO [#A] Call Pharmacy to activate Adderall refills
+SCHEDULED: <2025-10-13 Mon>
+** TODO [#B] Fill out Personal Workflow Project Actions
+- Rename and save any file to project/assets directory
+- Override archiving a task to a project archive
+What other actions do I do in a project?
+** TODO [#B] Move org-branch to roam functionality to proper place
+from webclipper to org-roam
 * Emacs Config Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
 *** Specification
