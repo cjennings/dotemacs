@@ -1422,6 +1422,375 @@ reverso.el is a package of mine that provides Emacs interface for https://revers
     (reverso-history-mode))
 #+end_src
 * Emacs Config Ideas/References
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+It’s nice for magit to display in-tree TODOs in the status buffer:
+
+(use-package magit-todos
+  :init (magit-todos-mode)
+  :custom
+  (magit-todos-exclude-globs '(".git/" "*.gz" "*.html" "*.fastq" "*.fq"))
+  :after (magit))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:40]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+Completion
+A completion framework—I used to use company but corfu seems to integrate with stock Emacs better.
+
+(use-package corfu
+  :custom
+  (corfu-cycle t)
+  :init
+  (global-corfu-mode)
+  :config
+  (with-eval-after-load 'savehist
+    (corfu-history-mode 1)
+    (add-to-list 'savehist-additional-variables 'corfu-history)))
+Use more completion at point functions from cape. dabbrev completion means that you can complete from words already present in the buffer, which helps for documents with long words that get used a lot.
+
+(use-package cape
+  :init
+  (dolist (fn (list #'cape-file
+                (cape-capf-super #'cape-dabbrev #'cape-dict #'org-block-capf #'cape-keyword)))
+    (add-to-list 'completion-at-point-functions fn))
+  :config
+  (let ((wordlist (getenv "WORDLIST")))
+    (setq
+     cape-dict-file wordlist
+     ispell-alternate-dictionary wordlist)))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:37]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+Sometimes you want dummy text, say if you’re testing layouts for a poster but you haven’t written the text yet. Look no further than lorem-ipsum.
+
+(use-package lorem-ipsum
+  :init
+  (setq
+   lorem-ipsum-sentence-separator " "
+   lorem-ipsum-list-bullet "- ")
+  ;; map from C-c l
+  (lorem-ipsum-use-default-bindings))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:37]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+Tree-sitter grammar autoinstallation:
+
+(use-package treesit-auto
+  :custom
+  (treesit-auto-install 'prompt)
+  :config
+  (treesit-auto-add-to-auto-mode-alist 'all)
+  (global-treesit-auto-mode))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:37]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+recentf provides a persistent list of recently-opened files.
+
+(use-package recentf
+  :ensure nil
+  :init (recentf-mode)
+  :config
+  (setq recentf-exclude '("Maildir")))
+
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:36]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+I like to have a keybind to do the opposite of fill-paragraph. It’s taken from Stefan Monnier.
+
+(defun unfill-paragraph (&optional region)
+  "Takes a multi-line paragraph and turns it into a single line"
+  (interactive (progn (barf-if-buffer-read-only) '(t)))
+  (let ((fill-column (point-max))
+        (emacs-lisp-docstring-fill-column t))
+    (fill-paragraph nil region)))
+(define-key global-map "\M-Q" 'unfill-paragraph)
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:35]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+I think a vertical “chooser” interface is key, it get used a lot due to find-file, buffer switching etc. I’m happy with vertico, which I switched to from selectrum because it appeared to rely more on built-in Emacs functionality which I think is a good thing for ecosystem compatability and the sustainability of Emacs as a platform in the future.
+
+vertico-resize allows the minibuffer to grow and shrink to accomodate more or fewer candiates. vertico-cycle allows wrapping around the candidate list.
+
+(use-package vertico
+  :ensure (vertico :files (:defaults "extensions/*"))
+  :custom
+  (vertico-scroll-margin 0)
+  (vertico-count 10)
+  (vertico-resize t)
+  (vertico-cycle t)
+  :init
+  (vertico-mode)
+  (vertico-mouse-mode))
+vertico-directory extension.
+
+(use-package vertico-directory
+  :ensure nil
+  :after vertico
+  :bind (:map vertico-map
+              ("RET" . vertico-directory-enter)
+              ("DEL" . vertico-directory-delete-char)
+              ("M-DEL" . vertico-directory-delete-word))
+  ;; Tidy shadowed file names
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+Use orderless searching, i.e M-x m o suggests org-mode. When completing at point in a buffer, after pressing TAB to bring up the completion interface, M-SPC allows you to insert a space in the query without breaking the completion.
+
+(use-package orderless
+  :custom
+  (completion-styles '(orderless flex basic))
+  (completion-category-overrides '((file (styles . (partial-completion)))
+                                   (eglot (styles orderless)))))
+consult offers some nice alternatives to standard Emacs interfaces based on completing-read. consult-buffer in particular is better than the stock command it replaces, providing recent files, bookmarks and buffers at-a-glance, with previews.
+
+(use-package consult
+  :config
+  (setq consult-fontify-max-size 1024)
+  :bind
+  ("C-x b" . consult-buffer)
+  ("C-c <C-m>" . consult-global-mark)
+  ("C-c C-a" . consult-org-agenda)
+  ("C-x O" . consult-outline)
+  ("M-g M-g" . consult-goto-line)
+  ("M-g i" . consult-imenu)
+  ("M-s s" . consult-line)
+  ("M-s M-s" . consult-line-multi))
+embark allows inverting the usual Emacs command flow. Generally, you pick a verb (like find-file) and then pick a noun (like a filename). With embark, you can change your mind—once a candidate selected, press embark-act to use a different verb.
+
+(use-package embark
+  :bind
+  (("C-." . embark-act)
+   ("M-." . embark-dwim)
+   ("C-h B" . embark-bindings))
+  :custom
+  (prefix-help-command #'embark-prefix-help-command)
+  (embark-quit-after-action '((t . nil)))
+  :config
+  (add-to-list 'display-buffer-alist
+               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                 nil
+                 (window-parameters (mode-line-format . none)))))
+embark-consult—additional integration of consult with embark.
+
+(use-package embark-consult
+  :after (embark consult)
+  :demand t ; only necessary if you have the hook below
+  ;; if you want to have consult previews as you move around an
+  ;; auto-updating embark collect buffer
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+marginalia takes advantage of vertical choosers by annotating candidates with exta information, such as file properties or function docstrings, making Emacs more self-explanatory.
+
+(use-package marginalia
+  :defer t
+  :init
+  (marginalia-mode)
+  (setq marginalia-annotators '(marginalia-annotators-heavy nil)))
+
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:34]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+Showing the location of the mark, probably helps with learning to use mark better.
+
+(use-package visible-mark
+  :init
+  (global-visible-mark-mode)
+  :custom
+  (visible-mark-faces '(visible-mark-face1 visible-mark-face2))
+  (visible-mark-forward-faces '(visible-mark-face1 visible-mark-face2))
+  (visible-mark-max 2))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:33]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+which-key got built into Emacs, it shows potential full keybinds when you enter a partial one, which is great for discoverability and learning.
+
+(use-package which-key
+  :ensure nil
+  :init (which-key-mode))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:32]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+Also show icons in find-file, consult-buffer etc.
+
+(use-package all-the-icons-completion
+  :after (marginalia all-the-icons)
+  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
+  :init
+  (all-the-icons-completion-mode))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:32]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+A mini-map (miniaturised window showing more of the buffer than the main window) is nice for longer documents:
+
+(use-package minimap
+  :custom
+  (minimap-major-modes '(org-mode prog-mode))
+  (minimap-window-location 'right)
+  :bind ("C-+" . minimap-mode))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:31]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+Drag and drop images into Org buffers to insert links:
+
+(use-package org-download
+  :custom
+  (org-download-image-dir "./img"))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:30]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+I prefer a hybrid of plain text and WYSIWYG, so only show org emphasis markers if point is on the word.
+
+(use-package org-appear
+  :custom
+  (org-appear-autolinks t)
+  (org-appear-autosubmarkers t)
+  (org-appear-autoentities t)
+  (org-appear-autokeywords t)
+  :hook (org-mode . org-appear-mode))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:29]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+Org mode (and stock Emacs in general) can be quite ugly, org-modern helps a lot.
+
+(use-package org-modern
+  :config
+  (setq org-modern-keyword
+        '((t . t)
+          ("bibliography" . "")
+          ("cite_export" . "⮭")
+          ("include" . "⇤")
+          ("setupfile" . "⇚")
+          ("header" . "›")
+          ("caption" . "☰")
+          ("name" . "⁝")
+          ("results" . "∴")))
+  (setq org-modern-block-name
+        '((t . t)
+          ("src" "»" "∥")
+          ("example" "»–" "∥")
+          ("quote" "❝" "❞")))
+  :hook (org-mode . org-modern-mode))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:29]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+For HTML, I rarely want images to link to my on-disk versions, as this makes the file unportable.
+
+(defun jdm204-org-export-to-html-with-monolith ()
+  "Export the current Org buffer to HTML and process it with Monolith."
+  (interactive)
+  (let* ((html-file (org-html-export-to-html)))
+    (shell-command (format "monolith %s -o %s" html-file html-file) nil nil)
+    (message "HTML exported and post-processed with Monolith to %s" html-file)))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:28]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+Refiling config.
+
+(setq org-refile-targets
+      '((nil :maxlevel . 3)
+        (org-agenda-files :maxlevel . 3)))
+(setq org-refile-use-outline-path 'file)
+(setq org-outline-path-complete-in-steps nil)
+Org agenda config.
+
+(setq
+ org-directory my/org-dir
+ org-default-notes-file my/org-default-notes
+ org-agenda-files `(,my/org-dir)
+ org-agenda-span 'month
+ diary-file my/diary
+ org-agenda-prefix-format '((agenda . " %i %-10:c%-12t %-6e %s") (todo . " %i %-12:c")
+                            (tags . " %i %-12:c") (search . " %i %-12:c"))
+ org-agenda-scheduled-leaders '("Scd: " "Scd.%2dx: ")
+ org-agenda-skip-scheduled-if-done t
+ org-agenda-skip-deadline-if-done t
+ org-agenda-compact-blocks t)
+Custom agenda commands:
+
+(setq org-agenda-custom-commands
+      '(("w" "Weekly Review"
+         ((agenda ""
+                  ((org-agenda-skip-function '(org-agenda-skip-entry-if 'nottodo 'done))
+                   (org-agenda-span 'week)))
+          (agenda ""
+                  ((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
+                   (org-agenda-span 'week)))))
+        ("d" "Dashboard View"
+         ((agenda ""
+                  ((org-agenda-span 'week)
+                   (org-agenda-overriding-header "\n--- Time-Sensitive & Scheduled Tasks ---")))
+          (alltodo ""
+                   ((org-agenda-skip-function '(org-agenda-skip-entry-if 'scheduled 'deadline))
+                    (org-agenda-overriding-header "\n--- General TODOs (Ready to be Worked On) ---")))))
+        ("r" "Review/Triage Inbox"
+         ((tags ".*" ((org-agenda-files '("~/cloud/org/inbox.org"))))))))
+Org agenda grouping functionality:
+
+(use-package org-super-agenda
+  :init (org-super-agenda-mode)
+  :config
+  (setq org-super-agenda-groups
+        '((:name "Scheduled" :time-grid t)
+          (:name "Important" :priority "A" :priority "B")
+          (:name "Personal" :tag "home" :tag "personal")
+          (:name "Low Priority" :priority<= "D" :order 100))))
+A mini agenda with calendar:
+
+(use-package nano-agenda
+  :bind ("C-c C" . nano-agenda))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:26]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+Present org sub-trees from Emacs:
+
+(use-package org-tree-slide
+  :custom
+  (org-tree-slide-slide-in-effect nil)
+  :bind (:map org-mode-map
+              ("C-c P" . org-tree-slide-mode)))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:25]
+** config.org · master · jdm204 / dotfiles · GitLab
+#+BEGIN_QUOTE
+More org blocks, notably including a details block, which is foldable, can include src and other blocks inside it, and exports (at least in HTML) to a hidden-by-default, revealable panel.
+
+(use-package org-special-block-extras
+  :init (org-special-block-extras-mode))
+#+END_QUOTE
+[[https://gitlab.com/jdm204/dotfiles/-/blob/master/config.org][config.org · master · jdm204 / dotfiles · GitLab]]
+Captured On: [2025-10-15 Wed 18:25]
+
 ** My PDF Tools Settings
 [[https://emacselements.com/pdf-tools-settings.html][My PDF Tools Settings]]
 Captured On: [2025-09-03 Wed 11:49]
