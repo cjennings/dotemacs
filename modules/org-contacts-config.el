@@ -35,7 +35,23 @@
   ;; Use the safe wrapper instead
   (add-hook 'org-agenda-finalize-hook 'cj/org-contacts-anniversaries-safe))
 
-;;; ---------------------------- Capture Templates ------------------------------
+;; ----------------------- Org-Contacts Capture Template -----------------------
+
+(with-eval-after-load 'org-capture
+  (add-to-list 'org-capture-templates
+			   '("C" "Contact" entry (file+headline contacts-file "Contacts")
+				 "* %(cj/org-contacts-template-name)
+:PROPERTIES:
+:EMAIL: %(cj/org-contacts-template-email)
+:PHONE: %^{Phone(s) - separate multiple with commas}
+:ADDRESS: %^{Address}
+:COMPANY: %^{Company}
+:TITLE: %^{Title/Position}
+:BIRTHDAY: %^{Birthday (YYYY-MM-DD)}
+:END:
+%^{Notes}
+Added: %U"
+				 :empty-lines 1)))
 
 (with-eval-after-load 'org-capture
   (add-to-list 'org-capture-templates
