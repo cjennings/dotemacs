@@ -18,7 +18,7 @@
 ;;; Code:
 
 (defvar cj/buffer-bury-alive-list
-  '("*dashboard*" "*scratch*" "*EMMS Playlist*" "*Messages*" "*ert*" "*AI-Assistant*")
+  '("*dashboard*" "*scratch*" "*EMMS-Playlist*" "*Messages*" "*ert*" "*AI-Assistant*")
   "Buffers to bury instead of killing.")
 
 (defun cj/kill-buffer-or-bury-alive (buffer)
