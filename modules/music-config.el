@@ -49,6 +49,17 @@
 ;; Requirements:
 ;; - MPD (Music Player Daemon) running on localhost:6600
 ;;
+;; Debug Notes:
+;; If you want to verify what players are currently in your list, you can evaluate:
+;;
+;; #+begin_src emacs-lisp
+;; ;; Check current player list
+;; emms-player-list
+;;
+;; ;; Check which player would be used for a specific file
+;; (emms-player-for '(*track* (type . file) (name . "~/music/The Beatles/1 (Remastered)/01 Love Me Do (Mono  Remastered).flac")))
+;; #+end_src
+;;
 ;; Custom functions are defined separately from the use-package declaration to facilitate unit testing.
 
 ;;; Code:
@@ -492,7 +503,8 @@ in the current window and provides appropriate feedback."
   (require 'emms-source-playlist)
 
   (emms-all)
-  (emms-default-players)
+  ;; I only want to use mpd to play. To add the defaults: (emms-default-players)
+  (setq emms-player-list '(emms-player-mpd))
 
   ;; MPD configuration
   (add-to-list 'emms-player-list 'emms-player-mpd)
@@ -502,7 +514,7 @@ in the current window and provides appropriate feedback."
 
   ;; EMMS settings
   (setq emms-source-file-default-directory cj/music-root
-		emms-playlist-buffer-name "*EMMS Playlist*"
+		emms-playlist-buffer-name "*EMMS-Playlist*"
 		emms-playlist-default-major-mode 'emms-playlist-mode)
 
   ;; modeline shows nothing
