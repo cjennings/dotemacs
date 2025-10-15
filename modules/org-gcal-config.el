@@ -36,7 +36,7 @@
 (require 'user-constants)
 
 (use-package org-gcal
-  :defer t ;; unless idle timer is set below (currently disabled in config)
+  :defer t ;; unless idle timer is set below
   :bind ("C-; g" . org-gcal-sync)
   :preface
   ;; org-gcal stumbles if this doesn't exist before initial sync
