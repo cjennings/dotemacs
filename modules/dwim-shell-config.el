@@ -713,11 +713,17 @@ Supports docx, odt, and other pandoc-compatible formats."
 						  (cj/xdg-open output-file)
 						  (message "Opened %s" output-file)))))))
 
-
+(defun cj/dwim-shell-commands-optimize-image-for-email ()
+  "Optimize image(s) for email - reduces file size while maintaining quality.
+Resizes to max 1200px (only if larger), strips metadata, and applies JPEG optimization."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+   "Optimize for email"
+   "magick '<<f>>' -strip -resize '1200x1200>' -quality 85 -interlace Plane -colorspace sRGB -sampling-factor 4:2:0 '<<fne>>_email.<<e>>'"
+   :utils "magick"))
 
   (defun cj/dwim-shell-commands-kill-gpg-agent ()
 	"Kill (thus restart) gpg agent.
-
 Useful for when you get this error:
 gpg: public key decryption failed: No pinentry
 gpg: decryption failed: No pinentry"
