@@ -275,18 +275,20 @@ If the heading contains a link, extract the description for the title."
 
 ;; ----------------------------- Webclipper Keymap -----------------------------
 
+;; keymaps shouldn't be required for webclipper
+;; TASK Move org-branch to roam functionality under org-roam
 ;; Setup keymaps
-;;;###autoload
-(defun cj/webclipper-setup-keymaps ()
-  "Setup webclipper keymaps."
-  (define-prefix-command 'cj/webclipper-map nil
-                         "Keymap for weblipper operations.")
-  (define-key cj/custom-keymap "w" 'cj/webclipper-map)
-  (define-key cj/webclipper-map "n" 'cj/move-org-branch-to-roam))
+;; ;;;###autoload
+;; (defun cj/webclipper-setup-keymaps ()
+;;   "Setup webclipper keymaps."
+;;   (define-prefix-command 'cj/webclipper-map nil
+;;                          "Keymap for weblipper operations.")
+;;   (define-key cj/custom-keymap "c" 'cj/webclipper-map)
+;;   (define-key cj/webclipper-map "n" 'cj/move-org-branch-to-roam))
 
-;; Call keymap setup if cj/custom-keymap is already defined
-(when (boundp 'cj/custom-keymap)
-  (cj/webclipper-setup-keymaps))
+;; ;; Call keymap setup if cj/custom-keymap is already defined
+;; (when (boundp 'cj/custom-keymap)
+;;   (cj/webclipper-setup-keymaps))
 
 ;; Register protocol handler early for external calls
 ;;;###autoload
