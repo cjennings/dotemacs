@@ -23,7 +23,7 @@
 
 (defun env-linux-p ()
   "Return t if host system is GNU/Linux."
-  (eq system-type "gnu/linux"))
+  (eq system-type 'gnu/linux))
 
 (defun env-bsd-p ()
   "Return t if host system is FreeBSD."
