@@ -45,7 +45,6 @@
 ;; ---------------------------------- Linting ----------------------------------
 
 (use-package flycheck
-  :after custom-functions ;; for keymap binding
   :defer t
   :commands (flycheck-list-errors
              cj/flycheck-list-errors)
