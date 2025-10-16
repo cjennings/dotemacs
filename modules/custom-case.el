@@ -5,6 +5,8 @@
 
 ;;; Code:
 
+(eval-when-compile (require 'keybindings))
+
 (defun cj/upcase-dwim ()
   "Upcase the active region, or upcase the symbol at point if no region."
   (interactive)
@@ -93,16 +95,17 @@ and all articles are considered minor words."
 					(insert c-up))))))
 		  (goto-char word-end)
 		  (setq is-first nil))))))
+
 ;; replace the capitalize-region keybinding to call title-case
 (global-set-key [remap capitalize-region] 'cj/title-case-region)
 
 ;; Case-change operations prefix and keymap
-(define-prefix-command 'cj/case-map nil
-					   "Keymap for case-change operations.")
-(define-key cj/custom-keymap "c" 'cj/case-map)
-(define-key cj/case-map "t" 'cj/title-case-region)
-(define-key cj/case-map "u" 'cj/upcase-dwim)
-(define-key cj/case-map "l" 'cj/downcase-dwim) ;; for "lower" case
+(defvar-keymap cj/case-map
+  :doc "Keymap for case-change operations."
+  "t" #'cj/title-case-region
+  "u" #'cj/upcase-dwim
+  "l" #'cj/downcase-dwim)
+(keymap-set cj/custom-keymap "c" cj/case-map)
 
 (provide 'custom-case)
 ;;; custom-case.el ends here.
