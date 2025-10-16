@@ -13,7 +13,6 @@
 (defvar org-archive-location
   (concat sync-dir "/archives/archive.org::datetree/")
   "Location of the archive file.
-
 The archive file is where org entries that are archived via
 org-archive-subtree-default are placed.")
 
@@ -50,8 +49,10 @@ org-archive-subtree-default are placed.")
   (setq org-image-actual-width '(500))      ;; keep image sizes in check
   (setq org-yank-image-save-method 'attach)  ;; attach images; save to data directory
 
-
   (setq org-bookmark-names-plist nil)       ;; don't set org-capture bookmarks
+
+  ;; make org-store-link binding global
+  (global-set-key (kbd "C-c l") 'org-store-link)
 
   ;; force pdfs exported from org to open in emacs
   (add-to-list 'org-file-apps '("\\.pdf\\'" . emacs)))
