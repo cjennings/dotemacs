@@ -14,102 +14,114 @@
 
 ;;; Code:
 
-(require 'user-constants)
-
-;; make org-store-link binding global
-(global-set-key (kbd "C-c l") 'org-store-link)
-
-;; remap Shift Backspace to Delete
-(global-set-key (kbd "S-<backspace>") 'delete-forward-char)
+;; Loaded earlier in init.el
+(eval-when-compile (require 'user-constants))
 
 ;; ------------------------------- Custom Keymap -------------------------------
 
-(defvar cj/custom-keymap
-  (let ((map (make-sparse-keymap)))
-	map)
-  "The base key map for custom elisp functions holding miscellaneous functions.
-Other key maps extend from this key map to hold categorized functions.")
-
-;; Set the global binding
-(global-set-key (kbd "C-;") cj/custom-keymap)
-
-;; Override flyspell's binding when it loads
-(with-eval-after-load 'flyspell
-  (define-key flyspell-mode-map (kbd "C-;") nil))
-
-;; Unnecessary, but leaving here for reference.
-;; Optional: Ensure it stays unbound even if flyspell redefines it
-;; (add-hook 'flyspell-mode-hook
-;;           (lambda ()
-;;             (define-key flyspell-mode-map (kbd "C-;") nil)))
-
+(defvar-keymap cj/custom-keymap
+  :doc "User custom prefix keymap base for nested keymaps.")
+(keymap-global-set "C-;" cj/custom-keymap)
 
 ;; ------------------------------ Jump To Commands -----------------------------
-;; quick access for commonly used files
 
-(defvar jump-to-keymap (make-sparse-keymap)
-  "Jump-to commonly used files/directories/commands.")
-(global-set-key (kbd "C-c j") jump-to-keymap)
+(defun cj/jump-open-var (var)
+  "Open the file whose path is stored in VAR.
+Errors if VAR is unbound, not a non-empty string, or the file does not exist."
+  (unless (boundp var)
+	(user-error "Variable %s is not bound" var))
+  (let ((path (symbol-value var)))
+	(unless (and (stringp path) (> (length path) 0))
+	  (user-error "Variable %s does not contain a valid file path" var))
+	(unless (file-exists-p path)
+	  (user-error "File does not exist: %s" path))
+	(find-file path)))
 
-(define-key jump-to-keymap (kbd "r")
-			#'(lambda () (interactive) (find-file reference-file)))
-(define-key jump-to-keymap (kbd "s")
-			#'(lambda () (interactive) (find-file schedule-file)))
-(define-key jump-to-keymap (kbd "i")
-			#'(lambda () (interactive) (find-file inbox-file)))
-(define-key jump-to-keymap (kbd "c")
-			#'(lambda () (interactive) (find-file contacts-file)))
-(define-key jump-to-keymap (kbd "m")
-			#'(lambda () (interactive) (find-file macros-file)))
-(define-key jump-to-keymap (kbd "n")
-			#'(lambda () (interactive) (find-file reading-notes-file)))
-(define-key jump-to-keymap (kbd "w")
-			#'(lambda () (interactive) (find-file webclipped-file)))
-(define-key jump-to-keymap (kbd "g")
-			#'(lambda () (interactive) (find-file gcal-file)))
-(define-key jump-to-keymap (kbd "I")
-			#'(lambda () (interactive) (find-file emacs-init-file)))
+(defconst cj/jump--specs
+  '(("r" reference      reference-file)
+	("s" schedule       schedule-file)
+	("i" inbox          inbox-file)
+	("c" contacts       contacts-file)
+	("m" macros         macros-file)
+	("n" reading-notes  reading-notes-file)
+	("w" webclipped     webclipped-file)
+	("g" gcal           gcal-file)
+	("I" emacs-init     emacs-init-file))
+  "Specs for jump commands: each entry is (KEY NAME-SYM VAR-SYM).")
+
+(defvar-keymap cj/jump-map
+  :doc "Key map for quick jumps to commonly used files.")
+
+;; Define commands and populate the keymap from the specs.
+(dolist (spec cj/jump--specs)
+  (pcase-let ((`(,key ,name ,var) spec))
+	(let* ((fn (intern (format "cj/jump-to-%s" name)))
+		   (doc (format "Open the file from variable `%s'." var)))
+	  ;; Define a named command that opens the file from VAR.
+	  (defalias fn
+		`(lambda ()
+		   ,doc
+		   (interactive)
+		   (cj/jump-open-var ',var)))
+	  ;; Bind it under the prefix map.
+	  (keymap-set cj/jump-map key fn))))
+
+;; Bind the prefix globally (user-reserved prefix).
+(keymap-global-set "C-c j" cj/jump-map)
+
+;; nicer prefix label in which-key
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-c j" "Jump to common files."))
 
 ;; ---------------------------- Keybinding Discovery ---------------------------
 
 (use-package free-keys
-  :defer 1
-  :bind ("C-h C-k" . free-keys))
+  :commands (free-keys)
+  :bind (:map help-map
+		 ("C-k" . free-keys)))
 
 (use-package which-key
-  :defer 1
+  :commands (which-key-mode)
+  :hook (emacs-startup . which-key-mode)
+  :custom
+  (which-key-idle-delay 1.0)
+  (which-key-popup-type 'side-window)
+  ;; :init
+  ;; ;; Load + enable after a short idle so it doesn't count toward startup.
+  ;; (run-with-idle-timer 0.5 nil
+  ;; 	(lambda ()
+  ;; 	  (require 'which-key nil t)
+  ;; 	  ;; Ensure config has applied, then enable the mode.
+  ;; 	  (with-eval-after-load 'which-key
+  ;; 		(unless (bound-and-true-p which-key-mode)
+  ;; 		  (which-key-mode 1)))))
   :config
-  ;; never show keybindings that have been 'cj/disabled'
-  (push '((nil . "cj/disabled") . t) which-key-replacement-alist)
-  (setq which-key-idle-delay 2.0
-		which-key-popup-type 'side-window)
   (which-key-setup-side-window-bottom)
-  ;; (which-key-setup-side-window-right-bottom)
-  (which-key-mode 1))
+  ;; never show keybindings that have been 'cj/disabled'
+  (push '((nil . "cj/disabled") . t) which-key-replacement-alist))
 
 ;; ---------------------------- General Keybindings ----------------------------
 
 ;; Avoid hostile bindings
-(global-unset-key (kbd "C-x C-f"))   ;; find-file-read-only
-(global-unset-key (kbd "C-z"))       ;; suspend-frame is accidentally hit often
-(global-unset-key (kbd "M-o"))       ;; facemenu-mode
+(keymap-global-unset  "C-x C-f")   ;; find-file-read-only
+(keymap-global-set  "C-x C-f" #'find-file)
+(keymap-global-unset  "C-z")       ;; suspend-frame is accidentally hit often
+(keymap-global-unset  "M-o")       ;; facemenu-mode
 
 ;; Add commonly-used general keybindings
-(global-set-key (kbd "C-x C-f") 'find-file)
-(global-set-key (kbd "C-c f")   'link-hint-open-link-at-point)
-(global-set-key (kbd "M-*")     'calculator)
-(global-set-key (kbd "M-Y")     'yank-media)
+(keymap-global-set  "M-*"     #'calculator)
+(keymap-global-set  "M-Y"     #'yank-media)
 
 ;; Normally bound to ESC ESC ESC, hit ESC once to get out of unpleasant situations.
-(global-set-key (kbd "<escape>")  'keyboard-escape-quit)
+(keymap-global-set  "<escape>" #'keyboard-escape-quit)
 
 ;; remap C-x \ to sort-lines (from remap activate-transient-input-method)
-(global-unset-key (kbd "C-x \\"))
-(global-set-key (kbd "C-x \\") 'sort-lines)
+(keymap-global-unset  "C-x \\")
+(keymap-global-set  "C-x \\" #'sort-lines)
 
 ;; training myself to use C-/ for undo (bound internally) as it's faster.
-(global-unset-key (kbd "C-x u"))
-(define-key global-map (kbd "C-x u")
+(keymap-global-unset  "C-x u")
+(keymap-global-set "C-x u"
 			#'(lambda () (interactive)
 				(message (concat "Seriously, " user-name
 								 "? Use 'C-/'. It's faster."))))
