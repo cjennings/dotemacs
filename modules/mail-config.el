@@ -171,12 +171,6 @@ Prompts user for the action when executing."
                      (concat "Bcc: " user-mail-address "\n"))))
   (add-hook 'mu4e-compose-mode-hook 'cj/add-cc-bcc-header)
 
-  ;; remap the awkward mml-attach-file to the quicker mail-add-attachment
-  (define-key mu4e-compose-mode-map [remap mml-attach-file] 'mail-add-attachment)
-
-  ;; don't allow openwith to mess with your attachments
-  (add-to-list  'mm-inhibit-file-name-handlers 'openwith-file-handler)
-
   ;; use imagemagick to render images, if available
   (when (fboundp 'imagemagick-register-types)
 	(imagemagick-register-types))
@@ -232,23 +226,20 @@ Prompts user for the action when executing."
 
   ;; first letter is the keybinding
   (setq mu4e-headers-actions
-		'(("bview in browser"   . mu4e-action-view-in-browser)
-		  ("asave attachment"   . mu4e-view-mime-part-action)
-		  ("oorg-contact-add"   . mu4e-action-add-org-contact)
-		  ("xsearch for sender" . cj/search-for-sender)
+		'(("asave attachment"   . mu4e-view-save-attachments)
+		  ("csave contact"      . mu4e-action-add-org-contact)
+		  ("ssearch for sender" . cj/search-for-sender)
 		  ("tshow this thread"  . mu4e-action-show-thread)
-		  ))
+		  ("vview in browser"   . mu4e-action-view-in-browser)))
 
   ;; first letter is the keybinding
   (setq mu4e-view-actions
-		'(("bview in browser"      . mu4e-action-view-in-browser)
-		  ("asave attachments"     . mu4e-view-mime-part-action)
-		  ("esave attachments"     . mu4e-view-save-attachments)
-		  ("oorg-contact-add"      . mu4e-action-add-org-contact)
-		  ("Itoggle remote images" . cj/mu4e-toggle-remote-images)
-		  ))
-  ;;        ("ssave message to attach later" . mu4e-action-capture-message)
-  (setq mu4e-compose-complete-addresses nil)
+		'(("asave attachments"     . mu4e-view-save-attachments)
+		  ("csave contact"         . mu4e-action-add-org-contact)
+		  ("itoggle remote images" . cj/mu4e-toggle-remote-images)
+		  ("lsave to attach later" . mu4e-action-capture-message)
+		  ("vview in browser"      . mu4e-action-view-in-browser)))
+ (setq mu4e-compose-complete-addresses nil)
 
   ;; ---------------------------- Address Completion ---------------------------
 
@@ -292,10 +283,23 @@ Prompts user for the action when executing."
 ;; user composes org mode; recipient receives html
 
 (use-package org-msg
-  :after (org mu4e)
+  :ensure nil ;; loading locally for fixes
+  :defer 1
   :load-path "~/code/org-msg/"
+  :after (org mu4e)
+  :preface
+	(define-prefix-command 'cj/email-map nil
+						 "keymap for email operations.")
+	(define-key cj/custom-keymap "e" 'cj/email-map)
+  :bind
+  ;; more intuitive keybinding for attachments
+  (:map org-msg-edit-mode-map
+		("C-c C-a" . org-msg-attach-attach)
+		("C-c C-d" . org-msg-attach-delete))
+  (:map cj/email-map
+		("a" . org-msg-attach-attach)
+		("d" . org-msg-attach-delete))
   :config
-
   ;; inline CSS, no postamble, no TOC, no stars or footers
   (setq org-msg-options "html-postamble:nil H:5 num:nil ^:{} toc:nil author:nil email:nil")
 
