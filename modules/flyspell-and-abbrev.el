@@ -89,6 +89,8 @@
   :after (ispell abbrev)
   :ensure nil ;; built-in
   :config
+  ;; unset keybinding as we're using it for cj/custom keymap
+  (keymap-unset flyspell-mode-map "C-;")
   ;; don't print message for every word when checking
   (setq flyspell-issue-message-flag nil))
 
