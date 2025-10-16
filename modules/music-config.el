@@ -603,7 +603,7 @@ Directories are added recursively."
 		  (message "Skipping non-music file: %s" file))))
 	(message "Added %d item(s) to EMMS playlist" (length files))))
 
-(with-eval-after-load 'dired
+(with-eval-after-load 'dirvish
   (define-key dirvish-mode-map "p" 'cj/music-add-dired-selection))
 
 (provide 'music-config)
