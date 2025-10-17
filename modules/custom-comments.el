@@ -5,7 +5,8 @@
 
 ;;; Code:
 
-(require 'custom-line-paragraph)
+(eval-when-compile (require 'keybindings)) ;; for keymapping below
+(autoload 'cj/join-line-or-region "custom-line-paragraph" nil t)
 
 ;; --------------------------- Delete Buffer Comments --------------------------
 
@@ -15,28 +16,6 @@
   (goto-char (point-min))
   (let (kill-ring)
 	(comment-kill (count-lines (point-min) (point-max)))))
-
-;; ----------------------------- Comment User Edit -----------------------------
-
-(defun cj/comment-user-edit ()
-  "Reformat commented text in an indirect buffer."
-  (interactive)
-  (if mark-active
-	  (uncomment-region beg end)
-	  (let ((beg (region-beginning))
-			(end (copy-marker (region-end)))
-			(source buffer (current-buffer))
-			(indirect-buffer (make-indirect-buffer source-buffer))
-			(with-current-buffer indirect-buffer
-			  ;; Narrow to the selected region
-			  (narrow-to-region start end)
-			  (goto-char (point-min))
-
-
-			  )))
-	  (comment-region beg end))
-  ;; if no region
-  (message "No region was selected. Select the comment lines to reformat."))
 
 ;; ------------------------------ Comment Reformat -----------------------------
 
@@ -61,15 +40,15 @@
   "Insert comment text centered around the COMMENT-CHAR character.
 Default to the hash character when COMMENT-CHAR is nil.
 Use the lesser of `fill-column' or 80 to calculate the comment length.
-Begin and end the line with the appropriate comment symbols for the current mode."
+Begin and end line with the appropriate comment symbols for the current mode."
   (interactive)
   (if (not (char-or-string-p comment-char))
 	  (setq comment-char "#"))
   (let* ((comment (capitalize (string-trim (read-from-minibuffer "Comment: "))))
 		 (fill-column (min fill-column 80))
 		 (comment-length (length comment))
-		 (comment-start-length (length comment-start))
-		 (comment-end-length (length comment-end))
+		 ;; (comment-start-length (length comment-start))
+		 ;; (comment-end-length (length comment-end))
 		 (current-column-pos (current-column))
 		 (space-on-each-side (/ (- fill-column
 								   current-column-pos
@@ -182,15 +161,15 @@ Leverages cj/comment-centered."
 
 ;; ------------------------------- Comment Keymap ------------------------------
 
-;; Comment styles & removal prefix and keymap
-(define-prefix-command 'cj/comment-map nil
-					   "Keymap for comment styling and removal.")
-(define-key cj/custom-keymap "C" 'cj/comment-map)
-(define-key cj/comment-map "r" 'cj/comment-reformat)
-(define-key cj/comment-map "c" 'cj/comment-centered)
-(define-key cj/comment-map "-" 'cj/comment-hyphen)
-(define-key cj/comment-map "b" 'cj/comment-box)
-(define-key cj/comment-map "D" 'cj/delete-buffer-comments)
+;; Comment styles & comment removal keymap.
+(defvar-keymap cj/comment-map
+  :doc "Keymap for code comment operations."
+  "r" #'cj/comment-reformat
+  "c" #'cj/comment-centered
+  "-" #'cj/comment-hyphen
+  "b" #'cj/comment-box
+  "D" #'cj/delete-buffer-comments)
+(keymap-set cj/custom-keymap "C" 'cj/comment-map)
 
 (provide 'custom-comments)
 ;;; custom-comments.el ends here.
