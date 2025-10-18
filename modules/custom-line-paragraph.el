@@ -33,7 +33,6 @@
 
 (defun cj/duplicate-line-or-region (&optional comment)
   "Duplicate the current line or active region below.
-
 Comment the duplicated text when optional COMMENT is non-nil."
   (interactive "P")
   (let* ((b (if (region-active-p) (region-beginning) (line-beginning-position)))
@@ -51,8 +50,8 @@ Comment the duplicated text when optional COMMENT is non-nil."
 
 (defun cj/remove-duplicate-lines-region-or-buffer ()
   "Remove duplicate lines in the region or buffer, keeping the first occurrence.
-
-Operate on the active region when one exists; otherwise operate on the whole buffer."
+Operate on the active region when one exists; otherwise operate on the whole
+buffer."
   (interactive)
   (let ((start (if (use-region-p) (region-beginning) (point-min)))
 		(end (if (use-region-p) (region-end) (point-max))))
@@ -61,13 +60,13 @@ Operate on the active region when one exists; otherwise operate on the whole buf
 		(while
 			(progn
 			  (goto-char start)
-			  (re-search-forward "^\\(.*\\)\n\\(\\(.*\n\\)*\\)\\1\n" end-marker t))
+			  (re-search-forward "^\\(.*\\)\n\\(\\(.*\n\\)*\\)\\1\n"
+								 end-marker t))
 		  (replace-match "\\1\n\\2"))))))
 
 
 (defun cj/remove-lines-containing (text)
   "Remove all lines containing TEXT.
-
 If region is active, operate only on the region, otherwise on entire buffer.
 The operation is undoable."
   (interactive "sRemove lines containing: ")
@@ -95,7 +94,6 @@ The operation is undoable."
 
 (defun cj/underscore-line ()
   "Underline the current line by inserting a row of characters below it.
-
 If the line is empty or contains only whitespace, abort with a message."
   (interactive)
   (let ((line (buffer-substring-no-properties
@@ -111,17 +109,17 @@ If the line is empty or contains only whitespace, abort with a message."
 		  (end-of-line)
 		  (insert "\n" (make-string len char)))))))
 
+;; ------------------------- Line And Paragraph Keymap -------------------------
 
-;; Line & paragraph operations prefix and keymap
-(define-prefix-command 'cj/line-and-paragraph-map nil
-					   "Keymap for line and paragraph manipulation.")
-(define-key cj/custom-keymap "l" 'cj/line-and-paragraph-map)
-(define-key cj/line-and-paragraph-map "j" 'cj/join-line-or-region)
-(define-key cj/line-and-paragraph-map "J" 'cj/join-paragraph)
-(define-key cj/line-and-paragraph-map "d" 'cj/duplicate-line-or-region)
-(define-key cj/line-and-paragraph-map "R" 'cj/remove-duplicate-lines-region-or-buffer)
-(define-key cj/line-and-paragraph-map "r" 'cj/remove-lines-containing)
-(define-key cj/line-and-paragraph-map "u" 'cj/underscore-line)
+(defvar-keymap cj/line-and-paragraph-map
+  :doc "Keymap for line and paragraph operations."
+ "j" #'cj/join-line-or-region
+ "J" #'cj/join-paragraph
+ "d" #'cj/duplicate-line-or-region
+ "R" #'cj/remove-duplicate-lines-region-or-buffer
+ "r" #'cj/remove-lines-containing
+ "u" #'cj/underscore-line)
+(keymap-set cj/custom-keymap "l" cj/line-and-paragraph-map)
 
 (provide 'custom-line-paragraph)
 ;;; custom-line-paragraph.el ends here.
