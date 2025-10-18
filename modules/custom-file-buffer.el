@@ -173,7 +173,7 @@ Do not save the deleted text in the kill ring."
 
   "l" #'cj/copy-link-to-buffer-file
   "P" #'cj/copy-path-to-buffer-file-as-kill)
-(keymap-set cj/custom-keymap "b" 'cj/buffer-and-file-map)
+(keymap-set cj/custom-keymap "b" cj/buffer-and-file-map)
 
 (provide 'custom-file-buffer)
 ;;; custom-file-buffer.el ends here.
