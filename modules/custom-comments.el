@@ -169,7 +169,7 @@ Leverages cj/comment-centered."
   "-" #'cj/comment-hyphen
   "b" #'cj/comment-box
   "D" #'cj/delete-buffer-comments)
-(keymap-set cj/custom-keymap "C" 'cj/comment-map)
+(keymap-set cj/custom-keymap "C" cj/comment-map)
 
 (provide 'custom-comments)
 ;;; custom-comments.el ends here.
