@@ -15,7 +15,7 @@
 ;; This happens automatically when the module loads.
 ;;
 ;; The paths are designed with a hierarchical structure, allowing child paths
-;; to reference their parents (e.g., roam-dir is inside sync-dir) for better
+;; to reference their parents (e.g., roam-dir is inside org-dir) for better
 ;; maintainability.
 ;;
 ;;; Code:
@@ -62,19 +62,22 @@
 (defconst mail-dir (expand-file-name ".mail/" user-home-dir)
   "Root directory where the mail folders are located.")
 
-(defconst sync-dir (expand-file-name "sync/org/" user-home-dir)
+(defconst sync-dir (expand-file-name "sync/" user-home-dir)
   "This directory is synchronized across machines.")
 
-(defconst roam-dir (expand-file-name "roam/" sync-dir)
+(defconst org-dir (expand-file-name "org/" sync-dir)
+  "This directory is synchronized across machines.")
+
+(defconst roam-dir (expand-file-name "roam/" org-dir)
   "The location of org-roam files.")
 
 (defconst journals-dir (expand-file-name "journal/" roam-dir)
   "The location of org-roam dailies or journals files.")
 
-(defconst drill-dir (expand-file-name "drill/" sync-dir)
+(defconst drill-dir (expand-file-name "drill/" org-dir)
   "The location of org-drill org files.")
 
-(defconst snippets-dir (expand-file-name "snippets/" sync-dir)
+(defconst snippets-dir (expand-file-name "snippets/" org-dir)
   "The location of ya-snippet snippets.")
 
 (defvar sounds-dir (expand-file-name "assets/sounds/" user-emacs-directory)
@@ -94,16 +97,16 @@
 (defvar authinfo-file (expand-file-name ".authinfo.gpg" user-home-dir)
   "The location of the encrypted .authinfo or .netrc file.")
 
-(defvar schedule-file (expand-file-name "schedule.org" sync-dir)
+(defvar schedule-file (expand-file-name "schedule.org" org-dir)
   "The location of the org file containing scheduled events.")
 
-(defvar gcal-file (expand-file-name "gcal.org" sync-dir)
+(defvar gcal-file (expand-file-name "gcal.org" org-dir)
   "The location of the org file containing Google Calendar information.")
 
-(defvar reference-file (expand-file-name "reference.org" sync-dir)
+(defvar reference-file (expand-file-name "reference.org" org-dir)
   "The location of the org file containing reference information.")
 
-(defvar article-archive (expand-file-name "article-archive.org" sync-dir)
+(defvar article-archive (expand-file-name "article-archive.org" org-dir)
   "The location of the org file that stores saved articles to keep.")
 
 (defvar inbox-file (expand-file-name "inbox.org" roam-dir)
@@ -112,16 +115,16 @@
 (defvar reading-notes-file (expand-file-name "reading_notes.org" roam-dir)
   "The default notes file for org-noter.")
 
-(defvar macros-file (concat sync-dir "macros.el")
+(defvar macros-file (concat org-dir "macros.el")
   "The location of the macros file for recorded saved macros via M-f3.")
 
-(defvar contacts-file (expand-file-name "contacts.org" sync-dir)
+(defvar contacts-file (expand-file-name "contacts.org" org-dir)
   "The location of the org file containing contact information.")
 
 (defvar notification-sound (expand-file-name "BitWave.opus" sounds-dir)
   "The location of the audio file to use as the default notification.")
 
-(defvar webclipped-file (expand-file-name "webclipped.org" sync-dir)
+(defvar webclipped-file (expand-file-name "webclipped.org" org-dir)
   "The location of the org file that keeps webclips to read.
 
 For more information, see org webclipper section of org-capture-config.el")
@@ -158,13 +161,14 @@ This ensures that all directories and files required by the Emacs configuration
 exist, creating them if necessary. This makes the configuration more robust
 and portable across different machines."
   (interactive)
-  (mapc 'cj/verify-or-create-dir (list drill-dir
+  (mapc 'cj/verify-or-create-dir (list sync-dir
+									   drill-dir
 									   journals-dir
 									   roam-dir
 									   snippets-dir
 									   video-recordings-dir
 									   audio-recordings-dir
-									   sync-dir))
+									   org-dir))
  (mapc 'cj/verify-or-create-file (list schedule-file
                                         inbox-file
 										article-archive

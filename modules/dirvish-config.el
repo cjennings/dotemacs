@@ -43,7 +43,6 @@ Used to filter files for M3U playlists.")
 
 (defun cj/dired-create-playlist-from-marked ()
   "Create an .m3u playlist file from marked files in Dired (or Dirvish).
-
 Filters for audio files, prompts for the playlist name, and saves the resulting
 .m3u in the directory specified by =music-dir=. Interactive use only."
   (interactive)
@@ -138,7 +137,6 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
 
 (defun cj/dirvish-open-file-manager-here ()
   "Open system's default file manager in the current dired/dirvish directory.
-
 Always opens the file manager in the directory currently being displayed,
 regardless of what file or subdirectory the point is on."
   (interactive)
@@ -167,7 +165,7 @@ regardless of what file or subdirectory the point is on."
 ;;; ---------------------------------- Dirvish ----------------------------------
 
 (use-package dirvish
-  :defer 1
+  :defer 0.5
   :init
   (dirvish-override-dired-mode)
   :custom
@@ -180,7 +178,7 @@ regardless of what file or subdirectory the point is on."
 	 ("ra" ,video-recordings-dir                            "video recordings")
 	 ("rv" ,audio-recordings-dir                            "audio recordings")
 	 ("dl" ,dl-dir                                          "downloads")
-	 ("dr" ,(concat sync-dir "/drill/")                     "drill files")
+	 ("dr" ,(concat org-dir "/drill/")                      "drill files")
 	 ("dt" ,(concat dl-dir "/torrents/complete/")           "torrents")
 	 ("dx" "~/documents/"                                   "documents")
 	 ("lx" "~/lectures/"                                    "lectures")
@@ -197,9 +195,10 @@ regardless of what file or subdirectory the point is on."
 	 ("rcj" "/sshx:cjennings@cjennings.net:~"               "remote cjennings.net")
 	 ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
 	 ("sx" ,sync-dir                                        "sync directory")
-	 ("so" "~/sync/org"                                     "org directory")
-	 ("sv" "~/sync/videos/"                                 "sync/videos directory")
-	 ("tg" ,(concat sync-dir "/text.games")                 "text games")
+	 ("so" ,(concat sync-dir "/org/")                       "sync/org directory")
+	 ("sr" ,(concat sync-dir "/recordings/")                "sync/recordings directory")
+	 ("sv" ,(concat sync-dir "/videos/")                    "sync/videos directory")
+	 ("tg" ,(concat sync-dir "/text.games/")                "text games")
 	 ("vr" ,video-recordings-dir                            "video recordings directory")
 	 ("vx" ,videos-dir                                      "videos")))
   :config
@@ -306,7 +305,7 @@ regardless of what file or subdirectory the point is on."
 
 (use-package dired-sidebar
   :after (dired projectile)
-  :bind (("<f11>" . dired-sidebar-toggle-sidebar))
+  :defer t
   :commands (dired-sidebar-toggle-sidebar)
   :init
   (add-hook 'dired-sidebar-mode-hook
@@ -329,7 +328,6 @@ regardless of what file or subdirectory the point is on."
   "Copy path of file at point in Dired/Dirvish.
 Copies relative path from project root if in a project, otherwise from home
 directory (with ~ prefix) if applicable, otherwise the absolute path.
-
 With prefix arg or when AS-ORG-LINK is non-nil, format as \='org-mode\=' link."
   (interactive "P")
   (unless (derived-mode-p 'dired-mode)

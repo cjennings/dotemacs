@@ -17,7 +17,7 @@
 
 ;;; Code:
 
-(require 'user-constants)  ;; For sync-dir
+(require 'user-constants)  ;; For org-dir
 
 ;; ----------------------------------- Themes ----------------------------------
 ;; theme choices and settings
@@ -49,7 +49,7 @@ Unloads any other applied themes before applying the chosen theme."
 ;; ----------------------------- Theme Persistence -----------------------------
 ;; persistence utility functions used by switch themes.
 
-(defvar theme-file (concat sync-dir "emacs-theme.persist")
+(defvar theme-file (concat org-dir "emacs-theme.persist")
   "The location of the file to persist the theme name.
 
 If you want your theme change to persist across instances, put this in a

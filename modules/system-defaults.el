@@ -12,7 +12,18 @@
 
 ;;; Code:
 
-(require 'host-environment)
+
+(require 'autorevert)
+(require 'server)
+(require 'bookmark)
+
+;; Loaded earlier in init.el
+(eval-when-compile (require 'host-environment))
+(eval-when-compile (require 'user-constants))
+
+;; Function in system-utils.el; autoload to avoid requiring it here.
+(autoload 'env-bsd-p "host-environment" nil t)
+
 
 ;; -------------------------- Native Comp Preferences --------------------------
 ;; after async compiler starts, set preferences and warning level
@@ -30,10 +41,11 @@
   "File where native-comp warnings will be appended.")
 
 (defun cj/log-comp-warning (type message &rest args)
-  "Log native-comp warnings of TYPE with MESSAGE & ARGS to 'comp-warnings-log'.
-Suppress them from appearing in the *Warnings* buffer. If TYPE contains 'comp',
-log the warning with a timestamp to the file specified by 'comp-warnings-log'.
-Return non-nil to indicate the warning was handled."
+  "Log native-comp warnings of TYPE with MESSAGE & ARGS.
+Log to buffer \='comp-warnings-log\='. Suppress warnings from appearing in the
+*Warnings* buffer. If TYPE contains \='comp\+', log the warning with a
+timestamp to the file specified by \+'comp-warnings-log\='. Return non-nil to
+indicate the warning was handled."
   (when (memq 'comp (if (listp type) type (list type)))
     (with-temp-buffer
       (insert (format-time-string "[%Y-%m-%d %H:%M:%S] "))
@@ -65,7 +77,7 @@ Return non-nil to indicate the warning was handled."
 
 (defun cj/disabled ()
   "Do absolutely nothing and do it quickly.
-Used to disable functionality with defalias 'somefunc 'cj/disabled)."
+Used to disable functionality with defalias \='somefunc \='cj/disabled)."
   (interactive))
 
 ;; VIEW EMACS NEWS
@@ -190,7 +202,7 @@ Used to disable functionality with defalias 'somefunc 'cj/disabled)."
 ;; keep bookmarks in sync location, and save the file whenever a mark is added
 
 ;; place bookmark file sync'd org files
-(setq bookmark-default-file (concat sync-dir "emacs_bookmarks"))
+(setq bookmark-default-file (concat org-dir "emacs_bookmarks"))
 
 ;; save bookmarks each (1) time it's modified.
 (setq bookmark-save-flag 1)

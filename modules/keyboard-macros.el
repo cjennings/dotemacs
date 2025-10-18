@@ -33,7 +33,7 @@
 ;;
 ;;; Code:
 
-(require 'user-constants) ;; definitions of sync-dir and macros-file
+(require 'user-constants) ;; definitions of org-dir and macros-file
 
 (defvar cj/macros-loaded nil
   "Whether saved keyboard macros have been loaded from file.")
