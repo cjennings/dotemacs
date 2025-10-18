@@ -21,6 +21,8 @@
 
 (use-package org-drill
   :after org
+  :commands org-drill
+  :defer 0.5
   :config
   (setq org-drill-leech-failure-threshold 50)           ;; leech cards = 50 wrong anwers
   (setq org-drill-leech-method 'warn)                   ;; leech cards show warnings
@@ -94,16 +96,6 @@
 (define-key cj/drill-map "c" 'cj/drill-capture)
 (define-key cj/drill-map "r" 'cj/drill-refile)
 (define-key cj/drill-map "R" 'org-drill-resume)
-
-;;(define-key cj/drill-map "P" 'cj/disabled)
-;;(define-key cj/drill-map "b" 'cj/disabled)
-;;(define-key cj/drill-map "d" 'cj/disabled)
-;;(define-key cj/drill-map "l" 'cj/disabled)
-;;(define-key cj/drill-map "m" 'cj/disabled)
-;;(define-key cj/drill-map "p" 'cj/disabled)
-;;(define-key cj/drill-map "t" 'cj/disabled)
-;;(define-key cj/drill-map "x" 'cj/disabled)
-
 
 (provide 'org-drill-config)
 ;;; org-drill-config.el ends here.
