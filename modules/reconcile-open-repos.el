@@ -61,7 +61,7 @@
           (cj/reconcile-git-directory child-dir)))))
 
   ;; check these directories individually
-  (cj/reconcile-git-directory sync-dir)
+  (cj/reconcile-git-directory org-dir)
   (cj/reconcile-git-directory user-emacs-directory)
 
   ;; communicate when finished.

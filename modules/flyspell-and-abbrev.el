@@ -81,7 +81,7 @@
 		   ("-d" "en_US") nil utf-8)))
   ;; personal directory goes with sync'd files
   (setq ispell-personal-dictionary
-		(concat sync-dir "aspell-personal-dictionary"))
+		(concat org-dir "aspell-personal-dictionary"))
   ;; skip code blocks in org mode
   (add-to-list 'ispell-skip-region-alist '("^#+BEGIN_SRC" . "^#+END_SRC")))
 

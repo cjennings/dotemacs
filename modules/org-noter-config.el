@@ -31,7 +31,7 @@
   (setq org-noter-notes-window-location 'horizontal-split)
   (setq org-noter-notes-window-behavior '(start scroll))  ; note: must be a list!
   (setq org-noter-doc-split-fraction '(0.5 . 0.5))
-  (setq org-noter-notes-search-path (list (concat sync-dir "/org-noter/")))
+  (setq org-noter-notes-search-path (list (concat org-dir "/org-noter/")))
   (setq org-noter-default-notes-file-names '("reading-notes.org"))
   (setq org-noter-separate-notes-from-heading t)
   (setq org-noter-kill-frame-at-session-end t)  ; kill frame when closing session
