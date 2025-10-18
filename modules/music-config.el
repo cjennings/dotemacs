@@ -47,7 +47,7 @@
 (defvar cj/music-keymap-prefix (kbd "C-; m")
   "Prefix keybinding for all music commands. Currently not auto-bound.")
 
-(defvar cj/music-file-extensions '("aac", "flac", "m4a", "mp3", "ogg", "opus", "wav")
+(defvar cj/music-file-extensions '("aac" "flac" "m4a" "mp3" "ogg" "opus" "wav")
   "List of valid music file extensions.")
 
 (defvar cj/music-playlist-buffer-name "*EMMS-Playlist*"
