@@ -1,17 +1,24 @@
 ;;; keybindings --- General Keyboard Shortcuts -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
-
+;;
 ;;; Commentary:
-
-;; Commonly used files should be easy to jump to. The "jump-to" keymap has the
-;; "C-c j" prefix and immediately opens files defined in user-constants.el.
-
-;; "Hostile Keybindings" are those that are close to keybindings I use commonly
-;; so they're easy to  hit by accident, but they have painful results. I'd
-;; rather avoid the pain by unsetting they keybindings and view the error '<key>
-;; is undefined' message. Finally, I'm providing messages to train me to use
-;; faster keybindings and provide feedback when evaluating buffers.
-
+;;
+;; Global keybinding configuration and custom keymap framework.
+;;
+;; Main features include:
+;; - custom keymap prefix (~C-;~) for all custom commands,
+;; - jump-to-file commands (~C-c j <key>~) for frequently used files
+;; - which-key integration for keybinding discovery
+;; - free-keys for finding available keybindings
+;; - hostile keybinding protection that disables accidental suspend-frame and other dangerous operations
+;; - training  to encourage faster keybindings
+;;
+;; Key principles:
+;; - avoid keybindings close to commonly-used keys that have painful results
+;; - use global-map for truly global bindings
+;; - use custom-keymap (~C-;~) for custom functionality
+;; - keep ~C-c <letter>~ reserved for user bindings per Emacs conventions
+;;
 ;;; Code:
 
 ;; Loaded earlier in init.el
