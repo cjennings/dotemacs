@@ -1,4 +1,13 @@
 * Emacs Config Open Work
+** TODO [#A] Switch Browsers from selection of internal to external
+- eww, w3m, firefox, google-chrome, brave listed in a defvar that can be changed
+- reads from persistence file for current default (as with the theme selection)
+  (you may be able to promote code reuse between the two features)
+- ensures browsers exist (at load? on first run?). narrows list to only existing browsers 
+- after choosing to reset default, completing read provides the list
+- the one selected is at top, selecting another sets your default browser variable
+- selection is saved in a persistence file for next time
+- user is given the opportunity to go to a url entered or default to test
 ** TODO [#A] Finish Testing New Org-webclipper
 ** TODO [#A] Document Goals, Specs, and Architecture Docs for this Config :maintenance:
 *** Emacs Config V2MOM
@@ -472,7 +481,7 @@ Pull out the API key fetching, caching, and GPTel backend creation logic from ai
 
 ---
 
-** TODO [#B] Capture and Refile to Drill Files                :enhancement:
+** DOING [#B] Capture and Refile to Drill Files                :enhancement:
 *** TODO [#B] Clean Up Existing Drill Files
 - Ensure they're in the proper format
 *** TODO [#B] Empty Inbox Drill file and Remove
@@ -769,25 +778,22 @@ Rather than just finding :EMAIL: matches, why not pass in key and have it find :
 *** TODO [#B] New Org-Roam type: Book Notes
 Part of the integration with org-noter
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
-** TODO [#B] Selecting Enter on FLAC File in Dirvish Causes Error
-cond: external-open: unsupported host environment
-** TODO [#B] Fill out Personal Workflow Project Actions
-- Rename and save any file to project/assets directory
-- Override archiving a task to a project archive
+** TODO [#B] Describe and Implement Personal Workflow Project Actions
 What other actions do I do in a project?
-** TODO [#B] Move Org-Branch to Roam Functionality to Proper Place
-from webclipper to org-roam
-** TODO [#C] Org-Webclipper Functionality                      :enhancement:
-*** TODO [#B] One click browser page to webclipped-file
-**** References
-***** alphapapa/org-protocol-capture-html: Capture HTML from the browser selection into Emacs as org-mode content
-[[https://github.com/alphapapa/org-protocol-capture-html][alphapapa/org-protocol-capture-html: Capture HTML from the browser selection into Emacs as org-mode content]]
-Captured On: [2025-10-03 Fri 13:47]
-*** DONE [#B] Fix cj/move-org-branch-to-roam and assign keybinding
-CLOSED: [2025-10-12 Sun 11:32]
-*** DONE [#B] Gather all webclipper functionality together and add keymap
-CLOSED: [2025-10-12 Sun 11:30]
-This will move this along into a separate package. 
+*** TODO [#B] Rename and save any file to project/assets directory
+use case:
+- I receive a load of files in google-drive/dropbox share or email attachments.
+- They all belong to a project
+- Projects are structured with an assets or data folder (decide which one first)
+- I select the file in dirvish and hit a key,
+- It brings up completing read for the projects
+- After choosing one, it moves selected files into the proper assets/data folder
+*** TODO [#B] Override archiving a task to a project archive
+use case:
+- C-x a archives to a central archive.org file.
+- If I'm in a projectile/project.el project it overrides the destination to an resolved.org file
+- if the resolved.org file doesn't exist, it creates it.
+- If not in a projectile/project.el project, it falls back to the archive.org file. 
 ** WAITING [#C] Fix Org-msg Issue With Undo Outside                   :bug:
 *** 2025-09-19 Fri @ 17:45:35 -0500 Submitted PR Waiting for Merge
 https://github.com/jeremy-compostella/org-msg/pull/213
