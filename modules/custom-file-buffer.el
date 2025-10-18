@@ -5,6 +5,70 @@
 
 ;;; Code:
 
+(eval-when-compile (require 'keybindings)) ;; for custom-keymap
+(eval-when-compile (require 'ps-print)) ;; for ps-print variables
+(declare-function ps-print-buffer-with-faces "ps-print")
+(declare-function ps-print-region-with-faces "ps-print")
+
+;; ------------------------- Print Buffer As Postscript ------------------------
+;; prints using postscript for much nicer output
+
+(defvar cj/print-spooler-command 'auto
+  "Command used to send PostScript to the system print spooler.
+Set to a string to force a specific command (e.g., lpr or lp).
+Set to \\='auto to auto-detect once per session.")
+
+(defvar cj/print--spooler-cache nil
+  "Cached spooler command detected for the current Emacs session.")
+
+(defun cj/print--resolve-spooler ()
+  "Return the spooler command to use, auto-detecting and caching if needed."
+  (cond
+   ;; User-specified command
+   ((and (stringp cj/print-spooler-command)
+		 (> (length cj/print-spooler-command) 0))
+	(or (executable-find cj/print-spooler-command)
+		(user-error "Cannot print: spooler command '%s' not found in PATH"
+					cj/print-spooler-command))
+	cj/print-spooler-command)
+   ;; Auto-detect once per session
+   ((eq cj/print-spooler-command 'auto)
+	(or cj/print--spooler-cache
+		(let ((cmd (or (and (executable-find "lpr") "lpr")
+					   (and (executable-find "lp")  "lp"))))
+		  (unless cmd
+			(user-error "Cannot print: neither 'lpr' nor 'lp' found in PATH"))
+		  (setq cj/print--spooler-cache cmd)
+		  cmd)))
+   (t
+	(user-error "Invalid value for cj/print-spooler-command: %S"
+				cj/print-spooler-command))))
+
+;;;###autoload
+(defun cj/print-buffer-ps (&optional color)
+  "Print the buffer (or active region) as PostScript to the default printer.
+With prefix argument COLOR, print in color; otherwise print in monochrome.
+Sends directly to the system spooler with no header."
+  (interactive "P")
+  (unless (require 'ps-print nil t)
+	(user-error "Cannot print: ps-print library not found"))
+  (let* ((spooler (cj/print--resolve-spooler))
+		 (want-color (not (null color)))
+		 (have-region (use-region-p)))
+	(let ((ps-lpr-command spooler)
+		  (ps-printer-name nil)      ; default system printer
+		  (ps-lpr-switches nil)
+		  (ps-print-color-p want-color)
+		  (ps-use-face-background want-color)
+		  (ps-print-header nil))     ; no headers
+	  (if have-region
+		  (ps-print-region-with-faces (region-beginning) (region-end))
+		(ps-print-buffer-with-faces)))
+	(message "Sent %s to default printer via %s (%s)"
+			 (if have-region "region" "buffer")
+			 spooler
+			 (if want-color "color" "monochrome"))))
+
 ;; ------------------------- Buffer And File Operations ------------------------
 
 (defun cj/move-buffer-and-file (dir)
@@ -28,8 +92,7 @@
 			 (user-error "Buffer '%s' is not visiting a file!" (buffer-name))
 		   (read-string "Rename buffer and file (to new name): "
 						(file-name-nondirectory (buffer-file-name))))))
-  (let ((name (buffer-name))
-		(filename (buffer-file-name)))
+  (let ((filename (buffer-file-name)))
 	(if (get-buffer new-name)
 		(message "A buffer named '%s' already exists!" new-name)
 	  (progn
@@ -93,54 +156,24 @@ Do not save the deleted text in the kill ring."
   (delete-region (point) (point-min))
   (message "Buffer contents removed to the beginning of the buffer."))
 
-;; ------------------------- Print Buffer As Postscript ------------------------
-
-;; prints using postscript for much nicer output
-(use-package ps-print
-  :ensure nil                     ;; built-in
-  :config
-  (defun cj/print-buffer-ps ()
-	"Print the current buffer as PostScript (monochrome) to the system default printer.
-Sends directly to the spooler (no temp files), with no page header."
-	(interactive)
-	(let* ((spooler
-			(cond
-			 ((executable-find "lpr") "lpr")
-			 ((executable-find "lp")  "lp")
-			 (t (user-error "Cannot print: neither 'lpr' nor 'lp' found in PATH"))))
-		   ;; Configure spooler for this invocation
-		   (ps-lpr-command spooler)
-		   (ps-printer-name nil)      ;; nil => system default printer
-		   (ps-lpr-switches nil)
-		   ;; Force monochrome and ignore face backgrounds for this job
-		   (ps-print-color-p nil)
-		   (ps-use-face-background nil)
-		   ;; Ensure no headers
-		   (ps-print-header nil)
-		   (ps-header-lines 0)
-		   (ps-left-header nil)
-		   (ps-right-header nil))
-	  (ps-print-buffer-with-faces)
-	  (message "Sent print job via %s to default printer (no header)" spooler))))
-
 ;; --------------------------- Buffer And File Keymap --------------------------
 
 ;; Buffer & file operations prefix and keymap
-(define-prefix-command 'cj/buffer-and-file-map nil
-					   "Keymap for buffer-and-file operations.")
-(define-key cj/custom-keymap "b" 'cj/buffer-and-file-map)
-(define-key cj/buffer-and-file-map "m" 'cj/move-buffer-and-file)
-(define-key cj/buffer-and-file-map "r" 'cj/rename-buffer-and-file)
-(define-key cj/buffer-and-file-map "p" 'cj/print-buffer-ps)
-(define-key cj/buffer-and-file-map "d" 'cj/delete-buffer-and-file)
-(define-key cj/buffer-and-file-map "c" 'cj/copy-whole-buffer)
-(define-key cj/buffer-and-file-map "t" 'cj/clear-to-top-of-buffer)
-(define-key cj/buffer-and-file-map "b" 'cj/clear-to-bottom-of-buffer)
-(define-key cj/buffer-and-file-map "x" 'erase-buffer)
-(define-key cj/buffer-and-file-map "s" 'write-file) ;; save as :)
+(defvar-keymap cj/buffer-and-file-map
+  :doc "Keymap for buffer and file operations."
+  "m" #'cj/move-buffer-and-file
+  "r" #'cj/rename-buffer-and-file
+  "p" #'cj/print-buffer-ps
+  "d" #'cj/delete-buffer-and-file
+  "c" #'cj/copy-whole-buffer
+  "t" #'cj/clear-to-top-of-buffer
+  "b" #'cj/clear-to-bottom-of-buffer
+  "x" #'erase-buffer
+  "s" #'write-file ;; save as
 
-(define-key cj/buffer-and-file-map "l" 'cj/copy-link-to-buffer-file)
-(define-key cj/buffer-and-file-map "P" 'cj/copy-path-to-buffer-file-as-kill)
+  "l" #'cj/copy-link-to-buffer-file
+  "P" #'cj/copy-path-to-buffer-file-as-kill)
+(keymap-set cj/custom-keymap "b" 'cj/buffer-and-file-map)
 
 (provide 'custom-file-buffer)
 ;;; custom-file-buffer.el ends here.
