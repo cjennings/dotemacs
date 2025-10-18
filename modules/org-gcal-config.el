@@ -81,12 +81,12 @@
   (org-gcal-reload-client-id-secret))
 
 ;; Set up automatic initial sync on boot with error handling
-(run-with-idle-timer
- 5 nil
- (lambda ()
-   (condition-case err
-	   (org-gcal-sync)
-	 (error (message "org-gcal: Initial sync failed: %s" err)))))
+;;(run-with-idle-timer
+;; 2 nil
+;; (lambda ()
+;;   (condition-case err
+;;	   (org-gcal-sync)
+;;	 (error (message "org-gcal: Initial sync failed: %s" err)))))
 
 (provide 'org-gcal-config)
 ;;; org-gcal-config.el ends here
