@@ -1,5 +1,5 @@
 * Emacs Config Open Work
-** TODO [#A] Finish testing new org-webclipper
+** TODO [#A] Finish Testing New Org-webclipper
 ** TODO [#A] Document Goals, Specs, and Architecture Docs for this Config :maintenance:
 *** Emacs Config V2MOM
 Misc Requirements
@@ -72,7 +72,66 @@ Windows that hold should behave in the same way
 |---------+-----------------------------------------+---------+---------|
 | test-   | test suite named after method           |         |         |
 
-** TODO [#A] Test Failures Fixed
+** TODO [#A] Alert/Notifications Working                               :bug:
+*** TODO [#B] Fix Emacs Alarms for Scheduled Events                    :bug:
+**** 2025-06-03 Tue @ 15:12:51 -0500 Problem
+Emacs Alarm seems to sound off periodically after the alarm rang the first time.
+It should ring once at the beginning of the event, and that's it.
+**** 2025-06-28 Sat @ 12:42:19 -0500 User's Method for Alarms In Emacs
+This is more than I actually want, but leaving here for reference.
+#+BEGIN_QUOTE
+I am quite happy with the system I use, which does (I think) exactly what you want. It has two parts: an Emacs part that uses appt.el to schedule the reminders and a small shell program (I'm using Linux) that creates the popup + sound notification. Here I share the code for both parts.
+A) Code in ~/.emacs.d/init.el
+(require 'appt)
+(appt-activate t)
+(setq appt-message-warning-time 5) ; Show notification 5 minutes before event
+(setq appt-display-interval appt-message-warning-time) ; Disable multiple reminders
+(setq appt-display-mode-line nil)
+; Use appointment data from org-mode
+(defun my-org-agenda-to-appt ()
+(interactive)
+(setq appt-time-msg-list nil)
+(org-agenda-to-appt))
+; Update alarms when...
+; (1) ... Starting Emacs
+(my-org-agenda-to-appt)
+; (2) ... Everyday at 12:05am (useful in case you keep Emacs always on)
+(run-at-time "12:05am" (* 24 3600) 'my-org-agenda-to-appt)
+; (3) ... When TODO.txt is saved
+(add-hook 'after-save-hook
+'(lambda ()
+(if (string= (buffer-file-name) (concat (getenv "HOME") "/ideas/TODO.txt"))
+(my-org-agenda-to-appt))))
+; Display appointments as a window manager notification
+(setq appt-disp-window-function 'my-appt-display)
+(setq appt-delete-window-function (lambda () t))
+(setq my-appt-notification-app (concat (getenv "HOME") "/bin/appt-notification"))
+(defun my-appt-display (min-to-app new-time msg)
+(if (atom min-to-app)
+(start-process "my-appt-notification-app" nil my-appt-notification-app min-to-app msg)
+(dolist (i (number-sequence 0 (1- (length min-to-app))))
+(start-process "my-appt-notification-app" nil my-appt-notification-app (nth i min-to-app) (nth i msg)))))
+
+(;;B) Code in ~/bin/appt-notification
+#!/bin/sh
+TIME="$1"
+MSG="$2"
+notify-send -t 0 "<br>Appointment in $TIME minutes:<br>$MSG<br>"
+play "~/bin/alarm.wav"
+To get voice notifications you could replace the last line (play) with the following:
+espeak "Appointment in $TIME minutes: $MSG"
+#+END_QUOTE
+[[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
+Captured On: [2025-06-19 Thu 12:29]
+** TODO [#A] Org Reveal.js Presentations From Local Org        :enhancement:
+*** References
+https://revealjs.com/
+https://github.com/hakimel/reveal.js
+*** Steps from Zamansky's Videos
+https://www.youtube.com/watch?v=psDpCpcIVYs&t=10s
+**** Install Org Reveal
+
+** TODO [#B] Test Failures Fixed
 *** TODO [#A] Add All ERT Tests Into Separate Directory               :bug:
 **** List of ERT tests that need consolidation:
 Looks like there are only two files that have tests left:
@@ -413,59 +472,10 @@ Pull out the API key fetching, caching, and GPTel backend creation logic from ai
 
 ---
 
-** TODO [#B] Alert/Notifications Working                               :bug:
-*** TODO [#B] Fix Emacs Alarms for Scheduled Events                    :bug:
-**** 2025-06-03 Tue @ 15:12:51 -0500 Problem
-Emacs Alarm seems to sound off periodically after the alarm rang the first time.
-It should ring once at the beginning of the event, and that's it.
-**** 2025-06-28 Sat @ 12:42:19 -0500 User's Method for Alarms In Emacs
-This is more than I actually want, but leaving here for reference.
-#+BEGIN_QUOTE
-I am quite happy with the system I use, which does (I think) exactly what you want. It has two parts: an Emacs part that uses appt.el to schedule the reminders and a small shell program (I'm using Linux) that creates the popup + sound notification. Here I share the code for both parts.
-A) Code in ~/.emacs.d/init.el
-(require 'appt)
-(appt-activate t)
-(setq appt-message-warning-time 5) ; Show notification 5 minutes before event
-(setq appt-display-interval appt-message-warning-time) ; Disable multiple reminders
-(setq appt-display-mode-line nil)
-; Use appointment data from org-mode
-(defun my-org-agenda-to-appt ()
-(interactive)
-(setq appt-time-msg-list nil)
-(org-agenda-to-appt))
-; Update alarms when...
-; (1) ... Starting Emacs
-(my-org-agenda-to-appt)
-; (2) ... Everyday at 12:05am (useful in case you keep Emacs always on)
-(run-at-time "12:05am" (* 24 3600) 'my-org-agenda-to-appt)
-; (3) ... When TODO.txt is saved
-(add-hook 'after-save-hook
-'(lambda ()
-(if (string= (buffer-file-name) (concat (getenv "HOME") "/ideas/TODO.txt"))
-(my-org-agenda-to-appt))))
-; Display appointments as a window manager notification
-(setq appt-disp-window-function 'my-appt-display)
-(setq appt-delete-window-function (lambda () t))
-(setq my-appt-notification-app (concat (getenv "HOME") "/bin/appt-notification"))
-(defun my-appt-display (min-to-app new-time msg)
-(if (atom min-to-app)
-(start-process "my-appt-notification-app" nil my-appt-notification-app min-to-app msg)
-(dolist (i (number-sequence 0 (1- (length min-to-app))))
-(start-process "my-appt-notification-app" nil my-appt-notification-app (nth i min-to-app) (nth i msg)))))
-
-(;;B) Code in ~/bin/appt-notification
-#!/bin/sh
-TIME="$1"
-MSG="$2"
-notify-send -t 0 "<br>Appointment in $TIME minutes:<br>$MSG<br>"
-play "~/bin/alarm.wav"
-To get voice notifications you could replace the last line (play) with the following:
-espeak "Appointment in $TIME minutes: $MSG"
-#+END_QUOTE
-[[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
-Captured On: [2025-06-19 Thu 12:29]
 ** TODO [#B] Capture and Refile to Drill Files                :enhancement:
-This code actually exists in org-drill-config, but it doesn't seem to work
+*** TODO [#B] Clean Up Existing Drill Files
+- Ensure they're in the proper format
+*** TODO [#B] Empty Inbox Drill file and Remove
 ** TODO [#B] Decent HTML Exports From Org Mode With Inline CSS :enhancement:
 *** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
 [[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
@@ -755,18 +765,18 @@ Rather than just finding :EMAIL: matches, why not pass in key and have it find :
 - [ ] Verify birthdays showing on agenda after adding new contact
 - [ ] Link a contact to an org-roam node (cj/org-contacts-link-to-roam)
 *** TODO [#C] Finish Org-Contacts/Mail Modules                 :maintenance:
-** TODO [#B] Org Reveal.js Presentations from local org       :enhancement:
-*** References
-https://revealjs.com/
-https://github.com/hakimel/reveal.js
-*** Steps from Zamansky's Videos
-https://www.youtube.com/watch?v=psDpCpcIVYs&t=10s
-**** Install Org Reveal
-
 ** DOING [#B] Org Roam Fixes/Enhancements                      :enhancement:
 *** TODO [#B] New Org-Roam type: Book Notes
 Part of the integration with org-noter
 *** TODO [#B] Add Org Capture Template for Vocabulary Words
+** TODO [#B] Selecting Enter on FLAC File in Dirvish Causes Error
+cond: external-open: unsupported host environment
+** TODO [#B] Fill out Personal Workflow Project Actions
+- Rename and save any file to project/assets directory
+- Override archiving a task to a project archive
+What other actions do I do in a project?
+** TODO [#B] Move Org-Branch to Roam Functionality to Proper Place
+from webclipper to org-roam
 ** TODO [#C] Org-Webclipper Functionality                      :enhancement:
 *** TODO [#B] One click browser page to webclipped-file
 **** References
@@ -993,15 +1003,6 @@ Org-roam and its database sync run at startup. Load Org-roam only when Org is ac
 ** TODO [#C] Git Timemachine Litters Empty Buffers                    :bug:
 Don't choose a revision and you'll see a blank buffer that needs to be killed
 ** TODO [#C] Org Keyword Discolored Until Reapplying Theme            :bug:
-** TODO [#B] Selecting enter on flac file in dirvish causes error
-cond: external-open: unsupported host environment
-** TODO [#B] Emacs: EMMS: Fix music info in the modeline
-** TODO [#B] Fill out Personal Workflow Project Actions
-- Rename and save any file to project/assets directory
-- Override archiving a task to a project archive
-What other actions do I do in a project?
-** TODO [#B] Move org-branch to roam functionality to proper place
-from webclipper to org-roam
 * Emacs Config Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
 *** Specification
