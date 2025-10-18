@@ -3,18 +3,20 @@
 
 ;;; Commentary:
 ;; Convenience functions to report about the host environment
-
+;;
 ;;; Code:
 
-(require 'battery)
+;; for the byte-compiler/linter
+(declare-function battery-format "battery" (format data))
+(defvar battery-status-function)
+
 
 (defun env-laptop-p ()
-  "Return t if host is a laptop (i.e., has a battery), nil if not."
-  (when (and battery-status-function
-			 (not (string-match-p "N/A"
-								  (battery-format "%B"
-												  (funcall battery-status-function)))))
-	t))
+  "Non-nil if a battery is present."
+  (when (and (require 'battery nil 'noerror)
+			 battery-status-function)
+	(not (string= "N/A"
+				  (battery-format "%B" (funcall battery-status-function))))))
 
 (defun env-desktop-p ()
   "Return t if host is a laptop (has a battery), nil if not."
@@ -30,8 +32,8 @@
   (eq system-type 'berkeley-unix))
 
 (defun env-macos-p ()
-  "Return t if host system is Mac OS (darwin-based)."
-  (eq system-type "darwin"))
+  "Return non-nil if running on macOS (Darwin)."
+  (eq system-type 'darwin))
 
 (defun env-windows-p ()
   "Return t if host system is Windows."
@@ -54,8 +56,9 @@
 (defun cj/match-localtime-to-zoneinfo ()
   "Detect system timezone by comparing /etc/localtime with zoneinfo files.
 This replicates the shell command:
-find /usr/share/zoneinfo -type f ! -name 'posixrules' \\
-  -exec cmp -s {} /etc/localtime \\; -print | sed -e 's@.*/zoneinfo/@@' | head -n1"
+find /usr/share/zoneinfo -type f ! -name \='posixrules\=' \\
+  -exec cmp -s {} /etc/localtime \\;
+  -print | sed -e \='s@.*/zoneinfo/@@\=' | head -n1"
   (when (and (file-exists-p "/etc/localtime")
 			 (file-directory-p "/usr/share/zoneinfo"))
 	(let ((localtime-content
@@ -83,7 +86,7 @@ find /usr/share/zoneinfo -type f ! -name 'posixrules' \\
 		result))))
 
 (defun cj/detect-system-timezone ()
-  "Detect the system timezone in IANA format (e.g., 'America/Los_Angeles').
+  "Detect the system timezone in IANA format (e.g., \='America/Los_Angeles\=').
 Tries multiple methods in order of reliability:
 1. Environment variable TZ
 2. File comparison of /etc/localtime with zoneinfo database
@@ -108,9 +111,8 @@ Tries multiple methods in order of reliability:
 	   (when (string-match ".*/zoneinfo/\\(.+\\)" target)
 		 (match-string 1 target))))
 
-   ;; Default to nil - let org-gcal use its default
+   ;; Default to nil - lets org-gcal use its default
    nil))
-
 
 (provide 'host-environment)
 ;;; host-environment.el ends here.
