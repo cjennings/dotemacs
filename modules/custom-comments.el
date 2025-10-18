@@ -1,8 +1,19 @@
 ;;; custom-comments.el --- Custom Comment Operations -*- coding: utf-8; lexical-binding: t; -*-
-
-;;; Commentary:
 ;;
-
+;;; Commentary:
+;; This module provides custom comment formatting and manipulation utilities for code editing.
+;;
+;; Functions include:
+;; - deleting all comments in a buffer,
+;; - reformatting commented text into single-line paragraphs,
+;; - creating centered comment headers with customizable separator characters,
+;; - creating comment boxes around text
+;; - inserting hyphen-style centered comments.
+;;
+;; These utilities help create consistent, well-formatted code comments and section headers.
+;; Bound to keymap prefix: C-; C
+;;
+;;
 ;;; Code:
 
 (eval-when-compile (require 'keybindings)) ;; for keymapping below
