@@ -120,7 +120,7 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 ;; ------------------------ Validate Org Agenda Entries ------------------------
 
 (defun cj/check-org-agenda-invalid-timestamps ()
-  "Scan all files in `org-agenda-files' for invalid timestamps.
+  "Scan all files in \='org-agenda-files\=' for invalid timestamps.
 
 Checks DEADLINE, SCHEDULED, TIMESTAMP properties and inline timestamps in headline contents.
 
