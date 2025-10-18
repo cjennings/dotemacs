@@ -94,12 +94,13 @@ Intended to be called within an org capture template."
 		  "* %?\n:PROPERTIES:\n:calendar-id:craigmartinjennings@gmail.com\n:END:\n:org-gcal:\n%^T--%^T\n:END:\n\n"
 		  :jump-to-captured t)
 
-		  ("e" "Event" entry (file+headline schedule-file "Scheduled Events")
-		   "* %?%:description
-SCHEDULED: %^t%(cj/org-capture-event-content)
-Captured On: %U"
-		   :prepend t
-		   :prepare-finalize cj/org-capture-format-event-headline)
+;; trialing the use gcal appointments instead of local events
+;; 		  ("e" "Event" entry (file+headline schedule-file "Scheduled Events")
+;; 		   "* %?%:description
+;; SCHEDULED: %^t%(cj/org-capture-event-content)
+;; Captured On: %U"
+;; 		   :prepend t
+;; 		   :prepare-finalize cj/org-capture-format-event-headline)
 
 		  ("E" "Epub Text" entry (file+headline inbox-file "Inbox")
 		   "* %?
@@ -118,7 +119,7 @@ Captured On: %U" :prepend t)
 		   "* %?%:description
 #+BEGIN_QUOTE\n%i\n#+END_QUOTE
 [[%:link][%:description]]
-Captured On: %U\n" :prepend t)
+Captured On: %U\n" :prepend t :immediate-finish t)
 
 		  ("L" "Link" entry (file+headline inbox-file "Inbox")
 		   "* %?%:description
