@@ -2,7 +2,18 @@
 
 ;;; Commentary:
 ;;
-
+;; Utilities for changing text case.
+;; - cj/title-case-region: Title-cases the active region, or the current line if
+;;   no region. Follows common English rules: major words capitalized; minor words
+;;   (a, an, and, as, at, but, by, for, if, in, is, nor, of, on, or, so, the, to, yet)
+;;   lowercased except at the start or after :, !, or ?. Avoids capitalizing
+;;   immediately after separators like -, \, ' or .; downcases first, then fixes caps.
+;; - cj/upcase-dwim / cj/downcase-dwim: operate on the region, or on the symbol at
+;;   point when no region is active.
+;;
+;; Integration: remaps capitalize-region to cj/title-case-region and exposes a case
+;; submenu on cj/custom-keymap under "c": t (title), u (upcase), l (downcase).
+;;
 ;;; Code:
 
 (eval-when-compile (require 'keybindings))
