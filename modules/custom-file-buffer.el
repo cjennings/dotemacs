@@ -1,8 +1,19 @@
 ;;; custom-file-buffer.el --- Custom Buffer and File Operations -*- coding: utf-8; lexical-binding: t; -*-
-
-;;; Commentary:
 ;;
-
+;;; Commentary:
+;; This module provides custom buffer and file operations including PostScript
+;; printing capabilities.
+;;
+;; Functions include:
+;; - printing buffers or regions as PostScript to the default printer (with color support)
+;; - moving/renaming/deleting buffer files
+;; - copying file paths and file:// links to the kill ring
+;; - copying entire buffer contents
+;; - clearing buffer contents from point to top or bottom.
+;;
+;; The PostScript printing auto-detects the system print spooler (lpr or lp)
+;; and prints with face/syntax highlighting. Bound to keymap prefix ~C-; b~.
+;;
 ;;; Code:
 
 (eval-when-compile (require 'keybindings)) ;; for custom-keymap
