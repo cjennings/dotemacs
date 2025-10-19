@@ -14,22 +14,12 @@
 ;; - Playlist window toggling
 ;; - MPD as player
 ;;
-;; Enhancements applied:
-;; 1) Reorganized/grouped functions; unified helpers
-;; 3) Standardized error handling (user-error for user-facing errors; consistent messages)
-;; 4) Removed redundant wrappers in favor of binding to EMMS functions directly
-;;
-;; Bug fixes:
-;; - cj/music-playlist-edit validates file, and always opens it correctly even after save prompt
-;; - Keep cj/music-playlist-file in sync even when emms-playlist-clear is called elsewhere
-;;
 ;;; Code:
 
 (eval-when-compile (require 'emms))
-(eval-when-compile (require 'emms-source-playlist))
-(eval-when-compile (require 'emms-setup))
 (eval-when-compile (require 'emms-player-mpd))
 (eval-when-compile (require 'emms-playlist-mode))
+(eval-when-compile (require 'emms-setup))
 (eval-when-compile (require 'emms-source-file))
 (eval-when-compile (require 'emms-source-playlist))
 
@@ -105,7 +95,10 @@ Directories are suffixed with /; files are plain. Hidden dirs/files skipped."
   (let ((buffer (get-buffer-create cj/music-playlist-buffer-name)))
     (with-current-buffer buffer
       (unless (eq major-mode 'emms-playlist-mode)
-        (emms-playlist-mode)))
+        (emms-playlist-mode))
+      (setq emms-playlist-buffer-p t))
+    ;; Set this as the current EMMS playlist buffer
+    (setq emms-playlist-buffer buffer)
     buffer))
 
 (defun cj/music--m3u-file-tracks (m3u-file)
@@ -179,6 +172,7 @@ Signals user-error if missing or deleted."
    (list (read-directory-name "Add directory recursively: " cj/music-root nil t)))
   (unless (file-directory-p directory)
     (user-error "Not a directory: %s" directory))
+  (cj/music--ensure-playlist-buffer)
   (emms-add-directory-tree directory)
   (message "Added recursively: %s" directory))
 
@@ -196,6 +190,7 @@ Directories (trailing /) are added recursively; files added singly."
                       (substring choice-rel 0 -1)
                     choice-rel))
          (abs (expand-file-name cleaned cj/music-root)))
+    (cj/music--ensure-playlist-buffer)
     (if (file-directory-p abs)
         (cj/music-add-directory-recursive abs)
       (emms-add-file abs))
@@ -340,6 +335,7 @@ Dirs added recursively."
 	(interactive)
 	(unless (derived-mode-p 'dired-mode)
 	  (user-error "This command must be run in a Dired buffer"))
+	(cj/music--ensure-playlist-buffer)
 	(let ((files (if (use-region-p)
 					 (dired-get-marked-files)
 				   (list (dired-get-file-for-visit)))))
@@ -360,6 +356,8 @@ Dirs added recursively."
   :defer t
   :init
   (defvar cj/music-map (make-sparse-keymap) "Keymap for music commands.")
+  ;; Set buffer name BEFORE emms loads to prevent default buffer creation
+  (setq emms-playlist-buffer-name "*EMMS-Playlist*")
   :commands (emms-mode-line-mode)
   :config
   (require 'emms-setup)
@@ -368,10 +366,15 @@ Dirs added recursively."
   (require 'emms-source-file)
   (require 'emms-source-playlist)
 
-  (emms-all)
+  ;; Basic EMMS configuration - MUST be set before emms-all
+  (setq emms-source-file-default-directory cj/music-root)
+  (setq emms-playlist-default-major-mode 'emms-playlist-mode)
 
-  ;; Use only mpd to play
-  (add-to-list 'emms-player-list 'emms-player-mpd)
+  ;; Use only MPD as player - MUST be set before emms-all
+  (setq emms-player-list '(emms-player-mpd))
+
+  ;; Now initialize EMMS
+  (emms-all)
 
   ;; MPD configuration
   (setq emms-player-mpd-server-name "localhost")
@@ -380,11 +383,6 @@ Dirs added recursively."
   (condition-case err
 	  (emms-player-mpd-connect)
 	(error (message "Failed to connect to MPD: %s" err)))
-
-  ;; Basic EMMS configuration
-  (setq emms-source-file-default-directory cj/music-root)
-  (setq emms-playlist-buffer-name cj/music-playlist-buffer-name)
-  (setq emms-playlist-default-major-mode 'emms-playlist-mode)
 
   ;; note setopt as variable is customizeable
   (setopt emms-player-mpd-supported-regexp
@@ -413,11 +411,11 @@ Dirs added recursively."
         ("s"   . emms-stop)
         ("x"   . emms-shuffle)
         ("q"   . emms-playlist-mode-bury-buffer)
-        ;; Manipulation
-        ("a" . cj/music-fuzzy-select-and-add)
+		("a"   . cj/music-fuzzy-select-and-add)
+		;; Manipulation
         ("C" . cj/music-playlist-clear)
         ("L" . cj/music-playlist-load)
-		("e" . cj/music-playlist-edit)
+		("E" . cj/music-playlist-edit)
         ("R" . cj/music-playlist-reload)
         ("S" . cj/music-playlist-save)
         ;; Track reordering (bind directly to EMMS commands; no wrappers)
