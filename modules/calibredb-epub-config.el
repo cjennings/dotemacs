@@ -83,8 +83,12 @@
 (use-package nov
   :defer .5
   :after visual-fill-column
-  :mode ("\\.epub\\'" . nov-mode)
-  :hook (nov-mode . cj/nov-apply-preferences)
+  :mode
+  ("\\.epub\\'" . nov-mode)
+  ("\\.epub\\'" . epub-mode)
+  :hook
+  (nov-mode . cj/nov-apply-preferences)
+  (epub-mode . cj/nov-apply-preferences)
   :bind
   (:map nov-mode-map
 		("m" . bookmark-set)
