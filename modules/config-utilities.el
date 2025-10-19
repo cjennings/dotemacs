@@ -2,12 +2,41 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-;; Convenience utilities for working on Emacs configuration.
-
+;; Development and debugging utilities for Emacs configuration maintenance.
+;;
+;; Features include:
+;; - reloading and recompiling configuration (native/byte compilation)
+;; - inspecting loaded packages and features
+;; - reporting on Emacs version build configuration
+;; - validating org-agenda timestamp integrity
+;; - debugging org-alert timers
+;; - SQLite database tracing and finalizer debugging
+;; - auth-source cache management
+;;
+;; Key commands:
+;; - ~cj/reload-init-file~ to reload init.el.
+;; - ~cj/recompile-emacs-home~ to recompile all Elisp files.
+;; - ~cj/list-loaded-packages~ to show currently loaded packages.
+;; - ~cj/check-org-agenda-invalid-timestamps~ to scan for invalid timestamps.
+;; - ~cj/sqlite-tracing-enable~ to enable SQLite debugging.
+;; - ~cj/emacs-build-summary~ to build a buffer containing information about the Emacs version.
+;;
 ;;; Code:
 
-(require 'ert)
 (require 'cl-lib)
+
+;; Declare functions from lazy-loaded packages to suppress byte-compiler warnings.
+;; These packages are required at runtime when their respective functions are called.
+(declare-function find-lisp-find-files "find-lisp" (directory regexp))
+(declare-function org-element-parse-buffer "org-element" (&optional granularity visible-only))
+(declare-function org-element-map "org-element" (data types fun &optional info first-match no-recursion with-affiliated))
+(declare-function org-element-property "org-element" (property element))
+(declare-function org-time-string-to-absolute "org" (s &optional daynr prefer buffer pos))
+(declare-function org-alert-check "org-alert" nil)
+
+;; Declare variables from lazy-loaded packages
+(defvar org-agenda-files)
+(defvar org-ts-regexp)
 
 ;; ------------------------------ Reload Init File -----------------------------
 ;; it does what it says it does.
@@ -17,13 +46,94 @@
   (interactive)
   (load-file user-init-file))
 
+;; ----------------------------- Reset-Auth-Sources ----------------------------
+
+(defun cj/reset-auth-cache ()
+  "Clear Emacs auth-source cache."
+  (interactive)
+  (auth-source-forget-all-cached)
+  (message "Emacs auth-source cache cleared."))
+
+;; ---------------------------- Emacs Build Summary ----------------------------
+;; builds a buffer with information about this version of Emacs
+
+(defun cj--yes-no (flag)
+  "Return \"yes\" if FLAG is non-nil, otherwise return \"no\"."
+  (if flag "yes" "no"))
+
+(defun cj--format-build-time (tval)
+  "Return a human-readable build time from TVAL."
+  (cond
+   ((null tval) "unknown")
+   ((stringp tval) tval)
+   ((and (consp tval) (integerp (car tval)))
+	(format-time-string "%Y-%m-%d %H:%M:%S %Z" tval))
+   ((numberp tval)
+	(format-time-string "%Y-%m-%d %H:%M:%S %Z" (seconds-to-time tval)))
+   (t (format "%s" tval))))
+
+(defun cj/emacs-build-summary-string ()
+  "Return a concise multi-line string describing this Emacs build."
+  (let ((build-time (and (boundp 'emacs-build-time) emacs-build-time))
+		(build-system (and (boundp 'emacs-build-system) emacs-build-system))
+		(branch (and (boundp 'emacs-repository-branch) emacs-repository-branch))
+		(commit (and (boundp 'emacs-repository-version) emacs-repository-version))
+		(features (and (boundp 'system-configuration-features) system-configuration-features))
+		(options (and (boundp 'system-configuration-options) system-configuration-options)))
+	(concat
+	 (format "Version: %s\n" emacs-version)
+	 (format "System: %s\n" system-configuration)
+	 (format "Build date: %s\n" (cj--format-build-time build-time))
+	 (when build-system
+	   (format "Build system: %s\n" build-system))
+	 (when branch
+	   (format "Git branch: %s\n" (or branch "n/a")))
+	 (when commit
+	   (format "Git commit: %s\n" (or commit "n/a")))
+	 "\nCapabilities:\n"
+	 (format "- Native compilation: %s\n"
+			 (cj--yes-no (and (fboundp 'native-comp-available-p)
+							  (native-comp-available-p))))
+	 (format "- Dynamic modules: %s\n"
+			 (cj--yes-no (and (boundp 'module-file-suffix)
+							  module-file-suffix)))
+	 (format "- GnuTLS: %s\n"
+			 (cj--yes-no (and (fboundp 'gnutls-available-p)
+							  (gnutls-available-p))))
+	 (format "- libxml2: %s\n"
+			 (cj--yes-no (fboundp 'libxml-parse-html-region)))
+	 (format "- ImageMagick: %s\n"
+			 (cj--yes-no (and (fboundp 'image-type-available-p)
+							  (image-type-available-p 'imagemagick))))
+	 (format "- SQLite: %s\n"
+			 (cj--yes-no (and (fboundp 'sqlite-available-p)
+							  (sqlite-available-p))))
+	 (when features
+	   (format "\nConfigured features:\n%s\n" features))
+	 (when options
+	   (format "\nConfiguration arguments:\n%s\n" options)))))
+
+(defun cj/emacs-build-summary ()
+  "Display a buffer with the Emacs build summary."
+  (interactive)
+  (let ((buf (get-buffer-create "*Emacs-Build-Summary*")))
+	(with-current-buffer buf
+	  (setq buffer-read-only nil)
+	  (erase-buffer)
+	  (insert (cj/emacs-build-summary-string))
+	  (goto-char (point-min))
+	  (help-mode)
+	  (setq-local truncate-lines nil))
+	(pop-to-buffer buf)))
+
 ;; ---------------------------- Recompile Emacs Home ---------------------------
 ;; deletes all .elc and .eln files in user-emacs-directory, then compiles
 ;; all emacs-lisp files natively if supported, or byte-compiles them if not.
 
+(defvar comp-async-report-warnings-errors)
+
 (defun cj/recompile-emacs-home()
   "Delete all compiled files in the Emacs home before recompiling.
-
 Recompile natively when supported, otherwise fall back to byte compilation."
   (interactive)
   (let* ((native-comp-supported (boundp 'native-compile-async))
@@ -45,7 +155,8 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 			(delete-directory elt-dir t t))
 		  (message compile-message user-emacs-directory)
 		  (if native-comp-supported
-			  (let ((comp-async-report-warnings-errors nil))
+			  (progn
+				(setq comp-async-report-warnings-errors nil)
 				(native-compile-async user-emacs-directory 'recursively))
 			(byte-recompile-directory user-emacs-directory 0)))
 	  (message "Cancelled recompilation of %s" user-emacs-directory))))
@@ -84,14 +195,14 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 	(pop-to-buffer (current-buffer))
 
 	(insert "* Live Packages Exploration\n\n")
-	(insert (format "%s total packages currently loaded\n"
-					(length cj--loaded-file-paths)))
 
 	;; Extract data from builtin variable `load-history'.
 	(setq cj--loaded-file-paths
 		  (seq-filter #'stringp
 					  (mapcar #'car load-history)))
-	(cl-sort cj--loaded-file-paths 'string-lessp)
+	(setq cj--loaded-file-paths (cl-sort cj--loaded-file-paths 'string-lessp))
+	(insert (format "%s total packages currently loaded\n"
+					(length cj--loaded-file-paths)))
 	(cl-loop for file in cj--loaded-file-paths
 			 do (insert "\n" file))
 
@@ -111,7 +222,7 @@ Recompile natively when supported, otherwise fall back to byte compilation."
                     (length features)))
 
     (let ((features-vec (apply 'vector features)))
-      (cl-sort features-vec 'string-lessp)
+      (setq features-vec (cl-sort features-vec 'string-lessp))
       (cl-loop for x across features-vec
                do (insert (format "  - %-25s: %s\n" x
 								  (locate-library (symbol-name x))))))
@@ -121,11 +232,11 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 
 (defun cj/check-org-agenda-invalid-timestamps ()
   "Scan all files in \='org-agenda-files\=' for invalid timestamps.
-
-Checks DEADLINE, SCHEDULED, TIMESTAMP properties and inline timestamps in headline contents.
-
-Generates an Org-mode report buffer with links to problematic entries, property/type, and raw timestamp string."
+Checks DEADLINE, SCHEDULED, TIMESTAMP properties and inline timestamps in
+headline contents. Generates an Org-mode report buffer with links to problematic
+entries, property/type, and raw timestamp string."
   (interactive)
+  (require 'org)
   (require 'org-element)
   (let ((report-buffer (get-buffer-create "*Org Invalid Timestamps Report*")))
 	(with-current-buffer report-buffer
@@ -169,19 +280,11 @@ Generates an Org-mode report buffer with links to problematic entries, property/
 		  (with-current-buffer report-buffer (insert "\n")))))
 	(pop-to-buffer report-buffer)))
 
-;; ----------------------------- Reset-Auth-Sources ----------------------------
-
-(defun cj/reset-auth-cache ()
-  "Clear Emacs auth-source cache."
-  (interactive)
-  (auth-source-forget-all-cached)
-  (message "Emacs auth-source cache cleared."))
-
 ;; --------------------------- Org-Alert-Check Timers --------------------------
 ;; Utility to list timers running org-alert-check
 
 (defun cj/org-alert-list-timers ()
-  "List all active timers running `org-alert-check' with next run time in human-readable form."
+  "List all active timers running `org-alert-check' with next run time."
   (interactive)
   (let ((timers (cl-remove-if-not
 				 (lambda (timer)
@@ -200,11 +303,13 @@ Generates an Org-mode report buffer with links to problematic entries, property/
 
 ;; ------------------------------- Sqlite Tracing ------------------------------
 
-
 (defvar cj/sqlite-tracing-enabled nil)
 (defvar cj/sqlite--db-origins (make-hash-table :test 'eq :weakness 'key))
 
 (defun cj/capture-backtrace ()
+  "Capture and return the current stack trace as a list of function names.
+Returns a list containing function names from the backtrace, or a fallback
+message if backtrace capture fails or is unavailable."
   (condition-case nil
 	  (if (fboundp 'backtrace-frames)
 		  (mapcar (lambda (fr) (car fr)) (backtrace-frames))
@@ -212,9 +317,15 @@ Generates an Org-mode report buffer with links to problematic entries, property/
 	(error (list "failed-to-capture-backtrace"))))
 
 (defun cj/take (n xs)
+  "Return the first N elements from list XS.
+If XS has fewer than N elements, return all elements."
   (cl-subseq xs 0 (min n (length xs))))
 
 (defun cj--ad-sqlite-open (orig file &rest opts)
+  "Advice function wrapping \='sqlite-open\=' to track database origins.
+ORIG is the original function, FILE is the database file path, and OPTS are
+additional options. Records database handle with metadata (file, time, location,
+and backtrace) in \='cj/sqlite--db-origins\=' for debugging purposes."
   (let ((db (apply orig file opts)))
 	(puthash db
 			 (list :file file
@@ -226,6 +337,10 @@ Generates an Org-mode report buffer with links to problematic entries, property/
 	db))
 
 (defun cj--ad-sqlite-close (orig db &rest args)
+  "Advice function wrapping \='sqlite-close\=' to log database closure.
+ORIG is the original function, DB is the database handle, and ARGS are
+additional arguments. Logs information about when and where the database was
+originally opened before closing it."
   (let ((info (gethash db cj/sqlite--db-origins)))
 	(when info
 	  (message "cj/sqlite: closing %s opened at %s by %s"
@@ -235,6 +350,11 @@ Generates an Org-mode report buffer with links to problematic entries, property/
   (apply orig db args))
 
 (defun cj--ad-set-finalizer (orig obj fn)
+  "Advice function wrapping \='set-finalizer\=' to debug finalizer failures.
+ORIG is the original function, OBJ is the object to finalize, and FN is the
+finalizer function. Wraps the finalizer to capture and log detailed diagnostic
+information (creation time, location, call stack, and SQLite database info if
+applicable) when finalizers fail, then re-signals the error."
   (let* ((origin (list :time (current-time-string)
 					   :where (or load-file-name buffer-file-name)
 					   :stack (cj/capture-backtrace)
