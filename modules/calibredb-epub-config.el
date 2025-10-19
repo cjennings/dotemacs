@@ -42,6 +42,12 @@
 
 (require 'user-constants)  ;; for books-dir
 
+;; Declare functions from lazy-loaded packages
+(declare-function calibredb-find-create-search-buffer "calibredb" ())
+(declare-function calibredb-search-keyword-filter "calibredb" (keyword))
+(declare-function cj/open-file-with-command "system-utils" (command))
+(declare-function visual-fill-column-mode "visual-fill-column" (&optional arg))
+
 ;; -------------------------- CalibreDB Ebook Manager --------------------------
 
 (use-package calibredb
@@ -129,7 +135,7 @@
 (defun cj/nov-center-images ()
   "Center images in the current Nov buffer without modifying text.
 
-Use line-prefix and wrap-prefix with a space display property aligned to a
+Use `line-prefix' and `wrap-prefix' with a space display property aligned to a
 computed column based on the window text area width."
   (let ((inhibit-read-only t))
 	;; Clear any prior centering prefixes first (fresh render usually makes this
