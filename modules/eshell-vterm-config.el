@@ -127,11 +127,11 @@
 (use-package eshell-toggle
   :after eshell
   :custom
-  (eshell-toggle-size-fraction 3)
+  (eshell-toggle-size-fraction 2)
   (eshell-toggle-run-command nil)
   (eshell-toggle-init-function #'eshell-toggle-init-eshell)
   :bind
-  ("<f12>" . eshell-toggle))
+  ("C-<f12>" . eshell-toggle))
 
 (use-package xterm-color
   :defer .5
@@ -195,7 +195,15 @@
 	(hl-line-mode -1)
 	(display-line-numbers-mode -1))
 
-  :hook (vterm-mode . cj/turn-off-chrome-for-vterm)
+  (defun cj/vterm-launch-tmux ()
+	"Automatically launch tmux in vterm if not already in a tmux session."
+	(let ((proc (get-buffer-process (current-buffer))))
+	  (when (and proc
+				 (not (getenv "TMUX"))) ; Check if not already in tmux
+		(vterm-send-string "tmux\n"))))
+  :hook
+  ((vterm-mode . cj/turn-off-chrome-for-vterm)
+   (vterm-mode . cj/vterm-launch-tmux))
   :bind
   (:map vterm-mode-map
 		("<f12>"   . nil)
@@ -211,7 +219,7 @@
 (use-package vterm-toggle
   :defer .5
   :bind
-  ("C-<f12>" . vterm-toggle)
+  ("<f12>" . vterm-toggle)
   :config
   (setq vterm-toggle-fullscreen-p nil)
   (add-to-list 'display-buffer-alist
@@ -223,7 +231,7 @@
 				 (display-buffer-reuse-window display-buffer-at-bottom)
 				 (dedicated . t) ;dedicated is supported in Emacs 27+
 				 (reusable-frames . visible)
-				 (window-height . 0.25))))
+				 (window-height . 0.7))))
 
 (provide 'eshell-vterm-config)
 ;;; eshell-vterm-config.el ends here.
