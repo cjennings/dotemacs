@@ -1,7 +1,17 @@
 ;;; custom-text-enclose.el ---  -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
-;;
+
+;; This module provides functions to surround words or regions with custom strings, and to append or prepend text to lines.
+
+;; It includes three main functions:
+;; - surround word or region with a user-specified string
+;; - append text to the end of lines
+;; - prepend text to the beginning of lines
+
+;; All functions work on both the active region and the entire buffer when no region is selected.
+
+;; Bound to keymap prefix C-; s
 
 ;;; Code:
 
@@ -61,10 +71,10 @@
 ;; Surround, append, prepend prefix keymap
 (define-prefix-command 'cj/enclose-map nil
 					   "Keymap for enclosing text: surrounding, appending, and prepending.")
-(define-key cj/custom-keymap "s" 'cj/enclose-map)
-(define-key cj/enclose-map "s" 'cj/surround-word-or-region)
-(define-key cj/enclose-map "a" 'cj/append-to-lines-in-region-or-buffer)
-(define-key cj/enclose-map "p" 'cj/prepend-to-lines-in-region-or-buffer)
+(keymap-set cj/custom-keymap "s" #'cj/enclose-map)
+(keymap-set cj/enclose-map "s" #'cj/surround-word-or-region)
+(keymap-set cj/enclose-map "a" #'cj/append-to-lines-in-region-or-buffer)
+(keymap-set cj/enclose-map "p" #'cj/prepend-to-lines-in-region-or-buffer)
 
 (provide 'custom-text-enclose)
 ;;; custom-text-enclose.el ends here.
