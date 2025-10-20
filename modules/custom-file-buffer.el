@@ -16,7 +16,8 @@
 ;;
 ;;; Code:
 
-(eval-when-compile (require 'keybindings)) ;; for custom-keymap
+;; cj/custom-keymap defined in keybindings.el
+(eval-when-compile (defvar cj/custom-keymap))
 (eval-when-compile (require 'ps-print)) ;; for ps-print variables
 (declare-function ps-print-buffer-with-faces "ps-print")
 (declare-function ps-print-region-with-faces "ps-print")
