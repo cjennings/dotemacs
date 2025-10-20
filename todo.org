@@ -140,6 +140,19 @@ https://github.com/hakimel/reveal.js
 https://www.youtube.com/watch?v=psDpCpcIVYs&t=10s
 **** Install Org Reveal
 
+** TODO [#B] Replace customization constructions in modules            :bug:
+Files using defcustom or other customization-related constructions:
+- media-utils.el
+- external-open.el
+- dashboard-config.el
+- lipsum-generator.el
+- ui-config.el
+- ai-conversations.el
+- video-audio-recording.el
+- jumper.el
+- local-repository.el
+- lorem-generator.el
+- eww-config.el
 ** TODO [#B] Test Failures Fixed
 *** TODO [#A] Add All ERT Tests Into Separate Directory               :bug:
 **** List of ERT tests that need consolidation:
