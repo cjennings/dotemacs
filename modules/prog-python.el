@@ -12,7 +12,6 @@
 
 (defun cj/python-setup ()
   "My default code preferences for Python coding."
-  (hs-minor-mode)                     ;; folding
   (company-mode)                      ;; completion framework
   (flyspell-prog-mode)                ;; spell check comments
   (superword-mode)                    ;; see-this-as-one-word
