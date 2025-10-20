@@ -67,6 +67,16 @@
   (treesit-auto-install t)
   ;;  (treesit-auto-install 'prompt) ;; optional prompt instead of auto-install
   :config
+  (require 'cl-lib)
+  ;; Pin Go grammar to v0.19.1 for compatibility with Emacs 30.2 font-lock queries
+  (let* ((go-idx (cl-position-if (lambda (recipe)
+                                    (eq (treesit-auto-recipe-lang recipe) 'go))
+                                  treesit-auto-recipe-list))
+         (go-recipe (and go-idx (nth go-idx treesit-auto-recipe-list))))
+    (when go-recipe
+      ;; Directly modify the slot value using aset (struct fields are vectors internally)
+      (aset go-recipe 6 "v0.19.1")))  ; slot 6 is :revision
+
   (treesit-auto-add-to-auto-mode-alist 'all)
   (global-treesit-auto-mode))
 
@@ -74,11 +84,9 @@
 
 ;; BICYCLE
 ;; cycle visibility of outline sections and code blocks.
-;; additionally it can make use of the hideshow package.
 (use-package bicycle
   :after outline
-  :hook ((prog-mode . outline-minor-mode)
-		 (prog-mode . hs-minor-mode))
+  :hook (prog-mode . outline-minor-mode)
   :bind (:map outline-minor-mode-map
 			  ("C-<tab>" . bicycle-cycle)
 			  ;; backtab is shift-tab
