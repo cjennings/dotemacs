@@ -1,7 +1,19 @@
 ;;; custom-whitespace.el ---  -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
-;;
+
+;; This module provides whitespace manipulation operations for cleaning and transforming whitespace in text.
+
+;; Functions include:
+
+;; - removing leading and trailing whitespace
+;; - collapsing multiple spaces to single spaces
+;; - deleting blank lines
+;; - converting whitespace to hyphens.
+
+;; All operations work on the current line, active region, or entire buffer depending on context.
+
+;; Bound to keymap prefix C-; w
 
 ;;; Code:
 
@@ -10,7 +22,6 @@
 
 (defun cj/remove-leading-trailing-whitespace ()
   "Remove leading and trailing whitespace in a region, line, or buffer.
-
 When called interactively:
 - If a region is active, operate on the region.
 - If called with a \[universal-argument] prefix, operate on the entire buffer.
@@ -32,7 +43,6 @@ When called interactively:
 
 (defun cj/collapse-whitespace-line-or-region ()
   "Collapse whitespace to one space in the current line or active region.
-
 Ensure there is exactly one space between words and remove leading and trailing whitespace."
   (interactive)
   (save-excursion
@@ -56,7 +66,6 @@ Ensure there is exactly one space between words and remove leading and trailing 
 
 (defun cj/delete-blank-lines-region-or-buffer (start end)
   "Delete blank lines between START and END.
-
 Treat blank lines as lines that contain nothing or only whitespace.
 Operate on the active region when one exists.
 Prompt before operating on the whole buffer when no region is selected.
@@ -80,7 +89,6 @@ Restore point to its original position after deletion."
 
 (defun cj/hyphenate-whitespace-in-region (start end)
   "Replace runs of whitespace between START and END with hyphens.
-
 Operate on the active region designated by START and END."
   (interactive "*r")
   (if (use-region-p)
@@ -96,11 +104,11 @@ Operate on the active region designated by START and END."
 ;; Whitespace operations prefix and keymap
 (define-prefix-command 'cj/whitespace-map nil
 					   "Keymap for whitespace operations.")
-(define-key cj/custom-keymap "w" 'cj/whitespace-map)
-(define-key cj/whitespace-map "r" 'cj/remove-leading-trailing-whitespace)
-(define-key cj/whitespace-map "c" 'cj/collapse-whitespace-line-or-region)
-(define-key cj/whitespace-map "l" 'cj/delete-blank-lines-region-or-buffer)
-(define-key cj/whitespace-map "-" 'cj/hyphenate-whitespace-in-region)
+(keymap-set cj/custom-keymap "w" #'cj/whitespace-map)
+(keymap-set cj/whitespace-map "r" #'cj/remove-leading-trailing-whitespace)
+(keymap-set cj/whitespace-map "c" #'cj/collapse-whitespace-line-or-region)
+(keymap-set cj/whitespace-map "l" #'cj/delete-blank-lines-region-or-buffer)
+(keymap-set cj/whitespace-map "-" #'cj/hyphenate-whitespace-in-region)
 
 (provide 'custom-whitespace)
 ;;; custom-whitespace.el ends here.
