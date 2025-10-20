@@ -23,25 +23,30 @@
 ;;
 ;;; Code:
 
-(require 'cl-lib)
-(require 'host-environment)
-(require 'user-constants)
+(declare-function dired-get-file-for-visit "dired" ())
+(declare-function dired-file-name-at-point "dired" ())
+(declare-function env-linux-p "host-environment" ())
+(declare-function env-macos-p "host-environment" ())
+(declare-function env-windows-p "host-environment" ())
+(declare-function w32-shell-execute "w32fns" (operation document &optional parameters show-flag))
 
 ;;; -------------------------------- Eval Buffer --------------------------------
 
 (defun cj/eval-buffer-with-confirmation-or-error-message ()
   "Evaluate the buffer and display a message."
   (interactive)
-  (let ((result (eval-buffer)))
-    (if (not (eq result 'error))
-        (message "Buffer evaluated.")
-      (message "error occurred during evaluation: %s" result))))
-(global-set-key (kbd "C-c b")   'cj/eval-buffer-with-confirmation-or-error-message)
+  (condition-case err
+      (progn
+        (eval-buffer)
+        (message "Buffer evaluated."))
+    (error
+     (message "Error occurred during evaluation: %s" (error-message-string err)))))
+(keymap-global-set "C-c b" #'cj/eval-buffer-with-confirmation-or-error-message)
 
 ;;; ---------------------------- Edit A File With Sudo ----------------------------
 
 (use-package sudo-edit
-  :defer 1
+  :commands sudo-edit
   :bind ("C-x M-f" . sudo-edit))
 
 ;;; ------------------------------- Open File With ------------------------------
@@ -55,8 +60,7 @@ fully detached from Emacs."
   (let* ((file (cond
                 ;; In dired/dirvish mode, get file at point
                 ((derived-mode-p 'dired-mode)
-                 (require 'dired)
-                 (dired-get-file-for-visit))
+				 (dired-get-file-for-visit))
                 ;; In a regular file buffer
                 (buffer-file-name
                  buffer-file-name)
@@ -93,7 +97,7 @@ Signals an error if the host is unsupported."
    ((env-linux-p)   "xdg-open")
    ((env-macos-p)   "open")
    ((env-windows-p) "start")
-   (t (error "external-open: unsupported host environment"))))
+   (t (error "External-open: unsupported host environment"))))
 
 (defun cj/xdg-open (&optional filename)
   "Open FILENAME (or the file at point) with the OS default handler.
@@ -119,28 +123,29 @@ Logs output and exit code to buffer *external-open.log*."
 
 ;;; ------------------------------ Server Shutdown ------------------------------
 
-(defun server-shutdown ()
+(defun cj/server-shutdown ()
   "Save buffers, kill Emacs and shutdown the server."
   (interactive)
   (save-some-buffers)
   (kill-emacs))
-(global-set-key (kbd "C-<f10>") #'server-shutdown)
+(keymap-global-set "C-<f10>" #'cj/server-shutdown)
 
 ;;; ---------------------------- History Persistence ----------------------------
 ;; Persist history over Emacs restarts
 
 (use-package savehist
   :ensure nil  ; built-in
-  :init
-  (savehist-mode)
   :config
+  (savehist-mode)
   (setq savehist-file  "~/.emacs.d/.emacs-history"))
 
 ;;; ------------------------ List Buffers With Nerd Icons -----------------------
 
-(global-set-key [remap list-buffers] #'ibuffer)
+;; Remap list-buffers to ibuffer (built-in). Keybinding is separate from
+;; nerd-icons-ibuffer package below, which only adds icons to ibuffer.
+(keymap-global-set "<remap> <list-buffers>" #'ibuffer)
+
 (use-package nerd-icons-ibuffer
-  :defer 0.5
   :after nerd-icons
   :hook (ibuffer-mode . nerd-icons-ibuffer-mode)
   :config
@@ -155,14 +160,12 @@ Logs output and exit code to buffer *external-open.log*."
           " on " system-configuration ".\n"))
 (defvar scratch-greet
   (concat ";; Emacs ♥ you, " user-login-name ". Happy Hacking!\n\n"))
-(setq initial-scratch-message
-      (concat scratch-emacs-version-and-system scratch-greet))
-(setq initial-major-mode 'org-mode)
+(setopt initial-scratch-message
+        (concat scratch-emacs-version-and-system scratch-greet))
 
 ;;; --------------------------------- Dictionary --------------------------------
 
 (use-package quick-sdcv
-  :defer 1
   :bind
   ("C-h d" . quick-sdcv-search-input)
   :custom
@@ -185,7 +188,6 @@ This does so without echoing in the minibuffer."
 
 (use-package proced
   :ensure nil ;; built-in
-  :defer 0.5
   :commands proced
   :bind ("C-M-p" . proced)
   :custom
