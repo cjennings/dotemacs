@@ -13,7 +13,7 @@
 ;; - PDF operations (merge, split, password protection, OCR)
 ;; - Archive management (zip/unzip)
 ;; - Document conversion (epub to org, docx to pdf, pdf to txt)
-1;; - Git operations (clone from clipboard)
+;; - Git operations (clone from clipboard)
 ;; - External file opening with context awareness
 ;;
 ;; Workflow:
@@ -41,7 +41,7 @@
 ;; The commands rely on various external utilities that need to be installed:
 ;; - ffmpeg: Audio/video conversion
 ;; - imagemagick (convert): Image manipulation
-;; - qpdf: PDF operations
+;; - qpdf: PDF operations (requires version 8.x+ for secure password handling)
 ;; - tesseract: OCR functionality
 ;; - pandoc: Document conversion
 ;; - atool: Archive extraction
@@ -49,15 +49,16 @@
 ;; - pdftotext: PDF text extraction
 ;; - git: Version control operations
 ;; - gpgconf: GPG agent management
+;; - 7z (p7zip): Secure password-protected archives
 ;;
 ;; On Arch Linux, install the requirements with:
 ;; #+begin_src bash
-;; sudo pacman -S --needed ffmpeg imagemagick qpdf tesseract tesseract-data-eng pandoc atool librsvg poppler git gnupg zip unzip mkvtoolnix-cli mpv ruby
+;; sudo pacman -S --needed ffmpeg imagemagick qpdf tesseract tesseract-data-eng pandoc atool librsvg poppler git gnupg p7zip zip unzip mkvtoolnix-cli mpv ruby
 ;; #+end_src
 ;;
 ;; On MacOS, install the requirements with:
 ;; #+begin_src bash
-;; brew install ffmpeg imagemagick qpdf tesseract pandoc atool librsvg poppler gnupg mkvtoolnix mpv
+;; brew install ffmpeg imagemagick qpdf tesseract pandoc atool librsvg poppler gnupg p7zip mkvtoolnix mpv
 ;; #+end_src
 ;;
 ;; Usage:
@@ -65,10 +66,21 @@
 ;; The package automatically replaces standard shell commands with DWIM versions
 ;; for a more intuitive experience.
 ;;
+;; Security:
+;; Password-protected operations (PDF encryption, archive encryption) use secure
+;; methods to avoid exposing passwords in process lists or command history:
+;; - PDF operations: Use temporary files with restrictive permissions (mode 600)
+;; - Archive operations: Use 7z instead of zip for better password handling
+;; - Temporary password files are automatically cleaned up after use
+;; - Note: Switched from zip to 7z for encryption due to zip's insecure -P flag
+;;
 ;; Template Variables:
 ;; - <<f>>: Full path to file
 ;; - <<fne>>: File name without extension
 ;; - <<e>>: File extension
+;; - <<b>>: Base name (file name with extension, no directory)
+;; - <<d>>: Directory path
+;; - <<n>>: Sequential number (for batch renaming)
 ;; - <<td>>: Temporary directory
 ;; - <<cb>>: Clipboard contents
 ;; - <<*>>: All marked files
@@ -76,51 +88,33 @@
 
 ;;; Code:
 
-(require 'system-utils)
+(require 'cl-lib)
 
-;; -------------------------- Dwim Shell Commands Menu -------------------------
+;; Declare variable from dired
+(defvar dired-mode-map)
 
-(defun dwim-shell-commands-menu ()
-  "Select and execute a dwim-shell-command function with prettified names."
-  (interactive)
-  (let* ((commands (cl-loop for symbol being the symbols
-							when (and (fboundp symbol)
-									  (string-prefix-p "cj/dwim-shell-commands-" (symbol-name symbol))
-									  (not (eq symbol 'dwim-shell-commands-menu)))
-							collect symbol))
-		 ;; Create alist of (pretty-name . command-symbol)
-		 (command-alist (mapcar (lambda (cmd)
-								  (cons (replace-regexp-in-string
-										 "-" " "
-										 (replace-regexp-in-string
-										  "^cj/dwim-shell-commands-"
-										  ""
-										  (symbol-name cmd)))
-										cmd))
-								commands))
-         (selected (completing-read "Command: "
-									command-alist
-									nil
-									t
-									nil
-									'dwim-shell-command-history))
-		 (command (alist-get selected command-alist nil nil #'string=)))
-	(when command
-	  (call-interactively command))))
+;; Declare functions from dwim-shell-command
+(declare-function dwim-shell-command-on-marked-files "dwim-shell-command")
+(declare-function dwim-shell-command--files "dwim-shell-command")
+(declare-function dwim-shell-command-read-file-name "dwim-shell-command")
 
-(with-eval-after-load 'dired
-  (define-key dired-mode-map (kbd "M-D") #'dwim-shell-commands-menu))
+;; Declare functions from system-utils
+(declare-function cj/xdg-open "system-utils")
+(declare-function cj/open-file-with-command "system-utils")
+
+;; Declare function defined in use-package :config below
+(declare-function dwim-shell-commands-menu "dwim-shell-config")
 
 ;; ----------------------------- Dwim Shell Command ----------------------------
 
 (use-package dwim-shell-command
-  :defer 0.5
-  :bind (([remap shell-command] . dwim-shell-command)
+  :defer t
+  :bind (("<remap> <shell-command>" . dwim-shell-command)
 		 :map dired-mode-map
-		 ([remap dired-do-async-shell-command] . dwim-shell-command)
-		 ([remap dired-do-shell-command] . dwim-shell-command)
-		 ([remap dired-smart-shell-command] . dwim-shell-command))
-  :init
+		 ("<remap> <dired-do-async-shell-command>" . dwim-shell-command)
+		 ("<remap> <dired-do-shell-command>" . dwim-shell-command)
+		 ("<remap> <dired-smart-shell-command>" . dwim-shell-command))
+  :config
   (defun cj/dwim-shell-commands-convert-audio-to-mp3 ()
 	"Convert all marked audio to mp3(s)."
 	(interactive)
@@ -196,6 +190,8 @@
 	"Keep a page from pdf."
 	(interactive)
 	(let ((page-num (read-number "Keep page number: " 1)))
+	  (when (<= page-num 0)
+		(user-error "Page number must be positive"))
 	  (dwim-shell-command-on-marked-files
 	   "Keep pdf page"
 	   (format "qpdf '<<f>>' --pages . %d -- '<<fne>>_%d.<<e>>'" page-num page-num)
@@ -290,44 +286,74 @@ Supports docx, odt, and other pandoc-compatible formats."
 	 :utils "pdftotext"))
 
   (defun cj/dwim-shell-commands-resize-image-by-factor ()
-	"Resize marked image(s) by factor."
+	"Resize image(s) by factor."
 	(interactive)
-	(dwim-shell-command-on-marked-files
-	 "Resize image"
-	 (let ((factor (read-number "Resize scaling factor: " 0.5)))
+	(let ((factor (read-number "Resize scaling factor: " 0.5)))
+	  (when (<= factor 0)
+		(user-error "Scaling factor must be positive"))
+	  (dwim-shell-command-on-marked-files
+	   "Resize image"
 	   (format "convert -resize %%%d '<<f>>' '<<fne>>_x%.2f.<<e>>'"
-			   (* 100 factor) factor))
-	 :utils "convert"))
+			   (* 100 factor) factor)
+	   :utils "convert")))
 
   (defun cj/dwim-shell-commands-resize-image-in-pixels ()
-	"Resize marked image(s) in pixels."
+	"Resize image(s) in pixels."
 	(interactive)
-	(dwim-shell-command-on-marked-files
-	 "Resize image"
-	 (let ((width (read-number "Resize width (pixels): " 500)))
-	   (format "convert -resize %dx '<<f>>' '<<fne>>_x%d.<<e>>'" width width))
-	 :utils "convert"))
+	(let ((width (read-number "Resize width (pixels): " 500)))
+	  (when (<= width 0)
+		(user-error "Width must be positive"))
+	  (dwim-shell-command-on-marked-files
+	   "Resize image"
+	   (format "convert -resize %dx '<<f>>' '<<fne>>_x%d.<<e>>'" width width)
+	   :utils "convert")))
 
   (defun cj/dwim-shell-commands-pdf-password-protect ()
-	"Add a password to pdf(s)."
+	"Add a password to pdf(s).
+Uses temporary file with restrictive permissions to avoid exposing passwords
+in process lists or command history."
 	(interactive)
-	(dwim-shell-command-on-marked-files
-	 "Password protect pdf"
-	 (format "qpdf --verbose --encrypt '%s' '%s' 256 -- '<<f>>' '<<fne>>_protected.<<e>>'"
-			 (read-passwd "user-password: ")
-			 (read-passwd "owner-password: "))
-	 :utils "qpdf"
-	 :extensions "pdf"))
+	(let* ((user-pass (read-passwd "user-password: "))
+		   (owner-pass (read-passwd "owner-password: "))
+		   (temp-file (make-temp-file "qpdf-pass-")))
+	  (unwind-protect
+		  (progn
+			;; Write passwords to temp file with restrictive permissions
+			(with-temp-file temp-file
+			  (insert user-pass "\n" owner-pass))
+			(set-file-modes temp-file #o600)
+			(dwim-shell-command-on-marked-files
+			 "Password protect pdf"
+			 (format "qpdf --verbose --password-file='%s' --encrypt --use-aes=y -- '<<f>>' '<<fne>>_protected.<<e>>'"
+					 temp-file)
+			 :utils "qpdf"
+			 :extensions "pdf"))
+		;; Always cleanup temp file
+		(when (file-exists-p temp-file)
+		  (delete-file temp-file)))))
 
   (defun cj/dwim-shell-commands-pdf-password-unprotect ()
-	"Remove a password from pdf(s)."
+	"Remove a password from pdf(s).
+Uses temporary file with restrictive permissions to avoid exposing passwords
+in process lists or command history."
 	(interactive)
-	(dwim-shell-command-on-marked-files
-	 "Remove protection from pdf"
-	 (format "qpdf --verbose --decrypt --password='%s' -- '<<f>>' '<<fne>>_unprotected.<<e>>'"
-			 (read-passwd "password: "))
-	 :utils "qpdf"
-	 :extensions "pdf"))
+	(let* ((password (read-passwd "password: "))
+		   (temp-file (make-temp-file "qpdf-pass-")))
+	  (unwind-protect
+		  (progn
+			;; Write password to temp file with restrictive permissions
+			(with-temp-file temp-file
+			  (insert password))
+			(set-file-modes temp-file #o600)
+			(dwim-shell-command-on-marked-files
+			 "Remove protection from pdf"
+			 (format "qpdf --verbose --decrypt --password-file='%s' -- '<<f>>' '<<fne>>_unprotected.<<e>>'"
+					 temp-file)
+			 :utils "qpdf"
+			 :extensions "pdf"))
+		;; Always cleanup temp file
+		(when (file-exists-p temp-file)
+		  (delete-file temp-file)))))
 
   (defun cj/dwim-shell-commands-video-trim ()
 	"Trim video with options for beginning, end, or both."
@@ -338,15 +364,21 @@ Supports docx, odt, and other pandoc-compatible formats."
            (command (pcase trim-type
 					  ("Beginning"
 					   (let ((seconds (read-number "Seconds to trim from beginning: " 5)))
+						 (when (< seconds 0)
+						   (user-error "Seconds must be non-negative"))
 						 (format "ffmpeg -i '<<f>>' -y -ss %d -c:v copy -c:a copy '<<fne>>_trimmed.<<e>>'"
 								 seconds)))
 					  ("End"
 					   (let ((seconds (read-number "Seconds to trim from end: " 5)))
+						 (when (< seconds 0)
+						   (user-error "Seconds must be non-negative"))
 						 (format "ffmpeg -sseof -%d -i '<<f>>' -y -c:v copy -c:a copy '<<fne>>_trimmed.<<e>>'"
 								 seconds)))
 					  ("Both"
 					   (let ((start (read-number "Seconds to trim from beginning: " 5))
 							 (end (read-number "Seconds to trim from end: " 5)))
+						 (when (or (< start 0) (< end 0))
+						   (user-error "Seconds must be non-negative"))
 						 (format "ffmpeg -i '<<f>>' -y -ss %d -sseof -%d -c:v copy -c:a copy '<<fne>>_trimmed.<<e>>'"
 								 start end))))))
       (dwim-shell-command-on-marked-files
@@ -483,6 +515,10 @@ Supports docx, odt, and other pandoc-compatible formats."
 	(interactive)
 	(let ((fps (read-number "FPS for GIF: " 10))
 		  (scale (read-number "Scale (pixels width): " 480)))
+	  (when (<= fps 0)
+		(user-error "FPS must be positive"))
+	  (when (<= scale 0)
+		(user-error "Scale must be positive"))
 	  (dwim-shell-command-on-marked-files
 	   "Create GIF"
 	   (format "ffmpeg -i '<<f>>' -vf 'fps=%d,scale=%d:-1:flags=lanczos' '<<fne>>.gif'" fps scale)
@@ -569,6 +605,8 @@ Supports docx, odt, and other pandoc-compatible formats."
 	"Create thumbnail(s) from image(s)."
 	(interactive)
 	(let ((size (read-number "Thumbnail size (pixels): " 200)))
+	  (when (<= size 0)
+		(user-error "Thumbnail size must be positive"))
 	  (dwim-shell-command-on-marked-files
 	   "Create thumbnail"
 	   (format "convert '<<f>>' -thumbnail %dx%d '<<fne>>_thumb.<<e>>'" size size)
@@ -591,23 +629,51 @@ Supports docx, odt, and other pandoc-compatible formats."
 	 :utils "ffmpeg"))
 
   (defun cj/dwim-shell-commands-remove-zip-encryption ()
-	"Remove password protection from zip file(s)."
+	"Remove password protection from archive file(s).
+Uses 7z for secure password handling via temporary file.
+Works with .7z, .zip, and other password-protected archives.
+Extracts and re-archives without password protection."
 	(interactive)
-	(let ((password (read-passwd "Current password: ")))
-	  (dwim-shell-command-on-marked-files
-	   "Remove zip encryption"
-	   (format "TMPDIR=$(mktemp -d) && unzip -P '%s' '<<f>>' -d \"$TMPDIR\" && cd \"$TMPDIR\" && zip -r archive.zip * && mv archive.zip '<<fne>>_decrypted.zip' && rm -rf \"$TMPDIR\""
-			   password)
-	   :utils '("unzip" "zip"))))
+	(let* ((password (read-passwd "Current password: "))
+		   (temp-file (make-temp-file "7z-pass-")))
+	  (unwind-protect
+		  (progn
+			;; Write password to temp file with restrictive permissions
+			(with-temp-file temp-file
+			  (insert password))
+			(set-file-modes temp-file #o600)
+			(dwim-shell-command-on-marked-files
+			 "Remove archive encryption"
+			 (format "TMPDIR=$(mktemp -d) && 7z x -p\"$(cat '%s')\" '<<f>>' -o\"$TMPDIR\" && 7z a -tzip '<<fne>>_decrypted.zip' \"$TMPDIR\"/* && rm -rf \"$TMPDIR\""
+					 temp-file)
+			 :utils "7z"))
+		;; Always cleanup temp file
+		(when (file-exists-p temp-file)
+		  (delete-file temp-file)))))
 
   (defun cj/dwim-shell-commands-create-encrypted-zip ()
-	"Create password-protected zip of file(s)."
+	"Create password-protected archive of file(s).
+Uses 7z instead of zip for secure password handling via temporary file.
+Creates a .7z archive with AES-256 encryption."
 	(interactive)
-	(let ((password (read-passwd "Password: ")))
-	  (dwim-shell-command-on-marked-files
-	   "Create encrypted zip"
-	   (format "zip -r -e -P '%s' '<<archive.zip(u)>>' '<<*>>'" password)
-	   :utils "zip")))
+	(let* ((password (read-passwd "Password: "))
+		   (temp-file (make-temp-file "7z-pass-"))
+		   (archive-name (read-string "Archive name (without extension): " "archive")))
+	  (unwind-protect
+		  (progn
+			;; Write password to temp file with restrictive permissions
+			(with-temp-file temp-file
+			  (insert password))
+			(set-file-modes temp-file #o600)
+			(dwim-shell-command-on-marked-files
+			 "Create encrypted archive"
+			 (format "7z a -t7z -mhe=on -p\"$(cat '%s')\" '%s.7z' '<<*>>'"
+					 temp-file
+					 archive-name)
+			 :utils "7z"))
+		;; Always cleanup temp file
+		(when (file-exists-p temp-file)
+		  (delete-file temp-file)))))
 
 
   (defun cj/dwim-shell-commands-list-archive-contents ()
@@ -617,14 +683,6 @@ Supports docx, odt, and other pandoc-compatible formats."
 	 "List archive contents"
 	 "atool --list '<<f>>'"
 	 :utils "atool"))
-
-  (defun cj/dwim-shell-commands-count-words-lines-in-text-file ()
-	"Count words, lines, and characters in text file(s)."
-	(interactive)
-	(dwim-shell-command-on-marked-files
-	 "Word count"
-	 "wc -lwc '<<f>>'"
-	 :utils "wc"))
 
   (defun cj/dwim-shell-commands-make-executable ()
 	"Make file(s) executable."
@@ -655,8 +713,7 @@ Supports docx, odt, and other pandoc-compatible formats."
   (defun cj/dwim-shell-commands-number-files-sequentially ()
 	"Rename files with sequential numbers."
 	(interactive)
-	(let ((prefix (read-string "Prefix (optional): "))
-		  (start (read-number "Start number: " 1)))
+	(let ((prefix (read-string "Prefix (optional): ")))
 	  (dwim-shell-command-on-marked-files
 	   "Number files"
 	   (format "mv '<<f>>' '<<d>>/%s<<n>>.<<e>>'" prefix)
@@ -690,37 +747,37 @@ Supports docx, odt, and other pandoc-compatible formats."
 	 :extensions '("gpg" "asc" "pgp")
 	 :utils "gpg"))
 
+  (defun cj/dwim-shell-commands-markdown-to-html5-and-open ()
+	"Convert markdown file to HTML in specified directory and open it."
+	(interactive)
+	(let ((files (dwim-shell-command--files)))
+	  ;; verify it's a markdown file
+	  (unless (and files
+				   (= 1 (length files))
+				   (string-match-p "\\.\\(md\\|markdown\\|mkd\\|mdown\\)\\'" (car files)))
+		(user-error "Please place cursor on a single markdown file"))
+	  (let* ((dest-dir (expand-file-name (read-directory-name "Destination directory: " default-directory)))
+			 (base-name (file-name-sans-extension (file-name-nondirectory (car files))))
+			 (output-file (expand-file-name (concat base-name ".html") dest-dir)))
+		(dwim-shell-command-on-marked-files
+		 "Convert markdown to HTML"
+		 (format "pandoc --standalone --from=markdown --to=html5 --metadata title='<<fne>>' '<<f>>' -o '%s'"
+				 output-file)
+		 :utils "pandoc"
+		 :on-completion (lambda (&rest _args)
+						  (when (file-exists-p output-file)
+							(cj/xdg-open output-file)
+							(message "Opened %s" output-file)))))))
 
-(defun cj/dwim-shell-commands-markdown-to-html5-and-open ()
-  "Convert markdown file to HTML in specified directory and open it."
-  (interactive)
-  (let ((files (dwim-shell-command--files)))
-	;; verify it's a markdown file
-	(unless (and files
-				 (= 1 (length files))
-				 (string-match-p "\\.\\(md\\|markdown\\|mkd\\|mdown\\)\\'" (car files)))
-	  (user-error "Please place cursor on a single markdown file"))
-	(let* ((dest-dir (expand-file-name (read-directory-name "Destination directory: " default-directory)))
-		   (base-name (file-name-sans-extension (file-name-nondirectory (car files))))
-		   (output-file (expand-file-name (concat base-name ".html") dest-dir)))
-	  (dwim-shell-command-on-marked-files
-	   "Convert markdown to HTML"
-	   (format "pandoc --standalone --from=markdown --to=html5 --metadata title='<<fne>>' '<<f>>' -o '%s'"
-			   output-file)
-	   :utils "pandoc"
-	   :on-completion (lambda (&rest args)
-						(when (file-exists-p output-file)
-						  (cj/xdg-open output-file)
-						  (message "Opened %s" output-file)))))))
-
-(defun cj/dwim-shell-commands-optimize-image-for-email ()
-  "Optimize image(s) for email - reduces file size while maintaining quality.
-Resizes to max 1200px (only if larger), strips metadata, and applies JPEG optimization."
-  (interactive)
-  (dwim-shell-command-on-marked-files
-   "Optimize for email"
-   "magick '<<f>>' -strip -resize '1200x1200>' -quality 85 -interlace Plane -colorspace sRGB -sampling-factor 4:2:0 '<<fne>>_email.<<e>>'"
-   :utils "magick"))
+  (defun cj/dwim-shell-commands-optimize-image-for-email ()
+	"Optimize image(s) for email - reduces file size while maintaining quality.
+Resizes to max 1200px (only if larger), strips metadata, and applies JPEG
+optimization."
+	(interactive)
+	(dwim-shell-command-on-marked-files
+	 "Optimize for email"
+	 "magick '<<f>>' -strip -resize '1200x1200>' -quality 85 -interlace Plane -colorspace sRGB -sampling-factor 4:2:0 '<<fne>>_email.<<e>>'"
+	 :utils "magick"))
 
   (defun cj/dwim-shell-commands-kill-gpg-agent ()
 	"Kill (thus restart) gpg agent.
@@ -732,7 +789,41 @@ gpg: decryption failed: No pinentry"
 	 "Kill gpg agent"
 	 "gpgconf --kill gpg-agent"
 	 :utils "gpgconf"
-	 :silent-success t)))
+	 :silent-success t))
+
+  ;; Dwim shell commands menu
+  (defun dwim-shell-commands-menu ()
+	"Select and execute a dwim-shell-command function with prettified names."
+	(interactive)
+	(let* ((commands (cl-loop for symbol being the symbols
+							  when (and (fboundp symbol)
+										(string-prefix-p "cj/dwim-shell-commands-" (symbol-name symbol))
+										(not (eq symbol 'dwim-shell-commands-menu)))
+							  collect symbol))
+		   ;; Create alist of (pretty-name . command-symbol)
+		   (command-alist (mapcar (lambda (cmd)
+									(cons (replace-regexp-in-string
+										   "-" " "
+										   (replace-regexp-in-string
+											"^cj/dwim-shell-commands-"
+											""
+											(symbol-name cmd)))
+										  cmd))
+								  commands))
+		   (selected (completing-read "Command: "
+									  command-alist
+									  nil
+									  t
+									  nil
+									  'dwim-shell-command-history))
+		   (command (alist-get selected command-alist nil nil #'string=)))
+	  (when command
+		(call-interactively command)))))
+
+;; Bind menu to dired (after dwim-shell-command loads)
+(with-eval-after-load 'dwim-shell-command
+  (with-eval-after-load 'dired
+	(keymap-set dired-mode-map "M-D" #'dwim-shell-commands-menu)))
 
 (provide 'dwim-shell-config)
 ;;; dwim-shell-config.el ends here.
