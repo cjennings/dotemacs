@@ -25,6 +25,9 @@
 (require 'host-environment) ;; environment information functions
 (require 'cl-lib)
 
+;; Declare platform-specific functions
+(declare-function w32-shell-execute "w32fns.c" (operation document &optional parameters show-flag))
+
 (defgroup external-open nil
   "Open certain files with the OS default handler."
   :group 'files)
@@ -106,7 +109,7 @@
 			   command (shell-quote-argument file))
 	   nil 0)))))
 
-(global-set-key (kbd "C-c x o") #'cj/open-this-file-with)
+(keymap-global-set "C-c x o" #'cj/open-this-file-with)
 
 ;; -------------------- Open Files With Default File Handler -------------------
 
