@@ -33,26 +33,35 @@
 ;;
 ;;; Code:
 
-(require 'user-constants) ;; definitions of org-dir and macros-file
+(require 'subr-x) ;; for string-trim
+
+;; Declare external variable to avoid compile warnings
+(defvar macros-file)
 
 (defvar cj/macros-loaded nil
   "Whether saved keyboard macros have been loaded from file.")
+
+(defvar cj/macros-loading nil
+  "Lock to prevent concurrent macro loading.")
 
 (defun cj/ensure-macros-loaded ()
   "Load keyboard macros from file if not already loaded.
 This function is idempotent and fast when macros are already loaded."
   (when (and (not cj/macros-loaded)
+             (not cj/macros-loading)
              (file-exists-p macros-file))
+    (setq cj/macros-loading t)
     (condition-case err
         (progn
           (load macros-file)
           (setq cj/macros-loaded t))
       (error
 	   (message "Error loading keyboard macros file: %s"
-                (error-message-string err))))))
+                (error-message-string err))))
+    (setq cj/macros-loading nil)))
 
 (defun ensure-macros-file (file)
-  "Ensure FILE exists and its first line enables lexical-binding."
+  "Ensure FILE exists and its first line enables \='lexical-binding\='."
   (unless (file-exists-p file)
     (with-temp-file file
       (insert ";;; -*- lexical-binding: t -*-\n"))))
@@ -67,20 +76,37 @@ This function is idempotent and fast when macros are already loaded."
     (start-kbd-macro nil)))
 
 (defun cj/save-maybe-edit-macro (name)
-  "Save last macro as NAME in `macros-file'; edit if prefix arg."
-  (interactive "SName of macro: ")
-  (kmacro-name-last-macro name)
+  "Save last macro as NAME in `macros-file'.
+With prefix arg, open the macros file for editing after saving."
+  (interactive "sName of macro: ")
+  ;; Validate macro name
+  (when (string-empty-p (string-trim name))
+    (user-error "Macro name cannot be empty"))
+  (unless (string-match-p "^[a-zA-Z][a-zA-Z0-9-]*$" name)
+    (user-error "Macro name must start with a letter and contain only letters, numbers, and hyphens"))
+  ;; Check if there's a macro to save
+  (unless last-kbd-macro
+    (user-error "No keyboard macro defined"))
+  (kmacro-name-last-macro (intern name))
   (ensure-macros-file macros-file)
-  (find-file macros-file)
-  (goto-char (point-max))
-  (newline)
-  (insert-kbd-macro name)
-  (newline)
-  (save-buffer)
-  (switch-to-buffer (other-buffer (current-buffer) 1))
-  (when current-prefix-arg
-    (find-file macros-file)
-    (goto-char (point-max)))
+  (let ((original-buffer (current-buffer))
+        (macros-buffer (find-file-noselect macros-file)))
+    (condition-case err
+        (progn
+          (with-current-buffer macros-buffer
+            (goto-char (point-max))
+            (newline)
+            (insert-kbd-macro (intern name))
+            (newline)
+            (save-buffer))
+          (if current-prefix-arg
+              (switch-to-buffer macros-buffer)
+            (when (not (eq original-buffer (get-file-buffer macros-file)))
+              (switch-to-buffer original-buffer)))
+          (message "Macro '%s' saved to %s" name macros-file))
+      (error
+       (message "Error saving macro: %s" (error-message-string err))
+       (signal (car err) (cdr err)))))
   name)
 
 (defun cj/open-macros-file ()
@@ -91,20 +117,28 @@ This function is idempotent and fast when macros are already loaded."
   (ensure-macros-file macros-file)
   (find-file macros-file))
 
-;; Set up key bindings
-(global-set-key (kbd "C-<f3>") #'cj/kbd-macro-start-or-end)
-(global-set-key (kbd "<f3>")   #'call-last-kbd-macro)
-(global-set-key (kbd "M-<f3>") #'cj/save-maybe-edit-macro)
-(global-set-key (kbd "s-<f3>") #'cj/open-macros-file)
+;; Set up key bindings and hooks
+(defun keyboard-macros-setup ()
+  "Set up keyboard macro key bindings and hooks."
+  (keymap-global-set "C-<f3>" #'cj/kbd-macro-start-or-end)
+  (keymap-global-set "<f3>"   #'call-last-kbd-macro)
+  (keymap-global-set "M-<f3>" #'cj/save-maybe-edit-macro)
+  (keymap-global-set "s-<f3>" #'cj/open-macros-file)
+  (add-hook 'kill-emacs-hook #'cj/save-last-kbd-macro-on-exit))
 
 ;; Add hook to save any unnamed macros on exit if desired
 (defun cj/save-last-kbd-macro-on-exit ()
   "Save the last keyboard macro before exiting Emacs if it's not saved."
-  (when (and last-kbd-macro (not (kmacro-name-last-macro)))
+  (when last-kbd-macro
     (when (y-or-n-p "Save last keyboard macro before exiting? ")
       (call-interactively #'cj/save-maybe-edit-macro))))
 
-(add-hook 'kill-emacs-hook #'cj/save-last-kbd-macro-on-exit)
+;; Auto-call setup after init
+(if after-init-time
+    ;; Init already completed, run setup now
+    (keyboard-macros-setup)
+  ;; Init not yet complete, defer until after init
+  (add-hook 'after-init-hook #'keyboard-macros-setup))
 
 (provide 'keyboard-macros)
 ;;; keyboard-macros.el ends here
