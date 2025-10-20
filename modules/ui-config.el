@@ -29,17 +29,12 @@
 
 ;; -------------------------------- UI Constants -------------------------------
 
-(defcustom cj/enable-transparency nil
-  "Non-nil means use `cj/transparency-level' for frame transparency."
-  :type 'boolean
-  :group 'ui-config)
+(defvar cj/enable-transparency nil
+  "Non-nil means use `cj/transparency-level' for frame transparency.")
 
-(defcustom cj/transparency-level 84
+(defvar cj/transparency-level 84
   "Opacity level for Emacs frames when `cj/enable-transparency' is non-nil.
-
-100 = fully opaque, 0 = fully transparent."
-  :type 'integer
-  :group 'ui-config)
+100 = fully opaque, 0 = fully transparent.")
 
 (defconst cj/cursor-colors
   '((read-only . "#f06a3f")  ; red   – buffer is read-only
@@ -51,10 +46,10 @@
 
 (add-to-list 'initial-frame-alist '(fullscreen . maximized)) ;; start the initial frame maximized
 (add-to-list 'default-frame-alist '(fullscreen . maximized)) ;; start every frame maximized
-(setq pixel-scroll-precision-mode nil)						 ;; smooth scroll past images - enabled if nil!
+(setq pixel-scroll-precision-mode nil)						 ;; disabled for performance
 
 (setq-default frame-inhibit-implied-resize t)				 ;; don't resize frames when setting ui-elements
-(setq frame-title-format '("Emacs " emacs-version" : %b"))	 ;; the title is emacs with version and buffer name
+(setq frame-title-format '("Emacs " emacs-version " : %b"))	 ;; the title is emacs with version and buffer name
 
 (setq use-file-dialog nil)									 ;; no file dialog
 (setq use-dialog-box nil)									 ;; no dialog boxes either
@@ -70,8 +65,11 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
   (let ((alpha (if cj/enable-transparency
 				   (cons cj/transparency-level cj/transparency-level)
 				 '(100 . 100))))
-	;; apply to current frame
-	(set-frame-parameter nil 'alpha alpha)
+	;; apply to current frame (skip if terminal frame)
+	(when (display-graphic-p)
+	  (condition-case err
+		  (set-frame-parameter nil 'alpha alpha)
+		(error (message "Failed to set transparency: %s" (error-message-string err)))))
 	;; update default for new frames
 	(setq default-frame-alist
 		  (assq-delete-all 'alpha default-frame-alist))
@@ -95,8 +93,6 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 ;;    #c48702 indicates overwrite mode
 ;;    #64aa0f indicates insert and read/write mode
 
-;; ----------------------------------- Cursor ----------------------------------
-
 (defvar cj/-cursor-last-color nil
   "Last color applied by `cj/set-cursor-color-according-to-mode'.")
 (defvar cj/-cursor-last-buffer nil
@@ -115,7 +111,11 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 	  (setq cj/-cursor-last-color color
 			cj/-cursor-last-buffer (buffer-name)))))
 
-(add-hook 'post-command-hook #'cj/set-cursor-color-according-to-mode)
+;; Use more efficient hooks instead of post-command-hook for better performance
+(add-hook 'window-buffer-change-functions
+		  (lambda (_window) (cj/set-cursor-color-according-to-mode)))
+(add-hook 'read-only-mode-hook #'cj/set-cursor-color-according-to-mode)
+(add-hook 'overwrite-mode-hook #'cj/set-cursor-color-according-to-mode)
 
 ;; Don’t show a cursor in non-selected windows:
 (setq cursor-in-non-selected-windows nil)
@@ -135,7 +135,7 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 ;; use icons from nerd fonts in the Emacs UI
 
 (use-package nerd-icons
-  :demand t)
+  :defer t)
 
 (provide 'ui-config)
 ;;; ui-config.el ends here
