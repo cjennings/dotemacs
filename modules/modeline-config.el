@@ -3,6 +3,26 @@
 
 ;;; Commentary:
 
+;; Doom modeline configuration with performance optimizations.
+
+;; Settings prioritize speed while keeping essential information including:
+;; - relative file paths from project root
+;; - column number and percentage position
+;; - buffer modification indicators
+;; - and major mode with icon.
+
+;; Disabled features for performance:
+;; - minor modes display
+;; - word count
+;; - encoding info
+;; - LSP information
+
+;; Performance tuning includes:
+;; - 0.75 second refresh rate
+;; - 1MB process output chunks
+;; - nerd-icons (faster than all-the-icons)
+;; - simplified checker format
+;; - limited VCS info length
 
 ;;; Code:
 
@@ -47,9 +67,9 @@
   (doom-modeline-buffer-name t)             ;; Show buffer name
   (doom-modeline-buffer-file-name t)        ;; Show file name
   :config
+  (setq read-process-output-max (* 1024 1024)) ;; 1MB process read size for better performance
   (setq doom-modeline-refresh-rate 0.75))      ;; Update rate in seconds
 
-;; (setq read-process-output-max (* 1024 1024)) ;; 1MB process read size for better performance
 
 (provide 'modeline-config)
 ;;; modeline-config.el ends here
