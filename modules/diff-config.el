@@ -32,18 +32,18 @@
   ;; adding this to a hook to make sure ediff is loaded due to :defer
   (defvar cj/ediff-map
 	(let ((m (make-sparse-keymap)))
-	  (define-key m "f" #'ediff-files)        ; C-c D f
-	  (define-key m "b" #'ediff-buffers)      ; C-c D b
-	  (define-key m "r" #'ediff-revision)     ; C-c D r
-	  (define-key m "D" #'ediff-directories)  ; C-c D D
+	  (keymap-set m "f" #'ediff-files)        ; C-c D f
+	  (keymap-set m "b" #'ediff-buffers)      ; C-c D b
+	  (keymap-set m "r" #'ediff-revision)     ; C-c D r
+	  (keymap-set m "D" #'ediff-directories)  ; C-c D D
 	  m)
 	"Prefix map for quick Ediff commands under C-c D.")
   :config
   (defun cj/ediff-hook ()
 	"Use j/k to navigate differences in Ediff."
 	(ediff-setup-keymap)  ;; keep the defaults…
-	(define-key ediff-mode-map "j" #'ediff-next-difference)
-	(define-key ediff-mode-map "k" #'ediff-previous-difference))
+	(keymap-set ediff-mode-map "j" #'ediff-next-difference)
+	(keymap-set ediff-mode-map "k" #'ediff-previous-difference))
 
   (add-hook 'ediff-mode-hook               #'cj/ediff-hook)
   (add-hook 'ediff-after-quit-hook-internal #'winner-undo))
