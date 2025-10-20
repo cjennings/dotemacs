@@ -2,7 +2,19 @@
 
 ;;; Commentary:
 ;;
-
+;; This module provides line and paragraph manipulation utilities.
+;; These utilities enhance text editing and formatting capabilities.
+;;
+;; Functions include:
+;; - joining lines in a region or the current line with the previous one
+;; - joining entire paragraphs into single lines
+;; - duplicating lines or regions (with optional commenting)
+;; - removing duplicate lines
+;; - removing lines containing specific text
+;; - underlining text with a custom character
+;;
+;; Bound to keymap prefix ~C-; l
+;;
 ;;; Code:
 
 (use-package expand-region
