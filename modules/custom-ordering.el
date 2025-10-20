@@ -1,14 +1,27 @@
 ;;; custom-ordering.el ---  -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
-;;
+
+;; This module provides functions for converting text between different formats and sorting operations.
+;; These utilities are useful for reformatting data structures and organizing text.
+
+;; Functions include:
+
+;; - converting lines to quoted comma-separated arrays (arrayify)
+;; - converting arrays back to separate lines (unarrayify)
+;; - alphabetically sorting words in a region
+;; - splitting comma-separated text into individual lines
+
+;; Bound to keymap prefix C-; o
 
 ;;; Code:
 
+;; cj/custom-keymap defined in keybindings.el
+(eval-when-compile (defvar cj/custom-keymap))
+(defvar cj/ordering-map)
 
 (defun cj/arrayify (start end quote)
   "Convert lines between START and END into quoted, comma-separated strings.
-
 START and END identify the active region.
 QUOTE specifies the quotation characters to surround each element."
   (interactive "r\nMQuotation character to use for array element: ")
@@ -20,8 +33,7 @@ QUOTE specifies the quotation characters to surround each element."
 	(insert insertion)))
 
 (defun cj/unarrayify (start end)
-  "Convert quoted, comma-separated strings between START and END into separate lines.
-
+  "Convert quoted comma-separated strings between START and END to separate lines.
 START and END identify the active region."
   (interactive "r")
   (let ((insertion
@@ -33,7 +45,6 @@ START and END identify the active region."
 
 (defun cj/alphabetize-region ()
   "Alphabetize words in the active region and replace the original text.
-
 Produce a comma-separated list as the result."
   (interactive)
   (unless (use-region-p)
@@ -50,7 +61,7 @@ Produce a comma-separated list as the result."
 				", "))))
 
 (defun cj/comma-separated-text-to-lines ()
-  "Break up comma-separated text in the active region so each item is on its own line."
+  "Break up comma-separated text in active region so each item is on own line."
   (interactive)
   (if (not (region-active-p))
 	  (error "No region selected"))
@@ -75,6 +86,8 @@ Produce a comma-separated list as the result."
 (define-prefix-command 'cj/ordering-map nil
 					   "Keymap for text ordering and sorting operations.")
 (define-key cj/custom-keymap "o" 'cj/ordering-map)
+
+
 (define-key cj/ordering-map "a" 'cj/arrayify)
 (define-key cj/ordering-map "u" 'cj/unarrayify)
 (define-key cj/ordering-map "A" 'cj/alphabetize-region)
