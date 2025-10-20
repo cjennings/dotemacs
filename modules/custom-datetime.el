@@ -29,7 +29,8 @@
 ;;
 ;;; Code:
 
-(eval-when-compile (require 'keybindings))
+;; cj/custom-keymap defined in keybindings.el
+(eval-when-compile (defvar cj/custom-keymap))
 
 ;; ----------------------------- Readable Date Time ----------------------------
 
