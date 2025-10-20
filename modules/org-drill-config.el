@@ -5,24 +5,33 @@
 ;; Notes: Org-Drill
 ;; Start out your org-drill with C-d s, then select your file.
 
-;; the javascript bookmark I use to capture information from the web for org-drill files:
+;; Capture templates:
+;; - "d" for web/EPUB drill captures (uses %i for selected text, %:link for source)
+;; - "f" for PDF drill captures (uses special PDF region extraction)
+
+;; The javascript bookmarklet for capturing from web to org-drill:
 ;; javascript:location.href='org-protocol://capture?template=d&url=%27+encodeURIComponent(location.href)+%27&title=%27+encodeURIComponent(document.title)+%27&body=%27+encodeURIComponent(window.getSelection());void(0);
 
-;; create a new bookmark and add "Drill Entry" to the name field and the above
-;; snippet to the URL field.
+;; Create a bookmark, add "Drill Entry" to the name field and the above snippet to the URL field.
 
 ;;; Code:
 
-(require 'user-constants)
-(require 'org-capture-config) ;; for adding org-capture-templates
-(require 'cl-lib)
+(eval-when-compile (defvar drill-dir))
+(eval-when-compile (defvar cj/custom-keymap))
+
+(defvar cj/drill-map)
+(declare-function org-drill-resume "org-drill")
+(declare-function cj/drill-map "org-drill-config")
+(declare-function cj/drill-start "org-drill-config")
+(declare-function cj/drill-edit "org-drill-config")
+(declare-function cj/drill-capture "org-drill-config")
+(declare-function cj/drill-refile "org-drill-config")
 
 ;; --------------------------------- Org Drill ---------------------------------
 
 (use-package org-drill
-  :after org
+  :after (org org-capture)
   :commands org-drill
-  :defer 0.5
   :config
   (setq org-drill-leech-failure-threshold 50)           ;; leech cards = 50 wrong anwers
   (setq org-drill-leech-method 'warn)                   ;; leech cards show warnings
@@ -43,8 +52,9 @@
   (defun cj/drill-edit ()
 	"Prompts the user to pick a drill org file, then opens it for editing."
 	(interactive)
-	(let* ((choices (directory-files drill-dir nil "^[^.].*\\.org$")))
-	  (find-file chosen-drill-file)))
+	(let* ((choices (directory-files drill-dir nil "^[^.].*\\.org$"))
+		   (chosen-drill-file (completing-read "Choose Flashcard File:" choices)))
+	  (find-file (concat drill-dir chosen-drill-file))))
 
   (defun cj/drill-capture ()
 	"Quickly capture a drill question."
@@ -58,44 +68,17 @@
 							   (drill-dir :maxlevel . 1)))
 	(call-interactively 'org-refile))
 
-  ;; add useful org drill capture templates
-  (setq org-capture-templates
-		(append org-capture-templates
-				'(("d" "Drill Question - Web" entry
-				   (file (lambda ()
-						   (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
-							 (expand-file-name
-							  (completing-read "Choose file: " files)
-							  drill-dir))))
-				   "* Item   :drill:\n%?\n** Answer\n%i\nSource: [[%:link][%:description]]\nCaptured On: %U" :prepend t)
+  ;; ------------------------------ Org Drill Keymap -----------------------------
 
-				  ("b" "Drill Question - EPUB" entry
-				   (file (lambda ()
-						   (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
-							 (expand-file-name
-							  (completing-read "Choose file: " files)
-							  drill-dir))))
-				   "* Item   :drill:\n%?\n** Answer\n%i\nSource: [[%:link][%(buffer-name (org-capture-get :original-buffer))]]\nCaptured On: %U" :prepend t)
-
-				  ("f" "Drill Question - PDF" entry
-				   (file (lambda ()
-						   (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
-							 (expand-file-name
-							  (completing-read "Choose file: " files)
-							  drill-dir))))
-				   "* Item   :drill:\n%?\n** Answer\n%(cj/org-capture-pdf-active-region)\nSource:[[%L][%(buffer-name (org-capture-get :original-buffer))]]\nCaptured On: %U" :prepend t)))))
-
-;; ------------------------------ Org Drill Keymap -----------------------------
-
-;; Buffer & file operations prefix and keymap
-(define-prefix-command 'cj/drill-map nil
-					   "Keymap for org-drill.")
-(define-key cj/custom-keymap "D" 'cj/drill-map)
-(define-key cj/drill-map "s" 'cj/drill-start)
-(define-key cj/drill-map "e" 'cj/drill-edit)
-(define-key cj/drill-map "c" 'cj/drill-capture)
-(define-key cj/drill-map "r" 'cj/drill-refile)
-(define-key cj/drill-map "R" 'org-drill-resume)
+  ;; Buffer & file operations prefix and keymap
+  (define-prefix-command 'cj/drill-map nil
+						 "Keymap for org-drill.")
+  (keymap-set cj/custom-keymap "D" #'cj/drill-map)
+  (keymap-set cj/drill-map "s" #'cj/drill-start)
+  (keymap-set cj/drill-map "e" #'cj/drill-edit)
+  (keymap-set cj/drill-map "c" #'cj/drill-capture)
+  (keymap-set cj/drill-map "r" #'cj/drill-refile)
+  (keymap-set cj/drill-map "R" #'org-drill-resume))
 
 (provide 'org-drill-config)
 ;;; org-drill-config.el ends here.
