@@ -1,10 +1,9 @@
 ;;; media-utils.el --- Utilities for Downloading and Viewing Media  -*- coding: utf-8; lexical-binding: t; -*-
-;; TASK: Update commentary to include default media selection
 ;;
 ;;; Commentary:
 ;;
 ;; This library provides reusable Emacs methods for working with online and
-;; local media, to support media download playback from Emacs.
+;; local media, to support media download and playback from Emacs.
 ;;
 ;; Main features:
 ;;
@@ -16,7 +15,19 @@
 ;;   media players (mpv, VLC, etc.), with automatic stream resolution via
 ;;   yt-dlp when required, and dynamic configuration of playback options.
 ;;
+;; - Default media player selection via `cj/default-media-player', allowing
+;;   users to set their preferred player (mpv, VLC, IINA, MPlayer, etc.) which
+;;   will be used automatically when playing media.
+;;
+;; - Customizable media player configurations in `cj/media-players', with
+;;   support for different yt-dlp format preferences, command-line arguments,
+;;   and stream URL handling for each player.
+;;
 ;;; Code:
+
+;; Declare functions and variables from other modules
+(declare-function cj/log-silently "system-utils" (format-string &rest args))
+(defvar videos-dir) ;; from user-constants.el
 
 ;; ------------------------ Default Media Configurations -----------------------
 ;; Common yt-dlp format codes:
