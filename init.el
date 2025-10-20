@@ -5,8 +5,12 @@
 
 ;; Note: This init.el file has an early-init.el file associated with it.
 ;; That file defines a few variables and settings used within the rest of the config.
+;; Emacs-Lisp code in this config requires version 29+.
 
 ;;; Code:
+
+;; Enable use-package statistics for profiling (run M-x use-package-report)
+;; (setq use-package-compute-statistics t)
 
 (add-to-list 'load-path (concat user-emacs-directory "assets/"))
 (add-to-list 'load-path (concat user-emacs-directory "custom/"))
@@ -22,9 +26,10 @@
 
 ;; -------------------------- Utilities And Libraries --------------------------
 
+;; <<<< testing progress
 (require 'custom-case)           ;; operations for upper/lower/title case
 (require 'custom-comments)       ;; operations with comments
-(require 'custom-datetime)       ;; date/timestamps in various formats
+(require 'custom-datetime)       ;; date/timestamp insertion in various formats
 (require 'custom-file-buffer)    ;; custom buffer and file operations and keymap
 (require 'custom-line-paragraph) ;; operations on lines and paragraphs
 (require 'custom-misc)           ;; miscellaneous functions
@@ -37,13 +42,14 @@
 ;; ------------------------- System Level Functionality ------------------------
 
 (require 'auth-config)           ;; emacs gnupg integration
-(require 'keyboard-macros)       ;; keyboard macro management
+(require 'keyboard-macros)       ;; tested: keyboard macro management
 (require 'system-utils)          ;; timers, process monitor
 (require 'text-config)           ;; text settings and functionality
 (require 'undead-buffers)        ;; bury rather than kill specific buffers
 
 ;; ------------------------ User Interface Configuration -----------------------
 
+;; <<<< refactoring progress
 (require 'ui-config)             ;; transparency, cursor color, icons, &c.
 (require 'ui-theme)              ;; themes and theme persistency
 (require 'ui-navigation)         ;; the movement and navigation of windows
@@ -124,9 +130,9 @@
   (require 'write_text_file)
 ;;  (require 'update_text_file) ;; BUG: issues with this tool
   (require 'list_directory_files)
-  (require 'move_to_trash)
+  (require 'move_to_trash))
   ;; Web Tools
-  (require 'fetch_page))
+  ;;(require 'fetch_page))
 
 ;; ------------------------- Personal Workflow Related -------------------------
 
