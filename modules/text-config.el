@@ -15,20 +15,19 @@
 ;; ------------------------------- Text Settings -------------------------------
 
 ;; Global text settings
-(setq-default indent-tabs-mode nil)   ;; indentation should not insert tabs
-(setq require-final-newline nil)      ;; don't require newlines at the end of files
-(setq sentence-end-double-space nil)  ;; in the 21st century, sentences end w/ a single space
+(setopt indent-tabs-mode nil)         ;; indentation should not insert tabs
+(setopt require-final-newline nil)    ;; don't require newlines at the end of files
+(setopt sentence-end-double-space nil) ;; in the 21st century, sentences end w/ a single space
 
 (defun cj/text-mode-settings ()
   "Personal settings for `text-mode'."
   (turn-on-visual-line-mode))        ;; wrap text in text modes
-(add-hook 'text-mode-hook 'cj/text-mode-settings)
+(add-hook 'text-mode-hook #'cj/text-mode-settings)
 
 ;; --------------------------------- Move Text ---------------------------------
 ;; move the current line or selected region up or down in the buffer
 
 (use-package move-text
-  :defer 0.5
   :bind
   (("C-<up>" . move-text-up)
    ("C-<down>" . move-text-down)))
@@ -37,7 +36,6 @@
 ;; increase the region by semantic units
 
 (use-package expand-region
-  :defer 0.5
   :bind
   (("M-=" . er/expand-region)
    ("C->" . er/expand-region)
@@ -48,7 +46,6 @@
 ;; change inner and outer, just like in vim.
 
 (use-package change-inner
-  :defer 0.5
   :bind (("C-c i" . change-inner)
          ("C-c o" . change-outer)))
 
@@ -57,7 +54,6 @@
 
 (use-package delsel
   :ensure nil ;; built-in
-  :defer 0.5
   :config
   (delete-selection-mode t))
 
@@ -65,57 +61,43 @@
 ;; edit selection in new buffer, C-c to finish; replaces with modifications
 
 (use-package edit-indirect
-  :defer 1
   :bind ("M-I" . edit-indirect-region))
 
 ;; ------------------------------ Prettify Symbols -----------------------------
 ;; replacing the word l-a-m-b-d-a with a symbol, just because
 
-(setq-default prettify-symbols-alist
-			  (let ((mapping (lambda (pair)
-							   (let ((k (car pair))
-									 (v (cdr pair)))
-								 (list (cons (downcase k) v)
-									   (cons (upcase k) v))))))
-				(apply #'append
-					   (mapcar mapping
-							   '(
-								 ("#+begin_src" . "λ")
-								 ("#+begin_src" . "λ")
-								 ("#+end_src" . "λ")
-                                 ("#+begin_quote" . "")
-								 ("#+end_quote" . "")
-								 ("lambda" . "λ"))))))
+(defun cj/case-insensitive-symbol-pair (pair)
+  "Convert a symbol PAIR to both lowercase and uppercase variants.
+PAIR is a cons cell of (string . symbol)."
+  (let ((k (car pair))
+        (v (cdr pair)))
+    (list (cons (downcase k) v)
+          (cons (upcase k) v))))
 
+(setopt prettify-symbols-alist
+        (apply #'append
+               (mapcar #'cj/case-insensitive-symbol-pair
+                       '(("#+begin_src" . "λ")
+                         ("#+end_src" . "λ")
+                         ("lambda" . "λ")))))
 
-(add-hook 'prog-mode-hook 'turn-on-prettify-symbols-mode)
-(add-hook 'org-mode-hook 'turn-on-prettify-symbols-mode)
+(add-hook 'prog-mode-hook #'turn-on-prettify-symbols-mode)
+(add-hook 'org-mode-hook #'turn-on-prettify-symbols-mode)
 
 ;; ---------------------------------- Olivetti ---------------------------------
 ;; center text in the middle of the screen.
 
 (use-package olivetti
-  :defer 1
+  :commands olivetti-mode
   :config
-  (setq-default olivetti-body-width 100))
+  (setopt olivetti-body-width 100))  ;; 100 characters wide (comfortable reading width)
 
 ;; --------------------------- Accent (Diacriticals) ---------------------------
 ;; an easy way to enter diacritical marks
 
 (use-package accent
-  :defer 1
+  :commands accent-company
   :bind ("C-`" . accent-company))
-
-;; ----------------------------- Visual Fill Column ----------------------------
-;; text wrapping
-
-;; (use-package visual-fill-column
-;;   :defer 0.5
-;;   :config
-;;   (setq-default visual-fill-column-center-text nil)
-;;   (setq-default visual-fill-column-width 100)
-;;   :hook
-;;   (visual-line-mode . visual-fill-column-mode))
 
 (provide 'text-config)
 ;;; text-config.el ends here
