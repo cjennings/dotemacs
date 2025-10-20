@@ -16,9 +16,8 @@
 ;;; Code:
 
 (defconst cj/test-base-dir
-  (expand-file-name "~/.temp-gptel-tests/")
-  "Base directory for all GPTel test files and directories.
-
+  (expand-file-name "~/.temp-emacs-tests/")
+  "Base directory for all Emacs test files and directories.
 All test file-system artifacts should be created under this hidden
 directory in the user's home. This avoids relying on ephemeral system
 directories like /tmp and reduces flaky test failures caused by external
@@ -26,7 +25,6 @@ cleanup.")
 
 (defun cj/create-test-base-dir ()
   "Create the test base directory `cj/test-base-dir' if it does not exist.
-
 Returns the absolute path to the test base directory.
 Signals an error if creation fails."
   (let ((dir (file-name-as-directory cj/test-base-dir)))
@@ -149,7 +147,6 @@ Signals an error if the directory still exists after deletion attempt."
 
 (defun cj/create-temp-test-file (&optional prefix)
   "Create a uniquely named temporary file under `cj/test-base-dir'.
-
 Optional argument PREFIX is a string to prefix the filename, defaults
 to \"tempfile-\". Returns the absolute path to the newly created empty file.
 Errors if base test directory cannot be created or file creation fails."
@@ -162,13 +159,9 @@ Errors if base test directory cannot be created or file creation fails."
 
 (defun cj/create-test-subdirectory (subdir)
   "Ensure subdirectory SUBDIR (relative to `cj/test-base-dir') exists.
-
 Creates parent directories as needed.
-
 Returns the absolute path to the subdirectory.
-
 Signals an error if creation fails.
-
 SUBDIR must be a relative path string."
   (let* ((base (cj/create-test-base-dir))
 		 (fullpath (expand-file-name subdir base)))
