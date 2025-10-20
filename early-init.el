@@ -34,6 +34,14 @@
 
 ;;; Code:
 
+;; ---------------------------- Benchmark Init Setup ---------------------------
+;; Comprehensive startup profiling (run M-x benchmark-init/show-durations-tree)
+;; To disable profiling, comment out the lines below.
+;; Note: Install with M-x package-install RET benchmark-init RET
+
+;; (when (require 'benchmark-init nil 'noerror)
+;;   (add-hook 'after-init-hook 'benchmark-init/deactivate))
+
 ;; -------------------------------- Debug Flags --------------------------------
 ;; debugging enabled during Emacs startup. disabled again after Emacs startup.
 
