@@ -108,7 +108,7 @@ and all articles are considered minor words."
 		  (setq is-first nil))))))
 
 ;; replace the capitalize-region keybinding to call title-case
-(global-set-key [remap capitalize-region] 'cj/title-case-region)
+(keymap-global-set "<remap> <capitalize-region>" #'cj/title-case-region)
 
 ;; Case-change operations prefix and keymap
 (defvar-keymap cj/case-map
