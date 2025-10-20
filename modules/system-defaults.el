@@ -165,7 +165,7 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 
 ;; disable pinching gesture or mouse-wheel changing font size
 (global-unset-key (kbd "<pinch>"))
-(global-set-key [remap mouse-wheel-text-scale] 'cj/disabled)
+(keymap-global-set "<remap> <mouse-wheel-text-scale>" #'cj/disabled)
 
 ;; ------------------------------- Be Quiet(er)! -------------------------------
 ;; reduces "helpful" instructions that distract Emacs power users.
