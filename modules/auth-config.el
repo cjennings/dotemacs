@@ -15,7 +15,7 @@
 
 ;;; Code:
 
-(require 'user-constants) ;; defines authinfo-file location
+(eval-when-compile (require 'user-constants)) ;; defines authinfo-file location
 
 ;; -------------------------------- Auth Sources -------------------------------
 ;; auth sources settings
