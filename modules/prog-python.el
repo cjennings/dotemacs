@@ -31,12 +31,18 @@
 
 ;; Forward declarations for external packages
 (declare-function company-mode "company")
+(declare-function cj/disabled "system-defaults")
+(declare-function pdb "gud")
 (defvar poetry-tracking-strategy)
 
 (defvar pylsp-path "pylsp"
   "Path to Python LSP server (pylsp or pyright).
 Install with: pip install python-lsp-server[all]
 Or for pyright: pip install pyright")
+
+(defvar mypy-path "mypy"
+  "Path to mypy static type checker.
+Install with: pip install mypy")
 
 ;; -------------------------------- Python Setup -------------------------------
 ;; preferences for Python programming
@@ -57,13 +63,38 @@ Or for pyright: pip install pyright")
              (executable-find pylsp-path))
     (lsp-deferred)))
 
+(defun cj/python-mypy ()
+  "Run mypy static type checker on the current Python file or directory."
+  (interactive)
+  (if (executable-find mypy-path)
+      (let ((target (or (buffer-file-name) default-directory)))
+        (compile (format "%s %s" mypy-path (shell-quote-argument target))))
+    (message "mypy not found. Install with: pip install mypy")))
+
+(defun cj/python-debug ()
+  "Start Python debugger (pdb) on the current file."
+  (interactive)
+  (if buffer-file-name
+      (pdb (format "python3 -m pdb %s" (shell-quote-argument buffer-file-name)))
+    (message "No file associated with this buffer")))
+
+(defun cj/python-mode-keybindings ()
+  "Set up keybindings for Python programming.
+Overrides default prog-mode keybindings with Python-specific commands."
+  ;; S-f5: Run mypy (static type checking)
+  (local-set-key (kbd "S-<f5>") #'cj/python-mypy)
+
+  ;; S-f6: Debug with pdb
+  (local-set-key (kbd "S-<f6>") #'cj/python-debug))
+
 ;; ----------------------------------- Python ----------------------------------
 ;; configuration for python-ts-mode (treesit-based Python editing)
 
 (use-package python
   :ensure nil ;; built-in
   :hook
-  (python-ts-mode . cj/python-setup)
+  ((python-ts-mode . cj/python-setup)
+   (python-ts-mode . cj/python-mode-keybindings))
   :custom
   (python-shell-interpreter "python3")
   :config
@@ -111,7 +142,10 @@ Or for pyright: pip install pyright")
   :custom
   (blacken-allow-py36 t)
   (blacken-skip-string-normalization t)
-  :hook (python-ts-mode . blacken-mode))
+  :hook (python-ts-mode . blacken-mode)
+  :bind (:map python-ts-mode-map
+              ("<f6>" . blacken-buffer)
+              ("C-; f" . blacken-buffer)))
 
 ;; ---------------------------------- Numpydoc ---------------------------------
 ;; automatically insert NumPy style docstrings in Python function definitions

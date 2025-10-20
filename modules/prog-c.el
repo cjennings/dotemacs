@@ -40,6 +40,9 @@
 ;; Forward declarations for compile
 (declare-function recompile "compile")
 
+;; Forward declarations for system utilities
+(declare-function cj/disabled "system-defaults")
+
 (defvar clangd-path "clangd"
   "Path to clangd language server executable.")
 
@@ -93,7 +96,7 @@
   :if (executable-find clang-format-path)
   :bind (:map c-mode-base-map
               ("<f6>" . clang-format-buffer)
-              ("C-c f" . clang-format-buffer)))
+              ("C-; f" . clang-format-buffer)))
 
 ;; -------------------------------- Compilation --------------------------------
 ;; Smart compilation with project detection
@@ -132,10 +135,16 @@
 ;; -------------------------------- Keybindings --------------------------------
 
 (defun cj/c-mode-keybindings ()
-  "Set up keybindings for C programming."
-  (local-set-key (kbd "S-<f2>") #'compile)
-  (local-set-key (kbd "S-<f3>") #'gdb)
-  (local-set-key (kbd "<f5>") #'recompile))
+  "Set up keybindings for C programming.
+Overrides default prog-mode keybindings with C-specific commands."
+  ;; S-f4: Recompile (override default - C uses this more than projectile-compile)
+  (local-set-key (kbd "S-<f4>") #'recompile)
+
+  ;; S-f5: Static analysis placeholder (could add clang-tidy, cppcheck, etc.)
+  (local-set-key (kbd "S-<f5>") #'cj/disabled)
+
+  ;; S-f6: Debug with GDB
+  (local-set-key (kbd "S-<f6>") #'gdb))
 
 (add-hook 'c-mode-hook 'cj/c-mode-keybindings)
 (add-hook 'c-ts-mode-hook 'cj/c-mode-keybindings)

@@ -5,6 +5,31 @@
 ;; This module provides general programming functionality not related to a
 ;; specific programming language, such as code-folding, project management,
 ;; highlighting symbols, snippets, and whitespace management.
+;;
+;; Keybinding Scheme:
+;; ------------------
+;; Unified keybindings across all programming languages using Projectile
+;; for project-aware operations with language-specific overrides.
+;;
+;; Global Keybindings (all prog-mode buffers):
+;;   F4     - projectile-compile-project (smart compilation)
+;;   S-F4   - recompile (repeat last compile)
+;;   F5     - projectile-test-project (run tests)
+;;   S-F5   - Language-specific static analysis
+;;   F6     - projectile-run-project (run/execute)
+;;   S-F6   - Language-specific debugger
+;;   C-; f  - Language-specific formatter
+;;
+;; Quick Reference Table:
+;; | Key   | Global   | C             | Go          | Python      | Shell       |
+;; |-------|----------|---------------|-------------|-------------|-------------|
+;; | F4    | compile  | compile       | compile     | compile     | compile     |
+;; | S-F4  | recompile| recompile     | (projectile)| (projectile)| (projectile)|
+;; | F5    | test     | test          | test        | test        | test        |
+;; | S-F5  | (none)   | disabled      | staticcheck | mypy        | shellcheck  |
+;; | F6    | run      | run           | run         | run         | run         |
+;; | S-F6  | (none)   | gdb           | dlv         | pdb         | disabled    |
+;; | C-; f | format   | clang-format  | gofmt       | blacken     | shfmt       |
 
 ;;; Code:
 
@@ -29,7 +54,11 @@
 (declare-function dired-get-filename "dired")
 (declare-function global-treesit-auto-mode "treesit-auto")
 (declare-function treesit-auto-add-to-auto-mode-alist "treesit-auto")
+(declare-function treesit-auto-recipe-lang "treesit-auto")
 (declare-function highlight-indent-guides-mode "highlight-indent-guides")
+
+;; Forward declarations for treesit-auto variables
+(defvar treesit-auto-recipe-list)
 
 ;; Forward declarations for functions defined later in this file
 (declare-function cj/find-project-root-file "prog-general")
@@ -48,7 +77,13 @@
   (setq-default display-line-numbers-width 3)   ;; 3 characters reserved for line numbers
   (turn-on-visual-line-mode)                    ;; word-wrapping
   (auto-fill-mode)                              ;; auto wrap at the fill column set
-  (local-set-key (kbd "M-;") 'comment-dwim))    ;; comment/uncomment region as appropriate
+  (local-set-key (kbd "M-;") 'comment-dwim)     ;; comment/uncomment region as appropriate
+
+  ;; Project-wide commands (can be overridden by language-specific modes)
+  (local-set-key (kbd "<f4>") 'projectile-compile-project)   ;; compile project
+  (local-set-key (kbd "S-<f4>") 'recompile)                  ;; recompile (repeat last)
+  (local-set-key (kbd "<f5>") 'projectile-test-project)      ;; run tests
+  (local-set-key (kbd "<f6>") 'projectile-run-project))      ;; run project
 
 (add-hook 'prog-mode-hook #'cj/general-prog-settings)
 (add-hook 'html-mode-hook #'cj/general-prog-settings)
