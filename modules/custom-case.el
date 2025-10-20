@@ -16,7 +16,7 @@
 ;;
 ;;; Code:
 
-(eval-when-compile (require 'keybindings))
+(eval-when-compile (defvar cj/custom-keymap)) ;; cj/custom-keymap defined in keybindings.el
 
 (defun cj/upcase-dwim ()
   "Upcase the active region, or upcase the symbol at point if no region."
