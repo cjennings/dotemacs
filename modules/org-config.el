@@ -7,28 +7,68 @@
 
 ;;; Code:
 
+;; Forward declarations
+(eval-when-compile (defvar org-dir))
+
+;; Forward declarations for org-mode variables
+(defvar org-mode-map)
+(defvar org-modules)
+(defvar org-startup-folded)
+(defvar org-cycle-open-archived-trees)
+(defvar org-outline-path-complete-in-steps)
+(defvar org-return-follows-link)
+(defvar org-list-allow-alphabetical)
+(defvar org-startup-indented)
+(defvar org-adapt-indentation)
+(defvar org-indent-indentation-per-level)
+(defvar org-startup-with-inline-images)
+(defvar org-image-actual-width)
+(defvar org-yank-image-save-method)
+(defvar org-bookmark-names-plist)
+(defvar org-file-apps)
+(defvar org-ellipsis)
+(defvar org-hide-emphasis-markers)
+(defvar org-hide-leading-stars)
+(defvar org-pretty-entities)
+(defvar org-pretty-entities-include-sub-superscripts)
+(defvar org-fontify-emphasized-text)
+(defvar org-fontify-whole-heading-line)
+(defvar org-todo-keywords)
+(defvar org-todo-keyword-faces)
+(defvar org-highest-priority)
+(defvar org-lowest-priority)
+(defvar org-default-priority)
+(defvar org-priority-faces)
+(defvar org-enforce-todo-dependencies)
+(defvar org-enforce-todo-checkbox-dependencies)
+(defvar org-deadline-warning-days)
+(defvar org-treat-insert-todo-heading-as-state-change)
+(defvar org-log-into-drawer)
+(defvar org-log-done)
+(defvar org-habit-graph-column)
+(defvar org-use-property-inheritance)
+
+;; Forward declarations for org-mode functions
+(declare-function org-eval-in-calendar "org" (form))
+(declare-function org-forward-heading-same-level "org" (arg))
+(declare-function org-backward-heading-same-level "org" (arg))
+
 ;; ------------------------------- Org Constants -------------------------------
 
-;; note: some constants used here are defined in init.el
-(defvar org-archive-location
-  (concat org-dir "/archives/archive.org::datetree/")
-  "Location of the archive file.
-The archive file is where org entries that are archived via
-org-archive-subtree-default are placed.")
+;; note: org-archive-location is set in the :config section after org loads
 
 ;; ---------------------------- Org General Settings ---------------------------
 
 (defun cj/org-general-settings ()
-  "All general \='org-mode\=' settings are grouped and set in this function."
+  "All general `org-mode' settings are grouped and set in this function."
 
   ;; Unbind org-cycle-agenda-files keys for use elsewhere
-  (unbind-key "C-'" org-mode-map)
-  (unbind-key "C-," org-mode-map)
+  (keymap-unset org-mode-map "C-'" t)
+  (keymap-unset org-mode-map "C-," t)
 
   ;; ORG-MODULES
   ;; enable recognition of org-protocol:// as a parameter
   ;; add org-habits
-  (require 'org-protocol)
   (setq org-modules '(org-protocol ol-eww ol-w3m ol-info org-habit))
 
   ;; GENERAL
@@ -52,7 +92,7 @@ org-archive-subtree-default are placed.")
   (setq org-bookmark-names-plist nil)       ;; don't set org-capture bookmarks
 
   ;; make org-store-link binding global
-  (global-set-key (kbd "C-c l") 'org-store-link)
+  (keymap-global-set "C-c l" #'org-store-link)
 
   ;; force pdfs exported from org to open in emacs
   (add-to-list 'org-file-apps '("\\.pdf\\'" . emacs)))
@@ -122,7 +162,7 @@ org-archive-subtree-default are placed.")
   (setq org-enforce-todo-checkbox-dependencies t)
   (setq org-deadline-warning-days 7)    ;; warn me w/in a week of deadlines
   (setq org-treat-insert-todo-heading-as-state-change nil) ;; log task creation
-  (setq org-log-into-drawer nil) ;; log into the drawer
+  (setq org-log-into-drawer nil) ;; don't log into drawer
   (setq org-log-done nil) ;; don't log completions
   (setq org-habit-graph-column 75) ;; allow space for task name
 
@@ -131,14 +171,16 @@ org-archive-subtree-default are placed.")
 
 ;; ---------------------------------- Org Mode ---------------------------------
 
+;; Create org-table-map prefix command
+(defvar org-table-map (make-sparse-keymap)
+  "Keymap for org-table operations.")
+
+;;;###autoload (keymap-global-set "C-c T" org-table-map)
+
 (use-package org
-  :defer .5
+  :defer t
   :ensure nil ;; use the built-in package
   :pin manual ;; never upgrade from the version built-into Emacs
-  :preface
-  ;; create an org-table-map so we can use C-c t as prefix
-  (define-prefix-command 'org-table-map)
-  (global-set-key (kbd "C-c T") 'org-table-map)
   :bind
   ("C-c c" . org-capture)
   ("C-c a" . org-agenda)
@@ -186,14 +228,13 @@ org-archive-subtree-default are placed.")
   ;; - super up/down increases and decreases the priority
   ;; - super left/right changes the todo state
   (setq org-replace-disputed-keys t)
-  (custom-set-variables
-   '(org-disputed-keys
-     '(([(shift left)]          . [(super left)])
-       ([(shift right)]         . [(super right)])
-       ([(shift up)]            . [(super up)])
-       ([(shift down)]          . [(super down)])
-       ([(control shift right)] . [(meta shift +)])
-	   ([(control shift left)]  . [(meta shift -)]))))
+  (setq org-disputed-keys
+        '(([(shift left)]          . [(super left)])
+          ([(shift right)]         . [(super right)])
+          ([(shift up)]            . [(super up)])
+          ([(shift down)]          . [(super down)])
+          ([(control shift right)] . [(meta shift +)])
+          ([(control shift left)]  . [(meta shift -)])))
 
   (defun cj/org-narrow-forward ()
 	"Narrow to the next subtree at the same level."
@@ -210,14 +251,15 @@ org-archive-subtree-default are placed.")
 	(org-narrow-to-subtree))
 
   :hook
-  (org-mode . flyspell-mode)
   (org-mode . turn-on-visual-line-mode)
-  (org-mode . org-indent-mode)
 
   :config
-  ;; bug workaround for org-element--get-category: Invalid function: org-element-with-disabled-cache
-  ;; https://github.com/doomemacs/doomemacs/issues/7347
-  ;;(load-library "org-element.el")
+  ;; Load org-protocol for org-protocol:// URL handling
+  (require 'org-protocol nil t)
+
+  ;; Set archive location (must be done after org loads)
+  (setq org-archive-location
+        (concat org-dir "/archives/archive.org::datetree/"))
 
   (cj/org-general-settings)
   (cj/org-appearance-settings)
@@ -226,13 +268,17 @@ org-archive-subtree-default are placed.")
 
 ;; ------------------------------- Org Superstar -------------------------------
 
+;; Forward declarations
+(defvar org-superstar-leading-bullet)
+(declare-function org-superstar-configure-like-org-bullets "org-superstar")
+
 ;; nicer bullets than simple asterisks.
 (use-package org-superstar
   :after org
+  :hook (org-mode . org-superstar-mode)
   :config
   (org-superstar-configure-like-org-bullets)
-  (setq org-superstar-leading-bullet ?\s)
-  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
+  (setq org-superstar-leading-bullet ?\s))
 
 ;; ------------------------------- Org-Checklist -------------------------------
 ;; needed for org-habits to reset checklists once task is complete
@@ -241,11 +287,12 @@ org-archive-subtree-default are placed.")
 (use-package org-checklist
   :ensure nil ;; in custom folder
   :after org
-  :load-path "custom/org-checklist.el")
+  :load-path "custom")
 
 ;; -------------------------- Org Link To Current File -------------------------
 ;; get a link to the file the current buffer is associated with.
 
+;;;###autoload
 (defun cj/org-link-to-current-buffer-file ()
   "Create an Org mode link to the current file and copy it to the clipboard.
 
