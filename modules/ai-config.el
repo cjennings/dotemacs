@@ -400,20 +400,20 @@ Works for any buffer, whether it's visiting a file or not."
 
 (define-prefix-command 'cj/ai-keymap nil
 					   "Keymap for AI operations.")
-(define-key cj/custom-keymap "a" 'cj/ai-keymap)
-(define-key cj/ai-keymap "B" #'cj/gptel-switch-backend)      ;; change the backend (OpenAI, Anthropic, etc.)
-(define-key cj/ai-keymap "M" #'gptel-menu)                   ;; gptel's transient menu
-(define-key cj/ai-keymap "d" #'cj/gptel-delete-conversation) ;; delete conversation
-(define-key cj/ai-keymap "." #'cj/gptel-add-this-buffer)     ;; add buffer to context
-(define-key cj/ai-keymap "f" #'cj/gptel-add-file)            ;; add a file to context
-(define-key cj/ai-keymap "l" #'cj/gptel-load-conversation)   ;; load and continue conversation
-(define-key cj/ai-keymap "m" #'cj/gptel-change-model)        ;; change the LLM model
-(define-key cj/ai-keymap "p" #'gptel-system-prompt)          ;; change prompt
-(define-key cj/ai-keymap "&" #'gptel-rewrite)                ;; rewrite a region of code/text
-(define-key cj/ai-keymap "r" #'cj/gptel-context-clear)       ;; remove all context
-(define-key cj/ai-keymap "s" #'cj/gptel-save-conversation)   ;; save conversation
-(define-key cj/ai-keymap "t" #'cj/toggle-gptel)              ;; toggles the ai-assistant window
-(define-key cj/ai-keymap "x" #'cj/gptel-clear-buffer)        ;; clears the assistant buffer
+(keymap-set cj/custom-keymap "a" #'cj/ai-keymap)
+(keymap-set cj/ai-keymap "B" #'cj/gptel-switch-backend)      ;; change the backend (OpenAI, Anthropic, etc.)
+(keymap-set cj/ai-keymap "M" #'gptel-menu)                   ;; gptel's transient menu
+(keymap-set cj/ai-keymap "d" #'cj/gptel-delete-conversation) ;; delete conversation
+(keymap-set cj/ai-keymap "." #'cj/gptel-add-this-buffer)     ;; add buffer to context
+(keymap-set cj/ai-keymap "f" #'cj/gptel-add-file)            ;; add a file to context
+(keymap-set cj/ai-keymap "l" #'cj/gptel-load-conversation)   ;; load and continue conversation
+(keymap-set cj/ai-keymap "m" #'cj/gptel-change-model)        ;; change the LLM model
+(keymap-set cj/ai-keymap "p" #'gptel-system-prompt)          ;; change prompt
+(keymap-set cj/ai-keymap "&" #'gptel-rewrite)                ;; rewrite a region of code/text
+(keymap-set cj/ai-keymap "r" #'cj/gptel-context-clear)       ;; remove all context
+(keymap-set cj/ai-keymap "s" #'cj/gptel-save-conversation)   ;; save conversation
+(keymap-set cj/ai-keymap "t" #'cj/toggle-gptel)              ;; toggles the ai-assistant window
+(keymap-set cj/ai-keymap "x" #'cj/gptel-clear-buffer)        ;; clears the assistant buffer
 
 (provide 'ai-config)
 ;;; ai-config.el ends here.
