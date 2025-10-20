@@ -85,13 +85,13 @@ Produce a comma-separated list as the result."
 ;; Ordering & sorting prefix and keymap
 (define-prefix-command 'cj/ordering-map nil
 					   "Keymap for text ordering and sorting operations.")
-(define-key cj/custom-keymap "o" 'cj/ordering-map)
+(keymap-set cj/custom-keymap "o" #'cj/ordering-map)
 
 
-(define-key cj/ordering-map "a" 'cj/arrayify)
-(define-key cj/ordering-map "u" 'cj/unarrayify)
-(define-key cj/ordering-map "A" 'cj/alphabetize-region)
-(define-key cj/ordering-map "l" 'cj/comma-separated-text-to-lines)
+(keymap-set cj/ordering-map "a" #'cj/arrayify)
+(keymap-set cj/ordering-map "u" #'cj/unarrayify)
+(keymap-set cj/ordering-map "A" #'cj/alphabetize-region)
+(keymap-set cj/ordering-map "l" #'cj/comma-separated-text-to-lines)
 
 (provide 'custom-ordering)
 ;;; custom-ordering.el ends here.
