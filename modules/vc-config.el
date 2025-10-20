@@ -95,11 +95,14 @@
 ;; GitHub/GitLab/etc integration for Magit
 
 (use-package forge
-  :after magit
+  :commands (forge-pull forge-list-notifications forge-create-issue forge-create-pullreq)
   :init
   ;; Set up forge database location
   (setq forge-database-file
 		(expand-file-name "forge-database.sqlite" user-emacs-directory))
+  ;; Auto-load forge when visiting magit-status in a forge-enabled repo
+  (with-eval-after-load 'magit
+    (define-key magit-mode-map (kbd "N") 'forge-pull))
 
   :config
   (setq forge-pull-notifications nil)       ;; Don't pull notifications by default
