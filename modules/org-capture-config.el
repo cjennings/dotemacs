@@ -17,6 +17,9 @@
 
 ;;; Code:
 (require 'user-constants)
+
+(eval-when-compile (defvar drill-dir))
+
 ;; -------------------------- Event Capture Formatting -------------------------
 
 ;; Formats event headlines with YY-MM-DD prefix extracted from the scheduled date
@@ -76,6 +79,43 @@ Intended to be called within an org capture template."
           (car (pdf-view-active-region-text)))
       (user-error "Buffer %S not alive" pdf-buf-name))))
 
+;; ----------------------- Org Drill Capture Helpers -----------------------
+
+(defun cj/drill-source-link ()
+  "Generate appropriate source link based on capture context."
+  (cond
+   ;; org-protocol capture (bookmarklet from web)
+   ((org-capture-get :link)
+    (format "Source: [[%s][%s]]"
+            (org-capture-get :link)
+            (org-capture-get :description)))
+   ;; PDF capture
+   ((with-current-buffer (org-capture-get :original-buffer)
+      (derived-mode-p 'pdf-view-mode))
+    (format "Source: [[%s][%s]]"
+            (org-capture-get :annotation)
+            (buffer-name (org-capture-get :original-buffer))))
+   ;; EPUB or other
+   (t
+    (format "Source: [[%s][%s]]"
+            (or (org-capture-get :link) "")
+            (buffer-name (org-capture-get :original-buffer))))))
+
+(defun cj/drill-answer-content ()
+  "Get answer content, using PDF active region for PDF captures."
+  (cond
+   ;; PDF capture - use PDF active region
+   ((and (org-capture-get :original-buffer)
+         (with-current-buffer (org-capture-get :original-buffer)
+           (derived-mode-p 'pdf-view-mode)))
+    (cj/org-capture-pdf-active-region))
+   ;; org-protocol capture - initial content is in a plist property
+   ((plist-get org-store-link-plist :initial)
+    (plist-get org-store-link-plist :initial))
+   ;; Regular capture with %i expansion
+   (t
+    (or (org-capture-get :initial) ""))))
+
 ;; --------------------------- Org-Capture Templates ---------------------------
 ;; you can bring up the org capture menu with C-c c
 
@@ -132,13 +172,29 @@ Captured On: %U\n" :prepend t :immediate-finish t)
 Captured On: %U"
 		   :prepend t)
 
+		  ("d" "Drill Question" entry
+		   (file (lambda ()
+				   (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
+					 (expand-file-name
+					  (completing-read "Choose file: " files)
+					  drill-dir))))
+		   "* Item   :drill:\n%?\n** Answer\n%i\nSource: [[%:link][%:description]]\nCaptured On: %U" :prepend t)
+
+		  ("f" "Drill Question - PDF" entry
+		   (file (lambda ()
+				   (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
+					 (expand-file-name
+					  (completing-read "Choose file: " files)
+					  drill-dir))))
+		   "* Item   :drill:\n%?\n** Answer\n%(cj/org-capture-pdf-active-region)\nSource: [[%L][%(buffer-name (org-capture-get :original-buffer))]]\nCaptured On: %U" :prepend t)
+
 		  )) ;; end setq
   ) ;; end use-package org-protocol
 
 ;; ---------------------------- Simple Task Capture ----------------------------
 ;; the simplest way to capture a task. Also a simple way to write this function.
 
-(define-key global-map (kbd "C-S-t") (kbd "C-c c t"))
+(keymap-global-set "C-T" (lambda () (interactive) (org-capture nil "t")))
 
 (provide 'org-capture-config)
 ;;; org-capture-config.el ends here.
