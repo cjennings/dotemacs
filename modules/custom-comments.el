@@ -16,7 +16,7 @@
 ;;
 ;;; Code:
 
-(eval-when-compile (require 'keybindings)) ;; for keymapping below
+(eval-when-compile (defvar cj/custom-keymap)) ;; cj/custom-keymap defined in keybindings.el
 (autoload 'cj/join-line-or-region "custom-line-paragraph" nil t)
 
 ;; --------------------------- Delete Buffer Comments --------------------------
