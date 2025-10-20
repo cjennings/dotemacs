@@ -29,17 +29,20 @@
 
 ;;; Code:
 
+(defvar recentf-list)
+(defvar recentf-mode)
+(declare-function recentf-mode "recentf")
+(declare-function consult-buffer "consult")
+
 ;; ------------------------------ Window Placement -----------------------------
 
 (use-package windmove
-  :defer .5
   :config
   (windmove-default-keybindings))  ; move cursor around with shift+arrows
 
 ;; ------------------------------ Window Resizing ------------------------------
 
 (use-package windsize
-  :defer .5
   :bind
   ("C-s-<left>"  . windsize-left)
   ("C-s-<right>" . windsize-right)
@@ -47,7 +50,7 @@
   ("C-s-<down>"  . windsize-down))
 
 ;; M-shift = to balance multiple split windows
-(global-set-key (kbd "M-+") 'balance-windows)
+(keymap-global-set "M-+" #'balance-windows)
 
 ;; ------------------------------ Window Splitting -----------------------------
 
@@ -57,7 +60,7 @@
   (split-window-right)
   (other-window 1)
   (consult-buffer))
-(global-set-key (kbd "M-V") 'cj/split-and-follow-right)
+(keymap-global-set "M-V" #'cj/split-and-follow-right)
 
 (defun cj/split-and-follow-below ()
   "Split window vertically and select a buffer to display."
@@ -65,7 +68,7 @@
   (split-window-below)
   (other-window 1)
   (consult-buffer))
-(global-set-key (kbd "M-H") 'cj/split-and-follow-below)
+(keymap-global-set "M-H" #'cj/split-and-follow-below)
 
 ;; ------------------------- Split Window Reorientation ------------------------
 
@@ -98,10 +101,10 @@ This function won't work with more than one split window."
 		  (set-window-buffer (next-window) next-win-buffer)
 		  (select-window first-win)
 		  (if this-win-2nd (other-window 1))))))
-(global-set-key (kbd "M-T") 'toggle-window-split)
+(keymap-global-set "M-T" #'toggle-window-split)
 
 ;; SWAP WINDOW POSITIONS
-(global-set-key (kbd "M-S") 'window-swap-states)
+(keymap-global-set "M-S" #'window-swap-states)
 
 ;; ---------------------------- Buffer Manipulation ----------------------------
 
@@ -137,7 +140,7 @@ This function won't work with more than one split window."
 	  (find-file
 	   (if arg (nth arg recently-killed-list)
 		 (car recently-killed-list))))))
-(global-set-key (kbd "M-Z") 'cj/undo-kill-buffer)
+(keymap-global-set "M-Z" #'cj/undo-kill-buffer)
 
 ;; ---------------------------- Undo Layout Changes ----------------------------
 ;; allows you to restore your window setup with C-c left-arrow
@@ -145,7 +148,6 @@ This function won't work with more than one split window."
 
 (use-package winner
   :ensure nil ;; built-in
-  :defer .5
   :bind ("M-U" . winner-undo)
   :config
   (winner-mode 1))
