@@ -8,7 +8,34 @@
 
 ;;; Code:
 
-(require 'seq)
+(eval-when-compile (defvar code-dir))
+(eval-when-compile (defvar projects-dir))
+(eval-when-compile (defvar snippets-dir))
+
+(defvar display-line-numbers-type)
+(defvar outline-minor-mode-map)
+(defvar projectile-per-project-compilation-buffer)
+(defvar projectile-switch-project-action)
+(defvar projectile-command-map)
+(defvar dired-mode-map)
+(defvar yas-snippet-dirs)
+(defvar highlight-indent-guides-auto-enabled)
+(defvar hl-todo-keyword-faces)
+(defvar ws-butler-convert-leading-tabs-or-spaces)
+
+(declare-function projectile-project-root "projectile")
+(declare-function projectile-mode "projectile")
+(declare-function magit-status "magit")
+(declare-function dired-get-filename "dired")
+(declare-function global-treesit-auto-mode "treesit-auto")
+(declare-function treesit-auto-add-to-auto-mode-alist "treesit-auto")
+(declare-function highlight-indent-guides-mode "highlight-indent-guides")
+
+;; Forward declarations for functions defined later in this file
+(declare-function cj/find-project-root-file "prog-general")
+(declare-function cj/project-switch-actions "prog-general")
+(declare-function cj/deadgrep--initial-term "prog-general")
+(declare-function cj/highlight-indent-guides-disable-in-non-prog-modes "prog-general")
 
 ;; --------------------- General Programming Mode Settings ---------------------
 ;; keybindings, minor-modes, and prog-mode settings
@@ -32,12 +59,10 @@
 ;; --------------------------------- Treesitter --------------------------------
 ;; incremental language syntax parser
 
-(use-package tree-sitter
-  :defer .5)
+(use-package tree-sitter)
 
 ;; installs tree-sitter grammars if they're absent
 (use-package treesit-auto
-  :defer .5
   :custom
   (treesit-auto-install t)
   ;;  (treesit-auto-install 'prompt) ;; optional prompt instead of auto-install
@@ -52,7 +77,6 @@
 ;; additionally it can make use of the hideshow package.
 (use-package bicycle
   :after outline
-  :defer 1
   :hook ((prog-mode . outline-minor-mode)
 		 (prog-mode . hs-minor-mode))
   :bind (:map outline-minor-mode-map
@@ -70,7 +94,6 @@
 	  (run-at-time "3" nil 'projectile-discover-projects-in-search-path))))
 
 (use-package projectile
-  :defer .5
   :bind-keymap
   ("C-c p" . projectile-command-map)
   :bind
@@ -81,6 +104,8 @@
   (projectile-auto-discover nil)
   (projectile-project-search-path `(,code-dir ,projects-dir))
   :config
+  (require 'seq)
+
   (defun cj/find-project-root-file (regexp)
 	"Return first file in the current Projectile project root matching REGEXP.
 
@@ -107,7 +132,7 @@ If no such file exists there, display a message."
 	  (message "Not in a Projectile project")))
 
   (defun cj/project-switch-actions ()
-	"On =projectile-after-switch-project-hook=, open TODO.{org,md,txt} or fall back to Magit."
+	"On project switch, open TODO.{org,md,txt} or fall back to Magit."
 	(let ((file (cj/find-project-root-file
 				 (rx bos "todo." (or "org" "md" "txt") eos))))
 	  (if file
@@ -124,13 +149,11 @@ If no such file exists there, display a message."
 
 ;; groups ibuffer by projects
 (use-package ibuffer-projectile
-  :defer .5
   :after projectile
   :hook (ibuffer-mode . ibuffer-projectile-set-filter-groups))
 
 ;; list all errors project-wide
 (use-package flycheck-projectile
-  :defer .5
   :after projectile
   :commands flycheck-projectile-list-errors
   :bind
@@ -185,20 +208,20 @@ If no such file exists there, display a message."
 	  (deadgrep term dir))))
 
 (with-eval-after-load 'dired
-  (define-key dired-mode-map (kbd "d") #'cj/deadgrep-here))
+  (keymap-set dired-mode-map "d" #'cj/deadgrep-here))
 
 
 ;; ---------------------------------- Snippets ---------------------------------
 ;; reusable code and text
 
 (use-package yasnippet
-  :defer 1
+  :commands (yas-new-snippet yas-visit-snippet-file yas-global-mode)
+  :hook (prog-mode . yas-minor-mode)
   :bind
   ("C-c s n" . yas-new-snippet)
   ("C-c s e" . yas-visit-snippet-file)
   :config
-  (setq yas-snippet-dirs '(snippets-dir))
-  (yas-global-mode 1))
+  (setq yas-snippet-dirs '(snippets-dir)))
 
 (use-package ivy-yasnippet
   :after yasnippet
@@ -209,7 +232,6 @@ If no such file exists there, display a message."
 ;; display the actual color as highlight to color hex code
 
 (use-package rainbow-mode
-  :defer .5
   :hook (prog-mode . rainbow-mode))
 
 ;; ---------------------------- Symbol Overlay Mode ----------------------------
@@ -217,7 +239,6 @@ If no such file exists there, display a message."
 ;; replaces highlight-symbol-mode
 
 (use-package symbol-overlay
-  :defer .5
   :bind-keymap
   ("C-c C-s" . symbol-overlay-map)
   :hook
@@ -227,7 +248,6 @@ If no such file exists there, display a message."
 ;; --------------------------- Highlight Indentation ---------------------------
 
 (use-package highlight-indent-guides
-  :ensure t
   :hook (prog-mode . cj/highlight-indent-guides-enable)
   :config
   ;; Disable auto face coloring to use explicit faces for better visibility across themes
@@ -274,7 +294,6 @@ If no such file exists there, display a message."
 ;; trims trailing whitespace only from lines you've modified when saving buffer
 
 (use-package ws-butler
-  :defer .5
   :commands (ws-butler-mode)
   :init
   (add-hook 'prog-mode-hook #'ws-butler-mode)
@@ -286,7 +305,7 @@ If no such file exists there, display a message."
 ;; close compilation windows when successful. from 'enberg' on #emacs
 
 (add-hook 'compilation-finish-functions
-		  (lambda (buf str)
+		  (lambda (_buf str)
 			(if (null (string-match ".*exited abnormally.*" str))
 				;;no errors, make the compilation window go away in a few seconds
 				(progn

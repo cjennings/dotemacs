@@ -5,12 +5,13 @@
 
 ;;; Code:
 
+(defvar python-ts-mode-map)
+
 ;; -------------------------------- Python Setup -------------------------------
 ;; preferences for Python programming
 
 (defun cj/python-setup ()
   "My default code preferences for Python coding."
-  (tree-sitter-hl-mode)               ;; use tree-sitter's highlighting
   (hs-minor-mode)                     ;; folding
   (company-mode)                      ;; completion framework
   (flyspell-prog-mode)                ;; spell check comments
@@ -22,17 +23,20 @@
   (electric-pair-mode t))             ;; match delimiters automatically
 
 ;; ----------------------------------- Python ----------------------------------
-;; configuration for Emacs' built-in Python editing support
+;; configuration for python-ts-mode (treesit-based Python editing)
 
 (use-package python
   :ensure nil ;; built-in
   :hook
-  (python-mode . cj/python-setup)
+  (python-ts-mode . cj/python-setup)
   :custom
   (python-shell-interpreter "python3")
   :config
   ;; remove the "guess indent" python message
-  (setq python-indent-guess-indent-offset-verbose nil))
+  (setq python-indent-guess-indent-offset-verbose nil)
+  ;; Remove python-mode from auto-mode-alist to prefer python-ts-mode
+  (setq auto-mode-alist
+        (rassq-delete-all 'python-mode auto-mode-alist)))
 
 ;; ----------------------------------- Poetry ----------------------------------
 ;; virtual environments and dependencies
@@ -40,7 +44,7 @@
 (use-package poetry
   :defer t
   :after (python)
-  :hook (python-mode . poetry-tracking-mode)
+  :hook (python-ts-mode . poetry-tracking-mode)
   :config
   ;; Checks for the correct virtualenv. Better strategy IMO because the default
   ;; one is quite slow.
@@ -50,31 +54,29 @@
 ;; formatting on save
 
 (use-package blacken
-  :defer 1
   :custom
   (blacken-allow-py36 t)
   (blacken-skip-string-normalization t)
-  :hook (python-mode . blacken-mode))
+  :hook (python-ts-mode . blacken-mode))
 
 ;; ---------------------------------- Numpydoc ---------------------------------
 ;; automatically insert NumPy style docstrings in Python function definitions
 
 (use-package numpydoc
-  :defer 1
   :custom
   (numpydoc-insert-examples-block nil)
   (numpydoc-template-long nil)
-  :bind (:map python-mode-map
+  :bind (:map python-ts-mode-map
 			  ("C-c C-n" . numpydoc-generate)))
 
 ;; ------------------------------------ TOML -----------------------------------
 ;; editing support and documentation for TOML files
 
 (use-package toml-mode
-  :defer 1)
+  :mode "\\.toml\\'")
 
 (use-package eldoc-toml
-  :defer 1)
+  :hook (toml-mode . eldoc-toml-mode))
 
 
 (provide 'prog-python)
