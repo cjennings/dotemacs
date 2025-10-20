@@ -2,47 +2,69 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;; Configuration for Emacs Lisp, Common Lisp (SLIME), and Scheme (Guile).
 
-;; ==== Setting up Quicklisp ====
-;; Quicklisp is a library manager for Common Lisp. It works with your existing Common Lisp
-;; implementation to download, install, and load any of over 1,500 libraries with a few
-;; simple commands.
-;; https://www.quicklisp.org/beta/
-
-;; mostly from: https://gist.github.com/jteneycke/7947353
-;; * Install SBCL
-;; sudo pacman -S sbcl       # arch
-;; doas pkg install sbcl     # bsd
-;; sudo apt-get install sbcl # debian
-
-;; * Install QuickLisp
-;; curl -O http://beta.quicklisp.org/quicklisp.lisp
-;; sbcl --load quicklisp.lisp --eval "(quicklisp-quickstart:install)" --quit
-;; sbcl --load ~/quicklisp/setup.lisp --eval "(ql:add-to-init-file)" --quit
-
-;; * Emacs Config
-;; (load (expand-file-name "~/quicklisp/slime-helper.el"))
-;; ;; Replace "sbcl" with the path to your implementation
-;; (setq inferior-lisp-program "/usr/bin/sbcl")
-
-;; to get readline support in SBCL's REPL, install rlwrap and run it
-;; before sbcl like so:
-
-;; $ rlwrap sbcl
+;; ==== Common Lisp Setup (SLIME + Quicklisp) ====
+;;
+;; Install SBCL:
+;;   sudo pacman -S sbcl       # arch
+;;   doas pkg install sbcl     # bsd
+;;   sudo apt-get install sbcl # debian
+;;
+;; Install Quicklisp (Common Lisp package manager):
+;;   curl -O http://beta.quicklisp.org/quicklisp.lisp
+;;   sbcl --load quicklisp.lisp --eval "(quicklisp-quickstart:install)" --quit
+;;   sbcl --load ~/quicklisp/setup.lisp --eval "(ql:add-to-init-file)" --quit
+;;
+;; Install SLIME via Quicklisp:
+;;   sbcl --eval "(ql:quickload :quicklisp-slime-helper)" --quit
+;;
+;; Readline support for SBCL REPL (outside Emacs):
+;;   rlwrap sbcl
 
 ;;; Code:
-(require 'ert)
+
+(defvar common-lisp-program "/usr/bin/sbcl"
+  "Path to Common Lisp implementation (SBCL, CCL, etc.).")
+
+(defvar quicklisp-helper-path (expand-file-name "~/quicklisp/slime-helper.el")
+  "Path to Quicklisp's SLIME helper file.")
+
+(defvar guile-program "/usr/bin/guile"
+  "Path to Guile Scheme implementation.")
+
+;; Forward declarations for SLIME variables
+(defvar inferior-lisp-program)
+(defvar slime-contribs)
+(defvar slime-repl-history-size)
+(defvar slime-repl-history-file)
+
+;; Forward declarations for Geiser variables
+(defvar geiser-guile-binary)
+
+;; Forward declarations for flycheck-package
+(declare-function flycheck-package-setup "flycheck-package")
 
 ;; -------------------------------- Elisp Setup --------------------------------
-;; run this on editing an elisp file
+;; preferences for Emacs Lisp editing
 
 (defun cj/elisp-setup ()
-  "My default code preferences for emacs-lisp."
-  (setq-default tab-width 4)            ;; set the tab width to 4 spaces
-  (setq-default indent-tabs-mode -1)    ;; disable tab characters
-  (setq-default fill-column 120)        ;; wrap code at this column
+  "Default code preferences for Emacs Lisp."
+  (setq-local tab-width 4)              ;; set the tab width to 4 spaces
+  (setq-local indent-tabs-mode nil)     ;; disable tab characters (use spaces)
+  (setq-local fill-column 120)          ;; wrap code at this column
   (display-fill-column-indicator-mode)) ;; show where the fill-column is
 (add-hook 'emacs-lisp-mode-hook 'cj/elisp-setup)
+
+;; ---------------------------- Common Lisp Setup ------------------------------
+;; preferences for Common Lisp editing
+
+(defun cj/common-lisp-setup ()
+  "Default code preferences for Common Lisp."
+  (setq-local tab-width 2)              ;; Common Lisp standard is 2 spaces
+  (setq-local indent-tabs-mode nil)     ;; use spaces, not tabs
+  (setq-local fill-column 100))         ;; wrap at 100 columns
+(add-hook 'lisp-mode-hook 'cj/common-lisp-setup)
 
 ;; ------------------------------ Emacs Lisp REPL ------------------------------
 
@@ -67,40 +89,36 @@
 ;; or: [[info:ert#User Input]]
 
 (use-package ert
-  :ensure nil ;; built-into emacs
-  :defer 1)
+  :ensure nil) ;; built-into emacs
 
 ;; ---------------------------------- El-Mock ----------------------------------
 
 (use-package el-mock
-  :defer 1) ;; mock/stub framework
+  :commands (with-mock mocklet mocklet-function)) ;; mock/stub framework
 
 ;; --------------------------------- Elisp Lint --------------------------------
 
 (use-package elisp-lint
-  :defer 1)
+  :commands (elisp-lint-file elisp-lint-directory))
 
 ;; ------------------------------ Package Tooling ------------------------------
 
 (use-package package-lint
-  :defer 1)
+  :commands (package-lint-current-buffer package-lint-batch-and-exit))
 
 (use-package flycheck-package
-  :defer 1
   :after (flycheck package-lint)
   :config
   (flycheck-package-setup))
 
 (use-package package-build
-  :defer 1)
+  :commands (package-build-archive package-build-current-recipe))
 
 ;; ----------------------------- Rainbow Delimiters ----------------------------
 
 (use-package rainbow-delimiters
-  :defer .5
   :hook
-  (emacs-lisp-mode . rainbow-delimiters-mode)
-  (lisp-mode . rainbow-delimiters-mode)
+  ((emacs-lisp-mode lisp-mode scheme-mode) . rainbow-delimiters-mode)
   :config
   (set-face-foreground 'rainbow-delimiters-depth-1-face "#c66")     ;; red
   (set-face-foreground 'rainbow-delimiters-depth-2-face "#6c6")     ;; green
@@ -112,15 +130,35 @@
   (set-face-foreground 'rainbow-delimiters-depth-8-face "#999")     ;; medium gray
   (set-face-foreground 'rainbow-delimiters-depth-9-face "#666"))    ;; dark gray
 
+;; ----------------------------------- SLIME -----------------------------------
+;; Superior Lisp Interaction Mode for Emacs (Common Lisp REPL/debugger)
+
+(use-package slime
+  :commands (slime slime-mode)
+  :bind ("C-c L" . slime)
+  :config
+  ;; Load Quicklisp's SLIME helper if it exists
+  (when (file-exists-p quicklisp-helper-path)
+    (load quicklisp-helper-path))
+
+  ;; Set Common Lisp implementation
+  (setq inferior-lisp-program common-lisp-program)
+
+  ;; Enable commonly-used SLIME contribs
+  (setq slime-contribs '(slime-fancy slime-quicklisp slime-asdf))
+
+  ;; Better REPL history
+  (setq slime-repl-history-size 1000)
+  (setq slime-repl-history-file (expand-file-name "~/.emacs.d/slime-history.eld")))
+
 ;; -------------------------------- Geiser Guile -------------------------------
-;; Guile support in Emacs
+;; Scheme support in Emacs (Guile implementation)
 
 (use-package geiser-guile
-  :defer 1
   :commands (geiser-guile)
   :bind ("C-c G" . geiser-guile)
   :config
-  (setq geiser-guile-binary "/usr/bin/guile"))
+  (setq geiser-guile-binary guile-program))
 
 (provide 'prog-lisp)
 ;;; prog-lisp.el ends here
