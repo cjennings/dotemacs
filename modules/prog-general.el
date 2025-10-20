@@ -309,6 +309,50 @@ If no such file exists there, display a message."
   :config
   (setq ws-butler-convert-leading-tabs-or-spaces t))
 
+;; ------------------------------------ LSP ------------------------------------
+;; Language Server Protocol for intelligent code completion and navigation
+;; Works with multiple languages: C, Python, Go, Rust, JavaScript, etc.
+
+;; Forward declarations for LSP variables
+(defvar lsp-idle-delay)
+(defvar lsp-log-io)
+(defvar lsp-enable-folding)
+(defvar lsp-enable-snippet)
+(defvar lsp-headerline-breadcrumb-enable)
+(defvar lsp-completion-provider)
+(defvar lsp-completion-show-detail)
+(defvar lsp-completion-show-kind)
+
+(use-package lsp-mode
+  :commands (lsp lsp-deferred)
+  :custom
+  (lsp-keymap-prefix "C-c l")  ;; LSP commands under C-c l prefix
+  :config
+  ;; Performance optimizations
+  (setq lsp-idle-delay 0.1)
+  (setq lsp-log-io nil)
+  (setq lsp-enable-folding nil)
+  (setq lsp-enable-snippet t)
+  (setq lsp-headerline-breadcrumb-enable nil)
+
+  ;; Improve completion
+  (setq lsp-completion-provider :capf)
+  (setq lsp-completion-show-detail t)
+  (setq lsp-completion-show-kind t))
+
+(use-package lsp-ui
+  :after lsp-mode
+  :commands lsp-ui-mode
+  :custom
+  (lsp-ui-doc-enable t)
+  (lsp-ui-doc-position 'at-point)
+  (lsp-ui-doc-delay 0.5)
+  (lsp-ui-sideline-enable t)
+  (lsp-ui-sideline-show-diagnostics t)
+  (lsp-ui-sideline-show-hover nil)
+  (lsp-ui-peek-enable t)
+  (lsp-ui-peek-show-directory t))
+
 ;; ----------------- Auto-Close Successful Compilation Windows -----------------
 ;; close compilation windows when successful. from 'enberg' on #emacs
 
