@@ -27,6 +27,10 @@ This is where tools like goimports and staticcheck are installed.")
   "Path to gopls (Go language server).
 Install with: go install golang.org/x/tools/gopls@latest")
 
+(defvar dlv-path "dlv"
+  "Path to Delve debugger.
+Install with: go install github.com/go-delve/delve/cmd/dlv@latest")
+
 (defvar go-ts-mode-map)
 (defvar go-mod-ts-mode-map)
 
@@ -38,6 +42,7 @@ Install with: go install golang.org/x/tools/gopls@latest")
 
 ;; Forward declarations for external packages
 (declare-function company-mode "company")
+(declare-function cj/disabled "system-defaults")
 (defvar gofmt-command)
 
 ;; ---------------------------------- Go Setup ---------------------------------
@@ -68,16 +73,35 @@ Install with: go install golang.org/x/tools/gopls@latest")
       (message "staticcheck not found at %s. Install with: go install honnef.co/go/tools/cmd/staticcheck@latest"
                staticcheck-bin))))
 
+(defun cj/go-debug ()
+  "Start Delve debugger for the current Go package."
+  (interactive)
+  (let* ((dlv-bin (expand-file-name dlv-path go-bin-path))
+         (default-directory (if buffer-file-name
+                               (file-name-directory buffer-file-name)
+                             default-directory)))
+    (if (or (executable-find dlv-path)
+            (file-executable-p dlv-bin))
+        (gud-gdb (format "%s debug" (or (executable-find dlv-path) dlv-bin)))
+      (message "Delve not found. Install with: go install github.com/go-delve/delve/cmd/dlv@latest"))))
+
+(defun cj/go-mode-keybindings ()
+  "Set up keybindings for Go programming.
+Overrides default prog-mode keybindings with Go-specific commands."
+  ;; S-f5: Run staticcheck (static analysis)
+  (local-set-key (kbd "S-<f5>") #'cj/go-staticcheck)
+
+  ;; S-f6: Debug with Delve
+  (local-set-key (kbd "S-<f6>") #'cj/go-debug))
+
 ;; ---------------------------------- Go Mode ----------------------------------
 ;; go-ts-mode configuration (treesit-based Go editing)
 
 (use-package go-mode
-  :hook (go-ts-mode . cj/go-setup)
+  :hook ((go-ts-mode . cj/go-setup)
+         (go-ts-mode . cj/go-mode-keybindings))
   :bind (:map go-ts-mode-map
-			  ("<f6>"   . gofmt)
-			  ("C-c 6"  . gofmt)
-			  ("<f4>"   . cj/go-staticcheck)
-			  ("C-c 4"  . cj/go-staticcheck))
+			  ("C-; f"  . gofmt))  ;; Override global formatter with gofmt/goimports
   :mode (("\\.go\\'" . go-ts-mode)      ;; .go files use go-ts-mode
          ("go\\.mod\\'" . go-mod-ts-mode)) ;; go.mod uses go-mod-ts-mode
   :config
