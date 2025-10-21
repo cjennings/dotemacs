@@ -24,6 +24,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'profiler)
 
 ;; Declare functions from lazy-loaded packages to suppress byte-compiler warnings.
 ;; These packages are required at runtime when their respective functions are called.
@@ -38,97 +39,52 @@
 (defvar org-agenda-files)
 (defvar org-ts-regexp)
 
-;; ------------------------------ Reload Init File -----------------------------
-;; it does what it says it does.
+;; -------------------------------- Debug Keymap -------------------------------
 
-(defun cj/reload-init-file ()
-  "Reload the init file.  Useful when modifying Emacs config."
+(defvar-keymap cj/debug-config-keymap
+  :doc "config debugging utilities keymap.")
+(keymap-global-set "C-c d" cj/debug-config-keymap)
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-c d" "Config debugging utilities."))
+
+;; --------------------------------- Profiling ---------------------------------
+
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-c d p" "profiler menu."))
+(keymap-set cj/debug-config-keymap "p s" #'profiler-start)
+(keymap-set cj/debug-config-keymap "p h" #'profiler-stop)
+(keymap-set cj/debug-config-keymap "p r" #'profiler-report)
+
+;; -------------------------------- Benchmarking -------------------------------
+
+(defmacro with-timer (title &rest forms)
+  "Run the given FORMS, counting the elapsed time.
+A message including the given TITLE and the corresponding elapsed
+time is displayed."
+  (declare (indent 1))
+  (let ((nowvar (make-symbol "now"))
+        (body   `(progn ,@forms)))
+    `(let ((,nowvar (current-time)))
+       (message "%s..." ,title)
+       (prog1 ,body
+         (let ((elapsed
+                (float-time (time-subtract (current-time) ,nowvar))))
+           (message "%s... done (%.3fs)" ,title elapsed))))))
+
+(defun cj/benchmark-this-method ()
+  "Prompt for a title and method name, then time the execution of the method."
   (interactive)
-  (load-file user-init-file))
+  (let ((title (read-string "Enter the title for the timing: "))
+        (method-name (completing-read "Enter the method name to time: " obarray
+                                      #'fboundp t)))
+    (let ((method-symbol (intern-soft method-name)))
+      (if (and method-symbol (fboundp method-symbol))
+      (with-timer title
+            (funcall method-symbol))
+    (message "Invalid method name: %s" method-name)))))
+(keymap-set cj/debug-config-keymap "b" #'cj/benchmark-this-method)
 
-;; ----------------------------- Reset-Auth-Sources ----------------------------
-
-(defun cj/reset-auth-cache ()
-  "Clear Emacs auth-source cache."
-  (interactive)
-  (auth-source-forget-all-cached)
-  (message "Emacs auth-source cache cleared."))
-
-;; ---------------------------- Emacs Build Summary ----------------------------
-;; builds a buffer with information about this version of Emacs
-
-(defun cj--yes-no (flag)
-  "Return \"yes\" if FLAG is non-nil, otherwise return \"no\"."
-  (if flag "yes" "no"))
-
-(defun cj--format-build-time (tval)
-  "Return a human-readable build time from TVAL."
-  (cond
-   ((null tval) "unknown")
-   ((stringp tval) tval)
-   ((and (consp tval) (integerp (car tval)))
-	(format-time-string "%Y-%m-%d %H:%M:%S %Z" tval))
-   ((numberp tval)
-	(format-time-string "%Y-%m-%d %H:%M:%S %Z" (seconds-to-time tval)))
-   (t (format "%s" tval))))
-
-(defun cj/emacs-build-summary-string ()
-  "Return a concise multi-line string describing this Emacs build."
-  (let ((build-time (and (boundp 'emacs-build-time) emacs-build-time))
-		(build-system (and (boundp 'emacs-build-system) emacs-build-system))
-		(branch (and (boundp 'emacs-repository-branch) emacs-repository-branch))
-		(commit (and (boundp 'emacs-repository-version) emacs-repository-version))
-		(features (and (boundp 'system-configuration-features) system-configuration-features))
-		(options (and (boundp 'system-configuration-options) system-configuration-options)))
-	(concat
-	 (format "Version: %s\n" emacs-version)
-	 (format "System: %s\n" system-configuration)
-	 (format "Build date: %s\n" (cj--format-build-time build-time))
-	 (when build-system
-	   (format "Build system: %s\n" build-system))
-	 (when branch
-	   (format "Git branch: %s\n" (or branch "n/a")))
-	 (when commit
-	   (format "Git commit: %s\n" (or commit "n/a")))
-	 "\nCapabilities:\n"
-	 (format "- Native compilation: %s\n"
-			 (cj--yes-no (and (fboundp 'native-comp-available-p)
-							  (native-comp-available-p))))
-	 (format "- Dynamic modules: %s\n"
-			 (cj--yes-no (and (boundp 'module-file-suffix)
-							  module-file-suffix)))
-	 (format "- GnuTLS: %s\n"
-			 (cj--yes-no (and (fboundp 'gnutls-available-p)
-							  (gnutls-available-p))))
-	 (format "- libxml2: %s\n"
-			 (cj--yes-no (fboundp 'libxml-parse-html-region)))
-	 (format "- ImageMagick: %s\n"
-			 (cj--yes-no (and (fboundp 'image-type-available-p)
-							  (image-type-available-p 'imagemagick))))
-	 (format "- SQLite: %s\n"
-			 (cj--yes-no (and (fboundp 'sqlite-available-p)
-							  (sqlite-available-p))))
-	 (when features
-	   (format "\nConfigured features:\n%s\n" features))
-	 (when options
-	   (format "\nConfiguration arguments:\n%s\n" options)))))
-
-(defun cj/emacs-build-summary ()
-  "Display a buffer with the Emacs build summary."
-  (interactive)
-  (let ((buf (get-buffer-create "*Emacs-Build-Summary*")))
-	(with-current-buffer buf
-	  (setq buffer-read-only nil)
-	  (erase-buffer)
-	  (insert (cj/emacs-build-summary-string))
-	  (goto-char (point-min))
-	  (help-mode)
-	  (setq-local truncate-lines nil))
-	(pop-to-buffer buf)))
-
-;; ---------------------------- Recompile Emacs Home ---------------------------
-;; deletes all .elc and .eln files in user-emacs-directory, then compiles
-;; all emacs-lisp files natively if supported, or byte-compiles them if not.
+;; ----------------------------- Config Compilation ----------------------------
 
 (defvar comp-async-report-warnings-errors)
 
@@ -159,10 +115,11 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 				(setq comp-async-report-warnings-errors nil)
 				(native-compile-async user-emacs-directory 'recursively))
 			(byte-recompile-directory user-emacs-directory 0)))
-	  (message "Cancelled recompilation of %s" user-emacs-directory))))
+      (message "Cancelled recompilation of %s" user-emacs-directory))))
 
-;; ---------------------- Delete Emacs Home Compiled Files ---------------------
-;; removes all compiled files and deletes the eln directory
+(keymap-set cj/debug-config-keymap "c h" 'cj/recompile-emacs-home)
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-c d c" "config compilation options."))
 
 (defun cj/delete-emacs-home-compiled-files ()
   "Delete all compiled files recursively in \='user-emacs-directory\='."
@@ -176,9 +133,116 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 			(delete-file path)))
         (find-lisp-find-files user-emacs-directory ""))
   (message "Done. Compiled files removed under %s" user-emacs-directory))
+(keymap-set cj/debug-config-keymap "c d" 'cj/delete-emacs-home-compiled-files)
+(keymap-set cj/debug-config-keymap "c d" 'cj/delete-emacs-home-compiled-files)
+
+(defun cj/compile-this-elisp-buffer ()
+  "Compile the current .el: prefer native (.eln), else .elc. Message if neither."
+  (interactive)
+  (unless (and buffer-file-name (string-match-p "\\.el\\'" buffer-file-name))
+    (user-error "Not visiting a .el file"))
+  (save-buffer)
+  (let ((file buffer-file-name))
+    (cond
+     ;; Native compilation (async preferred)
+     ((fboundp 'native-compile-async)
+      (native-compile-async file)
+      (message "Queued native compilation for %s" file))
+     ;; Native compilation (sync, if async not available)
+     ((fboundp 'native-compile)
+      (condition-case err
+          (progn
+            (native-compile file)
+            (message "Native-compiled %s" file))
+        (error (message "Native compile failed: %s" (error-message-string err)))))
+     ;; Byte-compile fallback
+     ((fboundp 'byte-compile-file)
+      (let ((out (byte-compile-file file)))
+        (if out
+            (message "Byte-compiled -> %s" out)
+          (message "Byte-compilation failed for %s" file))))
+     ;; Neither facility available
+     (otherwise
+      (message "No compilation available (no native-compile, no byte-compile)")))))
+(keymap-set cj/debug-config-keymap "c ." 'cj/compile-this-elisp-buffer)
+
+;; ---------------------------- Emacs Build Summary ----------------------------
+;; builds a buffer with information about this version of Emacs
+
+(defun cj--yes-no (flag)
+  "Return \"yes\" if FLAG is non-nil, otherwise return \"no\"."
+  (if flag "yes" "no"))
+
+(defun cj--format-build-time (tval)
+  "Return a human-readable build time from TVAL."
+  (cond
+   ((null tval) "unknown")
+   ((stringp tval) tval)
+   ((and (consp tval) (integerp (car tval)))
+    (format-time-string "%Y-%m-%d %H:%M:%S %Z" tval))
+   ((numberp tval)
+    (format-time-string "%Y-%m-%d %H:%M:%S %Z" (seconds-to-time tval)))
+   (t (format "%s" tval))))
+
+(defun cj/emacs-build-summary-string ()
+  "Return a concise multi-line string describing this Emacs build."
+  (let ((build-time (and (boundp 'emacs-build-time) emacs-build-time))
+        (build-system (and (boundp 'emacs-build-system) emacs-build-system))
+        (branch (and (boundp 'emacs-repository-branch) emacs-repository-branch))
+        (commit (and (boundp 'emacs-repository-version) emacs-repository-version))
+        (features (and (boundp 'system-configuration-features) system-configuration-features))
+        (options (and (boundp 'system-configuration-options) system-configuration-options)))
+    (concat
+     (format "Version: %s\n" emacs-version)
+     (format "System: %s\n" system-configuration)
+     (format "Build date: %s\n" (cj--format-build-time build-time))
+     (when build-system
+       (format "Build system: %s\n" build-system))
+     (when branch
+       (format "Git branch: %s\n" (or branch "n/a")))
+     (when commit
+       (format "Git commit: %s\n" (or commit "n/a")))
+     "\nCapabilities:\n"
+     (format "- Native compilation: %s\n"
+             (cj--yes-no (and (fboundp 'native-comp-available-p)
+                              (native-comp-available-p))))
+     (format "- Dynamic modules: %s\n"
+             (cj--yes-no (and (boundp 'module-file-suffix)
+                              module-file-suffix)))
+     (format "- GnuTLS: %s\n"
+             (cj--yes-no (and (fboundp 'gnutls-available-p)
+                              (gnutls-available-p))))
+     (format "- libxml2: %s\n"
+             (cj--yes-no (fboundp 'libxml-parse-html-region)))
+     (format "- ImageMagick: %s\n"
+             (cj--yes-no (and (fboundp 'image-type-available-p)
+                              (image-type-available-p 'imagemagick))))
+     (format "- SQLite: %s\n"
+             (cj--yes-no (and (fboundp 'sqlite-available-p)
+                              (sqlite-available-p))))
+     (when features
+       (format "\nConfigured features:\n%s\n" features))
+     (when options
+       (format "\nConfiguration arguments:\n%s\n" options)))))
+
+(defun cj/emacs-build-summary ()
+  "Display a buffer with the Emacs build summary."
+  (interactive)
+  (let ((buf (get-buffer-create "*Emacs-Build-Summary*")))
+    (with-current-buffer buf
+      (setq buffer-read-only nil)
+      (erase-buffer)
+      (insert (cj/emacs-build-summary-string))
+      (goto-char (point-min))
+      (help-mode)
+      (setq-local truncate-lines nil))
+    (pop-to-buffer buf)))
+
+(keymap-set cj/debug-config-keymap "i b" 'cj/emacs-build-summary)
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-c d i" "info on build/features/packages."))
 
 ;; ---------------------- List Loaded Packages ---------------------
-;; you don't really need an explanation for this function, do you?
 
 (defvar cj--loaded-file-paths nil
   "All file paths that are loaded.")
@@ -206,10 +270,10 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 	(cl-loop for file in cj--loaded-file-paths
 			 do (insert "\n" file))
 
-	(goto-char (point-min))))
+    (goto-char (point-min))))
+(keymap-set cj/debug-config-keymap "i p" 'cj/list-loaded-packages)
 
 ;; ---------------------------- List Loaded Features ---------------------------
-;; this function's also self-explanatory
 
 (defun cj/list-loaded-features()
   "List all currently loaded features."
@@ -226,7 +290,27 @@ Recompile natively when supported, otherwise fall back to byte compilation."
       (cl-loop for x across features-vec
                do (insert (format "  - %-25s: %s\n" x
 								  (locate-library (symbol-name x))))))
-	(goto-char (point-min))))
+    (goto-char (point-min))))
+(keymap-set cj/debug-config-keymap "i f" 'cj/list-loaded-features)
+
+
+;; ------------------------------ Reload Init File -----------------------------
+;; it does what it says it does.
+
+(defun cj/reload-init-file ()
+  "Reload the init file.  Useful when modifying Emacs config."
+  (interactive)
+  (load-file user-init-file))
+(keymap-set cj/debug-config-keymap "r" 'cj/reload-init-file)
+
+;; ----------------------------- Reset-Auth-Sources ----------------------------
+
+(defun cj/reset-auth-cache ()
+  "Clear Emacs auth-source cache."
+  (interactive)
+  (auth-source-forget-all-cached)
+  (message "Emacs auth-source cache cleared."))
+(keymap-set cj/debug-config-keymap "a" 'cj/reset-auth-cache)
 
 ;; ------------------------ Validate Org Agenda Entries ------------------------
 
@@ -281,7 +365,6 @@ entries, property/type, and raw timestamp string."
 	(pop-to-buffer report-buffer)))
 
 ;; --------------------------- Org-Alert-Check Timers --------------------------
-;; Utility to list timers running org-alert-check
 
 (defun cj/org-alert-list-timers ()
   "List all active timers running `org-alert-check' with next run time."
@@ -406,6 +489,55 @@ applicable) when finalizers fail, then re-signals the error."
 
 (cj/sqlite-tracing-enable)
 (setq debug-on-message (rx bos "finalizer failed"))
+
+;; ----------------------------- Explain Pause Mode ----------------------------
+;; Performance profiling tool to identify what's causing Emacs to pause/hang
+;; Usage:
+;;   1. Enable: M-x explain-pause-mode
+;;   2. Perform the slow operation (e.g., press F8 for agenda)
+;;   3. View report: M-x explain-pause-top
+;;   4. Disable when done: M-x explain-pause-mode
+
+;; (add-to-list 'load-path (expand-file-name "~/code/explain-pause-mode"))
+
+;; (use-package explain-pause-mode
+;;   :ensure nil  ;; local package
+;;   :init
+;;   (keymap-global-unset "<f2>")
+;;   :demand t
+;;   :commands (explain-pause-mode explain-pause-top)
+;;   :bind
+;;   ("<f2>" . explain-pause-mode)
+;;   ("C-<f2>" . explain-pause-top)
+;;   :config
+;;   ;; Consider commands slow if they take longer than 40ms (default)
+;;   (setq explain-pause-slow-too-long-ms 40)
+
+;;   ;; Auto-refresh the top buffer every 2 seconds
+;;   (setq explain-pause-top-auto-refresh-interval 2))
+
+;; ;; Quick access function for profiling org-agenda
+;; (defun profile-agenda-with-explain-pause ()
+;;   "Enable explain-pause-mode, run org-agenda, and show the report."
+;;   (interactive)
+;;   (unless explain-pause-mode
+;;     (explain-pause-mode 1))
+;;   (message "explain-pause-mode enabled. Generating agenda...")
+;;   (sit-for 0.5)  ;; brief pause so message is visible
+;;   (org-agenda nil "d")
+;;   (sit-for 1)    ;; let agenda finish rendering
+;;   (explain-pause-top))
+
+
+;; --------------------- Debug Code For Package Signatures ---------------------
+;; from https://emacs.stackexchange.com/questions/233/how-to-proceed-on-package-el-signature-check-failure
+
+;; Set package-check-signature to nil, e.g., M-: (setq package-check-signature nil) RET.
+;; Download the package gnu-elpa-keyring-update and run the function with the same name, e.g., M-x package-install RET gnu-elpa-keyring-update RET.
+;; Reset package-check-signature to the default value allow-unsigned, e.g., M-: (setq package-check-signature 'allow-unsigned) RET.
+
+;; (setq package-check-signature nil)
+;; (setq package-check-signature 'allow-unsigned)
 
 (provide 'config-utilities)
 ;;; config-utilities.el ends here
