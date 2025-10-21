@@ -116,7 +116,6 @@ to nil."
 (keymap-set cj/custom-keymap "W" #'cj/count-words-buffer-or-region)
 (keymap-set cj/custom-keymap "/" #'cj/replace-fraction-glyphs)
 (keymap-set cj/custom-keymap "A" #'align-regexp)
-(keymap-set cj/custom-keymap "B" #'toggle-debug-on-error)
 (keymap-set cj/custom-keymap "|" #'display-fill-column-indicator-mode)
 
 (provide 'custom-misc)
