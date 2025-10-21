@@ -60,6 +60,11 @@ Replaces tabs with spaces, deletes trailing whitespace, and reindents."
 		(delete-trailing-whitespace (point-min) (point-max))))
 	(message "Formatted %s" (if (use-region-p) "region" "buffer"))))
 
+(defun cj/switch-to-previous-buffer ()
+  "Switch to previously open buffer.
+Repeated invocations toggle between the two most recently open buffers."
+  (interactive)
+  (switch-to-buffer (other-buffer (current-buffer) 1)))
 
 (defun cj/count-words-buffer-or-region ()
   "Count the number of words in the buffer or region.
@@ -116,6 +121,7 @@ to nil."
 (keymap-set cj/custom-keymap "W" #'cj/count-words-buffer-or-region)
 (keymap-set cj/custom-keymap "/" #'cj/replace-fraction-glyphs)
 (keymap-set cj/custom-keymap "A" #'align-regexp)
+(keymap-set cj/custom-keymap "SPC" #'cj/switch-to-previous-buffer)
 (keymap-set cj/custom-keymap "|" #'display-fill-column-indicator-mode)
 
 (provide 'custom-misc)
