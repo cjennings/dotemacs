@@ -15,8 +15,9 @@
 (defvar-keymap cj/debug-config-keymap
   :doc "config debugging utilities keymap.")
 (keymap-global-set "C-c d" cj/debug-config-keymap)
+
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-c d" "Config debugging utilities."))
+  (which-key-add-key-based-replacements "C-c d" "config debugging utils"))
 
 ;;; --------------------------------- Profiling ---------------------------------
 
@@ -163,6 +164,7 @@ Recompile natively when supported, otherwise fall back to byte compilation."
     (concat
      (format "Version: %s\n" emacs-version)
      (format "System: %s\n" system-configuration)
+     (format "Location: %s\n"  (executable-find "emacs"))
      (format "Build date: %s\n" (cj/emacs-build--format-build-time build-time))
      (when build-system
        (format "Build system: %s\n" build-system))
