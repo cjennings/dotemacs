@@ -4,42 +4,13 @@
 ;;; Commentary:
 ;; Development and debugging utilities for Emacs configuration maintenance.
 ;;
-;; Features include:
-;; - reloading and recompiling configuration (native/byte compilation)
-;; - inspecting loaded packages and features
-;; - reporting on Emacs version build configuration
-;; - validating org-agenda timestamp integrity
-;; - debugging org-alert timers
-;; - SQLite database tracing and finalizer debugging
-;; - auth-source cache management
-;;
-;; Key commands:
-;; - ~cj/reload-init-file~ to reload init.el.
-;; - ~cj/recompile-emacs-home~ to recompile all Elisp files.
-;; - ~cj/list-loaded-packages~ to show currently loaded packages.
-;; - ~cj/check-org-agenda-invalid-timestamps~ to scan for invalid timestamps.
-;; - ~cj/sqlite-tracing-enable~ to enable SQLite debugging.
-;; - ~cj/emacs-build-summary~ to build a buffer containing information about the Emacs version.
-;;
 ;;; Code:
 
 (require 'cl-lib)
+(require 'find-lisp)
 (require 'profiler)
 
-;; Declare functions from lazy-loaded packages to suppress byte-compiler warnings.
-;; These packages are required at runtime when their respective functions are called.
-(declare-function find-lisp-find-files "find-lisp" (directory regexp))
-(declare-function org-element-parse-buffer "org-element" (&optional granularity visible-only))
-(declare-function org-element-map "org-element" (data types fun &optional info first-match no-recursion with-affiliated))
-(declare-function org-element-property "org-element" (property element))
-(declare-function org-time-string-to-absolute "org" (s &optional daynr prefer buffer pos))
-(declare-function org-alert-check "org-alert" nil)
-
-;; Declare variables from lazy-loaded packages
-(defvar org-agenda-files)
-(defvar org-ts-regexp)
-
-;; -------------------------------- Debug Keymap -------------------------------
+;;; -------------------------------- Debug Keymap -------------------------------
 
 (defvar-keymap cj/debug-config-keymap
   :doc "config debugging utilities keymap.")
@@ -47,7 +18,7 @@
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements "C-c d" "Config debugging utilities."))
 
-;; --------------------------------- Profiling ---------------------------------
+;;; --------------------------------- Profiling ---------------------------------
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements "C-c d p" "profiler menu."))
@@ -55,7 +26,11 @@
 (keymap-set cj/debug-config-keymap "p h" #'profiler-stop)
 (keymap-set cj/debug-config-keymap "p r" #'profiler-report)
 
-;; -------------------------------- Benchmarking -------------------------------
+;;; --------------------------- Toggle Debug On Error ---------------------------
+
+(keymap-set cj/debug-config-keymap "t" #'toggle-debug-on-error)
+
+;;; -------------------------------- Benchmarking -------------------------------
 
 (defmacro with-timer (title &rest forms)
   "Run the given FORMS, counting the elapsed time.
@@ -79,42 +54,40 @@ time is displayed."
                                       #'fboundp t)))
     (let ((method-symbol (intern-soft method-name)))
       (if (and method-symbol (fboundp method-symbol))
-      (with-timer title
+          (with-timer title
             (funcall method-symbol))
-    (message "Invalid method name: %s" method-name)))))
+        (message "Invalid method name: %s" method-name)))))
 (keymap-set cj/debug-config-keymap "b" #'cj/benchmark-this-method)
 
-;; ----------------------------- Config Compilation ----------------------------
-
-(defvar comp-async-report-warnings-errors)
+;;; ----------------------------- Config Compilation ----------------------------
 
 (defun cj/recompile-emacs-home()
   "Delete all compiled files in the Emacs home before recompiling.
 Recompile natively when supported, otherwise fall back to byte compilation."
   (interactive)
   (let* ((native-comp-supported (boundp 'native-compile-async))
-		 (elt-dir
-		  (expand-file-name (if native-comp-supported "eln" "elc")
-							user-emacs-directory))
-		 (message-format
-		  (format "Please confirm recursive %s recompilation of %%s: "
-				  (if native-comp-supported "native" "byte")))
-		 (compile-message (format "%scompiling all emacs-lisp files in %%s"
-								  (if native-comp-supported "Natively " "Byte-"))))
-	(if (yes-or-no-p (format message-format user-emacs-directory))
-		(progn
-		  (message "Deleting all compiled files in %s" user-emacs-directory)
-		  (dolist (file (directory-files-recursively user-emacs-directory
-													 "\\(\\.elc\\|\\.eln\\)$"))
-			(delete-file file))
-		  (when (file-directory-p elt-dir)
-			(delete-directory elt-dir t t))
-		  (message compile-message user-emacs-directory)
-		  (if native-comp-supported
-			  (progn
-				(setq comp-async-report-warnings-errors nil)
-				(native-compile-async user-emacs-directory 'recursively))
-			(byte-recompile-directory user-emacs-directory 0)))
+         (elt-dir
+          (expand-file-name (if native-comp-supported "eln" "elc")
+                            user-emacs-directory))
+         (message-format
+          (format "Please confirm recursive %s recompilation of %%s: "
+                  (if native-comp-supported "native" "byte")))
+         (compile-message (format "%scompiling all emacs-lisp files in %%s"
+                                  (if native-comp-supported "Natively " "Byte-"))))
+    (if (yes-or-no-p (format message-format user-emacs-directory))
+        (progn
+          (message "Deleting all compiled files in %s" user-emacs-directory)
+          (dolist (file (directory-files-recursively user-emacs-directory
+                                                     "\\(\\.elc\\|\\.eln\\)$"))
+            (delete-file file))
+          (when (file-directory-p elt-dir)
+            (delete-directory elt-dir t t))
+          (message compile-message user-emacs-directory)
+          (if native-comp-supported
+              (progn
+                (setq comp-async-report-warnings-errors nil)
+                (native-compile-async user-emacs-directory 'recursively))
+            (byte-recompile-directory user-emacs-directory 0)))
       (message "Cancelled recompilation of %s" user-emacs-directory))))
 
 (keymap-set cj/debug-config-keymap "c h" 'cj/recompile-emacs-home)
@@ -125,12 +98,12 @@ Recompile natively when supported, otherwise fall back to byte compilation."
   "Delete all compiled files recursively in \='user-emacs-directory\='."
   (interactive)
   (message "Deleting compiled files under %s. This may take a while."
-		   user-emacs-directory)
+           user-emacs-directory)
   (require 'find-lisp)    ;; make sure the package is required
   (mapc (lambda (path)
-		  (when (or (string-suffix-p ".elc" path)
-					(string-suffix-p ".eln" path))
-			(delete-file path)))
+          (when (or (string-suffix-p ".elc" path)
+                    (string-suffix-p ".eln" path))
+            (delete-file path)))
         (find-lisp-find-files user-emacs-directory ""))
   (message "Done. Compiled files removed under %s" user-emacs-directory))
 (keymap-set cj/debug-config-keymap "c d" 'cj/delete-emacs-home-compiled-files)
@@ -162,18 +135,13 @@ Recompile natively when supported, otherwise fall back to byte compilation."
             (message "Byte-compiled -> %s" out)
           (message "Byte-compilation failed for %s" file))))
      ;; Neither facility available
-     (otherwise
+     (t
       (message "No compilation available (no native-compile, no byte-compile)")))))
 (keymap-set cj/debug-config-keymap "c ." 'cj/compile-this-elisp-buffer)
 
-;; ---------------------------- Emacs Build Summary ----------------------------
-;; builds a buffer with information about this version of Emacs
+;; --------------------------- Information Reporting ---------------------------
 
-(defun cj--yes-no (flag)
-  "Return \"yes\" if FLAG is non-nil, otherwise return \"no\"."
-  (if flag "yes" "no"))
-
-(defun cj--format-build-time (tval)
+(defun cj/emacs-build--format-build-time (tval)
   "Return a human-readable build time from TVAL."
   (cond
    ((null tval) "unknown")
@@ -184,7 +152,7 @@ Recompile natively when supported, otherwise fall back to byte compilation."
     (format-time-string "%Y-%m-%d %H:%M:%S %Z" (seconds-to-time tval)))
    (t (format "%s" tval))))
 
-(defun cj/emacs-build-summary-string ()
+(defun cj/emacs-build--summary-string ()
   "Return a concise multi-line string describing this Emacs build."
   (let ((build-time (and (boundp 'emacs-build-time) emacs-build-time))
         (build-system (and (boundp 'emacs-build-system) emacs-build-system))
@@ -195,7 +163,7 @@ Recompile natively when supported, otherwise fall back to byte compilation."
     (concat
      (format "Version: %s\n" emacs-version)
      (format "System: %s\n" system-configuration)
-     (format "Build date: %s\n" (cj--format-build-time build-time))
+     (format "Build date: %s\n" (cj/emacs-build--format-build-time build-time))
      (when build-system
        (format "Build system: %s\n" build-system))
      (when branch
@@ -204,45 +172,50 @@ Recompile natively when supported, otherwise fall back to byte compilation."
        (format "Git commit: %s\n" (or commit "n/a")))
      "\nCapabilities:\n"
      (format "- Native compilation: %s\n"
-             (cj--yes-no (and (fboundp 'native-comp-available-p)
-                              (native-comp-available-p))))
+             (if (and (fboundp 'native-comp-available-p)
+                      (native-comp-available-p))
+                 "yes" "no"))
      (format "- Dynamic modules: %s\n"
-             (cj--yes-no (and (boundp 'module-file-suffix)
-                              module-file-suffix)))
+             (if (and (boundp 'module-file-suffix)
+                      module-file-suffix)
+                 "yes" "no"))
      (format "- GnuTLS: %s\n"
-             (cj--yes-no (and (fboundp 'gnutls-available-p)
-                              (gnutls-available-p))))
+             (if (and (fboundp 'gnutls-available-p)
+                      (gnutls-available-p))
+                 "yes" "no"))
      (format "- libxml2: %s\n"
-             (cj--yes-no (fboundp 'libxml-parse-html-region)))
+             (if (fboundp 'libxml-parse-html-region)
+                 "yes" "no"))
      (format "- ImageMagick: %s\n"
-             (cj--yes-no (and (fboundp 'image-type-available-p)
-                              (image-type-available-p 'imagemagick))))
+             (if (and (fboundp 'image-type-available-p)
+                      (image-type-available-p 'imagemagick))
+                 "yes" "no" ))
      (format "- SQLite: %s\n"
-             (cj--yes-no (and (fboundp 'sqlite-available-p)
-                              (sqlite-available-p))))
+             (if (and (fboundp 'sqlite-available-p)
+                      (sqlite-available-p))
+                 "yes" "no"))
      (when features
        (format "\nConfigured features:\n%s\n" features))
      (when options
        (format "\nConfiguration arguments:\n%s\n" options)))))
 
-(defun cj/emacs-build-summary ()
+(defun cj/info-emacs-build ()
   "Display a buffer with the Emacs build summary."
   (interactive)
   (let ((buf (get-buffer-create "*Emacs-Build-Summary*")))
     (with-current-buffer buf
       (setq buffer-read-only nil)
       (erase-buffer)
-      (insert (cj/emacs-build-summary-string))
+      (insert (cj/emacs-build--summary-string))
       (goto-char (point-min))
       (help-mode)
       (setq-local truncate-lines nil))
     (pop-to-buffer buf)))
 
-(keymap-set cj/debug-config-keymap "i b" 'cj/emacs-build-summary)
+(keymap-set cj/debug-config-keymap "i b" 'cj/info-emacs-build)
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements "C-c d i" "info on build/features/packages."))
 
-;; ---------------------- List Loaded Packages ---------------------
 
 (defvar cj--loaded-file-paths nil
   "All file paths that are loaded.")
@@ -251,31 +224,29 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 (defvar cj--loaded-features-buffer "*loaded-features*"
   "Buffer name for data about loaded features.")
 
-(defun cj/list-loaded-packages()
+(defun cj/info-loaded-packages()
   "List all currently loaded packages."
   (interactive)
   (with-current-buffer (get-buffer-create cj--loaded-packages-buffer)
-	(erase-buffer)
-	(pop-to-buffer (current-buffer))
+    (erase-buffer)
+    (pop-to-buffer (current-buffer))
 
-	(insert "* Live Packages Exploration\n\n")
+    (insert "* Live Packages Exploration\n\n")
 
-	;; Extract data from builtin variable `load-history'.
-	(setq cj--loaded-file-paths
-		  (seq-filter #'stringp
-					  (mapcar #'car load-history)))
-	(setq cj--loaded-file-paths (cl-sort cj--loaded-file-paths 'string-lessp))
-	(insert (format "%s total packages currently loaded\n"
-					(length cj--loaded-file-paths)))
-	(cl-loop for file in cj--loaded-file-paths
-			 do (insert "\n" file))
+    ;; Extract data from builtin variable `load-history'.
+    (setq cj--loaded-file-paths
+          (seq-filter #'stringp
+                      (mapcar #'car load-history)))
+    (setq cj--loaded-file-paths (cl-sort cj--loaded-file-paths 'string-lessp))
+    (insert (format "%s total packages currently loaded\n"
+                    (length cj--loaded-file-paths)))
+    (cl-loop for file in cj--loaded-file-paths
+             do (insert "\n" file))
 
     (goto-char (point-min))))
-(keymap-set cj/debug-config-keymap "i p" 'cj/list-loaded-packages)
+(keymap-set cj/debug-config-keymap "i p" 'cj/info-loaded-packages)
 
-;; ---------------------------- List Loaded Features ---------------------------
-
-(defun cj/list-loaded-features()
+(defun cj/info-loaded-features()
   "List all currently loaded features."
   (interactive)
   (with-current-buffer (get-buffer-create cj--loaded-features-buffer)
@@ -289,10 +260,9 @@ Recompile natively when supported, otherwise fall back to byte compilation."
       (setq features-vec (cl-sort features-vec 'string-lessp))
       (cl-loop for x across features-vec
                do (insert (format "  - %-25s: %s\n" x
-								  (locate-library (symbol-name x))))))
+                                  (locate-library (symbol-name x))))))
     (goto-char (point-min))))
-(keymap-set cj/debug-config-keymap "i f" 'cj/list-loaded-features)
-
+(keymap-set cj/debug-config-keymap "i f" 'cj/info-loaded-features)
 
 ;; ------------------------------ Reload Init File -----------------------------
 ;; it does what it says it does.
@@ -314,7 +284,7 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 
 ;; ------------------------ Validate Org Agenda Entries ------------------------
 
-(defun cj/check-org-agenda-invalid-timestamps ()
+(defun cj/validate-org-agenda-timestamps ()
   "Scan all files in \='org-agenda-files\=' for invalid timestamps.
 Checks DEADLINE, SCHEDULED, TIMESTAMP properties and inline timestamps in
 headline contents. Generates an Org-mode report buffer with links to problematic
@@ -323,46 +293,46 @@ entries, property/type, and raw timestamp string."
   (require 'org)
   (require 'org-element)
   (let ((report-buffer (get-buffer-create "*Org Invalid Timestamps Report*")))
-	(with-current-buffer report-buffer
-	  (erase-buffer)
-	  (org-mode)
-	  (insert "#+TITLE: Org Invalid Timestamps Report\n\n")
-	  (insert "* Overview\nScan of org-agenda-files for invalid timestamps.\n\n"))
-	(dolist (file org-agenda-files)
-	  (with-current-buffer (find-file-noselect file)
-		(let ((invalid-entries '())
-			  (props '("DEADLINE" "SCHEDULED" "TIMESTAMP"))
-			  (parse-tree (org-element-parse-buffer 'headline)))
-		  (org-element-map parse-tree 'headline
-			(lambda (hl)
-			  (let ((headline-text (org-element-property :raw-value hl))
-					(begin-pos (org-element-property :begin hl)))
-				(dolist (prop props)
-				  (let ((timestamp (org-element-property (intern (downcase prop)) hl)))
-					(when timestamp
-					  (let ((time-str (org-element-property :raw-value timestamp)))
-						(unless (ignore-errors (org-time-string-to-absolute time-str))
-						  (push (list file begin-pos headline-text prop time-str) invalid-entries))))))
-				(let ((contents-begin (org-element-property :contents-begin hl))
-					  (contents-end (org-element-property :contents-end hl)))
-				  (when (and contents-begin contents-end)
-					(save-excursion
-					  (goto-char contents-begin)
-					  (while (re-search-forward org-ts-regexp contents-end t)
-						(let ((ts-string (match-string 0)))
-						  (unless (ignore-errors (org-time-string-to-absolute ts-string))
-							(push (list file begin-pos headline-text "inline timestamp" ts-string) invalid-entries))))))))))
+    (with-current-buffer report-buffer
+      (erase-buffer)
+      (org-mode)
+      (insert "#+TITLE: Org Invalid Timestamps Report\n\n")
+      (insert "* Overview\nScan of org-agenda-files for invalid timestamps.\n\n"))
+    (dolist (file org-agenda-files)
+      (with-current-buffer (find-file-noselect file)
+        (let ((invalid-entries '())
+              (props '("DEADLINE" "SCHEDULED" "TIMESTAMP"))
+              (parse-tree (org-element-parse-buffer 'headline)))
+          (org-element-map parse-tree 'headline
+            (lambda (hl)
+              (let ((headline-text (org-element-property :raw-value hl))
+                    (begin-pos (org-element-property :begin hl)))
+                (dolist (prop props)
+                  (let ((timestamp (org-element-property (intern (downcase prop)) hl)))
+                    (when timestamp
+                      (let ((time-str (org-element-property :raw-value timestamp)))
+                        (unless (ignore-errors (org-time-string-to-absolute time-str))
+                          (push (list file begin-pos headline-text prop time-str) invalid-entries))))))
+                (let ((contents-begin (org-element-property :contents-begin hl))
+                      (contents-end (org-element-property :contents-end hl)))
+                  (when (and contents-begin contents-end)
+                    (save-excursion
+                      (goto-char contents-begin)
+                      (while (re-search-forward org-ts-regexp contents-end t)
+                        (let ((ts-string (match-string 0)))
+                          (unless (ignore-errors (org-time-string-to-absolute ts-string))
+                            (push (list file begin-pos headline-text "inline timestamp" ts-string) invalid-entries))))))))))
 
-		  (with-current-buffer report-buffer
-			(insert (format "* %s\n" file))
-			(if invalid-entries
-				(dolist (entry (reverse invalid-entries))
-				  (cl-destructuring-bind (f pos head prop ts) entry
-					(insert (format "- [[file:%s::%d][%s]]\n  - Property/Type: %s\n  - Invalid timestamp: \"%s\"\n"
-									f pos head prop ts))))
-			  (insert "No invalid timestamps found.\n")))
-		  (with-current-buffer report-buffer (insert "\n")))))
-	(pop-to-buffer report-buffer)))
+          (with-current-buffer report-buffer
+            (insert (format "* %s\n" file))
+            (if invalid-entries
+                (dolist (entry (reverse invalid-entries))
+                  (cl-destructuring-bind (f pos head prop ts) entry
+                    (insert (format "- [[file:%s::%d][%s]]\n  - Property/Type: %s\n  - Invalid timestamp: \"%s\"\n"
+                                    f pos head prop ts))))
+              (insert "No invalid timestamps found.\n")))
+          (with-current-buffer report-buffer (insert "\n")))))
+    (pop-to-buffer report-buffer)))
 
 ;; --------------------------- Org-Alert-Check Timers --------------------------
 
@@ -370,174 +340,20 @@ entries, property/type, and raw timestamp string."
   "List all active timers running `org-alert-check' with next run time."
   (interactive)
   (let ((timers (cl-remove-if-not
-				 (lambda (timer)
-				   (eq (timer--function timer) #'org-alert-check))
-				 timer-list)))
-	(if timers
-		(let ((lines
-			   (mapcar
-				(lambda (timer)
-				  (let* ((next-run (timer--time timer))
-						 (next-run-str (format-time-string "%Y-%m-%d %H:%M:%S" next-run)))
-					(format "Timer next runs at: %s" next-run-str)))
-				timers)))
-		  (message "org-alert-check timers:\n%s" (string-join lines "\n")))
-	  (message "No org-alert-check timers found."))))
+                 (lambda (timer)
+                   (eq (timer--function timer) #'org-alert-check))
+                 timer-list)))
+    (if timers
+        (let ((lines
+               (mapcar
+                (lambda (timer)
+                  (let* ((next-run (timer--time timer))
+                         (next-run-str (format-time-string "%Y-%m-%d %H:%M:%S" next-run)))
+                    (format "Timer next runs at: %s" next-run-str)))
+                timers)))
+          (message "org-alert-check timers:\n%s" (string-join lines "\n")))
+      (message "No org-alert-check timers found."))))
 
-;; ------------------------------- Sqlite Tracing ------------------------------
-
-(defvar cj/sqlite-tracing-enabled nil)
-(defvar cj/sqlite--db-origins (make-hash-table :test 'eq :weakness 'key))
-
-(defun cj/capture-backtrace ()
-  "Capture and return the current stack trace as a list of function names.
-Returns a list containing function names from the backtrace, or a fallback
-message if backtrace capture fails or is unavailable."
-  (condition-case nil
-	  (if (fboundp 'backtrace-frames)
-		  (mapcar (lambda (fr) (car fr)) (backtrace-frames))
-		(list "no-backtrace-frames"))
-	(error (list "failed-to-capture-backtrace"))))
-
-(defun cj/take (n xs)
-  "Return the first N elements from list XS.
-If XS has fewer than N elements, return all elements."
-  (cl-subseq xs 0 (min n (length xs))))
-
-(defun cj--ad-sqlite-open (orig file &rest opts)
-  "Advice function wrapping \='sqlite-open\=' to track database origins.
-ORIG is the original function, FILE is the database file path, and OPTS are
-additional options. Records database handle with metadata (file, time, location,
-and backtrace) in \='cj/sqlite--db-origins\=' for debugging purposes."
-  (let ((db (apply orig file opts)))
-	(puthash db
-			 (list :file file
-				   :opts opts
-				   :where (or load-file-name buffer-file-name)
-				   :time (current-time-string)
-				   :stack (cj/capture-backtrace))
-			 cj/sqlite--db-origins)
-	db))
-
-(defun cj--ad-sqlite-close (orig db &rest args)
-  "Advice function wrapping \='sqlite-close\=' to log database closure.
-ORIG is the original function, DB is the database handle, and ARGS are
-additional arguments. Logs information about when and where the database was
-originally opened before closing it."
-  (let ((info (gethash db cj/sqlite--db-origins)))
-	(when info
-	  (message "cj/sqlite: closing %s opened at %s by %s"
-			   (plist-get info :file)
-			   (plist-get info :time)
-			   (or (plist-get info :where) "unknown"))))
-  (apply orig db args))
-
-(defun cj--ad-set-finalizer (orig obj fn)
-  "Advice function wrapping \='set-finalizer\=' to debug finalizer failures.
-ORIG is the original function, OBJ is the object to finalize, and FN is the
-finalizer function. Wraps the finalizer to capture and log detailed diagnostic
-information (creation time, location, call stack, and SQLite database info if
-applicable) when finalizers fail, then re-signals the error."
-  (let* ((origin (list :time (current-time-string)
-					   :where (or load-file-name buffer-file-name)
-					   :stack (cj/capture-backtrace)
-					   :sqlite-open (when (and (fboundp 'sqlitep)
-											   (ignore-errors (sqlitep obj)))
-									  (gethash obj cj/sqlite--db-origins))))
-		 (wrapped
-		  (lambda (&rest args)
-			(condition-case err
-				(apply fn args)
-			  (error
-			   (let* ((stack (cj/take 8 (plist-get origin :stack)))
-					  (dbi   (plist-get origin :sqlite-open))
-					  (extra (if dbi
-								 (format " db=%s opened at %s by %s"
-										 (plist-get dbi :file)
-										 (plist-get dbi :time)
-										 (or (plist-get dbi :where) "unknown"))
-							   "")))
-				 (message "cj/finalizer: failed; created at %s (%s); callers=%S;%s; error=%S"
-						  (plist-get origin :time)
-						  (or (plist-get origin :where) "unknown")
-						  stack extra err))
-			   ;; Re-signal so Emacs still shows the standard finalizer message.
-			   (signal (car err) (cdr err)))))))
-	(funcall orig obj wrapped)))
-
-(defun cj/sqlite-tracing-enable ()
-  "Enable tracing of sqlite opens/closes and annotate failing finalizers."
-  (interactive)
-  (unless cj/sqlite-tracing-enabled
-	(setq cj/sqlite-tracing-enabled t)
-	(advice-add 'set-finalizer :around #'cj--ad-set-finalizer)
-	(when (fboundp 'sqlite-open)
-	  (advice-add 'sqlite-open :around #'cj--ad-sqlite-open)
-	  (advice-add 'sqlite-close :around #'cj--ad-sqlite-close))
-	(message "cj/sqlite tracing enabled")))
-
-(defun cj/sqlite-tracing-disable ()
-  "Disable sqlite/finalizer tracing and clear recorded origins."
-  (interactive)
-  (setq cj/sqlite-tracing-enabled nil)
-  (ignore-errors (advice-remove 'set-finalizer #'cj--ad-set-finalizer))
-  (when (fboundp 'sqlite-open)
-	(ignore-errors (advice-remove 'sqlite-open #'cj--ad-sqlite-open))
-	(ignore-errors (advice-remove 'sqlite-close #'cj--ad-sqlite-close)))
-  (clrhash cj/sqlite--db-origins)
-  (message "cj/sqlite tracing disabled"))
-
-(cj/sqlite-tracing-enable)
-(setq debug-on-message (rx bos "finalizer failed"))
-
-;; ----------------------------- Explain Pause Mode ----------------------------
-;; Performance profiling tool to identify what's causing Emacs to pause/hang
-;; Usage:
-;;   1. Enable: M-x explain-pause-mode
-;;   2. Perform the slow operation (e.g., press F8 for agenda)
-;;   3. View report: M-x explain-pause-top
-;;   4. Disable when done: M-x explain-pause-mode
-
-;; (add-to-list 'load-path (expand-file-name "~/code/explain-pause-mode"))
-
-;; (use-package explain-pause-mode
-;;   :ensure nil  ;; local package
-;;   :init
-;;   (keymap-global-unset "<f2>")
-;;   :demand t
-;;   :commands (explain-pause-mode explain-pause-top)
-;;   :bind
-;;   ("<f2>" . explain-pause-mode)
-;;   ("C-<f2>" . explain-pause-top)
-;;   :config
-;;   ;; Consider commands slow if they take longer than 40ms (default)
-;;   (setq explain-pause-slow-too-long-ms 40)
-
-;;   ;; Auto-refresh the top buffer every 2 seconds
-;;   (setq explain-pause-top-auto-refresh-interval 2))
-
-;; ;; Quick access function for profiling org-agenda
-;; (defun profile-agenda-with-explain-pause ()
-;;   "Enable explain-pause-mode, run org-agenda, and show the report."
-;;   (interactive)
-;;   (unless explain-pause-mode
-;;     (explain-pause-mode 1))
-;;   (message "explain-pause-mode enabled. Generating agenda...")
-;;   (sit-for 0.5)  ;; brief pause so message is visible
-;;   (org-agenda nil "d")
-;;   (sit-for 1)    ;; let agenda finish rendering
-;;   (explain-pause-top))
-
-
-;; --------------------- Debug Code For Package Signatures ---------------------
-;; from https://emacs.stackexchange.com/questions/233/how-to-proceed-on-package-el-signature-check-failure
-
-;; Set package-check-signature to nil, e.g., M-: (setq package-check-signature nil) RET.
-;; Download the package gnu-elpa-keyring-update and run the function with the same name, e.g., M-x package-install RET gnu-elpa-keyring-update RET.
-;; Reset package-check-signature to the default value allow-unsigned, e.g., M-: (setq package-check-signature 'allow-unsigned) RET.
-
-;; (setq package-check-signature nil)
-;; (setq package-check-signature 'allow-unsigned)
 
 (provide 'config-utilities)
 ;;; config-utilities.el ends here
