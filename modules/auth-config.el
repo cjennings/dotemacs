@@ -40,6 +40,5 @@
   ;; (setq epa-pinentry-mode 'loopback)  ;; emacs request passwords in minibuffer
   (setq epg-gpg-program "gpg2"))  ;; force use gpg2 (not gpg v.1)
 
-
 (provide 'auth-config)
 ;;; auth-config.el ends here.
