@@ -23,12 +23,11 @@
 (declare-function ps-print-region-with-faces "ps-print")
 
 ;; ------------------------- Print Buffer As Postscript ------------------------
-;; prints using postscript for much nicer output
 
 (defvar cj/print-spooler-command 'auto
   "Command used to send PostScript to the system print spooler.
-Set to a string to force a specific command (e.g., lpr or lp).
-Set to \\='auto to auto-detect once per session.")
+Set to a string to force a specific command (e.g., lpr or lp). Set to `auto' to
+auto-detect once per session.")
 
 (defvar cj/print--spooler-cache nil
   "Cached spooler command detected for the current Emacs session.")
@@ -56,7 +55,6 @@ Set to \\='auto to auto-detect once per session.")
     (user-error "Invalid value for cj/print-spooler-command: %S"
                 cj/print-spooler-command))))
 
-;;;###autoload
 (defun cj/print-buffer-ps (&optional color)
   "Print the buffer (or active region) as PostScript to the default printer.
 With prefix argument COLOR, print in color; otherwise print in monochrome.
@@ -193,6 +191,10 @@ Do not save the deleted text in the kill ring."
   "l" #'cj/copy-link-to-buffer-file
   "P" #'cj/copy-path-to-buffer-file-as-kill)
 (keymap-set cj/custom-keymap "b" cj/buffer-and-file-map)
+
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-; b" "buffer and file menu"))
+
 
 (provide 'custom-file-buffer)
 ;;; custom-file-buffer.el ends here.

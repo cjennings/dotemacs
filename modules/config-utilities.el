@@ -218,7 +218,6 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements "C-c d i" "info on build/features/packages."))
 
-
 (defvar cj--loaded-file-paths nil
   "All file paths that are loaded.")
 (defvar cj--loaded-packages-buffer "*loaded-packages*"
@@ -267,7 +266,6 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 (keymap-set cj/debug-config-keymap "i f" 'cj/info-loaded-features)
 
 ;; ------------------------------ Reload Init File -----------------------------
-;; it does what it says it does.
 
 (defun cj/reload-init-file ()
   "Reload the init file.  Useful when modifying Emacs config."
@@ -287,7 +285,7 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 ;; ------------------------ Validate Org Agenda Entries ------------------------
 
 (defun cj/validate-org-agenda-timestamps ()
-  "Scan all files in \='org-agenda-files\=' for invalid timestamps.
+  "Scan all files in `org-agenda-files' for invalid timestamps.
 Checks DEADLINE, SCHEDULED, TIMESTAMP properties and inline timestamps in
 headline contents. Generates an Org-mode report buffer with links to problematic
 entries, property/type, and raw timestamp string."

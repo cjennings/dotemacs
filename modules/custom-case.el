@@ -40,12 +40,11 @@
 
 (defun cj/title-case-region ()
   "Capitalize the region in title case format.
-Title case is a capitalization convention where major words
-are capitalized,and most minor words are lowercase.  Nouns,
-verbs (including linking verbs), adjectives, adverbs,pronouns,
-and all words of four letters or more are considered major words.
-Short (i.e., three letters or fewer) conjunctions, short prepositions,
-and all articles are considered minor words."
+Title case is a capitalization convention where major words are capitalized,
+and most minor words are lowercase.  Nouns, verbs (including linking verbs),
+adjectives, adverbs,pronouns, and all words of four letters or more are
+considered major words. Short (i.e., three letters or fewer) conjunctions,
+short prepositions, and all articles are considered minor words."
   (interactive)
   (let ((beg nil)
 		(end nil)
@@ -112,11 +111,14 @@ and all articles are considered minor words."
 
 ;; Case-change operations prefix and keymap
 (defvar-keymap cj/case-map
-  :doc "Keymap for case-change operations."
+  :doc "Keymap for case-change operations"
   "t" #'cj/title-case-region
   "u" #'cj/upcase-dwim
   "l" #'cj/downcase-dwim)
 (keymap-set cj/custom-keymap "c" cj/case-map)
+
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-; c" "case change menu"))
 
 (provide 'custom-case)
 ;;; custom-case.el ends here.
