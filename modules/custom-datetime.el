@@ -106,8 +106,6 @@ Use `readable-date-format' for formatting."
 
 ;; ------------------------------ Date Time Keymap -----------------------------
 
-;; Date/time insertion prefix and keymap
-
 (defvar-keymap cj/datetime-map
   :doc "Keymap for date/time insertions."
   "r" #'cj/insert-readable-date-time
@@ -117,6 +115,9 @@ Use `readable-date-format' for formatting."
   "d" #'cj/insert-sortable-date
   "D" #'cj/insert-readable-date )
 (keymap-set cj/custom-keymap "d" cj/datetime-map)
+
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-; d" "date/time insertion menu"))
 
 (provide 'custom-datetime)
 ;;; custom-datetime.el ends here.

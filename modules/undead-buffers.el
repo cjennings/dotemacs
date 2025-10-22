@@ -17,34 +17,43 @@
 ;;
 ;;; Code:
 
-(defvar cj/buffer-bury-alive-list
-  '("*dashboard*" "*scratch*" "*EMMS-Playlist*" "*Messages*" "*ert*" "*AI-Assistant*")
+(defvar cj/undead-buffer-list
+  '("*scratch*" "*EMMS-Playlist*" "*Messages*" "*ert*"
+    "*AI-Assistant*")
   "Buffers to bury instead of killing.")
 
+(defun cj/make-buffer-undead (name)
+  "Append NAME to `cj/undead-buffer-list' if not present.
+Signal an error if NAME is not a non-empty string. Return the updated list."
+  (unless (and (stringp name) (> (length name) 0))
+    (error "cj/bury-alive-add: NAME must be a non-empty string"))
+  (add-to-list 'cj/undead-buffer-list name t))
+
 (defun cj/kill-buffer-or-bury-alive (buffer)
-  "Kill BUFFER or bury it if it's in `cj/buffer-bury-alive-list'."
+  "Kill BUFFER or bury it if it's in `cj/undead-buffer-list'."
   (interactive "bBuffer to kill or bury: ")
   (with-current-buffer buffer
 	(if current-prefix-arg
 		(progn
-		  (add-to-list 'cj/buffer-bury-alive-list (buffer-name))
+          (add-to-list 'cj/undead-buffer-list (buffer-name))
 		  (message "Added %s to bury-alive-list" (buffer-name)))
-	  (if (member (buffer-name) cj/buffer-bury-alive-list)
+      (if (member (buffer-name) cj/undead-buffer-list)
 		  (bury-buffer)
 		(kill-buffer)))))
 (keymap-global-set "<remap> <kill-buffer>" #'cj/kill-buffer-or-bury-alive)
 
 (defun cj/undead-buffer-p ()
-  "Predicate for `save-some-buffers' that skips buffers in `cj/buffer-bury-alive-list'."
+  "Replacement for `save-some-buffers' skips undead-buffers.
+Undead-buffers are buffers in `cj/undead-buffer-list'."
   (let* ((buf (current-buffer))
 		 (name (buffer-name buf)))
 	(and
-	 (not (member name cj/buffer-bury-alive-list))
+     (not (member name cj/undead-buffer-list))
 	 (buffer-file-name buf)
 	 (buffer-modified-p buf))))
 
 (defun cj/save-some-buffers (&optional arg)
-  "Save some buffers, omitting those in `cj/buffer-bury-alive-list'.
+  "Save some buffers, omitting those in `cj/undead-buffer-list'.
 ARG is passed to `save-some-buffers'."
   (interactive "P")
   (save-some-buffers arg #'cj/undead-buffer-p))
@@ -53,7 +62,8 @@ ARG is passed to `save-some-buffers'."
   "Delete window and kill or bury its buffer."
   (interactive)
   (let ((buf (current-buffer)))
-	(delete-window)
+	(unless (one-window-p)
+	  (delete-window))
 	(cj/kill-buffer-or-bury-alive buf)))
 (keymap-global-set "M-C" #'cj/kill-buffer-and-window)
 
