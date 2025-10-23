@@ -68,8 +68,10 @@
 		  (FiraCode-Literata
 		   :default-family "Fira Code Nerd Font"
 		   :variable-pitch-family "Literata")
-		  (Merriweather
-		   :default-family "Merriweather"
+          (EBook
+           :default-family "Merriweather"
+           :default-weight regular
+           :default-height 200
 		   :variable-pitch-family "Merriweather")
 		  (24-point-font
 		   :default-height 240)
@@ -112,8 +114,7 @@
 	"List of frames that have had fontaine configuration applied.")
 
   (defun cj/apply-font-settings-to-frame (&optional frame)
-	"Apply font settings to FRAME if not already configured.
-
+    "Apply font settings to FRAME if not already configured.
 If FRAME is nil, uses the selected frame."
 	(let ((target-frame (or frame (selected-frame))))
 	  (unless (member target-frame cj/fontaine-configured-frames)
@@ -242,16 +243,16 @@ If FRAME is nil, uses the selected frame."
 	(move-to-window-line 0)
 	(special-mode)))
 
-(global-set-key (kbd "C-z F") 'cj/display-available-fonts)
+(keymap-global-set "C-z F" #'cj/display-available-fonts)
 
 ;; ----------------------- Increase / Decrease Font Size -----------------------
 ;; make it easy to enlarge or shrink font sizes with keybindings
 
 (setq text-scale-mode-step 1.08)
-(global-set-key (kbd "C-+") 'text-scale-increase)
-(global-set-key (kbd "C-=") 'text-scale-increase)
-(global-set-key (kbd "C-_") 'text-scale-decrease)
-(global-set-key (kbd "C--") 'text-scale-decrease)
+(keymap-global-set "C-+" #'text-scale-increase)
+(keymap-global-set "C-=" #'text-scale-increase)
+(keymap-global-set "C-_" #'text-scale-decrease)
+(keymap-global-set "C--" #'text-scale-decrease)
 
 ;; --------------------------------- Ligatures ---------------------------------
 ;; fancy programming glyphs make code easier to read
