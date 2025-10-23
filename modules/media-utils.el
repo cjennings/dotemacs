@@ -41,7 +41,7 @@
 
 (defcustom cj/media-players
   '((mpv . (:command "mpv"
-					 :args nil
+                     :args nil
 					 :name "MPV"
 					 :needs-stream-url nil
 					 :yt-dlp-formats nil))
@@ -74,14 +74,13 @@ strings."
   :type '(alist :key-type symbol
 				:value-type (plist :key-type keyword
 								   :value-type sexp))
-  :group 'elfeed)
+  :group 'media)
 
-(defcustom cj/default-media-player 'mpv
+(defcustom cj/default-media-player 'vlc
   "The default media player to use for videos.
-
 Should be a key from `cj/media-players'."
   :type 'symbol
-  :group 'elfeed)
+  :group 'media)
 
 (defun cj/get-available-media-players ()
   "Return a list of available media players from `cj/media-players'."
