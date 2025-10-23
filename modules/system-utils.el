@@ -142,7 +142,7 @@ Logs output and exit code to buffer *external-open.log*."
 ;;; ------------------------ List Buffers With Nerd Icons -----------------------
 
 ;; Remap list-buffers to ibuffer (built-in). Keybinding is separate from
-;; nerd-icons-ibuffer package below, which only adds icons to ibuffer.
+;; nerd-icons-ibuffer package, which only adds icons to ibuffer.
 (keymap-global-set "<remap> <list-buffers>" #'ibuffer)
 
 (use-package nerd-icons-ibuffer

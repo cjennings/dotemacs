@@ -44,7 +44,7 @@ If CMD is deemed dangerous, ask for confirmation."
   (pcase-let ((`(,sym ,cmdstr ,label) (cj/system-cmd--resolve cmd)))
     (when (and sym (get sym 'cj/system-confirm)
                (memq (read-char-choice
-					  (format "Run %s now (%s)? (Y/n) " label camdstr)
+                      (format "Run %s now (%s)? (Y/n) " label camdstr)
                       '(?y ?Y ?n ?N ?\r ?\n ?\s))
                      '(?n ?N)))
       (user-error "Aborted"))
@@ -116,12 +116,12 @@ If CONFIRM is non-nil, mark VAR to always require confirmation."
   "Present system commands via \='completing-read\='."
   (interactive)
   (let* ((commands '(("Logout System"   . cj/system-cmd-logout)
-					 ("Lock Screen"     . cj/system-cmd-lock)
-					 ("Suspend System"  . cj/system-cmd-suspend)
-					 ("Shutdown System" . cj/system-cmd-shutdown)
-					 ("Reboot System"   . cj/system-cmd-reboot)
-					 ("Exit Emacs"      . cj/system-cmd-exit-emacs)
-					 ("Restart Emacs"   . cj/system-cmd-restart-emacs)))
+                     ("Lock Screen"     . cj/system-cmd-lock)
+                     ("Suspend System"  . cj/system-cmd-suspend)
+                     ("Shutdown System" . cj/system-cmd-shutdown)
+                     ("Reboot System"   . cj/system-cmd-reboot)
+                     ("Exit Emacs"      . cj/system-cmd-exit-emacs)
+                     ("Restart Emacs"   . cj/system-cmd-restart-emacs)))
          (choice (completing-read "System command: " commands nil t)))
     (when-let ((cmd (alist-get choice commands nil nil #'equal)))
       (call-interactively cmd))))
@@ -150,15 +150,15 @@ If CONFIRM is non-nil, mark VAR to always require confirmation."
 
 ;; ------------------------------ Buffer Same Mode -----------------------------
 
-(defun cj/buffer-same-mode (&rest modes)
-  "Pop to a buffer with a mode among MODES, or the current one if not given."
-  (interactive)
-  (let* ((modes (or modes (list major-mode)))
-         (pred (lambda (b)
-                 (let ((b (get-buffer (if (consp b) (car b) b))))
-                   (member (buffer-local-value 'major-mode b) modes)))))
-    (pop-to-buffer (read-buffer "Buffer: " nil t pred))))
-(global-set-key (kbd "C-x B") 'cj/buffer-same-mode)
+;; (defun cj/buffer-same-mode (&rest modes)
+;;   "Pop to a buffer with a mode among MODES, or the current one if not given."
+;;   (interactive)
+;;   (let* ((modes (or modes (list major-mode)))
+;;          (pred (lambda (b)
+;;                  (let ((b (get-buffer (if (consp b) (car b) b))))
+;;                    (member (buffer-local-value 'major-mode b) modes)))))
+;;     (pop-to-buffer (read-buffer "Buffer: " nil t pred))))
+;; (keymap-global-set "C-x B" #'cj/buffer-same-mode)
 
 ;; ;; --------------------------------- Easy Hugo ---------------------------------
 
@@ -184,17 +184,30 @@ If CONFIRM is non-nil, mark VAR to always require confirmation."
   :bind ("M-p" . pomm)
   :commands (pomm pomm-third-time))
 
-;; --------------------- Debug Code For Package Signatures ---------------------
-;; from https://emacs.stackexchange.com/questions/233/how-to-proceed-on-package-el-signature-check-failure
+;; ----------------------------------- Popper ----------------------------------
 
-
-;; Set package-check-signature to nil, e.g., M-: (setq package-check-signature nil) RET.
-;; Download the package gnu-elpa-keyring-update and run the function with the same name, e.g., M-x package-install RET gnu-elpa-keyring-update RET.
-;; Reset package-check-signature to the default value allow-unsigned, e.g., M-: (setq package-check-signature 'allow-unsigned) RET.
-
-;; (setq package-check-signature nil)
-;; (setq package-check-signature 'allow-unsigned)
-
+;; (use-package popper
+;;   :bind (("C-`"   . popper-toggle)
+;;          ("M-`"   . popper-cycle)
+;;          ("C-M-`" . popper-toggle-type))
+;;   :custom
+;;   (popper-display-control-nil)
+;;   :init
+;;   (setq popper-reference-buffers
+;;         '("\\*Messages\\*"
+;;           "Output\\*$"
+;;           "\\*Async Shell Command\\*"
+;; ;;          "\\*scratch\\*"
+;;           help-mode
+;;           compilation-mode))
+;;   (add-to-list 'display-buffer-alist
+;;                '(popper-display-control-p  ; Predicate to match popper buffers
+;;                  (display-buffer-in-side-window)
+;;                  (side . bottom)
+;;                  (slot . 0)
+;;                  (window-height . 0.5)))  ; Half the frame height
+;;   (popper-mode +1)
+;;   (popper-echo-mode +1))
 
 (provide 'wip)
 ;;; wip.el ends here.

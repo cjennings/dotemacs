@@ -168,7 +168,7 @@ Note that using M-SPC will override the default binding to just-one-space."
 (defun jumper-setup-keys ()
   "Setup default keybindings for jumper."
   (interactive)
-  (global-set-key (kbd jumper-prefix-key) jumper-map))
+  (keymap-global-set jumper-prefix-key jumper-map))
 
 ;; Call jumper-setup-keys when the package is loaded
 (jumper-setup-keys)

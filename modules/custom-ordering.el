@@ -82,12 +82,11 @@ Produce a comma-separated list as the result."
 	(insert text)))
 
 
+
 ;; Ordering & sorting prefix and keymap
 (define-prefix-command 'cj/ordering-map nil
-					   "Keymap for text ordering and sorting operations.")
+                       "text ordering and sorting operations.")
 (keymap-set cj/custom-keymap "o" #'cj/ordering-map)
-
-
 (keymap-set cj/ordering-map "a" #'cj/arrayify)
 (keymap-set cj/ordering-map "u" #'cj/unarrayify)
 (keymap-set cj/ordering-map "A" #'cj/alphabetize-region)

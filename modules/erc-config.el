@@ -1,8 +1,8 @@
 ;;; erc-config --- Preferences for Emacs Relay Chat (IRC Client) -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
-
+;;
 ;;; Commentary:
-
+;;
 ;; Enhanced ERC configuration with multi-server support.
 ;;
 ;; Main keybindings:
@@ -17,49 +17,8 @@
 
 ;; Load cl-lib at compile time and runtime (lightweight, already loaded in most configs)
 (require 'cl-lib)
-
-;; Declare ERC functions to avoid byte-compiler warnings
-(declare-function erc-part-from-channel "erc" (&optional reason))
-(declare-function erc-quit-server "erc" (reason))
-(declare-function erc-buffer-list "erc" (&optional predicate proc))
-(declare-function erc-server-process-alive "erc" (&optional buffer))
-(declare-function erc-server-buffer-p "erc" (&optional buffer))
-(declare-function erc-current-nick "erc" ())
-(declare-function erc-join-channel "erc" (channel &optional key))
-(declare-function erc-tls "erc" (&rest r))
-(declare-function erc "erc" (&rest r))
-(declare-function erc-update-modules "erc" ())
-(declare-function erc-get-color-for-nick "erc" (nick))
-
-;; Declare ERC variables
-(defvar erc-server-process)
-(defvar erc-mode-abbrev-table)
-(defvar erc-log-channels-directory)
-(defvar erc-unique-buffers)
-(defvar erc-generate-buffer-name-function)
-(defvar erc-track-exclude-types)
-(defvar erc-track-exclude-server-buffer)
-(defvar erc-track-visibility)
-(defvar erc-track-switch-direction)
-(defvar erc-track-showcount)
-(defvar erc-nick-color-alist)
-(defvar erc-nick-color-function)
-(defvar erc-modules)
-(defvar erc-mode-map)
-(defvar user-whole-name)
-(defvar erc-image-inline-rescale)
-
-;; Keymap for ERC commands (bound in use-package :config to defer loading)
-(defvar cj/erc-command-map
-  (let ((map (make-sparse-keymap)))
-	(keymap-set map "C" #'cj/erc-connect-server-with-completion) ;; Connect to server (capital C)
-	(keymap-set map "c" #'cj/erc-join-channel-with-completion)   ;; join channel (lowercase c)
-	(keymap-set map "b" #'cj/erc-switch-to-buffer-with-completion) ;; switch Buffer
-	(keymap-set map "l" #'cj/erc-connected-servers)              ;; print connected servers in echo area
-	(keymap-set map "q" #'erc-part-from-channel)                 ;; quit channel
-	(keymap-set map "Q" #'erc-quit-server)                       ;; Quit ERC entirely
-	map)
-  "Keymap for ERC-related commands.")
+(eval-when-compile (require 'erc)
+                   (require 'user-constants))
 
 ;; ------------------------------------ ERC ------------------------------------
 ;; Server definitions and connection settings
@@ -113,7 +72,7 @@ Change this value to use a different nickname.")
 			   :nick cj/erc-nick
 			   :full-name user-whole-name))))))
 
-;;;###autoload
+
 (defun cj/erc-connect-server-with-completion ()
   "Connect to a server using completion for server selection."
   (interactive)
@@ -121,7 +80,7 @@ Change this value to use a different nickname.")
 									  (mapcar #'car cj/erc-server-alist))))
 	(cj/erc-connect-server server-name)))
 
-;;;###autoload
+
 (defun cj/erc-connected-servers ()
   "Return a list of currently connected servers and display them in echo area."
   (interactive)
@@ -141,7 +100,7 @@ Change this value to use a different nickname.")
 
 	server-buffers))
 
-;;;###autoload
+
 (defun cj/erc-switch-to-buffer-with-completion ()
   "Switch to an ERC buffer using completion.
 If no ERC buffers exist, prompt to connect to a server.
@@ -156,14 +115,14 @@ Buffer names are shown with server context for clarity."
 	  (when (y-or-n-p "Connect to an IRC server? ")
 		(call-interactively 'cj/erc-connect-server-with-completion)))))
 
-;;;###autoload
+
 (defun cj/erc-server-buffer-active-p ()
   "Return t if the current buffer is an active ERC server buffer."
   (and (derived-mode-p 'erc-mode)
 	   (erc-server-process-alive)
 	   (erc-server-buffer-p)))
 
-;;;###autoload
+
 (defun cj/erc-get-channels-for-current-server ()
   "Get list of channels for the currently connected server."
   (when (and (derived-mode-p 'erc-mode) erc-server-process)
@@ -175,10 +134,9 @@ Buffer names are shown with server context for clarity."
 	  (when matching-server
 		(plist-get (cdr matching-server) :channels)))))
 
-;;;###autoload
+
 (defun cj/erc-join-channel-with-completion ()
   "Join a channel on the current server.
-
 If not in an active ERC server buffer, reconnect first.
 Auto-adds # prefix if missing.  Offers completion from configured channels."
   (interactive)
@@ -213,7 +171,6 @@ Auto-adds # prefix if missing.  Offers completion from configured channels."
 		(when (> (length channel) 1)  ; Must have more than just #
 		  (erc-join-channel channel)))
 	(message "Failed to establish an active ERC connection")))
-
 
 ;; Main ERC configuration
 (use-package erc
@@ -381,7 +338,21 @@ NICK is the sender and MESSAGE is the message text."
   :after erc
   :bind
   (:map erc-mode-map
-		("C-y" . erc-yank)))
+        ("C-y" . erc-yank)))
+
+
+
+;; Keymap for ERC commands (bound in use-package :config to defer loading)
+(defvar cj/erc-command-map
+  (let ((map (make-sparse-keymap)))
+    (keymap-set map "C" #'cj/erc-connect-server-with-completion) ;; Connect to server (capital C)
+    (keymap-set map "c" #'cj/erc-join-channel-with-completion)   ;; join channel (lowercase c)
+    (keymap-set map "b" #'cj/erc-switch-to-buffer-with-completion) ;; switch Buffer
+    (keymap-set map "l" #'cj/erc-connected-servers)              ;; print connected servers in echo area
+    (keymap-set map "q" #'erc-part-from-channel)                 ;; quit channel
+    (keymap-set map "Q" #'erc-quit-server)                       ;; Quit ERC entirely
+    map)
+  "Keymap for ERC-related commands.")
 
 (provide 'erc-config)
 ;;; erc-config.el ends here

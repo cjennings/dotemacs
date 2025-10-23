@@ -8,7 +8,9 @@
 
 ;;; Code:
 
-(require 'undead-buffers)
+(eval-when-compile (require 'undead-buffers))
+(declare-function cj/make-buffer-undead "undead-buffers" (string))
+(autoload 'cj/make-buffer-undead "undead-buffers" nil t)
 
 ;; ------------------------ Dashboard Bookmarks Override -----------------------
 ;; overrides the bookmark insertion from the dashboard package to provide an
@@ -17,10 +19,8 @@
 ;; accompanied by the setting (setq dashboard-bookmarks-show-path nil) in
 ;; config.
 
-(defcustom dashboard-bookmarks-item-format "%s"
-  "Format to use when showing the base of the file name."
-  :type 'string
-  :group 'dashboard)
+(defvar dashboard-bookmarks-item-format "%s"
+  "Format to use when showing the base of the file name.")
 
 (defun dashboard-insert-bookmarks (list-size)
   "Add the list of LIST-SIZE items of bookmarks."
@@ -53,12 +53,14 @@
 (defun cj/dashboard-only ()
   "Switch to *dashboard* buffer and kill all other buffers and windows."
   (interactive)
-  (dired-sidebar-hide-sidebar)
+  (when (fboundp 'dired-sidebar-hide-sidebar)
+    (dired-sidebar-hide-sidebar))
   (if (get-buffer "*dashboard*")
 	  (progn
 		(switch-to-buffer "*dashboard*")
 		(cj/kill-all-other-buffers-and-windows))
-	(dashboard-open)))
+	(when (fboundp 'dashboard-open)
+	  (dashboard-open))))
 
 ;; --------------------------------- Dashboard ---------------------------------
 ;; a useful startup screen for Emacs
@@ -66,7 +68,7 @@
 (use-package dashboard
   :defer t
   :hook (emacs-startup . cj/dashboard-only)
-  :bind ("<f4>" . cj/dashboard-only)
+  :bind ("<f1>" . cj/dashboard-only)
   :custom
   (dashboard-projects-backend 'projectile)
 
@@ -91,15 +93,16 @@
   :config
 
   ;; == general
-  (dashboard-setup-startup-hook)                                 ;; run dashboard post emacs init
+  (dashboard-setup-startup-hook)                                      ;; run dashboard post emacs init
+  (cj/make-buffer-undead "*dashboard*")                               ;; make this buffer unkillable
 
   (if (< (length command-line-args) 2)
-      (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*"))))  ;; don't display dashboard if opening a file
-  (setq dashboard-display-icons-p t)                             ;; display icons on both GUI and terminal
-  (setq dashboard-icon-type 'nerd-icons)                         ;; use `nerd-icons' package
-  (setq dashboard-center-content t)                              ;; horizontally center dashboard content
-  (setq dashboard-bookmarks-show-path nil)                       ;; don't show paths in bookmarks
-  (setq dashboard-set-footer nil)  ;; don't show footer and quotes
+      (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))) ;; don't display dashboard if opening a file
+  (setq dashboard-display-icons-p t)                                  ;; display icons on both GUI and terminal
+  (setq dashboard-icon-type 'nerd-icons)                              ;; use `nerd-icons' package
+  (setq dashboard-center-content t)                                   ;; horizontally center dashboard content
+  (setq dashboard-bookmarks-show-path nil)                            ;; don't show paths in bookmarks
+  (setq dashboard-set-footer nil)                                     ;; don't show footer and quotes
 
   ;; == banner
   (setq dashboard-startup-banner (concat user-emacs-directory "assets/M-x_butterfly.png"))

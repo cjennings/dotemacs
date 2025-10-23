@@ -120,15 +120,15 @@
 ;; Ordering & sorting prefix and keymap
 (define-prefix-command 'cj/vc-map nil
 					   "Keymap for version control operations.")
-(define-key cj/custom-keymap "v" 'cj/vc-map)
-(define-key cj/vc-map "d" 'cj/goto-git-gutter-diff-hunks)
-(define-key cj/vc-map "c" 'cj/forge-create-issue)
-(define-key cj/vc-map "f" 'forge-pull)
-(define-key cj/vc-map "i" 'forge-list-issues)
-(define-key cj/vc-map "n" 'git-gutter:next-hunk)
-(define-key cj/vc-map "p" 'git-gutter:previous-hunk)
-(define-key cj/vc-map "r" 'forge-list-pullreqs)
-(define-key cj/vc-map "t" 'cj/git-timemachine)
+(keymap-set cj/custom-keymap "v" #'cj/vc-map)
+(keymap-set cj/vc-map "d" #'cj/goto-git-gutter-diff-hunks)
+(keymap-set cj/vc-map "c" #'cj/forge-create-issue)
+(keymap-set cj/vc-map "f" #'forge-pull)
+(keymap-set cj/vc-map "i" #'forge-list-issues)
+(keymap-set cj/vc-map "n" #'git-gutter:next-hunk)
+(keymap-set cj/vc-map "p" #'git-gutter:previous-hunk)
+(keymap-set cj/vc-map "r" #'forge-list-pullreqs)
+(keymap-set cj/vc-map "t" #'cj/git-timemachine)
 
 (provide 'vc-config)
 ;;; vc-config.el ends here.

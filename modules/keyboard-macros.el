@@ -34,9 +34,7 @@
 ;;; Code:
 
 (require 'subr-x) ;; for string-trim
-
-;; Declare external variable to avoid compile warnings
-(defvar macros-file)
+(eval-when-compile (require 'user-constants))
 
 (defvar cj/macros-loaded nil
   "Whether saved keyboard macros have been loaded from file.")
@@ -61,7 +59,7 @@ This function is idempotent and fast when macros are already loaded."
     (setq cj/macros-loading nil)))
 
 (defun ensure-macros-file (file)
-  "Ensure FILE exists and its first line enables \='lexical-binding\='."
+  "Ensure FILE exists and its first line enables `lexical-binding'."
   (unless (file-exists-p file)
     (with-temp-file file
       (insert ";;; -*- lexical-binding: t -*-\n"))))
