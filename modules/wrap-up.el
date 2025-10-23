@@ -23,8 +23,9 @@
 (defun cj/bury-buffers-after-delay ()
   "Run cj/bury-buffers after a delay."
   (run-with-timer 1 nil 'cj/bury-buffers))
-
 (add-hook 'emacs-startup-hook 'cj/bury-buffers-after-delay)
+
+(cj/log-silently "<-- end of init file.")
 
 (provide 'wrap-up)
 ;;; wrap-up.el ends here

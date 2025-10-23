@@ -129,7 +129,7 @@
   (setq completion-in-region-function #'consult-completion-in-region))
 
 (global-unset-key (kbd "C-s"))
-(global-set-key (kbd "C-s") 'consult-line)
+(keymap-global-set "C-s" #'consult-line)
 
 ;; Consult integration with Embark
 (use-package embark-consult
@@ -148,7 +148,6 @@
 
 ;; --------------------------------- Orderless ---------------------------------
 ;; Advanced completion style - provides space-separated, out-of-order matching
-
 
 (use-package orderless
   :demand t

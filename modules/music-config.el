@@ -16,14 +16,31 @@
 ;;
 ;;; Code:
 
-(eval-when-compile (require 'emms))
-(eval-when-compile (require 'emms-player-mpd))
-(eval-when-compile (require 'emms-playlist-mode))
-(eval-when-compile (require 'emms-setup))
-(eval-when-compile (require 'emms-source-file))
-(eval-when-compile (require 'emms-source-playlist))
+(eval-when-compile
+  (condition-case nil
+      (require 'emms)
+    (error nil)))
+(eval-when-compile
+  (condition-case nil
+      (require 'emms-player-mpd)
+    (error nil)))
+(eval-when-compile
+  (condition-case nil
+      (require 'emms-playlist-mode)
+    (error nil)))
+(eval-when-compile
+  (condition-case nil
+      (require 'emms-setup)
+    (error nil)))
+(eval-when-compile
+  (condition-case nil
+      (require 'emms-source-file)
+    (error nil)))
+(eval-when-compile
+  (condition-case nil
+      (require 'emms-source-playlist)
+    (error nil)))
 
-(require 'cl-lib)
 (require 'subr-x)
 
 ;;; Settings (no Customize)
@@ -348,7 +365,7 @@ Dirs added recursively."
 		 (t (message "Skipping non-music file: %s" file))))
 	  (message "Added %d item(s) to playlist" (length files))))
 
-  (define-key dirvish-mode-map "p" #'cj/music-add-dired-selection))
+  (keymap-set dirvish-mode-map "p" #'cj/music-add-dired-selection))
 
 ;;; EMMS setup and keybindings
 
@@ -436,9 +453,9 @@ Dirs added recursively."
         ("p" . emms-playlist-mode-go)
         ("x" . emms-shuffle)))
 
-;; Quick toggle key
-(global-unset-key (kbd "<f10>"))
-(global-set-key (kbd "<f10>") #'cj/music-playlist-toggle)
+;; Quick toggle key - use autoload to avoid loading emms at startup
+(autoload 'cj/music-playlist-toggle "music-config" "Toggle EMMS playlist window." t)
+(keymap-global-set "<f10>" #'cj/music-playlist-toggle)
 
 ;;; Minimal ensure-loaded setup for on-demand use
 

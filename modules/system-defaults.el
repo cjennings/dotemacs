@@ -12,7 +12,6 @@
 
 ;;; Code:
 
-
 (require 'autorevert)
 (require 'server)
 (require 'bookmark)
@@ -24,9 +23,7 @@
 ;; Function in system-utils.el; autoload to avoid requiring it here.
 (autoload 'env-bsd-p "host-environment" nil t)
 
-
 ;; -------------------------- Native Comp Preferences --------------------------
-;; after async compiler starts, set preferences and warning level
 
 (with-eval-after-load 'comp-run
   (setopt native-comp-async-jobs-number 8) ; parallel compile workers
@@ -34,7 +31,6 @@
   (setopt native-comp-always-compile t))   ; always native-compile
 
 ;; -------------------------- Log Native Comp Warnings -------------------------
-;; log native comp warnings rather than cluttering the buffer
 
 (defvar comp-warnings-log
   (expand-file-name "comp-warnings.log" user-emacs-directory)
@@ -42,9 +38,9 @@
 
 (defun cj/log-comp-warning (type message &rest args)
   "Log native-comp warnings of TYPE with MESSAGE & ARGS.
-Log to buffer \='comp-warnings-log\='. Suppress warnings from appearing in the
-*Warnings* buffer. If TYPE contains \='comp\+', log the warning with a
-timestamp to the file specified by \+'comp-warnings-log\='. Return non-nil to
+Log to buffer `comp-warnings-log'. Suppress warnings from appearing in the
+*Warnings* buffer. If TYPE contains `comp', log the warning with a
+timestamp to the file specified by `comp-warnings-log'. Return non-nil to
 indicate the warning was handled."
   (when (memq 'comp (if (listp type) type (list type)))
     (with-temp-buffer
@@ -60,7 +56,6 @@ indicate the warning was handled."
 (advice-add 'display-warning :before-until #'cj/log-comp-warning)
 
 ;; ---------------------------------- Unicode ----------------------------------
-;; unicode everywhere
 
 (set-locale-environment "en_US.UTF-8")
 (prefer-coding-system        'utf-8)
@@ -115,7 +110,6 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 (setq system-time-locale "C")                       ;; use en_US locale to format time.
 
 ;; --------------------------------- Clipboard ---------------------------------
-;; keep the clipboard and kill ring in sync
 
 (setq select-enable-clipboard t)                    ;; cut and paste using clipboard
 (setq yank-pop-change-selection t)                  ;; update system clipboard when yanking in emacs
@@ -126,7 +120,6 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 (setq mouse-drag-copy-region nil)                   ;; don't copy region to clipboard by selecting with mouse
 
 ;; -------------------------------- Tab Settings -------------------------------
-;; spaces, not tabs
 
 (setq-default tab-width 4)                          ;; if tab, make them 4 spaces default
 (setq-default indent-tabs-mode nil)                 ;; but turn off tabs by default
@@ -137,14 +130,12 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 (setq mouse-wheel-progressive-speed nil)            ;; don't accelerate scrolling
 
 ;; ----------------------------- Case Insensitivity ----------------------------
-;; make user interfaces case insensitive
 
 (setq case-fold-search t)                           ;; case-insensitive searches
 (setq completion-ignore-case t)                     ;; case-insensitive completion
 (setq read-file-name-completion-ignore-case t)      ;; case-insensitive file completion
 
 ;; ------------------------------- Async Commands ------------------------------
-;; always create new async command buffers silently
 
 (setq async-shell-command-buffer 'new-buffer)
 
@@ -154,7 +145,6 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
              '("*Async Shell Command*" display-buffer-no-window (nil)))
 
 ;; ------------------------ Mouse And Trackpad Settings ------------------------
-;; provide smoothest scrolling and avoid accidental gestures
 
 (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
 (setq scroll-margin 3)             ;; start scrolling at 3 lines from top/bottom
@@ -168,7 +158,6 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 (keymap-global-set "<remap> <mouse-wheel-text-scale>" #'cj/disabled)
 
 ;; ------------------------------- Be Quiet(er)! -------------------------------
-;; reduces "helpful" instructions that distract Emacs power users.
 
 (setq-default vc-follow-symlinks)             ;; don't ask to follow symlinks if target is version controlled
 (setq kill-buffer-query-functions             ;; don't ask about killing buffers with processes, just kill them
@@ -185,7 +174,6 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 (setq server-client-instructions nil)         ;; I already know what to do when done with the frame
 
 ;; ------------------ Reduce Garbage Collections In Minibuffer -----------------
-;; triggers garbage collection when it won't impact user minibuffer entries
 
 (defun cj/minibuffer-setup-hook ()
   "Hook to prevent garbage collection while user's in minibuffer."
@@ -199,7 +187,6 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 (add-hook 'minibuffer-exit-hook #'cj/minibuffer-exit-hook)
 
 ;; ----------------------------- Bookmark Settings -----------------------------
-;; keep bookmarks in sync location, and save the file whenever a mark is added
 
 ;; place bookmark file sync'd org files
 (setq bookmark-default-file (concat org-dir "emacs_bookmarks"))
@@ -208,7 +195,6 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 (setq bookmark-save-flag 1)
 
 ;; -------------------------------- Recent Files -------------------------------
-;; don't suggest bookmarks, packages, indexes, or recentf in recent files.
 
 (use-package recentf
   :init
@@ -223,20 +209,18 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
   (add-to-list 'recentf-exclude "\\ElfeedDB/index"))
 
 ;; -------------------------- Autosave And Lock Files --------------------------
-;; don't create lockfiles or autosave (i.e., filename~) files.
 
 (setq  auto-save-default nil)
 (setq  create-lockfiles nil)
 
 ;; ------------------------------ Backup Settings ------------------------------
-;; per-save backups can be invaluable, so create them in ~/.emacs.d/backups
 
-;; BACKUP DIRECTORY CREATION
+;; Backup Directory Creation
 (defvar cj/backup-directory (concat user-emacs-directory "backups"))
 (if (not (file-exists-p cj/backup-directory))
     (make-directory cj/backup-directory t))
 
-;; BACKUP SETTINGS
+;; Backup Settings
 (setq make-backup-files t)                                    ;; do make backup files
 (setq backup-directory-alist `(("." . ,cj/backup-directory))) ;; put all originals in backup directory
 (setq backup-by-copying t)                                    ;; don't clobber symlinks
@@ -246,7 +230,6 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 (setq vc-make-backup-files t)                                 ;; also backup any files in version control
 
 ;; ------------------------------- GNU 'ls' On BSD -------------------------------
-;; when on BSD use the ls from FSF sysutils/coreutils: pkg install coreutils
 
 (when (env-bsd-p)
   (setq insert-directory-program "/usr/local/bin/gls"))
