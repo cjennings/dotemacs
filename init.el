@@ -18,7 +18,7 @@
 
 ;; ---------------------------- System Configuration ---------------------------
 
-;;(require 'config-utilities)    ;; enable for extra Emacs config debug helpers
+(require 'config-utilities)      ;; enable for extra Emacs config debug helpers
 (require 'user-constants)        ;; paths for files referenced in this config
 (require 'host-environment)      ;; convenience functions re: host environment
 (require 'system-defaults)       ;; native comp; log; unicode, backup, exec path
@@ -26,11 +26,11 @@
 
 ;; -------------------------- Utilities And Libraries --------------------------
 
-;; <<<< testing progress
 (require 'custom-case)           ;; operations for upper/lower/title case
 (require 'custom-comments)       ;; operations with comments
 (require 'custom-datetime)       ;; date/timestamp insertion in various formats
 (require 'custom-file-buffer)    ;; custom buffer and file operations and keymap
+;; <<<< writing tests for join-line-or-region
 (require 'custom-line-paragraph) ;; operations on lines and paragraphs
 (require 'custom-misc)           ;; miscellaneous functions
 (require 'custom-ordering)       ;; ordering and sorting operations
@@ -49,7 +49,6 @@
 
 ;; ------------------------ User Interface Configuration -----------------------
 
-;; <<<< refactoring progress
 (require 'ui-config)             ;; transparency, cursor color, icons, &c.
 (require 'ui-theme)              ;; themes and theme persistency
 (require 'ui-navigation)         ;; the movement and navigation of windows
@@ -57,12 +56,13 @@
 (require 'selection-framework)   ;; menu config
 (require 'modeline-config)       ;; modeline (status-bar) config
 (require 'mousetrap-mode)        ;; disables trackpad/mouse input only in Emacs
+(require 'popper-config)         ;; moving logs, help, and other buffers to popup
 
 ;; ----------------- Emacs Built-In Functionality Configuration ----------------
 
 (require 'chrono-tools)          ;; calendar, world clock, timers
 (require 'diff-config)           ;; diff and merge functionality w/in Emacs
-(require 'erc-config)            ;; seamless IRC client
+;;(require 'erc-config)            ;; seamless IRC client
 (require 'eshell-vterm-config)   ;; shell and terminal configuration
 (require 'help-utils)            ;; search: arch-wiki, devdoc, tldr, wikipedia
 (require 'help-config)           ;; info, man, help config
@@ -93,7 +93,7 @@
 (require 'test-runner)
 (require 'vc-config)             ;; version control packages and keybindings
 (require 'flycheck-config)       ;; linting for all languages including human ones
-(require 'prog-lsp)
+;; (require 'prog-lsp)
 (require 'prog-training)
 (require 'prog-c)
 (require 'prog-go)
@@ -116,6 +116,7 @@
 (require 'org-refile-config)     ;; refile org-branches
 (require 'org-roam-config)       ;; personal knowledge management in org mode
 (require 'org-webclipper)        ;; "instapaper" to org-roam workflow
+;; (require 'org-noter-config) ;; wip
 
 ;; -------------------------- AI Integration And Tools -------------------------
 
@@ -131,8 +132,6 @@
 ;;  (require 'update_text_file) ;; BUG: issues with this tool
   (require 'list_directory_files)
   (require 'move_to_trash))
-  ;; Web Tools
-  ;;(require 'fetch_page))
 
 ;; ------------------------- Personal Workflow Related -------------------------
 
@@ -142,17 +141,17 @@
 ;; ------------------------------- Entertainment -------------------------------
 
 (require 'eradio-config)
-(require 'games-config)
 (require 'music-config)
+(require 'games-config)
+
+;; ------------------------------ Modules In Test ------------------------------
+
+;;(require 'wip)
+;;(require 'lipsum-generator)
+;;(require 'jumper)
 
 ;; ---------------------------------- Wrap Up ----------------------------------
 
 (require 'wrap-up)
-
-;; ------------------------------ Modules In Test ------------------------------
-(require 'wip)
-(require 'org-noter-config)
-;;(require 'lipsum-generator)
-;;(require 'jumper)
 
 ;;; init.el ends here
