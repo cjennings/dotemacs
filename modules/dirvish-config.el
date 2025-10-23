@@ -1,53 +1,26 @@
 ;;; dirvish-config.el --- Dired/Dirvish Configuration -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
-;;
+
 ;;; Commentary:
-;; Dired and Dirvish configuration for enhanced file management.
+
+;; Enhanced file management via Dirvish (modern dired replacement) with icons,
+;; previews, and quick access directories (press 'g'). Includes utilities for
+;; ediff, playlist creation, path copying, and external file manager integration.
 ;;
-;; Main features include:
-;; - quick access directories with 'g' prefix (press g then shortcut key like h for home, ex for Emacs config, mx for music, px for pictures)
-;; - ediff for comparing two marked files
-;; - creating M3U playlists from marked audio files
-;; - copying file paths (project-relative home-relative or absolute)
-;; - opening external file manager in current directory
-;; - file previews (images videos PDFs EPUBs archives)
-;; - nerd icons for visual file type identification
-;; - subtree folding with TAB
-;; - Dired sidebar mode
-;; - hide/show dotfiles with period key
-;; - background wallpaper setting with bg command
-;; - history navigation
-;; - quick sort options
-;; - version control integration
-;; - rsync support
-;; - various file operation menus
-;;
-;; Key bindings (in dirvish-mode):
-;; - g: quick access to bookmarked directories
-;; - l: copy path (project-relative, home-relative, or absolute)
-;; - P: create M3U playlist from marked audio files
-;; - e: ediff two marked files
-;; - f: open system file manager in current directory
-;; - o/O: open file with xdg-open or custom command
-;; - TAB: toggle subtree folding
-;; - .: toggle dotfile visibility
-;; - F11: toggle sidebar
-;;
-;; Dependencies: dirvish, nerd-icons, projectile (optional), user-constants,
-;; system-utils
+;; Key Bindings:
+;; - g: Quick access menu (jump to predefined directories)
+;; - f: Open system file manager in current directory
+;; - o/O: Open file with xdg-open/custom command
+;; - l: Copy file path (project-relative or home-relative)
+;; - P: Create M3U playlist from marked audio files
+;; - M-D: DWIM menu (context actions for files)
+;; - TAB: Toggle subtree expansion
+;; - F11: Toggle sidebar view
 
 ;;; Code:
 
-;; Declare functions from dired
-(declare-function dired-get-marked-files "dired")
-(declare-function dired-get-file-for-visit "dired")
-(declare-function dired-current-directory "dired")
-(declare-function dired-get-filename "dired")
-(declare-function dired-mark "dired")
-(declare-function dired-file-name-at-point "dired")
-(declare-function dired-flag-file-deletion "dired")
-(declare-function dired-up-directory "dired")
-(declare-function dired-find-file "dired")
+(eval-when-compile (require 'user-constants))
+(eval-when-compile (require 'system-utils))
 
 ;;; ----------------------------- Dired Ediff Files -----------------------------
 
@@ -131,7 +104,7 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
   :defer t
   :bind
   (:map dired-mode-map
-		("<remap> <dired-summary>" . which-key-show-major-mode)
+		([remap dired-summary] . which-key-show-major-mode)
 		("E" . wdired-change-to-wdired-mode) ;; edit names and properties in buffer
 		("e" . cj/dired-ediff-files))        ;; ediff files
   :custom
@@ -141,14 +114,13 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
   (setq dired-dwim-target t)
   (setq dired-clean-up-buffers-too t)                  ;; offer to kill buffers associated deleted files and dirs
   (setq dired-clean-confirm-killing-deleted-buffers t) ;; don't ask; just kill buffers associated with deleted files
-  (setq dired-recursive-copies (quote always))         ;; "always" means no asking
-  (setq dired-recursive-deletes (quote top))           ;; "top" means ask once
-
-  ;; Auto revert dired when files change
-  (add-hook 'dired-mode-hook 'auto-revert-mode))
+  (setq dired-recursive-copies (quote always))         ;; “always” means no asking
+  (setq dired-recursive-deletes (quote top)))          ;; “top” means ask once
 
 ;; note: disabled as it prevents marking and moving files to another directory
 ;; (setq dired-kill-when-opening-new-dired-buffer t)   ;; don't litter by leaving buffers when navigating directories
+
+(add-hook 'dired-mode-hook 'auto-revert-mode)          ;; auto revert dired when files change
 
 ;;; --------------------------- Dired Open HTML In EWW --------------------------
 
@@ -204,7 +176,9 @@ regardless of what file or subdirectory the point is on."
 ;;; ---------------------------------- Dirvish ----------------------------------
 
 (use-package dirvish
-  :hook (dired-mode . dirvish-mode)
+  :defer 0.5
+  :init
+  (dirvish-override-dired-mode)
   :custom
   ;; This MUST be in :custom section, not :config
   (dirvish-quick-access-entries
@@ -238,42 +212,6 @@ regardless of what file or subdirectory the point is on."
 	 ("tg" ,(concat sync-dir "/text.games/")                "text games")
 	 ("vr" ,video-recordings-dir                            "video recordings directory")
 	 ("vx" ,videos-dir                                      "videos")))
-  :bind
-  (("C-x d"   . dirvish)
-   ("C-x C-d" . dirvish)
-   ("C-x D"   . dirvish)
-   ("<f11>"   . dirvish-side)
-   :map dirvish-mode-map
-   ("bg"      . (lambda () (interactive)
-				  (shell-command
-				   (concat "nitrogen --save --set-zoom-fill "
-						   (dired-file-name-at-point) " >>/dev/null 2>&1"))))
-   ("/"       . dirvish-narrow)
-   ("<left>"  . dired-up-directory)
-   ("<right>" . dired-find-file)
-   ("C-,"     . dirvish-history-go-backward)
-   ("C-."     . dirvish-history-go-forward)
-   ("F"       . dirvish-file-info-menu)
-   ("G"       . revert-buffer)
-   ("l"       . (lambda () (interactive) (cj/dired-copy-path-as-kill))) ;; overwrites dired-do-redisplay
-   ("h"       . cj/dirvish-open-html-in-eww)  ;; it does what it says it does
-   ("M"       . cj/dired-mark-all-visible-files)
-   ("M-e"     . dirvish-emerge-menu)
-   ("M-l"     . dirvish-ls-switches-menu)
-   ("M-m"     . dirvish-mark-menu)
-   ("M-p"     . dirvish-peek-toggle)
-   ("M-s"     . dirvish-setup-menu)
-   ("TAB"     . dirvish-subtree-toggle)
-   ("d".  dired-flag-file-deletion)
-   ("f"       . cj/dirvish-open-file-manager-here)
-   ("g"       . dirvish-quick-access)
-   ("o"       . cj/xdg-open)
-   ("O"       . cj/open-file-with-command)  ; Prompts for command to run
-   ("r"       . dirvish-rsync)
-   ("P"       . cj/dired-create-playlist-from-marked)
-   ("s"       . dirvish-quicksort)
-   ("v"       . dirvish-vc-menu)
-   ("y"       . dirvish-yank-menu))
   :config
   ;; Add the extensions directory to load-path
   (let ((extensions-dir (expand-file-name "extensions"
@@ -316,7 +254,43 @@ regardless of what file or subdirectory the point is on."
   (setq dirvish-attributes '(nerd-icons file-size))
   (setq dirvish-preview-dispatchers '(image gif video audio epub pdf archive))
   (setq dirvish-use-mode-line nil)
-  (setq dirvish-use-header-line nil))
+  (setq dirvish-use-header-line nil)
+  :bind
+  (("C-x d"   . dirvish)
+   ("C-x C-d" . dirvish)
+   ("C-x D"   . dirvish)
+   ("<f11>"   . dirvish-side)
+   :map dirvish-mode-map
+   ("bg"      . (lambda () (interactive)
+				  (shell-command
+				   (concat "nitrogen --save --set-zoom-fill "
+						   (dired-file-name-at-point) " >>/dev/null 2>&1"))))
+   ("/"       . dirvish-narrow)
+   ("<left>"  . dired-up-directory)
+   ("<right>" . dired-find-file)
+   ("C-,"     . dirvish-history-go-backward)
+   ("C-."     . dirvish-history-go-forward)
+   ("F"       . dirvish-file-info-menu)
+   ("G"       . revert-buffer)
+   ("l"       . (lambda () (interactive) (cj/dired-copy-path-as-kill))) ;; overwrites dired-do-redisplay
+   ("h"       . cj/dirvish-open-html-in-eww)  ;; it does what it says it does
+   ("M"       . cj/dired-mark-all-visible-files)
+   ("M-e"     . dirvish-emerge-menu)
+   ("M-l"     . dirvish-ls-switches-menu)
+   ("M-m"     . dirvish-mark-menu)
+   ("M-p"     . dirvish-peek-toggle)
+   ("M-s"     . dirvish-setup-menu)
+   ("TAB"     . dirvish-subtree-toggle)
+   ("d".  dired-flag-file-deletion)
+   ("f"       . cj/dirvish-open-file-manager-here)
+   ("g"       . dirvish-quick-access)
+   ("o"       . cj/xdg-open)
+   ("O"       . cj/open-file-with-command)  ; Prompts for command to run
+   ("r"       . dirvish-rsync)
+   ("P"       . cj/dired-create-playlist-from-marked)
+   ("s"       . dirvish-quicksort)
+   ("v"       . dirvish-vc-menu)
+   ("y"       . dirvish-yank-menu)))
 
 ;;; -------------------------------- Nerd Icons -------------------------------
 
