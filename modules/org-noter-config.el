@@ -1,10 +1,14 @@
 ;;; org-noter-config.el ---  -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Open a PDF or DjVu file, hit F6, and org-noter splits the frame with notes beside the document.
-;; Notes live under ~/sync/org-noter/reading-notes.org by default; adjust the path when prompted the first time.
-;; Use org-noter capture keys while annotating—`C-c n c` checks linked documents, and `C-c n u` rewrites stale paths after moving files.
-;; Sessions resume where you stopped thanks to automatic location saves.
+;; Org-noter configuration for taking notes on PDF and DjVu documents. Workflow:
+;; open a PDF/DjVu file in Emacs, press F6 to start org-noter session, frame
+;; splits with document on one side and notes on the other, notes are saved to
+;; ~/sync/org-noter/reading-notes.org by default, and position is automatically
+;; saved when closing session. Features include integration with pdf-tools and
+;; djvu, org-roam integration for linking notes, automatic session resumption at
+;; last position, inserting highlighted text into notes, notes following
+;; TASK: Aborted Commentary
 
 ;;; Code:
 
@@ -24,7 +28,6 @@
 (use-package org-noter
   :after (:any org pdf-tools djvu)
   :commands org-noter
-  :bind ("<f6>" . org-noter)
   :config
   ;; Basic settings
   (setq org-noter-always-create-frame nil)

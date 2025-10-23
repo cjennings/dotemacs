@@ -11,10 +11,10 @@
 ;; ---------------------------------- Org Roam ---------------------------------
 
 (use-package org-roam
-  :after org
-  :defer 1
-  :commands (org-roam-node-find org-roam-node-insert)
-  :hook (after-init . org-roam-db-autosync-mode)
+  :commands (org-roam-node-find org-roam-node-insert org-roam-db-autosync-mode)
+  :config
+  ;; Enable autosync mode after org-roam loads
+  (org-roam-db-autosync-mode)
   :custom
   (org-roam-directory roam-dir)
   (org-roam-dailies-directory journals-dir)
@@ -90,7 +90,7 @@ the arguments that org-roam-node-insert expects."
         (org-roam-capture-templates (list (append (car org-roam-capture-templates)
                                                   '(:immediate-finish t)))))
     (apply #'org-roam-node-insert args)))
-(global-set-key (kbd "C-c n I") 'cj/org-roam-node-insert-immediate)
+(keymap-global-set "C-c n I" #'cj/org-roam-node-insert-immediate)
 
 ;; ------------------------- Tag Listing And Filtering -------------------------
 

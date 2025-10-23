@@ -16,17 +16,6 @@
 
 ;;; Code:
 
-(eval-when-compile (defvar drill-dir))
-(eval-when-compile (defvar cj/custom-keymap))
-
-(defvar cj/drill-map)
-(declare-function org-drill-resume "org-drill")
-(declare-function cj/drill-map "org-drill-config")
-(declare-function cj/drill-start "org-drill-config")
-(declare-function cj/drill-edit "org-drill-config")
-(declare-function cj/drill-capture "org-drill-config")
-(declare-function cj/drill-refile "org-drill-config")
-
 ;; --------------------------------- Org Drill ---------------------------------
 
 (use-package org-drill

@@ -14,18 +14,6 @@
 
 ;;; Code:
 
-(eval-when-compile (defvar drill-dir))
-(eval-when-compile (defvar inbox-file))
-(eval-when-compile (defvar gcal-file))
-(eval-when-compile (defvar schedule-file))
-
-(defvar org-capture-plist)
-(defvar org-store-link-plist)
-(defvar org-capture-templates)
-(declare-function org-parse-time-string "org")
-(declare-function org-capture-get "org-capture")
-(declare-function pdf-view-active-region-text "pdf-view")
-
 ;; --------------------------- Org-Capture Templates ---------------------------
 ;; you can bring up the org capture menu with C-c c
 
@@ -94,67 +82,71 @@ Intended to be called within an org capture template."
   (setq org-protocol-default-template-key "L")
   (setq org-capture-templates
         '(("t" "Task" entry (file+headline inbox-file "Inbox")
-		   "* TODO %?" :prepend t)
+           "* TODO %?" :prepend t)
 
-		  ("a" "Appointment" entry (file gcal-file)
-		  "* %?\n:PROPERTIES:\n:calendar-id:craigmartinjennings@gmail.com\n:END:\n:org-gcal:\n%^T--%^T\n:END:\n\n"
-		  :jump-to-captured t)
+          ("a" "Appointment" entry (file gcal-file)
+           "* %?\n:PROPERTIES:\n:calendar-id:craigmartinjennings@gmail.com\n:END:\n:org-gcal:\n%^T--%^T\n:END:\n\n"
+           :jump-to-captured t)
 
-;; trialing the use gcal appointments instead of local events
-;; 		  ("e" "Event" entry (file+headline schedule-file "Scheduled Events")
-;; 		   "* %?%:description
-;; SCHEDULED: %^t%(cj/org-capture-event-content)
-;; Captured On: %U"
-;; 		   :prepend t
-;; 		   :prepare-finalize cj/org-capture-format-event-headline)
+          ("e" "Event" entry (file+headline schedule-file "Scheduled Events")
+           "* %?%:description
+SCHEDULED: %^t%(cj/org-capture-event-content)
+Captured On: %U"
+           :prepend t
+           :prepare-finalize cj/org-capture-format-event-headline)
 
-		  ("E" "Epub Text" entry (file+headline inbox-file "Inbox")
-		   "* %?
+          ("E" "Epub Text" entry (file+headline inbox-file "Inbox")
+           "* %?
 #+BEGIN_QUOTE\n %i\n#+END_QUOTE
 Source: [[%:link][%(buffer-name (org-capture-get :original-buffer))]]
 Captured On: %U" :prepend t)
 
-		  ;; requires cj/org-capture-pdf-active-region function defined above
-		  ("P" "PDF Text" entry (file+headline inbox-file "Inbox")
-		   "* %?
+          ;; requires cj/org-capture-pdf-active-region function defined above
+          ("P" "PDF Text" entry (file+headline inbox-file "Inbox")
+           "* %?
 #+BEGIN_QUOTE\n%(cj/org-capture-pdf-active-region)\n#+END_QUOTE
 Source: [[%L][%(buffer-name (org-capture-get :original-buffer))]]
 Captured On: %U" :prepend t)
 
-		  ("p" "Link with Selection" entry (file+headline inbox-file "Inbox")
-		   "* %?%:description
+          ("p" "Link with Selection" entry (file+headline inbox-file "Inbox")
+           "* %?%:description
 #+BEGIN_QUOTE\n%i\n#+END_QUOTE
 [[%:link][%:description]]
 Captured On: %U\n" :prepend t :immediate-finish t)
 
-		  ("L" "Link" entry (file+headline inbox-file "Inbox")
-		   "* %?%:description
+          ("L" "Link" entry (file+headline inbox-file "Inbox")
+           "* %?%:description
 [[%:link][%:description]]\nCaptured On: %U" :prepend t :immediate-finish t)
 
-		  ("m" "Mu4e Email" entry (file+headline inbox-file "Inbox")
-		   "* TODO %?
+          ("m" "Mu4e Email" entry (file+headline inbox-file "Inbox")
+           "* TODO %?
 %(if (string= \"%i\" \"\") \"\" \"\n#+BEGIN_QUOTE\n%i\n#+END_QUOTE\")
 [[%:link][%:description]]
 Captured On: %U"
-		   :prepend t)
+           :prepend t)
 
-		  ("d" "Drill Question" entry
-		   (file (lambda ()
-				   (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
-					 (expand-file-name
-					  (completing-read "Choose file: " files)
-					  drill-dir))))
-		   "* Item   :drill:\n%?\n** Answer\n%i\nSource: [[%:link][%:description]]\nCaptured On: %U" :prepend t)
+          ("d" "Drill Question" entry
+           (file (lambda ()
+                   (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
+                     (expand-file-name
+                      (completing-read "Choose file: " files)
+                      drill-dir))))
+           "* Item   :drill:\n%?
+** Answer\n%i\nSource: [[%:link][%:description]
+nCaptured On: %U" :prepend t)
 
-		  ("f" "Drill Question - PDF" entry
-		   (file (lambda ()
-				   (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
-					 (expand-file-name
-					  (completing-read "Choose file: " files)
-					  drill-dir))))
-		   "* Item   :drill:\n%?\n** Answer\n%(cj/org-capture-pdf-active-region)\nSource: [[%L][%(buffer-name (org-capture-get :original-buffer))]]\nCaptured On: %U" :prepend t)
+          ("f" "Drill Question (from PDF)" entry
+           (file (lambda ()
+                   (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
+                     (expand-file-name
+                      (completing-read "Choose file: " files)
+                      drill-dir))))
+           "* Item   :drill:\n%?
+** Answer\n%(cj/org-capture-pdf-active-region)
+Source: [[%L][%(buffer-name (org-capture-get :original-buffer))]]
+Captured On: %U" :prepend t)
 
-		  )) ;; end setq
+          )) ;; end setq
   ) ;; end use-package org-protocol
 
 (provide 'org-capture-config)
