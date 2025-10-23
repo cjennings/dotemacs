@@ -79,6 +79,14 @@ For each test case, provide:
 - Use fixtures or setup functions to create test data
 - Clean up all test artifacts in teardown
 
+*** Testing Production Code
+- NEVER inline or copy production code into test files
+- Always load and test the actual production module
+- Stub/mock dependencies as needed, but test the real function
+- Inlined code will pass tests even when production code fails
+- Use proper require statements to load production modules
+- Handle missing dependencies by mocking them before loading the module
+
 *** Test Naming
 - Use descriptive names: test-<module>-<function>-<scenario>-<expected-result>
 - Examples: test-buffer-kill-undead-buffer-should-bury
