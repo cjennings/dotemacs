@@ -11,6 +11,7 @@
 (defvar battery-status-function)
 
 
+
 (defun env-laptop-p ()
   "Non-nil if a battery is present."
   (when (and (require 'battery nil 'noerror)
@@ -56,7 +57,7 @@
 (defun cj/match-localtime-to-zoneinfo ()
   "Detect system timezone by comparing /etc/localtime with zoneinfo files.
 This replicates the shell command:
-find /usr/share/zoneinfo -type f ! -name \='posixrules\=' \\
+find /usr/share/zoneinfo -type f ! -name `posixrules' \\
   -exec cmp -s {} /etc/localtime \\;
   -print | sed -e \='s@.*/zoneinfo/@@\=' | head -n1"
   (when (and (file-exists-p "/etc/localtime")
@@ -86,7 +87,7 @@ find /usr/share/zoneinfo -type f ! -name \='posixrules\=' \\
 		result))))
 
 (defun cj/detect-system-timezone ()
-  "Detect the system timezone in IANA format (e.g., \='America/Los_Angeles\=').
+  "Detect the system timezone in IANA format (e.g., `America/Los_Angeles').
 Tries multiple methods in order of reliability:
 1. Environment variable TZ
 2. File comparison of /etc/localtime with zoneinfo database
