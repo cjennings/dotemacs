@@ -12,6 +12,7 @@
 ;; - f: Open system file manager in current directory
 ;; - o/O: Open file with xdg-open/custom command
 ;; - l: Copy file path (project-relative or home-relative)
+;; - L: Copy absolute file path
 ;; - P: Create M3U playlist from marked audio files
 ;; - M-D: DWIM menu (context actions for files)
 ;; - TAB: Toggle subtree expansion
@@ -273,6 +274,7 @@ regardless of what file or subdirectory the point is on."
    ("F"       . dirvish-file-info-menu)
    ("G"       . revert-buffer)
    ("l"       . (lambda () (interactive) (cj/dired-copy-path-as-kill))) ;; overwrites dired-do-redisplay
+   ("L"       . (lambda () (interactive) (cj/dired-copy-path-as-kill nil t))) ;; copy absolute path
    ("h"       . cj/dirvish-open-html-in-eww)  ;; it does what it says it does
    ("M"       . cj/dired-mark-all-visible-files)
    ("M-e"     . dirvish-emerge-menu)
@@ -335,11 +337,12 @@ regardless of what file or subdirectory the point is on."
 
 ;; --------------------------------- Copy Path ---------------------------------
 
-(defun cj/dired-copy-path-as-kill (&optional as-org-link)
+(defun cj/dired-copy-path-as-kill (&optional as-org-link force-absolute)
   "Copy path of file at point in Dired/Dirvish.
 Copies relative path from project root if in a project, otherwise from home
 directory (with ~ prefix) if applicable, otherwise the absolute path.
-With prefix arg or when AS-ORG-LINK is non-nil, format as \='org-mode\=' link."
+With prefix arg or when AS-ORG-LINK is non-nil, format as \='org-mode\=' link.
+When FORCE-ABSOLUTE is non-nil, always copy the absolute path."
   (interactive "P")
   (unless (derived-mode-p 'dired-mode)
 	(user-error "Not in a Dired buffer"))
@@ -354,6 +357,11 @@ With prefix arg or when AS-ORG-LINK is non-nil, format as \='org-mode\=' link."
 	  (user-error "No file at point"))
 
 	(cond
+	 ;; Force absolute path
+	 (force-absolute
+	  (setq path file
+			path-type "absolute"))
+
 	 ;; Project-relative path
 	 (project-root
 	  (setq path (file-relative-name file project-root)
