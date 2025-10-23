@@ -6,18 +6,13 @@
 ;; Global keybinding configuration and custom keymap framework.
 ;;
 ;; Main features include:
-;; - custom keymap prefix (~C-;~) for all custom commands,
-;; - jump-to-file commands (~C-c j <key>~) for frequently used files
+;; - custom keymap prefix  C-; for all custom commands,
+;; - jump-to-file commands C-c j <key> for frequently used files
 ;; - which-key integration for keybinding discovery
 ;; - free-keys for finding available keybindings
-;; - hostile keybinding protection that disables accidental suspend-frame and other dangerous operations
-;; - training  to encourage faster keybindings
 ;;
 ;; Key principles:
 ;; - avoid keybindings close to commonly-used keys that have painful results
-;; - use global-map for truly global bindings
-;; - use custom-keymap (~C-;~) for custom functionality
-;; - keep ~C-c <letter>~ reserved for user bindings per Emacs conventions
 ;;
 ;;; Code:
 
@@ -93,15 +88,6 @@ Errors if VAR is unbound, not a non-empty string, or the file does not exist."
   :custom
   (which-key-idle-delay 1.0)
   (which-key-popup-type 'side-window)
-  ;; :init
-  ;; ;; Load + enable after a short idle so it doesn't count toward startup.
-  ;; (run-with-idle-timer 0.5 nil
-  ;; 	(lambda ()
-  ;; 	  (require 'which-key nil t)
-  ;; 	  ;; Ensure config has applied, then enable the mode.
-  ;; 	  (with-eval-after-load 'which-key
-  ;; 		(unless (bound-and-true-p which-key-mode)
-  ;; 		  (which-key-mode 1)))))
   :config
   (which-key-setup-side-window-bottom)
   ;; never show keybindings that have been 'cj/disabled'
