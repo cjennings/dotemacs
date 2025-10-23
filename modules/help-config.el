@@ -19,13 +19,11 @@
 
 (setq help-window-select t) ;; Always select the help buffer in a separate window
 
-(global-set-key (kbd "C-h P") 'list-packages) ;; bring up the package menu
+(keymap-global-set "C-h P" #'list-packages) ;; bring up the package menu
 
 ;; ---------------------------------- Helpful ----------------------------------
 
 (use-package helpful
-  :if (version< emacs-version "30")
-  :defer .5
   :bind
   ("C-h f" . helpful-callable)
   ("C-h v" . helpful-variable)
@@ -38,7 +36,6 @@
 ;; ------------------------------------ Man ------------------------------------
 
 (use-package man
-  :defer 1
   :ensure nil ;; built-in
   :bind ("C-h M" . man))
 
@@ -81,7 +78,7 @@ Preserves any unsaved changes and checks if the file exists."
 	  (info chosen-file))))
 
 (global-unset-key (kbd "C-h i"))
-(global-set-key (kbd "C-h i") #'cj/browse-info-files)
+(keymap-global-set "C-h i" #'cj/browse-info-files)
 
 
 (use-package info
