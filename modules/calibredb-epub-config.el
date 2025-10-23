@@ -47,6 +47,7 @@
 (declare-function calibredb-search-keyword-filter "calibredb" (keyword))
 (declare-function cj/open-file-with-command "system-utils" (command))
 (declare-function visual-fill-column-mode "visual-fill-column" (&optional arg))
+(declare-function visual-fill-column--adjust-window "visual-fill-column" ())
 
 ;; -------------------------- CalibreDB Ebook Manager --------------------------
 
@@ -86,15 +87,68 @@
 
 ;; ------------------------------ Nov Epub Reader ------------------------------
 
+;; Prevent magic-fallback-mode-alist from opening epub as archive-mode
+;; Advise set-auto-mode to force nov-mode for .epub files before magic-fallback runs
+(defun cj/force-nov-mode-for-epub (orig-fun &rest args)
+  "Force nov-mode for .epub files, bypassing archive-mode detection."
+  (if (and buffer-file-name
+           (string-match-p "\\.epub\\'" buffer-file-name))
+      (progn
+        ;; Load nov if not already loaded
+        (unless (featurep 'nov)
+          (require 'nov nil t))
+        ;; Call nov-mode if available, otherwise fallback to default behavior
+        (if (fboundp 'nov-mode)
+            (nov-mode)
+          (apply orig-fun args)))
+    (apply orig-fun args)))
+
+(advice-add 'set-auto-mode :around #'cj/force-nov-mode-for-epub)
+
+;; Visual-fill-column provides centered text with margins
+(use-package visual-fill-column
+  :defer t
+  :config
+  (setq-default visual-fill-column-center-text t))
+
+;; Define helper functions before use-package so they're available for hooks
+(defun cj/forward-paragraph-and-center ()
+  "Forward one paragraph and center the page."
+  (interactive)
+  (forward-paragraph)
+  (recenter))
+
+(defun cj/nov-apply-preferences ()
+  "Apply preferences after nov-mode has launched."
+  (interactive)
+  ;; Use Merriweather for comfortable reading with appropriate scaling
+  ;; Darker sepia color (#E8DCC0) is easier on the eyes than pure white
+  (face-remap-add-relative 'variable-pitch :family "Merriweather" :height 1.8 :foreground "#E8DCC0")
+  (face-remap-add-relative 'default :family "Merriweather" :height 180 :foreground "#E8DCC0")
+  (face-remap-add-relative 'fixed-pitch :height 180 :foreground "#E8DCC0")
+  ;; Make this buffer-local so other Nov buffers can choose differently
+  ;; Setting to t makes nov respect visual-fill-column margins
+  (setq-local nov-text-width t)
+  ;; Enable visual-line-mode for proper text wrapping
+  (visual-line-mode 1)
+  ;; Set fill-column as a fallback
+  (setq-local fill-column 100)
+  ;; Enable visual-fill-column for centered text with margins
+  (when (require 'visual-fill-column nil t)
+    (setq-local visual-fill-column-center-text t)
+    ;; Set text width for comfortable reading (characters per line)
+    (setq-local visual-fill-column-width 100)
+    (visual-fill-column-mode 1))
+  (nov-render-document)
+  ;; Force visual-fill-column to recalculate after rendering
+  (when (bound-and-true-p visual-fill-column-mode)
+    (visual-fill-column--adjust-window)))
+
 (use-package nov
-  :defer .5
-  :after visual-fill-column
   :mode
   ("\\.epub\\'" . nov-mode)
-  ("\\.epub\\'" . epub-mode)
   :hook
   (nov-mode . cj/nov-apply-preferences)
-  (epub-mode . cj/nov-apply-preferences)
   :bind
   (:map nov-mode-map
 		("m" . bookmark-set)
@@ -110,27 +164,6 @@
 		("z" . (lambda () (interactive) (cj/open-file-with-command "zathura")))
 		("t" . nov-goto-toc)
 		("C-c C-b" . cj/nov-jump-to-calibredb)))
-
-(defun cj/forward-paragraph-and-center ()
-  "Forward one paragraph and center the page."
-  (interactive)
-  (forward-paragraph)
-  (recenter))
-
-(defun cj/nov-apply-preferences ()
-  "Apply preferences after nov-mode has launched."
-  (interactive)
-  (face-remap-add-relative 'variable-pitch :height 180)
-  (face-remap-add-relative 'fixed-pitch :height 180)
-  ;; Make this buffer-local so other Nov buffers can choose differently
-  (setq-local nov-text-width 115)
-  (when (require 'visual-fill-column nil t)
-	(setq-local visual-fill-column-center-text t
-				;; small cushion above nov-text-width prevents truncation
-				visual-fill-column-width (+ nov-text-width 10))
-	(hl-line-mode)
-	(visual-fill-column-mode 1))
-  (nov-render-document))
 
 (defun cj/nov-center-images ()
   "Center images in the current Nov buffer without modifying text.
@@ -194,7 +227,6 @@ computed column based on the window text area width."
 
 (defun cj/nov-jump-to-calibredb ()
   "Open CalibreDB focused on the current EPUB's book entry.
-
 Try to use the Calibre book id from the parent folder name (for example,
 \"Title (123)\"). Fall back to a title or author search when no id exists."
   (interactive)
