@@ -37,7 +37,7 @@
 
 (use-package eshell
   :ensure nil ;; built-in
-  :defer .5
+  :commands (eshell)
   :config
   (setq eshell-banner-message "")
   (setq eshell-scroll-to-bottom-on-input 'all)
@@ -71,8 +71,8 @@
 
   (add-hook 'eshell-hist-mode-hook
             (lambda ()
-              (define-key eshell-hist-mode-map (kbd "<up>") 'previous-line)
-              (define-key eshell-hist-mode-map (kbd "<down>") 'next-line)))
+              (keymap-set eshell-hist-mode-map "<up>" #'previous-line)
+              (keymap-set eshell-hist-mode-map "<down>" #'next-line)))
 
   (add-hook 'eshell-mode-hook
             (lambda ()
@@ -134,7 +134,6 @@
   ("C-<f12>" . eshell-toggle))
 
 (use-package xterm-color
-  :defer .5
   :after eshell
   :hook
   (eshell-before-prompt-hook . (lambda ()
@@ -164,7 +163,7 @@
 
 (add-hook 'eshell-mode-hook
 		  (lambda ()
-			(define-key eshell-mode-map (kbd "C-r") 'cj/eshell-history-search)))
+			(keymap-set eshell-mode-map "C-r" #'cj/eshell-history-search)))
 
 ;; Better completion for eshell
 (use-package pcmpl-args
