@@ -90,25 +90,16 @@
 
 (require 'cl-lib)
 
-;; Declare variable from dired
-(defvar dired-mode-map)
 
-;; Declare functions from dwim-shell-command
-(declare-function dwim-shell-command-on-marked-files "dwim-shell-command")
-(declare-function dwim-shell-command--files "dwim-shell-command")
-(declare-function dwim-shell-command-read-file-name "dwim-shell-command")
-
-;; Declare functions from system-utils
-(declare-function cj/xdg-open "system-utils")
-(declare-function cj/open-file-with-command "system-utils")
-
-;; Declare function defined in use-package :config below
-(declare-function dwim-shell-commands-menu "dwim-shell-config")
+;; Bind menu to dired (after dwim-shell-command loads)
+(with-eval-after-load 'dwim-shell-command
+  (with-eval-after-load 'dired
+    (keymap-set dired-mode-map "M-D" #'dwim-shell-commands-menu)))
 
 ;; ----------------------------- Dwim Shell Command ----------------------------
 
 (use-package dwim-shell-command
-  :defer t
+  :after dired
   :bind (("<remap> <shell-command>" . dwim-shell-command)
 		 :map dired-mode-map
 		 ("<remap> <dired-do-async-shell-command>" . dwim-shell-command)
@@ -819,11 +810,6 @@ gpg: decryption failed: No pinentry"
 		   (command (alist-get selected command-alist nil nil #'string=)))
 	  (when command
 		(call-interactively command)))))
-
-;; Bind menu to dired (after dwim-shell-command loads)
-(with-eval-after-load 'dwim-shell-command
-  (with-eval-after-load 'dired
-	(keymap-set dired-mode-map "M-D" #'dwim-shell-commands-menu)))
 
 (provide 'dwim-shell-config)
 ;;; dwim-shell-config.el ends here.
