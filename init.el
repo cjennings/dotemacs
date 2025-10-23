@@ -93,7 +93,6 @@
 (require 'test-runner)
 (require 'vc-config)             ;; version control packages and keybindings
 (require 'flycheck-config)       ;; linting for all languages including human ones
-;; (require 'prog-lsp)
 (require 'prog-training)
 (require 'prog-c)
 (require 'prog-go)
