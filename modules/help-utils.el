@@ -26,27 +26,26 @@
 ;; ---------------------------------- Devdocs ----------------------------------
 
 (use-package devdocs
-  :defer 1
+  :commands (devdocs-search devdocs-peruse devdocs-lookup devdocs-install devdocs-delete devdocs-update-all)
+  :init
+  (keymap-global-set "C-h D s" #'devdocs-search)
+  (keymap-global-set "C-h D b" #'devdocs-peruse)
+  (keymap-global-set "C-h D l" #'devdocs-lookup)
+  (keymap-global-set "C-h D i" #'devdocs-install)
+  (keymap-global-set "C-h D d" #'devdocs-delete)
+  (keymap-global-set "C-h D u" #'devdocs-update-all)
   :config
-  (global-set-key (kbd "C-h D s") 'devdocs-search)
-  (global-set-key (kbd "C-h D b") 'devdocs-peruse)
-  (global-set-key (kbd "C-h D l") 'devdocs-lookup)
-  (global-set-key (kbd "C-h D i") 'devdocs-install)
-  (global-set-key (kbd "C-h D d") 'devdocs-delete)
-  (global-set-key (kbd "C-h D u") 'devdocs-update-all)
-  (define-key devdocs-mode-map "b" 'devdocs-go-back)
-  (define-key devdocs-mode-map "f" 'devdocs-go-forward))
+  (define-key devdocs-mode-map "b" #'devdocs-go-back)
+  (define-key devdocs-mode-map "f" #'devdocs-go-forward))
 
 ;; ------------------------------------ TLDR -----------------------------------
 
 (use-package tldr
-  :defer 1
   :bind ("C-h T" . tldr))
 
 ;; -------------------------------- Wiki Summary -------------------------------
 
 (use-package wiki-summary
-  :defer 1
   :bind ("C-h W" . wiki-summary))
 
 ;; --------------------------- Browse Local Arch Wiki --------------------------
@@ -71,7 +70,7 @@ arch-wiki-docs."
 			   (url (concat "file://" fullname)))
 		  (eww-browse-url url))
 	  (message "File not found! Is arch-wiki-docs installed?"))))
-(global-set-key (kbd "C-h A") 'cj/local-arch-wiki-search)
+(keymap-global-set "C-h A" #'cj/local-arch-wiki-search)
 
 (provide 'help-utils)
 ;;; help-utils.el ends here
