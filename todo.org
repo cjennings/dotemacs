@@ -9,6 +9,33 @@
 - selection is saved in a persistence file for next time
 - user is given the opportunity to go to a url entered or default to test
 ** TODO [#A] Finish Testing New Org-webclipper
+** TODO [#B] investigate unassociated files
+- [ ] /home/cjennings/.emacs.d/assets/test/test-misspellings.org
+- [ ] /home/cjennings/.emacs.d/assets/test/test.org
+- [ ] /home/cjennings/.emacs.d/custom/c-boxes.el
+- [ ] /home/cjennings/.emacs.d/custom/edit-indirect.el
+- [ ] /home/cjennings/.emacs.d/custom/eplot.el
+- [ ] /home/cjennings/.emacs.d/custom/gptel-prompts.el
+- [ ] /home/cjennings/.emacs.d/custom/org-checklist.el
+- [ ] /home/cjennings/.emacs.d/custom/pdf-continuous-scroll-mode.el
+- [ ] /home/cjennings/.emacs.d/custom/pdf-continuous-scroll-mode-latest.el
+- [ ] /home/cjennings/.emacs.d/custom/profile-dotemacs.el
+- [ ] /home/cjennings/.emacs.d/custom/titlecase.el
+- [ ] /home/cjennings/.emacs.d/custom/utilities/vcf-conversion-helpers.el
+- [ ] /home/cjennings/.emacs.d/gptel-tools/update_text_file.el
+- [ ] /home/cjennings/.emacs.d/modules/ai-conversations.el
+- [ ] /home/cjennings/.emacs.d/modules/erc-config.el
+- [ ] /home/cjennings/.emacs.d/modules/jumper.el
+- [ ] /home/cjennings/.emacs.d/modules/ledger-config.el
+- [ ] /home/cjennings/.emacs.d/modules/lipsum-generator.el
+- [ ] /home/cjennings/.emacs.d/modules/lorem-generator.el
+- [ ] /home/cjennings/.emacs.d/modules/mu4e-org-contacts-integration.el
+- [ ] /home/cjennings/.emacs.d/modules/mu4e-org-contacts-setup.el
+- [ ] /home/cjennings/.emacs.d/modules/org-noter-config.el
+- [ ] /home/cjennings/.emacs.d/modules/prog-lsp.el
+- [ ] /home/cjennings/.emacs.d/modules/wip.el
+- [ ] /home/cjennings/.emacs.d/themes/dupre-theme.el
+- [ ] /home/cjennings/.emacs.d/todo.org
 ** TODO [#A] Document Goals, Specs, and Architecture Docs for this Config :maintenance:
 *** Emacs Config V2MOM
 Misc Requirements
@@ -790,7 +817,6 @@ Rather than just finding :EMAIL: matches, why not pass in key and have it find :
 ** DOING [#B] Org Roam Fixes/Enhancements                      :enhancement:
 *** TODO [#B] New Org-Roam type: Book Notes
 Part of the integration with org-noter
-*** TODO [#B] Add Org Capture Template for Vocabulary Words
 ** TODO [#B] Describe and Implement Personal Workflow Project Actions
 What other actions do I do in a project?
 *** TODO [#B] Rename and save any file to project/assets directory
@@ -1021,7 +1047,6 @@ Org-roam and its database sync run at startup. Load Org-roam only when Org is ac
 
 ** TODO [#C] Git Timemachine Litters Empty Buffers                    :bug:
 Don't choose a revision and you'll see a blank buffer that needs to be killed
-** TODO [#C] Org Keyword Discolored Until Reapplying Theme            :bug:
 * Emacs Config Next Release: 0.9
 ** DOING [#A] Jumper Package                                   :enhancement:
 *** Specification
