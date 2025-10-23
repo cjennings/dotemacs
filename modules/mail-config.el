@@ -50,7 +50,7 @@ Prompts user for the action when executing."
 (use-package mu4e
   :ensure nil  ;; mu4e gets installed by installing 'mu' via the system package manager
   :load-path "/usr/share/emacs/site-lisp/mu4e/"
-  :defer .5
+  :commands (mu4e mu4e-update-index)
   :bind
   ("C-c m". mu4e)
   (:map mu4e-headers-mode-map
@@ -290,7 +290,7 @@ Prompts user for the action when executing."
   :preface
 	(define-prefix-command 'cj/email-map nil
 						 "keymap for email operations.")
-	(define-key cj/custom-keymap "e" 'cj/email-map)
+	(keymap-set cj/custom-keymap "e" #'cj/email-map)
   :bind
   ;; more intuitive keybinding for attachments
   (:map org-msg-edit-mode-map
