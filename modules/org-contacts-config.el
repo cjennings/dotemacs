@@ -45,20 +45,21 @@
 :EMAIL: %(cj/org-contacts-template-email)
 :PHONE: %^{Phone(s) - separate multiple with commas}
 :ADDRESS: %^{Address}
+:BIRTHDAY: %^{Birthday (YYYY-MM-DD)}
 :COMPANY: %^{Company}
 :TITLE: %^{Title/Position}
-:BIRTHDAY: %^{Birthday (YYYY-MM-DD)}
+:WEBSITE: %^{URL}
 :END:
 %^{Notes}
-Added: %U"
-				 :empty-lines 1)))
-
-(with-eval-after-load 'org-capture
-  (add-to-list 'org-capture-templates
-			   '("C" "Contact" entry (file+headline contacts-file "Contacts")
-				 "* %(cj/org-contacts-template-name)
-
 Added: %U")))
+
+;; TASK: What purpose did this serve?
+;; duplicate?!?
+;; (with-eval-after-load 'org-capture
+;;   (add-to-list 'org-capture-templates
+;; 			   '("C" "Contact" entry (file+headline contacts-file "Contacts")
+;; 				 "* %(cj/org-contacts-template-name)
+;; Added: %U")))
 
 (defun cj/org-contacts-template-name ()
   "Get name for contact template from context."
@@ -113,14 +114,14 @@ Added: %U")))
 
 ;; (with-eval-after-load 'org-roam
 ;;   (defun cj/org-contacts-link-to-roam ()
-;; 	"Link current contact to an org-roam node."
-;; 	(interactive)
-;; 	(when (eq major-mode 'org-mode)
-;; 	  (let ((contact-name (org-entry-get (point) "ITEM")))
-;; 		(org-set-property "ROAM_REFS"
-;; 						  (org-roam-node-id
-;; 						   (org-roam-node-read nil nil nil nil
-;; 											   :initial-input contact-name)))))))
+;;  "Link current contact to an org-roam node."
+;;  (interactive)
+;;  (when (eq major-mode 'org-mode)
+;;    (let ((contact-name (org-entry-get (point) "ITEM")))
+;;      (org-set-property "ROAM_REFS"
+;;                        (org-roam-node-id
+;;                         (org-roam-node-read nil nil nil nil
+;;                                             :initial-input contact-name)))))))
 
 ;;; ----------------------------- Birthday Agenda --------------------------------
 
@@ -188,7 +189,6 @@ module provides more sophisticated completion."
 
   ;; Birthday and anniversary handling
   (setq org-contacts-birthday-format "It's %l's birthday today! 🎂")
-  (setq org-contacts-anniversary-format "%l's anniversary 💑")
 
   ;; Email address formatting
   (setq org-contacts-email-link-description-format "%s <%e>")
@@ -207,15 +207,15 @@ module provides more sophisticated completion."
 ;; Keymap for `org-contacts' commands
 (defvar cj/org-contacts-map
   (let ((map (make-sparse-keymap)))
-	(define-key map "f" 'cj/org-contacts-find)     ;; find contact
-	(define-key map "n" 'cj/org-contacts-new)      ;; new contact
-	(define-key map "e" 'cj/insert-contact-email)  ;; inserts email from org-contact
-	(define-key map "v" 'cj/org-contacts-view-all) ;; view all contacts
+	(keymap-set map "f" #'cj/org-contacts-find)     ;; find contact
+	(keymap-set map "n" #'cj/org-contacts-new)      ;; new contact
+	(keymap-set map "e" #'cj/insert-contact-email)  ;; inserts email from org-contact
+	(keymap-set map "v" #'cj/org-contacts-view-all) ;; view all contacts
 	map)
   "Keymap for `org-contacts' commands.")
 
 ;; Bind the org-contacts map to the C-c C prefix
-(global-set-key (kbd "C-c C") cj/org-contacts-map)
+(keymap-global-set "C-c C" cj/org-contacts-map)
 
 (provide 'org-contacts-config)
 ;;; org-contacts-config.el ends here
