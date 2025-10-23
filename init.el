@@ -144,7 +144,7 @@
 (require 'games-config)
 
 ;; ------------------------------ Modules In Test ------------------------------
-
+(require 'browser-config)
 ;;(require 'wip)
 ;;(require 'lipsum-generator)
 ;;(require 'jumper)
