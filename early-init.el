@@ -241,8 +241,8 @@ early-init.el.")
 (setq use-package-always-ensure t)  ; Auto-install packages
 
 ;; Package signature checking
-;; (setq package-check-signature nil)
-(setq package-check-signature t)
+(setq package-check-signature nil)
+;; (setq package-check-signature t)
 
 ;; Optional but recommended for better error messages during config loading
 ;;(setq use-package-expand-minimally nil)  ; Better error reporting
