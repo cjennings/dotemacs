@@ -18,10 +18,6 @@
 ;;; Code:
 
 
-
-(use-package expand-region
-  :demand t) ;; used w/in join paragraph
-
 (defun cj/join-line-or-region ()
   "Join lines in the active region or join the current line with the previous one."
   (interactive)
@@ -36,12 +32,14 @@
     ;; No region - only join if there's a previous line
     (when (> (line-number-at-pos) 1)
       (join-line))
+    (end-of-line)
     (newline)))
 
 (defun cj/join-paragraph ()
   "Join all lines in the current paragraph using `cj/join-line-or-region'."
   (interactive)
-  (er/mark-paragraph) ;; from package expand region
+  (require 'expand-region)
+  (er/mark-paragraph)
   (cj/join-line-or-region)
   (forward-line))
 
