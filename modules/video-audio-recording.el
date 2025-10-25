@@ -84,7 +84,6 @@ Returns (mic-device . system-device) or nil on error."
 
   (cons cj/recording-mic-device cj/recording-system-device))
 
-;;;###autoload
 (defun cj/video-recording-start (arg)
   "Start the ffmpeg video recording.
 With prefix ARG, prompt for recording location.
@@ -98,7 +97,6 @@ Otherwise use the default location in `video-recordings-dir'."
 	  (make-directory directory t))
 	(cj/ffmpeg-record-video location)))
 
-;;;###autoload
 (defun cj/audio-recording-start (arg)
   "Start the ffmpeg audio recording.
 With prefix ARG, prompt for recording location.
@@ -179,7 +177,6 @@ Otherwise use the default location in `audio-recordings-dir'."
 	  (message "Started audio recording to %s (mic: %.1fx, system: %.1fx)."
 			   filename cj/recording-mic-boost cj/recording-system-volume))))
 
-;;;###autoload
 (defun cj/video-recording-stop ()
   "Stop the ffmpeg video recording process."
   (interactive)
@@ -193,7 +190,6 @@ Otherwise use the default location in `audio-recordings-dir'."
 		(message "Stopped video recording."))
 	(message "No video recording in progress.")))
 
-;;;###autoload
 (defun cj/audio-recording-stop ()
   "Stop the ffmpeg audio recording process."
   (interactive)
@@ -207,7 +203,6 @@ Otherwise use the default location in `audio-recordings-dir'."
 		(message "Stopped audio recording."))
 	(message "No audio recording in progress.")))
 
-;;;###autoload
 (defun cj/recording-adjust-volumes ()
   "Interactively adjust recording volume levels."
   (interactive)
@@ -230,7 +225,7 @@ Otherwise use the default location in `audio-recordings-dir'."
     map)
   "Keymap for video/audio recording operations.")
 
-;;;###autoload (keymap-set cj/custom-keymap "r" cj/record-map)
+(keymap-set cj/custom-keymap "r" cj/record-map)
 
 (provide 'video-audio-recording)
 ;;; video-audio-recording.el ends here.
