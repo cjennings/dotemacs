@@ -35,29 +35,21 @@
 (require 'host-environment)
 (require 'user-constants)
 
+(defun cj/org-gcal-clear-sync-lock ()
+  "Clear the org-gcal sync lock.
+Useful when a sync fails and leaves the lock in place, preventing future syncs."
+  (interactive)
+  (setq org-gcal--sync-lock nil)
+  (message "org-gcal sync lock cleared"))
+
 (use-package org-gcal
   :defer t ;; unless idle timer is set below
-  :bind ("C-; g" . org-gcal-sync)
-  :preface
-  ;; org-gcal stumbles if this doesn't exist before initial sync
-  (let ((oauth-file (concat user-emacs-directory "oauth2-auto.plist")))
-	(unless (file-exists-p oauth-file)
-	  (with-temp-buffer
-		(write-file oauth-file))))
+  :bind (("C-; g" . org-gcal-sync)
+         ("C-; G" . cj/org-gcal-clear-sync-lock))
 
   :init
-  ;; identify calendar to sync and it's destination
-  (setq org-gcal-fetch-file-alist `(("craigmartinjennings@gmail.com" . ,gcal-file)))
-
-  (setq org-gcal-up-days 30)                           ;; Look 30 days back
-  (setq org-gcal-down-days 60)                         ;; Look 60 days forward
-  (setq org-gcal-auto-archive t)                       ;; auto-archive old events
-  (setq org-gcal-notify-p nil)                         ;; nil disables; t enables notifications
-  (setq org-gcal-remove-api-cancelled-events t)        ;; auto-remove cancelled events
-  (setq  org-gcal-update-cancelled-events-with-todo t) ;; todo cancelled events for visibility
-
-  :config
-  ;; Retrieve credentials from authinfo.gpg
+  ;; Retrieve credentials from authinfo.gpg BEFORE package loads
+  ;; This is critical - org-gcal checks these variables at load time
   (require 'auth-source)
   (let ((credentials (car (auth-source-search :host "org-gcal" :require '(:user :secret)))))
 	(when credentials
@@ -69,7 +61,17 @@
 				  (funcall secret)
 				secret)))))
 
+  ;; identify calendar to sync and it's destination
+  (setq org-gcal-fetch-file-alist `(("craigmartinjennings@gmail.com" . ,gcal-file)))
 
+  (setq org-gcal-up-days 30)                           ;; Look 30 days back
+  (setq org-gcal-down-days 60)                         ;; Look 60 days forward
+  (setq org-gcal-auto-archive t)                       ;; auto-archive old events
+  (setq org-gcal-notify-p nil)                         ;; nil disables; t enables notifications
+  (setq org-gcal-remove-api-cancelled-events t)        ;; auto-remove cancelled events
+  (setq  org-gcal-update-cancelled-events-with-todo t) ;; todo cancelled events for visibility
+
+  :config
   ;; Enable plstore passphrase caching after org-gcal loads
   (require 'plstore)
   (setq plstore-cache-passphrase-for-symmetric-encryption t)
@@ -77,7 +79,7 @@
   ;; set org-gcal timezone based on system timezone
   (setq org-gcal-local-timezone (cj/detect-system-timezone))
 
-  ;; Reload client credentials
+  ;; Reload client credentials (should already be loaded by org-gcal, but ensure it's set)
   (org-gcal-reload-client-id-secret))
 
 ;; Set up automatic initial sync on boot with error handling
