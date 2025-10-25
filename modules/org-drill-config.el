@@ -20,7 +20,7 @@
 
 (use-package org-drill
   :after (org org-capture)
-  :commands org-drill
+  :commands (org-drill cj/drill-start)
   :config
   (setq org-drill-leech-failure-threshold 50)           ;; leech cards = 50 wrong anwers
   (setq org-drill-leech-method 'warn)                   ;; leech cards show warnings
