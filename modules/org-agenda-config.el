@@ -263,27 +263,40 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   (setq alert-fade-time 10) ;; seconds to vanish alert
   (setq alert-default-style 'libnotify)) ;; works well with dunst
 
-(use-package org-alert
-  :after alert org-agenda
-  :commands (org-alert-enable org-alert-check)
+;; Install CHIME from GitHub using use-package :vc (Emacs 29+)
+(use-package chime
+  :vc (:url "https://github.com/cjennings/chime.el" :rev :newest)
+  :after (alert org-agenda)
+  :commands (chime-mode chime-check)
   :bind
-  ("C-c A" . org-alert-check)
+  ("C-c A" . chime-check)
   :config
-  ;; Set org-alert settings
-  (setq org-alert-interval 300) ;; seconds between agenda checks (5 minutes)
-  (setq org-alert-notify-cutoff 10) ;; minutes before a deadline to notify
-  (setq org-alert-notify-after-event-cutoff 5)  ;; stop alerts 5 mins after deadline
-  (setq org-alert-notification-title "Reminder"))
+  ;; Notification times: 5 minutes before and at event time (0 minutes)
+  ;; This gives two notifications per event without any after-event notifications
+  (setq chime-alert-time '(5 0))
 
-;; Enable org-alert timer with message
-(defun cj/org-alert-enable-with-message ()
-  (org-alert-enable)
-  (message "org-alert timer enabled with interval %d seconds" org-alert-interval))
+  ;; Modeline display: show upcoming events within 60 minutes
+  (setq chime-modeline-lookahead 120)
+  (setq chime-modeline-format " ⏰ %s")
 
-;; Alert when idle post Emacs startup
-;; (add-hook 'emacs-startup-hook
-;; 		  (lambda ()
-;; 			(run-with-idle-timer 1 nil #'cj/org-alert-enable-with-message)))
+  ;; Chime sound: plays when notifications appear
+  (setq chime-play-sound t)
+  ;; Uses bundled chime.wav by default
+
+  ;; Notification settings
+  (setq chime-notification-title "Reminder")
+  (setq chime-alert-severity 'medium)
+
+  ;; Don't filter by TODO keywords - notify for all events with timestamps
+  (setq chime-keyword-whitelist nil)
+  (setq chime-keyword-blacklist nil)
+
+  ;; Only notify for non-done items (default behavior)
+  (setq chime-predicate-blacklist
+        '(chime-done-keywords-predicate))
+
+  ;; Enable chime-mode automatically
+  (chime-mode 1))
 
 
 (provide 'org-agenda-config)
