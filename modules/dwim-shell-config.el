@@ -99,7 +99,7 @@
 ;; ----------------------------- Dwim Shell Command ----------------------------
 
 (use-package dwim-shell-command
-  :after dired
+  :after (dired dirvish)
   :bind (("<remap> <shell-command>" . dwim-shell-command)
 		 :map dired-mode-map
 		 ("<remap> <dired-do-async-shell-command>" . dwim-shell-command)
