@@ -248,5 +248,23 @@ with a file, the function will throw an error."
         (message "Copied Org link to current file to clipboard: %s" link))
     (user-error "Buffer isn't associated with a file, so no link sent to clipboard")))
 
+;; ----------------------- Org Element Cache Management ------------------------
+
+(defun cj/org-clear-element-cache ()
+  "Clear the org-element cache for the current buffer or all buffers.
+With prefix argument, clear cache for all org buffers. Otherwise, clear only
+the current buffer's cache. Useful when encountering parsing errors like
+'wrong-type-argument stringp nil' during agenda generation."
+  (interactive)
+  (if current-prefix-arg
+      (progn
+        (org-element-cache-reset 'all)
+        (message "Cleared org-element cache for all buffers"))
+    (if (derived-mode-p 'org-mode)
+        (progn
+          (org-element-cache-reset)
+          (message "Cleared org-element cache for current buffer"))
+      (user-error "Current buffer is not in org-mode"))))
+
 (provide 'org-config)
 ;;; org-config.el ends here
