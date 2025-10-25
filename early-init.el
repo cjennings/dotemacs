@@ -64,7 +64,7 @@
 ;; --------------------------- Warning Notifications ---------------------------
 
 ;; skip warnings but notify me about errors
-;; (setq warning-minimum-level :error)
+(setq warning-minimum-level :error)
 
 ;; --------------------------- Use Online Repos Flag ---------------------------
 ;; set to nil to only use localrepo and local elpa-mirrors (see script directory)
@@ -78,8 +78,8 @@
 Can be t (available), nil (not available), or :unknown (not checked yet).")
 
 ;; ---------------------------- Startup Performance ----------------------------
-;; increases garbage collection threshold, and turns off file-name-handler and
-;; vc-backends during startup and restores the settings once emacs has loaded.
+;; increases garbage collection threshold and turns off file-name-handler
+;; during startup and restores the settings once emacs has loaded.
 
 (defvar cj/orig-gc-cons-threshold gc-cons-threshold
   "Temporary variable to allow restoration of value post-startup.")
@@ -89,15 +89,10 @@ Can be t (available), nil (not available), or :unknown (not checked yet).")
   "Temporary variable to allow restoration of value post-startup.")
 (setq file-name-handler-alist nil)
 
-(defvar cj/orig-vc-handled-backends vc-handled-backends
-  "Temporary variable to allow restoration of value post-startup.")
-(setq vc-handled-backends nil)
-
 (add-hook 'emacs-startup-hook
 		  (lambda ()
 			(setq gc-cons-threshold cj/orig-gc-cons-threshold
-				  file-name-handler-alist cj/orig-file-name-handler-alist
-				  vc-handled-backends cj/orig-vc-handled-backends)))
+				  file-name-handler-alist cj/orig-file-name-handler-alist)))
 
 ;; ------------------------------ Site Start Files -----------------------------
 ;; don't load site-start or default.el files
