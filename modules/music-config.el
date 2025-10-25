@@ -16,31 +16,6 @@
 ;;
 ;;; Code:
 
-(eval-when-compile
-  (condition-case nil
-      (require 'emms)
-    (error nil)))
-(eval-when-compile
-  (condition-case nil
-      (require 'emms-player-mpd)
-    (error nil)))
-(eval-when-compile
-  (condition-case nil
-      (require 'emms-playlist-mode)
-    (error nil)))
-(eval-when-compile
-  (condition-case nil
-      (require 'emms-setup)
-    (error nil)))
-(eval-when-compile
-  (condition-case nil
-      (require 'emms-source-file)
-    (error nil)))
-(eval-when-compile
-  (condition-case nil
-      (require 'emms-source-playlist)
-    (error nil)))
-
 (require 'subr-x)
 
 ;;; Settings (no Customize)
@@ -75,8 +50,8 @@
 (defun cj/music--valid-directory-p (dir)
   "Return non-nil if DIR is a non-hidden directory."
   (and (file-directory-p dir)
-	   (not (string-prefix-p "." (file-name-nondirectory
-								  (directory-file-name dir))))))
+       (not (string-prefix-p "." (file-name-nondirectory
+                                  (directory-file-name dir))))))
 
 (defun cj/music--collect-entries-recursive (root)
   "Return sorted relative paths of all subdirs and music files under ROOT.
@@ -182,7 +157,6 @@ Signals user-error if missing or deleted."
 
 ;;; Commands: add/select
 
-;;;###autoload
 (defun cj/music-add-directory-recursive (directory)
   "Add all music files under DIRECTORY recursively to the EMMS playlist."
   (interactive
@@ -193,7 +167,7 @@ Signals user-error if missing or deleted."
   (emms-add-directory-tree directory)
   (message "Added recursively: %s" directory))
 
-;;;###autoload
+
 (defun cj/music-fuzzy-select-and-add ()
   "Select a music file or directory and add to EMMS playlist.
 Directories (trailing /) are added recursively; files added singly."
@@ -215,7 +189,7 @@ Directories (trailing /) are added recursively; files added singly."
 
 ;;; Commands: playlist management (load/save/clear/reload/edit)
 
-;;;###autoload
+
 (defun cj/music-playlist-load ()
   "Load an M3U playlist from cj/music-m3u-root.
 Replaces current playlist."
@@ -233,7 +207,7 @@ Replaces current playlist."
         (setq cj/music-playlist-file choice-file))
       (message "Loaded playlist: %s" choice-name))))
 
-;;;###autoload
+
 (defun cj/music-playlist-save ()
   "Save current EMMS playlist to a file in cj/music-m3u-root.
 Offers completion over existing names but allows new names."
@@ -254,7 +228,7 @@ Offers completion over existing names but allows new names."
       (setq cj/music-playlist-file full))
     (message "Saved playlist: %s" filename)))
 
-;;;###autoload
+
 (defun cj/music-playlist-clear ()
   "Stop playback and empty the playlist."
   (interactive)
@@ -265,7 +239,7 @@ Offers completion over existing names but allows new names."
     (setq cj/music-playlist-file nil))
   (message "Playlist cleared"))
 
-;;;###autoload
+
 (defun cj/music-playlist-reload ()
   "Reload current playlist from its associated M3U file."
   (interactive)
@@ -279,7 +253,7 @@ Offers completion over existing names but allows new names."
       (setq cj/music-playlist-file file-path))
     (message "Reloaded playlist: %s" name)))
 
-;;;###autoload
+
 (defun cj/music-playlist-edit ()
   "Open the playlist's M3U file in other window, prompting to save if modified."
   (interactive)
@@ -298,7 +272,17 @@ Offers completion over existing names but allows new names."
 
 ;;; Commands: UI
 
-;;;###autoload
+;;; Minimal ensure-loaded setup for on-demand use
+
+(defun cj/emms--setup ()
+  "Ensure EMMS is loaded and quiet in mode line."
+  (unless (featurep 'emms)
+    (require 'emms))
+
+  (emms-playing-time-disable-display)
+  (emms-mode-line-mode -1))
+
+
 (defun cj/music-playlist-toggle ()
   "Toggle the EMMS playlist buffer in a right side window."
   (interactive)
@@ -325,7 +309,6 @@ Offers completion over existing names but allows new names."
                        (format "Playlist displayed (%d tracks)" count)
                      "Playlist displayed (empty)")))))))
 
-;;;###autoload
 (defun cj/music-playlist-show ()
   "Show the EMMS playlist buffer in the current window.
 Initializes EMMS if needed."
@@ -347,23 +330,23 @@ Initializes EMMS if needed."
 
 (with-eval-after-load 'dirvish
   (defun cj/music-add-dired-selection ()
-	"Add selected files/dirs in Dired/Dirvish to the EMMS playlist.
+    "Add selected files/dirs in Dired/Dirvish to the EMMS playlist.
 Dirs added recursively."
-	(interactive)
-	(unless (derived-mode-p 'dired-mode)
-	  (user-error "This command must be run in a Dired buffer"))
-	(cj/music--ensure-playlist-buffer)
-	(let ((files (if (use-region-p)
-					 (dired-get-marked-files)
-				   (list (dired-get-file-for-visit)))))
-	  (when (null files)
-		(user-error "No files selected"))
-	  (dolist (file files)
-		(cond
-		 ((file-directory-p file) (cj/music-add-directory-recursive file))
-		 ((cj/music--valid-file-p file) (emms-add-file file))
-		 (t (message "Skipping non-music file: %s" file))))
-	  (message "Added %d item(s) to playlist" (length files))))
+    (interactive)
+    (unless (derived-mode-p 'dired-mode)
+      (user-error "This command must be run in a Dired buffer"))
+    (cj/music--ensure-playlist-buffer)
+    (let ((files (if (use-region-p)
+                     (dired-get-marked-files)
+                   (list (dired-get-file-for-visit)))))
+      (when (null files)
+        (user-error "No files selected"))
+      (dolist (file files)
+        (cond
+         ((file-directory-p file) (cj/music-add-directory-recursive file))
+         ((cj/music--valid-file-p file) (emms-add-file file))
+         (t (message "Skipping non-music file: %s" file))))
+      (message "Added %d item(s) to playlist" (length files))))
 
   (keymap-set dirvish-mode-map "p" #'cj/music-add-dired-selection))
 
@@ -393,28 +376,35 @@ Dirs added recursively."
   ;; Now initialize EMMS
   (emms-all)
 
+  ;; Disable modeline display (keep modeline clean)
+  (emms-playing-time-disable-display)
+  (emms-mode-line-mode -1)
+
   ;; MPD configuration
   (setq emms-player-mpd-server-name "localhost")
   (setq emms-player-mpd-server-port "6600")
   (setq emms-player-mpd-music-directory cj/music-root)
   (condition-case err
-	  (emms-player-mpd-connect)
-	(error (message "Failed to connect to MPD: %s" err)))
+      (emms-player-mpd-connect)
+    (error (message "Failed to connect to MPD: %s" err)))
 
   ;; note setopt as variable is customizeable
+  ;; MPD can play both local files and stream URLs
   (setopt emms-player-mpd-supported-regexp
-		 (apply #'emms-player-simple-regexp cj/music-file-extensions))
+          (rx (or
+               ;; Stream URLs
+               (seq bos (or "http" "https" "mms") "://")
+               ;; Local music files by extension
+               (regexp (apply #'emms-player-simple-regexp cj/music-file-extensions)))))
 
   ;; Keep cj/music-playlist-file in sync if playlist is cleared
   (defun cj/music--after-playlist-clear (&rest _)
-	(when-let ((buf (get-buffer cj/music-playlist-buffer-name)))
-	  (with-current-buffer buf
-		(setq cj/music-playlist-file nil))))
+    (when-let ((buf (get-buffer cj/music-playlist-buffer-name)))
+      (with-current-buffer buf
+        (setq cj/music-playlist-file nil))))
 
   ;; Ensure we don't stack duplicate advice on reload
-  (when (advice-member-p #'cj/music--after-playlist-clear 'emms-playlist-clear)
-	(advice-remove 'emms-playlist-clear #'cj/music--after-playlist-clear))
-
+  (advice-remove 'emms-playlist-clear #'cj/music--after-playlist-clear)
   (advice-add 'emms-playlist-clear :after #'cj/music--after-playlist-clear)
 
   :bind-keymap
@@ -428,11 +418,11 @@ Dirs added recursively."
         ("s"   . emms-stop)
         ("x"   . emms-shuffle)
         ("q"   . emms-playlist-mode-bury-buffer)
-		("a"   . cj/music-fuzzy-select-and-add)
-		;; Manipulation
+        ("a"   . cj/music-fuzzy-select-and-add)
+        ;; Manipulation
         ("C" . cj/music-playlist-clear)
         ("L" . cj/music-playlist-load)
-		("E" . cj/music-playlist-edit)
+        ("E" . cj/music-playlist-edit)
         ("R" . cj/music-playlist-reload)
         ("S" . cj/music-playlist-save)
         ;; Track reordering (bind directly to EMMS commands; no wrappers)
@@ -457,19 +447,8 @@ Dirs added recursively."
 (autoload 'cj/music-playlist-toggle "music-config" "Toggle EMMS playlist window." t)
 (keymap-global-set "<f10>" #'cj/music-playlist-toggle)
 
-;;; Minimal ensure-loaded setup for on-demand use
-
-(defun cj/emms--setup ()
-  "Ensure EMMS is loaded and quiet in mode line."
-  (unless (featurep 'emms)
-	(require 'emms))
-
-  (emms-playing-time-disable-display)
-  (emms-mode-line-mode -1))
-
 ;;; Radio station creation
 
-;;;###autoload
 (defun cj/music-create-radio-station (name url)
   "Create a radio station M3U playlist with NAME and URL in cj/music-m3u-root."
   (interactive
