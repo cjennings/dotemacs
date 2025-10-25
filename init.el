@@ -139,7 +139,6 @@
 
 ;; ------------------------------- Entertainment -------------------------------
 
-(require 'eradio-config)
 (require 'music-config)
 (require 'games-config)
 
