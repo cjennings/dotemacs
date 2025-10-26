@@ -302,9 +302,6 @@ regardless of what file or subdirectory the point is on."
 (use-package nerd-icons
   :defer .5)
 
-(use-package nerd-icons-dired
-  :commands (nerd-icons-dired-mode))
-
 ;;; ---------------------------- Dired Hide Dotfiles ----------------------------
 
 (use-package dired-hide-dotfiles
@@ -316,27 +313,6 @@ regardless of what file or subdirectory the point is on."
   :bind
   (:map dired-mode-map
 		("." . dired-hide-dotfiles-mode)))
-
-;;; ------------------------------- Dired Sidebar -------------------------------
-
-(use-package dired-sidebar
-  :after (dired projectile)
-  :defer t
-  :commands (dired-sidebar-toggle-sidebar)
-  :init
-  (add-hook 'dired-sidebar-mode-hook
-			(lambda ()
-			  (unless (file-remote-p default-directory)
-				(auto-revert-mode))))
-  :config
-  (push 'toggle-window-split dired-sidebar-toggle-hidden-commands) ;; disallow splitting dired window when it's showing
-  (push 'rotate-windows dired-sidebar-toggle-hidden-commands)      ;; disallow rotating windows when sidebar is showing
-  (setq dired-sidebar-subtree-line-prefix "  ")                    ;; two spaces give simple and aesthetic indentation
-  (setq dired-sidebar-no-delete-other-windows t)                   ;; don't close when calling 'delete other windows'
-  (setq dired-sidebar-theme 'nerd-icons)                           ;; gimme fancy icons, please
-  (setq dired-sidebar-use-custom-font 'nil)                        ;; keep the same font as the rest of Emacs
-  (setq dired-sidebar-delay-auto-revert-updates 'nil)              ;; don't delay auto-reverting
-  (setq dired-sidebar-pop-to-sidebar-on-toggle-open 'nil))         ;; don't jump to sidebar when it's toggled on
 
 ;; --------------------------------- Copy Path ---------------------------------
 

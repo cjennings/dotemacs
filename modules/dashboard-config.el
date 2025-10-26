@@ -53,8 +53,6 @@
 (defun cj/dashboard-only ()
   "Switch to *dashboard* buffer and kill all other buffers and windows."
   (interactive)
-  (when (fboundp 'dired-sidebar-hide-sidebar)
-    (dired-sidebar-hide-sidebar))
   (if (get-buffer "*dashboard*")
 	  (progn
 		(switch-to-buffer "*dashboard*")
