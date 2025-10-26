@@ -69,14 +69,16 @@
   ;; remove/disable if performance slows
   ;; (setq org-element-use-cache nil) ;; disables caching org files
 
-  ;; move closed tasks to today's journal when marked done
-  (add-to-list 'org-after-todo-state-change-hook
-               (lambda ()
-                 (when (equal org-state "DONE")
-                   (cj/org-roam-copy-todo-to-today))))
-
   (require 'org-roam-dailies)      ;; Ensures the keymap is available
   (org-roam-db-autosync-mode))
+
+;; Move closed tasks to today's journal when marked done
+(with-eval-after-load 'org
+  (add-to-list 'org-after-todo-state-change-hook
+               (lambda ()
+                 (when (and (member org-state org-done-keywords)
+                            (not (member org-last-state org-done-keywords)))
+                   (cj/org-roam-copy-todo-to-today)))))
 
 ;; ------------------------- Org Roam Insert Immediate -------------------------
 
@@ -95,10 +97,12 @@ the arguments that org-roam-node-insert expects."
 ;; ------------------------- Tag Listing And Filtering -------------------------
 
 (defun cj/org-roam-filter-by-tag (tag-name)
+  "Return a predicate function that filters org-roam nodes by TAG-NAME."
   (lambda (node)
     (member tag-name (org-roam-node-tags node))))
 
 (defun cj/org-roam-list-notes-by-tag (tag-name)
+  "Return a list of file paths for all org-roam nodes tagged with TAG-NAME."
   (mapcar #'org-roam-node-file
           (seq-filter
            (cj/org-roam-filter-by-tag tag-name)
@@ -106,12 +110,12 @@ the arguments that org-roam-node-insert expects."
 
 ;; -------------------------- Org Roam Find Functions --------------------------
 
-;;;###autoload
 (defun cj/org-roam-find-node (tag template-key template-file &optional subdir)
   "List all nodes of type TAG in completing read for selection or creation.
 Interactively find or create an Org-roam node with a given TAG. Newly
 created nodes are added to the agenda and follow a template defined by
-TEMPLATE-KEY and TEMPLATE-FILE."
+TEMPLATE-KEY and TEMPLATE-FILE. If SUBDIR is provided, new nodes are
+created in that subdirectory of `org-roam-directory'."
   (interactive)
   (add-hook 'org-capture-after-finalize-hook
 			#'cj/org-roam-add-node-to-agenda-files-finalize-hook)
@@ -122,14 +126,15 @@ TEMPLATE-KEY and TEMPLATE-FILE."
 	  :if-new (file+head ,(concat (or subdir "") "%<%Y%m%d%H%M%S>-${slug}.org") "")
 	  :unnarrowed t))))
 
-;;;###autoload
+
 (defun cj/org-roam-find-node-topic ()
-  "List nodes of type \=`topic\=` in completing read for selection or creation."
+  "List nodes of type \=`Topic\=` in completing read for selection or creation."
   (interactive)
   (cj/org-roam-find-node "Topic" "t" (concat roam-dir "templates/topic.org")))
 
-;;;###autoload
+
 (defun cj/org-roam-find-node-recipe ()
+  "List nodes of type \"Recipe\" in completing read for selection or creation."
   (interactive)
   (cj/org-roam-find-node "Recipe" "r" (concat roam-dir "templates/recipe.org") "recipes/"))
 
@@ -185,12 +190,13 @@ Otherwise return TEXT unchanged."
 		(or description url))
 	text))
 
-;;;###autoload
+
 (defun cj/move-org-branch-to-roam ()
   "Move the org subtree at point to a new org-roam node.
 The node filename will be timestamp-based with the heading name.
-The heading becomes the node title, and the entire subtree is demoted to level 1.
-If the heading contains a link, extract the description for the title."
+The heading becomes the node title, and the entire subtree is demoted to
+level 1.  If the heading contains a link, extract the description for the
+title."
   (interactive)
   ;; Lazy load org and org-roam when needed
   (require 'org)
