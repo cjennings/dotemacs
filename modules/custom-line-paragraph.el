@@ -13,7 +13,7 @@
 ;; - removing lines containing specific text
 ;; - underlining text with a custom character
 ;;
-;; Bound to keymap prefix ~C-; l
+;; Bound to keymap prefix  C-; l
 ;;
 ;;; Code:
 
@@ -130,13 +130,15 @@ If the line is empty or contains only whitespace, abort with a message."
   "j" #'cj/join-line-or-region
   "J" #'cj/join-paragraph
   "d" #'cj/duplicate-line-or-region
+  "c" (lambda () (interactive) (cj/duplicate-line-or-region t))
   "R" #'cj/remove-duplicate-lines-region-or-buffer
   "r" #'cj/remove-lines-containing
   "u" #'cj/underscore-line)
 (keymap-set cj/custom-keymap "l" cj/line-and-paragraph-map)
 
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-; l" "line and paragraph menu"))
+  (which-key-add-key-based-replacements "C-; l" "line and paragraph menu")
+  (which-key-add-key-based-replacements "C-; l c" "duplicate and comment"))
 
 (provide 'custom-line-paragraph)
 ;;; custom-line-paragraph.el ends here.
