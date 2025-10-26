@@ -288,17 +288,18 @@ Prompts user for the action when executing."
   :load-path "~/code/org-msg/"
   :after (org mu4e)
   :preface
-	(define-prefix-command 'cj/email-map nil
-						 "keymap for email operations.")
-	(keymap-set cj/custom-keymap "e" #'cj/email-map)
+	(defvar-keymap cj/email-map
+	  :doc "Keymap for email operations"
+	  "a" #'org-msg-attach-attach
+	  "d" #'org-msg-attach-delete)
+	(keymap-set cj/custom-keymap "e" cj/email-map)
+	(with-eval-after-load 'which-key
+	  (which-key-add-key-based-replacements "C-; e" "email menu"))
   :bind
   ;; more intuitive keybinding for attachments
   (:map org-msg-edit-mode-map
 		("C-c C-a" . org-msg-attach-attach)
 		("C-c C-d" . org-msg-attach-delete))
-  (:map cj/email-map
-		("a" . org-msg-attach-attach)
-		("d" . org-msg-attach-delete))
   :config
   ;; inline CSS, no postamble, no TOC, no stars or footers
   (setq org-msg-options "html-postamble:nil H:5 num:nil ^:{} toc:nil author:nil email:nil")

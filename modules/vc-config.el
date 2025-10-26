@@ -118,17 +118,20 @@
 ;; --------------------------------- VC Keymap ---------------------------------
 
 ;; Ordering & sorting prefix and keymap
-(define-prefix-command 'cj/vc-map nil
-					   "Keymap for version control operations.")
-(keymap-set cj/custom-keymap "v" #'cj/vc-map)
-(keymap-set cj/vc-map "d" #'cj/goto-git-gutter-diff-hunks)
-(keymap-set cj/vc-map "c" #'cj/forge-create-issue)
-(keymap-set cj/vc-map "f" #'forge-pull)
-(keymap-set cj/vc-map "i" #'forge-list-issues)
-(keymap-set cj/vc-map "n" #'git-gutter:next-hunk)
-(keymap-set cj/vc-map "p" #'git-gutter:previous-hunk)
-(keymap-set cj/vc-map "r" #'forge-list-pullreqs)
-(keymap-set cj/vc-map "t" #'cj/git-timemachine)
+(defvar-keymap cj/vc-map
+  :doc "Keymap for version control operations"
+  "d" #'cj/goto-git-gutter-diff-hunks
+  "c" #'cj/forge-create-issue
+  "f" #'forge-pull
+  "i" #'forge-list-issues
+  "n" #'git-gutter:next-hunk
+  "p" #'git-gutter:previous-hunk
+  "r" #'forge-list-pullreqs
+  "t" #'cj/git-timemachine)
+
+(keymap-set cj/custom-keymap "v" cj/vc-map)
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-; v" "version control menu"))
 
 (provide 'vc-config)
 ;;; vc-config.el ends here.

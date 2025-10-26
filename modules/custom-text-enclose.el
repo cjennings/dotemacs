@@ -69,12 +69,15 @@
         (forward-line 1)))))
 
 ;; Surround, append, prepend prefix keymap
-(define-prefix-command 'cj/enclose-map nil
-					   "Keymap for enclosing text: surrounding, appending, and prepending.")
-(keymap-set cj/custom-keymap "s" #'cj/enclose-map)
-(keymap-set cj/enclose-map "s" #'cj/surround-word-or-region)
-(keymap-set cj/enclose-map "a" #'cj/append-to-lines-in-region-or-buffer)
-(keymap-set cj/enclose-map "p" #'cj/prepend-to-lines-in-region-or-buffer)
+(defvar-keymap cj/enclose-map
+  :doc "Keymap for enclosing text: surrounding, appending, and prepending"
+  "s" #'cj/surround-word-or-region
+  "a" #'cj/append-to-lines-in-region-or-buffer
+  "p" #'cj/prepend-to-lines-in-region-or-buffer)
+
+(keymap-set cj/custom-keymap "s" cj/enclose-map)
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-; s" "text enclose menu"))
 
 (provide 'custom-text-enclose)
 ;;; custom-text-enclose.el ends here.

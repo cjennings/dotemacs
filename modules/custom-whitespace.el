@@ -102,13 +102,16 @@ Operate on the active region designated by START and END."
 
 
 ;; Whitespace operations prefix and keymap
-(define-prefix-command 'cj/whitespace-map nil
-					   "Keymap for whitespace operations.")
-(keymap-set cj/custom-keymap "w" #'cj/whitespace-map)
-(keymap-set cj/whitespace-map "r" #'cj/remove-leading-trailing-whitespace)
-(keymap-set cj/whitespace-map "c" #'cj/collapse-whitespace-line-or-region)
-(keymap-set cj/whitespace-map "l" #'cj/delete-blank-lines-region-or-buffer)
-(keymap-set cj/whitespace-map "-" #'cj/hyphenate-whitespace-in-region)
+(defvar-keymap cj/whitespace-map
+  :doc "Keymap for whitespace operations"
+  "r" #'cj/remove-leading-trailing-whitespace
+  "c" #'cj/collapse-whitespace-line-or-region
+  "l" #'cj/delete-blank-lines-region-or-buffer
+  "-" #'cj/hyphenate-whitespace-in-region)
+
+(keymap-set cj/custom-keymap "w" cj/whitespace-map)
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-; w" "whitespace menu"))
 
 (provide 'custom-whitespace)
 ;;; custom-whitespace.el ends here.
