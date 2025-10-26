@@ -28,7 +28,8 @@
         (while (< (point) end)
           (join-line 1))
         (goto-char end)
-        (newline))
+        (newline)
+        (deactivate-mark))
     ;; No region - only join if there's a previous line
     (when (> (line-number-at-pos) 1)
       (join-line))

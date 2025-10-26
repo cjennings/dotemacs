@@ -380,6 +380,105 @@
           (should (marker-position marker))))
     (test-join-line-or-region-teardown)))
 
+(ert-deftest test-join-line-or-region-backwards-region ()
+  "Should handle backwards region (mark after point)."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "line one\nline two\nline three")
+        (goto-char (point-max))
+        (set-mark (point))
+        (goto-char (point-min))
+        (activate-mark)
+        (cj/join-line-or-region)
+        (should (string-match-p "line one line two line three" (buffer-string))))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-partial-line-selection ()
+  "Should handle region starting mid-line and ending mid-line."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "line one\nline two\nline three")
+        (goto-char (point-min))
+        (forward-char 5)  ; Middle of "line one"
+        (set-mark (point))
+        (forward-line 2)
+        (forward-char 5)  ; Middle of "line three"
+        (activate-mark)
+        (cj/join-line-or-region)
+        ;; Should join lines regardless of partial selection
+        (should (string-match-p "line two" (buffer-string))))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-stress-test-many-lines ()
+  "Should handle many lines (1000+) without hanging."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (dotimes (i 1000)
+          (insert (format "line %d\n" i)))
+        (goto-char (point-min))
+        (set-mark (point))
+        (goto-char (point-max))
+        (activate-mark)
+        (let ((start-time (current-time)))
+          (cj/join-line-or-region)
+          (let ((elapsed (float-time (time-subtract (current-time) start-time))))
+            ;; Should complete in reasonable time (< 5 seconds)
+            (should (< elapsed 5.0))))
+        ;; Verify all lines joined
+        (goto-char (point-min))
+        (should (string-match-p "line 0.*line 999" (buffer-string))))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-combining-characters ()
+  "Should handle Unicode combining characters."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        ;; e with combining acute accent (é)
+        (insert "cafe\u0301\nnaive\u0308")
+        (goto-char (point-max))
+        (cj/join-line-or-region)
+        (should (string-match-p "cafe\u0301.*naive\u0308" (buffer-string))))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-control-characters ()
+  "Should handle control characters."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "line\u000Cone\nline\u000Ctwo")
+        (goto-char (point-max))
+        (cj/join-line-or-region)
+        ;; Should preserve control characters
+        (should (string-match-p "line.*one.*line.*two" (buffer-string))))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-narrowed-buffer ()
+  "Should respect buffer narrowing."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "before\nline one\nline two\nafter")
+        (goto-char (point-min))
+        (forward-line 1)
+        (let ((beg (point)))
+          (forward-line 2)
+          (narrow-to-region beg (point))
+          (goto-char (point-min))
+          (set-mark (point))
+          (goto-char (point-max))
+          (activate-mark)
+          (cj/join-line-or-region)
+          (widen)
+          ;; Should only affect narrowed region
+          (should (string-match-p "before" (buffer-string)))
+          (should (string-match-p "after" (buffer-string)))
+          (should (string-match-p "line one.*line two" (buffer-string)))))
+    (test-join-line-or-region-teardown)))
+
 ;;; Error Cases
 
 (ert-deftest test-join-line-or-region-empty-buffer-no-region ()
@@ -421,6 +520,98 @@
         (goto-char (point-max))
         (read-only-mode 1)
         (should-error (cj/join-line-or-region)))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-undo-behavior ()
+  "Should properly support undo after joining lines."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (let* ((temp-file (expand-file-name "test-undo.txt" cj/test-base-dir))
+             (original-content "line one\nline two"))
+        ;; Create file with initial content
+        (with-temp-file temp-file
+          (insert original-content))
+        ;; Open file and test undo
+        (find-file temp-file)
+        (buffer-enable-undo)  ; Ensure undo is enabled
+        ;; Make a small change to establish undo history
+        (goto-char (point-min))
+        (insert " ")
+        (delete-char -1)
+        (undo-boundary)  ; Create explicit boundary
+        (goto-char (point-max))
+        (let ((before-join (buffer-string)))
+          (cj/join-line-or-region)
+          (undo-boundary)  ; Create boundary after operation
+          (let ((after-join (buffer-string)))
+            (should-not (string= before-join after-join))
+            ;; Undo should work now
+            (undo)
+            (should (string= before-join (buffer-string)))))
+        (kill-buffer (current-buffer)))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-buffer-modified-flag ()
+  "Should set buffer modified flag after joining lines."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "line one\nline two")
+        (set-buffer-modified-p nil)
+        (goto-char (point-max))
+        (cj/join-line-or-region)
+        (should (buffer-modified-p)))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-region-deactivation ()
+  "Should deactivate region after operation."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "line one\nline two\nline three")
+        (transient-mark-mode 1)
+        (goto-char (point-min))
+        (set-mark (point))
+        (goto-char (point-max))
+        (activate-mark)
+        (should (use-region-p))
+        (cj/join-line-or-region)
+        ;; Region should be deactivated after operation
+        (should-not (use-region-p)))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-dos-line-endings ()
+  "Should handle DOS-style line endings (CRLF) and preserve them."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "line one\r\nline two\r\n")
+        ;; Go to line two so we can join with line one
+        (goto-char (point-min))
+        (forward-line 1)
+        (cj/join-line-or-region)
+        ;; Should join lines (join-line handles the line endings)
+        (should (string-match-p "line one.*line two" (buffer-string))))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-consecutive-operations ()
+  "Should handle consecutive join operations correctly."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "line one\nline two\nline three\nline four")
+        ;; First operation: on line two, joins with line one
+        (goto-char (point-min))
+        (forward-line 1)
+        (cj/join-line-or-region)
+        (should (string-match-p "line one line two" (buffer-string)))
+        ;; Second operation: on line four, joins with line three
+        (goto-char (point-min))
+        (search-forward "line four")
+        (cj/join-line-or-region)
+        (should (string-match-p "line three line four" (buffer-string)))
+        ;; Both operations should have worked (note: each operation adds a newline)
+        (should (string-match-p "line one line two\n+line three line four" (buffer-string))))
     (test-join-line-or-region-teardown)))
 
 (provide 'test-custom-line-paragraph-join-line-or-region)
