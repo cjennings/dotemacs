@@ -38,7 +38,7 @@
             (orig-fill-column fill-column))
         (uncomment-region beg end)
         (setq fill-column (- fill-column 3))
-        (cj/join-line-or-region beg end)
+        (cj/join-line-or-region)
         (comment-region beg end)
         (setq fill-column orig-fill-column )))
   ;; if no region
