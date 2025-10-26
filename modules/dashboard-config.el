@@ -129,7 +129,7 @@
 
            (,(nerd-icons-faicon "nf-fa-comments")
             "IRC" "Emacs Relay Chat"
-            (lambda (&rest _) (cj/erc-start-or-switch)))
+            (lambda (&rest _) (cj/erc-switch-to-buffer-with-completion)))
 
            ;; (,(nerd-icons-faicon "nf-fae-telegram")
            ;;     "Telegram" "Telega Chat Client"

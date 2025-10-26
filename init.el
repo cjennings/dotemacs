@@ -62,7 +62,7 @@
 
 (require 'chrono-tools)          ;; calendar, world clock, timers
 (require 'diff-config)           ;; diff and merge functionality w/in Emacs
-;;(require 'erc-config)            ;; seamless IRC client
+(require 'erc-config)            ;; seamless IRC client
 (require 'eshell-vterm-config)   ;; shell and terminal configuration
 (require 'help-utils)            ;; search: arch-wiki, devdoc, tldr, wikipedia
 (require 'help-config)           ;; info, man, help config

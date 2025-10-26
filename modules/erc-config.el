@@ -6,12 +6,12 @@
 ;; Enhanced ERC configuration with multi-server support.
 ;;
 ;; Main keybindings:
-;; - C-c e C           : Select and connect to a specific server
-;; - C-c e c           : Join a channel on current server
-;; - C-c e b           : Switch between ERC buffers across all servers
-;; - C-c e l           : List connected servers
-;; - C-c e q           : Quit current channel
-;; - C-c e Q           : Quit ERC server
+;; - C-; E C           : Select and connect to a specific server
+;; - C-; E c           : Join a channel on current server
+;; - C-; E b           : Switch between ERC buffers across all servers
+;; - C-; E l           : List connected servers
+;; - C-; E q           : Quit current channel
+;; - C-; E Q           : Quit ERC server
 
 ;;; Code:
 
@@ -53,7 +53,6 @@ Change this value to use a different nickname.")
 	 :channels ("#general" "#lounge")))
   "Alist of IRC servers and their connection details.")
 
-;;;###autoload
 (defun cj/erc-connect-server (server-name)
   "Connect to a server specified by SERVER-NAME from `cj/erc-server-alist'."
   (let ((server-info (assoc server-name cj/erc-server-alist)))
@@ -172,6 +171,20 @@ Auto-adds # prefix if missing.  Offers completion from configured channels."
 		  (erc-join-channel channel)))
 	(message "Failed to establish an active ERC connection")))
 
+;; Keymap for ERC commands (must be defined before use-package erc)
+(defvar-keymap cj/erc-keymap
+  :doc "Keymap for ERC-related commands"
+  "C" #'cj/erc-connect-server-with-completion  ;; Connect to server
+  "c" #'cj/erc-join-channel-with-completion    ;; join channel
+  "b" #'cj/erc-switch-to-buffer-with-completion ;; switch Buffer
+  "l" #'cj/erc-connected-servers               ;; list connected servers
+  "q" #'erc-part-from-channel                  ;; quit channel
+  "Q" #'erc-quit-server)                       ;; Quit ERC entirely
+
+(keymap-set cj/custom-keymap "E" cj/erc-keymap)
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-; E" "ERC chat menu"))
+
 ;; Main ERC configuration
 (use-package erc
   :ensure nil ;; built-in
@@ -213,9 +226,6 @@ Auto-adds # prefix if missing.  Offers completion from configured channels."
   (erc-fill-static-center 20)
 
   :config
-
-  ;; Bind global keymap
-  (keymap-global-set "C-c e" cj/erc-command-map)
 
   ;; use all text mode abbrevs in ercmode
   (abbrev-table-put erc-mode-abbrev-table :parents (list text-mode-abbrev-table))
@@ -278,7 +288,6 @@ Auto-adds # prefix if missing.  Offers completion from configured channels."
 
 (defun cj/erc-notify-on-mention (match-type nick message)
   "Display a notification when MATCH-TYPE is \\='current-nick.
-
 NICK is the sender and MESSAGE is the message text."
   (when (and (eq match-type 'current-nick)
 			 (not (string= nick (erc-current-nick)))
@@ -313,7 +322,6 @@ NICK is the sender and MESSAGE is the message text."
 ;; show inlined images (png/jpg/gif/svg) in erc buffers.
 
 (use-package erc-image
-  :if (locate-library "erc-image")
   :after erc
   :config
   (setq erc-image-inline-rescale 300)
@@ -334,25 +342,10 @@ NICK is the sender and MESSAGE is the message text."
 ;; via ruby: 'gem install gist' via the aur: yay -S gist
 
 (use-package erc-yank
-  :if (locate-library "erc-yank")
   :after erc
   :bind
   (:map erc-mode-map
         ("C-y" . erc-yank)))
-
-
-
-;; Keymap for ERC commands (bound in use-package :config to defer loading)
-(defvar cj/erc-command-map
-  (let ((map (make-sparse-keymap)))
-    (keymap-set map "C" #'cj/erc-connect-server-with-completion) ;; Connect to server (capital C)
-    (keymap-set map "c" #'cj/erc-join-channel-with-completion)   ;; join channel (lowercase c)
-    (keymap-set map "b" #'cj/erc-switch-to-buffer-with-completion) ;; switch Buffer
-    (keymap-set map "l" #'cj/erc-connected-servers)              ;; print connected servers in echo area
-    (keymap-set map "q" #'erc-part-from-channel)                 ;; quit channel
-    (keymap-set map "Q" #'erc-quit-server)                       ;; Quit ERC entirely
-    map)
-  "Keymap for ERC-related commands.")
 
 (provide 'erc-config)
 ;;; erc-config.el ends here
