@@ -2,6 +2,7 @@
 *.cache
 .cache/
 /eln-cache/
+flycheck_*
 projectile-bookmarks.eld
 /recentf
 /backups/
