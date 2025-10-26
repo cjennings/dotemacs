@@ -30,8 +30,8 @@
 (require 'custom-comments)       ;; operations with comments
 (require 'custom-datetime)       ;; date/timestamp insertion in various formats
 (require 'custom-file-buffer)    ;; custom buffer and file operations and keymap
-;; <<<< writing tests for join-line-or-region
 (require 'custom-line-paragraph) ;; operations on lines and paragraphs
+;; <<<< writing tests for custom-misc
 (require 'custom-misc)           ;; miscellaneous functions
 (require 'custom-ordering)       ;; ordering and sorting operations
 (require 'custom-text-enclose)   ;; operations to append, prepend, and surround text
