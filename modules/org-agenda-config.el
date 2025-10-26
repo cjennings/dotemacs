@@ -267,7 +267,7 @@ This allows a line to show in an agenda without being scheduled or a deadline."
 (use-package chime
   :vc (:url "https://github.com/cjennings/chime.el" :rev :newest)
   :after (alert org-agenda)
-  :commands (chime-mode chime-check)
+  :demand t
   :bind
   ("C-c A" . chime-check)
   :config
