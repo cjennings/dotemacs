@@ -1,13 +1,4 @@
 * Emacs Config Open Work
-** TODO [#A] Switch Browsers from selection of internal to external
-- eww, w3m, firefox, google-chrome, brave listed in a defvar that can be changed
-- reads from persistence file for current default (as with the theme selection)
-  (you may be able to promote code reuse between the two features)
-- ensures browsers exist (at load? on first run?). narrows list to only existing browsers 
-- after choosing to reset default, completing read provides the list
-- the one selected is at top, selecting another sets your default browser variable
-- selection is saved in a persistence file for next time
-- user is given the opportunity to go to a url entered or default to test
 ** TODO [#A] Finish Testing New Org-webclipper
 ** TODO [#B] investigate unassociated files
 - [ ] /home/cjennings/.emacs.d/assets/test/test-misspellings.org
@@ -108,57 +99,6 @@ Windows that hold should behave in the same way
 |---------+-----------------------------------------+---------+---------|
 | test-   | test suite named after method           |         |         |
 
-** TODO [#A] Alert/Notifications Working                               :bug:
-*** TODO [#B] Fix Emacs Alarms for Scheduled Events                    :bug:
-**** 2025-06-03 Tue @ 15:12:51 -0500 Problem
-Emacs Alarm seems to sound off periodically after the alarm rang the first time.
-It should ring once at the beginning of the event, and that's it.
-**** 2025-06-28 Sat @ 12:42:19 -0500 User's Method for Alarms In Emacs
-This is more than I actually want, but leaving here for reference.
-#+BEGIN_QUOTE
-I am quite happy with the system I use, which does (I think) exactly what you want. It has two parts: an Emacs part that uses appt.el to schedule the reminders and a small shell program (I'm using Linux) that creates the popup + sound notification. Here I share the code for both parts.
-A) Code in ~/.emacs.d/init.el
-(require 'appt)
-(appt-activate t)
-(setq appt-message-warning-time 5) ; Show notification 5 minutes before event
-(setq appt-display-interval appt-message-warning-time) ; Disable multiple reminders
-(setq appt-display-mode-line nil)
-; Use appointment data from org-mode
-(defun my-org-agenda-to-appt ()
-(interactive)
-(setq appt-time-msg-list nil)
-(org-agenda-to-appt))
-; Update alarms when...
-; (1) ... Starting Emacs
-(my-org-agenda-to-appt)
-; (2) ... Everyday at 12:05am (useful in case you keep Emacs always on)
-(run-at-time "12:05am" (* 24 3600) 'my-org-agenda-to-appt)
-; (3) ... When TODO.txt is saved
-(add-hook 'after-save-hook
-'(lambda ()
-(if (string= (buffer-file-name) (concat (getenv "HOME") "/ideas/TODO.txt"))
-(my-org-agenda-to-appt))))
-; Display appointments as a window manager notification
-(setq appt-disp-window-function 'my-appt-display)
-(setq appt-delete-window-function (lambda () t))
-(setq my-appt-notification-app (concat (getenv "HOME") "/bin/appt-notification"))
-(defun my-appt-display (min-to-app new-time msg)
-(if (atom min-to-app)
-(start-process "my-appt-notification-app" nil my-appt-notification-app min-to-app msg)
-(dolist (i (number-sequence 0 (1- (length min-to-app))))
-(start-process "my-appt-notification-app" nil my-appt-notification-app (nth i min-to-app) (nth i msg)))))
-
-(;;B) Code in ~/bin/appt-notification
-#!/bin/sh
-TIME="$1"
-MSG="$2"
-notify-send -t 0 "<br>Appointment in $TIME minutes:<br>$MSG<br>"
-play "~/bin/alarm.wav"
-To get voice notifications you could replace the last line (play) with the following:
-espeak "Appointment in $TIME minutes: $MSG"
-#+END_QUOTE
-[[https://emacs.stackexchange.com/questions/3844/good-methods-for-setting-up-alarms-audio-visual-triggered-by-org-mode-events][Good methods for setting up alarms (audio + visual) triggered by org-mode events? - Emacs Stack Exchange]]
-Captured On: [2025-06-19 Thu 12:29]
 ** TODO [#A] Org Reveal.js Presentations From Local Org        :enhancement:
 *** References
 https://revealjs.com/
@@ -521,10 +461,6 @@ Pull out the API key fetching, caching, and GPTel backend creation logic from ai
 
 ---
 
-** DOING [#B] Capture and Refile to Drill Files                :enhancement:
-*** TODO [#B] Clean Up Existing Drill Files
-- Ensure they're in the proper format
-*** TODO [#B] Empty Inbox Drill file and Remove
 ** TODO [#B] Decent HTML Exports From Org Mode With Inline CSS :enhancement:
 *** fniessen/org-html-themes: Org mode files transformed into stunning HTML documents
 [[https://github.com/fniessen/org-html-themes?tab=readme-ov-file#using-a-theme][fniessen/org-html-themes: Transform your Org mode files into stunning HTML documents in minutes with our Org mode HTML theme. Elevate your productivity and impress your readers! #orgmode #html #theme #productivity #design]]
