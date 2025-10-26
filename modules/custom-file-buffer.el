@@ -81,35 +81,82 @@ Sends directly to the system spooler with no header."
 
 ;; ------------------------- Buffer And File Operations ------------------------
 
-(defun cj/move-buffer-and-file (dir)
-  "Move both current buffer and the file it visits to DIR."
-  (interactive "DMove buffer and file (to new directory): ")
+(defun cj/--move-buffer-and-file (dir &optional ok-if-exists)
+  "Internal implementation: Move buffer and file to DIR.
+If OK-IF-EXISTS is nil and target exists, signal an error.
+If OK-IF-EXISTS is non-nil, overwrite existing file.
+Returns t on success, nil if buffer not visiting a file."
   (let* ((name (buffer-name))
          (filename (buffer-file-name))
+         (dir (expand-file-name dir))
          (dir
-          (if (string-match dir "\\(?:/\\|\\\\)$")
+          (if (string-match "[/\\\\]$" dir)
               (substring dir 0 -1) dir))
          (newname (concat dir "/" name)))
     (if (not filename)
-        (message "Buffer '%s' is not visiting a file!" name)
-      (progn  (copy-file filename newname 1)  (delete-file filename)
-              (set-visited-file-name newname)  (set-buffer-modified-p nil)  t))))
+        (progn
+          (message "Buffer '%s' is not visiting a file!" name)
+          nil)
+      (progn  (copy-file filename newname ok-if-exists)
+              (delete-file filename)
+              (set-visited-file-name newname)
+              (set-buffer-modified-p nil)
+              t))))
+
+(defun cj/move-buffer-and-file (dir)
+  "Move both current buffer and the file it visits to DIR.
+When called interactively, prompts for confirmation if target file exists."
+  (interactive (list (read-directory-name "Move buffer and file (to new directory): ")))
+  (let* ((target (expand-file-name (buffer-name) (expand-file-name dir))))
+    (condition-case err
+        (cj/--move-buffer-and-file dir nil)
+      (file-already-exists
+       (if (yes-or-no-p (format "File %s exists; overwrite? " target))
+           (cj/--move-buffer-and-file dir t)
+         (message "File not moved"))))))
+
+(defun cj/--rename-buffer-and-file (new-name &optional ok-if-exists)
+  "Internal implementation: Rename buffer and file to NEW-NAME.
+NEW-NAME can be just a basename or a full path to move to different directory.
+If OK-IF-EXISTS is nil and target exists, signal an error.
+If OK-IF-EXISTS is non-nil, overwrite existing file.
+Returns t on success, nil if buffer not visiting a file."
+  (let ((filename (buffer-file-name))
+        (new-basename (file-name-nondirectory new-name)))
+    (if (not filename)
+        (progn
+          (message "Buffer '%s' is not visiting a file!" (buffer-name))
+          nil)
+      ;; Check if a buffer with the new name already exists
+      (when (and (get-buffer new-basename)
+                 (not (eq (get-buffer new-basename) (current-buffer))))
+        (error "A buffer named '%s' already exists" new-basename))
+      ;; Expand new-name to absolute path (preserves directory if just basename)
+      (let ((expanded-name (expand-file-name new-name
+                                              (file-name-directory filename))))
+        (rename-file filename expanded-name ok-if-exists)
+        (rename-buffer new-basename)
+        (set-visited-file-name expanded-name)
+        (set-buffer-modified-p nil)
+        t))))
 
 (defun cj/rename-buffer-and-file (new-name)
-  "Rename both current buffer and the file it visits to NEW-NAME."
+  "Rename both current buffer and the file it visits to NEW-NAME.
+When called interactively, prompts for confirmation if target file exists."
   (interactive
    (list (if (not (buffer-file-name))
              (user-error "Buffer '%s' is not visiting a file!" (buffer-name))
            (read-string "Rename buffer and file (to new name): "
                         (file-name-nondirectory (buffer-file-name))))))
-  (let ((filename (buffer-file-name)))
-    (if (get-buffer new-name)
-        (message "A buffer named '%s' already exists!" new-name)
-      (progn
-        (rename-file filename new-name 1)
-        (rename-buffer new-name)
-        (set-visited-file-name new-name)
-        (set-buffer-modified-p nil)))))
+  (condition-case err
+      (cj/--rename-buffer-and-file new-name nil)
+    (file-already-exists
+     (if (yes-or-no-p (format "File %s exists; overwrite? " new-name))
+         (cj/--rename-buffer-and-file new-name t)
+       (message "File not renamed")))
+    (error
+     ;; Handle buffer-already-exists and other errors
+     (message "%s" (error-message-string err)))))
 
 (defun cj/delete-buffer-and-file ()
   "Kill the current buffer and delete the file it visits."
