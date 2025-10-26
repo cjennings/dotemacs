@@ -297,11 +297,6 @@ regardless of what file or subdirectory the point is on."
    ("v"       . dirvish-vc-menu)
    ("y"       . dirvish-yank-menu)))
 
-;;; -------------------------------- Nerd Icons -------------------------------
-
-(use-package nerd-icons
-  :defer .5)
-
 ;;; ---------------------------- Dired Hide Dotfiles ----------------------------
 
 (use-package dired-hide-dotfiles

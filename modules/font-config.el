@@ -175,6 +175,12 @@ If FRAME is nil, uses the selected frame."
   :config
   (all-the-icons-nerd-fonts-prefer))
 
+;; -------------------------------- Nerd Icons ---------------------------------
+;; Modern icon fonts for UI elements
+
+(use-package nerd-icons
+  :defer .5)
+
 ;; ----------------------------- Emoji Fonts Per OS ----------------------------
 ;; Set emoji fonts in priority order (first found wins)
 
