@@ -108,7 +108,7 @@ Returns t on success, nil if buffer not visiting a file."
 When called interactively, prompts for confirmation if target file exists."
   (interactive (list (read-directory-name "Move buffer and file (to new directory): ")))
   (let* ((target (expand-file-name (buffer-name) (expand-file-name dir))))
-    (condition-case err
+    (condition-case _
         (cj/--move-buffer-and-file dir nil)
       (file-already-exists
        (if (yes-or-no-p (format "File %s exists; overwrite? " target))
