@@ -82,27 +82,29 @@ buffer."
 If region is active, operate only on the region, otherwise on entire buffer.
 The operation is undoable."
   (interactive "sRemove lines containing: ")
-  (save-excursion
-    (save-restriction
-      (let ((region-active (use-region-p))
-            (count 0))
-        (when region-active
-          (narrow-to-region (region-beginning) (region-end)))
-        (goto-char (point-min))
-        ;; Count lines before deletion
-        (while (re-search-forward (regexp-quote text) nil t)
-          (setq count (1+ count))
-          (beginning-of-line)
-          (forward-line))
-        ;; Go back and delete
-        (goto-char (point-min))
-        (delete-matching-lines (regexp-quote text))
-        ;; Report what was done
-        (message "Removed %d line%s containing '%s' from %s"
-                 count
-                 (if (= count 1) "" "s")
-                 text
-                 (if region-active "region" "buffer"))))))
+  (if (string-empty-p text)
+      (message "Empty search string - nothing to remove")
+    (save-excursion
+      (save-restriction
+        (let ((region-active (use-region-p))
+              (count 0))
+          (when region-active
+            (narrow-to-region (region-beginning) (region-end)))
+          (goto-char (point-min))
+          ;; Count lines before deletion
+          (while (re-search-forward (regexp-quote text) nil t)
+            (setq count (1+ count))
+            (beginning-of-line)
+            (forward-line))
+          ;; Go back and delete
+          (goto-char (point-min))
+          (delete-matching-lines (regexp-quote text))
+          ;; Report what was done
+          (message "Removed %d line%s containing '%s' from %s"
+                   count
+                   (if (= count 1) "" "s")
+                   text
+                   (if region-active "region" "buffer")))))))
 
 (defun cj/underscore-line ()
   "Underline the current line by inserting a row of characters below it.
