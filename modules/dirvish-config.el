@@ -255,6 +255,7 @@ regardless of what file or subdirectory the point is on."
 
   ;; Your other configuration settings
   (setq dirvish-attributes '(nerd-icons file-size))
+  (setq dirvish-side-attributes '(nerd-icons file-size))  ;; Explicitly set for sidebar
   (setq dirvish-preview-dispatchers '(image gif video audio epub pdf archive))
   (setq dirvish-use-mode-line nil)
   (setq dirvish-use-header-line nil)
@@ -285,7 +286,7 @@ regardless of what file or subdirectory the point is on."
    ("M-p"     . dirvish-peek-toggle)
    ("M-s"     . dirvish-setup-menu)
    ("TAB"     . dirvish-subtree-toggle)
-   ("d".  dired-flag-file-deletion)
+   ("d"       . dired-flag-file-deletion)
    ("f"       . cj/dirvish-open-file-manager-here)
    ("g"       . dirvish-quick-access)
    ("o"       . cj/xdg-open)
