@@ -103,6 +103,12 @@ For each test case, provide:
 - Use test doubles for non-deterministic behavior (time, random)
 - Keep mocks simple and focused
 - Verify mock interactions when relevant
+- DON'T MOCK WHAT YOU'RE TESTING
+  - Only mock external side-effects and dependencies, not the domain logic itself
+  - If mocking removes the actual work the function performs, you're testing the mock, not the code
+  - Use real data structures that the function is designed to operate on
+  - Tests should exercise the actual parsing, transformation, or computation logic
+  - Rule of thumb: If the function body could be `(error "not implemented")` and tests still pass, you've over-mocked
 
 *** Performance Testing
 - Establish baseline performance metrics
@@ -160,6 +166,10 @@ Watch for and report these issues:
 - Tests with no assertions
 - Tests that test the testing framework
 - Over-mocked tests that don't test real behavior
+  - Tests that mock the primary function being tested instead of its inputs
+  - Tests where mocks do the actual work instead of the production code
+  - Tests that would pass if the function implementation was deleted
+  - Mocking data parsing/transformation when you should create real test data
 - Flaky tests that pass/fail intermittently
 - Tests that are too slow
 - Tests that require manual setup or verification
