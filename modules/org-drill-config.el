@@ -59,15 +59,18 @@
 
   ;; ------------------------------ Org Drill Keymap -----------------------------
 
-  ;; Buffer & file operations prefix and keymap
-  (define-prefix-command 'cj/drill-map nil
-						 "Keymap for org-drill.")
-  (keymap-set cj/custom-keymap "D" #'cj/drill-map)
-  (keymap-set cj/drill-map "s" #'cj/drill-start)
-  (keymap-set cj/drill-map "e" #'cj/drill-edit)
-  (keymap-set cj/drill-map "c" #'cj/drill-capture)
-  (keymap-set cj/drill-map "r" #'cj/drill-refile)
-  (keymap-set cj/drill-map "R" #'org-drill-resume))
+  ;; Org drill operations keymap
+  (defvar-keymap cj/drill-map
+	:doc "Keymap for org-drill"
+	"s" #'cj/drill-start
+	"e" #'cj/drill-edit
+	"c" #'cj/drill-capture
+	"r" #'cj/drill-refile
+	"R" #'org-drill-resume)
+
+  (keymap-set cj/custom-keymap "D" cj/drill-map)
+  (with-eval-after-load 'which-key
+	(which-key-add-key-based-replacements "C-; D" "org-drill menu")))
 
 (provide 'org-drill-config)
 ;;; org-drill-config.el ends here.

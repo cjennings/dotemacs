@@ -352,10 +352,25 @@ Dirs added recursively."
 
 ;;; EMMS setup and keybindings
 
+;; Music/EMMS keymap
+(defvar-keymap cj/music-map
+  :doc "Keymap for music commands"
+  "m" #'cj/music-playlist-toggle
+  "M" #'cj/music-playlist-show
+  "a" #'cj/music-fuzzy-select-and-add
+  "r" #'cj/music-create-radio-station
+  "SPC" #'emms-pause
+  "s" #'emms-stop
+  "p" #'emms-playlist-mode-go
+  "x" #'emms-shuffle)
+
+(keymap-set cj/custom-keymap "m" cj/music-map)
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-; m" "music menu"))
+
 (use-package emms
   :defer t
   :init
-  (defvar cj/music-map (make-sparse-keymap) "Keymap for music commands.")
   ;; Set buffer name BEFORE emms loads to prevent default buffer creation
   (setq emms-playlist-buffer-name "*EMMS-Playlist*")
   :commands (emms-mode-line-mode)
@@ -407,9 +422,6 @@ Dirs added recursively."
   (advice-remove 'emms-playlist-clear #'cj/music--after-playlist-clear)
   (advice-add 'emms-playlist-clear :after #'cj/music--after-playlist-clear)
 
-  :bind-keymap
-  ("C-; m" . cj/music-map)
-
   :bind
   (:map emms-playlist-mode-map
         ;; Playback
@@ -432,16 +444,7 @@ Dirs added recursively."
         ("r" . cj/music-create-radio-station)
         ;; Volume (MPD)
         ("-" . emms-volume-lower)
-        ("=" . emms-volume-raise))
-  (:map cj/music-map
-        ("m" . cj/music-playlist-toggle)
-        ("M" . cj/music-playlist-show)
-        ("a" . cj/music-fuzzy-select-and-add)
-        ("r" . cj/music-create-radio-station)
-        ("SPC" . emms-pause)
-        ("s" . emms-stop)
-        ("p" . emms-playlist-mode-go)
-        ("x" . emms-shuffle)))
+        ("=" . emms-volume-raise)))
 
 ;; Quick toggle key - use autoload to avoid loading emms at startup
 (autoload 'cj/music-playlist-toggle "music-config" "Toggle EMMS playlist window." t)

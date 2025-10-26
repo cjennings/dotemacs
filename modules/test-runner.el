@@ -252,19 +252,21 @@ Otherwise, message that no test is found."
 	(cj/test-run-focused)))
 
 ;; Test runner operations prefix and keymap
-(define-prefix-command 'cj/test-map nil
-					   "Keymap for test-runner operations.")
-(keymap-set cj/custom-keymap "t" #'cj/test-map)
+(defvar-keymap cj/testrunner-map
+  :doc "Keymap for test-runner operations"
+  "L" #'cj/test-load-all
+  "R" #'cj/test-run-all
+  "." #'cj/run-test-at-point
+  "r" #'cj/test-run-smart
+  "a" #'cj/test-focus-add
+  "b" #'cj/test-focus-add-this-buffer-file
+  "c" #'cj/test-focus-clear
+  "v" #'cj/test-view-focused
+  "t" #'cj/test-toggle-mode)
 
-(keymap-set cj/test-map "L" #'cj/test-load-all)
-(keymap-set cj/test-map "R" #'cj/test-run-all)
-(keymap-set cj/test-map "." #'cj/run-test-at-point)
-(keymap-set cj/test-map "r" #'cj/test-run-smart)
-(keymap-set cj/test-map "a" #'cj/test-focus-add)
-(keymap-set cj/test-map "b" #'cj/test-focus-add-this-buffer-file)
-(keymap-set cj/test-map "c" #'cj/test-focus-clear)
-(keymap-set cj/test-map "v" #'cj/test-view-focused)
-(keymap-set cj/test-map "t" #'cj/test-toggle-mode)
+(keymap-set cj/custom-keymap "t" cj/testrunner-map)
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-; t" "test runner menu"))
 
 (provide 'test-runner)
 ;;; test-runner.el ends here
