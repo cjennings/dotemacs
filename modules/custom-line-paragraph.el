@@ -18,6 +18,9 @@
 ;;; Code:
 
 
+(eval-when-compile (defvar cj/custom-keymap)) ;; defined in keybindings.el
+(declare-function er/mark-paragraph "expand-region") ;; for cj/join-paragraph
+
 (defun cj/join-line-or-region ()
   "Join lines in the active region or join the current line with the previous one."
   (interactive)
