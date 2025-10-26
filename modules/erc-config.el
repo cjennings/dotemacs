@@ -197,6 +197,7 @@ Auto-adds # prefix if missing.  Offers completion from configured channels."
 	 button
 	 completion
 	 fill
+	 image
 	 irccontrols
 	 list
 	 log
@@ -207,7 +208,7 @@ Auto-adds # prefix if missing.  Offers completion from configured channels."
 	 readonly
 	 services
 	 stamp
-	 track))  ;; Added track module
+	 track))
 
   (erc-autojoin-channels-alist
    (mapcar (lambda (server)
@@ -258,9 +259,8 @@ Auto-adds # prefix if missing.  Offers completion from configured channels."
 		erc-track-switch-direction 'importance
 		erc-track-showcount t)
 
-  ;; Add hooks for notifications and colorization
-  (add-hook 'erc-text-matched-hook #'cj/erc-notify-on-mention)
-  (add-hook 'erc-mode-hook #'cj/erc-colorize-setup))
+  ;; Add hooks for notifications
+  (add-hook 'erc-text-matched-hook #'cj/erc-notify-on-mention))
 
 ;; -------------------------------- ERC Track ---------------------------------
 ;; Better tracking of activity across channels (already included in modules above)
@@ -303,30 +303,13 @@ NICK is the sender and MESSAGE is the message text."
 		   :app-name "Emacs ERC"
 		   :sound-name 'message))))))
 
-;; ------------------------------ ERC Colorize -------------------------------
-;; Better color management with built-in functionality
-
-(defun cj/erc-colorize-setup ()
-  "Setup ERC colorization for nicknames."
-  (make-local-variable 'erc-nick-color-alist)
-  (setq erc-nick-color-alist
-		(cl-loop for i from 0 to 15
-				 for color in '("blue" "green" "red" "brown" "purple"
-								"olive" "dark cyan" "light gray" "dark gray"
-								"light blue" "light green" "light red"
-								"light brown" "light purple" "yellow" "white")
-				 collect (cons i color)))
-  (setq erc-nick-color-function #'erc-get-color-for-nick))
-
 ;; -------------------------------- ERC Image ---------------------------------
 ;; show inlined images (png/jpg/gif/svg) in erc buffers.
 
 (use-package erc-image
   :after erc
   :config
-  (setq erc-image-inline-rescale 300)
-  (add-to-list 'erc-modules 'image)
-  (erc-update-modules))
+  (setq erc-image-inline-rescale 300))
 
 ;; -------------------------------- ERC Nicks ---------------------------------
 ;; Nickname highlighting (built-in to Emacs 29+)
