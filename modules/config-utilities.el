@@ -108,7 +108,6 @@ Recompile natively when supported, otherwise fall back to byte compilation."
         (find-lisp-find-files user-emacs-directory ""))
   (message "Done. Compiled files removed under %s" user-emacs-directory))
 (keymap-set cj/debug-config-keymap "c d" 'cj/delete-emacs-home-compiled-files)
-(keymap-set cj/debug-config-keymap "c d" 'cj/delete-emacs-home-compiled-files)
 
 (defun cj/compile-this-elisp-buffer ()
   "Compile the current .el: prefer native (.eln), else .elc. Message if neither."
