@@ -55,6 +55,7 @@ Test failure scenarios ensuring appropriate error handling:
 - Invalid inputs and type mismatches
 - Out-of-range values
 - Missing required parameters
+- Error messages are informative (test behavior, not exact wording)
 - Resource limitations (memory, file handles)
 - Security vulnerabilities (injection attacks, buffer overflows, XSS)
 - Malformed or malicious input
@@ -110,6 +111,25 @@ For each test case, provide:
   - Tests should exercise the actual parsing, transformation, or computation logic
   - Rule of thumb: If the function body could be `(error "not implemented")` and tests still pass, you've over-mocked
 
+*** Testing Framework/Library Integration
+- When function primarily delegates to framework/library code, focus tests on YOUR integration logic
+- Don't extensively test the framework itself - trust it works
+- Example: Function that calls `comment-kill` should test:
+  - You call it with correct arguments ✓
+  - You set up context correctly (e.g., go to point-min) ✓
+  - You handle return values appropriately ✓
+  - NOT: That `comment-kill` works in 50 different scenarios ✗
+- For cross-language/cross-mode functionality:
+  - Test 2-3 representative modes to prove compatibility
+  - Don't test every possible mode - diminishing returns
+  - Group by similarity (e.g., C-style comments: C/Java/Go/JavaScript)
+  - Example distribution:
+    - 15 tests in primary mode (all edge/boundary/error cases)
+    - 3 tests each in 2 other modes (just prove different syntaxes work)
+    - Total: ~21 tests instead of 100+
+- Document testing approach in test file Commentary
+- Balance: Prove polyglot functionality without excessive duplication
+
 *** Performance Testing
 - Establish baseline performance metrics
 - Test with realistic data volumes
@@ -128,11 +148,104 @@ For each test case, provide:
 - Use version control to track test evolution
 - Maintain a regression test suite
 
+*** Error Message Testing
+- Production code should provide clear error messages with context
+  - Include what operation failed, why it failed, and what to do
+  - Help users understand where the error originated
+- Tests should verify error behavior, not exact message text
+  - Test that errors occur (should-error, returns nil, etc.)
+  - Avoid asserting exact message wording unless critical to behavior
+  - Example: Test that function returns nil, not that message contains "not visiting"
+- When message content matters, test structure not exact text
+  - Use regexp patterns for key information (e.g., filename must be present)
+  - Test message type/severity, not specific phrasing
+- Balance: Ensure appropriate feedback exists without coupling to implementation
+
+*** Interactive vs Non-Interactive Function Pattern
+When writing functions that combine business logic with user interaction:
+- Split into internal implementation and interactive wrapper
+- Internal function (prefix with ~--~): Pure logic, takes all parameters explicitly
+  - Example: ~(defun cj/--move-buffer-and-file (dir &optional ok-if-exists) ...)~
+  - Deterministic, testable, reusable by other code
+  - No interactive prompts, no UI logic
+- Interactive wrapper: Thin layer handling only user interaction
+  - Example: ~(defun cj/move-buffer-and-file (dir) ...)~
+  - Prompts user for input, handles confirmations
+  - Catches errors and prompts for retry if needed
+  - Delegates all business logic to internal function
+- Test the internal function with direct parameter values
+  - No mocking ~yes-or-no-p~, ~read-directory-name~, etc.
+  - Simple, deterministic, fast tests
+  - Optional: Add minimal tests for interactive wrapper behavior
+- Benefits:
+  - Dramatically simpler testing (no interactive mocking)
+  - Code reusable programmatically without prompts
+  - Clear separation of concerns (logic vs UI)
+  - Follows standard Emacs patterns
+
 *** Test Maintenance
 - Refactor tests alongside production code
 - Remove obsolete tests
 - Update tests when requirements change
 - Keep test code DRY (but prefer clarity over brevity)
+
+*** Refactor vs Rewrite Decision Framework
+When inheriting untested code that needs testing, evaluate whether to refactor or rewrite:
+
+**** Key Decision Factors
+- **Similarity to recently-written code**: If you just wrote similar logic, adapting it is lower risk than refactoring old code
+- **Knowledge freshness**: Recently-implemented patterns are fresh in mind, reducing rewrite risk
+- **Code complexity**: Complex old code may be riskier to refactor than to rewrite from a working template
+- **Testing strategy**: If testing requires extensive mocking, that's a signal the code should be refactored
+- **Uniqueness of logic**: Unique algorithms with no templates favor refactoring; common patterns favor rewriting
+- **Time investment**: Compare actual effort, not perceived effort
+
+**** When to Refactor
+Prefer refactoring when:
+- Logic is unique with no similar working implementation to adapt
+- Code is relatively simple and well-structured
+- You don't have a tested template to work from
+- Risk of missing edge cases is high
+- Code is already mostly correct, just needs structural improvements
+
+Example: Refactoring a centering algorithm with unique spacing calculations
+
+**** When to Rewrite
+Prefer rewriting when:
+- You JUST wrote and tested similar functionality (knowledge is fresh!)
+- A working, tested template exists that can be adapted
+- Old code is overly complex or convoluted
+- Rewriting ensures consistency with recent patterns
+- Old code has poor validation or error handling
+
+Example: Adapting a 5-line box function you just tested into a 3-line variant
+
+**** Hybrid Approaches
+Often optimal to mix strategies:
+- Refactor unique logic without templates
+- Rewrite similar logic by adapting recent work
+- Evaluate each function independently based on its specific situation
+
+**** The "Knowledge Freshness" Principle
+**Critical insight**: Code you wrote in the last few hours/days is dramatically easier to adapt than old code, even if the old code seems "simpler." The mental model is loaded, edge cases are fresh, and patterns are internalized. This makes rewriting from recent work LOWER RISK than it appears.
+
+Example timeline:
+- Day 1: Write and test heavy-box (5 lines, centered text)
+- Day 1 later: Need regular box (3 lines, centered text)
+- **Adapt heavy-box** (lower risk) vs **refactor old box** (higher risk despite seeming simpler)
+
+**** Red Flags Indicating Rewrite Over Refactor
+- Code is impossible to test without extensive mocking
+- Mixing of concerns (UI + business logic intertwined)
+- No validation or poor error handling
+- You just finished implementing the same pattern elsewhere
+- Code quality is significantly below current standards
+
+**** Document Your Decision
+- When choosing refactor vs rewrite, document reasoning
+- Note which factors were most important
+- Track actual time spent vs estimated
+- Learn from outcomes for future decisions
 
 ## Workflow & Communication
 
