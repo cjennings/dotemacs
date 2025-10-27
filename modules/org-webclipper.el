@@ -11,6 +11,7 @@
 ;; - Automatic conversion to Org format using eww-readable and Pandoc
 ;; - One-click capture from any web page
 ;; - Preserves page structure and formatting
+;; - Smart heading adjustment (removes page title, demotes remaining headings)
 ;;
 ;; Setup:
 ;; 1. Ensure this file is loaded in your Emacs configuration
@@ -29,6 +30,11 @@
 ;;
 ;; The clipped content will be added to the file specified by `webclipped-file`
 ;; under the "Webclipped Inbox" heading with proper formatting and metadata.
+;;
+;; Architecture:
+;; - cj/--process-webclip-content: Pure function for content processing
+;; - cj/org-protocol-webclip-handler: Handles URL fetching and capture
+;; - cj/org-webclipper-EWW: Direct capture from EWW/W3M buffers
 ;;
 ;; Requirements:
 ;; - org-web-tools package
@@ -89,6 +95,28 @@
 
     (setq cj/webclipper-initialized t)))
 
+(defun cj/--process-webclip-content (org-content)
+  "Process webclip ORG-CONTENT by removing first heading and demoting others.
+ORG-CONTENT is the raw org-mode text from the web page conversion.
+Returns the processed content as a string with:
+- First top-level heading removed
+- Initial blank lines removed
+- All remaining headings demoted by one level"
+  (with-temp-buffer
+    (insert org-content)
+    (goto-char (point-min))
+    ;; Skip the first heading line (we'll use our template's heading)
+    (when (looking-at "^\\* .*\n")
+      (delete-region (match-beginning 0) (match-end 0)))
+    ;; Remove any initial blank lines
+    (while (looking-at "^[ \t]*\n")
+      (delete-char 1))
+    ;; Demote all remaining headings by one level
+    ;; since our template already provides the top-level heading
+    (while (re-search-forward "^\\(\\*+\\) " nil t)
+      (replace-match (concat (match-string 1) "* ") t t))
+    (buffer-string)))
+
 (defun cj/org-protocol-webclip (info)
   "Process org-protocol webclip requests.
 INFO is a plist containing :url and :title from the org-protocol call."
@@ -121,22 +149,7 @@ It fetches the page content and converts it to Org format."
         (error "No URL provided for clipping")
       (condition-case err
           (let* ((org-content (org-web-tools--url-as-readable-org url))
-                 ;; Process the content to adjust heading levels
-                 (processed-content
-                  (with-temp-buffer
-                    (insert org-content)
-                    (goto-char (point-min))
-                    ;; Skip the first heading line (we'll use our template's heading)
-                    (when (looking-at "^\\* .*\n")
-                      (delete-region (match-beginning 0) (match-end 0)))
-                    ;; Remove any initial blank lines
-                    (while (looking-at "^[ \t]*\n")
-                      (delete-char 1))
-                    ;; Demote all remaining headings by one level
-                    ;; since our template already provides the top-level heading
-                    (while (re-search-forward "^\\(\\*+\\) " nil t)
-                      (replace-match (concat (match-string 1) "* ") t t))
-                    (buffer-string))))
+                 (processed-content (cj/--process-webclip-content org-content)))
             ;; Show success message with the title
             (require 'user-constants) ;; Ensure webclipped-file is available
             (message "'%s' added to %s" title webclipped-file)
@@ -171,7 +184,6 @@ Return the yanked content as a string so templates can insert it."
 ;; ----------------------------- Webclipper Keymap -----------------------------
 
 ;; keymaps shouldn't be required for webclipper
-;; TASK Move org-branch to roam functionality under org-roam
 ;; Setup keymaps
 ;;
 ;; (defun cj/webclipper-setup-keymaps ()
