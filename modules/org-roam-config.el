@@ -1,7 +1,15 @@
 ;;; org-roam-config.el --- Org-Roam Config -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
-;; Currently a work in progress. The initial version of this was taken from David Wilson:
+;; Configuration and utilities for org-roam knowledge management.
+;;
+;; Key features:
+;; - Custom capture templates for different node types (v2mom, recipe, topic)
+;; - Automatic moving of completed tasks to daily journal
+;; - Tag-based node filtering and finding
+;; - Branch extraction to new roam nodes (cj/move-org-branch-to-roam)
+;;
+;; The initial version was adapted from David Wilson:
 ;; https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/
 
 ;;; Code:
@@ -190,6 +198,51 @@ Otherwise return TEXT unchanged."
 		(or description url))
 	text))
 
+(defun cj/--generate-roam-slug (title)
+  "Convert TITLE to a filename-safe slug.
+Converts to lowercase, replaces non-alphanumeric characters with hyphens,
+and removes leading/trailing hyphens.
+Returns the slugified string."
+  (let ((slug (replace-regexp-in-string
+               "[^a-zA-Z0-9]+" "-"
+               (downcase title))))
+    (replace-regexp-in-string "^-\\|-$" "" slug)))
+
+(defun cj/--demote-org-subtree (content from-level to-level)
+  "Demote org subtree CONTENT from FROM-LEVEL to TO-LEVEL.
+CONTENT is the org-mode text with headings.
+FROM-LEVEL is the current level of the top heading (integer).
+TO-LEVEL is the desired level for the top heading (integer).
+Returns the demoted content as a string.
+All headings in the tree are adjusted proportionally."
+  (if (<= from-level to-level)
+      ;; No demotion needed
+      content
+    (let ((demote-count (- from-level to-level)))
+      (with-temp-buffer
+        (insert content)
+        (goto-char (point-min))
+        (while (re-search-forward "^\\(\\*+\\) " nil t)
+          (let* ((stars (match-string 1))
+                 (level (length stars))
+                 (new-level (max 1 (- level demote-count)))
+                 (new-stars (make-string new-level ?*)))
+            (replace-match (concat new-stars " "))))
+        (buffer-string)))))
+
+(defun cj/--format-roam-node (title node-id content)
+  "Format org-roam node file CONTENT with TITLE and NODE-ID.
+TITLE is the node title string.
+NODE-ID is the unique identifier for the node.
+CONTENT is the main body content (already demoted if needed).
+Returns the complete file content as a string."
+  (concat ":PROPERTIES:\n"
+          ":ID:       " node-id "\n"
+          ":END:\n"
+          "#+TITLE: " title "\n"
+          "#+CATEGORY: " title "\n"
+          "#+FILETAGS: Topic\n\n"
+          content))
 
 (defun cj/move-org-branch-to-roam ()
   "Move the org subtree at point to a new org-roam node.
@@ -213,12 +266,7 @@ title."
 		 (title (cj/org-link-get-description raw-title))
 		 (timestamp (format-time-string "%Y%m%d%H%M%S"))
 		 ;; Convert title to filename-safe format
-		 (title-slug (replace-regexp-in-string
-					  "[^a-zA-Z0-9]+" "-"
-					  (downcase title)))
-		 ;; Remove leading/trailing hyphens
-		 (title-slug (replace-regexp-in-string
-					  "^-\\|-$" "" title-slug))
+		 (title-slug (cj/--generate-roam-slug title))
 		 (filename (format "%s-%s.org" timestamp title-slug))
 		 (filepath (expand-file-name filename org-roam-directory))
 		 ;; Generate a unique ID for the node
@@ -234,33 +282,11 @@ title."
 	(org-cut-subtree)
 
 	;; Process the subtree to demote it to level 1
-	(with-temp-buffer
-	  (org-mode)
-	  (insert subtree-content)
-	  ;; Demote the entire tree so the top level becomes level 1
-	  (goto-char (point-min))
-	  (when (> current-level 1)
-		(let ((demote-count (- current-level 1)))
-		  (while (re-search-forward "^\\*+ " nil t)
-			(beginning-of-line)
-			(dotimes (_ demote-count)
-			  (when (looking-at "^\\*\\*")
-				(delete-char 1)))
-			(forward-line))))
-	  (setq subtree-content (buffer-string)))
+	(setq subtree-content (cj/--demote-org-subtree subtree-content current-level 1))
 
 	;; Create the new org-roam file
 	(with-temp-file filepath
-	  ;; Insert the org-roam template with ID at file level
-	  (insert ":PROPERTIES:\n")
-	  (insert ":ID:       " node-id "\n")
-	  (insert ":END:\n")
-	  (insert "#+TITLE: " title "\n")
-	  (insert "#+CATEGORY: " title "\n")
-	  (insert "#+FILETAGS: Topic\n\n")
-
-	  ;; Insert the demoted subtree content
-	  (insert subtree-content))
+	  (insert (cj/--format-roam-node title node-id subtree-content)))
 
 	;; Sync the org-roam database
 	(org-roam-db-sync)
