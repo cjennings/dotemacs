@@ -43,6 +43,9 @@
      (message "Error occurred during evaluation: %s" (error-message-string err)))))
 (keymap-global-set "C-c b" #'cj/eval-buffer-with-confirmation-or-error-message)
 
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-c b" "eval buffer"))
+
 ;;; ---------------------------- Edit A File With Sudo ----------------------------
 
 (use-package sudo-edit

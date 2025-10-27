@@ -294,7 +294,10 @@ Prompts user for the action when executing."
 	  "d" #'org-msg-attach-delete)
 	(keymap-set cj/custom-keymap "e" cj/email-map)
 	(with-eval-after-load 'which-key
-	  (which-key-add-key-based-replacements "C-; e" "email menu"))
+	  (which-key-add-key-based-replacements
+        "C-; e" "email menu"
+        "C-; e a" "attach file"
+        "C-; e d" "delete attachment"))
   :bind
   ;; more intuitive keybinding for attachments
   (:map org-msg-edit-mode-map
@@ -341,6 +344,10 @@ Prompts user for the action when executing."
 			:after (lambda (&rest _) (org-msg-edit-mode)))
 (advice-add #'mu4e-compose-wide-reply
 			:after (lambda (&rest _) (org-msg-edit-mode)))
+
+;; which-key labels
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-c m" "mu4e email"))
 
 (provide 'mail-config)
 ;;; mail-config.el ends here

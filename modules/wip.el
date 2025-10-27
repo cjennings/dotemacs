@@ -127,6 +127,8 @@ If CONFIRM is non-nil, mark VAR to always require confirmation."
 
 (keymap-set cj/custom-keymap "!" #'cj/system-command-menu)
 
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-; !" "system commands"))
 
 ;; --------------------------- Org Upcoming Modeline ---------------------------
 

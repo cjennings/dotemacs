@@ -111,6 +111,11 @@
 
 (keymap-global-set "C-c x o" #'cj/open-this-file-with)
 
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-c x" "external open menu"
+    "C-c x o" "open file with"))
+
 ;; -------------------- Open Files With Default File Handler -------------------
 
 (defun cj/find-file-auto (orig-fun &rest args)

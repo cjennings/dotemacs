@@ -415,5 +415,22 @@ Works for any buffer, whether it's visiting a file or not."
   "x" #'cj/gptel-clear-buffer)        ;; clears the assistant buffer
 (keymap-set cj/custom-keymap "a" cj/ai-keymap)
 
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-; a" "AI assistant menu"
+    "C-; a B" "switch backend"
+    "C-; a M" "gptel menu"
+    "C-; a d" "delete conversation"
+    "C-; a ." "add buffer"
+    "C-; a f" "add file"
+    "C-; a l" "load conversation"
+    "C-; a m" "change model"
+    "C-; a p" "change prompt"
+    "C-; a &" "rewrite region"
+    "C-; a r" "clear context"
+    "C-; a s" "save conversation"
+    "C-; a t" "toggle window"
+    "C-; a x" "clear buffer"))
+
 (provide 'ai-config)
 ;;; ai-config.el ends here.

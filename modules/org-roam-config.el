@@ -85,7 +85,9 @@
   (add-to-list 'org-after-todo-state-change-hook
                (lambda ()
                  (when (and (member org-state org-done-keywords)
-                            (not (member org-last-state org-done-keywords)))
+                            (not (member org-last-state org-done-keywords))
+                            ;; Don't run for gcal.org - it's managed by org-gcal
+                            (not (string= (buffer-file-name) (expand-file-name gcal-file))))
                    (cj/org-roam-copy-todo-to-today)))))
 
 ;; ------------------------- Org Roam Insert Immediate -------------------------
@@ -293,6 +295,20 @@ title."
 
 	;; Message to user
 	(message "'%s' added as an org-roam node." title)))
+
+;; which-key labels
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-c n" "org-roam menu"
+    "C-c n l" "roam buffer toggle"
+    "C-c n f" "roam find node"
+    "C-c n p" "roam find project"
+    "C-c n r" "roam find recipe"
+    "C-c n t" "roam find topic"
+    "C-c n i" "roam insert node"
+    "C-c n w" "roam find webclip"
+    "C-c n I" "roam insert immediate"
+    "C-c n d" "roam dailies menu"))
 
 (provide 'org-roam-config)
 ;;; org-roam-config.el ends here.

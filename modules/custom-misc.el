@@ -152,5 +152,15 @@ to nil."
 (keymap-set cj/custom-keymap "SPC" #'cj/switch-to-previous-buffer)
 (keymap-set cj/custom-keymap "|" #'display-fill-column-indicator-mode)
 
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-; )" "jump to paren"
+    "C-; f" "format buffer"
+    "C-; W" "count words"
+    "C-; /" "fraction glyphs"
+    "C-; A" "align regexp"
+    "C-; SPC" "prev buffer"
+    "C-; |" "fill column"))
+
 (provide 'custom-misc)
 ;;; custom-misc.el ends here

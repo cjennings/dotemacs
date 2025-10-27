@@ -400,6 +400,15 @@ If no such file exists there, display a message."
 				   "1.5 sec" nil 'delete-windows-on
 				   (get-buffer-create "*compilation*"))))))
 
+;; which-key labels
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-c s" "snippets menu"
+    "C-c s n" "new snippet"
+    "C-c s e" "edit snippet"
+    "C-c s i" "insert snippet"
+    "C-c p" "projectile menu"
+    "C-c C-s" "symbol overlay"))
 
 (provide 'prog-general)
 ;;; prog-general.el ends here

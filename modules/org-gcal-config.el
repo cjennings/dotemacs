@@ -10,6 +10,9 @@
 ;; - Automatic removal of cancelled events, but with TODOs added for visibility
 ;; - System timezone configuration via functions in host-environment
 ;; - No notifications on syncing
+;; - Events are managed by Org (changes in org file push back to Google Calendar)
+;;   This is controlled by org-gcal-managed-newly-fetched-mode and
+;;   org-gcal-managed-update-existing-mode set to "org"
 ;; - Initial automatic sync post Emacs startup. No auto resync'ing.
 ;;   (my calendar doesn't change hourly and I want fewer distractions and slowdowns).
 ;;   if you need it: https://github.com/kidd/org-gcal.el?tab=readme-ov-file#sync-automatically-at-regular-times
@@ -42,6 +45,22 @@ Useful when a sync fails and leaves the lock in place, preventing future syncs."
   (setq org-gcal--sync-lock nil)
   (message "org-gcal sync lock cleared"))
 
+(defun cj/org-gcal-convert-all-to-org-managed ()
+  "Convert all org-gcal events in current buffer to Org-managed.
+
+Changes all events with org-gcal-managed property from 'gcal' to 'org',
+enabling bidirectional sync so changes push back to Google Calendar."
+  (interactive)
+  (let ((count 0))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^:org-gcal-managed: gcal$" nil t)
+        (replace-match ":org-gcal-managed: org")
+        (setq count (1+ count))))
+    (when (> count 0)
+      (save-buffer))
+    (message "Converted %d event(s) to Org-managed" count)))
+
 (use-package org-gcal
   :defer t ;; unless idle timer is set below
   :bind (("C-; g" . org-gcal-sync)
@@ -71,10 +90,19 @@ Useful when a sync fails and leaves the lock in place, preventing future syncs."
   (setq org-gcal-remove-api-cancelled-events t)        ;; auto-remove cancelled events
   (setq  org-gcal-update-cancelled-events-with-todo t) ;; todo cancelled events for visibility
 
+  ;; Enable bidirectional sync - treat events as Org-managed so changes push back
+  (setq org-gcal-managed-newly-fetched-mode "org")     ;; New events from GCal are Org-managed
+  (setq org-gcal-managed-update-existing-mode "org")   ;; Existing events become Org-managed
+
   :config
   ;; Enable plstore passphrase caching after org-gcal loads
   (require 'plstore)
   (setq plstore-cache-passphrase-for-symmetric-encryption t)
+
+  ;; Enable debugging for HTTP requests
+  (require 'request)
+  (setq request-log-level 'debug)
+  (setq request-message-level 'debug)
 
   ;; set org-gcal timezone based on system timezone
   (setq org-gcal-local-timezone (cj/detect-system-timezone))
@@ -89,6 +117,12 @@ Useful when a sync fails and leaves the lock in place, preventing future syncs."
 ;;   (condition-case err
 ;;	   (org-gcal-sync)
 ;;	 (error (message "org-gcal: Initial sync failed: %s" err)))))
+
+;; which-key labels
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-; g" "gcal sync"
+    "C-; G" "clear sync lock"))
 
 (provide 'org-gcal-config)
 ;;; org-gcal-config.el ends here

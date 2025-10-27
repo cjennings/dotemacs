@@ -94,5 +94,8 @@ Runs flycheck-prose-on-demand if in an org-buffer."
     ;; trigger immediate check
     (flycheck-buffer)))
 
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-; ?" "list errors"))
+
 (provide 'flycheck-config)
 ;;; flycheck-config.el ends here

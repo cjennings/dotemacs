@@ -239,5 +239,11 @@ Press C-' repeatedly to step through misspellings one at a time."
 ;;;###autoload (keymap-set global-map "C-c f" #'cj/flyspell-toggle)
 ;;;###autoload (keymap-set global-map "C-'" #'cj/flyspell-then-abbrev)
 
+;; which-key labels
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-c f" "flyspell toggle"
+    "C-'" "flyspell then abbrev"))
+
 (provide 'flyspell-and-abbrev)
 ;;; flyspell-and-abbrev.el ends here.

@@ -70,7 +70,13 @@
 
   (keymap-set cj/custom-keymap "D" cj/drill-map)
   (with-eval-after-load 'which-key
-	(which-key-add-key-based-replacements "C-; D" "org-drill menu")))
+	(which-key-add-key-based-replacements
+      "C-; D" "org-drill menu"
+      "C-; D s" "start drill"
+      "C-; D e" "edit drill file"
+      "C-; D c" "capture question"
+      "C-; D r" "refile to drill"
+      "C-; D R" "resume drill")))
 
 (provide 'org-drill-config)
 ;;; org-drill-config.el ends here.

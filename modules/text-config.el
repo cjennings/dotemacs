@@ -46,8 +46,7 @@
 ;; change inner and outer, just like in vim.
 
 (use-package change-inner
-  :bind (("C-c i" . change-inner)
-         ("C-c o" . change-outer)))
+  :commands (change-inner change-outer))
 
 ;; ------------------------------ Delete Selection -----------------------------
 ;; delete the region on character insertion

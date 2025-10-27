@@ -62,5 +62,8 @@ with or without C-, M-, S- modifiers."
 
 (keymap-global-set "C-c M" #'mouse-trap-mode)
 
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-c M" "mouse trap mode"))
+
 (provide 'mousetrap-mode)
 ;;; mousetrap-mode.el ends here.

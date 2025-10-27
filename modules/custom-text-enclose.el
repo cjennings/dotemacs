@@ -264,11 +264,23 @@ Works on region if active, otherwise entire buffer."
   "a" #'cj/append-to-lines-in-region-or-buffer
   "p" #'cj/prepend-to-lines-in-region-or-buffer
   "i" #'cj/indent-lines-in-region-or-buffer
-  "d" #'cj/dedent-lines-in-region-or-buffer)
+  "d" #'cj/dedent-lines-in-region-or-buffer
+  "I" #'change-inner
+  "O" #'change-outer)
 
 (keymap-set cj/custom-keymap "s" cj/enclose-map)
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-; s" "text enclose menu"))
+  (which-key-add-key-based-replacements
+    "C-; s" "text enclose menu"
+    "C-; s s" "surround text"
+    "C-; s w" "wrap text"
+    "C-; s u" "unwrap text"
+    "C-; s a" "append to lines"
+    "C-; s p" "prepend to lines"
+    "C-; s i" "indent lines"
+    "C-; s d" "dedent lines"
+    "C-; s I" "change inner"
+    "C-; s O" "change outer"))
 
 (provide 'custom-text-enclose)
 ;;; custom-text-enclose.el ends here.

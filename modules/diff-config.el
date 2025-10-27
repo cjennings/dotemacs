@@ -48,6 +48,14 @@
   (add-hook 'ediff-mode-hook               #'cj/ediff-hook)
   (add-hook 'ediff-after-quit-hook-internal #'winner-undo))
 
+;; which-key labels
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-c D" "ediff menu"
+    "C-c D f" "ediff files"
+    "C-c D b" "ediff buffers"
+    "C-c D r" "ediff revision"
+    "C-c D D" "ediff directories"))
 
 (provide 'diff-config)
 ;;; diff-config.el ends here
