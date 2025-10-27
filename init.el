@@ -145,7 +145,7 @@
 (require 'browser-config)
 ;;(require 'wip)
 (require 'lorem-optimum)
-;;(require 'jumper)
+(require 'jumper)
 
 ;; ---------------------------------- Wrap Up ----------------------------------
 
