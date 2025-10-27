@@ -1,4 +1,4 @@
-;;; lorem-generator.el --- Fake Latin Text Generator -*- coding: utf-8; lexical-binding: t; -*-
+;;; lorem-optimum.el --- Fake Latin Text Generator -*- coding: utf-8; lexical-binding: t; -*-
 ;;
 ;; Author: Craig Jennings
 ;; Version: 0.5
@@ -24,6 +24,19 @@
 
 (require 'cl-lib)
 
+;;; Configuration
+
+(defvar cj/lipsum-training-file "assets/liber-primus.txt"
+  "Default training file name (relative to `user-emacs-directory`).")
+
+(defvar cj/lipsum-default-file
+  (expand-file-name cj/lipsum-training-file user-emacs-directory)
+  "Default training file for cj-lipsum.
+
+This should be a plain UTF-8 text file with hundreds of Latin words
+or sentences.  By default it points to the file specified in
+`cj/lipsum-training-file` relative to `user-emacs-directory`.")
+
 (cl-defstruct (cj/markov-chain
 			   (:constructor cj/markov-chain-create))
   "An order-two Markov chain."
@@ -31,25 +44,45 @@
   (keys nil))
 
 (defun cj/markov-tokenize (text)
-  "Split TEXT into tokens: words and punctuation separately."
-  (let ((case-fold-search nil))
-	(split-string text "\\b" t "[[:space:]\n]+")))
-
+  "Split TEXT into tokens: words and punctuation separately.
+Returns a list of words and punctuation marks as separate tokens."
+  (let ((tokens '())
+        (pos 0)
+        (len (length text)))
+    (while (< pos len)
+      (cond
+       ;; Skip whitespace
+       ((string-match-p "[[:space:]]" (substring text pos (1+ pos)))
+        (setq pos (1+ pos)))
+       ;; Match word (sequence of alphanumeric characters)
+       ((string-match "\\`\\([[:alnum:]]+\\)" (substring text pos))
+        (let ((word (match-string 1 (substring text pos))))
+          (push word tokens)
+          (setq pos (+ pos (length word)))))
+       ;; Match punctuation (single character)
+       ((string-match "\\`\\([[:punct:]]\\)" (substring text pos))
+        (let ((punct (match-string 1 (substring text pos))))
+          (push punct tokens)
+          (setq pos (+ pos (length punct)))))
+       ;; Skip any other character
+       (t (setq pos (1+ pos)))))
+    (nreverse tokens)))
 (defun cj/markov-learn (chain text)
   "Add TEXT into the Markov CHAIN with tokenized input."
-  (let* ((words (cj/markov-tokenize text))
+  (let* ((word-list (cj/markov-tokenize text))
+         ;; Convert to vector for O(1) access instead of O(n) with nth
+         (words (vconcat word-list))
 		 (len (length words)))
 	(cl-loop for i from 0 to (- len 3)
-			 for a = (nth i words)
-			 for b = (nth (1+ i) words)
-			 for c = (nth (+ i 2) words)
+			 for a = (aref words i)
+			 for b = (aref words (1+ i))
+			 for c = (aref words (+ i 2))
 			 do (let* ((bigram (list a b))
 					   (nexts (gethash bigram (cj/markov-chain-map chain))))
 				  (puthash bigram (cons c nexts)
 						   (cj/markov-chain-map chain)))))
-	(setf (cj/markov-chain-keys chain)
-		  (cl-loop for k being the hash-keys of (cj/markov-chain-map chain)
-				   collect k)))
+  ;; Invalidate cached keys after learning new data
+  (setf (cj/markov-chain-keys chain) nil))
 
 (defun cj/markov-fix-capitalization (sentence)
   "Capitalize the first word and the first word after .!? in SENTENCE."
@@ -94,7 +127,7 @@
 
 (defun cj/markov-generate (chain n &optional start)
   "Generate a sentence of N tokens from CHAIN."
-  (when (cj/markov-chain-keys chain)
+  (when (> (hash-table-count (cj/markov-chain-map chain)) 0)
 	(let* ((state (or (and start
 						   (gethash start (cj/markov-chain-map chain))
 						   start)
@@ -116,8 +149,16 @@
 	  (cj/markov-join-tokens tokens))))
 
 (defun cj/markov-random-key (chain)
-  (nth (random (length (cj/markov-chain-keys chain)))
-	   (cj/markov-chain-keys chain)))
+  "Return a random bigram key from CHAIN.
+Builds and caches the keys list lazily if not already cached."
+  (unless (cj/markov-chain-keys chain)
+    ;; Lazily build keys list only when needed
+    (setf (cj/markov-chain-keys chain)
+          (cl-loop for k being the hash-keys of (cj/markov-chain-map chain)
+                   collect k)))
+  (let ((keys (cj/markov-chain-keys chain)))
+    (when keys
+      (nth (random (length keys)) keys))))
 
 (defun cj/markov-next-word (chain bigram)
   (let ((candidates (gethash bigram (cj/markov-chain-map chain))))
@@ -182,6 +223,7 @@
 										(or (cj/markov-next-word cj/lipsum-chain state)
 											(cadr (cj/markov-random-key cj/lipsum-chain))))))
 				   collect (replace-regexp-in-string "^[[:punct:]]+\\|[[:punct:]]+$" "" w))))
+	;; Filter empty strings from generated words
 	(setq words (cl-remove-if #'string-empty-p words))
 	(mapconcat
 	 (lambda (word idx)
@@ -204,23 +246,6 @@ Defaults: MIN=30, MAX=80."
       (let ((len (+ min (random (1+ (- max min))))))
 		(insert (cj/lipsum len) "\n\n")))))
 
-;;; Customization
-
-(defgroup cj-lipsum nil
-  "Pseudo-Latin lorem ipsum text generator."
-  :prefix "cj/lipsum-"
-  :group 'text)
-
-(defcustom cj/lipsum-default-file
-  (expand-file-name "latin.txt"
-					(file-name-directory (or load-file-name buffer-file-name)))
-  "Default training file for cj-lipsum.
-
-This should be a plain UTF-8 text file with hundreds of Latin words
-or sentences.  By default it points to the bundled `latin.txt`."
-  :type 'file
-  :group 'cj-lipsum)
-
 ;;; Initialization: train on default file
 (defun cj/lipsum--init ()
   "Initialize cj-lipsum by learning from `cj/lipsum-default-file`."
@@ -231,5 +256,5 @@ or sentences.  By default it points to the bundled `latin.txt`."
 
 (cj/lipsum--init)
 
-(provide 'lorem-generator)
-;;; lorem-generator.el ends here.
+(provide 'lorem-optimum)
+;;; lorem-optimum.el ends here.
