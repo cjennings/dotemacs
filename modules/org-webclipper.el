@@ -37,23 +37,6 @@
 
 ;;; Code:
 
-;; Declare functions and variables to avoid warnings
-(declare-function org-protocol-protocol-alist "org-protocol")
-(declare-function org-capture "org-capture")
-(declare-function org-capture-get "org-capture")
-(declare-function org-web-tools--url-as-readable-org "org-web-tools")
-(declare-function org-w3m-copy-for-org-mode "org-w3m")
-(declare-function org-eww-copy-for-org-mode "org-eww")
-(declare-function org-at-heading-p "org")
-(declare-function org-heading-components "org")
-(declare-function org-copy-subtree "org")
-(declare-function org-cut-subtree "org")
-(declare-function org-id-new "org-id")
-(declare-function org-roam-db-sync "org-roam")
-(defvar org-capture-templates)
-(defvar org-protocol-protocol-alist)
-(defvar org-roam-directory)
-(defvar webclipped-file)
 
 ;; Variables for storing org-protocol data
 (defvar cj/webclip-current-url nil
@@ -66,6 +49,9 @@
 (defvar cj/webclipper-initialized nil
   "Track if webclipper has been initialized.")
 
+(use-package org-web-tools
+  :defer t)
+
 ;; Lazy initialization function
 (defun cj/webclipper-ensure-initialized ()
   "Ensure webclipper is initialized when first used."
@@ -73,6 +59,7 @@
     ;; Load required packages now
     (require 'org-protocol)
     (require 'org-capture)
+    (require 'org-web-tools)
     (require 'user-constants) ;; for webclipped-file
 
     ;; Register the org-protocol handler
@@ -102,7 +89,6 @@
 
     (setq cj/webclipper-initialized t)))
 
-;;;###autoload
 (defun cj/org-protocol-webclip (info)
   "Process org-protocol webclip requests.
 INFO is a plist containing :url and :title from the org-protocol call."
@@ -162,7 +148,7 @@ It fetches the page content and converts it to Org format."
 
 ;; ---------------------------- Org Webpage Clipper ----------------------------
 
-;;;###autoload
+
 (defun cj/org-webclipper-EWW ()
   "Capture the current web page for later viewing in an Org file.
 Return the yanked content as a string so templates can insert it."
@@ -182,13 +168,12 @@ Return the yanked content as a string so templates can insert it."
     ;; extract the webpage content from the kill ring
     (car kill-ring)))
 
-
 ;; ----------------------------- Webclipper Keymap -----------------------------
 
 ;; keymaps shouldn't be required for webclipper
 ;; TASK Move org-branch to roam functionality under org-roam
 ;; Setup keymaps
-;; ;;;###autoload
+;;
 ;; (defun cj/webclipper-setup-keymaps ()
 ;;   "Setup webclipper keymaps."
 ;;   (define-prefix-command 'cj/webclipper-map nil
@@ -201,7 +186,6 @@ Return the yanked content as a string so templates can insert it."
 ;;   (cj/webclipper-setup-keymaps))
 
 ;; Register protocol handler early for external calls
-;;;###autoload
 (with-eval-after-load 'org-protocol
   (unless (assoc "webclip" org-protocol-protocol-alist)
     (add-to-list 'org-protocol-protocol-alist
@@ -210,9 +194,9 @@ Return the yanked content as a string so templates can insert it."
                    :function cj/org-protocol-webclip
                    :kill-client t))))
 
-(with-eval-after-load 'cj/custom-keymap
-  (require 'org-webclipper)
-  (cj/webclipper-setup-keymaps))
+;; (with-eval-after-load 'cj/custom-keymap
+;;   (require 'org-webclipper)
+;;   (cj/webclipper-setup-keymaps))
 
 (provide 'org-webclipper)
 ;;; org-webclipper.el ends here
