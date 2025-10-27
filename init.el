@@ -83,7 +83,6 @@
 (require 'markdown-config)
 (require 'pdf-config)            ;; pdf display settings
 (require 'quick-video-capture)   ;; desktop and/or audio recording via ffmpeg
-;; (require 'show-kill-ring)        ;; displays and facilitates pasting from history
 (require 'video-audio-recording) ;; desktop and/or audio recording via ffmpeg
 (require 'weather-config)        ;; utility to display the weather
 
