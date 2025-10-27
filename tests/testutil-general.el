@@ -81,31 +81,6 @@ Return the full created path."
 		(cj/create--directory-ensuring-parents path)
 	  (cj/create--file-ensuring-parents path content executable))))
 
-
-;; (defun cj/create-file-with-content-ensuring-parents (filepath content &optional executable)
-;;   "Create a file at FILEPATH with CONTENT, ensuring parent directories exist.
-;; FILEPATH will be relative to `cj/test-base-dir'.
-;; Signals an error if the file already exists.
-;; If EXECUTABLE is non-nil, set executable permission on the file.
-;; Errors if the resulting path is outside `cj/test-base-dir`."
-;;   (let* ((base (file-name-as-directory cj/test-base-dir))
-;; 		 (fullpath (if (file-name-absolute-p filepath)
-;; 					   (expand-file-name filepath)
-;; 					 (expand-file-name filepath base))))
-;; 	(unless (string-prefix-p base fullpath)
-;; 	  (error "File path %s is outside base test directory %s" fullpath base))
-;; 	(let ((parent-dir (file-name-directory fullpath)))
-;; 	  (when (file-exists-p fullpath)
-;; 		(error "File already exists: %s" fullpath))
-;; 	  (unless (file-directory-p parent-dir)
-;; 		(make-directory parent-dir t))
-;; 	  (with-temp-buffer
-;; 		(insert content)
-;; 		(write-file fullpath))
-;; 	  (when executable
-;; 		(chmod fullpath #o755))
-;; 	  fullpath)))
-
 (defun cj/fix-permissions-recursively (dir)
   "Recursively set read/write permissions for user under DIR.
 Directories get user read, write, and execute permissions to allow recursive

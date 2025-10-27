@@ -1,4 +1,4 @@
-;;; init.el --- Emacs Init File -*- lexical-binding: t; coding: utf-8; -*-
+w;;; init.el --- Emacs Init File -*- lexical-binding: t; coding: utf-8; -*-
 ;;  author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -27,25 +27,24 @@
 ;; -------------------------- Utilities And Libraries --------------------------
 
 (require 'custom-case)           ;; operations for upper/lower/title case
-(require 'custom-comments)       ;; operations with comments
-(require 'custom-datetime)       ;; date/timestamp insertion in various formats
-(require 'custom-file-buffer)    ;; custom buffer and file operations and keymap
-(require 'custom-line-paragraph) ;; operations on lines and paragraphs
-;; <<<< writing tests for custom-misc
-(require 'custom-misc)           ;; miscellaneous functions
-(require 'custom-ordering)       ;; ordering and sorting operations
-(require 'custom-text-enclose)   ;; operations to append, prepend, and surround text
-(require 'custom-whitespace)     ;; whitespace operations
+(require 'custom-comments)       ;; operations with comments                       (tests done)
+(require 'custom-datetime)       ;; date/timestamp insertion in various formats    (too trivial)
+(require 'custom-file-buffer)    ;; custom buffer and file operations and keymap   (tests done)
+(require 'custom-line-paragraph) ;; operations on lines and paragraphs             (tests done)
+(require 'custom-misc)           ;; miscellaneous functions                        (tests done)
+(require 'custom-ordering)       ;; ordering and sorting operations                (tests done)
+(require 'custom-text-enclose)   ;; operations to append, prepend, and surround text (tests done)
+(require 'custom-whitespace)     ;; whitespace operations                          (tests done)
 (require 'external-open)         ;; files to open outside of Emacs
 (require 'media-utils)           ;; download and play urls
 
 ;; ------------------------- System Level Functionality ------------------------
 
 (require 'auth-config)           ;; emacs gnupg integration
-(require 'keyboard-macros)       ;; tested: keyboard macro management
+(require 'keyboard-macros)       ;; keyboard macro management                     (tests done)
 (require 'system-utils)          ;; timers, process monitor
 (require 'text-config)           ;; text settings and functionality
-(require 'undead-buffers)        ;; bury rather than kill specific buffers
+(require 'undead-buffers)        ;; bury rather than kill buffers you choose      (tests done)
 
 ;; ------------------------ User Interface Configuration -----------------------
 
@@ -83,7 +82,7 @@
 (require 'markdown-config)
 (require 'pdf-config)            ;; pdf display settings
 (require 'quick-video-capture)   ;; desktop and/or audio recording via ffmpeg
-(require 'show-kill-ring)        ;; displays and facilitates pasting from history
+;; (require 'show-kill-ring)        ;; displays and facilitates pasting from history
 (require 'video-audio-recording) ;; desktop and/or audio recording via ffmpeg
 (require 'weather-config)        ;; utility to display the weather
 
@@ -113,7 +112,7 @@
 (require 'org-export-config)
 (require 'org-gcal-config)
 (require 'org-refile-config)     ;; refile org-branches
-(require 'org-roam-config)       ;; personal knowledge management in org mode
+(require 'org-roam-config)       ;; personal knowledge management in org mode     (tests added)
 (require 'org-webclipper)        ;; "instapaper" to org-roam workflow
 ;; (require 'org-noter-config) ;; wip
 
@@ -128,7 +127,7 @@
   ;; Filesystem Tools
   (require 'read_text_file)
   (require 'write_text_file)
-;;  (require 'update_text_file) ;; BUG: issues with this tool
+  ;;  (require 'update_text_file) ;; BUG: issues with this tool
   (require 'list_directory_files)
   (require 'move_to_trash))
 
