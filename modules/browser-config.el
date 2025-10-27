@@ -80,19 +80,44 @@ Returns the browser plist if found, nil otherwise."
             cj/saved-browser-choice))
       (error nil))))
 
-(defun cj/apply-browser-choice (browser-plist)
-  "Apply the browser settings from BROWSER-PLIST."
-  (when browser-plist
+(defun cj/--do-apply-browser-choice (browser-plist)
+  "Apply the browser settings from BROWSER-PLIST.
+Returns: \\='success if applied successfully,
+         \\='invalid-plist if browser-plist is nil or missing required keys."
+  (if (null browser-plist)
+      'invalid-plist
     (let ((browse-fn (plist-get browser-plist :function))
           (executable (plist-get browser-plist :executable))
           (path (plist-get browser-plist :path))
           (program-var (plist-get browser-plist :program-var)))
-      ;; Set the main browse-url function
-      (setq browse-url-browser-function browse-fn)
-      ;; Set the specific browser program variable if it exists
-      (when program-var
-        (set program-var (or path executable)))
-      (message "Default browser set to: %s" (plist-get browser-plist :name)))))
+      (if (null browse-fn)
+          'invalid-plist
+        ;; Set the main browse-url function
+        (setq browse-url-browser-function browse-fn)
+        ;; Set the specific browser program variable if it exists
+        (when program-var
+          (set program-var (or path executable)))
+        'success))))
+
+(defun cj/apply-browser-choice (browser-plist)
+  "Apply the browser settings from BROWSER-PLIST."
+  (pcase (cj/--do-apply-browser-choice browser-plist)
+    ('success (message "Default browser set to: %s" (plist-get browser-plist :name)))
+    ('invalid-plist (message "Invalid browser configuration"))))
+
+(defun cj/--do-choose-browser (browser-plist)
+  "Save and apply BROWSER-PLIST as the default browser.
+Returns: \\='success if browser was saved and applied,
+         \\='save-failed if save operation failed,
+         \\='invalid-plist if browser-plist is invalid."
+  (condition-case _err
+      (progn
+        (cj/save-browser-choice browser-plist)
+        (let ((result (cj/--do-apply-browser-choice browser-plist)))
+          (if (eq result 'success)
+              'success
+            'invalid-plist)))
+    (error 'save-failed)))
 
 (defun cj/choose-browser ()
   "Interactively choose a browser from available options.
@@ -107,21 +132,39 @@ Persists the choice for future sessions."
                                      (string= (plist-get b :name) choice))
                                    browsers)))
         (when selected
-          (cj/save-browser-choice selected)
-          (cj/apply-browser-choice selected))))))
+          (pcase (cj/--do-choose-browser selected)
+            ('success (message "Default browser set to: %s" (plist-get selected :name)))
+            ('save-failed (message "Failed to save browser choice"))
+            ('invalid-plist (message "Invalid browser configuration"))))))))
 
 ;; Initialize: Load saved choice or use first available browser
-(defun cj/initialize-browser ()
-  "Initialize browser configuration on startup."
+(defun cj/--do-initialize-browser ()
+  "Initialize browser configuration.
+Returns: (cons \\='loaded browser-plist) if saved choice was loaded,
+         (cons \\='first-available browser-plist) if using first discovered browser,
+         (cons \\='no-browsers nil) if no browsers found."
   (let ((saved-choice (cj/load-browser-choice)))
     (if saved-choice
-        (cj/apply-browser-choice saved-choice)
-      ;; No saved choice - try to set first available browser silently
+        (cons 'loaded saved-choice)
+      ;; No saved choice - try to set first available browser
       (let ((browsers (cj/discover-browsers)))
-        (when browsers
-          (cj/apply-browser-choice (car browsers))
-          (message "No browser configured. Using %s. Run M-x cj/choose-browser to change."
-                   (plist-get (car browsers) :name)))))))
+        (if browsers
+            (cons 'first-available (car browsers))
+          (cons 'no-browsers nil))))))
+
+(defun cj/initialize-browser ()
+  "Initialize browser configuration on startup."
+  (let ((result (cj/--do-initialize-browser)))
+    (pcase (car result)
+      ('loaded
+       (cj/--do-apply-browser-choice (cdr result)))
+      ('first-available
+       (let ((browser (cdr result)))
+         (cj/--do-apply-browser-choice browser)
+         (message "No browser configured. Using %s. Run M-x cj/choose-browser to change."
+                  (plist-get browser :name))))
+      ('no-browsers
+       (message "No supported browsers found")))))
 
 ;; Run initialization
 (cj/initialize-browser)
