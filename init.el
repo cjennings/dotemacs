@@ -27,24 +27,24 @@
 ;; -------------------------- Utilities And Libraries --------------------------
 
 (require 'custom-case)           ;; operations for upper/lower/title case
-(require 'custom-comments)       ;; operations with comments                       (tests done)
-(require 'custom-datetime)       ;; date/timestamp insertion in various formats    (too trivial)
-(require 'custom-file-buffer)    ;; custom buffer and file operations and keymap   (tests done)
-(require 'custom-line-paragraph) ;; operations on lines and paragraphs             (tests done)
-(require 'custom-misc)           ;; miscellaneous functions                        (tests done)
-(require 'custom-ordering)       ;; ordering and sorting operations                (tests done)
-(require 'custom-text-enclose)   ;; operations to append, prepend, and surround text (tests done)
-(require 'custom-whitespace)     ;; whitespace operations                          (tests done)
+(require 'custom-comments)       ;; operations with comments
+(require 'custom-datetime)       ;; date/timestamp insertion in various formats
+(require 'custom-file-buffer)    ;; custom buffer and file operations and keymap
+(require 'custom-line-paragraph) ;; operations on lines and paragraphs
+(require 'custom-misc)           ;; miscellaneous functions
+(require 'custom-ordering)       ;; ordering and sorting operations
+(require 'custom-text-enclose)   ;; operations to append, prepend, and surround text
+(require 'custom-whitespace)     ;; whitespace operations
 (require 'external-open)         ;; files to open outside of Emacs
 (require 'media-utils)           ;; download and play urls
 
 ;; ------------------------- System Level Functionality ------------------------
 
 (require 'auth-config)           ;; emacs gnupg integration
-(require 'keyboard-macros)       ;; keyboard macro management                     (tests done)
+(require 'keyboard-macros)       ;; keyboard macro management
 (require 'system-utils)          ;; timers, process monitor
 (require 'text-config)           ;; text settings and functionality
-(require 'undead-buffers)        ;; bury rather than kill buffers you choose      (tests done)
+(require 'undead-buffers)        ;; bury rather than kill buffers you choose
 (require 'browser-config)        ;; browser configuration/integration
 
 ;; ------------------------ User Interface Configuration -----------------------
@@ -113,7 +113,7 @@
 (require 'org-export-config)
 (require 'org-gcal-config)
 (require 'org-refile-config)     ;; refile org-branches
-(require 'org-roam-config)       ;; personal knowledge management in org mode     (tests added)
+(require 'org-roam-config)       ;; personal knowledge management in org mode
 (require 'org-webclipper)        ;; "instapaper" to org-roam workflow
 ;; (require 'org-noter-config) ;; wip
 
@@ -145,8 +145,8 @@
 ;; ------------------------------ Modules In Test ------------------------------
 
 ;;(require 'wip)
-(require 'lorem-optimum)                                                          (tests added)
-(require 'jumper)                                                                 (tests added)
+(require 'lorem-optimum)
+(require 'jumper)
 
 ;; ---------------------------------- Wrap Up ----------------------------------
 
