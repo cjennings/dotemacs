@@ -1,7 +1,16 @@
 ;;; test-undead-buffers.el ---  -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
-;;
+;; ERT tests for undead-buffers.el.
+;; Exercises kill vs bury decisions driven by cj/buffer-bury-alive-list
+;; and window-management helpers.
+;; Coverage:
+;; - cj/kill-buffer-or-bury-alive: kills non-listed buffers; buries listed; C-u adds to list
+;; - cj/kill-buffer-and-window: deletes selected window, then kill/bury buffer as appropriate
+;; - cj/kill-other-window: deletes the other window, then kill/bury that buffer
+;; - cj/kill-all-other-buffers-and-windows: keeps only current window/buffer
+;; Tests isolate state with temporary buffers/windows and restore cj/buffer-bury-alive-list.
+;; Note: bury-buffer does not delete windows; tests assert buffer liveness, not window removal.
 
 ;;; Code:
 
