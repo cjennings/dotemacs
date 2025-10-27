@@ -105,13 +105,17 @@ if not found or not in a project."
 		 (t cj/test-global-directory))))))
 
 (defun cj/test--get-test-files ()
-  "Return a list of test file names (without path) in the appropriate test directory."
+  "Return list of test file names (without path) in test directory."
   (let ((dir (cj/test--get-test-directory)))
 	(when (file-directory-p dir)
 	  (mapcar #'file-name-nondirectory
 			  (directory-files dir t "^test-.*\\.el$")))))
 
+<<<<<<< HEAD
 (defun cj/test--do-load-files (dir files)
+=======
+(defun cj/test--do-load-files (_dir files)
+>>>>>>> 76493d5 (feat:test-runner: Enhance ERT test runner with focus/unfocus support)
   "Load test FILES from DIR.
 Returns: (cons \\='success loaded-count) on success,
          (cons \\='error (list failed-files errors)) on errors."
@@ -310,7 +314,7 @@ Returns: (cons \\='success (list test-names loaded-count)) if successful,
          (ert (concat "^" pattern "$")))))))
 
 (defun cj/test--ensure-test-dir-in-load-path ()
-  "Ensure the directory returned by cj/test--get-test-directory is in `load-path`."
+  "Ensure test directory is in `load-path'."
   (let ((dir (cj/test--get-test-directory)))
 	(when (and dir (file-directory-p dir))
 	  (add-to-list 'load-path dir))))
@@ -345,7 +349,7 @@ Otherwise, message that no test is found."
   (ert t))
 
 (defun cj/test-toggle-mode ()
-  "Toggle between 'all and 'focused test execution modes."
+  "Toggle between \\='all and \\='focused test execution modes."
   (interactive)
   (setq cj/test-mode (if (eq cj/test-mode 'all) 'focused 'all))
   (message "Test mode: %s" cj/test-mode))
