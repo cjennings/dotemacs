@@ -124,25 +124,21 @@
 	(when candidates
 	  (nth (random (length candidates)) candidates))))
 
-;;;###autoload
 (defvar cj/lipsum-chain (cj/markov-chain-create)
   "Global Markov chain for lipsum generation.")
 
-;;;###autoload
 (defun cj/lipsum-reset ()
   "Reset the global lipsum Markov chain."
   (interactive)
   (setq cj/lipsum-chain (cj/markov-chain-create))
   (message "cj/lipsum-chain reset."))
 
-;;;###autoload
 (defun cj/lipsum-learn-region (beg end)
   "Learn text from region."
   (interactive "r")
   (cj/markov-learn cj/lipsum-chain (buffer-substring-no-properties beg end))
   (message "Learned from region."))
 
-;;;###autoload
 (defun cj/lipsum-learn-buffer ()
   "Learn from entire buffer."
   (interactive)
@@ -150,7 +146,6 @@
 				   (buffer-substring-no-properties (point-min) (point-max)))
   (message "Learned from buffer."))
 
-;;;###autoload
 (defun cj/lipsum-learn-file (file)
   "Learn from FILE containing plain text."
   (interactive "fTrain from file: ")
@@ -159,12 +154,10 @@
 	(cj/markov-learn cj/lipsum-chain (buffer-string)))
   (message "Learned from file: %s" file))
 
-;;;###autoload
 (defun cj/lipsum (n)
   "Return N words of lorem ipsum."
   (cj/markov-generate cj/lipsum-chain n '("Lorem" "ipsum")))
 
-;;;###autoload
 (defun cj/lipsum-insert (n)
   "Insert N words of lorem ipsum at point."
   (interactive "nNumber of words: ")
@@ -176,7 +169,6 @@
 (defconst cj/lipsum-title-max 8)
 (defconst cj/lipsum-title-small 3)
 
-;;;###autoload
 (defun cj/lipsum-title ()
   "Generate a pseudo-Latin title."
   (interactive)
@@ -200,7 +192,6 @@
 
 ;;; Paragraphs
 
-;;;###autoload
 (defun cj/lipsum-paragraphs (count &optional min max)
   "Insert COUNT paragraphs of lipsum.
 

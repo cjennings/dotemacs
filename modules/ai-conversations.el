@@ -159,7 +159,6 @@ Expect FILENAME to match _YYYYMMDD-HHMMSS.gptel."
 	(or (get-buffer buf-name)
 		(user-error "Could not create or find *AI-Assistant* buffer"))))
 
-;;;###autoload
 (defun cj/gptel-save-conversation ()
   "Save the current AI-Assistant buffer to a .gptel file.
 
@@ -188,7 +187,6 @@ Enable autosave for subsequent AI responses to the same file."
 		(setq-local cj/gptel-autosave-enabled t))
 	  (message "Conversation saved to: %s" filepath))))
 
-;;;###autoload
 (defun cj/gptel-delete-conversation ()
   "Delete a saved GPTel conversation file (chronologically sorted candidates)."
   (interactive)
@@ -218,7 +216,6 @@ Enable autosave for subsequent AI responses to the same file."
 	(when (looking-at "^\n+")
 	  (delete-region (point) (match-end 0)))))
 
-;;;###autoload
 (defun cj/gptel-load-conversation ()
   "Load a saved GPTel conversation into the AI-Assistant buffer.
 

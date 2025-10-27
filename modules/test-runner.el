@@ -42,7 +42,6 @@ Either 'all (run all tests) or 'focused (run only focused tests).")
 
 ;;; Core Functions
 
-;;;###autoload
 (defun cj/test--get-test-directory ()
   "Return the test directory path for the current project.
 
@@ -60,7 +59,6 @@ Falls back to =cj/test-global-directory= if not found or not in a project."
 		 ((file-directory-p tests-dir) tests-dir)
 		 (t cj/test-global-directory))))))
 
-;;;###autoload
 (defun cj/test--get-test-files ()
   "Return a list of test file names (without path) in the appropriate test directory."
   (let ((dir (cj/test--get-test-directory)))
@@ -68,7 +66,6 @@ Falls back to =cj/test-global-directory= if not found or not in a project."
 	  (mapcar #'file-name-nondirectory
 			  (directory-files dir t "^test-.*\\.el$")))))
 
-;;;###autoload
 (defun cj/test-load-all ()
   "Load all test files from the appropriate test directory."
   (interactive)
@@ -90,7 +87,6 @@ Falls back to =cj/test-global-directory= if not found or not in a project."
 					(error-message-string err)))))
 	  (message "Loaded %d test file(s)" loaded-count))))
 
-;;;###autoload
 (defun cj/test-focus-add ()
   "Select test file(s) to add to the focused list."
   (interactive)
@@ -114,7 +110,6 @@ Falls back to =cj/test-global-directory= if not found or not in a project."
 		(when (called-interactively-p 'interactive)
 		  (cj/test-view-focused))))))
 
-;;;###autoload
 (defun cj/test-focus-add-this-buffer-file ()
   "Add the current buffer's file to the focused test list."
   (interactive)
@@ -132,7 +127,6 @@ Falls back to =cj/test-global-directory= if not found or not in a project."
 		(when (called-interactively-p 'interactive)
 		  (cj/test-view-focused))))))
 
-;;;###autoload
 (defun cj/test-focus-remove ()
   "Remove a test file from the focused list."
   (interactive)
@@ -147,7 +141,6 @@ Falls back to =cj/test-global-directory= if not found or not in a project."
 	  (when (called-interactively-p 'interactive)
 		(cj/test-view-focused)))))
 
-;;;###autoload
 (defun cj/test-focus-clear ()
   "Clear all focused test files."
   (interactive)
@@ -168,7 +161,6 @@ Returns a list of test name symbols defined in the file."
 		(push (match-string 1) test-names)))
 	test-names))
 
-;;;###autoload
 (defun cj/test-run-focused ()
   "Run only the focused test files."
   (interactive)
@@ -201,7 +193,6 @@ Returns a list of test name symbols defined in the file."
 	(when (and dir (file-directory-p dir))
 	  (add-to-list 'load-path dir))))
 
-;;;###autoload
 (defun cj/run-test-at-point ()
   "Run the ERT test at point.
 If point is inside an `ert-deftest` definition, run that test only.
@@ -220,21 +211,18 @@ Otherwise, message that no test is found."
 		(error (message "No ERT test methods found at point."))))
 	(goto-char original-point)))
 
-;;;###autoload
 (defun cj/test-run-all ()
   "Load and run all tests."
   (interactive)
   (cj/test-load-all)
   (ert t))
 
-;;;###autoload
 (defun cj/test-toggle-mode ()
   "Toggle between 'all and 'focused test execution modes."
   (interactive)
   (setq cj/test-mode (if (eq cj/test-mode 'all) 'focused 'all))
   (message "Test mode: %s" cj/test-mode))
 
-;;;###autoload
 (defun cj/test-view-focused ()
   "Display test files in focus."
   (interactive)
@@ -243,7 +231,6 @@ Otherwise, message that no test is found."
 	(message "Focused files: %s"
 			 (mapconcat 'identity cj/test-focused-files ", "))))
 
-;;;###autoload
 (defun cj/test-run-smart ()
   "Run tests based on current mode (all or focused)."
   (interactive)

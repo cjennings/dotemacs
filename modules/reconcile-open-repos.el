@@ -73,7 +73,6 @@ Magit for review."
 
 ;; ---------------------------- Check For Open Work ----------------------------
 
-;;;###autoload
 (defun cj/check-for-open-work ()
   "Check all project directories for open work."
   (interactive)

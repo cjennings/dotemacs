@@ -142,7 +142,6 @@ If FRAME is nil, uses the selected frame."
 ;; ----------------------------- Font Install Check ----------------------------
 ;; convenience function to indicate whether a font is available by name.
 
-;;;###autoload
 (defun cj/font-installed-p (font-name)
   "Check if font with FONT-NAME is available."
   (if (find-font (font-spec :name font-name))
@@ -224,7 +223,6 @@ If FRAME is nil, uses the selected frame."
 ;; -------------------------- Display Available Fonts --------------------------
 ;; display all available fonts on the system in a side panel
 
-;;;###autoload
 (defun cj/display-available-fonts ()
   "Display a list of all font faces with sample text in another read-only buffer."
   (interactive)
