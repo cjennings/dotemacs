@@ -144,7 +144,7 @@
 ;; ------------------------------ Modules In Test ------------------------------
 (require 'browser-config)
 ;;(require 'wip)
-;;(require 'lipsum-generator)
+(require 'lorem-optimum)
 ;;(require 'jumper)
 
 ;; ---------------------------------- Wrap Up ----------------------------------
