@@ -89,6 +89,39 @@ trailing whitespace."
          (end (if region-active (region-end) (line-end-position))))
     (cj/--collapse-whitespace beg end)))
 
+;; --------------------- Ensure Single Blank Line ------------------------------
+
+(defun cj/--ensure-single-blank-line (start end)
+  "Internal implementation: Collapse consecutive blank lines to one.
+START and END define the region to operate on.
+Replaces runs of 2+ blank lines with exactly one blank line.
+A blank line is defined as a line containing only whitespace."
+  (when (> start end)
+    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (save-excursion
+    (save-restriction
+      (narrow-to-region start end)
+      (goto-char (point-min))
+      ;; Match 2+ consecutive blank lines (lines with only whitespace)
+      ;; Pattern: Match sequences of blank lines (newline + optional space + newline)
+      ;; but preserve leading whitespace on the following content line
+      ;; Match: newline, then 1+ (optional whitespace + newline), capturing the last one
+      (while (re-search-forward "\n\\(?:[[:space:]]*\n\\)+" nil t)
+        (replace-match "\n\n")))))
+
+(defun cj/ensure-single-blank-line (start end)
+  "Collapse consecutive blank lines to exactly one blank line.
+START and END define the region to operate on.
+Operates on the active region when one exists.
+Prompt before operating on the whole buffer when no region is selected."
+  (interactive
+   (if (use-region-p)
+       (list (region-beginning) (region-end))
+     (if (yes-or-no-p "Ensure single blank lines in entire buffer? ")
+         (list (point-min) (point-max))
+       (user-error "Aborted"))))
+  (cj/--ensure-single-blank-line start end))
+
 ;; ------------------------ Delete Blank Lines ---------------------------------
 
 (defun cj/--delete-blank-lines (start end)
@@ -122,6 +155,30 @@ Restore point to its original position after deletion."
   ;; Return nil (Emacs conventions). Point is already restored.
   nil)
 
+;; ------------------------- Delete All Whitespace -----------------------------
+
+(defun cj/--delete-all-whitespace (start end)
+  "Internal implementation: Delete all whitespace from region.
+START and END define the region to operate on.
+Removes all spaces, tabs, newlines, and carriage returns."
+  (when (> start end)
+    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (save-excursion
+    (save-restriction
+      (narrow-to-region start end)
+      (goto-char (point-min))
+      (while (re-search-forward "[ \t\n\r]+" nil t)
+        (replace-match "")))))
+
+(defun cj/delete-all-whitespace (start end)
+  "Delete all whitespace between START and END.
+Removes all spaces, tabs, newlines, and carriage returns.
+Operates on the active region."
+  (interactive "*r")
+  (if (use-region-p)
+      (cj/--delete-all-whitespace start end)
+    (message "No region; nothing to delete.")))
+
 ;; ------------------------- Hyphenate Whitespace ------------------------------
 
 (defun cj/--hyphenate-whitespace (start end)
@@ -152,7 +209,11 @@ Operate on the active region designated by START and END."
   "r" #'cj/remove-leading-trailing-whitespace
   "c" #'cj/collapse-whitespace-line-or-region
   "l" #'cj/delete-blank-lines-region-or-buffer
-  "-" #'cj/hyphenate-whitespace-in-region)
+  "1" #'cj/ensure-single-blank-line
+  "d" #'cj/delete-all-whitespace
+  "-" #'cj/hyphenate-whitespace-in-region
+  "t" #'untabify
+  "T" #'tabify)
 
 (keymap-set cj/custom-keymap "w" cj/whitespace-map)
 (with-eval-after-load 'which-key
