@@ -66,6 +66,11 @@
 (require 'ert)
 (require 'cl-lib)
 
+;;; External Variables and Functions
+
+(defvar cj/custom-keymap)  ; Defined in init.el
+(declare-function projectile-project-root "projectile" ())
+
 ;;; Variables
 
 (defvar cj/test-global-directory nil
@@ -111,11 +116,7 @@ if not found or not in a project."
 	  (mapcar #'file-name-nondirectory
 			  (directory-files dir t "^test-.*\\.el$")))))
 
-<<<<<<< HEAD
-(defun cj/test--do-load-files (dir files)
-=======
 (defun cj/test--do-load-files (_dir files)
->>>>>>> 76493d5 (feat:test-runner: Enhance ERT test runner with focus/unfocus support)
   "Load test FILES from DIR.
 Returns: (cons \\='success loaded-count) on success,
          (cons \\='error (list failed-files errors)) on errors."
