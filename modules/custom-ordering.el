@@ -4,9 +4,14 @@
 
 ;; Text transformation and sorting utilities for reformatting data structures.
 ;;
-;; Main functions:
+;; Array/list formatting:
 ;; - arrayify/listify - convert lines to comma-separated format (with/without quotes, brackets)
 ;; - unarrayify - convert arrays back to separate lines
+;;
+;; Line manipulation:
+;; - toggle-quotes - swap double ↔ single quotes
+;; - reverse-lines - reverse line order
+;; - number-lines - add line numbers with custom format (supports zero-padding)
 ;; - alphabetize-region - sort words alphabetically
 ;; - comma-separated-text-to-lines - split CSV text into lines
 ;;
@@ -14,6 +19,8 @@
 ;; Bound to keymap prefix C-; o
 
 ;;; Code:
+
+(require 'cl-lib)
 
 ;; cj/custom-keymap defined in keybindings.el
 (eval-when-compile (defvar cj/custom-keymap))
@@ -89,6 +96,90 @@ START and END identify the active region."
 	(delete-region start end)
 	(insert insertion)))
 
+(defun cj/--toggle-quotes (start end)
+  "Internal implementation: Toggle between double and single quotes.
+START and END define the region to operate on.
+Swaps all double quotes with single quotes and vice versa.
+Returns the transformed string without modifying the buffer."
+  (when (> start end)
+    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (let ((text (buffer-substring start end)))
+    (with-temp-buffer
+      (insert text)
+      (goto-char (point-min))
+      ;; Use a placeholder to avoid double-swapping
+      (while (search-forward "\"" nil t)
+        (replace-match "\001" nil t))
+      (goto-char (point-min))
+      (while (search-forward "'" nil t)
+        (replace-match "\"" nil t))
+      (goto-char (point-min))
+      (while (search-forward "\001" nil t)
+        (replace-match "'" nil t))
+      (buffer-string))))
+
+(defun cj/toggle-quotes (start end)
+  "Toggle between double and single quotes in region between START and END.
+START and END identify the active region."
+  (interactive "r")
+  (let ((insertion (cj/--toggle-quotes start end)))
+    (delete-region start end)
+    (insert insertion)))
+
+(defun cj/--reverse-lines (start end)
+  "Internal implementation: Reverse the order of lines in region.
+START and END define the region to operate on.
+Returns the transformed string without modifying the buffer."
+  (when (> start end)
+    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (let ((lines (split-string (buffer-substring start end) "\n")))
+    (mapconcat #'identity (nreverse lines) "\n")))
+
+(defun cj/reverse-lines (start end)
+  "Reverse the order of lines in region between START and END.
+START and END identify the active region."
+  (interactive "r")
+  (let ((insertion (cj/--reverse-lines start end)))
+    (delete-region start end)
+    (insert insertion)))
+
+(defun cj/--number-lines (start end format-string zero-pad)
+  "Internal implementation: Number lines in region with custom format.
+START and END define the region to operate on.
+FORMAT-STRING is the format for each line, with N as placeholder for number.
+  Example: \"N. \" produces \"1. \", \"2. \", etc.
+  Example: \"[N] \" produces \"[1] \", \"[2] \", etc.
+ZERO-PAD when non-nil pads numbers with zeros for alignment.
+  Example with 100 lines: \"001\", \"002\", ..., \"100\".
+Returns the transformed string without modifying the buffer."
+  (when (> start end)
+    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (let* ((lines (split-string (buffer-substring start end) "\n"))
+         (line-count (length lines))
+         (width (if zero-pad (length (number-to-string line-count)) 1))
+         (format-spec (if zero-pad (format "%%0%dd" width) "%d")))
+    (mapconcat
+     (lambda (pair)
+       (let* ((num (car pair))
+              (line (cdr pair))
+              (num-str (format format-spec num)))
+         (concat (replace-regexp-in-string "N" num-str format-string) line)))
+     (cl-loop for line in lines
+              for i from 1
+              collect (cons i line))
+     "\n")))
+
+(defun cj/number-lines (start end format-string zero-pad)
+  "Number lines in region between START and END with custom format.
+START and END identify the active region.
+FORMAT-STRING is the format for each line, with N as placeholder for number.
+  Example: \"N. \" produces \"1. \", \"2. \", etc.
+ZERO-PAD when non-nil (prefix argument) pads numbers with zeros."
+  (interactive "r\nMFormat string (use N for number): \nP")
+  (let ((insertion (cj/--number-lines start end format-string zero-pad)))
+    (delete-region start end)
+    (insert insertion)))
+
 (defun cj/--alphabetize-region (start end)
   "Internal implementation: Alphabetize words in region.
 START and END define the region to operate on.
@@ -154,6 +245,9 @@ Returns the transformed string without modifying the buffer."
   "l" #'cj/listify
   "j" #'cj/arrayify-json
   "p" #'cj/arrayify-python
+  "q" #'cj/toggle-quotes
+  "r" #'cj/reverse-lines
+  "n" #'cj/number-lines
   "A" #'cj/alphabetize-region
   "L" #'cj/comma-separated-text-to-lines)
 
