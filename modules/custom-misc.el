@@ -46,25 +46,41 @@ If not on a delimiter, show a message. Respects the current syntax table."
 	  (message "Point is not on a delimiter.")))))
 
 
+(defun cj/--format-region (start end)
+  "Internal implementation: Reformat text between START and END.
+START and END define the region to operate on.
+Replaces tabs with spaces, reindents, and deletes trailing whitespace."
+  (when (> start end)
+    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (save-excursion
+    (save-restriction
+      (narrow-to-region start end)
+      (untabify (point-min) (point-max))
+      (indent-region (point-min) (point-max))
+      (delete-trailing-whitespace (point-min) (point-max)))))
+
 (defun cj/format-region-or-buffer ()
   "Reformat the region or the entire buffer.
 Replaces tabs with spaces, deletes trailing whitespace, and reindents."
   (interactive)
   (let ((start-pos (if (use-region-p) (region-beginning) (point-min)))
-		(end-pos (if (use-region-p) (region-end) (point-max))))
-	(save-excursion
-	  (save-restriction
-		(narrow-to-region start-pos end-pos)
-		(untabify (point-min) (point-max))
-		(indent-region (point-min) (point-max))
-		(delete-trailing-whitespace (point-min) (point-max))))
-	(message "Formatted %s" (if (use-region-p) "region" "buffer"))))
+        (end-pos (if (use-region-p) (region-end) (point-max))))
+    (cj/--format-region start-pos end-pos)
+    (message "Formatted %s" (if (use-region-p) "region" "buffer"))))
 
 (defun cj/switch-to-previous-buffer ()
   "Switch to previously open buffer.
 Repeated invocations toggle between the two most recently open buffers."
   (interactive)
   (switch-to-buffer (other-buffer (current-buffer) 1)))
+
+(defun cj/--count-words (start end)
+  "Internal implementation: Count words between START and END.
+START and END define the region to count.
+Returns the word count as an integer."
+  (when (> start end)
+    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (count-words start end))
 
 (defun cj/count-words-buffer-or-region ()
   "Count the number of words in the buffer or region.
@@ -73,9 +89,38 @@ Display the result in the minibuffer."
   (let* ((use-region (use-region-p))
 		 (begin (if use-region (region-beginning) (point-min)))
 		 (end (if use-region (region-end) (point-max)))
-		 (area-type (if use-region "the region" "the buffer")))
-	(message "There are %d words in %s." (count-words begin end) area-type)))
+		 (area-type (if use-region "the region" "the buffer"))
+		 (word-count (cj/--count-words begin end)))
+	(message "There are %d words in %s." word-count area-type)))
 
+
+(defun cj/--replace-fraction-glyphs (start end to-glyphs)
+  "Internal implementation: Replace fraction glyphs or text between START and END.
+START and END define the region to operate on.
+TO-GLYPHS when non-nil converts text (1/4) to glyphs (¼),
+otherwise converts glyphs to text."
+  (when (> start end)
+    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (let ((replacements (if to-glyphs
+                          '(("1/4" . "¼")
+                            ("1/2" . "½")
+                            ("3/4" . "¾")
+                            ("1/3" . "⅓")
+                            ("2/3" . "⅔"))
+                        '(("¼" . "1/4")
+                          ("½" . "1/2")
+                          ("¾" . "3/4")
+                          ("⅓" . "1/3")
+                          ("⅔" . "2/3"))))
+        (count 0)
+        (end-marker (copy-marker end)))
+    (save-excursion
+      (dolist (r replacements)
+        (goto-char start)
+        (while (search-forward (car r) end-marker t)
+          (replace-match (cdr r))
+          (setq count (1+ count)))))
+    count))
 
 (defun cj/replace-fraction-glyphs (start end)
   "Replace common fraction glyphs between START and END.
@@ -83,27 +128,10 @@ Operate on the buffer or region designated by START and END.
 Replace the text representations with glyphs when called with a
 \\[universal-argument] prefix."
   (interactive (if (use-region-p)
-				   (list (region-beginning) (region-end))
-				 (list (point-min) (point-max))))
-  (let ((replacements (if current-prefix-arg
-						  '(("1/4" . "¼")
-							("1/2" . "½")
-							("3/4" . "¾")
-							("1/3" . "⅓")
-							("2/3" . "⅔"))
-						'(("¼" . "1/4")
-						  ("½" . "1/2")
-						  ("¾" . "3/4")
-						  ("⅓" . "1/3")
-						  ("⅔" . "2/3"))))
-		(count 0))
-	(save-excursion
-	  (dolist (r replacements)
-		(goto-char start)
-		(while (search-forward (car r) end t)
-		  (replace-match (cdr r))
-		  (setq count (1+ count)))))
-	(message "Replaced %d fraction%s" count (if (= count 1) "" "s"))))
+                   (list (region-beginning) (region-end))
+                 (list (point-min) (point-max))))
+  (let ((count (cj/--replace-fraction-glyphs start end current-prefix-arg)))
+    (message "Replaced %d fraction%s" count (if (= count 1) "" "s"))))
 
 (defun cj/align-regexp-with-spaces (orig-fun &rest args)
   "Call ORIG-FUN with ARGS while temporarily disabling tabs for alignment.
