@@ -35,7 +35,6 @@
       (list nil s "command")))
    (t (user-error "Error: cj/system-cmd expects a string or a symbol"))))
 
-;;;###autoload
 (defun cj/system-cmd (cmd)
   "Run CMD (string or symbol naming a string) detached via the shell.
 Shell expansions like $(...) are supported. Output is silenced.

@@ -111,7 +111,6 @@
 ;; ------------------------------ Flyspell Toggle ------------------------------
 ;; easy toggling flyspell and also leverage the 'for-buffer-type' functionality.
 
-;;;###autoload
 (defun cj/flyspell-toggle ()
   "Turn Flyspell on if it is off, or off if it is on.
 
@@ -198,7 +197,6 @@ buffer."
         (downcase misspelled-word)
       nil)))
 
-;;;###autoload
 (defun cj/flyspell-then-abbrev (p)
   "Find and correct the previous misspelled word, creating an abbrev.
 

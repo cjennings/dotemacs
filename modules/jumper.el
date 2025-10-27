@@ -164,7 +164,6 @@ Note that using M-SPC will override the default binding to just-one-space."
 	map)
   "Keymap for jumper commands.")
 
-;;;###autoload
 (defun jumper-setup-keys ()
   "Setup default keybindings for jumper."
   (interactive)
