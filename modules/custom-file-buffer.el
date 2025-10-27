@@ -240,7 +240,20 @@ Do not save the deleted text in the kill ring."
 (keymap-set cj/custom-keymap "b" cj/buffer-and-file-map)
 
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-; b" "buffer and file menu"))
+  (which-key-add-key-based-replacements
+    "C-; b" "buffer and file menu"
+    "C-; b m" "move file"
+    "C-; b r" "rename file"
+    "C-; b p" "print to PS"
+    "C-; b d" "delete file"
+    "C-; b c" "copy buffer"
+    "C-; b n" "copy buffer name"
+    "C-; b t" "clear to top"
+    "C-; b b" "clear to bottom"
+    "C-; b x" "erase buffer"
+    "C-; b s" "save as"
+    "C-; b l" "copy file link"
+    "C-; b P" "copy file path"))
 
 
 (provide 'custom-file-buffer)

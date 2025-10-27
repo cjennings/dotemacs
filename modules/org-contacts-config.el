@@ -212,5 +212,14 @@ module provides more sophisticated completion."
 ;; Bind the org-contacts map to the C-c C prefix
 (keymap-global-set "C-c C" cj/org-contacts-map)
 
+;; which-key labels
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-c C" "contacts menu"
+    "C-c C f" "find contact"
+    "C-c C n" "new contact"
+    "C-c C e" "insert email"
+    "C-c C v" "view all contacts"))
+
 (provide 'org-contacts-config)
 ;;; org-contacts-config.el ends here

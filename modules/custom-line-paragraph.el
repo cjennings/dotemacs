@@ -139,8 +139,15 @@ If the line is empty or contains only whitespace, abort with a message."
 (keymap-set cj/custom-keymap "l" cj/line-and-paragraph-map)
 
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-; l" "line and paragraph menu")
-  (which-key-add-key-based-replacements "C-; l c" "duplicate and comment"))
+  (which-key-add-key-based-replacements
+    "C-; l" "line and paragraph menu"
+    "C-; l j" "join lines"
+    "C-; l J" "join paragraph"
+    "C-; l d" "duplicate"
+    "C-; l c" "duplicate and comment"
+    "C-; l R" "remove duplicates"
+    "C-; l r" "remove matching"
+    "C-; l u" "underscore line"))
 
 (provide 'custom-line-paragraph)
 ;;; custom-line-paragraph.el ends here.

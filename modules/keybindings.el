@@ -68,12 +68,22 @@ Errors if VAR is unbound, not a non-empty string, or the file does not exist."
 	  ;; Bind it under the prefix map.
 	  (keymap-set cj/jump-map key fn))))
 
-;; Bind the prefix globally (user-reserved prefix).
-(keymap-global-set "C-c j" cj/jump-map)
+;; Bind the prefix to custom keymap
+(keymap-set cj/custom-keymap "j" cj/jump-map)
 
-;; nicer prefix label in which-key
+;; which-key labels
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-c j" "Jump to common files."))
+  (which-key-add-key-based-replacements
+    "C-; j" "jump to files menu"
+    "C-; j r" "jump to reference"
+    "C-; j s" "jump to schedule"
+    "C-; j i" "jump to inbox"
+    "C-; j c" "jump to contacts"
+    "C-; j m" "jump to macros"
+    "C-; j n" "jump to reading notes"
+    "C-; j w" "jump to webclipped"
+    "C-; j g" "jump to gcal"
+    "C-; j I" "jump to emacs init"))
 
 ;; ---------------------------- Keybinding Discovery ---------------------------
 

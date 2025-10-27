@@ -16,7 +16,7 @@
   :init
   (defvar-keymap cj/org-table-map
     :doc "org table operations.")
-  (keymap-global-set "C-c t" cj/org-table-map)
+  (keymap-set cj/custom-keymap "T" cj/org-table-map)
   :bind
   ("C-c c" . org-capture)
   ("C-c a" . org-agenda)
@@ -265,6 +265,21 @@ the current buffer's cache. Useful when encountering parsing errors like
           (org-element-cache-reset)
           (message "Cleared org-element cache for current buffer"))
       (user-error "Current buffer is not in org-mode"))))
+
+;; which-key labels for org-table-map
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-; T" "org table menu"
+    "C-; T r" "table row"
+    "C-; T r i" "insert row"
+    "C-; T r d" "delete row"
+    "C-; T c" "table column"
+    "C-; T c i" "insert column"
+    "C-; T c d" "delete column"
+    ;; org global bindings
+    "C-c a" "org agenda"
+    "C-c c" "org capture"
+    "C-c l" "org store link"))
 
 (provide 'org-config)
 ;;; org-config.el ends here

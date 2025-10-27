@@ -366,7 +366,16 @@ Dirs added recursively."
 
 (keymap-set cj/custom-keymap "m" cj/music-map)
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-; m" "music menu"))
+  (which-key-add-key-based-replacements
+    "C-; m" "music menu"
+    "C-; m m" "toggle playlist"
+    "C-; m M" "show playlist"
+    "C-; m a" "add music"
+    "C-; m r" "create radio"
+    "C-; m SPC" "pause"
+    "C-; m s" "stop"
+    "C-; m p" "playlist mode"
+    "C-; m x" "shuffle"))
 
 (use-package emms
   :defer t

@@ -284,5 +284,12 @@ If FRAME is nil, uses the selected frame."
 									   "<~" "<~~" "</" "</>" "~@" "~-" "~>" "~~" "~~>" "%%"))
   (global-ligature-mode t))
 
+;; which-key labels
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-c E" "emojify menu"
+    "C-c E i" "insert emoji"
+    "C-c E l" "list emojis"))
+
 (provide 'font-config)
 ;;; font-config.el ends here

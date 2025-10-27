@@ -296,6 +296,9 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   ;; Enable chime-mode automatically
   (chime-mode 1))
 
+;; which-key labels
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-c A" "chime check"))
 
 (provide 'org-agenda-config)
 ;;; org-agenda-config.el ends here

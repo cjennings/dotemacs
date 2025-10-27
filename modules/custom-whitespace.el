@@ -217,7 +217,15 @@ Operate on the active region designated by START and END."
 
 (keymap-set cj/custom-keymap "w" cj/whitespace-map)
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-; w" "whitespace menu"))
+  (which-key-add-key-based-replacements
+    "C-; w" "whitespace menu"
+    "C-; w c" "collapse whitespace"
+    "C-; w l" "delete blank lines"
+    "C-; w 1" "single blank line"
+    "C-; w d" "delete all whitespace"
+    "C-; w -" "hyphenate whitespace"
+    "C-; w t" "untabify"
+    "C-; w T" "tabify"))
 
 (provide 'custom-whitespace)
 ;;; custom-whitespace.el ends here.

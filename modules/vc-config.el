@@ -131,7 +131,16 @@
 
 (keymap-set cj/custom-keymap "v" cj/vc-map)
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-; v" "version control menu"))
+  (which-key-add-key-based-replacements
+    "C-; v" "version control menu"
+    "C-; v d" "goto diff hunks"
+    "C-; v c" "create issue"
+    "C-; v f" "forge pull"
+    "C-; v i" "list issues"
+    "C-; v n" "next hunk"
+    "C-; v p" "previous hunk"
+    "C-; v r" "list pull requests"
+    "C-; v t" "git timemachine"))
 
 (provide 'vc-config)
 ;;; vc-config.el ends here.

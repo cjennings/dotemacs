@@ -253,7 +253,16 @@ Returns the transformed string without modifying the buffer."
 
 (keymap-set cj/custom-keymap "o" cj/ordering-map)
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-; o" "ordering/sorting menu"))
+  (which-key-add-key-based-replacements
+    "C-; o" "ordering/sorting menu"
+    "C-; o l" "listify"
+    "C-; o j" "JSON array"
+    "C-; o p" "Python list"
+    "C-; o q" "toggle quotes"
+    "C-; o r" "reverse lines"
+    "C-; o n" "number lines"
+    "C-; o A" "alphabetize"
+    "C-; o L" "comma to lines"))
 
 (provide 'custom-ordering)
 ;;; custom-ordering.el ends here.

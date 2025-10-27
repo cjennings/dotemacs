@@ -259,5 +259,9 @@
   :config
   (company-prescient-mode))
 
+;; which-key labels
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements "C-c h" "consult history"))
+
 (provide 'selection-framework)
 ;;; selection-framework.el ends here

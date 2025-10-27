@@ -619,7 +619,18 @@ Leverages cj/comment-inline-border."
 (keymap-set cj/custom-keymap "C" cj/comment-map)
 
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-; C" "code comment menu"))
+  (which-key-add-key-based-replacements
+    "C-; C" "code comment menu"
+    "C-; C r" "reformat comment"
+    "C-; C d" "delete comments"
+    "C-; C c" "inline border"
+    "C-; C -" "hyphen divider"
+    "C-; C s" "simple divider"
+    "C-; C p" "padded divider"
+    "C-; C b" "box"
+    "C-; C h" "heavy box"
+    "C-; C u" "unicode box"
+    "C-; C n" "block banner"))
 
 (provide 'custom-comments)
 ;;; custom-comments.el ends here.

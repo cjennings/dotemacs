@@ -118,7 +118,11 @@ short prepositions, and all articles are considered minor words."
 (keymap-set cj/custom-keymap "c" cj/case-map)
 
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-; c" "case change menu"))
+  (which-key-add-key-based-replacements
+    "C-; c" "case change menu"
+    "C-; c t" "title case"
+    "C-; c u" "upcase"
+    "C-; c l" "downcase"))
 
 (provide 'custom-case)
 ;;; custom-case.el ends here.

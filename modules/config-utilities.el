@@ -17,12 +17,27 @@
 (keymap-global-set "C-c d" cj/debug-config-keymap)
 
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-c d" "config debugging utils"))
+  (which-key-add-key-based-replacements
+    "C-c d" "config debugging utils"
+    "C-c d p" "profiler menu"
+    "C-c d p s" "start profiler"
+    "C-c d p h" "stop profiler"
+    "C-c d p r" "profiler report"
+    "C-c d t" "toggle debug-on-error"
+    "C-c d b" "benchmark method"
+    "C-c d c" "compilation menu"
+    "C-c d c h" "compile home"
+    "C-c d c d" "delete compiled"
+    "C-c d c ." "compile buffer"
+    "C-c d i" "info menu"
+    "C-c d i b" "info build"
+    "C-c d i p" "info packages"
+    "C-c d i f" "info features"
+    "C-c d r" "reload init"
+    "C-c d a" "reset auth cache"))
 
 ;;; --------------------------------- Profiling ---------------------------------
 
-(with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-c d p" "profiler menu."))
 (keymap-set cj/debug-config-keymap "p s" #'profiler-start)
 (keymap-set cj/debug-config-keymap "p h" #'profiler-stop)
 (keymap-set cj/debug-config-keymap "p r" #'profiler-report)
@@ -92,8 +107,6 @@ Recompile natively when supported, otherwise fall back to byte compilation."
       (message "Cancelled recompilation of %s" user-emacs-directory))))
 
 (keymap-set cj/debug-config-keymap "c h" 'cj/recompile-emacs-home)
-(with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-c d c" "config compilation options."))
 
 (defun cj/delete-emacs-home-compiled-files ()
   "Delete all compiled files recursively in \='user-emacs-directory\='."
@@ -214,8 +227,6 @@ Recompile natively when supported, otherwise fall back to byte compilation."
     (pop-to-buffer buf)))
 
 (keymap-set cj/debug-config-keymap "i b" 'cj/info-emacs-build)
-(with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-c d i" "info on build/features/packages."))
 
 (defvar cj--loaded-file-paths nil
   "All file paths that are loaded.")

@@ -117,7 +117,14 @@ Use `readable-date-format' for formatting."
 (keymap-set cj/custom-keymap "d" cj/datetime-map)
 
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-; d" "date/time insertion menu"))
+  (which-key-add-key-based-replacements
+    "C-; d" "date/time insertion menu"
+    "C-; d r" "readable date-time"
+    "C-; d s" "sortable date-time"
+    "C-; d t" "sortable time"
+    "C-; d T" "readable time"
+    "C-; d d" "sortable date"
+    "C-; d D" "readable date"))
 
 (provide 'custom-datetime)
 ;;; custom-datetime.el ends here.

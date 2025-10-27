@@ -227,5 +227,14 @@ Otherwise use the default location in `audio-recordings-dir'."
 
 (keymap-set cj/custom-keymap "r" cj/record-map)
 
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-; r" "recording menu"
+    "C-; r v" "start video"
+    "C-; r V" "stop video"
+    "C-; r a" "start audio"
+    "C-; r A" "stop audio"
+    "C-; r l" "adjust levels"))
+
 (provide 'video-audio-recording)
 ;;; video-audio-recording.el ends here.
