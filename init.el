@@ -45,6 +45,7 @@
 (require 'system-utils)          ;; timers, process monitor
 (require 'text-config)           ;; text settings and functionality
 (require 'undead-buffers)        ;; bury rather than kill buffers you choose      (tests done)
+(require 'browser-config)        ;; browser configuration/integration
 
 ;; ------------------------ User Interface Configuration -----------------------
 
@@ -142,10 +143,10 @@
 (require 'games-config)
 
 ;; ------------------------------ Modules In Test ------------------------------
-(require 'browser-config)
+
 ;;(require 'wip)
-(require 'lorem-optimum)
-(require 'jumper)
+(require 'lorem-optimum)                                                          (tests added)
+(require 'jumper)                                                                 (tests added)
 
 ;; ---------------------------------- Wrap Up ----------------------------------
 
