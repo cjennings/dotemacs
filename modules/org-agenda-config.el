@@ -244,7 +244,6 @@ The agenda is rebuilt from all sources before display, including:
 
 (defun cj/add-timestamp-to-org-entry (s)
   "Add an event with time S to appear underneath the line-at-point.
-
 This allows a line to show in an agenda without being scheduled or a deadline."
   (interactive "sTime: ")
   (defvar cj/timeformat "%Y-%m-%d %a")
@@ -253,7 +252,6 @@ This allows a line to show in an agenda without being scheduled or a deadline."
     (open-line 1)
     (forward-line 1)
     (insert (concat "<" (format-time-string cj/timeformat (current-time)) " " s ">" ))))
-;;(global-set-key (kbd "M-t")       #'cj/add-timestamp-to-org-entry)
 
 ;; --------------------------- Notifications / Alerts --------------------------
 ;; send libnotify notifications for agenda items
