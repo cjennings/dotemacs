@@ -1,14 +1,13 @@
 ;;; custom-line-paragraph.el ---  -*- coding: utf-8; lexical-binding: t; -*-
-
+;; Author: Craig Jennings <c@cjennings.net>
+;;
 ;;; Commentary:
 ;;
-;; This module provides line and paragraph manipulation utilities.
-;; These utilities enhance text editing and formatting capabilities.
+;; This module provides the following line and paragraph manipulation utilities:
 ;;
-;; Functions include:
 ;; - joining lines in a region or the current line with the previous one
-;; - joining entire paragraphs into single lines
-;; - duplicating lines or regions (with optional commenting)
+;; - joining separate lines into a single paragraph
+;; - duplicating lines or regions (optional commenting)
 ;; - removing duplicate lines
 ;; - removing lines containing specific text
 ;; - underlining text with a custom character
