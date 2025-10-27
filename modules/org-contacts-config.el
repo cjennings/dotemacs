@@ -20,17 +20,17 @@
 
   ;; Add a wrapper function that ensures proper context
   (defun cj/org-contacts-anniversaries-safe ()
-	"Safely call org-contacts-anniversaries with required bindings."
-	(require 'diary-lib)
-	;; These need to be dynamically bound for diary functions
-	(defvar date)
-	(defvar entry)
-	(defvar original-date)
-	(let ((date (calendar-current-date))
-		  (entry "")
-		  (original-date (calendar-current-date)))
-	  (ignore-errors
-		(org-contacts-anniversaries))))
+    "Safely call org-contacts-anniversaries with required bindings."
+    (require 'diary-lib)
+    ;; These need to be dynamically bound for diary functions
+    (defvar date)
+    (defvar entry)
+    (defvar original-date)
+    (let ((date (calendar-current-date))
+          (entry "")
+          (original-date (calendar-current-date)))
+      (ignore-errors
+        (org-contacts-anniversaries))))
 
   ;; Use the safe wrapper instead
   (add-hook 'org-agenda-finalize-hook 'cj/org-contacts-anniversaries-safe))
@@ -39,8 +39,8 @@
 
 (with-eval-after-load 'org-capture
   (add-to-list 'org-capture-templates
-			   '("C" "Contact" entry (file+headline contacts-file "Contacts")
-				 "* %(cj/org-contacts-template-name)
+               '("C" "Contact" entry (file+headline contacts-file "Contacts")
+                 "* %(cj/org-contacts-template-name)
 :PROPERTIES:
 :EMAIL: %(cj/org-contacts-template-email)
 :PHONE: %^{Phone(s) - separate multiple with commas}
@@ -57,31 +57,31 @@ Added: %U")))
 ;; duplicate?!?
 ;; (with-eval-after-load 'org-capture
 ;;   (add-to-list 'org-capture-templates
-;; 			   '("C" "Contact" entry (file+headline contacts-file "Contacts")
-;; 				 "* %(cj/org-contacts-template-name)
+;;             '("C" "Contact" entry (file+headline contacts-file "Contacts")
+;;               "* %(cj/org-contacts-template-name)
 ;; Added: %U")))
 
 (defun cj/org-contacts-template-name ()
   "Get name for contact template from context."
   (let ((name (when (boundp 'cj/contact-name) cj/contact-name)))
-	(or name
-		(when (eq major-mode 'mu4e-headers-mode)
-		  (mu4e-message-field (mu4e-message-at-point) :from-or-to))
-		(when (eq major-mode 'mu4e-view-mode)
-		  (mu4e-message-field mu4e~view-message :from-or-to))
-		(read-string "Name: "))))
+    (or name
+        (when (eq major-mode 'mu4e-headers-mode)
+          (mu4e-message-field (mu4e-message-at-point) :from-or-to))
+        (when (eq major-mode 'mu4e-view-mode)
+          (mu4e-message-field mu4e~view-message :from-or-to))
+        (read-string "Name: "))))
 
 (defun cj/org-contacts-template-email ()
   "Get email for contact template from context."
   (let ((email (when (boundp 'cj/contact-email) cj/contact-email)))
-	(or email
-		(when (eq major-mode 'mu4e-headers-mode)
-		  (let ((from (mu4e-message-field (mu4e-message-at-point) :from)))
-			(when from (cdr (car from)))))
-		(when (eq major-mode 'mu4e-view-mode)
-		  (let ((from (mu4e-message-field mu4e~view-message :from)))
-			(when from (cdr (car from)))))
-		(read-string "Email: "))))
+    (or email
+        (when (eq major-mode 'mu4e-headers-mode)
+          (let ((from (mu4e-message-field (mu4e-message-at-point) :from)))
+            (when from (cdr (car from)))))
+        (when (eq major-mode 'mu4e-view-mode)
+          (let ((from (mu4e-message-field mu4e~view-message :from)))
+            (when from (cdr (car from)))))
+        (read-string "Email: "))))
 
 ;;; ------------------------- Quick Contact Functions ---------------------------
 
@@ -91,13 +91,13 @@ Added: %U")))
   (find-file contacts-file)
   (goto-char (point-min))
   (let ((contact (completing-read "Contact: "
-								  (org-map-entries
-								   (lambda () (nth 4 (org-heading-components)))
-								   nil (list contacts-file)))))
-	(goto-char (point-min))
-	(search-forward contact)
-	(org-fold-show-entry)
-	(org-reveal)))
+                                  (org-map-entries
+                                   (lambda () (nth 4 (org-heading-components)))
+                                   nil (list contacts-file)))))
+    (goto-char (point-min))
+    (search-forward contact)
+    (org-fold-show-entry)
+    (org-reveal)))
 
 (defun cj/org-contacts-new ()
   "Create a new contact."
@@ -110,19 +110,6 @@ Added: %U")))
   (find-file contacts-file)
   (org-columns))
 
-;;; -------------------------- Org-Roam Integration -----------------------------
-
-;; (with-eval-after-load 'org-roam
-;;   (defun cj/org-contacts-link-to-roam ()
-;;  "Link current contact to an org-roam node."
-;;  (interactive)
-;;  (when (eq major-mode 'org-mode)
-;;    (let ((contact-name (org-entry-get (point) "ITEM")))
-;;      (org-set-property "ROAM_REFS"
-;;                        (org-roam-node-id
-;;                         (org-roam-node-read nil nil nil nil
-;;                                             :initial-input contact-name)))))))
-
 ;;; ----------------------------- Birthday Agenda --------------------------------
 
 (with-eval-after-load 'org-agenda
@@ -131,40 +118,48 @@ Added: %U")))
 
   ;; Custom agenda command for upcoming birthdays
   (add-to-list 'org-agenda-custom-commands
-			   '("b" "Birthdays and Anniversaries"
-				 ((tags-todo "BIRTHDAY|ANNIVERSARY"
-							 ((org-agenda-overriding-header "Upcoming Birthdays and Anniversaries")
-							  (org-agenda-sorting-strategy '(time-up))))))))
+               '("b" "Birthdays and Anniversaries"
+                 ((tags-todo "BIRTHDAY|ANNIVERSARY"
+                             ((org-agenda-overriding-header "Upcoming Birthdays and Anniversaries")
+                              (org-agenda-sorting-strategy '(time-up))))))))
 
 ;;; ---------------------------- Core Contact Data Functions ---------------------------
 
 (defun cj/org-contacts--props-matching (entry pattern)
   "Return all property values from ENTRY whose keys match PATTERN (a regexp)."
   (let ((props (nth 2 entry)))
-	(delq nil
-		  (mapcar (lambda (prop)
-					(when (string-match-p pattern (car prop))
-					  (cdr prop)))
-				  props))))
+    (delq nil
+          (mapcar (lambda (prop)
+                    (when (string-match-p pattern (car prop))
+                      (cdr prop)))
+                  props))))
+
+(defun cj/--parse-email-string (name email-string)
+  "Parse EMAIL-STRING and return formatted entries for NAME.
+EMAIL-STRING may contain multiple emails separated by commas, semicolons, or spaces.
+Returns a list of strings formatted as 'Name <email>'.
+Returns nil if EMAIL-STRING is nil or contains only whitespace."
+  (when (and email-string (string-match-p "[^[:space:]]" email-string))
+    (let ((emails (split-string email-string "[,;[:space:]]+" t)))
+      (mapcar (lambda (email)
+                (format "%s <%s>" name (string-trim email)))
+              emails))))
 
 (defun cj/get-all-contact-emails ()
   "Retrieve all contact emails from org-contacts database.
 Returns a list of formatted strings like \"Name <email@example.com>\".
 This is the core function used by the mu4e integration module."
   (let ((contacts (org-contacts-db)))
-	(delq nil
-		  (mapcan (lambda (e)
-					(let* ((name (car e))
-						   ;; This returns a LIST of email strings
-						   (email-strings (cj/org-contacts--props-matching e "EMAIL")))
-					  ;; Need mapcan here to handle the list
-					  (mapcan (lambda (email-str)
-								(when (and email-str (string-match-p "[^[:space:]]" email-str))
-								  (mapcar (lambda (email)
-											(format "%s <%s>" name (string-trim email)))
-										  (split-string email-str "[,;[:space:]]+" t))))
-							  email-strings)))
-				  contacts))))
+    (delq nil
+          (mapcan (lambda (e)
+                    (let* ((name (car e))
+                           ;; This returns a LIST of email strings
+                           (email-strings (cj/org-contacts--props-matching e "EMAIL")))
+                      ;; Process each email string using the extracted parser
+                      (mapcan (lambda (email-str)
+                                (cj/--parse-email-string name email-str))
+                              email-strings)))
+                  contacts))))
 
 ;; Simple insertion function for use outside of mu4e
 (defun cj/insert-contact-email ()
@@ -173,8 +168,8 @@ For use outside of mu4e compose buffers. In mu4e, the integration
 module provides more sophisticated completion."
   (interactive)
   (let* ((items (cj/get-all-contact-emails))
-		 (selected (completing-read "Contact: " items nil t)))
-	(insert selected)))
+         (selected (completing-read "Contact: " items nil t)))
+    (insert selected)))
 
 ;;; -------------------------------- Org Contacts --------------------------------
 
@@ -195,9 +190,9 @@ module provides more sophisticated completion."
 
   (setq mu4e-org-contacts-file contacts-file)
   (add-to-list 'mu4e-headers-actions
-			   '("org-contact-add" . mu4e-action-add-org-contact) t)
+               '("org-contact-add" . mu4e-action-add-org-contact) t)
   (add-to-list 'mu4e-view-actions
-			   '("org-contact-add" . mu4e-action-add-org-contact) t)
+               '("org-contact-add" . mu4e-action-add-org-contact) t)
 
   ;; Disable mu4e's built-in completion in favor of our custom solution
   (setq mu4e-compose-complete-addresses nil))
@@ -207,11 +202,11 @@ module provides more sophisticated completion."
 ;; Keymap for `org-contacts' commands
 (defvar cj/org-contacts-map
   (let ((map (make-sparse-keymap)))
-	(keymap-set map "f" #'cj/org-contacts-find)     ;; find contact
-	(keymap-set map "n" #'cj/org-contacts-new)      ;; new contact
-	(keymap-set map "e" #'cj/insert-contact-email)  ;; inserts email from org-contact
-	(keymap-set map "v" #'cj/org-contacts-view-all) ;; view all contacts
-	map)
+    (keymap-set map "f" #'cj/org-contacts-find)     ;; find contact
+    (keymap-set map "n" #'cj/org-contacts-new)      ;; new contact
+    (keymap-set map "e" #'cj/insert-contact-email)  ;; inserts email from org-contact
+    (keymap-set map "v" #'cj/org-contacts-view-all) ;; view all contacts
+    map)
   "Keymap for `org-contacts' commands.")
 
 ;; Bind the org-contacts map to the C-c C prefix
