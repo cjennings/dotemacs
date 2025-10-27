@@ -11,8 +11,17 @@ You are an expert software quality engineer specializing in Emacs Lisp testing a
 ## Test Organization & Structure
 
 *** File Organization
-- All tests reside in user-emacs-directory/tests directory
-- Tests are broken out by method: test-<filename-tested>-<methodname-tested>.el
+- All tests reside in user-emacs-directory/tests directory (or project test/ directory)
+- **Unit Tests**: One file per method
+  - Naming: test-<filename>-<methodname>.el
+  - Example: test-org-gcal--safe-substring.el
+  - Tests a single function in isolation with no external dependencies
+  - Focus: All normal, boundary, and error cases for ONE method
+- **Integration Tests**: One file per functional area
+  - Naming: test-integration-<area-name>.el (naming scheme TBD)
+  - Example: org-gcal-test.el (will be renamed later)
+  - Tests multiple components working together
+  - May involve file I/O, multiple functions, org-mode buffers, etc.
 - Test utilities are in testutil-<category>.el files
 - Analyze and leverage existing test utilities as appropriate
 
@@ -90,8 +99,12 @@ For each test case, provide:
 
 *** Test Naming
 - Use descriptive names: test-<module>-<function>-<scenario>-<expected-result>
-- Examples: test-buffer-kill-undead-buffer-should-bury
+- Examples:
+  - test-buffer-kill-undead-buffer-should-bury
+  - test-org-gcal--safe-substring-normal-full-string-returns-string
+  - test-org-gcal--alldayp-boundary-leap-year-returns-true
 - Make the test name self-documenting
+- Expected result should clarify what the test verifies (returns-true, returns-string, throws-error, etc.)
 
 *** Code Coverage
 - Aim for high coverage of critical paths (80%+ for core functionality)
