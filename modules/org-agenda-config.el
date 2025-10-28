@@ -273,13 +273,25 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   ;; This gives two notifications per event without any after-event notifications
   (setq chime-alert-time '(5 0))
 
-  ;; Modeline display: show upcoming events within 60 minutes
+  ;; Modeline display: show upcoming events within 2 hours
+  (setq chime-enable-modeline t)
   (setq chime-modeline-lookahead 120)
   (setq chime-modeline-format " ⏰ %s")
 
-  ;; Chime sound: plays when notifications appear
-  (setq chime-play-sound t)
-  ;; Uses bundled chime.wav by default
+  ;; Modeline content: show title and countdown only (omit event time)
+  (setq chime-notification-text-format "%t (%u)")
+
+  ;; Time-until format: compact style like " in 10m" or " in 1h 37m"
+  (setq chime-time-left-format-short " in %mm")      ; Under 1 hour: " in 10m"
+  (setq chime-time-left-format-long " in %hh %mm")   ; 1 hour+: " in 1h 37m"
+  (setq chime-time-left-format-at-event "right now")
+
+  ;; Title truncation: limit long event titles to 15 characters
+  ;; This affects only the title, not the icon or countdown
+  (setq chime-max-title-length 25)                   ; "Very Long Me... ( in 10m)"
+
+  ;; Chime sound: disabled
+  (setq chime-play-sound nil)
 
   ;; Notification settings
   (setq chime-notification-title "Reminder")
