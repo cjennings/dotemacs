@@ -11,9 +11,8 @@
 ;; ----------------------------------- Wttrin ----------------------------------
 
 (use-package wttrin
+  :vc (:url "https://github.com/cjennings/emacs-wttrin" :rev :newest)
   :defer t
-  :load-path ("~/code/wttrin")
-  :ensure nil ;; local package
   :preface
   ;; dependency for wttrin
   (use-package xterm-color
