@@ -1,7 +1,7 @@
-;;; test-custom-file-buffer-copy-whole-buffer.el --- Tests for cj/copy-whole-buffer -*- lexical-binding: t; -*-
+;;; test-custom-buffer-file-copy-whole-buffer.el --- Tests for cj/copy-whole-buffer -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the cj/copy-whole-buffer function from custom-file-buffer.el
+;; Tests for the cj/copy-whole-buffer function from custom-buffer-file.el
 ;;
 ;; This function copies the entire contents of the current buffer to the kill ring.
 ;; Point and mark are left exactly where they were. No transient region is created.
@@ -22,7 +22,7 @@
 (provide 'ps-print)
 
 ;; Now load the actual production module
-(require 'custom-file-buffer)
+(require 'custom-buffer-file)
 
 ;;; Setup and Teardown
 
@@ -190,5 +190,5 @@
         (should (null (text-properties-at 0 (car kill-ring)))))
     (test-copy-whole-buffer-teardown)))
 
-(provide 'test-custom-file-buffer-copy-whole-buffer)
-;;; test-custom-file-buffer-copy-whole-buffer.el ends here
+(provide 'test-custom-buffer-file-copy-whole-buffer)
+;;; test-custom-buffer-file-copy-whole-buffer.el ends here

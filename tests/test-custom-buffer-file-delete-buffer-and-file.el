@@ -1,7 +1,7 @@
-;;; test-custom-file-buffer-delete-buffer-and-file.el --- Tests for cj/delete-buffer-and-file -*- lexical-binding: t; -*-
+;;; test-custom-buffer-file-delete-buffer-and-file.el --- Tests for cj/delete-buffer-and-file -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the cj/delete-buffer-and-file function from custom-file-buffer.el
+;; Tests for the cj/delete-buffer-and-file function from custom-buffer-file.el
 ;;
 ;; This function deletes both the current buffer and the file it visits.
 ;; It uses vc-delete-file for version-controlled files and delete-file
@@ -42,7 +42,7 @@
 (provide 'ps-print)
 
 ;; Now load the actual production module
-(require 'custom-file-buffer)
+(require 'custom-buffer-file)
 
 ;;; Setup and Teardown
 
@@ -667,5 +667,5 @@
           (should-error (cj/delete-buffer-and-file))))
     (test-delete-buffer-and-file-teardown)))
 
-(provide 'test-custom-file-buffer-delete-buffer-and-file)
-;;; test-custom-file-buffer-delete-buffer-and-file.el ends here
+(provide 'test-custom-buffer-file-delete-buffer-and-file)
+;;; test-custom-buffer-file-delete-buffer-and-file.el ends here

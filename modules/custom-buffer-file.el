@@ -1,4 +1,4 @@
-;;; custom-file-buffer.el --- Custom Buffer and File Operations -*- coding: utf-8; lexical-binding: t; -*-
+;;; custom-buffer-file.el --- Custom Buffer and File Operations -*- coding: utf-8; lexical-binding: t; -*-
 ;;
 ;;; Commentary:
 ;; This module provides custom buffer and file operations including PostScript
@@ -256,5 +256,5 @@ Do not save the deleted text in the kill ring."
     "C-; b P" "copy file path"))
 
 
-(provide 'custom-file-buffer)
-;;; custom-file-buffer.el ends here.
+(provide 'custom-buffer-file)
+;;; custom-buffer-file.el ends here.
