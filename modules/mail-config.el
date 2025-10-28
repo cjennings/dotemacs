@@ -283,7 +283,8 @@ Prompts user for the action when executing."
 ;; user composes org mode; recipient receives html
 
 (use-package org-msg
-  :vc (:url "https://github.com/cjennings/org-msg" :rev :newest)
+  ;; :vc (:url "https://github.com/cjennings/org-msg" :rev :newest)
+  :load-path "/home/cjennings/code/org-msg"
   :defer 1
   :after (org mu4e)
   :preface
