@@ -264,12 +264,8 @@ If no such file exists there, display a message."
   ("C-c s n" . yas-new-snippet)
   ("C-c s e" . yas-visit-snippet-file)
   :config
-  (setq yas-snippet-dirs '(snippets-dir)))
-
-(use-package ivy-yasnippet
-  :after yasnippet
-  :bind
-  ("C-c s i" . ivy-yasnippet))
+  (setq yas-snippet-dirs (list snippets-dir))
+  (yas-reload-all))
 
 ;; --------------------- Display Color On Color Declaration --------------------
 ;; display the actual color as highlight to color hex code
