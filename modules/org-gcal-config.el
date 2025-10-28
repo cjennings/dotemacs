@@ -38,6 +38,11 @@
 (require 'host-environment)
 (require 'user-constants)
 
+;; Forward declare org-gcal internal variables and functions
+(eval-when-compile
+  (defvar org-gcal--sync-lock))
+(declare-function org-gcal-reload-client-id-secret "org-gcal")
+
 (defun cj/org-gcal-clear-sync-lock ()
   "Clear the org-gcal sync lock.
 Useful when a sync fails and leaves the lock in place, preventing future syncs."
@@ -48,7 +53,7 @@ Useful when a sync fails and leaves the lock in place, preventing future syncs."
 (defun cj/org-gcal-convert-all-to-org-managed ()
   "Convert all org-gcal events in current buffer to Org-managed.
 
-Changes all events with org-gcal-managed property from 'gcal' to 'org',
+Changes all events with org-gcal-managed property from `gcal' to `org',
 enabling bidirectional sync so changes push back to Google Calendar."
   (interactive)
   (let ((count 0))
@@ -62,6 +67,7 @@ enabling bidirectional sync so changes push back to Google Calendar."
     (message "Converted %d event(s) to Org-managed" count)))
 
 (use-package org-gcal
+  :vc (:url "https://github.com/cjennings/org-gcal" :rev :newest)
   :defer t ;; unless idle timer is set below
   :bind (("C-; g" . org-gcal-sync)
          ("C-; G" . cj/org-gcal-clear-sync-lock))
