@@ -17,11 +17,26 @@ You are an expert software quality engineer specializing in Emacs Lisp testing a
   - Example: test-org-gcal--safe-substring.el
   - Tests a single function in isolation with no external dependencies
   - Focus: All normal, boundary, and error cases for ONE method
-- **Integration Tests**: One file per functional area
-  - Naming: test-integration-<area-name>.el (naming scheme TBD)
-  - Example: org-gcal-test.el (will be renamed later)
+- **Integration Tests**: One file per functional area or workflow
+  - Naming: test-integration-<area-or-workflow>.el
+  - Examples:
+    - test-integration-recurring-events.el (recurring event workflow)
+    - test-integration-complex-event-formatting.el (multiple formatting functions together)
+    - test-integration-empty-missing-data.el (edge case handling across functions)
+    - test-integration-multi-event-sync.el (multiple events interacting)
+    - test-integration-sync-workflow.el (full fetch → update → push cycle)
   - Tests multiple components working together
-  - May involve file I/O, multiple functions, org-mode buffers, etc.
+  - May involve file I/O, multiple functions, org-mode buffers, API interactions, etc.
+  - Focus on workflows, component interactions, and end-to-end scenarios
+  - Good integration test areas:
+    - Complete user workflows (sync, create, update, delete)
+    - Complex features involving multiple functions (recurring events, timezone handling)
+    - Cross-component interactions (org-mode ↔ API ↔ file system)
+    - Edge cases that span multiple functions (empty data, conflicts, errors)
+  - Anti-patterns to avoid:
+    - test-integration-<single-function>.el (too narrow, that's a unit test)
+    - test-integration-stuff.el (too vague, not descriptive)
+    - test-integration-1.el (numbered tests are not discoverable)
 - Test utilities are in testutil-<category>.el files
 - Analyze and leverage existing test utilities as appropriate
 
@@ -98,13 +113,160 @@ For each test case, provide:
 - Handle missing dependencies by mocking them before loading the module
 
 *** Test Naming
-- Use descriptive names: test-<module>-<function>-<scenario>-<expected-result>
+
+**** Unit Test Naming
+- Pattern: test-<module>-<function>-<category>-<scenario>-<expected-result>
 - Examples:
-  - test-buffer-kill-undead-buffer-should-bury
   - test-org-gcal--safe-substring-normal-full-string-returns-string
   - test-org-gcal--alldayp-boundary-leap-year-returns-true
+  - test-org-gcal--format-iso2org-error-nil-input-returns-nil
+- Category: normal, boundary, or error
 - Make the test name self-documenting
-- Expected result should clarify what the test verifies (returns-true, returns-string, throws-error, etc.)
+- Expected result clarifies what the test verifies (returns-true, returns-string, throws-error, etc.)
+- Focus: Single function behavior in isolation
+
+**** Integration Test Naming
+- Pattern: test-integration-<area>-<scenario>-<expected-outcome>
+- Examples:
+  - test-integration-recurring-events-preserves-old-timestamps
+  - test-integration-multi-event-updates-dont-affect-others
+  - test-integration-sync-workflow-fetch-creates-new-entries
+  - test-integration-complex-formatting-description-escapes-asterisks
+  - test-integration-empty-missing-minimal-event-succeeds
+- Area: Repeat the integration area from filename for clarity
+- Scenario: What situation/workflow is being tested
+- Outcome: What should happen across the integrated components
+- Focus: Multiple components working together, not single function
+- Make the name readable as a sentence describing the integration behavior
+
+**** Integration Test Docstrings
+Integration tests should have more detailed docstrings than unit tests:
+
+Example structure:
+#+begin_src elisp
+(ert-deftest test-integration-recurring-events-preserves-old-timestamps ()
+  "Test that recurring events preserve original timestamps across updates.
+
+When a recurring event is updated with a new instance date from Google Calendar,
+the timestamp in the org entry should remain the original series start date, not
+jump to the current instance date.
+
+Components integrated:
+- org-gcal--format-event-timestamp (timestamp formatting with recurrence)
+- org-gcal--determine-headline (headline selection)
+- org-gcal--format-description-for-drawer (description escaping)
+- org-gcal--update-entry (entry update orchestration)
+- org-element-at-point (org-mode property extraction)
+
+Validates:
+- Recurrence parameter triggers old timestamp preservation
+- Old-start/old-end passed through update workflow correctly
+- Full workflow: JSON event → parsed data → formatted timestamp → org entry"
+  ...)
+#+end_src
+
+Docstring requirements:
+1. **First line**: Brief summary (< 80 chars) - what is being tested
+2. **Context paragraph**: Why this matters, user scenario, or problem being solved
+3. **Components integrated**: Explicit list of functions/modules working together
+   - List each component with brief description of its role
+   - Include external dependencies (org-mode functions, file I/O, etc.)
+   - Show the integration boundary (what's real vs mocked)
+4. **Validates section**: What specific integration behavior is verified
+   - Data flow between components
+   - State changes across function calls
+   - Error propagation through the system
+5. **Optional sections**:
+   - Edge cases being tested
+   - Known limitations
+   - Related integration tests
+   - Performance considerations
+
+Why detailed docstrings matter for integration tests:
+- Integration failures are harder to debug than unit test failures
+- Need to understand which component interaction broke
+- Documents the integration contract between components
+- Helps maintainers understand system architecture
+- Makes test intent clear when test name is necessarily brief
+
+**CRITICAL**: Always list integrated components in docstrings:
+- Explicitly enumerate every function/module being tested together
+- Include external dependencies (org-mode, file I/O, parsers)
+- Distinguish between what's real and what's mocked
+- Show the data flow path through components
+- Name the integration boundary points
+
+Bad docstring (insufficient detail):
+#+begin_src elisp
+(ert-deftest test-integration-sync-workflow-updates-entries ()
+  "Test that sync updates org entries."
+  ...)
+#+end_src
+
+Good docstring (lists all components):
+#+begin_src elisp
+(ert-deftest test-integration-sync-workflow-updates-entries ()
+  "Test that calendar sync workflow updates org entries correctly.
+
+When user runs org-gcal-sync, events from Google Calendar should be
+fetched and org entries updated with new data while preserving local edits.
+
+Components integrated:
+- org-gcal-sync (main entry point)
+- org-gcal--get-calendar-events (API fetching)
+- org-gcal--json-read (JSON parsing)
+- org-gcal--update-entry (entry modification)
+- org-gcal--format-event-timestamp (timestamp formatting)
+- org-element-at-point (org-mode property reading)
+- write-file (persisting changes)
+
+Validates:
+- API response flows correctly through parsing → formatting → updating
+- Entry properties are updated while preserving manual edits
+- File is saved with correct content and encoding
+- Error in one event doesn't break processing of others"
+  ...)
+#+end_src
+
+Component listing best practices:
+1. **Order by call flow**: List components in the order they're called
+2. **Group by layer**: API → parsing → business logic → persistence
+3. **Include return path**: Don't forget callbacks or response handlers
+4. **Note side effects**: File writes, cache updates, state changes
+5. **Mark test doubles**: Indicate which components are mocked/stubbed
+6. **Show boundaries**: Where does your code end and framework begins?
+
+Examples of component descriptions:
+- ~org-gcal--update-entry (entry orchestration)~ - what it does in this test
+- ~org-element-at-point (REAL org-mode function)~ - not mocked
+- ~request-deferred (MOCKED, returns test data)~ - test double
+- ~file-exists-p → find-file → save-buffer (file I/O chain)~ - flow path
+- ~org-gcal--format-iso2org (date conversion, TESTED via integration)~ - tested indirectly
+
+**** Naming Comparison
+Unit tests are narrow and specific:
+- test-org-gcal--format-iso2org-error-nil-input-returns-nil
+  - Tests ONE function with ONE input scenario
+  - Very granular: specific input → specific output
+
+Integration tests are broader and scenario-focused:
+- test-integration-recurring-events-preserves-old-timestamps
+  - Tests MULTIPLE functions working together
+  - Workflow-oriented: describes behavior across components
+
+**** Naming Checklist
+For integration test files:
+- [ ] Does the name describe a coherent area/workflow?
+- [ ] Is it discoverable with glob test-integration-*.el?
+- [ ] Could someone guess what's being tested from the name?
+- [ ] Is it distinct from other integration test files?
+
+For integration test methods:
+- [ ] Does it start with test-integration-?
+- [ ] Does it include the area from the filename?
+- [ ] Can you read it as a sentence?
+- [ ] Does it describe both scenario AND expected outcome?
+- [ ] Is it specific enough to understand what failed if it breaks?
 
 *** Code Coverage
 - Aim for high coverage of critical paths (80%+ for core functionality)
@@ -272,6 +434,197 @@ Example timeline:
 - Inquire about usage context (web service, API, library function, etc.)
 - Generate appropriate integration test cases for the specific implementation
 - Consider testing interactions between modules
+
+**** When to Write Integration Tests
+Write integration tests when:
+- Multiple components must work together (API + parser + file I/O)
+- Testing complete user workflows (fetch → update → display → save)
+- Complex features span multiple functions (recurring events, timezone handling)
+- State management across function calls matters
+- Real-world scenarios combine multiple edge cases
+- Component boundaries and contracts need validation
+
+Don't write integration tests when:
+- Single function behavior can be fully tested in isolation
+- No meaningful interaction between components
+- Mocking would remove all real integration logic
+- Unit tests already cover the integration paths adequately
+
+**** What Integration Tests Should Cover
+Focus on:
+- **Complete workflows**: Full user scenarios from start to finish
+- **Component interactions**: How functions call each other and pass data
+- **State management**: Data persistence, caching, updates across calls
+- **Real dependencies**: Actual file I/O, org-mode buffers, data structures
+- **Edge case combinations**: Multiple edge cases interacting together
+- **Error propagation**: How errors flow through the system
+- **Data integrity**: Events don't interfere, state remains consistent
+
+Avoid:
+- Re-testing individual function logic (that's unit tests)
+- Testing framework/library behavior (trust it works)
+- Over-mocking that removes actual integration
+
+**** Integration Test Characteristics
+- **Slower** than unit tests (acceptable tradeoff)
+- **More setup** required (buffers, files, mock data)
+- **Broader scope** than unit tests (multiple functions)
+- **Higher value** for catching real-world bugs
+- **Less granular** in pinpointing exact failures
+- **More realistic** scenarios and data
+
+**** Integration Test Organization
+Structure integration tests by:
+1. **Workflow**: test-integration-sync-workflow.el (complete sync cycle)
+2. **Feature**: test-integration-recurring-events.el (recurring event handling)
+3. **Component interaction**: test-integration-multi-event-sync.el (multiple events)
+4. **Edge case category**: test-integration-empty-missing-data.el (nil/empty across system)
+
+Each test file should:
+- Focus on one coherent integration area
+- Include setup helpers specific to that area
+- Test realistic scenarios, not artificial combinations
+- Have clear test names describing the integration behavior
+- Include detailed docstrings explaining what's being integrated
+
+**** Integration Test File Structure
+Organize tests within each file using comment headers to group related scenarios:
+
+#+begin_src elisp
+;;; test-integration-recurring-events.el --- Integration tests for recurring events
+
+;;; Commentary:
+;; Integration tests covering the complete recurring event workflow:
+;; - Creating recurring events from Google Calendar API
+;; - Preserving timestamps across updates
+;; - Handling different recurrence patterns (WEEKLY, DAILY, etc.)
+;; - Managing recurrence metadata in org properties
+;;
+;; Components integrated: org-gcal--format-event-timestamp,
+;; org-gcal--update-entry, org-element-at-point
+
+;;; Code:
+
+(require 'org-gcal)
+(require 'ert)
+
+;; Test data constants
+(defconst test-integration-recurring-events-weekly-json ...)
+(defconst test-integration-recurring-events-daily-json ...)
+
+;; Helper functions
+(defun test-integration-recurring-events--json-read-string (json) ...)
+
+;;; Normal Cases - Recurring Event Creation
+
+(ert-deftest test-integration-recurring-events-weekly-creates-with-recurrence ()
+  "Test that weekly recurring event is created with recurrence property.
+
+Components integrated:
+- org-gcal--update-entry
+- org-gcal--format-event-timestamp
+- org-element-at-point"
+  ...)
+
+(ert-deftest test-integration-recurring-events-daily-creates-with-count ()
+  "Test that daily recurring event with COUNT creates correctly.
+
+Components integrated:
+- org-gcal--update-entry
+- org-gcal--format-event-timestamp"
+  ...)
+
+;;; Boundary Cases - Recurring Event Updates
+
+(ert-deftest test-integration-recurring-events-update-preserves-recurrence ()
+  "Test that updating recurring event preserves recurrence property.
+
+Components integrated:
+- org-gcal--update-entry (update path)
+- org-entry-get (property retrieval)"
+  ...)
+
+(ert-deftest test-integration-recurring-events-preserves-old-timestamps ()
+  "Test that recurring events preserve original timestamps across updates.
+
+This is the KEY test validating the refactored timestamp logic.
+
+Components integrated:
+- org-gcal--format-event-timestamp (with recurrence parameter)
+- org-gcal--update-entry (preserving old-start/old-end)
+- Full workflow: JSON → parsed data → formatted timestamp → org entry"
+  ...)
+
+;;; Edge Cases - Missing or Invalid Recurrence
+
+(ert-deftest test-integration-recurring-events-no-recurrence-uses-new-timestamps ()
+  "Test that events without recurrence use new timestamps on update.
+
+Components integrated:
+- org-gcal--format-event-timestamp (no recurrence path)
+- org-gcal--update-entry"
+  ...)
+
+(provide 'test-integration-recurring-events)
+;;; test-integration-recurring-events.el ends here
+#+end_src
+
+File structure guidelines:
+1. **Commentary section**: High-level overview of what's being integrated
+   - List the main workflow or feature
+   - Enumerate key components being tested together
+   - Explain the integration scope
+
+2. **Test data section**: Constants and fixtures
+   - Group related test data together
+   - Use descriptive constant names
+   - Document data format if non-obvious
+
+3. **Helper functions section**: Test utilities
+   - Functions used by multiple tests in this file
+   - Setup/teardown helpers
+   - Data transformation utilities
+
+4. **Grouped test sections**: Use comment headers to organize tests
+   - Start with `;;;` (three semicolons) for section headers
+   - Group by category: "Normal Cases", "Boundary Cases", "Edge Cases", "Error Cases"
+   - Or group by scenario: "Event Creation", "Event Updates", "Event Deletion"
+   - Or group by workflow stage: "Fetch Phase", "Update Phase", "Sync Phase"
+
+5. **Test ordering**: Organize tests logically
+   - Simple/common cases first
+   - Complex scenarios build on earlier tests
+   - Edge cases at the end
+   - Easier to understand test intent by reading top to bottom
+
+6. **Section headers should be discoverable**:
+   - Use grep-friendly patterns: `^;;;.*Cases` or `^;;; Test:`
+   - Consistent naming: always use "Normal/Boundary/Error Cases"
+   - Or use workflow stages consistently across files
+
+Benefits of grouping:
+- Easier to find related tests
+- Clear structure when file has 20+ tests
+- Documents test coverage patterns
+- Helps identify gaps (no error cases section? add some!)
+- Makes test maintenance easier
+- Improves test file readability
+
+**** Balancing Unit vs Integration Tests
+The testing pyramid:
+- **Base (most)**: Unit tests - Fast, isolated, granular
+- **Middle**: Integration tests - Realistic, component interactions
+- **Top (fewest)**: End-to-end tests - Full system, slowest
+
+For most projects:
+- 70-80% unit tests (individual functions)
+- 15-25% integration tests (component interactions)
+- 5-10% end-to-end tests (full workflows)
+
+Don't duplicate coverage:
+- If unit tests fully cover logic, integration tests focus on interactions
+- If integration test covers a workflow, don't repeat every unit test case
+- Integration tests validate unit-tested components work together correctly
 
 *** Test Reviews
 - Review tests with the same rigor as production code
