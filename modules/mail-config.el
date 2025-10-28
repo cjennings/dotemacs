@@ -283,9 +283,8 @@ Prompts user for the action when executing."
 ;; user composes org mode; recipient receives html
 
 (use-package org-msg
-  :ensure nil ;; loading locally for fixes
+  :vc (:url "https://github.com/cjennings/org-msg" :rev :newest)
   :defer 1
-  :load-path "~/code/org-msg/"
   :after (org mu4e)
   :preface
 	(defvar-keymap cj/email-map
