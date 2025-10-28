@@ -19,6 +19,7 @@
 ;; ---------------------------------- Org Roam ---------------------------------
 
 (use-package org-roam
+  :defer 1
   :commands (org-roam-node-find org-roam-node-insert org-roam-db-autosync-mode)
   :config
   ;; Enable autosync mode after org-roam loads
