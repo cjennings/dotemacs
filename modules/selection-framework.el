@@ -27,7 +27,6 @@
   (vertico-resize nil)             ; Don't resize the minibuffer
   (vertico-sort-function #'vertico-sort-history-alpha) ; History first, then alphabetical
   :bind (:map vertico-map
-			  ;; Match ivy's C-j C-k behavior
 			  ("C-j"   . vertico-next)
 			  ("C-k"   . vertico-previous)
 			  ("C-l"   . vertico-insert)  ; Insert current candidate
@@ -128,7 +127,7 @@
   ;; Use Consult for completion-at-point
   (setq completion-in-region-function #'consult-completion-in-region))
 
-(global-unset-key (kbd "C-s"))
+;; Override default search with consult-line
 (keymap-global-set "C-s" #'consult-line)
 
 ;; Consult integration with Embark
@@ -152,10 +151,10 @@
 (use-package orderless
   :demand t
   :custom
-  (completion-styles '(orderless))
+  (completion-styles '(orderless basic))
   (completion-category-defaults nil)
-  (completion-category-overrides '((file (styles partial-completion))
-								   (multi-category (styles orderless))))
+  (completion-category-overrides '((file (styles partial-completion orderless basic))
+								   (multi-category (styles orderless basic))))
   (orderless-matching-styles '(orderless-literal
 							   orderless-regexp
 							   orderless-initialism
@@ -183,16 +182,10 @@
 				 nil
 				 (window-parameters (mode-line-format . none)))))
 
-;; this typo causes crashes
-;; (add-to-list 'display-buffer-alist
-;;               '("\\=\\*Embark Collect \\(Live\\|Completions\\)\\*"
-;;                 nil
-;;                 (window-parameters (mode-line-format . none)))))
-
 ;; --------------------------- Consult Integration ----------------------------
 ;; Additional integrations for specific features
 
-;; Yasnippet integration - replaces ivy-yasnippet
+;; Yasnippet integration
 (use-package consult-yasnippet
   :after yasnippet
   :bind ("C-c s i" . consult-yasnippet))
@@ -204,7 +197,7 @@
 			  ("C-c ! c" . consult-flycheck)))
 
 ;; ---------------------------------- Company ----------------------------------
-;; In-buffer completion (retained from original configuration)
+;; In-buffer completion for text and code
 
 (use-package company
   :demand t
@@ -261,7 +254,11 @@
 
 ;; which-key labels
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-c h" "consult history"))
+  (which-key-add-key-based-replacements
+    "C-c h" "consult history"
+    "C-c s i" "insert snippet"
+    "M-g" "goto menu"
+    "M-s" "search menu"))
 
 (provide 'selection-framework)
 ;;; selection-framework.el ends here
