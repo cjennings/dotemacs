@@ -26,6 +26,7 @@
         '("\\*Messages\\*"
           "Output\\*$"
           "\\*Async Shell Command\\*"
+          "\\*Async-native-compile-log\\*"
           help-mode
           compilation-mode))
   (add-to-list 'display-buffer-alist
