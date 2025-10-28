@@ -105,11 +105,6 @@ enabling bidirectional sync so changes push back to Google Calendar."
   (require 'plstore)
   (setq plstore-cache-passphrase-for-symmetric-encryption t)
 
-  ;; Enable debugging for HTTP requests
-  (require 'request)
-  (setq request-log-level 'debug)
-  (setq request-message-level 'debug)
-
   ;; set org-gcal timezone based on system timezone
   (setq org-gcal-local-timezone (cj/detect-system-timezone))
 
