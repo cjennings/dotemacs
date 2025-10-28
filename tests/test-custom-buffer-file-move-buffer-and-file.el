@@ -1,7 +1,7 @@
-;;; test-custom-file-buffer-move-buffer-and-file.el --- Tests for cj/move-buffer-and-file -*- lexical-binding: t; -*-
+;;; test-custom-buffer-file-move-buffer-and-file.el --- Tests for cj/move-buffer-and-file -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the cj/--move-buffer-and-file function from custom-file-buffer.el
+;; Tests for the cj/--move-buffer-and-file function from custom-buffer-file.el
 ;;
 ;; This is the internal (non-interactive) implementation that moves both the
 ;; current buffer and its visited file to a new directory. It handles trailing
@@ -25,7 +25,7 @@
 (provide 'ps-print)
 
 ;; Now load the actual production module
-(require 'custom-file-buffer)
+(require 'custom-buffer-file)
 
 ;;; Setup and Teardown
 
@@ -932,5 +932,5 @@
         (kill-buffer (current-buffer)))
     (test-move-buffer-and-file-teardown)))
 
-(provide 'test-custom-file-buffer-move-buffer-and-file)
-;;; test-custom-file-buffer-move-buffer-and-file.el ends here
+(provide 'test-custom-buffer-file-move-buffer-and-file)
+;;; test-custom-buffer-file-move-buffer-and-file.el ends here

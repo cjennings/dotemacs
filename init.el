@@ -29,7 +29,7 @@
 (require 'custom-case)           ;; operations for upper/lower/title case
 (require 'custom-comments)       ;; operations with comments
 (require 'custom-datetime)       ;; date/timestamp insertion in various formats
-(require 'custom-file-buffer)    ;; custom buffer and file operations and keymap
+(require 'custom-buffer-file)    ;; custom buffer and file operations and keymap
 (require 'custom-line-paragraph) ;; operations on lines and paragraphs
 (require 'custom-misc)           ;; miscellaneous functions
 (require 'custom-ordering)       ;; ordering and sorting operations
@@ -110,7 +110,7 @@
 (require 'org-contacts-config)   ;; fully integrated org-mode contacts management
 (require 'org-drill-config)
 (require 'org-export-config)
-(require 'org-gcal-config)
+(require 'org-gcal-config)       ;; bi directional sync google calendar for org-agenda
 (require 'org-refile-config)     ;; refile org-branches
 (require 'org-roam-config)       ;; personal knowledge management in org mode
 (require 'org-webclipper)        ;; "instapaper" to org-roam workflow
@@ -134,7 +134,7 @@
 ;; ------------------------- Personal Workflow Related -------------------------
 
 (require 'reconcile-open-repos)
-(require 'local-repository)
+(require 'local-repository)      ;; local repository for easy config portability
 
 ;; ------------------------------- Entertainment -------------------------------
 
@@ -146,6 +146,7 @@
 ;;(require 'wip)
 (require 'lorem-optimum)
 (require 'jumper)
+(require 'system-commands)
 
 ;; ---------------------------------- Wrap Up ----------------------------------
 

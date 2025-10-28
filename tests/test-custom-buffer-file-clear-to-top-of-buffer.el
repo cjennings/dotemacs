@@ -1,7 +1,7 @@
-;;; test-custom-file-buffer-clear-to-top-of-buffer.el --- Tests for cj/clear-to-top-of-buffer -*- lexical-binding: t; -*-
+;;; test-custom-buffer-file-clear-to-top-of-buffer.el --- Tests for cj/clear-to-top-of-buffer -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the cj/clear-to-top-of-buffer function from custom-file-buffer.el
+;; Tests for the cj/clear-to-top-of-buffer function from custom-buffer-file.el
 ;;
 ;; This function deletes all text from point to the beginning of the current buffer.
 ;; It does not save the deleted text in the kill ring.
@@ -22,7 +22,7 @@
 (provide 'ps-print)
 
 ;; Now load the actual production module
-(require 'custom-file-buffer)
+(require 'custom-buffer-file)
 
 ;;; Setup and Teardown
 
@@ -158,5 +158,5 @@
         (should-error (cj/clear-to-top-of-buffer)))
     (test-clear-to-top-teardown)))
 
-(provide 'test-custom-file-buffer-clear-to-top-of-buffer)
-;;; test-custom-file-buffer-clear-to-top-of-buffer.el ends here
+(provide 'test-custom-buffer-file-clear-to-top-of-buffer)
+;;; test-custom-buffer-file-clear-to-top-of-buffer.el ends here

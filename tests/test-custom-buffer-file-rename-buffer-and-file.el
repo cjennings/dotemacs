@@ -1,7 +1,7 @@
-;;; test-custom-file-buffer-rename-buffer-and-file.el --- Tests for cj/--rename-buffer-and-file -*- lexical-binding: t; -*-
+;;; test-custom-buffer-file-rename-buffer-and-file.el --- Tests for cj/--rename-buffer-and-file -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the cj/--rename-buffer-and-file function from custom-file-buffer.el
+;; Tests for the cj/--rename-buffer-and-file function from custom-buffer-file.el
 ;;
 ;; This is the internal (non-interactive) implementation that renames both the
 ;; current buffer and its visited file. The interactive wrapper
@@ -24,7 +24,7 @@
 (provide 'ps-print)
 
 ;; Now load the actual production module
-(require 'custom-file-buffer)
+(require 'custom-buffer-file)
 
 ;;; Setup and Teardown
 
@@ -935,5 +935,5 @@
         (kill-buffer (current-buffer)))
     (test-rename-buffer-and-file-teardown)))
 
-(provide 'test-custom-file-buffer-rename-buffer-and-file)
-;;; test-custom-file-buffer-rename-buffer-and-file.el ends here
+(provide 'test-custom-buffer-file-rename-buffer-and-file)
+;;; test-custom-buffer-file-rename-buffer-and-file.el ends here
