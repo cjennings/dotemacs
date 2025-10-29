@@ -251,7 +251,7 @@ If no such file exists there, display a message."
 	  (deadgrep term dir))))
 
 (with-eval-after-load 'dired
-  (keymap-set dired-mode-map "D" #'cj/deadgrep-here))
+  (keymap-set dired-mode-map "G" #'cj/deadgrep-here))
 
 
 ;; ---------------------------------- Snippets ---------------------------------
