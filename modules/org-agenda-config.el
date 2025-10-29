@@ -32,6 +32,14 @@
 ;;; Code:
 (require 'user-constants)
 
+;; Load debug functions if enabled
+(when (or (eq cj/debug-modules t)
+          (memq 'org-agenda cj/debug-modules))
+  (require 'org-agenda-config-debug
+           (expand-file-name "org-agenda-config-debug.el"
+                             (file-name-directory load-file-name))
+           t))
+
 (use-package org-agenda
   :ensure nil ;; built-in
   :after (org)

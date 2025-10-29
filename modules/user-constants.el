@@ -20,6 +20,15 @@
 ;;
 ;;; Code:
 
+;; -------------------------------- Debug Toggle -------------------------------
+
+(defvar cj/debug-modules nil
+  "List of modules with debug functions enabled.
+Possible values: org-agenda, mail, chime, etc.
+Set to t to enable all debug modules.
+Example: (setq cj/debug-modules '(org-agenda mail))
+         (setq cj/debug-modules t)  ; Enable all")
+
 ;; -------------------------------- Contact Info -------------------------------
 
 (defvar user-whole-name "Craig Jennings"
