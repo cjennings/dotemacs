@@ -638,6 +638,119 @@ Don't duplicate coverage:
 - Format test cases as clear, numbered lists within each category
 - Focus on practical, implementable tests that catch real-world bugs
 
+## Test Future-Proofing & Time-Based Testing
+
+*** Dynamic Timestamp Generation
+When tests involve dates and times:
+- **Never hardcode dates** in tests (e.g., "2025-10-24")
+  - Tests will fail when that date passes
+  - Creates maintenance burden (annual test updates)
+  - Makes tests brittle and non-deterministic over time
+
+- **Use dynamic timestamp generation** instead:
+  - Create test utilities that generate timestamps relative to "now"
+  - Examples: `test-time-today-at`, `test-time-tomorrow-at`, `test-time-days-from-now`
+  - Base time can be offset into future to avoid past-date edge cases
+
+- **Mock time via function substitution**:
+  - Replace `current-time` with test-controlled time source
+  - Use macros like `with-test-time` to scope time mocking
+  - Preserves existing function mocking patterns (don't nest cl-letf*)
+
+- **Pattern for time-based tests**:
+  #+begin_src elisp
+  (let* ((now (test-time-today-at 14 0))
+         (event-time (test-time-today-at 14 10))
+         (timestamp-str (test-timestamp-string event-time)))
+    (with-test-time now
+      (cl-letf (((symbol-function 'other-mock) (lambda () ...)))
+        (let* ((result (function-under-test event-time)))
+          (should (equal expected result))))))
+  #+end_src
+
+- **Benefits of dynamic timestamps**:
+  - Tests work indefinitely without modification
+  - Time relationships remain consistent (10 minutes = 10 minutes)
+  - Clearer test intent (relative times vs absolute dates)
+  - Easier to understand what's being tested
+  - No test failures from date expiration
+
+*** Large-Scale Test Refactoring Strategy
+When refactoring many test files (e.g., removing hardcoded timestamps):
+
+**** Strategic Planning
+- **Tackle biggest challenges first** - Largest/most complex files
+  - Eliminates intimidation factor early
+  - Makes remaining work feel manageable
+  - Builds confidence and momentum
+  - Subsequent files feel easier by comparison
+
+- **Establish consistent patterns early**:
+  - First few files set the template
+  - Document patterns in commit messages
+  - Later files follow established conventions
+  - Reduces decision fatigue
+
+- **Identify files that don't need refactoring**:
+  - Not all timestamp references require changes
+  - Copyright dates, version numbers: leave alone
+  - Tests without time dependencies: skip
+  - Focus effort where it matters
+
+**** Execution Approach
+- **Maintain 100% test pass rate throughout**:
+  - Run tests after each file refactored
+  - Never commit broken tests
+  - Validates refactoring correctness immediately
+  - Builds trust in the process
+
+- **Work in batches but commit individually**:
+  - Refactor similar test patterns together
+  - But commit each file separately with detailed message
+  - Makes git history navigable
+  - Easier to revert specific changes if needed
+
+- **Use validation infrastructure**:
+  - Pre-commit hooks catch syntax errors
+  - Makefile targets (`make validate`, `make test-file`)
+  - Automated checks prevent regressions
+
+- **Document patterns in commits**:
+  - Before/after examples in commit messages
+  - List of changes made
+  - Pattern transformations explained
+  - Future maintainers understand the approach
+
+**** Project Management Lessons
+- **Track progress visibly**:
+  - Use todo lists to show what's done vs remaining
+  - Update counts: "16/23 files (70%) complete"
+  - Provides motivation and clarity
+
+- **Celebrate milestones**:
+  - Acknowledge when biggest challenges complete
+  - Note when majority threshold reached (>50%)
+  - Recognize systematic progress
+
+- **Know when you're done**:
+  - Some files genuinely don't need changes
+  - Don't force work where it doesn't apply
+  - Project can complete before all files touched
+
+**** Real-World Example: chime.el Timestamp Refactoring
+Project scope: 23 test files, 339 tests total
+- 16 files needed timestamp refactoring (251 tests)
+- 7 files had no timestamp dependencies (88 tests)
+- Completed over multiple sessions maintaining 100% pass rate
+- Strategic approach: Always chose largest remaining file
+- Result: Future-proof test suite, tests never expire
+
+Key insight: **Not all refactoring projects require touching every file**
+- Analyze which files actually need work
+- Skip files without relevant issues
+- Focus effort on high-impact changes
+- Don't let perfectionism create unnecessary work
+
 ## Red Flags
 
 Watch for and report these issues:
@@ -652,3 +765,4 @@ Watch for and report these issues:
 - Flaky tests that pass/fail intermittently
 - Tests that are too slow
 - Tests that require manual setup or verification
+- **Hardcoded dates in tests** - Will fail when dates pass, creates maintenance burden
