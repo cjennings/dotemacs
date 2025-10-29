@@ -9,7 +9,9 @@
 ;;
 ;; Key Bindings:
 ;; - d: Duplicate file at point (adds "-copy" before extension)
+;; - D: Delete marked files immediately (dired-do-delete)
 ;; - g: Quick access menu (jump to predefined directories)
+;; - G: Search with deadgrep in current directory
 ;; - f: Open system file manager in current directory
 ;; - o/O: Open file with xdg-open/custom command
 ;; - l: Copy file path (project-relative or home-relative)
