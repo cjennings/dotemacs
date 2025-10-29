@@ -109,7 +109,21 @@ enabling bidirectional sync so changes push back to Google Calendar."
   (setq org-gcal-local-timezone (cj/detect-system-timezone))
 
   ;; Reload client credentials (should already be loaded by org-gcal, but ensure it's set)
-  (org-gcal-reload-client-id-secret))
+  (org-gcal-reload-client-id-secret)
+
+  ;; Auto-save gcal files after sync completes
+  (defun cj/org-gcal-save-files-after-sync (&rest _)
+    "Save all org-gcal files after sync completes."
+    (dolist (entry org-gcal-fetch-file-alist)
+      (let* ((file (cdr entry))
+             (buffer (get-file-buffer file)))
+        (when (and buffer (buffer-modified-p buffer))
+          (with-current-buffer buffer
+            (save-buffer)
+            (message "Saved %s after org-gcal sync" (file-name-nondirectory file)))))))
+
+  ;; Advise org-gcal--sync-unlock which is called when sync completes
+  (advice-add 'org-gcal--sync-unlock :after #'cj/org-gcal-save-files-after-sync))
 
 ;; Set up automatic initial sync on boot with error handling
 ;;(run-with-idle-timer
