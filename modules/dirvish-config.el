@@ -8,6 +8,7 @@
 ;; ediff, playlist creation, path copying, and external file manager integration.
 ;;
 ;; Key Bindings:
+;; - d: Duplicate file at point (adds "-copy" before extension)
 ;; - g: Quick access menu (jump to predefined directories)
 ;; - f: Open system file manager in current directory
 ;; - o/O: Open file with xdg-open/custom command
@@ -144,6 +145,36 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
       (if (not (looking-at "^. d"))
           (dired-mark 1))
       (forward-line 1))))
+
+;;; ------------------------ Dirvish Duplicate File Copy ------------------------
+
+(defun cj/dirvish-duplicate-file ()
+  "Duplicate the file at point with '-copy' suffix before the extension.
+Examples:
+  report.pdf → report-copy.pdf
+  script.el → script-copy.el
+  README → README-copy"
+  (interactive)
+  (let* ((file (dired-get-filename nil t))
+         (dir (file-name-directory file))
+         (base (file-name-base file))
+         (ext (file-name-extension file t)) ; includes the dot
+         (new-name (concat base "-copy" ext))
+         (new-path (expand-file-name new-name dir)))
+    (unless file
+      (user-error "No file at point"))
+    (when (file-directory-p file)
+      (user-error "Cannot duplicate directories, only files"))
+
+    ;; Check if target already exists
+    (when (file-exists-p new-path)
+      (unless (y-or-n-p (format "File '%s' already exists. Overwrite? " new-name))
+        (user-error "Cancelled")))
+
+    ;; Copy the file
+    (copy-file file new-path t)
+    (revert-buffer)
+    (message "Duplicated: %s → %s" (file-name-nondirectory file) new-name)))
 
 ;;; ----------------------- Dirvish Open File Manager Here ----------------------
 
@@ -286,7 +317,7 @@ regardless of what file or subdirectory the point is on."
    ("M-p"     . dirvish-peek-toggle)
    ("M-s"     . dirvish-setup-menu)
    ("TAB"     . dirvish-subtree-toggle)
-   ("d"       . dired-flag-file-deletion)
+   ("d"       . cj/dirvish-duplicate-file)
    ("f"       . cj/dirvish-open-file-manager-here)
    ("g"       . dirvish-quick-access)
    ("o"       . cj/xdg-open)
