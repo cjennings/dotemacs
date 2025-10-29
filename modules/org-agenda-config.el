@@ -54,7 +54,7 @@
                  (window-height . fit-window-to-buffer)))
 
   ;; reset s-left/right each time org-agenda is enabled
-  (add-hook 'org-agenda-mode-hook (lambda ()
+s  (add-hook 'org-agenda-mode-hook (lambda ()
                                     (local-set-key (kbd "s-<right>") #'org-agenda-todo-nextset)
                                     (local-set-key (kbd "s-<left>")
                                                    #'org-agenda-todo-previousset)))
@@ -68,7 +68,6 @@
 
 (defun cj/add-files-to-org-agenda-files-list (directory)
   "Search for files named \\='todo.org\\=' add them to org-project-files.
-
 DIRECTORY is a string of the path to begin the search."
   (interactive "D")
   (setq org-agenda-files
@@ -81,10 +80,9 @@ DIRECTORY is a string of the path to begin the search."
 ;; agenda targets is the schedule, contacts, project todos,
 ;; inbox, and org roam projects.
 (defun cj/build-org-agenda-list ()
-  "Rebuilds the org agenda list without checking org-roam for projects.
-
+  "Rebuilds the org agenda list.
 Begins with the inbox-file, schedule-file, and contacts-file.
-Then adds all todo.org files from projects-dir and code-dir.
+Then adds all todo.org files from projects-dir.
 Reports elapsed time in the messages buffer."
   (interactive)
   (let ((start-time (current-time)))
@@ -105,7 +103,6 @@ Reports elapsed time in the messages buffer."
 
 (defun cj/todo-list-all-agenda-files ()
   "Displays an \\='org-agenda\\=' todo list.
-
 The contents of the agenda will be built from org-project-files and org-roam
 files that have project in their filetag."
   (interactive)
@@ -118,7 +115,6 @@ files that have project in their filetag."
 
 (defun cj/todo-list-from-this-buffer ()
   "Displays an \\='org-agenda\\=' todo list built from the current buffer.
-
 If the current buffer isn't an org buffer, inform the user."
   (interactive)
   (if (eq major-mode 'org-mode)
@@ -153,7 +149,6 @@ If the current buffer isn't an org buffer, inform the user."
 
 (defun cj/org-agenda-skip-subtree-if-not-overdue ()
   "Skip an agenda subtree if it is not an overdue deadline or scheduled task.
-
 An entry is considered overdue if it has a scheduled or deadline date strictly
 before today, is not marked as done, and is not a habit."
   (let* ((subtree-end (save-excursion (org-end-of-subtree t)))
@@ -176,7 +171,6 @@ before today, is not marked as done, and is not a habit."
 
 (defun cj/org-skip-subtree-if-priority (priority)
   "Skip an agenda subtree if it has a priority of PRIORITY.
-
 PRIORITY may be one of the characters ?A, ?B, or ?C."
   (let ((subtree-end (save-excursion (org-end-of-subtree t)))
         (pri-value (* 1000 (- org-lowest-priority priority)))
@@ -187,7 +181,6 @@ PRIORITY may be one of the characters ?A, ?B, or ?C."
 
 (defun cj/org-skip-subtree-if-keyword (keywords)
   "Skip an agenda subtree if it has a TODO keyword in KEYWORDS.
-
 KEYWORDS must be a list of strings."
   (let ((subtree-end (save-excursion (org-end-of-subtree t))))
     (if (member (org-get-todo-state) keywords)
@@ -224,12 +217,10 @@ KEYWORDS must be a list of strings."
 
 (defun cj/main-agenda-display ()
   "Display the main daily org-agenda view.
-
 This uses all org-agenda targets and presents three sections:
 - All unfinished priority A tasks
 - Today's schedule, including habits with consistency graphs
 - All priority B and C unscheduled/undeadlined tasks
-
 The agenda is rebuilt from all sources before display, including:
 - inbox-file and schedule-file
 - Org-roam nodes tagged as \"Project\"
@@ -263,9 +254,11 @@ This allows a line to show in an agenda without being scheduled or a deadline."
 
 ;; Install CHIME from GitHub using use-package :vc (Emacs 29+)
 (use-package chime
-  :vc (:url "https://github.com/cjennings/chime.el" :rev :newest)
-  :after (alert org-agenda)
   :demand t
+  ;; :vc (:url "https://github.com/cjennings/chime.el" :rev :newest) ;; using latest on github
+  :after (alert org-agenda)
+  :ensure nil ;; using local version
+  :load-path "~/code/chime.el"
   :bind
   ("C-c A" . chime-check)
   :config
@@ -275,8 +268,12 @@ This allows a line to show in an agenda without being scheduled or a deadline."
 
   ;; Modeline display: show upcoming events within 2 hours
   (setq chime-enable-modeline t)
-  (setq chime-modeline-lookahead 120)
+  (setq chime-modeline-lookahead 180)
   (setq chime-modeline-format " ⏰ %s")
+
+  ;; Tooltip settings: show up to 20 upcoming events (regardless of how far in future)
+  ;; chime-modeline-tooltip-lookahead defaults to 525600 (1 year) - effectively unlimited
+  (setq chime-modeline-tooltip-max-events 20)
 
   ;; Modeline content: show title and countdown only (omit event time)
   (setq chime-notification-text-format "%t (%u)")
