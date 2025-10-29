@@ -97,9 +97,12 @@
   :commands (with-mock mocklet mocklet-function)) ;; mock/stub framework
 
 ;; --------------------------------- Elisp Lint --------------------------------
+;; Comprehensive linting for Emacs Lisp code (indentation, whitespace, etc.)
+;; Used by chime.el 'make lint' target for code quality checks
 
 (use-package elisp-lint
-  :commands (elisp-lint-file elisp-lint-directory))
+  :ensure t
+  :commands (elisp-lint-file elisp-lint-directory elisp-lint-files-batch))
 
 ;; ------------------------------ Package Tooling ------------------------------
 
