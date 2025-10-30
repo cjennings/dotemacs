@@ -43,6 +43,7 @@
 (use-package org-agenda
   :ensure nil ;; built-in
   :after (org)
+  :demand t
   :config
   (setq org-agenda-prefix-format '((agenda   . " %i %-25:c%?-12t% s")
                                    (timeline . "  % s")
@@ -62,12 +63,12 @@
                  (window-height . fit-window-to-buffer)))
 
   ;; reset s-left/right each time org-agenda is enabled
-s  (add-hook 'org-agenda-mode-hook (lambda ()
+  (add-hook 'org-agenda-mode-hook (lambda ()
                                     (local-set-key (kbd "s-<right>") #'org-agenda-todo-nextset)
                                     (local-set-key (kbd "s-<left>")
                                                    #'org-agenda-todo-previousset)))
 
-  ;; build org-agenda-list for the first time after emacs init completes.
+  ;; Rebuild org-agenda-files at startup to gather all todo.org files from projects
   (add-hook 'emacs-startup-hook #'cj/build-org-agenda-list))
 
 ;; ------------------------ Add Files To Org Agenda List -----------------------
@@ -102,12 +103,6 @@ Reports elapsed time in the messages buffer."
 
 	(message "Rebuilt org-agenda-files in %.3f sec"
 			 (float-time (time-subtract (current-time) start-time)))))
-
-;; Run the above once after Emacs startup when idle for 1 second
-;; makes regenerating the list much faster
-(add-hook 'emacs-startup-hook
-		  (lambda ()
-			(run-with-idle-timer 1 nil #'cj/build-org-agenda-list)))
 
 (defun cj/todo-list-all-agenda-files ()
   "Displays an \\='org-agenda\\=' todo list.
@@ -264,7 +259,7 @@ This allows a line to show in an agenda without being scheduled or a deadline."
 (use-package chime
   :demand t
   ;; :vc (:url "https://github.com/cjennings/chime.el" :rev :newest) ;; using latest on github
-  :after (alert org-agenda)
+  :after alert  ; Removed org-agenda - chime.el requires it internally
   :ensure nil ;; using local version
   :load-path "~/code/chime.el"
   :bind
@@ -276,20 +271,21 @@ This allows a line to show in an agenda without being scheduled or a deadline."
 
   ;; Modeline display: show upcoming events within 2 hours
   (setq chime-enable-modeline t)
-  (setq chime-modeline-lookahead-minutes 180)
+  (setq chime-modeline-lookahead-minutes (* 3 60))
   (setq chime-modeline-format " ⏰ %s")
 
   ;; Tooltip settings: show up to 20 upcoming events (regardless of how far in future)
   ;; chime-tooltip-lookahead-hours defaults to 8760 (1 year) - effectively unlimited
-  (setq chime-modeline-tooltip-max-events 20)
+  (setq chime-modeline-tooltip-max-events 10)
+  (setq chime-tooltip-lookahead-hours (* 6 24))
 
   ;; Modeline content: show title and countdown only (omit event time)
-  (setq chime-notification-text-format "%t (%u)")
+  (setq chime-notification-text-format "%t %u")
 
   ;; Time-until format: compact style like " in 10m" or " in 1h 37m"
-  (setq chime-time-left-format-short " in %mm")      ; Under 1 hour: " in 10m"
-  (setq chime-time-left-format-long " in %hh %mm")   ; 1 hour+: " in 1h 37m"
-  (setq chime-time-left-format-at-event "right now")
+  (setq chime-time-left-format-short " in %mm ")      ; Under 1 hour: " in 10m"
+  (setq chime-time-left-format-long " in %hh %mm ")   ; 1 hour+: " in 1h 37m"
+  (setq chime-time-left-format-at-event "now")
 
   ;; Title truncation: limit long event titles to 15 characters
   ;; This affects only the title, not the icon or countdown
@@ -310,7 +306,7 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   (setq chime-predicate-blacklist
         '(chime-done-keywords-predicate))
 
-  ;; Enable chime-mode automatically
+  ;; Enable chime-mode - validation happens on first check after startup-delay
   (chime-mode 1))
 
 ;; which-key labels
