@@ -82,7 +82,8 @@ Prompts user for the action when executing."
   (setq mu4e-maildir mail-dir)                                            ;; same as above (for newer mu4e)
   (setq mu4e-sent-messages-behavior 'delete)                              ;; don't save to "Sent", IMAP does this already
   (setq mu4e-show-images t)                                               ;; show embedded images
-  (setq mu4e-update-interval nil)                                         ;; disallow automatic checking for new emails
+  (setq mu4e-update-interval 600)                                         ;; check for new mail every 10 minutes (600 seconds)
+  (setq mu4e-hide-index-messages t)                                       ;; don't show indexing messages buffer
 
   ;; Format=flowed for better plain text email handling
   ;; This will be automatically disabled when org-msg is active
