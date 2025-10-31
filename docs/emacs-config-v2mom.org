@@ -1,0 +1,299 @@
+#+TITLE: Emacs Configuration V2MOM
+#+AUTHOR: Craig Jennings
+#+DATE: 2025-10-30
+#+FILETAGS: :strategy:planning:v2mom:
+
+* What is V2MOM?
+
+V2MOM is a strategic framework used to clarify goals and priorities:
+- *Vision:* What do you want to achieve?
+- *Values:* What principles guide decisions?
+- *Methods:* How will you achieve the vision?
+- *Obstacles:* What's in your way?
+- *Metrics:* How will you measure success?
+
+This document provides strategic clarity for prioritizing Emacs configuration work.
+
+* Vision
+
+Your personal ideal Emacs configuration allows you to work at the speed of your own thought. It's stable and never needs edge-case bug fixing. The functionality covers your workflow such that you can work all day in Emacs for any of the following task areas:
+
+- Programming in any language, including emacs-lisp, common-lisp, scheme, golang, and c
+- Reading ebooks, including marginalia handling
+- Listening to music, including playlist management
+- Listening to podcasts, including saving episodes
+- Task organizing and planning
+- Calendaring, including syncing with google calendar
+- Alerting and notifications on tasks and calendar events
+- Timer/stopwatch functionality, including pomodoro presets
+- Audio and desktop recording
+- Memorization drills
+- Email, including email-to-task integration
+- Messaging, i.e., IRC
+- File-management, including extensive integration, and DWM scratchpad integration outside Emacs
+- Shell commands, leveraging vterm and eshell with custom methods, and DWM scratchpad integration outside Emacs
+
+Anytime you make a change in the config, you have unit tests to tell you quickly if the change created unexpected issues. You have a test-runner that integrates with your workflow.
+
+* Values
+
+** Intuitive
+
+*Definition:* Intuition comes from muscle memory, clear mnemonics, and just-in-time discovery that reinforces learning without blocking productivity.
+
+*** Keybindings Build Intuition Through Layers
+1. *Muscle memory first* - C-; on home row becomes automatic habit
+2. *Mnemonics provide "aha!" moments* - C-c **m** for mail creates dopamine hits that cement permanent memory
+3. *Which-key teaches through active recall* - Appears after you try (not before), forcing attempt without wasting time
+
+The timing matters: which-key's delay is calibrated so you're challenged to remember, but not blocked from working.
+
+*** What Breaks Intuition
+- *Physically awkward keybindings* - C-c 1 z C-c f requires hand contortions and offers no mnemonic
+- *Syntax overhead* - Parentheses tracking steals time from real learning (logic bugs, architecture understanding)
+- *Poor architecture* - Common actions (like "save all attachments") shouldn't require architectural archaeology
+
+*** Code Reads "Like a Newspaper"
+- Each use-package declaration is a *story* (topic = package)
+- Configuration settings are *facts* (what it does, how it behaves)
+- Clear variable/method naming (yours + maintainers) makes code read like English
+- Accessible to intermediate elisp readers without deep archaeology
+
+*** Principle
+*Intuition is earned through repeated success, not instant magic.* The config should make success easy to achieve and memorable when it happens.
+
+
+
+** Fast
+
+*Definition:* Fast means staying in flow. Startup and org-agenda must not make me wait. Everything else is already acceptable.
+
+*** Performance Targets
+
+*Startup Time:*
+- Current: ~3.8 seconds (real clock time, not Emacs-reported)
+- Target: ~1 second (aspirational, may not be realistic given package count)
+- Comfortable: ~2 seconds (±)
+
+*Measurement:*
+#+begin_src bash
+time emacs --eval '(save-buffers-kill-emacs)'  # Real startup time
+#+end_src
+
+*Note:* Emacs-reported time is inaccurate. Messages buffer continues populating and Emacs remains unresponsive after "loaded" message appears.
+
+*** Critical Performance Issues (Must Fix)
+
+1. *Emacs startup* - 3.8s is too slow
+   - Network check adds 1+ seconds (DELETE THIS)
+   - Eager loading vs lazy loading
+
+2. *Opening org-agenda for first time* - **THE BOTTLENECK**
+   - "Takes forever and a full work day"
+   - Likely: recursive directory scan, no caching, too many files
+   - Solution: Profile first (build debug-profiling.el), then optimize
+
+*** Must Be Instant (Flow-Critical)
+- Keybinding response
+- Changing projects in projectile (already good ✓)
+- Opening large org files (already good ✓, except malformed files with stray "*"s)
+- Buffer/window operations
+
+*** Can Take 1-2 Seconds (Acceptable)
+- *Mail sync* - Consider putting on timer instead of manual trigger
+- *Calibredb* (PDFs/Epubs) - Known solution: shrink inventory to <1k books or contribute optimizations
+- *Org-noter* opening PDFs/Epubs - Needs reliability + reasonable speed
+- *Looking up org-noter notes* - Should be easy to pull into other documents
+- *Initial file indexing* (projectile, etc.)
+
+*** Disabled Due to Performance (Need Solutions)
+- *Grammar checker* - Installed but turned off because it slows everything down
+  - No task exists to fix this yet
+  - Breaks concentration when writing
+
+- *Bibliography management* - Don't know how to do in Emacs
+  - Worried about broken/slow tools breaking writing flow
+  - Need solution that "just works"
+
+*** Principle
+*Speed is about flow, not milliseconds.* Startup and agenda are flow-breakers. Everything else is fine. Don't optimize what doesn't hurt.
+
+
+
+** Simple
+
+*Definition:* Simple means clear, maintainable code following production software practices. Simplicity is a discipline that produces reliability. Config is production software - treat it as such.
+
+*** What Makes Code Simple
+1. *Clear naming* - Variables and functions say what they do
+2. *Small functions* - Easy to understand, test, and modify
+3. *Good comments* - NOT obvious comments ("cat with post-it note saying 'cat'")
+
+*Good comments:*
+- Navigation markers for long files
+- Explain complex/non-obvious logic
+- Document unobvious impacts of settings
+- Answer "why" not "what"
+
+*Bad comments:*
+#+begin_src emacs-lisp
+;; declare a variable
+(defvar variable 10)
+#+end_src
+
+*** Abstractions and Magic
+- *Abstractions are fine* if they serve a purpose
+- *Macros are irritating* when unnecessary, but acceptable when warranted
+- *Magic is acceptable* if it's reliable and you can build a mental model
+
+*Principle:* "I want to understand every line of what my config does, or at least have a decent mental model of how it probably works. Never use a tool you can't fully trust."
+
+*** Package Count
+Package count itself isn't a concern. Quality and maintainability matter.
+
+*Concerns:*
+- More packages = more potential breakage
+- Need ability to roll back when packages break (localrepo for package snapshots)
+- Maintenance burden is real, but manageable with good practices
+
+*Not concerned about:*
+- Absolute number of packages
+- Startup time impact (if lazy-loaded properly)
+- Cognitive load (if organized well)
+
+*** Config IS Production Software
+
+*Key insight:* "My Emacs config IS production software. I use it more than probably every other application combined. The impact when it's broken can crush my productivity."
+
+This means:
+- *Apply production practices:* Testing, modularity, documentation, version control
+- *Plan for failure:* Rollback capability (localrepo), error handling, graceful degradation
+- *Modular design:* Extract custom code into packages when it grows
+- *Long-term maintenance:* Architecture matters, technical debt has real cost
+
+*** Personal Software Platform
+"I see my config as a personal software project built on the software platform called Emacs. Emacs has taught me a great deal about how to build software platforms well."
+
+*Implications:*
+- Config follows software engineering principles
+- Custom functionality becomes packages (chime, org-msg, potentially jumper)
+- Good architecture enables evolution
+- Quality matters because uptime matters
+
+*** Why Simplicity Matters
+When config breaks, productivity is crushed. The discipline of simplicity produces reliability:
+- Simple code is easier to fix when it breaks
+- Simple architecture enables graceful degradation
+- Simple practices (testing, rollback) provide safety nets
+- Simple means never using tools you can't trust
+
+*** Principle
+*Simple means maintainable production software, not minimal or primitive.* Complexity is acceptable when it serves the vision and can be understood or trusted. **Simplicity is the practice that produces reliability as an outcome.**
+
+
+
+** Summary: Three Core Values
+
+1. *Intuitive* - Muscle memory, mnemonics, just-in-time discovery. Code reads like a newspaper.
+2. *Fast* - Startup and org-agenda must not break flow. Everything else is acceptable.
+3. *Simple* - Clear, maintainable, production-quality code. Simplicity produces reliability.
+
+
+
+* Methods
+
+#+begin_quote
+Working section - HOW will you achieve the vision while honoring the values?
+
+*PAUSED HERE - NEED CRAIG'S INPUT*
+
+Draft methods proposed by Claude (need review):
+1. Ruthless prioritization - V2MOM guides triage, cancel what doesn't serve vision
+2. Profile before optimizing - Build observability (debug-profiling.el), measure first
+3. Test-driven development - Tests give confidence to refactor, catch regressions
+4. Ship > Research - Execute existing specs before exploring new ones
+5. Weekly triage ritual - Review todos, cancel stale items, keep < 20 active
+6. Measure metrics - Track startup time, agenda time, test coverage, todo count
+7. Extract packages - When custom code grows, make it a package (chime, org-msg pattern)
+8. Incremental execution - Ship small, test, iterate. Portions not all-at-once.
+
+*Questions for Craig:*
+- Which of these do you already do consistently?
+- Which do you want to do but don't yet?
+- Am I missing any important methods?
+
+*Fill in below after discussion:*
+#+end_quote
+
+
+
+* Obstacles
+
+#+begin_quote
+Working section - What's preventing you from achieving the vision?
+
+*Questions to answer:*
+- What technical challenges block you?
+- What behavioral patterns get in your way?
+- What external constraints limit you?
+- What trade-offs are hardest to make?
+
+*Fill in below:*
+#+end_quote
+
+
+
+* Metrics
+
+#+begin_quote
+Working section - How will you know you're succeeding?
+
+*Questions to answer:*
+- What numbers will you track?
+- How will you measure performance?
+- How will you measure productivity?
+- What leading indicators show progress?
+
+*Fill in below:*
+#+end_quote
+
+
+
+* How to Use This V2MOM
+
+** For Decision Making
+When considering a new task, package, or feature:
+1. Does it serve the *Vision*?
+2. Does it align with the *Values*?
+3. Is it addressed in the *Methods*?
+4. Does it overcome an *Obstacle*?
+5. Does it improve a *Metric*?
+
+If the answer is "no" to all five → CANCEL the task.
+
+** For Triage
+When reviewing todo.org:
+- Tasks aligned with V2MOM → Keep and prioritize
+- Tasks not aligned with V2MOM → CANCEL
+- Tasks that are interesting but not important → CANCEL
+- Tasks with complete code already → Execute immediately
+
+** For Weekly Review
+Every Sunday (30 minutes):
+1. Review metrics - Are they improving?
+2. Review obstacles - Any new ones? Any resolved?
+3. Review active todos - Still aligned with V2MOM?
+4. Cancel stale/misaligned tasks
+5. Plan next week's focus
+
+* Completion Status
+
+- [X] Vision - Complete (kept from original todo.org)
+- [X] Values - Complete (Intuitive, Fast, Simple)
+- [ ] Methods - IN PROGRESS (have draft, need Craig's input)
+- [ ] Obstacles - TODO
+- [ ] Metrics - TODO
+
+*Last Updated:* 2025-10-30 (Session 1)
+*Next Session:* Continue with Methods section (review draft list with Craig)
+*Estimated Time to Complete:* 20-30 minutes (Methods + Obstacles + Metrics)
