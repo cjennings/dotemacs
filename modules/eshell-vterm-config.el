@@ -125,7 +125,6 @@
 (advice-add 'eshell-life-is-too-much :after 'cj/eshell-delete-window-on-exit)
 
 (use-package eshell-toggle
-  :after eshell
   :custom
   (eshell-toggle-size-fraction 2)
   (eshell-toggle-run-command nil)
