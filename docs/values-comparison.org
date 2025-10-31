@@ -1,0 +1,107 @@
+#+TITLE: Values Comparison - Simple vs Reliability
+#+DATE: 2025-10-30
+
+* What Currently Supports Each Value
+
+| Theme/Practice                        | Simple | Reliability |
+|---------------------------------------+--------+-------------|
+| *Code Quality*                        |        |             |
+| Clear naming                          | ✓      |             |
+| Small functions                       | ✓      |             |
+| Good comments (why not what)          | ✓      |             |
+| Abstractions when warranted           | ✓      |             |
+|---------------------------------------+--------+-------------|
+| *Architecture*                        |        |             |
+| Modular design                        | ✓      |             |
+| Extract custom code into packages     | ✓      |             |
+| Good architecture enables evolution   | ✓      |             |
+| Technical debt has real cost          | ✓      |             |
+|---------------------------------------+--------+-------------|
+| *Production Practices*                |        |             |
+| Testing                               | ✓      | ✓           |
+| Documentation                         | ✓      |             |
+| Version control                       | ✓      |             |
+|---------------------------------------+--------+-------------|
+| *Failure Planning*                    |        |             |
+| Rollback capability (localrepo)       | ✓      | ✓           |
+| Error handling                        | ✓      | ✓           |
+| Graceful degradation                  | ✓      | ✓           |
+|---------------------------------------+--------+-------------|
+| *Trust & Stability*                   |        |             |
+| Never use tools you can't trust       | ✓      | ✓           |
+| Uptime matters                        |        | ✓           |
+| Config breakage crushes productivity  |        | ✓           |
+| More packages = more breakage risk    |        | ✓           |
+| Need confidence to refactor           |        | ✓           |
+|---------------------------------------+--------+-------------|
+
+* Key Quotes Supporting Each
+
+** Simple
+- "Config IS production software - treat it as such"
+- "Clear naming, small functions, good comments"
+- "Apply production practices: Testing, modularity, documentation"
+- "Simple means maintainable production software, not minimal or primitive"
+
+** Reliability/Resilience
+- "Never use a tool you can't fully trust"
+- "The impact when it's broken can crush my productivity"
+- "More packages = more potential breakage. Need ability to roll back"
+- "Plan for failure: Rollback capability, error handling, graceful degradation"
+- "Quality matters because uptime matters"
+
+* Analysis
+
+** If Reliability is part of Simple:
+*Simple means:* Maintainable, trustworthy, production-quality code that fails gracefully
+
+*Pros:*
+- Keeps to 3 values
+- Failure planning is a consequence of good engineering (already in Simple)
+- Less redundancy
+
+*Cons:*
+- "Simple" might not clearly convey the "must not break" urgency
+- Rollback/resilience themes could get lost
+
+** If Reliability is its own value:
+*Simple means:* Clear, maintainable code
+*Reliability means:* Never breaks, fails gracefully, always recoverable
+
+*Pros:*
+- Explicit focus on uptime/stability
+- Clear that this is mission-critical (crushes productivity when broken)
+- Resilience practices (localrepo, testing, error handling) have clear home
+
+*Cons:*
+- 4 values instead of 3
+- Some overlap with Simple
+
+* Decision Framework
+
+Ask yourself:
+
+1. When choosing between two approaches, would "reliability" change your decision differently than "simple"?
+
+   Example: Complex caching solution that's faster but harder to debug
+   - Simple says: "Too complex, harder to maintain"
+   - Reliability says: "If it breaks less often and has rollback, worth the complexity"
+
+2. Does "config can't break" deserve equal weight with Fast and Intuitive?
+
+3. Is the "trust" theme strong enough to be its own value?
+
+* Recommendation
+
+If you had to choose, I'd suggest: **Keep Simple, absorb Reliability into it.**
+
+Why? Most of your reliability practices (testing, rollback, error handling) are already listed under "production software practices" in Simple. The "never use tools you can't trust" is already there too.
+
+**But** - you could rename Simple to "**Reliable**" or "**Solid**" if the stability theme is more important than the simplicity theme.
+
+Alternative value names that might capture both:
+- *Solid* - Stable, maintainable, trustworthy
+- *Resilient* - Fails gracefully, recovers easily, maintainable
+- *Dependable* - Simple enough to trust, robust enough to rely on
+
+What resonates?
