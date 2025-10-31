@@ -27,13 +27,13 @@
   (vertico-resize nil)             ; Don't resize the minibuffer
   (vertico-sort-function #'vertico-sort-history-alpha) ; History first, then alphabetical
   :bind (:map vertico-map
-			  ("C-j"   . vertico-next)
-			  ("C-k"   . vertico-previous)
-			  ("C-l"   . vertico-insert)  ; Insert current candidate
-			  ("RET"   . vertico-exit)
-			  ("C-RET" . vertico-exit-input)
-			  ("M-RET" . minibuffer-force-complete-and-exit)
-			  ("TAB"   . minibuffer-complete))
+              ("C-j"   . vertico-next)
+              ("C-k"   . vertico-previous)
+              ("C-l"   . vertico-insert)  ; Insert current candidate
+              ("RET"   . vertico-exit)
+              ("C-RET" . vertico-exit-input)
+              ("M-RET" . minibuffer-force-complete-and-exit)
+              ("TAB"   . minibuffer-complete))
   :init
   (vertico-mode))
 
@@ -58,45 +58,45 @@
 (use-package consult
   :demand t
   :bind (;; C-c bindings (mode-specific-map)
-		 ("C-c h" . consult-history)
-		 ;; C-x bindings (ctl-x-map)
-		 ("C-x M-:" . consult-complex-command)
-		 ("C-x b" . consult-buffer)
-		 ("C-x 4 b" . consult-buffer-other-window)
-		 ("C-x 5 b" . consult-buffer-other-frame)
-		 ("C-x r b" . consult-bookmark)
-		 ("C-x p b" . consult-project-buffer)
-		 ;; M-g bindings (goto-map)
-		 ("M-g e" . consult-compile-error)
-		 ("M-g f" . consult-flymake)
-		 ("M-g g" . consult-goto-line)
-		 ("M-g M-g" . consult-goto-line)
-		 ("M-g o" . consult-outline)
-		 ("M-g m" . consult-mark)
-		 ("M-g k" . consult-global-mark)
-		 ("M-g i" . consult-imenu)
-		 ("M-g I" . consult-imenu-multi)
-		 ;; M-s bindings (search-map)
-		 ("M-s d" . consult-find)
-		 ("M-s D" . consult-locate)
-		 ("M-s g" . consult-grep)
-		 ("M-s G" . consult-git-grep)
-		 ("M-s r" . consult-ripgrep)
-		 ("M-s l" . consult-line)
-		 ("M-s L" . consult-line-multi)
-		 ("M-s k" . consult-keep-lines)
-		 ("M-s u" . consult-focus-lines)
-		 ;; Isearch integration
-		 ("M-s e" . consult-isearch-history)
-		 :map isearch-mode-map
-		 ("M-e" . consult-isearch-history)
-		 ("M-s e" . consult-isearch-history)
-		 ("M-s l" . consult-line)
-		 ("M-s L" . consult-line-multi)
-		 ;; Minibuffer history
-		 :map minibuffer-local-map
-		 ("M-s" . consult-history)
-		 ("M-r" . consult-history))
+         ("C-c h" . consult-history)
+         ;; C-x bindings (ctl-x-map)
+         ("C-x M-:" . consult-complex-command)
+         ("C-x b" . consult-buffer)
+         ("C-x 4 b" . consult-buffer-other-window)
+         ("C-x 5 b" . consult-buffer-other-frame)
+         ("C-x r b" . consult-bookmark)
+         ("C-x p b" . consult-project-buffer)
+         ;; M-g bindings (goto-map)
+         ("M-g e" . consult-compile-error)
+         ("M-g f" . consult-flymake)
+         ("M-g g" . consult-goto-line)
+         ("M-g M-g" . consult-goto-line)
+         ("M-g o" . consult-outline)
+         ("M-g m" . consult-mark)
+         ("M-g k" . consult-global-mark)
+         ("M-g i" . consult-imenu)
+         ("M-g I" . consult-imenu-multi)
+         ;; M-s bindings (search-map)
+         ("M-s d" . consult-find)
+         ("M-s D" . consult-locate)
+         ("M-s g" . consult-grep)
+         ("M-s G" . consult-git-grep)
+         ("M-s r" . consult-ripgrep)
+         ("M-s l" . consult-line)
+         ("M-s L" . consult-line-multi)
+         ("M-s k" . consult-keep-lines)
+         ("M-s u" . consult-focus-lines)
+         ;; Isearch integration
+         ("M-s e" . consult-isearch-history)
+         :map isearch-mode-map
+         ("M-e" . consult-isearch-history)
+         ("M-s e" . consult-isearch-history)
+         ("M-s l" . consult-line)
+         ("M-s L" . consult-line-multi)
+         ;; Minibuffer history
+         :map minibuffer-local-map
+         ("M-s" . consult-history)
+         ("M-r" . consult-history))
 
   :hook (completion-list-mode . consult-preview-at-point-mode)
 
@@ -105,14 +105,14 @@
   ;; preview for =consult-register', =consult-register-load',
   ;; =consult-register-store' and the Emacs built-ins.
   (setq register-preview-delay 0.5
-		register-preview-function #'consult-register-format)
+        register-preview-function #'consult-register-format)
 
   ;; Optionally tweak the register preview window.
   (advice-add #'register-preview :override #'consult-register-window)
 
   ;; Configure other variables and modes
   (setq xref-show-xrefs-function #'consult-xref
-		xref-show-definitions-function #'consult-xref)
+        xref-show-definitions-function #'consult-xref)
 
   :config
   ;; Configure preview. Default is 'any.
@@ -138,9 +138,9 @@
 
 (use-package consult-dir
   :bind (("C-x C-d" . consult-dir)
-		 :map vertico-map
-		 ("C-x C-d" . consult-dir)
-		 ("C-x C-j" . consult-dir-jump-file))
+         :map vertico-map
+         ("C-x C-d" . consult-dir)
+         ("C-x C-j" . consult-dir-jump-file))
   :config
   (add-to-list 'consult-dir-sources 'consult-dir--source-tramp-ssh t)
   (setq consult-dir-project-list-function #'consult-dir-projectile-dirs))
@@ -154,11 +154,11 @@
   (completion-styles '(orderless basic))
   (completion-category-defaults nil)
   (completion-category-overrides '((file (styles partial-completion orderless basic))
-								   (multi-category (styles orderless basic))))
+                                   (multi-category (styles orderless basic))))
   (orderless-matching-styles '(orderless-literal
-							   orderless-regexp
-							   orderless-initialism
-							   orderless-prefixes)))
+                               orderless-regexp
+                               orderless-initialism
+                               orderless-prefixes)))
 
 ;; ---------------------------------- Embark -----------------------------------
 ;; Contextual actions - provides right-click like functionality
@@ -178,9 +178,9 @@
   :config
   ;; Hide the mode line of the Embark live/completions buffers
   (add-to-list 'display-buffer-alist
-			   '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
-				 nil
-				 (window-parameters (mode-line-format . none)))))
+               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                 nil
+                 (window-parameters (mode-line-format . none)))))
 
 ;; --------------------------- Consult Integration ----------------------------
 ;; Additional integrations for specific features
@@ -194,7 +194,7 @@
 (use-package consult-flycheck
   :after flycheck
   :bind (:map flycheck-mode-map
-			  ("C-c ! c" . consult-flycheck)))
+              ("C-c ! c" . consult-flycheck)))
 
 ;; ---------------------------------- Company ----------------------------------
 ;; In-buffer completion for text and code
@@ -204,9 +204,9 @@
   :hook (after-init . global-company-mode)
   :bind
   (:map company-active-map
-		("<tab>" . company-complete-selection)
-		("C-n" . company-select-next)
-		("C-p" . company-select-previous))
+        ("<tab>" . company-complete-selection)
+        ("C-n" . company-select-next)
+        ("C-p" . company-select-previous))
   :custom
   (company-backends '(company-capf company-files company-keywords))
   (company-idle-delay 2)
@@ -220,9 +220,9 @@
   :config
   ;; Disable company in mail-related modes
   (setq company-global-modes
-		'(not message-mode
-			  mu4e-compose-mode
-			  org-msg-edit-mode)))
+        '(not message-mode
+              mu4e-compose-mode
+              org-msg-edit-mode)))
 
 
 (use-package company-quickhelp
@@ -251,6 +251,16 @@
   :demand t
   :config
   (company-prescient-mode))
+
+;; -------------------------- Consult Line Or Repeat -------------------------
+
+(defun cj/consult-line-or-repeat ()
+  "Call consult-line, or repeat last search if called twice."
+  (interactive)
+  (if (eq last-command 'cj/consult-line-or-repeat)
+      (vertico-repeat)
+    (consult-line)))
+(keymap-global-set "C-s" #'cj/consult-line-or-repeat)
 
 ;; which-key labels
 (with-eval-after-load 'which-key
