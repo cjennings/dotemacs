@@ -1,0 +1,263 @@
+#+TITLE: 🚨 ACTIVE PROJECT - READ THIS FIRST 🚨
+#+AUTHOR: Claude Code Session Notes
+#+DATE: 2025-10-30
+
+* CURRENT PROJECT STATUS
+
+** 🎯 What We're Doing
+Working through a systematic approach to clean up and prioritize Craig's Emacs config work:
+
+1. ✅ *COMPLETE V2MOM* (Vision, Values, Methods, Obstacles, Metrics) - IN PROGRESS
+2. ⏳ *TRIAGE todo.org* - Use V2MOM to ruthlessly cancel ~60% of tasks
+3. ⏳ *EXECUTE TIER 1* - Ship quick wins (network check removal, Corfu, bug fixes)
+4. ⏳ *BUILD OBSERVABILITY* - Create profiling infrastructure (TIER 2)
+5. ⏳ *SYSTEMATIC EXECUTION* - Work through prioritized tasks one by one
+
+** 📍 Where We Are Right Now
+*Session Started:* 2025-10-30
+*Current Step:* V2MOM Methods section (60% complete - Vision + Values done)
+*Time Committed:* ~1 hour sessions, working systematically
+*Status:* PAUSED between sessions - resuming later this evening
+
+** 📄 Key Documents
+
+*** Primary Working Documents
+- *V2MOM:* [[file:emacs-config-v2mom.org][emacs-config-v2mom.org]] - Strategic framework (ACTIVELY EDITING)
+- *Issues Analysis:* [[file:../issues.org][../issues.org]] - Claude's detailed analysis with TIER system and implementations
+- *Current Todos:* [[file:../todo.org][../todo.org]] - Craig's existing task list (~50+ items, needs triage)
+
+*** Reference Documents
+- *Config Root:* [[file:../init.el][../init.el]]
+- *Modules:* [[file:../modules/][../modules/]]
+- *Tests:* [[file:../tests/][../tests/]]
+
+** 🔑 Key Insights About Craig's Work Patterns
+
+*** Strengths
+- Thoughtful and strategic thinker
+- Good research skills (thorough specs, complete code examples)
+- Does ship things (dashboard, dirvish, network check fixes)
+- Recognizes need for V2MOM framework
+- Uses config daily for real work
+
+*** Patterns to Address
+1. *Research > Execution* - Has complete code for Corfu, difftastic, transcription workflow... still TODO
+2. *Priority Inflation* - Too many [#A]/[#B] items, unclear what's actually urgent
+3. *Incomplete Strategy* - V2MOM structure exists but sections are empty
+4. *Hard to Say No* - [#C]/[#D] items should be CANCELLED but remain in list
+5. *Side Projects Compete* - Dupre theme work competes with core config maintenance
+
+*** What Craig Told Us About Himself
+> "I am building tools both because they solve problems, but also because I enjoy building."
+
+This is healthy! But need balance:
+- Fix rough edges FIRST (daily pain points)
+- Build fun stuff SECOND (after maintenance)
+- Cancel distractions ALWAYS (Signal client, minimap, etc.)
+
+** 🎯 Agreed Goals for This Project
+
+*** Immediate (Next 2-3 Sessions)
+1. ✅ Complete V2MOM (IN PROGRESS)
+2. ⏳ Triage todo.org using V2MOM as filter
+3. ⏳ Execute quick wins: network check, Corfu migration, bug fixes
+4. ⏳ Build debug-profiling.el infrastructure
+
+*** Short Term (Next Month)
+5. Profile and optimize org-agenda performance
+6. Ship reveal.js presentation workflow
+7. Establish weekly triage ritual
+
+*** Long Term (Ongoing)
+8. Ship more than research
+9. Maintain < 20 active todos
+10. Measure metrics from V2MOM
+
+** 📋 TIER System from issues.org
+
+*** TIER 1: Do These First (High Impact, Low Effort) - 1 weekend
+- Remove network check (15 min)
+- Fix missing functions (30 min)
+- Corfu migration (2 hours)
+- Mood-line switch (30 min)
+- Bug fixes (1 hour)
+
+*** TIER 2: Build Observability (HIGHEST VALUE) - 1 week
+- Create debug-profiling.el module (3-4 hours)
+- Profile org-agenda-rebuild (1 hour)
+- Add instrumentation and caching (2 hours)
+- Test org-agenda filtering functions (2-3 hours)
+
+*** TIER 3: Quick Wins (After Profiling) - 1-2 hours each
+- Reveal.js presentation workflow (2 hours)
+- Difftastic integration (30 min)
+- Local package development workflow (1 hour)
+
+*** TIER 4: Maybe/Someday (Probably Never)
+- Code-maat reimplementation (HOLD)
+- LaTeX config (HOLD until concrete need)
+- Elfeed dashboard (HOLD - unclear if actually used)
+- DWIM shell integration (HOLD - current solution works)
+- Jumper package (HOLD - already maintaining chime + org-msg)
+
+** 🚫 Items That Should Be CANCELLED
+
+From todo.org, these don't serve the vision:
+- [#D] Signal Client - Not in vision
+- [#D] Awesome-tray / mode-icons - Already have modeline
+- [#C] Minimap - Interesting, not important
+- [#C] Install Magit TODOs - Already works fine
+- [#C] Git Timemachine litters buffers - Minor annoyance
+- Many Dupre theme TODOs - Side project competing with maintenance
+
+## 💡 Key Recommendations for Craig
+
+### Week 1: Strategy + Quick Wins
+1. Complete V2MOM (2-3 hours)
+2. Triage todo.org using V2MOM (1-2 hours)
+3. Execute items you already have code for (2-3 hours)
+
+### Week 2: Observability Infrastructure
+4. Build debug-profiling.el (3-4 hours)
+5. Profile org-agenda (1 hour)
+
+### Week 3: Fix Performance + Ship Presentation
+6. Fix org-agenda based on profiling (2-3 hours)
+7. Ship reveal.js workflow (2 hours)
+
+### Ongoing: Maintenance Discipline
+- Weekly triage ritual (30 min every Sunday)
+- Measure metrics (startup time, agenda time, todo count)
+- Ship > Research
+
+** 🔄 Next Session Pickup Points
+
+When starting next session, Claude should:
+
+1. **Read this document first** to understand context
+2. **Check V2MOM status** - If incomplete, continue there
+3. **Reference issues.org** for detailed technical recommendations
+4. **Reference todo.org** for items to triage
+5. **Ask Craig:** "Where did we leave off? V2MOM? Triage? Execution?"
+
+** 📞 Questions to Ask Craig Next Session
+
+*IMMEDIATE (when resuming):*
+- "Ready to continue V2MOM? We left off at Methods section."
+- "How much time do you have?"
+
+*FOR METHODS SECTION:*
+Show Craig the draft list and ask:
+- "Which methods do you already do consistently?"
+- "Which do you want to do but don't yet?"
+- "Am I missing any important methods?"
+
+*AFTER V2MOM COMPLETE:*
+- "Ready to triage todo.org using the V2MOM?"
+- "Should we execute quick wins or continue systematic triage?"
+
+** 🎯 Success Metrics for This Project
+
+We'll know this is working when:
+- ✅ V2MOM is complete and provides clear strategic direction
+- ✅ todo.org shrinks from ~50 to < 20 active items
+- ✅ Craig ships 3-5 items per week (small but consistent)
+- ✅ Craig has profiling infrastructure to measure performance
+- ✅ Org agenda rebuild time is measured and improving
+- ✅ Weekly triage becomes habit
+
+** 💬 Craig's Words to Remember
+
+> "I think you should adjust issues.org with all your recommendations. They are exciting, eye-opening, and just feel right. Add even your guidance on latex. spot on. thanks for your honesty. I did ask for it and am genuinely grateful for your responses. I'll take action on them."
+
+> "What I need help with is integrating this in with my existing todo.org file... Some of the tasks I've listed should probably just be deleted or better yet, marked CANCELLED."
+
+> "I have about an hour to devote. You could lead me through it, I could do some questions/answer rounds with you to clarify my thinking."
+
+Craig is ready to execute. He asked for honesty and took it well. He recognizes the patterns and wants systematic help.
+
+** 🛠️ Technical Context
+
+*** Current Pain Points
+1. Org agenda is slow (performance bottleneck)
+2. Network check adds 1+ seconds to startup (technical debt)
+3. Missing functions cause errors (cj/log-silently, cj/goto-git-gutter-diff-hunks)
+4. Mail attachments workflow is awkward
+5. No profiling infrastructure to measure performance
+
+*** Items Craig Already Has Code For
+These can be executed immediately - just paste and test:
+- Transcription workflow (complete bash + elisp in todo.org:2-99)
+- Difftastic integration (complete config in todo.org:1211-1223)
+- Corfu migration (complete config in todo.org:1611-1639)
+
+*** Architecture
+- Modular structure: modules/*.el
+- Good test coverage for utilities
+- Modern packages: Vertico/Consult/Embark stack
+- Local package development: chime.el, org-msg
+
+** 📚 Related Reading
+
+If Craig or Claude need more context:
+- [[file:../issues.org::*Second Opinion: Ruthless Prioritization & Reality Checks][Second Opinion section in issues.org]] - Full analysis and recommendations
+- [[file:../issues.org::*TIER 1: Do These First][TIER 1-4 breakdown]] - Prioritized task system
+- [[file:../quality-engineer.org][quality-engineer.org]] - Testing philosophy (if exists)
+
+** 🚀 Current Session Notes
+
+*** 2025-10-30 Session 1 - V2MOM In Progress
+*Time:* ~1 hour
+*Status:* PAUSED - V2MOM 60% complete
+
+*What We Completed:*
+1. ✅ Created docs/ directory structure
+2. ✅ Created SESSION-HANDOFF-ACTIVE-PROJECT.org (this file)
+3. ✅ Created emacs-config-v2mom.org
+4. ✅ Created values-comparison.org (analysis doc)
+5. ✅ Completed Vision (already existed, kept as-is)
+6. ✅ Completed Values section (Intuitive, Fast, Simple)
+   - Intuitive: Muscle memory, mnemonics, which-key timing, "newspaper" code
+   - Fast: Startup < 2s, org-agenda is THE bottleneck, everything else acceptable
+   - Simple: Production software practices, simplicity produces reliability
+
+*What's Next:*
+1. ⏳ *Methods* - IN PROGRESS (have draft list, need Craig's input)
+2. ⏳ *Obstacles* - TODO
+3. ⏳ *Metrics* - TODO
+4. ⏳ *Finalize V2MOM* - Review and commit
+
+*Draft Methods List (Need Craig's Feedback):*
+These were proposed but Craig stopped before reviewing:
+1. Ruthless prioritization (V2MOM guides triage)
+2. Profile before optimizing (build observability first)
+3. Test-driven development (tests enable confident refactoring)
+4. Ship > Research (execute existing specs before exploring new)
+5. Weekly triage ritual (review todos, cancel stale, keep < 20 active)
+6. Measure metrics (track startup, agenda, test coverage, todo count)
+7. Extract packages (when custom code grows: chime, org-msg pattern)
+8. Incremental execution (ship small, test, iterate)
+
+*Questions to Ask Craig When Resuming:*
+- Which methods do you already do consistently?
+- Which do you want to do but don't yet?
+- Am I missing any important methods?
+
+*After Methods/Obstacles/Metrics Complete:*
+Then move to triage todo.org using completed V2MOM as filter.
+
+*Key Files Modified This Session:*
+- [[file:emacs-config-v2mom.org][emacs-config-v2mom.org]] - Main working document (60% complete)
+- [[file:values-comparison.org][values-comparison.org]] - Analysis doc (reference only)
+- [[file:SESSION-HANDOFF-ACTIVE-PROJECT.org][SESSION-HANDOFF-ACTIVE-PROJECT.org]] - This file
+
+*Next Session Starts With:*
+1. Read this handoff document
+2. Read emacs-config-v2mom.org to see what's complete
+3. Ask Craig: "Ready to continue V2MOM with Methods section?"
+4. Show Craig the draft Methods list
+5. Get feedback and complete Methods
+6. Move to Obstacles
+7. Move to Metrics
+8. Finalize V2MOM
+9. Then triage todo.org
