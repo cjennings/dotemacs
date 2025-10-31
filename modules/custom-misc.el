@@ -165,8 +165,8 @@ to nil."
 
 (keymap-set cj/custom-keymap ")" #'cj/jump-to-matching-paren)
 (keymap-set cj/custom-keymap "f" #'cj/format-region-or-buffer)
-(keymap-set cj/custom-keymap "W" #'cj/count-words-buffer-or-region)
-(keymap-set cj/custom-keymap "C" #'cj/count-characters-buffer-or-region)
+(keymap-set cj/custom-keymap "# w" #'cj/count-words-buffer-or-region)
+(keymap-set cj/custom-keymap "# c" #'cj/count-characters-buffer-or-region)
 (keymap-set cj/custom-keymap "/" #'cj/replace-fraction-glyphs)
 (keymap-set cj/custom-keymap "A" #'align-regexp)
 (keymap-set cj/custom-keymap "SPC" #'cj/switch-to-previous-buffer)
@@ -176,8 +176,8 @@ to nil."
   (which-key-add-key-based-replacements
     "C-; )" "jump to paren"
     "C-; f" "format buffer"
-    "C-; W" "count words"
-    "C-; C" "count characters"
+    "C-; # w" "count words"
+    "C-; # c" "count characters"
     "C-; /" "fraction glyphs"
     "C-; A" "align regexp"
     "C-; SPC" "prev buffer"
