@@ -233,7 +233,9 @@ Do not save the deleted text in the kill ring."
   "t" #'cj/clear-to-top-of-buffer
   "b" #'cj/clear-to-bottom-of-buffer
   "x" #'erase-buffer
-  "s" #'write-file ;; save as
+  "s" #'mark-whole-buffer
+  "S" #'write-file ;; save as
+  "g" #'revert-buffer
 
   "l" #'cj/copy-link-to-buffer-file
   "P" #'cj/copy-path-to-buffer-file-as-kill)
@@ -251,7 +253,9 @@ Do not save the deleted text in the kill ring."
     "C-; b t" "clear to top"
     "C-; b b" "clear to bottom"
     "C-; b x" "erase buffer"
-    "C-; b s" "save as"
+    "C-; b s" "select whole buffer"
+    "C-; b S" "save as"
+    "C-; b g" "revert buffer"
     "C-; b l" "copy file link"
     "C-; b P" "copy file path"))
 
