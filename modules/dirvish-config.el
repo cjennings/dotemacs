@@ -26,6 +26,9 @@
 (eval-when-compile (require 'user-constants))
 (eval-when-compile (require 'system-utils))
 
+;; mark files in dirvish, attach in mu4e
+(add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
+
 ;;; ----------------------------- Dired Ediff Files -----------------------------
 
 (defun cj/dired-ediff-files ()
