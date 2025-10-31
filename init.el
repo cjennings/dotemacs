@@ -82,7 +82,7 @@
 (require 'mail-config)           ;; email using mu4e and org-msg
 (require 'markdown-config)
 (require 'pdf-config)            ;; pdf display settings
-(require 'quick-video-capture)   ;; desktop and/or audio recording via ffmpeg
+(require 'quick-video-capture)   ;; download videos with a browser bookmark
 (require 'video-audio-recording) ;; desktop and/or audio recording via ffmpeg
 (require 'weather-config)        ;; utility to display the weather
 
