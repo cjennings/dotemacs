@@ -93,6 +93,25 @@ Display the result in the minibuffer."
 		 (word-count (cj/--count-words begin end)))
 	(message "There are %d words in %s." word-count area-type)))
 
+(defun cj/--count-characters (start end)
+  "Internal implementation: Count characters between START and END.
+START and END define the region to count.
+Returns the character count as an integer."
+  (when (> start end)
+    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (- end start))
+
+(defun cj/count-characters-buffer-or-region ()
+  "Count the number of characters in the buffer or region.
+Display the result in the minibuffer."
+  (interactive)
+  (let* ((use-region (use-region-p))
+		 (begin (if use-region (region-beginning) (point-min)))
+		 (end (if use-region (region-end) (point-max)))
+		 (area-type (if use-region "the region" "the buffer"))
+		 (char-count (cj/--count-characters begin end)))
+	(message "There are %d characters in %s." char-count area-type)))
+
 
 (defun cj/--replace-fraction-glyphs (start end to-glyphs)
   "Internal implementation: Replace fraction glyphs or text between START and END.
@@ -147,6 +166,7 @@ to nil."
 (keymap-set cj/custom-keymap ")" #'cj/jump-to-matching-paren)
 (keymap-set cj/custom-keymap "f" #'cj/format-region-or-buffer)
 (keymap-set cj/custom-keymap "W" #'cj/count-words-buffer-or-region)
+(keymap-set cj/custom-keymap "C" #'cj/count-characters-buffer-or-region)
 (keymap-set cj/custom-keymap "/" #'cj/replace-fraction-glyphs)
 (keymap-set cj/custom-keymap "A" #'align-regexp)
 (keymap-set cj/custom-keymap "SPC" #'cj/switch-to-previous-buffer)
@@ -157,6 +177,7 @@ to nil."
     "C-; )" "jump to paren"
     "C-; f" "format buffer"
     "C-; W" "count words"
+    "C-; C" "count characters"
     "C-; /" "fraction glyphs"
     "C-; A" "align regexp"
     "C-; SPC" "prev buffer"
