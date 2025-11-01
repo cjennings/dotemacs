@@ -12,6 +12,7 @@ rm -rf ~/.emacs.d/crossword/
 rm -rf ~/.emacs.d/dirvish/
 rm -rf ~/.emacs.d/eln-cache/
 rm -rf ~/.emacs.d/elpa/
+rm -rf ~/.emacs.d/emms/
 rm -rf ~/.emacs.d/emojis/
 rm -rf ~/.emacs.d/erc/
 rm -rf ~/.emacs.d/eshell/
@@ -19,6 +20,7 @@ rm -rf ~/.emacs.d/multisession
 rm -rf ~/.emacs.d/nov-places/
 rm -rf ~/.emacs.d/persist/
 rm -rf ~/.emacs.d/quelpa/
+rm -rf ~/.emacs.d/request/
 rm -rf ~/.emacs.d/tramp-auto-save/
 rm -rf ~/.emacs.d/transient/
 rm -rf ~/.emacs.d/tree-sitter/
@@ -27,11 +29,12 @@ rm -rf ~/.emacs.d/var
 rm ~/.emacs.d/.elfeed-db
 rm ~/.emacs.d/.emacs-history
 rm ~/.emacs.d/.lsp-session*
+rm ~/.emacs.d/.org-generic-id-locations
 rm ~/.emacs.d/.org-id-locations
 rm ~/.emacs.d/.pdf-view-restore
 rm ~/.emacs.d/.scratch
 rm ~/.emacs.d/forge-database.sqlite
-rm ~/.emacs.d/forge-database.sqlite
+rm ~/.emacs.d/history
 rm ~/.emacs.d/nov-places
 rm ~/.emacs.d/org-roam.db
 rm ~/.emacs.d/pomm
