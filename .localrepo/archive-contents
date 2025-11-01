@@ -15,7 +15,6 @@
  (buffer-move . [(20220512 755) ((emacs (24 1))) "Easily swap buffers." tar])
  (calibredb . [(20250705 225) ((emacs (29 1)) (org (9 3)) (transient (0 1 0)) (s (1 12 0)) (dash (2 17 0)) (request (0 3 3)) (esxml (0 3 7))) "Yet another calibre client." tar])
  (change-inner . [(20250320 1600) ((expand-region (0 7))) "Change contents based on semantic units." tar])
- (chime . [(0 6 0) ((alert (1 2)) (async (1 9 3)) (dash (2 18 0)) (emacs (26 1))) "No description available." tar])
  (clang-format . [(20250223 1620) ((cl-lib (0 3))) "Format code using clang-format." tar])
  (closql . [(20250913 1926) ((emacs (28 1)) (compat (30 1)) (emacsql (4 3))) "Store EIEIO objects using EmacSQL." tar])
  (company . [(1 0 2) ((emacs (25 1))) "Modular text completion framework" tar])
