@@ -229,6 +229,13 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 (setq kept-new-versions 25)                                   ;; keep 25  of the newest backups made (default: 2)
 (setq vc-make-backup-files t)                                 ;; also backup any files in version control
 
+;; ------------------ Unpropertize Kill Ring For Performance -----------------
+
+(defun unpropertize-kill-ring ()
+  (setq kill-ring (mapcar 'substring-no-properties kill-ring)))
+
+(add-hook 'kill-emacs-hook 'unpropertize-kill-ring)
+
 ;; ------------------------------- GNU 'ls' On BSD -------------------------------
 
 (when (env-bsd-p)
