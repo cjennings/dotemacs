@@ -149,7 +149,6 @@ Complete code already exists in someday-maybe.org. Need today and recurring.
 Create reveal.js slides from org-mode.
 
 * Method 6: Develop Disciplined Engineering Practices
-
 ** TODO [#A] First weekly triage by Sunday (establish habit)
 SCHEDULED: <2025-11-03 Sun>
 
@@ -164,3 +163,11 @@ Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 ** TODO [#C] Set up monthly research:shipped ratio tracking
 
 Can't research next thing until current thing is implemented.
+
+* Emacs Config Inbox
+** TODO [#B] Performance: Speed First Org Capture Target Building
+** TODO [#B] Irritant: Press Key to Launch Dashboard Icon App
+** TODO [#C] Irritant: Consistent Keybindings in EMMS Playlist with Buffer
+
+** TODO [#A] BREAK: Fix Chime (currently disabled)
+** TODO [#B] Irritant: Move Persistence Files Into a Single Directory
