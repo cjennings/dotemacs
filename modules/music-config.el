@@ -44,14 +44,16 @@
 
 (defun cj/music--valid-file-p (file)
   "Return non-nil if FILE has an accepted music extension (case-insensitive)."
-  (when-let ((ext (file-name-extension file)))
-    (member (downcase ext) cj/music-file-extensions)))
+  (when (and file (stringp file))
+    (when-let ((ext (file-name-extension file)))
+      (member (downcase ext) cj/music-file-extensions))))
 
 (defun cj/music--valid-directory-p (dir)
   "Return non-nil if DIR is a non-hidden directory."
-  (and (file-directory-p dir)
-       (not (string-prefix-p "." (file-name-nondirectory
-                                  (directory-file-name dir))))))
+  (when (and dir (stringp dir) (not (string-empty-p dir)))
+    (and (file-directory-p dir)
+         (not (string-prefix-p "." (file-name-nondirectory
+                                    (directory-file-name dir)))))))
 
 (defun cj/music--collect-entries-recursive (root)
   "Return sorted relative paths of all subdirs and music files under ROOT.
@@ -105,7 +107,7 @@ Directories are suffixed with /; files are plain. Hidden dirs/files skipped."
           (let ((line (string-trim (match-string 0))))
             (unless (string-empty-p line)
               (push (if (or (file-name-absolute-p line)
-                            (string-match-p "\`\(https?\|mms\)://" line))
+                            (string-match-p "\\`\\(https?\\|mms\\)://" line))
                         line
                       (expand-file-name line dir))
                     tracks))))
@@ -188,6 +190,60 @@ Directories (trailing /) are added recursively; files added singly."
     (message "Added to playlist: %s" choice-rel)))
 
 ;;; Commands: playlist management (load/save/clear/reload/edit)
+
+(defun cj/music--append-track-to-m3u-file (track-path m3u-file)
+  "Append TRACK-PATH to M3U-FILE. Signals error on failure.
+Pure function for testing - no user interaction.
+TRACK-PATH should be an absolute path.
+M3U-FILE should be an existing, writable M3U file path."
+  (unless (file-exists-p m3u-file)
+    (error "M3U file does not exist: %s" m3u-file))
+  (unless (file-writable-p m3u-file)
+    (error "M3U file is not writable: %s" m3u-file))
+
+  ;; Determine if we need a leading newline
+  (let ((needs-prefix-newline nil)
+        (file-size (file-attribute-size (file-attributes m3u-file))))
+    (when (> file-size 0)
+      ;; Read the last character of the file to check if it ends with newline
+      (with-temp-buffer
+        (insert-file-contents m3u-file nil (max 0 (1- file-size)) file-size)
+        (setq needs-prefix-newline (not (= (char-after (point-min)) ?\n)))))
+
+    ;; Append the track with proper newline handling
+    (with-temp-buffer
+      (when needs-prefix-newline
+        (insert "\n"))
+      (insert track-path "\n")
+      (write-region (point-min) (point-max) m3u-file t 0)))
+  t)
+
+
+(defun cj/music-append-track-to-playlist ()
+  "Append track at point to a selected M3U playlist file.
+Prompts for M3U file selection with completion. Allows cancellation."
+  (interactive)
+  (unless (derived-mode-p 'emms-playlist-mode)
+    (user-error "This command must be run in the EMMS playlist buffer"))
+  (let ((track (emms-playlist-track-at (point))))
+    (unless track
+      (user-error "No track at point"))
+    (let* ((track-path (emms-track-name track))
+           (m3u-files (cj/music--get-m3u-files)))
+      (when (null m3u-files)
+        (user-error "No M3U files found in %s" cj/music-m3u-root))
+      (let* ((choices (append (mapcar #'car m3u-files) '("(Cancel)")))
+             (choice (completing-read "Append track to playlist: " choices nil t)))
+        (if (string= choice "(Cancel)")
+            (message "Cancelled")
+          (let ((m3u-file (cdr (assoc choice m3u-files))))
+            (condition-case err
+                (progn
+                  (cj/music--append-track-to-m3u-file track-path m3u-file)
+                  (message "Added '%s' to %s"
+                           (file-name-nondirectory track-path)
+                           choice))
+              (error (message "Failed to append track: %s" (error-message-string err))))))))))
 
 
 (defun cj/music-playlist-load ()
@@ -441,6 +497,7 @@ Dirs added recursively."
         ("q"   . emms-playlist-mode-bury-buffer)
         ("a"   . cj/music-fuzzy-select-and-add)
         ;; Manipulation
+        ("A" . cj/music-append-track-to-playlist)
         ("C" . cj/music-playlist-clear)
         ("L" . cj/music-playlist-load)
         ("E" . cj/music-playlist-edit)
