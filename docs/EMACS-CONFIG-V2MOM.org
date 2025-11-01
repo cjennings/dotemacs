@@ -37,6 +37,8 @@ Anytime you make a change in the config, you have unit tests to tell you quickly
 
 * Values
 
+also see: file:values-comparison.org
+
 ** Intuitive
 
 *Definition:* Intuition comes from muscle memory, clear mnemonics, and just-in-time discovery that reinforces learning without blocking productivity.
