@@ -47,6 +47,9 @@
   (setq eshell-prefer-lisp-functions nil)
   (setq eshell-destroy-buffer-when-process-dies t)
 
+  ;; no pagers required
+  (setenv "PAGER" "cat")
+
   (setq eshell-prompt-function
 		(lambda ()
 		  (concat
@@ -54,7 +57,7 @@
 		   " "
 		   (propertize (user-login-name) 'face '(:foreground "gray"))
 		   " "
-		   (propertize (system-name) 'face '(:foreground "gray"))
+           (propertize (system-name) 'face '(:foreground "gray"))
 		   ":"
 		   (propertize (abbreviate-file-name (eshell/pwd)) 'face '(:foreground "gray"))
 		   "\n"
@@ -81,7 +84,6 @@
               (add-to-list 'eshell-visual-options '("git" "--help" "--paginate"))
 
               ;; aliases
-              (eshell/alias "clear"  "clear 1") ;; leaves prompt at the top of the window
               (eshell/alias "e"      "find-file $1")
 			  (eshell/alias "em"     "find-file $1")
 			  (eshell/alias "emacs"  "find-file $1")
@@ -111,7 +113,13 @@
 	  (find-file (car files))
 	;; Multiple files
 	(dolist (file files)
-	  (find-file file))))
+      (find-file file))))
+
+(defun eshell/clear ()
+  "Clear the eshell buffer."
+  (let ((inhibit-read-only t))
+    (erase-buffer)
+    (eshell-send-input)))
 
 (defun eshell/find-using-dired (file-pattern)
   "Find a file FILE-PATTERN' using 'find-name-dired'."
