@@ -1,4 +1,15 @@
 * Emacs Config Open Work
+
+** TODO [#D] Irritant: Press Key to Launch Dashboard Icon App
+
+Not important enough - already have keybindings and M-x search as working alternatives.
+Moved from inbox 2025-11-01.
+
+** TODO [#D] Irritant: Move Persistence Files Into a Single Directory
+
+Organizational tidiness, not actual friction. Perfectionism (V2MOM Obstacle #4).
+Moved from inbox 2025-11-01.
+
 ** TODO [#A] Add Transcription Org-capture Workflow
   :PROPERTIES:
   :CATEGORY: emacs

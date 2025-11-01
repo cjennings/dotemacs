@@ -29,12 +29,21 @@ Now uses package priorities: .localrepo (200) > online repos (25).
 
 Quick win - 15 minutes. Just needs to be defined.
 
-** TODO [#A] Fix chime-check throw with no catch block
+** DONE [#A] Fix chime-check throw with no catch block
+CLOSED: [2025-11-01 Fri]
 
 Error: "(no-catch --cl-block-chime-check-- nil)"
-Chime is throwing to a catch block that doesn't exist.
-Location: chime package - chime-check() function
-Fix: Change defun to cl-defun to get implicit catch block, or wrap in catch block.
+Chime was throwing to a catch block that doesn't exist.
+Location: chime package - chime-check() function at line 1540
+Fix: Changed defun to cl-defun to provide implicit catch block for cl-return-from.
+
+Fixed in ~/code/chime.el/chime.el:1540
+
+Added regression test: test-integration-startup-early-return-on-validation-failure
+Created Makefile with test targets (unit, integration, all, by-file, by-name)
+Updated README.org with Development/Testing section
+
+All integration tests pass (5/5) ✅
 
 ** TODO [#B] Fix go-ts-mode-map keybinding error (void-variable)
 
@@ -67,6 +76,17 @@ Daily workflow improvement.
 ** TODO [#C] Fix grammar checker performance (currently disabled)
 
 Currently disabled because it breaks flow when writing.
+
+** TODO [#B] Optimize org-capture target building performance
+
+15-20 seconds every time capturing a task (12+ times/day).
+Major daily bottleneck - minutes lost waiting, plus context switching cost.
+
+** TODO [#D] Fix EMMS keybinding inconsistency with other buffers
+
+EMMS keybindings conflict with standard buffer keybindings, causing mistypes.
+Results in accidental destructive actions (clearing buffers), requires undo + context switch.
+Violates Intuitive value - muscle memory should help, not hurt.
 
 * Method 2: Stop Problems Before They Appear
 
@@ -165,9 +185,3 @@ Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 Can't research next thing until current thing is implemented.
 
 * Emacs Config Inbox
-** TODO [#B] Performance: Speed First Org Capture Target Building
-** TODO [#B] Irritant: Press Key to Launch Dashboard Icon App
-** TODO [#C] Irritant: Consistent Keybindings in EMMS Playlist with Buffer
-
-** TODO [#A] BREAK: Fix Chime (currently disabled)
-** TODO [#B] Irritant: Move Persistence Files Into a Single Directory
