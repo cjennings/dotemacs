@@ -7,6 +7,7 @@
 ;; Functions include:
 ;; - printing buffers or regions as PostScript to the default printer (with color support)
 ;; - moving/renaming/deleting buffer files
+;; - diffing buffer contents with saved file version
 ;; - copying file paths and file:// links to the kill ring
 ;; - copying entire buffer contents
 ;; - clearing buffer contents from point to top or bottom.
@@ -219,6 +220,25 @@ Do not save the deleted text in the kill ring."
   (kill-new (buffer-name))
   (message "Copied: %s" (buffer-name)))
 
+(defun cj/diff-buffer-with-file ()
+  "Compare the current modified buffer with the saved version.
+Uses unified diff format (-u) for better readability.
+Signal an error if the buffer is not visiting a file.
+
+TODO: Future integration with difftastic for structural diffs (Method 3)."
+  (interactive)
+  (let ((file-path (buffer-file-name)))
+    (cond
+     ((not file-path)
+      (user-error "Current buffer is not visiting a file"))
+     ((not (file-exists-p file-path))
+      (user-error "File %s does not exist on disk" file-path))
+     ((not (buffer-modified-p))
+      (message "Buffer has no unsaved changes"))
+     (t
+      (let ((diff-switches "-u"))  ; unified diff format
+        (diff-buffer-with-file (current-buffer)))))))
+
 ;; --------------------------- Buffer And File Keymap --------------------------
 
 ;; Buffer & file operations prefix and keymap
@@ -228,6 +248,7 @@ Do not save the deleted text in the kill ring."
   "r" #'cj/rename-buffer-and-file
   "p" #'cj/print-buffer-ps
   "d" #'cj/delete-buffer-and-file
+  "D" #'cj/diff-buffer-with-file
   "c" #'cj/copy-whole-buffer
   "n" #'cj/copy-buffer-name
   "t" #'cj/clear-to-top-of-buffer
@@ -248,6 +269,7 @@ Do not save the deleted text in the kill ring."
     "C-; b r" "rename file"
     "C-; b p" "print to PS"
     "C-; b d" "delete file"
+    "C-; b D" "diff buffer with file"
     "C-; b c" "copy buffer"
     "C-; b n" "copy buffer name"
     "C-; b t" "clear to top"
