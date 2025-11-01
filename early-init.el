@@ -70,12 +70,9 @@
 ;; set to nil to only use localrepo and local elpa-mirrors (see script directory)
 
 (defvar cj/use-online-repos t
-  "Whether to check for network connectivity & use online package repositories.")
-
-;; Cache network status to avoid repeated checks
-(defvar cj/network-available :unknown
-  "Cached network availability status.
-Can be t (available), nil (not available), or :unknown (not checked yet).")
+  "Whether to use online package repositories in addition to local repos.
+When t, online repos are added but .localrepo has highest priority (200).
+Set to nil to use only local repos.")
 
 ;; ---------------------------- Startup Performance ----------------------------
 ;; increases garbage collection threshold and turns off file-name-handler
@@ -99,53 +96,7 @@ Can be t (available), nil (not available), or :unknown (not checked yet).")
 
 (setq inhibit-default-init t)
 
-;; ------------------------------- Network Check -------------------------------
-;; checks if the network is available. used for online repo enablement.
-(defvar cj/network-available :unknown
-  "Cached network availability status. Values: :unknown, t, or nil.")
-
-(defun cj/reset-network-cache ()
-  "Reset cached network availability."
-  (setq cj/network-available :unknown))
-
-(defun cj/internet-up-p (&optional force)
-  "Return non-nil if the network seems available.
-If FORCE is non-nil, re-check even if cached."
-  (when (or force
-			(eq cj/network-available :unknown)
-			(not (boundp 'cj/network-available)))
-	(setq cj/network-available
-		  (condition-case _err
-			  (pcase system-type
-				;; Linux, *BSD
-				((or 'gnu/linux 'berkeley-unix 'gnu)
-				 (= 0 (call-process "ping" nil nil nil
-									"-c" "1"    ; count: 1 packet
-									"-W" "1"    ; timeout: 1 second
-									"1.1.1.1")))
-				;; macOS
-				('darwin
-				 (= 0 (call-process "ping" nil nil nil
-									"-c" "1"
-									"-t" "1"
-									"1.1.1.1")))
-				;; Windows
-				('windows-nt
-				 (= 0 (call-process "ping" nil nil nil
-									"-n" "1"
-									"-w" "1000"
-									"1.1.1.1")))
-				;; Fallback
-				(_
-				 (with-timeout (1.0 nil)
-				   (let ((p (ignore-errors
-							  (open-network-stream "net-test" nil
-												   "1.1.1.1" 53
-												   :type 'datagram))))
-					 (prog1 (and p t)
-					   (when p (delete-process p)))))))
-			(error nil))))
-  cj/network-available)
+;; ------------------------------ Package System -------------------------------
 
 (setq package-enable-at-startup nil)
 (require 'package) ;; emacs built-in
@@ -186,7 +137,9 @@ early-init.el.")
   (add-to-list 'package-archive-priorities '("melpa-stable-local" . 100)))
 
 ;; ONLINE REPOSITORIES
-(when (and cj/use-online-repos (cj/internet-up-p))
+;; Added regardless of network status. If offline, package operations fail gracefully.
+;; .localrepo has highest priority (200), so reproducible installs work offline.
+(when cj/use-online-repos
   (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/") t)
   (add-to-list 'package-archive-priorities '("gnu" . 25))
   (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/") t)
@@ -200,10 +153,11 @@ early-init.el.")
 (package-initialize)
 
 ;; Package refresh logic - refresh only if:
-;; 1. Online repos are enabled AND network is available
+;; 1. Online repos are enabled
 ;; 2. Any online repo cache doesn't exist or is older than 7 days
+;; If offline, refresh will fail gracefully and use cached/local packages.
 
-(when (and cj/use-online-repos (cj/internet-up-p))
+(when cj/use-online-repos
   (let ((cache-age-days 7)
 		(needs-refresh nil))
 	;; Check each online repository's cache
