@@ -63,7 +63,7 @@ fully detached from Emacs."
   (let* ((file (cond
                 ;; In dired/dirvish mode, get file at point
                 ((derived-mode-p 'dired-mode)
-				 (dired-get-file-for-visit))
+                 (dired-get-file-for-visit))
                 ;; In a regular file buffer
                 (buffer-file-name
                  buffer-file-name)
@@ -134,13 +134,40 @@ Logs output and exit code to buffer *external-open.log*."
 (keymap-global-set "C-<f10>" #'cj/server-shutdown)
 
 ;;; ---------------------------- History Persistence ----------------------------
-;; Persist history over Emacs restarts
 
 (use-package savehist
   :ensure nil  ; built-in
   :config
-  (savehist-mode)
-  (setq savehist-file  "~/.emacs.d/.emacs-history"))
+  (setq kill-ring-max 50
+        history-length 50)
+
+  (setq savehist-additional-variables
+        '(kill-ring
+          command-history
+          set-variable-value-history
+          custom-variable-history
+          query-replace-history
+          read-expression-history
+          minibuffer-history
+          read-char-history
+          face-name-history
+          bookmark-history
+          file-name-history))
+
+  (put 'minibuffer-history         'history-length 50)
+  (put 'file-name-history          'history-length 50)
+  (put 'set-variable-value-history 'history-length 25)
+  (put 'custom-variable-history    'history-length 25)
+  (put 'query-replace-history      'history-length 25)
+  (put 'read-expression-history    'history-length 25)
+  (put 'read-char-history          'history-length 25)
+  (put 'face-name-history          'history-length 25)
+  (put 'bookmark-history           'history-length 25)
+
+  (setq history-delete-duplicates t)
+  (let (message-log-max)
+    (savehist-mode))
+  )
 
 ;;; ------------------------ List Buffers With Nerd Icons -----------------------
 
