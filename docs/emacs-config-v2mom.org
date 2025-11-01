@@ -202,60 +202,123 @@ When config breaks, productivity is crushed. The discipline of simplicity produc
 
 * Methods
 
-#+begin_quote
-Working section - HOW will you achieve the vision while honoring the values?
+** Method 1: Make Using Emacs Frictionless
 
-*PAUSED HERE - NEED CRAIG'S INPUT*
+Emacs should never make you wait or break your concentration. This method eliminates daily friction points that disrupt flow. Every item here either removes a bottleneck (startup delay, org-agenda slowness), fixes something broken (org-noter, recording, mail attachments), or adds missing functionality you reach for weekly (diff-buffer-with-file).
 
-Draft methods proposed by Claude (need review):
-1. Ruthless prioritization - V2MOM guides triage, cancel what doesn't serve vision
-2. Profile before optimizing - Build observability (debug-profiling.el), measure first
-3. Test-driven development - Tests give confidence to refactor, catch regressions
-4. Ship > Research - Execute existing specs before exploring new ones
-5. Weekly triage ritual - Review todos, cancel stale items, keep < 20 active
-6. Measure metrics - Track startup time, agenda time, test coverage, todo count
-7. Extract packages - When custom code grows, make it a package (chime, org-msg pattern)
-8. Incremental execution - Ship small, test, iterate. Portions not all-at-once.
+When Method 1 is complete, Emacs starts fast, org-agenda opens instantly, all core workflows work reliably, and nothing makes you context-switch to debug config during work.
 
-*Questions for Craig:*
-- Which of these do you already do consistently?
-- Which do you want to do but don't yet?
-- Am I missing any important methods?
+*Concrete actions:*
+- Remove network check from startup (saves 1+ seconds every launch)
+- Optimize org-agenda performance using built-in profiler (eliminate "forever and a full work day" rebuild time)
+- Fix [[https://github.com/weirdNox/org-noter][org-noter]] (reading/annotation workflow currently "so painful")
+- Fix video/audio recording module (use it constantly, just broke)
+- Fix mail attachment workflow (currently awkward)
+- Implement cj/diff-buffer-with-file (compare buffer with saved version - weekly need)
+- Fix cj/goto-git-gutter-diff-hunks (missing function causing errors)
+- Fix grammar checker performance (currently disabled because it breaks flow)
 
-*Fill in below after discussion:*
-#+end_quote
+** Method 2: Stop Problems Before They Appear
+
+A stable config comes from proactive maintenance, not reactive fixes. This method replaces aging packages with modern, actively-maintained alternatives before they break. It removes deprecated dependencies and adopts better-designed tools that align with Emacs' evolution.
+
+When Method 2 is complete, the config uses current best practices, has no deprecated packages lurking as time bombs, and benefits from simpler, more maintainable completion infrastructure.
+
+*Concrete actions:*
+- Migrate from Company to [[https://github.com/minad/corfu][Corfu]] (simpler, modern completion framework - complete config already in todo.org)
+- Switch to [[https://gitlab.com/jessieh/mood-line][mood-line]] (lighter modeline, already researched)
+- Remove deprecated tree-sitter package and rely on [[https://github.com/renzmann/treesit-auto][treesit-auto]] (already installed, leverages Emacs 29+ built-in treesit)
+- Add [[https://github.com/awth13/org-appear][org-appear]] (show emphasis markers only when point is on them - cleaner org files)
+- Integrate [[https://github.com/radian-software/prescient.el][prescient]] with Corfu (frequency/recency-based smart sorting - already using with vertico)
+
+** Method 3: Make *Fixing* Emacs Frictionless
+
+You can't fix what you can't measure, and you can't trust what you can't test. This method builds observability and testing infrastructure that makes future maintenance systematic instead of guesswork. With proper profiling, testing, and diffing tools in place, debugging becomes fast and confident.
+
+When Method 3 is complete, you can profile any performance issue in seconds, write integration tests for complex workflows, roll back broken packages instantly, and review config changes with semantic understanding.
+
+*Concrete actions:*
+- Build debug-profiling.el module and develop skills using it (reusable profiling infrastructure for any future performance work)
+- Integrate [[https://github.com/jorgenschaefer/emacs-buttercup][Buttercup]] (behavior-driven integration tests for complex config workflows)
+- Build localrepo out (package snapshot system for repeatable installs and safe rollbacks)
+- Integrate [[https://github.com/Wilfred/difftastic][difftastic]] (structural diffs that show semantic changes, not just line changes)
+
+** Method 4: Contribute to the Emacs Ecosystem
+
+Maintaining packages (chime, org-msg, wttrin) means being a good steward of code others depend on. This method establishes professional package development practices: automated linting, CI testing, and coverage reporting. These tools catch issues before users do and make MELPA submissions smooth.
+
+When Method 4 is complete, every package you maintain has automated quality checks, measurable test coverage, and CI that validates changes before they ship. You contribute back to the community with confidence.
+
+*Concrete actions:*
+- Set up [[https://github.com/purcell/package-lint][package-lint]] for elisp linting (catch packaging issues and style violations automatically)
+- Set up [[https://github.com/riscy/melpazoid][melpazoid]] CI (validates packages meet MELPA standards before submission)
+- Set up [[https://github.com/leotaku/elisp-check][elisp-check]] GitHub Action (zero-config CI for Emacs packages)
+- Integrate [[https://github.com/undercover-el/undercover.el][undercover.el]] (measure and track test coverage over time)
+
+** Method 5: Be Kind To Your Future Self
+
+With Emacs stable and maintainable, it's time to add features that expand what's possible. This method builds workflows you'll use repeatedly: transcribing audio for notes and creating presentations directly from org-mode. These aren't fixes—they're investments in future capability.
+
+When Method 5 is complete, you can transcribe recordings without leaving Emacs and generate beautiful reveal.js presentations from org files. Future you will thank present you for shipping these.
+
+*Concrete actions:*
+- Add transcription workflow (complete code already in todo.org:2-99 - need today and recurring)
+- Implement [[https://github.com/yjwen/org-reveal][org-reveal]] presentation workflow (create reveal.js slides from org-mode)
+
+** Method 6: Develop Disciplined Engineering Practices
+
+The best infrastructure won't help without disciplined habits. This method builds the practices that make all other methods sustainable: knowing what matters most, shipping over researching, measuring before optimizing. These are skills to develop, not tasks to complete—they evolve throughout the entire V2MOM, and I become a better engineer overall.
+
+*Concrete practices to develop:*
+- *Ruthless prioritization* - Always do the most important thing. Use V2MOM as filter. If it doesn't serve the vision, cancel it.
+- *Weekly triage* - Review todos every Sunday (30 min). Items sitting >1 week get shipped or killed. Prevents backlog rot. Keep <20 active items.
+- *Measure metrics* - Define success criteria before starting work. Quantify outcomes so you know when you're done (startup time, test coverage, todo count).
+- *Profile-before-optimize* - Never guess what's slow. Run profiler, identify hotspot, THEN fix. Avoids wasting time optimizing things that don't matter.
+- *Ship-over-research* - Execute existing specs before exploring new ones. Time-box research (30 min → decide: ship or kill). Monthly retrospective on research:shipped ratio.
+- *Incremental execution* - Ship small, test, iterate. Keep config working at every step. Avoid big-bang failures, integration hell, and sunk cost traps.
+
+*How to measure success:*
+- *Ruthless prioritization* → todo.org stays under 20 active items, cancelled:completed ratio shows I'm saying "no"
+- *Weekly triage* → At least once a week by Sunday, no longer than 7 days between triage (tracked in calendar)
+- *Measure metrics* → Every task has defined success criteria before starting, can show actual tracked metrics (startup logs, coverage reports)
+- *Profile-before-optimize* → Every performance fix has profiler output proving the bottleneck, zero "I think this is slow" guesses
+- *Ship-over-research* → Research:shipped ratio improves monthly (>1:1), complete code in todo.org ships within 1 week
+- *Incremental execution* → Config never broken for >2 days, git commits are small and frequent, can roll back any change cleanly
 
 
 
 * Obstacles
 
-#+begin_quote
-Working section - What's preventing you from achieving the vision?
+1. *Building and researching is more fun than fixing.* But if I don't change this, everything will be broken.
 
-*Questions to answer:*
-- What technical challenges block you?
-- What behavioral patterns get in your way?
-- What external constraints limit you?
-- What trade-offs are hardest to make?
+2. *I get irritated with myself when making mistakes.* But mistakes are how people learn. If I let irritation drive me to give up, I'll never develop the skills these methods require.
 
-*Fill in below:*
-#+end_quote
+3. *It's hard for me to say "no".* But if I don't say "no" to something, I'll never achieve anything. The only way to make saying "no" easier is to do it repeatedly.
+
+4. *I can be a perfectionist who wants something just right before I move on.* But perfect is the enemy of shipped. I need to learn that good enough is better than perfect, and iteration beats perfection.
+
+5. *I don't always have the time for all day coding sessions.* Breaking the work into increments will help me deliver the long term value anyway. Be the tortoise, not the rabbit.
+
+6. *New disciplines are hard to sustain.* Weekly triage, measuring metrics, and profiling-before-optimizing are new habits. The first few weeks I'll be tempted to skip them when busy. But if I don't practice them consistently, they'll never become automatic, and I'll fall back into old patterns.
 
 
 
 * Metrics
 
-#+begin_quote
-Working section - How will you know you're succeeding?
+You can't improve what you don't measure. These metrics provide objective evidence that the Methods are working and the Vision is becoming reality. Track them weekly during triage to catch regressions early and celebrate progress.
 
-*Questions to answer:*
-- What numbers will you track?
-- How will you measure performance?
-- How will you measure productivity?
-- What leading indicators show progress?
+** Performance Metrics:
+- *Startup time: < 3 seconds* (currently ~6.2s) - Measured with =time emacs --eval '(save-buffers-kill-emacs)'=
+- *Org-agenda rebuild time: < 5 seconds* (currently 30+ seconds) - Measured with profiler during first daily open
 
-*Fill in below:*
-#+end_quote
+** Maintenance Discipline Metrics:
+- *Active todo count: < 20 items* (currently ~50+) - Counted during weekly triage
+- *Weekly triage consistency: At least once a week by Sunday, no longer than 7 days between triage* - Tracked in calendar
+- *Research:shipped ratio: > 1:1* - Can't research next thing until current thing is implemented. Track monthly.
+- *Config uptime: Never broken > 2 days* - Allows breathing room for emergencies/travel
+
+** Package Quality Metrics (chime, org-msg, wttrin):
+- *Test coverage: > 70% and all code not covered justifiable* - Uncovered code is 100% risk. Better not be the most-used parts!
 
 
 
@@ -290,10 +353,9 @@ Every Sunday (30 minutes):
 
 - [X] Vision - Complete (kept from original todo.org)
 - [X] Values - Complete (Intuitive, Fast, Simple)
-- [ ] Methods - IN PROGRESS (have draft, need Craig's input)
-- [ ] Obstacles - TODO
-- [ ] Metrics - TODO
+- [X] Methods - Complete (6 methods with aspirational bodies and concrete actions)
+- [X] Obstacles - Complete (6 honest obstacles with real stakes)
+- [X] Metrics - Complete (Performance, Discipline, and Quality metrics defined)
 
-*Last Updated:* 2025-10-30 (Session 1)
-*Next Session:* Continue with Methods section (review draft list with Craig)
-*Estimated Time to Complete:* 20-30 minutes (Methods + Obstacles + Metrics)
+*Last Updated:* 2025-10-31 (Session 2)
+*Status:* ✅ V2MOM COMPLETE - Ready to use for decision making and weekly triage
