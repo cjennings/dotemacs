@@ -18,7 +18,6 @@ V2MOM is located at: [[file:docs/emacs-config-v2mom.org][emacs-config-v2mom.org]
 Research/ideas that don't serve vision: [[file:docs/someday-maybe.org][someday-maybe.org]]
 
 * Method 1: Make Using Emacs Frictionless
-
 ** DONE [#A] Remove network check from startup (saves 1+ seconds)
 CLOSED: [2025-10-31 Fri]
 
@@ -45,21 +44,16 @@ Updated README.org with Development/Testing section
 
 All integration tests pass (5/5) ✅
 
-** TODO [#B] Fix go-ts-mode-map keybinding error (void-variable)
-
-Error: "Debugger entered--Lisp error: (void-variable go-ts-mode-map)"
-Location: modules/prog-go.el - trying to bind keys before mode loads.
-Fix: Wrap keybinding in with-eval-after-load or check if variable is bound.
-
 ** DONE [#A] Implement cj/diff-buffer-with-file (compare buffer with saved version)
 CLOSED: [2025-10-31 Fri]
 
 Bound to C-; b D. Weekly need satisfied.
 
-** TODO [#B] Optimize org-agenda performance using built-in profiler
+** TODO [#B] Fix go-ts-mode-map keybinding error (void-variable)
 
-THE BOTTLENECK. Currently 30+ seconds, target < 5 seconds.
-Use M-x profiler-start before Method 3 debug-profiling.el is built.
+Error: "Debugger entered--Lisp error: (void-variable go-ts-mode-map)"
+Location: modules/prog-go.el - trying to bind keys before mode loads.
+Fix: Wrap keybinding in with-eval-after-load or check if variable is bound.
 
 ** TODO [#B] Fix org-noter (reading/annotation workflow currently "so painful")
 
@@ -73,14 +67,19 @@ Use constantly, needs to work reliably.
 
 Daily workflow improvement.
 
-** TODO [#C] Fix grammar checker performance (currently disabled)
+** TODO [#B] Optimize org-agenda performance using built-in profiler
 
-Currently disabled because it breaks flow when writing.
+THE BOTTLENECK. Currently 30+ seconds, target < 5 seconds.
+Use M-x profiler-start before Method 3 debug-profiling.el is built.
 
 ** TODO [#B] Optimize org-capture target building performance
 
 15-20 seconds every time capturing a task (12+ times/day).
 Major daily bottleneck - minutes lost waiting, plus context switching cost.
+
+** TODO [#C] Fix grammar checker performance (currently disabled)
+
+Currently disabled because it breaks flow when writing.
 
 ** TODO [#D] Fix EMMS keybinding inconsistency with other buffers
 
@@ -185,3 +184,10 @@ Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 Can't research next thing until current thing is implemented.
 
 * Emacs Config Inbox
+** TODO [#A] Irritant: Print should be keybound to capital P
+and perhaps print-screen (however Emacs references that key)
+
+lowercase p should be about getting path, not doing something dramatic like sending a document to the LPR without confirmation
+
+** TODO [#A] Irritant: send buffer to printer must have confirmation
+it should allow to skip the confirmation with C-u.
