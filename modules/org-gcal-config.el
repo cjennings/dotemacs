@@ -104,9 +104,9 @@ enabling bidirectional sync so changes push back to Google Calendar."
   (setq org-gcal-remove-api-cancelled-events t)        ;; auto-remove cancelled events
   (setq  org-gcal-update-cancelled-events-with-todo t) ;; todo cancelled events for visibility
 
-  ;; Enable bidirectional sync - treat events as Org-managed so changes push back
-  (setq org-gcal-managed-newly-fetched-mode "org")     ;; New events from GCal are Org-managed
-  (setq org-gcal-managed-update-existing-mode "org")   ;; Existing events become Org-managed
+  ;; Google Calendar is authoritative - avoids sync conflicts
+  (setq org-gcal-managed-newly-fetched-mode "gcal")    ;; New events from GCal stay GCal-managed
+  (setq org-gcal-managed-update-existing-mode "gcal")  ;; GCal wins on conflicts
 
   :config
   ;; Enable plstore passphrase caching after org-gcal loads
