@@ -66,6 +66,14 @@ enabling bidirectional sync so changes push back to Google Calendar."
       (save-buffer))
     (message "Converted %d event(s) to Org-managed" count)))
 
+;; Deferred library required by org-gcal
+(use-package deferred
+  :ensure t)
+
+;; OAuth2 authentication library required by org-gcal
+(use-package oauth2-auto
+  :ensure t)
+
 (use-package org-gcal
   :vc (:url "https://github.com/cjennings/org-gcal" :rev :newest)
   :defer t ;; unless idle timer is set below
