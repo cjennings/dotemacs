@@ -37,6 +37,42 @@
 
 ;; ----------------------- Org-Contacts Capture Template -----------------------
 
+(defun cj/org-contacts-finalize-birthday-timestamp ()
+  "Add yearly repeating timestamp after properties drawer if BIRTHDAY is set."
+  (when (string= (plist-get org-capture-plist :key) "C")
+    (save-excursion
+      (goto-char (point-min))
+      (let ((birthday (org-entry-get (point) "BIRTHDAY")))
+        (when (and birthday (not (string-blank-p birthday)))
+          ;; Parse birthday - returns (year month day) or nil
+          (let ((parsed
+                 (cond
+                  ((string-match "^\\([0-9]\\{4\\}\\)-\\([0-9]\\{2\\}\\)-\\([0-9]\\{2\\}\\)$" birthday)
+                   (list (string-to-number (match-string 1 birthday))
+                         (string-to-number (match-string 2 birthday))
+                         (string-to-number (match-string 3 birthday))))
+                  ((string-match "^\\([0-9]\\{2\\}\\)-\\([0-9]\\{2\\}\\)$" birthday)
+                   (list (nth 5 (decode-time))
+                         (string-to-number (match-string 1 birthday))
+                         (string-to-number (match-string 2 birthday))))
+                  (t nil))))
+            (when parsed
+              (let* ((year (nth 0 parsed))
+                     (month (nth 1 parsed))
+                     (day (nth 2 parsed))
+                     (time (encode-time 0 0 0 day month year))
+                     (dow (format-time-string "%a" time))
+                     (timestamp (format "<%04d-%02d-%02d %s +1y>" year month day dow))
+                     (heading-end (save-excursion (outline-next-heading) (point))))
+                ;; Find :END: and insert timestamp
+                (when (re-search-forward "^[ \t]*:END:[ \t]*$" heading-end t)
+                  (let ((end-pos (point)))
+                    (goto-char end-pos)
+                    (unless (re-search-forward "<[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}[^>]*\\+1y>" heading-end t)
+                      (goto-char end-pos)
+                      (end-of-line)
+                      (insert "\n" timestamp))))))))))))
+
 (with-eval-after-load 'org-capture
   (add-to-list 'org-capture-templates
                '("C" "Contact" entry (file+headline contacts-file "Contacts")
@@ -45,13 +81,15 @@
 :EMAIL: %(cj/org-contacts-template-email)
 :PHONE: %^{Phone(s) - separate multiple with commas}
 :ADDRESS: %^{Address}
-:BIRTHDAY: %^{Birthday (YYYY-MM-DD)}
+:BIRTHDAY: %^{Birthday (YYYY-MM-DD or MM-DD)}
+:NICKNAME: %^{Nickname}
 :COMPANY: %^{Company}
 :TITLE: %^{Title/Position}
 :WEBSITE: %^{URL}
+:NOTE: %^{Notes}
 :END:
-%^{Notes}
-Added: %U")))
+Added: %U"
+                 :prepare-finalize cj/org-contacts-finalize-birthday-timestamp)))
 
 ;; TASK: What purpose did this serve?
 ;; duplicate?!?
