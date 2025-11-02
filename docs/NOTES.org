@@ -17,6 +17,159 @@ This triggers the create-session workflow from docs/sessions/create-session.org
 - "I want to do a refactor session" → Create docs/sessions/refactor.org
 - "I want to do a code review session" → Create docs/sessions/code-review.org
 
+* 🔔 DESKTOP NOTIFICATIONS WORKFLOW
+
+**IMPORTANT: How Claude notifies you when blocked**
+
+When Claude needs your input on blocking questions, Claude will send a desktop notification via `notify-send`:
+
+#+BEGIN_SRC bash
+notify-send "Claude Code" "Question: [Your input needed]" --urgency=normal
+#+END_SRC
+
+**When notifications ARE sent:**
+- ✅ When explicitly needing your decision/input (blocking questions)
+- ✅ When multiple valid approaches exist and choice affects implementation
+- ✅ When encountering errors that require user guidance
+- ✅ **ONLY** when Claude cannot proceed without user input
+
+**When notifications are NOT sent:**
+- ❌ After completing tasks (informational updates)
+- ❌ During normal progress updates
+- ❌ When milestones are reached
+- ❌ For status messages or completion notices
+- ❌ ANY informational alerts
+
+**Setup:**
+- Requires `dunst` or similar notification daemon
+- Works with `notify-send` command
+- Always uses `--urgency=normal` (not critical)
+
+**Purpose:**
+This allows you to context-switch to other work while Claude runs long tasks, and get notified ONLY when your input is truly needed to continue. You check back when convenient for status updates.
+
+* 🧩 EMACS LISP DEVELOPMENT BEST PRACTICES
+
+**Critical Lessons: Preventing Parenthesis Errors**
+
+Both humans and AI struggle with balanced parentheses in deeply nested Emacs Lisp code. Here are proven strategies to prevent this:
+
+** For AI Code Generation
+
+*** 1. Write Small, Focused Functions
+- Keep functions under 15 lines when possible
+- Each function should do ONE thing
+- Easier to verify parentheses at a glance
+- Easier to test in isolation
+
+#+BEGIN_EXAMPLE
+Bad (deeply nested, hard to verify):
+(defun process-data (data)
+  (when (valid-p data)
+    (let ((result (transform data)))
+      (when result
+        (let ((final (format result)))
+          (when final
+            (save final)))))))
+
+Good (broken into helpers):
+(defun process-data (data)
+  (when (valid-p data)
+    (save-result (format-result (transform-data data)))))
+
+(defun transform-data (data) ...)
+(defun format-result (result) ...)
+(defun save-result (final) ...)
+#+END_EXAMPLE
+
+*** 2. Test Immediately After Each Write
+- Write function → check-parens → test load → repeat
+- Don't batch multiple functions before testing
+- Catch errors early when context is fresh
+
+#+BEGIN_SRC bash
+# After writing each function:
+emacs --batch file.el --eval '(check-parens)' && echo "✓"
+#+END_SRC
+
+*** 3. Prefer Write Over Multiple Edits
+- For complex new code: use Write tool (complete file)
+- Only use Edit for small, simple changes
+- Incremental edits can introduce subtle paren mismatches
+- Complete file Write is easier to verify
+
+*** 4. Validate Before Committing
+- Use pre-commit hooks to validate all .el files
+- Prevents committing broken code
+- Example in chime.el repository: .git/hooks/pre-commit
+
+** For Human Developers
+
+*** 1. Use Structural Editing Modes
+These PREVENT unbalanced parens:
+- **paredit** - Classic, strict structural editing
+- **smartparens** - More flexible, works with multiple languages
+- **lispy** - Modal editing for lisps
+- **electric-pair-mode** - Built-in, auto-closes parens
+
+*** 2. Enable Real-time Validation
+- **flycheck** + **flycheck-package** - Shows errors as you type
+- **flymake** - Built-in alternative
+- **rainbow-delimiters-mode** - Colors matching parens
+
+*** 3. Quick Validation Commands
+#+BEGIN_SRC elisp
+M-x check-parens          ; Check current buffer
+M-x byte-compile-file     ; More comprehensive checking
+#+END_SRC
+
+** Lessons from chime-org-contacts.el Development
+
+*** Original Problem
+Complex nested function with 6 levels of nesting:
+- Hard to count parentheses manually
+- AI kept adding/removing wrong number of closing parens
+- Functions weren't defined after file load
+- Wasted significant debugging time
+
+*** Solution That Worked
+Refactored into 3 helper functions:
+1. =chime-org-contacts--parse-birthday= (10 lines)
+2. =chime-org-contacts--format-timestamp= (4 lines)
+3. =chime-org-contacts--insert-timestamp-after-drawer= (12 lines)
+
+Main function became simple composition (10 lines).
+
+**Result:**
+- All functions defined correctly
+- Easy to verify parens by eye
+- Each function testable independently
+- 24 tests written covering all cases
+
+*** Key Insight
+Breaking complex code into small helpers:
+- ✅ Easier to verify correctness
+- ✅ Easier to test
+- ✅ Easier to maintain
+- ✅ Self-documenting through function names
+- ✅ AI and humans both succeed
+
+Deeply nested code:
+- ❌ Hard to verify
+- ❌ Hard to test
+- ❌ AI frequently makes paren errors
+- ❌ Humans make mistakes too
+
+** Tools and Workflow Summary
+
+| Stage | Tool | Purpose |
+|-------+------+---------|
+| Writing | paredit/smartparens | Prevent errors |
+| Editing | rainbow-delimiters | Visual verification |
+| Testing | check-parens | Quick syntax check |
+| CI/CD | pre-commit hooks | Prevent bad commits |
+| Review | byte-compile-file | Comprehensive check |
+
 * 📋 AVAILABLE SESSION TYPES
 
 ** create-session
