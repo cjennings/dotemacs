@@ -262,6 +262,9 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   :after alert  ; Removed org-agenda - chime.el requires it internally
   :ensure nil ;; using local version
   :load-path "~/code/chime.el"
+  :init
+  ;; Debug mode (set to t for troubleshooting)
+  (setq chime-debug nil)
   :bind
   ("C-c A" . chime-check)
   :config
