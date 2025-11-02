@@ -88,6 +88,9 @@ Install with: go install github.com/go-delve/delve/cmd/dlv@latest")
 (defun cj/go-mode-keybindings ()
   "Set up keybindings for Go programming.
 Overrides default prog-mode keybindings with Go-specific commands."
+  ;; C-; f: Format with gofmt/goimports
+  (local-set-key (kbd "C-; f") #'gofmt)
+
   ;; S-f5: Run staticcheck (static analysis)
   (local-set-key (kbd "S-<f5>") #'cj/go-staticcheck)
 
@@ -100,8 +103,6 @@ Overrides default prog-mode keybindings with Go-specific commands."
 (use-package go-mode
   :hook ((go-ts-mode . cj/go-setup)
          (go-ts-mode . cj/go-mode-keybindings))
-  :bind (:map go-ts-mode-map
-			  ("C-; f"  . gofmt))  ;; Override global formatter with gofmt/goimports
   :mode (("\\.go\\'" . go-ts-mode)      ;; .go files use go-ts-mode
          ("go\\.mod\\'" . go-mod-ts-mode)) ;; go.mod uses go-mod-ts-mode
   :config
