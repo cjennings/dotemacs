@@ -6,102 +6,6 @@
 
 ;;; Code:
 
-
-;; ---------------------------------- Org Mode ---------------------------------
-
-(use-package org
-  :defer t
-  :ensure nil ;; use the built-in package
-  :pin manual ;; never upgrade from the version built-into Emacs
-  :init
-  (defvar-keymap cj/org-table-map
-    :doc "org table operations.")
-  (keymap-set cj/custom-keymap "T" cj/org-table-map)
-  :bind
-  ("C-c c" . org-capture)
-  ("C-c a" . org-agenda)
-  (:map org-mode-map
-        ("C-c I"     . org-table-field-info) ;; was C-c ?
-        ("C-\\"      . org-match-sparse-tree)
-        ("C-c t"     . org-set-tags-command)
-        ("C-c l"     . org-store-link)
-        ("C-c C-l"   . org-insert-link)
-        ("s-<up>"    . org-priority-up)
-        ("s-<down>"  . org-priority-down)
-        ("C-c N"     . org-narrow-to-subtree)
-        ("C-c >"     . cj/org-narrow-forward)
-        ("C-c <"     . cj/org-narrow-backwards)
-        ("<f5>"      . org-reveal)
-        ("C-c <ESC>" . widen))
-  (:map cj/org-table-map
-        ("r i" . org-table-insert-row)
-        ("r d" . org-table-kill-row)
-        ("c i" . org-table-insert-column)
-        ("c d" . org-table-delete-column))
-
-  ;; backward and forward day are ','  and '.'
-  ;; shift & meta moves by week or year
-  ;; C-. jumps to today
-  ;; original keybindings blocked by windmove keys
-  ;; these are consistent with plain-old calendar mode
-  (:map org-read-date-minibuffer-local-map
-        (","   . (lambda () (interactive)
-                   (org-eval-in-calendar '(calendar-backward-day 1))))
-        ("."   . (lambda () (interactive)
-                   (org-eval-in-calendar '(calendar-forward-day 1))))
-        ("<"   . (lambda () (interactive)
-                   (org-eval-in-calendar '(calendar-backward-month 1))))
-        (">"   . (lambda () (interactive)
-                   (org-eval-in-calendar '(calendar-forward-month 1))))
-        ("M-," . (lambda () (interactive)
-                   (org-eval-in-calendar '(calendar-backward-year 1))))
-        ("M-." . (lambda () (interactive)
-                   (org-eval-in-calendar '(calendar-forward-year 1)))))
-
-  :init
-  ;; windmove's keybindings conflict with org-agenda-todo-nextset/previousset keybindings
-  ;; solution:  map the super key so that
-  ;; - super up/down increases and decreases the priority
-  ;; - super left/right changes the todo state
-  (setq org-replace-disputed-keys t)
-  (setq org-disputed-keys
-        '(([(shift left)]          . [(super left)])
-          ([(shift right)]         . [(super right)])
-          ([(shift up)]            . [(super up)])
-          ([(shift down)]          . [(super down)])
-          ([(control shift right)] . [(meta shift +)])
-          ([(control shift left)]  . [(meta shift -)])))
-
-  (defun cj/org-narrow-forward ()
-    "Narrow to the next subtree at the same level."
-    (interactive)
-    (widen)
-    (org-forward-heading-same-level 1)
-    (org-narrow-to-subtree))
-
-  (defun cj/org-narrow-backwards ()
-    "Narrow to the previous subtree at the same level."
-    (interactive)
-    (widen)
-    (org-backward-heading-same-level 1)
-    (org-narrow-to-subtree))
-
-  :hook
-  (org-mode . turn-on-visual-line-mode)
-  (org-mode . (lambda () (setq-local tab-width 8)))
-
-  :config
-  ;; Load org-protocol for org-protocol:// URL handling
-  (require 'org-protocol nil t)
-
-  ;; Set archive location (must be done after org loads)
-  (setq org-archive-location
-        (concat org-dir "/archives/archive.org::datetree/"))
-
-  (cj/org-general-settings)
-  (cj/org-appearance-settings)
-  (cj/org-todo-settings))
-
 ;; ---------------------------- Org General Settings ---------------------------
 
 (defun cj/org-general-settings ()
@@ -212,6 +116,101 @@
 
   ;; inherit parents properties (sadly not schedules or deadlines)
   (setq org-use-property-inheritance t))
+
+;; ---------------------------------- Org Mode ---------------------------------
+
+(use-package org
+  :defer t
+  :ensure nil ;; use the built-in package
+  :pin manual ;; never upgrade from the version built-into Emacs
+  :init
+  (defvar-keymap cj/org-table-map
+    :doc "org table operations.")
+  (keymap-set cj/custom-keymap "T" cj/org-table-map)
+  :bind
+  ("C-c c" . org-capture)
+  ("C-c a" . org-agenda)
+  (:map org-mode-map
+        ("C-c I"     . org-table-field-info) ;; was C-c ?
+        ("C-\\"      . org-match-sparse-tree)
+        ("C-c t"     . org-set-tags-command)
+        ("C-c l"     . org-store-link)
+        ("C-c C-l"   . org-insert-link)
+        ("s-<up>"    . org-priority-up)
+        ("s-<down>"  . org-priority-down)
+        ("C-c N"     . org-narrow-to-subtree)
+        ("C-c >"     . cj/org-narrow-forward)
+        ("C-c <"     . cj/org-narrow-backwards)
+        ("<f5>"      . org-reveal)
+        ("C-c <ESC>" . widen))
+  (:map cj/org-table-map
+        ("r i" . org-table-insert-row)
+        ("r d" . org-table-kill-row)
+        ("c i" . org-table-insert-column)
+        ("c d" . org-table-delete-column))
+
+  ;; backward and forward day are ','  and '.'
+  ;; shift & meta moves by week or year
+  ;; C-. jumps to today
+  ;; original keybindings blocked by windmove keys
+  ;; these are consistent with plain-old calendar mode
+  (:map org-read-date-minibuffer-local-map
+        (","   . (lambda () (interactive)
+                   (org-eval-in-calendar '(calendar-backward-day 1))))
+        ("."   . (lambda () (interactive)
+                   (org-eval-in-calendar '(calendar-forward-day 1))))
+        ("<"   . (lambda () (interactive)
+                   (org-eval-in-calendar '(calendar-backward-month 1))))
+        (">"   . (lambda () (interactive)
+                   (org-eval-in-calendar '(calendar-forward-month 1))))
+        ("M-," . (lambda () (interactive)
+                   (org-eval-in-calendar '(calendar-backward-year 1))))
+        ("M-." . (lambda () (interactive)
+                   (org-eval-in-calendar '(calendar-forward-year 1)))))
+
+  :init
+  ;; windmove's keybindings conflict with org-agenda-todo-nextset/previousset keybindings
+  ;; solution:  map the super key so that
+  ;; - super up/down increases and decreases the priority
+  ;; - super left/right changes the todo state
+  (setq org-replace-disputed-keys t)
+  (setq org-disputed-keys
+        '(([(shift left)]          . [(super left)])
+          ([(shift right)]         . [(super right)])
+          ([(shift up)]            . [(super up)])
+          ([(shift down)]          . [(super down)])
+          ([(control shift right)] . [(meta shift +)])
+          ([(control shift left)]  . [(meta shift -)])))
+
+  (defun cj/org-narrow-forward ()
+    "Narrow to the next subtree at the same level."
+    (interactive)
+    (widen)
+    (org-forward-heading-same-level 1)
+    (org-narrow-to-subtree))
+
+  (defun cj/org-narrow-backwards ()
+    "Narrow to the previous subtree at the same level."
+    (interactive)
+    (widen)
+    (org-backward-heading-same-level 1)
+    (org-narrow-to-subtree))
+
+  :hook
+  (org-mode . turn-on-visual-line-mode)
+  (org-mode . (lambda () (setq-local tab-width 8)))
+
+  :config
+  ;; Load org-protocol for org-protocol:// URL handling
+  (require 'org-protocol nil t)
+
+  ;; Set archive location (must be done after org loads)
+  (setq org-archive-location
+        (concat org-dir "/archives/archive.org::datetree/"))
+
+  (cj/org-general-settings)
+  (cj/org-appearance-settings)
+  (cj/org-todo-settings))
 
 ;; ------------------------------- Org Superstar -------------------------------
 
