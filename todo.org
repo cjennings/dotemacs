@@ -57,11 +57,20 @@ CLOSED: [2025-10-31 Fri]
 
 Bound to C-; b D. Weekly need satisfied.
 
-** TODO [#B] Fix go-ts-mode-map keybinding error (void-variable)
+** DONE [#B] Fix go-ts-mode-map keybinding error (void-variable)
+CLOSED: [2025-11-03 Sun]
 
 Error: "Debugger entered--Lisp error: (void-variable go-ts-mode-map)"
 Location: modules/prog-go.el - trying to bind keys before mode loads.
-Fix: Wrap keybinding in with-eval-after-load or check if variable is bound.
+
+✅ Already fixed in commit 196b289 (Nov 2, 2025)
+- Moved keybinding from `:bind (:map go-ts-mode-map ...)` to hook function
+- Keybinding now set in `cj/go-mode-keybindings` called via `:hook`
+- Function executes after mode loads, ensuring keymap exists
+- Today's cleanup: Removed unused forward declarations (lines 34-35)
+
+Fix was: Wrap keybinding in hook function instead of :bind clause.
+Result: No more void-variable error, keybinding works correctly.
 
 ** TODO [#B] Fix org-noter (reading/annotation workflow currently "so painful")
 
