@@ -1,0 +1,4 @@
+This is not valid pactl output
+Some random text
+50	incomplete-line-missing-fields
+Another bad line with	only	two	tabs
