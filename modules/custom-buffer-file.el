@@ -252,23 +252,13 @@ Do not save the deleted text in the kill ring."
   (message "Copied: %s" (buffer-name)))
 
 (defun cj/diff-buffer-with-file ()
-  "Compare the current modified buffer with the saved version.
-Uses unified diff format (-u) for better readability.
-Signal an error if the buffer is not visiting a file.
-
-TODO: Future integration with difftastic for structural diffs (Method 3)."
+  "Compare the current modified buffer with the saved version using ediff.
+Uses the same ediff configuration from diff-config.el (horizontal split, j/k navigation).
+Signal an error if the buffer is not visiting a file."
   (interactive)
-  (let ((file-path (buffer-file-name)))
-    (cond
-     ((not file-path)
-      (user-error "Current buffer is not visiting a file"))
-     ((not (file-exists-p file-path))
-      (user-error "File %s does not exist on disk" file-path))
-     ((not (buffer-modified-p))
-      (message "Buffer has no unsaved changes"))
-     (t
-      (let ((diff-switches "-u"))  ; unified diff format
-        (diff-buffer-with-file (current-buffer)))))))
+  (if (buffer-file-name)
+      (ediff-current-file)
+    (user-error "Current buffer is not visiting a file")))
 
 ;; --------------------------- Buffer And File Keymap --------------------------
 
