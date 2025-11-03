@@ -31,9 +31,6 @@ Install with: go install golang.org/x/tools/gopls@latest")
   "Path to Delve debugger.
 Install with: go install github.com/go-delve/delve/cmd/dlv@latest")
 
-(defvar go-ts-mode-map)
-(defvar go-mod-ts-mode-map)
-
 ;; Forward declarations for LSP
 (declare-function lsp-deferred "lsp-mode")
 (defvar lsp-go-gopls-server-path)
