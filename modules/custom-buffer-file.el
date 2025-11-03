@@ -9,11 +9,17 @@
 ;; - moving/renaming/deleting buffer files
 ;; - diffing buffer contents with saved file version
 ;; - copying file paths and file:// links to the kill ring
-;; - copying entire buffer contents
+;; - copying buffer contents (whole buffer, to top of buffer, to bottom of buffer)
 ;; - clearing buffer contents from point to top or bottom.
 ;;
 ;; The PostScript printing auto-detects the system print spooler (lpr or lp)
-;; and prints with face/syntax highlighting. Bound to keymap prefix ~C-; b~.
+;; and prints with face/syntax highlighting.
+;;
+;; Keybindings under ~C-; b~:
+;; - Copy buffer content submenu at ~C-; b c~
+;;   - ~C-; b c w~ copy whole buffer
+;;   - ~C-; b c t~ copy from beginning to point
+;;   - ~C-; b c b~ copy from point to end
 ;;
 ;;; Code:
 
@@ -200,6 +206,24 @@ is created.  A message is displayed when done."
     (kill-new contents)
     (message "Buffer contents copied to kill ring")))
 
+(defun cj/copy-to-bottom-of-buffer ()
+  "Copy text from point to the end of the buffer to the kill ring.
+Point and mark are left exactly where they were.  No transient region
+is created.  A message is displayed when done."
+  (interactive)
+  (let ((contents (buffer-substring-no-properties (point) (point-max))))
+    (kill-new contents)
+    (message "Copied from point to end of buffer")))
+
+(defun cj/copy-to-top-of-buffer ()
+  "Copy text from the beginning of the buffer to point to the kill ring.
+Point and mark are left exactly where they were.  No transient region
+is created.  A message is displayed when done."
+  (interactive)
+  (let ((contents (buffer-substring-no-properties (point-min) (point))))
+    (kill-new contents)
+    (message "Copied from beginning of buffer to point")))
+
 (defun cj/clear-to-bottom-of-buffer ()
   "Delete all text from point to the end of the current buffer.
 This does not save the deleted text in the kill ring."
@@ -241,6 +265,13 @@ TODO: Future integration with difftastic for structural diffs (Method 3)."
 
 ;; --------------------------- Buffer And File Keymap --------------------------
 
+;; Copy buffer content sub-keymap
+(defvar-keymap cj/copy-buffer-content-map
+  :doc "Keymap for copy buffer content operations."
+  "w" #'cj/copy-whole-buffer
+  "b" #'cj/copy-to-bottom-of-buffer
+  "t" #'cj/copy-to-top-of-buffer)
+
 ;; Buffer & file operations prefix and keymap
 (defvar-keymap cj/buffer-and-file-map
   :doc "Keymap for buffer and file operations."
@@ -249,17 +280,16 @@ TODO: Future integration with difftastic for structural diffs (Method 3)."
   "p" #'cj/print-buffer-ps
   "d" #'cj/delete-buffer-and-file
   "D" #'cj/diff-buffer-with-file
-  "c" #'cj/copy-whole-buffer
+  "c" cj/copy-buffer-content-map
   "n" #'cj/copy-buffer-name
+  "l" #'cj/copy-link-to-buffer-file
+  "P" #'cj/copy-path-to-buffer-file-as-kill
   "t" #'cj/clear-to-top-of-buffer
   "b" #'cj/clear-to-bottom-of-buffer
   "x" #'erase-buffer
   "s" #'mark-whole-buffer
   "S" #'write-file ;; save as
-  "g" #'revert-buffer
-
-  "l" #'cj/copy-link-to-buffer-file
-  "P" #'cj/copy-path-to-buffer-file-as-kill)
+  "g" #'revert-buffer)
 (keymap-set cj/custom-keymap "b" cj/buffer-and-file-map)
 
 (with-eval-after-load 'which-key
@@ -270,16 +300,19 @@ TODO: Future integration with difftastic for structural diffs (Method 3)."
     "C-; b p" "print to PS"
     "C-; b d" "delete file"
     "C-; b D" "diff buffer with file"
-    "C-; b c" "copy buffer"
+    "C-; b c" "buffer copy menu"
+    "C-; b c w" "copy whole buffer"
+    "C-; b c b" "copy to bottom"
+    "C-; b c t" "copy to top"
     "C-; b n" "copy buffer name"
+    "C-; b l" "copy file link"
+    "C-; b P" "copy file path"
     "C-; b t" "clear to top"
     "C-; b b" "clear to bottom"
     "C-; b x" "erase buffer"
     "C-; b s" "select whole buffer"
     "C-; b S" "save as"
-    "C-; b g" "revert buffer"
-    "C-; b l" "copy file link"
-    "C-; b P" "copy file path"))
+    "C-; b g" "revert buffer"))
 
 
 (provide 'custom-buffer-file)
