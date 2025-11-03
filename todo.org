@@ -59,37 +59,92 @@ Fix: Wrap keybinding in with-eval-after-load or check if variable is bound.
 
 High priority - daily pain point.
 
-** TODO [#B] Fix video/audio recording module (use constantly, just broke)
+** DONE [#B] Fix video/audio recording module (use constantly, just broke)
+CLOSED: [2025-11-03 Sun]
 
 Main issue: No way to select audio devices when multiple are available.
 Plugging in external audio interface broke recording - only captured input, not output.
 
-Use constantly, needs to work reliably.
+✅ COMPLETED - Module now has robust device detection and selection.
 
-*** TODO [#A] Add diagnostic command cj/recording-list-devices
-Show ALL available PulseAudio/PipeWire sources.
+*** DONE [#A] Add diagnostic command cj/recording-list-devices
+CLOSED: [2025-11-03 Sun]
+
+✅ Created `cj/recording-list-devices` command (C-; r d)
+Shows ALL available PulseAudio/PipeWire sources with drivers and states.
+Displays current configuration.
 Helps debug why auto-detection fails.
-User can copy device names if needed.
 
-*** TODO [#A] Add device selection UI
-Prompt user to select mic and system audio sources.
-Cache selected devices for future recordings.
-Allow switching devices without restarting Emacs.
+*** DONE [#A] Add device selection UI
+CLOSED: [2025-11-03 Sun]
 
-*** TODO [#B] Improve error messages
-Show which devices were found/not found.
-Include actual pactl output in error messages.
-Suggest manual device configuration.
+✅ Created TWO selection workflows:
+1. `cj/recording-select-devices` (C-; r s) - Full manual control
+   - Select mic and system audio separately
+   - Interactive completion with device states
+2. `cj/recording-quick-setup-for-calls` (C-; r c) - Quick call setup
+   - Smart device pairing (groups mic + monitor by hardware)
+   - One selection for both mic and system audio
+   - Handles Bluetooth MAC normalization
 
-*** TODO [#B] Make device detection more flexible
-Try multiple regex patterns for different audio setups.
-Fallback to prompting user to select from list.
-Support both PulseAudio and PipeWire.
+Devices cached in variables for future recordings.
+Can switch devices without restarting Emacs.
+
+*** DONE [#B] Improve error messages
+CLOSED: [2025-11-03 Sun]
+
+✅ Error messages now include:
+- Guidance to run `cj/recording-select-devices`
+- Clear indication when auto-detection fails
+- User-friendly prompts for manual selection
+
+*** DONE [#B] Make device detection more flexible
+CLOSED: [2025-11-03 Sun]
+
+✅ Implemented multi-level fallback system:
+1. Auto-detect using pactl output parsing
+2. Prompt user to select manually if auto-detect fails
+3. Error with helpful guidance if user declines
+
+✅ Smart device grouping in `cj/recording-group-devices-by-hardware`:
+- Handles USB, PCI (built-in), and Bluetooth devices
+- Normalizes Bluetooth MAC addresses (colons ↔ underscores)
+- Assigns friendly names (e.g., "Built-in Laptop Audio", "Bluetooth Headset")
+- Filters incomplete devices (must have both mic and monitor)
+
+✅ Supports both PulseAudio and PipeWire (both use pactl).
 
 *** TODO [#B] Validate recording startup
 Check process status after starting.
 Parse ffmpeg output for errors.
 Show actual ffmpeg command for debugging.
+
+** DONE [#A] Add comprehensive test coverage for video-audio-recording module
+CLOSED: [2025-11-03 Sun]
+
+✅ Created comprehensive test suite following quality-engineer.org standards:
+- 9 test files (8 unit + 1 integration)
+- 83 test cases with 100% pass rate
+- Test categories: Normal, Boundary, Error cases
+- 6 test fixtures for reproducible testing
+- Mocking strategy using cl-letf
+- Integration test validates complete parse→group→friendly-names workflow
+- Tests document bugs in legacy detect functions
+- Critical validation: Bluetooth MAC normalization across component boundaries
+
+✅ Refactored code for testability:
+- Extracted `cj/recording--parse-pactl-output` internal parser
+- Separated I/O from business logic
+
+✅ Fixed all linting warnings (checkdoc):
+- 6 spacing/grammar issues resolved
+- `make lint` now passes cleanly
+
+✅ All changes committed and pushed to all remotes (origin + github)
+
+Commits:
+- 0a69c58: test: Add comprehensive test suite for video-audio-recording module
+- b086539: style: Fix checkdoc warnings in video-audio-recording.el
 
 *** TODO [#C] Add device testing command cj/recording-test-devices
 Records 3 seconds of audio.
