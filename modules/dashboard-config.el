@@ -64,7 +64,7 @@
 ;; a useful startup screen for Emacs
 
 (use-package dashboard
-  :defer t
+  :demand t
   :hook (emacs-startup . cj/dashboard-only)
   :bind ("<f1>" . cj/dashboard-only)
   :custom
@@ -75,7 +75,7 @@
      (bookmarks . dashboard-insert-bookmarks)))
 
   (dashboard-items '((projects . 5)
-                     (bookmarks . 15)))
+                     (bookmarks . 10)))
 
   (dashboard-startupify-list
    '(dashboard-insert-banner
