@@ -149,6 +149,74 @@ Sets cj/recording-mic-device and cj/recording-system-device."
            cj/recording-mic-device
            cj/recording-system-device))
 
+(defun cj/recording-group-devices-by-hardware ()
+  "Group audio sources by hardware device.
+Returns alist of (device-name . (mic-source . monitor-source))."
+  (let ((sources (cj/recording-parse-sources))
+        (devices (make-hash-table :test 'equal))
+        (result nil))
+    ;; Group sources by base device name
+    (dolist (source sources)
+      (let* ((device (nth 0 source))
+             (driver (nth 1 source))
+             ;; Extract hardware ID (the unique part that identifies the physical device)
+             (base-name (cond
+                         ;; USB devices: extract usb-XXXXX-XX part
+                         ((string-match "\\.\\(usb-[^.]+\\-[0-9]+\\)\\." device)
+                          (match-string 1 device))
+                         ;; Built-in (pci) devices: extract pci-XXXXX part
+                         ((string-match "\\.\\(pci-[^.]+\\)\\." device)
+                          (match-string 1 device))
+                         ;; Bluetooth devices: extract and normalize MAC address
+                         ;; (input uses colons, output uses underscores - normalize to colons)
+                         ((string-match "bluez_\\(?:input\\|output\\)\\.\\([^.]+\\)" device)
+                          (replace-regexp-in-string "_" ":" (match-string 1 device)))
+                         (t device)))
+             (is-monitor (string-match-p "\\.monitor$" device))
+             (device-entry (gethash base-name devices)))
+        (unless device-entry
+          (setf device-entry (cons nil nil))
+          (puthash base-name device-entry devices))
+        ;; Store mic or monitor in the pair
+        (if is-monitor
+            (setcdr device-entry device)
+          (setcar device-entry device))))
+
+    ;; Convert hash table to alist with friendly names
+    (maphash (lambda (base-name pair)
+               (when (and (car pair) (cdr pair))  ; Only include if we have both mic and monitor
+                 (let ((friendly-name
+                        (cond
+                         ((string-match-p "usb.*[Jj]abra" base-name) "Jabra SPEAK 510 USB")
+                         ((string-match-p "^usb-" base-name) "USB Audio Device")
+                         ((string-match-p "^pci-" base-name) "Built-in Laptop Audio")
+                         ((string-match-p "^[0-9A-Fa-f:]+$" base-name) "Bluetooth Headset")
+                         (t base-name))))
+                   (push (cons friendly-name pair) result))))
+             devices)
+    (nreverse result)))
+
+(defun cj/recording-quick-setup-for-calls ()
+  "Quick setup for recording calls/meetings.
+Detects available audio devices and lets you pick one device to use for
+both microphone (your voice) and monitor (remote person + sound effects).
+Perfect for recording video calls, phone calls, or presentations."
+  (interactive)
+  (let* ((grouped-devices (cj/recording-group-devices-by-hardware))
+         (choices (mapcar #'car grouped-devices)))
+    (if (null choices)
+        (user-error "No complete audio devices found (need both mic and monitor)")
+      (let* ((choice (completing-read "Which device are you using for the call? " choices nil t))
+             (device-pair (cdr (assoc choice grouped-devices)))
+             (mic (car device-pair))
+             (monitor (cdr device-pair)))
+        (setq cj/recording-mic-device mic)
+        (setq cj/recording-system-device monitor)
+        (message "Call recording ready! Using: %s\n  Mic: %s\n  Monitor: %s"
+                 choice
+                 (file-name-nondirectory mic)
+                 (file-name-nondirectory monitor))))))
+
 (defun cj/recording-get-devices ()
   "Get or auto-detect audio devices.
 Returns (mic-device . system-device) or nil on error."
@@ -309,6 +377,7 @@ Otherwise use the default location in `audio-recordings-dir'."
     (define-key map (kbd "l") #'cj/recording-adjust-volumes)
     (define-key map (kbd "d") #'cj/recording-list-devices)
     (define-key map (kbd "s") #'cj/recording-select-devices)
+    (define-key map (kbd "c") #'cj/recording-quick-setup-for-calls)
     map)
   "Keymap for video/audio recording operations.")
 
@@ -323,7 +392,8 @@ Otherwise use the default location in `audio-recordings-dir'."
     "C-; r A" "stop audio"
     "C-; r l" "adjust levels"
     "C-; r d" "list devices"
-    "C-; r s" "select devices"))
+    "C-; r s" "select devices"
+    "C-; r c" "quick setup for calls"))
 
 (provide 'video-audio-recording)
 ;;; video-audio-recording.el ends here.
