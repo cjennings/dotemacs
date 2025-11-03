@@ -69,11 +69,11 @@ Returns device name or nil if not found."
     (when (string-match "\\([^\t\n]+\\.monitor\\)" output)
       (match-string 1 output))))
 
-(defun cj/recording-parse-sources ()
-  "Parse pactl sources output into structured list.
-Returns list of (device-name description state) tuples."
-  (let ((output (shell-command-to-string "pactl list sources short 2>/dev/null"))
-        (sources nil))
+(defun cj/recording--parse-pactl-output (output)
+  "Internal parser for pactl sources output. Takes OUTPUT string.
+Returns list of (device-name driver state) tuples.
+Extracted for testing without shell command execution."
+  (let ((sources nil))
     (dolist (line (split-string output "\n" t))
       (when (string-match "^[0-9]+\t\\([^\t]+\\)\t\\([^\t]+\\)\t\\([^\t]+\\)\t\\([^\t]+\\)" line)
         (let ((device (match-string 1 line))
@@ -81,6 +81,12 @@ Returns list of (device-name description state) tuples."
               (state (match-string 4 line)))
           (push (list device driver state) sources))))
     (nreverse sources)))
+
+(defun cj/recording-parse-sources ()
+  "Parse pactl sources output into structured list.
+Returns list of (device-name driver state) tuples."
+  (cj/recording--parse-pactl-output
+   (shell-command-to-string "pactl list sources short 2>/dev/null")))
 
 (defun cj/recording-friendly-state (state)
   "Convert technical state name to user-friendly label.
