@@ -17,7 +17,7 @@ If the answer is "no" to all five → DON'T ADD IT.
 V2MOM is located at: [[file:docs/emacs-config-v2mom.org][emacs-config-v2mom.org]]
 Research/ideas that don't serve vision: [[file:docs/someday-maybe.org][someday-maybe.org]]
 
-* Method 1: Make Using Emacs Frictionless [5/13]
+* Method 1: Make Using Emacs Frictionless [7/13]
 ** DONE [#A] Remove network check from startup (saves 1+ seconds)
 CLOSED: [2025-10-31 Fri]
 
@@ -269,9 +269,23 @@ Complex workflow testing capability.
 
 Repeatable installs and safe rollbacks.
 
-** TODO [#C] Integrate difftastic (structural diffs)
+** DONE [#C] Integrate difftastic (structural diffs)
+CLOSED: [2025-11-03 Sun]
 
-Structural diffs that show semantic changes. Hook into cj/diff-buffer-with-file.
+✅ Completed difftastic integration:
+1. **Upgraded cj/diff-buffer-with-file to use ediff** (modules/custom-buffer-file.el)
+   - Replaced basic unified diff with ediff-current-file
+   - Now uses same ediff config (horizontal split, j/k navigation)
+   - Keybinding C-; b D now launches interactive ediff
+
+2. **Added difftastic for git diffs** (modules/vc-config.el)
+   - Installed binary: difftastic 0.64.0
+   - Added difftastic.el package integrated with magit
+   - Keybindings in magit-diff: D for dwim, S for show
+   - Provides structural, language-aware diffs for git changes
+
+Result: Better diffs everywhere - ediff for interactive buffer comparison,
+difftastic for understanding git changes.
 
 * Method 4: Contribute to the Emacs Ecosystem [0/4]
 
