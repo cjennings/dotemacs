@@ -68,11 +68,11 @@
   (set-face-attribute 'org-link nil :underline t)
 
   (setq org-ellipsis " ▾")                                  ;; change ellipses to down arrow
-  (setq org-hide-emphasis-markers t)                        ;; remove emphasis markers to keep the screen clean
+  (setq org-hide-emphasis-markers t)                        ;; hide emphasis markers (org-appear shows them when editing)
   (setq org-hide-leading-stars t)                           ;; hide leading stars, just show one per line
   (setq org-pretty-entities t)                              ;; render special symbols
   (setq org-pretty-entities-include-sub-superscripts nil)   ;; ...except superscripts and subscripts
-  (setq org-fontify-emphasized-text nil)                    ;; ...and don't render bold and italic markup
+  (setq org-fontify-emphasized-text t)                      ;; render bold and italic markup
   (setq org-fontify-whole-heading-line t)                   ;; fontify the whole line for headings (for face-backgrounds)
   (add-hook 'org-mode-hook 'prettify-symbols-mode))
 
@@ -220,6 +220,15 @@
   :config
   (org-superstar-configure-like-org-bullets)
   (setq org-superstar-leading-bullet ?\s))
+
+;; -------------------------------- Org-Appear ---------------------------------
+
+(use-package org-appear
+  :hook (org-mode . org-appear-mode)
+  :custom
+  (org-appear-autoemphasis t)   ;; Show * / _ when cursor is on them
+  (org-appear-autolinks t)      ;; Also works for links
+  (org-appear-autosubmarkers t)) ;; And sub/superscripts
 
 ;; ------------------------------- Org-Checklist -------------------------------
 

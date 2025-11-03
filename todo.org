@@ -214,7 +214,7 @@ EMMS keybindings conflict with standard buffer keybindings, causing mistypes.
 Results in accidental destructive actions (clearing buffers), requires undo + context switch.
 Violates Intuitive value - muscle memory should help, not hurt.
 
-* Method 2: Stop Problems Before They Appear [2/5]
+* Method 2: Stop Problems Before They Appear [3/5]
 
 ** TODO [#B] Migrate from Company to Corfu
 :PROPERTIES:
@@ -242,9 +242,15 @@ CLOSED: [2025-11-03 Sun]
 - treesit-auto continues to manage tree-sitter grammars automatically
 - No functionality lost, cleaner dependency tree
 
-** TODO [#C] Add org-appear (show emphasis markers only when point is on them)
+** DONE [#C] Add org-appear (show emphasis markers only when point is on them)
+CLOSED: [2025-11-03 Sun]
 
-Cleaner org files, supports Intuitive value.
+✅ Added org-appear package to modules/org-config.el
+- Shows emphasis markers (* / _) only when cursor is on them
+- Also shows link markup and sub/superscripts when editing
+- Changed org-fontify-emphasized-text from nil to t (line 75)
+- Updated comment on line 71 to reference org-appear
+- Cleaner editing experience while maintaining visual clarity
 
 ** TODO [#C] Integrate prescient with Corfu (smart sorting)
 
