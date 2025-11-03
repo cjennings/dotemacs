@@ -115,6 +115,14 @@
 	  (forge-create-issue)
 	(user-error "Not in a forge repository")))
 
+(defun cj/goto-git-gutter-diff-hunks ()
+  "Jump to git-gutter diff hunks using consult.
+Searches for lines starting with + or - (diff markers) and allows
+interactive selection to jump to any changed line in the buffer."
+  (interactive)
+  (require 'git-gutter)
+  (consult-line "^[+\\-]"))
+
 ;; --------------------------------- VC Keymap ---------------------------------
 
 ;; Ordering & sorting prefix and keymap
