@@ -123,6 +123,21 @@ interactive selection to jump to any changed line in the buffer."
   (require 'git-gutter)
   (consult-line "^[+\\-]"))
 
+;; -------------------------------- Difftastic ---------------------------------
+;; Structural diffs for better git change visualization
+
+(use-package difftastic
+  :demand t
+  :after magit
+  :bind (:map magit-blame-read-only-mode-map
+              ("D" . difftastic-magit-show)
+              ("S" . difftastic-magit-show))
+  :config
+  (eval-after-load 'magit-diff
+    '(transient-append-suffix 'magit-diff '(-1 -1)
+       [("D" "Difftastic diff (dwim)" difftastic-magit-diff)
+        ("S" "Difftastic show" difftastic-magit-show)])))
+
 ;; --------------------------------- VC Keymap ---------------------------------
 
 ;; Ordering & sorting prefix and keymap
