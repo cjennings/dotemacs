@@ -69,6 +69,74 @@ Returns device name or nil if not found."
     (when (string-match "\\([^\t\n]+\\.monitor\\)" output)
       (match-string 1 output))))
 
+(defun cj/recording-parse-sources ()
+  "Parse pactl sources output into structured list.
+Returns list of (device-name description state) tuples."
+  (let ((output (shell-command-to-string "pactl list sources short 2>/dev/null"))
+        (sources nil))
+    (dolist (line (split-string output "\n" t))
+      (when (string-match "^[0-9]+\t\\([^\t]+\\)\t\\([^\t]+\\)\t\\([^\t]+\\)\t\\([^\t]+\\)" line)
+        (let ((device (match-string 1 line))
+              (driver (match-string 2 line))
+              (state (match-string 4 line)))
+          (push (list device driver state) sources))))
+    (nreverse sources)))
+
+(defun cj/recording-list-devices ()
+  "Show all available audio sources in a readable format.
+Opens a buffer showing devices with their states."
+  (interactive)
+  (let ((sources (cj/recording-parse-sources)))
+    (with-current-buffer (get-buffer-create "*Recording Devices*")
+      (erase-buffer)
+      (insert "Available Audio Sources\n")
+      (insert "========================\n\n")
+      (insert "Current Configuration:\n")
+      (insert (format "  Microphone:   %s\n" (or cj/recording-mic-device "Not set")))
+      (insert (format "  System Audio: %s\n\n" (or cj/recording-system-device "Not set")))
+      (insert "Available Devices:\n\n")
+      (if sources
+          (dolist (source sources)
+            (let ((device (nth 0 source))
+                  (driver (nth 1 source))
+                  (state (nth 2 source)))
+              (insert (format "%-10s [%s]\n" state driver))
+              (insert (format "  %s\n\n" device))))
+        (insert "  No audio sources found. Is PulseAudio/PipeWire running?\n"))
+      (goto-char (point-min))
+      (special-mode))
+    (switch-to-buffer-other-window "*Recording Devices*")))
+
+(defun cj/recording-select-device (prompt device-type)
+  "Interactively select an audio device.
+PROMPT is shown to user.  DEVICE-TYPE is 'mic or 'monitor for filtering.
+Returns selected device name or nil."
+  (let* ((sources (cj/recording-parse-sources))
+         (filtered (if (eq device-type 'monitor)
+                       (seq-filter (lambda (s) (string-match-p "\\.monitor$" (car s))) sources)
+                     (seq-filter (lambda (s) (not (string-match-p "\\.monitor$" (car s)))) sources)))
+         (choices (mapcar (lambda (s)
+                           (let ((device (nth 0 s))
+                                 (driver (nth 1 s))
+                                 (state (nth 2 s)))
+                             (cons (format "%-10s %s" state device) device)))
+                         filtered)))
+    (if choices
+        (cdr (assoc (completing-read prompt choices nil t) choices))
+      (user-error "No %s devices found" (if (eq device-type 'monitor) "monitor" "input")))))
+
+(defun cj/recording-select-devices ()
+  "Interactively select microphone and system audio devices.
+Sets cj/recording-mic-device and cj/recording-system-device."
+  (interactive)
+  (setq cj/recording-mic-device
+        (cj/recording-select-device "Select microphone device: " 'mic))
+  (setq cj/recording-system-device
+        (cj/recording-select-device "Select system audio monitor: " 'monitor))
+  (message "Devices set - Mic: %s, System: %s"
+           cj/recording-mic-device
+           cj/recording-system-device))
+
 (defun cj/recording-get-devices ()
   "Get or auto-detect audio devices.
 Returns (mic-device . system-device) or nil on error."
@@ -78,9 +146,14 @@ Returns (mic-device . system-device) or nil on error."
   (unless cj/recording-system-device
     (setq cj/recording-system-device (cj/recording-detect-system-device)))
 
-  ;; Validate devices
+  ;; If auto-detection failed, prompt user to select
   (unless (and cj/recording-mic-device cj/recording-system-device)
-    (user-error "Could not detect audio devices. Set cj/recording-mic-device and cj/recording-system-device manually"))
+    (when (y-or-n-p "Could not auto-detect audio devices. Select manually? ")
+      (cj/recording-select-devices)))
+
+  ;; Final validation
+  (unless (and cj/recording-mic-device cj/recording-system-device)
+    (user-error "Audio devices not configured. Run M-x cj/recording-select-devices"))
 
   (cons cj/recording-mic-device cj/recording-system-device))
 
@@ -222,6 +295,8 @@ Otherwise use the default location in `audio-recordings-dir'."
     (define-key map (kbd "A") #'cj/audio-recording-stop)
     (define-key map (kbd "a") #'cj/audio-recording-start)
     (define-key map (kbd "l") #'cj/recording-adjust-volumes)
+    (define-key map (kbd "d") #'cj/recording-list-devices)
+    (define-key map (kbd "s") #'cj/recording-select-devices)
     map)
   "Keymap for video/audio recording operations.")
 
@@ -234,7 +309,9 @@ Otherwise use the default location in `audio-recordings-dir'."
     "C-; r V" "stop video"
     "C-; r a" "start audio"
     "C-; r A" "stop audio"
-    "C-; r l" "adjust levels"))
+    "C-; r l" "adjust levels"
+    "C-; r d" "list devices"
+    "C-; r s" "select devices"))
 
 (provide 'video-audio-recording)
 ;;; video-audio-recording.el ends here.

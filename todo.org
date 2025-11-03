@@ -61,7 +61,61 @@ High priority - daily pain point.
 
 ** TODO [#B] Fix video/audio recording module (use constantly, just broke)
 
+Main issue: No way to select audio devices when multiple are available.
+Plugging in external audio interface broke recording - only captured input, not output.
+
 Use constantly, needs to work reliably.
+
+*** TODO [#A] Add diagnostic command cj/recording-list-devices
+Show ALL available PulseAudio/PipeWire sources.
+Helps debug why auto-detection fails.
+User can copy device names if needed.
+
+*** TODO [#A] Add device selection UI
+Prompt user to select mic and system audio sources.
+Cache selected devices for future recordings.
+Allow switching devices without restarting Emacs.
+
+*** TODO [#B] Improve error messages
+Show which devices were found/not found.
+Include actual pactl output in error messages.
+Suggest manual device configuration.
+
+*** TODO [#B] Make device detection more flexible
+Try multiple regex patterns for different audio setups.
+Fallback to prompting user to select from list.
+Support both PulseAudio and PipeWire.
+
+*** TODO [#B] Validate recording startup
+Check process status after starting.
+Parse ffmpeg output for errors.
+Show actual ffmpeg command for debugging.
+
+*** TODO [#C] Add device testing command cj/recording-test-devices
+Records 3 seconds of audio.
+Plays it back.
+Confirms devices work before real recording.
+
+*** TODO [#C] Add recording status display (optional via flag, default off)
+Show "Recording: 00:05:23" in modeline or echo area.
+Timer showing duration.
+File size updating.
+
+*** TODO [#C] Add recording presets
+Screencast (video + audio, high quality).
+Podcast (audio only, voice optimized).
+Meeting (balanced, lower filesize).
+Quick note (audio, low quality, small file).
+
+*** TODO [#C] Build recording history buffer
+*Recordings* buffer showing history.
+Duration, file size, location.
+Quick actions: play, delete, rename, move.
+
+*** TODO [#C] Add post-processing hooks
+Auto-compress after recording.
+Move to cloud sync directory.
+Generate transcript (once transcription workflow exists).
 
 ** TODO [#B] Fix mail attachment workflow (currently awkward)
 
