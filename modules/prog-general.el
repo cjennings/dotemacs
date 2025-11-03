@@ -93,8 +93,7 @@
 
 ;; --------------------------------- Treesitter --------------------------------
 ;; incremental language syntax parser
-
-(use-package tree-sitter)
+;; Using Emacs 29+ built-in treesit with treesit-auto for grammar management
 
 ;; installs tree-sitter grammars if they're absent
 (use-package treesit-auto
