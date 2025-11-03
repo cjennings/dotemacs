@@ -24,9 +24,17 @@ CLOSED: [2025-10-31 Fri]
 ✅ Deleted blocking ping check. Startup improved from 6.2s to 5.4s.
 Now uses package priorities: .localrepo (200) > online repos (25).
 
-** TODO [#A] Fix cj/goto-git-gutter-diff-hunks (missing function causing errors)
+** DONE [#A] Fix cj/goto-git-gutter-diff-hunks (missing function causing errors)
+CLOSED: [2025-11-03 Sun]
 
-Quick win - 15 minutes. Just needs to be defined.
+✅ Implemented missing function in modules/vc-config.el
+- Added `cj/goto-git-gutter-diff-hunks` function (lines 118-124)
+- Uses consult-line to search for diff markers (^[+\-])
+- Enables interactive jumping to any changed line via C-; v d
+- Function properly documented with docstring
+- No linting issues, compiles cleanly
+
+Quick win completed - 5 minutes actual time.
 
 ** DONE [#A] Fix chime-check throw with no catch block
 CLOSED: [2025-11-01 Fri]
