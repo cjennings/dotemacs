@@ -64,14 +64,21 @@ auto-detect once per session.")
 
 (defun cj/print-buffer-ps (&optional color)
   "Print the buffer (or active region) as PostScript to the default printer.
-With prefix argument COLOR, print in color; otherwise print in monochrome.
+With prefix argument COLOR, print in color and skip confirmation; otherwise
+print in monochrome with confirmation prompt.
 Sends directly to the system spooler with no header."
   (interactive "P")
   (unless (require 'ps-print nil t)
     (user-error "Cannot print: ps-print library not found"))
   (let* ((spooler (cj/print--resolve-spooler))
          (want-color (not (null color)))
-         (have-region (use-region-p)))
+         (have-region (use-region-p))
+         (skip-confirm color))  ; C-u skips confirmation
+    ;; Confirm unless C-u was used
+    (when (and (not skip-confirm)
+               (not (y-or-n-p (format "Send %s to printer? "
+                                     (if have-region "region" "buffer")))))
+      (user-error "Printing cancelled"))
     (let ((ps-lpr-command spooler)
           (ps-printer-name nil)      ; default system printer
           (ps-lpr-switches nil)
@@ -277,13 +284,13 @@ TODO: Future integration with difftastic for structural diffs (Method 3)."
   :doc "Keymap for buffer and file operations."
   "m" #'cj/move-buffer-and-file
   "r" #'cj/rename-buffer-and-file
-  "p" #'cj/print-buffer-ps
+  "p" #'cj/copy-path-to-buffer-file-as-kill
   "d" #'cj/delete-buffer-and-file
   "D" #'cj/diff-buffer-with-file
   "c" cj/copy-buffer-content-map
   "n" #'cj/copy-buffer-name
   "l" #'cj/copy-link-to-buffer-file
-  "P" #'cj/copy-path-to-buffer-file-as-kill
+  "P" #'cj/print-buffer-ps
   "t" #'cj/clear-to-top-of-buffer
   "b" #'cj/clear-to-bottom-of-buffer
   "x" #'erase-buffer
@@ -297,7 +304,7 @@ TODO: Future integration with difftastic for structural diffs (Method 3)."
     "C-; b" "buffer and file menu"
     "C-; b m" "move file"
     "C-; b r" "rename file"
-    "C-; b p" "print to PS"
+    "C-; b p" "copy file path"
     "C-; b d" "delete file"
     "C-; b D" "diff buffer with file"
     "C-; b c" "buffer copy menu"
@@ -306,7 +313,7 @@ TODO: Future integration with difftastic for structural diffs (Method 3)."
     "C-; b c t" "copy to top"
     "C-; b n" "copy buffer name"
     "C-; b l" "copy file link"
-    "C-; b P" "copy file path"
+    "C-; b P" "print to PS"
     "C-; b t" "clear to top"
     "C-; b b" "clear to bottom"
     "C-; b x" "erase buffer"

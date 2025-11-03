@@ -184,10 +184,15 @@ Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 Can't research next thing until current thing is implemented.
 
 * Emacs Config Inbox
-** TODO [#A] Irritant: Print should be keybound to capital P
-and perhaps print-screen (however Emacs references that key)
+** DONE [#A] Irritant: Print should be keybound to capital P
+CLOSED: [2025-11-03 Sun]
 
-lowercase p should be about getting path, not doing something dramatic like sending a document to the LPR without confirmation
+Swapped keybindings:
+- C-; b p → copy file path (safe, common action)
+- C-; b P → print to PS (dramatic, requires shift)
 
-** TODO [#A] Irritant: send buffer to printer must have confirmation
-it should allow to skip the confirmation with C-u.
+** DONE [#A] Irritant: send buffer to printer must have confirmation
+CLOSED: [2025-11-03 Sun]
+
+Added y-or-n-p confirmation to cj/print-buffer-ps.
+C-u prefix skips confirmation and prints in color.

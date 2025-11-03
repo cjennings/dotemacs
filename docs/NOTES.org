@@ -170,6 +170,27 @@ Deeply nested code:
 | CI/CD | pre-commit hooks | Prevent bad commits |
 | Review | byte-compile-file | Comprehensive check |
 
+** Makefile - Comprehensive Testing & Validation Tool
+
+A comprehensive Makefile is available in the repository root with targets for testing, validation, and utilities.
+
+#+BEGIN_SRC bash
+make                    # Show all available targets
+make test               # Run all tests (unit + integration)
+make test-file FILE=... # Run specific test file
+make test-name TEST=... # Run tests matching pattern
+make validate-parens    # Check for unbalanced parentheses
+make validate-modules   # Load all modules to verify compilation
+make compile            # Byte-compile all modules
+make lint               # Run checkdoc, package-lint, elisp-lint
+make profile            # Profile Emacs startup
+make clean              # Remove test artifacts and compiled files
+make reset              # Reset to first launch (destructive!)
+#+END_SRC
+
+Created: 2025-11-03
+Adapted from chime.el Makefile with config-specific enhancements
+
 * 📋 AVAILABLE SESSION TYPES
 
 ** create-session
