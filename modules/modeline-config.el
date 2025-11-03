@@ -3,72 +3,28 @@
 
 ;;; Commentary:
 
-;; Doom modeline configuration with performance optimizations.
+;; Minimal modeline configuration using mood-line.
 
-;; Settings prioritize speed while keeping essential information including:
-;; - relative file paths from project root
-;; - column number and percentage position
-;; - buffer modification indicators
-;; - and major mode with icon.
+;; mood-line is a lightweight, minimal modeline inspired by doom-modeline
+;; but with much better performance and simpler configuration.
 
-;; Disabled features for performance:
-;; - minor modes display
-;; - word count
-;; - encoding info
-;; - LSP information
-
-;; Performance tuning includes:
-;; - 0.75 second refresh rate
-;; - 1MB process output chunks
-;; - nerd-icons (faster than all-the-icons)
-;; - simplified checker format
-;; - limited VCS info length
+;; Features:
+;; - Buffer status and modification indicators
+;; - Major mode display
+;; - Version control status
+;; - Flycheck/Flymake status
+;; - Cursor position and buffer percentage
+;; - Anzu and multiple-cursors counters
+;; - No dependencies
+;; - Minimal performance overhead
 
 ;;; Code:
 
-;; ------------------------------- Doom Modeline -------------------------------
+;; -------------------------------- mood-line ----------------------------------
 
-(use-package doom-modeline
-  :hook (after-init . doom-modeline-mode)
-  :custom
-  ;; Performance optimizations
-  (doom-modeline-buffer-file-name-style 'relative-from-project) ;; Faster than 'file-name
-  (doom-modeline-icon t)
-  (doom-modeline-major-mode-icon t)
-  (doom-modeline-major-mode-color-icon t)
-  (doom-modeline-buffer-state-icon t)
-  (doom-modeline-buffer-modification-icon t)
-  (doom-modeline-unicode-fallback nil)
-  (doom-modeline-minor-modes nil)           ;; Hide minor modes as requested
-  (doom-modeline-enable-word-count nil)     ;; Faster without word count
-  (doom-modeline-continuous-word-count-modes nil)
-  (doom-modeline-buffer-encoding nil)       ;; Hide encoding for speed
-  (doom-modeline-indent-info nil)           ;; Hide indent info for speed
-  (doom-modeline-checker-simple-format t)   ;; Simpler checker format for speed
-  (doom-modeline-number-limit 99)           ;; Lower number limit for better performance
-  (doom-modeline-vcs-max-length 12)         ;; Limit VCS info length for speed
-  (doom-modeline-persp-name nil)            ;; Disable perspective name for speed
-  (doom-modeline-display-default-persp-name nil)
-  (doom-modeline-persp-icon nil)
-  (doom-modeline-lsp nil)                   ;; Disable LSP info for speed
-
-  ;; UI Preferences
-  (doom-modeline-height 25)
-  (doom-modeline-bar-width 3)
-  (doom-modeline-window-width-limit 0.25)
-  (doom-modeline-project-detection 'projectile) ;; Use projectile if available, nil is faster
-
-  ;; Use nerd-icons instead of all-the-icons
-  (doom-modeline-icon-preference 'nerd-icons)
-
-  ;; Enable elements you specifically requested
-  (doom-modeline-column-number t)           ;; Show column number
-  (doom-modeline-percent-position t)        ;; Show percentage position
-  (doom-modeline-buffer-name t)             ;; Show buffer name
-  (doom-modeline-buffer-file-name t)        ;; Show file name
+(use-package mood-line
   :config
-  (setq read-process-output-max (* 1024 1024)) ;; 1MB process read size for better performance
-  (setq doom-modeline-refresh-rate 0.75))      ;; Update rate in seconds
+  (mood-line-mode))
 
 
 (provide 'modeline-config)
