@@ -82,6 +82,15 @@ Returns list of (device-name description state) tuples."
           (push (list device driver state) sources))))
     (nreverse sources)))
 
+(defun cj/recording-friendly-state (state)
+  "Convert technical state name to user-friendly label.
+STATE is the raw state from pactl (SUSPENDED, RUNNING, IDLE, etc.)."
+  (pcase state
+    ("SUSPENDED" "Ready")
+    ("RUNNING" "Active")
+    ("IDLE" "Ready")
+    (_ state)))  ; fallback to original if unknown
+
 (defun cj/recording-list-devices ()
   "Show all available audio sources in a readable format.
 Opens a buffer showing devices with their states."
@@ -91,6 +100,7 @@ Opens a buffer showing devices with their states."
       (erase-buffer)
       (insert "Available Audio Sources\n")
       (insert "========================\n\n")
+      (insert "Note: 'Ready' devices are available and will activate when recording starts.\n\n")
       (insert "Current Configuration:\n")
       (insert (format "  Microphone:   %s\n" (or cj/recording-mic-device "Not set")))
       (insert (format "  System Audio: %s\n\n" (or cj/recording-system-device "Not set")))
@@ -99,8 +109,9 @@ Opens a buffer showing devices with their states."
           (dolist (source sources)
             (let ((device (nth 0 source))
                   (driver (nth 1 source))
-                  (state (nth 2 source)))
-              (insert (format "%-10s [%s]\n" state driver))
+                  (state (nth 2 source))
+                  (friendly-state (cj/recording-friendly-state (nth 2 source))))
+              (insert (format "%-10s [%s]\n" friendly-state driver))
               (insert (format "  %s\n\n" device))))
         (insert "  No audio sources found. Is PulseAudio/PipeWire running?\n"))
       (goto-char (point-min))
@@ -118,8 +129,9 @@ Returns selected device name or nil."
          (choices (mapcar (lambda (s)
                            (let ((device (nth 0 s))
                                  (driver (nth 1 s))
-                                 (state (nth 2 s)))
-                             (cons (format "%-10s %s" state device) device)))
+                                 (state (nth 2 s))
+                                 (friendly-state (cj/recording-friendly-state (nth 2 s))))
+                             (cons (format "%-10s %s" friendly-state device) device)))
                          filtered)))
     (if choices
         (cdr (assoc (completing-read prompt choices nil t) choices))
