@@ -17,7 +17,7 @@ If the answer is "no" to all five → DON'T ADD IT.
 V2MOM is located at: [[file:docs/emacs-config-v2mom.org][emacs-config-v2mom.org]]
 Research/ideas that don't serve vision: [[file:docs/someday-maybe.org][someday-maybe.org]]
 
-* Method 1: Make Using Emacs Frictionless
+* Method 1: Make Using Emacs Frictionless [5/13]
 ** DONE [#A] Remove network check from startup (saves 1+ seconds)
 CLOSED: [2025-10-31 Fri]
 
@@ -196,7 +196,7 @@ EMMS keybindings conflict with standard buffer keybindings, causing mistypes.
 Results in accidental destructive actions (clearing buffers), requires undo + context switch.
 Violates Intuitive value - muscle memory should help, not hurt.
 
-* Method 2: Stop Problems Before They Appear
+* Method 2: Stop Problems Before They Appear [2/5]
 
 ** TODO [#B] Migrate from Company to Corfu
 :PROPERTIES:
@@ -205,13 +205,24 @@ Violates Intuitive value - muscle memory should help, not hurt.
 
 Complete config already exists in someday-maybe.org. Just needs to be executed.
 
-** TODO [#C] Switch to mood-line
+** DONE [#C] Switch to mood-line
+CLOSED: [2025-11-03 Sun]
 
-Already researched. Lighter modeline.
+✅ Replaced doom-modeline with mood-line in modules/modeline-config.el
+- Simplified from 70+ lines to ~10 lines of configuration
+- mood-line is lightweight, minimal, inspired by doom-modeline
+- Better performance with no dependencies
+- Features: buffer status, major mode, VCS, flycheck, cursor position
+- Net reduction: -40 lines of configuration code
 
-** TODO [#C] Remove deprecated tree-sitter package (rely on treesit-auto)
+** DONE [#C] Remove deprecated tree-sitter package (rely on treesit-auto)
+CLOSED: [2025-11-03 Sun]
 
-Already have treesit-auto installed. Just remove old package.
+✅ Removed deprecated tree-sitter package from modules/prog-general.el
+- Deleted `(use-package tree-sitter)` on line 97
+- Now relies solely on Emacs 29+ built-in treesit with treesit-auto
+- treesit-auto continues to manage tree-sitter grammars automatically
+- No functionality lost, cleaner dependency tree
 
 ** TODO [#C] Add org-appear (show emphasis markers only when point is on them)
 
@@ -221,7 +232,7 @@ Cleaner org files, supports Intuitive value.
 
 Already using prescient with vertico. Extend to Corfu after migration.
 
-* Method 3: Make *Fixing* Emacs Frictionless
+* Method 3: Make *Fixing* Emacs Frictionless [0/5]
 
 ** TODO [#B] Build debug-profiling.el module
 
@@ -245,7 +256,7 @@ Repeatable installs and safe rollbacks.
 
 Structural diffs that show semantic changes. Hook into cj/diff-buffer-with-file.
 
-* Method 4: Contribute to the Emacs Ecosystem
+* Method 4: Contribute to the Emacs Ecosystem [0/4]
 
 ** TODO [#C] Set up package-lint for elisp linting (chime, org-msg, wttrin)
 
@@ -263,7 +274,7 @@ Zero-config CI for Emacs packages.
 
 Measure and track test coverage over time.
 
-* Method 5: Be Kind To Your Future Self
+* Method 5: Be Kind To Your Future Self [0/2]
 
 ** TODO [#C] Add transcription workflow
 :PROPERTIES:
@@ -276,7 +287,7 @@ Complete code already exists in someday-maybe.org. Need today and recurring.
 
 Create reveal.js slides from org-mode.
 
-* Method 6: Develop Disciplined Engineering Practices
+* Method 6: Develop Disciplined Engineering Practices [0/3]
 ** TODO [#A] First weekly triage by Sunday (establish habit)
 SCHEDULED: <2025-11-03 Sun>
 
@@ -293,15 +304,3 @@ Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 Can't research next thing until current thing is implemented.
 
 * Emacs Config Inbox
-** DONE [#A] Irritant: Print should be keybound to capital P
-CLOSED: [2025-11-03 Sun]
-
-Swapped keybindings:
-- C-; b p → copy file path (safe, common action)
-- C-; b P → print to PS (dramatic, requires shift)
-
-** DONE [#A] Irritant: send buffer to printer must have confirmation
-CLOSED: [2025-11-03 Sun]
-
-Added y-or-n-p confirmation to cj/print-buffer-ps.
-C-u prefix skips confirmation and prints in color.
