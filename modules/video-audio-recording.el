@@ -70,7 +70,7 @@ Returns device name or nil if not found."
       (match-string 1 output))))
 
 (defun cj/recording--parse-pactl-output (output)
-  "Internal parser for pactl sources output. Takes OUTPUT string.
+  "Internal parser for pactl sources output.  Takes OUTPUT string.
 Returns list of (device-name driver state) tuples.
 Extracted for testing without shell command execution."
   (let ((sources nil))
@@ -203,7 +203,7 @@ Returns alist of (device-name . (mic-source . monitor-source))."
     (nreverse result)))
 
 (defun cj/recording-quick-setup-for-calls ()
-  "Quick setup for recording calls/meetings.
+  "Quick setup for recording call/meetings.
 Detects available audio devices and lets you pick one device to use for
 both microphone (your voice) and monitor (remote person + sound effects).
 Perfect for recording video calls, phone calls, or presentations."
@@ -234,12 +234,12 @@ Returns (mic-device . system-device) or nil on error."
 
   ;; If auto-detection failed, prompt user to select
   (unless (and cj/recording-mic-device cj/recording-system-device)
-    (when (y-or-n-p "Could not auto-detect audio devices. Select manually? ")
+    (when (y-or-n-p "Could not auto-detect audio devices.  Select manually? ")
       (cj/recording-select-devices)))
 
   ;; Final validation
   (unless (and cj/recording-mic-device cj/recording-system-device)
-    (user-error "Audio devices not configured. Run M-x cj/recording-select-devices"))
+    (user-error "Audio devices not configured.  Run M-x cj/recording-select-devices"))
 
   (cons cj/recording-mic-device cj/recording-system-device))
 
@@ -270,7 +270,7 @@ Otherwise use the default location in `audio-recordings-dir'."
 	(cj/ffmpeg-record-audio location)))
 
 (defun cj/ffmpeg-record-video (directory)
-  "Start an ffmpeg video recording. Save output to DIRECTORY."
+  "Start an ffmpeg video recording.  Save output to DIRECTORY."
   (cj/recording-check-ffmpeg)
   (unless cj/video-recording-ffmpeg-process
 	(let* ((devices (cj/recording-get-devices))
@@ -303,7 +303,7 @@ Otherwise use the default location in `audio-recordings-dir'."
 			   filename cj/recording-mic-boost cj/recording-system-volume))))
 
 (defun cj/ffmpeg-record-audio (directory)
-  "Start an ffmpeg audio recording. Save output to DIRECTORY."
+  "Start an ffmpeg audio recording.  Save output to DIRECTORY."
   (cj/recording-check-ffmpeg)
   (unless cj/audio-recording-ffmpeg-process
 	(let* ((devices (cj/recording-get-devices))
