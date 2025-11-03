@@ -263,22 +263,25 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   :ensure nil ;; using local version
   :load-path "~/code/chime.el"
   :init
-  ;; Debug mode (set to t for troubleshooting)
+  ;; Debug mode (keep set to nil, but available for troubleshooting)
   (setq chime-debug nil)
   :bind
   ("C-c A" . chime-check)
   :config
-  ;; Notification times: 5 minutes before and at event time (0 minutes)
-  ;; This gives two notifications per event without any after-event notifications
-  (setq chime-alert-time '(5 0))
+  ;; Polling interval: check every 30 seconds
+  (setq chime-check-interval 30)
 
-  ;; Modeline display: show upcoming events within 2 hours
-  (setq chime-enable-modeline t)
+  ;; Alert intervals: 5 minutes before and at event time
+  ;; All notifications use medium urgency
+  (setq chime-alert-intervals '((5 . medium) (0 . medium)))
+
+  ;; Day-wide events: notify at 9 AM for birthdays/all-day events
+  (setq chime-day-wide-time "09:00")
+
+  ;; Modeline display: show upcoming events within 3 hours
   (setq chime-modeline-lookahead-minutes (* 3 60))
-  (setq chime-modeline-format " ⏰ %s")
 
-  ;; Tooltip settings: show up to 20 upcoming events (regardless of how far in future)
-  ;; chime-tooltip-lookahead-hours defaults to 8760 (1 year) - effectively unlimited
+  ;; Tooltip settings: show up to 10 upcoming events within 6 days
   (setq chime-modeline-tooltip-max-events 10)
   (setq chime-tooltip-lookahead-hours (* 6 24))
 
@@ -290,26 +293,13 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   (setq chime-time-left-format-long " in %hh %mm ")   ; 1 hour+: " in 1h 37m"
   (setq chime-time-left-format-at-event "now")
 
-  ;; Title truncation: limit long event titles to 15 characters
-  ;; This affects only the title, not the icon or countdown
-  (setq chime-max-title-length 25)                   ; "Very Long Me... ( in 10m)"
+  ;; Title truncation: limit long event titles to 25 characters
+  (setq chime-max-title-length 25)
 
-  ;; Chime sound: disabled
-  (setq chime-play-sound nil)
-
-  ;; Notification settings
+  ;; Notification title
   (setq chime-notification-title "Reminder")
-  (setq chime-alert-severity 'medium)
 
-  ;; Don't filter by TODO keywords - notify for all events with timestamps
-  (setq chime-keyword-whitelist nil)
-  (setq chime-keyword-blacklist nil)
-
-  ;; Only notify for non-done items (default behavior)
-  (setq chime-predicate-blacklist
-        '(chime-done-keywords-predicate))
-
-  ;; Enable chime-mode - validation happens on first check after startup-delay
+  ;; Enable chime-mode
   (chime-mode 1))
 
 ;; which-key labels
