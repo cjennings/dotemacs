@@ -10,8 +10,15 @@
 
 ;; ----------------------------------- Wttrin ----------------------------------
 
+;; Load wttrin from local development directory
+(add-to-list 'load-path "/home/cjennings/code/wttrin")
+
+;; Set debug flag BEFORE loading wttrin (checked at load time)
+(setq wttrin-debug t)
+
 (use-package wttrin
-  :vc (:url "https://github.com/cjennings/emacs-wttrin" :rev :newest)
+  ;; Uncomment the next line to use vc-install instead of local directory:
+  ;; :vc (:url "https://github.com/cjennings/emacs-wttrin" :rev :newest)
   :defer t
   :preface
   ;; dependency for wttrin
@@ -21,6 +28,22 @@
   ("M-W" . wttrin)
   :custom
   (wttrin-unit-system "u")
+  (wttrin-mode-line-favorite-location "New Orleans, LA")
+  (wttrin-mode-line-refresh-interval 900)  ; 15 minutes
+  :init
+  ;; Explicitly autoload the mode function (needed for local dev directory)
+  (autoload 'wttrin-mode-line-mode "wttrin" "Toggle weather display in mode-line." t)
+  ;; Enable mode-line widget AFTER Emacs finishes initializing
+  ;; (url-retrieve async needs full init to work without buffer errors)
+  (if (daemonp)
+      ;; Daemon mode: wait for first client to connect
+      (add-hook 'server-after-make-frame-hook
+                (lambda () (wttrin-mode-line-mode 1))
+                t) ; append to end of hook
+    ;; Normal Emacs: wait for startup to complete
+    (add-hook 'after-init-hook
+              (lambda () (wttrin-mode-line-mode 1))
+              t)) ; append to end of hook
   :config
   (setq wttrin-default-locations '(
 							  "New Orleans, LA"

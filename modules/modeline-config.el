@@ -156,7 +156,8 @@ Shows only in active window.")
     mode-line-format-right-align
     cj/modeline-vc-branch
     "  "
-    cj/modeline-misc-info))
+    cj/modeline-misc-info
+    "  "))
 
 ;; Mark all segments as risky-local-variable (required for :eval forms)
 (dolist (construct '(cj/modeline-buffer-name
