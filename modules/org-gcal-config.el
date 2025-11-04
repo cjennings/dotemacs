@@ -13,9 +13,9 @@
 ;; - Events are managed by Org (changes in org file push back to Google Calendar)
 ;;   This is controlled by org-gcal-managed-newly-fetched-mode and
 ;;   org-gcal-managed-update-existing-mode set to "org"
-;; - Initial automatic sync post Emacs startup. No auto resync'ing.
-;;   (my calendar doesn't change hourly and I want fewer distractions and slowdowns).
-;;   if you need it: https://github.com/kidd/org-gcal.el?tab=readme-ov-file#sync-automatically-at-regular-times
+;; - Automatic sync timer (configurable via cj/org-gcal-sync-interval-minutes)
+;;   Default: 30 minutes, set to nil to disable
+;;   See: https://github.com/kidd/org-gcal.el?tab=readme-ov-file#sync-automatically-at-regular-times
 ;; - Validates existing oath2-auto.plist file or creates it to avoid the issue mentioned here:
 ;;   https://github.com/kidd/org-gcal.el?tab=readme-ov-file#note
 ;;
@@ -27,7 +27,10 @@
 ;; 3. Define `gcal-file' in user-constants (location of org file to hold sync'd events).
 ;;
 ;; Usage:
-;; - Manual sync: C-; g (or M-x org-gcal-sync)
+;; - Manual sync: C-; g s (or M-x org-gcal-sync)
+;; - Toggle auto-sync on/off: C-; g t
+;; - Restart auto-sync (e.g., after changing interval): C-; g r
+;; - Clear sync lock (if sync gets stuck): C-; g c
 ;;
 ;; Note:
 ;; This configuration creates oauth2-auto.plist on first run to prevent sync errors.
@@ -42,6 +45,17 @@
 (eval-when-compile
   (defvar org-gcal--sync-lock))
 (declare-function org-gcal-reload-client-id-secret "org-gcal")
+
+;; User configurable sync interval
+(defvar cj/org-gcal-sync-interval-minutes 30
+  "Interval in minutes for automatic Google Calendar sync.
+Set to nil to disable automatic syncing.
+Changes take effect after calling `cj/org-gcal-restart-auto-sync'.")
+
+;; Internal timer object
+(defvar cj/org-gcal-sync-timer nil
+  "Timer object for automatic org-gcal sync.
+Use `cj/org-gcal-start-auto-sync' and `cj/org-gcal-stop-auto-sync' to control.")
 
 (defun cj/org-gcal-clear-sync-lock ()
   "Clear the org-gcal sync lock.
@@ -66,6 +80,50 @@ enabling bidirectional sync so changes push back to Google Calendar."
       (save-buffer))
     (message "Converted %d event(s) to Org-managed" count)))
 
+(defun cj/org-gcal-start-auto-sync ()
+  "Start automatic Google Calendar sync timer.
+Uses the interval specified in `cj/org-gcal-sync-interval-minutes'.
+Does nothing if interval is nil or timer is already running."
+  (interactive)
+  (when (and cj/org-gcal-sync-interval-minutes
+             (not (and cj/org-gcal-sync-timer
+                       (memq cj/org-gcal-sync-timer timer-list))))
+    (let ((interval-seconds (* cj/org-gcal-sync-interval-minutes 60)))
+      (setq cj/org-gcal-sync-timer
+            (run-with-timer
+             120 ;; Initial delay: 2 minutes after startup
+             interval-seconds
+             (lambda ()
+               (condition-case err
+                   (org-gcal-sync)
+                 (error (message "org-gcal: Auto-sync failed: %s" err))))))
+      (message "org-gcal: Auto-sync started (every %d minutes)"
+               cj/org-gcal-sync-interval-minutes))))
+
+(defun cj/org-gcal-stop-auto-sync ()
+  "Stop automatic Google Calendar sync timer."
+  (interactive)
+  (when (and cj/org-gcal-sync-timer
+             (memq cj/org-gcal-sync-timer timer-list))
+    (cancel-timer cj/org-gcal-sync-timer)
+    (setq cj/org-gcal-sync-timer nil)
+    (message "org-gcal: Auto-sync stopped")))
+
+(defun cj/org-gcal-toggle-auto-sync ()
+  "Toggle automatic Google Calendar sync timer on/off."
+  (interactive)
+  (if (and cj/org-gcal-sync-timer
+           (memq cj/org-gcal-sync-timer timer-list))
+      (cj/org-gcal-stop-auto-sync)
+    (cj/org-gcal-start-auto-sync)))
+
+(defun cj/org-gcal-restart-auto-sync ()
+  "Restart automatic Google Calendar sync timer.
+Useful after changing `cj/org-gcal-sync-interval-minutes'."
+  (interactive)
+  (cj/org-gcal-stop-auto-sync)
+  (cj/org-gcal-start-auto-sync))
+
 ;; Deferred library required by org-gcal
 (use-package deferred
   :ensure t)
@@ -77,8 +135,6 @@ enabling bidirectional sync so changes push back to Google Calendar."
 (use-package org-gcal
   :vc (:url "https://github.com/cjennings/org-gcal" :rev :newest)
   :defer t ;; unless idle timer is set below
-  :bind (("C-; g" . org-gcal-sync)
-         ("C-; G" . cj/org-gcal-clear-sync-lock))
 
   :init
   ;; Retrieve credentials from authinfo.gpg BEFORE package loads
@@ -133,19 +189,26 @@ enabling bidirectional sync so changes push back to Google Calendar."
   ;; Advise org-gcal--sync-unlock which is called when sync completes
   (advice-add 'org-gcal--sync-unlock :after #'cj/org-gcal-save-files-after-sync))
 
-;; Set up automatic initial sync on boot with error handling
-;;(run-with-idle-timer
-;; 2 nil
-;; (lambda ()
-;;   (condition-case err
-;;	   (org-gcal-sync)
-;;	 (error (message "org-gcal: Initial sync failed: %s" err)))))
+;; Start automatic sync timer based on user configuration
+;; Set cj/org-gcal-sync-interval-minutes to nil to disable
+(cj/org-gcal-start-auto-sync)
 
-;; which-key labels
+;; Google Calendar keymap and keybindings
+(defvar-keymap cj/gcal-map
+  :doc "Keymap for Google Calendar operations"
+  "s" #'org-gcal-sync
+  "t" #'cj/org-gcal-toggle-auto-sync
+  "r" #'cj/org-gcal-restart-auto-sync
+  "c" #'cj/org-gcal-clear-sync-lock)
+(keymap-set cj/custom-keymap "g" cj/gcal-map)
+
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
-    "C-; g" "gcal sync"
-    "C-; G" "clear sync lock"))
+    "C-; g" "gcal menu"
+    "C-; g s" "sync"
+    "C-; g t" "toggle auto-sync"
+    "C-; g r" "restart auto-sync"
+    "C-; g c" "clear sync lock"))
 
 (provide 'org-gcal-config)
 ;;; org-gcal-config.el ends here

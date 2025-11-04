@@ -47,6 +47,14 @@ Example: (setq cj/debug-modules '(org-agenda mail))
   "Alist mapping buffer states to their colors.
 Used by cursor color, modeline, and other UI elements.")
 
+;; --------------------------- Media File Extensions ---------------------------
+
+(defvar cj/audio-file-extensions
+  '("m4a" "mp3" "wav" "flac" "ogg" "opus" "aac"
+    "aiff" "aif" "wma" "ape" "alac" "weba")
+  "File extensions recognized as audio files.
+Used by transcription module and other audio-related functionality.")
+
 ;; ------------------------ Directory And File Constants -----------------------
 
 ;; DIRECTORIES
