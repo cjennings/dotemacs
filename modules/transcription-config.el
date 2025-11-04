@@ -310,16 +310,16 @@ Uses backend specified by `cj/transcribe-backend'."
 ;; Transcription keymap
 (defvar-keymap cj/transcribe-map
   :doc "Keymap for transcription operations"
-  "t" #'cj/transcribe-audio
-  "b" #'cj/transcriptions-buffer
+  "a" #'cj/transcribe-audio
+  "v" #'cj/transcriptions-buffer
   "k" #'cj/transcription-kill)
 (keymap-set cj/custom-keymap "t" cj/transcribe-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; t" "transcription menu"
-    "C-; t t" "transcribe audio"
-    "C-; t b" "show transcriptions buffer"
+    "C-; t a" "transcribe audio"
+    "C-; t v" "view transcriptions"
     "C-; t k" "kill transcription"))
 
 (provide 'transcription-config)

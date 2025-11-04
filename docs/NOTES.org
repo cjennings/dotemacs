@@ -524,8 +524,8 @@ If Craig or Claude need more context:
 5. ✅ **Reorganized Keybindings**
    - Moved gcal from C-; g/t/r/G to C-; g s/t/r/c submenu
    - Created C-; t transcription submenu:
-     - C-; t t → transcribe audio
-     - C-; t b → show transcriptions buffer
+     - C-; t a → transcribe audio
+     - C-; t v → view transcriptions
      - C-; t k → kill transcription
    - Dired/Dirvish: T → transcribe file at point
    - which-key integration for discoverability
