@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# oai-transcribe - Transcribe audio files using OpenAI Whisper API
+# Usage: oai-transcribe <audio-file> [language]
+#
+# Requires: OPENAI_API_KEY environment variable
+# Language: en, es, fr, etc. (default: en)
+
+set -euo pipefail
+
+# Parse arguments
+AUDIO="${1:-}"
+LANG="${2:-en}"
+
+# Validate arguments
+if [[ -z "$AUDIO" ]]; then
+  echo "Usage: oai-transcribe <audio-file> [language]" >&2
+  echo "Example: oai-transcribe meeting.m4a en" >&2
+  exit 1
+fi
+
+if [[ ! -f "$AUDIO" ]]; then
+  echo "Error: Audio file not found: $AUDIO" >&2
+  exit 1
+fi
+
+# Check API key is set
+if [[ -z "${OPENAI_API_KEY:-}" ]]; then
+  echo "Error: OPENAI_API_KEY environment variable not set" >&2
+  echo "Set with: export OPENAI_API_KEY='sk-...'" >&2
+  exit 1
+fi
+
+# Check curl is available
+if ! command -v curl &> /dev/null; then
+  echo "Error: curl command not found" >&2
+  exit 1
+fi
+
+# Call OpenAI API
+curl -s -X POST "https://api.openai.com/v1/audio/transcriptions" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -F "model=whisper-1" \
+  -F "response_format=text" \
+  -F "language=${LANG}" \
+  -F "file=@${AUDIO}"

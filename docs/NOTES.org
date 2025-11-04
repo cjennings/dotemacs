@@ -484,6 +484,88 @@ If Craig or Claude need more context:
 
 ** 🚀 Current Session Notes
 
+*** 2025-11-04 Session - Complete Transcription Workflow Implementation
+*Time:* ~3 hours
+*Status:* ✅ COMPLETE - Full async transcription system with 60 passing tests
+
+*What We Completed:*
+
+1. ✅ **Installed Whisper Locally**
+   - Created install-whisper.sh with AUR support (python-openai-whisper)
+   - Created uninstall-whisper.sh for clean removal
+   - Installed via AUR successfully
+   - Added --yes flag for non-interactive automation
+
+2. ✅ **Created CLI Transcription Scripts**
+   - scripts/local-whisper - Uses installed Whisper (works offline)
+   - scripts/oai-transcribe - Uses OpenAI API (faster, requires API key)
+   - Both scripts output to stdout, log to stderr
+   - Proper error handling and validation
+
+3. ✅ **Implemented Full Transcription Module** (modules/transcription-config.el)
+   - Async transcription workflow (non-blocking)
+   - Desktop notifications (started, complete, error)
+   - Output: audio.txt (transcript) + audio.log (process logs)
+   - Log cleanup: auto-delete on success (configurable)
+   - Modeline integration: Shows ⏺count of active transcriptions
+   - Clickable modeline to view *Transcriptions* buffer
+   - Process tracking and management
+
+4. ✅ **Comprehensive Test Suite - 60 Tests, All Passing**
+   - test-transcription-audio-file.el (16 tests) - Extension detection
+   - test-transcription-paths.el (11 tests) - File path logic
+   - test-transcription-log-cleanup.el (5 tests) - Log retention
+   - test-transcription-duration.el (9 tests) - Time formatting
+   - test-transcription-counter.el (11 tests) - Active count & modeline
+   - test-integration-transcription.el (8 tests) - End-to-end workflows
+   - Tests found and fixed 1 bug (nil handling in audio detection)
+   - Normal, boundary, and error cases covered
+
+5. ✅ **Reorganized Keybindings**
+   - Moved gcal from C-; g/t/r/G to C-; g s/t/r/c submenu
+   - Created C-; t transcription submenu:
+     - C-; t t → transcribe audio
+     - C-; t b → show transcriptions buffer
+     - C-; t k → kill transcription
+   - Dired/Dirvish: T → transcribe file at point
+   - which-key integration for discoverability
+
+6. ✅ **Added Audio Extensions to user-constants.el**
+   - Centralized cj/audio-file-extensions list
+   - Shared across transcription and future audio features
+   - Used defvar (not defcustom) per Craig's preference
+
+*Key Decisions:*
+- **Simplified UX:** No org-capture integration (initially planned), just file in/out
+- **Minimalist approach:** Audio files → .txt transcripts (no complex templates)
+- **Testable architecture:** Pure functions separated from I/O
+- **defvar over defcustom:** All configuration variables use defvar
+
+*Files Created:*
+- scripts/install-whisper.sh
+- scripts/uninstall-whisper.sh
+- scripts/local-whisper
+- scripts/oai-transcribe
+- modules/transcription-config.el
+- tests/test-transcription-*.el (5 test files)
+
+*Files Modified:*
+- modules/user-constants.el (added cj/audio-file-extensions)
+- modules/org-gcal-config.el (reorganized keybindings to C-; g submenu)
+
+*Pending for Next Session:*
+- Manual test with real audio file
+- True integration tests (run actual transcription process)
+- Create test fixtures (small audio samples)
+- Consolidate issues.org with inbox.org (deferred)
+
+*Next Steps:*
+1. Add `(require 'transcription-config)` to init.el
+2. Test with: M-x cj/transcribe-audio or T in dired on audio file
+3. Verify .txt and .log files created
+4. Check modeline shows active count
+5. Review output quality
+
 *** 2025-11-03 Session - Modeline Polish & Wrap-Up Workflow
 *Time:* ~30 minutes
 *Status:* ✅ COMPLETE - Code quality improvements and workflow automation
