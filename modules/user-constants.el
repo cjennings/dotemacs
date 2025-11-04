@@ -38,6 +38,15 @@ Example: (setq cj/debug-modules '(org-agenda mail))
 (defvar user-mail-address "c@cjennings.net"
   "The user's email address.")
 
+;; ---------------------------- Buffer Status Colors ---------------------------
+
+(defconst cj/buffer-status-colors
+  '((read-only . "#f06a3f")  ; red   – buffer is read-only
+    (overwrite . "#c48702")  ; gold  – overwrite mode
+    (normal    . "#64aa0f")) ; green – insert & read/write
+  "Alist mapping buffer states to their colors.
+Used by cursor color, modeline, and other UI elements.")
+
 ;; ------------------------ Directory And File Constants -----------------------
 
 ;; DIRECTORIES
