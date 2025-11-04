@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# local-whisper - Transcribe audio files using locally installed Whisper
+# Usage: local-whisper <audio-file> [model] [language]
+#
+# Models: tiny, base, small, medium, large (default: small)
+# Language: en, es, fr, etc. (default: en)
+
+set -euo pipefail
+
+# Parse arguments
+AUDIO="${1:-}"
+MODEL="${2:-small}"
+LANG="${3:-en}"
+
+# Validate arguments
+if [[ -z "$AUDIO" ]]; then
+  echo "Usage: local-whisper <audio-file> [model] [language]" >&2
+  echo "Example: local-whisper meeting.m4a small en" >&2
+  exit 1
+fi
+
+if [[ ! -f "$AUDIO" ]]; then
+  echo "Error: Audio file not found: $AUDIO" >&2
+  exit 1
+fi
+
+# Check whisper is installed
+if ! command -v whisper &> /dev/null; then
+  echo "Error: whisper command not found" >&2
+  echo "Install with: ~/.emacs.d/scripts/install-whisper.sh" >&2
+  exit 1
+fi
+
+# Get absolute path to audio file
+AUDIO_ABS="$(realpath "$AUDIO")"
+AUDIO_DIR="$(dirname "$AUDIO_ABS")"
+AUDIO_BASE="$(basename "$AUDIO_ABS")"
+AUDIO_NAME="${AUDIO_BASE%.*}"
+
+# Run whisper
+# Note: whisper creates ${AUDIO_NAME}.txt automatically in the output directory
+whisper "$AUDIO_ABS" \
+  --model "$MODEL" \
+  --language "$LANG" \
+  --task transcribe \
+  --output_format txt \
+  --output_dir "$AUDIO_DIR" \
+  --verbose False 2>&1
+
+# Output file that whisper creates
+OUTPUT_FILE="$AUDIO_DIR/$AUDIO_NAME.txt"
+
+# Return transcript to stdout
+if [[ -f "$OUTPUT_FILE" ]]; then
+  cat "$OUTPUT_FILE"
+  exit 0
+else
+  echo "Error: Whisper did not create expected output file: $OUTPUT_FILE" >&2
+  exit 1
+fi
