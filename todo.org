@@ -223,15 +223,37 @@ Violates Intuitive value - muscle memory should help, not hurt.
 
 Complete config already exists in someday-maybe.org. Just needs to be executed.
 
-** DONE [#C] Switch to mood-line
+** DONE [#C] Switch to mood-line (actually: built custom modeline)
 CLOSED: [2025-11-03 Sun]
 
-✅ Replaced doom-modeline with mood-line in modules/modeline-config.el
-- Simplified from 70+ lines to ~10 lines of configuration
-- mood-line is lightweight, minimal, inspired by doom-modeline
-- Better performance with no dependencies
-- Features: buffer status, major mode, VCS, flycheck, cursor position
-- Net reduction: -40 lines of configuration code
+✅ **Built custom modeline (better than mood-line)**
+
+Went beyond mood-line and created a fully custom modeline using only built-in
+Emacs functionality to avoid native-compilation issues. Features:
+
+**Architecture:**
+- Named segment system using defvar-local (easy to reorder)
+- Emacs 30 built-in right-alignment (mode-line-format-right-align)
+- All segments marked as risky-local-variable for proper evaluation
+
+**Interactive Features:**
+- Color-coded buffer names (green=writeable, red=read-only, gold=overwrite)
+- VC branch with git symbol () and state-based coloring
+- Mouse click handlers: buffer name (prev/next), branch (vc-diff), mode (describe-mode)
+- Help-echo tooltips on all segments
+- String truncation for narrow windows (< 100 chars wide)
+- Active-window-only display for branch and misc-info (less clutter)
+
+**Layout:**
+- Left: Major mode, buffer name, position (L:# C:#)
+- Right: Git branch, chime notifications
+
+**Bug Fixes:**
+- Disabled async native compilation (prevented "Selecting deleted buffer" errors)
+- Fixed difftastic loading (:demand → :defer)
+- Abstracted buffer status colors to user-constants.el
+
+Inspired by Prot's modeline design. See commit c0c4b17.
 
 ** DONE [#C] Remove deprecated tree-sitter package (rely on treesit-auto)
 CLOSED: [2025-11-03 Sun]
