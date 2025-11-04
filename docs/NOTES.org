@@ -484,7 +484,44 @@ If Craig or Claude need more context:
 
 ** 🚀 Current Session Notes
 
-*** 2025-11-04 Session - Complete Transcription Workflow Implementation
+*** 2025-11-04 Session 2 - Emergency Bug Fixes & Modeline Polish
+*Time:* ~30 minutes
+*Status:* ✅ COMPLETE - Fixed async buffer error and improved modeline spacing
+
+*What We Completed:*
+
+1. ✅ **Fixed Critical Async Buffer Error on Startup**
+   - Problem: "Selecting deleted buffer" error in async.el during init
+   - Root cause: wttrin-mode-line-mode starting async HTTP request during init
+   - Solution: Delayed activation using after-init-hook
+   - Weather widget now loads AFTER Emacs finishes initializing
+   - Prevents async buffer from being killed before request completes
+
+2. ✅ **Fixed Parenthesis Error in weather-config.el**
+   - Removed extra closing parenthesis that prevented file from loading
+   - Verified with check-parens
+
+3. ✅ **Improved Modeline Right-Side Spacing**
+   - Problem: Right-most icon (weather) appeared flush with window edge
+   - Discovered: Regular spaces were being trimmed by right-align mechanism
+   - Solution: Added 2 non-breaking spaces (U+00A0) after misc-info segment
+   - Provides visual breathing room without being excessive
+
+*Key Technical Insights:*
+- Async operations during init need careful timing (use after-init-hook)
+- mode-line-right-align-edge 'right-margin trims trailing regular spaces
+- Non-breaking spaces (U+00A0) survive trimming in modeline format
+
+*Files Modified:*
+- modules/weather-config.el - Added after-init-hook delay for mode-line widget
+- modules/modeline-config.el - Added 2 non-breaking spaces at end
+
+*Status:*
+- Emacs launches without errors ✅
+- Weather widget appears in modeline after startup ✅
+- Modeline spacing looks clean and professional ✅
+
+*** 2025-11-04 Session 1 - Complete Transcription Workflow Implementation
 *Time:* ~3 hours
 *Status:* ✅ COMPLETE - Full async transcription system with 60 passing tests
 
