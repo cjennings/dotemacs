@@ -51,15 +51,19 @@
 (setq debug-on-error t)    ;; default nil. turn on to debug issues only.
 (setq debug-on-quit t)     ;; debug on C-g (breaking out of hangs/freezes)
 
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (setq debug-on-error nil)
-            (setq debug-on-quit nil)))
+;; (add-hook 'emacs-startup-hook
+;;           (lambda ()
+;;             (setq debug-on-error nil)
+;;             (setq debug-on-quit nil)))
 
 ;; ------------------------------ Bug Workarounds ------------------------------
 
-;; Prevent org-element from being natively compiled again by adding the line
-(setq native-comp-jit-compilation-deny-list '(".*org-element.*"))
+;; Disable async native compilation to prevent "Selecting deleted buffer" errors
+;; This is a known issue in Emacs 30.x where async compilation buffers get
+;; deleted before the compilation process completes. Synchronous compilation
+;; is slower initially but avoids these race conditions.
+(setq native-comp-deferred-compilation nil)  ;; Disable async/deferred compilation
+(setq native-comp-async-report-warnings-errors nil)  ;; Silence async warnings
 
 ;; --------------------------- Warning Notifications ---------------------------
 

@@ -123,3 +123,62 @@ Note: This file evolves as we learn best practices.
 - Defined four-question Q&A framework
 - Established seven core principles for session creation
 - Documented in =docs/sessions/create-session.org=
+
+** 2025-11-03: Method 2 Quick Wins Session
+- Completed 6 tasks across Methods 1, 2, and 3
+- Focus: Low-risk improvements aligned with V2MOM Methods
+
+*** Key Technical Learnings
+
+**** Difftastic vs Ediff - Complementary Tools
+- **Difftastic**: Read-only structural diffs for git (language-aware)
+- **Ediff**: Interactive side-by-side editing for buffer comparison
+- **Discovery**: User had ediff at C-c D but C-; b D used basic diff
+- **Solution**: Hybrid approach - ediff for buffers, difftastic for git
+- **Lesson**: Don't assume one replaces the other; they serve different purposes
+
+**** Org-mode Visual Emphasis
+- =org-fontify-emphasized-text= controls bold/italic rendering
+- =org-hide-emphasis-markers= hides markup characters (* / _)
+- =org-appear= shows markers only when cursor is on emphasized text
+- **Pattern**: Hide markers globally, reveal contextually with org-appear
+
+*** User Workflow Preferences
+
+**** Task Selection Strategy
+- User prefers quick wins when energy is lower
+- Appreciates effort estimates BEFORE committing to work
+- Will defer mission-critical changes (e.g., Company → Corfu)
+- Quote: "now I'm hungry for more" after successful quick wins
+
+**** Communication Patterns
+- User sometimes needs clarification iterations ("whoops. I wasn't clear again")
+- Always confirm understanding before major changes
+- User values knowing keybindings for new features
+- Appreciates when tasks are already complete (just need verification)
+
+**** V2MOM Task Management
+- Tasks organized by 6 Methods with progress tracking (e.g., 7/13, 3/5)
+- User maintains detailed completion notes in todo.org
+- Each task includes context, rationale, and completion details
+- Weekly triage scheduled to keep active todos < 20
+
+*** Development Patterns
+
+**** Git Workflow
+- Always push to BOTH remotes: origin (cjennings.net) AND github
+- Commit messages include Claude Code attribution
+- User reviews git status and diffs before committing
+
+**** Configuration Management
+- User runs Emacs 30.2 with use-package
+- Prefers editing existing files over creating new ones
+- Values code reduction (mood-line: -40 lines, ediff upgrade: -12 lines)
+
+*** Tasks Completed
+1. Switched doom-modeline → mood-line (Method 2)
+2. Removed deprecated tree-sitter package (Method 2)
+3. Fixed cj/goto-git-gutter-diff-hunks void-function (Method 1)
+4. Cleaned up go-ts-mode-map declarations (Method 1)
+5. Upgraded buffer diff to ediff + added difftastic for git (Method 3)
+6. Added org-appear and enabled emphasis rendering (Method 2)

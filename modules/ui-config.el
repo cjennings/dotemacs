@@ -36,11 +36,8 @@
   "Opacity level for Emacs frames when `cj/enable-transparency' is non-nil.
 100 = fully opaque, 0 = fully transparent.")
 
-(defconst cj/cursor-colors
-  '((read-only . "#f06a3f")  ; red   – buffer is read-only
-	(overwrite . "#c48702")  ; gold  – overwrite mode
-	(normal    . "#64aa0f")) ; green – insert & read/write
-  "Alist mapping cursor states to their colors.")
+;; Use buffer status colors from user-constants
+(require 'user-constants)
 
 ;; ----------------------------- System UI Settings ----------------------------
 
@@ -104,7 +101,7 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 				 (buffer-read-only 'read-only)
 				 (overwrite-mode   'overwrite)
 				 (t                'normal)))
-		 (color (alist-get state cj/cursor-colors)))
+		 (color (alist-get state cj/buffer-status-colors)))
 	(unless (and (string= color cj/-cursor-last-color)
 				 (string= (buffer-name) cj/-cursor-last-buffer))
 	  (set-cursor-color color)

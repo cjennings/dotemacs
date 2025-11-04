@@ -125,10 +125,11 @@ interactive selection to jump to any changed line in the buffer."
 
 ;; -------------------------------- Difftastic ---------------------------------
 ;; Structural diffs for better git change visualization
+;; Requires: difft binary (installed via pacman -S difftastic)
 
 (use-package difftastic
-  :demand t
-  :after magit
+  :defer t
+  :commands (difftastic-magit-diff difftastic-magit-show)
   :bind (:map magit-blame-read-only-mode-map
               ("D" . difftastic-magit-show)
               ("S" . difftastic-magit-show))
