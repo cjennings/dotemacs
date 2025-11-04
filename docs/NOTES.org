@@ -17,6 +17,30 @@ This triggers the create-session workflow from docs/sessions/create-session.org
 - "I want to do a refactor session" → Create docs/sessions/refactor.org
 - "I want to do a code review session" → Create docs/sessions/code-review.org
 
+** "Let's wrap it up" / "That's a wrap" / "Let's call it a wrap"
+
+When Craig says any of these phrases, execute the wrap-up workflow:
+
+1. **Write session notes** to docs/NOTES.org
+   - Key decisions made
+   - Work completed
+   - Context needed for next session
+   - Any pending issues or blockers
+
+2. **Git commit and push all changes**
+   - Check git status and diff
+   - Create descriptive commit message
+   - Include co-author attribution (Claude)
+   - Push to ALL remotes (origin + github)
+
+3. **Valediction**
+   - Friendly goodbye summary
+   - What was accomplished
+   - What's ready for next session
+   - Any important reminders
+
+*Slash command:* `/wrap-it-up` triggers this same workflow
+
 * 🔔 DESKTOP NOTIFICATIONS WORKFLOW
 
 **IMPORTANT: How Claude notifies you when blocked**
