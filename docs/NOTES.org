@@ -41,6 +41,31 @@ When Craig says any of these phrases, execute the wrap-up workflow:
 
 *Slash command:* `/wrap-it-up` triggers this same workflow
 
+* 🤔 PENDING DECISIONS
+
+** Flymake/Flycheck Modeline Integration
+
+Craig was interested in adding error/warning counts to the modeline but hasn't decided on implementation details yet.
+
+**Questions to decide:**
+
+1. **Flymake vs Flycheck?**
+   - Flymake is built-in and works with LSP (eglot)
+   - Flycheck requires installation but has more checker backends
+
+2. **Format preference?**
+   - Just counts: `E:3 W:5`
+   - With symbols: `⚠ 3 ✖ 5`
+   - Clickable to show diagnostics buffer?
+
+3. **Placement?**
+   - Left side near major-mode, or right side with VC branch?
+
+4. **Active window only?**
+   - Like your VC branch - only show in selected window
+
+**Implementation is ready** - just need your preferences and I can add it exactly how you want it.
+
 * 🔔 DESKTOP NOTIFICATIONS WORKFLOW
 
 **IMPORTANT: How Claude notifies you when blocked**
