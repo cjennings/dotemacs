@@ -423,26 +423,25 @@ Create =.dir-locals.el= in =~/.emacs.d= to:
 
 Helps maintain consistency when editing config.
 
-** TODO [#D] Consider moving from doom-modeline to mood-line :enhancement:performance:
+** DONE [#D] Consider moving from doom-modeline to mood-line :enhancement:performance:
+CLOSED: [2025-11-03 Sun]
 :PROPERTIES:
 :FILE: modules/modeline-config.el
 :END:
 
-Doom-modeline is feature-rich but heavy. For the minimal info you're displaying, mood-line might be better:
+✅ **Completed: Built custom modeline (better than mood-line)**
 
-*Mood-line advantages:*
-- ~10x faster than doom-modeline
-- Pure elisp (no external dependencies)
-- Very simple, hackable codebase
-- Shows exactly what you need: filename, position, major-mode
-- No nerd-icons dependency (can still use them if wanted)
+Went beyond mood-line and created a fully custom modeline using only built-in
+Emacs functionality. Features include:
+- Color-coded buffer names (green/red/gold by status)
+- VC branch with git symbol and state-based coloring
+- String truncation for narrow windows
+- Mouse click handlers (vc-diff, describe-mode, etc.)
+- Help-echo tooltips
+- Active-window-only segments
+- Emacs 30 built-in right-alignment
 
-*Doom-modeline advantages:*
-- More battle-tested
-- Better git integration
-- More features (even if disabled)
-
-*Recommendation:* Try mood-line. If you miss doom-modeline features, easy to switch back. Performance difference is noticeable on older hardware.
+Fast, reliable, no external packages, fully customizable.
 
 ** TODO [#D] Add commentary headers to test utility files :documentation:testing:
 :PROPERTIES:
@@ -932,25 +931,28 @@ Remove entire company configuration. Keep mu4e completion settings (Corfu respec
 
 *Configuration is actually simpler than Company.* Just do it.
 
-*** TODO [#B] Switch doom-modeline to mood-line :enhancement:performance:
+*** DONE [#B] Switch doom-modeline to mood-line :enhancement:performance:
+CLOSED: [2025-11-03 Sun]
 :PROPERTIES:
 :FILE: modules/modeline-config.el
 :EFFORT: 30 minutes
 :IMPACT: 10x faster modeline updates
 :END:
 
-Replace doom-modeline config with:
-#+begin_src elisp
-(use-package mood-line
-  :ensure t
-  :demand t
-  :config
-  (mood-line-mode))
-#+end_src
+✅ **Completed: Custom modeline implementation**
 
-That's it. Mood-line shows: buffer name, position, major-mode, vc status. Pure elisp, very fast.
+Built a custom modeline with advanced features inspired by Prot's design:
+- Named segment architecture (easy reordering)
+- Color-coded buffer status
+- VC state faces (green=clean, yellow=edited, red=conflict)
+- Git branch symbol (U+E0A0)
+- Interactive mouse handlers
+- String truncation for narrow windows
+- Active-window-only segments
+- Help-echo tooltips
+- Position format: L:# C:#
 
-If you miss doom-modeline features, easy to switch back. But try mood-line for a week.
+See commit c0c4b17 for full implementation.
 
 *** TODO [#C] Fix lorem markov chain error :bug:minor:
 :PROPERTIES:
