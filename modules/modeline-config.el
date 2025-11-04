@@ -46,7 +46,7 @@
 
 (defun cj/modeline-string-cut-middle (str)
   "Truncate STR in the middle if appropriate, else return STR.
-Example: 'my-very-long-name.el' → 'my-ver...me.el'"
+Example: `my-very-long-name.el' → `my-ver...me.el'"
   (if (cj/modeline-string-truncate-p str)
       (let ((half (floor cj/modeline-string-truncate-length 2)))
         (concat (substring str 0 half) "..." (substring str (- half))))
@@ -75,7 +75,7 @@ Example: 'my-very-long-name.el' → 'my-ver...me.el'"
                                      map))))
   "Buffer name colored by read-only/read-write status.
 Green = writeable, Red = read-only, Gold = overwrite.
-Truncates in narrow windows. Click: mouse-1 = prev buffer, mouse-3 = next buffer.")
+Truncates in narrow windows.  Click to switch buffers.")
 
 (defvar-local cj/modeline-position
   '(:eval (format "L:%d C:%d" (line-number-at-pos) (current-column)))
@@ -117,8 +117,8 @@ Truncates in narrow windows. Click: mouse-1 = prev buffer, mouse-3 = next buffer
                                             (define-key map [mode-line mouse-3] 'vc-root-diff)
                                             map))))))))
   "Git branch with symbol and colored by VC state.
-Shows only in active window. Truncates in narrow windows.
-Click: mouse-1 = vc-diff, mouse-3 = vc-root-diff.")
+Shows only in active window.  Truncates in narrow windows.
+Click to show diffs with `vc-diff' or `vc-root-diff'.")
 
 (defvar-local cj/modeline-major-mode
   '(:eval (let ((mode-str (format-mode-line mode-name))  ; Convert to string
@@ -132,7 +132,7 @@ Click: mouse-1 = vc-diff, mouse-3 = vc-root-diff.")
                                      (define-key map [mode-line mouse-1] 'describe-mode)
                                      map))))
   "Major mode name only (no minor modes).
-Click: mouse-1 = describe-mode.")
+Click to show help with `describe-mode'.")
 
 (defvar-local cj/modeline-misc-info
   '(:eval (when (mode-line-window-selected-p)
