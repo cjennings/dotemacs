@@ -769,6 +769,63 @@ Each entry should use this format:
 - **Files Modified:** Links to changed files
 - **Next Steps:** What to do next session (if applicable)
 
+** 2025-11-05 Tue @ 16:00 -0600
+
+*** Session: Terminology Refactor & Template Polish
+
+*Time:* ~2 hours total (across multiple mini-sessions)
+*Status:* ✅ COMPLETE - Major terminology cleanup and template improvements
+
+*What We Completed:*
+
+1. ✅ **Resolved "session" ambiguity - renamed to "workflow"**
+   - Renamed docs/sessions/ → docs/workflows/
+   - Renamed create-session.org → create-workflow.org
+   - Updated all references throughout documentation
+   - Clear terminology now:
+     - "session" = working time period
+     - "workflow" = documented process/routine
+   - Examples: "Let's run the refactor workflow" vs "This session took 2 hours"
+
+2. ✅ **Updated template docs/sessions/*.org → docs/workflows/*.org**
+   - create-workflow.org - Meta-workflow for creating workflows
+   - create-v2mom.org - Updated path references
+   - emacs-inbox-zero.org - Updated terminology throughout
+   - refactor.org - Updated title and references
+
+3. ✅ **Enhanced template files in ~/documents/claude/**
+   - NOTES.org - Original template updated
+   - NOTES-NEW.org - New comprehensive template with improvements
+   - Added clear docs/ policy for first session:
+     - Code projects (org-msg, chime.el, etc.): docs/ in .gitignore
+     - Non-code projects: docs/ committed normally
+   - Distinction now explicit with examples
+
+4. ✅ **Updated NOTES.org throughout**
+   - Fixed all "session type" → "workflow" references
+   - Updated "Available Session Types" → "Available Workflows"
+   - Updated all workflow file paths
+   - Session history references updated
+
+*Key Decisions:*
+- "Session" exclusively means working time period
+- "Workflow" exclusively means documented routine/process
+- Templates now have clear guidance on docs/ versioning based on project type
+- Code projects: private session notes in docs/
+- Non-code projects: docs/ is project documentation
+
+*Files Modified:*
+- docs/NOTES.org - Terminology updated throughout
+- docs/workflows/*.org - All workflow files updated
+- ~/documents/claude/NOTES.org - Template updated
+- ~/documents/claude/NOTES-NEW.org - New template updated
+
+*Impact:*
+- Eliminated terminology confusion
+- Clear distinction between time periods and processes
+- Future projects will have clear guidance on docs/ versioning
+- Templates ready for any project type (code or non-code)
+
 ** 2025-11-05 Tue @ 15:30 -0600
 
 *** Session: NOTES.org Consolidation & Template Integration
