@@ -515,6 +515,40 @@ If Craig or Claude need more context:
 
 ** 🚀 Current Session Notes
 
+*** 2025-11-05 Session 2 - Scratch Buffer Configuration
+*Time:* ~5 minutes
+*Status:* ✅ COMPLETE - Scratch buffer opens in org-mode with cursor at end
+
+*Problem:*
+- Scratch buffer opened in lisp-interaction-mode
+- Cursor positioned at beginning of buffer
+- Craig wanted org-mode with cursor ready to type at end
+
+*Solution:*
+1. **Set scratch buffer to org-mode** - `(setopt initial-major-mode 'org-mode)`
+2. **Move cursor to end on startup** - Added `emacs-startup-hook` to position cursor
+3. **Updated comment syntax** - Changed `;;` to `#` in greeting messages for org-mode
+
+*Files Modified:*
+- modules/system-utils.el:186-203
+  - Added `initial-major-mode` configuration
+  - Added startup hook for cursor positioning
+  - Updated greeting message comment syntax for org-mode compatibility
+
+*Technical Details:*
+- Used `emacs-startup-hook` to run after init completes
+- Buffer name check ensures we only affect *scratch* buffer
+- Greeting message now uses org-mode comment syntax (#)
+
+*Testing:*
+- Configuration updated in modules/system-utils.el:197-203
+- Requires restart or eval-buffer to take effect
+
+*Next Steps:*
+- Restart Emacs or evaluate modules/system-utils.el
+- Verify scratch buffer opens in org-mode
+- Verify cursor positioned at end of buffer
+
 *** 2025-11-05 Session 1 - Fix Google Calendar Password Prompts
 *Time:* ~15 minutes
 *Status:* ✅ COMPLETE - Fixed irritating password prompts every 10 minutes
