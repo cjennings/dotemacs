@@ -51,10 +51,10 @@
 (setq debug-on-error t)    ;; default nil. turn on to debug issues only.
 (setq debug-on-quit t)     ;; debug on C-g (breaking out of hangs/freezes)
 
-;; (add-hook 'emacs-startup-hook
-;;           (lambda ()
-;;             (setq debug-on-error nil)
-;;             (setq debug-on-quit nil)))
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (setq debug-on-error nil)
+            (setq debug-on-quit nil)))
 
 ;; ------------------------------ Bug Workarounds ------------------------------
 
