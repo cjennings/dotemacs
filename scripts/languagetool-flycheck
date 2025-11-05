@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""
+Wrapper for LanguageTool to produce flycheck-compatible output.
+Output format: filename:line:column: message
+"""
+
+import json
+import sys
+import subprocess
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: languagetool-flycheck FILE", file=sys.stderr)
+        sys.exit(1)
+
+    filename = sys.argv[1]
+
+    # Run languagetool with JSON output
+    try:
+        result = subprocess.run(
+            ['languagetool', '-l', 'en-US', '--json', filename],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+    except subprocess.TimeoutExpired:
+        print(f"{filename}:1:1: LanguageTool timeout", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"{filename}:1:1: LanguageTool error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Parse JSON output
+    try:
+        # Find the JSON in the output (skip warning lines)
+        json_output = None
+        for line in result.stdout.split('\n'):
+            if line.startswith('{'):
+                json_output = line
+                break
+
+        if not json_output:
+            sys.exit(0)  # No errors found
+
+        data = json.loads(json_output)
+
+        # Read file to calculate line numbers from character offsets
+        with open(filename, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Convert matches to flycheck format
+        for match in data.get('matches', []):
+            offset = match['offset']
+            length = match['length']
+            message = match['message']
+            rule_id = match['rule']['id']
+
+            # Calculate line and column from offset
+            line = content[:offset].count('\n') + 1
+            line_start = content.rfind('\n', 0, offset) + 1
+            column = offset - line_start + 1
+
+            # Get first suggestion if available
+            suggestions = match.get('replacements', [])
+            if suggestions:
+                suggestion = suggestions[0]['value']
+                message = f"{rule_id}: {message} Suggestion: {suggestion}"
+            else:
+                message = f"{rule_id}: {message}"
+
+            # Output in flycheck format
+            print(f"{filename}:{line}:{column}: {message}")
+
+    except json.JSONDecodeError as e:
+        print(f"{filename}:1:1: Failed to parse LanguageTool JSON: {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"{filename}:1:1: Error processing LanguageTool output: {e}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()
