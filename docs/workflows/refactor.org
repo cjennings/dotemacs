@@ -1,12 +1,12 @@
-#+TITLE: Test-Driven Quality Engineering Session Process
+#+TITLE: Test-Driven Quality Engineering Workflow
 #+AUTHOR: Craig Jennings & Claude
 #+DATE: 2025-11-01
 
 * Overview
 
-This document describes a comprehensive test-driven quality engineering session process applicable to any source code module. The session demonstrates systematic testing practices, refactoring for testability, bug discovery through tests, and decision-making processes when tests fail.
+This document describes a comprehensive test-driven quality engineering workflow applicable to any source code module. The workflow demonstrates systematic testing practices, refactoring for testability, bug discovery through tests, and decision-making processes when tests fail.
 
-* Session Goals
+* Workflow Goals
 
 1. Add comprehensive unit test coverage for testable functions in your module
 2. Discover and fix bugs through systematic testing
@@ -605,7 +605,7 @@ Note: =quality-engineer.org= evolves as we learn more quality best practices. Th
 
 * Conclusion
 
-This session process demonstrates how systematic testing combined with refactoring for testability can:
+This workflow process demonstrates how systematic testing combined with refactoring for testability can:
 - Discover real bugs before they reach users
 - Improve code quality and robustness
 - Build confidence in changes
