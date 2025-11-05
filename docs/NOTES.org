@@ -17,9 +17,9 @@ This triggers the create-session workflow from docs/sessions/create-session.org
 - "I want to do a refactor session" → Create docs/sessions/refactor.org
 - "I want to do a code review session" → Create docs/sessions/code-review.org
 
-** "Let's wrap it up" / "That's a wrap" / "Let's call it a wrap"
+** "Wrap it up" / "Wrap this up" / "Wrap up" / "That's a wrap" / "Let's call it a wrap"
 
-When Craig says any of these phrases, execute the wrap-up workflow:
+When Craig says any of these phrases (or variations), execute the wrap-up workflow:
 
 1. **Write session notes** to docs/NOTES.org
    - Key decisions made
