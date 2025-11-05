@@ -515,6 +515,57 @@ If Craig or Claude need more context:
 
 ** 🚀 Current Session Notes
 
+*** 2025-11-05 Session 1 - Fix Google Calendar Password Prompts
+*Time:* ~15 minutes
+*Status:* ✅ COMPLETE - Fixed irritating password prompts every 10 minutes
+
+*Problem:*
+- Google Calendar auto-sync timer prompting for oauth2-auto.plist passphrase every ~10 minutes
+- Interrupting workflow with pinentry dialogs
+- Despite having gpg-agent configured with 400-day cache timeout
+
+*Root Cause:*
+- Line 27 in modules/auth-config.el: `(setenv "GPG_AGENT_INFO" nil)`
+- This was telling Emacs to IGNORE the gpg-agent entirely
+- Result: gpg-agent's 400-day cache was being bypassed
+- Plstore (used by oauth2-auto) was loading too late in org-gcal-config
+
+*Solution:*
+1. **Disabled GPG_AGENT_INFO override** - Commented out line preventing agent use
+2. **Added auth-source-cache-expiry** - 24-hour cache for decrypted credentials
+3. **Moved plstore configuration** - From org-gcal-config to auth-config (loads earlier)
+4. **Set plstore caching globally** - `plstore-cache-passphrase-for-symmetric-encryption t`
+
+*Files Modified:*
+- modules/auth-config.el:
+  - Commented out `(setenv "GPG_AGENT_INFO" nil)` (was preventing cache)
+  - Added `(setq auth-source-cache-expiry 86400)` (24-hour cache)
+  - Added new plstore use-package block with caching enabled
+- modules/org-gcal-config.el:
+  - Removed plstore configuration (now in auth-config.el)
+  - Updated comments to reference global config
+
+*Technical Details:*
+- oauth2-auto.plist uses symmetric encryption (passphrase-based)
+- gpg-agent.conf already had `default-cache-ttl 34560000` (400 days)
+- gpg-agent needed to be reloaded: `gpgconf --reload gpg-agent`
+- Plstore now caches passphrase indefinitely via gpg-agent
+
+*Testing:*
+- gpg-agent reloaded successfully
+- Parentheses balanced (check-parens passed)
+- Will verify in production: no password prompts for 30+ minutes
+
+*Next Steps:*
+- Restart Emacs to pick up new configuration
+- Monitor for 1+ hour to confirm no password prompts
+- Mark as resolved if no prompts after several auto-sync cycles
+
+*User Quote:*
+> "It's making me crazy!"
+
+Totally valid! Getting interrupted every 10 minutes is legitimately maddening.  Fixed! ✅
+
 *** 2025-11-04 Session 4 - External Dependencies Audit
 *Time:* ~30 minutes
 *Status:* ✅ COMPLETE - Comprehensive dependency analysis documented

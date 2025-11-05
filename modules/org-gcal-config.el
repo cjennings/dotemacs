@@ -165,9 +165,8 @@ Useful after changing `cj/org-gcal-sync-interval-minutes'."
   (setq org-gcal-managed-update-existing-mode "gcal")  ;; GCal wins on conflicts
 
   :config
-  ;; Enable plstore passphrase caching after org-gcal loads
-  (require 'plstore)
-  (setq plstore-cache-passphrase-for-symmetric-encryption t)
+  ;; Plstore caching is now configured globally in auth-config.el
+  ;; to ensure it loads before org-gcal needs it
 
   ;; set org-gcal timezone based on system timezone
   (setq org-gcal-local-timezone (cj/detect-system-timezone))
