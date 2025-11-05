@@ -14,7 +14,7 @@
 (add-to-list 'load-path "/home/cjennings/code/wttrin")
 
 ;; Set debug flag BEFORE loading wttrin (checked at load time)
-(setq wttrin-debug t)
+(setq wttrin-debug nil)
 
 (use-package wttrin
   ;; Uncomment the next line to use vc-install instead of local directory:

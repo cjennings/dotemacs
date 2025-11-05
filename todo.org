@@ -204,9 +204,26 @@ Use M-x profiler-start before Method 3 debug-profiling.el is built.
 15-20 seconds every time capturing a task (12+ times/day).
 Major daily bottleneck - minutes lost waiting, plus context switching cost.
 
-** TODO [#C] Fix grammar checker performance (currently disabled)
+** DONE [#C] Fix grammar checker performance (currently disabled)
+CLOSED: [2025-11-04 Mon]
 
-Currently disabled because it breaks flow when writing.
+✅ **Installed and configured LanguageTool for comprehensive grammar checking**
+
+Replaced disabled grammar checker with on-demand LanguageTool integration:
+- Installed LanguageTool 6.6-2 from Arch repos (222MB)
+- Created wrapper script: scripts/languagetool-flycheck (Python 3)
+- Integrated with flycheck for on-demand checking via C-; ?
+- Removed proselint (redundant - LanguageTool catches more)
+- No performance impact: only runs when explicitly invoked
+- Installation instructions added to modules/flycheck-config.el commentary
+
+LanguageTool catches:
+- Real grammar errors (subject-verb agreement, tense, etc.)
+- Missing punctuation (commas, periods)
+- Common mistakes (could of → could have)
+- Style issues (redundant phrases, wordiness)
+
+Workflow: Open org/text/markdown file → press C-; ? → see errors in *Flycheck errors* buffer
 
 ** TODO [#D] Fix EMMS keybinding inconsistency with other buffers
 
