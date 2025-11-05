@@ -4,7 +4,7 @@
 
 * Overview
 
-This session processes the Emacs Config Inbox to zero by filtering tasks through the V2MOM framework. Items either move to active V2MOM methods, get moved to someday-maybe, or get deleted. This weekly discipline prevents backlog buildup and ensures only strategic work gets done.
+This workflow processes the Emacs Config Inbox to zero by filtering tasks through the V2MOM framework. Items either move to active V2MOM methods, get moved to someday-maybe, or get deleted. This weekly discipline prevents backlog buildup and ensures only strategic work gets done.
 
 * Problem We're Solving
 
@@ -35,21 +35,21 @@ Without weekly inbox zero:
 
 * Exit Criteria
 
-The session is complete when:
+The workflow is complete when:
 - Zero todo items remain under the "* Emacs Config Inbox" heading in =~/.emacs.d/todo.org=
 - All items have been routed to: V2MOM methods, someday-maybe, or deleted
 - Can verify by checking the org heading (should be empty or show "0/0" in agenda)
 
-*IMPORTANT:* We are ONLY processing items under the "* Emacs Config Inbox" heading. Items already organized under Method 1-6 headings have already been triaged and should NOT be touched during this session.
+*IMPORTANT:* We are ONLY processing items under the "* Emacs Config Inbox" heading. Items already organized under Method 1-6 headings have already been triaged and should NOT be touched during this workflow.
 
 *Measurable validation:*
 - Open =todo.org= and navigate to "* Emacs Config Inbox" heading
 - Confirm no child tasks exist under this heading only
 - Bonus: Check that active todo count is < 20 items across entire V2MOM
 
-* When to Use This Session
+* When to Use This Workflow
 
-Trigger this session when:
+Trigger this workflow when:
 - It's Sunday and you haven't triaged this week
 - 7 days have passed since last triage (hard deadline)
 - "Emacs Config Inbox" has accumulated items
@@ -220,13 +220,13 @@ When processing items that ARE aligned with V2MOM:
 
 * Living Document
 
-This is a living document. After each emacs-inbox-zero session, consider:
+This is a living document. After each emacs-inbox-zero workflow, consider:
 - Did the workflow make sense?
 - Were any steps unclear or unnecessary?
 - Did any new situations arise that need decision frameworks?
 - Did the 10-minute target work, or should it adjust?
 
-Update this document with learnings to make future sessions smoother.
+Update this document with learnings to make future workflows smoother.
 
 * Example Session Walkthrough
 
@@ -310,13 +310,13 @@ Emacs inbox zero is not about getting through email or org-capture. It's about *
 
 * Living Document
 
-This is a living document. After each emacs-inbox-zero session, consider:
+This is a living document. After each emacs-inbox-zero workflow, consider:
 - Did the workflow make sense?
 - Were any steps unclear or unnecessary?
 - Did any new situations arise that need decision frameworks?
 - Did the 10-minute target work, or should it adjust?
 
-Update this document with learnings to make future sessions smoother.
+Update this document with learnings to make future workflows smoother.
 
 ** Updates and Learnings
 
