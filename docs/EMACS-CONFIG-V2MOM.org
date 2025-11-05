@@ -201,7 +201,6 @@ When config breaks, productivity is crushed. The discipline of simplicity produc
 3. *Simple* - Clear, maintainable, production-quality code. Simplicity produces reliability.
 
 
-
 * Methods
 
 ** Method 1: Make Using Emacs Frictionless
@@ -288,7 +287,6 @@ The best infrastructure won't help without disciplined habits. This method build
 - *Incremental execution* → Config never broken for >2 days, git commits are small and frequent, can roll back any change cleanly
 
 
-
 * Obstacles
 
 1. *Building and researching is more fun than fixing.* But if I don't change this, everything will be broken.
@@ -302,7 +300,6 @@ The best infrastructure won't help without disciplined habits. This method build
 5. *I don't always have the time for all day coding sessions.* Breaking the work into increments will help me deliver the long term value anyway. Be the tortoise, not the rabbit.
 
 6. *New disciplines are hard to sustain.* Weekly triage, measuring metrics, and profiling-before-optimizing are new habits. The first few weeks I'll be tempted to skip them when busy. But if I don't practice them consistently, they'll never become automatic, and I'll fall back into old patterns.
-
 
 
 * Metrics
@@ -321,7 +318,6 @@ You can't improve what you don't measure. These metrics provide objective eviden
 
 ** Package Quality Metrics (chime, org-msg, wttrin):
 - *Test coverage: > 70% and all code not covered justifiable* - Uncovered code is 100% risk. Better not be the most-used parts!
-
 
 
 * How to Use This V2MOM
