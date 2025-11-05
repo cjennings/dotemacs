@@ -17,7 +17,7 @@ If the answer is "no" to all five → DON'T ADD IT.
 V2MOM is located at: [[file:docs/emacs-config-v2mom.org][emacs-config-v2mom.org]]
 Research/ideas that don't serve vision: [[file:docs/someday-maybe.org][someday-maybe.org]]
 
-* Method 1: Make Using Emacs Frictionless [7/13]
+* Method 1: Make Using Emacs Frictionless [8/13]
 
 ** DONE [#A] Remove network check from startup (saves 1+ seconds)
 CLOSED: [2025-10-31 Fri]
@@ -295,13 +295,17 @@ CLOSED: [2025-11-03 Sun]
 
 Already using prescient with vertico. Extend to Corfu after migration.
 
-* Method 3: Make *Fixing* Emacs Frictionless [0/5]
+* Method 3: Make *Fixing* Emacs Frictionless [1/4]
 
 ** TODO [#B] Build debug-profiling.el module
 
 Reusable profiling infrastructure for any future performance work.
 
-** TODO [#C] Document localrepo limitations (treesitter grammars not included)
+** TODO [#C] Build localrepo out (package snapshot system)
+
+Repeatable installs and safe rollbacks.
+
+*** TODO [#C] Document localrepo limitations (treesitter grammars not included)
 
 .localrepo only contains packages from package.el archives.
 Treesitter grammars are downloaded separately by treesit-auto on first use.
@@ -310,10 +314,6 @@ For true offline reproducibility, need to cache treesitter grammars separately.
 ** TODO [#C] Integrate Buttercup (behavior-driven integration tests)
 
 Complex workflow testing capability.
-
-** TODO [#C] Build localrepo out (package snapshot system)
-
-Repeatable installs and safe rollbacks.
 
 ** DONE [#C] Integrate difftastic (structural diffs)
 CLOSED: [2025-11-03 Sun]
