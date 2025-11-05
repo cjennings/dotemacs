@@ -152,6 +152,36 @@ emacs --batch file.el --eval '(check-parens)' && echo "✓"
 - Prevents committing broken code
 - Example in chime.el repository: .git/hooks/pre-commit
 
+*** 5. Test Emacs Launch After Non-Trivial Changes
+**CRITICAL: Always test that Emacs launches without errors after making changes**
+
+After completing any non-trivial code changes (new modules, integrations, etc.):
+
+#+BEGIN_SRC bash
+# 1. Run unit tests (if applicable)
+make test
+
+# 2. Test that Emacs launches without backtrace
+emacs --eval "(kill-emacs)"
+#+END_SRC
+
+This catches:
+- Syntax errors in :command specifications
+- Missing dependencies at load time
+- Invalid use-package configurations
+- Broken requires/provides
+
+**When to do this:**
+- ✅ After adding new checker definitions (flycheck, flymake)
+- ✅ After creating new modules
+- ✅ After modifying init.el or early-init.el
+- ✅ Before committing changes
+- ✅ After running all unit tests
+
+**Example lesson:** The LanguageTool integration used =(eval (expand-file-name ...))= in
+a =:command= specification, which caused a backtrace on startup. Testing Emacs launch
+would have caught this immediately instead of discovering it on next restart.
+
 ** For Human Developers
 
 *** 1. Use Structural Editing Modes
@@ -216,6 +246,7 @@ Deeply nested code:
 | Writing | paredit/smartparens | Prevent errors |
 | Editing | rainbow-delimiters | Visual verification |
 | Testing | check-parens | Quick syntax check |
+| Testing | emacs --eval "(kill-emacs)" | Verify Emacs launches |
 | CI/CD | pre-commit hooks | Prevent bad commits |
 | Review | byte-compile-file | Comprehensive check |
 
