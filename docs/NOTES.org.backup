@@ -70,8 +70,8 @@ When starting a new session with Craig:
 2. **Check Active Reminders section** - Remind Craig of outstanding tasks
 3. **Check Pending Decisions section** - Follow up on decisions needed
 4. **Check V2MOM Progress** - Offer to work on top method/priority task
-   - If no V2MOM exists, offer to create one using docs/workflows/create-v2mom.org
-5. **Scan docs/workflows/ directory** for available workflows (see "Available Workflows" section below)
+   - If no V2MOM exists, offer to create one using docs/sessions/create-v2mom.org
+5. **Scan docs/sessions/ directory** for available session types (see "Session Types" section below)
 
 ** IMPORTANT: Reminders Protocol
 
@@ -84,35 +84,35 @@ When Craig says "remind me" about something:
 1. Add it to Active Reminders section in this file
 2. If it's something he needs to DO, also add to =/home/cjennings/sync/org/roam/inbox.org= as TODO scheduled for today
 
-** Workflows: "Let's run/do the [workflow name] workflow"
+** Session Types: "Let's do a [session type] session"
 
 When Craig says this phrase:
 
-1. **Check for exact match** in docs/workflows/ directory
-   - If exact match found: Read that workflow file and guide through process
-   - Example: "refactor workflow" → read docs/workflows/refactor.org
+1. **Check for exact match** in docs/sessions/ directory
+   - If exact match found: Read that session file and guide through workflow
+   - Example: "refactor session" → read docs/sessions/refactor.org
 
 2. **If no exact match but similar word exists:** Ask for clarification
    - Example: User says "empty inbox" but we have "inbox-zero.org"
-   - Ask: "Did you mean the 'inbox zero' workflow, or create new 'empty inbox'?"
+   - Ask: "Did you mean the 'inbox zero' session, or create new 'empty inbox'?"
 
 3. **If no match at all:** Offer to create it
-   - Say: "I don't see '[workflow-name]' yet. Create it using create-workflow process?"
-   - If yes: Do create-workflow workflow, then use immediately (validates new workflow)
+   - Say: "I don't see '[session-type]' yet. Create it using create-session workflow?"
+   - If yes: Do create-session session, then use immediately (validates workflow)
 
-** "I want to create an X workflow" - Creating New Workflows
+** "I want to do an X session with you" - DIFFERENT MEANING!
 
-⚠️ **IMPORTANT:** This is different from running an existing workflow!
+⚠️ **IMPORTANT:** This phrase means something different!
 
-When Craig says "I want to create an X workflow":
-- This means: **CREATE a workflow definition** for doing X (meta-work)
+When Craig says "I want to do an X session with you":
+- This means: **CREATE a session definition** for doing X (meta-work)
 - This does **NOT** mean: "let's DO X right now" (the actual work)
-- Triggers the create-workflow process from docs/workflows/create-workflow.org
+- Triggers the create-session workflow from docs/sessions/create-session.org
 
 *Examples:*
-- "I want to create an inbox zero workflow" → Create docs/workflows/inbox-zero.org
-- "I want to create a refactor workflow" → Create docs/workflows/refactor.org
-- "I want to create a code review workflow" → Create docs/workflows/code-review.org
+- "I want to do an emacs inbox zero session" → Create docs/sessions/inbox-zero.org
+- "I want to do a refactor session" → Create docs/sessions/refactor.org
+- "I want to do a code review session" → Create docs/sessions/code-review.org
 
 ** "What Kind of Day Has It Been?" - Summary and Journal Routine
 
@@ -490,12 +490,12 @@ make reset              # Reset to first launch (destructive!)
 Created: 2025-11-03
 Adapted from chime.el Makefile with config-specific enhancements
 
-* 📋 AVAILABLE WORKFLOWS
+* 📋 AVAILABLE SESSION TYPES
 
-** create-workflow
-File: [[file:workflows/create-workflow.org][docs/workflows/create-workflow.org]]
+** create-session
+File: [[file:sessions/create-session.org][docs/sessions/create-session.org]]
 
-Meta-workflow for creating new workflow definitions. Use this when identifying repetitive processes that would benefit from documentation.
+Meta-workflow for creating new session types. Use this when identifying repetitive workflows that would benefit from documentation.
 
 Workflow:
 1. Q&A discovery (4 core questions)
@@ -508,7 +508,7 @@ Workflow:
 Created: 2025-11-01 (pre-existing)
 
 ** create-v2mom
-File: [[file:workflows/create-v2mom.org][docs/workflows/create-v2mom.org]]
+File: [[file:sessions/create-v2mom.org][docs/sessions/create-v2mom.org]]
 
 Workflow for creating a V2MOM (Vision, Values, Methods, Obstacles, Metrics) strategic framework for any project or goal. Generic process applicable to Emacs config, health goals, financial planning, software development, or any long-running project.
 
@@ -528,7 +528,7 @@ Time: ~2-3 hours total
 Created: 2025-11-05
 
 ** emacs-inbox-zero
-File: [[file:workflows/emacs-inbox-zero.org][docs/workflows/emacs-inbox-zero.org]]
+File: [[file:sessions/emacs-inbox-zero.org][docs/sessions/emacs-inbox-zero.org]]
 
 Weekly workflow for processing the "Emacs Config Inbox" heading in =todo.org= to zero by filtering through V2MOM framework.
 
@@ -826,13 +826,13 @@ Each entry should use this format:
 
 ** 2025-11-05 Tue @ 14:00 -0600
 
-*** Session: Create V2MOM Workflow Document
+*** Session: Create V2MOM Session Document
 
 *Time:* ~30 minutes
-*Status:* ✅ COMPLETE - Generic V2MOM workflow documented
+*Status:* ✅ COMPLETE - Generic V2MOM session workflow documented
 
 *What We Completed:*
-1. ✅ **Created docs/workflows/create-v2mom.org**
+1. ✅ **Created docs/sessions/create-v2mom.org**
    - Fully generic workflow applicable to any project/goal
    - Works for health, finance, software, personal infrastructure, etc.
    - Comprehensive 8-phase process with examples across domains
@@ -858,7 +858,7 @@ Each entry should use this format:
 - Time commitment (2-3 hours) justified by weeks of focused work it enables
 
 *Files Created:*
-- docs/workflows/create-v2mom.org (comprehensive generic V2MOM workflow)
+- docs/sessions/create-v2mom.org (comprehensive generic V2MOM workflow)
 
 *Next Steps:*
 - V2MOM workflow is now available for any future project

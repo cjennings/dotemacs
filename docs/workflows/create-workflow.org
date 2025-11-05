@@ -4,7 +4,7 @@
 
 * Overview
 
-This document describes the meta-workflow for creating new session types. When we identify a repetitive workflow or collaborative pattern, we use this process to formalize it into a documented session that we can reference and reuse.
+This document describes the meta-workflow for creating new workflows. When we identify a repetitive workflow or collaborative pattern, we use this process to formalize it into a documented session that we can reference and reuse.
 
 Session workflows are living documents that capture how we work together on specific types of tasks. They build our shared vocabulary and enable efficient collaboration across multiple work sessions.
 
@@ -64,8 +64,8 @@ Trigger this session creation workflow when:
 - You notice a repetitive workflow that keeps coming up
 - A collaborative pattern emerges that would benefit from documentation
 - Craig says "let's create/define/design a session for [activity]"
-- You identify a new type of work that doesn't fit existing session types
-- An existing session type needs significant restructuring (treat as creating a new one)
+- You identify a new type of work that doesn't fit existing workflows
+- An existing workflow needs significant restructuring (treat as creating a new one)
 
 Examples:
 - "Let's create a session where we inbox zero"
@@ -82,7 +82,7 @@ Walk through these four core questions collaboratively. Take notes on the answer
 
 The Q&A phase can take time—Craig may need to think through answers, and discussions can be lengthy. To prevent data loss from terminal crashes or process quits:
 
-1. Create a draft file at =docs/sessions/[name]-draft.org= after deciding on the name
+1. Create a draft file at =docs/workflows/[name]-draft.org= after deciding on the name
 2. After each question is answered, save the Q&A content to the draft file
 3. If session is interrupted, you can resume from the saved answers
 4. Once complete, the draft becomes the final session document
@@ -187,16 +187,16 @@ After the Q&A, ask together:
 
 ** Phase 3: Name the Session
 
-Decide on a name for this session type.
+Decide on a name for this workflow.
 
 *Naming convention:* Action-oriented (verb form)
-- Examples: "refactor", "inbox-zero", "create-session", "review-code"
+- Examples: "refactor", "inbox-zero", "create-workflow", "review-code"
 - Why: Shorter, natural when saying "let's do a [name] session"
-- Filename: =docs/sessions/[name].org=
+- Filename: =docs/workflows/[name].org=
 
 ** Phase 4: Document the Session
 
-Write the session file at =docs/sessions/[name].org= using this structure:
+Write the session file at =docs/workflows/[name].org= using this structure:
 
 *** Recommended Structure
 1. *Title and metadata* (=#+TITLE=, =#+AUTHOR=, =#+DATE=)
@@ -221,14 +221,14 @@ Write the session file at =docs/sessions/[name].org= using this structure:
 ** Phase 5: Update Project State
 
 Update =NOTES.org=:
-1. Add new session type to "Available Session Types" section
+1. Add new workflow to "Available Workflows" section
 2. Include brief description and reference to file
 3. Note creation date
 
 Example entry:
 #+begin_src org
 ,** inbox-zero
-File: =docs/sessions/inbox-zero.org=
+File: =docs/workflows/inbox-zero.org=
 
 Workflow for processing inbox to zero:
 1. [Brief workflow summary]
@@ -241,7 +241,7 @@ Created: 2025-11-01
 
 *Critical step:* Use the session soon after creating it.
 
-- Schedule the session type for immediate use
+- Schedule the workflow for immediate use
 - Follow the documented workflow
 - Note what works well
 - Identify gaps or unclear areas
@@ -339,7 +339,7 @@ We identified what was needed, collaborated on answers, and captured it in this 
 
 * Conclusion
 
-Creating session workflows is a meta-skill that improves all our collaboration. By formalizing how we work together, we:
+Creating workflows is a meta-skill that improves all our collaboration. By formalizing how we work together, we:
 
 - Build shared vocabulary
 - Eliminate repeated explanations
@@ -347,6 +347,6 @@ Creating session workflows is a meta-skill that improves all our collaboration. 
 - Enable continuous improvement
 - Make our partnership more efficient
 
-Each new session type we create adds to our collaborative toolkit and deepens our ability to work together effectively.
+Each new workflow we create adds to our collaborative toolkit and deepens our ability to work together effectively.
 
 *Remember:* Sessions are frameworks, not rigid recipes. They provide structure while allowing flexibility for case-by-case decisions. The goal is effectiveness, not perfection.
