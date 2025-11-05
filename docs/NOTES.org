@@ -515,6 +515,51 @@ If Craig or Claude need more context:
 
 ** 🚀 Current Session Notes
 
+*** 2025-11-04 Session 4 - External Dependencies Audit
+*Time:* ~30 minutes
+*Status:* ✅ COMPLETE - Comprehensive dependency analysis documented
+
+*What We Completed:*
+
+1. ✅ **Comprehensive External Dependencies Analysis**
+   - Systematically analyzed entire codebase for external tool dependencies
+   - Identified ~50 external dependencies across all feature areas
+   - Organized by functionality: media, email, programming, documents, etc.
+   - Distinguished required vs optional dependencies
+
+2. ✅ **Created config-dependencies.org**
+   - Quick reference commands (minimal, recommended, full install)
+   - Detailed documentation for each dependency:
+     - Package names (pacman/yay/pip/npm/go)
+     - What modules use them
+     - Functionality enabled
+     - Required vs optional status
+     - Installation commands
+   - Summary table by feature area
+   - Installation notes for different package managers
+
+3. ✅ **Next Steps Documented**
+   - TODO: Compare with archsetup script
+   - TODO: Create dependency verification script
+   - TODO: Add to main documentation
+
+*Key Dependencies Identified:*
+- Core: git, ripgrep, fd
+- Media: ffmpeg, libpulse, yt-dlp, mpv, python-openai-whisper
+- Email: mu, isync, msmtp
+- Grammar: languagetool, aspell
+- Programming: clang, python-lsp-server, gopls, bash-language-server, shellcheck
+- Documents: pandoc, texlive, poppler
+- Desktop: dunst, xdg-utils
+
+*Files Created:*
+- config-dependencies.org (comprehensive dependency documentation)
+
+*Status:*
+- Ready for comparison with archsetup script ✅
+- All dependencies documented with install commands ✅
+- Can now ensure archsetup installs all Emacs requirements ✅
+
 *** 2025-11-04 Session 3 - LanguageTool Grammar Checker Test Suite
 *Time:* ~1 hour
 *Status:* ✅ COMPLETE - Comprehensive test suite with 15 passing tests

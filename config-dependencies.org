@@ -1,0 +1,426 @@
+#+TITLE: External Dependencies for Emacs Configuration
+#+AUTHOR: Analysis by Claude Code
+#+DATE: 2025-11-04
+
+* Overview
+
+This document catalogs ALL external dependencies (non-Emacs, non-Emacs-packages) required
+for this Emacs configuration to function fully on Arch Linux.
+
+Dependencies are organized by functionality area with installation commands for pacman/yay.
+
+* Quick Reference
+
+** Minimal Install (Basic Functionality)
+#+BEGIN_SRC bash
+sudo pacman -S git ripgrep fd
+#+END_SRC
+
+** Recommended Install (Common Workflows)
+#+BEGIN_SRC bash
+# Core tools
+sudo pacman -S git ripgrep fd xdg-utils curl
+
+# Media (if using)
+sudo pacman -S ffmpeg yt-dlp task-spooler mpv libpulse
+
+# Development
+sudo pacman -S clang shellcheck shfmt python-pip
+pip install --user python-lsp-server[all] flake8
+npm install -g bash-language-server
+
+# Documents
+sudo pacman -S pandoc texlive-core
+#+END_SRC
+
+** Full Install (All Features)
+#+BEGIN_SRC bash
+# System tools
+sudo pacman -S git ripgrep fd xdg-utils curl dunst
+
+# Media & transcription
+sudo pacman -S ffmpeg yt-dlp task-spooler mpv libpulse
+yay -S python-openai-whisper  # Or use scripts/install-whisper.sh
+
+# Email
+sudo pacman -S mu isync msmtp
+
+# Grammar & spelling
+sudo pacman -S languagetool aspell aspell-en
+
+# PDF & documents
+sudo pacman -S poppler zathura zathura-pdf-mupdf pandoc
+
+# LaTeX (if needed)
+sudo pacman -S texlive-most
+
+# Programming tools
+sudo pacman -S clang shellcheck shfmt graphviz
+pip install --user python-lsp-server[all] flake8 mypy
+npm install -g bash-language-server typescript-language-server
+
+# File managers (choose one)
+sudo pacman -S thunar  # or nautilus, dolphin, pcmanfm
+
+# Browsers (choose one)
+sudo pacman -S firefox  # or chromium
+#+END_SRC
+
+* Core System Tools
+
+** Git - Version Control
+- *Package:* =git=
+- *Used by:* magit, forge, vc-config.el, all development workflows
+- *Functionality:* Essential for version control, package management
+- *Required:* YES
+- *Install:* =sudo pacman -S git=
+
+* Audio/Video Recording & Transcription
+
+** FFmpeg - Media Processing
+- *Package:* =ffmpeg=
+- *Used by:* modules/video-audio-recording.el, scripts/install-whisper.sh
+- *Functionality:* Desktop video/audio recording, media conversion
+- *Required:* YES (if using recording features)
+- *Install:* =sudo pacman -S ffmpeg=
+- *Note:* Explicitly checked in =cj/recording-check-ffmpeg=
+
+** PulseAudio/PipeWire Utils - Audio Device Management
+- *Package:* =libpulse= (provides =pactl= command)
+- *Used by:* modules/video-audio-recording.el
+- *Functionality:* Audio device detection and selection for recording
+- *Required:* YES (if using recording features)
+- *Install:* =sudo pacman -S libpulse=
+- *Commands used:* =pactl list sources short=
+
+** Whisper (OpenAI) - Speech-to-Text
+- *Package:* =python-openai-whisper= (AUR)
+- *Used by:* scripts/local-whisper, modules/transcription-config.el
+- *Functionality:* Local audio transcription (offline)
+- *Required:* OPTIONAL (alternative: OpenAI API with curl)
+- *Install:* =yay -S python-openai-whisper= OR =~/.emacs.d/scripts/install-whisper.sh=
+- *Uninstall:* =~/.emacs.d/scripts/uninstall-whisper.sh=
+- *Size:* ~500MB with models
+
+* Grammar & Spell Checking
+
+** LanguageTool - Grammar Checker
+- *Package:* =languagetool=
+- *Used by:* scripts/languagetool-flycheck, modules/flycheck-config.el
+- *Functionality:* Comprehensive grammar and style checking
+- *Required:* OPTIONAL (only if using grammar checking with =C-; ?=)
+- *Install:* =sudo pacman -S languagetool=
+- *Size:* ~222MB
+- *Dependencies:* Python 3 (for wrapper script at scripts/languagetool-flycheck)
+- *Keybinding:* =C-; ?= in org/text/markdown buffers
+
+** Aspell/Hunspell/Ispell - Spell Checking
+- *Packages:* =aspell= (recommended) OR =hunspell= OR =ispell=
+- *Used by:* modules/flyspell-and-abbrev.el
+- *Functionality:* Real-time spell checking
+- *Required:* OPTIONAL (choose one of the three)
+- *Install:* =sudo pacman -S aspell aspell-en= (recommended)
+- *Note:* Config checks for any of the three spell checkers
+
+* Email System
+
+** Mu - Email Indexer
+- *Package:* =mu=
+- *Used by:* modules/mail-config.el, scripts/setup-email.sh
+- *Functionality:* Email indexing and search (provides mu4e)
+- *Required:* YES (if using email)
+- *Install:* =sudo pacman -S mu=
+- *Provides:* =mu= command and mu4e elisp files
+
+** Isync (mbsync) - Email Sync
+- *Package:* =isync=
+- *Used by:* modules/mail-config.el, scripts/setup-email.sh
+- *Functionality:* IMAP email synchronization
+- *Required:* YES (if using email)
+- *Install:* =sudo pacman -S isync=
+- *Provides:* =mbsync= command
+
+** msmtp - SMTP Email Sending
+- *Package:* =msmtp=
+- *Used by:* modules/mail-config.el, scripts/setup-email.sh
+- *Functionality:* Sending emails via SMTP
+- *Required:* YES (if using email)
+- *Install:* =sudo pacman -S msmtp=
+
+* Media Playback & Downloading
+
+** yt-dlp - Media Downloader
+- *Package:* =yt-dlp=
+- *Used by:* modules/media-utils.el, modules/quick-video-capture.el, modules/elfeed-config.el
+- *Functionality:* Download videos from YouTube and 1000+ sites
+- *Required:* YES (if using video download or media playback from web)
+- *Install:* =sudo pacman -S yt-dlp=
+
+** Task Spooler (tsp) - Queue Management
+- *Package:* =task-spooler=
+- *Used by:* modules/media-utils.el (=cj/yt-dl-it= function)
+- *Functionality:* Queue and background management for downloads
+- *Required:* YES (if using video download)
+- *Install:* =sudo pacman -S task-spooler=
+
+** Media Players (Choose One or More)
+- *MPV* - =mpv= (recommended - works without stream URL extraction)
+- *VLC* - =vlc=
+- *MPlayer* - =mplayer=
+- *Used by:* modules/media-utils.el (customizable via =cj/media-players=)
+- *Functionality:* Playing media URLs
+- *Required:* OPTIONAL (choose preferred player)
+- *Install:* =sudo pacman -S mpv= (recommended)
+
+* PDF & Document Viewing
+
+** PDF Tools Server
+- *Package:* Auto-built by pdf-tools package on first Emacs launch
+- *Requires:* =poppler= library (usually already installed)
+- *Used by:* modules/pdf-config.el
+- *Functionality:* Fast PDF rendering in Emacs
+- *Required:* OPTIONAL (Emacs can use DocView as fallback)
+- *Install:* =sudo pacman -S poppler=
+- *Note:* pdf-tools will compile its server component automatically
+
+** Zathura - External PDF Viewer
+- *Package:* =zathura= and =zathura-pdf-mupdf=
+- *Used by:* modules/pdf-config.el, modules/latex-config.el
+- *Functionality:* External PDF viewing (alternative to pdf-tools)
+- *Required:* OPTIONAL (keybinding: 'z' in pdf-view-mode)
+- *Install:* =sudo pacman -S zathura zathura-pdf-mupdf=
+
+* LaTeX & Document Generation
+
+** LaTeX Distribution
+- *Package:* =texlive-core= (basic) or =texlive-most= (comprehensive)
+- *Used by:* modules/latex-config.el, modules/org-export-config.el
+- *Functionality:* LaTeX document compilation
+- *Required:* OPTIONAL (only if using LaTeX)
+- *Install:* =sudo pacman -S texlive-core= OR =sudo pacman -S texlive-most=
+- *Commands:* =latexmk=, =pdflatex=, =xelatex=
+
+** Pandoc - Universal Document Converter
+- *Package:* =pandoc=
+- *Used by:* modules/org-export-config.el, modules/mail-config.el
+- *Functionality:* Convert between document formats (DOCX, EPUB, HTML, etc.)
+- *Required:* OPTIONAL (enhances org-export capabilities)
+- *Install:* =sudo pacman -S pandoc=
+
+* Programming Language Support
+
+** Language Servers (LSP)
+
+*** Go
+- *gopls* - =go install golang.org/x/tools/gopls@latest=
+- *goimports* - =go install golang.org/x/tools/cmd/goimports@latest=
+- *staticcheck* - =go install honnef.co/go/tools/cmd/staticcheck@latest=
+- *delve* (debugger) - =go install github.com/go-delve/delve/cmd/dlv@latest=
+- *Used by:* modules/prog-go.el
+- *Required:* OPTIONAL (only if using Go development)
+
+*** Python
+- *python-lsp-server* - =pip install --user python-lsp-server[all]=
+- *flake8* - =pip install --user flake8=
+- *mypy* - =pip install --user mypy= (optional type checker)
+- *Used by:* modules/prog-python.el
+- *Required:* OPTIONAL (only if using Python development)
+- *Note:* Install with =--user= flag (no sudo needed)
+
+*** C/C++
+- *clangd* - Provided by =clang= package
+- *clang-format* - Provided by =clang= package
+- *Package:* =clang=
+- *Used by:* modules/prog-c.el
+- *Install:* =sudo pacman -S clang=
+- *Required:* OPTIONAL (only if using C/C++ development)
+
+*** Bash
+- *bash-language-server* - =npm install -g bash-language-server=
+- *shellcheck* - =shellcheck= package (linter)
+- *shfmt* - =shfmt= package (formatter)
+- *Used by:* modules/prog-shell.el
+- *Install:*
+  #+BEGIN_SRC bash
+  sudo pacman -S shellcheck shfmt nodejs npm
+  npm install -g bash-language-server
+  #+END_SRC
+- *Required:* OPTIONAL (only if using shell script development)
+
+*** JavaScript/TypeScript
+- *typescript-language-server* - =npm install -g typescript-language-server=
+- *eslint* - =npm install -g eslint= (optional linter)
+- *prettier* - =npm install -g prettier= (optional formatter)
+- *Used by:* modules/prog-lsp.el (detected via LSP mode hooks)
+- *Required:* OPTIONAL (only if using JS/TS development)
+
+** Build Tools
+- *make* - Usually pre-installed
+- *cmake* - For C/C++ projects: =sudo pacman -S cmake=
+- *gcc/g++* - C/C++ compiler: =sudo pacman -S gcc=
+- *gdb* - Debugger: =sudo pacman -S gdb=
+- *Required:* OPTIONAL (per-language basis)
+
+** Graphviz - Diagram Generation
+- *Package:* =graphviz=
+- *Used by:* modules/latex-config.el, modules/org-babel-config.el
+- *Functionality:* Generate diagrams from dot files
+- *Required:* OPTIONAL (only if using graphviz-dot-mode or org-babel dot blocks)
+- *Install:* =sudo pacman -S graphviz=
+
+* Search & File Management
+
+** Ripgrep - Fast Search
+- *Package:* =ripgrep=
+- *Used by:* Implicit in many modern Emacs packages (consult, projectile, etc.)
+- *Functionality:* Extremely fast code search
+- *Required:* HIGHLY RECOMMENDED
+- *Install:* =sudo pacman -S ripgrep=
+- *Note:* Faster than grep, used by many completion frameworks
+
+** fd - Fast Find
+- *Package:* =fd=
+- *Used by:* Implicit in modern completion frameworks
+- *Functionality:* Fast file finding (alternative to GNU find)
+- *Required:* RECOMMENDED
+- *Install:* =sudo pacman -S fd=
+
+** Deadgrep - Search Interface
+- *Package:* Emacs package (uses ripgrep)
+- *Used by:* modules/dirvish-config.el (keybinding: 'G')
+- *Functionality:* Interactive ripgrep interface
+- *Requires:* ripgrep (see above)
+
+* Desktop Integration
+
+** Desktop Notifications
+- *Package:* =dunst= or =notification-daemon=
+- *Used by:* modules/transcription-config.el, potentially others
+- *Functionality:* Desktop notifications via =notify-send=
+- *Required:* OPTIONAL (notifications will fail silently without it)
+- *Install:* =sudo pacman -S dunst= (recommended)
+- *Note:* Requires a notification daemon to be running
+
+** xdg-utils - File Opening
+- *Package:* =xdg-utils=
+- *Provides:* =xdg-open= command
+- *Used by:* modules/external-open.el, modules/dirvish-config.el
+- *Functionality:* Open files with default applications
+- *Required:* RECOMMENDED (fallback exists)
+- *Install:* =sudo pacman -S xdg-utils=
+
+** File Managers (Choose One - Optional)
+- *Thunar* - =thunar=
+- *Nautilus* - =nautilus=
+- *Dolphin* - =dolphin=
+- *PCManFM* - =pcmanfm=
+- *Used by:* modules/dwim-shell-config.el
+- *Functionality:* Open current directory in GUI file manager
+- *Required:* OPTIONAL (choose one)
+- *Install:* =sudo pacman -S thunar= (or your preferred file manager)
+
+* Web Browsers
+
+** Web Browsers (Choose One or More)
+- *Chromium* - =chromium=
+- *Google Chrome* - =google-chrome= (AUR)
+- *Firefox* - =firefox=
+- *Brave* - =brave-bin= (AUR)
+- *Qutebrowser* - =qutebrowser=
+- *Used by:* modules/browser-config.el
+- *Functionality:* Opening web links
+- *Required:* OPTIONAL (EWW built-in as fallback)
+- *Install:* =sudo pacman -S firefox= (or your preferred browser)
+
+* Network Utilities
+
+** Curl - HTTP Client
+- *Package:* =curl=
+- *Used by:* scripts/oai-transcribe (OpenAI API calls), various other scripts
+- *Functionality:* HTTP requests
+- *Required:* Usually pre-installed, but verify
+- *Install:* =sudo pacman -S curl=
+
+* Emacs Build Dependencies (For Building from Source)
+
+If using scripts/build-emacs.sh to build Emacs from source:
+
+#+BEGIN_SRC bash
+sudo pacman -S jansson tree-sitter imagemagick mailutils \
+               harfbuzz cairo gnutls libxml2 texinfo gtk3 \
+               libgccjit git base-devel
+#+END_SRC
+
+** Required for Native Compilation
+- *libgccjit* - Enables native compilation of elisp files
+- *Package:* =libgccjit=
+- *Note:* Dramatically improves Emacs performance
+
+* Summary by Feature Area
+
+| Feature                | Required Packages              | Optional Packages                    |
+|------------------------+--------------------------------+--------------------------------------|
+| *Basic Emacs*          | git                            | ripgrep, fd                          |
+| *Recording*            | ffmpeg, libpulse               | -                                    |
+| *Transcription*        | curl (for API)                 | python-openai-whisper                |
+| *Grammar*              | -                              | languagetool, aspell                 |
+| *Email*                | mu, isync, msmtp               | -                                    |
+| *Media*                | yt-dlp, task-spooler           | mpv, vlc                             |
+| *PDF*                  | poppler                        | zathura                              |
+| *LaTeX*                | -                              | texlive-core/most                    |
+| *Documents*            | -                              | pandoc                               |
+| *Notifications*        | -                              | dunst                                |
+| *File Opening*         | -                              | xdg-utils                            |
+| *C/C++*                | -                              | clang, gdb                           |
+| *Python*               | -                              | python-lsp-server, flake8            |
+| *Go*                   | -                              | gopls, goimports, delve              |
+| *Shell*                | -                              | bash-language-server, shellcheck     |
+| *Search*               | -                              | ripgrep (highly recommended)         |
+| *Desktop Integration*  | -                              | xdg-utils, dunst                     |
+
+* Installation Notes
+
+** Package Manager Tips
+1. *Python packages* install via =pip install --user= (no sudo needed)
+2. *Go tools* install via =go install= (no system package manager)
+3. *Node.js tools* install via =npm install -g= (requires =nodejs= package)
+4. *AUR packages* require an AUR helper like =yay= or =paru=
+
+** Special Considerations
+- *Tree-sitter grammars* are downloaded automatically by treesit-auto (not in .localrepo)
+- *Native compilation* requires libgccjit if building Emacs from source
+- *Local package repository* (.localrepo) contains Emacs packages, not system dependencies
+
+** Testing Installations
+After installing dependencies, test key functionality:
+#+BEGIN_SRC bash
+# Test recording
+emacs --eval "(require 'video-audio-recording)" --eval "(cj/recording-check-ffmpeg)"
+
+# Test grammar checker
+~/.emacs.d/scripts/languagetool-flycheck ~/.emacs.d/tests/fixtures/grammar-errors-basic.txt
+
+# Test transcription wrapper (if using local whisper)
+~/.emacs.d/scripts/local-whisper /path/to/audio.m4a
+
+# Run Emacs test suite
+cd ~/.emacs.d && make test
+#+END_SRC
+
+* Next Steps
+
+** TODO Compare with archsetup script
+- [ ] Analyze archsetup script to see which dependencies are already installed
+- [ ] Identify gaps where Emacs dependencies are missing
+- [ ] Ensure archsetup script installs all required dependencies
+- [ ] Document any Emacs-specific configuration needed beyond package installation
+
+** TODO Create dependency verification script
+- [ ] Script to check which dependencies are installed
+- [ ] Report missing optional dependencies by feature area
+- [ ] Provide installation commands for missing dependencies
+
+** TODO Add to documentation
+- [ ] Link from main README
+- [ ] Add to setup instructions
+- [ ] Include in archsetup script comments
