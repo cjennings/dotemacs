@@ -53,3 +53,6 @@ auto-save-list/
 
 # Documentation folder (session notes, personal workflows)
 /docs/
+
+# Claude Code configuration (personal settings, commands)
+/.claude/
