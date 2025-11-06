@@ -33,8 +33,7 @@
     "C-c d i b" "info build"
     "C-c d i p" "info packages"
     "C-c d i f" "info features"
-    "C-c d r" "reload init"
-    "C-c d a" "reset auth cache"))
+    "C-c d r" "reload init"))
 
 ;;; --------------------------------- Profiling ---------------------------------
 
@@ -282,15 +281,6 @@ Recompile natively when supported, otherwise fall back to byte compilation."
   (interactive)
   (load-file user-init-file))
 (keymap-set cj/debug-config-keymap "r" 'cj/reload-init-file)
-
-;; ----------------------------- Reset-Auth-Sources ----------------------------
-
-(defun cj/reset-auth-cache ()
-  "Clear Emacs auth-source cache."
-  (interactive)
-  (auth-source-forget-all-cached)
-  (message "Emacs auth-source cache cleared."))
-(keymap-set cj/debug-config-keymap "a" 'cj/reset-auth-cache)
 
 ;; ------------------------ Validate Org Agenda Entries ------------------------
 
