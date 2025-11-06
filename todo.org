@@ -450,3 +450,4 @@ Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 Can't research next thing until current thing is implemented.
 
 * Emacs Config Inbox
+** TODO cj/flyspell-then-abbrev loses keybinding in scratch org-mode buffer
