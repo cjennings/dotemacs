@@ -5,19 +5,23 @@
 
 ;;; Commentary:
 ;;
-;; Audio transcription workflow using OpenAI Whisper (API or local).
+;; Audio transcription workflow with multiple backend options.
 ;;
 ;; USAGE:
 ;;   In dired: Press `T` on an audio file to transcribe
 ;;   Anywhere: M-x cj/transcribe-audio
 ;;   View active: M-x cj/transcriptions-buffer
+;;   Switch backend: C-; T b (or M-x cj/transcription-switch-backend)
 ;;
 ;; OUTPUT FILES:
 ;;   audio.m4a → audio.txt (transcript)
 ;;            → audio.log (process logs, conditionally kept)
 ;;
 ;; BACKENDS:
-;;   - 'openai-api: Fast cloud transcription (requires OPENAI_API_KEY)
+;;   - 'openai-api: Fast cloud transcription
+;;     API key retrieved from authinfo.gpg (machine api.openai.com)
+;;   - 'assemblyai: Cloud transcription with speaker diarization
+;;     API key retrieved from authinfo.gpg (machine api.assemblyai.com)
 ;;   - 'local-whisper: Local transcription (requires whisper installed)
 ;;
 ;; NOTIFICATIONS:
@@ -33,12 +37,14 @@
 
 (require 'dired)
 (require 'notifications)
+(require 'auth-source)
 
 ;; ----------------------------- Configuration ---------------------------------
 
-(defvar cj/transcribe-backend 'local-whisper
+(defvar cj/transcribe-backend 'assemblyai
   "Transcription backend to use.
 - `openai-api': Fast cloud transcription via OpenAI API
+- `assemblyai': Cloud transcription with speaker diarization via AssemblyAI
 - `local-whisper': Local transcription using installed Whisper")
 
 (defvar cj/transcription-keep-log-when-done nil
@@ -83,8 +89,35 @@ SUCCESS-P indicates whether transcription succeeded."
   "Return absolute path to transcription script based on backend."
   (let ((script-name (pcase cj/transcribe-backend
                        ('openai-api "oai-transcribe")
+                       ('assemblyai "assemblyai-transcribe")
                        ('local-whisper "local-whisper"))))
     (expand-file-name (concat "scripts/" script-name) user-emacs-directory)))
+
+(defun cj/--get-openai-api-key ()
+  "Retrieve OpenAI API key from authinfo.gpg.
+Expects entry in authinfo.gpg:
+  machine api.openai.com login api password sk-...
+Returns the API key string, or nil if not found."
+  (when-let* ((auth-info (car (auth-source-search
+                               :host "api.openai.com"
+                               :require '(:secret))))
+              (secret (plist-get auth-info :secret)))
+    (if (functionp secret)
+        (funcall secret)
+      secret)))
+
+(defun cj/--get-assemblyai-api-key ()
+  "Retrieve AssemblyAI API key from authinfo.gpg.
+Expects entry in authinfo.gpg:
+  machine api.assemblyai.com login api password <key>
+Returns the API key string, or nil if not found."
+  (when-let* ((auth-info (car (auth-source-search
+                               :host "api.assemblyai.com"
+                               :require '(:secret))))
+              (secret (plist-get auth-info :secret)))
+    (if (functionp secret)
+        (funcall secret)
+      secret)))
 
 ;; ---------------------------- Process Management -----------------------------
 
@@ -125,14 +158,28 @@ Returns the process object."
               (format "Audio file: %s\n" audio-file)
               (format "Script: %s\n\n" script)))
 
-    ;; Start process
-    (let ((process (make-process
-                    :name process-name
-                    :buffer (get-buffer-create buffer-name)
-                    :command (list script audio-file)
-                    :sentinel (lambda (proc event)
-                                (cj/--transcription-sentinel proc event audio-file txt-file log-file))
-                    :stderr log-file)))
+    ;; Start process with environment
+    (let* ((process-environment
+            ;; Add API key to environment based on backend
+            (pcase cj/transcribe-backend
+              ('openai-api
+               (if-let ((api-key (cj/--get-openai-api-key)))
+                   (cons (format "OPENAI_API_KEY=%s" api-key)
+                         process-environment)
+                 (user-error "OpenAI API key not found in authinfo.gpg for host api.openai.com")))
+              ('assemblyai
+               (if-let ((api-key (cj/--get-assemblyai-api-key)))
+                   (cons (format "ASSEMBLYAI_API_KEY=%s" api-key)
+                         process-environment)
+                 (user-error "AssemblyAI API key not found in authinfo.gpg for host api.assemblyai.com")))
+              (_ process-environment)))
+           (process (make-process
+                     :name process-name
+                     :buffer (get-buffer-create buffer-name)
+                     :command (list script audio-file)
+                     :sentinel (lambda (proc event)
+                                 (cj/--transcription-sentinel proc event audio-file txt-file log-file))
+                     :stderr log-file)))
 
       ;; Track transcription
       (push (list process audio-file (current-time) 'running) cj/transcriptions-list)
@@ -298,6 +345,21 @@ Uses backend specified by `cj/transcribe-backend'."
     (kill-process process)
     (message "Killed transcription process")))
 
+;;;###autoload
+(defun cj/transcription-switch-backend ()
+  "Switch transcription backend.
+Prompts with completing-read to select from available backends."
+  (interactive)
+  (let* ((backends '(("assemblyai" . assemblyai)
+                     ("openai-api" . openai-api)
+                     ("local-whisper" . local-whisper)))
+         (current (symbol-name cj/transcribe-backend))
+         (prompt (format "Transcription backend (current: %s): " current))
+         (choice (completing-read prompt backends nil t))
+         (new-backend (alist-get choice backends nil nil #'string=)))
+    (setq cj/transcribe-backend new-backend)
+    (message "Transcription backend: %s" choice)))
+
 ;; ------------------------------- Dired Integration ---------------------------
 
 (with-eval-after-load 'dired
@@ -311,16 +373,18 @@ Uses backend specified by `cj/transcribe-backend'."
 (defvar-keymap cj/transcribe-map
   :doc "Keymap for transcription operations"
   "a" #'cj/transcribe-audio
+  "b" #'cj/transcription-switch-backend
   "v" #'cj/transcriptions-buffer
   "k" #'cj/transcription-kill)
-(keymap-set cj/custom-keymap "t" cj/transcribe-map)
+(keymap-set cj/custom-keymap "T" cj/transcribe-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
-    "C-; t" "transcription menu"
-    "C-; t a" "transcribe audio"
-    "C-; t v" "view transcriptions"
-    "C-; t k" "kill transcription"))
+    "C-; T" "transcription menu"
+    "C-; T a" "transcribe audio"
+    "C-; T b" "switch backend"
+    "C-; T v" "view transcriptions"
+    "C-; T k" "kill transcription"))
 
 (provide 'transcription-config)
 ;;; transcription-config.el ends here

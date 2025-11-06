@@ -769,6 +769,110 @@ Each entry should use this format:
 - **Files Modified:** Links to changed files
 - **Next Steps:** What to do next session (if applicable)
 
+** 2025-11-06 Wed @ 00:30 -0600
+
+*** Session: AssemblyAI Transcription Backend Integration
+
+*Time:* ~1.5 hours (continuation from previous session)
+*Status:* ✅ COMPLETE - AssemblyAI backend fully integrated and tested
+
+*What We Completed:*
+
+1. ✅ **Added AssemblyAI transcription backend with speaker diarization**
+   - Created =scripts/assemblyai-transcribe= bash script
+   - Implements upload → poll → format workflow with AssemblyAI API
+   - Supports speaker labels (up to 50 speakers) with "Speaker A: text" format
+   - Uses universal speech model (99 language support)
+   - API key retrieval from authinfo.gpg (machine api.assemblyai.com)
+   - Requires jq for JSON parsing
+   - Successfully tested with 33KB and 4.1MB files (3s and 9s processing times)
+
+2. ✅ **Updated transcription-config.el for multi-backend support**
+   - Added =cj/--get-assemblyai-api-key= function
+   - Updated =cj/--transcription-script-path= to support all 3 backends (openai-api, assemblyai, local-whisper)
+   - Changed process environment handling from if-statements to pcase for cleaner backend selection
+   - Updated documentation with backend descriptions
+
+3. ✅ **Created backend switching UI**
+   - Implemented =cj/transcription-switch-backend= interactive command
+   - Uses completing-read interface showing current backend in prompt
+   - Keybinding: =C-; T b=
+   - Persists selection for session
+   - Updated Commentary section with usage instructions
+
+4. ✅ **Set AssemblyAI as default backend**
+   - Changed default from 'openai-api to 'assemblyai in =cj/transcribe-backend=
+   - User feedback: "the assemblyai backend is definitely the best so far"
+   - Speaker diarization proves superior for multi-speaker recordings
+
+5. ✅ **Added comprehensive unit tests**
+   - Created =tests/test-transcription-config--transcription-script-path.el=
+   - 5 unit tests covering all 3 backends (all passing)
+   - Tests verify: correct script paths, absolute paths, path format consistency
+   - Fixed bug: user-emacs-directory path expansion in test assertions
+   - Followed quality-engineer.org guidelines: test pure functions only, skip framework integration
+
+6. ✅ **Investigated test failures (18 total)**
+   - Ran full test suite: 18 files failing (not related to new transcription work)
+   - Root cause analysis for dwim-shell-security tests (12 failures):
+     - Functions defined inside use-package :config block
+     - Config block only loads when package available
+     - During batch testing, package not loaded → functions never defined → void-function errors
+   - Identified as orphaned tests for unused placeholder code (PDF/ZIP security functions)
+   - Installed dependencies (7z, qpdf) to confirm not dependency issue
+   - 3 additional failures: lorem-optimum-benchmark (environment-dependent timing)
+
+7. ✅ **Documented cleanup task in todo.org**
+   - Added TODO item under Method 3 (priority C) at line 336
+   - Comprehensive context: why tests fail, what to delete, expected outcome
+   - Files to delete:
+     - =tests/test-dwim-shell-security.el= (12 failing tests)
+     - 4 unused functions in =modules/dwim-shell-config.el= (lines ~302-347)
+   - Expected result: 18 failures → 6 failures (only benchmarks remain)
+   - Aligns with V2MOM: reducing test failures, cleaning up unused code
+
+*Key Decisions:*
+
+1. **Backend Selection Strategy**
+   - Keep all 3 backends available (openai-api, assemblyai, local-whisper)
+   - AssemblyAI as default for superior speaker diarization
+   - Completing-read UI for backend switching (deferred dired integration discussion)
+
+2. **Testing Philosophy**
+   - Only test pure helper functions per quality-engineer.org guidelines
+   - Skip framework integration tests (auth-source, process management)
+   - Skip interactive wrapper tests (completing-read, dired bindings)
+   - Only =cj/--transcription-script-path= warranted testing
+
+3. **Test Failure Triage**
+   - Document cleanup in todo.org rather than immediate deletion
+   - Priority C (non-urgent) - focus on working features first
+   - Accept environment-dependent benchmark failures
+
+*Files Modified:*
+
+- [[file:~/.emacs.d/modules/transcription-config.el][modules/transcription-config.el]] - Multi-backend support, AssemblyAI integration, UI
+- [[file:~/.emacs.d/scripts/assemblyai-transcribe][scripts/assemblyai-transcribe]] - NEW: AssemblyAI API integration script
+- [[file:~/.emacs.d/tests/test-transcription-config--transcription-script-path.el][tests/test-transcription-config--transcription-script-path.el]] - NEW: Unit tests for backend selection
+- [[file:~/.emacs.d/todo.org][todo.org]] - Added test cleanup task in Method 3
+
+*Technical Notes:*
+
+- defvar doesn't override existing values (user needed Emacs restart when switching default backend)
+- AssemblyAI workflow: upload file → poll for completion (max 30 min) → format with speaker labels
+- Speaker diarization format: "Speaker A: <text>" automatically assigned
+- API key storage: authinfo.gpg entry "machine api.assemblyai.com login api password <key>"
+- Backend scripts must be executable (chmod +x)
+
+*Background Processes:*
+- ✅ Converted 8 Opus files to M4A (96kbps) - completed successfully
+- ✅ Recompressed 3 large M4A files to 64kbps mono for OpenAI compatibility - completed successfully
+
+*Next Steps:*
+
+- None - transcription workflow is production-ready
+- Future: Priority C task to clean up orphaned dwim-shell-security tests (see todo.org:336)
+
 ** 2025-11-05 Tue @ 16:00 -0600
 
 *** Session: Terminology Refactor & Template Polish
