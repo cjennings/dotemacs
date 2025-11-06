@@ -4,7 +4,7 @@
 ;;; Commentary:
 ;; Use ffmpeg to record desktop video or just audio.
 ;; with audio from mic and audio from default audio sink
-;; Also supports audio-only recording in Opus format.
+;; Audio recordings use M4A/AAC format for best compatibility.
 ;;
 ;; Note: video-recordings-dir and audio-recordings-dir are defined
 ;; (and directory created) in user-constants.el
@@ -311,16 +311,16 @@ Otherwise use the default location in `audio-recordings-dir'."
 		   (system-device (cdr devices))
 		   (location (expand-file-name directory))
 		   (name (format-time-string "%Y-%m-%d-%H-%M-%S"))
-		   (filename (expand-file-name (concat name ".opus") location))
+		   (filename (expand-file-name (concat name ".m4a") location))
 		   (ffmpeg-command
 			(format (concat "ffmpeg "
 							"-f pulse -i %s "
 							"-ac 1 "
 							"-f pulse -i %s "
-							"-ac 2 "
-							"-filter_complex \"[0:a]volume=%.1f[mic];[1:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2\" "
-							"-c:a libopus "
-							"-b:a 96k "
+							"-ac 1 "
+							"-filter_complex \"[0:a]volume=%.1f[mic];[1:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2[out];[out]pan=mono|c0=0.5*c0+0.5*c1\" "
+							"-c:a aac "
+							"-b:a 64k "
 							"%s")
 					mic-device
 					system-device

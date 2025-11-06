@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# assemblyai-transcribe - Transcribe audio files using AssemblyAI API with speaker diarization
+# Usage: assemblyai-transcribe <audio-file> [language]
+#
+# Requires: ASSEMBLYAI_API_KEY environment variable
+# Language: en, es, fr, etc. (default: en)
+# Features: Speaker diarization (up to 50 speakers)
+
+set -euo pipefail
+
+# Parse arguments
+AUDIO="${1:-}"
+LANG="${2:-en}"
+
+# Validate arguments
+if [[ -z "$AUDIO" ]]; then
+  echo "Usage: assemblyai-transcribe <audio-file> [language]" >&2
+  echo "Example: assemblyai-transcribe meeting.m4a en" >&2
+  exit 1
+fi
+
+if [[ ! -f "$AUDIO" ]]; then
+  echo "Error: Audio file not found: $AUDIO" >&2
+  exit 1
+fi
+
+# Check API key is set
+if [[ -z "${ASSEMBLYAI_API_KEY:-}" ]]; then
+  echo "Error: ASSEMBLYAI_API_KEY environment variable not set" >&2
+  exit 1
+fi
+
+# Check curl is available
+if ! command -v curl &> /dev/null; then
+  echo "Error: curl command not found" >&2
+  exit 1
+fi
+
+# Check jq is available (for JSON parsing)
+if ! command -v jq &> /dev/null; then
+  echo "Error: jq command not found (required for JSON parsing)" >&2
+  echo "Install with: sudo pacman -S jq" >&2
+  exit 1
+fi
+
+API_BASE="https://api.assemblyai.com/v2"
+
+# Step 1: Upload audio file
+echo "Uploading audio file..." >&2
+UPLOAD_RESPONSE=$(curl -s -X POST "${API_BASE}/upload" \
+  -H "Authorization: ${ASSEMBLYAI_API_KEY}" \
+  --data-binary "@${AUDIO}")
+
+UPLOAD_URL=$(echo "$UPLOAD_RESPONSE" | jq -r '.upload_url')
+
+if [[ -z "$UPLOAD_URL" ]] || [[ "$UPLOAD_URL" == "null" ]]; then
+  echo "Error: Failed to upload audio file" >&2
+  echo "$UPLOAD_RESPONSE" >&2
+  exit 1
+fi
+
+echo "Upload complete. Submitting transcription..." >&2
+
+# Step 2: Submit transcription request with speaker labels
+TRANSCRIPT_REQUEST=$(cat <<EOF
+{
+  "audio_url": "${UPLOAD_URL}",
+  "language_code": "${LANG}",
+  "speech_model": "universal",
+  "speaker_labels": true
+}
+EOF
+)
+
+TRANSCRIPT_RESPONSE=$(curl -s -X POST "${API_BASE}/transcript" \
+  -H "Authorization: ${ASSEMBLYAI_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d "$TRANSCRIPT_REQUEST")
+
+TRANSCRIPT_ID=$(echo "$TRANSCRIPT_RESPONSE" | jq -r '.id')
+
+if [[ -z "$TRANSCRIPT_ID" ]] || [[ "$TRANSCRIPT_ID" == "null" ]]; then
+  echo "Error: Failed to submit transcription" >&2
+  echo "$TRANSCRIPT_RESPONSE" >&2
+  exit 1
+fi
+
+echo "Transcription job submitted (ID: ${TRANSCRIPT_ID})" >&2
+echo "Waiting for completion..." >&2
+
+# Step 3: Poll for completion
+STATUS="queued"
+POLL_INTERVAL=3
+MAX_WAIT=1800  # 30 minutes
+ELAPSED=0
+
+while [[ "$STATUS" == "queued" ]] || [[ "$STATUS" == "processing" ]]; do
+  if [[ $ELAPSED -ge $MAX_WAIT ]]; then
+    echo "Error: Transcription timed out after ${MAX_WAIT} seconds" >&2
+    exit 1
+  fi
+
+  sleep $POLL_INTERVAL
+  ELAPSED=$((ELAPSED + POLL_INTERVAL))
+
+  RESULT=$(curl -s -X GET "${API_BASE}/transcript/${TRANSCRIPT_ID}" \
+    -H "Authorization: ${ASSEMBLYAI_API_KEY}")
+
+  STATUS=$(echo "$RESULT" | jq -r '.status')
+
+  if [[ "$STATUS" == "processing" ]]; then
+    echo "Processing... (${ELAPSED}s elapsed)" >&2
+  fi
+done
+
+# Check if transcription failed
+if [[ "$STATUS" != "completed" ]]; then
+  ERROR_MSG=$(echo "$RESULT" | jq -r '.error // "Unknown error"')
+  echo "Error: Transcription failed with status: ${STATUS}" >&2
+  echo "Error message: ${ERROR_MSG}" >&2
+  exit 1
+fi
+
+echo "Transcription complete! (${ELAPSED}s total)" >&2
+
+# Step 4: Format output with speaker labels
+# Extract utterances and format as "Speaker A: text"
+echo "$RESULT" | jq -r '
+  if .utterances then
+    .utterances[] | "Speaker \(.speaker): \(.text)"
+  else
+    .text
+  end
+'

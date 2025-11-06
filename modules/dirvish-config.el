@@ -8,15 +8,15 @@
 ;; ediff, playlist creation, path copying, and external file manager integration.
 ;;
 ;; Key Bindings:
-;; - d: Duplicate file at point (adds "-copy" before extension)
-;; - D: Delete marked files immediately (dired-do-delete)
+;; - d: Delete marked files (dired-do-delete)
+;; - D: Duplicate file at point (adds "-copy" before extension)
 ;; - g: Quick access menu (jump to predefined directories)
 ;; - G: Search with deadgrep in current directory
 ;; - f: Open system file manager in current directory
 ;; - o/O: Open file with xdg-open/custom command
 ;; - l: Copy file path (project-relative or home-relative)
 ;; - L: Copy absolute file path
-;; - P: Create M3U playlist from marked audio files
+;; - P: Copy file path (same as 'l', replaces dired-do-print)
 ;; - M-D: DWIM menu (context actions for files)
 ;; - TAB: Toggle subtree expansion
 ;; - F11: Toggle sidebar view
@@ -120,9 +120,9 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
   (setq dired-listing-switches "-l --almost-all --human-readable --group-directories-first")
   (setq dired-dwim-target t)
   (setq dired-clean-up-buffers-too t)                  ;; offer to kill buffers associated deleted files and dirs
-  (setq dired-clean-confirm-killing-deleted-buffers t) ;; don't ask; just kill buffers associated with deleted files
-  (setq dired-recursive-copies (quote always))         ;; “always” means no asking
-  (setq dired-recursive-deletes (quote top)))          ;; “top” means ask once
+  (setq dired-clean-confirm-killing-deleted-buffers nil) ;; don't ask; just kill buffers associated with deleted files
+  (setq dired-recursive-copies (quote always))         ;; "always" means no asking
+  (setq dired-recursive-deletes (quote top)))          ;; "top" means ask once
 
 ;; note: disabled as it prevents marking and moving files to another directory
 ;; (setq dired-kill-when-opening-new-dired-buffer t)   ;; don't litter by leaving buffers when navigating directories
@@ -322,13 +322,14 @@ regardless of what file or subdirectory the point is on."
    ("M-p"     . dirvish-peek-toggle)
    ("M-s"     . dirvish-setup-menu)
    ("TAB"     . dirvish-subtree-toggle)
-   ("d"       . cj/dirvish-duplicate-file)
+   ("d"       . dired-do-delete)
+   ("D"       . cj/dirvish-duplicate-file)
    ("f"       . cj/dirvish-open-file-manager-here)
    ("g"       . dirvish-quick-access)
    ("o"       . cj/xdg-open)
    ("O"       . cj/open-file-with-command)  ; Prompts for command to run
    ("r"       . dirvish-rsync)
-   ("P"       . cj/dired-create-playlist-from-marked)
+   ("P"       . cj/dired-copy-path-as-kill)
    ("s"       . dirvish-quicksort)
    ("v"       . dirvish-vc-menu)
    ("y"       . dirvish-yank-menu)))

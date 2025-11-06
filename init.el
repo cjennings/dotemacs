@@ -84,6 +84,7 @@
 (require 'pdf-config)            ;; pdf display settings
 (require 'quick-video-capture)   ;; download videos with a browser bookmark
 (require 'video-audio-recording) ;; desktop and/or audio recording via ffmpeg
+(require 'transcription-config)  ;; audio transcription using Whisper
 (require 'weather-config)        ;; utility to display the weather
 
 ;; -------------------------------- Programming --------------------------------

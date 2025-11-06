@@ -333,6 +333,29 @@ CLOSED: [2025-11-03 Sun]
 Result: Better diffs everywhere - ediff for interactive buffer comparison,
 difftastic for understanding git changes.
 
+** TODO [#C] Remove orphaned dwim-shell-security tests and unused production code
+
+Why: 12 tests in test-dwim-shell-security.el fail because the functions they test
+are inside a use-package :config block (dwim-shell-config.el:101-108) that only
+loads when the dwim-shell-command package is available. During batch testing,
+the package isn't loaded, so functions are never defined (void-function errors).
+
+These are PDF password protection and ZIP encryption functions that likely have
+never been used in practice - they're placeholder code from initial setup.
+
+What to delete:
+1. Test file: tests/test-dwim-shell-security.el (12 failing tests)
+2. Production functions in modules/dwim-shell-config.el (lines ~302-347):
+   - cj/dwim-shell-commands-pdf-password-protect (lines 302-324)
+   - cj/dwim-shell-commands-pdf-password-unprotect (lines 326-347)
+   - cj/dwim-shell-commands-create-encrypted-zip (search for it)
+   - cj/dwim-shell-commands-remove-zip-encryption (search for it)
+
+After deletion: Run "make test-all" to confirm 18 failures → 6 failures
+(only benchmark performance tests remain, which are environment-dependent).
+
+Aligns with: Reducing test failures from 18 to 6, cleaning up unused code.
+
 * Method 4: Contribute to the Emacs Ecosystem [0/4]
 
 ** TODO [#C] Set up package-lint for elisp linting (chime, org-msg, wttrin)
