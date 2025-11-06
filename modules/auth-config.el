@@ -55,5 +55,66 @@
   ;; Allow gpg-agent to cache the passphrase (400 days per gpg-agent.conf)
   (setq plstore-encrypt-to nil)) ;; Use symmetric encryption, not key-based
 
+;; ------------------------ Authentication Reset Utility -----------------------
+
+(defun cj/reset-auth-cache (&optional include-gpg-agent)
+  "Reset authentication caches when wrong password was entered.
+
+By default, only clears Emacs-side caches (auth-source, EPA file
+handler) and leaves gpg-agent's long-term cache intact.  This preserves
+your 400-day cache for GPG and SSH passphrases.
+
+With prefix argument INCLUDE-GPG-AGENT (\\[universal-argument]), also
+clears gpg-agent's password cache.  Use this when gpg-agent itself has
+cached an incorrect password.
+
+Clears:
+1. auth-source cache (Emacs-level credential cache)
+2. EPA file handler cache (encrypted file cache)
+3. gpg-agent cache (only if INCLUDE-GPG-AGENT is non-nil)
+
+Use this when you see errors like:
+  - \"Bad session key\"
+  - \"Decryption failed\"
+  - GPG repeatedly using wrong cached password"
+  (interactive "P")
+  (message "Resetting authentication caches...")
+
+  ;; Clear auth-source cache (Emacs credential cache)
+  (auth-source-forget-all-cached)
+
+  ;; Clear EPA file handler cache
+  (when (fboundp 'epa-file-clear-cache)
+    (epa-file-clear-cache))
+
+  ;; Only clear gpg-agent cache if explicitly requested
+  (if include-gpg-agent
+      (let ((result (shell-command "echo RELOADAGENT | gpg-connect-agent")))
+        (if (zerop result)
+            (message "✓ Emacs and gpg-agent caches cleared. Next access will prompt for password.")
+          (message "⚠ Warning: Failed to clear gpg-agent cache")))
+    (message "✓ Emacs caches cleared. GPG/SSH passphrases preserved for session.")))
+
+(defun cj/kill-gpg-agent ()
+  "Force kill gpg-agent (it will restart automatically on next use).
+
+This is a more aggressive reset than `cj/reset-auth-cache'.  Use this
+when gpg-agent is stuck or behaving incorrectly.
+
+The gpg-agent will automatically restart on the next GPG operation."
+  (interactive)
+  (let ((result (shell-command "gpgconf --kill gpg-agent")))
+    (if (zerop result)
+        (message "✓ gpg-agent killed. It will restart automatically on next use.")
+      (message "⚠ Warning: Failed to kill gpg-agent"))))
+
+;; Keybindings
+(with-eval-after-load 'keybindings
+  (keymap-set cj/custom-keymap "A" #'cj/reset-auth-cache))
+
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-; A" "reset auth cache"))
+
 (provide 'auth-config)
 ;;; auth-config.el ends here.
