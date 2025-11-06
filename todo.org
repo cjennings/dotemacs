@@ -17,7 +17,7 @@ If the answer is "no" to all five → DON'T ADD IT.
 V2MOM is located at: [[file:docs/emacs-config-v2mom.org][emacs-config-v2mom.org]]
 Research/ideas that don't serve vision: [[file:docs/someday-maybe.org][someday-maybe.org]]
 
-* Method 1: Make Using Emacs Frictionless [8/13]
+* Method 1: Make Using Emacs Frictionless [8/14]
 
 ** DONE [#A] Remove network check from startup (saves 1+ seconds)
 CLOSED: [2025-10-31 Fri]
@@ -193,6 +193,52 @@ Generate transcript (once transcription workflow exists).
 ** TODO [#B] Fix mail attachment workflow (currently awkward)
 
 Daily workflow improvement.
+
+** TODO [#A] Fix Google Calendar password prompts every 15 minutes
+
+IRRITANT: gcal-sync triggers password prompts approximately every 15 minutes,
+interrupting workflow and breaking focus. This defeats the purpose of having
+passphrase caching configured.
+
+**Current Setup:**
+- GPG agent configured with 400-day cache (gpg-agent.conf):
+  - default-cache-ttl 34560000
+  - max-cache-ttl 34560000
+  - allow-loopback-pinentry enabled
+- Plstore caching enabled (auth-config.el:54):
+  - plstore-cache-passphrase-for-symmetric-encryption t
+  - plstore-encrypt-to nil (symmetric encryption)
+- Auth-source cache: 24 hours (auth-config.el:31)
+- Auto-sync interval: 30 minutes (org-gcal-config.el:50)
+
+**Problem:**
+Despite proper GPG agent caching, oauth2-auto.plist prompts for passphrase
+every ~15 minutes during gcal-sync operations. This suggests:
+1. plstore may not be using GPG agent cache properly for symmetric encryption
+2. oauth2-auto token refresh might be bypassing cache
+3. EPinentry mode may need explicit configuration (currently commented out)
+
+**Goal:**
+Passphrase should be entered ONCE per Emacs session, then cached until Emacs
+closes. No interruptions during normal work.
+
+**Investigation Paths:**
+1. Check if oauth2-auto respects plstore passphrase caching
+2. Investigate plstore symmetric encryption cache behavior with GPG agent
+3. Test enabling epa-pinentry-mode 'loopback (auth-config.el:42)
+4. Check oauth2-auto token refresh cycle vs password prompt timing
+5. Consider oauth2-auto configuration options for token persistence
+6. Review org-gcal or oauth2-auto issues for similar problems
+
+**Files:**
+- modules/auth-config.el (plstore and GPG configuration)
+- modules/org-gcal-config.el (org-gcal and oauth2-auto setup)
+- ~/.gnupg/gpg-agent.conf (GPG agent cache settings)
+- oauth2-auto.plist (encrypted OAuth tokens - prompts every access?)
+
+**Related:**
+This violates the "Frictionless" value - interruptions every 15 minutes during
+calendar sync breaks concentration and workflow momentum.
 
 ** TODO [#B] Optimize org-agenda performance using built-in profiler
 
