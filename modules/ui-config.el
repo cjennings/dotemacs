@@ -50,7 +50,8 @@
 
 (setq use-file-dialog nil)									 ;; no file dialog
 (setq use-dialog-box nil)									 ;; no dialog boxes either
-(column-number-mode 1)										 ;; show column number in the modeline
+(line-number-mode 1)                                         ;; show line number in the modeline (cached)
+(column-number-mode 1)										 ;; show column number in the modeline (cached)
 (setq switch-to-buffer-obey-display-actions t)               ;; manual buffer switching obeys display action rules
 
 ;; -------------------------------- Transparency -------------------------------

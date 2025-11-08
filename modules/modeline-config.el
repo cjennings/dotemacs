@@ -78,8 +78,9 @@ Green = writeable, Red = read-only, Gold = overwrite.
 Truncates in narrow windows.  Click to switch buffers.")
 
 (defvar-local cj/modeline-position
-  '(:eval (format "L:%d C:%d" (line-number-at-pos) (current-column)))
-  "Line and column position as L:line C:col.")
+  '("L:" (:eval (format-mode-line "%l")) " C:" (:eval (format-mode-line "%c")))
+  "Line and column position as L:line C:col.
+Uses built-in cached values for performance.")
 
 (defvar cj/modeline-vc-faces
   '((added . vc-locally-added-state)

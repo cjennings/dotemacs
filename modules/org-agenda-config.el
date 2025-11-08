@@ -264,7 +264,7 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   :load-path "~/code/chime.el"
   :init
   ;; Debug mode (keep set to nil, but available for troubleshooting)
-  (setq chime-debug nil)
+  ;; (setq chime-debug nil)
   :bind
   ("C-c A" . chime-check)
   :config
