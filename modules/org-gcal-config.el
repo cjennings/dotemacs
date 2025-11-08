@@ -190,7 +190,7 @@ Useful after changing `cj/org-gcal-sync-interval-minutes'."
 
 ;; Start automatic sync timer based on user configuration
 ;; Set cj/org-gcal-sync-interval-minutes to nil to disable
-(cj/org-gcal-start-auto-sync)
+;; (cj/org-gcal-start-auto-sync)
 
 ;; Google Calendar keymap and keybindings
 (defvar-keymap cj/gcal-map

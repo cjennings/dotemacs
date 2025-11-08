@@ -249,7 +249,8 @@ Returns the transformed string without modifying the buffer."
   "r" #'cj/reverse-lines
   "n" #'cj/number-lines
   "A" #'cj/alphabetize-region
-  "L" #'cj/comma-separated-text-to-lines)
+  "L" #'cj/comma-separated-text-to-lines
+  "o" #'cj/org-sort-by-todo-and-priority)
 
 (keymap-set cj/custom-keymap "o" cj/ordering-map)
 (with-eval-after-load 'which-key
@@ -262,7 +263,8 @@ Returns the transformed string without modifying the buffer."
     "C-; o r" "reverse lines"
     "C-; o n" "number lines"
     "C-; o A" "alphabetize"
-    "C-; o L" "comma to lines"))
+    "C-; o L" "comma to lines"
+    "C-; o o" "org: sort by TODO+priority"))
 
 (provide 'custom-ordering)
 ;;; custom-ordering.el ends here.

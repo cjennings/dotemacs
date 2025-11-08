@@ -40,7 +40,11 @@
   :config
   (epa-file-enable)
   ;; (setq epa-pinentry-mode 'loopback)  ;; emacs request passwords in minibuffer
-  (setq epg-gpg-program "gpg2"))  ;; force use gpg2 (not gpg v.1)
+  (setq epg-gpg-program "gpg2")  ;; force use gpg2 (not gpg v.1)
+
+  ;; Update gpg-agent with current DISPLAY environment
+  ;; This ensures pinentry can open GUI windows when Emacs starts
+  (call-process "gpg-connect-agent" nil nil nil "updatestartuptty" "/bye"))
 
 ;; ---------------------------------- Plstore ----------------------------------
 ;; Encrypted storage used by oauth2-auto for Google Calendar tokens.

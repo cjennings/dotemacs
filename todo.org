@@ -17,7 +17,89 @@ If the answer is "no" to all five → DON'T ADD IT.
 V2MOM is located at: [[file:docs/emacs-config-v2mom.org][emacs-config-v2mom.org]]
 Research/ideas that don't serve vision: [[file:docs/someday-maybe.org][someday-maybe.org]]
 
-* Method 1: Make Using Emacs Frictionless [8/18]
+* Method 1: Make Using Emacs Frictionless [10/18]
+
+** TODO [#A] Fix Google Calendar password prompts every 15 minutes
+
+IRRITANT: gcal-sync triggers password prompts approximately every 15 minutes,
+interrupting workflow and breaking focus. This defeats the purpose of having
+passphrase caching configured.
+
+**Current Setup:**
+- GPG agent configured with 400-day cache (gpg-agent.conf):
+  - default-cache-ttl 34560000
+  - max-cache-ttl 34560000
+  - allow-loopback-pinentry enabled
+- Plstore caching enabled (auth-config.el:54):
+  - plstore-cache-passphrase-for-symmetric-encryption t
+  - plstore-encrypt-to nil (symmetric encryption)
+- Auth-source cache: 24 hours (auth-config.el:31)
+- Auto-sync interval: 30 minutes (org-gcal-config.el:50)
+
+**Problem:**
+Despite proper GPG agent caching, oauth2-auto.plist prompts for passphrase
+every ~15 minutes during gcal-sync operations. This suggests:
+1. plstore may not be using GPG agent cache properly for symmetric encryption
+2. oauth2-auto token refresh might be bypassing cache
+3. EPinentry mode may need explicit configuration (currently commented out)
+
+**Goal:**
+Passphrase should be entered ONCE per Emacs session, then cached until Emacs
+closes. No interruptions during normal work.
+
+**Investigation Paths:**
+1. Check if oauth2-auto respects plstore passphrase caching
+2. Investigate plstore symmetric encryption cache behavior with GPG agent
+3. Test enabling epa-pinentry-mode 'loopback (auth-config.el:42)
+4. Check oauth2-auto token refresh cycle vs password prompt timing
+5. Consider oauth2-auto configuration options for token persistence
+6. Review org-gcal or oauth2-auto issues for similar problems
+
+**Files:**
+- modules/auth-config.el (plstore and GPG configuration)
+- modules/org-gcal-config.el (org-gcal and oauth2-auto setup)
+- ~/.gnupg/gpg-agent.conf (GPG agent cache settings)
+- oauth2-auto.plist (encrypted OAuth tokens - prompts every access?)
+
+**Related:**
+This violates the "Frictionless" value - interruptions every 15 minutes during
+calendar sync breaks concentration and workflow momentum.
+
+** TODO [#B] Fix org-noter (reading/annotation workflow currently "so painful")
+
+High priority - daily pain point.
+
+** TODO [#B] Fix mail attachment workflow (currently awkward)
+
+Daily workflow improvement.
+
+** TODO [#B] Toggle org-appear on/off
+
+When org links have long paths and point is on them, they expand and make text difficult to read
+(especially in org-tables). Need ability to toggle org-appear: on for editing links, off for reading.
+Moved from inbox 2025-11-07.
+
+** TODO [#B] Optimize org-agenda performance using built-in profiler
+
+THE BOTTLENECK. Currently 30+ seconds, target < 5 seconds.
+Use M-x profiler-start before Method 3 debug-profiling.el is built.
+
+** TODO [#B] Optimize org-capture target building performance
+
+15-20 seconds every time capturing a task (12+ times/day).
+Major daily bottleneck - minutes lost waiting, plus context switching cost.
+
+** TODO Frequently used org-mode keybindings under C-; o
+
+Add quick access keybindings for common org commands (org-table, org-reveal, etc.) under C-; o.
+Makes org-mode operations more frictionless.
+Moved from inbox 2025-11-07.
+
+** TODO [#D] Fix EMMS keybinding inconsistency with other buffers
+
+EMMS keybindings conflict with standard buffer keybindings, causing mistypes.
+Results in accidental destructive actions (clearing buffers), requires undo + context switch.
+Violates Intuitive value - muscle memory should help, not hurt.
 
 ** DONE [#A] Remove network check from startup (saves 1+ seconds)
 CLOSED: [2025-10-31 Fri]
@@ -58,6 +140,80 @@ CLOSED: [2025-10-31 Fri]
 
 Bound to C-; b D. Weekly need satisfied.
 
+** DONE [#A] Add comprehensive test coverage for video-audio-recording module
+CLOSED: [2025-11-03 Sun]
+
+✅ Created comprehensive test suite following quality-engineer.org standards:
+- 9 test files (8 unit + 1 integration)
+- 83 test cases with 100% pass rate
+- Test categories: Normal, Boundary, Error cases
+- 6 test fixtures for reproducible testing
+- Mocking strategy using cl-letf
+- Integration test validates complete parse→group→friendly-names workflow
+- Tests document bugs in legacy detect functions
+- Critical validation: Bluetooth MAC normalization across component boundaries
+
+✅ Refactored code for testability:
+- Extracted `cj/recording--parse-pactl-output` internal parser
+- Separated I/O from business logic
+
+✅ Fixed all linting warnings (checkdoc):
+- 6 spacing/grammar issues resolved
+- `make lint` now passes cleanly
+
+✅ All changes committed and pushed to all remotes (origin + github)
+
+Commits:
+- 0a69c58: test: Add comprehensive test suite for video-audio-recording module
+- b086539: style: Fix checkdoc warnings in video-audio-recording.el
+
+*** TODO [#C] Add device testing command cj/recording-test-devices
+Records 3 seconds of audio.
+Plays it back.
+Confirms devices work before real recording.
+
+*** TODO [#C] Add recording status display (optional via flag, default off)
+Show "Recording: 00:05:23" in modeline or echo area.
+Timer showing duration.
+File size updating.
+
+*** TODO [#C] Add recording presets
+Screencast (video + audio, high quality).
+Podcast (audio only, voice optimized).
+Meeting (balanced, lower filesize).
+Quick note (audio, low quality, small file).
+
+*** TODO [#C] Build recording history buffer
+*Recordings* buffer showing history.
+Duration, file size, location.
+Quick actions: play, delete, rename, move.
+
+*** TODO [#C] Add post-processing hooks
+Auto-compress after recording.
+Move to cloud sync directory.
+Generate transcript (once transcription workflow exists).
+
+** DONE [#A] Delay in modeline lines and columns update
+CLOSED: [2025-11-08 Fri]
+
+✅ Fixed modeline position lag by replacing expensive function calls with cached values.
+
+**Problem:**
+- Line/column numbers lagged behind cursor movement
+- Used `line-number-at-pos` which counts from buffer start on every update
+- Performance degraded in large files
+
+**Solution:**
+- Replaced with built-in format specifiers `%l` and `%c` (modeline-config.el:81)
+- These use cached values maintained by line-number-mode and column-number-mode
+- Explicitly enabled line-number-mode in ui-config.el:53
+- Zero performance overhead - cached values update instantly
+
+**Result:**
+- Modeline position now updates instantly with cursor movement
+- No lag, even in large files
+- Maintains same "L:line C:col" format
+
 ** DONE [#B] Fix go-ts-mode-map keybinding error (void-variable)
 CLOSED: [2025-11-03 Sun]
 
@@ -72,10 +228,6 @@ Location: modules/prog-go.el - trying to bind keys before mode loads.
 
 Fix was: Wrap keybinding in hook function instead of :bind clause.
 Result: No more void-variable error, keybinding works correctly.
-
-** TODO [#B] Fix org-noter (reading/annotation workflow currently "so painful")
-
-High priority - daily pain point.
 
 ** DONE [#B] Fix video/audio recording module (use constantly, just broke)
 CLOSED: [2025-11-03 Sun]
@@ -137,153 +289,6 @@ Check process status after starting.
 Parse ffmpeg output for errors.
 Show actual ffmpeg command for debugging.
 
-** DONE [#A] Add comprehensive test coverage for video-audio-recording module
-CLOSED: [2025-11-03 Sun]
-
-✅ Created comprehensive test suite following quality-engineer.org standards:
-- 9 test files (8 unit + 1 integration)
-- 83 test cases with 100% pass rate
-- Test categories: Normal, Boundary, Error cases
-- 6 test fixtures for reproducible testing
-- Mocking strategy using cl-letf
-- Integration test validates complete parse→group→friendly-names workflow
-- Tests document bugs in legacy detect functions
-- Critical validation: Bluetooth MAC normalization across component boundaries
-
-✅ Refactored code for testability:
-- Extracted `cj/recording--parse-pactl-output` internal parser
-- Separated I/O from business logic
-
-✅ Fixed all linting warnings (checkdoc):
-- 6 spacing/grammar issues resolved
-- `make lint` now passes cleanly
-
-✅ All changes committed and pushed to all remotes (origin + github)
-
-Commits:
-- 0a69c58: test: Add comprehensive test suite for video-audio-recording module
-- b086539: style: Fix checkdoc warnings in video-audio-recording.el
-
-*** TODO [#C] Add device testing command cj/recording-test-devices
-Records 3 seconds of audio.
-Plays it back.
-Confirms devices work before real recording.
-
-*** TODO [#C] Add recording status display (optional via flag, default off)
-Show "Recording: 00:05:23" in modeline or echo area.
-Timer showing duration.
-File size updating.
-
-*** TODO [#C] Add recording presets
-Screencast (video + audio, high quality).
-Podcast (audio only, voice optimized).
-Meeting (balanced, lower filesize).
-Quick note (audio, low quality, small file).
-
-*** TODO [#C] Build recording history buffer
-*Recordings* buffer showing history.
-Duration, file size, location.
-Quick actions: play, delete, rename, move.
-
-*** TODO [#C] Add post-processing hooks
-Auto-compress after recording.
-Move to cloud sync directory.
-Generate transcript (once transcription workflow exists).
-
-** TODO [#B] Fix mail attachment workflow (currently awkward)
-
-Daily workflow improvement.
-
-** DONE cj/flyspell-then-abbrev loses keybinding in scratch org-mode buffer
-CLOSED: [2025-11-08 Fri]
-
-✅ Fixed keybinding issue in org-mode buffers.
-
-**Problem:**
-1. Autoload cookies were just comments and never executed
-2. Org-mode was overriding C-' with org-cycle-agenda-files
-
-**Solution:**
-- Set keybindings directly when module loads (lines 239-240)
-- Explicitly override org-mode's C-' after org loads (lines 244-245)
-- Both C-' and C-c f now work correctly in all buffers including org-mode
-
-File modified: modules/flyspell-and-abbrev.el:235-251
-
-** TODO [#A] Delay in modeline lines and columns update
-
-Performance issue where line/column numbers in modeline lag behind cursor movement.
-Breaks flow and makes navigation feel sluggish.
-Moved from inbox 2025-11-07.
-
-** TODO Frequently used org-mode keybindings under C-; o
-
-Add quick access keybindings for common org commands (org-table, org-reveal, etc.) under C-; o.
-Makes org-mode operations more frictionless.
-Moved from inbox 2025-11-07.
-
-** TODO [#B] Toggle org-appear on/off
-
-When org links have long paths and point is on them, they expand and make text difficult to read
-(especially in org-tables). Need ability to toggle org-appear: on for editing links, off for reading.
-Moved from inbox 2025-11-07.
-
-** TODO [#A] Fix Google Calendar password prompts every 15 minutes
-
-IRRITANT: gcal-sync triggers password prompts approximately every 15 minutes,
-interrupting workflow and breaking focus. This defeats the purpose of having
-passphrase caching configured.
-
-**Current Setup:**
-- GPG agent configured with 400-day cache (gpg-agent.conf):
-  - default-cache-ttl 34560000
-  - max-cache-ttl 34560000
-  - allow-loopback-pinentry enabled
-- Plstore caching enabled (auth-config.el:54):
-  - plstore-cache-passphrase-for-symmetric-encryption t
-  - plstore-encrypt-to nil (symmetric encryption)
-- Auth-source cache: 24 hours (auth-config.el:31)
-- Auto-sync interval: 30 minutes (org-gcal-config.el:50)
-
-**Problem:**
-Despite proper GPG agent caching, oauth2-auto.plist prompts for passphrase
-every ~15 minutes during gcal-sync operations. This suggests:
-1. plstore may not be using GPG agent cache properly for symmetric encryption
-2. oauth2-auto token refresh might be bypassing cache
-3. EPinentry mode may need explicit configuration (currently commented out)
-
-**Goal:**
-Passphrase should be entered ONCE per Emacs session, then cached until Emacs
-closes. No interruptions during normal work.
-
-**Investigation Paths:**
-1. Check if oauth2-auto respects plstore passphrase caching
-2. Investigate plstore symmetric encryption cache behavior with GPG agent
-3. Test enabling epa-pinentry-mode 'loopback (auth-config.el:42)
-4. Check oauth2-auto token refresh cycle vs password prompt timing
-5. Consider oauth2-auto configuration options for token persistence
-6. Review org-gcal or oauth2-auto issues for similar problems
-
-**Files:**
-- modules/auth-config.el (plstore and GPG configuration)
-- modules/org-gcal-config.el (org-gcal and oauth2-auto setup)
-- ~/.gnupg/gpg-agent.conf (GPG agent cache settings)
-- oauth2-auto.plist (encrypted OAuth tokens - prompts every access?)
-
-**Related:**
-This violates the "Frictionless" value - interruptions every 15 minutes during
-calendar sync breaks concentration and workflow momentum.
-
-** TODO [#B] Optimize org-agenda performance using built-in profiler
-
-THE BOTTLENECK. Currently 30+ seconds, target < 5 seconds.
-Use M-x profiler-start before Method 3 debug-profiling.el is built.
-
-** TODO [#B] Optimize org-capture target building performance
-
-15-20 seconds every time capturing a task (12+ times/day).
-Major daily bottleneck - minutes lost waiting, plus context switching cost.
-
 ** DONE [#C] Fix grammar checker performance (currently disabled)
 CLOSED: [2025-11-04 Mon]
 
@@ -305,11 +310,21 @@ LanguageTool catches:
 
 Workflow: Open org/text/markdown file → press C-; ? → see errors in *Flycheck errors* buffer
 
-** TODO [#D] Fix EMMS keybinding inconsistency with other buffers
+** DONE cj/flyspell-then-abbrev loses keybinding in scratch org-mode buffer
+CLOSED: [2025-11-08 Fri]
 
-EMMS keybindings conflict with standard buffer keybindings, causing mistypes.
-Results in accidental destructive actions (clearing buffers), requires undo + context switch.
-Violates Intuitive value - muscle memory should help, not hurt.
+✅ Fixed keybinding issue in org-mode buffers.
+
+**Problem:**
+1. Autoload cookies were just comments and never executed
+2. Org-mode was overriding C-' with org-cycle-agenda-files
+
+**Solution:**
+- Set keybindings directly when module loads (lines 239-240)
+- Explicitly override org-mode's C-' after org loads (lines 244-245)
+- Both C-' and C-c f now work correctly in all buffers including org-mode
+
+File modified: modules/flyspell-and-abbrev.el:235-251
 
 * Method 2: Stop Problems Before They Appear [3/5]
 
@@ -375,7 +390,7 @@ CLOSED: [2025-11-03 Sun]
 
 Already using prescient with vertico. Extend to Corfu after migration.
 
-* Method 3: Make *Fixing* Emacs Frictionless [1/4]
+* Method 3: Make *Fixing* Emacs Frictionless [1/5]
 
 ** TODO [#B] Build debug-profiling.el module
 
@@ -484,25 +499,4 @@ Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 Can't research next thing until current thing is implemented.
 
 * Emacs Config Inbox
-** DONE mu4e issue No sent emails since August?
-CLOSED: [2025-11-08 Fri]
-
-✅ Fixed cmail (c@cjennings.net) sent folder not syncing since May.
-
-**Root Cause:**
-- mbsync was using `Patterns *` which processes folders alphabetically
-- Errors in "Drafts" and "All Mail" folders caused mbsync to abort early
-- Sent folder (alphabetically after Drafts) was never reached
-
-**The Fix:**
-- Changed ~/.mbsyncrc to use explicit channels like Gmail configuration
-- Now syncs 6 folders independently: INBOX, Sent, Trash, Archive, Starred, Spam
-- Omitted problematic Drafts and "All Mail" folders
-- Errors in one folder no longer prevent other folders from syncing
-
-**Result:**
-- Synced 136 missing sent messages (May through November 7)
-- Gmail account was unaffected (always worked correctly)
-- Automatic syncs now include Sent folder
-
-File modified: ~/.mbsyncrc:80-143 
+* Emacs Config Resolved
