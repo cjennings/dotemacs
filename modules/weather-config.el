@@ -14,7 +14,8 @@
 (add-to-list 'load-path "/home/cjennings/code/wttrin")
 
 ;; Set debug flag BEFORE loading wttrin (checked at load time)
-(setq wttrin-debug nil)
+;; Change this to t to enable debug logging
+(setq wttrin-debug t)
 
 (use-package wttrin
   ;; Uncomment the next line to use vc-install instead of local directory:
@@ -27,6 +28,7 @@
   :bind
   ("M-W" . wttrin)
   :custom
+  ;; wttrin-debug must be set BEFORE loading (see line 17 above)
   (wttrin-unit-system "u")
   (wttrin-mode-line-favorite-location "New Orleans, LA")
   (wttrin-mode-line-refresh-interval 900)  ; 15 minutes
