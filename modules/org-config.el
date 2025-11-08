@@ -225,6 +225,7 @@
 
 (use-package org-appear
   :hook (org-mode . org-appear-mode)
+  :disabled t
   :custom
   (org-appear-autoemphasis t)   ;; Show * / _ when cursor is on them
   (org-appear-autolinks t)      ;; Also works for links
@@ -273,6 +274,29 @@ the current buffer's cache. Useful when encountering parsing errors like
           (org-element-cache-reset)
           (message "Cleared org-element cache for current buffer"))
       (user-error "Current buffer is not in org-mode"))))
+
+;; ----------------------- Org Multi-Level Sorting -----------------------------
+
+(defun cj/org-sort-by-todo-and-priority ()
+  "Sort org entries by TODO status (TODO before DONE) and priority (A to D).
+Sorts the current level's entries. Within each TODO state group, entries are
+sorted by priority. Uses stable sorting: sort by priority first, then by TODO
+status to preserve priority ordering within TODO groups."
+  (interactive)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Current buffer is not in org-mode"))
+  (save-excursion
+    ;; First sort by priority (A, B, C, D, then no priority)
+    ;; Ignore "Nothing to sort" errors for empty sections
+    (condition-case nil
+        (org-sort-entries nil ?p)
+      (user-error nil))
+    ;; Then sort by TODO status (TODO before DONE)
+    ;; This preserves the priority ordering within each TODO group
+    (condition-case nil
+        (org-sort-entries nil ?o)
+      (user-error nil)))
+  (message "Sorted entries by TODO status and priority"))
 
 ;; which-key labels for org-table-map
 (with-eval-after-load 'which-key
