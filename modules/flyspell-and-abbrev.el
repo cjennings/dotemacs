@@ -234,10 +234,15 @@ Press C-' repeatedly to step through misspellings one at a time."
 
 ;; -------------------------------- Keybindings --------------------------------
 ;; Global keybindings for spell checking commands
-;; With autoload cookies, these will lazy-load the file when pressed
 
-;;;###autoload (keymap-set global-map "C-c f" #'cj/flyspell-toggle)
-;;;###autoload (keymap-set global-map "C-'" #'cj/flyspell-then-abbrev)
+;; Set global keybindings
+(keymap-set global-map "C-c f" #'cj/flyspell-toggle)
+(keymap-set global-map "C-'" #'cj/flyspell-then-abbrev)
+
+;; Override org-mode's C-' binding (org-cycle-agenda-files)
+;; Org-mode binds C-' globally, but we want our spell check binding instead
+(with-eval-after-load 'org
+  (keymap-set org-mode-map "C-'" #'cj/flyspell-then-abbrev))
 
 ;; which-key labels
 (with-eval-after-load 'which-key
