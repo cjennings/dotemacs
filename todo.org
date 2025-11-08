@@ -17,7 +17,7 @@ If the answer is "no" to all five → DON'T ADD IT.
 V2MOM is located at: [[file:docs/emacs-config-v2mom.org][emacs-config-v2mom.org]]
 Research/ideas that don't serve vision: [[file:docs/someday-maybe.org][someday-maybe.org]]
 
-* Method 1: Make Using Emacs Frictionless [8/14]
+* Method 1: Make Using Emacs Frictionless [8/18]
 
 ** DONE [#A] Remove network check from startup (saves 1+ seconds)
 CLOSED: [2025-10-31 Fri]
@@ -193,6 +193,29 @@ Generate transcript (once transcription workflow exists).
 ** TODO [#B] Fix mail attachment workflow (currently awkward)
 
 Daily workflow improvement.
+
+** TODO cj/flyspell-then-abbrev loses keybinding in scratch org-mode buffer
+
+Keybinding breaks in scratch buffer when using org-mode. Affects daily editing workflow.
+Moved from inbox 2025-11-07.
+
+** TODO [#A] Delay in modeline lines and columns update
+
+Performance issue where line/column numbers in modeline lag behind cursor movement.
+Breaks flow and makes navigation feel sluggish.
+Moved from inbox 2025-11-07.
+
+** TODO Frequently used org-mode keybindings under C-; o
+
+Add quick access keybindings for common org commands (org-table, org-reveal, etc.) under C-; o.
+Makes org-mode operations more frictionless.
+Moved from inbox 2025-11-07.
+
+** TODO [#B] Toggle org-appear on/off
+
+When org links have long paths and point is on them, they expand and make text difficult to read
+(especially in org-tables). Need ability to toggle org-appear: on for editing links, off for reading.
+Moved from inbox 2025-11-07.
 
 ** TODO [#A] Fix Google Calendar password prompts every 15 minutes
 
@@ -450,4 +473,4 @@ Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 Can't research next thing until current thing is implemented.
 
 * Emacs Config Inbox
-** TODO cj/flyspell-then-abbrev loses keybinding in scratch org-mode buffer
+** TODO mu4e issue No sent emails since August? 
