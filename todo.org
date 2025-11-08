@@ -194,10 +194,21 @@ Generate transcript (once transcription workflow exists).
 
 Daily workflow improvement.
 
-** TODO cj/flyspell-then-abbrev loses keybinding in scratch org-mode buffer
+** DONE cj/flyspell-then-abbrev loses keybinding in scratch org-mode buffer
+CLOSED: [2025-11-08 Fri]
 
-Keybinding breaks in scratch buffer when using org-mode. Affects daily editing workflow.
-Moved from inbox 2025-11-07.
+✅ Fixed keybinding issue in org-mode buffers.
+
+**Problem:**
+1. Autoload cookies were just comments and never executed
+2. Org-mode was overriding C-' with org-cycle-agenda-files
+
+**Solution:**
+- Set keybindings directly when module loads (lines 239-240)
+- Explicitly override org-mode's C-' after org loads (lines 244-245)
+- Both C-' and C-c f now work correctly in all buffers including org-mode
+
+File modified: modules/flyspell-and-abbrev.el:235-251
 
 ** TODO [#A] Delay in modeline lines and columns update
 
@@ -473,4 +484,25 @@ Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 Can't research next thing until current thing is implemented.
 
 * Emacs Config Inbox
-** TODO mu4e issue No sent emails since August? 
+** DONE mu4e issue No sent emails since August?
+CLOSED: [2025-11-08 Fri]
+
+✅ Fixed cmail (c@cjennings.net) sent folder not syncing since May.
+
+**Root Cause:**
+- mbsync was using `Patterns *` which processes folders alphabetically
+- Errors in "Drafts" and "All Mail" folders caused mbsync to abort early
+- Sent folder (alphabetically after Drafts) was never reached
+
+**The Fix:**
+- Changed ~/.mbsyncrc to use explicit channels like Gmail configuration
+- Now syncs 6 folders independently: INBOX, Sent, Trash, Archive, Starred, Spam
+- Omitted problematic Drafts and "All Mail" folders
+- Errors in one folder no longer prevent other folders from syncing
+
+**Result:**
+- Synced 136 missing sent messages (May through November 7)
+- Gmail account was unaffected (always worked correctly)
+- Automatic syncs now include Sent folder
+
+File modified: ~/.mbsyncrc:80-143 
