@@ -18,6 +18,7 @@
 
 ;; ---------------------------- System Configuration ---------------------------
 
+(require 'system-lib)            ;; low-level system utility functions
 (require 'config-utilities)      ;; enable for extra Emacs config debug helpers
 (require 'user-constants)        ;; paths for files referenced in this config
 (require 'host-environment)      ;; convenience functions re: host environment
