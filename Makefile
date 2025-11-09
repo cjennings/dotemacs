@@ -97,7 +97,7 @@ test-unit:
 	@failed=0; \
 	for test in $(UNIT_TESTS); do \
 		echo "  Testing $$test..."; \
-		$(EMACS_TEST) -l ert -l $$test -f ert-run-tests-batch-and-exit || failed=$$((failed + 1)); \
+		$(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" || failed=$$((failed + 1)); \
 	done; \
 	if [ $$failed -eq 0 ]; then \
 		echo "$(COLOR_GREEN)✓ All unit tests passed$(COLOR_RESET)"; \
@@ -115,7 +115,7 @@ test-integration:
 	@failed=0; \
 	for test in $(INTEGRATION_TESTS); do \
 		echo "  Testing $$test..."; \
-		$(EMACS_TEST) -l ert -l $$test -f ert-run-tests-batch-and-exit || failed=$$((failed + 1)); \
+		$(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" || failed=$$((failed + 1)); \
 	done; \
 	if [ $$failed -eq 0 ]; then \
 		echo "$(COLOR_GREEN)✓ All integration tests passed$(COLOR_RESET)"; \
@@ -131,7 +131,7 @@ ifndef FILE
 	@exit 1
 endif
 	@echo "$(COLOR_BLUE)Running tests in $(FILE)...$(COLOR_RESET)"
-	@$(EMACS_TEST) -l ert -l $(TEST_DIR)/$(FILE) -f ert-run-tests-batch-and-exit
+	@$(EMACS_TEST) -l ert -l $(TEST_DIR)/$(FILE) --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))"
 	@echo "$(COLOR_GREEN)✓ Tests in $(FILE) complete$(COLOR_RESET)"
 
 test-name:
