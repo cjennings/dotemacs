@@ -264,7 +264,7 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   :load-path "~/code/chime.el"
   :init
   ;; Debug mode (keep set to nil, but available for troubleshooting)
-  ;; (setq chime-debug nil)
+  (setq chime-debug nil)
   :bind
   ("C-c A" . chime-check)
   :config
@@ -298,6 +298,9 @@ This allows a line to show in an agenda without being scheduled or a deadline."
 
   ;; Notification title
   (setq chime-notification-title "Reminder")
+
+  ;; Calendar URL
+  (setq chime-calendar-url "https://calendar.google.com/calendar/u/0/r")
 
   ;; Enable chime-mode
   (chime-mode 1))
