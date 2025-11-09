@@ -251,14 +251,71 @@ Do not save the deleted text in the kill ring."
   (kill-new (buffer-name))
   (message "Copied: %s" (buffer-name)))
 
+(require 'system-lib)
+(declare-function ansi-color-apply-on-region "ansi-color")
+
+(defun cj/--diff-with-difftastic (file1 file2 buffer)
+  "Run difftastic on FILE1 and FILE2, output to BUFFER.
+Applies ANSI color and sets up special-mode for navigation."
+  (with-current-buffer buffer
+    (let ((inhibit-read-only t))
+      (erase-buffer)
+      (insert (format "Difftastic diff: %s (saved) vs buffer (modified)\n\n"
+                      (file-name-nondirectory file1)))
+      (call-process "difft" nil t nil
+                    "--color" "always"
+                    "--display" "side-by-side-show-both"
+                    file1 file2)
+      (require 'ansi-color)
+      (ansi-color-apply-on-region (point-min) (point-max))
+      (special-mode)
+      (goto-char (point-min)))))
+
+(defun cj/--diff-with-regular-diff (file1 file2 buffer)
+  "Run regular unified diff on FILE1 and FILE2, output to BUFFER.
+Sets up diff-mode for navigation."
+  (with-current-buffer buffer
+    (let ((inhibit-read-only t))
+      (erase-buffer)
+      (insert (format "Unified diff: %s (saved) vs buffer (modified)\n\n"
+                      (file-name-nondirectory file1)))
+      (call-process "diff" nil t nil "-u" file1 file2)
+      (diff-mode)
+      (goto-char (point-min)))))
+
 (defun cj/diff-buffer-with-file ()
-  "Compare the current modified buffer with the saved version using ediff.
-Uses the same ediff configuration from diff-config.el (horizontal split, j/k navigation).
+  "Compare the current modified buffer with the saved version.
+Uses difftastic if available for syntax-aware diffing, falls back to regular diff.
+Shows output in a separate buffer.
 Signal an error if the buffer is not visiting a file."
   (interactive)
-  (if (buffer-file-name)
-      (ediff-current-file)
-    (user-error "Current buffer is not visiting a file")))
+  (unless (buffer-file-name)
+    (user-error "Current buffer is not visiting a file"))
+  (let* ((file (buffer-file-name))
+         (file-ext (file-name-extension file t))  ; includes the dot
+         (temp-file (make-temp-file "buffer-diff-" nil file-ext))
+         (buffer-content (buffer-string)))  ; Capture BEFORE with-temp-file!
+    (unwind-protect
+        (progn
+          ;; Write current buffer content to temp file
+          (with-temp-file temp-file
+            (insert buffer-content))
+          ;; Check if there are any differences first
+          (if (zerop (call-process "diff" nil nil nil "-q" file temp-file))
+              (message "No differences between buffer and file")
+            ;; Run diff/difftastic and display in buffer
+            (let* ((using-difftastic (cj/executable-exists-p "difft"))
+                   (buffer-name (if using-difftastic
+                                    "*Diff (difftastic)*"
+                                  "*Diff (unified)*"))
+                   (diff-buffer (get-buffer-create buffer-name)))
+              (if using-difftastic
+                  (cj/--diff-with-difftastic file temp-file diff-buffer)
+                (cj/--diff-with-regular-diff file temp-file diff-buffer))
+              (display-buffer diff-buffer))))
+      ;; Clean up temp file
+      (when (file-exists-p temp-file)
+        (delete-file temp-file)))))
 
 ;; --------------------------- Buffer And File Keymap --------------------------
 
