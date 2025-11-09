@@ -1,4 +1,4 @@
-#+TITLE: Inbox - V2MOM Aligned Tasks
+#+TITLE: Emacs Config V2MOM and Tasks
 #+AUTHOR: Craig Jennings
 #+DATE: 2025-10-31
 #+FILETAGS: :v2mom:active:
@@ -498,5 +498,1454 @@ Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 
 Can't research next thing until current thing is implemented.
 
-* Emacs Config Inbox
 * Emacs Config Resolved
+* Emacs Config Inbox
+
+** TODO [#B] Fix tests or remove code for 12 dwim-shell-security test failures
+
+All 12 tests in test-dwim-shell-security.el fail because the production functions
+they test are inside a use-package :config block that only loads when dwim-shell-command
+package is available. During batch testing, functions are never defined (void-function errors).
+
+**Current Failures:**
+1. test-dwim-archive-temp-file-cleanup-on-error-error
+2. test-dwim-archive-very-long-password-boundary
+3. test-dwim-create-encrypted-zip-no-password-in-command-normal
+4. test-dwim-create-encrypted-zip-uses-7z-normal
+5. test-dwim-multiple-temp-file-cleanup-error
+6. test-dwim-pdf-password-empty-password-boundary
+7. test-dwim-pdf-password-protect-creates-temp-file-normal
+8. test-dwim-pdf-password-protect-no-password-in-command-normal
+9. test-dwim-pdf-password-special-characters-boundary
+10. test-dwim-pdf-password-temp-file-cleanup-on-error-error
+11. test-dwim-pdf-password-unprotect-creates-temp-file-normal
+12. test-dwim-remove-zip-encryption-uses-7z-normal
+
+**Problem:**
+These are PDF password protection and ZIP encryption functions that likely have
+never been used in practice - placeholder code from initial dwim-shell setup.
+
+**Related TODO:**
+There's already a TODO for this at line 432: "Remove orphaned dwim-shell-security
+tests and unused production code". This task is to execute that TODO.
+
+**What to Delete:**
+1. **Test file**: tests/test-dwim-shell-security.el (entire file, 12 tests)
+2. **Production functions** in modules/dwim-shell-config.el:
+   - cj/dwim-shell-commands-pdf-password-protect (lines ~302-324)
+   - cj/dwim-shell-commands-pdf-password-unprotect (lines ~326-347)
+   - cj/dwim-shell-commands-create-encrypted-zip (search for it)
+   - cj/dwim-shell-commands-remove-zip-encryption (search for it)
+
+**Investigation First:**
+1. Search git history: Have these functions ever been called?
+2. Check if any keybindings reference them
+3. Confirm they're not used in any other modules
+4. Document why we're removing (unused, untested in practice)
+
+**After Deletion:**
+- Run `make test` to confirm: 18 failures → 2 failures
+- Only 2 benchmark tests remain (separate TODO above)
+- Cleaner codebase, no orphaned tests
+
+**Related Files:**
+- tests/test-dwim-shell-security.el (DELETE)
+- modules/dwim-shell-config.el (remove 4 functions)
+- Test output showing void-function errors
+
+**Related Docs:**
+- Original TODO at line 432 in this file
+- V2MOM Method 2: Stop Problems Before They Appear (remove unused code)
+- Test run output: 18 total failures (12 dwim + 2 benchmark + 4 other checks)
+
+**Success Criteria:**
+- test-dwim-shell-security.el deleted
+- 4 unused functions removed from dwim-shell-config.el
+- `make test` shows 2 failures (only benchmarks remain)
+- No broken functionality (functions were never used)
+- Git commit documents why removal is safe
+
+**Note:**
+This is the largest source of test failures. Completing this + benchmark fix
+achieves clean test suite (0 unexpected failures).
+
+** TODO [#B] Review and fix 2 lorem-optimum benchmark tests
+
+Two benchmark tests are failing because they take MINUTES instead of seconds.
+These tests have been DISABLED with :tags '(:slow) until lorem-optimum is optimized.
+
+**CURRENT STATE (2025-11-09):**
+✓ Tests disabled with :tags '(:slow) to prevent blocking test suite
+✓ Docstrings updated to explain why disabled
+✓ Tests will be skipped in normal test runs
+
+**Current Failures:**
+From test run output:
+1. `benchmark-learn-10k-words` - Expected < 500ms, **actually takes MINUTES** (>100x slower)
+2. `benchmark-tokenize-10k-words` - Expected < 50ms, **actually takes MINUTES** (>1000x slower)
+
+**Root Cause:**
+The lorem-optimum implementation is severely underperforming. Unit tests should never
+take minutes to run. This needs major performance optimization work.
+
+**Problem:**
+- Tests use absolute time thresholds (< 500ms, < 50ms)
+- Thresholds were likely set on a different machine/environment
+- Batch mode testing may be slower than interactive Emacs
+- System load affects results (makes tests flaky)
+
+**Investigation:**
+1. Review test file: tests/test-lorem-optimum-benchmark.el
+2. Check actual performance numbers on this system
+3. Understand what these benchmarks are measuring:
+   - Learning 10k words (building Markov chain?)
+   - Tokenizing 10k words (parsing text?)
+4. Determine if these are critical performance indicators or just smoke tests
+
+**Possible Solutions:**
+A. **Adjust thresholds** to realistic values for this environment
+   - Run tests multiple times to get consistent baseline
+   - Set threshold to 2x baseline for headroom
+   - Document why these thresholds were chosen
+
+B. **Use relative benchmarks** instead of absolute times
+   - Compare against a reference implementation
+   - Measure ratio instead of absolute milliseconds
+   - More portable across machines
+
+C. **Mark as optional performance tests**
+   - Add :tags to exclude from normal test runs
+   - Run only when explicitly testing performance
+   - Don't block on CI/batch test runs
+
+D. **Remove absolute timing assertions**
+   - Keep benchmarks for manual profiling
+   - Just report times without pass/fail
+   - Add to a performance monitoring system instead
+
+**Recommended Approach:**
+✓ **DONE**: Option C implemented - tests marked with :tags '(:slow) to skip in normal runs
+- Still TODO: Optimize lorem-optimum performance (see related task below)
+- Consider Option D: Convert to reporting-only benchmarks after optimization
+
+**Next Steps:**
+1. Profile lorem-optimum to find bottlenecks (see related task at line 1542+)
+2. Optimize performance to get tests under 5 seconds
+3. Re-enable tests once optimized
+4. Consider if absolute time thresholds make sense or switch to relative benchmarks
+
+**Related Files:**
+- tests/test-lorem-optimum-benchmark.el (tests now disabled with :tags '(:slow))
+- modules/lorem-optimum.el (needs performance profiling and optimization)
+- Related task: "Optimize size of liber-primus.txt for lorem-optimum" at line 1542
+
+**Related Docs:**
+- ai-prompts/quality-engineer.org (testing philosophy)
+- Performance principle: No unit test should take minutes
+- Test output: Was 14 total failures, now down to 12 (dwim-shell only)
+
+**Success Criteria:**
+- ✓ Tests disabled to unblock test suite (DONE 2025-11-09)
+- TODO: lorem-optimum optimized to run 10k word tests in < 5 seconds
+- TODO: Re-enable tests once performance acceptable
+- TODO: `make test` passes without benchmark failures
+- Benchmark tests clearly marked as optional/manual-only
+- Test file documents performance expectations and how to run benchmarks
+- No flaky tests (timing assertions work consistently)
+
+**Note:**
+These are the only non-dwim-shell failures in the test suite. Fixing these
+gets us to just 12 orphaned dwim-shell tests (which have their own TODO).
+
+** TODO [#B] Consider implementing cron download of Google Calendar to replace org-gcal
+
+Replace problematic org-gcal OAuth workflow with simpler cron-based calendar download.
+This could eliminate the password prompt issues and provide a more reliable sync solution.
+
+**Current Problem:**
+From TODO at line 22-66:
+- org-gcal prompts for password every ~15 minutes
+- OAuth token refresh bypasses cache
+- plstore symmetric encryption cache issues
+- Interrupts workflow constantly
+- Makes calendar sync painful instead of seamless
+
+**Proposed Solution:**
+Instead of OAuth-based sync (org-gcal), use Google Calendar's public iCalendar URLs:
+1. Download .ics file via cron (every 15-30 minutes)
+2. Parse .ics file into org-mode format
+3. Update org-agenda files automatically
+4. No OAuth, no passwords, no interruptions
+
+**Benefits:**
+- ✓ No password prompts (public calendar URL or one-time API key)
+- ✓ No OAuth token refresh issues
+- ✓ Runs in background (cron), never interrupts work
+- ✓ Simpler architecture (download → parse → update)
+- ✓ Can work offline (reads last downloaded .ics)
+- ✓ More reliable (fewer moving parts)
+- ✓ No plstore symmetric encryption issues
+
+**Drawbacks:**
+- ✗ Read-only (can't create/update events from Emacs)
+- ✗ Need to manually get calendar iCal URL
+- ✗ Requires cron setup (one-time configuration)
+- ✗ May have sync delay (up to cron interval)
+
+**Investigation:**
+
+1. **Get Google Calendar iCal URL:**
+   - Open Google Calendar settings
+   - Find "Integrate calendar" section
+   - Copy secret iCal address (https://calendar.google.com/calendar/ical/...)
+   - Store in auth-source (encrypted)
+
+2. **Test iCal download:**
+   ```bash
+   curl -o calendar.ics "https://calendar.google.com/calendar/ical/.../basic.ics"
+   ```
+   - Verify it downloads
+   - Check .ics format
+   - Confirm events are present
+
+3. **Research iCal parsing:**
+   - Does Emacs have built-in iCal parser? (icalendar.el)
+   - Check icalendar-import-file function
+   - Test parsing downloaded .ics file
+   - Verify it creates org entries
+
+4. **Design cron workflow:**
+   ```bash
+   # Every 15 minutes
+   */15 * * * * curl -s "$(cat ~/.calendar-url)" -o ~/calendars/gcal.ics
+   ```
+   - Downloads silently in background
+   - Emacs watches file for changes (file-notify)
+   - Auto-reimport when changed
+
+**Possible Implementations:**
+
+A. **Full replacement (recommended):**
+   - Remove org-gcal entirely
+   - Use cron + icalendar.el
+   - Read-only calendar view in org-agenda
+   - Create events directly in Google Calendar web UI
+
+B. **Hybrid approach:**
+   - Keep org-gcal for writing events
+   - Use cron download for reading events
+   - Disable org-gcal auto-sync (no password prompts)
+   - Manually trigger org-gcal only when creating events
+
+C. **Enhanced cron:**
+   - Cron downloads .ics
+   - Emacs function parses and updates org files
+   - Add file-notify watcher for auto-update
+   - Optional: Convert two-way with CalDAV later
+
+**Implementation Sketch:**
+```elisp
+(defun cj/calendar-import-gcal ()
+  "Import Google Calendar from downloaded .ics file."
+  (interactive)
+  (let ((ics-file "~/calendars/gcal.ics")
+        (org-file "~/org/calendar.org"))
+    (when (file-exists-p ics-file)
+      (icalendar-import-file ics-file org-file)
+      (message "Imported calendar from %s" ics-file))))
+
+;; Auto-import when .ics file changes
+(file-notify-add-watch
+ "~/calendars/gcal.ics"
+ '(change)
+ (lambda (event) (cj/calendar-import-gcal)))
+```
+
+**Related Files:**
+- modules/org-gcal-config.el (current problematic implementation)
+- Emacs built-in: icalendar.el (iCal parsing)
+- System: crontab -e (download schedule)
+- ~/.authinfo.gpg (store calendar URL securely)
+
+**Related Docs:**
+- Current problem: TODO line 22-66 (password prompts every 15 min)
+- icalendar.el manual: C-h f icalendar-import-file
+- Google Calendar iCal format documentation
+- V2MOM Method 1: Frictionless (no interruptions!)
+
+**Success Criteria:**
+- Calendar events appear in org-agenda
+- No password prompts during work
+- Updates automatically in background (cron)
+- Can work offline with last sync
+- Setup is one-time configuration
+- Simpler than current org-gcal setup
+
+**Testing Plan:**
+1. Get iCal URL from Google Calendar
+2. Test download: `curl URL -o test.ics`
+3. Test import: `M-x icalendar-import-file`
+4. Verify org entries created correctly
+5. Set up cron job
+6. Wait for auto-update
+7. Confirm events in org-agenda
+8. Disable org-gcal auto-sync
+9. Monitor for 1 week (no password prompts?)
+
+**Decision Point:**
+This is a significant architectural change. Need to:
+1. Test proof-of-concept first (manual download + import)
+2. Evaluate if read-only is acceptable
+3. Compare to fixing OAuth password prompts
+4. Consider hybrid approach if two-way sync needed
+
+**Note:**
+Priority [#B] because this could eliminate the #1 daily irritant (password prompts
+every 15 minutes). If proof-of-concept works, this is higher value than fixing
+OAuth issues. Simpler architecture = fewer problems.
+
+** TODO [#C] Verify format-buffer hands off to shfmt in shell scripts
+
+Need to verify that the format-buffer command correctly delegates to shfmt when
+formatting shell scripts. May not be configured or may use wrong formatter.
+
+**Problem:**
+- Unknown if format-buffer works in shell-script-mode
+- May not be using shfmt (should use shfmt for shell scripts)
+- May be using a different formatter (or no formatter)
+- Need to verify configuration and test manually
+
+**Investigation:**
+1. Find format-buffer implementation:
+   - Search for defun format-buffer in modules/
+   - Check if it's in prog-general.el or separate module
+   - Review how it selects formatters per mode
+2. Check shfmt configuration:
+   - Is shfmt installed? `which shfmt`
+   - Is shfmt configured for shell-script-mode?
+   - What are the shfmt command-line arguments?
+3. Test manually:
+   - Create test shell script with bad formatting
+   - Run format-buffer command
+   - Verify it uses shfmt (not something else)
+   - Check formatted output is correct
+
+**Expected Behavior:**
+1. In shell-script-mode buffer
+2. Run format-buffer (or whatever the command is)
+3. Should invoke shfmt to format the buffer
+4. Output should be properly formatted shell code
+5. Should preserve shebang and script functionality
+
+**Possible Issues:**
+
+A. **shfmt not installed**
+   - Check: `pacman -Q shfmt` or `which shfmt`
+   - Install if missing: `sudo pacman -S shfmt`
+
+B. **format-buffer not configured for shell**
+   - May only work for elisp/python/etc.
+   - Need to add shell-script-mode configuration
+   - Need to specify shfmt command
+
+C. **Wrong formatter used**
+   - May be using bashfmt, beautysh, or other tool
+   - Should specifically use shfmt (preferred)
+
+D. **format-buffer doesn't exist**
+   - May be using different command name
+   - Check for format-all, apheleia, or custom function
+
+**Manual Test:**
+Create test file:
+```bash
+#!/bin/bash
+# Poorly formatted script
+if [ -f "test.txt" ];then
+echo "found"
+else
+    echo "not found"
+fi
+for i in 1 2 3;do echo $i;done
+```
+
+Expected after shfmt:
+```bash
+#!/bin/bash
+# Poorly formatted script
+if [ -f "test.txt" ]; then
+        echo "found"
+else
+        echo "not found"
+fi
+for i in 1 2 3; do
+        echo $i
+done
+```
+
+**Related Commands to Check:**
+- format-buffer
+- format-all-buffer
+- apheleia-format-buffer
+- Custom cj/format-buffer
+
+**Related Files:**
+- modules/prog-general.el (likely location of format-buffer)
+- modules/prog-shell.el (shell-specific config)
+- Check for apheleia or format-all package config
+
+**Related Docs:**
+- shfmt documentation: https://github.com/mvdan/sh
+- format-all or apheleia package docs (whichever is used)
+- V2MOM Method 1: Frictionless (formatting should just work)
+
+**Success Criteria:**
+- format-buffer (or equivalent) command exists
+- Works in shell-script-mode buffers
+- Uses shfmt as the formatter
+- Produces correctly formatted shell code
+- Doesn't break script functionality
+- Documented what command to use and how it works
+
+**If It Doesn't Work:**
+1. Install shfmt: `sudo pacman -S shfmt`
+2. Configure formatter (apheleia or format-all):
+   ```elisp
+   ;; Example configuration
+   (add-to-list 'apheleia-formatters
+                '(shfmt . ("shfmt" "-i" "2" "-ci")))
+   (add-to-list 'apheleia-mode-alist
+                '(shell-script-mode . shfmt))
+   ```
+3. Test again
+4. Document in prog-shell.el
+
+**Note:**
+Priority [#C] because formatting is nice-to-have. Can format manually with shfmt
+if needed. Low priority but good for maintaining code quality in shell scripts.
+
+** TODO [#B] Write tests for cj/make-script-executable
+
+The `cj/make-script-executable` function automatically makes shell scripts executable
+when they have a shebang, but it has no test coverage. This is a critical function
+that modifies file permissions and needs comprehensive testing.
+
+**Function Location:**
+modules/prog-shell.el:158-167
+
+**Current Implementation:**
+```elisp
+(defun cj/make-script-executable ()
+  "Make the current file executable if it has a shebang."
+  (when (and buffer-file-name
+             (not (file-executable-p buffer-file-name))
+             (save-excursion
+               (goto-char (point-min))
+               (looking-at "^#!")))
+    (set-file-modes buffer-file-name
+                   (logior (file-modes buffer-file-name) #o111))
+    (message "Made %s executable" (file-name-nondirectory buffer-file-name))))
+```
+
+**Why Testing Is Critical:**
+1. **File system side effects** - modifies actual file permissions
+2. **Security implications** - making files executable is a security operation
+3. **Cross-platform** - file permissions work differently on different systems
+4. **Hooked function** - runs automatically on after-save-hook (high frequency)
+5. **Potential for bugs** - conditions must be exactly right to avoid false positives
+
+**Test Categories:**
+
+**Normal Cases:**
+1. File with shebang `#!/bin/bash` should become executable
+2. File with shebang `#!/usr/bin/env python3` should become executable
+3. File already executable should not change permissions (idempotent)
+4. Should work with various shebangs (sh, bash, zsh, python, ruby, perl, node)
+5. Message should indicate file was made executable
+
+**Boundary Cases:**
+1. Shebang with spaces: `#! /bin/bash` (space after #!)
+2. Shebang with extra content: `#!/bin/bash -e`
+3. Shebang not at start of file (should NOT make executable)
+4. Empty file (no shebang) - should not make executable
+5. Non-script file (.txt, .md) with shebang - should still work (user intent)
+6. File permissions already include execute for some users (should add for all)
+7. Symlinks - should follow symlink and set permission on target
+8. File name with special characters (spaces, quotes, etc.)
+
+**Error Cases:**
+1. Buffer not visiting a file (buffer-file-name nil) - should do nothing
+2. Read-only file system - should handle error gracefully
+3. No permission to chmod file - should handle error gracefully
+4. File deleted after buffer opened but before save - should handle gracefully
+5. Very large file with shebang at start - should not read entire file
+6. Binary file that happens to start with #! - should still work (edge case)
+
+**Test Structure:**
+Create test file: `tests/test-prog-shell-make-script-executable.el`
+
+Following quality-engineer.org patterns:
+- One test file per method (unit test)
+- Use temp files for file system operations
+- Clean up in teardown
+- Mock/stub file-executable-p for some tests
+- Test actual file permission changes in others
+- Verify message output
+- Test interaction with after-save-hook
+
+**Implementation Considerations:**
+1. **Temp file creation** - Use make-temp-file for test files
+2. **Permission verification** - Check actual file-modes after operation
+3. **Cross-platform** - Test on Linux (primary), note Windows differences
+4. **Cleanup** - Ensure temp files deleted even on test failure
+5. **Isolation** - Each test creates its own temp file
+6. **No side effects** - Tests don't modify real config files
+
+**Example Test:**
+```elisp
+(ert-deftest test-prog-shell-make-script-executable-normal-bash-shebang ()
+  "Test that file with bash shebang becomes executable.
+
+Normal case: File with #!/bin/bash at start should get +x permission."
+  (let ((test-file (make-temp-file "test-script-" nil ".sh")))
+    (unwind-protect
+        (progn
+          ;; Write shebang to file
+          (with-temp-file test-file
+            (insert "#!/bin/bash\necho hello\n"))
+          ;; Remove execute permission
+          (set-file-modes test-file #o644)
+          (should-not (file-executable-p test-file))
+          ;; Open file and trigger function
+          (with-current-buffer (find-file-noselect test-file)
+            (cj/make-script-executable)
+            (kill-buffer))
+          ;; Verify file is now executable
+          (should (file-executable-p test-file)))
+      (delete-file test-file))))
+```
+
+**Related Files:**
+- modules/prog-shell.el:158-167 (function to test)
+- tests/test-prog-shell-make-script-executable.el (NEW - create this)
+- ai-prompts/quality-engineer.org (testing guidance)
+
+**Related Docs:**
+- quality-engineer.org: File system testing best practices
+- Recent test examples: test-custom-buffer-file-*.el (file operations)
+- Emacs manual: File permissions and file-modes function
+
+**Success Criteria:**
+- Comprehensive test file covering all normal/boundary/error cases
+- All tests pass on Linux
+- Tests properly clean up temp files
+- Tests verify actual file permission changes
+- Tests verify message output
+- No false positives (making non-script files executable)
+- No false negatives (missing files that should be executable)
+- Tests document expected behavior (serve as specification)
+
+**Estimated Tests:**
+- 6-8 normal cases (different shebangs)
+- 8-10 boundary cases (edge conditions)
+- 5-6 error cases (failure handling)
+- Total: ~20-25 tests
+
+**Note:**
+Priority [#B] because this function runs on every save in shell-script-mode and
+modifying file permissions incorrectly could cause security issues or workflow
+problems. Needs testing before any refactoring or changes.
+
+** TODO [#C] Implement or manually test difftastic magit integration
+
+Difftastic was integrated for git diffs but needs verification that it actually works
+with magit as intended. The integration may need configuration or the keybindings
+may not work as expected.
+
+**Current State:**
+From DONE task at line 413-429:
+- Difftastic 0.64.0 installed
+- difftastic.el package added
+- Integrated with magit
+- Keybindings in magit-diff: D for dwim, S for show
+- Provides structural, language-aware diffs for git changes
+
+**Problem:**
+- Unknown if difftastic actually displays in magit
+- Haven't verified keybindings work (D, S in magit-diff)
+- May need additional configuration for magit integration
+- Could conflict with existing magit diff commands
+- Unclear if side-by-side view works in Emacs buffer
+
+**Investigation:**
+1. Review current difftastic configuration:
+   - Check modules/vc-config.el for difftastic setup
+   - Verify difftastic.el package is actually loaded
+   - Check if :demand or :defer affects loading
+2. Test manually in magit:
+   - Open magit-status on .emacs.d
+   - Make a test change to any .el file
+   - Navigate to diff section
+   - Try keybindings: D (dwim), S (show)
+   - Verify difftastic output appears
+3. Compare with regular diff:
+   - Does regular magit diff still work?
+   - Can you toggle between regular diff and difftastic?
+   - Which is better for elisp files?
+
+**Possible Issues:**
+
+A. **Package not loading**
+   - :defer prevents loading until first use
+   - No autoload cookies
+   - Missing require statement
+
+B. **Keybindings conflict**
+   - D or S already bound in magit-diff
+   - Need to check magit-diff-mode-map
+   - May need different keys
+
+C. **Display issues**
+   - ANSI colors not rendering
+   - Side-by-side too wide for window
+   - Output not in readable format
+
+D. **Integration not configured**
+   - difftastic.el needs explicit magit integration setup
+   - Missing hooks or advice
+   - Needs transient menu configuration
+
+**Expected Behavior:**
+1. In magit-diff buffer, press D or S
+2. Difftastic should show structural diff with:
+   - Syntax-aware comparison
+   - Language-specific formatting
+   - Side-by-side or unified view
+   - ANSI colors (if terminal supports)
+3. Should be obviously different from regular git diff
+4. Should be more readable for code changes
+
+**Testing Checklist:**
+- [ ] Verify difftastic binary works: `difft --version`
+- [ ] Check difftastic.el is installed: `M-x package-list-packages`
+- [ ] Review vc-config.el for difftastic setup
+- [ ] Open magit-status on emacs.d
+- [ ] Stage a change, view diff
+- [ ] Try keybinding D in diff view
+- [ ] Try keybinding S in diff view
+- [ ] Verify output is difftastic (not regular diff)
+- [ ] Test with different file types (.el, .org, .md)
+- [ ] Check if colors render correctly
+
+**If It Doesn't Work:**
+1. **Check package installation**
+   ```elisp
+   (require 'difftastic)  ; Does this error?
+   (difftastic-mode 1)    ; Try enabling manually
+   ```
+2. **Review difftastic.el documentation**
+   - How should it integrate with magit?
+   - What configuration is needed?
+   - Are there examples?
+3. **Check for errors**
+   - Look in *Messages* buffer
+   - Check *Warnings* buffer
+   - Run with debug-on-error
+
+**If It Works:**
+Document in vc-config.el:
+- Keybindings that work
+- When to use difftastic vs regular diff
+- Any performance considerations
+- Examples of good use cases
+
+**Related Files:**
+- modules/vc-config.el (difftastic configuration)
+- Binary: /usr/bin/difft (verify exists)
+- Package: difftastic.el (from package archives)
+- Test repo: .emacs.d (make test changes here)
+
+**Related Docs:**
+- DONE task line 413: "Integrate difftastic (structural diffs)"
+- difftastic.el package documentation
+- difftastic project: https://github.com/Wilfred/difftastic
+- V2MOM Method 3: Make Fixing Emacs Frictionless (better diff tools)
+
+**Success Criteria:**
+- Difftastic keybindings work in magit-diff (D and/or S)
+- Output clearly shows structural diff (different from regular diff)
+- Works for elisp, org, and markdown files
+- Performance is acceptable (not noticeably slow)
+- Documented in vc-config.el how to use
+- Can toggle between difftastic and regular diff
+
+**Note:**
+Priority [#C] because it's a nice-to-have improvement. Regular magit diffs work fine,
+but difftastic could make code review easier with structural awareness. Low priority
+since core functionality (diffing) already works without it.
+
+** TODO [#B] Figure out a way to clear "all ERT tests" when switching projects
+
+When switching between projects (e.g., from emacs.d to chime.el), previously loaded
+ERT tests from the old project remain in memory. This causes confusion and can lead
+to running tests from the wrong project.
+
+**Problem:**
+- ERT tests are globally registered in Emacs session
+- Switching projects (projectile/project.el) doesn't clear old tests
+- `M-x ert RET t RET` runs ALL loaded tests from ALL projects
+- No built-in way to unload tests from a specific project
+- Can accidentally run emacs.d tests when working on chime.el (or vice versa)
+
+**Current Workaround:**
+- Restart Emacs when switching projects (loses session state)
+- Manually track which project's tests are loaded (error-prone)
+- Hope you don't accidentally run wrong tests (unreliable)
+
+**Investigation:**
+1. How ERT stores tests:
+   - Tests stored in global `obarray` with special properties
+   - Each test is a symbol with ert-test property
+   - No built-in concept of "project" or "namespace"
+2. Existing solutions to check:
+   - Does projectile have test isolation?
+   - Any ERT extensions for project-scoped tests?
+   - Can we tag tests by project?
+3. Review test file loading patterns:
+   - How do we currently load tests? (batch vs interactive)
+   - Are tests autoloaded or explicitly loaded?
+   - Can we track which files define which tests?
+
+**Possible Solutions:**
+
+A. **Project-aware test selector**
+   - Create `cj/ert-run-project-tests` command
+   - Use project-root to filter tests by file location
+   - Only run tests defined in current project's test/ directory
+   - Leaves other tests in memory but doesn't run them
+
+B. **Clear tests on project switch**
+   - Hook into project-switch-commands or projectile-after-switch-project-hook
+   - Undefine all ERT tests before switching
+   - Reload only new project's tests
+   - Clean slate for each project
+
+C. **Tag-based test filtering**
+   - Add :tags '(project-name) to all tests
+   - Filter by tag when running tests
+   - Requires modifying all test definitions
+   - More maintainable across projects
+
+D. **Separate test namespaces**
+   - Use different prefixes per project (cj/ vs chime-)
+   - Run tests by prefix pattern
+   - Already partially done (good!)
+   - Could be enhanced with smarter filtering
+
+E. **Project-local test runner**
+   - Create wrapper around `ert` command
+   - Automatically detects project root
+   - Clears tests not in current project
+   - Provides project-scoped test results
+
+**Preferred Approach:**
+Combination of B + D:
+1. Create `cj/ert-clear-tests` function to undefine all tests
+2. Hook into project switching to auto-clear
+3. Use test name prefixes to selectively clear/run
+4. Add `cj/ert-run-current-project-tests` command
+
+**Implementation Sketch:**
+```elisp
+(defun cj/ert-clear-tests (&optional prefix)
+  "Clear all ERT tests, optionally matching PREFIX."
+  (interactive)
+  (let ((count 0))
+    (mapatoms
+     (lambda (sym)
+       (when (and (ert-test-boundp sym)
+                  (or (null prefix)
+                      (string-prefix-p prefix (symbol-name sym))))
+         (setf (get sym 'ert--test) nil)
+         (cl-incf count)))
+     obarray)
+    (message "Cleared %d ERT tests" count)))
+
+(defun cj/ert-run-current-project-tests ()
+  "Clear all tests and run only current project's tests."
+  (interactive)
+  (cj/ert-clear-tests)
+  ;; Load current project's test files
+  ;; Run tests with appropriate selector
+  ...)
+```
+
+**Related Files:**
+- Emacs built-in: ert.el (study test storage mechanism)
+- modules/test-runner.el (if it exists - check current test infrastructure)
+- init.el or project config (where to add hooks)
+- .dir-locals.el (project-specific test configuration?)
+
+**Related Docs:**
+- ERT manual: Test selectors and running tests
+- Projectile/project.el documentation on hooks
+- Current test workflow: Makefile test targets
+- V2MOM Method 3: Make Fixing Emacs Frictionless (better test workflow)
+
+**Success Criteria:**
+- Can switch from emacs.d project to chime.el project
+- Old tests are cleared (don't show up in completion)
+- Only current project's tests run with `M-x ert RET t RET`
+- Clear feedback about which tests were cleared/loaded
+- Works with both interactive and batch test runs
+- Integrated with existing test infrastructure (Makefile)
+
+**Testing:**
+1. Load emacs.d tests (make test or load test files)
+2. Verify emacs.d tests are registered (M-x ert shows them)
+3. Switch to chime.el project
+4. Verify emacs.d tests cleared, chime tests loaded
+5. Run tests - only chime tests execute
+6. Switch back - only emacs.d tests execute
+
+**Note:**
+This is a workflow pain point when maintaining multiple Emacs Lisp projects.
+Priority [#B] because it affects daily development across projects and can cause
+subtle bugs (running wrong tests, confusion about failures).
+
+** TODO [#B] Fix broken transcription-config not working for Jabra - no audience recorded
+
+Transcription workflow is failing when using Jabra headset. The recording captures
+no audio (silent/empty file) or doesn't detect the Jabra device properly.
+
+see: /home/cjennings/sync/recordings/2025-11-09-12-42-02.txt
+
+Question: can we run validation that audio will be heard from both user and audience as a separate diagnostics test? 
+
+**Problem:**
+- Transcription records from wrong audio device (not Jabra headset)
+- Results in silent recording with no audience audio to transcribe
+- May be related to same device selection issues fixed in video-audio-recording
+- Transcription likely hardcodes device selection or uses outdated detection
+
+**Investigation:**
+1. Review modules/transcription-config.el
+   - Check how audio device is selected
+   - Look for hardcoded device names/indices
+   - Compare to working video-audio-recording device detection
+2. Test current transcription workflow:
+   - What command initiates transcription?
+   - Does it prompt for device selection?
+   - What error messages (if any)?
+3. Check if related to recent Jabra device changes:
+   - External audio interface addition
+   - Multiple audio devices now available
+   - Need dynamic device selection like recording module
+
+**Likely Causes:**
+- Hardcoded audio device (e.g., always uses default or device index 0)
+- No device selection UI (unlike video-audio-recording which has C-; r s)
+- ffmpeg command uses wrong input source
+- PulseAudio/PipeWire device name changed when Jabra was added
+- Missing device auto-detection or manual override
+
+**Related Working Code:**
+Look at video-audio-recording.el for patterns:
+- `cj/recording-list-devices` (diagnostic command)
+- `cj/recording-select-devices` (manual device selection)
+- `cj/recording-quick-setup-for-calls` (smart device pairing)
+- Device detection via pactl parsing
+- Cached device selection in variables
+
+**Possible Solutions:**
+A. **Add device selection to transcription workflow**
+   - Prompt for audio device before recording
+   - Cache selection for session
+   - Similar to recording module's approach
+
+B. **Reuse recording module's device detection**
+   - Share device selection code between modules
+   - Extract common device detection to system-lib or audio-lib
+   - Single source of truth for audio devices
+
+C. **Make transcription workflow interactive**
+   - Show available devices
+   - Let user confirm before recording
+   - Display actual ffmpeg command for debugging
+
+**Related Files:**
+- modules/transcription-config.el (broken transcription)
+- modules/video-audio-recording.el (working device selection)
+- Test with Jabra headset connected
+
+**Related Docs:**
+- Recent fix: video-audio-recording device selection (DONE task)
+- V2MOM Method 5: Be Kind To Your Future Self (transcription workflow)
+- SOMEDAY-MAYBE.org likely has transcription config notes
+
+**Success Criteria:**
+- Transcription records audio from Jabra headset successfully
+- User can select audio device (or auto-detection works)
+- Clear error messages if device selection fails
+- Recording contains actual audio (not silent)
+- Transcription produces text from recorded audio
+
+**Testing:**
+1. Connect Jabra headset
+2. Run transcription command
+3. Speak into Jabra microphone
+4. Verify recording captures Jabra audio
+5. Verify transcription produces text
+
+**Note:**
+This blocks the transcription workflow entirely with Jabra. High priority [#B]
+because transcription is a stated goal (Method 5) but currently unusable.
+
+** TODO [#C] Identify any current methods in need of refactoring
+
+Review all modules to identify functions that violate single-responsibility principle,
+have poor separation of concerns, or could benefit from refactoring for testability
+and maintainability.
+
+**Goal:**
+Create a comprehensive list of refactoring opportunities across the entire config.
+This supports V2MOM Method 2 (Stop Problems Before They Appear) by identifying
+code quality issues before they cause bugs.
+
+**Criteria for Refactoring Candidates:**
+1. **Long functions** (>50 lines) that do multiple things
+2. **Mixed concerns** (UI + business logic, I/O + computation)
+3. **Hard to test** (requires extensive mocking, side effects everywhere)
+4. **Duplicated logic** (same pattern in multiple places)
+5. **Poor naming** (unclear what function does)
+6. **Hidden dependencies** (relies on global state, implicit context)
+7. **Interactive functions with business logic** (should split into internal + wrapper)
+8. **Functions that can't be called programmatically** (too much user interaction)
+
+**Review Process:**
+1. **Scan all modules** in alphabetical order
+   - For each module, list functions that meet refactoring criteria
+   - Note specific issues (too long, mixed concerns, etc.)
+   - Estimate refactoring complexity (trivial, moderate, complex)
+
+2. **Check recent refactoring patterns** for examples:
+   - modules/custom-buffer-file.el (internal + interactive wrapper pattern)
+   - modules/video-audio-recording.el (extracted parser for testing)
+   - modules/system-lib.el (consolidated utilities)
+
+3. **Document findings** in a refactoring checklist:
+   - Module name
+   - Function name
+   - Current issues
+   - Proposed refactoring
+   - Benefits (testability, reusability, clarity)
+   - Dependencies (what else needs to change)
+
+4. **Prioritize refactorings:**
+   - High: Functions used frequently or causing bugs
+   - Medium: Functions that are hard to test or understand
+   - Low: Functions that work but could be cleaner
+
+**Areas Likely to Need Refactoring:**
+- Old modules not touched in recent quality pass
+- Modules with no tests (indicates possible design issues)
+- Modules with many interactive functions (may hide testable logic)
+- Configuration modules with complex setup logic
+- Modules that grew organically (org-config, mail-config, etc.)
+
+**Output:**
+Create a refactoring.org file or section listing:
+```
+*** Module: custom-example.el
+**** REFACTOR cj/example-function [Priority: High]
+Issues:
+- 80 lines long (should be < 50)
+- Mixes UI prompting with business logic
+- Hard to test (requires user input)
+
+Proposed Solution:
+- Extract cj/--example-internal (takes params, returns result)
+- Keep cj/example-function as thin interactive wrapper
+- Add tests for cj/--example-internal
+
+Benefits:
+- Testable without mocking user input
+- Reusable from other code
+- Clearer separation of concerns
+
+Estimated Effort: 2 hours
+```
+
+**Related Files:**
+- All modules/* files (review candidates)
+- ai-prompts/quality-engineer.org (refactoring guidance)
+- Recent refactoring examples for patterns
+
+**Related Docs:**
+- quality-engineer.org section on "Interactive vs Non-Interactive Function Pattern"
+- Recent refactoring work (custom-buffer-file, video-audio-recording)
+- V2MOM Method 2: Stop Problems Before They Appear
+
+**Success Criteria:**
+- Comprehensive list of refactoring candidates across all modules
+- Each candidate has clear issue description and proposed solution
+- Prioritized by impact and effort
+- Can be tackled incrementally (smallest to largest)
+- Becomes backlog for future refactoring sprints
+
+**Note:**
+This is a one-time audit to identify technical debt. Once complete, it feeds
+future [#B] and [#C] refactoring tasks. Not meant to do all refactoring at once,
+just catalog opportunities.
+
+** TODO [#B] Review all config and pull library functions into system-lib file
+
+Extract reusable utility functions scattered across modules into system-lib.el
+for better code organization and reusability.
+
+**Goal:**
+Create a centralized system utilities library where generic functions that check
+system state, detect programs, or provide low-level system operations can live.
+This makes them:
+- Easily discoverable
+- Reusable across modules
+- Testable in isolation
+- Following single-responsibility principle
+
+**Current State:**
+- system-lib.el exists with `cj/executable-exists-p` function
+- Already required at top of init.el (System Configuration section)
+- Has comprehensive test coverage (test-system-lib-executable-exists-p.el)
+
+**Task:**
+1. Search entire config for candidate functions:
+   - System queries (program detection, path checking, environment vars)
+   - File system utilities (beyond buffer-file operations)
+   - Process utilities
+   - Platform detection helpers
+2. Review each module for extraction candidates:
+   - host-environment.el (already has some, may have more)
+   - system-utils.el (may contain generic utilities)
+   - Any module with functions that don't depend on mode-specific context
+3. Move appropriate functions to system-lib.el:
+   - Update function documentation
+   - Add require statements where functions are used
+   - Maintain backward compatibility (old locations can call new ones)
+4. Add comprehensive test coverage for all moved functions
+5. Document the purpose/scope of system-lib.el in its Commentary section
+
+**Criteria for inclusion in system-lib.el:**
+- ✓ Pure utility functions (no side effects)
+- ✓ System-level queries (executable detection, path operations)
+- ✓ Platform-agnostic where possible
+- ✓ No dependencies on mode-specific functionality
+- ✗ NOT buffer/file operations (those stay in custom-buffer-file.el)
+- ✗ NOT user-facing commands (those stay in their domain modules)
+
+**Related Files:**
+- modules/system-lib.el (target file)
+- modules/host-environment.el (likely source)
+- modules/system-utils.el (likely source)
+- modules/config-utilities.el (check for candidates)
+- tests/test-system-lib-*.el (add tests for moved functions)
+
+**Related Docs:**
+- Recent refactoring: Created system-lib.el with cj/executable-exists-p
+- Testing guidance: ai-prompts/quality-engineer.org
+- V2MOM Method 2: Stop Problems Before They Appear (better organization)
+
+**Success Criteria:**
+- All generic system utilities consolidated in system-lib.el
+- Each function has comprehensive test coverage
+- No functionality broken (all tests pass)
+- Documentation explains purpose and scope of system-lib.el
+- Other modules properly require system-lib where needed
+
+** TODO [#B] Optimize size of liber-primus.txt for lorem-optimum and investigate launch notices
+
+The liber-primus.txt file may be too large for optimal lorem-optimum performance,
+causing slow random text generation or excessive memory usage. Additionally, there
+are notices appearing in the *Messages* buffer during Emacs launch that need investigation.
+
+**Primary Problem:**
+- liber-primus.txt might be too large for efficient text generation
+- lorem-optimum may be slow when selecting random text from large corpus
+- File size could be causing memory or performance issues
+- Impact on startup time or buffer creation unknown
+
+**Secondary Problem:**
+- *Messages* buffer shows notices during Emacs launch
+- May be related to lorem-optimum, liber-primus, or unrelated issues
+- Need to identify source and severity of notices
+
+**Investigation:**
+
+1. **Check current file size:**
+   ```bash
+   ls -lh liber-primus.txt
+   wc -l liber-primus.txt
+   wc -w liber-primus.txt
+   ```
+
+2. **Review lorem-optimum configuration:**
+   - Find lorem-optimum module: `grep -r "lorem-optimum" modules/`
+   - Check how liber-primus.txt is loaded
+   - Look for performance issues in implementation
+   - Check if entire file is loaded into memory
+
+3. **Test performance with current file:**
+   ```elisp
+   (benchmark-run 100
+     (lorem-ipsum-insert-paragraphs 1))
+   ```
+   - Measure baseline performance
+   - Note memory usage
+
+4. **Investigate Messages buffer notices:**
+   - Launch Emacs with `emacs --debug-init`
+   - Check *Messages* buffer immediately after startup
+   - Search for lorem, liber-primus, or warning keywords
+   - Note timestamps and context
+
+5. **Identify notices source:**
+   - Could be from lorem-optimum loading
+   - Could be file permissions warnings
+   - Could be encoding issues
+   - Could be unrelated initialization messages
+
+**Possible Solutions:**
+
+1. **Reduce file size** (if too large):
+   - Keep most meaningful/interesting sections
+   - Remove repetitive content
+   - Target size: 50-100KB (fast loading, sufficient variety)
+   - Preserve character of cryptic/cipher text
+
+2. **Optimize lorem-optimum loading** (if implementation issue):
+   - Lazy load: don't read file until first use
+   - Sample lines: don't load entire file
+   - Cache in memory: read once, reuse
+   - Stream reading: read chunks as needed
+
+3. **Fix launch notices** (if errors/warnings):
+   - Fix source of warnings
+   - Silence benign notices
+   - Add proper error handling
+   - Document expected behavior
+
+**Testing:**
+1. Note baseline: file size, performance, messages
+2. Apply optimization (file size or code)
+3. Measure improvement:
+   - File size reduced?
+   - Performance improved?
+   - Messages cleaned up?
+4. Verify text generation still works
+5. Check variety/quality of generated text
+
+**Related Files:**
+- liber-primus.txt (the text corpus file)
+- modules/lorem-optimum.el or similar (lorem generation module)
+- init.el (loading sequence, Messages source)
+- tests/test-lorem-optimum-*.el (performance/benchmark tests)
+
+**Related Docs:**
+- DONE task at line 68-96: "Review lorem-optimum benchmark tests and fix"
+- Failed benchmark tests may be related to this issue
+- V2MOM Method 1: Frictionless (fast text generation)
+- V2MOM Method 2: Stop Problems Before They Appear (clean Messages)
+
+**Success Criteria:**
+- liber-primus.txt optimized to reasonable size (<100KB ideal)
+- lorem-optimum generates text quickly (<100ms for paragraph)
+- No unnecessary notices in *Messages* during launch
+- Text generation still produces varied, interesting output
+- Benchmark tests pass (after fixing per separate TODO)
+- Documented optimal file size and loading strategy
+
+**Benchmark Target:**
+- Text generation: <100ms for 1 paragraph
+- File loading: <50ms at startup (if not lazy loaded)
+- Memory usage: Reasonable for file size
+- No degradation from current working state
+
+**Note:**
+Priority [#B] because performance impacts daily workflow (lorem text generation
+used frequently for testing) and clean *Messages* buffer is important for catching
+real issues during startup. This ties into fixing the 2 failed benchmark tests
+(separate TODO at line 68-96).
+
+** TODO [#B] Move cj/log-silently to system-lib
+
+The `cj/log-silently` function is a generic utility for logging messages without
+displaying them in the echo area. It should be moved to system-lib.el for better
+organization and reusability across modules.
+
+**Current Problem:**
+- cj/log-silently is likely defined in a specific module
+- It's a generic logging utility that could be used by any module
+- Not easily discoverable for reuse
+- Doesn't follow the system-lib pattern we're establishing
+
+**What is cj/log-silently?**
+This function logs messages to the *Messages* buffer without interrupting the user
+by displaying them in the echo area (minibuffer). Useful for debugging and tracing
+code execution without breaking user flow.
+
+**Task:**
+1. **Find current location:**
+   ```bash
+   grep -rn "defun cj/log-silently" modules/
+   ```
+
+2. **Review implementation:**
+   - Check if it has dependencies on mode-specific functionality
+   - Verify it's truly generic (should be)
+   - Check for any callers that need updating
+
+3. **Move to system-lib.el:**
+   - Cut from current location
+   - Paste into system-lib.el
+   - Add appropriate commentary/docstring
+   - Ensure proper section organization
+
+4. **Update callers:**
+   - Find all uses: `grep -rn "cj/log-silently" modules/`
+   - Add `(require 'system-lib)` to any module that uses it
+   - Verify no circular dependencies
+
+5. **Write tests:**
+   Create `tests/test-system-lib-log-silently.el` with coverage for:
+   - Normal cases: logging simple messages
+   - Boundary cases: empty strings, very long messages, special characters
+   - Error cases: nil input, non-string input
+   - Verify output: check *Messages* buffer contains logged text
+   - Verify silence: ensure nothing appears in echo area
+
+**Expected Signature:**
+```elisp
+(defun cj/log-silently (format-string &rest args)
+  "Log a message to *Messages* buffer without displaying in echo area.
+FORMAT-STRING and ARGS work like `message' but output is not shown to user."
+  (let ((inhibit-message t))
+    (apply #'message format-string args)))
+```
+
+**Related Files:**
+- modules/system-lib.el (destination)
+- Current module where cj/log-silently lives (TBD - find it)
+- All modules that call cj/log-silently (update requires)
+- tests/test-system-lib-log-silently.el (NEW - create this)
+
+**Related Docs:**
+- System-lib refactoring initiative (previous TODO)
+- quality-engineer.org (testing guidance)
+- Recent refactoring: moved cj/executable-exists-p to system-lib
+- V2MOM Method 2: Stop Problems Before They Appear (better organization)
+
+**Success Criteria:**
+- cj/log-silently moved to system-lib.el
+- All callers updated with proper requires
+- Comprehensive test coverage (normal/boundary/error cases)
+- All existing tests still pass (no regressions)
+- Function works identically to before
+- Well-documented in system-lib.el
+
+**Testing:**
+1. Run all tests before move (baseline)
+2. Move function and update requires
+3. Run all tests after move (verify no breakage)
+4. Run new cj/log-silently tests (verify behavior)
+5. Test in real usage (logging works, messages not shown)
+
+**Note:**
+Priority [#B] because this is part of the larger system-lib consolidation effort
+(separate TODO). Logging utilities are commonly used, so centralizing them improves
+discoverability and encourages consistent logging patterns across the codebase.
+
+** TODO [#B] Select one method for dirvish to open files with default MIME handler detached from Emacs
+
+Consolidate duplicate file-opening methods into a single, working implementation that
+dirvish can use to open files with their default system MIME handler, detached from
+the Emacs process so closing Emacs doesn't kill the opened application.
+
+**Problem:**
+- Multiple duplicate methods exist for opening files externally
+- Unclear which method actually works correctly
+- Likely scattered across dired-config.el, dirvish-config.el, or file utilities
+- Need one canonical implementation that:
+  - Opens file with system default application (xdg-open on Linux)
+  - Detaches from Emacs process (doesn't block, doesn't die with Emacs)
+  - Can be called by dirvish keybindings
+  - Works reliably across file types
+
+**Investigation:**
+
+1. **Find all duplicate methods:**
+   ```bash
+   grep -rn "xdg-open\|open-externally\|system-open\|mime-open" modules/
+   grep -rn "start-process.*xdg-open" modules/
+   grep -rn "defun.*open.*external" modules/
+   ```
+
+2. **Check dirvish configuration:**
+   - Review modules/dirvish-config.el
+   - Look for keybindings that open files externally
+   - Check what function is currently bound (if any)
+   - Note any custom file-opening logic
+
+3. **Check dired configuration:**
+   - Review modules/dired-config.el
+   - Look for external open functions
+   - May have duplicate or conflicting implementations
+
+4. **Test each method found:**
+   - Does it open the file?
+   - Does it detach properly (start-process vs call-process)?
+   - Does it work with all file types?
+   - Does closing Emacs kill the opened app?
+
+**Requirements for Chosen Method:**
+
+```elisp
+(defun cj/open-file-externally (file)
+  "Open FILE with system default application, detached from Emacs.
+FILE is opened using xdg-open (or equivalent) in a detached process
+that survives Emacs session ending."
+  (interactive "fFile to open: ")
+  (start-process "xdg-open" nil "xdg-open" (expand-file-name file)))
+```
+
+Key characteristics:
+- Uses `start-process` (not `call-process`) for true detachment
+- First arg: process name (not important, can be "xdg-open")
+- Second arg: nil (no buffer, fully detached)
+- Third+ args: command and file path
+- Should expand file path to absolute path
+- Should work from dirvish context
+
+**Integration with Dirvish:**
+
+```elisp
+;; In dirvish-config.el
+(define-key dirvish-mode-map (kbd "C-c o") #'cj/open-file-externally)
+;; or similar keybinding
+```
+
+**Cleanup Tasks:**
+1. Identify the one best working method (or write it)
+2. Remove all duplicate implementations
+3. Update dirvish-config.el to use the chosen method
+4. Remove old keybindings to deleted methods
+5. Test with various file types (PDF, image, video, etc.)
+6. Document the keybinding in dirvish-config.el
+
+**Testing:**
+
+Test with different file types:
+- [ ] PDF file (should open in PDF viewer)
+- [ ] Image (should open in image viewer)
+- [ ] Video (should open in video player)
+- [ ] Text file (should open in text editor or ask)
+- [ ] Directory (should open in file manager or error gracefully)
+
+Test process detachment:
+- [ ] Open a file externally
+- [ ] Verify application opens
+- [ ] Close Emacs (C-x C-c)
+- [ ] Verify opened application still running
+- [ ] Verify no zombie processes
+
+**Related Files:**
+- modules/dirvish-config.el (primary integration point)
+- modules/dired-config.el (may have duplicates)
+- modules/file-operations.el (if exists - may have duplicates)
+- Any custom file utility modules
+
+**Related Docs:**
+- Emacs manual: start-process vs call-process (detachment)
+- xdg-open documentation (Linux MIME handler)
+- dirvish keybinding documentation
+- V2MOM Method 1: Frictionless (seamless file opening)
+
+**Success Criteria:**
+- Single canonical function for external file opening
+- All duplicates removed
+- Integrated with dirvish keybinding
+- Opens files with correct default application
+- Process properly detached (survives Emacs exit)
+- Works across all common file types
+- Documented in dirvish-config.el
+
+**Possible Locations of Duplicates:**
+- dired-config.el: May have old dired external open
+- dirvish-config.el: May have incomplete implementation
+- custom-buffer-file.el: Unlikely but check
+- system-lib.el: Could belong here if generic enough
+- init.el: May have old ad-hoc implementation
+
+**Decision: Where Should Final Function Live?**
+- If dirvish-specific: keep in dirvish-config.el
+- If also used by dired: put in dired-config.el, require from dirvish
+- If generic file utility: put in system-lib.el or new file-lib.el
+- Recommend: system-lib.el (generic system interaction)
+
+**Note:**
+Priority [#B] because duplicate code creates maintenance burden and having a
+reliable external file opener improves workflow. This is a common operation
+(opening PDFs, images, etc. from dirvish) that should just work without thinking.
+
+** TODO [#B] Remove ANSI color codes from Makefile test output
+
+The Makefile uses ANSI escape codes for colorization, but they clutter the output
+and make it harder to read in CI/batch mode. Replace with simple text markers.
+
+**Problem:**
+- Makefile uses variables like `COLOR_GREEN`, `COLOR_RED`, `COLOR_BLUE`
+- These insert ANSI escape codes like `\033[0;32m` into output
+- Makes output harder to read, especially in logs or when piped
+- Color codes don't work well in all terminals
+- Unnecessary complexity
+
+**Proposed Solution:**
+Replace color codes with simple text markers:
+- `✓` (checkmark) for success - KEEP THIS
+- `✗` (x mark) for failure - KEEP THIS
+- `[i]` for informational messages
+- Remove color entirely, rely on symbols alone
+
+**Examples:**
+Current:
+```
+\033[0;32m✓ All unit tests passed\033[0m
+\033[0;31m✗ 18 unit test file(s) failed\033[0m
+\033[0;34mRunning unit tests...\033[0m
+```
+
+Proposed:
+```
+✓ All unit tests passed
+✗ 18 unit test file(s) failed
+[i] Running unit tests...
+```
+
+**Implementation:**
+1. Find all `COLOR_*` variables in Makefile
+2. Replace colored text with plain text + symbols
+3. Remove color variable definitions
+4. Test that output is still clear and readable
+
+**Related Files:**
+- Makefile (all COLOR_ variables and usage)
+
+**Success Criteria:**
+- No ANSI escape codes in Makefile
+- Output still clear and readable
+- Uses text symbols (✓, ✗, [i]) appropriately
+- Simpler, cleaner Makefile
+- Test output works in any terminal/CI environment
+
+**Note:**
+Priority [#B] because it improves readability and maintainability. Not urgent,
+but makes the codebase cleaner and more portable.
+
