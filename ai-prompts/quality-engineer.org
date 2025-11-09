@@ -751,6 +751,273 @@ Key insight: **Not all refactoring projects require touching every file**
 - Focus effort on high-impact changes
 - Don't let perfectionism create unnecessary work
 
+## Refactoring for Testability
+
+*** When Code is Hard to Test, Refactor the Code
+
+If writing tests requires extensive mocking or complex setup, that's a signal the production code needs refactoring, not that you need more sophisticated mocks.
+
+**** Signs Code Needs Refactoring for Testability:
+- **Deep nesting** (7+ closing parens in a row)
+  - Hard to read, hard to debug, hard to test
+  - Each level of nesting is another thing to mock
+  - Callbacks within callbacks within callbacks
+  - Indicates mixing of concerns at different abstraction levels
+
+- **Long functions** doing multiple things
+  - If you can't describe the function in one sentence, it's doing too much
+  - Each "and" in the description suggests a function to extract
+  - Example: "Fetch URL *and* parse headers *and* decode UTF-8 *and* call callback"
+
+- **Testing requires mocking internal implementation details**
+  - If you're mocking `decode-coding-string` or `buffer-substring-no-properties`
+  - If tests break when you refactor without changing behavior
+  - If mocks recreate the function's internal logic
+
+**** Refactoring Pattern: Extract and Compose
+
+Instead of one complex function:
+#+begin_src elisp
+(defun complex-async-operation (url callback)
+  "Do everything in one nested mess."
+  (url-retrieve url
+    (lambda (status)
+      (let ((data nil))
+        (condition-case err
+            (if (plist-get status :error)
+                (progn
+                  (log "error")
+                  (setq data nil))
+              (unwind-protect
+                  (progn
+                    ;; Parse headers
+                    ;; Extract body
+                    ;; Decode UTF-8
+                    ;; Validate
+                    (setq data (process-everything)))
+                (kill-buffer)))
+          (error (setq data nil)))
+        (funcall callback data)))))
+#+end_src
+
+Extract focused helper functions:
+#+begin_src elisp
+(defun extract-response-body ()
+  "Extract and decode HTTP response body from current buffer.
+Returns nil on error. Kills buffer when done."
+  (condition-case err
+      (unwind-protect
+          (progn
+            (goto-char (point-min))
+            (re-search-forward "\r?\n\r?\n")
+            (decode-coding-string
+             (buffer-substring-no-properties (point) (point-max))
+             'utf-8))
+        (ignore-errors (kill-buffer (current-buffer))))
+    (error nil)))
+
+(defun handle-fetch-callback (status callback)
+  "Handle url-retrieve callback STATUS and invoke CALLBACK.
+Extracts response body or handles errors, then calls CALLBACK with data or nil."
+  (let ((data (if (plist-get status :error)
+                  nil
+                (extract-response-body))))
+    (condition-case err
+        (funcall callback data)
+      (error
+       (message "Error in callback: %s" (error-message-string err))))))
+
+(defun complex-async-operation (url callback)
+  "Asynchronously fetch URL and call CALLBACK with decoded response."
+  (url-retrieve url
+                (lambda (status)
+                  (handle-fetch-callback status callback))))
+#+end_src
+
+**** Benefits of This Refactoring:
+1. **Each function is testable in isolation**
+   - Test `extract-response-body` with temp buffers and various HTTP responses
+   - Test `handle-fetch-callback` by mocking only `extract-response-body`
+   - Test main function by mocking only `url-retrieve`
+
+2. **No deep nesting**
+   - Main function is 4 lines, trivially correct
+   - Helper functions are focused and linear
+   - Easy to understand data flow
+
+3. **Tests survive refactoring**
+   - Can change HOW response is extracted without changing WHAT is tested
+   - Unit tests verify each step works
+   - Integration tests verify steps work together
+
+4. **Clear separation of concerns**
+   - HTTP parsing separate from callback handling
+   - Error handling separate from business logic
+   - Each function has single responsibility
+
+**** Real-World Example: wttrin Mode-Line Bug
+
+**Problem**: Mode-line weather icon not appearing, debug logs showed fetch started but callback never invoked.
+
+**Initial debugging attempt**: Added logging to deeply nested callback:
+#+begin_src elisp
+(url-retrieve url
+  (lambda (status)
+    (let ((data nil))
+      (condition-case err
+          (if (plist-get status :error)
+              ;; ... nested error handling ...
+            (unwind-protect
+                ;; ... nested buffer processing ...
+              (kill-buffer)))
+        (error ...))
+      (funcall callback data))))  ;; 7 closing parens!
+#+end_src
+
+**Result**: Syntax errors from trying to add error handling. Tests for "callback fails" were overmocked and testing implementation details.
+
+**Solution**: Refactored into 3 focused functions (shown above).
+
+**Outcome**:
+- Bug identified: timing issue with early initialization, not callback logic
+- Added 26 new unit tests for extracted functions
+- Deleted 1 overmocked test that tested mocks, not real behavior
+- All 176 tests pass
+- Code is maintainable and debuggable
+
+*** Overmocking: When Tests Test Mocks Instead of Code
+
+**** The Overmocking Trap
+
+A test is overmocked when it mocks so much that it's testing the mocks, not the production code.
+
+**Example of overmocked test**:
+#+begin_src elisp
+(ert-deftest test-fetch-decoding-error ()
+  "Test that decoding errors are handled."
+  (cl-letf (((symbol-function 'url-retrieve)
+             (lambda (url callback)
+               (with-temp-buffer
+                 (cl-letf (((symbol-function 'decode-coding-string)
+                            (lambda (str coding)
+                              (error "Decode failed"))))
+                   (insert "HTTP/1.1 200 OK\r\n\r\ndata")
+                   (funcall callback nil)))))
+            ((symbol-function 'kill-buffer) #'ignore))
+    (wttrin--fetch-url "http://example.com"
+                       (lambda (data)
+                         (should (null data))))))
+#+end_src
+
+**Problems**:
+1. **Mocks internal implementation** (`decode-coding-string`)
+2. **Doesn't match reality** (real `url-retrieve` creates different buffer context)
+3. **Breaks on refactoring** (even if behavior unchanged)
+4. **Tests the mocks** (verifies mocked behavior, not production behavior)
+5. **Would pass if function was deleted** (mocks do all the work)
+
+**** How to Identify Overmocking
+
+Ask these questions:
+1. **Am I mocking internal functions?**
+   - Mocking `url-retrieve`: OK (external dependency)
+   - Mocking `decode-coding-string`: Overmocked (internal implementation)
+
+2. **Would this test pass if I deleted the function body?**
+   - If yes, you're testing the mocks, not the code
+
+3. **Am I recreating the function's logic in mocks?**
+   - If mocks contain the algorithm, you're not testing anything
+
+4. **Does the test break when I refactor without changing behavior?**
+   - Good tests survive refactoring
+   - Overmocked tests couple to implementation details
+
+5. **Is the mock more complex than the code being tested?**
+   - Red flag: test complexity should be much less than production complexity
+
+**** The Fix: Refactor Code, Not Tests
+
+When you identify an overmocked test:
+
+**Option 1: Delete the test**
+- If it's testing implementation details, it has no value
+- If other tests cover the behavior, remove duplication
+- Example: Delete "test decoding error" - network error tests are sufficient
+
+**Option 2: Refactor the code to be testable**
+- Extract the mocked logic into a separate function
+- Test that function in isolation with real data
+- Mock only at boundaries (network, file I/O, time)
+
+**Option 3: Convert to integration test**
+- If testing component interaction matters
+- Use real implementations where possible
+- Mock only true external dependencies
+
+**** Mocking Guidelines
+
+**Mock these (external boundaries)**:
+- Network calls (`url-retrieve`, `request`, HTTP clients)
+- File system (`find-file`, `write-region`, `delete-file`)
+- Time (`current-time`, `float-time`)
+- User input (`read-string`, `yes-or-no-p`)
+- External processes (`call-process`, `start-process`)
+
+**Don't mock these (internal implementation)**:
+- String functions (`substring`, `concat`, `format`)
+- Encoding/decoding (`decode-coding-string`, `encode-coding-string`)
+- Data structures (`plist-get`, `alist-get`, `nth`)
+- Parsing logic (JSON, XML, org-mode)
+- Business logic (your domain code)
+
+**Gray area (context-dependent)**:
+- Buffer functions - Mock if testing buffer management, use real buffers if testing content
+- Logging - Usually OK to mock/disable for cleaner test output
+- Callbacks - Mock if testing callback invocation, use real ones if testing data flow
+
+**** Case Study: Deleting an Overmocked Test
+
+**The test** (from wttrin refactoring):
+#+begin_src elisp
+(ert-deftest test-fetch-processing-error ()
+  (cl-letf (((symbol-function 'url-retrieve) ...)
+            ((symbol-function 'decode-coding-string)
+             (lambda (...) (error "Decoding error"))))
+    ...))
+#+end_src
+
+**Red flags**:
+- Mocks `decode-coding-string` (internal implementation)
+- Mock doesn't match real buffer context
+- Test failed with "Marker does not point anywhere" (fighting mocks, not fixing bugs)
+- Tested edge case (decode failure) already covered by network error tests
+
+**Decision**: **Delete it**
+- No behavior lost (network errors already tested)
+- Removed maintenance burden (test coupled to implementation)
+- Fighting the test, not fixing real bugs
+
+**Alternative considered**: Refactor code
+- But network error coverage made this test redundant
+- Sometimes the right test count is fewer tests
+
+**** Key Insight: Test Behavior, Not Implementation
+
+Focus on **what** the code does, not **how** it does it.
+
+**Bad** (tests implementation):
+- "When decode-coding-string fails, callback gets nil"
+- "When buffer parsing throws error, buffer is cleaned up"
+- "When regex match fails, function returns nil"
+
+**Good** (tests behavior):
+- "When network request fails, callback gets nil"
+- "When URL returns invalid data, callback gets nil"
+- "When server is unreachable, callback gets nil"
+
+The implementation might change (different parsing, different error handling), but the behavior contract stays the same.
+
 ## Red Flags
 
 Watch for and report these issues:
@@ -762,7 +1029,11 @@ Watch for and report these issues:
   - Tests where mocks do the actual work instead of the production code
   - Tests that would pass if the function implementation was deleted
   - Mocking data parsing/transformation when you should create real test data
+  - **Mocking internal implementation details** (decode-coding-string, buffer functions, string parsing)
+  - **Tests more complex than the code** (if test setup is longer than the function, something's wrong)
+  - **Tests that break when refactoring** without behavior change (coupled to implementation)
 - Flaky tests that pass/fail intermittently
 - Tests that are too slow
 - Tests that require manual setup or verification
 - **Hardcoded dates in tests** - Will fail when dates pass, creates maintenance burden
+- **Deep nesting in production code** (7+ closing parens) - refactor, don't just test
