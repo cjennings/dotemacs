@@ -10,55 +10,33 @@
 
 ;; ----------------------------------- Wttrin ----------------------------------
 
-;; Load wttrin from local development directory
-(add-to-list 'load-path "/home/cjennings/code/wttrin")
-
-;; Set debug flag BEFORE loading wttrin (checked at load time)
-;; Change this to t to enable debug logging
-(setq wttrin-debug t)
-
 (use-package wttrin
   ;; Uncomment the next line to use vc-install instead of local directory:
   ;; :vc (:url "https://github.com/cjennings/emacs-wttrin" :rev :newest)
-  :defer t
+  :demand t  ;; REQUIRED: mode-line must start at Emacs startup
+  :load-path "/home/cjennings/code/wttrin"
   :preface
-  ;; dependency for wttrin
-  (use-package xterm-color
-	:demand t)
+  ;; Change this to t to enable debug logging
+  ;; (setq wttrin-debug t)
   :bind
   ("M-W" . wttrin)
-  :custom
-  ;; wttrin-debug must be set BEFORE loading (see line 17 above)
-  (wttrin-unit-system "u")
-  (wttrin-mode-line-favorite-location "New Orleans, LA")
-  (wttrin-mode-line-refresh-interval 900)  ; 15 minutes
-  :init
-  ;; Explicitly autoload the mode function (needed for local dev directory)
-  (autoload 'wttrin-mode-line-mode "wttrin" "Toggle weather display in mode-line." t)
-  ;; Enable mode-line widget AFTER Emacs finishes initializing
-  ;; (url-retrieve async needs full init to work without buffer errors)
-  (if (daemonp)
-      ;; Daemon mode: wait for first client to connect
-      (add-hook 'server-after-make-frame-hook
-                (lambda () (wttrin-mode-line-mode 1))
-                t) ; append to end of hook
-    ;; Normal Emacs: wait for startup to complete
-    (add-hook 'after-init-hook
-              (lambda () (wttrin-mode-line-mode 1))
-              t)) ; append to end of hook
   :config
+  (setopt wttrin-unit-system "u")
+  (setopt wttrin-mode-line-favorite-location "New Orleans, LA")
+  (setopt wttrin-mode-line-refresh-interval (* 30 60)) ;; thirty minutes
   (setq wttrin-default-locations '(
-							  "New Orleans, LA"
-							  "Athens, GR"
-							  "Berkeley, CA"
-							  "Bury St Edmunds, UK"
-							  "Kyiv, UA"
-							  "Littlestown, PA"
-							  "Soufrière, St Lucia"
-							  "London, GB"
-							  "Naples, IT"
-							  "New York, NY"
-							  )))
+                                   "New Orleans, LA"
+                                   "Athens, GR"
+                                   "Berkeley, CA"
+                                   "Bury St Edmunds, UK"
+                                   "Kyiv, UA"
+                                   "Littlestown, PA"
+                                   "Soufrière, St Lucia"
+                                   "London, GB"
+                                   "Naples, IT"
+                                   "New York, NY"
+                                   ))
+  (wttrin-mode-line-mode 1))
 
 (provide 'weather-config)
 ;;; weather-config.el ends here.
