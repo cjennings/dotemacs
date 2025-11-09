@@ -16,6 +16,7 @@
 ;;; Code:
 
 (use-package popper
+  :disabled t
   :bind (("C-`"   . popper-toggle)
          ("M-`"   . popper-cycle)
          ("C-M-`" . popper-toggle-type))
@@ -23,7 +24,8 @@
   (popper-display-control-nil)
   :init
   (setq popper-reference-buffers
-        '("\\*Messages\\*"
+        '(
+  ;;        "\\*Messages\\*"
           "Output\\*$"
           "\\*Async Shell Command\\*"
           "\\*Async-native-compile-log\\*"
