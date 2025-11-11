@@ -7,11 +7,19 @@
 
 ;; • auth-source
 ;;   – Forces use of your default authinfo file
-;;   – Disable external GPG agent in favor of Emacs’s own prompt
+;;   – Disable external GPG agent in favor of Emacs's own prompt
 ;;   – Enable auth-source debug messages
 
 ;; • Easy PG Assistant (epa)
-;;   – Force using the ‘gpg2’ executable for encryption/decryption operations
+;;   – Force using the 'gpg2' executable for encryption/decryption operations
+
+;; • oauth2-auto cache fix (via advice)
+;;   – oauth2-auto version 20250624.1919 has caching bug on line 206
+;;   – Function oauth2-auto--plstore-read has `or nil` disabling cache
+;;   – This caused GPG passphrase prompts every ~15 minutes during gcal-sync
+;;   – Fix: Advice to enable hash-table cache without modifying package
+;;   – Works across package updates
+;;   – Fixed 2025-11-11
 
 ;;; Code:
 
@@ -58,6 +66,36 @@
   (setq plstore-cache-passphrase-for-symmetric-encryption t)
   ;; Allow gpg-agent to cache the passphrase (400 days per gpg-agent.conf)
   (setq plstore-encrypt-to nil)) ;; Use symmetric encryption, not key-based
+
+;; ----------------------------- oauth2-auto Cache Fix -----------------------------
+;; Fix oauth2-auto caching bug that causes repeated GPG passphrase prompts.
+;; The package has `or nil` on line 206 that disables its internal cache.
+;; This advice overrides the buggy function to enable caching properly.
+
+(defun cj/oauth2-auto--plstore-read-fixed (username provider)
+  "Fixed version of oauth2-auto--plstore-read that enables caching.
+
+This is a workaround for oauth2-auto.el bug where line 206 has:
+  (or nil ;(gethash id oauth2-auto--plstore-cache)
+which completely disables the internal hash-table cache.
+
+This function re-implements the intended behavior with cache enabled."
+  (require 'oauth2-auto)  ; Ensure package is loaded
+  (let ((id (oauth2-auto--compute-id username provider)))
+    ;; Check cache FIRST (this is what the original should do)
+    (or (gethash id oauth2-auto--plstore-cache)
+        ;; Cache miss - read from plstore and cache the result
+        (let ((plstore (plstore-open oauth2-auto-plstore)))
+          (unwind-protect
+              (puthash id
+                       (cdr (plstore-get plstore id))
+                       oauth2-auto--plstore-cache)
+            (plstore-close plstore))))))
+
+;; Apply the fix via advice (survives package updates)
+(with-eval-after-load 'oauth2-auto
+  (advice-add 'oauth2-auto--plstore-read :override #'cj/oauth2-auto--plstore-read-fixed)
+  (message "✓ oauth2-auto cache fix applied via advice"))
 
 ;; ------------------------ Authentication Reset Utility -----------------------
 
@@ -111,6 +149,22 @@ The gpg-agent will automatically restart on the next GPG operation."
     (if (zerop result)
         (message "✓ gpg-agent killed. It will restart automatically on next use.")
       (message "⚠ Warning: Failed to kill gpg-agent"))))
+
+(defun cj/clear-oauth2-auto-cache ()
+  "Clear the oauth2-auto in-memory token cache.
+
+This forces oauth2-auto to re-read tokens from oauth2-auto.plist on next
+access.  Useful when OAuth tokens have been manually updated or after
+re-authentication.
+
+Note: This only clears Emacs's in-memory cache.  The oauth2-auto.plist
+file on disk is not modified."
+  (interactive)
+  (if (boundp 'oauth2-auto--plstore-cache)
+      (progn
+        (clrhash oauth2-auto--plstore-cache)
+        (message "✓ oauth2-auto token cache cleared"))
+    (message "⚠ oauth2-auto not loaded yet")))
 
 ;; Keybindings
 (with-eval-after-load 'keybindings
