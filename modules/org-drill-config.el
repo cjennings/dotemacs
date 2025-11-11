@@ -19,16 +19,48 @@
 ;; --------------------------------- Org Drill ---------------------------------
 
 (use-package org-drill
+  :vc (:url "https://github.com/cjennings/org-drill"
+       :branch "main"
+       :rev :newest)
   :after (org org-capture)
+  :demand t
   :commands (org-drill cj/drill-start)
   :config
   (setq org-drill-leech-failure-threshold 50)           ;; leech cards = 50 wrong anwers
   (setq org-drill-leech-method 'warn)                   ;; leech cards show warnings
   (setq org-drill-use-visible-cloze-face-p t)           ;; cloze text show up in a different font
   (setq org-drill-hide-item-headings-p t)               ;; don't show heading text
-  (setq org-drill-maximum-items-per-session 1000)       ;; drill sessions end after 1000 cards
-  (setq org-drill-maximum-duration 60)                  ;; each drill session can last up to a an hour
+  (setq org-drill-maximum-items-per-session 100)        ;; drill sessions end after 100 cards
+  (setq org-drill-maximum-duration 30)                  ;; each drill session can last up to 30 mins
   (setq org-drill-add-random-noise-to-intervals-p t)    ;; slightly vary number of days to repetition
+
+  ;; ------------------------------ Display Settings -----------------------------
+
+  ;; Customize how drill cards are displayed: bigger text + proportional font
+  ;; Only affects the drill buffer, not other buffers
+
+  (defun cj/org-drill-setup-display ()
+    "Set up larger text and proportional font for drill sessions.
+This runs when each drill card is displayed. Uses buffer-local settings
+so it doesn't affect other buffers."
+    ;; Only apply in org-mode buffers (drill files)
+    (when (derived-mode-p 'org-mode)
+      ;; Make text bigger (3 = 30% larger, adjust to taste)
+      (text-scale-set 3)
+
+      ;; Use proportional (variable-width) font for readability
+      ;; This is buffer-local so won't affect other buffers
+      (variable-pitch-mode 1)
+
+      ;; Optional: Center the text for better focus (requires visual-fill-column package)
+      ;; (when (fboundp 'visual-fill-column-mode)
+      ;;   (setq-local visual-fill-column-width 100)
+      ;;   (setq-local visual-fill-column-center-text t)
+      ;;   (visual-fill-column-mode 1))
+      ))
+
+  ;; Hook runs when each answer is displayed
+  (add-hook 'org-drill-display-answer-hook #'cj/org-drill-setup-display)
 
   (defun cj/drill-start ()
 	"Prompt user to pick a drill org file, then start an org-drill session."
