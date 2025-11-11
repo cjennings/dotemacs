@@ -35,6 +35,13 @@
   (setq magit-clone-set-remote.pushDefault 'ask) ;; ask if origin is default
   ) ;; end use-package magit
 
+;; Git Clone from Clipboard
+(defvar cj/git-clone-dirs
+  (list code-dir                    ;; Already configured in your init
+        "~/projects/"
+        user-emacs-directory)        ;; For cloning Emacs packages
+  "List of directories to choose from when cloning with prefix argument.")
+
 ;; --------------------------------- Git Gutter --------------------------------
 ;; mark changed lines since last commit in the margin
 
@@ -123,6 +130,49 @@ interactive selection to jump to any changed line in the buffer."
   (require 'git-gutter)
   (consult-line "^[+\\-]"))
 
+;; ------------------------------ Git Clone Clipboard -----------------------------
+;; Quick git clone from clipboard URL
+;; Based on: https://xenodium.com/bending-emacs-episode-3-git-clone-the-lazy-way
+
+(defun cj/git-clone-clipboard-url (url target-dir)
+  "Clone git repository from clipboard URL to TARGET-DIR.
+
+With no prefix argument: uses first directory in `cj/git-clone-dirs'.
+With \\[universal-argument]: choose from `cj/git-clone-dirs'.
+With \\[universal-argument] \\[universal-argument]: choose any directory.
+
+After cloning, opens the repository's README file if found."
+  (interactive
+   (list (current-kill 0)  ;; Get URL from clipboard
+         (cond
+          ;; C-u C-u: Choose any directory
+          ((equal current-prefix-arg '(16))
+           (read-directory-name "Clone to: " code-dir))
+          ;; C-u: Choose from configured list
+          (current-prefix-arg
+           (completing-read "Clone to: " cj/git-clone-dirs nil t))
+          ;; No prefix: Use default (first in list)
+          (t (car cj/git-clone-dirs)))))
+
+  (let* ((default-directory target-dir)
+         (repo-name (file-name-sans-extension
+                     (file-name-nondirectory url)))
+         (clone-dir (expand-file-name repo-name target-dir)))
+
+    ;; Clone the repository
+    (message "Cloning %s to %s..." url target-dir)
+    (shell-command (format "git clone %s" (shell-quote-argument url)))
+
+    ;; Find and open README
+    (when (file-directory-p clone-dir)
+      (let ((readme (seq-find
+                     (lambda (file)
+                       (string-match-p "^README" (upcase file)))
+                     (directory-files clone-dir))))
+        (if readme
+            (find-file (expand-file-name readme clone-dir))
+          (dired clone-dir))))))
+
 ;; -------------------------------- Difftastic ---------------------------------
 ;; Structural diffs for better git change visualization
 ;; Requires: difft binary (installed via pacman -S difftastic)
@@ -144,23 +194,32 @@ interactive selection to jump to any changed line in the buffer."
 ;; Ordering & sorting prefix and keymap
 (defvar-keymap cj/vc-map
   :doc "Keymap for version control operations"
+  "c" #'cj/git-clone-clipboard-url
   "d" #'cj/goto-git-gutter-diff-hunks
-  "c" #'cj/forge-create-issue
   "f" #'forge-pull
-  "i" #'forge-list-issues
   "n" #'git-gutter:next-hunk
   "p" #'git-gutter:previous-hunk
   "r" #'forge-list-pullreqs
   "t" #'cj/git-timemachine)
 
+;; Issues submenu under C-; v i
+(defvar-keymap cj/vc-issues-map
+  :doc "Keymap for forge issue operations"
+  "c" #'cj/forge-create-issue
+  "l" #'forge-list-issues)
+
+(keymap-set cj/vc-map "i" cj/vc-issues-map)
+
 (keymap-set cj/custom-keymap "v" cj/vc-map)
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; v" "version control menu"
+    "C-; v c" "clone from clipboard"
     "C-; v d" "goto diff hunks"
-    "C-; v c" "create issue"
     "C-; v f" "forge pull"
-    "C-; v i" "list issues"
+    "C-; v i" "issues menu"
+    "C-; v i c" "create issue"
+    "C-; v i l" "list issues"
     "C-; v n" "next hunk"
     "C-; v p" "previous hunk"
     "C-; v r" "list pull requests"
