@@ -3,12 +3,51 @@
 ;;
 ;;; Commentary:
 ;; Use ffmpeg to record desktop video or just audio.
-;; with audio from mic and audio from default audio sink
+;; Records audio from both microphone and system audio (for calls/meetings).
 ;; Audio recordings use M4A/AAC format for best compatibility.
 ;;
 ;; Note: video-recordings-dir and audio-recordings-dir are defined
 ;; (and directory created) in user-constants.el
 ;;
+;; Quick Start
+;; ===========
+;; 1. Press C-; r a (start/stop audio recording)
+;; 2. First time: you'll be prompted for device setup
+;; 3. Choose "Bluetooth Headset" (or your device)
+;; 4. Recording starts - you'll see 🔴Audio in your modeline
+;; 5. Press C-; r a again to stop (🔴 disappears)
+;;
+;; Device Setup (First Time Only)
+;; ===============================
+;; C-; r a automatically prompts for device selection on first use.
+;; Device selection persists across Emacs sessions.
+;;
+;; Manual device selection:
+;;
+;; C-; r c (cj/recording-quick-setup-for-calls) - RECOMMENDED
+;;   Quick setup: picks one device for both mic and monitor.
+;;   Perfect for calls, meetings, or when using headset.
+;;
+;; C-; r s (cj/recording-select-devices) - ADVANCED
+;;   Manual selection: choose mic and monitor separately.
+;;   Use when you need different devices for input/output.
+;;
+;; C-; r d (cj/recording-list-devices)
+;;   List all available audio devices and current configuration.
+;;
+;; Testing Devices Before Important Recordings
+;; ============================================
+;; Always test devices before important meetings/calls:
+;;
+;; C-; r t b (cj/recording-test-both) - RECOMMENDED
+;;   Guided test: mic only, monitor only, then both together.
+;;   Catches hardware issues before they ruin recordings!
+;;
+;; C-; r t m (cj/recording-test-mic)
+;;   Quick 5-second mic test with playback.
+;;
+;; C-; r t s (cj/recording-test-monitor)
+;;   Quick 5-second system audio test with playback.
 ;;
 ;; To adjust volumes:
 ;; - Use =M-x cj/recording-adjust-volumes= (or your keybinding =r l=)
@@ -47,6 +86,36 @@ If nil, will auto-detect on first use.")
 (defvar cj/audio-recording-ffmpeg-process nil
   "Variable to store the process of the ffmpeg audio recording.")
 
+;; Modeline recording indicator
+(defun cj/recording-modeline-indicator ()
+  "Return modeline string showing active recordings.
+Shows 🔴 when recording (audio and/or video).
+Checks if process is actually alive, not just if variable is set."
+  (let ((audio-active (and cj/audio-recording-ffmpeg-process
+                          (process-live-p cj/audio-recording-ffmpeg-process)))
+        (video-active (and cj/video-recording-ffmpeg-process
+                          (process-live-p cj/video-recording-ffmpeg-process))))
+    (cond
+     ((and audio-active video-active) " 🔴A+V ")
+     (audio-active " 🔴Audio ")
+     (video-active " 🔴Video ")
+     (t ""))))
+
+(defun cj/recording-process-sentinel (process event)
+  "Sentinel for recording processes to clean up and update modeline.
+PROCESS is the ffmpeg process, EVENT describes what happened."
+  (when (memq (process-status process) '(exit signal))
+    ;; Process ended - clear the variable
+    (cond
+     ((eq process cj/audio-recording-ffmpeg-process)
+      (setq cj/audio-recording-ffmpeg-process nil)
+      (message "Audio recording stopped: %s" (string-trim event)))
+     ((eq process cj/video-recording-ffmpeg-process)
+      (setq cj/video-recording-ffmpeg-process nil)
+      (message "Video recording stopped: %s" (string-trim event))))
+    ;; Force modeline update
+    (force-mode-line-update t)))
+
 (defun cj/recording-check-ffmpeg ()
   "Check if ffmpeg is available.
 Return t if found, nil otherwise."
@@ -55,19 +124,10 @@ Return t if found, nil otherwise."
     nil)
   t)
 
-(defun cj/recording-detect-mic-device ()
-  "Auto-detect PulseAudio microphone input device.
-Returns device name or nil if not found."
-  (let ((output (shell-command-to-string "pactl list sources short 2>/dev/null")))
-    (when (string-match "\\([^\t\n]+\\).*analog.*stereo" output)
-      (match-string 1 output))))
-
-(defun cj/recording-detect-system-device ()
-  "Auto-detect PulseAudio system audio monitor device.
-Returns device name or nil if not found."
-  (let ((output (shell-command-to-string "pactl list sources short 2>/dev/null")))
-    (when (string-match "\\([^\t\n]+\\.monitor\\)" output)
-      (match-string 1 output))))
+;; Auto-detection functions removed - they were unreliable and preferred built-in
+;; audio over Bluetooth/USB devices. Use explicit device selection instead:
+;; - C-; r c (cj/recording-quick-setup-for-calls) - recommended for most use cases
+;; - C-; r s (cj/recording-select-devices) - manual selection of mic + monitor
 
 (defun cj/recording--parse-pactl-output (output)
   "Internal parser for pactl sources output.  Takes OUTPUT string.
@@ -223,51 +283,139 @@ Perfect for recording video calls, phone calls, or presentations."
                  (file-name-nondirectory mic)
                  (file-name-nondirectory monitor))))))
 
-(defun cj/recording-get-devices ()
-  "Get or auto-detect audio devices.
-Returns (mic-device . system-device) or nil on error."
-  ;; Auto-detect if not already set
+(defun cj/recording-test-mic ()
+  "Test microphone by recording 5 seconds and playing it back.
+Records from configured mic device, saves to temp file, plays back.
+Useful for verifying mic hardware works before important recordings."
+  (interactive)
   (unless cj/recording-mic-device
-    (setq cj/recording-mic-device (cj/recording-detect-mic-device)))
-  (unless cj/recording-system-device
-    (setq cj/recording-system-device (cj/recording-detect-system-device)))
+    (user-error "No microphone configured. Run C-; r c first"))
 
-  ;; If auto-detection failed, prompt user to select
+  (let* ((temp-file (make-temp-file "mic-test-" nil ".wav"))
+         (duration 5))
+    (message "Recording from mic for %d seconds... SPEAK NOW!" duration)
+    (shell-command
+     (format "ffmpeg -f pulse -i %s -t %d -y %s 2>/dev/null"
+             (shell-quote-argument cj/recording-mic-device)
+             duration
+             (shell-quote-argument temp-file)))
+    (message "Playing back recording...")
+    (shell-command (format "ffplay -autoexit -nodisp %s 2>/dev/null &"
+                           (shell-quote-argument temp-file)))
+    (message "Mic test complete. Temp file: %s" temp-file)))
+
+(defun cj/recording-test-monitor ()
+  "Test system audio monitor by recording 5 seconds and playing it back.
+Records from configured monitor device (system audio output).
+Play some audio/video during test. Useful for verifying you can capture
+conference call audio, YouTube, etc."
+  (interactive)
+  (unless cj/recording-system-device
+    (user-error "No system monitor configured. Run C-; r c first"))
+
+  (let* ((temp-file (make-temp-file "monitor-test-" nil ".wav"))
+         (duration 5))
+    (message "Recording system audio for %d seconds... PLAY SOMETHING NOW!" duration)
+    (shell-command
+     (format "ffmpeg -f pulse -i %s -t %d -y %s 2>/dev/null"
+             (shell-quote-argument cj/recording-system-device)
+             duration
+             (shell-quote-argument temp-file)))
+    (message "Playing back recording...")
+    (shell-command (format "ffplay -autoexit -nodisp %s 2>/dev/null &"
+                           (shell-quote-argument temp-file)))
+    (message "Monitor test complete. Temp file: %s" temp-file)))
+
+(defun cj/recording-test-both ()
+  "Test both mic and monitor together with guided prompts.
+This simulates a real recording scenario:
+1. Tests mic only (speak into it)
+2. Tests monitor only (play audio/video)
+3. Tests both together (speak while audio plays)
+
+Run this before important recordings to verify everything works!"
+  (interactive)
   (unless (and cj/recording-mic-device cj/recording-system-device)
-    (when (y-or-n-p "Could not auto-detect audio devices.  Select manually? ")
+    (user-error "Devices not configured. Run C-; r c first"))
+
+  (when (y-or-n-p "Test 1: Record from MICROPHONE only (5 sec). Ready? ")
+    (cj/recording-test-mic)
+    (sit-for 6))  ; Wait for playback
+
+  (when (y-or-n-p "Test 2: Record from SYSTEM AUDIO only (5 sec). Start playing audio/video, then press y: ")
+    (cj/recording-test-monitor)
+    (sit-for 6))  ; Wait for playback
+
+  (when (y-or-n-p "Test 3: Record BOTH mic + system audio (5 sec). Speak while audio plays, then press y: ")
+    (let* ((temp-file (make-temp-file "both-test-" nil ".wav"))
+           (duration 5))
+      (message "Recording BOTH for %d seconds... SPEAK + PLAY AUDIO NOW!" duration)
+      (shell-command
+       (format "ffmpeg -f pulse -i %s -f pulse -i %s -filter_complex \"[0:a]volume=%.1f[mic];[1:a]volume=%.1f[sys];[mic][sys]amix=inputs=2:duration=longest\" -t %d -y %s 2>/dev/null"
+               (shell-quote-argument cj/recording-mic-device)
+               (shell-quote-argument cj/recording-system-device)
+               cj/recording-mic-boost
+               cj/recording-system-volume
+               duration
+               (shell-quote-argument temp-file)))
+      (message "Playing back recording...")
+      (shell-command (format "ffplay -autoexit -nodisp %s 2>/dev/null &"
+                             (shell-quote-argument temp-file)))
+      (sit-for 6)
+      (message "All tests complete! Temp file: %s" temp-file)))
+
+  (message "Device testing complete. If you heard audio in all tests, recording will work!"))
+
+(defun cj/recording-get-devices ()
+  "Get audio devices, prompting user if not already configured.
+Returns (mic-device . system-device) or nil on error."
+  ;; If devices not set, prompt user to select them
+  (unless (and cj/recording-mic-device cj/recording-system-device)
+    (if (y-or-n-p "Audio devices not configured. Use quick setup for calls? ")
+        (cj/recording-quick-setup-for-calls)
       (cj/recording-select-devices)))
 
   ;; Final validation
   (unless (and cj/recording-mic-device cj/recording-system-device)
-    (user-error "Audio devices not configured.  Run M-x cj/recording-select-devices"))
+    (user-error "Audio devices not configured.  Run C-; r c (quick setup) or C-; r s (manual select)"))
 
   (cons cj/recording-mic-device cj/recording-system-device))
 
-(defun cj/video-recording-start (arg)
-  "Start the ffmpeg video recording.
+(defun cj/video-recording-toggle (arg)
+  "Toggle video recording: start if not recording, stop if recording.
+On first use (or when devices not configured), runs quick setup (C-; r c).
 With prefix ARG, prompt for recording location.
 Otherwise use the default location in `video-recordings-dir'."
   (interactive "P")
-  (let* ((location (if arg
-					   (read-directory-name "Enter recording location: ")
-					 video-recordings-dir))
-		 (directory (file-name-directory location)))
-	(unless (file-directory-p directory)
-	  (make-directory directory t))
-	(cj/ffmpeg-record-video location)))
+  (if cj/video-recording-ffmpeg-process
+      ;; Recording in progress - stop it
+      (cj/video-recording-stop)
+    ;; Not recording - start it
+    (let* ((location (if arg
+                         (read-directory-name "Enter recording location: ")
+                       video-recordings-dir))
+           (directory (file-name-directory location)))
+      (unless (file-directory-p directory)
+        (make-directory directory t))
+      (cj/ffmpeg-record-video location))))
 
-(defun cj/audio-recording-start (arg)
-  "Start the ffmpeg audio recording.
+(defun cj/audio-recording-toggle (arg)
+  "Toggle audio recording: start if not recording, stop if recording.
+On first use (or when devices not configured), runs quick setup (C-; r c).
 With prefix ARG, prompt for recording location.
 Otherwise use the default location in `audio-recordings-dir'."
   (interactive "P")
-  (let* ((location (if arg
-					   (read-directory-name "Enter recording location: ")
-					 audio-recordings-dir))
-		 (directory (file-name-directory location)))
-	(unless (file-directory-p directory)
-	  (make-directory directory t))
-	(cj/ffmpeg-record-audio location)))
+  (if cj/audio-recording-ffmpeg-process
+      ;; Recording in progress - stop it
+      (cj/audio-recording-stop)
+    ;; Not recording - start it
+    (let* ((location (if arg
+                         (read-directory-name "Enter recording location: ")
+                       audio-recordings-dir))
+           (directory (file-name-directory location)))
+      (unless (file-directory-p directory)
+        (make-directory directory t))
+      (cj/ffmpeg-record-audio location))))
 
 (defun cj/ffmpeg-record-video (directory)
   "Start an ffmpeg video recording.  Save output to DIRECTORY."
@@ -299,6 +447,8 @@ Otherwise use the default location in `audio-recordings-dir'."
 										 "*ffmpeg-video-recording*"
 										 ffmpeg-command))
 	  (set-process-query-on-exit-flag cj/video-recording-ffmpeg-process nil)
+	  (set-process-sentinel cj/video-recording-ffmpeg-process #'cj/recording-process-sentinel)
+	  (force-mode-line-update t)
 	  (message "Started video recording to %s (mic: %.1fx, system: %.1fx)."
 			   filename cj/recording-mic-boost cj/recording-system-volume))))
 
@@ -333,6 +483,8 @@ Otherwise use the default location in `audio-recordings-dir'."
 										 "*ffmpeg-audio-recording*"
 										 ffmpeg-command))
 	  (set-process-query-on-exit-flag cj/audio-recording-ffmpeg-process nil)
+	  (set-process-sentinel cj/audio-recording-ffmpeg-process #'cj/recording-process-sentinel)
+	  (force-mode-line-update t)
 	  (message "Started audio recording to %s (mic: %.1fx, system: %.1fx)."
 			   filename cj/recording-mic-boost cj/recording-system-volume))))
 
@@ -346,6 +498,7 @@ Otherwise use the default location in `audio-recordings-dir'."
 		;; Give ffmpeg a moment to finalize the file
 		(sit-for 0.2)
 		(setq cj/video-recording-ffmpeg-process nil)
+		(force-mode-line-update t)
 		(message "Stopped video recording."))
 	(message "No video recording in progress.")))
 
@@ -359,6 +512,7 @@ Otherwise use the default location in `audio-recordings-dir'."
 		;; Give ffmpeg a moment to finalize the file
 		(sit-for 0.2)
 		(setq cj/audio-recording-ffmpeg-process nil)
+		(force-mode-line-update t)
 		(message "Stopped audio recording."))
 	(message "No audio recording in progress.")))
 
@@ -376,14 +530,15 @@ Otherwise use the default location in `audio-recordings-dir'."
 ;; Recording operations prefix and keymap
 (defvar cj/record-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "V") #'cj/video-recording-stop)
-    (define-key map (kbd "v") #'cj/video-recording-start)
-    (define-key map (kbd "A") #'cj/audio-recording-stop)
-    (define-key map (kbd "a") #'cj/audio-recording-start)
+    (define-key map (kbd "v") #'cj/video-recording-toggle)
+    (define-key map (kbd "a") #'cj/audio-recording-toggle)
     (define-key map (kbd "l") #'cj/recording-adjust-volumes)
     (define-key map (kbd "d") #'cj/recording-list-devices)
     (define-key map (kbd "s") #'cj/recording-select-devices)
     (define-key map (kbd "c") #'cj/recording-quick-setup-for-calls)
+    (define-key map (kbd "t m") #'cj/recording-test-mic)
+    (define-key map (kbd "t s") #'cj/recording-test-monitor)
+    (define-key map (kbd "t b") #'cj/recording-test-both)
     map)
   "Keymap for video/audio recording operations.")
 
@@ -392,14 +547,16 @@ Otherwise use the default location in `audio-recordings-dir'."
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; r" "recording menu"
-    "C-; r v" "start video"
-    "C-; r V" "stop video"
-    "C-; r a" "start audio"
-    "C-; r A" "stop audio"
+    "C-; r v" "toggle video recording"
+    "C-; r a" "toggle audio recording"
     "C-; r l" "adjust levels"
     "C-; r d" "list devices"
     "C-; r s" "select devices"
-    "C-; r c" "quick setup for calls"))
+    "C-; r c" "quick setup for calls"
+    "C-; r t" "test devices"
+    "C-; r t m" "test microphone"
+    "C-; r t s" "test system audio"
+    "C-; r t b" "test both (guided)"))
 
 (provide 'video-audio-recording)
 ;;; video-audio-recording.el ends here.
