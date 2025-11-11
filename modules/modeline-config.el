@@ -155,6 +155,8 @@ Shows only in active window.")
     ;; RIGHT SIDE (using Emacs 30 built-in right-align)
     ;; Order: leftmost to rightmost as they appear in the list
     mode-line-format-right-align
+    (:eval (when (fboundp 'cj/recording-modeline-indicator)
+             (cj/recording-modeline-indicator)))
     cj/modeline-vc-branch
     "  "
     cj/modeline-misc-info
