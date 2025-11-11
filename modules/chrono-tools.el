@@ -5,7 +5,7 @@
 ;;
 ;; This module centralizes configuration for Emacs time-related tools:
 ;;
-;; – world-clock: predefined city list and custom time format
+;; – time-zones: interactive world clock with fuzzy search and time shifting
 ;; – calendar: quick navigation keybindings by day, month, and year
 ;; – tmr: lightweight timer setup with sounds, notifications, and history
 ;;
@@ -13,24 +13,32 @@
 
 (require 'user-constants)
 
-(use-package time
-  :ensure nil ;; built-in
-  :defer 0.5
-  :bind ("C-x c" . world-clock)
-  :config
-  (setq world-clock-list
-		'(("Pacific/Honolulu"    " Honolulu")
-		  ("America/Los_Angeles" " San Francisco, LA")
-		  ("America/Chicago"     " Chicago, New Orleans")
-		  ("America/New_York"    " New York, Boston")
-		  ("Etc/UTC"             " UTC =================")
-		  ("Europe/London"       " London, Lisbon")
-		  ("Europe/Paris"        " Paris, Berlin, Rome")
-		  ("Europe/Athens"       " Athens, Istanbul, Moscow")
-		  ("Asia/Kolkata"        " India")
-		  ("Asia/Shanghai"       " Shanghai, Singapore")
-		  ("Asia/Tokyo"          " Tokyo, Seoul")))
-  (setq world-clock-time-format " %a, %d %b @ %I:%M %p %Z"))
+;; -------------------------------- Time Zones ---------------------------------
+
+(use-package time-zones
+  :defer
+  :commands time-zones
+  :bind ("C-x c" . time-zones))
+
+;; Commented out old world-clock config while testing time-zone package above
+;; (use-package time
+;;   :ensure nil ;; built-in
+;;   :defer 0.5
+;;   :bind ("C-x c" . world-clock)
+;;   :config
+;;   (setq world-clock-list
+;; 		'(("Pacific/Honolulu"    " Honolulu")
+;; 		  ("America/Los_Angeles" " San Francisco, LA")
+;; 		  ("America/Chicago"     " Chicago, New Orleans")
+;; 		  ("America/New_York"    " New York, Boston")
+;; 		  ("Etc/UTC"             " UTC =================")
+;; 		  ("Europe/London"       " London, Lisbon")
+;; 		  ("Europe/Paris"        " Paris, Berlin, Rome")
+;; 		  ("Europe/Athens"       " Athens, Istanbul, Moscow")
+;; 		  ("Asia/Kolkata"        " India")
+;; 		  ("Asia/Shanghai"       " Shanghai, Singapore")
+;; 		  ("Asia/Tokyo"          " Tokyo, Seoul")))
+;;   (setq world-clock-time-format " %a, %d %b @ %I:%M %p %Z"))
 
 (use-package calendar
   :ensure nil ;; built-in
