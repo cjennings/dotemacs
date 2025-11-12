@@ -38,6 +38,10 @@
 (require 'dired)
 (require 'notifications)
 (require 'auth-source)
+(require 'user-constants)  ; For cj/audio-file-extensions
+
+;; Declare keymap defined in keybindings.el
+(eval-when-compile (defvar cj/custom-keymap))
 
 ;; ----------------------------- Configuration ---------------------------------
 
