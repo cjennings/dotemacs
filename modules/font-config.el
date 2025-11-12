@@ -53,18 +53,25 @@
   (setq fontaine-presets
 		'(
 		  (default
-		   :default-family "FiraCode Nerd Font Mono"
+		   :default-family "Berkeley Mono"
 		   :default-weight regular
 		   :default-height 110
 		   :fixed-pitch-family nil          ;; falls back to :default-family
 		   :fixed-pitch-weight nil          ;; falls back to :default-weight
 		   :fixed-pitch-height 1.0
-		   :variable-pitch-family "Merriweather"
-		   :variable-pitch-weight light
+		   :variable-pitch-family "Lexend"
+		   :variable-pitch-weight regular
 		   :variable-pitch-height 1.0)
+		  (FiraCode
+		   :default-family "FiraCode Nerd Font Mono"
+		   :variable-pitch-family "Merriweather"
+		   :variable-pitch-weight light)
 		  (Hack
 		   :default-family "Hack Nerd Font Mono"
 		   :variable-pitch-family "Hack Nerd Font Mono")
+		  (BerkeleyMono
+		   :default-family "Berkeley Mono"
+		   :variable-pitch-family "Charis SIL")
 		  (FiraCode-Literata
 		   :default-family "Fira Code Nerd Font"
 		   :variable-pitch-family "Literata")
