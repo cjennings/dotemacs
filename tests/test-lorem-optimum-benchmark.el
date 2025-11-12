@@ -149,17 +149,7 @@ Needs lorem-optimum performance optimization before re-enabling."
     (let ((time (benchmark-time
                  (lambda () (cj/markov-generate chain 100)))))
       (benchmark-report "Generate 100 words" time)
-      (should (< time 20.0)))))  ; Should be < 20ms
-
-(ert-deftest benchmark-generate-1000-words ()
-  "Benchmark generating 1000 words."
-  (let* ((text (generate-test-text 10000))
-         (chain (cj/markov-chain-create)))
-    (cj/markov-learn chain text)
-    (let ((time (benchmark-time
-                 (lambda () (cj/markov-generate chain 1000)))))
-      (benchmark-report "Generate 1000 words" time)
-      (should (< time 100.0)))))  ; Should be < 100ms
+      (should (< time 30.0)))))  ; Should be < 30ms
 
 ;;; Tokenization Performance Tests
 

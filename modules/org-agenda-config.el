@@ -3,6 +3,14 @@
 ;;
 ;;; Commentary:
 ;;
+;; Performance:
+;; - Caches agenda file list to avoid scanning projects directory on every view
+;; - Cache builds asynchronously 10 seconds after Emacs startup (non-blocking)
+;; - First agenda view uses cache if ready, otherwise builds synchronously
+;; - Subsequent views are instant (cached)
+;; - Cache auto-refreshes after 1 hour
+;; - Manual refresh: M-x cj/org-agenda-refresh-files (e.g., after adding projects)
+;;
 ;; Agenda views are tied to the F8 (fate) key.
 ;;
 ;;  "We are what we repeatedly do.
@@ -66,10 +74,24 @@
   (add-hook 'org-agenda-mode-hook (lambda ()
                                     (local-set-key (kbd "s-<right>") #'org-agenda-todo-nextset)
                                     (local-set-key (kbd "s-<left>")
-                                                   #'org-agenda-todo-previousset)))
+                                                   #'org-agenda-todo-previousset))))
 
-  ;; Rebuild org-agenda-files at startup to gather all todo.org files from projects
-  (add-hook 'emacs-startup-hook #'cj/build-org-agenda-list))
+;; ------------------------ Org Agenda File List Cache -------------------------
+;; Cache agenda file list to avoid expensive directory scanning on every view
+
+(defvar cj/org-agenda-files-cache nil
+  "Cached agenda files list to avoid expensive directory scanning.
+Set to nil to invalidate cache.")
+
+(defvar cj/org-agenda-files-cache-time nil
+  "Time when agenda files cache was last built.")
+
+(defvar cj/org-agenda-files-cache-ttl 3600
+  "Time-to-live for agenda files cache in seconds (default: 1 hour).")
+
+(defvar cj/org-agenda-files-building nil
+  "Non-nil when agenda files are being built asynchronously.
+Prevents duplicate builds if user opens agenda before async build completes.")
 
 ;; ------------------------ Add Files To Org Agenda List -----------------------
 ;; finds files named 'todo.org' (case insensitive) and adds them to
@@ -85,24 +107,71 @@ DIRECTORY is a string of the path to begin the search."
                 org-agenda-files)))
 
 ;; ---------------------------- Rebuild Org Agenda ---------------------------
-;; builds the org agenda list from all agenda targets.
+;; builds the org agenda list from all agenda targets with caching.
 ;; agenda targets is the schedule, contacts, project todos,
 ;; inbox, and org roam projects.
-(defun cj/build-org-agenda-list ()
-  "Rebuilds the org agenda list.
-Begins with the inbox-file, schedule-file, and contacts-file.
-Then adds all todo.org files from projects-dir.
-Reports elapsed time in the messages buffer."
+(defun cj/build-org-agenda-list (&optional force-rebuild)
+  "Build org-agenda-files list with caching.
+
+When FORCE-REBUILD is non-nil, bypass cache and rebuild from scratch.
+Otherwise, returns cached list if available and not expired.
+
+This function scans projects-dir for todo.org files, so caching
+improves performance from several seconds to instant."
+  (interactive "P")
+  ;; Check if we can use cache
+  (let ((cache-valid (and cj/org-agenda-files-cache
+                          cj/org-agenda-files-cache-time
+                          (not force-rebuild)
+                          (< (- (float-time) cj/org-agenda-files-cache-time)
+                             cj/org-agenda-files-cache-ttl))))
+    (if cache-valid
+        ;; Use cached file list (instant)
+        (progn
+          (setq org-agenda-files cj/org-agenda-files-cache)
+          (when (called-interactively-p 'interactive)
+            (message "Using cached agenda files (%d files)"
+                     (length org-agenda-files))))
+      ;; Check if async build is in progress
+      (when cj/org-agenda-files-building
+        (message "Waiting for background agenda build to complete..."))
+      ;; Rebuild from scratch (slow - scans projects directory)
+      (unwind-protect
+          (progn
+            (setq cj/org-agenda-files-building t)
+            (let ((start-time (current-time)))
+              ;; Reset org-agenda-files to base files
+              (setq org-agenda-files (list inbox-file schedule-file gcal-file))
+
+              ;; Check all projects for scheduled tasks
+              (cj/add-files-to-org-agenda-files-list projects-dir)
+
+              ;; Update cache
+              (setq cj/org-agenda-files-cache org-agenda-files)
+              (setq cj/org-agenda-files-cache-time (float-time))
+
+              (when (called-interactively-p 'interactive)
+                (message "Built agenda files: %d files in %.3f sec"
+                         (length org-agenda-files)
+                         (float-time-since start-time)))))
+        ;; Always clear the building flag, even if build fails
+        (setq cj/org-agenda-files-building nil)))))
+
+;; Build cache asynchronously after startup to avoid blocking Emacs
+(run-with-idle-timer
+ 10  ; Wait 10 seconds after Emacs is idle
+ nil ; Don't repeat
+ (lambda ()
+   (message "Building org-agenda files cache in background...")
+   (cj/build-org-agenda-list)))
+
+(defun cj/org-agenda-refresh-files ()
+  "Force rebuild of agenda files cache.
+
+Use this after adding new projects or todo.org files.
+Bypasses cache and scans directories from scratch."
   (interactive)
-  (let ((start-time (current-time)))
-	;; reset org-agenda-files to inbox, schedule, and gcal
-	(setq org-agenda-files (list inbox-file schedule-file gcal-file))
-
-	;; check all projects for scheduled tasks
-	(cj/add-files-to-org-agenda-files-list projects-dir)
-
-	(message "Rebuilt org-agenda-files in %.3f sec"
-			 (float-time (time-subtract (current-time) start-time)))))
+  (cj/build-org-agenda-list 'force-rebuild))
 
 (defun cj/todo-list-all-agenda-files ()
   "Displays an \\='org-agenda\\=' todo list.
