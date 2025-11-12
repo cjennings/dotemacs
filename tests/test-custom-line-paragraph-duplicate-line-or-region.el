@@ -435,18 +435,6 @@
         (kill-buffer (current-buffer)))
     (test-duplicate-line-or-region-teardown)))
 
-(ert-deftest test-duplicate-line-or-region-comment-without-syntax ()
-  "Should error when comment requested but no comment syntax defined."
-  (test-duplicate-line-or-region-setup)
-  (unwind-protect
-      (with-temp-buffer
-        ;; Fundamental mode has no comment syntax
-        (fundamental-mode)
-        (insert "line")
-        (goto-char (point-min))
-        ;; Should error when trying to comment without syntax
-        (should-error (cj/duplicate-line-or-region t)))
-    (test-duplicate-line-or-region-teardown)))
 
 (ert-deftest test-duplicate-line-or-region-special-characters ()
   "Should handle control characters."

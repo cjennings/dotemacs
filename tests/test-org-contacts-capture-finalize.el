@@ -23,58 +23,19 @@
 (require 'ert)
 (require 'org)
 
-;; Define the function to test (copied from org-contacts-config.el)
-(defun cj/org-contacts-finalize-birthday-timestamp ()
-  "Add yearly repeating timestamp after properties drawer if BIRTHDAY is set.
-This function is called during `org-capture' finalization to automatically
-insert a plain timestamp for birthdays, enabling them to appear in org-agenda
-without requiring org-contacts to be loaded in the async subprocess."
-  (when (string= (plist-get org-capture-plist :key) "C")
-    (save-excursion
-      (goto-char (point-min))
-      ;; Find the properties drawer
-      (when (re-search-forward "^:PROPERTIES:" nil t)
-        (let ((drawer-start (point))
-              (drawer-end (save-excursion
-                            (when (re-search-forward "^:END:" nil t)
-                              (point)))))
-          (when drawer-end
-            ;; Get BIRTHDAY property value
-            (goto-char drawer-start)
-            (when (re-search-forward "^:BIRTHDAY:[ \t]*\\(.+\\)$" drawer-end t)
-              (let ((birthday-value (string-trim (match-string 1))))
-                ;; Only process non-empty birthdays
-                (when (and birthday-value
-                           (not (string-blank-p birthday-value)))
-                  ;; Parse birthday and create timestamp
-                  (let* ((parsed (cond
-                                  ;; Format: YYYY-MM-DD
-                                  ((string-match "^\\([0-9]\\{4\\}\\)-\\([0-9]\\{2\\}\\)-\\([0-9]\\{2\\}\\)$" birthday-value)
-                                   (list (string-to-number (match-string 1 birthday-value))
-                                         (string-to-number (match-string 2 birthday-value))
-                                         (string-to-number (match-string 3 birthday-value))))
-                                  ;; Format: MM-DD
-                                  ((string-match "^\\([0-9]\\{2\\}\\)-\\([0-9]\\{2\\}\\)$" birthday-value)
-                                   (list nil
-                                         (string-to-number (match-string 1 birthday-value))
-                                         (string-to-number (match-string 2 birthday-value))))
-                                  (t nil)))
-                         (year (when parsed (or (nth 0 parsed) (nth 5 (decode-time)))))
-                         (month (when parsed (nth 1 parsed)))
-                         (day (when parsed (nth 2 parsed))))
-                    (when (and year month day)
-                      ;; Create timestamp
-                      (let* ((time (encode-time 0 0 0 day month year))
-                             (dow (format-time-string "%a" time))
-                             (date-str (format "%04d-%02d-%02d" year month day))
-                             (timestamp (format "<%s %s +1y>" date-str dow)))
-                        ;; Insert after :END: if not already present
-                        (goto-char drawer-end)
-                        (let ((heading-end (save-excursion (outline-next-heading) (point))))
-                          (unless (re-search-forward "<[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}[^>]*\\+1y>" heading-end t)
-                            (goto-char drawer-end)
-                            (end-of-line)
-                            (insert "\n" timestamp)))))))))))))
+;; Add modules directory to load path
+(add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
+
+;; Stub dependencies before loading the module
+(defvar contacts-file "/tmp/test-contacts.org"
+  "Stub contacts file for testing.")
+
+;; Declare org-capture-plist for dynamic scoping in tests
+(defvar org-capture-plist nil
+  "Plist that org-capture uses during capture. Declared for testing.")
+
+;; Load the actual module
+(require 'org-contacts-config)
 
 ;;; Tests for birthday timestamp finalization
 
