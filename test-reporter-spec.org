@@ -1,0 +1,636 @@
+#+TITLE: Test Reporter Specification
+#+AUTHOR: Claude & Craig Jennings
+#+DATE: 2025-11-12
+#+FILETAGS: :spec:testing:
+
+* Overview
+
+A test reporting system that analyzes ERT batch test output and generates comprehensive summaries with statistics and failure details.
+
+* Goals
+
+1. Provide clear test statistics after running test suites
+2. Show total tests run, passed, failed, and duration
+3. List all individual test failures with details
+4. Enable incremental improvement through test-driven development
+5. Support both Makefile and interactive Emacs usage
+
+* Requirements
+
+** Must Have (Phase 1)
+- Total test count (not just file count)
+- Pass/fail counts with percentages
+- Total duration in seconds
+- List of failed test names
+- File-based output collection (all ERT output in one file)
+- Basic ERT output parsing
+
+** Should Have (Phase 2)
+- Detailed failure messages (assertion details)
+- Line numbers for failures
+- Test file grouping
+- Rerun command suggestions
+- Per-file statistics
+
+** Could Have (Phase 3)
+- Per-test timing
+- Slowest tests report
+- Historical comparison
+- JSON output for tooling
+- Integration with CI systems
+
+* Design Decisions
+
+** Language Choice: Emacs Lisp vs Python
+
+*** Emacs Lisp (RECOMMENDED)
+
+**** Advantages
+- No external dependencies (pure Emacs)
+- Native ERT understanding (can use ERT's own data structures)
+- Better integration with test-runner.el
+- Dogfooding (testing tool in same language as tests)
+- Can be tested with ERT itself (meta-testing!)
+- Philosophically aligned with Emacs-first workflow
+
+**** Disadvantages
+- String parsing less ergonomic than Python
+- Regex syntax clunkier
+- More verbose file I/O
+
+**** Difficulty: Medium
+
+*** Python Alternative
+
+**** Advantages
+- More ergonomic string parsing
+- Cleaner regex syntax
+- Simpler file I/O
+- Standard library text processing
+
+**** Disadvantages
+- External dependency (requires Python 3)
+- Not "native" to Emacs ecosystem
+- Feels less integrated
+- Separate testing framework needed
+
+**** Difficulty: Easy
+
+*** Decision: Emacs Lisp
+Slightly harder to write but better aligned with ecosystem and enables tighter integration with test-runner.el.
+
+** Architecture
+
+#+BEGIN_SRC
+Makefile/test-runner.el → Collect ERT Output → Parse Output → Generate Report
+                          (/tmp/test-run.txt)   (test-reporter.el)
+#+END_SRC
+
+*** Components
+
+1. *Output Collector* (Makefile or test-runner.el)
+   - Runs ERT tests
+   - Captures all output to single file
+   - Tracks start/end time
+
+2. *Parser* (test-reporter.el)
+   - Reads output file
+   - Parses ERT batch format
+   - Extracts statistics and failures
+
+3. *Reporter* (test-reporter.el)
+   - Formats summary report
+   - Displays to user
+   - Returns appropriate exit code
+
+* ERT Output Format
+
+** Summary Line Format
+#+BEGIN_EXAMPLE
+Ran 15 tests, 14 results as expected, 1 unexpected
+#+END_EXAMPLE
+
+** Test Progress Format
+#+BEGIN_EXAMPLE
+Running 15 tests (2024-11-12 10:30:45-0600, selector `(not (tag :slow))')
+   passed  1/15  test-foo-normal
+   passed  2/15  test-foo-boundary
+   FAILED  3/15  test-foo-error (0.001234 sec) at test-foo.el:42
+#+END_EXAMPLE
+
+** Failure Details Format
+#+BEGIN_EXAMPLE
+   FAILED  3/15  test-foo-error (0.001234 sec) at test-foo.el:42
+       (should (equal result expected))
+       :form (equal nil "expected")
+       :value nil
+       :explanation "Expected non-nil but was nil"
+#+END_EXAMPLE
+
+* Implementation Plan
+
+** Phase 1: Basic Statistics (MVP)
+
+*** Features
+- Parse "Ran X tests, Y expected, Z unexpected" lines
+- Sum across all test files
+- Calculate totals and percentages
+- Display formatted summary
+- Return exit code (0 = all pass, 1 = any failures)
+
+*** Files
+- scripts/test-reporter.el (executable Emacs script)
+- tests/test-test-reporter.el (ERT tests for reporter)
+- Makefile (integration)
+
+*** Sample Output
+#+BEGIN_EXAMPLE
+================================================================================
+TEST SUMMARY
+================================================================================
+Tests:    523 total
+Passed:   520 (99.4%)
+Failed:   3 (0.6%)
+Duration: 45s
+================================================================================
+#+END_EXAMPLE
+
+** Phase 2: Failure Details
+
+*** Features
+- Parse FAILED lines
+- Extract test names and files
+- Capture error messages
+- Group by file
+- Show rerun commands
+
+*** Sample Output
+#+BEGIN_EXAMPLE
+================================================================================
+TEST SUMMARY
+================================================================================
+Tests:    523 total
+Passed:   520 (99.4%)
+Failed:   3 (0.6%)
+Duration: 45s
+
+FAILURES:
+  test-custom-buffer-file.el
+    ✗ test-copy-buffer-empty-buffer
+      Expected non-nil but was nil
+
+  test-org-agenda-build-list.el
+    ✗ test-cache-invalidation
+      Wrong type argument: listp, "string"
+    ✗ test-cache-update
+      Timeout after 5s
+
+RERUN FAILED:
+  make test-file FILE=test-custom-buffer-file.el
+  make test-file FILE=test-org-agenda-build-list.el
+================================================================================
+#+END_EXAMPLE
+
+** Phase 3: Rich Details
+
+*** Features
+- Parse assertion details (:form, :value, :explanation)
+- Extract line numbers
+- Show context around failures
+- Per-test timing
+- Slowest tests report
+
+* Integration Points
+
+** Makefile Integration
+
+*** Current Approach
+#+BEGIN_SRC makefile
+test-unit:
+	@echo "[i] Running unit tests ($(words $(UNIT_TESTS)) files)..."
+	@failed=0; \
+	for test in $(UNIT_TESTS); do \
+		echo "  Testing $$test..."; \
+		$(EMACS_TEST) -l ert -l $$test \
+			--eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" \
+			|| failed=$$((failed + 1)); \
+	done; \
+	if [ $$failed -eq 0 ]; then \
+		echo "✓ All unit tests passed"; \
+	else \
+		echo "✗ $$failed unit test file(s) failed"; \
+		exit 1; \
+	fi
+#+END_SRC
+
+*** Proposed Approach
+#+BEGIN_SRC makefile
+test-unit:
+	@echo "[i] Running unit tests ($(words $(UNIT_TESTS)) files)..."
+	@output_file="/tmp/emacs-test-run-$$.txt"; \
+	start_time=$$(date +%s); \
+	failed=0; \
+	for test in $(UNIT_TESTS); do \
+		echo "  Testing $$test..."; \
+		$(EMACS_TEST) -l ert -l $$test \
+			--eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" \
+			2>&1 | tee -a $$output_file || failed=$$((failed + 1)); \
+	done; \
+	end_time=$$(date +%s); \
+	duration=$$((end_time - start_time)); \
+	$(EMACS) --script scripts/test-reporter.el $$output_file $$duration; \
+	rm -f $$output_file; \
+	exit $$failed
+#+END_SRC
+
+** test-runner.el Integration
+
+*** Current Functionality
+- Interactive test running from Emacs
+- Focus/unfocus test patterns
+- Run all tests, focused tests, or specific files
+- Display results in *ert* buffer
+
+*** Integration Opportunities
+
+**** Option A: Post-Run Hook
+#+BEGIN_SRC elisp
+(defcustom cj/test-runner-report-hook nil
+  "Hook run after test execution with results.
+Functions receive (total-tests passed failed duration)."
+  :type 'hook
+  :group 'test-runner)
+
+(defun cj/test-runner--run-with-reporting ()
+  "Run tests and generate report."
+  (let ((start-time (current-time))
+        (output-buffer (generate-new-buffer " *test-output*")))
+    (unwind-protect
+        (progn
+          ;; Redirect ERT output to buffer
+          (let ((standard-output output-buffer))
+            (ert-run-tests-batch selector))
+          ;; Parse output
+          (let ((stats (test-reporter-parse-buffer output-buffer)))
+            (test-reporter-display-summary stats)
+            (run-hook-with-args 'cj/test-runner-report-hook stats)))
+      (kill-buffer output-buffer))))
+#+END_SRC
+
+**** Option B: Wrap ERT Results
+#+BEGIN_SRC elisp
+(defun cj/test-runner-display-summary ()
+  "Display test summary after running tests."
+  (interactive)
+  (when (get-buffer "*ert*")
+    (with-current-buffer "*ert*"
+      (let ((stats (test-reporter-parse-buffer (current-buffer))))
+        (goto-char (point-max))
+        (insert "\n" (test-reporter-format-summary stats))))))
+#+END_SRC
+
+**** Option C: Replace ERT Reporter
+- Implement custom ERT result printer
+- More invasive but cleanest integration
+- See `ert-batch-print` and `ert-batch-backtrace-right-margin`
+
+*** Recommendation
+Start with Option B (wrap results), migrate to Option A (hooks) once stable.
+
+** Cross-Project Test Isolation
+
+*** The Problem
+When switching between Emacs Lisp projects (e.g., ~/.emacs.d → chime.el):
+- ERT tests globally registered in Emacs session
+- ~M-x ert RET t RET~ runs ALL loaded tests from ALL projects
+- Can accidentally run wrong project's tests
+- Current workaround: restart Emacs (loses session state)
+
+*** Root Cause
+#+BEGIN_SRC elisp
+;; ERT stores tests globally
+(defvar ert--test-registry (make-hash-table :test 'equal))
+
+;; Tests registered at load-time
+(ert-deftest my-test () ...)
+;; → Adds to ert--test-registry immediately
+#+END_SRC
+
+*** Proposed Solutions
+
+**** Solution A: Clear Tests on Project Switch
+#+BEGIN_SRC elisp
+(defun cj/ert-clear-all-tests ()
+  "Clear all registered ERT tests."
+  (interactive)
+  (clrhash ert--test-registry)
+  (message "Cleared all ERT tests"))
+
+(defun cj/ert-clear-project-tests (prefix)
+  "Clear ERT tests matching PREFIX (e.g., 'cj/' or 'chime-')."
+  (interactive "sTest prefix to clear: ")
+  (maphash (lambda (name test)
+             (when (string-prefix-p prefix (symbol-name name))
+               (remhash name ert--test-registry)))
+           ert--test-registry)
+  (message "Cleared tests matching '%s'" prefix))
+
+;; Hook into project-switch
+(add-hook 'project-switch-hook #'cj/ert-clear-all-tests)
+#+END_SRC
+
+**** Solution B: Project-Aware Test Selection
+#+BEGIN_SRC elisp
+(defun cj/ert-run-current-project-tests ()
+  "Run only tests for current project."
+  (interactive)
+  (let* ((project-root (project-root (project-current)))
+         (test-prefix (cj/ert--infer-test-prefix project-root)))
+    (ert-run-tests-interactively
+     (lambda (test)
+       (string-prefix-p test-prefix (symbol-name test))))))
+
+(defun cj/ert--infer-test-prefix (project-root)
+  "Infer test prefix from project root."
+  (cond
+   ((string-match-p "\.emacs\.d" project-root) "cj/")
+   ((string-match-p "chime" project-root) "chime-")
+   (t (read-string "Test prefix: "))))
+#+END_SRC
+
+**** Solution C: Namespace-Based Isolation
+#+BEGIN_SRC elisp
+;; Store current project context
+(defvar-local cj/test-project-context nil
+  "Current project context for test filtering.")
+
+(defun cj/ert-set-project-context ()
+  "Set test project context based on current buffer."
+  (setq cj/test-project-context
+        (file-name-nondirectory
+         (directory-file-name (project-root (project-current))))))
+
+;; Filter tests by context
+(defun cj/ert-run-project-tests ()
+  "Run tests for current project context only."
+  (interactive)
+  (cj/ert-set-project-context)
+  (ert-run-tests-interactively
+   `(tag ,(intern cj/test-project-context))))
+
+;; Require tests to declare project
+(ert-deftest chime-my-test ()
+  :tags '(:chime)
+  ...)
+#+END_SRC
+
+*** Recommendation
+*Solution A + B hybrid*:
+1. Clear tests automatically on project switch (Solution A)
+2. Provide explicit "run current project tests" command (Solution B)
+3. Document test naming conventions (cj/ prefix for .emacs.d, etc.)
+4. Add keybinding: ~C-c C-t p~ (run project tests)
+
+This avoids requiring test tags while providing both automatic and manual control.
+
+* Test-Driven Development Approach
+
+** Philosophy
+- Parser gets smarter incrementally
+- Each new ERT output format → new test case → improved parser
+- Regression prevention through comprehensive test suite
+
+** Test Organization
+#+BEGIN_SRC
+tests/test-reporter/
+├── test-test-reporter-basic.el      # Basic parsing tests
+├── test-test-reporter-failures.el   # Failure detail parsing
+├── test-test-reporter-edge-cases.el # Edge cases
+└── fixtures/
+    ├── all-pass.txt                 # Sample ERT output: all pass
+    ├── all-fail.txt                 # Sample ERT output: all fail
+    ├── mixed.txt                    # Sample ERT output: mixed
+    └── malformed.txt                # Sample ERT output: malformed
+#+END_SRC
+
+** Sample Test Cases
+#+BEGIN_SRC elisp
+(ert-deftest test-reporter-parse-summary-line ()
+  "Parse 'Ran X tests, Y expected, Z unexpected' line."
+  (let ((result (test-reporter--parse-summary-line
+                 "Ran 15 tests, 14 results as expected, 1 unexpected")))
+    (should (= 15 (plist-get result :total)))
+    (should (= 14 (plist-get result :passed)))
+    (should (= 1 (plist-get result :failed)))))
+
+(ert-deftest test-reporter-parse-all-pass ()
+  "Parse output with all tests passing."
+  (let ((stats (test-reporter--parse-fixture "all-pass.txt")))
+    (should (= 0 (plist-get stats :failed)))
+    (should (null (plist-get stats :failures)))))
+
+(ert-deftest test-reporter-parse-with-failures ()
+  "Parse output with test failures."
+  (let ((stats (test-reporter--parse-fixture "mixed.txt")))
+    (should (> (plist-get stats :failed) 0))
+    (should (> (length (plist-get stats :failures)) 0))))
+
+(ert-deftest test-reporter-extract-failure-details ()
+  "Extract test name and error message from FAILED line."
+  (let ((failure (test-reporter--parse-failure
+                  "   FAILED  3/15  test-foo-error (0.001234 sec)")))
+    (should (string= "test-foo-error" (plist-get failure :test)))
+    (should (numberp (plist-get failure :index)))
+    (should (numberp (plist-get failure :duration)))))
+#+END_SRC
+
+** Incremental Development Flow
+1. Write test with sample ERT output
+2. Run test (should fail)
+3. Implement parser feature
+4. Run test (should pass)
+5. Encounter new format in real usage
+6. Add new test case with that format
+7. Improve parser
+8. Repeat
+
+* Implementation Details
+
+** File Structure
+
+*** scripts/test-reporter.el
+#+BEGIN_SRC elisp
+#!/usr/bin/env emacs --script
+;;; test-reporter.el --- Parse ERT output and generate test reports -*- lexical-binding: t; -*-
+
+;;; Commentary:
+;; Parses ERT batch test output and generates summary reports.
+;; Usage: emacs --script test-reporter.el OUTPUT_FILE DURATION
+
+;;; Code:
+
+(defun test-reporter--parse-summary-line (line)
+  "Parse 'Ran X tests, Y expected, Z unexpected' line."
+  ...)
+
+(defun test-reporter--parse-failure (line)
+  "Parse FAILED line and extract test details."
+  ...)
+
+(defun test-reporter--parse-output-file (file)
+  "Parse ERT output FILE and return stats plist."
+  ...)
+
+(defun test-reporter--format-summary (stats duration)
+  "Format summary report from STATS and DURATION."
+  ...)
+
+;; Main entry point
+(let ((output-file (nth 0 command-line-args-left))
+      (duration (string-to-number (nth 1 command-line-args-left))))
+  (let ((stats (test-reporter--parse-output-file output-file)))
+    (princ (test-reporter--format-summary stats duration))
+    (kill-emacs (if (> (plist-get stats :failed) 0) 1 0))))
+
+(provide 'test-reporter)
+;;; test-reporter.el ends here
+#+END_SRC
+
+*** tests/test-test-reporter.el
+#+BEGIN_SRC elisp
+;;; test-test-reporter.el --- Tests for test-reporter -*- lexical-binding: t; -*-
+
+(require 'ert)
+(load-file "scripts/test-reporter.el")
+
+(ert-deftest test-reporter-parse-summary-line ()
+  ...)
+
+(provide 'test-test-reporter)
+;;; test-test-reporter.el ends here
+#+END_SRC
+
+** API Design
+
+*** Core Functions
+
+#+BEGIN_SRC elisp
+(defun test-reporter--parse-summary-line (line)
+  "Parse summary line, return (:total N :passed N :failed N) or nil."
+  ...)
+
+(defun test-reporter--parse-failure (line)
+  "Parse failure line, return (:test NAME :index N :duration N) or nil."
+  ...)
+
+(defun test-reporter--parse-output-file (file)
+  "Parse entire output file, return complete stats plist."
+  ...)
+
+(defun test-reporter--format-summary (stats duration)
+  "Format human-readable summary from stats."
+  ...)
+
+(defun test-reporter-parse-buffer (buffer)
+  "Parse test output from BUFFER (for interactive use)."
+  ...)
+
+(defun test-reporter-display-summary (stats)
+  "Display summary in current buffer or separate window."
+  ...)
+#+END_SRC
+
+*** Data Structures
+
+#+BEGIN_SRC elisp
+;; Stats plist format
+(:total 523
+ :passed 520
+ :failed 3
+ :failures ((:test "test-foo"
+             :file "test-foo.el"
+             :line 42
+             :message "Expected non-nil but was nil")
+            ...))
+
+;; Failure plist format
+(:test "test-name"
+ :file "test-file.el"
+ :line 42
+ :index 3
+ :duration 0.001234
+ :message "Error message"
+ :form "(should (equal x y))"
+ :value "nil")
+#+END_SRC
+
+* Success Metrics
+
+** Phase 1 Success Criteria
+- ✓ Total test count displayed (not just file count)
+- ✓ Pass/fail counts with percentages
+- ✓ Duration in whole seconds
+- ✓ Works from Makefile
+- ✓ Exits with correct code (0=pass, 1=fail)
+- ✓ Basic test coverage (>80%)
+
+** Phase 2 Success Criteria
+- ✓ Failed test names listed
+- ✓ Error messages displayed
+- ✓ Grouped by file
+- ✓ Rerun commands suggested
+- ✓ Comprehensive test coverage (>90%)
+
+** Phase 3 Success Criteria
+- ✓ Per-test timing
+- ✓ Slowest tests identified
+- ✓ Rich assertion details
+- ✓ JSON output option
+- ✓ Full test coverage (100%)
+
+* Next Steps
+
+1. Create scripts/test-reporter.el with Phase 1 implementation
+2. Create tests/test-test-reporter.el with basic test cases
+3. Update Makefile to use test-reporter
+4. Test with real test suite
+5. Iterate based on real-world output formats
+6. Expand to Phase 2 features
+7. Integrate with test-runner.el
+
+* Open Questions
+
+1. Should we support both interactive (buffer) and batch (file) modes?
+   - Leaning YES - useful for both Makefile and test-runner.el
+
+2. Should we cache parsed results for re-display?
+   - Leaning NO - parsing is fast enough, keep it simple
+
+3. Should we support custom output formats (JSON, XML)?
+   - Leaning LATER - start with human-readable, add later if needed
+
+4. Should we track historical test results?
+   - Leaning LATER - interesting but out of scope for MVP
+
+5. How to handle test isolation across projects?
+   - Use Solution A+B: Clear on switch + project-aware run command
+
+* References
+
+- ERT documentation: [[info:ert#Top]]
+- modules/test-runner.el (current test infrastructure)
+- Makefile (current test execution)
+- ai-prompts/quality-engineer.org (testing philosophy)
+
+* Meta
+
+This specification was created: 2025-11-12
+This is the NEXT item to work on after current session.
+
+** Remember
+When returning to this task:
+1. Read this spec thoroughly
+2. Start with Phase 1 implementation
+3. Use TDD approach (tests first)
+4. Integrate incrementally
+5. Keep it simple - don't over-engineer
