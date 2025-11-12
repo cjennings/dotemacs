@@ -36,12 +36,7 @@ MODULE_FILES = $(wildcard $(MODULE_DIR)/*.el)
 EMACS_BATCH = $(EMACS) --batch --no-site-file --no-site-lisp
 EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 
-# Colors for output
-COLOR_GREEN = \033[0;32m
-COLOR_RED = \033[0;31m
-COLOR_BLUE = \033[0;34m
-COLOR_YELLOW = \033[0;33m
-COLOR_RESET = \033[0m
+# No colors - using plain text symbols instead
 
 .PHONY: help test test-all test-unit test-integration test-file test-name \
         validate-parens validate-modules compile lint profile \
@@ -53,20 +48,20 @@ COLOR_RESET = \033[0m
 help:
 	@echo "Emacs Configuration Targets:"
 	@echo ""
-	@echo "  $(COLOR_BLUE)Testing:$(COLOR_RESET)"
+	@echo "  Testing:"
 	@echo "    make test              - Run all tests ($(words $(ALL_TESTS)) files)"
 	@echo "    make test-unit         - Run unit tests only ($(words $(UNIT_TESTS)) files)"
 	@echo "    make test-integration  - Run integration tests only ($(words $(INTEGRATION_TESTS)) files)"
 	@echo "    make test-file FILE=<filename>  - Run specific test file"
 	@echo "    make test-name TEST=<pattern>   - Run tests matching pattern"
 	@echo ""
-	@echo "  $(COLOR_BLUE)Validation:$(COLOR_RESET)"
+	@echo "  Validation:"
 	@echo "    make validate-parens   - Check for unbalanced parentheses in modules"
 	@echo "    make validate-modules  - Load all modules to verify they compile"
 	@echo "    make compile           - Byte-compile all module files"
 	@echo "    make lint              - Run all linters (checkdoc, package-lint, elisp-lint)"
 	@echo ""
-	@echo "  $(COLOR_BLUE)Utilities:$(COLOR_RESET)"
+	@echo "  Utilities:"
 	@echo "    make profile           - Profile Emacs startup performance"
 	@echo "    make clean             - Remove test artifacts and compiled files"
 	@echo "    make clean-compiled    - Remove .elc/.eln files only"
@@ -85,74 +80,74 @@ help:
 test: test-all
 
 test-all:
-	@echo "$(COLOR_BLUE)Running all tests ($(words $(ALL_TESTS)) files)...$(COLOR_RESET)"
+	@echo "[i] Running all tests ($(words $(ALL_TESTS)) files)..."
 	@$(MAKE) test-unit
 	@if [ $(words $(INTEGRATION_TESTS)) -gt 0 ]; then \
 		$(MAKE) test-integration; \
 	fi
-	@echo "$(COLOR_GREEN)✓ All tests complete$(COLOR_RESET)"
+	@echo "✓ All tests complete"
 
 test-unit:
-	@echo "$(COLOR_BLUE)Running unit tests ($(words $(UNIT_TESTS)) files)...$(COLOR_RESET)"
+	@echo "[i] Running unit tests ($(words $(UNIT_TESTS)) files)..."
 	@failed=0; \
 	for test in $(UNIT_TESTS); do \
 		echo "  Testing $$test..."; \
 		$(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" || failed=$$((failed + 1)); \
 	done; \
 	if [ $$failed -eq 0 ]; then \
-		echo "$(COLOR_GREEN)✓ All unit tests passed$(COLOR_RESET)"; \
+		echo "✓ All unit tests passed"; \
 	else \
-		echo "$(COLOR_RED)✗ $$failed unit test file(s) failed$(COLOR_RESET)"; \
+		echo "✗ $$failed unit test file(s) failed"; \
 		exit 1; \
 	fi
 
 test-integration:
 	@if [ $(words $(INTEGRATION_TESTS)) -eq 0 ]; then \
-		echo "$(COLOR_YELLOW)No integration tests found$(COLOR_RESET)"; \
+		echo "No integration tests found"; \
 		exit 0; \
 	fi
-	@echo "$(COLOR_BLUE)Running integration tests ($(words $(INTEGRATION_TESTS)) files)...$(COLOR_RESET)"
+	@echo "Running integration tests ($(words $(INTEGRATION_TESTS)) files)..."
 	@failed=0; \
 	for test in $(INTEGRATION_TESTS); do \
 		echo "  Testing $$test..."; \
 		$(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" || failed=$$((failed + 1)); \
 	done; \
 	if [ $$failed -eq 0 ]; then \
-		echo "$(COLOR_GREEN)✓ All integration tests passed$(COLOR_RESET)"; \
+		echo "✓ All integration tests passed"; \
 	else \
-		echo "$(COLOR_RED)✗ $$failed integration test file(s) failed$(COLOR_RESET)"; \
+		echo "✗ $$failed integration test file(s) failed"; \
 		exit 1; \
 	fi
 
 test-file:
 ifndef FILE
-	@echo "$(COLOR_RED)Error: FILE parameter required$(COLOR_RESET)"
+	@echo "Error: FILE parameter required"
 	@echo "Usage: make test-file FILE=test-custom-buffer-file-copy-whole-buffer.el"
 	@exit 1
 endif
-	@echo "$(COLOR_BLUE)Running tests in $(FILE)...$(COLOR_RESET)"
+	@echo "Running tests in $(FILE)..."
 	@$(EMACS_TEST) -l ert -l $(TEST_DIR)/$(FILE) --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))"
-	@echo "$(COLOR_GREEN)✓ Tests in $(FILE) complete$(COLOR_RESET)"
+	@echo "✓ Tests in $(FILE) complete"
 
 test-name:
 ifndef TEST
-	@echo "$(COLOR_RED)Error: TEST parameter required$(COLOR_RESET)"
+	@echo "Error: TEST parameter required"
 	@echo "Usage: make test-name TEST=test-custom-buffer-file-copy-*"
 	@exit 1
 endif
-	@echo "$(COLOR_BLUE)Running tests matching pattern: $(TEST)...$(COLOR_RESET)"
+	@echo "Running tests matching pattern: $(TEST)..."
 	@$(EMACS_TEST) \
 		-l ert \
 		$(foreach test,$(ALL_TESTS),-l $(test)) \
 		--eval '(ert-run-tests-batch-and-exit "$(TEST)")'
-	@echo "$(COLOR_GREEN)✓ Tests matching '$(TEST)' complete$(COLOR_RESET)"
+	@echo "✓ Tests matching '$(TEST)' complete"
 
 # ============================================================================
 # Validation Targets
 # ============================================================================
 
 validate-parens:
-	@echo "$(COLOR_BLUE)Checking for unbalanced parentheses in modules...$(COLOR_RESET)"
+	@echo "Checking for unbalanced parentheses in modules..."
 	@failed=0; \
 	for file in $(MODULE_FILES); do \
 		echo "  Checking $$file..."; \
@@ -166,14 +161,14 @@ validate-parens:
 				(kill-emacs 1))))" 2>&1 > /dev/null || failed=$$((failed + 1)); \
 	done; \
 	if [ $$failed -eq 0 ]; then \
-		echo "$(COLOR_GREEN)✓ All modules have balanced parentheses$(COLOR_RESET)"; \
+		echo "✓ All modules have balanced parentheses"; \
 	else \
-		echo "$(COLOR_RED)✗ $$failed module(s) have unbalanced parentheses$(COLOR_RESET)"; \
+		echo "✗ $$failed module(s) have unbalanced parentheses"; \
 		exit 1; \
 	fi
 
 validate-modules:
-	@echo "$(COLOR_BLUE)Loading all modules to verify compilation...$(COLOR_RESET)"
+	@echo "Loading all modules to verify compilation..."
 	@failed=0; \
 	for file in $(MODULE_FILES); do \
 		echo "  Loading $$file..."; \
@@ -187,23 +182,23 @@ validate-modules:
 					(kill-emacs 1))))" || failed=$$((failed + 1)); \
 	done; \
 	if [ $$failed -eq 0 ]; then \
-		echo "$(COLOR_GREEN)✓ All modules loaded successfully$(COLOR_RESET)"; \
+		echo "✓ All modules loaded successfully"; \
 	else \
-		echo "$(COLOR_RED)✗ $$failed module(s) failed to load$(COLOR_RESET)"; \
+		echo "✗ $$failed module(s) failed to load"; \
 		exit 1; \
 	fi
 
 compile:
-	@echo "$(COLOR_BLUE)Byte-compiling all modules...$(COLOR_RESET)"
+	@echo "Byte-compiling all modules..."
 	@$(EMACS_BATCH) -L $(MODULE_DIR) \
 		--eval "(progn \
 			(setq byte-compile-error-on-warn nil) \
 			(batch-byte-compile))" $(MODULE_FILES)
-	@echo "$(COLOR_GREEN)✓ Compilation complete$(COLOR_RESET)"
+	@echo "✓ Compilation complete"
 
 lint:
-	@echo "$(COLOR_BLUE)Running linters on all modules...$(COLOR_RESET)"
-	@echo "$(COLOR_YELLOW)Note: checkdoc, package-lint, and elisp-lint must be installed$(COLOR_RESET)"
+	@echo "Running linters on all modules..."
+	@echo "Note: checkdoc, package-lint, and elisp-lint must be installed"
 	@failed=0; \
 	for file in $(MODULE_FILES); do \
 		echo "  Linting $$file..."; \
@@ -221,9 +216,9 @@ lint:
 					(elisp-lint-file \"$$file\")))" || failed=$$((failed + 1)); \
 	done; \
 	if [ $$failed -eq 0 ]; then \
-		echo "$(COLOR_GREEN)✓ All linting checks passed$(COLOR_RESET)"; \
+		echo "✓ All linting checks passed"; \
 	else \
-		echo "$(COLOR_YELLOW)⚠ $$failed module(s) have linting issues$(COLOR_RESET)"; \
+		echo "⚠ $$failed module(s) have linting issues"; \
 	fi
 
 # ============================================================================
@@ -231,31 +226,31 @@ lint:
 # ============================================================================
 
 profile:
-	@echo "$(COLOR_BLUE)Profiling Emacs startup...$(COLOR_RESET)"
+	@echo "Profiling Emacs startup..."
 	@if [ -f "$(EMACS_HOME)/early-init.el" ]; then \
 		$(EMACS) -Q --load "$(EMACS_HOME)/custom/profile-dotemacs.el" \
 			--eval "(progn (load-file \"$(EMACS_HOME)/early-init.el\") (profile-dotemacs))"; \
 	else \
-		echo "$(COLOR_YELLOW)No early-init.el found. Profiling init.el only.$(COLOR_RESET)"; \
+		echo "No early-init.el found. Profiling init.el only."; \
 		$(EMACS) -Q --load "$(EMACS_HOME)/custom/profile-dotemacs.el" \
 			--eval "(profile-dotemacs)"; \
 	fi
 
 clean: clean-tests clean-compiled
-	@echo "$(COLOR_GREEN)✓ Clean complete$(COLOR_RESET)"
+	@echo "✓ Clean complete"
 
 clean-compiled:
-	@echo "$(COLOR_BLUE)Removing compiled files (.elc, .eln)...$(COLOR_RESET)"
+	@echo "Removing compiled files (.elc, .eln)..."
 	@find $(EMACS_HOME) -type f \( -name "*.eln" -o -name "*.elc" \) -delete
-	@echo "$(COLOR_GREEN)✓ Compiled files removed$(COLOR_RESET)"
+	@echo "✓ Compiled files removed"
 
 clean-tests:
-	@echo "$(COLOR_BLUE)Removing test artifacts...$(COLOR_RESET)"
+	@echo "Removing test artifacts..."
 	@rm -rf $(HOME)/.temp-emacs-tests
-	@echo "$(COLOR_GREEN)✓ Test artifacts removed$(COLOR_RESET)"
+	@echo "✓ Test artifacts removed"
 
 reset:
-	@echo "$(COLOR_RED)⚠ DESTRUCTIVE: Resetting to first launch...$(COLOR_RESET)"
+	@echo "⚠ DESTRUCTIVE: Resetting to first launch..."
 	@rm -rf $(HOME)/.cache/org-persist/
 	@rm -rf $(EMACS_HOME)/.cache/
 	@rm -rf $(EMACS_HOME)/.elfeed-db/
@@ -298,4 +293,4 @@ reset:
 	@rm -f $(HOME)/sync/org/emacs-theme.persist
 	@find $(EMACS_HOME) -name "*.eln" -type f -delete
 	@find $(EMACS_HOME) -name "*.elc" -type f -delete
-	@echo "$(COLOR_GREEN)✓ Reset complete$(COLOR_RESET)"
+	@echo "✓ Reset complete"
