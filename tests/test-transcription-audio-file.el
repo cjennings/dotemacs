@@ -7,6 +7,11 @@
 ;;; Code:
 
 (require 'ert)
+
+;; Stub dependencies before loading the module
+(defvar cj/custom-keymap (make-sparse-keymap)
+  "Stub keymap for testing.")
+
 (require 'transcription-config)
 
 ;; ----------------------------- Normal Cases ----------------------------------
