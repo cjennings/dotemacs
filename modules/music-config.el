@@ -201,21 +201,25 @@ M3U-FILE should be an existing, writable M3U file path."
   (unless (file-writable-p m3u-file)
     (error "M3U file is not writable: %s" m3u-file))
 
-  ;; Determine if we need a leading newline
-  (let ((needs-prefix-newline nil)
-        (file-size (file-attribute-size (file-attributes m3u-file))))
-    (when (> file-size 0)
-      ;; Read the last character of the file to check if it ends with newline
-      (with-temp-buffer
-        (insert-file-contents m3u-file nil (max 0 (1- file-size)) file-size)
-        (setq needs-prefix-newline (not (= (char-after (point-min)) ?\n)))))
+  ;; Convert absolute path to relative path from music root
+  (let ((relative-path (if (file-name-absolute-p track-path)
+                           (file-relative-name track-path cj/music-root)
+                         track-path)))
+    ;; Determine if we need a leading newline
+    (let ((needs-prefix-newline nil)
+          (file-size (file-attribute-size (file-attributes m3u-file))))
+      (when (> file-size 0)
+        ;; Read the last character of the file to check if it ends with newline
+        (with-temp-buffer
+          (insert-file-contents m3u-file nil (max 0 (1- file-size)) file-size)
+          (setq needs-prefix-newline (not (= (char-after (point-min)) ?\n)))))
 
-    ;; Append the track with proper newline handling
-    (with-temp-buffer
-      (when needs-prefix-newline
-        (insert "\n"))
-      (insert track-path "\n")
-      (write-region (point-min) (point-max) m3u-file t 0)))
+      ;; Append the track with proper newline handling
+      (with-temp-buffer
+        (when needs-prefix-newline
+          (insert "\n"))
+        (insert relative-path "\n")
+        (write-region (point-min) (point-max) m3u-file t 0))))
   t)
 
 
