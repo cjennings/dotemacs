@@ -76,10 +76,10 @@
 		   :default-family "Fira Code Nerd Font"
 		   :variable-pitch-family "Literata")
           (EBook
-           :default-family "Merriweather"
+           :default-family "Lexend"
            :default-weight regular
            :default-height 200
-		   :variable-pitch-family "Merriweather")
+		   :variable-pitch-family "Lexend")
 		  (24-point-font
 		   :default-height 240)
 		  (20-point-font
