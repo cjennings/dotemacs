@@ -1378,3 +1378,24 @@ CLOSED: [2025-11-12 Wed 02:41] SCHEDULED: <2025-11-03 Sun>
 Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 
 * Emacs Config Inbox
+** TODO [#C] Investigate dashboard-mode interaction with mousetrap-mode
+Dashboard-mode with primary-click profile appears to block all clicks, not just secondary/scroll.
+Expected: left-click works on dashboard items, scroll blocked
+Actual: all clicks blocked when mousetrap enabled
+
+Possible causes:
+- Dashboard widgets use own keymaps that conflict with mousetrap keymap
+- Need to investigate dashboard-mode keymap priority
+- May need special handling or different profile for dashboard
+
+Current workaround: mousetrap works correctly in all other modes (org, pdf, nov, elisp)
+
+Related files:
+- modules/mousetrap-mode.el (profile: primary-click for dashboard)
+- tests/test-integration-mousetrap-mode-lighter-click.el
+
+** TODO Emacs: Modeline not updating dirty documents color properly
+** TODO [#A] Emacs Audio Recording Still Doesn't Get Audience!
+On a recorded call today Thursday, November 13, 2025 at 03:09:20 PM CST, the audio wasn't recorded on one side of the phone. Just my side was recorded.
+
+The input device works fine. I suspect we aren't taking input from the output device or monitor. Perhaps we should grab from them all? 
