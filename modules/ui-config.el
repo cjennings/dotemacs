@@ -97,11 +97,12 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
   "Last buffer name where cursor color was applied.")
 
 (defun cj/set-cursor-color-according-to-mode ()
-  "Change cursor color according to \\='buffer-read-only or \\='overwrite state."
+  "Change cursor color according to buffer state (modified, read-only, overwrite)."
   (let* ((state (cond
-				 (buffer-read-only 'read-only)
-				 (overwrite-mode   'overwrite)
-				 (t                'normal)))
+				 (buffer-read-only       'read-only)
+				 (overwrite-mode         'overwrite)
+				 ((buffer-modified-p)    'modified)
+				 (t                      'unmodified)))
 		 (color (alist-get state cj/buffer-status-colors)))
 	(unless (and (string= color cj/-cursor-last-color)
 				 (string= (buffer-name) cj/-cursor-last-buffer))
@@ -114,6 +115,10 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 		  (lambda (_window) (cj/set-cursor-color-according-to-mode)))
 (add-hook 'read-only-mode-hook #'cj/set-cursor-color-according-to-mode)
 (add-hook 'overwrite-mode-hook #'cj/set-cursor-color-according-to-mode)
+;; Add hook to update cursor color when buffer is modified/saved
+(add-hook 'after-change-functions
+		  (lambda (&rest _) (cj/set-cursor-color-according-to-mode)))
+(add-hook 'after-save-hook #'cj/set-cursor-color-according-to-mode)
 
 ;; Don’t show a cursor in non-selected windows:
 (setq cursor-in-non-selected-windows nil)
