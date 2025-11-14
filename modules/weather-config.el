@@ -22,7 +22,7 @@
   ("M-W" . wttrin)
   :config
   (setopt wttrin-unit-system "u")
-  (setopt wttrin-favorite-location "New Orleans, LA")
+  (setopt wttrin-mode-line-favorite-location "New Orleans, LA")
   (setopt wttrin-mode-line-refresh-interval (* 30 60)) ;; thirty minutes
   (setq wttrin-default-locations '(
                                    "New Orleans, LA"
