@@ -1,5 +1,0 @@
-This sentence is missing punctuation at the end
-
-Multiple  spaces  between  words  should  be  detected.
-
-A sentence with,incorrect comma,placement and usage.
