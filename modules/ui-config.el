@@ -97,28 +97,27 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
   "Last buffer name where cursor color was applied.")
 
 (defun cj/set-cursor-color-according-to-mode ()
-  "Change cursor color according to buffer state (modified, read-only, overwrite)."
-  (let* ((state (cond
-				 (buffer-read-only       'read-only)
-				 (overwrite-mode         'overwrite)
-				 ((buffer-modified-p)    'modified)
-				 (t                      'unmodified)))
-		 (color (alist-get state cj/buffer-status-colors)))
-	(unless (and (string= color cj/-cursor-last-color)
-				 (string= (buffer-name) cj/-cursor-last-buffer))
-	  (set-cursor-color color)
-	  (setq cj/-cursor-last-color color
-			cj/-cursor-last-buffer (buffer-name)))))
+  "Change cursor color according to buffer state (modified, read-only, overwrite).
+Only updates for real user buffers, not internal/temporary buffers."
+  ;; Only update cursor for real buffers (not internal ones like *temp*, *Echo Area*, etc.)
+  (unless (string-prefix-p " " (buffer-name))  ; Internal buffers start with space
+	(let* ((state (cond
+				   (buffer-read-only       'read-only)
+				   (overwrite-mode         'overwrite)
+				   ((buffer-modified-p)    'modified)
+				   (t                      'unmodified)))
+		   (color (alist-get state cj/buffer-status-colors)))
+	  ;; Only skip if BOTH color AND buffer are the same (optimization)
+	  ;; This allows color to update when buffer state changes
+	  (unless (and (string= color cj/-cursor-last-color)
+				   (string= (buffer-name) cj/-cursor-last-buffer))
+		(set-cursor-color color)
+		(setq cj/-cursor-last-color color
+			  cj/-cursor-last-buffer (buffer-name))))))
 
-;; Use more efficient hooks instead of post-command-hook for better performance
-(add-hook 'window-buffer-change-functions
-		  (lambda (_window) (cj/set-cursor-color-according-to-mode)))
-(add-hook 'read-only-mode-hook #'cj/set-cursor-color-according-to-mode)
-(add-hook 'overwrite-mode-hook #'cj/set-cursor-color-according-to-mode)
-;; Add hook to update cursor color when buffer is modified/saved
-(add-hook 'after-change-functions
-		  (lambda (&rest _) (cj/set-cursor-color-according-to-mode)))
-(add-hook 'after-save-hook #'cj/set-cursor-color-according-to-mode)
+;; Use post-command-hook to update cursor color after every command
+;; This ensures cursor color always matches the current buffer's state
+(add-hook 'post-command-hook #'cj/set-cursor-color-according-to-mode)
 
 ;; Don’t show a cursor in non-selected windows:
 (setq cursor-in-non-selected-windows nil)
