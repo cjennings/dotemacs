@@ -1378,21 +1378,15 @@ CLOSED: [2025-11-12 Wed 02:41] SCHEDULED: <2025-11-03 Sun>
 Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 
 * Emacs Config Inbox
-** TODO [#C] Investigate dashboard-mode interaction with mousetrap-mode
-Dashboard-mode with primary-click profile appears to block all clicks, not just secondary/scroll.
-Expected: left-click works on dashboard items, scroll blocked
-Actual: all clicks blocked when mousetrap enabled
+** TODO [#A] Music player is broken - mpd/mopidy need replacement
+SCHEDULED: <2025-11-15 Fri>
 
-Possible causes:
-- Dashboard widgets use own keymaps that conflict with mousetrap keymap
-- Need to investigate dashboard-mode keymap priority
-- May need special handling or different profile for dashboard
-
-Current workaround: mousetrap works correctly in all other modes (org, pdf, nov, elisp)
-
-Related files:
-- modules/mousetrap-mode.el (profile: primary-click for dashboard)
-- tests/test-integration-mousetrap-mode-lighter-click.el
+music-config.el integration with mpd and mopidy is broken. Need to migrate to
+a different music player solution. Investigate alternatives:
+- emms with VLC/mpv backend
+- bongo player
+- Simple mpv integration
+- Other lightweight music player packages
 
 ** TODO Emacs: Modeline not updating dirty documents color properly
 ** TODO [#A] Emacs Audio Recording Still Doesn't Get Audience!
