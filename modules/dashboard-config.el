@@ -114,7 +114,7 @@
             (lambda (&rest _) (mu4e)))
 
            (,(nerd-icons-faicon "nf-fae-book_open_o")
-            "Ebooks" "Calibre Ebook Reader"
+            "Books" "Calibre Ebook Reader"
             (lambda (&rest _) (calibredb)))
 
            (,(nerd-icons-mdicon "nf-md-school")
