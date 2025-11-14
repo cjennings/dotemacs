@@ -16,6 +16,10 @@
 
 ;; ------------------------------ Mouse Trap Mode ------------------------------
 
+(defvar mouse-trap-enable-scrolling t
+  "When non-nil, allow mouse wheel scrolling in `mouse-trap-mode'.
+When nil, disable mouse wheel scrolling along with clicks and drags.")
+
 (defvar mouse-trap-mode-map
   (let* ((prefixes '("" "C-" "M-" "S-" "C-M-" "C-S-" "M-S-" "C-M-S-")) ; modifiers
 		 (buttons  (number-sequence 1 5))                             ; mouse-1..5
@@ -28,21 +32,26 @@
 	  (dolist (pref prefixes)
 		(dolist (n buttons)
 		  (define-key map (kbd (format "<%s%s-%d>" pref type n)) #'ignore))))
-	;; wheel
-	(dolist (evt wheel)
-	  (dolist (pref prefixes)
-		(define-key map (kbd (format "<%s%s>" pref evt)) #'ignore)))
+	;; wheel (only disable if mouse-trap-enable-scrolling is nil)
+	(unless mouse-trap-enable-scrolling
+	  (dolist (evt wheel)
+		(dolist (pref prefixes)
+		  (define-key map (kbd (format "<%s%s>" pref evt)) #'ignore))))
 	map)
-  "Keymap for `mouse-trap-mode'. Unbinds almost every mouse event.
+  "Keymap for `mouse-trap-mode'.  Unbinds almost every mouse event.
 
-Disabling mouse prevents accidental mouse moves modifying text.")
+Disabling mouse prevents accidental mouse moves modifying text.
+Respects `mouse-trap-enable-scrolling' to optionally allow wheel scrolling.")
 
 (define-minor-mode mouse-trap-mode
   "Buffer-locally disable most mouse and trackpad events.
 
 When active, <mouse-*>, <down-mouse-*>, <drag-mouse-*>,
-<double-mouse-*>, <triple-mouse-*>, and wheel events are bound to `ignore',
-with or without C-, M-, S- modifiers."
+<double-mouse-*>, and <triple-mouse-*> events are bound to `ignore',
+with or without C-, M-, S- modifiers.
+
+Wheel scrolling is enabled by default, but can be disabled by
+setting `mouse-trap-enable-scrolling' to nil before loading this file."
   :lighter " 🐭"
   :keymap mouse-trap-mode-map
   :group 'convenience)
