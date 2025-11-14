@@ -41,9 +41,10 @@ Example: (setq cj/debug-modules '(org-agenda mail))
 ;; ---------------------------- Buffer Status Colors ---------------------------
 
 (defconst cj/buffer-status-colors
-  '((read-only . "#f06a3f")  ; red   – buffer is read-only
-    (overwrite . "#c48702")  ; gold  – overwrite mode
-    (normal    . "#64aa0f")) ; green – insert & read/write
+  '((read-only  . "#f06a3f")  ; red   – buffer is read-only
+    (overwrite  . "#c48702")  ; gold  – overwrite mode
+    (modified   . "#64aa0f")  ; green – modified & writeable
+    (unmodified . "#ffffff")) ; white – unmodified & writeable
   "Alist mapping buffer states to their colors.
 Used by cursor color, modeline, and other UI elements.")
 

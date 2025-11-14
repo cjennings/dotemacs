@@ -56,9 +56,10 @@ Example: `my-very-long-name.el' → `my-ver...me.el'"
 
 (defvar-local cj/modeline-buffer-name
   '(:eval (let* ((state (cond
-                         (buffer-read-only 'read-only)
-                         (overwrite-mode   'overwrite)
-                         (t                'normal)))
+                         (buffer-read-only       'read-only)
+                         (overwrite-mode         'overwrite)
+                         ((buffer-modified-p)    'modified)
+                         (t                      'unmodified)))
                  (color (alist-get state cj/buffer-status-colors))
                  (name (buffer-name))
                  (truncated-name (cj/modeline-string-cut-middle name)))
@@ -73,8 +74,8 @@ Example: `my-very-long-name.el' → `my-ver...me.el'"
                                      (define-key map [mode-line mouse-1] 'previous-buffer)
                                      (define-key map [mode-line mouse-3] 'next-buffer)
                                      map))))
-  "Buffer name colored by read-only/read-write status.
-Green = writeable, Red = read-only, Gold = overwrite.
+  "Buffer name colored by modification and read-only status.
+White = unmodified, Green = modified, Red = read-only, Gold = overwrite.
 Truncates in narrow windows.  Click to switch buffers.")
 
 (defvar-local cj/modeline-position
