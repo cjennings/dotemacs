@@ -1,0 +1,3 @@
+49	alsa_output.pci-0000_00_1f.3.analog-stereo.monitor	PipeWire	s32le 2ch 48000Hz	SUSPENDED
+81	bluez_output.00_1B_66_C0_91_6D.1.monitor	PipeWire	s24le 2ch 48000Hz	RUNNING
+99	alsa_output.usb-0b0e_Jabra_SPEAK_510_USB_1C48F9C067D5020A00-00.analog-stereo.monitor	PipeWire	s16le 2ch 48000Hz	SUSPENDED

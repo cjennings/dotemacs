@@ -1378,16 +1378,6 @@ CLOSED: [2025-11-12 Wed 02:41] SCHEDULED: <2025-11-03 Sun>
 Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 
 * Emacs Config Inbox
-** TODO [#A] Music player is broken - mpd/mopidy need replacement
-SCHEDULED: <2025-11-15 Fri>
-
-music-config.el integration with mpd and mopidy is broken. Need to migrate to
-a different music player solution. Investigate alternatives:
-- emms with VLC/mpv backend
-- bongo player
-- Simple mpv integration
-- Other lightweight music player packages
-
 ** TODO [#C] Investigate dashboard-mode interaction with mousetrap-mode
 Dashboard-mode with primary-click profile appears to block all clicks, not just secondary/scroll.
 Expected: left-click works on dashboard items, scroll blocked
