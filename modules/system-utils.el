@@ -186,21 +186,21 @@ Logs output and exit code to buffer *external-open.log*."
 ;;; -------------------------- Scratch Buffer Happiness -------------------------
 
 (defvar scratch-emacs-version-and-system
-  (concat "# Emacs " emacs-version
-          " on " system-configuration ".\n"))
-(defvar scratch-greet
-  (concat "# Emacs ♥ you, " user-login-name ". Happy Hacking!\n\n"))
+  (concat "# Emacs " emacs-version " ♥ you, " user-login-name ". Happy Hacking!\n"))
+(defvar scratch-greet "\n")
 (setopt initial-scratch-message
         (concat scratch-emacs-version-and-system scratch-greet))
 
 ;; Set scratch buffer to org-mode
 (setopt initial-major-mode 'org-mode)
 
-;; Move cursor to end of scratch buffer on startup
+;; Move cursor to end of scratch buffer on startup and set font size to 16pt
 (add-hook 'emacs-startup-hook
           (lambda ()
-            (when (string= (buffer-name) "*scratch*")
-              (goto-char (point-max)))))
+            (when (get-buffer "*scratch*")
+              (with-current-buffer "*scratch*"
+                (buffer-face-set :height 160)  ; 160 = 16pt (height is in 1/10pt units)
+                (goto-char (point-max))))))
 
 ;;; --------------------------------- Dictionary --------------------------------
 
