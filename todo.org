@@ -17,9 +17,48 @@ If the answer is "no" to all five → DON'T ADD IT.
 V2MOM is located at: [[file:docs/emacs-config-v2mom.org][emacs-config-v2mom.org]]
 Research/ideas that don't serve vision: [[file:docs/someday-maybe.org][someday-maybe.org]]
 
-* Method 1: Make Using Emacs Frictionless [12/23]
+* Method 1: Make Using Emacs Frictionless [13/24]
+** DONE [#A] Fix recording workflow - phone call audio not captured (44 dB volume loss)
+CLOSED: [2025-11-14 Thu]
 
-** TODO [#A] Fix recording workflow
+✅ **Fixed by replacing amerge+pan with amix FFmpeg filter**
+
+**Problem:**
+On recorded calls, only one side was captured (user's microphone), not the other person's voice.
+Phone call audio was too quiet to transcribe (44 dB volume loss).
+
+**Root Cause:**
+FFmpeg's `amerge+pan` filter combination caused massive volume loss when mixing microphone
+and system monitor inputs. The `pan` filter reduced volume by 50% and `amerge` had issues
+with PulseAudio/PipeWire compatibility.
+
+**Solution:**
+Replaced `amerge=inputs=2[merged];[merged]pan=mono|c0=0.5*c0+0.5*c1` with `amix=inputs=2:duration=longest`
+filter. The `amix` filter properly mixes inputs without volume loss.
+
+**Changes Made:**
+- Changed FFmpeg filter from `amerge+pan` to `amix` (modules/video-audio-recording.el:513)
+- Increased default system volume from 0.5 to 2.0 (modules/video-audio-recording.el:76)
+- Added diagnostic tool `C-; r w` to show active audio playback
+- Created integration test with real voice recording
+- Fixed batch mode compatibility for tests
+
+**Results:**
+- Volume improved from -66.2 dB to -21.5 dB (44 dB improvement)
+- Test transcription: 100% accurate ("Can you hear me? Testing, one, two, three.")
+- Phone calls now capture both sides correctly
+
+**Testing:**
+Automated integration test verifies monitor capture works with perfect transcription. 
+** TODO [#A] Music player is broken - mpd/mopidy need replacement
+SCHEDULED: <2025-11-15 Fri>
+
+music-config.el integration with mpd and mopidy is broken. Need to migrate to
+a different music player solution. Investigate alternatives:
+- emms with VLC/mpv backend
+- bongo player
+- Simple mpv integration
+- Other lightweight music player packages
 
 ** TODO [#B] Consider implementing cron download of Google Calendar to replace org-gcal
 
@@ -192,42 +231,6 @@ Use M-x profiler-start before Method 3 debug-profiling.el is built.
 15-20 seconds every time capturing a task (12+ times/day).
 Major daily bottleneck - minutes lost waiting, plus context switching cost.
 
-** TODO [#B] Add time-zones package for quick timezone lookups
-
-IRRITANT: Need to frequently check time differences between cities (London, Lisbon,
-New Orleans, San Francisco) for meetings and coordination. Currently requires stopping
-work, searching web/using external app, context switching back.
-
-**Pain Point:**
-Multiple times per week, need to know "what time is it in London right now?" or
-"if I schedule this for 2pm my time, what time is that in Lisbon?" This breaks
-flow and requires leaving Emacs.
-
-**Solution:**
-Use time-zones package: https://github.com/xenodium/time-zones
-
-Built-in world-clock exists (M-x world-clock) but lacks two critical features:
-1. Can't interactively add cities with fuzzy search
-2. Can't shift time forward/backward to check future times
-
-time-zones package adds both features - making timezone checks instant and frictionless.
-
-**Expected Workflow:**
-- M-x time-zones (or keybinding C-; T z or similar)
-- Interactively add/remove cities with completion
-- Shift time forward/backward to check meeting times
-- Stay in Emacs, maintain flow
-
-**Files:**
-- Create new module: modules/time-zones-config.el
-- Add require to init.el in appropriate section
-- Configure default cities list (London, Lisbon, New Orleans, San Francisco)
-- Add keybinding (suggest C-; T z for time zones)
-
-**V2MOM Alignment:**
-Method 1 - Frictionless: Eliminates context switch for common timezone queries.
-Intuitive value: Quick keybinding for frequent operation.
-
 ** TODO [#C] Verify format-buffer hands off to shfmt in shell scripts
 
 Need to verify that the format-buffer command correctly delegates to shfmt when
@@ -398,17 +401,17 @@ Priority [#B] because this function runs on every save in shell-script-mode and
 modifying file permissions incorrectly could cause security issues or workflow
 problems. Needs testing before any refactoring or changes.
 
+** TODO [#C] Fix EMMS keybinding inconsistency with other buffers
+
+EMMS keybindings conflict with standard buffer keybindings, causing mistypes.
+Results in accidental destructive actions (clearing buffers), requires undo + context switch.
+Violates Intuitive value - muscle memory should help, not hurt.
+
 ** TODO [#D] Frequently used org-mode keybindings under C-; o
 
 Add quick access keybindings for common org commands (org-table, org-reveal, etc.) under C-; o.
 Makes org-mode operations more frictionless.
 Moved from inbox 2025-11-07.
-
-** TODO [#D] Fix EMMS keybinding inconsistency with other buffers
-
-EMMS keybindings conflict with standard buffer keybindings, causing mistypes.
-Results in accidental destructive actions (clearing buffers), requires undo + context switch.
-Violates Intuitive value - muscle memory should help, not hurt.
 
 ** DONE [#A] Fix Google Calendar password prompts every 15 minutes
 CLOSED: [2025-11-11 Mon]
@@ -470,8 +473,6 @@ After restart:
 
 Priority [#A] because password prompts every 15 minutes violated "Frictionless" value.
 Fixed 2025-11-11.
-
-
 
 ** DONE [#A] Fix audio recording device selection - still broken with Jabra headset
 CLOSED: [2025-11-11 Mon]
@@ -653,6 +654,43 @@ CLOSED: [2025-11-08 Fri]
 - No lag, even in large files
 - Maintains same "L:line C:col" format
 
+** DONE [#B] Add time-zones package for quick timezone lookups
+CLOSED: [2025-11-14 Fri 02:42]
+
+IRRITANT: Need to frequently check time differences between cities (London, Lisbon,
+New Orleans, San Francisco) for meetings and coordination. Currently requires stopping
+work, searching web/using external app, context switching back.
+
+**Pain Point:**
+Multiple times per week, need to know "what time is it in London right now?" or
+"if I schedule this for 2pm my time, what time is that in Lisbon?" This breaks
+flow and requires leaving Emacs.
+
+**Solution:**
+Use time-zones package: https://github.com/xenodium/time-zones
+
+Built-in world-clock exists (M-x world-clock) but lacks two critical features:
+1. Can't interactively add cities with fuzzy search
+2. Can't shift time forward/backward to check future times
+
+time-zones package adds both features - making timezone checks instant and frictionless.
+
+**Expected Workflow:**
+- M-x time-zones (or keybinding C-; T z or similar)
+- Interactively add/remove cities with completion
+- Shift time forward/backward to check meeting times
+- Stay in Emacs, maintain flow
+
+**Files:**
+- Create new module: modules/time-zones-config.el
+- Add require to init.el in appropriate section
+- Configure default cities list (London, Lisbon, New Orleans, San Francisco)
+- Add keybinding (suggest C-; T z for time zones)
+
+**V2MOM Alignment:**
+Method 1 - Frictionless: Eliminates context switch for common timezone queries.
+Intuitive value: Quick keybinding for frequent operation.
+
 ** DONE [#B] Fix go-ts-mode-map keybinding error (void-variable)
 CLOSED: [2025-11-03 Sun]
 
@@ -749,7 +787,7 @@ LanguageTool catches:
 
 Workflow: Open org/text/markdown file → press C-; ? → see errors in *Flycheck errors* buffer
 
-** DONE cj/flyspell-then-abbrev loses keybinding in scratch org-mode buffer
+** DONE [#C] cj/flyspell-then-abbrev loses keybinding in scratch org-mode buffer
 CLOSED: [2025-11-08 Fri]
 
 ✅ Fixed keybinding issue in org-mode buffers.
@@ -766,9 +804,6 @@ CLOSED: [2025-11-08 Fri]
 File modified: modules/flyspell-and-abbrev.el:235-251
 
 * Method 2: Stop Problems Before They Appear [3/8]
-
-
-
 ** TODO [#A] Write Complete ERT Tests for This Config [0/0]
 Unit and Integration Tests should be added as subtasks below, marked done when complete
 ** TODO [#B] Move cj/log-silently to system-lib
@@ -985,7 +1020,6 @@ CLOSED: [2025-11-03 Sun]
 - Cleaner editing experience while maintaining visual clarity
 
 * Method 3: Make *Fixing* Emacs Frictionless [0/9]
-
 ** TODO [#B] Build debug-profiling.el module
 
 Reusable profiling infrastructure for any future performance work.
@@ -1330,7 +1364,6 @@ real issues during startup. This ties into fixing the 2 failed benchmark tests
 (separate TODO at line 68-96).
 
 * Method 4: Contribute to the Emacs Ecosystem [0/4]
-
 ** TODO [#B] Integrate undercover.el for test coverage
 
 Measure and track test coverage over time.
@@ -1348,7 +1381,6 @@ Catch packaging issues automatically.
 Zero-config CI for Emacs packages.
 
 * Method 5: Be Kind To Your Future Self [1/2]
-
 ** DONE [#C] Add transcription workflow
 CLOSED: [2025-11-12 Wed 02:41]
 :PROPERTIES:
@@ -1378,18 +1410,34 @@ CLOSED: [2025-11-12 Wed 02:41] SCHEDULED: <2025-11-03 Sun>
 Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 
 * Emacs Config Inbox
-** TODO [#A] Music player is broken - mpd/mopidy need replacement
-SCHEDULED: <2025-11-15 Fri>
+** TODO [#C] Review and implement flycheck modeline customization spec
 
-music-config.el integration with mpd and mopidy is broken. Need to migrate to
-a different music player solution. Investigate alternatives:
-- emms with VLC/mpv backend
-- bongo player
-- Simple mpv integration
-- Other lightweight music player packages
+Add flycheck status (error/warning counts) to custom modeline to make it visible again.
 
-** TODO Emacs: Modeline not updating dirty documents color properly
-** TODO [#A] Emacs Audio Recording Still Doesn't Get Audience!
-On a recorded call today Thursday, November 13, 2025 at 03:09:20 PM CST, the audio wasn't recorded on one side of the phone. Just my side was recorded.
+**Spec Document:**
+[[file:docs/flycheck-modeline-customization-spec.org][flycheck-modeline-customization-spec.org]]
 
-The input device works fine. I suspect we aren't taking input from the output device or monitor. Perhaps we should grab from them all? 
+**Summary:**
+Current custom modeline excludes minor-mode-alist where flycheck displays its status.
+Need to either:
+1. Add flycheck's lighter directly to mode-line-format (simplest)
+2. Customize flycheck prefix/indicator and add to modeline
+3. Create custom flycheck segment with full control
+
+**Files to Modify:**
+- modules/flycheck-config.el (customize prefix/indicator)
+- modules/modeline-config.el (add to mode-line-format)
+
+**Emoji Options:**
+- Prefix: 🪰 (fly), 🐛 (bug), ✓ (check), ⚠ (warning), 🔍 (magnifier)
+- Success: ✓, ✅, 🟢, ✨, 💯
+
+**Recommended Approach:**
+Option 4 (Hybrid) from spec - customize flycheck variables + add to modeline.
+Simple, maintainable, respects flycheck's built-in logic.
+
+**Next Steps:**
+1. Review spec document and choose emoji combination
+2. Add customization to flycheck-config.el
+3. Add to modeline-config.el mode-line-format
+4. Test in sh-mode and emacs-lisp-mode buffers
