@@ -51,7 +51,7 @@ Magit for review."
               ;; if git directory is clean, pulling generates no errors
               (if (string-empty-p (shell-command-to-string "git status --porcelain"))
                   (progn
-                    (let ((pull-result (shell-command "git pull --quiet")))
+                    (let ((pull-result (shell-command "git pull --rebase --quiet")))
                       (unless (= pull-result 0)
                         (message "Warning: git pull failed for %s (exit code: %d)" directory pull-result))))
 
@@ -61,7 +61,7 @@ Magit for review."
                   (let ((stash-result (shell-command "git stash --quiet")))
                     (if (= stash-result 0)
                         (progn
-                          (let ((pull-result (shell-command "git pull --quiet")))
+                          (let ((pull-result (shell-command "git pull --rebase --quiet")))
                             (if (= pull-result 0)
                                 (let ((stash-pop-result (shell-command "git stash pop --quiet")))
                                   (unless (= stash-pop-result 0)
