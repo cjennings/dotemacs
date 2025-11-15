@@ -66,7 +66,7 @@ Profiles:
   - full: Allow all mouse events")
 
 (defvar mouse-trap-mode-profiles
-  '((dashboard-mode  . primary-click)
+  '((dashboard-mode  . scroll+primary)
     (pdf-view-mode   . full)
     (nov-mode        . full))
   "Map major modes to mouse-trap profiles.
@@ -178,16 +178,11 @@ See `mouse-trap-profiles' for available profiles and
   (if mouse-trap-mode
       (progn
         (setq mouse-trap-mode-map (mouse-trap--build-keymap))
-        ;; Force the keymap to be recognized by the minor mode system
-        (setq minor-mode-map-alist
-              (cons (cons 'mouse-trap-mode mouse-trap-mode-map)
-                    (assq-delete-all 'mouse-trap-mode minor-mode-map-alist)))
         ;; Add dynamic lighter to mode-line-misc-info (always visible)
         (unless (member '(:eval (mouse-trap--lighter-string)) mode-line-misc-info)
           (push '(:eval (mouse-trap--lighter-string)) mode-line-misc-info)))
-    ;; When disabling, remove from minor-mode-map-alist
-    (setq minor-mode-map-alist
-          (assq-delete-all 'mouse-trap-mode minor-mode-map-alist))
+    ;; When disabling, clear the keymap
+    (setq mouse-trap-mode-map nil)
     ;; Note: We keep the lighter in mode-line-misc-info so it shows 🐭 when disabled
     ))
 
