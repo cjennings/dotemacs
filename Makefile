@@ -89,15 +89,49 @@ test-all:
 
 test-unit:
 	@echo "[i] Running unit tests ($(words $(UNIT_TESTS)) files)..."
+	@echo ""
 	@failed=0; \
+	failed_files=""; \
 	for test in $(UNIT_TESTS); do \
-		echo "  Testing $$test..."; \
-		$(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" || failed=$$((failed + 1)); \
+		test_name=$$(basename $$test); \
+		printf "  Testing %-60s " "$$test_name..."; \
+		output=$$($(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" 2>&1); \
+		result=$$?; \
+		if [ $$result -eq 0 ]; then \
+			pass_count=$$(echo "$$output" | grep -oP "Ran \K\d+" | head -1); \
+			echo "✓ ($$pass_count tests)"; \
+		else \
+			echo "✗ FAILED"; \
+			failed=$$((failed + 1)); \
+			failed_files="$$failed_files$$test_name "; \
+			echo "$$output" | grep -E "FAILED|unexpected|Error" > /tmp/test-failure-$$test_name.log; \
+		fi; \
 	done; \
+	echo ""; \
 	if [ $$failed -eq 0 ]; then \
-		echo "✓ All unit tests passed"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo "✓ ALL UNIT TESTS PASSED"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
 	else \
-		echo "✗ $$failed unit test file(s) failed"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo "✗ FAILURES DETECTED: $$failed test file(s) failed"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo ""; \
+		echo "Failed test files:"; \
+		for file in $$failed_files; do \
+			echo "  • $$file"; \
+			if [ -f /tmp/test-failure-$$file.log ]; then \
+				echo "    Errors:"; \
+				sed 's/^/      /' /tmp/test-failure-$$file.log; \
+				rm /tmp/test-failure-$$file.log; \
+			fi; \
+		done; \
+		echo ""; \
+		echo "Run individual failing tests with:"; \
+		for file in $$failed_files; do \
+			echo "  make test-file FILE=$$file"; \
+		done; \
+		echo ""; \
 		exit 1; \
 	fi
 
@@ -106,16 +140,50 @@ test-integration:
 		echo "No integration tests found"; \
 		exit 0; \
 	fi
-	@echo "Running integration tests ($(words $(INTEGRATION_TESTS)) files)..."
+	@echo "[i] Running integration tests ($(words $(INTEGRATION_TESTS)) files)..."
+	@echo ""
 	@failed=0; \
+	failed_files=""; \
 	for test in $(INTEGRATION_TESTS); do \
-		echo "  Testing $$test..."; \
-		$(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" || failed=$$((failed + 1)); \
+		test_name=$$(basename $$test); \
+		printf "  Testing %-60s " "$$test_name..."; \
+		output=$$($(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" 2>&1); \
+		result=$$?; \
+		if [ $$result -eq 0 ]; then \
+			pass_count=$$(echo "$$output" | grep -oP "Ran \K\d+" | head -1); \
+			echo "✓ ($$pass_count tests)"; \
+		else \
+			echo "✗ FAILED"; \
+			failed=$$((failed + 1)); \
+			failed_files="$$failed_files$$test_name "; \
+			echo "$$output" | grep -E "FAILED|unexpected|Error" > /tmp/test-failure-$$test_name.log; \
+		fi; \
 	done; \
+	echo ""; \
 	if [ $$failed -eq 0 ]; then \
-		echo "✓ All integration tests passed"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo "✓ ALL INTEGRATION TESTS PASSED"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
 	else \
-		echo "✗ $$failed integration test file(s) failed"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo "✗ FAILURES DETECTED: $$failed test file(s) failed"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo ""; \
+		echo "Failed test files:"; \
+		for file in $$failed_files; do \
+			echo "  • $$file"; \
+			if [ -f /tmp/test-failure-$$file.log ]; then \
+				echo "    Errors:"; \
+				sed 's/^/      /' /tmp/test-failure-$$file.log; \
+				rm /tmp/test-failure-$$file.log; \
+			fi; \
+		done; \
+		echo ""; \
+		echo "Run individual failing tests with:"; \
+		for file in $$failed_files; do \
+			echo "  make test-file FILE=$$file"; \
+		done; \
+		echo ""; \
 		exit 1; \
 	fi
 
