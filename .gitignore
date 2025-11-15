@@ -56,3 +56,4 @@ auto-save-list/
 
 # Claude Code configuration (personal settings, commands)
 /.claude/
+history
