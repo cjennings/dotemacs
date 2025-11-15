@@ -15,7 +15,7 @@
 (ert-deftest test-mousetrap-mode--get-profile-for-mode-normal-exact-match-returns-profile ()
   "Test exact mode match returns mapped profile."
   (let ((major-mode 'dashboard-mode))
-    (should (eq 'primary-click (mouse-trap--get-profile-for-mode)))))
+    (should (eq 'scroll+primary (mouse-trap--get-profile-for-mode)))))
 
 (ert-deftest test-mousetrap-mode--get-profile-for-mode-normal-inherited-mode-returns-parent-profile ()
   "Test that org-mode inherits disabled profile from text-mode."
