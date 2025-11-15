@@ -25,8 +25,9 @@
 ;;
 ;;; Code:
 
-;; Declare functions and variables from other modules
-(declare-function cj/log-silently "system-utils" (format-string &rest args))
+(require 'system-lib)
+
+;; Declare variables from other modules
 (defvar videos-dir) ;; from user-constants.el
 
 ;; ------------------------ Default Media Configurations -----------------------

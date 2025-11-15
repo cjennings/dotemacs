@@ -64,6 +64,8 @@
 ;;
 ;;; Code:
 
+(require 'system-lib)
+
 ;; Forward declarations
 (eval-when-compile (defvar video-recordings-dir))
 (eval-when-compile (defvar audio-recordings-dir))
