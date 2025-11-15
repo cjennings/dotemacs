@@ -40,39 +40,42 @@
   (test-music-config--append-track-to-m3u-file-setup)
   (unwind-protect
       (let* ((m3u-file (cj/create-temp-test-file "test-playlist-"))
-             (track-path "/home/user/music/artist/song.mp3"))
+             (track-path (expand-file-name "artist/song.mp3" cj/music-root))
+             (expected-relative "artist/song.mp3"))
         (cj/music--append-track-to-m3u-file track-path m3u-file)
         (with-temp-buffer
           (insert-file-contents m3u-file)
-          (should (string= (buffer-string) (concat track-path "\n")))))
+          (should (string= (buffer-string) (concat expected-relative "\n")))))
     (test-music-config--append-track-to-m3u-file-teardown)))
 
 (ert-deftest test-music-config--append-track-to-m3u-file-normal-existing-with-newline-appends-track ()
   "Append to file with existing content ending with newline."
   (test-music-config--append-track-to-m3u-file-setup)
   (unwind-protect
-      (let* ((existing-content "/home/user/music/first.mp3\n")
+      (let* ((existing-content "first.mp3\n")
              (m3u-file (cj/create-temp-test-file-with-content existing-content "test-playlist-"))
-             (track-path "/home/user/music/second.mp3"))
+             (track-path (expand-file-name "second.mp3" cj/music-root))
+             (expected-relative "second.mp3"))
         (cj/music--append-track-to-m3u-file track-path m3u-file)
         (with-temp-buffer
           (insert-file-contents m3u-file)
           (should (string= (buffer-string)
-                          (concat existing-content track-path "\n")))))
+                          (concat existing-content expected-relative "\n")))))
     (test-music-config--append-track-to-m3u-file-teardown)))
 
 (ert-deftest test-music-config--append-track-to-m3u-file-normal-existing-without-newline-appends-track ()
   "Append to file without trailing newline adds leading newline."
   (test-music-config--append-track-to-m3u-file-setup)
   (unwind-protect
-      (let* ((existing-content "/home/user/music/first.mp3")
+      (let* ((existing-content "first.mp3")
              (m3u-file (cj/create-temp-test-file-with-content existing-content "test-playlist-"))
-             (track-path "/home/user/music/second.mp3"))
+             (track-path (expand-file-name "second.mp3" cj/music-root))
+             (expected-relative "second.mp3"))
         (cj/music--append-track-to-m3u-file track-path m3u-file)
         (with-temp-buffer
           (insert-file-contents m3u-file)
           (should (string= (buffer-string)
-                          (concat existing-content "\n" track-path "\n")))))
+                          (concat existing-content "\n" expected-relative "\n")))))
     (test-music-config--append-track-to-m3u-file-teardown)))
 
 (ert-deftest test-music-config--append-track-to-m3u-file-normal-multiple-appends-all-succeed ()
@@ -80,9 +83,11 @@
   (test-music-config--append-track-to-m3u-file-setup)
   (unwind-protect
       (let* ((m3u-file (cj/create-temp-test-file "test-playlist-"))
-             (track1 "/home/user/music/track1.mp3")
-             (track2 "/home/user/music/track2.mp3")
-             (track1-duplicate "/home/user/music/track1.mp3"))
+             (track1 (expand-file-name "track1.mp3" cj/music-root))
+             (track2 (expand-file-name "track2.mp3" cj/music-root))
+             (track1-duplicate (expand-file-name "track1.mp3" cj/music-root))
+             (rel1 "track1.mp3")
+             (rel2 "track2.mp3"))
         (cj/music--append-track-to-m3u-file track1 m3u-file)
         (cj/music--append-track-to-m3u-file track2 m3u-file)
         (cj/music--append-track-to-m3u-file track1-duplicate m3u-file)
@@ -90,7 +95,7 @@
           (insert-file-contents m3u-file)
           (let ((content (buffer-string)))
             (should (string= content
-                            (concat track1 "\n" track2 "\n" track1-duplicate "\n"))))))
+                            (concat rel1 "\n" rel2 "\n" rel1 "\n"))))))
     (test-music-config--append-track-to-m3u-file-teardown)))
 
 ;;; Boundary Cases
@@ -100,15 +105,14 @@
   (test-music-config--append-track-to-m3u-file-setup)
   (unwind-protect
       (let* ((m3u-file (cj/create-temp-test-file "test-playlist-"))
-             ;; Create a path that's ~500 chars long
-             (track-path (concat "/home/user/music/"
-                                (make-string 450 ?a)
-                                "/song.mp3")))
+             ;; Create a relative path that's ~450 chars long
+             (relative-path (concat (make-string 440 ?a) "/song.mp3"))
+             (track-path (expand-file-name relative-path cj/music-root)))
         (cj/music--append-track-to-m3u-file track-path m3u-file)
         (with-temp-buffer
           (insert-file-contents m3u-file)
-          (should (string= (buffer-string) (concat track-path "\n")))
-          (should (= (length (buffer-string)) (1+ (length track-path))))))
+          (should (string= (buffer-string) (concat relative-path "\n")))
+          (should (= (length (buffer-string)) (1+ (length relative-path))))))
     (test-music-config--append-track-to-m3u-file-teardown)))
 
 (ert-deftest test-music-config--append-track-to-m3u-file-boundary-path-with-unicode-appends-successfully ()
@@ -116,11 +120,12 @@
   (test-music-config--append-track-to-m3u-file-setup)
   (unwind-protect
       (let* ((m3u-file (cj/create-temp-test-file "test-playlist-"))
-             (track-path "/home/user/music/中文/artist-名前/song🎵.mp3"))
+             (relative-path "中文/artist-名前/song🎵.mp3")
+             (track-path (expand-file-name relative-path cj/music-root)))
         (cj/music--append-track-to-m3u-file track-path m3u-file)
         (with-temp-buffer
           (insert-file-contents m3u-file)
-          (should (string= (buffer-string) (concat track-path "\n")))))
+          (should (string= (buffer-string) (concat relative-path "\n")))))
     (test-music-config--append-track-to-m3u-file-teardown)))
 
 (ert-deftest test-music-config--append-track-to-m3u-file-boundary-path-with-spaces-appends-successfully ()
@@ -128,11 +133,12 @@
   (test-music-config--append-track-to-m3u-file-setup)
   (unwind-protect
       (let* ((m3u-file (cj/create-temp-test-file "test-playlist-"))
-             (track-path "/home/user/music/Artist Name/Album (2024)/01 - Song's Title [Remix].mp3"))
+             (relative-path "Artist Name/Album (2024)/01 - Song's Title [Remix].mp3")
+             (track-path (expand-file-name relative-path cj/music-root)))
         (cj/music--append-track-to-m3u-file track-path m3u-file)
         (with-temp-buffer
           (insert-file-contents m3u-file)
-          (should (string= (buffer-string) (concat track-path "\n")))))
+          (should (string= (buffer-string) (concat relative-path "\n")))))
     (test-music-config--append-track-to-m3u-file-teardown)))
 
 (ert-deftest test-music-config--append-track-to-m3u-file-boundary-m3u-with-comments-appends-after ()
@@ -141,12 +147,13 @@
   (unwind-protect
       (let* ((existing-content "#EXTM3U\n#EXTINF:-1,Radio Station\nhttp://stream.url/radio\n")
              (m3u-file (cj/create-temp-test-file-with-content existing-content "test-playlist-"))
-             (track-path "/home/user/music/local-track.mp3"))
+             (relative-path "local-track.mp3")
+             (track-path (expand-file-name relative-path cj/music-root)))
         (cj/music--append-track-to-m3u-file track-path m3u-file)
         (with-temp-buffer
           (insert-file-contents m3u-file)
           (should (string= (buffer-string)
-                          (concat existing-content track-path "\n")))))
+                          (concat existing-content relative-path "\n")))))
     (test-music-config--append-track-to-m3u-file-teardown)))
 
 ;;; Error Cases
