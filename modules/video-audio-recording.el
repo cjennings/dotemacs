@@ -35,6 +35,11 @@
 ;; C-; r d (cj/recording-list-devices)
 ;;   List all available audio devices and current configuration.
 ;;
+;; C-; r w (cj/recording-show-active-audio) - DIAGNOSTIC TOOL
+;;   Show which apps are currently playing audio and through which device.
+;;   Use this DURING a phone call to see if the call audio is going through
+;;   the device you think it is. Helps diagnose "missing one side" issues.
+;;
 ;; Testing Devices Before Important Recordings
 ;; ============================================
 ;; Always test devices before important meetings/calls:
@@ -68,9 +73,10 @@
   "Volume multiplier for microphone in recordings.
 1.0 = normal volume, 2.0 = double volume (+6dB), 0.5 = half volume (-6dB).")
 
-(defvar cj/recording-system-volume 0.5
+(defvar cj/recording-system-volume 2.0
   "Volume multiplier for system audio in recordings.
-1.0 = normal volume, 2.0 = double volume (+6dB), 0.5 = half volume (-6dB).")
+1.0 = normal volume, 2.0 = double volume (+6dB), 0.5 = half volume (-6dB).
+Default is 2.0 because the pan filter reduces by 50%, so final level is 1.0x.")
 
 (defvar cj/recording-mic-device nil
   "PulseAudio device name for microphone input.
@@ -183,6 +189,37 @@ Opens a buffer showing devices with their states."
       (goto-char (point-min))
       (special-mode))
     (switch-to-buffer-other-window "*Recording Devices*")))
+
+(defun cj/recording-show-active-audio ()
+  "Show which audio sinks are currently PLAYING audio in real-time.
+Useful for diagnosing why phone call audio isn't being captured - helps identify
+which device the phone app is actually using for output."
+  (interactive)
+  (let ((output (shell-command-to-string "pactl list sink-inputs")))
+    (with-current-buffer (get-buffer-create "*Active Audio Playback*")
+      (erase-buffer)
+      (insert "Active Audio Playback (Updated: " (format-time-string "%H:%M:%S") ")\n")
+      (insert "======================================================\n\n")
+      (insert "This shows which applications are CURRENTLY playing audio and through which device.\n")
+      (insert "If you're on a phone call, you should see the phone app listed here.\n")
+      (insert "The 'Sink' line shows which output device it's using.\n\n")
+      (if (string-match-p "Sink Input" output)
+          (progn
+            (insert output)
+            (insert "\n\nTIP: The '.monitor' device corresponding to the 'Sink' above is what\n")
+            (insert "you need to select for system audio to capture the other person's voice.\n\n")
+            (insert "For example, if Sink is 'alsa_output.usb...Jabra...analog-stereo',\n")
+            (insert "then you need 'alsa_output.usb...Jabra...analog-stereo.monitor'\n"))
+        (insert "No active audio playback detected.\n\n")
+        (insert "This means no applications are currently playing audio.\n")
+        (insert "If you're on a phone call and see this, the phone app might be:\n")
+        (insert "  1. Using a different audio system (not PulseAudio/PipeWire)\n")
+        (insert "  2. Using a Bluetooth device directly (bypassing system audio)\n")
+        (insert "  3. Not actually playing audio (check if you can hear the other person)\n"))
+      (goto-char (point-min))
+      (special-mode))
+    (switch-to-buffer-other-window "*Active Audio Playback*")
+    (message "Showing active audio playback. Press 'g' to refresh, 'q' to quit.")))
 
 (defun cj/recording-select-device (prompt device-type)
   "Interactively select an audio device.
@@ -453,22 +490,28 @@ Otherwise use the default location in `audio-recordings-dir'."
 			   filename cj/recording-mic-boost cj/recording-system-volume))))
 
 (defun cj/ffmpeg-record-audio (directory)
-  "Start an ffmpeg audio recording.  Save output to DIRECTORY."
+  "Start an ffmpeg audio recording.  Save output to DIRECTORY.
+Records from microphone and system audio monitor (configured device), mixing them together.
+Use C-; r c to configure which device to use - it must match the device your phone call uses."
   (cj/recording-check-ffmpeg)
   (unless cj/audio-recording-ffmpeg-process
 	(let* ((devices (cj/recording-get-devices))
 		   (mic-device (car devices))
+		   ;; Use the explicitly configured monitor device
+		   ;; This must match the device your phone call/audio is using
 		   (system-device (cdr devices))
 		   (location (expand-file-name directory))
 		   (name (format-time-string "%Y-%m-%d-%H-%M-%S"))
 		   (filename (expand-file-name (concat name ".m4a") location))
 		   (ffmpeg-command
 			(format (concat "ffmpeg "
-							"-f pulse -i %s "
-							"-ac 1 "
-							"-f pulse -i %s "
-							"-ac 1 "
-							"-filter_complex \"[0:a]volume=%.1f[mic];[1:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2[out];[out]pan=mono|c0=0.5*c0+0.5*c1\" "
+							"-f pulse -i %s "  ; Input 0: Microphone (specific device)
+							"-f pulse -i %s "  ; Input 1: System audio monitor
+							"-filter_complex \""
+							"[0:a]volume=%.1f[mic];"     ; Apply mic boost
+							"[1:a]volume=%.1f[sys];"     ; Apply system volume
+							"[mic][sys]amix=inputs=2:duration=longest[out]\" "  ; Mix both inputs
+							"-map \"[out]\" "
 							"-c:a aac "
 							"-b:a 64k "
 							"%s")
@@ -477,6 +520,9 @@ Otherwise use the default location in `audio-recordings-dir'."
 					cj/recording-mic-boost
 					cj/recording-system-volume
 					filename)))
+	  ;; Log the command for debugging
+	  (message "Recording from mic: %s + ALL system outputs" mic-device)
+	  (cj/log-silently "Audio recording ffmpeg command: %s" ffmpeg-command)
 	  ;; start the recording
 	  (setq cj/audio-recording-ffmpeg-process
 			(start-process-shell-command "ffmpeg-audio-recording"
@@ -485,7 +531,7 @@ Otherwise use the default location in `audio-recordings-dir'."
 	  (set-process-query-on-exit-flag cj/audio-recording-ffmpeg-process nil)
 	  (set-process-sentinel cj/audio-recording-ffmpeg-process #'cj/recording-process-sentinel)
 	  (force-mode-line-update t)
-	  (message "Started audio recording to %s (mic: %.1fx, system: %.1fx)."
+	  (message "Started recording to %s (mic: %.1fx, all system audio: %.1fx)"
 			   filename cj/recording-mic-boost cj/recording-system-volume))))
 
 (defun cj/video-recording-stop ()
@@ -534,6 +580,7 @@ Otherwise use the default location in `audio-recordings-dir'."
     (define-key map (kbd "a") #'cj/audio-recording-toggle)
     (define-key map (kbd "l") #'cj/recording-adjust-volumes)
     (define-key map (kbd "d") #'cj/recording-list-devices)
+    (define-key map (kbd "w") #'cj/recording-show-active-audio)  ; "w" for "what's playing"
     (define-key map (kbd "s") #'cj/recording-select-devices)
     (define-key map (kbd "c") #'cj/recording-quick-setup-for-calls)
     (define-key map (kbd "t m") #'cj/recording-test-mic)
@@ -542,7 +589,9 @@ Otherwise use the default location in `audio-recordings-dir'."
     map)
   "Keymap for video/audio recording operations.")
 
-(keymap-set cj/custom-keymap "r" cj/record-map)
+;; Only set keybinding if cj/custom-keymap is bound (not in batch mode)
+(when (boundp 'cj/custom-keymap)
+  (keymap-set cj/custom-keymap "r" cj/record-map))
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
@@ -551,6 +600,7 @@ Otherwise use the default location in `audio-recordings-dir'."
     "C-; r a" "toggle audio recording"
     "C-; r l" "adjust levels"
     "C-; r d" "list devices"
+    "C-; r w" "what's playing (diagnostics)"
     "C-; r s" "select devices"
     "C-; r c" "quick setup for calls"
     "C-; r t" "test devices"
