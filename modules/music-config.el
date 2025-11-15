@@ -1,8 +1,8 @@
-;;; music-config.el --- EMMS configuration with MPD integration -*- coding: utf-8; lexical-binding: t; -*-
+;;; music-config.el --- EMMS configuration with MPV backend -*- coding: utf-8; lexical-binding: t; -*-
 ;;
 ;;; Commentary:
 ;;
-;; Comprehensive music management in Emacs via EMMS with MPD backend.
+;; Comprehensive music management in Emacs via EMMS with MPV backend.
 ;; Focus: simple, modular helpers; consistent error handling; streamlined UX.
 ;;
 ;; Highlights:
@@ -10,17 +10,18 @@
 ;; - Recursive directory add
 ;; - Dired/Dirvish integration (add selection)
 ;; - M3U playlist save/load/edit/reload
-;; - Radio station M3U creation
+;; - Radio station M3U creation (streaming URLs supported)
 ;; - Playlist window toggling
-;; - MPD as player
+;; - MPV as player (no daemon required)
 ;;
 ;;; Code:
 
 (require 'subr-x)
+(require 'user-constants)
 
 ;;; Settings (no Customize)
 
-(defvar cj/music-root (expand-file-name "~/music")
+(defvar cj/music-root music-dir
   "Root directory of your music collection.")
 
 (defvar cj/music-m3u-root cj/music-root
@@ -421,7 +422,9 @@ Dirs added recursively."
   "r" #'cj/music-create-radio-station
   "SPC" #'emms-pause
   "s" #'emms-stop
-  "p" #'emms-playlist-mode-go
+  "n" #'emms-next
+  "p" #'emms-previous
+  "g" #'emms-playlist-mode-go
   "x" #'emms-shuffle)
 
 (keymap-set cj/custom-keymap "m" cj/music-map)
@@ -434,7 +437,9 @@ Dirs added recursively."
     "C-; m r" "create radio"
     "C-; m SPC" "pause"
     "C-; m s" "stop"
-    "C-; m p" "playlist mode"
+    "C-; m n" "next track"
+    "C-; m p" "previous track"
+    "C-; m g" "goto playlist"
     "C-; m x" "shuffle"))
 
 (use-package emms
@@ -445,7 +450,7 @@ Dirs added recursively."
   :commands (emms-mode-line-mode)
   :config
   (require 'emms-setup)
-  (require 'emms-player-mpd)
+  (require 'emms-player-mpv)
   (require 'emms-playlist-mode)
   (require 'emms-source-file)
   (require 'emms-source-playlist)
@@ -454,8 +459,8 @@ Dirs added recursively."
   (setq emms-source-file-default-directory cj/music-root)
   (setq emms-playlist-default-major-mode 'emms-playlist-mode)
 
-  ;; Use only MPD as player - MUST be set before emms-all
-  (setq emms-player-list '(emms-player-mpd))
+  ;; Use MPV as player - MUST be set before emms-all
+  (setq emms-player-list '(emms-player-mpv))
 
   ;; Now initialize EMMS
   (emms-all)
@@ -464,22 +469,18 @@ Dirs added recursively."
   (emms-playing-time-disable-display)
   (emms-mode-line-mode -1)
 
-  ;; MPD configuration
-  (setq emms-player-mpd-server-name "localhost")
-  (setq emms-player-mpd-server-port "6600")
-  (setq emms-player-mpd-music-directory cj/music-root)
-  (condition-case err
-      (emms-player-mpd-connect)
-    (error (message "Failed to connect to MPD: %s" err)))
+  ;; MPV configuration
+  ;; MPV supports both local files and stream URLs
+  (setq emms-player-mpv-parameters
+        '("--quiet" "--no-video" "--audio-display=no"))
 
-  ;; note setopt as variable is customizeable
-  ;; MPD can play both local files and stream URLs
-  (setopt emms-player-mpd-supported-regexp
-          (rx (or
-               ;; Stream URLs
-               (seq bos (or "http" "https" "mms") "://")
-               ;; Local music files by extension
-               (regexp (apply #'emms-player-simple-regexp cj/music-file-extensions)))))
+  ;; Update supported file types for mpv player
+  (setq emms-player-mpv-regexp
+        (rx (or
+             ;; Stream URLs
+             (seq bos (or "http" "https" "mms") "://")
+             ;; Local music files by extension
+             (seq "." (or "aac" "flac" "m4a" "mp3" "ogg" "opus" "wav") eos))))
 
   ;; Keep cj/music-playlist-file in sync if playlist is cleared
   (defun cj/music--after-playlist-clear (&rest _)
@@ -497,6 +498,10 @@ Dirs added recursively."
         ("p"   . emms-playlist-mode-go)
         ("SPC" . emms-pause)
         ("s"   . emms-stop)
+        ("n"   . emms-next)
+        ("P"   . emms-previous)
+        ("f"   . emms-seek-forward)
+        ("b"   . emms-seek-backward)
         ("x"   . emms-shuffle)
         ("q"   . emms-playlist-mode-bury-buffer)
         ("a"   . cj/music-fuzzy-select-and-add)
@@ -512,7 +517,7 @@ Dirs added recursively."
         ("C-<down>" . emms-playlist-mode-shift-track-down)
         ;; Radio
         ("r" . cj/music-create-radio-station)
-        ;; Volume (MPD)
+        ;; Volume (MPV)
         ("-" . emms-volume-lower)
         ("=" . emms-volume-raise)))
 
