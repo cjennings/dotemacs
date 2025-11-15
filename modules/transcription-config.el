@@ -380,7 +380,10 @@ Prompts with completing-read to select from available backends."
   "b" #'cj/transcription-switch-backend
   "v" #'cj/transcriptions-buffer
   "k" #'cj/transcription-kill)
-(keymap-set cj/custom-keymap "T" cj/transcribe-map)
+
+;; Only set keybinding if cj/custom-keymap is bound (not in batch mode)
+(when (boundp 'cj/custom-keymap)
+  (keymap-set cj/custom-keymap "T" cj/transcribe-map))
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
