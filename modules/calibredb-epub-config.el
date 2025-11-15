@@ -87,6 +87,10 @@
 
 ;; ------------------------------ Nov Epub Reader ------------------------------
 
+(defvar cj/nov-margin-percent 25
+  "Percentage of window width to use as margins on each side when reading epubs.
+For example, 25 means 25% left margin + 25% right margin, with 50% for text.")
+
 ;; Prevent magic-fallback-mode-alist from opening epub as archive-mode
 ;; Advise set-auto-mode to force nov-mode for .epub files before magic-fallback runs
 (defun cj/force-nov-mode-for-epub (orig-fun &rest args)
@@ -123,7 +127,7 @@
   (interactive)
   ;; Use Merriweather for comfortable reading with appropriate scaling
   ;; Darker sepia color (#E8DCC0) is easier on the eyes than pure white
-  (face-remap-add-relative 'variable-pitch :family "Merriweather" :height 1.8 :foreground "#E8DCC0")
+  (face-remap-add-relative 'variable-pitch :family "Merriweather" :height 1.0 :foreground "#E8DCC0")
   (face-remap-add-relative 'default :family "Merriweather" :height 180 :foreground "#E8DCC0")
   (face-remap-add-relative 'fixed-pitch :height 180 :foreground "#E8DCC0")
   ;; Make this buffer-local so other Nov buffers can choose differently
@@ -136,8 +140,14 @@
   ;; Enable visual-fill-column for centered text with margins
   (when (require 'visual-fill-column nil t)
     (setq-local visual-fill-column-center-text t)
-    ;; Set text width for comfortable reading (characters per line)
-    (setq-local visual-fill-column-width 100)
+    ;; Calculate text width based on configurable margin percentage
+    (let ((window (get-buffer-window (current-buffer)))
+          (text-width-ratio (- 1.0 (* 2 (/ cj/nov-margin-percent 100.0)))))
+      (if window
+          (setq-local visual-fill-column-width
+                      (floor (* text-width-ratio (window-body-width window))))
+        ;; Fallback if no window yet
+        (setq-local visual-fill-column-width 80)))
     (visual-fill-column-mode 1))
   (nov-render-document)
   ;; Force visual-fill-column to recalculate after rendering
