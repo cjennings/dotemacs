@@ -22,7 +22,9 @@
 ;; -------------------------- Modeline Configuration --------------------------
 
 ;; Use Emacs 30's built-in right-alignment
-(setq mode-line-right-align-edge 'right-margin)
+;; Use 'window instead of 'right-margin so centered text modes (nov-mode, etc.)
+;; don't push modeline elements inward
+(setq mode-line-right-align-edge 'window)
 
 ;; String truncation length for narrow windows
 (defcustom cj/modeline-string-truncate-length 12
