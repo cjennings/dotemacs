@@ -16,19 +16,7 @@
 ;;; Code:
 
 (require 'user-constants)
-
-;; ---------------------------- Helper Functions -------------------------------
-
-(defun cj/log-silently (format-string &rest args)
-  "Append formatted message to *Messages* buffer without echoing.
-FORMAT-STRING and ARGS are passed to `format'.
-This is a local copy of the pattern from system-utils.el."
-  (let ((inhibit-read-only t))
-    (with-current-buffer (get-buffer-create "*Messages*")
-      (goto-char (point-max))
-      (unless (bolp) (insert "\n"))
-      (insert (apply #'format format-string args))
-      (unless (bolp) (insert "\n")))))
+(require 'system-lib)
 
 ;; ---------------------------- Debug Functions --------------------------------
 

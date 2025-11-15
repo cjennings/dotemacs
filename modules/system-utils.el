@@ -211,18 +211,6 @@ Logs output and exit code to buffer *external-open.log*."
   (quick-sdcv-dictionary-prefix-symbol "►")
   (quick-sdcv-ellipsis " ▼"))
 
-;;; -------------------------------- Log Silently -------------------------------
-
-(defun cj/log-silently (format-string &rest args)
-  "Append formatted message (FORMAT-STRING with ARGS) to *Messages* buffer.
-This does so without echoing in the minibuffer."
-  (let ((inhibit-read-only t))
-    (with-current-buffer (get-buffer-create "*Messages*")
-      (goto-char (point-max))
-      (unless (bolp) (insert "\n"))
-      (insert (apply #'format format-string args))
-      (unless (bolp) (insert "\n")))))
-
 ;;; ------------------------------ Process Monitor ------------------------------
 
 (use-package proced
