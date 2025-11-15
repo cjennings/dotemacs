@@ -83,7 +83,7 @@
      dashboard-insert-newline
      dashboard-insert-newline
      dashboard-insert-navigator
-     dashboard-insert-init-info
+     ;; dashboard-insert-init-info  ; Disabled: package count and startup time
      dashboard-insert-newline
      dashboard-insert-newline
      dashboard-insert-items
@@ -109,37 +109,78 @@
   ;; == navigation
   (setq dashboard-set-navigator t)
   (setq dashboard-navigator-buttons
-        `(((,(nerd-icons-faicon  "nf-fa-envelope")
-            "Email" "Mu4e Email Client"
-            (lambda (&rest _) (mu4e)))
+        `(;; Row 1
+          ((,(nerd-icons-faicon "nf-fa-code")
+            "Code" "Switch Project"
+            (lambda (&rest _) (projectile-switch-project))
+            nil " " "")
 
-           (,(nerd-icons-faicon "nf-fae-book_open_o")
-            "Books" "Calibre Ebook Reader"
-            (lambda (&rest _) (calibredb)))
+           (,(nerd-icons-faicon  "nf-fa-envelope")
+            "Email" "Mu4e Email Client"
+            (lambda (&rest _) (mu4e))
+            nil " " "")
+
+           (,(nerd-icons-mdicon "nf-md-calendar")
+            "Agenda" "Main Org Agenda"
+            (lambda (&rest _) (cj/main-agenda-display))
+            nil " " "")
 
            (,(nerd-icons-mdicon "nf-md-school")
             "Flashcards" "Org-Drill"
-            (lambda (&rest _) (cj/drill-start)))
+            (lambda (&rest _) (cj/drill-start))
+            nil " " "")
 
-           (,(nerd-icons-faicon "nf-fa-rss_square")
-            "Feeds" "Elfeed Feed Reader"
-			(lambda (&rest _) (cj/elfeed-open)))
+           (,(nerd-icons-faicon "nf-fae-book_open_o")
+            "Books" "Calibre Ebook Reader"
+            (lambda (&rest _) (calibredb))
+            nil " " ""))
+
+          ;; Row 2
+          ((,(nerd-icons-faicon "nf-fa-rss_square")
+            "RSS/Feeds" "Elfeed Feed Reader"
+			(lambda (&rest _) (cj/elfeed-open))
+            nil " " "")
 
            (,(nerd-icons-faicon "nf-fa-comments")
             "IRC" "Emacs Relay Chat"
-            (lambda (&rest _) (cj/erc-switch-to-buffer-with-completion)))
+            (lambda (&rest _) (cj/erc-switch-to-buffer-with-completion))
+            nil " " "")
+
+           (,(nerd-icons-devicon "nf-dev-terminal")
+            "Terminal" "Launch VTerm"
+            (lambda (&rest _) (vterm))
+            nil " " "")
 
            ;; (,(nerd-icons-faicon "nf-fae-telegram")
            ;;     "Telegram" "Telega Chat Client"
-           ;;     (lambda (&rest _) (telega)))
+           ;;     (lambda (&rest _) (telega))
+           ;;     nil " " "")
 
            (,(nerd-icons-faicon "nf-fa-folder_o")
-            "Files" "Dirvish File Manager"
-            (lambda (&rest _) (dirvish user-home-dir))))))
+            "Directory/Files" "Dirvish File Manager"
+            (lambda (&rest _) (dirvish user-home-dir))
+            nil " " ""))))
 
   ;; == content
   (setq dashboard-show-shortcuts nil) ;; don't show dashboard item abbreviations
   ) ;; end use-package dashboard
+
+;; ------------------------ Dashboard Keybindings ------------------------------
+
+(with-eval-after-load 'dashboard
+  ;; Disable 'q' to quit dashboard
+  (define-key dashboard-mode-map (kbd "q") nil)
+
+  ;; Dashboard launcher keybindings
+  (define-key dashboard-mode-map (kbd "e") (lambda () (interactive) (mu4e)))
+  (define-key dashboard-mode-map (kbd "c") (lambda () (interactive) (projectile-switch-project)))
+  (define-key dashboard-mode-map (kbd "a") (lambda () (interactive) (cj/main-agenda-display)))
+  (define-key dashboard-mode-map (kbd "b") (lambda () (interactive) (calibredb)))
+  (define-key dashboard-mode-map (kbd "f") (lambda () (interactive) (cj/drill-start)))
+  (define-key dashboard-mode-map (kbd "r") (lambda () (interactive) (cj/elfeed-open)))
+  (define-key dashboard-mode-map (kbd "i") (lambda () (interactive) (cj/erc-switch-to-buffer-with-completion)))
+  (define-key dashboard-mode-map (kbd "t") (lambda () (interactive) (vterm)))
+  (define-key dashboard-mode-map (kbd "d") (lambda () (interactive) (dirvish user-home-dir))))
 
 (provide 'dashboard-config)
 ;;; dashboard-config.el ends here.
