@@ -15,7 +15,7 @@
 ;;; Code:
 
 (require 'user-constants)
-(require 'system-utils)
+(require 'system-lib)
 (require 'media-utils)
 
 ;; ------------------------------- Elfeed Config -------------------------------

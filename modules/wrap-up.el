@@ -5,6 +5,8 @@
 
 ;;; Code:
 
+(require 'system-lib)
+
 ;; -------------------------------- Bury Buffers -------------------------------
 ;; wait a few seconds then bury compile-related buffers.
 
