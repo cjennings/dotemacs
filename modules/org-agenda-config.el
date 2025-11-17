@@ -39,6 +39,7 @@
 
 ;;; Code:
 (require 'user-constants)
+(require 'system-lib)
 
 ;; Load debug functions if enabled
 (when (or (eq cj/debug-modules t)
@@ -129,12 +130,12 @@ improves performance from several seconds to instant."
         ;; Use cached file list (instant)
         (progn
           (setq org-agenda-files cj/org-agenda-files-cache)
-          (when (called-interactively-p 'interactive)
-            (message "Using cached agenda files (%d files)"
-                     (length org-agenda-files))))
+          ;; Always show cache-hit message (interactive or background)
+          (cj/log-silently "Using cached agenda files (%d files)"
+                           (length org-agenda-files)))
       ;; Check if async build is in progress
       (when cj/org-agenda-files-building
-        (message "Waiting for background agenda build to complete..."))
+        (cj/log-silently "Waiting for background agenda build to complete..."))
       ;; Rebuild from scratch (slow - scans projects directory)
       (unwind-protect
           (progn
@@ -150,10 +151,10 @@ improves performance from several seconds to instant."
               (setq cj/org-agenda-files-cache org-agenda-files)
               (setq cj/org-agenda-files-cache-time (float-time))
 
-              (when (called-interactively-p 'interactive)
-                (message "Built agenda files: %d files in %.3f sec"
-                         (length org-agenda-files)
-                         (float-time-since start-time)))))
+              ;; Always show completion message (interactive or background)
+              (cj/log-silently "Built agenda files: %d files in %.3f sec"
+                               (length org-agenda-files)
+                               (- (float-time) (float-time start-time)))))
         ;; Always clear the building flag, even if build fails
         (setq cj/org-agenda-files-building nil)))))
 
@@ -162,7 +163,7 @@ improves performance from several seconds to instant."
  10  ; Wait 10 seconds after Emacs is idle
  nil ; Don't repeat
  (lambda ()
-   (message "Building org-agenda files cache in background...")
+   (cj/log-silently "Building org-agenda files cache in background...")
    (cj/build-org-agenda-list)))
 
 (defun cj/org-agenda-refresh-files ()
@@ -332,13 +333,17 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   :ensure nil ;; using local version
   :load-path "~/code/chime.el"
   :init
+  ;; Initialize org-agenda-files with base files before chime loads
+  ;; The full list will be built asynchronously later
+  (setq org-agenda-files (list inbox-file schedule-file gcal-file))
+
   ;; Debug mode (keep set to nil, but available for troubleshooting)
   (setq chime-debug nil)
   :bind
   ("C-c A" . chime-check)
   :config
-  ;; Polling interval: check every 30 seconds
-  (setq chime-check-interval 30)
+  ;; Polling interval: check every minute
+  (setq chime-check-interval 60)
 
   ;; Alert intervals: 5 minutes before and at event time
   ;; All notifications use medium urgency

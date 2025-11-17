@@ -23,6 +23,7 @@
 
 ;;; Code:
 
+(require 'system-lib)
 (eval-when-compile (require 'user-constants)) ;; defines authinfo-file location
 
 ;; -------------------------------- Auth Sources -------------------------------
@@ -95,7 +96,7 @@ This function re-implements the intended behavior with cache enabled."
 ;; Apply the fix via advice (survives package updates)
 (with-eval-after-load 'oauth2-auto
   (advice-add 'oauth2-auto--plstore-read :override #'cj/oauth2-auto--plstore-read-fixed)
-  (message "✓ oauth2-auto cache fix applied via advice"))
+  (cj/log-silently "✓ oauth2-auto cache fix applied via advice"))
 
 ;; ------------------------ Authentication Reset Utility -----------------------
 
