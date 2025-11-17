@@ -46,9 +46,9 @@
   "Google Calendar private .ics URL.
 Get this from Google Calendar Settings → Integrate calendar → Secret address in iCal format.")
 
-(defvar calendar-sync-interval-minutes 15
+(defvar calendar-sync-interval-minutes 60
   "Sync interval in minutes.
-Default: 15 minutes.")
+Default: 60 minutes (1 hour).")
 
 (defvar calendar-sync-file gcal-file
   "Location of synced calendar file.
@@ -442,7 +442,7 @@ Syncs immediately, then every `calendar-sync-interval-minutes' minutes."
     ))
 
 ;; Start auto-sync if enabled and URL is configured
-;; Syncs immediately then every calendar-sync-interval-minutes (default: 15 minutes)
+;; Syncs immediately then every calendar-sync-interval-minutes (default: 60 minutes)
 (when (and calendar-sync-auto-start calendar-sync-ics-url)
   (calendar-sync-start))
 
