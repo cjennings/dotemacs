@@ -142,7 +142,8 @@
         ("C-c >"     . cj/org-narrow-forward)
         ("C-c <"     . cj/org-narrow-backwards)
         ("<f5>"      . org-reveal)
-        ("C-c <ESC>" . widen))
+        ("C-c <ESC>" . widen)
+        ("C-c C-a"   . cj/org-appear-toggle))
   (:map cj/org-table-map
         ("r i" . org-table-insert-row)
         ("r d" . org-table-kill-row)
@@ -224,12 +225,25 @@
 ;; -------------------------------- Org-Appear ---------------------------------
 
 (use-package org-appear
-  :hook (org-mode . org-appear-mode)
-  :disabled t
+  ;; Default: OFF (toggle with cj/org-appear-toggle)
+  ;; Useful for editing links, but can make tables hard to read when links expand
   :custom
   (org-appear-autoemphasis t)   ;; Show * / _ when cursor is on them
   (org-appear-autolinks t)      ;; Also works for links
   (org-appear-autosubmarkers t)) ;; And sub/superscripts
+
+(defun cj/org-appear-toggle ()
+  "Toggle org-appear-mode in the current org-mode buffer.
+When enabled, org-appear shows emphasis markers and link URLs only when
+point is on them. When disabled, they stay hidden (cleaner for reading,
+especially in tables with long URLs)."
+  (interactive)
+  (if (bound-and-true-p org-appear-mode)
+      (progn
+        (org-appear-mode -1)
+        (message "org-appear disabled (links/emphasis stay hidden)"))
+    (org-appear-mode 1)
+    (message "org-appear enabled (links/emphasis show when editing)")))
 
 ;; ------------------------------- Org-Checklist -------------------------------
 
