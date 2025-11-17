@@ -17,196 +17,7 @@ If the answer is "no" to all five → DON'T ADD IT.
 V2MOM is located at: [[file:docs/emacs-config-v2mom.org][emacs-config-v2mom.org]]
 Research/ideas that don't serve vision: [[file:docs/someday-maybe.org][someday-maybe.org]]
 
-* Method 1: Make Using Emacs Frictionless [13/24]
-** DONE [#A] Fix recording workflow - phone call audio not captured (44 dB volume loss)
-CLOSED: [2025-11-14 Thu]
-
-✅ **Fixed by replacing amerge+pan with amix FFmpeg filter**
-
-**Problem:**
-On recorded calls, only one side was captured (user's microphone), not the other person's voice.
-Phone call audio was too quiet to transcribe (44 dB volume loss).
-
-**Root Cause:**
-FFmpeg's `amerge+pan` filter combination caused massive volume loss when mixing microphone
-and system monitor inputs. The `pan` filter reduced volume by 50% and `amerge` had issues
-with PulseAudio/PipeWire compatibility.
-
-**Solution:**
-Replaced `amerge=inputs=2[merged];[merged]pan=mono|c0=0.5*c0+0.5*c1` with `amix=inputs=2:duration=longest`
-filter. The `amix` filter properly mixes inputs without volume loss.
-
-**Changes Made:**
-- Changed FFmpeg filter from `amerge+pan` to `amix` (modules/video-audio-recording.el:513)
-- Increased default system volume from 0.5 to 2.0 (modules/video-audio-recording.el:76)
-- Added diagnostic tool `C-; r w` to show active audio playback
-- Created integration test with real voice recording
-- Fixed batch mode compatibility for tests
-
-**Results:**
-- Volume improved from -66.2 dB to -21.5 dB (44 dB improvement)
-- Test transcription: 100% accurate ("Can you hear me? Testing, one, two, three.")
-- Phone calls now capture both sides correctly
-
-**Testing:**
-Automated integration test verifies monitor capture works with perfect transcription. 
-** TODO [#A] Music player is broken - mpd/mopidy need replacement
-SCHEDULED: <2025-11-15 Fri>
-
-music-config.el integration with mpd and mopidy is broken. Need to migrate to
-a different music player solution. Investigate alternatives:
-- emms with VLC/mpv backend
-- bongo player
-- Simple mpv integration
-- Other lightweight music player packages
-
-** TODO [#B] Consider implementing cron download of Google Calendar to replace org-gcal
-
-Replace problematic org-gcal OAuth workflow with simpler cron-based calendar download.
-This could eliminate the password prompt issues and provide a more reliable sync solution.
-
-**Current Problem:**
-From TODO at line 22-66:
-- org-gcal prompts for password every ~15 minutes
-- OAuth token refresh bypasses cache
-- plstore symmetric encryption cache issues
-- Interrupts workflow constantly
-- Makes calendar sync painful instead of seamless
-
-**Proposed Solution:**
-Instead of OAuth-based sync (org-gcal), use Google Calendar's public iCalendar URLs:
-1. Download .ics file via cron (every 15-30 minutes)
-2. Parse .ics file into org-mode format
-3. Update org-agenda files automatically
-4. No OAuth, no passwords, no interruptions
-
-**Benefits:**
-- ✓ No password prompts (public calendar URL or one-time API key)
-- ✓ No OAuth token refresh issues
-- ✓ Runs in background (cron), never interrupts work
-- ✓ Simpler architecture (download → parse → update)
-- ✓ Can work offline (reads last downloaded .ics)
-- ✓ More reliable (fewer moving parts)
-- ✓ No plstore symmetric encryption issues
-
-**Drawbacks:**
-- ✗ Read-only (can't create/update events from Emacs)
-- ✗ Need to manually get calendar iCal URL
-- ✗ Requires cron setup (one-time configuration)
-- ✗ May have sync delay (up to cron interval)
-
-**Investigation:**
-
-1. **Get Google Calendar iCal URL:**
-   - Open Google Calendar settings
-   - Find "Integrate calendar" section
-   - Copy secret iCal address (https://calendar.google.com/calendar/ical/...)
-   - Store in auth-source (encrypted)
-
-2. **Test iCal download:**
-   ```bash
-   curl -o calendar.ics "https://calendar.google.com/calendar/ical/.../basic.ics"
-   ```
-   - Verify it downloads
-   - Check .ics format
-   - Confirm events are present
-
-3. **Research iCal parsing:**
-   - Does Emacs have built-in iCal parser? (icalendar.el)
-   - Check icalendar-import-file function
-   - Test parsing downloaded .ics file
-   - Verify it creates org entries
-
-4. **Design cron workflow:**
-   ```bash
-   # Every 15 minutes
-   */15 * * * * curl -s "$(cat ~/.calendar-url)" -o ~/calendars/gcal.ics
-   ```
-   - Downloads silently in background
-   - Emacs watches file for changes (file-notify)
-   - Auto-reimport when changed
-
-**Possible Implementations:**
-
-A. **Full replacement (recommended):**
-   - Remove org-gcal entirely
-   - Use cron + icalendar.el
-   - Read-only calendar view in org-agenda
-   - Create events directly in Google Calendar web UI
-
-B. **Hybrid approach:**
-   - Keep org-gcal for writing events
-   - Use cron download for reading events
-   - Disable org-gcal auto-sync (no password prompts)
-   - Manually trigger org-gcal only when creating events
-
-C. **Enhanced cron:**
-   - Cron downloads .ics
-   - Emacs function parses and updates org files
-   - Add file-notify watcher for auto-update
-   - Optional: Convert two-way with CalDAV later
-
-**Implementation Sketch:**
-```elisp
-(defun cj/calendar-import-gcal ()
-  "Import Google Calendar from downloaded .ics file."
-  (interactive)
-  (let ((ics-file "~/calendars/gcal.ics")
-        (org-file "~/org/calendar.org"))
-    (when (file-exists-p ics-file)
-      (icalendar-import-file ics-file org-file)
-      (message "Imported calendar from %s" ics-file))))
-
-;; Auto-import when .ics file changes
-(file-notify-add-watch
- "~/calendars/gcal.ics"
- '(change)
- (lambda (event) (cj/calendar-import-gcal)))
-```
-
-**Related Files:**
-- modules/org-gcal-config.el (current problematic implementation)
-- Emacs built-in: icalendar.el (iCal parsing)
-- System: crontab -e (download schedule)
-- ~/.authinfo.gpg (store calendar URL securely)
-
-**Related Docs:**
-- Current problem: TODO line 22-66 (password prompts every 15 min)
-- icalendar.el manual: C-h f icalendar-import-file
-- Google Calendar iCal format documentation
-- V2MOM Method 1: Frictionless (no interruptions!)
-
-**Success Criteria:**
-- Calendar events appear in org-agenda
-- No password prompts during work
-- Updates automatically in background (cron)
-- Can work offline with last sync
-- Setup is one-time configuration
-- Simpler than current org-gcal setup
-
-**Testing Plan:**
-1. Get iCal URL from Google Calendar
-2. Test download: `curl URL -o test.ics`
-3. Test import: `M-x icalendar-import-file`
-4. Verify org entries created correctly
-5. Set up cron job
-6. Wait for auto-update
-7. Confirm events in org-agenda
-8. Disable org-gcal auto-sync
-9. Monitor for 1 week (no password prompts?)
-
-**Decision Point:**
-This is a significant architectural change. Need to:
-1. Test proof-of-concept first (manual download + import)
-2. Evaluate if read-only is acceptable
-3. Compare to fixing OAuth password prompts
-4. Consider hybrid approach if two-way sync needed
-
-**Note:**
-Priority [#B] because this could eliminate the #1 daily irritant (password prompts
-every 15 minutes). If proof-of-concept works, this is higher value than fixing
-OAuth issues. Simpler architecture = fewer problems.
-
+* Method 1: Make Using Emacs Frictionless [16/24]
 ** TODO [#B] Fix org-noter (reading/annotation workflow currently "so painful")
 
 High priority - daily pain point.
@@ -413,6 +224,48 @@ Add quick access keybindings for common org commands (org-table, org-reveal, etc
 Makes org-mode operations more frictionless.
 Moved from inbox 2025-11-07.
 
+** DONE [#A] Music player is broken - mpd/mopidy need replacement
+CLOSED: [2025-11-16 Sun 18:35] SCHEDULED: <2025-11-15 Fri>
+
+music-config.el integration with mpd and mopidy is broken. Need to migrate to
+a different music player solution. Investigate alternatives:
+- emms with VLC/mpv backend
+- bongo player
+- Simple mpv integration
+- Other lightweight music player packages
+
+** DONE [#A] Fix recording workflow - phone call audio not captured (44 dB volume loss)
+CLOSED: [2025-11-14 Thu]
+
+✅ **Fixed by replacing amerge+pan with amix FFmpeg filter**
+
+**Problem:**
+On recorded calls, only one side was captured (user's microphone), not the other person's voice.
+Phone call audio was too quiet to transcribe (44 dB volume loss).
+
+**Root Cause:**
+FFmpeg's `amerge+pan` filter combination caused massive volume loss when mixing microphone
+and system monitor inputs. The `pan` filter reduced volume by 50% and `amerge` had issues
+with PulseAudio/PipeWire compatibility.
+
+**Solution:**
+Replaced `amerge=inputs=2[merged];[merged]pan=mono|c0=0.5*c0+0.5*c1` with `amix=inputs=2:duration=longest`
+filter. The `amix` filter properly mixes inputs without volume loss.
+
+**Changes Made:**
+- Changed FFmpeg filter from `amerge+pan` to `amix` (modules/video-audio-recording.el:513)
+- Increased default system volume from 0.5 to 2.0 (modules/video-audio-recording.el:76)
+- Added diagnostic tool `C-; r w` to show active audio playback
+- Created integration test with real voice recording
+- Fixed batch mode compatibility for tests
+
+**Results:**
+- Volume improved from -66.2 dB to -21.5 dB (44 dB improvement)
+- Test transcription: 100% accurate ("Can you hear me? Testing, one, two, three.")
+- Phone calls now capture both sides correctly
+
+**Testing:**
+Automated integration test verifies monitor capture works with perfect transcription. 
 ** DONE [#A] Fix Google Calendar password prompts every 15 minutes
 CLOSED: [2025-11-11 Mon]
 
@@ -654,6 +507,154 @@ CLOSED: [2025-11-08 Fri]
 - No lag, even in large files
 - Maintains same "L:line C:col" format
 
+** DONE [#B] Consider implementing cron download of Google Calendar to replace org-gcal
+CLOSED: [2025-11-16 Sat]
+
+Replaced problematic org-gcal OAuth workflow with calendar-sync.el module.
+Implemented pure Elisp .ics parser with timer-based sync (no cron needed).
+
+**Current Problem:**
+From TODO at line 22-66:
+- org-gcal prompts for password every ~15 minutes
+- OAuth token refresh bypasses cache
+- plstore symmetric encryption cache issues
+- Interrupts workflow constantly
+- Makes calendar sync painful instead of seamless
+
+**Proposed Solution:**
+Instead of OAuth-based sync (org-gcal), use Google Calendar's public iCalendar URLs:
+1. Download .ics file via cron (every 15-30 minutes)
+2. Parse .ics file into org-mode format
+3. Update org-agenda files automatically
+4. No OAuth, no passwords, no interruptions
+
+**Benefits:**
+- ✓ No password prompts (public calendar URL or one-time API key)
+- ✓ No OAuth token refresh issues
+- ✓ Runs in background (cron), never interrupts work
+- ✓ Simpler architecture (download → parse → update)
+- ✓ Can work offline (reads last downloaded .ics)
+- ✓ More reliable (fewer moving parts)
+- ✓ No plstore symmetric encryption issues
+
+**Drawbacks:**
+- ✗ Read-only (can't create/update events from Emacs)
+- ✗ Need to manually get calendar iCal URL
+- ✗ Requires cron setup (one-time configuration)
+- ✗ May have sync delay (up to cron interval)
+
+**Investigation:**
+
+1. **Get Google Calendar iCal URL:**
+   - Open Google Calendar settings
+   - Find "Integrate calendar" section
+   - Copy secret iCal address (https://calendar.google.com/calendar/ical/...)
+   - Store in auth-source (encrypted)
+
+2. **Test iCal download:**
+   ```bash
+   curl -o calendar.ics "https://calendar.google.com/calendar/ical/.../basic.ics"
+   ```
+   - Verify it downloads
+   - Check .ics format
+   - Confirm events are present
+
+3. **Research iCal parsing:**
+   - Does Emacs have built-in iCal parser? (icalendar.el)
+   - Check icalendar-import-file function
+   - Test parsing downloaded .ics file
+   - Verify it creates org entries
+
+4. **Design cron workflow:**
+   ```bash
+   # Every 15 minutes
+   */15 * * * * curl -s "$(cat ~/.calendar-url)" -o ~/calendars/gcal.ics
+   ```
+   - Downloads silently in background
+   - Emacs watches file for changes (file-notify)
+   - Auto-reimport when changed
+
+**Possible Implementations:**
+
+A. **Full replacement (recommended):**
+   - Remove org-gcal entirely
+   - Use cron + icalendar.el
+   - Read-only calendar view in org-agenda
+   - Create events directly in Google Calendar web UI
+
+B. **Hybrid approach:**
+   - Keep org-gcal for writing events
+   - Use cron download for reading events
+   - Disable org-gcal auto-sync (no password prompts)
+   - Manually trigger org-gcal only when creating events
+
+C. **Enhanced cron:**
+   - Cron downloads .ics
+   - Emacs function parses and updates org files
+   - Add file-notify watcher for auto-update
+   - Optional: Convert two-way with CalDAV later
+
+**Implementation Sketch:**
+```elisp
+(defun cj/calendar-import-gcal ()
+  "Import Google Calendar from downloaded .ics file."
+  (interactive)
+  (let ((ics-file "~/calendars/gcal.ics")
+        (org-file "~/org/calendar.org"))
+    (when (file-exists-p ics-file)
+      (icalendar-import-file ics-file org-file)
+      (message "Imported calendar from %s" ics-file))))
+
+;; Auto-import when .ics file changes
+(file-notify-add-watch
+ "~/calendars/gcal.ics"
+ '(change)
+ (lambda (event) (cj/calendar-import-gcal)))
+```
+
+**Related Files:**
+- modules/org-gcal-config.el (current problematic implementation)
+- Emacs built-in: icalendar.el (iCal parsing)
+- System: crontab -e (download schedule)
+- ~/.authinfo.gpg (store calendar URL securely)
+
+**Related Docs:**
+- Current problem: TODO line 22-66 (password prompts every 15 min)
+- icalendar.el manual: C-h f icalendar-import-file
+- Google Calendar iCal format documentation
+- V2MOM Method 1: Frictionless (no interruptions!)
+
+**Success Criteria:**
+- Calendar events appear in org-agenda
+- No password prompts during work
+- Updates automatically in background (cron)
+- Can work offline with last sync
+- Setup is one-time configuration
+- Simpler than current org-gcal setup
+
+**Testing Plan:**
+1. Get iCal URL from Google Calendar
+2. Test download: `curl URL -o test.ics`
+3. Test import: `M-x icalendar-import-file`
+4. Verify org entries created correctly
+5. Set up cron job
+6. Wait for auto-update
+7. Confirm events in org-agenda
+8. Disable org-gcal auto-sync
+9. Monitor for 1 week (no password prompts?)
+
+**Decision Point:**
+This is a significant architectural change. Need to:
+1. Test proof-of-concept first (manual download + import)
+2. Evaluate if read-only is acceptable
+3. Compare to fixing OAuth password prompts
+4. Consider hybrid approach if two-way sync needed
+
+**Note:**
+Priority [#B] because this could eliminate the #1 daily irritant (password prompts
+every 15 minutes). If proof-of-concept works, this is higher value than fixing
+OAuth issues. Simpler architecture = fewer problems.
+
 ** DONE [#B] Add time-zones package for quick timezone lookups
 CLOSED: [2025-11-14 Fri 02:42]
 
@@ -803,10 +804,85 @@ CLOSED: [2025-11-08 Fri]
 
 File modified: modules/flyspell-and-abbrev.el:235-251
 
-* Method 2: Stop Problems Before They Appear [3/8]
+* Method 2: Stop Problems Before They Appear [4/8]
 ** TODO [#A] Write Complete ERT Tests for This Config [0/0]
 Unit and Integration Tests should be added as subtasks below, marked done when complete
-** TODO [#B] Move cj/log-silently to system-lib
+** TODO [#B] Review all config and pull library functions into system-lib file
+
+Extract reusable utility functions scattered across modules into system-lib.el
+for better code organization and reusability.
+
+**Goal:**
+Create a centralized system utilities library where generic functions that check
+system state, detect programs, or provide low-level system operations can live.
+This makes them:
+- Easily discoverable
+- Reusable across modules
+- Testable in isolation
+- Following single-responsibility principle
+
+**Current State:**
+- system-lib.el exists with `cj/executable-exists-p` function
+- Already required at top of init.el (System Configuration section)
+- Has comprehensive test coverage (test-system-lib-executable-exists-p.el)
+
+**Task:**
+1. Search entire config for candidate functions:
+   - System queries (program detection, path checking, environment vars)
+   - File system utilities (beyond buffer-file operations)
+   - Process utilities
+   - Platform detection helpers
+2. Review each module for extraction candidates:
+   - host-environment.el (already has some, may have more)
+   - system-utils.el (may contain generic utilities)
+   - Any module with functions that don't depend on mode-specific context
+3. Move appropriate functions to system-lib.el:
+   - Update function documentation
+   - Add require statements where functions are used
+   - Maintain backward compatibility (old locations can call new ones)
+4. Add comprehensive test coverage for all moved functions
+5. Document the purpose/scope of system-lib.el in its Commentary section
+
+**Criteria for inclusion in system-lib.el:**
+- ✓ Pure utility functions (no side effects)
+- ✓ System-level queries (executable detection, path operations)
+- ✓ Platform-agnostic where possible
+- ✓ No dependencies on mode-specific functionality
+- ✗ NOT buffer/file operations (those stay in custom-buffer-file.el)
+- ✗ NOT user-facing commands (those stay in their domain modules)
+
+**Related Files:**
+- modules/system-lib.el (target file)
+- modules/host-environment.el (likely source)
+- modules/system-utils.el (likely source)
+- modules/config-utilities.el (check for candidates)
+- tests/test-system-lib-*.el (add tests for moved functions)
+
+**Related Docs:**
+- Recent refactoring: Created system-lib.el with cj/executable-exists-p
+- Testing guidance: ai-prompts/quality-engineer.org
+- V2MOM Method 2: Stop Problems Before They Appear (better organization)
+
+**Success Criteria:**
+- All generic system utilities consolidated in system-lib.el
+- Each function has comprehensive test coverage
+- No functionality broken (all tests pass)
+- Documentation explains purpose and scope of system-lib.el
+- Other modules properly require system-lib where needed
+
+** TODO [#B] Migrate from Company to Corfu
+:PROPERTIES:
+:COMPLETE_CONFIG: [[file:docs/someday-maybe.org::1611][todo.org:1611-1639]]
+:END:
+
+Complete config already exists in someday-maybe.org. Just needs to be executed.
+
+** TODO [#C] Integrate prescient with Corfu (smart sorting)
+
+Already using prescient with vertico. Extend to Corfu after migration.
+
+** DONE [#B] Move cj/log-silently to system-lib
+CLOSED: [2025-11-16 Sun 18:36]
 
 The `cj/log-silently` function is a generic utility for logging messages without
 displaying them in the echo area. It should be moved to system-lib.el for better
@@ -894,80 +970,6 @@ Priority [#B] because this is part of the larger system-lib consolidation effort
 (separate TODO). Logging utilities are commonly used, so centralizing them improves
 discoverability and encourages consistent logging patterns across the codebase.
 
-** TODO [#B] Review all config and pull library functions into system-lib file
-
-Extract reusable utility functions scattered across modules into system-lib.el
-for better code organization and reusability.
-
-**Goal:**
-Create a centralized system utilities library where generic functions that check
-system state, detect programs, or provide low-level system operations can live.
-This makes them:
-- Easily discoverable
-- Reusable across modules
-- Testable in isolation
-- Following single-responsibility principle
-
-**Current State:**
-- system-lib.el exists with `cj/executable-exists-p` function
-- Already required at top of init.el (System Configuration section)
-- Has comprehensive test coverage (test-system-lib-executable-exists-p.el)
-
-**Task:**
-1. Search entire config for candidate functions:
-   - System queries (program detection, path checking, environment vars)
-   - File system utilities (beyond buffer-file operations)
-   - Process utilities
-   - Platform detection helpers
-2. Review each module for extraction candidates:
-   - host-environment.el (already has some, may have more)
-   - system-utils.el (may contain generic utilities)
-   - Any module with functions that don't depend on mode-specific context
-3. Move appropriate functions to system-lib.el:
-   - Update function documentation
-   - Add require statements where functions are used
-   - Maintain backward compatibility (old locations can call new ones)
-4. Add comprehensive test coverage for all moved functions
-5. Document the purpose/scope of system-lib.el in its Commentary section
-
-**Criteria for inclusion in system-lib.el:**
-- ✓ Pure utility functions (no side effects)
-- ✓ System-level queries (executable detection, path operations)
-- ✓ Platform-agnostic where possible
-- ✓ No dependencies on mode-specific functionality
-- ✗ NOT buffer/file operations (those stay in custom-buffer-file.el)
-- ✗ NOT user-facing commands (those stay in their domain modules)
-
-**Related Files:**
-- modules/system-lib.el (target file)
-- modules/host-environment.el (likely source)
-- modules/system-utils.el (likely source)
-- modules/config-utilities.el (check for candidates)
-- tests/test-system-lib-*.el (add tests for moved functions)
-
-**Related Docs:**
-- Recent refactoring: Created system-lib.el with cj/executable-exists-p
-- Testing guidance: ai-prompts/quality-engineer.org
-- V2MOM Method 2: Stop Problems Before They Appear (better organization)
-
-**Success Criteria:**
-- All generic system utilities consolidated in system-lib.el
-- Each function has comprehensive test coverage
-- No functionality broken (all tests pass)
-- Documentation explains purpose and scope of system-lib.el
-- Other modules properly require system-lib where needed
-
-** TODO [#B] Migrate from Company to Corfu
-:PROPERTIES:
-:COMPLETE_CONFIG: [[file:docs/someday-maybe.org::1611][todo.org:1611-1639]]
-:END:
-
-Complete config already exists in someday-maybe.org. Just needs to be executed.
-
-** TODO [#C] Integrate prescient with Corfu (smart sorting)
-
-Already using prescient with vertico. Extend to Corfu after migration.
-
 ** DONE [#C] Switch to mood-line (actually: built custom modeline)
 CLOSED: [2025-11-03 Sun]
 
@@ -1020,10 +1022,6 @@ CLOSED: [2025-11-03 Sun]
 - Cleaner editing experience while maintaining visual clarity
 
 * Method 3: Make *Fixing* Emacs Frictionless [0/9]
-** TODO [#B] Build debug-profiling.el module
-
-Reusable profiling infrastructure for any future performance work.
-** TODO [#B] Evaluate Buttercup for integration tests
 ** TODO [#A] Write tests for cj/make-script-executable (suspected broken)
 
 The `cj/make-script-executable` function automatically makes shell scripts executable
@@ -1126,6 +1124,10 @@ Difftastic output should look VERY different from unified diff:
 Priority [#B] because if not working, we're not getting the benefit of difftastic integration.
 Moved from inbox 2025-11-11.
 
+** TODO [#B] Build debug-profiling.el module
+
+Reusable profiling infrastructure for any future performance work.
+** TODO [#B] Evaluate Buttercup for integration tests
 ** TODO [#B] Add project-aware ERT test isolation when switching projects
 
 When switching between elisp projects (e.g., emacs.d to chime.el), previously loaded
