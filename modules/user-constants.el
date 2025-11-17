@@ -127,8 +127,9 @@ Used by transcription module and other audio-related functionality.")
 (defvar schedule-file (expand-file-name "schedule.org" org-dir)
   "The location of the org file containing scheduled events.")
 
-(defvar gcal-file (expand-file-name "gcal.org" org-dir)
-  "The location of the org file containing Google Calendar information.")
+(defvar gcal-file (expand-file-name "data/gcal.org" user-emacs-directory)
+  "The location of the org file containing Google Calendar information.
+Stored in .emacs.d/data/ so each machine syncs independently from Google Calendar.")
 
 (defvar reference-file (expand-file-name "reference.org" org-dir)
   "The location of the org file containing reference information.")
