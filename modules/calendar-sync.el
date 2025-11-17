@@ -144,6 +144,20 @@ Example: -21600 → 'UTC-6' or 'UTC-6:00'."
       (error
        (message "calendar-sync: Error loading state: %s" (error-message-string err))))))
 
+;;; Line Ending Normalization
+
+(defun calendar-sync--normalize-line-endings (content)
+  "Normalize line endings in CONTENT to Unix format (LF only).
+Removes all carriage return characters (\\r) from CONTENT.
+The iCalendar format (RFC 5545) uses CRLF line endings, but Emacs
+and org-mode expect LF only. This function ensures consistent line
+endings throughout the parsing pipeline.
+
+Returns CONTENT with all \\r characters removed."
+  (if (not (stringp content))
+      content
+    (replace-regexp-in-string "\r" "" content)))
+
 ;;; .ics Parsing
 
 (defun calendar-sync--split-events (ics-content)
@@ -293,7 +307,7 @@ Events are sorted chronologically by start time."
 
 (defun calendar-sync--fetch-ics (url)
   "Fetch .ics file from URL using curl.
-Returns .ics content as string, or nil on error.
+Returns .ics content as string with normalized Unix line endings (LF only), or nil on error.
 Uses curl instead of url-retrieve-synchronously to avoid daemon mode hanging."
   (condition-case err
       (with-temp-buffer
@@ -303,7 +317,7 @@ Uses curl instead of url-retrieve-synchronously to avoid daemon mode hanging."
                                        "-m" "10"  ; Max 10 seconds
                                        url)))
           (if (= exit-code 0)
-              (buffer-string)
+              (calendar-sync--normalize-line-endings (buffer-string))
             (setq calendar-sync--last-error (format "curl exited with code %d" exit-code))
             (message "calendar-sync: Fetch error: %s" calendar-sync--last-error)
             nil)))
