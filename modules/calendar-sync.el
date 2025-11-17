@@ -297,26 +297,37 @@ Events are sorted chronologically by start time."
 
 ;;; Sync functions
 
-(defun calendar-sync--fetch-ics (url)
-  "Fetch .ics file from URL using curl.
-Returns .ics content as string with normalized Unix line endings (LF only), or nil on error.
-Uses curl instead of url-retrieve-synchronously to avoid daemon mode hanging."
+(defun calendar-sync--fetch-ics (url callback)
+  "Fetch .ics file from URL asynchronously using curl.
+Calls CALLBACK with the .ics content as string (normalized to Unix line endings)
+or nil on error. CALLBACK signature: (lambda (content) ...).
+
+The fetch happens asynchronously and doesn't block Emacs. The callback is
+invoked when the fetch completes, either successfully or with an error."
   (condition-case err
-      (with-temp-buffer
-        (let ((exit-code (call-process "curl" nil t nil
-                                       "-s"  ; Silent
-                                       "-L"  ; Follow redirects
-                                       "-m" "10"  ; Max 10 seconds
-                                       url)))
-          (if (= exit-code 0)
-              (calendar-sync--normalize-line-endings (buffer-string))
-            (setq calendar-sync--last-error (format "curl exited with code %d" exit-code))
-            (message "calendar-sync: Fetch error: %s" calendar-sync--last-error)
-            nil)))
+      (let ((buffer (generate-new-buffer " *calendar-sync-curl*")))
+        (make-process
+         :name "calendar-sync-curl"
+         :buffer buffer
+         :command (list "curl" "-s" "-L" "-m" "10" url)
+         :sentinel
+         (lambda (process event)
+           (when (memq (process-status process) '(exit signal))
+             (with-current-buffer (process-buffer process)
+               (let ((content
+                      (if (and (eq (process-status process) 'exit)
+                               (= (process-exit-status process) 0))
+                          (calendar-sync--normalize-line-endings (buffer-string))
+                        (setq calendar-sync--last-error
+                              (format "curl failed: %s" (string-trim event)))
+                        (message "calendar-sync: Fetch error: %s" calendar-sync--last-error)
+                        nil)))
+                 (kill-buffer (process-buffer process))
+                 (funcall callback content)))))))
     (error
      (setq calendar-sync--last-error (error-message-string err))
      (message "calendar-sync: Fetch error: %s" calendar-sync--last-error)
-     nil)))
+     (funcall callback nil))))
 
 (defun calendar-sync--write-file (content)
   "Write CONTENT to `calendar-sync-file'.
@@ -330,24 +341,26 @@ Creates parent directories if needed."
 
 ;;;###autoload
 (defun calendar-sync-now ()
-  "Sync Google Calendar now.
-Downloads .ics file and updates org file.
+  "Sync Google Calendar now asynchronously.
+Downloads .ics file and updates org file without blocking Emacs.
 Tracks timezone for automatic re-sync on timezone changes."
   (interactive)
   (if (not calendar-sync-ics-url)
       (message "calendar-sync: Please set calendar-sync-ics-url")
     (message "calendar-sync: Syncing...")
-    (let* ((ics-content (calendar-sync--fetch-ics calendar-sync-ics-url))
-           (org-content (and ics-content (calendar-sync--parse-ics ics-content))))
-      (if org-content
-          (progn
-            (calendar-sync--write-file org-content)
-            (setq calendar-sync--last-sync-time (current-time))
-            (setq calendar-sync--last-timezone-offset (calendar-sync--current-timezone-offset))
-            (setq calendar-sync--last-error nil)
-            (calendar-sync--save-state)
-            (message "calendar-sync: Sync complete"))
-        (message "calendar-sync: Sync failed (see *Messages* for details)")))))
+    (calendar-sync--fetch-ics
+     calendar-sync-ics-url
+     (lambda (ics-content)
+       (let ((org-content (and ics-content (calendar-sync--parse-ics ics-content))))
+         (if org-content
+             (progn
+               (calendar-sync--write-file org-content)
+               (setq calendar-sync--last-sync-time (current-time))
+               (setq calendar-sync--last-timezone-offset (calendar-sync--current-timezone-offset))
+               (setq calendar-sync--last-error nil)
+               (calendar-sync--save-state)
+               (message "calendar-sync: Sync complete"))
+           (message "calendar-sync: Sync failed (see *Messages* for details)")))))))
 
 ;;; Timer management
 
