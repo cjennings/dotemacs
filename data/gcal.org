@@ -1510,15 +1510,15 @@ Location: SF-Landmark-10th-Kahili 4 [5-Poly\,Proj]
 Due to my 188.1 obligations\, I thought I reach out to you to s
 Location: SF-Landmark-9th-Wakea 3 [5-Poly\,Proj]
 
-* Guido:Craig
-<2013-12-17 Tue 14:00-14:50>
-This is the latest version of our one-on-one as of 2/21/13. If 
-Location: _Kahili 7 Conference (HQ\, 10th Flr Landmark East) SCRUM
-
 * Hammer Contency Plan Checkpoint
 <2013-12-17 Tue 14:00-14:15>
 I will post a status after the morning Hammer status call.  Thi
 Location: Conf Call: 866-356-1046 ID: 415-536-6221
+
+* Guido:Craig
+<2013-12-17 Tue 14:00-14:50>
+This is the latest version of our one-on-one as of 2/21/13. If 
+Location: _Kahili 7 Conference (HQ\, 10th Flr Landmark East) SCRUM
 
 * Coffee with Nikhil
 <2013-12-17 Tue 15:30-15:55>
@@ -1850,6 +1850,11 @@ Location: SF-123 Mission-23rd-Wailua Falls 1 [20-Poly\,Proj]\, SF-123 Missio
 I know you wanted to chat more and catch up so setting this tim
 Location: Will meet at Sbux and then decide
 
+* Renewed focus on RCAs within R&D - starting the conversation
+<2014-01-24 Fri 18:00-18:30>
+Changing room and pushing out 30 minutes.\n====================
+Location: SF-Landmark-10th-Kahili 4 [5-Poly\,Proj]
+
 * help mick find the wagon
 <2014-01-24 Fri 18:00-20:00>
 updated w/ location (the table's under my name)\n-mcc\n=====\nT
@@ -1859,11 +1864,6 @@ Location: Holding Company (2 Embarcadero Center)
 <2014-01-24 Fri 18:00-19:00>
 Sorry Scott\, I know its a crappy time for you....\n\ndial in: 
 Location: SF-Landmark-8th-Nani 5 [5]
-
-* Renewed focus on RCAs within R&D - starting the conversation
-<2014-01-24 Fri 18:00-18:30>
-Changing room and pushing out 30 minutes.\n====================
-Location: SF-Landmark-10th-Kahili 4 [5-Poly\,Proj]
 
 * Peitao:Craig
 <2014-01-24 Fri 19:00-19:30>
@@ -2578,14 +2578,14 @@ Location: SF-Landmark-7th-Lokahi [25]
 Hi All\, \n\nHere's a one-off QE Exec meeting. I'm arranging a 
 Location: SF-Landmark-10th-Kalakaua 10 [8-VC\,Poly\,Proj]
 
+* David:Craig
+<2014-03-03 Mon 18:00-18:25>
+Location: SF-Landmark-10th-Kahili 5 [5-Poly\,Proj]
+
 * Willy's Farewell happy hour
 <2014-03-03 Mon 18:00-20:00>
 Hi Everyone\,\n\nIf you haven't heard yet\, our very own Securi
 Location: Americano\, Mission Street\, San Francisco\, CA\, United States
-
-* David:Craig
-<2014-03-03 Mon 18:00-18:25>
-Location: SF-Landmark-10th-Kahili 5 [5-Poly\,Proj]
 
 * Quick Connect - Sophos
 <2014-03-04 Tue 10:15-10:30>
@@ -2794,15 +2794,15 @@ Location: SF-Landmark-10th-Kahili 10 Restricted [8-Poly\,Proj]
 Hi Dessie\, \n\nSorry to move our 1:1\, but Srini called a meet
 Location: SF-Landmark-10th-Kahili 10 Restricted [8-Poly\,Proj]
 
-* Wishing Srikanth the Best!
-<2014-03-11 Tue 19:30-21:00>
--- Moved to Tuesday (Antonio is in Town)\n\nHi All\n\nDear Apps
-Location: TBD
-
 * Headcount for S1
 <2014-03-11 Tue 19:30-20:00>
 Let's meet to discuss the S1 headcount for Performance work for
 Location: SF-Landmark-7th-Aloha 5 [8]
+
+* Wishing Srikanth the Best!
+<2014-03-11 Tue 19:30-21:00>
+-- Moved to Tuesday (Antonio is in Town)\n\nHi All\n\nDear Apps
+Location: TBD
 
 * Craig/Josie
 <2014-03-12 Wed 16:30-16:55>
@@ -3538,14 +3538,14 @@ Location: SF-Landmark-10th-Kahili 10 Restricted [8-Poly\,Proj]
 <2014-04-22 Tue 16:00-16:30>
 Location: SF-Landmark-10th-Kahili 10 Restricted [8-Poly\,Proj]
 
-* Craig / George Manning 1:1
-<2014-04-22 Tue 18:00-18:30>
-Location: SF-Landmark-10th-Kahili 10 Restricted [8-Poly\,Proj]
-
 * Goodbye to Jeanette Zalder and Angela Wong @ Sinbad's
 <2014-04-22 Tue 18:00-20:00>
 Please join us for a goodbye to 2 of our colleagues in People O
 Location: Sinbad's Pier2 Restaurant\, Pier\, San Francisco\, CA\, United Sta
+
+* Craig / George Manning 1:1
+<2014-04-22 Tue 18:00-18:30>
+Location: SF-Landmark-10th-Kahili 10 Restricted [8-Poly\,Proj]
 
 * Madhuri:Craig
 <2014-04-22 Tue 19:00-19:25>
@@ -4195,14 +4195,14 @@ Location: SF-Landmark-10th-Kahili 1 [8-VC\,Poly\,Proj]
 Onsite: Sunil Kamath for Senior Director\, Performance Engineer
 Location: SF-Landmark-6th-Pukiawe 06-411 [4-LCD]
 
+* TechRun: Exec Presentation 
+<2014-06-03 Tue 12:00-12:30>
+Location: 1 Manoa Court\, San Pablo\, CA 94806
+
 * June Monthly T&P Town Hall with Parker
 <2014-06-03 Tue 12:00-13:30>
 ADDED: Webinar details...please register.\n\nParker All Hands J
 Location: SF-Landmark-7th-Lokahi [25]
-
-* TechRun: Exec Presentation 
-<2014-06-03 Tue 12:00-12:30>
-Location: 1 Manoa Court\, San Pablo\, CA 94806
 
 * David:Craig
 <2014-06-03 Tue 17:00-17:25>
@@ -4361,14 +4361,14 @@ Location: SF-Landmark-10th-Kahili 10 Restricted [8-Poly\,Proj]
 <2014-06-11 Wed 17:30-17:55>
 Location: Nani 8
 
+* Srini / Craig
+<2014-06-11 Wed 18:00-18:30>
+Location: SF-Landmark-10th-Kalakaua 7 Restricted [10-Poly\,Proj]
+
 * Integrating Split Sign-off into Release process
 <2014-06-11 Wed 18:00-19:00>
 Review the CMP proposal: \nhttps://gus.my.salesforce.com/a10B00
 Location: SF-Spear-9th-Leilani 4 [6]
-
-* Srini / Craig
-<2014-06-11 Wed 18:00-18:30>
-Location: SF-Landmark-10th-Kalakaua 7 Restricted [10-Poly\,Proj]
 
 * Vanita - Q2 hires discussion 
 <2014-06-11 Wed 19:00-19:30>
@@ -5513,15 +5513,15 @@ Location: 19 Clipper St\, San Francisco\, CA 94114\, USA
 * New Slides
 <2015-09-16 Wed 14:00-15:30>
 
-* Review of final materials
-<2015-09-16 Wed 15:30-16:30>
-All as discussed with Jeremy\,  virtual is how we will need to 
-Location: Web ex
-
 * Dreamforce Dry Run #4 - Life Sciences Quality & Audit Practices for
 <2015-09-16 Wed 15:30-16:30>
 Let's either meet in Moscone west or on Kathy's WebEx. \n\nWebE
 Location: https://roche.webex.com/roche/e.php?AT=SI&MK=958072299
+
+* Review of final materials
+<2015-09-16 Wed 15:30-16:30>
+All as discussed with Jeremy\,  virtual is how we will need to 
+Location: Web ex
 
 * Call Christine
 <2015-09-16 Wed 17:00-17:25>
@@ -6101,15 +6101,15 @@ Location: Craig's desk on LM.
 Please join us in welcoming Tyco to the EBC on December 9th.\n\
 Location: Kukio\, 11th Floor Landmark
 
-* Hallie:Craig
-<2015-12-09 Wed 18:00-18:50>
-Let's meet in Landmark (I have a meeting just before this). I t
-Location: SF-Landmark-3rd-Maka 2 [6]
-
 * Drinks with Salesforce and Testlio
 <2015-12-09 Wed 18:00-21:00>
 Feel free to stop by whenever! If timing is tough\, we are happ
 Location: 188 King St\, San Francisco\, CA 94107\, USA
+
+* Hallie:Craig
+<2015-12-09 Wed 18:00-18:50>
+Let's meet in Landmark (I have a meeting just before this). I t
+Location: SF-Landmark-3rd-Maka 2 [6]
 
 * Technology Roadmap Summit
 <2015-12-10 Thu 11:00-19:00>
@@ -8553,15 +8553,15 @@ Location: SF-Rincon Center-1st-101 520A [65-Proj\, VC\, RESTRICTED]\, Seattl
 <2016-08-25 Thu 17:00-19:00>
 Location: Kukio 11th Floor EBC
 
-* Technology Roadmap Summit **In Room Invitation** 
-<2016-08-26 Fri 11:00-19:00>
-**In Room Invitation** \n\n206/208 Technology Roadmap Summit \n
-Location: SF-Rincon Center-1st-101 520A [65-Proj\, VC\, RESTRICTED]\, Seattl
-
 * Fergus:Craig
 <2016-08-26 Fri 11:00-13:20>
 Looks like you're busy tomorrow morning. I would skip the RM ch
 Location: Craig's Desk
+
+* Technology Roadmap Summit **In Room Invitation** 
+<2016-08-26 Fri 11:00-19:00>
+**In Room Invitation** \n\n206/208 Technology Roadmap Summit \n
+Location: SF-Rincon Center-1st-101 520A [65-Proj\, VC\, RESTRICTED]\, Seattl
 
 * Discuss Q3/Central QE teams
 <2016-08-26 Fri 13:30-14:30>
@@ -9305,10 +9305,10 @@ Location: Julie Shumate: 925.413.6963
 * Start Wash
 <2016-10-06 Thu 23:30-00:00>
 
-* Introduce Doug and Hillary
+* Email to Tim about ICSW
 <2016-10-06 Thu 23:30-00:00>
 
-* Email to Tim about ICSW
+* Introduce Doug and Hillary
 <2016-10-06 Thu 23:30-00:00>
 
 * Craig: Family Reunion
@@ -9450,15 +9450,15 @@ Location: https://www.gotomeeting.com/join/934007077\, SF-Landmark-3rd-Kanun
 <2016-10-20 Thu 17:30-17:55>
 \n\n*************** Blue Jeans for Hangouts ***************\n\n
 
-* Kickoff: Joint FY18 V2MOM
-<2016-10-20 Thu 18:00-19:00>
-Agenda: \n- Review proposed content for the joint planning effo
-Location: SF-Rincon Center-2nd-WEST-01 Aloha Style [20-CFM]
-
 * Tatyana Celebration
 <2016-10-20 Thu 18:00-19:30>
 All\,\n\nI wanted to let you know that unfortunately Tatyana Ma
 Location: SF-Rincon Center-2nd-Social Space (After Hours Only)
+
+* Kickoff: Joint FY18 V2MOM
+<2016-10-20 Thu 18:00-19:00>
+Agenda: \n- Review proposed content for the joint planning effo
+Location: SF-Rincon Center-2nd-WEST-01 Aloha Style [20-CFM]
 
 * Move Planning
 <2016-10-20 Thu 21:00-22:50>
@@ -11304,15 +11304,15 @@ Location: Livery\, 720 N College Ave\, Indianapolis\, IN 46202\, USA
 <2017-03-23 Thu 15:00-16:00>
 Location: Glenda's Office
 
-* Discuss assistance with Roadmap Summit slides
-<2017-03-23 Thu 16:00-16:30>
-Hi Felipa\,\n\nSnafu on my side with the timing.  Any chance yo
-Location: Webex: +1-415-655-0002: Meeting number (access code): 497 242 300
-
 * Duarte/Salesforce: Roadmap Summit Sync
 <2017-03-23 Thu 16:00-16:30>
 Duarte/Salesforce: Roadmap Summit\nThursday\, March 23\, 2017\n
 Location: dial-in details below
+
+* Discuss assistance with Roadmap Summit slides
+<2017-03-23 Thu 16:00-16:30>
+Hi Felipa\,\n\nSnafu on my side with the timing.  Any chance yo
+Location: Webex: +1-415-655-0002: Meeting number (access code): 497 242 300
 
 * Compliance Response
 <2017-03-23 Thu 18:30-20:00>
@@ -11419,14 +11419,14 @@ Join with Google Meet: https://meet.google.com/isp-mpjj-scx\nOr
 Join with Google Hangouts: https://plus.google.com/hangouts/_/p
 Location: Hangouts
 
-*  Product Summit Day 1 - **Webinar Invite** 
-<2017-03-28 Tue 11:00-19:30>
-**Webinar Invite** \n\nAGENDA: \nhttps://docs.google.com/spread
-
 * Craig:Arvind  -Perf/Scale Testing Overview requested by Srini
 <2017-03-28 Tue 11:00-11:25>
 From: Craig Jennings <cjennings@salesforce.com>\nDate: Mon\, Ma
 Location: hangout
+
+*  Product Summit Day 1 - **Webinar Invite** 
+<2017-03-28 Tue 11:00-19:30>
+**Webinar Invite** \n\nAGENDA: \nhttps://docs.google.com/spread
 
 * Product Roadmap Summit Day 1
 <2017-03-28 Tue 11:00-19:30>
@@ -12577,13 +12577,13 @@ Location: SF-Landmark-8th-Molokai 2 [8-CFM]
 Join with Google Meet: https://meet.google.com/jpp-bhyq-vzp\nOr
 Location: SF-Landmark-8th-Molokai 3 [5-LCD]
 
-* Mailroom
-<2017-07-18 Tue 18:30-19:00>
-
 * Hallie:Craig
 <2017-07-18 Tue 18:30-19:00>
 Join with Google Meet: https://meet.google.com/bic-negc-ido\nOr
 Location: Google Meet
+
+* Mailroom
+<2017-07-18 Tue 18:30-19:00>
 
 * Send out 360 and Templates
 <2017-07-18 Tue 22:00-00:00>
@@ -13318,10 +13318,10 @@ Not sure of start time yet
 Next to Wolfhound. Starts around 7:30
 Location: Land & Sea gallery
 
-* Tyson feedback
+* Alana feedback
 <2017-09-05 Tue 10:00-10:30>
 
-* Alana feedback
+* Tyson feedback
 <2017-09-05 Tue 10:00-10:30>
 
 * MC Automated Testing Chat
@@ -14750,15 +14750,15 @@ Join with Google Meet: https://meet.google.com/xak-xegm-ofu\nOr
 <2017-11-30 Thu 17:30-17:55>
 Location: SF-Landmark-8th-Molokai 3 [5-LCD]\, SF-Landmark-8th-Molokai 11 [10
 
-* Synch up on IE11 budget
-<2017-11-30 Thu 18:00-18:30>
-Hi Craig\,\n\nComing out of the IE11 meeting\, lots to update y
-Location: Molokai 11
-
 * Synch up before I go
 <2017-11-30 Thu 18:00-19:00>
 As discussed.\n\nJoin with Google Meet: https://meet.google.com
 Location: SF-Landmark-8th-Molokai 11 [10-LCD\,CfM]
+
+* Synch up on IE11 budget
+<2017-11-30 Thu 18:00-18:30>
+Hi Craig\,\n\nComing out of the IE11 meeting\, lots to update y
+Location: Molokai 11
 
 * Craig/Alan 1:1
 <2017-12-01 Fri 10:30-10:55>
@@ -15700,10 +15700,10 @@ Location: SF-Landmark-8th-Molokai 5 [8-LCD\,CfM]
 Join with Google Meet: https://meet.google.com/wgc-xikg-vzy\nOr
 Location: SF-Landmark-8th-Molokai 1 [4-LCD\, CfM]
 
-* Wells Fargo
+* Print Corp Message Deck
 <2018-02-21 Wed 18:30-19:00>
 
-* Print Corp Message Deck
+* Wells Fargo
 <2018-02-21 Wed 18:30-19:00>
 
 * Transit to Dr Mehta
@@ -18931,12 +18931,12 @@ Join with Google Meet: https://meet.google.com/vac-qhes-yye\nOr
 Join with Google Meet: https://meet.google.com/qzj-jzwo-ctv\nOr
 Location: SF Tower - 14th floor social space by C-18
 
+* Christine leaves for RI\, Greece
+<2018-09-06 Thu 13:00-13:30>
+
 * Security GRC walkthrough
 <2018-09-06 Thu 13:00-13:30>
 Join with Google Meet: https://meet.google.com/gdz-rcwj-dcv\nOr
-
-* Christine leaves for RI\, Greece
-<2018-09-06 Thu 13:00-13:30>
 
 * Craig/Jon sync up - T&P/Support offsite
 <2018-09-06 Thu 13:30-14:00>
@@ -19857,11 +19857,11 @@ Join with Google Meet: https://meet.google.com/dow-qtdh-dnk\nOr
 Hello mindful ones\,\n\nAs some of you may know\, I'm recently 
 Location: SF-West-23-C20
 
-* Social Justice Seder at Joey's!
+* Social Justice Seder at Loey's!
 <2019-04-21 Sun 14:00-18:00>
 Location: 845 Sutter St\, San Francisco\, CA 94109\, USA
 
-* Social Justice Seder at Loey's!
+* Social Justice Seder at Joey's!
 <2019-04-21 Sun 14:00-18:00>
 Location: 845 Sutter St\, San Francisco\, CA 94109\, USA
 
@@ -21594,14 +21594,14 @@ Join with Google Meet: https://meet.google.com/gvy-kdsr-yct\n\n
 <2021-07-10 Sat 14:00-16:37>
 Duration2h 37m\nAircraftEmbraer 170\nFare ClassUnited First (P)
 
+* United Flight 907 ORD - FRA
+<2021-07-10 Sat 18:00-02:20>
+Duration8h 20m\nAircraftBoeing 787-9 Dreamliner\nFare ClassUnit
+
 * Vanessa / Rick wedding reception
 <2021-07-10 Sat 18:00-21:00>
 Join with Google Meet: https://meet.google.com/xsb-xhdi-bxp\n\n
 Location: Columns\, 3811 St Charles Ave\, New Orleans\, LA 70115\, USA
-
-* United Flight 907 ORD - FRA
-<2021-07-10 Sat 18:00-02:20>
-Duration8h 20m\nAircraftBoeing 787-9 Dreamliner\nFare ClassUnit
 
 * United Flight 9076 FRA - VIE
 <2021-07-11 Sun 04:50-06:10>
@@ -22854,15 +22854,15 @@ Look for a Zoom link on day of meeting
 The Husky<br>4510 Freret St\, New Orleans\, LA 70115<br>+1 504-
 Location: The Husky\, 4510 Freret St\, New Orleans\, LA 70115
 
-* Financial Review - Connect with Morgan Stanley - Zoom invite 
-<2025-01-13 Mon 14:00-14:30>
-Hi Craig\,<br><br>Per our earlier discussion\, we will postpone
-Location: Zoom link located in email from Eric Wylie
-
 * Zoom Meeting/Morgan Stanley Introduction - Craig\, Cheryl & Eric 
 <2025-01-13 Mon 14:00-15:00>
 <br><br>#######################################################
 Location: https://morganstanley.zoom.us/j/94529298945?from=addon
+
+* Financial Review - Connect with Morgan Stanley - Zoom invite 
+<2025-01-13 Mon 14:00-14:30>
+Hi Craig\,<br><br>Per our earlier discussion\, we will postpone
+Location: Zoom link located in email from Eric Wylie
 
 * Two Queen Beds - Phoenix Hotel
 <2025-01-16 Thu 17:00-14:00>
@@ -23127,6 +23127,15 @@ Location: 2820 Napoleon Avenue\, Suite 450\, New Orleans LA 70115-8229
 
 * Pick Up Prescriptions at CVS
 <2025-11-16 Sun 14:30-15:00>
+
+* Drive Christine to Clearview
+<2025-11-17 Mon 07:30-08:00>
+
+* Injection at Clearview
+<2025-11-17 Mon 08:00-08:30>
+
+* Finish and Send Email to Jon Schultis
+<2025-11-17 Mon 09:00-11:00>
 
 * Southwest Flight PVD
 <2025-12-03 Wed 10:40-16:30>
