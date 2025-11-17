@@ -13,6 +13,8 @@
 
 ;;; Code:
 
+(require 'system-lib)
+
 ;; ----------------------------- Org Refile Targets ----------------------------
 ;; sets refile targets
 ;; - adds project files in org-roam to the refile targets
@@ -31,6 +33,25 @@ Set to nil to invalidate cache.")
 (defvar cj/org-refile-targets-building nil
   "Non-nil when refile targets are being built asynchronously.
 Prevents duplicate builds if user refiles before async build completes.")
+
+(defun cj/org-refile-ensure-org-mode (file)
+  "Ensure FILE is a .org file and its buffer is in org-mode.
+Returns the buffer visiting FILE, switching it to org-mode if needed.
+Signals an error if FILE doesn't have a .org extension.
+
+This prevents issues where:
+1. Buffers get stuck in fundamental-mode (e.g., opened before org loaded)
+2. Non-.org files are accidentally added to refile targets"
+  (unless (string-match-p "\\.org\\'" file)
+    (error "Refile target \"%s\" is not a .org file" file))
+
+  (let ((buf (org-get-agenda-file-buffer file)))
+    (with-current-buffer buf
+      (unless (derived-mode-p 'org-mode)
+        (cj/log-silently "Switching %s to org-mode (was in %s)"
+                         (buffer-name) major-mode)
+        (org-mode)))
+    buf))
 
 (defun cj/build-org-refile-targets (&optional force-rebuild)
   "Build =org-refile-targets= with caching.
@@ -51,12 +72,12 @@ so caching improves performance from 15-20 seconds to instant."
         ;; Use cached targets (instant)
         (progn
           (setq org-refile-targets cj/org-refile-targets-cache)
-          (when (called-interactively-p 'interactive)
-            (message "Using cached refile targets (%d files)"
-                     (length org-refile-targets))))
+          ;; Always show cache-hit message (interactive or background)
+          (cj/log-silently "Using cached refile targets (%d files)"
+                           (length org-refile-targets)))
       ;; Check if async build is in progress
       (when cj/org-refile-targets-building
-        (message "Waiting for background cache build to complete..."))
+        (cj/log-silently "Waiting for background cache build to complete..."))
       ;; Rebuild from scratch (slow - scans 34,000+ files)
       (unwind-protect
           (progn
@@ -94,10 +115,10 @@ so caching improves performance from 15-20 seconds to instant."
               (setq cj/org-refile-targets-cache new-files)
               (setq cj/org-refile-targets-cache-time (float-time))
 
-              (when (called-interactively-p 'interactive)
-                (message "Built refile targets: %d files in %.2f seconds"
-                         (length org-refile-targets)
-                         (float-time-since start-time)))))
+              ;; Always show completion message (interactive or background)
+              (cj/log-silently "Built refile targets: %d files in %.2f seconds"
+                               (length org-refile-targets)
+                               (- (float-time) (float-time start-time)))))
         ;; Always clear the building flag, even if build fails
         (setq cj/org-refile-targets-building nil)))))
 
@@ -106,7 +127,7 @@ so caching improves performance from 15-20 seconds to instant."
  5  ; Wait 5 seconds after Emacs is idle
  nil ; Don't repeat
  (lambda ()
-   (message "Building org-refile targets cache in background...")
+   (cj/log-silently "Building org-refile targets cache in background...")
    (cj/build-org-refile-targets)))
 
 (defun cj/org-refile-refresh-targets ()
@@ -156,7 +177,17 @@ ARG DEFAULT-BUFFER RFLOC and MSG parameters passed to org-refile."
   ;; save all open org buffers after a refile is complete
   (advice-add 'org-refile :after
 			  (lambda (&rest _)
-				(org-save-all-org-buffers))))
+				(org-save-all-org-buffers)))
+
+  ;; Ensure refile target buffers are in org-mode before processing
+  ;; Fixes issue where buffers opened before org loaded get stuck in fundamental-mode
+  (advice-add 'org-refile-get-targets :before
+              (lambda (&rest _)
+                "Ensure all refile target buffers are in org-mode."
+                (dolist (target org-refile-targets)
+                  (let ((file (car target)))
+                    (when (stringp file)
+                      (cj/org-refile-ensure-org-mode file)))))))
 
 (provide 'org-refile-config)
 ;;; org-refile-config.el ends here.

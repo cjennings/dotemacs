@@ -24,6 +24,8 @@
 ;;
 ;;; Code:
 
+(require 'system-lib)
+
 ;; --------------------------------- Org Export --------------------------------
 
 (use-package ox
@@ -112,7 +114,7 @@
 			  (variable . "transition=slide")
 			  (variable . "slideNumber=true"))))
 	  (unless (file-exists-p reveal-dir)
-		(message "Downloading reveal.js...")
+		(cj/log-silently "Downloading reveal.js...")
 		(shell-command
 		 (format "git clone https://github.com/hakimel/reveal.js.git %s" reveal-dir)))
 	  (org-pandoc-export-to-revealjs)))
