@@ -46,9 +46,9 @@
   "Google Calendar private .ics URL.
 Get this from Google Calendar Settings → Integrate calendar → Secret address in iCal format.")
 
-(defvar calendar-sync-interval (* 15 60)
-  "Sync interval in seconds.
-Default: 15 minutes (900 seconds).")
+(defvar calendar-sync-interval-minutes 15
+  "Sync interval in minutes.
+Default: 15 minutes.")
 
 (defvar calendar-sync-file gcal-file
   "Location of synced calendar file.
@@ -366,7 +366,7 @@ Checks for timezone changes and triggers re-sync if detected."
 ;;;###autoload
 (defun calendar-sync-start ()
   "Start automatic calendar syncing.
-Syncs immediately, then every `calendar-sync-interval' seconds."
+Syncs immediately, then every `calendar-sync-interval-minutes' minutes."
   (interactive)
   (when calendar-sync--timer
     (cancel-timer calendar-sync--timer))
@@ -374,13 +374,14 @@ Syncs immediately, then every `calendar-sync-interval' seconds."
       (message "calendar-sync: Please set calendar-sync-ics-url before starting")
     ;; Sync immediately
     (calendar-sync-now)
-    ;; Start timer for future syncs
-    (setq calendar-sync--timer
-          (run-at-time calendar-sync-interval
-                       calendar-sync-interval
-                       #'calendar-sync--sync-timer-function))
+    ;; Start timer for future syncs (convert minutes to seconds)
+    (let ((interval-seconds (* calendar-sync-interval-minutes 60)))
+      (setq calendar-sync--timer
+            (run-at-time interval-seconds
+                         interval-seconds
+                         #'calendar-sync--sync-timer-function)))
     (message "calendar-sync: Auto-sync started (every %d minutes)"
-             (/ calendar-sync-interval 60))))
+             calendar-sync-interval-minutes)))
 
 ;;;###autoload
 (defun calendar-sync-stop ()
@@ -441,7 +442,7 @@ Syncs immediately, then every `calendar-sync-interval' seconds."
     ))
 
 ;; Start auto-sync if enabled and URL is configured
-;; Syncs immediately then every calendar-sync-interval (default: 15 minutes)
+;; Syncs immediately then every calendar-sync-interval-minutes (default: 15 minutes)
 (when (and calendar-sync-auto-start calendar-sync-ics-url)
   (calendar-sync-start))
 
