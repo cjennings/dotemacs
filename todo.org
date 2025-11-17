@@ -26,11 +26,27 @@ High priority - daily pain point.
 
 Daily workflow improvement.
 
-** TODO [#B] Toggle org-appear on/off
+** DONE [#B] Toggle org-appear on/off
+CLOSED: [2025-11-16 Sat]
 
-When org links have long paths and point is on them, they expand and make text difficult to read
-(especially in org-tables). Need ability to toggle org-appear: on for editing links, off for reading.
-Moved from inbox 2025-11-07.
+✅ **Implemented toggle function with C-c C-a keybinding**
+
+Created `cj/org-appear-toggle` function that toggles org-appear-mode on/off in
+current org buffer. Default is OFF (cleaner for reading), can be toggled ON when
+editing links, then toggled OFF again.
+
+**Implementation:**
+- Removed :disabled flag and :hook (default: OFF)
+- Created cj/org-appear-toggle function with clear user feedback
+- Bound to C-c C-a in org-mode-map (unbound, no conflicts)
+- Tested: toggles correctly, all tests pass
+
+**Usage:**
+- C-c C-a: Toggle on/off
+- Default: OFF (links and emphasis markers stay hidden)
+- Messages show current state clearly
+
+Moved from inbox 2025-11-07. Completed 2025-11-16.
 
 ** TODO [#B] Optimize org-agenda performance using built-in profiler
 
