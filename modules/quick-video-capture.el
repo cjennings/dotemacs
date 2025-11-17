@@ -20,6 +20,8 @@
 
 ;;; Code:
 
+(require 'system-lib)
+
 ;; Declare external functions to avoid warnings
 (declare-function org-capture "org-capture" (&optional goto keys))
 (declare-function org-protocol-check-filename-for-protocol "org-protocol" (fname restoffiles client))
@@ -99,7 +101,7 @@ It's designed to be idempotent - safe to call multiple times."
                      :jump-to-captured nil)))
     
     (setq cj/video-download-initialized t)
-    (message "Video download functionality initialized")))
+    (cj/log-silently "Video download functionality initialized")))
 
 (defun cj/video-download-bookmarklet-instructions ()
   "Display instructions for setting up the browser bookmarklet."
