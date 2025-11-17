@@ -42,30 +42,22 @@
 
 ;;; Configuration
 
-(defgroup calendar-sync nil
-  "Simple Google Calendar sync via .ics."
-  :group 'calendar
-  :prefix "calendar-sync-")
-
-(defcustom calendar-sync-ics-url nil
+(defvar calendar-sync-ics-url nil
   "Google Calendar private .ics URL.
-Get this from Google Calendar Settings → Integrate calendar → Secret address in iCal format."
-  :type '(choice (const :tag "Not configured" nil)
-                 (string :tag "iCal URL"))
-  :group 'calendar-sync)
+Get this from Google Calendar Settings → Integrate calendar → Secret address in iCal format.")
 
-(defcustom calendar-sync-interval (* 15 60)
+(defvar calendar-sync-interval (* 15 60)
   "Sync interval in seconds.
-Default: 15 minutes (900 seconds)."
-  :type 'integer
-  :group 'calendar-sync)
+Default: 15 minutes (900 seconds).")
 
-(defcustom calendar-sync-file
-  gcal-file
+(defvar calendar-sync-file gcal-file
   "Location of synced calendar file.
-Defaults to gcal-file from user-constants."
-  :type 'file
-  :group 'calendar-sync)
+Defaults to gcal-file from user-constants.")
+
+(defvar calendar-sync-auto-start t
+  "Whether to automatically start calendar sync when module loads.
+If non-nil, sync starts automatically when calendar-sync is loaded.
+If nil, user must manually call `calendar-sync-start'.")
 
 ;;; Internal state
 
@@ -443,10 +435,15 @@ Syncs immediately, then every `calendar-sync-interval' seconds."
                  (calendar-sync--current-timezone-offset))))
     (message "calendar-sync: Timezone changed since last session (%s → %s)"
              old-tz new-tz)
-    (message "calendar-sync: Run `calendar-sync-now' or start auto-sync to update")
+    (message "calendar-sync: Will sync on next timer tick")
     ;; Note: We don't auto-sync here to avoid blocking Emacs startup
     ;; User can manually sync or it will happen on next timer tick if auto-sync is enabled
     ))
+
+;; Start auto-sync if enabled and URL is configured
+;; Syncs immediately then every calendar-sync-interval (default: 15 minutes)
+(when (and calendar-sync-auto-start calendar-sync-ics-url)
+  (calendar-sync-start))
 
 (provide 'calendar-sync)
 ;;; calendar-sync.el ends here
