@@ -84,10 +84,6 @@ Intended to be called within an org capture template."
         '(("t" "Task" entry (file+headline inbox-file "Inbox")
            "* TODO %?" :prepend t)
 
-          ("a" "Appointment" entry (file gcal-file)
-           "* %?\n:PROPERTIES:\n:calendar-id:craigmartinjennings@gmail.com\n:END:\n:org-gcal:\n%^T--%^T\n:END:\n\n"
-           :jump-to-captured t)
-
           ("e" "Event" entry (file+headline schedule-file "Scheduled Events")
            "* %?%:description
 SCHEDULED: %^t%(cj/org-capture-event-content)
