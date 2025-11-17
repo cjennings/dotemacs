@@ -127,6 +127,10 @@
   (defvar-keymap cj/org-table-map
     :doc "org table operations.")
   (keymap-set cj/custom-keymap "T" cj/org-table-map)
+
+  (defvar-keymap cj/org-map
+    :doc "General org-mode operations and utilities.")
+  (keymap-set cj/custom-keymap "O" cj/org-map)
   :bind
   ("C-c c" . org-capture)
   ("C-c a" . org-agenda)
@@ -289,6 +293,9 @@ the current buffer's cache. Useful when encountering parsing errors like
           (message "Cleared org-element cache for current buffer"))
       (user-error "Current buffer is not in org-mode"))))
 
+;; Add to org keymap
+(keymap-set cj/org-map "c" #'cj/org-clear-element-cache)
+
 ;; ----------------------- Org Multi-Level Sorting -----------------------------
 
 (defun cj/org-sort-by-todo-and-priority ()
@@ -312,9 +319,13 @@ status to preserve priority ordering within TODO groups."
       (user-error nil)))
   (message "Sorted entries by TODO status and priority"))
 
-;; which-key labels for org-table-map
+;; which-key labels for org keymaps
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
+    ;; org general operations
+    "C-; O" "org menu"
+    "C-; O c" "clear element cache"
+    ;; org table operations
     "C-; T" "org table menu"
     "C-; T r" "table row"
     "C-; T r i" "insert row"
