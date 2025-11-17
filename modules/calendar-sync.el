@@ -309,7 +309,7 @@ invoked when the fetch completes, either successfully or with an error."
         (make-process
          :name "calendar-sync-curl"
          :buffer buffer
-         :command (list "curl" "-s" "-L" "-m" "10" url)
+         :command (list "curl" "-s" "-L" "-m" "30" url)
          :sentinel
          (lambda (process event)
            (when (memq (process-status process) '(exit signal))
