@@ -179,6 +179,78 @@ Local times should pass through unchanged."
     (should (= expected-day (nth 2 parsed)))
     (should (= expected-hour (nth 3 parsed)))))
 
+;;; Tests: UTC to Local Conversion
+
+(ert-deftest test-calendar-sync--convert-utc-to-local-basic-conversion ()
+  "Test basic UTC to local time conversion."
+  (let* ((result (calendar-sync--convert-utc-to-local 2025 11 16 14 30 0))
+         ;; Compute expected local time
+         (utc-time (encode-time 0 30 14 16 11 2025 0))
+         (local-time (decode-time utc-time))
+         (expected-year (nth 5 local-time))
+         (expected-month (nth 4 local-time))
+         (expected-day (nth 3 local-time))
+         (expected-hour (nth 2 local-time))
+         (expected-minute (nth 1 local-time)))
+    ;; Verify conversion happened correctly
+    (should (= expected-year (nth 0 result)))
+    (should (= expected-month (nth 1 result)))
+    (should (= expected-day (nth 2 result)))
+    (should (= expected-hour (nth 3 result)))
+    (should (= expected-minute (nth 4 result)))))
+
+(ert-deftest test-calendar-sync--convert-utc-to-local-midnight-boundary ()
+  "Test UTC midnight conversion handles day boundary correctly."
+  (let* ((result (calendar-sync--convert-utc-to-local 2025 11 16 0 0 0))
+         ;; Compute expected local time
+         (utc-time (encode-time 0 0 0 16 11 2025 0))
+         (local-time (decode-time utc-time))
+         (expected-year (nth 5 local-time))
+         (expected-month (nth 4 local-time))
+         (expected-day (nth 3 local-time))
+         (expected-hour (nth 2 local-time)))
+    ;; In timezones west of UTC, midnight UTC becomes previous day
+    (should (= expected-year (nth 0 result)))
+    (should (= expected-month (nth 1 result)))
+    (should (= expected-day (nth 2 result)))
+    (should (= expected-hour (nth 3 result)))))
+
+(ert-deftest test-calendar-sync--convert-utc-to-local-preserves-minutes ()
+  "Test that minute component is preserved during conversion."
+  (let* ((result (calendar-sync--convert-utc-to-local 2025 11 16 20 45 0))
+         (expected-minute 45))
+    ;; Minutes should always be preserved (timezone offsets are in hours)
+    (should (= expected-minute (nth 4 result)))))
+
+(ert-deftest test-calendar-sync--convert-utc-to-local-returns-five-elements ()
+  "Test that conversion returns exactly 5 elements (year month day hour minute)."
+  (let ((result (calendar-sync--convert-utc-to-local 2025 11 16 14 30 0)))
+    (should (= 5 (length result)))
+    ;; All elements should be numbers
+    (should (numberp (nth 0 result)))  ; year
+    (should (numberp (nth 1 result)))  ; month
+    (should (numberp (nth 2 result)))  ; day
+    (should (numberp (nth 3 result)))  ; hour
+    (should (numberp (nth 4 result))))) ; minute
+
+(ert-deftest test-calendar-sync--convert-utc-to-local-end-of-day ()
+  "Test conversion near end of day (23:59 UTC)."
+  (let* ((result (calendar-sync--convert-utc-to-local 2025 11 16 23 59 0))
+         ;; Compute expected local time
+         (utc-time (encode-time 0 59 23 16 11 2025 0))
+         (local-time (decode-time utc-time))
+         (expected-year (nth 5 local-time))
+         (expected-month (nth 4 local-time))
+         (expected-day (nth 3 local-time))
+         (expected-hour (nth 2 local-time))
+         (expected-minute (nth 1 local-time)))
+    ;; In timezones east of UTC, this might roll to next day
+    (should (= expected-year (nth 0 result)))
+    (should (= expected-month (nth 1 result)))
+    (should (= expected-day (nth 2 result)))
+    (should (= expected-hour (nth 3 result)))
+    (should (= expected-minute (nth 4 result)))))
+
 ;;; Tests: Chronological Sorting
 
 (ert-deftest test-calendar-sync--event-start-time-extracts-comparable-time ()
