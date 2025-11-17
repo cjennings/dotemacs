@@ -112,7 +112,7 @@ Tries multiple methods in order of reliability:
 	   (when (string-match ".*/zoneinfo/\\(.+\\)" target)
 		 (match-string 1 target))))
 
-   ;; Default to nil - lets org-gcal use its default
+   ;; Default to nil if detection fails
    nil))
 
 (provide 'host-environment)
