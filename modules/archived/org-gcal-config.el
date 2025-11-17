@@ -137,19 +137,7 @@ Useful after changing `cj/org-gcal-sync-interval-minutes'."
   :defer t ;; unless idle timer is set below
 
   :init
-  ;; Retrieve credentials from authinfo.gpg BEFORE package loads
-  ;; This is critical - org-gcal checks these variables at load time
-  (require 'auth-source)
-  (let ((credentials (car (auth-source-search :host "org-gcal" :require '(:user :secret)))))
-	(when credentials
-	  (setq org-gcal-client-id (plist-get credentials :user))
-	  ;; The secret might be a function, so we need to handle that
-	  (let ((secret (plist-get credentials :secret)))
-		(setq org-gcal-client-secret
-			  (if (functionp secret)
-				  (funcall secret)
-				secret)))))
-
+  ;; Configure org-gcal settings (no authinfo.gpg decryption here - deferred to :config)
   ;; identify calendar to sync and it's destination
   (setq org-gcal-fetch-file-alist `(("craigmartinjennings@gmail.com" . ,gcal-file)))
 
@@ -165,6 +153,18 @@ Useful after changing `cj/org-gcal-sync-interval-minutes'."
   (setq org-gcal-managed-update-existing-mode "gcal")  ;; GCal wins on conflicts
 
   :config
+  ;; Retrieve credentials from authinfo.gpg when org-gcal is first loaded
+  ;; This happens on first use (e.g., C-; g s), not during daemon startup
+  (require 'auth-source)
+  (let ((credentials (car (auth-source-search :host "org-gcal" :require '(:user :secret)))))
+	(when credentials
+	  (setq org-gcal-client-id (plist-get credentials :user))
+	  ;; The secret might be a function, so we need to handle that
+	  (let ((secret (plist-get credentials :secret)))
+		(setq org-gcal-client-secret
+			  (if (functionp secret)
+				  (funcall secret)
+				secret)))))
   ;; Plstore caching is now configured globally in auth-config.el
   ;; to ensure it loads before org-gcal needs it
 

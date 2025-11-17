@@ -87,7 +87,7 @@
                (lambda ()
                  (when (and (member org-state org-done-keywords)
                             (not (member org-last-state org-done-keywords))
-                            ;; Don't run for gcal.org - it's managed by org-gcal
+                            ;; Don't run for gcal.org - it's synced from Google Calendar
                             (not (string= (buffer-file-name) (expand-file-name gcal-file))))
                    (cj/org-roam-copy-todo-to-today)))))
 
