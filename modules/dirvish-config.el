@@ -236,6 +236,7 @@ regardless of what file or subdirectory the point is on."
 	 ("mx" "~/music/"                                       "music")
 	 ("pdx" "~/projects/documents/"                         "project documents")
 	 ("pdl" "~/projects/danneel/"                           "project danneel")
+	 ("pc" "~/projects/clipper/"                            "project clipper")
 	 ("pl" "~/projects/elibrary/"                           "project elibrary")
 	 ("pf" "~/projects/finances/"                           "project finances")
 	 ("pjr" "~/projects/jr-estate/"                         "project jr-estate")
