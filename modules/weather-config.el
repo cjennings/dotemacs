@@ -26,15 +26,16 @@
   (setopt wttrin-mode-line-refresh-interval (* 30 60)) ;; thirty minutes
   (setq wttrin-default-locations '(
                                    "New Orleans, LA"
-                                   "Athens, GR"
                                    "Berkeley, CA"
+                                   "Huntington Beach, CA"
                                    "Bury St Edmunds, UK"
-                                   "Kyiv, UA"
+                                   "New York, NY"
                                    "Littlestown, PA"
                                    "Soufrière, St Lucia"
                                    "London, GB"
                                    "Naples, IT"
-                                   "New York, NY"
+                                   "Athens, GR"
+                                   "Kyiv, UA"
                                    ))
   (wttrin-mode-line-mode 1))
 
