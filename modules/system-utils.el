@@ -207,6 +207,8 @@ Logs output and exit code to buffer *external-open.log*."
 (use-package quick-sdcv
   :bind
   ("C-h d" . quick-sdcv-search-input)
+  :bind (:map quick-sdcv-mode-map
+         ("q" . quit-window))
   :custom
   (quick-sdcv-dictionary-prefix-symbol "►")
   (quick-sdcv-ellipsis " ▼"))
