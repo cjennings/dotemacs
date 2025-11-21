@@ -663,17 +663,19 @@ invoked when the fetch completes, either successfully or with an error."
          :sentinel
          (lambda (process event)
            (when (memq (process-status process) '(exit signal))
-             (with-current-buffer (process-buffer process)
-               (let ((content
-                      (if (and (eq (process-status process) 'exit)
-                               (= (process-exit-status process) 0))
-                          (calendar-sync--normalize-line-endings (buffer-string))
-                        (setq calendar-sync--last-error
-                              (format "curl failed: %s" (string-trim event)))
-                        (cj/log-silently "calendar-sync: Fetch error: %s" calendar-sync--last-error)
-                        nil)))
-                 (kill-buffer (process-buffer process))
-                 (funcall callback content)))))))
+             (let ((buf (process-buffer process)))
+               (when (buffer-live-p buf)
+                 (let ((content
+                        (with-current-buffer buf
+                          (if (and (eq (process-status process) 'exit)
+                                   (= (process-exit-status process) 0))
+                              (calendar-sync--normalize-line-endings (buffer-string))
+                            (setq calendar-sync--last-error
+                                  (format "curl failed: %s" (string-trim event)))
+                            (cj/log-silently "calendar-sync: Fetch error: %s" calendar-sync--last-error)
+                            nil))))
+                   (kill-buffer buf)
+                   (funcall callback content))))))))
     (error
      (setq calendar-sync--last-error (error-message-string err))
      (cj/log-silently "calendar-sync: Fetch error: %s" calendar-sync--last-error)
