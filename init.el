@@ -123,7 +123,7 @@
 (require 'org-refile-config)     ;; refile org-branches
 (require 'org-roam-config)       ;; personal knowledge management in org mode
 (require 'org-webclipper)        ;; "instapaper" to org-roam workflow
-;; (require 'org-noter-config) ;; wip
+(require 'org-noter-config)
 
 ;; -------------------------- AI Integration And Tools -------------------------
 
