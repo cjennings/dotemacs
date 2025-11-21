@@ -52,10 +52,9 @@
 
   ;; If you want to use the org-noter-pdftools integration features
   (when (featurep 'org-noter-integration)
-	(setq org-noter-use-pdftools-link-location t)
-	(setq org-noter-use-org-id t)
-	(setq org-noter-use-unique-org-id t))
-	(org-noter-enable-org-roam-integration)
+    (setq org-noter-use-pdftools-link-location t)
+    (setq org-noter-use-org-id t)
+    (setq org-noter-use-unique-org-id t))
 
   (org-noter-enable-org-roam-integration))
 
