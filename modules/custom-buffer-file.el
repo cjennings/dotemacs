@@ -16,6 +16,7 @@
 ;; and prints with face/syntax highlighting.
 ;;
 ;; Keybindings under ~C-; b~:
+;; - ~C-; b k~ kill buffer and window (delete window, kill/bury buffer)
 ;; - Copy buffer content submenu at ~C-; b c~
 ;;   - ~C-; b c w~ copy whole buffer
 ;;   - ~C-; b c t~ copy from beginning to point
@@ -337,6 +338,7 @@ Signal an error if the buffer is not visiting a file."
   "c" cj/copy-buffer-content-map
   "n" #'cj/copy-buffer-name
   "l" #'cj/copy-link-to-buffer-file
+  "k" #'cj/kill-buffer-and-window
   "P" #'cj/print-buffer-ps
   "t" #'cj/clear-to-top-of-buffer
   "b" #'cj/clear-to-bottom-of-buffer
@@ -360,6 +362,7 @@ Signal an error if the buffer is not visiting a file."
     "C-; b c t" "copy to top"
     "C-; b n" "copy buffer name"
     "C-; b l" "copy file link"
+    "C-; b k" "kill buffer and window"
     "C-; b P" "print to PS"
     "C-; b t" "clear to top"
     "C-; b b" "clear to bottom"
