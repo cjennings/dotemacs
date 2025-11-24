@@ -14,10 +14,10 @@
 ;; - G: Search with deadgrep in current directory
 ;; - f: Open system file manager in current directory
 ;; - o/O: Open file with xdg-open/custom command
-;; - l: Copy file path (project-relative or home-relative)
-;; - L: Copy absolute file path
-;; - P: Copy file path (same as 'l', replaces dired-do-print)
-;; - M-D: DWIM menu (context actions for files)
+;; - l: Copy org-link with relative file path (project-relative or home-relative)
+;; - p: Copy absolute file path
+;; - P: Copy relative file path (project-relative or home-relative)
+;; - M-S-d (Meta-Shift-d): DWIM shell commands menu
 ;; - TAB: Toggle subtree expansion
 ;; - F11: Toggle sidebar view
 
@@ -314,9 +314,8 @@ regardless of what file or subdirectory the point is on."
    ("C-."     . dirvish-history-go-forward)
    ("F"       . dirvish-file-info-menu)
    ("G"       . revert-buffer)
-   ("l"       . (lambda () (interactive) (cj/dired-copy-path-as-kill))) ;; overwrites dired-do-redisplay
-   ("L"       . (lambda () (interactive) (cj/dired-copy-path-as-kill nil t))) ;; copy absolute path
    ("h"       . cj/dirvish-open-html-in-eww)  ;; it does what it says it does
+   ("l"       . (lambda () (interactive) (cj/dired-copy-path-as-kill t nil))) ;; copy as org-link, relative path
    ("M"       . cj/dired-mark-all-visible-files)
    ("M-e"     . dirvish-emerge-menu)
    ("M-l"     . dirvish-ls-switches-menu)
@@ -330,8 +329,9 @@ regardless of what file or subdirectory the point is on."
    ("g"       . dirvish-quick-access)
    ("o"       . cj/xdg-open)
    ("O"       . cj/open-file-with-command)  ; Prompts for command to run
+   ("p"       . (lambda () (interactive) (cj/dired-copy-path-as-kill nil t)))
+   ("P"       . (lambda () (interactive) (cj/dired-copy-path-as-kill)))
    ("r"       . dirvish-rsync)
-   ("P"       . cj/dired-copy-path-as-kill)
    ("s"       . dirvish-quicksort)
    ("v"       . dirvish-vc-menu)
    ("y"       . dirvish-yank-menu)))
@@ -427,6 +427,7 @@ Returns nil if not in a project."
 
    ;; No project found
    (t nil)))
+
 
 
 (provide 'dirvish-config)
