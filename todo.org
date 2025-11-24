@@ -1428,6 +1428,52 @@ CLOSED: [2025-11-12 Wed 02:41] SCHEDULED: <2025-11-03 Sun>
 Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 
 * Emacs Config Inbox
+** TODO [#B] Continue org-noter custom workflow implementation (IN PROGRESS)
+
+Continue debugging and testing the custom org-noter workflow from 2025-11-21 session.
+This is partially implemented but has known issues that need fixing before it's usable.
+
+**Last worked on:** 2025-11-21
+**Current status:** Implementation complete but has bugs, needs testing
+
+**Known Issues to Fix:**
+
+1. **Double notes buffer appearing when pressing 'i' to insert note**
+   - When user presses 'i' in document to insert a note, two notes buffers appear
+   - Expected: single notes buffer appears
+   - Need to debug why the insert-note function is creating duplicate buffers
+
+2. **Toggle behavior refinement needed**
+   - The toggle between document and notes needs refinement
+   - May have edge cases with window management
+   - Need to test various scenarios
+
+**Testing Needed:**
+
+1. **EPUB files** - Test with EPUB documents (primary use case)
+2. **Reopening existing notes** - Verify it works when notes file already exists
+3. **Starting from notes file** - Test opening document from an existing notes file
+4. **PDF files** - Verify compatibility with PDF workflow
+5. **Edge cases:**
+   - Multiple windows open
+   - Splitting behavior
+   - Window focus after operations
+
+**Implementation Files:**
+- modules/org-noter-config.el - Custom workflow implementation
+- Contains custom functions for document/notes toggling and insertion
+
+**Context:**
+This custom workflow is designed to make org-noter more ergonomic for Craig's reading/annotation
+workflow. It simplifies the toggle between document and notes, and streamlines note insertion.
+The core functionality is implemented but needs debugging before it's production-ready.
+
+**Next Steps:**
+1. Debug the double buffer issue when pressing 'i'
+2. Test all scenarios listed above
+3. Refine toggle behavior based on testing
+4. Document the final keybindings and workflow
+
 ** TODO [#D] Add status dashboard for dwim-shell-command processes
 
 Create a command to show all running dwim-shell-command processes with their status.
