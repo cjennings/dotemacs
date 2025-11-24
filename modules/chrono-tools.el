@@ -18,7 +18,7 @@
 (use-package time-zones
   :defer
   :commands time-zones
-  :bind ("C-x c" . time-zones))
+  :bind ("M-C" . time-zones))
 
 ;; Commented out old world-clock config while testing time-zone package above
 ;; (use-package time
