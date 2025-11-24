@@ -2,12 +2,12 @@
 
 ;;; Commentary:
 ;;
-;; This library allows for “burying” selected buffers instead of killing them.
+;; This library allows for "burying" selected buffers instead of killing them.
 ;; Since they won't be killed, I'm calling them "undead buffers".
 ;; The main function cj/kill-buffer-or-bury-alive replaces kill-buffer.
 ;;
 ;; Additional helper commands and key bindings:
-;;  - M-C (=cj/kill-buffer-and-window=): delete this window and bury/kill its buffer.
+;;  - C-; b k (=cj/kill-buffer-and-window=): delete this window and bury/kill its buffer.
 ;;  - M-O (=cj/kill-other-window=): delete the next window and bury/kill its buffer.
 ;;  - M-M (=cj/kill-all-other-buffers-and-windows=): kill or bury all buffers except
 ;;    the current one and delete all other windows.
@@ -65,7 +65,7 @@ ARG is passed to `save-some-buffers'."
 	(unless (one-window-p)
 	  (delete-window))
 	(cj/kill-buffer-or-bury-alive buf)))
-(keymap-global-set "M-C" #'cj/kill-buffer-and-window)
+;; Keybinding moved to custom-buffer-file.el (C-; b k)
 
 (defun cj/kill-other-window ()
   "Delete the next window and kill or bury its buffer."
