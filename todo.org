@@ -26,28 +26,6 @@ High priority - daily pain point.
 
 Daily workflow improvement.
 
-** DONE [#B] Toggle org-appear on/off
-CLOSED: [2025-11-16 Sat]
-
-✅ **Implemented toggle function with C-c C-a keybinding**
-
-Created `cj/org-appear-toggle` function that toggles org-appear-mode on/off in
-current org buffer. Default is OFF (cleaner for reading), can be toggled ON when
-editing links, then toggled OFF again.
-
-**Implementation:**
-- Removed :disabled flag and :hook (default: OFF)
-- Created cj/org-appear-toggle function with clear user feedback
-- Bound to C-c C-a in org-mode-map (unbound, no conflicts)
-- Tested: toggles correctly, all tests pass
-
-**Usage:**
-- C-c C-a: Toggle on/off
-- Default: OFF (links and emphasis markers stay hidden)
-- Messages show current state clearly
-
-Moved from inbox 2025-11-07. Completed 2025-11-16.
-
 ** TODO [#B] Optimize org-agenda performance using built-in profiler
 
 THE BOTTLENECK. Currently 30+ seconds, target < 5 seconds.
@@ -522,6 +500,28 @@ CLOSED: [2025-11-08 Fri]
 - Modeline position now updates instantly with cursor movement
 - No lag, even in large files
 - Maintains same "L:line C:col" format
+
+** DONE [#B] Toggle org-appear on/off
+CLOSED: [2025-11-16 Sat]
+
+✅ **Implemented toggle function with C-c C-a keybinding**
+
+Created `cj/org-appear-toggle` function that toggles org-appear-mode on/off in
+current org buffer. Default is OFF (cleaner for reading), can be toggled ON when
+editing links, then toggled OFF again.
+
+**Implementation:**
+- Removed :disabled flag and :hook (default: OFF)
+- Created cj/org-appear-toggle function with clear user feedback
+- Bound to C-c C-a in org-mode-map (unbound, no conflicts)
+- Tested: toggles correctly, all tests pass
+
+**Usage:**
+- C-c C-a: Toggle on/off
+- Default: OFF (links and emphasis markers stay hidden)
+- Messages show current state clearly
+
+Moved from inbox 2025-11-07. Completed 2025-11-16.
 
 ** DONE [#B] Consider implementing cron download of Google Calendar to replace org-gcal
 CLOSED: [2025-11-16 Sat]
@@ -1428,6 +1428,54 @@ CLOSED: [2025-11-12 Wed 02:41] SCHEDULED: <2025-11-03 Sun>
 Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 
 * Emacs Config Inbox
+** TODO [#D] Add status dashboard for dwim-shell-command processes
+
+Create a command to show all running dwim-shell-command processes with their status.
+Currently, there's no unified view of multiple running extractions/conversions.
+
+**Current behavior:**
+- Each command shows spinner in minibuffer while running
+- Process buffers created: `*Extract audio*`, etc.
+- On completion: buffer renamed to `*Extract audio done*` or `*Extract audio error*`
+- No way to see all running processes at once
+
+**Implementation approaches:**
+
+1. **Use existing process list (simplest):**
+   - Enhance `M-x list-processes` output filtering
+   - Create wrapper command that filters to dwim-shell processes only
+   - Pro: Uses built-in functionality
+   - Con: Generic process list, not tailored
+
+2. **Custom status buffer:**
+   - Create command `dwim-shell-commands-status` or similar
+   - Access `dwim-shell-command--commands` variable (tracks all running commands)
+   - Display in custom buffer with:
+     - Command name
+     - Files being processed
+     - Progress/status
+     - Time running
+   - Allow actions: view buffer, kill process
+   - Pro: Tailored UI, more useful information
+   - Con: More code to maintain
+
+3. **Mode-line indicator:**
+   - Show count of running dwim commands in mode-line
+   - Click to open status buffer
+   - Pro: Always visible, lightweight
+   - Con: Limited information at a glance
+
+**Recommended approach:**
+Start with option 2 (custom status buffer) that reads `dwim-shell-command--commands`.
+Can add mode-line indicator later as enhancement.
+
+**Files to create/modify:**
+- modules/dwim-shell-config.el - add status command
+
+** TODO [#C] Create print function for dirvish bound to uppercase P
+
+Add a print function that works on printable files (PDF, txt, org, etc.) and bind it to uppercase P in dirvish-mode. Should detect file type and use appropriate print command (lpr for text files, print dialog for PDFs, etc.).
+
 ** TODO [#C] Review and implement flycheck modeline customization spec
 
 Add flycheck status (error/warning counts) to custom modeline to make it visible again.
