@@ -90,16 +90,10 @@
 
 (require 'cl-lib)
 
-
-;; Bind menu to dired (after dwim-shell-command loads)
-(with-eval-after-load 'dwim-shell-command
-  (with-eval-after-load 'dired
-    (keymap-set dired-mode-map "M-D" #'dwim-shell-commands-menu)))
-
 ;; ----------------------------- Dwim Shell Command ----------------------------
 
 (use-package dwim-shell-command
-  :after (dired dirvish)
+  :demand t
   :bind (("<remap> <shell-command>" . dwim-shell-command)
 		 :map dired-mode-map
 		 ("<remap> <dired-do-async-shell-command>" . dwim-shell-command)
@@ -606,10 +600,14 @@ in process lists or command history."
   (defun cj/dwim-shell-commands-extract-audio-from-video ()
 	"Extract audio track from video file(s)."
 	(interactive)
-	(dwim-shell-command-on-marked-files
-	 "Extract audio"
-	 "ffmpeg -i '<<f>>' -vn -acodec copy '<<fne>>.m4a'"
-	 :utils "ffmpeg"))
+	(let ((bitrate (completing-read "Audio bitrate: "
+									 '("64k" "96k" "128k" "192k")
+									 nil t)))
+	  (dwim-shell-command-on-marked-files
+	   "Extract audio"
+	   (format "ffmpeg -i '<<f>>' -vn -c:a aac -b:a %s '<<fne>>.m4a'" bitrate)
+	   :utils "ffmpeg"
+	   :extensions '("mp4" "mkv" "webm" "avi" "mov" "flv" "wmv" "m4v" "mpg" "mpeg" "ogv" "3gp" "ts"))))
 
   (defun cj/dwim-shell-commands-normalize-audio-volume ()
 	"Normalize audio volume in file(s)."
@@ -809,7 +807,13 @@ gpg: decryption failed: No pinentry"
 									  'dwim-shell-command-history))
 		   (command (alist-get selected command-alist nil nil #'string=)))
 	  (when command
-		(call-interactively command)))))
+		(call-interactively command))))
+
+  ;; Bind menu to keymaps after function is defined
+  (with-eval-after-load 'dired
+    (keymap-set dired-mode-map "M-D" #'dwim-shell-commands-menu))
+  (with-eval-after-load 'dirvish
+    (keymap-set dirvish-mode-map "M-D" #'dwim-shell-commands-menu)))
 
 (provide 'dwim-shell-config)
 ;;; dwim-shell-config.el ends here.
