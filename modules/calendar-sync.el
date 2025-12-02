@@ -1,25 +1,26 @@
-;;; calendar-sync.el --- Simple Google Calendar sync via .ics  -*- lexical-binding: t; -*-
+;;; calendar-sync.el --- Multi-calendar sync via .ics  -*- lexical-binding: t; -*-
 
 ;; Author: Craig Jennings <c@cjennings.net>
 ;; Created: 2025-11-16
 
 ;;; Commentary:
 
-;; Simple, reliable one-way sync from Google Calendar to Org mode.
-;; Downloads .ics file from Google Calendar private URL and converts
-;; to Org format. No OAuth, no API complexity, just file conversion.
+;; Simple, reliable one-way sync from multiple calendars to Org mode.
+;; Downloads .ics files from calendar URLs (Google, Proton, etc.) and
+;; converts to Org format. No OAuth, no API complexity, just file conversion.
 ;;
 ;; Features:
+;; - Multi-calendar support (sync multiple calendars to separate files)
 ;; - Pure Emacs Lisp .ics parser (no external dependencies)
 ;; - Recurring event support (RRULE expansion)
 ;; - Timer-based automatic sync (every 60 minutes, configurable)
 ;; - Self-contained in .emacs.d (no cron, portable across machines)
-;; - Read-only (can't corrupt Google Calendar)
+;; - Read-only (can't corrupt source calendars)
 ;; - Works with chime.el for event notifications
 ;;
 ;; Recurring Events (RRULE):
 ;;
-;; Google Calendar recurring events are defined once with an RRULE
+;; Calendar recurring events are defined once with an RRULE
 ;; (recurrence rule) rather than as individual event instances. This
 ;; module expands recurring events into individual org entries.
 ;;
@@ -32,14 +33,6 @@
 ;; naturally fall off after 3 months, and new future events appear
 ;; as you approach them.
 ;;
-;; Example: If today is 2025-11-18, events are expanded from
-;; 2025-08-18 to 2026-11-18. When you sync on 2026-01-01, the
-;; window shifts to 2025-10-01 to 2027-01-01 automatically.
-;;
-;; This approach requires no state tracking and naturally handles
-;; the "year boundary" problem - there is no boundary to cross,
-;; the window just moves forward with each sync.
-;;
 ;; Supported RRULE patterns:
 ;; - FREQ=DAILY: Daily events
 ;; - FREQ=WEEKLY;BYDAY=MO,WE,FR: Weekly on specific days
@@ -50,42 +43,56 @@
 ;; - COUNT: Maximum occurrences (combined with date range limit)
 ;;
 ;; Setup:
-;; 1. Get your Google Calendar private .ics URL:
-;;    - Open Google Calendar → Settings → Your Calendar → Integrate calendar
-;;    - Copy the "Secret address in iCal format" URL
+;; 1. Configure calendars in your init.el:
+;;    (setq calendar-sync-calendars
+;;          '((:name "google"
+;;             :url "https://calendar.google.com/calendar/ical/.../basic.ics"
+;;             :file gcal-file)
+;;            (:name "proton"
+;;             :url "https://calendar.proton.me/api/calendar/v1/url/.../calendar.ics"
+;;             :file pcal-file)))
 ;;
-;; 2. Configure in your init.el:
-;;    (setq calendar-sync-ics-url "https://calendar.google.com/calendar/ical/YOUR_PRIVATE_URL/basic.ics")
+;; 2. Load and start:
 ;;    (require 'calendar-sync)
 ;;    (calendar-sync-start)
 ;;
 ;; 3. Add to org-agenda (optional):
-;;    (add-to-list 'org-agenda-files calendar-sync-file)
+;;    (dolist (cal calendar-sync-calendars)
+;;      (add-to-list 'org-agenda-files (plist-get cal :file)))
 ;;
 ;; Usage:
-;; - M-x calendar-sync-now    ; Manual sync
+;; - M-x calendar-sync-now    ; Sync all or select specific calendar
 ;; - M-x calendar-sync-start  ; Start auto-sync
 ;; - M-x calendar-sync-stop   ; Stop auto-sync
 ;; - M-x calendar-sync-toggle ; Toggle auto-sync
+;; - M-x calendar-sync-status ; Show sync status for all calendars
 
 ;;; Code:
 
 (require 'org)
-(require 'user-constants)  ; For gcal-file path
+(require 'user-constants)  ; For gcal-file, pcal-file paths
 
 ;;; Configuration
 
-(defvar calendar-sync-ics-url nil
-  "Google Calendar private .ics URL.
-Get this from Google Calendar Settings → Integrate calendar → Secret address in iCal format.")
+(defvar calendar-sync-calendars nil
+  "List of calendars to sync.
+Each calendar is a plist with the following keys:
+  :name - Display name for the calendar (used in logs and prompts)
+  :url  - URL to fetch .ics file from
+  :file - Output file path for org format
+
+Example:
+  (setq calendar-sync-calendars
+        \\='((:name \"google\"
+           :url \"https://calendar.google.com/calendar/ical/.../basic.ics\"
+           :file gcal-file)
+          (:name \"proton\"
+           :url \"https://calendar.proton.me/api/calendar/v1/url/.../calendar.ics\"
+           :file pcal-file)))")
 
 (defvar calendar-sync-interval-minutes 60
   "Sync interval in minutes.
 Default: 60 minutes (1 hour).")
-
-(defvar calendar-sync-file gcal-file
-  "Location of synced calendar file.
-Defaults to gcal-file from user-constants.")
 
 (defvar calendar-sync-auto-start t
   "Whether to automatically start calendar sync when module loads.
@@ -105,11 +112,12 @@ Default: 12 months. This provides a full year of future events.")
 (defvar calendar-sync--timer nil
   "Timer object for automatic syncing.")
 
-(defvar calendar-sync--last-sync-time nil
-  "Time of last successful sync.")
-
-(defvar calendar-sync--last-error nil
-  "Last sync error message, if any.")
+(defvar calendar-sync--calendar-states (make-hash-table :test 'equal)
+  "Per-calendar sync state.
+Hash table mapping calendar name (string) to state plist with:
+  :last-sync  - Time of last successful sync
+  :status     - Symbol: ok, error, or syncing
+  :last-error - Error message string, or nil")
 
 (defvar calendar-sync--last-timezone-offset nil
   "Timezone offset in seconds from UTC at last sync.
@@ -155,9 +163,15 @@ Example: -21600 → 'UTC-6' or 'UTC-6:00'."
 
 (defun calendar-sync--save-state ()
   "Save sync state to disk for persistence across sessions."
-  (let ((state `((timezone-offset . ,calendar-sync--last-timezone-offset)
-                 (last-sync-time . ,calendar-sync--last-sync-time)))
-        (dir (file-name-directory calendar-sync--state-file)))
+  (let* ((calendar-states-alist
+          (let ((result '()))
+            (maphash (lambda (name state)
+                       (push (cons name state) result))
+                     calendar-sync--calendar-states)
+            result))
+         (state `((timezone-offset . ,calendar-sync--last-timezone-offset)
+                  (calendar-states . ,calendar-states-alist)))
+         (dir (file-name-directory calendar-sync--state-file)))
     (unless (file-directory-p dir)
       (make-directory dir t))
     (with-temp-file calendar-sync--state-file
@@ -172,10 +186,21 @@ Example: -21600 → 'UTC-6' or 'UTC-6:00'."
           (let ((state (read (current-buffer))))
             (setq calendar-sync--last-timezone-offset
                   (alist-get 'timezone-offset state))
-            (setq calendar-sync--last-sync-time
-                  (alist-get 'last-sync-time state))))
+            ;; Load per-calendar states
+            (let ((cal-states (alist-get 'calendar-states state)))
+              (clrhash calendar-sync--calendar-states)
+              (dolist (entry cal-states)
+                (puthash (car entry) (cdr entry) calendar-sync--calendar-states)))))
       (error
        (cj/log-silently "calendar-sync: Error loading state: %s" (error-message-string err))))))
+
+(defun calendar-sync--get-calendar-state (calendar-name)
+  "Get state plist for CALENDAR-NAME, or nil if not found."
+  (gethash calendar-name calendar-sync--calendar-states))
+
+(defun calendar-sync--set-calendar-state (calendar-name state)
+  "Set STATE plist for CALENDAR-NAME."
+  (puthash calendar-name state calendar-sync--calendar-states))
 
 ;;; Line Ending Normalization
 
@@ -636,7 +661,7 @@ Recurring events are expanded into individual occurrences."
                                                    (calendar-sync--event-start-time b)))))
                (org-entries (mapcar #'calendar-sync--event-to-org sorted-events)))
           (if org-entries
-              (concat "# Google Calendar Events\n\n"
+              (concat "# Calendar Events\n\n"
                       (string-join org-entries "\n\n")
                       "\n")
             nil)))
@@ -681,38 +706,116 @@ invoked when the fetch completes, either successfully or with an error."
      (cj/log-silently "calendar-sync: Fetch error: %s" calendar-sync--last-error)
      (funcall callback nil))))
 
-(defun calendar-sync--write-file (content)
-  "Write CONTENT to `calendar-sync-file'.
+(defun calendar-sync--write-file (content file)
+  "Write CONTENT to FILE.
 Creates parent directories if needed."
-  (let ((dir (file-name-directory calendar-sync-file)))
+  (let ((dir (file-name-directory file)))
     (unless (file-directory-p dir)
       (make-directory dir t)))
-  (with-temp-file calendar-sync-file
-    (insert content))
-  (message "calendar-sync: Updated %s" calendar-sync-file))
+  (with-temp-file file
+    (insert content)))
 
-;;;###autoload
-(defun calendar-sync-now ()
-  "Sync Google Calendar now asynchronously.
-Downloads .ics file and updates org file without blocking Emacs.
-Tracks timezone for automatic re-sync on timezone changes."
-  (interactive)
-  (if (not calendar-sync-ics-url)
-      (message "calendar-sync: Please set calendar-sync-ics-url")
-    (message "calendar-sync: Syncing...")
+;;; Single Calendar Sync
+
+(defun calendar-sync--sync-calendar (calendar)
+  "Sync a single CALENDAR asynchronously.
+CALENDAR is a plist with :name, :url, and :file keys.
+Updates calendar state and saves to disk on completion."
+  (let ((name (plist-get calendar :name))
+        (url (plist-get calendar :url))
+        (file (plist-get calendar :file)))
+    ;; Mark as syncing
+    (calendar-sync--set-calendar-state name '(:status syncing))
+    (cj/log-silently "calendar-sync: [%s] Syncing..." name)
     (calendar-sync--fetch-ics
-     calendar-sync-ics-url
+     url
      (lambda (ics-content)
        (let ((org-content (and ics-content (calendar-sync--parse-ics ics-content))))
          (if org-content
              (progn
-               (calendar-sync--write-file org-content)
-               (setq calendar-sync--last-sync-time (current-time))
-               (setq calendar-sync--last-timezone-offset (calendar-sync--current-timezone-offset))
-               (setq calendar-sync--last-error nil)
+               (calendar-sync--write-file org-content file)
+               (calendar-sync--set-calendar-state
+                name
+                (list :status 'ok
+                      :last-sync (current-time)
+                      :last-error nil))
+               (setq calendar-sync--last-timezone-offset
+                     (calendar-sync--current-timezone-offset))
                (calendar-sync--save-state)
-               (message "calendar-sync: Sync complete"))
-           (message "calendar-sync: Sync failed (see *Messages* for details)")))))))
+               (message "calendar-sync: [%s] Sync complete → %s" name file))
+           (calendar-sync--set-calendar-state
+            name
+            (list :status 'error
+                  :last-sync (plist-get (calendar-sync--get-calendar-state name) :last-sync)
+                  :last-error "Parse failed"))
+           (calendar-sync--save-state)
+           (message "calendar-sync: [%s] Sync failed (see *Messages*)" name)))))))
+
+(defun calendar-sync--sync-all-calendars ()
+  "Sync all configured calendars asynchronously.
+Each calendar syncs in parallel."
+  (if (null calendar-sync-calendars)
+      (message "calendar-sync: No calendars configured (set calendar-sync-calendars)")
+    (message "calendar-sync: Syncing %d calendar(s)..." (length calendar-sync-calendars))
+    (dolist (calendar calendar-sync-calendars)
+      (calendar-sync--sync-calendar calendar))))
+
+(defun calendar-sync--calendar-names ()
+  "Return list of configured calendar names."
+  (mapcar (lambda (cal) (plist-get cal :name)) calendar-sync-calendars))
+
+(defun calendar-sync--get-calendar-by-name (name)
+  "Find calendar plist by NAME, or nil if not found."
+  (cl-find-if (lambda (cal) (string= (plist-get cal :name) name))
+              calendar-sync-calendars))
+
+;;;###autoload
+(defun calendar-sync-now (&optional calendar-name)
+  "Sync calendar(s) now asynchronously.
+When called interactively, prompts to select a specific calendar or all.
+When called non-interactively with CALENDAR-NAME, syncs that calendar.
+When called non-interactively with nil, syncs all calendars."
+  (interactive
+   (list (when calendar-sync-calendars
+           (let ((choices (cons "all" (calendar-sync--calendar-names))))
+             (completing-read "Sync calendar: " choices nil t nil nil "all")))))
+  (cond
+   ((null calendar-sync-calendars)
+    (message "calendar-sync: No calendars configured (set calendar-sync-calendars)"))
+   ((or (null calendar-name) (string= calendar-name "all"))
+    (calendar-sync--sync-all-calendars))
+   (t
+    (let ((calendar (calendar-sync--get-calendar-by-name calendar-name)))
+      (if calendar
+          (calendar-sync--sync-calendar calendar)
+        (message "calendar-sync: Calendar '%s' not found" calendar-name))))))
+
+;;;###autoload
+(defun calendar-sync-status ()
+  "Display sync status for all configured calendars."
+  (interactive)
+  (if (null calendar-sync-calendars)
+      (message "calendar-sync: No calendars configured")
+    (let ((status-lines '()))
+      (dolist (calendar calendar-sync-calendars)
+        (let* ((name (plist-get calendar :name))
+               (file (plist-get calendar :file))
+               (state (calendar-sync--get-calendar-state name))
+               (status (or (plist-get state :status) 'never))
+               (last-sync (plist-get state :last-sync))
+               (last-error (plist-get state :last-error))
+               (status-str
+                (pcase status
+                  ('ok (format "✓ %s" (if last-sync
+                                          (format-time-string "%Y-%m-%d %H:%M" last-sync)
+                                        "unknown")))
+                  ('error (format "✗ %s" (or last-error "error")))
+                  ('syncing "⟳ syncing...")
+                  ('never "— never synced"))))
+          (push (format "  %s: %s → %s" name status-str (abbreviate-file-name file))
+                status-lines)))
+      (message "calendar-sync status:\n%s"
+               (string-join (nreverse status-lines) "\n")))))
 
 ;;; Timer management
 
@@ -726,27 +829,28 @@ Checks for timezone changes and triggers re-sync if detected."
                    (calendar-sync--current-timezone-offset))))
       (message "calendar-sync: Timezone change detected (%s → %s), re-syncing..."
                old-tz new-tz)))
-  (calendar-sync-now))
+  (calendar-sync--sync-all-calendars))
 
 ;;;###autoload
 (defun calendar-sync-start ()
   "Start automatic calendar syncing.
-Syncs immediately, then every `calendar-sync-interval-minutes' minutes."
+Syncs all calendars immediately, then every `calendar-sync-interval-minutes'."
   (interactive)
   (when calendar-sync--timer
     (cancel-timer calendar-sync--timer))
-  (if (not calendar-sync-ics-url)
-      (message "calendar-sync: Please set calendar-sync-ics-url before starting")
+  (if (null calendar-sync-calendars)
+      (message "calendar-sync: No calendars configured (set calendar-sync-calendars)")
     ;; Sync immediately
-    (calendar-sync-now)
+    (calendar-sync--sync-all-calendars)
     ;; Start timer for future syncs (convert minutes to seconds)
     (let ((interval-seconds (* calendar-sync-interval-minutes 60)))
       (setq calendar-sync--timer
             (run-at-time interval-seconds
                          interval-seconds
                          #'calendar-sync--sync-timer-function)))
-    (message "calendar-sync: Auto-sync started (every %d minutes)"
-             calendar-sync-interval-minutes)))
+    (message "calendar-sync: Auto-sync started (every %d minutes, %d calendars)"
+             calendar-sync-interval-minutes
+             (length calendar-sync-calendars))))
 
 ;;;###autoload
 (defun calendar-sync-stop ()
@@ -771,6 +875,7 @@ Syncs immediately, then every `calendar-sync-interval-minutes' minutes."
 (defvar-keymap cj/calendar-map
   :doc "Keymap for calendar synchronization operations"
   "s" #'calendar-sync-now
+  "i" #'calendar-sync-status
   "t" #'calendar-sync-toggle
   "S" #'calendar-sync-start
   "x" #'calendar-sync-stop)
@@ -783,6 +888,7 @@ Syncs immediately, then every `calendar-sync-interval-minutes' minutes."
     (which-key-add-key-based-replacements
       "C-; g" "calendar sync menu"
       "C-; g s" "sync now"
+      "C-; g i" "sync status"
       "C-; g t" "toggle auto-sync"
       "C-; g S" "start auto-sync"
       "C-; g x" "stop auto-sync")))
@@ -793,7 +899,7 @@ Syncs immediately, then every `calendar-sync-interval-minutes' minutes."
 (calendar-sync--load-state)
 
 ;; Check for timezone change on startup
-(when (and calendar-sync-ics-url
+(when (and calendar-sync-calendars
            (calendar-sync--timezone-changed-p))
   (let ((old-tz (calendar-sync--format-timezone-offset
                  calendar-sync--last-timezone-offset))
@@ -806,9 +912,9 @@ Syncs immediately, then every `calendar-sync-interval-minutes' minutes."
     ;; User can manually sync or it will happen on next timer tick if auto-sync is enabled
     ))
 
-;; Start auto-sync if enabled and URL is configured
+;; Start auto-sync if enabled and calendars are configured
 ;; Syncs immediately then every calendar-sync-interval-minutes (default: 60 minutes)
-(when (and calendar-sync-auto-start calendar-sync-ics-url)
+(when (and calendar-sync-auto-start calendar-sync-calendars)
   (calendar-sync-start))
 
 (provide 'calendar-sync)

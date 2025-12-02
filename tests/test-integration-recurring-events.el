@@ -105,7 +105,7 @@ Validates:
       (let ((org-output (calendar-sync--parse-ics test-integration-recurring-events--weekly-ics)))
         ;; Should generate org-formatted output
         (should (stringp org-output))
-        (should (string-match-p "^# Google Calendar Events" org-output))
+        (should (string-match-p "^# Calendar Events" org-output))
 
         ;; Should contain multiple GTFO entries
         (let ((gtfo-count (with-temp-buffer

@@ -142,7 +142,7 @@ improves performance from several seconds to instant."
             (setq cj/org-agenda-files-building t)
             (let ((start-time (current-time)))
               ;; Reset org-agenda-files to base files
-              (setq org-agenda-files (list inbox-file schedule-file gcal-file))
+              (setq org-agenda-files (list inbox-file schedule-file gcal-file pcal-file))
 
               ;; Check all projects for scheduled tasks
               (cj/add-files-to-org-agenda-files-list projects-dir)
@@ -335,7 +335,7 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   :init
   ;; Initialize org-agenda-files with base files before chime loads
   ;; The full list will be built asynchronously later
-  (setq org-agenda-files (list inbox-file schedule-file gcal-file))
+  (setq org-agenda-files (list inbox-file schedule-file gcal-file pcal-file))
 
   ;; Debug mode (keep set to nil, but available for troubleshooting)
   (setq chime-debug nil)

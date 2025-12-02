@@ -114,11 +114,15 @@
 (require 'org-export-config)
 ;; (require 'org-gcal-config)    ;; DISABLED: Replaced by calendar-sync.el (one-way sync)
 
-;; Google Calendar sync (one-way: Google → Org)
-(setq calendar-sync-ics-url "https://calendar.google.com/calendar/ical/craigmartinjennings%40gmail.com/private-1dad154d6a2100e755f76e2d0502f6aa/basic.ics")
+;; Calendar sync (one-way: Google/Proton → Org)
+(setq calendar-sync-calendars
+      `((:name "google"
+         :url "https://calendar.google.com/calendar/ical/craigmartinjennings%40gmail.com/private-1dad154d6a2100e755f76e2d0502f6aa/basic.ics"
+         :file ,gcal-file)
+        (:name "proton"
+         :url "https://calendar.proton.me/api/calendar/v1/url/MpLtuwsUNoygyA_60GvJE5cz0hbREbrAPBEJoWDRpFEstnmzmEMDb7sjLzkY8kbkF10A7Be3wGKB1-vqaLf-pw==/calendar.ics?CacheKey=LrB9NG5Vfqp5p2sy90H13g%3D%3D&PassphraseKey=sURqFfACPM21d6AXSeaEXYCruimvSb8t0ce1vuxRAXk%3D"
+         :file ,pcal-file)))
 (require 'calendar-sync)
-;; Uncomment to enable auto-sync every 15 minutes:
-;; (calendar-sync-start)
 
 (require 'org-refile-config)     ;; refile org-branches
 (require 'org-roam-config)       ;; personal knowledge management in org mode
