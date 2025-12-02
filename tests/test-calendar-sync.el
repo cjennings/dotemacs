@@ -452,7 +452,7 @@ Earlier events should appear first in the output."
          (ics (test-calendar-sync-make-ics event))
          (org-content (calendar-sync--parse-ics ics)))
     (should org-content)
-    (should (string-match-p "^# Google Calendar Events" org-content))
+    (should (string-match-p "^# Calendar Events" org-content))
     (should (string-match-p "\\* Test Event" org-content))))
 
 (ert-deftest test-calendar-sync--parse-ics-normal-multiple-events-all-included ()
@@ -577,7 +577,11 @@ Valid events should be parsed, invalid ones skipped."
          (original-offset -21600)  ; CST
          (original-time (current-time))
          (calendar-sync--last-timezone-offset original-offset)
-         (calendar-sync--last-sync-time original-time))
+         (calendar-sync--calendar-states (make-hash-table :test 'equal)))
+    ;; Set up per-calendar state
+    (puthash "test-calendar"
+             (list :status 'ok :last-sync original-time :last-error nil)
+             calendar-sync--calendar-states)
     (unwind-protect
         (progn
           ;; Save state
@@ -586,14 +590,17 @@ Valid events should be parsed, invalid ones skipped."
 
           ;; Clear variables
           (setq calendar-sync--last-timezone-offset nil)
-          (setq calendar-sync--last-sync-time nil)
+          (clrhash calendar-sync--calendar-states)
 
           ;; Load state
           (calendar-sync--load-state)
 
           ;; Verify loaded correctly
           (should (= original-offset calendar-sync--last-timezone-offset))
-          (should (equal original-time calendar-sync--last-sync-time)))
+          (let ((loaded-state (gethash "test-calendar" calendar-sync--calendar-states)))
+            (should loaded-state)
+            (should (eq 'ok (plist-get loaded-state :status)))
+            (should (equal original-time (plist-get loaded-state :last-sync)))))
       ;; Cleanup
       (when (file-exists-p test-state-file)
         (delete-file test-state-file)))))
@@ -604,7 +611,7 @@ Valid events should be parsed, invalid ones skipped."
          (test-state-file (expand-file-name "subdir/state.el" test-dir))
          (calendar-sync--state-file test-state-file)
          (calendar-sync--last-timezone-offset -21600)
-         (calendar-sync--last-sync-time (current-time)))
+         (calendar-sync--calendar-states (make-hash-table :test 'equal)))
     (unwind-protect
         (progn
           (calendar-sync--save-state)
@@ -618,35 +625,79 @@ Valid events should be parsed, invalid ones skipped."
   "Test that load-state handles missing file gracefully."
   (let ((calendar-sync--state-file "/nonexistent/path/state.el")
         (calendar-sync--last-timezone-offset nil)
-        (calendar-sync--last-sync-time nil))
+        (calendar-sync--calendar-states (make-hash-table :test 'equal)))
     ;; Should not error
     (should-not (calendar-sync--load-state))
-    ;; Variables should remain nil
+    ;; Variables should remain nil/empty
     (should-not calendar-sync--last-timezone-offset)
-    (should-not calendar-sync--last-sync-time)))
+    (should (= 0 (hash-table-count calendar-sync--calendar-states)))))
 
 (ert-deftest test-calendar-sync--load-state-handles-corrupted-file ()
   "Test that load-state handles corrupted state file gracefully."
   (let* ((test-state-file (make-temp-file "calendar-sync-test-state"))
          (calendar-sync--state-file test-state-file)
          (calendar-sync--last-timezone-offset nil)
-         (calendar-sync--last-sync-time nil))
+         (calendar-sync--calendar-states (make-hash-table :test 'equal)))
     (unwind-protect
         (progn
           ;; Write corrupted data
           (with-temp-file test-state-file
             (insert "this is not valid elisp {[}"))
 
-          ;; Should handle error gracefully (catches error, logs message)
-          ;; Returns error message string, not nil, but doesn't throw
-          (should (stringp (calendar-sync--load-state)))
+          ;; Should handle error gracefully (catches error, logs message, returns nil)
+          ;; Function logs to *Messages* but returns nil (doesn't crash)
+          (should-not (calendar-sync--load-state))
 
-          ;; Variables should remain nil (not loaded from corrupted file)
+          ;; Variables should remain nil/empty (not loaded from corrupted file)
           (should-not calendar-sync--last-timezone-offset)
-          (should-not calendar-sync--last-sync-time))
+          (should (= 0 (hash-table-count calendar-sync--calendar-states))))
       ;; Cleanup
       (when (file-exists-p test-state-file)
         (delete-file test-state-file)))))
+
+;;; Tests: Multi-Calendar Configuration
+
+(ert-deftest test-calendar-sync--calendar-names-returns-names ()
+  "Test that calendar-names returns list of calendar names."
+  (let ((calendar-sync-calendars
+         '((:name "cal1" :url "http://example.com/1" :file "/tmp/cal1.org")
+           (:name "cal2" :url "http://example.com/2" :file "/tmp/cal2.org"))))
+    (should (equal '("cal1" "cal2") (calendar-sync--calendar-names)))))
+
+(ert-deftest test-calendar-sync--calendar-names-empty-when-no-calendars ()
+  "Test that calendar-names returns empty list when no calendars configured."
+  (let ((calendar-sync-calendars nil))
+    (should (null (calendar-sync--calendar-names)))))
+
+(ert-deftest test-calendar-sync--get-calendar-by-name-finds-calendar ()
+  "Test that get-calendar-by-name finds correct calendar."
+  (let ((calendar-sync-calendars
+         '((:name "google" :url "http://google.com" :file "/tmp/gcal.org")
+           (:name "proton" :url "http://proton.me" :file "/tmp/pcal.org"))))
+    (let ((found (calendar-sync--get-calendar-by-name "proton")))
+      (should found)
+      (should (string= "proton" (plist-get found :name)))
+      (should (string= "http://proton.me" (plist-get found :url))))))
+
+(ert-deftest test-calendar-sync--get-calendar-by-name-returns-nil-for-unknown ()
+  "Test that get-calendar-by-name returns nil for unknown calendar."
+  (let ((calendar-sync-calendars
+         '((:name "google" :url "http://google.com" :file "/tmp/gcal.org"))))
+    (should (null (calendar-sync--get-calendar-by-name "nonexistent")))))
+
+(ert-deftest test-calendar-sync--get-calendar-state-returns-nil-for-new ()
+  "Test that get-calendar-state returns nil for calendar without state."
+  (let ((calendar-sync--calendar-states (make-hash-table :test 'equal)))
+    (should (null (calendar-sync--get-calendar-state "new-calendar")))))
+
+(ert-deftest test-calendar-sync--set-and-get-calendar-state ()
+  "Test setting and getting calendar state."
+  (let ((calendar-sync--calendar-states (make-hash-table :test 'equal))
+        (test-state '(:status ok :last-sync (0 0 0) :last-error nil)))
+    (calendar-sync--set-calendar-state "test-cal" test-state)
+    (let ((retrieved (calendar-sync--get-calendar-state "test-cal")))
+      (should retrieved)
+      (should (eq 'ok (plist-get retrieved :status))))))
 
 (provide 'test-calendar-sync)
 ;;; test-calendar-sync.el ends here
