@@ -122,7 +122,8 @@
   (unwind-protect
       (let* ((start-date (test-calendar-sync-time-days-from-now 1 10 0))
              (end-date (test-calendar-sync-time-days-from-now 1 11 0))
-             (until-date (test-calendar-sync-time-days-from-now 60 0 0))
+             ;; UNTIL must be date-only (3 elements) for calendar-sync--before-date-p
+             (until-date (test-calendar-sync-time-date-only 60))
              (base-event (list :summary "Time-Limited Event"
                               :start start-date
                               :end end-date))
@@ -253,7 +254,8 @@
   (unwind-protect
       (let* ((start-date (test-calendar-sync-time-days-ago 100 10 0))
              (end-date (test-calendar-sync-time-days-ago 100 11 0))
-             (until-date (test-calendar-sync-time-days-ago 50 0 0))
+             ;; UNTIL must be date-only (3 elements) for calendar-sync--before-date-p
+             (until-date (test-calendar-sync-time-date-only-ago 50))
              (base-event (list :summary "Past Event"
                               :start start-date
                               :end end-date))

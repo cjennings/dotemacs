@@ -114,11 +114,15 @@
 (require 'org-export-config)
 ;; (require 'org-gcal-config)    ;; DISABLED: Replaced by calendar-sync.el (one-way sync)
 
-;; Google Calendar sync (one-way: Google → Org)
-(setq calendar-sync-ics-url "***REMOVED***")
+;; Calendar sync (one-way: Google/Proton → Org)
+(setq calendar-sync-calendars
+      `((:name "google"
+         :url "***REMOVED***"
+         :file ,gcal-file)
+        (:name "proton"
+         :url "***REMOVED***"
+         :file ,pcal-file)))
 (require 'calendar-sync)
-;; Uncomment to enable auto-sync every 15 minutes:
-;; (calendar-sync-start)
 
 (require 'org-refile-config)     ;; refile org-branches
 (require 'org-roam-config)       ;; personal knowledge management in org mode

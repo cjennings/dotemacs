@@ -1,23 +1,10 @@
-# Google Calendar Events
-
-* Vanessa Homewood's Birthday
-<2025-08-26 Tue>
-This is an event reminder
-
-* Meetali Kerawalla's Birthday
-<2025-08-31 Sun>
-
-* Trash Out
-<2025-08-31 Sun>
-
-* Hallie Parry's Birthday
-<2025-09-02 Tue>
+# Calendar Events
 
 * James massage
-<2025-09-03 Wed 09:30-10:00>
+<2025-09-03 Wed 11:30-12:00>
 
 * Flight to San Francisco (UA 1665)
-<2025-09-04 Thu 15:27-20:08>
+<2025-09-04 Thu 17:27-22:08>
 United Airlines flight 1665\nNew Orleans MSY 5:27pm (local time
 Location: New Orleans MSY
 
@@ -25,7 +12,7 @@ Location: New Orleans MSY
 <2025-09-07 Sun>
 
 * Flight to New Orleans (UA 246)
-<2025-09-10 Wed 10:01-14:17>
+<2025-09-10 Wed 12:01-16:17>
 United Airlines flight 246\nSan Francisco SFO 10:01am (local ti
 Location: San Francisco SFO
 
@@ -33,17 +20,17 @@ Location: San Francisco SFO
 <2025-09-14 Sun>
 
 * Marley
-<2025-09-17 Wed 13:00-13:30>
+<2025-09-17 Wed 15:00-15:30>
 
 * Dr. Braddy in Spine Center\, Ochsner Baptist
-<2025-09-19 Fri 11:00-11:45>
+<2025-09-19 Fri 13:00-13:45>
 Location:  Ochsner Baptist 
 
 * Trash Out
 <2025-09-21 Sun>
 
 * Laura Arrives at MSY
-<2025-09-21 Sun 15:50-17:00>
+<2025-09-21 Sun 17:50-19:00>
 SWA Flight 1849 Sunday 09/21/25 \nPassenger: Laura Smetanick\nD
 Location: 1 Terminal Dr\, Kenner\, LA 70062
 
@@ -55,36 +42,28 @@ Location: 1 Terminal Dr\, Kenner\, LA 70062
 This is an event reminder
 
 * Brittni
-<2025-09-24 Wed 11:30-12:00>
+<2025-09-24 Wed 13:30-14:00>
 
 * Review Carrollton Construction Analysis
-<2025-09-24 Wed 13:00-14:30>
+<2025-09-24 Wed 15:00-16:30>
 Join with Google Meet: https://meet.google.com/zev-qjor-uhz\n\n
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-09-25 Thu>
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * CVS and liquor store
-<2025-09-25 Thu 08:00-08:30>
+<2025-09-25 Thu 10:00-10:30>
 
 * Trash Out
 <2025-09-28 Sun>
 
 * Danneel Meeting @ Martin's 
-<2025-09-30 Tue 12:00-14:00>
+<2025-09-30 Tue 14:00-16:00>
 Craig Jennings\nHey everyone -- I hope y'all are doing well. I 
 Location: Martin’s: Wine\, Liquor\, Beer & Deli - New Orleans\, 3827 Baronne
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-10-02 Thu>
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Brady Lester's Birthday
 <2025-10-02 Thu>
 
 * Dinner at The Husky with Abby\, Nick
-<2025-10-03 Fri 18:00-20:00>
+<2025-10-03 Fri 20:00-22:00>
 Join with Google Meet: https://meet.google.com/zrx-srqr-mkt\n\n
 
 * Prisca Weem's Birthday
@@ -94,28 +73,24 @@ Join with Google Meet: https://meet.google.com/zrx-srqr-mkt\n\n
 <2025-10-05 Sun>
 
 * Martin\, GC\, Kelly
-<2025-10-07 Tue 12:00-13:00>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-10-09 Thu>
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
+<2025-10-07 Tue 14:00-15:00>
 
 * Harmick/Vahagn <> Craig catch up
-<2025-10-09 Thu 08:00-08:40>
+<2025-10-09 Thu 10:00-10:40>
 Hi Craig<br><br>Thanks again for agreeing to meet with us<br><b
 
 * Call Mom
-<2025-10-09 Thu 10:00-11:00>
+<2025-10-09 Thu 12:00-13:00>
 Testing where the notes go....
 
 * Amy pain management for Christine
-<2025-10-10 Fri 09:40-10:10>
+<2025-10-10 Fri 11:40-12:10>
 
 * Trash Out
 <2025-10-12 Sun>
 
 * Craig/Arusyak Chat
-<2025-10-13 Mon 09:30-10:30>
+<2025-10-13 Mon 11:30-12:30>
 \n~-~-~-~-~-~-~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~
 
 * Foursevens Quark Onibi Debut
@@ -126,62 +101,52 @@ This is an event reminder
 <2025-10-14 Tue>
 
 * Dr. Braddy -- Pain Mgmt
-<2025-10-14 Tue 11:30-12:15>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-10-16 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
+<2025-10-14 Tue 13:30-14:15>
 
 * Post Office: Check to Teresa
-<2025-10-16 Thu 09:00-09:30>
+<2025-10-16 Thu 11:00-11:30>
 
 * CVS: Pick up Your and Xtine Prescriptions
-<2025-10-16 Thu 09:30-10:00>
+<2025-10-16 Thu 11:30-12:00>
 
 * French Truck: Coffee / Lunch
-<2025-10-16 Thu 10:00-10:30>
+<2025-10-16 Thu 12:00-12:30>
 
 * Walk Back
-<2025-10-16 Thu 10:30-11:00>
+<2025-10-16 Thu 12:30-13:00>
 
 * Call with AJ Fudge
-<2025-10-16 Thu 11:00-12:00>
-
-* Pete's Pirate Life Drop
-<2025-10-18 Sat 09:00-09:30>
+<2025-10-16 Thu 13:00-14:00>
 
 * GTFO
 <2025-10-18 Sat 10:30-11:00>
 
+* Pete's Pirate Life Drop
+<2025-10-18 Sat 11:00-11:30>
+
 * High school reunion 40th
-<2025-10-18 Sat 17:00-17:30>
+<2025-10-18 Sat 19:00-19:30>
+
+* Trash Out
+<2025-10-19 Sun>
 
 * Baby Fart Day
 <2025-10-19 Sun>
 Making it an official all-day event. Attendance mandatory. Loca
 
-* Trash Out
-<2025-10-19 Sun>
-
 * Daniel Pham's birthday
 <2025-10-22 Wed>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-10-23 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * John Smetanick's Birthday
 <2025-10-24 Fri>
 This is an event reminder
 
 * Reminder: Arrange for Tile Delivery
-<2025-10-24 Fri 07:00-07:30>
+<2025-10-24 Fri 09:00-09:30>
 On Wed Sept 24th we received a call from the tile place who sai
 
 * Danneel Street Project Meeting
-<2025-10-24 Fri 08:00-09:00>
+<2025-10-24 Fri 10:00-11:00>
 Craig\,<br><br>Jeff and I are both available tomorrow morning f
 Location: 3824 Nashville Ave\, New Orleans\, LA 70125\, USA
 
@@ -195,73 +160,68 @@ Location: 3824 Nashville Ave\, New Orleans\, LA 70125\, USA
 <2025-10-26 Sun>
 
 * Phone Meeting with Arusyak
-<2025-10-26 Sun 08:00-09:00>
+<2025-10-26 Sun 10:00-11:00>
 <a href="https://us05web.zoom.us/j/85337619651?pwd=KpBnpye1tahE
 
 * Brunch @ Katie's
-<2025-10-26 Sun 09:30-12:00>
+<2025-10-26 Sun 11:30-14:00>
 Join with Google Meet: https://meet.google.com/dny-xfoy-umz\n\n
 Location: Katie's\, 3701 Iberville St\, New Orleans\, LA 70119\, USA
 
 * Order and Pick up Lunch for Danneel Project Meeting
-<2025-10-27 Mon 09:00-10:00>
+<2025-10-27 Mon 11:00-12:00>
 
 * Meet with Mark and Jeff
-<2025-10-27 Mon 10:00-10:45>
+<2025-10-27 Mon 12:00-12:45>
 Join with Google Meet: https://meet.google.com/cpp-tuxm-kyx\n\n
 Location: 3824 Nashville Ave\, New Orleans\, LA 70125\, USA
 
 * Haircut with Ashley @ Aidan Gill
-<2025-10-28 Tue 12:00-12:30>
+<2025-10-28 Tue 14:00-14:30>
 This is an event reminder
 Location: Aidan Gill For Men\, 2026 Magazine St\, New Orleans\, LA 70130\, U
 
 * Reply to AJ
-<2025-10-29 Wed 09:00-12:00>
+<2025-10-29 Wed 11:00-14:00>
 
 * Change.Yale Lock Batteries
 <2025-10-30 Thu>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-10-30 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * Answer All Email and Linked In Messages
-<2025-10-30 Thu 11:00-12:00>
+<2025-10-30 Thu 13:00-14:00>
 
 * Work On Disclosures
-<2025-10-30 Thu 12:00-16:30>
+<2025-10-30 Thu 14:00-18:30>
 
 * Fill Out Pre-Check In
-<2025-10-30 Thu 16:30-17:00>
+<2025-10-30 Thu 18:30-19:00>
 
 * Fasting Begins
-<2025-10-30 Thu 17:00-05:00>
+<2025-10-30 Thu 19:00-07:00>
 \n1. Do not eat or drink anything for TEN HOURS (10) PRIOR TO T
 
 * Leave for Dr Fernandez Appt
-<2025-10-31 Fri 04:30-05:00>
+<2025-10-31 Fri 06:30-07:00>
 
 * Appt Dr Fernandez
-<2025-10-31 Fri 05:00-06:00>
+<2025-10-31 Fri 07:00-08:00>
 \nJeff Hwy Lab - Primary Care Bldg\n\n1401 Jefferson Hwy\nNew O
 Location: 1401 Jefferson Ave\, New Orleans\, LA 70115\, USA
 
 * Call with Jonathan Schlutis lawyer
-<2025-10-31 Fri 08:00-08:30>
+<2025-10-31 Fri 10:00-10:30>
 
 * Call with Jon at Reiss
-<2025-10-31 Fri 09:00-09:30>
+<2025-10-31 Fri 11:00-11:30>
 
 * Renew DMV Registration By Mail
-<2025-10-31 Fri 11:00-12:00>
+<2025-10-31 Fri 13:00-14:00>
 
 * File IRS Form 56
-<2025-10-31 Fri 12:00-13:00>
+<2025-10-31 Fri 14:00-15:00>
 
 * Get EIN Tax ID Number
-<2025-10-31 Fri 13:00-14:00>
+<2025-10-31 Fri 15:00-16:00>
 
 * GTFO
 <2025-11-01 Sat 10:30-11:00>
@@ -273,37 +233,32 @@ Location: 1401 Jefferson Ave\, New Orleans\, LA 70115\, USA
 <2025-11-02 Sun>
 
 * Transit to Meeting
-<2025-11-03 Mon 08:00-08:30>
+<2025-11-03 Mon 10:00-10:30>
 
 * Mark Wetmore
-<2025-11-03 Mon 08:30-09:00>
+<2025-11-03 Mon 10:30-11:00>
 This is an event reminder
 Location: French Truck Coffee\, 4536 Dryades St\, New Orleans\, LA 70115\, U
 
 * Meeting with AJ
-<2025-11-04 Tue 10:00-11:00>
+<2025-11-04 Tue 12:00-13:00>
 
 * Olle Kjellgren\, MD - Cardiologist
-<2025-11-04 Tue 13:30-14:00>
+<2025-11-04 Tue 15:30-16:00>
 Phone: 504-894-2560\n\n\nPlease arrive approximately 15 minutes
 Location: 2820 Napoleon Avenue\, Suite 230\, New Orleans LA 70115-6969
 
 * Physical Therapy with Jasmyn Chaisson
-<2025-11-05 Wed 11:30-12:30>
+<2025-11-05 Wed 13:30-14:30>
 Phone: 504-894-2002\n
 Location: 2820 Napoleon Avenue\, Suite 450\, New Orleans LA 70115-8229
 
 * Phone Call with Craig and Justin
-<2025-11-05 Wed 14:30-15:30>
+<2025-11-05 Wed 16:30-17:30>
 <br><br><br><br>Christine Ciarmello<br><br><br><div dir="auto">
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-11-06 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * Call Mark Wetmore
-<2025-11-07 Fri 08:30-09:30>
+<2025-11-07 Fri 10:30-11:30>
 (504) 799-5697
 
 * GTFO
@@ -316,35 +271,30 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 <2025-11-09 Sun>
 
 * Call the Probate Court
-<2025-11-10 Mon 12:00-12:30>
-
-* DEADLINE Send Response to Mark Wetmore
 <2025-11-10 Mon 14:00-14:30>
 
+* DEADLINE Send Response to Mark Wetmore
+<2025-11-10 Mon 16:00-16:30>
+
 * Shower
-<2025-11-11 Tue 09:00-09:30>
+<2025-11-11 Tue 11:00-11:30>
 
 * org-msg improvements
-<2025-11-11 Tue 11:00-14:00>
+<2025-11-11 Tue 13:00-16:00>
 
 * Craig / Ryan
 <2025-11-12 Wed 10:00-11:00>
 Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-11-13 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * Call with Jonathan Schultis
-<2025-11-13 Thu 12:00-12:30>
+<2025-11-13 Thu 14:00-14:30>
 <p>P: 504.304.7115  Ext. 1002</p><p>D: 504.309.1051</p>\n\nJoin
-
-* Pick up Prescriptions at CVS
-<2025-11-15 Sat 09:00-10:00>
 
 * GTFO
 <2025-11-15 Sat 10:30-11:00>
+
+* Pick up Prescriptions at CVS
+<2025-11-15 Sat 11:00-12:00>
 
 * Louisa Housekeeping
 <2025-11-15 Sat 11:00-16:00>
@@ -353,83 +303,78 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 <2025-11-16 Sun>
 
 * Pick Up Prescriptions at CVS
-<2025-11-16 Sun 12:30-13:00>
+<2025-11-16 Sun 14:30-15:00>
 
 * Drive Christine to Clearview
-<2025-11-17 Mon 05:30-06:00>
+<2025-11-17 Mon 07:30-08:00>
 
 * Injection at Clearview
-<2025-11-17 Mon 06:00-06:30>
+<2025-11-17 Mon 08:00-08:30>
 
 * Talk with Shane about Tenants
-<2025-11-17 Mon 14:15-14:45>
+<2025-11-17 Mon 16:15-16:45>
 
 * Finish and Send Email to Jon Schultis
-<2025-11-17 Mon 15:00-16:00>
+<2025-11-17 Mon 17:00-18:00>
 
 * Send Laura Tasks for HB
-<2025-11-17 Mon 18:30-19:00>
+<2025-11-17 Mon 20:30-21:00>
 
 * Pack for Trip
-<2025-11-18 Tue 17:00-18:00>
-
-* Passport Renewal Work
-<2025-11-18 Tue 18:00-19:00>
-
-* Driver's License Renewal Work
 <2025-11-18 Tue 19:00-20:00>
 
+* Passport Renewal Work
+<2025-11-18 Tue 20:00-21:00>
+
+* Driver's License Renewal Work
+<2025-11-18 Tue 21:00-22:00>
+
 * Arrive at MSY via Uber
-<2025-11-19 Wed 03:30-04:00>
+<2025-11-19 Wed 05:30-06:00>
 This is an event reminder
 
 * SW Flight 1435 MSY - LAS
-<2025-11-19 Wed 05:00-08:55>
+<2025-11-19 Wed 07:00-10:55>
 WN1435 Boeing 737-800<br><br><br><br><b>Ticket number </b>52621
 Location: Louis Armstrong New Orleans International Airport\, 1 Terminal Dr\
 
 * Boarding LGB Flight
-<2025-11-19 Wed 11:30-12:00>
+<2025-11-19 Wed 13:30-14:00>
 
 * SW Flight 2223 LAS - LGB
-<2025-11-19 Wed 12:00-13:15>
+<2025-11-19 Wed 14:00-15:15>
 WN2223 Boeing 737-800<br><br><br><br><b>Ticket number </b>52621
 Location: Harry Reid International Airport\, 5757 Wayne Newton Blvd\, Las Ve
 
 * Pick up Rental Car at Budget
-<2025-11-19 Wed 13:30-14:00>
+<2025-11-19 Wed 15:30-16:00>
 <p>CONFIRMATION 35391712US6<br><br>Ensure you can return car ea
 
 * Drive to Hotel
-<2025-11-19 Wed 14:00-14:30>
+<2025-11-19 Wed 16:00-16:30>
 
 * Arrive at Wyndham Sunset Travelodge
-<2025-11-19 Wed 14:30-15:00>
+<2025-11-19 Wed 16:30-17:00>
 Location: 17205 Pacific Coast Hwy\, Sunset Beach\, CA\, 90742
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-11-20 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * Tasks
-<2025-11-20 Thu 07:30-08:00>
+<2025-11-20 Thu 09:30-10:00>
 Lawyer form\nLease DocuSign \nCVS\nGrocery list for T-day. The 
 
 * Shower/Ready
-<2025-11-21 Fri 08:00-09:00>
+<2025-11-21 Fri 10:00-11:00>
 
 * Coffee and Breakfast
-<2025-11-21 Fri 09:00-09:30>
+<2025-11-21 Fri 11:00-11:30>
 
 * Head to Maga's Beach
-<2025-11-21 Fri 09:30-10:00>
+<2025-11-21 Fri 11:30-12:00>
 
 * Call AAA
-<2025-11-21 Fri 10:00-10:30>
+<2025-11-21 Fri 12:00-12:30>
 
 * Call Claire @ Tiempo Escrow
-<2025-11-21 Fri 11:00-11:30>
+<2025-11-21 Fri 13:00-13:30>
 Counter offer documents use "Rivera Revocable Trust" but the co
 
 * GTFO
@@ -442,33 +387,53 @@ Counter offer documents use "Rivera Revocable Trust" but the co
 <2025-11-23 Sun>
 
 * Arusyak & Craig Chat
-<2025-11-24 Mon 10:00-11:00>
+<2025-11-24 Mon 12:00-13:00>
 Join with Google Meet: https://meet.google.com/pxw-chcg-qij\n\n
+
+* Mail Remaining Boxes & Send Check
+<2025-11-24 Mon 14:00-15:00>
+
+* Upgrade Flights
+<2025-11-24 Mon 15:00-15:30>
+
+* Christine & Craig Catch Up
+<2025-11-24 Mon 16:00-17:00>
+
+* Laundry
+<2025-11-24 Mon 17:00-18:00>
+
+* Tiempo Escrow
+<2025-11-25 Tue 17:00-17:30>
+This is an event reminder
+Location: Tiempo Escrow\, Inc.\, 625 Main St\, Huntington Beach\, CA 92648\,
+
+* Capone's
+<2025-11-25 Tue 20:00-21:00>
+This is an event reminder
+Location: Capone's Italian Cucina\, 19688 Beach Blvd #10\, Huntington Beach\
 
 * Pick up Thanksgiving Order at Lagniappe
 <2025-11-26 Wed>
 
 * Arrive at LGB
-<2025-11-26 Wed 06:00-06:30>
+<2025-11-26 Wed 08:30-09:00>
 This is an event reminder
 
 * Return Rental Car to Budget
-<2025-11-26 Wed 06:30-07:00>
+<2025-11-26 Wed 09:00-09:30>
 
 * SW Flight 4683 LGB - DEN
-<2025-11-26 Wed 08:15-10:30>
+<2025-11-26 Wed 10:15-12:30>
 WN4683 Boeing 737-800 \nTicket number 5262105624794\nRapid Rewa
 Location: Long Beach Airport\, 4100 Donald Douglas Dr\, Long Beach\, CA 9080
 
 * SW Flight 270 DEN-MSY
-<2025-11-26 Wed 12:10-14:40>
+<2025-11-26 Wed 14:10-16:40>
 WN270 Boeing 737-800<br><br><br><br><b>Ticket number </b>526210
 Location: Denver International Airport\, 8500 Peña Blvd\, Denver\, CO 80249\
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-11-27 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
+* Get EIN#
+<2025-11-28 Fri 16:00-16:30>
 
 * GTFO
 <2025-11-29 Sat 10:30-11:00>
@@ -479,14 +444,12 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Trash Out
 <2025-11-30 Sun>
 
-* Southwest Flight PVD
-<2025-12-03 Wed 08:40-14:30>
-<br><br><b>confirmation\, </b><b>AV6IHB</b><br><b><br></b><br><
+* Dr Mejia
+<2025-12-02 Tue 13:00-13:30>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-12-04 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
+* Southwest Flight PVD
+<2025-12-03 Wed 10:40-16:30>
+<br><br><b>confirmation\, </b><b>AV6IHB</b><br><b><br></b><br><
 
 * GTFO
 <2025-12-06 Sat 10:30-11:00>
@@ -502,15 +465,10 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 Blake was born in 1999
 
 * Pay healthcare premium for 2026
-<2025-12-10 Wed 12:00-12:30>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-12-11 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
+<2025-12-10 Wed 14:00-14:30>
 
 * Marley
-<2025-12-11 Thu 09:00-09:30>
+<2025-12-11 Thu 11:00-11:30>
 
 * Craig / Ryan
 <2025-12-12 Fri 10:00-11:00>
@@ -532,11 +490,6 @@ This is an event reminder
 * Saradha's Birthday
 <2025-12-17 Wed>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-12-18 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * Blake Michael's birthday
 <2025-12-19 Fri>
 
@@ -549,11 +502,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Trash Out
 <2025-12-21 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2025-12-25 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2025-12-27 Sat 10:30-11:00>
 
@@ -563,10 +511,8 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Trash Out
 <2025-12-28 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-01-01 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
+* Brittni
+<2025-12-30 Tue 14:30-15:00>
 
 * GTFO
 <2026-01-03 Sat 10:30-11:00>
@@ -578,17 +524,12 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 <2026-01-04 Sun>
 
 * Amy Oregon
-<2026-01-06 Tue 08:20-08:50>
+<2026-01-06 Tue 10:20-10:50>
 
 * New Patient with Lynsi Blanchard\, PA-C
-<2026-01-07 Wed 11:30-12:00>
+<2026-01-07 Wed 13:30-14:00>
 Arrival Location: BAPC SLEEP CLINIC\nPhone: 504-842-4910\n\n\nP
 Location: 2820 Napoleon Ave\, Ste 590\, New Orleans LA 70115-8209
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-01-08 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * GTFO
 <2026-01-10 Sat 10:30-11:00>
@@ -603,11 +544,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 <2026-01-12 Mon 10:00-11:00>
 Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-01-15 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-01-17 Sat 10:30-11:00>
 
@@ -616,11 +552,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-01-18 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-01-22 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * GTFO
 <2026-01-24 Sat 10:30-11:00>
@@ -635,11 +566,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 <2026-01-28 Wed>
 This is an event reminder
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-01-29 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * Cesar Birthday
 <2026-01-29 Thu 10:00-10:30>
 Join with Google Meet: https://meet.google.com/hgw-ceaa-mfa\n\n
@@ -653,19 +579,14 @@ Join with Google Meet: https://meet.google.com/hgw-ceaa-mfa\n\n
 * Louisa Housekeeping
 <2026-01-31 Sat 11:00-16:00>
 
-* Mom and Johns Anniversary
-<2026-02-01 Sun>
-
 * Trash Out
 <2026-02-01 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-02-05 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
+* Mom and Johns Anniversary
+<2026-02-01 Sun>
 
 * Nine Inch Nails
-<2026-02-05 Thu 17:00-19:00>
+<2026-02-05 Thu 19:00-21:00>
 Nine Inch Nails bring the Peel It Back Tour 2026 to New Orleans
 Location: Smoothie King Center\, 1501 Dave Dixon Dr Space 101-102\, New Orle
 
@@ -677,11 +598,6 @@ Location: Smoothie King Center\, 1501 Dave Dixon Dr Space 101-102\, New Orle
 
 * Trash Out
 <2026-02-08 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-02-12 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Craig / Ryan
 <2026-02-12 Thu 10:00-11:00>
@@ -696,11 +612,6 @@ Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 * Trash Out
 <2026-02-15 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-02-19 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * Sara Essex Bradley Birthday
 <2026-02-21 Sat>
 
@@ -714,12 +625,7 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 <2026-02-22 Sun>
 
 * Bri
-<2026-02-23 Mon 10:15-10:45>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-02-26 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
+<2026-02-23 Mon 12:15-12:45>
 
 * GTFO
 <2026-02-28 Sat 10:30-11:00>
@@ -727,17 +633,12 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Louisa Housekeeping
 <2026-02-28 Sat 11:00-16:00>
 
-* Anniversary
-<2026-03-01 Sun>
-This is an event reminder
-
 * Trash Out
 <2026-03-01 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-03-05 Thu>
+* Anniversary
+<2026-03-01 Sun>
 This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * GTFO
 <2026-03-07 Sat 10:30-11:00>
@@ -747,11 +648,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-03-08 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-03-12 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Craig / Ryan
 <2026-03-12 Thu 10:00-11:00>
@@ -773,11 +669,6 @@ Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 <2026-03-15 Sun>
 Join with Google Meet: https://meet.google.com/myx-kkcm-nav\n\n
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-03-19 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-03-21 Sat 10:30-11:00>
 
@@ -790,11 +681,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Rajani Ramanathan's Birthday
 <2026-03-25 Wed>
 ------------\nFrom:Lauren Peterson\nSent:Monday\, March 25\, 20
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-03-26 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Gracie's Birthday
 <2026-03-27 Fri>
@@ -819,11 +705,6 @@ This is an event reminder
 * Sanjeevani Bhardwaj's Birthday
 <2026-04-02 Thu>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-04-02 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-04-04 Sat 10:30-11:00>
 
@@ -832,11 +713,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-04-05 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-04-09 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Anniversary: SF
 <2026-04-11 Sat>
@@ -855,11 +731,6 @@ Christine and I got married in City Hall this day
 <2026-04-12 Sun 10:00-11:00>
 Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-04-16 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-04-18 Sat 10:30-11:00>
 
@@ -869,11 +740,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Trash Out
 <2026-04-19 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-04-23 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-04-25 Sat 10:30-11:00>
 
@@ -882,11 +748,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-04-26 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-04-30 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Change.Yale Lock Batteries
 <2026-04-30 Thu>
@@ -899,11 +760,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-05-03 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-05-07 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * GTFO
 <2026-05-09 Sat 10:30-11:00>
@@ -918,11 +774,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 <2026-05-12 Tue 10:00-11:00>
 Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-05-14 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-05-16 Sat 10:30-11:00>
 
@@ -931,11 +782,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-05-17 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-05-21 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * GTFO
 <2026-05-23 Sat 10:30-11:00>
@@ -946,11 +792,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Trash Out
 <2026-05-24 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-05-28 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-05-30 Sat 10:30-11:00>
 
@@ -960,11 +801,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Trash Out
 <2026-05-31 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-06-04 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-06-06 Sat 10:30-11:00>
 
@@ -973,11 +809,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-06-07 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-06-11 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Craig / Ryan
 <2026-06-12 Fri 10:00-11:00>
@@ -992,11 +823,6 @@ Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 * Trash Out
 <2026-06-14 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-06-18 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-06-20 Sat 10:30-11:00>
 
@@ -1005,11 +831,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-06-21 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-06-25 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Christine's Birthday
 <2026-06-27 Sat>
@@ -1024,11 +845,6 @@ Born this day in 1968
 * Trash Out
 <2026-06-28 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-07-02 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-07-04 Sat 10:30-11:00>
 
@@ -1037,11 +853,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-07-05 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-07-09 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * GTFO
 <2026-07-11 Sat 10:30-11:00>
@@ -1067,11 +878,6 @@ This is an event reminder
 <2026-07-15 Wed>
 This is an event reminder
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-07-16 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-07-18 Sat 10:30-11:00>
 
@@ -1081,11 +887,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Trash Out
 <2026-07-19 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-07-23 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-07-25 Sat 10:30-11:00>
 
@@ -1094,11 +895,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-07-26 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-07-30 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Change.Yale Lock Batteries
 <2026-07-30 Thu>
@@ -1119,11 +915,6 @@ This is an event reminder
 * Laura Smetanick's birthday
 <2026-08-05 Wed>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-08-06 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-08-08 Sat 10:30-11:00>
 
@@ -1140,11 +931,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 <2026-08-12 Wed 10:00-11:00>
 Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-08-13 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-08-15 Sat 10:30-11:00>
 
@@ -1153,11 +939,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-08-16 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-08-20 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * GTFO
 <2026-08-22 Sat 10:30-11:00>
@@ -1175,11 +956,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 <2026-08-26 Wed>
 This is an event reminder
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-08-27 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-08-29 Sat 10:30-11:00>
 
@@ -1195,11 +971,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Hallie Parry's Birthday
 <2026-09-02 Wed>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-09-03 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-09-05 Sat 10:30-11:00>
 
@@ -1208,11 +979,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-09-06 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-09-10 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Craig / Ryan
 <2026-09-12 Sat 10:00-11:00>
@@ -1227,11 +993,6 @@ Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 * Trash Out
 <2026-09-13 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-09-17 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-09-19 Sat 10:30-11:00>
 
@@ -1243,11 +1004,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Michelle  Sartor's birthday
 <2026-09-22 Tue>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-09-24 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Liz Balsam's Birthday
 <2026-09-24 Thu>
@@ -1262,11 +1018,6 @@ This is an event reminder
 * Trash Out
 <2026-09-27 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-10-01 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * Brady Lester's Birthday
 <2026-10-02 Fri>
 
@@ -1276,16 +1027,11 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Louisa Housekeeping
 <2026-10-03 Sat 11:00-16:00>
 
-* Prisca Weem's Birthday
-<2026-10-04 Sun>
-
 * Trash Out
 <2026-10-04 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-10-08 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
+* Prisca Weem's Birthday
+<2026-10-04 Sun>
 
 * GTFO
 <2026-10-10 Sat 10:30-11:00>
@@ -1303,11 +1049,6 @@ Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 * Susan Moynihan's Birthday
 <2026-10-14 Wed>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-10-15 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-10-17 Sat 10:30-11:00>
 
@@ -1320,11 +1061,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Baby Fart Day
 <2026-10-19 Mon>
 Making it an official all-day event. Attendance mandatory. Loca
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-10-22 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Daniel Pham's birthday
 <2026-10-22 Thu>
@@ -1342,11 +1078,6 @@ This is an event reminder
 * Trash Out
 <2026-10-25 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-10-29 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * Change.Yale Lock Batteries
 <2026-10-30 Fri>
 
@@ -1359,11 +1090,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 * Trash Out
 <2026-11-01 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-11-05 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-11-07 Sat 10:30-11:00>
 
@@ -1372,11 +1098,6 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-11-08 Sun>
-
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-11-12 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Craig / Ryan
 <2026-11-12 Thu 10:00-11:00>
@@ -1391,11 +1112,6 @@ Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 * Trash Out
 <2026-11-15 Sun>
 
-* Lagniappe Bakehouse Is Open 8 AM–1 PM
-<2026-11-19 Thu>
-This is an event reminder
-Location: 1825 Euterpe St\, New Orleans\, LA 70113
-
 * GTFO
 <2026-11-21 Sat 10:30-11:00>
 
@@ -1404,3 +1120,12 @@ Location: 1825 Euterpe St\, New Orleans\, LA 70113
 
 * Trash Out
 <2026-11-22 Sun>
+
+* GTFO
+<2026-11-28 Sat 10:30-11:00>
+
+* Louisa Housekeeping
+<2026-11-28 Sat 11:00-16:00>
+
+* Trash Out
+<2026-11-29 Sun>
