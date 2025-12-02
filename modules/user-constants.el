@@ -131,6 +131,10 @@ Used by transcription module and other audio-related functionality.")
   "The location of the org file containing Google Calendar information.
 Stored in .emacs.d/data/ so each machine syncs independently from Google Calendar.")
 
+(defvar pcal-file (expand-file-name "data/pcal.org" user-emacs-directory)
+  "The location of the org file containing Proton Calendar information.
+Stored in .emacs.d/data/ so each machine syncs independently from Proton Calendar.")
+
 (defvar reference-file (expand-file-name "reference.org" org-dir)
   "The location of the org file containing reference information.")
 
