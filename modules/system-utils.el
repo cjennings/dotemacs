@@ -194,12 +194,11 @@ Logs output and exit code to buffer *external-open.log*."
 ;; Set scratch buffer to org-mode
 (setopt initial-major-mode 'org-mode)
 
-;; Move cursor to end of scratch buffer on startup and set font size to 16pt
+;; Move cursor to end of scratch buffer on startup
 (add-hook 'emacs-startup-hook
           (lambda ()
             (when (get-buffer "*scratch*")
               (with-current-buffer "*scratch*"
-                (buffer-face-set :height 160)  ; 160 = 16pt (height is in 1/10pt units)
                 (goto-char (point-max))))))
 
 ;;; --------------------------------- Dictionary --------------------------------

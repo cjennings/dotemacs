@@ -1,88 +1,5 @@
 # Calendar Events
 
-* James massage
-<2025-09-03 Wed 11:30-12:00>
-
-* Flight to San Francisco (UA 1665)
-<2025-09-04 Thu 17:27-22:08>
-United Airlines flight 1665\nNew Orleans MSY 5:27pm (local time
-Location: New Orleans MSY
-
-* Trash Out
-<2025-09-07 Sun>
-
-* Flight to New Orleans (UA 246)
-<2025-09-10 Wed 12:01-16:17>
-United Airlines flight 246\nSan Francisco SFO 10:01am (local ti
-Location: San Francisco SFO
-
-* Trash Out
-<2025-09-14 Sun>
-
-* Marley
-<2025-09-17 Wed 15:00-15:30>
-
-* Dr. Braddy in Spine Center\, Ochsner Baptist
-<2025-09-19 Fri 13:00-13:45>
-Location:  Ochsner Baptist 
-
-* Trash Out
-<2025-09-21 Sun>
-
-* Laura Arrives at MSY
-<2025-09-21 Sun 17:50-19:00>
-SWA Flight 1849 Sunday 09/21/25 \nPassenger: Laura Smetanick\nD
-Location: 1 Terminal Dr\, Kenner\, LA 70062
-
-* Michelle  Sartor's birthday
-<2025-09-22 Mon>
-
-* Liz Balsam's Birthday
-<2025-09-24 Wed>
-This is an event reminder
-
-* Brittni
-<2025-09-24 Wed 13:30-14:00>
-
-* Review Carrollton Construction Analysis
-<2025-09-24 Wed 15:00-16:30>
-Join with Google Meet: https://meet.google.com/zev-qjor-uhz\n\n
-
-* CVS and liquor store
-<2025-09-25 Thu 10:00-10:30>
-
-* Trash Out
-<2025-09-28 Sun>
-
-* Danneel Meeting @ Martin's 
-<2025-09-30 Tue 14:00-16:00>
-Craig Jennings\nHey everyone -- I hope y'all are doing well. I 
-Location: Martin’s: Wine\, Liquor\, Beer & Deli - New Orleans\, 3827 Baronne
-
-* Brady Lester's Birthday
-<2025-10-02 Thu>
-
-* Dinner at The Husky with Abby\, Nick
-<2025-10-03 Fri 20:00-22:00>
-Join with Google Meet: https://meet.google.com/zrx-srqr-mkt\n\n
-
-* Prisca Weem's Birthday
-<2025-10-04 Sat>
-
-* Trash Out
-<2025-10-05 Sun>
-
-* Martin\, GC\, Kelly
-<2025-10-07 Tue 14:00-15:00>
-
-* Harmick/Vahagn <> Craig catch up
-<2025-10-09 Thu 10:00-10:40>
-Hi Craig<br><br>Thanks again for agreeing to meet with us<br><b
-
-* Call Mom
-<2025-10-09 Thu 12:00-13:00>
-Testing where the notes go....
-
 * Amy pain management for Christine
 <2025-10-10 Fri 11:40-12:10>
 
@@ -127,12 +44,12 @@ This is an event reminder
 * High school reunion 40th
 <2025-10-18 Sat 19:00-19:30>
 
-* Trash Out
-<2025-10-19 Sun>
-
 * Baby Fart Day
 <2025-10-19 Sun>
 Making it an official all-day event. Attendance mandatory. Loca
+
+* Trash Out
+<2025-10-19 Sun>
 
 * Daniel Pham's birthday
 <2025-10-22 Wed>
@@ -444,12 +361,39 @@ Location: Denver International Airport\, 8500 Peña Blvd\, Denver\, CO 80249\
 * Trash Out
 <2025-11-30 Sun>
 
+* CVS for Shots
+<2025-12-02 Tue 11:45-12:15>
+This is an event reminder
+
 * Dr Mejia
 <2025-12-02 Tue 13:00-13:30>
+
+* Call with Jonathan Shulitz 
+<2025-12-02 Tue 16:00-16:30>
+Join with Google Meet: https://meet.google.com/inw-ofqm-xhm\n\n
+Location: 129 S Dupre St\, New Orleans\, LA 70119\, USA
+
+* Drive to MSY
+<2025-12-03 Wed 08:00-08:30>
+Join with Google Meet: https://meet.google.com/quc-wtbk-api\n\n
 
 * Southwest Flight PVD
 <2025-12-03 Wed 10:40-16:30>
 <br><br><b>confirmation\, </b><b>AV6IHB</b><br><b><br></b><br><
+
+* No alcohol after this time
+<2025-12-04 Thu 18:00-18:30>
+
+* No food after this time
+<2025-12-04 Thu 20:00-20:30>
+
+* Fasting Lab
+<2025-12-05 Fri 08:00-08:15>
+Phone: 504-842-4115\n\n\n1. Do not eat or drink anything for TE
+Location: 4429 Clara Ave\, New Orleans LA 70115-6914
+
+* August
+<2025-12-05 Fri 18:15-18:45>
 
 * GTFO
 <2025-12-06 Sat 10:30-11:00>
@@ -460,19 +404,35 @@ Location: Denver International Airport\, 8500 Peña Blvd\, Denver\, CO 80249\
 * Trash Out
 <2025-12-07 Sun>
 
+* Established Physical Therapy with Jasmyn Chaisson\, PT
+<2025-12-08 Mon 14:30-15:30>
+Phone: 504-894-2002\n\n\nPlease arrive approximately 15 minutes
+Location: 2820 Napoleon Avenue\, Suite 450\, New Orleans LA 70115-8229
+
 * Blake Michael's Birthday
 <2025-12-09 Tue>
 Blake was born in 1999
 
-* Pay healthcare premium for 2026
+* Leave for PT
 <2025-12-10 Wed 14:00-14:30>
 
-* Marley
-<2025-12-11 Thu 11:00-11:30>
+* Established Physical Therapy with Jasmyn Chaisson\, PT
+<2025-12-10 Wed 14:30-15:30>
+Phone: 504-894-2002\n\n\nPlease arrive approximately 15 minutes
+Location: 2820 Napoleon Avenue\, Suite 450\, New Orleans LA 70115-8229
+
+* Leave for airport
+<2025-12-11 Thu 15:30-16:00>
+
+* Christine arrives
+<2025-12-11 Thu 16:00-16:30>
 
 * Craig / Ryan
 <2025-12-12 Fri 10:00-11:00>
 Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
+
+* Pay healthcare premium for 2026
+<2025-12-12 Fri 14:00-14:30>
 
 * Augusta Baty Birthday
 <2025-12-13 Sat>
@@ -487,11 +447,50 @@ This is an event reminder
 * Trash Out
 <2025-12-14 Sun>
 
+* Established Physical Therapy with PTA Aidan
+<2025-12-15 Mon 14:30-15:30>
+Phone: 504-894-2002\n\n\nPlease arrive approximately 15 minutes
+Location: 2820 Napoleon Avenue\, Suite 450\, New Orleans LA 70115-8229
+
+* Danneel Annual HOA meeting
+<2025-12-15 Mon 16:00-17:00>
+
 * Saradha's Birthday
 <2025-12-17 Wed>
 
+* Chase Acct
+<2025-12-17 Wed 10:30-12:00>
+
+* Refile Letters
+<2025-12-17 Wed 12:00-13:00>
+
+* Reply to AJ
+<2025-12-17 Wed 13:00-13:30>
+
+* Transit to PT
+<2025-12-17 Wed 14:00-14:30>
+
+* Established Physical Therapy with Jasmyn Chaisson\, PT
+<2025-12-17 Wed 14:30-15:30>
+Phone: 504-894-2002\n\n\nPlease arrive approximately 15 minutes
+Location: 2820 Napoleon Avenue\, Suite 450\, New Orleans LA 70115-8229
+
+* The Husky
+<2025-12-17 Wed 19:30-21:30>
+(504) 766-7159\nModern Neighborhood Steakhouse located in Uptow
+Location: 4510 Freret St  New Orleans\, LA United States 70115
+
+* Mike's Birthday
+<2025-12-18 Thu 08:00-08:30>
+
+* Chat with Nerses
+<2025-12-18 Thu 16:30-17:00>
+
 * Blake Michael's birthday
 <2025-12-19 Fri>
+
+* Mike Birthday Observed: Sara\, Mike\, Abby\, Nick
+<2025-12-19 Fri 18:00-21:00>
 
 * GTFO
 <2025-12-20 Sat 10:30-11:00>
@@ -499,8 +498,29 @@ This is an event reminder
 * Louisa Housekeeping
 <2025-12-20 Sat 11:00-16:00>
 
+* Kristin & Errol Xmas Party
+<2025-12-20 Sat 18:00-21:00>
+
 * Trash Out
 <2025-12-21 Sun>
+
+* OMV Appointment
+<2025-12-22 Mon 10:50-11:00>
+Renewals and Duplicates (Driver's License/ID Cards/REAL-ID) 
+Location: 100 Veterans Blvd\, New Orleans\, LA 70124
+
+* Established Physical Therapy with Jasmyn Chaisson\, PT
+<2025-12-22 Mon 14:30-15:30>
+Phone: 504-894-2002\n\n\nPlease arrive approximately 15 minutes
+Location: 2820 Napoleon Avenue\, Suite 450\, New Orleans LA 70115-8229
+
+* Established Patient Visit with Ian O'Connor\, MD
+<2025-12-23 Tue 10:40-11:00>
+Phone: 504-842-4747\n
+Location: 1401 Jefferson Hwy\, New Orleans LA 70121-2426
+
+* Rachel & Paul party
+<2025-12-23 Tue 18:30-21:00>
 
 * GTFO
 <2025-12-27 Sat 10:30-11:00>
@@ -511,8 +531,8 @@ This is an event reminder
 * Trash Out
 <2025-12-28 Sun>
 
-* Brittni
-<2025-12-30 Tue 14:30-15:00>
+* Errol's Birthdays
+<2026-01-03 Sat>
 
 * GTFO
 <2026-01-03 Sat 10:30-11:00>
@@ -520,16 +540,51 @@ This is an event reminder
 * Louisa Housekeeping
 <2026-01-03 Sat 11:00-16:00>
 
+* Ready
+<2026-01-03 Sat 17:15-17:45>
+
 * Trash Out
 <2026-01-04 Sun>
 
-* Amy Oregon
-<2026-01-06 Tue 10:20-10:50>
+* Healthy Back PT
+<2026-01-05 Mon 14:30-15:30>
+
+* Dinner with Ollie and Jean
+<2026-01-05 Mon 17:30-19:30>
+
+* Established Patient Visit with Olle Kjellgren\, MD
+<2026-01-06 Tue 15:00-15:15>
+Phone: 504-894-2560\n\n\nPlease arrive approximately 15 minutes
+Location: 2820 Napoleon Avenue\, Suite 230\, New Orleans LA 70115-6969
+
+* Call from Geaux Maids
+<2026-01-07 Wed 09:30-10:00>
+
+* Chat with Mom
+<2026-01-07 Wed 11:00-11:30>
 
 * New Patient with Lynsi Blanchard\, PA-C
 <2026-01-07 Wed 13:30-14:00>
 Arrival Location: BAPC SLEEP CLINIC\nPhone: 504-842-4910\n\n\nP
 Location: 2820 Napoleon Ave\, Ste 590\, New Orleans LA 70115-8209
+
+* Call Sonia from Ochsner Digital Medicine
+<2026-01-07 Wed 15:00-15:30>
+
+* Meeting with Emmitt and Ram
+<2026-01-08 Thu 15:00-16:00>
+Join Zoom Meeting<a href="https://us02web.zoom.us/j/84765365478
+
+* Call Jonathan Shulitz
+<2026-01-09 Fri 14:30-15:00>
+Join with Google Meet: https://meet.google.com/rwi-xpxb-yws\n\n
+Location: 129 S Dupre St\, New Orleans\, LA 70119\, USA
+
+* Pick Up Prescriptions
+<2026-01-09 Fri 16:00-16:30>
+
+* Order workout clothes
+<2026-01-09 Fri 16:30-17:00>
 
 * GTFO
 <2026-01-10 Sat 10:30-11:00>
@@ -543,6 +598,17 @@ Location: 2820 Napoleon Ave\, Ste 590\, New Orleans LA 70115-8209
 * Craig / Ryan
 <2026-01-12 Mon 10:00-11:00>
 Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
+
+* Blocked for Maids
+<2026-01-13 Tue 08:00-17:00>
+
+* Kirk and Kim stay
+<2026-01-15 Thu 07:00-07:30>
+
+* New Patient with David Leslie\, DO
+<2026-01-15 Thu 10:40-11:20>
+Phone: 504-736-4800\n\n\nPlease arrive approximately 15 minutes
+Location: 5300 Tchoupitoulas St\, Ste C2\, New Orleans LA 70115-1936
 
 * GTFO
 <2026-01-17 Sat 10:30-11:00>
@@ -579,10 +645,10 @@ Join with Google Meet: https://meet.google.com/hgw-ceaa-mfa\n\n
 * Louisa Housekeeping
 <2026-01-31 Sat 11:00-16:00>
 
-* Trash Out
+* Mom and Johns Anniversary
 <2026-02-01 Sun>
 
-* Mom and Johns Anniversary
+* Trash Out
 <2026-02-01 Sun>
 
 * Nine Inch Nails
@@ -627,18 +693,24 @@ Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 * Bri
 <2026-02-23 Mon 12:15-12:45>
 
+* Abby's Birthday
+<2026-02-27 Fri 08:00-08:30>
+
 * GTFO
 <2026-02-28 Sat 10:30-11:00>
 
 * Louisa Housekeeping
 <2026-02-28 Sat 11:00-16:00>
 
-* Trash Out
-<2026-03-01 Sun>
-
 * Anniversary
 <2026-03-01 Sun>
 This is an event reminder
+
+* Trash Out
+<2026-03-01 Sun>
+
+* Dr Mejia
+<2026-03-03 Tue 12:30-13:00>
 
 * GTFO
 <2026-03-07 Sat 10:30-11:00>
@@ -662,12 +734,12 @@ Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 * Louisa Housekeeping
 <2026-03-14 Sat 11:00-16:00>
 
-* Trash Out
-<2026-03-15 Sun>
-
 * Louisa Birthday
 <2026-03-15 Sun>
 Join with Google Meet: https://meet.google.com/myx-kkcm-nav\n\n
+
+* Trash Out
+<2026-03-15 Sun>
 
 * GTFO
 <2026-03-21 Sat 10:30-11:00>
@@ -731,6 +803,9 @@ Christine and I got married in City Hall this day
 <2026-04-12 Sun 10:00-11:00>
 Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 
+* Dr KJ
+<2026-04-14 Tue 14:30-15:00>
+
 * GTFO
 <2026-04-18 Sat 10:30-11:00>
 
@@ -748,6 +823,9 @@ Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 
 * Trash Out
 <2026-04-26 Sun>
+
+* Nick's Birthday
+<2026-04-28 Tue 09:00-09:30>
 
 * Change.Yale Lock Batteries
 <2026-04-30 Thu>
@@ -822,6 +900,9 @@ Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 
 * Trash Out
 <2026-06-14 Sun>
+
+* Dr. Greene
+<2026-06-18 Thu 14:00-14:30>
 
 * GTFO
 <2026-06-20 Sat 10:30-11:00>
@@ -1027,10 +1108,10 @@ This is an event reminder
 * Louisa Housekeeping
 <2026-10-03 Sat 11:00-16:00>
 
-* Trash Out
+* Prisca Weem's Birthday
 <2026-10-04 Sun>
 
-* Prisca Weem's Birthday
+* Trash Out
 <2026-10-04 Sun>
 
 * GTFO
@@ -1129,3 +1210,69 @@ Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
 
 * Trash Out
 <2026-11-29 Sun>
+
+* GTFO
+<2026-12-05 Sat 10:30-11:00>
+
+* Louisa Housekeeping
+<2026-12-05 Sat 11:00-16:00>
+
+* Trash Out
+<2026-12-06 Sun>
+
+* Blake Michael's Birthday
+<2026-12-09 Wed>
+Blake was born in 1999
+
+* Craig / Ryan
+<2026-12-12 Sat 10:00-11:00>
+Join with Google Meet: https://meet.google.com/kgb-ngmj-tez\nOr
+
+* GTFO
+<2026-12-12 Sat 10:30-11:00>
+
+* Louisa Housekeeping
+<2026-12-12 Sat 11:00-16:00>
+
+* Augusta Baty Birthday
+<2026-12-13 Sun>
+This is an event reminder
+
+* Trash Out
+<2026-12-13 Sun>
+
+* Saradha's Birthday
+<2026-12-17 Thu>
+
+* Mike's Birthday
+<2026-12-18 Fri 08:00-08:30>
+
+* Blake Michael's birthday
+<2026-12-19 Sat>
+
+* GTFO
+<2026-12-19 Sat 10:30-11:00>
+
+* Louisa Housekeeping
+<2026-12-19 Sat 11:00-16:00>
+
+* Trash Out
+<2026-12-20 Sun>
+
+* GTFO
+<2026-12-26 Sat 10:30-11:00>
+
+* Louisa Housekeeping
+<2026-12-26 Sat 11:00-16:00>
+
+* Trash Out
+<2026-12-27 Sun>
+
+* GTFO
+<2027-01-02 Sat 10:30-11:00>
+
+* Louisa Housekeeping
+<2027-01-02 Sat 11:00-16:00>
+
+* Trash Out
+<2027-01-03 Sun>
