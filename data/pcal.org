@@ -1,8 +1,5 @@
 # Calendar Events
 
-* Trash Out
-<2025-10-12 Sun>
-
 * Craig/Arusyak Chat
 <2025-10-13 Mon 11:30-12:30>
 \n~-~-~-~-~-~-~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~
@@ -180,6 +177,16 @@ Location: https://meet.google.com/gaf-iwsw-wqb
 * Re: Craig <> Hayk intro
 <2026-01-12 Mon 22:00-23:00>
 Welcome back Hayk! Great - I'm free until noon. Feel free to se
+
+* Craig<>Subbu
+<2026-01-13 Tue 13:00-14:00>
+-::~:~::~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~
+Location: https://meet.google.com/xab-gucy-hop
+
+* Provider Visit with Laura Alfstad
+<2026-01-13 Tue 13:30-13:50>
+Thank you for trusting us with your care. We look forward to se
+Location: https://9am-health.zoom.us/j/89045872502?pwd=8ELj6nKgkqZ1MawajM4al
 
 * PT
 <2026-01-14 Wed 15:30-16:00>
@@ -832,5 +839,13 @@ Location: https://meet.google.com/gaf-iwsw-wqb
 
 * Craig<>Arusyak: sync up
 <2027-01-04 Mon 19:00-20:00>
+-::~:~::~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~
+Location: https://meet.google.com/gaf-iwsw-wqb
+
+* Trash Out
+<2027-01-10 Sun>
+
+* Craig<>Arusyak: sync up
+<2027-01-11 Mon 19:00-20:00>
 -::~:~::~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~
 Location: https://meet.google.com/gaf-iwsw-wqb

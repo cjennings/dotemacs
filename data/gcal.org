@@ -1,8 +1,5 @@
 # Calendar Events
 
-* Amy pain management for Christine
-<2025-10-10 Fri 11:40-12:10>
-
 * Trash Out
 <2025-10-12 Sun>
 
@@ -1276,3 +1273,9 @@ This is an event reminder
 
 * Trash Out
 <2027-01-03 Sun>
+
+* GTFO
+<2027-01-09 Sat 10:30-11:00>
+
+* Louisa Housekeeping
+<2027-01-09 Sat 11:00-16:00>
