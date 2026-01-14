@@ -1,1 +1,1 @@
-((timezone-offset . -21600) (calendar-states ("google" :status syncing) ("proton" :status ok :last-sync (26981 8164 365040 250000) :last-error nil)))
+((timezone-offset . -21600) (calendar-states ("google" :status syncing) ("proton" :status ok :last-sync (26983 60223 431283 519000) :last-error nil)))
