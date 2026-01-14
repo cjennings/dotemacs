@@ -1,12 +1,5 @@
 # Calendar Events
 
-* Craig/Arusyak Chat
-<2025-10-13 Mon 11:30-12:30>
-\n~-~-~-~-~-~-~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~%~!~
-
-* Susan Moynihan's Birthday
-<2025-10-14 Tue>
-
 * Baby Fart Day
 <2025-10-19 Sun>
 Making it an official all-day event. Attendance mandatory. Loca
@@ -188,8 +181,17 @@ Location: https://meet.google.com/xab-gucy-hop
 Thank you for trusting us with your care. We look forward to se
 Location: https://9am-health.zoom.us/j/89045872502?pwd=8ELj6nKgkqZ1MawajM4al
 
+* Shower
+<2026-01-14 Wed 11:30-12:00>
+
+* Transit
+<2026-01-14 Wed 15:00-15:30>
+
 * PT
 <2026-01-14 Wed 15:30-16:00>
+
+* Transit
+<2026-01-14 Wed 16:00-16:30>
 
 * Prescriptions
 <2026-01-15 Thu>
@@ -849,3 +851,8 @@ Location: https://meet.google.com/gaf-iwsw-wqb
 <2027-01-11 Mon 19:00-20:00>
 -::~:~::~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~
 Location: https://meet.google.com/gaf-iwsw-wqb
+
+* Craig / Ryan
+<2027-01-12 Tue 10:00-11:00>
+-::~:~::~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~:~
+Location: https://meet.google.com/kgb-ngmj-tez
