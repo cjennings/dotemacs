@@ -100,8 +100,6 @@ Call this only after loading 'gptel' so the backend constructors exist."
   (unless gptel-backend
     (setq gptel-backend (or gptel-chatgpt-backend gptel-claude-backend))))
 
-(autoload 'cj/toggle-gptel "ai-config" "Toggle the AI-Assistant window" t)
-
 ;; ------------------ GPTel Conversation And Utility Commands ------------------
 
 (defun cj/gptel--available-backends ()
