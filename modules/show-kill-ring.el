@@ -116,7 +116,7 @@ If it's too long, truncate it first."
   (setq kill-ring nil)
   (garbage-collect))
 
-(keymap-global-set "M-K" #'show-kill-ring)
+(keymap-global-set "M-S-k" #'show-kill-ring)  ;; was M-K, overrides kill-sentence
 
 (provide 'show-kill-ring)
 ;;; show-kill-ring.el ends here

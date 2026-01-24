@@ -811,7 +811,7 @@ gpg: decryption failed: No pinentry"
 
   ;; Bind menu to keymaps after function is defined
   (with-eval-after-load 'dired
-    (keymap-set dired-mode-map "M-D" #'dwim-shell-commands-menu))
+    (keymap-set dired-mode-map "M-S-d" #'dwim-shell-commands-menu))  ;; was M-D, overrides kill-word
   (with-eval-after-load 'dirvish
     (keymap-set dirvish-mode-map "M-D" #'dwim-shell-commands-menu)))
 
