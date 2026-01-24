@@ -36,6 +36,16 @@ Use M-x profiler-start before Method 3 debug-profiling.el is built.
 15-20 seconds every time capturing a task (12+ times/day).
 Major daily bottleneck - minutes lost waiting, plus context switching cost.
 
+** TODO [#C] Finish terminal GPG pinentry configuration
+
+Continue work on terminal-mode GPG passphrase prompts (loopback mode).
+Branch: terminal-pinentry
+
+Changes in progress (modules/auth-config.el):
+- Use epa-pinentry-mode 'loopback in terminal
+- Use external pinentry (pinentry-dmenu) in GUI
+- Requires env-terminal-p from host-environment module
+
 ** TODO [#C] Verify format-buffer hands off to shfmt in shell scripts
 
 Need to verify that the format-buffer command correctly delegates to shfmt when
