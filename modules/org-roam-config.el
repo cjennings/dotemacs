@@ -21,9 +21,6 @@
 (use-package org-roam
   :defer 1
   :commands (org-roam-node-find org-roam-node-insert org-roam-db-autosync-mode)
-  :config
-  ;; Enable autosync mode after org-roam loads
-  (org-roam-db-autosync-mode)
   :custom
   (org-roam-directory roam-dir)
   (org-roam-dailies-directory journals-dir)
@@ -62,12 +59,7 @@
          ("C-c n i" . org-roam-node-insert)
          ("C-c n w" . cj/org-roam-find-node-webclip)
          :map org-mode-map
-         ("C-M-i" . completion-at-point)
-         :map org-roam-dailies-map
-         ("Y" . org-roam-dailies-capture-yesterday)
-         ("T" . org-roam-dailies-capture-tomorrow))
-  :bind-keymap
-  ("C-c n d" . org-roam-dailies-map)
+         ("C-M-i" . completion-at-point))
   :config
   (setq org-log-done  'time)
   (setq org-agenda-timegrid-use-ampm t)
@@ -79,6 +71,10 @@
   ;; (setq org-element-use-cache nil) ;; disables caching org files
 
   (require 'org-roam-dailies)      ;; Ensures the keymap is available
+  ;; Bind dailies keys after keymap exists
+  (define-key org-roam-dailies-map (kbd "Y") #'org-roam-dailies-capture-yesterday)
+  (define-key org-roam-dailies-map (kbd "T") #'org-roam-dailies-capture-tomorrow)
+  (global-set-key (kbd "C-c n d") org-roam-dailies-map)
   (org-roam-db-autosync-mode))
 
 ;; Move closed tasks to today's journal when marked done
