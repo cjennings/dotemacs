@@ -18,15 +18,15 @@ V2MOM is located at: [[file:docs/emacs-config-v2mom.org][emacs-config-v2mom.org]
 Research/ideas that don't serve vision: [[file:docs/someday-maybe.org][someday-maybe.org]]
 
 * Method 1: Make Using Emacs Frictionless [16/24]
-** TODO [#B] Fix org-noter (reading/annotation workflow currently "so painful")
+** VERIFY [#B] Fix org-noter (reading/annotation workflow currently "so painful")
 
 High priority - daily pain point.
 
-** TODO [#B] Fix mail attachment workflow (currently awkward)
+** VERIFY [#B] Fix mail attachment workflow (currently awkward)
 
 Daily workflow improvement.
 
-** TODO [#B] Optimize org-agenda performance using built-in profiler
+** DONE [#B] Optimize org-agenda performance using built-in profiler
 
 THE BOTTLENECK. Currently 30+ seconds, target < 5 seconds.
 Use M-x profiler-start before Method 3 debug-profiling.el is built.
@@ -46,7 +46,7 @@ Changes in progress (modules/auth-config.el):
 - Use external pinentry (pinentry-dmenu) in GUI
 - Requires env-terminal-p from host-environment module
 
-** TODO [#C] Verify format-buffer hands off to shfmt in shell scripts
+** DONE [#C] Verify format-buffer hands off to shfmt in shell scripts
 
 Need to verify that the format-buffer command correctly delegates to shfmt when
 formatting shell scripts. May not be configured or may use wrong formatter.
@@ -216,13 +216,13 @@ Priority [#B] because this function runs on every save in shell-script-mode and
 modifying file permissions incorrectly could cause security issues or workflow
 problems. Needs testing before any refactoring or changes.
 
-** TODO [#C] Fix EMMS keybinding inconsistency with other buffers
+** VERIFY [#C] Fix EMMS keybinding inconsistency with other buffers
 
 EMMS keybindings conflict with standard buffer keybindings, causing mistypes.
 Results in accidental destructive actions (clearing buffers), requires undo + context switch.
 Violates Intuitive value - muscle memory should help, not hurt.
 
-** TODO [#D] Frequently used org-mode keybindings under C-; o
+** DONE [#D] Frequently used org-mode keybindings under C-; o
 
 Add quick access keybindings for common org commands (org-table, org-reveal, etc.) under C-; o.
 Makes org-mode operations more frictionless.
@@ -1048,7 +1048,7 @@ CLOSED: [2025-11-03 Sun]
 - Cleaner editing experience while maintaining visual clarity
 
 * Method 3: Make *Fixing* Emacs Frictionless [0/9]
-** TODO [#A] Write tests for cj/make-script-executable (suspected broken)
+** DONE [#A] Write tests for cj/make-script-executable (suspected broken)
 
 The `cj/make-script-executable` function automatically makes shell scripts executable
 when they have a shebang, but has no test coverage. **Suspected to be broken/not working.**
@@ -1089,7 +1089,7 @@ Following quality-engineer.org patterns:
 Priority [#B] because if broken, it's a daily workflow issue (scripts don't auto-execute).
 Moved from inbox 2025-11-11.
 
-** TODO [#A] Fix difftastic integration - not showing semantic diffs (just unified diff)
+** DONE [#A] Fix difftastic integration - not showing semantic diffs (just unified diff)
 
 Difftastic was marked as "integrated" but diffs in magit and custom-buffer-file.el look
 identical to standard unified diffs. **Likely not actually using difftastic** - probably
@@ -1179,7 +1179,7 @@ Create `cj/ert-clear-tests` and `cj/ert-run-current-project-tests`:
 Priority [#B] because affects daily workflow when working on multiple elisp projects.
 Moved from inbox 2025-11-11.
 
-** TODO [#B] Remove ANSI color codes from Makefile - breaks test output readability
+** DONE [#B] Remove ANSI color codes from Makefile - breaks test output readability
 
 ANSI color codes render incorrectly in some terminals, making test output unreadable.
 Can see it's colored red, but can't read what the actual error message says due to
@@ -1438,7 +1438,7 @@ CLOSED: [2025-11-12 Wed 02:41] SCHEDULED: <2025-11-03 Sun>
 Review this inbox, cancel stale items, keep < 20 active. Track in calendar.
 
 * Emacs Config Inbox
-** TODO [#B] Continue org-noter custom workflow implementation (IN PROGRESS)
+** VERIFY [#B] Continue org-noter custom workflow implementation (IN PROGRESS)
 
 Continue debugging and testing the custom org-noter workflow from 2025-11-21 session.
 This is partially implemented but has known issues that need fixing before it's usable.
