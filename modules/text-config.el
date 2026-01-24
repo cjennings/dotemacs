@@ -60,7 +60,7 @@
 ;; edit selection in new buffer, C-c to finish; replaces with modifications
 
 (use-package edit-indirect
-  :bind ("M-I" . edit-indirect-region))
+  :bind ("M-S-i" . edit-indirect-region)  ;; was M-I)
 
 ;; ------------------------------ Prettify Symbols -----------------------------
 ;; replacing the word l-a-m-b-d-a with a symbol, just because

@@ -22,6 +22,7 @@
 (require 'config-utilities)      ;; enable for extra Emacs config debug helpers
 (require 'user-constants)        ;; paths for files referenced in this config
 (require 'host-environment)      ;; convenience functions re: host environment
+(require 'terminal-compat)       ;; terminal/mosh compatibility fixes
 (require 'system-defaults)       ;; native comp; log; unicode, backup, exec path
 (require 'keybindings)           ;; system-wide keybindings and keybinding discovery
 

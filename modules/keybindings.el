@@ -113,7 +113,7 @@ Errors if VAR is unbound, not a non-empty string, or the file does not exist."
 
 ;; Add commonly-used general keybindings
 (keymap-global-set  "M-*"     #'calculator)
-(keymap-global-set  "M-Y"     #'yank-media)
+(keymap-global-set  "M-S-y" #'yank-media)  ;; was M-Y, overrides yank-pop
 
 ;; Normally bound to ESC ESC ESC, hit ESC once to get out of unpleasant situations.
 (keymap-global-set  "<escape>" #'keyboard-escape-quit)

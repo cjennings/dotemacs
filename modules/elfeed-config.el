@@ -22,7 +22,7 @@
 
 (use-package elfeed
   :bind
-  ("M-R" . cj/elfeed-open)
+  ("M-S-r" . cj/elfeed-open)  ;; was M-R
   (:map elfeed-show-mode-map
         ("w"  . eww-open-in-new-buffer))
   (:map elfeed-search-mode-map

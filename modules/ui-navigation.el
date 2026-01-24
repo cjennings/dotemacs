@@ -60,7 +60,7 @@
   (split-window-right)
   (other-window 1)
   (consult-buffer))
-(keymap-global-set "M-V" #'cj/split-and-follow-right)
+(keymap-global-set "M-S-v" #'cj/split-and-follow-right)  ;; was M-V, overrides scroll-down
 
 (defun cj/split-and-follow-below ()
   "Split window vertically and select a buffer to display."
@@ -68,7 +68,7 @@
   (split-window-below)
   (other-window 1)
   (consult-buffer))
-(keymap-global-set "M-H" #'cj/split-and-follow-below)
+(keymap-global-set "M-S-h" #'cj/split-and-follow-below)  ;; was M-H
 
 ;; ------------------------- Split Window Reorientation ------------------------
 
@@ -101,10 +101,10 @@ This function won't work with more than one split window."
 		  (set-window-buffer (next-window) next-win-buffer)
 		  (select-window first-win)
 		  (if this-win-2nd (other-window 1))))))
-(keymap-global-set "M-T" #'toggle-window-split)
+(keymap-global-set "M-S-t" #'toggle-window-split)  ;; was M-T, overrides transpose-words
 
 ;; SWAP WINDOW POSITIONS
-(keymap-global-set "M-S" #'window-swap-states)
+(keymap-global-set "M-S-s" #'window-swap-states)  ;; was M-S
 
 ;; ---------------------------- Buffer Manipulation ----------------------------
 
@@ -140,7 +140,7 @@ This function won't work with more than one split window."
 	  (find-file
 	   (if arg (nth arg recently-killed-list)
 		 (car recently-killed-list))))))
-(keymap-global-set "M-Z" #'cj/undo-kill-buffer)
+(keymap-global-set "M-S-z" #'cj/undo-kill-buffer)  ;; was M-Z, overrides zap-to-char
 
 ;; ---------------------------- Undo Layout Changes ----------------------------
 ;; allows you to restore your window setup with C-c left-arrow
@@ -148,7 +148,7 @@ This function won't work with more than one split window."
 
 (use-package winner
   :ensure nil ;; built-in
-  :bind ("M-U" . winner-undo)
+  :bind ("M-S-u" . winner-undo)  ;; was M-U, overrides upcase-word
   :config
   (winner-mode 1))
 

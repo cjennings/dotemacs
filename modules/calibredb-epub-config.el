@@ -55,7 +55,7 @@
   :defer 1
   :commands calibredb
   :bind
-  ("M-B" . calibredb)
+  ("M-S-b" . calibredb)  ;; was M-B, overrides backward-word
   ;; use built-in filter by tag, add clear-filters
   (:map calibredb-search-mode-map
 		("l" . calibredb-filter-by-tag)

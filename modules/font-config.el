@@ -42,13 +42,15 @@
 ;;
 ;;; Code:
 
+(require 'host-environment)
+
 ;; ----------------------- Font Family And Size Selection ----------------------
 ;; preset your fixed and variable fonts, then apply them to text as a set
 
 (use-package fontaine
   :demand t
   :bind
-  ("M-F" . fontaine-set-preset)
+  ("M-S-f" . fontaine-set-preset)  ;; was M-F, overrides forward-word
   :config
   (setq fontaine-presets
 		'(
@@ -126,7 +128,7 @@ If FRAME is nil, uses the selected frame."
 	(let ((target-frame (or frame (selected-frame))))
 	  (unless (member target-frame cj/fontaine-configured-frames)
 		(with-selected-frame target-frame
-		  (when (display-graphic-p target-frame)
+		  (when (env-gui-p target-frame)
 			(fontaine-set-preset 'default)
 			(push target-frame cj/fontaine-configured-frames))))))
 
@@ -143,7 +145,7 @@ If FRAME is nil, uses the selected frame."
 		;; Clean up deleted frames from tracking list
 		(add-hook 'delete-frame-functions #'cj/cleanup-frame-list))
 	;; Apply immediately in non-daemon mode
-	(when (display-graphic-p)
+	(when (env-gui-p)
 	  (cj/apply-font-settings-to-frame))))
 
 ;; ----------------------------- Font Install Check ----------------------------
@@ -164,7 +166,7 @@ If FRAME is nil, uses the selected frame."
   ;; Check for font installation after frame creation
   (defun cj/maybe-install-all-the-icons-fonts (&optional _frame)
 	"Install all-the-icons fonts if needed and we have a GUI."
-	(when (and (display-graphic-p)
+	(when (and (env-gui-p)
 			   (not (cj/font-installed-p "all-the-icons")))
 	  (all-the-icons-install-fonts t)
 	  ;; Remove this hook after successful installation
@@ -190,16 +192,17 @@ If FRAME is nil, uses the selected frame."
 ;; ----------------------------- Emoji Fonts Per OS ----------------------------
 ;; Set emoji fonts in priority order (first found wins)
 
-(cond
- ;; Prefer Noto Color Emoji (Linux)
- ((member "Noto Color Emoji" (font-family-list))
-  (set-fontset-font t 'symbol (font-spec :family "Noto Color Emoji") nil 'prepend))
- ;; Then Apple Color Emoji (macOS)
- ((member "Apple Color Emoji" (font-family-list))
-  (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
- ;; Finally Segoe UI Emoji (Windows)
- ((member "Segoe UI Emoji" (font-family-list))
-  (set-fontset-font t 'symbol (font-spec :family "Segoe UI Emoji") nil 'prepend)))
+(when (env-gui-p)
+  (cond
+   ;; Prefer Noto Color Emoji (Linux)
+   ((member "Noto Color Emoji" (font-family-list))
+    (set-fontset-font t 'symbol (font-spec :family "Noto Color Emoji") nil 'prepend))
+   ;; Then Apple Color Emoji (macOS)
+   ((member "Apple Color Emoji" (font-family-list))
+    (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
+   ;; Finally Segoe UI Emoji (Windows)
+   ((member "Segoe UI Emoji" (font-family-list))
+    (set-fontset-font t 'symbol (font-spec :family "Segoe UI Emoji") nil 'prepend))))
 
 ;; ---------------------------------- Emojify ----------------------------------
 ;; converts emoji identifiers into emojis; allows for easy emoji entry.
@@ -216,7 +219,7 @@ If FRAME is nil, uses the selected frame."
   :config
   (setq emojify-show-help nil)
   (setq emojify-point-entered-behaviour 'uncover)
-  (setq emojify-display-style 'image)
+  (setq emojify-display-style (if (env-gui-p) 'image 'unicode))
   (setq emojify-emoji-styles '(ascii unicode github))
 
   ;; Disable emojify in programming and gptel modes
