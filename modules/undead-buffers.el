@@ -75,7 +75,7 @@ ARG is passed to `save-some-buffers'."
 	(unless (one-window-p)
 	  (delete-window))
 	(cj/kill-buffer-or-bury-alive buf)))
-(keymap-global-set "M-O" #'cj/kill-other-window)
+(keymap-global-set "M-S-o" #'cj/kill-other-window)
 
 (defun cj/kill-all-other-buffers-and-windows ()
   "Kill or bury all other buffers, then delete other windows."
@@ -84,7 +84,7 @@ ARG is passed to `save-some-buffers'."
   (delete-other-windows)
   (mapc #'cj/kill-buffer-or-bury-alive
 		(delq (current-buffer) (buffer-list))))
-(keymap-global-set "M-M" #'cj/kill-all-other-buffers-and-windows)
+(keymap-global-set "M-S-m" #'cj/kill-all-other-buffers-and-windows)  ;; was M-M
 
 (provide 'undead-buffers)
 ;;; undead-buffers.el ends here

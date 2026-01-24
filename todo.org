@@ -1553,3 +1553,26 @@ Simple, maintainable, respects flycheck's built-in logic.
 2. Add customization to flycheck-config.el
 3. Add to modeline-config.el mode-line-format
 4. Test in sh-mode and emacs-lisp-mode buffers
+
+* TODO [#B] Review and rebind M-S- keybindings
+Changed from M-uppercase to M-S-lowercase for terminal compatibility.
+These may override useful defaults - review and pick better bindings:
+- M-S-b calibredb (was overriding backward-word)
+- M-S-c time-zones (was overriding capitalize-word)
+- M-S-d dwim-shell-menu (was overriding kill-word)
+- M-S-e eww (was overriding forward-sentence)
+- M-S-f fontaine (was overriding forward-word)
+- M-S-h split-below
+- M-S-i edit-indirect
+- M-S-k show-kill-ring (was overriding kill-sentence)
+- M-S-l switch-themes (was overriding downcase-word)
+- M-S-m kill-all-buffers
+- M-S-o kill-other-window
+- M-S-r elfeed
+- M-S-s window-swap
+- M-S-t toggle-split (was overriding transpose-words)
+- M-S-u winner-undo (was overriding upcase-word)
+- M-S-v split-right (was overriding scroll-down)
+- M-S-w wttrin (was overriding kill-ring-save)
+- M-S-y yank-media (was overriding yank-pop)
+- M-S-z undo-kill-buffer (was overriding zap-to-char)

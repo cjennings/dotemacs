@@ -59,7 +59,7 @@
 (use-package eww
   :ensure nil ;; built-in
   :bind
-  (("M-E" . eww)
+  (("M-S-e" . eww)  ;; was M-E, overrides forward-sentence
    :map eww-mode-map
    ("<" . eww-back-url)
    (">" . eww-forward-url)

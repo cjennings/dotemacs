@@ -43,7 +43,7 @@ Unloads any other applied themes before applying the chosen theme."
     (load-theme (intern chosentheme) t))
   (cj/save-theme-to-file))
 
-(keymap-global-set "M-L" #'cj/switch-themes)
+(keymap-global-set "M-S-l" #'cj/switch-themes)  ;; was M-L, overrides downcase-word
 
 ;; ----------------------------- Theme Persistence -----------------------------
 ;; persistence utility functions used by switch themes.

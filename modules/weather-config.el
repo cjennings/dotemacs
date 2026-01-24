@@ -19,7 +19,7 @@
   ;; Change this to t to enable debug logging
   ;; (setq wttrin-debug t)
   :bind
-  ("M-W" . wttrin)
+  ("M-S-w" . wttrin)  ;; was M-W, overrides kill-ring-save
   :config
   (setopt wttrin-unit-system "u")
   (setopt wttrin-favorite-location "New Orleans, LA")
