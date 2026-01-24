@@ -18,7 +18,7 @@
 (use-package time-zones
   :defer
   :commands time-zones
-  :bind ("M-S-c" . time-zones)  ;; was M-C, overrides capitalize-word)
+  :bind ("M-S-c" . time-zones))  ;; was M-C, overrides capitalize-word
 
 ;; Commented out old world-clock config while testing time-zone package above
 ;; (use-package time
