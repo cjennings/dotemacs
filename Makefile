@@ -38,9 +38,12 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 
 # No colors - using plain text symbols instead
 
-.PHONY: help test test-all test-unit test-integration test-file test-name \
+.PHONY: help targets test test-all test-unit test-integration test-file test-name \
         validate-parens validate-modules compile lint profile \
         clean clean-compiled clean-tests reset
+
+# Alias for help
+targets: help
 
 # Default target
 .DEFAULT_GOAL := help
