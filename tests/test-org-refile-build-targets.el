@@ -51,7 +51,7 @@ When cache is empty, function should:
   (test-org-refile-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern) '("/tmp/todo.org")))
+                 (lambda (_dir _pattern &optional _include-dirs _predicate) '("/tmp/todo.org")))
                 ((symbol-function 'fboundp) (lambda (_sym) nil)))
 
         ;; Before call: cache empty
@@ -84,7 +84,7 @@ When cache is valid (not expired):
   (unwind-protect
       (let ((scan-count 0))
         (cl-letf (((symbol-function 'directory-files-recursively)
-                   (lambda (_dir _pattern)
+                   (lambda (_dir _pattern &optional _include-dirs _predicate)
                      (setq scan-count (1+ scan-count))
                      '("/tmp/todo.org")))
                   ((symbol-function 'fboundp) (lambda (_sym) nil)))
@@ -118,7 +118,7 @@ When force-rebuild is non-nil:
   (unwind-protect
       (let ((scan-count 0))
         (cl-letf (((symbol-function 'directory-files-recursively)
-                   (lambda (_dir _pattern)
+                   (lambda (_dir _pattern &optional _include-dirs _predicate)
                      (setq scan-count (1+ scan-count))
                      (if (> scan-count 3)
                          '("/tmp/todo.org" "/tmp/todo2.org")  ; New file on rebuild
@@ -152,7 +152,7 @@ When cache timestamp exceeds TTL:
   (unwind-protect
       (let ((scan-count 0))
         (cl-letf (((symbol-function 'directory-files-recursively)
-                   (lambda (_dir _pattern)
+                   (lambda (_dir _pattern &optional _include-dirs _predicate)
                      (setq scan-count (1+ scan-count))
                      '("/tmp/todo.org")))
                   ((symbol-function 'fboundp) (lambda (_sym) nil)))
@@ -185,7 +185,7 @@ When directory scans return empty:
   (test-org-refile-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern) nil))  ; No files found
+                 (lambda (_dir _pattern &optional _include-dirs _predicate) nil))  ; No files found
                 ((symbol-function 'fboundp) (lambda (_sym) nil)))
 
         (cj/build-org-refile-targets)
@@ -209,7 +209,7 @@ During build:
   (unwind-protect
       (let ((flag-during-build nil))
         (cl-letf (((symbol-function 'directory-files-recursively)
-                   (lambda (_dir _pattern)
+                   (lambda (_dir _pattern &optional _include-dirs _predicate)
                      ;; Capture flag state during directory scan
                      (setq flag-during-build cj/org-refile-targets-building)
                      '("/tmp/todo.org")))
@@ -238,7 +238,7 @@ When build encounters error:
   (test-org-refile-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern)
+                 (lambda (_dir _pattern &optional _include-dirs _predicate)
                    (error "Simulated scan failure")))
                 ((symbol-function 'fboundp) (lambda (_sym) nil)))
 
@@ -261,7 +261,7 @@ When cache is nil but timestamp exists:
   (test-org-refile-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern) '("/tmp/todo.org")))
+                 (lambda (_dir _pattern &optional _include-dirs _predicate) '("/tmp/todo.org")))
                 ((symbol-function 'fboundp) (lambda (_sym) nil)))
 
         ;; Set inconsistent state
@@ -287,7 +287,7 @@ When directory-files-recursively errors:
   (test-org-refile-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern)
+                 (lambda (_dir _pattern &optional _include-dirs _predicate)
                    (error "Permission denied")))
                 ((symbol-function 'fboundp) (lambda (_sym) nil)))
 

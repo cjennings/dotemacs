@@ -20,6 +20,12 @@
 
 (require 'ert)
 (require 'org)
+
+;; Stub variables needed by org-config before loading
+(defvar cj/custom-keymap (make-sparse-keymap) "Stub keymap for testing.")
+(defvar cj/org-map (make-sparse-keymap) "Stub org keymap for testing.")
+(defvar org-dir "/tmp/test-org/" "Stub org directory for testing.")
+
 (require 'org-config)  ; Defines cj/org-sort-by-todo-and-priority
 
 ;;; Test Helpers

@@ -7,6 +7,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'org-id)  ; needed for org-id-uuid
 (require 'org-noter-config)
 
 ;;; Test Helpers
