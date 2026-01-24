@@ -47,19 +47,21 @@ Prompts user for the action when executing."
 
 ;; --------------------------------- Mu4e Email --------------------------------
 
+(autoload 'mu4e "mu4e" "Launch mu4e email client." t)
+(keymap-global-set "C-c m" #'mu4e)
+
 (use-package mu4e
   :ensure nil  ;; mu4e gets installed by installing 'mu' via the system package manager
   :load-path "/usr/share/emacs/site-lisp/mu4e/"
   :commands (mu4e mu4e-update-index)
   :bind
-  ("C-c m". mu4e)
-  (:map mu4e-headers-mode-map
-        ("M" . cj/mu4e-mark-all-headers)
-        ("D" . mu4e-headers-mark-for-trash)
-        ("d" . mu4e-headers-mark-for-delete))
-  (:map mu4e-view-mode-map
-        ("r" . mu4e-compose-wide-reply)
-		("R" . mu4e-compose-reply))
+  ((:map mu4e-headers-mode-map
+    ("M" . cj/mu4e-mark-all-headers)
+    ("D" . mu4e-headers-mark-for-trash)
+    ("d" . mu4e-headers-mark-for-delete))
+   (:map mu4e-view-mode-map
+    ("r" . mu4e-compose-wide-reply)
+    ("R" . mu4e-compose-reply)))
   :hook
   (mu4e-view-mode . turn-on-visual-line-mode)
   :config
