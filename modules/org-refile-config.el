@@ -101,13 +101,18 @@ so caching improves performance from 15-20 seconds to instant."
                       (push (cons file file-rule) new-files)))))
 
               ;; Add todo.org files from known directories
+              ;; Skip directories that cause permission errors (e.g., archiso airootfs)
               (dolist (dir (list user-emacs-directory code-dir projects-dir))
-                (let* ((todo-files (directory-files-recursively
-                                    dir "^[Tt][Oo][Dd][Oo]\\.[Oo][Rr][Gg]$"))
-                       (file-rule '(:maxlevel . 1)))
-                  (dolist (file todo-files)
-                    (unless (assoc file new-files)
-                      (push (cons file file-rule) new-files)))))
+                (condition-case nil
+                    (let* ((todo-files (directory-files-recursively
+                                        dir "^[Tt][Oo][Dd][Oo]\\.[Oo][Rr][Gg]$"
+                                        nil
+                                        (lambda (d) (not (string-match-p "airootfs" d)))))
+                           (file-rule '(:maxlevel . 1)))
+                      (dolist (file todo-files)
+                        (unless (assoc file new-files)
+                          (push (cons file file-rule) new-files))))
+                  (permission-denied nil)))  ;; Silently skip permission errors
 
               ;; Update targets and cache
               (setq new-files (nreverse new-files))
