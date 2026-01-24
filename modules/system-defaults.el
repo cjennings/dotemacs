@@ -107,6 +107,12 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 (setq bidi-display-reordering nil)                  ;; don't reorder bidirectional text for display
 (setq bidi-paragraph-direction t)                   ;; forces directionality of text for performance.
 
+;; -------------------------------- Emacs Server -------------------------------
+;; Start server so emacsclient can connect (needed for pinentry-emacs in terminal)
+
+(unless (or (daemonp) (server-running-p))
+  (server-start))
+
 (setq system-time-locale "C")                       ;; use en_US locale to format time.
 
 ;; --------------------------------- Clipboard ---------------------------------
@@ -206,7 +212,8 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
   (add-to-list 'recentf-exclude "emacs_bookmarks")
   (add-to-list 'recentf-exclude "\\.emacs\\.d/elpa")
   (add-to-list 'recentf-exclude "\\.emacs\\.d/recentf")
-  (add-to-list 'recentf-exclude "\\ElfeedDB/index"))
+  (add-to-list 'recentf-exclude "\\ElfeedDB/index")
+  (add-to-list 'recentf-exclude "airootfs"))
 
 ;; -------------------------- Autosave And Lock Files --------------------------
 
