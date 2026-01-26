@@ -55,9 +55,9 @@
   (setq fontaine-presets
 		'(
 		  (default
-		   :default-family "Berkeley Mono"
+		   :default-family "BerkeleyMono Nerd Font"
 		   :default-weight regular
-		   :default-height 110
+		   :default-height 130
 		   :fixed-pitch-family nil          ;; falls back to :default-family
 		   :fixed-pitch-weight nil          ;; falls back to :default-weight
 		   :fixed-pitch-height 1.0
@@ -128,7 +128,7 @@ If FRAME is nil, uses the selected frame."
 	(let ((target-frame (or frame (selected-frame))))
 	  (unless (member target-frame cj/fontaine-configured-frames)
 		(with-selected-frame target-frame
-		  (when (env-gui-p target-frame)
+		  (when (env-gui-p)
 			(fontaine-set-preset 'default)
 			(push target-frame cj/fontaine-configured-frames))))))
 
