@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Palette</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #2a2a2a;
+            color: #f0f0f0;
+            padding: 20px;
+            margin: 0;
+        }
+        .palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            max-width: 1200px;
+        }
+        .swatch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #1a1a1a;
+            padding: 8px 12px;
+            border-radius: 4px;
+        }
+        .color-box {
+            width: 4ch;
+            height: 4ch;
+            border: 1px solid #555;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        .label {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .name {
+            font-weight: bold;
+            color: #fff;
+        }
+        .hex {
+            color: #999;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+    <h1>Color Palette Comparison</h1>
+    <div class="palette">
+        <div class="swatch">
+            <div class="color-box" style="background: #151311;"></div>
+            <div class="label"><span class="name">bg</span><br><span class="hex">#151311</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #252321;"></div>
+            <div class="label"><span class="name">bg+1</span><br><span class="hex">#252321</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #474544;"></div>
+            <div class="label"><span class="name">bg+2</span><br><span class="hex">#474544</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #58574e;"></div>
+            <div class="label"><span class="name">gray-2</span><br><span class="hex">#58574e</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #6c6a60;"></div>
+            <div class="label"><span class="name">gray-1</span><br><span class="hex">#6c6a60</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #969385;"></div>
+            <div class="label"><span class="name">gray</span><br><span class="hex">#969385</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #b4b1a2;"></div>
+            <div class="label"><span class="name">gray+1</span><br><span class="hex">#b4b1a2</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #d0cbc0;"></div>
+            <div class="label"><span class="name">gray+2</span><br><span class="hex">#d0cbc0</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #8a9496;"></div>
+            <div class="label"><span class="name">steel</span><br><span class="hex">#8a9496</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #acb0b3;"></div>
+            <div class="label"><span class="name">steel+1</span><br><span class="hex">#acb0b3</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #c0c7ca;"></div>
+            <div class="label"><span class="name">steel+2</span><br><span class="hex">#c0c7ca</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #67809c;"></div>
+            <div class="label"><span class="name">blue</span><br><span class="hex">#67809c</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #b2c3cc;"></div>
+            <div class="label"><span class="name">blue+1</span><br><span class="hex">#b2c3cc</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #d9e2ff;"></div>
+            <div class="label"><span class="name">blue+2</span><br><span class="hex">#d9e2ff</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #646d14;"></div>
+            <div class="label"><span class="name">green-2</span><br><span class="hex">#646d14</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #869038;"></div>
+            <div class="label"><span class="name">green-1</span><br><span class="hex">#869038</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #a4ac64;"></div>
+            <div class="label"><span class="name">green</span><br><span class="hex">#a4ac64</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #ccc768;"></div>
+            <div class="label"><span class="name">green+1</span><br><span class="hex">#ccc768</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #3f1c0f;"></div>
+            <div class="label"><span class="name">red-3</span><br><span class="hex">#3f1c0f</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #7c2a09;"></div>
+            <div class="label"><span class="name">red-2</span><br><span class="hex">#7c2a09</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #a7502d;"></div>
+            <div class="label"><span class="name">red-1</span><br><span class="hex">#a7502d</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #d47c59;"></div>
+            <div class="label"><span class="name">red</span><br><span class="hex">#d47c59</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #edb08f;"></div>
+            <div class="label"><span class="name">red+1</span><br><span class="hex">#edb08f</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #edbca2;"></div>
+            <div class="label"><span class="name">red+2</span><br><span class="hex">#edbca2</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #875f00;"></div>
+            <div class="label"><span class="name">yellow-2</span><br><span class="hex">#875f00</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #ffd700;"></div>
+            <div class="label"><span class="name">yellow-1</span><br><span class="hex">#ffd700</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #d7af5f;"></div>
+            <div class="label"><span class="name">yellow</span><br><span class="hex">#d7af5f</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #ffd75f;"></div>
+            <div class="label"><span class="name">yellow+1</span><br><span class="hex">#ffd75f</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #f9ee98;"></div>
+            <div class="label"><span class="name">yellow+2</span><br><span class="hex">#f9ee98</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #ff2a00;"></div>
+            <div class="label"><span class="name">intense-red</span><br><span class="hex">#ff2a00</span></div>
+        </div>
+        <div class="swatch">
+            <div class="color-box" style="background: #f0fef0;"></div>
+            <div class="label"><span class="name">fg</span><br><span class="hex">#f0fef0</span></div>
+        </div>
+    </div>
+</body>
+</html>
