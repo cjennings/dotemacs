@@ -94,7 +94,7 @@ Example:
   "Sync interval in minutes.
 Default: 60 minutes (1 hour).")
 
-(defvar calendar-sync-auto-start nil
+(defvar calendar-sync-auto-start t
   "Whether to automatically start calendar sync when module loads.
 If non-nil, sync starts automatically when calendar-sync is loaded.
 If nil, user must manually call `calendar-sync-start'.")
