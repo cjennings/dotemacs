@@ -19,11 +19,9 @@
 ;; --------------------------------- Org Drill ---------------------------------
 
 (use-package org-drill
-  :load-path "~/code/org-drill"
-  ;; Use local development version instead of VC install
-  ;; :vc (:url "https://github.com/cjennings/org-drill"
-  ;;      :branch "main"
-  ;;      :rev :newest)
+  :vc (:url "https://github.com/cjennings/org-drill"
+       :branch "main"
+       :rev :newest)
   :after (org org-capture)
   :demand t
   :commands (org-drill cj/drill-start)
