@@ -58,3 +58,8 @@ auto-save-list/
 /.claude/
 history
 .stignore
+
+# Calendar sync generated data
+/data/gcal.org
+/data/pcal.org
+/data/calendar-sync-state.el
