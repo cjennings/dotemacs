@@ -278,11 +278,14 @@ Monday = 1, Sunday = 7."
 
 (defun calendar-sync--add-days (date days)
   "Add DAYS to DATE (year month day).
-Returns new (year month day)."
+Returns new (year month day).
+Uses noon internally to avoid DST boundary issues where adding
+86400 seconds to midnight can land on the same calendar date
+during fall-back transitions."
   (let* ((year (nth 0 date))
          (month (nth 1 date))
          (day (nth 2 date))
-         (time (encode-time 0 0 0 day month year))
+         (time (encode-time 0 0 12 day month year))
          (new-time (time-add time (days-to-time days)))
          (decoded (decode-time new-time)))
     (list (nth 5 decoded) (nth 4 decoded) (nth 3 decoded))))
@@ -292,11 +295,14 @@ Returns new (year month day)."
 (defun calendar-sync--split-events (ics-content)
   "Split ICS-CONTENT into individual VEVENT blocks.
 Returns list of strings, each containing one VEVENT block."
-  (let ((events '())
-        (start 0))
-    (while (string-match "BEGIN:VEVENT\\(.\\|\n\\)*?END:VEVENT" ics-content start)
-      (push (match-string 0 ics-content) events)
-      (setq start (match-end 0)))
+  (let ((events '()))
+    (with-temp-buffer
+      (insert ics-content)
+      (goto-char (point-min))
+      (while (search-forward "BEGIN:VEVENT" nil t)
+        (let ((start (match-beginning 0)))
+          (when (search-forward "END:VEVENT" nil t)
+            (push (buffer-substring-no-properties start (point)) events)))))
     (nreverse events)))
 
 (defun calendar-sync--get-property (event property)
