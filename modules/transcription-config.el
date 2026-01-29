@@ -369,7 +369,9 @@ Prompts with completing-read to select from available backends."
 (with-eval-after-load 'dired
   (define-key dired-mode-map (kbd "T") #'cj/transcribe-audio-at-point))
 
-;; Dirvish inherits dired-mode-map, so T works automatically
+;; Dirvish uses its own keymap, so bind T there too
+(with-eval-after-load 'dirvish
+  (define-key dirvish-mode-map (kbd "T") #'cj/transcribe-audio-at-point))
 
 ;; ------------------------------- Global Keybindings --------------------------
 
