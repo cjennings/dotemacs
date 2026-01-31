@@ -456,40 +456,75 @@ Otherwise use the default location in `audio-recordings-dir'."
         (make-directory directory t))
       (cj/ffmpeg-record-audio location))))
 
+(defun cj/recording--wayland-p ()
+  "Return non-nil if running under Wayland."
+  (string= (getenv "XDG_SESSION_TYPE") "wayland"))
+
+(defun cj/recording--check-wf-recorder ()
+  "Check if wf-recorder is available (needed for Wayland).
+Return t if found, nil otherwise."
+  (if (executable-find "wf-recorder")
+      t
+    (user-error "wf-recorder not found. Install with: sudo pacman -S wf-recorder")
+    nil))
+
 (defun cj/ffmpeg-record-video (directory)
-  "Start an ffmpeg video recording.  Save output to DIRECTORY."
+  "Start a video recording.  Save output to DIRECTORY.
+Uses wf-recorder on Wayland, x11grab on X11."
   (cj/recording-check-ffmpeg)
   (unless cj/video-recording-ffmpeg-process
-	(let* ((devices (cj/recording-get-devices))
-		   (mic-device (car devices))
-		   (system-device (cdr devices))
-		   (location (expand-file-name directory))
-		   (name (format-time-string "%Y-%m-%d-%H-%M-%S"))
-		   (filename (expand-file-name (concat name ".mkv") location))
-		   (ffmpeg-command
-			(format (concat "ffmpeg -framerate 30 -f x11grab -i :0.0+ "
-							"-f pulse -i %s "
-							"-ac 1 "
-							"-f pulse -i %s "
-							"-ac 2 "
-							"-filter_complex \"[1:a]volume=%.1f[mic];[2:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2[out]\" "
-							"-map 0:v -map \"[out]\" "
-							"%s")
-					mic-device
-					system-device
-					cj/recording-mic-boost
-					cj/recording-system-volume
-					filename)))
-	  ;; start the recording
-	  (setq cj/video-recording-ffmpeg-process
-			(start-process-shell-command "ffmpeg-video-recording"
-										 "*ffmpeg-video-recording*"
-										 ffmpeg-command))
-	  (set-process-query-on-exit-flag cj/video-recording-ffmpeg-process nil)
-	  (set-process-sentinel cj/video-recording-ffmpeg-process #'cj/recording-process-sentinel)
-	  (force-mode-line-update t)
-	  (message "Started video recording to %s (mic: %.1fx, system: %.1fx)."
-			   filename cj/recording-mic-boost cj/recording-system-volume))))
+    (let* ((devices (cj/recording-get-devices))
+           (mic-device (car devices))
+           (system-device (cdr devices))
+           (location (expand-file-name directory))
+           (name (format-time-string "%Y-%m-%d-%H-%M-%S"))
+           (filename (expand-file-name (concat name ".mkv") location))
+           (on-wayland (cj/recording--wayland-p))
+           (record-command
+            (if on-wayland
+                ;; Wayland: wf-recorder pipes H264 video to ffmpeg for audio mixing
+                ;; wf-recorder outputs matroska container with H264, ffmpeg adds audio
+                (progn
+                  (cj/recording--check-wf-recorder)
+                  (format (concat "wf-recorder --no-audio -c h264 -f matroska -o - 2>/dev/null | "
+                                  "ffmpeg -i pipe:0 "
+                                  "-f pulse -i %s "
+                                  "-f pulse -i %s "
+                                  "-filter_complex \"[1:a]volume=%.1f[mic];[2:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2[out]\" "
+                                  "-map 0:v -map \"[out]\" "
+                                  "-c:v copy "
+                                  "%s")
+                          (shell-quote-argument mic-device)
+                          (shell-quote-argument system-device)
+                          cj/recording-mic-boost
+                          cj/recording-system-volume
+                          (shell-quote-argument filename)))
+              ;; X11: use x11grab directly
+              (format (concat "ffmpeg -framerate 30 -f x11grab -i :0.0+ "
+                              "-f pulse -i %s "
+                              "-ac 1 "
+                              "-f pulse -i %s "
+                              "-ac 2 "
+                              "-filter_complex \"[1:a]volume=%.1f[mic];[2:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2[out]\" "
+                              "-map 0:v -map \"[out]\" "
+                              "%s")
+                      mic-device
+                      system-device
+                      cj/recording-mic-boost
+                      cj/recording-system-volume
+                      filename))))
+      ;; start the recording
+      (setq cj/video-recording-ffmpeg-process
+            (start-process-shell-command "ffmpeg-video-recording"
+                                         "*ffmpeg-video-recording*"
+                                         record-command))
+      (set-process-query-on-exit-flag cj/video-recording-ffmpeg-process nil)
+      (set-process-sentinel cj/video-recording-ffmpeg-process #'cj/recording-process-sentinel)
+      (force-mode-line-update t)
+      (message "Started video recording to %s (%s, mic: %.1fx, system: %.1fx)."
+               filename
+               (if on-wayland "Wayland/wf-recorder" "X11")
+               cj/recording-mic-boost cj/recording-system-volume))))
 
 (defun cj/ffmpeg-record-audio (directory)
   "Start an ffmpeg audio recording.  Save output to DIRECTORY.
