@@ -57,7 +57,7 @@
 		  (default
 		   :default-family "BerkeleyMono Nerd Font"
 		   :default-weight regular
-		   :default-height 130
+		   :default-height 140
 		   :fixed-pitch-family nil          ;; falls back to :default-family
 		   :fixed-pitch-weight nil          ;; falls back to :default-weight
 		   :fixed-pitch-height 1.0
