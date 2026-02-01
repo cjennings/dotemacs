@@ -25,6 +25,7 @@
 
 (eval-when-compile (require 'user-constants))
 (eval-when-compile (require 'system-utils))
+(require 'host-environment)
 
 ;; mark files in dirvish, attach in mu4e
 (add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
@@ -210,6 +211,27 @@ regardless of what file or subdirectory the point is on."
 									 (shell-quote-argument current-dir)))))))
 	  (message "Could not determine current directory."))))
 
+(defun cj/set-wallpaper ()
+  "Set the image at point as the desktop wallpaper.
+Uses feh on X11, swww on Wayland."
+  (interactive)
+  (let ((file (expand-file-name (dired-file-name-at-point))))
+    (cond
+     ((env-x11-p)
+      (if (executable-find "feh")
+          (progn
+            (call-process "feh" nil 0 nil "--bg-fill" file)
+            (message "Wallpaper set: %s (feh)" (file-name-nondirectory file)))
+        (message "feh not found")))
+     ((env-wayland-p)
+      (if (executable-find "swww")
+          (progn
+            (call-process "swww" nil 0 nil "img" file)
+            (message "Wallpaper set: %s (swww)" (file-name-nondirectory file)))
+        (message "swww not found")))
+     (t
+      (message "Unknown display server (not X11 or Wayland)")))))
+
 ;;; ---------------------------------- Dirvish ----------------------------------
 
 (use-package dirvish
@@ -307,10 +329,7 @@ regardless of what file or subdirectory the point is on."
    ("C-x D"   . dirvish)
    ("<f11>"   . dirvish-side)
    :map dirvish-mode-map
-   ("bg"      . (lambda () (interactive)
-				  (shell-command
-				   (concat "nitrogen --save --set-zoom-fill "
-						   (dired-file-name-at-point) " >>/dev/null 2>&1"))))
+   ("bg"      . cj/set-wallpaper)
    ("/"       . dirvish-narrow)
    ("<left>"  . dired-up-directory)
    ("<right>" . dired-find-file)
