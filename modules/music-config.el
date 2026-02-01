@@ -407,7 +407,9 @@ Dirs added recursively."
          ((file-directory-p file) (cj/music-add-directory-recursive file))
          ((cj/music--valid-file-p file) (emms-add-file file))
          (t (message "Skipping non-music file: %s" file))))
-      (message "Added %d item(s) to playlist" (length files)))))
+      (message "Added %d item(s) to playlist" (length files))))
+
+  (keymap-set dirvish-mode-map "+" #'cj/music-add-dired-selection))
 
 ;;; EMMS setup and keybindings
 
