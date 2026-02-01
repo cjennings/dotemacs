@@ -320,6 +320,25 @@ Returns nil if property not found."
         (setq start (match-end 0)))
       value)))
 
+(defun calendar-sync--get-property-line (event property)
+  "Extract full PROPERTY line from EVENT string, including parameters.
+Returns the complete line like 'DTSTART;TZID=Europe/Lisbon:20260202T190000'.
+Returns nil if property not found."
+  (when (string-match (format "^\\(%s[^\n]*\\)$" (regexp-quote property)) event)
+    (match-string 1 event)))
+
+(defun calendar-sync--extract-tzid (property-line)
+  "Extract TZID parameter value from PROPERTY-LINE.
+PROPERTY-LINE is like 'DTSTART;TZID=Europe/Lisbon:20260202T190000'.
+Returns timezone string like 'Europe/Lisbon', or nil if no TZID.
+Returns nil for malformed lines (missing colon separator)."
+  (when (and property-line
+             (stringp property-line)
+             ;; Must have colon (property:value format)
+             (string-match-p ":" property-line)
+             (string-match ";TZID=\\([^;:]+\\)" property-line))
+    (match-string 1 property-line)))
+
 (defun calendar-sync--convert-utc-to-local (year month day hour minute second)
   "Convert UTC datetime to local time.
 Returns list (year month day hour minute) in local timezone."
@@ -331,10 +350,42 @@ Returns list (year month day hour minute) in local timezone."
           (nth 2 local-time)  ; hour
           (nth 1 local-time)))) ; minute
 
-(defun calendar-sync--parse-timestamp (timestamp-str)
+(defun calendar-sync--convert-tz-to-local (year month day hour minute source-tz)
+  "Convert datetime from SOURCE-TZ timezone to local time.
+SOURCE-TZ is a timezone name like 'Europe/Lisbon' or 'Asia/Yerevan'.
+Returns list (year month day hour minute) in local timezone, or nil on error.
+
+Uses the system `date` command for reliable timezone conversion."
+  (when (and source-tz (not (string-empty-p source-tz)))
+    (condition-case err
+        (let* ((date-input (format "%04d-%02d-%02d %02d:%02d"
+                                   year month day hour minute))
+               ;; Use date command: convert from source-tz to local
+               ;; TZ= sets output timezone (local), TZ=\"...\" in -d sets input timezone
+               (cmd (format "date -d 'TZ=\"%s\" %s' '+%%Y %%m %%d %%H %%M' 2>/dev/null"
+                            source-tz date-input))
+               (result (string-trim (shell-command-to-string cmd)))
+               (parts (split-string result " ")))
+          (if (= 5 (length parts))
+              (list (string-to-number (nth 0 parts))
+                    (string-to-number (nth 1 parts))
+                    (string-to-number (nth 2 parts))
+                    (string-to-number (nth 3 parts))
+                    (string-to-number (nth 4 parts)))
+            ;; date command failed (invalid timezone, etc.)
+            (cj/log-silently "calendar-sync: Failed to convert timezone %s: %s"
+                             source-tz result)
+            nil))
+      (error
+       (cj/log-silently "calendar-sync: Error converting timezone %s: %s"
+                        source-tz (error-message-string err))
+       nil))))
+
+(defun calendar-sync--parse-timestamp (timestamp-str &optional tzid)
   "Parse iCal timestamp string TIMESTAMP-STR.
 Returns (year month day hour minute) or (year month day) for all-day events.
 Converts UTC times (ending in Z) to local time.
+If TZID is provided (e.g., 'Europe/Lisbon'), converts from that timezone to local.
 Returns nil if parsing fails."
   (cond
    ;; DateTime format: 20251116T140000Z or 20251116T140000
@@ -346,9 +397,18 @@ Returns nil if parsing fails."
            (minute (string-to-number (match-string 5 timestamp-str)))
            (second (string-to-number (match-string 6 timestamp-str)))
            (is-utc (match-string 7 timestamp-str)))
-      (if is-utc
-          (calendar-sync--convert-utc-to-local year month day hour minute second)
-        (list year month day hour minute))))
+      (cond
+       ;; UTC timestamp (Z suffix) - convert from UTC
+       (is-utc
+        (calendar-sync--convert-utc-to-local year month day hour minute second))
+       ;; TZID provided - convert from that timezone
+       (tzid
+        (or (calendar-sync--convert-tz-to-local year month day hour minute tzid)
+            ;; Fallback to raw time if conversion fails
+            (list year month day hour minute)))
+       ;; No timezone info - assume local time
+       (t
+        (list year month day hour minute)))))
    ;; Date format: 20251116
    ((string-match "\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)" timestamp-str)
     (list (string-to-number (match-string 1 timestamp-str))
@@ -582,17 +642,24 @@ Returns list of event plists, or nil if not a recurring event."
   "Parse single VEVENT string EVENT-STR into plist.
 Returns plist with :summary :description :location :start :end.
 Returns nil if event lacks required fields (DTSTART, SUMMARY).
-Skips events with RECURRENCE-ID (individual instances of recurring events)."
+Skips events with RECURRENCE-ID (individual instances of recurring events).
+Handles TZID-qualified timestamps by converting to local time."
   ;; Skip individual instances of recurring events (they're handled by RRULE expansion)
   (unless (calendar-sync--get-property event-str "RECURRENCE-ID")
-    (let ((summary (calendar-sync--get-property event-str "SUMMARY"))
-          (description (calendar-sync--get-property event-str "DESCRIPTION"))
-          (location (calendar-sync--get-property event-str "LOCATION"))
-          (dtstart (calendar-sync--get-property event-str "DTSTART"))
-          (dtend (calendar-sync--get-property event-str "DTEND")))
+    (let* ((summary (calendar-sync--get-property event-str "SUMMARY"))
+           (description (calendar-sync--get-property event-str "DESCRIPTION"))
+           (location (calendar-sync--get-property event-str "LOCATION"))
+           ;; Get raw property values
+           (dtstart (calendar-sync--get-property event-str "DTSTART"))
+           (dtend (calendar-sync--get-property event-str "DTEND"))
+           ;; Extract TZID from property lines (if present)
+           (dtstart-line (calendar-sync--get-property-line event-str "DTSTART"))
+           (dtend-line (calendar-sync--get-property-line event-str "DTEND"))
+           (start-tzid (calendar-sync--extract-tzid dtstart-line))
+           (end-tzid (calendar-sync--extract-tzid dtend-line)))
       (when (and summary dtstart)
-        (let ((start-parsed (calendar-sync--parse-timestamp dtstart))
-              (end-parsed (and dtend (calendar-sync--parse-timestamp dtend))))
+        (let ((start-parsed (calendar-sync--parse-timestamp dtstart start-tzid))
+              (end-parsed (and dtend (calendar-sync--parse-timestamp dtend end-tzid))))
           (when start-parsed
             (list :summary summary
                   :description description
