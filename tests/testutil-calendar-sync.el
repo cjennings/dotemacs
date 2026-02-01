@@ -194,5 +194,88 @@ DATE is (year month day) or (year month day hour minute)."
         (minute (or (nth 4 date) 0)))
     (encode-time 0 minute hour day month year)))
 
+;;; Timezone Test Helpers
+
+(defun test-calendar-sync-ics-datetime-local (time-list)
+  "Convert TIME-LIST to iCal DATETIME format WITHOUT Z suffix.
+TIME-LIST is (year month day hour minute).
+Returns string like '20251116T140000' (no timezone, treated as local)."
+  (format "%04d%02d%02dT%02d%02d00"
+          (nth 0 time-list)
+          (nth 1 time-list)
+          (nth 2 time-list)
+          (nth 3 time-list)
+          (nth 4 time-list)))
+
+(defun test-calendar-sync-ics-datetime-with-tzid (time-list tzid)
+  "Convert TIME-LIST to iCal DTSTART with TZID parameter.
+TIME-LIST is (year month day hour minute).
+TZID is timezone string like \"Europe/Lisbon\".
+Returns string like 'DTSTART;TZID=Europe/Lisbon:20260202T190000'."
+  (format "DTSTART;TZID=%s:%04d%02d%02dT%02d%02d00"
+          tzid
+          (nth 0 time-list)
+          (nth 1 time-list)
+          (nth 2 time-list)
+          (nth 3 time-list)
+          (nth 4 time-list)))
+
+(defun test-calendar-sync-make-vevent-with-tzid (summary start end tzid &optional description location)
+  "Create a VEVENT block with TZID-qualified timestamps.
+START and END are time lists (year month day hour minute).
+TZID is timezone string like \"Europe/Lisbon\".
+Returns .ics formatted VEVENT string."
+  (let* ((dtstart-val (format "%04d%02d%02dT%02d%02d00"
+                              (nth 0 start) (nth 1 start) (nth 2 start)
+                              (nth 3 start) (nth 4 start)))
+         (dtend-val (when end
+                      (format "%04d%02d%02dT%02d%02d00"
+                              (nth 0 end) (nth 1 end) (nth 2 end)
+                              (nth 3 end) (nth 4 end)))))
+    (concat "BEGIN:VEVENT\n"
+            "SUMMARY:" summary "\n"
+            "DTSTART;TZID=" tzid ":" dtstart-val "\n"
+            (when dtend-val (concat "DTEND;TZID=" tzid ":" dtend-val "\n"))
+            (when description (concat "DESCRIPTION:" description "\n"))
+            (when location (concat "LOCATION:" location "\n"))
+            "END:VEVENT")))
+
+(defun test-calendar-sync-convert-tz-via-date (year month day hour minute source-tz)
+  "Convert datetime from SOURCE-TZ to local time using date command.
+Returns (year month day hour minute) in local timezone.
+This is the reference implementation for verifying our conversion function."
+  (let* ((date-input (format "%04d-%02d-%02d %02d:%02d" year month day hour minute))
+         ;; Don't set TZ= prefix - let date use system local timezone as output
+         ;; The TZ="source-tz" inside -d specifies the INPUT timezone
+         (cmd (format "date -d 'TZ=\"%s\" %s' '+%%Y %%m %%d %%H %%M' 2>/dev/null"
+                      source-tz
+                      date-input))
+         (result (string-trim (shell-command-to-string cmd)))
+         (parts (split-string result " ")))
+    (when (= 5 (length parts))
+      (list (string-to-number (nth 0 parts))
+            (string-to-number (nth 1 parts))
+            (string-to-number (nth 2 parts))
+            (string-to-number (nth 3 parts))
+            (string-to-number (nth 4 parts))))))
+
+(defun test-calendar-sync-local-tz-name ()
+  "Get the local timezone name (e.g., 'America/Chicago').
+Returns nil if unable to determine."
+  (let ((tz (getenv "TZ")))
+    (if (and tz (not (string-empty-p tz)))
+        tz
+      ;; Try to read from /etc/timezone or /etc/localtime
+      (cond
+       ((file-exists-p "/etc/timezone")
+        (string-trim (with-temp-buffer
+                       (insert-file-contents "/etc/timezone")
+                       (buffer-string))))
+       ((file-symlink-p "/etc/localtime")
+        (let ((target (file-truename "/etc/localtime")))
+          (when (string-match "/zoneinfo/\\(.+\\)$" target)
+            (match-string 1 target))))
+       (t nil)))))
+
 (provide 'testutil-calendar-sync)
 ;;; testutil-calendar-sync.el ends here
