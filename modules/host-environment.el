@@ -44,6 +44,17 @@
   "Return t if host system is running the X Window System."
   (string= (window-system) "x"))
 
+(defun env-x11-p ()
+  "Return t if running under X11 (not Wayland)."
+  (and (eq (window-system) 'x)
+       (not (getenv "WAYLAND_DISPLAY"))))
+
+(defun env-wayland-p ()
+  "Return t if running under Wayland.
+Checks WAYLAND_DISPLAY env var, which is set by Wayland compositors.
+This returns t even if Emacs is running through XWayland."
+  (and (getenv "WAYLAND_DISPLAY") t))
+
 (defun env-terminal-p ()
   "Return t if running in a terminal."
   (not (display-graphic-p)))
