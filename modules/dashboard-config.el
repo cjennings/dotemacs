@@ -47,6 +47,15 @@
          (t (format dashboard-bookmarks-item-format filename path-shorten)))
      el)))
 
+;; ------------------------- Banner Title Centering Fix ------------------------
+;; The default centering can be off due to font width calculations.
+;; This override allows manual adjustment via dashboard-banner-title-offset.
+
+(defvar dashboard-banner-title-offset 5
+  "Offset to adjust banner title centering.
+Positive values shift left, negative values shift right.
+Adjust this if the title doesn't appear centered under the banner image.")
+
 ;; ----------------------------- Display Dashboard -----------------------------
 ;; convenience function to redisplay dashboard and kill all other windows
 
@@ -181,6 +190,21 @@
   (define-key dashboard-mode-map (kbd "i") (lambda () (interactive) (cj/erc-switch-to-buffer-with-completion)))
   (define-key dashboard-mode-map (kbd "t") (lambda () (interactive) (vterm)))
   (define-key dashboard-mode-map (kbd "d") (lambda () (interactive) (dirvish user-home-dir))))
+
+;; Override banner title centering (must be after dashboard-widgets loads)
+(with-eval-after-load 'dashboard-widgets
+  (defun dashboard-insert-banner-title ()
+    "Insert `dashboard-banner-logo-title' with adjustable centering offset."
+    (when dashboard-banner-logo-title
+      (let* ((title dashboard-banner-logo-title)
+             (start (point)))
+        (insert (propertize title 'face 'dashboard-banner-logo-title))
+        (let* ((end (point))
+               (width (string-width title))
+               (adjusted-center (+ (/ (float width) 2) dashboard-banner-title-offset))
+               (prefix (propertize " " 'display `(space . (:align-to (- center ,adjusted-center))))))
+          (add-text-properties start end `(line-prefix ,prefix indent-prefix ,prefix))))
+      (insert "\n"))))
 
 (provide 'dashboard-config)
 ;;; dashboard-config.el ends here.
