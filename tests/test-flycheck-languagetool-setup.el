@@ -29,12 +29,16 @@
     (should (file-executable-p wrapper-path))))
 
 (ert-deftest test-flycheck-languagetool-setup-normal-languagetool-installed ()
-  "Test that languagetool command is available in PATH."
-  (should (executable-find "languagetool")))
+  "Test that languagetool command is available in PATH.
+The test failure serves as a reminder to install the dependency."
+  (should (or (executable-find "languagetool")
+              (error "LanguageTool not installed. Install with: sudo pacman -S languagetool"))))
 
 (ert-deftest test-flycheck-languagetool-setup-normal-python3-available ()
-  "Test that python3 is available for wrapper script."
-  (should (executable-find "python3")))
+  "Test that python3 is available for wrapper script.
+The test failure serves as a reminder to install the dependency."
+  (should (or (executable-find "python3")
+              (error "python3 not installed. Install with: sudo pacman -S python"))))
 
 
 ;; ----------------------------- Boundary Cases --------------------------------
