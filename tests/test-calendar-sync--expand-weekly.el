@@ -24,9 +24,7 @@
 ;;; Normal Cases
 
 (ert-deftest test-calendar-sync--expand-weekly-normal-saturday-returns-occurrences ()
-  "Test expanding weekly event on Saturday (GTFO use case).
-Known issue: Timezone calculation may cause off-by-one day error."
-  :expected-result :failed
+  "Test expanding weekly event on Saturday (GTFO use case)."
   (test-calendar-sync--expand-weekly-setup)
   (unwind-protect
       (let* ((start-date (test-calendar-sync-time-days-from-now 1 10 30))
