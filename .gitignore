@@ -62,4 +62,5 @@ history
 # Calendar sync generated data
 /data/gcal.org
 /data/pcal.org
+/data/dcal.org
 /data/calendar-sync-state.el

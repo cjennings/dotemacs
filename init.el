@@ -122,7 +122,10 @@
          :file ,gcal-file)
         (:name "proton"
          :url "https://calendar.proton.me/api/calendar/v1/url/MpLtuwsUNoygyA_60GvJE5cz0hbREbrAPBEJoWDRpFEstnmzmEMDb7sjLzkY8kbkF10A7Be3wGKB1-vqaLf-pw==/calendar.ics?CacheKey=LrB9NG5Vfqp5p2sy90H13g%3D%3D&PassphraseKey=sURqFfACPM21d6AXSeaEXYCruimvSb8t0ce1vuxRAXk%3D"
-         :file ,pcal-file)))
+         :file ,pcal-file)
+        (:name "deepsat"
+         :url "https://calendar.google.com/calendar/ical/craig.jennings%40deepsat.com/private-f0250a2c6752a5ca71d7b0636587a6d5/basic.ics"
+         :file ,dcal-file)))
 (require 'calendar-sync)
 
 (require 'org-refile-config)     ;; refile org-branches
