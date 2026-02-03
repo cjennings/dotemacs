@@ -79,8 +79,10 @@
       (let ((fake-process (make-process :name "test-audio" :command '("sh" "-c" "exit 0")))
             (update-called nil))
         (setq cj/audio-recording-ffmpeg-process fake-process)
-        ;; Mock force-mode-line-update to track if it's called
-        (cl-letf (((symbol-function 'force-mode-line-update)
+        ;; Mock process-status to return 'exit and force-mode-line-update to track call
+        (cl-letf (((symbol-function 'process-status)
+                   (lambda (_proc) 'exit))
+                  ((symbol-function 'force-mode-line-update)
                    (lambda (&optional _all) (setq update-called t))))
           (cj/recording-process-sentinel fake-process "finished\n")
           (should update-called)))
@@ -124,8 +126,10 @@
       (let ((fake-process (make-process :name "test-audio" :command '("sh" "-c" "exit 0")))
             (message-text nil))
         (setq cj/audio-recording-ffmpeg-process fake-process)
-        ;; Mock message to capture output
-        (cl-letf (((symbol-function 'message)
+        ;; Mock process-status to return 'exit and message to capture output
+        (cl-letf (((symbol-function 'process-status)
+                   (lambda (_proc) 'exit))
+                  ((symbol-function 'message)
                    (lambda (fmt &rest args) (setq message-text (apply #'format fmt args)))))
           (cj/recording-process-sentinel fake-process "  finished  \n")
           ;; Message should contain trimmed event
