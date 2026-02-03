@@ -122,7 +122,10 @@
          :file ,gcal-file)
         (:name "proton"
          :url "***REMOVED***"
-         :file ,pcal-file)))
+         :file ,pcal-file)
+        (:name "deepsat"
+         :url "***REMOVED***"
+         :file ,dcal-file)))
 (require 'calendar-sync)
 
 (require 'org-refile-config)     ;; refile org-branches

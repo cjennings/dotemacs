@@ -290,6 +290,167 @@ during fall-back transitions."
          (decoded (decode-time new-time)))
     (list (nth 5 decoded) (nth 4 decoded) (nth 3 decoded))))
 
+;;; RECURRENCE-ID Exception Handling
+
+(defun calendar-sync--get-recurrence-id (event-str)
+  "Extract RECURRENCE-ID value from EVENT-STR.
+Returns the datetime value (without TZID parameter), or nil if not found.
+Handles both simple values and values with parameters like TZID."
+  (when (and event-str (stringp event-str))
+    (calendar-sync--get-property event-str "RECURRENCE-ID")))
+
+(defun calendar-sync--get-recurrence-id-line (event-str)
+  "Extract full RECURRENCE-ID line from EVENT-STR, including parameters.
+Returns the complete line like 'RECURRENCE-ID;TZID=Europe/Tallinn:20260203T170000'.
+Returns nil if not found."
+  (when (and event-str (stringp event-str))
+    (calendar-sync--get-property-line event-str "RECURRENCE-ID")))
+
+(defun calendar-sync--parse-recurrence-id (recurrence-id-value)
+  "Parse RECURRENCE-ID-VALUE into (year month day hour minute) list.
+Returns nil for invalid input. For date-only values, returns (year month day nil nil)."
+  (when (and recurrence-id-value
+             (stringp recurrence-id-value)
+             (not (string-empty-p recurrence-id-value)))
+    (cond
+     ;; DateTime format: 20260203T090000Z or 20260203T090000
+     ((string-match "\\`\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)T\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)Z?\\'" recurrence-id-value)
+      (list (string-to-number (match-string 1 recurrence-id-value))
+            (string-to-number (match-string 2 recurrence-id-value))
+            (string-to-number (match-string 3 recurrence-id-value))
+            (string-to-number (match-string 4 recurrence-id-value))
+            (string-to-number (match-string 5 recurrence-id-value))))
+     ;; Date-only format: 20260203
+     ((string-match "\\`\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)\\'" recurrence-id-value)
+      (list (string-to-number (match-string 1 recurrence-id-value))
+            (string-to-number (match-string 2 recurrence-id-value))
+            (string-to-number (match-string 3 recurrence-id-value))
+            nil nil))
+     (t nil))))
+
+(defun calendar-sync--collect-recurrence-exceptions (ics-content)
+  "Collect all RECURRENCE-ID events from ICS-CONTENT.
+Returns hash table mapping UID to list of exception event plists.
+Each exception plist contains :recurrence-id (parsed), :start, :end, :summary, etc."
+  (let ((exceptions (make-hash-table :test 'equal)))
+    (when (and ics-content (stringp ics-content))
+      (let ((events (calendar-sync--split-events ics-content)))
+        (dolist (event-str events)
+          (let ((recurrence-id (calendar-sync--get-recurrence-id event-str))
+                (uid (calendar-sync--get-property event-str "UID")))
+            (when (and recurrence-id uid)
+              ;; Parse the exception event
+              (let* ((recurrence-id-line (calendar-sync--get-recurrence-id-line event-str))
+                     (recurrence-id-tzid (calendar-sync--extract-tzid recurrence-id-line))
+                     (recurrence-id-is-utc (and recurrence-id
+                                                (string-suffix-p "Z" recurrence-id)))
+                     (recurrence-id-parsed (calendar-sync--parse-recurrence-id recurrence-id))
+                     ;; Parse the new times from the exception
+                     (dtstart (calendar-sync--get-property event-str "DTSTART"))
+                     (dtend (calendar-sync--get-property event-str "DTEND"))
+                     (dtstart-line (calendar-sync--get-property-line event-str "DTSTART"))
+                     (dtend-line (calendar-sync--get-property-line event-str "DTEND"))
+                     (start-tzid (calendar-sync--extract-tzid dtstart-line))
+                     (end-tzid (calendar-sync--extract-tzid dtend-line))
+                     (start-parsed (calendar-sync--parse-timestamp dtstart start-tzid))
+                     (end-parsed (and dtend (calendar-sync--parse-timestamp dtend end-tzid)))
+                     (summary (calendar-sync--get-property event-str "SUMMARY"))
+                     (description (calendar-sync--get-property event-str "DESCRIPTION"))
+                     (location (calendar-sync--get-property event-str "LOCATION")))
+                (when (and recurrence-id-parsed start-parsed)
+                  ;; Convert RECURRENCE-ID to local time
+                  ;; Handle: UTC (Z suffix), TZID, or assume local
+                  (let ((local-recurrence-id
+                         (cond
+                          ;; UTC time (Z suffix) - convert from UTC
+                          (recurrence-id-is-utc
+                           (calendar-sync--convert-utc-to-local
+                            (nth 0 recurrence-id-parsed)
+                            (nth 1 recurrence-id-parsed)
+                            (nth 2 recurrence-id-parsed)
+                            (or (nth 3 recurrence-id-parsed) 0)
+                            (or (nth 4 recurrence-id-parsed) 0)
+                            0))  ; seconds
+                          ;; TZID specified - convert from that timezone
+                          (recurrence-id-tzid
+                           (or (calendar-sync--convert-tz-to-local
+                                (nth 0 recurrence-id-parsed)
+                                (nth 1 recurrence-id-parsed)
+                                (nth 2 recurrence-id-parsed)
+                                (or (nth 3 recurrence-id-parsed) 0)
+                                (or (nth 4 recurrence-id-parsed) 0)
+                                recurrence-id-tzid)
+                               recurrence-id-parsed))
+                          ;; No timezone info - assume local
+                          (t recurrence-id-parsed))))
+                    (let ((exception-plist
+                           (list :recurrence-id local-recurrence-id
+                                 :recurrence-id-raw recurrence-id
+                                 :start start-parsed
+                                 :end end-parsed
+                                 :summary summary
+                                 :description description
+                                 :location location)))
+                      ;; Add to hash table
+                      (let ((existing (gethash uid exceptions)))
+                        (puthash uid (cons exception-plist existing) exceptions)))))))))))
+    exceptions))
+
+(defun calendar-sync--occurrence-matches-exception-p (occurrence exception)
+  "Check if OCCURRENCE matches EXCEPTION's recurrence-id.
+Compares year, month, day, hour, minute."
+  (let ((occ-start (plist-get occurrence :start))
+        (exc-recid (plist-get exception :recurrence-id)))
+    (and occ-start exc-recid
+         (= (nth 0 occ-start) (nth 0 exc-recid))  ; year
+         (= (nth 1 occ-start) (nth 1 exc-recid))  ; month
+         (= (nth 2 occ-start) (nth 2 exc-recid))  ; day
+         ;; Hour/minute check (handle nil for all-day events)
+         (or (and (null (nth 3 occ-start)) (null (nth 3 exc-recid)))
+             (and (nth 3 occ-start) (nth 3 exc-recid)
+                  (= (nth 3 occ-start) (nth 3 exc-recid))
+                  (= (or (nth 4 occ-start) 0) (or (nth 4 exc-recid) 0)))))))
+
+(defun calendar-sync--apply-single-exception (occurrence exception)
+  "Apply EXCEPTION to OCCURRENCE, returning modified occurrence."
+  (let ((result (copy-sequence occurrence)))
+    ;; Update time from exception
+    (plist-put result :start (plist-get exception :start))
+    (when (plist-get exception :end)
+      (plist-put result :end (plist-get exception :end)))
+    ;; Update summary if exception has one
+    (when (plist-get exception :summary)
+      (plist-put result :summary (plist-get exception :summary)))
+    ;; Update other fields
+    (when (plist-get exception :description)
+      (plist-put result :description (plist-get exception :description)))
+    (when (plist-get exception :location)
+      (plist-put result :location (plist-get exception :location)))
+    result))
+
+(defun calendar-sync--apply-recurrence-exceptions (occurrences exceptions)
+  "Apply EXCEPTIONS to OCCURRENCES list.
+OCCURRENCES is list of event plists from RRULE expansion.
+EXCEPTIONS is hash table from `calendar-sync--collect-recurrence-exceptions'.
+Returns new list with matching occurrences replaced by exception times."
+  (if (or (null occurrences) (null exceptions))
+      occurrences
+    (mapcar
+     (lambda (occurrence)
+       (let* ((uid (plist-get occurrence :uid))
+              (uid-exceptions (and uid (gethash uid exceptions))))
+         (if (null uid-exceptions)
+             occurrence
+           ;; Check if any exception matches this occurrence
+           (let ((matching-exception
+                  (cl-find-if (lambda (exc)
+                                (calendar-sync--occurrence-matches-exception-p occurrence exc))
+                              uid-exceptions)))
+             (if matching-exception
+                 (calendar-sync--apply-single-exception occurrence matching-exception)
+               occurrence)))))
+     occurrences)))
+
 ;;; .ics Parsing
 
 (defun calendar-sync--split-events (ics-content)
@@ -640,13 +801,15 @@ Returns list of event plists, or nil if not a recurring event."
 
 (defun calendar-sync--parse-event (event-str)
   "Parse single VEVENT string EVENT-STR into plist.
-Returns plist with :summary :description :location :start :end.
+Returns plist with :uid :summary :description :location :start :end.
 Returns nil if event lacks required fields (DTSTART, SUMMARY).
-Skips events with RECURRENCE-ID (individual instances of recurring events).
+Skips events with RECURRENCE-ID (individual instances of recurring events
+are handled separately via exception collection).
 Handles TZID-qualified timestamps by converting to local time."
-  ;; Skip individual instances of recurring events (they're handled by RRULE expansion)
+  ;; Skip individual instances of recurring events (they're collected as exceptions)
   (unless (calendar-sync--get-property event-str "RECURRENCE-ID")
-    (let* ((summary (calendar-sync--get-property event-str "SUMMARY"))
+    (let* ((uid (calendar-sync--get-property event-str "UID"))
+           (summary (calendar-sync--get-property event-str "SUMMARY"))
            (description (calendar-sync--get-property event-str "DESCRIPTION"))
            (location (calendar-sync--get-property event-str "LOCATION"))
            ;; Get raw property values
@@ -661,7 +824,8 @@ Handles TZID-qualified timestamps by converting to local time."
         (let ((start-parsed (calendar-sync--parse-timestamp dtstart start-tzid))
               (end-parsed (and dtend (calendar-sync--parse-timestamp dtend end-tzid))))
           (when start-parsed
-            (list :summary summary
+            (list :uid uid
+                  :summary summary
                   :description description
                   :location location
                   :start start-parsed
@@ -702,10 +866,13 @@ Returns time value suitable for comparison, or 0 if no start time."
   "Parse ICS-CONTENT and return org-formatted string.
 Returns nil if parsing fails.
 Events are sorted chronologically by start time.
-Recurring events are expanded into individual occurrences."
+Recurring events are expanded into individual occurrences.
+RECURRENCE-ID exceptions are applied to override specific occurrences."
   (condition-case err
       (let* ((range (calendar-sync--get-date-range))
              (events (calendar-sync--split-events ics-content))
+             ;; First pass: collect all RECURRENCE-ID exceptions
+             (exceptions (calendar-sync--collect-recurrence-exceptions ics-content))
              (parsed-events '())
              (max-events 5000)  ; Safety limit to prevent Emacs from hanging
              (events-generated 0))
@@ -714,10 +881,11 @@ Recurring events are expanded into individual occurrences."
           (when (< events-generated max-events)
             (let ((expanded (calendar-sync--expand-recurring-event event-str range)))
               (if expanded
-                  ;; Recurring event - add all occurrences
-                  (progn
-                    (setq parsed-events (append parsed-events expanded))
-                    (setq events-generated (+ events-generated (length expanded))))
+                  ;; Recurring event - add all occurrences with exceptions applied
+                  (let ((with-exceptions (calendar-sync--apply-recurrence-exceptions
+                                          expanded exceptions)))
+                    (setq parsed-events (append parsed-events with-exceptions))
+                    (setq events-generated (+ events-generated (length with-exceptions))))
                 ;; Non-recurring event - parse normally
                 (let ((parsed (calendar-sync--parse-event event-str)))
                   (when (and parsed
