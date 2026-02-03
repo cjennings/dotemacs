@@ -473,6 +473,10 @@ Return t if found, nil otherwise."
 Uses wf-recorder on Wayland, x11grab on X11."
   (cj/recording-check-ffmpeg)
   (unless cj/video-recording-ffmpeg-process
+    ;; On Wayland, kill any orphan wf-recorder processes from previous crashes
+    (when (cj/recording--wayland-p)
+      (call-process "pkill" nil nil nil "-INT" "wf-recorder")
+      (sit-for 0.1))
     (let* ((devices (cj/recording-get-devices))
            (mic-device (car devices))
            (system-device (cdr devices))
@@ -576,10 +580,15 @@ Use C-; r c to configure which device to use - it must match the device your pho
   (interactive)
   (if cj/video-recording-ffmpeg-process
 	  (progn
+		;; On Wayland, we run wf-recorder | ffmpeg pipeline.
+		;; SIGINT only reaches ffmpeg, leaving wf-recorder as orphan.
+		;; Kill wf-recorder explicitly first, then ffmpeg will exit naturally.
+		(when (cj/recording--wayland-p)
+		  (call-process "pkill" nil nil nil "-INT" "wf-recorder"))
 		;; Use interrupt-process to send SIGINT (graceful termination)
 		(interrupt-process cj/video-recording-ffmpeg-process)
 		;; Give ffmpeg a moment to finalize the file
-		(sit-for 0.2)
+		(sit-for 0.5)
 		(setq cj/video-recording-ffmpeg-process nil)
 		(force-mode-line-update t)
 		(message "Stopped video recording."))
