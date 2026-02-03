@@ -45,27 +45,33 @@ or sentences.  By default it points to the file specified in
 
 (defun cj/markov-tokenize (text)
   "Split TEXT into tokens: words and punctuation separately.
-Returns a list of words and punctuation marks as separate tokens."
+Returns a list of words and punctuation marks as separate tokens.
+
+Uses O(n) algorithm by matching at position instead of creating substrings."
   (let ((tokens '())
         (pos 0)
         (len (length text)))
     (while (< pos len)
-      (cond
-       ;; Skip whitespace
-       ((string-match-p "[[:space:]]" (substring text pos (1+ pos)))
-        (setq pos (1+ pos)))
-       ;; Match word (sequence of alphanumeric characters)
-       ((string-match "\\`\\([[:alnum:]]+\\)" (substring text pos))
-        (let ((word (match-string 1 (substring text pos))))
-          (push word tokens)
-          (setq pos (+ pos (length word)))))
-       ;; Match punctuation (single character)
-       ((string-match "\\`\\([[:punct:]]\\)" (substring text pos))
-        (let ((punct (match-string 1 (substring text pos))))
-          (push punct tokens)
-          (setq pos (+ pos (length punct)))))
-       ;; Skip any other character
-       (t (setq pos (1+ pos)))))
+      (let ((char (aref text pos)))
+        (cond
+         ;; Skip whitespace (check char directly, no substring)
+         ((memq char '(?\s ?\t ?\n ?\r ?\f))
+          (setq pos (1+ pos)))
+         ;; Match word at position (no substring needed)
+         ((and (or (<= ?a char ?z)
+                   (<= ?A char ?Z)
+                   (<= ?0 char ?9))
+               (string-match "\\([[:alnum:]]+\\)" text pos)
+               (= (match-beginning 0) pos))
+          (push (match-string 1 text) tokens)
+          (setq pos (match-end 0)))
+         ;; Match punctuation at position
+         ((and (string-match "\\([[:punct:]]\\)" text pos)
+               (= (match-beginning 0) pos))
+          (push (match-string 1 text) tokens)
+          (setq pos (match-end 0)))
+         ;; Skip any other character
+         (t (setq pos (1+ pos))))))
     (nreverse tokens)))
 (defun cj/markov-learn (chain text)
   "Add TEXT into the Markov CHAIN with tokenized input."
