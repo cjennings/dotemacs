@@ -98,7 +98,7 @@ Call this only after loading 'gptel' so the backend constructors exist."
             :stream t)))
   ;; Set default backend
   (unless gptel-backend
-    (setq gptel-backend (or gptel-chatgpt-backend gptel-claude-backend))))
+    (setq gptel-backend (or gptel-claude-backend gptel-chatgpt-backend))))
 
 ;; ------------------ GPTel Conversation And Utility Commands ------------------
 
@@ -280,8 +280,8 @@ Works for any buffer, whether it's visiting a file or not."
   (gptel--debug nil)
   :config
   (cj/ensure-gptel-backends)
-  ;; Set ChatGPT as default after initialization
-  (setq gptel-backend gptel-chatgpt-backend)
+  ;; Set Claude as default after initialization
+  (setq gptel-backend gptel-claude-backend)
 
   ;; Named backend list for switching
   (defvar cj/gptel-backends
@@ -292,8 +292,7 @@ Works for any buffer, whether it's visiting a file or not."
   (setq gptel-confirm-tool-calls nil) ;; allow tool access by default
   ;;; ---------------------------- Backend Management ---------------------------
 
-  (setq gptel-backend gptel-chatgpt-backend) ;; use ChatGPT as default
-  ;; (setq gptel-backend gptel-claude-backend) ;; use Claude as default
+  (setq gptel-backend gptel-claude-backend) ;; use Claude as default
 
 ;;; -------------------------- Org Header Construction --------------------------
 
