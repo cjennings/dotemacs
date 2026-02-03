@@ -112,8 +112,8 @@ Validates:
                             (insert org-output)
                             (goto-char (point-min))
                             (how-many "^\\* GTFO"))))
-          (should (> gtfo-count 40))  ; ~52 weeks in a year
-          (should (< gtfo-count 60)))
+          (should (> gtfo-count 55))  ; ~65 weeks in 15-month window
+          (should (< gtfo-count 75)))
 
         ;; Should have properly formatted Saturday timestamps
         (should (string-match-p "<[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\} Sat 10:30-11:00>" org-output)))
