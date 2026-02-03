@@ -486,7 +486,7 @@ Uses wf-recorder on Wayland, x11grab on X11."
                 ;; wf-recorder outputs matroska container with H264, ffmpeg adds audio
                 (progn
                   (cj/recording--check-wf-recorder)
-                  (format (concat "wf-recorder --no-audio -c h264 -f matroska -o - 2>/dev/null | "
+                  (format (concat "wf-recorder -y -c libx264 -m matroska -f /dev/stdout 2>/dev/null | "
                                   "ffmpeg -i pipe:0 "
                                   "-f pulse -i %s "
                                   "-f pulse -i %s "
