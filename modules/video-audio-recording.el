@@ -294,7 +294,7 @@ Returns alist of (device-name . (mic-source . monitor-source))."
                         (cond
                          ((string-match-p "usb.*[Jj]abra" base-name) "Jabra SPEAK 510 USB")
                          ((string-match-p "^usb-" base-name) "USB Audio Device")
-                         ((string-match-p "^pci-" base-name) "Built-in Laptop Audio")
+                         ((string-match-p "^pci-" base-name) "Built-in Audio")
                          ((string-match-p "^[0-9A-Fa-f:]+$" base-name) "Bluetooth Headset")
                          (t base-name))))
                    (push (cons friendly-name pair) result))))
