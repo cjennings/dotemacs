@@ -208,7 +208,7 @@ Example: -21600 → 'UTC-6' or 'UTC-6:00'."
   "Normalize line endings in CONTENT to Unix format (LF only).
 Removes all carriage return characters (\\r) from CONTENT.
 The iCalendar format (RFC 5545) uses CRLF line endings, but Emacs
-and org-mode expect LF only. This function ensures consistent line
+and 'org-mode' expect LF only. This function ensures consistent line
 endings throughout the parsing pipeline.
 
 Returns CONTENT with all \\r characters removed."
@@ -449,6 +449,124 @@ Returns new list with matching occurrences replaced by exception times."
              (if matching-exception
                  (calendar-sync--apply-single-exception occurrence matching-exception)
                occurrence)))))
+     occurrences)))
+
+;;; EXDATE (Excluded Date) Handling
+
+(defun calendar-sync--get-exdates (event-str)
+  "Extract all EXDATE values from EVENT-STR.
+Returns list of datetime strings (without TZID parameters), or nil if none found.
+Handles both simple values and values with parameters like TZID."
+  (when (and event-str (stringp event-str) (not (string-empty-p event-str)))
+    (let ((exdates '())
+          (pos 0))
+      ;; Find all EXDATE lines
+      (while (string-match "^EXDATE[^:\n]*:\\([^\n]+\\)" event-str pos)
+        (push (match-string 1 event-str) exdates)
+        (setq pos (match-end 0)))
+      (nreverse exdates))))
+
+(defun calendar-sync--get-exdate-line (event-str exdate-value)
+  "Find the full EXDATE line containing EXDATE-VALUE from EVENT-STR.
+Returns the complete line like 'EXDATE;TZID=America/New_York:20260210T130000'.
+Returns nil if not found."
+  (when (and event-str (stringp event-str) exdate-value)
+    (let ((pattern (format "^\\(EXDATE[^:]*:%s\\)" (regexp-quote exdate-value))))
+      (when (string-match pattern event-str)
+        (match-string 1 event-str)))))
+
+(defun calendar-sync--parse-exdate (exdate-value)
+  "Parse EXDATE-VALUE into (year month day hour minute) list.
+Returns nil for invalid input. For date-only values, returns (year month day nil nil)."
+  (when (and exdate-value
+             (stringp exdate-value)
+             (not (string-empty-p exdate-value)))
+    (cond
+     ;; DateTime format: 20260203T130000Z or 20260203T130000
+     ((string-match "\\`\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)T\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)Z?\\'" exdate-value)
+      (list (string-to-number (match-string 1 exdate-value))
+            (string-to-number (match-string 2 exdate-value))
+            (string-to-number (match-string 3 exdate-value))
+            (string-to-number (match-string 4 exdate-value))
+            (string-to-number (match-string 5 exdate-value))))
+     ;; Date-only format: 20260203
+     ((string-match "\\`\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)\\'" exdate-value)
+      (list (string-to-number (match-string 1 exdate-value))
+            (string-to-number (match-string 2 exdate-value))
+            (string-to-number (match-string 3 exdate-value))
+            nil nil))
+     (t nil))))
+
+(defun calendar-sync--collect-exdates (event-str)
+  "Collect all excluded dates from EVENT-STR, handling timezone conversion.
+Returns list of parsed datetime lists (year month day hour minute).
+Converts TZID-qualified and UTC times to local time."
+  (if (or (null event-str)
+          (not (stringp event-str))
+          (string-empty-p event-str))
+      '()
+    (let ((exdate-values (calendar-sync--get-exdates event-str))
+          (result '()))
+      (dolist (exdate-value exdate-values)
+        (let* ((exdate-line (calendar-sync--get-exdate-line event-str exdate-value))
+               (exdate-tzid (and exdate-line (calendar-sync--extract-tzid exdate-line)))
+               (exdate-is-utc (and exdate-value (string-suffix-p "Z" exdate-value)))
+               (exdate-parsed (calendar-sync--parse-exdate exdate-value)))
+          (when exdate-parsed
+            (let ((local-exdate
+                   (cond
+                    ;; UTC time (Z suffix) - convert from UTC
+                    (exdate-is-utc
+                     (calendar-sync--convert-utc-to-local
+                      (nth 0 exdate-parsed)
+                      (nth 1 exdate-parsed)
+                      (nth 2 exdate-parsed)
+                      (or (nth 3 exdate-parsed) 0)
+                      (or (nth 4 exdate-parsed) 0)
+                      0))
+                    ;; TZID specified - convert from that timezone
+                    (exdate-tzid
+                     (or (calendar-sync--convert-tz-to-local
+                          (nth 0 exdate-parsed)
+                          (nth 1 exdate-parsed)
+                          (nth 2 exdate-parsed)
+                          (or (nth 3 exdate-parsed) 0)
+                          (or (nth 4 exdate-parsed) 0)
+                          exdate-tzid)
+                         exdate-parsed))
+                    ;; No timezone info - use as-is (local time)
+                    (t exdate-parsed))))
+              (push local-exdate result)))))
+      (nreverse result))))
+
+(defun calendar-sync--exdate-matches-p (occurrence-start exdate)
+  "Check if OCCURRENCE-START matches EXDATE.
+OCCURRENCE-START is (year month day hour minute).
+EXDATE is (year month day hour minute) or (year month day nil nil) for date-only.
+Date-only EXDATE matches any time on that day."
+  (and occurrence-start exdate
+       (= (nth 0 occurrence-start) (nth 0 exdate))  ; year
+       (= (nth 1 occurrence-start) (nth 1 exdate))  ; month
+       (= (nth 2 occurrence-start) (nth 2 exdate))  ; day
+       ;; If EXDATE has nil hour/minute (date-only), match any time
+       (or (null (nth 3 exdate))
+           (and (nth 3 occurrence-start)
+                (= (nth 3 occurrence-start) (nth 3 exdate))
+                (= (or (nth 4 occurrence-start) 0) (or (nth 4 exdate) 0))))))
+
+(defun calendar-sync--filter-exdates (occurrences exdates)
+  "Filter OCCURRENCES list to remove entries matching EXDATES.
+OCCURRENCES is list of event plists with :start key.
+EXDATES is list of parsed datetime lists from `calendar-sync--collect-exdates'.
+Returns filtered list with excluded dates removed."
+  (if (or (null occurrences) (null exdates))
+      (or occurrences '())
+    (cl-remove-if
+     (lambda (occurrence)
+       (let ((occ-start (plist-get occurrence :start)))
+         (cl-some (lambda (exdate)
+                    (calendar-sync--exdate-matches-p occ-start exdate))
+                  exdates)))
      occurrences)))
 
 ;;; .ics Parsing
@@ -784,20 +902,27 @@ BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
 
 (defun calendar-sync--expand-recurring-event (event-str range)
   "Expand recurring event EVENT-STR into individual occurrences within RANGE.
-Returns list of event plists, or nil if not a recurring event."
+Returns list of event plists, or nil if not a recurring event.
+Filters out dates excluded via EXDATE properties."
   (let ((rrule (calendar-sync--get-property event-str "RRULE")))
     (when rrule
       (let* ((base-event (calendar-sync--parse-event event-str))
              (parsed-rrule (calendar-sync--parse-rrule rrule))
-             (freq (plist-get parsed-rrule :freq)))
+             (freq (plist-get parsed-rrule :freq))
+             (exdates (calendar-sync--collect-exdates event-str)))
         (when base-event
-          (pcase freq
-            ('daily (calendar-sync--expand-daily base-event parsed-rrule range))
-            ('weekly (calendar-sync--expand-weekly base-event parsed-rrule range))
-            ('monthly (calendar-sync--expand-monthly base-event parsed-rrule range))
-            ('yearly (calendar-sync--expand-yearly base-event parsed-rrule range))
-            (_ (cj/log-silently "calendar-sync: Unsupported RRULE frequency: %s" freq)
-               nil)))))))
+          (let ((occurrences
+                 (pcase freq
+                   ('daily (calendar-sync--expand-daily base-event parsed-rrule range))
+                   ('weekly (calendar-sync--expand-weekly base-event parsed-rrule range))
+                   ('monthly (calendar-sync--expand-monthly base-event parsed-rrule range))
+                   ('yearly (calendar-sync--expand-yearly base-event parsed-rrule range))
+                   (_ (cj/log-silently "calendar-sync: Unsupported RRULE frequency: %s" freq)
+                      nil))))
+            ;; Filter out EXDATE occurrences
+            (if exdates
+                (calendar-sync--filter-exdates occurrences exdates)
+              occurrences)))))))
 
 (defun calendar-sync--parse-event (event-str)
   "Parse single VEVENT string EVENT-STR into plist.
