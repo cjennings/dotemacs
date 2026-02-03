@@ -76,7 +76,7 @@ Validates:
           (should (= 3 (length grouped)))
 
           ;; Validate built-in device
-          (let ((built-in (assoc "Built-in Laptop Audio" grouped)))
+          (let ((built-in (assoc "Built-in Audio" grouped)))
             (should built-in)
             (should (string-prefix-p "alsa_input.pci" (cadr built-in)))
             (should (string-prefix-p "alsa_output.pci" (cddr built-in))))
@@ -160,7 +160,7 @@ Validates:
         ;; Group returns only 1 complete device
         (let ((grouped (cj/recording-group-devices-by-hardware)))
           (should (= 1 (length grouped)))
-          (should (equal "Built-in Laptop Audio" (caar grouped))))))))
+          (should (equal "Built-in Audio" (caar grouped))))))))
 
 ;;; Edge Cases - Bluetooth MAC Normalization
 

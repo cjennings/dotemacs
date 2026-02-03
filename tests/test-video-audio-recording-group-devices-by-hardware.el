@@ -43,7 +43,7 @@ This is the key test validating the complete grouping logic."
         (should (= 3 (length result)))
         ;; Check that we have all three device types
         (let ((names (mapcar #'car result)))
-          (should (member "Built-in Laptop Audio" names))
+          (should (member "Built-in Audio" names))
           (should (member "Bluetooth Headset" names))
           (should (member "Jabra SPEAK 510 USB" names)))
         ;; Verify each device has both mic and monitor
@@ -60,7 +60,7 @@ This is the key test validating the complete grouping logic."
     (cl-letf (((symbol-function 'shell-command-to-string)
                (lambda (_cmd) output)))
       (let* ((result (cj/recording-group-devices-by-hardware))
-             (built-in (assoc "Built-in Laptop Audio" result)))
+             (built-in (assoc "Built-in Audio" result)))
         (should built-in)
         (should (string-match-p "pci-0000_00_1f" (cadr built-in)))
         (should (string-match-p "pci-0000_00_1f" (cddr built-in)))
@@ -129,7 +129,7 @@ Devices must have BOTH mic and monitor to be included."
                (lambda (_cmd) output)))
       (let ((result (cj/recording-group-devices-by-hardware)))
         (should (= 1 (length result)))
-        (should (equal "Built-in Laptop Audio" (caar result)))))))
+        (should (equal "Built-in Audio" (caar result)))))))
 
 (ert-deftest test-video-audio-recording-group-devices-by-hardware-boundary-mixed-complete-incomplete ()
   "Test that only devices with BOTH mic and monitor are included.
@@ -147,7 +147,7 @@ Incomplete devices (only mic or only monitor) are filtered out."
       (let ((result (cj/recording-group-devices-by-hardware)))
         ;; Only the complete built-in device should be returned
         (should (= 1 (length result)))
-        (should (equal "Built-in Laptop Audio" (caar result)))))))
+        (should (equal "Built-in Audio" (caar result)))))))
 
 ;;; Error Cases
 

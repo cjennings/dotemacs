@@ -48,7 +48,7 @@
   (test-quick-setup-setup)
   (unwind-protect
       (let ((grouped-devices '(("Jabra SPEAK 510 USB" . ("usb-input" . "usb-monitor"))
-                              ("Built-in Laptop Audio" . ("pci-input" . "pci-monitor"))))
+                              ("Built-in Audio" . ("pci-input" . "pci-monitor"))))
             (presented-choices nil))
         (cl-letf (((symbol-function 'cj/recording-group-devices-by-hardware)
                    (lambda () grouped-devices))
@@ -58,7 +58,7 @@
                      (car choices))))
           (cj/recording-quick-setup-for-calls)
           (should (member "Jabra SPEAK 510 USB" presented-choices))
-          (should (member "Built-in Laptop Audio" presented-choices))))
+          (should (member "Built-in Audio" presented-choices))))
     (test-quick-setup-teardown)))
 
 (ert-deftest test-video-audio-recording-quick-setup-for-calls-normal-displays-confirmation ()
@@ -84,11 +84,11 @@
   "Test that with single device, selection still happens."
   (test-quick-setup-setup)
   (unwind-protect
-      (let ((grouped-devices '(("Built-in Laptop Audio" . ("pci-input" . "pci-monitor")))))
+      (let ((grouped-devices '(("Built-in Audio" . ("pci-input" . "pci-monitor")))))
         (cl-letf (((symbol-function 'cj/recording-group-devices-by-hardware)
                    (lambda () grouped-devices))
                   ((symbol-function 'completing-read)
-                   (lambda (_prompt _choices &rest _args) "Built-in Laptop Audio")))
+                   (lambda (_prompt _choices &rest _args) "Built-in Audio")))
           (cj/recording-quick-setup-for-calls)
           (should (equal "pci-input" cj/recording-mic-device))
           (should (equal "pci-monitor" cj/recording-system-device))))
