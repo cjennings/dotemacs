@@ -90,6 +90,18 @@ Example:
            :url \"***REMOVED***"
            :file pcal-file)))")
 
+;; Calendar sync (one-way: Google/Proton → Org)
+(setq calendar-sync-calendars
+      `((:name "google"
+         :url "***REMOVED***"
+         :file ,gcal-file)
+        (:name "proton"
+         :url "***REMOVED***"
+         :file ,pcal-file)
+        (:name "deepsat"
+         :url "***REMOVED***"
+         :file ,dcal-file)))
+
 (defvar calendar-sync-interval-minutes 60
   "Sync interval in minutes.
 Default: 60 minutes (1 hour).")
