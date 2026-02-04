@@ -343,6 +343,47 @@ Signals an error if the buffer is not visiting a file."
       (eww-open-file buffer-file-name)
     (user-error "Buffer is not visiting a file")))
 
+(defun cj/--email-handle-is-type-p (handle type)
+  "Return non-nil if HANDLE is a MIME part of TYPE (e.g., \"text/html\").
+TYPE matching is a prefix match, so \"text/html\" matches
+\"text/html; charset=utf-8\"."
+  (when (and handle (listp handle))
+    (let ((content-type (mm-handle-type handle)))
+      (and content-type
+           (listp content-type)
+           (stringp (car content-type))
+           (string-prefix-p type (car content-type))))))
+
+(defun cj/--email-find-displayable-part (handle)
+  "Find a displayable part (text/html or text/plain) in HANDLE.
+Prefers text/html over text/plain.  HANDLE can be a leaf handle or
+a multipart structure.  Returns the handle for the displayable part, or nil."
+  (cond
+   ;; Leaf handle that's HTML
+   ((cj/--email-handle-is-type-p handle "text/html")
+    handle)
+   ;; Leaf handle that's plain text - save it but keep looking for HTML
+   ((cj/--email-handle-is-type-p handle "text/plain")
+    handle)
+   ;; Multipart - search children
+   ((and (listp handle) (listp (car handle)))
+    (let ((html-part nil)
+          (text-part nil))
+      (dolist (part handle)
+        (when (listp part)
+          (let ((found (cj/--email-find-displayable-part part)))
+            (when found
+              (if (cj/--email-handle-is-type-p found "text/html")
+                  (setq html-part found)
+                (unless html-part
+                  (setq text-part found)))))))
+      (or html-part text-part)))
+   ;; Multipart container (string content-type as car)
+   ((and (listp handle) (stringp (car handle)))
+    ;; This is a multipart with type info - search the cdr
+    (cj/--email-find-displayable-part (cdr handle)))
+   (t nil)))
+
 (defun cj/view-email-in-buffer ()
   "Render an .eml email file with proper MIME decoding.
 
@@ -364,18 +405,16 @@ Signals an error if:
   (require 'mm-decode)
   (require 'shr)
   (let* ((handle (mm-dissect-buffer t))
-         (html-part (or (mm-find-part-by-type handle "text/html" nil t)
-                        (mm-find-part-by-type handle "text/plain" nil t)))
+         (displayable-part (cj/--email-find-displayable-part handle))
          (buffer-name (format "*Email: %s*" (file-name-nondirectory buffer-file-name))))
-    (unless html-part
+    (unless displayable-part
       (user-error "No displayable content found in email"))
     (with-current-buffer (get-buffer-create buffer-name)
       (let ((inhibit-read-only t))
         (erase-buffer)
-        (mm-insert-part html-part)
+        (mm-insert-part displayable-part)
         (goto-char (point-min))
-        (when (and (mm-handle-type html-part)
-                   (string-match-p "text/html" (car (mm-handle-type html-part))))
+        (when (cj/--email-handle-is-type-p displayable-part "text/html")
           (shr-render-region (point-min) (point-max)))
         (goto-char (point-min))
         (special-mode)))
