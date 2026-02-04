@@ -19,6 +19,8 @@
               ("C-c d" . lsp-describe-thing-at-point)
               ("C-c a" . lsp-execute-code-action))
   :bind-keymap ("C-c L" . lsp-command-map)
+  :init
+  (setq lsp-enable-remote nil) ;; Don't start LSP on TRAMP files (slow, prompts for project root)
   :config
   (setq lsp-auto-guess-root t)
   (setq lsp-log-io nil)
