@@ -30,6 +30,16 @@
 (declare-function ps-print-buffer-with-faces "ps-print")
 (declare-function ps-print-region-with-faces "ps-print")
 
+;; mm-decode functions for email viewing
+(declare-function mm-dissect-buffer "mm-decode")
+(declare-function mm-find-part-by-type "mm-decode")
+(declare-function mm-insert-part "mm-decode")
+(declare-function mm-handle-type "mm-decode")
+(declare-function mm-destroy-parts "mm-decode")
+
+;; cj/kill-buffer-and-window defined in undead-buffers.el
+(declare-function cj/kill-buffer-and-window "undead-buffers")
+
 ;; ------------------------- Print Buffer As Postscript ------------------------
 
 (defvar cj/print-spooler-command 'auto
@@ -286,9 +296,9 @@ Sets up diff-mode for navigation."
 
 (defun cj/diff-buffer-with-file ()
   "Compare the current modified buffer with the saved version.
-Uses difftastic if available for syntax-aware diffing, falls back to regular diff.
-Shows output in a separate buffer.
-Signal an error if the buffer is not visiting a file."
+Uses difftastic if available for syntax-aware diffing, otherwise
+falls back to regular unified diff.  Shows output in a separate buffer.
+Signals an error if the buffer is not visiting a file."
   (interactive)
   (unless (buffer-file-name)
     (user-error "Current buffer is not visiting a file"))
@@ -318,6 +328,60 @@ Signal an error if the buffer is not visiting a file."
       (when (file-exists-p temp-file)
         (delete-file temp-file)))))
 
+(defun cj/view-buffer-in-eww ()
+  "Render the current buffer's file in EWW (Emacs Web Wowser).
+
+Opens the file associated with the current buffer in EWW for rendered
+viewing.  Useful for previewing HTML, XML, or other markup files with
+proper formatting instead of viewing raw source.
+
+Bound to \\`C-; b w'.
+
+Signals an error if the buffer is not visiting a file."
+  (interactive)
+  (if buffer-file-name
+      (eww-open-file buffer-file-name)
+    (user-error "Buffer is not visiting a file")))
+
+(defun cj/view-email-in-buffer ()
+  "Render an .eml email file with proper MIME decoding.
+
+Parses the MIME structure of the current buffer's .eml file, extracts
+the text/html part (falling back to text/plain if no HTML), and renders
+it using shr (Simple HTML Renderer) in a dedicated buffer.
+
+The rendered email is displayed in a buffer named \"*Email: <filename>*\"
+in `special-mode' for easy navigation and dismissal with \\`q'.
+
+Bound to \\`C-; b e'.
+
+Signals an error if:
+- The buffer is not visiting a file
+- No displayable content (text/html or text/plain) is found"
+  (interactive)
+  (unless buffer-file-name
+    (user-error "Buffer is not visiting a file"))
+  (require 'mm-decode)
+  (require 'shr)
+  (let* ((handle (mm-dissect-buffer t))
+         (html-part (or (mm-find-part-by-type handle "text/html" nil t)
+                        (mm-find-part-by-type handle "text/plain" nil t)))
+         (buffer-name (format "*Email: %s*" (file-name-nondirectory buffer-file-name))))
+    (unless html-part
+      (user-error "No displayable content found in email"))
+    (with-current-buffer (get-buffer-create buffer-name)
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (mm-insert-part html-part)
+        (goto-char (point-min))
+        (when (and (mm-handle-type html-part)
+                   (string-match-p "text/html" (car (mm-handle-type html-part))))
+          (shr-render-region (point-min) (point-max)))
+        (goto-char (point-min))
+        (special-mode)))
+    (mm-destroy-parts handle)
+    (switch-to-buffer buffer-name)))
+
 ;; --------------------------- Buffer And File Keymap --------------------------
 
 ;; Copy buffer content sub-keymap
@@ -345,7 +409,9 @@ Signal an error if the buffer is not visiting a file."
   "x" #'erase-buffer
   "s" #'mark-whole-buffer
   "S" #'write-file ;; save as
-  "g" #'revert-buffer)
+  "g" #'revert-buffer
+  "w" #'cj/view-buffer-in-eww
+  "e" #'cj/view-email-in-buffer)
 (keymap-set cj/custom-keymap "b" cj/buffer-and-file-map)
 
 (with-eval-after-load 'which-key
@@ -369,7 +435,9 @@ Signal an error if the buffer is not visiting a file."
     "C-; b x" "erase buffer"
     "C-; b s" "select whole buffer"
     "C-; b S" "save as"
-    "C-; b g" "revert buffer"))
+    "C-; b g" "revert buffer"
+    "C-; b w" "view in EWW"
+    "C-; b e" "view email"))
 
 
 (provide 'custom-buffer-file)
