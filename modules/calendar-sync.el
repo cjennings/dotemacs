@@ -90,6 +90,18 @@ Example:
            :url \"https://calendar.proton.me/api/calendar/v1/url/.../calendar.ics\"
            :file pcal-file)))")
 
+;; Calendar sync (one-way: Google/Proton → Org)
+(setq calendar-sync-calendars
+      `((:name "google"
+         :url "https://calendar.google.com/calendar/ical/craigmartinjennings%40gmail.com/private-1dad154d6a2100e755f76e2d0502f6aa/basic.ics"
+         :file ,gcal-file)
+        (:name "proton"
+         :url "https://calendar.proton.me/api/calendar/v1/url/MpLtuwsUNoygyA_60GvJE5cz0hbREbrAPBEJoWDRpFEstnmzmEMDb7sjLzkY8kbkF10A7Be3wGKB1-vqaLf-pw==/calendar.ics?CacheKey=LrB9NG5Vfqp5p2sy90H13g%3D%3D&PassphraseKey=sURqFfACPM21d6AXSeaEXYCruimvSb8t0ce1vuxRAXk%3D"
+         :file ,pcal-file)
+        (:name "deepsat"
+         :url "https://calendar.google.com/calendar/ical/craig.jennings%40deepsat.com/private-f0250a2c6752a5ca71d7b0636587a6d5/basic.ics"
+         :file ,dcal-file)))
+
 (defvar calendar-sync-interval-minutes 60
   "Sync interval in minutes.
 Default: 60 minutes (1 hour).")

@@ -113,20 +113,7 @@
 (require 'org-contacts-config)   ;; fully integrated org-mode contacts management
 (require 'org-drill-config)
 (require 'org-export-config)
-;; (require 'org-gcal-config)    ;; DISABLED: Replaced by calendar-sync.el (one-way sync)
 
-;; Calendar sync (one-way: Google/Proton → Org)
-(setq calendar-sync-calendars
-      `((:name "google"
-         :url "https://calendar.google.com/calendar/ical/craigmartinjennings%40gmail.com/private-1dad154d6a2100e755f76e2d0502f6aa/basic.ics"
-         :file ,gcal-file)
-        (:name "proton"
-         :url "https://calendar.proton.me/api/calendar/v1/url/MpLtuwsUNoygyA_60GvJE5cz0hbREbrAPBEJoWDRpFEstnmzmEMDb7sjLzkY8kbkF10A7Be3wGKB1-vqaLf-pw==/calendar.ics?CacheKey=LrB9NG5Vfqp5p2sy90H13g%3D%3D&PassphraseKey=sURqFfACPM21d6AXSeaEXYCruimvSb8t0ce1vuxRAXk%3D"
-         :file ,pcal-file)
-        (:name "deepsat"
-         :url "https://calendar.google.com/calendar/ical/craig.jennings%40deepsat.com/private-f0250a2c6752a5ca71d7b0636587a6d5/basic.ics"
-         :file ,dcal-file)))
-(require 'calendar-sync)
 
 (require 'org-refile-config)     ;; refile org-branches
 (require 'org-roam-config)       ;; personal knowledge management in org mode
@@ -150,8 +137,9 @@
 
 ;; ------------------------- Personal Workflow Related -------------------------
 
-(require 'reconcile-open-repos)
-(require 'local-repository)      ;; local repository for easy config portability
+(require 'calendar-sync)        ;; sync calendars, must come after org-agenda
+(require 'reconcile-open-repos) ;; review dirty repositories and reconcile
+(require 'local-repository)     ;; local repository for easy config portability
 
 ;; ------------------------------- Entertainment -------------------------------
 
