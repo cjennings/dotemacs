@@ -65,9 +65,10 @@ Install with: sudo pacman -S shellcheck")
   (setq-local fill-column 80)           ;; wrap at 80 columns
   (electric-pair-mode t)                ;; automatic quote/bracket pairing
 
-  ;; Enable LSP if available
+  ;; Enable LSP if available (skip remote files - slow and prompts for project root)
   (when (and (fboundp 'lsp-deferred)
-             (executable-find bash-language-server-path))
+             (executable-find bash-language-server-path)
+             (not (file-remote-p default-directory)))
     (lsp-deferred)))
 
 (defun cj/shell-run-shellcheck ()
