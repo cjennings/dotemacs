@@ -30,12 +30,8 @@
 (declare-function ps-print-buffer-with-faces "ps-print")
 (declare-function ps-print-region-with-faces "ps-print")
 
-;; mm-decode functions for email viewing
-(declare-function mm-dissect-buffer "mm-decode")
-(declare-function mm-find-part-by-type "mm-decode")
-(declare-function mm-insert-part "mm-decode")
-(declare-function mm-handle-type "mm-decode")
-(declare-function mm-destroy-parts "mm-decode")
+;; mm-decode for email viewing (mm-handle-type is a macro, needs early require)
+(require 'mm-decode)
 
 ;; cj/kill-buffer-and-window defined in undead-buffers.el
 (declare-function cj/kill-buffer-and-window "undead-buffers")
