@@ -36,22 +36,22 @@
   "Ediff two selected files within Dired."
   (interactive)
   (let ((files (dired-get-marked-files))
-		(wnd (current-window-configuration)))
-	(if (<= (length files) 2)
-		(let ((file1 (car files))
-			  (file2 (if (cdr files)
-						 (cadr files)
-					   (read-file-name
-						"file: "
-						(dired-dwim-target-directory)))))
-		  (if (file-newer-than-file-p file1 file2)
-			  (ediff-files file2 file1)
-			(ediff-files file1 file2))
-		  (add-hook 'ediff-after-quit-hook-internal
-					(lambda ()
-					  (setq ediff-after-quit-hook-internal nil)
-					  (set-window-configuration wnd))))
-	  (error "No more than 2 files should be marked"))))
+        (wnd (current-window-configuration)))
+    (if (<= (length files) 2)
+        (let ((file1 (car files))
+              (file2 (if (cdr files)
+                         (cadr files)
+                       (read-file-name
+                        "file: "
+                        (dired-dwim-target-directory)))))
+          (if (file-newer-than-file-p file1 file2)
+              (ediff-files file2 file1)
+            (ediff-files file1 file2))
+          (add-hook 'ediff-after-quit-hook-internal
+                    (lambda ()
+                      (setq ediff-after-quit-hook-internal nil)
+                      (set-window-configuration wnd))))
+      (error "No more than 2 files should be marked"))))
 
 ;; ------------------------ Create Playlist From Marked ------------------------
 
@@ -66,44 +66,44 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
 .m3u in the directory specified by =music-dir=. Interactive use only."
   (interactive)
   (let* ((marked-files (dired-get-marked-files))
-		 (audio-files
-		  (cl-remove-if-not
-		   (lambda (f)
-			 (let ((ext (file-name-extension f)))
-			   (and ext
-					(member (downcase ext) cj/audio-file-extensions))))
-		   marked-files))
-		 (count (length audio-files)))
-	(if (zerop count)
-		(user-error "No audio files marked (extensions: %s)"
-					(string-join cj/audio-file-extensions ", "))
-	  (let ((base-name nil)
-			(playlist-path nil)
-			(done nil))
-		(while (not done)
-		  (setq base-name (read-string
-						   (format "Playlist name (without .m3u): ")))
-		  ;; Sanitize: strip any trailing .m3u
-		  (setq base-name (replace-regexp-in-string "\\.m3u\\'" "" base-name))
-		  (setq playlist-path (expand-file-name (concat base-name ".m3u") music-dir))
-		  (cond
-		   ((not (file-exists-p playlist-path))
-			;; Safe to write
-			(setq done t))
-		   (t
-			(let ((choice (read-char-choice
-						   (format "Playlist '%s' exists. [o]verwrite, [c]ancel, [r]ename? "
-								   (file-name-nondirectory playlist-path))
-						   '(?o ?c ?r))))
-			  (cl-case choice
-				(?o (setq done t))
-				(?c (user-error "Cancelled playlist creation"))
-				(?r (setq done nil)))))))
-		;; Actually write the file
-		(with-temp-file playlist-path
-		  (dolist (af audio-files)
-			(insert af "\n")))
-		(message "Wrote playlist %s with %d tracks" (file-name-nondirectory playlist-path) count)))))
+         (audio-files
+          (cl-remove-if-not
+           (lambda (f)
+             (let ((ext (file-name-extension f)))
+               (and ext
+                    (member (downcase ext) cj/audio-file-extensions))))
+           marked-files))
+         (count (length audio-files)))
+    (if (zerop count)
+        (user-error "No audio files marked (extensions: %s)"
+                    (string-join cj/audio-file-extensions ", "))
+      (let ((base-name nil)
+            (playlist-path nil)
+            (done nil))
+        (while (not done)
+          (setq base-name (read-string
+                           (format "Playlist name (without .m3u): ")))
+          ;; Sanitize: strip any trailing .m3u
+          (setq base-name (replace-regexp-in-string "\\.m3u\\'" "" base-name))
+          (setq playlist-path (expand-file-name (concat base-name ".m3u") music-dir))
+          (cond
+           ((not (file-exists-p playlist-path))
+            ;; Safe to write
+            (setq done t))
+           (t
+            (let ((choice (read-char-choice
+                           (format "Playlist '%s' exists. [o]verwrite, [c]ancel, [r]ename? "
+                                   (file-name-nondirectory playlist-path))
+                           '(?o ?c ?r))))
+              (cl-case choice
+                (?o (setq done t))
+                (?c (user-error "Cancelled playlist creation"))
+                (?r (setq done nil)))))))
+        ;; Actually write the file
+        (with-temp-file playlist-path
+          (dolist (af audio-files)
+            (insert af "\n")))
+        (message "Wrote playlist %s with %d tracks" (file-name-nondirectory playlist-path) count)))))
 
 ;;; ----------------------------------- Dired -----------------------------------
 
@@ -112,9 +112,9 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
   :defer t
   :bind
   (:map dired-mode-map
-		([remap dired-summary] . which-key-show-major-mode)
-		("E" . wdired-change-to-wdired-mode) ;; edit names and properties in buffer
-		("e" . cj/dired-ediff-files))        ;; ediff files
+        ([remap dired-summary] . which-key-show-major-mode)
+        ("E" . wdired-change-to-wdired-mode) ;; edit names and properties in buffer
+        ("e" . cj/dired-ediff-files))        ;; ediff files
   :custom
   (dired-use-ls-dired nil)                             ;; non GNU FreeBSD doesn't support a "--dired" switch
   :config
@@ -136,9 +136,9 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
   "Open HTML file at point in dired/dirvish using eww."
   (interactive)
   (let ((file (dired-get-file-for-visit)))
-	(if (string-match-p "\\.html?\\'" file)
-		(eww-open-file file)
-	  (message "Not an HTML file: %s" file))))
+    (if (string-match-p "\\.html?\\'" file)
+        (eww-open-file file)
+      (message "Not an HTML file: %s" file))))
 
 ;;; ------------------------ Dired Mark All Visible Files -----------------------
 
@@ -190,26 +190,26 @@ Always opens the file manager in the directory currently being displayed,
 regardless of what file or subdirectory the point is on."
   (interactive)
   (let ((current-dir (dired-current-directory)))
-	(if (and current-dir (file-exists-p current-dir))
-		(progn
-		  (message "Opening file manager in %s..." current-dir)
-		  ;; Use shell-command with & to run asynchronously and detached
-		  (let ((process-connection-type nil)) ; Use pipe instead of pty
-			(cond
-			 ;; Linux/Unix with xdg-open
-			 ((executable-find "xdg-open")
-			  (call-process "xdg-open" nil 0 nil current-dir))
-			 ;; macOS
-			 ((eq system-type 'darwin)
-			  (call-process "open" nil 0 nil current-dir))
-			 ;; Windows
-			 ((eq system-type 'windows-nt)
-			  (call-process "explorer" nil 0 nil current-dir))
-			 ;; Fallback to shell-command
-			 (t
-			  (shell-command (format "xdg-open %s &"
-									 (shell-quote-argument current-dir)))))))
-	  (message "Could not determine current directory."))))
+    (if (and current-dir (file-exists-p current-dir))
+        (progn
+          (message "Opening file manager in %s..." current-dir)
+          ;; Use shell-command with & to run asynchronously and detached
+          (let ((process-connection-type nil)) ; Use pipe instead of pty
+            (cond
+             ;; Linux/Unix with xdg-open
+             ((executable-find "xdg-open")
+              (call-process "xdg-open" nil 0 nil current-dir))
+             ;; macOS
+             ((eq system-type 'darwin)
+              (call-process "open" nil 0 nil current-dir))
+             ;; Windows
+             ((eq system-type 'windows-nt)
+              (call-process "explorer" nil 0 nil current-dir))
+             ;; Fallback to shell-command
+             (t
+              (shell-command (format "xdg-open %s &"
+                                     (shell-quote-argument current-dir)))))))
+      (message "Could not determine current directory."))))
 
 (defun cj/set-wallpaper ()
   "Set the image at point as the desktop wallpaper.
@@ -242,80 +242,82 @@ Uses feh on X11, swww on Wayland."
   ;; This MUST be in :custom section, not :config
   (dirvish-quick-access-entries
    `(("h"  "~/"                                             "home")
-	 ("cx" ,code-dir                                        "code directory")
-	 ("ex" ,user-emacs-directory                            "emacs home")
-	 ("es" ,sounds-dir                                      "notification sounds")
-	 ("ra" ,video-recordings-dir                            "video recordings")
-	 ("rv" ,audio-recordings-dir                            "audio recordings")
-	 ("dl" ,dl-dir                                          "downloads")
-	 ("dr" ,(concat org-dir "/drill/")                      "drill files")
-	 ("dt" ,(concat dl-dir "/torrents/complete/")           "torrents")
+     ("cx" ,code-dir                                        "code directory")
+     ("ex" ,user-emacs-directory                            "emacs home")
+     ("es" ,sounds-dir                                      "notification sounds")
+     ("ra" ,video-recordings-dir                            "video recordings")
+     ("rv" ,audio-recordings-dir                            "audio recordings")
+     ("dl" ,dl-dir                                          "downloads")
+     ("dr" ,(concat org-dir "/drill/")                      "drill files")
+     ("dt" ,(concat dl-dir "/torrents/complete/")           "torrents")
      ("dx" "~/documents/"                                   "documents")
      ("db" "~/documents/dropbox/"                           "dropbox")
      ("gd" "~/documents/google-drive/"                      "google-drive")
-	 ("lx" "~/archive/lectures/"                            "lectures")
-	 ("mb" "/media/backup/"                                 "backup directory")
-	 ("mx" "~/music/"                                       "music")
-	 ("pdx" "~/projects/documents/"                         "project documents")
-	 ("pdl" "~/projects/danneel/"                           "project danneel")
-	 ("pc" "~/projects/clipper/"                            "project clipper")
-	 ("pl" "~/projects/elibrary/"                           "project elibrary")
-	 ("pf" "~/projects/finances/"                           "project finances")
-	 ("pjr" "~/projects/jr-estate/"                         "project jr-estate")
-	 ("phx" "~/projects/health/"                            "project health")
-	 ("phl" "~/projects/homelab/"                           "project homelab")
-	 ("pk" "~/projects/kit/"                                "project kit")
-	 ("pn" "~/projects/nextjob/"                            "project nextjob")
-	 ("ps" ,(concat pix-dir "/screenshots/")                "pictures screenshots")
-	 ("pw" ,(concat pix-dir "/wallpaper/")                  "pictures wallpaper")
-	 ("px" ,pix-dir                                         "pictures directory")
+     ("lx" "~/archive/lectures/"                            "lectures")
+     ("mb" "/media/backup/"                                 "backup directory")
+     ("mx" "~/music/"                                       "music")
+     ("pdx" "~/projects/documents/"                         "project documents")
+     ("pdl" "~/projects/danneel/"                           "project danneel")
+     ("pc" "~/projects/clipper/"                            "project clipper")
+     ("pl" "~/projects/elibrary/"                           "project elibrary")
+     ("pf" "~/projects/finances/"                           "project finances")
+     ("pjr" "~/projects/jr-estate/"                         "project jr-estate")
+     ("phx" "~/projects/health/"                            "project health")
+     ("phl" "~/projects/homelab/"                           "project homelab")
+     ("pk" "~/projects/kit/"                                "project kit")
+     ("pn" "~/projects/nextjob/"                            "project nextjob")
+     ("ps" ,(concat pix-dir "/screenshots/")                "pictures screenshots")
+     ("pw" ,(concat pix-dir "/wallpaper/")                  "pictures wallpaper")
+     ("px" ,pix-dir                                         "pictures directory")
      ("rcj" "/sshx:cjennings@cjennings.net:~"               "remote c@cjennings.net")
+     ("rtl" "/sshx:cjennings@truenas.local:~"               "remote cjennings@truenas.local")
+     ("rtt" "/sshx:cjennings@truenas:~"                      "remote cjennings@truenas (tailscale)")
      ("rcg" "/sshx:git@cjennings.net:~"                     "remote git@cjennings.net")
-	 ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
-	 ("sx" ,sync-dir                                        "sync directory")
-	 ("so" ,(concat sync-dir "/org/")                       "sync/org directory")
-	 ("sr" ,(concat sync-dir "/recordings/")                "sync/recordings directory")
-	 ("spv" ,(concat sync-dir "/phone/videos/")             "sync/phone/videos directory")
-	 ("tg" ,(concat org-dir "/text.games/")                 "text games")
-	 ("vr" ,video-recordings-dir                            "video recordings directory")
-	 ("vx" ,videos-dir                                      "videos")))
+     ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
+     ("sx" ,sync-dir                                        "sync directory")
+     ("so" ,(concat sync-dir "/org/")                       "sync/org directory")
+     ("sr" ,(concat sync-dir "/recordings/")                "sync/recordings directory")
+     ("spv" ,(concat sync-dir "/phone/videos/")             "sync/phone/videos directory")
+     ("tg" ,(concat org-dir "/text.games/")                 "text games")
+     ("vr" ,video-recordings-dir                            "video recordings directory")
+     ("vx" ,videos-dir                                      "videos")))
   :config
   ;; Add the extensions directory to load-path
   (let ((extensions-dir (expand-file-name "extensions"
-										  (file-name-directory (locate-library "dirvish")))))
-	(when (file-directory-p extensions-dir)
-	  (add-to-list 'load-path extensions-dir)))
+                                          (file-name-directory (locate-library "dirvish")))))
+    (when (file-directory-p extensions-dir)
+      (add-to-list 'load-path extensions-dir)))
 
   ;; Load dirvish modules with error checking
   (let ((dirvish-modules '(dirvish-emerge
-						   dirvish-subtree
-						   dirvish-narrow
-						   dirvish-history
-						   dirvish-ls
-						   dirvish-yank
-						   dirvish-quick-access
-						   dirvish-collapse
-						   dirvish-rsync
-						   dirvish-vc
-						   dirvish-icons
-						   dirvish-side
-						   dirvish-peek)))
-	(dolist (module dirvish-modules)
-	  (condition-case err
-		  (require module)
-		(error
-		 (message "Failed to load %s: %s" module (error-message-string err))))))
+                           dirvish-subtree
+                           dirvish-narrow
+                           dirvish-history
+                           dirvish-ls
+                           dirvish-yank
+                           dirvish-quick-access
+                           dirvish-collapse
+                           dirvish-rsync
+                           dirvish-vc
+                           dirvish-icons
+                           dirvish-side
+                           dirvish-peek)))
+    (dolist (module dirvish-modules)
+      (condition-case err
+          (require module)
+        (error
+         (message "Failed to load %s: %s" module (error-message-string err))))))
 
   ;; Enable peek mode with error checking
   (condition-case err
-	  (dirvish-peek-mode 1)
-	(error (message "Failed to enable dirvish-peek-mode: %s" (error-message-string err))))
+      (dirvish-peek-mode 1)
+    (error (message "Failed to enable dirvish-peek-mode: %s" (error-message-string err))))
 
   ;; Enable side-follow mode with error checking
   (condition-case err
-	  (dirvish-side-follow-mode 1)
-	(error (message "Failed to enable dirvish-side-follow-mode: %s"
-					(error-message-string err))))
+      (dirvish-side-follow-mode 1)
+    (error (message "Failed to enable dirvish-side-follow-mode: %s"
+                    (error-message-string err))))
 
   ;; Your other configuration settings
   (setq dirvish-attributes '(nerd-icons file-size))
@@ -369,7 +371,7 @@ Uses feh on X11, swww on Wayland."
    (dirvish-mode . dired-hide-dotfiles-mode))
   :bind
   (:map dired-mode-map
-		("." . dired-hide-dotfiles-mode)))
+        ("." . dired-hide-dotfiles-mode)))
 
 ;; --------------------------------- Copy Path ---------------------------------
 
@@ -381,55 +383,55 @@ With prefix arg or when AS-ORG-LINK is non-nil, format as \='org-mode\=' link.
 When FORCE-ABSOLUTE is non-nil, always copy the absolute path."
   (interactive "P")
   (unless (derived-mode-p 'dired-mode)
-	(user-error "Not in a Dired buffer"))
+    (user-error "Not in a Dired buffer"))
 
   (let* ((file (dired-get-filename nil t))
-		 (file-name (file-name-nondirectory file))
-		 (project-root (cj/get-project-root))
-		 (home-dir (expand-file-name "~"))
-		 path path-type)
+         (file-name (file-name-nondirectory file))
+         (project-root (cj/get-project-root))
+         (home-dir (expand-file-name "~"))
+         path path-type)
 
-	(unless file
-	  (user-error "No file at point"))
+    (unless file
+      (user-error "No file at point"))
 
-	(cond
-	 ;; Force absolute path
-	 (force-absolute
-	  (setq path file
-			path-type "absolute"))
+    (cond
+     ;; Force absolute path
+     (force-absolute
+      (setq path file
+            path-type "absolute"))
 
-	 ;; Project-relative path
-	 (project-root
-	  (setq path (file-relative-name file project-root)
-			path-type "project-relative"))
+     ;; Project-relative path
+     (project-root
+      (setq path (file-relative-name file project-root)
+            path-type "project-relative"))
 
-	 ;; Home-relative path
-	 ((string-prefix-p home-dir file)
-	  (let ((relative-from-home (file-relative-name file home-dir)))
-		(setq path (if (string= relative-from-home ".")
-					   "~"
-					 (concat "~/" relative-from-home))
-			  path-type "home-relative")))
+     ;; Home-relative path
+     ((string-prefix-p home-dir file)
+      (let ((relative-from-home (file-relative-name file home-dir)))
+        (setq path (if (string= relative-from-home ".")
+                       "~"
+                     (concat "~/" relative-from-home))
+              path-type "home-relative")))
 
-	 ;; Absolute path
-	 (t
-	  (setq path file
-			path-type "absolute")))
+     ;; Absolute path
+     (t
+      (setq path file
+            path-type "absolute")))
 
-	;; Format as org-link if requested
-	(when as-org-link
-	  (setq path (format "[[file:%s][%s]]" path file-name)))
+    ;; Format as org-link if requested
+    (when as-org-link
+      (setq path (format "[[file:%s][%s]]" path file-name)))
 
-	;; Copy to kill-ring and clipboard
-	(kill-new path)
+    ;; Copy to kill-ring and clipboard
+    (kill-new path)
 
-	;; Provide feedback
-	(message "Copied %s path%s: %s"
-			 path-type
-			 (if as-org-link " as org-link" "")
-			 (if (> (length path) 60)
-				 (concat (substring path 0 57) "...")
-			   path))))
+    ;; Provide feedback
+    (message "Copied %s path%s: %s"
+             path-type
+             (if as-org-link " as org-link" "")
+             (if (> (length path) 60)
+                 (concat (substring path 0 57) "...")
+               path))))
 
 (defun cj/get-project-root ()
   "Get project root using projectile or project.el.
@@ -437,16 +439,16 @@ Returns nil if not in a project."
   (cond
    ;; Try projectile first if available
    ((and (fboundp 'projectile-project-root)
-		 (ignore-errors (projectile-project-root))))
+         (ignore-errors (projectile-project-root))))
 
    ;; Fallback to project.el
    ((and (fboundp 'project-current)
-		 (project-current))
-	(let ((proj (project-current)))
-	  (if (fboundp 'project-root)
-		  (project-root proj)
-		;; Compatibility with older versions
-		(car (project-roots proj)))))
+         (project-current))
+    (let ((proj (project-current)))
+      (if (fboundp 'project-root)
+          (project-root proj)
+        ;; Compatibility with older versions
+        (car (project-roots proj)))))
 
    ;; No project found
    (t nil)))
