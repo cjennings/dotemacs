@@ -113,20 +113,7 @@
 (require 'org-contacts-config)   ;; fully integrated org-mode contacts management
 (require 'org-drill-config)
 (require 'org-export-config)
-;; (require 'org-gcal-config)    ;; DISABLED: Replaced by calendar-sync.el (one-way sync)
 
-;; Calendar sync (one-way: Google/Proton → Org)
-(setq calendar-sync-calendars
-      `((:name "google"
-         :url "***REMOVED***"
-         :file ,gcal-file)
-        (:name "proton"
-         :url "***REMOVED***"
-         :file ,pcal-file)
-        (:name "deepsat"
-         :url "***REMOVED***"
-         :file ,dcal-file)))
-(require 'calendar-sync)
 
 (require 'org-refile-config)     ;; refile org-branches
 (require 'org-roam-config)       ;; personal knowledge management in org mode
@@ -150,8 +137,9 @@
 
 ;; ------------------------- Personal Workflow Related -------------------------
 
-(require 'reconcile-open-repos)
-(require 'local-repository)      ;; local repository for easy config portability
+(require 'calendar-sync)        ;; sync calendars, must come after org-agenda
+(require 'reconcile-open-repos) ;; review dirty repositories and reconcile
+(require 'local-repository)     ;; local repository for easy config portability
 
 ;; ------------------------------- Entertainment -------------------------------
 
