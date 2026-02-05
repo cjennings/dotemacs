@@ -413,9 +413,12 @@ Each exception plist contains :recurrence-id (parsed), :start, :end, :summary, e
                      (end-tzid (calendar-sync--extract-tzid dtend-line))
                      (start-parsed (calendar-sync--parse-timestamp dtstart start-tzid))
                      (end-parsed (and dtend (calendar-sync--parse-timestamp dtend end-tzid)))
-                     (summary (calendar-sync--get-property event-str "SUMMARY"))
-                     (description (calendar-sync--get-property event-str "DESCRIPTION"))
-                     (location (calendar-sync--get-property event-str "LOCATION")))
+                     (summary (calendar-sync--clean-text
+                               (calendar-sync--get-property event-str "SUMMARY")))
+                     (description (calendar-sync--clean-text
+                                   (calendar-sync--get-property event-str "DESCRIPTION")))
+                     (location (calendar-sync--clean-text
+                                (calendar-sync--get-property event-str "LOCATION"))))
                 (when (and recurrence-id-parsed start-parsed)
                   ;; Convert RECURRENCE-ID to local time
                   ;; Handle: UTC (Z suffix), TZID, or assume local
@@ -658,9 +661,10 @@ Returns nil if property not found."
   (when (string-match (format "^%s[^:\n]*:\\(.*\\)$" (regexp-quote property)) event)
     (let ((value (match-string 1 event))
           (start (match-end 0)))
-      ;; Handle continuation lines (start with space or tab)
+      ;; Handle continuation lines (RFC 5545 §3.1: folded lines start with space or tab)
       (while (and (< start (length event))
-                  (string-match "^\n[ \t]\\(.*\\)$" event start))
+                  (string-match "\n[ \t]\\([^\n]*\\)" event start)
+                  (= (match-beginning 0) start))
         (setq value (concat value (match-string 1 event)))
         (setq start (match-end 0)))
       value)))
@@ -1164,7 +1168,7 @@ Description appears as body text after the drawer."
       (push (format ":URL: %s" url) props))
     (setq props (nreverse props))
     ;; Build output
-    (let ((parts (list (format "* %s" summary) timestamp)))
+    (let ((parts (list timestamp (format "* %s" summary))))
       ;; Add property drawer if any properties exist
       (when props
         (push ":PROPERTIES:" parts)

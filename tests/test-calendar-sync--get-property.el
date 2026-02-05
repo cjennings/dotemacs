@@ -133,6 +133,26 @@
         (should (equal (calendar-sync--get-property event "DESCRIPTION") "Tasks: setup; review; deploy")))
     (test-calendar-sync--get-property-teardown)))
 
+(ert-deftest test-calendar-sync--get-property-boundary-continuation-lines-joined ()
+  "Test extracting property value with RFC 5545 continuation lines.
+Folded lines start with a space or tab and should be joined."
+  (test-calendar-sync--get-property-setup)
+  (unwind-protect
+      (let ((event "BEGIN:VEVENT\nDESCRIPTION:This is a long\n description that spans\n multiple lines\nSUMMARY:Test\nEND:VEVENT"))
+        (should (equal (calendar-sync--get-property event "DESCRIPTION")
+                       "This is a longdescription that spansmultiple lines")))
+    (test-calendar-sync--get-property-teardown)))
+
+(ert-deftest test-calendar-sync--get-property-boundary-continuation-with-html ()
+  "Test that HTML tags split across continuation lines are fully captured."
+  (test-calendar-sync--get-property-setup)
+  (unwind-protect
+      (let ((event "BEGIN:VEVENT\nDESCRIPTION:Created by <a href=\"https://ex\n ample.com\">link</a> here\nEND:VEVENT"))
+        (let ((value (calendar-sync--get-property event "DESCRIPTION")))
+          (should (string-match-p "example.com" value))
+          (should (string-match-p "</a>" value))))
+    (test-calendar-sync--get-property-teardown)))
+
 ;;; Error Cases
 
 (ert-deftest test-calendar-sync--get-property-error-missing-property-returns-nil ()
