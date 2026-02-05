@@ -1564,6 +1564,33 @@ Simple, maintainable, respects flycheck's built-in logic.
 3. Add to modeline-config.el mode-line-format
 4. Test in sh-mode and emacs-lisp-mode buffers
 
+** TODO [#C] Investigate TRAMP/dirvish showing question marks for file dates
+
+Remote directories in dirvish show "?" instead of actual modification dates.
+Tried several approaches without success - needs deeper investigation.
+
+**Attempted fixes (all reverted):**
+1. Connection-local dired-listing-switches with -alh (didn't help)
+2. Disabling tramp-direct-async-process (reported to cause this, but disabling didn't fix it)
+3. Hook to set different listing switches for remote vs local (didn't help)
+
+**Possible causes to investigate:**
+- dirvish may be using its own attribute fetching that bypasses dired-listing-switches
+- May need dirvish-specific configuration for remote file attributes
+- Could be an Emacs 29/30 + TRAMP + dirvish interaction issue
+- May require changes to how dirvish renders the file-size attribute on remote
+
+**Resources:**
+- https://github.com/alexluigit/dirvish/discussions/124 (related TRAMP issues)
+- https://github.com/alexluigit/dirvish/blob/main/docs/CUSTOMIZING.org (TRAMP section)
+
+**Files involved:**
+- modules/tramp-config.el
+- modules/dirvish-config.el
+
+**Workaround:**
+Use regular dired for remote directories if timestamps are needed.
+
 * TODO [#B] Review and rebind M-S- keybindings
 Changed from M-uppercase to M-S-lowercase for terminal compatibility.
 These may override useful defaults - review and pick better bindings:
