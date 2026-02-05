@@ -72,6 +72,7 @@
 
 ;; ---------------------- Added Features And Integrations ----------------------
 
+
 (require 'calibredb-epub-config) ;; ebook reader/manager settings
 (require 'dashboard-config)      ;; the nice landing page with links
 (require 'dirvish-config)        ;; file manager configuration
@@ -86,7 +87,7 @@
 (require 'pdf-config)            ;; pdf display settings
 (require 'quick-video-capture)   ;; download videos with a browser bookmark
 (require 'video-audio-recording) ;; desktop and/or audio recording via ffmpeg
-(require 'transcription-config)  ;; audio transcription using Whisper
+(require 'transcription-config)  ;; audio transcription
 (require 'weather-config)        ;; utility to display the weather
 
 ;; -------------------------------- Programming --------------------------------
@@ -113,7 +114,6 @@
 (require 'org-contacts-config)   ;; fully integrated org-mode contacts management
 (require 'org-drill-config)
 (require 'org-export-config)
-
 
 (require 'org-refile-config)     ;; refile org-branches
 (require 'org-roam-config)       ;; personal knowledge management in org mode
