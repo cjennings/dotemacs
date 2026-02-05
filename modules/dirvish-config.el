@@ -273,6 +273,7 @@ Uses feh on X11, swww on Wayland."
      ("rcj" "/sshx:cjennings@cjennings.net:~"               "remote c@cjennings.net")
      ("rtl" "/sshx:cjennings@truenas.local:~"               "remote cjennings@truenas.local")
      ("rtt" "/sshx:cjennings@truenas:~"                      "remote cjennings@truenas (tailscale)")
+     ("rbk" "/sshx:cjennings@truenas.local:/mnt/vault/backups/" "remote truenas backups")
      ("rcg" "/sshx:git@cjennings.net:~"                     "remote git@cjennings.net")
      ("rsb" "/sshx:cjennings@wolf.usbx.me:/home/cjennings/" "remote seedbox")
      ("sx" ,sync-dir                                        "sync directory")
