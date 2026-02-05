@@ -447,7 +447,8 @@ Signals an error if:
   "g" #'revert-buffer
   "w" #'cj/view-buffer-in-eww
   "e" #'cj/view-email-in-buffer)
-(keymap-set cj/custom-keymap "b" cj/buffer-and-file-map)
+(when (boundp 'cj/custom-keymap)
+  (keymap-set cj/custom-keymap "b" cj/buffer-and-file-map))
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

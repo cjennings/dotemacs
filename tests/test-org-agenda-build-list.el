@@ -16,6 +16,7 @@
 (defvar schedule-file "/tmp/test-schedule.org")
 (defvar gcal-file "/tmp/test-gcal.org")
 (defvar pcal-file "/tmp/test-pcal.org")
+(defvar dcal-file "/tmp/test-dcal.org")
 (defvar projects-dir "/tmp/test-projects/")
 
 ;; Now load the actual production module
@@ -184,12 +185,12 @@ When directory scan returns empty:
 
         (cj/build-org-agenda-list)
 
-        ;; Should have base files only (inbox, schedule, gcal, pcal)
-        (should (= (length org-agenda-files) 4))
+        ;; Should have base files only (inbox, schedule, gcal, pcal, dcal)
+        (should (= (length org-agenda-files) 5))
 
         ;; Cache should contain base files
         (should cj/org-agenda-files-cache)
-        (should (= (length cj/org-agenda-files-cache) 4)))
+        (should (= (length cj/org-agenda-files-cache) 5)))
     (test-org-agenda-teardown)))
 
 (ert-deftest test-org-agenda-build-list-boundary-building-flag-set-during-build ()

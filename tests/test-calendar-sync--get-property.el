@@ -12,6 +12,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'testutil-calendar-sync)
 (require 'calendar-sync)
 
 ;;; Setup and Teardown

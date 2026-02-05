@@ -19,8 +19,8 @@
 ;;; Code:
 
 (require 'ert)
-(require 'calendar-sync)
 (require 'testutil-calendar-sync)
+(require 'calendar-sync)
 
 (defconst test-calendar-sync-property-trials 30
   "Number of random trials to run for each property test.
