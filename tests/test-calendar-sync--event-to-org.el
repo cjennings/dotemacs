@@ -26,7 +26,11 @@
                       :status "accepted"
                       :url "https://meet.google.com/abc-defg-hij")))
     (let ((result (calendar-sync--event-to-org event)))
-      (should (string-match-p "\\* Team Standup" result))
+      ;; Verify heading comes before timestamp
+      (should (string-match "\\* Team Standup" result))
+      (let ((heading-pos (match-beginning 0)))
+        (should (string-match "<[0-9]" result))
+        (should (< heading-pos (match-beginning 0))))
       (should (string-match-p ":PROPERTIES:" result))
       (should (string-match-p ":LOCATION: Conference Room A" result))
       (should (string-match-p ":ORGANIZER: John Smith" result))
