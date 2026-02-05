@@ -376,6 +376,7 @@
     ("sgould" "should" nil :count 0)
     ("sholarship" "scholarship" nil :count 0)
     ("shoudl" "should" nil :count 8)
+    ("should't" "shouldn't" nil :count 0)
     ("sieze" "seize" nil :count 0)
     ("skilfull" "skillful" nil :count 0)
     ("snoer" "snore" nil :count 1)
