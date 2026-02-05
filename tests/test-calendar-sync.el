@@ -8,8 +8,8 @@
 ;;; Code:
 
 (require 'ert)
-(require 'calendar-sync)
 (require 'testutil-calendar-sync)
+(require 'calendar-sync)
 
 ;;; Test Data
 

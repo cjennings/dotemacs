@@ -111,6 +111,12 @@ Default: 60 minutes (1 hour).")
 If non-nil, sync starts automatically when calendar-sync is loaded.
 If nil, user must manually call `calendar-sync-start'.")
 
+(defvar calendar-sync-user-emails
+  '("craigmartinjennings@gmail.com" "craig.jennings@deepsat.com" "c@cjennings.net")
+  "List of user email addresses for determining acceptance status.
+Used by `calendar-sync--find-user-status' to look up the user's
+PARTSTAT in event attendee lists.")
+
 (defvar calendar-sync-past-months 3
   "Number of months in the past to include when expanding recurring events.
 Default: 3 months. This keeps recent history visible in org-agenda.")
@@ -227,6 +233,47 @@ Returns CONTENT with all \\r characters removed."
   (if (not (stringp content))
       content
     (replace-regexp-in-string "\r" "" content)))
+
+;;; Text Cleaning (ICS unescape + HTML strip)
+
+(defun calendar-sync--unescape-ics-text (text)
+  "Unescape RFC 5545 escape sequences in TEXT.
+Converts: \\n→newline, \\,→comma, \\\\→backslash, \\;→semicolon.
+Returns nil for nil input."
+  (when text
+    ;; Use placeholder for literal backslash to avoid double-unescaping.
+    ;; replace-regexp-in-string with LITERAL=t avoids backslash interpretation.
+    (let ((result (replace-regexp-in-string "\\\\\\\\" "\000" text)))
+      (setq result (replace-regexp-in-string "\\\\n" "\n" result t t))
+      (setq result (replace-regexp-in-string "\\\\," "," result t t))
+      (setq result (replace-regexp-in-string "\\\\;" ";" result t t))
+      (replace-regexp-in-string "\000" "\\" result t t))))
+
+(defun calendar-sync--strip-html (text)
+  "Strip HTML tags from TEXT and decode common HTML entities.
+Converts <br>, <br/>, <br /> to newlines.  Strips all other tags.
+Decodes &amp; &lt; &gt; &quot;.  Collapses excessive blank lines.
+Returns nil for nil input."
+  (when text
+    (let ((result text))
+      ;; Convert <br> variants to newline (must come before tag stripping)
+      (setq result (replace-regexp-in-string "<br[ \t]*/?>[ \t]*" "\n" result))
+      ;; Strip all remaining HTML tags
+      (setq result (replace-regexp-in-string "<[^>]*>" "" result))
+      ;; Decode HTML entities
+      (setq result (replace-regexp-in-string "&amp;" "&" result))
+      (setq result (replace-regexp-in-string "&lt;" "<" result))
+      (setq result (replace-regexp-in-string "&gt;" ">" result))
+      (setq result (replace-regexp-in-string "&quot;" "\"" result))
+      ;; Collapse 3+ consecutive newlines to 2
+      (setq result (replace-regexp-in-string "\n\\{3,\\}" "\n\n" result))
+      result)))
+
+(defun calendar-sync--clean-text (text)
+  "Clean TEXT by unescaping ICS sequences, stripping HTML, and trimming.
+Returns nil for nil input.  Returns empty string for whitespace-only input."
+  (when text
+    (string-trim (calendar-sync--strip-html (calendar-sync--unescape-ics-text text)))))
 
 ;;; Date Utilities
 
@@ -438,6 +485,13 @@ Compares year, month, day, hour, minute."
       (plist-put result :description (plist-get exception :description)))
     (when (plist-get exception :location)
       (plist-put result :location (plist-get exception :location)))
+    ;; Pass through new fields if exception overrides them
+    (when (plist-get exception :attendees)
+      (plist-put result :attendees (plist-get exception :attendees)))
+    (when (plist-get exception :organizer)
+      (plist-put result :organizer (plist-get exception :organizer)))
+    (when (plist-get exception :url)
+      (plist-put result :url (plist-get exception :url)))
     result))
 
 (defun calendar-sync--apply-recurrence-exceptions (occurrences exceptions)
@@ -617,6 +671,102 @@ Returns the complete line like 'DTSTART;TZID=Europe/Lisbon:20260202T190000'.
 Returns nil if property not found."
   (when (string-match (format "^\\(%s[^\n]*\\)$" (regexp-quote property)) event)
     (match-string 1 event)))
+
+(defun calendar-sync--get-all-property-lines (event property)
+  "Extract ALL lines matching PROPERTY from EVENT string.
+Unlike `calendar-sync--get-property-line' which returns the first match,
+this returns a list of all matching lines.  Handles continuation lines
+\(lines starting with space or tab).
+Returns nil if EVENT or PROPERTY is nil, or no matches found."
+  (when (and event property (stringp event) (not (string-empty-p event)))
+    (let ((lines '())
+          (pattern (format "^%s[^\n]*" (regexp-quote property)))
+          (pos 0))
+      (while (string-match pattern event pos)
+        (let ((line (match-string 0 event))
+              (end (match-end 0)))
+          ;; Handle continuation lines (start with space or tab after newline)
+          (while (and (< end (length event))
+                      (string-match "\n[ \t]\\([^\n]*\\)" event end)
+                      (= (match-beginning 0) end))
+            (setq line (concat line (match-string 1 event)))
+            (setq end (match-end 0)))
+          (push line lines)
+          (setq pos (if (< end (length event)) (1+ end) end))))
+      (nreverse lines))))
+
+(defun calendar-sync--parse-attendee-line (line)
+  "Parse single ATTENDEE LINE into plist.
+Returns plist (:cn NAME :email EMAIL :partstat STATUS :role ROLE).
+Returns nil for nil, empty, or malformed input."
+  (when (and line (stringp line) (not (string-empty-p line))
+             (string-match-p "^ATTENDEE" line))
+    (let ((cn nil)
+          (email nil)
+          (partstat nil)
+          (role nil))
+      ;; Extract CN parameter
+      (when (string-match ";CN=\\([^;:]+\\)" line)
+        (setq cn (match-string 1 line))
+        ;; Strip surrounding quotes if present
+        (when (and (string-prefix-p "\"" cn) (string-suffix-p "\"" cn))
+          (setq cn (substring cn 1 -1))))
+      ;; Extract PARTSTAT parameter
+      (when (string-match ";PARTSTAT=\\([^;:]+\\)" line)
+        (setq partstat (match-string 1 line)))
+      ;; Extract ROLE parameter
+      (when (string-match ";ROLE=\\([^;:]+\\)" line)
+        (setq role (match-string 1 line)))
+      ;; Extract email from mailto: value
+      (when (string-match "mailto:\\([^>\n ]+\\)" line)
+        (setq email (match-string 1 line)))
+      (when email
+        (list :cn cn :email email :partstat partstat :role role)))))
+
+(defun calendar-sync--find-user-status (attendees user-emails)
+  "Find user's PARTSTAT from ATTENDEES list using USER-EMAILS.
+ATTENDEES is list of plists from `calendar-sync--parse-attendee-line'.
+USER-EMAILS is list of email strings to match against.
+Returns lowercase status string (\"accepted\", \"declined\", etc.) or nil."
+  (when (and attendees user-emails)
+    (let ((user-emails-lower (mapcar #'downcase user-emails))
+          (found nil))
+      (cl-dolist (attendee attendees)
+        (let ((attendee-email (downcase (or (plist-get attendee :email) ""))))
+          (when (member attendee-email user-emails-lower)
+            (let ((partstat (plist-get attendee :partstat)))
+              (when partstat
+                (setq found (downcase partstat))
+                (cl-return found))))))
+      found)))
+
+(defun calendar-sync--parse-organizer (event-str)
+  "Parse ORGANIZER property from EVENT-STR into plist.
+Returns plist (:cn NAME :email EMAIL), or nil if no ORGANIZER found."
+  (when (and event-str (stringp event-str))
+    (let ((line (calendar-sync--get-property-line event-str "ORGANIZER")))
+      (when line
+        (let ((cn nil)
+              (email nil))
+          ;; Extract CN parameter
+          (when (string-match ";CN=\\([^;:]+\\)" line)
+            (setq cn (match-string 1 line))
+            ;; Strip surrounding quotes if present
+            (when (and (string-prefix-p "\"" cn) (string-suffix-p "\"" cn))
+              (setq cn (substring cn 1 -1))))
+          ;; Extract email from mailto: value
+          (when (string-match "mailto:\\([^>\n ]+\\)" line)
+            (setq email (match-string 1 line)))
+          (when email
+            (list :cn cn :email email)))))))
+
+(defun calendar-sync--extract-meeting-url (event-str)
+  "Extract meeting URL from EVENT-STR.
+Prefers X-GOOGLE-CONFERENCE over URL property.
+Returns URL string or nil."
+  (when (and event-str (stringp event-str))
+    (or (calendar-sync--get-property event-str "X-GOOGLE-CONFERENCE")
+        (calendar-sync--get-property event-str "URL"))))
 
 (defun calendar-sync--extract-tzid (property-line)
   "Extract TZID parameter value from PROPERTY-LINE.
@@ -938,17 +1088,22 @@ Filters out dates excluded via EXDATE properties."
 
 (defun calendar-sync--parse-event (event-str)
   "Parse single VEVENT string EVENT-STR into plist.
-Returns plist with :uid :summary :description :location :start :end.
+Returns plist with :uid :summary :description :location :start :end
+:attendees :organizer :url :status.
 Returns nil if event lacks required fields (DTSTART, SUMMARY).
 Skips events with RECURRENCE-ID (individual instances of recurring events
 are handled separately via exception collection).
-Handles TZID-qualified timestamps by converting to local time."
+Handles TZID-qualified timestamps by converting to local time.
+Cleans text fields (description, location, summary) via `calendar-sync--clean-text'."
   ;; Skip individual instances of recurring events (they're collected as exceptions)
   (unless (calendar-sync--get-property event-str "RECURRENCE-ID")
     (let* ((uid (calendar-sync--get-property event-str "UID"))
-           (summary (calendar-sync--get-property event-str "SUMMARY"))
-           (description (calendar-sync--get-property event-str "DESCRIPTION"))
-           (location (calendar-sync--get-property event-str "LOCATION"))
+           (summary (calendar-sync--clean-text
+                     (calendar-sync--get-property event-str "SUMMARY")))
+           (description (calendar-sync--clean-text
+                         (calendar-sync--get-property event-str "DESCRIPTION")))
+           (location (calendar-sync--clean-text
+                      (calendar-sync--get-property event-str "LOCATION")))
            ;; Get raw property values
            (dtstart (calendar-sync--get-property event-str "DTSTART"))
            (dtend (calendar-sync--get-property event-str "DTEND"))
@@ -956,7 +1111,15 @@ Handles TZID-qualified timestamps by converting to local time."
            (dtstart-line (calendar-sync--get-property-line event-str "DTSTART"))
            (dtend-line (calendar-sync--get-property-line event-str "DTEND"))
            (start-tzid (calendar-sync--extract-tzid dtstart-line))
-           (end-tzid (calendar-sync--extract-tzid dtend-line)))
+           (end-tzid (calendar-sync--extract-tzid dtend-line))
+           ;; Extract attendees
+           (attendee-lines (calendar-sync--get-all-property-lines event-str "ATTENDEE"))
+           (attendees (delq nil (mapcar #'calendar-sync--parse-attendee-line attendee-lines)))
+           ;; Extract organizer and URL
+           (organizer (calendar-sync--parse-organizer event-str))
+           (url (calendar-sync--extract-meeting-url event-str))
+           ;; Determine user status from attendees
+           (status (calendar-sync--find-user-status attendees calendar-sync-user-emails)))
       (when (and summary dtstart)
         (let ((start-parsed (calendar-sync--parse-timestamp dtstart start-tzid))
               (end-parsed (and dtend (calendar-sync--parse-timestamp dtend end-tzid))))
@@ -966,23 +1129,52 @@ Handles TZID-qualified timestamps by converting to local time."
                   :description description
                   :location location
                   :start start-parsed
-                  :end end-parsed)))))))
+                  :end end-parsed
+                  :attendees attendees
+                  :organizer organizer
+                  :url url
+                  :status status)))))))
 
 (defun calendar-sync--event-to-org (event)
-  "Convert parsed EVENT plist to org entry string."
-  (let* ((summary (plist-get event :summary))
+  "Convert parsed EVENT plist to org entry string.
+Produces property drawer with LOCATION, ORGANIZER, STATUS, URL when present.
+Description appears as body text after the drawer."
+  (let* ((summary (or (plist-get event :summary) "(No Title)"))
          (description (plist-get event :description))
          (location (plist-get event :location))
          (start (plist-get event :start))
          (end (plist-get event :end))
+         (organizer (plist-get event :organizer))
+         (status (plist-get event :status))
+         (url (plist-get event :url))
          (timestamp (calendar-sync--format-timestamp start end))
-         (parts (list (format "* %s" summary))))
-    (push timestamp parts)
-    (when description
-      (push description parts))
-    (when location
-      (push (format "Location: %s" location) parts))
-    (string-join (nreverse parts) "\n")))
+         ;; Build property drawer entries
+         (props '()))
+    ;; Collect non-nil properties
+    (when (and location (not (string-empty-p location)))
+      (push (format ":LOCATION: %s" location) props))
+    (when organizer
+      (let ((org-name (or (plist-get organizer :cn)
+                          (plist-get organizer :email))))
+        (when org-name
+          (push (format ":ORGANIZER: %s" org-name) props))))
+    (when (and status (not (string-empty-p status)))
+      (push (format ":STATUS: %s" status) props))
+    (when (and url (not (string-empty-p url)))
+      (push (format ":URL: %s" url) props))
+    (setq props (nreverse props))
+    ;; Build output
+    (let ((parts (list (format "* %s" summary) timestamp)))
+      ;; Add property drawer if any properties exist
+      (when props
+        (push ":PROPERTIES:" parts)
+        (dolist (prop props)
+          (push prop parts))
+        (push ":END:" parts))
+      ;; Add description as body text
+      (when (and description (not (string-empty-p description)))
+        (push description parts))
+      (string-join (nreverse parts) "\n"))))
 
 (defun calendar-sync--event-start-time (event)
   "Extract comparable start time from EVENT plist.
