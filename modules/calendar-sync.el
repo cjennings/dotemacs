@@ -125,6 +125,13 @@ Default: 3 months. This keeps recent history visible in org-agenda.")
   "Number of months in the future to include when expanding recurring events.
 Default: 12 months. This provides a full year of future events.")
 
+(defvar calendar-sync-fetch-timeout 120
+  "Maximum time in seconds for a calendar fetch to complete.
+This is the total time allowed for the entire transfer (connect + download).
+Large calendars (thousands of events) may need more time on slow connections.
+A separate 10-second connect timeout ensures fast failure when a host is
+unreachable.")
+
 ;;; Internal state
 
 (defvar calendar-sync--timer nil
@@ -1269,7 +1276,10 @@ invoked when the fetch completes, either successfully or with an error."
         (make-process
          :name "calendar-sync-curl"
          :buffer buffer
-         :command (list "curl" "-s" "-L" "-m" "30" url)
+         :command (list "curl" "-s" "-L"
+                        "--connect-timeout" "10"
+                        "--max-time" (number-to-string calendar-sync-fetch-timeout)
+                        url)
          :sentinel
          (lambda (process event)
            (when (memq (process-status process) '(exit signal))
