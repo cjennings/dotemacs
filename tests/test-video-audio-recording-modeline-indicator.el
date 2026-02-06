@@ -45,7 +45,7 @@
       (let ((fake-process (make-process :name "test-audio" :command '("sleep" "1000"))))
         (setq cj/audio-recording-ffmpeg-process fake-process)
         (let ((result (cj/recording-modeline-indicator)))
-          (should (equal " 󰍬 " result)))
+          (should (equal " 🎤 " result)))
         (delete-process fake-process))
     (test-modeline-indicator-teardown)))
 
@@ -56,7 +56,7 @@
       (let ((fake-process (make-process :name "test-video" :command '("sleep" "1000"))))
         (setq cj/video-recording-ffmpeg-process fake-process)
         (let ((result (cj/recording-modeline-indicator)))
-          (should (equal " 󰃽 " result)))
+          (should (equal " 🎬 " result)))
         (delete-process fake-process))
     (test-modeline-indicator-teardown)))
 
@@ -69,7 +69,7 @@
         (setq cj/audio-recording-ffmpeg-process audio-proc)
         (setq cj/video-recording-ffmpeg-process video-proc)
         (let ((result (cj/recording-modeline-indicator)))
-          (should (equal " 󰍬󰃽 " result)))
+          (should (equal " 🎤🎬 " result)))
         (delete-process audio-proc)
         (delete-process video-proc))
     (test-modeline-indicator-teardown)))
@@ -115,7 +115,7 @@
         (delete-process dead-proc)
         (sit-for 0.1)
         (let ((result (cj/recording-modeline-indicator)))
-          (should (equal " 󰃽 " result)))
+          (should (equal " 🎬 " result)))
         (delete-process alive-proc))
     (test-modeline-indicator-teardown)))
 

@@ -130,16 +130,16 @@ If nil, will auto-detect on first use.")
 
 (defun cj/recording-modeline-indicator ()
   "Return modeline string showing active recordings.
-Shows 󰍬 (microphone) for audio, 󰃽 (camcorder) for video.
+Shows 🎤 (microphone) for audio, 🎬 (clapper board) for video.
 Checks if process is actually alive, not just if variable is set."
   (let ((audio-active (and cj/audio-recording-ffmpeg-process
                           (process-live-p cj/audio-recording-ffmpeg-process)))
         (video-active (and cj/video-recording-ffmpeg-process
                           (process-live-p cj/video-recording-ffmpeg-process))))
     (cond
-     ((and audio-active video-active) " 󰍬󰃽 ")
-     (audio-active " 󰍬 ")
-     (video-active " 󰃽 ")
+     ((and audio-active video-active) " 🎤🎬 ")
+     (audio-active " 🎤 ")
+     (video-active " 🎬 ")
      (t ""))))
 
 ;;; ============================================================

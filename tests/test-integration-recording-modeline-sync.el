@@ -68,7 +68,7 @@
 
 When user toggles audio recording on:
 1. Process is created
-2. Modeline indicator updates to show 󰍬 (mic icon)
+2. Modeline indicator updates to show 🎤(mic icon)
 3. State is in sync immediately (not delayed)
 
 Components integrated:
@@ -94,7 +94,7 @@ Validates:
         (cj/audio-recording-toggle nil)
 
         ;; Immediately after toggle: modeline should show recording
-        (should (equal " 󰍬 " (cj/recording-modeline-indicator)))
+        (should (equal " 🎤 " (cj/recording-modeline-indicator)))
 
         ;; Process should be alive
         (should (process-live-p cj/audio-recording-ffmpeg-process)))
@@ -127,7 +127,7 @@ Validates:
 
         ;; Start recording
         (cj/audio-recording-toggle nil)
-        (should (equal " 󰍬 " (cj/recording-modeline-indicator)))
+        (should (equal " 🎤 " (cj/recording-modeline-indicator)))
 
         ;; Stop recording
         (cj/audio-recording-toggle nil)
@@ -150,7 +150,7 @@ Components integrated:
 
 Validates:
 - Video recording follows same sync pattern as audio
-- Modeline shows 󰃽correctly"
+- Modeline shows 🎬 correctly"
   (test-integration-modeline-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'file-directory-p)
@@ -164,7 +164,7 @@ Validates:
 
         ;; Start video
         (cj/video-recording-toggle nil)
-        (should (equal " 󰃽 " (cj/recording-modeline-indicator)))
+        (should (equal " 🎬 " (cj/recording-modeline-indicator)))
 
         ;; Stop video
         (cj/video-recording-toggle nil)
@@ -201,15 +201,15 @@ Validates:
 
         ;; State 2: Audio only
         (cj/audio-recording-toggle nil)
-        (should (equal " 󰍬 " (cj/recording-modeline-indicator)))
+        (should (equal " 🎤 " (cj/recording-modeline-indicator)))
 
         ;; State 3: Both
         (cj/video-recording-toggle nil)
-        (should (equal " 󰍬󰃽 " (cj/recording-modeline-indicator)))
+        (should (equal " 🎤🎬 " (cj/recording-modeline-indicator)))
 
         ;; State 4: Video only (stop audio)
         (cj/audio-recording-toggle nil)
-        (should (equal " 󰃽 " (cj/recording-modeline-indicator)))
+        (should (equal " 🎬 " (cj/recording-modeline-indicator)))
 
         ;; State 5: None (stop video)
         (cj/video-recording-toggle nil)
@@ -249,7 +249,7 @@ Validates:
         (cj/audio-recording-toggle nil)
 
         ;; Immediately after start: should show recording
-        (should (equal " 󰍬 " (cj/recording-modeline-indicator)))
+        (should (equal " 🎤 " (cj/recording-modeline-indicator)))
 
         ;; Wait for process to exit and sentinel to run
         (sit-for 0.3)
@@ -323,7 +323,7 @@ Validates:
         (dotimes (_i 5)
           ;; Start
           (cj/audio-recording-toggle nil)
-          (should (equal " 󰍬 " (cj/recording-modeline-indicator)))
+          (should (equal " 🎤 " (cj/recording-modeline-indicator)))
           (should cj/audio-recording-ffmpeg-process)
 
           ;; Stop
@@ -357,23 +357,23 @@ Validates:
 
         ;; Start audio
         (cj/audio-recording-toggle nil)
-        (should (equal " 󰍬 " (cj/recording-modeline-indicator)))
+        (should (equal " 🎤 " (cj/recording-modeline-indicator)))
 
         ;; Add video - modeline should combine
         (cj/video-recording-toggle nil)
-        (should (equal " 󰍬󰃽 " (cj/recording-modeline-indicator)))
+        (should (equal " 🎤🎬 " (cj/recording-modeline-indicator)))
 
         ;; Stop audio - video indicator should persist
         (cj/audio-recording-toggle nil)
-        (should (equal " 󰃽 " (cj/recording-modeline-indicator)))
+        (should (equal " 🎬 " (cj/recording-modeline-indicator)))
 
         ;; Start audio again - should recombine
         (cj/audio-recording-toggle nil)
-        (should (equal " 󰍬󰃽 " (cj/recording-modeline-indicator)))
+        (should (equal " 🎤🎬 " (cj/recording-modeline-indicator)))
 
         ;; Stop video - audio indicator should persist
         (cj/video-recording-toggle nil)
-        (should (equal " 󰍬 " (cj/recording-modeline-indicator)))
+        (should (equal " 🎤 " (cj/recording-modeline-indicator)))
 
         ;; Stop audio - should be empty
         (cj/audio-recording-toggle nil)

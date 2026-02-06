@@ -128,7 +128,7 @@ Validates:
           (should (string-match-p "test-monitor" ffmpeg-cmd))
 
           ;; Verify modeline shows recording
-          (should (equal " 󰍬 " (cj/recording-modeline-indicator)))
+          (should (equal " 🎤 " (cj/recording-modeline-indicator)))
 
           ;; STEP 2: Second toggle - should stop recording
           (cj/audio-recording-toggle nil)
@@ -222,7 +222,7 @@ Validates:
           ;; Verify setup and recording
           (should setup-called)
           (should cj/video-recording-ffmpeg-process)
-          (should (equal " 󰃽 " (cj/recording-modeline-indicator)))
+          (should (equal " 🎬 " (cj/recording-modeline-indicator)))
 
           ;; Stop recording
           (cj/video-recording-toggle nil)
@@ -267,7 +267,7 @@ Validates:
           ;; Verify both are recording
           (should cj/audio-recording-ffmpeg-process)
           (should cj/video-recording-ffmpeg-process)
-          (should (equal " 󰍬󰃽 " (cj/recording-modeline-indicator)))
+          (should (equal " 🎤🎬 " (cj/recording-modeline-indicator)))
 
           ;; Stop audio only
           (cj/audio-recording-toggle nil)
@@ -275,7 +275,7 @@ Validates:
           ;; Verify only video still recording
           (should (null cj/audio-recording-ffmpeg-process))
           (should cj/video-recording-ffmpeg-process)
-          (should (equal " 󰃽 " (cj/recording-modeline-indicator)))
+          (should (equal " 🎬 " (cj/recording-modeline-indicator)))
 
           ;; Stop video
           (cj/video-recording-toggle nil)
@@ -325,7 +325,7 @@ Validates:
 
             ;; Verify recording started
             (should cj/audio-recording-ffmpeg-process)
-            (should (equal " 󰍬 " (cj/recording-modeline-indicator)))
+            (should (equal " 🎤 " (cj/recording-modeline-indicator)))
 
             ;; Wait for process to exit (sentinel should run)
             (sit-for 0.3)

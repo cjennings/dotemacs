@@ -8,6 +8,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'testutil-calendar-sync)
 (require 'calendar-sync)
 
 ;;; Normal Cases
