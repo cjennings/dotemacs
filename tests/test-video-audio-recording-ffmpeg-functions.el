@@ -166,17 +166,20 @@
 ;;; Stop Functions - Normal Cases
 
 (ert-deftest test-video-audio-recording-video-stop-normal-interrupts-process ()
-  "Test that stopping video recording interrupts the process."
+  "Test that stopping video recording sends SIGINT to process group."
   (test-ffmpeg-setup)
   (unwind-protect
       (let ((fake-process (make-process :name "test-video" :command '("sleep" "1000")))
-            (interrupt-called nil))
+            (signal-called nil))
         (setq cj/video-recording-ffmpeg-process fake-process)
-        (cl-letf (((symbol-function 'interrupt-process)
-                   (lambda (_proc) (setq interrupt-called t))))
+        (cl-letf (((symbol-function 'cj/recording--wayland-p) (lambda () nil))
+                  ((symbol-function 'signal-process)
+                   (lambda (_pid _sig) (setq signal-called t) 0))
+                  ((symbol-function 'cj/recording--wait-for-exit)
+                   (lambda (_proc _timeout) t)))
           (cj/video-recording-stop)
-          (should interrupt-called))
-        (delete-process fake-process))
+          (should signal-called))
+        (ignore-errors (delete-process fake-process)))
     (test-ffmpeg-teardown)))
 
 (ert-deftest test-video-audio-recording-video-stop-normal-clears-variable ()
@@ -205,17 +208,19 @@
     (test-ffmpeg-teardown)))
 
 (ert-deftest test-video-audio-recording-audio-stop-normal-interrupts-process ()
-  "Test that stopping audio recording interrupts the process."
+  "Test that stopping audio recording sends SIGINT to process group."
   (test-ffmpeg-setup)
   (unwind-protect
       (let ((fake-process (make-process :name "test-audio" :command '("sleep" "1000")))
-            (interrupt-called nil))
+            (signal-called nil))
         (setq cj/audio-recording-ffmpeg-process fake-process)
-        (cl-letf (((symbol-function 'interrupt-process)
-                   (lambda (_proc) (setq interrupt-called t))))
+        (cl-letf (((symbol-function 'signal-process)
+                   (lambda (_pid _sig) (setq signal-called t) 0))
+                  ((symbol-function 'cj/recording--wait-for-exit)
+                   (lambda (_proc _timeout) t)))
           (cj/audio-recording-stop)
-          (should interrupt-called))
-        (delete-process fake-process))
+          (should signal-called))
+        (ignore-errors (delete-process fake-process)))
     (test-ffmpeg-teardown)))
 
 (ert-deftest test-video-audio-recording-audio-stop-normal-clears-variable ()
@@ -257,70 +262,68 @@
 
 ;;; Error Cases
 
-(ert-deftest test-video-audio-recording-video-stop-error-interrupt-process-fails ()
-  "Test that video stop handles interrupt-process failure gracefully."
+(ert-deftest test-video-audio-recording-video-stop-error-signal-process-fails ()
+  "Test that video stop handles signal-process failure gracefully."
   (test-ffmpeg-setup)
   (unwind-protect
       (let ((fake-process (make-process :name "test-video" :command '("sleep" "1000")))
             (error-raised nil))
         (setq cj/video-recording-ffmpeg-process fake-process)
-        (cl-letf (((symbol-function 'interrupt-process)
-                   (lambda (_proc) (error "Interrupt failed"))))
-          ;; Should handle the error without crashing
-          (condition-case err
+        (cl-letf (((symbol-function 'cj/recording--wayland-p) (lambda () nil))
+                  ((symbol-function 'signal-process)
+                   (lambda (_pid _sig) (error "Signal failed"))))
+          (condition-case _err
               (cj/video-recording-stop)
             (error (setq error-raised t)))
-          ;; Error should propagate (function doesn't catch it)
           (should error-raised))
-        (delete-process fake-process))
+        (ignore-errors (delete-process fake-process)))
     (test-ffmpeg-teardown)))
 
-(ert-deftest test-video-audio-recording-audio-stop-error-interrupt-process-fails ()
-  "Test that audio stop handles interrupt-process failure gracefully."
+(ert-deftest test-video-audio-recording-audio-stop-error-signal-process-fails ()
+  "Test that audio stop handles signal-process failure gracefully."
   (test-ffmpeg-setup)
   (unwind-protect
       (let ((fake-process (make-process :name "test-audio" :command '("sleep" "1000")))
             (error-raised nil))
         (setq cj/audio-recording-ffmpeg-process fake-process)
-        (cl-letf (((symbol-function 'interrupt-process)
-                   (lambda (_proc) (error "Interrupt failed"))))
-          ;; Should handle the error without crashing
-          (condition-case err
+        (cl-letf (((symbol-function 'signal-process)
+                   (lambda (_pid _sig) (error "Signal failed"))))
+          (condition-case _err
               (cj/audio-recording-stop)
             (error (setq error-raised t)))
-          ;; Error should propagate (function doesn't catch it)
           (should error-raised))
-        (delete-process fake-process))
+        (ignore-errors (delete-process fake-process)))
     (test-ffmpeg-teardown)))
 
-(ert-deftest test-video-audio-recording-video-stop-error-dead-process-raises-error ()
-  "Test that video stop raises error if process is already dead.
-This documents current behavior - interrupt-process on dead process errors.
-The sentinel should clear the variable before this happens in practice."
+(ert-deftest test-video-audio-recording-video-stop-error-dead-process-handles-gracefully ()
+  "Test that video stop handles already-dead process gracefully.
+The new implementation guards against nil process-id, so stopping a dead
+process should clean up without error."
   (test-ffmpeg-setup)
   (unwind-protect
       (let ((fake-process (make-process :name "test-video" :command '("sleep" "1000"))))
         (setq cj/video-recording-ffmpeg-process fake-process)
-        ;; Kill process before calling stop
         (delete-process fake-process)
         (sit-for 0.1)
-        ;; Calling stop on dead process raises error
-        (should-error (cj/video-recording-stop)))
+        ;; Should not error - process-id returns nil, guarded by `when pid'
+        (cl-letf (((symbol-function 'cj/recording--wayland-p) (lambda () nil)))
+          (cj/video-recording-stop))
+        (should (null cj/video-recording-ffmpeg-process)))
     (test-ffmpeg-teardown)))
 
-(ert-deftest test-video-audio-recording-audio-stop-error-dead-process-raises-error ()
-  "Test that audio stop raises error if process is already dead.
-This documents current behavior - interrupt-process on dead process errors.
-The sentinel should clear the variable before this happens in practice."
+(ert-deftest test-video-audio-recording-audio-stop-error-dead-process-handles-gracefully ()
+  "Test that audio stop handles already-dead process gracefully.
+The new implementation guards against nil process-id, so stopping a dead
+process should clean up without error."
   (test-ffmpeg-setup)
   (unwind-protect
       (let ((fake-process (make-process :name "test-audio" :command '("sleep" "1000"))))
         (setq cj/audio-recording-ffmpeg-process fake-process)
-        ;; Kill process before calling stop
         (delete-process fake-process)
         (sit-for 0.1)
-        ;; Calling stop on dead process raises error
-        (should-error (cj/audio-recording-stop)))
+        ;; Should not error - process-id returns nil, guarded by `when pid'
+        (cj/audio-recording-stop)
+        (should (null cj/audio-recording-ffmpeg-process)))
     (test-ffmpeg-teardown)))
 
 (ert-deftest test-video-audio-recording-ffmpeg-record-video-boundary-skips-if-already-recording ()

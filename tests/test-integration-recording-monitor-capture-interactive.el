@@ -8,10 +8,10 @@
 ;; **INTERACTIVE TEST - Run from within Emacs**
 ;;
 ;; This test must be run from an interactive Emacs session where recording
-;; devices are already configured (C-; r c).
+;; devices are already configured (C-; r s).
 ;;
 ;; USAGE:
-;;   1. Ensure devices are configured: C-; r c
+;;   1. Ensure devices are configured: C-; r s
 ;;   2. Load this file: M-x load-file RET tests/test-integration-recording-monitor-capture-interactive.el RET
 ;;   3. Run test: M-x test-recording-monitor-now RET
 ;;
@@ -79,7 +79,7 @@ This function can be called with M-x to test recording without ERT framework."
   (unless (file-exists-p test-recording--test-audio)
     (user-error "Test audio file not found: %s" test-recording--test-audio))
   (unless (and cj/recording-mic-device cj/recording-system-device)
-    (user-error "Recording devices not configured. Run C-; r c first"))
+    (user-error "Recording devices not configured. Run C-; r s first"))
 
   (let ((test-dir (make-temp-file "recording-test-" t))
         (recording-file nil)

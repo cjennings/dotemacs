@@ -124,7 +124,7 @@
         (condition-case err
             (cj/recording-test-mic)
           (user-error
-           (should (string-match-p "C-; r c" (error-message-string err))))))
+           (should (string-match-p "C-; r s" (error-message-string err))))))
     (test-mic-teardown)))
 
 (ert-deftest test-video-audio-recording-test-mic-error-ffmpeg-failure-handled ()
