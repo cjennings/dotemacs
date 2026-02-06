@@ -10,7 +10,7 @@
 ;; - cj/audio-recording-toggle (entry point)
 ;; - cj/video-recording-toggle (entry point)
 ;; - cj/recording-get-devices (device prompting and setup)
-;; - cj/recording-quick-setup-for-calls (device selection workflow)
+;; - cj/recording-quick-setup (device selection workflow)
 ;; - cj/ffmpeg-record-audio (process creation and ffmpeg command)
 ;; - cj/ffmpeg-record-video (process creation and ffmpeg command)
 ;; - cj/recording-modeline-indicator (UI state display)
@@ -80,7 +80,7 @@ When user presses C-; r a for the first time:
 Components integrated:
 - cj/audio-recording-toggle (toggles start/stop)
 - cj/recording-get-devices (prompts for setup on first use)
-- cj/recording-quick-setup-for-calls (device selection)
+- cj/recording-quick-setup (device selection)
 - cj/ffmpeg-record-audio (creates recording process)
 - cj/recording-modeline-indicator (UI state)
 - cj/audio-recording-stop (cleanup)
@@ -96,10 +96,8 @@ Validates:
       (let ((setup-called nil)
             (ffmpeg-cmd nil)
             (process-created nil))
-        ;; Mock the device setup to simulate user choosing quick setup
-        (cl-letf (((symbol-function 'y-or-n-p)
-                   (lambda (_prompt) t))  ; User says yes to quick setup
-                  ((symbol-function 'cj/recording-quick-setup-for-calls)
+        ;; Mock the device setup to simulate quick setup
+        (cl-letf (((symbol-function 'cj/recording-quick-setup)
                    (lambda ()
                      (setq setup-called t)
                      (setq cj/recording-mic-device "test-mic")
@@ -130,7 +128,7 @@ Validates:
           (should (string-match-p "test-monitor" ffmpeg-cmd))
 
           ;; Verify modeline shows recording
-          (should (equal " 🔴Audio " (cj/recording-modeline-indicator)))
+          (should (equal " 󰍬 " (cj/recording-modeline-indicator)))
 
           ;; STEP 2: Second toggle - should stop recording
           (cj/audio-recording-toggle nil)
@@ -168,7 +166,7 @@ Validates:
 
         (let ((setup-called nil)
               (ffmpeg-cmd nil))
-          (cl-letf (((symbol-function 'cj/recording-quick-setup-for-calls)
+          (cl-letf (((symbol-function 'cj/recording-quick-setup)
                      (lambda () (setq setup-called t)))
                     ((symbol-function 'file-directory-p)
                      (lambda (_dir) t))
@@ -207,9 +205,7 @@ Validates:
   (test-integration-toggle-setup)
   (unwind-protect
       (let ((setup-called nil))
-        (cl-letf (((symbol-function 'y-or-n-p)
-                   (lambda (_prompt) t))
-                  ((symbol-function 'cj/recording-quick-setup-for-calls)
+        (cl-letf (((symbol-function 'cj/recording-quick-setup)
                    (lambda ()
                      (setq setup-called t)
                      (setq cj/recording-mic-device "test-mic")
@@ -226,7 +222,7 @@ Validates:
           ;; Verify setup and recording
           (should setup-called)
           (should cj/video-recording-ffmpeg-process)
-          (should (equal " 🔴Video " (cj/recording-modeline-indicator)))
+          (should (equal " 󰃽 " (cj/recording-modeline-indicator)))
 
           ;; Stop recording
           (cj/video-recording-toggle nil)
@@ -271,7 +267,7 @@ Validates:
           ;; Verify both are recording
           (should cj/audio-recording-ffmpeg-process)
           (should cj/video-recording-ffmpeg-process)
-          (should (equal " 🔴A+V " (cj/recording-modeline-indicator)))
+          (should (equal " 󰍬󰃽 " (cj/recording-modeline-indicator)))
 
           ;; Stop audio only
           (cj/audio-recording-toggle nil)
@@ -279,7 +275,7 @@ Validates:
           ;; Verify only video still recording
           (should (null cj/audio-recording-ffmpeg-process))
           (should cj/video-recording-ffmpeg-process)
-          (should (equal " 🔴Video " (cj/recording-modeline-indicator)))
+          (should (equal " 󰃽 " (cj/recording-modeline-indicator)))
 
           ;; Stop video
           (cj/video-recording-toggle nil)
@@ -329,7 +325,7 @@ Validates:
 
             ;; Verify recording started
             (should cj/audio-recording-ffmpeg-process)
-            (should (equal " 🔴Audio " (cj/recording-modeline-indicator)))
+            (should (equal " 󰍬 " (cj/recording-modeline-indicator)))
 
             ;; Wait for process to exit (sentinel should run)
             (sit-for 0.3)
