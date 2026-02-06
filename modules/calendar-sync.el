@@ -275,6 +275,17 @@ Returns nil for nil input.  Returns empty string for whitespace-only input."
   (when text
     (string-trim (calendar-sync--strip-html (calendar-sync--unescape-ics-text text)))))
 
+(defun calendar-sync--sanitize-org-body (text)
+  "Sanitize TEXT for safe inclusion as org body content.
+Replaces leading asterisks with dashes to prevent lines from being
+parsed as org headings.  Handles multiple levels (e.g. ** becomes --)."
+  (when text
+    (replace-regexp-in-string
+     "^\\(\\*+\\) "
+     (lambda (match)
+       (concat (make-string (length (match-string 1 match)) ?-) " "))
+     text)))
+
 ;;; Date Utilities
 
 (defun calendar-sync--add-months (date months)
@@ -1175,9 +1186,9 @@ Description appears as body text after the drawer."
         (dolist (prop props)
           (push prop parts))
         (push ":END:" parts))
-      ;; Add description as body text
+      ;; Add description as body text (sanitized to prevent org heading conflicts)
       (when (and description (not (string-empty-p description)))
-        (push description parts))
+        (push (calendar-sync--sanitize-org-body description) parts))
       (string-join (nreverse parts) "\n"))))
 
 (defun calendar-sync--event-start-time (event)
