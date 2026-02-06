@@ -92,7 +92,7 @@
       (should (string-match-p ":END:" result)))))
 
 (ert-deftest test-calendar-sync--event-to-org-boundary-description-with-asterisks ()
-  "Test event description containing org-special asterisks."
+  "Test event description containing org-special asterisks are sanitized."
   (let* ((start (test-calendar-sync-time-days-from-now 5 14 0))
          (end (test-calendar-sync-time-days-from-now 5 15 0))
          (event (list :summary "Meeting"
@@ -100,8 +100,13 @@
                       :end end
                       :description "* agenda item 1\n** sub-item")))
     (let ((result (calendar-sync--event-to-org event)))
-      ;; Description should be present
-      (should (string-match-p "agenda item" result)))))
+      ;; Description content should be present
+      (should (string-match-p "agenda item" result))
+      ;; Leading asterisks replaced with dashes to prevent org heading conflicts
+      (should (string-match-p "^- agenda item 1" result))
+      (should (string-match-p "^-- sub-item" result))
+      ;; Only the event heading should use *
+      (should (= 1 (length (split-string result "^\\* " t)))))))
 
 (ert-deftest test-calendar-sync--event-to-org-boundary-organizer-email-only ()
   "Test organizer without CN shows email."
