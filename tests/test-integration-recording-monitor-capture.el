@@ -16,7 +16,7 @@
 ;;
 ;; Requirements:
 ;; - Audio system must be working (PulseAudio/PipeWire)
-;; - Recording devices must be configured (C-; r c)
+;; - Recording devices must be configured (C-; r s)
 ;; - paplay must be available
 ;; - Transcription backend must be configured
 ;;
