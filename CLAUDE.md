@@ -19,7 +19,7 @@ If the file exists at session start, the previous session was interrupted - read
 
 Read these files at session start:
 1. `docs/protocols.org` - Behavioral protocols and conventions
-2. `docs/NOTES.org` - Project-specific context and history
+2. `docs/notes.org` - Project-specific context and history
 
 ## Key Rules
 
