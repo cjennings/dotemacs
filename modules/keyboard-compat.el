@@ -163,8 +163,12 @@ Meta+Shift+letter triggers M-S-letter keybindings."
     (define-key key-translation-map (kbd "M-B") (kbd "M-S-b"))
     (define-key key-translation-map (kbd "M-K") (kbd "M-S-k"))))
 
-;; Run early - key-translation-map should be set up before keybindings
-(add-hook 'emacs-startup-hook #'cj/keyboard-compat-gui-setup)
+;; In daemon mode, no frame exists at startup so env-gui-p returns nil.
+;; Use server-after-make-frame-hook to set up translations when the first
+;; GUI client connects. In non-daemon mode, run at startup as before.
+(if (daemonp)
+    (add-hook 'server-after-make-frame-hook #'cj/keyboard-compat-gui-setup)
+  (add-hook 'emacs-startup-hook #'cj/keyboard-compat-gui-setup))
 
 (provide 'keyboard-compat)
 ;;; keyboard-compat.el ends here
