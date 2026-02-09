@@ -104,8 +104,6 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 
 (global-auto-revert-mode)                           ;; update the buffer when the associated file has changed
 (setq global-auto-revert-non-file-buffers t)        ;; do so for all buffer types (e.g., ibuffer)
-(setq bidi-display-reordering nil)                  ;; don't reorder bidirectional text for display
-(setq bidi-paragraph-direction t)                   ;; forces directionality of text for performance.
 
 ;; -------------------------------- Emacs Server -------------------------------
 ;; Start server so emacsclient can connect (needed for pinentry-emacs in terminal)
