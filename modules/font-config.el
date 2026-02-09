@@ -44,6 +44,30 @@
 
 (require 'host-environment)
 
+;; ---------------------- HarfBuzz Font Cache Crash Fix -----------------------
+;; Prevents Emacs from compacting font caches during GC. Without this, GC can
+;; free font cache entries that HarfBuzz still references, causing SIGSEGV
+;; crashes during glyph shaping (e.g., rendering emoji in mu4e headers).
+;; See: Emacs bug#12746, coredump traces through hb_shape_full.
+
+(setq inhibit-compacting-font-caches t)
+
+;; --------------- Disable Arabic Shaping (Prevents HarfBuzz SIGSEGV) ---------
+;; Emacs 30.2 + HarfBuzz crashes (SIGSEGV in hb_shape_full) when
+;; arabic-shape-gstring is called on emoji characters in mu4e headers.
+;; Since bidi display is already disabled in early-init.el and Arabic text
+;; shaping is not needed, remove it from the composition function table.
+;; This prevents HarfBuzz from ever using the Arabic shaper. Programming
+;; ligatures and emoji rendering use different shapers and are unaffected.
+
+(with-eval-after-load 'misc-lang
+  (dolist (range '((#x0600 . #x06FF)    ;; Arabic
+                   (#x0750 . #x077F)    ;; Arabic Supplement
+                   (#x08A0 . #x08FF)    ;; Arabic Extended-A
+                   (#xFB50 . #xFDFF)    ;; Arabic Presentation Forms-A
+                   (#xFE70 . #xFEFF)))  ;; Arabic Presentation Forms-B
+    (set-char-table-range composition-function-table range nil)))
+
 ;; ----------------------- Font Family And Size Selection ----------------------
 ;; preset your fixed and variable fonts, then apply them to text as a set
 

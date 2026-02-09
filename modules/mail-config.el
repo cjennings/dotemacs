@@ -16,9 +16,25 @@
 ;; - followed by , (comma) next to each file you want to save,
 ;; - then RET (vertico-exit), to save selected attachments.
 ;;
+;; Crash Fix:
+;; auto-composition-mode is disabled in mu4e-headers-mode to prevent a
+;; HarfBuzz SIGSEGV crash. Email subjects containing emoji trigger glyph
+;; shaping via arabic-shape-gstring → hb_shape_full, which segfaults.
+;; Disabling composition in headers is safe (no ligatures needed there).
+;;
 ;;; Code:
 
 (require 'user-constants)
+
+;; -------------------- HarfBuzz Crash Fix: Disable Composition ---------------
+;; Disable auto-composition in mu4e headers to prevent SIGSEGV from HarfBuzz
+;; when shaping emoji characters in email subjects. See Commentary above.
+
+(defun cj/disable-auto-composition ()
+  "Disable `auto-composition-mode' in the current buffer."
+  (auto-composition-mode -1))
+
+(add-hook 'mu4e-headers-mode-hook #'cj/disable-auto-composition)
 
 ;; ------------------------------ Mark All Headers -----------------------------
 ;; convenience function to mark all headers for an action
