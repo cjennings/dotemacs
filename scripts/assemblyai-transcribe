@@ -127,7 +127,7 @@ echo "Transcription complete! (${ELAPSED}s total)" >&2
 # Extract utterances and format as "Speaker A: text"
 echo "$RESULT" | jq -r '
   if .utterances then
-    .utterances[] | "Speaker \(.speaker): \(.text)"
+    .utterances[] | ((.start / 1000 | floor) as $s | "\([$s/3600 | floor, ($s % 3600 / 60 | floor), $s % 60] | map(tostring | if length < 2 then "0" + . else . end) | join(":")) Speaker \(.speaker): \(.text)")
   else
     .text
   end
