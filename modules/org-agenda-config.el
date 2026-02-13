@@ -95,17 +95,20 @@ Set to nil to invalidate cache.")
 Prevents duplicate builds if user opens agenda before async build completes.")
 
 ;; ------------------------ Add Files To Org Agenda List -----------------------
-;; finds files named 'todo.org' (case insensitive) and adds them to
-;; org-agenda-files list.
+;; Checks immediate subdirectories of DIRECTORY for todo.org files and adds
+;; them to org-agenda-files. Does NOT recurse into nested subdirectories.
 
 (defun cj/add-files-to-org-agenda-files-list (directory)
-  "Search for files named \\='todo.org\\=' add them to org-project-files.
-DIRECTORY is a string of the path to begin the search."
+  "Add todo.org files from immediate subdirectories of DIRECTORY.
+Only checks DIRECTORY/*/todo.org — does not recurse deeper."
   (interactive "D")
-  (setq org-agenda-files
-        (append (directory-files-recursively directory
-                                             "^[Tt][Oo][Dd][Oo]\\.[Oo][Rr][Gg]$" t)
-                org-agenda-files)))
+  (let ((todo-files
+         (seq-filter
+          #'file-exists-p
+          (mapcar (lambda (dir) (expand-file-name "todo.org" dir))
+                  (seq-filter #'file-directory-p
+                              (directory-files directory t "^[^.]"))))))
+    (setq org-agenda-files (append todo-files org-agenda-files))))
 
 ;; ---------------------------- Rebuild Org Agenda ---------------------------
 ;; builds the org agenda list from all agenda targets with caching.
@@ -297,7 +300,7 @@ This uses all org-agenda targets and presents three sections:
 The agenda is rebuilt from all sources before display, including:
 - inbox-file and schedule-file
 - Org-roam nodes tagged as \"Project\"
-- All todo.org files in projects-dir and code-dir"
+- All todo.org files in immediate subdirectories of projects-dir"
   (interactive)
   (cj/build-org-agenda-list)
   (org-agenda "a" "d"))
