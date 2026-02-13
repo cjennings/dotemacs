@@ -50,8 +50,10 @@ When cache is empty, function should:
 4. Set cache timestamp"
   (test-org-agenda-setup)
   (unwind-protect
-      (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern &optional _include-dirs) '("/tmp/project/todo.org"))))
+      (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
+                 (lambda (_dir)
+                   (setq org-agenda-files
+                         (append '("/tmp/project/todo.org") org-agenda-files)))))
 
         ;; Before call: cache empty
         (should (null cj/org-agenda-files-cache))
@@ -68,7 +70,7 @@ When cache is empty, function should:
         ;; Cache matches org-agenda-files
         (should (equal cj/org-agenda-files-cache org-agenda-files))
 
-        ;; Contains base files (inbox, schedule, gcal) plus project files
+        ;; Contains base files (inbox, schedule, gcal, pcal, dcal) plus project files
         (should (>= (length org-agenda-files) 3)))
     (test-org-agenda-teardown)))
 
@@ -82,14 +84,15 @@ When cache is valid (not expired):
   (test-org-agenda-setup)
   (unwind-protect
       (let ((scan-count 0))
-        (cl-letf (((symbol-function 'directory-files-recursively)
-                   (lambda (_dir _pattern &optional _include-dirs)
+        (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
+                   (lambda (_dir)
                      (setq scan-count (1+ scan-count))
-                     '("/tmp/project/todo.org"))))
+                     (setq org-agenda-files
+                           (append '("/tmp/project/todo.org") org-agenda-files)))))
 
           ;; First call: builds cache
           (cj/build-org-agenda-list)
-          (should (= scan-count 1))  ; 1 directory scanned
+          (should (= scan-count 1))
 
           (let ((cached-time cj/org-agenda-files-cache-time)
                 (cached-files cj/org-agenda-files-cache))
@@ -115,12 +118,13 @@ When force-rebuild is non-nil:
   (test-org-agenda-setup)
   (unwind-protect
       (let ((scan-count 0))
-        (cl-letf (((symbol-function 'directory-files-recursively)
-                   (lambda (_dir _pattern &optional _include-dirs)
+        (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
+                   (lambda (_dir)
                      (setq scan-count (1+ scan-count))
-                     (if (> scan-count 1)
-                         '("/tmp/project/todo.org" "/tmp/project2/todo.org")  ; New file on rebuild
-                       '("/tmp/project/todo.org")))))
+                     (let ((extra (if (> scan-count 1)
+                                      '("/tmp/project/todo.org" "/tmp/project2/todo.org")
+                                    '("/tmp/project/todo.org"))))
+                       (setq org-agenda-files (append extra org-agenda-files))))))
 
           ;; First call: builds cache
           (cj/build-org-agenda-list)
@@ -148,10 +152,11 @@ When cache timestamp exceeds TTL:
   (test-org-agenda-setup)
   (unwind-protect
       (let ((scan-count 0))
-        (cl-letf (((symbol-function 'directory-files-recursively)
-                   (lambda (_dir _pattern &optional _include-dirs)
+        (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
+                   (lambda (_dir)
                      (setq scan-count (1+ scan-count))
-                     '("/tmp/project/todo.org"))))
+                     (setq org-agenda-files
+                           (append '("/tmp/project/todo.org") org-agenda-files)))))
 
           ;; First call: builds cache
           (cj/build-org-agenda-list)
@@ -180,8 +185,8 @@ When directory scan returns empty:
 3. Should cache the minimal result"
   (test-org-agenda-setup)
   (unwind-protect
-      (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern &optional _include-dirs) nil)))  ; No files found
+      (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
+                 (lambda (_dir) nil)))  ; No files added
 
         (cj/build-org-agenda-list)
 
@@ -203,11 +208,12 @@ During build:
   (test-org-agenda-setup)
   (unwind-protect
       (let ((flag-during-build nil))
-        (cl-letf (((symbol-function 'directory-files-recursively)
-                   (lambda (_dir _pattern &optional _include-dirs)
+        (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
+                   (lambda (_dir)
                      ;; Capture flag state during directory scan
                      (setq flag-during-build cj/org-agenda-files-building)
-                     '("/tmp/project/todo.org"))))
+                     (setq org-agenda-files
+                           (append '("/tmp/project/todo.org") org-agenda-files)))))
 
           ;; Before build
           (should (null cj/org-agenda-files-building))
@@ -231,8 +237,8 @@ When build encounters error:
 3. Next build can proceed"
   (test-org-agenda-setup)
   (unwind-protect
-      (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern &optional _include-dirs)
+      (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
+                 (lambda (_dir)
                    (error "Simulated scan failure"))))
 
         ;; Build will error
@@ -253,8 +259,10 @@ When cache is nil but timestamp exists:
 3. Should set both cache and timestamp"
   (test-org-agenda-setup)
   (unwind-protect
-      (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern &optional _include-dirs) '("/tmp/project/todo.org"))))
+      (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
+                 (lambda (_dir)
+                   (setq org-agenda-files
+                         (append '("/tmp/project/todo.org") org-agenda-files)))))
 
         ;; Set inconsistent state
         (setq cj/org-agenda-files-cache nil)
@@ -272,14 +280,14 @@ When cache is nil but timestamp exists:
 (ert-deftest test-org-agenda-build-list-error-directory-scan-failure-propagates ()
   "Test that directory scan failures propagate as errors.
 
-When directory-files-recursively errors:
+When cj/add-files-to-org-agenda-files-list errors:
 1. Error should propagate to caller
 2. Cache should not be corrupted
 3. Building flag should clear"
   (test-org-agenda-setup)
   (unwind-protect
-      (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern &optional _include-dirs)
+      (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
+                 (lambda (_dir)
                    (error "Permission denied"))))
 
         ;; Should propagate error
