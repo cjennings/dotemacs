@@ -115,6 +115,7 @@
 (require 'org-drill-config)
 (require 'org-export-config)
 (require 'hugo-config)          ;; ox-hugo blog workflow (C-; h)
+(require 'org-reveal-config)    ;; reveal.js presentations (C-; p)
 
 (require 'org-refile-config)     ;; refile org-branches
 (require 'org-roam-config)       ;; personal knowledge management in org mode

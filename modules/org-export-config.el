@@ -13,14 +13,14 @@
 ;; - Texinfo: GNU documentation and Info files
 ;;
 ;; Extended via Pandoc:
-;; - Additional formats: DOCX, EPUB, reveal.js presentations
-;; - Self-contained HTML exports with embedded resources
+;; - Additional formats: DOCX, self-contained HTML5
 ;; - Custom PDF export with Zathura integration
 ;;
 ;; Key features:
 ;; - UTF-8 encoding enforced across all backends
 ;; - Subtree export as default scope
-;; - reveal.js presentations with CDN or local embedding options
+;;
+;; Note: reveal.js presentations are handled by org-reveal-config.el (C-; p)
 ;;
 ;;; Code:
 
@@ -79,47 +79,7 @@
   (setq org-pandoc-options '((standalone . t)
 							 (mathjax . t)))
 
-  ;; Configure reveal.js specific options
-  (setq org-pandoc-options-for-revealjs
-		'((standalone . t)
-		  (variable . "revealjs-url=https://cdn.jsdelivr.net/npm/reveal.js")
-		  (variable . "theme=black")  ; or white, league, beige, sky, night, serif, simple, solarized
-		  (variable . "transition=slide") ; none, fade, slide, convex, concave, zoom
-		  (variable . "slideNumber=true")
-		  (variable . "hash=true")
-		  (self-contained . t))) ; This embeds CSS/JS when possible
-
-  ;; Custom function for self-contained reveal.js export
-  (defun my/org-pandoc-export-to-revealjs-standalone ()
-	"Export to reveal.js with embedded dependencies."
-	(interactive)
-	(let* ((org-pandoc-options-for-revealjs
-			(append org-pandoc-options-for-revealjs
-					'((self-contained . t)
-					  (embed-resources . t))))  ; pandoc 3.0+ option
-		   (html-file (org-pandoc-export-to-revealjs)))
-	  (when html-file
-		(browse-url-of-file html-file)
-		(message "Opened reveal.js presentation: %s" html-file))))
-
-  ;; Alternative: Download and embed local reveal.js
-  (defun my/org-pandoc-export-to-revealjs-local ()
-	"Export to reveal.js using local copy of reveal.js."
-	(interactive)
-	(let* ((reveal-dir (expand-file-name "reveal.js" user-emacs-directory))
-		   (org-pandoc-options-for-revealjs
-			`((standalone . t)
-			  (variable . ,(format "revealjs-url=%s" reveal-dir))
-			  (variable . "theme=black")
-			  (variable . "transition=slide")
-			  (variable . "slideNumber=true"))))
-	  (unless (file-exists-p reveal-dir)
-		(cj/log-silently "Downloading reveal.js...")
-		(shell-command
-		 (format "git clone https://github.com/hakimel/reveal.js.git %s" reveal-dir)))
-	  (org-pandoc-export-to-revealjs)))
-
-  ;; Configure specific format options (your existing config)
+  ;; Configure specific format options
   (setq org-pandoc-options-for-latex-pdf '((pdf-engine . "pdflatex")))
   (setq org-pandoc-options-for-html5 '((html-q-tags . t)
 									   (self-contained . t)))
@@ -134,12 +94,10 @@
 		(start-process "zathura-pdf" nil "zathura" pdf-file)
 		(message "Opened %s in Zathura" pdf-file))))
 
-  ;; Updated menu entries with reveal.js options
+  ;; Pandoc export menu entries
   (setq org-pandoc-menu-entry
 		'((?4 "to html5 and open" org-pandoc-export-to-html5-and-open)
 		  (?$ "as html5" org-pandoc-export-as-html5)
-		  (?r "to reveal.js (CDN) and open" org-pandoc-export-to-revealjs-and-open)
-		  (?R "to reveal.js (self-contained)" my/org-pandoc-export-to-revealjs-standalone)
 		  (?< "to markdown" org-pandoc-export-to-markdown)
 		  (?d "to docx and open" org-pandoc-export-to-docx-and-open)
 		  (?z "to pdf and open (Zathura)" my/org-pandoc-export-to-pdf-and-open))))
