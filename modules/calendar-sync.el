@@ -818,27 +818,18 @@ Returns list (year month day hour minute) in local timezone."
 SOURCE-TZ is a timezone name like 'Europe/Lisbon' or 'Asia/Yerevan'.
 Returns list (year month day hour minute) in local timezone, or nil on error.
 
-Uses the system `date` command for reliable timezone conversion."
+Uses Emacs built-in timezone support (encode-time/decode-time with ZONE
+argument) for fast, subprocess-free conversion.  Uses the same system
+TZ database as the `date' command."
   (when (and source-tz (not (string-empty-p source-tz)))
     (condition-case err
-        (let* ((date-input (format "%04d-%02d-%02d %02d:%02d"
-                                   year month day hour minute))
-               ;; Use date command: convert from source-tz to local
-               ;; TZ= sets output timezone (local), TZ=\"...\" in -d sets input timezone
-               (cmd (format "date -d 'TZ=\"%s\" %s' '+%%Y %%m %%d %%H %%M' 2>/dev/null"
-                            source-tz date-input))
-               (result (string-trim (shell-command-to-string cmd)))
-               (parts (split-string result " ")))
-          (if (= 5 (length parts))
-              (list (string-to-number (nth 0 parts))
-                    (string-to-number (nth 1 parts))
-                    (string-to-number (nth 2 parts))
-                    (string-to-number (nth 3 parts))
-                    (string-to-number (nth 4 parts)))
-            ;; date command failed (invalid timezone, etc.)
-            (cj/log-silently "calendar-sync: Failed to convert timezone %s: %s"
-                             source-tz result)
-            nil))
+        (let* ((abs-time (encode-time 0 minute hour day month year source-tz))
+               (local (decode-time abs-time)))
+          (list (nth 5 local)    ; year
+                (nth 4 local)    ; month
+                (nth 3 local)    ; day
+                (nth 2 local)    ; hour
+                (nth 1 local)))  ; minute
       (error
        (cj/log-silently "calendar-sync: Error converting timezone %s: %s"
                         source-tz (error-message-string err))
@@ -1310,25 +1301,67 @@ Creates parent directories if needed."
   (with-temp-file file
     (insert content)))
 
+;;; Debug Logging
+
+(defun calendar-sync--debug-p ()
+  "Return non-nil if calendar-sync debug logging is enabled.
+Checks `cj/debug-modules' for symbol `calendar-sync' or t (all)."
+  (and (boundp 'cj/debug-modules)
+       (or (eq cj/debug-modules t)
+           (memq 'calendar-sync cj/debug-modules))))
+
 ;;; Single Calendar Sync
 
 (defun calendar-sync--sync-calendar (calendar)
   "Sync a single CALENDAR asynchronously.
 CALENDAR is a plist with :name, :url, and :file keys.
-Updates calendar state and saves to disk on completion."
+Updates calendar state and saves to disk on completion.
+Logs timing for each phase to *Messages* for performance diagnosis."
   (let ((name (plist-get calendar :name))
         (url (plist-get calendar :url))
-        (file (plist-get calendar :file)))
+        (file (plist-get calendar :file))
+        (fetch-start (float-time)))
     ;; Mark as syncing
     (calendar-sync--set-calendar-state name '(:status syncing))
     (cj/log-silently "calendar-sync: [%s] Syncing..." name)
     (calendar-sync--fetch-ics
      url
      (lambda (ics-content)
-       (let ((org-content (and ics-content (calendar-sync--parse-ics ics-content))))
-         (if org-content
+       (let ((fetch-elapsed (- (float-time) fetch-start)))
+         (if (null ics-content)
              (progn
-               (calendar-sync--write-file org-content file)
+               (cj/log-silently "calendar-sync: [%s] Fetch failed" name)
+               (calendar-sync--set-calendar-state
+                name
+                (list :status 'error
+                      :last-sync (plist-get (calendar-sync--get-calendar-state name) :last-sync)
+                      :last-error "Fetch failed"))
+               (calendar-sync--save-state)
+               (message "calendar-sync: [%s] Sync failed (see *Messages*)" name))
+           (when (calendar-sync--debug-p)
+             (cj/log-silently "calendar-sync: [%s] Fetched %dKB in %.1fs"
+                              name (/ (length ics-content) 1024) fetch-elapsed))
+           (let* ((parse-start (float-time))
+                  (org-content (calendar-sync--parse-ics ics-content))
+                  (parse-elapsed (- (float-time) parse-start)))
+             (if (null org-content)
+                 (progn
+                   (cj/log-silently "calendar-sync: [%s] Parse failed (%.1fs)" name parse-elapsed)
+                   (calendar-sync--set-calendar-state
+                    name
+                    (list :status 'error
+                          :last-sync (plist-get (calendar-sync--get-calendar-state name) :last-sync)
+                          :last-error "Parse failed"))
+                   (calendar-sync--save-state)
+                   (message "calendar-sync: [%s] Sync failed (see *Messages*)" name))
+               (when (calendar-sync--debug-p)
+                 (cj/log-silently "calendar-sync: [%s] Parsed in %.1fs" name parse-elapsed))
+               (let ((write-start (float-time)))
+                 (calendar-sync--write-file org-content file)
+                 (when (calendar-sync--debug-p)
+                   (cj/log-silently "calendar-sync: [%s] Wrote %s in %.2fs"
+                                    name (file-name-nondirectory file)
+                                    (- (float-time) write-start))))
                (calendar-sync--set-calendar-state
                 name
                 (list :status 'ok
@@ -1337,14 +1370,9 @@ Updates calendar state and saves to disk on completion."
                (setq calendar-sync--last-timezone-offset
                      (calendar-sync--current-timezone-offset))
                (calendar-sync--save-state)
-               (message "calendar-sync: [%s] Sync complete → %s" name file))
-           (calendar-sync--set-calendar-state
-            name
-            (list :status 'error
-                  :last-sync (plist-get (calendar-sync--get-calendar-state name) :last-sync)
-                  :last-error "Parse failed"))
-           (calendar-sync--save-state)
-           (message "calendar-sync: [%s] Sync failed (see *Messages*)" name)))))))
+               (let ((total-elapsed (- (float-time) fetch-start)))
+                 (message "calendar-sync: [%s] Sync complete (%.1fs total) → %s"
+                          name total-elapsed file))))))))))
 
 (defun calendar-sync--sync-all-calendars ()
   "Sync all configured calendars asynchronously.
