@@ -34,22 +34,18 @@
 
 ;; ----------------------------- Hugo Blog Functions ---------------------------
 
-(defun cj/hugo-new-post ()
-  "Create a new Hugo blog post as a standalone Org file.
-Prompts for title, generates the slug filename, and opens the
-new file with Hugo front matter keywords pre-filled."
-  (interactive)
-  (require 'ox-hugo)
-  (let* ((title (read-from-minibuffer "Post Title: "))
-         (slug (org-hugo-slug title))
-         (date (format-time-string "%Y-%m-%d"))
-         (file (expand-file-name (concat slug ".org") cj/hugo-content-org-dir)))
-    (when (file-exists-p file)
-      (user-error "Post already exists: %s" file))
-    (unless (file-directory-p cj/hugo-content-org-dir)
-      (make-directory cj/hugo-content-org-dir t))
-    (find-file file)
-    (insert (format "#+hugo_base_dir: ../../
+(defun cj/hugo--post-file-path (title)
+  "Return the file path for a Hugo post with TITLE.
+Generates a slug from TITLE using `org-hugo-slug' and returns
+the full path under `cj/hugo-content-org-dir'.
+Assumes ox-hugo is already loaded (via use-package declaration above)."
+  (let ((slug (org-hugo-slug title)))
+    (expand-file-name (concat slug ".org") cj/hugo-content-org-dir)))
+
+(defun cj/hugo--post-template (title date)
+  "Return the Org front matter template for a Hugo post.
+TITLE is the post title, DATE is the date string (YYYY-MM-DD)."
+  (format "#+hugo_base_dir: ../../
 #+hugo_section: log
 #+hugo_auto_set_lastmod: t
 #+title: %s
@@ -59,6 +55,21 @@ new file with Hugo front matter keywords pre-filled."
 #+hugo_custom_front_matter: :description \"\"
 
 " title date))
+
+(defun cj/hugo-new-post ()
+  "Create a new Hugo blog post as a standalone Org file.
+Prompts for title, generates the slug filename, and opens the
+new file with Hugo front matter keywords pre-filled."
+  (interactive)
+  (let* ((title (read-from-minibuffer "Post Title: "))
+         (file (cj/hugo--post-file-path title))
+         (date (format-time-string "%Y-%m-%d")))
+    (when (file-exists-p file)
+      (user-error "Post already exists: %s" file))
+    (unless (file-directory-p cj/hugo-content-org-dir)
+      (make-directory cj/hugo-content-org-dir t))
+    (find-file file)
+    (insert (cj/hugo--post-template title date))
     (save-buffer)
     (message "New post: %s" file)))
 

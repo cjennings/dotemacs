@@ -31,7 +31,7 @@ Daily workflow improvement.
 THE BOTTLENECK. Currently 30+ seconds, target < 5 seconds.
 Use M-x profiler-start before Method 3 debug-profiling.el is built.
 
-** TODO [#A] Optimize org-capture target building performance
+** TODO [#B] Optimize org-capture target building performance
 
 15-20 seconds every time capturing a task (12+ times/day).
 Major daily bottleneck - minutes lost waiting, plus context switching cost.
@@ -464,26 +464,23 @@ Commits:
 - 0a69c58: test: Add comprehensive test suite for video-audio-recording module
 - b086539: style: Fix checkdoc warnings in video-audio-recording.el
 
-*** TODO [#C] Add device testing command cj/recording-test-devices
+*** DONE [#C] Add device testing command cj/recording-test-devices
+CLOSED: [2026-02-06 Thu]
 Records 3 seconds of audio.
 Plays it back.
 Confirms devices work before real recording.
 
-*** TODO [#C] Add recording status display (optional via flag, default off)
-Show "Recording: 00:05:23" in modeline or echo area.
-Timer showing duration.
-File size updating.
+*** CANCELLED [#C] Add recording status display (optional via flag, default off)
+CLOSED: [2026-02-14 Sat]
+Emoji modeline icon is sufficient.
 
-*** TODO [#C] Add recording presets
-Screencast (video + audio, high quality).
-Podcast (audio only, voice optimized).
-Meeting (balanced, lower filesize).
-Quick note (audio, low quality, small file).
+*** CANCELLED [#C] Add recording presets
+CLOSED: [2026-02-14 Sat]
+Only used for meetings; emoji icon is good-enough reminder. Gold-plating.
 
-*** TODO [#C] Build recording history buffer
-*Recordings* buffer showing history.
-Duration, file size, location.
-Quick actions: play, delete, rename, move.
+*** CANCELLED [#C] Build recording history buffer
+CLOSED: [2026-02-14 Sat]
+Opening recordings in dirvish is sufficient.
 
 *** TODO [#C] Add post-processing hooks
 Auto-compress after recording.
@@ -831,8 +828,49 @@ CLOSED: [2025-11-08 Fri]
 File modified: modules/flyspell-and-abbrev.el:235-251
 
 * Method 2: Stop Problems Before They Appear [4/8]
-** TODO [#B] Write Complete ERT Tests for This Config [0/0]
-Unit and Integration Tests should be added as subtasks below, marked done when complete
+** TODO [#B] Write Complete ERT Tests for This Config [0/31]
+Unit and Integration Tests should be added as subtasks below, marked done when complete.
+
+*High-value test targets (no coverage, testable logic, daily use):*
+
+*** TODO custom-case — pure case conversion functions (upper/lower/title)
+*** TODO custom-datetime — date/timestamp insertion and formatting
+*** TODO host-environment — platform detection (env-macos-p, env-wayland-p, etc.)
+*** TODO hugo-config — draft toggle, slug generation, post template
+*** TODO org-capture-config — template building (relates to capture perf optimization)
+*** TODO modeline-config — custom segment construction
+*** TODO external-open — file-type detection and external app dispatch
+*** TODO reconcile-open-repos — dirty repo scanning logic
+*** TODO media-utils — URL download/play logic
+*** TODO org-config — org-mode utility functions
+*** TODO org-export-config — export helper functions
+*** TODO local-repository — package snapshot logic
+*** TODO show-kill-ring — kill ring display logic
+*** TODO system-commands — reboot/logout/system action functions
+*** TODO config-utilities — debug helper functions
+
+*Modules with partial coverage (expand existing tests):*
+
+*** TODO org-agenda-config — caching/TTL logic untested (only build-list covered)
+*** TODO org-contacts-config — expand beyond capture/parse
+*** TODO prog-shell — expand beyond make-script-executable
+*** TODO ui-config — expand beyond buffer-status/cursor-color
+*** TODO org-refile-config — expand beyond build-targets
+*** TODO org-webclipper — expand beyond process (only 1 test file)
+*** TODO org-noter-config — expand beyond generate-notes/title-to-slug
+*** TODO browser-config — expand beyond current single test file
+*** TODO flycheck-config — expand beyond languagetool setup
+*** TODO org-drill-config — expand beyond first-function/font-switching
+
+*Lower priority (testable but less critical):*
+
+*** TODO chrono-tools — timer/clock functions
+*** TODO help-utils — search dispatch (arch-wiki, devdoc, tldr, wikipedia)
+*** TODO dirvish-config — wallpaper setter, custom functions
+*** TODO dwim-shell-config — shell command definitions
+*** TODO elfeed-config — podcast/feed helper functions
+*** TODO eww-config — browser helper functions
+
 ** TODO [#B] Review all config and pull library functions into system-lib file
 
 Extract reusable utility functions scattered across modules into system-lib.el
@@ -1049,6 +1087,7 @@ CLOSED: [2025-11-03 Sun]
 
 * Method 3: Make *Fixing* Emacs Frictionless [0/9]
 ** DONE [#A] Write tests for cj/make-script-executable (suspected broken)
+CLOSED: [2025-11-11 Tue]
 
 The `cj/make-script-executable` function automatically makes shell scripts executable
 when they have a shebang, but has no test coverage. **Suspected to be broken/not working.**
@@ -1090,6 +1129,7 @@ Priority [#B] because if broken, it's a daily workflow issue (scripts don't auto
 Moved from inbox 2025-11-11.
 
 ** DONE [#A] Fix difftastic integration - not showing semantic diffs (just unified diff)
+CLOSED: [2025-11-11 Tue]
 
 Difftastic was marked as "integrated" but diffs in magit and custom-buffer-file.el look
 identical to standard unified diffs. **Likely not actually using difftastic** - probably
@@ -1180,6 +1220,7 @@ Priority [#B] because affects daily workflow when working on multiple elisp proj
 Moved from inbox 2025-11-11.
 
 ** DONE [#B] Remove ANSI color codes from Makefile - breaks test output readability
+CLOSED: [2025-11-11 Tue]
 
 ANSI color codes render incorrectly in some terminals, making test output unreadable.
 Can see it's colored red, but can't read what the actual error message says due to
@@ -1417,7 +1458,7 @@ CLOSED: [2025-11-12 Wed 02:41]
 
 Complete code already exists in someday-maybe.org. Need today and recurring.
 
-** TODO [#B] Implement org-reveal presentation workflow
+** TODO [#A] Implement org-reveal presentation workflow
 
 Create reveal.js slides from org-mode.
 
