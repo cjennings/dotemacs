@@ -1458,9 +1458,24 @@ CLOSED: [2025-11-12 Wed 02:41]
 
 Complete code already exists in someday-maybe.org. Need today and recurring.
 
-** TODO [#A] Implement org-reveal presentation workflow
+** DONE [#A] Implement org-reveal presentation workflow
+CLOSED: [2026-02-14 Fri]
 
-Create reveal.js slides from org-mode.
+Created org-reveal-config.el module with ox-reveal integration for offline,
+self-contained reveal.js presentations.  Keybindings under C-; p prefix.
+Removed pandoc-based reveal.js export from org-export-config.el.
+
+** TODO [#B] Create custom dupre reveal.js theme
+
+Create a custom reveal.js CSS theme using colors from themes/dupre-palette.el.
+Install into reveal.js/css/theme/ for use with #+REVEAL_THEME: dupre.
+
+** TODO [#B] Investigate missing yasnippet configuration
+
+snippets-dir is defined in user-constants.el (points to org-dir/snippets/) and
+yasnippet is configured in prog-general.el, but no custom snippets directory or
+snippet files exist.  Investigate whether snippets should be created (e.g., org
+structure templates for reveal.js headers, blog post front matter, etc.).
 
 * Method 6: Develop Disciplined Engineering Practices [1/3]
 ** TODO [#C] Track current metrics baseline
