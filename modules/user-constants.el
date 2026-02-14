@@ -119,6 +119,9 @@ Used by transcription module and other audio-related functionality.")
 (defconst music-dir (expand-file-name "music/" user-home-dir)
   "The location to save your music files.")
 
+(defconst website-dir (expand-file-name "projects/website/" user-home-dir)
+  "Root directory of the Hugo website project.")
+
 
 ;; FILES
 (defvar authinfo-file (expand-file-name ".authinfo.gpg" user-home-dir)

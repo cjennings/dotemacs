@@ -144,36 +144,6 @@
 		  (?d "to docx and open" org-pandoc-export-to-docx-and-open)
 		  (?z "to pdf and open (Zathura)" my/org-pandoc-export-to-pdf-and-open))))
 
-;; ---------------------------------- ox-hugo ----------------------------------
-;; Export Org subtrees to Hugo-compatible Markdown.
-;; Each Org heading with :EXPORT_FILE_NAME: becomes a separate Hugo post.
-;; Source file: ~/projects/website/content-org/log.org
-
-(use-package ox-hugo
-  :after ox
-  :config
-  (defvar org-capture-templates)
-
-  (defun cj/org-hugo-new-post-capture-template ()
-    "Return a new Hugo post subtree template for org-capture.
-Prompts for title, generates slug, and sets export date to today."
-    (let* ((title (read-from-minibuffer "Post Title: "))
-           (fname (org-hugo-slug title)))
-      (mapconcat #'identity
-                 `(,(concat "* TODO " title)
-                   ":PROPERTIES:"
-                   ,(concat ":EXPORT_FILE_NAME: " fname)
-                   ,(concat ":EXPORT_DATE: "
-                            (format-time-string "%Y-%m-%d"))
-                   ":END:"
-                   "%?\n")
-                 "\n")))
-
-  (add-to-list 'org-capture-templates
-               '("h" "Hugo post" entry
-                 (file "~/projects/website/content-org/log.org")
-                 (function cj/org-hugo-new-post-capture-template))))
-
 ;; github flavored markdown
 ;; (use-package ox-gfm
 ;;   :after ox)

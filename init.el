@@ -114,6 +114,7 @@
 (require 'org-contacts-config)   ;; fully integrated org-mode contacts management
 (require 'org-drill-config)
 (require 'org-export-config)
+(require 'hugo-config)          ;; ox-hugo blog workflow (C-; h)
 
 (require 'org-refile-config)     ;; refile org-branches
 (require 'org-roam-config)       ;; personal knowledge management in org mode
