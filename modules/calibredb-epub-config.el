@@ -71,7 +71,9 @@
   ;; search window display
   (setq calibredb-size-show nil)
   (setq calibredb-order "asc")
-  (setq calibredb-id-width 7))
+  (setq calibredb-id-width 7)
+  (setq calibredb-favorite-icon "🔖")
+  (setq calibredb-favorite-keyword "in-progress"))
 
 (defun cj/calibredb-clear-filters ()
   "Clear active filters and show all results."
