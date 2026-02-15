@@ -33,7 +33,7 @@
 (defconst cj/reveal-default-theme "black"
   "Default reveal.js theme for new presentations.")
 
-(defconst cj/reveal-default-transition "slide"
+(defconst cj/reveal-default-transition "none"
   "Default reveal.js slide transition for new presentations.")
 
 ;; --------------------------------- ox-reveal ---------------------------------
@@ -45,7 +45,10 @@
   (setq org-reveal-single-file t)
   (setq org-reveal-plugins '(highlight notes search zoom))
   (setq org-reveal-highlight-css "%r/plugin/highlight/monokai.css")
-  (setq org-reveal-init-options "slideNumber:true, hash:true"))
+  (setq org-reveal-init-options (format "slideNumber:true, hash:true, transition:'%s'"
+                                         cj/reveal-default-transition))
+  (setq org-reveal-head-preamble
+        "<style>.reveal h1,.reveal h2,.reveal h3,.reveal p{text-transform:none;}</style>"))
 
 ;; ----------------------------- Private Helpers -------------------------------
 
@@ -58,11 +61,10 @@
 #+DATE: %s
 #+REVEAL_ROOT: %s
 #+REVEAL_THEME: %s
-#+REVEAL_TRANS: %s
-#+REVEAL_INIT_OPTIONS: slideNumber:true, hash:true
+#+REVEAL_INIT_OPTIONS: slideNumber:true, hash:true, transition:'%s'
 #+REVEAL_PLUGINS: (highlight notes search zoom)
 #+REVEAL_HIGHLIGHT_CSS: %%r/plugin/highlight/monokai.css
-#+OPTIONS: toc:nil num:nil
+#+OPTIONS: toc:nil num:nil date:nil timestamp:nil author:t
 
 " title (user-full-name) (format-time-string "%Y-%m-%d")
     (concat "file://" cj/reveal-root)

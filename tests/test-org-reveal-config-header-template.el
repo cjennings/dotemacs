@@ -59,10 +59,10 @@
              result))))
 
 (ert-deftest test-org-reveal-config-header-template-normal-contains-transition ()
-  "Output should contain #+REVEAL_TRANS: with the default transition."
+  "Output should contain transition in INIT_OPTIONS with the default value."
   (let ((result (test-reveal--header "My Talk")))
     (should (string-match-p
-             (format "^#\\+REVEAL_TRANS: %s$" cj/reveal-default-transition)
+             (format "transition:'%s'" cj/reveal-default-transition)
              result))))
 
 (ert-deftest test-org-reveal-config-header-template-normal-contains-init-options ()
@@ -85,9 +85,13 @@
     (should (string-match-p "^#\\+REVEAL_HIGHLIGHT_CSS:.*monokai" result))))
 
 (ert-deftest test-org-reveal-config-header-template-normal-contains-options ()
-  "Output should contain #+OPTIONS: disabling toc and num."
+  "Output should contain #+OPTIONS: disabling toc, num, and date; enabling author."
   (let ((result (test-reveal--header "My Talk")))
-    (should (string-match-p "^#\\+OPTIONS: toc:nil num:nil$" result))))
+    (should (string-match-p "^#\\+OPTIONS:.*toc:nil" result))
+    (should (string-match-p "^#\\+OPTIONS:.*num:nil" result))
+    (should (string-match-p "^#\\+OPTIONS:.*date:nil" result))
+    (should (string-match-p "^#\\+OPTIONS:.*timestamp:nil" result))
+    (should (string-match-p "^#\\+OPTIONS:.*author:t" result))))
 
 (ert-deftest test-org-reveal-config-header-template-normal-ends-with-blank-line ()
   "Output should end with a trailing newline (blank line separator)."
@@ -98,7 +102,7 @@
   "All required org keywords should be present in the output."
   (let ((result (test-reveal--header "My Talk"))
         (keywords '("#+TITLE:" "#+AUTHOR:" "#+DATE:"
-                    "#+REVEAL_ROOT:" "#+REVEAL_THEME:" "#+REVEAL_TRANS:"
+                    "#+REVEAL_ROOT:" "#+REVEAL_THEME:"
                     "#+REVEAL_INIT_OPTIONS:" "#+REVEAL_PLUGINS:"
                     "#+REVEAL_HIGHLIGHT_CSS:" "#+OPTIONS:")))
     (dolist (kw keywords)
