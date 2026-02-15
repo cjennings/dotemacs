@@ -167,13 +167,7 @@ file on disk is not modified."
         (message "✓ oauth2-auto token cache cleared"))
     (message "⚠ oauth2-auto not loaded yet")))
 
-;; Keybindings
-(with-eval-after-load 'keybindings
-  (keymap-set cj/custom-keymap "A" #'cj/reset-auth-cache))
-
-(with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements
-    "C-; A" "reset auth cache"))
+;; No keybinding — use M-x cj/reset-auth-cache
 
 (provide 'auth-config)
 ;;; auth-config.el ends here.
