@@ -81,10 +81,12 @@ Adjust this if the title doesn't appear centered under the banner image.")
 
   (dashboard-item-generators
    '((projects . dashboard-insert-projects)
-     (bookmarks . dashboard-insert-bookmarks)))
+     (bookmarks . dashboard-insert-bookmarks)
+     (recents . dashboard-insert-recents)))
 
   (dashboard-items '((projects . 5)
-                     (bookmarks . 10)))
+                     (bookmarks . 10)
+                     (recents . 5)))
 
   (dashboard-startupify-list
    '(dashboard-insert-banner
