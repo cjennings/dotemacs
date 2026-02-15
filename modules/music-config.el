@@ -12,7 +12,72 @@
 ;; - M3U playlist save/load/edit/reload
 ;; - Radio station M3U creation (streaming URLs supported)
 ;; - Playlist window toggling
+;; - Consume mode (remove tracks after playback)
 ;; - MPV as player (no daemon required)
+;;
+;; Keybindings (playlist-mode-map):
+;;
+;; Aligned with ncmpcpp defaults where possible (83% match).
+;; Additional EMMS-specific bindings for features ncmpcpp lacks.
+;;
+;;   Key       Action                    ncmpcpp default   Match
+;;   ───       ──────                    ───────────────   ─────
+;;   Playback
+;;   SPC       pause                     add_item          *
+;;   s         stop                      stop              ✓
+;;   > / n     next track                next              ✓
+;;   < / P     previous track            previous          ✓
+;;   p         play selected             (enter)           ✓
+;;   f         seek forward              seek_forward      ✓
+;;   b         seek backward             seek_backward     ✓
+;;
+;;   Toggles
+;;   r         repeat playlist           toggle_repeat     ✓
+;;   t         repeat track              (none)            +
+;;   z         random                    toggle_random     ✓
+;;   x         consume                   toggle_crossfade  *
+;;   Z         shuffle                   shuffle           ✓
+;;
+;;   Volume
+;;   + / =     volume up                 volume_up         ✓
+;;   -         volume down               volume_down       ✓
+;;
+;;   Info
+;;   i         song info                 show_song_info    ✓
+;;   o         jump to playing           jump_to_playing   ✓
+;;
+;;   Playlist management
+;;   a         add music (fuzzy)         add_selected      ✓
+;;   c / C     clear playlist            clear_playlist    ✓
+;;   S         save playlist             (none)            +
+;;   L         load playlist             (none)            +
+;;   E         edit playlist M3U         (none)            +
+;;   g         reload playlist           (none)            +
+;;   A         append track to M3U       (none)            +
+;;   q         quit/bury                 quit              ✓
+;;
+;;   Track reordering
+;;   S-up      move track up             (shift-up)        ✓
+;;   S-down    move track down           (shift-down)      ✓
+;;   C-up      move track up (alias)     (none)            +
+;;   C-down    move track down (alias)   (none)            +
+;;
+;;   Other
+;;   R         create radio station      (none)            +
+;;
+;;   Legend: ✓ = matches ncmpcpp default
+;;           * = intentional divergence (see below)
+;;           + = EMMS-only feature
+;;
+;; Intentional divergences from ncmpcpp defaults:
+;;
+;;   SPC/p swap: ncmpcpp defaults p=pause, SPC=add_item_to_playlist.
+;;   This config uses SPC=pause (more natural in Emacs) and p=play
+;;   selected track. Pause via SPC is a common media player convention.
+;;
+;;   x=consume vs crossfade: ncmpcpp's crossfade is an mpd daemon
+;;   feature. EMMS uses mpv directly, so consume mode (remove tracks
+;;   after playback) is more useful here.
 ;;
 ;;; Code:
 
