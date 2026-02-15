@@ -3,7 +3,9 @@
 
 * Emacs Open Work
 
-** VERIFY [#B] Continue org-noter custom workflow implementation (IN PROGRESS)
+** Org Mode
+
+*** VERIFY [#B] Continue org-noter custom workflow implementation (IN PROGRESS)
 
 Continue debugging and testing the custom org-noter workflow from 2025-11-21 session.
 This is partially implemented but has known issues that need fixing before it's usable.
@@ -49,44 +51,109 @@ The core functionality is implemented but needs debugging before it's production
 3. Refine toggle behavior based on testing
 4. Document the final keybindings and workflow
 
-** VERIFY [#B] Fix mail attachment workflow (currently awkward)
-
-Daily workflow improvement.
-
-** TODO [#B] Optimize org-capture target building performance
+*** TODO [#B] Optimize org-capture target building performance
 
 15-20 seconds every time capturing a task (12+ times/day).
 Major daily bottleneck - minutes lost waiting, plus context switching cost.
 
-** TODO [#C] Finish terminal GPG pinentry configuration
+** Presentations
 
-Continue work on terminal-mode GPG passphrase prompts (loopback mode).
-Branch: terminal-pinentry
+*** TODO [#C] Add image insertion helper for slides
+Helper function to insert images with proper org-reveal attributes
+(sizing, background images, etc.) without remembering the syntax.
 
-Changes in progress (modules/auth-config.el):
-- Use epa-pinentry-mode 'loopback in terminal
-- Use external pinentry (pinentry-dmenu) in GUI
-- Requires env-terminal-p from host-environment module
+*** TODO [#C] Adjust default font sizing for all slide elements
+Configure reveal.js font sizes for headings, body text, code blocks, etc.
+to better defaults via org-reveal-head-preamble CSS or custom theme.
 
-** VERIFY [#C] Fix EMMS keybinding inconsistency with other buffers
+*** TODO [#C] Create custom dupre reveal.js theme
 
-EMMS keybindings conflict with standard buffer keybindings, causing mistypes.
-Results in accidental destructive actions (clearing buffers), requires undo + context switch.
-Violates Intuitive value - muscle memory should help, not hurt.
+Create a custom reveal.js CSS theme using colors from themes/dupre-palette.el.
+Install into reveal.js/css/theme/ for use with #+REVEAL_THEME: dupre.
 
-** TODO [#C] Add post-processing hooks (recording)
+** Mail
+
+*** VERIFY [#B] Fix mail attachment workflow (currently awkward)
+
+Daily workflow improvement.
+
+** Media & Recording
+
+*** TODO [#C] Consider Recording Enhancement via post-processing hooks
 
 Auto-compress after recording.
 Move to cloud sync directory.
 Generate transcript (once transcription workflow exists).
 
-** TODO [#B] Validate recording startup
+** UI, Keybindings & Completion
 
-Check process status after starting.
-Parse ffmpeg output for errors.
-Show actual ffmpeg command for debugging.
+*** TODO [#B] Review and rebind M-S- keybindings
 
-** TODO [#B] Write Complete ERT Tests for This Config [0/31]
+Changed from M-uppercase to M-S-lowercase for terminal compatibility.
+These may override useful defaults - review and pick better bindings:
+- M-S-b calibredb (was overriding backward-word)
+- M-S-c time-zones (was overriding capitalize-word)
+- M-S-d dwim-shell-menu (was overriding kill-word)
+- M-S-e eww (was overriding forward-sentence)
+- M-S-f fontaine (was overriding forward-word)
+- M-S-h split-below
+- M-S-i edit-indirect
+- M-S-k show-kill-ring (was overriding kill-sentence)
+- M-S-l switch-themes (was overriding downcase-word)
+- M-S-m kill-all-buffers
+- M-S-o kill-other-window
+- M-S-r elfeed
+- M-S-s window-swap
+- M-S-t toggle-split (was overriding transpose-words)
+- M-S-u winner-undo (was overriding upcase-word)
+- M-S-v split-right (was overriding scroll-down)
+- M-S-w wttrin (was overriding kill-ring-save)
+- M-S-y yank-media (was overriding yank-pop)
+- M-S-z undo-kill-buffer (was overriding zap-to-char)
+
+*** TODO [#B] Investigate missing yasnippet configuration
+
+snippets-dir is defined in user-constants.el (points to org-dir/snippets/) and
+yasnippet is configured in prog-general.el, but no custom snippets directory or
+snippet files exist.  Investigate whether snippets should be created (e.g., org
+structure templates for reveal.js headers, blog post front matter, etc.).
+
+*** TODO [#C] Review and implement flycheck modeline customization spec
+
+Add flycheck status (error/warning counts) to custom modeline to make it visible again.
+
+**Spec Document:**
+[[file:docs/flycheck-modeline-customization-spec.org][flycheck-modeline-customization-spec.org]]
+
+**Summary:**
+Current custom modeline excludes minor-mode-alist where flycheck displays its status.
+Need to either:
+1. Add flycheck's lighter directly to mode-line-format (simplest)
+2. Customize flycheck prefix/indicator and add to modeline
+3. Create custom flycheck segment with full control
+
+**Files to Modify:**
+- modules/flycheck-config.el (customize prefix/indicator)
+- modules/modeline-config.el (add to mode-line-format)
+
+**Recommended Approach:**
+Option 4 (Hybrid) from spec - customize flycheck variables + add to modeline.
+Simple, maintainable, respects flycheck's built-in logic.
+
+*** TODO [#C] Migrate from Company to Corfu
+:PROPERTIES:
+:COMPLETE_CONFIG: [[file:docs/someday-maybe.org::1611][todo.org:1611-1639]]
+:END:
+
+Complete config already exists in someday-maybe.org. Just needs to be executed.
+
+*** TODO [#C] Integrate prescient with Corfu (smart sorting)
+
+Already using prescient with vertico. Extend to Corfu after migration.
+
+** Testing & CI
+
+*** TODO [#B] Write Complete ERT Tests for This Config [7/31]
 
 Unit and Integration Tests should be added as subtasks below, marked done when complete.
 
@@ -95,9 +162,9 @@ Unit and Integration Tests should be added as subtasks below, marked done when c
 - [ ] custom-case — pure case conversion functions (upper/lower/title)
 - [ ] custom-datetime — date/timestamp insertion and formatting
 - [ ] host-environment — platform detection (env-macos-p, env-wayland-p, etc.)
-- [ ] hugo-config — draft toggle, slug generation, post template
+- [X] hugo-config — draft toggle, slug generation, post template (41 tests, 4 files)
 - [ ] org-capture-config — template building (relates to capture perf optimization)
-- [ ] modeline-config — custom segment construction
+- [X] modeline-config — custom segment construction (26 tests, 2 files)
 - [ ] external-open — file-type detection and external app dispatch
 - [ ] reconcile-open-repos — dirty repo scanning logic
 - [ ] media-utils — URL download/play logic
@@ -111,15 +178,15 @@ Unit and Integration Tests should be added as subtasks below, marked done when c
 *Modules with partial coverage (expand existing tests):*
 
 - [ ] org-agenda-config — caching/TTL logic untested (only build-list covered)
-- [ ] org-contacts-config — expand beyond capture/parse
-- [ ] prog-shell — expand beyond make-script-executable
-- [ ] ui-config — expand beyond buffer-status/cursor-color
-- [ ] org-refile-config — expand beyond build-targets
-- [ ] org-webclipper — expand beyond process (only 1 test file)
-- [ ] org-noter-config — expand beyond generate-notes/title-to-slug
-- [ ] browser-config — expand beyond current single test file
-- [ ] flycheck-config — expand beyond languagetool setup
-- [ ] org-drill-config — expand beyond first-function/font-switching
+- [X] org-contacts-config — 40 tests, 2 files (capture-finalize + parse-email)
+- [ ] prog-shell — expand beyond make-script-executable (9 tests)
+- [X] ui-config — 27 tests, 2 files (buffer-status-colors + cursor-color)
+- [ ] org-refile-config — expand beyond build-targets (9 tests)
+- [X] org-webclipper — 31 tests in 1 file
+- [X] org-noter-config — 30 tests, 2 files (generate-notes + title-to-slug)
+- [X] browser-config — 20 tests in 1 file
+- [ ] flycheck-config — expand beyond languagetool setup (6 tests)
+- [ ] org-drill-config — expand beyond first-function/font-switching (17 tests)
 
 *Lower priority (testable but less critical):*
 
@@ -130,7 +197,51 @@ Unit and Integration Tests should be added as subtasks below, marked done when c
 - [ ] elfeed-config — podcast/feed helper functions
 - [ ] eww-config — browser helper functions
 
-** TODO [#B] Review all config and pull library functions into system-lib file
+*** TODO [#B] Add project-aware ERT test isolation when switching projects
+
+When switching between elisp projects (e.g., emacs.d to chime.el), previously loaded
+ERT tests remain in memory causing confusion and wrong tests to run.
+
+**Problem:**
+- ERT tests globally registered in Emacs session
+- `M-x ert RET t RET` runs ALL loaded tests from ALL projects
+- Can accidentally run emacs.d tests when working on chime.el
+- Current workaround: restart Emacs (loses session state)
+
+**Solution:**
+Create `cj/ert-clear-tests` and `cj/ert-run-current-project-tests`:
+- Clear tests when switching projects (hook into project-switch)
+- Use test name prefixes to selectively clear (cj/ vs chime-)
+- Only run current project's tests
+
+**Success Criteria:**
+- Switch projects -> old tests cleared
+- Only current project's tests run with `M-x ert`
+- Works with both interactive and batch runs
+
+*** TODO [#C] Evaluate and integrate Buttercup for behavior-driven integration tests
+
+Complex workflow testing capability.
+
+*** TODO [#C] Integrate undercover.el for test coverage
+
+Measure and track test coverage over time.
+
+*** TODO [#C] Set up melpazoid CI for MELPA submissions
+
+Validates packages meet MELPA standards.
+
+*** TODO [#C] Set up package-lint for elisp linting (chime, org-msg, wttrin)
+
+Catch packaging issues automatically.
+
+*** TODO [#C] Set up elisp-check GitHub Action
+
+Zero-config CI for Emacs packages.
+
+** Code Architecture & Performance
+
+*** TODO [#B] Review all config and pull library functions into system-lib file
 
 Extract reusable utility functions scattered across modules into system-lib.el
 for better code organization and reusability.
@@ -174,18 +285,11 @@ This makes them:
 - NOT buffer/file operations (those stay in custom-buffer-file.el)
 - NOT user-facing commands (those stay in their domain modules)
 
-** TODO [#C] Migrate from Company to Corfu
-:PROPERTIES:
-:COMPLETE_CONFIG: [[file:docs/someday-maybe.org::1611][todo.org:1611-1639]]
-:END:
+*** TODO [#B] Build debug-profiling.el module
 
-Complete config already exists in someday-maybe.org. Just needs to be executed.
+Reusable profiling infrastructure for any future performance work.
 
-** TODO [#C] Integrate prescient with Corfu (smart sorting)
-
-Already using prescient with vertico. Extend to Corfu after migration.
-
-** TODO [#C] Build localrepo and document limitations
+*** TODO [#C] Build localrepo and document limitations
 
 Repeatable installs and safe rollbacks.
 
@@ -193,11 +297,7 @@ Repeatable installs and safe rollbacks.
 Treesitter grammars are downloaded separately by treesit-auto on first use.
 For true offline reproducibility, need to cache treesitter grammars separately.
 
-** TODO [#C] Evaluate and integrate Buttercup for behavior-driven integration tests
-
-Complex workflow testing capability.
-
-** TODO [#D] Optimize lorem-optimum performance and liber-primus.txt size
+*** TODO [#D] Optimize lorem-optimum performance and liber-primus.txt size
 
 Lorem-optimum text generation is generally slow but doesn't completely break workflow.
 Two benchmark tests were disabled (marked :slow) because they take MINUTES instead of seconds.
@@ -218,112 +318,13 @@ Two benchmark tests were disabled (marked :slow) because they take MINUTES inste
 - tests/test-lorem-optimum-benchmark.el (tests disabled with :tags '(:slow))
 - liber-primus.txt (corpus file, may need size optimization)
 
-** TODO [#B] Build debug-profiling.el module
+** File Management & Shell
 
-Reusable profiling infrastructure for any future performance work.
-
-** TODO [#B] Add project-aware ERT test isolation when switching projects
-
-When switching between elisp projects (e.g., emacs.d to chime.el), previously loaded
-ERT tests remain in memory causing confusion and wrong tests to run.
-
-**Problem:**
-- ERT tests globally registered in Emacs session
-- `M-x ert RET t RET` runs ALL loaded tests from ALL projects
-- Can accidentally run emacs.d tests when working on chime.el
-- Current workaround: restart Emacs (loses session state)
-
-**Solution:**
-Create `cj/ert-clear-tests` and `cj/ert-run-current-project-tests`:
-- Clear tests when switching projects (hook into project-switch)
-- Use test name prefixes to selectively clear (cj/ vs chime-)
-- Only run current project's tests
-
-**Success Criteria:**
-- Switch projects -> old tests cleared
-- Only current project's tests run with `M-x ert`
-- Works with both interactive and batch runs
-
-** TODO [#C] Integrate undercover.el for test coverage
-
-Measure and track test coverage over time.
-
-** TODO [#C] Set up melpazoid CI for MELPA submissions
-
-Validates packages meet MELPA standards.
-
-** TODO [#C] Set up package-lint for elisp linting (chime, org-msg, wttrin)
-
-Catch packaging issues automatically.
-
-** TODO [#C] Set up elisp-check GitHub Action
-
-Zero-config CI for Emacs packages.
-
-** TODO [#B] Create custom dupre reveal.js theme
-
-Create a custom reveal.js CSS theme using colors from themes/dupre-palette.el.
-Install into reveal.js/css/theme/ for use with #+REVEAL_THEME: dupre.
-
-** TODO [#B] Investigate missing yasnippet configuration
-
-snippets-dir is defined in user-constants.el (points to org-dir/snippets/) and
-yasnippet is configured in prog-general.el, but no custom snippets directory or
-snippet files exist.  Investigate whether snippets should be created (e.g., org
-structure templates for reveal.js headers, blog post front matter, etc.).
-
-** TODO [#C] Track current metrics baseline
-
-- [ ] Measure current startup time (time emacs --eval '(save-buffers-kill-emacs)')
-- [ ] Count current active todos
-- [ ] Set up tracking document for weekly metrics
-
-** TODO [#C] Set up monthly research:shipped ratio tracking
-
-Can't research next thing until current thing is implemented.
-
-** TODO [#D] Add status dashboard for dwim-shell-command processes
-
-Create a command to show all running dwim-shell-command processes with their status.
-Currently, there's no unified view of multiple running extractions/conversions.
-
-**Current behavior:**
-- Each command shows spinner in minibuffer while running
-- Process buffers created: `*Extract audio*`, etc.
-- On completion: buffer renamed to `*Extract audio done*` or `*Extract audio error*`
-- No way to see all running processes at once
-
-**Recommended approach:**
-Custom status buffer that reads `dwim-shell-command--commands`.
-Can add mode-line indicator later as enhancement.
-
-** TODO [#C] Create print function for dirvish bound to uppercase P
+*** TODO [#C] Create print function for dirvish bound to uppercase P
 
 Add a print function that works on printable files (PDF, txt, org, etc.) and bind it to uppercase P in dirvish-mode. Should detect file type and use appropriate print command (lpr for text files, print dialog for PDFs, etc.).
 
-** TODO [#C] Review and implement flycheck modeline customization spec
-
-Add flycheck status (error/warning counts) to custom modeline to make it visible again.
-
-**Spec Document:**
-[[file:docs/flycheck-modeline-customization-spec.org][flycheck-modeline-customization-spec.org]]
-
-**Summary:**
-Current custom modeline excludes minor-mode-alist where flycheck displays its status.
-Need to either:
-1. Add flycheck's lighter directly to mode-line-format (simplest)
-2. Customize flycheck prefix/indicator and add to modeline
-3. Create custom flycheck segment with full control
-
-**Files to Modify:**
-- modules/flycheck-config.el (customize prefix/indicator)
-- modules/modeline-config.el (add to mode-line-format)
-
-**Recommended Approach:**
-Option 4 (Hybrid) from spec - customize flycheck variables + add to modeline.
-Simple, maintainable, respects flycheck's built-in logic.
-
-** TODO [#C] Investigate TRAMP/dirvish showing question marks for file dates
+*** TODO [#C] Investigate TRAMP/dirvish showing question marks for file dates
 
 Remote directories in dirvish show "?" instead of actual modification dates.
 Tried several approaches without success - needs deeper investigation.
@@ -343,28 +344,46 @@ Tried several approaches without success - needs deeper investigation.
 - modules/tramp-config.el
 - modules/dirvish-config.el
 
-** TODO [#B] Review and rebind M-S- keybindings
+*** TODO [#D] Add status dashboard for dwim-shell-command processes
 
-Changed from M-uppercase to M-S-lowercase for terminal compatibility.
-These may override useful defaults - review and pick better bindings:
-- M-S-b calibredb (was overriding backward-word)
-- M-S-c time-zones (was overriding capitalize-word)
-- M-S-d dwim-shell-menu (was overriding kill-word)
-- M-S-e eww (was overriding forward-sentence)
-- M-S-f fontaine (was overriding forward-word)
-- M-S-h split-below
-- M-S-i edit-indirect
-- M-S-k show-kill-ring (was overriding kill-sentence)
-- M-S-l switch-themes (was overriding downcase-word)
-- M-S-m kill-all-buffers
-- M-S-o kill-other-window
-- M-S-r elfeed
-- M-S-s window-swap
-- M-S-t toggle-split (was overriding transpose-words)
-- M-S-u winner-undo (was overriding upcase-word)
-- M-S-v split-right (was overriding scroll-down)
-- M-S-w wttrin (was overriding kill-ring-save)
-- M-S-y yank-media (was overriding yank-pop)
-- M-S-z undo-kill-buffer (was overriding zap-to-char)
+Create a command to show all running dwim-shell-command processes with their status.
+Currently, there's no unified view of multiple running extractions/conversions.
+
+**Current behavior:**
+- Each command shows spinner in minibuffer while running
+- Process buffers created: `*Extract audio*`, etc.
+- On completion: buffer renamed to `*Extract audio done*` or `*Extract audio error*`
+- No way to see all running processes at once
+
+**Recommended approach:**
+Custom status buffer that reads `dwim-shell-command--commands`.
+Can add mode-line indicator later as enhancement.
+
+** Authentication & Security
+
+*** TODO [#C] Finish terminal GPG pinentry configuration
+
+Continue work on terminal-mode GPG passphrase prompts (loopback mode).
+Branch: terminal-pinentry
+
+Changes in progress (modules/auth-config.el):
+- Use epa-pinentry-mode 'loopback in terminal
+- Use external pinentry (pinentry-dmenu) in GUI
+- Requires env-terminal-p from host-environment module
+
 
 * Emacs Resolved
+** DONE [#B] Validate recording startup
+CLOSED: [2026-02-15 Sun 15:40]
+
+Check process status after starting.
+Parse ffmpeg output for errors.
+Show actual ffmpeg command for debugging.
+
+** DONE [#C] Fix EMMS keybinding inconsistency with other buffers
+CLOSED: [2026-02-15 Sun 15:40]
+
+EMMS keybindings conflict with standard buffer keybindings, causing mistypes.
+Results in accidental destructive actions (clearing buffers), requires undo + context switch.
+Violates Intuitive value - muscle memory should help, not hurt.
+
