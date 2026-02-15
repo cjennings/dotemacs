@@ -2,7 +2,7 @@
 ;;
 ;;; Commentary:
 ;;
-;; Comprehensive music management in Emacs via EMMS with MPV backend.
+;; Music management in Emacs via EMMS with MPV backend.
 ;; Focus: simple, modular helpers; consistent error handling; streamlined UX.
 ;;
 ;; Highlights:
@@ -331,6 +331,32 @@ Offers completion over existing names but allows new names."
         (user-error "Playlist file no longer exists: %s"
                     (file-name-nondirectory path))))))
 
+;;; Commands: consume mode
+
+(defvar cj/music-consume-mode nil
+  "Non-nil means consume mode is active.
+When enabled, tracks are removed from the playlist after they finish playing.")
+
+(defun cj/music--consume-track ()
+  "Remove the just-finished track from the playlist.
+Intended for use on `emms-player-finished-hook'."
+  (when cj/music-consume-mode
+    (with-current-buffer (cj/music--ensure-playlist-buffer)
+      (when (and emms-playlist-selected-marker
+                 (marker-position emms-playlist-selected-marker))
+        (save-excursion
+          (goto-char emms-playlist-selected-marker)
+          (emms-playlist-mode-kill-track))))))
+
+(defun cj/music-toggle-consume ()
+  "Toggle consume mode. When active, tracks are removed after playing."
+  (interactive)
+  (setq cj/music-consume-mode (not cj/music-consume-mode))
+  (if cj/music-consume-mode
+      (add-hook 'emms-player-finished-hook #'cj/music--consume-track)
+    (remove-hook 'emms-player-finished-hook #'cj/music--consume-track))
+  (message "Consume mode %s" (if cj/music-consume-mode "enabled" "disabled")))
+
 ;;; Commands: UI
 
 ;;; Minimal ensure-loaded setup for on-demand use
@@ -419,13 +445,17 @@ Dirs added recursively."
   "m" #'cj/music-playlist-toggle
   "M" #'cj/music-playlist-show
   "a" #'cj/music-fuzzy-select-and-add
-  "r" #'cj/music-create-radio-station
+  "R" #'cj/music-create-radio-station
   "SPC" #'emms-pause
   "s" #'emms-stop
   "n" #'emms-next
   "p" #'emms-previous
   "g" #'emms-playlist-mode-go
-  "x" #'emms-shuffle)
+  "Z" #'emms-shuffle
+  "r" #'emms-toggle-repeat-playlist
+  "t" #'emms-toggle-repeat-track
+  "z" #'emms-toggle-random-playlist
+  "x" #'cj/music-toggle-consume)
 
 (keymap-set cj/custom-keymap "m" cj/music-map)
 (with-eval-after-load 'which-key
@@ -434,13 +464,17 @@ Dirs added recursively."
     "C-; m m" "toggle playlist"
     "C-; m M" "show playlist"
     "C-; m a" "add music"
-    "C-; m r" "create radio"
+    "C-; m R" "create radio"
     "C-; m SPC" "pause"
     "C-; m s" "stop"
     "C-; m n" "next track"
     "C-; m p" "previous track"
     "C-; m g" "goto playlist"
-    "C-; m x" "shuffle"))
+    "C-; m Z" "shuffle"
+    "C-; m r" "repeat playlist"
+    "C-; m t" "repeat track"
+    "C-; m z" "random"
+    "C-; m x" "consume"))
 
 (use-package emms
   :defer t
@@ -499,27 +533,41 @@ Dirs added recursively."
         ("SPC" . emms-pause)
         ("s"   . emms-stop)
         ("n"   . emms-next)
+        (">"   . emms-next)
         ("P"   . emms-previous)
+        ("<"   . emms-previous)
         ("f"   . emms-seek-forward)
         ("b"   . emms-seek-backward)
-        ("x"   . emms-shuffle)
         ("q"   . emms-playlist-mode-bury-buffer)
         ("a"   . cj/music-fuzzy-select-and-add)
+        ;; Toggles (aligned with ncmpcpp)
+        ("r"   . emms-toggle-repeat-playlist)
+        ("t"   . emms-toggle-repeat-track)
+        ("z"   . emms-toggle-random-playlist)
+        ("x"   . cj/music-toggle-consume)
+        ("Z"   . emms-shuffle)
+        ;; Info
+        ("i"   . emms-show)
+        ("o"   . emms-playlist-mode-center-current)
         ;; Manipulation
         ("A" . cj/music-append-track-to-playlist)
+        ("c" . cj/music-playlist-clear)
         ("C" . cj/music-playlist-clear)
         ("L" . cj/music-playlist-load)
         ("E" . cj/music-playlist-edit)
-        ("R" . cj/music-playlist-reload)
+        ("g" . cj/music-playlist-reload)
         ("S" . cj/music-playlist-save)
-        ;; Track reordering (bind directly to EMMS commands; no wrappers)
+        ;; Track reordering
+        ("S-<up>"   . emms-playlist-mode-shift-track-up)
+        ("S-<down>" . emms-playlist-mode-shift-track-down)
         ("C-<up>"   . emms-playlist-mode-shift-track-up)
         ("C-<down>" . emms-playlist-mode-shift-track-down)
         ;; Radio
-        ("r" . cj/music-create-radio-station)
-        ;; Volume (MPV)
-        ("-" . emms-volume-lower)
-        ("=" . emms-volume-raise)))
+        ("R" . cj/music-create-radio-station)
+        ;; Volume
+        ("+" . emms-volume-raise)
+        ("=" . emms-volume-raise)
+        ("-" . emms-volume-lower)))
 
 ;; Quick toggle key - use autoload to avoid loading emms at startup
 (autoload 'cj/music-playlist-toggle "music-config" "Toggle EMMS playlist window." t)
