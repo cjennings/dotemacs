@@ -85,8 +85,8 @@ Adjust this if the title doesn't appear centered under the banner image.")
      (recents . dashboard-insert-recents)))
 
   (dashboard-items '((projects . 5)
-                     (bookmarks . 10)
-                     (recents . 5)))
+                     (bookmarks . 5)
+                     (recents . 10)))
 
   (dashboard-startupify-list
    '(dashboard-insert-banner
@@ -111,6 +111,9 @@ Adjust this if the title doesn't appear centered under the banner image.")
   (setq dashboard-icon-type 'nerd-icons)                              ;; use `nerd-icons' package
   (setq dashboard-center-content t)                                   ;; horizontally center dashboard content
   (setq dashboard-bookmarks-show-path nil)                            ;; don't show paths in bookmarks
+  (setq dashboard-recentf-show-base t)                                ;; show filename, not full path
+  (setq dashboard-recentf-item-format "%s")
+  (setq recentf-exclude '("/emms/history"))                            ;; exclude EMMS history from recent files
   (setq dashboard-set-footer nil)                                     ;; don't show footer and quotes
 
   ;; == banner
@@ -126,7 +129,7 @@ Adjust this if the title doesn't appear centered under the banner image.")
             (lambda (&rest _) (projectile-switch-project))
             nil " " "")
 
-           (,(nerd-icons-faicon  "nf-fa-envelope")
+           (,(nerd-icons-faicon "nf-fa-envelope")
             "Email" "Mu4e Email Client"
             (lambda (&rest _) (mu4e))
             nil " " "")
@@ -134,6 +137,27 @@ Adjust this if the title doesn't appear centered under the banner image.")
            (,(nerd-icons-mdicon "nf-md-calendar")
             "Agenda" "Main Org Agenda"
             (lambda (&rest _) (cj/main-agenda-display))
+            nil " " "")
+
+           (,(nerd-icons-faicon "nf-fa-folder_o")
+            "Files" "Dirvish File Manager"
+            (lambda (&rest _) (dirvish user-home-dir))
+            nil " " "")
+
+           (,(nerd-icons-mdicon "nf-md-music")
+            "Music" "EMMS Music Player"
+            (lambda (&rest _) (cj/music-playlist-toggle) (cj/music-playlist-load))
+            nil " " ""))
+
+          ;; Row 2
+          ((,(nerd-icons-faicon "nf-fa-rss_square")
+            "Feeds" "Elfeed Feed Reader"
+            (lambda (&rest _) (cj/elfeed-open))
+            nil " " "")
+
+           (,(nerd-icons-faicon "nf-fa-comments")
+            "IRC" "Emacs Relay Chat"
+            (lambda (&rest _) (cj/erc-switch-to-buffer-with-completion))
             nil " " "")
 
            (,(nerd-icons-mdicon "nf-md-school")
@@ -144,32 +168,11 @@ Adjust this if the title doesn't appear centered under the banner image.")
            (,(nerd-icons-faicon "nf-fae-book_open_o")
             "Books" "Calibre Ebook Reader"
             (lambda (&rest _) (calibredb))
-            nil " " ""))
-
-          ;; Row 2
-          ((,(nerd-icons-faicon "nf-fa-rss_square")
-            "RSS/Feeds" "Elfeed Feed Reader"
-			(lambda (&rest _) (cj/elfeed-open))
-            nil " " "")
-
-           (,(nerd-icons-faicon "nf-fa-comments")
-            "IRC" "Emacs Relay Chat"
-            (lambda (&rest _) (cj/erc-switch-to-buffer-with-completion))
             nil " " "")
 
            (,(nerd-icons-devicon "nf-dev-terminal")
             "Terminal" "Launch VTerm"
             (lambda (&rest _) (vterm))
-            nil " " "")
-
-           ;; (,(nerd-icons-faicon "nf-fae-telegram")
-           ;;     "Telegram" "Telega Chat Client"
-           ;;     (lambda (&rest _) (telega))
-           ;;     nil " " "")
-
-           (,(nerd-icons-faicon "nf-fa-folder_o")
-            "Directory/Files" "Dirvish File Manager"
-            (lambda (&rest _) (dirvish user-home-dir))
             nil " " ""))))
 
   ;; == content
