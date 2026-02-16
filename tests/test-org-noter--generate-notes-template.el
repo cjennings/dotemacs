@@ -8,6 +8,8 @@
 
 (require 'ert)
 (require 'org-id)  ; needed for org-id-uuid
+(require 'user-constants)
+(require 'keybindings)
 (require 'org-noter-config)
 
 ;;; Test Helpers

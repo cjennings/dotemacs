@@ -7,6 +7,8 @@
 ;;; Code:
 
 (require 'ert)
+(require 'user-constants)
+(require 'keybindings)
 (require 'org-noter-config)
 
 ;;; Normal Cases
