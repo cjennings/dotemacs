@@ -1,0 +1,7 @@
+# name: habitdrawer
+# key:<habit
+# --
+:PROPERTIES:
+:STYLE:    habit
+:RESET_CHECK_BOXES: t
+:END:

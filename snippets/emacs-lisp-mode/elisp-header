@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# name: elisp-header
+# key: >elheader
+# --
+;;; `(file-name-nondirectory buffer-file-name)` --- $1 -*- coding: utf-8; lexical-binding: t; -*-
+
+;;; Commentary:
+;; $0
+
+;;; Code:
+

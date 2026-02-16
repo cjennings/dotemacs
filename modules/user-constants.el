@@ -104,8 +104,8 @@ Used by transcription module and other audio-related functionality.")
 (defconst drill-dir (expand-file-name "drill/" org-dir)
   "The location of org-drill org files.")
 
-(defconst snippets-dir (expand-file-name "snippets/" org-dir)
-  "The location of ya-snippet snippets.")
+(defconst snippets-dir (expand-file-name "snippets/" user-emacs-directory)
+  "The location of yasnippet snippets.")
 
 (defvar sounds-dir (expand-file-name "assets/sounds/" user-emacs-directory)
   "Directory containing sound files for notifications and timers.")

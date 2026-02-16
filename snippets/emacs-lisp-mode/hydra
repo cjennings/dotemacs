@@ -1,0 +1,15 @@
+# -*- mode: snippet -*-
+# name: hydra
+# key: <hydra
+# --
+
+(with-eval-after-load '$1
+  (defhydra hydra-$2 (:color teal :timeout 10 :hint nil)
+	"$2 common commands menu"
+	("q" quit-window "quit" :column "")
+	)
+
+  (defun $1-hook-hydra-setup ()
+	"Create $2 hydra/menu keybinding when entering ledger mode."
+	(local-set-key (kbd "C-c ?") 'hydra-$2/body))
+  (add-hook '$1-hook '$1-hook-hydra-setup))

@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: link
+# key: <link
+# --
+<a href="$0" target="_blank" rel="noopener noreferrer">
