@@ -43,11 +43,11 @@ keep them in source control.")
 "Add the repository to the package archives, then gives it a high priority."
   (unless (car-member localrepo-repository-id package-archives)
 	(add-to-list 'package-archives
-				 (localrepo-repository-id . localrepo-repository-location)))
+				 (cons localrepo-repository-id localrepo-repository-location)))
 
   (unless (car-member localrepo-repository-id package-archive-priorities)
 	(add-to-list 'package-archive-priorities
-				 (localrepo-repository-id . localrepo-repository-priority))))
+				 (cons localrepo-repository-id localrepo-repository-priority))))
 
 (provide 'local-repository)
 ;;; local-repository.el ends here.
