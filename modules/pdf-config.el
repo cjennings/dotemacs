@@ -39,6 +39,8 @@
   (define-key pdf-view-mode-map "k" #'image-previous-line)
   (define-key pdf-view-mode-map (kbd "<down>") #'image-next-line)
   (define-key pdf-view-mode-map (kbd "<up>") #'image-previous-line)
+  ;; Org-noter: start session if needed, then insert note
+  (define-key pdf-view-mode-map "i" #'cj/org-noter-insert-note-dwim)
   ;; Page change: C-up/C-down go to top of prev/next page
   (define-key pdf-view-mode-map (kbd "C-<down>")
               (lambda () (interactive) (pdf-view-next-page-command) (image-bob)))

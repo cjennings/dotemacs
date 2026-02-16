@@ -6,16 +6,20 @@
 ;;
 ;; Workflow:
 ;; 1. Open a PDF (pdf-view-mode) or EPUB (nov-mode) in Emacs
-;; 2. Press F6 to start org-noter session
+;; 2. Press 'i' to start org-noter session and insert a note
 ;; 3. If new book: prompted for title, creates notes file as org-roam node
 ;; 4. If existing book: finds and opens associated notes file
-;; 5. Window splits with document on left (2/3) and notes on right (1/3)
-;; 6. Use 'i' to insert notes at current location
-;; 7. Notes are saved as org-roam nodes in org-roam-directory
+;; 5. Window splits with document (70%) and notes (30%)
+;;    Split direction chosen automatically based on frame aspect ratio
+;; 6. Notes are saved as org-roam nodes in roam-dir
 ;;
-;; Can also start from notes file: open notes via org-roam, press F6 to open document.
-;;
-;; See docs/org-noter-workflow-spec.org for full specification.
+;; Keybindings (C-; n prefix):
+;;   i - insert note (starts session if needed)
+;;   t - toggle notes window
+;;   T - toggle window position (side/bottom)
+;;   n/p/. - sync next/prev/current note
+;;   s - headings from TOC
+;;   q - kill session
 
 ;;; Code:
 
@@ -26,29 +30,25 @@
 (declare-function nov-mode "ext:nov")
 (declare-function pdf-view-mode "ext:pdf-view")
 (defvar nov-file-name)
-(defvar org-roam-directory)
-(defvar org-dir)
-
 ;;; Configuration Variables
 
-(defvar cj/org-noter-notes-directory
-  (if (boundp 'org-roam-directory)
-      org-roam-directory
-    (expand-file-name "~/sync/org/roam/"))
+(defvar cj/org-noter-notes-directory roam-dir
   "Directory where org-noter notes files are stored.
-Defaults to `org-roam-directory' so notes are indexed by org-roam.")
+Uses `roam-dir' from user-constants so notes are indexed by org-roam.")
 
-(defvar cj/org-noter-keybinding (kbd "<f6>")
-  "Keybinding to start org-noter session.")
+(defun cj/org-noter--preferred-split ()
+  "Return preferred split direction based on frame aspect ratio.
+Returns `horizontal-split' (side-by-side) if frame is wide,
+`vertical-split' (stacked) otherwise."
+  (let ((width (frame-pixel-width))
+        (height (frame-pixel-height)))
+    (if (> (/ (float width) height) 1.4)
+        'horizontal-split
+      'vertical-split)))
 
-(defvar cj/org-noter-split-direction 'horizontal
-  "Direction to split window for notes.
-`vertical' puts notes on the right (side-by-side).
-`horizontal' puts notes on the bottom (stacked).")
-
-(defvar cj/org-noter-split-fraction 0.67
+(defvar cj/org-noter-split-fraction 0.70
   "Fraction of window for document (notes get the remainder).
-Default 0.67 means document gets 2/3, notes get 1/3.")
+Default 0.70 means document gets 70%, notes get 30%.")
 
 ;;; Helper Functions
 
@@ -182,15 +182,32 @@ When called from a notes file:
     (let ((notes-file (or (cj/org-noter--find-notes-file)
                           (cj/org-noter--create-notes-file))))
       (when notes-file
-        ;; Open notes file and call org-noter from there
-        (find-file notes-file)
-        (goto-char (point-min))
-        (org-noter))))
+        ;; Recalculate split direction based on current frame dimensions
+        (setq org-noter-notes-window-location (cj/org-noter--preferred-split))
+        ;; Start org-noter from the notes buffer without leaving the document
+        (let ((notes-buf (find-file-noselect notes-file)))
+          (with-current-buffer notes-buf
+            (goto-char (point-min))
+            (org-noter))))))
    ;; In notes file without session - start session
    ((cj/org-noter--in-notes-file-p)
     (org-noter))
    (t
     (message "Not in a document or org-noter notes file"))))
+
+(defun cj/org-noter-insert-note-dwim ()
+  "Insert an org-noter note, starting a session first if needed.
+From a PDF/EPUB: starts org-noter session if inactive, then inserts note."
+  (interactive)
+  (unless (cj/org-noter--session-active-p)
+    (cj/org-noter-start)
+    ;; Return to the document window for the insert
+    (when (cj/org-noter--session-active-p)
+      (let ((doc-window (org-noter--get-doc-window)))
+        (when doc-window
+          (select-window doc-window)))))
+  (when (cj/org-noter--session-active-p)
+    (org-noter-insert-note)))
 
 ;;; Package Configuration
 
@@ -201,21 +218,16 @@ When called from a notes file:
   :after (org pdf-tools)
   :hook (org-mode . org-pdftools-setup-link))
 
-(global-set-key (kbd "<f6>") #'cj/org-noter-start)
-
 (use-package org-noter
   :after (:any org pdf-tools djvu nov)
   :commands org-noter
   :config
-  ;; Window layout based on cj/org-noter-split-direction
-  (setq org-noter-notes-window-location
-        (if (eq cj/org-noter-split-direction 'vertical)
-            'horizontal-split    ; confusingly named: horizontal-split = side-by-side
-          'vertical-split))      ; vertical-split = stacked
+  ;; Window layout calculated dynamically at session start
+  (setq org-noter-notes-window-location (cj/org-noter--preferred-split))
 
-  ;; Split ratio from configuration (first is notes, second is doc)
+  ;; Split ratio: document gets cj/org-noter-split-fraction, notes get the rest
   (setq org-noter-doc-split-fraction
-        (cons (- 1.0 cj/org-noter-split-fraction)
+        (cons cj/org-noter-split-fraction
               cj/org-noter-split-fraction))
 
   ;; Basic settings
@@ -245,6 +257,57 @@ When called from a notes file:
   ;; Defer org-roam integration to avoid slowing PDF load
   (with-eval-after-load 'org-roam
     (org-noter-enable-org-roam-integration)))
+
+;;; ---------------------- Notes Window Background Highlight --------------------
+
+(defvar-local cj/org-noter--bg-remap-cookie nil
+  "Cookie for the active-window background face remapping.")
+
+(defun cj/org-noter--update-active-bg (&rest _)
+  "Toggle notes buffer background based on whether its window is selected."
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (when (bound-and-true-p org-noter-notes-mode)
+        (let ((active (eq buf (window-buffer (selected-window)))))
+          (cond
+           ((and active (not cj/org-noter--bg-remap-cookie))
+            (setq cj/org-noter--bg-remap-cookie
+                  (face-remap-add-relative 'default :background "#1d1b19")))
+           ((and (not active) cj/org-noter--bg-remap-cookie)
+            (face-remap-remove-relative cj/org-noter--bg-remap-cookie)
+            (setq cj/org-noter--bg-remap-cookie nil))))))))
+
+(defun cj/org-noter--setup-notes-bg ()
+  "Set up focus-based background tracking in the notes buffer."
+  (add-hook 'window-selection-change-functions #'cj/org-noter--update-active-bg nil t))
+
+(add-hook 'org-noter-notes-mode-hook #'cj/org-noter--setup-notes-bg)
+
+;;; ----------------------------- Org-Noter Keymap -----------------------------
+
+(defvar-keymap cj/org-noter-map
+  :doc "Keymap for org-noter operations."
+  "i" #'cj/org-noter-insert-note-dwim
+  "n" #'org-noter-sync-next-note
+  "p" #'org-noter-sync-prev-note
+  "." #'org-noter-sync-current-note
+  "s" #'org-noter-create-skeleton
+  "q" #'org-noter-kill-session
+  "t" #'cj/org-noter-start
+  "T" #'org-noter-toggle-notes-window-location)
+(keymap-set cj/custom-keymap "n" cj/org-noter-map)
+
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-; n" "org-noter menu"
+    "C-; n i" "insert note"
+    "C-; n n" "sync next note"
+    "C-; n p" "sync prev note"
+    "C-; n ." "sync current note"
+    "C-; n s" "headings from TOC"
+    "C-; n q" "kill session"
+    "C-; n t" "toggle window"
+    "C-; n T" "toggle window position"))
 
 (provide 'org-noter-config)
 ;;; org-noter-config.el ends here
