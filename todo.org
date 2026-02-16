@@ -153,7 +153,7 @@ Already using prescient with vertico. Extend to Corfu after migration.
 
 ** Testing & CI
 
-*** TODO [#B] Write Complete ERT Tests for This Config [13/23]
+*** TODO [#B] Write Complete ERT Tests for This Config [13/14]
 
 Unit and Integration Tests should be added as subtasks below, marked done when complete.
 
@@ -175,16 +175,8 @@ Unit and Integration Tests should be added as subtasks below, marked done when c
 - [X] org-webclipper — 31 tests in 1 file
 - [X] org-noter-config — 30 tests, 2 files (generate-notes + title-to-slug)
 - [X] browser-config — 20 tests in 1 file
-- [ ] flycheck-config — expand beyond languagetool setup (6 tests)
-- [ ] org-drill-config — expand beyond first-function/font-switching (17 tests)
-
 *Lower priority (testable but less critical):*
 
-- [ ] chrono-tools — timer/clock functions
-- [ ] help-utils — search dispatch (arch-wiki, devdoc, tldr, wikipedia)
-- [ ] dirvish-config — wallpaper setter, custom functions
-- [ ] dwim-shell-config — shell command definitions
-- [ ] elfeed-config — podcast/feed helper functions
 - [ ] eww-config — browser helper functions
 
 *** TODO [#B] Add project-aware ERT test isolation when switching projects

@@ -106,7 +106,7 @@ Present all audio files in the sounds directory and set the chosen file as
   (interactive)
   (setq tmr-sound-file notification-sound)
   (message "Timer sound reset to default: %s"
-		   (file-name-nondirectory notification-package)))
+		   (file-name-nondirectory notification-sound)))
 
 (use-package tmr
   :defer 0.5
