@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: if_file_exists
+# key: <if_file
+# --
+ [ -f $1 ] && $0

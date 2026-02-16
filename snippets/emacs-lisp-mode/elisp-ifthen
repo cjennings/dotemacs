@@ -1,0 +1,13 @@
+# -*- mode: snippet -*-
+# name: elifthen
+# key: >elifthen
+# --
+
+(if ($1 condition)
+     (progn
+		$2 ; if statements
+        ; go here
+	)
+	$2 ; else statements
+	; go here
+)

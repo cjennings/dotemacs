@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: footnote-ref
+# key:
+# --
+<li id="fn$0">
+  <a href="#ref$1">↩︎</a>
+</li>

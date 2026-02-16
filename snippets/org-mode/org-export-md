@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: org-export-md
+# key: <org-export-md
+# --
+# -*- org-auto-export-to-md: t; -*-
+#+DATE:
+$0

@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: echo_w_date_time_tee
+# key: >edtt 
+# --
+
+    echo "$1 @ $(date +'%T')" | tee -a $2
+	$0

@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: if_last_command_failed
+# key: <ilcf
+# --
+
+if [ $? -eq 0 ]; then

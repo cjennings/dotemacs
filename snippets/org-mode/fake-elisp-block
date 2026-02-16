@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: fake-elisp-block
+# key: --e
+# --
+
+--- emacs-lisp
+$1
+---

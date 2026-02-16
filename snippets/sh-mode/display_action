@@ -1,0 +1,4 @@
+# key: >da
+# name: display_action
+# --
+$0action="$1" && display "$2" "$action"

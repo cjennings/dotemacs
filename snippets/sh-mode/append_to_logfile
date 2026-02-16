@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: append_to_logfile
+# key: <atlf
+# --
+
+ >> $logfile 2>&1

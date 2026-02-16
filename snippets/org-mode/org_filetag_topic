@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: org filetag topic
+# key: <ftt
+# --
+#+FILETAGS: Topic

@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: printf_error_with_date_time_tee_logfile
+# key: >pedttlf
+# --
+
+printf "\n\nERROR: $1 failed with error $? @ %s\n" \
+			   "$(date +'%T')" | tee -a $logfile

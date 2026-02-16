@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: bash header with set -e
+# key: <bashhead
+# --
+#!/usr/bin/env bash
+#
+# Craig Jennings <c@cjennings.net>
+set -e
