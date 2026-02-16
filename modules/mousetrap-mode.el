@@ -178,10 +178,16 @@ See `mouse-trap-profiles' for available profiles and
   (if mouse-trap-mode
       (progn
         (setq mouse-trap-mode-map (mouse-trap--build-keymap))
+        ;; Register keymap so Emacs actually uses it for key dispatch
+        (let ((entry (assq 'mouse-trap-mode minor-mode-map-alist)))
+          (if entry
+              (setcdr entry mouse-trap-mode-map)
+            (push (cons 'mouse-trap-mode mouse-trap-mode-map) minor-mode-map-alist)))
         ;; Add dynamic lighter to mode-line-misc-info (always visible)
         (unless (member '(:eval (mouse-trap--lighter-string)) mode-line-misc-info)
           (push '(:eval (mouse-trap--lighter-string)) mode-line-misc-info)))
-    ;; When disabling, clear the keymap
+    ;; When disabling, remove keymap from minor-mode-map-alist
+    (setq minor-mode-map-alist (assq-delete-all 'mouse-trap-mode minor-mode-map-alist))
     (setq mouse-trap-mode-map nil)
     ;; Note: We keep the lighter in mode-line-misc-info so it shows 🐭 when disabled
     ))

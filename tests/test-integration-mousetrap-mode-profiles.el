@@ -55,26 +55,26 @@ Validates:
       (should (eq (lookup-key map (kbd "<wheel-up>")) nil))
       (should (eq (lookup-key map (kbd "<drag-mouse-1>")) nil)))))
 
-(ert-deftest test-integration-mousetrap-mode-profiles-dashboard-primary-click-only ()
-  "Test dashboard-mode gets primary-click profile.
+(ert-deftest test-integration-mousetrap-mode-profiles-dashboard-scroll-and-primary ()
+  "Test dashboard-mode gets scroll+primary profile.
 
 Components integrated:
 - mouse-trap--get-profile-for-mode (lookup)
 - mouse-trap--build-keymap (selective event binding)
 
 Validates:
-- Primary-click profile allows mouse-1
-- Blocks mouse-2/3 and scroll events"
+- scroll+primary profile allows mouse-1 and scrolling
+- Blocks mouse-2/3"
   (let ((major-mode 'dashboard-mode))
     (let ((profile (mouse-trap--get-profile-for-mode))
           (map (mouse-trap--build-keymap)))
-      (should (eq 'primary-click profile))
+      (should (eq 'scroll+primary profile))
       ;; mouse-1 allowed
       (should (eq (lookup-key map (kbd "<mouse-1>")) nil))
+      ;; scroll allowed
+      (should (eq (lookup-key map (kbd "<wheel-up>")) nil))
       ;; mouse-2/3 blocked
-      (should (eq (lookup-key map (kbd "<mouse-2>")) 'ignore))
-      ;; scroll blocked
-      (should (eq (lookup-key map (kbd "<wheel-up>")) 'ignore)))))
+      (should (eq (lookup-key map (kbd "<mouse-2>")) 'ignore)))))
 
 (ert-deftest test-integration-mousetrap-mode-profiles-emacs-lisp-uses-default-disabled ()
   "Test unmapped mode uses default disabled profile.

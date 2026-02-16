@@ -176,16 +176,16 @@
 ;;; Rainbow-delimiters tests (skip if package not available)
 
 (ert-deftest dupre-theme-rainbow-depth-1 ()
-  "Rainbow depth 1 should use yellow."
+  "Rainbow depth 1 should use blue."
   (skip-unless (require 'rainbow-delimiters nil t))
   (load-theme 'dupre t)
-  (should (string= (face-attribute 'rainbow-delimiters-depth-1-face :foreground) "#d7af5f")))
+  (should (string= (face-attribute 'rainbow-delimiters-depth-1-face :foreground) "#67809c")))
 
 (ert-deftest dupre-theme-rainbow-depth-2 ()
-  "Rainbow depth 2 should use blue."
+  "Rainbow depth 2 should use gray+2."
   (skip-unless (require 'rainbow-delimiters nil t))
   (load-theme 'dupre t)
-  (should (string= (face-attribute 'rainbow-delimiters-depth-2-face :foreground) "#67809c")))
+  (should (string= (face-attribute 'rainbow-delimiters-depth-2-face :foreground) "#d0cbc0")))
 
 ;;; Error/warning face tests
 

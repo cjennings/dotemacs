@@ -24,6 +24,17 @@
 
   ;; -------------------------- Event Capture Formatting -------------------------
 
+  (defun cj/org-capture--date-prefix (timestamp)
+    "Return \"YY-MM-DD: \" prefix from org TIMESTAMP string, or nil if unparseable."
+    (when-let ((parsed (ignore-errors (org-parse-time-string timestamp))))
+      (let ((year (nth 5 parsed))
+            (month (nth 4 parsed))
+            (day (nth 3 parsed)))
+        (when (and year month day
+                   (> year 0) (> month 0) (> day 0))
+          (format "%02d-%02d-%02d: "
+                  (mod year 100) month day)))))
+
   (defun cj/org-capture-format-event-headline ()
     "Format the event headline with YY-MM-DD prefix from the WHEN timestamp.
 This function is called during `org-capture' finalization to prepend the date
@@ -31,22 +42,12 @@ to the event title for better organization in the schedule file."
     (when (string= (plist-get org-capture-plist :key) "e")
       (save-excursion
         (goto-char (point-min))
-        ;; Find the WHEN: line with timestamp
         (when (re-search-forward "^WHEN: \\(<[^>]+>\\)" nil t)
-          (let* ((timestamp (match-string 1))
-                 ;; Parse the timestamp to extract date components
-                 (parsed (org-parse-time-string timestamp))
-                 (year (nth 5 parsed))
-                 (month (nth 4 parsed))
-                 (day (nth 3 parsed))
-                 ;; Format as YY-MM-DD
-                 (date-prefix (format "%02d-%02d-%02d: "
-                                      (mod year 100) month day)))
-            ;; Go back to the headline
-            (goto-char (point-min))
-            ;; Insert date prefix after the asterisks
-            (when (looking-at "^\\(\\*+ \\)\\(.*\\)$")
-              (replace-match (concat "\\1" date-prefix "\\2"))))))))
+          (let ((date-prefix (cj/org-capture--date-prefix (match-string 1))))
+            (when date-prefix
+              (goto-char (point-min))
+              (when (looking-at "^\\(\\*+ \\)\\(.*\\)$")
+                (replace-match (concat "\\1" date-prefix "\\2")))))))))
 
   (defun cj/org-capture-event-content ()
     "Get the appropriate content for event capture based on context.
@@ -56,7 +57,8 @@ formatted appropriately for insertion into the capture template."
      ;; If called from org-protocol (browser), get the initial from org-store-link-plist
      ((and (boundp 'org-store-link-plist)
            org-store-link-plist
-           (plist-get org-store-link-plist :initial))
+           (let ((val (plist-get org-store-link-plist :initial)))
+             (and (stringp val) (not (string-empty-p val)))))
       (concat "\n" (plist-get org-store-link-plist :initial)))
      ;; If there's a selected region in Emacs, use it from capture plist
      ((and (stringp (plist-get org-capture-plist :initial))

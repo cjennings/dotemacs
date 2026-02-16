@@ -14,7 +14,7 @@
 
 (ert-deftest test-integration-lighter-click-enables-mode-in-dashboard ()
   "Test clicking lighter in dashboard-mode enables mode with correct profile.
-Dashboard uses primary-click profile which blocks scrolling but allows mouse-1."
+Dashboard uses scroll+primary profile which allows scrolling and mouse-1."
   (with-temp-buffer
     (let ((major-mode 'dashboard-mode)
           (mouse-trap-mode nil))
@@ -27,12 +27,12 @@ Dashboard uses primary-click profile which blocks scrolling but allows mouse-1."
       ;; Mode should be enabled
       (should mouse-trap-mode)
 
-      ;; Keymap should be built for dashboard (primary-click profile)
+      ;; Keymap should be built for dashboard (scroll+primary profile)
       (should (keymapp mouse-trap-mode-map))
 
-      ;; Verify profile-specific behavior: mouse-1 allowed, scroll blocked
+      ;; Verify profile-specific behavior: mouse-1 and scroll allowed
       (should (eq (lookup-key mouse-trap-mode-map (kbd "<mouse-1>")) nil))
-      (should (eq (lookup-key mouse-trap-mode-map (kbd "<wheel-up>")) 'ignore))
+      (should (eq (lookup-key mouse-trap-mode-map (kbd "<wheel-up>")) nil))
 
       ;; Keymap should be in minor-mode-map-alist
       (should (assq 'mouse-trap-mode minor-mode-map-alist)))))
@@ -68,10 +68,10 @@ the keymap based on the CURRENT major mode's profile."
       (mouse-trap-mode 1)
       (should mouse-trap-mode)
 
-      ;; Should have dashboard profile (primary-click)
+      ;; Should have dashboard profile (scroll+primary)
       (let ((map1 mouse-trap-mode-map))
-        (should (eq (lookup-key map1 (kbd "<mouse-1>")) nil))      ; allowed
-        (should (eq (lookup-key map1 (kbd "<wheel-up>")) 'ignore)) ; blocked
+        (should (eq (lookup-key map1 (kbd "<mouse-1>")) nil))     ; allowed
+        (should (eq (lookup-key map1 (kbd "<wheel-up>")) nil))    ; allowed
 
         ;; Disable
         (mouse-trap-mode -1)
