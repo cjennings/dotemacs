@@ -153,7 +153,7 @@ Already using prescient with vertico. Extend to Corfu after migration.
 
 ** Testing & CI
 
-*** TODO [#B] Write Complete ERT Tests for This Config [13/14]
+*** TODO [#B] Write Complete ERT Tests for This Config [13/13]
 
 Unit and Integration Tests should be added as subtasks below, marked done when complete.
 
@@ -175,9 +175,9 @@ Unit and Integration Tests should be added as subtasks below, marked done when c
 - [X] org-webclipper — 31 tests in 1 file
 - [X] org-noter-config — 30 tests, 2 files (generate-notes + title-to-slug)
 - [X] browser-config — 20 tests in 1 file
-*Lower priority (testable but less critical):*
+*Lower priority:*
 
-- [ ] eww-config — browser helper functions
+All lower-priority modules evaluated and removed — all interactive wrappers or runtime-dependent.
 
 *** TODO [#B] Add project-aware ERT test isolation when switching projects
 
