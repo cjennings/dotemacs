@@ -353,7 +353,6 @@ Changes in progress (modules/auth-config.el):
 - Use external pinentry (pinentry-dmenu) in GUI
 - Requires env-terminal-p from host-environment module
 
-
 * Emacs Resolved
 ** DONE [#B] Validate recording startup
 CLOSED: [2026-02-15 Sun 15:40]
