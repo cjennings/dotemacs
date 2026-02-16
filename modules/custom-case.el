@@ -79,12 +79,15 @@ short prepositions, and all articles are considered minor words."
 	  (while (< (point) end)
 		(setq prev-word-end (point))
 		(skip-chars-forward (concat "^" word-chars) end)
+		(when (>= (point) end)  ;; no word chars remaining
+		  (goto-char end))
 		(let ((word-end
 			   (save-excursion
 				 (skip-chars-forward word-chars end)
 				 (point))))
 
-		  (unless (memq (char-before (point)) chars-separator)
+		  (unless (or (>= (point) end)
+					  (memq (char-before (point)) chars-separator))
 			(let* ((c-orig (char-to-string (char-after (point))))
 				   (c-up (capitalize c-orig)))
 			  (unless (string-equal c-orig c-up)

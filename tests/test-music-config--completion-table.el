@@ -103,7 +103,8 @@
 
 (ert-deftest test-music-config--completion-table-boundary-mixed-case-candidates ()
   "Completion table with mixed-case duplicate candidates."
-  (let* ((candidates '("Rock" "ROCK" "rock"))
+  (let* ((completion-ignore-case nil)
+         (candidates '("Rock" "ROCK" "rock"))
          (table (cj/music--completion-table candidates))
          (result (funcall table "R" nil t)))
     ;; All start with "R", but exact case matters for complete-with-action

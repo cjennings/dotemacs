@@ -153,27 +153,18 @@ Already using prescient with vertico. Extend to Corfu after migration.
 
 ** Testing & CI
 
-*** TODO [#B] Write Complete ERT Tests for This Config [7/31]
+*** TODO [#B] Write Complete ERT Tests for This Config [11/25]
 
 Unit and Integration Tests should be added as subtasks below, marked done when complete.
 
 *High-value test targets (no coverage, testable logic, daily use):*
 
-- [ ] custom-case — pure case conversion functions (upper/lower/title)
-- [ ] custom-datetime — date/timestamp insertion and formatting
-- [ ] host-environment — platform detection (env-macos-p, env-wayland-p, etc.)
+- [X] custom-case — 43 tests, 3 files (title-case-region, upcase-dwim, downcase-dwim)
+- [X] custom-datetime — 10 tests, 1 file (all methods, thin wrappers)
 - [X] hugo-config — draft toggle, slug generation, post template (41 tests, 4 files)
-- [ ] org-capture-config — template building (relates to capture perf optimization)
+- [X] org-capture-config — 22 tests, 2 files (date-prefix + event-content; refactored format-event-headline)
 - [X] modeline-config — custom segment construction (26 tests, 2 files)
-- [ ] external-open — file-type detection and external app dispatch
-- [ ] reconcile-open-repos — dirty repo scanning logic
-- [ ] media-utils — URL download/play logic
-- [ ] org-config — org-mode utility functions
-- [ ] org-export-config — export helper functions
-- [ ] local-repository — package snapshot logic
-- [ ] show-kill-ring — kill ring display logic
-- [ ] system-commands — reboot/logout/system action functions
-- [ ] config-utilities — debug helper functions
+- [X] config-utilities — 11 tests, 1 file (format-build-time)
 
 *Modules with partial coverage (expand existing tests):*
 
