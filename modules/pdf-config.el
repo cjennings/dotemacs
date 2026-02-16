@@ -21,18 +21,29 @@
   (pdf-view-use-unicode-ligther nil)
   ;; Enable HiDPI support, at the cost of memory.
   (pdf-view-use-scaling t)
-  :bind
-  (:map pdf-view-mode-map
-		("M" . pdf-view-midnight-minor-mode)
-		("m" . bookmark-set)
-		("C-=" . pdf-view-enlarge)
-		("C--" . pdf-view-shrink)
-		("C-c l" . org-store-link)
-		("z" . (lambda () (interactive) (cj/open-file-with-command "zathura")))
-		("j" . pdf-view-next-line-or-next-page)
-		("k" . pdf-view-previous-line-or-previous-page))
   :config
   (pdf-tools-install :no-query)) ;; automatically compile on first launch
+
+;; Keybindings via eval-after-load on 'pdf-view (not 'pdf-tools), because
+;; opening a PDF loads pdf-view.el which provides 'pdf-view — it never
+;; loads pdf-tools.el, so use-package :config for pdf-tools won't run.
+(with-eval-after-load 'pdf-view
+  (define-key pdf-view-mode-map "M" #'pdf-view-midnight-minor-mode)
+  (define-key pdf-view-mode-map "m" #'bookmark-set)
+  (define-key pdf-view-mode-map (kbd "C-=") #'pdf-view-enlarge)
+  (define-key pdf-view-mode-map (kbd "C--") #'pdf-view-shrink)
+  (define-key pdf-view-mode-map (kbd "C-c l") #'org-store-link)
+  (define-key pdf-view-mode-map "z" (lambda () (interactive) (cj/open-file-with-command "zathura")))
+  ;; Arrow keys / j,k: scroll within page only (no page change)
+  (define-key pdf-view-mode-map "j" #'image-next-line)
+  (define-key pdf-view-mode-map "k" #'image-previous-line)
+  (define-key pdf-view-mode-map (kbd "<down>") #'image-next-line)
+  (define-key pdf-view-mode-map (kbd "<up>") #'image-previous-line)
+  ;; Page change: C-up/C-down go to top of prev/next page
+  (define-key pdf-view-mode-map (kbd "C-<down>")
+              (lambda () (interactive) (pdf-view-next-page-command) (image-bob)))
+  (define-key pdf-view-mode-map (kbd "C-<up>")
+              (lambda () (interactive) (pdf-view-previous-page-command) (image-eob))))
 
 ;; ------------------------------ PDF View Restore -----------------------------
 
