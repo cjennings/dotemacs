@@ -111,13 +111,6 @@ These may override useful defaults - review and pick better bindings:
 - M-S-y yank-media (was overriding yank-pop)
 - M-S-z undo-kill-buffer (was overriding zap-to-char)
 
-*** TODO [#B] Investigate missing yasnippet configuration
-
-snippets-dir is defined in user-constants.el (points to org-dir/snippets/) and
-yasnippet is configured in prog-general.el, but no custom snippets directory or
-snippet files exist.  Investigate whether snippets should be created (e.g., org
-structure templates for reveal.js headers, blog post front matter, etc.).
-
 *** TODO [#C] Review and implement flycheck modeline customization spec
 
 Add flycheck status (error/warning counts) to custom modeline to make it visible again.
@@ -152,32 +145,6 @@ Complete config already exists in someday-maybe.org. Just needs to be executed.
 Already using prescient with vertico. Extend to Corfu after migration.
 
 ** Testing & CI
-
-*** TODO [#B] Write Complete ERT Tests for This Config [13/13]
-
-Unit and Integration Tests should be added as subtasks below, marked done when complete.
-
-*High-value test targets (no coverage, testable logic, daily use):*
-
-- [X] custom-case — 43 tests, 3 files (title-case-region, upcase-dwim, downcase-dwim)
-- [X] custom-datetime — 10 tests, 1 file (all methods, thin wrappers)
-- [X] hugo-config — draft toggle, slug generation, post template (41 tests, 4 files)
-- [X] org-capture-config — 22 tests, 2 files (date-prefix + event-content; refactored format-event-headline)
-- [X] modeline-config — custom segment construction (26 tests, 2 files)
-- [X] config-utilities — 11 tests, 1 file (format-build-time)
-
-*Modules with partial coverage (expand existing tests):*
-
-- [X] org-agenda-config — 31 tests, 2 files (skip-functions + add-files)
-- [X] org-contacts-config — 40 tests, 2 files (capture-finalize + parse-email)
-- [X] ui-config — 27 tests, 2 files (buffer-status-colors + cursor-color)
-- [X] org-refile-config — 16 tests, 2 files (build-targets + ensure-org-mode)
-- [X] org-webclipper — 31 tests in 1 file
-- [X] org-noter-config — 30 tests, 2 files (generate-notes + title-to-slug)
-- [X] browser-config — 20 tests in 1 file
-*Lower priority:*
-
-All lower-priority modules evaluated and removed — all interactive wrappers or runtime-dependent.
 
 *** TODO [#B] Add project-aware ERT test isolation when switching projects
 
@@ -354,6 +321,22 @@ Changes in progress (modules/auth-config.el):
 - Requires env-terminal-p from host-environment module
 
 * Emacs Resolved
+** DONE [#B] Investigate missing yasnippet configuration
+CLOSED: [2026-02-16 Mon]
+
+Resolved: snippets were in ~/sync/org/snippets/ but directory was empty after
+machine migration. Restored 28 snippets from backup, relocated snippets-dir
+to ~/.emacs.d/snippets/ for source control.
+
+** DONE [#B] Write Complete ERT Tests for This Config [13/13]
+CLOSED: [2026-02-16 Mon]
+
+All 13 modules covered: custom-case (43), custom-datetime (10), hugo-config (41),
+org-capture-config (22), modeline-config (26), config-utilities (11),
+org-agenda-config (31), org-contacts-config (40), ui-config (27),
+org-refile-config (16), org-webclipper (31), org-noter-config (30),
+browser-config (20). 172 test files, all passing.
+
 ** DONE [#B] Validate recording startup
 CLOSED: [2026-02-15 Sun 15:40]
 
