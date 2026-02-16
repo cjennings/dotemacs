@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: visibility - showall
+# key: <showall
+# --
+#+STARTUP: showall

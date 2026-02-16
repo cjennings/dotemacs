@@ -1,0 +1,5 @@
+# key: >elfooter
+# name: elisp-file-footer
+# --
+(provide '`(file-name-base buffer-file-name)`)
+;;; `(buffer-name)` ends here.

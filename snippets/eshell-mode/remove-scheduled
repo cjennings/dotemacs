@@ -1,0 +1,4 @@
+# key: sedrmscheduled
+# name: remove-scheduled
+# --
+sed -i '/^SCHEDULED: </d' %0

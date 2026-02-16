@@ -1,0 +1,5 @@
+# key: <pdtt
+# name: printf_with_date_time_tee
+# --
+printf "$1 @ %s\n" "$(date +'%T')" | tee -a $2
+$0

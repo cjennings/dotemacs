@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: elisp-commentary-and-code
+# key: >elc
+# --
+;;; Commentary:
+
+;;; Code:

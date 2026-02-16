@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: tee_to_logfile
+# key: <ttlf
+# --
+ | tee -a $logfile

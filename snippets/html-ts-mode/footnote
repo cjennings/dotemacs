@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: footnote
+# key:
+# --
+<sup><a href="#fn$1" id="ref$2">[$3]</a></sup>
