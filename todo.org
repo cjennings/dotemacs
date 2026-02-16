@@ -153,7 +153,7 @@ Already using prescient with vertico. Extend to Corfu after migration.
 
 ** Testing & CI
 
-*** TODO [#B] Write Complete ERT Tests for This Config [11/25]
+*** TODO [#B] Write Complete ERT Tests for This Config [13/23]
 
 Unit and Integration Tests should be added as subtasks below, marked done when complete.
 
@@ -168,11 +168,10 @@ Unit and Integration Tests should be added as subtasks below, marked done when c
 
 *Modules with partial coverage (expand existing tests):*
 
-- [ ] org-agenda-config — caching/TTL logic untested (only build-list covered)
+- [X] org-agenda-config — 31 tests, 2 files (skip-functions + add-files)
 - [X] org-contacts-config — 40 tests, 2 files (capture-finalize + parse-email)
-- [ ] prog-shell — expand beyond make-script-executable (9 tests)
 - [X] ui-config — 27 tests, 2 files (buffer-status-colors + cursor-color)
-- [ ] org-refile-config — expand beyond build-targets (9 tests)
+- [X] org-refile-config — 16 tests, 2 files (build-targets + ensure-org-mode)
 - [X] org-webclipper — 31 tests in 1 file
 - [X] org-noter-config — 30 tests, 2 files (generate-notes + title-to-slug)
 - [X] browser-config — 20 tests in 1 file
