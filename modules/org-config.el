@@ -154,24 +154,19 @@
         ("c i" . org-table-insert-column)
         ("c d" . org-table-delete-column))
 
-  ;; backward and forward day are ','  and '.'
-  ;; shift & meta moves by week or year
-  ;; C-. jumps to today
-  ;; original keybindings blocked by windmove keys
-  ;; these are consistent with plain-old calendar mode
+  ;; . jumps to today, < and > move by day, M-, and M-. move by month
+  ;; original shift-arrow keybindings blocked by windmove keys
   (:map org-read-date-minibuffer-local-map
-        (","   . (lambda () (interactive)
-                   (org-eval-in-calendar '(calendar-backward-day 1))))
         ("."   . (lambda () (interactive)
-                   (org-eval-in-calendar '(calendar-forward-day 1))))
+                   (org-eval-in-calendar '(calendar-goto-today))))
         ("<"   . (lambda () (interactive)
-                   (org-eval-in-calendar '(calendar-backward-month 1))))
+                   (org-eval-in-calendar '(calendar-backward-day 1))))
         (">"   . (lambda () (interactive)
-                   (org-eval-in-calendar '(calendar-forward-month 1))))
+                   (org-eval-in-calendar '(calendar-forward-day 1))))
         ("M-," . (lambda () (interactive)
-                   (org-eval-in-calendar '(calendar-backward-year 1))))
+                   (org-eval-in-calendar '(calendar-backward-month 1))))
         ("M-." . (lambda () (interactive)
-                   (org-eval-in-calendar '(calendar-forward-year 1)))))
+                   (org-eval-in-calendar '(calendar-forward-month 1)))))
 
   :init
   ;; windmove's keybindings conflict with org-agenda-todo-nextset/previousset keybindings
