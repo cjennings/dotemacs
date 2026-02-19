@@ -125,6 +125,7 @@
 ;; -------------------------- AI Integration And Tools -------------------------
 
 (require 'ai-config)            ;; LLM integration with GPTel and friends
+(require 'restclient-config)    ;; REST API client for API exploration
 
 (with-eval-after-load 'gptel
   (add-to-list 'load-path "~/.emacs.d/gptel-tools")
