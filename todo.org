@@ -320,6 +320,30 @@ Changes in progress (modules/auth-config.el):
 - Use external pinentry (pinentry-dmenu) in GUI
 - Requires env-terminal-p from host-environment module
 
+** API & Web Services
+
+*** VERIFY [#B] Test and review restclient.el implementation
+
+Test the new REST API client integration in a running Emacs session.
+
+**Keybindings to test:**
+- C-; R n — new scratch *restclient* buffer (should open in restclient-mode)
+- C-; R o — open .rest file (should default to data/ directory)
+- C-; R s — open SkyFi template (should auto-inject API key from authinfo)
+
+**Functional tests:**
+1. Open tutorial-api.rest, run JSONPlaceholder GET (C-c C-c) — verify response inline
+2. Run POST example — verify 201 response with fake ID
+3. Run httpbin header echo — verify custom headers echoed back
+4. Navigate between requests with C-c C-n / C-c C-p
+5. Test jq filtering (requires jq installed): restclient-jq loaded?
+6. Open scratch buffer (C-; R n), type a request manually, execute
+7. which-key shows "REST client" menu under C-; R
+
+**SkyFi key injection (if authinfo entry exists):**
+- C-; R s should replace :skyfi-key = PLACEHOLDER with real key
+- Key should NOT be written to disk (verify file still shows PLACEHOLDER)
+
 * Emacs Resolved
 ** DONE [#B] Investigate missing yasnippet configuration
 CLOSED: [2026-02-16 Mon]
