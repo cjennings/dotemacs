@@ -199,7 +199,7 @@ Builds and caches the keys list lazily if not already cached."
   (with-temp-buffer
 	(insert-file-contents file)
 	(cj/markov-learn cj/lipsum-chain (buffer-string)))
-  (message "Learned from file: %s" file))
+  (message "Lorem-optimum learned from file: %s" file))
 
 (defun cj/lipsum (n)
   "Return N words of lorem ipsum."
@@ -257,7 +257,6 @@ Defaults: MIN=30, MAX=80."
   "Initialize cj-lipsum by learning from `cj/lipsum-default-file`."
   (when (and cj/lipsum-default-file
 			 (file-readable-p cj/lipsum-default-file))
-	(cj/lipsum-reset)
 	(cj/lipsum-learn-file cj/lipsum-default-file)))
 
 (cj/lipsum--init)

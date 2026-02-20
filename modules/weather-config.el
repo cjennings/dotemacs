@@ -17,7 +17,7 @@
   :load-path "/home/cjennings/code/wttrin"
   :preface
   ;; Change this to t to enable debug logging
-  ;; (setq wttrin-debug t)
+  (setq wttrin-debug t)
   :bind
   ("M-S-w" . wttrin)  ;; was M-W, overrides kill-ring-save
   :config
