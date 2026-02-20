@@ -15,6 +15,9 @@
 ;; change profiles or mode mappings and re-enable the mode without reloading
 ;; your Emacs configuration.
 ;;
+;; Keymaps are buffer-local via `emulation-mode-map-alists', so each buffer
+;; gets the correct profile for its major mode independently.
+;;
 ;; Inspired by this blog post from Malabarba
 ;; https://endlessparentheses.com/disable-mouse-only-inside-emacs.html
 ;;
@@ -127,10 +130,18 @@ the mode is toggled, allowing dynamic behavior without reloading config."
                   (define-key map (kbd (format "<%s%s-%d>" pref type button)) #'ignore)))))))))
     map))
 
-;;; Minor Mode Definition
+;;; Buffer-local keymap via emulation-mode-map-alists
 
 (defvar-local mouse-trap-mode-map nil
   "Keymap for `mouse-trap-mode'.  Built dynamically per buffer.")
+
+(defvar-local mouse-trap--emulation-alist nil
+  "Buffer-local alist for mouse-trap keymap lookup.
+Used via `emulation-mode-map-alists' so each buffer gets its own keymap.")
+
+(add-to-list 'emulation-mode-map-alists 'mouse-trap--emulation-alist)
+
+;;; Minor Mode Definition
 
 (defvar mouse-trap--lighter-keymap
   (let ((map (make-sparse-keymap)))
@@ -174,20 +185,17 @@ See `mouse-trap-profiles' for available profiles and
 `mouse-trap-mode-profiles' for mode mappings."
   :lighter nil  ; We use mode-line-misc-info instead
   :group 'convenience
-  ;; Build keymap dynamically when mode is activated
   (if mouse-trap-mode
       (progn
+        ;; Build buffer-local keymap and register via emulation layer
         (setq mouse-trap-mode-map (mouse-trap--build-keymap))
-        ;; Register keymap so Emacs actually uses it for key dispatch
-        (let ((entry (assq 'mouse-trap-mode minor-mode-map-alist)))
-          (if entry
-              (setcdr entry mouse-trap-mode-map)
-            (push (cons 'mouse-trap-mode mouse-trap-mode-map) minor-mode-map-alist)))
+        (setq mouse-trap--emulation-alist
+              `((mouse-trap-mode . ,mouse-trap-mode-map)))
         ;; Add dynamic lighter to mode-line-misc-info (always visible)
         (unless (member '(:eval (mouse-trap--lighter-string)) mode-line-misc-info)
           (push '(:eval (mouse-trap--lighter-string)) mode-line-misc-info)))
-    ;; When disabling, remove keymap from minor-mode-map-alist
-    (setq minor-mode-map-alist (assq-delete-all 'mouse-trap-mode minor-mode-map-alist))
+    ;; When disabling, clear the buffer-local emulation alist and keymap
+    (setq mouse-trap--emulation-alist nil)
     (setq mouse-trap-mode-map nil)
     ;; Note: We keep the lighter in mode-line-misc-info so it shows 🐭 when disabled
     ))
@@ -200,14 +208,29 @@ These modes are excluded from automatic activation via hooks, but you
 can still manually enable mouse-trap-mode in these buffers if desired.")
 
 (defun mouse-trap-maybe-enable ()
-  "Enable `mouse-trap-mode' unless in an excluded mode."
+  "Enable `mouse-trap-mode' unless in an excluded mode.
+If already enabled, rebuild the keymap for the current major mode.
+This handles derived modes whose parent hook fires before `major-mode'
+is set to the child (e.g. special-mode-hook runs before dashboard-mode)."
   (unless (apply #'derived-mode-p mouse-trap-excluded-modes)
-    (mouse-trap-mode 1)))
+    (if mouse-trap-mode
+        ;; Already on — rebuild keymap for the (possibly changed) major mode
+        (progn
+          (setq mouse-trap-mode-map (mouse-trap--build-keymap))
+          (setq mouse-trap--emulation-alist
+                `((mouse-trap-mode . ,mouse-trap-mode-map))))
+      (mouse-trap-mode 1))))
 
 ;; Enable in text, prog, and special modes
 (add-hook 'text-mode-hook #'mouse-trap-maybe-enable)
 (add-hook 'prog-mode-hook #'mouse-trap-maybe-enable)
 (add-hook 'special-mode-hook #'mouse-trap-maybe-enable)
+
+;; Derived modes with custom profiles need their own hooks to rebuild the
+;; keymap after major-mode is set (parent hooks fire before the child sets it).
+(dolist (mode (mapcar #'car mouse-trap-mode-profiles))
+  (let ((hook (intern (format "%s-hook" mode))))
+    (add-hook hook #'mouse-trap-maybe-enable)))
 
 (keymap-global-set "C-c M" #'mouse-trap-mode)
 
