@@ -35,7 +35,7 @@ Dashboard uses scroll+primary profile which allows scrolling and mouse-1."
       (should (eq (lookup-key mouse-trap-mode-map (kbd "<wheel-up>")) nil))
 
       ;; Keymap should be in minor-mode-map-alist
-      (should (assq 'mouse-trap-mode minor-mode-map-alist)))))
+      (should (assq 'mouse-trap-mode mouse-trap--emulation-alist)))))
 
 (ert-deftest test-integration-lighter-click-disables-mode ()
   "Test clicking lighter when mode is enabled disables it and removes keymap."
@@ -43,7 +43,7 @@ Dashboard uses scroll+primary profile which allows scrolling and mouse-1."
     (emacs-lisp-mode)
     (mouse-trap-mode 1)
     (should mouse-trap-mode)
-    (should (assq 'mouse-trap-mode minor-mode-map-alist))
+    (should (assq 'mouse-trap-mode mouse-trap--emulation-alist))
 
     ;; Simulate clicking lighter to disable
     (mouse-trap-mode -1)
@@ -52,7 +52,7 @@ Dashboard uses scroll+primary profile which allows scrolling and mouse-1."
     (should-not mouse-trap-mode)
 
     ;; Keymap should be removed from minor-mode-map-alist
-    (should-not (assq 'mouse-trap-mode minor-mode-map-alist))))
+    (should-not (assq 'mouse-trap-mode mouse-trap--emulation-alist))))
 
 (ert-deftest test-integration-lighter-click-toggle-updates-keymap ()
   "Test toggling mode via lighter click rebuilds keymap for current mode.
@@ -142,12 +142,12 @@ Auto-enable is blocked, but manual toggle should still work."
     ;; But manual toggle should work
     (mouse-trap-mode 1)
     (should mouse-trap-mode)
-    (should (assq 'mouse-trap-mode minor-mode-map-alist))
+    (should (assq 'mouse-trap-mode mouse-trap--emulation-alist))
 
     ;; Toggle off
     (mouse-trap-mode -1)
     (should-not mouse-trap-mode)
-    (should-not (assq 'mouse-trap-mode minor-mode-map-alist))))
+    (should-not (assq 'mouse-trap-mode mouse-trap--emulation-alist))))
 
 (ert-deftest test-integration-lighter-click-multiple-rapid-toggles ()
   "Test rapid clicking (multiple toggles) is stable and doesn't corrupt state."
@@ -162,12 +162,12 @@ Auto-enable is blocked, but manual toggle should still work."
 
     ;; Should end in disabled state (even number of toggles)
     (should-not mouse-trap-mode)
-    (should-not (assq 'mouse-trap-mode minor-mode-map-alist))
+    (should-not (assq 'mouse-trap-mode mouse-trap--emulation-alist))
 
     ;; Enable one more time to end enabled
     (mouse-trap-mode 1)
     (should mouse-trap-mode)
-    (should (assq 'mouse-trap-mode minor-mode-map-alist))
+    (should (assq 'mouse-trap-mode mouse-trap--emulation-alist))
     (should (keymapp mouse-trap-mode-map))))
 
 (provide 'test-integration-mousetrap-mode-lighter-click)
