@@ -142,6 +142,12 @@ Stored in .emacs.d/data/ so each machine syncs independently from Proton Calenda
   "The location of the org file containing DeepSat Calendar information.
 Stored in .emacs.d/data/ so each machine syncs independently from Google Calendar.")
 
+;; Ensure calendar data files exist so org-agenda-list doesn't hang
+;; prompting for missing files (calendar-sync populates them on first sync)
+(dolist (f (list gcal-file pcal-file dcal-file))
+  (unless (file-exists-p f)
+    (make-empty-file f t)))
+
 (defvar reference-file (expand-file-name "reference.org" org-dir)
   "The location of the org file containing reference information.")
 
