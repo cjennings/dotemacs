@@ -241,6 +241,7 @@ Signals user-error if missing or deleted."
 Directories (trailing /) are added recursively; files added singly."
   (interactive)
   (let* ((completion-ignore-case t)
+         (orderless-smart-case nil)
          (candidates (cj/music--collect-entries-recursive cj/music-root))
          (choice-rel (completing-read "Choose music file or directory: "
                                       (cj/music--completion-table candidates)
