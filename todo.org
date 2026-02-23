@@ -148,13 +148,13 @@ Already using prescient with vertico. Extend to Corfu after migration.
 
 *** TODO [#B] Add project-aware ERT test isolation when switching projects
 
-When switching between elisp projects (e.g., emacs.d to chime.el), previously loaded
+When switching between elisp projects (e.g., emacs.d to Chime), previously loaded
 ERT tests remain in memory causing confusion and wrong tests to run.
 
 **Problem:**
 - ERT tests globally registered in Emacs session
 - `M-x ert RET t RET` runs ALL loaded tests from ALL projects
-- Can accidentally run emacs.d tests when working on chime.el
+- Can accidentally run emacs.d tests when working on Chime
 - Current workaround: restart Emacs (loses session state)
 
 **Solution:**

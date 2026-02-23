@@ -98,7 +98,7 @@
 
 ;; --------------------------------- Elisp Lint --------------------------------
 ;; Comprehensive linting for Emacs Lisp code (indentation, whitespace, etc.)
-;; Used by chime.el 'make lint' target for code quality checks
+;; Used by Chime 'make lint' target for code quality checks
 
 (use-package elisp-lint
   :ensure t

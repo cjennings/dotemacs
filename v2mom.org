@@ -424,7 +424,7 @@ Chime was throwing to a catch block that doesn't exist.
 Location: chime package - chime-check() function at line 1540
 Fix: Changed defun to cl-defun to provide implicit catch block for cl-return-from.
 
-Fixed in ~/code/chime.el/chime.el:1540
+Fixed in ~/code/chime/chime.el:1540
 
 Added regression test: test-integration-startup-early-return-on-validation-failure
 Created Makefile with test targets (unit, integration, all, by-file, by-name)
@@ -1196,13 +1196,13 @@ Reusable profiling infrastructure for any future performance work.
 ** TODO [#C] Evaluate Buttercup for integration tests
 ** TODO [#B] Add project-aware ERT test isolation when switching projects
 
-When switching between elisp projects (e.g., emacs.d to chime.el), previously loaded
+When switching between elisp projects (e.g., emacs.d to Chime), previously loaded
 ERT tests remain in memory causing confusion and wrong tests to run.
 
 **Problem:**
 - ERT tests globally registered in Emacs session
 - `M-x ert RET t RET` runs ALL loaded tests from ALL projects
-- Can accidentally run emacs.d tests when working on chime.el
+- Can accidentally run emacs.d tests when working on Chime
 - Current workaround: restart Emacs (loses session state)
 
 **Solution:**
