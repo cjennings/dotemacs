@@ -300,7 +300,7 @@ Start with Option B (wrap results), migrate to Option A (hooks) once stable.
 ** Cross-Project Test Isolation
 
 *** The Problem
-When switching between Emacs Lisp projects (e.g., ~/.emacs.d → chime.el):
+When switching between Emacs Lisp projects (e.g., ~/.emacs.d → Chime):
 - ERT tests globally registered in Emacs session
 - ~M-x ert RET t RET~ runs ALL loaded tests from ALL projects
 - Can accidentally run wrong project's tests

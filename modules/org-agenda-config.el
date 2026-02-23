@@ -331,10 +331,10 @@ This allows a line to show in an agenda without being scheduled or a deadline."
 ;; Install CHIME from GitHub using use-package :vc (Emacs 29+)
 (use-package chime
   :demand t
-  ;; :vc (:url "https://github.com/cjennings/chime.el" :rev :newest) ;; using latest on github
-  :after alert  ; Removed org-agenda - chime.el requires it internally
+  ;; :vc (:url "https://github.com/cjennings/chime" :rev :newest) ;; using latest on github
+  :after alert  ; Removed org-agenda - Chime requires it internally
   :ensure nil ;; using local version
-  :load-path "~/code/chime.el"
+  :load-path "~/code/chime"
   :init
   ;; Initialize org-agenda-files with base files before chime loads
   ;; The full list will be built asynchronously later

@@ -737,7 +737,7 @@ When refactoring many test files (e.g., removing hardcoded timestamps):
   - Don't force work where it doesn't apply
   - Project can complete before all files touched
 
-**** Real-World Example: chime.el Timestamp Refactoring
+**** Real-World Example: Chime Timestamp Refactoring
 Project scope: 23 test files, 339 tests total
 - 16 files needed timestamp refactoring (251 tests)
 - 7 files had no timestamp dependencies (88 tests)
