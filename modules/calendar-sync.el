@@ -16,7 +16,7 @@
 ;; - Timer-based automatic sync (every 60 minutes, configurable)
 ;; - Self-contained in .emacs.d (no cron, portable across machines)
 ;; - Read-only (can't corrupt source calendars)
-;; - Works with chime.el for event notifications
+;; - Works with Chime for event notifications
 ;;
 ;; Recurring Events (RRULE):
 ;;
