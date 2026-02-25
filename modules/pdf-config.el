@@ -21,13 +21,22 @@
   (pdf-view-use-unicode-ligther nil)
   ;; Enable HiDPI support, at the cost of memory.
   (pdf-view-use-scaling t)
-  :config
-  (pdf-tools-install :no-query)) ;; automatically compile on first launch
+  )
 
 ;; Keybindings via eval-after-load on 'pdf-view (not 'pdf-tools), because
 ;; opening a PDF loads pdf-view.el which provides 'pdf-view — it never
 ;; loads pdf-tools.el, so use-package :config for pdf-tools won't run.
+;; pdf-tools-install must run when pdf-view loads (not in use-package :config
+;; for pdf-tools, which never triggers — see comment above).  It starts the
+;; epdfinfo rendering server and is a no-op when already set up.
 (with-eval-after-load 'pdf-view
+  (pdf-tools-install :no-query)
+  ;; Revert any PDF buffers that opened before the server was ready,
+  ;; so they re-render instead of showing raw binary.
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (when (eq major-mode 'pdf-view-mode)
+        (revert-buffer nil t))))
   (define-key pdf-view-mode-map "M" #'pdf-view-midnight-minor-mode)
   (define-key pdf-view-mode-map "m" #'bookmark-set)
   (define-key pdf-view-mode-map (kbd "C-=") #'pdf-view-enlarge)
