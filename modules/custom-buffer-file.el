@@ -32,6 +32,7 @@
 
 ;; mm-decode for email viewing (mm-handle-type is a macro, needs early require)
 (require 'mm-decode)
+(require 'external-open) ;; for cj/xdg-open, cj/open-this-file-with
 
 ;; cj/kill-buffer-and-window defined in undead-buffers.el
 (declare-function cj/kill-buffer-and-window "undead-buffers")
@@ -446,7 +447,9 @@ Signals an error if:
   "S" #'write-file ;; save as
   "g" #'revert-buffer
   "w" #'cj/view-buffer-in-eww
-  "e" #'cj/view-email-in-buffer)
+  "e" #'cj/view-email-in-buffer
+  "o" #'cj/xdg-open
+  "O" #'cj/open-this-file-with)
 (when (boundp 'cj/custom-keymap)
   (keymap-set cj/custom-keymap "b" cj/buffer-and-file-map))
 
@@ -473,7 +476,9 @@ Signals an error if:
     "C-; b S" "save as"
     "C-; b g" "revert buffer"
     "C-; b w" "view in EWW"
-    "C-; b e" "view email"))
+    "C-; b e" "view email"
+    "C-; b o" "open with default app"
+    "C-; b O" "open with program..."))
 
 
 (provide 'custom-buffer-file)

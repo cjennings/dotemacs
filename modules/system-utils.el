@@ -106,7 +106,11 @@ Signals an error if the host is unsupported."
   "Open FILENAME (or the file at point) with the OS default handler.
 Logs output and exit code to buffer *external-open.log*."
   (interactive)
-  (let* ((file  (expand-file-name (or filename (dired-file-name-at-point))))
+  (let* ((file  (expand-file-name
+                (or filename
+                    buffer-file-name
+                    (and (derived-mode-p 'dired-mode) (dired-file-name-at-point))
+                    (user-error "No file associated with this buffer"))))
          (cmd   (cj/identify-external-open-command))
          (logbuf (get-buffer-create "*external-open.log*")))
     (with-current-buffer logbuf
