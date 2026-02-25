@@ -90,7 +90,6 @@
   :group 'external-open)
 
 ;; ------------------------------- Open File With ------------------------------
-;; TASK: Add this to buffer custom functions
 
 (defun cj/open-this-file-with (command)
   "Open this buffer's file with COMMAND, detached from Emacs."
@@ -109,12 +108,6 @@
 			   command (shell-quote-argument file))
 	   nil 0)))))
 
-(keymap-global-set "C-c x o" #'cj/open-this-file-with)
-
-(with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements
-    "C-c x" "external open menu"
-    "C-c x o" "open file with"))
 
 ;; -------------------- Open Files With Default File Handler -------------------
 
