@@ -2,8 +2,10 @@
 
 ;;; Commentary:
 ;; Unit tests for cj/recording-quick-setup function.
-;; The quick setup shows available mics and auto-selects the default
-;; sink's monitor for system audio capture.
+;; The quick setup is a two-step flow:
+;;   Step 1: Pick a microphone
+;;   Step 2: Pick an audio output (sink) with active/inactive indicators
+;; The chosen sink's .monitor source is set as the system audio device.
 
 ;;; Code:
 
@@ -34,26 +36,32 @@
   "Test that selecting a mic sets cj/recording-mic-device."
   (test-quick-setup-setup)
   (unwind-protect
-      (cl-letf (((symbol-function 'cj/recording--get-available-mics)
-                 (lambda () '(("jabra-input" . "Jabra SPEAK 510 Mono")
-                              ("builtin-input" . "Built-in Analog"))))
-                ((symbol-function 'cj/recording--get-default-sink-monitor)
-                 (lambda () "jds-labs.monitor"))
-                ((symbol-function 'completing-read)
-                 (lambda (_prompt table &rest _args)
-                   (car (all-completions "" table)))))
-        (cj/recording-quick-setup)
-        (should (equal "jabra-input" cj/recording-mic-device)))
+      (let ((call-count 0))
+        (cl-letf (((symbol-function 'cj/recording--get-available-mics)
+                   (lambda () '(("jabra-input" . "Jabra SPEAK 510 Mono")
+                                ("builtin-input" . "Built-in Analog"))))
+                  ((symbol-function 'cj/recording--get-available-sinks)
+                   (lambda () '(("jds-labs" . "JDS Labs Element IV"))))
+                  ((symbol-function 'cj/recording--sink-active-p)
+                   (lambda (_name) nil))
+                  ((symbol-function 'completing-read)
+                   (lambda (_prompt table &rest _args)
+                     (setq call-count (1+ call-count))
+                     (car (all-completions "" table)))))
+          (cj/recording-quick-setup)
+          (should (equal "jabra-input" cj/recording-mic-device))))
     (test-quick-setup-teardown)))
 
-(ert-deftest test-video-audio-recording-quick-setup-normal-sets-system-to-default-monitor ()
-  "Test that system device is set to the default sink's monitor."
+(ert-deftest test-video-audio-recording-quick-setup-normal-sets-system-to-sink-monitor ()
+  "Test that system device is set to the chosen sink's .monitor."
   (test-quick-setup-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'cj/recording--get-available-mics)
                  (lambda () '(("jabra-input" . "Jabra SPEAK 510 Mono"))))
-                ((symbol-function 'cj/recording--get-default-sink-monitor)
-                 (lambda () "alsa_output.usb-JDS_Labs-00.analog-stereo.monitor"))
+                ((symbol-function 'cj/recording--get-available-sinks)
+                 (lambda () '(("alsa_output.usb-JDS_Labs-00.analog-stereo" . "JDS Labs Element IV"))))
+                ((symbol-function 'cj/recording--sink-active-p)
+                 (lambda (_name) nil))
                 ((symbol-function 'completing-read)
                  (lambda (_prompt table &rest _args)
                    (car (all-completions "" table)))))
@@ -62,26 +70,78 @@
                        cj/recording-system-device)))
     (test-quick-setup-teardown)))
 
-(ert-deftest test-video-audio-recording-quick-setup-normal-presents-descriptions ()
-  "Test that completing-read receives friendly descriptions and Cancel option."
+(ert-deftest test-video-audio-recording-quick-setup-normal-two-completing-reads ()
+  "Test that completing-read is called twice (mic + sink)."
   (test-quick-setup-setup)
   (unwind-protect
-      (let ((presented-candidates nil))
+      (let ((call-count 0))
         (cl-letf (((symbol-function 'cj/recording--get-available-mics)
-                   (lambda () '(("raw-device-1" . "Jabra SPEAK 510 Mono")
-                                ("raw-device-2" . "Built-in Analog"))))
-                  ((symbol-function 'cj/recording--get-default-sink-monitor)
-                   (lambda () "default.monitor"))
+                   (lambda () '(("mic-1" . "Mic One"))))
+                  ((symbol-function 'cj/recording--get-available-sinks)
+                   (lambda () '(("sink-1" . "Sink One"))))
+                  ((symbol-function 'cj/recording--sink-active-p)
+                   (lambda (_name) nil))
                   ((symbol-function 'completing-read)
                    (lambda (_prompt table &rest _args)
-                     (setq presented-candidates (all-completions "" table))
-                     (car presented-candidates))))
+                     (setq call-count (1+ call-count))
+                     (car (all-completions "" table)))))
           (cj/recording-quick-setup)
-          ;; Candidates should have friendly descriptions
-          (should (member "Jabra SPEAK 510 Mono" presented-candidates))
-          (should (member "Built-in Analog" presented-candidates))
-          ;; Cancel option should be present
-          (should (member "Cancel" presented-candidates))))
+          (should (= 2 call-count))))
+    (test-quick-setup-teardown)))
+
+(ert-deftest test-video-audio-recording-quick-setup-normal-active-sink-indicator ()
+  "Test that active sinks get the active icon in their label."
+  (test-quick-setup-setup)
+  (unwind-protect
+      (let ((sink-candidates nil)
+            (call-count 0))
+        (cl-letf (((symbol-function 'cj/recording--get-available-mics)
+                   (lambda () '(("mic-1" . "Mic One"))))
+                  ((symbol-function 'cj/recording--get-available-sinks)
+                   (lambda () '(("active-sink" . "Active Sink")
+                                ("inactive-sink" . "Inactive Sink"))))
+                  ((symbol-function 'cj/recording--sink-active-p)
+                   (lambda (name) (equal name "active-sink")))
+                  ((symbol-function 'completing-read)
+                   (lambda (_prompt table &rest _args)
+                     (setq call-count (1+ call-count))
+                     (let ((candidates (all-completions "" table)))
+                       (when (= call-count 2)
+                         (setq sink-candidates candidates))
+                       (car candidates)))))
+          (cj/recording-quick-setup)
+          ;; Active sink should have 󰕾 icon (substring-no-properties strips faces but keeps text)
+          (should (cl-some (lambda (c) (and (string-match-p "Active Sink" c)
+                                            (string-match-p "󰕾" c)))
+                           sink-candidates))
+          ;; Inactive sink should have 󰖁 icon
+          (should (cl-some (lambda (c) (and (string-match-p "Inactive Sink" c)
+                                            (string-match-p "󰖁" c)))
+                           sink-candidates))))
+    (test-quick-setup-teardown)))
+
+(ert-deftest test-video-audio-recording-quick-setup-normal-active-sorted-first ()
+  "Test that active sinks are sorted to the top of the list."
+  (test-quick-setup-setup)
+  (unwind-protect
+      (let ((sink-candidates nil))
+        (cl-letf (((symbol-function 'cj/recording--get-available-mics)
+                   (lambda () '(("mic-1" . "Mic One"))))
+                  ((symbol-function 'cj/recording--get-available-sinks)
+                   (lambda () '(("inactive-sink" . "Inactive Sink")
+                                ("active-sink" . "Active Sink"))))
+                  ((symbol-function 'cj/recording--sink-active-p)
+                   (lambda (name) (equal name "active-sink")))
+                  ((symbol-function 'completing-read)
+                   (lambda (_prompt table &rest _args)
+                     (let ((candidates (all-completions "" table)))
+                       (when (cl-some (lambda (c) (string-match-p "Sink" c)) candidates)
+                         (setq sink-candidates candidates))
+                       (car candidates)))))
+          (cj/recording-quick-setup)
+          ;; First non-Cancel candidate should be the active sink
+          (let ((first-sink (car sink-candidates)))
+            (should (string-match-p "Active Sink" first-sink)))))
     (test-quick-setup-teardown)))
 
 (ert-deftest test-video-audio-recording-quick-setup-normal-confirmation-message ()
@@ -91,8 +151,10 @@
       (let ((message-text nil))
         (cl-letf (((symbol-function 'cj/recording--get-available-mics)
                    (lambda () '(("jabra-input" . "Jabra SPEAK 510 Mono"))))
-                  ((symbol-function 'cj/recording--get-default-sink-monitor)
-                   (lambda () "jds-labs.analog-stereo.monitor"))
+                  ((symbol-function 'cj/recording--get-available-sinks)
+                   (lambda () '(("jds-labs.analog-stereo" . "JDS Labs Element IV"))))
+                  ((symbol-function 'cj/recording--sink-active-p)
+                   (lambda (_name) nil))
                   ((symbol-function 'completing-read)
                    (lambda (_prompt table &rest _args)
                      (car (all-completions "" table))))
@@ -101,8 +163,7 @@
                      (setq message-text (apply #'format fmt args)))))
           (cj/recording-quick-setup)
           (should (string-match-p "Recording ready" message-text))
-          (should (string-match-p "Jabra SPEAK 510 Mono" message-text))
-          (should (string-match-p "default output monitor" message-text))))
+          (should (string-match-p ".monitor" message-text))))
     (test-quick-setup-teardown)))
 
 ;;; Boundary Cases
@@ -111,30 +172,34 @@
   "Test that with only one mic, it still presents selection."
   (test-quick-setup-setup)
   (unwind-protect
-      (let ((read-called nil))
+      (let ((read-called 0))
         (cl-letf (((symbol-function 'cj/recording--get-available-mics)
                    (lambda () '(("sole-mic" . "Only Mic Available"))))
-                  ((symbol-function 'cj/recording--get-default-sink-monitor)
-                   (lambda () "default.monitor"))
+                  ((symbol-function 'cj/recording--get-available-sinks)
+                   (lambda () '(("sole-sink" . "Only Sink"))))
+                  ((symbol-function 'cj/recording--sink-active-p)
+                   (lambda (_name) nil))
                   ((symbol-function 'completing-read)
                    (lambda (_prompt table &rest _args)
-                     (setq read-called t)
+                     (setq read-called (1+ read-called))
                      (car (all-completions "" table)))))
           (cj/recording-quick-setup)
-          (should read-called)
+          (should (= 2 read-called))
           (should (equal "sole-mic" cj/recording-mic-device))))
     (test-quick-setup-teardown)))
 
 ;;; Error Cases
 
-(ert-deftest test-video-audio-recording-quick-setup-error-cancel-selected ()
-  "Test that selecting Cancel signals user-error and does not set devices."
+(ert-deftest test-video-audio-recording-quick-setup-error-cancel-mic ()
+  "Test that cancelling mic selection signals user-error and does not set devices."
   (test-quick-setup-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'cj/recording--get-available-mics)
                  (lambda () '(("jabra-input" . "Jabra SPEAK 510 Mono"))))
-                ((symbol-function 'cj/recording--get-default-sink-monitor)
-                 (lambda () "default.monitor"))
+                ((symbol-function 'cj/recording--get-available-sinks)
+                 (lambda () '(("sink-1" . "Sink One"))))
+                ((symbol-function 'cj/recording--sink-active-p)
+                 (lambda (_name) nil))
                 ((symbol-function 'completing-read)
                  (lambda (_prompt _choices &rest _args)
                    "Cancel")))
@@ -143,14 +208,35 @@
         (should (null cj/recording-system-device)))
     (test-quick-setup-teardown)))
 
+(ert-deftest test-video-audio-recording-quick-setup-error-cancel-sink ()
+  "Test that cancelling sink selection signals user-error."
+  (test-quick-setup-setup)
+  (unwind-protect
+      (let ((call-count 0))
+        (cl-letf (((symbol-function 'cj/recording--get-available-mics)
+                   (lambda () '(("jabra-input" . "Jabra SPEAK 510 Mono"))))
+                  ((symbol-function 'cj/recording--get-available-sinks)
+                   (lambda () '(("sink-1" . "Sink One"))))
+                  ((symbol-function 'cj/recording--sink-active-p)
+                   (lambda (_name) nil))
+                  ((symbol-function 'completing-read)
+                   (lambda (_prompt table &rest _args)
+                     (setq call-count (1+ call-count))
+                     (if (= call-count 1)
+                         ;; First call: select mic
+                         (car (all-completions "" table))
+                       ;; Second call: cancel sink
+                       "Cancel"))))
+          (should-error (cj/recording-quick-setup) :type 'user-error)
+          (should (null cj/recording-system-device))))
+    (test-quick-setup-teardown)))
+
 (ert-deftest test-video-audio-recording-quick-setup-error-no-mics ()
   "Test that function signals error when no mics are found."
   (test-quick-setup-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'cj/recording--get-available-mics)
-                 (lambda () nil))
-                ((symbol-function 'cj/recording--get-default-sink-monitor)
-                 (lambda () "default.monitor")))
+                 (lambda () nil)))
         (should-error (cj/recording-quick-setup) :type 'user-error))
     (test-quick-setup-teardown)))
 
@@ -159,9 +245,7 @@
   (test-quick-setup-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'cj/recording--get-available-mics)
-                 (lambda () nil))
-                ((symbol-function 'cj/recording--get-default-sink-monitor)
-                 (lambda () "default.monitor")))
+                 (lambda () nil)))
         (condition-case err
             (cj/recording-quick-setup)
           (user-error

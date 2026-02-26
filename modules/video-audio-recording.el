@@ -29,11 +29,12 @@
 ;;
 ;; Quick Start
 ;; ===========
-;; 1. Press C-; r a (start/stop audio recording)
-;; 2. First time: you'll be prompted for device setup
-;; 3. Choose "Bluetooth Headset" (or your device)
-;; 4. Recording starts - you'll see 󰍬 in your modeline
-;; 5. Press C-; r a again to stop (🔴 disappears)
+;; 1. Press C-; r s to run quick setup
+;; 2. Pick a microphone from the list
+;; 3. Pick an audio output — 󰕾 marks sinks with active audio
+;; 4. Press C-; r a to start/stop audio recording
+;; 5. Recording starts - you'll see 󰍬 in your modeline
+;; 6. Press C-; r a again to stop (🔴 disappears)
 ;;
 ;; Device Setup (First Time Only)
 ;; ===============================
@@ -43,8 +44,9 @@
 ;; Manual device selection:
 ;;
 ;; C-; r s (cj/recording-quick-setup) - RECOMMENDED
-;;   Quick setup: pick a mic, system audio is auto-detected.
-;;   Works for any recording scenario.
+;;   Two-step setup: pick a mic, then pick an audio output (sink).
+;;   Sinks show 󰕾/󰖁 icons indicating active/inactive audio streams.
+;;   Active sinks are sorted to the top for easy selection.
 ;;
 ;; C-; r S (cj/recording-select-devices) - ADVANCED
 ;;   Manual selection: choose mic and monitor separately.
@@ -315,6 +317,63 @@ than the raw device name."
           (push (cons name (or desc name)) mics))))
     (nreverse mics)))
 
+(defun cj/recording--parse-pactl-sinks-verbose (output)
+  "Parse verbose `pactl list sinks' OUTPUT into structured list.
+Returns list of (name description mute state) tuples.
+OUTPUT should be the full output of `pactl list sinks'."
+  (let ((sinks nil)
+        (current-name nil)
+        (current-desc nil)
+        (current-mute nil)
+        (current-state nil))
+    (dolist (line (split-string output "\n"))
+      (cond
+       ((string-match "^Sink #" line)
+        ;; Save previous sink if complete
+        (when current-name
+          (push (list current-name current-desc current-mute current-state)
+                sinks))
+        (setq current-name nil current-desc nil
+              current-mute nil current-state nil))
+       ((string-match "^\\s-+Name:\\s-+\\(.+\\)" line)
+        (setq current-name (match-string 1 line)))
+       ((string-match "^\\s-+Description:\\s-+\\(.+\\)" line)
+        (setq current-desc (match-string 1 line)))
+       ((string-match "^\\s-+Mute:\\s-+\\(.+\\)" line)
+        (setq current-mute (match-string 1 line)))
+       ((string-match "^\\s-+State:\\s-+\\(.+\\)" line)
+        (setq current-state (match-string 1 line)))))
+    ;; Don't forget the last sink
+    (when current-name
+      (push (list current-name current-desc current-mute current-state)
+            sinks))
+    (nreverse sinks)))
+
+(defun cj/recording--get-available-sinks ()
+  "Return available audio sinks as (name . description) alist.
+Filters out muted sinks.  Uses the friendly description from
+PulseAudio (e.g. \"JDS Labs Element IV Analog Stereo\")."
+  (let* ((output (shell-command-to-string "pactl list sinks 2>/dev/null"))
+         (sinks (cj/recording--parse-pactl-sinks-verbose output))
+         (result nil))
+    (dolist (sink sinks)
+      (let ((name (nth 0 sink))
+            (desc (nth 1 sink))
+            (mute (nth 2 sink)))
+        (when (not (equal mute "yes"))
+          (push (cons name (or desc name)) result))))
+    (nreverse result)))
+
+(defun cj/recording--sink-active-p (sink-name)
+  "Return non-nil if SINK-NAME has active audio streams.
+Resolves the sink name to its index via `pactl list sinks short',
+then checks `pactl list sink-inputs' for connected streams."
+  (let* ((sinks-output (shell-command-to-string "pactl list sinks short 2>/dev/null"))
+         (sink-index (cj/recording--get-sink-index sink-name sinks-output))
+         (sink-inputs (shell-command-to-string "pactl list sink-inputs 2>/dev/null")))
+    (and sink-index
+         (cj/recording--sink-has-active-audio-p sink-index sink-inputs))))
+
 ;;; ============================================================
 ;;; Device Selection UI
 ;;; ============================================================
@@ -458,38 +517,69 @@ since recording needs both to capture your voice and system audio."
     (nreverse result)))
 
 (defun cj/recording-quick-setup ()
-  "Quick device setup for recording.
-Shows available microphones and lets you pick one.  System audio is
-automatically captured from the default audio output's monitor source,
-so it records whatever you hear (music, calls, system sounds)
-regardless of which output device is active.
+  "Quick device setup for recording — two-step mic + sink selection.
+Step 1: Pick a microphone from available unmuted sources.
+Step 2: Pick an audio output (sink) to monitor.  Sinks with active
+audio streams are marked with 󰕾 (green) and sorted to the top;
+inactive sinks show 󰖁 (dim).  The chosen sink's .monitor source
+is set as the system audio device.
 
 This approach is portable across systems — plug in a new mic, run this
 command, and it appears in the list.  No hardware-specific configuration
 needed."
   (interactive)
+  ;; Step 1: Mic selection
   (let* ((mics (cj/recording--get-available-mics))
-         (monitor (cj/recording--get-default-sink-monitor))
-         (choices (mapcar (lambda (mic)
-                            (cons (cdr mic) (car mic)))
-                          mics)))
-    (if (null choices)
+         (mic-choices (mapcar (lambda (mic)
+                                (cons (cdr mic) (car mic)))
+                              mics)))
+    (if (null mic-choices)
         (user-error "No microphones found.  Is a mic plugged in and unmuted?")
-      (let* ((choices-with-cancel (append choices '(("Cancel" . nil))))
-             (choice (completing-read "Select microphone: "
-                                     (lambda (string pred action)
-                                       (if (eq action 'metadata)
-                                           '(metadata (display-sort-function . identity))
-                                         (complete-with-action action choices-with-cancel string pred)))
-                                     nil t))
-             (mic-device (cdr (assoc choice choices-with-cancel))))
+      (let* ((mic-choices-with-cancel (append mic-choices '(("Cancel" . nil))))
+             (mic-choice (completing-read "Select microphone: "
+                                         (lambda (string pred action)
+                                           (if (eq action 'metadata)
+                                               '(metadata (display-sort-function . identity))
+                                             (complete-with-action action mic-choices-with-cancel string pred)))
+                                         nil t))
+             (mic-device (cdr (assoc mic-choice mic-choices-with-cancel))))
         (if (null mic-device)
             (user-error "Device setup cancelled")
-          (setq cj/recording-mic-device mic-device)
-          (setq cj/recording-system-device monitor)
-          (message "Recording ready!\n  Mic: %s\n  System audio: %s (default output monitor)"
-                   choice
-                   (file-name-nondirectory monitor)))))))
+          ;; Step 2: Sink selection
+          (let* ((sinks (cj/recording--get-available-sinks))
+                 (sink-labels
+                  (mapcar
+                   (lambda (sink)
+                     (let* ((name (car sink))
+                            (desc (cdr sink))
+                            (active (cj/recording--sink-active-p name))
+                            (icon (if active "󰕾" "󰖁"))
+                            (face (if active '(:foreground "#50fa7b") '(:foreground "#6272a4")))
+                            (label (concat (propertize icon 'face face) " " desc)))
+                       (list label name active)))
+                   sinks))
+                 ;; Sort active sinks to top
+                 (sorted-labels (sort sink-labels
+                                      (lambda (a b)
+                                        (and (nth 2 a) (not (nth 2 b))))))
+                 (sink-alist (mapcar (lambda (entry)
+                                      (cons (nth 0 entry) (nth 1 entry)))
+                                    sorted-labels))
+                 (sink-alist-with-cancel (append sink-alist '(("Cancel" . nil))))
+                 (sink-choice (completing-read "Select audio output to monitor: "
+                                              (lambda (string pred action)
+                                                (if (eq action 'metadata)
+                                                    '(metadata (display-sort-function . identity))
+                                                  (complete-with-action action sink-alist-with-cancel string pred)))
+                                              nil t))
+                 (sink-device (cdr (assoc sink-choice sink-alist-with-cancel))))
+            (if (null sink-device)
+                (user-error "Device setup cancelled")
+              (setq cj/recording-mic-device mic-device)
+              (setq cj/recording-system-device (concat sink-device ".monitor"))
+              (message "Recording ready!\n  Mic: %s\n  System audio: %s.monitor"
+                       mic-choice
+                       (file-name-nondirectory sink-device)))))))))
 
 ;;; ============================================================
 ;;; Device Testing
@@ -659,13 +749,11 @@ is currently playing."
              (has-audio (and sink-index
                              (cj/recording--sink-has-active-audio-p sink-index sink-inputs))))
         (unless has-audio
-          (message "Warning: No audio detected on %s — other participants may not be recorded"
+          (message "Warning: No audio connected to %s. Run C-; r s to check devices"
                    sink-name)
           (cj/log-silently
-           (concat "No audio playing through %s.\n"
-                   "If you're in a meeting, the other participants may not be recorded.\n"
-                   "  C-; r w  show which device your call is using\n"
-                   "  C-; r s  switch devices")
+           (concat "No audio connected to %s. "
+                   "Run C-; r s to see active streams and switch devices")
            sink-name))))))
 
 ;;; ============================================================
