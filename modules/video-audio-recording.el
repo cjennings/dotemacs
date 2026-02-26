@@ -58,6 +58,18 @@
 ;;   Use this DURING a phone call to see if the call audio is going through
 ;;   the device you think it is. Helps diagnose "missing one side" issues.
 ;;
+;; Pre-Recording Validation
+;; ========================
+;; Every time you start a recording, the system audio device is
+;; validated automatically:
+;;   1. If the configured monitor device no longer exists, it's
+;;      auto-updated to the current default sink's monitor.
+;;   2. If the default audio output has changed (e.g. Bluetooth
+;;      reconnect, USB DAC plugged in), the monitor is auto-updated.
+;;   3. If no audio is currently playing through the monitored sink,
+;;      a warning is shown in the echo area. Recording proceeds
+;;      without interruption — check *Messages* for diagnostic steps.
+;;
 ;; Testing Devices Before Important Recordings
 ;; ============================================
 ;; Always test devices before important recordings:
@@ -647,15 +659,14 @@ is currently playing."
              (has-audio (and sink-index
                              (cj/recording--sink-has-active-audio-p sink-index sink-inputs))))
         (unless has-audio
-          (unless (y-or-n-p
-                   (format (concat "Warning: No audio is playing through %s.\n"
-                                   "If you're in a meeting, the other participants may not be recorded.\n"
-                                   "- Check that your call app is using the expected audio output\n"
-                                   "- Run C-; r w to see which device your call is using\n"
-                                   "- Run C-; r s to switch devices\n"
-                                   "Continue anyway? ")
-                           sink-name))
-            (user-error "Recording cancelled")))))))
+          (message "Warning: No audio detected on %s — other participants may not be recorded"
+                   sink-name)
+          (cj/log-silently
+           (concat "No audio playing through %s.\n"
+                   "If you're in a meeting, the other participants may not be recorded.\n"
+                   "  C-; r w  show which device your call is using\n"
+                   "  C-; r s  switch devices")
+           sink-name))))))
 
 ;;; ============================================================
 ;;; Toggle Commands (User-Facing)
