@@ -574,7 +574,88 @@ If devices aren't set, goes straight into quick setup (mic selection)."
     (cj/recording-quick-setup))
   (unless (and cj/recording-mic-device cj/recording-system-device)
     (user-error "Audio devices not configured.  Run C-; r s (quick setup) or C-; r S (manual select)"))
+  (cj/recording--validate-system-audio)
   (cons cj/recording-mic-device cj/recording-system-device))
+
+(defun cj/recording--source-exists-p (source-name pactl-output)
+  "Return non-nil if SOURCE-NAME exists in PACTL-OUTPUT.
+PACTL-OUTPUT should be the output of `pactl list sources short'."
+  (let ((found nil))
+    (dolist (line (split-string pactl-output "\n" t))
+      (when (string-match "^[0-9]+\t\\([^\t]+\\)\t" line)
+        (when (equal source-name (match-string 1 line))
+          (setq found t))))
+    found))
+
+(defun cj/recording--get-sink-index (sink-name sinks-output)
+  "Return the numeric index of SINK-NAME from SINKS-OUTPUT.
+SINKS-OUTPUT should be the output of `pactl list sinks short'.
+Returns the index as a string, or nil if not found."
+  (let ((index nil))
+    (dolist (line (split-string sinks-output "\n" t))
+      (when (string-match "^\\([0-9]+\\)\t\\([^\t]+\\)\t" line)
+        (when (equal sink-name (match-string 2 line))
+          (setq index (match-string 1 line)))))
+    index))
+
+(defun cj/recording--sink-has-active-audio-p (sink-index pactl-output)
+  "Return non-nil if SINK-INDEX has active audio streams.
+PACTL-OUTPUT should be the output of `pactl list sink-inputs'.
+SINK-INDEX is the numeric sink index as a string."
+  (let ((found nil)
+        (lines (split-string pactl-output "\n")))
+    (dolist (line lines)
+      (when (string-match "^[ \t]+Sink:[ \t]+\\([0-9]+\\)" line)
+        (when (equal sink-index (match-string 1 line))
+          (setq found t))))
+    found))
+
+(defun cj/recording--validate-system-audio ()
+  "Validate that the configured system audio device will capture audio.
+Checks three things:
+1. Does the configured device still exist as a PulseAudio source?
+2. Has the default sink drifted from what we're monitoring?
+3. Is anything currently playing through the monitored sink?
+
+Auto-fixes stale/drifted devices. Warns (but doesn't block) if no audio
+is currently playing."
+  (when cj/recording-system-device
+    (let* ((sources-output (shell-command-to-string "pactl list sources short 2>/dev/null"))
+           (current-default (cj/recording--get-default-sink-monitor))
+           (device-exists (cj/recording--source-exists-p
+                           cj/recording-system-device sources-output)))
+      ;; Check 1: Device no longer exists — auto-update
+      (unless device-exists
+        (let ((old cj/recording-system-device))
+          (setq cj/recording-system-device current-default)
+          (message "System audio device updated: %s → %s (old device no longer exists)"
+                   old current-default)))
+      ;; Check 2: Default sink has drifted — auto-update
+      (when (and device-exists
+                 (not (equal cj/recording-system-device current-default)))
+        (let ((old cj/recording-system-device))
+          (setq cj/recording-system-device current-default)
+          (message "System audio device updated: %s → %s (default output changed)"
+                   old current-default)))
+      ;; Check 3: No active audio on the monitored sink — warn
+      (let* ((sink-name (if (string-suffix-p ".monitor" cj/recording-system-device)
+                            (substring cj/recording-system-device 0 -8)
+                          cj/recording-system-device))
+             (sinks-output (shell-command-to-string "pactl list sinks short 2>/dev/null"))
+             (sink-index (cj/recording--get-sink-index sink-name sinks-output))
+             (sink-inputs (shell-command-to-string "pactl list sink-inputs 2>/dev/null"))
+             (has-audio (and sink-index
+                             (cj/recording--sink-has-active-audio-p sink-index sink-inputs))))
+        (unless has-audio
+          (unless (y-or-n-p
+                   (format (concat "Warning: No audio is playing through %s.\n"
+                                   "If you're in a meeting, the other participants may not be recorded.\n"
+                                   "- Check that your call app is using the expected audio output\n"
+                                   "- Run C-; r w to see which device your call is using\n"
+                                   "- Run C-; r s to switch devices\n"
+                                   "Continue anyway? ")
+                           sink-name))
+            (user-error "Recording cancelled")))))))
 
 ;;; ============================================================
 ;;; Toggle Commands (User-Facing)
