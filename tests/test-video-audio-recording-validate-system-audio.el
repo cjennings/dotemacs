@@ -102,11 +102,12 @@
     (test-validate-teardown)))
 
 (ert-deftest test-validate-system-audio-normal-no-audio-warns ()
-  "Test that no active audio triggers a y-or-n-p warning."
+  "Test that no active audio shows warning message and logs diagnostic steps."
   (test-validate-setup)
   (unwind-protect
       (let ((cj/recording-system-device "alsa_output.usb-Jabra-00.analog-stereo.monitor")
-            (prompted nil))
+            (messages nil)
+            (logged nil))
         (cl-letf (((symbol-function 'shell-command-to-string)
                    (lambda (cmd)
                      (cond
@@ -118,17 +119,23 @@
                       ((string-match-p "sink-inputs" cmd) "")
                       ((string-match-p "get-default-sink" cmd) "alsa_output.usb-Jabra-00.analog-stereo")
                       (t ""))))
-                  ((symbol-function 'y-or-n-p)
-                   (lambda (prompt)
-                     (setq prompted prompt)
-                     t)))  ; User says yes, continue
+                  ((symbol-function 'message)
+                   (lambda (fmt &rest args)
+                     (push (apply #'format fmt args) messages)))
+                  ((symbol-function 'cj/log-silently)
+                   (lambda (fmt &rest args)
+                     (setq logged (apply #'format fmt args)))))
           (cj/recording--validate-system-audio)
-          (should prompted)
-          (should (string-match-p "No audio is playing" prompted))))
+          ;; Echo area should show the warning
+          (should (cl-some (lambda (m) (string-match-p "No audio detected" m)) messages))
+          ;; Messages buffer should have diagnostic steps
+          (should logged)
+          (should (string-match-p "C-; r w" logged))
+          (should (string-match-p "C-; r s" logged))))
     (test-validate-teardown)))
 
-(ert-deftest test-validate-system-audio-normal-no-audio-user-cancels ()
-  "Test that user declining the warning cancels recording."
+(ert-deftest test-validate-system-audio-normal-no-audio-does-not-block ()
+  "Test that no active audio does not block — recording proceeds."
   (test-validate-setup)
   (unwind-protect
       (let ((cj/recording-system-device "alsa_output.usb-Jabra-00.analog-stereo.monitor"))
@@ -142,9 +149,10 @@
                       ((string-match-p "sink-inputs" cmd) "")
                       ((string-match-p "get-default-sink" cmd) "alsa_output.usb-Jabra-00.analog-stereo")
                       (t ""))))
-                  ((symbol-function 'y-or-n-p)
-                   (lambda (_prompt) nil)))  ; User says no
-          (should-error (cj/recording--validate-system-audio) :type 'user-error)))
+                  ((symbol-function 'message) (lambda (_fmt &rest _args) nil))
+                  ((symbol-function 'cj/log-silently) (lambda (_fmt &rest _args) nil)))
+          ;; Should return normally, not signal an error or prompt
+          (cj/recording--validate-system-audio)))
     (test-validate-teardown)))
 
 ;;; Boundary Cases
