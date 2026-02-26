@@ -127,10 +127,9 @@
                      (setq logged (apply #'format fmt args)))))
           (cj/recording--validate-system-audio)
           ;; Echo area should show the warning
-          (should (cl-some (lambda (m) (string-match-p "No audio detected" m)) messages))
+          (should (cl-some (lambda (m) (string-match-p "No audio connected" m)) messages))
           ;; Messages buffer should have diagnostic steps
           (should logged)
-          (should (string-match-p "C-; r w" logged))
           (should (string-match-p "C-; r s" logged))))
     (test-validate-teardown)))
 

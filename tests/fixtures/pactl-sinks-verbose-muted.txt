@@ -1,0 +1,30 @@
+Sink #65
+	State: RUNNING
+	Name: alsa_output.usb-JDS_Labs-00.analog-stereo
+	Description: JDS Labs Element IV Analog Stereo
+	Driver: PipeWire
+	Sample Specification: s32le 2ch 48000Hz
+	Channel Map: front-left,front-right
+	Mute: no
+	Volume: front-left: 32768 / 50% / -18.06 dB,   front-right: 32768 / 50% / -18.06 dB
+	        balance 0.00
+Sink #73
+	State: SUSPENDED
+	Name: alsa_output.usb-Shure_MV7-00.analog-stereo
+	Description: Shure MV7+ Analog Stereo
+	Driver: PipeWire
+	Sample Specification: s32le 2ch 48000Hz
+	Channel Map: front-left,front-right
+	Mute: yes
+	Volume: front-left: 0 / 0% / -inf dB,   front-right: 0 / 0% / -inf dB
+	        balance 0.00
+Sink #81
+	State: SUSPENDED
+	Name: alsa_output.pci-0000_0e_00.4.analog-stereo
+	Description: Ryzen HD Audio Controller Analog Stereo
+	Driver: PipeWire
+	Sample Specification: s32le 2ch 48000Hz
+	Channel Map: front-left,front-right
+	Mute: no
+	Volume: front-left: 65536 / 100% / 0.00 dB,   front-right: 65536 / 100% / 0.00 dB
+	        balance 0.00
