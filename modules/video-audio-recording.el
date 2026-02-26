@@ -36,10 +36,10 @@
 ;; 5. Recording starts - you'll see 󰍬 in your modeline
 ;; 6. Press C-; r a again to stop (🔴 disappears)
 ;;
-;; Device Setup (First Time Only)
-;; ===============================
+;; Device Setup
+;; ============
 ;; C-; r a automatically prompts for device selection on first use.
-;; Device selection persists across Emacs sessions.
+;; Device selection lasts for the current Emacs session only.
 ;;
 ;; Manual device selection:
 ;;
@@ -64,13 +64,12 @@
 ;; ========================
 ;; Every time you start a recording, the system audio device is
 ;; validated automatically:
-;;   1. If the configured monitor device no longer exists, it's
-;;      auto-updated to the current default sink's monitor.
-;;   2. If the default audio output has changed (e.g. Bluetooth
-;;      reconnect, USB DAC plugged in), the monitor is auto-updated.
-;;   3. If no audio is currently playing through the monitored sink,
+;;   1. If the configured monitor device no longer exists (e.g.
+;;      USB DAC unplugged), it's auto-updated to the current
+;;      default sink's monitor.
+;;   2. If no audio is currently playing through the monitored sink,
 ;;      a warning is shown in the echo area. Recording proceeds
-;;      without interruption — check *Messages* for diagnostic steps.
+;;      without interruption — run C-; r s to see active streams.
 ;;
 ;; Testing Devices Before Important Recordings
 ;; ============================================
@@ -714,13 +713,13 @@ SINK-INDEX is the numeric sink index as a string."
 
 (defun cj/recording--validate-system-audio ()
   "Validate that the configured system audio device will capture audio.
-Checks three things:
+Checks two things:
 1. Does the configured device still exist as a PulseAudio source?
-2. Has the default sink drifted from what we're monitoring?
-3. Is anything currently playing through the monitored sink?
+2. Is anything currently playing through the monitored sink?
 
-Auto-fixes stale/drifted devices. Warns (but doesn't block) if no audio
-is currently playing."
+Auto-fixes stale devices by falling back to the default sink's monitor.
+Warns (but doesn't block) if no audio is currently playing.
+Respects the user's explicit sink choice from quick-setup."
   (when cj/recording-system-device
     (let* ((sources-output (shell-command-to-string "pactl list sources short 2>/dev/null"))
            (current-default (cj/recording--get-default-sink-monitor))
@@ -732,14 +731,7 @@ is currently playing."
           (setq cj/recording-system-device current-default)
           (message "System audio device updated: %s → %s (old device no longer exists)"
                    old current-default)))
-      ;; Check 2: Default sink has drifted — auto-update
-      (when (and device-exists
-                 (not (equal cj/recording-system-device current-default)))
-        (let ((old cj/recording-system-device))
-          (setq cj/recording-system-device current-default)
-          (message "System audio device updated: %s → %s (default output changed)"
-                   old current-default)))
-      ;; Check 3: No active audio on the monitored sink — warn
+      ;; Check 2: No active audio on the monitored sink — warn
       (let* ((sink-name (if (string-suffix-p ".monitor" cj/recording-system-device)
                             (substring cj/recording-system-device 0 -8)
                           cj/recording-system-device))

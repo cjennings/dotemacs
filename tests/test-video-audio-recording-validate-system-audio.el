@@ -73,32 +73,30 @@
           (should (cl-some (lambda (m) (string-match-p "no longer exists" m)) messages))))
     (test-validate-teardown)))
 
-(ert-deftest test-validate-system-audio-normal-drifted-default-auto-updates ()
-  "Test that device is updated when default sink has drifted."
+(ert-deftest test-validate-system-audio-normal-respects-explicit-non-default-choice ()
+  "Test that an existing non-default device is NOT overridden by drift detection."
   (test-validate-setup)
   (unwind-protect
-      (let ((cj/recording-system-device "alsa_output.pci-0000.hdmi-stereo.monitor")
-            (messages nil))
+      (let ((cj/recording-system-device "alsa_output.pci-0000.hdmi-stereo.monitor"))
         (cl-letf (((symbol-function 'shell-command-to-string)
                    (lambda (cmd)
                      (cond
                       ((string-match-p "sources short" cmd)
-                       ;; Old device still exists
+                       ;; Device still exists
                        (concat "65\talsa_output.pci-0000.hdmi-stereo.monitor\tPipeWire\ts32le 2ch 48000Hz\tSUSPENDED\n"
                                "69\talsa_output.usb-Jabra-00.analog-stereo.monitor\tPipeWire\ts32le 2ch 48000Hz\tSUSPENDED\n"))
                       ((string-match-p "sinks short" cmd)
-                       "69\talsa_output.usb-Jabra-00.analog-stereo\tPipeWire\ts32le 2ch 48000Hz\tSUSPENDED\n")
-                      ((string-match-p "sink-inputs" cmd) "Sink Input #1\n\tSink: 69\n")
-                      ;; But default has changed to Jabra
+                       "65\talsa_output.pci-0000.hdmi-stereo\tPipeWire\ts32le 2ch 48000Hz\tRUNNING\n")
+                      ((string-match-p "sink-inputs" cmd) "Sink Input #1\n\tSink: 65\n")
+                      ;; Default is Jabra, but user explicitly chose HDMI
                       ((string-match-p "get-default-sink" cmd) "alsa_output.usb-Jabra-00.analog-stereo")
                       (t ""))))
-                  ((symbol-function 'message)
-                   (lambda (fmt &rest args)
-                     (push (apply #'format fmt args) messages))))
+                  ((symbol-function 'message) (lambda (_fmt &rest _args) nil))
+                  ((symbol-function 'cj/log-silently) (lambda (_fmt &rest _args) nil)))
           (cj/recording--validate-system-audio)
-          (should (equal "alsa_output.usb-Jabra-00.analog-stereo.monitor"
-                         cj/recording-system-device))
-          (should (cl-some (lambda (m) (string-match-p "default output changed" m)) messages))))
+          ;; Should keep the user's explicit HDMI choice, not drift to Jabra
+          (should (equal "alsa_output.pci-0000.hdmi-stereo.monitor"
+                         cj/recording-system-device))))
     (test-validate-teardown)))
 
 (ert-deftest test-validate-system-audio-normal-no-audio-warns ()
