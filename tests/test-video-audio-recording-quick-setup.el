@@ -3,7 +3,7 @@
 ;;; Commentary:
 ;; Unit tests for cj/recording-quick-setup function.
 ;; The quick setup is a two-step flow:
-;;   Step 1: Pick a microphone
+;;   Step 1: Pick a microphone (with active/inactive indicators)
 ;;   Step 2: Pick an audio output (sink) with active/inactive indicators
 ;; The chosen sink's .monitor source is set as the system audio device.
 
@@ -36,20 +36,20 @@
   "Test that selecting a mic sets cj/recording-mic-device."
   (test-quick-setup-setup)
   (unwind-protect
-      (let ((call-count 0))
-        (cl-letf (((symbol-function 'cj/recording--get-available-mics)
-                   (lambda () '(("jabra-input" . "Jabra SPEAK 510 Mono")
-                                ("builtin-input" . "Built-in Analog"))))
-                  ((symbol-function 'cj/recording--get-available-sinks)
-                   (lambda () '(("jds-labs" . "JDS Labs Element IV"))))
-                  ((symbol-function 'cj/recording--sink-active-p)
-                   (lambda (_name) nil))
-                  ((symbol-function 'completing-read)
-                   (lambda (_prompt table &rest _args)
-                     (setq call-count (1+ call-count))
-                     (car (all-completions "" table)))))
-          (cj/recording-quick-setup)
-          (should (equal "jabra-input" cj/recording-mic-device))))
+      (cl-letf (((symbol-function 'cj/recording--get-available-mics)
+                 (lambda () '(("jabra-input" . "Jabra SPEAK 510 Mono")
+                              ("builtin-input" . "Built-in Analog"))))
+                ((symbol-function 'cj/recording--mic-active-p)
+                 (lambda (_name) nil))
+                ((symbol-function 'cj/recording--get-available-sinks)
+                 (lambda () '(("jds-labs" . "JDS Labs Element IV"))))
+                ((symbol-function 'cj/recording--sink-active-p)
+                 (lambda (_name) nil))
+                ((symbol-function 'completing-read)
+                 (lambda (_prompt table &rest _args)
+                   (car (all-completions "" table)))))
+        (cj/recording-quick-setup)
+        (should (equal "jabra-input" cj/recording-mic-device)))
     (test-quick-setup-teardown)))
 
 (ert-deftest test-video-audio-recording-quick-setup-normal-sets-system-to-sink-monitor ()
@@ -58,6 +58,8 @@
   (unwind-protect
       (cl-letf (((symbol-function 'cj/recording--get-available-mics)
                  (lambda () '(("jabra-input" . "Jabra SPEAK 510 Mono"))))
+                ((symbol-function 'cj/recording--mic-active-p)
+                 (lambda (_name) nil))
                 ((symbol-function 'cj/recording--get-available-sinks)
                  (lambda () '(("alsa_output.usb-JDS_Labs-00.analog-stereo" . "JDS Labs Element IV"))))
                 ((symbol-function 'cj/recording--sink-active-p)
@@ -77,6 +79,8 @@
       (let ((call-count 0))
         (cl-letf (((symbol-function 'cj/recording--get-available-mics)
                    (lambda () '(("mic-1" . "Mic One"))))
+                  ((symbol-function 'cj/recording--mic-active-p)
+                   (lambda (_name) nil))
                   ((symbol-function 'cj/recording--get-available-sinks)
                    (lambda () '(("sink-1" . "Sink One"))))
                   ((symbol-function 'cj/recording--sink-active-p)
@@ -89,14 +93,75 @@
           (should (= 2 call-count))))
     (test-quick-setup-teardown)))
 
+(ert-deftest test-video-audio-recording-quick-setup-normal-active-mic-indicator ()
+  "Test that active mics get the green mic icon in their label."
+  (test-quick-setup-setup)
+  (unwind-protect
+      (let ((mic-candidates nil)
+            (call-count 0))
+        (cl-letf (((symbol-function 'cj/recording--get-available-mics)
+                   (lambda () '(("active-mic" . "Active Mic")
+                                ("idle-mic" . "Idle Mic"))))
+                  ((symbol-function 'cj/recording--mic-active-p)
+                   (lambda (name) (equal name "active-mic")))
+                  ((symbol-function 'cj/recording--get-available-sinks)
+                   (lambda () '(("sink-1" . "Sink One"))))
+                  ((symbol-function 'cj/recording--sink-active-p)
+                   (lambda (_name) nil))
+                  ((symbol-function 'completing-read)
+                   (lambda (_prompt table &rest _args)
+                     (setq call-count (1+ call-count))
+                     (let ((candidates (all-completions "" table)))
+                       (when (= call-count 1)
+                         (setq mic-candidates candidates))
+                       (car candidates)))))
+          (cj/recording-quick-setup)
+          ;; Both should have 󰍬 icon
+          (should (cl-some (lambda (c) (and (string-match-p "Active Mic" c)
+                                            (string-match-p "󰍬" c)))
+                           mic-candidates))
+          (should (cl-some (lambda (c) (and (string-match-p "Idle Mic" c)
+                                            (string-match-p "󰍬" c)))
+                           mic-candidates))))
+    (test-quick-setup-teardown)))
+
+(ert-deftest test-video-audio-recording-quick-setup-normal-active-mic-sorted-first ()
+  "Test that active mics are sorted to the top of the list."
+  (test-quick-setup-setup)
+  (unwind-protect
+      (let ((mic-candidates nil)
+            (call-count 0))
+        (cl-letf (((symbol-function 'cj/recording--get-available-mics)
+                   (lambda () '(("idle-mic" . "Idle Mic")
+                                ("active-mic" . "Active Mic"))))
+                  ((symbol-function 'cj/recording--mic-active-p)
+                   (lambda (name) (equal name "active-mic")))
+                  ((symbol-function 'cj/recording--get-available-sinks)
+                   (lambda () '(("sink-1" . "Sink One"))))
+                  ((symbol-function 'cj/recording--sink-active-p)
+                   (lambda (_name) nil))
+                  ((symbol-function 'completing-read)
+                   (lambda (_prompt table &rest _args)
+                     (setq call-count (1+ call-count))
+                     (let ((candidates (all-completions "" table)))
+                       (when (= call-count 1)
+                         (setq mic-candidates candidates))
+                       (car candidates)))))
+          (cj/recording-quick-setup)
+          ;; First candidate should be the active mic
+          (should (string-match-p "Active Mic" (car mic-candidates)))))
+    (test-quick-setup-teardown)))
+
 (ert-deftest test-video-audio-recording-quick-setup-normal-active-sink-indicator ()
-  "Test that active sinks get the active icon in their label."
+  "Test that active sinks get 󰕾 and inactive sinks get 󰖀."
   (test-quick-setup-setup)
   (unwind-protect
       (let ((sink-candidates nil)
             (call-count 0))
         (cl-letf (((symbol-function 'cj/recording--get-available-mics)
                    (lambda () '(("mic-1" . "Mic One"))))
+                  ((symbol-function 'cj/recording--mic-active-p)
+                   (lambda (_name) nil))
                   ((symbol-function 'cj/recording--get-available-sinks)
                    (lambda () '(("active-sink" . "Active Sink")
                                 ("inactive-sink" . "Inactive Sink"))))
@@ -110,13 +175,13 @@
                          (setq sink-candidates candidates))
                        (car candidates)))))
           (cj/recording-quick-setup)
-          ;; Active sink should have 󰕾 icon (substring-no-properties strips faces but keeps text)
+          ;; Active sink should have 󰕾 icon
           (should (cl-some (lambda (c) (and (string-match-p "Active Sink" c)
                                             (string-match-p "󰕾" c)))
                            sink-candidates))
-          ;; Inactive sink should have 󰖁 icon
+          ;; Inactive sink should have 󰖀 icon
           (should (cl-some (lambda (c) (and (string-match-p "Inactive Sink" c)
-                                            (string-match-p "󰖁" c)))
+                                            (string-match-p "󰖀" c)))
                            sink-candidates))))
     (test-quick-setup-teardown)))
 
@@ -127,6 +192,8 @@
       (let ((sink-candidates nil))
         (cl-letf (((symbol-function 'cj/recording--get-available-mics)
                    (lambda () '(("mic-1" . "Mic One"))))
+                  ((symbol-function 'cj/recording--mic-active-p)
+                   (lambda (_name) nil))
                   ((symbol-function 'cj/recording--get-available-sinks)
                    (lambda () '(("inactive-sink" . "Inactive Sink")
                                 ("active-sink" . "Active Sink"))))
@@ -151,6 +218,8 @@
       (let ((message-text nil))
         (cl-letf (((symbol-function 'cj/recording--get-available-mics)
                    (lambda () '(("jabra-input" . "Jabra SPEAK 510 Mono"))))
+                  ((symbol-function 'cj/recording--mic-active-p)
+                   (lambda (_name) nil))
                   ((symbol-function 'cj/recording--get-available-sinks)
                    (lambda () '(("jds-labs.analog-stereo" . "JDS Labs Element IV"))))
                   ((symbol-function 'cj/recording--sink-active-p)
@@ -175,6 +244,8 @@
       (let ((read-called 0))
         (cl-letf (((symbol-function 'cj/recording--get-available-mics)
                    (lambda () '(("sole-mic" . "Only Mic Available"))))
+                  ((symbol-function 'cj/recording--mic-active-p)
+                   (lambda (_name) nil))
                   ((symbol-function 'cj/recording--get-available-sinks)
                    (lambda () '(("sole-sink" . "Only Sink"))))
                   ((symbol-function 'cj/recording--sink-active-p)
@@ -196,6 +267,8 @@
   (unwind-protect
       (cl-letf (((symbol-function 'cj/recording--get-available-mics)
                  (lambda () '(("jabra-input" . "Jabra SPEAK 510 Mono"))))
+                ((symbol-function 'cj/recording--mic-active-p)
+                 (lambda (_name) nil))
                 ((symbol-function 'cj/recording--get-available-sinks)
                  (lambda () '(("sink-1" . "Sink One"))))
                 ((symbol-function 'cj/recording--sink-active-p)
@@ -215,6 +288,8 @@
       (let ((call-count 0))
         (cl-letf (((symbol-function 'cj/recording--get-available-mics)
                    (lambda () '(("jabra-input" . "Jabra SPEAK 510 Mono"))))
+                  ((symbol-function 'cj/recording--mic-active-p)
+                   (lambda (_name) nil))
                   ((symbol-function 'cj/recording--get-available-sinks)
                    (lambda () '(("sink-1" . "Sink One"))))
                   ((symbol-function 'cj/recording--sink-active-p)
@@ -236,7 +311,9 @@
   (test-quick-setup-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'cj/recording--get-available-mics)
-                 (lambda () nil)))
+                 (lambda () nil))
+                ((symbol-function 'cj/recording--mic-active-p)
+                 (lambda (_name) nil)))
         (should-error (cj/recording-quick-setup) :type 'user-error))
     (test-quick-setup-teardown)))
 
@@ -245,7 +322,9 @@
   (test-quick-setup-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'cj/recording--get-available-mics)
-                 (lambda () nil)))
+                 (lambda () nil))
+                ((symbol-function 'cj/recording--mic-active-p)
+                 (lambda (_name) nil)))
         (condition-case err
             (cj/recording-quick-setup)
           (user-error
