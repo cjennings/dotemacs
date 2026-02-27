@@ -86,5 +86,21 @@ Each sink is (name description mute state)."
              (lambda (_cmd) "")))
     (should (null (cj/recording--get-available-sinks)))))
 
+;;; Error Cases
+
+(ert-deftest test-get-available-sinks-error-garbled-output ()
+  "Test that garbled pactl output returns empty list, not an error."
+  (cl-letf (((symbol-function 'shell-command-to-string)
+             (lambda (_cmd) "random garbage\nwith newlines\nbut no structure\n")))
+    (should (null (cj/recording--get-available-sinks)))))
+
+(ert-deftest test-get-available-sinks-error-missing-fields ()
+  "Test that sink with partial fields does not crash."
+  (cl-letf (((symbol-function 'shell-command-to-string)
+             (lambda (_cmd) "Sink #1\n\tState: RUNNING\n\tName: partial-sink\n")))
+    ;; Missing Description and Mute — should not error
+    (let ((sinks (cj/recording--get-available-sinks)))
+      (should (listp sinks)))))
+
 (provide 'test-video-audio-recording--get-available-sinks)
 ;;; test-video-audio-recording--get-available-sinks.el ends here
