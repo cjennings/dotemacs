@@ -316,6 +316,15 @@ than the raw device name."
           (push (cons name (or desc name)) mics))))
     (nreverse mics)))
 
+(defun cj/recording--mic-active-p (source-name)
+  "Return non-nil if SOURCE-NAME is actively in use (RUNNING state).
+Checks `pactl list sources short' for the source's current state."
+  (let ((output (shell-command-to-string "pactl list sources short 2>/dev/null")))
+    (cl-some (lambda (line)
+               (and (string-match-p (regexp-quote source-name) line)
+                    (string-match-p "RUNNING" line)))
+             (split-string output "\n" t))))
+
 (defun cj/recording--parse-pactl-sinks-verbose (output)
   "Parse verbose `pactl list sinks' OUTPUT into structured list.
 Returns list of (name description mute state) tuples.
@@ -517,11 +526,12 @@ since recording needs both to capture your voice and system audio."
 
 (defun cj/recording-quick-setup ()
   "Quick device setup for recording — two-step mic + sink selection.
-Step 1: Pick a microphone from available unmuted sources.
+Step 1: Pick a microphone.  Mics in use by an app (RUNNING) show
+a green 󰍬 icon and are sorted to the top; idle mics show dim 󰍬.
 Step 2: Pick an audio output (sink) to monitor.  Sinks with active
-audio streams are marked with 󰕾 (green) and sorted to the top;
-inactive sinks show 󰖁 (dim).  The chosen sink's .monitor source
-is set as the system audio device.
+audio streams show green 󰕾 and are sorted to the top; idle sinks
+show dim 󰖀.  The chosen sink's .monitor source is set as the
+system audio device.
 
 This approach is portable across systems — plug in a new mic, run this
 command, and it appears in the list.  No hardware-specific configuration
@@ -529,19 +539,34 @@ needed."
   (interactive)
   ;; Step 1: Mic selection
   (let* ((mics (cj/recording--get-available-mics))
-         (mic-choices (mapcar (lambda (mic)
-                                (cons (cdr mic) (car mic)))
-                              mics)))
-    (if (null mic-choices)
+         (mic-labels
+          (mapcar
+           (lambda (mic)
+             (let* ((name (car mic))
+                    (desc (cdr mic))
+                    (active (cj/recording--mic-active-p name))
+                    (icon "󰍬")
+                    (face (if active '(:foreground "#50fa7b") '(:foreground "#6272a4")))
+                    (label (concat (propertize icon 'face face) " " desc)))
+               (list label name active)))
+           mics))
+         ;; Sort active mics to top
+         (sorted-mics (sort mic-labels
+                            (lambda (a b)
+                              (and (nth 2 a) (not (nth 2 b))))))
+         (mic-alist (mapcar (lambda (entry)
+                              (cons (nth 0 entry) (nth 1 entry)))
+                            sorted-mics))
+         (mic-alist-with-cancel (append mic-alist '(("Cancel" . nil)))))
+    (if (null mic-alist)
         (user-error "No microphones found.  Is a mic plugged in and unmuted?")
-      (let* ((mic-choices-with-cancel (append mic-choices '(("Cancel" . nil))))
-             (mic-choice (completing-read "Select microphone: "
-                                         (lambda (string pred action)
-                                           (if (eq action 'metadata)
-                                               '(metadata (display-sort-function . identity))
-                                             (complete-with-action action mic-choices-with-cancel string pred)))
-                                         nil t))
-             (mic-device (cdr (assoc mic-choice mic-choices-with-cancel))))
+      (let* ((mic-choice (completing-read "Select microphone: "
+                                          (lambda (string pred action)
+                                            (if (eq action 'metadata)
+                                                '(metadata (display-sort-function . identity))
+                                              (complete-with-action action mic-alist-with-cancel string pred)))
+                                          nil t))
+             (mic-device (cdr (assoc mic-choice mic-alist-with-cancel))))
         (if (null mic-device)
             (user-error "Device setup cancelled")
           ;; Step 2: Sink selection
@@ -552,7 +577,7 @@ needed."
                      (let* ((name (car sink))
                             (desc (cdr sink))
                             (active (cj/recording--sink-active-p name))
-                            (icon (if active "󰕾" "󰖁"))
+                            (icon (if active "󰕾" "󰖀"))
                             (face (if active '(:foreground "#50fa7b") '(:foreground "#6272a4")))
                             (label (concat (propertize icon 'face face) " " desc)))
                        (list label name active)))
