@@ -4,9 +4,9 @@
 ;; Unit tests for cj/recording--get-available-mics.
 ;; Verifies that available microphones are discovered correctly:
 ;; - Monitor sources are excluded (they capture output, not input)
-;; - Muted sources are excluded
+;; - Muted sources are included (shown with [muted] label in UI)
 ;; - Friendly descriptions from PulseAudio are used
-;; - PulseAudio state is included
+;; - PulseAudio state and mute status are included
 
 ;;; Code:
 
@@ -41,16 +41,16 @@ Each source is (name description mute state)."
       (should (= 1 (length mics)))
       (should (equal "alsa_input.usb-Jabra.mono" (nth 0 (car mics)))))))
 
-(ert-deftest test-video-audio-recording--get-available-mics-normal-filters-muted ()
-  "Test that muted sources are excluded from mic list."
+(ert-deftest test-video-audio-recording--get-available-mics-normal-includes-muted ()
+  "Test that muted sources are included in mic list."
   (cl-letf (((symbol-function 'shell-command-to-string)
              (lambda (_cmd)
                (test-mics--make-pactl-output
                 '(("active-mic" "Active Mic" "no" "SUSPENDED")
                   ("muted-mic" "Muted Mic" "yes" "SUSPENDED"))))))
     (let ((mics (cj/recording--get-available-mics)))
-      (should (= 1 (length mics)))
-      (should (equal "active-mic" (nth 0 (car mics)))))))
+      (should (= 2 (length mics)))
+      (should (equal "yes" (nth 3 (nth 1 mics)))))))
 
 (ert-deftest test-video-audio-recording--get-available-mics-normal-uses-descriptions ()
   "Test that friendly descriptions are returned as second element."
@@ -70,8 +70,17 @@ Each source is (name description mute state)."
     (let ((mics (cj/recording--get-available-mics)))
       (should (equal "RUNNING" (nth 2 (car mics)))))))
 
+(ert-deftest test-video-audio-recording--get-available-mics-normal-includes-mute-status ()
+  "Test that mute status is returned as fourth element."
+  (cl-letf (((symbol-function 'shell-command-to-string)
+             (lambda (_cmd)
+               (test-mics--make-pactl-output
+                '(("mic-a" "Mic A" "no" "RUNNING"))))))
+    (let ((mics (cj/recording--get-available-mics)))
+      (should (equal "no" (nth 3 (car mics)))))))
+
 (ert-deftest test-video-audio-recording--get-available-mics-normal-multiple-mics ()
-  "Test that multiple non-muted, non-monitor mics are returned."
+  "Test that multiple mics are returned including muted ones."
   (cl-letf (((symbol-function 'shell-command-to-string)
              (lambda (_cmd)
                (test-mics--make-pactl-output
@@ -80,7 +89,8 @@ Each source is (name description mute state)."
                   ("alsa_output.jabra.monitor" "Monitor of Jabra" "no" "SUSPENDED")
                   ("muted-mic" "Muted Mic" "yes" "SUSPENDED"))))))
     (let ((mics (cj/recording--get-available-mics)))
-      (should (= 2 (length mics))))))
+      ;; 3 non-monitor sources (including the muted one)
+      (should (= 3 (length mics))))))
 
 ;;; Boundary Cases
 
@@ -97,15 +107,6 @@ Each source is (name description mute state)."
                (test-mics--make-pactl-output
                 '(("sink-a.monitor" "Monitor A" "no" "SUSPENDED")
                   ("sink-b.monitor" "Monitor B" "no" "SUSPENDED"))))))
-    (should (null (cj/recording--get-available-mics)))))
-
-(ert-deftest test-video-audio-recording--get-available-mics-boundary-all-muted ()
-  "Test that if all non-monitor sources are muted, returns empty list."
-  (cl-letf (((symbol-function 'shell-command-to-string)
-             (lambda (_cmd)
-               (test-mics--make-pactl-output
-                '(("muted-a" "Mic A" "yes" "SUSPENDED")
-                  ("muted-b" "Mic B" "yes" "SUSPENDED"))))))
     (should (null (cj/recording--get-available-mics)))))
 
 (provide 'test-video-audio-recording--get-available-mics)

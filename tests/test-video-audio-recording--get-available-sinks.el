@@ -3,9 +3,9 @@
 ;;; Commentary:
 ;; Unit tests for cj/recording--get-available-sinks.
 ;; Verifies that available sinks are discovered correctly:
-;; - Muted sinks are excluded
+;; - Muted sinks are included (shown with [muted] label in UI)
 ;; - Friendly descriptions from PulseAudio are used
-;; - PulseAudio state is included
+;; - PulseAudio state and mute status are included
 
 ;;; Code:
 
@@ -29,16 +29,16 @@ Each sink is (name description mute state)."
 
 ;;; Normal Cases
 
-(ert-deftest test-get-available-sinks-normal-filters-muted ()
-  "Test that muted sinks are excluded from sink list."
+(ert-deftest test-get-available-sinks-normal-includes-muted ()
+  "Test that muted sinks are included in sink list."
   (cl-letf (((symbol-function 'shell-command-to-string)
              (lambda (_cmd)
                (test-sinks--make-pactl-output
                 '(("active-sink" "Active Sink" "no" "RUNNING")
                   ("muted-sink" "Muted Sink" "yes" "SUSPENDED"))))))
     (let ((sinks (cj/recording--get-available-sinks)))
-      (should (= 1 (length sinks)))
-      (should (equal "active-sink" (nth 0 (car sinks)))))))
+      (should (= 2 (length sinks)))
+      (should (equal "yes" (nth 3 (nth 1 sinks)))))))
 
 (ert-deftest test-get-available-sinks-normal-uses-descriptions ()
   "Test that friendly descriptions are returned as second element."
@@ -58,8 +58,17 @@ Each sink is (name description mute state)."
     (let ((sinks (cj/recording--get-available-sinks)))
       (should (equal "RUNNING" (nth 2 (car sinks)))))))
 
+(ert-deftest test-get-available-sinks-normal-includes-mute-status ()
+  "Test that mute status is returned as fourth element."
+  (cl-letf (((symbol-function 'shell-command-to-string)
+             (lambda (_cmd)
+               (test-sinks--make-pactl-output
+                '(("sink-a" "Sink A" "yes" "SUSPENDED"))))))
+    (let ((sinks (cj/recording--get-available-sinks)))
+      (should (equal "yes" (nth 3 (car sinks)))))))
+
 (ert-deftest test-get-available-sinks-normal-multiple-sinks ()
-  "Test that multiple non-muted sinks are returned."
+  "Test that multiple sinks are returned including muted."
   (cl-letf (((symbol-function 'shell-command-to-string)
              (lambda (_cmd)
                (test-sinks--make-pactl-output
@@ -67,7 +76,7 @@ Each sink is (name description mute state)."
                   ("sink-b" "Shure MV7+" "no" "SUSPENDED")
                   ("muted-sink" "Muted" "yes" "SUSPENDED"))))))
     (let ((sinks (cj/recording--get-available-sinks)))
-      (should (= 2 (length sinks))))))
+      (should (= 3 (length sinks))))))
 
 ;;; Boundary Cases
 
@@ -75,15 +84,6 @@ Each sink is (name description mute state)."
   "Test that empty pactl output returns empty list."
   (cl-letf (((symbol-function 'shell-command-to-string)
              (lambda (_cmd) "")))
-    (should (null (cj/recording--get-available-sinks)))))
-
-(ert-deftest test-get-available-sinks-boundary-all-muted ()
-  "Test that if all sinks are muted, returns empty list."
-  (cl-letf (((symbol-function 'shell-command-to-string)
-             (lambda (_cmd)
-               (test-sinks--make-pactl-output
-                '(("muted-a" "Sink A" "yes" "SUSPENDED")
-                  ("muted-b" "Sink B" "yes" "SUSPENDED"))))))
     (should (null (cj/recording--get-available-sinks)))))
 
 (provide 'test-video-audio-recording--get-available-sinks)

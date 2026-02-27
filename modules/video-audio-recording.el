@@ -31,7 +31,7 @@
 ;; ===========
 ;; 1. Press C-; r s to run quick setup
 ;; 2. Pick a microphone from the list
-;; 3. Pick an audio output — [active - running] means audio is flowing
+;; 3. Pick an audio output — [in use] shows which apps are playing
 ;; 4. Press C-; r a to start/stop audio recording
 ;; 5. Recording starts - you'll see 󰍬 in your modeline
 ;; 6. Press C-; r a again to stop (🔴 disappears)
@@ -44,9 +44,10 @@
 ;; Manual device selection:
 ;;
 ;; C-; r s (cj/recording-quick-setup) - RECOMMENDED
-;;   Two-step setup: pick a mic, then pick an audio output (sink).
-;;   Both steps show device state: [active - running], [active - idle],
-;;   or [inactive - suspended].  Sorted running → idle → suspended.
+;;   Two-step setup: pick a mic, then pick an audio output to capture.
+;;   Both steps show status: [in use], [ready], [available], [muted].
+;;   Audio outputs also show which apps are playing through them.
+;;   Sorted: in use → ready → available → muted.
 ;;
 ;; C-; r S (cj/recording-select-devices) - ADVANCED
 ;;   Manual selection: choose mic and monitor separately.
@@ -299,11 +300,12 @@ OUTPUT should be the full output of `pactl list sources'."
     (nreverse sources)))
 
 (defun cj/recording--get-available-mics ()
-  "Return available microphone sources as list of (name description state).
-Filters out monitor sources and muted devices.  Uses the friendly
-description from PulseAudio (e.g. \"Jabra SPEAK 510 Mono\") rather
-than the raw device name.  State is the PulseAudio state string
-\(RUNNING, IDLE, or SUSPENDED)."
+  "Return available microphone sources as list of (name description state mute).
+Filters out monitor sources but includes muted devices (shown with
+a [muted] label in the UI).  Uses the friendly description from
+PulseAudio (e.g. \"Jabra SPEAK 510 Mono\") rather than the raw
+device name.  State is the PulseAudio state string (RUNNING, IDLE,
+or SUSPENDED).  Mute is \"yes\" or \"no\"."
   (let* ((output (shell-command-to-string "pactl list sources 2>/dev/null"))
          (sources (cj/recording--parse-pactl-sources-verbose output))
          (mics nil))
@@ -312,10 +314,8 @@ than the raw device name.  State is the PulseAudio state string
             (desc (nth 1 source))
             (mute (nth 2 source))
             (state (nth 3 source)))
-        ;; Include non-monitor, non-muted sources
-        (when (and (not (string-match-p "\\.monitor$" name))
-                   (not (equal mute "yes")))
-          (push (list name (or desc name) state) mics))))
+        (when (not (string-match-p "\\.monitor$" name))
+          (push (list name (or desc name) state mute) mics))))
     (nreverse mics)))
 
 (defun cj/recording--parse-pactl-sinks-verbose (output)
@@ -351,10 +351,11 @@ OUTPUT should be the full output of `pactl list sinks'."
     (nreverse sinks)))
 
 (defun cj/recording--get-available-sinks ()
-  "Return available audio sinks as list of (name description state).
-Filters out muted sinks.  Uses the friendly description from
-PulseAudio (e.g. \"JDS Labs Element IV Analog Stereo\").  State is
-the PulseAudio state string (RUNNING, IDLE, or SUSPENDED)."
+  "Return available audio sinks as list of (name description state mute).
+Includes muted sinks (shown with a [muted] label in the UI).  Uses
+the friendly description from PulseAudio (e.g. \"JDS Labs Element IV
+Analog Stereo\").  State is the PulseAudio state string (RUNNING,
+IDLE, or SUSPENDED).  Mute is \"yes\" or \"no\"."
   (let* ((output (shell-command-to-string "pactl list sinks 2>/dev/null"))
          (sinks (cj/recording--parse-pactl-sinks-verbose output))
          (result nil))
@@ -363,8 +364,7 @@ the PulseAudio state string (RUNNING, IDLE, or SUSPENDED)."
             (desc (nth 1 sink))
             (mute (nth 2 sink))
             (state (nth 3 sink)))
-        (when (not (equal mute "yes"))
-          (push (list name (or desc name) state) result))))
+        (push (list name (or desc name) state mute) result)))
     (nreverse result)))
 
 ;;; ============================================================
@@ -509,48 +509,104 @@ since recording needs both to capture your voice and system audio."
              devices)
     (nreverse result)))
 
-(defun cj/recording--state-sort-key (state)
-  "Return a numeric sort key for PulseAudio STATE.
-Lower values sort first: RUNNING (0) → IDLE (1) → SUSPENDED (2)."
-  (pcase (upcase (or state ""))
-    ("RUNNING" 0)
-    ("IDLE" 1)
-    (_ 2)))
+(defun cj/recording--device-sort-key (state muted)
+  "Return a numeric sort key for a device with STATE and MUTED flag.
+Lower values sort first: RUNNING (0) → IDLE (1) → SUSPENDED (2) → muted (3)."
+  (if (equal muted "yes")
+      3
+    (pcase (upcase (or state ""))
+      ("RUNNING" 0)
+      ("IDLE" 1)
+      (_ 2))))
 
-(defun cj/recording--state-label (state)
-  "Return a human-readable label for PulseAudio STATE.
-RUNNING and IDLE are active states; SUSPENDED is inactive."
-  (pcase (upcase (or state ""))
-    ("RUNNING"   "[active - running]")
-    ("IDLE"      "[active - idle]")
-    (_           "[inactive - suspended]")))
+(defun cj/recording--device-status-label (state muted)
+  "Return a human-readable status label for a device.
+MUTED is \"yes\" or \"no\".  STATE is the PulseAudio state string."
+  (if (equal muted "yes")
+      "[muted]"
+    (pcase (upcase (or state ""))
+      ("RUNNING" "[in use]")
+      ("IDLE"    "[ready]")
+      (_         "[available]"))))
 
 (defun cj/recording--label-devices (devices)
   "Build labeled (label . name) alist from DEVICES for `completing-read'.
-DEVICES is a list of (name description state) as returned by
+DEVICES is a list of (name description state mute) as returned by
 `cj/recording--get-available-mics' or `cj/recording--get-available-sinks'.
-Labels are formatted as \"Description [active - running]\" etc.
-Sorted: running → idle → suspended."
+Labels are formatted as \"Description [in use]\" etc.
+Sorted: in use → ready → available → muted."
   (let* ((labeled (mapcar
                    (lambda (dev)
                      (let* ((name  (nth 0 dev))
                             (desc  (nth 1 dev))
                             (state (nth 2 dev))
-                            (label (concat desc " " (cj/recording--state-label state))))
-                       (list label name (cj/recording--state-sort-key state))))
+                            (muted (nth 3 dev))
+                            (label (concat desc " "
+                                           (cj/recording--device-status-label state muted))))
+                       (list label name (cj/recording--device-sort-key state muted))))
                    devices))
+         (sorted (sort labeled (lambda (a b) (< (nth 2 a) (nth 2 b))))))
+    (mapcar (lambda (entry) (cons (nth 0 entry) (nth 1 entry))) sorted)))
+
+(defun cj/recording--get-sink-apps ()
+  "Return alist mapping sink index to list of application names.
+Parses `pactl list sink-inputs' to find which apps are playing
+audio through each sink."
+  (let ((output (shell-command-to-string "pactl list sink-inputs 2>/dev/null"))
+        (apps (make-hash-table :test 'equal))
+        (current-sink nil))
+    (dolist (line (split-string output "\n"))
+      (cond
+       ((string-match "^Sink Input #" line)
+        (setq current-sink nil))
+       ((string-match "^[ \t]+Sink:[ \t]+\\([0-9]+\\)" line)
+        (setq current-sink (match-string 1 line)))
+       ((and current-sink
+             (string-match "application\\.name = \"\\([^\"]+\\)\"" line))
+        (let ((existing (gethash current-sink apps)))
+          (unless (member (match-string 1 line) existing)
+            (puthash current-sink
+                     (append existing (list (match-string 1 line)))
+                     apps))))))
+    ;; Convert hash to alist
+    (let ((result nil))
+      (maphash (lambda (k v) (push (cons k v) result)) apps)
+      result)))
+
+(defun cj/recording--label-sinks (sinks)
+  "Build labeled (label . name) alist from SINKS for `completing-read'.
+Like `cj/recording--label-devices' but also appends application names
+for sinks with active audio streams.  E.g. \"JDS Labs [in use] (Firefox)\"."
+  (let* ((sink-apps (cj/recording--get-sink-apps))
+         (sinks-short (shell-command-to-string "pactl list sinks short 2>/dev/null"))
+         (labeled
+          (mapcar
+           (lambda (dev)
+             (let* ((name  (nth 0 dev))
+                    (desc  (nth 1 dev))
+                    (state (nth 2 dev))
+                    (muted (nth 3 dev))
+                    (index (cj/recording--get-sink-index name sinks-short))
+                    (apps  (and index (cdr (assoc index sink-apps))))
+                    (status (cj/recording--device-status-label state muted))
+                    (app-str (if apps (concat " (" (string-join apps ", ") ")") ""))
+                    (label (concat desc " " status app-str)))
+               (list label name (cj/recording--device-sort-key state muted))))
+           sinks))
          (sorted (sort labeled (lambda (a b) (< (nth 2 a) (nth 2 b))))))
     (mapcar (lambda (entry) (cons (nth 0 entry) (nth 1 entry))) sorted)))
 
 (defun cj/recording-quick-setup ()
   "Quick device setup for recording — two-step mic + sink selection.
-Step 1: Pick a microphone.  Each mic shows its PulseAudio state:
-  [active - running]    = an app is using this mic right now
-  [active - idle]       = recently used, still open
-  [inactive - suspended] = no app has this mic open
-Step 2: Pick an audio output (sink) to monitor, with the same
-state labels.  Devices are sorted running → idle → suspended.
-The chosen sink's .monitor source is set as the system audio device.
+Step 1: Pick a microphone.  Each mic shows its status:
+  [in use]    = an app is actively using this mic
+  [ready]     = recently used, still open
+  [available] = no app has this mic open
+  [muted]     = device is muted in PulseAudio
+Step 2: Pick an audio output to capture.  Same status labels, plus
+application names for outputs with active streams (e.g. \"Firefox\").
+Devices are sorted: in use → ready → available → muted.
+The chosen output's .monitor source is set as the system audio device.
 
 This approach is portable across systems — plug in a new mic, run this
 command, and it appears in the list.  No hardware-specific configuration
@@ -561,7 +617,7 @@ needed."
          (mic-entries (cj/recording--label-devices mics))
          (mic-alist-with-cancel (append mic-entries '(("Cancel" . nil)))))
     (if (null mic-entries)
-        (user-error "No microphones found.  Is a mic plugged in and unmuted?")
+        (user-error "No microphones found.  Is a mic connected?")
       (let* ((mic-choice (completing-read "Select microphone: "
                                           (lambda (string pred action)
                                             (if (eq action 'metadata)
@@ -573,9 +629,9 @@ needed."
             (user-error "Device setup cancelled")
           ;; Step 2: Sink selection
           (let* ((sinks (cj/recording--get-available-sinks))
-                 (sink-entries (cj/recording--label-devices sinks))
+                 (sink-entries (cj/recording--label-sinks sinks))
                  (sink-alist-with-cancel (append sink-entries '(("Cancel" . nil))))
-                 (sink-choice (completing-read "Select audio output to monitor: "
+                 (sink-choice (completing-read "Select audio output to capture: "
                                               (lambda (string pred action)
                                                 (if (eq action 'metadata)
                                                     '(metadata (display-sort-function . identity))
