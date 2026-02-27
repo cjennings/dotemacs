@@ -109,5 +109,22 @@ Each source is (name description mute state)."
                   ("sink-b.monitor" "Monitor B" "no" "SUSPENDED"))))))
     (should (null (cj/recording--get-available-mics)))))
 
+;;; Error Cases
+
+(ert-deftest test-video-audio-recording--get-available-mics-error-garbled-output ()
+  "Test that garbled pactl output returns empty list, not an error."
+  (cl-letf (((symbol-function 'shell-command-to-string)
+             (lambda (_cmd) "random garbage\nwith newlines\nbut no structure\n")))
+    (should (null (cj/recording--get-available-mics)))))
+
+(ert-deftest test-video-audio-recording--get-available-mics-error-missing-fields ()
+  "Test that source with partial fields does not crash."
+  (cl-letf (((symbol-function 'shell-command-to-string)
+             (lambda (_cmd) "Source #1\n\tState: RUNNING\n\tName: partial-source\n")))
+    ;; Missing Description and Mute — should not error
+    (let ((mics (cj/recording--get-available-mics)))
+      ;; May return empty or partial; must not signal
+      (should (listp mics)))))
+
 (provide 'test-video-audio-recording--get-available-mics)
 ;;; test-video-audio-recording--get-available-mics.el ends here
