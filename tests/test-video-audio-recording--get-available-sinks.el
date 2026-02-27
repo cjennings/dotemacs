@@ -5,6 +5,7 @@
 ;; Verifies that available sinks are discovered correctly:
 ;; - Muted sinks are excluded
 ;; - Friendly descriptions from PulseAudio are used
+;; - PulseAudio state is included
 
 ;;; Code:
 
@@ -37,16 +38,25 @@ Each sink is (name description mute state)."
                   ("muted-sink" "Muted Sink" "yes" "SUSPENDED"))))))
     (let ((sinks (cj/recording--get-available-sinks)))
       (should (= 1 (length sinks)))
-      (should (equal "active-sink" (car (car sinks)))))))
+      (should (equal "active-sink" (nth 0 (car sinks)))))))
 
 (ert-deftest test-get-available-sinks-normal-uses-descriptions ()
-  "Test that friendly descriptions are returned as cdr."
+  "Test that friendly descriptions are returned as second element."
   (cl-letf (((symbol-function 'shell-command-to-string)
              (lambda (_cmd)
                (test-sinks--make-pactl-output
                 '(("raw-sink-name" "Friendly Sink Name" "no" "IDLE"))))))
     (let ((sinks (cj/recording--get-available-sinks)))
-      (should (equal "Friendly Sink Name" (cdr (car sinks)))))))
+      (should (equal "Friendly Sink Name" (nth 1 (car sinks)))))))
+
+(ert-deftest test-get-available-sinks-normal-includes-state ()
+  "Test that PulseAudio state is returned as third element."
+  (cl-letf (((symbol-function 'shell-command-to-string)
+             (lambda (_cmd)
+               (test-sinks--make-pactl-output
+                '(("sink-a" "Sink A" "no" "RUNNING"))))))
+    (let ((sinks (cj/recording--get-available-sinks)))
+      (should (equal "RUNNING" (nth 2 (car sinks)))))))
 
 (ert-deftest test-get-available-sinks-normal-multiple-sinks ()
   "Test that multiple non-muted sinks are returned."

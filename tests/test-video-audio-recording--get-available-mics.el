@@ -6,6 +6,7 @@
 ;; - Monitor sources are excluded (they capture output, not input)
 ;; - Muted sources are excluded
 ;; - Friendly descriptions from PulseAudio are used
+;; - PulseAudio state is included
 
 ;;; Code:
 
@@ -38,7 +39,7 @@ Each source is (name description mute state)."
                   ("alsa_output.usb-Jabra.monitor" "Monitor of Jabra" "no" "SUSPENDED"))))))
     (let ((mics (cj/recording--get-available-mics)))
       (should (= 1 (length mics)))
-      (should (equal "alsa_input.usb-Jabra.mono" (car (car mics)))))))
+      (should (equal "alsa_input.usb-Jabra.mono" (nth 0 (car mics)))))))
 
 (ert-deftest test-video-audio-recording--get-available-mics-normal-filters-muted ()
   "Test that muted sources are excluded from mic list."
@@ -49,16 +50,25 @@ Each source is (name description mute state)."
                   ("muted-mic" "Muted Mic" "yes" "SUSPENDED"))))))
     (let ((mics (cj/recording--get-available-mics)))
       (should (= 1 (length mics)))
-      (should (equal "active-mic" (car (car mics)))))))
+      (should (equal "active-mic" (nth 0 (car mics)))))))
 
 (ert-deftest test-video-audio-recording--get-available-mics-normal-uses-descriptions ()
-  "Test that friendly descriptions are returned as cdr."
+  "Test that friendly descriptions are returned as second element."
   (cl-letf (((symbol-function 'shell-command-to-string)
              (lambda (_cmd)
                (test-mics--make-pactl-output
                 '(("raw-device-name" "Friendly Device Name" "no" "IDLE"))))))
     (let ((mics (cj/recording--get-available-mics)))
-      (should (equal "Friendly Device Name" (cdr (car mics)))))))
+      (should (equal "Friendly Device Name" (nth 1 (car mics)))))))
+
+(ert-deftest test-video-audio-recording--get-available-mics-normal-includes-state ()
+  "Test that PulseAudio state is returned as third element."
+  (cl-letf (((symbol-function 'shell-command-to-string)
+             (lambda (_cmd)
+               (test-mics--make-pactl-output
+                '(("mic-a" "Mic A" "no" "RUNNING"))))))
+    (let ((mics (cj/recording--get-available-mics)))
+      (should (equal "RUNNING" (nth 2 (car mics)))))))
 
 (ert-deftest test-video-audio-recording--get-available-mics-normal-multiple-mics ()
   "Test that multiple non-muted, non-monitor mics are returned."
