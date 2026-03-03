@@ -103,6 +103,7 @@
 (require 'prog-shell)            ;; combine elsewhere
 (require 'prog-python)
 (require 'prog-webdev)
+(require 'prog-json)
 (require 'prog-yaml)
 
 ;; ---------------------------------- Org Mode ---------------------------------
