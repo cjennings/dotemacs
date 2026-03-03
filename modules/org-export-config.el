@@ -49,7 +49,7 @@
   (setq org-export-with-tasks '("TODO"))     ;; export with tasks by default
   (setq org-export-with-tasks nil)           ;; export WITHOUT tasks by default
   (setq org-export-with-toc t)               ;; export WITH table of contents by default
-  (setq org-export-initial-scope 'subtree)   ;; 'buffer is your other choice
+  (setq org-export-initial-scope 'buffer)   ;; 'subtree is your other choice
   (setq org-export-with-author nil))         ;; export without author by default
 
 (use-package ox-html

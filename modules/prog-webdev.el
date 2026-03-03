@@ -3,7 +3,6 @@
 ;;
 ;;; Commentary:
 ;; Open a project file and Emacs selects the right helper:
-;; - *.json buffers drop into json-mode for quick structural edits.
 ;; - *.js buffers jump into js2-mode for linty feedback.
 ;; - Mixed HTML templates land in web-mode which chains Tide and CSS Eldoc.
 ;;
@@ -16,13 +15,6 @@
 ;;   and rename are ready without extra setup.
 
 ;;; Code:
-
-;; --------------------------------- JSON Mode ---------------------------------
-;; mode for editing JavaScript Object Notation (JSON) data files
-
-(use-package json-mode
-  :mode ("\\.json\\'" . json-mode)
-  :defer .5)
 
 ;; ---------------------------------- JS2 Mode ---------------------------------
 ;; javascript editing mode
