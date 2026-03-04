@@ -5,14 +5,17 @@
 ;; Python programming environment with LSP, tree-sitter, and formatting.
 ;;
 ;; Installation:
-;;   pip install python-lsp-server[all] flake8
+;;   pip install pyright mypy
 ;;
 ;; LSP will provide:
 ;;   - Intelligent code completion
 ;;   - Jump to definition (M-.)
 ;;   - Find references
-;;   - On-the-fly error checking (flake8)
+;;   - On-the-fly type checking
 ;;   - Documentation on hover
+;;
+;; For Django projects, also install:
+;;   pip install django-stubs
 
 ;;; Code:
 
@@ -20,14 +23,6 @@
 
 ;; Forward declarations for LSP
 (declare-function lsp-deferred "lsp-mode")
-(defvar lsp-pylsp-server-command)
-(defvar lsp-pylsp-plugins-flake8-enabled)
-(defvar lsp-pylsp-plugins-pylint-enabled)
-(defvar lsp-pylsp-plugins-pycodestyle-enabled)
-(defvar lsp-pylsp-plugins-autopep8-enabled)
-(defvar lsp-pylsp-plugins-yapf-enabled)
-(defvar lsp-pylsp-plugins-pydocstyle-enabled)
-(defvar lsp-pylsp-plugins-rope-completion-enabled)
 
 ;; Forward declarations for external packages
 (declare-function company-mode "company")
@@ -35,10 +30,9 @@
 (declare-function pdb "gud")
 (defvar poetry-tracking-strategy)
 
-(defvar pylsp-path "pylsp"
-  "Path to Python LSP server (pylsp or pyright).
-Install with: pip install python-lsp-server[all]
-Or for pyright: pip install pyright")
+(defvar pyright-path "pyright"
+  "Path to pyright language server.
+Install with: pip install pyright")
 
 (defvar mypy-path "mypy"
   "Path to mypy static type checker.
@@ -60,7 +54,7 @@ Install with: pip install mypy")
 
   ;; Enable LSP if available
   (when (and (fboundp 'lsp-deferred)
-             (executable-find pylsp-path))
+             (executable-find pyright-path))
     (lsp-deferred)))
 
 (defun cj/python-mypy ()
@@ -105,23 +99,13 @@ Overrides default prog-mode keybindings with Python-specific commands."
         (rassq-delete-all 'python-mode auto-mode-alist)))
 
 ;; ------------------------------- LSP for Python ------------------------------
-;; Python-specific LSP configuration
+;; Python-specific LSP configuration via pyright
 ;; Core LSP setup is in prog-general.el
 
-(use-package lsp-mode
-  :hook (python-ts-mode . lsp-deferred)
-  :config
-  ;; Use pylsp (python-lsp-server) - more lightweight than pyright
-  (setq lsp-pylsp-server-command pylsp-path)
-
-  ;; Configure pylsp plugins
-  (setq lsp-pylsp-plugins-flake8-enabled t)
-  (setq lsp-pylsp-plugins-pylint-enabled nil)  ;; too slow
-  (setq lsp-pylsp-plugins-pycodestyle-enabled nil)  ;; use flake8 instead
-  (setq lsp-pylsp-plugins-autopep8-enabled nil)  ;; use blacken instead
-  (setq lsp-pylsp-plugins-yapf-enabled nil)
-  (setq lsp-pylsp-plugins-pydocstyle-enabled t)
-  (setq lsp-pylsp-plugins-rope-completion-enabled t))
+(use-package lsp-pyright
+  :hook (python-ts-mode . (lambda ()
+                            (require 'lsp-pyright)
+                            (lsp-deferred))))
 
 ;; ----------------------------------- Poetry ----------------------------------
 ;; virtual environments and dependencies
