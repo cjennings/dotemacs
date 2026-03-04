@@ -2,111 +2,131 @@
 ;; Author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
-;; Open a project file and Emacs selects the right helper:
-;; - *.js buffers jump into js2-mode for linty feedback.
-;; - Mixed HTML templates land in web-mode which chains Tide and CSS Eldoc.
+;; TypeScript, JavaScript, and HTML development with tree-sitter, LSP, and
+;; prettier formatting.
+;;
+;; Installation:
+;;   sudo pacman -S typescript-language-server typescript prettier
+;;
+;; Features:
+;;   - Tree-sitter: Syntax highlighting for TS, TSX, JS (via treesit-auto)
+;;   - LSP: Completion, go-to-definition, hover docs, rename, references
+;;   - Formatting: prettier via C-; f
+;;   - Web-mode: Mixed HTML/CSS/JS templates with context-aware completion
 ;;
 ;; Workflow:
-;; - Hit C-RET in web-mode to ask for completions; the command routes to Tide,
-;;   company-css, or dabbrev based on the language at point.
-;; - Eldoc messages come from `cj/eldoc-web-mode`, so keeping point over JS, CSS,
-;;   or markup swaps the doc source automatically.
-;; - New web buffers call `cj/setup-web-mode-mixed`, enabling Tide so goto-definition
-;;   and rename are ready without extra setup.
+;;   1. Open .ts/.tsx/.js file → tree-sitter mode + LSP auto-starts
+;;   2. C-; f → Format with prettier
+;;   3. Open .html file → web-mode with LSP support
 
 ;;; Code:
 
-;; ---------------------------------- JS2 Mode ---------------------------------
-;; javascript editing mode
+(defvar typescript-ts-mode-map)
+(defvar tsx-ts-mode-map)
+(defvar js-ts-mode-map)
 
-(use-package js2-mode
-  :mode ("\\.js\\'" . js2-mode)
-  :defer .5)
+;; Forward declarations for LSP
+(declare-function lsp-deferred "lsp-mode")
+
+;; Forward declarations for external packages
+(declare-function company-mode "company")
+
+(defvar ts-language-server-path "typescript-language-server"
+  "Path to typescript-language-server executable.
+Install with: sudo pacman -S typescript-language-server")
+
+(defvar prettier-path "prettier"
+  "Path to prettier executable.
+Install with: sudo pacman -S prettier")
+
+;; ------------------------------ Web Dev Setup --------------------------------
+;; shared setup for TypeScript, JavaScript, and TSX modes
+
+(defun cj/webdev-setup ()
+  "Set up common preferences for web development buffers."
+  (company-mode)
+  (flyspell-prog-mode)
+  (superword-mode)
+  (setq-local fill-column 100)
+  (setq-local tab-width 2)
+  (setq-local standard-indent 2)
+  (setq-local indent-tabs-mode nil)
+  (electric-pair-mode t)
+
+  ;; Enable LSP if available
+  (when (and (fboundp 'lsp-deferred)
+             (executable-find ts-language-server-path))
+    (lsp-deferred)))
+
+(defun cj/webdev-format-buffer ()
+  "Format the current buffer with prettier.
+Detects the file type automatically from the filename."
+  (interactive)
+  (if (executable-find prettier-path)
+      (let ((point (point)))
+        (shell-command-on-region (point-min) (point-max)
+                                (format "prettier --stdin-filepath %s"
+                                        (shell-quote-argument
+                                         (or buffer-file-name "file.ts")))
+                                nil t)
+        (goto-char (min point (point-max))))
+    (user-error "prettier not found; install with: sudo pacman -S prettier")))
+
+(defun cj/webdev-keybindings ()
+  "Set up keybindings for web development buffers."
+  (local-set-key (kbd "C-; f") #'cj/webdev-format-buffer))
+
+;; ----------------------------- TypeScript / JS -------------------------------
+;; tree-sitter modes (built-in, Emacs 29+)
+;; NOTE: No :mode directives — treesit-auto (in prog-general.el) handles
+;; the auto-mode-alist mappings and auto-installs grammars on first use.
+
+(use-package typescript-ts-mode
+  :ensure nil
+  :defer t
+  :hook
+  ((typescript-ts-mode . cj/webdev-setup)
+   (typescript-ts-mode . cj/webdev-keybindings)))
+
+(use-package tsx-ts-mode
+  :ensure nil
+  :defer t
+  :hook
+  ((tsx-ts-mode . cj/webdev-setup)
+   (tsx-ts-mode . cj/webdev-keybindings)))
+
+(use-package js-ts-mode
+  :ensure nil
+  :defer t
+  :hook
+  ((js-ts-mode . cj/webdev-setup)
+   (js-ts-mode . cj/webdev-keybindings)))
+
+;; ----------------------------------- LSP -------------------------------------
+;; TypeScript/JavaScript LSP configuration
+;; Core LSP setup is in prog-general.el
+
+(use-package lsp-mode
+  :hook ((typescript-ts-mode tsx-ts-mode js-ts-mode) . lsp-deferred))
 
 ;; --------------------------------- CSS Eldoc ---------------------------------
 ;; CSS info in the echo area
 
 (use-package css-eldoc
-  :defer .5)
-
-;; ------------------------------------ Tide -----------------------------------
-;; typescript interactive development environment
-
-(use-package tide
-  :defer .5)
-
-(defun cj/activate-tide ()
-  "Activate Tide mode for TypeScript development.
-Calls Tide's setup, enables `eldoc-mode, and activates identifier highlighting."
-  (interactive)
-  (tide-setup)
-  (eldoc-mode 1)
-  (tide-hl-identifier-mode 1))
+  :defer t)
 
 ;; ---------------------------------- Web Mode ---------------------------------
-;; major mode for editing web templates
+;; major mode for editing web templates (HTML with embedded JS/CSS)
 
 (use-package web-mode
-  :defer .5
-  :after (tide css-eldoc)
+  :defer t
   :custom
   (web-mode-enable-current-element-highlight t)
-  :bind
-  ([(control return)] . cj/complete-web-mode)
-  :mode
-  (("\\.html?$" . cj/setup-web-mode-mixed)))
-
-(defun cj/complete-web-mode ()
-  "Provide context-aware completion in `web-mode' buffers.
-Determines the language at point (JavaScript, CSS, or markup)
-and invokes the appropriate completion backend:
-- JavaScript: uses `company-tide'
-- CSS: uses `company-css'
-- Other markup: uses `company-dabbrev-code'
-
-This function is typically bound to \\[cj/complete-web-mode] in
-`web-mode' buffers to provide intelligent completions based on
-the current context."
-  (interactive)
-  (let ((current-scope (web-mode-language-at-pos (point))))
-	(cond ((string-equal "javascript" current-scope)
-		   (company-tide 'interactive))
-		  ((string-equal "css" current-scope)
-		   (company-css 'interactive))
-		  (t
-		   (company-dabbrev-code 'interactive)))))
-
-(defun cj/eldoc-web-mode ()
-  "Provide context-aware eldoc documentation in `web-mode' buffers.
-Return appropriate documentation based on the language at point:
-- JavaScript: uses `tide-eldoc-function' for TypeScript/JavaScript docs
-- CSS: uses `css-eldoc-function' for CSS property documentation
-- Other markup: returns nil (no documentation)
-
-This function is designed to be used as the buffer-local value
-of `eldoc-documentation-function' in `web-mode' buffers with
-mixed content."
-  (let ((current-scope (web-mode-language-at-pos (point))))
-	(cond ((string-equal "javascript" current-scope)
-		   (tide-eldoc-function))
-		  ((string-equal "css" current-scope)
-		   (css-eldoc-function))
-		  (t
-		   nil))))
-
-(defun cj/setup-web-mode-mixed ()
-  "Set up `web-mode' with Tide and context-aware eldoc support.
-Enable `web-mode' for the current buffer and configure it for
-mixed HTML/JavaScript/CSS content.  Activate Tide for JavaScript
-support and configure eldoc to use `cj/eldoc-web-mode' for
-context-aware documentation.
-
-This function is typically used as an auto-mode entry point for
-HTML files that contain embedded JavaScript and CSS."
-  (web-mode)
-  (cj/activate-tide)
-  (setq-local eldoc-documentation-function #'cj/eldoc-web-mode))
-
+  (web-mode-markup-indent-offset 2)
+  (web-mode-code-indent-offset 2)
+  (web-mode-engines-alist '(("django" . "\\.html\\'")))
+  :mode ("\\.html?$" . web-mode)
+  :hook (web-mode . cj/webdev-keybindings))
 
 (provide 'prog-webdev)
 ;;; prog-webdev.el ends here.
