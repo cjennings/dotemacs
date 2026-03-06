@@ -93,12 +93,21 @@
 MESSAGE is the incoming slack message, ROOM is the channel/DM,
 TEAM is the slack team object."
   (when (and (not (slack-message-minep message team))
-             (or (slack-room-im-p room)
+             (or (slack-im-p room)
                  (slack-message-mentioned-p message)))
     (let ((title (format "Slack: %s" (slack-room-display-name room team)))
-          (body (slack-message-to-string message team)))
+          (body (slack-message-body message team)))
       (start-process "slack-notify" nil
                      "notify" "info" title body))))
+
+(defun cj/slack-mark-read-and-bury ()
+  "Mark the current Slack channel as read and bury the buffer."
+  (interactive)
+  (when (and (boundp 'slack-current-buffer) slack-current-buffer)
+    (let ((ts (slack-buffer-latest-ts slack-current-buffer)))
+      (when ts
+        (slack-buffer-update-mark-request slack-current-buffer ts))))
+  (bury-buffer))
 
 ;; ------------------------------ Keybindings ----------------------------------
 
@@ -117,7 +126,7 @@ TEAM is the slack team object."
 (define-key cj/slack-keymap (kbd "!") #'slack-message-add-reaction)
 (define-key cj/slack-keymap (kbd "@") #'slack-message-embed-mention)
 (define-key cj/slack-keymap (kbd "#") #'slack-message-embed-channel)
-(define-key cj/slack-keymap (kbd "q") #'slack-buffer-mark-as-read-and-bury)
+(define-key cj/slack-keymap (kbd "q") #'cj/slack-mark-read-and-bury)
 (define-key cj/slack-keymap (kbd "S") #'cj/slack-stop)
 
 (which-key-add-keymap-based-replacements cj/slack-keymap
