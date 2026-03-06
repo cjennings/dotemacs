@@ -160,6 +160,11 @@ Adjust this if the title doesn't appear centered under the banner image.")
             (lambda (&rest _) (cj/erc-switch-to-buffer-with-completion))
             nil " " "")
 
+           (,(nerd-icons-faicon "nf-fa-slack")
+            "Slack" "Slack Client"
+            (lambda (&rest _) (cj/slack-start))
+            nil " " "")
+
            (,(nerd-icons-mdicon "nf-md-school")
             "Flashcards" "Org-Drill"
             (lambda (&rest _) (cj/drill-start))
@@ -193,6 +198,7 @@ Adjust this if the title doesn't appear centered under the banner image.")
   (define-key dashboard-mode-map (kbd "f") (lambda () (interactive) (cj/drill-start)))
   (define-key dashboard-mode-map (kbd "r") (lambda () (interactive) (cj/elfeed-open)))
   (define-key dashboard-mode-map (kbd "i") (lambda () (interactive) (cj/erc-switch-to-buffer-with-completion)))
+  (define-key dashboard-mode-map (kbd "s") (lambda () (interactive) (cj/slack-start)))
   (define-key dashboard-mode-map (kbd "t") (lambda () (interactive) (vterm)))
   (define-key dashboard-mode-map (kbd "d") (lambda () (interactive) (dirvish user-home-dir))))
 
