@@ -71,6 +71,49 @@ to better defaults via org-reveal-head-preamble CSS or custom theme.
 Create a custom reveal.js CSS theme using colors from themes/dupre-palette.el.
 Install into reveal.js/css/theme/ for use with #+REVEAL_THEME: dupre.
 
+** Slack
+
+*** VERIFY [#B] Test Slack desktop notifications (DM and @mention)
+
+Notifications were silently failing due to two bugs in cj/slack-notify:
+1. ~slack-room-im-p~ (nonexistent) → ~slack-im-p~ (correct EIEIO predicate)
+2. ~slack-message-to-string~ (propertized) → ~slack-message-body~ (plain text)
+
+**Testing Steps:**
+
+1. Open slack-config.el and run ~M-x eval-buffer~
+2. Connect to Slack: ~C-; S s~
+3. In any Slack channel, type ~/remind me in 1 minute test notification~
+4. Wait for Slackbot DM — a desktop notification should appear
+5. Verify notification shows "Slack: DM: Slackbot" as title with message body
+
+**If notification does NOT appear:**
+- Check ~*Messages*~ buffer for errors mentioning ~cj/slack-notify~
+- Verify ~notify~ command works standalone: run ~notify info "Test" "Hello"~ in a terminal
+
+**Files Modified:**
+- modules/slack-config.el (cj/slack-notify function)
+
+*** VERIFY [#B] Test Slack mark-as-read and bury buffer (C-; S q)
+
+~C-; S q~ was bound to ~slack-buffer-mark-as-read-and-bury~ which doesn't exist
+in the emacs-slack package. Replaced with ~cj/slack-mark-read-and-bury~.
+
+**Testing Steps:**
+
+1. Open slack-config.el and run ~M-x eval-buffer~
+2. Connect to Slack: ~C-; S s~
+3. Open any channel with unread messages: ~C-; S c~
+4. Press ~C-; S q~ — buffer should bury without error
+5. Reopen the same channel: ~C-; S c~ — it should no longer appear as unread
+
+**If it errors:**
+- Check ~*Messages*~ buffer for the specific error
+- Verify ~slack-current-buffer~ is bound in the Slack buffer: ~C-h v slack-current-buffer~
+
+**Files Modified:**
+- modules/slack-config.el (new cj/slack-mark-read-and-bury function + keybinding)
+
 ** Mail
 
 *** VERIFY [#B] Fix mail attachment workflow (currently awkward)
