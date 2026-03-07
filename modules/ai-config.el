@@ -78,10 +78,9 @@ Call this only after loading 'gptel' so the backend constructors exist."
               "Claude"
             :key (cj/anthropic-api-key)
             :models '(
-                      "claude-opus-4-1-20250805"
-                      "claude-3-5-sonnet-20241022"
-                      "claude-3-opus-20240229"
-                      "claude-3-5-haiku-20241022"
+                      "claude-opus-4-6"
+                      "claude-sonnet-4-6"
+                      "claude-haiku-4-5-20251001"
                       )
             :stream t)))
   (unless gptel-chatgpt-backend
@@ -391,7 +390,11 @@ Works for any buffer, whether it's visiting a file or not."
   (gptel-prompts-directory (concat user-emacs-directory "ai-prompts"))
   :config
   (gptel-prompts-update)
-  (gptel-prompts-add-update-watchers))
+  (gptel-prompts-add-update-watchers)
+  ;; gptel--system-message is set at gptel load time, before gptel-prompts
+  ;; replaces the default directive. Re-apply it now.
+  (when-let* ((dir (alist-get 'default gptel-directives)))
+    (setq gptel--system-message dir)))
 
 ;;; --------------------------------- AI Keymap ---------------------------------
 
