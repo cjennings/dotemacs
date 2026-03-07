@@ -118,38 +118,60 @@ Ensures gptel and backends are initialized."
    ((symbolp m) (symbol-name m))
    (t (format "%s" m))))
 
-;; Backend/model switching commands (moved out of use-package so they are commandp)
+;; Backend/model switching helpers (pure logic, extracted for testability)
+
+(defun cj/gptel--build-model-list (backends model-fn)
+  "Build a flat list of all models across BACKENDS.
+BACKENDS is an alist of (NAME . BACKEND-OBJECT).  MODEL-FN is called
+with each backend object and should return a list of model identifiers.
+Returns a list of entries: (DISPLAY-STRING BACKEND MODEL-STRING BACKEND-NAME)
+where DISPLAY-STRING is \"Backend: model\" for use in completing-read."
+  (mapcan
+   (lambda (pair)
+     (let* ((backend-name (car pair))
+            (backend (cdr pair))
+            (models (funcall model-fn backend)))
+       (mapcar (lambda (m)
+                 (list (format "%s: %s" backend-name (cj/gptel--model-to-string m))
+                       backend
+                       (cj/gptel--model-to-string m)
+                       backend-name))
+               models)))
+   backends))
+
+(defun cj/gptel--current-model-selection (backends current-backend current-model)
+  "Format the current backend/model as a display string.
+BACKENDS is the alist from `cj/gptel--available-backends'.
+CURRENT-BACKEND and CURRENT-MODEL are the active gptel settings.
+Returns a string like \"Anthropic - Claude: claude-opus-4-6\"."
+  (let ((backend-name (car (rassoc current-backend backends))))
+    (format "%s: %s"
+            (or backend-name "AI")
+            (cj/gptel--model-to-string current-model))))
+
+;; Backend/model switching commands
 (defun cj/gptel-change-model ()
   "Change the GPTel backend and select a model from that backend.
 Present all available models from every backend, switching backends when
 necessary. Prompt for whether to apply the selection globally or buffer-locally."
   (interactive)
   (let* ((backends (cj/gptel--available-backends))
-         (all-models
-          (mapcan
-           (lambda (pair)
-             (let* ((backend-name (car pair))
-                    (backend (cdr pair))
-                    (models (when (fboundp 'gptel-backend-models)
-                              (gptel-backend-models backend))))
-               (mapcar (lambda (m)
-                         (list (format "%s: %s" backend-name (cj/gptel--model-to-string m))
-                               backend
-                               (cj/gptel--model-to-string m)
-                               backend-name))
-                       models)))
-           backends))
-         (current-backend-name (car (rassoc (bound-and-true-p gptel-backend) backends)))
-         (current-selection (format "%s: %s"
-                                    (or current-backend-name "AI")
-                                    (cj/gptel--model-to-string (bound-and-true-p gptel-model))))
+         (all-models (cj/gptel--build-model-list
+                      backends
+                      (lambda (b)
+                        (when (fboundp 'gptel-backend-models)
+                          (gptel-backend-models b)))))
+         (current-selection (cj/gptel--current-model-selection
+                             backends
+                             (bound-and-true-p gptel-backend)
+                             (bound-and-true-p gptel-model)))
          (scope (completing-read "Set model for: " '("buffer" "global") nil t))
          (selected (completing-read
                     (format "Select model (current: %s): " current-selection)
                     (mapcar #'car all-models) nil t nil nil current-selection)))
     (let* ((model-info (assoc selected all-models))
            (backend (nth 1 model-info))
-           (model (intern (nth 2 model-info)))  ;; Convert string to symbol
+           (model (intern (nth 2 model-info)))
            (backend-name (nth 3 model-info)))
       (if (string= scope "global")
           (progn
