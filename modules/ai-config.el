@@ -277,12 +277,6 @@ Works for any buffer, whether it's visiting a file or not."
   ;; Set Claude as default after initialization
   (setq gptel-backend gptel-claude-backend)
 
-  ;; Named backend list for switching
-  (defvar cj/gptel-backends
-    `(("Anthropic - Claude" . ,gptel-claude-backend)
-      ("OpenAI - ChatGPT" . ,gptel-chatgpt-backend))
-    "Alist of GPTel backends for interactive switching.")
-
   (setq gptel-confirm-tool-calls nil) ;; allow tool access by default
 
 
