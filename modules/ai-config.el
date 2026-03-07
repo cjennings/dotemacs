@@ -5,8 +5,8 @@
 ;; Configuration for AI integrations in Emacs, focused on GPTel.
 ;;
 ;; Main Features:
-;; - Quick toggle for AI assistant window (F9 or M-a t)
-;; - Custom keymap (M-a prefix, overrides 'backwards-sentence') for AI-related commands.
+;; - Quick toggle for AI assistant window (F9 or C-; a t)
+;; - Custom keymap (C-; a prefix) for AI-related commands.
 ;; - Enhanced org-mode conversation formatting with timestamps
 ;;   allows switching models and easily compare and track responses.
 ;; - Various specialized AI directives (coder, reviewer, etc.)
@@ -17,13 +17,13 @@
 ;; Basic Workflow
 ;;
 ;; Using a side-chat window:
-;; - Launch GPTel via F9 or M-a t, and chat in the AI-Assistant side window (C-<return> to send)
-;; - Change system prompt (expertise, personalities) with M-a p
-;; - Add context from files (M-a f) or buffers (M-a b)
-;; - Save conversations with M-a s, load previous ones with M-a l
-;; - Clear the conversation and start over with M-a x
+;; - Launch GPTel via F9 or C-; a t, and chat in the AI-Assistant side window (C-<return> to send)
+;; - Change system prompt (expertise, personalities) with C-; a p
+;; - Add context from files (C-; a f) or current buffer (C-; a .)
+;; - Save conversations with C-; a s, load previous ones with C-; a l
+;; - Clear the conversation and start over with C-; a x
 ;; Or in any buffer:
-;; - Add directive as above, and select a region to rewrite with M-a r.
+;; - Add directive as above, and select a region to rewrite with C-; a &.
 ;;
 
 ;;; Code:
@@ -289,9 +289,8 @@ Works for any buffer, whether it's visiting a file or not."
     "Alist of GPTel backends for interactive switching.")
 
   (setq gptel-confirm-tool-calls nil) ;; allow tool access by default
-  ;;; ---------------------------- Backend Management ---------------------------
 
-  (setq gptel-backend gptel-claude-backend) ;; use Claude as default
+
 
 ;;; -------------------------- Org Header Construction --------------------------
 
