@@ -114,6 +114,102 @@ in the emacs-slack package. Replaced with ~cj/slack-mark-read-and-bury~.
 **Files Modified:**
 - modules/slack-config.el (new cj/slack-mark-read-and-bury function + keybinding)
 
+*** TODO [#C] Fix Slack reaction workflow (C-; S !)
+
+Reactions via ~C-; S !~ (~slack-message-add-reaction~) have two problems:
+
+1. *Emoji picker only shows GitHub-style names* — without the ~emojify~ package,
+   ~slack-select-emoji~ falls back to a flat ~completing-read~ over 1600+ names
+   fetched from GitHub's iamcal/emoji-data. Common names like ~thumbsup~ and ~pray~
+   are buried. A curated shortlist of common reactions would fix the UX.
+
+2. *CRITICAL: post-command-hook bug traps user in Slack buffer* —
+   ~slack-reaction-echo-description~ is added to ~post-command-hook~ (buffer-local)
+   in all Slack buffers. When the cursor lands on a reaction widget, it reads the
+   ~reaction~ text property and calls ~slack-reaction-help-text~. If the reaction
+   EIEIO object is malformed, the error fires on *every keystroke*, making it
+   impossible to switch buffers, run M-x, or even C-g. The only escape is killing
+   Emacs externally (~pkill emacs~).
+
+   The fix must address this hook FIRST before any other reaction work.
+   Approach: advise ~slack-reaction-echo-description~ with ~condition-case~ to
+   silently catch errors, or remove it from ~post-command-hook~ entirely.
+
+   Relevant code in emacs-slack:
+   - ~slack-buffer.el:399~ — adds hook
+   - ~slack-buffer.el:374~ — ~slack-reaction-echo-description~ definition
+   - ~slack-reaction.el:72~ — ~slack-reaction-help-text~ method
+
+**Discovered:** 2026-03-06
+
+** AI / GPTel
+
+*** TODO [#B] Update stale model list in ai-config.el
+
+Model IDs are outdated. Update to current models.
+See cleanup task below for full list of issues.
+
+*** TODO [#C] Clean up ai-config.el
+
+**** Stale model list
+~claude-opus-4-1-20250805~ and ~claude-3-5-sonnet-20241022~ are superseded.
+Update to current model IDs (claude-opus-4-6, claude-sonnet-4-6, etc.).
+
+**** ~gptel-backend~ set twice
+Lines 284 and 295 both do ~(setq gptel-backend gptel-claude-backend)~. Remove one.
+
+**** Dead code: ~cj/gptel-backends~ defvar
+Static alist at line 287 duplicates ~cj/gptel--available-backends~ (line 105)
+which dynamically builds the same thing. ~cj/gptel-backends~ is unused — delete it.
+
+**** Functions defined inside ~:config~ block
+~cj/gptel--fresh-org-prefix~, ~cj/gptel--refresh-org-prefix~,
+~cj/gptel-backend-and-model~, ~cj/gptel-insert-model-heading~ are defined inside
+use-package :config. Move outside like the other helpers for visibility and
+byte-compilation.
+
+**** ~gptel-confirm-tool-calls~ set to nil
+Allows LLMs to execute tool calls without confirmation. Intentional security
+trade-off — document or reconsider.
+
+**** ~gptel-include-reasoning~ set to ~'ignore~
+Suppresses reasoning output from thinking models (o1, Claude extended thinking).
+Comment says TODO. Decide whether to enable.
+
+**** ~gptel-magit~ loads on every magit open
+Hook ~(magit-mode . gptel-magit-install)~ runs every magit session even when
+AI commit messages aren't needed. Minor overhead.
+
+**** Rewrite bound to ~&~ — unusual mnemonic
+~gptel-rewrite~ bound to ~M-a &~. ~w~ is free in the keymap and more intuitive.
+
+**File:** modules/ai-config.el
+
+** Calibre / EPUB
+
+*** TODO [#C] Clean up calibredb-epub-config.el
+
+1. *Remove ~:defer 1~ from calibredb use-package* — loads calibredb 1 second after
+   startup even though ~:commands~ and ~:bind~ already handle lazy loading. Free
+   startup time.
+
+2. *Double rendering on EPUB open* — ~cj/nov-apply-preferences~ calls
+   ~(nov-render-document)~ explicitly, but it runs as a ~nov-mode~ hook which fires
+   after nov already renders. Every EPUB open renders twice.
+
+3. *visual-fill-column-width doesn't adapt on resize* — calculated once at open
+   time based on window size. Resizing or splitting the window won't recalculate
+   text width. Consider hooking ~window-size-change-functions~ or
+   ~window-configuration-change-hook~.
+
+4. *~calibredb-search-page-max-rows 20000~* — effectively disables pagination.
+   Could slow down the search buffer if library grows large. Monitor or lower.
+
+5. *Anonymous lambda for zathura keybinding* — ~("z" . (lambda ...))~ won't show
+   a name in which-key or describe-key. Replace with a named function.
+
+**File:** modules/calibredb-epub-config.el
+
 ** Mail
 
 *** VERIFY [#B] Fix mail attachment workflow (currently awkward)
