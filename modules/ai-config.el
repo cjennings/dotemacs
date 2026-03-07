@@ -255,6 +255,32 @@ Works for any buffer, whether it's visiting a file or not."
   (gptel-add '(4))
   (message "Added buffer '%s' to GPTel context" (buffer-name)))
 
+;;; -------------------------- Org Header Construction --------------------------
+
+(defun cj/gptel--fresh-org-prefix ()
+  "Generate a fresh org-mode header with current timestamp for user messages."
+  (concat "* " user-login-name " " (format-time-string "[%Y-%m-%d %H:%M:%S]") "\n"))
+
+(defun cj/gptel--refresh-org-prefix (&rest _)
+  "Update the org-mode prefix with fresh timestamp before sending message."
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
+        (cj/gptel--fresh-org-prefix)))
+
+(defun cj/gptel-backend-and-model ()
+  "Return backend, model, and timestamp as a single string."
+  (let* ((backend (pcase (bound-and-true-p gptel-backend)
+                    ((and v (pred vectorp)) (aref v 1))
+                    (_ "AI")))
+         (model   (format "%s" (or (bound-and-true-p gptel-model) "")))
+         (ts      (format-time-string "[%Y-%m-%d %H:%M:%S]")))
+    (format "%s: %s %s" backend model ts)))
+
+(defun cj/gptel-insert-model-heading (response-begin-pos _response-end-pos)
+  "Insert an Org heading for the AI reply at RESPONSE-BEGIN-POS."
+  (save-excursion
+    (goto-char response-begin-pos)
+    (insert (format "* %s\n" (cj/gptel-backend-and-model)))))
+
 ;;; ---------------------------- GPTel Configuration ----------------------------
 
 (use-package gptel
@@ -285,32 +311,6 @@ Works for any buffer, whether it's visiting a file or not."
         (cj/gptel--fresh-org-prefix))
   (advice-add 'gptel-send :before #'cj/gptel--refresh-org-prefix)
   (add-hook 'gptel-post-response-functions #'cj/gptel-insert-model-heading))
-
-;;; -------------------------- Org Header Construction --------------------------
-
-(defun cj/gptel--fresh-org-prefix ()
-  "Generate a fresh org-mode header with current timestamp for user messages."
-  (concat "* " user-login-name " " (format-time-string "[%Y-%m-%d %H:%M:%S]") "\n"))
-
-(defun cj/gptel--refresh-org-prefix (&rest _)
-  "Update the org-mode prefix with fresh timestamp before sending message."
-  (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
-        (cj/gptel--fresh-org-prefix)))
-
-(defun cj/gptel-backend-and-model ()
-  "Return backend, model, and timestamp as a single string."
-  (let* ((backend (pcase (bound-and-true-p gptel-backend)
-                    ((and v (pred vectorp)) (aref v 1))
-                    (_ "AI")))
-         (model   (format "%s" (or (bound-and-true-p gptel-model) "")))
-         (ts      (format-time-string "[%Y-%m-%d %H:%M:%S]")))
-    (format "%s: %s %s" backend model ts)))
-
-(defun cj/gptel-insert-model-heading (response-begin-pos _response-end-pos)
-  "Insert an Org heading for the AI reply at RESPONSE-BEGIN-POS."
-  (save-excursion
-    (goto-char response-begin-pos)
-    (insert (format "* %s\n" (cj/gptel-backend-and-model)))))
 
 ;;; ---------------------------- Toggle GPTel Window ----------------------------
 
@@ -359,9 +359,27 @@ Works for any buffer, whether it's visiting a file or not."
 
 ;;; -------------------------------- GPTel-Magit --------------------------------
 
-(use-package gptel-magit
-  :defer t
-  :hook (magit-mode . gptel-magit-install))
+;; Lazy gptel-magit integration (replaces use-package gptel-magit block).
+;;
+;; The original `(magit-mode . gptel-magit-install)' hook ran on every magit
+;; buffer, repeatedly re-installing keybindings and loading gptel eagerly.
+;;
+;; Instead, we register autoloads and wire up keybindings once when magit
+;; loads.  gptel-magit (and gptel) are only loaded when you actually press
+;; one of these keys:
+;;   M-g  — generate commit message (in commit message buffer)
+;;   g    — generate commit (in magit-commit transient)
+;;   x    — explain diff (in magit-diff transient)
+
+(with-eval-after-load 'magit
+  (autoload 'gptel-magit-generate-message "gptel-magit" nil t)
+  (autoload 'gptel-magit-commit-generate "gptel-magit" nil t)
+  (autoload 'gptel-magit-diff-explain "gptel-magit" nil t)
+  (define-key git-commit-mode-map (kbd "M-g") #'gptel-magit-generate-message)
+  (transient-append-suffix 'magit-commit #'magit-commit-create
+    '("g" "Generate commit" gptel-magit-commit-generate))
+  (transient-append-suffix 'magit-diff #'magit-stash-show
+    '("x" "Explain" gptel-magit-diff-explain)))
 
 ;; ------------------------------ GPTel Directives -----------------------------
 
