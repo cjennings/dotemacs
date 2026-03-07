@@ -32,8 +32,6 @@
 (autoload 'cj/gptel-load-conversation "ai-conversations" "Load a saved AI conversation." t)
 (autoload 'cj/gptel-delete-conversation "ai-conversations" "Delete a saved AI conversation." t)
 
-
-
 (with-eval-after-load 'gptel
   (require 'ai-conversations))
 
@@ -71,7 +69,7 @@ HOST and USER must be strings that identify the credential to return."
 
 (defun cj/ensure-gptel-backends ()
   "Initialize GPTel backends if they are not already available.
-Call this only after loading 'gptel' so the backend constructors exist."
+Call this only after loading `gptel' so the backend constructors exist."
   (unless gptel-claude-backend
     (setq gptel-claude-backend
           (gptel-make-anthropic
@@ -102,7 +100,8 @@ Call this only after loading 'gptel' so the backend constructors exist."
 ;; ------------------ GPTel Conversation And Utility Commands ------------------
 
 (defun cj/gptel--available-backends ()
-  "Return an alist of (NAME . BACKEND), ensuring gptel and backends are initialized."
+  "Return an alist of (NAME . BACKEND).
+Ensures gptel and backends are initialized."
   (unless (featurep 'gptel)
     (require 'gptel))
   (cj/ensure-gptel-backends)
@@ -112,7 +111,8 @@ Call this only after loading 'gptel' so the backend constructors exist."
               (and (bound-and-true-p gptel-chatgpt-backend)
                    (cons "OpenAI - ChatGPT" gptel-chatgpt-backend)))))
 
-(defun cj/gptel--model->string (m)
+(defun cj/gptel--model-to-string (m)
+  "Return model M as a string regardless of its type."
   (cond
    ((stringp m) m)
    ((symbolp m) (symbol-name m))
@@ -133,16 +133,16 @@ necessary. Prompt for whether to apply the selection globally or buffer-locally.
                     (models (when (fboundp 'gptel-backend-models)
                               (gptel-backend-models backend))))
                (mapcar (lambda (m)
-                         (list (format "%s: %s" backend-name (cj/gptel--model->string m))
+                         (list (format "%s: %s" backend-name (cj/gptel--model-to-string m))
                                backend
-                               (cj/gptel--model->string m)
+                               (cj/gptel--model-to-string m)
                                backend-name))
                        models)))
            backends))
          (current-backend-name (car (rassoc (bound-and-true-p gptel-backend) backends)))
          (current-selection (format "%s: %s"
                                     (or current-backend-name "AI")
-                                    (cj/gptel--model->string (bound-and-true-p gptel-model))))
+                                    (cj/gptel--model-to-string (bound-and-true-p gptel-model))))
          (scope (completing-read "Set model for: " '("buffer" "global") nil t))
          (selected (completing-read
                     (format "Select model (current: %s): " current-selection)
@@ -171,8 +171,8 @@ necessary. Prompt for whether to apply the selection globally or buffer-locally.
     (let* ((models (when (fboundp 'gptel-backend-models)
                      (gptel-backend-models backend)))
            (model (completing-read (format "Select %s model: " choice)
-                                   (mapcar #'cj/gptel--model->string models)
-                                   nil t nil nil (cj/gptel--model->string (bound-and-true-p gptel-model)))))
+                                   (mapcar #'cj/gptel--model-to-string models)
+                                   nil t nil nil (cj/gptel--model-to-string (bound-and-true-p gptel-model)))))
       (setq gptel-backend backend
             gptel-model model)
       (message "Switched to %s with model: %s" choice model))))
@@ -180,7 +180,6 @@ necessary. Prompt for whether to apply the selection globally or buffer-locally.
 ;; Clear assistant buffer (moved out so it's always available)
 (defun cj/gptel-clear-buffer ()
   "Erase the current GPTel buffer while preserving the initial Org heading.
-
 Operate only when `gptel-mode' is active in an Org buffer so the heading
 can be reinserted."
   (interactive)
@@ -198,7 +197,6 @@ can be reinserted."
 
 (defun cj/gptel--add-file-to-context (file-path)
   "Add FILE-PATH to the GPTel context.
-
 Returns t on success, nil on failure.
 Provides consistent user feedback about the context state."
   (when (and file-path (file-exists-p file-path))
@@ -213,7 +211,6 @@ Provides consistent user feedback about the context state."
 
 (defun cj/gptel-add-file ()
   "Add a file to the GPTel context.
-
 If inside a Projectile project, prompt from that project's file list.
 Otherwise, prompt with `read-file-name'."
   (interactive)
@@ -234,7 +231,6 @@ Otherwise, prompt with `read-file-name'."
 
 (defun cj/gptel-add-buffer-file ()
   "Select a buffer and add its associated file to the GPTel context.
-
 Lists all open buffers for selection. If the selected buffer is visiting
 a file, that file is added to the GPTel context. Otherwise, an error
 message is displayed."
@@ -250,7 +246,6 @@ message is displayed."
 
 (defun cj/gptel-add-this-buffer ()
   "Add the current buffer to the GPTel context.
-
 Works for any buffer, whether it's visiting a file or not."
   (interactive)
   ;; Load gptel-context if needed

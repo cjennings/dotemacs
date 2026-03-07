@@ -144,7 +144,7 @@ Reactions via ~C-; S !~ (~slack-message-add-reaction~) have two problems:
 
 ** AI / GPTel
 
-*** TODO [#B] Update stale model list in ai-config.el
+*** DONE [#B] Update stale model list in ai-config.el
 
 Model IDs are outdated. Update to current models.
 See cleanup task below for full list of issues.
