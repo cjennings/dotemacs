@@ -63,9 +63,10 @@
 (defun gptel-prompts-add-update-watchers (&rest _) "Stub." nil)
 (provide 'gptel-prompts)
 
-;; Stub gptel-magit
-(defun gptel-magit-install (&rest _) "Stub." nil)
-(provide 'gptel-magit)
+;; NOTE: gptel-magit is NOT stubbed here.  ai-config.el now uses
+;; with-eval-after-load 'magit instead of use-package gptel-magit,
+;; so the magit integration only activates when magit is provided.
+;; See test-ai-config-gptel-magit-lazy-loading.el for magit stub tests.
 
 ;; Stub ai-conversations
 (provide 'ai-conversations)

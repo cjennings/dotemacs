@@ -173,9 +173,9 @@ Changed to ~"*AI-Reasoning*"~ — reasoning redirected to a separate buffer to
 keep conversations clean while remaining reviewable. Not re-sent as context
 (saves API tokens). Can be toggled per-session via gptel menu (~C-; a M~).
 
-**** ~gptel-magit~ loads on every magit open
-Hook ~(magit-mode . gptel-magit-install)~ runs every magit session even when
-AI commit messages aren't needed. Minor overhead.
+**** DONE ~gptel-magit~ loads on every magit open
+Replaced use-package hook with lazy autoloads via ~with-eval-after-load 'magit~.
+Keybindings wired up once when magit loads; gptel-magit only loads on key press.
 
 **** DONE Rewrite bound to ~&~ — unusual mnemonic
 Rewrite moved to ~C-; a r~, clear context moved to ~C-; a c~.
