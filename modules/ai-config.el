@@ -23,7 +23,7 @@
 ;; - Save conversations with C-; a s, load previous ones with C-; a l
 ;; - Clear the conversation and start over with C-; a x
 ;; Or in any buffer:
-;; - Add directive as above, and select a region to rewrite with C-; a &.
+;; - Add directive as above, and select a region to rewrite with C-; a r.
 ;;
 
 ;;; Code:
@@ -268,8 +268,9 @@ Works for any buffer, whether it's visiting a file or not."
   (gptel-default-mode 'org-mode)
   (gptel-expert-commands t)
   (gptel-track-media t)
-  ;; TODO: add reasoning to a buffer. See docstring.
-  (gptel-include-reasoning 'ignore)
+  ;; Options: t (include + resend), 'ignore (show but don't resend),
+  ;;          nil (discard), or a buffer name to redirect reasoning to
+  (gptel-include-reasoning "*AI-Reasoning*")
   (gptel-log-level 'info)
   (gptel--debug nil)
   :config
@@ -279,43 +280,37 @@ Works for any buffer, whether it's visiting a file or not."
 
   (setq gptel-confirm-tool-calls nil) ;; allow tool access by default
 
-
+  ;; Initialize org-mode user prefix and wire up hooks
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
+        (cj/gptel--fresh-org-prefix))
+  (advice-add 'gptel-send :before #'cj/gptel--refresh-org-prefix)
+  (add-hook 'gptel-post-response-functions #'cj/gptel-insert-model-heading))
 
 ;;; -------------------------- Org Header Construction --------------------------
 
-  ;;  Dynamic user prefix for org-mode heading (string, refreshed just before send)
-  (defun cj/gptel--fresh-org-prefix ()
-    "Generate a fresh org-mode header with current timestamp for user messages."
-    (concat "* " user-login-name " " (format-time-string "[%Y-%m-%d %H:%M:%S]") "\n"))
+(defun cj/gptel--fresh-org-prefix ()
+  "Generate a fresh org-mode header with current timestamp for user messages."
+  (concat "* " user-login-name " " (format-time-string "[%Y-%m-%d %H:%M:%S]") "\n"))
 
-  ;; Initialize as a string (GPTel expectation)
+(defun cj/gptel--refresh-org-prefix (&rest _)
+  "Update the org-mode prefix with fresh timestamp before sending message."
   (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
-        (cj/gptel--fresh-org-prefix))
+        (cj/gptel--fresh-org-prefix)))
 
-  ;; Refresh immediately before each send for accurate timestamp
-  (defun cj/gptel--refresh-org-prefix (&rest _)
-    "Update the org-mode prefix with fresh timestamp before sending message."
-    (setf (alist-get 'org-mode gptel-prompt-prefix-alist)
-          (cj/gptel--fresh-org-prefix)))
-  (advice-add 'gptel-send :before #'cj/gptel--refresh-org-prefix)
+(defun cj/gptel-backend-and-model ()
+  "Return backend, model, and timestamp as a single string."
+  (let* ((backend (pcase (bound-and-true-p gptel-backend)
+                    ((and v (pred vectorp)) (aref v 1))
+                    (_ "AI")))
+         (model   (format "%s" (or (bound-and-true-p gptel-model) "")))
+         (ts      (format-time-string "[%Y-%m-%d %H:%M:%S]")))
+    (format "%s: %s %s" backend model ts)))
 
-  ;; AI header on each reply: (e.g. "*** AI: <model> [timestamp]")
-  (defun cj/gptel-backend-and-model ()
-    "Return backend, model, and timestamp as a single string."
-    (let* ((backend (pcase (bound-and-true-p gptel-backend)
-                      ((and v (pred vectorp)) (aref v 1))  ;; display name if vector
-                      (_ "AI")))
-           (model   (format "%s" (or (bound-and-true-p gptel-model) "")))
-           (ts      (format-time-string "[%Y-%m-%d %H:%M:%S]")))
-      (format "%s: %s %s" backend model ts)))
-
-  (defun cj/gptel-insert-model-heading (response-begin-pos _response-end-pos)
-    "Insert an Org heading for the AI reply at RESPONSE-BEGIN-POS."
-    (save-excursion
-      (goto-char response-begin-pos)
-      (insert (format "* %s\n" (cj/gptel-backend-and-model)))))
-
-  (add-hook 'gptel-post-response-functions #'cj/gptel-insert-model-heading))
+(defun cj/gptel-insert-model-heading (response-begin-pos _response-end-pos)
+  "Insert an Org heading for the AI reply at RESPONSE-BEGIN-POS."
+  (save-excursion
+    (goto-char response-begin-pos)
+    (insert (format "* %s\n" (cj/gptel-backend-and-model)))))
 
 ;;; ---------------------------- Toggle GPTel Window ----------------------------
 
@@ -396,8 +391,8 @@ Works for any buffer, whether it's visiting a file or not."
   "l" #'cj/gptel-load-conversation   ;; load and continue conversation
   "m" #'cj/gptel-change-model        ;; change the LLM model
   "p" #'gptel-system-prompt          ;; change prompt
-  "&" #'gptel-rewrite                ;; rewrite a region of code/text
-  "r" #'cj/gptel-context-clear       ;; remove all context
+  "r" #'gptel-rewrite                ;; rewrite a region of code/text
+  "c" #'cj/gptel-context-clear       ;; clear all context
   "s" #'cj/gptel-save-conversation   ;; save conversation
   "t" #'cj/toggle-gptel              ;; toggles the ai-assistant window
   "x" #'cj/gptel-clear-buffer)        ;; clears the assistant buffer
@@ -414,8 +409,8 @@ Works for any buffer, whether it's visiting a file or not."
     "C-; a l" "load conversation"
     "C-; a m" "change model"
     "C-; a p" "change prompt"
-    "C-; a &" "rewrite region"
-    "C-; a r" "clear context"
+    "C-; a r" "rewrite region"
+    "C-; a c" "clear context"
     "C-; a s" "save conversation"
     "C-; a t" "toggle window"
     "C-; a x" "clear buffer"))

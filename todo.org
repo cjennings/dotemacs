@@ -151,37 +151,34 @@ See cleanup task below for full list of issues.
 
 *** TODO [#C] Clean up ai-config.el
 
-**** Stale model list
+**** DONE Stale model list
 ~claude-opus-4-1-20250805~ and ~claude-3-5-sonnet-20241022~ are superseded.
 Update to current model IDs (claude-opus-4-6, claude-sonnet-4-6, etc.).
 
-**** ~gptel-backend~ set twice
+**** DONE ~gptel-backend~ set twice
 Lines 284 and 295 both do ~(setq gptel-backend gptel-claude-backend)~. Remove one.
 
-**** Dead code: ~cj/gptel-backends~ defvar
+**** DONE Dead code: ~cj/gptel-backends~ defvar
 Static alist at line 287 duplicates ~cj/gptel--available-backends~ (line 105)
 which dynamically builds the same thing. ~cj/gptel-backends~ is unused — delete it.
 
-**** Functions defined inside ~:config~ block
+**** DONE Functions defined inside ~:config~ block
 ~cj/gptel--fresh-org-prefix~, ~cj/gptel--refresh-org-prefix~,
 ~cj/gptel-backend-and-model~, ~cj/gptel-insert-model-heading~ are defined inside
 use-package :config. Move outside like the other helpers for visibility and
 byte-compilation.
 
-**** ~gptel-confirm-tool-calls~ set to nil
-Allows LLMs to execute tool calls without confirmation. Intentional security
-trade-off — document or reconsider.
-
-**** ~gptel-include-reasoning~ set to ~'ignore~
-Suppresses reasoning output from thinking models (o1, Claude extended thinking).
-Comment says TODO. Decide whether to enable.
+**** DONE ~gptel-include-reasoning~ set to ~'ignore~
+Changed to ~"*AI-Reasoning*"~ — reasoning redirected to a separate buffer to
+keep conversations clean while remaining reviewable. Not re-sent as context
+(saves API tokens). Can be toggled per-session via gptel menu (~C-; a M~).
 
 **** ~gptel-magit~ loads on every magit open
 Hook ~(magit-mode . gptel-magit-install)~ runs every magit session even when
 AI commit messages aren't needed. Minor overhead.
 
-**** Rewrite bound to ~&~ — unusual mnemonic
-~gptel-rewrite~ bound to ~M-a &~. ~w~ is free in the keymap and more intuitive.
+**** DONE Rewrite bound to ~&~ — unusual mnemonic
+Rewrite moved to ~C-; a r~, clear context moved to ~C-; a c~.
 
 **File:** modules/ai-config.el
 
