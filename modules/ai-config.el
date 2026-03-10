@@ -93,9 +93,10 @@ Call this only after loading `gptel' so the backend constructors exist."
                       "o1"
                       )
             :stream t)))
-  ;; Set default backend
+  ;; Set default backend and model
   (unless gptel-backend
-    (setq gptel-backend (or gptel-claude-backend gptel-chatgpt-backend))))
+    (setq gptel-backend (or gptel-claude-backend gptel-chatgpt-backend))
+    (setq gptel-model "claude-opus-4-6")))
 
 ;; ------------------ GPTel Conversation And Utility Commands ------------------
 
@@ -325,6 +326,7 @@ Works for any buffer, whether it's visiting a file or not."
   (cj/ensure-gptel-backends)
   ;; Set Claude as default after initialization
   (setq gptel-backend gptel-claude-backend)
+  (setq gptel-model "claude-opus-4-6")
 
   (setq gptel-confirm-tool-calls nil) ;; allow tool access by default
 

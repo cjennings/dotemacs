@@ -218,6 +218,7 @@
     ("hospiralization" "hospitalization" nil :count 0)
     ("hrie" "hire" nil :count 0)
     ("htey" "they" nil :count 3)
+    ("humaize" "humanize" nil :count 0)
     ("humerous" "humorous" nil :count 0)
     ("hygeine" "hygiene" nil :count 1)
     ("hygene" "hygiene" nil :count 0)
