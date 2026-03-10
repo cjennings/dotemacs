@@ -331,7 +331,8 @@ Replaces current playlist."
       (emms-playlist-clear)
       (emms-play-playlist choice-file)
       (with-current-buffer (cj/music--ensure-playlist-buffer)
-        (setq cj/music-playlist-file choice-file))
+        (setq cj/music-playlist-file choice-file)
+        (goto-char (point-min)))
       (message "Loaded playlist: %s" choice-name))))
 
 
@@ -377,7 +378,8 @@ Offers completion over existing names but allows new names."
     (emms-playlist-clear)
     (emms-play-playlist file-path)
     (with-current-buffer (cj/music--ensure-playlist-buffer)
-      (setq cj/music-playlist-file file-path))
+      (setq cj/music-playlist-file file-path)
+      (goto-char (point-min)))
     (message "Reloaded playlist: %s" name)))
 
 
