@@ -26,6 +26,7 @@
 ;;   C-; S @  — embed @mention
 ;;   C-; S #  — embed #channel
 ;;   C-; S q  — mark channel read and bury buffer
+;;   C-; S Q  — close all Slack buffers and windows
 ;;   C-; S S  — disconnect
 ;;
 ;; Compose buffer:
@@ -94,7 +95,7 @@ MESSAGE is the incoming slack message, ROOM is the channel/DM,
 TEAM is the slack team object."
   (when (and (not (slack-message-minep message team))
              (or (slack-im-p room)
-                 (slack-message-mentioned-p message)))
+                 (slack-message-mentioned-p message team)))
     (let ((title (format "Slack: %s" (slack-room-display-name room team)))
           (body (slack-message-body message team)))
       (start-process "slack-notify" nil
@@ -108,6 +109,19 @@ TEAM is the slack team object."
       (when ts
         (slack-buffer-update-mark-request slack-current-buffer ts))))
   (bury-buffer))
+
+(defun cj/slack-close-all-buffers ()
+  "Kill all Slack buffers and delete their windows."
+  (interactive)
+  (let ((count 0))
+    (dolist (buf (buffer-list))
+      (when (buffer-local-value 'slack-current-buffer buf)
+        (let ((win (get-buffer-window buf t)))
+          (when (and win (not (window-dedicated-p win)))
+            (delete-window win)))
+        (kill-buffer buf)
+        (cl-incf count)))
+    (message "Closed %d Slack buffer%s" count (if (= count 1) "" "s"))))
 
 ;; ------------------------------ Keybindings ----------------------------------
 
@@ -127,6 +141,7 @@ TEAM is the slack team object."
 (define-key cj/slack-keymap (kbd "@") #'slack-message-embed-mention)
 (define-key cj/slack-keymap (kbd "#") #'slack-message-embed-channel)
 (define-key cj/slack-keymap (kbd "q") #'cj/slack-mark-read-and-bury)
+(define-key cj/slack-keymap (kbd "Q") #'cj/slack-close-all-buffers)
 (define-key cj/slack-keymap (kbd "S") #'cj/slack-stop)
 
 (which-key-add-keymap-based-replacements cj/slack-keymap
@@ -142,6 +157,7 @@ TEAM is the slack team object."
   "@" "embed @mention"
   "#" "embed #channel"
   "q" "mark read & bury"
+  "Q" "close all slack"
   "S" "disconnect")
 
 ;; Send from compose buffer with C-<return>
