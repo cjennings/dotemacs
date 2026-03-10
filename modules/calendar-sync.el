@@ -894,9 +894,13 @@ Returns string like '<2025-11-16 Sun 14:00-15:00>' or '<2025-11-16 Sun>'."
 ;;; Helper Functions
 
 (defun calendar-sync--date-to-time (date)
-  "Convert DATE (year month day) to time value for comparison.
-DATE should be a list like (year month day)."
-  (apply #'encode-time 0 0 0 (reverse date)))
+  "Convert DATE to time value for comparison.
+DATE should be a list starting with (year month day ...).
+Only the first three elements are used; extra elements (hour, minute) are ignored."
+  (let ((day (nth 2 date))
+        (month (nth 1 date))
+        (year (nth 0 date)))
+    (encode-time 0 0 0 day month year)))
 
 (defun calendar-sync--before-date-p (date1 date2)
   "Return t if DATE1 is before DATE2.
