@@ -92,14 +92,26 @@
 (defun cj/slack-notify (message room team)
   "Send desktop notification for DMs and @mentions only.
 MESSAGE is the incoming slack message, ROOM is the channel/DM,
-TEAM is the slack team object."
-  (when (and (not (slack-message-minep message team))
-             (or (slack-im-p room)
-                 (slack-message-mentioned-p message team)))
-    (let ((title (format "Slack: %s" (slack-room-display-name room team)))
-          (body (slack-message-body message team)))
-      (start-process "slack-notify" nil
-                     "notify" "info" title body))))
+TEAM is the slack team object.
+Errors are logged to *Messages* since the websocket library silently
+swallows exceptions via `websocket-try-callback'."
+  (condition-case err
+      (when (and (not (slack-message-minep message team))
+                 (or (slack-im-p room)
+                     (slack-message-mentioned-p message team)))
+        (let ((title (format "Slack: %s" (slack-room-display-name room team)))
+              (body (or (slack-message-body message team) "")))
+          (start-process "slack-notify" nil
+                         "notify" "info" title body)))
+    (error (message "cj/slack-notify error: %S" err))))
+
+(defun cj/slack-test-notify ()
+  "Send a test desktop notification to verify the notify pipeline works."
+  (interactive)
+  (condition-case err
+      (start-process "slack-notify-test" nil
+                     "notify" "info" "Slack: Test" "Notification pipeline works")
+    (error (message "cj/slack-test-notify error: %S" err))))
 
 (defun cj/slack-mark-read-and-bury ()
   "Mark the current Slack channel as read and bury the buffer."
