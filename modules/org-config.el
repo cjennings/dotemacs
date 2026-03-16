@@ -314,6 +314,28 @@ status to preserve priority ordering within TODO groups."
       (user-error nil)))
   (message "Sorted entries by TODO status and priority"))
 
+;; ----------------------- Org Element Cache Reset -----------------------------
+
+(defun cj/org-element-cache-reset-all ()
+  "Reset the org-element cache in all org-mode buffers."
+  (interactive)
+  (let ((count 0))
+    (dolist (buf (buffer-list))
+      (with-current-buffer buf
+        (when (derived-mode-p 'org-mode)
+          (org-element-cache-reset)
+          (cl-incf count))))
+    (message "Reset org-element cache in %d buffer%s" count (if (= count 1) "" "s"))))
+
+;; ------------------------------ Org Keybindings ------------------------------
+
+(defvar cj/org-keymap (make-sparse-keymap)
+  "Keymap for org commands under C-; O.")
+
+(global-set-key (kbd "C-; O") cj/org-keymap)
+
+(define-key cj/org-keymap (kbd "c") #'cj/org-element-cache-reset-all)
+
 ;; which-key labels for org keymaps
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
