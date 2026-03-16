@@ -82,7 +82,11 @@
              slack-im-select slack-thread-show-or-create
              slack-insert-emoji slack-register-team)
   :custom
-  (slack-buffer-emojify t)
+  ;; Disabled: emojify-mode in lui buffers causes (wrong-type-argument listp)
+  ;; errors on emoji characters during lui-scroll-post-command's recenter call.
+  ;; Native emoji rendering via Noto Color Emoji fontset works fine without it.
+  ;; Re-enable if emojify/circe fix the interaction. (2026-03-16)
+  (slack-buffer-emojify nil)
   (slack-prefer-current-team t)
   :config
   (setq slack-message-custom-notifier #'cj/slack-notify))
