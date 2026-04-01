@@ -92,9 +92,6 @@
 (defvar cj/music-m3u-root cj/music-root
   "Directory where M3U playlists are saved and loaded.")
 
-(defvar cj/music-keymap-prefix (kbd "C-; m")
-  "Prefix keybinding for all music commands. Currently not auto-bound.")
-
 (defvar cj/music-file-extensions '("aac" "flac" "m4a" "mp3" "ogg" "opus" "wav")
   "List of valid music file extensions.")
 
@@ -223,6 +220,29 @@ Signals user-error if missing or deleted."
       (user-error "Playlist file no longer exists: %s"
                   (file-name-nondirectory cj/music-playlist-file))))))
 
+(defun cj/music--assert-m3u-files-exist ()
+  "Assert that M3U files exist in cj/music-m3u-root.
+Returns the list of (BASENAME . FULLPATH) conses. Signals user-error if none."
+  (let ((files (cj/music--get-m3u-files)))
+    (when (null files)
+      (user-error "No M3U files found in %s" cj/music-m3u-root))
+    files))
+
+(defun cj/music--sync-playlist-file (file-path)
+  "Set the playlist buffer's associated M3U file to FILE-PATH and reset point."
+  (with-current-buffer (cj/music--ensure-playlist-buffer)
+    (setq cj/music-playlist-file file-path)
+    (goto-char (point-min))))
+
+(defun cj/music--select-m3u-file (prompt)
+  "Prompt user to select an M3U file with PROMPT.
+Returns the full path to the selected file, or nil if cancelled."
+  (let* ((m3u-files (cj/music--assert-m3u-files-exist))
+         (choices (append (mapcar #'car m3u-files) '("(Cancel)")))
+         (choice (completing-read prompt choices nil t)))
+    (unless (string= choice "(Cancel)")
+      (cdr (assoc choice m3u-files)))))
+
 ;;; Commands: add/select
 
 (defun cj/music-add-directory-recursive (directory)
@@ -300,40 +320,31 @@ Prompts for M3U file selection with completion. Allows cancellation."
     (unless track
       (user-error "No track at point"))
     (let* ((track-path (emms-track-name track))
-           (m3u-files (cj/music--get-m3u-files)))
-      (when (null m3u-files)
-        (user-error "No M3U files found in %s" cj/music-m3u-root))
-      (let* ((choices (append (mapcar #'car m3u-files) '("(Cancel)")))
-             (choice (completing-read "Append track to playlist: " choices nil t)))
-        (if (string= choice "(Cancel)")
-            (message "Cancelled")
-          (let ((m3u-file (cdr (assoc choice m3u-files))))
-            (condition-case err
-                (progn
-                  (cj/music--append-track-to-m3u-file track-path m3u-file)
-                  (message "Added '%s' to %s"
-                           (file-name-nondirectory track-path)
-                           choice))
-              (error (message "Failed to append track: %s" (error-message-string err))))))))))
+           (m3u-file (cj/music--select-m3u-file "Append track to playlist: ")))
+      (if (not m3u-file)
+          (message "Cancelled")
+        (condition-case err
+            (progn
+              (cj/music--append-track-to-m3u-file track-path m3u-file)
+              (message "Added '%s' to %s"
+                       (file-name-nondirectory track-path)
+                       (file-name-nondirectory m3u-file)))
+          (error (message "Failed to append track: %s" (error-message-string err))))))))
 
 
 (defun cj/music-playlist-load ()
   "Load an M3U playlist from cj/music-m3u-root.
 Replaces current playlist."
   (interactive)
-  (let* ((pairs (cj/music--get-m3u-files)))
-    (when (null pairs)
-      (user-error "No M3U files found in %s" cj/music-m3u-root))
-    (let* ((choice-name (completing-read "Select playlist: " (mapcar #'car pairs) nil t))
-           (choice-file (cdr (assoc choice-name pairs))))
-      (unless (and choice-file (file-exists-p choice-file))
-        (user-error "Playlist file does not exist: %s" choice-name))
-      (emms-playlist-clear)
-      (emms-play-playlist choice-file)
-      (with-current-buffer (cj/music--ensure-playlist-buffer)
-        (setq cj/music-playlist-file choice-file)
-        (goto-char (point-min)))
-      (message "Loaded playlist: %s" choice-name))))
+  (let* ((pairs (cj/music--assert-m3u-files-exist))
+         (choice-name (completing-read "Select playlist: " (mapcar #'car pairs) nil t))
+         (choice-file (cdr (assoc choice-name pairs))))
+    (unless (and choice-file (file-exists-p choice-file))
+      (user-error "Playlist file does not exist: %s" choice-name))
+    (emms-playlist-clear)
+    (emms-play-playlist choice-file)
+    (cj/music--sync-playlist-file choice-file)
+    (message "Loaded playlist: %s" choice-name)))
 
 
 (defun cj/music-playlist-save ()
@@ -352,8 +363,8 @@ Offers completion over existing names but allows new names."
       (user-error "Aborted saving playlist"))
     (with-current-buffer (cj/music--ensure-playlist-buffer)
       (let ((emms-source-playlist-ask-before-overwrite nil))
-        (emms-playlist-save 'm3u full))
-      (setq cj/music-playlist-file full))
+        (emms-playlist-save 'm3u full)))
+    (cj/music--sync-playlist-file full)
     (message "Saved playlist: %s" filename)))
 
 
@@ -377,9 +388,7 @@ Offers completion over existing names but allows new names."
          (name (file-name-nondirectory file-path)))
     (emms-playlist-clear)
     (emms-play-playlist file-path)
-    (with-current-buffer (cj/music--ensure-playlist-buffer)
-      (setq cj/music-playlist-file file-path)
-      (goto-char (point-min)))
+    (cj/music--sync-playlist-file file-path)
     (message "Reloaded playlist: %s" name)))
 
 
