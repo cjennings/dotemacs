@@ -139,7 +139,9 @@ FLAG is the raw prefix argument passed interactively."
   (add-to-list 'org-structure-template-alist '("example"  . "example"))
   (add-to-list 'org-structure-template-alist '("quote"    . "quote"))
   (add-to-list 'org-structure-template-alist '("response" . "response"))
-  (add-to-list 'org-structure-template-alist '("output"   . "output")))
+  (add-to-list 'org-structure-template-alist '("output"   . "output"))
+  ;; cj: comment blocks for daily prep annotations
+  (add-to-list 'org-structure-template-alist '("cj"       . "src cj: comment")))
 
 ;; requires ob-racket, not yet in repositories
 ;;   (add-to-list 'org-structure-template-alist '("sicp"   . "src racket :lang sicp"))
