@@ -408,6 +408,62 @@ Offers completion over existing names but allows new names."
         (user-error "Playlist file no longer exists: %s"
                     (file-name-nondirectory path))))))
 
+;;; Commands: random-aware navigation
+
+(defvar cj/music--random-history nil
+  "List of recently played track names during random mode, most recent first.")
+
+(defvar cj/music--random-history-max 50
+  "Maximum number of tracks to keep in random playback history.")
+
+(defun cj/music--record-random-history ()
+  "Push the current track onto random history if random mode is active.
+Intended for use on `emms-player-started-hook'."
+  (when emms-random-playlist
+    (when-let ((track (emms-playlist-current-selected-track)))
+      (let ((name (emms-track-name track)))
+        (unless (equal name (car cj/music--random-history))
+          (push name cj/music--random-history)
+          (when (> (length cj/music--random-history) cj/music--random-history-max)
+            (setq cj/music--random-history
+                  (seq-take cj/music--random-history cj/music--random-history-max))))))))
+
+(defun cj/music-next ()
+  "Play next track. Respects random mode — picks a random track if active."
+  (interactive)
+  (if emms-random-playlist
+      (emms-random)
+    (emms-next)))
+
+(defun cj/music--find-track-in-playlist (track-name)
+  "Return buffer position of TRACK-NAME in the current playlist, or nil."
+  (with-current-buffer (cj/music--ensure-playlist-buffer)
+    (save-excursion
+      (goto-char (point-min))
+      (let ((found nil))
+        (while (and (not found) (not (eobp)))
+          (when-let ((track (emms-playlist-track-at (point))))
+            (when (equal (emms-track-name track) track-name)
+              (setq found (point))))
+          (unless found (forward-line 1)))
+        found))))
+
+(defun cj/music-previous ()
+  "Play previous track. In random mode, go back through playback history."
+  (interactive)
+  (if (and emms-random-playlist cj/music--random-history)
+      (let* ((track-name (pop cj/music--random-history))
+             (pos (cj/music--find-track-in-playlist track-name)))
+        (if pos
+            (progn
+              (emms-playlist-select pos)
+              (emms-start))
+          (message "Track no longer in playlist: %s"
+                   (file-name-nondirectory track-name))))
+    (when (and emms-random-playlist (null cj/music--random-history))
+      (message "No random history to go back to"))
+    (emms-previous)))
+
 ;;; Commands: consume mode
 
 (defvar cj/music-consume-mode nil
@@ -443,8 +499,7 @@ Intended for use on `emms-player-finished-hook'."
   (unless (featurep 'emms)
     (require 'emms))
 
-  (emms-playing-time-disable-display)
-  (emms-mode-line-mode -1))
+)
 
 
 (defun cj/music-playlist-toggle ()
@@ -525,8 +580,8 @@ Dirs added recursively."
   "R" #'cj/music-create-radio-station
   "SPC" #'emms-pause
   "s" #'emms-stop
-  "n" #'emms-next
-  "p" #'emms-previous
+  "n" #'cj/music-next
+  "p" #'cj/music-previous
   "g" #'emms-playlist-mode-go
   "Z" #'emms-shuffle
   "r" #'emms-toggle-repeat-playlist
@@ -587,11 +642,9 @@ Dirs added recursively."
 
   ;; Update supported file types for mpv player
   (setq emms-player-mpv-regexp
-        (rx (or
-             ;; Stream URLs
-             (seq bos (or "http" "https" "mms") "://")
-             ;; Local music files by extension
-             (seq "." (or "aac" "flac" "m4a" "mp3" "ogg" "opus" "wav") eos))))
+        (concat "\\(?:\\`\\(?:https?\\|mms\\)://\\)\\|\\(?:\\."
+                (regexp-opt cj/music-file-extensions)
+                "\\'\\)"))
 
   ;; Keep cj/music-playlist-file in sync if playlist is cleared
   (defun cj/music--after-playlist-clear (&rest _)
@@ -770,6 +823,7 @@ For URL tracks: decoded URL."
     (add-hook 'window-selection-change-functions #'cj/music--update-active-bg nil t))
 
   (add-hook 'emms-playlist-mode-hook #'cj/music--setup-playlist-display)
+  (add-hook 'emms-player-started-hook #'cj/music--record-random-history)
   (add-hook 'emms-player-started-hook #'cj/music--update-header)
   (add-hook 'emms-player-stopped-hook #'cj/music--update-header)
   (add-hook 'emms-player-paused-hook #'cj/music--update-header)
@@ -789,10 +843,10 @@ For URL tracks: decoded URL."
         ("p"   . emms-playlist-mode-go)
         ("SPC" . emms-pause)
         ("s"   . emms-stop)
-        ("n"   . emms-next)
-        (">"   . emms-next)
-        ("P"   . emms-previous)
-        ("<"   . emms-previous)
+        ("n"   . cj/music-next)
+        (">"   . cj/music-next)
+        ("P"   . cj/music-previous)
+        ("<"   . cj/music-previous)
         ("f"   . emms-seek-forward)
         ("b"   . emms-seek-backward)
         ("q"   . emms-playlist-mode-bury-buffer)
@@ -826,8 +880,6 @@ For URL tracks: decoded URL."
         ("=" . emms-volume-raise)
         ("-" . emms-volume-lower)))
 
-;; Quick toggle key - use autoload to avoid loading emms at startup
-(autoload 'cj/music-playlist-toggle "music-config" "Toggle EMMS playlist window." t)
 (keymap-global-set "<f10>" #'cj/music-playlist-toggle)
 
 ;;; Radio station creation
