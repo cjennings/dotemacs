@@ -69,7 +69,6 @@
 
 ;;; Code:
 
-(require 'org)
 (require 'user-constants)  ; For gcal-file, pcal-file paths
 
 ;;; Configuration
@@ -383,27 +382,31 @@ Returns nil if not found."
   (when (and event-str (stringp event-str))
     (calendar-sync--get-property-line event-str "RECURRENCE-ID")))
 
-(defun calendar-sync--parse-recurrence-id (recurrence-id-value)
-  "Parse RECURRENCE-ID-VALUE into (year month day hour minute) list.
-Returns nil for invalid input. For date-only values, returns (year month day nil nil)."
-  (when (and recurrence-id-value
-             (stringp recurrence-id-value)
-             (not (string-empty-p recurrence-id-value)))
+(defun calendar-sync--parse-ics-datetime (value)
+  "Parse iCal datetime VALUE into (year month day hour minute) list.
+Returns nil for invalid input. For date-only values, returns (year month day nil nil).
+Handles formats: 20260203T090000Z, 20260203T090000, 20260203."
+  (when (and value
+             (stringp value)
+             (not (string-empty-p value)))
     (cond
      ;; DateTime format: 20260203T090000Z or 20260203T090000
-     ((string-match "\\`\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)T\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)Z?\\'" recurrence-id-value)
-      (list (string-to-number (match-string 1 recurrence-id-value))
-            (string-to-number (match-string 2 recurrence-id-value))
-            (string-to-number (match-string 3 recurrence-id-value))
-            (string-to-number (match-string 4 recurrence-id-value))
-            (string-to-number (match-string 5 recurrence-id-value))))
+     ((string-match "\\`\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)T\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)Z?\\'" value)
+      (list (string-to-number (match-string 1 value))
+            (string-to-number (match-string 2 value))
+            (string-to-number (match-string 3 value))
+            (string-to-number (match-string 4 value))
+            (string-to-number (match-string 5 value))))
      ;; Date-only format: 20260203
-     ((string-match "\\`\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)\\'" recurrence-id-value)
-      (list (string-to-number (match-string 1 recurrence-id-value))
-            (string-to-number (match-string 2 recurrence-id-value))
-            (string-to-number (match-string 3 recurrence-id-value))
+     ((string-match "\\`\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)\\'" value)
+      (list (string-to-number (match-string 1 value))
+            (string-to-number (match-string 2 value))
+            (string-to-number (match-string 3 value))
             nil nil))
      (t nil))))
+
+(defalias 'calendar-sync--parse-recurrence-id #'calendar-sync--parse-ics-datetime
+  "Parse RECURRENCE-ID value. See `calendar-sync--parse-ics-datetime'.")
 
 (defun calendar-sync--collect-recurrence-exceptions (ics-content)
   "Collect all RECURRENCE-ID events from ICS-CONTENT.
@@ -438,31 +441,9 @@ Each exception plist contains :recurrence-id (parsed), :start, :end, :summary, e
                      (location (calendar-sync--clean-text
                                 (calendar-sync--get-property event-str "LOCATION"))))
                 (when (and recurrence-id-parsed start-parsed)
-                  ;; Convert RECURRENCE-ID to local time
-                  ;; Handle: UTC (Z suffix), TZID, or assume local
                   (let ((local-recurrence-id
-                         (cond
-                          ;; UTC time (Z suffix) - convert from UTC
-                          (recurrence-id-is-utc
-                           (calendar-sync--convert-utc-to-local
-                            (nth 0 recurrence-id-parsed)
-                            (nth 1 recurrence-id-parsed)
-                            (nth 2 recurrence-id-parsed)
-                            (or (nth 3 recurrence-id-parsed) 0)
-                            (or (nth 4 recurrence-id-parsed) 0)
-                            0))  ; seconds
-                          ;; TZID specified - convert from that timezone
-                          (recurrence-id-tzid
-                           (or (calendar-sync--convert-tz-to-local
-                                (nth 0 recurrence-id-parsed)
-                                (nth 1 recurrence-id-parsed)
-                                (nth 2 recurrence-id-parsed)
-                                (or (nth 3 recurrence-id-parsed) 0)
-                                (or (nth 4 recurrence-id-parsed) 0)
-                                recurrence-id-tzid)
-                               recurrence-id-parsed))
-                          ;; No timezone info - assume local
-                          (t recurrence-id-parsed))))
+                         (calendar-sync--localize-parsed-datetime
+                          recurrence-id-parsed recurrence-id-is-utc recurrence-id-tzid)))
                     (let ((exception-plist
                            (list :recurrence-id local-recurrence-id
                                  :recurrence-id-raw recurrence-id
@@ -562,27 +543,8 @@ Returns nil if not found."
       (when (string-match pattern event-str)
         (match-string 1 event-str)))))
 
-(defun calendar-sync--parse-exdate (exdate-value)
-  "Parse EXDATE-VALUE into (year month day hour minute) list.
-Returns nil for invalid input. For date-only values, returns (year month day nil nil)."
-  (when (and exdate-value
-             (stringp exdate-value)
-             (not (string-empty-p exdate-value)))
-    (cond
-     ;; DateTime format: 20260203T130000Z or 20260203T130000
-     ((string-match "\\`\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)T\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)Z?\\'" exdate-value)
-      (list (string-to-number (match-string 1 exdate-value))
-            (string-to-number (match-string 2 exdate-value))
-            (string-to-number (match-string 3 exdate-value))
-            (string-to-number (match-string 4 exdate-value))
-            (string-to-number (match-string 5 exdate-value))))
-     ;; Date-only format: 20260203
-     ((string-match "\\`\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)\\'" exdate-value)
-      (list (string-to-number (match-string 1 exdate-value))
-            (string-to-number (match-string 2 exdate-value))
-            (string-to-number (match-string 3 exdate-value))
-            nil nil))
-     (t nil))))
+(defalias 'calendar-sync--parse-exdate #'calendar-sync--parse-ics-datetime
+  "Parse EXDATE value. See `calendar-sync--parse-ics-datetime'.")
 
 (defun calendar-sync--collect-exdates (event-str)
   "Collect all excluded dates from EVENT-STR, handling timezone conversion.
@@ -600,30 +562,9 @@ Converts TZID-qualified and UTC times to local time."
                (exdate-is-utc (and exdate-value (string-suffix-p "Z" exdate-value)))
                (exdate-parsed (calendar-sync--parse-exdate exdate-value)))
           (when exdate-parsed
-            (let ((local-exdate
-                   (cond
-                    ;; UTC time (Z suffix) - convert from UTC
-                    (exdate-is-utc
-                     (calendar-sync--convert-utc-to-local
-                      (nth 0 exdate-parsed)
-                      (nth 1 exdate-parsed)
-                      (nth 2 exdate-parsed)
-                      (or (nth 3 exdate-parsed) 0)
-                      (or (nth 4 exdate-parsed) 0)
-                      0))
-                    ;; TZID specified - convert from that timezone
-                    (exdate-tzid
-                     (or (calendar-sync--convert-tz-to-local
-                          (nth 0 exdate-parsed)
-                          (nth 1 exdate-parsed)
-                          (nth 2 exdate-parsed)
-                          (or (nth 3 exdate-parsed) 0)
-                          (or (nth 4 exdate-parsed) 0)
-                          exdate-tzid)
-                         exdate-parsed))
-                    ;; No timezone info - use as-is (local time)
-                    (t exdate-parsed))))
-              (push local-exdate result)))))
+            (push (calendar-sync--localize-parsed-datetime
+                   exdate-parsed exdate-is-utc exdate-tzid)
+                  result))))
       (nreverse result))))
 
 (defun calendar-sync--exdate-matches-p (occurrence-start exdate)
@@ -835,6 +776,25 @@ TZ database as the `date' command."
                         source-tz (error-message-string err))
        nil))))
 
+(defun calendar-sync--localize-parsed-datetime (parsed is-utc tzid)
+  "Convert PARSED datetime to local time using timezone info.
+PARSED is (year month day hour minute) or (year month day nil nil).
+IS-UTC non-nil means the value had a Z suffix.
+TZID is a timezone string like \"Europe/Lisbon\", or nil.
+Returns PARSED converted to local time, or PARSED unchanged if no conversion needed."
+  (cond
+   (is-utc
+    (calendar-sync--convert-utc-to-local
+     (nth 0 parsed) (nth 1 parsed) (nth 2 parsed)
+     (or (nth 3 parsed) 0) (or (nth 4 parsed) 0) 0))
+   (tzid
+    (or (calendar-sync--convert-tz-to-local
+         (nth 0 parsed) (nth 1 parsed) (nth 2 parsed)
+         (or (nth 3 parsed) 0) (or (nth 4 parsed) 0)
+         tzid)
+        parsed))
+   (t parsed)))
+
 (defun calendar-sync--parse-timestamp (timestamp-str &optional tzid)
   "Parse iCal timestamp string TIMESTAMP-STR.
 Returns (year month day hour minute) or (year month day) for all-day events.
@@ -942,9 +902,10 @@ Returns plist with :freq :interval :byday :until :count."
       (setq result (plist-put result :interval 1)))
     result))
 
-(defun calendar-sync--expand-daily (base-event rrule range)
-  "Expand daily recurring event.
-BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
+(defun calendar-sync--expand-simple-recurrence (base-event rrule range advance-fn)
+  "Expand a simple (non-weekly) recurring event using ADVANCE-FN to step dates.
+BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range.
+ADVANCE-FN takes (current-date interval) and returns the next date."
   (let* ((start (plist-get base-event :start))
          (interval (plist-get rrule :interval))
          (until (plist-get rrule :until))
@@ -953,29 +914,27 @@ BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
          (current-date (list (nth 0 start) (nth 1 start) (nth 2 start)))
          (num-generated 0)
          (range-end-time (cadr range)))
-    ;; For infinite recurrence (no COUNT/UNTIL), stop at range-end for performance
-    ;; For COUNT, generate all occurrences from start regardless of range
     (while (and (or count until (time-less-p (calendar-sync--date-to-time current-date) range-end-time))
                 (or (not until) (calendar-sync--before-date-p current-date until))
                 (or (not count) (< num-generated count)))
       (let ((occurrence-datetime (append current-date (nthcdr 3 start))))
-        ;; Check UNTIL date first
-        (when (or (not until) (calendar-sync--before-date-p current-date until))
-          ;; Check COUNT - increment BEFORE range check so COUNT is absolute from start
-          (when (or (not count) (< num-generated count))
-            (setq num-generated (1+ num-generated))
-            ;; Only add to output if within date range
-            (when (calendar-sync--date-in-range-p occurrence-datetime range)
-              (push (calendar-sync--create-occurrence base-event occurrence-datetime)
-                    occurrences)))))
-      (setq current-date (calendar-sync--add-days current-date interval)))
+        (setq num-generated (1+ num-generated))
+        (when (calendar-sync--date-in-range-p occurrence-datetime range)
+          (push (calendar-sync--create-occurrence base-event occurrence-datetime)
+                occurrences)))
+      (setq current-date (funcall advance-fn current-date interval)))
     (nreverse occurrences)))
+
+(defun calendar-sync--expand-daily (base-event rrule range)
+  "Expand daily recurring event.
+BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
+  (calendar-sync--expand-simple-recurrence
+   base-event rrule range #'calendar-sync--add-days))
 
 (defun calendar-sync--expand-weekly (base-event rrule range)
   "Expand weekly recurring event.
 BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
   (let* ((start (plist-get base-event :start))
-         (end (plist-get base-event :end))
          (interval (plist-get rrule :interval))
          (byday (plist-get rrule :byday))
          (until (plist-get rrule :until))
@@ -1024,60 +983,15 @@ BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
 (defun calendar-sync--expand-monthly (base-event rrule range)
   "Expand monthly recurring event.
 BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
-  (let* ((start (plist-get base-event :start))
-         (interval (plist-get rrule :interval))
-         (until (plist-get rrule :until))
-         (count (plist-get rrule :count))
-         (occurrences '())
-         (current-date (list (nth 0 start) (nth 1 start) (nth 2 start)))
-         (num-generated 0)
-         (range-end-time (cadr range)))
-    ;; For infinite recurrence (no COUNT/UNTIL), stop at range-end for performance
-    ;; For COUNT, generate all occurrences from start regardless of range
-    (while (and (or count until (time-less-p (calendar-sync--date-to-time current-date) range-end-time))
-                (or (not until) (calendar-sync--before-date-p current-date until))
-                (or (not count) (< num-generated count)))
-      (let ((occurrence-datetime (append current-date (nthcdr 3 start))))
-        ;; Check UNTIL date first
-        (when (or (not until) (calendar-sync--before-date-p current-date until))
-          ;; Check COUNT - increment BEFORE range check so COUNT is absolute from start
-          (when (or (not count) (< num-generated count))
-            (setq num-generated (1+ num-generated))
-            ;; Only add to output if within date range
-            (when (calendar-sync--date-in-range-p occurrence-datetime range)
-              (push (calendar-sync--create-occurrence base-event occurrence-datetime)
-                    occurrences)))))
-      (setq current-date (calendar-sync--add-months current-date interval)))
-    (nreverse occurrences)))
+  (calendar-sync--expand-simple-recurrence
+   base-event rrule range #'calendar-sync--add-months))
 
 (defun calendar-sync--expand-yearly (base-event rrule range)
   "Expand yearly recurring event.
 BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
-  (let* ((start (plist-get base-event :start))
-         (interval (plist-get rrule :interval))
-         (until (plist-get rrule :until))
-         (count (plist-get rrule :count))
-         (occurrences '())
-         (current-date (list (nth 0 start) (nth 1 start) (nth 2 start)))
-         (num-generated 0)
-         (range-end-time (cadr range)))
-    ;; For infinite recurrence (no COUNT/UNTIL), stop at range-end for performance
-    ;; For COUNT, generate all occurrences from start regardless of range
-    (while (and (or count until (time-less-p (calendar-sync--date-to-time current-date) range-end-time))
-                (or (not until) (calendar-sync--before-date-p current-date until))
-                (or (not count) (< num-generated count)))
-      (let ((occurrence-datetime (append current-date (nthcdr 3 start))))
-        ;; Check UNTIL date first
-        (when (or (not until) (calendar-sync--before-date-p current-date until))
-          ;; Check COUNT - increment BEFORE range check so COUNT is absolute from start
-          (when (or (not count) (< num-generated count))
-            (setq num-generated (1+ num-generated))
-            ;; Only add to output if within date range
-            (when (calendar-sync--date-in-range-p occurrence-datetime range)
-              (push (calendar-sync--create-occurrence base-event occurrence-datetime)
-                    occurrences)))))
-      (setq current-date (calendar-sync--add-months current-date (* 12 interval))))
-    (nreverse occurrences)))
+  (calendar-sync--expand-simple-recurrence
+   base-event rrule range
+   (lambda (date interval) (calendar-sync--add-months date (* 12 interval)))))
 
 (defun calendar-sync--expand-recurring-event (event-str range)
   "Expand recurring event EVENT-STR into individual occurrences within RANGE.
@@ -1253,8 +1167,7 @@ RECURRENCE-ID exceptions are applied to override specific occurrences."
                       "\n")
             nil)))
     (error
-     (setq calendar-sync--last-error (error-message-string err))
-     (cj/log-silently "calendar-sync: Parse error: %s" calendar-sync--last-error)
+     (cj/log-silently "calendar-sync: Parse error: %s" (error-message-string err))
      nil)))
 
 ;;; Sync functions
@@ -1285,15 +1198,12 @@ invoked when the fetch completes, either successfully or with an error."
                           (if (and (eq (process-status process) 'exit)
                                    (= (process-exit-status process) 0))
                               (calendar-sync--normalize-line-endings (buffer-string))
-                            (setq calendar-sync--last-error
-                                  (format "curl failed: %s" (string-trim event)))
-                            (cj/log-silently "calendar-sync: Fetch error: %s" calendar-sync--last-error)
+                            (cj/log-silently "calendar-sync: Fetch error: curl failed: %s" (string-trim event))
                             nil))))
                    (kill-buffer buf)
                    (funcall callback content))))))))
     (error
-     (setq calendar-sync--last-error (error-message-string err))
-     (cj/log-silently "calendar-sync: Fetch error: %s" calendar-sync--last-error)
+     (cj/log-silently "calendar-sync: Fetch error: %s" (error-message-string err))
      (funcall callback nil))))
 
 (defun calendar-sync--write-file (content file)
