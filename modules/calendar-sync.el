@@ -159,11 +159,6 @@ Returns negative for west of UTC, positive for east.
 Example: -21600 for CST (UTC-6), -28800 for PST (UTC-8)."
   (car (current-time-zone)))
 
-(defun calendar-sync--timezone-name ()
-  "Get human-readable timezone name.
-Returns string like 'CST' or 'PST'."
-  (cadr (current-time-zone)))
-
 (defun calendar-sync--format-timezone-offset (offset)
   "Format timezone OFFSET (in seconds) as human-readable string.
 Example: -21600 → 'UTC-6' or 'UTC-6:00'."
