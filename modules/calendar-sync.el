@@ -1277,11 +1277,16 @@ Logs timing for each phase to *Messages* for performance diagnosis."
                  (message "calendar-sync: [%s] Sync complete (%.1fs total) → %s"
                           name total-elapsed file))))))))))
 
+(defun calendar-sync--require-calendars ()
+  "Return non-nil if calendars are configured, else warn and return nil."
+  (or calendar-sync-calendars
+      (progn (message "calendar-sync: No calendars configured (set calendar-sync-calendars)")
+             nil)))
+
 (defun calendar-sync--sync-all-calendars ()
   "Sync all configured calendars asynchronously.
 Each calendar syncs in parallel."
-  (if (null calendar-sync-calendars)
-      (message "calendar-sync: No calendars configured (set calendar-sync-calendars)")
+  (when (calendar-sync--require-calendars)
     (message "calendar-sync: Syncing %d calendar(s)..." (length calendar-sync-calendars))
     (dolist (calendar calendar-sync-calendars)
       (calendar-sync--sync-calendar calendar))))
@@ -1306,8 +1311,7 @@ When called non-interactively with nil, syncs all calendars."
            (let ((choices (cons "all" (calendar-sync--calendar-names))))
              (completing-read "Sync calendar: " choices nil t nil nil "all")))))
   (cond
-   ((null calendar-sync-calendars)
-    (message "calendar-sync: No calendars configured (set calendar-sync-calendars)"))
+   ((not (calendar-sync--require-calendars)) nil)
    ((or (null calendar-name) (string= calendar-name "all"))
     (calendar-sync--sync-all-calendars))
    (t
@@ -1320,8 +1324,7 @@ When called non-interactively with nil, syncs all calendars."
 (defun calendar-sync-status ()
   "Display sync status for all configured calendars."
   (interactive)
-  (if (null calendar-sync-calendars)
-      (message "calendar-sync: No calendars configured")
+  (when (calendar-sync--require-calendars)
     (let ((status-lines '()))
       (dolist (calendar calendar-sync-calendars)
         (let* ((name (plist-get calendar :name))
@@ -1364,8 +1367,7 @@ Syncs all calendars immediately, then every `calendar-sync-interval-minutes'."
   (interactive)
   (when calendar-sync--timer
     (cancel-timer calendar-sync--timer))
-  (if (null calendar-sync-calendars)
-      (message "calendar-sync: No calendars configured (set calendar-sync-calendars)")
+  (when (calendar-sync--require-calendars)
     ;; Sync immediately
     (calendar-sync--sync-all-calendars)
     ;; Start timer for future syncs (convert minutes to seconds)
