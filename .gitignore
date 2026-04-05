@@ -78,8 +78,5 @@ history
 /v2mom.org
 /.time-zones.el
 
-# Calendar sync generated data
-/data/gcal.org
-/data/pcal.org
-/data/dcal.org
-/data/calendar-sync-state.el
+# Data directory (calendar sync output, API rest files)
+/data/
