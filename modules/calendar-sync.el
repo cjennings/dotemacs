@@ -607,21 +607,25 @@ Returns list of strings, each containing one VEVENT block."
             (push (buffer-substring-no-properties start (point)) events)))))
     (nreverse events)))
 
+(defun calendar-sync--unfold-continuation (text value start)
+  "Unfold RFC 5545 continuation lines from TEXT starting at START.
+VALUE is the initial content to append to.  Continuation lines begin
+with a space or tab after a newline.  Returns (unfolded-value . new-pos)."
+  (while (and (< start (length text))
+              (string-match "\n[ \t]\\([^\n]*\\)" text start)
+              (= (match-beginning 0) start))
+    (setq value (concat value (match-string 1 text)))
+    (setq start (match-end 0)))
+  (cons value start))
+
 (defun calendar-sync--get-property (event property)
   "Extract PROPERTY value from EVENT string.
 Handles property parameters (e.g., DTSTART;TZID=America/Chicago:value).
 Handles multi-line values (lines starting with space).
 Returns nil if property not found."
   (when (string-match (format "^%s[^:\n]*:\\(.*\\)$" (regexp-quote property)) event)
-    (let ((value (match-string 1 event))
-          (start (match-end 0)))
-      ;; Handle continuation lines (RFC 5545 §3.1: folded lines start with space or tab)
-      (while (and (< start (length event))
-                  (string-match "\n[ \t]\\([^\n]*\\)" event start)
-                  (= (match-beginning 0) start))
-        (setq value (concat value (match-string 1 event)))
-        (setq start (match-end 0)))
-      value)))
+    (car (calendar-sync--unfold-continuation
+          event (match-string 1 event) (match-end 0)))))
 
 (defun calendar-sync--get-property-line (event property)
   "Extract full PROPERTY line from EVENT string, including parameters.
@@ -641,14 +645,10 @@ Returns nil if EVENT or PROPERTY is nil, or no matches found."
           (pattern (format "^%s[^\n]*" (regexp-quote property)))
           (pos 0))
       (while (string-match pattern event pos)
-        (let ((line (match-string 0 event))
-              (end (match-end 0)))
-          ;; Handle continuation lines (start with space or tab after newline)
-          (while (and (< end (length event))
-                      (string-match "\n[ \t]\\([^\n]*\\)" event end)
-                      (= (match-beginning 0) end))
-            (setq line (concat line (match-string 1 event)))
-            (setq end (match-end 0)))
+        (let* ((result (calendar-sync--unfold-continuation
+                        event (match-string 0 event) (match-end 0)))
+               (line (car result))
+               (end (cdr result)))
           (push line lines)
           (setq pos (if (< end (length event)) (1+ end) end))))
       (nreverse lines))))
