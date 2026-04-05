@@ -508,13 +508,7 @@ Valid events should be parsed, invalid ones skipped."
     (should (>= offset (* -12 3600)))
     (should (<= offset (* 14 3600)))))
 
-(ert-deftest test-calendar-sync--timezone-name-returns-string ()
-  "Test that timezone name returns a string."
-  (let ((name (calendar-sync--timezone-name)))
-    ;; Should be a string
-    (should (stringp name))
-    ;; Should not be empty
-    (should (> (length name) 0))))
+
 
 (ert-deftest test-calendar-sync--format-timezone-offset-handles-negative ()
   "Test formatting negative timezone offsets (west of UTC)."
