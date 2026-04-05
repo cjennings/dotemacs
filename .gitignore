@@ -58,6 +58,7 @@ auto-save-list/
 /docs/
 
 # Claude Code configuration (personal settings, commands)
+/CLAUDE.md
 /.claude/
 history
 .stignore
