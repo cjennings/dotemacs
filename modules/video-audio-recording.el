@@ -620,23 +620,29 @@ needed."
 ;; These functions record short clips and play them back so you can
 ;; verify hardware works BEFORE an important recording.
 
-(defun cj/recording-test-mic ()
-  "Test microphone by recording 5 seconds and playing it back."
-  (interactive)
-  (unless cj/recording-mic-device
-    (user-error "No microphone configured. Run C-; r s first"))
-  (let* ((temp-file (make-temp-file "mic-test-" nil ".wav"))
+(defun cj/recording--test-device (device prefix prompt-action)
+  "Record 5 seconds from DEVICE and play it back.
+PREFIX is the temp file name prefix (e.g. \"mic-test-\").
+PROMPT-ACTION is the action text shown to the user (e.g. \"SPEAK NOW!\")."
+  (let* ((temp-file (make-temp-file prefix nil ".wav"))
          (duration 5))
-    (message "Recording from mic for %d seconds... SPEAK NOW!" duration)
+    (message "Recording for %d seconds... %s" duration prompt-action)
     (shell-command
      (format "ffmpeg -f pulse -i %s -t %d -y %s 2>/dev/null"
-             (shell-quote-argument cj/recording-mic-device)
+             (shell-quote-argument device)
              duration
              (shell-quote-argument temp-file)))
     (message "Playing back recording...")
     (shell-command (format "ffplay -autoexit -nodisp %s 2>/dev/null &"
                            (shell-quote-argument temp-file)))
-    (message "Mic test complete. Temp file: %s" temp-file)))
+    (message "Test complete. Temp file: %s" temp-file)))
+
+(defun cj/recording-test-mic ()
+  "Test microphone by recording 5 seconds and playing it back."
+  (interactive)
+  (unless cj/recording-mic-device
+    (user-error "No microphone configured. Run C-; r s first"))
+  (cj/recording--test-device cj/recording-mic-device "mic-test-" "SPEAK NOW!"))
 
 (defun cj/recording-test-monitor ()
   "Test system audio monitor by recording 5 seconds and playing it back.
@@ -644,18 +650,7 @@ Play some audio/video during the test so there's something to capture."
   (interactive)
   (unless cj/recording-system-device
     (user-error "No system monitor configured. Run C-; r s first"))
-  (let* ((temp-file (make-temp-file "monitor-test-" nil ".wav"))
-         (duration 5))
-    (message "Recording system audio for %d seconds... PLAY SOMETHING NOW!" duration)
-    (shell-command
-     (format "ffmpeg -f pulse -i %s -t %d -y %s 2>/dev/null"
-             (shell-quote-argument cj/recording-system-device)
-             duration
-             (shell-quote-argument temp-file)))
-    (message "Playing back recording...")
-    (shell-command (format "ffplay -autoexit -nodisp %s 2>/dev/null &"
-                           (shell-quote-argument temp-file)))
-    (message "Monitor test complete. Temp file: %s" temp-file)))
+  (cj/recording--test-device cj/recording-system-device "monitor-test-" "PLAY SOMETHING NOW!"))
 
 (defun cj/recording-test-both ()
   "Guided test of both mic and monitor together.
