@@ -62,6 +62,21 @@ auto-save-list/
 history
 .stignore
 
+# Inbox (files for Claude to process at session start)
+/inbox/
+
+# Build artifacts and package caches
+/.cask/
+/.localrepo/
+
+# Vendored binary assets
+/emojis/
+
+# Personal planning and task files
+/todo.org
+/v2mom.org
+/.time-zones.el
+
 # Calendar sync generated data
 /data/gcal.org
 /data/pcal.org
