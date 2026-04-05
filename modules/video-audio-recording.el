@@ -816,15 +816,48 @@ Otherwise use the default location in `audio-recordings-dir'."
 ;;; Start Recording
 ;;; ============================================================
 
+(defun cj/recording--build-video-command (mic-device system-device filename on-wayland)
+  "Build the shell command string for video recording.
+MIC-DEVICE and SYSTEM-DEVICE are PulseAudio device names.
+FILENAME is the output .mkv path.  ON-WAYLAND selects the capture method.
+
+On Wayland: wf-recorder captures screen as H.264 in matroska container,
+piped to ffmpeg which adds mic + system audio, then writes the final MKV.
+
+On X11: ffmpeg captures screen directly via x11grab with PulseAudio audio."
+  (if on-wayland
+      (progn
+        (cj/recording--check-wf-recorder)
+        (format (concat "wf-recorder -y -c libx264 -m matroska -f /dev/stdout 2>/dev/null | "
+                        "ffmpeg -i pipe:0 "
+                        "-f pulse -i %s "
+                        "-f pulse -i %s "
+                        "-filter_complex \"[1:a]volume=%.1f[mic];[2:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2[out]\" "
+                        "-map 0:v -map \"[out]\" "
+                        "-c:v copy "
+                        "%s")
+                (shell-quote-argument mic-device)
+                (shell-quote-argument system-device)
+                cj/recording-mic-boost
+                cj/recording-system-volume
+                (shell-quote-argument filename)))
+    (format (concat "ffmpeg -framerate 30 -f x11grab -i :0.0+ "
+                    "-f pulse -i %s "
+                    "-ac 1 "
+                    "-f pulse -i %s "
+                    "-ac 2 "
+                    "-filter_complex \"[1:a]volume=%.1f[mic];[2:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2[out]\" "
+                    "-map 0:v -map \"[out]\" "
+                    "%s")
+            mic-device
+            system-device
+            cj/recording-mic-boost
+            cj/recording-system-volume
+            filename)))
+
 (defun cj/ffmpeg-record-video (directory)
   "Start a video recording, saving output to DIRECTORY.
-Uses wf-recorder on Wayland, x11grab on X11.
-
-On Wayland, the pipeline is:
-  wf-recorder (captures screen → H.264) | ffmpeg (mixes in audio → MKV)
-
-On X11, ffmpeg handles everything:
-  ffmpeg (x11grab for screen + PulseAudio for audio → MKV)"
+Uses wf-recorder on Wayland, x11grab on X11."
   (cj/recording-check-ffmpeg)
   (unless cj/video-recording-ffmpeg-process
     ;; On Wayland, kill any orphan wf-recorder processes left over from
@@ -840,41 +873,8 @@ On X11, ffmpeg handles everything:
            (name (format-time-string "%Y-%m-%d-%H-%M-%S"))
            (filename (expand-file-name (concat name ".mkv") location))
            (on-wayland (cj/recording--wayland-p))
-           (record-command
-            (if on-wayland
-                (progn
-                  (cj/recording--check-wf-recorder)
-                  ;; Wayland pipeline: wf-recorder captures screen as H.264 in
-                  ;; matroska container, piped to ffmpeg which adds mic + system
-                  ;; audio via PulseAudio, then writes the final MKV.
-                  ;; -c:v copy means ffmpeg passes video through without re-encoding.
-                  (format (concat "wf-recorder -y -c libx264 -m matroska -f /dev/stdout 2>/dev/null | "
-                                  "ffmpeg -i pipe:0 "
-                                  "-f pulse -i %s "
-                                  "-f pulse -i %s "
-                                  "-filter_complex \"[1:a]volume=%.1f[mic];[2:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2[out]\" "
-                                  "-map 0:v -map \"[out]\" "
-                                  "-c:v copy "
-                                  "%s")
-                          (shell-quote-argument mic-device)
-                          (shell-quote-argument system-device)
-                          cj/recording-mic-boost
-                          cj/recording-system-volume
-                          (shell-quote-argument filename)))
-              ;; X11: ffmpeg captures screen directly via x11grab
-              (format (concat "ffmpeg -framerate 30 -f x11grab -i :0.0+ "
-                              "-f pulse -i %s "
-                              "-ac 1 "
-                              "-f pulse -i %s "
-                              "-ac 2 "
-                              "-filter_complex \"[1:a]volume=%.1f[mic];[2:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2[out]\" "
-                              "-map 0:v -map \"[out]\" "
-                              "%s")
-                      mic-device
-                      system-device
-                      cj/recording-mic-boost
-                      cj/recording-system-volume
-                      filename))))
+           (record-command (cj/recording--build-video-command
+                            mic-device system-device filename on-wayland)))
       (setq cj/video-recording-ffmpeg-process
             (start-process-shell-command "ffmpeg-video-recording"
                                          "*ffmpeg-video-recording*"
