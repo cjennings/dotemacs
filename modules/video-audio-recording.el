@@ -267,22 +267,22 @@ for capturing \"what I hear\" regardless of which output hardware is active."
         (user-error "No default audio output found.  Is PulseAudio/PipeWire running?")
       (concat default-sink ".monitor"))))
 
-(defun cj/recording--parse-pactl-sources-verbose (output)
-  "Parse verbose `pactl list sources' OUTPUT into structured list.
-Returns list of (name description mute state) tuples.
-OUTPUT should be the full output of `pactl list sources'."
-  (let ((sources nil)
+(defun cj/recording--parse-pactl-verbose (output record-type)
+  "Parse verbose pactl OUTPUT into structured list.
+RECORD-TYPE is \"Source\" or \"Sink\" — the record header in pactl output.
+Returns list of (name description mute state) tuples."
+  (let ((entries nil)
+        (header-re (concat "^" record-type " #"))
         (current-name nil)
         (current-desc nil)
         (current-mute nil)
         (current-state nil))
     (dolist (line (split-string output "\n"))
       (cond
-       ((string-match "^Source #" line)
-        ;; Save previous source if complete
+       ((string-match-p header-re line)
         (when current-name
           (push (list current-name current-desc current-mute current-state)
-                sources))
+                entries))
         (setq current-name nil current-desc nil
               current-mute nil current-state nil))
        ((string-match "^\\s-+Name:\\s-+\\(.+\\)" line)
@@ -293,11 +293,10 @@ OUTPUT should be the full output of `pactl list sources'."
         (setq current-mute (match-string 1 line)))
        ((string-match "^\\s-+State:\\s-+\\(.+\\)" line)
         (setq current-state (match-string 1 line)))))
-    ;; Don't forget the last source
     (when current-name
       (push (list current-name current-desc current-mute current-state)
-            sources))
-    (nreverse sources)))
+            entries))
+    (nreverse entries)))
 
 (defun cj/recording--get-available-mics ()
   "Return available microphone sources as list of (name description state mute).
@@ -307,7 +306,7 @@ PulseAudio (e.g. \"Jabra SPEAK 510 Mono\") rather than the raw
 device name.  State is the PulseAudio state string (RUNNING, IDLE,
 or SUSPENDED).  Mute is \"yes\" or \"no\"."
   (let* ((output (shell-command-to-string "pactl list sources 2>/dev/null"))
-         (sources (cj/recording--parse-pactl-sources-verbose output))
+         (sources (cj/recording--parse-pactl-verbose output "Source"))
          (mics nil))
     (dolist (source sources)
       (let ((name (nth 0 source))
@@ -318,38 +317,6 @@ or SUSPENDED).  Mute is \"yes\" or \"no\"."
           (push (list name (or desc name) state mute) mics))))
     (nreverse mics)))
 
-(defun cj/recording--parse-pactl-sinks-verbose (output)
-  "Parse verbose `pactl list sinks' OUTPUT into structured list.
-Returns list of (name description mute state) tuples.
-OUTPUT should be the full output of `pactl list sinks'."
-  (let ((sinks nil)
-        (current-name nil)
-        (current-desc nil)
-        (current-mute nil)
-        (current-state nil))
-    (dolist (line (split-string output "\n"))
-      (cond
-       ((string-match "^Sink #" line)
-        ;; Save previous sink if complete
-        (when current-name
-          (push (list current-name current-desc current-mute current-state)
-                sinks))
-        (setq current-name nil current-desc nil
-              current-mute nil current-state nil))
-       ((string-match "^\\s-+Name:\\s-+\\(.+\\)" line)
-        (setq current-name (match-string 1 line)))
-       ((string-match "^\\s-+Description:\\s-+\\(.+\\)" line)
-        (setq current-desc (match-string 1 line)))
-       ((string-match "^\\s-+Mute:\\s-+\\(.+\\)" line)
-        (setq current-mute (match-string 1 line)))
-       ((string-match "^\\s-+State:\\s-+\\(.+\\)" line)
-        (setq current-state (match-string 1 line)))))
-    ;; Don't forget the last sink
-    (when current-name
-      (push (list current-name current-desc current-mute current-state)
-            sinks))
-    (nreverse sinks)))
-
 (defun cj/recording--get-available-sinks ()
   "Return available audio sinks as list of (name description state mute).
 Includes muted sinks (shown with a [muted] label in the UI).  Uses
@@ -357,7 +324,7 @@ the friendly description from PulseAudio (e.g. \"JDS Labs Element IV
 Analog Stereo\").  State is the PulseAudio state string (RUNNING,
 IDLE, or SUSPENDED).  Mute is \"yes\" or \"no\"."
   (let* ((output (shell-command-to-string "pactl list sinks 2>/dev/null"))
-         (sinks (cj/recording--parse-pactl-sinks-verbose output))
+         (sinks (cj/recording--parse-pactl-verbose output "Sink"))
          (result nil))
     (dolist (sink sinks)
       (let ((name (nth 0 sink))
