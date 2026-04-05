@@ -563,6 +563,22 @@ for sinks with active audio streams.  E.g. \"JDS Labs [in use] (Firefox)\"."
          (sorted (sort labeled (lambda (a b) (< (nth 2 a) (nth 2 b))))))
     (mapcar (lambda (entry) (cons (nth 0 entry) (nth 1 entry))) sorted)))
 
+(defun cj/recording--select-from-labeled (prompt entries)
+  "Prompt user with PROMPT to select from labeled ENTRIES.
+ENTRIES is an alist of (label . device-name).  Appends a Cancel option.
+Returns the selected device name, or signals user-error if cancelled."
+  (let* ((alist (append entries '(("Cancel" . nil))))
+         (choice (completing-read prompt
+                                  (lambda (string pred action)
+                                    (if (eq action 'metadata)
+                                        '(metadata (display-sort-function . identity))
+                                      (complete-with-action action alist string pred)))
+                                  nil t))
+         (device (cdr (assoc choice alist))))
+    (unless device
+      (user-error "Device setup cancelled"))
+    device))
+
 (defun cj/recording-quick-setup ()
   "Quick device setup for recording — two-step mic + sink selection.
 Step 1: Pick a microphone.  Each mic shows its status:
@@ -579,39 +595,17 @@ This approach is portable across systems — plug in a new mic, run this
 command, and it appears in the list.  No hardware-specific configuration
 needed."
   (interactive)
-  ;; Step 1: Mic selection
-  (let* ((mics (cj/recording--get-available-mics))
-         (mic-entries (cj/recording--label-devices mics))
-         (mic-alist-with-cancel (append mic-entries '(("Cancel" . nil)))))
-    (if (null mic-entries)
-        (user-error "No microphones found.  Is a mic connected?")
-      (let* ((mic-choice (completing-read "Select microphone: "
-                                          (lambda (string pred action)
-                                            (if (eq action 'metadata)
-                                                '(metadata (display-sort-function . identity))
-                                              (complete-with-action action mic-alist-with-cancel string pred)))
-                                          nil t))
-             (mic-device (cdr (assoc mic-choice mic-alist-with-cancel))))
-        (if (null mic-device)
-            (user-error "Device setup cancelled")
-          ;; Step 2: Sink selection
-          (let* ((sinks (cj/recording--get-available-sinks))
-                 (sink-entries (cj/recording--label-sinks sinks))
-                 (sink-alist-with-cancel (append sink-entries '(("Cancel" . nil))))
-                 (sink-choice (completing-read "Select audio output to capture: "
-                                              (lambda (string pred action)
-                                                (if (eq action 'metadata)
-                                                    '(metadata (display-sort-function . identity))
-                                                  (complete-with-action action sink-alist-with-cancel string pred)))
-                                              nil t))
-                 (sink-device (cdr (assoc sink-choice sink-alist-with-cancel))))
-            (if (null sink-device)
-                (user-error "Device setup cancelled")
-              (setq cj/recording-mic-device mic-device)
-              (setq cj/recording-system-device (concat sink-device ".monitor"))
-              (message "Recording ready!\n  Mic: %s\n  System audio: %s.monitor"
-                       mic-choice
-                       (file-name-nondirectory sink-device)))))))))
+  (let* ((mic-entries (cj/recording--label-devices (cj/recording--get-available-mics))))
+    (unless mic-entries
+      (user-error "No microphones found.  Is a mic connected?"))
+    (let ((mic-device (cj/recording--select-from-labeled "Select microphone: " mic-entries))
+          (sink-entries (cj/recording--label-sinks (cj/recording--get-available-sinks))))
+      (let ((sink-device (cj/recording--select-from-labeled "Select audio output to capture: " sink-entries)))
+        (setq cj/recording-mic-device mic-device)
+        (setq cj/recording-system-device (concat sink-device ".monitor"))
+        (message "Recording ready!\n  Mic: %s\n  System audio: %s.monitor"
+                 (car (rassoc mic-device mic-entries))
+                 (file-name-nondirectory sink-device))))))
 
 ;;; ============================================================
 ;;; Device Testing
