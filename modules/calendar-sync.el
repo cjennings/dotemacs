@@ -653,31 +653,35 @@ Returns nil if EVENT or PROPERTY is nil, or no matches found."
           (setq pos (if (< end (length event)) (1+ end) end))))
       (nreverse lines))))
 
+(defun calendar-sync--extract-cn (line)
+  "Extract and dequote CN parameter from iCal LINE.
+Returns the CN value string, or nil if not found."
+  (when (string-match ";CN=\\([^;:]+\\)" line)
+    (let ((cn (match-string 1 line)))
+      (if (and (string-prefix-p "\"" cn) (string-suffix-p "\"" cn))
+          (substring cn 1 -1)
+        cn))))
+
+(defun calendar-sync--extract-email (line)
+  "Extract email address from mailto: value in iCal LINE.
+Returns email string, or nil if not found."
+  (when (string-match "mailto:\\([^>\n ]+\\)" line)
+    (match-string 1 line)))
+
 (defun calendar-sync--parse-attendee-line (line)
   "Parse single ATTENDEE LINE into plist.
 Returns plist (:cn NAME :email EMAIL :partstat STATUS :role ROLE).
 Returns nil for nil, empty, or malformed input."
   (when (and line (stringp line) (not (string-empty-p line))
              (string-match-p "^ATTENDEE" line))
-    (let ((cn nil)
-          (email nil)
+    (let ((cn (calendar-sync--extract-cn line))
+          (email (calendar-sync--extract-email line))
           (partstat nil)
           (role nil))
-      ;; Extract CN parameter
-      (when (string-match ";CN=\\([^;:]+\\)" line)
-        (setq cn (match-string 1 line))
-        ;; Strip surrounding quotes if present
-        (when (and (string-prefix-p "\"" cn) (string-suffix-p "\"" cn))
-          (setq cn (substring cn 1 -1))))
-      ;; Extract PARTSTAT parameter
       (when (string-match ";PARTSTAT=\\([^;:]+\\)" line)
         (setq partstat (match-string 1 line)))
-      ;; Extract ROLE parameter
       (when (string-match ";ROLE=\\([^;:]+\\)" line)
         (setq role (match-string 1 line)))
-      ;; Extract email from mailto: value
-      (when (string-match "mailto:\\([^>\n ]+\\)" line)
-        (setq email (match-string 1 line)))
       (when email
         (list :cn cn :email email :partstat partstat :role role)))))
 
@@ -704,19 +708,9 @@ Returns plist (:cn NAME :email EMAIL), or nil if no ORGANIZER found."
   (when (and event-str (stringp event-str))
     (let ((line (calendar-sync--get-property-line event-str "ORGANIZER")))
       (when line
-        (let ((cn nil)
-              (email nil))
-          ;; Extract CN parameter
-          (when (string-match ";CN=\\([^;:]+\\)" line)
-            (setq cn (match-string 1 line))
-            ;; Strip surrounding quotes if present
-            (when (and (string-prefix-p "\"" cn) (string-suffix-p "\"" cn))
-              (setq cn (substring cn 1 -1))))
-          ;; Extract email from mailto: value
-          (when (string-match "mailto:\\([^>\n ]+\\)" line)
-            (setq email (match-string 1 line)))
+        (let ((email (calendar-sync--extract-email line)))
           (when email
-            (list :cn cn :email email)))))))
+            (list :cn (calendar-sync--extract-cn line) :email email)))))))
 
 (defun calendar-sync--extract-meeting-url (event-str)
   "Extract meeting URL from EVENT-STR.
