@@ -212,6 +212,9 @@
    (vterm-mode . cj/vterm-launch-tmux))
   :bind
   (:map vterm-mode-map
+		("<f8>"    . nil)
+		("<f9>"    . nil)
+		("<f10>"   . nil)
 		("<f12>"   . nil)
 		("C-y"     . vterm-yank)
 		("C-p"     . vtermf-copy-mode)
