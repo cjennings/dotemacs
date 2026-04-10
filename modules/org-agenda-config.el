@@ -28,7 +28,11 @@
 ;;        - the weekly schedule, including the habit consistency graph
 ;;        - all priority B tasks
 ;;
-;; C-f8 - TASK LIST containing all tasks from all agenda targets.
+;; C-f8 - PROJECT AGENDA showing the main agenda filtered to a single project.
+;;        Prompts for project selection, then shows overdue/hi-pri/schedule/B tasks
+;;        scoped to that project's todo.org plus all calendars and inbox.
+;;
+;; s-f8 - TASK LIST containing all tasks from all agenda targets.
 ;;
 ;; M-f8 - TASK LIST containing all tasks from just the current org-mode buffer.
 ;;
@@ -184,7 +188,32 @@ files that have project in their filetag."
   (interactive)
   (cj/build-org-agenda-list)
   (org-agenda "a" "t"))
-(global-set-key (kbd "C-<f8>") #'cj/todo-list-all-agenda-files)
+(global-set-key (kbd "s-<f8>") #'cj/todo-list-all-agenda-files)
+
+;; ----------------------- Agenda List Single Project --------------------------
+;; an agenda showing the main daily view filtered to a single project.
+
+(defun cj/todo-list-single-project ()
+  "Display the main agenda filtered to a single project.
+Prompts for a project from ~/projects/ (only those containing todo.org),
+then shows the daily agenda (overdue, high-pri, schedule, priority B)
+scoped to that project's todo.org plus calendars, schedule, and inbox."
+  (interactive)
+  (let* ((all-dirs (directory-files projects-dir t "^[^.]"))
+         (project-dirs (seq-filter
+                        (lambda (dir)
+                          (and (file-directory-p dir)
+                               (file-exists-p (expand-file-name "todo.org" dir))))
+                        all-dirs))
+         (project-names (mapcar #'file-name-nondirectory project-dirs))
+         (chosen (completing-read "Project: " project-names nil t))
+         (todo-file (expand-file-name "todo.org"
+                                      (expand-file-name chosen projects-dir)))
+         (org-agenda-files (list todo-file
+                                inbox-file schedule-file
+                                gcal-file pcal-file dcal-file)))
+    (org-agenda "a" "d")))
+(global-set-key (kbd "C-<f8>") #'cj/todo-list-single-project)
 
 ;; ------------------------- Agenda List Current Buffer ------------------------
 ;; an agenda listing tasks from just the current buffer.
