@@ -81,7 +81,7 @@
 		  (default
 		   :default-family "BerkeleyMono Nerd Font"
 		   :default-weight regular
-		   :default-height 140
+		   :default-height 120
 		   :fixed-pitch-family nil          ;; falls back to :default-family
 		   :fixed-pitch-weight nil          ;; falls back to :default-weight
 		   :fixed-pitch-height 1.0
@@ -125,7 +125,7 @@
 		  (t                                ;; shared fallback properties go here
 		   :default-family "FiraCode Nerd Font Mono"
 		   :default-weight regular
-		   :default-height 110
+		   :default-height 120
 		   :fixed-pitch-family nil          ;; falls back to :default-family
 		   :fixed-pitch-weight nil          ;; falls back to :default-weight
 		   :fixed-pitch-height 1.0
