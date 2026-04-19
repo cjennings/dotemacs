@@ -80,3 +80,6 @@ history
 
 # Data directory (calendar sync output, API rest files)
 /data/
+
+# --- elisp ruleset ---
+*.eln
