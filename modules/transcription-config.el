@@ -246,19 +246,19 @@ associated output files."
     (run-at-time 600 nil #'cj/--cleanup-completed-transcriptions)
     (force-mode-line-update t)))
 
+(defun cj/--running-transcriptions ()
+  "Return the subset of `cj/transcriptions-list' whose status is `running'."
+  (seq-filter (lambda (entry) (eq (nth 3 entry) 'running))
+              cj/transcriptions-list))
+
 (defun cj/--cleanup-completed-transcriptions ()
   "Remove completed/errored transcriptions from tracking list."
-  (setq cj/transcriptions-list
-        (seq-filter (lambda (entry)
-                      (eq (nth 3 entry) 'running))
-                    cj/transcriptions-list))
+  (setq cj/transcriptions-list (cj/--running-transcriptions))
   (force-mode-line-update t))
 
 (defun cj/--count-active-transcriptions ()
   "Return count of running transcriptions."
-  (length (seq-filter (lambda (entry)
-                        (eq (nth 3 entry) 'running))
-                      cj/transcriptions-list)))
+  (length (cj/--running-transcriptions)))
 
 ;; ----------------------------- Modeline Integration --------------------------
 
@@ -304,6 +304,23 @@ Uses backend specified by `cj/transcribe-backend'."
       (user-error "No file at point"))
     (cj/transcribe-audio file)))
 
+(defun cj/--format-transcription-entry (entry)
+  "Return a display string for a transcription ENTRY.
+ENTRY is (PROCESS AUDIO-FILE START-TIME STATUS).  Status drives the face;
+duration is computed from START-TIME."
+  (let* ((audio-file (nth 1 entry))
+         (start-time (nth 2 entry))
+         (status (nth 3 entry))
+         (duration (cj/--transcription-duration start-time))
+         (status-face (pcase status
+                        ('running 'warning)
+                        ('complete 'success)
+                        ('error 'error))))
+    (concat (propertize (format "%-10s" status) 'face status-face)
+            " "
+            (file-name-nondirectory audio-file)
+            (format " (%s)\n" duration))))
+
 ;;;###autoload
 (defun cj/transcriptions-buffer ()
   "Show buffer with active transcriptions."
@@ -318,19 +335,7 @@ Uses backend specified by `cj/transcribe-backend'."
         (if (null cj/transcriptions-list)
             (insert "No active transcriptions.\n")
           (dolist (entry cj/transcriptions-list)
-            (let* ((process (nth 0 entry))
-                   (audio-file (nth 1 entry))
-                   (start-time (nth 2 entry))
-                   (status (nth 3 entry))
-                   (duration (cj/--transcription-duration start-time))
-                   (status-face (pcase status
-                                  ('running 'warning)
-                                  ('complete 'success)
-                                  ('error 'error))))
-              (insert (propertize (format "%-10s" status) 'face status-face)
-                      " "
-                      (file-name-nondirectory audio-file)
-                      (format " (%s)\n" duration))))))
+            (insert (cj/--format-transcription-entry entry)))))
       (goto-char (point-min))
       (special-mode))
     (display-buffer buffer)))
