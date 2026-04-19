@@ -34,6 +34,7 @@ case "$f" in
                      -L "$PROJECT_ROOT" \
                      -L "$PROJECT_ROOT/modules" \
                      -L "$PROJECT_ROOT/tests" \
+                     --eval '(package-initialize)' \
                      "$f" \
                      --eval '(check-parens)' \
                      --eval "(or (byte-compile-file \"$f\") (kill-emacs 1))" 2>&1)"; then
@@ -44,12 +45,13 @@ case "$f" in
 esac
 
 # --- Phase 2: test runner ---
-# Determine which tests (if any) apply to this edit.
+# Determine which tests (if any) apply to this edit. Works for projects with
+# source at root, in modules/, or elsewhere — stem-based test lookup is the
+# common pattern.
 tests=()
 case "$f" in
-  "$PROJECT_ROOT/modules/"*.el)
-    stem="$(basename "${f%.el}")"
-    mapfile -t tests < <(find "$PROJECT_ROOT/tests" -maxdepth 1 -name "test-${stem}*.el" 2>/dev/null | sort)
+  */init.el|*/early-init.el)
+    : # Phase 1 handled it; skip test runner
     ;;
   "$PROJECT_ROOT/tests/testutil-"*.el)
     stem="$(basename "${f%.el}")"
@@ -58,6 +60,11 @@ case "$f" in
     ;;
   "$PROJECT_ROOT/tests/test-"*.el)
     tests=("$f")
+    ;;
+  *.el)
+    # Any other .el under the project — find matching tests by stem
+    stem="$(basename "${f%.el}")"
+    mapfile -t tests < <(find "$PROJECT_ROOT/tests" -maxdepth 1 -name "test-${stem}*.el" 2>/dev/null | sort)
     ;;
 esac
 
@@ -69,6 +76,7 @@ if [ "$count" -ge 1 ] && [ "$count" -le "$MAX_AUTO_TEST_FILES" ]; then
                    -L "$PROJECT_ROOT" \
                    -L "$PROJECT_ROOT/modules" \
                    -L "$PROJECT_ROOT/tests" \
+                   --eval '(package-initialize)' \
                    -l ert "${load_args[@]}" \
                    --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" 2>&1)"; then
     printf 'TESTS FAILED for %s (%d test file(s)):\n%s\n' "$f" "$count" "$output" >&2

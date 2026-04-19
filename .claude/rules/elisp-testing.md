@@ -2,6 +2,9 @@
 
 Applies to: `**/tests/*.el`
 
+Implements the core principles from `testing.md`. All rules there apply here —
+this file covers Elisp-specific patterns.
+
 ## Framework: ERT
 
 Use `ert-deftest` for all tests. One test = one scenario.
