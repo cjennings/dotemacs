@@ -62,6 +62,20 @@ Log files are always kept on error regardless of this setting.")
 Each entry: (process audio-file start-time status)
 Status: running, complete, error")
 
+;; ---------------------------- Backend Descriptors ---------------------------
+
+(defconst cj/--transcription-backends
+  '((openai-api    :script "oai-transcribe"        :auth-host "api.openai.com"     :env-var "OPENAI_API_KEY")
+    (assemblyai    :script "assemblyai-transcribe" :auth-host "api.assemblyai.com" :env-var "ASSEMBLYAI_API_KEY")
+    (local-whisper :script "local-whisper"         :auth-host nil                  :env-var nil))
+  "Per-backend descriptors. Each entry: (SYMBOL :script S :auth-host H :env-var V).
+`:auth-host' and `:env-var' are nil for local backends that need no API key.")
+
+(defun cj/--backend-plist (backend)
+  "Return the descriptor plist for BACKEND, or signal if unknown."
+  (or (alist-get backend cj/--transcription-backends)
+      (user-error "Unknown transcription backend: %s" backend)))
+
 ;; ----------------------------- Pure Functions --------------------------------
 
 (defun cj/--audio-file-p (file)
@@ -90,34 +104,15 @@ SUCCESS-P indicates whether transcription succeeded."
       cj/transcription-keep-log-when-done))
 
 (defun cj/--transcription-script-path ()
-  "Return absolute path to transcription script based on backend."
-  (let ((script-name (pcase cj/transcribe-backend
-                       ('openai-api "oai-transcribe")
-                       ('assemblyai "assemblyai-transcribe")
-                       ('local-whisper "local-whisper"))))
+  "Return absolute path to transcription script for the active backend."
+  (let ((script-name (plist-get (cj/--backend-plist cj/transcribe-backend) :script)))
     (expand-file-name (concat "scripts/" script-name) user-emacs-directory)))
 
-(defun cj/--get-openai-api-key ()
-  "Retrieve OpenAI API key from authinfo.gpg.
-Expects entry in authinfo.gpg:
-  machine api.openai.com login api password sk-...
-Returns the API key string, or nil if not found."
-  (when-let* ((auth-info (car (auth-source-search
-                               :host "api.openai.com"
-                               :require '(:secret))))
-              (secret (plist-get auth-info :secret)))
-    (if (functionp secret)
-        (funcall secret)
-      secret)))
-
-(defun cj/--get-assemblyai-api-key ()
-  "Retrieve AssemblyAI API key from authinfo.gpg.
-Expects entry in authinfo.gpg:
-  machine api.assemblyai.com login api password <key>
-Returns the API key string, or nil if not found."
-  (when-let* ((auth-info (car (auth-source-search
-                               :host "api.assemblyai.com"
-                               :require '(:secret))))
+(defun cj/--auth-source-password (host)
+  "Retrieve password for HOST from authinfo.gpg.
+Expects entry like: machine HOST login api password <key>.
+Returns the password string, or nil if no matching entry exists."
+  (when-let* ((auth-info (car (auth-source-search :host host :require '(:secret))))
               (secret (plist-get auth-info :secret)))
     (if (functionp secret)
         (funcall secret)
@@ -164,19 +159,14 @@ Returns the process object."
 
     ;; Start process with environment
     (let* ((process-environment
-            ;; Add API key to environment based on backend
-            (pcase cj/transcribe-backend
-              ('openai-api
-               (if-let ((api-key (cj/--get-openai-api-key)))
-                   (cons (format "OPENAI_API_KEY=%s" api-key)
-                         process-environment)
-                 (user-error "OpenAI API key not found in authinfo.gpg for host api.openai.com")))
-              ('assemblyai
-               (if-let ((api-key (cj/--get-assemblyai-api-key)))
-                   (cons (format "ASSEMBLYAI_API_KEY=%s" api-key)
-                         process-environment)
-                 (user-error "AssemblyAI API key not found in authinfo.gpg for host api.assemblyai.com")))
-              (_ process-environment)))
+            (let* ((desc (cj/--backend-plist cj/transcribe-backend))
+                   (auth-host (plist-get desc :auth-host))
+                   (env-var (plist-get desc :env-var)))
+              (if (and auth-host env-var)
+                  (if-let ((api-key (cj/--auth-source-password auth-host)))
+                      (cons (format "%s=%s" env-var api-key) process-environment)
+                    (user-error "API key not found in authinfo.gpg for host %s" auth-host))
+                process-environment)))
            (process (make-process
                      :name process-name
                      :buffer (get-buffer-create buffer-name)
