@@ -193,53 +193,57 @@ Returns the process object."
                    (format "Started on %s" (file-name-nondirectory audio-file)))
       process)))
 
-(defun cj/--transcription-sentinel (process event audio-file txt-file log-file)
+(defun cj/--write-transcript-on-success (process-buffer success-p txt-file)
+  "Write PROCESS-BUFFER contents to TXT-FILE when SUCCESS-P is non-nil.
+No-op if PROCESS-BUFFER is dead or SUCCESS-P is nil."
+  (when (and success-p (buffer-live-p process-buffer))
+    (with-current-buffer process-buffer
+      (write-region (point-min) (point-max) txt-file nil 'silent))))
+
+(defun cj/--append-to-log (process-buffer log-file event)
+  "Append an EVENT marker plus PROCESS-BUFFER contents to LOG-FILE.
+No-op if PROCESS-BUFFER is dead."
+  (when (buffer-live-p process-buffer)
+    (with-temp-buffer
+      (insert-file-contents log-file)
+      (goto-char (point-max))
+      (insert "\n" (format-time-string "[%Y-%m-%d %H:%M:%S] ") event "\n")
+      (insert-buffer-substring process-buffer)
+      (write-region (point-min) (point-max) log-file nil 'silent))))
+
+(defun cj/--update-transcription-status (process success-p)
+  "Mark PROCESS's entry as `complete' or `error' based on SUCCESS-P.
+No-op if PROCESS isn't tracked."
+  (when-let ((entry (assq process cj/transcriptions-list)))
+    (setf (nth 3 entry) (if success-p 'complete 'error))))
+
+(defun cj/--notify-completion (success-p txt-file log-file)
+  "Send completion notification based on SUCCESS-P.
+References TXT-FILE on success (normal urgency), LOG-FILE on failure
+\(critical urgency)."
+  (if success-p
+      (cj/--notify "Transcription"
+                   (format "Complete.  Transcript in %s" (file-name-nondirectory txt-file)))
+    (cj/--notify "Transcription"
+                 (format "Errored.  Logs in %s" (file-name-nondirectory log-file))
+                 'critical)))
+
+(defun cj/--transcription-sentinel (process event _audio-file txt-file log-file)
   "Sentinel for transcription PROCESS.
-EVENT is the process event string.
-AUDIO-FILE, TXT-FILE, and LOG-FILE are the associated files."
+EVENT is the process event string.  TXT-FILE and LOG-FILE are the
+associated output files."
   (let* ((success-p (and (string-match-p "finished" event)
                          (= 0 (process-exit-status process))))
-         (process-buffer (process-buffer process))
-         (entry (assq process cj/transcriptions-list)))
-
-    ;; Write process output to txt file
-    (when (and success-p (buffer-live-p process-buffer))
-      (with-current-buffer process-buffer
-        (write-region (point-min) (point-max) txt-file nil 'silent)))
-
-    ;; Append process output to log file
-    (when (buffer-live-p process-buffer)
-      (with-temp-buffer
-        (insert-file-contents log-file)
-        (goto-char (point-max))
-        (insert "\n" (format-time-string "[%Y-%m-%d %H:%M:%S] ") event "\n")
-        (insert-buffer-substring process-buffer)
-        (write-region (point-min) (point-max) log-file nil 'silent)))
-
-    ;; Update transcription status
-    (when entry
-      (setf (nth 3 entry) (if success-p 'complete 'error)))
-
-    ;; Cleanup log file if successful and configured to do so
-    (when (and success-p (not (cj/--should-keep-log t)))
+         (process-buffer (process-buffer process)))
+    (cj/--write-transcript-on-success process-buffer success-p txt-file)
+    (cj/--append-to-log process-buffer log-file event)
+    (cj/--update-transcription-status process success-p)
+    (when (and success-p (not (cj/--should-keep-log success-p)))
       (delete-file log-file))
-
-    ;; Kill process buffer
     (when (buffer-live-p process-buffer)
       (kill-buffer process-buffer))
-
-    ;; Notify user
-    (if success-p
-        (cj/--notify "Transcription"
-                     (format "Complete.  Transcript in %s" (file-name-nondirectory txt-file)))
-      (cj/--notify "Transcription"
-                   (format "Errored.  Logs in %s" (file-name-nondirectory log-file))
-                   'critical))
-
-    ;; Clean up completed transcriptions after 10 minutes
+    (cj/--notify-completion success-p txt-file log-file)
     (run-at-time 600 nil #'cj/--cleanup-completed-transcriptions)
-
-    ;; Update modeline
     (force-mode-line-update t)))
 
 (defun cj/--cleanup-completed-transcriptions ()
