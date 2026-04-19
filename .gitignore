@@ -57,9 +57,9 @@ auto-save-list/
 # Documentation folder (session notes, personal workflows)
 /docs/
 
-# Claude Code configuration (personal settings, commands)
-/CLAUDE.md
-/.claude/
+# Claude Code — personal overrides only (bundle content is tracked)
+/.claude/settings.local.json
+/.claude/.cache/
 history
 .stignore
 
