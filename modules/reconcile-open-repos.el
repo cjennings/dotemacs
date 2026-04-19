@@ -73,16 +73,26 @@ Magit for review."
 
 ;; ---------------------------- Check For Open Work ----------------------------
 
+(defun cj/find-git-repos (directory)
+  "Recursively find all git repositories under DIRECTORY.
+Returns a list of directory paths that contain a .git subdirectory."
+  (let (repos)
+    (dolist (child (directory-files directory t "^[^.]+$" 'nosort))
+      (when (file-directory-p child)
+        (if (file-directory-p (expand-file-name ".git" child))
+            (push child repos)
+          (setq repos (nconc repos (cj/find-git-repos child))))))
+    repos))
+
 (defun cj/check-for-open-work ()
   "Check all project directories for open work."
   (interactive)
   ;; these are constants defined in init.el
-  ;; children of these directories will be checked
+  ;; recursively find and check all git repos under these directories
   (dolist (base-dir (list projects-dir code-dir))
     (when (and (boundp 'base-dir) base-dir (file-directory-p base-dir))
-      (dolist (child-dir (directory-files base-dir t "^[^.]+$" 'nosort))
-        (when (file-directory-p child-dir)
-          (cj/reconcile-git-directory child-dir)))))
+      (dolist (repo (cj/find-git-repos base-dir))
+        (cj/reconcile-git-directory repo))))
 
   ;; check these directories individually
   (when (and (boundp 'org-dir) org-dir (file-directory-p org-dir))
