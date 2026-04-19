@@ -102,7 +102,7 @@ Returns a list of directory paths that contain a .git subdirectory."
   ;; these are constants defined in init.el
   ;; recursively find and check all git repos under these directories
   (dolist (base-dir (list projects-dir code-dir))
-    (when (and (boundp 'base-dir) base-dir (file-directory-p base-dir))
+    (when (and base-dir (file-directory-p base-dir))
       (dolist (repo (cj/find-git-repos base-dir))
         (cj/reconcile-git-directory repo))))
 
