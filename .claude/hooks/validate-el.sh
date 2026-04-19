@@ -1,13 +1,31 @@
 #!/usr/bin/env bash
 # Validate and test .el files after Edit/Write/MultiEdit.
 # PostToolUse hook: receives tool-call JSON on stdin.
-# Silent on success; on failure, prints emacs output and exits 2
-# so Claude sees the error and can correct it.
+#
+# On success: exit 0 silent.
+# On failure: emit JSON with hookSpecificOutput.additionalContext so Claude
+# sees a structured error in its context, THEN exit 2 to block the tool
+# pipeline. stderr still echoes the error for terminal visibility.
 #
 # Phase 1: check-parens + byte-compile
-# Phase 2: for modules/*.el, run matching tests/test-<stem>*.el
+# Phase 2: for non-test .el files, run matching tests/test-<stem>*.el
 
 set -u
+
+# Emit a JSON failure payload and exit 2. Arguments:
+#   $1 — short failure type (e.g. "PAREN CHECK FAILED")
+#   $2 — file path
+#   $3 — emacs output (error body)
+fail_json() {
+    local ctx
+    ctx="$(printf '%s: %s\n\n%s\n\nFix before proceeding.' "$1" "$2" "$3" \
+        | jq -Rs .)"
+    cat <<EOF
+{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": $ctx}}
+EOF
+    printf '%s: %s\n%s\n' "$1" "$2" "$3" >&2
+    exit 2
+}
 
 # Portable project root: prefer Claude Code's env var, fall back to deriving
 # from this script's location ($project/.claude/hooks/validate-el.sh).
@@ -25,8 +43,7 @@ case "$f" in
     # Byte-compile here would load the full package graph. Parens only.
     if ! output="$(emacs --batch --no-site-file --no-site-lisp "$f" \
                      --eval '(check-parens)' 2>&1)"; then
-      printf 'PAREN CHECK FAILED: %s\n%s\n' "$f" "$output" >&2
-      exit 2
+      fail_json "PAREN CHECK FAILED" "$f" "$output"
     fi
     ;;
   *.el)
@@ -38,8 +55,7 @@ case "$f" in
                      "$f" \
                      --eval '(check-parens)' \
                      --eval "(or (byte-compile-file \"$f\") (kill-emacs 1))" 2>&1)"; then
-      printf 'VALIDATION FAILED: %s\n%s\n' "$f" "$output" >&2
-      exit 2
+      fail_json "VALIDATION FAILED" "$f" "$output"
     fi
     ;;
 esac
@@ -79,8 +95,7 @@ if [ "$count" -ge 1 ] && [ "$count" -le "$MAX_AUTO_TEST_FILES" ]; then
                    --eval '(package-initialize)' \
                    -l ert "${load_args[@]}" \
                    --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" 2>&1)"; then
-    printf 'TESTS FAILED for %s (%d test file(s)):\n%s\n' "$f" "$count" "$output" >&2
-    exit 2
+    fail_json "TESTS FAILED ($count test file(s))" "$f" "$output"
   fi
 fi
 

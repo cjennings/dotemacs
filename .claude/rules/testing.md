@@ -58,6 +58,26 @@ Every unit under test requires coverage across three categories:
 - Resource exhaustion
 - Malformed data
 
+## Combinatorial Coverage
+
+For functions with 3+ parameters that each take multiple values (feature-flag
+combinations, config matrices, permission/role interactions, multi-field
+form validation, API parameter spaces), the exhaustive test count explodes
+(M^N) while 3-5 ad-hoc cases miss pair interactions. Use **pairwise /
+combinatorial testing** — generate a minimal matrix that hits every 2-way
+combination of parameter values. Empirically catches 60-90% of combinatorial
+bugs with 80-99% fewer tests.
+
+Invoke `/pairwise-tests` on the offending function; continue using `/add-tests`
+and the Normal/Boundary/Error discipline for the rest. The two approaches
+complement: pairwise covers parameter *interactions*; category discipline
+covers each parameter's individual edge space.
+
+Skip pairwise when: the function has 1-2 parameters (just write the cases),
+the context requires *provably* exhaustive coverage (regulated systems — document
+in an ADR), or the testing target is non-parametric (single happy path,
+performance regression, a specific error).
+
 ## Test Organization
 
 Typical layout:
