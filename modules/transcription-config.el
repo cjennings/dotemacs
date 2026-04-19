@@ -118,6 +118,20 @@ Returns the password string, or nil if no matching entry exists."
         (funcall secret)
       secret)))
 
+(defun cj/--build-process-environment (backend)
+  "Return `process-environment' augmented with BACKEND's API-key env var.
+If BACKEND needs no API key (no :auth-host in its descriptor), return
+`process-environment' unchanged.  Signals `user-error' if BACKEND requires
+a key but none is found in authinfo.gpg."
+  (let* ((desc (cj/--backend-plist backend))
+         (auth-host (plist-get desc :auth-host))
+         (env-var (plist-get desc :env-var)))
+    (if (and auth-host env-var)
+        (if-let ((api-key (cj/--auth-source-password auth-host)))
+            (cons (format "%s=%s" env-var api-key) process-environment)
+          (user-error "API key not found in authinfo.gpg for host %s" auth-host))
+      process-environment)))
+
 ;; ---------------------------- Process Management -----------------------------
 
 (defun cj/--notify (title message &optional urgency)
@@ -158,15 +172,7 @@ Returns the process object."
               (format "Script: %s\n\n" script)))
 
     ;; Start process with environment
-    (let* ((process-environment
-            (let* ((desc (cj/--backend-plist cj/transcribe-backend))
-                   (auth-host (plist-get desc :auth-host))
-                   (env-var (plist-get desc :env-var)))
-              (if (and auth-host env-var)
-                  (if-let ((api-key (cj/--auth-source-password auth-host)))
-                      (cons (format "%s=%s" env-var api-key) process-environment)
-                    (user-error "API key not found in authinfo.gpg for host %s" auth-host))
-                process-environment)))
+    (let* ((process-environment (cj/--build-process-environment cj/transcribe-backend))
            (process (make-process
                      :name process-name
                      :buffer (get-buffer-create buffer-name)
