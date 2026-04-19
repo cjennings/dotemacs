@@ -29,6 +29,46 @@
 ;; Forward declaration for magit
 (declare-function magit-status "magit" (&optional directory cache))
 
+;; ------------------------------ Skip Predicate -------------------------------
+
+(defun cj/reconcile--should-skip-p (directory)
+  "Return non-nil if DIRECTORY should be skipped during reconciliation.
+Skips directories without .git, without a remote, or with http/https remotes
+\(reference clones)."
+  (let ((default-directory directory))
+    (or (not (file-directory-p (expand-file-name ".git" directory)))
+        (let ((remote-url (string-trim (shell-command-to-string
+                                        "git config --get remote.origin.url"))))
+          (or (string-empty-p remote-url)
+              (string-match-p "^\\(http\\|https\\)://" remote-url))))))
+
+;; -------------------------------- Pull Clean --------------------------------
+
+(defun cj/reconcile--pull-clean (directory)
+  "Pull latest changes for clean git repo at DIRECTORY."
+  (let* ((default-directory directory)
+         (pull-result (shell-command "git pull --rebase --quiet")))
+    (unless (= pull-result 0)
+      (message "Warning: git pull failed for %s (exit code: %d)" directory pull-result))))
+
+;; -------------------------------- Pull Dirty --------------------------------
+
+(defun cj/reconcile--pull-dirty (directory)
+  "Stash, pull, pop stash, and open Magit for dirty repo at DIRECTORY."
+  (let ((default-directory directory))
+    (message "%s contains uncommitted work" directory)
+    (let ((stash-result (shell-command "git stash --quiet")))
+      (if (= stash-result 0)
+          (let ((pull-result (shell-command "git pull --rebase --quiet")))
+            (when (= pull-result 0)
+              (let ((stash-pop-result (shell-command "git stash pop --quiet")))
+                (unless (= stash-pop-result 0)
+                  (message "Warning: git stash pop failed for %s - opening Magit" directory))))
+            (unless (= pull-result 0)
+              (message "Warning: git pull failed for %s - opening Magit" directory)))
+        (message "Warning: git stash failed for %s - opening Magit" directory)))
+    (magit-status directory)))
+
 ;; -------------------------- Reconcile Git Directory --------------------------
 
 (defun cj/reconcile-git-directory (directory)
@@ -37,39 +77,11 @@ Skips local-only repos and http/https remotes.  For clean repos, silently pulls
 latest changes.  For dirty repos, stashes changes, pulls, pops stash, and opens
 Magit for review."
   (message "checking: %s" directory)
-  (let ((default-directory directory))
-    ;; Check for the presence of the .git directory
-    (if (file-directory-p (expand-file-name ".git" directory))
-        (progn
-          (let ((remote-url (string-trim (shell-command-to-string "git config --get remote.origin.url"))))
-
-            ;; skip local git repos, or remote URLs that are http or https,
-            ;; these are typically cloned for reference only
-            (unless (or (string-empty-p remote-url)
-                        (string-match-p "^\\(http\\|https\\)://" remote-url))
-
-              ;; if git directory is clean, pulling generates no errors
-              (if (string-empty-p (shell-command-to-string "git status --porcelain"))
-                  (progn
-                    (let ((pull-result (shell-command "git pull --rebase --quiet")))
-                      (unless (= pull-result 0)
-                        (message "Warning: git pull failed for %s (exit code: %d)" directory pull-result))))
-
-                ;; if directory not clean, pull latest changes and display Magit for manual intervention
-                (progn
-                  (message "%s contains uncommitted work" directory)
-                  (let ((stash-result (shell-command "git stash --quiet")))
-                    (if (= stash-result 0)
-                        (progn
-                          (let ((pull-result (shell-command "git pull --rebase --quiet")))
-                            (if (= pull-result 0)
-                                (let ((stash-pop-result (shell-command "git stash pop --quiet")))
-                                  (unless (= stash-pop-result 0)
-                                    (message "Warning: git stash pop failed for %s - opening Magit" directory)))
-                              (message "Warning: git pull failed for %s - opening Magit" directory)))
-                          (magit-status directory))
-                      (message "Warning: git stash failed for %s - opening Magit" directory)
-                      (magit-status directory)))))))))))
+  (unless (cj/reconcile--should-skip-p directory)
+    (let ((default-directory directory))
+      (if (string-empty-p (shell-command-to-string "git status --porcelain"))
+          (cj/reconcile--pull-clean directory)
+        (cj/reconcile--pull-dirty directory)))))
 
 ;; ---------------------------- Check For Open Work ----------------------------
 
@@ -79,9 +91,9 @@ Returns a list of directory paths that contain a .git subdirectory."
   (let (repos)
     (dolist (child (directory-files directory t "^[^.]+$" 'nosort))
       (when (file-directory-p child)
-        (if (file-directory-p (expand-file-name ".git" child))
-            (push child repos)
-          (setq repos (nconc repos (cj/find-git-repos child))))))
+        (when (file-directory-p (expand-file-name ".git" child))
+          (push child repos))
+        (setq repos (nconc repos (cj/find-git-repos child)))))
     repos))
 
 (defun cj/check-for-open-work ()
