@@ -11,10 +11,10 @@ Use `ert-deftest` for all tests. One test = one scenario.
 
 ## File Layout
 
-- `tests/test-<module>.el` — tests for `modules/<module>.el`
+- `tests/test-<module>.el` — tests for `<module>.el`
 - `tests/test-<module>--<helper>.el` — tests for a specific private helper (matches `<module>--<helper>` function naming)
-- `tests/testutil-<module>.el` — fixtures and mocks for one module
-- `tests/testutil-general.el`, `testutil-filesystem.el`, `testutil-org.el` — cross-module helpers
+- `tests/testutil-<module>.el` — fixtures and mocks scoped to one module
+- `tests/testutil-*.el` — cross-module helpers (shared fixtures, generic mocks, filesystem helpers); name them for what they help with
 
 Tests must `(require 'module-name)` before the testutil file that stubs its internals, unless documented otherwise. Order matters — a testutil that defines a stub can be shadowed by a later `require` of the real module.
 
