@@ -101,25 +101,21 @@ Added: %U"
 
 (defun cj/org-contacts-template-name ()
   "Get name for contact template from context."
-  (let ((name (when (boundp 'cj/contact-name) cj/contact-name)))
-    (or name
-        (when (eq major-mode 'mu4e-headers-mode)
-          (mu4e-message-field (mu4e-message-at-point) :from-or-to))
-        (when (eq major-mode 'mu4e-view-mode)
-          (mu4e-message-field mu4e~view-message :from-or-to))
-        (read-string "Name: "))))
+  (or (when (eq major-mode 'mu4e-headers-mode)
+        (mu4e-message-field (mu4e-message-at-point) :from-or-to))
+      (when (eq major-mode 'mu4e-view-mode)
+        (mu4e-message-field mu4e~view-message :from-or-to))
+      (read-string "Name: ")))
 
 (defun cj/org-contacts-template-email ()
   "Get email for contact template from context."
-  (let ((email (when (boundp 'cj/contact-email) cj/contact-email)))
-    (or email
-        (when (eq major-mode 'mu4e-headers-mode)
-          (let ((from (mu4e-message-field (mu4e-message-at-point) :from)))
-            (when from (cdr (car from)))))
-        (when (eq major-mode 'mu4e-view-mode)
-          (let ((from (mu4e-message-field mu4e~view-message :from)))
-            (when from (cdr (car from)))))
-        (read-string "Email: "))))
+  (or (when (eq major-mode 'mu4e-headers-mode)
+        (let ((from (mu4e-message-field (mu4e-message-at-point) :from)))
+          (when from (cdr (car from)))))
+      (when (eq major-mode 'mu4e-view-mode)
+        (let ((from (mu4e-message-field mu4e~view-message :from)))
+          (when from (cdr (car from)))))
+      (read-string "Email: ")))
 
 ;;; ------------------------- Quick Contact Functions ---------------------------
 
