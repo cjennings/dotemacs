@@ -72,6 +72,48 @@ tests/
 Per-language files may adjust this (e.g. Elisp collates ERT tests into
 `tests/test-<module>*.el` without subdirectories).
 
+### Testing Pyramid
+
+Rough proportions for most projects:
+- Unit tests: 70-80% (fast, isolated, granular)
+- Integration tests: 15-25% (component interactions, real dependencies)
+- E2E tests: 5-10% (full system, slowest)
+
+Don't duplicate coverage: if unit tests fully exercise a function's logic,
+integration tests should focus on *how* components interact — not repeat the
+function's case coverage.
+
+## Integration Tests
+
+Integration tests exercise multiple components together. Two rules:
+
+**The docstring names every component integrated** and marks which are real vs
+mocked. Integration failures are harder to pinpoint than unit failures;
+enumerating the participants up front tells you where to start looking.
+
+Example:
+
+```
+def test_integration_refund_during_sync_updates_ledger_atomically():
+    """Refund processed mid-sync updates order and ledger in one transaction.
+
+    Components integrated:
+    - OrderService.refund (entry point)
+    - PaymentGateway.reverse (MOCKED — returns success)
+    - Ledger.credit (real)
+    - db.transaction (real)
+
+    Validates:
+    - Refund rolls back if ledger write fails
+    - Both tables updated or neither
+    """
+```
+
+**Write an integration test when** multiple components must work together,
+state crosses function boundaries, or edge cases combine. **Don't** when
+single-function behavior suffices, or when mocking would erase the interaction
+you meant to test.
+
 ## Naming Convention
 
 - Unit: `test_<module>_<function>_<scenario>_<expected>`
@@ -115,6 +157,65 @@ Never mock:
 - Internal domain logic
 - Framework behavior (ORM queries, middleware, hooks, buffer primitives)
 
+### Signs of Overmocking
+
+Ask yourself:
+
+- Would this test still pass if I replaced the function body with `raise NotImplementedError` (or equivalent)? If yes, the mocks are doing the work — you're testing mocks, not code.
+- Is the mock more complex than the function being tested? Smell.
+- Am I mocking internal string / parsing / decoding helpers? Those aren't boundaries — they're the work.
+- Does the test break when I refactor without changing behavior? Good tests survive refactors; overmocked ones couple to implementation.
+
+When tests demand heavy internal mocking, the fix isn't better mocks — it's
+restructuring the code (see *If Tests Are Hard to Write* below).
+
+### Testing Code That Uses Frameworks
+
+When a function mostly delegates to framework or library code, test *your*
+integration logic:
+- ✓ "I call the library with the right arguments in the right context"
+- ✓ "I handle its return value correctly"
+- ✗ "The library works in 50 scenarios" — trust it; it has its own tests
+
+For polyglot behavior (e.g., comment handling across C/Java/Go/JS), test 2-3
+representative modes thoroughly plus a minimal smoke test in the others.
+Exhaustive permutations are diminishing returns.
+
+### Test Real Code, Not Copies
+
+Never inline or copy production code into test files. Always `require`/`import`
+the module under test. Copied code passes even when production breaks — the
+bug hides behind the duplicate.
+
+Mock dependencies at their boundary; exercise the real function body.
+
+### Error Behavior, Not Error Text
+
+Test that errors occur with the right type; don't assert exact wording:
+- ✓ Right exception type (`pytest.raises(ValueError)`, `(should-error ... :type 'user-error)`)
+- ✓ Regex on values the message *must* contain (e.g., the offending filename)
+- ✗ `assert str(e) == "File 'foo' not found"` — breaks when prose changes even though behavior is unchanged
+
+Production code should emit clear, contextual errors. Tests verify the
+behavior (raised, caught, returned nil) and values that must appear — not the
+prose.
+
+## If Tests Are Hard to Write, Refactor the Code
+
+If a test needs extensive mocking of internal helpers, elaborate fixture
+scaffolding, or mocks that recreate the function's own logic, the production
+code needs restructuring — not the test.
+
+Signals:
+- Deep nesting (callbacks inside callbacks)
+- Long functions doing multiple things ("fetch AND parse AND decode AND save")
+- Tests that mock internal string / parsing / I/O helpers
+- Tests that break on refactors with no behavior change
+
+Fix: extract focused helpers (one responsibility each), test each in isolation
+with real inputs, compose them in a thin outer function. Several small unit
+tests plus one composition test beats one monster test behind a wall of mocks.
+
 ## Coverage Targets
 
 - Business logic and domain services: **90%+**
@@ -147,6 +248,9 @@ If you catch yourself thinking any of these, stop and write the test.
 - Hardcoded dates or timestamps (they rot)
 - Testing implementation details instead of behavior
 - Mocking the thing you're testing
+- Mocking internal helpers (string ops, parsing, decoding) — those are the work
+- Inlining production code into test files — always `require` / `import` the real module
+- Asserting exact error-message text instead of type + key values
 - Shared mutable state between tests
 - Non-deterministic tests (random without seed, network in unit tests)
 - Testing framework behavior instead of your code

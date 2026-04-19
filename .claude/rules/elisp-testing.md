@@ -43,6 +43,32 @@ Write the failing test first. A failing test proves you understand the change. A
 
 For untested code, write a **characterization test** that captures current behavior before you change anything. It becomes the safety net for the refactor.
 
+## Interactive vs Internal — Split for Testability
+
+When a function mixes business logic with user interaction, split it:
+
+- **Internal** (`cj/--foo`) — pure logic. All parameters explicit. No prompts,
+  no UI. Deterministic and trivially testable.
+- **Interactive wrapper** (`cj/foo`) — thin layer that reads user input and
+  delegates to the internal.
+
+```elisp
+(defun cj/--move-buffer-and-file (dir &optional ok-if-exists)
+  "Move the current buffer's file into DIR. Overwrite if OK-IF-EXISTS."
+  ...)
+
+(defun cj/move-buffer-and-file ()
+  "Interactive wrapper: prompt for DIR, delegate."
+  (interactive)
+  (let ((dir (read-directory-name "Move to: ")))
+    (cj/--move-buffer-and-file dir)))
+```
+
+Test the internal directly with parameter values — no `cl-letf` on
+`read-directory-name`, `yes-or-no-p`, etc. The wrapper gets a smoke test or
+nothing — Emacs already tests its own prompts. The internal also becomes
+reusable by other Elisp code without triggering UI.
+
 ## Mocking
 
 Mock at boundaries:
