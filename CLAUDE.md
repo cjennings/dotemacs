@@ -39,7 +39,7 @@ See rule files in `.claude/rules/`:
 
 - Single-user repo, commits go to `main`
 - Conventional prefixes: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
-- Commits are authored as Craig — never add Claude/Anthropic attribution (see `docs/protocols.org`)
+- Commit conventions and attribution rules: see `.claude/rules/commits.md`
 - Pre-commit hook scans for secrets and runs `make validate-parens`
 
 ## Problem-Solving Approach
