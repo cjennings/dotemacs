@@ -132,6 +132,20 @@ a key but none is found in authinfo.gpg."
           (user-error "API key not found in authinfo.gpg for host %s" auth-host))
       process-environment)))
 
+(defun cj/--init-log-file (log-file audio-file script)
+  "Create LOG-FILE with a header recording the start of transcription.
+Records the current time, active backend, AUDIO-FILE, and SCRIPT path."
+  (with-temp-file log-file
+    (insert (format "Transcription started: %s\n" (current-time-string))
+            (format "Backend: %s\n" cj/transcribe-backend)
+            (format "Audio file: %s\n" audio-file)
+            (format "Script: %s\n\n" script))))
+
+(defun cj/--track-transcription (process audio-file)
+  "Push a running-status entry for PROCESS and AUDIO-FILE, refresh modeline."
+  (push (list process audio-file (current-time) 'running) cj/transcriptions-list)
+  (force-mode-line-update t))
+
 ;; ---------------------------- Process Management -----------------------------
 
 (defun cj/--notify (title message &optional urgency)
@@ -164,14 +178,8 @@ Returns the process object."
     (unless (file-executable-p script)
       (user-error "Transcription script not found or not executable: %s" script))
 
-    ;; Create log file
-    (with-temp-file log-file
-      (insert (format "Transcription started: %s\n" (current-time-string))
-              (format "Backend: %s\n" cj/transcribe-backend)
-              (format "Audio file: %s\n" audio-file)
-              (format "Script: %s\n\n" script)))
+    (cj/--init-log-file log-file audio-file script)
 
-    ;; Start process with environment
     (let* ((process-environment (cj/--build-process-environment cj/transcribe-backend))
            (process (make-process
                      :name process-name
@@ -180,15 +188,9 @@ Returns the process object."
                      :sentinel (lambda (proc event)
                                  (cj/--transcription-sentinel proc event audio-file txt-file log-file))
                      :stderr log-file)))
-
-      ;; Track transcription
-      (push (list process audio-file (current-time) 'running) cj/transcriptions-list)
-      (force-mode-line-update t)
-
-      ;; Notify user
+      (cj/--track-transcription process audio-file)
       (cj/--notify "Transcription"
                    (format "Started on %s" (file-name-nondirectory audio-file)))
-
       process)))
 
 (defun cj/--transcription-sentinel (process event audio-file txt-file log-file)
