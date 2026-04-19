@@ -40,7 +40,7 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 
 .PHONY: help targets test test-all test-unit test-integration test-file test-name \
         validate-parens validate-modules compile lint profile \
-        clean clean-compiled clean-tests reset
+        clean clean-compiled clean-tests reset install-hooks
 
 # Alias for help
 targets: help
@@ -70,6 +70,7 @@ help:
 	@echo "    make clean-compiled    - Remove .elc/.eln files only"
 	@echo "    make clean-tests       - Remove test artifacts only"
 	@echo "    make reset             - Reset to first launch (DESTRUCTIVE!)"
+	@echo "    make install-hooks     - Activate tracked git hooks (githooks/)"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make test-file FILE=test-custom-buffer-file-copy-whole-buffer.el"
@@ -365,3 +366,11 @@ reset:
 	@find $(EMACS_HOME) -name "*.eln" -type f -delete
 	@find $(EMACS_HOME) -name "*.elc" -type f -delete
 	@echo "✓ Reset complete"
+
+install-hooks:
+	@echo "Activating tracked git hooks from githooks/..."
+	@git config core.hooksPath githooks
+	@chmod +x githooks/* 2>/dev/null || true
+	@echo "✓ core.hooksPath set to githooks/"
+	@echo "  Active hooks:"
+	@ls -1 githooks/ 2>/dev/null | grep -v '\.md$$' | sed 's/^/    /'

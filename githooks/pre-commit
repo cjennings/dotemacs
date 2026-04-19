@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Pre-commit hook: secret scan + paren validation on staged .el files.
+# Use `git commit --no-verify` to bypass for confirmed false positives.
+
+set -u
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# --- 1. Secret scan ---
+# Patterns for common credentials. Scans only added lines in the staged diff.
+SECRET_PATTERNS='(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9_-]{20,}|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP)( PRIVATE)?( KEY| KEY BLOCK)?-----|(api[_-]?key|api[_-]?secret|auth[_-]?token|secret[_-]?key|bearer[_-]?token|access[_-]?token|password)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{16,}["'"'"'])'
+
+secret_hits="$(git diff --cached -U0 --diff-filter=AM \
+  | grep '^+' | grep -v '^+++' \
+  | grep -iEn "$SECRET_PATTERNS" || true)"
+
+if [ -n "$secret_hits" ]; then
+  echo "pre-commit: potential secret in staged changes:" >&2
+  echo "$secret_hits" >&2
+  echo "" >&2
+  echo "Review the lines above. If this is a false positive (test fixture, documentation)," >&2
+  echo "bypass with: git commit --no-verify" >&2
+  exit 1
+fi
+
+# --- 2. Paren check on staged .el files ---
+staged_el="$(git diff --cached --name-only --diff-filter=AM | grep '\.el$' || true)"
+
+if [ -n "$staged_el" ]; then
+  paren_fail=""
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    [ -f "$f" ] || continue
+    if ! out="$(emacs --batch --no-site-file --no-site-lisp "$f" \
+                  --eval '(check-parens)' 2>&1)"; then
+      paren_fail="${paren_fail}${f}:
+${out}
+
+"
+    fi
+  done <<< "$staged_el"
+
+  if [ -n "$paren_fail" ]; then
+    printf 'pre-commit: paren check failed:\n\n%s' "$paren_fail" >&2
+    exit 1
+  fi
+fi
+
+exit 0
