@@ -93,7 +93,7 @@ Magit for review."
   ;; communicate when finished.
   (message "Complete. All repositories checked and updated"))
 
-;;;###autoload (keymap-global-set "M-P" #'cj/check-for-open-work)
+(keymap-global-set "M-P" #'cj/check-for-open-work)
 
 (provide 'reconcile-open-repos)
 ;;; reconcile-open-repos.el ends here.
