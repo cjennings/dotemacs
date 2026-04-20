@@ -54,8 +54,8 @@ auto-save-list/
 # reveal.js local clone (managed by scripts/setup-reveal.sh)
 /reveal.js/
 
-# Documentation folder (session notes, personal workflows)
-/docs/
+# Claude tooling (session notes, personal workflows, protocols)
+/.ai/
 
 # Claude Code — personal overrides only (bundle content is tracked)
 /.claude/settings.local.json

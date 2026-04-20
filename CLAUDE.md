@@ -11,7 +11,8 @@ Craig's personal Emacs configuration. Pure Elisp, organized as modules loaded fr
 - `tests/testutil-*.el` — shared test fixtures and mocks
 - `assets/` — data files checked into git
 - `data/` — runtime state (mostly gitignored)
-- `docs/` — project docs; see `docs/protocols.org` and `docs/notes.org` first
+- `.ai/` — Claude tooling (gitignored); session state and workflows. See `.ai/protocols.org` and `.ai/notes.org` first.
+- `docs/` — real project documentation (if/when created); not touched by Claude sync
 
 ## Build & Test Commands
 
