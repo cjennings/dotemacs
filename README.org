@@ -1,0 +1,89 @@
+#+TITLE: Craig's Emacs Configuration
+#+AUTHOR: Craig Jennings
+#+OPTIONS: toc:2
+
+Personal Emacs configuration. Pure Elisp, modular, no framework (not
+Doom, not Spacemacs). Used daily for real work — this is a lived-in
+config, not a demo.
+
+Still in active development; the GPTel integration and its tool
+implementations in particular are a work in progress.
+
+* Status
+
+Personal. Published in case bits are useful to others, but not intended
+as a distribution or starter kit. Conventions and keybindings reflect
+my habits. Feel free to read, borrow, or steal; no support promised.
+
+* Requirements
+
+- Emacs 29 or newer (uses ~lexical-binding~, ~use-package~, native comp)
+- Linux / macOS / FreeBSD / Windows — the config checks host via
+  =host-environment.el= and degrades where platform features are missing
+- Several modules shell out to external tools (e.g. =ffmpeg=,
+  =mu4e=, =pdftools=); those modules fail gracefully when the tool
+  is absent
+
+* Layout
+
+#+begin_example
+.
+├── early-init.el        startup perf, package system, local repos
+├── init.el              module loader (one require per feature)
+├── modules/             feature modules — one domain per file (~100 files)
+├── tests/               ERT tests — test-<module>*.el, testutil-*.el
+├── assets/              data files checked into git
+├── custom/              user customizations and overrides
+├── snippets/            yasnippet templates
+├── themes/              local themes
+├── scripts/             helper shell scripts (elpa mirror, setup, etc.)
+├── gptel-tools/         GPTel tool implementations for LLM access
+├── org-roam-templates/  capture templates for org-roam
+├── githooks/            optional git hooks (pre-commit, etc.)
+└── Makefile             test / lint / validate / profile targets
+#+end_example
+
+=modules/= is organized by domain: ~org-*~, ~prog-*~, ~custom-*~,
+~ui-*~, and standalone feature files (e.g. ~calendar-sync.el~,
+~transcription-config.el~, ~reconcile-open-repos.el~).
+
+* Features
+
+- *Local package repository* (=.localrepo/=) — last-known-good package
+  versions checked in for fully offline reinstalls. Highest priority
+  in the archive list, so online repos are additive, not required.
+- *ELPA mirror support* — optional script (=scripts/create-elpa-mirror.sh=)
+  clones GNU / NonGNU / MELPA / MELPA-stable locally (~1.9 GB) for
+  portability behind firewalls.
+- *Google Calendar sync* (=modules/calendar-sync.el=) — pure-Elisp
+  =.ics= parser, one-way sync to org-mode, no external dependencies.
+- *Audio transcription* (=modules/transcription-config.el=) — pluggable
+  backends (OpenAI, AssemblyAI, local) via descriptor alist.
+- *Repo reconcile* (=modules/reconcile-open-repos.el=) — walks
+  project directories, surfaces dirty/unpushed repos for review.
+- *Mu4e + org-msg + org-contacts* — integrated mail workflow.
+- *Reveal.js and ox-hugo* — slide decks and blog publishing from org.
+- *GPTel tools* — buffer / filesystem tools exposed to LLM chats
+  (work in progress).
+- *Custom keymap* under =C-;= prefix for personal commands.
+
+* Development
+
+Makefile targets:
+
+#+begin_src bash
+make                    # Show all targets
+make test               # Run all ERT tests
+make test-file FILE=tests/test-foo.el   # One test file
+make test-name TEST=pattern             # Match by test name
+make validate-parens    # Check for unbalanced parens in modules
+make validate-modules   # Load all modules to verify they compile
+make compile            # Byte-compile modules
+make lint               # checkdoc + package-lint + elisp-lint
+make profile            # Profile Emacs startup
+make clean              # Remove .elc and test artifacts
+#+end_src
+
+Coverage is substantial but not uniform — critical utilities
+(calendar-sync, transcription, reconcile, custom-* helpers) have
+thorough test suites; some config modules are smoke-tested only.
