@@ -12,6 +12,59 @@
 
 ;;; Code:
 
+(require 'seq)
+
+(defvar cj/coverage-backends nil
+  "Registry of coverage backends in priority order.
+Each entry is a plist with at least :name, :detect, :run, and :lcov-path.
+Use `cj/coverage-register-backend' to add or replace an entry.")
+
+(defvar-local cj/coverage-backend nil
+  "Override: name of the coverage backend to use for the current project.
+When nil (the default), resolution runs each registered backend's :detect
+function in registration order.  Typically set buffer-locally via
+`.dir-locals.el' to pin a specific backend.")
+
+(defun cj/coverage-register-backend (backend)
+  "Register BACKEND, a plist with :name, :detect, :run, :lcov-path.
+Appends to `cj/coverage-backends' at the end, or replaces the existing
+entry with the same :name in its current position."
+  (let ((name (plist-get backend :name)))
+	(if (cj/--coverage-backend-by-name name)
+		(setq cj/coverage-backends
+			  (mapcar (lambda (b)
+						(if (eq (plist-get b :name) name) backend b))
+					  cj/coverage-backends))
+	  (setq cj/coverage-backends
+			(append cj/coverage-backends (list backend))))))
+
+(defun cj/--coverage-backend-by-name (name)
+  "Return the registered backend whose :name equals NAME, or nil."
+  (seq-find (lambda (b) (eq name (plist-get b :name)))
+			cj/coverage-backends))
+
+(defun cj/--coverage-backend-for-project (root &optional override)
+  "Resolve the coverage backend to use for ROOT.
+OVERRIDE, if non-nil, is a backend name symbol (typically the value of
+`cj/coverage-backend' from .dir-locals.el).  When given, the named
+backend is returned regardless of any :detect functions.  Signals
+`user-error' when OVERRIDE names a backend that isn't registered.
+
+When OVERRIDE is nil, each backend's :detect is called in turn with
+ROOT as its sole argument; the first that returns non-nil wins.
+Returns the backend plist, or nil when no backend matches."
+  (cond
+   (override
+	(or (cj/--coverage-backend-by-name override)
+		(user-error
+		 "Unknown coverage backend: %s (registered: %s)"
+		 override
+		 (mapcar (lambda (b) (plist-get b :name)) cj/coverage-backends))))
+   (t
+	(seq-find (lambda (backend)
+				(funcall (plist-get backend :detect) root))
+			  cj/coverage-backends))))
+
 (defun cj/--coverage-parse-lcov (file)
   "Parse FILE as LCOV and return a hash table of covered lines.
 Keys are source-file paths (strings).  Values are hash tables whose
