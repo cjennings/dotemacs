@@ -28,16 +28,18 @@
 ;;    - Frame-aware font application for client/server setups
 ;;
 ;; Configuration Notes:
-;; - Default font: FiraCode Nerd Font Mono at 110 height
-;; - Variable pitch: Merriweather Light for prose-heavy modes
+;; - Default preset: BerkeleyMono Nerd Font; height 120 on laptops, 140 on desktops
+;; - Variable pitch: Lexend in the default preset; Merriweather for fallback presets
 ;; - Handles both standalone and daemon mode Emacs instances
 ;; - Emoji fonts selected based on OS availability
 ;;
 ;; Keybindings:
-;; - M-F: Select font preset
+;; - M-S-f: Select font preset (fontaine-set-preset)
 ;; - C-z F: Display available fonts
 ;; - C-+/C-=: Increase text scale
 ;; - C--/C-_: Decrease text scale
+;; - C-c E i: Insert emoji
+;; - C-c E l: List emojis
 ;;
 ;;
 ;;; Code:
