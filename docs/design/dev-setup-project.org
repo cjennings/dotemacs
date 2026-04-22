@@ -1,0 +1,158 @@
+#+TITLE: Design: cj/dev-setup-project
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-04-22
+
+* Status
+
+Draft. Not yet implemented.
+
+* Problem
+
+Adopting the F4 / F6 / F7 dev-block keybindings (compile+run, test, coverage) on a new project means configuring projectile's per-project compile/run/test commands plus the coverage backend. That's a few minutes of ceremony per project, and the polyglot Docker case (backend + frontend in subdirectories) needs per-subproject configuration that projectile's cache doesn't handle cleanly.
+
+=cj/dev-setup-project= is the interactive helper that removes that ceremony. It detects the project shape, proposes the right =.dir-locals.el= content for each subproject, optionally generates a starter Makefile when none exists, and writes everything in one reviewed step.
+
+* Non-Goals
+
+- Running the detected commands. The helper only writes configuration; you invoke F4 / F6 / F7 afterwards.
+- Managing Dockerfile changes, compose file edits, or container orchestration. Those stay hand-owned.
+- Replacing projectile's cache for simple single-language projects. If you're fine with projectile's prompt-and-cache, don't run the helper.
+- Supporting every possible project shape. The helper targets the shapes the user actually uses: pure Elisp, pure Go, pure Python, pure Node/TS, Docker Compose polyglot.
+
+* Approaches Considered
+
+** Recommended: detect + review buffer + user commits
+
+Interactive command opens a review buffer pre-populated with proposals. User edits inline. On =C-c C-c=, helper writes the files.
+
+Detection is three-tier: existing Makefile, existing package.json / pyproject.toml scripts, or fall back to generating a starter Makefile. Re-runs use the same buffer with status banners (UNCHANGED, WILL UPDATE, WILL CREATE) so nothing changes silently.
+
+*Pros:* Zero silent surprises. User sees exactly what's going to change. Reuses the same UX for initial setup and re-runs.
+
+*Cons:* More code than a "just write the files" approach. Review buffer mode is a small but non-trivial piece of UX.
+
+** Rejected: silent auto-detect and commit
+
+Helper inspects project, writes =.dir-locals.el= immediately with best-guess conventions, prints a summary. Zero friction on the easy cases. Wrong results on edge cases go unnoticed until you hit F4/F6 and they misfire. Not worth the friction savings.
+
+** Rejected: wizard (prompt each question in sequence)
+
+Helper asks "Test command: [default: make test] > " and so on. Explicit and safe, but slow and the series of minibuffer prompts is a worse fit than a single editable review buffer.
+
+** Rejected: hybrid (silent for obvious cases, wizard for polyglot)
+
+Two code paths to maintain. The review-buffer approach is already fast for obvious cases (one =C-c C-c= to accept the proposal) and correct for polyglot cases. No need for a second path.
+
+* Design
+
+** Detection
+
+Three tiers, checked in order.
+
+*** Tier 1: existing Makefile
+
+Parse Makefile for =.PHONY:= declarations and bare =^target:= lines. Collect the target names.
+
+Best-guess role mapping:
+- *compile* role: prefer =build=, =compile=, =install=
+- *run* role: prefer =run=, =start=, =dev=, =serve=
+- *test* role: prefer =test=, =tests=, =check=
+
+If multiple targets match (e.g., both =test= and =check=), pick the first match and list the others in the review buffer as "other available targets."
+
+*** Tier 2: existing package.json scripts or pyproject.toml sections
+
+- =package.json= with a =scripts= block: parse the block, same best-guess mapping (=dev= → run, =build= → compile, =test= → test). Command prefix is =npm run=.
+- =pyproject.toml= with =[tool.pytest]= or =[project.scripts]=: for v1, skip this — fall back to =pytest= as the test command if =pytest= is on PATH. More sophisticated parsing can come later.
+
+*** Tier 3: no build file found
+
+Propose a starter Makefile in the review buffer. User edits or declines.
+
+The starter Makefile adapts to the detected project type:
+
+- Elisp: =make compile=, =make test= wrapping =emacs --batch= invocations.
+- Go: =go build=, =go run=, =go test ./...=.
+- Python (non-Docker): =pip install -r requirements.txt=, =python -m <module>=, =pytest=.
+- Node/TS (non-Docker): =npm install=, =npm run dev=, =npm test=.
+- Docker Compose polyglot: =docker compose build=, calls to user-named external run script (prompted), =docker compose exec <service> <runner>= for tests per service.
+
+** Review Buffer
+
+Custom major mode derived from =emacs-lisp-mode= with two local bindings:
+
+- =C-c C-c= — parse the buffer, validate all blocks, write files, show summary.
+- =C-c C-k= — abort, write nothing.
+
+Block syntax: =;; ==== <path> ====[ <status>]== banner lines delimit each file's proposed content. Status banner is one of:
+
+- (unset, initial setup) — file will be created
+- =[UNCHANGED]= — current file matches proposal; skipped unless user edits
+- =[WILL UPDATE]= — current file differs; shown with both current and proposed for the user to pick
+- =[WILL CREATE]= — file doesn't exist yet; will be created
+
+=;; ==== .gitignore (append if missing) ===== is a special banner — lines under it are appended to =.gitignore= if not already present.
+
+=;; ==== Makefile ====[...]= is a special banner — only honored if no Makefile exists at the target path. On re-run with an existing Makefile, this banner is suppressed entirely.
+
+** Escape Hatch
+
+A =.dir-locals.el= containing =;;; cj/dev-setup-project: ignore= as the first line is skipped on re-run. Lets the user diverge intentionally without every re-run reverting.
+
+** Write Step
+
+On =C-c C-c=:
+
+1. Parse all blocks. Validate each is well-formed elisp (or well-formed Makefile / gitignore entries).
+2. If any block is malformed, show an error in the review buffer and do not write.
+3. For each WILL UPDATE / WILL CREATE block: write the file.
+4. For the gitignore block: append each line only if not present (idempotent).
+5. Clear projectile's per-project command cache for this project (so new commands take effect on next F4/F6).
+6. Print a summary: ="Wrote backend/.dir-locals.el, frontend/.dir-locals.el, appended 2 lines to .gitignore."=
+
+** Coverage Backend Forward References
+
+The helper writes =(cj/coverage-backend . python)=, =(cj/coverage-backend . typescript)=, etc. even when those backends don't exist yet (MVP coverage ships Elisp only). The binding silently does nothing until the backend lands; after that, it activates automatically. Simpler than leaving empty and coming back.
+
+** Example Flows
+
+*** Fresh setup on orchestration_dashboard_mvp (Tier 3, no Makefile)
+
+Review buffer proposes a Makefile (calling the user's existing =reset-dashboard.sh= as the =run= target) plus backend/ and frontend/ =.dir-locals.el= files plus gitignore updates. User edits the Makefile's =run= target to match their actual script path. =C-c C-c=. Four files written.
+
+*** Fresh setup on .emacs.d (Tier 1, rich Makefile)
+
+Review buffer shows target-to-role mapping derived from the existing 14-target Makefile (=make compile= → compile role, =make test= → test role; =run= role left nil since this is a config project). Single file written: =.dir-locals.el= at project root.
+
+*** Re-run after adding a new compose service
+
+The helper detects a new =worker= service in docker-compose.yml with a =./worker/= build context. Existing backend/ and frontend/ files show =[UNCHANGED]=. New =worker/.dir-locals.el= block shows =[WILL CREATE]=. =C-c C-c=. One file written.
+
+*** Re-run after renaming a Makefile target
+
+Makefile's =test-frontend= was renamed to =test-frontend-unit=. The helper detects the mismatch and shows frontend/.dir-locals.el as =[WILL UPDATE]= with current and proposed visible. User either accepts (the test command updates) or edits the buffer to keep =test-frontend=. Nothing silent.
+
+* Testing
+
+Pure helpers, fully tested per the project's Normal / Boundary / Error discipline:
+
+- =cj/--dev-setup-parse-makefile-targets FILE= — handcrafted Makefiles. Normal: two-target file with .PHONY. Boundary: tabs vs spaces, continuation lines, pattern-rule targets (skip them). Error: file missing, non-Makefile content.
+- =cj/--dev-setup-parse-package-json-scripts FILE= — synthetic package.json fixtures. Normal: valid scripts block. Boundary: no scripts block, empty scripts. Error: malformed JSON.
+- =cj/--dev-setup-detect-project-shape ROOT= — temp directories with combinations of marker files. Assert returned shape plist. Normal: each single-language case. Boundary: docker-compose polyglot with one subproject, with two subprojects, with a service that uses an external image (no subproject). Error: empty directory returns 'unknown.
+- =cj/--dev-setup-map-targets-to-roles TARGETS= — input list of target names, output role mapping. Normal: well-named project (build/run/test). Boundary: unusual names (start instead of run; check instead of test). Error: empty input returns empty mapping.
+- =cj/--dev-setup-review-buffer-parse CONTENTS= — the buffer-format parser. Normal: well-formed buffer with multiple blocks. Boundary: single block, block with empty body. Error: missing banner, malformed elisp inside a dir-locals block.
+
+Not tested (by design):
+- The interactive command =cj/dev-setup-project= itself — one smoke test that runs against a prepared temp project and asserts the expected files exist after =C-c C-c=.
+- The review-buffer major mode's keybindings.
+
+* Open Questions
+
+- [ ] Whether to also detect Cargo.toml (Rust), pom.xml (Java/Maven), etc. v1 targets Elisp, Go, Python, TS/JS. Rust/Java defer.
+- [ ] Whether =cj/dev-setup-project= should also offer to add a =make coverage= target when generating a Makefile. Probably yes — it's the natural partner to the coverage work.
+- [ ] Whether to support a project-wide config override file (=.cj-dev-setup.el= at project root) that pins choices regardless of what detection finds. Defer unless the detection-only path proves annoying.
+
+* Next Steps
+
+1. Implement after the F-key rework ticket ships.
+2. Open questions above → resolve inline or via =arch-decide= if they turn out to be load-bearing.
