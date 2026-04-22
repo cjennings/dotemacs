@@ -12,12 +12,37 @@
 
 
 
+(defun env--battery-status-char-indicates-battery-p (status)
+  "Return non-nil if STATUS indicates a real battery is present.
+STATUS is the value returned by `battery-format' with the \"%B\" spec.
+A real battery reports \"!\" (critical), \"+\" (charging), or \"-\"
+(discharging).  Desktops report \"N/A\", \"unknown\", or empty, which
+all mean no battery."
+  (and (stringp status)
+	   (member status '("!" "+" "-"))
+	   t))
+
+(defun env--power-supply-has-battery-p (power-supply-dir)
+  "Return non-nil if POWER-SUPPLY-DIR contains a BAT* entry.
+Canonical Linux check.  A laptop exposes directories like
+/sys/class/power_supply/BAT0; a desktop exposes only AC adapters
+and USB-C power entries."
+  (and (file-directory-p power-supply-dir)
+	   (file-expand-wildcards (expand-file-name "BAT*" power-supply-dir))
+	   t))
+
 (defun env-laptop-p ()
-  "Non-nil if a battery is present."
-  (when (and (require 'battery nil 'noerror)
-			 battery-status-function)
-	(not (string= "N/A"
-				  (battery-format "%B" (funcall battery-status-function))))))
+  "Non-nil if the host has a battery.
+On Linux, checks /sys/class/power_supply for BAT* entries, which is the
+canonical signal.  On other platforms, falls back to `battery-format'
+\"%B\" and checks for a live battery status char."
+  (cond
+   ((eq system-type 'gnu/linux)
+	(env--power-supply-has-battery-p "/sys/class/power_supply"))
+   ((and (require 'battery nil 'noerror)
+		 battery-status-function)
+	(env--battery-status-char-indicates-battery-p
+	 (battery-format "%B" (funcall battery-status-function))))))
 
 (defun env-desktop-p ()
   "Return t if host is a laptop (has a battery), nil if not."
