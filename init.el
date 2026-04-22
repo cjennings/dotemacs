@@ -153,7 +153,6 @@
 
 ;; ------------------------------ Modules In Test ------------------------------
 
-;;(require 'wip)
 (require 'lorem-optimum) ;; best fake latin text generator ever
 (require 'jumper)  ;; navigation help for large projects/lotsa buffers
 (require 'system-commands) ;; reboot, logout, etc.
