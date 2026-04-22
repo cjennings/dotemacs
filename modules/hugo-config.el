@@ -7,14 +7,11 @@
 ;; One-file-per-post workflow:
 ;; - Each blog post is a standalone Org file in content-org/log/
 ;; - File-level keywords control Hugo front matter
-;; - Export with C-; h e, create new posts with C-; h n
+;; - Publish by committing and pushing the website repo; the server-side
+;;   post-receive hook on cjennings.net rebuilds Hugo and deploys
 ;;
-;; Keybindings (C-; h prefix):
-;; - C-; h n : New post (create from template)
-;; - C-; h e : Export current post to Hugo markdown
-;; - C-; h o : Open blog source directory in dirvish
-;; - C-; h O : Open blog source directory in system file manager
-;; - C-; h d : Toggle draft status (TODO/DONE)
+;; Keybindings live under the C-; h prefix. See the bottom of this file
+;; or the which-key panel for the full listing.
 
 ;;; Code:
 
@@ -32,37 +29,7 @@
 (use-package ox-hugo
   :after ox)
 
-;; ----------------------------- Hugo Blog Functions ---------------------------
-
-(defun cj/hugo--post-metadata (file)
-  "Return minimal front-matter metadata for Hugo post FILE, or nil if not one.
-A file counts as a Hugo post only if it contains `#+hugo_draft: true' or
-`#+hugo_draft: false' in its front matter region.
-Returns a plist (:title TITLE :draft BOOL). TITLE falls back to the file
-basename when `#+title:' is absent. Reads only the first 2048 bytes."
-  (with-temp-buffer
-    (insert-file-contents file nil 0 2048)
-    (let (title draft is-hugo)
-      (goto-char (point-min))
-      (when (re-search-forward "^#\\+title: *\\(.+\\)$" nil t)
-        (setq title (match-string 1)))
-      (goto-char (point-min))
-      (when (re-search-forward "^#\\+hugo_draft: *\\(true\\|false\\)" nil t)
-        (setq draft (string= (match-string 1) "true")
-              is-hugo t))
-      (when is-hugo
-        (list :title (or title (file-name-base file)) :draft draft)))))
-
-(defun cj/hugo--collect-drafts (dir)
-  "Return alist of (TITLE . FILEPATH) for draft Hugo posts under DIR.
-Walks non-recursively through DIR for .org files and keeps only those
-whose `cj/hugo--post-metadata' returns a :draft-t plist."
-  (let (drafts)
-    (dolist (f (directory-files dir t "\\.org\\'"))
-      (let ((meta (cj/hugo--post-metadata f)))
-        (when (and meta (plist-get meta :draft))
-          (push (cons (plist-get meta :title) f) drafts))))
-    drafts))
+;; ------------------------------- Post Creation -------------------------------
 
 (defun cj/hugo--post-file-path (title)
   "Return the file path for a Hugo post with TITLE.
@@ -103,6 +70,8 @@ new file with Hugo front matter keywords pre-filled."
     (save-buffer)
     (message "New post: %s" file)))
 
+;; -------------------------------- Post Export --------------------------------
+
 (defun cj/hugo-export-post ()
   "Export the current Org file to Hugo-compatible Markdown."
   (interactive)
@@ -111,6 +80,8 @@ new file with Hugo front matter keywords pre-filled."
     (user-error "Not in an Org buffer"))
   (org-hugo-export-to-md)
   (message "Exported: %s" (buffer-name)))
+
+;; ---------------------------- Directory Navigation ---------------------------
 
 (defun cj/hugo-open-blog-dir ()
   "Open the blog source directory in dirvish/dired."
@@ -129,6 +100,38 @@ new file with Hugo front matter keywords pre-filled."
               ((env-windows-p) "explorer.exe")
               (t "xdg-open"))))
     (start-process "hugo-file-manager" nil cmd cj/hugo-content-org-dir)))
+
+;; ----------------------------- Draft Management ------------------------------
+
+(defun cj/hugo--post-metadata (file)
+  "Return minimal front-matter metadata for Hugo post FILE, or nil if not one.
+A file counts as a Hugo post only if it contains `#+hugo_draft: true' or
+`#+hugo_draft: false' in its front matter region.
+Returns a plist (:title TITLE :draft BOOL). TITLE falls back to the file
+basename when `#+title:' is absent. Reads only the first 2048 bytes."
+  (with-temp-buffer
+    (insert-file-contents file nil 0 2048)
+    (let (title draft is-hugo)
+      (goto-char (point-min))
+      (when (re-search-forward "^#\\+title: *\\(.+\\)$" nil t)
+        (setq title (match-string 1)))
+      (goto-char (point-min))
+      (when (re-search-forward "^#\\+hugo_draft: *\\(true\\|false\\)" nil t)
+        (setq draft (string= (match-string 1) "true")
+              is-hugo t))
+      (when is-hugo
+        (list :title (or title (file-name-base file)) :draft draft)))))
+
+(defun cj/hugo--collect-drafts (dir)
+  "Return alist of (TITLE . FILEPATH) for draft Hugo posts under DIR.
+Walks non-recursively through DIR for .org files and keeps only those
+whose `cj/hugo--post-metadata' returns a :draft-t plist."
+  (let (drafts)
+    (dolist (f (directory-files dir t "\\.org\\'"))
+      (let ((meta (cj/hugo--post-metadata f)))
+        (when (and meta (plist-get meta :draft))
+          (push (cons (plist-get meta :title) f) drafts))))
+    drafts))
 
 (defun cj/hugo-toggle-draft ()
   "Toggle the draft status of the current Hugo post.
