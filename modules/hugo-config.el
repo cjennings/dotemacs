@@ -34,6 +34,36 @@
 
 ;; ----------------------------- Hugo Blog Functions ---------------------------
 
+(defun cj/hugo--post-metadata (file)
+  "Return minimal front-matter metadata for Hugo post FILE, or nil if not one.
+A file counts as a Hugo post only if it contains `#+hugo_draft: true' or
+`#+hugo_draft: false' in its front matter region.
+Returns a plist (:title TITLE :draft BOOL). TITLE falls back to the file
+basename when `#+title:' is absent. Reads only the first 2048 bytes."
+  (with-temp-buffer
+    (insert-file-contents file nil 0 2048)
+    (let (title draft is-hugo)
+      (goto-char (point-min))
+      (when (re-search-forward "^#\\+title: *\\(.+\\)$" nil t)
+        (setq title (match-string 1)))
+      (goto-char (point-min))
+      (when (re-search-forward "^#\\+hugo_draft: *\\(true\\|false\\)" nil t)
+        (setq draft (string= (match-string 1) "true")
+              is-hugo t))
+      (when is-hugo
+        (list :title (or title (file-name-base file)) :draft draft)))))
+
+(defun cj/hugo--collect-drafts (dir)
+  "Return alist of (TITLE . FILEPATH) for draft Hugo posts under DIR.
+Walks non-recursively through DIR for .org files and keeps only those
+whose `cj/hugo--post-metadata' returns a :draft-t plist."
+  (let (drafts)
+    (dolist (f (directory-files dir t "\\.org\\'"))
+      (let ((meta (cj/hugo--post-metadata f)))
+        (when (and meta (plist-get meta :draft))
+          (push (cons (plist-get meta :title) f) drafts))))
+    drafts))
+
 (defun cj/hugo--post-file-path (title)
   "Return the file path for a Hugo post with TITLE.
 Generates a slug from TITLE using `org-hugo-slug' and returns
@@ -114,13 +144,57 @@ Switches #+hugo_draft between true and false."
                    (if (string= current "true") "false" "true")))
       (user-error "No #+hugo_draft keyword found in this file"))))
 
+(defun cj/hugo-open-draft ()
+  "Pick a draft post via completing-read and open it."
+  (interactive)
+  (let ((drafts (cj/hugo--collect-drafts cj/hugo-content-org-dir)))
+    (if (null drafts)
+        (message "No drafts found in %s" cj/hugo-content-org-dir)
+      (let ((choice (completing-read "Open draft: "
+                                     (mapcar #'car drafts) nil t)))
+        (find-file (cdr (assoc choice drafts)))))))
+
+;; ---------------------------- Preview and Publish ----------------------------
+
+(defvar cj/hugo--preview-process nil
+  "Handle to the running hugo preview server, or nil.")
+
+(defun cj/hugo-preview ()
+  "Toggle the `hugo server' preview.
+Start the server and open the browser if stopped; stop it if running."
+  (interactive)
+  (if (process-live-p cj/hugo--preview-process)
+      (progn
+        (kill-process cj/hugo--preview-process)
+        (setq cj/hugo--preview-process nil)
+        (message "hugo server stopped"))
+    (let ((default-directory website-dir))
+      (setq cj/hugo--preview-process
+            (start-process "hugo-server" "*hugo-server*"
+                           "hugo" "server" "-D"
+                           "--noHTTPCache" "--disableFastRender"))
+      (run-at-time "1 sec" nil #'browse-url "http://localhost:1313/")
+      (message "hugo server starting — C-; h p again to stop"))))
+
+(declare-function magit-status-setup-buffer "magit-status")
+
+(defun cj/hugo-publish ()
+  "Open magit-status on the website repo so a push triggers server-side deploy.
+The cjennings.net bare repo's post-receive hook rebuilds Hugo and writes
+to /var/www/cjennings/, so a successful push is the deploy."
+  (interactive)
+  (magit-status-setup-buffer website-dir))
+
 ;; -------------------------------- Keybindings --------------------------------
 
 (global-set-key (kbd "C-; h n") #'cj/hugo-new-post)
 (global-set-key (kbd "C-; h e") #'cj/hugo-export-post)
 (global-set-key (kbd "C-; h o") #'cj/hugo-open-blog-dir)
 (global-set-key (kbd "C-; h O") #'cj/hugo-open-blog-dir-external)
-(global-set-key (kbd "C-; h d") #'cj/hugo-toggle-draft)
+(global-set-key (kbd "C-; h d") #'cj/hugo-open-draft)
+(global-set-key (kbd "C-; h D") #'cj/hugo-toggle-draft)
+(global-set-key (kbd "C-; h p") #'cj/hugo-preview)
+(global-set-key (kbd "C-; h P") #'cj/hugo-publish)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
@@ -129,7 +203,10 @@ Switches #+hugo_draft between true and false."
     "C-; h e" "export post"
     "C-; h o" "open in dirvish"
     "C-; h O" "open in file manager"
-    "C-; h d" "toggle draft"))
+    "C-; h d" "open draft"
+    "C-; h D" "toggle draft"
+    "C-; h p" "preview (toggle)"
+    "C-; h P" "publish (magit push)"))
 
 (provide 'hugo-config)
 ;;; hugo-config.el ends here
