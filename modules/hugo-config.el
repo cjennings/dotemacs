@@ -162,9 +162,43 @@ Switches #+hugo_draft between true and false."
 (defvar cj/hugo--preview-process nil
   "Handle to the running hugo preview server, or nil.")
 
+(defun cj/hugo--preview-filter (proc output)
+  "Process filter for the hugo preview server.
+Appends OUTPUT to PROC's buffer and opens the browser the first time
+Hugo reports the server is ready. Hugo prints a line containing
+\"Web Server is available at\" once it has bound the port, so waiting
+for that string is more reliable than a fixed delay."
+  (when (buffer-live-p (process-buffer proc))
+    (with-current-buffer (process-buffer proc)
+      (let ((moving (= (point) (process-mark proc))))
+        (save-excursion
+          (goto-char (process-mark proc))
+          (insert output)
+          (set-marker (process-mark proc) (point)))
+        (when moving (goto-char (process-mark proc))))))
+  (when (and (process-live-p proc)
+             (string-match-p "Web Server is available at" output))
+    (browse-url "http://localhost:1313/")
+    (set-process-filter proc nil)))
+
+(defun cj/hugo--preview-sentinel (proc _event)
+  "Sentinel for the hugo preview server.
+Clears `cj/hugo--preview-process' on any exit and announces crashes.
+User-initiated stops arrive with status `signal' and are silent here
+because `cj/hugo-preview' already prints its own stop message."
+  (when (memq (process-status proc) '(exit signal))
+    (setq cj/hugo--preview-process nil)
+    (when (and (eq (process-status proc) 'exit)
+               (not (zerop (process-exit-status proc))))
+      (message "hugo server crashed (exit %d) — see *hugo-server* buffer"
+               (process-exit-status proc)))))
+
 (defun cj/hugo-preview ()
   "Toggle the `hugo server' preview.
-Start the server and open the browser if stopped; stop it if running."
+Start the server and open the browser if stopped; stop it if running.
+The browser opens only once Hugo has finished its initial build and is
+actually listening on the port. If Hugo exits on its own (for example
+a template error), the sentinel reports the failure."
   (interactive)
   (if (process-live-p cj/hugo--preview-process)
       (progn
@@ -176,8 +210,11 @@ Start the server and open the browser if stopped; stop it if running."
             (start-process "hugo-server" "*hugo-server*"
                            "hugo" "server" "-D"
                            "--noHTTPCache" "--disableFastRender"))
-      (run-at-time "1 sec" nil #'browse-url "http://localhost:1313/")
-      (message "hugo server starting — C-; h p again to stop"))))
+      (set-process-filter cj/hugo--preview-process
+                          #'cj/hugo--preview-filter)
+      (set-process-sentinel cj/hugo--preview-process
+                            #'cj/hugo--preview-sentinel)
+      (message "hugo server starting — browser will open when ready"))))
 
 (declare-function magit-status-setup-buffer "magit-status")
 
