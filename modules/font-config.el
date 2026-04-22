@@ -77,11 +77,11 @@
   ("M-S-f" . fontaine-set-preset)  ;; was M-F, overrides forward-word
   :config
   (setq fontaine-presets
-		'(
+		`(
 		  (default
 		   :default-family "BerkeleyMono Nerd Font"
 		   :default-weight regular
-		   :default-height 120
+		   :default-height ,(if (env-laptop-p) 120 140)
 		   :fixed-pitch-family nil          ;; falls back to :default-family
 		   :fixed-pitch-weight nil          ;; falls back to :default-weight
 		   :fixed-pitch-height 1.0
