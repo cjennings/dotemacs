@@ -65,6 +65,14 @@
 (setq native-comp-deferred-compilation nil)  ;; Disable async/deferred compilation
 (setq native-comp-async-report-warnings-errors nil)  ;; Silence async warnings
 
+;; ------------------------------- Load Freshness ------------------------------
+;; Prefer newer .el source over stale .elc byte-compiled files. Without this,
+;; Emacs loads the .elc even when the .el has been modified more recently and
+;; only emits a warning. Setting this in early-init.el ensures init.el itself
+;; also benefits.
+
+(setq load-prefer-newer t)
+
 ;; --------------------------- Warning Notifications ---------------------------
 
 ;; skip warnings but notify me about errors

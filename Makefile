@@ -263,6 +263,7 @@ compile:
 	@echo "Byte-compiling all modules..."
 	@$(EMACS_BATCH) -L $(MODULE_DIR) \
 		--eval "(progn \
+			(package-initialize) \
 			(setq byte-compile-error-on-warn nil) \
 			(batch-byte-compile))" $(MODULE_FILES)
 	@echo "✓ Compilation complete"
