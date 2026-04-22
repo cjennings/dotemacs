@@ -145,7 +145,7 @@
         ("C-c N"     . org-narrow-to-subtree)
         ("C-c >"     . cj/org-narrow-forward)
         ("C-c <"     . cj/org-narrow-backwards)
-        ("<f5>"      . org-reveal)
+        ("<f2>"      . org-reveal)
         ("C-c <ESC>" . widen)
         ("C-c C-a"   . cj/org-appear-toggle))
   (:map cj/org-table-map
