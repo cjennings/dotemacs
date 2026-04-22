@@ -118,5 +118,57 @@ Signals `user-error' for any other SCOPE."
 			   (user-error "Unknown coverage scope: %s" scope)))))
 	(cj/--coverage-parse-diff-output (shell-command-to-string cmd))))
 
+(defun cj/--coverage-hash-keys-sorted (table)
+  "Return a sorted list of TABLE's integer keys."
+  (let (keys)
+	(maphash (lambda (k _v) (push k keys)) table)
+	(sort keys #'<)))
+
+(defun cj/--coverage-intersect (covered changed)
+  "Combine COVERED (LCOV) with CHANGED (git diff) into per-file records.
+COVERED and CHANGED are each hash tables from file path to a hash table
+of line numbers (as built by `cj/--coverage-parse-lcov' and
+`cj/--coverage-parse-diff-output').  Either may be nil, in which case
+the result is an empty list.
+
+Return value is a list of plists, one per entry in CHANGED, sorted by
+path:
+  (:path PATH
+   :changed-lines LIST-OF-INTS
+   :covered-lines LIST-OF-INTS   ; nil when the file isn't tracked
+   :uncovered-lines LIST-OF-INTS ; nil when the file isn't tracked
+   :tracked BOOL)
+
+A file that appears in CHANGED but not in COVERED is marked as
+`:tracked nil'; coverage data is unavailable for it, so no lines
+can be classified as covered or uncovered."
+  (unless (and covered changed)
+	(setq covered (or covered (make-hash-table :test 'equal)))
+	(setq changed (or changed (make-hash-table :test 'equal))))
+  (let (paths records)
+	(maphash (lambda (path _) (push path paths)) changed)
+	(setq paths (sort paths #'string<))
+	(dolist (path paths)
+	  (let* ((changed-set (gethash path changed))
+			 (changed-lines (cj/--coverage-hash-keys-sorted changed-set))
+			 (covered-set (gethash path covered))
+			 (tracked (and covered-set t))
+			 covered-lines
+			 uncovered-lines)
+		(when tracked
+		  (dolist (line changed-lines)
+			(if (gethash line covered-set)
+				(push line covered-lines)
+			  (push line uncovered-lines)))
+		  (setq covered-lines (nreverse covered-lines)
+				uncovered-lines (nreverse uncovered-lines)))
+		(push (list :path path
+					:changed-lines changed-lines
+					:covered-lines covered-lines
+					:uncovered-lines uncovered-lines
+					:tracked tracked)
+			  records)))
+	(nreverse records)))
+
 (provide 'coverage-core)
 ;;; coverage-core.el ends here
