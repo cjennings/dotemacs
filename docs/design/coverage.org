@@ -18,16 +18,18 @@ The tooling should be pluggable so the same workflow covers Elisp today and Pyth
 
 - Continuous in-buffer overlays (fringe marks, line highlights). Parked over performance concerns.
 - Mutation testing or any signal other than line coverage.
-- CI integration beyond emitting an LCOV artifact. No coveralls, no GitHub Actions wiring.
+- CI integration beyond emitting a simplecov JSON artifact. No coveralls, no GitHub Actions wiring.
 - Shadowing or replacing existing test-running commands (=make test=, =make test-file=, etc.).
 
 * Approaches Considered
 
 ** Recommended: diff-aware report with pluggable backends
 
-Core engine reads an LCOV file, shells to ~git diff~ at a selectable scope, intersects, and displays the result in a compilation-mode-derived buffer. Language-specific "backends" each produce LCOV in their own way and register themselves with the core.
+Core engine reads a simplecov JSON file, shells to ~git diff~ at a selectable scope, intersects, and displays the result in a compilation-mode-derived buffer. Language-specific "backends" each produce simplecov in their own way and register themselves with the core.
 
-*Pros:* Directly serves the primary use case. LCOV is a universal format, so new languages plug in without touching the core. Compilation-mode inheritance gives free =next-error= / =previous-error= navigation.
+*Pros:* Directly serves the primary use case. Simplecov is broadly supported across language coverage tools, and Undercover's ~:merge-report t~ option works for simplecov (but not for LCOV), which is essential for the per-file coverage-run strategy. Compilation-mode inheritance gives free =next-error= / =previous-error= navigation.
+
+*Note on format:* An earlier draft of this design used LCOV. That was changed to simplecov after discovering that Undercover's LCOV writer does not implement report-merging — per-file coverage runs would require custom merge logic or an external ~lcov~ tool. Simplecov's native merge-report support made it the cleaner fit without changing anything about the pluggable backend story.
 
 *Cons:* More code than a "just run coverage and read the output" approach. Backend registry adds one layer of indirection (small — ~30 lines).
 
@@ -60,17 +62,17 @@ Three files:
 Each backend is a plist registered into =cj/coverage-backends=:
 
 #+begin_src emacs-lisp
-(:name       'elisp
- :detect     (lambda () ...)   ; non-nil if current project matches
- :run        (lambda (cb) ...) ; kick off coverage build; invoke CB with LCOV path
- :lcov-path  (lambda () ...))  ; where the LCOV lives (for re-reading without running)
+(:name         'elisp
+ :detect       (lambda () ...)   ; non-nil if current project matches
+ :run          (lambda (cb) ...) ; kick off coverage build; invoke CB with report path
+ :report-path  (lambda () ...))  ; where the simplecov JSON lives (for re-reading without running)
 #+end_src
 
 Detection precedence: =.dir-locals.el= override (=cj/coverage-backend= set to a backend name), then project-root fingerprints (=go.mod=, =pyproject.toml=, =package.json=, =.el= files + Makefile, etc.). First =:detect= that matches wins. No silent fallback — if nothing matches, the command errors with guidance.
 
 *** Pure helpers
 
-- =cj/--coverage-parse-lcov FILE= → hash-table ={file → covered-line-set}=.
+- =cj/--coverage-parse-simplecov FILE= → hash-table ={file → covered-line-set}=.
 - =cj/--coverage-changed-lines SCOPE BASE= → hash-table ={file → changed-line-set}= by shelling a =git diff --unified=0= for the selected scope and parsing hunk headers.
 - =cj/--coverage-intersect COVERED CHANGED= → per-file records with three buckets: covered, uncovered, not-tracked.
 
@@ -85,13 +87,13 @@ All three are pure, fully ERT-tested.
    - "Staged — about to commit"
    - "Branch vs parent" (uses =cj/coverage-base-branch= → =@{upstream}= → =main= in order)
    - "Branch vs main" (explicit)
-4. Freshness check: if =lcov.info= is missing, or older than the newest changed file, prompt "Run coverage now?" Yes runs the backend's =:run= asynchronously via =compile=; no reads the stale file anyway.
-5. Parse LCOV, compute changed lines, intersect.
+4. Freshness check: if =simplecov.json= is missing, or older than the newest changed file, prompt "Run coverage now?" Yes runs the backend's =:run= asynchronously via =compile=; no reads the stale file anyway.
+5. Parse simplecov, compute changed lines, intersect.
 6. Display a report buffer in a mode derived from =compilation-mode=.
 
 ** Persistence
 
-- =.coverage/lcov.info= at the project root, gitignored. Overwritten on each run.
+- =.coverage/simplecov.json= at the project root, gitignored. Overwritten on each run.
 - No long-term storage. Historical tracking is explicitly out of scope for v1.
 
 ** Error Handling
@@ -104,12 +106,12 @@ All three are pure, fully ERT-tested.
 
 *During the coverage run:*
 - Backend =:run= fails (test failure, Make error) → keep the =compile= buffer visible, do *not* proceed to display a report. Partial data is worse than no data.
-- Run completes but no LCOV produced → error naming the expected path.
+- Run completes but no simplecov.json produced → error naming the expected path.
 
 *Post-flight classification:* three buckets, not two.
-- *Covered* — changed line in LCOV's covered-line set.
+- *Covered* — changed line in the simplecov covered-line set.
 - *Uncovered* — changed line in a tracked file but not covered.
-- *Not tracked* — changed file isn't in LCOV at all (test files, READMEs, config). Reported separately — don't conflate "coverage didn't look here" with "tests didn't exercise this code."
+- *Not tracked* — changed file isn't in the simplecov data at all (test files, READMEs, config). Reported separately — don't conflate "coverage didn't look here" with "tests didn't exercise this code."
 
 *Happy-path degenerates:*
 - Zero changed lines in scope → "No changes in this scope; nothing to report."
@@ -119,7 +121,7 @@ All three are pure, fully ERT-tested.
 
 *Global:*
 - =F7= → =cj/coverage-report= (prompts scope, shows report).
-- =C-u F7= → force re-run regardless of LCOV freshness.
+- =C-u F7= → force re-run regardless of report freshness.
 
 *In the report buffer* (compilation-mode derived, most inherited for free):
 - =RET= → jump to source under point.
@@ -136,7 +138,7 @@ The =F4=–=F7= developer block (compile+run, debug, test, coverage) gets its fu
 ** Testing
 
 *Pure helpers, fully tested* (Normal / Boundary / Error for each):
-- =cj/--coverage-parse-lcov= — handcrafted LCOV fragments in temp files; empty, headers-only, spaces/unicode in filenames, malformed lines, missing =end_of_record=.
+- =cj/--coverage-parse-simplecov= — handcrafted simplecov JSON in temp files; empty object, all-null coverage arrays, spaces in filenames, multiple test-name keys unioned, malformed JSON.
 - =cj/--coverage-changed-lines= — =cl-letf= over =shell-command-to-string= to return canned =git diff= output; single hunk, new-file hunk, deletion-only hunk, binary marker, no-diff case.
 - =cj/--coverage-intersect= — pure table-in / table-out; covered ⊇ changed, unknown files, nil/empty inputs.
 
@@ -144,13 +146,13 @@ The =F4=–=F7= developer block (compile+run, debug, test, coverage) gets its fu
 - =cj/coverage-backend-for-project ROOT= — synthetic temp project roots with marker files; assert correct backend. Registration-order test: two backends match, first-registered wins.
 
 *Not tested:*
-- =cj/coverage-report= interactive command — one smoke test with a prepared LCOV and a stubbed git-diff. No tests for the prompt UI or the compilation-buffer display.
+- =cj/coverage-report= interactive command — one smoke test with a prepared simplecov report and a stubbed git-diff. No tests for the prompt UI or the compilation-buffer display.
 - The elisp backend's =:run= function — shells to =make coverage=; integration-test-shaped, low value, slow. Skipped by design.
 
 * Open Questions
 
 - [ ] Which tests should a coverage run actually execute? All of them (simple, slow for 265 files), or only the test files whose target modules changed (fast, but dependent-test discovery in Elisp is non-trivial)? Deferred until implementation.
-- [ ] Default behavior when LCOV is stale but not missing: prompt, or auto-rerun? Current design prompts. Revisit after first use.
+- [ ] Default behavior when the simplecov report is stale but not missing: prompt, or auto-rerun? Current design prompts. Revisit after first use.
 - [ ] Whether =cj/coverage-base-branch= should be a single value or a list of candidates (useful if you routinely stack PRs more than one level deep). Single value for v1.
 
 * Next Steps

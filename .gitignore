@@ -2,6 +2,7 @@
 *.cache
 .cache/
 /eln-cache/
+/.coverage/
 flycheck_*
 projectile-bookmarks.eld
 /recentf
