@@ -55,43 +55,50 @@
 ;;; ------------------------------- Open File With ------------------------------
 ;; TASK: Favor this method over cj/open-this-file-with and add to custom buffer funcs
 
+(defun cj/--file-from-context (&optional explicit-filename)
+  "Return a file path from the current context, or nil.
+Resolves in priority order:
+  1. EXPLICIT-FILENAME, if non-nil.
+  2. `buffer-file-name' of the current buffer.
+  3. The file at point if the current buffer is in dired-mode.
+Returns nil when none of these yield a file."
+  (or explicit-filename
+	  buffer-file-name
+	  (and (derived-mode-p 'dired-mode)
+		   (dired-file-name-at-point))))
+
+(defun cj/--open-with-is-launcher-p (command)
+  "Return non-nil if COMMAND is a desktop launcher.
+Launchers (xdg-open, open, start) need to be called with `call-process'
+and a zero BUFFER argument so they fully detach from Emacs.  Other
+commands get `start-process-shell-command' so their output is visible."
+  (and (member command '("xdg-open" "open" "start")) t))
+
 (defun cj/open-file-with-command (command)
   "Open the current file with COMMAND.
-Works in both Dired buffers and regular file buffers. The command runs
-fully detached from Emacs."
+Works in both Dired buffers and regular file buffers.  Prompts for a
+file only when neither context yields one.  The command runs fully
+detached from Emacs."
   (interactive "MOpen with command: ")
-  (let* ((file (cond
-                ;; In dired/dirvish mode, get file at point
-                ((derived-mode-p 'dired-mode)
-                 (dired-get-file-for-visit))
-                ;; In a regular file buffer
-                (buffer-file-name
-                 buffer-file-name)
-                ;; Fallback - prompt for file
-                (t
-                 (read-file-name "File to open: "))))
-         ;; For xdg-open and similar launchers, we need special handling
-         (is-launcher (member command '("xdg-open" "open" "start"))))
-    ;; Validate file exists
-    (unless (and file (file-exists-p file))
-      (error "No valid file found or selected"))
-    ;; Use different approaches for launchers vs regular commands
-    (if is-launcher
-        ;; For launchers, use call-process with 0 to fully detach
-        (progn
-          (call-process command nil 0 nil file)
-          (message "Opening %s with %s..." (file-name-nondirectory file) command))
-      ;; For other commands, use start-process-shell-command for potential output
-      (let* ((output-buffer-name (format "*Open with %s: %s*"
-                                         command
-                                         (file-name-nondirectory file)))
-             (output-buffer (generate-new-buffer output-buffer-name)))
-        (start-process-shell-command
-         command
-         output-buffer
-         (format "%s %s" command (shell-quote-argument file)))
-        (message "Running %s on %s..." command (file-name-nondirectory file))))))
-
+  (let* ((file (or (cj/--file-from-context)
+				   (read-file-name "File to open: "))))
+	(unless (and file (file-exists-p file))
+	  (error "No valid file found or selected"))
+	(if (cj/--open-with-is-launcher-p command)
+		(progn
+		  (call-process command nil 0 nil file)
+		  (message "Opening %s with %s..."
+				   (file-name-nondirectory file) command))
+	  (let* ((output-buffer-name (format "*Open with %s: %s*"
+										 command
+										 (file-name-nondirectory file)))
+			 (output-buffer (generate-new-buffer output-buffer-name)))
+		(start-process-shell-command
+		 command
+		 output-buffer
+		 (format "%s %s" command (shell-quote-argument file)))
+		(message "Running %s on %s..."
+				 (file-name-nondirectory file) command)))))
 
 (defun cj/identify-external-open-command ()
   "Return the OS-default \"open\" command for this host.
@@ -107,26 +114,22 @@ Signals an error if the host is unsupported."
 Logs output and exit code to buffer *external-open.log*."
   (interactive)
   (let* ((file  (expand-file-name
-                (or filename
-                    buffer-file-name
-                    (and (derived-mode-p 'dired-mode) (dired-file-name-at-point))
-                    (user-error "No file associated with this buffer"))))
-         (cmd   (cj/identify-external-open-command))
-         (logbuf (get-buffer-create "*external-open.log*")))
-    (with-current-buffer logbuf
-      (goto-char (point-max))
-      (insert (format-time-string "[%Y-%m-%d %H:%M:%S] "))
-      (insert (format "Opening: %s\n" file)))
-    (cond
-     ;; Windows: let the shell handle association; fully detached.
-     ((env-windows-p)
-      (w32-shell-execute "open" file))
-     ;; macOS/Linux: run the opener synchronously; it returns immediately.
-     (t
-      (call-process cmd nil 0 nil file)
-      (with-current-buffer logbuf
-        (insert "  → Launched asynchronously\n"))))
-    nil))
+				 (or (cj/--file-from-context filename)
+					 (user-error "No file associated with this buffer"))))
+		 (cmd   (cj/identify-external-open-command))
+		 (logbuf (get-buffer-create "*external-open.log*")))
+	(with-current-buffer logbuf
+	  (goto-char (point-max))
+	  (insert (format-time-string "[%Y-%m-%d %H:%M:%S] "))
+	  (insert (format "Opening: %s\n" file)))
+	(cond
+	 ((env-windows-p)
+	  (w32-shell-execute "open" file))
+	 (t
+	  (call-process cmd nil 0 nil file)
+	  (with-current-buffer logbuf
+		(insert "  → Launched asynchronously\n"))))
+	nil))
 
 ;;; ------------------------------ Server Shutdown ------------------------------
 
