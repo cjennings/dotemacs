@@ -227,5 +227,75 @@ can be classified as covered or uncovered."
 			  records)))
 	(nreverse records)))
 
+(defun cj/--coverage-format-report (records scope-label)
+  "Render RECORDS as a text report for SCOPE-LABEL.
+RECORDS is the list of plists produced by `cj/--coverage-intersect'.
+SCOPE-LABEL is the human-readable scope name (e.g. \"Staged\").
+Returns a string ready to insert into a compilation-mode buffer.
+
+Uncovered-line entries use the format \"<path>:<line>: uncovered\"
+so `compilation-error-regexp-alist' picks them up for
+`next-error' / `previous-error' navigation.
+
+Files with an empty :changed-lines (deletion-only hunks) are
+omitted from the display.  The summary counts only tracked files."
+  (if (null records)
+	  (format "Coverage Report — %s\n\nNo changes in this scope; nothing to report.\n"
+			  scope-label)
+	(let (partial fully-covered not-tracked
+				  (total-covered 0)
+				  (total-tracked 0))
+	  (dolist (rec records)
+		(let ((changed (plist-get rec :changed-lines))
+			  (tracked (plist-get rec :tracked))
+			  (uncovered (plist-get rec :uncovered-lines))
+			  (covered (plist-get rec :covered-lines)))
+		  (cond
+		   ((null changed) nil)   ; deletion-only; skip
+		   ((not tracked)
+			(push rec not-tracked))
+		   (uncovered
+			(push rec partial)
+			(setq total-covered (+ total-covered (length covered))
+				  total-tracked (+ total-tracked (length changed))))
+		   (t
+			(push rec fully-covered)
+			(setq total-covered (+ total-covered (length covered))
+				  total-tracked (+ total-tracked (length changed)))))))
+	  (setq partial (nreverse partial)
+			fully-covered (nreverse fully-covered)
+			not-tracked (nreverse not-tracked))
+	  (with-temp-buffer
+		(let* ((header (format "Coverage Report — %s" scope-label))
+			   (pct (if (> total-tracked 0)
+						(/ (* 100.0 total-covered) total-tracked)
+					  0.0)))
+		  (insert header "\n")
+		  (insert (make-string (length header) ?=) "\n\n")
+		  (insert (format "Summary: %d of %d changed lines covered (%.1f%%)\n\n"
+						  total-covered total-tracked pct)))
+		(when partial
+		  (insert "Uncovered lines:\n")
+		  (dolist (rec partial)
+			(dolist (line (plist-get rec :uncovered-lines))
+			  (insert (format "  %s:%d: uncovered\n"
+							  (plist-get rec :path) line))))
+		  (insert "\n"))
+		(when not-tracked
+		  (insert "Not tracked (coverage data unavailable):\n")
+		  (dolist (rec not-tracked)
+			(insert (format "  %s (%d lines changed)\n"
+							(plist-get rec :path)
+							(length (plist-get rec :changed-lines)))))
+		  (insert "\n"))
+		(when fully-covered
+		  (insert "Fully covered:\n")
+		  (dolist (rec fully-covered)
+			(let ((cnt (length (plist-get rec :covered-lines))))
+			  (insert (format "  %s (%d/%d)\n"
+							  (plist-get rec :path) cnt cnt))))
+		  (insert "\n"))
+		(buffer-string)))))
+
 (provide 'coverage-core)
 ;;; coverage-core.el ends here
