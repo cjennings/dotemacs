@@ -65,6 +65,47 @@ Returns the backend plist, or nil when no backend matches."
 				(funcall (plist-get backend :detect) root))
 			  cj/coverage-backends))))
 
+(defun cj/--coverage-simplecov-executable-lines (file)
+  "Parse FILE (a simplecov JSON report) and return executable lines per file.
+Symmetric with `cj/--coverage-parse-simplecov', but includes every line
+whose simplecov array entry is a number (hits > 0 AND 0-hit lines).
+Only null entries (not executable: blank, comment) are excluded.
+
+Used by the whole-project scope of `cj/coverage-report', where we treat
+every executable line as if it were a changed line so the same intersect
++ format pipeline applies.
+
+Signals `user-error' if FILE does not exist or contains malformed JSON."
+  (unless (file-exists-p file)
+	(user-error "Simplecov report not found: %s" file))
+  (require 'json)
+  (let* ((json-object-type 'hash-table)
+		 (json-array-type 'list)
+		 (json-key-type 'string)
+		 (data (condition-case err
+				   (json-read-file file)
+				 (error (user-error "Malformed simplecov JSON in %s: %s"
+									file (error-message-string err)))))
+		 (result (make-hash-table :test 'equal)))
+	(maphash
+	 (lambda (_test-name section)
+	   (when (hash-table-p section)
+		 (let ((coverage (gethash "coverage" section)))
+		   (when (hash-table-p coverage)
+			 (maphash
+			  (lambda (path hits-list)
+				(let ((lines (or (gethash path result)
+								 (make-hash-table :test 'eql)))
+					  (line-num 1))
+				  (dolist (hits hits-list)
+					(when (numberp hits)
+					  (puthash line-num t lines))
+					(setq line-num (1+ line-num)))
+				  (puthash path lines result)))
+			  coverage)))))
+	 data)
+	result))
+
 (defun cj/--coverage-parse-simplecov (file)
   "Parse FILE as a simplecov JSON report and return covered lines per file.
 Keys are source-file paths (strings).  Values are hash tables whose
@@ -297,16 +338,66 @@ omitted from the display.  The summary counts only tracked files."
 		  (insert "\n"))
 		(buffer-string)))))
 
+(defun cj/--coverage-format-summary (records scope-label)
+  "Render RECORDS as a per-file percentage summary for SCOPE-LABEL.
+Used for the whole-project scope where line-level drill-down would
+be thousands of entries.  Shows totals plus per-file coverage (sorted
+by percentage ascending — worst-covered first).  Files with :tracked
+nil are excluded.  Empty RECORDS produces a \"No coverage data\" note."
+  (let ((tracked (seq-filter (lambda (rec) (plist-get rec :tracked))
+							 records)))
+	(if (null tracked)
+		(format "Coverage Summary — %s\n\nNo coverage data available.\n"
+				scope-label)
+	  (let* ((rows (mapcar
+					(lambda (rec)
+					  (let* ((path (plist-get rec :path))
+							 (covered (length (plist-get rec :covered-lines)))
+							 (total (length (plist-get rec :changed-lines)))
+							 (pct (if (> total 0)
+									  (/ (* 100.0 covered) total)
+									0.0)))
+						(list pct covered total path)))
+					tracked))
+			 (sorted (sort rows (lambda (a b) (< (car a) (car b)))))
+			 (total-covered (apply #'+ (mapcar #'cadr rows)))
+			 (total-lines (apply #'+ (mapcar #'caddr rows)))
+			 (overall-pct (if (> total-lines 0)
+							  (/ (* 100.0 total-covered) total-lines)
+							0.0))
+			 (max-path-len (apply #'max
+								  (mapcar (lambda (r) (length (cadddr r)))
+										  rows)))
+			 (row-format (format "  %%-%ds  %%4d/%%-4d  (%%5.1f%%%%)\n"
+								 max-path-len)))
+		(with-temp-buffer
+		  (let ((header (format "Coverage Summary — %s" scope-label)))
+			(insert header "\n")
+			(insert (make-string (length header) ?=) "\n\n"))
+		  (insert (format "Total: %d of %d lines covered (%.1f%%) across %d files\n\n"
+						  total-covered total-lines overall-pct (length rows)))
+		  (insert "Per-file coverage (worst first):\n")
+		  (dolist (row sorted)
+			(pcase-let ((`(,pct ,covered ,total ,path) row))
+			  (insert (format row-format path covered total pct))))
+		  (buffer-string))))))
+
 ;;; --- Scope selection ---
 
 (defconst cj/--coverage-scope-alist
   '(("Working tree — all uncommitted changes" . working-tree)
 	("Staged — about to commit"               . staged)
 	("Branch vs parent"                       . branch-vs-parent)
-	("Branch vs main"                         . branch-vs-main))
+	("Branch vs main"                         . branch-vs-main)
+	("Whole project — all executable lines"   . whole-project))
   "Alist mapping human-readable scope labels to scope symbols.
 Used by `cj/--coverage-select-scope' for the `completing-read' prompt
-and by the report-buffer header to show which scope was picked.")
+and by the report-buffer header to show which scope was picked.
+
+The diff-aware scopes (working-tree, staged, branch-vs-*) render the
+line-level \"Uncovered lines\" report.  The whole-project scope renders
+a per-file percentage summary instead, since line-level drill-down
+across an entire codebase would be thousands of entries.")
 
 (defun cj/--coverage-scope-from-label (label)
   "Return the scope symbol for human-readable LABEL, or nil if unknown."
@@ -334,9 +425,16 @@ Returns the selected scope symbol (e.g. `staged')."
 (defun cj/--coverage-render-to-buffer (records scope)
   "Render RECORDS for SCOPE into the coverage report buffer.
 Does the buffer setup, the insert, and switches it into
-`cj/coverage-report-mode' for compilation-mode navigation."
+`cj/coverage-report-mode' for compilation-mode navigation.
+
+For the whole-project scope, uses `cj/--coverage-format-summary'
+(per-file percentages only; line-level drill-down would be thousands
+of entries).  For diff-aware scopes, uses `cj/--coverage-format-report'
+which preserves the compilation-mode-navigable uncovered-line list."
   (let* ((label (cj/--coverage-label-from-scope scope))
-		 (text (cj/--coverage-format-report records label))
+		 (text (if (eq scope 'whole-project)
+				   (cj/--coverage-format-summary records label)
+				 (cj/--coverage-format-report records label)))
 		 (buf (get-buffer-create "*Coverage Report*")))
 	(with-current-buffer buf
 	  (let ((inhibit-read-only t))
@@ -348,10 +446,16 @@ Does the buffer setup, the insert, and switches it into
 	buf))
 
 (defun cj/--coverage-read-and-display (backend scope)
-  "Parse BACKEND's report file, intersect with SCOPE, display result."
+  "Parse BACKEND's report file, intersect with SCOPE, display result.
+For the whole-project scope, the \"changed\" set is every executable
+line in the simplecov data — the intersect then classifies each line
+as covered or uncovered.  For diff-aware scopes, the changed set
+comes from `git diff' via `cj/--coverage-changed-lines'."
   (let* ((report-path (funcall (plist-get backend :report-path)))
 		 (covered (cj/--coverage-parse-simplecov report-path))
-		 (changed (cj/--coverage-changed-lines scope))
+		 (changed (if (eq scope 'whole-project)
+					  (cj/--coverage-simplecov-executable-lines report-path)
+					(cj/--coverage-changed-lines scope)))
 		 (records (cj/--coverage-intersect covered changed)))
 	(cj/--coverage-render-to-buffer records scope)))
 
