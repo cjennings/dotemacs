@@ -6,6 +6,8 @@
 #   make test-unit         - Run unit tests only
 #   make test-file FILE=test-foo.el  - Run specific test file
 #   make test-name TEST=test-foo-*   - Run tests matching pattern
+#   make coverage          - Generate simplecov coverage report
+#   make coverage-clean    - Remove coverage report file
 #   make validate-parens   - Check for unbalanced parentheses
 #   make validate-modules  - Load all modules to verify they compile
 #   make compile           - Byte-compile all modules
@@ -39,6 +41,7 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 # No colors - using plain text symbols instead
 
 .PHONY: help targets test test-all test-unit test-integration test-file test-name \
+        coverage coverage-clean \
         validate-parens validate-modules compile lint profile \
         clean clean-compiled clean-tests reset
 
@@ -57,6 +60,10 @@ help:
 	@echo "    make test-integration  - Run integration tests only ($(words $(INTEGRATION_TESTS)) files)"
 	@echo "    make test-file FILE=<filename>  - Run specific test file"
 	@echo "    make test-name TEST=<pattern>   - Run tests matching pattern"
+	@echo ""
+	@echo "  Coverage:"
+	@echo "    make coverage          - Generate simplecov JSON at $(COVERAGE_FILE)"
+	@echo "    make coverage-clean    - Delete the coverage report file"
 	@echo ""
 	@echo "  Validation:"
 	@echo "    make validate-parens   - Check for unbalanced parentheses in modules"
@@ -212,6 +219,60 @@ endif
 		$(foreach test,$(ALL_TESTS),-l $(test)) \
 		--eval '(ert-run-tests-batch-and-exit "$(TEST)")'
 	@echo "✓ Tests matching '$(TEST)' complete"
+
+# ============================================================================
+# Coverage Targets
+# ============================================================================
+
+COVERAGE_DIR = .coverage
+COVERAGE_FILE = $(COVERAGE_DIR)/simplecov.json
+
+# Test files that can't coexist with undercover's instrumentation
+# (e.g. test-all-comp-errors byte-compiles modules, which fails on
+# instrumented sources).  Excluded from `make coverage' only.
+COVERAGE_EXCLUDE = $(TEST_DIR)/test-all-comp-errors.el
+COVERAGE_TESTS = $(filter-out $(COVERAGE_EXCLUDE),$(UNIT_TESTS))
+
+coverage: coverage-clean $(COVERAGE_DIR)
+	@echo "[i] Deleting modules/*.elc so undercover can instrument sources..."
+	@rm -f $(MODULE_DIR)/*.elc
+	@echo "[i] Running coverage across $(words $(COVERAGE_TESTS)) test files..."
+	@echo "    (this is slower than 'make test' — each file runs in its own Emacs)"
+	@echo "    excluded from coverage: $(notdir $(COVERAGE_EXCLUDE))"
+	@echo ""
+	@failed=0; \
+	failed_files=""; \
+	for test in $(COVERAGE_TESTS); do \
+		test_name=$$(basename $$test); \
+		printf "  Coverage: %-58s " "$$test_name..."; \
+		output=$$($(EMACS_TEST) -l $(TEST_DIR)/run-coverage-file.el -l $$test --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" 2>&1); \
+		result=$$?; \
+		if [ $$result -eq 0 ]; then \
+			echo "✓"; \
+		else \
+			echo "✗"; \
+			failed=$$((failed + 1)); \
+			failed_files="$$failed_files $$test_name"; \
+		fi; \
+	done; \
+	echo ""; \
+	if [ $$failed -gt 0 ]; then \
+		echo "[!] $$failed test file(s) failed during coverage run:"; \
+		echo "$$failed_files" | tr ' ' '\n' | grep -v '^$$' | sed 's/^/    /'; \
+		exit 1; \
+	fi
+	@if [ -f $(COVERAGE_FILE) ]; then \
+		echo "✓ Coverage report: $(COVERAGE_FILE) ($$(du -h $(COVERAGE_FILE) | cut -f1))"; \
+	else \
+		echo "[!] No coverage file produced; check that undercover is installed"; \
+		exit 1; \
+	fi
+
+coverage-clean:
+	@rm -f $(COVERAGE_FILE)
+
+$(COVERAGE_DIR):
+	@mkdir -p $(COVERAGE_DIR)
 
 # ============================================================================
 # Validation Targets

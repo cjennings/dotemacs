@@ -3,7 +3,7 @@
 ;;; Commentary:
 ;; Unit tests for the backend registry.
 ;;
-;; A backend is a plist with at least :name, :detect, :run, and :lcov-path
+;; A backend is a plist with at least :name, :detect, :run, and :report-path
 ;; keys.  `cj/coverage-register-backend' adds or replaces an entry.
 ;; `cj/--coverage-backend-for-project' resolves which backend applies to
 ;; a project root, honoring an optional override (buffer-local
@@ -28,7 +28,7 @@
   "Normal: registering a backend makes it retrievable by name."
   (test-coverage-registry-with-empty
 	(cj/coverage-register-backend
-	 '(:name elisp :detect (lambda (_) t) :run ignore :lcov-path ignore))
+	 '(:name elisp :detect (lambda (_) t) :run ignore :report-path ignore))
 	(should (= 1 (length cj/coverage-backends)))
 	(should (eq 'elisp (plist-get (car cj/coverage-backends) :name)))))
 
@@ -36,11 +36,11 @@
   "Normal: re-registering by name replaces the existing entry at the same position."
   (test-coverage-registry-with-empty
 	(cj/coverage-register-backend
-	 '(:name elisp :detect (lambda (_) nil) :run ignore :lcov-path ignore))
+	 '(:name elisp :detect (lambda (_) nil) :run ignore :report-path ignore))
 	(cj/coverage-register-backend
-	 '(:name python :detect (lambda (_) nil) :run ignore :lcov-path ignore))
+	 '(:name python :detect (lambda (_) nil) :run ignore :report-path ignore))
 	(cj/coverage-register-backend
-	 '(:name elisp :detect (lambda (_) t) :run ignore :lcov-path ignore))
+	 '(:name elisp :detect (lambda (_) t) :run ignore :report-path ignore))
 	(should (= 2 (length cj/coverage-backends)))
 	(should (eq 'elisp (plist-get (nth 0 cj/coverage-backends) :name)))
 	(should (eq 'python (plist-get (nth 1 cj/coverage-backends) :name)))
@@ -50,11 +50,11 @@
   "Normal: resolution returns the first backend whose :detect matches."
   (test-coverage-registry-with-empty
 	(cj/coverage-register-backend
-	 '(:name a :detect (lambda (_) nil) :run ignore :lcov-path ignore))
+	 '(:name a :detect (lambda (_) nil) :run ignore :report-path ignore))
 	(cj/coverage-register-backend
-	 '(:name b :detect (lambda (_) t)   :run ignore :lcov-path ignore))
+	 '(:name b :detect (lambda (_) t)   :run ignore :report-path ignore))
 	(cj/coverage-register-backend
-	 '(:name c :detect (lambda (_) t)   :run ignore :lcov-path ignore))
+	 '(:name c :detect (lambda (_) t)   :run ignore :report-path ignore))
 	(let ((backend (cj/--coverage-backend-for-project "/tmp")))
 	  (should (eq 'b (plist-get backend :name))))))
 
@@ -69,18 +69,18 @@
   "Boundary: no backend's :detect matches returns nil."
   (test-coverage-registry-with-empty
 	(cj/coverage-register-backend
-	 '(:name a :detect (lambda (_) nil) :run ignore :lcov-path ignore))
+	 '(:name a :detect (lambda (_) nil) :run ignore :report-path ignore))
 	(cj/coverage-register-backend
-	 '(:name b :detect (lambda (_) nil) :run ignore :lcov-path ignore))
+	 '(:name b :detect (lambda (_) nil) :run ignore :report-path ignore))
 	(should (null (cj/--coverage-backend-for-project "/tmp")))))
 
 (ert-deftest test-coverage-backend-for-project-override-bypasses-detect ()
   "Boundary: OVERRIDE returns the named backend without calling :detect."
   (test-coverage-registry-with-empty
 	(cj/coverage-register-backend
-	 '(:name a :detect (lambda (_) nil) :run ignore :lcov-path ignore))
+	 '(:name a :detect (lambda (_) nil) :run ignore :report-path ignore))
 	(cj/coverage-register-backend
-	 '(:name b :detect (lambda (_) nil) :run ignore :lcov-path ignore))
+	 '(:name b :detect (lambda (_) nil) :run ignore :report-path ignore))
 	(let ((backend (cj/--coverage-backend-for-project "/tmp" 'b)))
 	  (should (eq 'b (plist-get backend :name))))))
 
@@ -91,7 +91,7 @@
 	  (cj/coverage-register-backend
 	   `(:name a
 			   :detect ,(lambda (root) (setq captured root) t)
-			   :run ignore :lcov-path ignore))
+			   :run ignore :report-path ignore))
 	  (cj/--coverage-backend-for-project "/my/root")
 	  (should (equal "/my/root" captured)))))
 
@@ -101,7 +101,7 @@
   "Error: OVERRIDE that names an unregistered backend signals user-error."
   (test-coverage-registry-with-empty
 	(cj/coverage-register-backend
-	 '(:name a :detect (lambda (_) t) :run ignore :lcov-path ignore))
+	 '(:name a :detect (lambda (_) t) :run ignore :report-path ignore))
 	(should-error (cj/--coverage-backend-for-project "/tmp" 'bogus)
 				  :type 'user-error)))
 

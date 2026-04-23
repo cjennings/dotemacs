@@ -16,7 +16,7 @@
 
 (defvar cj/coverage-backends nil
   "Registry of coverage backends in priority order.
-Each entry is a plist with at least :name, :detect, :run, and :lcov-path.
+Each entry is a plist with at least :name, :detect, :run, and :report-path.
 Use `cj/coverage-register-backend' to add or replace an entry.")
 
 (defvar-local cj/coverage-backend nil
@@ -26,7 +26,7 @@ function in registration order.  Typically set buffer-locally via
 `.dir-locals.el' to pin a specific backend.")
 
 (defun cj/coverage-register-backend (backend)
-  "Register BACKEND, a plist with :name, :detect, :run, :lcov-path.
+  "Register BACKEND, a plist with :name, :detect, :run, :report-path.
 Appends to `cj/coverage-backends' at the end, or replaces the existing
 entry with the same :name in its current position."
   (let ((name (plist-get backend :name)))
@@ -65,46 +65,50 @@ Returns the backend plist, or nil when no backend matches."
 				(funcall (plist-get backend :detect) root))
 			  cj/coverage-backends))))
 
-(defun cj/--coverage-parse-lcov (file)
-  "Parse FILE as LCOV and return a hash table of covered lines.
+(defun cj/--coverage-parse-simplecov (file)
+  "Parse FILE as a simplecov JSON report and return covered lines per file.
 Keys are source-file paths (strings).  Values are hash tables whose
-keys are line numbers (integers) that had a hit count greater than
-zero.  Only the SF, DA, and end_of_record fields are read; other
-LCOV fields are ignored.  Malformed DA lines are skipped silently.
-Signals `user-error' if FILE does not exist."
+keys are line numbers (integers) with a hit count greater than zero.
+Lines marked nil (not executable) or 0 (executable but not hit) are
+excluded.
+
+Simplecov JSON structure is:
+  { <test-name>: { \"coverage\": { <path>: [null | 0 | int, ...] } } }
+
+When the JSON contains multiple top-level test-name keys, coverage
+data is unioned across them; useful for files produced with undercover's
+`:merge-report t' option that accumulate runs under a shared key, and
+also for defensive handling of unexpected multi-key shapes.
+
+Signals `user-error' if FILE does not exist or contains malformed JSON."
   (unless (file-exists-p file)
-	(user-error "LCOV file not found: %s" file))
-  (let ((result (make-hash-table :test 'equal))
-		(current-file nil)
-		(current-lines nil))
-	(with-temp-buffer
-	  (insert-file-contents file)
-	  (goto-char (point-min))
-	  (while (not (eobp))
-		(let ((line (buffer-substring-no-properties
-					 (line-beginning-position) (line-end-position))))
-		  (cond
-		   ((string-prefix-p "SF:" line)
-			(setq current-file (substring line 3))
-			(setq current-lines (make-hash-table :test 'eql)))
-		   ((string-prefix-p "DA:" line)
-			(when current-lines
-			  (let* ((rest (substring line 3))
-					 (parts (split-string rest ","))
-					 (line-str (car parts))
-					 (hits-str (cadr parts))
-					 (line-num (and line-str (string-match-p "\\`[0-9]+\\'" line-str)
-									(string-to-number line-str)))
-					 (hits (and hits-str (string-match-p "\\`[0-9]+\\'" hits-str)
-								(string-to-number hits-str))))
-				(when (and line-num hits (> hits 0))
-				  (puthash line-num t current-lines)))))
-		   ((string= line "end_of_record")
-			(when current-file
-			  (puthash current-file current-lines result))
-			(setq current-file nil
-				  current-lines nil))))
-		(forward-line 1)))
+	(user-error "Simplecov report not found: %s" file))
+  (require 'json)
+  (let* ((json-object-type 'hash-table)
+		 (json-array-type 'list)
+		 (json-key-type 'string)
+		 (data (condition-case err
+				   (json-read-file file)
+				 (error (user-error "Malformed simplecov JSON in %s: %s"
+									file (error-message-string err)))))
+		 (result (make-hash-table :test 'equal)))
+	(maphash
+	 (lambda (_test-name section)
+	   (when (hash-table-p section)
+		 (let ((coverage (gethash "coverage" section)))
+		   (when (hash-table-p coverage)
+			 (maphash
+			  (lambda (path hits-list)
+				(let ((lines (or (gethash path result)
+								 (make-hash-table :test 'eql)))
+					  (line-num 1))
+				  (dolist (hits hits-list)
+					(when (and (numberp hits) (> hits 0))
+					  (puthash line-num t lines))
+					(setq line-num (1+ line-num)))
+				  (puthash path lines result)))
+			  coverage)))))
+	 data)
 	result))
 
 (defconst cj/--coverage-hunk-header-regexp
@@ -180,7 +184,7 @@ Signals `user-error' for any other SCOPE."
 (defun cj/--coverage-intersect (covered changed)
   "Combine COVERED (LCOV) with CHANGED (git diff) into per-file records.
 COVERED and CHANGED are each hash tables from file path to a hash table
-of line numbers (as built by `cj/--coverage-parse-lcov' and
+of line numbers (as built by `cj/--coverage-parse-simplecov' and
 `cj/--coverage-parse-diff-output').  Either may be nil, in which case
 the result is an empty list.
 
