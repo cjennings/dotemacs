@@ -48,6 +48,8 @@
 (require 'text-config)           ;; text settings and functionality
 (require 'undead-buffers)        ;; bury rather than kill buffers you choose
 (require 'browser-config)        ;; browser configuration/integration
+(require 'coverage-core)         ;; diff-aware coverage engine + F7 binding
+(require 'coverage-elisp)        ;; elisp backend for coverage-core
 
 ;; ------------------------ User Interface Configuration -----------------------
 
