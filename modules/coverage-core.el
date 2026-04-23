@@ -297,5 +297,113 @@ omitted from the display.  The summary counts only tracked files."
 		  (insert "\n"))
 		(buffer-string)))))
 
+;;; --- Scope selection ---
+
+(defconst cj/--coverage-scope-alist
+  '(("Working tree — all uncommitted changes" . working-tree)
+	("Staged — about to commit"               . staged)
+	("Branch vs parent"                       . branch-vs-parent)
+	("Branch vs main"                         . branch-vs-main))
+  "Alist mapping human-readable scope labels to scope symbols.
+Used by `cj/--coverage-select-scope' for the `completing-read' prompt
+and by the report-buffer header to show which scope was picked.")
+
+(defun cj/--coverage-scope-from-label (label)
+  "Return the scope symbol for human-readable LABEL, or nil if unknown."
+  (cdr (assoc label cj/--coverage-scope-alist)))
+
+(defun cj/--coverage-label-from-scope (scope)
+  "Return the human-readable label for SCOPE symbol, or nil if unknown."
+  (car (rassq scope cj/--coverage-scope-alist)))
+
+(defun cj/--coverage-select-scope ()
+  "Prompt for a coverage scope via `completing-read'.
+Returns the selected scope symbol (e.g. `staged')."
+  (let* ((labels (mapcar #'car cj/--coverage-scope-alist))
+		 (choice (completing-read "Coverage scope: " labels nil t)))
+	(cj/--coverage-scope-from-label choice)))
+
+;;; --- User-facing command ---
+
+(defun cj/--coverage-project-root ()
+  "Return the current project's root, or `default-directory' as fallback."
+  (or (and (fboundp 'projectile-project-root)
+		   (projectile-project-root))
+	  default-directory))
+
+(defun cj/--coverage-render-to-buffer (records scope)
+  "Render RECORDS for SCOPE into the coverage report buffer.
+Does the buffer setup, the insert, and switches it into
+`cj/coverage-report-mode' for compilation-mode navigation."
+  (let* ((label (cj/--coverage-label-from-scope scope))
+		 (text (cj/--coverage-format-report records label))
+		 (buf (get-buffer-create "*Coverage Report*")))
+	(with-current-buffer buf
+	  (let ((inhibit-read-only t))
+		(erase-buffer)
+		(insert text))
+	  (cj/coverage-report-mode)
+	  (goto-char (point-min)))
+	(display-buffer buf)
+	buf))
+
+(defun cj/--coverage-read-and-display (backend scope)
+  "Parse BACKEND's report file, intersect with SCOPE, display result."
+  (let* ((report-path (funcall (plist-get backend :report-path)))
+		 (covered (cj/--coverage-parse-simplecov report-path))
+		 (changed (cj/--coverage-changed-lines scope))
+		 (records (cj/--coverage-intersect covered changed)))
+	(cj/--coverage-render-to-buffer records scope)))
+
+(defun cj/coverage-report (&optional force-rerun)
+  "Show a coverage report for in-flight changes in the current project.
+Prompts for a git-diff scope via `completing-read', reads the most
+recent coverage data, intersects with the diff, and pops a buffer
+listing covered, uncovered, and not-tracked files.
+
+With a prefix argument (FORCE-RERUN non-nil), re-runs coverage before
+displaying the report even if a recent report already exists.  Without
+the prefix, a missing report triggers a y/n prompt."
+  (interactive "P")
+  (let* ((root (cj/--coverage-project-root))
+		 (backend (cj/--coverage-backend-for-project
+				   root cj/coverage-backend)))
+	(unless backend
+	  (user-error
+	   "No coverage backend for %s.  Register one or set cj/coverage-backend"
+	   root))
+	(let* ((scope (cj/--coverage-select-scope))
+		   (report-path (funcall (plist-get backend :report-path))))
+	  (cond
+	   ;; Force rerun via prefix arg
+	   (force-rerun
+		(funcall (plist-get backend :run)
+				 (lambda (_path)
+				   (cj/--coverage-read-and-display backend scope))))
+	   ;; Missing report — prompt before running
+	   ((not (file-exists-p report-path))
+		(if (y-or-n-p (format "No coverage report at %s.  Run coverage now? "
+							  report-path))
+			(funcall (plist-get backend :run)
+					 (lambda (_path)
+					   (cj/--coverage-read-and-display backend scope)))
+		  (user-error "Coverage cancelled")))
+	   ;; Otherwise, use existing data
+	   (t
+		(cj/--coverage-read-and-display backend scope))))))
+
+(define-derived-mode cj/coverage-report-mode compilation-mode "Coverage"
+  "Major mode for the coverage report buffer.
+Derives from `compilation-mode' so next-error / previous-error and
+the standard navigation keys (n, p, RET, g, q) work without extra
+setup.  Uncovered-line entries match compilation-mode's default
+`file:line: message' error regex."
+  (setq-local compilation-error-regexp-alist '(gnu))
+  (setq-local compilation-search-path (list (cj/--coverage-project-root))))
+
+;;; --- Global keybinding ---
+
+(keymap-global-set "<f7>" #'cj/coverage-report)
+
 (provide 'coverage-core)
 ;;; coverage-core.el ends here
