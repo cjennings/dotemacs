@@ -93,7 +93,7 @@ directories; others are files.  Returns the temp directory path."
 	(should (eq 'elisp (plist-get backend :name)))
 	(should (functionp (plist-get backend :detect)))
 	(should (functionp (plist-get backend :run)))
-	(should (functionp (plist-get backend :lcov-path)))))
+	(should (functionp (plist-get backend :report-path)))))
 
 (provide 'test-coverage-elisp--detect)
 ;;; test-coverage-elisp--detect.el ends here

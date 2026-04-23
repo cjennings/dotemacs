@@ -13,8 +13,10 @@
 ;; the callback is invoked with the LCOV path; on failure, the buffer
 ;; stays visible for the user to inspect.
 ;;
-;; :lcov-path resolves to `<project-root>/.coverage/lcov.info', which
-;; matches the path the Makefile's coverage target writes to.
+;; :report-path resolves to `<project-root>/.coverage/simplecov.json',
+;; which matches the path the Makefile's coverage target writes to.
+;; The simplecov JSON format is used because undercover's `:merge-report'
+;; support only covers simplecov, not LCOV.
 
 ;;; Code:
 
@@ -23,9 +25,9 @@
 (use-package undercover
   :defer t)
 
-(defconst cj/--coverage-elisp-lcov-relative-path
-  ".coverage/lcov.info"
-  "Project-relative path to the LCOV file produced by `make coverage'.")
+(defconst cj/--coverage-elisp-report-relative-path
+  ".coverage/simplecov.json"
+  "Project-relative path to the simplecov JSON produced by `make coverage'.")
 
 (defun cj/--coverage-elisp-project-root (&optional root)
   "Return ROOT or fall back to projectile's root or `default-directory'."
@@ -44,14 +46,14 @@ The heuristic needs both (a) a Makefile, Eask, or Cask at ROOT and
 	   (or (file-expand-wildcards (expand-file-name "modules/*.el" root))
 		   (file-expand-wildcards (expand-file-name "*.el" root)))))
 
-(defun cj/--coverage-elisp-lcov-path (&optional root)
-  "Return the absolute path to the LCOV file for ROOT."
-  (expand-file-name cj/--coverage-elisp-lcov-relative-path
+(defun cj/--coverage-elisp-report-path (&optional root)
+  "Return the absolute path to the simplecov JSON file for ROOT."
+  (expand-file-name cj/--coverage-elisp-report-relative-path
 					(cj/--coverage-elisp-project-root root)))
 
 (defun cj/--coverage-elisp-run (callback)
   "Run `make coverage' asynchronously.
-CALLBACK is invoked with the LCOV path when the build finishes
+CALLBACK is invoked with the report path when the build finishes
 successfully.  On failure, no callback is invoked and the compilation
 buffer stays visible so the user can read the error."
   (let* ((default-directory (cj/--coverage-elisp-project-root))
@@ -61,14 +63,14 @@ buffer stays visible so the user can read the error."
 	  (add-hook 'compilation-finish-functions
 				(lambda (_buf status)
 				  (when (string-match-p "^finished" status)
-					(funcall callback (cj/--coverage-elisp-lcov-path))))
+					(funcall callback (cj/--coverage-elisp-report-path))))
 				nil t))))
 
 (cj/coverage-register-backend
  (list :name 'elisp
 	   :detect #'cj/--coverage-elisp-detect
 	   :run #'cj/--coverage-elisp-run
-	   :lcov-path #'cj/--coverage-elisp-lcov-path))
+	   :report-path #'cj/--coverage-elisp-report-path))
 
 (provide 'coverage-elisp)
 ;;; coverage-elisp.el ends here
