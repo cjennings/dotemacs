@@ -60,14 +60,15 @@ Adjust this if the title doesn't appear centered under the banner image.")
 ;; convenience function to redisplay dashboard and kill all other windows
 
 (defun cj/dashboard-only ()
-  "Switch to *dashboard* buffer and kill all other buffers and windows."
+  "Switch to *dashboard* buffer, kill other buffers and windows, go to top."
   (interactive)
   (if (get-buffer "*dashboard*")
 	  (progn
 		(switch-to-buffer "*dashboard*")
 		(cj/kill-all-other-buffers-and-windows))
 	(when (fboundp 'dashboard-open)
-	  (dashboard-open))))
+	  (dashboard-open)))
+  (goto-char (point-min)))
 
 ;; --------------------------------- Dashboard ---------------------------------
 ;; a useful startup screen for Emacs
