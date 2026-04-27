@@ -26,6 +26,14 @@
 
 (require 'user-constants)
 
+;; cj/custom-keymap's real binding is in keybindings.el, which init.el loads
+;; first. The use-package org-msg :preface below wraps in eval-and-compile, so
+;; standalone byte-compile evaluates `keymap-set` on it at compile time. This
+;; shim defines cj/custom-keymap then; defvar is a no-op once the real keymap
+;; is in place at load time.
+(eval-and-compile
+  (defvar cj/custom-keymap (make-sparse-keymap)))
+
 ;; -------------------- HarfBuzz Crash Fix: Disable Composition ---------------
 ;; Disable auto-composition in mu4e headers to prevent SIGSEGV from HarfBuzz
 ;; when shaping emoji characters in email subjects. See Commentary above.
