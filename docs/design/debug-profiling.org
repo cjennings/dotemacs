@@ -1,0 +1,203 @@
+#+TITLE: Design: debug-profiling.el module
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-04-26
+
+* Status
+
+Draft. Not yet implemented.
+
+* Problem
+
+Profiling helpers in this config exist but are scattered: =profiler-start/stop/report= bindings live in =modules/config-utilities.el=, the =cj/benchmark-this-method= helper sits next to them, =modules/org-agenda-config-debug.el= handles its own thing, =early-init.el= has a commented-out =benchmark-init= block, and =custom/profile-dotemacs.el= drives =make profile=. There's no single place to look when you need to investigate a slow command, and no callable pure helpers for batch / test / external use.
+
+The immediate driver is the queued [#B] task to investigate org-capture target-building (15-20s, 12+ times/day). Future perf work — refactor audits, regressions caught during testing — should reach for the same module.
+
+* Non-Goals
+
+- Startup / load-time measurement (was option B in the brainstorm scope question — ruled out for v1).
+- Hot-path / interactive-loop watchdog with thresholds and alerts (option C — ruled out).
+- Comparative before/after measurement as a first-class feature (option D — ruled out).
+- Memory / GC-pressure tracing as a separate mode (option E — ruled out; GC time still surfaces in =benchmark-run= output).
+- Log accumulation across sessions — measurements are one-shot.
+- Replacing or shadowing the existing =profiler-start/stop/report= keystrokes; those stay as escape hatches.
+
+* Approaches Considered
+
+** Recommended: named-operation surface, no clever stuff
+
+Module exposes ~4 named functions: =cj/profile-next-command=, =cj/profile-cancel=, =cj/time-region-or-sexp=, =cj/profile-report-show=. Each is a small wrapper around the built-in =profiler.el= and =benchmark.el=. No macros, no logs, no auto-discovery.
+
+*Pros:* Easy to read, easy to test, easy to remember; matches the project's split-for-testability convention; zero new ELPA dependencies; byte-compile clean from day one.
+
+*Cons:* Boring is sometimes the wrong answer — if the org-capture investigation reveals a need for "profile this form 1000 times to amortize noise" or comparison-over-time, that's not built in. Followups would land in a v2.
+
+** Rejected: macro-first design
+
+Module's primary surface would be =cj/with-timing= and =cj/with-profile= macros wrapping arbitrary forms. Lets you sprinkle instrumentation directly into source code. Rejected because investigation-by-source-edit mutates code under measurement (can hide GC interactions and inlining), and macros are harder to reason about for someone reading a call site cold. Worth re-considering in v2 if v1 reveals friction.
+
+** Rejected: log-and-grep design
+
+Each measurement appends a structured JSON-lines record to =data/profile.log=; no interactive report, just data. Rejected for v1 — solves "comparison over time" which the agreed scope rules out, and shifts the mental model from "show me the report now" to "the data is in the log somewhere." Could be a v2 add.
+
+** Rejected: treesit-aware instrumentation picker
+
+Walk elisp source via treesit, list candidate functions via =completing-read=, wrap chosen function with timing on the fly. Rejected as a sister implementation of =trace-function= for no clear benefit, with a treesit-elisp-grammar dependency that isn't standard yet.
+
+** Rejected: ELPA-augmented wrapper (benchmark-init, esup, memory-usage)
+
+Pull in established profiling packages and orchestrate them. Rejected because most of those packages target startup or memory specifically — both ruled out in the scope question. Would drift past the agreed MVP.
+
+* Design
+
+** Architecture
+
+New module =modules/debug-profiling.el=. Lexical-binding, byte-compile clean from day one. Conventional =cj/...= public / =cj/--...= private naming.
+
+Top-level shape:
+
+#+begin_example
+modules/debug-profiling.el
+├── (require 'profiler)             ; built-in
+├── (require 'benchmark)            ; built-in
+├── (defvar cj/--profile-armed nil)         ; module-private
+├── (defvar cj/--profile-last-result nil)   ; module-private
+│
+├── ;; Pure helpers
+├── (defun cj/profile--run-form (FORM) → profile-data)
+├── (defun cj/profile--arm)                 ; sets up profiler + hook
+├── (defun cj/profile--disarm)              ; tears down + stores result
+├── (defun cj/time--expr (FORM &optional REPS) → (elapsed gc-time gc-count))
+│
+├── ;; Interactive wrappers
+├── (defun cj/profile-next-command ...)
+├── (defun cj/profile-cancel ...)
+├── (defun cj/profile-report-show ...)
+└── (defun cj/time-region-or-sexp ...)
+#+end_example
+
+*** Migration from =modules/config-utilities.el=
+
+Out of =config-utilities.el=:
+- =(require 'profiler)=
+- The three keybindings for =profiler-start= / =profiler-stop= / =profiler-report=.
+- =cj/benchmark-this-method= defun.
+- The =which-key= labels for ="C-c d p"= submenu and ="C-c d b"=.
+
+Stays in =config-utilities.el=:
+- =cj/debug-config-keymap= itself (debug umbrella; profiling is one subset).
+- All non-profiling debug entries (=toggle-debug-on-error=, compile menu, info menu, reload init).
+
+*** Keybindings (all under =C-c d=)
+
+| Key | Command | Status |
+|-----+---------+--------|
+| =p s= | =profiler-start= | Kept (escape hatch) |
+| =p h= | =profiler-stop= | Kept (escape hatch) |
+| =p r= | =profiler-report= | Kept (escape hatch) |
+| =p n= | =cj/profile-next-command= | New (primary) |
+| =p c= | =cj/profile-cancel= | New (abort armed window) |
+| =b= | =cj/time-region-or-sexp= | Renamed from =cj/benchmark-this-method=, same key |
+
+The new module owns the =which-key= label registration for these entries (matches the pattern in =config-utilities.el:20-36= for its own bindings). =config-utilities.el='s registration block drops the profiling labels.
+
+** Data Flow
+
+*** =cj/profile-next-command= (auto-stop wrapper)
+
+1. User invokes — =C-c d p n=.
+2. =cj/profile--arm=:
+   - Checks =cj/--profile-armed=; if =t=, signals =user-error= "Profile already armed."
+   - Calls =profiler-start ='cpu+mem=. If profiler externally active, catches that error and signals =user-error= "Profiler already active — =M-x profiler-stop= first."
+   - Registers a one-shot function on =post-command-hook=. Function removes itself on first call.
+   - Sets =cj/--profile-armed= to =t=, =message='s "Profile armed — run any command to capture."
+3. User performs the slow operation (e.g., =M-x org-capture=).
+4. After that command's command-loop iteration completes, the hook fires =cj/profile--disarm=:
+   - Removes itself from =post-command-hook=.
+   - Calls =profiler-stop= inside =unwind-protect= (always runs even if the operation threw).
+   - Stores the captured profile in =cj/--profile-last-result=.
+   - Clears =cj/--profile-armed=.
+   - =message='s "Profile captured. Opening report..." and calls =profiler-report=.
+
+*** =cj/time-region-or-sexp=
+
+1. User invokes — =C-c d b=.
+2. Wrapper: =(or (use-region-p) (sexp-at-point))= guard. If neither, =user-error= "No region active and no sexp at point."
+3. Reads the region or sexp as a string, calls =read-from-string= to convert to elisp form. Handles parse errors with =user-error=.
+4. Calls =(cj/time--expr FORM 1)= → returns =(elapsed-seconds gc-seconds gc-count)=.
+5. Wrapper formats: ="0.234s (GC: 0.012s, 3 collections)"= and emits via =message=.
+
+*** =cj/profile-cancel=
+
+1. User invokes — =C-c d p c=.
+2. If =cj/--profile-armed= is =nil=, =user-error= "No profile armed."
+3. Otherwise call =cj/profile--disarm= without opening the report.
+
+*** =cj/profile-report-show=
+
+Shows the buffer for =cj/--profile-last-result=. If =nil=, =user-error= "No profile captured yet."
+
+*** Pure helper signatures
+
+Both callable from batch and from tests:
+
+#+begin_src emacs-lisp
+(cj/profile--run-form FORM)        ; → opaque profile object
+(cj/time--expr FORM &optional REPS) ; → (elapsed gc-time gc-count)
+#+end_src
+
+** Error Handling
+
+Failure modes and responses:
+
+1. *Armed twice.* =cj/profile--arm= checks =cj/--profile-armed=; signals =user-error= naming the recovery (=cj/profile-cancel=). Recoverable.
+2. *Time with no region or sexp.* =user-error= naming both required states. No state to clean up.
+3. *=read-from-string= on malformed elisp.* =condition-case= around the parse; =user-error= on =end-of-file= / =invalid-read-syntax= naming the source text and parse error.
+4. *Form passed to =cj/profile--run-form= raises.* =unwind-protect= guarantees =profiler-stop= runs. Error propagates to caller — not swallowed. Profile data captured up to the throw is stored.
+5. *=C-g= during the armed window.* The =post-command-hook= still fires for =keyboard-quit=, so auto-stop runs. Profile may be empty/short, but no leaked state.
+6. *Profiler externally active.* =profiler-start= errors. Wrapper catches and signals =user-error= naming the resolution.
+7. *Disarm when not armed.* Silent no-op (idempotent cleanup).
+
+*Invariant:* the profiler never leaks. Every code path that calls =profiler-start= is wrapped in =unwind-protect= with =profiler-stop= in the cleanup branch.
+
+** Testing
+
+Per =.claude/rules/elisp-testing.md=: pure helpers get full Normal/Boundary/Error coverage, interactive wrappers get smoke tests or none.
+
+Test files (one per function, project convention):
+
+| File | Function tested | Test categories |
+|------+-----------------+-----------------|
+| =tests/test-debug-profiling--time-expr.el= | =cj/time--expr= | Normal: 3-tuple of numbers for a simple form. Boundary: empty =(progn)=, REPS=1, REPS=100. Error: form that raises propagates. |
+| =tests/test-debug-profiling--run-form.el= | =cj/profile--run-form= | Normal: returns a profile object; predicate true. Boundary: trivial form. Error: form raises → error propagates AND =profiler-running-p= is =nil= after (invariant test). |
+| =tests/test-debug-profiling--arm.el= | =cj/profile--arm= | Normal: sets =cj/--profile-armed= true, profiler running, hook registered. Boundary: armed-twice → =user-error=. Error: profiler externally active → =user-error=. |
+| =tests/test-debug-profiling--disarm.el= | =cj/profile--disarm= | Normal: clears flag, removes hook, stops profiler, populates =cj/--profile-last-result=. Boundary: disarm when not armed → silent no-op. Error: profiler already stopped → silent OK. |
+
+Skip from unit tests: interactive wrappers (=cj/profile-next-command=, =cj/time-region-or-sexp=, =cj/profile-cancel=, =cj/profile-report-show=). Each gets a single smoke test confirming dispatch to the right helper — no =cl-letf= on =read-from-string= / =use-region-p= / etc.
+
+Coverage target: the four pure helpers should be ≥90% per project rules (utilities + helpers tier).
+
+** Observability
+
+Light by design — the module is observability tooling, not an instrumented system.
+
+*=message= notifications:*
+- On arm: ="Profile armed — run any command to capture."=
+- On disarm: ="Profile captured (N.NN seconds). Opening report..."= (then opens report buffer).
+- On =cj/time-region-or-sexp= completion: ="0.234s (GC: 0.012s, 3 collections)"=.
+
+*=user-error= for invalid states.* Each error names the state and the recovery action. No silent failures.
+
+*No log accumulation, no external instrumentation, no metrics export.* =cj/--profile-last-result= keeps just the most recent capture so =cj/profile-report-show= can re-open without re-running.
+
+*Module-private state visibility:* =cj/--profile-armed= and =cj/--profile-last-result= are module-private (=cj/--= naming). Inspect ad-hoc via =M-: cj/--profile-last-result RET=. Not exposed as commands.
+
+* Open Questions
+
+- [ ] Default REPS value for =cj/time--expr= when called interactively. Brainstorm assumed =1=. Could plausibly default higher (e.g., =3=) to amortize first-call noise. Worth picking after using v1 a few times. Likely an =arch-decide= candidate if it has performance-impact implications.
+- [ ] =profiler-start= argument: ='cpu+mem= captures both CPU and memory; ='cpu= alone is faster and avoids GC interaction in the profile. Default to ='cpu+mem= per the v1 design but reconsider after the org-capture investigation reveals which signal mattered.
+
+* Next Steps
+
+1. Implement under =/start-work= against this design. Branch =feat/debug-profiling=.
+2. Decompose into commits per the design's split-for-testability boundary: tests-first per pure helper, then the interactive wrappers, then the migration of =cj/benchmark-this-method= and the =which-key= label cleanup in =config-utilities.el=.
+3. Use the new module on the queued [#B] org-capture investigation as the first real exercise.
