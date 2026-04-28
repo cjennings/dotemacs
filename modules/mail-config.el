@@ -120,7 +120,9 @@ Prompts user for the action when executing."
   (setq mu4e-html2text-command 'mu4e-shr2text)  ;; email conversion to html via shr2text
   (setq mu4e-mu-binary (executable-find "mu"))
   (setq mu4e-get-mail-command (concat (executable-find "mbsync") " -a"))    ;; command to sync mail
-  (setq mu4e-user-mail-address-list '("c@cjennings.net" "craigmartinjennings@gmail.com"))
+  (setq mu4e-user-mail-address-list '("c@cjennings.net"
+                                      "craigmartinjennings@gmail.com"
+                                      "craig.jennings@deepsat.com"))
   (setq mu4e-index-update-error-warning nil) ;; don't warn me about spurious sync issues
 
   ;; ------------------------------ Mu4e Contexts ------------------------------
@@ -149,41 +151,44 @@ Prompts user for the action when executing."
           :vars '((user-mail-address    . "c@cjennings.net")
                   (user-full-name       . "Craig Jennings")
                   (mu4e-drafts-folder   . "/cmail/Drafts")
-                  (mu4e-sent-folder     . "/cmail/Sent")))))
+                  (mu4e-sent-folder     . "/cmail/Sent")))
+
+         (make-mu4e-context
+          :name "deepsat.com"
+          :match-func
+          (lambda (msg)
+            (when msg
+              (string-prefix-p "/dmail" (mu4e-message-field msg :maildir))))
+          :vars '((user-mail-address        . "craig.jennings@deepsat.com")
+                  (user-full-name           . "Craig Jennings")
+                  (mu4e-drafts-folder       . "/dmail/Drafts")
+                  (mu4e-sent-folder         . "/dmail/Sent")
+                  (mu4e-starred-folder      . "/dmail/Starred")
+                  (mu4e-trash-folder        . "/dmail/Trash")))))
 
   (setq mu4e-maildir-shortcuts
         '(("/cmail/Inbox"       . ?i)
           ("/cmail/Sent"        . ?s)
           ("/gmail/Inbox"       . ?I)
-          ("/gmail/Sent"        . ?S)))
+          ("/gmail/Sent"        . ?S)
+          ("/dmail/Inbox"       . ?d)
+          ("/dmail/Sent"        . ?D)))
 
   ;; ------------------------------ Mu4e Bookmarks -----------------------------
 
+  ;; Landing-page bookmarks: just unread per account, for at-a-glance triage.
+  ;; Keys match the account letter (b<letter>): bc cmail, bg gmail, bd deepsat.
+  ;; Full account/folder navigation lives under C-; e (cj/email-map).
   (setq mu4e-bookmarks
-        `((:name "cjennings inbox"
-                 :query "maildir:/cmail/INBOX"
-                 :key ?i)
-          (:name "cjennings unread"
+        `((:name "cjennings unread"
                  :query "maildir:/cmail/INBOX AND flag:unread AND NOT flag:trashed"
-                 :key ?u)
-          (:name "cjennings starred"
-                 :query "maildir:/cmail/INBOX AND flag:flagged"
-                 :key ?s)
-          (:name "cjennings large"
-                 :query "maildir:/cmail/INBOX AND size:5M..999M"
-                 :key ?l)
-          (:name "gmail.com inbox"
-                 :query "maildir:/gmail/INBOX"
-                 :key ?I)
+                 :key ?c)
           (:name "gmail.com unread"
                  :query "maildir:/gmail/INBOX AND flag:unread AND NOT flag:trashed"
-                 :key ?U)
-          (:name "gmail.com starred"
-                 :query "maildir:/gmail/INBOX AND flag:flagged"
-                 :key ?S)
-          (:name "gmail.com large"
-                 :query "maildir:/gmail/INBOX AND size:5M..999M"
-                 :key ?L)))
+                 :key ?g)
+          (:name "deepsat.com unread"
+                 :query "maildir:/dmail/INBOX AND flag:unread AND NOT flag:trashed"
+                 :key ?d)))
 
   (defun no-auto-fill ()
     "Turn off \'auto-fill-mode\'."
@@ -317,16 +322,52 @@ Prompts user for the action when executing."
   :defer 1
   :after (org mu4e)
   :preface
+	(defvar-keymap cj/mail-cmail-map
+	  :doc "cmail account navigation"
+	  "i" (lambda () (interactive) (mu4e-search "maildir:/cmail/INBOX"))
+	  "u" (lambda () (interactive) (mu4e-search "maildir:/cmail/INBOX AND flag:unread AND NOT flag:trashed"))
+	  "s" (lambda () (interactive) (mu4e-search "maildir:/cmail/INBOX AND flag:flagged"))
+	  "l" (lambda () (interactive) (mu4e-search "maildir:/cmail/INBOX AND size:5M..999M")))
+	(defvar-keymap cj/mail-dmail-map
+	  :doc "deepsat account navigation"
+	  "i" (lambda () (interactive) (mu4e-search "maildir:/dmail/INBOX"))
+	  "u" (lambda () (interactive) (mu4e-search "maildir:/dmail/INBOX AND flag:unread AND NOT flag:trashed"))
+	  "s" (lambda () (interactive) (mu4e-search "maildir:/dmail/INBOX AND flag:flagged"))
+	  "l" (lambda () (interactive) (mu4e-search "maildir:/dmail/INBOX AND size:5M..999M")))
+	(defvar-keymap cj/mail-gmail-map
+	  :doc "gmail account navigation"
+	  "i" (lambda () (interactive) (mu4e-search "maildir:/gmail/INBOX"))
+	  "u" (lambda () (interactive) (mu4e-search "maildir:/gmail/INBOX AND flag:unread AND NOT flag:trashed"))
+	  "s" (lambda () (interactive) (mu4e-search "maildir:/gmail/INBOX AND flag:flagged"))
+	  "l" (lambda () (interactive) (mu4e-search "maildir:/gmail/INBOX AND size:5M..999M")))
 	(defvar-keymap cj/email-map
-	  :doc "Keymap for email operations"
-	  "a" #'org-msg-attach-attach
-	  "d" #'org-msg-attach-delete)
+	  :doc "Email operations and account navigation"
+	  "A" #'org-msg-attach-attach
+	  "D" #'org-msg-attach-delete
+	  "c" cj/mail-cmail-map
+	  "d" cj/mail-dmail-map
+	  "g" cj/mail-gmail-map)
 	(keymap-set cj/custom-keymap "e" cj/email-map)
 	(with-eval-after-load 'which-key
 	  (which-key-add-key-based-replacements
         "C-; e" "email menu"
-        "C-; e a" "attach file"
-        "C-; e d" "delete attachment"))
+        "C-; e A" "attach file"
+        "C-; e D" "delete attachment"
+        "C-; e c" "cmail"
+        "C-; e c i" "cmail inbox"
+        "C-; e c u" "cmail unread"
+        "C-; e c s" "cmail starred"
+        "C-; e c l" "cmail large"
+        "C-; e d" "deepsat"
+        "C-; e d i" "deepsat inbox"
+        "C-; e d u" "deepsat unread"
+        "C-; e d s" "deepsat starred"
+        "C-; e d l" "deepsat large"
+        "C-; e g" "gmail"
+        "C-; e g i" "gmail inbox"
+        "C-; e g u" "gmail unread"
+        "C-; e g s" "gmail starred"
+        "C-; e g l" "gmail large"))
   :bind
   ;; more intuitive keybinding for attachments
   (:map org-msg-edit-mode-map
