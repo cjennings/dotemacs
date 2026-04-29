@@ -1,0 +1,316 @@
+#+TITLE: Design — gloss (Glossary Lookup with Online-Sourced Selection)
+#+DATE: 2026-04-28
+#+STATUS: Draft
+
+* Problem
+
+A personal glossary inside Emacs, modelled on the existing =quick-sdcv= UX (=C-h d=) but for self-curated terms rather than packaged dictionaries. =C-h g= prompts for a term (defaulting to word-at-point), looks it up in a single git-tracked org file, and shows the definition in a side buffer that =q= dismisses. On a local miss, the package fetches candidate definitions from an online source, lets the user pick one, and saves it with provenance. The same org file feeds =org-drill= for spaced-repetition study.
+
+The pain point: domain jargon — government acronyms, technical terms, philosophy vocabulary, project-specific names — doesn't live in any general dictionary, so existing tools like =quick-sdcv= can't help. A personal glossary that grows by use (encounter term → save it once → it's permanently looked-up-able and study-card-able) closes that gap.
+
+* Non-Goals
+
+The following are explicitly out of scope for v1. Each is a defensible v2+ topic on its own.
+
+- *Multi-language support.* English only. Wiktionary returns French/Latin/etc. — v1 ignores everything but the =en= key.
+- *Synonyms, cross-references, related terms.* Even when the upstream source returns them, v1 stores only the picked definition.
+- *Audio pronunciation.* Not fetched, not played.
+- *Etymology, usage notes, parsed examples.* Discarded during HTML strip.
+- *Multiple glossaries / domain separation.* One file, one glossary.
+- *Backup or sync infrastructure.* Delegated to git on whatever path =gloss-file= points at.
+- *Org-drill scheduling control.* The exporter prepares entries; =org-drill= itself runs unmodified.
+
+In scope (kept after triage): edit-in-place via =C-h g e=, which jumps to the source file at the entry's heading.
+
+* Approaches Considered
+
+Six approaches evaluated during brainstorm. Three conventional, three tail samples for diversity.
+
+** Recommended: Layered multi-module package
+
+Five =.el= files, each owning one concern: =gloss-core= (data), =gloss-fetch= (network), =gloss-display= (UI), =gloss-drill= (drill export), =gloss= (orchestration entry point). Each layer mocks at its own natural boundary; no layer mocks another layer's internals.
+
+*Why this over the alternatives.* The codebase already prefers layering — =coverage-core= + =coverage-elisp= split, Hugo pure-helpers + interactive wrappers, LSP file-watch defvar + function. The four concerns (data, fetch, display, drill) have genuinely different test boundaries (file I/O, HTTP, mode UI, =org-element=). Mixing them in one file would force overmocking, which the project's testing rules flag as a smell. The package is also public-style — clear module boundaries reward cold readers.
+
+*What's traded away.* About 30 minutes more structural setup at the start, in exchange for boilerplate that may never pay off if the package stays personal forever. Cheap trade against the testing and reading wins.
+
+** Rejected: Single-file quick-sdcv-clone
+
+One =.el= file (~400 lines) covering all four concerns. Simplest path, lowest dependency footprint, but everything (data, HTTP, mode definition, drill) cohabits a single namespace. Test isolation gets awkward; refactor cost grows when one piece needs replacing.
+
+** Rejected: Backend-pluggable registry
+
+A =glossary-backend= protocol covering both local-org and online sources, with =lookup= / =save= / =list= operations. Local and online become interchangeable backends. Real future-proofing, but for v1 with two backends and probably never a third, the protocol is overkill — YAGNI risk. The forward-compat shape we did adopt (the =gloss-fetch-sources= registry, see Architecture) gets the same benefit at a fraction of the design weight, scoped only to where source variety is real.
+
+** Rejected: quick-sdcv + generated StarDict
+
+Round-trip the org file through StarDict format on save; reuse =quick-sdcv='s UI verbatim. Reuses 100% of an existing UI but loses provenance metadata in the round-trip, fights drill (which reads org, not StarDict), and forces a binary intermediate format for what should be a plain-text data store.
+
+** Rejected: Org-roam node per term
+
+Each entry is its own =org-roam= node. Free fuzzy/exact title search, free backlinks. But it's a heavy dependency for an otherwise self-contained package, file-explodes (1000 terms = 1000 files), and contradicts the locked single-file storage decision.
+
+** Rejected: Lazy-reactive minor mode
+
+Passive recognition — =gloss-mode= scans buffer text for known terms, underlines them, hover/click reveals definitions. Different and arguably more-natural mental model, but it reframes the brief (active =C-h g= lookup is what was asked for) and doesn't naturally support online fallback or auto-add. Probably belongs as a v3 feature on top of the layered architecture, not as the architecture itself.
+
+* Design
+
+** Architecture
+
+Five =.el= files:
+
+#+begin_example
+gloss-core.el      data layer — org file I/O + in-memory cache
+gloss-fetch.el     network layer — Wiktionary REST + HTML strip
+gloss-display.el   UI layer — side buffer + picker
+gloss-drill.el     drill export — :drill: tag + twosided property
+gloss.el           entry point — defcustoms, prefix keymap, user commands
+#+end_example
+
+*Public API by layer.*
+
+=gloss-core=: =gloss-core-lookup TERM=, =gloss-core-save TERM DEFINITION SOURCE=, =gloss-core-list=, =gloss-core-find-buffer-position TERM=.
+
+=gloss-fetch=: =gloss-fetch-definitions TERM= → =(:ok DEFS) | (:empty :no-defs SOURCES :failed SOURCES)=. Internally a registry: =gloss-fetch--sources= alist (source-symbol → fetcher function), walked in order per the user-facing =gloss-fetch-sources= defcustom.
+
+=gloss-display=: =gloss-display-show-entry TERM BODY=, =gloss-display-pick-definition TERM DEFINITIONS=. Defines =gloss-mode= (derived from =special-mode=, =q= quits).
+
+=gloss-drill=: =gloss-drill-export-all=, =gloss-drill-untag-all=. Operates on the org file via =org-element=.
+
+=gloss=: =defcustom gloss-file= (path), =gloss-prefix-map= for =C-h g=, user commands =gloss-lookup=, =gloss-add=, =gloss-edit=, =gloss-fetch-online=, =gloss-drill-export=.
+
+** Data Flow
+
+*Shapes.*
+
+A definition (in flight from fetch through display to save) is a plist:
+
+#+begin_src emacs-lisp
+(:source wiktionary :text "Reference to something earlier in the discourse...")
+#+end_src
+
+An entry (saved in cache and on disk) is a plist:
+
+#+begin_src emacs-lisp
+(:term "anaphora"
+ :body "Reference to something earlier in the discourse..."
+ :source wiktionary
+ :added "2026-04-28"
+ :marker #<marker at 1247 in gloss.org>)
+#+end_src
+
+The cache is a hash table, term-string → entry-plist. The org file is the source of truth; the cache is a read-side index.
+
+*Lookup flow (=C-h g=).*
+
+1. Read input — word-at-point if available, else minibuffer prompt.
+2. =gloss-core-lookup TERM=. Cache loaded if cold.
+3. Hit → =gloss-display-show-entry=. Done.
+4. Miss → silent fall-through to =gloss-fetch-definitions TERM=.
+5. Orchestrate on result:
+   - 0 definitions or all-failures → side buffer message (see Error Handling).
+   - 1 definition → auto-save via =gloss-core-save=, then =gloss-display-show-entry=.
+   - >1 definitions → =gloss-display-pick-definition= → user picks → =gloss-core-save= → =gloss-display-show-entry=.
+
+*Add flow (=C-h g a=).*
+
+=gloss-add= prompts for term and body (small temp buffer for multi-line body, =C-c C-c= accepts). =gloss-core-save TERM BODY 'manual=. Then =gloss-display-show-entry=.
+
+*Edit flow (=C-h g e=).*
+
+=gloss-edit= resolves the term to a buffer position via =gloss-core-find-buffer-position=. Opens the org file at that heading in the *source* buffer (not the side buffer). User edits inline. On save, the buffer-local =after-save-hook= refreshes the cache for that single term.
+
+*Drill export (=C-h g D=).*
+
+=gloss-drill-export-all= walks the org file via =org-element=, ensures every term heading has =:drill:= tag and =:DRILL_CARD_TYPE: twosided= property. =M-x org-drill= runs the session — gloss does not wrap or invoke =org-drill= itself.
+
+** Persistence
+
+*File shape.* Single org file at =gloss-file= (default: =(expand-file-name "gloss.org" (or org-directory user-emacs-directory))=). One =* term= heading per entry, alphabetical order maintained on insert. Each entry has a =:PROPERTIES:= drawer with =:SOURCE:= and =:ADDED:=. Body is plain text immediately under the heading.
+
+#+begin_example
+#+TITLE: Glossary
+#+STARTUP: showall
+
+* anaphora
+:PROPERTIES:
+:SOURCE:   wiktionary
+:ADDED:    2026-04-28
+:END:
+Reference to something earlier in the discourse...
+
+* SBIR
+:PROPERTIES:
+:SOURCE:   wiktionary
+:ADDED:    2026-04-28
+:END:
+Initialism of Small Business Innovation Research...
+#+end_example
+
+After =gloss-drill-export-all=, the heading line gains a =:drill:= tag and the properties drawer gains =:DRILL_CARD_TYPE: twosided=.
+
+*Cache lifecycle.* Hash table loaded lazily on first lookup of the session. Populated by reading =gloss-file= once and parsing with =org-element-parse-buffer=. Subsequent lookups hit the cache directly.
+
+*Cache invalidation.* Four triggers, in order of cost:
+
+1. =gloss-core-save= mutates the cache directly when it writes.
+2. *mtime check on every lookup.* =file-attributes= the file before each =gloss-core-lookup= returns; if mtime > cached-mtime, reload before answering. Sub-millisecond cost; catches every out-of-band edit (other Emacs session, =git pull=, hand-edit, =sed=).
+3. =gloss-edit='s buffer-local =after-save-hook= updates the single edited term immediately; overlaps with #2 but doesn't wait for the next lookup.
+4. Manual =gloss-reload= command — nuclear option for paranoia.
+
+=file-notify-add-watch= rejected: platform-specific backend, async callback complicates the model, mtime path is already sub-millisecond.
+
+*Write strategy.* Append-on-add via direct buffer editing (=find-file-noselect=, insert at the alphabetically-correct heading position, save, kill the buffer if not previously open). No journal, no temp file — org-mode's =auto-save-mode= and the user's git tracking provide durability. Single-user, single-Emacs assumed; concurrent access isn't a concern.
+
+*Alphabetical order.* Maintained on insert via case-insensitive string compare. Cheap; the file stays diff-clean (only the inserted block changes).
+
+** Error Handling
+
+*Per-source status taxonomy.* Five internal values; three user-facing rollups.
+
+#+begin_src emacs-lisp
+;; Internal per-source result:
+(:source SYM :status STATUS :reason STRING)
+
+;; STATUS values:
+;;   :ok :defs (def1 def2 ...)   — success
+;;   :no-defs                    — server reached, term not there (HTTP 404 or empty 200)
+;;   :unreachable                — network problem (DNS, refused, timeout)
+;;   :server-error               — HTTP 5xx, malformed JSON, schema mismatch, HTTP 4xx other than 404/429
+;;   :rate-limited               — HTTP 429
+#+end_src
+
+*=:reason= strings* carry the technical detail (=timeout (5s)=, =HTTP 503=, =malformed JSON: ...=) and land in =*gloss-debug*=. They are never user-facing.
+
+*User-facing rollup.* =gloss-fetch-definitions= aggregates per-source results into:
+
+#+begin_src emacs-lisp
+(:ok DEFS)                                       ;; any source returned >=1 def
+(:empty :no-defs (...) :failed (...))            ;; everything else
+#+end_src
+
+=:failed= unions =:unreachable=, =:server-error=, =:rate-limited=.
+
+| Result shape                              | Message                                                            |
+|-------------------------------------------+--------------------------------------------------------------------|
+| Every source =:no-defs=, none failed      | "No definition for X in Wiktionary."                               |
+| Every source failed, none =:no-defs=      | "Couldn't reach Wiktionary."                                       |
+| Mix of =:no-defs= and failures            | "No definition in Wiktionary; couldn't reach DictionaryAPI."       |
+| Any =:ok= with defs                       | Silent on others — picker shows what came back                     |
+
+When v2 starts surfacing =:rate-limited= regularly, the rollup wording will gain a third visible category. v1 with no-key Wiktionary doesn't need it.
+
+*libxml as a precondition, not a per-source failure.* First time =gloss-fetch-definitions= runs, probe =(libxml-parse-html-region 1 1)= on a temp buffer. If unavailable, online fetching is disabled package-wide for the session with a one-shot =user-error=: "Online fetch requires Emacs built with libxml2; manual add still works." Subsequent online attempts in the session short-circuit to that message.
+
+*Partial-success on per-sense HTML failures.* If libxml is available but fails on a specific sense's content, drop that sense and return the rest. Source status stays =:ok= with N-1 entries; the dropped sense logs to =*gloss-debug*=. A single bad sense doesn't poison the whole source.
+
+*Storage failures.* First call creates =gloss-file= and any missing parent directory with a =#+TITLE: Glossary= header. Permission denied raises =user-error= naming the path. Corrupt org file (=org-element-parse-buffer= raises) preserves the existing cache and surfaces "glossary file corrupt at line N; cache not refreshed" — operations fall back to the stale cache until the user fixes the file and runs =gloss-reload=. Term collision (saving an existing term) prompts: replace, append-with-separator, or cancel.
+
+*Drill.* =org-drill= checked via =featurep= before export runs. If absent: =user-error= with install hint.
+
+*User cancellations.* =C-g= during the picker → no save, side buffer shows the local-miss state. Empty term input from =gloss-add= → re-prompt once, then abort silently. Cancelled at the term-collision prompt → no write.
+
+** Testing
+
+Per-function test files; three categories (Normal/Boundary/Error) per function. TDD by default. Real production code via =require=, never inlined.
+
+*=gloss-core=.* Temp files + real =org-element-parse-buffer=. No mocking — exercises the actual file I/O and parser.
+
+#+begin_example
+test-gloss-core--lookup.el
+test-gloss-core--save.el
+test-gloss-core--invalidate-on-mtime.el
+test-gloss-core--corrupt-file-preserves-cache.el
+test-gloss-core--alphabetical-insert.el
+test-gloss-core--first-call-creates-file.el
+#+end_example
+
+*=gloss-fetch=.* =cl-letf= mock on =url-retrieve-synchronously=, injecting canned response buffers. Captured Wiktionary fixtures in =tests/fixtures/wiktionary-*.json= — real responses for SBIR, anaphora, API, frozen once, replayed forever.
+
+#+begin_example
+test-gloss-fetch--definitions-200-returns-ok.el
+test-gloss-fetch--definitions-404-returns-no-defs.el
+test-gloss-fetch--definitions-500-returns-server-error.el
+test-gloss-fetch--definitions-timeout-returns-unreachable.el
+test-gloss-fetch--strip-html.el
+test-gloss-fetch--multi-source-walks-registry.el
+test-gloss-fetch--libxml-probe.el
+#+end_example
+
+*=gloss-display=.* The candidate-formatting helper =gloss-display--format-candidate PLIST → "[wiktionary] text..."= is pure → full N/B/E coverage. =gloss-display-show-entry= and =gloss-mode= get one smoke test each (Emacs already tests =switch-to-buffer= and major-mode definition).
+
+#+begin_example
+test-gloss-display--format-candidate.el
+test-gloss-display--show-entry-smoke.el
+#+end_example
+
+*=gloss-drill=.* Temp file + real =org-element=. Tests assert tag/property changes on entries.
+
+#+begin_example
+test-gloss-drill--export-all-tags-untagged.el
+test-gloss-drill--export-all-skips-already-tagged.el
+test-gloss-drill--export-all-no-orgdrill-installed.el
+test-gloss-drill--untag-all.el
+#+end_example
+
+*=gloss=.* The orchestration policy =gloss--orchestrate-fetch-result RESULT → SYMBOL= is a pure pattern-matcher. Tested with shaped inputs covering every result variant.
+
+#+begin_example
+test-gloss--orchestrate-fetch-result.el
+#+end_example
+
+*Integration tests.* Three small ones, each with a docstring naming participants per project convention.
+
+#+begin_example
+test-integration-gloss-lookup-flow-local-hit.el
+test-integration-gloss-lookup-flow-online-fall-through.el
+test-integration-gloss-lookup-flow-online-failure.el
+#+end_example
+
+*Coverage targets.* 90%+ on =gloss-core=, =gloss-fetch=, =gloss-drill=, and pure helpers in =gloss-display= / =gloss=. 70%+ on display mode-glue. Overall ≥80%.
+
+** Observability
+
+*=*gloss-debug*= log buffer.* Off until =gloss-debug= defcustom is non-nil, or session-only =gloss-toggle-debug= flips it. One timestamped, layer-prefixed line per significant event.
+
+#+begin_example
+2026-04-28 11:14:02 [fetch:wiktionary]  GET /API → 200, 12 senses
+2026-04-28 11:14:02 [fetch:wiktionary]  sense 7 HTML parse failed, dropping
+2026-04-28 11:14:02 [core]              cache hit for "anaphora"
+2026-04-28 11:14:09 [core]              mtime change detected, reloading cache (47 terms)
+2026-04-28 11:14:11 [save]              "API" → wiktionary, 11 alts not saved
+#+end_example
+
+Per-source statuses from Error Handling land here verbatim. No personal data beyond user-supplied terms.
+
+*=*Messages*= for user-facing events.* Saves, picker-shown, "no definition found" messages — short single-line =message= calls, persisted in =*Messages*= via Emacs idiom. Strict separation: =*Messages*= for things the user did or asked for; =*gloss-debug*= for everything else.
+
+*Inspection commands.*
+
+- =gloss-list-terms= — completing-read over every term in the cache. Pick one to jump to it.
+- =gloss-stats= — small buffer summarizing total terms, breakdown by =:source=, count of drill-tagged entries, file size, cache mtime.
+
+No metrics export, no telemetry, no profiling hooks — v3 territory if the package ever needs them.
+
+* Open Questions (will become ADRs)
+
+Each was decided during the brainstorm. Listed for traceability; each becomes an ADR in the gloss repo's =docs/decisions/=.
+
+- [ ] *ADR-1: storage path default* → =(expand-file-name "gloss.org" (or org-directory user-emacs-directory))=. Rationale: respects the user's existing =org-directory= convention; falls back gracefully.
+- [ ] *ADR-2: auto-fetch on local miss* → silent fall-through with graceful network-failure path. Rationale: y/n prompt is yes 99% of the time and an annoyance the other 1%; the offline case is better handled by detecting the failure than by pre-asking permission.
+- [ ] *ADR-3: drill direction* → =:DRILL_CARD_TYPE: twosided=. Rationale: tests both recognition and recall over time without doubling the deck.
+- [ ] *ADR-4: HTML strip strategy* → =libxml-parse-html-region= (plain text only, no italic/bold preservation). Rationale: more robust than regex on edge cases; libxml2 is standard on Linux/Mac; ~30 lines.
+
+* Next Steps
+
+1. *Scaffold the repo.* =~/code/gloss= with the claude-template structure: =.ai/= and =todo.org= and =inbox/= gitignored, =Makefile= for tests/lint/compile, =README.org= placeholder, =LICENSE=, package skeleton (=gloss.el= with package-header autoload entry).
+2. *Set up remotes.* Bare repo on cjennings.net at =/var/cjennings/git/gloss.git/= with the existing post-receive hook pattern that mirrors to =github.com/cjennings/gloss=.
+3. *Decompose into todo.org tasks.* One TODO per layer, in implementation order: core → fetch → display → drill → entry-point → integration tests → README. Each task carries its acceptance criteria from this design.
+4. *Implement v1 layer by layer*, TDD per project rules. Run =/start-work= once per task.
+5. *First-week shakedown.* Use the package on real terms for a week. File issues against any rough edges as v1.1 tasks.
+6. *Record the four ADRs* in =docs/decisions/= once the repo exists.
+
+* Status
+
+Draft. Pending: repo scaffold, ADR records, implementation.
