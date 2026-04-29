@@ -35,6 +35,13 @@ f="$(jq -r '.tool_input.file_path // .tool_response.filePath // empty')"
 [ -z "$f" ] && exit 0
 [ "${f##*.}" = "el" ] || exit 0
 
+# Only validate in-tree files. Files outside PROJECT_ROOT are owned by
+# their own project's hooks (when a Claude session runs there).
+case "$f" in
+    "$PROJECT_ROOT"/*) ;;  # in-tree, continue
+    *) exit 0 ;;            # out-of-tree, skip
+esac
+
 MAX_AUTO_TEST_FILES=20  # skip if more matches than this (large test suites)
 
 # --- Phase 1: syntax + byte-compile ---
