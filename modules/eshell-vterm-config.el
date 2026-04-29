@@ -122,9 +122,9 @@
     (eshell-send-input)))
 
 (defun eshell/find-using-dired (file-pattern)
-  "Find a file FILE-PATTERN' using 'find-name-dired'."
+  "Find a file matching FILE-PATTERN using `find-name-dired'."
   (let ((escaped-pattern (regexp-quote file-pattern)))
-    (find-name-dired . escaped-pattern)))
+    (find-name-dired default-directory escaped-pattern)))
 
 (defun cj/eshell-delete-window-on-exit ()
   "Close the eshell window when exiting."
