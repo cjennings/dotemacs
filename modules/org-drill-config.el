@@ -19,7 +19,7 @@
 ;; --------------------------------- Org Drill ---------------------------------
 
 (use-package org-drill
-  :vc (:url "https://github.com/cjennings/org-drill"
+  :vc (:url "git@cjennings.net:org-drill.git"
        :branch "main"
        :rev :newest)
   :after (org org-capture)
