@@ -158,6 +158,7 @@
 (require 'lorem-optimum) ;; best fake latin text generator ever
 (require 'jumper)  ;; navigation help for large projects/lotsa buffers
 (require 'system-commands) ;; reboot, logout, etc.
+(require 'gloss-config)  ;; personal glossary on C-h g; v1 in shakedown
 
 ;; ---------------------------------- Wrap Up ----------------------------------
 
