@@ -84,33 +84,38 @@ Signals `user-error' if METHOD-SYMBOL is nil or not fboundp."
 
 ;;; ----------------------------- Config Compilation ----------------------------
 
-(defun cj/recompile-emacs-home()
+(defun cj/--recompile-emacs-home (dir &optional native-p)
+  "Delete all .elc/.eln files under DIR, then recompile.
+NATIVE-P chooses native compilation when non-nil, byte otherwise.
+Also removes the eln (native) or elc (byte) cache directory.
+Returns the compilation method used: \\='native or \\='byte."
+  (let ((elt-dir (expand-file-name (if native-p "eln" "elc") dir)))
+    (message "Deleting all compiled files in %s" dir)
+    (dolist (file (directory-files-recursively dir "\\(\\.elc\\|\\.eln\\)$"))
+      (delete-file file))
+    (when (file-directory-p elt-dir)
+      (delete-directory elt-dir t t))
+    (cond
+     (native-p
+      (message "Natively compiling all emacs-lisp files in %s" dir)
+      (setq comp-async-report-warnings-errors nil)
+      (native-compile-async dir 'recursively)
+      'native)
+     (t
+      (message "Byte-compiling all emacs-lisp files in %s" dir)
+      (byte-recompile-directory dir 0)
+      'byte))))
+
+(defun cj/recompile-emacs-home ()
   "Delete all compiled files in the Emacs home before recompiling.
 Recompile natively when supported, otherwise fall back to byte compilation."
   (interactive)
-  (let* ((native-comp-supported (boundp 'native-compile-async))
-         (elt-dir
-          (expand-file-name (if native-comp-supported "eln" "elc")
-                            user-emacs-directory))
-         (message-format
-          (format "Please confirm recursive %s recompilation of %%s: "
-                  (if native-comp-supported "native" "byte")))
-         (compile-message (format "%scompiling all emacs-lisp files in %%s"
-                                  (if native-comp-supported "Natively " "Byte-"))))
-    (if (yes-or-no-p (format message-format user-emacs-directory))
-        (progn
-          (message "Deleting all compiled files in %s" user-emacs-directory)
-          (dolist (file (directory-files-recursively user-emacs-directory
-                                                     "\\(\\.elc\\|\\.eln\\)$"))
-            (delete-file file))
-          (when (file-directory-p elt-dir)
-            (delete-directory elt-dir t t))
-          (message compile-message user-emacs-directory)
-          (if native-comp-supported
-              (progn
-                (setq comp-async-report-warnings-errors nil)
-                (native-compile-async user-emacs-directory 'recursively))
-            (byte-recompile-directory user-emacs-directory 0)))
+  (let* ((native (boundp 'native-compile-async))
+         (mode-word (if native "native" "byte")))
+    (if (yes-or-no-p
+         (format "Please confirm recursive %s recompilation of %s: "
+                 mode-word user-emacs-directory))
+        (cj/--recompile-emacs-home user-emacs-directory native)
       (message "Cancelled recompilation of %s" user-emacs-directory))))
 
 (keymap-set cj/debug-config-keymap "c h" 'cj/recompile-emacs-home)
