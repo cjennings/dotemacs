@@ -11,10 +11,10 @@
 ;; ----------------------------------- Wttrin ----------------------------------
 
 (use-package wttrin
-  ;; Uncomment the next line to use vc-install instead of local directory:
-  ;; :vc (:url "https://github.com/cjennings/emacs-wttrin" :rev :newest)
+  :vc (:url "git@cjennings.net:emacs-wttrin.git"
+       :branch "main"
+       :rev :newest)
   :demand t  ;; REQUIRED: mode-line must start at Emacs startup
-  :load-path "/home/cjennings/code/emacs-wttrin"
   :preface
   ;; Change this to t to enable debug logging
   ;; (setq wttrin-debug t)
