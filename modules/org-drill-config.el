@@ -22,6 +22,7 @@
   :vc (:url "git@cjennings.net:org-drill.git"
        :branch "main"
        :rev :newest)
+  ;; :load-path "~/code/org-drill"  ;; uncomment + comment :vc above for local dev
   :after (org org-capture)
   :demand t
   :commands (org-drill cj/drill-start)

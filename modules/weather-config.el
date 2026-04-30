@@ -14,6 +14,7 @@
   :vc (:url "git@cjennings.net:emacs-wttrin.git"
        :branch "main"
        :rev :newest)
+  ;; :load-path "~/code/emacs-wttrin"  ;; uncomment + comment :vc above for local dev
   :demand t  ;; REQUIRED: mode-line must start at Emacs startup
   :preface
   ;; Change this to t to enable debug logging
