@@ -61,17 +61,25 @@ time is displayed."
                 (float-time (time-subtract (current-time) ,nowvar))))
            (message "%s... done (%.3fs)" ,title elapsed))))))
 
+(defun cj/--benchmark-method (title method-symbol)
+  "Time the execution of METHOD-SYMBOL with display TITLE.
+Returns the value returned by METHOD-SYMBOL.
+Signals `user-error' if METHOD-SYMBOL is nil or not fboundp."
+  (unless (and method-symbol (fboundp method-symbol))
+    (user-error "Invalid method: %s" method-symbol))
+  (with-timer title
+    (funcall method-symbol)))
+
 (defun cj/benchmark-this-method ()
   "Prompt for a title and method name, then time the execution of the method."
   (interactive)
-  (let ((title (read-string "Enter the title for the timing: "))
-        (method-name (completing-read "Enter the method name to time: " obarray
-                                      #'fboundp t)))
-    (let ((method-symbol (intern-soft method-name)))
-      (if (and method-symbol (fboundp method-symbol))
-          (with-timer title
-            (funcall method-symbol))
-        (message "Invalid method name: %s" method-name)))))
+  (let* ((title (read-string "Enter the title for the timing: "))
+         (method-name (completing-read "Enter the method name to time: " obarray
+                                       #'fboundp t))
+         (method-symbol (intern-soft method-name)))
+    (condition-case err
+        (cj/--benchmark-method title method-symbol)
+      (user-error (message "%s" (error-message-string err))))))
 (keymap-set cj/debug-config-keymap "b" #'cj/benchmark-this-method)
 
 ;;; ----------------------------- Config Compilation ----------------------------
