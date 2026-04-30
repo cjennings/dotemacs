@@ -125,8 +125,8 @@ find /usr/share/zoneinfo -type f ! -name `posixrules' \\
 (defun cj/detect-system-timezone ()
   "Detect the system timezone in IANA format (e.g., `America/Los_Angeles').
 Tries multiple methods in order of reliability:
-1. Environment variable TZ
-2. File comparison of /etc/localtime with zoneinfo database
+1. File comparison of /etc/localtime with zoneinfo database
+2. Environment variable TZ
 3. /etc/timezone file contents
 4. /etc/localtime symlink target"
   (or
