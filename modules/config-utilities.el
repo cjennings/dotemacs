@@ -107,18 +107,27 @@ Recompile natively when supported, otherwise fall back to byte compilation."
 
 (keymap-set cj/debug-config-keymap "c h" 'cj/recompile-emacs-home)
 
+(defun cj/--delete-compiled-files-in-dir (dir)
+  "Delete every .elc and .eln file under DIR recursively.
+Returns the count of files deleted."
+  (require 'find-lisp)
+  (let ((count 0))
+    (mapc (lambda (path)
+            (when (or (string-suffix-p ".elc" path)
+                      (string-suffix-p ".eln" path))
+              (delete-file path)
+              (setq count (1+ count))))
+          (find-lisp-find-files dir ""))
+    count))
+
 (defun cj/delete-emacs-home-compiled-files ()
-  "Delete all compiled files recursively in \='user-emacs-directory\='."
+  "Delete all compiled files recursively in `user-emacs-directory'."
   (interactive)
   (message "Deleting compiled files under %s. This may take a while."
            user-emacs-directory)
-  (require 'find-lisp)    ;; make sure the package is required
-  (mapc (lambda (path)
-          (when (or (string-suffix-p ".elc" path)
-                    (string-suffix-p ".eln" path))
-            (delete-file path)))
-        (find-lisp-find-files user-emacs-directory ""))
-  (message "Done. Compiled files removed under %s" user-emacs-directory))
+  (let ((count (cj/--delete-compiled-files-in-dir user-emacs-directory)))
+    (message "Done. %d compiled file(s) removed under %s"
+             count user-emacs-directory)))
 (keymap-set cj/debug-config-keymap "c d" 'cj/delete-emacs-home-compiled-files)
 
 (defun cj/compile-this-elisp-buffer ()
