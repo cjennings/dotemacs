@@ -19,6 +19,7 @@
   :vc (:url "git@cjennings.net:gloss.git"
        :branch "main"
        :rev :newest)
+  ;; :load-path "~/code/gloss"  ;; uncomment + comment :vc above for local dev
   :demand t
   :commands (gloss-lookup gloss-add gloss-edit
              gloss-fetch-online gloss-list-terms gloss-stats

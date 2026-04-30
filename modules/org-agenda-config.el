@@ -361,6 +361,7 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   :vc (:url "git@cjennings.net:chime.git"
        :branch "main"
        :rev :newest)
+  ;; :load-path "~/code/chime"  ;; uncomment + comment :vc above for local dev
   :demand t
   :after alert  ; Removed org-agenda - Chime requires it internally
   :init
