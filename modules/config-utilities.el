@@ -306,6 +306,69 @@ Returns the count of files deleted."
 
 ;; ------------------------ Validate Org Agenda Entries ------------------------
 
+(defun cj/--validate-timestamps-in-buffer (file)
+  "Scan the current buffer for invalid org timestamps.
+Walks every headline.  Checks DEADLINE / SCHEDULED / TIMESTAMP
+properties plus inline timestamps in headline contents.  An inline
+match whose raw text equals a property timestamp on the same headline
+is not reported a second time.
+
+Returns a list of (FILE POS HEADLINE-TEXT PROP TIMESTAMP-STRING) tuples
+in document order.  FILE is the value passed in; the function does not
+look it up itself."
+  (require 'org)
+  (require 'org-element)
+  (let ((invalid '())
+        (props '("DEADLINE" "SCHEDULED" "TIMESTAMP"))
+        (parse-tree (org-element-parse-buffer 'headline)))
+    (org-element-map parse-tree 'headline
+      (lambda (hl)
+        (let ((headline-text (org-element-property :raw-value hl))
+              (begin-pos (org-element-property :begin hl))
+              (property-timestamps '()))
+          (dolist (prop props)
+            (let ((timestamp (org-element-property
+                              (intern (concat ":" (downcase prop))) hl)))
+              (when timestamp
+                (let ((time-str (org-element-property :raw-value timestamp)))
+                  (push time-str property-timestamps)
+                  (unless (ignore-errors (org-time-string-to-absolute time-str))
+                    (push (list file begin-pos headline-text prop time-str)
+                          invalid))))))
+          (let ((contents-begin (org-element-property :contents-begin hl))
+                (contents-end (org-element-property :contents-end hl)))
+            (when (and contents-begin contents-end)
+              (save-excursion
+                (goto-char contents-begin)
+                (while (re-search-forward org-ts-regexp contents-end t)
+                  (let ((ts-string (match-string 0)))
+                    (unless (or (member ts-string property-timestamps)
+                                (ignore-errors
+                                  (org-time-string-to-absolute ts-string)))
+                      (push (list file begin-pos headline-text
+                                  "inline timestamp" ts-string)
+                            invalid))))))))))
+    (nreverse invalid)))
+
+(defun cj/--format-validation-report-section (file invalid-entries)
+  "Return the per-FILE string section for the timestamp validation report.
+INVALID-ENTRIES is a list of (FILE POS HEADLINE PROP TS) tuples as
+returned by `cj/--validate-timestamps-in-buffer'.  An empty list
+produces a section with the \"No invalid timestamps found.\" line."
+  (concat
+   (format "* %s\n" file)
+   (if invalid-entries
+       (mapconcat
+        (lambda (entry)
+          (cl-destructuring-bind (f pos head prop ts) entry
+            (format
+             "- [[file:%s::%d][%s]]\n  - Property/Type: %s\n  - Invalid timestamp: \"%s\"\n"
+             f pos head prop ts)))
+        invalid-entries
+        "")
+     "No invalid timestamps found.\n")
+   "\n"))
+
 (defun cj/validate-org-agenda-timestamps ()
   "Scan all files in `org-agenda-files' for invalid timestamps.
 Checks DEADLINE, SCHEDULED, TIMESTAMP properties and inline timestamps in
@@ -322,38 +385,9 @@ entries, property/type, and raw timestamp string."
       (insert "* Overview\nScan of org-agenda-files for invalid timestamps.\n\n"))
     (dolist (file org-agenda-files)
       (with-current-buffer (find-file-noselect file)
-        (let ((invalid-entries '())
-              (props '("DEADLINE" "SCHEDULED" "TIMESTAMP"))
-              (parse-tree (org-element-parse-buffer 'headline)))
-          (org-element-map parse-tree 'headline
-            (lambda (hl)
-              (let ((headline-text (org-element-property :raw-value hl))
-                    (begin-pos (org-element-property :begin hl)))
-                (dolist (prop props)
-                  (let ((timestamp (org-element-property (intern (downcase prop)) hl)))
-                    (when timestamp
-                      (let ((time-str (org-element-property :raw-value timestamp)))
-                        (unless (ignore-errors (org-time-string-to-absolute time-str))
-                          (push (list file begin-pos headline-text prop time-str) invalid-entries))))))
-                (let ((contents-begin (org-element-property :contents-begin hl))
-                      (contents-end (org-element-property :contents-end hl)))
-                  (when (and contents-begin contents-end)
-                    (save-excursion
-                      (goto-char contents-begin)
-                      (while (re-search-forward org-ts-regexp contents-end t)
-                        (let ((ts-string (match-string 0)))
-                          (unless (ignore-errors (org-time-string-to-absolute ts-string))
-                            (push (list file begin-pos headline-text "inline timestamp" ts-string) invalid-entries))))))))))
-
+        (let ((invalid (cj/--validate-timestamps-in-buffer file)))
           (with-current-buffer report-buffer
-            (insert (format "* %s\n" file))
-            (if invalid-entries
-                (dolist (entry (reverse invalid-entries))
-                  (cl-destructuring-bind (f pos head prop ts) entry
-                    (insert (format "- [[file:%s::%d][%s]]\n  - Property/Type: %s\n  - Invalid timestamp: \"%s\"\n"
-                                    f pos head prop ts))))
-              (insert "No invalid timestamps found.\n")))
-          (with-current-buffer report-buffer (insert "\n")))))
+            (insert (cj/--format-validation-report-section file invalid))))))
     (pop-to-buffer report-buffer)))
 
 ;; --------------------------- Org-Alert-Check Timers --------------------------
