@@ -357,13 +357,12 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   (setq alert-fade-time 10) ;; seconds to vanish alert
   (setq alert-default-style 'libnotify)) ;; works well with dunst
 
-;; Install CHIME from GitHub using use-package :vc (Emacs 29+)
 (use-package chime
+  :vc (:url "git@cjennings.net:chime.git"
+       :branch "main"
+       :rev :newest)
   :demand t
-  ;; :vc (:url "https://github.com/cjennings/chime" :rev :newest) ;; using latest on github
   :after alert  ; Removed org-agenda - Chime requires it internally
-  :ensure nil ;; using local version
-  :load-path "~/code/chime"
   :init
   ;; Initialize org-agenda-files with base files before chime loads
   ;; The full list will be built asynchronously later
