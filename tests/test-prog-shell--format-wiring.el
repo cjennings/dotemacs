@@ -25,9 +25,16 @@
 ;; the map into existence by referencing the mode definition.  When
 ;; tree-sitter isn't built in, bash-ts-mode is still defined as a
 ;; symbol via define-derived-mode, and its keymap exists.
-(ignore-errors (require 'prog-shell))
+(require 'prog-shell)
 (when (executable-find "shfmt")
   (require 'shfmt))
+
+(ert-deftest test-prog-shell-format-package-loaded ()
+  "Normal: `shfmt' is in `features' when the executable is on PATH.
+Skipped when shfmt isn't installed because the use-package gates on
+`:if (executable-find shfmt-path)' and never loads the package."
+  (format-test--skip-unless-executable "shfmt")
+  (should (featurep 'shfmt)))
 
 (ert-deftest test-prog-shell-format-command-fboundp ()
   "Normal: `shfmt-buffer' is fboundp after shfmt loads.

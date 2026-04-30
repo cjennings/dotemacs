@@ -20,8 +20,12 @@
 (require 'testutil-format-wiring)
 
 (format-test--ensure-packages-init)
-(ignore-errors (require 'prog-go))
+(require 'prog-go)
 (require 'go-mode)
+
+(ert-deftest test-prog-go-format-package-loaded ()
+  "Normal: `go-mode' is in `features' after the prog-go config loads."
+  (should (featurep 'go-mode)))
 
 (ert-deftest test-prog-go-format-command-fboundp ()
   "Normal: `gofmt' is fboundp after `go-mode' loads."

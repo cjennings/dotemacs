@@ -18,9 +18,13 @@
 ;; use-package's `:bind (:map ...)' defers until the named map exists.
 ;; Loading python.el populates `python-ts-mode-map'; loading blacken
 ;; resolves the binding form's late-binding hook.
-(ignore-errors (require 'prog-python))
+(require 'prog-python)
 (require 'python)
 (require 'blacken)
+
+(ert-deftest test-prog-python-format-package-loaded ()
+  "Normal: `blacken' is in `features' after the prog-python config loads."
+  (should (featurep 'blacken)))
 
 (ert-deftest test-prog-python-format-command-fboundp ()
   "Normal: `blacken-buffer' is fboundp after the package is loaded."
