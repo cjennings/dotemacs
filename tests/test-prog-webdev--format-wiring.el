@@ -22,7 +22,15 @@
 (require 'testutil-format-wiring)
 
 (format-test--ensure-packages-init)
-(ignore-errors (require 'prog-webdev))
+(require 'prog-webdev)
+
+(ert-deftest test-prog-webdev-format-package-loaded ()
+  "Normal: `prog-webdev' is in `features' after load.
+The webdev formatter is a custom function defined in prog-webdev
+itself, so this asserts the module loaded rather than a separate
+formatter package (there isn't one — `cj/webdev-format-buffer'
+shells out to the `prettier' CLI directly)."
+  (should (featurep 'prog-webdev)))
 
 (ert-deftest test-prog-webdev-format-command-fboundp ()
   "Normal: `cj/webdev-format-buffer' is fboundp from prog-webdev."
