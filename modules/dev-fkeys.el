@@ -261,7 +261,9 @@ TypeScript / JavaScript and unknown languages return nil."
   (pcase language
     ('elisp
      (if is-test-file
-         (format "make test-file FILE=%s" rel-path)
+         ;; The project Makefile prepends `tests/' to FILE, so pass the
+         ;; basename only — passing the rel-path produces `tests/tests/...'.
+         (format "make test-file FILE=%s" (file-name-nondirectory rel-path))
        (format "make test-name TEST=^test-%s-" stem)))
     ('python
      (if is-test-file

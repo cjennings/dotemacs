@@ -45,7 +45,7 @@ Components integrated:
       (cj/--f6-current-file-tests-impl
        "/home/u/proj/tests/test-foo.el"
        "/home/u/proj/")
-      (should (string= seen-cmd "make test-file FILE=tests/test-foo.el")))))
+      (should (string= seen-cmd "make test-file FILE=test-foo.el")))))
 
 (ert-deftest test-dev-fkeys-f6-current-file-tests-impl-python-source ()
   "Normal: a Python source file maps to `pytest tests/test_<stem>.py'."
@@ -88,7 +88,7 @@ just that file's tests run, not the whole module's prefix."
       (cj/--f6-current-file-tests-impl
        "/home/u/proj/tests/test-foo--bar.el"
        "/home/u/proj/")
-      (should (string= seen-cmd "make test-file FILE=tests/test-foo--bar.el")))))
+      (should (string= seen-cmd "make test-file FILE=test-foo--bar.el")))))
 
 ;;; Error Cases
 
