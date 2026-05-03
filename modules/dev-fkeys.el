@@ -113,8 +113,8 @@ Installs a one-shot `compilation-finish-functions' hook to chain the run."
   "Route ACTION (a symbol from `cj/--f4-candidates') to its handler.
 Signals `user-error' on an unrecognized symbol or nil."
   (pcase action
-    ('compile-only    (projectile-compile-project nil))
-    ('run-only        (projectile-run-project nil))
+    ('compile-only    (projectile-compile-project current-prefix-arg))
+    ('run-only        (projectile-run-project current-prefix-arg))
     ('compile-and-run (cj/--f4-compile-and-run-impl))
     ('clean-rebuild   (cj/--f4-clean-rebuild-impl (cj/--f4-project-root)))
     ('compile-plain   (call-interactively #'compile))
@@ -329,7 +329,7 @@ get a no-op message. Outside any project, falls back to interactive
   (let* ((root (cj/--f4-project-root))
          (project-type (cj/--detect-project-type root)))
     (pcase project-type
-      ('compiled    (projectile-compile-project nil))
+      ('compiled    (projectile-compile-project current-prefix-arg))
       ('interpreted (message "C-F4: not a compiled language"))
       (_            (call-interactively #'compile)))))
 
@@ -342,7 +342,7 @@ Prompts via `completing-read' between \"All tests\" (delegates to
   (let* ((candidates '("All tests" "Current file's tests"))
          (label (completing-read "F6: " candidates nil t nil nil (car candidates))))
     (pcase label
-      ("All tests" (projectile-test-project nil))
+      ("All tests" (projectile-test-project current-prefix-arg))
       ("Current file's tests"
        (cj/--f6-current-file-tests-impl
         (buffer-file-name) (cj/--f4-project-root))))))
