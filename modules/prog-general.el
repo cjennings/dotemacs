@@ -376,16 +376,21 @@ If no such file exists there, display a message."
   (lsp-ui-peek-show-directory t))
 
 ;; ----------------- Auto-Close Successful Compilation Windows -----------------
-;; close compilation windows when successful. from 'enberg' on #emacs
-
-(add-hook 'compilation-finish-functions
-		  (lambda (_buf str)
-			(if (null (string-match ".*exited abnormally.*" str))
-				;;no errors, make the compilation window go away in a few seconds
-				(progn
-				  (run-at-time
-				   "1.5 sec" nil 'delete-windows-on
-				   (get-buffer-create "*compilation*"))))))
+;; Disabled: when test results land in *compilation* (F6 / projectile-test-
+;; project), I want to read the output afterward, not have the window close
+;; under me 1.5 s later. To re-enable globally, uncomment the block below.
+;; A prog-mode-only variant would need to capture the originating buffer's
+;; major-mode at compile-start (via advice on `compile') and gate the hook
+;; on it — left out for now per the simpler comment-out path.
+;;
+;; (add-hook 'compilation-finish-functions
+;; 		  (lambda (_buf str)
+;; 			(if (null (string-match ".*exited abnormally.*" str))
+;; 				;;no errors, make the compilation window go away in a few seconds
+;; 				(progn
+;; 				  (run-at-time
+;; 				   "1.5 sec" nil 'delete-windows-on
+;; 				   (get-buffer-create "*compilation*"))))))
 
 ;; which-key labels
 (with-eval-after-load 'which-key
