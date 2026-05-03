@@ -50,6 +50,7 @@
 (require 'browser-config)        ;; browser configuration/integration
 (require 'coverage-core)         ;; diff-aware coverage engine + F7 binding
 (require 'coverage-elisp)        ;; elisp backend for coverage-core
+(require 'dev-fkeys)             ;; F4 compile+run dispatcher, F6 tests stopgap
 
 ;; ------------------------ User Interface Configuration -----------------------
 

@@ -128,7 +128,6 @@ Overrides default prog-mode keybindings with Python-specific commands."
   (blacken-skip-string-normalization t)
   :hook (python-ts-mode . blacken-mode)
   :bind (:map python-ts-mode-map
-              ("<f6>" . blacken-buffer)
               ("C-; f" . blacken-buffer)))
 
 ;; ---------------------------------- Numpydoc ---------------------------------

@@ -17,9 +17,9 @@
 ;;
 ;; Workflow:
 ;;   1. Open .sh file → LSP auto-starts, ShellCheck runs
-;;   2. <f6> → Format with shfmt
-;;   3. C-c ! l → Show all ShellCheck diagnostics
-;;   4. Save → Auto-set executable bit if script has shebang
+;;   2. C-; f → format with shfmt
+;;   3. C-c ! l → show all ShellCheck diagnostics
+;;   4. Save → auto-set executable bit if script has shebang
 
 ;;; Code:
 
@@ -143,10 +143,8 @@ Overrides default prog-mode keybindings with shell-specific commands."
   :if (executable-find shfmt-path)
   :hook ((sh-mode bash-ts-mode) . shfmt-on-save-mode)
   :bind ((:map sh-mode-map
-               ("<f6>" . shfmt-buffer)
                ("C-; f" . shfmt-buffer))
          (:map bash-ts-mode-map
-               ("<f6>" . shfmt-buffer)
                ("C-; f" . shfmt-buffer)))
   :custom
   (shfmt-arguments '("-i" "2"      ;; indent with 2 spaces

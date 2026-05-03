@@ -8,28 +8,22 @@
 ;;
 ;; Keybinding Scheme:
 ;; ------------------
-;; Unified keybindings across all programming languages using Projectile
-;; for project-aware operations with language-specific overrides.
+;; The F4–F7 dev block is owned by dev-fkeys.el (global bindings). Per-
+;; language modules only set S-F5 / S-F6 overrides for static analysis
+;; and debugging. F5 is reserved for the debug ticket.
 ;;
-;; Global Keybindings (all prog-mode buffers):
-;;   F4     - projectile-compile-project (smart compilation)
-;;   S-F4   - recompile (repeat last compile)
-;;   F5     - projectile-test-project (run tests)
-;;   S-F5   - Language-specific static analysis
-;;   F6     - projectile-run-project (run/execute)
-;;   S-F6   - Language-specific debugger
-;;   C-; f  - Language-specific formatter
+;; Global (dev-fkeys.el):
+;;   F4 / C-F4 / M-F4   compile + run dispatcher / compile only / clean + rebuild
+;;   S-F4               recompile (repeat last)
+;;   F6                 project tests (Phase 1 stopgap; Phase 2 = polyglot dispatcher)
+;;   F7                 coverage report (coverage-core.el)
+;;   C-; f              language-specific formatter
 ;;
-;; Quick Reference Table:
-;; | Key   | Global   | C             | Go          | Python      | Shell       |
-;; |-------|----------|---------------|-------------|-------------|-------------|
-;; | F4    | compile  | compile       | compile     | compile     | compile     |
-;; | S-F4  | recompile| recompile     | (projectile)| (projectile)| (projectile)|
-;; | F5    | test     | test          | test        | test        | test        |
-;; | S-F5  | (none)   | disabled      | staticcheck | mypy        | shellcheck  |
-;; | F6    | run      | run           | run         | run         | run         |
-;; | S-F6  | (none)   | gdb           | dlv         | pdb         | disabled    |
-;; | C-; f | format   | clang-format  | gofmt       | blacken     | shfmt       |
+;; Per-language S-modifier overrides:
+;; | Key  | C        | Go          | Python | Shell      |
+;; |------|----------|-------------|--------|------------|
+;; | S-F5 | disabled | staticcheck | mypy   | shellcheck |
+;; | S-F6 | gdb      | dlv         | pdb    | disabled   |
 
 ;;; Code:
 
@@ -79,11 +73,9 @@
   (auto-fill-mode)                              ;; auto wrap at the fill column set
   (local-set-key (kbd "M-;") 'comment-dwim)     ;; comment/uncomment region as appropriate
 
-  ;; Project-wide commands (can be overridden by language-specific modes)
-  (local-set-key (kbd "<f4>") 'projectile-compile-project)   ;; compile project
-  (local-set-key (kbd "S-<f4>") 'recompile)                  ;; recompile (repeat last)
-  (local-set-key (kbd "<f5>") 'projectile-test-project)      ;; run tests
-  (local-set-key (kbd "<f6>") 'projectile-run-project))      ;; run project
+  ;; F4–F6 are global, owned by dev-fkeys.el. F5 is reserved for the
+  ;; debug ticket (separate work).
+  )
 
 (add-hook 'prog-mode-hook #'cj/general-prog-settings)
 (add-hook 'html-mode-hook #'cj/general-prog-settings)
