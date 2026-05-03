@@ -40,9 +40,14 @@
 ;; Add expand-region to load path explicitly
 (add-to-list 'load-path (expand-file-name "elpa/expand-region-1.0.0" user-emacs-directory))
 
-;; Stub dependencies before loading the module
-(defvar cj/custom-keymap (make-sparse-keymap)
-  "Stub keymap for testing.")
+;; Stub dependencies before loading the module. `eval-and-compile` is required
+;; because the byte-compile pass `require`s custom-line-paragraph, which runs
+;; the module's top-level `(keymap-set cj/custom-keymap ...)` form at load
+;; time. A bare `defvar` here would only declare the symbol at compile time;
+;; the keymap-set then sees a void value.
+(eval-and-compile
+  (defvar cj/custom-keymap (make-sparse-keymap)
+    "Stub keymap for testing."))
 
 ;; Load expand-region for real (needed by cj/join-paragraph)
 (require 'expand-region)
@@ -73,7 +78,7 @@
         (goto-char (point-min))
         (cj/join-paragraph)
         (should (string= (buffer-substring-no-properties (point-min) (point-max))
-                        "line one line two line three\n")))
+                        "line one line two line three")))
     (test-join-paragraph-teardown)))
 
 (ert-deftest test-join-paragraph-simple-multiline-cursor-in-middle ()
@@ -87,7 +92,7 @@
         (forward-line 1)
         (cj/join-paragraph)
         (should (string= (buffer-substring-no-properties (point-min) (point-max))
-                        "line one line two line three\n")))
+                        "line one line two line three")))
     (test-join-paragraph-teardown)))
 
 (ert-deftest test-join-paragraph-simple-multiline-cursor-at-end ()
@@ -100,7 +105,7 @@
         (goto-char (point-max))
         (cj/join-paragraph)
         (should (string= (buffer-substring-no-properties (point-min) (point-max))
-                        "line one line two line three\n")))
+                        "line one line two line three")))
     (test-join-paragraph-teardown)))
 
 (ert-deftest test-join-paragraph-surrounded-by-other-paragraphs ()
@@ -134,7 +139,7 @@
         (goto-char (point-min))
         (cj/join-paragraph)
         (should (string= (buffer-substring-no-properties (point-min) (point-max))
-                        "  indented line one indented line two indented line three\n")))
+                        "  indented line one indented line two indented line three")))
     (test-join-paragraph-teardown)))
 
 (ert-deftest test-join-paragraph-cursor-position-after ()
@@ -206,7 +211,7 @@
         (cj/join-paragraph)
         ;; Should still work, even if nothing to join
         (should (string= (buffer-substring-no-properties (point-min) (point-max))
-                        "single line paragraph\n")))
+                        "single line paragraph")))
     (test-join-paragraph-teardown)))
 
 (ert-deftest test-join-paragraph-at-buffer-start ()
@@ -230,7 +235,7 @@
         (insert "other paragraph\n\nfirst line\nsecond line\nthird line")
         (goto-char (point-max))
         (cj/join-paragraph)
-        (should (string-match-p "first line second line third line\n$" (buffer-string))))
+        (should (string-match-p "first line second line third line\\'" (buffer-string))))
     (test-join-paragraph-teardown)))
 
 (ert-deftest test-join-paragraph-very-long ()
@@ -288,7 +293,7 @@
         (goto-char (point-min))
         (cj/join-paragraph)
         (should (string= (buffer-substring-no-properties (point-min) (point-max))
-                        "line one line two line three\n")))
+                        "line one line two line three")))
     (test-join-paragraph-teardown)))
 
 (ert-deftest test-join-paragraph-only-whitespace-lines ()
@@ -314,7 +319,7 @@
         (goto-char (point-min))
         (cj/join-paragraph)
         (should (string= (buffer-substring-no-properties (point-min) (point-max))
-                        "Hello 👋 world こんにちは 世界 🎉 celebration 🎊\n")))
+                        "Hello 👋 world こんにちは 世界 🎉 celebration 🎊")))
     (test-join-paragraph-teardown)))
 
 ;; ---------------------------- Error Cases ------------------------------------
@@ -353,7 +358,7 @@
         (goto-char (point-min))
         (cj/join-paragraph)
         (should (string= (buffer-substring-no-properties (point-min) (point-max))
-                        "x\n")))
+                        "x")))
     (test-join-paragraph-teardown)))
 
 (provide 'test-custom-line-paragraph-join-paragraph)
