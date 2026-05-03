@@ -26,12 +26,15 @@
 ;; Add modules directory to load path
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 
-;; Stub dependencies before loading the module
-(defvar cj/custom-keymap (make-sparse-keymap)
-  "Stub keymap for testing.")
-
-;; Stub expand-region package
-(provide 'expand-region)
+;; Stub dependencies before loading the module. `eval-and-compile` is required
+;; because the byte-compile pass `require`s custom-line-paragraph, which runs
+;; the module's top-level `(keymap-set cj/custom-keymap ...)` form at load
+;; time. A bare `defvar` here would only declare the symbol at compile time;
+;; the keymap-set then sees a void value.
+(eval-and-compile
+  (defvar cj/custom-keymap (make-sparse-keymap)
+    "Stub keymap for testing.")
+  (provide 'expand-region))
 
 ;; Now load the actual production module
 (require 'custom-line-paragraph)
@@ -84,8 +87,10 @@
         (should (string-match-p "line one line two line three" (buffer-string))))
     (test-join-line-or-region-teardown)))
 
-(ert-deftest test-join-line-or-region-with-region-adds-newline-at-end ()
-  "With region, should add newline at end."
+(ert-deftest test-join-line-or-region-with-region-no-newline-added-at-end ()
+  "Region branch must not add a trailing newline. The function lands point on
+the next existing line via `forward-line 1`, so an input without a trailing
+newline produces output without one."
   (test-join-line-or-region-setup)
   (unwind-protect
       (with-temp-buffer
@@ -95,7 +100,7 @@
         (goto-char (point-max))
         (activate-mark)
         (cj/join-line-or-region)
-        (should (string-suffix-p "\n" (buffer-string))))
+        (should (string= "line one line two line three" (buffer-string))))
     (test-join-line-or-region-teardown)))
 
 (ert-deftest test-join-line-or-region-preserves-text-content ()
@@ -138,6 +143,70 @@
         (should (string-match-p "two three four" (buffer-string))))
     (test-join-line-or-region-teardown)))
 
+(ert-deftest test-join-line-or-region-with-region-no-stray-space-on-following-line ()
+  "Normal: joining a multi-line region must not leave a stray space at the start
+of the line below the region. Regression: the original `while`-based loop ran
+one iteration too many, so the final `join-line 1` reached past the region and
+replaced the trailing newline of the region with a space, then `goto-char end`
++ `newline` reinserted the newline before that space, stranding it at BOL of
+the next line."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "- /Confidence calibration/ Every source declares its\n"
+                "  own confidence in [0..1], and those numbers don't mean the same\n"
+                "  thing. Calibrating across sources is a downstream-of-schema\n"
+                "  problem.\n"
+                "- /Detection-to-detection links/ within a single sensor scene.\n")
+        (goto-char (point-min))
+        (set-mark (point))
+        (search-forward "problem.")
+        (activate-mark)
+        (cj/join-line-or-region)
+        (goto-char (point-min))
+        (search-forward "- /Detection")
+        (beginning-of-line)
+        ;; The next-bullet line must begin with the dash, not a leading space.
+        (should (eq (char-after) ?-)))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-with-region-cursor-lands-on-next-existing-line ()
+  "Normal: after joining a multi-line region, point should land at BOL of the
+existing line immediately after the region — no blank line inserted between."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "alpha line one\n"
+                "  alpha line two\n"
+                "  alpha line three\n"
+                "beta line\n")
+        (goto-char (point-min))
+        (set-mark (point))
+        (search-forward "alpha line three")
+        (activate-mark)
+        (cj/join-line-or-region)
+        (should (looking-at-p "beta line")))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-with-region-no-blank-gap-after-paragraph ()
+  "Normal: the joined paragraph must abut the next existing line directly. The
+exact buffer shape is asserted to catch both the leading-space regression and
+any spurious blank line from a residual trailing `(newline)`."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "alpha one\n"
+                "  alpha two\n"
+                "beta\n")
+        (goto-char (point-min))
+        (set-mark (point))
+        (search-forward "alpha two")
+        (activate-mark)
+        (cj/join-line-or-region)
+        (should (string= (buffer-string)
+                         "alpha one alpha two\nbeta\n")))
+    (test-join-line-or-region-teardown)))
+
 ;;; Boundary Cases
 
 (ert-deftest test-join-line-or-region-on-first-line-no-region-does-nothing-except-newline ()
@@ -166,7 +235,8 @@
     (test-join-line-or-region-teardown)))
 
 (ert-deftest test-join-line-or-region-single-line-region ()
-  "Should handle single-line region."
+  "Should handle single-line region. Region branch performs zero joins and
+moves point to the next existing line; the buffer is left untouched."
   (test-join-line-or-region-setup)
   (unwind-protect
       (with-temp-buffer
@@ -176,7 +246,7 @@
         (goto-char (point-max))
         (activate-mark)
         (cj/join-line-or-region)
-        (should (string= "only line\n" (buffer-string))))
+        (should (string= "only line" (buffer-string))))
     (test-join-line-or-region-teardown)))
 
 (ert-deftest test-join-line-or-region-region-with-only-whitespace-lines ()

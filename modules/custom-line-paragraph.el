@@ -24,13 +24,19 @@
   "Join lines in the active region or join the current line with the previous one."
   (interactive)
   (if (use-region-p)
-      (let ((beg (region-beginning))
-            (end (copy-marker (region-end))))
+      ;; Compute the join count up front from the region's line span.
+      ;; A position-based loop overshoots — after the final in-region join,
+      ;; point still sits before the end marker, so one extra `join-line 1`
+      ;; reaches past the region and pulls the next line in, leaving a stray
+      ;; space at its head when the trailing newline is reinserted.
+      (let* ((beg (region-beginning))
+             (end (copy-marker (region-end)))
+             (n   (count-lines beg end)))
         (goto-char beg)
-        (while (< (point) end)
+        (dotimes (_ (max 0 (1- n)))
           (join-line 1))
         (goto-char end)
-        (newline)
+        (forward-line 1)
         (deactivate-mark))
     ;; No region - only join if there's a previous line
     (when (> (line-number-at-pos) 1)
