@@ -167,6 +167,80 @@ a single Compile entry that calls plain `compile'."
     ('interpreted '(("Run"             . run-only)))
     (_            '(("Compile"         . compile-plain)))))
 
+;; ---------- Projectile cache revert on failure ----------
+;;
+;; Without this, a one-off typo at projectile's prompt poisons the per-
+;; project cmd cache: every subsequent invocation pre-fills the broken
+;; value. The capture/finish-hook pair installed by `:around' advice on
+;; the three projectile cmd-runners reverts the cache to its prior value
+;; if the compile fails AND the cmd was modified. A test that fails
+;; because of a real code bug (cmd unchanged) leaves the cache alone.
+
+(defvar cj/--projectile-revert-state nil
+  "Plist describing the projectile cache state to potentially revert.
+Set by `cj/--projectile-capture-cmd' before each invocation; read and
+cleared by `cj/--projectile-revert-on-fail' after the compile finishes.
+Keys: :map (cmd-map symbol), :root (project root), :prior (cached cmd
+before invocation, may be nil).")
+
+(defun cj/--projectile-capture-cmd (map-symbol)
+  "Capture the cached cmd at the project root in MAP-SYMBOL.
+MAP-SYMBOL is the symbol of a projectile cmd-map (e.g.
+`projectile-compile-cmd-map'). Stashes a plist in
+`cj/--projectile-revert-state' for the finish hook to read. No-op when
+the project root cannot be resolved or MAP-SYMBOL is unbound (projectile
+not loaded)."
+  (let ((root (cj/--f4-project-root)))
+    (when (and root (boundp map-symbol))
+      (let ((prior (gethash root (symbol-value map-symbol))))
+        (setq cj/--projectile-revert-state
+              (list :map map-symbol :root root :prior prior))))))
+
+(defun cj/--projectile-revert-on-fail (_buf status)
+  "Compilation-finish hook: revert projectile cache on failed-and-modified.
+Always self-removes from `compilation-finish-functions' and clears
+`cj/--projectile-revert-state'. Reverts the cmd-map entry only when the
+compile failed AND the cmd was modified from the captured prior value
+AND that prior was non-nil. The unchanged-and-failed case (test fails
+because of a real bug) leaves the cache alone."
+  (remove-hook 'compilation-finish-functions #'cj/--projectile-revert-on-fail)
+  (let ((state cj/--projectile-revert-state))
+    (setq cj/--projectile-revert-state nil)
+    (when (and state (stringp status)
+               (not (string-prefix-p "finished" status)))
+      (let* ((map     (plist-get state :map))
+             (root    (plist-get state :root))
+             (prior   (plist-get state :prior))
+             (current (and (boundp map) (gethash root (symbol-value map)))))
+        (when (and root prior (boundp map)
+                   (not (equal prior current)))
+          (puthash root prior (symbol-value map)))))))
+
+(defun cj/--projectile-around-revert (map-symbol orig-fn &rest args)
+  "Around-advice for projectile cmd-runners.
+MAP-SYMBOL identifies which cmd-map to capture (compile / test / run).
+Captures the prior cached cmd, installs the one-shot revert-on-failure
+hook, then invokes ORIG-FN with ARGS."
+  (cj/--projectile-capture-cmd map-symbol)
+  (add-hook 'compilation-finish-functions #'cj/--projectile-revert-on-fail)
+  (apply orig-fn args))
+
+(defun cj/projectile-reset-cmds ()
+  "Clear projectile's cached compile/test/run cmds for the current project.
+Use when projectile's auto-detected default was wrong to begin with and
+you want to start fresh — the next F4 / F6 invocation will re-derive
+projectile's project-type default."
+  (interactive)
+  (let ((root (cj/--f4-project-root)))
+    (unless root
+      (user-error "F-keys: no project detected"))
+    (dolist (map '(projectile-compile-cmd-map
+                   projectile-test-cmd-map
+                   projectile-run-cmd-map))
+      (when (boundp map)
+        (remhash root (symbol-value map))))
+    (message "Cleared projectile compile/test/run cache for %s" root)))
+
 ;; ---------- F6 language detection ----------
 
 (defconst cj/--f6-extension-language-map
@@ -368,7 +442,26 @@ message."
       ('interpreted (message "M-F4: not a compiled language"))
       (_            (message "M-F4: no project detected")))))
 
+;; ---------- Projectile advice ----------
+
+(advice-add 'projectile-compile-project :around
+            (apply-partially #'cj/--projectile-around-revert
+                             'projectile-compile-cmd-map))
+(advice-add 'projectile-test-project :around
+            (apply-partially #'cj/--projectile-around-revert
+                             'projectile-test-cmd-map))
+(advice-add 'projectile-run-project :around
+            (apply-partially #'cj/--projectile-around-revert
+                             'projectile-run-cmd-map))
+
 ;; ---------- Bindings ----------
+
+(eval-when-compile (defvar cj/custom-keymap)) ;; defined in keybindings.el
+
+;; Skip the binding if cj/custom-keymap isn't loaded yet (e.g. when this
+;; module is required directly in batch tests).
+(when (boundp 'cj/custom-keymap)
+  (keymap-set cj/custom-keymap "P" #'cj/projectile-reset-cmds))
 
 (keymap-global-set "<f4>"   #'cj/f4-compile-and-run)
 (keymap-global-set "C-<f4>" #'cj/f4-compile-only)
