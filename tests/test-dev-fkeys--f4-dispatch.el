@@ -23,6 +23,26 @@
       (cj/--f4-dispatch 'compile-only)
       (should (= calls 1)))))
 
+(ert-deftest test-dev-fkeys-dispatch-compile-only-propagates-prefix-arg ()
+  "Normal: 'compile-only forwards `current-prefix-arg' to
+projectile-compile-project so `C-u F4 → Compile' forces a re-prompt."
+  (let ((seen-arg 'unset)
+        (current-prefix-arg t))
+    (cl-letf (((symbol-function 'projectile-compile-project)
+               (lambda (arg) (setq seen-arg arg))))
+      (cj/--f4-dispatch 'compile-only)
+      (should (eq seen-arg t)))))
+
+(ert-deftest test-dev-fkeys-dispatch-run-only-propagates-prefix-arg ()
+  "Normal: 'run-only forwards `current-prefix-arg' to
+projectile-run-project."
+  (let ((seen-arg 'unset)
+        (current-prefix-arg t))
+    (cl-letf (((symbol-function 'projectile-run-project)
+               (lambda (arg) (setq seen-arg arg))))
+      (cj/--f4-dispatch 'run-only)
+      (should (eq seen-arg t)))))
+
 (ert-deftest test-dev-fkeys-dispatch-run-only-calls-projectile-run ()
   "Normal: 'run-only routes to projectile-run-project."
   (let ((calls 0))

@@ -49,6 +49,21 @@
       (cj/f6-test-runner)
       (should (= calls 1)))))
 
+(ert-deftest test-dev-fkeys-f6-test-runner-all-tests-propagates-prefix-arg ()
+  "Normal: choosing 'All tests' forwards `current-prefix-arg' to
+projectile-test-project so `C-u F6 → All tests' forces a re-prompt."
+  (let ((seen-arg 'unset)
+        (current-prefix-arg t))
+    (cl-letf (((symbol-function 'completing-read)
+               (lambda (&rest _) "All tests"))
+              ((symbol-function 'projectile-test-project)
+               (lambda (arg) (setq seen-arg arg)))
+              ((symbol-function 'cj/--f4-project-root) (lambda () "/p/"))
+              ((symbol-function 'cj/--f6-current-file-tests-impl)
+               (lambda (_f _r) nil)))
+      (cj/f6-test-runner)
+      (should (eq seen-arg t)))))
+
 (ert-deftest test-dev-fkeys-f6-test-runner-current-file-routes-to-impl ()
   "Normal: choosing 'Current file's tests' invokes the orchestrator with
 the buffer file and projectile root.
