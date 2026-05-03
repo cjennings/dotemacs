@@ -24,11 +24,14 @@
 ;;; Normal Cases — Elisp
 
 (ert-deftest test-dev-fkeys-f6-cmd-for-elisp-test-file ()
-  "Normal: an elisp test file runs via `make test-file FILE=<path>'."
+  "Normal: an elisp test file runs via `make test-file FILE=<basename>'.
+The project Makefile prepends `tests/' to whatever FILE you pass, so the
+runner command must use just the basename (not the rel-path) to avoid
+`tests/tests/...' double-prefix."
   (should (string=
            (cj/--f6-test-runner-cmd-for
             'elisp t "tests/test-foo.el" "foo" "tests")
-           "make test-file FILE=tests/test-foo.el")))
+           "make test-file FILE=test-foo.el")))
 
 (ert-deftest test-dev-fkeys-f6-cmd-for-elisp-source-file ()
   "Normal: an elisp source file runs via `make test-name TEST=^test-<stem>-'.
@@ -78,11 +81,12 @@ test files."
 (ert-deftest test-dev-fkeys-f6-cmd-for-elisp-test-file-with-double-dash ()
   "Boundary: a per-helper test file runs only that file, not the whole
 test-name prefix. `make test-file FILE=...' is precise; `test-name'
-would over-match."
+would over-match. Pass just the basename — the Makefile re-prepends
+`tests/' itself."
   (should (string=
            (cj/--f6-test-runner-cmd-for
             'elisp t "tests/test-foo--bar.el" "foo" "tests")
-           "make test-file FILE=tests/test-foo--bar.el")))
+           "make test-file FILE=test-foo--bar.el")))
 
 (ert-deftest test-dev-fkeys-f6-cmd-for-go-source-at-root ()
   "Boundary: a Go source file at project root runs `go test ./'."
