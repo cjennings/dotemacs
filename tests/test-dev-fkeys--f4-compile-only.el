@@ -36,6 +36,18 @@
         (cj/f4-compile-only)
         (should (= calls 1))))))
 
+(ert-deftest test-dev-fkeys-f4-compile-only-propagates-prefix-arg ()
+  "Normal: on a compiled project, `current-prefix-arg' is forwarded to
+projectile-compile-project so `C-u C-F4' forces a re-prompt."
+  (test-dev-fkeys-co--with-project '("go.mod")
+    (let ((seen-arg 'unset)
+          (current-prefix-arg t))
+      (cl-letf (((symbol-function 'cj/--f4-project-root) (lambda () root))
+                ((symbol-function 'projectile-compile-project)
+                 (lambda (arg) (setq seen-arg arg))))
+        (cj/f4-compile-only)
+        (should (eq seen-arg t))))))
+
 (ert-deftest test-dev-fkeys-f4-compile-only-interpreted-project-skips-compile ()
   "Normal: on an interpreted project, projectile-compile-project does not run."
   (test-dev-fkeys-co--with-project '("pyproject.toml")
