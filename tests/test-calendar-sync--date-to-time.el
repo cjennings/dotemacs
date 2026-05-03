@@ -104,7 +104,14 @@ Mirrors the real DeepSat Mgmt Sync case: RRULE with UNTIL ~6 days after start."
          (until-5 (append (test-calendar-sync-time-date-only 7) '(19 59)))
          (start-weekday (calendar-sync--date-weekday
                          (list (nth 0 start-date) (nth 1 start-date) (nth 2 start-date))))
-         (weekday-str (nth start-weekday '("SU" "MO" "TU" "WE" "TH" "FR" "SA")))
+         ;; calendar-sync--date-weekday returns 1..7 with Monday=1, Sunday=7
+         ;; (matching calendar-sync--weekday-to-number), so the lookup array
+         ;; runs Mon..Sun and we index with (1- start-weekday). The earlier
+         ;; "SU MO TU WE TH FR SA" array misread the convention as 0-indexed
+         ;; Sunday-first, which silently returned nil for start-weekday=7
+         ;; (Sunday) and crashed inside expand-weekly every Saturday.
+         (weekday-str (nth (1- start-weekday)
+                           '("MO" "TU" "WE" "TH" "FR" "SA" "SU")))
          (base-event (list :summary "Short-Lived Series"
                            :start start-date
                            :end end-date))
