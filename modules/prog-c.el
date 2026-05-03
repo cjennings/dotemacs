@@ -16,12 +16,12 @@
 ;;
 ;; Workflow Example:
 ;;   1. Open a .c file → LSP auto-starts, provides completions
-;;   2. S-<f2> → Compile (auto-detects Makefile/CMake/single file)
-;;   3. <f5> → Quick recompile
-;;   4. S-<f3> → Start GDB with multi-window layout
-;;   5. <f6> or C-c f → Format code with clang-format
-;;   6. M-. → Jump to function definition
-;;   7. C-c l → Access LSP commands (rename, find references, etc.)
+;;   2. F4 → compile + run dispatcher (dev-fkeys.el)
+;;   3. S-F4 → recompile (repeat last)
+;;   4. S-F6 → start GDB
+;;   5. C-; f → format code with clang-format
+;;   6. M-. → jump to function definition
+;;   7. C-c l → LSP commands (rename, find references, etc.)
 
 ;;; Code:
 
@@ -95,7 +95,6 @@
 (use-package clang-format
   :if (executable-find clang-format-path)
   :bind (:map c-mode-base-map
-              ("<f6>" . clang-format-buffer)
               ("C-; f" . clang-format-buffer)))
 
 ;; -------------------------------- Compilation --------------------------------
@@ -135,11 +134,8 @@
 ;; -------------------------------- Keybindings --------------------------------
 
 (defun cj/c-mode-keybindings ()
-  "Set up keybindings for C programming.
-Overrides default prog-mode keybindings with C-specific commands."
-  ;; S-f4: Recompile (override default - C uses this more than projectile-compile)
-  (local-set-key (kbd "S-<f4>") #'recompile)
-
+  "Set up C-specific S-modifier overrides on the dev F-keys.
+S-F4 (recompile) is global, owned by dev-fkeys.el — not duplicated here."
   ;; S-f5: Static analysis placeholder (could add clang-tidy, cppcheck, etc.)
   (local-set-key (kbd "S-<f5>") #'cj/disabled)
 
