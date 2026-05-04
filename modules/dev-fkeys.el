@@ -320,6 +320,18 @@ languages fall back to the basename without extension."
 
 ;; ---------- F6 test-runner command builder ----------
 
+(defconst cj/--f6-shell-safe-argument-regexp "\\`[[:alnum:]_./=+@%:,^-]+\\'"
+  "Regexp matching shell arguments safe to interpolate unchanged.")
+
+(defun cj/--f6-shell-quote-argument (argument)
+  "Quote ARGUMENT for shell command interpolation when needed.
+Simple file paths and test regexes are returned unchanged so existing
+F6 command strings stay readable. Arguments containing whitespace or
+shell-significant characters are escaped with `shell-quote-argument'."
+  (if (string-match-p cj/--f6-shell-safe-argument-regexp argument)
+      argument
+    (shell-quote-argument argument)))
+
 (defun cj/--f6-test-runner-cmd-for (language is-test-file rel-path stem rel-dir)
   "Return shell command to run tests for the given primitives, or nil.
 LANGUAGE is the language symbol; IS-TEST-FILE is non-nil when the file
@@ -337,14 +349,24 @@ TypeScript / JavaScript and unknown languages return nil."
      (if is-test-file
          ;; The project Makefile prepends `tests/' to FILE, so pass the
          ;; basename only — passing the rel-path produces `tests/tests/...'.
-         (format "make test-file FILE=%s" (file-name-nondirectory rel-path))
-       (format "make test-name TEST=^test-%s-" stem)))
+         (format "make test-file FILE=%s"
+                 (cj/--f6-shell-quote-argument
+                  (file-name-nondirectory rel-path)))
+       (format "make test-name TEST=%s"
+               (cj/--f6-shell-quote-argument
+                (format "^test-%s-" stem)))))
     ('python
      (if is-test-file
-         (format "pytest %s" rel-path)
-       (format "pytest tests/test_%s.py" stem)))
+         (format "pytest %s" (cj/--f6-shell-quote-argument rel-path))
+       (format "pytest %s"
+               (cj/--f6-shell-quote-argument
+                (format "tests/test_%s.py" stem)))))
     ('go
-     (format "go test ./%s" rel-dir))
+     (format "go test %s"
+             (cj/--f6-shell-quote-argument
+              (if (string-empty-p rel-dir)
+                  "./"
+                (format "./%s" rel-dir)))))
     (_ nil)))
 
 ;; ---------- F6 current-file orchestrator ----------
