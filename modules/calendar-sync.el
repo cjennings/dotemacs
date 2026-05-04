@@ -69,9 +69,11 @@
 
 ;;; Code:
 
-(require 'user-constants)  ; For gcal-file, pcal-file paths
-
 ;;; Configuration
+
+(defgroup calendar-sync nil
+  "One-way calendar synchronization to Org files."
+  :group 'calendar)
 
 (defvar calendar-sync-calendars nil
   "List of calendars to sync.
@@ -89,17 +91,13 @@ Example:
            :url \"***REMOVED***"
            :file pcal-file)))")
 
-;; Calendar sync (one-way: Google/Proton → Org)
-(setq calendar-sync-calendars
-      `((:name "google"
-         :url "***REMOVED***"
-         :file ,gcal-file)
-        (:name "proton"
-         :url "***REMOVED***"
-         :file ,pcal-file)
-        (:name "deepsat"
-         :url "***REMOVED***"
-         :file ,dcal-file)))
+(defcustom calendar-sync-private-config-file
+  (expand-file-name "calendar-sync.local.el" user-emacs-directory)
+  "Private calendar-sync config file loaded when readable.
+This file is the intended place to set `calendar-sync-calendars' with private
+calendar feed URLs."
+  :type 'file
+  :group 'calendar-sync)
 
 (defvar calendar-sync-interval-minutes 60
   "Sync interval in minutes.
@@ -1229,6 +1227,16 @@ Creates parent directories if needed."
 
 ;;; Debug Logging
 
+(defun calendar-sync--load-private-config ()
+  "Load private calendar-sync configuration when available."
+  (when (file-readable-p calendar-sync-private-config-file)
+    (condition-case err
+        (load calendar-sync-private-config-file nil t)
+      (error
+       (message "calendar-sync: Failed to load private config %s: %s"
+                (abbreviate-file-name calendar-sync-private-config-file)
+                (error-message-string err))))))
+
 (defun calendar-sync--debug-p ()
   "Return non-nil if calendar-sync debug logging is enabled.
 Checks `cj/debug-modules' for symbol `calendar-sync' or t (all)."
@@ -1446,6 +1454,8 @@ Syncs all calendars immediately, then every `calendar-sync-interval-minutes'."
 
 ;;; Initialization
 
+(calendar-sync--load-private-config)
+
 ;; Load saved state from previous session
 (calendar-sync--load-state)
 
@@ -1465,7 +1475,9 @@ Syncs all calendars immediately, then every `calendar-sync-interval-minutes'."
 
 ;; Start auto-sync if enabled and calendars are configured
 ;; Syncs immediately then every calendar-sync-interval-minutes (default: 60 minutes)
-(when (and calendar-sync-auto-start calendar-sync-calendars)
+(when (and calendar-sync-auto-start
+           calendar-sync-calendars
+           (not noninteractive))
   (calendar-sync-start))
 
 (provide 'calendar-sync)
