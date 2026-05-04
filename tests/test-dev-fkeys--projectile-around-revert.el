@@ -5,7 +5,7 @@
 ;; to projectile cmd runners. The advice:
 ;;
 ;; 1. Captures the prior cached cmd via `cj/--projectile-capture-cmd'.
-;; 2. Adds `cj/--projectile-revert-on-fail' to `compilation-finish-functions'.
+;; 2. Adds a buffer-local revert hook to `compilation-finish-functions'.
 ;; 3. Calls ORIG-FN with ARGS so projectile's normal flow proceeds.
 
 ;;; Code:
@@ -22,7 +22,6 @@
 (ert-deftest test-dev-fkeys-projectile-around-revert-invokes-orig-fn ()
   "Normal: advice calls the wrapped function with its args."
   (let ((calls nil)
-        (cj/--projectile-revert-state nil)
         (compilation-finish-functions nil)
         (projectile-compile-cmd-map (make-hash-table :test 'equal)))
     (cl-letf (((symbol-function 'cj/--f4-project-root) (lambda () "/p/")))
@@ -34,8 +33,7 @@
 
 (ert-deftest test-dev-fkeys-projectile-around-revert-captures-prior ()
   "Normal: advice captures the prior cmd into the buffer-local hook."
-  (let ((cj/--projectile-revert-state nil)
-        (compilation-finish-functions nil)
+  (let ((compilation-finish-functions nil)
         (projectile-compile-cmd-map (make-hash-table :test 'equal)))
     (puthash "/p/" "make build" projectile-compile-cmd-map)
     (cl-letf (((symbol-function 'cj/--f4-project-root) (lambda () "/p/")))
@@ -55,8 +53,7 @@
 
 (ert-deftest test-dev-fkeys-projectile-around-revert-installs-finish-hook ()
   "Normal: advice adds a buffer-local revert hook to the compilation buffer."
-  (let ((cj/--projectile-revert-state nil)
-        (compilation-finish-functions nil)
+  (let ((compilation-finish-functions nil)
         (projectile-compile-cmd-map (make-hash-table :test 'equal)))
     (puthash "/p/" "make build" projectile-compile-cmd-map)
     (cl-letf (((symbol-function 'cj/--f4-project-root) (lambda () "/p/")))
@@ -74,8 +71,7 @@
 
 (ert-deftest test-dev-fkeys-projectile-around-revert-overlapping-compiles-use-own-state ()
   "Regression: overlapping compiles finishing out of order use their own state."
-  (let ((cj/--projectile-revert-state nil)
-        (compilation-finish-functions nil)
+  (let ((compilation-finish-functions nil)
         (projectile-compile-cmd-map (make-hash-table :test 'equal))
         (roots '("/one/" "/two/")))
     (puthash "/one/" "make one" projectile-compile-cmd-map)
@@ -115,14 +111,12 @@
   "Boundary: no project root → capture is a no-op, orig-fn still runs.
 The state stays nil so the finish hook will be a no-op too."
   (let ((calls 0)
-        (cj/--projectile-revert-state nil)
         (compilation-finish-functions nil))
     (cl-letf (((symbol-function 'cj/--f4-project-root) (lambda () nil)))
       (cj/--projectile-around-revert
        'projectile-compile-cmd-map
        (lambda (&rest _) (cl-incf calls))))
     (should (= calls 1))
-    (should (null cj/--projectile-revert-state))
     (should-not compilation-finish-functions)))
 
 (provide 'test-dev-fkeys--projectile-around-revert)
