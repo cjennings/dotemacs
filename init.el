@@ -56,6 +56,7 @@
 
 (require 'ui-config)             ;; transparency, cursor color, icons, &c.
 (require 'ui-theme)              ;; themes and theme persistency
+(cj/load-theme-from-file)
 (require 'ui-navigation)         ;; the movement and navigation of windows
 (require 'font-config)           ;; font and emoji configuration
 (require 'selection-framework)   ;; menu config
