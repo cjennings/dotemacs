@@ -34,6 +34,62 @@
 (eval-and-compile
   (defvar cj/custom-keymap (make-sparse-keymap)))
 
+(defvar smtpmail-debug-info nil)
+(defvar sendmail-program nil)
+(defvar send-mail-function nil)
+(defvar message-send-mail-function nil)
+(defvar message-sendmail-envelope-from nil)
+
+(defcustom cj/smtpmail-debug-enabled nil
+  "Non-nil means enable verbose SMTP transport debug logging.
+
+Keep this nil during normal startup. SMTP debug output is useful for
+troubleshooting mail delivery problems, but it can expose sensitive mail
+transport details in debug buffers."
+  :type 'boolean
+  :group 'mail)
+
+(defun cj/set-smtpmail-debug (enabled)
+  "Set SMTP transport debug logging according to ENABLED."
+  (interactive
+   (list (y-or-n-p "Enable SMTP transport debug logging? ")))
+  (setq cj/smtpmail-debug-enabled enabled)
+  (setq smtpmail-debug-info enabled)
+  (message "SMTP transport debug logging %s"
+           (if enabled "enabled" "disabled")))
+
+(defun cj/toggle-smtpmail-debug ()
+  "Toggle verbose SMTP transport debug logging for troubleshooting."
+  (interactive)
+  (cj/set-smtpmail-debug (not smtpmail-debug-info)))
+
+(defun cj/mail--executable-or-warn (program feature)
+  "Return PROGRAM's executable path, or warn that FEATURE is unavailable."
+  (or (executable-find program)
+      (progn
+        (display-warning
+         'mail-config
+         (format "%s not found; %s unavailable" program feature)
+         :warning)
+        nil)))
+
+(defun cj/mail--mbsync-command ()
+  "Return the mu4e mail sync command, or nil if mbsync is unavailable."
+  (when-let ((mbsync (cj/mail--executable-or-warn
+                      "mbsync" "mu4e mail synchronization")))
+    (concat (shell-quote-argument mbsync) " -a")))
+
+(defun cj/mail-configure-smtpmail ()
+  "Configure SMTP mail transport when msmtp is available."
+  (setq smtpmail-debug-info cj/smtpmail-debug-enabled)
+  (if-let ((msmtp (cj/mail--executable-or-warn
+                   "msmtp" "SMTP mail sending")))
+      (setq sendmail-program msmtp
+            send-mail-function 'message-send-mail-with-sendmail
+            message-send-mail-function 'message-send-mail-with-sendmail
+            message-sendmail-envelope-from 'header)
+    (setq sendmail-program nil)))
+
 ;; -------------------- HarfBuzz Crash Fix: Disable Composition ---------------
 ;; Disable auto-composition in mu4e headers to prevent SIGSEGV from HarfBuzz
 ;; when shaping emoji characters in email subjects. See Commentary above.
@@ -63,11 +119,7 @@ Prompts user for the action when executing."
   :ensure nil ;; built-in
   :defer .5
   :config
-  (setq sendmail-program (executable-find "msmtp"))
-  (setq send-mail-function 'message-send-mail-with-sendmail
-        message-send-mail-function 'message-send-mail-with-sendmail)
-  (setq message-sendmail-envelope-from 'header)
-  (setq smtpmail-debug-info t))
+  (cj/mail-configure-smtpmail))
 
 ;; --------------------------------- Mu4e Email --------------------------------
 
@@ -119,7 +171,7 @@ Prompts user for the action when executing."
 
   (setq mu4e-html2text-command 'mu4e-shr2text)  ;; email conversion to html via shr2text
   (setq mu4e-mu-binary (executable-find "mu"))
-  (setq mu4e-get-mail-command (concat (executable-find "mbsync") " -a"))    ;; command to sync mail
+  (setq mu4e-get-mail-command (cj/mail--mbsync-command))                  ;; command to sync mail
   (setq mu4e-user-mail-address-list '("c@cjennings.net"
                                       "craigmartinjennings@gmail.com"
                                       "craig.jennings@deepsat.com"))
