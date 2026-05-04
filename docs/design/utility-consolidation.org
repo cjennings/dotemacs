@@ -1,0 +1,1216 @@
+#+TITLE: Design: Consolidate Shared Utility Helpers
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-04
+
+* Status
+
+Draft. Specification only. No helper extraction is part of this document.
+
+This is the sibling project to [[file:init-load-graph.org][Untangle the init.el Load Graph]]. The load-graph
+project decides when modules load and what dependencies they declare. This
+project decides which module should own reusable helper behavior.
+
+* Framing Questions
+
+Before extracting helpers, ask these questions for each candidate:
+
+1. Is this behavior duplicated, or merely similar?
+2. Does the proposed helper have at least two real consumers?
+3. Can the helper live in a foundation library without pulling heavy packages
+   into startup?
+4. Is the helper pure or mostly pure, or does it create files, processes,
+   timers, buffers, warnings, messages, or network traffic?
+5. Does it need to be available to production code, tests only, or both?
+6. Will extraction make the caller easier to read, or will it hide important
+   domain decisions behind a vague utility name?
+7. Can the tests move with the helper while preserving consumer behavior tests?
+8. Is an existing Emacs primitive already good enough?
+9. Is this a library function, a command helper, or a module-specific private
+   detail?
+10. What compatibility story is needed for existing public =cj/= commands?
+
+The default answer should be "do not extract yet" unless the helper has clear
+reuse pressure and low dependency cost. The exception is a helper that currently
+lives in a clearly wrong dependency layer and blocks the load-graph work; those
+speculative extractions are allowed only when this spec names the expected
+future consumers and the migration keeps the old caller behavior covered.
+
+* Candidate Decision Criteria
+
+Use intent first and implementation shape second. A helper is a real extraction
+candidate when multiple callers are enforcing the same policy, even if the
+current functions were written differently.
+
+Do not reject a candidate just because the implementations differ. Differences
+may be accidental drift, local naming, or missing parameters. Also do not accept
+a candidate just because the implementations look similar. Similar code can
+still represent different workflow policies.
+
+Treat a candidate as real when most of these are true:
+
+- Same job: one domain-neutral sentence describes what both callers are trying
+  to do.
+- Same failure semantics: callers agree on whether failure should return nil,
+  warn, signal =user-error=, skip silently, or fall back.
+- Same side-effect policy: callers agree on whether the helper may message,
+  warn, write files, create buffers, start processes, or mutate state.
+- Same dependency layer: the helper can live somewhere both callers can
+  reasonably require without pulling heavy package/domain dependencies into
+  foundation startup.
+- Differences are parameters, not hidden modes: warning type, feature name,
+  current directory, TTL, or trim behavior are reasonable parameters; broad
+  flags that make one helper behave like several unrelated helpers are a smell.
+- Tests can describe the policy without loading unrelated domain modules.
+- Call sites get clearer because the shared policy has a good name and the
+  caller still owns workflow-specific consequences.
+
+When callers share only part of the intention, extract the shared policy core
+and leave workflow decisions local. For example, executable lookup can be shared
+while mail, programming, and media modules still decide whether a missing tool
+means "disable sync," "skip a hook," or "show an interactive warning."
+
+* Problem
+
+Several modules define helper functions where they were first needed. Some of
+those helpers are truly private. Others are general utilities that now have
+multiple consumers or obvious near-duplicates. This creates architectural drag:
+
+- A feature module becomes the accidental owner of generic behavior.
+- Other modules either duplicate the behavior or depend on a feature module for
+  a helper they should not conceptually require.
+- Tests are harder to place because helper logic is mixed with package config,
+  keybinding setup, timers, external processes, and user commands.
+- The =init.el= load graph stays harder to untangle because helper ownership is
+  not explicit.
+
+The goal is not to build a large personal standard library. The goal is to
+extract a small set of proven helpers into predictable, dependency-light
+libraries with focused tests.
+
+A prior review estimated roughly 221 private helpers across 31 modules. That
+count is useful motivation for an inventory, but it is not the extraction
+target. This project should pull only the helpers whose ownership and reuse
+case are clear.
+
+* Goals
+
+- Identify concrete helper functions that should be moved, renamed, wrapped, or
+  deliberately left alone.
+- Keep foundation helpers dependency-light and safe to load early.
+- Give each helper family a clear home and naming convention.
+- Preserve existing behavior at call sites.
+- Move unit tests with extracted helper behavior.
+- Keep migrations small: one helper family per commit.
+- Improve direct module loading by replacing hidden cross-module assumptions
+  with explicit =require= statements.
+
+* Non-Goals
+
+- Renaming every =cj/= function.
+- Turning command modules into libraries when their behavior is user-facing.
+- Extracting helpers with only one consumer unless they are already in the wrong
+  dependency layer.
+- Replacing useful built-in APIs such as =file-in-directory-p= with wrappers
+  that add no policy.
+- Moving heavy package-specific behavior into =system-lib=.
+- Combining this work with lazy-loading changes in the same commit.
+
+* Existing Library Shape
+
+A file with user-facing interactive commands is a feature/command module, not a
+shared library. Mixed files can keep private helper functions, but those helpers
+should move to =system-lib.el= or a topic library only when reuse pressure and
+the candidate criteria justify extraction.
+
+** =system-lib.el=
+
+Current role: low-level system utility library. It is already expected to be a
+foundation module.
+
+Current functions:
+
+- =cj/executable-exists-p=
+- =cj/log-silently=
+
+Recommended role: foundation helpers that are dependency-light, batch-safe, and
+reasonable to load early.
+
+Good fits:
+
+- executable lookup,
+- shell argument formatting,
+- process execution wrappers built on =process-file=,
+- warning/message convenience wrappers,
+- simple file/path predicates,
+- simple file string read/write helpers.
+
+Bad fits:
+
+- helpers that require Org, mu4e, projectile, dirvish, vc-git, url, gptel, or
+  other package/domain dependencies,
+- helpers that start asynchronous processes/timers at load time,
+- helpers whose semantics are really workflow-specific.
+
+Dependency budget:
+
+- Allowed without additional design: built-ins already available at startup,
+  =subr-x=, =cl-lib=, and =seq=.
+- Allowed only with an explicit note in the helper's section:
+  =host-environment=, because it participates in early foundation/load-order
+  decisions.
+- Not allowed in =system-lib.el=: Org, VC internals such as =vc-git=, Dired
+  implementation packages beyond declarations, url/network libraries, mu4e,
+  projectile, dirvish, gptel, media packages, or any package that would make
+  optional workflows part of foundation startup.
+
+Any helper needing dependencies outside this budget belongs in a topic library
+or the domain module that already owns that dependency.
+
+** =system-utils.el=
+
+Current role: user-facing system commands and Emacs enhancements. It mixes
+commands, package config, keybindings, external open behavior, savehist,
+scratch-buffer setup, dictionary, and proced.
+
+Recommended role: command/config module, not a low-level library.
+
+Potential extraction from here:
+
+- =cj/--file-from-context= should move to =system-lib= as a generic path helper.
+- =cj/--open-with-is-launcher-p= should move if external-open behavior is shared.
+- =cj/identify-external-open-command= should move to =external-open.el= as
+  workflow-owned command resolution.
+
+After extraction, =system-utils.el= should require the library and keep the
+interactive commands.
+
+** =config-utilities.el=
+
+Current role: interactive maintenance/debug commands for this Emacs config.
+
+Recommended role: keep as command/config module. Do not turn it into a generic
+library.
+
+Potential extraction:
+
+- =with-timer= should become =cj/with-timer= only if other modules need the
+  macro.
+- =cj/--delete-compiled-files-in-dir= may become a generic recursive file
+  deletion helper only if another production caller needs the same behavior and
+  the destructive policy is explicit.
+- build-info formatting helpers should stay here; they are command-specific.
+
+** =testutil-general.el=
+
+Current role: test-only filesystem helpers.
+
+Recommended role: keep test harness helpers here unless a production module
+needs the same safety policy. Do not make production code depend on
+=testutil-general=.
+
+Potential production extraction:
+
+- =cj/test--assert-inside-base= -> =cj/path-assert-in-directory=
+- =cj/test--safe-base-dir-p= -> =cj/safe-recursive-delete-root-p=
+
+These should move only when a production destructive workflow needs them.
+
+* Library File Header Standard
+
+Shared library files should document their own scope in the commentary header.
+The design spec records the rationale; the file header is the contributor-facing
+contract that should be visible during ordinary edits.
+
+Required header content:
+
+1. =;; Role:= foundation utility library or topic library role.
+2. =;; Layer:= matching the load-graph architecture.
+3. =;; Dependency budget:= allowed, note-required, and forbidden dependencies.
+4. =;; What belongs here:= concrete helper families.
+5. =;; What does not belong here:= workflow/domain behavior and heavy
+   dependencies.
+6. =;; Adding a helper:= two-consumer rule plus wrong-layer speculative
+   exception.
+7. =;; Naming:= public helper naming policy.
+8. =;; Tests:= expected test-file convention.
+9. =;; Renaming:= obsolete alias policy.
+10. =;; See also:= design docs for rationale.
+
+Worked =system-lib.el= header:
+
+#+begin_src emacs-lisp
+;;; system-lib.el --- Foundation utility helpers -*- lexical-binding: t; -*-
+;;
+;;; Commentary:
+;;
+;; Role: Foundation utility library (Layer 1).
+;;
+;; This file owns reusable, dependency-light helpers used across feature
+;; modules. It loads early in startup and must stay batch-safe.
+;;
+;; Dependency budget:
+;;   Allowed without note:    built-ins, subr-x, cl-lib, seq.
+;;   Allowed with note:       host-environment (foundation peer).
+;;   Not allowed:             Org, vc-git internals, Dired implementation,
+;;                            url/network libraries, mu4e, projectile,
+;;                            dirvish, gptel, media packages, or any package
+;;                            that would attach optional workflows to
+;;                            foundation startup.
+;;
+;; What belongs here:
+;;   - executable lookup (silent predicate or warn-and-return)
+;;   - shell argument formatting (readable-when-safe quoting)
+;;   - process execution wrappers built on `process-file'
+;;   - simple file/path predicates and context resolution
+;;   - logging convenience wrappers
+;;
+;; What does not belong here:
+;;   - workflow-specific behavior (calendar parsing, Org-roam slug generation,
+;;     gptel adapters)
+;;   - timers, network requests, or buffer mutations at load time
+;;   - helpers that pull a heavy package into foundation startup
+;;
+;; Adding a helper:
+;;   Default to "do not extract yet." Extract when at least two callers share
+;;   the same job, failure semantics, side-effect policy, and dependency layer.
+;;   Speculative extractions are allowed only when a feature module is the
+;;   wrong long-term owner; record expected future consumers in
+;;   docs/design/utility-inventory.org.
+;;
+;; Naming:
+;;   Public helpers use cj/<noun>-<verb> or cj/<domain>-<verb>. Names should
+;;   describe policy, not just shape. Do not retain source-module prefixes
+;;   after extraction.
+;;
+;; Tests:
+;;   tests/test-system-lib-<helper-name>.el, one file per helper. Stub
+;;   side-effecting primitives at their boundaries via cl-letf.
+;;
+;; Renaming:
+;;   Public helpers in user muscle memory get a one-cycle obsolete alias.
+;;   Private helpers rename without alias when all call sites change in the
+;;   same commit.
+;;
+;; See also: docs/design/utility-consolidation.org for design rationale.
+;;
+;;; Code:
+#+end_src
+
+Topic libraries such as =cj-process.el=, =cj-org-text.el=, or =cj-cache.el=
+should follow the same shape with a narrower role and dependency budget.
+
+* Proposed Library Layout
+
+Start with single-file growth in =system-lib.el=. Split later only when the file
+becomes too broad or a helper family needs a dependency that should not be
+foundation-eager.
+
+Recommended phases:
+
+1. Grow =system-lib.el= for the first dependency-light helpers.
+2. Keep Org-specific helpers out of =system-lib= unless they can be written with
+   only strings and =subr-x=.
+3. Introduce topic libraries only when there is a clear reason:
+   - =cj-process.el= for process runners if the process API grows beyond a
+     couple functions.
+   - =cj-org-text.el= for Org-safe text helpers if they start requiring Org
+     APIs.
+   - =cj-cache.el= for cache helpers because that abstraction is stateful and
+     distinct from simple system helpers.
+4. Preserve =system-lib.el= as the easy entry point for the low-level set.
+
+Load shape:
+
+- Each topic library declares its load-graph layer in its file header.
+- =cj-process.el= and =cj-org-text.el= are Layer 1 only if their first consumer
+  is foundation-eager; otherwise they are Layer 2 and loaded by explicit
+  =require= from eager consumers.
+- =cj-cache.el= follows the first real cache consumer's layer, likely Layer 2 if
+  modeline/agenda/refile remain eager or near-eager.
+- Coordinate every new topic library with
+  [[file:init-load-graph.org][init-load-graph.org]] before migrating its first consumer.
+
+* Naming Rules
+
+- Library files use =cj-<topic>.el=. The legacy =system-lib.el= name stays for
+  compatibility and serves as the foundation entry point.
+- Public reusable helpers use =cj/<noun>-<verb>= or =cj/<domain>-<verb>=.
+- Private module helpers keep =cj/<module>--<helper>= or
+  =<module>--<helper>=.
+- Do not keep source-module names after extraction. For example,
+  =cj/mail--executable-or-warn= should not become
+  =cj/system-mail-executable-or-warn=.
+- Prefer names that describe policy:
+  - =cj/executable-find-or-warn= is better than =cj/check-program=.
+  - =cj/shell-quote-argument-readable= is better than =cj/shell-quote= because
+    it documents the readable-when-safe policy.
+- Preserve public interactive command names unless there is a separate
+  user-facing rename task.
+- Add obsolete aliases only for functions used outside their defining module or
+  in user muscle memory. Private helpers can be renamed without aliases when
+  all call sites change in the same commit.
+
+* Candidate Extraction Table
+
+This table is intentionally concrete. "Action" describes the recommended end
+state, not necessarily the first commit.
+
+| Current symbol | Current file | Proposed symbol | Proposed home | Action | Priority | Notes |
+|----------------+--------------+-----------------+---------------+--------+----------+-------|
+| =cj/mail--executable-or-warn= | =mail-config.el= | =cj/executable-find-or-warn= | =system-lib.el= | Extract | High | Generalizes missing executable warning; callers include mail, language tools, media/dirvish commands. |
+| =cj/executable-exists-p= | =system-lib.el= | =cj/executable-available-p= | =system-lib.el= | Rename, alias preserved | Medium | New predicate returns boolean. Keep one-cycle obsolete alias/wrapper because the current name is misleading and returns a path. |
+| direct =(executable-find ...)= with silent nil | =prog-c.el=, =prog-go.el=, =prog-python.el=, =prog-shell.el=, =dirvish-config.el=, =browser-config.el=, =mail-config.el= | =cj/executable-find-or-warn= or =cj/executable-available-p= | =system-lib.el= | Migrate selectively | High | Use warnings for user-invoked missing features; keep silent predicates for package =:if= checks when silence is intentional. |
+| =cj/--f6-shell-safe-argument-regexp= | =dev-fkeys.el= | =cj/shell-safe-argument-regexp= | =system-lib.el= | Extract | High | Keep as implementation detail for readable shell quoting. |
+| =cj/--f6-shell-quote-argument= | =dev-fkeys.el= | =cj/shell-quote-argument-readable= | =system-lib.el= | Extract | High | Useful for generated compile/test strings where safe paths should remain readable. |
+| direct =shell-quote-argument= in command strings | =prog-c.el=, =prog-python.el=, =prog-shell.el=, =mail-config.el=, =dirvish-config.el=, =vc-config.el=, =elfeed-config.el=, =system-utils.el= | case-by-case | =system-lib.el= | Audit | Medium | Do not blindly replace; direct quoting is correct when readability is irrelevant or command strings are security-sensitive. |
+| =cj/--coverage-git-string= | =coverage-core.el= | =cj/process-output-or-error= | =system-lib.el= or =cj-process.el= | Extract generic core | High | Generic process-file wrapper: program + argv -> stdout or user-error with status/output. |
+| =cj/--coverage-git-string= | =coverage-core.el= | =cj/git-output-or-error= | =system-lib.el= or =cj-process.el= | Add wrapper | High | Thin wrapper around generic runner with program ="git"=. |
+| =cj/--coverage-git-merge-base= | =coverage-core.el= | keep =cj/--coverage-git-merge-base= | =coverage-core.el= | Keep | Low | Coverage-specific semantics; may call =cj/git-output-or-error=. |
+| =cj/--coverage-git-diff= | =coverage-core.el= | keep =cj/--coverage-git-diff= | =coverage-core.el= | Keep | Low | Coverage-specific =--unified=0= policy. |
+| =cj/--file-from-context= | =system-utils.el= | =cj/file-from-context= | =system-lib.el= | Extract | High | Useful for Dired/current-buffer command helpers. Requires only dired declarations and built-ins. |
+| =cj/--open-with-is-launcher-p= | =system-utils.el= | =cj/external-open-launcher-p= | =external-open.el= | Extract after consumers align | Medium | External-open policy, not core path logic. |
+| =cj/identify-external-open-command= | =system-utils.el= | =cj/external-open-command= | =external-open.el= | Move/rename | Medium | External-open owns command-string resolution; host-environment remains predicate-only. |
+| duplicated OS-open command selection | =system-utils.el=, =dirvish-config.el=, =external-open.el= | =cj/external-open-command= | =external-open.el= | Consolidate | Medium | One source of truth for =xdg-open=, =open=, =start=. |
+| =cj/test--file-in-directory-p= | =test-runner.el= | =file-in-directory-p= (built-in) | built-in | Replace caller with built-in | Medium | Do not create a wrapper unless a real normalization policy emerges. |
+| =cj/test--assert-inside-base= | =testutil-general.el= | =cj/path-assert-in-directory= | =system-lib.el= | Extract only with production caller | Medium | Useful for destructive commands, but currently test-only. |
+| =cj/test--safe-base-dir-p= | =testutil-general.el= | =cj/safe-recursive-delete-root-p= | =system-lib.el= | Extract only with production caller | Medium | Policy-heavy. Should be explicit and well-tested before production use. |
+| =calendar-sync--sanitize-org-body= | =calendar-sync.el= | =cj/org-sanitize-body-text= | =cj-org-text.el= or =system-lib.el= | Extract | High | Already tested; likely useful for webclipper, AI conversations, mail capture. |
+| =calendar-sync--sanitize-org-property-value= | =calendar-sync.el= | =cj/org-sanitize-property-value= | =cj-org-text.el= or =system-lib.el= | Extract | High | String-only behavior; no Org dependency required. |
+| =calendar-sync--sanitize-org-heading= | =calendar-sync.el= | =cj/org-sanitize-heading= | =cj-org-text.el= or =system-lib.el= | Extract | High | Protects outline structure from external text. |
+| =calendar-sync--strip-html= | =calendar-sync.el= | =cj/text-strip-html= | =system-lib.el= or =cj-text.el= | Consider | Medium | Useful beyond calendar, but HTML stripping via regex is intentionally simple and should be documented as such. |
+| =calendar-sync--clean-text= | =calendar-sync.el= | =cj/text-clean-external= | =system-lib.el= or =cj-text.el= | Consider | Medium | Combines ICS unescape + HTML strip today, so it may be too calendar-specific unless split. |
+| =calendar-sync--unescape-ics-text= | =calendar-sync.el= | keep =calendar-sync--unescape-ics-text= | =calendar-sync.el= | Keep | Low | ICS-specific; not a general utility. |
+| =cj/modeline-vc-cache-*= helpers | =modeline-config.el= | =cj/cache-valid-p=, =cj/cache-get=, =cj/cache-put=, =cj/cache-clear= | =cj-cache.el= | Extract later | Medium | Good pattern, but variable-local cache shape differs from Org caches. Needs design before extraction. |
+| agenda/refile cache vars and build flags | =org-agenda-config.el=, =org-refile-config.el= | =cj/cache-value-or-rebuild= or =cj/build-cache= | =cj-cache.el= | Extract later | Medium | Similar TTL/building/invalidation lifecycle. Higher risk than simple helpers. |
+| =cj/log-silently= | =system-lib.el= | =cj/message-log-only= | =system-lib.el= | Rename, alias preserved | Low | Clearer name for discoverability, but low value. Do after higher-priority helpers unless touched nearby. |
+| direct =display-warning= boilerplate | =mail-config.el= and future callers | =cj/display-warning-once= / =cj/warn-once= | =system-lib.el= | Add after second caller | Low | Do not add until repeated formatting or once-only behavior appears. |
+| =with-timer= | =config-utilities.el= | =cj/with-timer= | =system-lib.el= or stay | Defer | Low | Macro is useful, but currently debug-oriented. Extract only after another production caller appears. |
+| =cj/theme-read-file-contents= | =ui-theme.el= | =cj/read-file-string= | =system-lib.el= | Consider | Low | Built-in =insert-file-contents= wrappers are small; extract only if multiple callers emerge. |
+| =cj/theme-write-file-contents= | =ui-theme.el= | =cj/write-file-string= | =system-lib.el= | Consider | Low | Same as above. Keep theme-specific unless reused. |
+| =cj/modeline-string-cut-middle= | =modeline-config.el= | =cj/string-truncate-middle= | =system-lib.el= or =cj-text.el= | Defer | Low | Only one current production caller. Good candidate if completion, headings, or report buffers need it. |
+| =cj/--benchmark-method= | =config-utilities.el= | keep | =config-utilities.el= | Keep | Low | Debug command helper, not general architecture. |
+| =cj/--delete-compiled-files-in-dir= | =config-utilities.el= | =cj/delete-files-recursively-matching= | maybe =system-lib.el= | Defer | Low | Destructive behavior needs a strong second caller and path safety contract. |
+
+* Recommended Helper Groups
+
+** Group 1: Executable Discovery
+
+Home: =system-lib.el=.
+
+Proposed API:
+
+#+begin_src emacs-lisp
+(defun cj/executable-available-p (program)
+  "Return non-nil when PROGRAM resolves to an executable in PATH.")
+
+(defun cj/executable-find-or-warn (program feature &optional warning-type)
+  "Return PROGRAM's executable path, or warn that FEATURE is unavailable.")
+#+end_src
+
+Migration:
+
+- Rename =cj/executable-exists-p= to =cj/executable-available-p= and keep a
+  one-cycle obsolete alias/wrapper for compatibility.
+- Replace =cj/mail--executable-or-warn= first because it is already the exact
+  behavior.
+- Audit language modules:
+  - Keep existing =use-package :if= checks on built-in =executable-find= during
+    this project unless there is a separate load-order reason to change them.
+  - Use =cj/executable-find-or-warn= for interactive commands where the user
+    asked for a feature and needs a clear explanation.
+- Do not warn during startup for every optional language tool unless the feature
+  is explicitly configured to be active.
+
+Behavior:
+
+- =program= is a non-empty string naming an executable.
+- =cj/executable-available-p= returns =t= or =nil=, never the executable path.
+- =cj/executable-find-or-warn= returns the resolved executable path or =nil=.
+- =feature= is a human-readable string used in the warning message.
+- =warning-type= defaults to ='system-lib= unless the caller passes a more
+  specific module symbol.
+- Missing executables warn with level =:warning=.
+- Invalid =program= values (non-string or empty string) signal
+  =wrong-type-argument= via =cl-check-type=. This is a programmer-error path;
+  user-facing error reporting is the caller's responsibility.
+
+Tests:
+
+- program string validation,
+- successful lookup returns path,
+- missing program returns nil,
+- warning type defaults sensibly,
+- warning message includes program and feature.
+
+** Group 2: Shell Command String Helpers
+
+Home: start in =system-lib.el=.
+
+Proposed API:
+
+#+begin_src emacs-lisp
+(defconst cj/shell-safe-argument-regexp "\\`[[:alnum:]_./=+@%:,^-]+\\'")
+
+(defun cj/shell-quote-argument-readable (argument)
+  "Return ARGUMENT unchanged when safe, otherwise shell-quote it.")
+#+end_src
+
+Policy:
+
+- Use this helper only when building shell command strings for display,
+  compilation, or logging and readable safe paths matter.
+- Use plain =shell-quote-argument= when maximum conservatism is preferred and
+  readability does not matter.
+- Prefer argv/process APIs over shell strings for new process execution when
+  possible.
+
+First consumers:
+
+- =dev-fkeys.el= F6 command builder.
+- Candidate later consumers: =prog-c.el= compile command generation,
+  =prog-python.el= test/debug commands, =prog-shell.el= shellcheck command,
+  =mail-config.el= mbsync command.
+
+Justification:
+
+- This is a speculative extraction with one current concrete consumer. It is
+  allowed because =dev-fkeys.el= is not the right long-term owner for shell
+  argument policy, the helper is dependency-free, and several command-building
+  modules already make the same readability/security tradeoff manually.
+
+Behavior:
+
+- =argument= must be a string.
+- Arguments matching =cj/shell-safe-argument-regexp= are returned unchanged.
+- Other arguments are passed to =shell-quote-argument=.
+- This helper is for shell command strings only. New process execution helpers
+  should accept argv lists and should not use this helper internally.
+
+Tests:
+
+- safe paths unchanged,
+- whitespace quoted,
+- shell metacharacters quoted,
+- nil/non-string behavior explicitly errors or normalizes.
+
+** Group 3: Process Execution
+
+Home: =system-lib.el= initially, split to =cj-process.el= if the API grows.
+
+Proposed API:
+
+#+begin_src emacs-lisp
+(cl-defun cj/process-output-or-error
+    (program args &key cwd stdin error-message trim)
+  "Run PROGRAM with ARGS via `process-file' and return stdout.")
+
+(defun cj/git-output-or-error (&rest args)
+  "Run git with ARGS and return stdout, or signal `user-error'.")
+#+end_src
+
+Minimum behavior:
+
+- Accept argv as a list, not a shell command string.
+- Capture stdout/stderr together unless a caller needs them separated.
+- Include program, args, exit status, and trimmed output in failure errors.
+- Optionally bind =default-directory= to =cwd=.
+- Return raw stdout by default; allow =:trim t= for callers that need it.
+
+First migration:
+
+- Extract the generic logic from =cj/--coverage-git-string=.
+- Keep =cj/--coverage-git-merge-base= and =cj/--coverage-git-diff= in
+  =coverage-core.el= because their semantics are coverage-specific.
+
+Justification:
+
+- This is a speculative extraction with one current concrete consumer. It is
+  allowed because =coverage-core.el= is not the right long-term owner for a
+  generic argv/process error-reporting policy, and the helper is a prerequisite
+  for later shell-command hardening in VC, repo reconciliation, Hugo, and
+  language command modules.
+
+Behavior:
+
+- =program= is a non-empty string.
+- =args= is a list of strings.
+- The helper uses =process-file=, not a shell.
+- =cwd=, when non-nil, temporarily binds =default-directory=.
+- =stdin= is out of scope for the first implementation and must be nil. Add a
+  separate design note before supporting string/buffer/file stdin.
+- Stdout and stderr are captured together in a temporary buffer unless a later
+  caller proves separated streams are needed.
+- Exit status =0= is success even when stderr text exists.
+- Exit status non-zero signals =user-error=.
+- Exit status =0= with empty stdout returns =""=, not =nil=.
+- =trim= nil returns raw output. =:trim t= uses =string-trim-right= so leading
+  output whitespace remains intact while common trailing newlines are removed.
+- =error-message= is an optional caller label prepended to the generated error;
+  it does not replace command/status/output details.
+
+Likely later consumers:
+
+- hardened =vc-config.el= clone command,
+- =reconcile-open-repos.el= repository scans,
+- =hugo-config.el= deploy/build commands,
+- language compile/test helpers where argv execution is practical.
+
+Tests:
+
+- success returns stdout,
+- non-zero status signals =user-error=,
+- error includes argv/status/output,
+- cwd is honored,
+- empty output behavior is defined,
+- no shell interpolation occurs.
+
+Table grouping:
+
+- The =cj/process-output-or-error= and =cj/git-output-or-error= rows are one
+  extraction commit. The git helper should be a thin wrapper over the generic
+  process helper.
+
+** Group 4: File/Path Context And Safety
+
+Home: =system-lib.el= for simple predicates; keep test-only setup helpers in
+=testutil-general.el=.
+
+Proposed API:
+
+#+begin_src emacs-lisp
+(defun cj/file-from-context (&optional explicit-filename)
+  "Return a file path from explicit input, current buffer, or Dired point.")
+
+(defun cj/path-assert-in-directory (path directory)
+  "Signal an error unless PATH is inside DIRECTORY.")
+
+(defun cj/safe-recursive-delete-root-p (dir)
+  "Return non-nil when DIR is specific enough to delete recursively.")
+#+end_src
+
+Policy:
+
+- Prefer built-in =file-in-directory-p= directly unless the caller needs a named
+  project policy.
+- Extract =cj/file-from-context= early because it is a useful command helper and
+  already lives in a too-broad command module.
+- Extract deletion safety only when a production destructive command is ready to
+  consume it. The test harness can continue using test-local names until then.
+
+First consumers:
+
+- =system-utils.el= =cj/open-file-with-command= and =cj/xdg-open=.
+- =external-open.el= and =dirvish-config.el= once their file-open behavior is
+  aligned.
+- Production destructive/deploy commands only after policy review.
+
+Behavior:
+
+- =cj/file-from-context= resolves in priority order: explicit filename,
+  current =buffer-file-name=, Dired file at point.
+- It returns =nil= rather than prompting. Interactive commands decide whether
+  to prompt or signal.
+- It may declare Dired functions but must not require a Dired implementation
+  package at load time.
+- =cj/path-assert-in-directory= signals =user-error= with both paths in the
+  message.
+- =cj/safe-recursive-delete-root-p= is not implemented until a production
+  destructive caller is ready to adopt it.
+
+Tests:
+
+- explicit filename wins,
+- buffer file fallback,
+- Dired point fallback,
+- nil when no context exists,
+- path containment handles =..= and symlinks according to documented policy,
+- destructive safe-root rejects =/=, =~/=, =temporary-file-directory=,
+  =user-emacs-directory=, and =default-directory=.
+
+** Group 5: External Open Command Resolution
+
+Home: =external-open.el=.
+
+Proposed API:
+
+#+begin_src emacs-lisp
+(defun cj/external-open-command ()
+  "Return the platform default opener command.")
+
+(defun cj/external-open-launcher-p (command)
+  "Return non-nil when COMMAND should be detached as a desktop launcher.")
+#+end_src
+
+Decision:
+
+- =external-open.el= owns platform opener command resolution because this is
+  workflow policy, not a foundation predicate.
+- =external-open.el= may require =host-environment= for predicates.
+- =host-environment.el= remains predicate-only.
+- =system-lib.el= does not learn external-open workflow semantics.
+- Have =dirvish-config.el= call that owner rather than duplicating OS cases.
+
+Behavior:
+
+- =cj/external-open-command= returns a command string or signals =user-error=
+  for unsupported hosts.
+- The Linux default is =xdg-open=, macOS is =open=, and Windows is =start=.
+  A future helper for explicitly opening folders in Explorer is out of scope
+  for this group.
+- =cj/external-open-launcher-p= returns boolean and has no side effects.
+- The helpers only resolve commands; callers remain responsible for choosing
+  =call-process=, =start-process=, or a shell fallback.
+
+Tests:
+
+- Linux returns =xdg-open=,
+- macOS returns =open=,
+- Windows returns =start=,
+- unsupported host errors clearly,
+- launcher predicate handles =xdg-open=, =open=, =start=.
+
+** Group 6: Org-Safe Text
+
+Home: =cj-org-text.el= from first extraction.
+
+This is also the first topic library to land; the extraction commit
+demonstrates the topic-library header pattern from [[*Library File Header Standard][Library File Header
+Standard]].
+
+Proposed API:
+
+#+begin_src emacs-lisp
+(defun cj/org-sanitize-body-text (text)
+  "Prevent external body TEXT from creating unintended Org headings.")
+
+(defun cj/org-sanitize-property-value (text)
+  "Flatten TEXT for safe use as an Org property value.")
+
+(defun cj/org-sanitize-heading (text)
+  "Flatten TEXT for safe use as an Org heading.")
+#+end_src
+
+Source:
+
+- =calendar-sync--sanitize-org-body=
+- =calendar-sync--sanitize-org-property-value=
+- =calendar-sync--sanitize-org-heading=
+
+Likely consumers:
+
+- =calendar-sync.el= event headings/properties/body,
+- =org-webclipper.el= clipped page titles/content,
+- =ai-conversations.el= model output persisted into Org,
+- =mail-config.el= mail subjects inserted into capture/templates,
+- future external ingest workflows.
+
+Justification:
+
+- This is a speculative extraction with one current concrete consumer family.
+  It is allowed because =calendar-sync.el= is not the right long-term owner for
+  generic external-text Org safety, the helpers are string-only, and several
+  external-ingest workflows need the same policy.
+
+Important distinction:
+
+- =calendar-sync--unescape-ics-text= should stay in =calendar-sync.el= because
+  it is ICS-specific.
+- =calendar-sync--strip-html= may become =cj/text-strip-html= later, but only
+  with a docstring that says it is a lightweight regex cleanup, not a full HTML
+  parser.
+
+Behavior:
+
+- Nil input returns nil.
+- Body text preserves line breaks but replaces leading Org heading stars with
+  dashes so external text cannot create outline entries.
+- Property values and headings flatten newlines and collapse internal
+  whitespace to a single space.
+- Heading sanitization composes body sanitization and property-value
+  flattening.
+- These helpers do not parse Org. They are string guards for external text
+  before insertion into Org structures.
+
+Tests:
+
+- Move the existing calendar sanitizer tests to the new helper names.
+- Add consumer tests showing calendar output still sanitizes correctly.
+- Add webclipper/AI/mail tests only when those modules are migrated.
+
+** Group 7: Cache With TTL And Invalidation
+
+Home: =cj-cache.el=, not =system-lib.el=, once implemented.
+
+Current patterns:
+
+- =modeline-config.el=: per-buffer VC cache with key/time/value/set-p and
+  after-save/after-revert invalidation.
+- =org-agenda-config.el=: global agenda-file cache with TTL and building flag.
+- =org-refile-config.el=: global refile-target cache with TTL and building
+  flag.
+
+Proposed API shape:
+
+#+begin_src emacs-lisp
+(cl-defstruct cj/cache
+  key value timestamp set-p ttl building-p)
+
+(defun cj/cache-valid-p (cache key &optional now)
+  "Return non-nil when CACHE has a value for KEY that has not expired.")
+
+(defun cj/cache-get-or-rebuild (cache key rebuild-fn &optional force)
+  "Return CACHE value for KEY or rebuild it with REBUILD-FN.")
+
+(defun cj/cache-clear (cache)
+  "Clear CACHE state.")
+#+end_src
+
+This API is only illustrative. The real design must decide whether caches are:
+
+- structs stored in one variable,
+- plists,
+- closures,
+- several caller-owned variables with helper predicates.
+
+Recommendation:
+
+- Do not extract cache helpers first.
+- Behavioral normalization (lifecycle alignment between agenda/refile caches)
+  is owned by init-load-graph Phase 6. This project extracts the shared pattern
+  into =cj-cache.el= once that lifecycle alignment lands, or in parallel if the
+  design addendum proves the API can drive the alignment.
+- Then decide whether modeline's buffer-local cache can use the same library or
+  should remain specialized.
+- Phase 5 step 1 produces =docs/design/cache-helper-design.org=. Until that
+  file exists, =cj-cache.el= must not be created. The addendum is the
+  prerequisite for any cache extraction commit.
+
+Tests:
+
+- valid cache hit,
+- forced rebuild,
+- TTL expiration,
+- nil value can be cached distinctly from "not set",
+- rebuild flag is cleared on errors,
+- hook invalidation clears only intended cache scope.
+
+** Group 8: Logging And Warnings
+
+Home: =system-lib.el=.
+
+Proposed API:
+
+#+begin_src emacs-lisp
+(defun cj/message-log-only (format-string &rest args)
+  "Append a formatted message to *Messages* without minibuffer echo.")
+
+(cl-defun cj/display-warning-once (type message &key level key)
+  "Display warning MESSAGE once for KEY.")
+#+end_src
+
+Recommendation:
+
+- Rename =cj/log-silently= to =cj/message-log-only= with an obsolete alias when
+  this low-priority helper is touched. Do not put this rename in the first
+  extraction wave.
+- Do not add =cj/display-warning-once= until there is repeated once-only warning
+  behavior. For ordinary warnings, =display-warning= is already readable.
+
+Behavior:
+
+- =cj/message-log-only= preserves the current =cj/log-silently= behavior:
+  append one formatted message to =*Messages*= without echoing in the
+  minibuffer, ensure the message starts on its own line, and ensure the buffer
+  ends with a newline.
+- =cj/display-warning-once= is not implemented until a second caller proves the
+  need. When implemented, duplicate suppression is process-local and keyed by
+  =(type key)=. =:level= defaults to =:warning=.
+
+Tests:
+
+- log-only inserts into =*Messages*=,
+- warning-once suppresses duplicates by key,
+- warning-once does not suppress unrelated warnings.
+
+** Group 9: File Content Helpers
+
+Home: =system-lib.el= only if reused.
+
+Potential API:
+
+#+begin_src emacs-lisp
+(defun cj/read-file-string (file)
+  "Return FILE contents as a string.")
+
+(defun cj/write-file-string (file contents)
+  "Write CONTENTS to FILE, creating parents if requested by option.")
+#+end_src
+
+Source:
+
+- =cj/theme-read-file-contents=
+- =cj/theme-write-file-contents=
+
+Recommendation:
+
+- Defer. The theme helpers are small and theme-specific today.
+- Extract only when another module needs identical read/write behavior.
+
+* Functions To Leave Alone For Now
+
+- =calendar-sync--parse-*=, =calendar-sync--expand-*=, and
+  =calendar-sync--unescape-ics-text=: calendar/ICS domain logic.
+- =cj/--coverage-parse-simplecov= and =cj/--coverage-parse-diff-output=:
+  coverage domain parsing.
+- =cj/--coverage-git-merge-base= and =cj/--coverage-git-diff=: coverage-specific
+  git policy after the low-level runner is extracted.
+- =cj/modeline-string-cut-middle=: good utility shape, but currently only one
+  real caller.
+- =cj/--generate-roam-slug= and org-roam formatting helpers: Org-roam workflow
+  semantics. These stay local because they are data/workflow-aware, unlike the
+  string-only Org sanitizers that only protect external text from becoming
+  unintended headings or malformed properties.
+- text editing commands in =custom-*.el=: many are reusable commands, but they
+  are user-facing editing features rather than foundation utilities.
+- package configuration helpers in =prog-*.el=: keep mode/package-specific
+  setup close to the package unless a generic policy emerges.
+- test fixture builders in individual test files: keep local unless three or
+  more suites duplicate the same fixture shape.
+
+* Migration Phases
+
+Extraction commits should use conventional commit prefixes consistently:
+
+- =refactor:= for behavior-preserving helper moves/renames and call-site
+  migrations.
+- =feat:= only when adding a new reusable helper for a new user-visible
+  capability.
+- =test:= for test-only follow-up work.
+- =docs:= for spec, inventory, and design addendum updates.
+
+** Phase 1: Inventory And Tags
+
+Create an inventory of private helpers across =modules/=.
+
+Inventory artifact:
+
+- Create =docs/design/utility-inventory.org=.
+- Use an Org table with the fields below.
+- Scope it to the candidate table in this spec plus new candidates discovered
+  during module walkthroughs. It is not required to list every private helper
+  across the whole codebase before Phase 2 can start.
+- Treat the inventory as living documentation. Cleared high-priority candidates
+  may move to Phase 2 before the whole inventory is complete.
+- This inventory is independent from the module-shape inventory maintained by
+  [[file:init-load-graph.org][init-load-graph.org]]. The two projects may walk the same files, but they
+  record different facts in separate artifacts.
+
+For each helper record:
+
+- current symbol,
+- file,
+- public/private status,
+- dependencies,
+- side effects,
+- candidate home,
+- proposed name,
+- real consumers,
+- test file(s),
+- extraction priority,
+- decision: extract, defer, keep, or replace with built-in.
+
+Audit output:
+
+- An =Audit= row produces an inventory decision: =Migrate=, =Leave=, or
+  =Defer=.
+- =Migrate= decisions should create or update a concrete =todo.org= task.
+- =Leave= and =Defer= decisions should record the rationale in the inventory so
+  the same audit is not repeated later.
+
+Exit criteria:
+
+- Every candidate in the table above is represented.
+- Each candidate has at least one specific next action.
+- No code behavior changes.
+
+** Phase 2: Low-Risk Foundation Helpers
+
+Extract helpers that are string/path/process-light and either have direct
+consumers or are explicitly justified as wrong-layer speculative extractions in
+this spec.
+
+Suggested order:
+
+1. =cj/executable-find-or-warn=
+2. =cj/shell-quote-argument-readable=
+3. =cj/process-output-or-error= and =cj/git-output-or-error=
+4. =cj/file-from-context=
+
+Exit criteria:
+
+- Each extraction has moved or added focused tests.
+- Consumer modules explicitly require =system-lib=.
+- Full targeted tests pass after each extraction.
+- Startup does not gain new package dependencies.
+- Existing =use-package :if= checks are not migrated away from built-in
+  predicates unless a separate load-order task explicitly requires it.
+
+** Phase 3: Org-Safe Text Helpers
+
+Extract the calendar Org sanitizers and migrate calendar first.
+
+Then migrate consumers one at a time:
+
+- =org-webclipper.el=,
+- =ai-conversations.el=,
+- =mail-config.el= if mail-to-org behavior needs it.
+
+Exit criteria:
+
+- Existing calendar sanitizer tests pass under new helper names.
+- Calendar integration tests still pass.
+- New consumers have behavior tests showing external text cannot create
+  unintended headings/properties.
+
+** Phase 4: External Open Consolidation
+
+Pick a single owner for default system opener resolution.
+
+Then migrate:
+
+- =system-utils.el=,
+- =dirvish-config.el=,
+- =external-open.el=.
+
+Exit criteria:
+
+- One platform-opener decision point exists.
+- Dired/Dirvish/current-buffer open workflows still work.
+- Host tests cover Linux/macOS/Windows branches via predicate stubs.
+
+** Phase 5: Cache Abstraction
+
+Do this after simpler extractions, because cache abstraction is riskier.
+
+Suggested order:
+
+1. Write a Phase 5 design addendum with the exact cache API. The output of this
+   step is a design document, not code.
+2. Normalize agenda/refile cache code first.
+3. Add tests for rebuild, TTL, nil cache values, and error cleanup.
+4. Consider modeline VC cache only after global cache behavior is stable.
+
+Exit criteria:
+
+- Agenda/refile behavior is unchanged.
+- Building flags clear on errors.
+- Batch startup does not start extra timers/processes.
+- Cache helper does not obscure caller-specific rebuild logic.
+
+** Phase 6: Deferred And Opportunistic Helpers
+
+Consider lower-priority helpers only when a second consumer appears:
+
+- =cj/string-truncate-middle=,
+- =cj/read-file-string= / =cj/write-file-string=,
+- =cj/with-timer=,
+- recursive file deletion helpers,
+- warning-once helpers.
+
+* Test Strategy
+
+- Keep the project convention of focused helper tests.
+- Name new tests after the library/helper, for example:
+  - =tests/test-system-lib-executable-find-or-warn.el=
+  - =tests/test-system-lib-shell-quote-argument-readable.el=
+  - =tests/test-system-lib-process-output-or-error.el=
+  - =tests/test-system-lib-file-from-context.el=
+  - =tests/test-cj-org-text-sanitize-heading.el=
+- Move unit tests with extracted helpers.
+- Keep consumer tests that prove the original workflow still calls the helper
+  correctly.
+- Stub side-effectful primitives with =cl-letf=:
+  - =executable-find=,
+  - =display-warning=,
+  - =process-file=,
+  - Dired file-at-point helpers,
+  - host predicates.
+- For each extraction commit, run targeted tests for the helper and each touched
+  consumer. Run full =make test= before marking the task =VERIFY=.
+
+Interactive coverage:
+
+- For each migrated consumer with a keybinding, add or keep a test asserting
+  =(key-binding (kbd "..."))= resolves to the intended command symbol.
+- For non-trivial interactive flows such as =completing-read= prompts or
+  confirmation dialogs, use =with-simulated-input= where the helper is reachable
+  in batch.
+- Use =execute-kbd-macro= for non-graphical keypress flows where it is simpler
+  than stubbing command internals.
+- Mark visual-only checks, such as modeline appearance, theme rendering, and
+  font rendering, as manual smoke checks in the load-graph project rather than
+  utility helper tests.
+
+Coverage measurement:
+
+- Extracted helpers should meet the project's utility coverage target
+  (currently 90%) measured with =make coverage=.
+- Phase 5 cache work should meet the same target and include explicit
+  unwind/error-path tests for rebuilding flags and invalidation cleanup.
+
+Tooling: Cask, ert-runner, buttercup:
+
+- Keep this project on bare =emacs --batch= plus ERT because this repository is
+  a personal Emacs configuration, not a redistributable package.
+- =with-simulated-input= is acceptable as a test-only dependency for
+  interactive coverage when a migrated helper is reachable through a command
+  path.
+- Cask, ert-runner, buttercup, and ecukes are out of scope unless a future task
+  gives a concrete reason to adopt them.
+
+Header validation:
+
+- Add a smoke test that asserts =modules/system-lib.el= and any future
+  =modules/cj-*.el= library file declares the required library header lines.
+
+Test relocation policy:
+
+- The extraction commit moves the helper, helper unit tests, consumer call
+  sites, and consumer call-site test updates together.
+- Empty old helper test files are deleted in the same commit.
+- If an old consumer test file still has consumer behavior coverage, keep it
+  and remove only the helper-specific tests.
+- Avoid commits that only rename tests without moving behavior unless the rename
+  is too large to review with the helper extraction.
+
+* Acceptance Criteria
+
+This project is complete when:
+
+- =system-lib.el= has a documented role and contains only foundation-safe
+  helpers.
+- Each extracted helper has a stable public name, tests, and explicit consumer
+  =require= statements.
+- Feature modules no longer own generic executable lookup, process execution,
+  shell-readable quoting, or Org-safe text sanitation.
+- External open command resolution has a single owner.
+- Agenda/refile/modeline cache duplication has either been intentionally
+  consolidated or explicitly deferred with rationale.
+- No helper extraction introduces package/network/timer side effects at load
+  time.
+- Phase 2 and Phase 3 migrations record =emacs-init-time= against a phase
+  baseline; regressions around 25 ms or more should be investigated and
+  explained.
+- Full =make test= passes after the final migration.
+
+* Risks And Mitigations
+
+** Risk: Premature abstraction
+
+Mitigation:
+
+- Require at least two real consumers.
+- Keep "defer" as a valid inventory decision.
+- Avoid helpers named around vague concepts such as "do thing safely."
+
+** Risk: Foundation module becomes too broad
+
+Mitigation:
+
+- Keep =system-lib.el= dependency-light.
+- Split topic libraries when a helper family becomes stateful or domain-specific.
+- Track every new =require= added to =system-lib.el=.
+
+** Risk: Behavior changes during rename
+
+Mitigation:
+
+- Move tests first where practical.
+- Preserve old public symbols temporarily with aliases only when needed.
+- Change one helper family per commit.
+- Rename commits that preserve a one-cycle alias use =refactor:= and mention
+  the alias in the commit body; the alias does not need a separate commit.
+
+** Risk: Warnings become noisy at startup
+
+Mitigation:
+
+- Use warning helpers for user-invoked missing features.
+- Keep optional package =:if= checks quiet unless the user explicitly enabled
+  the feature.
+- Do not warn for every absent language tool on startup.
+
+** Risk: Helper calls in =use-package :if= create new load-order requirements
+
+Mitigation:
+
+- Do not migrate =use-package :if= clauses in this project. Keep built-in
+  predicates such as =executable-find= there unless a load-graph task handles
+  the ordering explicitly.
+- Migrate function-body, command-body, and =:config= callers first, where
+  =require 'system-lib= can be ordinary and local.
+- If a future migration needs a helper in =:if=, document the load-order
+  prerequisite in that commit and ensure =system-lib= is required before the
+  =use-package= form is macroexpanded/evaluated.
+
+** Risk: Process helper hides security decisions
+
+Mitigation:
+
+- Prefer argv APIs over shell command strings.
+- Keep shell-string helpers clearly separate from process-file helpers.
+- Document when a caller intentionally uses a shell.
+
+** Risk: Helper API turns out to be wrong
+
+Mitigation:
+
+- Revert the extraction commit, restore the source-module helper name and tests,
+  and file a redesign task.
+- Do not patch a vague or wrong foundation API in place after consumers have
+  started migrating; stabilize the API before the second wave of consumers.
+
+* Open Questions
+
+- Should =system-lib.el= eventually become only an aggregator requiring topic
+  libraries, or remain the primary helper file?
+- Should =system-utils.el= and =config-utilities.el= remain separate command
+  modules after library extraction? Default answer for this project: keep them
+  separate; revisit only during the load-graph refactor.
+- What should the cache helper represent: a struct, a plist, closures, or
+  caller-owned variables plus helper predicates?
+
+Closed alias check:
+
+- A local search across =/home/cjennings/code=, =/home/cjennings/projects=,
+  =/home/cjennings/go=, and this repository found no uses of
+  =cj/executable-exists-p= or =cj/log-silently= outside this Emacs
+  configuration. Alias decisions are therefore for in-repo compatibility and
+  user muscle memory, not external package consumers.
+
+* Recommended First Three Commits
+
+Phase 2 also extracts =cj/file-from-context= as commit 4. It is not in this
+first-three list because it has direct multi-consumer pressure and is not a
+speculative extraction; the three commits below are the speculative or
+high-policy commits that need extra care.
+
+1. Extract =cj/executable-find-or-warn= to =system-lib.el=.
+   - Migrate =mail-config.el=.
+   - Add =tests/test-system-lib-executable-find-or-warn.el=.
+   - Keep optional language/package checks unchanged.
+2. Extract =cj/shell-quote-argument-readable= to =system-lib.el=.
+   - Migrate =dev-fkeys.el=.
+   - Move F6 shell-quote tests or add focused system-lib tests.
+   - Do not replace all =shell-quote-argument= callers yet.
+   - This is a wrong-layer speculative extraction; record expected future
+     consumers in the inventory.
+3. Extract =cj/process-output-or-error= and =cj/git-output-or-error=.
+   - Migrate =coverage-core.el= only.
+   - Keep coverage-specific git wrappers in =coverage-core.el=.
+   - Add tests that stub =process-file=.
+   - This is a wrong-layer speculative extraction; record expected future
+     consumers in the inventory.
+
+These give the project useful proof points without touching stateful cache
+behavior or broader load-order mechanics.

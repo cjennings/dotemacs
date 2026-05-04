@@ -1,0 +1,829 @@
+#+TITLE: Design: Untangle the init.el Load Graph
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-04
+
+* Status
+
+Draft. Specification only. No load-order implementation is part of this design
+document.
+
+* Problem
+
+=init.el= is currently both the startup script and the dependency graph. It
+eagerly requires almost every module in a fixed order, so many modules work
+because some earlier require happened to define a variable, keymap, path
+constant, hook owner, package, or helper function.
+
+That creates four practical problems:
+
+- Standalone module loading is unreliable. A module may byte-compile but fail at
+  runtime unless enough of =init.el= was loaded first.
+- Startup has unnecessary work. Optional workflows, heavy packages, timers,
+  network-facing integrations, and media tools load even when not used.
+- Side effects are hard to audit. Keybindings, timers, global hooks, server
+  setup, package configuration, and command definitions are mixed together.
+- Test boundaries are blurry. Tests often need to simulate init order instead of
+  loading the unit under test directly.
+
+The target is not "lazy load everything." The target is an explicit, testable
+load graph where eager startup is a small documented set, optional workflows
+load from commands/hooks/autoloads, and module dependencies are declared by the
+modules that use them.
+
+* Goals
+
+- Make module ownership obvious: libraries, keymap ownership, package
+  configuration, commands, and startup side effects should be distinguishable.
+- Make dependencies explicit with ordinary =require=, =autoload=, or documented
+  hook/package boundaries.
+- Reduce eager startup load without breaking existing keybindings or daily
+  workflows.
+- Keep the migration incremental and reversible. Each batch should be small
+  enough to test and inspect.
+- Preserve interactive behavior for configured workflows, including calendar
+  sync, Org capture/agenda, mail, F-keys, and media commands.
+- Improve testability: modules should either load directly or fail with a clear
+  missing external package/config message.
+
+* Non-Goals
+
+- Rewriting the whole configuration into one framework or literate init.
+- Removing =use-package=. This design assumes package config modules continue to
+  use it where appropriate.
+- Eliminating all top-level forms. Some top-level configuration is appropriate,
+  especially for foundational Emacs settings and hook registration.
+- Solving package bootstrap in =early-init.el=. That is tracked by the separate
+  "Move package bootstrap out of =early-init.el= where possible" project.
+- Rotating calendar feed URLs or designing secret storage beyond the local
+  calendar config path already introduced. Token rotation remains a separate
+  security task.
+- Consolidating all scattered utility helpers. Utility consolidation is a
+  sibling project because it changes helper ownership, tests, and call sites
+  without necessarily changing startup load order.
+
+* Principles
+
+** Eager Requires Are Allowed Only With A Reason
+
+An eager require in =init.el= should satisfy one of these conditions:
+
+- It establishes basic Emacs behavior needed for the rest of startup.
+- It defines shared constants or helpers used by many eager modules.
+- It owns the global key prefix/keymap registration system.
+- It configures core UI behavior that should be visible in the first frame.
+- It starts a user-approved startup service that cannot be triggered lazily.
+
+Everything else should be a candidate for autoload, hook-based loading,
+=with-eval-after-load=, or a command wrapper.
+
+** Modules Declare What They Use
+
+If a module calls a function or reads a variable at runtime, it should not rely
+on init order unless that dependency is an explicit startup contract.
+
+Preferred dependency forms:
+
+- Runtime dependency: =(require 'module)=.
+- Optional runtime dependency: =(require 'module nil t)= with a clear degraded
+  behavior.
+- Macro/compile-time dependency: =(eval-when-compile (require 'module))=.
+- Command-only dependency: =(autoload 'command "module" nil t)= or a lazy
+  command wrapper.
+- Package-bound dependency: =use-package :after=, =:hook=, =:commands=, or
+  =with-eval-after-load=.
+
+Avoid test-only shims in production modules such as "define this keymap if it
+does not exist." Tests should provide stubs or load the real owner.
+
+** Utility Extraction Should Stay Small And Evidence-Based
+
+Some hidden dependencies exist because generic helpers live in feature modules
+where they were first needed. Moving those helpers into =system-lib= can make
+dependencies clearer, but utility extraction should not become part of every
+load-order change by default.
+
+Extract a helper only when:
+
+- at least two callers need substantially the same behavior,
+- the helper can stay dependency-light enough for foundation startup,
+- tests can move with the helper,
+- the extraction is atomic and easy to review.
+
+Avoid building a broad utility suite speculatively. Prefer one helper, one
+tested extraction, one commit.
+
+** Keymaps Have Owners
+
+=keybindings.el= should own global prefixes, especially =cj/custom-keymap= and
+the =C-;= prefix. Feature modules may define local maps or command maps, but
+registration into global prefixes should go through a small convention/helper so
+load order is not a hidden dependency.
+
+** Side Effects Are Named And Isolated
+
+Side effects include:
+
+- starting timers,
+- starting processes,
+- calling network-facing sync/fetch commands,
+- setting global keybindings,
+- mutating global hooks,
+- opening files/buffers,
+- enabling global modes,
+- loading large packages solely for optional commands.
+
+Each side effect should have one of:
+
+- a documented eager reason,
+- an interactive command,
+- a hook/package boundary,
+- a noninteractive/batch guard,
+- a test that proves the side effect does not happen in the wrong context.
+
+* Target Architecture
+
+** Layer 0: Early Startup
+
+Owned by =early-init.el=. Should remain limited to startup mechanics that must
+happen before package/UI initialization.
+
+Examples:
+
+- package archive/bootstrap policy,
+- native-comp/cache startup knobs that must be early,
+- disabling expensive default UI before first frame.
+
+This design does not refactor =early-init.el= except to avoid adding new load
+graph responsibilities to it.
+
+** Layer 1: Foundation
+
+Small eager set required before most other modules can safely load.
+
+Expected contents:
+
+- =system-lib=
+- =user-constants=
+- =host-environment=
+- =system-defaults=
+- =keyboard-compat=
+- =keybindings=
+- maybe =config-utilities=, if debug helpers are intentionally eager
+
+Foundation modules should be able to load in batch mode without package,
+network, timer, or UI-package side effects.
+
+Adding a new Layer 1 module requires a coordinated update to the
+=system-lib.el= dependency budget in [[file:utility-consolidation.org][utility-consolidation.org]].
+
+Topic libraries introduced by the utility project join Layer 1 only when their
+first consumer is foundation-eager. Otherwise they are Layer 2 and loaded by an
+explicit =require= from their eager consumers. Add each new topic library to the
+module category table before migrating its first consumer.
+
+** Layer 2: Core UX
+
+Eager or near-eager modules that shape the first interactive session.
+
+Expected contents:
+
+- basic text/editing defaults,
+- core UI frame/theme/font/modeline behavior,
+- selection/completion framework,
+- F-key development entry points,
+- VC/test/coverage command entry points.
+
+Core UX modules may configure packages, but heavy features should still use
+=:commands=, =:hook=, or =:defer= where practical.
+
+** Layer 3: Domain Workflows
+
+Org, programming, mail, browser, media, AI, and integration modules. These
+should generally load through hooks, commands, package =:after= clauses, or
+workflow-specific entry commands.
+
+Examples:
+
+- Org capture/agenda can remain eager if the user's daily workflow needs it,
+  but exporters and optional extensions can be deferred.
+- Language modules should load from mode hooks or file associations, not because
+  every startup might edit every language.
+- Mail/media/AI/rest tools should register commands eagerly if needed, then load
+  heavy packages only on use.
+
+** Layer 4: Optional And Experimental
+
+Entertainment, modules in test, diagnostics, and rarely used tools. These should
+not be required by default unless the user explicitly chooses that behavior.
+
+Examples:
+
+- =games-config=
+- =music-config=
+- =lorem-optimum=
+- =gloss-config=
+- optional IRC/Slack/feed/media modules when not in active use
+
+* Module Categories
+
+This is a first-pass classification to guide implementation. It is not an
+architectural truth table; each module should be confirmed while refactoring.
+
+Category key:
+
+- =F= foundation or shared library/config.
+- =C= core eager UX.
+- =P= package configuration that should usually be hook/command/package loaded.
+- =D= domain workflow that may have a user-visible eager reason.
+- =S= startup side-effect or timer/process owner.
+- =O= optional, entertainment, experimental, or rarely used.
+- =L= pure-ish library/command helpers that should be easy to load directly.
+
+| Module | Category | Expected final load shape | Notes |
+|--------+----------+---------------------------+-------|
+| =early-init= | F | early | Layer 0; see Non-Goals. |
+| =system-lib= | F/L | eager | Low-level helpers. Keep side-effect free. |
+| =cj-process= | F/L | TBD per first consumer | Topic library placeholder; see utility-consolidation Group 3. |
+| =cj-org-text= | F/L | TBD per first consumer | Topic library placeholder; see utility-consolidation Group 6. |
+| =cj-cache= | F/L | TBD per first consumer | Topic library placeholder; see utility-consolidation Group 7. |
+| =user-constants= | F | eager, then split | Split pure path constants from directory creation/failure behavior. |
+| =host-environment= | F/L | eager | Predicate helpers. |
+| =system-defaults= | F/S | eager | Owns global Emacs defaults, server/recentf/minibuffer hooks. |
+| =keyboard-compat= | F/S | eager | Terminal/GUI keyboard setup hooks. |
+| =keybindings= | F/C | eager | Owner of =cj/custom-keymap= and global prefixes. |
+| =config-utilities= | C/O | eager or command-loaded | Debug keymap may be eager; heavy org parsing commands can lazy require. |
+| =custom-case= | L/C | autoload commands + key registration | Text command helper. |
+| =custom-comments= | L/C | autoload commands + key registration | Text command helper. |
+| =custom-datetime= | L/C | autoload commands + key registration | Text command helper. |
+| =custom-buffer-file= | L/C | eager only if remaps required | Has file/process helpers and keymap registration. |
+| =custom-line-paragraph= | L/C | autoload commands + key registration | Requires =expand-region= at command boundary if possible. |
+| =custom-misc= | L/C | autoload commands + key registration | Misc commands. |
+| =custom-ordering= | L/C | autoload commands + key registration | Text command helper. |
+| =custom-text-enclose= | L/C | autoload commands + key registration | Text command helper. |
+| =custom-whitespace= | L/C | autoload commands + key registration | Text command helper. |
+| =external-open= | L/D | autoload commands | Runtime requires environment/process helpers explicitly. |
+| =media-utils= | D | command-loaded | Downloads/players should run only by command. |
+| =auth-config= | F/D | eager or package-after | Auth setup may be core; GPG commands should remain commands. |
+| =keyboard-macros= | C | eager or keymap-only | Lightweight command/key owner. |
+| =system-utils= | L/C | eager or command-loaded | Timers/process monitor utilities. |
+| =text-config= | C/P | eager hooks | General text defaults and package config. |
+| =undead-buffers= | C | eager if remaps desired | Global kill-buffer remaps. |
+| =browser-config= | D/P | command/package-loaded | Browser workflow. |
+| =coverage-core= | C/L | eager command entry | F7 entry point and backend registry. |
+| =coverage-elisp= | C/P | eager after core | Backend registration; keep cheap. |
+| =dev-fkeys= | C | eager | F4/F6 command entry points. |
+| =ui-config= | C/S | eager | Cursor/UI defaults; post-command hook should be documented. |
+| =ui-theme= | C | eager + explicit startup call | Theme load stays explicit in init. |
+| =ui-navigation= | C/P | eager | Window keybindings and winner/buffer-move config. |
+| =font-config= | C/P/S | eager or first-frame | Font hooks/font installation checks need guards. |
+| =selection-framework= | C/P | eager | Completion stack; likely core UX. |
+| =modeline-config= | C/S | eager | Mode line and VC cache hooks. |
+| =mousetrap-mode= | C | eager if global behavior desired | Prevents accidental mouse edits. |
+| =popper-config= | C/P | eager if enabled, else remove/defer | Existing disabled-state question remains. |
+| =chrono-tools= | D/P | command-loaded | Calendar/timer commands; sound path dependency explicit. |
+| =diff-config= | C/P | eager or package-loaded | Diff/merge UX. |
+| =erc-config= | O/D/P | command-loaded | IRC should not be startup load by default. |
+| =slack-config= | O/D/P | command-loaded | Slack package/auth and which-key registration should be after-load. |
+| =eshell-vterm-config= | D/P | command/hook-loaded | Shell/terminal packages. |
+| =help-utils= | L/D | autoload commands | Search/help commands. |
+| =help-config= | C/P | eager or after help | Info/man/help config. |
+| =tramp-config= | D/P | package-loaded | Remote shell configuration. |
+| =calibredb-epub-config= | O/D/P | command-loaded | Ebook workflow. |
+| =dashboard-config= | C/S | eager only if startup dashboard desired | Opens/initializes landing page behavior. |
+| =dirvish-config= | D/P | command/hook-loaded | File manager; runtime constants explicit. |
+| =dwim-shell-config= | D/P | command-loaded | Shell commands from Dired/Dirvish. |
+| =elfeed-config= | O/D/P | command-loaded | Feed reader/podcast workflow. |
+| =eww-config= | D/P | command-loaded | Web browsing helpers. |
+| =flyspell-and-abbrev= | C/P | hooks | Text-mode spelling/abbrev. |
+| =httpd-config= | O/D/P | command-loaded | Local web server. |
+| =latex-config= | D/P | hook-loaded | Existing WIP comment should become tasks or be removed. |
+| =mail-config= | D/P | command-loaded or eager by choice | Heavy mu4e/org-msg; daily workflow may justify eager command registration. |
+| =markdown-config= | D/P | mode-loaded | Markdown package config. |
+| =pdf-config= | D/P | file/mode-loaded | Heavy PDF packages should load on PDF open. |
+| =quick-video-capture= | O/D/S | command/protocol-loaded | Top-level timers should be removed or guarded. |
+| =video-audio-recording= | O/D/S | command-loaded | External process/device probing only on command. |
+| =transcription-config= | O/D/P | command-loaded | Auth/process workflow. |
+| =weather-config= | O/D/P | command-loaded | Optional command. |
+| =prog-general= | C/P/S | eager or hooks | Projectile, treesit policy, LSP ownership concerns. |
+| =test-runner= | C/L | eager command entry | Test keymap and project-scoped state. |
+| =vc-config= | C/P | eager command entry | Magit/git keymap; clone command hardening separate. |
+| =flycheck-config= | C/P | hooks | General linting. |
+| =prog-training= | O/D/P | command-loaded | Exercism/Leetcode optional. |
+| =prog-c= | D/P | mode-loaded | C hooks and compile command. |
+| =prog-go= | D/P | mode-loaded | Go hooks/LSP. |
+| =prog-lisp= | D/P | mode-loaded | Lisp package config. |
+| =prog-lsp= | C/P | package policy owner | Should consolidate generic LSP policy. |
+| =prog-shell= | D/P/S | mode-loaded | after-save executable hook should be opt-in or scoped. |
+| =prog-python= | D/P | mode-loaded | Python hooks/LSP. |
+| =prog-webdev= | D/P | mode-loaded | Webdev modes/LSP. |
+| =prog-json= | D/P | mode-loaded | JSON formatting/mode config. |
+| =prog-yaml= | D/P | mode-loaded | YAML formatting/mode config. |
+| =org-config= | C/D/P | eager | Core Org behavior likely eager. |
+| =org-agenda-config= | D/S | eager by workflow, timers guarded | Agenda cache lifecycle project tracks cleanup. |
+| =org-babel-config= | D/P | after Org | Babel languages package config. |
+| =org-capture-config= | D/P | eager if capture hot path | Protocol/capture templates. |
+| =org-contacts-config= | D/P | after Org/mail | Contacts workflow. |
+| =org-drill-config= | O/D/P | command-loaded | Optional drill workflow. |
+| =org-export-config= | D/P | command-loaded | Export packages/processes. |
+| =hugo-config= | D/P | command-loaded | Blog workflow. |
+| =org-reveal-config= | O/D/P | command-loaded | Presentation workflow. |
+| =org-refile-config= | D/S | eager by workflow, timers guarded | Refile cache lifecycle project tracks cleanup. |
+| =org-roam-config= | D/P/S | eager by workflow | Capture/finalize hooks, db. |
+| =org-webclipper= | O/D/P | protocol/command-loaded | Global temp state cleanup tracked separately. |
+| =org-noter-config= | O/D/P | command-loaded | PDF notes workflow. |
+| =ai-config= | D/P | command-loaded | GPTel commands; avoid loading all AI tooling at startup. |
+| =ai-conversations= | D/L/S | after gptel | Autosave hook and persistence path need coverage. |
+| =restclient-config= | D/P | command-loaded | API exploration. |
+| =calendar-sync= | D/S | eager only if configured, batch safe | Private config path and noninteractive guard exist. |
+| =reconcile-open-repos= | D/S | command-loaded | Repo scanning/reconciliation should not run at startup. |
+| =local-repository= | O/D/P | command-loaded | Local package mirror workflow. |
+| =music-config= | O/D/P/S | command-loaded | EMMS/keymap optional, hooks only after EMMS. |
+| =games-config= | O | command-loaded | Optional. |
+| =lorem-optimum= | O/L | command-loaded | Module in test. |
+| =jumper= | O/L | command-loaded | Navigation helper. |
+| =system-commands= | D/S | command-loaded | High-impact commands; defensive work tracked separately. |
+| =gloss-config= | O/D/P | command-loaded | Glossary workflow. |
+| =wrap-up= | S | eager if desired | End-of-startup buffer bury timer. |
+| =ledger-config= | O/D/P | mode-loaded | Not currently required by init. |
+| =mu4e-org-contacts-integration= | D/L | after mu4e/org-contacts | Loaded by mail workflow. |
+| =mu4e-org-contacts-setup= | D/L | after mu4e/org-contacts | Setup helper. |
+| =org-agenda-config-debug= | O/L | command/debug-loaded | Debug helper. |
+| =show-kill-ring= | O/L | command-loaded | Not currently required by init. |
+
+* Module File Header Standard
+
+Each module should eventually declare its load-graph contract in its own
+commentary header. The category table above is the seed view; module headers
+are the contributor-facing contract that travels with the code.
+
+Required header lines, after =;;; Commentary:=:
+
+1. =;; Layer: <0|1|2|3|4> (<layer name>).=
+2. =;; Category: <F|C|P|D|S|O|L>=.
+3. =;; Load shape: <eager|hook|mode|command|after-load>=.
+4. =;; Eager reason:= one-line justification when load shape is =eager=,
+   omitted otherwise.
+5. =;; Top-level side effects:= timer, process, hook, package, network,
+   buffer mutation, file write, or =none=.
+6. =;; Runtime requires:= explicit runtime module/package list.
+7. =;; Direct test load: <yes|conditional|no>=, with a brief reason when not
+   =yes=.
+
+Optional:
+
+- =;; See also:= references to tests and design docs.
+
+Worked example:
+
+#+begin_src emacs-lisp
+;;; calendar-sync.el --- One-way calendar synchronization to Org -*- lexical-binding: t; -*-
+;;
+;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/S.
+;; Load shape: eager only when calendar-sync.local.el configures calendars.
+;; Eager reason: daily-driver workflow; user expects calendars synced at first
+;;   session. Top-level startup is guarded so batch/test loads do not start
+;;   timers or network fetches.
+;; Top-level side effects: timer, network fetch, file writes to calendar Org
+;;   files. Guarded by noninteractive/config checks.
+;; Runtime requires: user-constants, seq, subr-x.
+;; Direct test load: yes (batch-safe; private config is optional).
+;;
+;; See also: docs/design/init-load-graph.org, tests/test-calendar-sync.el.
+;;
+;;; Code:
+#+end_src
+
+Phase 1 should annotate every module required by =init.el= with this header.
+Later validation can assert that every required module declares the seven
+required lines.
+
+* Proposed Load Shape
+
+Migration commits should use conventional commit prefixes consistently:
+
+- =refactor:= for behavior-preserving load-order, dependency, keymap, and lazy
+  loading migrations.
+- =feat:= only when adding a new user-visible capability.
+- =test:= for test-only follow-up work.
+- =docs:= for spec, inventory, design updates, and module-header annotations,
+  even when those annotations touch =modules/*.el= files.
+
+Default deferral mechanism:
+
+- Prefer =use-package :commands= for command-driven deferrals.
+- Prefer =use-package :mode= when loading is file-extension or major-mode
+  driven.
+- Prefer =use-package :hook= when the consumer is a mode-hook function.
+- Use explicit =(autoload 'command "module" nil t)= only when the command is
+  not naturally owned by a =use-package= form.
+
+** Phase 1: Inventory And Contracts
+
+Do not change load order yet.
+
+1. Keep the current eager =init.el= order.
+2. Create/maintain =docs/design/module-inventory.org= as a living inventory
+   with:
+   - module name,
+   - category,
+   - eager/deferred target,
+   - known runtime dependencies,
+   - top-level side effects,
+   - tests that cover standalone load or command behavior.
+3. Annotate every module required by =init.el= with the module header standard.
+4. Convert vague comments in =init.el= into tasks or remove them:
+   - =latex-config= "WIP need to fix",
+   - =prog-shell= "combine elsewhere",
+   - "Modules In Test" section.
+5. Add lightweight standalone-load smoke tests for the lowest-level modules.
+
+Inventory rules:
+
+- The module table in this spec seeds the inventory.
+- =docs/design/module-inventory.org= is the living per-module truth after Phase
+  1 starts.
+- Every module required by =init.el= must be represented before Phase 2 starts.
+- Discoveries during later phases update the inventory.
+- This inventory is independent from the helper inventory owned by
+  [[file:utility-consolidation.org][utility-consolidation.org]].
+
+Exit criteria:
+
+- Every module required by =init.el= has a category and target load shape.
+- Every eager survivor has a documented reason.
+- The inventory identifies top-level timers/process/network-ish side effects.
+- Every module required by =init.el= has the required load-graph header lines.
+
+** Phase 2: Explicit Dependencies
+
+Still do not significantly change startup behavior.
+
+1. For each module batch, load it directly in batch mode.
+2. Fix hidden dependencies by adding real =require=, =autoload=, or package
+   boundaries.
+3. Remove production shims that only exist because tests load modules in an
+   incomplete environment.
+4. If a keymap dependency is hidden, document it and make the dependency
+   explicit with =require= or =autoload=. Do not refactor into the registration
+   convention until Phase 3. When the hidden dependency is on
+   =cj/custom-keymap= itself, add =(require 'keybindings)= to the consuming
+   module; Phase 3 replaces these direct dependencies with the registration
+   API.
+5. When a hidden dependency is really a duplicated generic helper, either:
+   - hand the extraction to the utility-consolidation sibling project when it
+     is in scope there, or
+   - leave it in place and record it under that project.
+
+Suggested order:
+
+- Foundation and libraries.
+- Text/editing command modules.
+- UI modules.
+- Programming modules.
+- Org modules.
+- Optional integrations.
+
+Exit criteria:
+
+- Direct module load either succeeds or fails with a clear missing external
+  package/config message.
+- =make test-file FILE=test-all-comp-errors.el= passes.
+- New tests cover any helper extracted while fixing dependencies.
+- Helper extraction remains dependency-light and does not pull heavy packages
+  into foundation startup.
+
+** Phase 3: Keymap Registration Boundary
+
+Introduce a small keymap registration API before deferring many feature modules.
+
+Possible API:
+
+#+begin_src emacs-lisp
+(defun cj/register-prefix-map (key map label)
+  "Register MAP under KEY in `cj/custom-keymap' with LABEL for which-key."
+  ...)
+
+(defun cj/register-command (key command label)
+  "Register COMMAND under KEY in `cj/custom-keymap' with LABEL for which-key."
+  ...)
+#+end_src
+
+Design rules:
+
+- =keybindings.el= owns =cj/custom-keymap= and the global =C-;= binding.
+- Feature modules may define maps and commands without mutating global keys
+  directly.
+- Which-key labels must be registered after which-key loads.
+- Tests can assert key resolution without loading every feature package.
+
+Exit criteria:
+
+- Modules no longer need to assume =cj/custom-keymap= exists at top level
+  except through the registration API.
+- Existing =C-;= bindings continue to resolve.
+- Which-key labels for documented prefixes remain available.
+
+** Phase 4: Defer Low-Risk Optional Modules
+
+Start with modules that are unlikely to affect first-frame startup.
+
+Candidate batch:
+
+- =games-config=
+- =music-config=
+- =weather-config=
+- =gloss-config=
+- =lorem-optimum=
+- =jumper=
+- =httpd-config=
+- =prog-training=
+
+For each module:
+
+1. Keep its user-facing command/key available via the default deferral mechanism
+   above.
+2. Move package loading into =use-package :commands=, =:hook=, =:mode=, or an
+   explicit autoload/wrapper only when the default does not fit.
+3. Run targeted tests and an interactive smoke check.
+
+Exit criteria:
+
+- Startup no longer requires the module eagerly.
+- User command still works from a fresh Emacs session.
+- Module-specific tests pass.
+
+** Phase 5: Defer Heavy Domain Modules
+
+Candidate batch:
+
+- =pdf-config=
+- =calibredb-epub-config=
+- =video-audio-recording=
+- =transcription-config=
+- =mail-config=
+- =ai-config=
+- =restclient-config=
+- =elfeed-config=
+- =erc-config=
+- =slack-config=
+
+These need more care because they often combine package setup, auth, keymaps,
+processes, hooks, and user workflows.
+
+Exit criteria for each:
+
+- Commands are discoverable before package load.
+- Package load happens through the default deferral mechanism: command, hook,
+  mode, or explicit startup opt-in.
+- Auth and private config are not read until necessary unless the user opts in.
+- Batch/test startup does not start network/process work.
+
+Private config opt-in follows the =calendar-sync.local.el= precedent: a module
+reads =<module-name>.local.el= when readable, the file is gitignored, and the
+module degrades cleanly when the file is missing. Token rotation is a separate
+security task; this convention is about config presence, not secret protection.
+
+** Phase 6: Revisit Org And Programming Eagerness
+
+Org and programming modules are daily-use, so the goal is not blindly deferring
+everything.
+
+Programming target:
+
+- Keep generic programming defaults and F-key command entry points available.
+- Load language-specific modules by major mode.
+- Consolidate generic LSP policy under =prog-lsp=.
+  - Move to =prog-lsp=: global LSP toggles such as =lsp-idle-delay=,
+    =lsp-log-io=, =lsp-enable-folding=, =lsp-enable-snippet=,
+    =lsp-headerline-breadcrumb-enable=, and file-watch ignore lists.
+  - Keep per-language: server client settings such as
+    =lsp-clients-clangd-args= and =lsp-pyright-*=, plus language-mode hook
+    wiring.
+- Tree-sitter grammar auto-install is always on; the project policy is global
+  allow. =treesit-auto-install= is =t= without per-language conditionals.
+
+Org target:
+
+- Keep these daily first-session workflows eager: =org-config=,
+  =org-agenda-config=, =org-capture-config=, =org-refile-config=,
+  =calendar-sync= when local config is present, and =org-roam-config=.
+- Defer exporters, reveal, drill, noter, webclipper, and optional publishing
+  pieces behind commands/hooks.
+- Normalize agenda/refile cache lifecycle before changing timer behavior. This
+  is behavioral normalization within the load-graph project; the shared
+  =cj-cache.el= extraction is owned by utility-consolidation Phase 5 and may
+  follow.
+
+The =prog-lsp= consolidation and tree-sitter policy decisions are owned by this
+load-graph project. Utility consolidation owns reusable helper extraction, not
+programming policy.
+
+Exit criteria:
+
+- Common daily Org/programming workflows work from a fresh session.
+- Optional exporters/languages load when used.
+- Timers are guarded in batch/test contexts.
+
+* Adjacent Project: Utility Consolidation
+
+The review of this spec identified a related but distinct architectural
+problem: helper functions are scattered across feature modules, sometimes with
+duplicated behavior. This matters to the load graph because modules can become
+coupled to whichever feature file happened to define a useful helper first.
+
+This should be tracked as a sibling project, not folded into the load-graph
+project. The load-graph project asks "when and why does this module load?" The
+utility consolidation project asks "which module should own this reusable
+behavior?" Those questions overlap, but their changes have different risk and
+rollback shapes.
+
+This sibling project can run beside Phase 2. When explicit-dependency work finds
+a generic duplicated helper, the sibling project owns the extraction commit when
+the helper is in scope for that project. See
+[[file:utility-consolidation.org][utility-consolidation.org]] for candidate
+helpers, naming rules, dependency budgets, migration phases, and test policy.
+
+* Testing Strategy
+
+** Static/Batch Tests
+
+Add or extend tests for:
+
+- Direct module load smoke tests for modules in each batch.
+- Header validation: every module required by =init.el= declares the seven
+  required load-graph header lines.
+  - Test file: =tests/test-init-module-headers.el=.
+  - Assertion shape: inspect every module required by =init.el=, read its
+    commentary header, and fail with the missing line names for any absent
+    required header line.
+- Keymap registration: prefix maps and commands resolve without requiring the
+  feature implementation package.
+- No startup timers/processes in batch for side-effect modules.
+- =init.el= startup smoke in batch, where possible.
+- Byte/native compile smoke via existing =test-all-comp-errors.el=.
+
+Test files for this project use =test-init-<feature>.el=, for example
+=test-init-module-headers.el= and =test-init-keymap-registration.el=. This keeps
+load-graph validation tests distinct from per-module unit tests.
+
+Header validation runs directly against module files. It does not depend on the
+final =docs/design/module-inventory.org= format, which remains a Phase 1
+authoring decision.
+
+** Automated Smoke Checks
+
+Automate every smoke item that can run in batch:
+
+- Important keybindings resolve to the intended command symbols, including
+  =C-;= prefixes and F4/F6/F7 entry points.
+- Org capture and agenda command entry points load or produce expected
+  batch-safe guidance.
+- Calendar sync status reports configured/no-config state without starting
+  timers or network fetches in batch.
+- Optional commands touched in the batch autoload and resolve.
+- Non-graphical interactive flows use =execute-kbd-macro= or
+  =with-simulated-input= where practical.
+
+These checks should run under =make test= for every migration commit.
+
+** Manual Smoke Checks
+
+Each migration batch should be followed by an interactive restart and checklist:
+
+- First frame appears with expected theme/font/modeline.
+- =C-;= prefix appears and key descriptions are present.
+- Magit opens.
+- Mail command opens or gives expected package/config guidance.
+- Refile target lookup works in an interactive session.
+- Any optional command changed in the batch runs end to end.
+- If daemon mode is part of normal use, run the visual checklist once via
+  regular =emacs= and once via =emacsclient= against a running daemon.
+
+** Performance Checks
+
+Before and after major batches:
+
+- Record =emacs-init-time=.
+- Record a startup profile baseline and diff, preferably with =benchmark-init=
+  if enabled for the phase.
+- =benchmark-init= is installed via package.el. The activation block in
+  =early-init.el= is commented; uncomment it locally during phases that need
+  profiling and do not commit the activation. Profile output goes to
+  =.profile/=, which should stay gitignored.
+- Suggested workflow:
+  - =make profile-baseline= records =emacs-init-time= and a startup profile to
+    =.profile/baseline.txt=.
+  - =make profile-diff= records the current run and compares it to the phase
+    baseline.
+- Keep a simple note of eagerly loaded feature count from
+  =cj/info-loaded-features= or equivalent.
+
+Performance is a supporting signal. Correctness and explicit dependencies are
+the primary acceptance criteria. Startup regressions larger than roughly 50 ms
+against the phase baseline should be investigated and explained; after several
+stable baseline runs, this can become a stricter gate.
+
+* Acceptance Criteria
+
+The project is complete when:
+
+- =init.el= contains only documented eager requires and explicit startup calls.
+- Optional modules no longer load merely because Emacs started.
+- Each module required by =init.el= has a category and eager/deferred rationale.
+- Modules that remain eager have no hidden dependencies on arbitrary earlier
+  init order.
+- Global key registration has a central owner/convention.
+- Top-level timers/process/network work is either removed, guarded, or
+  documented as intentional.
+- Full =make test= passes.
+- Byte/native compile smoke passes.
+- Interactive startup checklist passes.
+
+* Risks And Mitigations
+
+** Risk: Breaking muscle-memory keybindings
+
+Mitigation:
+
+- Change key registration mechanics before changing bindings.
+- Add keymap resolution tests for important prefixes.
+- Keep a per-batch manual keybinding checklist.
+
+** Risk: Lazy-loaded packages miss early hook setup
+
+Mitigation:
+
+- Prefer =use-package :hook= and =:mode= over ad hoc lazy command bodies for mode
+  packages.
+- Add tests that inspect hook contents where possible.
+- Smoke-test opening representative files.
+
+** Risk: Daily workflows silently stop starting
+
+Mitigation:
+
+- Distinguish "safe default" from "local opt-in" for workflows like calendar
+  sync.
+- Use ignored/local config files for private eager opt-ins.
+- Report missing config clearly.
+
+** Risk: Batch tests differ from interactive startup
+
+Mitigation:
+
+- Guard timers/process/network work with =noninteractive= only when that is the
+  intended distinction.
+- Add at least one interactive checklist per migration batch.
+
+** Risk: Refactor becomes too broad
+
+Mitigation:
+
+- One batch, one module family.
+- Do not mix dependency fixes, keybinding redesign, and package lazy-loading in
+  the same commit unless tightly coupled.
+- Keep rollback easy by preserving user-facing commands and using wrappers.
+
+* Implementation Backlog
+
+The project in =todo.org= should remain the source of task state. This design
+supports these implementation tickets:
+
+1. Classify modules by role and startup requirement.
+2. Add explicit module dependencies before changing load order.
+3. Centralize custom keymap registration.
+4. Defer low-risk optional modules.
+5. Defer heavy document/media/integration modules.
+6. Revisit programming module LSP/tree-sitter ownership.
+7. Revisit Org module cache/timer and optional extension loading.
+8. Retire or rewrite stale =init.el= comments.
+9. Create a sibling utility consolidation project with an inventory pass and
+   first helper extractions.
+
+* Open Questions
+
+- Should =config-utilities= remain eager because debug commands are useful
+  during startup work, or should it become command-loaded after this project?
+- Should local/private opt-ins share one file, or should modules keep
+  workflow-specific local files such as =calendar-sync.local.el=?
+- Should the module inventory become machine-readable for validation, or is an
+  org table enough? Decide during Phase 1 based on inventory authoring
+  experience.
+- Should =init.el= ultimately become declarative sections plus an explicit
+  startup contract list?
+
+* Next Steps
+
+1. Use this document as the reference for the =Classify modules by role and
+   startup requirement= task.
+2. Build the first inventory directly from the module table above, correcting
+   category guesses while inspecting each file.
+3. Do not defer a module until its direct runtime dependencies are explicit.
+4. Implement keymap registration before deferring feature modules that currently
+   mutate =cj/custom-keymap= at top level.
+5. Create the sibling utility consolidation project before Phase 2 work begins,
+   so duplicated helpers found during dependency cleanup have a clear place to
+   land.
