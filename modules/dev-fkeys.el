@@ -179,11 +179,6 @@ a single Compile entry that calls plain `compile'."
 ;; buffer-local compilation finish hook so overlapping compiles cannot
 ;; overwrite or consume one another's revert metadata.
 
-(defvar cj/--projectile-revert-state nil
-  "Legacy dynamic state used by direct tests of `cj/--projectile-revert-on-fail'.
-The around advice no longer stores live compile metadata here; it closes
-over the plist returned by `cj/--projectile-capture-cmd' instead.")
-
 (defun cj/--projectile-capture-cmd (map-symbol)
   "Capture the cached cmd at the project root in MAP-SYMBOL.
 MAP-SYMBOL is the symbol of a projectile cmd-map (e.g.
@@ -209,18 +204,6 @@ cache alone."
       (when (and root prior (boundp map)
                  (not (equal prior current)))
         (puthash root prior (symbol-value map))))))
-
-(defun cj/--projectile-revert-on-fail (_buf status)
-  "Compilation-finish hook: revert projectile cache on failed-and-modified.
-Always self-removes from `compilation-finish-functions' and clears
-`cj/--projectile-revert-state'. Reverts the cmd-map entry only when the
-compile failed AND the cmd was modified from the captured prior value
-AND that prior was non-nil. The unchanged-and-failed case (test fails
-because of a real bug) leaves the cache alone."
-  (remove-hook 'compilation-finish-functions #'cj/--projectile-revert-on-fail)
-  (let ((state cj/--projectile-revert-state))
-    (setq cj/--projectile-revert-state nil)
-    (cj/--projectile-revert-state-on-fail state status)))
 
 (defun cj/--projectile-make-revert-on-fail-hook (state)
   "Return a one-shot buffer-local finish hook for projectile revert STATE."
@@ -497,15 +480,44 @@ message."
 
 ;; ---------- Projectile advice ----------
 
-(advice-add 'projectile-compile-project :around
-            (apply-partially #'cj/--projectile-around-revert
-                             'projectile-compile-cmd-map))
-(advice-add 'projectile-test-project :around
-            (apply-partially #'cj/--projectile-around-revert
-                             'projectile-test-cmd-map))
-(advice-add 'projectile-run-project :around
-            (apply-partially #'cj/--projectile-around-revert
-                             'projectile-run-cmd-map))
+(defun cj/--projectile-compile-around-revert (orig-fn &rest args)
+  "Around advice for `projectile-compile-project' command-cache revert."
+  (apply #'cj/--projectile-around-revert
+         'projectile-compile-cmd-map orig-fn args))
+
+(defun cj/--projectile-test-around-revert (orig-fn &rest args)
+  "Around advice for `projectile-test-project' command-cache revert."
+  (apply #'cj/--projectile-around-revert
+         'projectile-test-cmd-map orig-fn args))
+
+(defun cj/--projectile-run-around-revert (orig-fn &rest args)
+  "Around advice for `projectile-run-project' command-cache revert."
+  (apply #'cj/--projectile-around-revert
+         'projectile-run-cmd-map orig-fn args))
+
+(defconst cj/--projectile-revert-advice-specs
+  '((projectile-compile-project . cj/--projectile-compile-around-revert)
+    (projectile-test-project    . cj/--projectile-test-around-revert)
+    (projectile-run-project     . cj/--projectile-run-around-revert))
+  "Projectile command runners and their command-cache revert advice.")
+
+(defun cj/--projectile-install-revert-advice ()
+  "Install Projectile command-cache revert advice when Projectile is available."
+  (dolist (spec cj/--projectile-revert-advice-specs)
+    (let ((target (car spec))
+          (advice (cdr spec)))
+      (when (and (fboundp target)
+                 (not (advice-member-p advice target)))
+        (advice-add target :around advice)))))
+
+(defun cj/--projectile-register-revert-advice ()
+  "Install Projectile revert advice now, or after Projectile loads."
+  (if (featurep 'projectile)
+      (cj/--projectile-install-revert-advice)
+    (eval-after-load 'projectile
+      (list 'cj/--projectile-install-revert-advice))))
+
+(cj/--projectile-register-revert-advice)
 
 ;; ---------- Bindings ----------
 
