@@ -56,6 +56,18 @@
       (insert content))
     filepath))
 
+(defun test-testrunner-create-project (name files)
+  "Create temp project NAME with test FILES.
+FILES is an alist of relative test filenames to file contents."
+  (let* ((root (expand-file-name name test-testrunner--temp-dir))
+         (tests-dir (expand-file-name "tests" root)))
+    (make-directory tests-dir t)
+    (dolist (file files)
+      (let ((path (expand-file-name (car file) tests-dir)))
+        (with-temp-file path
+          (insert (cdr file)))))
+    root))
+
 ;;; Normal Cases - Load Files
 
 (ert-deftest test-testrunner-load-files-success ()
@@ -353,6 +365,117 @@
          (names (cj/test--extract-test-names file)))
     (should (= (length names) 1))
     (should (member "test-real" names)))
+  (test-testrunner-teardown))
+
+;;; Project-Scoped State
+
+(ert-deftest test-testrunner-focus-state-is-project-scoped ()
+  "Focused test files should not bleed between projects."
+  (test-testrunner-setup)
+  (let ((project-a (test-testrunner-create-project
+                    "project-a"
+                    '(("test-a.el" . "(ert-deftest test-project-a () t)"))))
+        (project-b (test-testrunner-create-project
+                    "project-b"
+                    '(("test-b.el" . "(ert-deftest test-project-b () t)"))))
+        (cj/test-project-states (make-hash-table :test #'equal)))
+    (cl-letf (((symbol-function 'projectile-project-root)
+               (lambda () project-a))
+              ((symbol-function 'completing-read)
+               (lambda (&rest _args) "test-a.el")))
+      (cj/test-focus-add)
+      (should (equal (cj/test--current-focused-files) '("test-a.el"))))
+    (cl-letf (((symbol-function 'projectile-project-root)
+               (lambda () project-b)))
+      (should (null (cj/test--current-focused-files))))
+    (cl-letf (((symbol-function 'projectile-project-root)
+               (lambda () project-b))
+              ((symbol-function 'completing-read)
+               (lambda (&rest _args) "test-b.el")))
+      (cj/test-focus-add)
+      (should (equal (cj/test--current-focused-files) '("test-b.el"))))
+    (cl-letf (((symbol-function 'projectile-project-root)
+               (lambda () project-a)))
+      (should (equal (cj/test--current-focused-files) '("test-a.el")))))
+  (test-testrunner-teardown))
+
+(ert-deftest test-testrunner-mode-is-project-scoped ()
+  "Focused/all mode should be tracked independently per project."
+  (test-testrunner-setup)
+  (let ((project-a (test-testrunner-create-project "mode-a" nil))
+        (project-b (test-testrunner-create-project "mode-b" nil))
+        (cj/test-project-states (make-hash-table :test #'equal)))
+    (cl-letf (((symbol-function 'projectile-project-root)
+               (lambda () project-a)))
+      (should (eq (cj/test--current-mode) 'all))
+      (cj/test-toggle-mode)
+      (should (eq (cj/test--current-mode) 'focused)))
+    (cl-letf (((symbol-function 'projectile-project-root)
+               (lambda () project-b)))
+      (should (eq (cj/test--current-mode) 'all)))
+    (cl-letf (((symbol-function 'projectile-project-root)
+               (lambda () project-a)))
+      (should (eq (cj/test--current-mode) 'focused))))
+  (test-testrunner-teardown))
+
+(ert-deftest test-testrunner-ert-clear-tests-keeps-current-project-tests ()
+  "Clearing ERT tests for a project switch should remove other project tests."
+  (test-testrunner-setup)
+  (let* ((project-a (test-testrunner-create-project
+                     "ert-a"
+                     '(("test-a.el" . "(ert-deftest test-testrunner-project-a-sentinel () t)"))))
+         (project-b (test-testrunner-create-project
+                     "ert-b"
+                     '(("test-b.el" . "(ert-deftest test-testrunner-project-b-sentinel () t)"))))
+         (file-a (expand-file-name "tests/test-a.el" project-a))
+         (file-b (expand-file-name "tests/test-b.el" project-b)))
+    (unwind-protect
+        (progn
+          (cl-letf (((symbol-function 'projectile-project-root)
+                     (lambda () project-a)))
+            (cj/test-load-all))
+          (cl-letf (((symbol-function 'projectile-project-root)
+                     (lambda () project-b)))
+            (cj/test-load-all))
+          (should (ert-test-boundp 'test-testrunner-project-a-sentinel))
+          (should (ert-test-boundp 'test-testrunner-project-b-sentinel))
+          (cl-letf (((symbol-function 'projectile-project-root)
+                     (lambda () project-a)))
+            (should (= (cj/ert-clear-tests) 1)))
+          (should (ert-test-boundp 'test-testrunner-project-a-sentinel))
+          (should-not (ert-test-boundp 'test-testrunner-project-b-sentinel)))
+      (when (ert-test-boundp 'test-testrunner-project-a-sentinel)
+        (ert-delete-test 'test-testrunner-project-a-sentinel))
+      (when (ert-test-boundp 'test-testrunner-project-b-sentinel)
+        (ert-delete-test 'test-testrunner-project-b-sentinel))))
+  (test-testrunner-teardown))
+
+(ert-deftest test-testrunner-current-project-test-names-ignore-other-projects ()
+  "Current project ERT selection should ignore loaded tests from other projects."
+  (test-testrunner-setup)
+  (let* ((project-a (test-testrunner-create-project
+                     "names-a"
+                     '(("test-a.el" . "(ert-deftest test-testrunner-project-names-a () t)"))))
+         (project-b (test-testrunner-create-project
+                     "names-b"
+                     '(("test-b.el" . "(ert-deftest test-testrunner-project-names-b () t)")))))
+    (unwind-protect
+        (progn
+          (cl-letf (((symbol-function 'projectile-project-root)
+                     (lambda () project-a)))
+            (cj/test-load-all))
+          (cl-letf (((symbol-function 'projectile-project-root)
+                     (lambda () project-b)))
+            (cj/test-load-all))
+          (cl-letf (((symbol-function 'projectile-project-root)
+                     (lambda () project-a)))
+            (let ((names (cj/test--current-project-test-names)))
+              (should (member 'test-testrunner-project-names-a names))
+              (should-not (member 'test-testrunner-project-names-b names)))))
+      (when (ert-test-boundp 'test-testrunner-project-names-a)
+        (ert-delete-test 'test-testrunner-project-names-a))
+      (when (ert-test-boundp 'test-testrunner-project-names-b)
+        (ert-delete-test 'test-testrunner-project-names-b))))
   (test-testrunner-teardown))
 
 (provide 'test-test-runner)
