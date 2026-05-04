@@ -8,7 +8,7 @@
 ;; • auth-source
 ;;   – Forces use of your default authinfo file
 ;;   – Disable external GPG agent in favor of Emacs's own prompt
-;;   – Enable auth-source debug messages
+;;   – Keeps auth-source debug logging disabled by default
 
 ;; • Easy PG Assistant (epa)
 ;;   – Force using the 'gpg2' executable for encryption/decryption operations
@@ -26,6 +26,29 @@
 (require 'system-lib)
 (eval-when-compile (require 'user-constants)) ;; defines authinfo-file location
 
+(defcustom cj/auth-source-debug-enabled nil
+  "Non-nil means enable verbose auth-source debug logging.
+
+Keep this nil during normal startup.  Auth-source debug output is useful
+for troubleshooting credential lookup problems, but it can expose too
+much context about sensitive services in the Messages buffer."
+  :type 'boolean
+  :group 'auth-source)
+
+(defun cj/set-auth-source-debug (enabled)
+  "Set auth-source debug logging according to ENABLED."
+  (interactive
+   (list (y-or-n-p "Enable auth-source debug logging? ")))
+  (setq cj/auth-source-debug-enabled enabled)
+  (setq auth-source-debug enabled)
+  (message "auth-source debug logging %s"
+           (if enabled "enabled" "disabled")))
+
+(defun cj/toggle-auth-source-debug ()
+  "Toggle verbose auth-source debug logging for troubleshooting."
+  (interactive)
+  (cj/set-auth-source-debug (not auth-source-debug)))
+
 ;; -------------------------------- Auth Sources -------------------------------
 ;; auth sources settings
 
@@ -36,7 +59,7 @@
   ;; USE gpg-agent for passphrase caching (400-day cache from gpg-agent.conf)
   ;; (setenv "GPG_AGENT_INFO" nil)      ;; DISABLED: was preventing gpg-agent cache
   (setq auth-sources `(,authinfo-file))  ;; use authinfo.gpg (see user-constants.el)
-  (setq auth-source-debug t)             ;; echo debug info to Messages
+  (setq auth-source-debug cj/auth-source-debug-enabled)
   (setq auth-source-cache-expiry 86400)) ;; cache decrypted credentials for 24 hours
 
 ;; ----------------------------- Easy PG Assistant -----------------------------
