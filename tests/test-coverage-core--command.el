@@ -66,8 +66,11 @@ uncovered-line markers."
 		  (cj/coverage-register-backend test-backend)
 		  (cl-letf (((symbol-function 'completing-read)
 					 (lambda (&rest _) "Staged — about to commit"))
-					((symbol-function 'shell-command-to-string)
-					 (lambda (_) diff-output))
+					((symbol-function 'process-file)
+					 (lambda (_program _infile destination _display &rest _args)
+					   (with-current-buffer destination
+						 (insert diff-output))
+					   0))
 					((symbol-function 'cj/--coverage-project-root)
 					 (lambda () tmp-root))
 					((symbol-function 'display-buffer) #'identity))
