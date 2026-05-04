@@ -100,6 +100,16 @@
 ;; -------------------------------- Compilation --------------------------------
 ;; Smart compilation with project detection
 
+(defun cj/c--single-file-compile-command (file)
+  "Return a GCC compile command for C source FILE.
+The output binary is FILE without its extension. Both paths are shell
+quoted so spaces and shell metacharacters in filenames are handled."
+  (unless file
+    (user-error "C compile: buffer is not visiting a file"))
+  (format "gcc -Wall -Wextra -g -o %s %s"
+          (shell-quote-argument (file-name-sans-extension file))
+          (shell-quote-argument file)))
+
 (defun cj/c-compile-command ()
   "Set buffer-local compile command based on project structure."
   (let* ((makefile (locate-dominating-file default-directory "Makefile"))
@@ -114,9 +124,7 @@
      (t
       ;; Single file compilation
       (setq-local compile-command
-                  (format "gcc -Wall -Wextra -g -o %s %s"
-                          (file-name-sans-extension (buffer-name))
-                          (buffer-name)))))))
+                  (cj/c--single-file-compile-command buffer-file-name))))))
 
 (add-hook 'c-mode-hook 'cj/c-compile-command)
 (add-hook 'c-ts-mode-hook 'cj/c-compile-command)
