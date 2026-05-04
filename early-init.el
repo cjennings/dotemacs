@@ -116,13 +116,31 @@ Set to nil to use only local repos.")
 (defconst user-home-dir (getenv "HOME")
   "The user's home directory per the environment variable.")
 
-(defconst elpa-mirror-location (concat user-home-dir ".elpa-mirrors/")
+(defconst elpa-mirror-location
+  (expand-file-name ".elpa-mirrors/" user-home-dir)
   "The path to the elpa mirror location.")
 
-(defconst localrepo-location (concat user-emacs-directory ".localrepo/")
+(defconst localrepo-location
+  (expand-file-name ".localrepo/" user-emacs-directory)
   "The path to your local Emacs package repository.
 For more information about the local Emacs package repository, see comments in
 early-init.el.")
+
+(defconst elpa-mirror-gnu-location
+  (expand-file-name "gnu/" elpa-mirror-location)
+  "The path to the local GNU ELPA mirror.")
+
+(defconst elpa-mirror-nongnu-location
+  (expand-file-name "nongnu/" elpa-mirror-location)
+  "The path to the local NonGNU ELPA mirror.")
+
+(defconst elpa-mirror-melpa-location
+  (expand-file-name "melpa/" elpa-mirror-location)
+  "The path to the local MELPA mirror.")
+
+(defconst elpa-mirror-stable-melpa-location
+  (expand-file-name "stable-melpa/" elpa-mirror-location)
+  "The path to the local MELPA Stable mirror.")
 
 (setq package-archives nil) ;; package-archives will be added below
 
@@ -132,20 +150,20 @@ early-init.el.")
   (add-to-list 'package-archive-priorities '("localrepo" . 200)))
 
 ;; LOCAL REPOSITORY ELPA MIRRORS
-(when (file-accessible-directory-p (concat elpa-mirror-location "gnu"))
-  (add-to-list 'package-archives (cons "gnu-local" (concat elpa-mirror-location "gnu/")) t)
+(when (file-accessible-directory-p elpa-mirror-gnu-location)
+  (add-to-list 'package-archives (cons "gnu-local" elpa-mirror-gnu-location) t)
   (add-to-list 'package-archive-priorities '("gnu-local" . 125)))
 
-(when (file-accessible-directory-p (concat elpa-mirror-location "nongnu"))
-  (add-to-list 'package-archives (cons "nongnu-local" (concat elpa-mirror-location "nongnu/")) t)
+(when (file-accessible-directory-p elpa-mirror-nongnu-location)
+  (add-to-list 'package-archives (cons "nongnu-local" elpa-mirror-nongnu-location) t)
   (add-to-list 'package-archive-priorities '("nongnu-local" . 120)))
 
-(when (file-accessible-directory-p (concat elpa-mirror-location "melpa"))
-  (add-to-list 'package-archives (cons "melpa-local" (concat elpa-mirror-location "melpa/")) t)
+(when (file-accessible-directory-p elpa-mirror-melpa-location)
+  (add-to-list 'package-archives (cons "melpa-local" elpa-mirror-melpa-location) t)
   (add-to-list 'package-archive-priorities '("melpa-local" . 115)))
 
-(when (file-accessible-directory-p (concat elpa-mirror-location "stable-melpa"))
-  (add-to-list 'package-archives (cons "melpa-stable-local" (concat elpa-mirror-location "stable-melpa/")) t)
+(when (file-accessible-directory-p elpa-mirror-stable-melpa-location)
+  (add-to-list 'package-archives (cons "melpa-stable-local" elpa-mirror-stable-melpa-location) t)
   (add-to-list 'package-archive-priorities '("melpa-stable-local" . 100)))
 
 ;; ONLINE REPOSITORIES
