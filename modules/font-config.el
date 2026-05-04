@@ -235,8 +235,7 @@ If FRAME is nil, uses the selected frame."
 
 (use-package emojify
   :defer 1
-  :hook ((erc-mode . emojify-mode)
-		 (org-mode . emojify-mode))
+  :hook ((erc-mode . emojify-mode))
   :custom
   (emojify-download-emojis-p t) ;; don't ask, just download emojis
   :bind
