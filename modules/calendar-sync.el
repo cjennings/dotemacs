@@ -287,6 +287,20 @@ parsed as org headings.  Handles multiple levels (e.g. ** becomes --)."
        (concat (make-string (length (match-string 1 match)) ?-) " "))
      text)))
 
+(defun calendar-sync--sanitize-org-property-value (text)
+  "Sanitize TEXT for safe inclusion as a single Org property value."
+  (when text
+    (string-trim
+     (replace-regexp-in-string
+      "[[:space:]\n\r]+"
+      " "
+      text))))
+
+(defun calendar-sync--sanitize-org-heading (text)
+  "Sanitize TEXT for safe inclusion as a single Org heading title."
+  (calendar-sync--sanitize-org-property-value
+   (calendar-sync--sanitize-org-body text)))
+
 ;;; Date Utilities
 
 (defun calendar-sync--add-months (date months)
@@ -1059,7 +1073,8 @@ Cleans text fields (description, location, summary) via `calendar-sync--clean-te
   "Convert parsed EVENT plist to org entry string.
 Produces property drawer with LOCATION, ORGANIZER, STATUS, URL when present.
 Description appears as body text after the drawer."
-  (let* ((summary (or (plist-get event :summary) "(No Title)"))
+  (let* ((summary (calendar-sync--sanitize-org-heading
+                   (or (plist-get event :summary) "(No Title)")))
          (description (plist-get event :description))
          (location (plist-get event :location))
          (start (plist-get event :start))
@@ -1072,16 +1087,24 @@ Description appears as body text after the drawer."
          (props '()))
     ;; Collect non-nil properties
     (when (and location (not (string-empty-p location)))
-      (push (format ":LOCATION: %s" location) props))
+      (push (format ":LOCATION: %s"
+                    (calendar-sync--sanitize-org-property-value location))
+            props))
     (when organizer
       (let ((org-name (or (plist-get organizer :cn)
                           (plist-get organizer :email))))
         (when org-name
-          (push (format ":ORGANIZER: %s" org-name) props))))
+          (push (format ":ORGANIZER: %s"
+                        (calendar-sync--sanitize-org-property-value org-name))
+                props))))
     (when (and status (not (string-empty-p status)))
-      (push (format ":STATUS: %s" status) props))
+      (push (format ":STATUS: %s"
+                    (calendar-sync--sanitize-org-property-value status))
+            props))
     (when (and url (not (string-empty-p url)))
-      (push (format ":URL: %s" url) props))
+      (push (format ":URL: %s"
+                    (calendar-sync--sanitize-org-property-value url))
+            props))
     (setq props (nreverse props))
     ;; Build output
     (let ((parts (list timestamp (format "* %s" summary))))
