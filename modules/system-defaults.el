@@ -163,7 +163,7 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 
 ;; ------------------------------- Be Quiet(er)! -------------------------------
 
-(setq-default vc-follow-symlinks)             ;; don't ask to follow symlinks if target is version controlled
+(setq-default vc-follow-symlinks t)           ;; follow version-controlled symlinks without asking
 (setq kill-buffer-query-functions             ;; don't ask about killing buffers with processes, just kill them
       (remq 'process-kill-buffer-query-function
             kill-buffer-query-functions))
