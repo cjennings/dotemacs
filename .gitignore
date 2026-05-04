@@ -84,3 +84,8 @@ history
 
 # --- elisp ruleset ---
 *.eln
+
+# Emacs backup and auto-save files
+*~
+\#*\#
+.\#*
