@@ -127,9 +127,6 @@
   ;; Use Consult for completion-at-point
   (setq completion-in-region-function #'consult-completion-in-region))
 
-;; Override default search with consult-line
-(keymap-global-set "C-s" #'consult-line)
-
 ;; Consult integration with Embark
 (use-package embark-consult
   :after (embark consult)
