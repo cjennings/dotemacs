@@ -2,9 +2,9 @@
 
 ;;; Commentary:
 ;; Tests for the prior-cmd capture helper used by the auto-revert advice.
-;; Captures the current cached cmd at the project root into
-;; `cj/--projectile-revert-state' so a later finish-hook can restore it
-;; if the compile fails after the cmd was modified.
+;; Captures the current cached cmd at the project root into a plist so a
+;; later finish-hook can restore it if the compile fails after the cmd was
+;; modified.
 
 ;;; Code:
 
@@ -24,25 +24,29 @@
 (ert-deftest test-dev-fkeys-projectile-capture-cmd-stores-prior-value ()
   "Normal: captures the cached cmd at the project root into the state plist."
   (let* ((cj/--projectile-revert-state nil)
-         (projectile-compile-cmd-map (make-hash-table :test 'equal)))
+         (projectile-compile-cmd-map (make-hash-table :test 'equal))
+         state)
     (puthash "/p/" "make build" projectile-compile-cmd-map)
     (cl-letf (((symbol-function 'cj/--f4-project-root) (lambda () "/p/")))
-      (cj/--projectile-capture-cmd 'projectile-compile-cmd-map))
-    (should (equal (plist-get cj/--projectile-revert-state :map)
+      (setq state (cj/--projectile-capture-cmd 'projectile-compile-cmd-map)))
+    (should (equal (plist-get state :map)
                    'projectile-compile-cmd-map))
-    (should (equal (plist-get cj/--projectile-revert-state :root) "/p/"))
-    (should (equal (plist-get cj/--projectile-revert-state :prior) "make build"))))
+    (should (equal (plist-get state :root) "/p/"))
+    (should (equal (plist-get state :prior) "make build"))
+    (should (null cj/--projectile-revert-state))))
 
 (ert-deftest test-dev-fkeys-projectile-capture-cmd-no-prior-stores-nil ()
   "Normal: when no cmd is cached, captures :prior nil — distinct from
 \"didn't capture at all\" because :map and :root are still set."
   (let* ((cj/--projectile-revert-state nil)
-         (projectile-test-cmd-map (make-hash-table :test 'equal)))
+         (projectile-test-cmd-map (make-hash-table :test 'equal))
+         state)
     (cl-letf (((symbol-function 'cj/--f4-project-root) (lambda () "/p/")))
-      (cj/--projectile-capture-cmd 'projectile-test-cmd-map))
-    (should (eq (plist-get cj/--projectile-revert-state :map)
+      (setq state (cj/--projectile-capture-cmd 'projectile-test-cmd-map)))
+    (should (eq (plist-get state :map)
                 'projectile-test-cmd-map))
-    (should (null (plist-get cj/--projectile-revert-state :prior)))))
+    (should (null (plist-get state :prior)))
+    (should (null cj/--projectile-revert-state))))
 
 ;;; Boundary Cases
 

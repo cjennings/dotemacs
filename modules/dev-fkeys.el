@@ -175,26 +175,40 @@ a single Compile entry that calls plain `compile'."
 ;; the three projectile cmd-runners reverts the cache to its prior value
 ;; if the compile fails AND the cmd was modified. A test that fails
 ;; because of a real code bug (cmd unchanged) leaves the cache alone.
+;; Revert state is captured before Projectile runs, then closed over by a
+;; buffer-local compilation finish hook so overlapping compiles cannot
+;; overwrite or consume one another's revert metadata.
 
 (defvar cj/--projectile-revert-state nil
-  "Plist describing the projectile cache state to potentially revert.
-Set by `cj/--projectile-capture-cmd' before each invocation; read and
-cleared by `cj/--projectile-revert-on-fail' after the compile finishes.
-Keys: :map (cmd-map symbol), :root (project root), :prior (cached cmd
-before invocation, may be nil).")
+  "Legacy dynamic state used by direct tests of `cj/--projectile-revert-on-fail'.
+The around advice no longer stores live compile metadata here; it closes
+over the plist returned by `cj/--projectile-capture-cmd' instead.")
 
 (defun cj/--projectile-capture-cmd (map-symbol)
   "Capture the cached cmd at the project root in MAP-SYMBOL.
 MAP-SYMBOL is the symbol of a projectile cmd-map (e.g.
-`projectile-compile-cmd-map'). Stashes a plist in
-`cj/--projectile-revert-state' for the finish hook to read. No-op when
-the project root cannot be resolved or MAP-SYMBOL is unbound (projectile
-not loaded)."
+`projectile-compile-cmd-map'). Return nil when the project root cannot
+be resolved or MAP-SYMBOL is unbound (projectile not loaded)."
   (let ((root (cj/--f4-project-root)))
     (when (and root (boundp map-symbol))
       (let ((prior (gethash root (symbol-value map-symbol))))
-        (setq cj/--projectile-revert-state
-              (list :map map-symbol :root root :prior prior))))))
+        (list :map map-symbol :root root :prior prior)))))
+
+(defun cj/--projectile-revert-state-on-fail (state status)
+  "Apply projectile cache revert STATE when STATUS is a failed compile.
+Reverts the cmd-map entry only when the compile failed AND the cmd was
+modified from the captured prior value AND that prior was non-nil. The
+unchanged-and-failed case (test fails because of a real bug) leaves the
+cache alone."
+  (when (and state (stringp status)
+             (not (string-prefix-p "finished" status)))
+    (let* ((map     (plist-get state :map))
+           (root    (plist-get state :root))
+           (prior   (plist-get state :prior))
+           (current (and (boundp map) (gethash root (symbol-value map)))))
+      (when (and root prior (boundp map)
+                 (not (equal prior current)))
+        (puthash root prior (symbol-value map))))))
 
 (defun cj/--projectile-revert-on-fail (_buf status)
   "Compilation-finish hook: revert projectile cache on failed-and-modified.
@@ -206,24 +220,41 @@ because of a real bug) leaves the cache alone."
   (remove-hook 'compilation-finish-functions #'cj/--projectile-revert-on-fail)
   (let ((state cj/--projectile-revert-state))
     (setq cj/--projectile-revert-state nil)
-    (when (and state (stringp status)
-               (not (string-prefix-p "finished" status)))
-      (let* ((map     (plist-get state :map))
-             (root    (plist-get state :root))
-             (prior   (plist-get state :prior))
-             (current (and (boundp map) (gethash root (symbol-value map)))))
-        (when (and root prior (boundp map)
-                   (not (equal prior current)))
-          (puthash root prior (symbol-value map)))))))
+    (cj/--projectile-revert-state-on-fail state status)))
+
+(defun cj/--projectile-make-revert-on-fail-hook (state)
+  "Return a one-shot buffer-local finish hook for projectile revert STATE."
+  (let (hook)
+    (setq hook
+          (lambda (buf status)
+            (when (buffer-live-p buf)
+              (with-current-buffer buf
+                (remove-hook 'compilation-finish-functions hook t)))
+            (cj/--projectile-revert-state-on-fail state status)))
+    hook))
+
+(defun cj/--projectile-compilation-buffer (result)
+  "Return the compilation buffer represented by RESULT, or nil."
+  (cond
+   ((bufferp result) result)
+   ((processp result) (process-buffer result))
+   (t nil)))
 
 (defun cj/--projectile-around-revert (map-symbol orig-fn &rest args)
   "Around-advice for projectile cmd-runners.
 MAP-SYMBOL identifies which cmd-map to capture (compile / test / run).
-Captures the prior cached cmd, installs the one-shot revert-on-failure
-hook, then invokes ORIG-FN with ARGS."
-  (cj/--projectile-capture-cmd map-symbol)
-  (add-hook 'compilation-finish-functions #'cj/--projectile-revert-on-fail)
-  (apply orig-fn args))
+Captures the prior cached cmd, invokes ORIG-FN with ARGS, then installs a
+one-shot buffer-local revert-on-failure hook on the returned compilation
+buffer when possible."
+  (let* ((state (cj/--projectile-capture-cmd map-symbol))
+         (result (apply orig-fn args))
+         (buffer (cj/--projectile-compilation-buffer result)))
+    (when (and state (buffer-live-p buffer))
+      (with-current-buffer buffer
+        (add-hook 'compilation-finish-functions
+                  (cj/--projectile-make-revert-on-fail-hook state)
+                  nil t)))
+    result))
 
 (defun cj/projectile-reset-cmds ()
   "Clear projectile's cached compile/test/run cmds for the current project.

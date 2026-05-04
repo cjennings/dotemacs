@@ -33,29 +33,81 @@
     (should (equal calls '((arg1 arg2))))))
 
 (ert-deftest test-dev-fkeys-projectile-around-revert-captures-prior ()
-  "Normal: advice captures the prior cmd into the revert state."
+  "Normal: advice captures the prior cmd into the buffer-local hook."
   (let ((cj/--projectile-revert-state nil)
         (compilation-finish-functions nil)
         (projectile-compile-cmd-map (make-hash-table :test 'equal)))
     (puthash "/p/" "make build" projectile-compile-cmd-map)
     (cl-letf (((symbol-function 'cj/--f4-project-root) (lambda () "/p/")))
-      (cj/--projectile-around-revert
-       'projectile-compile-cmd-map
-       (lambda (&rest _) nil)))
-    (should (equal (plist-get cj/--projectile-revert-state :prior)
-                   "make build"))))
+      (let ((compile-buffer (get-buffer-create " *compile-capture*")))
+        (unwind-protect
+            (progn
+              (cj/--projectile-around-revert
+               'projectile-compile-cmd-map
+               (lambda (&rest _) compile-buffer))
+              (puthash "/p/" "make typo" projectile-compile-cmd-map)
+              (with-current-buffer compile-buffer
+                (run-hook-with-args 'compilation-finish-functions
+                                    compile-buffer "exited abnormally\n"))
+              (should (equal (gethash "/p/" projectile-compile-cmd-map)
+                             "make build")))
+          (kill-buffer compile-buffer))))))
 
 (ert-deftest test-dev-fkeys-projectile-around-revert-installs-finish-hook ()
-  "Normal: advice adds the revert-on-fail hook to compilation-finish-functions."
+  "Normal: advice adds a buffer-local revert hook to the compilation buffer."
   (let ((cj/--projectile-revert-state nil)
         (compilation-finish-functions nil)
         (projectile-compile-cmd-map (make-hash-table :test 'equal)))
+    (puthash "/p/" "make build" projectile-compile-cmd-map)
     (cl-letf (((symbol-function 'cj/--f4-project-root) (lambda () "/p/")))
-      (cj/--projectile-around-revert
-       'projectile-compile-cmd-map
-       (lambda (&rest _) nil)))
-    (should (member #'cj/--projectile-revert-on-fail
-                    compilation-finish-functions))))
+      (with-current-buffer (get-buffer-create " *compile-a*")
+        (setq-local compilation-finish-functions nil))
+      (unwind-protect
+          (let ((compile-buffer
+                 (cj/--projectile-around-revert
+                  'projectile-compile-cmd-map
+                  (lambda (&rest _) (get-buffer-create " *compile-a*")))))
+            (should-not compilation-finish-functions)
+            (with-current-buffer compile-buffer
+              (should compilation-finish-functions)))
+        (kill-buffer " *compile-a*")))))
+
+(ert-deftest test-dev-fkeys-projectile-around-revert-overlapping-compiles-use-own-state ()
+  "Regression: overlapping compiles finishing out of order use their own state."
+  (let ((cj/--projectile-revert-state nil)
+        (compilation-finish-functions nil)
+        (projectile-compile-cmd-map (make-hash-table :test 'equal))
+        (roots '("/one/" "/two/")))
+    (puthash "/one/" "make one" projectile-compile-cmd-map)
+    (puthash "/two/" "make two" projectile-compile-cmd-map)
+    (cl-letf (((symbol-function 'cj/--f4-project-root)
+               (lambda () (pop roots))))
+      (let ((buf-one (get-buffer-create " *compile-one*"))
+            (buf-two (get-buffer-create " *compile-two*")))
+        (unwind-protect
+            (progn
+              (cj/--projectile-around-revert
+               'projectile-compile-cmd-map
+               (lambda (&rest _) buf-one))
+              (cj/--projectile-around-revert
+               'projectile-compile-cmd-map
+               (lambda (&rest _) buf-two))
+              (puthash "/one/" "make one typo" projectile-compile-cmd-map)
+              (puthash "/two/" "make two typo" projectile-compile-cmd-map)
+              (with-current-buffer buf-two
+                (run-hook-with-args 'compilation-finish-functions
+                                    buf-two "exited abnormally\n"))
+              (should (string= (gethash "/two/" projectile-compile-cmd-map)
+                               "make two"))
+              (should (string= (gethash "/one/" projectile-compile-cmd-map)
+                               "make one typo"))
+              (with-current-buffer buf-one
+                (run-hook-with-args 'compilation-finish-functions
+                                    buf-one "exited abnormally\n"))
+              (should (string= (gethash "/one/" projectile-compile-cmd-map)
+                               "make one")))
+          (kill-buffer buf-one)
+          (kill-buffer buf-two))))))
 
 ;;; Boundary Cases
 
@@ -70,7 +122,8 @@ The state stays nil so the finish hook will be a no-op too."
        'projectile-compile-cmd-map
        (lambda (&rest _) (cl-incf calls))))
     (should (= calls 1))
-    (should (null cj/--projectile-revert-state))))
+    (should (null cj/--projectile-revert-state))
+    (should-not compilation-finish-functions)))
 
 (provide 'test-dev-fkeys--projectile-around-revert)
 ;;; test-dev-fkeys--projectile-around-revert.el ends here
