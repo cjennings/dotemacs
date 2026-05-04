@@ -225,6 +225,46 @@
         (kill-buffer (current-buffer)))
     (test-move-buffer-and-file-teardown)))
 
+(ert-deftest test-move-buffer-and-file-renamed-buffer-uses-file-basename ()
+  "Should use visited file basename when buffer name differs."
+  (test-move-buffer-and-file-setup)
+  (unwind-protect
+      (let* ((source-dir (cj/create-test-subdirectory "source"))
+             (target-dir (cj/create-test-subdirectory "target"))
+             (source-file (expand-file-name "original.txt" source-dir))
+             (target-file (expand-file-name "original.txt" target-dir))
+             (wrong-target (expand-file-name "renamed-buffer" target-dir)))
+        (with-temp-file source-file
+          (insert "content"))
+        (find-file source-file)
+        (rename-buffer "renamed-buffer")
+        (cj/--move-buffer-and-file target-dir)
+        (should (file-exists-p target-file))
+        (should-not (file-exists-p wrong-target))
+        (should (string= (buffer-file-name) target-file))
+        (kill-buffer (current-buffer)))
+    (test-move-buffer-and-file-teardown)))
+
+(ert-deftest test-move-buffer-and-file-uniquified-buffer-uses-file-basename ()
+  "Should not use uniquified buffer names such as <2> as filenames."
+  (test-move-buffer-and-file-setup)
+  (unwind-protect
+      (let* ((source-dir (cj/create-test-subdirectory "source"))
+             (target-dir (cj/create-test-subdirectory "target"))
+             (source-file (expand-file-name "duplicate.txt" source-dir))
+             (target-file (expand-file-name "duplicate.txt" target-dir))
+             (wrong-target (expand-file-name "duplicate.txt<2>" target-dir)))
+        (with-temp-file source-file
+          (insert "content"))
+        (find-file source-file)
+        (rename-buffer "duplicate.txt<2>")
+        (cj/--move-buffer-and-file (concat target-dir "/"))
+        (should (file-exists-p target-file))
+        (should-not (file-exists-p wrong-target))
+        (should (string= (buffer-file-name) target-file))
+        (kill-buffer (current-buffer)))
+    (test-move-buffer-and-file-teardown)))
+
 (ert-deftest test-move-buffer-and-file-deeply-nested-target ()
   "Should move to deeply nested target directory."
   (test-move-buffer-and-file-setup)

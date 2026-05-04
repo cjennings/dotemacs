@@ -110,11 +110,12 @@ If OK-IF-EXISTS is non-nil, overwrite existing file.
 Returns t on success, nil if buffer not visiting a file."
   (let* ((name (buffer-name))
          (filename (buffer-file-name))
+         (basename (and filename (file-name-nondirectory filename)))
          (dir (expand-file-name dir))
          (dir
           (if (string-match "[/\\\\]$" dir)
               (substring dir 0 -1) dir))
-         (newname (concat dir "/" name)))
+         (newname (and basename (expand-file-name basename dir))))
     (if (not filename)
         (progn
           (message "Buffer '%s' is not visiting a file!" name)
@@ -129,7 +130,10 @@ Returns t on success, nil if buffer not visiting a file."
   "Move both current buffer and the file it visits to DIR.
 When called interactively, prompts for confirmation if target file exists."
   (interactive (list (read-directory-name "Move buffer and file (to new directory): ")))
-  (let* ((target (expand-file-name (buffer-name) (expand-file-name dir))))
+  (let* ((filename (buffer-file-name))
+         (target (expand-file-name
+                  (file-name-nondirectory (or filename (buffer-name)))
+                  (expand-file-name dir))))
     (condition-case _
         (cj/--move-buffer-and-file dir nil)
       (file-already-exists
