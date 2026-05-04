@@ -86,10 +86,82 @@ Each element is a filename (without path) to run.")
 
 Either \\='all (run all tests) or \\='focused (run only focused tests).")
 
+(defvar cj/test-project-states (make-hash-table :test #'equal)
+  "Per-project test runner state keyed by project root.")
+
+(defvar cj/test-loaded-project-roots '()
+  "Project roots whose tests have been loaded by this test runner.")
+
 (defvar cj/test-last-results nil
   "Results from the last test run.")
 
 ;;; Core Functions
+
+(defun cj/test--project-root ()
+  "Return the current Projectile project root, or nil when unavailable."
+  (when (fboundp 'projectile-project-root)
+    (when-let ((root (ignore-errors (projectile-project-root))))
+      (file-name-as-directory (expand-file-name root)))))
+
+(defun cj/test--state-key ()
+  "Return the key for current test runner state."
+  (or (cj/test--project-root)
+      (file-name-as-directory (expand-file-name default-directory))))
+
+(defun cj/test--project-state (&optional key)
+  "Return test runner state for KEY, creating it when absent."
+  (let ((state-key (or key (cj/test--state-key))))
+    (or (gethash state-key cj/test-project-states)
+        (puthash state-key
+                 (list :focused-files '()
+                       :mode 'all)
+                 cj/test-project-states))))
+
+(defun cj/test--state-get (property default)
+  "Return current project state PROPERTY, or DEFAULT when unset."
+  (let ((value (plist-get (cj/test--project-state) property)))
+    (if (null value) default value)))
+
+(defun cj/test--state-put (property value)
+  "Set current project state PROPERTY to VALUE."
+  (let* ((key (cj/test--state-key))
+         (state (cj/test--project-state key)))
+    (setq state (plist-put state property value))
+    (puthash key state cj/test-project-states)
+    (cj/test--sync-legacy-state)
+    value))
+
+(defun cj/test--current-focused-files ()
+  "Return focused test files for the current project."
+  (cj/test--state-get :focused-files '()))
+
+(defun cj/test--set-current-focused-files (focused-files)
+  "Set FOCUSED-FILES for the current project."
+  (cj/test--state-put :focused-files focused-files))
+
+(defun cj/test--current-mode ()
+  "Return test execution mode for the current project."
+  (cj/test--state-get :mode 'all))
+
+(defun cj/test--set-current-mode (mode)
+  "Set test execution MODE for the current project."
+  (cj/test--state-put :mode mode))
+
+(defun cj/test--sync-legacy-state ()
+  "Mirror current project state into legacy public variables."
+  (setq cj/test-focused-files (cj/test--current-focused-files)
+        cj/test-mode (cj/test--current-mode)))
+
+(defun cj/test--remember-loaded-project-root ()
+  "Remember the current project root as one loaded by this test runner."
+  (when-let ((root (cj/test--project-root)))
+    (cl-pushnew root cj/test-loaded-project-roots :test #'string=)))
+
+(defun cj/test--file-in-directory-p (file directory)
+  "Return non-nil when FILE is inside DIRECTORY."
+  (let ((true-file (file-truename file))
+        (true-dir (file-name-as-directory (file-truename directory))))
+    (string-prefix-p true-dir true-file)))
 
 (defun cj/test--get-test-directory ()
   "Return the test directory path for the current project.
@@ -97,8 +169,7 @@ Either \\='all (run all tests) or \\='focused (run only focused tests).")
 If in a Projectile project, prefers \\='test or \\='tests directory
 inside the project root.  Falls back to `cj/test-global-directory'
 if not found or not in a project."
-  (require 'projectile)
-  (let ((project-root (ignore-errors (projectile-project-root))))
+  (let ((project-root (cj/test--project-root)))
 	(if (not (and project-root (file-directory-p project-root)))
 		;; fallback global test directory
 		cj/test-global-directory
@@ -145,8 +216,10 @@ Returns: (cons \\='success loaded-count) on success,
 	(let ((test-files (directory-files dir t "^test-.*\\.el$")))
       (pcase (cj/test--do-load-files dir test-files)
         (`(success . ,count)
+         (cj/test--remember-loaded-project-root)
          (message "Loaded %d test file(s)" count))
         (`(error ,count ,errors)
+         (cj/test--remember-loaded-project-root)
          (dolist (err errors)
            (message "Error loading %s: %s" (car err) (cdr err)))
          (message "Loaded %d test file(s) with %d error(s)" count (length errors)))))))
@@ -167,23 +240,24 @@ Returns: \\='success if added successfully,
   "Select test file(s) to add to the focused list."
   (interactive)
   (cj/test--ensure-test-dir-in-load-path)
-  (let* ((dir (cj/test--get-test-directory))
+  (let* ((focused-files (cj/test--current-focused-files))
+         (dir (cj/test--get-test-directory))
 		 (available-files (when (file-directory-p dir)
 							(mapcar #'file-name-nondirectory
 									(directory-files dir t "^test-.*\\.el$")))))
 	(if (null available-files)
 		(user-error "No test files found in %s" dir)
 	  (let* ((unfocused-files (cl-set-difference available-files
-												 cj/test-focused-files
+												 focused-files
 												 :test #'string=))
 			 (selected (if unfocused-files
 						   (completing-read "Add test file to focus: "
 											unfocused-files
 											nil t)
 						 (user-error "All test files are already focused"))))
-        (pcase (cj/test--do-focus-add selected available-files cj/test-focused-files)
+        (pcase (cj/test--do-focus-add selected available-files focused-files)
           ('success
-           (push selected cj/test-focused-files)
+           (cj/test--set-current-focused-files (cons selected focused-files))
            (message "Added to focus: %s" selected)
            (when (called-interactively-p 'interactive)
              (cj/test-view-focused)))
@@ -215,8 +289,9 @@ Second value is the relative filename if successful."
   "Add the current buffer's file to the focused test list."
   (interactive)
   (let ((file (buffer-file-name))
-        (dir (cj/test--get-test-directory)))
-    (pcase (cj/test--do-focus-add-file file dir cj/test-focused-files)
+        (dir (cj/test--get-test-directory))
+        (focused-files (cj/test--current-focused-files)))
+    (pcase (cj/test--do-focus-add-file file dir focused-files)
       (`(no-file . ,_)
        (user-error "Current buffer is not visiting a file"))
       (`(not-in-testdir . ,_)
@@ -224,7 +299,7 @@ Second value is the relative filename if successful."
       (`(already-focused . ,relative)
        (message "Already focused: %s" relative))
       (`(success . ,relative)
-       (push relative cj/test-focused-files)
+       (cj/test--set-current-focused-files (cons relative focused-files))
        (message "Added to focus: %s" relative)
        (when (called-interactively-p 'interactive)
          (cj/test-view-focused))))))
@@ -242,27 +317,28 @@ Returns: \\='success if removed successfully,
 (defun cj/test-focus-remove ()
   "Remove a test file from the focused list."
   (interactive)
-  (if (null cj/test-focused-files)
+  (let ((focused-files (cj/test--current-focused-files)))
+  (if (null focused-files)
 	  (user-error "No focused files to remove")
 	(let ((selected (completing-read "Remove from focus: "
-									 cj/test-focused-files
+									 focused-files
 									 nil t)))
-      (pcase (cj/test--do-focus-remove selected cj/test-focused-files)
+      (pcase (cj/test--do-focus-remove selected focused-files)
         ('success
-         (setq cj/test-focused-files
-               (delete selected cj/test-focused-files))
+         (cj/test--set-current-focused-files
+          (delete selected focused-files))
          (message "Removed from focus: %s" selected)
          (when (called-interactively-p 'interactive)
            (cj/test-view-focused)))
         ('not-found
          (message "File not in focused list: %s" selected))
         ('empty-list
-         (user-error "No focused files to remove"))))))
+         (user-error "No focused files to remove")))))))
 
 (defun cj/test-focus-clear ()
   "Clear all focused test files."
   (interactive)
-  (setq cj/test-focused-files '())
+  (cj/test--set-current-focused-files '())
   (message "Cleared all focused test files"))
 
 (defun cj/test--extract-test-names (file)
@@ -303,7 +379,7 @@ Returns: (cons \\='success (list test-names loaded-count)) if successful,
   "Run only the focused test files."
   (interactive)
   (let ((dir (cj/test--get-test-directory)))
-    (pcase (cj/test--do-get-focused-tests cj/test-focused-files dir)
+    (pcase (cj/test--do-get-focused-tests (cj/test--current-focused-files) dir)
       (`(empty-list . ,_)
        (user-error "No focused files set. Use =cj/test-focus-add' first"))
       (`(no-tests . ,_)
@@ -346,29 +422,85 @@ Otherwise, message that no test is found."
 (defun cj/test-run-all ()
   "Load and run all tests."
   (interactive)
-  (cj/test-load-all)
-  (ert t))
+  (cj/ert-run-current-project-tests))
 
 (defun cj/test-toggle-mode ()
   "Toggle between \\='all and \\='focused test execution modes."
   (interactive)
-  (setq cj/test-mode (if (eq cj/test-mode 'all) 'focused 'all))
-  (message "Test mode: %s" cj/test-mode))
+  (let ((mode (if (eq (cj/test--current-mode) 'all) 'focused 'all)))
+    (cj/test--set-current-mode mode)
+    (message "Test mode: %s" mode)))
 
 (defun cj/test-view-focused ()
   "Display test files in focus."
   (interactive)
-  (if (null cj/test-focused-files)
-	  (message "No focused test files")
-	(message "Focused files: %s"
-			 (mapconcat 'identity cj/test-focused-files ", "))))
+  (let ((focused-files (cj/test--current-focused-files)))
+    (if (null focused-files)
+	    (message "No focused test files")
+	  (message "Focused files: %s"
+			   (mapconcat 'identity focused-files ", ")))))
 
 (defun cj/test-run-smart ()
   "Run tests based on current mode (all or focused)."
   (interactive)
-  (if (eq cj/test-mode 'all)
+  (if (eq (cj/test--current-mode) 'all)
 	  (cj/test-run-all)
 	(cj/test-run-focused)))
+
+(defun cj/test--current-project-test-names ()
+  "Return ERT test names defined in the current project."
+  (let ((current-root (cj/test--project-root))
+        (test-names '()))
+    (dolist (test (ert-select-tests t t))
+      (let ((file (ert-test-file-name test)))
+        (when (or (null current-root)
+                  (and file
+                       (cj/test--file-in-directory-p file current-root)))
+          (push (ert-test-name test) test-names))))
+    (nreverse test-names)))
+
+(defun cj/ert-run-current-project-tests ()
+  "Load and run only ERT tests defined in the current project."
+  (interactive)
+  (cj/test-load-all)
+  (let ((test-names (cj/test--current-project-test-names)))
+    (if test-names
+        (ert (concat "^"
+                     (regexp-opt (mapcar #'symbol-name test-names))
+                     "$"))
+      (user-error "No ERT tests found for current project"))))
+
+(defun cj/ert-clear-tests ()
+  "Delete ERT tests loaded from other known project roots.
+Returns the number of tests deleted."
+  (interactive)
+  (let ((current-root (cj/test--project-root))
+        (deleted 0))
+    (dolist (test (ert-select-tests t t))
+      (let* ((test-name (ert-test-name test))
+             (file (ert-test-file-name test))
+             (loaded-root (and file
+                               (cl-find-if
+                                (lambda (root)
+                                  (cj/test--file-in-directory-p file root))
+                                cj/test-loaded-project-roots))))
+        (when (and loaded-root
+                   (not (and current-root
+                             (string= loaded-root current-root))))
+          (ert-delete-test test-name)
+          (setq deleted (1+ deleted)))))
+    (when (called-interactively-p 'interactive)
+      (message "Cleared %d ERT test(s) from other projects" deleted))
+    deleted))
+
+(defun cj/test-project-switch-reset ()
+  "Refresh test-runner state after switching projects."
+  (interactive)
+  (cj/test--sync-legacy-state)
+  (cj/ert-clear-tests))
+
+(with-eval-after-load 'projectile
+  (add-hook 'projectile-after-switch-project-hook #'cj/test-project-switch-reset))
 
 ;; Test runner operations prefix and keymap
 (defvar-keymap cj/testrunner-map
