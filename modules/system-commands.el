@@ -104,17 +104,6 @@ If CONFIRM is non-nil, mark VAR to always require confirmation."
   (run-at-time 1 nil #'kill-emacs)
   (message "Restarting Emacs..."))
 
-(defvar-keymap cj/system-command-map
-  :doc "Keymap for system commands."
-  "L" #'cj/system-cmd-logout
-  "r" #'cj/system-cmd-reboot
-  "s" #'cj/system-cmd-shutdown
-  "S" #'cj/system-cmd-suspend
-  "l" #'cj/system-cmd-lock
-  "E" #'cj/system-cmd-exit-emacs
-  "e" #'cj/system-cmd-restart-emacs)
-(keymap-set cj/custom-keymap "!" cj/system-command-map)
-
 (defun cj/system-command-menu ()
   "Present system commands via \='completing-read\='."
   (interactive)
@@ -129,10 +118,29 @@ If CONFIRM is non-nil, mark VAR to always require confirmation."
     (when-let ((cmd (alist-get choice commands nil nil #'equal)))
       (call-interactively cmd))))
 
-(keymap-set cj/custom-keymap "!" #'cj/system-command-menu)
+(defvar-keymap cj/system-command-map
+  :doc "Keymap for system commands."
+  "!" #'cj/system-command-menu
+  "L" #'cj/system-cmd-logout
+  "r" #'cj/system-cmd-reboot
+  "s" #'cj/system-cmd-shutdown
+  "S" #'cj/system-cmd-suspend
+  "l" #'cj/system-cmd-lock
+  "E" #'cj/system-cmd-exit-emacs
+  "e" #'cj/system-cmd-restart-emacs)
+(keymap-set cj/custom-keymap "!" cj/system-command-map)
 
 (with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements "C-; !" "system commands"))
+  (which-key-add-key-based-replacements
+    "C-; !" "system commands"
+    "C-; ! !" "system command menu"
+    "C-; ! L" "logout"
+    "C-; ! E" "exit Emacs"
+    "C-; ! S" "suspend"
+    "C-; ! e" "restart Emacs"
+    "C-; ! l" "lock screen"
+    "C-; ! r" "reboot"
+    "C-; ! s" "shutdown"))
 
 (provide 'system-commands)
 ;;; system-commands.el ends here
