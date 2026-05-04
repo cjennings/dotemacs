@@ -32,6 +32,16 @@
   :type 'natnum
   :group 'modeline)
 
+(defcustom cj/modeline-vc-cache-ttl 5
+  "Seconds to reuse cached VC branch and state in the modeline."
+  :type 'number
+  :group 'modeline)
+
+(defcustom cj/modeline-vc-show-remote nil
+  "When non-nil, show VC branch and state for remote files."
+  :type 'boolean
+  :group 'modeline)
+
 ;; -------------------------- Helper Functions ---------------------------------
 
 (defun cj/modeline-window-narrow-p ()
@@ -95,31 +105,89 @@ Uses built-in cached values for performance.")
     (up-to-date . vc-up-to-date-state))
   "VC state to face mapping.")
 
+(defvar-local cj/modeline-vc-cache-key nil
+  "Cache key for the current buffer's modeline VC data.")
+
+(defvar-local cj/modeline-vc-cache-time nil
+  "Timestamp for the current buffer's modeline VC cache.")
+
+(defvar-local cj/modeline-vc-cache-value nil
+  "Cached modeline VC plist for the current buffer.")
+
+(defvar-local cj/modeline-vc-cache-set-p nil
+  "Non-nil when the current buffer's modeline VC cache has a value.")
+
+(defun cj/modeline-vc-file ()
+  "Return the file or directory to inspect for VC modeline data."
+  (or buffer-file-name default-directory))
+
+(defun cj/modeline-vc-cache-clear ()
+  "Clear cached VC modeline data for the current buffer."
+  (setq cj/modeline-vc-cache-key nil
+        cj/modeline-vc-cache-time nil
+        cj/modeline-vc-cache-value nil
+        cj/modeline-vc-cache-set-p nil))
+
+(defun cj/modeline-vc-cache-key (file)
+  "Return the cache key for FILE."
+  (list file cj/modeline-vc-show-remote))
+
+(defun cj/modeline-vc-cache-valid-p (key now)
+  "Return non-nil when cached VC data is valid for KEY at NOW."
+  (and cj/modeline-vc-cache-set-p
+       cj/modeline-vc-cache-time
+       (equal key cj/modeline-vc-cache-key)
+       (<= (- now cj/modeline-vc-cache-time) cj/modeline-vc-cache-ttl)))
+
+(defun cj/modeline-vc-fetch (file)
+  "Fetch modeline VC data for FILE.
+Return a plist with `:branch' and `:state', or nil when FILE has no VC data."
+  (unless (and (file-remote-p file) (not cj/modeline-vc-show-remote))
+    (when-let* ((backend (vc-backend file))
+                (branch (vc-working-revision file backend)))
+      (when (eq backend 'Git)
+        (unless (fboundp 'vc-git--symbolic-ref)
+          (require 'vc-git))
+        (when-let* ((symbolic (vc-git--symbolic-ref file)))
+          (setq branch symbolic)))
+      (list :branch branch
+            :state (vc-state file backend)))))
+
+(defun cj/modeline-vc-info ()
+  "Return cached modeline VC data for the current buffer."
+  (when-let* ((file (cj/modeline-vc-file)))
+    (unless (and (file-remote-p file) (not cj/modeline-vc-show-remote))
+      (let* ((now (float-time))
+             (key (cj/modeline-vc-cache-key file)))
+        (if (cj/modeline-vc-cache-valid-p key now)
+            cj/modeline-vc-cache-value
+          (setq cj/modeline-vc-cache-key key
+                cj/modeline-vc-cache-time now
+                cj/modeline-vc-cache-value (cj/modeline-vc-fetch file)
+                cj/modeline-vc-cache-set-p t)
+          cj/modeline-vc-cache-value)))))
+
+(defun cj/modeline-vc-render (info)
+  "Render modeline VC INFO plist."
+  (when-let* ((branch (plist-get info :branch)))
+    (let* ((state (plist-get info :state))
+           (face (alist-get state cj/modeline-vc-faces 'vc-up-to-date-state))
+           (truncated-branch (cj/modeline-string-cut-middle branch)))
+      (concat
+       (propertize (char-to-string #xE0A0) 'face 'shadow)
+       " "
+       (propertize truncated-branch
+                   'face face
+                   'mouse-face 'mode-line-highlight
+                   'help-echo (format "Branch: %s\nState: %s\nmouse-1: vc-diff\nmouse-3: vc-root-diff" branch state)
+                   'local-map (let ((map (make-sparse-keymap)))
+                                (define-key map [mode-line mouse-1] 'vc-diff)
+                                (define-key map [mode-line mouse-3] 'vc-root-diff)
+                                map))))))
+
 (defvar-local cj/modeline-vc-branch
   '(:eval (when (mode-line-window-selected-p)  ; Only show in active window
-            (when-let* ((file (or buffer-file-name default-directory))
-                        (backend (vc-backend file)))
-              (when-let* ((branch (vc-working-revision file backend)))
-                ;; For Git, try to get symbolic branch name
-                (when (eq backend 'Git)
-                  (require 'vc-git)
-                  (when-let* ((symbolic (vc-git--symbolic-ref file)))
-                    (setq branch symbolic)))
-                ;; Get VC state for face
-                (let* ((state (vc-state file backend))
-                       (face (alist-get state cj/modeline-vc-faces 'vc-up-to-date-state))
-                       (truncated-branch (cj/modeline-string-cut-middle branch)))
-                  (concat
-                   (propertize (char-to-string #xE0A0) 'face 'shadow) ; Git branch symbol
-                   " "
-                   (propertize truncated-branch
-                               'face face
-                               'mouse-face 'mode-line-highlight
-                               'help-echo (format "Branch: %s\nState: %s\nmouse-1: vc-diff\nmouse-3: vc-root-diff" branch state)
-                               'local-map (let ((map (make-sparse-keymap)))
-                                            (define-key map [mode-line mouse-1] 'vc-diff)
-                                            (define-key map [mode-line mouse-3] 'vc-root-diff)
-                                            map))))))))
+            (cj/modeline-vc-render (cj/modeline-vc-info))))
   "Git branch with symbol and colored by VC state.
 Shows only in active window.  Truncates in narrow windows.
 Click to show diffs with `vc-diff' or `vc-root-diff'.")
@@ -143,6 +211,9 @@ Click to show help with `describe-mode'.")
             mode-line-misc-info))
   "Misc info (chime notifications, etc).
 Shows only in active window.")
+
+(add-hook 'after-save-hook #'cj/modeline-vc-cache-clear)
+(add-hook 'after-revert-hook #'cj/modeline-vc-cache-clear)
 
 ;; -------------------------- Modeline Assembly --------------------------------
 
