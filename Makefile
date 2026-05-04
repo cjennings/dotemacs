@@ -379,7 +379,8 @@ clean-compiled:
 
 clean-tests:
 	@echo "Removing test artifacts..."
-	@rm -rf $(HOME)/.temp-emacs-tests
+	@test_dir="$${CJ_EMACS_TEST_DIR:-$${TMPDIR:-/tmp}/cj-emacs-tests}"; \
+	 rm -rf "$$test_dir" "$${TMPDIR:-/tmp}"/cj-emacs-tests-* "$(HOME)/.temp-emacs-tests"
 	@echo "✓ Test artifacts removed"
 
 reset:
