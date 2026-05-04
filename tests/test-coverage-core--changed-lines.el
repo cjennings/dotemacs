@@ -3,7 +3,7 @@
 ;;; Commentary:
 ;; Unit tests for:
 ;;   `cj/--coverage-parse-diff-output' (pure parser over git-diff text)
-;;   `cj/--coverage-changed-lines' (scope → hash table, shells to git)
+;;   `cj/--coverage-changed-lines' (scope → hash table, invokes git by argv)
 ;;
 ;; The parser takes the output of `git diff --unified=0' and returns
 ;; a hash table of file → set of changed (added) line numbers in the
@@ -173,16 +173,54 @@ Binary files a/image.png and b/image.png differ
     (should (gethash 10 lines))
     (should (gethash 11 lines))))
 
-;;; Smoke test — changed-lines (stubbed git invocation)
+;;; Smoke tests — changed-lines (stubbed git invocation)
 
 (ert-deftest test-coverage-changed-lines-working-tree-stubbed ()
-  "Smoke: scope dispatches, shell is stubbed, parser is applied to the result."
-  (cl-letf (((symbol-function 'shell-command-to-string)
-             (lambda (_cmd) test-coverage-diff--simple-single-file)))
-    (let* ((result (cj/--coverage-changed-lines 'working-tree))
-           (lines (gethash "foo.el" result)))
-      (should (= 1 (hash-table-count result)))
-      (should (= 3 (hash-table-count lines))))))
+  "Smoke: working-tree scope invokes git diff via argv and parses the result."
+  (let (seen-calls)
+    (cl-letf (((symbol-function 'process-file)
+               (lambda (program _infile destination _display &rest args)
+                 (push (cons program args) seen-calls)
+                 (with-current-buffer destination
+                   (insert test-coverage-diff--simple-single-file))
+                 0)))
+      (let* ((result (cj/--coverage-changed-lines 'working-tree))
+             (lines (gethash "foo.el" result)))
+        (should (equal (nreverse seen-calls)
+                       '(("git" "diff" "HEAD" "--unified=0"))))
+        (should (= 1 (hash-table-count result)))
+        (should (= 3 (hash-table-count lines)))))))
+
+(ert-deftest test-coverage-changed-lines-branch-vs-parent-computes-merge-base ()
+  "Branch scopes should compute merge-base separately before diffing."
+  (let (seen-calls)
+    (cl-letf (((symbol-function 'process-file)
+               (lambda (program _infile destination _display &rest args)
+                 (push (cons program args) seen-calls)
+                 (with-current-buffer destination
+                   (insert
+                    (pcase args
+                      (`("merge-base" "HEAD" "feature/base") "abc123\n")
+                      (`("diff" "abc123..HEAD" "--unified=0")
+                       test-coverage-diff--simple-single-file)
+                      (_ ""))))
+                 0)))
+      (let* ((result (cj/--coverage-changed-lines 'branch-vs-parent "feature/base"))
+             (lines (gethash "foo.el" result)))
+        (should (equal (nreverse seen-calls)
+                       '(("git" "merge-base" "HEAD" "feature/base")
+                         ("git" "diff" "abc123..HEAD" "--unified=0"))))
+        (should (= 3 (hash-table-count lines)))))))
+
+(ert-deftest test-coverage-changed-lines-git-failure-errors-clearly ()
+  "Git failures should surface as user-error messages."
+  (cl-letf (((symbol-function 'process-file)
+             (lambda (_program _infile destination _display &rest _args)
+               (with-current-buffer destination
+                 (insert "fatal: not a git repository\n"))
+               128)))
+    (should-error (cj/--coverage-changed-lines 'working-tree)
+                  :type 'user-error)))
 
 (ert-deftest test-coverage-changed-lines-unknown-scope-errors ()
   "Error: an unknown scope symbol signals user-error."

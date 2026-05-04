@@ -4,7 +4,7 @@
 ;;; Commentary:
 ;; Language-agnostic core for diff-aware coverage reporting.
 ;;
-;; Reads an LCOV file, shells to git diff at a selectable scope,
+;; Reads an LCOV file, invokes git diff at a selectable scope,
 ;; intersects the results, and displays a report buffer.  Languages
 ;; plug in via the backend registry (see `cj/coverage-backends').
 ;;
@@ -13,6 +13,7 @@
 ;;; Code:
 
 (require 'seq)
+(require 'subr-x)
 
 (defvar cj/coverage-backends nil
   "Registry of coverage backends in priority order.
@@ -196,25 +197,54 @@ empty hash table.  Malformed hunk headers are skipped silently."
 		(forward-line 1)))
 	result))
 
+(defun cj/--coverage-git-string (&rest args)
+  "Run git with ARGS and return its stdout as a string.
+Signals `user-error' when git exits non-zero."
+  (with-temp-buffer
+    (let ((status (apply #'process-file "git" nil (current-buffer) nil args))
+          (output (buffer-string)))
+      (unless (zerop status)
+        (user-error "git %s failed with status %s: %s"
+                    (string-join args " ")
+                    status
+                    (string-trim output)))
+      output)))
+
+(defun cj/--coverage-git-merge-base (base)
+  "Return the merge-base between HEAD and BASE."
+  (let ((merge-base (string-trim
+                     (cj/--coverage-git-string "merge-base" "HEAD" base))))
+    (unless (not (string-empty-p merge-base))
+      (user-error "git merge-base HEAD %s returned no commit" base))
+    merge-base))
+
+(defun cj/--coverage-git-diff (&rest args)
+  "Return git diff output for ARGS plus --unified=0."
+  (apply #'cj/--coverage-git-string
+         (append (list "diff") args (list "--unified=0"))))
+
 (defun cj/--coverage-changed-lines (scope &optional base)
   "Return a hash table of files to changed line numbers for SCOPE.
 SCOPE is one of the symbols `working-tree', `staged', `branch-vs-main',
 or `branch-vs-parent'.  For `branch-vs-parent', BASE is the ref to
 compare against; if nil, falls back to the tracked upstream @{upstream}.
 Signals `user-error' for any other SCOPE."
-  (let ((cmd (cond
-			  ((eq scope 'working-tree)
-			   "git diff HEAD --unified=0")
-			  ((eq scope 'staged)
-			   "git diff --cached --unified=0")
-			  ((eq scope 'branch-vs-main)
-			   "git diff $(git merge-base HEAD main)..HEAD --unified=0")
-			  ((eq scope 'branch-vs-parent)
-			   (format "git diff $(git merge-base HEAD %s)..HEAD --unified=0"
-					   (or base "@{upstream}")))
-			  (t
-			   (user-error "Unknown coverage scope: %s" scope)))))
-	(cj/--coverage-parse-diff-output (shell-command-to-string cmd))))
+  (let ((output
+         (pcase scope
+           ('working-tree
+            (cj/--coverage-git-diff "HEAD"))
+           ('staged
+            (cj/--coverage-git-diff "--cached"))
+           ('branch-vs-main
+            (cj/--coverage-git-diff
+             (format "%s..HEAD" (cj/--coverage-git-merge-base "main"))))
+           ('branch-vs-parent
+            (cj/--coverage-git-diff
+             (format "%s..HEAD"
+                     (cj/--coverage-git-merge-base (or base "@{upstream}")))))
+           (_
+            (user-error "Unknown coverage scope: %s" scope)))))
+    (cj/--coverage-parse-diff-output output)))
 
 (defun cj/--coverage-hash-keys-sorted (table)
   "Return a sorted list of TABLE's integer keys."
