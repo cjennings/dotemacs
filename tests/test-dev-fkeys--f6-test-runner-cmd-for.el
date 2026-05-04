@@ -95,6 +95,27 @@ would over-match. Pass just the basename — the Makefile re-prepends
             'go nil "main.go" "main" "")
            "go test ./")))
 
+(ert-deftest test-dev-fkeys-f6-cmd-for-python-test-file-quotes-spaces ()
+  "Boundary: a Python test file path with spaces is shell-escaped."
+  (should (string=
+           (cj/--f6-test-runner-cmd-for
+            'python t "tests/dir with spaces/test_foo.py" "foo" "tests/dir with spaces")
+           "pytest tests/dir\\ with\\ spaces/test_foo.py")))
+
+(ert-deftest test-dev-fkeys-f6-cmd-for-elisp-source-quotes-test-regex ()
+  "Boundary: an elisp source stem with shell metacharacters is escaped."
+  (should (string=
+           (cj/--f6-test-runner-cmd-for
+            'elisp nil "modules/foo;bar.el" "foo;bar" "modules")
+           "make test-name TEST=\\^test-foo\\;bar-")))
+
+(ert-deftest test-dev-fkeys-f6-cmd-for-go-source-quotes-spaces ()
+  "Boundary: a Go package path with spaces is shell-escaped."
+  (should (string=
+           (cj/--f6-test-runner-cmd-for
+            'go nil "pkg/with spaces/foo.go" "foo" "pkg/with spaces")
+           "go test ./pkg/with\\ spaces")))
+
 ;;; Error Cases
 
 (ert-deftest test-dev-fkeys-f6-cmd-for-typescript-returns-nil ()
