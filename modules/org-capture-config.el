@@ -130,8 +130,8 @@ Captured On: %U"
                       (completing-read "Choose file: " files)
                       drill-dir))))
            "* Item   :drill:\n%?
-** Answer\n%i\nSource: [[%:link][%:description]
-nCaptured On: %U" :prepend t)
+** Answer\n%i\nSource: [[%:link][%:description]]
+Captured On: %U" :prepend t)
 
           ("f" "Drill Question (from PDF)" entry
            (file (lambda ()
