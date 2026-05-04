@@ -6,9 +6,9 @@
 ;; This library provides general helper functions and constants for managing
 ;; test directories and files across test suites.
 ;;
-;; It establishes a user-local hidden directory as the root for all test assets,
-;; provides utilities to create this directory safely, create temporary files
-;; and subdirectories within it, and clean up after tests.
+;; It establishes a sandbox- and CI-friendly directory as the root for all test
+;; assets, provides utilities to create this directory safely, create temporary
+;; files and subdirectories within it, and clean up after tests.
 ;;
 ;; This library should be required by test suites to ensure consistent,
 ;; reliable, and isolated file-system resources.
@@ -16,12 +16,32 @@
 ;;; Code:
 
 (defconst cj/test-base-dir
-  (expand-file-name "~/.temp-emacs-tests/")
+  (file-name-as-directory
+   (expand-file-name
+    (or (getenv "CJ_EMACS_TEST_DIR")
+        (make-temp-file "cj-emacs-tests-" t))))
   "Base directory for all Emacs test files and directories.
-All test file-system artifacts should be created under this hidden
-directory in the user's home. This avoids relying on ephemeral system
-directories like /tmp and reduces flaky test failures caused by external
-cleanup.")
+All test file-system artifacts should be created under this directory.
+Set CJ_EMACS_TEST_DIR to use a stable local directory while debugging.
+The default is a unique directory under `temporary-file-directory' so
+tests work in sandboxes, CI, and parallel Emacs test processes without
+home-directory write permission.")
+
+(defun cj/test--safe-base-dir-p (dir)
+  "Return non-nil when DIR is specific enough to delete recursively."
+  (let* ((expanded (file-name-as-directory (expand-file-name dir)))
+         (forbidden (mapcar
+                     (lambda (path)
+                       (file-name-as-directory (expand-file-name path)))
+                     (list "/" "~/" temporary-file-directory
+                           user-emacs-directory default-directory))))
+    (and (not (member expanded forbidden))
+         (> (length (directory-file-name expanded)) 5))))
+
+(defun cj/test--assert-inside-base (path base)
+  "Signal an error unless PATH is inside BASE."
+  (unless (file-in-directory-p path base)
+    (error "Path %s is outside base test directory %s" path base)))
 
 (defun cj/create-test-base-dir ()
   "Create the test base directory `cj/test-base-dir' if it does not exist.
@@ -39,8 +59,7 @@ Error if DIRPATH exists already.
 Ensure DIRPATH is within `cj/test-base-dir`."
   (let* ((base (file-name-as-directory cj/test-base-dir))
 		 (fullpath (expand-file-name dirpath base)))
-	(unless (string-prefix-p base fullpath)
-	  (error "Directory path %s is outside base test directory %s" fullpath base))
+    (cj/test--assert-inside-base fullpath base)
 	(when (file-exists-p fullpath)
 	  (error "Directory path already exists: %s" fullpath))
 	(make-directory fullpath t)
@@ -55,8 +74,7 @@ Ensure FILEPATH is within `cj/test-base-dir`."
   (let* ((base (file-name-as-directory cj/test-base-dir))
 		 (fullpath (expand-file-name filepath base))
 		 (parent-dir (file-name-directory fullpath)))
-	(unless (string-prefix-p base fullpath)
-	  (error "File path %s is outside base test directory %s" fullpath base))
+    (cj/test--assert-inside-base fullpath base)
 	(when (file-exists-p fullpath)
 	  (error "File already exists: %s" fullpath))
 	(unless (file-directory-p parent-dir)
@@ -114,6 +132,8 @@ so deletion is not blocked by permissions.
 After deletion, verifies that the directory no longer exists.
 Signals an error if the directory still exists after deletion attempt."
   (let ((dir (file-name-as-directory cj/test-base-dir)))
+    (unless (cj/test--safe-base-dir-p dir)
+      (error "Refusing to delete unsafe test base directory %s" dir))
 	(when (file-directory-p dir)
 	  (cj/fix-permissions-recursively dir)
 	  (delete-directory dir t))
