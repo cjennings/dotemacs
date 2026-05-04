@@ -158,7 +158,7 @@ Use this when you see errors like:
       (let ((result (shell-command "echo RELOADAGENT | gpg-connect-agent")))
         (if (zerop result)
             (message "✓ Emacs and gpg-agent caches cleared. Next access will prompt for password.")
-          (message "⚠ Warning: Failed to clear gpg-agent cache")))
+          (message "⚠ Emacs caches cleared, but failed to clear gpg-agent cache")))
     (message "✓ Emacs caches cleared. GPG/SSH passphrases preserved for session.")))
 
 (defun cj/kill-gpg-agent ()
