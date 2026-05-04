@@ -11,6 +11,16 @@
 (require 'testutil-calendar-sync)
 (require 'calendar-sync)
 
+(defun test-calendar-sync--count-line-matches (regexp text)
+  "Count lines in TEXT that match REGEXP."
+  (with-temp-buffer
+    (insert text)
+    (goto-char (point-min))
+    (let ((count 0))
+      (while (re-search-forward regexp nil t)
+        (setq count (1+ count)))
+      count)))
+
 ;;; Normal Cases
 
 (ert-deftest test-calendar-sync--event-to-org-normal-all-fields ()
@@ -107,6 +117,40 @@
       (should (string-match-p "^-- sub-item" result))
       ;; Only the event heading should use *
       (should (= 1 (length (split-string result "^\\* " t)))))))
+
+(ert-deftest test-calendar-sync--event-to-org-boundary-summary-structure-is-flattened ()
+  "Test event summary cannot create additional Org headings."
+  (let* ((start (test-calendar-sync-time-days-from-now 5 14 0))
+         (end (test-calendar-sync-time-days-from-now 5 15 0))
+         (event (list :summary "* Planning\n** Hidden task"
+                      :start start
+                      :end end)))
+    (let ((result (calendar-sync--event-to-org event)))
+      (should (string-match-p "^\\* - Planning -- Hidden task$" result))
+      (should-not (string-match-p "^\\*\\* Hidden task" result))
+      (should (= 1 (length (split-string result "^\\* " t)))))))
+
+(ert-deftest test-calendar-sync--event-to-org-boundary-property-structure-is-flattened ()
+  "Test property values cannot create extra drawer lines or close the drawer."
+  (let* ((start (test-calendar-sync-time-days-from-now 5 14 0))
+         (end (test-calendar-sync-time-days-from-now 5 15 0))
+         (event (list :summary "Meeting"
+                      :start start
+                      :end end
+                      :location "Room 1\n:END:\n* Not a real heading"
+                      :organizer (list :cn "Jane\n:STATUS: fake"
+                                       :email "jane@example.com")
+                      :status "accepted\n:LOCATION: fake"
+                      :url "https://example.com/a\n:PROPERTIES:")))
+    (let ((result (calendar-sync--event-to-org event)))
+      (should (string-match-p ":LOCATION: Room 1 :END: \\* Not a real heading" result))
+      (should (string-match-p ":ORGANIZER: Jane :STATUS: fake" result))
+      (should (string-match-p ":STATUS: accepted :LOCATION: fake" result))
+      (should (string-match-p ":URL: https://example.com/a :PROPERTIES:" result))
+      (should (= 1 (test-calendar-sync--count-line-matches "^:LOCATION:" result)))
+      (should (= 1 (test-calendar-sync--count-line-matches "^:STATUS:" result)))
+      (should (= 1 (test-calendar-sync--count-line-matches "^:END:$" result)))
+      (should-not (string-match-p "^\\* Not a real heading" result)))))
 
 (ert-deftest test-calendar-sync--event-to-org-boundary-organizer-email-only ()
   "Test organizer without CN shows email."

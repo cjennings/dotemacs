@@ -70,5 +70,29 @@
   "Lone asterisk with space at start of line is sanitized."
   (should (equal "- " (calendar-sync--sanitize-org-body "* "))))
 
+;;; Heading and Property Sanitizers
+
+(ert-deftest test-calendar-sync--sanitize-org-heading-flattens-newlines ()
+  "Heading text should stay on one Org heading line."
+  (should (equal "Planning Agenda"
+                 (calendar-sync--sanitize-org-heading "Planning\nAgenda"))))
+
+(ert-deftest test-calendar-sync--sanitize-org-heading-replaces-leading-stars ()
+  "Heading text should not start with Org heading stars."
+  (should (equal "- Planning -- Hidden"
+                 (calendar-sync--sanitize-org-heading "* Planning\n** Hidden"))))
+
+(ert-deftest test-calendar-sync--sanitize-org-property-value-flattens-structure ()
+  "Property values should not create extra property drawer lines."
+  (should (equal "Room 1 :END: * Not a heading"
+                 (calendar-sync--sanitize-org-property-value
+                  "Room 1\n:END:\n* Not a heading"))))
+
+(ert-deftest test-calendar-sync--sanitize-org-property-value-trims-and-collapses ()
+  "Property values should be compact single-line values."
+  (should (equal "alpha beta gamma"
+                 (calendar-sync--sanitize-org-property-value
+                  " alpha\t beta\n\n gamma "))))
+
 (provide 'test-calendar-sync--sanitize-org-body)
 ;;; test-calendar-sync--sanitize-org-body.el ends here
