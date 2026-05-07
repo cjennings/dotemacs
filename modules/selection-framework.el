@@ -45,13 +45,6 @@
   :init
   (marginalia-mode))
 
-(use-package nerd-icons-completion
-  :demand t
-  :hook (marginalia-mode nerd-icons-completion-marginalia-setup)
-  :after marginalia
-  :init
-  (nerd-icons-completion-mode))
-
 ;; ---------------------------------- Consult ----------------------------------
 ;; Practical commands based on completing-read
 

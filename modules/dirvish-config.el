@@ -259,7 +259,7 @@ Uses feh on X11, swww on Wayland."
      ("pdx" "~/projects/documents/"                         "project documents")
      ("pdl" "~/projects/danneel/"                           "project danneel")
      ("pcl" "~/projects/clipper/"                            "project clipper")
-     ("pcr" "~/projects/career/"                             "project career")
+     ("pwk" "~/projects/work/"                               "project work")
      ("pl" "~/projects/elibrary/"                           "project elibrary")
      ("pf" "~/projects/finances/"                           "project finances")
      ("pjr" "~/projects/jr-estate/"                         "project jr-estate")
@@ -362,6 +362,24 @@ Uses feh on X11, swww on Wayland."
    ("s"       . dirvish-quicksort)
    ("v"       . dirvish-vc-menu)
    ("y"       . dirvish-yank-menu)))
+
+;;; ----------------------------- Dired Text Greying ----------------------------
+
+;; The right-column file-size attribute uses `shadow' (#969385). Match the
+;; visible text faces to it so the column reads as one tone, with icon color
+;; supplying the only accent. `default' is remapped buffer-locally inside
+;; dired/dirvish so plain files match too — no global side effects.
+
+(with-eval-after-load 'dired
+  (set-face-attribute 'dired-directory nil :foreground 'unspecified :inherit 'shadow)
+  (set-face-attribute 'dired-symlink   nil :foreground 'unspecified :inherit 'shadow)
+  (set-face-attribute 'dired-header    nil :foreground 'unspecified :inherit 'shadow))
+
+(defun cj/--dired-text-greyout ()
+  "Buffer-local: render `default' in `shadow' so plain files read grey."
+  (face-remap-add-relative 'default 'shadow))
+
+(add-hook 'dired-mode-hook #'cj/--dired-text-greyout)
 
 ;;; ---------------------------- Dired Hide Dotfiles ----------------------------
 

@@ -176,19 +176,11 @@ Logs output and exit code to buffer *external-open.log*."
     (savehist-mode))
   )
 
-;;; ------------------------ List Buffers With Nerd Icons -----------------------
+;;; ----------------------------- List Buffers Remap ----------------------------
 
-;; Remap list-buffers to ibuffer (built-in). Keybinding is separate from
-;; nerd-icons-ibuffer package, which only adds icons to ibuffer.
+;; Remap list-buffers to ibuffer (built-in). Icons come from nerd-icons-ibuffer
+;; in `nerd-icons-config'.
 (keymap-global-set "<remap> <list-buffers>" #'ibuffer)
-
-(use-package nerd-icons-ibuffer
-  :after nerd-icons
-  :hook (ibuffer-mode . nerd-icons-ibuffer-mode)
-  :config
-  (setq nerd-icons-ibuffer-icon            t
-        nerd-icons-ibuffer-color-icon      t
-        nerd-icons-ibuffer-human-readable-size t))
 
 ;;; -------------------------- Scratch Buffer Happiness -------------------------
 

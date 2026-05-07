@@ -111,26 +111,31 @@ This runs after init to override any package settings."
 ;; Run after init completes to override any package settings
 (add-hook 'emacs-startup-hook #'cj/keyboard-compat-terminal-setup)
 
-;; Icon disabling only in terminal mode (prevents unicode artifacts)
-(when (env-terminal-p)
-  ;; Disable nerd-icons display (shows as \uXXXX artifacts)
-  (with-eval-after-load 'nerd-icons
-    (defun nerd-icons-icon-for-file (&rest _) "")
-    (defun nerd-icons-icon-for-dir (&rest _) "")
-    (defun nerd-icons-icon-for-mode (&rest _) "")
-    (defun nerd-icons-icon-for-buffer (&rest _) ""))
+;; Icon-rendering functions return blank on terminal frames so unicode
+;; artifacts don't show up. The check runs per call against the selected
+;; frame, so the same daemon serves real icons to GUI clients and blanks to
+;; terminal clients. Earlier this lived in a top-level (when (env-terminal-p)
+;; ...) block that redefined the icon functions at module-load time, which
+;; broke under daemon startup: no frame exists yet, display-graphic-p returns
+;; nil, env-terminal-p returns t, and the stubs install permanently. GUI
+;; clients connecting later saw empty icons everywhere.
 
-  ;; Disable dashboard icons
-  (with-eval-after-load 'dashboard
-    (setq dashboard-display-icons-p nil)
-    (setq dashboard-set-file-icons nil)
-    (setq dashboard-set-heading-icons nil))
+(defun cj/--icon-blank-in-terminal (orig &rest args)
+  "Return empty string on a terminal frame, otherwise call ORIG with ARGS."
+  (if (display-graphic-p) (apply orig args) ""))
 
-  ;; Disable all-the-icons
-  (with-eval-after-load 'all-the-icons
-    (defun all-the-icons-icon-for-file (&rest _) "")
-    (defun all-the-icons-icon-for-dir (&rest _) "")
-    (defun all-the-icons-icon-for-mode (&rest _) "")))
+(with-eval-after-load 'nerd-icons
+  (dolist (fn '(nerd-icons-icon-for-file
+                nerd-icons-icon-for-dir
+                nerd-icons-icon-for-mode
+                nerd-icons-icon-for-buffer))
+    (advice-add fn :around #'cj/--icon-blank-in-terminal)))
+
+(with-eval-after-load 'all-the-icons
+  (dolist (fn '(all-the-icons-icon-for-file
+                all-the-icons-icon-for-dir
+                all-the-icons-icon-for-mode))
+    (advice-add fn :around #'cj/--icon-blank-in-terminal)))
 
 ;; =============================================================================
 ;; GUI-specific fixes
