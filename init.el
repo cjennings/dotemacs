@@ -59,6 +59,7 @@
 (cj/load-theme-from-file)
 (require 'ui-navigation)         ;; the movement and navigation of windows
 (require 'font-config)           ;; font and emoji configuration
+(require 'nerd-icons-config)     ;; nerd-icons + completion/ibuffer integration + tint
 (require 'selection-framework)   ;; menu config
 (require 'modeline-config)       ;; modeline (status-bar) config
 (require 'mousetrap-mode)        ;; prevent accidental mouse/trackpad modifications
