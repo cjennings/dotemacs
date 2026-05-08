@@ -103,9 +103,6 @@ This function won't work with more than one split window."
 		  (if this-win-2nd (other-window 1))))))
 (keymap-global-set "M-S-t" #'toggle-window-split)  ;; was M-T, overrides transpose-words
 
-;; SWAP WINDOW POSITIONS
-(keymap-global-set "M-S-s" #'window-swap-states)  ;; was M-S
-
 ;; ---------------------------- Buffer Manipulation ----------------------------
 
 ;; MOVE BUFFER
