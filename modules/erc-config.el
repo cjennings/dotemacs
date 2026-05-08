@@ -17,6 +17,7 @@
 
 ;; Load cl-lib at compile time and runtime (lightweight, already loaded in most configs)
 (require 'cl-lib)
+(require 'keybindings)  ;; provides cj/custom-keymap
 (eval-when-compile (require 'erc)
                    (require 'user-constants))
 

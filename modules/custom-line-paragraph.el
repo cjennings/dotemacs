@@ -17,7 +17,7 @@
 ;;; Code:
 
 
-(eval-when-compile (defvar cj/custom-keymap)) ;; defined in keybindings.el
+(require 'keybindings)  ;; provides cj/custom-keymap
 (declare-function er/mark-paragraph "expand-region") ;; for cj/join-paragraph
 
 (defun cj/join-line-or-region ()

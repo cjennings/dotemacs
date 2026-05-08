@@ -21,8 +21,7 @@
 
 ;;; Code:
 
-;; cj/custom-keymap defined in keybindings.el
-(eval-when-compile (defvar cj/custom-keymap))
+(require 'keybindings)  ;; provides cj/custom-keymap
 
 (defun cj/--surround (text surround-string)
   "Internal implementation: Surround TEXT with SURROUND-STRING.

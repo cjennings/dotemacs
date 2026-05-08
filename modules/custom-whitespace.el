@@ -17,7 +17,7 @@
 
 ;;; Code:
 
-(eval-when-compile (defvar cj/custom-keymap)) ;; cj/custom-keymap defined in keybindings.el
+(require 'keybindings)  ;; provides cj/custom-keymap
 
 ;;; ---------------------- Whitespace Operations And Keymap ---------------------
 

@@ -83,6 +83,7 @@
 
 (require 'subr-x)
 (require 'user-constants)
+(require 'keybindings)  ;; provides cj/custom-keymap
 
 ;;; Settings (no Customize)
 
