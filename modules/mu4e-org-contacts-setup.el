@@ -7,11 +7,12 @@
 
 ;;; Code:
 
-;; Load the integration module
-(require 'mu4e-org-contacts-integration)
-
-;; Activate the integration
-(cj/activate-mu4e-org-contacts-integration)
+;; Load the integration module.  Activation only runs when the module loaded
+;; cleanly AND mu4e is present; otherwise this file is a no-op so the rest
+;; of the config can load without mu4e installed.
+(when (require 'mu4e-org-contacts-integration nil t)
+  (when (featurep 'mu4e)
+    (cj/activate-mu4e-org-contacts-integration)))
 
 ;; Optional: If you want to use org-contacts as the primary source,
 ;; you might want to disable mu4e's contact caching to save memory

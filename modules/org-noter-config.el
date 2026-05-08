@@ -24,6 +24,8 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'user-constants)  ;; provides roam-dir
+(require 'keybindings)  ;; provides cj/custom-keymap
 
 ;; Forward declarations
 (declare-function org-id-uuid "org-id")

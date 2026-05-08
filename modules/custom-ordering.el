@@ -21,9 +21,8 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'keybindings)  ;; provides cj/custom-keymap
 
-;; cj/custom-keymap defined in keybindings.el
-(eval-when-compile (defvar cj/custom-keymap))
 (defvar cj/ordering-map)
 
 (defun cj/--arrayify (start end quote &optional prefix suffix)

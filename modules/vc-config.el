@@ -14,6 +14,9 @@
 
 ;;; Code:
 
+(require 'user-constants)  ;; provides code-dir
+(require 'keybindings)  ;; provides cj/custom-keymap
+
 ;; ---------------------------- Magit Configuration ----------------------------
 
 (use-package magit

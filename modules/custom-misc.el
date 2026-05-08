@@ -14,8 +14,7 @@
 ;;
 ;;; Code:
 
-;; cj/custom-keymap defined in keybindings.el
-(eval-when-compile (defvar cj/custom-keymap))
+(require 'keybindings)  ;; provides cj/custom-keymap
 
 (defun cj/jump-to-matching-paren ()
   "Jump to the matching delimiter if point is on (or just after) one.

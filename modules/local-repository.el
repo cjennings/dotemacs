@@ -5,7 +5,7 @@
 
 ;;; Code:
 
-(require 'elpa-mirror)
+(require 'elpa-mirror nil t)  ;; optional; cj/update-localrepo-repository fails at call-time if absent
 
 ;; ------------------------------ Utility Function -----------------------------
 

@@ -65,10 +65,10 @@
 
 (require 'ert)
 (require 'cl-lib)
+(require 'keybindings)  ;; provides cj/custom-keymap
 
 ;;; External Variables and Functions
 
-(defvar cj/custom-keymap)  ; Defined in init.el
 (declare-function projectile-project-root "projectile" ())
 
 ;;; Variables

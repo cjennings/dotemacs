@@ -6,6 +6,8 @@
 
 ;;; Code:
 
+(require 'keybindings)  ;; provides cj/custom-keymap (used in :init below)
+
 ;; ---------------------------- Org General Settings ---------------------------
 
 (defun cj/org-general-settings ()
