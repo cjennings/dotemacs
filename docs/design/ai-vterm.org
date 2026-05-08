@@ -1,0 +1,146 @@
+#+TITLE: Design: ai-vterm — in-Emacs Claude launcher
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-07
+#+OPTIONS: toc:nil num:nil
+
+* Status
+
+Draft.
+
+* Problem
+
+Claude Code currently launches outside Emacs via the =ai= shell script, which builds candidate projects from =~/.emacs.d=, =~/code/*=, =~/projects/*= (anything with =.ai/protocols.org=), opens each in a tmux window, and runs =claude "Read .ai/protocols.org and follow all instructions."= per project. The shell-out pulls focus to a terminal, and tmux's horizontal split is the wrong shape for a code-on-left, Claude-on-right reading layout.
+
+The in-Emacs alternative today is =vterm-toggle= at F12, which uses a horizontal bottom split via =display-buffer-at-bottom=. No project picker, no per-project session model, no vertical split.
+
+Building this in Emacs eliminates the context switch and gives the side-by-side layout that matches how the work is actually read.
+
+* Non-Goals
+
+- Replicating the =ai= script's git prep / auto-pull. Phase A.0 of the startup workflow already handles pulls at session start.
+- A multi-project session switcher with its own UI. =consult-buffer= and the buffer list already navigate between =claude [...]= buffers.
+- Replacing =vterm-toggle= at F12. The existing bottom-split flow stays for non-AI shells.
+- Tab-bar or frame-per-project layouts.
+- Auto-launching tmux inside the AI vterm. Claude under tmux adds a session-management layer for no benefit here.
+
+* Approaches Considered
+
+** Recommended: wrap =vterm= directly with per-project named buffers + a parallel display rule
+
+A new module =modules/ai-vterm.el= adds a command that picks a Claude-template project, opens (or reuses) a vterm buffer named =claude [<basename>]=, and lets a new =display-buffer-alist= entry route any buffer matching that prefix to a right-side window. Multiple projects produce multiple coexisting buffers, all sharing the same right-side slot. Switching among them is a buffer-switch, not a kill-and-recreate.
+
+Pros:
+- Same package (=vterm=) as the existing config.
+- Per-project buffers run simultaneously without conflict.
+- Right-side placement is one =display-buffer-alist= entry.
+- Existing windmove (Shift-arrows) handles code↔Claude focus toggling. =buffer-move= (C-M-arrows) handles side-swap.  Neither needs new bindings.
+
+Cons:
+- Re-implements toggle/show-hide logic that =vterm-toggle= would handle for free. Acceptable because =vterm-toggle= is built around one toggle-able buffer, and the per-project model is what's wanted.
+
+** Rejected: wrap =vterm-toggle=
+
+=vterm-toggle='s contract is one buffer toggled visible/hidden. Per-project buffers running simultaneously is outside that contract. Wrapping it would mean fighting the abstraction.
+
+** Rejected: project-per-tab via =tab-bar-mode=
+
+Each project gets its own tab. Matches the =ai= / tmux model cleanly, but adds tab-bar UI that isn't in current use. Bigger lifestyle change for a one-window task.
+
+** Rejected: frame-per-project
+
+Each Claude session opens in a new Emacs frame. Hyprland-native, clean isolation, but frame creation under Wayland has historical jank, and it breaks the easy windmove flow between code and Claude.
+
+** Rejected: window-configuration-per-project
+
+Save and restore named window configs (code buffers + Claude vterm together). Preserves the surrounding thinking environment, but window configs go stale when buffers die, and it adds a parallel mechanism to project.el. Overkill for v1.
+
+* Design
+
+** Architecture
+
+New module =modules/ai-vterm.el=. Required after =eshell-vterm-config= in =init.el= so =vterm= is loaded.
+
+Components:
+
+| Function | Kind | Responsibility |
+|----------+------+----------------|
+| =cj/--ai-vterm-candidates= | pure | Walks =~/.emacs.d=, =~/code/*=, =~/projects/*=; returns abs paths containing =.ai/protocols.org= |
+| =cj/--ai-vterm-pick-project= | interactive helper | =completing-read= over candidates; returns picked path |
+| =cj/--ai-vterm-buffer-name= | pure | =(format "claude [%s]" basename)= |
+| =cj/--ai-vterm-show-or-create= | internal | Given dir + name: display existing buffer, or create vterm + send claude command |
+| =cj/ai-vterm= | interactive entry | Composes picker + show-or-create |
+
+The =display-buffer-alist= entry is added at module load:
+
+#+begin_src emacs-lisp
+(add-to-list 'display-buffer-alist
+             '("\\`claude \\["
+               (display-buffer-in-side-window)
+               (side . right)
+               (window-width . 0.5)
+               (dedicated . t)))
+#+end_src
+
+** Data Flow
+
+On =M-x cj/ai-vterm=:
+
+1. Pick a project via =completing-read=. Display in =~/relative= form. Return absolute path.
+2. Compute buffer name: =claude [<basename-of-dir>]=.
+3. Branch:
+   - *Buffer exists with live process* → =display-buffer= it. Side-window rule routes it to the right slot.
+   - *Buffer exists, dead process* → kill it (log last 200 chars to =*Messages*=), then fall through to create.
+   - *No buffer* → =let=-bind =default-directory= to picked dir and =vterm-buffer-name= to computed name; call =(vterm)=. After process is live, send =claude "Read .ai/protocols.org and follow all instructions."= via =vterm-send-string= + =vterm-send-return=.
+4. =select-window= on the displayed window so point lands in Claude. =C-u= prefix shows without selecting.
+
+After this, all navigation is handled by existing global bindings: Shift-arrows (windmove) for focus, C-M-arrows (=buffer-move=) for directional side-swap.
+
+** Error Handling
+
+| Case | Response |
+|------+----------|
+| Picker cancelled (=quit=) | Silent no-op |
+| No candidates found | =user-error= naming the search roots |
+| Picked dir disappeared between scan and launch | =user-error= naming the path |
+| Existing buffer with dead process | Kill + recreate; log last 200 chars |
+| Side-window already showing a different =claude [...]= | =display-buffer= swaps which buffer occupies the slot; hidden one keeps running |
+| =vterm= not installed | Module fails to load loudly (no graceful degradation) |
+
+** Tmux Auto-Launch Suppression
+
+Existing =cj/vterm-launch-tmux= on =vterm-mode-hook= types =tmux\n= unconditionally. AI vterms set a buffer-local =cj/--ai-vterm-suppress-tmux= flag before =(vterm)=; the hook checks the flag and skips tmux when set.
+
+** Testing
+
+Pure helpers tested against real inputs:
+
+- =cj/--ai-vterm-buffer-name= — Normal, Boundary (trailing slash, dot-prefix dirs, spaces in basenames), Error (degenerate paths).
+- =cj/--ai-vterm-candidates= — temp directory tree built with =make-temp-file= + =make-directory=, fake =.ai/protocols.org= markers. Assert returned paths, ignored entries.
+
+Internal with mocked boundary:
+
+- =cj/--ai-vterm-show-or-create= — =cl-letf= on =vterm= to skip process spawn; assert buffer name, =default-directory=, claude argv via captured =vterm-send-string= calls. Two branches (exists vs creates) tested with mocked =process-live-p=.
+
+Display rule:
+
+- After =add-to-list=, =display-buffer= on a buffer named =claude [test]= lands in a window with =(window-parameter w 'window-side) = 'right=.
+
+Test files:
+
+- =tests/test-ai-vterm--candidates.el=
+- =tests/test-ai-vterm--buffer-name.el=
+- =tests/test-ai-vterm--show-or-create.el=
+- =tests/test-ai-vterm--display-rule.el=
+
+Smoke test (=:slow= tag, excluded from default suite): launch against a fixture, verify live process.
+
+* Open Questions
+
+- [ ] Default split width — 50/50 vs 60/40 weighted to code. Starting with 50/50.
+- [X] Keybinding — F9. Replaces the prior =cj/toggle-gptel= binding on F9; gptel moves to C-F9.
+
+* Next Steps
+
+- TDD implementation in this order: =buffer-name= → =candidates= → =show-or-create= → display rule → interactive entry.
+- Wire into =init.el= after =eshell-vterm-config=.
+- Pick a keybinding once the command is shipped.
