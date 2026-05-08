@@ -202,10 +202,16 @@
 	(display-line-numbers-mode -1))
 
   (defun cj/vterm-launch-tmux ()
-	"Automatically launch tmux in vterm if not already in a tmux session."
+	"Automatically launch tmux in vterm if not already in a tmux session.
+
+Skipped when `cj/--ai-vterm-suppress-tmux' is non-nil so the AI-vterm
+flow can run its own project-named tmux session instead of a bare,
+auto-named one.  `bound-and-true-p' keeps this safe whether or not
+ai-vterm.el is loaded."
 	(let ((proc (get-buffer-process (current-buffer))))
 	  (when (and proc
-				 (not (getenv "TMUX"))) ; Check if not already in tmux
+				 (not (getenv "TMUX")) ; Check if not already in tmux
+				 (not (bound-and-true-p cj/--ai-vterm-suppress-tmux)))
 		(vterm-send-string "tmux\n"))))
   :hook
   ((vterm-mode . cj/turn-off-chrome-for-vterm)
