@@ -28,6 +28,8 @@
 
 ;;; Code:
 
+(require 'keybindings)  ;; provides cj/custom-keymap
+
 (autoload 'cj/gptel-save-conversation "ai-conversations" "Save the AI conversation to a file." t)
 (autoload 'cj/gptel-load-conversation "ai-conversations" "Load a saved AI conversation." t)
 (autoload 'cj/gptel-delete-conversation "ai-conversations" "Delete a saved AI conversation." t)
@@ -310,7 +312,7 @@ Works for any buffer, whether it's visiting a file or not."
   :defer t
   :commands (gptel gptel-send gptel-menu)
   :bind
-  (("<f9>" . cj/toggle-gptel)
+  (("C-<f9>" . cj/toggle-gptel)
    :map gptel-mode-map
    ("C-<return>" . gptel-send))
   :custom
