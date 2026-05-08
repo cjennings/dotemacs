@@ -57,7 +57,7 @@ VARS is a plist of capture variable names: :calls, :strings, :returns,
     (kill-buffer name)))
 
 (ert-deftest test-ai-vterm--show-or-create-creates-when-buffer-missing ()
-  "Normal: no existing buffer -> vterm called once, claude cmd sent."
+  "Normal: no existing buffer -> vterm called once, launch cmd sent."
   (let ((name "claude [normal-create-test]"))
     (test-ai-vterm--cleanup name)
     (unwind-protect
@@ -65,7 +65,8 @@ VARS is a plist of capture variable names: :calls, :strings, :returns,
                                          :returns returns :default-dir ddir)
           (cj/--ai-vterm-show-or-create "/tmp/some-project" name)
           (should (equal calls (list name)))
-          (should (equal strings (list cj/ai-vterm-claude-command)))
+          (should (equal strings
+                         (list (cj/--ai-vterm-launch-command "/tmp/some-project"))))
           (should (= returns 1))
           (should (equal ddir "/tmp/some-project")))
       (test-ai-vterm--cleanup name))))
@@ -98,7 +99,8 @@ VARS is a plist of capture variable names: :calls, :strings, :returns,
                                              :returns returns :default-dir _ddir)
               (cj/--ai-vterm-show-or-create "/tmp/dead" name)
               (should (equal calls (list name)))
-              (should (equal strings (list cj/ai-vterm-claude-command)))
+              (should (equal strings
+                             (list (cj/--ai-vterm-launch-command "/tmp/dead"))))
               (should (= returns 1))
               (should-not (buffer-live-p stale)))))
       (test-ai-vterm--cleanup name))))

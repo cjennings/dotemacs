@@ -106,9 +106,22 @@ After this, all navigation is handled by existing global bindings: Shift-arrows 
 | Side-window already showing a different =claude [...]= | =display-buffer= swaps which buffer occupies the slot; hidden one keeps running |
 | =vterm= not installed | Module fails to load loudly (no graceful degradation) |
 
+** Per-project tmux sessions
+
+The launch command sent to a fresh AI-vterm shell is
+
+#+begin_example
+tmux new-session -A -s <basename> -c <dir> '<claude-cmd>; exec bash'
+#+end_example
+
+- =-A= reattaches to an existing session of the same name instead of creating a new one. So a second F9 on the same project after an Emacs crash brings the running Claude back without spawning a duplicate.
+- =-s <basename>= names the session after the project's directory basename. =tmux ls= shows the active sessions by project name.
+- =-c <dir>= sets the start directory for new sessions (ignored on attach).
+- =exec bash= tails the shell command so the tmux window survives Claude exiting -- the session stays alive with a bare prompt for recovery, and reattach is unaffected.
+
 ** Tmux Auto-Launch Suppression
 
-Existing =cj/vterm-launch-tmux= on =vterm-mode-hook= types =tmux\n= unconditionally. AI vterms set a buffer-local =cj/--ai-vterm-suppress-tmux= flag before =(vterm)=; the hook checks the flag and skips tmux when set.
+The existing =cj/vterm-launch-tmux= on =vterm-mode-hook= types =tmux\n= unconditionally for any vterm buffer. AI-vterm =let='s a dynamic =cj/--ai-vterm-suppress-tmux= flag around =(vterm)= so the hook skips its bare =tmux\n= and the project-named launch command (above) runs instead.
 
 ** Testing
 

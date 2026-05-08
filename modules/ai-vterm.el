@@ -32,6 +32,15 @@
   :type 'string
   :group 'ai-vterm)
 
+(defvar cj/--ai-vterm-suppress-tmux nil
+  "When non-nil, the generic vterm tmux-launch hook skips its auto-tmux step.
+
+ai-vterm dynamically binds this around `(vterm)' so the hook in
+eshell-vterm-config.el doesn't send a bare \"tmux\\n\" before the named
+session launch command runs.  The hook reads the variable via
+`bound-and-true-p' so loading order between the two modules doesn't
+matter.")
+
 (defcustom cj/ai-vterm-project-roots
   (list (expand-file-name "~/.emacs.d"))
   "Directories that are themselves Claude-template projects.
@@ -57,6 +66,33 @@ rule keys on the literal prefix \"claude [\", so changing the format
 breaks routing to the right-side window."
   (format "claude [%s]"
           (file-name-nondirectory (directory-file-name dir))))
+
+(defun cj/--ai-vterm-tmux-session-name (dir)
+  "Return the tmux name derived from project directory DIR.
+
+The basename of DIR, with any run of whitespace collapsed to a single
+hyphen so the result is safe to pass on a tmux command line."
+  (replace-regexp-in-string
+   "[[:space:]]+" "-"
+   (file-name-nondirectory (directory-file-name dir))))
+
+(defun cj/--ai-vterm-launch-command (dir)
+  "Return the shell command line that runs Claude in a project tmux session.
+
+Uses `tmux new-session -A' so a second F9 on the same project reattaches
+to the running session instead of spawning a new one.  The session name
+is the project's basename via `cj/--ai-vterm-tmux-session-name'.
+
+The shell command run on first creation is
+  <claude-command>; exec bash
+so the tmux window survives Claude exiting -- the session stays alive
+with a bare bash prompt for recovery, and reattach works the same way."
+  (let ((session (cj/--ai-vterm-tmux-session-name dir))
+        (start-dir (expand-file-name dir)))
+    (format "tmux new-session -A -s %s -c %s '%s'"
+            (shell-quote-argument session)
+            (shell-quote-argument start-dir)
+            (concat cj/ai-vterm-claude-command "; exec bash"))))
 
 (defun cj/--ai-vterm-has-marker-p (dir)
   "Return non-nil when DIR contains .ai/protocols.org."
@@ -131,8 +167,14 @@ window an ordinary window so all the standard window commands work."
 
 If a buffer named NAME exists with a live process, display it.  If
 the buffer exists but its process is dead, kill it and recreate.  If
-no such buffer exists, create a new vterm in DIR and send
-`cj/ai-vterm-claude-command' to it.
+no such buffer exists, create a new vterm in DIR and send the
+project's tmux launch command (see `cj/--ai-vterm-launch-command') so
+the same project basename reattaches across Emacs restarts.
+
+The dynamic binding of `cj/--ai-vterm-suppress-tmux' around `(vterm)'
+suppresses the generic tmux-launch hook in eshell-vterm-config.el so
+it doesn't fire a bare \"tmux\\n\" before the project-named launch
+command runs.
 
 Returns the buffer."
   (let ((existing (get-buffer name)))
@@ -143,11 +185,12 @@ Returns the buffer."
      (t
       (when existing
         (kill-buffer existing))
-      (let ((default-directory dir))
+      (let ((default-directory dir)
+            (cj/--ai-vterm-suppress-tmux t))
         (vterm name))
       (let ((buf (get-buffer name)))
         (with-current-buffer buf
-          (vterm-send-string cj/ai-vterm-claude-command)
+          (vterm-send-string (cj/--ai-vterm-launch-command dir))
           (vterm-send-return))
         (display-buffer buf)
         buf)))))
