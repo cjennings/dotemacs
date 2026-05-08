@@ -45,6 +45,7 @@
 ;;; Code:
 
 (require 'host-environment)
+(require 'keybindings)  ;; establishes the C-z prefix used for "C-z F" below
 
 ;; ---------------------- HarfBuzz Font Cache Crash Fix -----------------------
 ;; Prevents Emacs from compacting font caches during GC. Without this, GC can

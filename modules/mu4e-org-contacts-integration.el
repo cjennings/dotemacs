@@ -7,8 +7,11 @@
 
 ;;; Code:
 
-(require 'mu4e)
-(require 'org-contacts)
+;; Both deps are optional at file-load time.  The functions defined here only
+;; fire from mu4e/org-msg compose hooks, so a missing package means the
+;; activation call is a no-op rather than a load-time error.
+(require 'mu4e nil t)
+(require 'org-contacts nil t)
 
 ;; ---------------------- Completion at Point Function -------------------------
 
