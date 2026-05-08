@@ -231,12 +231,18 @@
   ("<f12>" . vterm-toggle)
   :config
   (setq vterm-toggle-fullscreen-p nil)
+  ;; This rule covers F12 toggle-shells only.  AI-vterm buffers are named
+  ;; "claude [<repo>]" and have their own display rule in `ai-vterm.el'
+  ;; that puts them in a right-direction window without dedication.  The
+  ;; explicit "claude [" exclusion stops this rule from claiming them
+  ;; first when `:defer' makes vterm-toggle's :config run last.
   (add-to-list 'display-buffer-alist
 			   '((lambda (buffer-or-name _)
 				   (let ((buffer (get-buffer buffer-or-name)))
 					 (with-current-buffer buffer
-					   (or (equal major-mode 'vterm-mode)
-						   (string-prefix-p vterm-buffer-name (buffer-name buffer))))))
+					   (and (or (equal major-mode 'vterm-mode)
+								(string-prefix-p vterm-buffer-name (buffer-name buffer)))
+							(not (string-prefix-p "claude [" (buffer-name buffer)))))))
 				 (display-buffer-reuse-window display-buffer-at-bottom)
 				 (dedicated . t) ;dedicated is supported in Emacs 27+
 				 (reusable-frames . visible)

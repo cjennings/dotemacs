@@ -72,6 +72,7 @@
 (require 'erc-config)            ;; seamless IRC client
 (require 'slack-config)          ;; slack client via emacs-slack
 (require 'eshell-vterm-config)   ;; shell and terminal configuration
+(require 'ai-vterm)               ;; in-Emacs Claude launcher (vertical-split vterm)
 (require 'help-utils)            ;; search: arch-wiki, devdoc, tldr, wikipedia
 (require 'help-config)           ;; info, man, help config
 (require 'tramp-config)          ;; remote shell connections
