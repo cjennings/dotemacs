@@ -382,7 +382,7 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   (setq chime-alert-intervals '((5 . medium) (0 . medium)))
 
   ;; Day-wide events: notify at 9 AM for birthdays/all-day events
-  (setq chime-day-wide-time "09:00")
+  (setq chime-day-wide-alert-times '("09:00"))
 
   ;; Modeline display: show upcoming events within 6 hours
   (setq chime-modeline-lookahead-minutes (* 6 60))
@@ -395,9 +395,10 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   (setq chime-notification-text-format "%t %u")
 
   ;; Time-until format: compact style like " in 10m" or " in 1h 37m"
-  (setq chime-time-left-format-short " in %mm ")      ; Under 1 hour: " in 10m"
-  (setq chime-time-left-format-long " in %hh %mm ")   ; 1 hour+: " in 1h 37m"
-  (setq chime-time-left-format-at-event "now")
+  (setq chime-time-left-formats
+        '((at-event . "now")
+          (short    . " in %mm ")     ; Under 1 hour: " in 10m"
+          (long     . " in %hh %mm ")))  ; 1 hour+: " in 1h 37m"
 
   ;; Title truncation: limit long event titles to 25 characters
   (setq chime-max-title-length 25)
