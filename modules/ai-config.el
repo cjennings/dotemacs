@@ -5,7 +5,7 @@
 ;; Configuration for AI integrations in Emacs, focused on GPTel.
 ;;
 ;; Main Features:
-;; - Quick toggle for AI assistant window (F9 or C-; a t)
+;; - Quick toggle for AI assistant window (C-; a t)
 ;; - Custom keymap (C-; a prefix) for AI-related commands.
 ;; - Enhanced org-mode conversation formatting with timestamps
 ;;   allows switching models and easily compare and track responses.
@@ -17,7 +17,7 @@
 ;; Basic Workflow
 ;;
 ;; Using a side-chat window:
-;; - Launch GPTel via F9 or C-; a t, and chat in the AI-Assistant side window (C-<return> to send)
+;; - Launch GPTel via C-; a t, and chat in the AI-Assistant side window (C-<return> to send)
 ;; - Change system prompt (expertise, personalities) with C-; a p
 ;; - Add context from files (C-; a f) or current buffer (C-; a .)
 ;; - Save conversations with C-; a s, load previous ones with C-; a l
@@ -312,9 +312,8 @@ Works for any buffer, whether it's visiting a file or not."
   :defer t
   :commands (gptel gptel-send gptel-menu)
   :bind
-  (("C-<f9>" . cj/toggle-gptel)
-   :map gptel-mode-map
-   ("C-<return>" . gptel-send))
+  (:map gptel-mode-map
+        ("C-<return>" . gptel-send))
   :custom
   (gptel-default-mode 'org-mode)
   (gptel-expert-commands t)
