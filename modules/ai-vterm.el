@@ -204,12 +204,29 @@ applies.  Captured at toggle-off by `cj/--ai-vterm-capture-state'
 and consumed by `cj/--ai-vterm-display-saved'.")
 
 (defvar cj/--ai-vterm-last-size nil
-  "Last user-chosen size fraction for the AI-vterm display.
+  "Last user-chosen body size for the AI-vterm display.
 
-Float between 0 and 1, expressed on the axis matching
-`cj/--ai-vterm-last-direction' (width fraction for right/left,
-height fraction for below/above).  nil means use the customizable
-default `cj/ai-vterm-window-width'.")
+Positive integer: body-columns when `cj/--ai-vterm-last-direction'
+is right or left, body-lines when below or above.  nil means use
+the customizable default `cj/ai-vterm-window-width' (a float
+fraction).
+
+Body size, not total size, because total-width includes the
+right-edge divider when the window has a right sibling but excludes
+it when the window is at the frame edge.  Capturing total-width
+from a rightmost claude (no divider) and replaying into a middle
+position (with divider) leaves the body 1 column short -- visible
+as 1 col of the sibling buffer peeking through where claude should
+have ended.  Body-width is divider-independent and matches what the
+user actually sees.
+
+Absolute values rather than fractions because
+`display-buffer-in-direction' interprets a float `window-width' /
+`window-height' as a fraction of the new window's parent in the
+window tree.  In a 3+ window layout the parent may be a sub-tree,
+and a fraction-of-frame produces the wrong size on replay
+(squeezes the other windows).  An integer is unambiguous, at the
+cost of not auto-scaling if the frame itself resizes.")
 
 (defun cj/--ai-vterm-window-direction (window)
   "Return the side WINDOW occupies in its frame.
@@ -239,20 +256,16 @@ fails to span the full height."
      ((not spans-full-height) (if (= top root-top) 'above 'below))
      (t 'right))))
 
-(defun cj/--ai-vterm-window-fraction (window direction)
-  "Return WINDOW's size as a fraction of the frame's root on DIRECTION's axis.
+(defun cj/--ai-vterm-window-size (window direction)
+  "Return WINDOW's body size in cols (right/left) or lines (below/above).
 
-For right/left, returns WINDOW's total-width / root's total-width.
-For below/above, total-height / root's total-height.  The root
-window excludes the minibuffer so the fraction matches what
-`display-buffer-in-direction' will use as window-width or
-window-height when re-creating the split."
-  (let ((root (frame-root-window (window-frame window))))
-    (if (memq direction '(right left))
-        (/ (float (window-total-width window))
-           (window-total-width root))
-      (/ (float (window-total-height window))
-         (window-total-height root)))))
+Returns body width or body height -- the count of characters
+visible in the text content area, independent of fringes,
+scrollbars, or window dividers.  See `cj/--ai-vterm-last-size' for
+why body size, not total size, is the right thing to capture."
+  (if (memq direction '(right left))
+      (window-body-width window)
+    (window-body-height window)))
 
 (defun cj/--ai-vterm-capture-state (window)
   "Capture WINDOW's direction and size into module-level state.
@@ -265,9 +278,9 @@ window down).
 Does nothing when WINDOW is not live."
   (when (window-live-p window)
     (let* ((dir (cj/--ai-vterm-window-direction window))
-           (frac (cj/--ai-vterm-window-fraction window dir)))
+           (size (cj/--ai-vterm-window-size window dir)))
       (setq cj/--ai-vterm-last-direction dir
-            cj/--ai-vterm-last-size frac))))
+            cj/--ai-vterm-last-size size))))
 
 (defun cj/--ai-vterm-reuse-existing-claude (buffer _alist)
   "Display-buffer action: reuse any window in this frame already showing
@@ -297,23 +310,53 @@ Reads `cj/--ai-vterm-last-direction' and `cj/--ai-vterm-last-size'
 delegates to `display-buffer-in-direction' with an alist that carries
 the saved values.
 
+The captured cardinal direction (right/left/below/above) is mapped
+to its frame-edge variant (rightmost/leftmost/bottom/top) so the new
+claude always lands at the same frame edge it came from.  This
+means: the new window splits the frame's main window at the
+matching edge, not whatever window happens to be selected when F9
+fires.  Without this mapping, a toggle-off-on cycle in a 3+ window
+layout would put claude into a middle position (right of the
+selected window) rather than the edge it lived on before.  As a
+side benefit, claude always lands without a sibling on its
+captured-edge side, so its body-width and total-width match -- no
+divider chrome eating 1 col per toggle.
+
+An integer size (the captured absolute body-cols or body-lines) is
+wrapped in a `(body-columns . N)' / `(body-lines . N)' cons so
+`display-buffer-in-direction' sets the body width or body height
+exactly.  A float size (the customizable default fallback) passes
+through as a fraction of the new window's parent.
+
 Any direction/window-width/window-height entries in ALIST are
 stripped so the saved-state values control placement -- callers
 shouldn't specify direction or size in the rule when this action is
 used."
   (let* ((direction (or cj/--ai-vterm-last-direction 'right))
+         (edge-direction (pcase direction
+                           ('right 'rightmost)
+                           ('left 'leftmost)
+                           ('below 'bottom)
+                           ('above 'top)
+                           (_ 'rightmost)))
          (size (or cj/--ai-vterm-last-size cj/ai-vterm-window-width))
          (size-key (if (memq direction '(right left))
                        'window-width
                      'window-height))
+         (body-tag (if (memq direction '(right left))
+                       'body-columns
+                     'body-lines))
+         (size-value (if (integerp size)
+                         (cons body-tag size)
+                       size))
          (filtered (cl-remove-if
                     (lambda (cell)
                       (memq (car-safe cell)
                             '(direction window-width window-height)))
                     alist))
          (effective (append
-                     (list (cons 'direction direction)
-                           (cons size-key size))
+                     (list (cons 'direction edge-direction)
+                           (cons size-key size-value))
                      filtered)))
     (display-buffer-in-direction buffer effective)))
 
@@ -530,7 +573,19 @@ AI-vterm buffers without touching the project list."
   (pcase (cj/--ai-vterm-dispatch)
     (`(toggle-off . ,win)
      (cj/--ai-vterm-capture-state win)
-     (quit-window nil win)
+     ;; `delete-window' rather than `quit-window' so the toggle-off
+     ;; semantics are unconditional.  `quit-window' only deletes the
+     ;; window when its `quit-restore' parameter records that it was
+     ;; created for the buffer.  Buffer-move (C-M-arrows) leaves the
+     ;; claude buffer in a window without that history, so
+     ;; `quit-window' would just bury -- the window stays with some
+     ;; other buffer in it, and the next toggle-on then creates a
+     ;; fresh side window for a count of N+1.  Skip the deletion
+     ;; only when claude is the lone window in the frame (delete
+     ;; would leave none); bury in that case.
+     (if (one-window-p)
+         (bury-buffer (window-buffer win))
+       (delete-window win))
      nil)
     (`(redisplay-single . ,buf)
      (display-buffer buf)

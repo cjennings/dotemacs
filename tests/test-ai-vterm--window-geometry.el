@@ -55,31 +55,34 @@
     (delete-other-windows)
     (should (eq (cj/--ai-vterm-window-direction (selected-window)) 'right))))
 
-(ert-deftest test-ai-vterm--window-fraction-right-split-half ()
-  "Normal: right window of equal vertical split -> ~0.5 width fraction."
+(ert-deftest test-ai-vterm--window-size-right-split-returns-body-cols ()
+  "Normal: right window -> integer body-cols matching window-body-width."
   (save-window-excursion
     (delete-other-windows)
     (let* ((right (split-window (selected-window) nil 'right))
-           (frac (cj/--ai-vterm-window-fraction right 'right)))
-      (should (and (> frac 0.4) (< frac 0.6))))))
+           (size (cj/--ai-vterm-window-size right 'right)))
+      (should (integerp size))
+      (should (= size (window-body-width right))))))
 
-(ert-deftest test-ai-vterm--window-fraction-below-split-half ()
-  "Normal: bottom window of equal horizontal split -> ~0.5 height fraction."
+(ert-deftest test-ai-vterm--window-size-below-split-returns-body-lines ()
+  "Normal: bottom window -> integer body-lines matching window-body-height."
   (save-window-excursion
     (delete-other-windows)
     (let* ((below (split-window (selected-window) nil 'below))
-           (frac (cj/--ai-vterm-window-fraction below 'below)))
-      (should (and (> frac 0.4) (< frac 0.6))))))
+           (size (cj/--ai-vterm-window-size below 'below)))
+      (should (integerp size))
+      (should (= size (window-body-height below))))))
 
-(ert-deftest test-ai-vterm--window-fraction-narrow-right-split ()
-  "Normal: right window at 1/4 width -> fraction within that range."
+(ert-deftest test-ai-vterm--window-size-narrow-right-split ()
+  "Normal: deliberately narrow right window -> matching body-col count."
   (save-window-excursion
     (delete-other-windows)
     (let* ((frame-w (frame-width))
            (target-cols (/ frame-w 4))
            (right (split-window (selected-window) (- target-cols) 'right))
-           (frac (cj/--ai-vterm-window-fraction right 'right)))
-      (should (and (> frac 0.15) (< frac 0.35))))))
+           (size (cj/--ai-vterm-window-size right 'right)))
+      (should (integerp size))
+      (should (= size (window-body-width right))))))
 
 (provide 'test-ai-vterm--window-geometry)
 ;;; test-ai-vterm--window-geometry.el ends here
