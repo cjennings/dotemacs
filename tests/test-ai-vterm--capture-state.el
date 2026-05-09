@@ -15,7 +15,7 @@
 (require 'ai-vterm)
 
 (ert-deftest test-ai-vterm--capture-state-right-split-sets-direction ()
-  "Normal: right-split window -> direction=right, size in (0.4, 0.6)."
+  "Normal: right-split window -> direction=right, integer body-cols matching window."
   (save-window-excursion
     (delete-other-windows)
     (let ((right (split-window (selected-window) nil 'right))
@@ -23,12 +23,11 @@
           (cj/--ai-vterm-last-size nil))
       (cj/--ai-vterm-capture-state right)
       (should (eq cj/--ai-vterm-last-direction 'right))
-      (should (numberp cj/--ai-vterm-last-size))
-      (should (and (> cj/--ai-vterm-last-size 0.4)
-                   (< cj/--ai-vterm-last-size 0.6))))))
+      (should (integerp cj/--ai-vterm-last-size))
+      (should (= cj/--ai-vterm-last-size (window-body-width right))))))
 
 (ert-deftest test-ai-vterm--capture-state-below-split-sets-direction ()
-  "Normal: below-split window -> direction=below, size in (0.4, 0.6)."
+  "Normal: below-split window -> direction=below, integer body-lines matching window."
   (save-window-excursion
     (delete-other-windows)
     (let ((below (split-window (selected-window) nil 'below))
@@ -36,8 +35,8 @@
           (cj/--ai-vterm-last-size nil))
       (cj/--ai-vterm-capture-state below)
       (should (eq cj/--ai-vterm-last-direction 'below))
-      (should (and (> cj/--ai-vterm-last-size 0.4)
-                   (< cj/--ai-vterm-last-size 0.6))))))
+      (should (integerp cj/--ai-vterm-last-size))
+      (should (= cj/--ai-vterm-last-size (window-body-height below))))))
 
 (ert-deftest test-ai-vterm--capture-state-noop-on-dead-window ()
   "Boundary: nil window -> state remains unchanged."
