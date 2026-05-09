@@ -44,5 +44,26 @@
       (cj/--ai-vterm-pick-project)
       (should (equal (caar received-collection) "~/code/foo")))))
 
+(ert-deftest test-ai-vterm--format-candidate-flags-running-project ()
+  "Normal: a path whose claude buffer has a live process gets a [running] suffix."
+  (let* ((path (expand-file-name "~/code/already-running"))
+         (buffer-name (cj/--ai-vterm-buffer-name path))
+         (buf (get-buffer-create buffer-name)))
+    (unwind-protect
+        (cl-letf (((symbol-function 'cj/--ai-vterm-process-live-p)
+                   (lambda (b) (eq b buf))))
+          (should (equal (cj/--ai-vterm-format-candidate path)
+                         (format "%s [running]" (abbreviate-file-name path)))))
+      (kill-buffer buf))))
+
+(ert-deftest test-ai-vterm--format-candidate-omits-flag-when-not-running ()
+  "Boundary: a path with no buffer or no live process -> plain abbreviated path."
+  (let ((path (expand-file-name "~/code/not-running")))
+    ;; Make sure no claude buffer exists for this path.
+    (let ((bn (cj/--ai-vterm-buffer-name path)))
+      (when (get-buffer bn) (kill-buffer bn)))
+    (should (equal (cj/--ai-vterm-format-candidate path)
+                   (abbreviate-file-name path)))))
+
 (provide 'test-ai-vterm--pick-project)
 ;;; test-ai-vterm--pick-project.el ends here

@@ -434,12 +434,28 @@ Returns the buffer."
         (display-buffer buf)
         buf)))))
 
+(defun cj/--ai-vterm-format-candidate (path)
+  "Return the display name for PATH in the AI-vterm project picker.
+
+Appends \" [running]\" when the project's claude buffer exists with
+a live process, so the user sees at a glance which projects already
+have a session.  Path is abbreviated via `abbreviate-file-name' so
+it reads as ~/code/foo rather than the full home-dir form."
+  (let* ((name (cj/--ai-vterm-buffer-name path))
+         (buf (get-buffer name))
+         (running (and buf (cj/--ai-vterm-process-live-p buf)))
+         (display-path (abbreviate-file-name path)))
+    (if running
+        (format "%s [running]" display-path)
+      display-path)))
+
 (defun cj/--ai-vterm-pick-project ()
   "Prompt for a Claude-template project; return its absolute path.
 
 Candidates come from `cj/--ai-vterm-candidates'.  Display uses
-`abbreviate-file-name' so paths read as ~/code/foo instead of the
-full home-dir form.  Signals `user-error' when no candidates exist."
+`cj/--ai-vterm-format-candidate', which abbreviates the path and
+flags projects with a live session via a \" [running]\" suffix.
+Signals `user-error' when no candidates exist."
   (let ((candidates (cj/--ai-vterm-candidates)))
     (unless candidates
       (user-error "No Claude-template projects found under %s"
@@ -448,7 +464,7 @@ full home-dir form.  Signals `user-error' when no candidates exist."
                                      cj/ai-vterm-container-roots)
                              ", ")))
     (let* ((display-alist
-            (mapcar (lambda (p) (cons (abbreviate-file-name p) p))
+            (mapcar (lambda (p) (cons (cj/--ai-vterm-format-candidate p) p))
                     candidates))
            (chosen (completing-read "AI vterm project: "
                                     display-alist nil t)))
@@ -460,8 +476,14 @@ full home-dir form.  Signals `user-error' when no candidates exist."
 
 Returns one of:
 - (toggle-off . WINDOW)        -- claude is displayed in WINDOW; quit it.
-- (redisplay-single . BUFFER)  -- exactly one alive claude buffer; show it.
-- (pick-project)               -- zero or 2+ alive claude buffers; prompt.
+- (redisplay-recent . BUFFER)  -- 1+ alive claude buffers; show MRU.
+- (pick-project)               -- zero alive claude buffers; prompt.
+
+When 2+ claude buffers are alive, F9 redisplays the most-recently-
+selected one rather than opening the project picker.  C-F9 is the
+explicit \"start a different project\" surface; M-F9 is the explicit
+\"switch among existing claudes\" surface.  F9 keeps a single, simple
+job: toggle whichever claude was last in use.
 
 A pure-decision helper so the dispatch logic is exercisable in tests
 without firing real `display-buffer' or `quit-window' calls."
@@ -471,7 +493,7 @@ without firing real `display-buffer' or `quit-window' calls."
      (t
       (let ((buffers (cj/--ai-vterm-claude-buffers)))
         (cond
-         ((= (length buffers) 1) (cons 'redisplay-single (car buffers)))
+         (buffers (cons 'redisplay-recent (car buffers)))
          (t '(pick-project))))))))
 
 (defun cj/--ai-vterm-pick-buffer-candidates (buffers shown-buffer)
@@ -587,7 +609,7 @@ AI-vterm buffers without touching the project list."
          (bury-buffer (window-buffer win))
        (delete-window win))
      nil)
-    (`(redisplay-single . ,buf)
+    (`(redisplay-recent . ,buf)
      (display-buffer buf)
      (unless arg
        (let ((w (get-buffer-window buf)))
