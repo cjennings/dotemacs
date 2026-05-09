@@ -13,14 +13,9 @@
 (require 'cl-lib)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
+(add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'eshell-vterm-config)
-
-(defun test-vterm-toggle--dispatch-cleanup ()
-  "Kill any leftover test buffers."
-  (dolist (b (buffer-list))
-    (let ((name (buffer-name b)))
-      (when (string-prefix-p "*test-vterm" name)
-        (kill-buffer b)))))
+(require 'testutil-vterm-buffers)
 
 (ert-deftest test-vterm-toggle--dispatch-window-displayed-returns-toggle-off ()
   "Normal: displayed vterm window -> (toggle-off . WIN)."
@@ -32,7 +27,7 @@
 
 (ert-deftest test-vterm-toggle--dispatch-no-window-buffer-alive-returns-show-recent ()
   "Normal: no displayed vterm, at least one alive -> show-recent + first."
-  (test-vterm-toggle--dispatch-cleanup)
+  (cj/test--kill-test-vterm-buffers)
   (let ((b1 (get-buffer-create "*test-vterm-mru-1*"))
         (b2 (get-buffer-create "*test-vterm-mru-2*")))
     (unwind-protect
@@ -47,7 +42,7 @@
 
 (ert-deftest test-vterm-toggle--dispatch-no-window-no-buffer-returns-create-new ()
   "Boundary: nothing displayed, no alive vterms -> create-new."
-  (test-vterm-toggle--dispatch-cleanup)
+  (cj/test--kill-test-vterm-buffers)
   (cl-letf (((symbol-function 'cj/--vterm-toggle-displayed-window)
              (lambda (&optional _frame) nil))
             ((symbol-function 'cj/--vterm-toggle-buffers)

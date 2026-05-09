@@ -16,23 +16,19 @@
 (require 'ert)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
+(add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'ai-vterm)
-
-(defun test-ai-vterm--pbc-cleanup ()
-  "Kill any leftover claude-prefixed buffers."
-  (dolist (b (buffer-list))
-    (when (string-prefix-p "claude [" (buffer-name b))
-      (kill-buffer b))))
+(require 'testutil-vterm-buffers)
 
 (ert-deftest test-ai-vterm--pick-buffer-candidates-empty-buffers ()
   "Boundary: empty buffer list -> empty alist regardless of shown."
-  (test-ai-vterm--pbc-cleanup)
+  (cj/test--kill-claude-buffers)
   (should (null (cj/--ai-vterm-pick-buffer-candidates nil nil)))
   (should (null (cj/--ai-vterm-pick-buffer-candidates nil 'sentinel))))
 
 (ert-deftest test-ai-vterm--pick-buffer-candidates-shown-nil ()
   "Normal: shown is nil -> straight alist in input order, no marker."
-  (test-ai-vterm--pbc-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((b1 (get-buffer-create "claude [a]"))
         (b2 (get-buffer-create "claude [b]")))
     (unwind-protect
@@ -44,7 +40,7 @@
 
 (ert-deftest test-ai-vterm--pick-buffer-candidates-shown-promotes-non-shown ()
   "Normal: shown buffer sorts last with [shown] suffix; others first."
-  (test-ai-vterm--pbc-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((b1 (get-buffer-create "claude [a]"))
         (b2 (get-buffer-create "claude [b]"))
         (b3 (get-buffer-create "claude [c]")))
@@ -61,7 +57,7 @@
 
 (ert-deftest test-ai-vterm--pick-buffer-candidates-shown-only-buffer ()
   "Boundary: shown is the only entry -> single cell with [shown] marker."
-  (test-ai-vterm--pbc-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((b1 (get-buffer-create "claude [a]")))
     (unwind-protect
         (let ((result (cj/--ai-vterm-pick-buffer-candidates (list b1) b1)))
@@ -70,7 +66,7 @@
 
 (ert-deftest test-ai-vterm--pick-buffer-candidates-shown-not-in-buffers ()
   "Boundary: stale shown buffer not in list -> all cells are non-shown."
-  (test-ai-vterm--pbc-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((b1 (get-buffer-create "claude [a]"))
         (b-stale (get-buffer-create "claude [stale]")))
     (unwind-protect

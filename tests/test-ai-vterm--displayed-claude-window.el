@@ -10,24 +10,20 @@
 (require 'ert)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
+(add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'ai-vterm)
-
-(defun test-ai-vterm--displayed-cleanup ()
-  "Kill any leftover claude-prefixed buffers."
-  (dolist (b (buffer-list))
-    (when (string-prefix-p "claude [" (buffer-name b))
-      (kill-buffer b))))
+(require 'testutil-vterm-buffers)
 
 (ert-deftest test-ai-vterm--displayed-claude-window-no-buffers-returns-nil ()
   "Boundary: no claude buffers anywhere -> nil."
-  (test-ai-vterm--displayed-cleanup)
+  (cj/test--kill-claude-buffers)
   (save-window-excursion
     (delete-other-windows)
     (should-not (cj/--ai-vterm-displayed-claude-window))))
 
 (ert-deftest test-ai-vterm--displayed-claude-window-not-displayed-returns-nil ()
   "Boundary: claude buffer exists but not in any window -> nil."
-  (test-ai-vterm--displayed-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((b1 (get-buffer-create "claude [hidden]")))
     (unwind-protect
         (save-window-excursion
@@ -37,7 +33,7 @@
 
 (ert-deftest test-ai-vterm--displayed-claude-window-returns-window-when-displayed ()
   "Normal: claude buffer in a window -> returns that window."
-  (test-ai-vterm--displayed-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((b1 (get-buffer-create "claude [shown]")))
     (unwind-protect
         (save-window-excursion
@@ -51,7 +47,7 @@
 
 (ert-deftest test-ai-vterm--displayed-claude-window-ignores-non-claude-windows ()
   "Boundary: only a non-claude buffer is displayed -> nil."
-  (test-ai-vterm--displayed-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((other (get-buffer-create "regular-displayed-buffer")))
     (unwind-protect
         (save-window-excursion
