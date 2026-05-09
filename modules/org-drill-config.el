@@ -19,10 +19,10 @@
 ;; --------------------------------- Org Drill ---------------------------------
 
 (use-package org-drill
-  :vc (:url "git@cjennings.net:org-drill.git"
-       :branch "main"
-       :rev :newest)
-  ;; :load-path "~/code/org-drill"  ;; uncomment + comment :vc above for local dev
+  ;; :vc (:url "git@cjennings.net:org-drill.git"
+  ;;      :branch "main"
+  ;;      :rev :newest)
+  :load-path "~/code/org-drill"  ;; local dev checkout — switch back to :vc above when done
   :after (org org-capture)
   :demand t
   :commands (org-drill cj/drill-start)
