@@ -2,10 +2,10 @@
 
 ;;; Commentary:
 ;; The dispatch helper is a pure decision function used by F9.
-;; Returns one of (toggle-off . WIN), (redisplay-single . BUF),
+;; Returns one of (toggle-off . WIN), (redisplay-recent . BUF),
 ;; or (pick-project) based on whether a claude buffer is currently
-;; displayed and how many alive claude buffers exist.  Tests mock the
-;; two underlying helpers so the dispatch logic can be exercised
+;; displayed and whether any alive claude buffers exist.  Tests mock
+;; the two underlying helpers so the dispatch logic can be exercised
 ;; without touching real windows.
 
 ;;; Code:
@@ -30,8 +30,8 @@
       (should (equal (cj/--ai-vterm-dispatch)
                      (cons 'toggle-off sentinel-win))))))
 
-(ert-deftest test-ai-vterm--dispatch-no-window-single-buffer-returns-redisplay ()
-  "Normal: no displayed claude, exactly one alive buffer -> redisplay-single."
+(ert-deftest test-ai-vterm--dispatch-no-window-single-buffer-returns-redisplay-recent ()
+  "Normal: no displayed claude, one alive buffer -> redisplay-recent + buffer."
   (test-ai-vterm--dispatch-cleanup)
   (let ((b1 (get-buffer-create "claude [single]")))
     (unwind-protect
@@ -40,11 +40,14 @@
                   ((symbol-function 'cj/--ai-vterm-claude-buffers)
                    (lambda () (list b1))))
           (should (equal (cj/--ai-vterm-dispatch)
-                         (cons 'redisplay-single b1))))
+                         (cons 'redisplay-recent b1))))
       (kill-buffer b1))))
 
-(ert-deftest test-ai-vterm--dispatch-no-window-multiple-buffers-returns-pick-project ()
-  "Normal: no displayed claude, 2+ alive buffers -> pick-project."
+(ert-deftest test-ai-vterm--dispatch-no-window-multiple-buffers-returns-redisplay-recent ()
+  "Normal: no displayed claude, 2+ alive buffers -> redisplay-recent + MRU.
+F9 redisplays the most-recently-selected claude (head of buffer-list
+order) rather than opening the project picker, so the user toggles
+THE claude they were last using.  Other claudes are reachable via M-F9."
   (test-ai-vterm--dispatch-cleanup)
   (let ((b1 (get-buffer-create "claude [a]"))
         (b2 (get-buffer-create "claude [b]")))
@@ -53,7 +56,8 @@
                    (lambda (&optional _frame) nil))
                   ((symbol-function 'cj/--ai-vterm-claude-buffers)
                    (lambda () (list b1 b2))))
-          (should (equal (cj/--ai-vterm-dispatch) '(pick-project))))
+          (should (equal (cj/--ai-vterm-dispatch)
+                         (cons 'redisplay-recent b1))))
       (kill-buffer b1)
       (kill-buffer b2))))
 
