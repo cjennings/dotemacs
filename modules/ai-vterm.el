@@ -36,6 +36,7 @@
 
 (require 'cl-lib)
 (require 'seq)
+(require 'cj-window-geometry)
 
 (declare-function vterm "vterm" (&optional buffer-name))
 (declare-function vterm-send-string "vterm" (string &optional paste-p))
@@ -228,57 +229,19 @@ and a fraction-of-frame produces the wrong size on replay
 (squeezes the other windows).  An integer is unambiguous, at the
 cost of not auto-scaling if the frame itself resizes.")
 
-(defun cj/--ai-vterm-window-direction (window)
-  "Return the side WINDOW occupies in its frame.
-
-Returns one of right, below, left, above.  Falls back to right when
-WINDOW fills its frame's root area (single-window or atypical
-layout), since right is the module's default split direction.
-
-Comparison uses `frame-root-window' edges rather than frame edges so
-the minibuffer doesn't make every full-area window look like it
-fails to span the full height."
-  (let* ((root (frame-root-window (window-frame window)))
-         (edges (window-edges window))
-         (root-edges (window-edges root))
-         (left (nth 0 edges))
-         (top (nth 1 edges))
-         (right (nth 2 edges))
-         (bottom (nth 3 edges))
-         (root-left (nth 0 root-edges))
-         (root-top (nth 1 root-edges))
-         (root-right (nth 2 root-edges))
-         (root-bottom (nth 3 root-edges))
-         (spans-full-width (and (= left root-left) (= right root-right)))
-         (spans-full-height (and (= top root-top) (= bottom root-bottom))))
-    (cond
-     ((not spans-full-width) (if (= left root-left) 'left 'right))
-     ((not spans-full-height) (if (= top root-top) 'above 'below))
-     (t 'right))))
-
-(defun cj/--ai-vterm-window-size (window direction)
-  "Return WINDOW's body size in cols (right/left) or lines (below/above).
-
-Returns body width or body height -- the count of characters
-visible in the text content area, independent of fringes,
-scrollbars, or window dividers.  See `cj/--ai-vterm-last-size' for
-why body size, not total size, is the right thing to capture."
-  (if (memq direction '(right left))
-      (window-body-width window)
-    (window-body-height window)))
-
 (defun cj/--ai-vterm-capture-state (window)
   "Capture WINDOW's direction and size into module-level state.
 
 Sets `cj/--ai-vterm-last-direction' and `cj/--ai-vterm-last-size'
 so a subsequent F9 display can restore the user's chosen orientation
-and size.  Called at toggle-off (just before `quit-window' tears the
-window down).
+and size.  Called at toggle-off (just before the window is torn
+down).  The default direction is 'right -- the module's side-panel
+default.
 
 Does nothing when WINDOW is not live."
   (when (window-live-p window)
-    (let* ((dir (cj/--ai-vterm-window-direction window))
-           (size (cj/--ai-vterm-window-size window dir)))
+    (let* ((dir (cj/window-direction window 'right))
+           (size (cj/window-body-size window dir)))
       (setq cj/--ai-vterm-last-direction dir
             cj/--ai-vterm-last-size size))))
 
@@ -333,12 +296,8 @@ stripped so the saved-state values control placement -- callers
 shouldn't specify direction or size in the rule when this action is
 used."
   (let* ((direction (or cj/--ai-vterm-last-direction 'right))
-         (edge-direction (pcase direction
-                           ('right 'rightmost)
-                           ('left 'leftmost)
-                           ('below 'bottom)
-                           ('above 'top)
-                           (_ 'rightmost)))
+         (edge-direction (or (cj/cardinal-to-edge-direction direction)
+                             'rightmost))
          (size (or cj/--ai-vterm-last-size cj/ai-vterm-window-width))
          (size-key (if (memq direction '(right left))
                        'window-width

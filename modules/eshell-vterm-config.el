@@ -261,6 +261,7 @@ ai-vterm.el is loaded."
 
 (require 'cl-lib)
 (require 'seq)
+(require 'cj-window-geometry)
 
 (defcustom cj/vterm-toggle-window-height 0.7
   "Default fraction of frame height for the F12 vterm window.
@@ -306,43 +307,14 @@ FRAME defaults to the selected frame.  Minibuffer is excluded."
               (cj/--vterm-toggle-buffer-p (window-buffer w)))
             (window-list (or frame (selected-frame)) 'never)))
 
-(defun cj/--vterm-toggle-window-direction (window)
-  "Return the side WINDOW occupies in its frame.
-
-Returns one of right, below, left, above.  Falls back to 'below
-(F12's traditional bottom split) when WINDOW fills its frame's
-root area.  Comparison uses `frame-root-window' edges so the
-minibuffer doesn't make every full-area window look like it
-fails to span the full height."
-  (let* ((root (frame-root-window (window-frame window)))
-         (edges (window-edges window))
-         (root-edges (window-edges root))
-         (left (nth 0 edges))
-         (top (nth 1 edges))
-         (right (nth 2 edges))
-         (bottom (nth 3 edges))
-         (root-left (nth 0 root-edges))
-         (root-top (nth 1 root-edges))
-         (root-right (nth 2 root-edges))
-         (root-bottom (nth 3 root-edges))
-         (spans-full-width (and (= left root-left) (= right root-right)))
-         (spans-full-height (and (= top root-top) (= bottom root-bottom))))
-    (cond
-     ((not spans-full-width) (if (= left root-left) 'left 'right))
-     ((not spans-full-height) (if (= top root-top) 'above 'below))
-     (t 'below))))
-
-(defun cj/--vterm-toggle-window-size (window direction)
-  "Return WINDOW's body size in cols (right/left) or lines (below/above)."
-  (if (memq direction '(right left))
-      (window-body-width window)
-    (window-body-height window)))
-
 (defun cj/--vterm-toggle-capture-state (window)
-  "Capture WINDOW's direction + body size into module-level state."
+  "Capture WINDOW's direction + body size into module-level state.
+
+Default direction is 'below to match F12's traditional bottom
+split when WINDOW fills the frame's root area."
   (when (window-live-p window)
-    (let* ((dir (cj/--vterm-toggle-window-direction window))
-           (size (cj/--vterm-toggle-window-size window dir)))
+    (let* ((dir (cj/window-direction window 'below))
+           (size (cj/window-body-size window dir)))
       (setq cj/--vterm-toggle-last-direction dir
             cj/--vterm-toggle-last-size size))))
 
@@ -359,12 +331,8 @@ in a `(body-columns . N)' / `(body-lines . N)' cons so the body
 width or height is set explicitly, divider-independent.  A float
 size passes through as a fraction of the new window's parent."
   (let* ((direction (or cj/--vterm-toggle-last-direction 'below))
-         (edge-direction (pcase direction
-                           ('right 'rightmost)
-                           ('left 'leftmost)
-                           ('below 'bottom)
-                           ('above 'top)
-                           (_ 'bottom)))
+         (edge-direction (or (cj/cardinal-to-edge-direction direction)
+                             'bottom))
          (size (or cj/--vterm-toggle-last-size cj/vterm-toggle-window-height))
          (size-key (if (memq direction '(right left))
                        'window-width
