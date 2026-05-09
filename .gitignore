@@ -44,6 +44,7 @@ auto-save-list/
 /pomm
 /ai-conversations/
 /.emacs-history
+/.emacs-theme
 /emms/
 /oauth2-auto.plist
 
