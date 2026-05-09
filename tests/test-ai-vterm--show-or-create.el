@@ -105,6 +105,45 @@ VARS is a plist of capture variable names: :calls, :strings, :returns,
               (should-not (buffer-live-p stale)))))
       (test-ai-vterm--cleanup name))))
 
+(ert-deftest test-ai-vterm--show-or-create-preserves-selected-window ()
+  "Regression: vterm's pop-to-buffer-same-window must not bury the dashboard.
+
+Real `vterm' replaces the selected window's buffer as a side-effect of
+construction.  On a fresh-boot frame (one window showing the dashboard),
+that side-effect previously left the original window pointing at the new
+claude buffer; the dashboard was buried, the alist-routed split then
+created a second window also showing claude.  The wrapper must restore
+the original window state before `display-buffer' fires so dashboard
+stays put and the alist places claude into a fresh right-side split.
+
+This test stubs `vterm' to mimic the pop-to-buffer-same-window side-effect
+and asserts the originally-selected window still shows its original buffer
+after `cj/--ai-vterm-show-or-create' returns."
+  (let ((claude-name "claude [preserve-window-test]")
+        (orig-name "*test-original-buffer*"))
+    (test-ai-vterm--cleanup claude-name)
+    (when (get-buffer orig-name) (kill-buffer orig-name))
+    (unwind-protect
+        (save-window-excursion
+          (delete-other-windows)
+          (let ((orig-buf (get-buffer-create orig-name))
+                (orig-win (selected-window)))
+            (set-window-buffer orig-win orig-buf)
+            (cl-letf
+                (((symbol-function 'vterm)
+                  (lambda (&optional name)
+                    (let ((buf (get-buffer-create name)))
+                      (set-window-buffer (selected-window) buf)
+                      buf)))
+                 ((symbol-function 'vterm-send-string)
+                  (lambda (_s &optional _) nil))
+                 ((symbol-function 'vterm-send-return)
+                  (lambda () nil)))
+              (cj/--ai-vterm-show-or-create "/tmp/preserve" claude-name)
+              (should (eq (window-buffer orig-win) orig-buf)))))
+      (test-ai-vterm--cleanup claude-name)
+      (when (get-buffer orig-name) (kill-buffer orig-name)))))
+
 (ert-deftest test-ai-vterm--show-or-create-returns-buffer ()
   "Normal: return value is the vterm buffer."
   (let ((name "claude [return-test]"))
