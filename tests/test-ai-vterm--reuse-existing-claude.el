@@ -15,17 +15,13 @@
 (require 'ert)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
+(add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'ai-vterm)
-
-(defun test-ai-vterm--reuse-cleanup ()
-  "Kill any leftover claude-prefixed buffers."
-  (dolist (b (buffer-list))
-    (when (string-prefix-p "claude [" (buffer-name b))
-      (kill-buffer b))))
+(require 'testutil-vterm-buffers)
 
 (ert-deftest test-ai-vterm--reuse-existing-claude-swaps-buffer-when-window-exists ()
   "Normal: a claude window exists -> swap its buffer, return the window."
-  (test-ai-vterm--reuse-cleanup)
+  (cj/test--kill-claude-buffers)
   (save-window-excursion
     (delete-other-windows)
     (let ((existing (get-buffer-create "claude [existing]"))
@@ -42,7 +38,7 @@
 
 (ert-deftest test-ai-vterm--reuse-existing-claude-returns-nil-when-no-claude-window ()
   "Boundary: no claude window in frame -> nil (chain continues to next action)."
-  (test-ai-vterm--reuse-cleanup)
+  (cj/test--kill-claude-buffers)
   (save-window-excursion
     (delete-other-windows)
     (let ((new-buf (get-buffer-create "claude [no-existing]")))
@@ -52,7 +48,7 @@
 
 (ert-deftest test-ai-vterm--reuse-existing-claude-leaves-non-claude-windows-alone ()
   "Boundary: only non-claude windows in frame -> nil; other windows untouched."
-  (test-ai-vterm--reuse-cleanup)
+  (cj/test--kill-claude-buffers)
   (save-window-excursion
     (delete-other-windows)
     (let ((code-buf (get-buffer-create "*test-code-buffer*"))
@@ -76,7 +72,7 @@
 This is the C-F9-from-claude regression: with claude at the bottom
 and code on top, switching projects must replace the bottom window's
 buffer, not the top window's."
-  (test-ai-vterm--reuse-cleanup)
+  (cj/test--kill-claude-buffers)
   (save-window-excursion
     (delete-other-windows)
     (let* ((code-buf (get-buffer-create "*test-code-top*"))

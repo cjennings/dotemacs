@@ -16,7 +16,9 @@
 (require 'cl-lib)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
+(add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'ai-vterm)
+(require 'testutil-vterm-buffers)
 
 (ert-deftest test-ai-vterm--display-saved-uses-defaults-when-state-nil ()
   "Normal: nil state -> direction=rightmost, size=cj/ai-vterm-window-width.
@@ -94,12 +96,6 @@ which window is selected."
       (cj/--ai-vterm-display-saved 'sentinel-buffer nil))
     (should (eq received-buf 'sentinel-buffer))))
 
-(defun test-ai-vterm--display-saved-cleanup ()
-  "Kill any leftover claude-prefixed buffers."
-  (dolist (b (buffer-list))
-    (when (string-prefix-p "claude [" (buffer-name b))
-      (kill-buffer b))))
-
 (ert-deftest test-ai-vterm--display-saved-3window-roundtrip-preserves-body-width ()
   "Regression: capture+delete+display in a 3-window layout preserves body-width.
 
@@ -109,7 +105,7 @@ the new claude lands at a different position than the captured one
 of the right divider.  `window-body-width' is divider-independent
 and is what the user actually sees, so the assertion locks down
 the body match."
-  (test-ai-vterm--display-saved-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((claude-name "claude [3win-roundtrip]")
         (left-name "*test-3win-left*")
         (right-name "*test-3win-right*"))
@@ -144,11 +140,11 @@ the body match."
                   (should (eq captured-direction 'right)))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer right-name) (kill-buffer right-name))
-      (test-ai-vterm--display-saved-cleanup))))
+      (cj/test--kill-claude-buffers))))
 
 (ert-deftest test-ai-vterm--display-saved-3window-claude-rightmost-roundtrip ()
   "Round-trip when claude is the rightmost window (no right divider)."
-  (test-ai-vterm--display-saved-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((claude-name "claude [rightmost]")
         (left-name "*test-rm-left*")
         (mid-name "*test-rm-mid*"))
@@ -173,11 +169,11 @@ the body match."
                   (should (= (window-body-width new-win) captured-size)))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer mid-name) (kill-buffer mid-name))
-      (test-ai-vterm--display-saved-cleanup))))
+      (cj/test--kill-claude-buffers))))
 
 (ert-deftest test-ai-vterm--display-saved-3window-after-mouse-resize ()
   "Round-trip after a deliberate mid-window resize (mimics mouse-drag)."
-  (test-ai-vterm--display-saved-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((claude-name "claude [mouse-resize]")
         (left-name "*test-mr-left*")
         (right-name "*test-mr-right*"))
@@ -206,11 +202,11 @@ the body match."
                   (should (= (window-body-width new-win) captured-size)))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer right-name) (kill-buffer right-name))
-      (test-ai-vterm--display-saved-cleanup))))
+      (cj/test--kill-claude-buffers))))
 
 (ert-deftest test-ai-vterm--display-saved-roundtrip-via-cj/ai-vterm-toggle ()
   "End-to-end: toggle-off via dispatch then redisplay -- preserves size."
-  (test-ai-vterm--display-saved-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((claude-name "claude [toggle-roundtrip]")
         (left-name "*test-tr-left*")
         (right-name "*test-tr-right*"))
@@ -240,11 +236,11 @@ the body match."
                     (should (= new-size before-size))))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer right-name) (kill-buffer right-name))
-      (test-ai-vterm--display-saved-cleanup))))
+      (cj/test--kill-claude-buffers))))
 
 (ert-deftest test-ai-vterm--display-saved-two-toggle-cycles-stable ()
   "Two consecutive toggle-off+toggle-on cycles -- no compounding error."
-  (test-ai-vterm--display-saved-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((claude-name "claude [two-cycle]")
         (left-name "*test-2c-left*")
         (right-name "*test-2c-right*"))
@@ -277,13 +273,13 @@ the body match."
                     (should (= cycle2-size initial-size))))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer right-name) (kill-buffer right-name))
-      (test-ai-vterm--display-saved-cleanup))))
+      (cj/test--kill-claude-buffers))))
 
 (ert-deftest test-ai-vterm--display-saved-craig-c-x-3-roundtrip ()
   "Reproduces Craig's repro from 2026-05-09:
 launch -> F9 -> dashboard splits via C-x 3 -> toggle off -> toggle on.
 Expected: new claude lands at the same total-width it had before."
-  (test-ai-vterm--display-saved-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((claude-name "claude [c-x-3-repro]")
         (dash-name "*test-cx3-dashboard*"))
     (unwind-protect
@@ -314,7 +310,7 @@ Expected: new claude lands at the same total-width it had before."
                   (should (windowp claude-win-3))
                   (should (= size-after size-before)))))))
       (when (get-buffer dash-name) (kill-buffer dash-name))
-      (test-ai-vterm--display-saved-cleanup))))
+      (cj/test--kill-claude-buffers))))
 
 (ert-deftest test-ai-vterm--toggle-after-buffer-move-no-extra-window ()
   "Regression: toggle-off must remove claude's window even when buffer-move
@@ -331,7 +327,7 @@ landing the user at N+1 windows instead of N.
 
 Assertion: after toggle-off+toggle-on, the window count is back to
 its pre-cycle value, regardless of `quit-restore' state."
-  (test-ai-vterm--display-saved-cleanup)
+  (cj/test--kill-claude-buffers)
   (let ((claude-name "claude [buffer-move-toggle]")
         (left-name "*test-bm-left*")
         (right-name "*test-bm-right*"))
@@ -364,7 +360,7 @@ its pre-cycle value, regardless of `quit-restore' state."
                   (should (= (length claude-windows) 1)))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer right-name) (kill-buffer right-name))
-      (test-ai-vterm--display-saved-cleanup))))
+      (cj/test--kill-claude-buffers))))
 
 (provide 'test-ai-vterm--display-saved)
 ;;; test-ai-vterm--display-saved.el ends here
