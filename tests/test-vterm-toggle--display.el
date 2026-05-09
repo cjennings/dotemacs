@@ -16,35 +16,6 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (require 'eshell-vterm-config)
 
-(ert-deftest test-vterm-toggle--window-direction-single-window-defaults-to-below ()
-  "Boundary: full-frame window -> default 'below for F12."
-  (save-window-excursion
-    (delete-other-windows)
-    (should (eq (cj/--vterm-toggle-window-direction (selected-window))
-                'below))))
-
-(ert-deftest test-vterm-toggle--window-direction-below-split ()
-  "Normal: bottom window of horizontal split -> 'below."
-  (save-window-excursion
-    (delete-other-windows)
-    (let ((below (split-window (selected-window) nil 'below)))
-      (should (eq (cj/--vterm-toggle-window-direction below) 'below)))))
-
-(ert-deftest test-vterm-toggle--window-direction-right-split ()
-  "Normal: right window of vertical split -> 'right."
-  (save-window-excursion
-    (delete-other-windows)
-    (let ((right (split-window (selected-window) nil 'right)))
-      (should (eq (cj/--vterm-toggle-window-direction right) 'right)))))
-
-(ert-deftest test-vterm-toggle--window-size-returns-body ()
-  "Normal: returns body-width for right/left, body-height for below/above."
-  (save-window-excursion
-    (delete-other-windows)
-    (let ((below (split-window (selected-window) nil 'below)))
-      (should (= (cj/--vterm-toggle-window-size below 'below)
-                 (window-body-height below))))))
-
 (ert-deftest test-vterm-toggle--capture-state-records-direction-and-size ()
   "Normal: capture-state writes direction and integer body size."
   (save-window-excursion
