@@ -221,26 +221,38 @@ regardless of what file or subdirectory the point is on."
                                      (shell-quote-argument current-dir)))))))
       (message "Could not determine current directory."))))
 
+(defun cj/--wallpaper-program-for (env)
+  "Return the (PROGRAM PRE-FILE-ARG...) list for setting wallpaper under ENV.
+
+ENV is a display-server symbol: `x11' picks feh with --bg-fill, `wayland'
+picks swww with the img subcommand.  Any other value returns nil so the
+caller can surface an \"unknown display server\" error.
+
+Pure helper used by `cj/set-wallpaper'."
+  (pcase env
+    ('x11     '("feh" "--bg-fill"))
+    ('wayland '("swww" "img"))
+    (_ nil)))
+
 (defun cj/set-wallpaper ()
   "Set the image at point as the desktop wallpaper.
 Uses feh on X11, swww on Wayland."
   (interactive)
-  (let ((file (expand-file-name (dired-file-name-at-point))))
+  (let* ((file (expand-file-name (dired-file-name-at-point)))
+         (env (cond ((env-x11-p) 'x11)
+                    ((env-wayland-p) 'wayland)
+                    (t nil)))
+         (cmd (cj/--wallpaper-program-for env)))
     (cond
-     ((env-x11-p)
-      (if (executable-find "feh")
-          (progn
-            (call-process "feh" nil 0 nil "--bg-fill" file)
-            (message "Wallpaper set: %s (feh)" (file-name-nondirectory file)))
-        (message "feh not found")))
-     ((env-wayland-p)
-      (if (executable-find "swww")
-          (progn
-            (call-process "swww" nil 0 nil "img" file)
-            (message "Wallpaper set: %s (swww)" (file-name-nondirectory file)))
-        (message "swww not found")))
+     ((null cmd)
+      (message "Unknown display server (not X11 or Wayland)"))
+     ((not (executable-find (car cmd)))
+      (message "%s not found" (car cmd)))
      (t
-      (message "Unknown display server (not X11 or Wayland)")))))
+      (apply #'call-process (car cmd) nil 0 nil
+             (append (cdr cmd) (list file)))
+      (message "Wallpaper set: %s (%s)"
+               (file-name-nondirectory file) (car cmd))))))
 
 ;;; ---------------------------------- Dirvish ----------------------------------
 
