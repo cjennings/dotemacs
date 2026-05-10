@@ -18,13 +18,15 @@
    (let ((dir (expand-file-name "repo" test-root))
          (clean-called nil)
          (dirty-called nil))
-     (reconcile-test-with-shell-mocks
-         (lambda (_cmd) 0)
-         (lambda (cmd)
-           (cond ((string-match-p "remote.origin.url" cmd) "git@host:repo.git")
-                 ((string-match-p "status --porcelain" cmd) "")
-                 (t "")))
-       (cl-letf (((symbol-function 'cj/reconcile--pull-clean)
+    (reconcile-test-with-git-mock
+        (lambda (args)
+          (cond
+           ((equal args '("config" "--get" "remote.origin.url"))
+            '(:exit 0 :output "git@host:repo.git\n"))
+           ((equal args '("status" "--porcelain"))
+            '(:exit 0 :output ""))
+           (t '(:exit 0 :output ""))))
+      (cl-letf (((symbol-function 'cj/reconcile--pull-clean)
                   (lambda (_dir) (setq clean-called t)))
                  ((symbol-function 'cj/reconcile--pull-dirty)
                   (lambda (_dir) (setq dirty-called t)))
@@ -33,20 +35,22 @@
      (should clean-called)
      (should-not dirty-called))))
 
-(ert-deftest test-reconcile-git-directory-normal-dirty-repo-stashes ()
-  "Dirty SSH repo calls pull-dirty, not pull-clean."
+(ert-deftest test-reconcile-git-directory-normal-dirty-repo-opens-review ()
+  "Dirty SSH repo calls review-first handler, not pull-clean."
   (reconcile-test-with-temp-dirs
    ("repo/.git/")
    (let ((dir (expand-file-name "repo" test-root))
          (clean-called nil)
          (dirty-called nil))
-     (reconcile-test-with-shell-mocks
-         (lambda (_cmd) 0)
-         (lambda (cmd)
-           (cond ((string-match-p "remote.origin.url" cmd) "git@host:repo.git")
-                 ((string-match-p "status --porcelain" cmd) " M file.el\n")
-                 (t "")))
-       (cl-letf (((symbol-function 'cj/reconcile--pull-clean)
+    (reconcile-test-with-git-mock
+        (lambda (args)
+          (cond
+           ((equal args '("config" "--get" "remote.origin.url"))
+            '(:exit 0 :output "git@host:repo.git\n"))
+           ((equal args '("status" "--porcelain"))
+            '(:exit 0 :output " M file.el\n"))
+           (t '(:exit 0 :output ""))))
+      (cl-letf (((symbol-function 'cj/reconcile--pull-clean)
                   (lambda (_dir) (setq clean-called t)))
                  ((symbol-function 'cj/reconcile--pull-dirty)
                   (lambda (_dir) (setq dirty-called t)))
@@ -62,13 +66,12 @@
    (let ((dir (expand-file-name "repo" test-root))
          (clean-called nil)
          (dirty-called nil))
-     (reconcile-test-with-shell-mocks
-         (lambda (_cmd) 0)
-         (lambda (cmd)
-           (if (string-match-p "remote.origin.url" cmd)
-               "https://github.com/user/repo.git"
-             ""))
-       (cl-letf (((symbol-function 'cj/reconcile--pull-clean)
+    (reconcile-test-with-git-mock
+        (lambda (args)
+          (if (equal args '("config" "--get" "remote.origin.url"))
+              '(:exit 0 :output "https://github.com/user/repo.git\n")
+            '(:exit 0 :output "")))
+      (cl-letf (((symbol-function 'cj/reconcile--pull-clean)
                   (lambda (_dir) (setq clean-called t)))
                  ((symbol-function 'cj/reconcile--pull-dirty)
                   (lambda (_dir) (setq dirty-called t)))
@@ -76,6 +79,20 @@
          (cj/reconcile-git-directory dir)))
      (should-not clean-called)
      (should-not dirty-called))))
+
+(ert-deftest test-reconcile-git-directory-normal-skipped-result-includes-reason ()
+  "Skipped repos return a structured reason."
+  (reconcile-test-with-temp-dirs
+   ("repo/.git/")
+   (let ((dir (expand-file-name "repo" test-root)))
+     (reconcile-test-with-git-mock
+         (lambda (args)
+           (if (equal args '("config" "--get" "remote.origin.url"))
+               '(:exit 0 :output "https://github.com/user/repo.git\n")
+             '(:exit 0 :output "")))
+       (let ((result (cj/reconcile-git-directory dir)))
+         (should (eq (plist-get result :status) 'skipped))
+         (should (eq (plist-get result :reason) 'skipped-remote)))))))
 
 ;;; Boundary Cases
 

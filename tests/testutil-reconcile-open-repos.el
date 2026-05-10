@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; Provides helper macros and functions for testing reconcile-open-repos.
-;; Creates temporary directory trees with fake .git dirs and mocks shell commands.
+;; Creates temporary directory trees with fake .git dirs and mocks git commands.
 
 ;;; Code:
 
@@ -41,6 +41,36 @@ SHELL-CMD-TO-STR-FN receives (command) and returns a string."
              ((symbol-function 'shell-command-to-string)
               (lambda (cmd) (funcall ,shell-cmd-to-str-fn cmd))))
      ,@body))
+
+(defvar reconcile-test-git-calls nil
+  "List of git argv lists observed during reconcile tests.")
+
+(defmacro reconcile-test-with-git-mock (handler &rest body)
+  "Run BODY with `process-file' mocked for git.
+HANDLER receives the argv list and returns either an exit code integer or a
+plist with :exit and :output."
+  (declare (indent 1))
+  `(let ((reconcile-test-git-calls nil))
+     (cl-letf (((symbol-function 'process-file)
+                (lambda (program _infile destination _display &rest args)
+                  (unless (string= program "git")
+                    (error "Unexpected program: %s" program))
+                  (push args reconcile-test-git-calls)
+                  (let* ((result (funcall ,handler args))
+                         (plist-result (and (consp result) (keywordp (car result))))
+                         (exit (if plist-result (plist-get result :exit) result))
+                         (output (if plist-result (plist-get result :output) "")))
+                    (when (and destination output)
+                      (let ((stdout-dest (if (consp destination)
+                                             (car destination)
+                                           destination)))
+                        (cond
+                         ((bufferp stdout-dest)
+                          (with-current-buffer stdout-dest (insert output)))
+                         ((eq stdout-dest t)
+                          (insert output)))))
+                    exit))))
+       ,@body)))
 
 (defvar reconcile-test-magit-calls nil
   "List of directories passed to magit-status during tests.")
