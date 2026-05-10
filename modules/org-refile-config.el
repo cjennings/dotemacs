@@ -14,7 +14,7 @@
 ;;; Code:
 
 (require 'system-lib)
-(require 'cj-cache)
+(require 'cj-cache-lib)
 
 ;; ----------------------------- Org Refile Targets ----------------------------
 ;; sets refile targets

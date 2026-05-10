@@ -12,7 +12,7 @@
 (require 'cl-lib)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
-(require 'cj-cache)
+(require 'cj-cache-lib)
 
 ;;; cj/cache-make
 
