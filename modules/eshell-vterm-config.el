@@ -19,10 +19,12 @@
 ;; just send them to the process that is currently running. So, C-a may be
 ;; beginning-of-the-line in a shell, or the prefix key in a screen session.
 
-;; If you enter vterm-copy-mode C-c C-t or <pause>, the buffer will become a normal
-;; Emacs buffer. You can then use your navigation keys, select rectangles, etc.
-;; When you press RET, the region will be copied and you'll be back in a working
-;; terminal session.
+;; If you enter vterm-copy-mode with C-; V c or <pause>, the buffer will become
+;; a normal Emacs buffer. You can then use your navigation keys, select
+;; rectangles, etc.  When you press RET or M-w, the region will be copied and
+;; you'll be back in a working terminal session.  C-; V C captures the current
+;; tmux pane history into a temporary Emacs buffer where M-w copies the selected
+;; region and returns to the vterm.
 
 ;; ANSI-TERM & TERM
 ;; I haven't yet found a need for term or ansi-term in my workflows, so I leave
@@ -31,6 +33,9 @@
 ;;; Code:
 
 (require 'system-utils)
+(require 'keybindings)
+(require 'seq)
+(require 'subr-x)
 
 ;; ------------------------------ Eshell -----------------------------
 ;; the Emacs shell.
@@ -191,10 +196,141 @@
 ;; ------------------------------ Vterm ------------------------------
 ;; faster and highly dependable, but not extensible
 
+(defvar-keymap cj/vterm-map
+  :doc "Personal vterm command map.")
+;; Uppercase V is intentional: lowercase C-; v is the version-control menu.
+(keymap-set cj/custom-keymap "V" cj/vterm-map)
+
+(defvar-local cj/vterm-tmux-history--origin-buffer nil
+  "Buffer active before opening the tmux history buffer.")
+
+(defvar-local cj/vterm-tmux-history--origin-window nil
+  "Window active before opening the tmux history buffer.")
+
+(defvar-local cj/vterm-tmux-history--origin-point nil
+  "Point in the origin buffer before opening the tmux history buffer.")
+
+(defun cj/vterm--tmux-output (&rest args)
+  "Run tmux with ARGS and return its stdout.
+Signal `user-error' when tmux exits with a non-zero status."
+  (with-temp-buffer
+    (let ((exit-code (apply #'process-file "tmux" nil t nil args)))
+      (unless (zerop exit-code)
+        (user-error "tmux failed: %s" (string-trim (buffer-string))))
+      (buffer-string))))
+
+(defun cj/vterm--tmux-pane-id-for-tty (tty)
+  "Return the tmux pane id for client TTY."
+  (let* ((output (cj/vterm--tmux-output
+                  "list-clients" "-F" "#{client_tty}\t#{pane_id}"))
+         (lines (split-string output "\n" t))
+         (match (seq-find
+                 (lambda (line)
+                   (let ((fields (split-string line "\t")))
+                     (equal (car fields) tty)))
+                 lines)))
+    (unless match
+      (user-error "No tmux client found for vterm tty %s" tty))
+    (cadr (split-string match "\t"))))
+
+(defun cj/vterm--tmux-capture-pane (pane-id)
+  "Return full joined tmux history for PANE-ID."
+  (cj/vterm--tmux-output
+   "capture-pane" "-p" "-J" "-S" "-" "-E" "-" "-t" pane-id))
+
+(defun cj/vterm--current-tmux-pane-id ()
+  "Return the tmux pane id for the current vterm buffer."
+  (unless (eq major-mode 'vterm-mode)
+    (user-error "Current buffer is not a vterm buffer"))
+  (let* ((proc (get-buffer-process (current-buffer)))
+         (tty (and proc (process-tty-name proc))))
+    (unless (and tty (not (string-empty-p tty)))
+      (user-error "Could not determine vterm tty"))
+    (cj/vterm--tmux-pane-id-for-tty tty)))
+
+(defvar-keymap cj/vterm-tmux-history-mode-map
+  :doc "Keymap for `cj/vterm-tmux-history-mode'."
+  "M-w" #'cj/vterm-tmux-history-copy-and-quit
+  "q" #'cj/vterm-tmux-history-quit)
+
+(define-derived-mode cj/vterm-tmux-history-mode special-mode "Tmux History"
+  "Mode for copying captured tmux pane history with normal Emacs keys."
+  (setq-local truncate-lines t)
+  (goto-address-mode 1))
+
+(defun cj/vterm-tmux-history-quit ()
+  "Quit tmux history and return to its origin buffer."
+  (interactive)
+  (let ((history-buffer (current-buffer))
+        (origin-buffer cj/vterm-tmux-history--origin-buffer)
+        (origin-window cj/vterm-tmux-history--origin-window)
+        (origin-point cj/vterm-tmux-history--origin-point))
+    (when (buffer-live-p origin-buffer)
+      (if (window-live-p origin-window)
+          (progn
+            (set-window-buffer origin-window origin-buffer)
+            (select-window origin-window))
+        (pop-to-buffer origin-buffer))
+      (with-current-buffer origin-buffer
+        (when (integer-or-marker-p origin-point)
+          (goto-char origin-point))))
+    (when (buffer-live-p history-buffer)
+      (kill-buffer history-buffer))))
+
+(defun cj/vterm-tmux-history-copy-and-quit ()
+  "Copy active region from tmux history, then quit back to the origin."
+  (interactive)
+  (unless (use-region-p)
+    (user-error "No active region"))
+  (let ((text (buffer-substring-no-properties
+               (region-beginning)
+               (region-end))))
+    (kill-new text)
+    (deactivate-mark)
+    (cj/vterm-tmux-history-quit)))
+
+(defun cj/vterm-tmux-history ()
+  "Open full tmux pane history in a temporary Emacs buffer.
+
+The history buffer uses normal Emacs navigation and selection.  `M-w'
+copies the active region, closes the history buffer, and returns point
+to the vterm buffer that launched it."
+  (interactive)
+  (let* ((origin-buffer (current-buffer))
+         (origin-window (selected-window))
+         (origin-point (point))
+         (pane-id (cj/vterm--current-tmux-pane-id))
+         (history (cj/vterm--tmux-capture-pane pane-id))
+         (buffer (get-buffer-create
+                  (format "*vterm tmux history: %s*" (buffer-name origin-buffer)))))
+    (with-current-buffer buffer
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert history))
+      (cj/vterm-tmux-history-mode)
+      (setq-local cj/vterm-tmux-history--origin-buffer origin-buffer)
+      (setq-local cj/vterm-tmux-history--origin-window origin-window)
+      (setq-local cj/vterm-tmux-history--origin-point origin-point)
+      (goto-char (point-max)))
+    (pop-to-buffer buffer)))
+
+(defalias 'cj/vterm-history #'cj/vterm-tmux-history)
+
+(defun cj/vterm-copy-mode-cancel ()
+  "Exit `vterm-copy-mode' without copying."
+  (interactive)
+  (unless (bound-and-true-p vterm-copy-mode)
+    (user-error "This command is effective only in vterm-copy-mode"))
+  (vterm-copy-mode -1))
+
 (use-package vterm
   :defer .5
   :commands (vterm vterm-other-window)
   :init
+  (defvar vterm-keymap-exceptions
+    '("C-c" "C-x" "C-u" "C-g" "C-h" "C-l" "M-x" "M-o" "C-y" "M-y")
+    "Exceptions for `vterm-keymap'.")
+  (add-to-list 'vterm-keymap-exceptions "C-;")
   (setq vterm-always-compile-module t)
 
   (defun cj/turn-off-chrome-for-vterm ()
@@ -222,8 +358,8 @@ ai-vterm.el is loaded."
 		("<f9>"    . nil)
 		("<f10>"   . nil)
 		("<f12>"   . nil)
+		("C-c C-t" . nil)
 		("C-y"     . vterm-yank)
-		("C-p"     . vtermf-copy-mode)
 		("<pause>" . vterm-copy-mode))
   :custom
   (vterm-kill-buffer-on-exit t)
@@ -419,6 +555,47 @@ C-F9 / M-F9 dispatch via `cj/ai-vterm'."
      (vterm))))
 
 (keymap-global-set "<f12>" #'cj/vterm-toggle)
+
+(keymap-set cj/vterm-map "C" #'cj/vterm-tmux-history)
+(keymap-set cj/vterm-map "c" #'vterm-copy-mode)
+(keymap-set cj/vterm-map "l" #'vterm-clear-scrollback)
+(keymap-set cj/vterm-map "n" #'vterm)
+(keymap-set cj/vterm-map "o" #'vterm-other-window)
+(keymap-set cj/vterm-map "q" #'vterm-send-next-key)
+(keymap-set cj/vterm-map "r" #'vterm-reset-cursor-point)
+(keymap-set cj/vterm-map "t" #'cj/vterm-toggle)
+
+(defun cj/vterm-install-prefix-key ()
+  "Make `C-;' resolve as the personal keymap inside vterm buffers."
+  (when (boundp 'vterm-mode-map)
+    (keymap-set vterm-mode-map "C-;" cj/custom-keymap)))
+
+(defun cj/vterm-install-copy-mode-cancel-keys ()
+  "Install copy and cancel keys in `vterm-copy-mode-map'."
+  (when (boundp 'vterm-copy-mode-map)
+    (keymap-set vterm-copy-mode-map "C-g" #'cj/vterm-copy-mode-cancel)
+    (keymap-set vterm-copy-mode-map "<escape>" #'cj/vterm-copy-mode-cancel)
+    (keymap-set vterm-copy-mode-map "M-w" #'vterm-copy-mode-done)))
+
+(cj/vterm-install-prefix-key)
+(cj/vterm-install-copy-mode-cancel-keys)
+(with-eval-after-load 'vterm
+  (cj/vterm-install-prefix-key)
+  (cj/vterm-install-copy-mode-cancel-keys))
+
+(add-hook 'vterm-mode-hook #'goto-address-mode)
+
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-; V" "vterm menu"
+    "C-; V C" "tmux scrollback copy"
+    "C-; V c" "vterm copy mode"
+    "C-; V l" "clear vterm scrollback"
+    "C-; V n" "new vterm"
+    "C-; V o" "vterm other window"
+    "C-; V q" "send next key to vterm"
+    "C-; V r" "reset vterm cursor point"
+    "C-; V t" "toggle vterm"))
 
 (provide 'eshell-vterm-config)
 ;;; eshell-vterm-config.el ends here.
