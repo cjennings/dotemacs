@@ -4,13 +4,22 @@
 
 * Status
 
-Draft. Not yet implemented.
+Implemented for Elisp.
+
+The shipped path is local-first: =make coverage= produces
+=.coverage/simplecov.json= with Undercover, and =cj/coverage-report= reads that
+artifact to show either diff-aware coverage or a whole-project summary from
+Emacs.  Python, TypeScript, and Go backends remain future work.
 
 * Problem
 
-Before committing or opening a PR, there's no quick way to answer "are the lines I just changed actually covered by tests?" Line-level coverage for the *whole* project is also missing, and there's no artifact to track coverage over time.
+Before this work, there was no quick way to answer "are the lines I just
+changed actually covered by tests?" Line-level coverage for the *whole*
+project was also missing, and there was no local artifact to inspect.
 
-The primary user-facing need is the first one: point-in-time feedback on in-flight changes, triggered from Emacs. The other two (whole-project report, long-term artifact) fall out naturally once the primary path exists.
+The primary user-facing need is the first one: point-in-time feedback on
+in-flight changes, triggered from Emacs.  The implemented system also supports a
+whole-project summary and writes a local SimpleCov JSON artifact.
 
 The tooling should be pluggable so the same workflow covers Elisp today and Python, TypeScript, and Go later — without rebuilding the UI for each language.
 
@@ -76,7 +85,7 @@ Detection precedence: =.dir-locals.el= override (=cj/coverage-backend= set to a 
 - =cj/--coverage-changed-lines SCOPE BASE= → hash-table ={file → changed-line-set}= by shelling a =git diff --unified=0= for the selected scope and parsing hunk headers.
 - =cj/--coverage-intersect COVERED CHANGED= → per-file records with three buckets: covered, uncovered, not-tracked.
 
-All three are pure, fully ERT-tested.
+These helpers are pure and covered by focused ERT tests.
 
 ** Data Flow
 
@@ -85,10 +94,12 @@ All three are pure, fully ERT-tested.
 3. =completing-read= prompts for scope:
    - "Working tree — all uncommitted changes"
    - "Staged — about to commit"
-   - "Branch vs parent" (uses =cj/coverage-base-branch= → =@{upstream}= → =main= in order)
+   - "Branch vs parent" (uses =@{upstream}= unless a caller passes an explicit base to the helper)
    - "Branch vs main" (explicit)
-4. Freshness check: if =simplecov.json= is missing, or older than the newest changed file, prompt "Run coverage now?" Yes runs the backend's =:run= asynchronously via =compile=; no reads the stale file anyway.
-5. Parse simplecov, compute changed lines, intersect.
+   - "Whole project — all executable lines"
+4. If =simplecov.json= is missing, prompt to run coverage.  A prefix argument
+   (=C-u F7=) forces a fresh run.  Otherwise the existing report is used as-is.
+5. Parse simplecov, compute changed lines or all executable lines, intersect.
 6. Display a report buffer in a mode derived from =compilation-mode=.
 
 ** Persistence
@@ -102,7 +113,9 @@ All three are pure, fully ERT-tested.
 - No backend matches → =user-error= with instructions to register a backend or set =.dir-locals.el=.
 - =.dir-locals.el= names an unknown backend → error listing registered backends.
 - Not in a git repository → error; don't swallow git's stderr.
-- "Branch vs main" scope on a repo with no common ancestor (orphan branch, shallow clone missing the fork point) → "no merge base with main" error, suggest "Working tree" or "Staged" scope.
+- Branch comparison on a repo with no common ancestor (orphan branch, shallow
+  clone missing the fork point, or missing upstream) reports the underlying git
+  failure.
 
 *During the coverage run:*
 - Backend =:run= fails (test failure, Make error) → keep the =compile= buffer visible, do *not* proceed to display a report. Partial data is worse than no data.
@@ -126,21 +139,23 @@ All three are pure, fully ERT-tested.
 *In the report buffer* (compilation-mode derived, most inherited for free):
 - =RET= → jump to source under point.
 - =n= / =p= → next / previous uncovered line.
-- =g= → refresh (re-run + redisplay).
 - =q= → bury buffer.
 
 *Globally available via compilation-mode integration:*
 - =M-g n= / =M-g p= → =next-error= / =previous-error= on the last compilation buffer.
 - =C-x `= → visit next uncovered line without leaving the current buffer.
 
-The =F4=–=F7= developer block (compile+run, debug, test, coverage) gets its full rework in a separate todo ticket. The coverage work binds =F7= now because it's its final position.
+The =F4=–=F7= developer block currently uses =F6= for project-aware test
+dispatch and =F7= for coverage.
 
 ** Testing
 
 *Pure helpers, fully tested* (Normal / Boundary / Error for each):
 - =cj/--coverage-parse-simplecov= — handcrafted simplecov JSON in temp files; empty object, all-null coverage arrays, spaces in filenames, multiple test-name keys unioned, malformed JSON.
+- =cj/--coverage-simplecov-executable-lines= — whole-project executable-line set, including zero-hit executable lines.
 - =cj/--coverage-changed-lines= — =cl-letf= over =shell-command-to-string= to return canned =git diff= output; single hunk, new-file hunk, deletion-only hunk, binary marker, no-diff case.
 - =cj/--coverage-intersect= — pure table-in / table-out; covered ⊇ changed, unknown files, nil/empty inputs.
+- =cj/--coverage-format-report= and =cj/--coverage-format-summary= — report text and whole-project per-file summary.
 
 *Backend registry, structurally tested:*
 - =cj/coverage-backend-for-project ROOT= — synthetic temp project roots with marker files; assert correct backend. Registration-order test: two backends match, first-registered wins.
@@ -149,14 +164,12 @@ The =F4=–=F7= developer block (compile+run, debug, test, coverage) gets its fu
 - =cj/coverage-report= interactive command — one smoke test with a prepared simplecov report and a stubbed git-diff. No tests for the prompt UI or the compilation-buffer display.
 - The elisp backend's =:run= function — shells to =make coverage=; integration-test-shaped, low value, slow. Skipped by design.
 
-* Open Questions
+* Current Limitations
 
-- [ ] Which tests should a coverage run actually execute? All of them (simple, slow for 265 files), or only the test files whose target modules changed (fast, but dependent-test discovery in Elisp is non-trivial)? Deferred until implementation.
-- [ ] Default behavior when the simplecov report is stale but not missing: prompt, or auto-rerun? Current design prompts. Revisit after first use.
-- [ ] Whether =cj/coverage-base-branch= should be a single value or a list of candidates (useful if you routinely stack PRs more than one level deep). Single value for v1.
-
-* Next Steps
-
-1. Replace the existing =[#C] Integrate undercover.el for test coverage= entry in =todo.org= with a sharper implementation ticket referencing this design.
-2. Begin implementation, starting with the pure helpers (TDD) and the elisp backend, then the =cj/coverage-report= command, then the =make coverage= Makefile target.
-3. Open questions above → individual =arch-decide= ADRs if they turn out to be load-bearing; otherwise resolve inline during implementation.
+- =make coverage= runs all unit test files except known instrumentation
+  conflicts.  It does not try to select only tests related to changed modules.
+- Existing reports are not checked for staleness.  Use =C-u F7= or
+  =make coverage= when a fresh report matters.
+- Only the Elisp backend is implemented.
+- There is no CI coverage publishing.  The generated
+  =.coverage/simplecov.json= file is local and gitignored.

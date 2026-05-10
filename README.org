@@ -74,8 +74,9 @@ Makefile targets:
 #+begin_src bash
 make                    # Show all targets
 make test               # Run all ERT tests
-make test-file FILE=tests/test-foo.el   # One test file
+make test-file FILE=test-foo.el         # One test file
 make test-name TEST=pattern             # Match by test name
+make coverage           # Generate .coverage/simplecov.json
 make validate-parens    # Check for unbalanced parens in modules
 make validate-modules   # Load all modules to verify they compile
 make compile            # Byte-compile modules
