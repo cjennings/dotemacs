@@ -39,20 +39,20 @@ Stubs `vterm--enter-copy-mode' and `vterm--exit-copy-mode' so toggling
     (setq-local cursor-type nil)
     (let ((vterm-copy-mode t))
       (cj/--vterm-copy-mode-restore-cursor))
-    (should (equal cursor-type '(bar . 3)))))
+    (should (equal cursor-type 'box))))
 
-(ert-deftest test-vterm-copy-mode-cursor-restored-when-prior-was-box ()
-  "Boundary: entering copy-mode overrides any prior cursor-type with the bar."
+(ert-deftest test-vterm-copy-mode-cursor-restored-when-prior-was-hbar ()
+  "Boundary: entering copy-mode overrides any prior cursor-type with the block."
   (with-temp-buffer
-    (setq-local cursor-type 'box)
+    (setq-local cursor-type 'hbar)
     (let ((vterm-copy-mode t))
       (cj/--vterm-copy-mode-restore-cursor))
-    (should (equal cursor-type '(bar . 3)))))
+    (should (equal cursor-type 'box))))
 
 (ert-deftest test-vterm-copy-mode-cursor-override-killed-on-exit ()
   "Normal: exiting copy-mode kills the buffer-local cursor-type override."
   (with-temp-buffer
-    (setq-local cursor-type '(bar . 3))
+    (setq-local cursor-type 'box)
     (should (local-variable-p 'cursor-type))
     (let ((vterm-copy-mode nil))
       (cj/--vterm-copy-mode-restore-cursor))
@@ -74,7 +74,7 @@ restore function -- not just the helper in isolation."
     ;; let-binding the variable.  This fires `vterm-copy-mode-hook'.
     (vterm-copy-mode 1)
     (should (eq vterm-copy-mode t))
-    (should (equal cursor-type '(bar . 3)))
+    (should (equal cursor-type 'box))
     ;; Exit through the same path.
     (vterm-copy-mode -1)
     (should (eq vterm-copy-mode nil))
@@ -88,7 +88,7 @@ most often -- copy and exit in one keystroke."
     (setq-local cursor-type nil)
     (vterm-copy-mode 1)
     (should (eq vterm-copy-mode t))
-    (should (equal cursor-type '(bar . 3)))
+    (should (equal cursor-type 'box))
     (insert "selectable text on this line")
     (set-mark (point-min))
     (goto-char (point-max))
@@ -103,7 +103,7 @@ selected -- the cancel path skips the kill-ring step entirely."
   (test-vterm-copy-mode-cursor--in-fake-vterm-buffer
     (setq-local cursor-type nil)
     (vterm-copy-mode 1)
-    (should (equal cursor-type '(bar . 3)))
+    (should (equal cursor-type 'box))
     (cj/vterm-copy-mode-cancel)
     (should (eq vterm-copy-mode nil))
     (should-not (local-variable-p 'cursor-type))))
@@ -122,7 +122,7 @@ still run; cursor restoration must still happen."
       (insert "line content")
       (setq-local cursor-type nil)
       (vterm-copy-mode 1)
-      (should (equal cursor-type '(bar . 3)))
+      (should (equal cursor-type 'box))
       (deactivate-mark)
       (should-not (use-region-p))
       (vterm-copy-mode-done nil)
@@ -136,7 +136,7 @@ state.  The cursor goes back and forth cleanly."
     (setq-local cursor-type nil)
     (dotimes (_ 3)
       (vterm-copy-mode 1)
-      (should (equal cursor-type '(bar . 3)))
+      (should (equal cursor-type 'box))
       (vterm-copy-mode -1)
       (should-not (local-variable-p 'cursor-type)))))
 

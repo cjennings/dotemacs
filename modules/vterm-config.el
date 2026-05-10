@@ -388,12 +388,12 @@ The vterm C module sets `cursor-type' to nil whenever the underlying
 TUI sends DECTCEM (`\\e[?25l') to hide the terminal cursor — typical
 for full-screen TUIs like Claude Code.  In `vterm-copy-mode' the user
 is navigating the buffer, not watching the TUI, so the cursor must
-be visible.  Switches to a 3-pixel bar (drawn between characters
-rather than inverting one) so face-heavy TUI output doesn't hide it
-either.  On exit, kills the buffer-local override so vterm's normal
+be visible.  Switches to a `box' so the cursor color and blinking
+behavior follow Emacs's normal cursor-face / `blink-cursor-mode'
+defaults.  On exit, kills the buffer-local override so vterm's normal
 cursor-visibility tracking resumes."
   (if vterm-copy-mode
-      (setq-local cursor-type '(bar . 3))
+      (setq-local cursor-type 'box)
     (kill-local-variable 'cursor-type)))
 
 (add-hook 'vterm-copy-mode-hook #'cj/--vterm-copy-mode-restore-cursor)
