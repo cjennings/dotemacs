@@ -14,7 +14,7 @@
 (require 'cl-lib)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
-(require 'eshell-vterm-config)
+(require 'vterm-config)
 
 (ert-deftest test-vterm-toggle--capture-state-records-direction-and-size ()
   "Normal: capture-state writes direction and integer body size."

@@ -15,7 +15,7 @@
 (defvar vterm-mode-map (make-sparse-keymap))
 (defvar vterm-copy-mode-map (make-sparse-keymap))
 (keymap-set vterm-mode-map "C-c C-t" #'ignore)
-(require 'eshell-vterm-config)
+(require 'vterm-config)
 (require 'testutil-vterm-buffers)
 
 (defmacro test-vterm-tmux-history--with-tmux-mock (responses &rest body)
