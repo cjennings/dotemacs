@@ -71,7 +71,7 @@
 
 (require 'cl-lib)
 (require 'subr-x)
-(require 'cj-org-text)
+(require 'cj-org-text-lib)
 
 (defun calendar-sync--log-silently (format-string &rest args)
   "Log FORMAT-STRING with ARGS without requiring the full config."

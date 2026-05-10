@@ -1,4 +1,4 @@
-;;; cj-org-text.el --- Pure helpers for sanitizing external text into Org -*- lexical-binding: t; -*-
+;;; cj-org-text-lib.el --- Pure helpers for sanitizing external text into Org -*- lexical-binding: t; -*-
 
 ;; Author: Craig Jennings <c@cjennings.net>
 
@@ -54,5 +54,5 @@ nil for nil input."
   (cj/org-sanitize-property-value
    (cj/org-sanitize-body-text text)))
 
-(provide 'cj-org-text)
-;;; cj-org-text.el ends here
+(provide 'cj-org-text-lib)
+;;; cj-org-text-lib.el ends here
