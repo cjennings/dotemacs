@@ -34,9 +34,6 @@
 (autoload 'cj/gptel-load-conversation "ai-conversations" "Load a saved AI conversation." t)
 (autoload 'cj/gptel-delete-conversation "ai-conversations" "Delete a saved AI conversation." t)
 
-(with-eval-after-load 'gptel
-  (require 'ai-conversations))
-
 ;;; ------------------------- AI Config Helper Functions ------------------------
 
 ;; Define variables upfront
@@ -45,6 +42,52 @@
 (defvar gptel-claude-backend nil "Claude backend, lazy-initialized.")
 (defvar gptel-chatgpt-backend nil "ChatGPT backend, lazy-initialized.")
 
+(defcustom cj/gptel-tools-directory
+  (expand-file-name "gptel-tools/" user-emacs-directory)
+  "Directory containing optional local GPTel tool modules."
+  :type 'directory
+  :group 'cj)
+
+(defcustom cj/gptel-local-tool-features
+  '(read_buffer
+    read_text_file
+    write_text_file
+    list_directory_files
+    move_to_trash)
+  "Feature symbols for optional local GPTel tool modules."
+  :type '(repeat symbol)
+  :group 'cj)
+
+(defun cj/gptel-load-local-tools
+    (&optional tools-directory tool-features)
+  "Load optional GPTel tools from TOOLS-DIRECTORY.
+TOOL-FEATURES defaults to `cj/gptel-local-tool-features'.  Return a list
+of loaded feature symbols.  Missing directories or individual optional
+tools are reported with `message' and do not signal."
+  (let ((dir (file-name-as-directory
+              (expand-file-name (or tools-directory cj/gptel-tools-directory))))
+        (features (or tool-features cj/gptel-local-tool-features))
+        (loaded nil))
+    (cond
+     ((not (file-directory-p dir))
+      (message "GPTel tools directory not found: %s" dir)
+      nil)
+     (t
+      (add-to-list 'load-path dir)
+      (dolist (feature features)
+        (condition-case err
+            (if (require feature nil 'noerror)
+                (push feature loaded)
+              (message "Optional GPTel tool not found: %s" feature))
+          (error
+           (message "Failed to load GPTel tool %s: %s"
+                    feature
+                    (error-message-string err)))))
+      (nreverse loaded)))))
+
+(with-eval-after-load 'gptel
+  (require 'ai-conversations)
+  (cj/gptel-load-local-tools))
 
 (defun cj/auth-source-secret (host user)
   "Fetch a secret from auth-source for HOST and USER.
