@@ -44,7 +44,7 @@
 ;;; Code:
 (require 'user-constants)
 (require 'system-lib)
-(require 'cj-cache)
+(require 'cj-cache-lib)
 
 ;; Load debug functions if enabled
 (when (or (eq cj/debug-modules t)

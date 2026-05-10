@@ -1,4 +1,4 @@
-;;; cj-cache.el --- Generic TTL cache with build-guard -*- lexical-binding: t; -*-
+;;; cj-cache-lib.el --- Generic TTL cache with build-guard -*- lexical-binding: t; -*-
 
 ;; Author: Craig Jennings <c@cjennings.net>
 
@@ -91,5 +91,5 @@ rethrown after ON-BUILD-ERROR fires."
            (signal (car err) (cdr err))))
       (plist-put cache :building nil)))))
 
-(provide 'cj-cache)
-;;; cj-cache.el ends here
+(provide 'cj-cache-lib)
+;;; cj-cache-lib.el ends here
