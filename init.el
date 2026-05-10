@@ -135,17 +135,6 @@
 (require 'ai-config)            ;; LLM integration with GPTel and friends
 (require 'restclient-config)    ;; REST API client for API exploration
 
-(with-eval-after-load 'gptel
-  (add-to-list 'load-path "~/.emacs.d/gptel-tools")
-  ;; Buffer Tools
-  (require 'read_buffer)
-  ;; Filesystem Tools
-  (require 'read_text_file)
-  (require 'write_text_file)
-  ;;  (require 'update_text_file) ;; BUG: issues with this tool
-  (require 'list_directory_files)
-  (require 'move_to_trash))
-
 ;; ------------------------- Personal Workflow Related -------------------------
 
 (require 'calendar-sync)        ;; sync calendars, must come after org-agenda
