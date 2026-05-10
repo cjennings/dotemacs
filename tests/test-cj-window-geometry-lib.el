@@ -1,7 +1,7 @@
-;;; test-cj-window-geometry.el --- Tests for the shared window-geometry helpers -*- lexical-binding: t; -*-
+;;; test-cj-window-geometry-lib.el --- Tests for the shared window-geometry helpers -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests the three pure helpers in `cj-window-geometry.el':
+;; Tests the three pure helpers in `cj-window-geometry-lib.el':
 ;; `cj/window-direction', `cj/window-body-size', and
 ;; `cj/cardinal-to-edge-direction'.
 
@@ -10,7 +10,7 @@
 (require 'ert)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
-(require 'cj-window-geometry)
+(require 'cj-window-geometry-lib)
 
 (ert-deftest test-cj-window-geometry--direction-right-split ()
   "Normal: 2-window vertical split, right-side window -> right."
@@ -99,5 +99,5 @@
   (should (null (cj/cardinal-to-edge-direction 'sideways)))
   (should (null (cj/cardinal-to-edge-direction nil))))
 
-(provide 'test-cj-window-geometry)
-;;; test-cj-window-geometry.el ends here
+(provide 'test-cj-window-geometry-lib)
+;;; test-cj-window-geometry-lib.el ends here
