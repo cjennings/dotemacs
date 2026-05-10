@@ -405,6 +405,32 @@ Uses feh on X11, swww on Wayland."
 
 ;; --------------------------------- Copy Path ---------------------------------
 
+(defun cj/--dired-resolve-display-path (file project-root home-dir
+                                             &optional force-absolute)
+  "Return a (PATH . PATH-TYPE) cons describing how to display FILE.
+
+PATH-TYPE is one of \"absolute\", \"project-relative\", or \"home-relative\".
+
+Resolution order: FORCE-ABSOLUTE wins over everything; otherwise an active
+PROJECT-ROOT yields a project-relative path; otherwise a file under
+HOME-DIR yields a `~/'-prefixed home-relative path (or the bare \"~\"
+glyph when FILE is the home dir itself); otherwise the absolute FILE.
+
+Pure helper used by `cj/dired-copy-path-as-kill'."
+  (cond
+   (force-absolute
+    (cons file "absolute"))
+   (project-root
+    (cons (file-relative-name file project-root) "project-relative"))
+   ((string-prefix-p home-dir file)
+    (let ((relative-from-home (file-relative-name file home-dir)))
+      (cons (if (string= relative-from-home ".")
+                "~"
+              (concat "~/" relative-from-home))
+            "home-relative")))
+   (t
+    (cons file "absolute"))))
+
 (defun cj/dired-copy-path-as-kill (&optional as-org-link force-absolute)
   "Copy path of file at point in Dired/Dirvish.
 Copies relative path from project root if in a project, otherwise from home
@@ -414,54 +440,25 @@ When FORCE-ABSOLUTE is non-nil, always copy the absolute path."
   (interactive "P")
   (unless (derived-mode-p 'dired-mode)
     (user-error "Not in a Dired buffer"))
-
-  (let* ((file (dired-get-filename nil t))
-         (file-name (file-name-nondirectory file))
-         (project-root (cj/get-project-root))
-         (home-dir (expand-file-name "~"))
-         path path-type)
-
+  (let ((file (dired-get-filename nil t)))
     (unless file
       (user-error "No file at point"))
-
-    (cond
-     ;; Force absolute path
-     (force-absolute
-      (setq path file
-            path-type "absolute"))
-
-     ;; Project-relative path
-     (project-root
-      (setq path (file-relative-name file project-root)
-            path-type "project-relative"))
-
-     ;; Home-relative path
-     ((string-prefix-p home-dir file)
-      (let ((relative-from-home (file-relative-name file home-dir)))
-        (setq path (if (string= relative-from-home ".")
-                       "~"
-                     (concat "~/" relative-from-home))
-              path-type "home-relative")))
-
-     ;; Absolute path
-     (t
-      (setq path file
-            path-type "absolute")))
-
-    ;; Format as org-link if requested
-    (when as-org-link
-      (setq path (format "[[file:%s][%s]]" path file-name)))
-
-    ;; Copy to kill-ring and clipboard
-    (kill-new path)
-
-    ;; Provide feedback
-    (message "Copied %s path%s: %s"
-             path-type
-             (if as-org-link " as org-link" "")
-             (if (> (length path) 60)
-                 (concat (substring path 0 57) "...")
-               path))))
+    (let* ((file-name (file-name-nondirectory file))
+           (resolved (cj/--dired-resolve-display-path
+                      file (cj/get-project-root)
+                      (expand-file-name "~") force-absolute))
+           (path (car resolved))
+           (path-type (cdr resolved))
+           (output (if as-org-link
+                       (format "[[file:%s][%s]]" path file-name)
+                     path)))
+      (kill-new output)
+      (message "Copied %s path%s: %s"
+               path-type
+               (if as-org-link " as org-link" "")
+               (if (> (length output) 60)
+                   (concat (substring output 0 57) "...")
+                 output)))))
 
 (defun cj/get-project-root ()
   "Get project root using projectile or project.el.
