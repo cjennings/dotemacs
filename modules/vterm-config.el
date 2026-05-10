@@ -29,8 +29,8 @@
 
 (defvar-keymap cj/vterm-map
   :doc "Personal vterm command map.")
-;; Uppercase V is intentional: lowercase C-; v is the version-control menu.
-(keymap-set cj/custom-keymap "V" cj/vterm-map)
+;; Lowercase x picked over V for fewer Shift presses; v is the VC menu.
+(keymap-set cj/custom-keymap "x" cj/vterm-map)
 
 (defvar-local cj/vterm-tmux-history--origin-buffer nil
   "Buffer active before opening the tmux history buffer.")
@@ -188,8 +188,7 @@ ai-vterm.el is loaded."
 		("<f10>"   . nil)
 		("<f12>"   . nil)
 		("C-c C-t" . nil)
-		("C-y"     . vterm-yank)
-		("<pause>" . vterm-copy-mode))
+		("C-y"     . vterm-yank))
   :custom
   (vterm-kill-buffer-on-exit t)
   (vterm-max-scrollback 100000)
@@ -357,8 +356,10 @@ C-F9 / M-F9 dispatch via `cj/ai-vterm'."
 (keymap-set cj/vterm-map "C" #'cj/vterm-tmux-history)
 (keymap-set cj/vterm-map "c" #'vterm-copy-mode)
 (keymap-set cj/vterm-map "l" #'vterm-clear-scrollback)
-(keymap-set cj/vterm-map "n" #'vterm)
+(keymap-set cj/vterm-map "N" #'vterm)
+(keymap-set cj/vterm-map "n" #'vterm-next-prompt)
 (keymap-set cj/vterm-map "o" #'vterm-other-window)
+(keymap-set cj/vterm-map "p" #'vterm-previous-prompt)
 (keymap-set cj/vterm-map "q" #'vterm-send-next-key)
 (keymap-set cj/vterm-map "r" #'vterm-reset-cursor-point)
 (keymap-set cj/vterm-map "t" #'cj/vterm-toggle)
@@ -402,15 +403,17 @@ cursor-visibility tracking resumes."
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
-    "C-; V" "vterm menu"
-    "C-; V C" "tmux scrollback copy"
-    "C-; V c" "vterm copy mode"
-    "C-; V l" "clear vterm scrollback"
-    "C-; V n" "new vterm"
-    "C-; V o" "vterm other window"
-    "C-; V q" "send next key to vterm"
-    "C-; V r" "reset vterm cursor point"
-    "C-; V t" "toggle vterm"))
+    "C-; x" "vterm menu"
+    "C-; x C" "tmux scrollback copy"
+    "C-; x c" "vterm copy mode"
+    "C-; x l" "clear vterm scrollback"
+    "C-; x N" "new vterm"
+    "C-; x n" "next prompt"
+    "C-; x o" "vterm other window"
+    "C-; x p" "previous prompt"
+    "C-; x q" "send next key to vterm"
+    "C-; x r" "reset vterm cursor point"
+    "C-; x t" "toggle vterm"))
 
 (provide 'vterm-config)
 ;;; vterm-config.el ends here.
