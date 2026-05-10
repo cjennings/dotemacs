@@ -27,6 +27,7 @@
 (eval-when-compile (require 'system-utils))
 (require 'host-environment)
 (require 'system-lib)
+(require 'external-open-lib)
 
 ;; mark files in dirvish, attach in mu4e
 (add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)

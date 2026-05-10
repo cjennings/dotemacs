@@ -1,7 +1,7 @@
-;;; test-external-open-command.el --- Tests for cj/external-open-command -*- lexical-binding: t; -*-
+;;; test-external-open-lib-command.el --- Tests for cj/external-open-command -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Unit tests for `cj/external-open-command' in external-open.el.  The
+;; Unit tests for `cj/external-open-command' in external-open-lib.el.  The
 ;; function dispatches on host-environment predicates to return the
 ;; appropriate "open" command: xdg-open on Linux, open on macOS,
 ;; start on Windows.  Returns nil for unsupported hosts (callers that
@@ -16,7 +16,7 @@
 (setq package-user-dir (expand-file-name "elpa" user-emacs-directory))
 (package-initialize)
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
-(require 'external-open)
+(require 'external-open-lib)
 
 (defmacro test-eoc--with-host (linux macos windows &rest body)
   "Run BODY with env-*-p predicates stubbed to LINUX, MACOS, WINDOWS."
@@ -61,5 +61,5 @@ user-error with a clear message."
   (test-eoc--with-host nil nil nil
     (should-not (cj/external-open-command))))
 
-(provide 'test-external-open-command)
-;;; test-external-open-command.el ends here
+(provide 'test-external-open-lib-command)
+;;; test-external-open-lib-command.el ends here
