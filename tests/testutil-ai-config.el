@@ -7,6 +7,12 @@
 
 ;;; Code:
 
+(setq load-prefer-newer t)
+
+;; Keep ai-config tests isolated from personal optional GPTel tool files.
+(defvar cj/gptel-tools-directory (make-temp-file "gptel-tools-empty-" t))
+(defvar cj/gptel-local-tool-features nil)
+
 ;; Pre-cache API keys so auth-source is never consulted
 (defvar cj/anthropic-api-key-cached "test-anthropic-key")
 (defvar cj/openai-api-key-cached "test-openai-key")
