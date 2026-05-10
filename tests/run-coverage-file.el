@@ -3,7 +3,7 @@
 ;;; Commentary:
 ;; Loaded via `-l tests/run-coverage-file.el' by the Makefile's coverage
 ;; target before each test file runs.  Ensures undercover is active and
-;; configured to merge into the shared LCOV output so coverage data
+;; configured to merge into the shared SimpleCov JSON report so coverage data
 ;; accumulates across all test-file invocations.
 ;;
 ;; Per-file isolation matches the project's `make test-unit' pattern:
