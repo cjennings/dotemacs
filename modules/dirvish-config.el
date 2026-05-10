@@ -60,19 +60,32 @@
   "List of audio file extensions (lowercase, no dot).
 Used to filter files for M3U playlists.")
 
+(defun cj/--playlist-filter-audio (files extensions)
+  "Return the elements of FILES whose extension matches EXTENSIONS.
+
+Pure helper used by `cj/dired-create-playlist-from-marked'.  EXTENSIONS
+is a list of lowercase extension strings (no dot).  A file with no
+extension never matches.  Comparison downcases the file's extension so
+mixed-case names match."
+  (cl-remove-if-not
+   (lambda (f)
+     (let ((ext (file-name-extension f)))
+       (and ext (member (downcase ext) extensions))))
+   files))
+
+(defun cj/--playlist-sanitize-name (name)
+  "Strip a trailing `.m3u' suffix from NAME and return the result.
+Pure helper.  An embedded `.m3u' that isn't at the end stays put."
+  (replace-regexp-in-string "\\.m3u\\'" "" name))
+
 (defun cj/dired-create-playlist-from-marked ()
   "Create an .m3u playlist file from marked files in Dired (or Dirvish).
 Filters for audio files, prompts for the playlist name, and saves the resulting
 .m3u in the directory specified by =music-dir=. Interactive use only."
   (interactive)
   (let* ((marked-files (dired-get-marked-files))
-         (audio-files
-          (cl-remove-if-not
-           (lambda (f)
-             (let ((ext (file-name-extension f)))
-               (and ext
-                    (member (downcase ext) cj/audio-file-extensions))))
-           marked-files))
+         (audio-files (cj/--playlist-filter-audio
+                       marked-files cj/audio-file-extensions))
          (count (length audio-files)))
     (if (zerop count)
         (user-error "No audio files marked (extensions: %s)"
@@ -81,14 +94,11 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
             (playlist-path nil)
             (done nil))
         (while (not done)
-          (setq base-name (read-string
-                           (format "Playlist name (without .m3u): ")))
-          ;; Sanitize: strip any trailing .m3u
-          (setq base-name (replace-regexp-in-string "\\.m3u\\'" "" base-name))
+          (setq base-name (cj/--playlist-sanitize-name
+                           (read-string "Playlist name (without .m3u): ")))
           (setq playlist-path (expand-file-name (concat base-name ".m3u") music-dir))
           (cond
            ((not (file-exists-p playlist-path))
-            ;; Safe to write
             (setq done t))
            (t
             (let ((choice (read-char-choice
@@ -99,11 +109,11 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
                 (?o (setq done t))
                 (?c (user-error "Cancelled playlist creation"))
                 (?r (setq done nil)))))))
-        ;; Actually write the file
         (with-temp-file playlist-path
           (dolist (af audio-files)
             (insert af "\n")))
-        (message "Wrote playlist %s with %d tracks" (file-name-nondirectory playlist-path) count)))))
+        (message "Wrote playlist %s with %d tracks"
+                 (file-name-nondirectory playlist-path) count)))))
 
 ;;; ----------------------------------- Dired -----------------------------------
 
