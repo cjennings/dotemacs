@@ -177,5 +177,19 @@ Regression: lexical-binding + `(boundp 'base-dir)' used to silently skip this."
        (cj/check-for-open-work))
      (should (cl-some (lambda (m) (string-match-p "Complete\\." m)) messages)))))
 
+(ert-deftest test-reconcile-check-for-open-work-normal-summary-counts-statuses ()
+  "Summary reports pulled, review, skipped, and failed counts."
+  (let ((summary (cj/reconcile--summary-message
+                  '((:status pulled)
+                    (:status needs-review)
+                    (:status skipped :reason skipped-remote)
+                    (:status pull-failed)
+                    (:status status-failed)))))
+    (should (string-match-p "Repositories checked: 5" summary))
+    (should (string-match-p "pulled: 1" summary))
+    (should (string-match-p "needs review: 1" summary))
+    (should (string-match-p "skipped: 1" summary))
+    (should (string-match-p "failed: 2" summary))))
+
 (provide 'test-reconcile--check-for-open-work)
 ;;; test-reconcile--check-for-open-work.el ends here

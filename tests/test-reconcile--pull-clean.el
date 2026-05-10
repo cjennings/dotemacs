@@ -17,12 +17,14 @@
    ("repo/.git/")
    (let ((dir (expand-file-name "repo" test-root))
          (messages nil))
-     (reconcile-test-with-shell-mocks
-         (lambda (_cmd) 0)
-         (lambda (_cmd) "")
-       (cl-letf (((symbol-function 'message)
+    (reconcile-test-with-git-mock
+        (lambda (args)
+          (should (equal args '("pull" "--rebase" "--quiet")))
+          '(:exit 0 :output ""))
+      (cl-letf (((symbol-function 'message)
                   (lambda (fmt &rest args) (push (apply #'format fmt args) messages))))
-         (cj/reconcile--pull-clean dir)))
+        (let ((result (cj/reconcile--pull-clean dir)))
+          (should (eq (plist-get result :status) 'pulled)))))
      (should-not (cl-some (lambda (m) (string-match-p "Warning" m)) messages)))))
 
 (ert-deftest test-pull-clean-normal-failure-warns ()
@@ -31,12 +33,13 @@
    ("repo/.git/")
    (let ((dir (expand-file-name "repo" test-root))
          (messages nil))
-     (reconcile-test-with-shell-mocks
-         (lambda (_cmd) 1)
-         (lambda (_cmd) "")
-       (cl-letf (((symbol-function 'message)
+    (reconcile-test-with-git-mock
+        (lambda (_args) '(:exit 1 :output "boom\n"))
+      (cl-letf (((symbol-function 'message)
                   (lambda (fmt &rest args) (push (apply #'format fmt args) messages))))
-         (cj/reconcile--pull-clean dir)))
+        (let ((result (cj/reconcile--pull-clean dir)))
+          (should (eq (plist-get result :status) 'pull-failed))
+          (should (equal (plist-get result :output) "boom\n")))))
      (should (cl-some (lambda (m) (string-match-p "Warning.*git pull failed" m)) messages))
      (should (cl-some (lambda (m) (string-match-p "exit code: 1" m)) messages)))))
 
@@ -48,12 +51,11 @@
    ("repo/.git/")
    (let ((dir (expand-file-name "repo" test-root))
          (messages nil))
-     (reconcile-test-with-shell-mocks
-         (lambda (_cmd) 128)
-         (lambda (_cmd) "")
-       (cl-letf (((symbol-function 'message)
+    (reconcile-test-with-git-mock
+        (lambda (_args) '(:exit 128 :output "fatal\n"))
+      (cl-letf (((symbol-function 'message)
                   (lambda (fmt &rest args) (push (apply #'format fmt args) messages))))
-         (cj/reconcile--pull-clean dir)))
+        (cj/reconcile--pull-clean dir)))
      (should (cl-some (lambda (m) (string-match-p "exit code: 128" m)) messages)))))
 
 (provide 'test-reconcile--pull-clean)
