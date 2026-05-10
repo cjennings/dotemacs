@@ -26,6 +26,7 @@
 (eval-when-compile (require 'user-constants))
 (eval-when-compile (require 'system-utils))
 (require 'host-environment)
+(require 'system-lib)
 
 ;; mark files in dirvish, attach in mu4e
 (add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
@@ -301,16 +302,14 @@ Uses feh on X11, swww on Wayland."
                     ((env-wayland-p) 'wayland)
                     (t nil)))
          (cmd (cj/--wallpaper-program-for env)))
-    (cond
-     ((null cmd)
-      (message "Unknown display server (not X11 or Wayland)"))
-     ((not (executable-find (car cmd)))
-      (message "%s not found" (car cmd)))
-     (t
-      (apply #'call-process (car cmd) nil 0 nil
-             (append (cdr cmd) (list file)))
-      (message "Wallpaper set: %s (%s)"
-               (file-name-nondirectory file) (car cmd))))))
+    (if (null cmd)
+        (message "Unknown display server (not X11 or Wayland)")
+      (when-let ((path (cj/executable-find-or-warn
+                        (car cmd) "wallpaper setter" 'dirvish-config)))
+        (apply #'call-process path nil 0 nil
+               (append (cdr cmd) (list file)))
+        (message "Wallpaper set: %s (%s)"
+                 (file-name-nondirectory file) (car cmd))))))
 
 ;;; ---------------------------------- Dirvish ----------------------------------
 
