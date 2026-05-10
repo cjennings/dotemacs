@@ -23,6 +23,8 @@
 ;;
 ;;; Code:
 
+(require 'system-lib)
+
 (declare-function dired-get-file-for-visit "dired" ())
 (declare-function dired-file-name-at-point "dired" ())
 (declare-function env-linux-p "host-environment" ())
@@ -55,18 +57,6 @@
 ;;; ------------------------------- Open File With ------------------------------
 ;; TASK: Favor this method over cj/open-this-file-with and add to custom buffer funcs
 
-(defun cj/--file-from-context (&optional explicit-filename)
-  "Return a file path from the current context, or nil.
-Resolves in priority order:
-  1. EXPLICIT-FILENAME, if non-nil.
-  2. `buffer-file-name' of the current buffer.
-  3. The file at point if the current buffer is in dired-mode.
-Returns nil when none of these yield a file."
-  (or explicit-filename
-	  buffer-file-name
-	  (and (derived-mode-p 'dired-mode)
-		   (dired-file-name-at-point))))
-
 (defun cj/--open-with-is-launcher-p (command)
   "Return non-nil if COMMAND is a desktop launcher.
 Launchers (xdg-open, open, start) need to be called with `call-process'
@@ -80,7 +70,7 @@ Works in both Dired buffers and regular file buffers.  Prompts for a
 file only when neither context yields one.  The command runs fully
 detached from Emacs."
   (interactive "MOpen with command: ")
-  (let* ((file (or (cj/--file-from-context)
+  (let* ((file (or (cj/file-from-context)
 				   (read-file-name "File to open: "))))
 	(unless (and file (file-exists-p file))
 	  (error "No valid file found or selected"))
@@ -114,7 +104,7 @@ Signals an error if the host is unsupported."
 Logs output and exit code to buffer *external-open.log*."
   (interactive)
   (let* ((file  (expand-file-name
-				 (or (cj/--file-from-context filename)
+				 (or (cj/file-from-context filename)
 					 (user-error "No file associated with this buffer"))))
 		 (cmd   (cj/identify-external-open-command))
 		 (logbuf (get-buffer-create "*external-open.log*")))
