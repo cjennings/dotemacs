@@ -12,7 +12,7 @@
 (require 'ert)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
-(require 'cj-org-text)
+(require 'cj-org-text-lib)
 
 ;;; cj/org-sanitize-body-text -- Normal cases
 
