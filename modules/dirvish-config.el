@@ -161,11 +161,20 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
 
 ;;; --------------------------- Dired Open HTML In EWW --------------------------
 
+(defun cj/--html-file-p (file)
+  "Return non-nil when FILE has a `.html' or `.htm' extension.
+
+Match is case-insensitive (`.HTML' counts) and anchored at end so
+embedded `html' in the middle of a name doesn't match.  Pure helper
+used by `cj/dirvish-open-html-in-eww'."
+  (let ((case-fold-search t))
+    (and (string-match-p "\\.html?\\'" file) t)))
+
 (defun cj/dirvish-open-html-in-eww ()
   "Open HTML file at point in dired/dirvish using eww."
   (interactive)
   (let ((file (dired-get-file-for-visit)))
-    (if (string-match-p "\\.html?\\'" file)
+    (if (cj/--html-file-p file)
         (eww-open-file file)
       (message "Not an HTML file: %s" file))))
 
