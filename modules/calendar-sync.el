@@ -71,6 +71,7 @@
 
 (require 'cl-lib)
 (require 'subr-x)
+(require 'cj-org-text)
 
 (defun calendar-sync--log-silently (format-string &rest args)
   "Log FORMAT-STRING with ARGS without requiring the full config."
@@ -293,31 +294,6 @@ Returns nil for nil input."
 Returns nil for nil input.  Returns empty string for whitespace-only input."
   (when text
     (string-trim (calendar-sync--strip-html (calendar-sync--unescape-ics-text text)))))
-
-(defun calendar-sync--sanitize-org-body (text)
-  "Sanitize TEXT for safe inclusion as org body content.
-Replaces leading asterisks with dashes to prevent lines from being
-parsed as org headings.  Handles multiple levels (e.g. ** becomes --)."
-  (when text
-    (replace-regexp-in-string
-     "^\\(\\*+\\) "
-     (lambda (match)
-       (concat (make-string (length (match-string 1 match)) ?-) " "))
-     text)))
-
-(defun calendar-sync--sanitize-org-property-value (text)
-  "Sanitize TEXT for safe inclusion as a single Org property value."
-  (when text
-    (string-trim
-     (replace-regexp-in-string
-      "[[:space:]\n\r]+"
-      " "
-      text))))
-
-(defun calendar-sync--sanitize-org-heading (text)
-  "Sanitize TEXT for safe inclusion as a single Org heading title."
-  (calendar-sync--sanitize-org-property-value
-   (calendar-sync--sanitize-org-body text)))
 
 ;;; Date Utilities
 
@@ -1091,7 +1067,7 @@ Cleans text fields (description, location, summary) via `calendar-sync--clean-te
   "Convert parsed EVENT plist to org entry string.
 Produces property drawer with LOCATION, ORGANIZER, STATUS, URL when present.
 Description appears as body text after the drawer."
-  (let* ((summary (calendar-sync--sanitize-org-heading
+  (let* ((summary (cj/org-sanitize-heading
                    (or (plist-get event :summary) "(No Title)")))
          (description (plist-get event :description))
          (location (plist-get event :location))
@@ -1106,22 +1082,22 @@ Description appears as body text after the drawer."
     ;; Collect non-nil properties
     (when (and location (not (string-empty-p location)))
       (push (format ":LOCATION: %s"
-                    (calendar-sync--sanitize-org-property-value location))
+                    (cj/org-sanitize-property-value location))
             props))
     (when organizer
       (let ((org-name (or (plist-get organizer :cn)
                           (plist-get organizer :email))))
         (when org-name
           (push (format ":ORGANIZER: %s"
-                        (calendar-sync--sanitize-org-property-value org-name))
+                        (cj/org-sanitize-property-value org-name))
                 props))))
     (when (and status (not (string-empty-p status)))
       (push (format ":STATUS: %s"
-                    (calendar-sync--sanitize-org-property-value status))
+                    (cj/org-sanitize-property-value status))
             props))
     (when (and url (not (string-empty-p url)))
       (push (format ":URL: %s"
-                    (calendar-sync--sanitize-org-property-value url))
+                    (cj/org-sanitize-property-value url))
             props))
     (setq props (nreverse props))
     ;; Build output
@@ -1134,7 +1110,7 @@ Description appears as body text after the drawer."
         (push ":END:" parts))
       ;; Add description as body text (sanitized to prevent org heading conflicts)
       (when (and description (not (string-empty-p description)))
-        (push (calendar-sync--sanitize-org-body description) parts))
+        (push (cj/org-sanitize-body-text description) parts))
       (string-join (nreverse parts) "\n"))))
 
 (defun calendar-sync--event-start-time (event)
