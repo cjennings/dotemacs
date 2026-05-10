@@ -27,11 +27,19 @@
      (should (= (length repos) 1))
      (should (string-suffix-p "child" (car repos))))))
 
-(ert-deftest test-find-git-repos-normal-repo-with-nested-subrepo ()
-  "Finds both a parent repo and a sub-repo inside it."
+(ert-deftest test-find-git-repos-normal-stops-at-repo-root-by-default ()
+  "Finds a parent repo and does not descend into nested repos by default."
   (reconcile-test-with-temp-dirs
    ("deepsat/.git/" "deepsat/frontend/.git/" "deepsat/backend/.git/")
    (let ((repos (cj/find-git-repos test-root)))
+     (should (= (length repos) 1))
+     (should (string-suffix-p "deepsat" (car repos))))))
+
+(ert-deftest test-find-git-repos-normal-can-include-nested-subrepos ()
+  "Finds nested repos when INCLUDE-NESTED is non-nil."
+  (reconcile-test-with-temp-dirs
+   ("deepsat/.git/" "deepsat/frontend/.git/" "deepsat/backend/.git/")
+   (let ((repos (cj/find-git-repos test-root t)))
      (should (= (length repos) 3)))))
 
 (ert-deftest test-find-git-repos-normal-mixed-repos-and-dirs ()
@@ -72,6 +80,16 @@
    (let ((repos (cj/find-git-repos test-root)))
      (should (= (length repos) 1))
      (should (string-suffix-p "visible-repo" (car repos))))))
+
+(ert-deftest test-find-git-repos-boundary-prunes-heavy-directories ()
+  "Skips generated/heavy directories while discovering repos."
+  (reconcile-test-with-temp-dirs
+   ("project/node_modules/dependency/.git/"
+    "project/.venv/tool/.git/"
+    "project/src/repo/.git/")
+   (let ((repos (cj/find-git-repos test-root)))
+     (should (= (length repos) 1))
+     (should (string-suffix-p "repo" (car repos))))))
 
 (provide 'test-reconcile--find-git-repos)
 ;;; test-reconcile--find-git-repos.el ends here
