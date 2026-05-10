@@ -19,8 +19,9 @@ Craig's personal Emacs configuration. Pure Elisp, organized as modules loaded fr
 ```bash
 make                                    # Show all targets
 make test                               # Run all tests
-make test-file FILE=tests/test-foo.el   # One file
+make test-file FILE=test-foo.el         # One file
 make test-name TEST=pattern             # Match test names
+make coverage                           # Generate .coverage/simplecov.json
 make validate-parens                    # Balanced parens in modules
 make validate-modules                   # Load all modules to verify they compile
 make compile                            # Byte-compile (writes .elc)
