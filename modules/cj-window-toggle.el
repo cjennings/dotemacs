@@ -5,7 +5,7 @@
 ;;; Commentary:
 
 ;; Parameterized helpers used by ai-vterm.el (F9) and
-;; eshell-vterm-config.el (F12) to capture a window's geometry at
+;; vterm-config.el (F12) to capture a window's geometry at
 ;; toggle-off and replay it on the next toggle-on.  Each consumer
 ;; holds its own pair of state variables (last-direction symbol +
 ;; last-size integer/float) and passes the variable symbols to the
