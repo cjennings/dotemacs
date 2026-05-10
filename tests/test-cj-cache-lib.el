@@ -1,4 +1,4 @@
-;;; test-cj-cache.el --- Tests for cj-cache.el -*- lexical-binding: t; -*-
+;;; test-cj-cache-lib.el --- Tests for cj-cache-lib.el -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 ;; Unit tests for the TTL+building cache helper.  Covers cache-make /
@@ -159,5 +159,5 @@ the prior agenda/refile contract."
     (should-not (plist-get c :time))
     (should (= 60 (plist-get c :ttl)))))
 
-(provide 'test-cj-cache)
-;;; test-cj-cache.el ends here
+(provide 'test-cj-cache-lib)
+;;; test-cj-cache-lib.el ends here
