@@ -14,25 +14,15 @@
 ;;; Code:
 
 (require 'system-lib)
+(require 'cj-cache)
 
 ;; ----------------------------- Org Refile Targets ----------------------------
 ;; sets refile targets
 ;; - adds project files in org-roam to the refile targets
 ;; - adds todo.org files in subdirectories of the code and project directories
 
-(defvar cj/org-refile-targets-cache nil
-  "Cached refile targets to avoid expensive directory scanning.
-Set to nil to invalidate cache.")
-
-(defvar cj/org-refile-targets-cache-time nil
-  "Time when refile targets cache was last built.")
-
-(defvar cj/org-refile-targets-cache-ttl 3600
-  "Time-to-live for refile targets cache in seconds (default: 1 hour).")
-
-(defvar cj/org-refile-targets-building nil
-  "Non-nil when refile targets are being built asynchronously.
-Prevents duplicate builds if user refiles before async build completes.")
+(defvar cj/--org-refile-targets-cache (cj/cache-make :ttl 3600)
+  "Cache state for the refile targets list.  See `cj-cache.el'.")
 
 (defun cj/org-refile-ensure-org-mode (file)
   "Ensure FILE is a .org file and its buffer is in org-mode.
@@ -53,6 +43,37 @@ This prevents issues where:
         (org-mode)))
     buf))
 
+(defun cj/--org-refile-scan-targets ()
+  "Scan disk for the refile-targets list.  Pure-ish: no caching, no logging.
+Returns the list to assign to `org-refile-targets'.  Slow -- walks
+30,000+ files across `code-dir' and `projects-dir'."
+  (let ((new-files
+         (list
+          (cons inbox-file     '(:maxlevel . 1))
+          (cons reference-file '(:maxlevel . 2))
+          (cons schedule-file  '(:maxlevel . 1)))))
+    (when (and (fboundp 'cj/org-roam-list-notes-by-tag)
+               (fboundp 'org-roam-node-list))
+      (let* ((project-and-topic-files
+              (append (cj/org-roam-list-notes-by-tag "Project")
+                      (cj/org-roam-list-notes-by-tag "Topic")))
+             (file-rule '(:maxlevel . 1)))
+        (dolist (file project-and-topic-files)
+          (unless (assoc file new-files)
+            (push (cons file file-rule) new-files)))))
+    (dolist (dir (list user-emacs-directory code-dir projects-dir))
+      (condition-case nil
+          (let* ((todo-files (directory-files-recursively
+                              dir "^[Tt][Oo][Dd][Oo]\\.[Oo][Rr][Gg]$"
+                              nil
+                              (lambda (d) (not (string-match-p "airootfs" d)))))
+                 (file-rule '(:maxlevel . 1)))
+            (dolist (file todo-files)
+              (unless (assoc file new-files)
+                (push (cons file file-rule) new-files))))
+        (permission-denied nil)))
+    (nreverse new-files)))
+
 (defun cj/build-org-refile-targets (&optional force-rebuild)
   "Build =org-refile-targets= with caching.
 
@@ -62,70 +83,23 @@ Otherwise, returns cached targets if available and not expired.
 This function scans 30,000+ files across code/projects directories,
 so caching improves performance from 15-20 seconds to instant."
   (interactive "P")
-  ;; Check if we can use cache
-  (let ((cache-valid (and cj/org-refile-targets-cache
-                          cj/org-refile-targets-cache-time
-                          (not force-rebuild)
-                          (< (- (float-time) cj/org-refile-targets-cache-time)
-                             cj/org-refile-targets-cache-ttl))))
-    (if cache-valid
-        ;; Use cached targets (instant)
-        (progn
-          (setq org-refile-targets cj/org-refile-targets-cache)
-          ;; Always show cache-hit message (interactive or background)
-          (cj/log-silently "Using cached refile targets (%d files)"
-                           (length org-refile-targets)))
-      ;; Check if async build is in progress
-      (when cj/org-refile-targets-building
-        (cj/log-silently "Waiting for background cache build to complete..."))
-      ;; Rebuild from scratch (slow - scans 34,000+ files)
-      (unwind-protect
-          (progn
-            (setq cj/org-refile-targets-building t)
-            (let ((start-time (current-time))
-                  (new-files
-                   (list
-                    (cons inbox-file     '(:maxlevel . 1))
-                    (cons reference-file '(:maxlevel . 2))
-                    (cons schedule-file  '(:maxlevel . 1)))))
-
-              ;; Extend with org-roam files if available AND org-roam is loaded
-              (when (and (fboundp 'cj/org-roam-list-notes-by-tag)
-                         (fboundp 'org-roam-node-list))
-                (let* ((project-and-topic-files
-                        (append (cj/org-roam-list-notes-by-tag "Project")
-                                (cj/org-roam-list-notes-by-tag "Topic")))
-                       (file-rule '(:maxlevel . 1)))
-                  (dolist (file project-and-topic-files)
-                    (unless (assoc file new-files)
-                      (push (cons file file-rule) new-files)))))
-
-              ;; Add todo.org files from known directories
-              ;; Skip directories that cause permission errors (e.g., archiso airootfs)
-              (dolist (dir (list user-emacs-directory code-dir projects-dir))
-                (condition-case nil
-                    (let* ((todo-files (directory-files-recursively
-                                        dir "^[Tt][Oo][Dd][Oo]\\.[Oo][Rr][Gg]$"
-                                        nil
-                                        (lambda (d) (not (string-match-p "airootfs" d)))))
-                           (file-rule '(:maxlevel . 1)))
-                      (dolist (file todo-files)
-                        (unless (assoc file new-files)
-                          (push (cons file file-rule) new-files))))
-                  (permission-denied nil)))  ;; Silently skip permission errors
-
-              ;; Update targets and cache
-              (setq new-files (nreverse new-files))
-              (setq org-refile-targets new-files)
-              (setq cj/org-refile-targets-cache new-files)
-              (setq cj/org-refile-targets-cache-time (float-time))
-
-              ;; Always show completion message (interactive or background)
-              (cj/log-silently "Built refile targets: %d files in %.2f seconds"
-                               (length org-refile-targets)
-                               (- (float-time) (float-time start-time)))))
-        ;; Always clear the building flag, even if build fails
-        (setq cj/org-refile-targets-building nil)))))
+  (when (cj/cache-building-p cj/--org-refile-targets-cache)
+    (cj/log-silently "Waiting for background cache build to complete..."))
+  (let* ((start-time (current-time))
+         (targets
+          (cj/cache-value-or-rebuild
+           cj/--org-refile-targets-cache
+           #'cj/--org-refile-scan-targets
+           :force-rebuild force-rebuild
+           :on-hit (lambda (v)
+                     (cj/log-silently "Using cached refile targets (%d files)"
+                                      (length v)))
+           :on-build-success
+           (lambda (v)
+             (cj/log-silently "Built refile targets: %d files in %.2f seconds"
+                              (length v)
+                              (- (float-time) (float-time start-time)))))))
+    (setq org-refile-targets targets)))
 
 ;; Build cache asynchronously after startup to avoid blocking Emacs
 (run-with-idle-timer

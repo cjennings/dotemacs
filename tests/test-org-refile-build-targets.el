@@ -1,305 +1,143 @@
 ;;; test-org-refile-build-targets.el --- Tests for cj/build-org-refile-targets -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Unit tests for cj/build-org-refile-targets caching logic.
-;; Tests cache behavior, TTL expiration, force rebuild, and async build flag.
+;; Tests for `cj/build-org-refile-targets' and the underlying cache
+;; shape.  The wrapper delegates to `cj-cache.el', so these tests
+;; exercise the integration -- they don't reach into the cache plist
+;; directly (the cache primitives have their own tests in
+;; test-cj-cache.el).  Stubs `cj/--org-refile-scan-targets' to avoid
+;; touching the filesystem.
 
 ;;; Code:
 
 (require 'ert)
+(require 'cl-lib)
 
-;; Add modules to load path
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 
 ;; Stub dependencies before loading the module
 (defvar inbox-file "/tmp/test-inbox.org")
 (defvar reference-file "/tmp/test-reference.org")
 (defvar schedule-file "/tmp/test-schedule.org")
-(defvar user-emacs-directory "/tmp/test-emacs.d/")
 (defvar code-dir "/tmp/test-code/")
 (defvar projects-dir "/tmp/test-projects/")
 
-;; Now load the actual production module
 (require 'org-refile-config)
 
-;;; Setup and Teardown
-
-(defun test-org-refile-setup ()
-  "Reset cache and state before each test."
-  (setq cj/org-refile-targets-cache nil)
-  (setq cj/org-refile-targets-cache-time nil)
-  (setq cj/org-refile-targets-building nil)
-  (setq org-refile-targets nil))
-
-(defun test-org-refile-teardown ()
-  "Clean up after each test."
-  (setq cj/org-refile-targets-cache nil)
-  (setq cj/org-refile-targets-cache-time nil)
-  (setq cj/org-refile-targets-building nil)
+(defun test-org-refile--reset ()
+  "Reset cache and `org-refile-targets' between tests."
+  (cj/cache-invalidate cj/--org-refile-targets-cache)
   (setq org-refile-targets nil))
 
 ;;; Normal Cases
 
-(ert-deftest test-org-refile-build-targets-normal-first-call-builds-cache ()
-  "Test that first call builds cache from scratch.
-
-When cache is empty, function should:
-1. Scan directories for todo.org files
-2. Build refile targets list
-3. Populate cache
-4. Set cache timestamp"
-  (test-org-refile-setup)
+(ert-deftest test-org-refile-build-targets-first-call-builds-and-populates ()
+  "Normal: first call calls the scan helper and assigns to `org-refile-targets'."
+  (test-org-refile--reset)
   (unwind-protect
-      (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern &optional _include-dirs _predicate) '("/tmp/todo.org")))
-                ((symbol-function 'fboundp) (lambda (_sym) nil)))
-
-        ;; Before call: cache empty
-        (should (null cj/org-refile-targets-cache))
-        (should (null cj/org-refile-targets-cache-time))
-
-        ;; Build targets
-        (cj/build-org-refile-targets)
-
-        ;; After call: cache populated
-        (should cj/org-refile-targets-cache)
-        (should cj/org-refile-targets-cache-time)
-        (should org-refile-targets)
-
-        ;; Cache matches org-refile-targets
-        (should (equal cj/org-refile-targets-cache org-refile-targets))
-
-        ;; Contains base files (inbox, reference, schedule)
-        (should (>= (length org-refile-targets) 3)))
-    (test-org-refile-teardown)))
-
-(ert-deftest test-org-refile-build-targets-normal-second-call-uses-cache ()
-  "Test that second call uses cache instead of rebuilding.
-
-When cache is valid (not expired):
-1. Should NOT scan directories again
-2. Should restore targets from cache
-3. Should NOT update cache timestamp"
-  (test-org-refile-setup)
-  (unwind-protect
-      (let ((scan-count 0))
-        (cl-letf (((symbol-function 'directory-files-recursively)
-                   (lambda (_dir _pattern &optional _include-dirs _predicate)
-                     (setq scan-count (1+ scan-count))
-                     '("/tmp/todo.org")))
-                  ((symbol-function 'fboundp) (lambda (_sym) nil)))
-
-          ;; First call: builds cache
+      (let ((scan-calls 0))
+        (cl-letf (((symbol-function 'cj/--org-refile-scan-targets)
+                   (lambda ()
+                     (cl-incf scan-calls)
+                     '(("/a.org" :maxlevel . 1) ("/b.org" :maxlevel . 1)))))
           (cj/build-org-refile-targets)
-          (should (= scan-count 3))  ; 3 directories scanned
+          (should (= 1 scan-calls))
+          (should (equal '(("/a.org" :maxlevel . 1) ("/b.org" :maxlevel . 1))
+                         org-refile-targets))))
+    (test-org-refile--reset)))
 
-          (let ((cached-time cj/org-refile-targets-cache-time)
-                (cached-targets cj/org-refile-targets-cache))
-
-            ;; Second call: uses cache
-            (cj/build-org-refile-targets)
-
-            ;; Scan count unchanged (cache hit)
-            (should (= scan-count 3))
-
-            ;; Cache unchanged
-            (should (equal cj/org-refile-targets-cache-time cached-time))
-            (should (equal cj/org-refile-targets-cache cached-targets)))))
-    (test-org-refile-teardown)))
-
-(ert-deftest test-org-refile-build-targets-normal-force-rebuild-bypasses-cache ()
-  "Test that force-rebuild parameter bypasses cache.
-
-When force-rebuild is non-nil:
-1. Should ignore valid cache
-2. Should rebuild from scratch
-3. Should update cache with new data"
-  (test-org-refile-setup)
+(ert-deftest test-org-refile-build-targets-second-call-uses-cache ()
+  "Normal: a valid cache means the second call doesn't call the scan helper."
+  (test-org-refile--reset)
   (unwind-protect
-      (let ((scan-count 0))
-        (cl-letf (((symbol-function 'directory-files-recursively)
-                   (lambda (_dir _pattern &optional _include-dirs _predicate)
-                     (setq scan-count (1+ scan-count))
-                     (if (> scan-count 3)
-                         '("/tmp/todo.org" "/tmp/todo2.org")  ; New file on rebuild
-                       '("/tmp/todo.org"))))
-                  ((symbol-function 'fboundp) (lambda (_sym) nil)))
-
-          ;; First call: builds cache
+      (let ((scan-calls 0))
+        (cl-letf (((symbol-function 'cj/--org-refile-scan-targets)
+                   (lambda ()
+                     (cl-incf scan-calls)
+                     '(("/a.org" :maxlevel . 1)))))
           (cj/build-org-refile-targets)
-          (let ((initial-count (length org-refile-targets)))
+          (cj/build-org-refile-targets)
+          (should (= 1 scan-calls))))
+    (test-org-refile--reset)))
 
-            ;; Force rebuild
-            (cj/build-org-refile-targets 'force)
-
-            ;; Scanned again (3 more directories)
-            (should (= scan-count 6))
-
-            ;; New targets include additional file
-            (should (> (length org-refile-targets) initial-count)))))
-    (test-org-refile-teardown)))
+(ert-deftest test-org-refile-build-targets-force-rebuild-bypasses-cache ()
+  "Normal: FORCE-REBUILD calls the scan helper even when the cache is valid."
+  (test-org-refile--reset)
+  (unwind-protect
+      (let ((scan-calls 0))
+        (cl-letf (((symbol-function 'cj/--org-refile-scan-targets)
+                   (lambda ()
+                     (cl-incf scan-calls)
+                     '(("/a.org" :maxlevel . 1)))))
+          (cj/build-org-refile-targets)
+          (cj/build-org-refile-targets 'force)
+          (should (= 2 scan-calls))))
+    (test-org-refile--reset)))
 
 ;;; Boundary Cases
 
-(ert-deftest test-org-refile-build-targets-boundary-cache-expires-after-ttl ()
-  "Test that cache expires after TTL period.
-
-When cache timestamp exceeds TTL:
-1. Should rebuild targets
-2. Should update cache timestamp
-3. Should rescan directories"
-  (test-org-refile-setup)
+(ert-deftest test-org-refile-build-targets-cache-expires-after-ttl ()
+  "Boundary: an expired cache rebuilds (cache time backdated past TTL)."
+  (test-org-refile--reset)
   (unwind-protect
-      (let ((scan-count 0))
-        (cl-letf (((symbol-function 'directory-files-recursively)
-                   (lambda (_dir _pattern &optional _include-dirs _predicate)
-                     (setq scan-count (1+ scan-count))
-                     '("/tmp/todo.org")))
-                  ((symbol-function 'fboundp) (lambda (_sym) nil)))
-
-          ;; First call: builds cache
+      (let ((scan-calls 0))
+        (cl-letf (((symbol-function 'cj/--org-refile-scan-targets)
+                   (lambda ()
+                     (cl-incf scan-calls)
+                     '(("/a.org" :maxlevel . 1)))))
           (cj/build-org-refile-targets)
-          (should (= scan-count 3))
-
-          ;; Simulate cache expiration (set time to 2 hours ago)
-          (setq cj/org-refile-targets-cache-time
-                (- (float-time) (* 2 3600)))
-
-          ;; Second call: cache expired, rebuild
+          (let ((ttl (plist-get cj/--org-refile-targets-cache :ttl)))
+            (plist-put cj/--org-refile-targets-cache :time
+                       (- (float-time) (1+ ttl))))
           (cj/build-org-refile-targets)
+          (should (= 2 scan-calls))))
+    (test-org-refile--reset)))
 
-          ;; Scanned again (cache was expired)
-          (should (= scan-count 6))
-
-          ;; Cache timestamp updated to current time
-          (should (< (- (float-time) cj/org-refile-targets-cache-time) 1))))
-    (test-org-refile-teardown)))
-
-(ert-deftest test-org-refile-build-targets-boundary-empty-directories-creates-minimal-targets ()
-  "Test behavior when directories contain no todo.org files.
-
-When directory scans return empty:
-1. Should still create base targets (inbox, reference, schedule)
-2. Should not fail or error
-3. Should cache the minimal result"
-  (test-org-refile-setup)
+(ert-deftest test-org-refile-build-targets-empty-scan-still-assigns ()
+  "Boundary: scan returning nil assigns nil and does not cache (per the
+documented \"nil reads as invalid\" contract)."
+  (test-org-refile--reset)
   (unwind-protect
-      (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern &optional _include-dirs _predicate) nil))  ; No files found
-                ((symbol-function 'fboundp) (lambda (_sym) nil)))
+      (let ((scan-calls 0))
+        (cl-letf (((symbol-function 'cj/--org-refile-scan-targets)
+                   (lambda () (cl-incf scan-calls) nil)))
+          (cj/build-org-refile-targets)
+          (should (= 1 scan-calls))
+          (should (null org-refile-targets))
+          (cj/build-org-refile-targets)
+          (should (= 2 scan-calls))))
+    (test-org-refile--reset)))
 
+(ert-deftest test-org-refile-build-targets-building-flag-clears-on-success ()
+  "Boundary: the cache's :building flag is cleared after a successful build."
+  (test-org-refile--reset)
+  (unwind-protect
+      (cl-letf (((symbol-function 'cj/--org-refile-scan-targets)
+                 (lambda () '(("/a.org" :maxlevel . 1)))))
         (cj/build-org-refile-targets)
-
-        ;; Should have base files only
-        (should (= (length org-refile-targets) 3))
-
-        ;; Cache should contain base files
-        (should cj/org-refile-targets-cache)
-        (should (= (length cj/org-refile-targets-cache) 3)))
-    (test-org-refile-teardown)))
-
-(ert-deftest test-org-refile-build-targets-boundary-building-flag-set-during-build ()
-  "Test that building flag is set during build and cleared after.
-
-During build:
-1. Flag should be set to prevent concurrent builds
-2. Flag should clear even if build fails
-3. Flag state should be consistent"
-  (test-org-refile-setup)
-  (unwind-protect
-      (let ((flag-during-build nil))
-        (cl-letf (((symbol-function 'directory-files-recursively)
-                   (lambda (_dir _pattern &optional _include-dirs _predicate)
-                     ;; Capture flag state during directory scan
-                     (setq flag-during-build cj/org-refile-targets-building)
-                     '("/tmp/todo.org")))
-                  ((symbol-function 'fboundp) (lambda (_sym) nil)))
-
-          ;; Before build
-          (should (null cj/org-refile-targets-building))
-
-          ;; Build
-          (cj/build-org-refile-targets)
-
-          ;; Flag was set during build
-          (should flag-during-build)
-
-          ;; Flag cleared after build
-          (should (null cj/org-refile-targets-building))))
-    (test-org-refile-teardown)))
-
-(ert-deftest test-org-refile-build-targets-boundary-building-flag-clears-on-error ()
-  "Test that building flag clears even if build errors.
-
-When build encounters error:
-1. Flag should still be cleared (unwind-protect)
-2. Prevents permanently locked state
-3. Next build can proceed"
-  (test-org-refile-setup)
-  (unwind-protect
-      (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern &optional _include-dirs _predicate)
-                   (error "Simulated scan failure")))
-                ((symbol-function 'fboundp) (lambda (_sym) nil)))
-
-        ;; Build will error
-        (should-error (cj/build-org-refile-targets))
-
-        ;; Flag cleared despite error (unwind-protect)
-        (should (null cj/org-refile-targets-building)))
-    (test-org-refile-teardown)))
+        (should-not (cj/cache-building-p cj/--org-refile-targets-cache)))
+    (test-org-refile--reset)))
 
 ;;; Error Cases
 
-(ert-deftest test-org-refile-build-targets-error-nil-cache-with-old-timestamp ()
-  "Test handling of inconsistent state (nil cache but timestamp set).
-
-When cache is nil but timestamp exists:
-1. Should recognize cache as invalid
-2. Should rebuild targets
-3. Should set both cache and timestamp"
-  (test-org-refile-setup)
+(ert-deftest test-org-refile-build-targets-scan-error-propagates ()
+  "Error: a failure inside the scan helper propagates to the caller."
+  (test-org-refile--reset)
   (unwind-protect
-      (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern &optional _include-dirs _predicate) '("/tmp/todo.org")))
-                ((symbol-function 'fboundp) (lambda (_sym) nil)))
+      (cl-letf (((symbol-function 'cj/--org-refile-scan-targets)
+                 (lambda () (error "Permission denied"))))
+        (should-error (cj/build-org-refile-targets)))
+    (test-org-refile--reset)))
 
-        ;; Set inconsistent state
-        (setq cj/org-refile-targets-cache nil)
-        (setq cj/org-refile-targets-cache-time (float-time))
-
-        ;; Build should recognize invalid state
-        (cj/build-org-refile-targets)
-
-        ;; Cache now populated
-        (should cj/org-refile-targets-cache)
-        (should cj/org-refile-targets-cache-time)
-        (should org-refile-targets))
-    (test-org-refile-teardown)))
-
-(ert-deftest test-org-refile-build-targets-error-directory-scan-failure-propagates ()
-  "Test that directory scan failures propagate as errors.
-
-When directory-files-recursively errors:
-1. Error should propagate to caller
-2. Cache should not be corrupted
-3. Building flag should clear"
-  (test-org-refile-setup)
+(ert-deftest test-org-refile-build-targets-building-flag-clears-on-error ()
+  "Error: the building flag is cleared even when the scan helper signals."
+  (test-org-refile--reset)
   (unwind-protect
-      (cl-letf (((symbol-function 'directory-files-recursively)
-                 (lambda (_dir _pattern &optional _include-dirs _predicate)
-                   (error "Permission denied")))
-                ((symbol-function 'fboundp) (lambda (_sym) nil)))
-
-        ;; Should propagate error
-        (should-error (cj/build-org-refile-targets))
-
-        ;; Cache not corrupted (still nil)
-        (should (null cj/org-refile-targets-cache))
-
-        ;; Building flag cleared
-        (should (null cj/org-refile-targets-building)))
-    (test-org-refile-teardown)))
+      (cl-letf (((symbol-function 'cj/--org-refile-scan-targets)
+                 (lambda () (error "Simulated failure"))))
+        (ignore-errors (cj/build-org-refile-targets))
+        (should-not (cj/cache-building-p cj/--org-refile-targets-cache)))
+    (test-org-refile--reset)))
 
 (provide 'test-org-refile-build-targets)
 ;;; test-org-refile-build-targets.el ends here
