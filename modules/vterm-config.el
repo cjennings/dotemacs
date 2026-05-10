@@ -25,7 +25,7 @@
 (require 'seq)
 (require 'subr-x)
 (require 'cj-window-geometry)
-(require 'cj-window-toggle)
+(require 'cj-window-toggle-lib)
 
 (defvar-keymap cj/vterm-map
   :doc "Personal vterm command map.")
