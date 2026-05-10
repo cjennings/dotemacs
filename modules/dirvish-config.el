@@ -194,6 +194,21 @@ Examples:
 
 ;;; ----------------------- Dirvish Open File Manager Here ----------------------
 
+(defun cj/--file-manager-program-for (has-xdg-open-p system-type)
+  "Return the file-manager command for HAS-XDG-OPEN-P + SYSTEM-TYPE, or nil.
+
+Pure helper used by `cj/dirvish-open-file-manager-here'.  When
+HAS-XDG-OPEN-P is non-nil, returns \"xdg-open\" regardless of
+SYSTEM-TYPE -- xdg-open works on Linux and many ported environments.
+Without xdg-open, falls back to `darwin' -> \"open\", `windows-nt' ->
+\"explorer\", everything else -> nil so the caller can shell-command
+its way out."
+  (cond
+   (has-xdg-open-p "xdg-open")
+   ((eq system-type 'darwin) "open")
+   ((eq system-type 'windows-nt) "explorer")
+   (t nil)))
+
 (defun cj/dirvish-open-file-manager-here ()
   "Open system's default file manager in the current dired/dirvish directory.
 Always opens the file manager in the directory currently being displayed,
@@ -203,22 +218,14 @@ regardless of what file or subdirectory the point is on."
     (if (and current-dir (file-exists-p current-dir))
         (progn
           (message "Opening file manager in %s..." current-dir)
-          ;; Use shell-command with & to run asynchronously and detached
-          (let ((process-connection-type nil)) ; Use pipe instead of pty
-            (cond
-             ;; Linux/Unix with xdg-open
-             ((executable-find "xdg-open")
-              (call-process "xdg-open" nil 0 nil current-dir))
-             ;; macOS
-             ((eq system-type 'darwin)
-              (call-process "open" nil 0 nil current-dir))
-             ;; Windows
-             ((eq system-type 'windows-nt)
-              (call-process "explorer" nil 0 nil current-dir))
-             ;; Fallback to shell-command
-             (t
+          ;; Use pipe instead of pty for the async call-process below.
+          (let* ((process-connection-type nil)
+                 (program (cj/--file-manager-program-for
+                           (executable-find "xdg-open") system-type)))
+            (if program
+                (call-process program nil 0 nil current-dir)
               (shell-command (format "xdg-open %s &"
-                                     (shell-quote-argument current-dir)))))))
+                                     (shell-quote-argument current-dir))))))
       (message "Could not determine current directory."))))
 
 (defun cj/--wallpaper-program-for (env)
