@@ -276,21 +276,19 @@ with a file, the function will throw an error."
 
 (defun cj/org-clear-element-cache ()
   "Clear the org-element cache for the current buffer or all buffers.
-With prefix argument, clear cache for all org buffers. Otherwise, clear only
+By default, clear cache for all org buffers. With prefix argument, clear only
 the current buffer's cache. Useful when encountering parsing errors like
 'wrong-type-argument stringp nil' during agenda generation."
   (interactive)
   (if current-prefix-arg
-      (progn
-        (org-element-cache-reset 'all)
-        (message "Cleared org-element cache for all buffers"))
-    (if (derived-mode-p 'org-mode)
+      (if (derived-mode-p 'org-mode)
         (progn
           (org-element-cache-reset)
           (message "Cleared org-element cache for current buffer"))
-      (user-error "Current buffer is not in org-mode"))))
+        (user-error "Current buffer is not in org-mode"))
+    (org-element-cache-reset 'all)
+    (message "Cleared org-element cache for all buffers")))
 
-;; Add to org keymap
 (keymap-set cj/org-map "c" #'cj/org-clear-element-cache)
 
 ;; ----------------------- Org Multi-Level Sorting -----------------------------
@@ -316,27 +314,7 @@ status to preserve priority ordering within TODO groups."
       (user-error nil)))
   (message "Sorted entries by TODO status and priority"))
 
-;; ----------------------- Org Element Cache Reset -----------------------------
-
-(defun cj/org-element-cache-reset-all ()
-  "Reset the org-element cache in all org-mode buffers."
-  (interactive)
-  (let ((count 0))
-    (dolist (buf (buffer-list))
-      (with-current-buffer buf
-        (when (derived-mode-p 'org-mode)
-          (org-element-cache-reset)
-          (cl-incf count))))
-    (message "Reset org-element cache in %d buffer%s" count (if (= count 1) "" "s"))))
-
 ;; ------------------------------ Org Keybindings ------------------------------
-
-(defvar cj/org-keymap (make-sparse-keymap)
-  "Keymap for org commands under C-; O.")
-
-(global-set-key (kbd "C-; O") cj/org-keymap)
-
-(define-key cj/org-keymap (kbd "c") #'cj/org-element-cache-reset-all)
 
 ;; which-key labels for org keymaps
 (with-eval-after-load 'which-key
