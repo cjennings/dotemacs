@@ -69,6 +69,15 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+(require 'subr-x)
+
+(defun calendar-sync--log-silently (format-string &rest args)
+  "Log FORMAT-STRING with ARGS without requiring the full config."
+  (if (fboundp 'cj/log-silently)
+      (apply #'cj/log-silently format-string args)
+    (apply #'message format-string args)))
+
 ;;; Configuration
 
 (defgroup calendar-sync nil
@@ -128,6 +137,17 @@ This is the total time allowed for the entire transfer (connect + download).
 Large calendars (thousands of events) may need more time on slow connections.
 A separate 10-second connect timeout ensures fast failure when a host is
 unreachable.")
+
+(defvar calendar-sync--module-file
+  (let* ((loaded-file (or load-file-name buffer-file-name))
+         (source-file (when loaded-file
+                        (concat (file-name-sans-extension loaded-file) ".el"))))
+    (if (and source-file (file-readable-p source-file))
+        source-file
+      loaded-file))
+  "Absolute path to this module file.
+Used by the batch conversion worker so it can load the same parser code
+without loading the user's init file.")
 
 ;;; Internal state
 
@@ -209,7 +229,7 @@ Example: -21600 → 'UTC-6' or 'UTC-6:00'."
               (dolist (entry cal-states)
                 (puthash (car entry) (cdr entry) calendar-sync--calendar-states)))))
       (error
-       (cj/log-silently "calendar-sync: Error loading state: %s" (error-message-string err))))))
+       (calendar-sync--log-silently "calendar-sync: Error loading state: %s" (error-message-string err))))))
 
 (defun calendar-sync--get-calendar-state (calendar-name)
   "Get state plist for CALENDAR-NAME, or nil if not found."
@@ -773,7 +793,7 @@ TZ database as the `date' command."
                 (nth 2 local)    ; hour
                 (nth 1 local)))  ; minute
       (error
-       (cj/log-silently "calendar-sync: Error converting timezone %s: %s"
+       (calendar-sync--log-silently "calendar-sync: Error converting timezone %s: %s"
                         source-tz (error-message-string err))
        nil))))
 
@@ -978,7 +998,7 @@ BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
       ;; Move to next interval week
       (setq current-date (calendar-sync--add-days current-date (* 7 interval))))
     (when (>= iterations max-iterations)
-      (cj/log-silently "calendar-sync: WARNING: Hit max iterations (%d) expanding weekly event" max-iterations))
+      (calendar-sync--log-silently "calendar-sync: WARNING: Hit max iterations (%d) expanding weekly event" max-iterations))
     (nreverse occurrences)))
 
 (defun calendar-sync--expand-monthly (base-event rrule range)
@@ -1011,7 +1031,7 @@ Filters out dates excluded via EXDATE properties."
                    ('weekly (calendar-sync--expand-weekly base-event parsed-rrule range))
                    ('monthly (calendar-sync--expand-monthly base-event parsed-rrule range))
                    ('yearly (calendar-sync--expand-yearly base-event parsed-rrule range))
-                   (_ (cj/log-silently "calendar-sync: Unsupported RRULE frequency: %s" freq)
+                   (_ (calendar-sync--log-silently "calendar-sync: Unsupported RRULE frequency: %s" freq)
                       nil))))
             ;; Filter out EXDATE occurrences
             (if exdates
@@ -1163,8 +1183,8 @@ RECURRENCE-ID exceptions are applied to override specific occurrences."
                     (push parsed parsed-events)
                     (setq events-generated (1+ events-generated))))))))
         (when (>= events-generated max-events)
-          (cj/log-silently "calendar-sync: WARNING: Hit max events limit (%d), some events may be missing" max-events))
-        (cj/log-silently "calendar-sync: Processing %d events..." (length parsed-events))
+          (calendar-sync--log-silently "calendar-sync: WARNING: Hit max events limit (%d), some events may be missing" max-events))
+        (calendar-sync--log-silently "calendar-sync: Processing %d events..." (length parsed-events))
         ;; Sort and convert to org format
         (let* ((sorted-events (sort parsed-events
                                     (lambda (a b)
@@ -1177,7 +1197,7 @@ RECURRENCE-ID exceptions are applied to override specific occurrences."
                       "\n")
             nil)))
     (error
-     (cj/log-silently "calendar-sync: Parse error: %s" (error-message-string err))
+     (calendar-sync--log-silently "calendar-sync: Parse error: %s" (error-message-string err))
      nil)))
 
 ;;; Sync functions
@@ -1208,12 +1228,47 @@ invoked when the fetch completes, either successfully or with an error."
                           (if (and (eq (process-status process) 'exit)
                                    (= (process-exit-status process) 0))
                               (calendar-sync--normalize-line-endings (buffer-string))
-                            (cj/log-silently "calendar-sync: Fetch error: curl failed: %s" (string-trim event))
+                            (calendar-sync--log-silently "calendar-sync: Fetch error: curl failed: %s" (string-trim event))
                             nil))))
                    (kill-buffer buf)
                    (funcall callback content))))))))
     (error
-     (cj/log-silently "calendar-sync: Fetch error: %s" (error-message-string err))
+     (calendar-sync--log-silently "calendar-sync: Fetch error: %s" (error-message-string err))
+     (funcall callback nil))))
+
+(defun calendar-sync--fetch-ics-file (url callback)
+  "Fetch .ics from URL to a temp file asynchronously.
+Calls CALLBACK with the temp file path on success, or nil on error.  The caller
+owns deleting the temp file after a successful callback."
+  (condition-case err
+      (let ((buffer (generate-new-buffer " *calendar-sync-curl*"))
+            (temp-file (make-temp-file "calendar-sync-" nil ".ics")))
+        (make-process
+         :name "calendar-sync-curl"
+         :buffer buffer
+         :command (list "curl" "-s" "-L"
+                        "--connect-timeout" "10"
+                        "--max-time" (number-to-string calendar-sync-fetch-timeout)
+                        "-o" temp-file
+                        url)
+         :sentinel
+         (lambda (process event)
+           (when (memq (process-status process) '(exit signal))
+             (let ((buf (process-buffer process))
+                   (success (and (eq (process-status process) 'exit)
+                                 (= (process-exit-status process) 0))))
+               (when (buffer-live-p buf)
+                 (unless success
+                   (calendar-sync--log-silently "calendar-sync: Fetch error: curl failed: %s"
+                                                (string-trim event)))
+                 (kill-buffer buf))
+               (if success
+                   (funcall callback temp-file)
+                 (when (file-exists-p temp-file)
+                   (delete-file temp-file))
+                 (funcall callback nil)))))))
+    (error
+     (calendar-sync--log-silently "calendar-sync: Fetch error: %s" (error-message-string err))
      (funcall callback nil))))
 
 (defun calendar-sync--write-file (content file)
@@ -1224,6 +1279,92 @@ Creates parent directories if needed."
       (make-directory dir t)))
   (with-temp-file file
     (insert content)))
+
+(defun calendar-sync--emacs-binary ()
+  "Return the Emacs executable to use for calendar conversion workers."
+  (let ((candidate (expand-file-name invocation-name invocation-directory)))
+    (if (file-executable-p candidate)
+        candidate
+      invocation-name)))
+
+(defun calendar-sync--batch-convert-file (ics-file output-file past-months future-months user-emails)
+  "Convert ICS-FILE to Org format and write OUTPUT-FILE.
+PAST-MONTHS, FUTURE-MONTHS, and USER-EMAILS mirror the interactive session's
+calendar conversion settings.  This is intended for noninteractive worker
+processes, not direct interactive use."
+  (setq calendar-sync-past-months past-months
+        calendar-sync-future-months future-months
+        calendar-sync-user-emails user-emails)
+  (let* ((ics-content
+          (with-temp-buffer
+            (insert-file-contents ics-file)
+            (calendar-sync--normalize-line-endings (buffer-string))))
+         (org-content (calendar-sync--parse-ics ics-content)))
+    (unless org-content
+      (error "calendar-sync: parse failed"))
+    (calendar-sync--write-file org-content output-file)))
+
+(defun calendar-sync--worker-command (ics-file output-file)
+  "Build the batch Emacs command that converts ICS-FILE to OUTPUT-FILE."
+  (let ((private-config-file
+         (make-temp-name (expand-file-name "calendar-sync-worker-config-"
+                                           temporary-file-directory)))
+        (state-file
+         (make-temp-name (expand-file-name "calendar-sync-worker-state-"
+                                           temporary-file-directory))))
+    (list (calendar-sync--emacs-binary)
+          "--batch"
+          "--no-site-file"
+          "--no-site-lisp"
+          "--eval" (format "(setq load-prefer-newer t calendar-sync-auto-start nil calendar-sync-private-config-file %S calendar-sync--state-file %S)"
+                           private-config-file state-file)
+          "-l" calendar-sync--module-file
+          "--eval" (format "(calendar-sync--batch-convert-file %S %S %S %S '%S)"
+                           ics-file
+                           output-file
+                           calendar-sync-past-months
+                           calendar-sync-future-months
+                           calendar-sync-user-emails))))
+
+(defun calendar-sync--convert-ics-file-async (ics-file output-file callback)
+  "Convert ICS-FILE to OUTPUT-FILE in a batch Emacs worker.
+Calls CALLBACK as (CALLBACK SUCCESS ERROR-MESSAGE).  Deletes ICS-FILE after the
+worker exits."
+  (condition-case err
+      (let ((buffer (generate-new-buffer " *calendar-sync-worker*")))
+        (make-process
+         :name "calendar-sync-worker"
+         :buffer buffer
+         :command (calendar-sync--worker-command ics-file output-file)
+         :sentinel
+         (lambda (process _event)
+           (when (memq (process-status process) '(exit signal))
+             (let* ((buf (process-buffer process))
+                    (success (and (eq (process-status process) 'exit)
+                                  (= (process-exit-status process) 0)))
+                    (error-message
+                     (when (buffer-live-p buf)
+                       (with-current-buffer buf
+                         (string-trim (buffer-string))))))
+               (when (file-exists-p ics-file)
+                 (delete-file ics-file))
+               (when (buffer-live-p buf)
+                 (kill-buffer buf))
+               (funcall callback success error-message))))))
+    (error
+     (when (file-exists-p ics-file)
+       (delete-file ics-file))
+     (funcall callback nil (error-message-string err)))))
+
+(defun calendar-sync--mark-sync-failed (name reason)
+  "Record failed sync state for calendar NAME with REASON."
+  (calendar-sync--set-calendar-state
+   name
+   (list :status 'error
+         :last-sync (plist-get (calendar-sync--get-calendar-state name) :last-sync)
+         :last-error reason))
+  (calendar-sync--save-state)
+  (message "calendar-sync: [%s] Sync failed (see *Messages*)" name))
 
 ;;; Debug Logging
 
@@ -1250,63 +1391,50 @@ Checks `cj/debug-modules' for symbol `calendar-sync' or t (all)."
   "Sync a single CALENDAR asynchronously.
 CALENDAR is a plist with :name, :url, and :file keys.
 Updates calendar state and saves to disk on completion.
-Logs timing for each phase to *Messages* for performance diagnosis."
+The fetch and conversion run in external processes so parsing and writing large
+calendar files do not block the interactive Emacs thread."
   (let ((name (plist-get calendar :name))
         (url (plist-get calendar :url))
         (file (plist-get calendar :file))
         (fetch-start (float-time)))
-    ;; Mark as syncing
     (calendar-sync--set-calendar-state name '(:status syncing))
-    (cj/log-silently "calendar-sync: [%s] Syncing..." name)
-    (calendar-sync--fetch-ics
+    (calendar-sync--log-silently "calendar-sync: [%s] Syncing..." name)
+    (calendar-sync--fetch-ics-file
      url
-     (lambda (ics-content)
+     (lambda (ics-file)
        (let ((fetch-elapsed (- (float-time) fetch-start)))
-         (if (null ics-content)
+         (if (null ics-file)
              (progn
-               (cj/log-silently "calendar-sync: [%s] Fetch failed" name)
-               (calendar-sync--set-calendar-state
-                name
-                (list :status 'error
-                      :last-sync (plist-get (calendar-sync--get-calendar-state name) :last-sync)
-                      :last-error "Fetch failed"))
-               (calendar-sync--save-state)
-               (message "calendar-sync: [%s] Sync failed (see *Messages*)" name))
+               (calendar-sync--log-silently "calendar-sync: [%s] Fetch failed" name)
+               (calendar-sync--mark-sync-failed name "Fetch failed"))
            (when (calendar-sync--debug-p)
-             (cj/log-silently "calendar-sync: [%s] Fetched %dKB in %.1fs"
-                              name (/ (length ics-content) 1024) fetch-elapsed))
-           (let* ((parse-start (float-time))
-                  (org-content (calendar-sync--parse-ics ics-content))
-                  (parse-elapsed (- (float-time) parse-start)))
-             (if (null org-content)
-                 (progn
-                   (cj/log-silently "calendar-sync: [%s] Parse failed (%.1fs)" name parse-elapsed)
-                   (calendar-sync--set-calendar-state
-                    name
-                    (list :status 'error
-                          :last-sync (plist-get (calendar-sync--get-calendar-state name) :last-sync)
-                          :last-error "Parse failed"))
-                   (calendar-sync--save-state)
-                   (message "calendar-sync: [%s] Sync failed (see *Messages*)" name))
-               (when (calendar-sync--debug-p)
-                 (cj/log-silently "calendar-sync: [%s] Parsed in %.1fs" name parse-elapsed))
-               (let ((write-start (float-time)))
-                 (calendar-sync--write-file org-content file)
-                 (when (calendar-sync--debug-p)
-                   (cj/log-silently "calendar-sync: [%s] Wrote %s in %.2fs"
-                                    name (file-name-nondirectory file)
-                                    (- (float-time) write-start))))
-               (calendar-sync--set-calendar-state
-                name
-                (list :status 'ok
-                      :last-sync (current-time)
-                      :last-error nil))
-               (setq calendar-sync--last-timezone-offset
-                     (calendar-sync--current-timezone-offset))
-               (calendar-sync--save-state)
-               (let ((total-elapsed (- (float-time) fetch-start)))
-                 (message "calendar-sync: [%s] Sync complete (%.1fs total) → %s"
-                          name total-elapsed file))))))))))
+             (calendar-sync--log-silently "calendar-sync: [%s] Fetched in %.1fs"
+                                          name fetch-elapsed))
+           (calendar-sync--convert-ics-file-async
+            ics-file
+            file
+            (lambda (success error-message)
+              (if (not success)
+                  (progn
+                    (calendar-sync--log-silently "calendar-sync: [%s] Conversion failed: %s"
+                                                name error-message)
+                    (calendar-sync--mark-sync-failed
+                     name
+                     (if (or (null error-message)
+                             (string-empty-p error-message))
+                         "Conversion failed"
+                       error-message)))
+                (calendar-sync--set-calendar-state
+                 name
+                 (list :status 'ok
+                       :last-sync (current-time)
+                       :last-error nil))
+                (setq calendar-sync--last-timezone-offset
+                      (calendar-sync--current-timezone-offset))
+                (calendar-sync--save-state)
+                (let ((total-elapsed (- (float-time) fetch-start)))
+                  (message "calendar-sync: [%s] Sync complete (%.1fs total) → %s"
+                           name total-elapsed file)))))))))))
 
 (defun calendar-sync--require-calendars ()
   "Return non-nil if calendars are configured, else warn and return nil."
