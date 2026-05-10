@@ -24,7 +24,7 @@
 ;;; Code:
 
 (require 'system-lib)
-(require 'external-open)
+(require 'external-open-lib)
 
 (declare-function dired-get-file-for-visit "dired" ())
 (declare-function dired-file-name-at-point "dired" ())

@@ -1,7 +1,7 @@
-;;; test-external-open-launcher-p.el --- Tests for cj/external-open-launcher-p -*- lexical-binding: t; -*-
+;;; test-external-open-lib-launcher-p.el --- Tests for cj/external-open-launcher-p -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Unit tests for `cj/external-open-launcher-p' in external-open.el.
+;; Unit tests for `cj/external-open-launcher-p' in external-open-lib.el.
 ;; The predicate returns t for desktop launcher commands (xdg-open,
 ;; open, start) that need `call-process' with a zero buffer argument
 ;; to fully detach from Emacs.  Anything else returns nil.
@@ -14,7 +14,7 @@
 (setq package-user-dir (expand-file-name "elpa" user-emacs-directory))
 (package-initialize)
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
-(require 'external-open)
+(require 'external-open-lib)
 
 ;;; Normal cases
 
@@ -51,5 +51,5 @@
   "Error: nil input is handled gracefully (not in the launcher list)."
   (should-not (cj/external-open-launcher-p nil)))
 
-(provide 'test-external-open-launcher-p)
-;;; test-external-open-launcher-p.el ends here
+(provide 'test-external-open-lib-launcher-p)
+;;; test-external-open-lib-launcher-p.el ends here

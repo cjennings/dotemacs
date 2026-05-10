@@ -23,6 +23,7 @@
 
 (require 'host-environment) ;; environment information functions
 (require 'system-lib) ;; for cj/file-from-context
+(require 'external-open-lib) ;; pure dispatch helpers
 (require 'cl-lib)
 
 ;; Declare platform-specific functions
@@ -88,28 +89,6 @@
   "Regexps matching file extensions that should be opened externally."
   :type '(repeat (regexp :tag "File extension regexp"))
   :group 'external-open)
-
-;; ----------------------- External-Open Command Resolution -------------------
-
-(defun cj/external-open-command ()
-  "Return the OS-default \"open\" command for this host, or nil if unsupported.
-Returns one of \"xdg-open\" (Linux), \"open\" (macOS), \"start\" (Windows).
-Callers that require a command should error on nil with a contextual
-message so the user sees what feature is unavailable."
-  (cond
-   ((env-linux-p)   "xdg-open")
-   ((env-macos-p)   "open")
-   ((env-windows-p) "start")
-   (t nil)))
-
-(defun cj/external-open-launcher-p (command)
-  "Return non-nil when COMMAND is a desktop launcher.
-Launchers (xdg-open, open, start) need to be called with `call-process'
-and a zero BUFFER argument so they fully detach from Emacs.  Other
-commands get `start-process-shell-command' so their output is visible."
-  (and (stringp command)
-       (member command '("xdg-open" "open" "start"))
-       t))
 
 (defun cj/xdg-open (&optional filename)
   "Open FILENAME (or the file at point) with the OS default handler.
