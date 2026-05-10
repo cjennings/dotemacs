@@ -1,7 +1,7 @@
-;;; test-cj-window-toggle.el --- Tests for shared toggle-state helpers -*- lexical-binding: t; -*-
+;;; test-cj-window-toggle-lib.el --- Tests for shared toggle-state helpers -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; cj-window-toggle.el provides parameterized capture-state and
+;; cj-window-toggle-lib.el provides parameterized capture-state and
 ;; display-saved helpers shared by ai-vterm.el (F9) and
 ;; eshell-vterm-config.el (F12).  Each consumer holds its own pair of
 ;; state variables (last-direction symbol + last-size integer/float)
@@ -14,7 +14,7 @@
 (require 'cl-lib)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
-(require 'cj-window-toggle)
+(require 'cj-window-toggle-lib)
 
 (defvar test-cj-window-toggle--last-direction nil)
 (defvar test-cj-window-toggle--last-size nil)
@@ -184,5 +184,5 @@
     (should (eq (cdr (assq 'direction received-alist)) 'bottom))
     (should (= (cdr (assq 'window-height received-alist)) 0.4))))
 
-(provide 'test-cj-window-toggle)
-;;; test-cj-window-toggle.el ends here
+(provide 'test-cj-window-toggle-lib)
+;;; test-cj-window-toggle-lib.el ends here
