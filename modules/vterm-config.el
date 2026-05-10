@@ -24,7 +24,7 @@
 (require 'keybindings)
 (require 'seq)
 (require 'subr-x)
-(require 'cj-window-geometry)
+(require 'cj-window-geometry-lib)
 (require 'cj-window-toggle-lib)
 
 (defvar-keymap cj/vterm-map
