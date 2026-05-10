@@ -36,6 +36,24 @@ keep working."
          :warning)
         nil)))
 
+(defconst cj/shell-safe-argument-regexp "\\`[[:alnum:]_./=+@%:,^-]+\\'"
+  "Regexp matching shell arguments safe to interpolate unchanged.
+Members of this character set survive shell parsing without quoting,
+so a command line containing only these characters in each argument
+remains both safe and readable.")
+
+(defun cj/shell-quote-argument-readable (argument)
+  "Quote ARGUMENT for shell command interpolation when needed.
+
+When ARGUMENT consists only of characters in `cj/shell-safe-argument-regexp'
+it is returned unchanged so the surrounding command stays human-readable
+(useful for compile/test command lines you'll inspect in *compilation*).
+Otherwise falls back to `shell-quote-argument' so the result is safe to
+interpolate."
+  (if (string-match-p cj/shell-safe-argument-regexp argument)
+      argument
+    (shell-quote-argument argument)))
+
 (defun cj/log-silently (format-string &rest args)
   "Append formatted message (FORMAT-STRING with ARGS) to *Messages* buffer.
 This does so without echoing in the minibuffer."
