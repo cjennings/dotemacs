@@ -35,7 +35,7 @@ ALL_TESTS = $(UNIT_TESTS) $(INTEGRATION_TESTS)
 MODULE_FILES = $(wildcard $(MODULE_DIR)/*.el)
 
 # Emacs batch flags
-EMACS_BATCH = $(EMACS) --batch --no-site-file --no-site-lisp
+EMACS_BATCH = $(EMACS) --batch --no-site-file --no-site-lisp --eval '(setq load-prefer-newer t)'
 EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 
 # No colors - using plain text symbols instead
