@@ -14,6 +14,7 @@
 
 (require 'seq)
 (require 'subr-x)
+(require 'system-lib)
 
 (defvar cj/coverage-backends nil
   "Registry of coverage backends in priority order.
@@ -197,30 +198,17 @@ empty hash table.  Malformed hunk headers are skipped silently."
 		(forward-line 1)))
 	result))
 
-(defun cj/--coverage-git-string (&rest args)
-  "Run git with ARGS and return its stdout as a string.
-Signals `user-error' when git exits non-zero."
-  (with-temp-buffer
-    (let ((status (apply #'process-file "git" nil (current-buffer) nil args))
-          (output (buffer-string)))
-      (unless (zerop status)
-        (user-error "git %s failed with status %s: %s"
-                    (string-join args " ")
-                    status
-                    (string-trim output)))
-      output)))
-
 (defun cj/--coverage-git-merge-base (base)
   "Return the merge-base between HEAD and BASE."
   (let ((merge-base (string-trim
-                     (cj/--coverage-git-string "merge-base" "HEAD" base))))
+                     (cj/git-output-or-error "merge-base" "HEAD" base))))
     (unless (not (string-empty-p merge-base))
       (user-error "git merge-base HEAD %s returned no commit" base))
     merge-base))
 
 (defun cj/--coverage-git-diff (&rest args)
   "Return git diff output for ARGS plus --unified=0."
-  (apply #'cj/--coverage-git-string
+  (apply #'cj/git-output-or-error
          (append (list "diff") args (list "--unified=0"))))
 
 (defun cj/--coverage-changed-lines (scope &optional base)
