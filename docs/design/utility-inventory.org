@@ -1,0 +1,160 @@
+#+TITLE: Utility Helper Inventory
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-10
+
+* Status
+
+Living inventory. Phase 1 of [[file:utility-consolidation.org][utility-consolidation.org]]. Records the current state of helpers identified in the spec's Candidate Extraction Table plus any new candidates discovered during module walkthroughs. Decisions become concrete tasks in =todo.org= for Phase 2+.
+
+* Scope
+
+Phase 1 inventories the candidates from the spec's Candidate Extraction Table. The spec explicitly does not require listing every private helper across the codebase before Phase 2 can start -- new candidates surface and are recorded as they show up.
+
+* Methodology
+
+For each helper:
+
+- Read the function definition for arguments and body.
+- Note dependencies (=require= statements, calls to other modules, built-ins).
+- Note side effects (process, file I/O, network, message log, none).
+- Search the tree for callers (modules and tests).
+- Locate the test file(s) covering the helper.
+- Decide: =Migrate= / =Leave= / =Defer=, plus a rationale.
+
+Caller counts in the inventory below reflect grep results from 2026-05-10. The columns "Tests" and "Callers" record what actually references the symbol; a test that loads a defining module without naming the symbol does not count.
+
+* Inventory
+
+** Executable Discovery
+
+| Symbol | File | Vis | Deps | Side effects | Proposed home / name | Callers (modules) | Tests | Pri | Decision | Rationale |
+|--------+------+-----+------+--------------+----------------------+-------------------+-------+-----+----------+-----------|
+| =cj/mail--executable-or-warn= | =mail-config.el:66= | private | =executable-find=, =display-warning= | =display-warning= | =system-lib.el= / =cj/executable-find-or-warn= | 0 (used inline within =mail-config.el=) | none | High | Migrate | Mail-specific name hides a generally useful pattern. Mail, language tools, and dirvish wallpaper/file-manager commands all need "find this program or surface a clear missing-dep warning." |
+| =cj/executable-exists-p= | =system-lib.el:13= | public | =executable-find= | none (returns path) | =system-lib.el= / =cj/executable-available-p= | =custom-buffer-file.el= (1) | =test-system-lib-executable-exists-p.el= | Medium | Migrate | Current name claims a predicate but returns a path. Rename to =-available-p= and return =t=/=nil=, keep one-cycle alias. |
+| direct =(executable-find ...)= without warning | =prog-c.el=, =prog-go.el=, =prog-python.el=, =prog-shell.el=, =dirvish-config.el=, =browser-config.el=, =mail-config.el= | n/a | =executable-find= | sometimes silent nil | =cj/executable-find-or-warn= or =cj/executable-available-p= | many | n/a | High | Migrate selectively | User-invoked features should warn on missing executables; package =:if= silent checks should stay silent. |
+
+** Shell Argument Quoting
+
+| Symbol | File | Vis | Deps | Side effects | Proposed home / name | Callers (modules) | Tests | Pri | Decision | Rationale |
+|--------+------+-----+------+--------------+----------------------+-------------------+-------+-----+----------+-----------|
+| =cj/--f6-shell-safe-argument-regexp= | =dev-fkeys.el:337= (defconst) | private | none | none | =system-lib.el= / =cj/shell-safe-argument-regexp= | 1 (defining file) | none | High | Migrate | Internal regex paired with the readable-quote function. Move with its consumer. |
+| =cj/--f6-shell-quote-argument= | =dev-fkeys.el:340= | private | =shell-quote-argument=, the regexp above | none | =system-lib.el= / =cj/shell-quote-argument-readable= | 1 (defining file) | none | High | Migrate | Generates compile/test commands where readable paths matter for log inspection. F6 dispatch is one of several future callers (see =mail-config=, =dirvish-config=). |
+| direct =shell-quote-argument= in command strings | =prog-c.el=, =prog-python.el=, =prog-shell.el=, =mail-config.el=, =dirvish-config.el=, =vc-config.el=, =elfeed-config.el=, =system-utils.el= | n/a | =shell-quote-argument= | none | case-by-case | many | n/a | Medium | Defer | Audit each call site after =cj/shell-quote-argument-readable= lands; some are security-sensitive and should keep =shell-quote-argument= as-is. |
+
+** Process Runner
+
+| Symbol | File | Vis | Deps | Side effects | Proposed home / name | Callers (modules) | Tests | Pri | Decision | Rationale |
+|--------+------+-----+------+--------------+----------------------+-------------------+-------+-----+----------+-----------|
+| =cj/--coverage-git-string= | =coverage-core.el:200= | private | =process-file=, =with-temp-buffer=, =user-error= | runs git via =process-file= | =system-lib.el= or new =cj-process.el= / =cj/process-output-or-error= | 2 (within =coverage-core.el=) | covered indirectly by coverage tests | High | Migrate | Generic "run program with argv -> stdout, raise user-error with status+output on non-zero" pattern. Future callers: reconcile-open-repos, vc-config, mail integrations. |
+| =cj/--coverage-git-string= (wrapper) | =coverage-core.el= | private | the generic above | runs git | =system-lib.el= or =cj-process.el= / =cj/git-output-or-error= | 2 | n/a | High | Migrate | Thin wrapper around the generic runner with =git= as the program. |
+| =cj/--coverage-git-merge-base= | =coverage-core.el:213= | private | =cj/--coverage-git-string= | runs git | =coverage-core.el= (stay) | 1 (within file) | covered by coverage tests | Low | Leave | Coverage-specific semantics. May call the generic runner once it exists, but stays in coverage-core. |
+| =cj/--coverage-git-diff= | =coverage-core.el:221= | private | =cj/--coverage-git-string= | runs git | =coverage-core.el= (stay) | 1 (within file) | covered by coverage tests | Low | Leave | Coverage-specific =--unified=0= policy. |
+
+** File / Path Helpers
+
+| Symbol | File | Vis | Deps | Side effects | Proposed home / name | Callers (modules) | Tests | Pri | Decision | Rationale |
+|--------+------+-----+------+--------------+----------------------+-------------------+-------+-----+----------+-----------|
+| =cj/--file-from-context= | =system-utils.el:58= | private | =dired-get-filename=, =buffer-file-name= | none (reads buffer state) | =system-lib.el= / =cj/file-from-context= | 1 (within =system-utils.el=) | =test-system-utils--file-from-context.el= | High | Migrate | Useful for any "current Dired entry or current buffer's file" command. Tests already exist; rename + re-home is straightforward. |
+| =cj/test--file-in-directory-p= | =test-runner.el:160= | private | =file-in-directory-p= (built-in) | none | built-in | 1 (within file) | none | Medium | Migrate (delete) | Wraps the built-in for no apparent reason. Replace caller with =file-in-directory-p= directly. |
+| =cj/test--assert-inside-base= | =testutil-general.el:41= | test-only | =file-in-directory-p= | signals error | =system-lib.el= / =cj/path-assert-in-directory= | 2 (within file) | =testutil-general.el= itself | Medium | Defer | Useful pattern for destructive commands, but currently test-only. Extract when a production caller appears (e.g. =safe-recursive-delete=). |
+| =cj/test--safe-base-dir-p= | =testutil-general.el:30= | test-only | path predicates | none | =system-lib.el= / =cj/safe-recursive-delete-root-p= | 1 (within file) | =testutil-general.el= itself | Medium | Defer | Policy-heavy ("is this dir safe to recursively delete from"). Should be explicit and well-tested before any production use. |
+
+** External Open
+
+| Symbol | File | Vis | Deps | Side effects | Proposed home / name | Callers (modules) | Tests | Pri | Decision | Rationale |
+|--------+------+-----+------+--------------+----------------------+-------------------+-------+-----+----------+-----------|
+| =cj/--open-with-is-launcher-p= | =system-utils.el:70= | private | =string-match-p= | none | =external-open.el= / =cj/external-open-launcher-p= | 1 (within =system-utils.el=) | =test-system-utils--open-with-is-launcher-p.el= | Medium | Defer | Move when external-open consumers (dirvish, mail) align on a single owner; not blocking. |
+| =cj/identify-external-open-command= | =system-utils.el:103= | public | =executable-find=, system-type | none | =external-open.el= / =cj/external-open-command= | 1 (within file) | =test-system-utils-identify-external-open-command.el= | Medium | Migrate | External-open should own command-string resolution; host-environment stays predicate-only. |
+| duplicated OS-open command selection | =system-utils.el=, =dirvish-config.el=, =external-open.el= | n/a | =executable-find=, system-type | external process | =external-open.el= / =cj/external-open-command= | many | several | Medium | Migrate | One source of truth for =xdg-open=, =open=, =start=. The dirvish refactor I just shipped extracts =cj/--file-manager-program-for=; that helper merges naturally into =cj/external-open-command= once external-open is the owner. |
+
+** Org-Safe Text Helpers
+
+| Symbol | File | Vis | Deps | Side effects | Proposed home / name | Callers (modules) | Tests | Pri | Decision | Rationale |
+|--------+------+-----+------+--------------+----------------------+-------------------+-------+-----+----------+-----------|
+| =calendar-sync--sanitize-org-body= | =calendar-sync.el:297= | private | =replace-regexp-in-string= | none | =cj-org-text.el= or =system-lib.el= / =cj/org-sanitize-body-text= | 1 (within file) | =test-calendar-sync--sanitize-org-body.el= | High | Migrate | Already tested. Useful for webclipper, AI conversations, mail-to-org capture. Pure string work; no Org dependency. |
+| =calendar-sync--sanitize-org-property-value= | =calendar-sync.el:308= | private | =replace-regexp-in-string= | none | =cj-org-text.el= or =system-lib.el= / =cj/org-sanitize-property-value= | 1 (within file) | =test-calendar-sync--sanitize-org-body.el= | High | Migrate | Strips characters that would break Org property syntax. Pure string. |
+| =calendar-sync--sanitize-org-heading= | =calendar-sync.el:317= | private | =replace-regexp-in-string= | none | =cj-org-text.el= or =system-lib.el= / =cj/org-sanitize-heading= | 1 (within file) | =test-calendar-sync--sanitize-org-body.el= | High | Migrate | Protects outline structure from external text. Pure string. |
+| =calendar-sync--strip-html= | =calendar-sync.el:271= | private | =replace-regexp-in-string= | none | =system-lib.el= or =cj-text.el= / =cj/text-strip-html= | 1 (within file) | =test-calendar-sync--strip-html.el= | Medium | Defer | Useful beyond calendar, but the regex-only approach is intentionally simple; document its limits before promoting. |
+| =calendar-sync--clean-text= | =calendar-sync.el:291= | private | the two helpers above | none | =system-lib.el= or =cj-text.el= / =cj/text-clean-external= | 1 (within file) | =test-calendar-sync--clean-text.el= | Medium | Defer | Combines ICS unescape + HTML strip; too calendar-specific without splitting. |
+| =calendar-sync--unescape-ics-text= | =calendar-sync.el:258= | private | =replace-regexp-in-string= | none | =calendar-sync.el= (stay) | 1 (within file) | =test-calendar-sync--unescape-ics-text.el= | Low | Leave | ICS-specific. Not a general utility. |
+
+** Cache Abstraction
+
+| Symbol | File | Vis | Deps | Side effects | Proposed home / name | Callers (modules) | Tests | Pri | Decision | Rationale |
+|--------+------+-----+------+--------------+----------------------+-------------------+-------+-----+----------+-----------|
+| =cj/modeline-vc-cache-*= helpers (key/get/put/clear/valid-p) | =modeline-config.el:108-140= | private | buffer-local vars | mutates buffer-local state | =cj-cache.el= / =cj/cache-valid-p=, =cj/cache-get=, =cj/cache-put=, =cj/cache-clear= | 1 (within file) | =test-modeline-config-vc-cache.el= | Medium | Defer | Good pattern, but variable-local cache shape differs from the agenda/refile caches. Needs design before extraction. Spec calls out a Phase 5 design addendum at =docs/design/cache-helper-design.org=. |
+| agenda/refile cache vars and build flags | =org-agenda-config.el=, =org-refile-config.el= | n/a | timers, file scans | scans filesystem, sets vars | =cj-cache.el= / =cj/cache-value-or-rebuild= | 2 | none | Medium | Defer | TTL/build/invalidate lifecycle; higher risk than the modeline cache. Same Phase 5 work. |
+
+** Logging / Warnings
+
+| Symbol | File | Vis | Deps | Side effects | Proposed home / name | Callers (modules) | Tests | Pri | Decision | Rationale |
+|--------+------+-----+------+--------------+----------------------+-------------------+-------+-----+----------+-----------|
+| =cj/log-silently= | =system-lib.el:20= | public | =message= with =inhibit-message= | writes to *Messages* without echo-area flash | =system-lib.el= / =cj/message-log-only= | 10 (=elfeed-config=, =media-utils=, =org-agenda-config-debug=, =quick-video-capture=, =wrap-up=) | several test files reference it | Low | Defer | Rename is clearer but low-value. Only do when touching system-lib for a higher-priority change. |
+| direct =display-warning= boilerplate | =mail-config.el= | n/a | =display-warning= | warning entry | =system-lib.el= / =cj/display-warning-once= or =cj/warn-once= | 1+ | none | Low | Defer | Single caller today. Add only after a second caller appears or once-only behavior becomes a real need. |
+
+** Macros / Debug Helpers
+
+| Symbol | File | Vis | Deps | Side effects | Proposed home / name | Callers (modules) | Tests | Pri | Decision | Rationale |
+|--------+------+-----+------+--------------+----------------------+-------------------+-------+-----+----------+-----------|
+| =with-timer= | =config-utilities.el:50= (defmacro) | public | =current-time=, =message= | times forms, messages elapsed | =config-utilities.el= (stay for now) | 0 in production; 1 test | =test-config-utilities--with-timer.el= | Low | Defer | Debug-oriented today. Promote only after a production caller appears. |
+| =cj/--benchmark-method= | =config-utilities.el:64= | private | =benchmark-call= | runs forms, messages timing | =config-utilities.el= (stay) | 0 outside file | =test-config-utilities--benchmark-method.el= | Low | Leave | Debug command helper. Not general architecture. |
+| =cj/--delete-compiled-files-in-dir= | =config-utilities.el:123= | private | =directory-files-recursively=, =delete-file= | deletes files | =config-utilities.el= (stay until safe second caller) | 0 outside file | =test-config-utilities--delete-compiled-files-in-dir.el= | Low | Defer | Destructive. A second caller plus a path-safety contract should land before promoting. |
+
+** Theme File I/O
+
+| Symbol | File | Vis | Deps | Side effects | Proposed home / name | Callers (modules) | Tests | Pri | Decision | Rationale |
+|--------+------+-----+------+--------------+----------------------+-------------------+-------+-----+----------+-----------|
+| =cj/theme-read-file-contents= | =ui-theme.el:66= | public | =insert-file-contents= | reads file | =system-lib.el= / =cj/read-file-string= | 0 outside file | =test-ui-theme-persistence.el= | Low | Defer | One production caller. Built-in =insert-file-contents= wrappers are small; keep theme-specific until reused. |
+| =cj/theme-write-file-contents= | =ui-theme.el:75= | public | =write-region= | writes file | =system-lib.el= / =cj/write-file-string= | 0 outside file | =test-ui-theme-persistence.el= | Low | Defer | Same as above. |
+
+** String / Modeline Helpers
+
+| Symbol | File | Vis | Deps | Side effects | Proposed home / name | Callers (modules) | Tests | Pri | Decision | Rationale |
+|--------+------+-----+------+--------------+----------------------+-------------------+-------+-----+----------+-----------|
+| =cj/modeline-string-cut-middle= | =modeline-config.el:59= | public | =substring=, length math | none | =system-lib.el= or =cj-text.el= / =cj/string-truncate-middle= | 1 (within file) | =test-modeline-config-string-cut-middle.el= | Low | Defer | Single production caller. Good candidate when completion/headings/report buffers need ellipsis-in-middle truncation. |
+
+* Decisions Summary
+
+| Action | Count | Examples |
+|--------+-------+----------|
+| Migrate | 11 | =cj/--file-from-context=, three calendar-sync sanitizers, =cj/executable-find-or-warn=, =cj/shell-quote-argument-readable=, process runner pair, =cj/external-open-command= |
+| Leave | 3 | =cj/--coverage-git-merge-base=, =cj/--coverage-git-diff=, =calendar-sync--unescape-ics-text= |
+| Defer | 13 | cache helpers (need design addendum), test-only helpers awaiting production caller, low-value renames, theme/string/HTML extractions awaiting second caller |
+
+* Concrete Next Actions
+
+These become =todo.org= entries (or update existing ones) as Phase 2 starts.
+
+** Phase 2 candidates (already in spec's recommended order)
+
+1. *Extract* =cj/executable-find-or-warn= into =system-lib.el=. Move =cj/mail--executable-or-warn= and rename. Migrate user-invoked features in =mail-config.el=, =prog-*.el=, =dirvish-config.el=, =browser-config.el= as appropriate.
+2. *Rename* =cj/executable-exists-p= -> =cj/executable-available-p=, return boolean, keep one-cycle alias.
+3. *Extract* =cj/shell-quote-argument-readable= and the paired regexp into =system-lib.el=. Move =cj/--f6-shell-quote-argument= and the constant.
+4. *Extract* =cj/process-output-or-error= (generic argv -> stdout / user-error) and =cj/git-output-or-error= (thin wrapper) into =system-lib.el= or =cj-process.el=. Migrate =cj/--coverage-git-string= callers.
+5. *Extract* =cj/file-from-context= into =system-lib.el=.
+6. *Replace* =cj/test--file-in-directory-p= caller with built-in =file-in-directory-p=, then delete the wrapper.
+
+** Phase 3 candidates (Org-safe text)
+
+7. *Extract* =cj/org-sanitize-heading=, =cj/org-sanitize-property-value=, =cj/org-sanitize-body-text= into =cj-org-text.el= (new) or =system-lib.el=. Migrate =org-webclipper.el= and =ai-conversations.el= as second consumers; mail capture if applicable.
+
+** Phase 4 candidates (External-open consolidation)
+
+8. *Move* =cj/identify-external-open-command= to =external-open.el= as =cj/external-open-command=. Consolidate the duplicated OS-open dispatch from =system-utils.el=, =dirvish-config.el=, and (already-shipped) =cj/--file-manager-program-for= into one source of truth.
+
+** Deferred (track in =todo.org= but no commit yet)
+
+- Cache abstraction (modeline + agenda/refile) -- needs Phase 5 design addendum at =docs/design/cache-helper-design.org=.
+- =cj/--open-with-is-launcher-p= -- move when external-open ownership is finalized.
+- =cj/log-silently= rename -- low value; do during incidental =system-lib= work.
+- HTML/text helpers (=strip-html=, =clean-text=) -- defer until a second consumer.
+- Theme file I/O wrappers -- defer until a second consumer.
+- =cj/string-truncate-middle= -- defer until a second consumer.
+- =cj/path-assert-in-directory= and =cj/safe-recursive-delete-root-p= -- defer until a production caller justifies promotion.
+- =with-timer=, =cj/--delete-compiled-files-in-dir=, =cj/display-warning-once= -- defer until a clear second caller.
+
+* Discoveries Worth Recording
+
+- =cj/--file-manager-program-for= already exists in =vterm-config.el= (post-split: =modules/vterm-config.el=) -- wait, the dirvish refactor put it in =modules/dirvish-config.el=. It's the new form of the OS-dispatch consolidation. The =cj/external-open-command= work in Phase 4 should fold this helper in rather than re-deriving it.
+- =cj/log-silently= has 10 production callers, more than the spec's table suggested. The rename's churn cost is real; defer is the right call.
+- The three calendar sanitizers (=org-body=, =org-property-value=, =org-heading=) all share one test file (=test-calendar-sync--sanitize-org-body.el=). When moved, the tests should also move and split per helper for clarity.
