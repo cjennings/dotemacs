@@ -1,8 +1,8 @@
-;;; test-cj-org-text-sanitize.el --- Tests for the Org-safe text sanitizers -*- lexical-binding: t; -*-
+;;; test-cj-org-text-lib-sanitize.el --- Tests for the Org-safe text sanitizers -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 ;; Unit tests for `cj/org-sanitize-body-text', `cj/org-sanitize-property-value',
-;; and `cj/org-sanitize-heading' in cj-org-text.el.  Pure string helpers
+;; and `cj/org-sanitize-heading' in cj-org-text-lib.el.  Pure string helpers
 ;; for safely composing Org content from external sources (calendar
 ;; bodies, web-clipped HTML, mail subjects, AI transcripts).  Originally
 ;; lived in calendar-sync.el under `calendar-sync--sanitize-*' names.
@@ -107,5 +107,5 @@
   "Boundary: nil input returns nil."
   (should (null (cj/org-sanitize-property-value nil))))
 
-(provide 'test-cj-org-text-sanitize)
-;;; test-cj-org-text-sanitize.el ends here
+(provide 'test-cj-org-text-lib-sanitize)
+;;; test-cj-org-text-lib-sanitize.el ends here
