@@ -12,12 +12,12 @@
 ;; helpers.  Both helpers are pure with respect to their arguments;
 ;; the side effects are confined to the named state variables.
 ;;
-;; Pulls the geometry primitives in from cj-window-geometry.el.
+;; Pulls the geometry primitives in from cj-window-geometry-lib.el.
 
 ;;; Code:
 
 (require 'cl-lib)
-(require 'cj-window-geometry)
+(require 'cj-window-geometry-lib)
 
 (defun cj/window-toggle-capture-state (window default-direction
                                               direction-var size-var)

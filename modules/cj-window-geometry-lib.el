@@ -1,4 +1,4 @@
-;;; cj-window-geometry.el --- Pure window-geometry helpers -*- lexical-binding: t; -*-
+;;; cj-window-geometry-lib.el --- Pure window-geometry helpers -*- lexical-binding: t; -*-
 
 ;; Author: Craig Jennings <c@cjennings.net>
 
@@ -77,5 +77,5 @@ layouts."
     ('above 'top)
     (_ nil)))
 
-(provide 'cj-window-geometry)
-;;; cj-window-geometry.el ends here
+(provide 'cj-window-geometry-lib)
+;;; cj-window-geometry-lib.el ends here
