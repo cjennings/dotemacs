@@ -14,7 +14,7 @@
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
-(require 'eshell-vterm-config)
+(require 'vterm-config)
 (require 'testutil-vterm-buffers)
 
 (ert-deftest test-vterm-toggle--dispatch-window-displayed-returns-toggle-off ()
