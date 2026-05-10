@@ -37,7 +37,7 @@
 (require 'cl-lib)
 (require 'seq)
 (require 'cj-window-geometry)
-(require 'cj-window-toggle)
+(require 'cj-window-toggle-lib)
 
 (declare-function vterm "vterm" (&optional buffer-name))
 (declare-function vterm-send-string "vterm" (string &optional paste-p))

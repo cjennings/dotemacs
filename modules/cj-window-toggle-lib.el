@@ -1,4 +1,4 @@
-;;; cj-window-toggle.el --- Shared toggle-state helpers for display-buffer dispatchers -*- lexical-binding: t; -*-
+;;; cj-window-toggle-lib.el --- Shared toggle-state helpers for display-buffer dispatchers -*- lexical-binding: t; -*-
 
 ;; Author: Craig Jennings <c@cjennings.net>
 
@@ -81,5 +81,5 @@ placement; the remaining alist entries are passed through."
                      filtered)))
     (display-buffer-in-direction buffer effective)))
 
-(provide 'cj-window-toggle)
-;;; cj-window-toggle.el ends here
+(provide 'cj-window-toggle-lib)
+;;; cj-window-toggle-lib.el ends here
