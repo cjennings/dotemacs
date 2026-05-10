@@ -44,6 +44,7 @@
 ;;; Code:
 (require 'user-constants)
 (require 'system-lib)
+(require 'cj-cache)
 
 ;; Load debug functions if enabled
 (when (or (eq cj/debug-modules t)
@@ -82,21 +83,11 @@
                                                    #'org-agenda-todo-previousset))))
 
 ;; ------------------------ Org Agenda File List Cache -------------------------
-;; Cache agenda file list to avoid expensive directory scanning on every view
+;; Cache agenda file list to avoid expensive directory scanning on every view.
+;; The TTL+building cache lifecycle is provided by `cj-cache.el'.
 
-(defvar cj/org-agenda-files-cache nil
-  "Cached agenda files list to avoid expensive directory scanning.
-Set to nil to invalidate cache.")
-
-(defvar cj/org-agenda-files-cache-time nil
-  "Time when agenda files cache was last built.")
-
-(defvar cj/org-agenda-files-cache-ttl 3600
-  "Time-to-live for agenda files cache in seconds (default: 1 hour).")
-
-(defvar cj/org-agenda-files-building nil
-  "Non-nil when agenda files are being built asynchronously.
-Prevents duplicate builds if user opens agenda before async build completes.")
+(defvar cj/--org-agenda-files-cache (cj/cache-make :ttl 3600)
+  "Cache state for the agenda files list.  See `cj-cache.el'.")
 
 ;; ------------------------ Add Files To Org Agenda List -----------------------
 ;; Checks immediate subdirectories of DIRECTORY for todo.org files and adds
@@ -118,6 +109,17 @@ Only checks DIRECTORY/*/todo.org — does not recurse deeper."
 ;; builds the org agenda list from all agenda targets with caching.
 ;; agenda targets is the schedule, contacts, project todos,
 ;; inbox, and org roam projects.
+(defun cj/--org-agenda-scan-files ()
+  "Scan disk for the agenda files list.  Pure-ish: no caching, no logging.
+Returns the list to assign to `org-agenda-files'.  Slow -- walks
+`projects-dir' for per-project todo.org files."
+  (let ((files (list inbox-file schedule-file gcal-file pcal-file dcal-file)))
+    ;; cj/add-files-to-org-agenda-files-list mutates org-agenda-files; let-bind
+    ;; it for the duration of the helper, then return whatever it produced.
+    (let ((org-agenda-files files))
+      (cj/add-files-to-org-agenda-files-list projects-dir)
+      org-agenda-files)))
+
 (defun cj/build-org-agenda-list (&optional force-rebuild)
   "Build org-agenda-files list with caching.
 
@@ -127,43 +129,23 @@ Otherwise, returns cached list if available and not expired.
 This function scans projects-dir for todo.org files, so caching
 improves performance from several seconds to instant."
   (interactive "P")
-  ;; Check if we can use cache
-  (let ((cache-valid (and cj/org-agenda-files-cache
-                          cj/org-agenda-files-cache-time
-                          (not force-rebuild)
-                          (< (- (float-time) cj/org-agenda-files-cache-time)
-                             cj/org-agenda-files-cache-ttl))))
-    (if cache-valid
-        ;; Use cached file list (instant)
-        (progn
-          (setq org-agenda-files cj/org-agenda-files-cache)
-          ;; Always show cache-hit message (interactive or background)
-          (cj/log-silently "Using cached agenda files (%d files)"
-                           (length org-agenda-files)))
-      ;; Check if async build is in progress
-      (when cj/org-agenda-files-building
-        (cj/log-silently "Waiting for background agenda build to complete..."))
-      ;; Rebuild from scratch (slow - scans projects directory)
-      (unwind-protect
-          (progn
-            (setq cj/org-agenda-files-building t)
-            (let ((start-time (current-time)))
-              ;; Reset org-agenda-files to base files
-              (setq org-agenda-files (list inbox-file schedule-file gcal-file pcal-file dcal-file))
-
-              ;; Check all projects for scheduled tasks
-              (cj/add-files-to-org-agenda-files-list projects-dir)
-
-              ;; Update cache
-              (setq cj/org-agenda-files-cache org-agenda-files)
-              (setq cj/org-agenda-files-cache-time (float-time))
-
-              ;; Always show completion message (interactive or background)
-              (cj/log-silently "Built agenda files: %d files in %.3f sec"
-                               (length org-agenda-files)
-                               (- (float-time) (float-time start-time)))))
-        ;; Always clear the building flag, even if build fails
-        (setq cj/org-agenda-files-building nil)))))
+  (when (cj/cache-building-p cj/--org-agenda-files-cache)
+    (cj/log-silently "Waiting for background agenda build to complete..."))
+  (let* ((start-time (current-time))
+         (files
+          (cj/cache-value-or-rebuild
+           cj/--org-agenda-files-cache
+           #'cj/--org-agenda-scan-files
+           :force-rebuild force-rebuild
+           :on-hit (lambda (v)
+                     (cj/log-silently "Using cached agenda files (%d files)"
+                                      (length v)))
+           :on-build-success
+           (lambda (v)
+             (cj/log-silently "Built agenda files: %d files in %.3f sec"
+                              (length v)
+                              (- (float-time) (float-time start-time)))))))
+    (setq org-agenda-files files)))
 
 ;; Build cache asynchronously after startup to avoid blocking Emacs
 (run-with-idle-timer

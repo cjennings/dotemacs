@@ -1,14 +1,17 @@
 ;;; test-org-agenda-build-list.el --- Tests for cj/build-org-agenda-list -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Unit tests for cj/build-org-agenda-list caching logic.
-;; Tests cache behavior, TTL expiration, force rebuild, and async build flag.
+;; Tests for `cj/build-org-agenda-list' and the underlying cache shape.
+;; The wrapper delegates to `cj-cache.el', so these tests exercise the
+;; integration -- they don't reach into the cache plist directly (the
+;; cache primitives have their own tests in test-cj-cache.el).  Stubs
+;; `cj/--org-agenda-scan-files' to avoid touching the filesystem.
 
 ;;; Code:
 
 (require 'ert)
+(require 'cl-lib)
 
-;; Add modules to load path
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 
 ;; Stub dependencies before loading the module
@@ -19,286 +22,125 @@
 (defvar dcal-file "/tmp/test-dcal.org")
 (defvar projects-dir "/tmp/test-projects/")
 
-;; Now load the actual production module
 (require 'org-agenda-config)
 
-;;; Setup and Teardown
-
-(defun test-org-agenda-setup ()
-  "Reset cache and state before each test."
-  (setq cj/org-agenda-files-cache nil)
-  (setq cj/org-agenda-files-cache-time nil)
-  (setq cj/org-agenda-files-building nil)
-  (setq org-agenda-files nil))
-
-(defun test-org-agenda-teardown ()
-  "Clean up after each test."
-  (setq cj/org-agenda-files-cache nil)
-  (setq cj/org-agenda-files-cache-time nil)
-  (setq cj/org-agenda-files-building nil)
+(defun test-org-agenda--reset ()
+  "Reset cache and `org-agenda-files' between tests."
+  (cj/cache-invalidate cj/--org-agenda-files-cache)
   (setq org-agenda-files nil))
 
 ;;; Normal Cases
 
-(ert-deftest test-org-agenda-build-list-normal-first-call-builds-cache ()
-  "Test that first call builds cache from scratch.
-
-When cache is empty, function should:
-1. Scan directory for todo.org files
-2. Build agenda files list
-3. Populate cache
-4. Set cache timestamp"
-  (test-org-agenda-setup)
+(ert-deftest test-org-agenda-build-list-first-call-builds-and-populates ()
+  "Normal: first call calls the scan helper and assigns to `org-agenda-files'."
+  (test-org-agenda--reset)
   (unwind-protect
-      (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
-                 (lambda (_dir)
-                   (setq org-agenda-files
-                         (append '("/tmp/project/todo.org") org-agenda-files)))))
-
-        ;; Before call: cache empty
-        (should (null cj/org-agenda-files-cache))
-        (should (null cj/org-agenda-files-cache-time))
-
-        ;; Build agenda files
-        (cj/build-org-agenda-list)
-
-        ;; After call: cache populated
-        (should cj/org-agenda-files-cache)
-        (should cj/org-agenda-files-cache-time)
-        (should org-agenda-files)
-
-        ;; Cache matches org-agenda-files
-        (should (equal cj/org-agenda-files-cache org-agenda-files))
-
-        ;; Contains base files (inbox, schedule, gcal, pcal, dcal) plus project files
-        (should (>= (length org-agenda-files) 3)))
-    (test-org-agenda-teardown)))
-
-(ert-deftest test-org-agenda-build-list-normal-second-call-uses-cache ()
-  "Test that second call uses cache instead of rebuilding.
-
-When cache is valid (not expired):
-1. Should NOT scan directories again
-2. Should restore files from cache
-3. Should NOT update cache timestamp"
-  (test-org-agenda-setup)
-  (unwind-protect
-      (let ((scan-count 0))
-        (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
-                   (lambda (_dir)
-                     (setq scan-count (1+ scan-count))
-                     (setq org-agenda-files
-                           (append '("/tmp/project/todo.org") org-agenda-files)))))
-
-          ;; First call: builds cache
+      (let ((scan-calls 0))
+        (cl-letf (((symbol-function 'cj/--org-agenda-scan-files)
+                   (lambda ()
+                     (cl-incf scan-calls)
+                     '("/a.org" "/b.org" "/c.org"))))
           (cj/build-org-agenda-list)
-          (should (= scan-count 1))
+          (should (= 1 scan-calls))
+          (should (equal '("/a.org" "/b.org" "/c.org") org-agenda-files))))
+    (test-org-agenda--reset)))
 
-          (let ((cached-time cj/org-agenda-files-cache-time)
-                (cached-files cj/org-agenda-files-cache))
-
-            ;; Second call: uses cache
-            (cj/build-org-agenda-list)
-
-            ;; Scan count unchanged (cache hit)
-            (should (= scan-count 1))
-
-            ;; Cache unchanged
-            (should (equal cj/org-agenda-files-cache-time cached-time))
-            (should (equal cj/org-agenda-files-cache cached-files)))))
-    (test-org-agenda-teardown)))
-
-(ert-deftest test-org-agenda-build-list-normal-force-rebuild-bypasses-cache ()
-  "Test that force-rebuild parameter bypasses cache.
-
-When force-rebuild is non-nil:
-1. Should ignore valid cache
-2. Should rebuild from scratch
-3. Should update cache with new data"
-  (test-org-agenda-setup)
+(ert-deftest test-org-agenda-build-list-second-call-uses-cache ()
+  "Normal: a valid cache means the second call doesn't call the scan helper."
+  (test-org-agenda--reset)
   (unwind-protect
-      (let ((scan-count 0))
-        (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
-                   (lambda (_dir)
-                     (setq scan-count (1+ scan-count))
-                     (let ((extra (if (> scan-count 1)
-                                      '("/tmp/project/todo.org" "/tmp/project2/todo.org")
-                                    '("/tmp/project/todo.org"))))
-                       (setq org-agenda-files (append extra org-agenda-files))))))
-
-          ;; First call: builds cache
+      (let ((scan-calls 0))
+        (cl-letf (((symbol-function 'cj/--org-agenda-scan-files)
+                   (lambda ()
+                     (cl-incf scan-calls)
+                     '("/a.org"))))
           (cj/build-org-agenda-list)
-          (let ((initial-count (length org-agenda-files)))
+          (cj/build-org-agenda-list)
+          (should (= 1 scan-calls))))
+    (test-org-agenda--reset)))
 
-            ;; Force rebuild
-            (cj/build-org-agenda-list 'force)
-
-            ;; Scanned again
-            (should (= scan-count 2))
-
-            ;; New files include additional project
-            (should (> (length org-agenda-files) initial-count)))))
-    (test-org-agenda-teardown)))
+(ert-deftest test-org-agenda-build-list-force-rebuild-bypasses-cache ()
+  "Normal: FORCE-REBUILD calls the scan helper even when the cache is valid."
+  (test-org-agenda--reset)
+  (unwind-protect
+      (let ((scan-calls 0))
+        (cl-letf (((symbol-function 'cj/--org-agenda-scan-files)
+                   (lambda ()
+                     (cl-incf scan-calls)
+                     '("/a.org"))))
+          (cj/build-org-agenda-list)
+          (cj/build-org-agenda-list 'force)
+          (should (= 2 scan-calls))))
+    (test-org-agenda--reset)))
 
 ;;; Boundary Cases
 
-(ert-deftest test-org-agenda-build-list-boundary-cache-expires-after-ttl ()
-  "Test that cache expires after TTL period.
-
-When cache timestamp exceeds TTL:
-1. Should rebuild files list
-2. Should update cache timestamp
-3. Should rescan directory"
-  (test-org-agenda-setup)
+(ert-deftest test-org-agenda-build-list-cache-expires-after-ttl ()
+  "Boundary: an expired cache rebuilds.  Simulated by backdating the
+cache's :time field beyond the TTL."
+  (test-org-agenda--reset)
   (unwind-protect
-      (let ((scan-count 0))
-        (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
-                   (lambda (_dir)
-                     (setq scan-count (1+ scan-count))
-                     (setq org-agenda-files
-                           (append '("/tmp/project/todo.org") org-agenda-files)))))
-
-          ;; First call: builds cache
+      (let ((scan-calls 0))
+        (cl-letf (((symbol-function 'cj/--org-agenda-scan-files)
+                   (lambda ()
+                     (cl-incf scan-calls)
+                     '("/a.org"))))
           (cj/build-org-agenda-list)
-          (should (= scan-count 1))
-
-          ;; Simulate cache expiration (set time to 2 hours ago)
-          (setq cj/org-agenda-files-cache-time
-                (- (float-time) (* 2 3600)))
-
-          ;; Second call: cache expired, rebuild
+          ;; Expire the cache by moving its timestamp backwards beyond TTL.
+          (let ((ttl (plist-get cj/--org-agenda-files-cache :ttl)))
+            (plist-put cj/--org-agenda-files-cache :time
+                       (- (float-time) (1+ ttl))))
           (cj/build-org-agenda-list)
+          (should (= 2 scan-calls))))
+    (test-org-agenda--reset)))
 
-          ;; Scanned again (cache was expired)
-          (should (= scan-count 2))
-
-          ;; Cache timestamp updated to current time
-          (should (< (- (float-time) cj/org-agenda-files-cache-time) 1))))
-    (test-org-agenda-teardown)))
-
-(ert-deftest test-org-agenda-build-list-boundary-empty-directory-creates-minimal-list ()
-  "Test behavior when directory contains no todo.org files.
-
-When directory scan returns empty:
-1. Should still create base files (inbox, schedule)
-2. Should not fail or error
-3. Should cache the minimal result"
-  (test-org-agenda-setup)
+(ert-deftest test-org-agenda-build-list-empty-scan-still-assigns ()
+  "Boundary: a scan helper that returns nil does NOT cache (per the
+documented \"nil reads as invalid\" contract).  org-agenda-files is
+still assigned correctly."
+  (test-org-agenda--reset)
   (unwind-protect
-      (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
-                 (lambda (_dir) nil)))  ; No files added
+      (let ((scan-calls 0))
+        (cl-letf (((symbol-function 'cj/--org-agenda-scan-files)
+                   (lambda () (cl-incf scan-calls) nil)))
+          (cj/build-org-agenda-list)
+          (should (= 1 scan-calls))
+          (should (null org-agenda-files))
+          ;; Next call rebuilds because nil-value reads as invalid.
+          (cj/build-org-agenda-list)
+          (should (= 2 scan-calls))))
+    (test-org-agenda--reset)))
 
+(ert-deftest test-org-agenda-build-list-building-flag-clears-on-success ()
+  "Boundary: the cache's :building flag is cleared after a successful build."
+  (test-org-agenda--reset)
+  (unwind-protect
+      (cl-letf (((symbol-function 'cj/--org-agenda-scan-files)
+                 (lambda () '("/a.org"))))
         (cj/build-org-agenda-list)
-
-        ;; Should have base files only (inbox, schedule, gcal, pcal, dcal)
-        (should (= (length org-agenda-files) 5))
-
-        ;; Cache should contain base files
-        (should cj/org-agenda-files-cache)
-        (should (= (length cj/org-agenda-files-cache) 5)))
-    (test-org-agenda-teardown)))
-
-(ert-deftest test-org-agenda-build-list-boundary-building-flag-set-during-build ()
-  "Test that building flag is set during build and cleared after.
-
-During build:
-1. Flag should be set to prevent concurrent builds
-2. Flag should clear even if build fails
-3. Flag state should be consistent"
-  (test-org-agenda-setup)
-  (unwind-protect
-      (let ((flag-during-build nil))
-        (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
-                   (lambda (_dir)
-                     ;; Capture flag state during directory scan
-                     (setq flag-during-build cj/org-agenda-files-building)
-                     (setq org-agenda-files
-                           (append '("/tmp/project/todo.org") org-agenda-files)))))
-
-          ;; Before build
-          (should (null cj/org-agenda-files-building))
-
-          ;; Build
-          (cj/build-org-agenda-list)
-
-          ;; Flag was set during build
-          (should flag-during-build)
-
-          ;; Flag cleared after build
-          (should (null cj/org-agenda-files-building))))
-    (test-org-agenda-teardown)))
-
-(ert-deftest test-org-agenda-build-list-boundary-building-flag-clears-on-error ()
-  "Test that building flag clears even if build errors.
-
-When build encounters error:
-1. Flag should still be cleared (unwind-protect)
-2. Prevents permanently locked state
-3. Next build can proceed"
-  (test-org-agenda-setup)
-  (unwind-protect
-      (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
-                 (lambda (_dir)
-                   (error "Simulated scan failure"))))
-
-        ;; Build will error
-        (should-error (cj/build-org-agenda-list))
-
-        ;; Flag cleared despite error (unwind-protect)
-        (should (null cj/org-agenda-files-building)))
-    (test-org-agenda-teardown)))
+        (should-not (cj/cache-building-p cj/--org-agenda-files-cache)))
+    (test-org-agenda--reset)))
 
 ;;; Error Cases
 
-(ert-deftest test-org-agenda-build-list-error-nil-cache-with-old-timestamp ()
-  "Test handling of inconsistent state (nil cache but timestamp set).
-
-When cache is nil but timestamp exists:
-1. Should recognize cache as invalid
-2. Should rebuild files list
-3. Should set both cache and timestamp"
-  (test-org-agenda-setup)
+(ert-deftest test-org-agenda-build-list-scan-error-propagates ()
+  "Error: a failure inside the scan helper propagates to the caller."
+  (test-org-agenda--reset)
   (unwind-protect
-      (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
-                 (lambda (_dir)
-                   (setq org-agenda-files
-                         (append '("/tmp/project/todo.org") org-agenda-files)))))
+      (cl-letf (((symbol-function 'cj/--org-agenda-scan-files)
+                 (lambda () (error "Permission denied"))))
+        (should-error (cj/build-org-agenda-list)))
+    (test-org-agenda--reset)))
 
-        ;; Set inconsistent state
-        (setq cj/org-agenda-files-cache nil)
-        (setq cj/org-agenda-files-cache-time (float-time))
-
-        ;; Build should recognize invalid state
-        (cj/build-org-agenda-list)
-
-        ;; Cache now populated
-        (should cj/org-agenda-files-cache)
-        (should cj/org-agenda-files-cache-time)
-        (should org-agenda-files))
-    (test-org-agenda-teardown)))
-
-(ert-deftest test-org-agenda-build-list-error-directory-scan-failure-propagates ()
-  "Test that directory scan failures propagate as errors.
-
-When cj/add-files-to-org-agenda-files-list errors:
-1. Error should propagate to caller
-2. Cache should not be corrupted
-3. Building flag should clear"
-  (test-org-agenda-setup)
+(ert-deftest test-org-agenda-build-list-building-flag-clears-on-error ()
+  "Error: the building flag is cleared even when the scan helper signals."
+  (test-org-agenda--reset)
   (unwind-protect
-      (cl-letf (((symbol-function 'cj/add-files-to-org-agenda-files-list)
-                 (lambda (_dir)
-                   (error "Permission denied"))))
-
-        ;; Should propagate error
-        (should-error (cj/build-org-agenda-list))
-
-        ;; Cache not corrupted (still nil)
-        (should (null cj/org-agenda-files-cache))
-
-        ;; Building flag cleared
-        (should (null cj/org-agenda-files-building)))
-    (test-org-agenda-teardown)))
+      (cl-letf (((symbol-function 'cj/--org-agenda-scan-files)
+                 (lambda () (error "Simulated failure"))))
+        (ignore-errors (cj/build-org-agenda-list))
+        (should-not (cj/cache-building-p cj/--org-agenda-files-cache)))
+    (test-org-agenda--reset)))
 
 (provide 'test-org-agenda-build-list)
 ;;; test-org-agenda-build-list.el ends here
