@@ -25,6 +25,7 @@
 ;;; Code:
 
 (require 'user-constants)
+(require 'system-lib)
 
 ;; cj/custom-keymap's real binding is in keybindings.el, which init.el loads
 ;; first. The use-package org-msg :preface below wraps in eval-and-compile, so
@@ -63,27 +64,17 @@ transport details in debug buffers."
   (interactive)
   (cj/set-smtpmail-debug (not smtpmail-debug-info)))
 
-(defun cj/mail--executable-or-warn (program feature)
-  "Return PROGRAM's executable path, or warn that FEATURE is unavailable."
-  (or (executable-find program)
-      (progn
-        (display-warning
-         'mail-config
-         (format "%s not found; %s unavailable" program feature)
-         :warning)
-        nil)))
-
 (defun cj/mail--mbsync-command ()
   "Return the mu4e mail sync command, or nil if mbsync is unavailable."
-  (when-let ((mbsync (cj/mail--executable-or-warn
-                      "mbsync" "mu4e mail synchronization")))
+  (when-let ((mbsync (cj/executable-find-or-warn
+                      "mbsync" "mu4e mail synchronization" 'mail-config)))
     (concat (shell-quote-argument mbsync) " -a")))
 
 (defun cj/mail-configure-smtpmail ()
   "Configure SMTP mail transport when msmtp is available."
   (setq smtpmail-debug-info cj/smtpmail-debug-enabled)
-  (if-let ((msmtp (cj/mail--executable-or-warn
-                   "msmtp" "SMTP mail sending")))
+  (if-let ((msmtp (cj/executable-find-or-warn
+                   "msmtp" "SMTP mail sending" 'mail-config)))
       (setq sendmail-program msmtp
             send-mail-function 'message-send-mail-with-sendmail
             message-send-mail-function 'message-send-mail-with-sendmail

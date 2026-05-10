@@ -17,6 +17,25 @@ PROGRAM should be a string naming an executable program."
        (not (string-empty-p program))
        (executable-find program)))
 
+(defun cj/executable-find-or-warn (program feature &optional group)
+  "Return PROGRAM's executable path, or warn that FEATURE is unavailable.
+
+When PROGRAM is in PATH, return its absolute path.  When it isn't,
+emit a `display-warning' naming PROGRAM and FEATURE so the user gets
+a clear hint about what won't work, and return nil.
+
+GROUP is the symbol passed to `display-warning' for filtering and
+defaults to `cj/system-lib'.  Callers should pass their own module
+symbol (for example `mail-config') so per-feature warning filters
+keep working."
+  (or (executable-find program)
+      (progn
+        (display-warning
+         (or group 'cj/system-lib)
+         (format "%s not found; %s unavailable" program feature)
+         :warning)
+        nil)))
+
 (defun cj/log-silently (format-string &rest args)
   "Append formatted message (FORMAT-STRING with ARGS) to *Messages* buffer.
 This does so without echoing in the minibuffer."
