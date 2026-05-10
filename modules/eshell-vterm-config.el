@@ -314,8 +314,6 @@ to the vterm buffer that launched it."
       (goto-char (point-max)))
     (pop-to-buffer buffer)))
 
-(defalias 'cj/vterm-history #'cj/vterm-tmux-history)
-
 (defun cj/vterm-copy-mode-cancel ()
   "Exit `vterm-copy-mode' without copying."
   (interactive)
@@ -409,7 +407,7 @@ Used as the size fallback when `cj/--vterm-toggle-last-size' is nil
 (defvar cj/--vterm-toggle-last-direction nil
   "Last user-chosen direction for the F12 vterm display.
 Symbol: right, left, below, above.  nil means use the default
-'below for F12's traditional bottom split.")
+`below' for F12's traditional bottom split.")
 
 (defvar cj/--vterm-toggle-last-size nil
   "Last user-chosen body size for the F12 vterm display.
@@ -446,7 +444,7 @@ FRAME defaults to the selected frame.  Minibuffer is excluded."
 (defun cj/--vterm-toggle-capture-state (window)
   "Capture WINDOW's direction + body size into module-level state.
 
-Default direction is 'below to match F12's traditional bottom
+Default direction is `below' to match F12's traditional bottom
 split when WINDOW fills the frame's root area."
   (when (window-live-p window)
     (let* ((dir (cj/window-direction window 'below))
@@ -458,7 +456,7 @@ split when WINDOW fills the frame's root area."
   "Display-buffer action: split per saved direction and body size.
 
 Reads `cj/--vterm-toggle-last-direction' and
-`cj/--vterm-toggle-last-size', falling back to 'below and
+`cj/--vterm-toggle-last-size', falling back to `below' and
 `cj/vterm-toggle-window-height' when nil.  The cardinal direction
 is mapped to its frame-edge variant (`right' -> `rightmost', etc.)
 so the new vterm always lands at the same frame edge it came from
