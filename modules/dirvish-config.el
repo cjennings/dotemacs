@@ -32,26 +32,45 @@
 
 ;;; ----------------------------- Dired Ediff Files -----------------------------
 
+(defun cj/--ediff-pair-from-files (files prompt-fn newer-than-p)
+  "Return a (OLDER . NEWER) cons for ediff'ing FILES.
+
+FILES is the list of marked file paths.  PROMPT-FN is a thunk used to
+acquire a second file when only one is marked.  NEWER-THAN-P is a binary
+predicate (a b) -> non-nil when A is newer than B.
+
+Signals `user-error' for zero or 3+ files; the latter matches the original
+contract, the former replaces a latent crash where the caller fell through
+to (file-newer-than-file-p nil ...).
+
+Pure helper used by `cj/dired-ediff-files'."
+  (let ((n (length files)))
+    (cond
+     ((zerop n)
+      (user-error "No files marked"))
+     ((> n 2)
+      (user-error "No more than 2 files should be marked"))
+     (t
+      (let ((file1 (car files))
+            (file2 (or (cadr files) (funcall prompt-fn))))
+        (if (funcall newer-than-p file1 file2)
+            (cons file2 file1)
+          (cons file1 file2)))))))
+
 (defun cj/dired-ediff-files ()
   "Ediff two selected files within Dired."
   (interactive)
-  (let ((files (dired-get-marked-files))
-        (wnd (current-window-configuration)))
-    (if (<= (length files) 2)
-        (let ((file1 (car files))
-              (file2 (if (cdr files)
-                         (cadr files)
-                       (read-file-name
-                        "file: "
-                        (dired-dwim-target-directory)))))
-          (if (file-newer-than-file-p file1 file2)
-              (ediff-files file2 file1)
-            (ediff-files file1 file2))
-          (add-hook 'ediff-after-quit-hook-internal
-                    (lambda ()
-                      (setq ediff-after-quit-hook-internal nil)
-                      (set-window-configuration wnd))))
-      (error "No more than 2 files should be marked"))))
+  (let* ((wnd (current-window-configuration))
+         (pair (cj/--ediff-pair-from-files
+                (dired-get-marked-files)
+                (lambda ()
+                  (read-file-name "file: " (dired-dwim-target-directory)))
+                #'file-newer-than-file-p)))
+    (ediff-files (car pair) (cdr pair))
+    (add-hook 'ediff-after-quit-hook-internal
+              (lambda ()
+                (setq ediff-after-quit-hook-internal nil)
+                (set-window-configuration wnd)))))
 
 ;; ------------------------ Create Playlist From Marked ------------------------
 
