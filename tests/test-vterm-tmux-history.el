@@ -120,13 +120,26 @@ RESPONSES is an alist of (ARGS EXIT-CODE OUTPUT)."
 (ert-deftest test-vterm-keymap-includes-history-and-copy-bindings ()
   "Normal: personal vterm map owns the high-level vterm UX commands."
   (should (member "C-;" vterm-keymap-exceptions))
-  (should-not (eq (keymap-lookup cj/custom-keymap "v c") #'vterm-copy-mode))
-  (should (eq (keymap-lookup cj/custom-keymap "V C") #'cj/vterm-tmux-history))
-  (should (eq (keymap-lookup cj/custom-keymap "V c") #'vterm-copy-mode))
+  (should-not (eq (keymap-lookup cj/custom-keymap "X c") #'vterm-copy-mode))
+  (should (eq (keymap-lookup cj/custom-keymap "x C") #'cj/vterm-tmux-history))
+  (should (eq (keymap-lookup cj/custom-keymap "x c") #'vterm-copy-mode))
   (should (equal (keymap-lookup vterm-mode-map "C-;") cj/custom-keymap))
-  (should (eq (keymap-lookup vterm-mode-map "C-; V C") #'cj/vterm-tmux-history))
-  (should (eq (keymap-lookup vterm-mode-map "C-; V c") #'vterm-copy-mode))
+  (should (eq (keymap-lookup vterm-mode-map "C-; x C") #'cj/vterm-tmux-history))
+  (should (eq (keymap-lookup vterm-mode-map "C-; x c") #'vterm-copy-mode))
   (should-not (keymap-lookup vterm-mode-map "C-c C-t")))
+
+(ert-deftest test-vterm-keymap-prompt-navigation ()
+  "Normal: n/p navigate prompts, capital N creates a new vterm buffer."
+  (should (eq (keymap-lookup cj/custom-keymap "x n") #'vterm-next-prompt))
+  (should (eq (keymap-lookup cj/custom-keymap "x p") #'vterm-previous-prompt))
+  (should (eq (keymap-lookup cj/custom-keymap "x N") #'vterm)))
+
+(ert-deftest test-vterm-pause-not-bound-to-copy-mode ()
+  "Normal: <pause> is no longer wired as a vterm-copy-mode entry point.
+The personal `C-; x c' binding is the canonical entry; <pause> is rare on
+modern keyboards and was redundant."
+  (let ((binding (keymap-lookup vterm-mode-map "<pause>")))
+    (should-not (eq binding #'vterm-copy-mode))))
 
 (ert-deftest test-vterm-copy-mode-cancel-keys ()
   "Normal: copy mode has explicit copy and no-copy exits."
