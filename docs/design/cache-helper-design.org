@@ -1,0 +1,165 @@
+#+TITLE: Cache Helper Design Addendum
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-10
+
+* Status
+
+Phase 5 design addendum to [[file:utility-consolidation.org][utility-consolidation.org]]. Specifies the cache API to extract before any code moves.
+
+* Problem
+
+Two modules carry a parallel cache implementation today:
+
+- =modules/org-agenda-config.el= caches the agenda file list.
+- =modules/org-refile-config.el= caches refile targets.
+
+Both share the same shape (lines map between modules):
+
+| Element | Purpose |
+|---------|---------|
+| =VAR-cache= | the cached value |
+| =VAR-cache-time= | float-time when last built |
+| =VAR-cache-ttl= | seconds to retain (default 3600) |
+| =VAR-building= | non-nil while an async build is in progress |
+| =cj/build-VAR (&optional force-rebuild)= | "use cache if valid, else rebuild" |
+
+The build function does:
+
+1. Check whether cache is valid: cache and cache-time set, FORCE-REBUILD nil, age < TTL.
+2. If valid: assign to the consumer's variable, log cache-hit, return.
+3. If a background build is running: log "waiting...", continue (no second build).
+4. Otherwise: set building flag, run the rebuild closure inside =condition-case=, on success update cache+time, on error log message; the =unwind-protect= clears the building flag.
+
+The consumer's variable (e.g. =org-agenda-files=, =org-refile-targets=) is updated as a side effect.
+
+A separate cache pattern exists in =modules/modeline-config.el= for VC info, but it's *buffer-local*, *key-based* (the file path), and not TTL-based. It will not migrate to the same helper -- see "Out of scope" below.
+
+* Goals
+
+- One source of truth for the TTL+building build pattern.
+- Consumers shrink from ~30 lines of cache plumbing to a single =cj/cache-value-or-rebuild= call.
+- Behavior preserved for agenda and refile.
+- Tests cover rebuild / TTL hit / TTL miss / nil cache value / build error / building-flag cleanup.
+
+* Out of scope
+
+- Modeline VC cache (=cj/modeline-vc-cache-*=). Buffer-local + key-based + non-TTL invalidation. Different lifecycle. The spec calls this out explicitly: consider only after global cache behavior is stable. Defer to a future round.
+- Generic memoization. We're not introducing function memoization or LRU. Just the specific "rebuild a long-running computation behind a TTL" pattern.
+
+* API
+
+** =cj/cache-make=
+
+#+begin_src emacs-lisp
+(cj/cache-make &key ttl)
+#+end_src
+
+Return a fresh cache state object.  TTL is in seconds; defaults to 3600.
+
+The state is a plist with keys =:value=, =:time=, =:ttl=, =:building=.  Consumers store the state in a single =defvar=.
+
+** =cj/cache-valid-p=
+
+#+begin_src emacs-lisp
+(cj/cache-valid-p cache)
+#+end_src
+
+Return non-nil when CACHE has a non-nil value, a non-nil time, and (now - time) < ttl.
+
+** =cj/cache-value-or-rebuild=
+
+#+begin_src emacs-lisp
+(cj/cache-value-or-rebuild cache build-fn
+                           &key force-rebuild
+                                on-hit
+                                on-build-start
+                                on-build-success
+                                on-build-error)
+#+end_src
+
+The main entry point.  Returns the cached value when valid (and FORCE-REBUILD is nil); otherwise calls BUILD-FN to compute a new value, updates CACHE, and returns the result.
+
+The four optional callbacks let the consumer log without the helper printing on its behalf:
+
+- =on-hit (value)= -- the helper found a valid cache.
+- =on-build-start ()= -- about to call BUILD-FN.
+- =on-build-success (value)= -- BUILD-FN returned cleanly.
+- =on-build-error (err)= -- BUILD-FN signaled.  After this fires the helper rethrows so the caller sees the error.
+
+The =:building= flag is set before BUILD-FN runs and cleared inside an =unwind-protect= regardless of outcome.  The flag is exposed read-only via =cj/cache-building-p= so callers can log "build in progress" without poking at the plist directly.
+
+** =cj/cache-building-p=
+
+#+begin_src emacs-lisp
+(cj/cache-building-p cache)
+#+end_src
+
+Return non-nil when a build is currently in progress on CACHE.  Used by callers that want to log "waiting for background build" before invoking =cj/cache-value-or-rebuild=.
+
+** =cj/cache-invalidate=
+
+#+begin_src emacs-lisp
+(cj/cache-invalidate cache)
+#+end_src
+
+Reset the cache to "no value, no time".  TTL is preserved.
+
+* Consumer Shape (after migration)
+
+The agenda module's ~30 lines of cache plumbing become roughly:
+
+#+begin_src emacs-lisp
+(defvar cj/--org-agenda-files-cache (cj/cache-make :ttl 3600))
+
+(defun cj/build-org-agenda-list (&optional force-rebuild)
+  "..."
+  (interactive "P")
+  (when (cj/cache-building-p cj/--org-agenda-files-cache)
+    (cj/log-silently "Waiting for background agenda build to complete..."))
+  (let ((files
+         (cj/cache-value-or-rebuild
+          cj/--org-agenda-files-cache
+          (lambda () (cj/--scan-org-agenda-files))
+          :force-rebuild force-rebuild
+          :on-hit (lambda (v) (cj/log-silently
+                               "Using cached agenda files (%d files)" (length v)))
+          :on-build-start (lambda () (cj/log-silently
+                                      "Rebuilding agenda files (slow)..."))
+          :on-build-success (lambda (v) (cj/log-silently
+                                         "Built agenda files (%d files)"
+                                         (length v)))
+          :on-build-error (lambda (err) (cj/log-silently
+                                         "Agenda build failed: %s" err)))))
+    (setq org-agenda-files files)
+    files))
+#+end_src
+
+The =cj/--scan-org-agenda-files= helper holds the slow filesystem walk; the existing in-place expression body moves there with no behavior change.
+
+* Migration order
+
+Per the spec: agenda first, refile second.  Each is its own commit:
+
+1. Add =modules/cj-cache.el= with the API and tests.  No call-site changes.
+2. Migrate =org-agenda-config.el= to the helper.  Verify behavior with the existing async-cache tests.
+3. Migrate =org-refile-config.el= the same way.
+
+* Testing
+
+For the helper itself, =tests/test-cj-cache.el=:
+
+- Normal: hit returns cached value; miss calls BUILD-FN.
+- TTL: build at t=0, request at t=ttl-1 hits; request at t=ttl+1 rebuilds.
+- FORCE-REBUILD wins over a valid cache.
+- nil from BUILD-FN is stored (cache-valid-p returns t).  This matches today's behavior -- a build that legitimately produces nil should not loop.  *Decision point*: the current implementations actually treat "cache value nil" as "cache invalid" (line 131 of agenda, line 66 of refile both check =(and cache cache-time ...)=).  Preserve that to avoid a behavior change: the new helper's =cj/cache-valid-p= treats a nil :value as "not valid".  That's the safer default; consumers that need "nil is a real value" can migrate to a sentinel later.
+- :building flag is set during BUILD-FN, cleared after success.
+- :building flag is cleared even when BUILD-FN signals.
+- Each callback fires once per appropriate path (hit / start / success / error).
+
+For the migrated consumers: the existing async-cache and rebuild tests run unchanged after the migration.  No new test files for agenda/refile are required as part of Phase 5 itself; they got their tests when the original cache was added.
+
+* Risks
+
+- *Behavior drift on cache-hit logging.* The current code logs "Using cached agenda files (N files)" via =cj/log-silently=. The migration preserves that exact message via =:on-hit=. Verify by tail-ing =*Messages*= during a manual smoke test.
+- *Building-flag leak.* The current code uses =unwind-protect= to clear =VAR-building= even on error. The helper does the same. The test "building flag cleared on error" pins this contract.
+- *Async timer interaction.* Both modules schedule background builds via =run-with-idle-timer=. The migration leaves those scheduling forms in the consumer; only the cache-or-build core moves. No changes to startup timing.
