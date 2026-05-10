@@ -154,33 +154,43 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
 
 ;;; ------------------------ Dirvish Duplicate File Copy ------------------------
 
+(defun cj/--duplicate-file-name (file)
+  "Return FILE's path with `-copy' inserted before the extension.
+
+Pure helper used by `cj/dirvish-duplicate-file'.  Examples:
+  /tmp/report.pdf      -> /tmp/report-copy.pdf
+  /home/foo/.bashrc    -> /home/foo/.bashrc-copy
+  doc.txt              -> doc-copy.txt
+  /tmp/archive.tar.gz  -> /tmp/archive.tar-copy.gz"
+  (let* ((dir (file-name-directory file))
+         (base (file-name-base file))
+         (ext (or (file-name-extension file t) ""))
+         (new-name (concat base "-copy" ext)))
+    (if dir
+        (expand-file-name new-name dir)
+      new-name)))
+
 (defun cj/dirvish-duplicate-file ()
-  "Duplicate the file at point with '-copy' suffix before the extension.
+  "Duplicate the file at point with `-copy' suffix before the extension.
 Examples:
   report.pdf → report-copy.pdf
   script.el → script-copy.el
   README → README-copy"
   (interactive)
-  (let* ((file (dired-get-filename nil t))
-         (dir (file-name-directory file))
-         (base (file-name-base file))
-         (ext (file-name-extension file t)) ; includes the dot
-         (new-name (concat base "-copy" ext))
-         (new-path (expand-file-name new-name dir)))
+  (let ((file (dired-get-filename nil t)))
     (unless file
       (user-error "No file at point"))
     (when (file-directory-p file)
       (user-error "Cannot duplicate directories, only files"))
-
-    ;; Check if target already exists
-    (when (file-exists-p new-path)
-      (unless (y-or-n-p (format "File '%s' already exists. Overwrite? " new-name))
-        (user-error "Cancelled")))
-
-    ;; Copy the file
-    (copy-file file new-path t)
-    (revert-buffer)
-    (message "Duplicated: %s → %s" (file-name-nondirectory file) new-name)))
+    (let* ((new-path (cj/--duplicate-file-name file))
+           (new-name (file-name-nondirectory new-path)))
+      (when (file-exists-p new-path)
+        (unless (y-or-n-p (format "File '%s' already exists. Overwrite? " new-name))
+          (user-error "Cancelled")))
+      (copy-file file new-path t)
+      (revert-buffer)
+      (message "Duplicated: %s → %s"
+               (file-name-nondirectory file) new-name))))
 
 ;;; ----------------------- Dirvish Open File Manager Here ----------------------
 
