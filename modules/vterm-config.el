@@ -381,6 +381,23 @@ C-F9 / M-F9 dispatch via `cj/ai-vterm'."
   (cj/vterm-install-prefix-key)
   (cj/vterm-install-copy-mode-cancel-keys))
 
+(defun cj/--vterm-copy-mode-restore-cursor ()
+  "Force a visible cursor on entry to `vterm-copy-mode'.
+
+The vterm C module sets `cursor-type' to nil whenever the underlying
+TUI sends DECTCEM (`\\e[?25l') to hide the terminal cursor — typical
+for full-screen TUIs like Claude Code.  In `vterm-copy-mode' the user
+is navigating the buffer, not watching the TUI, so the cursor must
+be visible.  Switches to a 3-pixel bar (drawn between characters
+rather than inverting one) so face-heavy TUI output doesn't hide it
+either.  On exit, kills the buffer-local override so vterm's normal
+cursor-visibility tracking resumes."
+  (if vterm-copy-mode
+      (setq-local cursor-type '(bar . 3))
+    (kill-local-variable 'cursor-type)))
+
+(add-hook 'vterm-copy-mode-hook #'cj/--vterm-copy-mode-restore-cursor)
+
 (add-hook 'vterm-mode-hook #'goto-address-mode)
 
 (with-eval-after-load 'which-key
