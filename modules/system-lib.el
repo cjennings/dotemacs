@@ -54,6 +54,32 @@ interpolate."
       argument
     (shell-quote-argument argument)))
 
+(defun cj/process-output-or-error (program &rest args)
+  "Run PROGRAM with ARGS via `process-file' and return stdout, or signal error.
+
+On zero exit, returns the program's stdout as a string (including any
+trailing newline -- callers that need a trimmed value should call
+`string-trim' themselves).  On non-zero exit, signals `user-error' with
+a message naming the program, the exit status, and the (trimmed) output
+so a user inspecting *Messages* can see what went wrong."
+  (with-temp-buffer
+    (let ((status (apply #'process-file program nil (current-buffer) nil args))
+          (output (buffer-string)))
+      (unless (zerop status)
+        (user-error "%s %s failed with status %s: %s"
+                    program
+                    (string-join args " ")
+                    status
+                    (string-trim output)))
+      output)))
+
+(defun cj/git-output-or-error (&rest args)
+  "Run git with ARGS and return stdout, or signal `user-error' on failure.
+
+Thin wrapper around `cj/process-output-or-error' with `git' as the
+program."
+  (apply #'cj/process-output-or-error "git" args))
+
 (defun cj/log-silently (format-string &rest args)
   "Append formatted message (FORMAT-STRING with ARGS) to *Messages* buffer.
 This does so without echoing in the minibuffer."
