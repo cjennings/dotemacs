@@ -80,6 +80,22 @@ Thin wrapper around `cj/process-output-or-error' with `git' as the
 program."
   (apply #'cj/process-output-or-error "git" args))
 
+(defun cj/file-from-context (&optional explicit-filename)
+  "Return a file path from the current context, or nil.
+
+Resolves in priority order:
+  1. EXPLICIT-FILENAME, if non-nil.
+  2. `buffer-file-name' of the current buffer.
+  3. The file at point if the current buffer is in `dired-mode'.
+
+Returns nil when none of these yield a file.  Useful for any command
+that operates on \"the current file\" -- buffer commands, dired
+commands, and external-open dispatchers all want this resolution."
+  (or explicit-filename
+      buffer-file-name
+      (and (derived-mode-p 'dired-mode)
+           (dired-file-name-at-point))))
+
 (defun cj/log-silently (format-string &rest args)
   "Append formatted message (FORMAT-STRING with ARGS) to *Messages* buffer.
 This does so without echoing in the minibuffer."
