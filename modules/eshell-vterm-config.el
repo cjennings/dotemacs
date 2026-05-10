@@ -396,6 +396,7 @@ ai-vterm.el is loaded."
 (require 'cl-lib)
 (require 'seq)
 (require 'cj-window-geometry)
+(require 'cj-window-toggle)
 
 (defcustom cj/vterm-toggle-window-height 0.7
   "Default fraction of frame height for the F12 vterm window.
@@ -446,47 +447,20 @@ FRAME defaults to the selected frame.  Minibuffer is excluded."
 
 Default direction is `below' to match F12's traditional bottom
 split when WINDOW fills the frame's root area."
-  (when (window-live-p window)
-    (let* ((dir (cj/window-direction window 'below))
-           (size (cj/window-body-size window dir)))
-      (setq cj/--vterm-toggle-last-direction dir
-            cj/--vterm-toggle-last-size size))))
+  (cj/window-toggle-capture-state
+   window 'below
+   'cj/--vterm-toggle-last-direction
+   'cj/--vterm-toggle-last-size))
 
 (defun cj/--vterm-toggle-display-saved (buffer alist)
   "Display-buffer action: split per saved direction and body size.
 
-Reads `cj/--vterm-toggle-last-direction' and
-`cj/--vterm-toggle-last-size', falling back to `below' and
-`cj/vterm-toggle-window-height' when nil.  The cardinal direction
-is mapped to its frame-edge variant (`right' -> `rightmost', etc.)
-so the new vterm always lands at the same frame edge it came from
-regardless of which window is selected.  An integer size is wrapped
-in a `(body-columns . N)' / `(body-lines . N)' cons so the body
-width or height is set explicitly, divider-independent.  A float
-size passes through as a fraction of the new window's parent."
-  (let* ((direction (or cj/--vterm-toggle-last-direction 'below))
-         (edge-direction (or (cj/cardinal-to-edge-direction direction)
-                             'bottom))
-         (size (or cj/--vterm-toggle-last-size cj/vterm-toggle-window-height))
-         (size-key (if (memq direction '(right left))
-                       'window-width
-                     'window-height))
-         (body-tag (if (memq direction '(right left))
-                       'body-columns
-                     'body-lines))
-         (size-value (if (integerp size)
-                         (cons body-tag size)
-                       size))
-         (filtered (cl-remove-if
-                    (lambda (cell)
-                      (memq (car-safe cell)
-                            '(direction window-width window-height)))
-                    alist))
-         (effective (append
-                     (list (cons 'direction edge-direction)
-                           (cons size-key size-value))
-                     filtered)))
-    (display-buffer-in-direction buffer effective)))
+Delegates to `cj/window-toggle-display-saved' against the F12 state
+vars, falling back to `below' and `cj/vterm-toggle-window-height'."
+  (cj/window-toggle-display-saved
+   buffer alist
+   'cj/--vterm-toggle-last-direction 'below
+   'cj/--vterm-toggle-last-size cj/vterm-toggle-window-height))
 
 (defun cj/--vterm-toggle-display-rule-list ()
   "Return the `display-buffer-alist' entry list installed by F12.

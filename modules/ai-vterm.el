@@ -37,6 +37,7 @@
 (require 'cl-lib)
 (require 'seq)
 (require 'cj-window-geometry)
+(require 'cj-window-toggle)
 
 (declare-function vterm "vterm" (&optional buffer-name))
 (declare-function vterm-send-string "vterm" (string &optional paste-p))
@@ -235,15 +236,12 @@ cost of not auto-scaling if the frame itself resizes.")
 Sets `cj/--ai-vterm-last-direction' and `cj/--ai-vterm-last-size'
 so a subsequent F9 display can restore the user's chosen orientation
 and size.  Called at toggle-off (just before the window is torn
-down).  The default direction is 'right -- the module's side-panel
-default.
-
-Does nothing when WINDOW is not live."
-  (when (window-live-p window)
-    (let* ((dir (cj/window-direction window 'right))
-           (size (cj/window-body-size window dir)))
-      (setq cj/--ai-vterm-last-direction dir
-            cj/--ai-vterm-last-size size))))
+down).  The default direction is `right' -- the module's side-panel
+default.  Does nothing when WINDOW is not live."
+  (cj/window-toggle-capture-state
+   window 'right
+   'cj/--ai-vterm-last-direction
+   'cj/--ai-vterm-last-size))
 
 (defun cj/--ai-vterm-reuse-existing-claude (buffer _alist)
   "Display-buffer action: reuse any window in this frame already showing
@@ -268,56 +266,12 @@ project changes."
 (defun cj/--ai-vterm-display-saved (buffer alist)
   "Display-buffer action: split per saved direction and size.
 
-Reads `cj/--ai-vterm-last-direction' and `cj/--ai-vterm-last-size'
-(falling back to right and `cj/ai-vterm-window-width' when nil) and
-delegates to `display-buffer-in-direction' with an alist that carries
-the saved values.
-
-The captured cardinal direction (right/left/below/above) is mapped
-to its frame-edge variant (rightmost/leftmost/bottom/top) so the new
-claude always lands at the same frame edge it came from.  This
-means: the new window splits the frame's main window at the
-matching edge, not whatever window happens to be selected when F9
-fires.  Without this mapping, a toggle-off-on cycle in a 3+ window
-layout would put claude into a middle position (right of the
-selected window) rather than the edge it lived on before.  As a
-side benefit, claude always lands without a sibling on its
-captured-edge side, so its body-width and total-width match -- no
-divider chrome eating 1 col per toggle.
-
-An integer size (the captured absolute body-cols or body-lines) is
-wrapped in a `(body-columns . N)' / `(body-lines . N)' cons so
-`display-buffer-in-direction' sets the body width or body height
-exactly.  A float size (the customizable default fallback) passes
-through as a fraction of the new window's parent.
-
-Any direction/window-width/window-height entries in ALIST are
-stripped so the saved-state values control placement -- callers
-shouldn't specify direction or size in the rule when this action is
-used."
-  (let* ((direction (or cj/--ai-vterm-last-direction 'right))
-         (edge-direction (or (cj/cardinal-to-edge-direction direction)
-                             'rightmost))
-         (size (or cj/--ai-vterm-last-size cj/ai-vterm-window-width))
-         (size-key (if (memq direction '(right left))
-                       'window-width
-                     'window-height))
-         (body-tag (if (memq direction '(right left))
-                       'body-columns
-                     'body-lines))
-         (size-value (if (integerp size)
-                         (cons body-tag size)
-                       size))
-         (filtered (cl-remove-if
-                    (lambda (cell)
-                      (memq (car-safe cell)
-                            '(direction window-width window-height)))
-                    alist))
-         (effective (append
-                     (list (cons 'direction edge-direction)
-                           (cons size-key size-value))
-                     filtered)))
-    (display-buffer-in-direction buffer effective)))
+Delegates to `cj/window-toggle-display-saved' against the F9 state
+vars, falling back to `right' and `cj/ai-vterm-window-width'."
+  (cj/window-toggle-display-saved
+   buffer alist
+   'cj/--ai-vterm-last-direction 'right
+   'cj/--ai-vterm-last-size cj/ai-vterm-window-width))
 
 (defun cj/--ai-vterm-display-rule-list ()
   "Return the `display-buffer-alist' entry list installed by this module.
