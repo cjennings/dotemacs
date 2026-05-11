@@ -86,10 +86,10 @@ RESPONSES is an alist of (ARGS EXIT-CODE OUTPUT)."
       (when (buffer-live-p origin)
         (kill-buffer origin))))
 
-(ert-deftest test-vterm-tmux-history-copy-copies-region-and-returns ()
-  "Normal: M-w copies the region, kills history buffer, and restores origin."
-  (let ((origin (get-buffer-create "*test-vterm-history-return*"))
-        (kill-ring nil))
+(ert-deftest test-vterm-tmux-history-quit-returns-to-origin ()
+  "Normal: q / <escape> / C-g (cj/vterm-tmux-history-quit) kills the history
+buffer and restores the origin buffer, window, and point."
+  (let ((origin (get-buffer-create "*test-vterm-history-return*")))
     (unwind-protect
         (let ((history (get-buffer-create "*vterm tmux history: test*")))
           (with-current-buffer origin
@@ -105,26 +105,34 @@ RESPONSES is an alist of (ARGS EXIT-CODE OUTPUT)."
               (setq-local cj/vterm-tmux-history--origin-buffer origin)
               (setq-local cj/vterm-tmux-history--origin-window origin-window)
               (setq-local cj/vterm-tmux-history--origin-point (point-min))
-              (goto-char (point-min))
-              (set-mark (point))
-              (goto-char (point-at-eol 2))
-              (activate-mark)
-              (cj/vterm-tmux-history-copy-and-quit))
-            (should (equal (car kill-ring) "alpha\nbeta"))
+              (cj/vterm-tmux-history-quit))
             (should-not (buffer-live-p history))
             (should (eq (current-buffer) origin))
             (should (= (point) (point-min)))))
       (when (buffer-live-p origin)
         (kill-buffer origin)))))
 
+(ert-deftest test-vterm-tmux-history-mode-keymap ()
+  "Normal: in the history buffer M-w copies without quitting; q, <escape>,
+and C-g quit back to the vterm; RET is left unbound (no special exit)."
+  (should (eq (keymap-lookup cj/vterm-tmux-history-mode-map "M-w")
+              #'kill-ring-save))
+  (should (eq (keymap-lookup cj/vterm-tmux-history-mode-map "q")
+              #'cj/vterm-tmux-history-quit))
+  (should (eq (keymap-lookup cj/vterm-tmux-history-mode-map "<escape>")
+              #'cj/vterm-tmux-history-quit))
+  (should (eq (keymap-lookup cj/vterm-tmux-history-mode-map "C-g")
+              #'cj/vterm-tmux-history-quit))
+  (should-not (keymap-lookup cj/vterm-tmux-history-mode-map "RET")))
+
 (ert-deftest test-vterm-keymap-includes-history-and-copy-bindings ()
   "Normal: personal vterm map owns the high-level vterm UX commands."
   (should (member "C-;" vterm-keymap-exceptions))
   (should-not (eq (keymap-lookup cj/custom-keymap "X c") #'vterm-copy-mode))
-  (should (eq (keymap-lookup cj/custom-keymap "x C") #'cj/vterm-tmux-history))
+  (should (eq (keymap-lookup cj/custom-keymap "x h") #'cj/vterm-tmux-history))
   (should (eq (keymap-lookup cj/custom-keymap "x c") #'vterm-copy-mode))
   (should (equal (keymap-lookup vterm-mode-map "C-;") cj/custom-keymap))
-  (should (eq (keymap-lookup vterm-mode-map "C-; x C") #'cj/vterm-tmux-history))
+  (should (eq (keymap-lookup vterm-mode-map "C-; x h") #'cj/vterm-tmux-history))
   (should (eq (keymap-lookup vterm-mode-map "C-; x c") #'vterm-copy-mode))
   (should-not (keymap-lookup vterm-mode-map "C-c C-t")))
 
@@ -141,14 +149,19 @@ modern keyboards and was redundant."
   (let ((binding (keymap-lookup vterm-mode-map "<pause>")))
     (should-not (eq binding #'vterm-copy-mode))))
 
-(ert-deftest test-vterm-copy-mode-cancel-keys ()
-  "Normal: copy mode has explicit copy and no-copy exits."
+(ert-deftest test-vterm-copy-mode-keys ()
+  "Normal: copy mode mirrors the history buffer -- M-w copies without
+leaving; C-g, <escape>, and q leave without copying; RET is unbound."
+  (should (eq (keymap-lookup vterm-copy-mode-map "M-w")
+              #'kill-ring-save))
   (should (eq (keymap-lookup vterm-copy-mode-map "C-g")
               #'cj/vterm-copy-mode-cancel))
   (should (eq (keymap-lookup vterm-copy-mode-map "<escape>")
               #'cj/vterm-copy-mode-cancel))
-  (should (eq (keymap-lookup vterm-copy-mode-map "M-w")
-              #'vterm-copy-mode-done)))
+  (should (eq (keymap-lookup vterm-copy-mode-map "q")
+              #'cj/vterm-copy-mode-cancel))
+  (should-not (keymap-lookup vterm-copy-mode-map "RET"))
+  (should-not (keymap-lookup vterm-copy-mode-map "<return>")))
 
 (ert-deftest test-vterm-copy-mode-cancel-errors-outside-copy-mode ()
   "Error: `cj/vterm-copy-mode-cancel' refuses to run when not in copy mode."
