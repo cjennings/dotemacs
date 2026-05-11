@@ -395,7 +395,7 @@ it using shr (Simple HTML Renderer) in a dedicated buffer.
 The rendered email is displayed in a buffer named \"*Email: <filename>*\"
 in `special-mode' for easy navigation and dismissal with \\`q'.
 
-Bound to \\`C-; b e'.
+Bound to \\`C-; b E'.
 
 Signals an error if:
 - The buffer is not visiting a file
@@ -450,8 +450,9 @@ Signals an error if:
   "s" #'mark-whole-buffer
   "S" #'write-file ;; save as
   "g" #'revert-buffer
+  "e" #'eval-buffer
   "w" #'cj/view-buffer-in-eww
-  "e" #'cj/view-email-in-buffer
+  "E" #'cj/view-email-in-buffer
   "o" #'cj/xdg-open
   "O" #'cj/open-this-file-with)
 (when (boundp 'cj/custom-keymap)
@@ -479,8 +480,9 @@ Signals an error if:
     "C-; b s" "select whole buffer"
     "C-; b S" "save as"
     "C-; b g" "revert buffer"
+    "C-; b e" "eval buffer"
     "C-; b w" "view in EWW"
-    "C-; b e" "view email"
+    "C-; b E" "view email"
     "C-; b o" "open with default app"
     "C-; b O" "open with program..."))
 
