@@ -8,6 +8,8 @@
 ;;
 ;; Additional helper commands and key bindings:
 ;;  - C-; b k (=cj/kill-buffer-and-window=): delete this window and bury/kill its buffer.
+;;  - C-; b K (=cj/kill-other-window-buffer=): bury/kill the other window's buffer,
+;;    keeping that window and the split intact.
 ;;  - M-O (=cj/kill-other-window=): delete the next window and bury/kill its buffer.
 ;;  - M-M (=cj/kill-all-other-buffers-and-windows=): kill or bury all buffers except
 ;;    the current one and delete all other windows.
@@ -76,6 +78,20 @@ ARG is passed to `save-some-buffers'."
 	  (delete-window))
 	(cj/kill-buffer-or-bury-alive buf)))
 (keymap-global-set "M-S-o" #'cj/kill-other-window)
+
+(defun cj/kill-other-window-buffer ()
+  "Kill or bury the buffer shown in the other window, keeping that window
+and the split intact -- the window then shows whatever bury/kill surfaces
+next.  With more than two windows, acts on `next-window'.
+
+Sibling of `cj/kill-other-window', which deletes the other window; here the
+split is preserved.  Buffers in `cj/undead-buffer-list' are buried."
+  (interactive)
+  (if (one-window-p)
+	  (user-error "No other window")
+	(with-selected-window (next-window)
+	  (cj/kill-buffer-or-bury-alive (current-buffer)))))
+;; Keybinding in custom-buffer-file.el (C-; b K)
 
 (defun cj/kill-all-other-buffers-and-windows ()
   "Kill or bury all other buffers, then delete other windows."
