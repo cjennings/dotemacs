@@ -1,18 +1,18 @@
-;;; ai-vterm.el --- In-Emacs Claude launcher with vertical-split vterm -*- lexical-binding: t; -*-
+;;; ai-vterm.el --- In-Emacs AI-agent launcher with vertical-split vterm -*- lexical-binding: t; -*-
 
 ;; Author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
 
-;; Picks a Claude-template project (a dir under ~/.emacs.d, ~/code/*, or
+;; Picks an AI-agent project (a dir under ~/.emacs.d, ~/code/*, or
 ;; ~/projects/* containing .ai/protocols.org), opens or reuses a vterm
-;; buffer named "claude [<basename>]", sends Claude Code's startup
+;; buffer named "agent [<basename>]", sends the agent's startup
 ;; instruction to it, and routes the buffer to a right-side window via
 ;; display-buffer-alist.  Multiple projects produce multiple coexisting
 ;; buffers that share the same right-side slot; switching among them is a
 ;; buffer-switch, not a kill-and-recreate.
 ;;
-;; Each project's Claude runs inside a tmux session named
+;; Each project's agent runs inside a tmux session named
 ;; "<cj/ai-vterm-tmux-session-prefix><basename>" (default prefix "aiv-").
 ;; The prefix lets `tmux ls' be filtered to AI-vterm's own sessions, so
 ;; after an Emacs crash the project picker can match surviving sessions
@@ -23,21 +23,21 @@
 ;;
 ;; Three F-key entry points:
 ;;
-;; - F9   `cj/ai-vterm' -- DWIM dispatch.  If a claude buffer is
+;; - F9   `cj/ai-vterm' -- DWIM dispatch.  If an agent buffer is
 ;;        currently displayed in this frame, F9 quits its window
-;;        (toggle off).  Otherwise, if exactly one claude buffer is
+;;        (toggle off).  Otherwise, if exactly one agent buffer is
 ;;        alive, F9 re-displays it; if zero or two-plus are alive, F9
 ;;        falls through to the project picker.
 ;; - C-F9 `cj/ai-vterm-pick-project' -- always show the project
-;;        picker, even when a claude buffer is currently displayed.
+;;        picker, even when an agent buffer is currently displayed.
 ;;        Used when the user wants to start a new project session
 ;;        instead of toggling the current one.
-;; - M-F9 `cj/ai-vterm-pick-buffer' -- pick from the alive claude
-;;        buffers (no project candidates, no creation).  When a claude
+;; - M-F9 `cj/ai-vterm-pick-buffer' -- pick from the alive agent
+;;        buffers (no project candidates, no creation).  When an agent
 ;;        buffer is currently displayed, the picked buffer replaces it
 ;;        in that window so orientation and size are preserved.
 ;;
-;; Existing windmove (Shift-arrows) handles code <-> Claude focus
+;; Existing windmove (Shift-arrows) handles code <-> agent focus
 ;; toggling.  Buffer-move (C-M-arrows) handles side-swap.  Neither
 ;; needs anything new from this module.
 
@@ -53,12 +53,15 @@
 (declare-function vterm-send-return "vterm" ())
 
 (defgroup ai-vterm nil
-  "In-Emacs Claude launcher with vertical-split vterm."
+  "In-Emacs AI-agent launcher with vertical-split vterm."
   :group 'tools)
 
-(defcustom cj/ai-vterm-claude-command
+(defcustom cj/ai-vterm-agent-command
   "claude \"Read .ai/protocols.org and follow all instructions.\""
-  "Shell command sent to a fresh AI-vterm to start Claude Code."
+  "Shell command sent to a fresh AI-vterm to start the agent.
+
+The default invokes the Claude Code CLI; set it to whatever terminal
+agent you run (aider, an open-source LLM TUI, etc.)."
   :type 'string
   :group 'ai-vterm)
 
@@ -66,14 +69,14 @@
   "When non-nil, the generic vterm tmux-launch hook skips its auto-tmux step.
 
 ai-vterm dynamically binds this around `(vterm)' so the hook in
-eshell-vterm-config.el doesn't send a bare \"tmux\\n\" before the named
+vterm-config.el doesn't send a bare \"tmux\\n\" before the named
 session launch command runs.  The hook reads the variable via
 `bound-and-true-p' so loading order between the two modules doesn't
 matter.")
 
 (defcustom cj/ai-vterm-project-roots
   (list (expand-file-name "~/.emacs.d"))
-  "Directories that are themselves Claude-template projects.
+  "Directories that are themselves AI-agent projects.
 Each entry is included as a candidate when it exists and contains
 .ai/protocols.org.  Use this for single-project roots like ~/.emacs.d."
   :type '(repeat directory)
@@ -82,7 +85,7 @@ Each entry is included as a candidate when it exists and contains
 (defcustom cj/ai-vterm-container-roots
   (list (expand-file-name "~/code")
         (expand-file-name "~/projects"))
-  "Directories whose immediate children are scanned for Claude projects.
+  "Directories whose immediate children are scanned for agent projects.
 Each entry's child directories are included as candidates when they
 contain .ai/protocols.org.  Use this for container dirs like ~/code."
   :type '(repeat directory)
@@ -112,19 +115,19 @@ running program."
   :type 'string
   :group 'ai-vterm)
 
-(defconst cj/--ai-vterm-name-prefix "claude ["
+(defconst cj/--ai-vterm-name-prefix "agent ["
   "Buffer-name prefix shared by all AI-vterm buffers.
 
 Single source of truth for both buffer construction in
 `cj/--ai-vterm-buffer-name' and detection in
 `cj/--ai-vterm-buffer-p'.  The display-buffer-alist rule keys on the
-escaped form \"\\\\`claude \\\\[\" -- they must stay in sync.")
+escaped form \"\\\\`agent \\\\[\" -- they must stay in sync.")
 
 (defun cj/--ai-vterm-buffer-name (dir)
   "Return the AI-vterm buffer name for project directory DIR.
 
-The name pattern is \"claude [<basename>]\".  The display-buffer-alist
-rule keys on the literal prefix \"claude [\", so changing the format
+The name pattern is \"agent [<basename>]\".  The display-buffer-alist
+rule keys on the literal prefix \"agent [\", so changing the format
 breaks routing to the right-side window."
   (format "%s%s]"
           cj/--ai-vterm-name-prefix
@@ -134,13 +137,13 @@ breaks routing to the right-side window."
   "Return non-nil when BUFFER is an AI-vterm buffer.
 
 A buffer qualifies when its name starts with the literal prefix in
-`cj/--ai-vterm-name-prefix' (\"claude [\").  The check is anchored at
-the start so names like \"foo claude [bar]\" do not match."
+`cj/--ai-vterm-name-prefix' (\"agent [\").  The check is anchored at
+the start so names like \"foo agent [bar]\" do not match."
   (and (bufferp buffer)
        (buffer-live-p buffer)
        (string-prefix-p cj/--ai-vterm-name-prefix (buffer-name buffer))))
 
-(defun cj/--ai-vterm-claude-buffers ()
+(defun cj/--ai-vterm-agent-buffers ()
   "Return the live AI-vterm buffers in `buffer-list' order.
 
 Order matches `buffer-list' on the selected frame, which is most-
@@ -148,11 +151,11 @@ recently-selected first.  Non-AI-vterm buffers are filtered out via
 `cj/--ai-vterm-buffer-p'."
   (seq-filter #'cj/--ai-vterm-buffer-p (buffer-list)))
 
-(defun cj/--ai-vterm-displayed-claude-window (&optional frame)
+(defun cj/--ai-vterm-displayed-agent-window (&optional frame)
   "Return a window in FRAME currently displaying an AI-vterm buffer, or nil.
 
 FRAME defaults to the selected frame.  When more than one window in
-the frame shows a claude buffer, the first one in `window-list' order
+the frame shows an agent buffer, the first one in `window-list' order
 is returned.  The minibuffer is excluded from the search."
   (seq-find (lambda (w)
               (cj/--ai-vterm-buffer-p (window-buffer w)))
@@ -211,7 +214,7 @@ comes from `cj/--ai-vterm-tmux-session-name'; the first window is named
 window auto-names after its command and the two read distinctly.
 
 The shell command run on first creation is
-  <cj/ai-vterm-claude-command>; exec bash
+  <cj/ai-vterm-agent-command>; exec bash
 so the tmux window survives the AI command exiting -- the session stays
 alive with a bare bash prompt for recovery, and reattach works the same way."
   (let ((session (cj/--ai-vterm-tmux-session-name dir))
@@ -220,14 +223,14 @@ alive with a bare bash prompt for recovery, and reattach works the same way."
             (shell-quote-argument session)
             (shell-quote-argument cj/ai-vterm-tmux-window-name)
             (shell-quote-argument start-dir)
-            (concat cj/ai-vterm-claude-command "; exec bash"))))
+            (concat cj/ai-vterm-agent-command "; exec bash"))))
 
 (defun cj/--ai-vterm-has-marker-p (dir)
   "Return non-nil when DIR contains .ai/protocols.org."
   (file-exists-p (expand-file-name ".ai/protocols.org" dir)))
 
 (defun cj/--ai-vterm-candidates ()
-  "Return the list of Claude-template project paths.
+  "Return the list of AI-agent project paths.
 
 Each entry of `cj/ai-vterm-project-roots' contributes itself when it
 exists and contains .ai/protocols.org.  Each entry of
@@ -276,7 +279,7 @@ list."
 
 Used by `cj/--ai-vterm-display-saved' as the size fallback when
 `cj/--ai-vterm-last-size' is nil (i.e. the user hasn't yet toggled
-off a claude window in this session).  Applies to both width and
+off an agent window in this session).  Applies to both width and
 height axes -- the same fallback fraction is used for either default
 direction."
   :type 'number
@@ -285,7 +288,7 @@ direction."
 (defvar cj/--ai-vterm-last-direction nil
   "Last user-chosen direction for the AI-vterm display.
 
-Symbol: right, below, left, or above.  nil means no claude window
+Symbol: right, below, left, or above.  nil means no agent window
 has been toggled off yet this session, so the default direction
 applies.  Captured at toggle-off by `cj/--ai-vterm-capture-state'
 and consumed by `cj/--ai-vterm-display-saved'.")
@@ -301,9 +304,9 @@ fraction).
 Body size, not total size, because total-width includes the
 right-edge divider when the window has a right sibling but excludes
 it when the window is at the frame edge.  Capturing total-width
-from a rightmost claude (no divider) and replaying into a middle
+from a rightmost agent (no divider) and replaying into a middle
 position (with divider) leaves the body 1 column short -- visible
-as 1 col of the sibling buffer peeking through where claude should
+as 1 col of the sibling buffer peeking through where agent should
 have ended.  Body-width is divider-independent and matches what the
 user actually sees.
 
@@ -328,22 +331,22 @@ default.  Does nothing when WINDOW is not live."
    'cj/--ai-vterm-last-direction
    'cj/--ai-vterm-last-size))
 
-(defun cj/--ai-vterm-reuse-existing-claude (buffer _alist)
+(defun cj/--ai-vterm-reuse-existing-agent (buffer _alist)
   "Display-buffer action: reuse any window in this frame already showing
-a claude buffer.
+an agent buffer.
 
-Looks up `cj/--ai-vterm-displayed-claude-window' on the selected
-frame.  When a claude window exists, replaces its buffer with BUFFER
+Looks up `cj/--ai-vterm-displayed-agent-window' on the selected
+frame.  When an agent window exists, replaces its buffer with BUFFER
 and returns the window.  When none exists, returns nil so the next
 action in the chain runs.
 
 This is more specific than `display-buffer-use-some-window', which
 would happily steal any non-selected window (e.g. a code window
-above the claude split) when the user is focused in claude and
-swaps projects via C-F9.  The selective lookup here keeps non-claude
+above the agent split) when the user is focused in agent and
+swaps projects via C-F9.  The selective lookup here keeps non-agent
 windows undisturbed and preserves the user's split geometry across
 project changes."
-  (let ((win (cj/--ai-vterm-displayed-claude-window)))
+  (let ((win (cj/--ai-vterm-displayed-agent-window)))
     (when win
       (set-window-buffer win buffer)
       win)))
@@ -361,13 +364,13 @@ vars, falling back to `right' and `cj/ai-vterm-window-width'."
 (defun cj/--ai-vterm-display-rule-list ()
   "Return the `display-buffer-alist' entry list installed by this module.
 
-The single rule routes any buffer whose name starts with \"claude [\"
+The single rule routes any buffer whose name starts with \"agent [\"
 through three actions in order:
 
 1. `display-buffer-reuse-window' -- if the same buffer is already
    visible in any window, focus that one.
-2. `cj/--ai-vterm-reuse-existing-claude' -- otherwise, if any
-   window in this frame already shows a claude-prefixed buffer,
+2. `cj/--ai-vterm-reuse-existing-agent' -- otherwise, if any
+   window in this frame already shows an agent-prefixed buffer,
    swap its buffer for the new one (preserves geometry across
    project changes via C-F9).
 3. `cj/--ai-vterm-display-saved' -- otherwise, split per the saved
@@ -381,11 +384,11 @@ resulting window an ordinary window so all standard window commands
 work.
 
 `display-buffer-use-some-window' is also avoided -- it would happily
-steal any non-selected window (e.g. a code window above a claude
-split) when the user is focused in claude and switches projects."
-  '(("\\`claude \\["
+steal any non-selected window (e.g. a code window above an agent
+split) when the user is focused in agent and switches projects."
+  '(("\\`agent \\["
      (display-buffer-reuse-window
-      cj/--ai-vterm-reuse-existing-claude
+      cj/--ai-vterm-reuse-existing-agent
       cj/--ai-vterm-display-saved)
      (inhibit-same-window . t))))
 
@@ -402,7 +405,7 @@ project's tmux launch command (see `cj/--ai-vterm-launch-command') so
 the same project basename reattaches across Emacs restarts.
 
 The dynamic binding of `cj/--ai-vterm-suppress-tmux' around `(vterm)'
-suppresses the generic tmux-launch hook in eshell-vterm-config.el so
+suppresses the generic tmux-launch hook in vterm-config.el so
 it doesn't fire a bare \"tmux\\n\" before the project-named launch
 command runs.
 
@@ -435,7 +438,7 @@ Returns the buffer."
 (defun cj/--ai-vterm-format-candidate (path &optional sessions)
   "Return the display name for PATH in the AI-vterm project picker.
 
-Appends \" [running]\" when the project's claude buffer exists with
+Appends \" [running]\" when the project's agent buffer exists with
 a live process; otherwise \" [detached]\" when PATH's tmux session
 name is in SESSIONS (a session that survived an Emacs crash, no
 buffer yet); otherwise just the abbreviated path.  Path is
@@ -467,7 +470,7 @@ the metadata keeps the order ALIST was built in."
       (complete-with-action action alist string predicate))))
 
 (defun cj/--ai-vterm-pick-project ()
-  "Prompt for a Claude-template project; return its absolute path.
+  "Prompt for an AI-agent project; return its absolute path.
 
 Candidates come from `cj/--ai-vterm-candidates', ordered by
 `cj/--ai-vterm-sort-candidates' so projects with a live tmux session
@@ -478,7 +481,7 @@ alive) or \" [detached]\" (the tmux session survived, no buffer).
 Signals `user-error' when no candidates exist."
   (let ((candidates (cj/--ai-vterm-candidates)))
     (unless candidates
-      (user-error "No Claude-template projects found under %s"
+      (user-error "No AI-agent projects found under %s"
                   (mapconcat #'identity
                              (append cj/ai-vterm-project-roots
                                      cj/ai-vterm-container-roots)
@@ -500,23 +503,23 @@ Signals `user-error' when no candidates exist."
   "Compute the F9 (`cj/ai-vterm') action without performing it.
 
 Returns one of:
-- (toggle-off . WINDOW)        -- claude is displayed in WINDOW; quit it.
-- (redisplay-recent . BUFFER)  -- 1+ alive claude buffers; show MRU.
-- (pick-project)               -- zero alive claude buffers; prompt.
+- (toggle-off . WINDOW)        -- agent is displayed in WINDOW; quit it.
+- (redisplay-recent . BUFFER)  -- 1+ alive agent buffers; show MRU.
+- (pick-project)               -- zero alive agent buffers; prompt.
 
-When 2+ claude buffers are alive, F9 redisplays the most-recently-
+When 2+ agent buffers are alive, F9 redisplays the most-recently-
 selected one rather than opening the project picker.  C-F9 is the
 explicit \"start a different project\" surface; M-F9 is the explicit
-\"switch among existing claudes\" surface.  F9 keeps a single, simple
-job: toggle whichever claude was last in use.
+\"switch among existing agents\" surface.  F9 keeps a single, simple
+job: toggle whichever agent was last in use.
 
 A pure-decision helper so the dispatch logic is exercisable in tests
 without firing real `display-buffer' or `quit-window' calls."
-  (let ((win (cj/--ai-vterm-displayed-claude-window)))
+  (let ((win (cj/--ai-vterm-displayed-agent-window)))
     (cond
      (win (cons 'toggle-off win))
      (t
-      (let ((buffers (cj/--ai-vterm-claude-buffers)))
+      (let ((buffers (cj/--ai-vterm-agent-buffers)))
         (cond
          (buffers (cons 'redisplay-recent (car buffers)))
          (t '(pick-project))))))))
@@ -543,17 +546,17 @@ Each cell is (DISPLAY-NAME . BUFFER)."
        (list (cons (format "%s [shown]" (buffer-name shown)) shown))))))
 
 (defun cj/ai-vterm-pick-project (&optional arg)
-  "Pick a Claude-template project and open or reuse its vterm.
+  "Pick an AI-agent project and open or reuse its vterm.
 
 The project is picked from a filtered completing-read list of dirs
 that contain .ai/protocols.org.  The vterm buffer is named
-\"claude [<basename>]\" and is routed to a right-side window via
+\"agent [<basename>]\" and is routed to a right-side window via
 `display-buffer-alist'.  Multiple projects coexist as separate
 buffers; reinvoking on the same project reuses its existing vterm.
 
 With prefix ARG, display the buffer without selecting its window.
 
-Bound to C-F9 -- always shows the project picker, even when a claude
+Bound to C-F9 -- always shows the project picker, even when an agent
 buffer is currently displayed."
   (interactive "P")
   (let* ((dir (cj/--ai-vterm-pick-project))
@@ -581,10 +584,10 @@ Signals `user-error' when no AI-vterm buffers exist.
 
 Bound to M-F9."
   (interactive)
-  (let ((buffers (cj/--ai-vterm-claude-buffers)))
+  (let ((buffers (cj/--ai-vterm-agent-buffers)))
     (unless buffers
-      (user-error "No Claude buffers"))
-    (let* ((shown-win (cj/--ai-vterm-displayed-claude-window))
+      (user-error "No agent buffers"))
+    (let* ((shown-win (cj/--ai-vterm-displayed-agent-window))
            (shown-buf (and shown-win (window-buffer shown-win)))
            (alist (cj/--ai-vterm-pick-buffer-candidates buffers shown-buf))
            (chosen (completing-read "AI vterm buffer: " alist nil t))
@@ -624,11 +627,11 @@ AI-vterm buffers without touching the project list."
      ;; semantics are unconditional.  `quit-window' only deletes the
      ;; window when its `quit-restore' parameter records that it was
      ;; created for the buffer.  Buffer-move (C-M-arrows) leaves the
-     ;; claude buffer in a window without that history, so
+     ;; agent buffer in a window without that history, so
      ;; `quit-window' would just bury -- the window stays with some
      ;; other buffer in it, and the next toggle-on then creates a
      ;; fresh side window for a count of N+1.  Skip the deletion
-     ;; only when claude is the lone window in the frame (delete
+     ;; only when agent is the lone window in the frame (delete
      ;; would leave none); bury in that case.
      (if (one-window-p)
          (bury-buffer (window-buffer win))

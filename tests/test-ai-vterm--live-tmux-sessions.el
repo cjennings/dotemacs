@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; Lists the live tmux sessions that carry the AI-vterm prefix so the
-;; project picker can surface projects whose Claude session survived an
+;; project picker can surface projects whose agent session survived an
 ;; Emacs crash.  tmux being absent or no server running is a normal
 ;; "nothing to match" outcome, not an error -- the lister returns nil.
 

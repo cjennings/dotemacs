@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; The module installs a `display-buffer-alist' entry routing buffers
-;; whose names match "\\`claude \\[" to a right-side window.  These
+;; whose names match "\\`agent \\[" to a right-side window.  These
 ;; tests verify the rule reaches the right side and ignores buffers
 ;; that don't match the prefix.
 
@@ -26,13 +26,13 @@
      (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list)))
        ,@body)))
 
-(ert-deftest test-ai-vterm--display-rule-routes-claude-buffer-to-right ()
-  "Normal: a buffer named \"claude [foo]\" lands in a window to the right.
+(ert-deftest test-ai-vterm--display-rule-routes-agent-buffer-to-right ()
+  "Normal: a buffer named \"agent [foo]\" lands in a window to the right.
 
 The rule uses `display-buffer-in-direction' with `(direction . right)',
 which splits the current window so the new window's left edge sits at
 a positive column.  The buffer winds up in that new window."
-  (let ((name "claude [display-rule-test]"))
+  (let ((name "agent [display-rule-test]"))
     (test-ai-vterm--cleanup name)
     (unwind-protect
         (test-ai-vterm--with-clean-frame
@@ -43,7 +43,7 @@ a positive column.  The buffer winds up in that new window."
       (test-ai-vterm--cleanup name))))
 
 (ert-deftest test-ai-vterm--display-rule-skips-non-matching-buffer ()
-  "Boundary: a buffer not named \"claude [...]\" does not match the rule.
+  "Boundary: a buffer not named \"agent [...]\" does not match the rule.
 
 The rule's regex doesn't fire, so `display-buffer' falls back to the
 default action -- reuse the current window -- and no rightward split
@@ -59,8 +59,8 @@ occurs."
       (test-ai-vterm--cleanup name))))
 
 (ert-deftest test-ai-vterm--display-rule-prefix-not-substring ()
-  "Boundary: \"foo claude [bar]\" does not match -- the rule anchors at start."
-  (let ((name "foo claude [substring-test]"))
+  "Boundary: \"foo agent [bar]\" does not match -- the rule anchors at start."
+  (let ((name "foo agent [substring-test]"))
     (test-ai-vterm--cleanup name)
     (unwind-protect
         (test-ai-vterm--with-clean-frame
