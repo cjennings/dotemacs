@@ -10,8 +10,11 @@
 
 ;; Forward declarations for byte-compile and let-binding under lexical scope.
 ;; Real definitions are lsp-mode's defcustoms.
+(defvar eldoc-documentation-functions)
 (defvar lsp-file-watch-ignored-directories)
 (defvar lsp-enable-remote)
+
+(declare-function lsp-eldoc-function "lsp-mode")
 
 ;;;;; --------------------- File-Watch Ignore Patterns ---------------------
 ;; lsp-mode prompts when a workspace exceeds `lsp-file-watch-threshold' (1000)
@@ -45,6 +48,10 @@ Idempotent — `add-to-list' skips patterns already present."
   (dolist (pattern cj/lsp-file-watch-ignored-extras)
     (add-to-list 'lsp-file-watch-ignored-directories pattern)))
 
+(defun cj/lsp--disable-eldoc-hover ()
+  "Remove lsp-mode's Eldoc hover provider in the current buffer."
+  (remove-hook 'eldoc-documentation-functions #'lsp-eldoc-function t))
+
 ;;;;; ---------------------------- LSP Mode ---------------------------
 
 (use-package lsp-mode
@@ -65,7 +72,7 @@ Idempotent — `add-to-list' skips patterns already present."
   (setq lsp-enable-on-type-formatting nil)
   (setq lsp-signature-auto-activate nil)
   (setq lsp-signature-render-documentation nil)
-  (setq lsp-eldoc-hook nil)
+  (add-hook 'lsp-managed-mode-hook #'cj/lsp--disable-eldoc-hover)
   (setq lsp-modeline-code-actions-enable nil)
   (setq lsp-modeline-diagnostics-enable nil)
   (setq lsp-headerline-breadcrumb-enable nil)

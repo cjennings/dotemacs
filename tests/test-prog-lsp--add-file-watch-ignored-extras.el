@@ -16,6 +16,10 @@
 ;; activates lsp-mode.  In the test environment, this stub provides the value
 ;; cell `add-to-list' needs.
 (defvar lsp-file-watch-ignored-directories nil)
+(defvar eldoc-documentation-functions nil)
+
+(defun lsp-eldoc-function (&rest _args)
+  "Stub lsp-mode Eldoc function for tests.")
 
 (require 'prog-lsp)
 
@@ -82,6 +86,30 @@
   (let ((lsp-file-watch-ignored-directories "not-a-list"))
     (should-error (cj/lsp--add-file-watch-ignored-extras)
                   :type 'wrong-type-argument)))
+
+(ert-deftest test-prog-lsp--disable-eldoc-hover-removes-lsp-provider-locally ()
+  "Normal: remove lsp-mode's Eldoc provider from the buffer-local hook."
+  (with-temp-buffer
+    (setq-local eldoc-documentation-functions
+                '(lsp-eldoc-function eldoc-documentation-default))
+    (cj/lsp--disable-eldoc-hover)
+    (should-not (memq #'lsp-eldoc-function eldoc-documentation-functions))
+    (should (memq 'eldoc-documentation-default eldoc-documentation-functions))))
+
+(ert-deftest test-prog-lsp--disable-eldoc-hover-does-not-touch-default-value ()
+  "Boundary: disabling LSP Eldoc in one buffer leaves the default hook alone."
+  (let ((eldoc-documentation-functions '(lsp-eldoc-function)))
+    (with-temp-buffer
+      (setq-local eldoc-documentation-functions '(lsp-eldoc-function))
+      (cj/lsp--disable-eldoc-hover)
+      (should-not (memq #'lsp-eldoc-function eldoc-documentation-functions)))
+    (should (memq #'lsp-eldoc-function eldoc-documentation-functions))))
+
+(ert-deftest test-prog-lsp--module-no-obsolete-lsp-eldoc-hook-reference ()
+  "Regression: prog-lsp should not reference obsolete `lsp-eldoc-hook'."
+  (with-temp-buffer
+    (insert-file-contents (expand-file-name "modules/prog-lsp.el" user-emacs-directory))
+    (should-not (re-search-forward "\\_<lsp-eldoc-hook\\_>" nil t))))
 
 (provide 'test-prog-lsp--add-file-watch-ignored-extras)
 ;;; test-prog-lsp--add-file-watch-ignored-extras.el ends here
