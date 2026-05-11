@@ -23,7 +23,7 @@
 (ert-deftest test-ai-vterm--display-saved-uses-defaults-when-state-nil ()
   "Normal: nil state -> direction=rightmost, size=cj/ai-vterm-window-width.
 The cardinal `right' default maps to the frame-edge variant
-`rightmost' so claude lands at the frame's right edge regardless of
+`rightmost' so agent lands at the frame's right edge regardless of
 which window is selected."
   (let (received-buf received-alist
         (cj/--ai-vterm-last-direction nil)
@@ -100,13 +100,13 @@ which window is selected."
   "Regression: capture+delete+display in a 3-window layout preserves body-width.
 
 Reproduces Craig's `peeking ~1 col' report from 2026-05-09: when
-the new claude lands at a different position than the captured one
+the new agent lands at a different position than the captured one
 (rightmost vs middle), `window-total-width' differs by 1 because
 of the right divider.  `window-body-width' is divider-independent
 and is what the user actually sees, so the assertion locks down
 the body match."
-  (cj/test--kill-claude-buffers)
-  (let ((claude-name "claude [3win-roundtrip]")
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [3win-roundtrip]")
         (left-name "*test-3win-left*")
         (right-name "*test-3win-right*"))
     (unwind-protect
@@ -114,25 +114,25 @@ the body match."
           (delete-other-windows)
           (let ((left-buf (get-buffer-create left-name))
                 (right-buf (get-buffer-create right-name))
-                (claude-buf (get-buffer-create claude-name)))
-            ;; Build: left | claude | right.  Selected window starts as
+                (agent-buf (get-buffer-create agent-name)))
+            ;; Build: left | agent | right.  Selected window starts as
             ;; the only window.  Split right twice to get three windows.
             (set-window-buffer (selected-window) left-buf)
             (let* ((right-win (split-window (selected-window) nil 'right))
                    (_ (set-window-buffer right-win right-buf))
-                   (claude-win (split-window (selected-window) nil 'right)))
-              (set-window-buffer claude-win claude-buf)
-              ;; Capture claude's state.
-              (cj/--ai-vterm-capture-state claude-win)
+                   (agent-win (split-window (selected-window) nil 'right)))
+              (set-window-buffer agent-win agent-buf)
+              ;; Capture agent's state.
+              (cj/--ai-vterm-capture-state agent-win)
               (let ((captured-size cj/--ai-vterm-last-size)
                     (captured-direction cj/--ai-vterm-last-direction))
-                ;; Simulate quit-window on claude.
-                (delete-window claude-win)
+                ;; Simulate quit-window on agent.
+                (delete-window agent-win)
                 ;; Now route a fresh display through the actual rule.
                 (let* ((display-buffer-alist (cj/--ai-vterm-display-rule-list))
-                       (new-win (display-buffer claude-buf)))
+                       (new-win (display-buffer agent-buf)))
                   (should (windowp new-win))
-                  (should (eq (window-buffer new-win) claude-buf))
+                  (should (eq (window-buffer new-win) agent-buf))
                   ;; The captured size should be replayed exactly.
                   (should (= (window-body-width new-win)
                              captured-size))
@@ -140,12 +140,12 @@ the body match."
                   (should (eq captured-direction 'right)))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer right-name) (kill-buffer right-name))
-      (cj/test--kill-claude-buffers))))
+      (cj/test--kill-agent-buffers))))
 
-(ert-deftest test-ai-vterm--display-saved-3window-claude-rightmost-roundtrip ()
-  "Round-trip when claude is the rightmost window (no right divider)."
-  (cj/test--kill-claude-buffers)
-  (let ((claude-name "claude [rightmost]")
+(ert-deftest test-ai-vterm--display-saved-3window-agent-rightmost-roundtrip ()
+  "Round-trip when agent is the rightmost window (no right divider)."
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [rightmost]")
         (left-name "*test-rm-left*")
         (mid-name "*test-rm-mid*"))
     (unwind-protect
@@ -153,28 +153,28 @@ the body match."
           (delete-other-windows)
           (let ((left-buf (get-buffer-create left-name))
                 (mid-buf (get-buffer-create mid-name))
-                (claude-buf (get-buffer-create claude-name)))
-            ;; Build: left | mid | claude (claude rightmost)
+                (agent-buf (get-buffer-create agent-name)))
+            ;; Build: left | mid | agent (agent rightmost)
             (set-window-buffer (selected-window) left-buf)
             (let* ((mid-win (split-window (selected-window) nil 'right))
-                   (claude-win (split-window mid-win nil 'right)))
+                   (agent-win (split-window mid-win nil 'right)))
               (set-window-buffer mid-win mid-buf)
-              (set-window-buffer claude-win claude-buf)
-              (cj/--ai-vterm-capture-state claude-win)
+              (set-window-buffer agent-win agent-buf)
+              (cj/--ai-vterm-capture-state agent-win)
               (let ((captured-size cj/--ai-vterm-last-size))
-                (delete-window claude-win)
+                (delete-window agent-win)
                 (let* ((display-buffer-alist (cj/--ai-vterm-display-rule-list))
-                       (new-win (display-buffer claude-buf)))
+                       (new-win (display-buffer agent-buf)))
                   (should (windowp new-win))
                   (should (= (window-body-width new-win) captured-size)))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer mid-name) (kill-buffer mid-name))
-      (cj/test--kill-claude-buffers))))
+      (cj/test--kill-agent-buffers))))
 
 (ert-deftest test-ai-vterm--display-saved-3window-after-mouse-resize ()
   "Round-trip after a deliberate mid-window resize (mimics mouse-drag)."
-  (cj/test--kill-claude-buffers)
-  (let ((claude-name "claude [mouse-resize]")
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [mouse-resize]")
         (left-name "*test-mr-left*")
         (right-name "*test-mr-right*"))
     (unwind-protect
@@ -182,32 +182,32 @@ the body match."
           (delete-other-windows)
           (let ((left-buf (get-buffer-create left-name))
                 (right-buf (get-buffer-create right-name))
-                (claude-buf (get-buffer-create claude-name)))
+                (agent-buf (get-buffer-create agent-name)))
             (set-window-buffer (selected-window) left-buf)
             (let* ((right-win (split-window (selected-window) nil 'right))
-                   (claude-win (split-window (selected-window) nil 'right)))
+                   (agent-win (split-window (selected-window) nil 'right)))
               (set-window-buffer right-win right-buf)
-              (set-window-buffer claude-win claude-buf)
-              ;; Resize claude smaller to mimic the user dragging the
-              ;; divider.  Shrink claude by 5 cols, give to left.
+              (set-window-buffer agent-win agent-buf)
+              ;; Resize agent smaller to mimic the user dragging the
+              ;; divider.  Shrink agent by 5 cols, give to left.
               (let ((delta -5))
-                (when (window--resizable-p claude-win delta t)
-                  (window-resize claude-win delta t)))
-              (cj/--ai-vterm-capture-state claude-win)
+                (when (window--resizable-p agent-win delta t)
+                  (window-resize agent-win delta t)))
+              (cj/--ai-vterm-capture-state agent-win)
               (let ((captured-size cj/--ai-vterm-last-size))
-                (delete-window claude-win)
+                (delete-window agent-win)
                 (let* ((display-buffer-alist (cj/--ai-vterm-display-rule-list))
-                       (new-win (display-buffer claude-buf)))
+                       (new-win (display-buffer agent-buf)))
                   (should (windowp new-win))
                   (should (= (window-body-width new-win) captured-size)))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer right-name) (kill-buffer right-name))
-      (cj/test--kill-claude-buffers))))
+      (cj/test--kill-agent-buffers))))
 
 (ert-deftest test-ai-vterm--display-saved-roundtrip-via-cj/ai-vterm-toggle ()
   "End-to-end: toggle-off via dispatch then redisplay -- preserves size."
-  (cj/test--kill-claude-buffers)
-  (let ((claude-name "claude [toggle-roundtrip]")
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [toggle-roundtrip]")
         (left-name "*test-tr-left*")
         (right-name "*test-tr-right*"))
     (unwind-protect
@@ -215,33 +215,33 @@ the body match."
           (delete-other-windows)
           (let ((left-buf (get-buffer-create left-name))
                 (right-buf (get-buffer-create right-name))
-                (claude-buf (get-buffer-create claude-name)))
+                (agent-buf (get-buffer-create agent-name)))
             (set-window-buffer (selected-window) left-buf)
             (let* ((right-win (split-window (selected-window) nil 'right))
-                   (claude-win (split-window (selected-window) nil 'right)))
+                   (agent-win (split-window (selected-window) nil 'right)))
               (set-window-buffer right-win right-buf)
-              (set-window-buffer claude-win claude-buf)
+              (set-window-buffer agent-win agent-buf)
               (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list)))
-                ;; Focus claude (mimics `M-x cj/ai-vterm' from inside claude).
-                (select-window claude-win)
-                (let ((before-size (window-body-width claude-win)))
+                ;; Focus agent (mimics `M-x cj/ai-vterm' from inside agent).
+                (select-window agent-win)
+                (let ((before-size (window-body-width agent-win)))
                   ;; Toggle off via the actual command -- captures + quit-window.
                   (cj/ai-vterm)
-                  (should-not (cj/--ai-vterm-displayed-claude-window))
+                  (should-not (cj/--ai-vterm-displayed-agent-window))
                   ;; Toggle on -- single-buffer DWIM redisplay path.
                   (cj/ai-vterm)
-                  (let* ((new-win (cj/--ai-vterm-displayed-claude-window))
+                  (let* ((new-win (cj/--ai-vterm-displayed-agent-window))
                          (new-size (window-body-width new-win)))
                     (should (windowp new-win))
                     (should (= new-size before-size))))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer right-name) (kill-buffer right-name))
-      (cj/test--kill-claude-buffers))))
+      (cj/test--kill-agent-buffers))))
 
 (ert-deftest test-ai-vterm--display-saved-two-toggle-cycles-stable ()
   "Two consecutive toggle-off+toggle-on cycles -- no compounding error."
-  (cj/test--kill-claude-buffers)
-  (let ((claude-name "claude [two-cycle]")
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [two-cycle]")
         (left-name "*test-2c-left*")
         (right-name "*test-2c-right*"))
     (unwind-protect
@@ -249,86 +249,86 @@ the body match."
           (delete-other-windows)
           (let ((left-buf (get-buffer-create left-name))
                 (right-buf (get-buffer-create right-name))
-                (claude-buf (get-buffer-create claude-name)))
+                (agent-buf (get-buffer-create agent-name)))
             (set-window-buffer (selected-window) left-buf)
             (let* ((right-win (split-window (selected-window) nil 'right))
-                   (claude-win (split-window (selected-window) nil 'right)))
+                   (agent-win (split-window (selected-window) nil 'right)))
               (set-window-buffer right-win right-buf)
-              (set-window-buffer claude-win claude-buf)
+              (set-window-buffer agent-win agent-buf)
               (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list))
-                    (initial-size (window-body-width claude-win)))
-                (select-window claude-win)
+                    (initial-size (window-body-width agent-win)))
+                (select-window agent-win)
                 ;; Cycle 1
                 (cj/ai-vterm) ; off
                 (cj/ai-vterm) ; on
                 (let ((cycle1-size (window-body-width
-                                    (cj/--ai-vterm-displayed-claude-window))))
+                                    (cj/--ai-vterm-displayed-agent-window))))
                   (should (= cycle1-size initial-size))
-                  (select-window (cj/--ai-vterm-displayed-claude-window))
+                  (select-window (cj/--ai-vterm-displayed-agent-window))
                   ;; Cycle 2
                   (cj/ai-vterm) ; off
                   (cj/ai-vterm) ; on
                   (let ((cycle2-size (window-body-width
-                                      (cj/--ai-vterm-displayed-claude-window))))
+                                      (cj/--ai-vterm-displayed-agent-window))))
                     (should (= cycle2-size initial-size))))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer right-name) (kill-buffer right-name))
-      (cj/test--kill-claude-buffers))))
+      (cj/test--kill-agent-buffers))))
 
 (ert-deftest test-ai-vterm--display-saved-craig-c-x-3-roundtrip ()
   "Reproduces Craig's repro from 2026-05-09:
 launch -> F9 -> dashboard splits via C-x 3 -> toggle off -> toggle on.
-Expected: new claude lands at the same total-width it had before."
-  (cj/test--kill-claude-buffers)
-  (let ((claude-name "claude [c-x-3-repro]")
+Expected: new agent lands at the same total-width it had before."
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [c-x-3-repro]")
         (dash-name "*test-cx3-dashboard*"))
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
           (let ((dash-buf (get-buffer-create dash-name))
-                (claude-buf (get-buffer-create claude-name)))
+                (agent-buf (get-buffer-create agent-name)))
             (set-window-buffer (selected-window) dash-buf)
             (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list)))
-              ;; Step 1: F9 displays claude.  Layout: dashboard | claude.
-              (let ((claude-win-1 (display-buffer claude-buf)))
-                (should (windowp claude-win-1)))
+              ;; Step 1: F9 displays agent.  Layout: dashboard | agent.
+              (let ((agent-win-1 (display-buffer agent-buf)))
+                (should (windowp agent-win-1)))
               ;; Step 2: focus dashboard, C-x 3 (split-window-right).
               (let ((dash-win (get-buffer-window dash-buf)))
                 (select-window dash-win)
                 (split-window-right))
-              ;; Layout now: dashboard1 | dashboard2 | claude
-              ;; Capture claude's pre-toggle body width for later assertion.
-              (let* ((claude-win-2 (cj/--ai-vterm-displayed-claude-window))
-                     (size-before (window-body-width claude-win-2)))
-                ;; Step 3: F9 toggles claude off (selected is dashboard).
+              ;; Layout now: dashboard1 | dashboard2 | agent
+              ;; Capture agent's pre-toggle body width for later assertion.
+              (let* ((agent-win-2 (cj/--ai-vterm-displayed-agent-window))
+                     (size-before (window-body-width agent-win-2)))
+                ;; Step 3: F9 toggles agent off (selected is dashboard).
                 (cj/ai-vterm)
-                (should-not (cj/--ai-vterm-displayed-claude-window))
-                ;; Step 4: F9 toggles claude on -- redisplay-single path.
+                (should-not (cj/--ai-vterm-displayed-agent-window))
+                ;; Step 4: F9 toggles agent on -- redisplay-single path.
                 (cj/ai-vterm)
-                (let* ((claude-win-3 (cj/--ai-vterm-displayed-claude-window))
-                       (size-after (window-body-width claude-win-3)))
-                  (should (windowp claude-win-3))
+                (let* ((agent-win-3 (cj/--ai-vterm-displayed-agent-window))
+                       (size-after (window-body-width agent-win-3)))
+                  (should (windowp agent-win-3))
                   (should (= size-after size-before)))))))
       (when (get-buffer dash-name) (kill-buffer dash-name))
-      (cj/test--kill-claude-buffers))))
+      (cj/test--kill-agent-buffers))))
 
 (ert-deftest test-ai-vterm--toggle-after-buffer-move-no-extra-window ()
-  "Regression: toggle-off must remove claude's window even when buffer-move
+  "Regression: toggle-off must remove agent's window even when buffer-move
 has cleared its `quit-restore' parameter.
 
 Reproduces Craig's repro from 2026-05-09: 3 windows, user uses
-buffer-move (C-M-arrows) to relocate claude.  buffer-move swaps
+buffer-move (C-M-arrows) to relocate agent.  buffer-move swaps
 buffers between windows and leaves the receiving window with no
-record that it was created for the claude buffer.  `quit-window'
+record that it was created for the agent buffer.  `quit-window'
 respects that history and only buries -- the window stays with
 some other buffer in it.  The next toggle-on then doesn't recognize
-that window as a claude home and creates a fresh one alongside,
+that window as an agent home and creates a fresh one alongside,
 landing the user at N+1 windows instead of N.
 
 Assertion: after toggle-off+toggle-on, the window count is back to
 its pre-cycle value, regardless of `quit-restore' state."
-  (cj/test--kill-claude-buffers)
-  (let ((claude-name "claude [buffer-move-toggle]")
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [buffer-move-toggle]")
         (left-name "*test-bm-left*")
         (right-name "*test-bm-right*"))
     (unwind-protect
@@ -336,31 +336,31 @@ its pre-cycle value, regardless of `quit-restore' state."
           (delete-other-windows)
           (let ((left-buf (get-buffer-create left-name))
                 (right-buf (get-buffer-create right-name))
-                (claude-buf (get-buffer-create claude-name)))
+                (agent-buf (get-buffer-create agent-name)))
             (set-window-buffer (selected-window) left-buf)
             (let* ((right-win (split-window (selected-window) nil 'right))
-                   (claude-win (split-window (selected-window) nil 'right)))
+                   (agent-win (split-window (selected-window) nil 'right)))
               (set-window-buffer right-win right-buf)
-              (set-window-buffer claude-win claude-buf)
-              ;; Mimic buffer-move's effect: claude lives in this
+              (set-window-buffer agent-win agent-buf)
+              ;; Mimic buffer-move's effect: agent lives in this
               ;; window but quit-restore says nothing about it.
-              (set-window-parameter claude-win 'quit-restore nil)
+              (set-window-parameter agent-win 'quit-restore nil)
               (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list))
                     (window-count-before (count-windows)))
-                (select-window claude-win)
+                (select-window agent-win)
                 (cj/ai-vterm) ; off
                 (cj/ai-vterm) ; on
                 (should (= (count-windows) window-count-before))
-                ;; Claude must be displayed exactly once.
-                (let ((claude-windows
+                ;; Agent must be displayed exactly once.
+                (let ((agent-windows
                        (seq-filter
                         (lambda (w)
-                          (eq (window-buffer w) claude-buf))
+                          (eq (window-buffer w) agent-buf))
                         (window-list))))
-                  (should (= (length claude-windows) 1)))))))
+                  (should (= (length agent-windows) 1)))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer right-name) (kill-buffer right-name))
-      (cj/test--kill-claude-buffers))))
+      (cj/test--kill-agent-buffers))))
 
 (provide 'test-ai-vterm--display-saved)
 ;;; test-ai-vterm--display-saved.el ends here

@@ -19,7 +19,7 @@
 (require 'ai-vterm)
 
 (defun test-ai-vterm--make-marker (dir)
-  "Create DIR/.ai/protocols.org so DIR registers as a Claude project."
+  "Create DIR/.ai/protocols.org so DIR registers as an AI-agent project."
   (let ((ai-dir (expand-file-name ".ai" dir)))
     (make-directory ai-dir t)
     (write-region "" nil (expand-file-name "protocols.org" ai-dir))))

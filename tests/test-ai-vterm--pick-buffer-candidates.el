@@ -22,57 +22,57 @@
 
 (ert-deftest test-ai-vterm--pick-buffer-candidates-empty-buffers ()
   "Boundary: empty buffer list -> empty alist regardless of shown."
-  (cj/test--kill-claude-buffers)
+  (cj/test--kill-agent-buffers)
   (should (null (cj/--ai-vterm-pick-buffer-candidates nil nil)))
   (should (null (cj/--ai-vterm-pick-buffer-candidates nil 'sentinel))))
 
 (ert-deftest test-ai-vterm--pick-buffer-candidates-shown-nil ()
   "Normal: shown is nil -> straight alist in input order, no marker."
-  (cj/test--kill-claude-buffers)
-  (let ((b1 (get-buffer-create "claude [a]"))
-        (b2 (get-buffer-create "claude [b]")))
+  (cj/test--kill-agent-buffers)
+  (let ((b1 (get-buffer-create "agent [a]"))
+        (b2 (get-buffer-create "agent [b]")))
     (unwind-protect
         (let ((result (cj/--ai-vterm-pick-buffer-candidates (list b1 b2) nil)))
-          (should (equal result `(("claude [a]" . ,b1)
-                                   ("claude [b]" . ,b2)))))
+          (should (equal result `(("agent [a]" . ,b1)
+                                   ("agent [b]" . ,b2)))))
       (kill-buffer b1)
       (kill-buffer b2))))
 
 (ert-deftest test-ai-vterm--pick-buffer-candidates-shown-promotes-non-shown ()
   "Normal: shown buffer sorts last with [shown] suffix; others first."
-  (cj/test--kill-claude-buffers)
-  (let ((b1 (get-buffer-create "claude [a]"))
-        (b2 (get-buffer-create "claude [b]"))
-        (b3 (get-buffer-create "claude [c]")))
+  (cj/test--kill-agent-buffers)
+  (let ((b1 (get-buffer-create "agent [a]"))
+        (b2 (get-buffer-create "agent [b]"))
+        (b3 (get-buffer-create "agent [c]")))
     (unwind-protect
         (let ((result (cj/--ai-vterm-pick-buffer-candidates
                        (list b1 b2 b3) b1)))
           (should (equal result
-                         `(("claude [b]" . ,b2)
-                           ("claude [c]" . ,b3)
-                           ("claude [a] [shown]" . ,b1)))))
+                         `(("agent [b]" . ,b2)
+                           ("agent [c]" . ,b3)
+                           ("agent [a] [shown]" . ,b1)))))
       (kill-buffer b1)
       (kill-buffer b2)
       (kill-buffer b3))))
 
 (ert-deftest test-ai-vterm--pick-buffer-candidates-shown-only-buffer ()
   "Boundary: shown is the only entry -> single cell with [shown] marker."
-  (cj/test--kill-claude-buffers)
-  (let ((b1 (get-buffer-create "claude [a]")))
+  (cj/test--kill-agent-buffers)
+  (let ((b1 (get-buffer-create "agent [a]")))
     (unwind-protect
         (let ((result (cj/--ai-vterm-pick-buffer-candidates (list b1) b1)))
-          (should (equal result `(("claude [a] [shown]" . ,b1)))))
+          (should (equal result `(("agent [a] [shown]" . ,b1)))))
       (kill-buffer b1))))
 
 (ert-deftest test-ai-vterm--pick-buffer-candidates-shown-not-in-buffers ()
   "Boundary: stale shown buffer not in list -> all cells are non-shown."
-  (cj/test--kill-claude-buffers)
-  (let ((b1 (get-buffer-create "claude [a]"))
-        (b-stale (get-buffer-create "claude [stale]")))
+  (cj/test--kill-agent-buffers)
+  (let ((b1 (get-buffer-create "agent [a]"))
+        (b-stale (get-buffer-create "agent [stale]")))
     (unwind-protect
         (let ((result (cj/--ai-vterm-pick-buffer-candidates
                        (list b1) b-stale)))
-          (should (equal result `(("claude [a]" . ,b1)))))
+          (should (equal result `(("agent [a]" . ,b1)))))
       (kill-buffer b1)
       (kill-buffer b-stale))))
 

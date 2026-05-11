@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; Tests for the buffer-name transform.  Given an absolute project
-;; directory, the helper returns "claude [<basename>]".  The naming pattern
+;; directory, the helper returns "agent [<basename>]".  The naming pattern
 ;; is what the display-buffer-alist rule keys on, so a regression here
 ;; silently breaks routing to the right side-window.
 
@@ -14,29 +14,29 @@
 (require 'ai-vterm)
 
 (ert-deftest test-ai-vterm--buffer-name-normal-project ()
-  "Normal: a typical project path yields claude [<basename>]."
+  "Normal: a typical project path yields agent [<basename>]."
   (should (equal (cj/--ai-vterm-buffer-name "/home/cjennings/projects/foo")
-                 "claude [foo]")))
+                 "agent [foo]")))
 
 (ert-deftest test-ai-vterm--buffer-name-trailing-slash ()
   "Boundary: trailing slash collapses before basename extraction."
   (should (equal (cj/--ai-vterm-buffer-name "/home/cjennings/projects/foo/")
-                 "claude [foo]")))
+                 "agent [foo]")))
 
 (ert-deftest test-ai-vterm--buffer-name-dot-prefix-dir ()
   "Boundary: dot-prefix dirs (.emacs.d) preserve the dot in the basename."
   (should (equal (cj/--ai-vterm-buffer-name "/home/cjennings/.emacs.d")
-                 "claude [.emacs.d]")))
+                 "agent [.emacs.d]")))
 
 (ert-deftest test-ai-vterm--buffer-name-space-in-basename ()
   "Boundary: a space in the basename round-trips into the buffer name."
   (should (equal (cj/--ai-vterm-buffer-name "/tmp/my work")
-                 "claude [my work]")))
+                 "agent [my work]")))
 
 (ert-deftest test-ai-vterm--buffer-name-deeply-nested ()
   "Normal: only the last path component is used."
   (should (equal (cj/--ai-vterm-buffer-name "/a/b/c/d/e/leaf")
-                 "claude [leaf]")))
+                 "agent [leaf]")))
 
 (provide 'test-ai-vterm--buffer-name)
 ;;; test-ai-vterm--buffer-name.el ends here

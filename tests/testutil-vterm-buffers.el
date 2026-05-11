@@ -1,4 +1,4 @@
-;;; testutil-vterm-buffers.el --- Shared helpers for vterm/claude buffer tests -*- lexical-binding: t; -*-
+;;; testutil-vterm-buffers.el --- Shared helpers for vterm/agent buffer tests -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 ;; Cleanup helpers and a fake-vterm constructor used across the
@@ -15,9 +15,9 @@
     (when (string-prefix-p prefix (buffer-name b))
       (kill-buffer b))))
 
-(defun cj/test--kill-claude-buffers ()
-  "Kill all live buffers whose name matches the AI-vterm prefix \"claude [\"."
-  (cj/test--kill-buffers-matching-prefix "claude ["))
+(defun cj/test--kill-agent-buffers ()
+  "Kill all live buffers whose name matches the AI-vterm prefix \"agent [\"."
+  (cj/test--kill-buffers-matching-prefix "agent ["))
 
 (defun cj/test--kill-test-vterm-buffers ()
   "Kill all live buffers whose name starts with \"*test-vterm\"."

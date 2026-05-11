@@ -197,7 +197,7 @@ ai-vterm.el is loaded."
 
 ;; vterm-toggle is kept installed so `M-x vterm-toggle' still works,
 ;; but F12 below is bound to a custom toggle (`cj/vterm-toggle') that
-;; excludes claude-prefixed buffers from its candidate set.
+;; excludes agent-prefixed buffers from its candidate set.
 (use-package vterm-toggle
   :defer .5
   :config
@@ -207,11 +207,11 @@ ai-vterm.el is loaded."
 ;;
 ;; Replacement for `vterm-toggle' on F12.  Two reasons to roll our own:
 ;;
-;; 1. claude exclusion.  vterm-toggle picks the most-recently-selected
+;; 1. agent exclusion.  vterm-toggle picks the most-recently-selected
 ;;    vterm buffer as the toggle target.  When the user just used F9
-;;    on a claude vterm, the most-recent vterm IS claude, so F12 ends
-;;    up toggling claude -- which has its own F9 / C-F9 / M-F9 surface
-;;    in `ai-vterm.el' and shouldn't be affected by F12.  The claude
+;;    on an agent vterm, the most-recent vterm IS agent, so F12 ends
+;;    up toggling agent -- which has its own F9 / C-F9 / M-F9 surface
+;;    in `ai-vterm.el' and shouldn't be affected by F12.  The agent
 ;;    exclusion lives in the candidate filter (`cj/--vterm-toggle-buffer-p').
 ;;
 ;; 2. user-modified geometry.  vterm-toggle's display rule had a
@@ -245,7 +245,7 @@ nil means fall back to `cj/vterm-toggle-window-height' as a fraction.")
 
 Qualifies when BUFFER is alive, has `vterm-mode' (or its name starts
 with the vterm-toggle prefix), AND its name does NOT start with the
-claude prefix used by ai-vterm.el.  The claude exclusion keeps F12
+agent prefix used by ai-vterm.el.  The agent exclusion keeps F12
 from grabbing buffers that ai-vterm.el's F9 dispatch owns."
   (and (bufferp buffer)
        (buffer-live-p buffer)
@@ -254,7 +254,7 @@ from grabbing buffers that ai-vterm.el's F9 dispatch owns."
                   (string-prefix-p (or (bound-and-true-p vterm-buffer-name)
                                        "*vterm*")
                                    (buffer-name buffer)))
-              (not (string-prefix-p "claude [" (buffer-name buffer)))))))
+              (not (string-prefix-p "agent [" (buffer-name buffer)))))))
 
 (defun cj/--vterm-toggle-buffers ()
   "Return live F12-managed vterm buffers in `buffer-list' (MRU) order."
@@ -292,7 +292,7 @@ vars, falling back to `below' and `cj/vterm-toggle-window-height'."
 
 Routes any vterm buffer that satisfies `cj/--vterm-toggle-buffer-p'
 through two actions: reuse-window (for visible vterm windows) then
-the saved-geometry display action.  Excludes claude buffers via the
+the saved-geometry display action.  Excludes agent buffers via the
 predicate -- those are handled by ai-vterm.el's display rule."
   '(((lambda (buffer-or-name _)
        (cj/--vterm-toggle-buffer-p (get-buffer buffer-or-name)))
@@ -322,7 +322,7 @@ Returns one of:
 (declare-function vterm "vterm" (&optional buffer-name))
 
 (defun cj/vterm-toggle ()
-  "Toggle a normal (non-claude) vterm buffer.
+  "Toggle a normal (non-agent) vterm buffer.
 
 - If an F12-managed vterm is currently displayed in this frame,
   capture its geometry and delete its window (toggle off).  Falls
@@ -333,7 +333,7 @@ Returns one of:
 - Otherwise, create a new vterm via `(vterm)' which routes through
   the same display action.
 
-Excludes claude-prefixed vterm buffers; those have their own F9 /
+Excludes agent-prefixed vterm buffers; those have their own F9 /
 C-F9 / M-F9 dispatch via `cj/ai-vterm'."
   (interactive)
   (pcase (cj/--vterm-toggle-dispatch)

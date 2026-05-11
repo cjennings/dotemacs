@@ -164,13 +164,13 @@ modern keyboards and was redundant."
   "Normal: an AI-vterm-named buffer still resolves by process TTY.
 
 The copy path belongs to `vterm-mode', not to `*vterm*'-named buffers.
-A buffer named like `claude [repo]' (ai-vterm.el's naming) is a
+A buffer named like `agent [repo]' (ai-vterm.el's naming) is a
 `vterm-mode' buffer and must inherit tmux history copy.  The pane lookup
 keys off the live process TTY, never the buffer name -- so the
 AI-vterm name neither helps nor blocks resolution."
-  (let ((claude (cj/test--make-fake-vterm-buffer "claude [emacs.d]")))
+  (let ((agent (cj/test--make-fake-vterm-buffer "agent [emacs.d]")))
     (unwind-protect
-        (with-current-buffer claude
+        (with-current-buffer agent
           (cl-letf (((symbol-function 'get-buffer-process)
                      (lambda (_buffer) 'fake-process))
                     ((symbol-function 'process-tty-name)
@@ -179,8 +179,8 @@ AI-vterm name neither helps nor blocks resolution."
                 '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
                    "/dev/pts/1\t%1\n/dev/pts/8\t%8\n"))
               (should (equal (cj/vterm--current-tmux-pane-id) "%8")))))
-      (when (buffer-live-p claude)
-        (kill-buffer claude)))))
+      (when (buffer-live-p agent)
+        (kill-buffer agent)))))
 
 (provide 'test-vterm-tmux-history)
 ;;; test-vterm-tmux-history.el ends here

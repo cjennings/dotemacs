@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; The tmux session name is `cj/ai-vterm-tmux-session-prefix' followed by
-;; the project's basename, so reopening Claude on the same project (e.g.
+;; the project's basename, so reopening the agent on the same project (e.g.
 ;; after an Emacs crash) reattaches to the same tmux session rather than
 ;; spawning a new one -- and the prefix lets `tmux ls' output be filtered
 ;; down to AI-vterm's own sessions.  Whitespace in the basename becomes
