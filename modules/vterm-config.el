@@ -8,12 +8,15 @@
 ;; just send them to the process that is currently running. So, C-a may be
 ;; beginning-of-the-line in a shell, or the prefix key in a screen session.
 
-;; If you enter vterm-copy-mode with C-; V c or <pause>, the buffer will become
-;; a normal Emacs buffer. You can then use your navigation keys, select
-;; rectangles, etc.  When you press RET or M-w, the region will be copied and
-;; you'll be back in a working terminal session.  C-; V C captures the current
-;; tmux pane history into a temporary Emacs buffer where M-w copies the selected
-;; region and returns to the vterm.
+;; Two ways to lift text out of a vterm, both with the same key story:
+;;   - C-; x c  enters vterm-copy-mode (the buffer becomes a normal Emacs
+;;     buffer: navigation keys, rectangles, etc.).
+;;   - C-; x h  captures the current tmux pane's full history into a temporary
+;;     Emacs buffer.
+;; In both, M-w copies the active region and stays open, so several pieces can
+;; be grabbed in a row; C-g, <escape>, or q leaves (closing the history buffer
+;; / resuming the live terminal) without copying.  RET is left unbound -- no
+;; special "copy and exit" shortcut.
 
 ;; ANSI-TERM & TERM
 ;; I haven't yet found a need for term or ansi-term in my workflows, so I leave
@@ -80,8 +83,12 @@ Signal `user-error' when tmux exits with a non-zero status."
     (cj/vterm--tmux-pane-id-for-tty tty)))
 
 (defvar-keymap cj/vterm-tmux-history-mode-map
-  :doc "Keymap for `cj/vterm-tmux-history-mode'."
-  "M-w" #'cj/vterm-tmux-history-copy-and-quit
+  :doc "Keymap for `cj/vterm-tmux-history-mode'.
+M-w copies the active region without leaving the buffer; C-g, <escape>, or q
+returns to the vterm without copying.  RET is left unbound."
+  "M-w" #'kill-ring-save
+  "C-g" #'cj/vterm-tmux-history-quit
+  "<escape>" #'cj/vterm-tmux-history-quit
   "q" #'cj/vterm-tmux-history-quit)
 
 (define-derived-mode cj/vterm-tmux-history-mode special-mode "Tmux History"
@@ -108,24 +115,13 @@ Signal `user-error' when tmux exits with a non-zero status."
     (when (buffer-live-p history-buffer)
       (kill-buffer history-buffer))))
 
-(defun cj/vterm-tmux-history-copy-and-quit ()
-  "Copy active region from tmux history, then quit back to the origin."
-  (interactive)
-  (unless (use-region-p)
-    (user-error "No active region"))
-  (let ((text (buffer-substring-no-properties
-               (region-beginning)
-               (region-end))))
-    (kill-new text)
-    (deactivate-mark)
-    (cj/vterm-tmux-history-quit)))
-
 (defun cj/vterm-tmux-history ()
   "Open full tmux pane history in a temporary Emacs buffer.
 
 The history buffer uses normal Emacs navigation and selection.  `M-w'
-copies the active region, closes the history buffer, and returns point
-to the vterm buffer that launched it."
+copies the active region and stays open, so several pieces can be
+copied in a row; `q', `<escape>', or `C-g' returns point to the vterm
+buffer that launched it."
   (interactive)
   (let* ((origin-buffer (current-buffer))
          (origin-window (selected-window))
@@ -353,8 +349,8 @@ C-F9 / M-F9 dispatch via `cj/ai-vterm'."
 
 (keymap-global-set "<f12>" #'cj/vterm-toggle)
 
-(keymap-set cj/vterm-map "C" #'cj/vterm-tmux-history)
 (keymap-set cj/vterm-map "c" #'vterm-copy-mode)
+(keymap-set cj/vterm-map "h" #'cj/vterm-tmux-history)
 (keymap-set cj/vterm-map "l" #'vterm-clear-scrollback)
 (keymap-set cj/vterm-map "N" #'vterm)
 (keymap-set cj/vterm-map "n" #'vterm-next-prompt)
@@ -370,11 +366,20 @@ C-F9 / M-F9 dispatch via `cj/ai-vterm'."
     (keymap-set vterm-mode-map "C-;" cj/custom-keymap)))
 
 (defun cj/vterm-install-copy-mode-cancel-keys ()
-  "Install copy and cancel keys in `vterm-copy-mode-map'."
+  "Install copy and exit keys in `vterm-copy-mode-map'.
+
+`M-w' copies the active region without leaving copy-mode, so several
+pieces can be copied in a row.  `C-g', `<escape>', and `q' all leave
+copy-mode without copying.  vterm's default `RET' / `<return>' ->
+`vterm-copy-mode-done' bindings are removed so RET isn't a special
+\"copy and exit\" -- matching the tmux history buffer."
   (when (boundp 'vterm-copy-mode-map)
+    (keymap-set vterm-copy-mode-map "M-w" #'kill-ring-save)
     (keymap-set vterm-copy-mode-map "C-g" #'cj/vterm-copy-mode-cancel)
     (keymap-set vterm-copy-mode-map "<escape>" #'cj/vterm-copy-mode-cancel)
-    (keymap-set vterm-copy-mode-map "M-w" #'vterm-copy-mode-done)))
+    (keymap-set vterm-copy-mode-map "q" #'cj/vterm-copy-mode-cancel)
+    (keymap-unset vterm-copy-mode-map "RET" t)
+    (keymap-unset vterm-copy-mode-map "<return>" t)))
 
 (cj/vterm-install-prefix-key)
 (cj/vterm-install-copy-mode-cancel-keys)
@@ -404,8 +409,8 @@ cursor-visibility tracking resumes."
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; x" "vterm menu"
-    "C-; x C" "tmux scrollback copy"
     "C-; x c" "vterm copy mode"
+    "C-; x h" "tmux scrollback history"
     "C-; x l" "clear vterm scrollback"
     "C-; x N" "new vterm"
     "C-; x n" "next prompt"
