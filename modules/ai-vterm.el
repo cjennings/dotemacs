@@ -101,6 +101,17 @@ default \"aiv-\" is short for \"ai-vterm\"."
   :type 'string
   :group 'ai-vterm)
 
+(defcustom cj/ai-vterm-tmux-window-name "ai"
+  "Name given to the first tmux window in an AI-vterm session.
+
+Passed as `tmux new-session -n', so the window running the AI tool
+shows up as this name in `tmux ls' / the status line.  A later
+window opened by hand (e.g. a shell) auto-names after its command,
+so the two read distinctly instead of both showing up as the
+running program."
+  :type 'string
+  :group 'ai-vterm)
+
 (defconst cj/--ai-vterm-name-prefix "claude ["
   "Buffer-name prefix shared by all AI-vterm buffers.
 
@@ -191,20 +202,23 @@ looked up in SESSIONS, so the lossy whitespace->hyphen transform in
   (and (member (cj/--ai-vterm-tmux-session-name dir) sessions) t))
 
 (defun cj/--ai-vterm-launch-command (dir)
-  "Return the shell command line that runs Claude in a project tmux session.
+  "Return the shell command line that runs the AI tool in a project tmux session.
 
 Uses `tmux new-session -A' so a second F9 on the same project reattaches
 to the running session instead of spawning a new one.  The session name
-is the project's basename via `cj/--ai-vterm-tmux-session-name'.
+comes from `cj/--ai-vterm-tmux-session-name'; the first window is named
+`cj/ai-vterm-tmux-window-name' (default \"ai\") so a later hand-opened
+window auto-names after its command and the two read distinctly.
 
 The shell command run on first creation is
-  <claude-command>; exec bash
-so the tmux window survives Claude exiting -- the session stays alive
-with a bare bash prompt for recovery, and reattach works the same way."
+  <cj/ai-vterm-claude-command>; exec bash
+so the tmux window survives the AI command exiting -- the session stays
+alive with a bare bash prompt for recovery, and reattach works the same way."
   (let ((session (cj/--ai-vterm-tmux-session-name dir))
         (start-dir (expand-file-name dir)))
-    (format "tmux new-session -A -s %s -c %s '%s'"
+    (format "tmux new-session -A -s %s -n %s -c %s '%s'"
             (shell-quote-argument session)
+            (shell-quote-argument cj/ai-vterm-tmux-window-name)
             (shell-quote-argument start-dir)
             (concat cj/ai-vterm-claude-command "; exec bash"))))
 
