@@ -96,17 +96,34 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 (defvar cj/-cursor-last-buffer nil
   "Last buffer name where cursor color was applied.")
 
+(defun cj/--buffer-cursor-state ()
+  "Return the buffer-state symbol used to choose the cursor color.
+
+One of `read-only', `overwrite', `modified', or `unmodified' — keys
+of `cj/buffer-status-colors'.
+
+A live vterm buffer (in `vterm-mode' but NOT `vterm-copy-mode')
+reports `unmodified' even though `vterm-mode' sets `buffer-read-only':
+keystrokes there go to the terminal process, so from the user's side
+the buffer is writeable, and the read-only (orange) cursor would be
+misleading.  `vterm-copy-mode' is the exception — there the buffer
+really is a read-only Emacs buffer the user navigates, so it falls
+through to `read-only' and keeps the orange cursor."
+  (cond
+   ((and (eq major-mode 'vterm-mode)
+		 (not (bound-and-true-p vterm-copy-mode)))
+	'unmodified)
+   (buffer-read-only       'read-only)
+   (overwrite-mode         'overwrite)
+   ((buffer-modified-p)    'modified)
+   (t                      'unmodified)))
+
 (defun cj/set-cursor-color-according-to-mode ()
   "Change cursor color according to buffer state (modified, read-only, overwrite).
 Only updates for real user buffers, not internal/temporary buffers."
   ;; Only update cursor for real buffers (not internal ones like *temp*, *Echo Area*, etc.)
   (unless (string-prefix-p " " (buffer-name))  ; Internal buffers start with space
-	(let* ((state (cond
-				   (buffer-read-only       'read-only)
-				   (overwrite-mode         'overwrite)
-				   ((buffer-modified-p)    'modified)
-				   (t                      'unmodified)))
-		   (color (alist-get state cj/buffer-status-colors)))
+	(let ((color (alist-get (cj/--buffer-cursor-state) cj/buffer-status-colors)))
 	  ;; Only skip if BOTH color AND buffer are the same (optimization)
 	  ;; This allows color to update when buffer state changes
 	  (unless (and (string= color cj/-cursor-last-color)
