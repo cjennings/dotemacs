@@ -31,6 +31,22 @@
              " -s aiv-foo "
              (cj/--ai-vterm-launch-command "/code/foo")))))
 
+(ert-deftest test-ai-vterm--launch-command-names-window ()
+  "Normal: `-n <window-name>' so the claude window is named distinctly."
+  (let ((cj/ai-vterm-claude-command "claude")
+        (cj/ai-vterm-tmux-window-name "ai"))
+    (should (string-match-p
+             " -n ai "
+             (cj/--ai-vterm-launch-command "/code/foo")))))
+
+(ert-deftest test-ai-vterm--launch-command-honors-custom-window-name ()
+  "Boundary: a non-default window name is what `-n' gets."
+  (let ((cj/ai-vterm-claude-command "claude")
+        (cj/ai-vterm-tmux-window-name "claude"))
+    (should (string-match-p
+             " -n claude "
+             (cj/--ai-vterm-launch-command "/code/foo")))))
+
 (ert-deftest test-ai-vterm--launch-command-includes-start-directory ()
   "Normal: `-c <dir>' so the new session's first window starts in DIR."
   (let ((cj/ai-vterm-claude-command "claude"))
