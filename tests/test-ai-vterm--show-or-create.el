@@ -57,8 +57,10 @@ VARS is a plist of capture variable names: :calls, :strings, :returns,
     (kill-buffer name)))
 
 (ert-deftest test-ai-vterm--show-or-create-creates-when-buffer-missing ()
-  "Normal: no existing buffer -> vterm called once, launch cmd sent."
-  (let ((name "agent [normal-create-test]"))
+  "Normal: no existing buffer -> vterm called once, launch cmd sent, the
+project recorded at the front of the MRU list."
+  (let ((name "agent [normal-create-test]")
+        (cj/--ai-vterm-mru nil))
     (test-ai-vterm--cleanup name)
     (unwind-protect
         (test-ai-vterm--with-mock-vterm (:calls calls :strings strings
@@ -68,7 +70,8 @@ VARS is a plist of capture variable names: :calls, :strings, :returns,
           (should (equal strings
                          (list (cj/--ai-vterm-launch-command "/tmp/some-project"))))
           (should (= returns 1))
-          (should (equal ddir "/tmp/some-project")))
+          (should (equal ddir "/tmp/some-project"))
+          (should (equal (car cj/--ai-vterm-mru) "/tmp/some-project")))
       (test-ai-vterm--cleanup name))))
 
 (ert-deftest test-ai-vterm--show-or-create-displays-existing-when-process-live ()
