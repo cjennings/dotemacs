@@ -230,7 +230,9 @@ COVERAGE_FILE = $(COVERAGE_DIR)/simplecov.json
 # Test files that can't coexist with undercover's instrumentation
 # (e.g. test-all-comp-errors byte-compiles modules, which fails on
 # instrumented sources).  Excluded from `make coverage' only.
-COVERAGE_EXCLUDE = $(TEST_DIR)/test-all-comp-errors.el
+COVERAGE_EXCLUDE = \
+	$(TEST_DIR)/test-all-comp-errors.el \
+	$(TEST_DIR)/test-lorem-optimum-benchmark.el
 COVERAGE_TESTS = $(filter-out $(COVERAGE_EXCLUDE),$(UNIT_TESTS))
 
 coverage: coverage-clean $(COVERAGE_DIR)
