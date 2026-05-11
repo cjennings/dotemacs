@@ -247,5 +247,11 @@
       (should (> (length result) 0))
       (should (string-match-p "^[[:upper:]]" result)))))
 
+(ert-deftest test-title-generation-empty-chain-returns-empty-string ()
+  "Boundary: an empty Markov chain (`cj/markov-random-key' returns nil) yields
+an empty string, not an error."
+  (let ((cj/lipsum-chain (cj/markov-chain-create)))
+    (should (equal "" (cj/lipsum-title)))))
+
 (provide 'test-lorem-optimum)
 ;;; test-lorem-optimum.el ends here
