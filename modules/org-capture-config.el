@@ -14,6 +14,112 @@
 
 ;;; Code:
 
+(defvar org-capture-plist)
+(defvar org-capture-templates)
+(defvar org-complex-heading-regexp-format)
+
+(declare-function org-at-encrypted-entry-p "org-crypt")
+(declare-function org-at-heading-p "org")
+(declare-function org-back-to-heading "org")
+(declare-function org-capture-expand-file "org-capture")
+(declare-function org-capture-get "org-capture")
+(declare-function org-capture-put "org-capture")
+(declare-function org-capture-put-target-region-and-position "org-capture")
+(declare-function org-capture-target-buffer "org-capture")
+(declare-function org-display-warning "org")
+(declare-function org-get-heading "org")
+(declare-function org-parse-time-string "org")
+(declare-function pdf-view-active-region-text "pdf-view")
+
+(defvar cj/org-capture--file-headline-target-cache (make-hash-table :test #'equal)
+  "Cache Org capture file+headline target markers by expanded file and headline.")
+
+(defun cj/org-capture-clear-target-cache ()
+  "Clear cached Org capture target markers."
+  (interactive)
+  (clrhash cj/org-capture--file-headline-target-cache)
+  (message "Cleared org-capture target cache"))
+
+(defun cj/org-capture--file-headline-target-p (target)
+  "Return non-nil when TARGET is an Org capture file+headline target."
+  (pcase target
+    (`(file+headline ,_path ,(and _headline (pred stringp))) t)
+    (_ nil)))
+
+(defun cj/org-capture--headline-marker-valid-p (marker headline)
+  "Return non-nil when MARKER still points at HEADLINE."
+  (and (markerp marker)
+       (marker-buffer marker)
+       (buffer-live-p (marker-buffer marker))
+       (with-current-buffer (marker-buffer marker)
+         (save-excursion
+           (goto-char marker)
+           (and (derived-mode-p 'org-mode)
+                (org-at-heading-p)
+                (string= (org-get-heading t t t t) headline))))))
+
+(defun cj/org-capture--file-headline-cache-key (path headline)
+  "Return the cache key for PATH and HEADLINE."
+  (list (org-capture-expand-file path) headline))
+
+(defun cj/org-capture--goto-file-headline (path headline)
+  "Move to capture target PATH and HEADLINE, using a cached marker when valid.
+This implements Org's `file+headline' target positioning behavior, but avoids
+re-scanning large target files after the first successful lookup."
+  (set-buffer (org-capture-target-buffer path))
+  ;; Org expects the target file to be in Org mode, otherwise it throws an
+  ;; error.  Match Org's stock file+headline behavior here.
+  (unless (derived-mode-p 'org-mode)
+    (org-display-warning
+     (format "Capture requirement: switching buffer %S to Org mode"
+             (current-buffer)))
+    (org-mode))
+  (org-capture-put-target-region-and-position)
+  (widen)
+  (let* ((key (list (expand-file-name (buffer-file-name)) headline))
+         (marker (gethash key cj/org-capture--file-headline-target-cache)))
+    (if (cj/org-capture--headline-marker-valid-p marker headline)
+        (goto-char marker)
+      (goto-char (point-min))
+      (if (re-search-forward (format org-complex-heading-regexp-format
+                                      (regexp-quote headline))
+                              nil t)
+          (forward-line 0)
+        (goto-char (point-max))
+        (unless (bolp) (insert "\n"))
+        (insert "* " headline "\n")
+        (forward-line -1))
+      (puthash key (copy-marker (point))
+               cj/org-capture--file-headline-target-cache))))
+
+(defun cj/org-capture--set-file-headline-target-location (target)
+  "Set Org capture target location for file+headline TARGET."
+  (pcase target
+    (`(file+headline ,path ,headline)
+     (let ((target-entry-p t))
+       (save-excursion
+         (cj/org-capture--goto-file-headline path headline)
+         (org-capture-put :buffer (current-buffer)
+                          :pos (point)
+                          :target-entry-p target-entry-p
+                          :decrypted
+                          (and (featurep 'org-crypt)
+                               (org-at-encrypted-entry-p)
+                               (save-excursion
+                                 (org-decrypt-entry)
+                                 (and (org-back-to-heading t) (point))))))))))
+
+(defun cj/org-capture--set-target-location-advice (orig-fun &optional target)
+  "Use cached target lookup around ORIG-FUN for file+headline capture targets."
+  (let ((resolved-target (or target (org-capture-get :target))))
+    (if (cj/org-capture--file-headline-target-p resolved-target)
+        (cj/org-capture--set-file-headline-target-location resolved-target)
+      (funcall orig-fun target))))
+
+(with-eval-after-load 'org-capture
+  (advice-add 'org-capture-set-target-location
+              :around #'cj/org-capture--set-target-location-advice))
+
 ;; --------------------------- Org-Capture Templates ---------------------------
 ;; you can bring up the org capture menu with C-c c
 
