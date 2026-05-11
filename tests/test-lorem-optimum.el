@@ -238,5 +238,14 @@
     (let ((result (cj/markov-generate chain 2)))
       (should (stringp result)))))
 
+(ert-deftest test-title-generation-produces-title ()
+  "Should generate a non-empty title from the global chain."
+  (let ((cj/lipsum-chain
+         (test-learn "lorem ipsum dolor sit amet consectetur adipiscing elit")))
+    (let ((result (cj/lipsum-title)))
+      (should (stringp result))
+      (should (> (length result) 0))
+      (should (string-match-p "^[[:upper:]]" result)))))
+
 (provide 'test-lorem-optimum)
 ;;; test-lorem-optimum.el ends here

@@ -63,10 +63,7 @@
     (should (< time 50.0))))  ; Should be < 50ms
 
 (ert-deftest benchmark-learn-10k-words ()
-  "Benchmark learning 10,000 words.
-DISABLED: Takes too long (minutes instead of seconds).
-Needs lorem-optimum performance optimization before re-enabling."
-  :tags '(:slow)
+  "Benchmark learning 10,000 words."
   (let* ((text (generate-test-text 10000))
          (chain (cj/markov-chain-create))
          (time (benchmark-time
@@ -76,7 +73,6 @@ Needs lorem-optimum performance optimization before re-enabling."
 
 (ert-deftest benchmark-learn-100k-words ()
   "Benchmark learning 100,000 words (stress test)."
-  :tags '(:slow)
   (let* ((text (generate-test-text 100000))
          (chain (cj/markov-chain-create))
          (time (benchmark-time
@@ -84,7 +80,8 @@ Needs lorem-optimum performance optimization before re-enabling."
     (benchmark-report "Learn 100K words" time)
     ;; This may be slow due to key rebuild
     (message "Hash table size: %d bigrams"
-             (hash-table-count (cj/markov-chain-map chain)))))
+             (hash-table-count (cj/markov-chain-map chain)))
+    (should (< time 5000.0))))
 
 ;;; Multiple Learning Operations (Exposes Quadratic Behavior)
 
@@ -109,7 +106,6 @@ Needs lorem-optimum performance optimization before re-enabling."
 
 (ert-deftest benchmark-multiple-learns-100x100 ()
   "Benchmark 100 learn operations of 100 words each (key rebuild overhead)."
-  :tags '(:slow)
   (let ((chain (cj/markov-chain-create))
         (times '())
         (measurements '()))
@@ -154,10 +150,7 @@ Needs lorem-optimum performance optimization before re-enabling."
 ;;; Tokenization Performance Tests
 
 (ert-deftest benchmark-tokenize-10k-words ()
-  "Benchmark tokenizing 10,000 words.
-DISABLED: Takes too long (minutes instead of seconds).
-Needs lorem-optimum performance optimization before re-enabling."
-  :tags '(:slow)
+  "Benchmark tokenizing 10,000 words."
   (let* ((text (generate-test-text 10000))
          (time (benchmark-time
                 (lambda () (cj/markov-tokenize text)))))
