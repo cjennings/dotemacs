@@ -42,15 +42,38 @@
 
 ;; ------------------------------ Window Resizing ------------------------------
 
+;; windsize moves the divider between the active window and a neighbor in the
+;; arrow's direction (preferring the right/bottom border).  Its commands have
+;; no repeat mechanism; `cj/window-resize-sticky' below adds one.  windsize was
+;; on C-s-<arrow> (Ctrl+Super), which a tiling WM eats, so the keys live under
+;; C-; b instead (bound there in custom-buffer-file.el).
 (use-package windsize
-  :bind
-  ("C-s-<left>"  . windsize-left)
-  ("C-s-<right>" . windsize-right)
-  ("C-s-<up>"    . windsize-up)
-  ("C-s-<down>"  . windsize-down))
+  :commands (windsize-left windsize-right windsize-up windsize-down)
+  :custom
+  (windsize-cols 2)               ; default 8 is too jumpy for a held nudge loop
+  (windsize-rows 2))              ; default 4, same reason
 
 ;; M-shift = to balance multiple split windows
 (keymap-global-set "M-+" #'balance-windows)
+
+(defvar-keymap cj/window-resize-map
+  :doc "Bare arrows that keep resizing the split after a `C-; b <arrow>'
+resize -- each moves the active window's divider in the arrow's direction
+(via `windsize').  Any other key (or `C-g' / `<escape>') ends the loop."
+  "<left>"  #'windsize-left
+  "<right>" #'windsize-right
+  "<up>"    #'windsize-up
+  "<down>"  #'windsize-down)
+
+(defun cj/window-resize-sticky ()
+  "Resize the active window's divider in the just-pressed arrow's direction
+(via `windsize'), then keep `cj/window-resize-map' active so bare arrows keep
+nudging until any other key.  Bound to `C-; b <left>/<right>/<up>/<down>'."
+  (interactive)
+  (let ((cmd (keymap-lookup cj/window-resize-map
+                            (key-description (vector last-command-event)))))
+    (when cmd (call-interactively cmd)))
+  (set-transient-map cj/window-resize-map t))
 
 ;; ------------------------------ Window Splitting -----------------------------
 

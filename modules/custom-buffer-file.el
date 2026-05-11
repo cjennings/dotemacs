@@ -17,6 +17,9 @@
 ;;
 ;; Keybindings under ~C-; b~:
 ;; - ~C-; b k~ kill buffer and window (delete window, kill/bury buffer)
+;; - ~C-; b <arrow>~ move the active window's divider that way (via windsize);
+;;   bare arrows keep nudging until any other key (cj/window-resize-sticky in
+;;   ui-navigation.el)
 ;; - Copy buffer content submenu at ~C-; b c~
 ;;   - ~C-; b c w~ copy whole buffer
 ;;   - ~C-; b c t~ copy from beginning to point
@@ -36,6 +39,9 @@
 
 ;; cj/kill-buffer-and-window defined in undead-buffers.el
 (declare-function cj/kill-buffer-and-window "undead-buffers")
+
+;; cj/window-resize-sticky (C-; b <arrow>) defined in ui-navigation.el
+(declare-function cj/window-resize-sticky "ui-navigation")
 
 ;; ------------------------- Print Buffer As Postscript ------------------------
 
@@ -454,7 +460,14 @@ Signals an error if:
   "w" #'cj/view-buffer-in-eww
   "E" #'cj/view-email-in-buffer
   "o" #'cj/xdg-open
-  "O" #'cj/open-this-file-with)
+  "O" #'cj/open-this-file-with
+  ;; Window resize (cj/window-resize-sticky in ui-navigation.el, on `windsize'):
+  ;; the arrow moves the active window's divider that way, then bare arrows
+  ;; keep nudging until any other key.
+  "<left>"  #'cj/window-resize-sticky
+  "<right>" #'cj/window-resize-sticky
+  "<up>"    #'cj/window-resize-sticky
+  "<down>"  #'cj/window-resize-sticky)
 (when (boundp 'cj/custom-keymap)
   (keymap-set cj/custom-keymap "b" cj/buffer-and-file-map))
 
@@ -484,7 +497,11 @@ Signals an error if:
     "C-; b w" "view in EWW"
     "C-; b E" "view email"
     "C-; b o" "open with default app"
-    "C-; b O" "open with program..."))
+    "C-; b O" "open with program..."
+    "C-; b <left>"  "resize divider left"
+    "C-; b <right>" "resize divider right"
+    "C-; b <up>"    "resize divider up"
+    "C-; b <down>"  "resize divider down"))
 
 
 (provide 'custom-buffer-file)
