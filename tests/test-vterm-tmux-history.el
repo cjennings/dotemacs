@@ -150,5 +150,37 @@ modern keyboards and was redundant."
   (should (eq (keymap-lookup vterm-copy-mode-map "M-w")
               #'vterm-copy-mode-done)))
 
+(ert-deftest test-vterm-copy-mode-cancel-errors-outside-copy-mode ()
+  "Error: `cj/vterm-copy-mode-cancel' refuses to run when not in copy mode."
+  (with-temp-buffer
+    (should-error (cj/vterm-copy-mode-cancel) :type 'user-error)))
+
+(ert-deftest test-vterm-current-tmux-pane-id-rejects-non-vterm-buffer ()
+  "Error: pane-id lookup refuses a buffer that is not in `vterm-mode'."
+  (with-temp-buffer
+    (should-error (cj/vterm--current-tmux-pane-id) :type 'user-error)))
+
+(ert-deftest test-vterm-current-tmux-pane-id-accepts-ai-vterm-named-buffer ()
+  "Normal: an AI-vterm-named buffer still resolves by process TTY.
+
+The copy path belongs to `vterm-mode', not to `*vterm*'-named buffers.
+A buffer named like `claude [repo]' (ai-vterm.el's naming) is a
+`vterm-mode' buffer and must inherit tmux history copy.  The pane lookup
+keys off the live process TTY, never the buffer name -- so the
+AI-vterm name neither helps nor blocks resolution."
+  (let ((claude (cj/test--make-fake-vterm-buffer "claude [emacs.d]")))
+    (unwind-protect
+        (with-current-buffer claude
+          (cl-letf (((symbol-function 'get-buffer-process)
+                     (lambda (_buffer) 'fake-process))
+                    ((symbol-function 'process-tty-name)
+                     (lambda (_process) "/dev/pts/8")))
+            (test-vterm-tmux-history--with-tmux-mock
+                '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
+                   "/dev/pts/1\t%1\n/dev/pts/8\t%8\n"))
+              (should (equal (cj/vterm--current-tmux-pane-id) "%8")))))
+      (when (buffer-live-p claude)
+        (kill-buffer claude)))))
+
 (provide 'test-vterm-tmux-history)
 ;;; test-vterm-tmux-history.el ends here
