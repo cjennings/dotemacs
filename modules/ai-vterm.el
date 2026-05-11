@@ -650,5 +650,50 @@ AI-vterm buffers without touching the project list."
 (keymap-global-set "C-<f9>" #'cj/ai-vterm-pick-project)
 (keymap-global-set "M-<f9>" #'cj/ai-vterm-pick-buffer)
 
+;; ---------- emacsclient: keep opened files off the agent vterm ----------
+;;
+;; `server-start' (in system-defaults.el) leaves `server-window' nil, so
+;; `server-switch-buffer' opens an `emacsclient -n' file in the *selected*
+;; window.  When the user is typing in the agent vterm, that's the agent
+;; window -- so "tell the agent to open X" would replace the agent buffer
+;; with X.  The function below, wired as `server-window', routes such files
+;; into a non-agent window instead (splitting one off the agent when the
+;; agent is the only window).  emacsclient invocations from anywhere else
+;; fall through to `pop-to-buffer' and behave as before.
+
+(defun cj/--ai-vterm-non-agent-window (&optional exclude)
+  "Return a window in the selected frame fit to show a non-agent buffer.
+
+Skips the minibuffer, the EXCLUDE window, dedicated windows, and any
+window already showing an AI-vterm agent buffer.  Returns nil when no
+such window exists."
+  (seq-find (lambda (w)
+              (and (not (eq w exclude))
+                   (not (window-dedicated-p w))
+                   (not (cj/--ai-vterm-buffer-p (window-buffer w)))))
+            (window-list (selected-frame) 'never)))
+
+(defun cj/--ai-vterm-server-display (buffer)
+  "Display BUFFER for `server-window', keeping it off the agent vterm.
+
+When the selected window shows an AI-vterm agent buffer, put BUFFER in
+a non-agent window (`cj/--ai-vterm-non-agent-window'), splitting a
+left-side window off the agent when the agent is the only window, then
+select that window.  Otherwise hand off to `pop-to-buffer'.  Returns
+the window BUFFER ends up in -- the value `server-switch-buffer'
+expects from a `server-window' function."
+  (if (cj/--ai-vterm-buffer-p (window-buffer (selected-window)))
+      (let* ((agent-win (selected-window))
+             (target (or (cj/--ai-vterm-non-agent-window agent-win)
+                         (split-window agent-win nil 'left))))
+        (set-window-buffer target buffer)
+        (select-window target))
+    (pop-to-buffer buffer)
+    (selected-window)))
+
+(defvar server-window)
+(with-eval-after-load 'server
+  (setq server-window #'cj/--ai-vterm-server-display))
+
 (provide 'ai-vterm)
 ;;; ai-vterm.el ends here
