@@ -12,6 +12,15 @@
 ;; buffers that share the same right-side slot; switching among them is a
 ;; buffer-switch, not a kill-and-recreate.
 ;;
+;; Each project's Claude runs inside a tmux session named
+;; "<cj/ai-vterm-tmux-session-prefix><basename>" (default prefix "aiv-").
+;; The prefix lets `tmux ls' be filtered to AI-vterm's own sessions, so
+;; after an Emacs crash the project picker can match surviving sessions
+;; back to their directories: matched projects sort to the top of the
+;; picker (flagged "[detached]" -- session alive, no Emacs buffer -- or
+;; "[running]" when a live vterm buffer exists), the rest follow in
+;; alphabetical order.
+;;
 ;; Three F-key entry points:
 ;;
 ;; - F9   `cj/ai-vterm' -- DWIM dispatch.  If a claude buffer is
@@ -79,6 +88,19 @@ contain .ai/protocols.org.  Use this for container dirs like ~/code."
   :type '(repeat directory)
   :group 'ai-vterm)
 
+(defcustom cj/ai-vterm-tmux-session-prefix "aiv-"
+  "Prefix prepended to tmux session names AI-vterm creates.
+
+The session name for a project is this prefix followed by the
+project's basename (whitespace collapsed to hyphens).  The prefix
+lets `tmux ls' output be filtered down to AI-vterm's own sessions --
+so after an Emacs crash the project picker can match surviving
+sessions back to their directories and surface them first.  Pick
+something unlikely to collide with hand-rolled tmux sessions; the
+default \"aiv-\" is short for \"ai-vterm\"."
+  :type 'string
+  :group 'ai-vterm)
+
 (defconst cj/--ai-vterm-name-prefix "claude ["
   "Buffer-name prefix shared by all AI-vterm buffers.
 
@@ -126,13 +148,47 @@ is returned.  The minibuffer is excluded from the search."
             (window-list (or frame (selected-frame)) 'never)))
 
 (defun cj/--ai-vterm-tmux-session-name (dir)
-  "Return the tmux name derived from project directory DIR.
+  "Return the tmux session name for project directory DIR.
 
-The basename of DIR, with any run of whitespace collapsed to a single
-hyphen so the result is safe to pass on a tmux command line."
-  (replace-regexp-in-string
-   "[[:space:]]+" "-"
-   (file-name-nondirectory (directory-file-name dir))))
+`cj/ai-vterm-tmux-session-prefix' followed by DIR's basename, with any
+run of whitespace collapsed to a single hyphen so the result is safe
+to pass on a tmux command line.  The prefix lets `tmux ls' output be
+filtered to AI-vterm's own sessions (see
+`cj/--ai-vterm-live-tmux-sessions')."
+  (concat cj/ai-vterm-tmux-session-prefix
+          (replace-regexp-in-string
+           "[[:space:]]+" "-"
+           (file-name-nondirectory (directory-file-name dir)))))
+
+(defun cj/--ai-vterm-live-tmux-sessions ()
+  "Return live tmux session names that carry the AI-vterm prefix.
+
+Runs `tmux list-sessions'.  Returns the names beginning with
+`cj/ai-vterm-tmux-session-prefix', or nil when tmux is not installed,
+no server is running, or the command exits non-zero -- the picker
+treats nil as \"no sessions to surface\" and falls back to a plain
+alphabetical list."
+  (let* ((prefix cj/ai-vterm-tmux-session-prefix)
+         (exit nil)
+         (output (with-temp-buffer
+                   (setq exit (condition-case nil
+                                  (process-file "tmux" nil '(t nil) nil
+                                                "list-sessions" "-F"
+                                                "#{session_name}")
+                                (error nil)))
+                   (buffer-string))))
+    (when (and (integerp exit) (zerop exit))
+      (seq-filter (lambda (name) (string-prefix-p prefix name))
+                  (split-string output "\n" t)))))
+
+(defun cj/--ai-vterm-session-active-p (dir sessions)
+  "Return non-nil when DIR's tmux session name is in SESSIONS.
+
+SESSIONS is the list from `cj/--ai-vterm-live-tmux-sessions' (or nil).
+The match is forward: DIR's expected session name is computed and
+looked up in SESSIONS, so the lossy whitespace->hyphen transform in
+`cj/--ai-vterm-tmux-session-name' never needs reversing."
+  (and (member (cj/--ai-vterm-tmux-session-name dir) sessions) t))
 
 (defun cj/--ai-vterm-launch-command (dir)
   "Return the shell command line that runs Claude in a project tmux session.
@@ -180,6 +236,21 @@ Returns absolute paths.  Nonexistent roots are skipped silently."
                        (cj/--ai-vterm-has-marker-p child))
               (push child result))))))
     (nreverse result)))
+
+(defun cj/--ai-vterm-sort-candidates (dirs sessions)
+  "Order DIRS for the project picker.
+
+DIRS with a live tmux session in SESSIONS (per
+`cj/--ai-vterm-session-active-p') come first, the rest follow; within
+each group the order is alphabetical by abbreviated path.  SESSIONS
+nil means nothing is active, so the result is a plain alphabetical
+list."
+  (let* ((alpha (lambda (a b)
+                  (string< (abbreviate-file-name a) (abbreviate-file-name b))))
+         (active-p (lambda (d) (cj/--ai-vterm-session-active-p d sessions)))
+         (active (seq-filter active-p dirs))
+         (inactive (seq-remove active-p dirs)))
+    (append (sort active alpha) (sort inactive alpha))))
 
 (defun cj/--ai-vterm-process-live-p (buffer)
   "Return non-nil when BUFFER has a live process attached."
@@ -347,27 +418,49 @@ Returns the buffer."
         (display-buffer buf)
         buf)))))
 
-(defun cj/--ai-vterm-format-candidate (path)
+(defun cj/--ai-vterm-format-candidate (path &optional sessions)
   "Return the display name for PATH in the AI-vterm project picker.
 
 Appends \" [running]\" when the project's claude buffer exists with
-a live process, so the user sees at a glance which projects already
-have a session.  Path is abbreviated via `abbreviate-file-name' so
-it reads as ~/code/foo rather than the full home-dir form."
+a live process; otherwise \" [detached]\" when PATH's tmux session
+name is in SESSIONS (a session that survived an Emacs crash, no
+buffer yet); otherwise just the abbreviated path.  Path is
+abbreviated via `abbreviate-file-name' so it reads as ~/code/foo
+rather than the full home-dir form."
   (let* ((name (cj/--ai-vterm-buffer-name path))
          (buf (get-buffer name))
          (running (and buf (cj/--ai-vterm-process-live-p buf)))
+         (detached (and (not running)
+                        (cj/--ai-vterm-session-active-p path sessions)))
          (display-path (abbreviate-file-name path)))
-    (if running
-        (format "%s [running]" display-path)
-      display-path)))
+    (cond
+     (running  (format "%s [running]" display-path))
+     (detached (format "%s [detached]" display-path))
+     (t        display-path))))
+
+(defun cj/--ai-vterm-completion-table (alist)
+  "Return a `completing-read' table over ALIST that pins candidate order.
+
+`completing-read' over a bare alist lets the front-end (Vertico)
+re-sort candidates by recency / length / alpha, which would defeat
+the picker's active-sessions-first grouping.  Returning
+`display-sort-function' and `cycle-sort-function' of `identity' in
+the metadata keeps the order ALIST was built in."
+  (lambda (string predicate action)
+    (if (eq action 'metadata)
+        '(metadata (display-sort-function . identity)
+                   (cycle-sort-function . identity))
+      (complete-with-action action alist string predicate))))
 
 (defun cj/--ai-vterm-pick-project ()
   "Prompt for a Claude-template project; return its absolute path.
 
-Candidates come from `cj/--ai-vterm-candidates'.  Display uses
+Candidates come from `cj/--ai-vterm-candidates', ordered by
+`cj/--ai-vterm-sort-candidates' so projects with a live tmux session
+appear first (then alphabetical by abbreviated path).  Display uses
 `cj/--ai-vterm-format-candidate', which abbreviates the path and
-flags projects with a live session via a \" [running]\" suffix.
+flags a live session via \" [running]\" (an Emacs vterm buffer is
+alive) or \" [detached]\" (the tmux session survived, no buffer).
 Signals `user-error' when no candidates exist."
   (let ((candidates (cj/--ai-vterm-candidates)))
     (unless candidates
@@ -376,11 +469,16 @@ Signals `user-error' when no candidates exist."
                              (append cj/ai-vterm-project-roots
                                      cj/ai-vterm-container-roots)
                              ", ")))
-    (let* ((display-alist
-            (mapcar (lambda (p) (cons (cj/--ai-vterm-format-candidate p) p))
-                    candidates))
-           (chosen (completing-read "AI vterm project: "
-                                    display-alist nil t)))
+    (let* ((sessions (cj/--ai-vterm-live-tmux-sessions))
+           (sorted (cj/--ai-vterm-sort-candidates candidates sessions))
+           (display-alist
+            (mapcar (lambda (p)
+                      (cons (cj/--ai-vterm-format-candidate p sessions) p))
+                    sorted))
+           (chosen (completing-read
+                    "AI vterm project: "
+                    (cj/--ai-vterm-completion-table display-alist)
+                    nil t)))
       (or (cdr (assoc chosen display-alist))
           (expand-file-name chosen)))))
 
