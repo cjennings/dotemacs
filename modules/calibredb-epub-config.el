@@ -41,6 +41,7 @@
 ;;; Code:
 
 (require 'user-constants)  ;; for books-dir
+(require 'subr-x)
 
 ;; Declare functions from lazy-loaded packages
 (declare-function calibredb-find-create-search-buffer "calibredb" ())
@@ -52,7 +53,6 @@
 ;; -------------------------- CalibreDB Ebook Manager --------------------------
 
 (use-package calibredb
-  :defer 1
   :commands calibredb
   :bind
   ("M-S-b" . calibredb)  ;; was M-B, overrides backward-word
@@ -66,7 +66,7 @@
   (setq calibredb-db-dir (expand-file-name "metadata.db" calibredb-root-dir))
   (setq calibredb-program "/usr/bin/calibredb")
   (setq calibredb-preferred-format "epub")
-  (setq calibredb-search-page-max-rows 20000)
+  (setq calibredb-search-page-max-rows 500)
 
   ;; search window display
   (setq calibredb-size-show nil)
@@ -92,6 +92,9 @@
 (defvar cj/nov-margin-percent 25
   "Percentage of window width to use as margins on each side when reading epubs.
 For example, 25 means 25% left margin + 25% right margin, with 50% for text.")
+
+(defvar cj/nov-min-text-width 40
+  "Minimum text width in columns for Nov reading buffers.")
 
 ;; Prevent magic-fallback-mode-alist from opening epub as archive-mode
 ;; Advise set-auto-mode to force nov-mode for .epub files before magic-fallback runs
@@ -124,6 +127,29 @@ For example, 25 means 25% left margin + 25% right margin, with 50% for text.")
   (forward-paragraph)
   (recenter))
 
+(defun cj/nov--text-width-for-window (&optional window)
+  "Return preferred Nov text width for WINDOW.
+The width uses `cj/nov-margin-percent' while keeping a readable minimum and
+clamping excessive margin percentages."
+  (let* ((window (or window (get-buffer-window (current-buffer) t)))
+         (window-width (if window (window-body-width window) 80))
+         (margin-percent (max 0 (min 45 cj/nov-margin-percent)))
+         (text-width-ratio (- 1.0 (* 2 (/ margin-percent 100.0)))))
+    (max cj/nov-min-text-width
+         (floor (* text-width-ratio window-width)))))
+
+(defun cj/nov-update-layout (&optional _frame)
+  "Recalculate Nov text layout for the current buffer.
+Suitable for `window-configuration-change-hook' or
+`window-size-change-functions'."
+  (when (derived-mode-p 'nov-mode)
+    (when (require 'visual-fill-column nil t)
+      (setq-local visual-fill-column-center-text t)
+      (setq-local visual-fill-column-width (cj/nov--text-width-for-window))
+      (visual-fill-column-mode 1)
+      (when (bound-and-true-p visual-fill-column-mode)
+        (visual-fill-column--adjust-window)))))
+
 (defun cj/nov-apply-preferences ()
   "Apply preferences after nov-mode has launched."
   (interactive)
@@ -140,21 +166,14 @@ For example, 25 means 25% left margin + 25% right margin, with 50% for text.")
   ;; Set fill-column as a fallback
   (setq-local fill-column 100)
   ;; Enable visual-fill-column for centered text with margins
-  (when (require 'visual-fill-column nil t)
-    (setq-local visual-fill-column-center-text t)
-    ;; Calculate text width based on configurable margin percentage
-    (let ((window (get-buffer-window (current-buffer)))
-          (text-width-ratio (- 1.0 (* 2 (/ cj/nov-margin-percent 100.0)))))
-      (if window
-          (setq-local visual-fill-column-width
-                      (floor (* text-width-ratio (window-body-width window))))
-        ;; Fallback if no window yet
-        (setq-local visual-fill-column-width 80)))
-    (visual-fill-column-mode 1))
-  (nov-render-document)
-  ;; Force visual-fill-column to recalculate after rendering
-  (when (bound-and-true-p visual-fill-column-mode)
-    (visual-fill-column--adjust-window)))
+  (cj/nov-update-layout)
+  ;; Keep centered text width responsive after splits/resizes.
+  (add-hook 'window-configuration-change-hook #'cj/nov-update-layout nil t))
+
+(defun cj/nov-open-external ()
+  "Open the current EPUB with zathura."
+  (interactive)
+  (cj/open-file-with-command "zathura"))
 
 (use-package nov
   :mode
@@ -173,7 +192,7 @@ For example, 25 means 25% left margin + 25% right margin, with 50% for text.")
 		(">" . nov-history-forward)
 		("," . backward-paragraph)
 		;; open current EPUB with zathura (same key in pdf-view)
-		("z" . (lambda () (interactive) (cj/open-file-with-command "zathura")))
+		("z" . cj/nov-open-external)
 		("t" . nov-goto-toc)
 		("C-c C-b" . cj/nov-jump-to-calibredb)))
 
