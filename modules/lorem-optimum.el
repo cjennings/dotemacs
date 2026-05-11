@@ -107,29 +107,31 @@ Uses O(n) algorithm by matching at position instead of creating substrings."
 
 (defun cj/markov-join-tokens (tokens)
   "Join TOKENS into a sentence with proper spacing/punctuation."
-  (let ((sentence "") (need-space nil))
+  (let ((parts '())
+        (need-space nil))
 	(dolist (tok tokens)
 	  (cond
 	   ;; punctuation attaches directly
 	   ((string-match-p "^[[:punct:]]+$" tok)
-		(setq sentence (concat sentence tok))
+		(push tok parts)
 		(setq need-space t))
 	   ;; word
 	   (t
 		(when need-space
-		  (setq sentence (concat sentence " ")))
-		(setq sentence (concat sentence tok))
+		  (push " " parts))
+		(push tok parts)
 		(setq need-space t))))
-	;; fix capitalization of first word only
-	(when (string-match "\\`\\([[:alpha:]]\\)" sentence)
-	  (setq sentence
-			(replace-match (upcase (match-string 1 sentence))
-						   nil nil sentence)))
-	;; ensure it ends with .!?
-	(unless (string-match-p "[.!?]$" sentence)
-	  (setq sentence (concat (replace-regexp-in-string "[[:punct:]]+$" "" sentence) ".")))
-  (setq sentence (cj/markov-fix-capitalization sentence))
-		sentence))
+    (let ((sentence (mapconcat #'identity (nreverse parts) "")))
+	  ;; fix capitalization of first word only
+	  (when (string-match "\\`\\([[:alpha:]]\\)" sentence)
+	    (setq sentence
+			  (replace-match (upcase (match-string 1 sentence))
+						     nil nil sentence)))
+	  ;; ensure it ends with .!?
+	  (unless (string-match-p "[.!?]$" sentence)
+	    (setq sentence (concat (replace-regexp-in-string "[[:punct:]]+$" "" sentence) ".")))
+      (setq sentence (cj/markov-fix-capitalization sentence))
+	  sentence)))
 
 (defun cj/markov-generate (chain n &optional start)
   "Generate a sentence of N tokens from CHAIN."
@@ -140,19 +142,21 @@ Uses O(n) algorithm by matching at position instead of creating substrings."
 					  (cj/markov-random-key chain)))
 		   (w1 (car state))
 		   (w2 (cadr state))
-		   (tokens (list w1 w2)))
-	  (dotimes (_ (- n 2))
+		   (tokens (list w2 w1)))
+	  (dotimes (_ (max 0 (- n 2)))
 		(let ((next (cj/markov-next-word chain state)))
 		  (if next
-			  (setq tokens (append tokens (list next))
-					state (list w2 next)
-					w1 w2
-					w2 next)
+			  (progn
+			    (push next tokens)
+			    (setq state (list w2 next)
+				      w1 w2
+				      w2 next))
 			(setq state (cj/markov-random-key chain)
 				  w1 (car state)
-				  w2 (cadr state)
-				  tokens (append tokens (list w1 w2))))))
-	  (cj/markov-join-tokens tokens))))
+				  w2 (cadr state))
+			(push w1 tokens)
+			(push w2 tokens))))
+	  (cj/markov-join-tokens (nreverse tokens)))))
 
 (defun cj/markov-random-key (chain)
   "Return a random bigram key from CHAIN.
@@ -160,11 +164,12 @@ Builds and caches the keys list lazily if not already cached."
   (unless (cj/markov-chain-keys chain)
     ;; Lazily build keys list only when needed
     (setf (cj/markov-chain-keys chain)
-          (cl-loop for k being the hash-keys of (cj/markov-chain-map chain)
-                   collect k)))
+          (vconcat
+           (cl-loop for k being the hash-keys of (cj/markov-chain-map chain)
+                    collect k))))
   (let ((keys (cj/markov-chain-keys chain)))
-    (when keys
-      (nth (random (length keys)) keys))))
+    (when (> (length keys) 0)
+      (aref keys (random (length keys))))))
 
 (defun cj/markov-next-word (chain bigram)
   (let ((candidates (gethash bigram (cj/markov-chain-map chain))))
@@ -219,24 +224,31 @@ Builds and caches the keys list lazily if not already cached."
 (defun cj/lipsum-title ()
   "Generate a pseudo-Latin title."
   (interactive)
-  (let* ((n (+ cj/lipsum-title-min
-			   (random (1+ (- cj/lipsum-title-max cj/lipsum-title-min)))))
-		 (words
-		  (cl-loop with state = (cj/markov-random-key cj/lipsum-chain)
-				   for i from 0 below n
-				   for w = (car state)
-				   do (setq state (list (cadr state)
-										(or (cj/markov-next-word cj/lipsum-chain state)
-											(cadr (cj/markov-random-key cj/lipsum-chain))))))
-				   collect (replace-regexp-in-string "^[[:punct:]]+\\|[[:punct:]]+$" "" w))))
-	;; Filter empty strings from generated words
-	(setq words (cl-remove-if #'string-empty-p words))
-	(mapconcat
-	 (lambda (word idx)
-	   (if (or (zerop idx) (> (length word) cj/lipsum-title-small))
-		   (capitalize word)
-		 word))
-	 words " "))
+  (let ((n (+ cj/lipsum-title-min
+			  (random (1+ (- cj/lipsum-title-max cj/lipsum-title-min)))))
+        (state (cj/markov-random-key cj/lipsum-chain))
+        (words '()))
+    (dotimes (_ n)
+      (when state
+        (let ((word (car state)))
+          (when (stringp word)
+            (setq word (replace-regexp-in-string
+                        "^[[:punct:]]+\\|[[:punct:]]+$" "" word))
+            (unless (string-empty-p word)
+              (push word words))))
+        (setq state
+              (when (cadr state)
+                (list (cadr state)
+                      (or (cj/markov-next-word cj/lipsum-chain state)
+                          (cadr (cj/markov-random-key cj/lipsum-chain))))))))
+    (mapconcat
+     #'identity
+     (cl-loop for word in (nreverse words)
+              for idx from 0
+              collect (if (or (zerop idx) (> (length word) cj/lipsum-title-small))
+		                  (capitalize word)
+		                word))
+     " ")))
 
 ;;; Paragraphs
 
