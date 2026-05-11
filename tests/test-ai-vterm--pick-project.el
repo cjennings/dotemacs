@@ -1,10 +1,12 @@
 ;;; test-ai-vterm--pick-project.el --- Tests for cj/--ai-vterm-pick-project -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; The picker presents abbreviated paths to `completing-read', then
-;; returns the absolute path corresponding to the user's choice.  Empty
-;; candidate set raises a `user-error' rather than offering an empty
-;; prompt.
+;; The picker presents abbreviated paths to `completing-read' (projects
+;; with a live tmux session first, then alphabetical), then returns the
+;; absolute path corresponding to the user's choice.  An empty candidate
+;; set raises a `user-error' rather than offering an empty prompt.  The
+;; collection is a completion table that pins display order (so Vertico
+;; doesn't re-sort and defeat the active-first grouping).
 
 ;;; Code:
 
@@ -14,17 +16,21 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (require 'ai-vterm)
 
+(defun test-ai-vterm--collection-strings (collection)
+  "Return the candidate display strings from a completing-read COLLECTION.
+Works whether COLLECTION is an alist or a completion-table function."
+  (all-completions "" collection))
+
 (ert-deftest test-ai-vterm--pick-project-returns-absolute-path-of-choice ()
   "Normal: user picks a candidate, picker returns its absolute path."
   (cl-letf (((symbol-function 'cj/--ai-vterm-candidates)
              (lambda () '("/home/u/code/foo" "/home/u/code/bar")))
+            ((symbol-function 'cj/--ai-vterm-live-tmux-sessions)
+             (lambda () nil))
             ((symbol-function 'completing-read)
              (lambda (_p collection &rest _)
-               ;; Pick the one whose display form matches ~/code/bar
-               ;; (collection is alist of display . abs)
-               (car (cl-find-if
-                     (lambda (cell) (string-match-p "bar" (car cell)))
-                     collection)))))
+               (seq-find (lambda (s) (string-match-p "bar" s))
+                         (test-ai-vterm--collection-strings collection)))))
     (should (equal (cj/--ai-vterm-pick-project) "/home/u/code/bar"))))
 
 (ert-deftest test-ai-vterm--pick-project-empty-candidates-raises-user-error ()
@@ -34,15 +40,33 @@
 
 (ert-deftest test-ai-vterm--pick-project-presents-abbreviated-paths ()
   "Normal: the completing-read collection holds abbreviated display forms."
-  (let (received-collection)
+  (let (received-strings)
     (cl-letf (((symbol-function 'cj/--ai-vterm-candidates)
                (lambda () (list (expand-file-name "~/code/foo"))))
+              ((symbol-function 'cj/--ai-vterm-live-tmux-sessions)
+               (lambda () nil))
               ((symbol-function 'completing-read)
                (lambda (_p collection &rest _)
-                 (setq received-collection collection)
-                 (caar collection))))
+                 (setq received-strings (test-ai-vterm--collection-strings collection))
+                 (car received-strings))))
       (cj/--ai-vterm-pick-project)
-      (should (equal (caar received-collection) "~/code/foo")))))
+      (should (equal (car received-strings) "~/code/foo")))))
+
+(ert-deftest test-ai-vterm--pick-project-active-sessions-sort-first ()
+  "Normal: a project with a live tmux session leads; it carries [detached]."
+  (let ((cj/ai-vterm-tmux-session-prefix "aiv-")
+        received-strings)
+    (cl-letf (((symbol-function 'cj/--ai-vterm-candidates)
+               (lambda () '("/c/foo" "/c/bar" "/c/baz")))
+              ((symbol-function 'cj/--ai-vterm-live-tmux-sessions)
+               (lambda () '("aiv-baz")))
+              ((symbol-function 'completing-read)
+               (lambda (_p collection &rest _)
+                 (setq received-strings (test-ai-vterm--collection-strings collection))
+                 (car received-strings))))
+      (cj/--ai-vterm-pick-project)
+      (should (equal received-strings
+                     '("/c/baz [detached]" "/c/bar" "/c/foo"))))))
 
 (ert-deftest test-ai-vterm--format-candidate-flags-running-project ()
   "Normal: a path whose claude buffer has a live process gets a [running] suffix."
@@ -53,6 +77,30 @@
         (cl-letf (((symbol-function 'cj/--ai-vterm-process-live-p)
                    (lambda (b) (eq b buf))))
           (should (equal (cj/--ai-vterm-format-candidate path)
+                         (format "%s [running]" (abbreviate-file-name path)))))
+      (kill-buffer buf))))
+
+(ert-deftest test-ai-vterm--format-candidate-flags-detached-session ()
+  "Normal: no buffer but a matching tmux session -> [detached] suffix."
+  (let* ((cj/ai-vterm-tmux-session-prefix "aiv-")
+         (path (expand-file-name "~/code/has-session"))
+         (bn (cj/--ai-vterm-buffer-name path)))
+    (when (get-buffer bn) (kill-buffer bn))
+    (should (equal (cj/--ai-vterm-format-candidate
+                    path (list (cj/--ai-vterm-tmux-session-name path)))
+                   (format "%s [detached]" (abbreviate-file-name path))))))
+
+(ert-deftest test-ai-vterm--format-candidate-running-beats-detached ()
+  "Boundary: a live buffer wins over a matching session -> [running], not [detached]."
+  (let* ((cj/ai-vterm-tmux-session-prefix "aiv-")
+         (path (expand-file-name "~/code/both"))
+         (bn (cj/--ai-vterm-buffer-name path))
+         (buf (get-buffer-create bn)))
+    (unwind-protect
+        (cl-letf (((symbol-function 'cj/--ai-vterm-process-live-p)
+                   (lambda (b) (eq b buf))))
+          (should (equal (cj/--ai-vterm-format-candidate
+                          path (list (cj/--ai-vterm-tmux-session-name path)))
                          (format "%s [running]" (abbreviate-file-name path)))))
       (kill-buffer buf))))
 
