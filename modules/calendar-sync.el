@@ -1282,7 +1282,8 @@ processes, not direct interactive use."
 
 (defun calendar-sync--worker-command (ics-file output-file)
   "Build the batch Emacs command that converts ICS-FILE to OUTPUT-FILE."
-  (let ((private-config-file
+  (let ((module-dir (file-name-directory calendar-sync--module-file))
+        (private-config-file
          (make-temp-name (expand-file-name "calendar-sync-worker-config-"
                                            temporary-file-directory)))
         (state-file
@@ -1294,6 +1295,7 @@ processes, not direct interactive use."
           "--no-site-lisp"
           "--eval" (format "(setq load-prefer-newer t calendar-sync-auto-start nil calendar-sync-private-config-file %S calendar-sync--state-file %S)"
                            private-config-file state-file)
+          "-L" module-dir
           "-l" calendar-sync--module-file
           "--eval" (format "(calendar-sync--batch-convert-file %S %S %S %S '%S)"
                            ics-file
