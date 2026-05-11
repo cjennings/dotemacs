@@ -142,6 +142,8 @@ Uses O(n) algorithm by matching at position instead of creating substrings."
 					  (cj/markov-random-key chain)))
 		   (w1 (car state))
 		   (w2 (cadr state))
+		   ;; tokens is built with `push' (prepend) and `nreverse'd at the end,
+		   ;; so seed it reversed -- w2 then w1 -- to get w1 w2 ... after the flip.
 		   (tokens (list w2 w1)))
 	  (dotimes (_ (max 0 (- n 2)))
 		(let ((next (cj/markov-next-word chain state)))
