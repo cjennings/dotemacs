@@ -35,6 +35,30 @@
 ;;; Code:
 
 (require 'auth-source)
+(require 'cl-lib)
+
+(defvar slack-current-buffer)
+(defvar slack-message-compose-buffer-mode-map)
+(defvar slack-message-custom-notifier)
+(defvar slack-teams)
+
+(declare-function slack-buffer-add-reaction-to-message "slack-buffer")
+(declare-function slack-buffer-latest-ts "slack-buffer")
+(declare-function slack-buffer-team "slack-buffer")
+(declare-function slack-buffer-update-mark-request "slack-buffer")
+(declare-function slack-get-ts "slack-util")
+(declare-function slack-im-p "slack-im")
+(declare-function slack-message-body "slack-message")
+(declare-function slack-message-embed-channel "slack-message-buffer")
+(declare-function slack-message-embed-mention "slack-message-buffer")
+(declare-function slack-message-mentioned-p "slack-message")
+(declare-function slack-message-minep "slack-message")
+(declare-function slack-message-reaction-input "slack-message-reaction")
+(declare-function slack-message-send-from-buffer "slack-message-sender")
+(declare-function slack-message-write-another-buffer "slack-message-buffer")
+(declare-function slack-reaction-echo-description "slack-buffer")
+(declare-function slack-room-display-name "slack-room")
+(declare-function slack-ws-close "slack")
 
 (defvar cj/slack-workspace "deepsatworkspace.slack.com"
   "Slack workspace domain for auth-source lookup.")
@@ -90,6 +114,75 @@
   (slack-prefer-current-team t)
   :config
   (setq slack-message-custom-notifier #'cj/slack-notify))
+
+;; ------------------------------ Reactions ------------------------------------
+
+(defvar cj/slack-common-reactions
+  '(("thumbs up" . "+1")
+    ("thumbsup" . "thumbsup")
+    ("thumbs down" . "-1")
+    ("pray" . "pray")
+    ("raised hands" . "raised_hands")
+    ("eyes" . "eyes")
+    ("white check mark" . "white_check_mark")
+    ("heavy check mark" . "heavy_check_mark")
+    ("plus one" . "+1")
+    ("heart" . "heart")
+    ("heart eyes" . "heart_eyes")
+    ("joy" . "joy")
+    ("laughing" . "laughing")
+    ("smile" . "smile")
+    ("thinking face" . "thinking_face")
+    ("rocket" . "rocket")
+    ("fire" . "fire")
+    ("party" . "tada")
+    ("clap" . "clap")
+    ("ok hand" . "ok_hand"))
+  "Curated common Slack reaction labels mapped to Slack emoji names.")
+
+(defun cj/slack--safe-reaction-echo-description (orig-fun &rest args)
+  "Call ORIG-FUN safely from `post-command-hook'.
+If emacs-slack sees a malformed reaction text property, remove the local hook
+so the Slack buffer stays usable."
+  (condition-case err
+      (apply orig-fun args)
+    (error
+     (remove-hook 'post-command-hook #'slack-reaction-echo-description t)
+     (message "Slack reaction hover disabled in this buffer: %s"
+              (error-message-string err)))))
+
+(defun cj/slack--reaction-candidates ()
+  "Return display candidates for `cj/slack-common-reactions'."
+  (append
+   (mapcar (lambda (entry)
+             (let ((label (car entry))
+                   (name (cdr entry)))
+               (cons (format "%-18s :%s:" label name) name)))
+           cj/slack-common-reactions)
+   '(("Other..." . :other))))
+
+(defun cj/slack-select-reaction (team)
+  "Select a Slack reaction for TEAM, preferring a short common list."
+  (let* ((candidates (cj/slack--reaction-candidates))
+         (choice (completing-read "Reaction: " candidates nil t))
+         (reaction (cdr (assoc choice candidates))))
+    (if (eq reaction :other)
+        (slack-message-reaction-input team)
+      reaction)))
+
+(defun cj/slack-message-add-reaction ()
+  "Add a reaction to the current Slack message using a curated shortlist."
+  (interactive)
+  (when-let* ((buf slack-current-buffer)
+              (team (slack-buffer-team buf))
+              (reaction (cj/slack-select-reaction team)))
+      (slack-buffer-add-reaction-to-message buf
+                                            reaction
+                                            (slack-get-ts))))
+
+(with-eval-after-load 'slack-buffer
+  (advice-add 'slack-reaction-echo-description
+              :around #'cj/slack--safe-reaction-echo-description))
 
 ;; ----------------------------- Notifications ---------------------------------
 
@@ -153,7 +246,7 @@ swallows exceptions via `websocket-try-callback'."
 (define-key cj/slack-keymap (kbd "w") #'slack-message-write-another-buffer)
 (define-key cj/slack-keymap (kbd "r") #'slack-thread-show-or-create)
 (define-key cj/slack-keymap (kbd "e") #'slack-insert-emoji)
-(define-key cj/slack-keymap (kbd "!") #'slack-message-add-reaction)
+(define-key cj/slack-keymap (kbd "!") #'cj/slack-message-add-reaction)
 (define-key cj/slack-keymap (kbd "@") #'slack-message-embed-mention)
 (define-key cj/slack-keymap (kbd "#") #'slack-message-embed-channel)
 (define-key cj/slack-keymap (kbd "q") #'cj/slack-mark-read-and-bury)
