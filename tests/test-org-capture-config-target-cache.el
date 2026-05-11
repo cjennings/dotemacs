@@ -85,5 +85,53 @@ The file-visiting buffer is killed after BODY returns."
             (should (cj/org-capture--headline-marker-valid-p marker "Inbox")))))
     (test-org-capture-target-cache--reset)))
 
+(ert-deftest test-org-capture-target-cache-recovers-after-buffer-killed ()
+  "Boundary: killing the marker's buffer invalidates the cache entry.
+The next capture rescans (and refreshes), without crashing on the stale marker."
+  (test-org-capture-target-cache--reset)
+  (unwind-protect
+      (test-org-capture-target-cache--with-temp-org-file
+          "* Inbox\n"
+        (let ((org-capture-plist `(:target (file+headline ,file "Inbox"))))
+          (org-capture-set-target-location)
+          (let* ((key (cj/org-capture--file-headline-cache-key file "Inbox"))
+                 (marker (gethash key cj/org-capture--file-headline-target-cache)))
+            (kill-buffer (marker-buffer marker))
+            (should-not (cj/org-capture--headline-marker-valid-p marker "Inbox"))
+            ;; A second resolution must succeed without erroring on the stale marker.
+            (org-capture-set-target-location)
+            (let ((fresh (gethash key cj/org-capture--file-headline-target-cache)))
+              (should (cj/org-capture--headline-marker-valid-p fresh "Inbox"))))))
+    (test-org-capture-target-cache--reset)))
+
+(ert-deftest test-org-capture-target-cache-clear-empties-the-hash ()
+  "Normal: `cj/org-capture-clear-target-cache' actually empties the cache."
+  (test-org-capture-target-cache--reset)
+  (unwind-protect
+      (test-org-capture-target-cache--with-temp-org-file
+          "* Inbox\n"
+        (let ((org-capture-plist `(:target (file+headline ,file "Inbox"))))
+          (org-capture-set-target-location)
+          (should (= 1 (hash-table-count cj/org-capture--file-headline-target-cache)))
+          ;; Suppress the user-facing message during the test.
+          (cl-letf (((symbol-function 'message) (lambda (&rest _) nil)))
+            (cj/org-capture-clear-target-cache))
+          (should (= 0 (hash-table-count cj/org-capture--file-headline-target-cache)))))
+    (test-org-capture-target-cache--reset)))
+
+(ert-deftest test-org-capture-target-cache-falls-through-for-non-file+headline ()
+  "Boundary: targets that aren't `file+headline' (e.g. plain `file', `file+olp',
+`file+function') fall through to the original `org-capture-set-target-location'
+unchanged."
+  (test-org-capture-target-cache--reset)
+  (dolist (target '((file "/tmp/fall-through.org")
+                    (file+olp "/tmp/fall-through.org" "Tasks" "Inbox")
+                    (file+function "/tmp/fall-through.org" ignore)))
+    (let ((called-with nil))
+      (cj/org-capture--set-target-location-advice
+       (lambda (&optional received) (setq called-with (list :ran received)))
+       target)
+      (should (equal called-with (list :ran target))))))
+
 (provide 'test-org-capture-config-target-cache)
 ;;; test-org-capture-config-target-cache.el ends here
