@@ -2,11 +2,12 @@
 
 ;;; Commentary:
 ;; The launch command is what gets typed into a fresh vterm shell to bring
-;; up Claude inside a per-project tmux session.  The session is named after
-;; the project basename so a second F9 on the same project reattaches to
-;; the running Claude rather than spawning a new one.  The trailing
-;; `exec bash' keeps the tmux window alive if Claude exits, leaving the
-;; session intact for recovery.
+;; up Claude inside a per-project tmux session.  The session is named
+;; `cj/ai-vterm-tmux-session-prefix' + the project basename, so a second
+;; F9 on the same project reattaches to the running Claude rather than
+;; spawning a new one, and `tmux ls' output can be filtered to AI-vterm's
+;; own sessions.  The trailing `exec bash' keeps the tmux window alive if
+;; Claude exits, leaving the session intact for recovery.
 
 ;;; Code:
 
@@ -22,11 +23,12 @@
              "tmux new-session -A "
              (cj/--ai-vterm-launch-command "/code/foo")))))
 
-(ert-deftest test-ai-vterm--launch-command-includes-session-name ()
-  "Normal: the session name comes from the basename helper."
-  (let ((cj/ai-vterm-claude-command "claude"))
+(ert-deftest test-ai-vterm--launch-command-includes-prefixed-session-name ()
+  "Normal: the session name is the prefixed form from the name helper."
+  (let ((cj/ai-vterm-claude-command "claude")
+        (cj/ai-vterm-tmux-session-prefix "aiv-"))
     (should (string-match-p
-             " -s foo "
+             " -s aiv-foo "
              (cj/--ai-vterm-launch-command "/code/foo")))))
 
 (ert-deftest test-ai-vterm--launch-command-includes-start-directory ()
@@ -52,9 +54,10 @@
 
 (ert-deftest test-ai-vterm--launch-command-handles-spaces-in-basename ()
   "Boundary: a basename with whitespace becomes hyphenated before quoting."
-  (let ((cj/ai-vterm-claude-command "claude"))
+  (let ((cj/ai-vterm-claude-command "claude")
+        (cj/ai-vterm-tmux-session-prefix "aiv-"))
     (should (string-match-p
-             " -s my-work "
+             " -s aiv-my-work "
              (cj/--ai-vterm-launch-command "/code/my work")))))
 
 (provide 'test-ai-vterm--launch-command)
