@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; The project picker lists candidates with a live tmux session first
-;; (so a Claude that survived an Emacs crash is easy to get back to),
+;; (so an agent that survived an Emacs crash is easy to get back to),
 ;; then everything else.  Within each group the order is alphabetical
 ;; by abbreviated path.
 
