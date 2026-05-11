@@ -76,7 +76,7 @@ re-scanning large target files after the first successful lookup."
     (org-mode))
   (org-capture-put-target-region-and-position)
   (widen)
-  (let* ((key (list (expand-file-name (buffer-file-name)) headline))
+  (let* ((key (cj/org-capture--file-headline-cache-key path headline))
          (marker (gethash key cj/org-capture--file-headline-target-cache)))
     (if (cj/org-capture--headline-marker-valid-p marker headline)
         (goto-char marker)
