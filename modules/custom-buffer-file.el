@@ -17,6 +17,8 @@
 ;;
 ;; Keybindings under ~C-; b~:
 ;; - ~C-; b k~ kill buffer and window (delete window, kill/bury buffer)
+;; - ~C-; b K~ kill the other window's buffer, keeping that window/split
+;;   (cj/kill-other-window-buffer in undead-buffers.el)
 ;; - ~C-; b <arrow>~ move the active window's divider that way (via windsize);
 ;;   bare arrows keep nudging until any other key (cj/window-resize-sticky in
 ;;   ui-navigation.el)
@@ -37,8 +39,9 @@
 (require 'mm-decode)
 (require 'external-open) ;; for cj/xdg-open, cj/open-this-file-with
 
-;; cj/kill-buffer-and-window defined in undead-buffers.el
+;; cj/kill-buffer-and-window and cj/kill-other-window-buffer defined in undead-buffers.el
 (declare-function cj/kill-buffer-and-window "undead-buffers")
+(declare-function cj/kill-other-window-buffer "undead-buffers")
 
 ;; cj/window-resize-sticky (C-; b <arrow>) defined in ui-navigation.el
 (declare-function cj/window-resize-sticky "ui-navigation")
@@ -449,6 +452,7 @@ Signals an error if:
   "n" #'cj/copy-buffer-name
   "l" #'cj/copy-link-to-buffer-file
   "k" #'cj/kill-buffer-and-window
+  "K" #'cj/kill-other-window-buffer
   "P" #'cj/print-buffer-ps
   "t" #'cj/clear-to-top-of-buffer
   "b" #'cj/clear-to-bottom-of-buffer
@@ -486,6 +490,7 @@ Signals an error if:
     "C-; b n" "copy buffer name"
     "C-; b l" "copy file link"
     "C-; b k" "kill buffer and window"
+    "C-; b K" "kill other window's buffer"
     "C-; b P" "print to PS"
     "C-; b t" "clear to top"
     "C-; b b" "clear to bottom"
