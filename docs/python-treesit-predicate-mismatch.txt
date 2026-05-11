@@ -1,0 +1,196 @@
+PYTHON TREE-SITTER FONT-LOCK PREDICATE MISMATCH — DIAGNOSIS (paused 2026-04-26)
+================================================================================
+
+STATUS
+------
+/start-work paused at Gate 2 (approach was being investigated).
+Todo.org entry reverted to TODO. This diagnostic captures the full investigation
+so the next session can pick up at decision-time without re-deriving the cause.
+
+Linked todo.org entry:
+  * TODO [#A] Fix Python tree-sitter font-lock query syntax error :bug:
+  SCHEDULED: <2026-04-27 Mon>
+
+
+THE BUG
+-------
+Every Python file redisplay fires:
+
+  Error during redisplay: (jit-lock-function N) signaled
+    (treesit-query-error "Syntax error at" 358 ...
+     "Debug the query with `treesit-query-validate'")
+
+The reported failing query is the keyword + self-as-keyword block from upstream
+Emacs python.el at lines 1188-1190:
+
+  `([,@python--treesit-keywords] @font-lock-keyword-face
+    ((identifier) @font-lock-keyword-face
+     (:match "\\`self\\'" @font-lock-keyword-face)))
+
+
+ROOT CAUSE — VERSION MISMATCH (system-level, not in .emacs.d)
+-------------------------------------------------------------
+Emacs version:           30.2
+tree-sitter library:     0.26.8 (/usr/lib/libtree-sitter.so.0.26)
+tree-sitter grammar ABI: 15
+
+Tree-sitter 0.26.x enforces that predicate names must end in "?" or "!" — for
+example #match? or #any-of?. The unsuffixed form #match (without "?") is
+rejected with a syntax error.
+
+Emacs 30.2's treesit translates elisp predicate keywords to tree-sitter
+predicate strings WITHOUT the "?" suffix:
+
+  :match  →  #match    (rejected by tree-sitter 0.26)
+  :equal  →  #equal    (rejected)
+  :pred   →  #pred     (rejected)
+
+And Emacs 30.2 ALSO rejects raw string queries that use the "?" form:
+
+  Tested raw query "((identifier) @cap (#match? @cap \"^self$\"))"
+  → Emacs error: "Invalid predicate match? Currently Emacs only supports
+    `equal', `match', and `pred' predicates"
+
+Both ends are strict and incompatible. There is no API path through Emacs
+30.2's treesit that produces a query tree-sitter 0.26 will accept when any
+predicate is used.
+
+This is NOT specific to the self-as-keyword line. It affects every :match,
+:equal, :pred predicate in every language's treesit font-lock settings.
+Python alone has six other :match predicates in python--treesit-settings
+(features: builtin, type, function — at lines 1205, 1209, 1260, 1296, 1297,
+1303 of python.el). Other treesit-aware modes (rust-ts, go-ts, c-ts, etc.)
+likely have the same shape and may also be silently or loudly broken.
+
+The keyword block is the loudest because it captures every identifier in the
+buffer, so the predicate evaluation is forced on every redisplay. Other queries
+with rarer captures may fail silently (one-off errors) or not fire often
+enough to flood Messages.
+
+
+WHY THE OTHER ERRORS LOOK LIKE THIS WAS THE ONLY BREAK
+------------------------------------------------------
+Tree-sitter validates predicates lazily — only when the predicate is actually
+evaluated against captured text. The keyword query captures every identifier
+(very common), so its predicate evaluates per redisplay → error per
+redisplay → flood. Builtin/type/function queries only fire on more selective
+node types, so their errors fire less often and may not be visible in the
+*Messages* sample we collected.
+
+
+REPRODUCTION (verified in batch with --batch)
+---------------------------------------------
+emacs --batch --eval "
+(progn
+  (require 'treesit)
+  (require 'python)
+  (with-temp-buffer
+    (insert \"def foo(self): return self\")
+    (treesit-parser-create 'python)
+    (let ((q '((identifier) @cap (:match \"^self\$\" @cap))))
+      (condition-case err
+          (treesit-query-capture 'python q (point-min) (point-max))
+        (error (message \"FAIL: %s\" err))))))"
+
+Output: FAIL: (treesit-query-error Syntax error at 26
+              (identifier) @cap (#match @cap "^self$") ...)
+
+
+FIX OPTIONS (each with trade-off)
+----------------------------------
+A. WAIT FOR UPSTREAM EMACS FIX
+   Most likely the right answer if Emacs 30.3 ships the predicate-suffix
+   compatibility. Check pacman/news for emacs updates regularly. Zero local
+   work; loses font-lock fidelity in the meantime.
+
+B. DOWNGRADE TREE-SITTER LIBRARY
+   Roll /usr/lib/libtree-sitter.so back to a pre-0.26 version that accepts
+   unsuffixed predicates. System-wide change; affects every package that
+   links tree-sitter. Risky — would need pinning in pacman to prevent
+   re-upgrade. Reject unless we hit other breakages.
+
+C. PATCH EMACS' treesit.c TO EMIT #match?
+   The right structural fix. Requires building Emacs from source with a
+   one-line patch (or applying via a custom AUR/PKGBUILD). Major effort,
+   ongoing maintenance burden.
+
+D. OVERRIDE python--treesit-settings IN .emacs.d
+   After python.el loads, replace the broken queries with predicate-free
+   variants (or omit the affected features entirely). Pros: local, surgical.
+   Cons: loses self-as-keyword highlighting and any other predicate-using
+   feature; must be redone for every treesit mode (rust-ts, go-ts, c-ts,
+   typescript-ts, ...).
+
+E. ADVISE treesit-query-compile / treesit-query-capture
+   Wrap the C calls so #match → #match? in the query string before tree-
+   sitter sees it. Theoretically possible if the predicate evaluator can
+   still recognize the "?" form on its end. Risky; needs verification that
+   Emacs's predicate dispatch table maps "match?" or just "match" — the
+   "Invalid predicate match?" error suggests the dispatch table is keyed on
+   the unsuffixed form, so this advice would need to translate both
+   directions. Untested.
+
+F. PIN EMACS IN PACMAN AT 30.2 OR EARLIER + DOWNGRADE TREE-SITTER
+   System-level pin both packages until upstream fixes land. Safe but
+   stops other Emacs/tree-sitter package updates entirely.
+
+
+RECOMMENDED PATH (subject to Craig's call)
+------------------------------------------
+1. Verify whether Emacs has a patch in 30.3 / master. Search pacman -Q
+   for emacs-snapshot variants. Skim NEWS or git log for treesit predicate
+   fixes if a build-from-source is on the table.
+
+2. If no upstream fix is imminent: option D (override
+   python--treesit-settings) for the immediate noise — a small,
+   project-local patch in modules/prog-python.el that strips the keyword
+   feature's :match sub-query. Loses self-as-keyword highlighting only;
+   keeps the rest of Python font-lock working.
+
+3. File this as a known bug + document the workaround in CLAUDE.md or a
+   project note so it doesn't get re-investigated next time someone hits
+   it.
+
+
+VERIFICATION PATH (after a fix lands)
+-------------------------------------
+1. Restart Emacs.
+2. Open any Python file from the dashboard MVP.
+3. Watch *Messages* for "treesit-query-error" — should be zero.
+4. Visually confirm Python keywords still highlight (def, class, return,
+   import, etc.).
+5. If using option D specifically: confirm "self" no longer renders as a
+   keyword (expected loss).
+
+
+INVESTIGATION ARTIFACTS
+-----------------------
+Position 358 in the failing query string corresponds to the regex string
+opening quote. Initially suspected a regex syntax problem (Emacs's \\`...\\'
+anchors not in tree-sitter regex flavor). Disproved: the error fires even
+with tree-sitter-friendly regex like ^self$, and even with :equal predicates
+that don't compile a regex at all. Confirmed by isolating predicate variants:
+
+  ((identifier) @cap)                                  → OK
+  ((identifier) @cap (:match  "^self$"  @cap))         → FAIL at #match
+  ((identifier) @cap (:equal  @cap "self"))            → FAIL at #equal
+  ((identifier) @cap (:pred   (lambda ...) @cap))      → FAIL at #pred
+
+  Raw string "((identifier) @cap (#match? @cap \"...\"))"
+                                                       → FAIL Emacs (predicate ?)
+  Raw string "((identifier) @cap (#match  @cap \"...\"))"
+                                                       → FAIL tree-sitter
+
+The "Syntax error at 26" reported in those isolated cases corresponds to the
+position of the predicate's opening "(" — tree-sitter parser refusing the
+unsuffixed predicate form before it ever evaluates anything.
+
+
+SCOPE NOTE
+----------
+This is upstream / system-level. Not a .emacs.d bug. Three fix surfaces:
+  - Emacs source (treesit.c predicate translation)
+  - Tree-sitter library (predicate-suffix strictness)
+  - Local override in .emacs.d (workaround only)
+
+Fixing in .emacs.d is a workaround, not a root-cause fix. Document it as such.
