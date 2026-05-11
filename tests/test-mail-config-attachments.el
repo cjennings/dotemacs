@@ -233,5 +233,30 @@
   (should (eq (lookup-key cj/email-map (kbd "m"))
               #'cj/mu4e-save-some-attachments)))
 
+(ert-deftest test-mail-config-attachments-default-directory-uses-target-dir ()
+  "Normal: the default save directory comes from the part's :target-dir."
+  (let ((parts (list (test-mail-config-attachment--part "a.pdf" 1))))
+    (should (equal (cj/mu4e--attachment-default-directory parts)
+                   "/tmp/mail-target/"))))
+
+(ert-deftest test-mail-config-attachments-default-directory-falls-back-to-downloads ()
+  "Boundary: with no :target-dir hint, the default is ~/Downloads/."
+  (let ((parts (list (list :filename "a.pdf" :part-index 1 :attachment-like t))))
+    (should (equal (cj/mu4e--attachment-default-directory parts)
+                   (file-name-as-directory (expand-file-name "~/Downloads/"))))))
+
+(ert-deftest test-mail-config-attachments-selection-entry-at-point-errors-off-row ()
+  "Error: asking for the attachment at point on a header line fails clearly."
+  (let* ((a (test-mail-config-attachment--part "a.pdf" 1))
+         (buffer (get-buffer-create "*test-mail-attachments*")))
+    (unwind-protect
+        (with-current-buffer buffer
+          (cj/mu4e-attachment-selection-mode)
+          (cj/mu4e--attachment-selection-setup (list a) "/downloads/")
+          (goto-char (point-min))      ; first line is the "Save attachments to:" header
+          (should-error (cj/mu4e--attachment-selection-entry-at-point)
+                        :type 'user-error))
+      (kill-buffer buffer))))
+
 (provide 'test-mail-config-attachments)
 ;;; test-mail-config-attachments.el ends here

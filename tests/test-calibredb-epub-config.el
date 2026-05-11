@@ -40,6 +40,17 @@
                (lambda (&rest _) nil)))
       (should (= 40 (cj/nov--text-width-for-window))))))
 
+(ert-deftest test-calibredb-epub-nov-text-width-clamps-negative-margin ()
+  "Boundary: a negative margin percent is clamped up to 0, so the text takes
+the full window width."
+  (let ((cj/nov-margin-percent -10)
+        (cj/nov-min-text-width 40))
+    (cl-letf (((symbol-function 'get-buffer-window)
+               (lambda (&rest _) 'window))
+              ((symbol-function 'window-body-width)
+               (lambda (_) 120)))
+      (should (= 120 (cj/nov--text-width-for-window))))))
+
 (ert-deftest test-calibredb-epub-open-external-uses-zathura ()
   "Normal: named Nov external-open command delegates to zathura."
   (let (command)

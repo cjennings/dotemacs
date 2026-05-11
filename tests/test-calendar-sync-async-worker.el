@@ -37,8 +37,21 @@
                             (string-match-p "'(\"me@example\\.test\")" arg)))
                      command))))
 
+(ert-deftest test-calendar-sync--worker-command-puts-L-before-l ()
+  "Order: `-L module-dir' must precede `-l calendar-sync.el' so the sibling
+load-path entry is in effect by the time the module load runs.  Asserting both
+via `member' separately wouldn't catch a swap."
+  (let* ((calendar-sync--module-file "/tmp/calendar-sync.el")
+         (calendar-sync-past-months 2)
+         (calendar-sync-future-months 6)
+         (calendar-sync-user-emails '("me@example.test"))
+         (command (calendar-sync--worker-command "/tmp/input.ics" "/tmp/output.org")))
+    (should (< (cl-position "-L" command :test #'equal)
+               (cl-position "-l" command :test #'equal)))))
+
 (ert-deftest test-calendar-sync--worker-command-loads-sibling-modules-without-init ()
   "The worker command should load calendar-sync and sibling modules without init."
+  :tags '(:slow)
   (let* ((calendar-sync--module-file
           (expand-file-name "modules/calendar-sync.el" user-emacs-directory))
          (command (append
