@@ -81,9 +81,10 @@ restore function -- not just the helper in isolation."
     (should-not (local-variable-p 'cursor-type))))
 
 (ert-deftest test-vterm-copy-mode-cursor-end-to-end-via-copy-done ()
-  "Normal: `vterm-copy-mode-done' (M-w / RET binding) toggles copy-mode
-off and triggers cursor restoration.  This is the path the user takes
-most often -- copy and exit in one keystroke."
+  "Normal: `vterm-copy-mode-done' toggles copy-mode off and triggers cursor
+restoration.  No key is bound to it in this config (M-w copies and stays;
+RET is unbound), but it stays reachable via \\[execute-extended-command]
+and its exit path must still restore the cursor."
   (test-vterm-copy-mode-cursor--in-fake-vterm-buffer
     (setq-local cursor-type nil)
     (vterm-copy-mode 1)
