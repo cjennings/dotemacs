@@ -5,8 +5,10 @@
 ;; the project's basename, so reopening the agent on the same project (e.g.
 ;; after an Emacs crash) reattaches to the same tmux session rather than
 ;; spawning a new one -- and the prefix lets `tmux ls' output be filtered
-;; down to AI-vterm's own sessions.  Whitespace in the basename becomes
-;; hyphens so the name is safe to pass on a tmux command line.
+;; down to AI-vterm's own sessions.  The basename is sanitized to a form
+;; tmux won't re-mangle: runs of whitespace become hyphens, and `.' / `:'
+;; (which tmux disallows in session names and silently rewrites to `_')
+;; become `_' up front so the computed name matches the real session.
 
 ;;; Code:
 
@@ -27,11 +29,19 @@
     (should (equal (cj/--ai-vterm-tmux-session-name "/home/cjennings/projects/foo/")
                    "aiv-foo"))))
 
-(ert-deftest test-ai-vterm--tmux-session-name-dot-prefix-dir ()
-  "Boundary: dot-prefix dirs preserve the dot (tmux accepts dots)."
+(ert-deftest test-ai-vterm--tmux-session-name-dots-become-underscores ()
+  "Boundary: tmux disallows `.' in session names and rewrites it to `_',
+so the basename's dots are sanitized to `_' up front -- `.emacs.d' must
+yield `aiv-_emacs_d', matching the session tmux actually creates."
   (let ((cj/ai-vterm-tmux-session-prefix "aiv-"))
     (should (equal (cj/--ai-vterm-tmux-session-name "/home/cjennings/.emacs.d")
-                   "aiv-.emacs.d"))))
+                   "aiv-_emacs_d"))))
+
+(ert-deftest test-ai-vterm--tmux-session-name-colon-becomes-underscore ()
+  "Boundary: `:' is also disallowed by tmux in session names -> `_'."
+  (let ((cj/ai-vterm-tmux-session-prefix "aiv-"))
+    (should (equal (cj/--ai-vterm-tmux-session-name "/tmp/a:b")
+                   "aiv-a_b"))))
 
 (ert-deftest test-ai-vterm--tmux-session-name-space-becomes-hyphen ()
   "Boundary: a space in the basename is replaced with a hyphen."

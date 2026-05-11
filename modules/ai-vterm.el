@@ -164,15 +164,22 @@ is returned.  The minibuffer is excluded from the search."
 (defun cj/--ai-vterm-tmux-session-name (dir)
   "Return the tmux session name for project directory DIR.
 
-`cj/ai-vterm-tmux-session-prefix' followed by DIR's basename, with any
-run of whitespace collapsed to a single hyphen so the result is safe
-to pass on a tmux command line.  The prefix lets `tmux ls' output be
+`cj/ai-vterm-tmux-session-prefix' followed by DIR's basename, sanitized
+to a form tmux won't re-mangle: runs of whitespace become a single
+hyphen, and `.' / `:' become `_'.  tmux disallows `.' and `:' in
+session names and silently rewrites them to `_', so a project like
+`.emacs.d' really runs in session `aiv-_emacs_d', not `aiv-.emacs.d' --
+sanitizing up front keeps the computed name matching the live one (and
+keeps `cj/--ai-vterm-session-active-p' and the crash-recovery picker
+from missing such projects).  The prefix lets `tmux ls' output be
 filtered to AI-vterm's own sessions (see
 `cj/--ai-vterm-live-tmux-sessions')."
   (concat cj/ai-vterm-tmux-session-prefix
           (replace-regexp-in-string
-           "[[:space:]]+" "-"
-           (file-name-nondirectory (directory-file-name dir)))))
+           "[.:]" "_"
+           (replace-regexp-in-string
+            "[[:space:]]+" "-"
+            (file-name-nondirectory (directory-file-name dir))))))
 
 (defun cj/--ai-vterm-live-tmux-sessions ()
   "Return live tmux session names that carry the AI-vterm prefix.
@@ -254,20 +261,56 @@ Returns absolute paths.  Nonexistent roots are skipped silently."
               (push child result))))))
     (nreverse result)))
 
+(defvar cj/--ai-vterm-mru nil
+  "Project dirs opened via the AI-vterm launcher this session, newest first.
+
+Maintained by `cj/--ai-vterm-record-mru' (called from
+`cj/--ai-vterm-show-or-create') and consumed by
+`cj/--ai-vterm-sort-candidates' so the project picker puts
+recently-opened projects at the top of the active-sessions group.
+In-memory only -- not persisted across Emacs restarts.")
+
+(defun cj/--ai-vterm-record-mru (dir)
+  "Move DIR to the front of `cj/--ai-vterm-mru'.
+
+DIR is normalized with `expand-file-name' + `directory-file-name' so a
+trailing slash or `~' form doesn't create a duplicate entry; any prior
+occurrence is removed first, keeping the list a true MRU order."
+  (let ((d (directory-file-name (expand-file-name dir))))
+    (setq cj/--ai-vterm-mru (cons d (delete d cj/--ai-vterm-mru)))))
+
+(defun cj/--ai-vterm-mru-rank (dir)
+  "Return DIR's index in `cj/--ai-vterm-mru', or nil when it isn't there.
+
+DIR is normalized the same way `cj/--ai-vterm-record-mru' stores
+entries, so a trailing slash doesn't defeat the lookup."
+  (seq-position cj/--ai-vterm-mru
+                (directory-file-name (expand-file-name dir))))
+
 (defun cj/--ai-vterm-sort-candidates (dirs sessions)
   "Order DIRS for the project picker.
 
 DIRS with a live tmux session in SESSIONS (per
-`cj/--ai-vterm-session-active-p') come first, the rest follow; within
-each group the order is alphabetical by abbreviated path.  SESSIONS
-nil means nothing is active, so the result is a plain alphabetical
-list."
+`cj/--ai-vterm-session-active-p') come first, ordered most-recently-
+opened first (per `cj/--ai-vterm-mru'); active dirs not opened yet this
+session fall after them, alphabetical by abbreviated path.  DIRS with no
+session follow, always alphabetical.  SESSIONS nil means nothing is
+active, so the result is a plain alphabetical list; an empty MRU makes
+the active group alphabetical too."
   (let* ((alpha (lambda (a b)
                   (string< (abbreviate-file-name a) (abbreviate-file-name b))))
+         (mru-then-alpha
+          (lambda (a b)
+            (let ((ra (cj/--ai-vterm-mru-rank a))
+                  (rb (cj/--ai-vterm-mru-rank b)))
+              (cond ((and ra rb) (< ra rb))
+                    (ra t)
+                    (rb nil)
+                    (t (funcall alpha a b))))))
          (active-p (lambda (d) (cj/--ai-vterm-session-active-p d sessions)))
          (active (seq-filter active-p dirs))
          (inactive (seq-remove active-p dirs)))
-    (append (sort active alpha) (sort inactive alpha))))
+    (append (sort active mru-then-alpha) (sort inactive alpha))))
 
 (defun cj/--ai-vterm-process-live-p (buffer)
   "Return non-nil when BUFFER has a live process attached."
@@ -409,7 +452,10 @@ suppresses the generic tmux-launch hook in vterm-config.el so
 it doesn't fire a bare \"tmux\\n\" before the project-named launch
 command runs.
 
-Returns the buffer."
+Records DIR in `cj/--ai-vterm-mru' (whichever branch runs) so the
+project picker can list recently-opened projects first.  Returns the
+buffer."
+  (cj/--ai-vterm-record-mru dir)
   (let ((existing (get-buffer name)))
     (cond
      ((and existing (cj/--ai-vterm-process-live-p existing))
