@@ -21,6 +21,8 @@
     (should (member "--batch" command))
     (should (member "--no-site-file" command))
     (should (member "--no-site-lisp" command))
+    (should (member "-L" command))
+    (should (member "/tmp/" command))
     (should (member "-l" command))
     (should (member "/tmp/calendar-sync.el" command))
     (should (cl-some (lambda (arg)
@@ -34,6 +36,27 @@
                             (string-match-p "/tmp/output\\.org" arg)
                             (string-match-p "'(\"me@example\\.test\")" arg)))
                      command))))
+
+(ert-deftest test-calendar-sync--worker-command-loads-sibling-modules-without-init ()
+  "The worker command should load calendar-sync and sibling modules without init."
+  (let* ((calendar-sync--module-file
+          (expand-file-name "modules/calendar-sync.el" user-emacs-directory))
+         (command (append
+                   (calendar-sync--worker-command "/tmp/input.ics" "/tmp/output.org")
+                   (list "--eval" "(princ \"loaded\")"))))
+    ;; Replace the conversion eval with a harmless smoke expression so this
+    ;; test exercises load-path setup without requiring temp ICS input.
+    (setq command
+          (cl-loop for arg in command
+                   collect (if (and (stringp arg)
+                                    (string-match-p "calendar-sync--batch-convert-file" arg))
+                               "(princ \"\")"
+                             arg)))
+    (with-temp-buffer
+      (let ((exit-code (apply #'call-process
+                              (car command) nil t nil (cdr command))))
+        (should (= 0 exit-code))
+        (should (string-match-p "loaded" (buffer-string)))))))
 
 (ert-deftest test-calendar-sync--batch-convert-file-writes-org-output ()
   "The worker entry point should convert an ICS file and write Org output."
