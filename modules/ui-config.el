@@ -150,6 +150,10 @@ Only updates for real user buffers, not internal/temporary buffers."
 
 (cj/set-cursor-type 'box)
 
+;; Keep the cursor a solid block -- no blinking (including the initial blink
+;; burst when entering read-only buffers like EPUBs or vterm).
+(blink-cursor-mode -1)
+
 ;; --------------------------------- Nerd Icons --------------------------------
 ;; use icons from nerd fonts in the Emacs UI
 
