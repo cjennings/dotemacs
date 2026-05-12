@@ -14,6 +14,12 @@
 
 (require 'ert)
 
+;; `org-drill-config.el' mounts its keymap under `cj/custom-keymap' at load
+;; time; in a real session that's defined by keybindings.el, but a bare
+;; `load' of the module needs it stubbed (see `test-org-drill-config-loads-without-error').
+(defvar cj/custom-keymap (make-sparse-keymap)
+  "Stub custom keymap for the org-drill-config load test.")
+
 (ert-deftest test-org-drill-first-function-not-defined-without-compat ()
   "Verify that 'first' function doesn't exist by default in modern Emacs.
 
