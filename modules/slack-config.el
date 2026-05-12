@@ -171,14 +171,14 @@ so the Slack buffer stays usable."
       reaction)))
 
 (defun cj/slack-message-add-reaction ()
-  "Add a reaction to the current Slack message using a curated shortlist."
+  "Add a reaction to the current Slack message using a curated shortlist.
+Errors if called outside a Slack message buffer."
   (interactive)
-  (when-let* ((buf slack-current-buffer)
-              (team (slack-buffer-team buf))
-              (reaction (cj/slack-select-reaction team)))
-      (slack-buffer-add-reaction-to-message buf
-                                            reaction
-                                            (slack-get-ts))))
+  (let ((buf (or slack-current-buffer
+                 (user-error "Not in a Slack buffer"))))
+    (when-let* ((team (slack-buffer-team buf))
+                (reaction (cj/slack-select-reaction team)))
+      (slack-buffer-add-reaction-to-message buf reaction (slack-get-ts)))))
 
 (with-eval-after-load 'slack-buffer
   (advice-add 'slack-reaction-echo-description

@@ -87,5 +87,10 @@
       (cj/slack-message-add-reaction)
       (should (equal called '(:buffer "pray" "123.456"))))))
 
+(ert-deftest test-slack-config-message-add-reaction-errors-outside-slack-buffer ()
+  "Error: invoking the reaction command outside a Slack buffer fails clearly."
+  (let ((slack-current-buffer nil))
+    (should-error (cj/slack-message-add-reaction) :type 'user-error)))
+
 (provide 'test-slack-config-reactions)
 ;;; test-slack-config-reactions.el ends here
