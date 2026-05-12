@@ -8,7 +8,8 @@
 #   make test-name TEST=test-foo-*   - Run tests matching pattern
 #   make test-bash         - Run the bats shell-script tests
 #   make benchmark         - Run performance benchmarks (:perf-tagged tests)
-#   make coverage          - Generate simplecov coverage report
+#   make coverage          - Generate simplecov coverage report and summary
+#   make coverage-summary  - Summarize existing coverage by module
 #   make coverage-clean    - Remove coverage report file
 #   make validate-parens   - Check for unbalanced parentheses
 #   make validate-modules  - Load all modules to verify they compile
@@ -44,7 +45,7 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 # No colors - using plain text symbols instead
 
 .PHONY: help targets test test-all test-unit test-integration test-file test-name \
-        test-bash benchmark coverage coverage-clean \
+        test-bash benchmark coverage coverage-summary coverage-clean \
         validate-parens validate-modules compile lint profile \
         clean clean-compiled clean-tests reset
 
@@ -67,7 +68,8 @@ help:
 	@echo "    make benchmark         - Run performance benchmarks (:perf-tagged)"
 	@echo ""
 	@echo "  Coverage:"
-	@echo "    make coverage          - Generate simplecov JSON at $(COVERAGE_FILE)"
+	@echo "    make coverage          - Generate simplecov JSON and summarize modules"
+	@echo "    make coverage-summary  - Summarize existing coverage by module"
 	@echo "    make coverage-clean    - Delete the coverage report file"
 	@echo ""
 	@echo "  Validation:"
@@ -117,105 +119,71 @@ test-bash:
 	@echo "[i] Running bats shell-script tests ($(words $(BASH_TESTS)) files)..."
 	@bats $(BASH_TESTS)
 
-test-unit:
-	@echo "[i] Running unit tests ($(words $(UNIT_TESTS)) files)..."
-	@echo ""
-	@failed=0; \
-	failed_files=""; \
-	for test in $(UNIT_TESTS); do \
-		test_name=$$(basename $$test); \
-		printf "  Testing %-60s " "$$test_name..."; \
-		output=$$($(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (or (tag :slow) (tag :perf))))" 2>&1); \
-		result=$$?; \
-		if [ $$result -eq 0 ]; then \
-			pass_count=$$(echo "$$output" | grep -oP "Ran \K\d+" | head -1); \
-			echo "✓ ($$pass_count tests)"; \
-		else \
-			echo "✗ FAILED"; \
-			failed=$$((failed + 1)); \
-			failed_files="$$failed_files$$test_name "; \
-			echo "$$output" | grep -E "FAILED|unexpected|Error" > /tmp/test-failure-$$test_name.log; \
+BANNER = ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Run the .el test files in $(1), each in its own Emacs, with :slow and :perf
+# tagged tests skipped.  $(2) is the lowercase phrase for status lines
+# ("unit tests"); $(3) the uppercase phrase for the banner ("UNIT TESTS").
+# The whole body is one shell command, so callers invoke it as a single
+# recipe line: `@$(call run-el-tests,...)'.
+define run-el-tests
+echo "[i] Running $(2) ($(words $(1)) files)..."; \
+echo ""; \
+failed=0; \
+failed_files=""; \
+for test in $(1); do \
+	test_name=$$(basename $$test); \
+	printf "  Testing %-60s " "$$test_name..."; \
+	output=$$($(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (or (tag :slow) (tag :perf))))" 2>&1); \
+	result=$$?; \
+	if [ $$result -eq 0 ]; then \
+		pass_count=$$(echo "$$output" | grep -oP "Ran \K\d+" | head -1); \
+		echo "✓ ($$pass_count tests)"; \
+	else \
+		echo "✗ FAILED"; \
+		failed=$$((failed + 1)); \
+		failed_files="$$failed_files$$test_name "; \
+		echo "$$output" | grep -E "FAILED|unexpected|Error" > /tmp/test-failure-$$test_name.log; \
+	fi; \
+done; \
+echo ""; \
+if [ $$failed -eq 0 ]; then \
+	echo "$(BANNER)"; \
+	echo "✓ ALL $(3) PASSED"; \
+	echo "$(BANNER)"; \
+else \
+	echo "$(BANNER)"; \
+	echo "✗ FAILURES DETECTED: $$failed test file(s) failed"; \
+	echo "$(BANNER)"; \
+	echo ""; \
+	echo "Failed test files:"; \
+	for file in $$failed_files; do \
+		echo "  • $$file"; \
+		if [ -f /tmp/test-failure-$$file.log ]; then \
+			echo "    Errors:"; \
+			sed 's/^/      /' /tmp/test-failure-$$file.log; \
+			rm /tmp/test-failure-$$file.log; \
 		fi; \
 	done; \
 	echo ""; \
-	if [ $$failed -eq 0 ]; then \
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		echo "✓ ALL UNIT TESTS PASSED"; \
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-	else \
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		echo "✗ FAILURES DETECTED: $$failed test file(s) failed"; \
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		echo ""; \
-		echo "Failed test files:"; \
-		for file in $$failed_files; do \
-			echo "  • $$file"; \
-			if [ -f /tmp/test-failure-$$file.log ]; then \
-				echo "    Errors:"; \
-				sed 's/^/      /' /tmp/test-failure-$$file.log; \
-				rm /tmp/test-failure-$$file.log; \
-			fi; \
-		done; \
-		echo ""; \
-		echo "Run individual failing tests with:"; \
-		for file in $$failed_files; do \
-			echo "  make test-file FILE=$$file"; \
-		done; \
-		echo ""; \
-		exit 1; \
-	fi
+	echo "Run individual failing tests with:"; \
+	for file in $$failed_files; do \
+		echo "  make test-file FILE=$$file"; \
+	done; \
+	echo ""; \
+	exit 1; \
+fi
+endef
+
+test-unit:
+	@$(call run-el-tests,$(UNIT_TESTS),unit tests,UNIT TESTS)
 
 test-integration:
 	@if [ $(words $(INTEGRATION_TESTS)) -eq 0 ]; then \
 		echo "No integration tests found"; \
 		exit 0; \
 	fi
-	@echo "[i] Running integration tests ($(words $(INTEGRATION_TESTS)) files)..."
-	@echo ""
-	@failed=0; \
-	failed_files=""; \
-	for test in $(INTEGRATION_TESTS); do \
-		test_name=$$(basename $$test); \
-		printf "  Testing %-60s " "$$test_name..."; \
-		output=$$($(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (or (tag :slow) (tag :perf))))" 2>&1); \
-		result=$$?; \
-		if [ $$result -eq 0 ]; then \
-			pass_count=$$(echo "$$output" | grep -oP "Ran \K\d+" | head -1); \
-			echo "✓ ($$pass_count tests)"; \
-		else \
-			echo "✗ FAILED"; \
-			failed=$$((failed + 1)); \
-			failed_files="$$failed_files$$test_name "; \
-			echo "$$output" | grep -E "FAILED|unexpected|Error" > /tmp/test-failure-$$test_name.log; \
-		fi; \
-	done; \
-	echo ""; \
-	if [ $$failed -eq 0 ]; then \
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		echo "✓ ALL INTEGRATION TESTS PASSED"; \
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-	else \
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		echo "✗ FAILURES DETECTED: $$failed test file(s) failed"; \
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		echo ""; \
-		echo "Failed test files:"; \
-		for file in $$failed_files; do \
-			echo "  • $$file"; \
-			if [ -f /tmp/test-failure-$$file.log ]; then \
-				echo "    Errors:"; \
-				sed 's/^/      /' /tmp/test-failure-$$file.log; \
-				rm /tmp/test-failure-$$file.log; \
-			fi; \
-		done; \
-		echo ""; \
-		echo "Run individual failing tests with:"; \
-		for file in $$failed_files; do \
-			echo "  make test-file FILE=$$file"; \
-		done; \
-		echo ""; \
-		exit 1; \
-	fi
+	@$(call run-el-tests,$(INTEGRATION_TESTS),integration tests,INTEGRATION TESTS)
 
 test-file:
 ifndef FILE
@@ -299,6 +267,15 @@ coverage: coverage-clean $(COVERAGE_DIR)
 		echo "[!] No coverage file produced; check that undercover is installed"; \
 		exit 1; \
 	fi
+	@$(MAKE) coverage-summary
+
+coverage-summary:
+	@if [ ! -f $(COVERAGE_FILE) ]; then \
+		echo "[!] No coverage file found at $(COVERAGE_FILE). Run 'make coverage' first."; \
+		exit 1; \
+	fi
+	@$(EMACS_BATCH) -L $(MODULE_DIR) -L scripts -l coverage-summary \
+		--eval '(cj/coverage-print-module-summary "$(COVERAGE_FILE)" "$(MODULE_DIR)" "$(CURDIR)")'
 
 coverage-clean:
 	@rm -f $(COVERAGE_FILE)
