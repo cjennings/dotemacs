@@ -20,6 +20,21 @@
 
 (declare-function cj/nov--text-width "calibredb-epub-config" (total-cols))
 
+(defmacro test-calibredb-epub--in-nov-buffer (&rest body)
+  "Run BODY in a temp buffer faking `nov-mode' and a 200-column window.
+`get-buffer-window' / `window-body-width' / `window-margins' /
+`set-window-margins' / `set-window-fringes' are stubbed; BODY must stub
+`nov-render-document' before anything that reaches it."
+  (declare (indent 0))
+  `(with-temp-buffer
+     (setq-local major-mode 'nov-mode)
+     (cl-letf (((symbol-function 'get-buffer-window) (lambda (&rest _) 'win))
+               ((symbol-function 'window-body-width) (lambda (_) 200))
+               ((symbol-function 'window-margins) (lambda (_) '(nil . nil)))
+               ((symbol-function 'set-window-margins) (lambda (&rest _) nil))
+               ((symbol-function 'set-window-fringes) (lambda (&rest _) nil)))
+       ,@body)))
+
 ;;; ----------------------------- cj/nov--text-width ---------------------------
 
 (ert-deftest test-calibredb-epub-nov-text-width-applies-margin ()
@@ -87,6 +102,42 @@ this, every layout pass would shave the column by another margin fraction."
   "Normal: `cj/nov-update-layout' can be invoked with `M-x'."
   (should (commandp #'cj/nov-update-layout)))
 
+(ert-deftest test-calibredb-epub-nov-update-layout-reflows-when-width-changes ()
+  "Normal: a changed text width updates `nov-text-width' and re-renders.
+nov fills the text to `nov-text-width' itself, so a width change requires a
+re-render of the document."
+  (let ((cj/nov-margin-percent 10)
+        rendered)
+    (test-calibredb-epub--in-nov-buffer
+      (setq-local nov-text-width 50)
+      (cl-letf (((symbol-function 'nov-render-document) (lambda () (setq rendered t))))
+        (cj/nov-update-layout))
+      (should (= 160 nov-text-width))   ; 80% of the 200-column window
+      (should rendered))))
+
+(ert-deftest test-calibredb-epub-nov-update-layout-skips-reflow-when-width-unchanged ()
+  "Boundary: when the width is already current, do not re-render the document."
+  (let ((cj/nov-margin-percent 10)
+        rendered)
+    (test-calibredb-epub--in-nov-buffer
+      (setq-local nov-text-width 160)   ; already 80% of 200
+      (cl-letf (((symbol-function 'nov-render-document) (lambda () (setq rendered t))))
+        (cj/nov-update-layout))
+      (should (= 160 nov-text-width))
+      (should-not rendered))))
+
+(ert-deftest test-calibredb-epub-nov-update-layout-centers-with-equal-margins ()
+  "Normal: the text block is centered with equal left/right window margins."
+  (let ((cj/nov-margin-percent 10)
+        margins)
+    (test-calibredb-epub--in-nov-buffer
+      (cl-letf (((symbol-function 'nov-render-document) #'ignore)
+                ((symbol-function 'set-window-margins)
+                 (lambda (_win l r) (setq margins (list l r)))))
+        (cj/nov-update-layout))
+      ;; (200 - 160) / 2 = 20 columns each side
+      (should (equal margins '(20 20))))))
+
 ;;; --------------------- cj/nov-widen-text / cj/nov-narrow-text ---------------
 
 (ert-deftest test-calibredb-epub-nov-adjust-margin-steps-and-clamps ()
@@ -133,12 +184,20 @@ this, every layout pass would shave the column by another margin fraction."
 
 (ert-deftest test-calibredb-epub-nov-apply-preferences-rerenders-document ()
   "Normal: applying preferences re-renders the document so the first page
-lands inside the margins it just configured."
+lands at the width it just configured."
   (let (rendered)
     (cl-letf (((symbol-function 'nov-render-document) (lambda () (setq rendered t))))
       (with-temp-buffer
         (cj/nov-apply-preferences)
         (should rendered)))))
+
+(ert-deftest test-calibredb-epub-nov-apply-preferences-sets-integer-text-width ()
+  "Normal: applying preferences sets `nov-text-width' to a column count, not t,
+so nov's `shr' fills the text itself rather than relying on visual-fill-column."
+  (cl-letf (((symbol-function 'nov-render-document) #'ignore))
+    (with-temp-buffer
+      (cj/nov-apply-preferences)
+      (should (integerp nov-text-width)))))
 
 ;;; ----------------------------- cj/nov-open-external -------------------------
 
