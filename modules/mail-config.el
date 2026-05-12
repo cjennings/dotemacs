@@ -7,10 +7,8 @@
 ;;
 ;; https://macowners.club/posts/email-emacs-mu4e-macos/
 ;;
-;; Attachment saving:
-;; - C-; e S saves all attachments from the current mu4e view message.
-;; - C-; e s prompts for one attachment and saves it.
-;; Both commands prompt for a destination directory.
+;; Attachment saving lives in the `mu4e-attachments' module; its C-; e
+;; bindings are wired into `cj/email-map' below.
 ;;
 ;; Crash Fix:
 ;; auto-composition-mode is disabled in mu4e-headers-mode to prevent a
@@ -22,7 +20,7 @@
 
 (require 'user-constants)
 (require 'system-lib)
-(require 'seq)
+(require 'mu4e-attachments)
 
 ;; cj/custom-keymap's real binding is in keybindings.el, which init.el loads
 ;; first. The use-package org-msg :preface below wraps in eval-and-compile, so
@@ -37,15 +35,6 @@
 (defvar send-mail-function nil)
 (defvar message-send-mail-function nil)
 (defvar message-sendmail-envelope-from nil)
-(defvar mu4e-uniquify-save-file-name-function)
-(defvar-local cj/mu4e-attachment-selection-directory nil
-  "Destination directory for the current attachment selection buffer.")
-(defvar-local cj/mu4e-attachment-selection-entries nil
-  "Attachment selection entries for the current selection buffer.")
-
-(declare-function mm-save-part-to-file "mm-decode" (handle filename))
-(declare-function mu4e-join-paths "mu4e-helpers" (directory &rest components))
-(declare-function mu4e-view-mime-parts "mu4e-mime-parts" ())
 
 (defcustom cj/smtpmail-debug-enabled nil
   "Non-nil means enable verbose SMTP transport debug logging.
@@ -86,221 +75,6 @@ transport details in debug buffers."
             message-send-mail-function 'message-send-mail-with-sendmail
             message-sendmail-envelope-from 'header)
     (setq sendmail-program nil)))
-
-;; --------------------------- Attachment Saving ------------------------------
-
-(defun cj/mu4e--attachment-parts (&optional parts)
-  "Return attachment-like MIME PARTS for the current mu4e view message.
-When PARTS is nil, read parts from `mu4e-view-mime-parts'."
-  (seq-filter (lambda (part) (plist-get part :attachment-like))
-              (or parts
-                  (progn
-                    (unless (fboundp 'mu4e-view-mime-parts)
-                      (require 'mu4e-mime-parts))
-                    (mu4e-view-mime-parts)))))
-
-(defun cj/mu4e--attachment-duplicate-filenames (parts)
-  "Return filenames that appear more than once in PARTS."
-  (let ((counts (make-hash-table :test 'equal))
-        duplicates)
-    (dolist (part parts)
-      (let ((filename (plist-get part :filename)))
-        (puthash filename (1+ (gethash filename counts 0)) counts)))
-    (maphash (lambda (filename count)
-               (when (> count 1)
-                 (push filename duplicates)))
-             counts)
-    duplicates))
-
-(defun cj/mu4e--attachment-label (part duplicate-filenames)
-  "Return a completion label for PART.
-DUPLICATE-FILENAMES is a list of filenames that need part-index disambiguation."
-  (let ((filename (or (plist-get part :filename) "unnamed-attachment")))
-    (if (member filename duplicate-filenames)
-        (format "%s <part %s>" filename (plist-get part :part-index))
-      filename)))
-
-(defun cj/mu4e--attachment-candidates (parts)
-  "Return completion candidates for attachment PARTS.
-The result is an alist of display labels to MIME part plists."
-  (let ((duplicates (cj/mu4e--attachment-duplicate-filenames parts)))
-    (mapcar (lambda (part)
-              (cons (cj/mu4e--attachment-label part duplicates) part))
-            parts)))
-
-(defun cj/mu4e--attachment-default-directory (parts)
-  "Return a sensible default save directory for attachment PARTS."
-  (file-name-as-directory
-   (or (plist-get (car parts) :target-dir)
-       (expand-file-name "~/Downloads/"))))
-
-(defun cj/mu4e--read-attachment-directory (parts)
-  "Prompt for a destination directory for attachment PARTS."
-  (file-name-as-directory
-   (read-directory-name "Save attachments to: "
-                        (cj/mu4e--attachment-default-directory parts))))
-
-(defun cj/mu4e--ensure-attachment-save-functions ()
-  "Load mu4e MIME support when attachment save helpers need it."
-  (unless (and (boundp 'mu4e-uniquify-save-file-name-function)
-               (fboundp 'mu4e-join-paths))
-    (require 'mu4e-mime-parts)))
-
-(defun cj/mu4e--save-attachment-part (part directory)
-  "Save attachment PART to DIRECTORY and return the final path."
-  (cj/mu4e--ensure-attachment-save-functions)
-  (let ((handle (plist-get part :handle)))
-    (unless handle
-      (user-error "Attachment has no MIME handle: %s"
-                  (or (plist-get part :filename) "<unnamed>")))
-    (let* ((path (funcall mu4e-uniquify-save-file-name-function
-                          (mu4e-join-paths directory
-                                           (plist-get part :filename)))))
-      (mm-save-part-to-file handle path)
-      path)))
-
-(defun cj/mu4e--save-attachment-parts (parts directory)
-  "Save attachment PARTS to DIRECTORY and return the saved paths."
-  (mapcar (lambda (part)
-            (cj/mu4e--save-attachment-part part directory))
-          parts))
-
-(defun cj/mu4e-save-all-attachments ()
-  "Prompt for a directory and save all attachments in the current mu4e message."
-  (interactive)
-  (let ((parts (cj/mu4e--attachment-parts)))
-    (unless parts
-      (user-error "No attachments for this message"))
-    (let* ((directory (cj/mu4e--read-attachment-directory parts))
-           (paths (cj/mu4e--save-attachment-parts parts directory)))
-      (message "Saved %d attachment%s to %s"
-               (length paths)
-               (if (= (length paths) 1) "" "s")
-               directory)
-      paths)))
-
-(defun cj/mu4e-save-attachment-here ()
-  "Prompt for one attachment and a directory, then save that attachment."
-  (interactive)
-  (let ((parts (cj/mu4e--attachment-parts)))
-    (unless parts
-      (user-error "No attachments for this message"))
-    (let* ((directory (cj/mu4e--read-attachment-directory parts))
-           (candidates (cj/mu4e--attachment-candidates parts))
-           (choice (completing-read "Save attachment: " candidates nil t))
-           (part (cdr (assoc choice candidates)))
-           (path (cj/mu4e--save-attachment-part part directory)))
-      (message "Saved attachment to %s" path)
-      path)))
-
-(defvar cj/mu4e-attachment-selection-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "RET") #'cj/mu4e-attachment-selection-toggle)
-    (define-key map (kbd "a") #'cj/mu4e-attachment-selection-mark-all)
-    (define-key map (kbd "u") #'cj/mu4e-attachment-selection-unmark-all)
-    (define-key map (kbd "s") #'cj/mu4e-attachment-selection-save-marked)
-    (define-key map (kbd "q") #'quit-window)
-    map)
-  "Keymap for `cj/mu4e-attachment-selection-mode'.")
-
-(define-derived-mode cj/mu4e-attachment-selection-mode special-mode "Mail Attachments"
-  "Mode for selecting mu4e attachments to save.")
-
-(defun cj/mu4e--attachment-selection-entry-at-point ()
-  "Return the attachment selection entry at point."
-  (or (get-text-property (point) 'cj/mu4e-attachment-entry)
-      (get-text-property (line-beginning-position) 'cj/mu4e-attachment-entry)
-      (user-error "No attachment on this line")))
-
-(defun cj/mu4e--attachment-selection-render ()
-  "Render the current attachment selection buffer."
-  (let ((inhibit-read-only t)
-        (point-line (line-number-at-pos)))
-    (erase-buffer)
-    (insert (format "Save attachments to: %s\n\n"
-                    cj/mu4e-attachment-selection-directory))
-    (insert "RET toggle   a mark all   u unmark all   s save marked   q quit\n\n")
-    (dolist (entry cj/mu4e-attachment-selection-entries)
-      (let* ((part (plist-get entry :part))
-             (mark (if (plist-get entry :selected) "[x]" "[ ]"))
-             (label (plist-get entry :label))
-             (mime-type (or (plist-get part :mime-type) ""))
-             (size (if-let ((bytes (plist-get part :decoded-size-approx)))
-                       (file-size-human-readable bytes)
-                     "")))
-        (insert
-         (propertize
-          (format "%s %-40s %-24s %s\n" mark label mime-type size)
-          'cj/mu4e-attachment-entry entry))))
-    (goto-char (point-min))
-    (forward-line (max 0 (1- point-line)))))
-
-(defun cj/mu4e--attachment-selection-setup (parts directory)
-  "Populate the current selection buffer with attachment PARTS and DIRECTORY."
-  (setq cj/mu4e-attachment-selection-directory directory)
-  (setq cj/mu4e-attachment-selection-entries
-        (mapcar (lambda (candidate)
-                  (list :label (car candidate)
-                        :part (cdr candidate)
-                        :selected nil))
-                (cj/mu4e--attachment-candidates parts)))
-  (cj/mu4e--attachment-selection-render))
-
-(defun cj/mu4e-attachment-selection-toggle ()
-  "Toggle the attachment entry at point."
-  (interactive)
-  (let ((entry (cj/mu4e--attachment-selection-entry-at-point)))
-    (setf (plist-get entry :selected)
-          (not (plist-get entry :selected)))
-    (cj/mu4e--attachment-selection-render)))
-
-(defun cj/mu4e-attachment-selection-mark-all ()
-  "Mark all attachments in the selection buffer."
-  (interactive)
-  (dolist (entry cj/mu4e-attachment-selection-entries)
-    (setf (plist-get entry :selected) t))
-  (cj/mu4e--attachment-selection-render))
-
-(defun cj/mu4e-attachment-selection-unmark-all ()
-  "Unmark all attachments in the selection buffer."
-  (interactive)
-  (dolist (entry cj/mu4e-attachment-selection-entries)
-    (setf (plist-get entry :selected) nil))
-  (cj/mu4e--attachment-selection-render))
-
-(defun cj/mu4e-attachment-selection-save-marked ()
-  "Save marked attachments from the selection buffer."
-  (interactive)
-  (let ((parts (mapcar (lambda (entry) (plist-get entry :part))
-                       (seq-filter (lambda (entry)
-                                     (plist-get entry :selected))
-                                   cj/mu4e-attachment-selection-entries))))
-    (unless parts
-      (user-error "No attachments selected"))
-    (let ((paths (cj/mu4e--save-attachment-parts
-                  parts cj/mu4e-attachment-selection-directory)))
-      (message "Saved %d attachment%s to %s"
-               (length paths)
-               (if (= (length paths) 1) "" "s")
-               cj/mu4e-attachment-selection-directory)
-      paths)))
-
-(defun cj/mu4e--open-attachment-selection-buffer (parts directory)
-  "Open an attachment selection buffer for PARTS and DIRECTORY."
-  (let ((buffer (get-buffer-create "*mu4e attachments*")))
-    (with-current-buffer buffer
-      (cj/mu4e-attachment-selection-mode)
-      (cj/mu4e--attachment-selection-setup parts directory))
-    (pop-to-buffer buffer)))
-
-(defun cj/mu4e-save-some-attachments ()
-  "Prompt for a directory and open a buffer to select attachments to save."
-  (interactive)
-  (let ((parts (cj/mu4e--attachment-parts)))
-    (unless parts
-      (user-error "No attachments for this message"))
-    (let ((directory (cj/mu4e--read-attachment-directory parts)))
-      (cj/mu4e--open-attachment-selection-buffer parts directory))))
 
 ;; -------------------- HarfBuzz Crash Fix: Disable Composition ---------------
 ;; Disable auto-composition in mu4e headers to prevent SIGSEGV from HarfBuzz
