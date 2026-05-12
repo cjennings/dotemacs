@@ -192,7 +192,11 @@ so this fails the same way whether or not mu4e's MIME support is loadable."
                     ((symbol-function 'message) (lambda (&rest _) nil)))
             (should (equal (cj/mu4e-attachment-selection-save-marked)
                            '("/downloads/b.pdf")))
-            (should (equal saved (list (list b) "/downloads/")))))
+            (should (equal saved (list (list b) "/downloads/")))
+            ;; marks clear after a successful save so `s' won't re-save them
+            (should-not (seq-some (lambda (entry) (plist-get entry :selected))
+                                  cj/mu4e-attachment-selection-entries))
+            (should (string-match-p "\\[ \\] b\\.pdf" (buffer-string)))))
       (kill-buffer buffer))))
 
 (ert-deftest test-mu4e-attachments-selection-save-marked-errors-when-empty ()
