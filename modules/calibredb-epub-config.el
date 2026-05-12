@@ -90,10 +90,10 @@
 
 ;; ------------------------------ Nov Epub Reader ------------------------------
 
-(defvar cj/nov-margin-percent 12
+(defvar cj/nov-margin-percent 10
   "Percent of the window's natural width used as a margin on each side in epubs.
-12 leaves about 76% of the columns for text.  Clamped to 0..25, so the text
-column runs from 50% (margin 25) to 100% (margin 0) of the window.
+10 leaves 80% of the columns for text.  Clamped to 0..25, so the text column
+runs from 50% (margin 25) to 100% (margin 0) of the window.
 Adjust it live with `cj/nov-widen-text' and `cj/nov-narrow-text'.")
 
 (defvar cj/nov-min-text-width 40
