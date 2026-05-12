@@ -49,6 +49,7 @@
 (declare-function cj/open-file-with-command "system-utils" (command))
 (declare-function visual-fill-column-mode "visual-fill-column" (&optional arg))
 (declare-function visual-fill-column--adjust-window "visual-fill-column" ())
+(declare-function nov-render-document "nov" ())
 
 ;; -------------------------- CalibreDB Ebook Manager --------------------------
 
@@ -89,12 +90,17 @@
 
 ;; ------------------------------ Nov Epub Reader ------------------------------
 
-(defvar cj/nov-margin-percent 25
-  "Percentage of window width to use as margins on each side when reading epubs.
-For example, 25 means 25% left margin + 25% right margin, with 50% for text.")
+(defvar cj/nov-margin-percent 12
+  "Percent of the window's natural width used as a margin on each side in epubs.
+12 leaves about 76% of the columns for text.  Clamped to 0..25, so the text
+column runs from 50% (margin 25) to 100% (margin 0) of the window.
+Adjust it live with `cj/nov-widen-text' and `cj/nov-narrow-text'.")
 
 (defvar cj/nov-min-text-width 40
   "Minimum text width in columns for Nov reading buffers.")
+
+(defvar cj/nov-margin-step 2
+  "Percentage points each `cj/nov-widen-text'/`cj/nov-narrow-text' press changes.")
 
 ;; Prevent magic-fallback-mode-alist from opening epub as archive-mode
 ;; Advise set-auto-mode to force nov-mode for .epub files before magic-fallback runs
@@ -127,21 +133,35 @@ For example, 25 means 25% left margin + 25% right margin, with 50% for text.")
   (forward-paragraph)
   (recenter))
 
-(defun cj/nov--text-width-for-window (&optional window)
-  "Return preferred Nov text width for WINDOW.
-The width uses `cj/nov-margin-percent' while keeping a readable minimum and
-clamping excessive margin percentages."
-  (let* ((window (or window (get-buffer-window (current-buffer) t)))
-         (window-width (if window (window-body-width window) 80))
-         (margin-percent (max 0 (min 45 cj/nov-margin-percent)))
+(defun cj/nov--text-width (total-cols)
+  "Return the Nov text-column width for TOTAL-COLS of usable window width.
+`cj/nov-margin-percent' is clamped to 0..25 and taken off each side; the
+result is at least `cj/nov-min-text-width'."
+  (let* ((margin-percent (max 0 (min 25 cj/nov-margin-percent)))
          (text-width-ratio (- 1.0 (* 2 (/ margin-percent 100.0)))))
     (max cj/nov-min-text-width
-         (floor (* text-width-ratio window-width)))))
+         (floor (* text-width-ratio total-cols)))))
+
+(defun cj/nov--text-width-for-window (&optional window)
+  "Return preferred Nov text width for WINDOW.
+Computed from the window's natural column count -- its current body width
+plus any margins already set -- so that re-running `cj/nov-update-layout' is
+idempotent: each pass would otherwise shave the column by another margin
+fraction, since setting margins narrows the body width."
+  (let* ((window (or window (get-buffer-window (current-buffer) t)))
+         (margins (and window (window-margins window)))
+         (natural-cols (if window
+                           (+ (window-body-width window)
+                              (or (car margins) 0)
+                              (or (cdr margins) 0))
+                         80)))
+    (cj/nov--text-width natural-cols)))
 
 (defun cj/nov-update-layout (&optional _frame)
-  "Recalculate Nov text layout for the current buffer.
-Suitable for `window-configuration-change-hook' or
-`window-size-change-functions'."
+  "Recalculate Nov's centered text column (width + margins) for this buffer.
+Also runs from `window-configuration-change-hook' and
+`window-size-change-functions' to stay responsive to splits and resizes."
+  (interactive)
   (when (derived-mode-p 'nov-mode)
     (when (require 'visual-fill-column nil t)
       (setq-local visual-fill-column-center-text t)
@@ -149,6 +169,25 @@ Suitable for `window-configuration-change-hook' or
       (visual-fill-column-mode 1)
       (when (bound-and-true-p visual-fill-column-mode)
         (visual-fill-column--adjust-window)))))
+
+(defun cj/--nov-adjust-margin (delta)
+  "Add DELTA to `cj/nov-margin-percent' (clamped 0..25), re-lay-out, and report.
+A positive DELTA narrows the text column; a negative DELTA widens it."
+  (setq cj/nov-margin-percent
+        (max 0 (min 25 (+ cj/nov-margin-percent delta))))
+  (cj/nov-update-layout)
+  (message "EPUB text width: %d%% of the window (margin %d%% each side)"
+           (- 100 (* 2 cj/nov-margin-percent)) cj/nov-margin-percent))
+
+(defun cj/nov-widen-text ()
+  "Give the EPUB text column more of the window, up to the full width."
+  (interactive)
+  (cj/--nov-adjust-margin (- cj/nov-margin-step)))
+
+(defun cj/nov-narrow-text ()
+  "Give the EPUB text column less of the window, down to 50%."
+  (interactive)
+  (cj/--nov-adjust-margin cj/nov-margin-step))
 
 (defun cj/nov-apply-preferences ()
   "Apply preferences after nov-mode has launched."
@@ -168,7 +207,10 @@ Suitable for `window-configuration-change-hook' or
   ;; Enable visual-fill-column for centered text with margins
   (cj/nov-update-layout)
   ;; Keep centered text width responsive after splits/resizes.
-  (add-hook 'window-configuration-change-hook #'cj/nov-update-layout nil t))
+  (add-hook 'window-configuration-change-hook #'cj/nov-update-layout nil t)
+  ;; Re-render so the first page is laid out inside the margins just set;
+  ;; nov-mode's initial render ran before `nov-text-width'/visual-fill-column.
+  (nov-render-document))
 
 (defun cj/nov-open-external ()
   "Open the current EPUB with zathura."
@@ -191,6 +233,11 @@ Suitable for `window-configuration-change-hook' or
 		("<" . nov-history-back)
 		(">" . nov-history-forward)
 		("," . backward-paragraph)
+		;; +/= widen the text column, -/_ narrow it (50%..100% of the window)
+		("+" . cj/nov-widen-text)
+		("=" . cj/nov-widen-text)
+		("-" . cj/nov-narrow-text)
+		("_" . cj/nov-narrow-text)
 		;; open current EPUB with zathura (same key in pdf-view)
 		("z" . cj/nov-open-external)
 		("t" . nov-goto-toc)
