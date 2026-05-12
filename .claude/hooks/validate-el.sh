@@ -98,7 +98,7 @@ if [ "$count" -ge 1 ] && [ "$count" -le "$MAX_AUTO_TEST_FILES" ]; then
                    -L "$PROJECT_ROOT/tests" \
                    --eval '(package-initialize)' \
                    -l ert "${load_args[@]}" \
-                   --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" 2>&1)"; then
+                   --eval "(ert-run-tests-batch-and-exit '(not (or (tag :slow) (tag :perf))))" 2>&1)"; then
     fail_json "TESTS FAILED ($count test file(s))" "$f" "$output"
   fi
 fi

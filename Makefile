@@ -6,6 +6,7 @@
 #   make test-unit         - Run unit tests only
 #   make test-file FILE=test-foo.el  - Run specific test file
 #   make test-name TEST=test-foo-*   - Run tests matching pattern
+#   make benchmark         - Run performance benchmarks (:perf-tagged tests)
 #   make coverage          - Generate simplecov coverage report
 #   make coverage-clean    - Remove coverage report file
 #   make validate-parens   - Check for unbalanced parentheses
@@ -41,7 +42,7 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 # No colors - using plain text symbols instead
 
 .PHONY: help targets test test-all test-unit test-integration test-file test-name \
-        coverage coverage-clean \
+        benchmark coverage coverage-clean \
         validate-parens validate-modules compile lint profile \
         clean clean-compiled clean-tests reset
 
@@ -60,6 +61,7 @@ help:
 	@echo "    make test-integration  - Run integration tests only ($(words $(INTEGRATION_TESTS)) files)"
 	@echo "    make test-file FILE=<filename>  - Run specific test file"
 	@echo "    make test-name TEST=<pattern>   - Run tests matching pattern"
+	@echo "    make benchmark         - Run performance benchmarks (:perf-tagged)"
 	@echo ""
 	@echo "  Coverage:"
 	@echo "    make coverage          - Generate simplecov JSON at $(COVERAGE_FILE)"
@@ -105,7 +107,7 @@ test-unit:
 	for test in $(UNIT_TESTS); do \
 		test_name=$$(basename $$test); \
 		printf "  Testing %-60s " "$$test_name..."; \
-		output=$$($(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" 2>&1); \
+		output=$$($(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (or (tag :slow) (tag :perf))))" 2>&1); \
 		result=$$?; \
 		if [ $$result -eq 0 ]; then \
 			pass_count=$$(echo "$$output" | grep -oP "Ran \K\d+" | head -1); \
@@ -157,7 +159,7 @@ test-integration:
 	for test in $(INTEGRATION_TESTS); do \
 		test_name=$$(basename $$test); \
 		printf "  Testing %-60s " "$$test_name..."; \
-		output=$$($(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" 2>&1); \
+		output=$$($(EMACS_TEST) -l ert -l $$test --eval "(ert-run-tests-batch-and-exit '(not (or (tag :slow) (tag :perf))))" 2>&1); \
 		result=$$?; \
 		if [ $$result -eq 0 ]; then \
 			pass_count=$$(echo "$$output" | grep -oP "Ran \K\d+" | head -1); \
@@ -220,6 +222,17 @@ endif
 		--eval '(ert-run-tests-batch-and-exit "$(TEST)")'
 	@echo "✓ Tests matching '$(TEST)' complete"
 
+# Performance benchmarks for lorem-optimum's Markov chain.  These are tagged
+# `:perf' so `make test', `make coverage', and the editor test hook skip them;
+# this target is the way to run them on purpose.
+BENCHMARK_TESTS = $(TEST_DIR)/test-lorem-optimum-benchmark.el
+
+benchmark:
+	@echo "[i] Running performance benchmarks..."
+	@$(EMACS_TEST) -l ert $(foreach test,$(BENCHMARK_TESTS),-l $(test)) \
+		--eval "(ert-run-tests-batch-and-exit '(tag :perf))"
+	@echo "✓ Benchmarks complete"
+
 # ============================================================================
 # Coverage Targets
 # ============================================================================
@@ -227,13 +240,11 @@ endif
 COVERAGE_DIR = .coverage
 COVERAGE_FILE = $(COVERAGE_DIR)/simplecov.json
 
-# Test files that can't coexist with undercover's instrumentation
-# (test-all-comp-errors byte-compiles modules, which fails on instrumented
-# sources; test-lorem-optimum-benchmark's wall-clock assertions fail when
-# instrumentation slows execution).  Excluded from `make coverage' only.
+# test-all-comp-errors byte-compiles every module, which fails on sources
+# undercover has instrumented, so it can't run under `make coverage'.  (The
+# :perf-tagged benchmarks are skipped by the tag filter above, not listed here.)
 COVERAGE_EXCLUDE = \
-	$(TEST_DIR)/test-all-comp-errors.el \
-	$(TEST_DIR)/test-lorem-optimum-benchmark.el
+	$(TEST_DIR)/test-all-comp-errors.el
 COVERAGE_TESTS = $(filter-out $(COVERAGE_EXCLUDE),$(UNIT_TESTS))
 
 coverage: coverage-clean $(COVERAGE_DIR)
@@ -248,7 +259,7 @@ coverage: coverage-clean $(COVERAGE_DIR)
 	for test in $(COVERAGE_TESTS); do \
 		test_name=$$(basename $$test); \
 		printf "  Coverage: %-58s " "$$test_name..."; \
-		output=$$($(EMACS_TEST) -l $(TEST_DIR)/run-coverage-file.el -l $$test --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" 2>&1); \
+		output=$$($(EMACS_TEST) -l $(TEST_DIR)/run-coverage-file.el -l $$test --eval "(ert-run-tests-batch-and-exit '(not (or (tag :slow) (tag :perf))))" 2>&1); \
 		result=$$?; \
 		if [ $$result -eq 0 ]; then \
 			echo "✓"; \
