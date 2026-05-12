@@ -245,6 +245,52 @@ Examples:
       (message "Duplicated: %s → %s"
                (file-name-nondirectory file) new-name))))
 
+;;; ------------------------------ Dirvish Print File ---------------------------
+
+(defvar cj/dirvish-print-extensions
+  '("pdf" "ps" "eps" "txt" "text" "org" "md" "markdown" "log" "conf"
+    "el" "py" "sh" "c" "h" "json" "yaml" "yml" "csv" "tex"
+    "png" "jpg" "jpeg" "gif")
+  "File extensions `cj/dirvish-print-file' will send to the printer.
+Matched case-insensitively.  CUPS filters handle each of these directly,
+so PDFs and images print without a separate dialog.")
+
+(defun cj/--printable-file-p (file)
+  "Return non-nil when FILE's extension is in `cj/dirvish-print-extensions'.
+Match is case-insensitive; a file with no extension is not printable.
+Pure helper used by `cj/dirvish-print-file'."
+  (when-let* ((ext (file-name-extension file)))
+    (and (member (downcase ext) cj/dirvish-print-extensions) t)))
+
+(defun cj/--print-program ()
+  "Return the CUPS print command (`lp' preferred, `lpr' as fallback), or nil."
+  (or (executable-find "lp") (executable-find "lpr")))
+
+(defun cj/dirvish-print-file ()
+  "Print the file at point on the default printer via CUPS (`lp'/`lpr').
+Refuses directories and file types not in `cj/dirvish-print-extensions'.
+Shadows dired's `P' (`dired-do-print') with this type-aware version."
+  (interactive)
+  (let ((file (dired-get-filename nil t)))
+    (unless file
+      (user-error "No file at point"))
+    (when (file-directory-p file)
+      (user-error "Cannot print directories"))
+    (unless (cj/--printable-file-p file)
+      (user-error "Not a printable file type: %s" (file-name-nondirectory file)))
+    (let ((program (or (cj/--print-program)
+                       (user-error "No `lp' or `lpr' found — is CUPS installed?")))
+          (name (file-name-nondirectory file)))
+      (when (y-or-n-p (format "Print %s on the default printer? " name))
+        (with-temp-buffer
+          (let* ((code (call-process program nil t nil file))
+                 (out (string-trim (buffer-string))))
+            (if (zerop code)
+                (message "Printing %s%s" name
+                         (if (string-empty-p out) "" (concat " — " out)))
+              (user-error "Print failed (exit %d)%s" code
+                          (if (string-empty-p out) "" (concat ": " out))))))))))
+
 ;;; ----------------------- Dirvish Open File Manager Here ----------------------
 
 (defun cj/dirvish-open-file-manager-here ()
@@ -421,7 +467,7 @@ Uses feh on X11, swww on Wayland."
    ("o"       . cj/xdg-open)
    ("O"       . cj/open-file-with-command)  ; Prompts for command to run
    ("p"       . (lambda () (interactive) (cj/dired-copy-path-as-kill nil t)))
-   ("P"       . (lambda () (interactive) (cj/dired-copy-path-as-kill)))
+   ("P"       . cj/dirvish-print-file)
    ("r"       . dirvish-rsync)
    ("s"       . dirvish-quicksort)
    ("v"       . dirvish-vc-menu)
