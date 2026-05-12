@@ -16,7 +16,8 @@
 ;; - o/O: Open file with xdg-open/custom command
 ;; - l: Copy org-link with relative file path (project-relative or home-relative)
 ;; - p: Copy absolute file path
-;; - P: Copy relative file path (project-relative or home-relative)
+;; - P: Print the file at point via CUPS
+;; - S: Study — start an org-drill session on the .org file at point
 ;; - M-S-d (Meta-Shift-d): DWIM shell commands menu
 ;; - TAB: Toggle subtree expansion
 ;; - F11: Toggle sidebar view
@@ -28,6 +29,8 @@
 (require 'host-environment)
 (require 'system-lib)
 (require 'external-open-lib)
+
+(declare-function cj/drill-this-file "org-drill-config")
 
 ;; mark files in dirvish, attach in mu4e
 (add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
@@ -291,6 +294,18 @@ Shadows dired's `P' (`dired-do-print') with this type-aware version."
               (user-error "Print failed (exit %d)%s" code
                           (if (string-empty-p out) "" (concat ": " out))))))))))
 
+;;; ------------------------------ Dirvish Drill File ---------------------------
+
+(defun cj/dirvish-drill-file ()
+  "Open the Org file at point and start an `org-drill' session on it.
+Bound to `S' (\"study\") in `dirvish-mode-map'; refuses anything but a `.org' file."
+  (interactive)
+  (let ((file (dired-get-filename nil t)))
+    (unless (and file (not (file-directory-p file)) (string-suffix-p ".org" file t))
+      (user-error "Not an Org file at point"))
+    (find-file file)
+    (cj/drill-this-file)))
+
 ;;; ----------------------- Dirvish Open File Manager Here ----------------------
 
 (defun cj/dirvish-open-file-manager-here ()
@@ -469,6 +484,7 @@ Uses feh on X11, swww on Wayland."
    ("p"       . (lambda () (interactive) (cj/dired-copy-path-as-kill nil t)))
    ("P"       . cj/dirvish-print-file)
    ("r"       . dirvish-rsync)
+   ("S"       . cj/dirvish-drill-file)  ; Study: org-drill the .org file at point
    ("s"       . dirvish-quicksort)
    ("v"       . dirvish-vc-menu)
    ("y"       . dirvish-yank-menu)))
