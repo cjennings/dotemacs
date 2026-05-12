@@ -8,10 +8,12 @@
 ;; scripts/setup-reveal.sh) and self-contained HTML export.
 ;;
 ;; Keybindings (C-; p prefix):
+;; - C-; p SPC : Ensure headers, export, and open in browser
 ;; - C-; p e : Export to self-contained HTML and open in browser
 ;; - C-; p p : Start live preview (re-exports on save)
 ;; - C-; p s : Stop live preview
 ;; - C-; p h : Insert #+REVEAL_ header block at top of current buffer
+;; - C-; p H : Remove reveal.js headers from current buffer
 ;; - C-; p n : Create new presentation file (prompts for title and location)
 
 ;;; Code:
@@ -77,12 +79,61 @@ Downcases TITLE, replaces whitespace runs with hyphens, appends .org."
   (concat (replace-regexp-in-string "[[:space:]]+" "-" (downcase title))
           ".org"))
 
+(defconst cj/--reveal-header-keywords
+  '("TITLE"
+    "AUTHOR"
+    "DATE"
+    "REVEAL_ROOT"
+    "REVEAL_THEME"
+    "REVEAL_INIT_OPTIONS"
+    "REVEAL_PLUGINS"
+    "REVEAL_HIGHLIGHT_CSS"
+    "OPTIONS")
+  "Org keywords inserted by `cj/--reveal-header-template'.")
+
+(defun cj/--reveal-keyword-regexp (keyword)
+  "Return a regexp matching an Org metadata line for KEYWORD."
+  (format "^#\\+%s:[^\n]*\n?" (regexp-quote keyword)))
+
+(defun cj/--reveal-has-header-p ()
+  "Return non-nil when the current buffer already has reveal.js headers."
+  (save-excursion
+    (goto-char (point-min))
+    (re-search-forward "^#\\+REVEAL_\\|^#\\+REVEAL_ROOT:" nil t)))
+
+(defun cj/--reveal-remove-headers ()
+  "Remove reveal.js header lines inserted by this module.
+Returns the number of lines removed."
+  (let ((removed 0))
+    (save-excursion
+      (goto-char (point-min))
+      (while (and (not (eobp))
+                  (seq-some
+                   (lambda (keyword)
+                     (looking-at-p (cj/--reveal-keyword-regexp keyword)))
+                   cj/--reveal-header-keywords))
+        (delete-region (line-beginning-position)
+                       (min (point-max) (1+ (line-end-position))))
+        (setq removed (1+ removed)))
+      (while (looking-at-p "\n")
+        (delete-char 1)))
+    removed))
+
 (defun cj/--reveal-preview-export-on-save ()
   "Export current org buffer to reveal.js HTML silently.
 Intended for use as a buffer-local `after-save-hook'."
   (when (derived-mode-p 'org-mode)
     (let ((inhibit-message t))
       (org-reveal-export-to-html))))
+
+(defun cj/--reveal-ensure-header ()
+  "Insert reveal.js headers when the current Org buffer does not have them."
+  (unless (cj/--reveal-has-header-p)
+    (let ((title (read-from-minibuffer "Presentation title: ")))
+      (save-excursion
+        (goto-char (point-min))
+        (insert (cj/--reveal-header-template title)))
+      t)))
 
 ;; ----------------------------- Public Functions ------------------------------
 
@@ -115,16 +166,37 @@ re-export silently; refresh the browser to see changes."
   (remove-hook 'after-save-hook #'cj/--reveal-preview-export-on-save t)
   (message "Live preview stopped"))
 
+(defun cj/reveal-present ()
+  "Ensure reveal headers, export current Org buffer, and open it in browser."
+  (interactive)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Not in an Org buffer"))
+  (cj/--reveal-ensure-header)
+  (when (buffer-modified-p)
+    (if buffer-file-name
+        (save-buffer)
+      (call-interactively #'write-file)))
+  (cj/reveal-export))
+
 (defun cj/reveal-insert-header ()
   "Insert a #+REVEAL_ header block at the top of the current Org buffer."
   (interactive)
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an Org buffer"))
-  (let ((title (read-from-minibuffer "Presentation title: ")))
-    (save-excursion
-      (goto-char (point-min))
-      (insert (cj/--reveal-header-template title)))
-    (message "Inserted reveal.js headers")))
+  (when (cj/--reveal-has-header-p)
+    (user-error "Reveal headers already present"))
+  (cj/--reveal-ensure-header)
+  (message "Inserted reveal.js headers"))
+
+(defun cj/reveal-remove-headers ()
+  "Remove reveal.js headers inserted by this module from the current Org buffer."
+  (interactive)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Not in an Org buffer"))
+  (let ((removed (cj/--reveal-remove-headers)))
+    (message "Removed %d reveal.js header line%s"
+             removed
+             (if (= removed 1) "" "s"))))
 
 (defun cj/reveal-new ()
   "Create a new reveal.js presentation file.
@@ -145,19 +217,23 @@ reveal.js headers pre-filled."
 
 ;; -------------------------------- Keybindings --------------------------------
 
+(global-set-key (kbd "C-; p SPC") #'cj/reveal-present)
 (global-set-key (kbd "C-; p e") #'cj/reveal-export)
 (global-set-key (kbd "C-; p p") #'cj/reveal-preview-start)
 (global-set-key (kbd "C-; p s") #'cj/reveal-preview-stop)
 (global-set-key (kbd "C-; p h") #'cj/reveal-insert-header)
+(global-set-key (kbd "C-; p H") #'cj/reveal-remove-headers)
 (global-set-key (kbd "C-; p n") #'cj/reveal-new)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; p" "presentations"
+    "C-; p SPC" "present current buffer"
     "C-; p e" "export & open"
     "C-; p p" "start live preview"
     "C-; p s" "stop live preview"
     "C-; p h" "insert headers"
+    "C-; p H" "remove headers"
     "C-; p n" "new presentation"))
 
 (provide 'org-reveal-config)
