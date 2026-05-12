@@ -48,8 +48,9 @@ Idempotent — `add-to-list' skips patterns already present."
   (dolist (pattern cj/lsp-file-watch-ignored-extras)
     (add-to-list 'lsp-file-watch-ignored-directories pattern)))
 
-(defun cj/lsp--disable-eldoc-hover ()
-  "Remove lsp-mode's Eldoc hover provider in the current buffer."
+(defun cj/lsp--remove-eldoc-provider ()
+  "Remove lsp-mode's provider from `eldoc-documentation-functions' here.
+Buffer-local — the global hook value is untouched."
   (remove-hook 'eldoc-documentation-functions #'lsp-eldoc-function t))
 
 ;;;;; ---------------------------- LSP Mode ---------------------------
@@ -72,7 +73,7 @@ Idempotent — `add-to-list' skips patterns already present."
   (setq lsp-enable-on-type-formatting nil)
   (setq lsp-signature-auto-activate nil)
   (setq lsp-signature-render-documentation nil)
-  (add-hook 'lsp-managed-mode-hook #'cj/lsp--disable-eldoc-hover)
+  (add-hook 'lsp-managed-mode-hook #'cj/lsp--remove-eldoc-provider)
   (setq lsp-modeline-code-actions-enable nil)
   (setq lsp-modeline-diagnostics-enable nil)
   (setq lsp-headerline-breadcrumb-enable nil)
