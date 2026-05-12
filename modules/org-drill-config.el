@@ -3,7 +3,9 @@
 ;;; Commentary:
 ;;
 ;; Notes: Org-Drill
-;; Start out your org-drill with C-d s, then select your file.
+;; `C-; D s' picks a flashcard file from `drill-dir' and starts a session;
+;; `C-u C-; D s' lets you pick the directory first.  `C-; D f' drills
+;; whatever Org file is current, so any drill file anywhere works.
 
 ;; Capture templates:
 ;; - "d" for web/EPUB drill captures (uses %i for selected text, %:link for source)
@@ -42,20 +44,42 @@
   (setq org-drill-use-variable-pitch t)                 ;; use variable-pitch font for readability
   (setq org-drill-hide-modeline-during-session t)       ;; hide modeline for cleaner display
 
-  (defun cj/drill-start ()
-	"Prompt user to pick a drill org file, then start an org-drill session."
-	(interactive)
-	(let* ((choices (directory-files drill-dir nil "^[^.].*\\.org$"))
-		   (chosen-drill-file (completing-read "Choose Flashcard File:" choices)))
-	  (find-file (concat drill-dir chosen-drill-file))
-      (org-drill)))
+  (defun cj/--drill-files-in (dir)
+	"Return the drill Org file names directly inside DIR (no leading dots)."
+	(directory-files dir nil "^[^.].*\\.org$"))
 
-  (defun cj/drill-edit ()
-	"Prompts the user to pick a drill org file, then opens it for editing."
+  (defun cj/--drill-pick-file (dir)
+	"Prompt for one of the drill Org files in DIR; return its absolute path."
+	(expand-file-name
+	 (completing-read "Choose flashcard file: " (cj/--drill-files-in dir) nil t)
+	 dir))
+
+  (defun cj/--drill-pick-dir (other-dir)
+	"Return the directory to pick drill files from.
+With OTHER-DIR non-nil, prompt for one; otherwise use `drill-dir'."
+	(if other-dir (read-directory-name "Drill files in: ") drill-dir))
+
+  (defun cj/drill-start (&optional other-dir)
+	"Pick a drill Org file and start an `org-drill' session.
+With a prefix arg OTHER-DIR, prompt for the directory to choose from
+instead of the default `drill-dir'."
+	(interactive "P")
+	(find-file (cj/--drill-pick-file (cj/--drill-pick-dir other-dir)))
+	(org-drill))
+
+  (defun cj/drill-this-file ()
+	"Start an `org-drill' session on the current Org buffer.
+Use this to drill any drill file you have open, wherever it lives."
 	(interactive)
-	(let* ((choices (directory-files drill-dir nil "^[^.].*\\.org$"))
-		   (chosen-drill-file (completing-read "Choose Flashcard File:" choices)))
-	  (find-file (concat drill-dir chosen-drill-file))))
+	(unless (derived-mode-p 'org-mode)
+	  (user-error "Not an Org buffer -- visit a `.org' file first"))
+	(org-drill))
+
+  (defun cj/drill-edit (&optional other-dir)
+	"Pick a drill Org file and open it for editing.
+With a prefix arg OTHER-DIR, prompt for the directory instead of `drill-dir'."
+	(interactive "P")
+	(find-file (cj/--drill-pick-file (cj/--drill-pick-dir other-dir))))
 
   (defun cj/drill-capture ()
 	"Quickly capture a drill question."
@@ -75,6 +99,7 @@
   (defvar-keymap cj/drill-map
 	:doc "Keymap for org-drill"
 	"s" #'cj/drill-start
+	"f" #'cj/drill-this-file
 	"e" #'cj/drill-edit
 	"c" #'cj/drill-capture
 	"r" #'cj/drill-refile
@@ -84,8 +109,9 @@
   (with-eval-after-load 'which-key
 	(which-key-add-key-based-replacements
       "C-; D" "org-drill menu"
-      "C-; D s" "start drill"
-      "C-; D e" "edit drill file"
+      "C-; D s" "start drill (C-u: pick dir)"
+      "C-; D f" "drill current file"
+      "C-; D e" "edit drill file (C-u: pick dir)"
       "C-; D c" "capture question"
       "C-; D r" "refile to drill"
       "C-; D R" "resume drill")))
