@@ -1,8 +1,8 @@
-;;; test-mail-config-attachments.el --- Tests for mu4e attachment helpers -*- lexical-binding: t; -*-
+;;; test-mu4e-attachments.el --- Tests for mu4e attachment helpers -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests project-owned attachment save helpers without requiring a live mu4e
-;; view buffer or real MIME handles.
+;; Tests the project-owned attachment save helpers in `mu4e-attachments'
+;; without requiring a live mu4e view buffer or real MIME handles.
 
 ;;; Code:
 
@@ -10,11 +10,11 @@
 (require 'cl-lib)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
-(require 'mail-config)
+(require 'mu4e-attachments)
 
 (defvar mu4e-uniquify-save-file-name-function)
 
-(defun test-mail-config-attachment--part (filename index &optional handle)
+(defun test-mu4e-attachments--part (filename index &optional handle)
   "Return a fake attachment part for FILENAME at INDEX."
   (list :filename filename
         :part-index index
@@ -23,9 +23,9 @@
         :attachment-like t
         :handle (or handle (format "handle-%s" index))))
 
-(ert-deftest test-mail-config-attachments-filters-attachment-like-parts ()
-  "Only attachment-like MIME parts should be saved by the custom commands."
-  (let ((parts (list (test-mail-config-attachment--part "invoice.pdf" 1)
+(ert-deftest test-mu4e-attachments-filters-attachment-like-parts ()
+  "Normal: only attachment-like MIME parts are returned for saving."
+  (let ((parts (list (test-mu4e-attachments--part "invoice.pdf" 1)
                      (list :filename "inline.png"
                            :part-index 2
                            :attachment-like nil
@@ -34,27 +34,27 @@
                            (cj/mu4e--attachment-parts parts))
                    '("invoice.pdf")))))
 
-(ert-deftest test-mail-config-attachments-candidates-disambiguate-duplicates ()
-  "Duplicate filenames should remain individually selectable."
-  (let* ((a (test-mail-config-attachment--part "report.pdf" 1))
-         (b (test-mail-config-attachment--part "report.pdf" 2))
+(ert-deftest test-mu4e-attachments-candidates-disambiguate-duplicates ()
+  "Boundary: duplicate filenames remain individually selectable."
+  (let* ((a (test-mu4e-attachments--part "report.pdf" 1))
+         (b (test-mu4e-attachments--part "report.pdf" 2))
          (candidates (cj/mu4e--attachment-candidates (list a b))))
     (should (equal (mapcar #'car candidates)
                    '("report.pdf <part 1>" "report.pdf <part 2>")))
     (should (eq (cdr (assoc "report.pdf <part 1>" candidates)) a))
     (should (eq (cdr (assoc "report.pdf <part 2>" candidates)) b))))
 
-(ert-deftest test-mail-config-attachments-candidates-keep-unique-names-simple ()
-  "Unique filenames should be shown without extra part-index labels."
-  (let* ((a (test-mail-config-attachment--part "invoice.pdf" 1))
-         (b (test-mail-config-attachment--part "receipt.pdf" 2))
+(ert-deftest test-mu4e-attachments-candidates-keep-unique-names-simple ()
+  "Normal: unique filenames are shown without extra part-index labels."
+  (let* ((a (test-mu4e-attachments--part "invoice.pdf" 1))
+         (b (test-mu4e-attachments--part "receipt.pdf" 2))
          (candidates (cj/mu4e--attachment-candidates (list a b))))
     (should (equal (mapcar #'car candidates)
                    '("invoice.pdf" "receipt.pdf")))))
 
-(ert-deftest test-mail-config-attachments-save-part-uses-mu4e-save-path ()
-  "Saving a part should use mu4e path joining, uniquifying, and MIME saving."
-  (let ((part (test-mail-config-attachment--part "invoice.pdf" 3 "handle"))
+(ert-deftest test-mu4e-attachments-save-part-uses-mu4e-save-path ()
+  "Normal: saving a part uses mu4e path joining, uniquifying, and MIME saving."
+  (let ((part (test-mu4e-attachments--part "invoice.pdf" 3 "handle"))
         (mu4e-uniquify-save-file-name-function
          (lambda (path) (concat path ".unique")))
         saved)
@@ -66,17 +66,19 @@
                      "/downloads/invoice.pdf.unique"))
       (should (equal saved '("handle" "/downloads/invoice.pdf.unique"))))))
 
-(ert-deftest test-mail-config-attachments-save-part-errors-without-handle ()
-  "A malformed part without a MIME handle should fail clearly."
-  (let ((part (test-mail-config-attachment--part "invoice.pdf" 3 nil)))
+(ert-deftest test-mu4e-attachments-save-part-errors-without-handle ()
+  "Error: a malformed part without a MIME handle fails clearly."
+  (let ((part (test-mu4e-attachments--part "invoice.pdf" 3 nil))
+        (mu4e-uniquify-save-file-name-function #'identity))
     (setq part (plist-put part :handle nil))
-    (should-error (cj/mu4e--save-attachment-part part "/downloads")
-                  :type 'user-error)))
+    (cl-letf (((symbol-function 'mu4e-join-paths) #'list))
+      (should-error (cj/mu4e--save-attachment-part part "/downloads")
+                    :type 'user-error))))
 
-(ert-deftest test-mail-config-attachments-save-all-prompts-once ()
-  "The save-all command should prompt for a directory once and save all parts."
-  (let ((parts (list (test-mail-config-attachment--part "a.pdf" 1)
-                     (test-mail-config-attachment--part "b.pdf" 2)))
+(ert-deftest test-mu4e-attachments-save-all-prompts-once ()
+  "Normal: the save-all command prompts for a directory once and saves all parts."
+  (let ((parts (list (test-mu4e-attachments--part "a.pdf" 1)
+                     (test-mu4e-attachments--part "b.pdf" 2)))
         saved
         prompts)
     (cl-letf (((symbol-function 'mu4e-view-mime-parts)
@@ -95,10 +97,10 @@
       (should (= 1 (length prompts)))
       (should (equal saved (list parts "/downloads/"))))))
 
-(ert-deftest test-mail-config-attachments-save-selected-prompts-and-selects-one ()
-  "The selected-attachment command should complete by label and save one part."
-  (let* ((a (test-mail-config-attachment--part "a.pdf" 1))
-         (b (test-mail-config-attachment--part "b.pdf" 2))
+(ert-deftest test-mu4e-attachments-save-selected-prompts-and-selects-one ()
+  "Normal: the selected-attachment command completes by label and saves one part."
+  (let* ((a (test-mu4e-attachments--part "a.pdf" 1))
+         (b (test-mu4e-attachments--part "b.pdf" 2))
          (parts (list a b))
          saved)
     (cl-letf (((symbol-function 'mu4e-view-mime-parts)
@@ -118,18 +120,11 @@
       (should (equal (cj/mu4e-save-attachment-here) "/downloads/b.pdf"))
       (should (equal saved (list b "/downloads/"))))))
 
-(ert-deftest test-mail-config-attachments-email-map-bindings ()
-  "Attachment save commands should be available from the email prefix map."
-  (should (eq (lookup-key cj/email-map (kbd "S"))
-              #'cj/mu4e-save-all-attachments))
-  (should (eq (lookup-key cj/email-map (kbd "s"))
-              #'cj/mu4e-save-attachment-here)))
-
-(ert-deftest test-mail-config-attachments-selection-buffer-renders-parts ()
-  "Opening the selection buffer should render attachment rows with metadata."
-  (let* ((a (test-mail-config-attachment--part "a.pdf" 1))
-         (b (test-mail-config-attachment--part "b.pdf" 2))
-         (buffer (get-buffer-create "*test-mail-attachments*")))
+(ert-deftest test-mu4e-attachments-selection-buffer-renders-parts ()
+  "Normal: opening the selection buffer renders attachment rows with metadata."
+  (let* ((a (test-mu4e-attachments--part "a.pdf" 1))
+         (b (test-mu4e-attachments--part "b.pdf" 2))
+         (buffer (get-buffer-create "*test-mu4e-attachments*")))
     (unwind-protect
         (with-current-buffer buffer
           (cj/mu4e-attachment-selection-mode)
@@ -144,10 +139,10 @@
           (should (string-match-p "application/pdf" (buffer-string))))
       (kill-buffer buffer))))
 
-(ert-deftest test-mail-config-attachments-selection-toggle-current-row ()
-  "RET should toggle the selected state for the attachment at point."
-  (let* ((a (test-mail-config-attachment--part "a.pdf" 1))
-         (buffer (get-buffer-create "*test-mail-attachments*")))
+(ert-deftest test-mu4e-attachments-selection-toggle-current-row ()
+  "Normal: RET toggles the selected state for the attachment at point."
+  (let* ((a (test-mu4e-attachments--part "a.pdf" 1))
+         (buffer (get-buffer-create "*test-mu4e-attachments*")))
     (unwind-protect
         (with-current-buffer buffer
           (cj/mu4e-attachment-selection-mode)
@@ -162,11 +157,11 @@
           (should (string-match-p "\\[ \\] a\\.pdf" (buffer-string))))
       (kill-buffer buffer))))
 
-(ert-deftest test-mail-config-attachments-selection-mark-all-and-unmark-all ()
-  "Selection buffer should support marking and unmarking all rows."
-  (let ((parts (list (test-mail-config-attachment--part "a.pdf" 1)
-                     (test-mail-config-attachment--part "b.pdf" 2)))
-        (buffer (get-buffer-create "*test-mail-attachments*")))
+(ert-deftest test-mu4e-attachments-selection-mark-all-and-unmark-all ()
+  "Normal: the selection buffer supports marking and unmarking all rows."
+  (let ((parts (list (test-mu4e-attachments--part "a.pdf" 1)
+                     (test-mu4e-attachments--part "b.pdf" 2)))
+        (buffer (get-buffer-create "*test-mu4e-attachments*")))
     (unwind-protect
         (with-current-buffer buffer
           (cj/mu4e-attachment-selection-mode)
@@ -179,11 +174,11 @@
                                 cj/mu4e-attachment-selection-entries)))
       (kill-buffer buffer))))
 
-(ert-deftest test-mail-config-attachments-selection-save-marked ()
-  "Saving marked rows should save only selected attachment parts."
-  (let* ((a (test-mail-config-attachment--part "a.pdf" 1))
-         (b (test-mail-config-attachment--part "b.pdf" 2))
-         (buffer (get-buffer-create "*test-mail-attachments*"))
+(ert-deftest test-mu4e-attachments-selection-save-marked ()
+  "Normal: saving marked rows saves only the selected attachment parts."
+  (let* ((a (test-mu4e-attachments--part "a.pdf" 1))
+         (b (test-mu4e-attachments--part "b.pdf" 2))
+         (buffer (get-buffer-create "*test-mu4e-attachments*"))
          saved)
     (unwind-protect
         (with-current-buffer buffer
@@ -200,22 +195,22 @@
             (should (equal saved (list (list b) "/downloads/")))))
       (kill-buffer buffer))))
 
-(ert-deftest test-mail-config-attachments-selection-save-marked-errors-when-empty ()
-  "Saving with no marked rows should fail clearly."
-  (let ((buffer (get-buffer-create "*test-mail-attachments*")))
+(ert-deftest test-mu4e-attachments-selection-save-marked-errors-when-empty ()
+  "Error: saving with no marked rows fails clearly."
+  (let ((buffer (get-buffer-create "*test-mu4e-attachments*")))
     (unwind-protect
         (with-current-buffer buffer
           (cj/mu4e-attachment-selection-mode)
           (cj/mu4e--attachment-selection-setup
-           (list (test-mail-config-attachment--part "a.pdf" 1))
+           (list (test-mu4e-attachments--part "a.pdf" 1))
            "/downloads/")
           (should-error (cj/mu4e-attachment-selection-save-marked)
                         :type 'user-error))
       (kill-buffer buffer))))
 
-(ert-deftest test-mail-config-attachments-save-some-opens-selection-buffer ()
-  "The save-some command should prompt for a directory and open a selector."
-  (let ((parts (list (test-mail-config-attachment--part "a.pdf" 1)))
+(ert-deftest test-mu4e-attachments-save-some-opens-selection-buffer ()
+  "Normal: the save-some command prompts for a directory and opens a selector."
+  (let ((parts (list (test-mu4e-attachments--part "a.pdf" 1)))
         opened)
     (cl-letf (((symbol-function 'mu4e-view-mime-parts)
                (lambda () parts))
@@ -228,27 +223,22 @@
       (should (eq (cj/mu4e-save-some-attachments) :buffer))
       (should (equal opened (list parts "/downloads/"))))))
 
-(ert-deftest test-mail-config-attachments-email-map-save-some-binding ()
-  "The email prefix map should include a save-some binding."
-  (should (eq (lookup-key cj/email-map (kbd "m"))
-              #'cj/mu4e-save-some-attachments)))
-
-(ert-deftest test-mail-config-attachments-default-directory-uses-target-dir ()
+(ert-deftest test-mu4e-attachments-default-directory-uses-target-dir ()
   "Normal: the default save directory comes from the part's :target-dir."
-  (let ((parts (list (test-mail-config-attachment--part "a.pdf" 1))))
+  (let ((parts (list (test-mu4e-attachments--part "a.pdf" 1))))
     (should (equal (cj/mu4e--attachment-default-directory parts)
                    "/tmp/mail-target/"))))
 
-(ert-deftest test-mail-config-attachments-default-directory-falls-back-to-downloads ()
+(ert-deftest test-mu4e-attachments-default-directory-falls-back-to-downloads ()
   "Boundary: with no :target-dir hint, the default is ~/Downloads/."
   (let ((parts (list (list :filename "a.pdf" :part-index 1 :attachment-like t))))
     (should (equal (cj/mu4e--attachment-default-directory parts)
                    (file-name-as-directory (expand-file-name "~/Downloads/"))))))
 
-(ert-deftest test-mail-config-attachments-selection-entry-at-point-errors-off-row ()
+(ert-deftest test-mu4e-attachments-selection-entry-at-point-errors-off-row ()
   "Error: asking for the attachment at point on a header line fails clearly."
-  (let* ((a (test-mail-config-attachment--part "a.pdf" 1))
-         (buffer (get-buffer-create "*test-mail-attachments*")))
+  (let* ((a (test-mu4e-attachments--part "a.pdf" 1))
+         (buffer (get-buffer-create "*test-mu4e-attachments*")))
     (unwind-protect
         (with-current-buffer buffer
           (cj/mu4e-attachment-selection-mode)
@@ -258,5 +248,5 @@
                         :type 'user-error))
       (kill-buffer buffer))))
 
-(provide 'test-mail-config-attachments)
-;;; test-mail-config-attachments.el ends here
+(provide 'test-mu4e-attachments)
+;;; test-mu4e-attachments.el ends here
