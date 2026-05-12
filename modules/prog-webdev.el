@@ -58,6 +58,10 @@ Install with: sudo pacman -S prettier")
              (executable-find ts-language-server-path))
     (lsp-deferred)))
 
+(defun cj/--webdev-format-command (file)
+  "Return the prettier command that formats FILE's contents on stdin."
+  (format "prettier --stdin-filepath %s" (shell-quote-argument file)))
+
 (defun cj/webdev-format-buffer ()
   "Format the current buffer with prettier.
 Detects the file type automatically from the filename."
@@ -65,10 +69,9 @@ Detects the file type automatically from the filename."
   (if (executable-find prettier-path)
       (let ((point (point)))
         (shell-command-on-region (point-min) (point-max)
-                                (format "prettier --stdin-filepath %s"
-                                        (shell-quote-argument
-                                         (or buffer-file-name "file.ts")))
-                                nil t)
+                                 (cj/--webdev-format-command
+                                  (or buffer-file-name "file.ts"))
+                                 nil t)
         (goto-char (min point (point-max))))
     (user-error "prettier not found; install with: sudo pacman -S prettier")))
 
