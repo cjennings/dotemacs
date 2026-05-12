@@ -47,9 +47,8 @@
 (declare-function calibredb-find-create-search-buffer "calibredb" ())
 (declare-function calibredb-search-keyword-filter "calibredb" (keyword))
 (declare-function cj/open-file-with-command "system-utils" (command))
-(declare-function visual-fill-column-mode "visual-fill-column" (&optional arg))
-(declare-function visual-fill-column--adjust-window "visual-fill-column" ())
 (declare-function nov-render-document "nov" ())
+(defvar nov-text-width)                 ; from nov.el; set buffer-local here
 
 ;; -------------------------- CalibreDB Ebook Manager --------------------------
 
@@ -120,12 +119,6 @@ Adjust it live with `cj/nov-widen-text' and `cj/nov-narrow-text'.")
 
 (advice-add 'set-auto-mode :around #'cj/force-nov-mode-for-epub)
 
-;; Visual-fill-column provides centered text with margins
-(use-package visual-fill-column
-  :defer t
-  :config
-  (setq-default visual-fill-column-center-text t))
-
 ;; Define helper functions before use-package so they're available for hooks
 (defun cj/forward-paragraph-and-center ()
   "Forward one paragraph and center the page."
@@ -142,33 +135,49 @@ result is at least `cj/nov-min-text-width'."
     (max cj/nov-min-text-width
          (floor (* text-width-ratio total-cols)))))
 
+(defun cj/nov--natural-window-width (&optional window)
+  "Return WINDOW's column count, adding back any display margins already set.
+WINDOW defaults to the window showing the current buffer on any frame; 80 if
+there is none.  Adding the margins back makes the value stable under repeated
+layout passes -- each pass narrows the body width but not the natural width."
+  (if-let ((win (or window (get-buffer-window (current-buffer) t))))
+      (let ((m (window-margins win)))
+        (+ (window-body-width win) (or (car m) 0) (or (cdr m) 0)))
+    80))
+
 (defun cj/nov--text-width-for-window (&optional window)
-  "Return preferred Nov text width for WINDOW.
-Computed from the window's natural column count -- its current body width
-plus any margins already set -- so that re-running `cj/nov-update-layout' is
-idempotent: each pass would otherwise shave the column by another margin
-fraction, since setting margins narrows the body width."
-  (let* ((window (or window (get-buffer-window (current-buffer) t)))
-         (margins (and window (window-margins window)))
-         (natural-cols (if window
-                           (+ (window-body-width window)
-                              (or (car margins) 0)
-                              (or (cdr margins) 0))
-                         80)))
-    (cj/nov--text-width natural-cols)))
+  "Return the preferred EPUB text column count for WINDOW."
+  (cj/nov--text-width (cj/nov--natural-window-width window)))
 
 (defun cj/nov-update-layout (&optional _frame)
-  "Recalculate Nov's centered text column (width + margins) for this buffer.
-Also runs from `window-configuration-change-hook' and
-`window-size-change-functions' to stay responsive to splits and resizes."
+  "Size the EPUB text column for this buffer and center it in its window.
+`nov-text-width' is set so nov's `shr' fills the text to roughly 80% of the
+window, and the window's display margins are set to center that block (no
+`visual-fill-column' -- its margin-setting wasn't taking effect in nov-mode).
+When the width changes the document is re-rendered, restoring the reading
+position approximately.  Runs from `window-configuration-change-hook' and is a
+command."
   (interactive)
   (when (derived-mode-p 'nov-mode)
-    (when (require 'visual-fill-column nil t)
-      (setq-local visual-fill-column-center-text t)
-      (setq-local visual-fill-column-width (cj/nov--text-width-for-window))
-      (visual-fill-column-mode 1)
-      (when (bound-and-true-p visual-fill-column-mode)
-        (visual-fill-column--adjust-window)))))
+    (let* ((win (get-buffer-window (current-buffer) t))
+           (total (cj/nov--natural-window-width win))
+           (width (cj/nov--text-width total)))
+      (unless (eql nov-text-width width)
+        (setq-local nov-text-width width)
+        (let ((frac (when (> (point-max) (point-min))
+                      (/ (float (- (point) (point-min)))
+                         (- (point-max) (point-min))))))
+          (nov-render-document)
+          (when frac
+            (goto-char (+ (point-min)
+                          (round (* frac (- (point-max) (point-min)))))))))
+      (when win
+        ;; floor: never let the margins squeeze the text area below WIDTH.
+        (let ((margin (max 0 (/ (- total width) 2))))
+          (set-window-margins win margin margin))
+        ;; Push the fringes out to the window's edge; otherwise they sit between
+        ;; the margin and the text and show as thin vertical lines beside it.
+        (set-window-fringes win nil nil t)))))
 
 (defun cj/--nov-adjust-margin (delta)
   "Add DELTA to `cj/nov-margin-percent' (clamped 0..25), re-lay-out, and report.
@@ -197,19 +206,28 @@ A positive DELTA narrows the text column; a negative DELTA widens it."
   (face-remap-add-relative 'variable-pitch :family "Merriweather" :height 1.0 :foreground "#E8DCC0")
   (face-remap-add-relative 'default :family "Merriweather" :height 180 :foreground "#E8DCC0")
   (face-remap-add-relative 'fixed-pitch :height 180 :foreground "#E8DCC0")
-  ;; Make this buffer-local so other Nov buffers can choose differently
-  ;; Setting to t makes nov respect visual-fill-column margins
-  (setq-local nov-text-width t)
   ;; Enable visual-line-mode for proper text wrapping
   (visual-line-mode 1)
   ;; Set fill-column as a fallback
   (setq-local fill-column 100)
-  ;; Enable visual-fill-column for centered text with margins
+  ;; Have nov's `shr' fill the text to a column count, and `cj/nov-update-layout'
+  ;; center it with the window's display margins.  This deliberately does NOT
+  ;; use `visual-fill-column' -- its margin-setting wasn't taking effect here.
+  (setq-local nov-text-width (cj/nov--text-width-for-window))
   (cj/nov-update-layout)
-  ;; Keep centered text width responsive after splits/resizes.
+  ;; Keep the width and centering responsive to splits/resizes.
   (add-hook 'window-configuration-change-hook #'cj/nov-update-layout nil t)
-  ;; Re-render so the first page is laid out inside the margins just set;
-  ;; nov-mode's initial render ran before `nov-text-width'/visual-fill-column.
+  ;; Drop the centering margins from the window when this EPUB buffer goes away,
+  ;; so a later buffer in the same window isn't left indented.
+  (add-hook 'kill-buffer-hook
+            (lambda ()
+              (when-let ((w (get-buffer-window (current-buffer))))
+                (set-window-margins w nil)
+                (set-window-fringes w nil)))
+            nil t)
+  ;; Render once now; the window may not exist yet (so this uses the fallback
+  ;; width), and `cj/nov-update-layout' on the first window-config change
+  ;; re-flows at the real width.
   (nov-render-document))
 
 (defun cj/nov-open-external ()
