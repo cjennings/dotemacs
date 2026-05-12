@@ -87,21 +87,21 @@
     (should-error (cj/lsp--add-file-watch-ignored-extras)
                   :type 'wrong-type-argument)))
 
-(ert-deftest test-prog-lsp--disable-eldoc-hover-removes-lsp-provider-locally ()
+(ert-deftest test-prog-lsp--remove-eldoc-provider-removes-lsp-provider-locally ()
   "Normal: remove lsp-mode's Eldoc provider from the buffer-local hook."
   (with-temp-buffer
     (setq-local eldoc-documentation-functions
                 '(lsp-eldoc-function eldoc-documentation-default))
-    (cj/lsp--disable-eldoc-hover)
+    (cj/lsp--remove-eldoc-provider)
     (should-not (memq #'lsp-eldoc-function eldoc-documentation-functions))
     (should (memq 'eldoc-documentation-default eldoc-documentation-functions))))
 
-(ert-deftest test-prog-lsp--disable-eldoc-hover-does-not-touch-default-value ()
-  "Boundary: disabling LSP Eldoc in one buffer leaves the default hook alone."
+(ert-deftest test-prog-lsp--remove-eldoc-provider-does-not-touch-default-value ()
+  "Boundary: removing the LSP provider in one buffer leaves the default hook alone."
   (let ((eldoc-documentation-functions '(lsp-eldoc-function)))
     (with-temp-buffer
       (setq-local eldoc-documentation-functions '(lsp-eldoc-function))
-      (cj/lsp--disable-eldoc-hover)
+      (cj/lsp--remove-eldoc-provider)
       (should-not (memq #'lsp-eldoc-function eldoc-documentation-functions)))
     (should (memq #'lsp-eldoc-function eldoc-documentation-functions))))
 
