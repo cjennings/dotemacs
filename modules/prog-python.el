@@ -50,7 +50,7 @@ Install with: pip install mypy")
   (setq-local tab-width 4)            ;; set the tab width to 4 spaces
   (setq-local standard-indent 4)      ;; indent 4 spaces
   (setq-local indent-tabs-mode nil)   ;; disable tab characters
-  (electric-pair-mode t)              ;; match delimiters automatically
+  (electric-pair-local-mode t)        ;; match delimiters automatically (buffer-local)
 
   ;; Enable LSP if available
   (when (and (fboundp 'lsp-deferred)
