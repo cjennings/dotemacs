@@ -46,6 +46,17 @@
 (require 'system-lib)
 (require 'cj-cache-lib)
 
+(defcustom cj/org-agenda-window-height 0.75
+  "Fraction of the selected frame used for the org agenda window."
+  :type 'number)
+
+(defun cj/--org-agenda-display-rule ()
+  "Return the display-buffer rule for the org agenda buffer."
+  `("\\*Org Agenda\\*"
+    (display-buffer-reuse-mode-window display-buffer-below-selected)
+    (dedicated . t)
+    (window-height . ,cj/org-agenda-window-height)))
+
 ;; Load debug functions if enabled
 (when (or (eq cj/debug-modules t)
           (memq 'org-agenda cj/debug-modules))
@@ -71,10 +82,7 @@
 
   ;; display the agenda from the bottom
   (add-to-list 'display-buffer-alist
-               '("\\*Org Agenda\\*"
-                 (display-buffer-reuse-mode-window display-buffer-below-selected)
-                 (dedicated . t)
-                 (window-height . fit-window-to-buffer)))
+               (cj/--org-agenda-display-rule))
 
   ;; reset s-left/right each time org-agenda is enabled
   (add-hook 'org-agenda-mode-hook (lambda ()
@@ -335,6 +343,10 @@ This allows a line to show in an agenda without being scheduled or a deadline."
 ;; send libnotify notifications for agenda items
 
 (use-package alert
+  ;; Batch tests load this module without package-initialize, so optional
+  ;; notification packages may be installed but not loadable yet.
+  :if (or (not noninteractive)
+          (require 'alert nil t))
   :config
   (setq alert-fade-time 10) ;; seconds to vanish alert
   (setq alert-default-style 'libnotify)) ;; works well with dunst
