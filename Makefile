@@ -6,6 +6,7 @@
 #   make test-unit         - Run unit tests only
 #   make test-file FILE=test-foo.el  - Run specific test file
 #   make test-name TEST=test-foo-*   - Run tests matching pattern
+#   make test-bash         - Run the bats shell-script tests
 #   make benchmark         - Run performance benchmarks (:perf-tagged tests)
 #   make coverage          - Generate simplecov coverage report
 #   make coverage-clean    - Remove coverage report file
@@ -31,6 +32,7 @@ EMACS_HOME = $(HOME)/.emacs.d
 UNIT_TESTS = $(filter-out $(TEST_DIR)/test-integration-%.el, $(wildcard $(TEST_DIR)/test-*.el))
 INTEGRATION_TESTS = $(wildcard $(TEST_DIR)/test-integration-%.el)
 ALL_TESTS = $(UNIT_TESTS) $(INTEGRATION_TESTS)
+BASH_TESTS = $(wildcard $(TEST_DIR)/*.bats)
 
 # Module files
 MODULE_FILES = $(wildcard $(MODULE_DIR)/*.el)
@@ -42,7 +44,7 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 # No colors - using plain text symbols instead
 
 .PHONY: help targets test test-all test-unit test-integration test-file test-name \
-        benchmark coverage coverage-clean \
+        test-bash benchmark coverage coverage-clean \
         validate-parens validate-modules compile lint profile \
         clean clean-compiled clean-tests reset
 
@@ -61,6 +63,7 @@ help:
 	@echo "    make test-integration  - Run integration tests only ($(words $(INTEGRATION_TESTS)) files)"
 	@echo "    make test-file FILE=<filename>  - Run specific test file"
 	@echo "    make test-name TEST=<pattern>   - Run tests matching pattern"
+	@echo "    make test-bash         - Run the bats shell-script tests ($(words $(BASH_TESTS)) files)"
 	@echo "    make benchmark         - Run performance benchmarks (:perf-tagged)"
 	@echo ""
 	@echo "  Coverage:"
@@ -92,12 +95,27 @@ help:
 test: test-all
 
 test-all:
-	@echo "[i] Running all tests ($(words $(ALL_TESTS)) files)..."
+	@echo "[i] Running all tests ($(words $(ALL_TESTS)) Elisp files)..."
 	@$(MAKE) test-unit
 	@if [ $(words $(INTEGRATION_TESTS)) -gt 0 ]; then \
 		$(MAKE) test-integration; \
 	fi
+	@if [ $(words $(BASH_TESTS)) -gt 0 ] && command -v bats >/dev/null 2>&1; then \
+		$(MAKE) test-bash; \
+	fi
 	@echo "✓ All tests complete"
+
+test-bash:
+	@if [ $(words $(BASH_TESTS)) -eq 0 ]; then \
+		echo "No bats tests found"; \
+		exit 0; \
+	fi
+	@if ! command -v bats >/dev/null 2>&1; then \
+		echo "[!] bats not installed — skipping shell-script tests"; \
+		exit 0; \
+	fi
+	@echo "[i] Running bats shell-script tests ($(words $(BASH_TESTS)) files)..."
+	@bats $(BASH_TESTS)
 
 test-unit:
 	@echo "[i] Running unit tests ($(words $(UNIT_TESTS)) files)..."

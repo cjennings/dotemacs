@@ -75,41 +75,49 @@ decrypt_password() {
     fi
 }
 
-# Decrypt Mail Passwords
-# Skip if destination already exists, install or decrypt if missing.
-echo "→ checking mail passwords..."
-if [[ ! -d "$ENCRYPTED_PASSWORDS_DIR" ]]; then
-    echo "  ✗ encrypted passwords directory not found: $ENCRYPTED_PASSWORDS_DIR"
-    exit 1
+main() {
+    # Decrypt Mail Passwords
+    # Skip if destination already exists, install or decrypt if missing.
+    echo "→ checking mail passwords..."
+    if [[ ! -d "$ENCRYPTED_PASSWORDS_DIR" ]]; then
+        echo "  ✗ encrypted passwords directory not found: $ENCRYPTED_PASSWORDS_DIR"
+        exit 1
+    fi
+    mkdir -p "$PASSWORD_DEST_DIR"
+    install_encrypted_password ".gmailpass.gpg"
+    decrypt_password ".cmailpass.gpg" ".cmailpass"
+    install_encrypted_password ".dmailpass.gpg"
+
+    # Check All Prerequisites
+    [[ -x "$MBSYNC"   ]] || { echo "ERROR: mbsync not found. Install 'isync'."; exit 1; }
+    [[ -x "$MU"       ]] || { echo "ERROR: mu not found. Install 'mu'."; exit 1; }
+    [[ -d "$MU4EDIR"  ]] || { echo "ERROR: mu4e elisp not found at $MU4EDIR. Install 'mu'."; exit 1; }
+    [[ -f "$MBSYNCRC" ]] || { echo "ERROR: '~/.mbsyncrc' missing."; exit 1; }
+    [[ -x "$MSMTP"    ]] || { echo "ERROR: msmtp not found. Install 'msmtp'."; exit 1; }
+    [[ -f "$MSMTPRC"  ]] || { echo "ERROR: '~/.msmtprc' missing."; exit 1; }
+
+    # Ensure Mail Dirs Exist
+    mkdir -p "$GMAILDIR" "$CMAILDIR" "$DMAILDIR"
+
+    # Initial Sync
+    echo "→ syncing all mail with mbsync ..."
+    "$MBSYNC" -aV
+
+    # Init MU and Index Email
+    echo "→ initializing mu ..."
+    "$MU" init --maildir="$MAILROOT" \
+          --my-address="craigmartinjennings@gmail.com" \
+          --my-address="c@cjennings.net" \
+          --my-address="craig.jennings@deepsat.com"
+
+    echo "→ indexing mail ..."
+    "$MU" index
+
+    echo "✅ Mail setup complete."
+}
+
+# Run the setup when executed directly.  Sourcing this file (for example from
+# a bats test) just defines the helper functions above.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
 fi
-mkdir -p "$PASSWORD_DEST_DIR"
-install_encrypted_password ".gmailpass.gpg"
-decrypt_password ".cmailpass.gpg" ".cmailpass"
-install_encrypted_password ".dmailpass.gpg"
-
-# Check All Prerequisites
-[[ -x "$MBSYNC"   ]] || { echo "ERROR: mbsync not found. Install 'isync'."; exit 1; }
-[[ -x "$MU"       ]] || { echo "ERROR: mu not found. Install 'mu'."; exit 1; }
-[[ -d "$MU4EDIR"  ]] || { echo "ERROR: mu4e elisp not found at $MU4EDIR. Install 'mu'."; exit 1; }
-[[ -f "$MBSYNCRC" ]] || { echo "ERROR: '~/.mbsyncrc' missing."; exit 1; }
-[[ -x "$MSMTP"    ]] || { echo "ERROR: msmtp not found. Install 'msmtp'."; exit 1; }
-[[ -f "$MSMTPRC"  ]] || { echo "ERROR: '~/.msmtprc' missing."; exit 1; }
-
-# Ensure Mail Dirs Exist
-mkdir -p "$GMAILDIR" "$CMAILDIR" "$DMAILDIR"
-
-# Initial Sync
-echo "→ syncing all mail with mbsync ..."
-"$MBSYNC" -aV
-
-# Init MU and Index Email
-echo "→ initializing mu ..."
-"$MU" init --maildir="$MAILROOT" \
-		  --my-address="craigmartinjennings@gmail.com" \
-		  --my-address="c@cjennings.net" \
-		  --my-address="craig.jennings@deepsat.com"
-
-echo "→ indexing mail ..."
-"$MU" index
-
-echo "✅ Mail setup complete."
