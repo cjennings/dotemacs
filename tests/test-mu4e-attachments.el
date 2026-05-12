@@ -67,13 +67,13 @@
       (should (equal saved '("handle" "/downloads/invoice.pdf.unique"))))))
 
 (ert-deftest test-mu4e-attachments-save-part-errors-without-handle ()
-  "Error: a malformed part without a MIME handle fails clearly."
-  (let ((part (test-mu4e-attachments--part "invoice.pdf" 3 nil))
-        (mu4e-uniquify-save-file-name-function #'identity))
+  "Error: a malformed part without a MIME handle fails clearly.
+The handle check runs before `cj/mu4e--ensure-attachment-save-functions',
+so this fails the same way whether or not mu4e's MIME support is loadable."
+  (let ((part (test-mu4e-attachments--part "invoice.pdf" 3 nil)))
     (setq part (plist-put part :handle nil))
-    (cl-letf (((symbol-function 'mu4e-join-paths) #'list))
-      (should-error (cj/mu4e--save-attachment-part part "/downloads")
-                    :type 'user-error))))
+    (should-error (cj/mu4e--save-attachment-part part "/downloads")
+                  :type 'user-error)))
 
 (ert-deftest test-mu4e-attachments-save-all-prompts-once ()
   "Normal: the save-all command prompts for a directory once and saves all parts."
