@@ -47,9 +47,9 @@ below 50% of the usable columns."
         (cj/nov-min-text-width 40))
     (should (= 40 (cj/nov--text-width 50)))))
 
-(ert-deftest test-calibredb-epub-nov-default-margin-gives-roughly-three-quarter-text ()
-  "Normal: the default `cj/nov-margin-percent' leaves ~3/4 of the window for text."
-  (should (= 76 (cj/nov--text-width 100))))
+(ert-deftest test-calibredb-epub-nov-default-margin-gives-80-percent-text ()
+  "Normal: the default `cj/nov-margin-percent' leaves 80% of the window for text."
+  (should (= 80 (cj/nov--text-width 100))))
 
 ;;; ----------------------- cj/nov--text-width-for-window ----------------------
 
