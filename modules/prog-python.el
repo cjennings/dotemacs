@@ -57,19 +57,26 @@ Install with: pip install mypy")
              (executable-find pyright-path))
     (lsp-deferred)))
 
+(defun cj/--python-mypy-command (target)
+  "Return the shell command that runs mypy against TARGET."
+  (format "%s %s" mypy-path (shell-quote-argument target)))
+
+(defun cj/--python-debug-command (file)
+  "Return the shell command that runs pdb against FILE."
+  (format "python3 -m pdb %s" (shell-quote-argument file)))
+
 (defun cj/python-mypy ()
   "Run mypy static type checker on the current Python file or directory."
   (interactive)
   (if (executable-find mypy-path)
-      (let ((target (or (buffer-file-name) default-directory)))
-        (compile (format "%s %s" mypy-path (shell-quote-argument target))))
+      (compile (cj/--python-mypy-command (or (buffer-file-name) default-directory)))
     (message "mypy not found. Install with: pip install mypy")))
 
 (defun cj/python-debug ()
   "Start Python debugger (pdb) on the current file."
   (interactive)
   (if buffer-file-name
-      (pdb (format "python3 -m pdb %s" (shell-quote-argument buffer-file-name)))
+      (pdb (cj/--python-debug-command buffer-file-name))
     (message "No file associated with this buffer")))
 
 (defun cj/python-mode-keybindings ()
