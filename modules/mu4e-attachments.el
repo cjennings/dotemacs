@@ -87,11 +87,11 @@ The result is an alist of display labels to MIME part plists."
 
 (defun cj/mu4e--save-attachment-part (part directory)
   "Save attachment PART to DIRECTORY and return the final path."
-  (cj/mu4e--ensure-attachment-save-functions)
   (let ((handle (plist-get part :handle)))
     (unless handle
       (user-error "Attachment has no MIME handle: %s"
                   (or (plist-get part :filename) "<unnamed>")))
+    (cj/mu4e--ensure-attachment-save-functions)
     (let* ((path (funcall mu4e-uniquify-save-file-name-function
                           (mu4e-join-paths directory
                                            (plist-get part :filename)))))
