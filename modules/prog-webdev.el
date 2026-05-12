@@ -51,7 +51,7 @@ Install with: sudo pacman -S prettier")
   (setq-local tab-width 2)
   (setq-local standard-indent 2)
   (setq-local indent-tabs-mode nil)
-  (electric-pair-mode t)
+  (electric-pair-local-mode t)
 
   ;; Enable LSP if available
   (when (and (fboundp 'lsp-deferred)
