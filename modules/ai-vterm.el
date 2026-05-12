@@ -51,6 +51,7 @@
 (declare-function vterm "vterm" (&optional buffer-name))
 (declare-function vterm-send-string "vterm" (string &optional paste-p))
 (declare-function vterm-send-return "vterm" ())
+(defvar vterm-mode-map)
 
 (defgroup ai-vterm nil
   "In-Emacs AI-agent launcher with vertical-split vterm."
@@ -695,6 +696,17 @@ AI-vterm buffers without touching the project list."
 (keymap-global-set "<f9>"   #'cj/ai-vterm)
 (keymap-global-set "C-<f9>" #'cj/ai-vterm-pick-project)
 (keymap-global-set "M-<f9>" #'cj/ai-vterm-pick-buffer)
+
+;; vterm binds <f1>..<f12> to `vterm--self-insert', so a plain <f9> typed
+;; while point is inside an agent buffer gets sent to the terminal program
+;; instead of toggling the agent -- which bites hard when the agent buffer is
+;; the only window in the frame.  Re-bind the F9 family in `vterm-mode-map' so
+;; the toggle reaches Emacs from there too.  (C-<f9> / M-<f9> aren't in vterm's
+;; intercept set, but bind them here as well so the behaviour is uniform.)
+(with-eval-after-load 'vterm
+  (keymap-set vterm-mode-map "<f9>"   #'cj/ai-vterm)
+  (keymap-set vterm-mode-map "C-<f9>" #'cj/ai-vterm-pick-project)
+  (keymap-set vterm-mode-map "M-<f9>" #'cj/ai-vterm-pick-buffer))
 
 ;; ---------- emacsclient: keep opened files off the agent vterm ----------
 ;;
