@@ -208,7 +208,10 @@ The result is an alist of display labels to MIME part plists."
   (cj/mu4e--attachment-selection-render))
 
 (defun cj/mu4e-attachment-selection-save-marked ()
-  "Save marked attachments from the selection buffer."
+  "Save the marked attachments, then clear the marks.
+Clearing the marks keeps a second `s' from silently re-saving the same set;
+quit the buffer with `q' or RET when done.  With no marks set, this is a
+`user-error'."
   (interactive)
   (let ((parts (mapcar (lambda (entry) (plist-get entry :part))
                        (seq-filter (lambda (entry)
@@ -218,6 +221,9 @@ The result is an alist of display labels to MIME part plists."
       (user-error "No attachments selected"))
     (let ((paths (cj/mu4e--save-attachment-parts
                   parts cj/mu4e-attachment-selection-directory)))
+      (dolist (entry cj/mu4e-attachment-selection-entries)
+        (setf (plist-get entry :selected) nil))
+      (cj/mu4e--attachment-selection-render)
       (message "Saved %d attachment%s to %s"
                (length paths)
                (if (= (length paths) 1) "" "s")
