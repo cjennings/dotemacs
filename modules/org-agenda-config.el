@@ -90,6 +90,50 @@
                                     (local-set-key (kbd "s-<left>")
                                                    #'org-agenda-todo-previousset))))
 
+;; ----------------------- Project-name Category Override ---------------------
+;; The default `org-category' for a todo.org buffer is "todo" (the filename
+;; without extension), which renders as "todo:" in every agenda `%c' column
+;; and tells the reader nothing useful when every project has its own
+;; todo.org.  Substitute the parent-directory basename instead, so
+;; `~/.emacs.d/todo.org' shows "emacs.d:" and `~/projects/foo/todo.org' shows
+;; "foo:".  Files that aren't named todo.org are left alone, and a user-set
+;; `#+CATEGORY:' (which leaves `org-category' at a non-default value) wins.
+
+(defun cj/--org-todo-category-from-file (path)
+  "Return the project category for a todo.org PATH, or nil if not applicable.
+For a file named todo.org, returns the basename of its parent
+directory with a single leading dot stripped (so `~/.emacs.d/todo.org'
+yields \"emacs.d\", not \".emacs.d\").  For any other file -- or for a
+PATH that is nil, empty, or has no usable parent directory -- returns
+nil so the org default category applies."
+  (when (and (stringp path)
+             (not (string-empty-p path))
+             (string= "todo.org" (file-name-nondirectory path)))
+    (let* ((dir (file-name-directory path))
+           (parent (and dir
+                        (file-name-nondirectory
+                         (directory-file-name dir))))
+           (clean (and parent
+                       (if (and (> (length parent) 1)
+                                (eq ?. (aref parent 0)))
+                           (substring parent 1)
+                         parent))))
+      (and clean (not (string-empty-p clean)) clean))))
+
+(defun cj/--org-set-todo-category ()
+  "Set buffer-local `org-category' to the project name for a todo.org buffer.
+Runs from `org-mode-hook'.  Only overrides when `org-category' is still
+the default-from-filename (\"todo\"), so an explicit `#+CATEGORY:' in
+the file keeps precedence."
+  (when (and buffer-file-name
+             (boundp 'org-category)
+             (stringp org-category)
+             (string= "todo" org-category))
+    (when-let* ((project (cj/--org-todo-category-from-file buffer-file-name)))
+      (setq-local org-category project))))
+
+(add-hook 'org-mode-hook #'cj/--org-set-todo-category)
+
 ;; ------------------------ Org Agenda File List Cache -------------------------
 ;; Cache agenda file list to avoid expensive directory scanning on every view.
 ;; The TTL+building cache lifecycle is provided by `cj-cache.el'.
