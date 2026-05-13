@@ -273,5 +273,73 @@
       (should (string= (plist-get loaded :name) "Second"))))
   (test-browser-teardown))
 
+;;; Public wrappers (message side-effects mocked)
+
+(ert-deftest test-browser-apply-wrapper-success-messages-name ()
+  "Normal: =cj/apply-browser-choice= reports the chosen name on success."
+  (test-browser-setup)
+  (let ((browser (test-browser-make-plist "Wrapper Test"))
+        (received nil))
+    (cl-letf (((symbol-function 'message)
+               (lambda (fmt &rest args) (setq received (apply #'format fmt args)))))
+      (cj/apply-browser-choice browser))
+    (should (string-match-p "Wrapper Test" received))
+    (should (string-match-p "Default browser set" received)))
+  (test-browser-teardown))
+
+(ert-deftest test-browser-apply-wrapper-invalid-plist-messages-error ()
+  "Error: =cj/apply-browser-choice= surfaces an error message for a bad plist."
+  (test-browser-setup)
+  (let ((received nil))
+    (cl-letf (((symbol-function 'message)
+               (lambda (fmt &rest args) (setq received (apply #'format fmt args)))))
+      (cj/apply-browser-choice nil))
+    (should (string-match-p "Invalid" received)))
+  (test-browser-teardown))
+
+(ert-deftest test-browser-initialize-wrapper-loaded-branch-applies ()
+  "Normal: =cj/initialize-browser= applies the saved browser when one is loaded."
+  (test-browser-setup)
+  (let ((browser (test-browser-make-plist "Loaded Wrapper")))
+    (cj/save-browser-choice browser)
+    (let ((applied nil))
+      (cl-letf (((symbol-function 'cj/--do-apply-browser-choice)
+                 (lambda (b) (setq applied b) 'success)))
+        (cj/initialize-browser))
+      (should applied)
+      (should (string= (plist-get applied :name) "Loaded Wrapper"))))
+  (test-browser-teardown))
+
+(ert-deftest test-browser-initialize-wrapper-first-available-branch-messages ()
+  "Normal: when no saved choice exists the wrapper applies the first discovered
+browser and tells the user how to change it."
+  (test-browser-setup)
+  (when (file-exists-p cj/browser-choice-file)
+    (delete-file cj/browser-choice-file))
+  (let ((applied nil)
+        (msg nil))
+    (cl-letf (((symbol-function 'cj/--do-apply-browser-choice)
+               (lambda (b) (setq applied b) 'success))
+              ((symbol-function 'message)
+               (lambda (fmt &rest args) (setq msg (apply #'format fmt args)))))
+      (cj/initialize-browser))
+    (should applied)
+    (should (string-match-p "M-x cj/choose-browser" msg)))
+  (test-browser-teardown))
+
+(ert-deftest test-browser-initialize-wrapper-no-browsers-branch-messages ()
+  "Boundary: when discovery finds nothing, the wrapper surfaces the empty state."
+  (test-browser-setup)
+  (when (file-exists-p cj/browser-choice-file)
+    (delete-file cj/browser-choice-file))
+  (let ((msg nil))
+    (cl-letf (((symbol-function 'cj/discover-browsers)
+               (lambda () nil))
+              ((symbol-function 'message)
+               (lambda (fmt &rest args) (setq msg (apply #'format fmt args)))))
+      (cj/initialize-browser))
+    (should (string-match-p "No supported browsers" msg)))
+  (test-browser-teardown))
+
 (provide 'test-browser-config)
 ;;; test-browser-config.el ends here
