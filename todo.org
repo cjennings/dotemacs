@@ -43,6 +43,28 @@ Tags are additive. For example, a small wrong-behavior fix can be
 https://github.com/zevlg/telega.el
 Make sure there is a setup script to run, so that the docker container can be installed post emacs dotfiles repository clone on a fresh install
 also, let's add an icon to the dashboard for this. perhaps this is the beginning of the third row? If so, add a child task to review and balance the dashboard icons
+
+Progress so far:
+- =modules/telega-config.el= shipped with =telega-use-docker t= and the
+  =C-; G= launcher binding (=C-; t= and =C-; m t= were both taken).
+- Dashboard Row 3 added with the Telegram icon; dashboard-mode-map =g=
+  key launches =telega=.
+- TDLib docker setup script (=scripts/setup-telega.sh=) still TODO --
+  see child task below.
+
+*** TODO [#B] Add =scripts/setup-telega.sh= for TDLib docker container :feature:
+Pull or build the telega TDLib container so a fresh-clone install can
+run telega without a system-wide TDLib build.  Mirror the
+=scripts/setup-email.sh= pattern: =main()= wrapped in a
+=BASH_SOURCE == 0= guard so the script is sourceable for bats tests;
+bats test file =tests/test-setup-telega.bats= with =docker= stubbed.
+
+*** TODO [#C] Review and balance dashboard icon layout :refactor:
+Adding the Telegram icon started a third row that has only one entry.
+Decide whether to (a) leave it asymmetric and let the row fill in as
+new launchers arrive, (b) move an existing icon down to balance 5/5/2
+or similar, or (c) reorganize by category (work / read / chat / play).
+Surfaced when Telegram landed in Row 3 alone.
 ** DOING [#A] Org Agenda fixes                                          :bug:
 *** 2026-05-13 Wed @ 13:05:21 -0500 Skip CANCELLED entries from main agenda SCHEDULE
 see the following screenshot
@@ -56,7 +78,7 @@ narrow -- DONE and FAILED scheduled tasks still render.
 Tests in =tests/test-org-agenda-config-skip-functions.el= (Normal +
 Boundary) lock in the configuration form on the agenda block and
 verify the other blocks aren't accidentally carrying the same skip.
-**** TODO [#C] Refactor: extract org-agenda-prefix-format literal :refactor:
+*** TODO [#C] Refactor: extract org-agenda-prefix-format literal :refactor:
 =modules/org-agenda-config.el= currently inlines =" %i %-15:c%?-15t% s"=
 across four blocks of =org-agenda-custom-commands= (overdue, hi-pri,
 schedule, priority-B). Extract into a defvar (e.g.
