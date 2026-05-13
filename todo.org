@@ -39,20 +39,25 @@ Tags are additive. For example, a small wrong-behavior fix can be
 
 * Emacs Open Work
 
-** TODO [#A] Add Telegram Messaging
+** DONE [#A] Add Telegram Messaging
 https://github.com/zevlg/telega.el
 Make sure there is a setup script to run, so that the docker container can be installed post emacs dotfiles repository clone on a fresh install
 also, let's add an icon to the dashboard for this. perhaps this is the beginning of the third row? If so, add a child task to review and balance the dashboard icons
 
-Progress so far:
-- =modules/telega-config.el= shipped with =telega-use-docker t= and the
-  =C-; G= launcher binding (=C-; t= and =C-; m t= were both taken).
+Shipped this session:
+- =modules/telega-config.el= -- =use-package telega= with
+  =telega-use-docker t=; launcher on =C-; G= (=C-; t= and =C-; m t=
+  were both taken).
 - Dashboard Row 3 added with the Telegram icon; dashboard-mode-map =g=
   key launches =telega=.
-- TDLib docker setup script (=scripts/setup-telega.sh=) still TODO --
-  see child task below.
+- =scripts/setup-telega.sh= -- verifies docker presence + daemon
+  reachability; pulls =$TELEGA_DOCKER_IMAGE= when set, otherwise
+  announces =M-x telega-server-build= for the in-Emacs build path.
+  7 bats tests in =tests/test-setup-telega.bats= (docker stubbed).
+- Auth (phone + verification code) is interactive on first =M-x telega=
+  -- not scripted.
 
-*** TODO [#B] Add =scripts/setup-telega.sh= for TDLib docker container :feature:
+*** DONE [#B] Add =scripts/setup-telega.sh= for TDLib docker container :feature:
 Pull or build the telega TDLib container so a fresh-clone install can
 run telega without a system-wide TDLib build.  Mirror the
 =scripts/setup-email.sh= pattern: =main()= wrapped in a
