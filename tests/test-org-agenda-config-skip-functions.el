@@ -7,6 +7,9 @@
 ;; - cj/org-skip-subtree-if-keyword
 ;; - cj/org-agenda-skip-subtree-if-not-overdue
 ;;
+;; Also covers the "d" command's SCHEDULE block config -- the skip-function
+;; that filters CANCELLED entries from the forward-looking agenda.
+;;
 ;; Uses dynamic timestamp generation (no hardcoded dates) via testutil-org.
 
 ;;; Code:
@@ -211,6 +214,38 @@ Suppresses org-mode hooks to avoid loading packages not available in batch."
       (concat "* TODO Future deadline\n"
               "DEADLINE: " (test-org-timestamp-days-ahead 14) "\n")
     (should (integerp (cj/org-agenda-skip-subtree-if-not-overdue)))))
+
+;;; ---------- "d" command SCHEDULE block: CANCELLED skip ----------
+
+;;; Normal Cases
+
+(ert-deftest test-org-agenda-config-schedule-block-skips-cancelled ()
+  "Normal: main-agenda \"d\" SCHEDULE block has a skip-function for CANCELLED.
+This is the configuration check that locks in the fix for the
+CANCELLED-in-schedule bug: without the skip-function form on the
+(agenda ...) block, cancelled tasks render in the schedule view."
+  (let* ((entry (assoc "d" org-agenda-custom-commands))
+         (blocks (nth 2 entry))
+         (agenda-block (seq-find (lambda (b) (eq (car b) 'agenda)) blocks))
+         (opts (nth 2 agenda-block))
+         (skip-form (cadr (assoc 'org-agenda-skip-function opts))))
+    (should (equal skip-form
+                   '(quote (org-agenda-skip-entry-if 'todo '("CANCELLED")))))))
+
+;;; Boundary Cases
+
+(ert-deftest test-org-agenda-config-schedule-cancelled-skip-scoped-to-agenda-block ()
+  "Boundary: only the (agenda ...) block carries the CANCELLED skip.
+The fix is deliberately scoped to the SCHEDULE block; the overdue/hi-pri/
+priority-B blocks must not pick up the same skip-function form."
+  (let* ((entry (assoc "d" org-agenda-custom-commands))
+         (blocks (nth 2 entry))
+         (non-agenda (seq-remove (lambda (b) (eq (car b) 'agenda)) blocks))
+         (cancelled-form '(quote (org-agenda-skip-entry-if 'todo '("CANCELLED")))))
+    (dolist (b non-agenda)
+      (let* ((opts (nth 2 b))
+             (skip (cadr (assoc 'org-agenda-skip-function opts))))
+        (should-not (equal skip cancelled-form))))))
 
 (provide 'test-org-agenda-config-skip-functions)
 ;;; test-org-agenda-config-skip-functions.el ends here
