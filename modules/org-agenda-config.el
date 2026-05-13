@@ -296,6 +296,10 @@ KEYWORDS must be a list of strings."
 				  ((org-agenda-start-day "0d")
 				   (org-agenda-span 8)
 				   (org-agenda-start-on-weekday nil)
+				   ;; CANCELLED entries with a SCHEDULED date shouldn't appear
+				   ;; in the forward-looking schedule -- they're dead weight.
+				   (org-agenda-skip-function
+					'(org-agenda-skip-entry-if 'todo '("CANCELLED")))
 				   (org-agenda-overriding-header cj/main-agenda-schedule-title)
 				   (org-agenda-prefix-format "  %i %-15:c%?-15t% s")))
 		  (alltodo ""
