@@ -121,7 +121,12 @@ returns to the vterm without copying.  RET is left unbound."
 The history buffer uses normal Emacs navigation and selection.  `M-w'
 copies the active region and stays open, so several pieces can be
 copied in a row; `q', `<escape>', or `C-g' returns point to the vterm
-buffer that launched it."
+buffer that launched it.
+
+The history view replaces the origin vterm buffer in the same window
+(via `switch-to-buffer'), not a split or a popped-up window -- reading
+past output should keep the agent's frame slot intact, and quit puts
+the live terminal back where it was."
   (interactive)
   (let* ((origin-buffer (current-buffer))
          (origin-window (selected-window))
@@ -139,7 +144,7 @@ buffer that launched it."
       (setq-local cj/vterm-tmux-history--origin-window origin-window)
       (setq-local cj/vterm-tmux-history--origin-point origin-point)
       (goto-char (point-max)))
-    (pop-to-buffer buffer)))
+    (switch-to-buffer buffer)))
 
 (defun cj/vterm-copy-mode-cancel ()
   "Exit `vterm-copy-mode' without copying."

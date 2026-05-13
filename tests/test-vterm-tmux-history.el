@@ -63,15 +63,12 @@ RESPONSES is an alist of (ARGS EXIT-CODE OUTPUT)."
   "Normal: command renders tmux history in a normal Emacs buffer."
   (let ((origin (cj/test--make-fake-vterm-buffer "*test-vterm-history-origin*")))
     (unwind-protect
-        (with-current-buffer origin
+        (save-window-excursion
+          (switch-to-buffer origin)
           (cl-letf (((symbol-function 'get-buffer-process)
                      (lambda (_buffer) 'fake-process))
                     ((symbol-function 'process-tty-name)
-                     (lambda (_process) "/dev/pts/8"))
-                    ((symbol-function 'pop-to-buffer)
-                     (lambda (buffer &rest _)
-                       (set-buffer buffer)
-                       buffer)))
+                     (lambda (_process) "/dev/pts/8")))
             (test-vterm-tmux-history--with-tmux-mock
                 '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
                    "/dev/pts/8\t%8\n")
@@ -81,10 +78,45 @@ RESPONSES is an alist of (ARGS EXIT-CODE OUTPUT)."
               (should (eq major-mode 'cj/vterm-tmux-history-mode))
               (should buffer-read-only)
               (should (string-match-p "history http://example.com"
-                                      (buffer-string)))))))
+                                      (buffer-string))))))
       (cj/test--kill-buffers-matching-prefix "*vterm tmux history")
       (when (buffer-live-p origin)
-        (kill-buffer origin))))
+        (kill-buffer origin)))))
+
+(ert-deftest test-vterm-tmux-history-replaces-origin-buffer-in-same-window ()
+  "Normal: the history view replaces the origin in the selected window.
+
+Before the in-place change, `cj/vterm-tmux-history' used `pop-to-buffer'
+which could split or hand the buffer to a different window.  The fix
+uses `switch-to-buffer' so reading scrollback keeps the agent's frame
+slot."
+  (let ((origin (cj/test--make-fake-vterm-buffer "*test-vterm-history-inplace*")))
+    (unwind-protect
+        (save-window-excursion
+          (delete-other-windows)
+          (switch-to-buffer origin)
+          (let ((win (selected-window)))
+            (should (eq (window-buffer win) origin))
+            (should (one-window-p))
+            (cl-letf (((symbol-function 'get-buffer-process)
+                       (lambda (_buffer) 'fake-process))
+                      ((symbol-function 'process-tty-name)
+                       (lambda (_process) "/dev/pts/8")))
+              (test-vterm-tmux-history--with-tmux-mock
+                  '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
+                     "/dev/pts/8\t%8\n")
+                    (("capture-pane" "-p" "-J" "-S" "-" "-E" "-" "-t" "%8") 0
+                     "scrollback line\n"))
+                (cj/vterm-tmux-history)))
+            ;; Same window, no split, history buffer now in the slot.
+            (should (one-window-p))
+            (should (eq (selected-window) win))
+            (should (string-prefix-p
+                     "*vterm tmux history:"
+                     (buffer-name (window-buffer win))))))
+      (cj/test--kill-buffers-matching-prefix "*vterm tmux history")
+      (when (buffer-live-p origin)
+        (kill-buffer origin)))))
 
 (ert-deftest test-vterm-tmux-history-quit-returns-to-origin ()
   "Normal: q / <escape> / C-g (cj/vterm-tmux-history-quit) kills the history
