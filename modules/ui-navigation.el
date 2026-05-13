@@ -100,30 +100,40 @@ nudging until any other key.  Bound to `C-; b <left>/<right>/<up>/<down>'."
 
 If the window is split horizontally, change the split to vertical.
 If it's vertical, change the split to horizontal.
+Clears dedicated state on both windows so the toggle still works when
+one is strongly dedicated (e.g. =*Org Agenda*=).  Without this, the
+internal `set-window-buffer' call refuses to place a non-matching
+buffer in a dedicated window and both panes end up showing the
+dedicated buffer.
 This function won't work with more than one split window."
   (interactive)
-  (if (= (count-windows) 2)
-	  (let* ((this-win-buffer (window-buffer))
-			 (next-win-buffer (window-buffer (next-window)))
-			 (this-win-edges (window-edges (selected-window)))
-			 (next-win-edges (window-edges (next-window)))
-			 (this-win-2nd (not (and (<= (car this-win-edges)
-										 (car next-win-edges))
-									 (<= (cadr this-win-edges)
-										 (cadr next-win-edges)))))
-			 (splitter
-			  (if (= (car this-win-edges)
-					 (car (window-edges (next-window))))
-				  'split-window-horizontally
-				'split-window-vertically)))
-		(delete-other-windows)
-		(let ((first-win (selected-window)))
-		  (funcall splitter)
-		  (if this-win-2nd (other-window 1))
-		  (set-window-buffer (selected-window) this-win-buffer)
-		  (set-window-buffer (next-window) next-win-buffer)
-		  (select-window first-win)
-		  (if this-win-2nd (other-window 1))))))
+  (when (= (count-windows) 2)
+	;; Clear dedicated up front: `set-window-buffer' rejects buffer swaps
+	;; on strongly-dedicated windows.  The user explicitly invoked a
+	;; layout change, so don't try to preserve dedicated through it.
+	(set-window-dedicated-p (selected-window) nil)
+	(set-window-dedicated-p (next-window) nil)
+	(let* ((this-win-buffer (window-buffer))
+		   (next-win-buffer (window-buffer (next-window)))
+		   (this-win-edges (window-edges (selected-window)))
+		   (next-win-edges (window-edges (next-window)))
+		   (this-win-2nd (not (and (<= (car this-win-edges)
+									   (car next-win-edges))
+								   (<= (cadr this-win-edges)
+									   (cadr next-win-edges)))))
+		   (splitter
+			(if (= (car this-win-edges)
+				   (car (window-edges (next-window))))
+				'split-window-horizontally
+			  'split-window-vertically)))
+	  (delete-other-windows)
+	  (let ((first-win (selected-window)))
+		(funcall splitter)
+		(if this-win-2nd (other-window 1))
+		(set-window-buffer (selected-window) this-win-buffer)
+		(set-window-buffer (next-window) next-win-buffer)
+		(select-window first-win)
+		(if this-win-2nd (other-window 1))))))
 (keymap-global-set "M-S-t" #'toggle-window-split)  ;; was M-T, overrides transpose-words
 
 ;; ---------------------------- Buffer Manipulation ----------------------------
