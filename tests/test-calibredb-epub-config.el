@@ -209,5 +209,221 @@ so nov's `shr' fills the text itself rather than relying on visual-fill-column."
       (cj/nov-open-external)
       (should (equal command "zathura")))))
 
+;;; ----------------------- cj/nov--natural-window-width -----------------------
+
+(ert-deftest test-calibredb-epub-nov-natural-window-width-no-margins ()
+  "Normal: with no margins set, the natural width equals `window-body-width'."
+  (cl-letf (((symbol-function 'get-buffer-window) (lambda (&rest _) 'win))
+            ((symbol-function 'window-body-width) (lambda (_) 100))
+            ((symbol-function 'window-margins) (lambda (_) '(nil . nil))))
+    (should (= 100 (cj/nov--natural-window-width)))))
+
+(ert-deftest test-calibredb-epub-nov-natural-window-width-adds-margins ()
+  "Boundary: with margins set, the natural width adds them back to the body."
+  (cl-letf (((symbol-function 'get-buffer-window) (lambda (&rest _) 'win))
+            ((symbol-function 'window-body-width) (lambda (_) 60))
+            ((symbol-function 'window-margins) (lambda (_) '(20 . 20))))
+    (should (= 100 (cj/nov--natural-window-width)))))
+
+(ert-deftest test-calibredb-epub-nov-natural-window-width-no-window-fallback ()
+  "Boundary: when no window shows the buffer, the helper returns 80."
+  (cl-letf (((symbol-function 'get-buffer-window) (lambda (&rest _) nil)))
+    (should (= 80 (cj/nov--natural-window-width)))))
+
+;;; ----------------------- cj/--nov-image-padding-cols ------------------------
+
+(ert-deftest test-calibredb-epub-image-padding-centers-narrow-image ()
+  "Normal: a half-column-wide image is centered with quarter-width padding."
+  (should (= 20 (cj/--nov-image-padding-cols 80 320 8))))
+
+(ert-deftest test-calibredb-epub-image-padding-zero-when-image-fills-column ()
+  "Boundary: an image exactly as wide as the column needs no padding."
+  (should (= 0 (cj/--nov-image-padding-cols 40 320 8))))
+
+(ert-deftest test-calibredb-epub-image-padding-zero-when-image-overflows ()
+  "Boundary: an image wider than the column clamps the padding to 0."
+  (should (= 0 (cj/--nov-image-padding-cols 80 1000 8))))
+
+(ert-deftest test-calibredb-epub-image-padding-clamps-zero-font-width ()
+  "Boundary: a zero `font-width-px' is clamped up to 1 so the divide stays safe."
+  (should (= 0 (cj/--nov-image-padding-cols 80 320 0))))
+
+;;; --------------------------- cj/calibredb-clear-filters ---------------------
+
+(ert-deftest test-calibredb-epub-clear-filters-resets-state ()
+  "Normal: clearing the filters resets all five filter vars and the page index."
+  (skip-unless (require 'calibredb-search nil t))
+  (let ((calibredb-tag-filter-p t)
+        (calibredb-favorite-filter-p t)
+        (calibredb-author-filter-p t)
+        (calibredb-date-filter-p t)
+        (calibredb-format-filter-p t)
+        (calibredb-search-current-page 7))
+    (cl-letf (((symbol-function 'calibredb-search-keyword-filter) #'ignore))
+      (cj/calibredb-clear-filters))
+    (should-not calibredb-tag-filter-p)
+    (should-not calibredb-favorite-filter-p)
+    (should-not calibredb-author-filter-p)
+    (should-not calibredb-date-filter-p)
+    (should-not calibredb-format-filter-p)
+    (should (= 1 calibredb-search-current-page))))
+
+(ert-deftest test-calibredb-epub-clear-filters-refreshes-listing ()
+  "Normal: clearing the filters re-runs the keyword filter with an empty query
+so the search buffer rebuilds against the now-unfiltered set."
+  (skip-unless (require 'calibredb-search nil t))
+  (let ((calibredb-tag-filter-p nil)
+        (calibredb-favorite-filter-p nil)
+        (calibredb-author-filter-p nil)
+        (calibredb-date-filter-p nil)
+        (calibredb-format-filter-p nil)
+        (calibredb-search-current-page 1)
+        passed)
+    (cl-letf (((symbol-function 'calibredb-search-keyword-filter)
+               (lambda (kw) (setq passed kw))))
+      (cj/calibredb-clear-filters))
+    (should (equal "" passed))))
+
+;;; --------------------------- cj/force-nov-mode-for-epub ---------------------
+
+(ert-deftest test-calibredb-epub-force-nov-mode-on-epub-calls-nov-mode ()
+  "Normal: a .epub buffer with nov-mode bound dispatches to `nov-mode' and
+does not fall through to the original mode dispatcher."
+  (skip-unless (fboundp 'nov-mode))
+  (let (orig-called nov-called)
+    (cl-letf (((symbol-function 'nov-mode)
+               (lambda () (setq nov-called t))))
+      (with-temp-buffer
+        (setq buffer-file-name "/tmp/sample.epub")
+        (cj/force-nov-mode-for-epub
+         (lambda (&rest _) (setq orig-called t)))))
+    (should nov-called)
+    (should-not orig-called)))
+
+(ert-deftest test-calibredb-epub-force-nov-mode-passes-through-non-epub ()
+  "Boundary: a non-epub buffer falls through to the original mode dispatcher."
+  (let (orig-called)
+    (with-temp-buffer
+      (setq buffer-file-name "/tmp/sample.txt")
+      (cj/force-nov-mode-for-epub
+       (lambda (&rest _) (setq orig-called t))))
+    (should orig-called)))
+
+(ert-deftest test-calibredb-epub-force-nov-mode-passes-through-no-filename ()
+  "Boundary: a buffer with no associated filename falls through to the
+original mode dispatcher."
+  (let (orig-called)
+    (with-temp-buffer
+      (cj/force-nov-mode-for-epub
+       (lambda (&rest _) (setq orig-called t))))
+    (should orig-called)))
+
+(ert-deftest test-calibredb-epub-force-nov-mode-passes-through-when-nov-missing ()
+  "Error: a .epub buffer falls through to the original dispatcher when nov-mode
+is not defined (the require failed and there is nothing to dispatch to)."
+  (let ((saved (and (fboundp 'nov-mode) (symbol-function 'nov-mode)))
+        orig-called)
+    (when saved (fmakunbound 'nov-mode))
+    (unwind-protect
+        (cl-letf (((symbol-function 'require)
+                   ;; Pretend the (require 'nov nil t) call fails too.
+                   (lambda (&rest _) nil)))
+          (with-temp-buffer
+            (setq buffer-file-name "/tmp/sample.epub")
+            (cj/force-nov-mode-for-epub
+             (lambda (&rest _) (setq orig-called t)))))
+      (when saved (fset 'nov-mode saved)))
+    (should orig-called)))
+
+;;; ---------------------------- cj/nov--metadata-get --------------------------
+
+(ert-deftest test-calibredb-epub-metadata-get-symbol-key ()
+  "Normal: a symbol key returns the matching alist value."
+  (let ((nov-metadata '((title . "Moby Dick"))))
+    (should (equal "Moby Dick" (cj/nov--metadata-get 'title)))))
+
+(ert-deftest test-calibredb-epub-metadata-get-string-fallback ()
+  "Normal: when the alist is keyed by string and the caller passes a symbol,
+the helper retries with the string form."
+  (let ((nov-metadata '(("title" . "Moby Dick"))))
+    (should (equal "Moby Dick" (cj/nov--metadata-get 'title)))))
+
+(ert-deftest test-calibredb-epub-metadata-get-unwraps-single-element-list ()
+  "Boundary: a single-element list value is unwrapped to its element so the
+result is a plain string that the jump-to-calibredb query can interpolate."
+  (let ((nov-metadata '((title . ("Moby Dick")))))
+    (should (equal "Moby Dick" (cj/nov--metadata-get 'title)))))
+
+(ert-deftest test-calibredb-epub-metadata-get-keeps-multi-element-list ()
+  "Boundary: a multi-element list value passes through as-is."
+  (let ((nov-metadata '((creator . ("Melville" "Whittaker")))))
+    (should (equal '("Melville" "Whittaker") (cj/nov--metadata-get 'creator)))))
+
+(ert-deftest test-calibredb-epub-metadata-get-missing-key-returns-nil ()
+  "Error: a key with no value in the alist returns nil."
+  (let ((nov-metadata '((title . "Moby Dick"))))
+    (should-not (cj/nov--metadata-get 'creator))))
+
+;;; ----------------------------- cj/nov--file-path ----------------------------
+
+(ert-deftest test-calibredb-epub-file-path-returns-buffer-file-name-in-nov-mode ()
+  "Normal: in `nov-mode' the helper returns `buffer-file-name'."
+  (with-temp-buffer
+    (setq-local major-mode 'nov-mode)
+    (setq buffer-file-name "/tmp/sample.epub")
+    (should (equal "/tmp/sample.epub" (cj/nov--file-path)))))
+
+(ert-deftest test-calibredb-epub-file-path-returns-nil-outside-nov-mode ()
+  "Error: outside `nov-mode' the helper returns nil regardless of file name."
+  (with-temp-buffer
+    (setq buffer-file-name "/tmp/sample.epub")
+    (should-not (cj/nov--file-path))))
+
+;;; --------------------------- cj/nov-jump-to-calibredb -----------------------
+
+(defmacro test-calibredb-epub--with-calibredb-stubs (file metadata-alist &rest body)
+  "Run BODY with `cj/nov--file-path' and `cj/nov--metadata-get' stubbed.
+FILE is returned by the file-path stub; METADATA-ALIST is the alist consulted
+by the metadata stub.  `calibredb', `calibredb-find-create-search-buffer', and
+`message' are stubbed so the body never touches the real library."
+  (declare (indent 2))
+  `(let ((calibredb-search-current-page 99)
+         passed)
+     (cl-letf (((symbol-function 'cj/nov--file-path) (lambda () ,file))
+               ((symbol-function 'cj/nov--metadata-get)
+                (lambda (key) (alist-get key ,metadata-alist nil nil #'equal)))
+               ((symbol-function 'calibredb) (lambda () nil))
+               ((symbol-function 'calibredb-find-create-search-buffer)
+                (lambda () (current-buffer)))
+               ((symbol-function 'calibredb-search-keyword-filter)
+                (lambda (kw) (setq passed kw)))
+               ((symbol-function 'message) (lambda (&rest _) nil)))
+       ,@body
+       passed)))
+
+(ert-deftest test-calibredb-epub-jump-to-calibredb-uses-id-when-present ()
+  "Normal: a parent directory of the form \"Title (NNN)\" yields an id query."
+  (let ((result (test-calibredb-epub--with-calibredb-stubs
+                    "/books/Moby Dick (42)/moby.epub"
+                    '((title . "Moby Dick") (creator . "Melville"))
+                  (cj/nov-jump-to-calibredb))))
+    (should (equal "id:42" result))))
+
+(ert-deftest test-calibredb-epub-jump-to-calibredb-falls-back-to-title-and-author ()
+  "Normal: without an id, the query combines title and author with `and'."
+  (let ((result (test-calibredb-epub--with-calibredb-stubs
+                    "/books/Some Book/some.epub"
+                    '((title . "Moby Dick") (creator . "Melville"))
+                  (cj/nov-jump-to-calibredb))))
+    (should (equal "title:\"Moby Dick\" and authors:\"Melville\"" result))))
+
+(ert-deftest test-calibredb-epub-jump-to-calibredb-empty-query-without-metadata ()
+  "Boundary: with no id and no metadata, the helper clears the keyword filter."
+  (let ((result (test-calibredb-epub--with-calibredb-stubs
+                    "/books/Untitled/untitled.epub"
+                    nil
+                  (cj/nov-jump-to-calibredb))))
+    (should (equal "" result))))
+
 (provide 'test-calibredb-epub-config)
 ;;; test-calibredb-epub-config.el ends here
