@@ -373,6 +373,15 @@ result is a plain string that the jump-to-calibredb query can interpolate."
     (setq buffer-file-name "/tmp/sample.epub")
     (should (equal "/tmp/sample.epub" (cj/nov--file-path)))))
 
+(ert-deftest test-calibredb-epub-file-path-falls-back-to-nov-file-name ()
+  "Boundary: in `nov-mode' with no `buffer-file-name', the helper falls back
+to nov.el's own `nov-file-name' (set by `nov-mode' from the visited file)."
+  (with-temp-buffer
+    (setq-local major-mode 'nov-mode)
+    (setq buffer-file-name nil)
+    (setq-local nov-file-name "/tmp/sample.epub")
+    (should (equal "/tmp/sample.epub" (cj/nov--file-path)))))
+
 (ert-deftest test-calibredb-epub-file-path-returns-nil-outside-nov-mode ()
   "Error: outside `nov-mode' the helper returns nil regardless of file name."
   (with-temp-buffer

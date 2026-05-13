@@ -322,12 +322,12 @@ computed column based on the window text area width."
 	 (t v))))
 
 (defun cj/nov--file-path ()
-  "Return the current EPUB file path when in nov-mode, or nil."
+  "Return the current EPUB file path when in nov-mode, or nil.
+Falls back to nov's own `nov-file-name' (set by `nov-mode' from the visited
+file) so the function still resolves when `buffer-file-name' has been cleared."
   (when (derived-mode-p 'nov-mode)
-	;; In nov, the buffer visits the .epub; buffer-file-name is usually the EPUB.
 	(or buffer-file-name
-		(and (boundp 'nov-epub-filename) nov-epub-filename)
-		(and (boundp 'nov-epub-file) nov-epub-file))))
+		(and (boundp 'nov-file-name) nov-file-name))))
 
 (defun cj/nov-jump-to-calibredb ()
   "Open CalibreDB focused on the current EPUB's book entry.
