@@ -97,6 +97,44 @@ so, for instance this todo.org file would show "emacs.d" as the project name in 
 see snapshot below for an example of the current state. 
 /home/cjennings/pictures/screenshots/2026-05-13_071840.png
 
+** TODO [#B] F9 toggle should restore single-window layout for AI-vterm :bug:
+
+When the AI-vterm buffer is the only window in the frame (e.g. after =C-x 1=) and
+F9 is pressed, =cj/ai-vterm= buries the buffer (correct), but the next F9
+redisplays the agent in a split rather than restoring the single-window full-frame
+layout. F9 should toggle off/on while preserving the lone-window state.
+
+The bury-then-redisplay path goes through =display-buffer= and hits
+=display-buffer-in-direction= via =cj/--ai-vterm-display-saved=, which splits the
+existing window. The fix needs the toggle-on path to detect that toggle-off was a
+bury-not-delete and use =switch-to-buffer= (or equivalent) instead of a
+saved-direction split.
+
+Locations:
+- =modules/ai-vterm.el= around the =(one-window-p)= branch in =cj/ai-vterm=
+- =modules/ai-vterm.el= the =cj/--ai-vterm-display-saved= display-buffer action
+
+Regression test: enter single-window state with agent buffer, F9, F9 again --
+expect =(one-window-p)= still t and the agent buffer displayed.
+
+** TODO [#B] AI-vterm scrollback history should replace agent buffer in place :feature:
+
+When viewing the scrollback history of an AI-vterm buffer, the history view should
+replace the live agent buffer in the same window rather than splitting or popping
+a separate window. Goal: read past output without losing the agent's frame slot,
+then snap back to the live buffer when done.
+
+Open questions before implementation:
+- Is the trigger an existing command (e.g. =vterm-copy-mode= toggle staying
+  in-place) or a new command that builds a read-only history buffer?
+- Round-trip ergonomics: how does the user return to the live agent? Same key as
+  the entry, or a separate "resume" binding?
+- Does this need to integrate with the F9 toggle state (so a toggle-off while in
+  history mode does the right thing)?
+
+Locations: =modules/ai-vterm.el= (no scrollback-history command exists yet) and
+=modules/vterm-config.el= (vterm base bindings).
+
 ** TODO [#B] Add ERT coverage for modules below 70% :tests:
 
 Coverage snapshot from =make coverage-summary= on 2026-05-12:
