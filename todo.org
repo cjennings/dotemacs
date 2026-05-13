@@ -97,6 +97,21 @@ so, for instance this todo.org file would show "emacs.d" as the project name in 
 see snapshot below for an example of the current state. 
 /home/cjennings/pictures/screenshots/2026-05-13_071840.png
 
+** TODO [#B] Investigate gptel-magit not working properly :bug:
+
+Wired up in =modules/ai-config.el= as three lazy entry points:
+- =M-g= in =git-commit-mode-map= -> =gptel-magit-generate-message=
+- =g= in =magit-commit= transient -> =gptel-magit-commit-generate=
+- =x= in =magit-diff= transient -> =gptel-magit-diff-explain=
+
+Specific failure mode TBD. First step: reproduce, note which entry point fails
+and how, then trace from there. Likely suspects: autoload chain (the three
+=autoload= calls run inside =with-eval-after-load 'magit=), transient suffix
+attachment via =transient-append-suffix=, or gptel-side backend/model config.
+
+Migration to current lazy form: commit =3eb1a0c refactor(gptel): lazy-load
+gptel-magit, rebind rewrite/context keys=.
+
 ** TODO [#B] F9 toggle should restore single-window layout for AI-vterm :bug:
 
 When the AI-vterm buffer is the only window in the frame (e.g. after =C-x 1=) and
