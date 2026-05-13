@@ -1,0 +1,3689 @@
+#+TITLE: Emacs Config Tasks
+#+AUTHOR: Craig Jennings
+#+ARCHIVE: %s::* Emacs Resolved
+
+* Emacs Priority Scheme
+
+Use priority to express impact and urgency, not task type. Bugs, refactors,
+tests, chores, and features can all be high or low priority.
+
+- =[#A]= Urgent risk or current workflow blocker. Use for credential exposure,
+  security/privacy leaks, data loss, destructive behavior, startup breakage,
+  failing tests that block work, or a feature/refactor that unblocks a core
+  daily workflow.
+- =[#B]= Important planned work. Use for concrete bugs, high-leverage
+  architecture cleanup, brittle load-order/test gaps, dependency failures, or
+  feature work with a clear design and expected near-term use.
+- =[#C]= Useful but optional. Use for low-risk cleanup, ergonomics, smoke tests,
+  investigations with limited current impact, or feature work that would improve
+  the setup but is not yet a committed workflow.
+- =[#D]= Someday/maybe or watchlist. Use for speculative features, tiny polish,
+  upstream/package tracking, optimizations without current pain, or deferred
+  ideas that should not compete with active maintenance.
+
+For =PROJECT= headings, use the highest priority of the meaningful child work
+inside the project. If a project only contains exploration or review, assign the
+priority by the expected decision value rather than the number of files touched.
+
+Use tags to describe the work shape:
+- =:bug:= means the current behavior is wrong or likely broken.
+- =:feature:= means the task adds a new user-visible capability or workflow.
+- =:refactor:= means the task changes structure/ownership without primarily
+  changing behavior.
+- =:quick:= means the task appears low effort and localized. It is a planning
+  hint, not a promise; remove it if the task grows during implementation.
+
+Tags are additive. For example, a small wrong-behavior fix can be
+=:bug:quick:=, and a feature that requires internal restructuring can be
+=:feature:refactor:=.
+
+* Emacs Open Work
+
+** TODO [#A] Add Telegram Messaging
+https://github.com/zevlg/telega.el
+Make sure there is a setup script to run, so that the docker container can be installed post emacs dotfiles repository clone on a fresh install
+** DOING [#A] Org Agenda fixes                                          :bug:
+*** 2026-05-13 Wed @ 13:05:21 -0500 Skip CANCELLED entries from main agenda SCHEDULE
+see the following screenshot
+/home/cjennings/pictures/screenshots/2026-05-13_071428.png
+
+Fix shipped on main: commit =8e57950=. Added an org-agenda-skip-function
+to the SCHEDULE block of the "d" command in =org-agenda-custom-commands=
+that filters entries with TODO state CANCELLED. Scope is deliberately
+narrow -- DONE and FAILED scheduled tasks still render.
+
+Tests in =tests/test-org-agenda-config-skip-functions.el= (Normal +
+Boundary) lock in the configuration form on the agenda block and
+verify the other blocks aren't accidentally carrying the same skip.
+**** TODO [#C] Refactor: extract org-agenda-prefix-format literal :refactor:
+=modules/org-agenda-config.el= currently inlines =" %i %-15:c%?-15t% s"=
+across four blocks of =org-agenda-custom-commands= (overdue, hi-pri,
+schedule, priority-B). Extract into a defvar (e.g.
+=cj/--main-agenda-prefix-format=) and reference it from each block.
+Surfaced during the audit for the CANCELLED-schedule fix.
+*** 2026-05-13 Wed @ 13:27:39 -0500 Clear dedicated before toggling window split
+Reproduction steps
+- open an org file (I was using this projects's todo.org file
+- hit the f8 button to open the agenda view. it opens fine.
+- toggle-window-split
+>>> The agenda displays on both panes after the toggle.
+see snapshot below
+/home/cjennings/pictures/screenshots/2026-05-13_071603.png
+
+Fix shipped on main: commit =97f0f8e=. Root cause was the dedicated
+=*Org Agenda*= window (set via =display-buffer-alist= rule) rejecting
+the internal =set-window-buffer= swap. The non-dedicated buffer never
+crossed and both panes ended up showing the agenda.
+
+=modules/ui-navigation.el= now clears dedicated on both windows at the
+top of =toggle-window-split= before the swap. The toggle is an
+explicit layout change, so preserving per-window dedicated through it
+would just re-trigger the same wedge on the next invocation.
+
+Tests in =tests/test-ui-navigation--toggle-window-split.el= (5 tests,
+Normal + Boundary) cover the no-dedicated baseline, the bug-trigger,
+post-toggle cleared state, and the 1-window / 3-window no-op cases.
+Verified red against the unfixed code (the bug-trigger test errored
+=Window is dedicated to '*test-toggle-b*'=) before applying the fix.
+
+Live verification pending: =M-x load-file modules/ui-navigation.el=,
+then walk through F8 + M-S-t in a fresh session.
+*** TODO [#A] Enhancement: replace todo indicators with project name
+In the overdue section, the high priority section, and the priority B section, each of the entries has a todo: indicator, which is the name of the file.
+This is not useful. Based on how I'm using emacs, every entry is likely to come from a file named todo.org.
+A much preferrable option would be to have the project's name there instead.
+so, for instance this todo.org file would show "emacs.d" as the project name in place of todo. 
+
+see snapshot below for an example of the current state. 
+/home/cjennings/pictures/screenshots/2026-05-13_071840.png
+
+** TODO [#B] Add ERT coverage for modules below 70% :tests:
+
+Coverage snapshot from =make coverage-summary= on 2026-05-12:
+=4405/6735= executable lines covered (=65.4%=) across 72 tracked module files.
+
+Add focused ERT tests for each module currently below 70% coverage, then rerun
+=make coverage= and update or close the child tasks as their module coverage
+crosses the threshold.
+
+*** TODO [#B] Add ERT tests for =modules/prog-python.el= (0/20, 0.0%) :tests:
+*** TODO [#B] Add ERT tests for =modules/selection-framework.el= (0/3, 0.0%) :tests:
+*** TODO [#B] Add ERT tests for =modules/keyboard-compat.el= (1/29, 3.4%) :tests:
+*** TODO [#B] Add ERT tests for =modules/prog-webdev.el= (1/21, 4.8%) :tests:
+*** TODO [#B] Add ERT tests for =modules/calibredb-epub-config.el= (7/104, 6.7%) :tests:
+*** TODO [#B] Add ERT tests for =modules/system-defaults.el= (1/12, 8.3%) :tests:
+*** TODO [#B] Add ERT tests for =modules/ui-navigation.el= (4/46, 8.7%) :tests:
+*** TODO [#B] Add ERT tests for =modules/prog-go.el= (3/27, 11.1%) :tests:
+*** TODO [#B] Add ERT tests for =modules/system-commands.el= (6/49, 12.2%) :tests:
+*** TODO [#B] Add ERT tests for =modules/external-open.el= (5/33, 15.2%) :tests:
+*** TODO [#B] Add ERT tests for =modules/org-webclipper.el= (10/59, 16.9%) :tests:
+*** TODO [#B] Add ERT tests for =modules/system-utils.el= (5/26, 19.2%) :tests:
+*** TODO [#B] Add ERT tests for =modules/org-reveal-config.el= (9/45, 20.0%) :tests:
+*** TODO [#B] Add ERT tests for =modules/coverage-elisp.el= (5/19, 26.3%) :tests:
+*** TODO [#B] Add ERT tests for =modules/org-noter-config.el= (27/99, 27.3%) :tests:
+*** TODO [#B] Add ERT tests for =modules/ai-config.el= (53/191, 27.7%) :tests:
+*** TODO [#B] Add ERT tests for =modules/slack-config.el= (23/74, 31.1%) :tests:
+*** TODO [#B] Add ERT tests for =modules/org-roam-config.el= (26/80, 32.5%) :tests:
+*** TODO [#B] Add ERT tests for =modules/custom-text-enclose.el= (51/145, 35.2%) :tests:
+*** TODO [#B] Add ERT tests for =modules/dirvish-config.el= (68/180, 37.8%) :tests:
+*** TODO [#B] Add ERT tests for =modules/hugo-config.el= (38/96, 39.6%) :tests:
+*** TODO [#B] Add ERT tests for =modules/org-refile-config.el= (21/51, 41.2%) :tests:
+*** TODO [#B] Add ERT tests for =modules/org-contacts-config.el= (36/79, 45.6%) :tests:
+*** TODO [#B] Add ERT tests for =modules/transcription-config.el= (75/162, 46.3%) :tests:
+*** TODO [#B] Add ERT tests for =modules/music-config.el= (130/278, 46.8%) :tests:
+*** TODO [#B] Add ERT tests for =modules/mail-config.el= (9/19, 47.4%) :tests:
+*** TODO [#B] Add ERT tests for =modules/custom-buffer-file.el= (123/212, 58.0%) :tests:
+*** TODO [#B] Add ERT tests for =modules/org-agenda-config.el= (49/83, 59.0%) :tests:
+*** TODO [#B] Add ERT tests for =modules/host-environment.el= (34/57, 59.6%) :tests:
+*** TODO [#B] Add ERT tests for =modules/custom-ordering.el= (61/101, 60.4%) :tests:
+*** TODO [#B] Add ERT tests for =modules/ui-theme.el= (25/40, 62.5%) :tests:
+*** TODO [#B] Add ERT tests for =modules/custom-comments.el= (230/358, 64.2%) :tests:
+*** TODO [#B] Add ERT tests for =modules/ui-config.el= (20/31, 64.5%) :tests:
+*** TODO [#B] Add ERT tests for =modules/custom-whitespace.el= (53/82, 64.6%) :tests:
+*** TODO [#B] Add ERT tests for =modules/jumper.el= (64/99, 64.6%) :tests:
+*** TODO [#B] Add ERT tests for =modules/test-runner.el= (146/222, 65.8%) :tests:
+*** TODO [#B] Add ERT tests for =modules/browser-config.el= (53/76, 69.7%) :tests:
+
+** TODO [#A] Fix Python tree-sitter font-lock query syntax error :bug:
+SCHEDULED: <2026-04-27 Mon>
+
+Diagnosed 2026-04-26 — paused at /start-work Gate 2. Root cause is system-level, not in =.emacs.d=: Emacs 30.2 + tree-sitter library 0.26.x predicate-syntax mismatch. Emacs sends =#match= (no =?= suffix), tree-sitter 0.26 rejects anything but =#match?=. Affects every =:match=, =:equal=, =:pred= predicate in every treesit-aware mode, not just Python.
+
+Full investigation, reproduction, and fix-option analysis in:
+
+[[file:inbox/python-treesit-predicate-mismatch.txt][inbox/python-treesit-predicate-mismatch.txt]]
+
+Fix surfaces are upstream (Emacs source or tree-sitter library) — local options are workarounds. Recommended next-session path: check whether Emacs 30.3 / master has a fix; if not, override =python--treesit-settings= in =modules/prog-python.el= to strip the loudest predicate-using queries (loses some highlighting, kills the redisplay flood).
+
+** STALLED [#C] EPUB text is slightly left-of-center (shr word-wrap shortfall) :bug:
+[2026-05-12] Visual review of the reading-width rework is done -- it's good. Not sure I actually need this nit fixed; the left-of-center bias is minor and the `+'/`-' keys let me nudge it. Parking here until I decide it bothers me enough.
+
+After =b7c6b2c=, the EPUB text block is centered with `set-window-margins' at `(natural - nov-text-width) / 2' each side -- but the *rendered* text is a bit narrower than `nov-text-width' columns, because `shr' wraps at word boundaries, so the typical line ends a few columns short of the fill width. The text is left-aligned within its `nov-text-width'-wide fill region, so the unused tail of that region adds to the right margin -- the block reads as shifted left of center. Adjusting `cj/nov-margin-percent' (the `+'/`-' keys) re-flows and happens to look better at some widths (probably the line-ending pattern lands tighter), which is the same effect, not a real difference.
+
+Plan: in `cj/nov-update-layout', after the render, measure the actual widest line (`(save-excursion (goto-char (point-min)) (let ((m 0)) (while (not (eobp)) (end-of-line) (setq m (max m (current-column))) (forward-line 1)) m))') and center on *that* instead of on `nov-text-width'. Or, cheaper but coarser: bias the left margin by a small fudge (a column or two). The measure-the-text approach is correct; do it if it's not too slow on big chapters (it scans the buffer once per render -- the buffer's already in memory, so likely fine). =modules/calibredb-epub-config.el=, =tests/test-calibredb-epub-config.el=.
+
+cj: this is now confirmed. mark it DONE. 
+
+** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
+
+Consolidate the developer F-key block into a coherent sequence. F5 reserved for debug (separate ticket). Format bindings move off F6 to C-; f.
+
+Menu mechanism: =completing-read= everywhere (consistent with F7 coverage scope prompt and with the vertico/consult workflow in the rest of the config). No transient definitions.
+
+**F4 — compile + run**
+
+- F4 (no modifier): completing-read with candidates filtered by project type. Detection via projectile-project-compilation-cmd and heuristic fallbacks (go.mod, Makefile, Eask, package.json, pyproject.toml, docker-compose.yml).
+  - Compiled project candidates: "Compile", "Run", "Compile + Run" (default), "Clean + Rebuild"
+  - Interpreted project candidates: "Run" only
+- C-F4: fast path = Compile only. On interpreted projects, shows "not a compiled language" and no-ops.
+- M-F4: fast path = Clean + Rebuild. Same "not applicable" behavior on interpreted projects.
+
+The dispatcher reads projectile's per-project compile/run/test commands. No Docker-specific logic in the command itself. Container workflows are configured via projectile's prompt-and-cache (or .dir-locals.el from the dev-project-setup helper).
+
+**F6 — run tests**
+
+- F6 (no modifier): completing-read top-level:
+  - "All tests"
+  - "Current file's tests"
+  - "Run a test..." (nested completing-read with individual tests)
+- C-F6: fast path = "Current file's tests"
+- M-F6: fast path = "Run a test..."
+
+"Current file's tests": if current buffer is a test file, run it directly. If source file, find matching test file(s) via language conventions (elisp: tests/test-<module>*.el; python: tests/test_<module>.py; etc.) and run them aggregated.
+
+"Run a test...": build a candidate list of individual tests, pre-select the last-chosen test for this buffer (buffer-local cj/--last-test-run), present via completing-read. Pressing RET re-runs last. Memory is buffer-local so different source files remember their own last-test.
+
+Candidate set for "Run a test...":
+- If buffer is a test file: parse the file, return its test definitions.
+- If buffer is a source file: find matching test file(s) and aggregate their test definitions.
+- No matches: error out with "No tests found for <buffer>". Don't silently fall through.
+
+Per-language test discovery:
+- Python, Go, TypeScript/JavaScript: tree-sitter queries (treesit-auto already configured, grammars auto-install)
+  - Python: (function_definition name: (identifier) @name (:match "^test_" @name))
+  - Go: (function_declaration name: (identifier) @name (:match "^Test" @name))
+  - TS/JS: (call_expression function: (identifier) @fn arguments: (arguments (string) @name) (:match "^\\(test\\|it\\)$" @fn))
+  - Parsing unopened test files: use with-temp-buffer + insert-file-contents + python-ts-mode (etc.) + treesit-query-capture
+- Elisp: built-in sexp navigation; scan for (ert-deftest <name> ...) forms. No tree-sitter needed.
+
+**F7 — coverage** (already designed in docs/design/coverage.org)
+
+**Required moves:**
+- Move blacken-buffer (python), shfmt-buffer (sh), clang-format-buffer (c) off F6 to C-; f prefix (already the format-buffer prefix).
+- Move projectile-run-project off F6 (folds into the new F4 completing-read).
+
+**Ordering:**
+Do this after the coverage-config work ships. No churn mid-flight.
+
+** TODO [#B] Review and rebind M-S- keybindings :refactor:
+
+Changed from M-uppercase to M-S-lowercase for terminal compatibility.
+These may override useful defaults - review and pick better bindings:
+- M-S-b calibredb (was overriding backward-word)
+- M-S-c time-zones (was overriding capitalize-word)
+- M-S-d dwim-shell-menu (was overriding kill-word)
+- M-S-e eww (was overriding forward-sentence)
+- M-S-f fontaine (was overriding forward-word)
+- M-S-h split-below
+- M-S-i edit-indirect
+- M-S-k show-kill-ring (was overriding kill-sentence)
+- M-S-l switch-themes (was overriding downcase-word)
+- M-S-m kill-all-buffers
+- M-S-o kill-other-window
+- M-S-r elfeed
+- M-S-s window-swap
+- M-S-t toggle-split (was overriding transpose-words)
+- M-S-u winner-undo (was overriding upcase-word)
+- M-S-v split-right (was overriding scroll-down)
+- M-S-w wttrin (was overriding kill-ring-save)
+- M-S-y yank-media (was overriding yank-pop)
+- M-S-z undo-kill-buffer (was overriding zap-to-char)
+
+** TODO [#B] Build cj/dev-setup-project helper (per docs/design/dev-setup-project.org) :feature:
+
+Interactive command that opens a review buffer with proposed per-subdirectory .dir-locals.el contents (projectile compile/run/test + cj/coverage-backend), optional starter Makefile when none exists, and gitignore updates. User edits inline, C-c C-c writes all files.
+
+Design: [[file:../docs/design/dev-setup-project.org][docs/design/dev-setup-project.org]]
+
+Scope of v1:
+- modules/dev-setup-config.el (command + review-buffer major mode)
+- Three-tier detection: existing Makefile, existing package.json/pyproject.toml scripts, fall-back starter Makefile generation.
+- Project shapes supported: pure Elisp, pure Go, pure Python, pure Node/TS, Docker Compose polyglot.
+- Re-run semantics: status banners (UNCHANGED / WILL UPDATE / WILL CREATE), idempotent gitignore append, never modifies an existing Makefile.
+- ERT tests for the pure helpers (Makefile parser, package.json parser, shape detection, target-to-role mapping, review-buffer parser).
+
+Deferred:
+- Rust (Cargo.toml), Java (pom.xml), other language shapes.
+- Project-wide override config file.
+- Auto-detecting external run scripts in conventional locations.
+
+Do this after the F-key rework ticket ships; don't want to churn project configs before the keys are stable.
+
+** TODO [#B] Pick and wire a debug backend for F5 :feature:
+
+Bind F5 globally to a debug entry point. Backend choice is the hard part:
+
+- dape (Debug Adapter Protocol for Emacs) — modern, multi-language via DAP. Single UX across Python, Go, TS, Rust, etc. Less mature than DAP clients in other editors.
+- realgud — wraps multiple debuggers (pdb, gdb, node --inspect, etc.). More mature; UX varies by backend.
+- Language-specific stacks — dap-mode (python-mode + dap), delve for go, ts-node --inspect, etc. Best per-language UX; most config work.
+
+F5 itself will be simple (start/resume debug). Likely modifier variants once the backend is picked:
+- C-F5 toggle breakpoint at point
+- M-F5 eval expression in debug context (or step-over shortcut)
+
+Evaluate against these projects' languages: elisp (edebug already works), Python, Go, TS, shell. Shell debug is usually print-based; skip.
+
+Do this after the F-key rework ticket ships so F5 is the only hole left.
+
+** TODO [#B] Build debug-profiling.el module :feature:
+
+Reusable profiling infrastructure for targeted slow-command investigation. Consolidates scattered profiler bindings (currently in =modules/config-utilities.el=) and adds two pure-helper-backed entry points: "profile next command" and "time region or sexp." Designed via =/brainstorm= 2026-04-26.
+
+Design: [[file:../docs/design/debug-profiling.org][docs/design/debug-profiling.org]]
+
+Implement via =/start-work= against the design — branch =feat/debug-profiling=, commits decomposed along the test-first split-for-testability boundary. Once shipped, use it as the v1 exercise on the queued [#B] org-capture target-building investigation.
+
+** TODO [#C] Review and implement flycheck modeline customization spec :feature:
+
+Add flycheck status (error/warning counts) to custom modeline to make it visible again.
+
+**Spec Document:**
+[[file:docs/flycheck-modeline-customization-spec.org][flycheck-modeline-customization-spec.org]]
+
+**Summary:**
+Current custom modeline excludes minor-mode-alist where flycheck displays its status.
+Need to either:
+1. Add flycheck's lighter directly to mode-line-format (simplest)
+2. Customize flycheck prefix/indicator and add to modeline
+3. Create custom flycheck segment with full control
+
+**Files to Modify:**
+- modules/flycheck-config.el (customize prefix/indicator)
+- modules/modeline-config.el (add to mode-line-format)
+
+**Recommended Approach:**
+Option 4 (Hybrid) from spec - customize flycheck variables + add to modeline.
+Simple, maintainable, respects flycheck's built-in logic.
+
+** TODO [#C] Migrate from Company to Corfu (with prescient integration) :feature:
+:PROPERTIES:
+:COMPLETE_CONFIG: [[file:.ai/SOMEDAY-MAYBE.org::1611][todo.org:1611-1639]]
+:END:
+
+Complete config already exists in someday-maybe.org — just needs to be executed.
+
+While migrating, also extend prescient (already wired into vertico) to Corfu for smart sorting. The prescient piece is a small follow-up to the migration, so handled in the same task.
+
+** TODO [#C] Consider removing gptel and the C-; a AI-assistant keymap :refactor:cleanup:
+
+Claude Code (via the F9 ai-vterm launcher) has fully replaced the gptel
+side-chat workflow. The =C-; a= prefix and the gptel use-package block
+in =modules/ai-config.el= no longer get used.
+
+Decide whether to:
+
+1. *Remove entirely.* Drop =modules/ai-config.el= +
+   =modules/ai-conversations.el=, the =C-; a= keymap registration,
+   the gptel/anthropic/openai package installs, and the saved-
+   conversations directory. Update =init.el= to stop requiring the
+   module. Net code reduction is large.
+2. *Keep but mothball.* Move the module to =modules/archived/= so the
+   bindings disappear but the code stays available for reference if
+   the workflow ever comes back.
+3. *Trim to the part that's still useful.* The rewrite-region command
+   (=C-; a r=) is the one piece Claude Code in a separate vterm can't
+   do as smoothly -- it edits the current buffer in place against a
+   prompt. If that's worth keeping, narrow =ai-config.el= to just
+   that command + its backend setup and drop everything else.
+
+Scope notes for whichever path:
+
+- =C-; a= keymap is registered in =ai-config.el='s tail; if removed,
+  the prefix becomes free for repurposing or stays unbound.
+- gptel pulls in =anthropic= / =openai= backends; both keys live in
+  =auth-config.el= but aren't referenced elsewhere -- safe to leave
+  the auth entries even if gptel goes.
+- =ai-conversations.el= is autoloaded via =ai-config.el= and stores
+  saved conversations in a designated dir; the dir + content go too
+  if removing entirely.
+- which-key registrations under =C-; a= disappear automatically when
+  the keymap goes.
+
+Companion to the F9 ai-vterm work shipped 2026-05-08. Filed because
+the C-F9 binding was already pulled from gptel during that work.
+
+** TODO [#C] Extend F2 "preview" convention across modes :feature:
+
+F2 is the universal preview key. Currently bound in markdown-mode (markdown-preview) and org-mode (org-reveal, moved from F5). Extend to other modes where a "preview" action is natural:
+
+- Hugo blog (hugo-config.el) — preview the post in browser
+- HTML / web-mode — open in browser
+- Any other mode with a natural "preview this" action
+
+Keep the binding mode-local so F2 stays available as a global candidate where no preview makes sense.
+
+** TODO [#C] Build localrepo and document limitations :feature:
+
+Repeatable installs and safe rollbacks.
+
+.localrepo only contains packages from package.el archives.
+Treesitter grammars are downloaded separately by treesit-auto on first use.
+For true offline reproducibility, need to cache treesitter grammars separately.
+
+** TODO [#C] Investigate sqlite finalizer error on init :bug:
+
+=*Messages*= shows =finalizer failed: (wrong-type-argument sqlitep nil)= during init. A package is finalizing an sqlite handle that's already nil — indicates a teardown bug somewhere. Likely culprits: forge, magit-todos, or any package using the sqlite backend.
+
+Investigation order:
+1. =M-x toggle-debug-on-message= with a regex matching =finalizer failed=.
+2. Restart Emacs to capture the backtrace.
+3. Check =modules/git-config.el= (forge) and any other sqlite-using module.
+
+Single occurrence per session, no visible impact yet. Track in case it grows.
+
+Discovered 2026-04-26 in =*Messages*=.
+
+** TODO [#C] Investigate TRAMP/dirvish showing question marks for file dates :bug:
+
+Remote directories in dirvish show "?" instead of actual modification dates.
+Tried several approaches without success - needs deeper investigation.
+
+**Attempted fixes (all reverted):**
+1. Connection-local dired-listing-switches with -alh (didn't help)
+2. Disabling tramp-direct-async-process (reported to cause this, but disabling didn't fix it)
+3. Hook to set different listing switches for remote vs local (didn't help)
+
+**Possible causes to investigate:**
+- dirvish may be using its own attribute fetching that bypasses dired-listing-switches
+- May need dirvish-specific configuration for remote file attributes
+- Could be an Emacs 29/30 + TRAMP + dirvish interaction issue
+- May require changes to how dirvish renders the file-size attribute on remote
+
+**Files involved:**
+- modules/tramp-config.el
+- modules/dirvish-config.el
+
+** TODO [#C] Finish terminal GPG pinentry configuration :feature:
+
+Continue work on terminal-mode GPG passphrase prompts (loopback mode).
+Branch: terminal-pinentry
+
+Changes in progress (modules/auth-config.el):
+- Use epa-pinentry-mode 'loopback in terminal
+- Use external pinentry (pinentry-dmenu) in GUI
+- Requires env-terminal-p from host-environment module
+
+** TODO [#D] Polish reveal.js presentation setup :feature:
+
+Three small reveal.js improvements; collected into one task because each on its own is too small to track separately.
+
+1. *Image insertion helper.* Function to insert images with proper org-reveal attributes (sizing, background images, etc.) without having to remember the syntax.
+2. *Default font sizing for slide elements.* Configure reveal.js font sizes for headings, body text, code blocks, etc. — better defaults via =org-reveal-head-preamble= CSS or a custom theme.
+3. *Custom dupre reveal.js theme.* CSS theme using the colors from =themes/dupre-palette.el=. Install into =reveal.js/css/theme/= for use with =#+REVEAL_THEME: dupre=.
+
+** TODO [#D] Evaluate and integrate Buttercup for behavior-driven integration tests :tests:
+
+Complex workflow testing capability.
+
+** TODO [#D] Dedup the doubly-defined functions in calibredb-epub-config.el :cleanup:
+=make compile= flags =calibredb-epub-config.el= for defining =cj/calibredb-clear-filters= (line ~79) and =cj/nov-jump-to-calibredb= (line ~277) twice each — the later definition silently shadows the earlier. Find which copy is current, delete the stale one. Pre-existing; noticed 2026-05-12 while fixing the Nov text-width loop.
+
+** TODO [#D] Track ELPA upstream byte-compile warnings (esxml, poetry) :chore:
+
+Two ELPA packages emit byte-compile warnings on =make compile= that aren't fixable in this repo:
+
+1. =elpa/esxml-20250421.1632/esxml.el= — =Warning: Unknown type: attrs= and =Unknown type: stringp= (a defcustom =:type= spec).
+2. =elpa/poetry-20240329.1103/poetry.el= — =Warning: Case 'X will match 'quote'= for four cases (=post-command=, =projectile=, =project=, =switch-buffer=). Quoted symbols inside =pcase= clauses — should be unquoted upstream.
+
+No action in this repo. Revisit when packages update. File upstream issues if warnings linger past a few months.
+
+Discovered 2026-04-26 in =*Messages*= during compile.
+
+** TODO [#D] Add status dashboard for dwim-shell-command processes :feature:
+
+Create a command to show all running dwim-shell-command processes with their status.
+Currently, there's no unified view of multiple running extractions/conversions.
+
+**Current behavior:**
+- Each command shows spinner in minibuffer while running
+- Process buffers created: `*Extract audio*`, etc.
+- On completion: buffer renamed to `*Extract audio done*` or `*Extract audio error*`
+- No way to see all running processes at once
+
+**Recommended approach:**
+Custom status buffer that reads `dwim-shell-command--commands`.
+Can add mode-line indicator later as enhancement.
+** PROJECT [#A] Architecture review follow-up from 2026-05-03 :refactor:
+
+High-level pass over =init.el=, =early-init.el=, and all 104 files in
+=modules/=. The main theme: the config works, but load order, startup side
+effects, credentials, and test measurement are more implicit than they should
+be. Use this project as the parent tracker; each child below should land as a
+small, reviewable change.
+
+Review snapshot:
+- =modules/= has 104 files and about 24k lines including =init.el= and
+  =early-init.el=.
+- =init.el= eagerly =require=s nearly every module.
+- =make coverage= passed when allowed to write the test scratch directory.
+- Coverage report: =3240/4952= executable lines, =65.43%=, across 49 module
+  files. Caveat: 55 module files do not appear in the report at all, so the
+  real project confidence is lower than the raw percentage suggests.
+
+*** PROJECT [#A] Untangle the eager =init.el= load graph :architecture:refactor:
+
+=init.el= currently functions as the dependency graph by eagerly requiring
+almost every module in a fixed order. That makes modules harder to test in
+isolation and hides real dependencies behind "loaded earlier in init.el"
+assumptions.
+
+Spec: [[file:docs/design/init-load-graph.org][docs/design/init-load-graph.org]]
+
+**** VERIFY [#B] Write full design spec for the =init.el= load-graph refactor :architecture:refactor:
+
+Create a design document that defines the target architecture, module
+categories, migration phases, test strategy, acceptance criteria, and risk
+controls for untangling the eager =init.el= load graph.
+
+Review incorporation:
+- Treat helper consolidation as adjacent architecture work, not a direct
+  acceptance criterion for the load-graph refactor.
+- Mention utility extraction guardrails in the spec so Phase 2 dependency work
+  has a clear rule for duplicated helpers found along the way.
+
+Verify 2026-05-04:
+- Added [[file:docs/design/init-load-graph.org][docs/design/init-load-graph.org]].
+- Incorporated review feedback by making utility consolidation an explicit
+  sibling project with guardrails and candidate helper families.
+- Parsed the spec and =todo.org= with =org-element=.
+- Committed the tracked spec as =0528475=.
+
+**** TODO [#B] Classify modules by role and startup requirement :refactor:
+
+Create a simple inventory, probably in =docs/design/= or an org note linked
+from this task:
+- Pure library modules: should have explicit =require=s, no top-level keybinds,
+  no timers, no package install/load side effects.
+- Package configuration modules: mostly =use-package=, hooks, mode bindings.
+- Startup side-effect modules: server startup, timers, dashboard, weather,
+  calendar auto-sync, quick-video setup, etc.
+- User command modules: expose interactive commands but defer heavy package
+  loading until the command runs.
+
+Acceptance criteria:
+- Every module has an assigned category.
+- Any module that must be eager has a documented reason.
+- Obvious "modules in test" or "WIP need to fix" comments in =init.el= are
+  either retired or turned into actual tasks.
+
+**** TODO [#B] Add explicit module dependencies before changing load order :refactor:
+
+Several modules assume things like =cj/custom-keymap=, path constants, or
+environment predicates already exist. Before deferring load, make each module
+declare what it uses.
+
+Guidance:
+- Prefer runtime =(require 'foo)= for actual runtime dependencies.
+- Use =eval-when-compile= only for macros or compile-time declarations.
+- Avoid shims like "define this keymap if it does not exist" except in tests.
+- If a module only needs a command from another module, consider =autoload=.
+
+Acceptance criteria:
+- Loading a module directly in batch mode either succeeds or gives a clear
+  missing-package error.
+- =make validate-modules= still passes.
+- New tests cover any extracted pure dependency helpers.
+
+**** TODO [#B] Defer feature modules behind autoloads, hooks, and commands :refactor:
+
+Once dependencies are explicit, reduce the number of modules required at
+startup. Start with lower-risk feature modules:
+- Entertainment and optional integrations: =games-config=, =music-config=,
+  =weather-config=, =slack-config=, =erc-config=.
+- Heavy document/media modules: =pdf-config=, =calibredb-epub-config=,
+  =video-audio-recording=, =transcription-config=.
+- AI/rest tooling: =ai-config=, =restclient-config=, =ai-conversations=.
+
+Do this incrementally. After each batch:
+- Restart Emacs interactively.
+- Run =make test= or at least targeted tests.
+- Check that keybindings still resolve and which-key labels still appear.
+
+**** TODO [#B] Centralize custom keymap registration :refactor:
+
+Many modules mutate =cj/custom-keymap= or global keys at top level. This is a
+real architectural boundary because it forces load order and makes standalone
+module loading brittle.
+
+Expected outcome:
+- Define a small helper or convention for registering prefix maps.
+- Modules can expose their keymaps without assuming =keybindings.el= has already
+  loaded.
+- =keybindings.el= remains the owner of global prefixes like =C-;=.
+- Existing keymaps continue to work.
+
+Related existing task: [#B] "Review and rebind M-S- keybindings".
+
+*** PROJECT [#B] Consolidate shared utility helpers :architecture:refactor:
+
+Helpers are scattered across feature modules where they were first needed.
+Some are duplicated, and some private helpers are generic enough to belong in a
+shared foundation library. This is adjacent to the load-graph refactor because
+central helper ownership reduces hidden inter-module dependencies, but it
+should remain a sibling project so load-order batches stay small and
+reviewable.
+
+Guidance:
+- Do not extract a helper until at least two callers are clearly the same
+  shape.
+- Prefer growing =system-lib.el= first; split into topic libraries only if it
+  becomes too broad or starts pulling coarse dependencies into foundation
+  startup.
+- Keep one helper extraction per commit.
+- Move unit tests with the helper. Consumers should keep behavior/integration
+  coverage.
+- Do not add heavy package dependencies to foundation helpers.
+
+**** VERIFY [#B] Write full utility consolidation design spec :architecture:refactor:
+
+Create a design document that inventories candidate helper extractions,
+recommends grouping and naming, explains how the helpers fit into existing
+library modules, defines migration phases, and identifies testing/rollback
+rules.
+
+Spec: [[file:docs/design/utility-consolidation.org][docs/design/utility-consolidation.org]]
+
+Verify 2026-05-04:
+- Added [[file:docs/design/utility-consolidation.org][docs/design/utility-consolidation.org]].
+- Spec includes framing questions, existing library fit, proposed grouping,
+  concrete pull/rename table, migration phases, test strategy, acceptance
+  criteria, risks, open questions, and recommended first commits.
+- Parsed the spec and =todo.org= with =org-element=.
+- Committed the tracked spec as =3ea4707=.
+- Incorporated complete review feedback in =dd77ebd=, including API behavior
+  contracts, speculative-extraction rules, =system-lib= dependency budget,
+  inventory/audit artifacts, test relocation policy, commit type guidance,
+  =use-package :if= load-order policy, and Phase 5 cache-design addendum
+  requirement.
+
+**** VERIFY [#B] Inventory private helpers across modules :refactor:
+
+Walk every module and tag private helpers as genuinely module-specific,
+generic-but-trapped, or duplicated. Capture likely consumers and any dependency
+cost before extracting.
+
+Candidate families:
+- shell argument formatting,
+- executable lookup with user-visible warnings,
+- argv-based process runners,
+- path containment/safe-base predicates,
+- Org-safe heading/property/body text sanitizers,
+- cache-with-TTL plus invalidation hooks,
+- warning/message wrappers.
+
+Verify 2026-05-10:
+- Added [[file:docs/design/utility-inventory.org][docs/design/utility-inventory.org]] covering the 30 entries in the spec's
+  Candidate Extraction Table grouped by family (executable discovery, shell
+  quoting, process runner, file/path, external-open, Org-safe text, cache,
+  logging, macros/debug, theme I/O, string).
+- For each helper recorded: visibility, dependencies, side effects, callers
+  (production + test), test files, priority, decision (Migrate / Leave / Defer)
+  with rationale.
+- Decisions Summary: 11 Migrate, 3 Leave, 13 Defer.
+- Concrete next-action list groups Migrate items by Phase (2 = foundation
+  helpers, 3 = Org-safe text, 4 = external-open consolidation) for the order
+  the spec recommends.
+- Discoveries: =cj/log-silently= has 10 production callers (more than the
+  spec's table suggested -- defer is the right call); =cj/--file-manager-program-for=
+  shipped today in =dirvish-config.el= is the new form of OS-dispatch
+  consolidation and should fold into =cj/external-open-command= during Phase 4.
+
+**** TODO [#B] Extract executable lookup with warning helper :refactor:
+
+Create a generic helper such as =cj/find-executable-or-warn= from the useful
+=mail-config= pattern. It should return the executable path or nil and produce
+a clear warning when the executable is missing.
+
+**** TODO [#B] Extract argv-based process runner helper :refactor:
+
+Generalize the =coverage-core= process pattern into a dependency-light helper
+that captures output and signals a clear =user-error= with command/status/output
+on failure. Consider a small git wrapper only after the generic runner exists.
+
+**** TODO [#B] Extract Org-safe text sanitizers :refactor:
+
+Move heading/property/body sanitization into a shared helper once at least one
+non-calendar consumer is ready. Keep behavior explicit so external text cannot
+accidentally create headings or malformed properties.
+
+*** PROJECT [#A] Move package bootstrap out of =early-init.el= where possible :startup:refactor:
+
+=early-init.el= currently handles package archives, package refresh, installing
+=use-package=, and =use-package-always-ensure=. That is more than early startup
+needs and can make startup network-sensitive.
+
+**** TODO [#B] Split early startup from package bootstrap :refactor:
+
+Keep =early-init.el= focused on things that must happen before package and UI
+startup:
+- GC/file-name-handler startup tuning.
+- =load-prefer-newer=.
+- frame/UI suppression.
+- minimal debug behavior.
+
+Move package archive setup and =use-package= installation to a normal module or
+bootstrap command, unless there is a specific reason it must run in
+=early-init.el=.
+
+Acceptance criteria:
+- Fresh install/bootstrap still works from a documented command or script.
+- Normal startup does not refresh archives or install packages unexpectedly.
+- Offline startup remains quiet and predictable.
+
+**** TODO [#A] Revisit package signature policy
+
+=package-check-signature= is disabled. Decide whether that is still necessary
+for the localrepo/mirror workflow.
+
+Expected outcome:
+- Prefer signatures on by default.
+- If signatures must be disabled for local mirrors, scope that exception and
+  document why.
+- Add a note to the local repository docs so future package failures do not
+  lead to permanent insecure defaults.
+
+*** PROJECT [#B] Make coverage reporting account for untracked modules :tests:
+
+The current coverage result is useful but easy to overread. =make coverage=
+reported =65.43%= for files that undercover saw, but only 49 of 104 module
+files appeared in =.coverage/simplecov.json=.
+
+**** TODO [#B] Teach the coverage report to list modules missing from SimpleCov
+
+Expected outcome:
+- Compare =modules/*.el= against paths present in =.coverage/simplecov.json=.
+- Show a separate "not in report" section.
+- Do not silently fold those files into the percentage until we decide the
+  semantics. A visible missing-file count is enough for v1.
+
+**** TODO [#B] Decide whether unreported modules count as 0% coverage
+
+This is a policy decision:
+- Counting missing modules as 0% gives a more honest project-level number.
+- Keeping the current number is useful for "instrumented executable lines only".
+
+Recommendation: display both:
+- Instrumented coverage: current SimpleCov percentage.
+- Project module coverage: includes unreported module files as 0% or reports
+  them separately with an explicit caveat.
+
+Related existing task: [#B] "Coverage audit: untested and lightly-tested
+modules".
+
+*** TODO [#B] Add a lightweight architecture smoke test for startup contracts :tests:
+
+After the above refactors start, add one or two smoke tests that protect the
+architecture instead of individual functions.
+
+Candidate checks:
+- All modules can be loaded directly with only =modules/= on =load-path=, or
+  skipped with a clear external package reason.
+- No module other than =keybindings.el= binds =C-;= itself.
+- Startup-only modules do not run timers in batch test mode.
+
+Keep this small. The goal is to catch accidental return to hidden load-order
+coupling, not to build a full static analyzer.
+
+** PROJECT [#B] Module-by-module review and hardening :review:
+
+Review every file in =modules/= and capture concrete bugs, tests, refactors,
+and design improvements as child tasks. This is intentionally separate from the
+top-level architecture review: the architecture project tracks cross-cutting
+load/startup/test structure, while this project tracks module-specific work.
+
+Review protocol for each module:
+- Read the module directly, not just the test names.
+- Check runtime dependencies, top-level side effects, keybindings, timers,
+  external executable assumptions, secrets, host-specific paths, and user-data
+  writes.
+- Check existing test coverage and whether tests protect the highest-risk
+  behavior.
+- Promote larger findings into child =PROJECT= tasks with phases. Keep small
+  fixes as plain =TODO= tasks.
+
+Priority scheme: use the top-level =Priority Scheme= section in this file.
+
+Suggested review order:
+1. Foundation: =system-lib=, =user-constants=, =host-environment=,
+   =system-defaults=, =keybindings=, =config-utilities=, =early-init=,
+   =init=.
+2. Custom editing utilities: =custom-*=, =external-open=, =media-utils=.
+3. UI and navigation: =ui-*=, =font-config=, =modeline-config=,
+   =selection-framework=, =mousetrap-mode=, =popper-config=.
+4. Org workflow: =org-*=, =calendar-sync=, =hugo-config=, =gloss-config=.
+5. Programming workflow: =prog-*=, =dev-fkeys=, =test-runner=,
+   =coverage-*=, =vc-config=.
+6. Integrations and applications: mail, Slack, ERC, Elfeed, EWW, Dirvish,
+   PDF, Calibre, music, recording/transcription, AI/rest tooling.
+
+*** TODO [#B] Review foundation modules :review:
+
+Scope:
+- =system-lib.el=
+- =user-constants.el=
+- =host-environment.el=
+- =system-defaults.el=
+- =keybindings.el=
+- =config-utilities.el=
+- =early-init.el=
+- =init.el=
+
+Expected output:
+- Add one child task for each actionable finding.
+- Note "no action" only when the module has been reviewed and no task is
+  needed.
+- Cross-reference existing architecture tasks instead of duplicating them.
+
+Review progress:
+- =system-lib.el=: reviewed 2026-05-03. No immediate action beyond the existing
+  [#B] system-lib extraction task.
+- =host-environment.el=: reviewed 2026-05-03. See child tasks below.
+- =user-constants.el=: reviewed 2026-05-03. See child tasks below.
+- =system-defaults.el=: reviewed 2026-05-03. See child tasks below.
+- =keybindings.el=: reviewed during architecture pass. No new module-specific
+  action beyond the load-order/keymap architecture tasks.
+- =config-utilities.el=: reviewed 2026-05-03. No new module-specific action;
+  profiling extraction is already tracked by [#B] "Build debug-profiling.el
+  module".
+- =early-init.el=: reviewed 2026-05-10. See child tasks below and the existing
+  [#B] "Split early startup from package bootstrap" task.
+- =init.el=: reviewed 2026-05-10. See child tasks below and the existing
+  eager load-graph architecture tasks.
+
+**** PROJECT [#B] Split path constants from filesystem initialization in =user-constants.el= :refactor:
+
+=user-constants.el= defines paths and immediately creates directories/files at
+module load time. That makes a simple =(require 'user-constants)= write to the
+filesystem, including org files and calendar placeholder files. This is useful
+for interactive startup but brittle for tests, batch tools, and future
+autoloading.
+
+***** TODO [#B] Extract pure path definitions from startup writes :refactor:
+
+Expected outcome:
+- Loading path constants should not create files by default.
+- Put filesystem creation behind an explicit command/hook, e.g.
+  =cj/initialize-user-directories-and-files= called from startup/wrap-up, not
+  from the constant module's top level.
+- Keep startup behavior equivalent in normal interactive Emacs.
+
+Pitfalls:
+- Some modules may assume =gcal-file=, =pcal-file=, =dcal-file=, agenda files,
+  or org inbox files already exist. Handle those call sites deliberately.
+- Calendar placeholder creation may belong in =calendar-sync= or
+  =org-agenda-config=, not in generic constants.
+
+***** TODO [#B] Make initialization failures actionable :refactor:
+
+=cj/verify-or-create-dir= and =cj/verify-or-create-file= currently catch errors
+and only =message= them. That can hide a broken environment until a later module
+fails less clearly.
+
+Expected outcome:
+- Decide which paths are required vs optional.
+- Required path failures should signal a clear =user-error= or startup warning
+  that is hard to miss.
+- Optional path failures should be logged but not block startup.
+- Add tests around success, optional failure, and required failure behavior.
+
+**** TODO [#C] Clean up host environment predicates and timezone detection :cleanup:refactor:
+
+Small module-specific cleanup in =host-environment.el=:
+- =env-desktop-p= has a docstring that says "host is a laptop"; it should say
+  desktop / no battery.
+- =env-x-p= uses =(string= (window-system) "x")= while =env-x11-p= uses symbol
+  comparison. Existing tests pass, but the two predicates should use one style
+  and document the difference between "X display" and "X11 not Wayland".
+- =cj/match-localtime-to-zoneinfo= reads every zoneinfo file and compares
+  contents. That is fine as a fallback, but it is expensive enough to consider
+  caching or preferring symlink/env methods first if this ever runs during
+  startup.
+
+Acceptance criteria:
+- Fix the docstring.
+- Normalize or document =env-x-p= vs =env-x11-p= semantics.
+- Add or adjust tests only if behavior changes.
+
+**** TODO [#C] Add minimal =system-defaults.el= setting smoke tests :tests:
+
+=system-defaults.el= has no direct test file, despite holding high-impact
+defaults: server startup, backup behavior, custom-file behavior, symlink
+prompting, minibuffer GC hooks, backup directory, and mouse/key disabling.
+
+Keep this narrow; do not test Emacs itself. Good smoke assertions:
+- =vc-follow-symlinks= has the intended explicit value.
+- =custom-file= points at a temp file and is not loaded from the repo.
+- =backup-directory-alist= points inside =user-emacs-directory/backups=.
+- Minibuffer GC hooks are registered.
+
+This should be done after the =vc-follow-symlinks= fix so the test captures the
+correct behavior.
+
+**** TODO [#B] Move package bootstrap policy out of =early-init.el= :startup:refactor:
+
+=early-init.el= currently handles performance/debug setup, package archive
+construction, archive refresh policy, =use-package= installation, package
+signature policy, and Unicode defaults. That makes early startup do network- and
+package-manager-adjacent work before the regular module system exists.
+
+This overlaps with the existing [#B] "Split early startup from package
+bootstrap" task; keep the implementation there if that task is already active.
+This foundation review finding is the module-level acceptance detail.
+
+Expected outcome:
+- =early-init.el= keeps only settings that must happen before normal init:
+  startup GC/file-handler tuning, debug flag setup, native-comp workaround,
+  =load-prefer-newer=, site-start suppression, and package startup suppression.
+- Package archive setup, refresh/install policy, and =use-package= bootstrap
+  live in a normal module or bootstrap helper that can be tested directly.
+- Offline and missing-package states produce actionable errors without doing an
+  unexpected package refresh during early startup.
+- Existing local repo and ELPA mirror behavior is preserved.
+
+Pitfalls:
+- Do not break first-run bootstrap on a clean machine.
+- Keep local repositories higher priority than online archives.
+- Avoid prompting or refreshing archives during batch tests.
+
+**** TODO [#C] Decide and test package signature policy :security:startup:
+
+=early-init.el= sets =package-check-signature= to =nil= after package setup, with
+an earlier commented emergency toggle for expired signatures. That may be
+intentional for local mirrors, but it is security-sensitive enough to make the
+policy explicit.
+
+Expected outcome:
+- Document when signatures should be disabled, if ever.
+- Prefer signatures on for online archives unless a local-mirror workflow
+  requires otherwise.
+- If signatures stay disabled, add a clear comment explaining the trust model.
+- Add a small test or validation helper around the computed package policy if
+  package bootstrap is extracted.
+
+*** TODO [#B] Review custom editing utility modules :review:
+
+Scope:
+- =custom-buffer-file.el=
+- =custom-case.el=
+- =custom-comments.el=
+- =custom-datetime.el=
+- =custom-line-paragraph.el=
+- =custom-misc.el=
+- =custom-ordering.el=
+- =custom-text-enclose.el=
+- =custom-whitespace.el=
+- =external-open.el=
+- =media-utils.el=
+
+Review progress:
+- Core =custom-*= text modules reviewed 2026-05-03. They have unusually strong
+  direct ERT coverage compared with the rest of the config.
+- =external-open.el= and =media-utils.el= reviewed 2026-05-03. See child tasks.
+- =custom-buffer-file.el= reviewed 2026-05-03. See child tasks.
+
+**** TODO [#B] Harden external process launching in =external-open.el= and =media-utils.el= :security:refactor:
+
+=external-open.el= and =media-utils.el= use shell command strings for launching
+external applications:
+- =cj/open-this-file-with= interpolates the user-supplied command into
+  =call-process-shell-command=.
+- =cj/media-play-it= builds a shell command for players and optional =yt-dlp=
+  stream extraction.
+
+This is mostly controlled local input, but it is still brittle: command paths
+with spaces can fail, arguments are hard to reason about, and future URL/source
+changes could create shell quoting bugs.
+
+Expected outcome:
+- Prefer =start-process= / =call-process= with argv lists where possible.
+- If shell is required for command substitution, isolate and quote every
+  untrusted value.
+- Add tests around command construction for:
+  - file paths with spaces and shell metacharacters,
+  - URL strings with shell metacharacters,
+  - configured player args,
+  - missing executable errors.
+
+Pitfalls:
+- =cj/open-this-file-with= may intentionally accept "program plus args". If so,
+  split the command deliberately or introduce separate program/args prompts.
+- Some media players need different URL handling; preserve the existing
+  =:needs-stream-url= behavior.
+
+**** TODO [#C] Add coverage for =external-open.el= and =media-utils.el= :tests:
+
+The core custom editing modules are covered, but these integration helpers have
+little or no direct test coverage despite owning shell/process boundaries.
+
+Useful test seams:
+- Pure command-builder helpers for external open and media play.
+- Player availability selection from =cj/media-players=.
+- Error behavior when =yt-dlp=, =tsp=, or the selected player is missing.
+- Advice behavior for externally opened file extensions should not leave
+  surprising buffers behind.
+
+This pairs naturally with the process-launch hardening task above.
+
+**** TODO [#C] Audit destructive buffer/file keybindings for confirmation policy :ux:
+
+=cj/buffer-and-file-map= includes destructive operations under =C-; b=,
+including delete file, erase buffer, clear top, clear bottom, and revert. Some
+are intentionally fast, but this module is high blast radius.
+
+Expected outcome:
+- Decide which operations need confirmation when the buffer is modified or
+  visiting a file.
+- At minimum, document the intended policy in =custom-buffer-file.el=.
+- Consider safer wrappers for =erase-buffer= and =revert-buffer= under the
+  personal keymap.
+
+**** TODO [#C] Add explicit autoloads/requires for cross-module command keybindings :cleanup:refactor:
+
+Several custom utility keymaps bind symbols owned by other modules without
+declaring the relationship:
+- =custom-ordering.el= binds =cj/org-sort-by-todo-and-priority=.
+- =custom-text-enclose.el= binds =change-inner= and =change-outer=.
+- =custom-buffer-file.el= binds =cj/kill-buffer-and-window= and external-open
+  commands.
+
+These work in the current eager =init.el= load order, but standalone module
+loading and future deferral will be cleaner if the dependencies are explicit.
+
+Expected outcome:
+- Use =autoload= for commands that should remain lazy.
+- Use =declare-function= for byte-compiler clarity when only the symbol is
+  needed.
+- Add a simple module-load smoke test if this becomes part of the load-graph
+  refactor.
+
+*** TODO [#B] Review UI and navigation modules :review:
+
+Scope:
+- =ui-config.el=
+- =ui-navigation.el=
+- =ui-theme.el=
+- =font-config.el=
+- =modeline-config.el=
+- =selection-framework.el=
+- =mousetrap-mode.el=
+- =popper-config.el=
+
+Review progress:
+- Reviewed 2026-05-03.
+- =mousetrap-mode.el= has strong focused and integration tests.
+- =modeline-config.el= has pure string-helper coverage, but not VC/runtime
+  segment behavior.
+- =font-config.el=, =ui-theme.el=, =selection-framework.el=, =ui-navigation.el=,
+  and =popper-config.el= have little direct test coverage.
+
+**** TODO [#C] Decide whether =popper-config.el= should exist while disabled :cleanup:
+
+=popper-config.el= is required by =init.el=, but the only =use-package popper=
+form is =:disabled t=. That makes the module a no-op while still participating
+in the load graph.
+
+Expected outcome:
+- Either remove it from =init.el= until Popper is wanted, or re-enable and test
+  the popup behavior.
+- If kept disabled, add a clear task/comment explaining why it remains.
+
+This is low priority, but it is a good example of load graph noise to clean up
+during the =init.el= deferral work.
+
+*** TODO [#B] Review Org workflow modules :review:
+
+Scope:
+- =org-config.el=
+- =org-agenda-config.el=
+- =org-babel-config.el=
+- =org-capture-config.el=
+- =org-contacts-config.el=
+- =org-drill-config.el=
+- =org-export-config.el=
+- =org-noter-config.el=
+- =org-refile-config.el=
+- =org-reveal-config.el=
+- =org-roam-config.el=
+- =org-webclipper.el=
+- =calendar-sync.el=
+- =hugo-config.el=
+- =gloss-config.el=
+
+Review progress:
+- Reviewed 2026-05-03 at high level.
+- =calendar-sync.el= has substantial focused coverage for parsing, recurrence,
+  timezone conversion, event conversion, and regressions. The largest remaining
+  risks are configuration/secrets, startup side effects, and process/network
+  boundaries.
+- =org-agenda-config.el= and =org-refile-config.el= now have useful cache tests,
+  but the cache lifecycle and startup idle timers still deserve a design pass.
+- =org-noter-config.el= already has an older [#B] workflow VERIFY task. Do not
+  duplicate that work here.
+- =hugo-config.el= and =org-reveal-config.el= have focused helper coverage.
+- =gloss-config.el= is a thin package wrapper; no local unit-test target unless
+  custom glue is added.
+- Deeper pass 2026-05-10 added follow-up tasks for org-roam done hooks, drill
+  file selection/package loading, Org export defaults, Babel templates, and
+  contact/Mu4e boundaries.
+
+**** PROJECT [#A] Split personal calendar configuration from =calendar-sync.el= :security:refactor:
+
+=calendar-sync.el= is a reusable sync engine, but it also defines the personal
+=calendar-sync-calendars= value at top level. The concrete URLs are private feed
+tokens, so they should be rotated and moved out of source. This overlaps the
+top-level architecture/security item; this module task tracks the implementation
+shape.
+
+***** TODO [#A] Load calendar definitions from a private source :refactor:
+
+Expected outcome:
+- =calendar-sync.el= should default =calendar-sync-calendars= to nil or a safe
+  placeholder.
+- Put real calendar plists in private machine config, auth-source, env-backed
+  elisp, or an ignored file loaded from =custom-file= / host config.
+- =calendar-sync-status= and =calendar-sync-start= should explain missing config
+  clearly without erroring.
+
+Pitfalls:
+- =org-agenda-config.el= expects =gcal-file=, =pcal-file=, and =dcal-file= in
+  agenda file lists. Missing calendar config should not break agenda startup.
+- Avoid logging URLs on fetch failures.
+
+**** PROJECT [#B] Normalize Org agenda/refile cache lifecycle :perf:refactor:
+
+=org-agenda-config.el= and =org-refile-config.el= both solve the same startup
+problem with hand-rolled globals: cache value, cache time, TTL, "building" flag,
+idle timer, force-refresh command, and a synchronous fallback. The behavior is
+useful, but the implementation is duplicated and has edge cases.
+
+***** TODO [#B] Extract a small reusable cache helper or shared pattern :refactor:
+
+Expected outcome:
+- Keep the agenda and refile public commands unchanged.
+- Share the common "valid cache or rebuild" control flow, or at least document
+  why the two implementations intentionally differ.
+- Make "build in progress" semantics real. Today the message says "waiting",
+  but the code continues into a rebuild path rather than waiting or using the
+  old cache.
+
+***** TODO [#B] Make directory scan failures visible but non-fatal
+
+=org-refile-config.el= silently ignores =permission-denied= while scanning
+directories, and =org-agenda-config.el= assumes =projects-dir= exists and is
+readable. These are acceptable interactive defaults only if the resulting
+agenda/refile target list tells the user what was skipped.
+
+Expected outcome:
+- Missing optional roots should log a concise warning once per refresh.
+- Required roots should produce an actionable error.
+- Tests should cover missing =projects-dir= and permission/error cases by
+  stubbing directory functions.
+
+***** TODO [#C] Suppress startup idle timers in batch/test contexts
+
+Both modules start cache builders with =run-with-idle-timer= at top level. That
+is fine for interactive startup, but awkward for tests and batch commands.
+
+Expected outcome:
+- Gate the idle timers behind =(not noninteractive)= or an explicit startup
+  function.
+- Preserve normal interactive behavior.
+- Add a smoke test that requiring the modules in batch does not schedule cache
+  builders.
+
+**** TODO [#A] Revisit =org-confirm-babel-evaluate= default :security:
+
+=org-babel-config.el= sets =org-confirm-babel-evaluate= to nil globally. That
+means every source block in every Org file can execute without confirmation,
+including files from cloned repos, downloaded notes, or web clips.
+
+Expected outcome:
+- Decide whether the global default should be safe (=t=) with a fast toggle for
+  trusted buffers/projects, or whether only selected languages should skip
+  confirmation.
+- Keep =babel-confirm= or replace it with a clearer command that reports and
+  toggles the current policy.
+- Add a test/smoke assertion for the chosen default.
+
+**** TODO [#B] Add guardrails to =cj/move-org-branch-to-roam= :ux:
+
+=org-roam-config.el= implements =cj/move-org-branch-to-roam= by copying the
+subtree, cutting it from the source buffer, writing a new roam file, and syncing
+the database. There is no confirmation, rollback, or save behavior around the
+destructive step.
+
+Expected outcome:
+- Confirm before cutting large subtrees or when the source buffer is modified.
+- Write the new file before deleting source content, and avoid losing the
+  subtree if file creation or =org-roam-db-sync= fails.
+- Decide whether the source buffer should be saved automatically or left dirty.
+- Add tests around the pure slug/demotion/format helpers are already present;
+  add one integration-style test around failure ordering if feasible.
+
+**** TODO [#C] Make =org-webclipper.el= initialization less global-state-heavy :cleanup:refactor:
+
+=org-webclipper.el= stores protocol URL/title in global variables, registers
+capture templates lazily, and clears those globals during template expansion.
+That is workable for one-at-a-time org-protocol calls, but brittle if a capture
+is interrupted or nested.
+
+Expected outcome:
+- Prefer passing URL/title through the capture plist or a lexical wrapper rather
+  than global temp vars where possible.
+- Ensure aborted captures clear temp state.
+- Keep the existing browser bookmarklet workflow unchanged.
+
+**** TODO [#C] Review external executable assumptions in Org export/publishing modules :cleanup:
+
+=org-export-config.el= assumes =zathura= for one Pandoc PDF path, =hugo-config.el=
+assumes =hugo= and a browser/file-manager opener, =org-reveal-config.el= assumes
+a local =reveal.js= checkout, and =org-webclipper.el= assumes Pandoc through
+=org-web-tools=.
+
+Expected outcome:
+- Add explicit executable/directory checks before commands run.
+- Error messages should name the missing tool and the command/setup needed.
+- Keep startup quiet; only check expensive/external requirements when the
+  relevant command runs.
+
+**** TODO [#B] Guard the org-roam completed-task hook around non-file buffers :bug:refactor:
+
+=org-roam-config.el= adds a global =org-after-todo-state-change-hook= that
+copies newly completed tasks to today's org-roam journal. The hook assumes the
+current Org buffer is visiting a file:
+
+- It calls =(buffer-file-name)= and passes the result to =string=.
+- =cj/org-roam-copy-todo-to-today= later compares =file-truename= of the daily
+  file and the current buffer file.
+
+That can error in capture buffers, indirect buffers, temporary Org buffers, or
+other fileless Org workflows.
+
+Expected outcome:
+- Extract a predicate for "should copy this completed task to today's journal".
+- Skip fileless buffers, calendar sync files, aborted capture buffers, and tasks
+  already in the target daily file.
+- Keep the normal completed-task journal workflow unchanged.
+- Add tests for fileless buffers, =gcal-file=, already-daily buffers, and a
+  normal project/todo buffer.
+
+**** TODO [#B] Make Org drill file selection robust and shared :bug:refactor:
+
+=org-capture-config.el= and =org-drill-config.el= both scan =drill-dir= for
+candidate =.org= files with inline =directory-files= calls. If =drill-dir= is
+missing, empty, or unreadable, the user gets a low-level error from whichever
+command happened to run.
+
+Expected outcome:
+- Extract one helper that returns valid drill files or signals a clear
+  =user-error=.
+- Use it from drill capture templates, =cj/drill-start=, and =cj/drill-edit=.
+- Preserve the current completing-read workflow when files exist.
+- Add tests for missing directory, empty directory, and normal selection list.
+
+**** TODO [#C] Clarify contradictory Org export task defaults :cleanup:tests:
+
+=org-export-config.el= sets =org-export-with-tasks= twice in a row: first to
+=("TODO")= and then to =nil=. The final behavior is "export no tasks", but the
+adjacent comments describe both policies.
+
+Expected outcome:
+- Pick the intended default and remove the contradictory assignment/comment.
+- Add a narrow smoke test for the chosen =org-export-with-tasks= value after
+  =ox= config loads.
+- If task export should vary by workflow, expose an explicit command or local
+  export option instead of relying on the global default.
+
+**** TODO [#C] Fix and cover Org Babel structure templates :bug:tests:
+
+=org-babel-config.el= adds a Java structure template as =("java" . "src javas")=,
+which appears to expand to the wrong language name. The template list is useful
+but currently untested, so small typos can persist unnoticed.
+
+Expected outcome:
+- Correct the Java template or remove it if Java blocks are not used.
+- Add a focused test that loads the Org Tempo config and asserts key templates
+  expand to the intended language names for common aliases: =bash=, =zsh=,
+  =el=, =py=, =json=, =yaml=, and =java=.
+
+**** TODO [#C] Make org-contacts/Mu4e boundaries explicit :cleanup:refactor:
+
+=org-contacts-config.el= defines helpers that call Mu4e functions when the
+current major mode is a Mu4e mode, and the =use-package org-contacts= block is
+=:after (org mu4e)= while also requiring =mu4e= inside =:config=. This works in
+the current eager setup, but the ownership boundary is unclear now that
+=mu4e-org-contacts-integration.el= exists.
+
+Expected outcome:
+- Decide whether contact capture-from-email behavior belongs in
+  =org-contacts-config.el= or the Mu4e integration modules.
+- Add =declare-function= / autoloads or move Mu4e-specific code behind
+  =with-eval-after-load 'mu4e=.
+- Keep plain Org contact commands usable on systems without Mu4e loaded.
+- Add a smoke test for loading =org-contacts-config.el= without Mu4e stubs if
+  practical.
+
+**** TODO [#C] Add an Org workflow health check command :feature:ux:
+
+Several Org workflow modules depend on personal paths, optional external tools,
+and local package checkouts. Failures currently show up at command time in
+different ways, depending on which module hits the missing dependency first.
+
+Recommended improvement:
+- Add a lightweight =cj/org-workflow-doctor= command that checks the main Org
+  workflow prerequisites without mutating user data.
+- Report status for core files/directories: =org-dir=, =roam-dir=, =drill-dir=,
+  =contacts-file=, =webclipped-file=, =cj/hugo-content-org-dir=, and
+  =cj/reveal-root=.
+- Report optional executable/package availability for Pandoc/org-web-tools,
+  Hugo, reveal.js, org-drill, org-roam, and org-noter.
+- Keep startup quiet; run this only on demand.
+- Make the checker return structured data so it can be unit-tested and displayed
+  either in Messages or a buffer.
+
+**** TODO [#C] Add capture-template key collision and target smoke tests :tests:
+
+Org capture templates are assembled across =org-capture-config.el=,
+=org-contacts-config.el=, =org-webclipper.el=, and other feature modules. The
+current setup works, but template ownership is implicit and duplicate keys or
+missing target files would be easy to miss.
+
+Recommended improvement:
+- Add a test helper that loads the Org capture-related modules with temp path
+  bindings.
+- Assert template keys are unique or intentionally overridden.
+- Assert templates that write to files point at non-empty path variables.
+- Cover lazy additions for contact and webclipper templates without requiring a
+  browser/org-protocol round trip.
+
+**** TODO [#C] Document Org workflow module ownership and load boundaries :docs:refactor:
+
+The Org workflow is spread across many modules with overlapping responsibilities:
+capture templates, keymaps, org-protocol handlers, refile/agenda target
+construction, roam notes, publishing, and document annotation. The code is
+usable, but future load-order work will be easier with explicit ownership notes.
+
+Recommended improvement:
+- Add a short design note under =docs/design/= that maps each Org module to the
+  behavior it owns.
+- Call out which modules may mutate global Org variables, capture templates,
+  keymaps, and protocol handlers.
+- Define which modules should be safe to load in batch mode and which are
+  allowed to start timers or require interactive packages.
+- Link this note from the Org workflow review task and the broader load-graph
+  refactor.
+
+*** TODO [#B] Review programming workflow modules :review:
+
+Scope:
+- =prog-c.el=
+- =prog-general.el=
+- =prog-go.el=
+- =prog-json.el=
+- =prog-lisp.el=
+- =prog-lsp.el=
+- =prog-python.el=
+- =prog-shell.el=
+- =prog-training.el=
+- =prog-webdev.el=
+- =prog-yaml.el=
+- =coverage-core.el=
+- =coverage-elisp.el=
+- =test-runner.el=
+- =vc-config.el=
+- =keyboard-compat.el=
+- =dev-fkeys.el=
+
+Review progress:
+- Reviewed 2026-05-03 at high level.
+- =dev-fkeys.el= reviewed 2026-05-03 after local edits settled. The focused
+  dev-fkeys test set passed: 22 test files, 163 ERT tests.
+- =coverage-core.el= / =coverage-elisp.el= have strong pure-helper tests.
+- Language formatter wiring is covered for Python, Go, shell, webdev, JSON, and
+  YAML.
+- =test-runner.el= has direct tests, but project-scoping is still a design gap.
+
+**** TODO [#C] Revisit F4 project classification vs actual project capabilities :ux:
+
+=dev-fkeys.el= classifies a project as =interpreted= if it has
+=pyproject.toml=, =requirements.txt=, =Pipfile=, or =package.json=, even when it
+also has a =Makefile=. That intentionally keeps Python/Node projects on a
+Run-only F4 menu, but it also hides useful Compile/Clean options for projects
+where =Makefile=, =package.json= scripts, or Projectile cached commands provide
+real build/test tasks.
+
+Expected outcome:
+- Decide whether F4 should classify by language family or by available
+  capabilities.
+- Consider deriving candidates from Projectile's known compile/run/test commands
+  first, then falling back to markers.
+- Keep the current "interpreted markers win" behavior only if that remains the
+  intentional UX after trying it in mixed Python/Node projects.
+
+**** PROJECT [#B] Consolidate LSP ownership across programming modules :architecture:refactor:
+
+LSP setup is currently split across =prog-general.el=, =prog-lsp.el=, and each
+language module. There are multiple =use-package lsp-mode= forms and some
+conflicting defaults:
+- =prog-general.el= enables snippets/UI doc/sideline behavior.
+- =prog-lsp.el= disables snippets/UI doc/sideline-heavy behavior.
+- Python, Go, shell, C, and webdev modules both call =lsp-deferred= from local
+  setup functions and add package hooks that call =lsp-deferred= again.
+
+This probably works because lsp-mode is defensive, but it makes the final
+runtime policy hard to predict.
+
+***** TODO [#B] Make =prog-lsp.el= the single owner of generic LSP policy :refactor:
+
+Expected outcome:
+- Move generic =lsp-mode= and =lsp-ui= defaults out of =prog-general.el=.
+- Keep language-specific server variables in language modules.
+- Keep one hook path per language for starting LSP.
+- Preserve the remote-file guard.
+
+Pitfalls:
+- =lsp-pyright= may still need a language-specific hook to load before LSP
+  starts.
+- Do not accidentally re-enable UI/doc/sideline behavior that was explicitly
+  disabled for performance.
+
+***** TODO [#B] Add a startup smoke test for LSP config resolution
+
+Keep this narrow. A useful test can require the LSP-related modules with mocked
+=use-package= side effects and assert that:
+- generic defaults are set in one place,
+- no duplicate hook entries are installed for the same mode,
+- =lsp-enable-remote= remains nil.
+
+**** TODO [#B] Gate tree-sitter grammar auto-install behind an explicit policy :startup:
+
+=prog-general.el= sets =treesit-auto-install= to =t=. That means opening a file
+can trigger grammar download/build/install behavior. This is convenient on a
+fresh machine, but it is a startup/network/build side effect in normal editing
+and batch contexts.
+
+Expected outcome:
+- Prefer ='prompt= or a custom command such as =cj/install-treesit-grammars=.
+- Batch/test startup should never auto-install grammars.
+- Document the intentional bootstrap path for a new machine.
+
+This should be coordinated with the existing [#A] Python tree-sitter predicate
+syntax issue, since both touch tree-sitter reliability.
+
+**** TODO [#C] Harden git clone from clipboard in =vc-config.el= :robustness:refactor:
+
+=cj/git-clone-clipboard-url= shells out to =git clone= from clipboard text and
+derives the clone directory with =file-name-nondirectory=. The URL is quoted, so
+this is not an immediate shell-injection bug, but process handling and path
+derivation are still brittle.
+
+Expected outcome:
+- Use =start-process= or =call-process= with =("git" "clone" url)=.
+- Validate that the target directory exists and is writable before cloning.
+- Derive the expected repository directory robustly for HTTPS, SSH, and local
+  clone URLs.
+- Report clone failures from the process exit status instead of assuming the
+  directory appears.
+
+**** TODO [#C] Decide whether auto-executable shell scripts should be opt-in :ux:
+
+=prog-shell.el= adds a global =after-save-hook= that sets executable bits on any
+saved file with a shebang. This is convenient, but it silently changes file
+modes for every buffer in the session.
+
+Expected outcome:
+- Decide whether this should remain global, be limited to shell/script modes, or
+  prompt the first time per file.
+- Preserve the fast path for real scripts.
+- Keep the existing =cj/make-script-executable= tests updated for the chosen
+  policy.
+
+**** TODO [#C] Review language formatter process boundaries :cleanup:
+
+JSON, YAML, and webdev formatters use =shell-command-on-region= with command
+strings. Most inputs are fixed or shell-quoted, but formatter code is a good
+place to standardize process handling.
+
+Expected outcome:
+- Prefer process APIs with argv lists where practical.
+- Keep point preservation behavior.
+- Keep existing formatter wiring tests and add command-construction tests if a
+  helper is extracted.
+
+*** TODO [#B] Review integrations and application modules :review:
+
+Scope:
+- AI/rest: =ai-config.el=, =ai-conversations.el=, =restclient-config.el=
+- Mail/chat/social: =mail-config.el=, =mu4e-*.el=, =slack-config.el=,
+  =erc-config.el=, =elfeed-config.el=, =eww-config.el=
+- File/media/apps: =dirvish-config.el=, =dwim-shell-config.el=, =pdf-config.el=,
+  =calibredb-epub-config.el=, =music-config.el=, =quick-video-capture.el=,
+  =video-audio-recording.el=, =transcription-config.el=
+- Utilities/apps: =auth-config.el=, =browser-config.el=, =dashboard-config.el=,
+  =help-config.el=, =help-utils.el=, =jumper.el=, =keyboard-macros.el=,
+  =local-repository.el=, =lorem-optimum.el=, =reconcile-open-repos.el=,
+  =show-kill-ring.el=, =system-commands.el=, =system-utils.el=,
+  =tramp-config.el=, =undead-buffers.el=, =weather-config.el=, =wrap-up.el=
+
+Review progress:
+- Reviewed 2026-05-03 at high level by direct reads plus risky-pattern search.
+- Recording/transcription and music modules have much stronger coverage than
+  most application wrappers.
+- Existing coverage audit already tracks =ai-conversations=, =quick-video-capture=,
+  =dashboard-config=, =mail-config=, =show-kill-ring=, =system-commands=, and
+  =wrap-up= as high-value test targets.
+
+**** TODO [#B] Make system restart/shutdown commands more defensive :safety:
+
+=system-commands.el= exposes high-impact shell commands through a convenience
+menu. The restart-Emacs path starts a shell command that restarts the user
+service and reconnects, then schedules =kill-emacs= after one second. If the
+service command is unavailable or fails, the current session can still be killed.
+
+Expected outcome:
+- Check whether the Emacs daemon service exists before offering the service
+  restart command.
+- Start restart/reconnect work as a process with an exit sentinel.
+- Kill the current Emacs only after the replacement path has clearly started,
+  or keep a non-daemon fallback that does not kill the session on failure.
+- Consider requiring a stronger confirmation for shutdown/reboot than a single
+  RET/space confirmation.
+- Add smoke tests around key resolution and command selection without invoking
+  real system commands.
+
+**** TODO [#A] Prevent REST API keys from being saved into template files :security:bug:
+
+=restclient-config.el= opens =data/skyfi-api.rest= and replaces the
+=:skyfi-key= line in that file-visiting buffer with the real key from
+=authinfo.gpg=. Even if the function does not write to disk itself, an
+accidental save can persist the key.
+
+Expected outcome:
+- Open SkyFi requests in a scratch/indirect buffer, or mark the injected buffer
+  read-only with a save guard that restores =PLACEHOLDER= before writing.
+- Make the buffer visibly modified state sane after injection.
+- Keep the existing tests that assert the template file remains unchanged, and
+  add a test for accidental save behavior.
+
+**** TODO [#B] Reconcile mail image/privacy settings :privacy:
+
+=mail-config.el= documents blocked remote images and sets
+=gnus-blocked-images=, but later enables both =mu4e-show-images= and
+=mu4e-view-show-images=. The interactive toggle changes =gnus-blocked-images=
+buffer-locally, so the final privacy behavior is hard to reason about without
+manual testing against real HTML messages.
+
+Expected outcome:
+- Decide the default policy for embedded images versus remote HTTP images.
+- Make the toggle report the effective state in the current mu4e view buffer.
+- Add a short manual checklist or mocked test for the variables that control
+  remote image display.
+
+**** TODO [#C] Clean up mail compose buffer lifecycle conflicts :cleanup:quick:
+
+=mail-config.el= first sets =message-kill-buffer-on-exit= to =t= in the mu4e
+configuration, then =org-msg= later sets it to nil. That may be intentional for
+org-msg editing, but the ownership is unclear.
+
+Expected outcome:
+- Decide whether compose buffers should be killed on send/exit for plain mu4e,
+  org-msg, or both.
+- Move the final policy next to the owner module.
+- Add a short note in the config explaining the choice.
+
+**** TODO [#B] Remove automatic startup timers from =quick-video-capture.el= :startup:refactor:
+
+=quick-video-capture.el= schedules both an =after-init-hook= idle timer and a
+fallback =run-with-timer= to initialize org-protocol/capture glue shortly after
+startup. This is a small side effect, but it loads Org capture/protocol plumbing
+even if the video workflow is never used.
+
+Expected outcome:
+- Register the protocol lazily through autoloadable setup, or initialize only
+  when Org/protocol support is already active.
+- Batch/test startup should not schedule timers.
+- Keep manual bookmarklet usage working when an org-protocol URL arrives before
+  the rest of Org has been used.
+
+**** TODO [#B] Avoid global temp state in =quick-video-capture.el= :cleanup:refactor:
+
+Like =org-webclipper.el=, quick video capture passes URL state through a global
+=cj/video-download-current-url=. Interrupted captures or nested capture flows can
+leave stale state.
+
+Expected outcome:
+- Pass the URL through capture/protocol state where possible.
+- Ensure aborted captures clear the temp URL.
+- Add coverage for manual URL prompt, protocol URL, and aborted capture cleanup.
+
+**** TODO [#B] Audit shell-command-heavy recording and dwim-shell workflows :security:refactor:
+
+=video-audio-recording.el= and =dwim-shell-config.el= are intentionally close to
+the shell: pactl/ffmpeg/qpdf/7z/tesseract/media conversion commands are the
+point. They also have the highest process and quoting surface in the config.
+
+Expected outcome:
+- Keep the current workflows, but catalog which commands accept filenames,
+  URLs, passwords, or free-form user input.
+- Prefer argv process APIs for commands that do not require a shell.
+- For commands that must use shell templates, document which placeholders are
+  safely quoted by =dwim-shell-command= and add focused tests around password
+  temp-file cleanup.
+
+***** TODO [#A] Fix async password temp-file lifetime in dwim-shell commands :bug:
+
+Several password commands create a temp file, call
+=dwim-shell-command-on-marked-files=, and delete the temp file in
+=unwind-protect= immediately after the command is launched. Because these
+commands are normally asynchronous, =qpdf= or =7z= may start after the password
+file is already gone.
+
+Affected workflows:
+- PDF password protect and unprotect.
+- Remove ZIP encryption.
+- Create encrypted ZIP.
+
+Expected outcome:
+- Keep password material out of command-line arguments.
+- Delete password files only after the spawned process exits.
+- Add tests or a small harness that proves cleanup happens on success, failure,
+  and user cancellation.
+
+***** TODO [#A] Quote or argv-ify user-controlled dwim-shell inputs :security:bug:
+
+Several commands interpolate clipboard text, archive names, prefixes,
+recipients, timestamps, and output paths into shell templates. Some are quoted
+by dwim-shell placeholders, but several explicit =format= calls are not robust
+against spaces, quotes, newlines, or shell metacharacters.
+
+Specific cases to check first:
+- =cj/dwim-shell-commands-git-clone-clipboard-url= uses =git clone <<cb>>=
+  rather than an argv process call or a quoted URL.
+- Encrypted archive names and GPG recipients are interpolated into single-quoted
+  shell fragments.
+- Sequential rename prefixes are interpolated into =mv= destinations.
+- Video thumbnail timestamps come from =read-string= and are inserted into
+  =ffmpeg -ss=.
+- Video concatenation builds a concat list with =echo= / =tr= / =sed=, which is
+  fragile for filenames with spaces or quotes.
+
+Expected outcome:
+- Replace high-risk commands with process helpers where practical.
+- Where dwim-shell templates remain, add focused command-construction tests.
+- Validate user strings as domain values when possible, e.g. ffmpeg timestamps.
+
+***** TODO [#B] Clarify broad or misleading file-operation commands :safety:bug:
+
+Two dwim-shell commands look broader or weaker than their names suggest:
+- =cj/dwim-shell-commands-remove-empty-directories= runs
+  =find . -type d -empty -delete= from the current directory, not from the marked
+  files.
+- =cj/dwim-shell-commands-secure-delete= calls =shred= without =-u=, so it may
+  overwrite file contents but leave the directory entry in place.
+
+Expected outcome:
+- Scope empty-directory cleanup to an explicit selected root and show that root
+  in the confirmation prompt.
+- Decide whether secure delete should actually remove files with =shred -u= or
+  be renamed to describe overwrite-only behavior.
+- Add tests around command strings or extract small pure builders.
+
+***** TODO [#B] Quote X11 and audio recording command paths :bug:
+
+=video-audio-recording.el= quotes devices and filenames in the Wayland
+=wf-recorder= command path, but the X11 =ffmpeg= path and audio-only =ffmpeg=
+path interpolate device names and output filenames without shell quoting. This
+will break on output directories with spaces and can mishandle unusual device
+names.
+
+Expected outcome:
+- Shell-quote mic device, system device, and output file consistently in every
+  shell command path.
+- Prefer argv process APIs for ffmpeg where possible.
+- Add regression tests for recording directories with spaces.
+
+***** TODO [#B] Track recorder processes instead of killing by program name :safety:bug:
+
+The Wayland recording path stops recording with =pkill -INT wf-recorder=. That
+can interrupt unrelated =wf-recorder= processes outside Emacs.
+
+Expected outcome:
+- Store the process object or PID for the recorder launched by this module.
+- Stop only that process or process group.
+- Preserve existing toggle behavior and tests for already-running recordings.
+
+***** TODO [#C] Ensure chosen recording directories are created directly :bug:
+
+The recording toggles accept a directory via prefix argument, then derive parent
+directories in a way that can create the parent but not necessarily the selected
+recording directory itself.
+
+Expected outcome:
+- Normalize the selected destination as either an explicit file or explicit
+  directory.
+- Ensure the actual target directory exists before launching ffmpeg/wf-recorder.
+- Add tests for new directories and paths containing spaces.
+
+**** TODO [#C] Make AI conversation persistence path-safe and project-aware :cleanup:refactor:
+
+=ai-conversations.el= has good pure helper seams but is currently untested in
+this repo. The path slugging is simple and the save/load/delete commands operate
+directly in a single global directory.
+
+Expected outcome:
+- Add tests for candidate sorting, topic slug collisions, autosave path setup,
+  and delete confirmation behavior.
+- Consider whether conversations should remain global or support project-scoped
+  subdirectories.
+- Confirm autosave never writes partial prompt/response state to an unexpected
+  file after loading a different conversation.
+
+**** TODO [#B] Harden calendar sync operational behavior around the parser :data:refactor:
+
+=calendar-sync.el= has broad parser/recurrence coverage, but the operational
+path around it still has startup, persistence, and fetch risks.
+
+Expected outcome:
+- Move private calendar URLs out of source and rotate the exposed feed URLs
+  before doing further cleanup.
+- Avoid immediate network fetches at module load unless explicitly enabled for
+  interactive sessions.
+- Add a per-calendar in-flight guard so a timer tick cannot launch overlapping
+  syncs for the same calendar.
+- Use =curl --fail= or equivalent status handling so HTTP error pages are not
+  treated as successful ICS downloads.
+- Write generated Org files atomically via a temp file and rename.
+- Read the local state file with =read-eval= disabled.
+
+**** TODO [#B] Add first coverage for AI conversation persistence :tests:
+
+=ai-conversations.el= is not currently represented in =.coverage/simplecov.json=.
+The module has several pure helper seams and a few file operations that can be
+tested without loading GPTel.
+
+Expected outcome:
+- Test slug generation, timestamp parsing, candidate sorting, and latest-file
+  selection.
+- Test save/load header stripping against a temp conversations directory.
+- Test autosave path setup and delete confirmation with stubbed prompts.
+- Keep GPTel itself mocked or avoided unless a later integration test needs it.
+
+**** TODO [#C] Add first coverage for Dirvish utility helpers :tests:
+
+=dirvish-config.el= is not currently represented in =.coverage/simplecov.json=.
+The pure-ish Dired helpers have a few sharp edges that are easy to characterize
+with mocked =dired-get-filename= / =dired-get-marked-files= calls.
+
+Expected outcome:
+- Test playlist path construction and reject playlist names that escape
+  =music-dir=.
+- Test duplicate/copy-path/wallpaper helpers when there is no file at point.
+- Test project-relative, home-relative, absolute, and Org-link path copying.
+- Keep Dirvish package loading mocked; these tests should not require the full
+  UI package.
+
+**** TODO [#B] Require runtime constants explicitly in =dirvish-config.el= :startup:bug:
+
+=dirvish-config.el= uses =eval-when-compile= for =user-constants= and
+=system-utils=, but runtime configuration constructs quick-access entries from
+constants such as =code-dir=, =music-dir=, =pix-dir=, and recording directories.
+This depends on load order rather than the module declaring its runtime inputs.
+
+Expected outcome:
+- Require runtime dependencies normally or add clear =defvar= declarations for
+  values owned elsewhere.
+- Keep byte compilation clean without making standalone module loads depend on
+  accidental init order.
+- Add a module-load smoke test with required constants stubbed.
+
+**** TODO [#B] Harden Dirvish path helpers around nil files and path traversal :bug:
+
+Several Dirvish helpers derive path components before checking whether Dired has
+a file at point. Playlist creation also accepts a raw playlist name and expands
+it under =music-dir= without rejecting =../= style input.
+
+Expected outcome:
+- In duplicate, copy-path, and wallpaper helpers, check for a file before
+  calling path functions.
+- Reject playlist names that contain directory separators or resolve outside
+  =music-dir=.
+- Add regression tests for no-file-at-point and traversal-like playlist names.
+
+**** TODO [#C] Add first smoke coverage for mail and system command modules :tests:
+
+=mail-config.el= and =system-commands.el= are not currently represented in the
+coverage report. Both can get useful coverage without sending mail or invoking
+real system commands.
+
+Expected outcome:
+- For mail, stub executable discovery and assert the resulting config either
+  assigns valid commands or reports missing dependencies clearly.
+- For system commands, test keymap shape, menu candidates, confirmation routing,
+  and command-string construction with =shell-command= stubbed.
+- Keep all tests batch-safe and non-destructive.
+
+**** TODO [#C] Harden EWW/Elfeed synchronous network helpers :cleanup:refactor:
+
+=elfeed-config.el= includes synchronous URL retrieval helpers for converting
+YouTube channel/playlist URLs into feed entries, and =eww-config.el= advises URL
+retrieval to inject a user agent only from EWW buffers.
+
+Expected outcome:
+- Add timeouts/error handling to synchronous feed-conversion requests.
+- Kill temporary URL buffers after parsing.
+- Add a small test or manual checklist for the EWW user-agent advice so it does
+  not affect package.el or non-EWW URL callers.
+
+**** TODO [#C] Move Slack which-key registration behind =with-eval-after-load= :cleanup:quick:
+
+=slack-config.el= calls =which-key-add-keymap-based-replacements= at top level,
+while most modules defer which-key registration. If which-key is not loaded or
+autoloaded as expected, Slack config can fail during require.
+
+Expected outcome:
+- Wrap the registration in =with-eval-after-load 'which-key=.
+- Add a module-load smoke test or byte-compile check if easy.
+
+** VERIFY [#B] Move lsp-file-watch-ignored-directories to global .emacs.d config :chore:refactor:
+SCHEDULED: <2026-04-27 Mon>
+
+Shipped 2026-04-26 in commit 781b46e. Implementation: =cj/lsp-file-watch-ignored-extras= (thirteen patterns) and =cj/lsp--add-file-watch-ignored-extras= in =modules/prog-lsp.el=, called from the lsp-mode use-package =:config=. Seven ERT tests in =tests/test-prog-lsp--add-file-watch-ignored-extras.el=, all green.
+
+Manual verify (tomorrow): restart Emacs, open =~/code/deepsat/orchestration_dashboard_mvp/backend/test_mission_image_api.py=, watch for the file-watch prompt. Expected: no prompt, or count well below the previous 1905. If still prompting at ~1905, iterate on the pattern list.
+
+After verification: drop the redundant =lsp-file-watch-ignored-directories= entry from the deepsat MVP's =.dir-locals.el= here and on velox.
+
+Setting =lsp-file-watch-ignored-directories= via the project's =.dir-locals.el= doesn't apply at the buffer level. Confirmed via =M-: lsp-file-watch-ignored-directories= in a Python buffer — value is the lsp-mode default, not the 7 patterns we wrote in dir-locals. The safety prompt was answered with =!= and the dir-locals are otherwise live (the projectile commands take effect).
+
+Fix: move the seven patterns into the lsp config module as a global default with =setq-default= or per-pattern =add-to-list=. The patterns are project-agnostic build/cache directories — safe as defaults for any project.
+
+Patterns to add:
+- =[/\\\\]node_modules\\'=
+- =[/\\\\]\\.ruff_cache\\'=
+- =[/\\\\]dist\\'=
+- =[/\\\\]coverage\\'=
+- =[/\\\\]test-results\\'=
+- =[/\\\\]playwright-report\\'=
+- =[/\\\\]tf[/\\\\]\\.terraform\\'=
+
+After landing: =M-x lsp-workspace-shutdown=, reopen a Python file, confirm the directory count drops well below the default threshold of 1000 (currently 1905). Then remove the redundant entries from the deepsat MVP's =.dir-locals.el= here and on velox.
+
+Discovered 2026-04-26 testing dashboard MVP F-key setup.
+
+** VERIFY [#B] Continue org-noter custom workflow implementation (IN PROGRESS) :feature:bug:
+
+Continue debugging and testing the custom org-noter workflow from 2025-11-21 session.
+This is partially implemented but has known issues that need fixing before it's usable.
+
+**Last worked on:** 2025-11-21
+**Current status:** Implementation complete but has bugs, needs testing
+
+**Known Issues to Fix:**
+
+1. **Double notes buffer appearing when pressing 'i' to insert note**
+   - When user presses 'i' in document to insert a note, two notes buffers appear
+   - Expected: single notes buffer appears
+   - Need to debug why the insert-note function is creating duplicate buffers
+
+2. **Toggle behavior refinement needed**
+   - The toggle between document and notes needs refinement
+   - May have edge cases with window management
+   - Need to test various scenarios
+
+**Testing Needed:**
+
+1. **EPUB files** - Test with EPUB documents (primary use case)
+2. **Reopening existing notes** - Verify it works when notes file already exists
+3. **Starting from notes file** - Test opening document from an existing notes file
+4. **PDF files** - Verify compatibility with PDF workflow
+5. **Edge cases:**
+   - Multiple windows open
+   - Splitting behavior
+   - Window focus after operations
+
+**Implementation Files:**
+- modules/org-noter-config.el - Custom workflow implementation
+- Contains custom functions for document/notes toggling and insertion
+
+**Context:**
+This custom workflow is designed to make org-noter more ergonomic for Craig's reading/annotation
+workflow. It simplifies the toggle between document and notes, and streamlines note insertion.
+The core functionality is implemented but needs debugging before it's production-ready.
+
+**Next Steps:**
+1. Debug the double buffer issue when pressing 'i'
+2. Test all scenarios listed above
+3. Refine toggle behavior based on testing
+4. Document the final keybindings and workflow
+
+** VERIFY [#B] Test and review restclient.el implementation :tests:
+
+Test the new REST API client integration in a running Emacs session.
+
+**Keybindings to test:**
+- C-; R n — new scratch *restclient* buffer (should open in restclient-mode)
+- C-; R o — open .rest file (should default to data/ directory)
+- C-; R s — open SkyFi template (should auto-inject API key from authinfo)
+
+**Functional tests:**
+1. Open tutorial-api.rest, run JSONPlaceholder GET (C-c C-c) — verify response inline
+2. Run POST example — verify 201 response with fake ID
+3. Run httpbin header echo — verify custom headers echoed back
+4. Navigate between requests with C-c C-n / C-c C-p
+5. Test jq filtering (requires jq installed): restclient-jq loaded?
+6. Open scratch buffer (C-; R n), type a request manually, execute
+7. which-key shows "REST client" menu under C-; R
+
+**SkyFi key injection (if authinfo entry exists):**
+- C-; R s should replace :skyfi-key = PLACEHOLDER with real key
+- Key should NOT be written to disk (verify file still shows PLACEHOLDER)
+  
+* Emacs Resolved
+** DONE [#B] Fix likely =elpa-mirror-location= path bug :bug:quick:
+CLOSED: [2026-05-03 Sun]
+
+=early-init.el= builds =elpa-mirror-location= with:
+
+#+begin_src emacs-lisp
+(concat user-home-dir ".elpa-mirrors/")
+#+end_src
+
+That likely expands to =~/..= incorrectly, e.g. =/home/cjennings.elpa-mirrors/=
+instead of =/home/cjennings/.elpa-mirrors/=. Use =expand-file-name= instead.
+
+Acceptance criteria:
+- Local mirror paths resolve under the home directory as intended.
+- Add a small testable helper if this logic moves out of =early-init.el=.
+
+Done 2026-05-03:
+- Replaced =concat= path construction with =expand-file-name= for
+  =elpa-mirror-location=, =localrepo-location=, and local mirror archive paths.
+- Added =tests/test-early-init-paths.el= to load =early-init.el= with package
+  side effects stubbed and assert local archive paths.
+
+** DONE [#B] Fix =vc-follow-symlinks= setting in =system-defaults.el= :bug:quick:
+CLOSED: [2026-05-03 Sun]
+
+=modules/system-defaults.el= has:
+
+#+begin_src emacs-lisp
+(setq-default vc-follow-symlinks)
+#+end_src
+
+The comment says "don't ask to follow symlinks if target is version
+controlled", but evaluating this leaves =vc-follow-symlinks= as =nil=. That
+means the intended prompt suppression is not actually configured. The likely
+fix is =t=, but verify the exact Emacs semantics first.
+
+Acceptance criteria:
+- Set =vc-follow-symlinks= to the intended value explicitly.
+- Add a small regression test or startup smoke assertion for this setting.
+- Confirm opening a symlinked, version-controlled file no longer prompts.
+
+Done 2026-05-03:
+- Confirmed from Emacs docs that =t= follows version-controlled symlinks without
+  prompting.
+- Set =vc-follow-symlinks= explicitly to =t=.
+- Added =tests/test-system-defaults-vc-follow-symlinks.el=.
+
+** DONE [#B] Fix overwritten =C-; != system command prefix :bug:quick:
+CLOSED: [2026-05-03 Sun]
+
+=system-commands.el= first binds =cj/system-command-map= under =C-; !=, then
+later replaces the same prefix with =cj/system-command-menu=:
+
+#+begin_src emacs-lisp
+(keymap-set cj/custom-keymap "!" cj/system-command-map)
+...
+(keymap-set cj/custom-keymap "!" #'cj/system-command-menu)
+#+end_src
+
+That likely makes the documented subkeys such as =C-; ! r= and =C-; ! s=
+unreachable.
+
+Expected outcome:
+- Decide whether =C-; != is a prefix map or a direct menu command.
+- If keeping both, bind the menu inside the prefix, e.g. =C-; ! != or =C-; ! m=.
+- Add a key-resolution smoke test for the chosen bindings.
+
+Done 2026-05-03:
+- Kept =C-; != as the prefix map.
+- Moved the completing-read menu to =C-; ! !=.
+- Added which-key labels for the documented subkeys.
+- Added =tests/test-system-commands-keymap.el=.
+
+** DONE [#B] Ensure formatters for TS, Python, Go, Shell with automated tests :tests:
+CLOSED: [2026-04-30 Thu]
+
+Audit showed the four formatters were already consistently bound to =C-; f=
+across the relevant mode-maps. No production change needed — this branch
+shipped the regression net only.
+
+5 new files (1 testutil + 4 per-language test files), 17 tests total, all
+passing.
+
+Per-language wiring inventory (locked in):
+- Python: =blacken-buffer= in =python-ts-mode-map= (use-package =:bind=)
+- Shell: =shfmt-buffer= in =sh-mode-map= and =bash-ts-mode-map=
+  (use-package =:bind=, gated on =:if (executable-find shfmt-path)=)
+- Go: =gofmt= via =cj/go-mode-keybindings= hook + =local-set-key=
+- TS / JS / Web: =cj/webdev-format-buffer= via =cj/webdev-keybindings= hook
+
+Each test file checks: prog module requires without error, formatter package
+is in =features=, format command is fboundp, C-; f binding resolves, and the
+underlying executable is on PATH (skipped via =ert-skip= if not installed).
+
+Real-formatting tests (run formatter on misformatted input, assert output)
+were deferred — wiring tests catch the highest-frequency regressions cheaply
+without crossing the boundary into testing the upstream formatter tools.
+
+** DONE [#A] Continue coverage push on low-coverage modules :tests:
+CLOSED: [2026-04-30 Thu]
+
+The four scoped low-coverage modules — =keybindings.el=, =config-utilities.el=,
+=org-noter-config.el=, =host-environment.el= — are now covered. 121 new tests
+across 18 test files. Plus one production bug fixed in
+=cj/validate-org-agenda-timestamps= (property-check branch was dead since the
+function was written: =(intern (downcase prop))= built plain symbols where
+=org-element-property= expects keywords).
+
+Modules covered (per-function test files, Normal/Boundary/Error categories):
+
+- =keybindings.el= — =cj/jump-open-var=, the auto-generated jump commands.
+- =host-environment.el= — laptop/desktop predicates, platform predicates,
+  display predicates, system-timezone detection. Folded a docstring fix on
+  =cj/detect-system-timezone= along the way.
+- =config-utilities.el= — =with-timer=, =cj/compile-this-elisp-buffer=,
+  =cj/emacs-build--summary-string=, info-commands smoke. Plus refactor pass
+  to extract testable internals from the four heavyweight interactives:
+  =cj/--delete-compiled-files-in-dir=, =cj/--benchmark-method=,
+  =cj/--recompile-emacs-home=, =cj/--validate-timestamps-in-buffer= +
+  =cj/--format-validation-report-section=.
+- =org-noter-config.el= — preferred-split, title-to-slug,
+  generate-notes-template, the predicate cluster.
+
+Broader scope (the 11 high-value untested modules, 7 lightly-tested ones, and
+~28 use-package wrappers to triage) is tracked under the [#B] "Coverage audit:
+untested and lightly-tested modules" entry.
+
+** DONE [#B] Test Slack mark-as-read and bury buffer (C-; S q) :tests:
+CLOSED: [2026-04-30 Thu]
+
+Verified working. =cj/slack-mark-read-and-bury= is bound to =C-; S q= in
+=modules/slack-config.el=, replacing the previous binding that referenced a
+non-existent =slack-buffer-mark-as-read-and-bury=.
+
+** DONE [#A] Fix calendar-sync UNTIL boundary regression :bug:
+CLOSED: [2026-05-03 Sun]
+
+Real cause was a Saturday-only flake in the test, not a stale =.elc= as
+earlier triage suggested. =test-calendar-sync--expand-weekly-boundary-single-week-5-element-until=
+built its byday string from a 0-indexed Sunday-first array
+=("SU" "MO" "TU" "WE" "TH" "FR" "SA")= while the production code uses
+Monday=1, Sunday=7 throughout. When start-date landed on a Sunday
+(start-weekday=7), =(nth 7 array)= returned nil, and inside =expand-weekly=
+the =(mod (- nil current-weekday) 7)= form raised
+=wrong-type-argument number-or-marker-p nil=. The test failed every
+Saturday (when "tomorrow" is Sunday) and passed the other six days.
+
+Fixed in commit =8ec668d= by switching the lookup to
+=(nth (1- start-weekday) '("MO" "TU" "WE" "TH" "FR" "SA" "SU"))= — the
+same convention as every other weekday-mapping in the codebase. Verified
+across all 7 weekdays via faked =current-time=.
+
+Production code was internally consistent; no production change needed.
+
+** DONE [#B] Investigate missing yasnippet configuration
+CLOSED: [2026-02-16 Mon]
+
+Resolved: snippets were in ~/sync/org/snippets/ but directory was empty after
+machine migration. Restored 28 snippets from backup, relocated snippets-dir
+to ~/.emacs.d/snippets/ for source control.
+
+** DONE [#B] Write Complete ERT Tests for This Config [13/13]
+CLOSED: [2026-02-16 Mon]
+
+All 13 modules covered: custom-case (43), custom-datetime (10), hugo-config (41),
+org-capture-config (22), modeline-config (26), config-utilities (11),
+org-agenda-config (31), org-contacts-config (40), ui-config (27),
+org-refile-config (16), org-webclipper (31), org-noter-config (30),
+browser-config (20). 172 test files, all passing.
+
+** DONE [#B] Validate recording startup
+CLOSED: [2026-02-15 Sun 15:40]
+
+Check process status after starting.
+Parse ffmpeg output for errors.
+Show actual ffmpeg command for debugging.
+
+** DONE [#C] Fix EMMS keybinding inconsistency with other buffers
+CLOSED: [2026-02-15 Sun 15:40]
+
+EMMS keybindings conflict with standard buffer keybindings, causing mistypes.
+Results in accidental destructive actions (clearing buffers), requires undo + context switch.
+Violates Intuitive value - muscle memory should help, not hurt.
+
+** DONE [#B] Update stale model list in ai-config.el
+CLOSED: [2026-03-06 Fri]
+
+Model IDs were outdated. Updated to current models (claude-opus-4-6, claude-sonnet-4-6, etc.).
+See cleanup task in ai-config.el for full list of related improvements.
+
+** DONE [#C] Graduate easy-hugo into hugo-config.el, retire wip.el, uninstall pomm
+CLOSED: [2026-04-22 Wed]
+
+Move the easy-hugo use-package block from modules/wip.el into modules/hugo-config.el so the full Hugo pipeline (new post → ox-hugo export → preview server → SSH deploy) lives in one place and is actually reachable at runtime. wip.el is currently not required in init.el, so its only live block (pomm) never ran anyway.
+
+Scope:
+- Verify easy-hugo is usable against current Hugo CLI and the paths in the existing config (~/code/cjennings-net/, /var/www/cjennings/).
+- If easy-hugo is healthy: graduate it and propose keybindings under the C-; h hugo prefix.
+- If easy-hugo is unmaintained or broken: document the issues, assess whether fixing or forking is viable.
+- Delete modules/wip.el entirely and remove the commented-out (require 'wip) line at init.el:156.
+- Uninstall pomm (remove from elpa/).
+- Confirm make compile no longer warns about wip or pomm.
+
+** DONE [#C] Consider Recording Enhancement via post-processing hooks
+CLOSED: [2026-04-04 Sat 12:00]
+
+Auto-compress after recording.
+Move to cloud sync directory.
+Generate transcript (once transcription workflow exists).
+
+** DONE [#B] Implement coverage reporting (per docs/design/coverage.org)
+CLOSED: [2026-04-23]
+
+Diff-aware coverage report with pluggable backends. Shipped v1 on 2026-04-23.
+
+Design: [[file:../docs/design/coverage.org][docs/design/coverage.org]]
+
+What shipped:
+- modules/coverage-core.el (engine, backend registry, cj/coverage-report, cj/coverage-report-mode)
+- modules/coverage-elisp.el (undercover.el backend, auto-registered on load)
+- make coverage Makefile target (simplecov JSON output, per-file isolation, .elc cleanup, exclusion list)
+- tests/run-coverage-file.el (undercover driver for the Makefile)
+- ERT tests for all pure helpers (parse-simplecov, parse-diff, intersect, format-report, backend registry, scope lookup) plus one smoke test for the command
+- F7 global binding
+- docs/design/coverage.org (design doc with historical LCOV→simplecov pivot note)
+
+Notable pivots during implementation:
+- Switched collection format from LCOV to simplecov (undercover's :merge-report t only supports simplecov).
+- `make coverage` must delete modules/*.elc first so undercover's source-level instrumentation actually fires.
+- Excluded tests/test-all-comp-errors.el from coverage runs (byte-compiles modules, which fails under undercover instrumentation).
+
+Deferred to future tickets:
+- Python, TypeScript, Go backends
+- Fringe-overlay coverage display (parked over perf concerns)
+- Historical coverage tracking
+
+** DONE [#A] Fix "Invalid face attribute :foreground nil" flood :bug:
+CLOSED: [2026-04-26 Sun 20:15]
+
+Diagnosed 2026-04-26 — paused at /start-work Gate 2. Full diagnostic, root cause, proposed fix, test plan, and verification path saved to wttrin's inbox (the fix lives in that repo, so the diagnostic does too):
+
+[[file:~/code/emacs-wttrin/inbox/wttrin-face-flood-diagnosis.txt][~/code/emacs-wttrin/inbox/wttrin-face-flood-diagnosis.txt]]
+
+Summary: root cause is =wttrin--make-emoji-icon= in =/home/cjennings/code/emacs-wttrin/wttrin.el:598-608=. Builds a face spec with =:foreground foreground= unconditionally when =wttrin-mode-line-emoji-font= is set; the caller passes nil when the cache is fresh, producing =(:family ... :foreground nil)= which Emacs treats as invalid on every redisplay.
+
+Fix lives in the wttrin repo (cross-repo), not =.emacs.d=. Two-commit scope: regression test + fix.
+
+** DONE [#B] Test Slack desktop notifications (DM and @mention) :tests:
+CLOSED: [2026-04-26 Sun]
+
+Notifications were silently failing due to two bugs in =cj/slack-notify=:
+1. =slack-room-im-p= (nonexistent) → =slack-im-p= (correct EIEIO predicate)
+2. =slack-message-to-string= (propertized) → =slack-message-body= (plain text)
+
+Verified in actual Slack use: desktop notifications fire correctly for DMs and @mentions, with the title and message body rendering as expected.
+
+**File:** modules/slack-config.el (cj/slack-notify function)
+
+** DONE [#C] Clean up ai-config.el
+CLOSED: [2026-03-06 Fri]
+
+Cleaned up assorted issues in =modules/ai-config.el=:
+- Stale model list updated to current IDs (=claude-opus-4-6=, =claude-sonnet-4-6=, etc.).
+- Removed duplicate =gptel-backend= setq (lines 284 and 295 both did the same set).
+- Deleted the unused =cj/gptel-backends= defvar (duplicated =cj/gptel--available-backends=).
+- Moved helpers (=cj/gptel--fresh-org-prefix=, =cj/gptel--refresh-org-prefix=, =cj/gptel-backend-and-model=, =cj/gptel-insert-model-heading=) outside the use-package =:config= block for visibility and byte-compilation.
+- Changed =gptel-include-reasoning= from ='ignore= to a buffer name (=*AI-Reasoning*=) so reasoning lands in a separate buffer, isn't re-sent as context, and can be toggled per-session via the gptel menu (=C-; a M=).
+- Switched =gptel-magit= loading from a hook to lazy autoloads via =with-eval-after-load 'magit= so it only loads on key press.
+- Moved Rewrite from =&= to =C-; a r= and Clear context to =C-; a c= for clearer mnemonics.
+
+** DONE [#B] Use file basename, not buffer name, when moving buffer files :review:bug:quick:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 19:24
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review custom editing utility modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=cj/--move-buffer-and-file= builds the destination as =(concat dir "/" name)=,
+where =name= is =(buffer-name)=. If the buffer has been renamed, uniquified
+(e.g. =foo.txt<2>=), or otherwise differs from the file basename, the move can
+write an unexpected destination filename.
+
+Expected outcome:
+- Use =(file-name-nondirectory filename)= for the destination basename unless
+  the interactive command explicitly asks for a new name.
+- Add regression tests for:
+  - renamed buffer visiting =original.txt=,
+  - duplicate buffer names / uniquified names,
+  - target directory with and without trailing slash.
+
+Done 2026-05-03:
+- =cj/--move-buffer-and-file= now derives the destination basename from
+  =buffer-file-name=.
+- =cj/move-buffer-and-file= uses the same basename when checking/prompting for
+  overwrite.
+- Added regression coverage for renamed and uniquified buffer names.
+
+** DONE [#B] Fix malformed drill capture template in =org-capture-config.el= :review:bug:quick:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 19:28
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review Org workflow modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+The ="d"= drill capture template appears to have a malformed source link:
+
+#+begin_src org
+Source: [[%:link][%:description]
+nCaptured On: %U
+#+end_src
+
+It is missing the closing =]]= and has a literal leading =n= before "Captured".
+
+Expected outcome:
+- Fix the template string.
+- Add a narrow test that expands or inspects the template and confirms the
+  source link plus "Captured On" line are well-formed.
+
+Done 2026-05-03:
+- Closed the source link in the regular drill capture template.
+- Removed the stray literal =n= before =Captured On=.
+- Added =tests/test-org-capture-config-drill-template.el=.
+
+** DONE [#B] Disable auth-source debug logging by default :review:security:quick:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 19:40
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review integrations and application modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=auth-config.el= sets =auth-source-debug= to =t=. Debug output is helpful while
+fixing GPG/auth-source issues, but credential lookup debug logging should not be
+the steady-state default for a config that handles Slack, AI, REST, mail, and
+transcription credentials.
+
+Expected outcome:
+- Default =auth-source-debug= to nil.
+- Add an explicit troubleshooting command or variable to enable auth debugging
+  temporarily.
+- Confirm no module logs secret values directly on auth failure.
+
+Done 2026-05-03:
+- Defaulted =auth-source-debug= to nil via =cj/auth-source-debug-enabled=.
+- Added =cj/set-auth-source-debug= and =cj/toggle-auth-source-debug= for
+  temporary troubleshooting.
+- Added =tests/test-auth-config-debug.el=.
+- Scanned nearby auth callers; obvious failure messages name hosts/logins but
+  do not print secret values directly.
+
+** DONE [#B] Quote F6 current-file test commands in =dev-fkeys.el= :review:bug:quick:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 19:44
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review programming workflow modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=cj/--f6-test-runner-cmd-for= builds shell command strings from relative paths,
+directories, and source stems:
+
+#+begin_src emacs-lisp
+(format "pytest %s" rel-path)
+(format "make test-name TEST=^test-%s-" stem)
+(format "go test ./%s" rel-dir)
+#+end_src
+
+This is fine for the current repo's simple filenames, but it will break or
+misbehave for paths with spaces or shell metacharacters. Since these commands
+feed =compile=, either quote each dynamic argument or move to a command-builder
+that returns argv plus a shell-rendering function.
+
+Expected outcome:
+- Quote =rel-path=, =stem= / test regex, and =rel-dir= appropriately.
+- Add regression tests for:
+  - Python test file under a directory with spaces,
+  - Elisp module stem containing shell-significant characters,
+  - Go package directory with spaces.
+- Keep existing command strings unchanged for ordinary paths.
+
+Done 2026-05-03:
+- Added =cj/--f6-shell-quote-argument= so F6 command strings escape dynamic
+  paths and test regexes only when needed.
+- Quoted Python rel-paths, generated Python test paths, Elisp =FILE= /
+  =TEST= values, and Go package paths.
+- Added regression coverage for Python paths with spaces, Elisp stems with
+  shell metacharacters, and Go package directories with spaces.
+- Confirmed ordinary command strings remain unchanged.
+
+** DONE [#B] Disable mail transport debug logging and validate dependencies :review:security:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 19:57
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review integrations and application modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=mail-config.el= sets =smtpmail-debug-info= to =t= and builds mail commands from
+=executable-find= results at config time. If =msmtp= or =mbsync= is missing, the
+configuration can silently produce unusable command values. Mail debug output is
+also too sensitive to leave enabled by default.
+
+Expected outcome:
+- Default =smtpmail-debug-info= to nil.
+- Add an explicit mail troubleshooting variable/command for temporary SMTP
+  debug logging.
+- Validate =msmtp= and =mbsync= before assigning send/sync commands, and show a
+  clear warning or disable the dependent feature when missing.
+- Add a module-load test with stubbed =executable-find= results.
+
+Done 2026-05-03:
+- Defaulted =smtpmail-debug-info= to nil via =cj/smtpmail-debug-enabled=.
+- Added =cj/set-smtpmail-debug= and =cj/toggle-smtpmail-debug= for temporary
+  troubleshooting.
+- Added validation helpers for =msmtp= and =mbsync= so missing executables
+  warn and do not produce unusable command values.
+- Added =tests/test-mail-config-transport.el= with stubbed executable lookup.
+
+** DONE [#B] Make test scratch paths sandbox- and CI-friendly :refactor:tests:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 19:59
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#A] Architecture review follow-up from 2026-05-03
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: refactor
+:END:
+
+=tests/testutil-general.el= hardcodes =~/.temp-emacs-tests/=. That caused the
+first =make coverage= run to fail under the default workspace sandbox because
+tests attempted to write outside the repo and =/tmp=.
+
+Confirmed again 2026-05-03 with =make test=: the default sandbox run reported
+32 failing test files across custom-buffer, custom-line, music, Org, undead
+buffers, and recording cleanup tests. Rerunning the same command with approval
+outside the sandbox passed all 311 test files. This is a test-environment
+contract problem, not a regression in those modules.
+
+Expected outcome:
+- Let tests honor an env var, for example =CJ_EMACS_TEST_DIR=.
+- Default to =(make-temp-file ... t)= or a stable directory under
+  =temporary-file-directory=.
+- Keep an option for a stable local directory when debugging manually.
+- Ensure cleanup is robust and guarded against deleting outside the selected
+  test root.
+
+Acceptance criteria:
+- =make test-file FILE=test-custom-line-paragraph-join-line-or-region.el=
+  works without special home-directory write permission.
+- =make coverage= works in a clean sandbox/CI environment.
+- Update any docs or Makefile notes that assume =~/.temp-emacs-tests/=.
+
+Done 2026-05-03:
+- Changed =cj/test-base-dir= to honor =CJ_EMACS_TEST_DIR= for stable local
+  debugging and otherwise create a unique directory under
+  =temporary-file-directory=.
+- Replaced prefix-string path checks with =file-in-directory-p= and added a
+  deletion guard that refuses broad roots such as =temporary-file-directory=.
+- Updated =make clean-tests= to clean the new temp-root pattern and the legacy
+  =~/.temp-emacs-tests= directory.
+- Added =tests/test-testutil-general.el=.
+- Confirmed default sandbox =make test= passes: 312 test files.
+
+** DONE [#B] Fix C single-file compile command path handling     :review:bug:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 20:11
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review programming workflow modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=prog-c.el= builds the fallback single-file compile command from =(buffer-name)=:
+
+#+begin_src emacs-lisp
+(format "gcc -Wall -Wextra -g -o %s %s"
+        (file-name-sans-extension (buffer-name))
+        (buffer-name))
+#+end_src
+
+This breaks for renamed buffers, duplicate buffer names, paths with spaces, and
+files outside =default-directory=.
+
+Expected outcome:
+- Use =buffer-file-name= for source path and derive output from the file path.
+- Shell-quote both paths.
+- If the buffer is not visiting a file, show a clear message or use a safe temp
+  target.
+- Add regression tests for filenames with spaces and renamed buffers.
+
+Done 2026-05-03:
+- Added =cj/c--single-file-compile-command= and changed the fallback path to
+  use =buffer-file-name= instead of =(buffer-name)=.
+- Shell-quoted source and output paths.
+- Made non-file buffers signal a clear =user-error=.
+- Added =tests/test-prog-c-compile-command.el= for spaces, shell
+  metacharacters, renamed buffers, and non-file buffers.
+
+** DONE [#B] Replace shell-based coverage git diff calls with argv process calls :review:robustness:refactor:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 20:11
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review programming workflow modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=coverage-core.el= uses =shell-command-to-string= for git diff scopes, including
+forms with command substitution:
+
+#+begin_src emacs-lisp
+git diff $(git merge-base HEAD main)..HEAD --unified=0
+#+end_src
+
+The inputs are mostly fixed, but this code is central tooling and should avoid
+shell parsing entirely.
+
+Expected outcome:
+- Use =process-file= / =call-process= with argv lists.
+- Compute merge bases with a separate git invocation.
+- Surface git failures as clear =user-error= messages.
+- Preserve the existing parser and report formatting tests.
+
+Done 2026-05-03:
+- Added argv-boundary tests before the implementation change.
+- Replaced =shell-command-to-string= with =process-file= based git helpers.
+- Compute merge-base with a separate =git merge-base HEAD <base>= invocation
+  before running =git diff <merge-base>..HEAD --unified=0=.
+- Surface non-zero git exits as =user-error= messages that include the git
+  argv, exit status, and command output.
+- Updated the interactive coverage report smoke test to stub =process-file=.
+
+** DONE [#B] Cache or cheapen VC work in the custom modeline    :review:perf:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 20:24
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review UI and navigation modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=modeline-config.el= computes VC branch/state in a mode-line =:eval= form using
+=vc-backend=, =vc-working-revision=, =vc-git--symbolic-ref=, and =vc-state=.
+Even though it only displays for the selected window, this can become expensive
+in large repositories, remote/TRAMP buffers, or slow filesystems.
+
+Expected outcome:
+- Measure the current cost in normal git repos and a TRAMP/remote-like case if
+  available.
+- Cache branch/state per buffer and invalidate on buffer/file save, VC refresh,
+  or timer.
+- Avoid VC calls for remote files unless explicitly enabled.
+- Add tests around any pure formatting/cache invalidation helpers.
+
+Pitfalls:
+- Mode-line code runs often; avoid anything that can block redisplay.
+- Do not lose the useful active-window-only behavior.
+
+Done 2026-05-03:
+- Added buffer-local VC modeline caching with a short TTL, plus cache clearing
+  on save and revert.
+- Kept the active-window-only modeline rendering behavior.
+- Skipped VC work for remote files by default, with a custom option to opt in.
+- Added focused tests for cache reuse, TTL refresh, remote-file bypass, cache
+  clearing, and VC rendering metadata.
+- Measured on this repo after the change: uncached reads were about 2.4 ms
+  each, cached reads were about 0.0025 ms each, and remote-skipped reads avoid
+  VC calls while still paying the cheap =file-remote-p= check.
+
+** DONE [#B] Make Projectile command-cache revert state compilation-local :review:robustness:bug:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 21:11
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review programming workflow modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=dev-fkeys.el= protects Projectile's compile/test/run command caches by
+capturing prior state in the global =cj/--projectile-revert-state= and reverting
+on failed compile when the cached command changed. The idea is useful and well
+covered, but the state is global while compilation processes are asynchronous.
+
+Risk:
+- Starting another Projectile compile/test/run before the first finish hook
+  fires can overwrite the state.
+- The finish hook is installed even when no project/cache state was captured.
+- A failure from one compilation buffer could theoretically act on state from a
+  later command.
+
+Expected outcome:
+- Store revert metadata on the compilation buffer/process where possible, or
+  close over immutable state in a one-shot hook instead of using one global
+  variable.
+- Only install the revert hook when state was captured.
+- Add a test that simulates two overlapping compile processes finishing out of
+  order.
+
+Done 2026-05-03:
+- Changed Projectile command-cache revert capture to return immutable state
+  instead of storing live compile metadata in one global variable.
+- Installed one-shot buffer-local compilation finish hooks on the compilation
+  buffer returned by Projectile, so overlapping compiles keep separate revert
+  metadata.
+- Avoided installing revert hooks when no project/cache state was captured.
+- Added regression coverage for two overlapping compiles finishing out of order.
+
+** DONE [#C] Tighten =dev-fkeys.el= load-order contract with Projectile :review:cleanup:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 21:17
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review programming workflow modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=init.el= loads =dev-fkeys.el= before =prog-general.el=, while =prog-general.el=
+owns the =projectile= setup. =dev-fkeys.el= currently works through autoloads,
+=fboundp= checks, and top-level advice, but the dependency is implicit.
+
+Expected outcome:
+- Either require/load Projectile before installing advice, or move the
+  =dev-fkeys= require after Projectile setup.
+- Keep direct batch requiring of =dev-fkeys.el= test-friendly.
+- Add a module-load smoke test for "Projectile not loaded yet" and "Projectile
+  loaded after dev-fkeys".
+
+Done 2026-05-03:
+- Replaced raw top-level Projectile =advice-add= calls with named advice
+  wrappers and an explicit idempotent installer.
+- Registered advice immediately when Projectile is already loaded, otherwise
+  delayed installation with =eval-after-load=.
+- Kept direct batch requiring of =dev-fkeys.el= from forcing Projectile to load.
+- Added smoke tests for deferred registration, already-loaded registration, and
+  bounded installation behavior when Projectile functions are unavailable.
+
+** DONE [#B] Retire legacy =cj/--projectile-revert-on-fail= and global revert state :review:chore:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 21:32
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review programming workflow modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+After scoping the projectile cache-revert state to each compile (commit
+=31edc86=), =cj/--projectile-revert-on-fail= and the global
+=cj/--projectile-revert-state= are production-dead.  They survive only so
+=tests/test-dev-fkeys--projectile-revert-on-fail.el= keeps exercising the
+inner decision logic via the legacy wrapper.
+
+Expected outcome:
+- Delete =cj/--projectile-revert-on-fail= and =cj/--projectile-revert-state=
+  from =modules/dev-fkeys.el=.
+- Re-point the existing =test-dev-fkeys--projectile-revert-on-fail.el= cases
+  at =cj/--projectile-revert-state-on-fail= (or rename the file to match
+  the new target).
+- Confirm the broader dev-fkeys test set still passes after the rename.
+
+Done 2026-05-03:
+- Removed the production-dead legacy wrapper and global revert state from
+  =dev-fkeys.el=.
+- Repointed the existing revert tests at =cj/--projectile-revert-state-on-fail=.
+- Removed stale test bindings/assertions that only existed for the legacy global
+  state.
+
+** DONE [#C] Review duplicate or competing search/keybinding setup in =selection-framework.el= :review:cleanup:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 23:27
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review UI and navigation modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=selection-framework.el= binds =C-s= to =consult-line= and later rebinds it to
+=cj/consult-line-or-repeat=. The final behavior is probably intended, but the
+earlier binding is dead configuration and makes the file harder to reason about.
+
+Expected outcome:
+- Remove the intermediate =C-s= binding or explain it.
+- Add a small test or smoke check that =C-s= resolves to
+  =cj/consult-line-or-repeat= after the module loads.
+
+Verify 2026-05-03:
+- Removed the intermediate global =C-s= binding to =consult-line=.
+- Kept the final =C-s= binding to =cj/consult-line-or-repeat=.
+- Added a smoke test that loads =selection-framework.el= with package setup
+  stubbed and asserts =C-s= resolves to =cj/consult-line-or-repeat=.
+
+** DONE [#C] Move and test theme persistence behavior :review:tests:refactor:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 23:46
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review UI and navigation modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=ui-theme.el= persists theme names to =theme-file= and loads fallback themes
+when the file is absent or invalid. The current default path is built from
+=org-dir= as =emacs-theme.persist=, which makes UI theme persistence depend on
+Org-directory configuration and keeps an Emacs preference outside the Emacs
+home directory.
+
+Desired direction:
+- Make the persisted theme file a dotfile inside =user-emacs-directory=, e.g.
+  =.emacs-theme= or another clear dotfile name.
+- Remove the runtime need for =org-dir= from theme persistence.
+- Keep the theme persistence code self-contained in =ui-theme.el= unless an
+  existing constants helper is a better local fit.
+- Preserve the current user-facing behavior: chosen themes persist, unreadable
+  or invalid saved themes fall back, and literal ="nil"= means no enabled theme.
+- Refactor the current large theme-load function into smaller helpers for:
+  reading persisted theme names, disabling enabled themes, loading one named
+  theme, applying a persisted theme value, and loading fallback themes.
+- Prefer =defcustom= for user-facing persistence/fallback settings.
+- Replace generic =cj/read-file-contents= / =cj/write-file-contents= names with
+  theme-specific helpers or move generic helpers elsewhere.
+- Prefer =write-region= over visiting the file with =write-file= for persistence.
+- Decide whether the top-level =(cj/load-theme-from-file)= side effect should
+  remain in the module or become an explicit init call; preserve startup behavior
+  either way.
+
+Useful tests:
+- The default =theme-file= expands under =user-emacs-directory= and does not
+  depend on =org-dir=.
+- Reading a missing/unreadable theme file returns nil.
+- Writing to a writable temp theme file succeeds.
+- Invalid theme name triggers fallback path without leaving multiple themes
+  enabled.
+- The literal ="nil"= disables themes.
+- Loading a valid persisted theme uses that theme and does not also load the
+  fallback.
+- Theme application disables existing themes before loading a valid or fallback
+  theme, so themes do not stack.
+- Theme writes use the configured =theme-file= and do not visit that file in a
+  temp buffer.
+
+Keep tests isolated by binding =theme-file= to a temp file and mocking
+=load-theme= / =disable-theme= where appropriate. Avoid mutating the real
+=custom-enabled-themes= state in tests.
+
+Pitfalls:
+- =ui-theme.el= currently calls =cj/load-theme-from-file= at module load time,
+  so tests should either bind =theme-file= before loading or mock file/theme
+  effects carefully.
+- If changing the persisted filename, consider whether a migration path from
+  the old =org-dir/emacs-theme.persist= location is worth doing now or should
+  be a separate compatibility task.
+
+Verify 2026-05-03:
+- Moved the default =theme-file= to =(expand-file-name ".emacs-theme"
+  user-emacs-directory)=.
+- Removed the =org-dir= / =user-constants= dependency from =ui-theme.el= theme
+  persistence.
+- Split theme persistence into theme-specific helpers for read/write,
+  disabling themes, named theme loading, fallback loading, and applying a
+  persisted value.
+- Switched persistence writes to =write-region=.
+- Moved startup theme loading out of module load side effects and into
+  =init.el= immediately after requiring =ui-theme=.
+- Added focused tests for the default path, missing reads, writes,
+  =write-region= use, valid persisted themes, invalid fallback, missing
+  fallback, and literal ="nil"=.
+- Verified with =make test-file FILE=test-ui-theme-persistence.el=,
+  =make test-file FILE=test-all-comp-errors.el=,
+  =make test-file FILE=test-dupre-theme.el=, and full =make test=.
+
+** DONE [#B] Make test-runner focus state project-scoped   :review:tests:bug:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 23:46
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review programming workflow modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=test-runner.el= stores =cj/test-focused-files= and =cj/test-mode= globally.
+When switching between projects, focused test filenames and mode can bleed into
+the next project.
+
+Expected outcome:
+- Scope focused files and mode by project root.
+- Keep the current UI commands unchanged.
+- Coordinate with the existing [#B] "Add project-aware ERT test isolation when
+  switching projects" task so test registration and focus state follow the same
+  project boundary.
+
+Verify 2026-05-03:
+- Added per-project test-runner state keyed by Projectile project root, with
+  focused files and all/focused mode tracked independently per project.
+- Kept the existing interactive commands and legacy public variables mirrored
+  to the current project state.
+- Removed the hard test-time dependency on requiring Projectile before project
+  root calls can be mocked.
+- Added regression tests proving focused files and mode do not bleed across
+  projects.
+- Verified with =make test-file FILE=test-test-runner.el=,
+  =make test-file FILE=test-all-comp-errors.el=,
+  =make test-file FILE=test-dev-fkeys--f6-test-runner.el=,
+  =make test-file FILE=test-dev-fkeys--f6-current-file-tests-impl.el=, and
+  full =make test=.
+
+** DONE [#B] Add project-aware ERT test isolation when switching projects :tests:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 23:46
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+When switching between elisp projects (e.g., emacs.d to Chime), previously loaded
+ERT tests remain in memory causing confusion and wrong tests to run.
+
+**Problem:**
+- ERT tests globally registered in Emacs session
+- `M-x ert RET t RET` runs ALL loaded tests from ALL projects
+- Can accidentally run emacs.d tests when working on Chime
+- Current workaround: restart Emacs (loses session state)
+
+**Solution:**
+Create `cj/ert-clear-tests` and `cj/ert-run-current-project-tests`:
+- Clear tests when switching projects (hook into project-switch)
+- Use test name prefixes to selectively clear (cj/ vs chime-)
+- Only run current project's tests
+
+**Success Criteria:**
+- Switch projects -> old tests cleared
+- Only current project's tests run with `M-x ert`
+- Works with both interactive and batch runs
+
+Verify 2026-05-03:
+- Added =cj/ert-clear-tests= to delete ERT tests loaded by this runner from
+  other known project roots while keeping the current project's tests.
+- Added =cj/ert-run-current-project-tests= and routed =cj/test-run-all= through
+  a current-project selector, so the test runner's "all" path runs all tests
+  for the current project rather than every loaded ERT test in the session.
+- Hooked =cj/test-project-switch-reset= into
+  =projectile-after-switch-project-hook= after Projectile loads.
+- Added regression tests for clearing other-project ERT tests and selecting
+  only current-project test names.
+- Verified with =make test-file FILE=test-test-runner.el=,
+  =make test-file FILE=test-all-comp-errors.el=,
+  =make test-file FILE=test-dev-fkeys--f6-test-runner.el=,
+  =make test-file FILE=test-dev-fkeys--f6-current-file-tests-impl.el=, and
+  full =make test=.
+
+** DONE [#B] Sanitize calendar-generated Org headings and properties :review:bug:
+CLOSED: [2026-05-03 Sun]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-03 Sun 23:52
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review integrations and application modules
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review
+:END:
+
+=calendar-sync--event-to-org= sanitizes description body text against accidental
+Org headings, but event summaries, locations, organizers, statuses, and URLs are
+inserted into headings/property drawers directly. Calendar text containing
+newlines, leading stars, or property drawer markers can corrupt the generated
+Org structure.
+
+Expected outcome:
+- Add separate sanitizers for Org heading text and property values.
+- Preserve readable event text while escaping or flattening structural
+  characters.
+- Add tests for summaries with newlines/stars and locations with property-like
+  lines.
+
+Verify 2026-05-03:
+- Added separate sanitizers for Org heading text and Org property values.
+- Event summaries now flatten newlines and convert leading heading stars to
+  dashes before being inserted as Org heading text.
+- Location, organizer, status, and URL values now collapse structural
+  whitespace into single-line property values before insertion into the
+  property drawer.
+- Added regression tests for summaries with newlines/stars and property values
+  containing =:END:=, property-looking text, and heading-looking text.
+- Verified with =make test-file FILE=test-calendar-sync--event-to-org.el=,
+  =make test-file FILE=test-calendar-sync--sanitize-org-body.el=,
+  =make test-file FILE=test-all-comp-errors.el=,
+  =make test-file FILE=test-calendar-sync.el=,
+  =make test-file FILE=test-calendar-sync--parse-event.el=,
+  =make test-file FILE=test-calendar-sync--event-start-time.el=, and full
+  =make test=.
+
+** DONE [#B] Add a no-config startup test for =calendar-sync.el= :review:security:refactor:
+CLOSED: [2026-05-04 Mon]
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-04 Mon 00:05
+:ARCHIVE_FILE: ~/.emacs.d/todo.org
+:ARCHIVE_OLPATH: Emacs Open Work/PROJECT [#B] Module-by-module review and hardening/Review Org workflow modules/PROJECT [#A] Split personal calendar configuration from =calendar-sync.el=
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:ARCHIVE_ITAGS: review security refactor
+:END:
+
+Bind =calendar-sync-calendars= to nil and verify:
+- requiring the module does not start a timer,
+- =calendar-sync-status= reports the missing configuration cleanly,
+- no network process is started.
+
+Verify 2026-05-03:
+- Removed the tracked top-level personal calendar plist from =calendar-sync.el=,
+  leaving =calendar-sync-calendars= nil by default.
+- Added an ignored private config path, =calendar-sync.local.el=, loaded when
+  readable so local calendar definitions can stay outside git.
+- Added =calendar-sync.local.el= to =.gitignore= and moved the current local
+  calendar plist into that ignored file to preserve this machine's workflow.
+- Gated top-level auto-start behind =(not noninteractive)= so batch/test loads
+  do not start timers or network fetches, even when private config exists.
+- Added startup tests for no-config loads, missing-config status reporting,
+  private config loading, and private config not auto-starting in batch.
+- Verified with =make test-file FILE=test-calendar-sync-no-config-startup.el=,
+  =make test-file FILE=test-calendar-sync.el=,
+  =make test-file FILE=test-all-comp-errors.el=, and full =make test=.
+
+** DONE [#C] Add focused tests for early startup archive construction :tests:
+CLOSED: [2026-05-10 Sun]
+
+=tests/test-early-init-paths.el= covers path constants, but not archive
+selection, archive priorities, refresh decisions, or the offline/localrepo
+branches that make startup reproducible.
+
+Useful assertions after package bootstrap is extracted:
+- Local repo and local mirrors are added only when their directories exist.
+- Local archives keep higher priority than online archives.
+- =cj/use-online-repos= disables online archives and refresh attempts.
+- Stale or missing online archive caches request refresh only through the
+  extracted bootstrap path, not by loading unrelated modules.
+
+Verify 2026-05-10:
+- Extended =tests/test-early-init-paths.el= to cover local archive presence,
+  local-vs-online priority, offline archive omission, fresh-cache no-refresh,
+  and missing-cache refresh behavior.
+- Ran =make test-file FILE=test-early-init-paths.el=.
+
+** DONE [#C] Move inline GPT tool wiring out of =init.el= :startup:refactor:
+CLOSED: [2026-05-10 Sun]
+
+=init.el= contains a =with-eval-after-load 'gptel= block that mutates
+=load-path= and requires local files from =~/.emacs.d/gptel-tools=. This is
+feature-specific integration code inside the top-level load graph, and it will
+be hard to test or defer cleanly while it stays inline.
+
+Expected outcome:
+- Move the tool registration into =ai-config.el= or a small dedicated module.
+- Guard the local tool directory and individual tool files so missing optional
+  files produce a clear message rather than breaking startup after =gptel= loads.
+- Keep =init.el= limited to coarse module loading until the load-graph refactor
+  removes most eager =require=s.
+- Add a smoke test for the missing-directory path if the helper is pure enough.
+
+Verify 2026-05-10:
+- Moved optional GPTel tool loading into =ai-config.el= via
+  =cj/gptel-load-local-tools=.
+- Removed the inline =with-eval-after-load 'gptel= tool block from =init.el=.
+- Added =tests/test-ai-config-gptel-local-tools.el= for missing-directory,
+  present-tool, and missing-file behavior.
+- Ran focused AI config tests and checked parens for =init.el= and
+  =modules/ai-config.el=.
+
+** DONE [#C] Clean up Org keymap ownership and duplicate maps :cleanup:refactor:
+CLOSED: [2026-05-10 Sun]
+
+=org-config.el= creates =cj/org-map= under =cj/custom-keymap=, then later
+creates a separate =cj/org-keymap= under =C-; O=. Other Org modules bind their
+own global prefixes directly. This works with the current eager load order, but
+it makes the intended owner of Org commands less clear.
+
+Expected outcome:
+- Pick one owner for the Org command prefix.
+- Move module-specific menus under that owner or document why they remain
+  separate (=C-c n= for org-roam may be worth keeping).
+- Avoid duplicate definitions for =C-; O= and =cj/org-map=.
+- Coordinate with the broader custom keymap/load-order architecture task.
+
+Verify 2026-05-10:
+- Removed the duplicate =cj/org-keymap= and kept =cj/org-map= as the single
+  owner of =C-; O= through =cj/custom-keymap=.
+- Kept =C-; O c= bound to =cj/org-clear-element-cache=, which handles all Org
+  buffers by default and only the current Org buffer with a prefix argument.
+- Added =tests/test-org-config-keymap-ownership.el= and updated the existing
+  Org sort test to load newer source in the presence of ignored =.elc= files.
+- Ran =make test-file FILE=test-org-config-keymap-ownership.el= and
+  =make test-file FILE=test-org-sort-by-todo-and-priority.el=.
+
+** DONE [#A] Make repo reconciliation non-destructive by default :data:refactor:
+CLOSED: [2026-05-10 Sun]
+
+Before this refactor, =reconcile-open-repos.el= recursively scanned repos and,
+for dirty repos, ran
+=git stash --quiet=, =git pull --rebase --quiet=, and =git stash pop --quiet=
+before opening Magit. That is high blast radius for a convenience command: stash
+pop conflicts, untracked files, submodules, and worktrees can all create messy
+states.
+
+Verify 2026-05-10:
+- Dirty repos now open Magit for review without running stash, pull, or stash
+  pop.
+- Clean repos still pull with =git pull --rebase --quiet= via =process-file=.
+- Git calls now use argv lists through =cj/reconcile--git=.
+- Reconcile results distinguish =pulled=, =needs-review=, =skipped=,
+  =pull-failed=, and =status-failed=.
+- Repo discovery prunes heavy/generated directories and stops at repo roots by
+  default.
+- HTTP/HTTPS remote skipping is explicit and configurable via
+  =cj/reconcile-skipped-remote-regexp=.
+- Ran all reconcile ERT files and byte-compiled =reconcile-open-repos.el=.
+
+*** DONE [#A] Change dirty repo handling to review-first :bug:
+
+Expected outcome:
+- Clean repos may still pull automatically if desired.
+- Dirty repos should open Magit or a review buffer before any stash/pull/pop.
+- If an auto-reconcile mode is kept, require an explicit prefix argument or
+  separate command name.
+- Update the current dirty-repo tests so they assert the new review-first
+  behavior instead of encoding =git stash= / =git pull= / =git stash pop= as the
+  desired path.
+
+*** DONE [#B] Replace shell git calls with process helpers and parse statuses :refactor:
+
+Expected outcome:
+- Use =process-file= / =call-process= with argv lists.
+- Capture stdout/stderr per repo for a final report.
+- Distinguish clean, dirty, skipped, pull-failed, and needs-review states.
+- Add tests with stubbed git command results.
+
+*** DONE [#B] Prune expensive directories while discovering repos :refactor:
+
+=cj/find-git-repos= recursively walks the configured project/code roots and
+checks every directory for a nested =.git=. That can wander through
+=node_modules=, =.venv=, =target=, vendored source, build output, and nested
+dependency checkouts.
+
+Expected outcome:
+- Add a configurable prune list for heavy/generated directories.
+- Stop descending once a repo root has been found unless explicitly requested.
+- Add tests for nested repos and ignored heavy directories.
+
+*** DONE [#C] Make remote skip policy explicit and configurable
+
+=cj/reconcile--reference-clone-p= treats HTTP/HTTPS remotes as reference clones
+and skips them. That may be right for this machine, but the behavior is encoded
+as a naming mismatch and can skip ordinary repos.
+
+Expected outcome:
+- Rename the predicate to reflect the actual policy, or make the policy
+  configurable.
+- Report skipped repos with the reason in the final reconcile output.
+- Keep tests for SSH remotes, HTTP remotes, and local/file remotes.
+
+** DONE [#B] ai-vterm: occasional wrong-edge replay after buffer-move dance :bug:
+CLOSED: [2026-05-10 Sun]
+
+Shipped 2026-05-09 in commit =26e9763= "fix(ai-vterm): harden F9 toggle across multi-window and buffer-move". The fix maps cardinal directions to frame-edge variants on replay (=right= → =rightmost=, =below= → =bottom=), switches captured units from frame-fractions to absolute body-cols / body-lines, wraps replay sizes in =(body-columns . N)= / =(body-lines . N)= cons forms so dividers don't shift the body, and uses =delete-window= (with =one-window-p= guard) instead of =quit-window= so buffer-moved windows don't leak. 7 regression tests added covering each scenario; 80 ai-vterm tests pass.
+
+Surfaced 2026-05-09. After an extended sequence with both vterm and
+ai-vterm visible, switching orientations, buffer-moving claude
+between positions, and toggling each independently, claude
+eventually replayed at the right side when its captured direction
+should have been =below= (it had just been buffer-moved to the
+bottom and toggled there).
+
+The full sequence that hit it:
+
+1. F9 to open claude (right side).
+2. F12 to open vterm. M-S-t to flip vterm to right-side -- gives
+   dashboard | vterm | claude. Toggle each off/on; both behave.
+3. F12 vterm off. M-S-t flips claude to left half. Toggle both
+   off/on; both behave.
+4. Toggle both off. F12 vterm on. M-S-t flips vterm to bottom.
+   Toggle both on/off; both behave.
+5. Buffer-move claude to the bottom.
+6. Toggle claude there -- claude pops up at the right instead of
+   at the bottom.
+
+** DONE [#B] Scope F12 (vterm-toggle) to non-claude vterm buffers, preserve user orientation :refactor:bug:
+CLOSED: [2026-05-10 Sun]
+
+Shipped 2026-05-09 in commit =554b32d= "feat(vterm): F12 toggle that excludes claude and preserves geometry". F12 now binds =cj/vterm-toggle= (replaces the =vterm-toggle= package binding). =cj/--vterm-toggle-buffer-p= excludes =claude [= prefixed buffers from the candidate set; =cj/--vterm-toggle-capture-state= records direction + body size at toggle-off; =cj/--vterm-toggle-display-saved= replays via =(body-columns . N)= / =(body-lines . N)= cons forms with cardinal direction mapped to frame-edge variant. Toggle-off uses =delete-window= (with =one-window-p= guard) so buffer-move scenarios don't leak ghost windows. The hard-coded =(window-height . 0.7)= override is gone — user-resized geometry persists. 19 new tests across buffer-filter, dispatch, and display.
+
+F12 previously ran =vterm-toggle=, which picked the most-recent vterm buffer
+as the toggle target. When that target was a =claude [<repo>]= buffer (which
+has its own F9/C-F9/M-F9 dispatch via =modules/ai-vterm.el=), F12 ended up
+toggling Claude. The display-buffer rule in =modules/eshell-vterm-config.el=
+already excluded =claude [= names from the bottom-window placement, but the
+exclusion only governed /where/ a buffer landed once vterm-toggle had chosen
+it -- not which buffer got chosen.
+
+Two changes shipped:
+
+1. *Filter claude buffers from vterm-toggle's target set* via
+   =cj/--vterm-toggle-buffer-p=, which ignores buffers whose names start with
+   "claude [".
+2. *Respect user-modified window orientation.* Captured direction + body size
+   at toggle-off; replayed via =(body-columns . N)= / =(body-lines . N)= cons
+   forms. The hard-coded =(window-height . 0.7)= override is gone.
+
+** DONE [#C] Move vterm-copy-mode binding off C-c C-t to the personal keymap :chore:quick:
+CLOSED: [2026-05-10 Sun 02:02]
+
+Default vterm binding is =C-c C-t=, which collides with the =C-c= space many modes
+reach for and is awkward to hit when the terminal is the active buffer. Move it
+to the personal keymap (=C-;= prefix) — pick a mnemonic letter (e.g. =C-; V c=
+for "vterm copy") and unbind the default in =vterm-mode-map=. Update
+=modules/eshell-vterm-config.el= alongside any related vterm bindings.
+
+Implemented with a broader =C-; V= vterm menu, clickable URLs in vterm buffers,
+=C-; V c= for raw =vterm-copy-mode=, and =C-; V C= for tmux-pane history
+capture into a temporary Emacs buffer.
+** DONE [#A] AI-Term-Related Improvements
+*** DONE Check for widen/shorten buffer keys.
+The keybinding you "thought you had" is =windsize= on =C-s-<arrow>= (Ctrl+Super) — a tiling WM eats Ctrl+Super, which is why it didn't seem to exist. Shipped 2026-05-11 in commit =f837e5f= "feat(window): resize the split with C-; b <arrow>": =C-; b <left>/<right>/<up>/<down>= moves the active window's divider that way (via =windsize=), then keeps =cj/window-resize-map= active so bare arrows keep nudging until any other key (or =C-g= / =<escape>=); =C-u N C-; b <right>= resizes by N. The old =C-s-<arrow>= bindings were dropped; =windsize= is now =:commands=-deferred with =windsize-cols=/=windsize-rows= at 2. =cj/window-resize-sticky= (in ui-navigation.el) dispatches on the arrow that triggered it and arms the loop. New ERT tests; all green.
+*** DONE Evaluate this buffer should be in personal keybindings also.
+=eval-buffer= is now on =C-; b e= (it already had =C-c b=). =e= had been =cj/view-email-in-buffer= and the requested fallback =C-; b m= is =cj/move-buffer-and-file=, so email-view moved to =C-; b E= (docstring + which-key updated too). All in =modules/custom-buffer-file.el=.
+*** DONE Last ai-project used should be topmost in completing-read.
+Shipped 2026-05-11 in commit =c14d6c8= "feat(ai-vterm): order the project picker by most-recently-used". The picker's active group (projects with a live tmux session) now leads with projects opened this session, most-recent first (=cj/--ai-vterm-mru=, pushed by =cj/--ai-vterm-show-or-create=), then the rest of the active group alpha, then the no-session group alpha. Bundled fix: =cj/--ai-vterm-tmux-session-name= now sanitizes =.= / =:= → =_= the way tmux does, so =.emacs.d= (real session =aiv-_emacs_d=) is correctly matched to its session and shows up in the active group (and crash-recovery reattaches instead of spawning a duplicate). New tests + updated tests; all green.
+
+*** DONE Kill other window that leaves the split where it is.
+Didn't exist (the closest, =cj/kill-other-window= on =M-S-o=, *deletes* the other window). Shipped 2026-05-11 in commit =0ddbcde= "feat(window): kill the other window's buffer with C-; b K": =cj/kill-other-window-buffer= (in undead-buffers.el, on =C-; b K=) kills or buries the buffer shown in the other window and leaves that window and the split alone — the window then shows whatever bury/kill surfaces next. Reuses =cj/kill-buffer-or-bury-alive= so =cj/undead-buffer-list= buffers (=*scratch*= etc.) are buried; with 3+ windows it acts on =next-window=; errors with "No other window" if there's only one. =M-S-o= / =cj/kill-other-window= kept as-is (different op). 4 new ERT tests; all green.
+*** DONE Kill this buffer/window that leaves the split.
+Yes — the command is =cj/kill-buffer-and-window= (in =modules/undead-buffers.el=), bound to =C-; b k= (keymap entry in =modules/custom-buffer-file.el=, under the "buffer and file menu"). It does =(delete-window)= on the current window unless it's the only one, then kills (or buries, for "undead" buffers like =*scratch*=) the buffer — so in a 3-column split, =C-; b k= in column 2 leaves columns 1 and 3 as a normal 2-column split. No code change needed.
+
+Footnote on the =M-S-c= memory: =M-S-c= was Emacs's default =capitalize-word= and is now =time-zones= (=modules/chrono-tools.el=) — it was never this command. The =M-S-= window-killing family is =M-S-o= → =cj/kill-other-window= and =M-S-m= → =cj/kill-all-other-buffers-and-windows=.
+*** DONE M-w shouldn't close the buffer or copy-mode
+Shipped 2026-05-11 in commit =949bdeb= "feat(vterm): unify the keys in vterm copy-mode and tmux history". Both scrollback surfaces (=vterm-copy-mode= and the tmux-history buffer) now share one key story: =M-w= copies the active region and stays put (copy several things in a row); =C-g=, =<escape>=, or =q= leaves without copying; =RET= is unbound (no "copy and exit" — vterm's default =RET → vterm-copy-mode-done= binding removed). Dropped the now-dead =cj/vterm-tmux-history-copy-and-quit= (=M-w= then =q= is the equivalent). Also moved =cj/vterm-tmux-history= from =C-; x C= to =C-; x h= (unshifted, frees =C=) and refreshed the file's stale commentary header. Tests updated.
+*** DONE cursor still orange after hitting return.
+Shipped 2026-05-11 in commit =a70bb98= "fix(ui-config): use the writeable cursor color in a live vterm". Root cause: =vterm-mode= sets =buffer-read-only=, so the post-command cursor-color hook painted the cursor the read-only color (orange) any time point was in a vterm — copy-mode and the live terminal alike. Fix: a live vterm (=vterm-mode= and not =vterm-copy-mode=) now reports =unmodified= (white); =vterm-copy-mode= still reports =read-only= (orange), which Craig confirmed he wants. Extracted =cj/--buffer-cursor-state= for testability; 7 new ERT tests.
+
+*** DONE open in other window question/issue
+Shipped 2026-05-11 in commit =071fb5e= "feat(ai-vterm): keep emacsclient files out of the agent window". =server-start= left =server-window= nil, so =emacsclient -n= opened files in the selected window — which is the agent window when you're typing in it. Fix in ai-vterm.el: =server-window= now points at =cj/--ai-vterm-server-display=, which routes the file to a non-agent window (splitting one off the agent when it's the only window); emacsclient from anywhere else still goes through =pop-to-buffer=. Helper =cj/--ai-vterm-non-agent-window= picks the target (skips the minibuffer, dedicated windows, agent windows). 7 new ERT tests. Confirmed working — direction-agnostic, picks the "other" window whichever side the agent is on.
+** DONE [#A] Optimize org-capture target building performance :perf:
+CLOSED: [2026-05-11 Mon 13:05]
+
+15-20 seconds every time capturing a task (12+ times/day).
+Major daily bottleneck - minutes lost waiting, plus context switching cost.
+
+Implemented 2026-05-11: cache validated =file+headline= target markers in
+=org-capture-config.el= so repeated task captures into =Inbox= skip Org's
+full-file headline scan. Added regression coverage in
+=tests/test-org-capture-config-target-cache.el=.
+** DONE [#A] Fix Slack reaction workflow (C-; S !) :bug:
+CLOSED: [2026-05-11 Mon 14:08]
+
+Reactions via ~C-; S !~ (~slack-message-add-reaction~) have two problems:
+
+1. *Emoji picker only shows GitHub-style names* — without the ~emojify~ package,
+   ~slack-select-emoji~ falls back to a flat ~completing-read~ over 1600+ names
+   fetched from GitHub's iamcal/emoji-data. Common names like ~thumbsup~ and ~pray~
+   are buried. A curated shortlist of common reactions would fix the UX.
+
+2. *CRITICAL: post-command-hook bug traps user in Slack buffer* —
+   ~slack-reaction-echo-description~ is added to ~post-command-hook~ (buffer-local)
+   in all Slack buffers. When the cursor lands on a reaction widget, it reads the
+   ~reaction~ text property and calls ~slack-reaction-help-text~. If the reaction
+   EIEIO object is malformed, the error fires on *every keystroke*, making it
+   impossible to switch buffers, run M-x, or even C-g. The only escape is killing
+   Emacs externally (~pkill emacs~).
+
+   The fix must address this hook FIRST before any other reaction work.
+   Approach: advise ~slack-reaction-echo-description~ with ~condition-case~ to
+   silently catch errors, or remove it from ~post-command-hook~ entirely.
+
+   Relevant code in emacs-slack:
+   - ~slack-buffer.el:399~ — adds hook
+   - ~slack-buffer.el:374~ — ~slack-reaction-echo-description~ definition
+   - ~slack-reaction.el:72~ — ~slack-reaction-help-text~ method
+
+Implemented 2026-05-11:
+- Added a safe advice around ~slack-reaction-echo-description~. If malformed
+  reaction data errors from the buffer-local ~post-command-hook~, the hook is
+  removed for that buffer and a single message is shown instead of trapping
+  every keystroke.
+- Rebound ~C-; S !~ to ~cj/slack-message-add-reaction~, which presents a short
+  common reaction list first and keeps an ~Other...~ fallback to upstream
+  ~slack-message-reaction-input~.
+- Added regression coverage in =tests/test-slack-config-reactions.el=.
+
+**Discovered:** 2026-03-06
+** DONE [#B] Coverage audit: untested and lightly-tested modules :tests:
+CLOSED: [2026-05-11 Mon 14:38]
+
+Snapshot of test-coverage gaps as of 2026-04-26. The existing [#A] "Continue coverage push" task already targets =keybindings.el=, =config-utilities.el=, =org-noter-config.el=, and =host-environment.el=; this entry catalogs the rest so future sessions have a working list.
+
+**Methodology.** 102 modules in =modules/=, cross-referenced against =tests/= using fuzzy name matching (full module name, drop =-config=/=-setup= suffix, first hyphen segment). Categorized by likely test value.
+
+**High-value untested (substantial logic, real test value):**
+- =ai-conversations= — gptel persistence + autosave; 13 functions
+- =quick-video-capture= — yt-dlp queue, org-protocol; 5 functions
+- =dashboard-config= — custom commands (=cj/dashboard-only=, etc.)
+- =external-open= — partially refactored; helpers covered, commands still bare
+- =keyboard-compat= — terminal vs GUI Meta+Shift translation
+- =help-config= and =help-utils= — interactive help and lookup commands
+- =mail-config= — helpers (some covered via transcription tests; rest bare)
+- =show-kill-ring= — kill-ring UI logic
+- =system-commands= — shell command wrappers
+- =ui-navigation= and =ui-theme= — navigation + theme switching
+- =wrap-up= — init-finalize helpers
+
+**Lightly covered (1–2 tests, likely many uncovered functions):**
+- =modeline-config= (2 tests)
+- =org-agenda-config= (2)
+- =org-capture-config= (2)
+- =org-reveal-config= (2)
+- =transcription-config= (1) — helpers tested, start/stop loop bare
+- =jumper= (1)
+- =keyboard-macros= (1)
+
+**Likely low-value (mostly use-package wrappers):**
+About 28 modules are dominated by use-package + hooks + keybinds — testing them would mostly test Emacs/use-package itself. Examples: =auth-config=, =diff-config=, =dirvish-config=, =elfeed-config=, =erc-config=, =eww-config=, the =prog-*= language modules, etc. For each, review whether the file has any helper functions beyond use-package. If yes, write characterization tests. If not, document as "no unit tests appropriate" so the next audit skips it.
+
+**Approach.** Pick 2–3 modules per session from the high-value list. Refactor-first if needed (split interactive wrapper from pure helper per =.claude/rules/elisp-testing.md=), then write Normal/Boundary/Error coverage. Re-run =cj/coverage-report= (F7, project scope) after each batch so progress is measurable.
+
+**Cross-references:**
+- [[file:.ai/sessions/2026-04-22-09-49-coverage-v1-shipped-system-utils-tested.org][2026-04-22 session]] — coverage v1 shipped, 59.6% baseline
+- [[file:.claude/rules/elisp-testing.md][.claude/rules/elisp-testing.md]] — per-function test files, refactor-first, three required categories
+
+**2026-05-11 refresh.** Re-ran =make coverage= after excluding timing-sensitive
+=tests/test-lorem-optimum-benchmark.el= from coverage instrumentation. The
+benchmark file still runs in normal test-file/unit flows, but Undercover slows
+timing assertions enough to make it unsuitable for coverage. Low-coverage means
+instrumented modules below 50% executable-line coverage, plus modules missing
+from SimpleCov entirely. For missing modules, first decide whether the file has
+testable project logic; if it is just use-package/keybinding glue, document it
+as intentionally low-value instead of forcing brittle tests.
+
+*** TODO [#B] Add coverage for =prog-python.el= (0.0%, 0/20) :tests:
+
+Focus on formatter/setup helpers and any Python command-building logic. Avoid
+testing Emacs package glue directly; split pure helpers first if needed.
+
+*** TODO [#C] Add coverage for =selection-framework.el= (0.0%, 0/3) :tests:
+
+Add a smoke test for the final binding/setup behavior or document why the three
+instrumented lines are configuration-only.
+
+*** TODO [#B] Add coverage for =keyboard-compat.el= (3.4%, 1/29) :tests:
+
+Cover terminal-vs-GUI translation predicates and key normalization paths. Keep
+tests table-driven so future terminal quirks are easy to add.
+
+*** TODO [#B] Add coverage for =prog-webdev.el= (4.8%, 1/21) :tests:
+
+Cover formatter wiring and web-mode helper behavior without invoking external
+formatters.
+
+*** TODO [#C] Add coverage for =system-defaults.el= (8.3%, 1/12) :tests:
+
+Characterize the platform/default-setting helpers with stubs around system
+calls. Do not assert machine-specific defaults directly.
+
+*** TODO [#B] Add coverage for =ui-navigation.el= (8.7%, 4/46) :tests:
+
+Extend the existing window-resize tests to cover navigation commands,
+window-selection behavior, and boundary cases around missing/side windows.
+
+*** TODO [#B] Add coverage for =prog-go.el= (11.1%, 3/27) :tests:
+
+Cover Go formatting/test command wiring and any path/build helper behavior with
+external commands stubbed.
+
+*** TODO [#B] Add coverage for =system-commands.el= (12.2%, 6/49) :tests:
+
+Cover shell command wrapper construction, missing executable behavior, and
+interactive command smoke paths with process execution stubbed.
+
+*** TODO [#B] Add coverage for =external-open.el= (15.2%, 5/33) :tests:
+
+The library helpers already have some coverage; add smoke/characterization tests
+for user-facing open commands and error paths while stubbing launcher calls.
+
+*** TODO [#B] Add coverage for =org-webclipper.el= (16.9%, 10/59) :tests:
+
+Cover URL/content parsing, manual URL prompt behavior, protocol URL handling,
+and aborted capture cleanup.
+
+*** TODO [#C] Add coverage for =system-utils.el= (19.2%, 5/26) :tests:
+
+Review remaining utilities not covered by =eval-buffer= tests. Add focused
+Normal/Boundary/Error tests for pure helpers; stub process/system calls.
+
+*** TODO [#C] Add coverage for =org-reveal-config.el= (20.0%, 9/45) :tests:
+
+Extend existing header-template/title tests to cover export command setup and
+option-building helpers.
+
+*** TODO [#C] Add coverage for =coverage-elisp.el= (26.3%, 5/19) :tests:
+
+The detector is covered; add tests for report-path/project-root behavior and a
+stubbed run callback path if it can be tested without launching compilation.
+
+*** TODO [#C] Add coverage for =org-noter-config.el= (27.3%, 27/99) :tests:
+
+Build on the existing predicate/template tests. Target note-file placement,
+preferred split behavior, and interactive wrapper smoke tests.
+
+*** TODO [#B] Add coverage for =ai-config.el= (27.7%, 53/191) :tests:
+
+Prioritize model/backend selection edge cases, gptel local-tool registration,
+and command helpers. Stub network/model calls.
+
+*** TODO [#C] Add coverage for =dirvish-config.el= (30.4%, 48/158) :tests:
+
+Existing utility tests cover several helpers. Add focused coverage for remaining
+playlist/quick-access/display-path branches and document config-only areas.
+
+*** TODO [#B] Add coverage for =slack-config.el= (32.0%, 24/75) :tests:
+
+Extend reaction workflow coverage to message lookup, workspace/account
+configuration, and command error handling with Slack APIs stubbed.
+
+*** TODO [#B] Add coverage for =org-roam-config.el= (32.5%, 26/80) :tests:
+
+Extend existing slug/demote/link tests to cover TODO copy behavior, capture
+helpers, and file/path boundary cases.
+
+*** TODO [#C] Add coverage for =custom-text-enclose.el= (35.2%, 51/145) :tests:
+
+Many wrappers are tested, but coverage is still low. Identify untested commands
+and add table-driven region/buffer boundary cases.
+
+*** TODO [#C] Add coverage for =hugo-config.el= (39.6%, 38/96) :tests:
+
+Extend metadata/template tests to draft collection, path derivation, and command
+wrapper behavior with file/process calls stubbed.
+
+*** TODO [#C] Add coverage for =org-refile-config.el= (41.2%, 21/51) :tests:
+
+Build on target-building tests. Cover org-mode enforcement, missing files, and
+refile target edge cases.
+
+*** TODO [#C] Add coverage for =org-contacts-config.el= (45.6%, 36/79) :tests:
+
+Extend email parsing/finalize tests to contact lookup, capture field handling,
+and malformed contact data.
+
+*** TODO [#C] Add coverage for =transcription-config.el= (46.3%, 75/162) :tests:
+
+Existing helper tests are strong; add start/stop/process lifecycle tests with
+process creation and sentinels stubbed.
+
+*** TODO [#C] Add coverage for =music-config.el= (46.8%, 130/278) :tests:
+
+Coverage is broad but below 50%. Target remaining playlist mutation,
+navigation, and MPD side-effect paths with process calls stubbed.
+
+*** TODO [#B] Add coverage for =mail-config.el= (47.4%, 9/19) :tests:
+
+Transport helpers are covered. Add smoke tests for account context data,
+maildir shortcuts, bookmarks, and safe command setup without sending mail.
+
+*** TODO [#B] Add or triage first coverage for =ai-conversations.el= (missing from SimpleCov) :tests:
+
+High-value missing module. Cover gptel persistence, autosave path selection, and
+load/save error behavior with filesystem calls isolated.
+
+*** TODO [#C] Add or triage first coverage for =auth-config.el= (missing from SimpleCov) :tests:
+
+Review for testable cache/debug helpers versus package glue. Add tests for
+helpers; document any config-only surface as intentionally untested.
+
+*** TODO [#C] Add or triage first coverage for =calibredb-epub-config.el= (missing from SimpleCov) :tests:
+
+Review EPUB preference helpers and calibredb/nov hooks. Add tests around pure
+helpers; avoid brittle package-load assertions.
+
+*** TODO [#C] Add or triage first coverage for =chrono-tools.el= (missing from SimpleCov) :tests:
+
+Identify date/time helpers and command formatting logic. Add deterministic tests
+with current time stubbed.
+
+*** TODO [#B] Add or triage first coverage for =dashboard-config.el= (missing from SimpleCov) :tests:
+
+Cover custom dashboard commands such as single-window/dashboard-only behavior
+with buffer/window operations isolated.
+
+*** TODO [#D] Triage =diff-config.el= as missing from SimpleCov :tests:
+
+Mostly likely package/keybinding glue. Add tests only for local helper logic; if
+none exists, document as no unit tests appropriate.
+
+*** TODO [#C] Add or triage first coverage for =dwim-shell-config.el= (missing from SimpleCov) :tests:
+
+Review DWIM shell command selection and buffer/process helpers. Stub shell
+launches and cover fallback/error cases.
+
+*** TODO [#D] Triage =elfeed-config.el= as missing from SimpleCov :tests:
+
+Check for project-owned feed/search helpers. If it is only elfeed setup,
+document as low-value for unit coverage.
+
+*** TODO [#D] Triage =erc-config.el= as missing from SimpleCov :tests:
+
+Check for local IRC command helpers. If the file is package setup only, document
+as intentionally untested.
+
+*** TODO [#C] Add or triage first coverage for =eshell-config.el= (missing from SimpleCov) :tests:
+
+Cover local eshell helper functions and command aliases where possible. Avoid
+tests that depend on a live shell session.
+
+*** TODO [#D] Triage =eww-config.el= as missing from SimpleCov :tests:
+
+Review for local URL/browser helpers. If configuration-only, document as
+low-value for unit coverage.
+
+*** TODO [#D] Triage =flycheck-config.el= as missing from SimpleCov :tests:
+
+Prefer testing only project-owned predicate/setup helpers. Do not test flycheck
+package internals.
+
+*** TODO [#D] Triage =flyspell-and-abbrev.el= as missing from SimpleCov :tests:
+
+Look for local dictionary/abbrev helpers. If the file only wires modes/hooks,
+document that no unit tests are appropriate.
+
+*** TODO [#D] Triage =font-config.el= as missing from SimpleCov :tests:
+
+Check for font-selection helpers; otherwise classify as environment-specific UI
+configuration.
+
+*** TODO [#D] Triage =games-config.el= as missing from SimpleCov :tests:
+
+Check for project-owned game command wrappers. If it is only package setup,
+document as low-value.
+
+*** TODO [#C] Add or triage first coverage for =gloss-config.el= (missing from SimpleCov) :tests:
+
+Review glossary lookup/parsing helpers. Add pure tests where possible and smoke
+test interactive commands with completion stubbed.
+
+*** TODO [#B] Add or triage first coverage for =help-config.el= (missing from SimpleCov) :tests:
+
+High-value missing module from the original audit. Cover interactive help lookup
+commands and buffer-selection behavior with display functions stubbed.
+
+*** TODO [#B] Add or triage first coverage for =help-utils.el= (missing from SimpleCov) :tests:
+
+High-value missing module. Cover lookup/formatting helpers and error behavior
+for unknown symbols/topics.
+
+*** TODO [#D] Triage =httpd-config.el= as missing from SimpleCov :tests:
+
+Check for local server helpers. If it only configures simple-httpd, document as
+configuration-only.
+
+*** TODO [#D] Triage =latex-config.el= as missing from SimpleCov :tests:
+
+Review for local compile/view helper logic. Avoid asserting package setup unless
+there are project-owned predicates.
+
+*** TODO [#D] Triage =ledger-config.el= as missing from SimpleCov :tests:
+
+Check for project-owned ledger helpers; otherwise document as mode setup.
+
+*** TODO [#C] Add or triage first coverage for =local-repository.el= (missing from SimpleCov) :tests:
+
+Review repository path/discovery helpers and add filesystem-backed tempdir tests
+for meaningful local logic.
+
+*** TODO [#D] Triage =markdown-config.el= as missing from SimpleCov :tests:
+
+Check for local markdown command helpers. If it is only mode configuration,
+document as no unit tests appropriate.
+
+*** TODO [#C] Add or triage first coverage for =media-utils.el= (missing from SimpleCov) :tests:
+
+Original audit called this out with process boundaries. Cover launcher/command
+selection helpers with external commands stubbed.
+
+*** TODO [#C] Add or triage first coverage for =mu4e-org-contacts-integration.el= (missing from SimpleCov) :tests:
+
+Cover contact lookup/insert integration with mu4e and org-contacts calls
+stubbed.
+
+*** TODO [#C] Add or triage first coverage for =mu4e-org-contacts-setup.el= (missing from SimpleCov) :tests:
+
+Cover setup helpers and contact field defaults where project-owned logic exists.
+
+*** TODO [#D] Triage =org-agenda-config-debug.el= as missing from SimpleCov :tests:
+
+Check for debug helper functions worth testing. If it is ad-hoc diagnostics,
+document as low-value.
+
+*** TODO [#D] Triage =org-babel-config.el= as missing from SimpleCov :tests:
+
+Review for project-owned org-babel helper logic. Avoid tests that only assert
+language registration.
+
+*** TODO [#D] Triage =org-drill-config.el= as missing from SimpleCov :tests:
+
+Check for local drill helpers beyond package setup. Add characterization tests
+only for those helpers.
+
+*** TODO [#D] Triage =org-export-config.el= as missing from SimpleCov :tests:
+
+Review export option/path helpers. If configuration-only, document as no unit
+tests appropriate.
+
+*** TODO [#D] Triage =pdf-config.el= as missing from SimpleCov :tests:
+
+Check for local PDF helper commands. Avoid tests tied to external PDF tools
+unless command construction can be isolated.
+
+*** TODO [#D] Triage =popper-config.el= as missing from SimpleCov :tests:
+
+Review popup classification helpers. Add tests for predicates; document pure
+package setup as intentionally untested.
+
+*** TODO [#D] Triage =prog-general.el= as missing from SimpleCov :tests:
+
+Check for local development command helpers beyond global key setup. Add tests
+only for project-owned logic.
+
+*** TODO [#D] Triage =prog-lisp.el= as missing from SimpleCov :tests:
+
+Review Lisp-mode helper behavior. If it is only hooks/mode setup, document as
+low-value.
+
+*** TODO [#D] Triage =prog-training.el= as missing from SimpleCov :tests:
+
+Check for exercise/training command helpers and add characterization tests if
+present.
+
+*** TODO [#B] Add or triage first coverage for =quick-video-capture.el= (missing from SimpleCov) :tests:
+
+High-value missing module. Cover yt-dlp queue behavior, org-protocol handling,
+URL parsing, and process error paths with external commands stubbed.
+
+*** TODO [#B] Add or triage first coverage for =show-kill-ring.el= (missing from SimpleCov) :tests:
+
+High-value missing module. Cover kill-ring formatting, selection behavior, and
+empty-ring boundaries.
+
+*** TODO [#D] Triage =text-config.el= as missing from SimpleCov :tests:
+
+Review for local text helper commands. If it only configures packages/hooks,
+document as no unit tests appropriate.
+
+*** TODO [#D] Triage =tramp-config.el= as missing from SimpleCov :tests:
+
+Check for local TRAMP path helpers. Avoid tests requiring remote connections.
+
+*** TODO [#C] Add or triage first coverage for =vc-config.el= (missing from SimpleCov) :tests:
+
+Review project-owned VC helpers and command wrappers. Stub git/process calls.
+
+*** TODO [#D] Triage =weather-config.el= as missing from SimpleCov :tests:
+
+Check for request/format helpers. Avoid live network tests; stub weather calls.
+
+*** TODO [#B] Add or triage first coverage for =wrap-up.el= (missing from SimpleCov) :tests:
+
+Cover init-finalize helpers and post-startup behavior with hooks/timers stubbed.
+** DONE [#B] Review all config and pull library functions into system-lib file :refactor:
+Superseded by =PROJECT [#B] Consolidate shared utility helpers= (the structured version of this, with =docs/design/utility-consolidation.org= as the spec and =docs/design/utility-inventory.org= as the config-wide audit -- 30 candidate helpers across all modules, decided 11 Migrate / 3 Leave / 13 Defer). The system-lib extractions shipped 2026-05-10: =c75e36f= (=cj/executable-find-or-warn= from mail-config), =f1e8f08= (=cj/shell-quote-argument-readable= from dev-fkeys), =57e558c= (=cj/process-output-or-error= + =cj/git-output-or-error= from coverage-core), =aa72245= (=cj/file-from-context= from system-utils), plus the earlier =8e8152e= (=cj/log-silently=) -- each with its own test file. The rest of the 11 Migrate items landed as new =-lib.el= modules in the same marathon (=cj-cache-lib.el=, =cj-org-text-lib.el=, =external-open-lib.el=, =cj-window-geometry-lib.el=, =cj-window-toggle-lib.el=). The 13 deferred candidates remain tracked under the Consolidate-shared-utility-helpers PROJECT, not here.
+** DONE [#C] Clean up calibredb-epub-config.el :refactor:bug:
+CLOSED: [2026-05-11 Mon 14:55]
+
+1. *Remove ~:defer 1~ from calibredb use-package* — loads calibredb 1 second after
+   startup even though ~:commands~ and ~:bind~ already handle lazy loading. Free
+   startup time.
+
+2. *Double rendering on EPUB open* — ~cj/nov-apply-preferences~ calls
+   ~(nov-render-document)~ explicitly, but it runs as a ~nov-mode~ hook which fires
+   after nov already renders. Every EPUB open renders twice.
+
+3. *visual-fill-column-width doesn't adapt on resize* — calculated once at open
+   time based on window size. Resizing or splitting the window won't recalculate
+   text width. Consider hooking ~window-size-change-functions~ or
+   ~window-configuration-change-hook~.
+
+4. *~calibredb-search-page-max-rows 20000~* — effectively disables pagination.
+   Could slow down the search buffer if library grows large. Monitor or lower.
+
+5. *Anonymous lambda for zathura keybinding* — ~("z" . (lambda ...))~ won't show
+   a name in which-key or describe-key. Replace with a named function.
+
+**File:** modules/calibredb-epub-config.el
+
+Implemented 2026-05-11: removed the timed calibredb load, removed the explicit
+=nov-render-document= call from the =nov-mode= hook to avoid double rendering,
+made Nov text width recalculate after window configuration changes, lowered
+=calibredb-search-page-max-rows= from 20000 to 500, and replaced the anonymous
+zathura binding with =cj/nov-open-external=. Added focused helper coverage in
+=tests/test-calibredb-epub-config.el= for the adaptive width calculation and
+named external-open command.
+** DONE [#C] Update email setup script for the work account :chore:
+CLOSED: [2026-05-11 Mon 14:21]
+
+Follow-up to the deepsat mu4e work shipped 2026-04-27. The mu4e config (=modules/mail-config.el=), =.mbsyncrc=, =.msmtprc=, and the encrypted password file (=.config/.dmailpass.gpg=) all gained a third account. There is an "email setup script" (per Craig's mention while wrapping up that work) that needs the equivalent updates so a fresh machine bootstraps with all three accounts. Craig will name the specific script when picking this up.
+
+Likely shape:
+- Wherever the script writes / templates =.mbsyncrc=, add the dmail block (5-channel layout, mirroring the gmail block).
+- Wherever it writes =.msmtprc=, add the dmail SMTP account (passwordeval against =~/.config/.dmailpass.gpg=).
+- Ensure the encrypted password file exists or is sourced correctly during setup.
+
+Implemented 2026-05-11: updated =scripts/setup-email.sh= so the setup flow
+handles the deepsat/dmail account alongside gmail and cmail. The script now
+creates =~/.mail/dmail=, passes =craig.jennings@deepsat.com= to =mu init=,
+and installs/validates =~/.config/.dmailpass.gpg= using the same encrypted-file
+pattern as gmail. While there, the credential bootstrap was made explicit:
+gmail and dmail keep encrypted =.gpg= files because mbsync/msmtp decrypt them at
+use time, while cmail is decrypted to the plaintext ProtonBridge password file.
+** DONE [#C] Stand up packaging CI for personal Elisp packages  :ci:feature:
+CLOSED: [2026-05-11 Mon 14:08]
+
+Get =chime=, =org-msg=, and =wttrin= covered by automated package-quality checks. Three pieces, all aimed at the same set of repos, so tracked together:
+
+1. *melpazoid* — MELPA-submission validator. Run against each package; gives a pre-submission checklist so packages don't bounce on basics.
+2. *package-lint* — elisp-specific package linter. Catches header issues, autoload problems, version-spec drift. Can be run locally as part of =make lint= and in CI.
+3. *elisp-check GitHub Action* — zero-config CI workflow that wraps the above plus byte-compile and basic tests. One =.github/workflows/elisp.yml= per package.
+
+Order of execution: package-lint first (most actionable, fastest feedback), then elisp-check (CI wiring), then melpazoid (heavier; only matters if/when submitting to MELPA).
+** DONE [#D] Optimize lorem-optimum performance and liber-primus.txt size :perf:
+CLOSED: [2026-05-11 Mon 14:17]
+
+Lorem-optimum text generation is generally slow but doesn't completely break workflow.
+Two benchmark tests were disabled (marked :slow) because they take MINUTES instead of seconds.
+
+**Current State:**
+- Tests disabled to unblock test suite (DONE 2025-11-09)
+- Performance is acceptable for daily use, but could be better
+- liber-primus.txt may be too large for optimal performance
+
+**Investigation:**
+1. Profile lorem-optimum to find bottlenecks
+2. Check if liber-primus.txt size needs optimization
+3. Optimize performance to get tests under 5 seconds
+4. Re-enable benchmark tests once performance is acceptable
+
+**Related Files:**
+- modules/lorem-optimum.el (needs profiling and optimization)
+- tests/test-lorem-optimum-benchmark.el (tests disabled with :tags '(:slow))
+- liber-primus.txt (corpus file, may need size optimization)
+
+Implemented 2026-05-11: optimized generation hotspots in =modules/lorem-optimum.el=
+by avoiding repeated string/list appends, caching random Markov keys as a vector,
+and hardening title generation while preserving empty-chain behavior. Re-enabled
+the benchmark tests in =tests/test-lorem-optimum-benchmark.el= by removing their
+=:slow= tags and added a title-generation regression test in
+=tests/test-lorem-optimum.el=. Checked =assets/liber-primus.txt= directly; it is
+36,475 bytes / 5,374 words, so no corpus shrink was needed. The benchmark file
+now runs all 10 tests in under one second, with 100K-word learning measured under
+200 ms on this machine.
+** DONE [#D] Migrate lsp-eldoc-hook to eldoc-documentation-functions :chore:quick:
+CLOSED: [2026-05-11 Mon 14:12]
+
+=modules/prog-lsp.el:68= sets =lsp-eldoc-hook= to nil. Byte-compile flags it as obsolete since lsp-mode 9.0.0; replacement is =eldoc-documentation-functions=. Find the lsp-mode-supplied entry there and remove it (or set the variable buffer-locally per the new API). Discovered 2026-04-26 during refactor audit on the file-watch-ignored-extras change.
+
+Implemented 2026-05-11: replaced the obsolete =lsp-eldoc-hook= assignment with
+=cj/lsp--disable-eldoc-hover=, installed from =lsp-managed-mode-hook=. The helper
+removes =lsp-eldoc-function= from buffer-local
+=eldoc-documentation-functions= after lsp-mode adds it. Covered in
+=tests/test-prog-lsp--add-file-watch-ignored-extras.el=.
+** DONE [#B] Simplify mail attachment save workflow               :feature:
+
+Saving attachments out of mu4e is currently a multi-step dance via =mu4e-view-save-attachments= + embark + vertico. The flow documented in =modules/mail-config.el:10-17= goes:
+
+#+begin_quote
+After running =mu4e-view-save-attachments=:
+- invoke =embark-act-all= in the completion menu, then RET to save all
+- OR TAB (=vertico-insert=), comma each file to mark, RET to save selected
+#+end_quote
+
+That's four keystrokes for "save all to default dir" and N+2 for "save the one I want." Both common cases should be one keystroke.
+
+Proposed shape:
+- =cj/mu4e-save-all-attachments= → save every attachment in current message to a sensible default dir (=~/Downloads/= or per-thread). One keystroke.
+- =cj/mu4e-save-attachment-here= → completing-read on attachment names; save selected one. One keystroke + selection.
+- Bind both under =C-; e= (the existing email map already has =a= and =d= for attach/delete in compose).
+
+Open question: should the "save all" target be a fixed dir, prompt every time, or use the directory of an associated org-noter / project context? Flagged for design decision when this lands.
+
+Decision: save all should prompt every time. 
+
+**Files:** =modules/mail-config.el= (add helpers, wire into mu4e-view-actions and the =C-; e= keymap).
+
+Implemented 2026-05-11: added direct mu4e view attachment save commands in
+=modules/mail-config.el=. =cj/mu4e-save-all-attachments= prompts once for a
+directory and saves every attachment-like MIME part. =cj/mu4e-save-attachment-here=
+prompts for a directory, then uses =completing-read= to save one attachment.
+Both reuse mu4e's MIME part metadata, uniquify hook, path joiner, and
+=mm-save-part-to-file= save primitive instead of driving the existing
+multi-select completion UI. Duplicate filenames are disambiguated by part index.
+Bound under =C-; e S= and =C-; e s= with which-key labels. Covered by
+=tests/test-mail-config-attachments.el=.
+
+Extended 2026-05-11: added =cj/mu4e-save-some-attachments= on =C-; e m=. It
+prompts for the destination directory, opens a dedicated =*mu4e attachments*=
+selection buffer, and lets the user mark rows with RET, mark all with =a=,
+unmark all with =u=, save marked with =s=, and quit with =q=. The selection
+buffer shows labels, MIME types, and approximate sizes while reusing the same
+attachment save helpers.
+
+Committed and pushed 2026-05-11 as =1aa8d0f= "feat(mu4e): simpler attachment-save commands on C-; e S/s/m"; 18 ERT tests in =tests/test-mail-config-attachments.el=. (Two small UX follow-ups — `entry-at-point' user-error outside a row, and clearing marks / auto-quit after save — are tracked under "Post-batch review follow-ups (2026-05-11)".)
+** DONE [#B] EPUB text renders full-width: visual-fill-column margins not applied in nov-mode :bug:
+*** Resolved 2026-05-12
+Fixed in =b7c6b2c= "fix(nov): center the EPUB text by setting window margins directly" -- took the "preferred" plan below: `nov-text-width' is now a column count (~80% of the window's natural width) so nov's `shr' fills the text itself, and `cj/nov-update-layout' centers the block with `set-window-margins' directly (plus `set-window-fringes ... t' to push the fringes off the reading area). `visual-fill-column' is dropped from nov entirely -- its margin-setting still mysteriously never applied, but that's moot now. `+'/`=' / `-'/`_' re-flow and re-center; a buffer-local `kill-buffer-hook' resets the margins/fringes. The text-width math factored into `cj/nov--natural-window-width' + `cj/nov--text-width'. Remaining nit: see "EPUB text is slightly left-of-center" below.
+*** Problem
+Opening an EPUB renders the text filling 100% of the window width, not the configured ~80%. =modules/calibredb-epub-config.el=, =cj/nov-apply-preferences= (on =nov-mode-hook=).
+
+Before the 2026-05-12 work it was the opposite — a too-narrow ~third-of-the-window strip — caused by a feedback loop (=cj/nov--text-width-for-window= computed from =window-body-width=, which is post-margin, so each =cj/nov-update-layout= pass shaved the column by another margin fraction, bottoming out at =cj/nov-min-text-width= = 40). Commit =1c5c8bd= "fix(nov): rework the EPUB reading-width layout" fixed the loop (width now computed from the window's *natural* column count, idempotent) and split out a pure =cj/nov--text-width= helper with a regression test; =4d9a206= set the default =cj/nov-margin-percent= to 10 (= 80% text); both also re-added =b3b537f='s =(nov-render-document)= for the cold open, made =cj/nov-update-layout= a command, and bound =+= / === / =-= / =_= in =nov-mode-map= to adjust the width live (clamp 0..25, i.e. text 50%..100%). The *width computation* and the *loop* are fixed. The *margin application* is not — hence 100%.
+
+*** Why 100% specifically
+=cj/nov-apply-preferences= sets =(setq-local nov-text-width t)=. With =nov-text-width= = t, =nov-render-html= renders the text *unfilled* — it swaps =shr-fill-line= for =nov-fill-line=, which only indents, never wraps — so the buffer holds one long logical line per paragraph, and =visual-line-mode= is relied on to wrap it visually at the window's *text-area* width. =cj/nov-update-layout= is supposed to narrow that text area by turning on =visual-fill-column-mode= with =visual-fill-column-width= set to ~80% of the window's columns and letting =visual-fill-column--adjust-window= set the left/right *window display margins*. The margins never get set, so the text area stays the full window width → text wraps at 100%.
+
+*** Diagnostics captured (Craig's running Emacs, in the EPUB buffer, 2026-05-12)
+=M-: (list :margin cj/nov-margin-percent :body-w (window-body-width) :vfc-w visual-fill-column-width :vfc-mode (bound-and-true-p visual-fill-column-mode) :vfc-feat (featurep 'visual-fill-column) :wmargins (window-margins) :ntw nov-text-width)= →
+  =(:margin 10 :body-w 152 :vfc-w 121 :vfc-mode t :vfc-feat t :wmargins (nil . nil) :ntw t)=
+So: the new code IS loaded (=cj/nov-margin-percent= 10), =visual-fill-column= IS loaded, =visual-fill-column-mode= IS on, =visual-fill-column-width= IS correct (121 = 80% of 152) — but =(window-margins)= is =(nil . nil)=. =M-x cj/nov-update-layout= (which calls =visual-fill-column--adjust-window=) does NOT change it; =M-: (condition-case e (progn (cj/nov-update-layout) (window-margins)) (error e))= → =(nil . nil)= (no error caught, margins still nil). So =visual-fill-column='s margin-setting path (=visual-fill-column--adjust-window= → =visual-fill-column--set-margins= → =set-window-margins=) is not landing in nov-mode buffers.
+
+*** Why it doesn't apply — UNKNOWN
+Code-reading =visual-fill-column-2.7.0= didn't pin it down. =visual-fill-column--adjust-window= does =(with-selected-window window (visual-fill-column--reset-window window) (when visual-fill-column-mode (... (visual-fill-column--set-margins window))))=. For the result to be =(nil . nil)=, either =--set-margins= isn't reached (the =(when visual-fill-column-mode ...)= check is false in whatever buffer =with-selected-window= makes current) or it computed left=right=0 (=set-window-margins window 0 0= → =(window-margins)= = =(nil . nil)=). =--set-margins= computes 0/0 only when =total-width= (≈ window-width) ≤ =visual-fill-column-width= (121) — and window-width is 152, so it shouldn't. Candidate causes not yet ruled out: (a) the =default= face is remapped to "Merriweather" :height 180 in nov buffers (via =face-remap-add-relative= in =cj/nov-apply-preferences=), and =set-window-margins='s units (canonical frame-font columns) vs. the remapped 18pt buffer columns may be confusing the column math; (b) =--adjust-window= being invoked on the wrong window (it defaults to =(selected-window)=, not the EPUB's window — relevant when nov-mode-hook runs before =find-file= switches the window, and possibly later); (c) a =visual-fill-column= 2.7.0 / Emacs 30 regression with =nov-fill-line=-style rendering; (d) something resetting the margins after they're set.
+
+*** Plan forward — preferred: stop delegating the width to visual-fill-column
+Set =nov-text-width= to a *computed integer* instead of =t=, so nov's =shr= fills the rendered text to that width itself — no dependence on =visual-fill-column='s window margins working at all. =visual-fill-column= then only *centers* the already-narrow block (if it works; if it still doesn't, the text is left-aligned at ~80%, which is acceptable). Specifically:
+- =cj/nov-apply-preferences=: =(setq-local nov-text-width (cj/nov--text-width-for-window))= (integer) instead of =t=.
+- =cj/nov-update-layout=: recompute and =setq-local= both =nov-text-width= and =visual-fill-column-width=, then call =(nov-render-document)= so =shr= re-flows the text at the new width (currently it only re-sets the vfc width). Still keep the =visual-fill-column-mode= + =--adjust-window= calls for centering.
+- =+= / =-= keep working: they adjust =cj/nov-margin-percent= then call =cj/nov-update-layout=, which now re-renders.
+- =cj/nov-min-text-width= (40) stays the absolute column floor.
+TDD test-first. Touches =modules/calibredb-epub-config.el= + =tests/test-calibredb-epub-config.el=. ~25 lines.
+
+*** Alternatives considered
+(1) Keep =nov-text-width= = t + =visual-fill-column= and keep poking at *why* the margins don't apply — needs more in-Emacs diagnostics (e.g. trace =visual-fill-column--set-margins=, check =(window-margins)= right after =(set-window-margins win 15 16)=, check whether a stray window param clamps it). Higher uncertainty.
+(2) Left-align at the computed width with no centering at all (drop =visual-fill-column= from nov entirely) — simpler, but loses the centered look Craig wanted.
+Preferred is the =nov-text-width=-as-integer approach because it's robust regardless of what =visual-fill-column= does.
+** DONE [#B] Post-batch review follow-ups (2026-05-11) :refactor:tests:
+Minor items found while reviewing the 2026-05-11 commit batch (a70bb98..2b88c6a). The major fix (org-capture cache-key consistency) and the coverage gaps were already handled in commits =fc94e5b= / =e0e0ecd= / =2b88c6a=; these are the leftovers.
+
+*** DONE [#B] Give the benchmarks a real home (`make benchmark' or `:tags '(:perf)') :tests:perf:
+The 2026-05-11 lorem-optimum perf work (=7f353e9=) dropped the `:slow' tags from the benchmark tests so they run in every `make test', and one (`benchmark-learn-100k-words') gained an absolute wall-clock threshold (`(should (< time 5000.0))'). Then =1f4c692= excluded `test-lorem-optimum-benchmark.el' from `make coverage' because undercover's instrumentation breaks those thresholds. That's a fragmented policy and the thresholds are machine-dependent (a slower CI runner or older laptop could blow 5s). Pick one: (a) restore `:tags '(:perf)' on the benchmark tests and add a `make benchmark' target that runs them, or (b) replace the absolute thresholds with relative checks ("100K is no more than ~20x slower than 10K") that catch O(N^2) regressions without depending on the machine. Either way `make test' should stop running absolute-time benchmarks by default.
+
+*** DONE [#B] Verify Nov EPUB renders at the right width on first open :bug:
+There WAS a regression, deeper than =b3b537f=: `cj/nov--text-width-for-window' computed the column from `window-body-width' (post-margin), so `cj/nov-update-layout' (on `window-configuration-change-hook') shrank the column on every pass — a feedback loop bottoming out at `cj/nov-min-text-width' (40 cols) regardless of `cj/nov-margin-percent'. Fixed 2026-05-12 in =1c5c8bd= "fix(nov): rework the EPUB reading-width layout": width now from the window's natural column count (idempotent), pure `cj/nov--text-width' helper + regression test, `cj/nov-margin-percent' default 12 (~76% text), `b3b537f's `(nov-render-document)' re-added for the cold open, `cj/nov-update-layout' made a command, and `+'/`='/`-'/`_' added in `nov-mode-map' to adjust the width live (50%..100%). Visual confirm in real Emacs still pending Craig's restart.
+
+*** DONE [#C] Surface `cj/slack-message-add-reaction' errors outside a Slack buffer :ux:
+`cj/slack-message-add-reaction' (C-; S !, added in =bbd1b73=) silently no-ops when `slack-current-buffer' is nil — e.g. if the binding fires outside a Slack buffer. The `when-let*' chain just bails with no feedback. Add a `user-error "Not in a Slack buffer"' (and the same for `slack-buffer-team' returning nil) so the misuse surfaces instead of being swallowed.
+
+*** DONE [#C] Rename `cj/lsp--disable-eldoc-hover' to `cj/lsp--remove-eldoc-provider' :refactor:
+The function (added in =96d5d6a=) removes one specific provider — `lsp-eldoc-function' — from the buffer-local `eldoc-documentation-functions'. If lsp-mode ever adds another eldoc provider, the current function wouldn't catch it; the name promises more than it does. Rename to match what it actually does and update the `add-hook' callsite + the regression test.
+
+*** DONE [#C] Add `bats' test infra and cover `scripts/setup-email.sh' helpers :tests:
+The 2026-05-11 email-setup work (=eddc103=) added `install_encrypted_password' and `decrypt_password' — cleanly factored (filenames in, file-or-`exit 1' out) but untested, since the repo has no shell-test infrastructure. With a temp `$PASSWORD_DEST_DIR' and mocked `gpg'/`cp', they'd test cleanly. Add `bats' (or pick an alternative), wire a `make test-shell' target, and cover the two helpers plus the dest-exists-skip and missing-source-fails paths.
+
+*** DONE [#C] Split the mu4e attachment workflow out of `mail-config.el' :refactor:
+The 2026-05-11 mu4e attachment commit (=1aa8d0f=) added ~247 lines to `mail-config.el' for a self-contained attachment-save UI (helpers + three commands + a `special-mode'-derived selection buffer). None of it depends on the rest of `mail-config'. As that file grows, moving this into `modules/mu4e-attachments.el' (or `mail-attachments-lib.el', matching the `-lib.el' convention) would keep both files easier to read. The seam is clean.
+
+*** DONE [#C] Clear marks (or auto-quit) after `cj/mu4e-attachment-selection-save-marked' :ux:
+After saving the marked attachments, the `*mu4e attachments*' buffer (=1aa8d0f=) stays open with the same marks intact — pressing `s' again re-saves the same set silently. Decide what the workflow wants: auto-`quit-window' after a successful save, or clear the marks and stay so the user can save another batch. Right now it does neither.
+** DONE [#D] Create print function for dirvish bound to uppercase P :feature:
+
+Add a print function that works on printable files (PDF, txt, org, etc.) and bind it to uppercase P in dirvish-mode. Should detect file type and use appropriate print command (lpr for text files, print dialog for PDFs, etc.).
+** DONE [#D] Collapse the duplicated per-file test loop in the Makefile :chore:
+=test-unit=, =test-integration=, and =coverage= each carry a near-identical ~40-line shell loop (run each file in its own Emacs, count passes, collect failures, print a summary box). The three drifted once already (the =:perf= tag filter had to be added in three places). Extract a single =define=d shell function or a helper recipe parametrized by test list + extra =-l= args + label, and have the three targets call it. Cosmetic — the Makefile works — so low priority. Noticed 2026-05-12 while adding =make benchmark=.
