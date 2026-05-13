@@ -210,8 +210,8 @@ Full =make test-unit= green.
 
 ** TODO [#B] Add ERT coverage for modules below 70% :tests:
 
-Coverage snapshot from =make coverage-summary= on 2026-05-13:
-=4586/6823= executable lines covered (=67.2%=) across 73 tracked module files.
+Coverage snapshot from =make coverage-summary= on 2026-05-13 (post-push):
+=4716/6853= executable lines covered (=68.8%=) across 73 tracked module files.
 
 Add focused ERT tests for each module currently below 70% coverage, then rerun
 =make coverage= and update or close the child tasks as their module coverage
@@ -223,7 +223,16 @@ crosses the threshold.
 *** TODO [#B] Add ERT tests for =modules/prog-webdev.el= (10/21, 47.6%) :tests:
 *** DONE [#B] Add ERT tests for =modules/calibredb-epub-config.el= (95/133, 71.4%) :tests:
 *** TODO [#B] Add ERT tests for =modules/system-defaults.el= (1/12, 8.3%) :tests:
-*** TODO [#B] Add ERT tests for =modules/ui-navigation.el= (4/46, 8.7%) :tests:
+=tests/test-system-defaults-functions.el= ships 8 tests covering the
+helpers (cj/disabled, the two minibuffer-gc hooks,
+unpropertize-kill-ring, cj/log-comp-warning).  Coverage still reads
+1/12 because the sandboxed =(load ...)= used to bypass system-defaults'
+startup side effects doesn't register with undercover's instrumentation;
+the function bodies execute under test but the gauge can't credit them.
+Closing this child task needs either a refactor that lets the module
+load via =(require)= cleanly in batch, or a switch to a different
+instrumentation strategy.
+*** TODO [#B] Add ERT tests for =modules/ui-navigation.el= (26/48, 54.2%) :tests:
 *** TODO [#B] Add ERT tests for =modules/prog-go.el= (3/27, 11.1%) :tests:
 *** TODO [#B] Add ERT tests for =modules/system-commands.el= (6/49, 12.2%) :tests:
 *** TODO [#B] Add ERT tests for =modules/external-open.el= (5/33, 15.2%) :tests:
@@ -244,16 +253,16 @@ crosses the threshold.
 *** TODO [#B] Add ERT tests for =modules/music-config.el= (130/278, 46.8%) :tests:
 *** TODO [#B] Add ERT tests for =modules/mail-config.el= (9/19, 47.4%) :tests:
 *** TODO [#B] Add ERT tests for =modules/custom-buffer-file.el= (123/212, 58.0%) :tests:
-*** TODO [#B] Add ERT tests for =modules/org-agenda-config.el= (51/85, 60.0%) :tests:
+*** TODO [#B] Add ERT tests for =modules/org-agenda-config.el= (70/104, 67.3%) :tests:
 *** TODO [#B] Add ERT tests for =modules/host-environment.el= (34/57, 59.6%) :tests:
 *** TODO [#B] Add ERT tests for =modules/custom-ordering.el= (61/101, 60.4%) :tests:
 *** TODO [#B] Add ERT tests for =modules/ui-theme.el= (25/40, 62.5%) :tests:
 *** TODO [#B] Add ERT tests for =modules/custom-comments.el= (230/358, 64.2%) :tests:
-*** TODO [#B] Add ERT tests for =modules/ui-config.el= (20/31, 64.5%) :tests:
-*** TODO [#B] Add ERT tests for =modules/custom-whitespace.el= (53/82, 64.6%) :tests:
-*** TODO [#B] Add ERT tests for =modules/jumper.el= (64/99, 64.6%) :tests:
+*** DONE [#B] Add ERT tests for =modules/ui-config.el= (28/31, 90.3%) :tests:
+*** DONE [#B] Add ERT tests for =modules/custom-whitespace.el= (80/82, 97.6%) :tests:
+*** DONE [#B] Add ERT tests for =modules/jumper.el= (97/99, 98.0%) :tests:
 *** TODO [#B] Add ERT tests for =modules/test-runner.el= (146/222, 65.8%) :tests:
-*** TODO [#B] Add ERT tests for =modules/browser-config.el= (53/76, 69.7%) :tests:
+*** DONE [#B] Add ERT tests for =modules/browser-config.el= (62/76, 81.6%) :tests:
 
 ** TODO [#A] Fix Python tree-sitter font-lock query syntax error :bug:
 SCHEDULED: <2026-04-27 Mon>
