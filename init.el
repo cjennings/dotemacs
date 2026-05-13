@@ -71,6 +71,7 @@
 (require 'diff-config)           ;; diff and merge functionality w/in Emacs
 (require 'erc-config)            ;; seamless IRC client
 (require 'slack-config)          ;; slack client via emacs-slack
+(require 'telega-config)         ;; telegram client via telega.el (TDLib in docker)
 (require 'eshell-config)         ;; emacs shell configuration
 (require 'vterm-config)          ;; vterm + F12 toggle + tmux history copy
 (require 'ai-vterm)               ;; in-Emacs Claude launcher (vertical-split vterm)
