@@ -261,6 +261,16 @@ A positive DELTA narrows the text column; a negative DELTA widens it."
 		("t" . nov-goto-toc)
 		("C-c C-b" . cj/nov-jump-to-calibredb)))
 
+(defun cj/--nov-image-padding-cols (col-width img-px font-width-px)
+  "Return left-padding columns to center an IMG-PX-wide image in COL-WIDTH cols.
+FONT-WIDTH-PX is the column width in pixels; clamped up to 1 so a zero or
+negative value can't divide.  When the image is at least as wide as COL-WIDTH
+the result is 0 -- no centering is possible."
+  (let* ((fw (max 1 font-width-px))
+         (img-cols (max 1 (ceiling (/ (float img-px) fw))))
+         (pad (/ (- col-width img-cols) 2)))
+    (max 0 pad)))
+
 (defun cj/nov-center-images ()
   "Center images in the current Nov buffer without modifying text.
 
@@ -283,10 +293,8 @@ computed column based on the window text area width."
 				 (when m
 				   (let* ((img (prop-match-value m))
 						  (img-px (car (image-size img t)))   ;; pixel width
-						  ;; Convert pixel image width to columns for alignment.
-						  (img-cols (max 1 (ceiling (/ (float img-px)
-													   (max 1 (window-font-width win))))))
-						  (pad-cols (max 0 (/ (- col-width img-cols) 2)))
+						  (pad-cols (cj/--nov-image-padding-cols
+									 col-width img-px (window-font-width win)))
 						  (prefix (propertize " " 'display `(space :align-to ,pad-cols))))
 					 (save-excursion
 					   (goto-char (prop-match-beginning m))
