@@ -70,7 +70,7 @@ Decide whether to (a) leave it asymmetric and let the row fill in as
 new launchers arrive, (b) move an existing icon down to balance 5/5/2
 or similar, or (c) reorganize by category (work / read / chat / play).
 Surfaced when Telegram landed in Row 3 alone.
-** DOING [#A] Org Agenda fixes                                          :bug:
+** DONE [#A] Org Agenda fixes                                           :bug:
 *** 2026-05-13 Wed @ 13:05:21 -0500 Skip CANCELLED entries from main agenda SCHEDULE
 see the following screenshot
 /home/cjennings/pictures/screenshots/2026-05-13_071428.png
@@ -83,12 +83,20 @@ narrow -- DONE and FAILED scheduled tasks still render.
 Tests in =tests/test-org-agenda-config-skip-functions.el= (Normal +
 Boundary) lock in the configuration form on the agenda block and
 verify the other blocks aren't accidentally carrying the same skip.
-*** TODO [#C] Refactor: extract org-agenda-prefix-format literal :refactor:
+*** DONE [#C] Refactor: extract org-agenda-prefix-format literal :refactor:
 =modules/org-agenda-config.el= currently inlines =" %i %-15:c%?-15t% s"=
 across four blocks of =org-agenda-custom-commands= (overdue, hi-pri,
 schedule, priority-B). Extract into a defvar (e.g.
 =cj/--main-agenda-prefix-format=) and reference it from each block.
 Surfaced during the audit for the CANCELLED-schedule fix.
+
+Fix: new =cj/--main-agenda-prefix-format= defvar in
+=modules/org-agenda-config.el=; all four blocks of the "d" command now
+reference the symbol instead of inlining the literal.  Regression test
+in =tests/test-org-agenda-config-skip-functions.el= walks the blocks
+and asserts each =org-agenda-prefix-format= entry resolves to the
+shared symbol -- so a future tweak to one block can't silently diverge
+from the others.
 *** 2026-05-13 Wed @ 13:27:39 -0500 Clear dedicated before toggling window split
 Reproduction steps
 - open an org file (I was using this projects's todo.org file

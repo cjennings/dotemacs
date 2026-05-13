@@ -247,5 +247,22 @@ priority-B blocks must not pick up the same skip-function form."
              (skip (cadr (assoc 'org-agenda-skip-function opts))))
         (should-not (equal skip cancelled-form))))))
 
+;;; ---------- prefix-format extracted into a defvar ----------
+
+;;; Normal Cases
+
+(ert-deftest test-org-agenda-config-prefix-format-extracted-to-defvar ()
+  "Normal: every block of the \"d\" command references the shared prefix
+format symbol rather than inlining the literal string.  Catches a
+regression where one block diverges from the others on the format."
+  (let* ((entry (assoc "d" org-agenda-custom-commands))
+         (blocks (nth 2 entry)))
+    (should (boundp 'cj/--main-agenda-prefix-format))
+    (should (stringp cj/--main-agenda-prefix-format))
+    (dolist (b blocks)
+      (let* ((opts (nth 2 b))
+             (fmt-form (cadr (assoc 'org-agenda-prefix-format opts))))
+        (should (eq fmt-form 'cj/--main-agenda-prefix-format))))))
+
 (provide 'test-org-agenda-config-skip-functions)
 ;;; test-org-agenda-config-skip-functions.el ends here
