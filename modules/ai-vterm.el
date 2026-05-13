@@ -337,6 +337,16 @@ has been toggled off yet this session, so the default direction
 applies.  Captured at toggle-off by `cj/--ai-vterm-capture-state'
 and consumed by `cj/--ai-vterm-display-saved'.")
 
+(defvar cj/--ai-vterm-last-was-bury nil
+  "Non-nil when the last F9 toggle-off used `bury-buffer'.
+
+Set by `cj/ai-vterm' in its `toggle-off' branch: t when the agent
+window was the only window in the frame (so toggle-off buried
+without deleting), nil when the window was deleted.  Consumed by
+`cj/--ai-vterm-display-saved' to decide between restoring the
+buried agent in the current window (the only one) or splitting per
+the saved direction.")
+
 (defvar cj/--ai-vterm-last-size nil
   "Last user-chosen body size for the AI-vterm display.
 
@@ -398,12 +408,26 @@ project changes."
 (defun cj/--ai-vterm-display-saved (buffer alist)
   "Display-buffer action: split per saved direction and size.
 
-Delegates to `cj/window-toggle-display-saved' against the F9 state
-vars, falling back to `right' and `cj/ai-vterm-window-width'."
-  (cj/window-toggle-display-saved
-   buffer alist
-   'cj/--ai-vterm-last-direction 'right
-   'cj/--ai-vterm-last-size cj/ai-vterm-window-width))
+When the prior toggle-off was a bury (single-window state, flagged
+via `cj/--ai-vterm-last-was-bury') and the frame is still single-
+window, restore the agent into the selected window in place rather
+than splitting -- preserves the user's lone-window layout across
+F9 toggles.
+
+Otherwise delegates to `cj/window-toggle-display-saved' against the
+F9 state vars, falling back to `right' and `cj/ai-vterm-window-width'."
+  (cond
+   ((and cj/--ai-vterm-last-was-bury (one-window-p))
+    (setq cj/--ai-vterm-last-was-bury nil)
+    (let ((win (selected-window)))
+      (set-window-buffer win buffer)
+      win))
+   (t
+    (setq cj/--ai-vterm-last-was-bury nil)
+    (cj/window-toggle-display-saved
+     buffer alist
+     'cj/--ai-vterm-last-direction 'right
+     'cj/--ai-vterm-last-size cj/ai-vterm-window-width))))
 
 (defun cj/--ai-vterm-display-rule-list ()
   "Return the `display-buffer-alist' entry list installed by this module.
@@ -679,10 +703,17 @@ AI-vterm buffers without touching the project list."
      ;; other buffer in it, and the next toggle-on then creates a
      ;; fresh side window for a count of N+1.  Skip the deletion
      ;; only when agent is the lone window in the frame (delete
-     ;; would leave none); bury in that case.
-     (if (one-window-p)
-         (bury-buffer (window-buffer win))
-       (delete-window win))
+     ;; would leave none); bury in that case.  The flag tells the
+     ;; next toggle-on (via `cj/--ai-vterm-display-saved') to restore
+     ;; in place rather than splitting -- preserves the single-window
+     ;; layout across F9 toggles.
+     (cond
+      ((one-window-p)
+       (setq cj/--ai-vterm-last-was-bury t)
+       (bury-buffer (window-buffer win)))
+      (t
+       (setq cj/--ai-vterm-last-was-bury nil)
+       (delete-window win)))
      nil)
     (`(redisplay-recent . ,buf)
      (display-buffer buf)

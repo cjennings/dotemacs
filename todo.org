@@ -122,25 +122,25 @@ attachment via =transient-append-suffix=, or gptel-side backend/model config.
 Migration to current lazy form: commit =3eb1a0c refactor(gptel): lazy-load
 gptel-magit, rebind rewrite/context keys=.
 
-** TODO [#B] F9 toggle should restore single-window layout for AI-vterm :bug:
+** DONE [#B] F9 toggle should restore single-window layout for AI-vterm :bug:
 
 When the AI-vterm buffer is the only window in the frame (e.g. after =C-x 1=) and
 F9 is pressed, =cj/ai-vterm= buries the buffer (correct), but the next F9
 redisplays the agent in a split rather than restoring the single-window full-frame
 layout. F9 should toggle off/on while preserving the lone-window state.
 
-The bury-then-redisplay path goes through =display-buffer= and hits
-=display-buffer-in-direction= via =cj/--ai-vterm-display-saved=, which splits the
-existing window. The fix needs the toggle-on path to detect that toggle-off was a
-bury-not-delete and use =switch-to-buffer= (or equivalent) instead of a
-saved-direction split.
+Fix: new =cj/--ai-vterm-last-was-bury= flag in =modules/ai-vterm.el=.
+The toggle-off branch sets it to t when =one-window-p= is true (bury
+path) or nil when =delete-window= runs.  =cj/--ai-vterm-display-saved=
+checks the flag at toggle-on: if t and the frame is still single-window,
+it replaces the selected window's buffer in place via =set-window-buffer=
+rather than splitting via =display-buffer-in-direction=.  Flag is
+consumed (cleared) by either branch so it never stays stale.
 
-Locations:
-- =modules/ai-vterm.el= around the =(one-window-p)= branch in =cj/ai-vterm=
-- =modules/ai-vterm.el= the =cj/--ai-vterm-display-saved= display-buffer action
-
-Regression test: enter single-window state with agent buffer, F9, F9 again --
-expect =(one-window-p)= still t and the agent buffer displayed.
+5 tests in =tests/test-ai-vterm--single-window-toggle.el= cover:
+flag set on bury, flag cleared on delete-window, flag respected only
+when still one-window, flag not set when bury didn't run, and the
+end-to-end roundtrip.  Full =make test-unit= green.
 
 ** TODO [#B] AI-vterm scrollback history should replace agent buffer in place :feature:
 
