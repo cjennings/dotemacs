@@ -42,6 +42,7 @@ Tags are additive. For example, a small wrong-behavior fix can be
 ** TODO [#A] Add Telegram Messaging
 https://github.com/zevlg/telega.el
 Make sure there is a setup script to run, so that the docker container can be installed post emacs dotfiles repository clone on a fresh install
+also, let's add an icon to the dashboard for this. perhaps this is the beginning of the third row? If so, add a child task to review and balance the dashboard icons
 ** DOING [#A] Org Agenda fixes                                          :bug:
 *** 2026-05-13 Wed @ 13:05:21 -0500 Skip CANCELLED entries from main agenda SCHEDULE
 see the following screenshot
@@ -88,14 +89,23 @@ Verified red against the unfixed code (the bug-trigger test errored
 
 Live verification pending: =M-x load-file modules/ui-navigation.el=,
 then walk through F8 + M-S-t in a fresh session.
-*** TODO [#A] Enhancement: replace todo indicators with project name
+*** DONE [#A] Enhancement: replace todo indicators with project name
 In the overdue section, the high priority section, and the priority B section, each of the entries has a todo: indicator, which is the name of the file.
 This is not useful. Based on how I'm using emacs, every entry is likely to come from a file named todo.org.
 A much preferrable option would be to have the project's name there instead.
-so, for instance this todo.org file would show "emacs.d" as the project name in place of todo. 
+so, for instance this todo.org file would show "emacs.d" as the project name in place of todo.
 
-see snapshot below for an example of the current state. 
+see snapshot below for an example of the current state.
 /home/cjennings/pictures/screenshots/2026-05-13_071840.png
+
+Fix: =cj/--org-todo-category-from-file= +
+=cj/--org-set-todo-category= in =modules/org-agenda-config.el=
+hook =org-category= buffer-locally to the parent directory's
+basename (with a single leading dot stripped, so =.emacs.d= reads
+as =emacs.d=) whenever a todo.org file opens.  Explicit
+=#+CATEGORY:= still wins.  14 tests in
+=tests/test-org-agenda-config-category.el= cover normal /
+boundary / error paths; full =make test-unit= green.
 
 ** TODO [#B] Investigate gptel-magit not working properly :bug:
 
@@ -152,18 +162,18 @@ Locations: =modules/ai-vterm.el= (no scrollback-history command exists yet) and
 
 ** TODO [#B] Add ERT coverage for modules below 70% :tests:
 
-Coverage snapshot from =make coverage-summary= on 2026-05-12:
-=4405/6735= executable lines covered (=65.4%=) across 72 tracked module files.
+Coverage snapshot from =make coverage-summary= on 2026-05-13:
+=4586/6823= executable lines covered (=67.2%=) across 73 tracked module files.
 
 Add focused ERT tests for each module currently below 70% coverage, then rerun
 =make coverage= and update or close the child tasks as their module coverage
 crosses the threshold.
 
-*** TODO [#B] Add ERT tests for =modules/prog-python.el= (0/20, 0.0%) :tests:
-*** TODO [#B] Add ERT tests for =modules/selection-framework.el= (0/3, 0.0%) :tests:
-*** TODO [#B] Add ERT tests for =modules/keyboard-compat.el= (1/29, 3.4%) :tests:
-*** TODO [#B] Add ERT tests for =modules/prog-webdev.el= (1/21, 4.8%) :tests:
-*** TODO [#B] Add ERT tests for =modules/calibredb-epub-config.el= (7/104, 6.7%) :tests:
+*** TODO [#B] Add ERT tests for =modules/prog-python.el= (10/21, 47.6%) :tests:
+*** DONE [#B] Add ERT tests for =modules/selection-framework.el= (3/3, 100.0%) :tests:
+*** DONE [#B] Add ERT tests for =modules/keyboard-compat.el= (29/29, 100.0%) :tests:
+*** TODO [#B] Add ERT tests for =modules/prog-webdev.el= (10/21, 47.6%) :tests:
+*** DONE [#B] Add ERT tests for =modules/calibredb-epub-config.el= (95/133, 71.4%) :tests:
 *** TODO [#B] Add ERT tests for =modules/system-defaults.el= (1/12, 8.3%) :tests:
 *** TODO [#B] Add ERT tests for =modules/ui-navigation.el= (4/46, 8.7%) :tests:
 *** TODO [#B] Add ERT tests for =modules/prog-go.el= (3/27, 11.1%) :tests:
@@ -171,14 +181,14 @@ crosses the threshold.
 *** TODO [#B] Add ERT tests for =modules/external-open.el= (5/33, 15.2%) :tests:
 *** TODO [#B] Add ERT tests for =modules/org-webclipper.el= (10/59, 16.9%) :tests:
 *** TODO [#B] Add ERT tests for =modules/system-utils.el= (5/26, 19.2%) :tests:
-*** TODO [#B] Add ERT tests for =modules/org-reveal-config.el= (9/45, 20.0%) :tests:
+*** TODO [#B] Add ERT tests for =modules/org-reveal-config.el= (29/81, 35.8%) :tests:
 *** TODO [#B] Add ERT tests for =modules/coverage-elisp.el= (5/19, 26.3%) :tests:
 *** TODO [#B] Add ERT tests for =modules/org-noter-config.el= (27/99, 27.3%) :tests:
 *** TODO [#B] Add ERT tests for =modules/ai-config.el= (53/191, 27.7%) :tests:
 *** TODO [#B] Add ERT tests for =modules/slack-config.el= (23/74, 31.1%) :tests:
 *** TODO [#B] Add ERT tests for =modules/org-roam-config.el= (26/80, 32.5%) :tests:
 *** TODO [#B] Add ERT tests for =modules/custom-text-enclose.el= (51/145, 35.2%) :tests:
-*** TODO [#B] Add ERT tests for =modules/dirvish-config.el= (68/180, 37.8%) :tests:
+*** TODO [#B] Add ERT tests for =modules/dirvish-config.el= (73/185, 39.5%) :tests:
 *** TODO [#B] Add ERT tests for =modules/hugo-config.el= (38/96, 39.6%) :tests:
 *** TODO [#B] Add ERT tests for =modules/org-refile-config.el= (21/51, 41.2%) :tests:
 *** TODO [#B] Add ERT tests for =modules/org-contacts-config.el= (36/79, 45.6%) :tests:
@@ -186,7 +196,7 @@ crosses the threshold.
 *** TODO [#B] Add ERT tests for =modules/music-config.el= (130/278, 46.8%) :tests:
 *** TODO [#B] Add ERT tests for =modules/mail-config.el= (9/19, 47.4%) :tests:
 *** TODO [#B] Add ERT tests for =modules/custom-buffer-file.el= (123/212, 58.0%) :tests:
-*** TODO [#B] Add ERT tests for =modules/org-agenda-config.el= (49/83, 59.0%) :tests:
+*** TODO [#B] Add ERT tests for =modules/org-agenda-config.el= (51/85, 60.0%) :tests:
 *** TODO [#B] Add ERT tests for =modules/host-environment.el= (34/57, 59.6%) :tests:
 *** TODO [#B] Add ERT tests for =modules/custom-ordering.el= (61/101, 60.4%) :tests:
 *** TODO [#B] Add ERT tests for =modules/ui-theme.el= (25/40, 62.5%) :tests:
@@ -291,6 +301,24 @@ These may override useful defaults - review and pick better bindings:
 - M-S-w wttrin (was overriding kill-ring-save)
 - M-S-y yank-media (was overriding yank-pop)
 - M-S-z undo-kill-buffer (was overriding zap-to-char)
+
+** TODO [#C] Rebind org-noter insert-note to =n= (so it's =C-; n n=) :refactor:
+
+The org-noter prefix =C-; n= currently has =i= for insert-note and =n=
+for sync-next-note. Move insert-note onto =n= -- it's the most-used
+action in a noter session and deserves the doubled prefix letter.
+
+Current bindings in =modules/org-noter-config.el= (=cj/org-noter-map=):
+- =i= -> =cj/org-noter-insert-note-dwim=
+- =n= -> =org-noter-sync-next-note=
+- =p= -> =org-noter-sync-prev-note=
+- =.= -> =org-noter-sync-current-note=
+
+Proposed: =n= -> insert-note. Pick a new home for sync-next-note during
+implementation (free letters under the prefix include =N=, =j=, =f=
+among others) and decide whether to also move sync-prev-note for
+symmetry. Update the =which-key= labels in the same module and any test
+that asserts the keymap shape.
 
 ** TODO [#B] Build cj/dev-setup-project helper (per docs/design/dev-setup-project.org) :feature:
 
