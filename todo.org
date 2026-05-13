@@ -142,23 +142,36 @@ flag set on bury, flag cleared on delete-window, flag respected only
 when still one-window, flag not set when bury didn't run, and the
 end-to-end roundtrip.  Full =make test-unit= green.
 
-** TODO [#B] AI-vterm scrollback history should replace agent buffer in place :feature:
+** DONE [#B] AI-vterm scrollback history should replace agent buffer in place :feature:
 
 When viewing the scrollback history of an AI-vterm buffer, the history view should
 replace the live agent buffer in the same window rather than splitting or popping
 a separate window. Goal: read past output without losing the agent's frame slot,
 then snap back to the live buffer when done.
 
-Open questions before implementation:
-- Is the trigger an existing command (e.g. =vterm-copy-mode= toggle staying
-  in-place) or a new command that builds a read-only history buffer?
-- Round-trip ergonomics: how does the user return to the live agent? Same key as
-  the entry, or a separate "resume" binding?
-- Does this need to integrate with the F9 toggle state (so a toggle-off while in
-  history mode does the right thing)?
+Decisions on the open questions:
+- *Trigger*: reused the existing =cj/vterm-tmux-history= command (=C-; x h=).
+  No new command -- it already captures the tmux pane and runs from any
+  vterm buffer including agents.
+- *Round-trip*: =q= / =<escape>= / =C-g= already restore the origin in
+  the same window via =cj/vterm-tmux-history-quit=.  Same key as the
+  scrollback mode's other exits.
+- *F9 integration*: deferred.  Pressing F9 in history mode now treats the
+  history buffer as non-agent (its name is =*vterm tmux history: ...*=,
+  not =agent [...]=) so dispatch falls through to redisplay-recent + a
+  saved-direction split.  A user who wants to toggle agent off should
+  press =q= first, then F9.  Filed as a follow-up if it bites.
 
-Locations: =modules/ai-vterm.el= (no scrollback-history command exists yet) and
-=modules/vterm-config.el= (vterm base bindings).
+Fix: =modules/vterm-config.el= -- one line.  =pop-to-buffer buffer=
+became =switch-to-buffer buffer= so the history view replaces the origin
+in the selected window instead of going through display-buffer's split
+logic.  Quit was already in-place via =set-window-buffer=.
+
+New test in =tests/test-vterm-tmux-history.el= asserts the selected
+window's buffer becomes the history buffer with no extra window
+created (=one-window-p= still t).  Existing tests dropped their
+=pop-to-buffer= stub since =switch-to-buffer= works directly in batch.
+Full =make test-unit= green.
 
 ** TODO [#B] Add ERT coverage for modules below 70% :tests:
 
