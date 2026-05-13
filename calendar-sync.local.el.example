@@ -1,0 +1,34 @@
+;;; calendar-sync.local.el.example --- Template for private calendar config -*- lexical-binding: t; -*-
+
+;; Copy this file to `calendar-sync.local.el' (sibling of init.el) and
+;; replace the placeholder URLs with your actual private ICS feed
+;; addresses. The real file is gitignored; the template is tracked.
+;;
+;; How it works:
+;; - `modules/calendar-sync.el' defines `calendar-sync-private-config-file'
+;;   defaulting to ~/.emacs.d/calendar-sync.local.el.
+;; - At the bottom of that module, `calendar-sync--load-private-config'
+;;   calls `load' on that path if readable. Missing file = silent no-op,
+;;   and `calendar-sync-now' prints "No calendars configured".
+;; - `user-constants' is required earlier in init.el, so `gcal-file',
+;;   `pcal-file', and `dcal-file' are bound when this file is evaluated.
+;;
+;; Where to find the private .ics URL:
+;; - Google Calendar: Settings -> Your Calendar -> Integrate calendar ->
+;;   "Secret address in iCal format" (regenerate if leaked).
+;; - Proton Calendar: Settings -> Import/Export / Share -> "Share with
+;;   anyone (via link)" -> copy the .ics URL.
+
+(setq calendar-sync-calendars
+      `((:name "google"
+         :url "***REMOVED***"
+         :file ,gcal-file)
+        (:name "proton"
+         :url "***REMOVED***"
+         :file ,pcal-file)
+        (:name "deepsat"
+         :url "***REMOVED***"
+         :file ,dcal-file)))
+
+(provide 'calendar-sync.local)
+;;; calendar-sync.local.el.example ends here
