@@ -187,6 +187,38 @@ as =emacs.d=) whenever a todo.org file opens.  Explicit
 =tests/test-org-agenda-config-category.el= cover normal /
 boundary / error paths; full =make test-unit= green.
 
+** DONE [#A] Save journal buffer after marking a task DONE :bug:
+CLOSED: [2026-05-14 Thu]
+
+When a task transitions to a done state, =cj/org-roam-copy-todo-to-today=
+in =modules/org-roam-config.el= refiles a copy of the heading into the
+day's roam journal (creating the file if missing) -- example:
+=/home/cjennings/sync/org/roam/journal/2026-05-14.org=.  The journal
+buffer is left modified-but-unsaved, so closing Emacs always prompts
+about open unsaved buffers with no obvious source.
+
+Function intends to save via two routes:
+- =org-after-refile-insert-hook= let-bound to =#'save-buffer= -- a
+  single-function value rather than a list.  =run-hooks= calls a bare
+  function value, so this should fire, but verify it does in the
+  capture+refile context (and that it runs in the target buffer, not
+  the source).
+- The =:config= block of =use-package org-refile= advises =org-refile=
+  =:after= with =org-save-all-org-buffers=.  That only runs once
+  =org-refile= is loaded; if the DONE transition fires before
+  org-refile's =:defer .5= elapses, the advice isn't attached yet.
+
+Fix candidates:
+- Drop the let-binding and call =(save-buffer)= explicitly in the
+  target buffer after the =org-refile= call, before
+  =save-window-excursion= unwinds.  Deterministic, doesn't depend on
+  hook timing.
+- Or eager-load =org-refile= so the =:after= advice attaches before any
+  DONE transition can fire.
+
+Test: mark a TODO done from a non-journal buffer, then check
+=buffer-modified-p= on the dated journal buffer.  Should be nil.
+
 ** TODO [#B] Investigate gptel-magit not working properly :bug:
 
 Wired up in =modules/ai-config.el= as three lazy entry points:
