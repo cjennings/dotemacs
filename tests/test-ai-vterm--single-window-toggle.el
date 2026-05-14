@@ -24,49 +24,65 @@
 ;;; Normal Cases
 
 (ert-deftest test-ai-vterm--single-window-toggle-normal-roundtrip-preserves-fullscreen ()
-  "Normal: agent in the only window, simulated bury, F9 (on) -> still single window with agent.
+  "Normal: agent in the only window, F9 (off), F9 (on) -> still single window with agent.
 
-Reproduces Craig's report.  Before the fix the toggle-on path fell
-through to `display-buffer-in-direction', which split the lone window
-into two and left the agent in a side panel.
-
-The bury step is simulated (set flag + swap window buffer to a non-
-agent buffer) because batch-mode `bury-buffer' won't switch the
-displayed buffer on a window with empty prev-buffers; the toggle-off
-branch's *logic* is covered by the flag-set-on-bury test."
+Reproduces Craig's report.  Before the original fix the toggle-on path
+fell through to `display-buffer-in-direction', which split the lone
+window into two and left the agent in a side panel.  Before the
+follow-up fix the toggle-off path could no-op entirely when
+`bury-buffer' couldn't find a buffer to switch to, so the user saw
+\"F9 does nothing\".  The dispatcher now forces the swap to a non-
+agent buffer after bury so the toggle-off is observable in real and
+batch use both."
   (cj/test--kill-agent-buffers)
   (let ((agent-name "agent [single-window-roundtrip]")
-        (other-name "*test-sw-roundtrip-other*")
         (cj/--ai-vterm-last-was-bury nil)
         (cj/--ai-vterm-last-direction nil)
         (cj/--ai-vterm-last-size nil))
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
-          (let ((agent-buf (get-buffer-create agent-name))
-                (other-buf (get-buffer-create other-name)))
+          (let ((agent-buf (get-buffer-create agent-name)))
             (set-window-buffer (selected-window) agent-buf)
             (should (one-window-p))
-            ;; Simulate the toggle-off bury path: capture state, set the
-            ;; bury flag, and put a non-agent buffer in the window where
-            ;; the real bury would have left one.  This isolates the
-            ;; toggle-on behaviour without depending on batch-mode
-            ;; `bury-buffer' (which is unreliable with empty prev-buffers).
-            (cj/--ai-vterm-capture-state (selected-window))
-            (setq cj/--ai-vterm-last-was-bury t)
-            (set-window-buffer (selected-window) other-buf)
-            (should (one-window-p))
-            (should-not (cj/--ai-vterm-displayed-agent-window))
-            ;; Toggle on -- should restore agent in the same lone window.
+            (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list)))
+              ;; Toggle off -- the dispatcher's force-swap should put the
+              ;; window on a non-agent buffer.
+              (cj/ai-vterm)
+              (should (one-window-p))
+              (should-not (cj/--ai-vterm-displayed-agent-window))
+              (should (eq cj/--ai-vterm-last-was-bury t))
+              ;; Toggle on -- should restore agent in the same lone window.
+              (cj/ai-vterm)
+              (should (one-window-p))
+              (let ((win (cj/--ai-vterm-displayed-agent-window)))
+                (should (windowp win))
+                (should (eq (window-buffer win) agent-buf)))
+              ;; Flag consumed by the display-saved action.
+              (should-not cj/--ai-vterm-last-was-bury))))
+      (cj/test--kill-agent-buffers))))
+
+(ert-deftest test-ai-vterm--single-window-toggle-off-swaps-window-buffer ()
+  "Normal: toggle-off in single-window state forces the window onto a non-
+agent buffer when `bury-buffer' itself didn't swap.
+
+Catches the regression Craig reported after the original fix shipped:
+F9 in a lone-window agent did nothing visible.  The fix layer here
+ensures the displayed buffer changes -- so the next F9 sees an empty
+agent-window state and can route through the display-saved path."
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [bury-swap-observable]")
+        (cj/--ai-vterm-last-was-bury nil))
+    (unwind-protect
+        (save-window-excursion
+          (delete-other-windows)
+          (let* ((agent-buf (get-buffer-create agent-name))
+                 (win (selected-window)))
+            (set-window-buffer win agent-buf)
             (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list)))
               (cj/ai-vterm))
-            (should (one-window-p))
-            (let ((win (cj/--ai-vterm-displayed-agent-window)))
-              (should (windowp win))
-              (should (eq (window-buffer win) agent-buf)))
-            ;; Flag must be consumed by the display-saved action.
-            (should-not cj/--ai-vterm-last-was-bury)))
-      (when (get-buffer other-name) (kill-buffer other-name))
+            (should (window-live-p win))
+            (should-not (cj/--ai-vterm-buffer-p (window-buffer win)))))
       (cj/test--kill-agent-buffers))))
 
 (ert-deftest test-ai-vterm--single-window-toggle-normal-flag-set-on-bury ()
