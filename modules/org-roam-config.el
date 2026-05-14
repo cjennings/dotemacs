@@ -170,7 +170,6 @@ created in that subdirectory of `org-roam-directory'."
             :if-new (file+head+olp "%<%Y-%m-%d>.org"
                                    "#+FILETAGS: Journal
 #+TITLE: %<%Y-%m-%d>\n" ("Completed Tasks")))))
-        (org-after-refile-insert-hook #'save-buffer)
         today-file
         pos)
     (save-window-excursion
@@ -181,7 +180,11 @@ created in that subdirectory of `org-roam-directory'."
     ;; Only refile if the target file is different than the current file
     (unless (equal (file-truename today-file)
                    (file-truename (buffer-file-name)))
-	  (org-refile nil nil (list "Completed Tasks" today-file nil pos)))))
+	  (org-refile nil nil (list "Completed Tasks" today-file nil pos))
+	  ;; Save explicitly so shutdown doesn't prompt about an unsaved journal buffer.
+	  (when-let ((target-buffer (find-buffer-visiting today-file)))
+	    (with-current-buffer target-buffer
+	      (save-buffer))))))
 
 ;; ------------------------ Org-Branch To Org-Roam-Node ------------------------
 

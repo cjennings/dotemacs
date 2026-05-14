@@ -57,6 +57,34 @@ when today-file differs from the current buffer file."
       (delete-file source)
       (delete-file today))))
 
+(ert-deftest test-org-roam-copy-todo-saves-target-buffer ()
+  "Normal: after the refile into today's journal, the target buffer
+must not be left modified.  An unsaved journal buffer is what causes
+Emacs to prompt about unsaved buffers at shutdown."
+  (let ((source (make-temp-file "cj-roam-source-" nil ".org"))
+        (today  (make-temp-file "cj-roam-today-"  nil ".org")))
+    (unwind-protect
+        (with-temp-buffer
+          (setq buffer-file-name source)
+          (cl-letf (((symbol-function 'org-roam-dailies--capture)
+                     (lambda (&rest _)
+                       (set-buffer (find-file-noselect today))
+                       (goto-char (point-max))))
+                    ((symbol-function 'org-refile)
+                     (lambda (&rest _)
+                       ;; Simulate org-refile inserting into the
+                       ;; target buffer (which marks it modified).
+                       (with-current-buffer (find-file-noselect today)
+                         (goto-char (point-max))
+                         (insert "* refiled content\n")))))
+            (cj/org-roam-copy-todo-to-today))
+          (let ((target-buffer (find-buffer-visiting today)))
+            (should target-buffer)
+            (should-not (buffer-modified-p target-buffer))))
+      (when (get-file-buffer today) (kill-buffer (get-file-buffer today)))
+      (delete-file source)
+      (delete-file today))))
+
 (ert-deftest test-org-roam-copy-todo-skips-when-already-today ()
   "Boundary: when the current buffer already visits today's file, no
 refile is issued (same source and target)."
