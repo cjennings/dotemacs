@@ -27,13 +27,13 @@
 ;; the server the install fails with a 404.  Refreshing pulls a current
 ;; index.  This module deliberately sets `:ensure nil' so a stale
 ;; archive doesn't take Emacs init down at startup; if the package
-;; isn't installed yet, `C-; G' will signal a void-function until the
-;; install runs once.
+;; isn't installed yet, `C-; T' surfaces a clear "install telega" error
+;; until the install runs once.
 ;;
-;; Launcher: =C-; G= (mnemonic: teleGram).  Neither =C-; t= (test-runner
-;; menu) nor =C-; m t= (music "repeat track") were available, so the
-;; launcher lives at a free top-level letter rather than under a
-;; messaging sub-prefix.
+;; Launcher: =C-; T= (mnemonic: Telegram).  Previously `C-; G' because
+;; `T' was contested between org-table and transcription menus -- both
+;; have been moved (org-table flattened under `C-; O', transcription
+;; cleared to M-x), so `T' is now telega's outright.
 
 ;;; Code:
 
@@ -63,11 +63,11 @@ pointed at =scripts/setup-telega.sh= and the manual fallback."
      (concat "telega not installed -- run scripts/setup-telega.sh, "
              "or `M-x package-install RET telega'"))))
 
-(keymap-set cj/custom-keymap "G" #'cj/telega)
+(keymap-set cj/custom-keymap "T" #'cj/telega)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
-    "C-; G" "telegram (telega)"))
+    "C-; T" "telegram (telega)"))
 
 (provide 'telega-config)
 ;;; telega-config.el ends here

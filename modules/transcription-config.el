@@ -11,7 +11,7 @@
 ;;   In dired: Press `T` on an audio file to transcribe
 ;;   Anywhere: M-x cj/transcribe-audio
 ;;   View active: M-x cj/transcriptions-buffer
-;;   Switch backend: C-; T b (or M-x cj/transcription-switch-backend)
+;;   Switch backend: M-x cj/transcription-switch-backend
 ;;
 ;; OUTPUT FILES:
 ;;   audio.m4a → audio.txt (transcript)
@@ -380,27 +380,10 @@ Prompts with completing-read to select from available backends."
 (with-eval-after-load 'dirvish
   (define-key dirvish-mode-map (kbd "T") #'cj/transcribe-audio-at-point))
 
-;; ------------------------------- Global Keybindings --------------------------
-
-;; Transcription keymap
-(defvar-keymap cj/transcribe-map
-  :doc "Keymap for transcription operations"
-  "a" #'cj/transcribe-audio
-  "b" #'cj/transcription-switch-backend
-  "v" #'cj/transcriptions-buffer
-  "k" #'cj/transcription-kill)
-
-;; Only set keybinding if cj/custom-keymap is bound (not in batch mode)
-(when (boundp 'cj/custom-keymap)
-  (keymap-set cj/custom-keymap "T" cj/transcribe-map))
-
-(with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements
-    "C-; T" "transcription menu"
-    "C-; T a" "transcribe audio"
-    "C-; T b" "switch backend"
-    "C-; T v" "view transcriptions"
-    "C-; T k" "kill transcription"))
+;; Reach the transcription commands via M-x.  The previous `C-; T'
+;; menu was retired so the top-level slot could go to telega (which
+;; finally has a clean mnemonic at `C-; T' once nothing else is
+;; fighting over the same key).
 
 (provide 'transcription-config)
 ;;; transcription-config.el ends here
