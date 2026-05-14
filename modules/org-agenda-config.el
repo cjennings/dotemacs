@@ -279,11 +279,22 @@ If the current buffer isn't an org buffer, inform the user."
 (defvar cj/main-agenda-tasks-title "PRIORITY B"
   "String to announce the schedule section of the main agenda.")
 
+(defvar cj/main-agenda-verify-title "VERIFICATION"
+  "String to announce the VERIFY section of the main agenda.
+Lists tasks in the VERIFY TODO state waiting on a manual check.
+Block sits above the day's schedule.")
+
+(defvar cj/main-agenda-doing-title "IN-PROGRESS"
+  "String to announce the DOING section of the main agenda.
+Lists tasks in the DOING TODO state -- work actively in flight.
+Block sits just under the day's schedule.")
+
 (defvar cj/--main-agenda-prefix-format "  %i %-15:c%?-15t% s"
   "Prefix format string shared by all blocks of the main daily agenda.
-Inlined across the overdue / high-priority / schedule / priority-B
-blocks of `org-agenda-custom-commands' before the extraction.  Keep
-the four blocks pointing here so a format tweak lands in one place.")
+Inlined across the overdue / high-priority / VERIFICATION / schedule /
+IN-PROGRESS / priority-B blocks of `org-agenda-custom-commands' before
+the extraction.  Keep the six blocks pointing here so a format tweak
+lands in one place.")
 
 (defun cj/org-skip-subtree-if-habit ()
   "Skip an agenda entry if it has a STYLE property equal to \"habit\"."
@@ -342,6 +353,10 @@ KEYWORDS must be a list of strings."
 				((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
 				 (org-agenda-overriding-header cj/main-agenda-hipri-title)
 				 (org-agenda-prefix-format cj/--main-agenda-prefix-format)))
+		  (todo "VERIFY"
+				((org-agenda-skip-function 'cj/org-skip-subtree-if-habit)
+				 (org-agenda-overriding-header cj/main-agenda-verify-title)
+				 (org-agenda-prefix-format cj/--main-agenda-prefix-format)))
 		  (agenda ""
 				  ((org-agenda-start-day "0d")
 				   (org-agenda-span 8)
@@ -352,6 +367,10 @@ KEYWORDS must be a list of strings."
 					'(org-agenda-skip-entry-if 'todo '("CANCELLED")))
 				   (org-agenda-overriding-header cj/main-agenda-schedule-title)
 				   (org-agenda-prefix-format cj/--main-agenda-prefix-format)))
+		  (todo "DOING"
+				((org-agenda-skip-function 'cj/org-skip-subtree-if-habit)
+				 (org-agenda-overriding-header cj/main-agenda-doing-title)
+				 (org-agenda-prefix-format cj/--main-agenda-prefix-format)))
 		  (alltodo ""
 				   ((org-agenda-skip-function '(or (cj/org-skip-subtree-if-habit)
 												   (cj/org-skip-subtree-if-priority ?A)
