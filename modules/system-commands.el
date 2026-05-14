@@ -43,8 +43,15 @@
   "Run CMD (string or symbol naming a string) detached via the shell.
 Shell expansions like $(...) are supported. Output is silenced.
 If CMD is deemed dangerous, ask for confirmation."
-  (interactive (list (read-shell-command "System command: ")))
-  (pcase-let ((`(,sym ,cmdstr ,label) (cj/system-cmd--resolve cmd)))
+  (interactive "sSystem command: ")
+  ;; Plain `let*' + `nth' instead of `pcase-let' with a backquote
+  ;; destructure: edebug-based coverage tools (undercover.el) don't
+  ;; instrument inside backquote-destructured `pcase-let' bindings,
+  ;; so the body shows as uncovered even when tests exercise it.
+  (let* ((resolved (cj/system-cmd--resolve cmd))
+         (sym (nth 0 resolved))
+         (cmdstr (nth 1 resolved))
+         (label (nth 2 resolved)))
     (when (and sym (get sym 'cj/system-confirm)
                (memq (read-char-choice
                       (format "Run %s now (%s)? (Y/n) " label cmdstr)

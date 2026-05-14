@@ -126,6 +126,29 @@
       (cj/system-cmd-restart-emacs))
     (should (= schedules 2))))
 
+(ert-deftest test-system-cmd-restart-emacs-restart-lambda-shells-out ()
+  "Normal: the lambda scheduled by the first `run-at-time' call invokes
+`call-process-shell-command' with the systemctl restart line.
+
+Captures the lambda passed to the first scheduling call and invokes it
+directly with all relevant side effects stubbed, so the inner body
+registers under coverage even though the real timer never fires."
+  (let (captured-lambda call-args)
+    (cl-letf (((symbol-function 'read-char-choice) (lambda (&rest _) ?y))
+              ((symbol-function 'save-some-buffers) #'ignore)
+              ((symbol-function 'run-at-time)
+               (lambda (_when _repeat fn)
+                 (unless captured-lambda (setq captured-lambda fn))))
+              ((symbol-function 'message) #'ignore)
+              ((symbol-function 'call-process-shell-command)
+               (lambda (&rest args) (setq call-args args))))
+      (cj/system-cmd-restart-emacs)
+      (should (functionp captured-lambda))
+      (funcall captured-lambda)
+      (should call-args)
+      (should (string-match-p "systemctl --user restart emacs.service"
+                              (car call-args))))))
+
 ;;; cj/system-command-menu
 
 (ert-deftest test-system-command-menu-dispatches-by-name ()
