@@ -219,6 +219,45 @@ Fix candidates:
 Test: mark a TODO done from a non-journal buffer, then check
 =buffer-modified-p= on the dated journal buffer.  Should be nil.
 
+** TODO [#B] Extend dired/dirvish =T= to transcribe videos, not just audio :feature:
+
+Today =T= on an audio file in dired/dirvish triggers
+=cj/transcribe-audio-at-point= and only accepts files matching
+=cj/audio-file-extensions= (=cj/--audio-file-p= rejects anything
+else with a =user-error=).  Want the same one-key flow on video
+files -- so a =.mp4= or =.mkv= recording can be transcribed without
+hand-extracting the audio track first.
+
+Likely shape:
+- New =cj/video-file-extensions= in user-constants.el (mp4, mkv,
+  mov, webm, avi, m4v, ...).
+- =cj/--video-file-p= sibling of =cj/--audio-file-p=.
+- =cj/--start-transcription-process= (or a wrapper) detects video,
+  shells out to ffmpeg to extract the audio track to a temp file
+  (=ffmpeg -i in.mp4 -vn -acodec copy out.m4a= or similar; pick a
+  codec the backend accepts), then transcribes the temp file and
+  cleans up.
+- =cj/transcribe-audio-at-point= accepts both audio and video via
+  =(or (cj/--audio-file-p f) (cj/--video-file-p f))=; the
+  surrounding pipeline knows when to insert the ffmpeg step.
+
+Open design questions:
+- Keep the function named =transcribe-audio-at-point= (treats video
+  as "audio-bearing") or rename to =transcribe-media-at-point= and
+  add an alias?  Rename probably cleaner.
+- ffmpeg availability check + =cj/executable-find-or-warn= pattern
+  on first use.
+- Where the temp audio file lives -- alongside the video (visible),
+  or =temporary-file-directory= (clean).  Probably the latter for
+  videos the user doesn't want to clutter.
+- Do we keep the temp audio after transcription, or always delete?
+  The log file already retains diagnostic info; extracted audio is
+  derivable.  Default to delete; offer a custom to keep.
+
+Test surface: =cj/--video-file-p= happy/edge cases, the ffmpeg
+extract step (stub =call-process=), and the dispatch in
+=cj/transcribe-audio-at-point= against a video path.
+
 ** TODO [#B] Investigate gptel-magit not working properly :bug:
 
 Wired up in =modules/ai-config.el= as three lazy entry points:
