@@ -219,7 +219,8 @@ Fix candidates:
 Test: mark a TODO done from a non-journal buffer, then check
 =buffer-modified-p= on the dated journal buffer.  Should be nil.
 
-** TODO [#B] Extend dired/dirvish =T= to transcribe videos, not just audio :feature:
+** DONE [#B] Extend dired/dirvish =T= to transcribe videos, not just audio :feature:
+CLOSED: [2026-05-14 Thu]
 
 Today =T= on an audio file in dired/dirvish triggers
 =cj/transcribe-audio-at-point= and only accepts files matching
