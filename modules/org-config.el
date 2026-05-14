@@ -126,15 +126,13 @@
   :ensure nil ;; use the built-in package
   :pin manual ;; never upgrade from the version built-into Emacs
   :init
-  (defvar-keymap cj/org-table-map
-    :doc "org table operations.")
-
   (defvar-keymap cj/org-map
     :doc "General org-mode operations and utilities.")
   (keymap-set cj/custom-keymap "O" cj/org-map)
-  ;; Table operations live under the org menu (was at top-level "T",
-  ;; which collided silently with `cj/transcribe-map').
-  (keymap-set cj/org-map "T" cj/org-table-map)
+  ;; Table operations live directly under the org menu: `r' for row,
+  ;; `c' for column.  Single-key org commands under this prefix use
+  ;; capitals (e.g. `C' for clear element cache) to leave the
+  ;; lowercase letters free as table sub-prefixes.
   :bind
   ("C-c c" . org-capture)
   ("C-c a" . org-agenda)
@@ -152,7 +150,7 @@
         ("<f2>"      . org-reveal)
         ("C-c <ESC>" . widen)
         ("C-c C-a"   . cj/org-appear-toggle))
-  (:map cj/org-table-map
+  (:map cj/org-map
         ("r i" . org-table-insert-row)
         ("r d" . org-table-kill-row)
         ("c i" . org-table-insert-column)
@@ -291,7 +289,7 @@ the current buffer's cache. Useful when encountering parsing errors like
     (org-element-cache-reset 'all)
     (message "Cleared org-element cache for all buffers")))
 
-(keymap-set cj/org-map "c" #'cj/org-clear-element-cache)
+(keymap-set cj/org-map "C" #'cj/org-clear-element-cache)
 
 ;; ----------------------- Org Multi-Level Sorting -----------------------------
 
@@ -323,15 +321,14 @@ status to preserve priority ordering within TODO groups."
   (which-key-add-key-based-replacements
     ;; org general operations
     "C-; O" "org menu"
-    "C-; O c" "clear element cache"
-    ;; org table operations (under the org menu)
-    "C-; O T" "org table menu"
-    "C-; O T r" "table row"
-    "C-; O T r i" "insert row"
-    "C-; O T r d" "delete row"
-    "C-; O T c" "table column"
-    "C-; O T c i" "insert column"
-    "C-; O T c d" "delete column"
+    "C-; O C" "clear element cache"
+    ;; org table operations (live directly under the org menu)
+    "C-; O r" "table row"
+    "C-; O r i" "insert row"
+    "C-; O r d" "delete row"
+    "C-; O c" "table column"
+    "C-; O c i" "insert column"
+    "C-; O c d" "delete column"
     ;; org global bindings
     "C-c a" "org agenda"
     "C-c c" "org capture"
