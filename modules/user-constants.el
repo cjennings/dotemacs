@@ -56,6 +56,12 @@ Used by cursor color, modeline, and other UI elements.")
   "File extensions recognized as audio files.
 Used by transcription module and other audio-related functionality.")
 
+(defvar cj/video-file-extensions
+  '("mp4" "mkv" "mov" "webm" "avi" "m4v" "wmv" "flv" "mpg" "mpeg" "3gp" "ogv")
+  "File extensions recognized as video files.
+Used by transcription to dispatch the audio-extract step in front of
+the regular transcription pipeline.")
+
 ;; ------------------------ Directory And File Constants -----------------------
 
 ;; DIRECTORIES

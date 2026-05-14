@@ -179,13 +179,18 @@
     (should-error (cj/transcribe-audio-at-point) :type 'user-error)))
 
 (ert-deftest test-tx-transcribe-audio-at-point-normal-delegates ()
-  "Normal: with a file at point, delegates to `cj/transcribe-audio'."
+  "Normal: with a file at point, delegates to `cj/transcribe-media'.
+
+`cj/transcribe-audio-at-point' is now a `defalias' for
+`cj/transcribe-media-at-point', which hands off to
+`cj/transcribe-media' (no longer the old audio-only command).  The
+stub still pins behavior by name."
   (let ((handed-off nil))
     (cl-letf (((symbol-function 'derived-mode-p)
                (lambda (&rest modes) (memq 'dired-mode modes)))
               ((symbol-function 'dired-get-filename)
                (lambda (&rest _) "/tmp/recording.wav"))
-              ((symbol-function 'cj/transcribe-audio)
+              ((symbol-function 'cj/transcribe-media)
                (lambda (f) (setq handed-off f))))
       (cj/transcribe-audio-at-point))
     (should (equal handed-off "/tmp/recording.wav"))))
