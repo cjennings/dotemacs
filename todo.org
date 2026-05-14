@@ -285,19 +285,25 @@ created (=one-window-p= still t).  Existing tests dropped their
 =pop-to-buffer= stub since =switch-to-buffer= works directly in batch.
 Full =make test-unit= green.
 
-p** TODO [#B] Add ERT coverage for modules below 70% :tests:
+** TODO [#B] Add ERT coverage for modules below 70% :tests:
 
-Coverage snapshot from =make coverage-summary= on 2026-05-13 (post-push):
-=4716/6853= executable lines covered (=68.8%=) across 73 tracked module files.
+Coverage snapshot from =make coverage= on 2026-05-14 (post-push):
+=5932/6857= executable lines covered (=86.5%=) across 73 tracked module files.
 
-Add focused ERT tests for each module currently below 70% coverage, then rerun
-=make coverage= and update or close the child tasks as their module coverage
-crosses the threshold.
+Only two tracked modules remain below 70%:
+- =system-defaults.el= (8.3%) -- blocked on the sandboxed =(load ...)=
+  instrumentation gap.  See the child task below.
+- =system-commands.el= (69.4%) -- the only uncovered lines are an
+  =interactive= form and a =run-at-time= lambda body that don't
+  register under the =.elc=-based coverage harness even when the
+  logic is exercised by existing tests.
 
-*** TODO [#B] Add ERT tests for =modules/prog-python.el= (10/21, 47.6%) :tests:
+*** DONE [#B] Add ERT tests for =modules/prog-python.el= (21/21, 100.0%) :tests:
+CLOSED: [2026-05-14 Thu]
 *** DONE [#B] Add ERT tests for =modules/selection-framework.el= (3/3, 100.0%) :tests:
 *** DONE [#B] Add ERT tests for =modules/keyboard-compat.el= (29/29, 100.0%) :tests:
-*** TODO [#B] Add ERT tests for =modules/prog-webdev.el= (10/21, 47.6%) :tests:
+*** DONE [#B] Add ERT tests for =modules/prog-webdev.el= (21/21, 100.0%) :tests:
+CLOSED: [2026-05-14 Thu]
 *** DONE [#B] Add ERT tests for =modules/calibredb-epub-config.el= (95/133, 71.4%) :tests:
 *** TODO [#B] Add ERT tests for =modules/system-defaults.el= (1/12, 8.3%) :tests:
 =tests/test-system-defaults-functions.el= ships 8 tests covering the
@@ -309,36 +315,70 @@ the function bodies execute under test but the gauge can't credit them.
 Closing this child task needs either a refactor that lets the module
 load via =(require)= cleanly in batch, or a switch to a different
 instrumentation strategy.
-*** TODO [#B] Add ERT tests for =modules/ui-navigation.el= (26/48, 54.2%) :tests:
-*** TODO [#B] Add ERT tests for =modules/prog-go.el= (3/27, 11.1%) :tests:
-*** TODO [#B] Add ERT tests for =modules/system-commands.el= (6/49, 12.2%) :tests:
-*** TODO [#B] Add ERT tests for =modules/external-open.el= (5/33, 15.2%) :tests:
-*** TODO [#B] Add ERT tests for =modules/org-webclipper.el= (10/59, 16.9%) :tests:
-*** TODO [#B] Add ERT tests for =modules/system-utils.el= (5/26, 19.2%) :tests:
-*** TODO [#B] Add ERT tests for =modules/org-reveal-config.el= (29/81, 35.8%) :tests:
-*** TODO [#B] Add ERT tests for =modules/coverage-elisp.el= (5/19, 26.3%) :tests:
-*** TODO [#B] Add ERT tests for =modules/org-noter-config.el= (27/99, 27.3%) :tests:
-*** TODO [#B] Add ERT tests for =modules/ai-config.el= (53/191, 27.7%) :tests:
-*** TODO [#B] Add ERT tests for =modules/slack-config.el= (23/74, 31.1%) :tests:
-*** TODO [#B] Add ERT tests for =modules/org-roam-config.el= (26/80, 32.5%) :tests:
-*** TODO [#B] Add ERT tests for =modules/custom-text-enclose.el= (51/145, 35.2%) :tests:
-*** TODO [#B] Add ERT tests for =modules/dirvish-config.el= (73/185, 39.5%) :tests:
-*** TODO [#B] Add ERT tests for =modules/hugo-config.el= (38/96, 39.6%) :tests:
-*** TODO [#B] Add ERT tests for =modules/org-refile-config.el= (21/51, 41.2%) :tests:
-*** TODO [#B] Add ERT tests for =modules/org-contacts-config.el= (36/79, 45.6%) :tests:
-*** TODO [#B] Add ERT tests for =modules/transcription-config.el= (75/162, 46.3%) :tests:
-*** TODO [#B] Add ERT tests for =modules/music-config.el= (130/278, 46.8%) :tests:
-*** TODO [#B] Add ERT tests for =modules/mail-config.el= (9/19, 47.4%) :tests:
-*** TODO [#B] Add ERT tests for =modules/custom-buffer-file.el= (123/212, 58.0%) :tests:
-*** TODO [#B] Add ERT tests for =modules/org-agenda-config.el= (70/104, 67.3%) :tests:
-*** TODO [#B] Add ERT tests for =modules/host-environment.el= (34/57, 59.6%) :tests:
-*** TODO [#B] Add ERT tests for =modules/custom-ordering.el= (61/101, 60.4%) :tests:
-*** TODO [#B] Add ERT tests for =modules/ui-theme.el= (25/40, 62.5%) :tests:
-*** TODO [#B] Add ERT tests for =modules/custom-comments.el= (230/358, 64.2%) :tests:
+*** DONE [#B] Add ERT tests for =modules/ui-navigation.el= (46/48, 95.8%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/prog-go.el= (24/27, 88.9%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** TODO [#B] Add ERT tests for =modules/system-commands.el= (34/49, 69.4%) :tests:
+Logic is covered by =tests/test-system-commands-resolve-and-run.el= and
+=tests/test-system-commands-keymap.el=.  The remaining uncovered lines
+are the =interactive= form for =cj/system-cmd= and the inner lambda
+body in the =run-at-time= callback inside =cj/system-cmd-restart-emacs=
+-- both register as uncovered under the =.elc=-based instrumentation
+even though the surrounding code paths execute under test.  Closing
+this needs the same instrumentation-strategy fix as
+=system-defaults.el=, or accept the gauge floor and close anyway.
+*** DONE [#B] Add ERT tests for =modules/external-open.el= (31/33, 93.9%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/org-webclipper.el= (59/59, 100.0%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/system-utils.el= (26/26, 100.0%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/org-reveal-config.el= (68/81, 84.0%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/coverage-elisp.el= (19/19, 100.0%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/org-noter-config.el= (72/99, 72.7%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/ai-config.el= (160/191, 83.8%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/slack-config.el= (70/74, 94.6%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/org-roam-config.el= (80/80, 100.0%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/custom-text-enclose.el= (145/145, 100.0%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/dirvish-config.el= (174/185, 94.1%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/hugo-config.el= (88/96, 91.7%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/org-refile-config.el= (50/51, 98.0%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/org-contacts-config.el= (64/79, 81.0%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/transcription-config.el= (150/162, 92.6%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/music-config.el= (213/278, 76.6%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/mail-config.el= (14/19, 73.7%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/custom-buffer-file.el= (167/212, 78.8%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/org-agenda-config.el= (103/104, 99.0%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/host-environment.el= (53/57, 93.0%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/custom-ordering.el= (101/101, 100.0%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/ui-theme.el= (39/40, 97.5%) :tests:
+CLOSED: [2026-05-14 Thu]
+*** DONE [#B] Add ERT tests for =modules/custom-comments.el= (317/358, 88.5%) :tests:
+CLOSED: [2026-05-14 Thu]
 *** DONE [#B] Add ERT tests for =modules/ui-config.el= (28/31, 90.3%) :tests:
 *** DONE [#B] Add ERT tests for =modules/custom-whitespace.el= (80/82, 97.6%) :tests:
 *** DONE [#B] Add ERT tests for =modules/jumper.el= (97/99, 98.0%) :tests:
-*** TODO [#B] Add ERT tests for =modules/test-runner.el= (146/222, 65.8%) :tests:
+*** DONE [#B] Add ERT tests for =modules/test-runner.el= (160/222, 72.1%) :tests:
+CLOSED: [2026-05-14 Thu]
 *** DONE [#B] Add ERT tests for =modules/browser-config.el= (62/76, 81.6%) :tests:
 
 ** TODO [#A] Fix Python tree-sitter font-lock query syntax error :bug:
