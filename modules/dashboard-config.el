@@ -124,20 +124,10 @@ Adjust this if the title doesn't appear centered under the banner image.")
   ;; == navigation
   (setq dashboard-set-navigator t)
   (setq dashboard-navigator-buttons
-        `(;; Row 1
+        `(;; Row 1 — Work tools
           ((,(nerd-icons-faicon "nf-fa-code")
             "Code" "Switch Project"
             (lambda (&rest _) (projectile-switch-project))
-            nil " " "")
-
-           (,(nerd-icons-faicon "nf-fa-envelope")
-            "Email" "Mu4e Email Client"
-            (lambda (&rest _) (mu4e))
-            nil " " "")
-
-           (,(nerd-icons-mdicon "nf-md-calendar")
-            "Agenda" "Main Org Agenda"
-            (lambda (&rest _) (cj/main-agenda-display))
             nil " " "")
 
            (,(nerd-icons-faicon "nf-fa-folder_o")
@@ -145,15 +135,41 @@ Adjust this if the title doesn't appear centered under the banner image.")
             (lambda (&rest _) (dirvish user-home-dir))
             nil " " "")
 
+           (,(nerd-icons-devicon "nf-dev-terminal")
+            "Terminal" "Launch VTerm"
+            (lambda (&rest _) (vterm))
+            nil " " "")
+
+           (,(nerd-icons-mdicon "nf-md-calendar")
+            "Agenda" "Main Org Agenda"
+            (lambda (&rest _) (cj/main-agenda-display))
+            nil " " ""))
+
+          ;; Row 2 — Read & Learn
+          ((,(nerd-icons-faicon "nf-fa-rss_square")
+            "Feeds" "Elfeed Feed Reader"
+            (lambda (&rest _) (cj/elfeed-open))
+            nil " " "")
+
+           (,(nerd-icons-faicon "nf-fae-book_open_o")
+            "Books" "Calibre Ebook Reader"
+            (lambda (&rest _) (calibredb))
+            nil " " "")
+
+           (,(nerd-icons-mdicon "nf-md-school")
+            "Flashcards" "Org-Drill"
+            (lambda (&rest _) (cj/drill-start))
+            nil " " "")
+
            (,(nerd-icons-mdicon "nf-md-music")
             "Music" "EMMS Music Player"
             (lambda (&rest _) (cj/music-playlist-toggle) (cj/music-playlist-load))
             nil " " ""))
 
-          ;; Row 2
-          ((,(nerd-icons-faicon "nf-fa-rss_square")
-            "Feeds" "Elfeed Feed Reader"
-            (lambda (&rest _) (cj/elfeed-open))
+          ;; Row 3 — Communication
+          ((,(nerd-icons-faicon "nf-fa-envelope")
+            "Email" "Mu4e Email Client"
+            (lambda (&rest _) (mu4e))
             nil " " "")
 
            (,(nerd-icons-faicon "nf-fa-comments")
@@ -166,23 +182,7 @@ Adjust this if the title doesn't appear centered under the banner image.")
             (lambda (&rest _) (cj/slack-start))
             nil " " "")
 
-           (,(nerd-icons-mdicon "nf-md-school")
-            "Flashcards" "Org-Drill"
-            (lambda (&rest _) (cj/drill-start))
-            nil " " "")
-
-           (,(nerd-icons-faicon "nf-fae-book_open_o")
-            "Books" "Calibre Ebook Reader"
-            (lambda (&rest _) (calibredb))
-            nil " " "")
-
-           (,(nerd-icons-devicon "nf-dev-terminal")
-            "Terminal" "Launch VTerm"
-            (lambda (&rest _) (vterm))
-            nil " " ""))
-
-          ;; Row 3
-          ((,(nerd-icons-faicon "nf-fa-telegram")
+           (,(nerd-icons-faicon "nf-fa-telegram")
             "Telegram" "Telega Telegram Client"
             (lambda (&rest _) (cj/telega))
             nil " " ""))))
@@ -197,17 +197,23 @@ Adjust this if the title doesn't appear centered under the banner image.")
   ;; Disable 'q' to quit dashboard
   (define-key dashboard-mode-map (kbd "q") nil)
 
-  ;; Dashboard launcher keybindings
-  (define-key dashboard-mode-map (kbd "e") (lambda () (interactive) (mu4e)))
+  ;; Dashboard launcher keybindings, ordered to mirror the icon rows.
+  ;; Row 1 — Work tools
   (define-key dashboard-mode-map (kbd "c") (lambda () (interactive) (projectile-switch-project)))
+  (define-key dashboard-mode-map (kbd "d") (lambda () (interactive) (dirvish user-home-dir)))
+  (define-key dashboard-mode-map (kbd "t") (lambda () (interactive) (vterm)))
   (define-key dashboard-mode-map (kbd "a") (lambda () (interactive) (cj/main-agenda-display)))
+  ;; Row 2 — Read & Learn
+  (define-key dashboard-mode-map (kbd "r") (lambda () (interactive) (cj/elfeed-open)))
   (define-key dashboard-mode-map (kbd "b") (lambda () (interactive) (calibredb)))
   (define-key dashboard-mode-map (kbd "f") (lambda () (interactive) (cj/drill-start)))
-  (define-key dashboard-mode-map (kbd "r") (lambda () (interactive) (cj/elfeed-open)))
+  (define-key dashboard-mode-map (kbd "m") (lambda () (interactive)
+                                             (cj/music-playlist-toggle)
+                                             (cj/music-playlist-load)))
+  ;; Row 3 — Communication
+  (define-key dashboard-mode-map (kbd "e") (lambda () (interactive) (mu4e)))
   (define-key dashboard-mode-map (kbd "i") (lambda () (interactive) (cj/erc-switch-to-buffer-with-completion)))
   (define-key dashboard-mode-map (kbd "s") (lambda () (interactive) (cj/slack-start)))
-  (define-key dashboard-mode-map (kbd "t") (lambda () (interactive) (vterm)))
-  (define-key dashboard-mode-map (kbd "d") (lambda () (interactive) (dirvish user-home-dir)))
   (define-key dashboard-mode-map (kbd "g") (lambda () (interactive) (cj/telega))))
 
 ;; Override banner title centering (must be after dashboard-widgets loads)
