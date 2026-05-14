@@ -128,11 +128,13 @@
   :init
   (defvar-keymap cj/org-table-map
     :doc "org table operations.")
-  (keymap-set cj/custom-keymap "T" cj/org-table-map)
 
   (defvar-keymap cj/org-map
     :doc "General org-mode operations and utilities.")
   (keymap-set cj/custom-keymap "O" cj/org-map)
+  ;; Table operations live under the org menu (was at top-level "T",
+  ;; which collided silently with `cj/transcribe-map').
+  (keymap-set cj/org-map "T" cj/org-table-map)
   :bind
   ("C-c c" . org-capture)
   ("C-c a" . org-agenda)
@@ -322,14 +324,14 @@ status to preserve priority ordering within TODO groups."
     ;; org general operations
     "C-; O" "org menu"
     "C-; O c" "clear element cache"
-    ;; org table operations
-    "C-; T" "org table menu"
-    "C-; T r" "table row"
-    "C-; T r i" "insert row"
-    "C-; T r d" "delete row"
-    "C-; T c" "table column"
-    "C-; T c i" "insert column"
-    "C-; T c d" "delete column"
+    ;; org table operations (under the org menu)
+    "C-; O T" "org table menu"
+    "C-; O T r" "table row"
+    "C-; O T r i" "insert row"
+    "C-; O T r d" "delete row"
+    "C-; O T c" "table column"
+    "C-; O T c i" "insert column"
+    "C-; O T c d" "delete column"
     ;; org global bindings
     "C-c a" "org agenda"
     "C-c c" "org capture"
