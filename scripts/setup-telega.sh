@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Craig Jennings <c@cjennings.net>
 #
-# Prepares the docker environment telega.el uses for TDLib.
+# Prepares everything telega.el needs on a fresh clone.
 #
 # Sequence:
 # - Verifies docker is installed and the daemon is responsive.
@@ -9,6 +9,11 @@
 # - Pulls the telega-server image if a public one is configured (env var
 #   `TELEGA_DOCKER_IMAGE'); otherwise prints the in-Emacs build command
 #   (`M-x telega-server-build') for the user to run once.
+# - Installs the `telega' Emacs package via package.el if it isn't
+#   already in package-user-dir.  modules/telega-config.el uses
+#   `:ensure nil' (a stale MELPA index can 404 and take startup down
+#   if auto-install runs in init), so the install has to happen
+#   explicitly somewhere.  This is that somewhere.
 #
 # Does NOT handle Telegram account auth -- phone number + verification
 # code is interactive and runs inside `M-x telega' on first launch.
@@ -63,13 +68,47 @@ EOF
     fi
 }
 
+ensure_telega_package() {
+    if ! command -v emacs >/dev/null 2>&1; then
+        echo "  ✗ emacs not on PATH; install Emacs first"
+        return 1
+    fi
+    # Probe quietly whether telega is already in package-user-dir.
+    if emacs --batch --eval "(progn
+        (require 'package)
+        (package-initialize)
+        (kill-emacs (if (package-installed-p 'telega) 0 1)))" \
+        >/dev/null 2>&1; then
+        echo "  ✓ telega Emacs package already installed"
+        return 0
+    fi
+    echo "  → installing telega via package.el..."
+    if emacs --batch --eval "(progn
+        (require 'package)
+        (package-initialize)
+        (unless (assoc \"melpa\" package-archives)
+          (add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\") t))
+        (package-refresh-contents)
+        (package-install 'telega))" >/dev/null 2>&1; then
+        echo "  ✓ telega installed"
+    else
+        echo "  ✗ telega install failed"
+        echo "    try interactively:"
+        echo "      M-x package-refresh-contents"
+        echo "      M-x package-install RET telega"
+        return 1
+    fi
+}
+
 main() {
     echo "→ checking docker..."
     ensure_docker_installed
     ensure_docker_running
     echo "→ preparing telega-server image..."
     pull_or_announce_image
-    echo "✅ Telega docker setup complete."
+    echo "→ checking telega Emacs package..."
+    ensure_telega_package
+    echo "✅ Telega setup complete."
     echo "   First launch: M-x telega -- enter phone + verification code interactively."
 }
 

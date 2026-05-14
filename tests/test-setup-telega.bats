@@ -85,3 +85,50 @@ setup() {
     [ "$status" -eq 1 ]
     [[ "$output" == *"pull failed"* ]]
 }
+
+# --------------------------- ensure_telega_package ------------------------
+
+@test "ensure_telega_package: fails when emacs is missing" {
+    command() {
+        if [[ "$1" == "-v" && "$2" == "emacs" ]]; then
+            return 1
+        fi
+        builtin command "$@"
+    }
+    run ensure_telega_package
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"emacs not on PATH"* ]]
+}
+
+@test "ensure_telega_package: skips when telega already installed" {
+    # Stub emacs so the first --batch probe (package-installed-p) exits 0.
+    emacs() { return 0; }
+    export -f emacs
+    run ensure_telega_package
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"already installed"* ]]
+}
+
+@test "ensure_telega_package: installs when telega not yet present" {
+    # First call (probe) returns 1 "not installed"; second call (install) returns 0.
+    emacs() {
+        if [[ "$*" == *"package-installed-p"* ]]; then
+            return 1
+        fi
+        return 0
+    }
+    export -f emacs
+    run ensure_telega_package
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"telega installed"* ]]
+}
+
+@test "ensure_telega_package: reports failure when install fails" {
+    # Both calls return non-zero so the install path errors.
+    emacs() { return 1; }
+    export -f emacs
+    run ensure_telega_package
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"install failed"* ]]
+    [[ "$output" == *"M-x package-install"* ]]
+}
