@@ -46,7 +46,24 @@
   :custom
   (telega-use-docker t))
 
-(keymap-set cj/custom-keymap "G" #'telega)
+(defun cj/telega ()
+  "Launch telega.el with a helpful message when it isn't installed yet.
+
+The =telega= Emacs package uses =:ensure nil= in this config so a
+stale MELPA archive index can't take startup down with a 404.  The
+trade-off: a fresh clone needs a one-time install before this
+launcher works.  Without this wrapper, the autoload stub fails with
+the cryptic =Cannot open load file: telega=; with it, the user gets
+pointed at =scripts/setup-telega.sh= and the manual fallback."
+  (interactive)
+  (if (or (featurep 'telega)
+          (locate-library "telega"))
+      (telega)
+    (user-error
+     (concat "telega not installed -- run scripts/setup-telega.sh, "
+             "or `M-x package-install RET telega'"))))
+
+(keymap-set cj/custom-keymap "G" #'cj/telega)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
