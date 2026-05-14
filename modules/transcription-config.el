@@ -8,8 +8,9 @@
 ;; Audio transcription workflow with multiple backend options.
 ;;
 ;; USAGE:
-;;   In dired: Press `T` on an audio file to transcribe
-;;   Anywhere: M-x cj/transcribe-audio
+;;   In dired: Press `T` on an audio OR video file to transcribe
+;;            (videos run through ffmpeg first to extract the audio)
+;;   Anywhere: M-x cj/transcribe-media  (M-x cj/transcribe-audio still works)
 ;;   View active: M-x cj/transcriptions-buffer
 ;;   Switch backend: M-x cj/transcription-switch-backend
 ;;
@@ -83,6 +84,17 @@ Status: running, complete, error")
   (when (and file (stringp file))
     (when-let ((ext (file-name-extension file)))
       (member (downcase ext) cj/audio-file-extensions))))
+
+(defun cj/--video-file-p (file)
+  "Return non-nil if FILE is a video file based on extension."
+  (when (and file (stringp file))
+    (when-let ((ext (file-name-extension file)))
+      (member (downcase ext) cj/video-file-extensions))))
+
+(defun cj/--media-file-p (file)
+  "Return non-nil if FILE is an audio or video file."
+  (or (cj/--audio-file-p file)
+      (cj/--video-file-p file)))
 
 (defun cj/--transcription-output-files (audio-file)
   "Return cons cell of (TXT-FILE . LOG-FILE) for AUDIO-FILE."
@@ -159,9 +171,13 @@ TITLE and MESSAGE are strings.  URGENCY is normal or critical."
      :body message
      :urgency (or urgency 'normal))))
 
-(defun cj/--start-transcription-process (audio-file)
+(defun cj/--start-transcription-process (audio-file &optional cleanup-file)
   "Start async transcription process for AUDIO-FILE.
-Returns the process object."
+Returns the process object.
+
+When CLEANUP-FILE is non-nil, delete that path once the transcription
+sentinel fires (success or failure).  Used by the video flow to drop
+the temp audio file produced by ffmpeg after transcription completes."
   (unless (file-exists-p audio-file)
     (user-error "Audio file does not exist: %s" audio-file))
 
@@ -186,12 +202,56 @@ Returns the process object."
                      :buffer (get-buffer-create buffer-name)
                      :command (list script audio-file)
                      :sentinel (lambda (proc event)
-                                 (cj/--transcription-sentinel proc event audio-file txt-file log-file))
+                                 (cj/--transcription-sentinel proc event audio-file txt-file log-file)
+                                 (when cleanup-file
+                                   (ignore-errors (delete-file cleanup-file))))
                      :stderr log-file)))
       (cj/--track-transcription process audio-file)
       (cj/--notify "Transcription"
                    (format "Started on %s" (file-name-nondirectory audio-file)))
       process)))
+
+(defun cj/--video-extracted-audio-path (video-file)
+  "Return a temp .mp3 path to hold the extracted audio for VIDEO-FILE.
+The basename hints at the source so a stuck file is easy to identify."
+  (make-temp-file (format "cj-tx-%s-"
+                          (file-name-base video-file))
+                  nil ".mp3"))
+
+(defun cj/--extract-audio-from-video (video-file output-file on-success)
+  "Async-extract the audio track from VIDEO-FILE to OUTPUT-FILE via ffmpeg.
+
+On success, call ON-SUCCESS (no args).  On failure, signal a
+descriptive `user-error' via `cj/--notify'.  Signals `user-error'
+synchronously if ffmpeg isn't on PATH.
+
+Uses libmp3lame at quality 4 (~165kbps VBR) -- good for speech,
+universally accepted by the transcription backends."
+  (let ((ffmpeg (cj/executable-find-or-warn
+                 "ffmpeg" "video audio extraction" 'transcription-config)))
+    (unless ffmpeg
+      (user-error "ffmpeg not found on PATH -- install ffmpeg to transcribe videos"))
+    (let ((process-name (format "ffmpeg-extract-%s"
+                                (file-name-nondirectory video-file))))
+      (make-process
+       :name process-name
+       :buffer (get-buffer-create (format " *%s*" process-name))
+       :command (list ffmpeg "-y" "-i" video-file
+                      "-vn" "-acodec" "libmp3lame" "-q:a" "4"
+                      output-file)
+       :sentinel (lambda (proc event)
+                   (cond
+                    ((and (string-match-p "finished" event)
+                          (= 0 (process-exit-status proc)))
+                     (let ((buf (process-buffer proc)))
+                       (when (buffer-live-p buf) (kill-buffer buf)))
+                     (funcall on-success))
+                    ((string-match-p "\\(?:exited\\|failed\\|signal\\)" event)
+                     (cj/--notify "Transcription"
+                                  (format "ffmpeg failed on %s"
+                                          (file-name-nondirectory video-file))
+                                  'critical)
+                     (ignore-errors (delete-file output-file)))))))))
 
 (defun cj/--write-transcript-on-success (process-buffer success-p txt-file)
   "Write PROCESS-BUFFER contents to TXT-FILE when SUCCESS-P is non-nil.
@@ -284,25 +344,49 @@ associated output files."
 ;; --------------------------- Interactive Commands ----------------------------
 
 ;;;###autoload
-(defun cj/transcribe-audio (audio-file)
-  "Transcribe AUDIO-FILE asynchronously.
-Creates AUDIO.txt with transcript and AUDIO.log with process logs.
-Uses backend specified by `cj/transcribe-backend'."
-  (interactive (list (read-file-name "Audio file to transcribe: "
+(defun cj/transcribe-media (file)
+  "Transcribe FILE asynchronously.  Accepts audio or video.
+
+For audio: hands the file straight to the transcription pipeline.
+For video: shells ffmpeg to extract the audio track to a temp .mp3,
+then transcribes that.  The temp audio is deleted after the
+transcription sentinel fires.
+
+Creates FILE.txt with the transcript (alongside the source) and
+FILE.log with process logs.  Uses the backend in
+`cj/transcribe-backend'."
+  (interactive (list (read-file-name "Media file to transcribe: "
                                       nil nil t nil
-                                      #'cj/--audio-file-p)))
-  (cj/--start-transcription-process (expand-file-name audio-file)))
+                                      #'cj/--media-file-p)))
+  (let ((path (expand-file-name file)))
+    (unless (cj/--media-file-p path)
+      (user-error "Not an audio or video file: %s" path))
+    (cond
+     ((cj/--audio-file-p path)
+      (cj/--start-transcription-process path))
+     ((cj/--video-file-p path)
+      (let ((extracted (cj/--video-extracted-audio-path path)))
+        (cj/--extract-audio-from-video
+         path extracted
+         (lambda ()
+           (cj/--start-transcription-process extracted extracted))))))))
 
 ;;;###autoload
-(defun cj/transcribe-audio-at-point ()
-  "Transcribe audio file at point in dired."
+(defun cj/transcribe-media-at-point ()
+  "Transcribe the audio or video file at point in dired/dirvish."
   (interactive)
   (unless (derived-mode-p 'dired-mode)
     (user-error "Not in dired-mode"))
   (let ((file (dired-get-filename nil t)))
     (unless file
       (user-error "No file at point"))
-    (cj/transcribe-audio file)))
+    (cj/transcribe-media file)))
+
+;; Backwards-compat aliases.  The audio-only names predate the
+;; video-extension work; keep them as drop-in synonyms for anyone
+;; with muscle memory or external scripts.
+(defalias 'cj/transcribe-audio 'cj/transcribe-media)
+(defalias 'cj/transcribe-audio-at-point 'cj/transcribe-media-at-point)
 
 (defun cj/--format-transcription-entry (entry)
   "Return a display string for a transcription ENTRY.
@@ -374,11 +458,11 @@ Prompts with completing-read to select from available backends."
 ;; ------------------------------- Dired Integration ---------------------------
 
 (with-eval-after-load 'dired
-  (define-key dired-mode-map (kbd "T") #'cj/transcribe-audio-at-point))
+  (define-key dired-mode-map (kbd "T") #'cj/transcribe-media-at-point))
 
 ;; Dirvish uses its own keymap, so bind T there too
 (with-eval-after-load 'dirvish
-  (define-key dirvish-mode-map (kbd "T") #'cj/transcribe-audio-at-point))
+  (define-key dirvish-mode-map (kbd "T") #'cj/transcribe-media-at-point))
 
 ;; Reach the transcription commands via M-x.  The previous `C-; T'
 ;; menu was retired so the top-level slot could go to telega (which
