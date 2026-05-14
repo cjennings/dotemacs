@@ -272,6 +272,48 @@ Test surface: =cj/--video-file-p= happy/edge cases, the ffmpeg
 extract step (stub =call-process=), and the dispatch in
 =cj/transcribe-audio-at-point= against a video path.
 
+** TODO [#C] Surface org narrowing + sparse-tree under =C-; O= :refactor:
+
+The narrowing and sparse-tree commands already exist in
+=modules/org-config.el=, but they're bound only inside the
+=:bind (:map org-mode-map ...)= block and scattered across `C-c'
+shortcuts -- nothing in `cj/org-map' (`C-; O') surfaces them, so
+which-key never shows them and discoverability is poor.
+
+Existing bindings worth promoting (org-config.el ~line 141-150):
+- =C-\\=        =org-match-sparse-tree=
+- =C-c N=       =org-narrow-to-subtree=
+- =C-c >=       =cj/org-narrow-forward=
+- =C-c <=       =cj/org-narrow-backwards=
+- =C-c <ESC>=   =widen=
+- =<f2>=        =org-reveal= (the reveal-narrowed-context command,
+                  not org-reveal-config.el)
+
+Proposal:
+
+Add a sub-menu under `C-; O':
+
+- `C-; O n' -- narrow operations (sub-prefix)
+  - `n s' narrow to subtree
+  - `n e' narrow to element
+  - `n >' narrow forward sibling
+  - `n <' narrow backward sibling
+  - `n w' widen
+
+- `C-; O s' -- sparse-tree operations (sub-prefix)
+  - `s s' org-match-sparse-tree (by tag/property/todo match)
+  - `s t' show all TODOs
+  - `s p' show entries with a priority
+  - `s r' org-reveal (open the surrounding context of point)
+
+Add the which-key labels alongside.  Keep the existing `C-c'
+bindings as-is for muscle memory.
+
+Open question: should `cj/org-narrow-forward' /
+`cj/org-narrow-backwards' have their own sub-letters under `n', or
+just be under `n >' / `n <' as written above?  The arrow-symbol
+keys read naturally as "next/previous" so probably keep them.
+
 ** TODO [#B] Investigate gptel-magit not working properly :bug:
 
 Wired up in =modules/ai-config.el= as three lazy entry points:
