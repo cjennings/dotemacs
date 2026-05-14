@@ -381,16 +381,16 @@ CLOSED: [2026-05-14 Thu]
 CLOSED: [2026-05-14 Thu]
 *** DONE [#B] Add ERT tests for =modules/browser-config.el= (62/76, 81.6%) :tests:
 
-** TODO [#A] Fix Python tree-sitter font-lock query syntax error :bug:
-SCHEDULED: <2026-04-27 Mon>
+** DONE [#A] Fix Python tree-sitter font-lock query syntax error :bug:
+CLOSED: [2026-05-14 Thu]
 
-Diagnosed 2026-04-26 — paused at /start-work Gate 2. Root cause is system-level, not in =.emacs.d=: Emacs 30.2 + tree-sitter library 0.26.x predicate-syntax mismatch. Emacs sends =#match= (no =?= suffix), tree-sitter 0.26 rejects anything but =#match?=. Affects every =:match=, =:equal=, =:pred= predicate in every treesit-aware mode, not just Python.
+Diagnosed 2026-04-26 — paused at /start-work Gate 2. Root cause was system-level, not in =.emacs.d=: Emacs 30.2 + tree-sitter library 0.26.x predicate-syntax mismatch. Emacs sent =#match= (no =?= suffix), tree-sitter 0.26 rejected anything but =#match?=. Affected every =:match=, =:equal=, =:pred= predicate in every treesit-aware mode, not just Python.
 
 Full investigation, reproduction, and fix-option analysis in:
 
-[[file:inbox/python-treesit-predicate-mismatch.txt][inbox/python-treesit-predicate-mismatch.txt]]
+[[file:docs/python-treesit-predicate-mismatch.txt][docs/python-treesit-predicate-mismatch.txt]]
 
-Fix surfaces are upstream (Emacs source or tree-sitter library) — local options are workarounds. Recommended next-session path: check whether Emacs 30.3 / master has a fix; if not, override =python--treesit-settings= in =modules/prog-python.el= to strip the loudest predicate-using queries (loses some highlighting, kills the redisplay flood).
+Resolved 2026-05-14 by an upstream emacs Arch-package revision bump (=30.2-2= → =30.2-3=, shipped 2026-05-03) — most likely carrying a downstream patch to =treesit.c='s predicate translation. Bug no longer reproduces: the exact failing query runs cleanly via =treesit-query-capture=, and =font-lock-ensure= on a real Python file under =python-ts-mode= completes with no =treesit-query-error=. No local override applied to =modules/prog-python.el=. Matches option A from the investigation's fix-options ("WAIT FOR UPSTREAM EMACS FIX").
 
 ** STALLED [#C] EPUB text is slightly left-of-center (shr word-wrap shortfall) :bug:
 [2026-05-12] Visual review of the reading-width rework is done -- it's good. Not sure I actually need this nit fixed; the left-of-center bias is minor and the `+'/`-' keys let me nudge it. Parking here until I decide it bothers me enough.
@@ -1672,8 +1672,10 @@ Expected outcome:
 - Batch/test startup should never auto-install grammars.
 - Document the intentional bootstrap path for a new machine.
 
-This should be coordinated with the existing [#A] Python tree-sitter predicate
-syntax issue, since both touch tree-sitter reliability.
+Originally meant to coordinate with the [#A] Python tree-sitter predicate
+syntax issue.  That one resolved upstream on 2026-05-14 (see =docs/python-
+treesit-predicate-mismatch.txt= RESOLVED footer), so this task no longer
+depends on it.
 
 **** TODO [#C] Harden git clone from clipboard in =vc-config.el= :robustness:refactor:
 

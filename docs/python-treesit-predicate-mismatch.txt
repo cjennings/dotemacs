@@ -194,3 +194,26 @@ This is upstream / system-level. Not a .emacs.d bug. Three fix surfaces:
   - Local override in .emacs.d (workaround only)
 
 Fixing in .emacs.d is a workaround, not a root-cause fix. Document it as such.
+
+
+RESOLVED 2026-05-14
+-------------------
+Bug no longer reproduces against the current versions:
+  - emacs 30.2-3 (Arch package; upgraded from 30.2-2 on 2026-05-03)
+  - tree-sitter 0.26.8-1 (unchanged from the original investigation)
+
+The exact failing query from the investigation (python.el lines
+1188-1190, the keyword + self-as-keyword block) now runs cleanly
+under `treesit-query-capture'.  `font-lock-ensure' on a real Python
+file under `python-ts-mode' completes with no `treesit-query-error'.
+No local override applied to `modules/prog-python.el'.
+
+The upstream Emacs version string is unchanged (30.2 in both), but
+the Arch package revision bumped from -2 to -3 on 2026-05-03 -- most
+likely carrying a downstream patch that fixed the treesit.c predicate
+translation.  This matches option A from the fix-options list above
+("WAIT FOR UPSTREAM EMACS FIX").
+
+If the flood ever returns, restart the investigation from the
+REPRODUCTION block above against whichever emacs / tree-sitter
+versions are then installed.
