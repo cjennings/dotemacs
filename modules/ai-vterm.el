@@ -710,7 +710,19 @@ AI-vterm buffers without touching the project list."
      (cond
       ((one-window-p)
        (setq cj/--ai-vterm-last-was-bury t)
-       (bury-buffer (window-buffer win)))
+       (bury-buffer (window-buffer win))
+       ;; `bury-buffer' calls `switch-to-prev-buffer' to swap the
+       ;; lone window onto another buffer, but that no-ops when the
+       ;; window's `window-prev-buffers' list only contains the
+       ;; agent itself (common right after a `C-x 1' that cleared
+       ;; the other windows' histories).  Without an observable swap
+       ;; the toggle-off appears to do nothing -- a subsequent F9
+       ;; finds the agent still displayed and just buries again.
+       ;; Force the switch when bury's own swap didn't take.
+       (when (and (window-live-p win)
+                  (cj/--ai-vterm-buffer-p (window-buffer win)))
+         (with-selected-window win
+           (switch-to-buffer (other-buffer (window-buffer win) t)))))
       (t
        (setq cj/--ai-vterm-last-was-bury nil)
        (delete-window win)))
