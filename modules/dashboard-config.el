@@ -184,7 +184,7 @@ Adjust this if the title doesn't appear centered under the banner image.")
           ;; Row 3
           ((,(nerd-icons-faicon "nf-fa-telegram")
             "Telegram" "Telega Telegram Client"
-            (lambda (&rest _) (telega))
+            (lambda (&rest _) (cj/telega))
             nil " " ""))))
 
   ;; == content
@@ -208,7 +208,7 @@ Adjust this if the title doesn't appear centered under the banner image.")
   (define-key dashboard-mode-map (kbd "s") (lambda () (interactive) (cj/slack-start)))
   (define-key dashboard-mode-map (kbd "t") (lambda () (interactive) (vterm)))
   (define-key dashboard-mode-map (kbd "d") (lambda () (interactive) (dirvish user-home-dir)))
-  (define-key dashboard-mode-map (kbd "g") (lambda () (interactive) (telega))))
+  (define-key dashboard-mode-map (kbd "g") (lambda () (interactive) (cj/telega))))
 
 ;; Override banner title centering (must be after dashboard-widgets loads)
 (with-eval-after-load 'dashboard-widgets
