@@ -70,6 +70,51 @@ Decide whether to (a) leave it asymmetric and let the row fill in as
 new launchers arrive, (b) move an existing icon down to balance 5/5/2
 or similar, or (c) reorganize by category (work / read / chat / play).
 Surfaced when Telegram landed in Row 3 alone.
+** DONE [#B] Add VERIFY and DOING blocks to the main agenda view :feature:
+
+The main agenda "d" command (=cj/main-agenda-display=, F8) currently
+renders four blocks: OVERDUE -> HIGH PRIORITY UNRESOLVED -> SCHEDULE
+-> PRIORITY B.  Insert two new blocks around SCHEDULE so a glance at
+the daily view also surfaces what's in flight and what's waiting on a
+manual check:
+
+- Above SCHEDULE: all tasks with TODO state VERIFY  (header:
+  =VERIFICATION=).
+- Below SCHEDULE: all tasks with TODO state DOING   (header:
+  =IN-PROGRESS=).
+
+Resulting block order:
+
+  OVERDUE -> HIGH PRIORITY -> *VERIFICATION* -> SCHEDULE -> *IN-PROGRESS* -> PRIORITY B
+
+Decisions:
+- *Scope*: same as the other blocks -- every entry in
+  =org-agenda-files=, no per-project filter.
+- *Scheduled / deadlined entries*: included.  A VERIFY task with a
+  scheduled date for today appears in both the VERIFICATION block and
+  the SCHEDULE block.  Mirrors the HIGH PRIORITY block's behavior.
+- *Habit / PROJECT skips*: skip habits via
+  =cj/org-skip-subtree-if-habit=.  Don't skip PROJECT-keyword entries
+  (the =(todo "VERIFY")= and =(todo "DOING")= match is keyword-exact
+  so PROJECT parents wouldn't appear anyway, and a PROJECT in VERIFY
+  state would be deliberate).
+
+Implementation locations:
+- =modules/org-agenda-config.el= -- two new entries inside
+  =org-agenda-custom-commands= "d" block, each a =(todo "STATE" ...)=
+  with =org-agenda-overriding-header=, the shared
+  =cj/--main-agenda-prefix-format=, and the habit skip-function.
+- =modules/org-agenda-config.el= -- two header defvars
+  (=cj/main-agenda-verify-title= / =cj/main-agenda-doing-title=) for
+  symmetry with =cj/main-agenda-overdue-title= etc.
+
+Regression coverage:
+- Extend =tests/test-org-agenda-config-skip-functions.el= with
+  structural assertions: the "d" command has six blocks in the
+  expected order, the new VERIFICATION / IN-PROGRESS blocks reference
+  the shared prefix-format symbol, carry the right
+  =org-agenda-overriding-header=, and run the habit skip.
+
 ** DONE [#A] Org Agenda fixes                                           :bug:
 *** 2026-05-13 Wed @ 13:05:21 -0500 Skip CANCELLED entries from main agenda SCHEDULE
 see the following screenshot
@@ -208,7 +253,7 @@ created (=one-window-p= still t).  Existing tests dropped their
 =pop-to-buffer= stub since =switch-to-buffer= works directly in batch.
 Full =make test-unit= green.
 
-** TODO [#B] Add ERT coverage for modules below 70% :tests:
+p** TODO [#B] Add ERT coverage for modules below 70% :tests:
 
 Coverage snapshot from =make coverage-summary= on 2026-05-13 (post-push):
 =4716/6853= executable lines covered (=68.8%=) across 73 tracked module files.
