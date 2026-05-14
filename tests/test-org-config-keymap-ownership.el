@@ -23,9 +23,27 @@
               cj/org-map)))
 
 (ert-deftest test-org-config-keymap-ownership-normal-clear-cache-on-org-map ()
-  "The Org prefix should expose one cache-clear command on c."
-  (should (eq (keymap-lookup cj/org-map "c")
+  "The Org prefix should expose the cache-clear command on capital C.
+
+Lowercase `c' is reserved as a sub-prefix for table column operations
+(`c i' insert, `c d' delete); the single-key org commands under this
+menu use capitals to leave the lowercase letters free as table
+sub-prefixes."
+  (should (eq (keymap-lookup cj/org-map "C")
               #'cj/org-clear-element-cache)))
+
+(ert-deftest test-org-config-keymap-ownership-table-row-bindings ()
+  "Table row operations live directly under the org menu at `r i' /
+`r d', no longer behind a `T' sub-prefix."
+  (should (eq (keymap-lookup cj/org-map "r i") #'org-table-insert-row))
+  (should (eq (keymap-lookup cj/org-map "r d") #'org-table-kill-row)))
+
+(ert-deftest test-org-config-keymap-ownership-table-column-bindings ()
+  "Table column operations live directly under the org menu at `c i' /
+`c d', sharing the `c' prefix that used to host the clear-cache
+command (which moved to capital `C')."
+  (should (eq (keymap-lookup cj/org-map "c i") #'org-table-insert-column))
+  (should (eq (keymap-lookup cj/org-map "c d") #'org-table-delete-column)))
 
 (ert-deftest test-org-config-keymap-ownership-regression-no-duplicate-org-keymap ()
   "The old duplicate `cj/org-keymap' binding should not exist."
