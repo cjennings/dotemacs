@@ -264,5 +264,91 @@ regression where one block diverges from the others on the format."
              (fmt-form (cadr (assoc 'org-agenda-prefix-format opts))))
         (should (eq fmt-form 'cj/--main-agenda-prefix-format))))))
 
+;;; ---------- VERIFICATION and IN-PROGRESS blocks ----------
+
+;;; Normal Cases
+
+(ert-deftest test-org-agenda-config-d-command-has-six-blocks-in-expected-order ()
+  "Normal: the \"d\" command runs six blocks in the expected order --
+OVERDUE -> HIGH PRIORITY -> VERIFICATION -> SCHEDULE -> IN-PROGRESS -> PRIORITY B."
+  (let* ((entry (assoc "d" org-agenda-custom-commands))
+         (blocks (nth 2 entry))
+         (shapes (mapcar (lambda (b) (list (car b) (cadr b))) blocks)))
+    (should (equal shapes
+                   '((alltodo "")
+                     (tags "PRIORITY=\"A\"")
+                     (todo "VERIFY")
+                     (agenda "")
+                     (todo "DOING")
+                     (alltodo ""))))))
+
+(ert-deftest test-org-agenda-config-verify-block-options ()
+  "Normal: the VERIFY block carries the VERIFICATION header, the shared
+prefix format, and the habit skip function."
+  (let* ((entry (assoc "d" org-agenda-custom-commands))
+         (blocks (nth 2 entry))
+         (verify (seq-find
+                  (lambda (b) (and (eq (car b) 'todo)
+                                   (equal (cadr b) "VERIFY")))
+                  blocks))
+         (opts (nth 2 verify)))
+    (should verify)
+    (should (eq (cadr (assoc 'org-agenda-overriding-header opts))
+                'cj/main-agenda-verify-title))
+    (should (equal cj/main-agenda-verify-title "VERIFICATION"))
+    (should (eq (cadr (assoc 'org-agenda-prefix-format opts))
+                'cj/--main-agenda-prefix-format))
+    (should (equal (cadr (assoc 'org-agenda-skip-function opts))
+                   ''cj/org-skip-subtree-if-habit))))
+
+(ert-deftest test-org-agenda-config-doing-block-options ()
+  "Normal: the DOING block carries the IN-PROGRESS header, the shared
+prefix format, and the habit skip function."
+  (let* ((entry (assoc "d" org-agenda-custom-commands))
+         (blocks (nth 2 entry))
+         (doing (seq-find
+                 (lambda (b) (and (eq (car b) 'todo)
+                                  (equal (cadr b) "DOING")))
+                 blocks))
+         (opts (nth 2 doing)))
+    (should doing)
+    (should (eq (cadr (assoc 'org-agenda-overriding-header opts))
+                'cj/main-agenda-doing-title))
+    (should (equal cj/main-agenda-doing-title "IN-PROGRESS"))
+    (should (eq (cadr (assoc 'org-agenda-prefix-format opts))
+                'cj/--main-agenda-prefix-format))
+    (should (equal (cadr (assoc 'org-agenda-skip-function opts))
+                   ''cj/org-skip-subtree-if-habit))))
+
+;;; Boundary Cases
+
+(ert-deftest test-org-agenda-config-verify-block-includes-scheduled-entries ()
+  "Boundary: the VERIFY block has no scheduled/deadline skip, so a VERIFY
+task with a scheduled date appears here as well as in the SCHEDULE block.
+Mirrors the HIGH PRIORITY block's behaviour."
+  (let* ((entry (assoc "d" org-agenda-custom-commands))
+         (blocks (nth 2 entry))
+         (verify (seq-find
+                  (lambda (b) (and (eq (car b) 'todo)
+                                   (equal (cadr b) "VERIFY")))
+                  blocks))
+         (opts (nth 2 verify))
+         (skip (cadr (assoc 'org-agenda-skip-function opts))))
+    ;; Single skip function (no compound `or' with scheduled/deadline).
+    (should (equal skip ''cj/org-skip-subtree-if-habit))))
+
+(ert-deftest test-org-agenda-config-doing-block-includes-scheduled-entries ()
+  "Boundary: same contract as VERIFY -- no scheduled/deadline skip, so a
+DOING task with a scheduled date appears in both blocks."
+  (let* ((entry (assoc "d" org-agenda-custom-commands))
+         (blocks (nth 2 entry))
+         (doing (seq-find
+                 (lambda (b) (and (eq (car b) 'todo)
+                                  (equal (cadr b) "DOING")))
+                 blocks))
+         (opts (nth 2 doing))
+         (skip (cadr (assoc 'org-agenda-skip-function opts))))
+    (should (equal skip ''cj/org-skip-subtree-if-habit))))
+
 (provide 'test-org-agenda-config-skip-functions)
 ;;; test-org-agenda-config-skip-functions.el ends here
