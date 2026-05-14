@@ -18,9 +18,13 @@
   (should (featurep 'telega-config)))
 
 (ert-deftest test-telega-config-launcher-binding-is-telega ()
-  "Normal: =C-; G= invokes the launcher wrapper, which routes to
-`telega' when installed or signals a helpful user-error otherwise."
-  (should (eq (keymap-lookup cj/custom-keymap "G") #'cj/telega)))
+  "Normal: =C-; T= invokes the launcher wrapper, which routes to
+`telega' when installed or signals a helpful user-error otherwise.
+
+Was =C-; G= when `T' was contested between org-table and transcription
+menus; both have moved (org-table flattened under `C-; O',
+transcription cleared to M-x), so the natural mnemonic is free."
+  (should (eq (keymap-lookup cj/custom-keymap "T") #'cj/telega)))
 
 (ert-deftest test-telega-config-launcher-without-package-signals-user-error ()
   "Error: with telega absent, the launcher signals a `user-error' that
