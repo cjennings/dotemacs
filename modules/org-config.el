@@ -129,10 +129,32 @@
   (defvar-keymap cj/org-map
     :doc "General org-mode operations and utilities.")
   (keymap-set cj/custom-keymap "O" cj/org-map)
-  ;; Table operations live directly under the org menu: `r' for row,
-  ;; `c' for column.  Single-key org commands under this prefix use
-  ;; capitals (e.g. `C' for clear element cache) to leave the
-  ;; lowercase letters free as table sub-prefixes.
+  ;; Keymap conventions for this prefix:
+  ;; - Table operations claim `r' (row) and `c' (column) as
+  ;;   sub-prefixes, so single-key commands that would otherwise
+  ;;   want lowercase `r' or `c' use capitals (e.g. `C' for clear
+  ;;   element cache).
+  ;; - Narrow and sparse-tree commands follow a lowercase-creates /
+  ;;   uppercase-cancels pattern.  `n' narrows to the current
+  ;;   subtree; `N' widens.  `s' is the sparse-tree sub-prefix and
+  ;;   `s S' cancels the sparse tree.
+
+  ;; Narrow / widen (direct, flat under the org menu)
+  (keymap-set cj/org-map "n" #'org-narrow-to-subtree)
+  (keymap-set cj/org-map "N" #'widen)
+  (keymap-set cj/org-map ">" #'cj/org-narrow-forward)
+  (keymap-set cj/org-map "<" #'cj/org-narrow-backwards)
+
+  ;; Sparse trees: lowercase creates, capital of the same letter cancels.
+  ;; Both `S' and `T' resolve to `org-show-all' -- same cancel command,
+  ;; paired with each lowercase create so the mental model is "capital
+  ;; cancels the lowercase command I just ran" without having to recall
+  ;; which letter the cancel actually lives on.
+  (keymap-set cj/org-map "s" #'org-match-sparse-tree)
+  (keymap-set cj/org-map "S" #'org-show-all)
+  (keymap-set cj/org-map "t" #'org-show-todo-tree)
+  (keymap-set cj/org-map "T" #'org-show-all)
+  (keymap-set cj/org-map "R" #'org-reveal)
   :bind
   ("C-c c" . org-capture)
   ("C-c a" . org-agenda)
@@ -147,7 +169,6 @@
         ("C-c N"     . org-narrow-to-subtree)
         ("C-c >"     . cj/org-narrow-forward)
         ("C-c <"     . cj/org-narrow-backwards)
-        ("<f2>"      . org-reveal)
         ("C-c <ESC>" . widen)
         ("C-c C-a"   . cj/org-appear-toggle))
   (:map cj/org-map
@@ -329,6 +350,17 @@ status to preserve priority ordering within TODO groups."
     "C-; O c" "table column"
     "C-; O c i" "insert column"
     "C-; O c d" "delete column"
+    ;; org narrowing (flat under the org menu; lowercase narrows, capital widens)
+    "C-; O n" "narrow to subtree"
+    "C-; O N" "widen"
+    "C-; O >" "narrow forward sibling"
+    "C-; O <" "narrow backward sibling"
+    ;; org sparse tree (flat; lowercase creates, capital of same letter cancels)
+    "C-; O s" "match sparse tree"
+    "C-; O S" "show all (cancel)"
+    "C-; O t" "show all TODOs"
+    "C-; O T" "show all (cancel)"
+    "C-; O R" "reveal context"
     ;; org global bindings
     "C-c a" "org agenda"
     "C-c c" "org capture"
