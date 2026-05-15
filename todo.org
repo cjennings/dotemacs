@@ -38,573 +38,7 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:feature:refactor:=.
 
 * Emacs Open Work
-** DONE [#B] Write spec on what's needed for music-config not to depend on EMMS
-CLOSED: [2026-05-15 Fri]
-What if we were writing this as it's own package and couldn't use EMMS. What would that look like?
-The spec should be in docs/
-Another task should be created to implement the spec
-Spec written in [[file:docs/design/music-config-without-emms.org][Design: music-config Without EMMS]].
-
-** TODO [#B] Implement EMMS-free music-config architecture       :refactor:
-Implement the design in [[file:docs/design/music-config-without-emms.org][Design: music-config Without EMMS]].
-
-The implementation should make =music-config.el= load without EMMS, introduce
-package-owned playlist and track state, add a =cj/music-playlist-mode= view,
-and route playback through a small backend protocol with an initial =mpv=
-backend.  Preserve the current F10 and =C-; m= user workflows where practical,
-and keep M3U load/save/edit/reload plus radio station creation working.
-
-Complexity estimate: high.  This is a module rewrite with a new internal data
-model, package-owned playlist mode, backend protocol, mpv process management,
-and migration of existing EMMS-backed commands/tests.
-
-Time estimate: 2-4 focused days for an EMMS-free v1 with play/stop/next/previous,
-M3U persistence, playlist UI, and focused tests.  Add another 1-2 days if v1
-must include full mpv IPC support for pause, seek, and volume parity.
-
-Acceptance checks:
-- =music-config.el= can be required in batch with no EMMS package installed.
-- Existing focused music tests pass without EMMS preload or EMMS stubs except
-  where a compatibility adapter is explicitly under test.
-- New tests cover playlist state, backend command dispatch, M3U persistence,
-  and the EMMS-free load smoke path.
-** DONE [#B] Update gptel models :chore:
-CLOSED: [2026-05-14 Thu]
-Anthropic side: bumped Opus 4.6 → 4.7 (current frontier); Sonnet 4.6
-and Haiku 4.5 stay (still current).  Default model setq also bumped
-to =claude-opus-4-7= in both places (=cj/ensure-gptel-backends= and
-the =use-package gptel :config= block).
-
-OpenAI side: bigger refresh.  Old menu (=gpt-4o=, =gpt-5= original,
-=gpt-4.1=, =o1=) was all in the cohort retired from ChatGPT on
-2026-02-13 -- still callable via API but no longer the path forward.
-New menu: =gpt-5.5= (current flagship), =gpt-5.4-mini= (fast/cheap),
-=o3= (reasoning).
-
-Stale docstring example in =cj/gptel--current-model-selection=
-also bumped to match.
-
-gptel's bundled =:models= list only goes through May-2025 model IDs
-but the constructor passes whatever string you supply straight to the
-API, so newer model names work fine without a gptel upgrade.
-
-** DONE [#B] Add gptel toggle to M-F9 :refactor:
-CLOSED: [2026-05-15 Fri]
-Rebound =M-<f9>= from =cj/ai-vterm-pick-buffer= to =cj/toggle-gptel=
-in both the global keymap and =vterm-mode-map=.  The pick-buffer
-command and its helper =cj/--ai-vterm-pick-buffer-candidates= were
-deleted entirely along with the candidates test file.
-
-F9 family after this change:
-- =<f9>=   ai-vterm toggle (unchanged)
-- =C-<f9>= ai-vterm project picker (unchanged)
-- =M-<f9>= gptel *AI-Assistant* window toggle (NEW)
-
-Two existing test files updated:
-=test-ai-vterm--f9-in-vterm.el= (binding assertions flipped to the
-new function).
-=test-ai-vterm--pick-buffer-candidates.el= deleted.
-
-Module commentary + the =cj/ai-vterm= docstring updated to describe
-the new M-F9 behavior.
-
-*** 2026-05-15 Fri @ 02:21:00 -0500 Add explicit ai-vterm -> ai-config command boundary for cj/toggle-gptel
-=make compile= warned that =cj/toggle-gptel= was not known to be
-defined when =modules/ai-vterm.el= was byte-compiled.  Added an
-interactive autoload declaration in =ai-vterm.el= alongside the
-other cross-module declarations:
-
-#+begin_src elisp
-(autoload 'cj/toggle-gptel "ai-config" nil t)
-#+end_src
-
-The dependency is now explicit, =make compile= is clean, and
-requiring =ai-vterm= in isolation leaves =cj/toggle-gptel= fboundp
-as an autoload sigil pointing at =ai-config=.  Added a regression
-test in =test-ai-vterm--f9-in-vterm.el=:
-=test-ai-vterm-toggle-gptel-autoloaded-without-ai-config=.  Verified
-with =make compile= (no warning) and
-=make test-file FILE=test-ai-vterm--f9-in-vterm.el= (5/5 pass).
-
-** DONE [#B] Modify C-; b p :feature:
-CLOSED: [2026-05-15 Fri]
-- (EWW) copy EWW url when in an EWW buffer.
-- (calibre) copy path to an epub or pdf or other document if those are shown in docview or pdfview
-
-Shipped this session: =cj/copy-buffer-source-as-kill= replaces the
-old =cj/copy-path-to-buffer-file-as-kill= (kept as a =defalias= for
-backwards compat).  Dispatch alist =cj/buffer-source-functions= keys
-on =major-mode= → thunk; =buffer-file-name= is the fallback.
-Bindings: =C-; b p= now copies whatever is the right "source" for
-the current mode.  which-key relabeled "copy buffer source" (was
-"copy file path").
-
-First-batch dispatches: =eww-mode= (eww URL), =elfeed-show-mode=
-(entry link), =dired-mode= / =dirvish-mode= (file at point),
-=doc-view-mode= / =pdf-view-mode= (covered by the fallback to
-=buffer-file-name=).  10 new ERT tests in
-=tests/test-custom-buffer-file-copy-buffer-source.el= cover the
-dispatch paths + the alias + the keymap.
-
-Deferred to a follow-up task: =mu4e-view-mode=, =org-mode= at a
-heading, =help-mode=, =Info-mode=, =magit-log-mode= /
-=magit-commit-mode= / =magit-status-mode=, =xref--xref-buffer-mode=
-/ =grep-mode= / =compilation-mode=, =image-mode=, =archive-mode=.
-These need format decisions (Message-ID vs link vs subject, id link
-vs CUSTOM_ID vs heading text, etc.) before implementation.
-
-** DONE [#C] Extend cj/buffer-source-functions to more modes :feature:
-CLOSED: [2026-05-15 Fri]
-Followup to =Modify C-; b p=.  The first batch covered eww,
-elfeed-show, dired/dirvish, and doc-view/pdf-view (via the
-buffer-file-name fallback).  These modes still need a decision +
-implementation:
-
-- =mu4e-view-mode= → Message-ID, =mu4e:msgid:...= link, or
-  Subject + From?
-- =Info-mode= → an org-style =[[info:(manual)Node][label]]= link
-
-Each one is a small addition to =cj/buffer-source-functions= in
-=modules/custom-buffer-file.el= plus a test.  Pick a format per
-mode, then implement.
-
-*** 2026-05-15 Fri @ 02:21:00 -0500 Make Info buffer-source output match the documented org link format
-Updated the =Info-mode= thunk in =cj/buffer-source-functions=
-(=modules/custom-buffer-file.el=) to return the full org bracket
-link =[[info:(manual)Node][(manual) Node]]= instead of the bare
-target =info:(manual)Node=.  Label format =(manual) Node= keeps the
-manual name and node name both grep-friendly in note files.
-
-Existing test
-=test-copy-buffer-source-info-mode-formats-as-org-info-link= on a
-=.info.gz= file now asserts the bracket form.  Added a new boundary
-test
-=test-copy-buffer-source-info-mode-handles-uncompressed-info-file=
-for plain =.info= input so the suffix-stripping branch is locked
-in.  Verified with
-=make test-file FILE=test-custom-buffer-file-copy-buffer-source.el=
-(15/15 pass).
-
-*** 2026-05-15 Fri @ 00:11:47 -0500 Brainstorm: additional buffer-source ideas
-
-Today =C-; b p= invokes =cj/copy-path-to-buffer-file-as-kill=, which only
-handles file-visiting buffers and errors otherwise.  The proposed
-extension turns it into a dispatcher: ask the current buffer "what's
-your source?" and copy that, falling back to =buffer-file-name=.
-
-Grouping ideas by yield (most useful first) so an implementation can
-prioritize:
-
-*Likely highest-leverage (matches Craig's daily workflows):*
-- =eww-mode= → =(eww-current-url)= (already in task body).
-- =elfeed-show-mode= → entry URL via =(elfeed-entry-link
-  elfeed-show-entry)=.  Closes the loop for "I'm reading this article,
-  let me share it / open it in browser."
-- =mu4e-view-mode= / =mu4e-headers-mode= → either the Message-ID as a
-  =mu4e:msgid:...= link or the From + Subject as plain text.  Useful
-  for citing emails in org notes.
-- =org-mode= on a heading → the heading's =CUSTOM_ID= or =ID= as a
-  full =[[id:...][title]]= link.  Already partly covered by
-  =org-store-link=; the value here is "give me the link form even
-  outside an org-store flow."
-- =dired-mode= / =dirvish-mode= → =(dired-get-filename)= for the file
-  at point, not the dired buffer's =default-directory=.  Subtly
-  different from current behavior because dired *is* file-visiting in
-  a sense.
-- =doc-view-mode= / =pdf-view-mode= → the underlying file path.  Often
-  IS =buffer-file-name=, but explicit dispatch makes the behavior
-  predictable.  Calibre integration (task body) is a special case of
-  this -- calibre wraps the path through a different lookup.
-
-*Useful for occasional workflows:*
-- =help-mode= → the symbol being described (=help-xref-following= or
-  parsing the *Help* buffer header).  Pairs with /describe-function/
-  /describe-variable/.
-- =Info-mode= → an org-style =[[info:(manual)Node][label]]= link.
-- =magit-log-mode= / =magit-commit-mode= → the commit SHA at point,
-  optionally as a clickable form for the remote.
-- =magit-status-mode= → the project root (or repo URL via
-  =vc-git-repository-url=).
-- =xref--xref-buffer-mode= / =grep-mode= / =compilation-mode= → the
-  =file:line= location at point.
-- =image-mode= → the image file path.
-- =archive-mode= (tar/zip) → =archive-file-name= plus the entry name.
-
-*Probably skip:*
-- =vterm-mode= / =eshell-mode= → no meaningful "source"; would just
-  copy the buffer name.  Edge case at best.
-- =w3m-mode= → covered by EWW for Craig; w3m use is rare here.
-- =calc-mode= → "current value" isn't really a "buffer source"; better
-  served by a dedicated calc keybinding.
-
-*Implementation shape:*
-
-A dispatch alist mapping major-mode → thunk that returns a string
-(or nil to fall through), with =buffer-file-name= as the final
-fallback.  Something like:
-
-#+begin_src emacs-lisp
-(defvar cj/buffer-source-functions
-  '((eww-mode . (lambda () (eww-current-url)))
-    (elfeed-show-mode . (lambda () (elfeed-entry-link elfeed-show-entry)))
-    (dired-mode . (lambda () (dired-get-filename nil t)))
-    ...))
-
-(defun cj/copy-buffer-source-as-kill ()
-  (interactive)
-  (let* ((handler (alist-get major-mode cj/buffer-source-functions))
-         (source (or (and handler (funcall handler))
-                     (buffer-file-name)
-                     (user-error "Buffer has no copyable source"))))
-    (kill-new source)
-    (message "Copied: %s" source)))
-#+end_src
-
-Rename the command (=cj/copy-buffer-source-as-kill=) since it's no
-longer specifically about a file path.  Keep =C-; b p= binding so
-muscle memory survives.
-
-** TODO [#B] Investigate gptel-magit not working properly :bug:
-
-Wired up in =modules/ai-config.el= as three lazy entry points:
-- =M-g= in =git-commit-mode-map= -> =gptel-magit-generate-message=
-- =g= in =magit-commit= transient -> =gptel-magit-commit-generate=
-- =x= in =magit-diff= transient -> =gptel-magit-diff-explain=
-
-Specific failure mode TBD. First step: reproduce, note which entry point fails
-and how, then trace from there. Likely suspects: autoload chain (the three
-=autoload= calls run inside =with-eval-after-load 'magit=), transient suffix
-attachment via =transient-append-suffix=, or gptel-side backend/model config.
-
-Migration to current lazy form: commit =3eb1a0c refactor(gptel): lazy-load
-gptel-magit, rebind rewrite/context keys=.
-
-** DONE [#C] Rebind org-noter insert-note to =n= (so it's =C-; n n=) :refactor:
-CLOSED: [2026-05-15 Fri]
-
-The org-noter prefix =C-; n= currently has =i= for insert-note and =n=
-for sync-next-note. Move insert-note onto =n= -- it's the most-used
-action in a noter session and deserves the doubled prefix letter.
-
-Current bindings in =modules/org-noter-config.el= (=cj/org-noter-map=):
-- =i= -> =cj/org-noter-insert-note-dwim=
-- =n= -> =org-noter-sync-next-note=
-- =p= -> =org-noter-sync-prev-note=
-- =.= -> =org-noter-sync-current-note=
-
-
-Proposed bindings
-- n -> =cj/org-noter-insert-note-dwim=
-- > -> =org-noter-sync-next-note=
-- < -> =org-noter-sync-prev-note=
-- =.= -> =org-noter-sync-current-note=
-
-Update the =which-key= labels in the same module and any test that asserts the keymap shape.
-
-** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
-
-Consolidate the developer F-key block into a coherent sequence. F5 reserved for debug (separate ticket). Format bindings move off F6 to C-; f.
-
-Menu mechanism: =completing-read= everywhere (consistent with F7 coverage scope prompt and with the vertico/consult workflow in the rest of the config). No transient definitions.
-
-**F4 — compile + run**
-
-- F4 (no modifier): completing-read with candidates filtered by project type. Detection via projectile-project-compilation-cmd and heuristic fallbacks (go.mod, Makefile, Eask, package.json, pyproject.toml, docker-compose.yml).
-  - Compiled project candidates: "Compile", "Run", "Compile + Run" (default), "Clean + Rebuild"
-  - Interpreted project candidates: "Run" only
-- C-F4: fast path = Compile only. On interpreted projects, shows "not a compiled language" and no-ops.
-- M-F4: fast path = Clean + Rebuild. Same "not applicable" behavior on interpreted projects.
-
-The dispatcher reads projectile's per-project compile/run/test commands. No Docker-specific logic in the command itself. Container workflows are configured via projectile's prompt-and-cache (or .dir-locals.el from the dev-project-setup helper).
-
-**F6 — run tests**
-
-- F6 (no modifier): completing-read top-level:
-  - "All tests"
-  - "Current file's tests"
-  - "Run a test..." (nested completing-read with individual tests)
-- C-F6: fast path = "Current file's tests"
-- M-F6: fast path = "Run a test..."
-
-"Current file's tests": if current buffer is a test file, run it directly. If source file, find matching test file(s) via language conventions (elisp: tests/test-<module>*.el; python: tests/test_<module>.py; etc.) and run them aggregated.
-
-"Run a test...": build a candidate list of individual tests, pre-select the last-chosen test for this buffer (buffer-local cj/--last-test-run), present via completing-read. Pressing RET re-runs last. Memory is buffer-local so different source files remember their own last-test.
-
-Candidate set for "Run a test...":
-- If buffer is a test file: parse the file, return its test definitions.
-- If buffer is a source file: find matching test file(s) and aggregate their test definitions.
-- No matches: error out with "No tests found for <buffer>". Don't silently fall through.
-
-Per-language test discovery:
-- Python, Go, TypeScript/JavaScript: tree-sitter queries (treesit-auto already configured, grammars auto-install)
-  - Python: (function_definition name: (identifier) @name (:match "^test_" @name))
-  - Go: (function_declaration name: (identifier) @name (:match "^Test" @name))
-  - TS/JS: (call_expression function: (identifier) @fn arguments: (arguments (string) @name) (:match "^\\(test\\|it\\)$" @fn))
-  - Parsing unopened test files: use with-temp-buffer + insert-file-contents + python-ts-mode (etc.) + treesit-query-capture
-- Elisp: built-in sexp navigation; scan for (ert-deftest <name> ...) forms. No tree-sitter needed.
-
-**F7 — coverage** (already designed in docs/design/coverage.org)
-
-**Required moves:**
-- Move blacken-buffer (python), shfmt-buffer (sh), clang-format-buffer (c) off F6 to C-; f prefix (already the format-buffer prefix).
-- Move projectile-run-project off F6 (folds into the new F4 completing-read).
-
-**Ordering:**
-Do this after the coverage-config work ships. No churn mid-flight.
-
-** TODO [#B] Review and rebind M-S- keybindings :refactor:
-
-Changed from M-uppercase to M-S-lowercase for terminal compatibility.
-These may override useful defaults - review and pick better bindings:
-- M-S-b calibredb (was overriding backward-word)
-- M-S-c time-zones (was overriding capitalize-word)
-- M-S-d dwim-shell-menu (was overriding kill-word)
-- M-S-e eww (was overriding forward-sentence)
-- M-S-f fontaine (was overriding forward-word)
-- M-S-h split-below
-- M-S-i edit-indirect
-- M-S-k show-kill-ring (was overriding kill-sentence)
-- M-S-l switch-themes (was overriding downcase-word)
-- M-S-m kill-all-buffers
-- M-S-o kill-other-window
-- M-S-r elfeed
-- M-S-s window-swap
-- M-S-t toggle-split (was overriding transpose-words)
-- M-S-u winner-undo (was overriding upcase-word)
-- M-S-v split-right (was overriding scroll-down)
-- M-S-w wttrin (was overriding kill-ring-save)
-- M-S-y yank-media (was overriding yank-pop)
-- M-S-z undo-kill-buffer (was overriding zap-to-char)
-
-** TODO [#B] Build cj/dev-setup-project helper (per docs/design/dev-setup-project.org) :feature:
-
-Interactive command that opens a review buffer with proposed per-subdirectory .dir-locals.el contents (projectile compile/run/test + cj/coverage-backend), optional starter Makefile when none exists, and gitignore updates. User edits inline, C-c C-c writes all files.
-
-Design: [[file:../docs/design/dev-setup-project.org][docs/design/dev-setup-project.org]]
-
-Scope of v1:
-- modules/dev-setup-config.el (command + review-buffer major mode)
-- Three-tier detection: existing Makefile, existing package.json/pyproject.toml scripts, fall-back starter Makefile generation.
-- Project shapes supported: pure Elisp, pure Go, pure Python, pure Node/TS, Docker Compose polyglot.
-- Re-run semantics: status banners (UNCHANGED / WILL UPDATE / WILL CREATE), idempotent gitignore append, never modifies an existing Makefile.
-- ERT tests for the pure helpers (Makefile parser, package.json parser, shape detection, target-to-role mapping, review-buffer parser).
-
-Deferred:
-- Rust (Cargo.toml), Java (pom.xml), other language shapes.
-- Project-wide override config file.
-- Auto-detecting external run scripts in conventional locations.
-
-Do this after the F-key rework ticket ships; don't want to churn project configs before the keys are stable.
-
-** TODO [#B] Pick and wire a debug backend for F5 :feature:
-
-Bind F5 globally to a debug entry point. Backend choice is the hard part:
-
-- dape (Debug Adapter Protocol for Emacs) — modern, multi-language via DAP. Single UX across Python, Go, TS, Rust, etc. Less mature than DAP clients in other editors.
-- realgud — wraps multiple debuggers (pdb, gdb, node --inspect, etc.). More mature; UX varies by backend.
-- Language-specific stacks — dap-mode (python-mode + dap), delve for go, ts-node --inspect, etc. Best per-language UX; most config work.
-
-F5 itself will be simple (start/resume debug). Likely modifier variants once the backend is picked:
-- C-F5 toggle breakpoint at point
-- M-F5 eval expression in debug context (or step-over shortcut)
-
-Evaluate against these projects' languages: elisp (edebug already works), Python, Go, TS, shell. Shell debug is usually print-based; skip.
-
-Do this after the F-key rework ticket ships so F5 is the only hole left.
-
-** TODO [#B] Build debug-profiling.el module :feature:
-
-Reusable profiling infrastructure for targeted slow-command investigation. Consolidates scattered profiler bindings (currently in =modules/config-utilities.el=) and adds two pure-helper-backed entry points: "profile next command" and "time region or sexp." Designed via =/brainstorm= 2026-04-26.
-
-Design: [[file:../docs/design/debug-profiling.org][docs/design/debug-profiling.org]]
-
-Implement via =/start-work= against the design — branch =feat/debug-profiling=, commits decomposed along the test-first split-for-testability boundary. Once shipped, use it as the v1 exercise on the queued [#B] org-capture target-building investigation.
-
-** TODO [#C] Implement flycheck modeline customization :feature:
-
-Spec: [[file:docs/design/flycheck-modeline-customization.org][docs/design/flycheck-modeline-customization.org]]
-
-Custom modeline (=modules/modeline-config.el=) omits =minor-mode-alist=,
-so flycheck's error/warning lighter is invisible.  Fix is a two-line
-=:custom= block in =flycheck-config.el= (prefix + success indicator) plus
-one guarded =(:eval ...)= form in =mode-line-format=.  See spec for the
-active-window-gating decision, risky-local-variable note, emoji
-candidates, and the manual verification walk.
-
-** TODO [#C] Migrate from Company to Corfu (with prescient integration) :feature:
-
-Spec: [[file:docs/design/company-to-corfu-migration.org][docs/design/company-to-corfu-migration.org]]
-
-Drop-in replacement for the in-buffer completion stack: =company= →
-=corfu=, =company-quickhelp= → =corfu-popupinfo=, =company-box= →
-=kind-icon=, =company-prescient= → =corfu-prescient=, plus =cape= for
-the file/keyword/dabbrev capfs that =company-files= / =company-keywords=
-used to handle.  Per-module fixups for ledger, AUCTeX, eshell, mu4e
-compose, and the three =prog-*= modules.  See the design doc for the
-full translation table, migration steps, tests, and risks.
-
-** TODO [#C] Consider removing gptel and the C-; a AI-assistant keymap :refactor:cleanup:
-
-Claude Code (via the F9 ai-vterm launcher) has fully replaced the gptel
-side-chat workflow. The =C-; a= prefix and the gptel use-package block
-in =modules/ai-config.el= no longer get used.
-
-Decide whether to:
-
-1. *Remove entirely.* Drop =modules/ai-config.el= +
-   =modules/ai-conversations.el=, the =C-; a= keymap registration,
-   the gptel/anthropic/openai package installs, and the saved-
-   conversations directory. Update =init.el= to stop requiring the
-   module. Net code reduction is large.
-2. *Keep but mothball.* Move the module to =modules/archived/= so the
-   bindings disappear but the code stays available for reference if
-   the workflow ever comes back.
-3. *Trim to the part that's still useful.* The rewrite-region command
-   (=C-; a r=) is the one piece Claude Code in a separate vterm can't
-   do as smoothly -- it edits the current buffer in place against a
-   prompt. If that's worth keeping, narrow =ai-config.el= to just
-   that command + its backend setup and drop everything else.
-
-Scope notes for whichever path:
-
-- =C-; a= keymap is registered in =ai-config.el='s tail; if removed,
-  the prefix becomes free for repurposing or stays unbound.
-- gptel pulls in =anthropic= / =openai= backends; both keys live in
-  =auth-config.el= but aren't referenced elsewhere -- safe to leave
-  the auth entries even if gptel goes.
-- =ai-conversations.el= is autoloaded via =ai-config.el= and stores
-  saved conversations in a designated dir; the dir + content go too
-  if removing entirely.
-- which-key registrations under =C-; a= disappear automatically when
-  the keymap goes.
-
-Companion to the F9 ai-vterm work shipped 2026-05-08. Filed because
-the C-F9 binding was already pulled from gptel during that work.
-
-** TODO [#C] Extend F2 "preview" convention across modes :feature:
-
-F2 is the universal preview key. Currently bound in markdown-mode (markdown-preview) and org-mode (org-reveal, moved from F5). Extend to other modes where a "preview" action is natural:
-
-- Hugo blog (hugo-config.el) — preview the post in browser
-- HTML / web-mode — open in browser
-- Any other mode with a natural "preview this" action
-
-Keep the binding mode-local so F2 stays available as a global candidate where no preview makes sense.
-
-** TODO [#C] Build localrepo and document limitations :feature:
-
-Repeatable installs and safe rollbacks.
-
-.localrepo only contains packages from package.el archives.
-Treesitter grammars are downloaded separately by treesit-auto on first use.
-For true offline reproducibility, need to cache treesitter grammars separately.
-
-** TODO [#C] Investigate sqlite finalizer error on init :bug:
-
-=*Messages*= shows =finalizer failed: (wrong-type-argument sqlitep nil)= during init. A package is finalizing an sqlite handle that's already nil — indicates a teardown bug somewhere. Likely culprits: forge, magit-todos, or any package using the sqlite backend.
-
-Investigation order:
-1. =M-x toggle-debug-on-message= with a regex matching =finalizer failed=.
-2. Restart Emacs to capture the backtrace.
-3. Check =modules/git-config.el= (forge) and any other sqlite-using module.
-
-Single occurrence per session, no visible impact yet. Track in case it grows.
-
-Discovered 2026-04-26 in =*Messages*=.
-
-** TODO [#C] Investigate TRAMP/dirvish showing question marks for file dates :bug:
-
-Remote directories in dirvish show "?" instead of actual modification dates.
-Tried several approaches without success - needs deeper investigation.
-
-**Attempted fixes (all reverted):**
-1. Connection-local dired-listing-switches with -alh (didn't help)
-2. Disabling tramp-direct-async-process (reported to cause this, but disabling didn't fix it)
-3. Hook to set different listing switches for remote vs local (didn't help)
-
-**Possible causes to investigate:**
-- dirvish may be using its own attribute fetching that bypasses dired-listing-switches
-- May need dirvish-specific configuration for remote file attributes
-- Could be an Emacs 29/30 + TRAMP + dirvish interaction issue
-- May require changes to how dirvish renders the file-size attribute on remote
-
-**Files involved:**
-- modules/tramp-config.el
-- modules/dirvish-config.el
-
-** TODO [#C] Finish terminal GPG pinentry configuration :feature:
-
-Continue work on terminal-mode GPG passphrase prompts (loopback mode).
-Branch: terminal-pinentry
-
-Changes in progress (modules/auth-config.el):
-- Use epa-pinentry-mode 'loopback in terminal
-- Use external pinentry (pinentry-dmenu) in GUI
-- Requires env-terminal-p from host-environment module
-
-** TODO [#D] Polish reveal.js presentation setup :feature:
-
-Three small reveal.js improvements; collected into one task because each on its own is too small to track separately.
-
-1. *Image insertion helper.* Function to insert images with proper org-reveal attributes (sizing, background images, etc.) without having to remember the syntax.
-2. *Default font sizing for slide elements.* Configure reveal.js font sizes for headings, body text, code blocks, etc. — better defaults via =org-reveal-head-preamble= CSS or a custom theme.
-3. *Custom dupre reveal.js theme.* CSS theme using the colors from =themes/dupre-palette.el=. Install into =reveal.js/css/theme/= for use with =#+REVEAL_THEME: dupre=.
-
-** TODO [#D] Evaluate and integrate Buttercup for behavior-driven integration tests :tests:
-
-Complex workflow testing capability.
-
-** DONE [#D] Dedup the doubly-defined functions in calibredb-epub-config.el :cleanup:
-CLOSED: [2026-05-15 Fri]
-=make compile= flags =calibredb-epub-config.el= for defining =cj/calibredb-clear-filters= (line ~79) and =cj/nov-jump-to-calibredb= (line ~277) twice each — the later definition silently shadows the earlier. Find which copy is current, delete the stale one. Pre-existing; noticed 2026-05-12 while fixing the Nov text-width loop.
-
-Diagnosis: there was no actual duplicate.  Only one =(defun ...)=
-of each name in the source.  The "defined multiple times" warning
-fired because use-package's =:bind= expansion makes the
-byte-compiler count the referenced symbol as a definition when the
-target function is defined in the same file -- then sees the actual
-=defun= later and warns about a redefinition.
-
-Fix: reorder so each =defun= appears /before/ the =use-package=
-block that references it via =:bind=.  Concrete moves:
-
-- =cj/calibredb-clear-filters= moved above =(use-package calibredb
-  ...)=.
-- =cj/nov--metadata-get= + =cj/nov--file-path= +
-  =cj/nov-jump-to-calibredb= (the entire jump-to-calibredb cluster)
-  moved above =(use-package nov ...)=.  Helpers had to move
-  alongside the public function so the byte-compiler doesn't emit
-  free-function warnings for them.
-
-After: both "defined multiple times" warnings are gone.  All unit
-tests still pass.  Net line count unchanged (just reordered).
-
-** TODO [#D] Track ELPA upstream byte-compile warnings (esxml, poetry) :chore:
-
-Two ELPA packages emit byte-compile warnings on =make compile= that aren't fixable in this repo:
-
-1. =elpa/esxml-20250421.1632/esxml.el= — =Warning: Unknown type: attrs= and =Unknown type: stringp= (a defcustom =:type= spec).
-2. =elpa/poetry-20240329.1103/poetry.el= — =Warning: Case 'X will match 'quote'= for four cases (=post-command=, =projectile=, =project=, =switch-buffer=). Quoted symbols inside =pcase= clauses — should be unquoted upstream.
-
-No action in this repo. Revisit when packages update. File upstream issues if warnings linger past a few months.
-
-Discovered 2026-04-26 in =*Messages*= during compile.
-
-** TODO [#D] Add status dashboard for dwim-shell-command processes :feature:
-
-Create a command to show all running dwim-shell-command processes with their status.
-Currently, there's no unified view of multiple running extractions/conversions.
-
-**Current behavior:**
-- Each command shows spinner in minibuffer while running
-- Process buffers created: `*Extract audio*`, etc.
-- On completion: buffer renamed to `*Extract audio done*` or `*Extract audio error*`
-- No way to see all running processes at once
-
-**Recommended approach:**
-Custom status buffer that reads `dwim-shell-command--commands`.
-Can add mode-line indicator later as enhancement.
-** PROJECT [#A] Architecture review follow-up from 2026-05-03 :refactor:
+** PROJECT [#A] Architecture review follow-up from 2026-05-03 :refactor:no-sync:
 
 High-level pass over =init.el=, =early-init.el=, and all 104 files in
 =modules/=. The main theme: the config works, but load order, startup side
@@ -942,7 +376,164 @@ Done 2026-05-15:
 - Focused tests passed for the new architecture smoke file and the affected
   agenda/refile helpers.
 
-** DOING [#B] Module-by-module review and hardening                 :review:
+** TODO [#B] Implement EMMS-free music-config architecture       :refactor:
+Implement the design in [[file:docs/design/music-config-without-emms.org][Design: music-config Without EMMS]].
+
+The implementation should make =music-config.el= load without EMMS, introduce
+package-owned playlist and track state, add a =cj/music-playlist-mode= view,
+and route playback through a small backend protocol with an initial =mpv=
+backend.  Preserve the current F10 and =C-; m= user workflows where practical,
+and keep M3U load/save/edit/reload plus radio station creation working.
+
+Complexity estimate: high.  This is a module rewrite with a new internal data
+model, package-owned playlist mode, backend protocol, mpv process management,
+and migration of existing EMMS-backed commands/tests.
+
+Time estimate: 2-4 focused days for an EMMS-free v1 with play/stop/next/previous,
+M3U persistence, playlist UI, and focused tests.  Add another 1-2 days if v1
+must include full mpv IPC support for pause, seek, and volume parity.
+
+Acceptance checks:
+- =music-config.el= can be required in batch with no EMMS package installed.
+- Existing focused music tests pass without EMMS preload or EMMS stubs except
+  where a compatibility adapter is explicitly under test.
+- New tests cover playlist state, backend command dispatch, M3U persistence,
+  and the EMMS-free load smoke path.
+** TODO [#B] Investigate gptel-magit not working properly :bug:
+
+Wired up in =modules/ai-config.el= as three lazy entry points:
+- =M-g= in =git-commit-mode-map= -> =gptel-magit-generate-message=
+- =g= in =magit-commit= transient -> =gptel-magit-commit-generate=
+- =x= in =magit-diff= transient -> =gptel-magit-diff-explain=
+
+Specific failure mode TBD. First step: reproduce, note which entry point fails
+and how, then trace from there. Likely suspects: autoload chain (the three
+=autoload= calls run inside =with-eval-after-load 'magit=), transient suffix
+attachment via =transient-append-suffix=, or gptel-side backend/model config.
+
+Migration to current lazy form: commit =3eb1a0c refactor(gptel): lazy-load
+gptel-magit, rebind rewrite/context keys=.
+
+** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
+
+Consolidate the developer F-key block into a coherent sequence. F5 reserved for debug (separate ticket). Format bindings move off F6 to C-; f.
+
+Menu mechanism: =completing-read= everywhere (consistent with F7 coverage scope prompt and with the vertico/consult workflow in the rest of the config). No transient definitions.
+
+**F4 — compile + run**
+
+- F4 (no modifier): completing-read with candidates filtered by project type. Detection via projectile-project-compilation-cmd and heuristic fallbacks (go.mod, Makefile, Eask, package.json, pyproject.toml, docker-compose.yml).
+  - Compiled project candidates: "Compile", "Run", "Compile + Run" (default), "Clean + Rebuild"
+  - Interpreted project candidates: "Run" only
+- C-F4: fast path = Compile only. On interpreted projects, shows "not a compiled language" and no-ops.
+- M-F4: fast path = Clean + Rebuild. Same "not applicable" behavior on interpreted projects.
+
+The dispatcher reads projectile's per-project compile/run/test commands. No Docker-specific logic in the command itself. Container workflows are configured via projectile's prompt-and-cache (or .dir-locals.el from the dev-project-setup helper).
+
+**F6 — run tests**
+
+- F6 (no modifier): completing-read top-level:
+  - "All tests"
+  - "Current file's tests"
+  - "Run a test..." (nested completing-read with individual tests)
+- C-F6: fast path = "Current file's tests"
+- M-F6: fast path = "Run a test..."
+
+"Current file's tests": if current buffer is a test file, run it directly. If source file, find matching test file(s) via language conventions (elisp: tests/test-<module>*.el; python: tests/test_<module>.py; etc.) and run them aggregated.
+
+"Run a test...": build a candidate list of individual tests, pre-select the last-chosen test for this buffer (buffer-local cj/--last-test-run), present via completing-read. Pressing RET re-runs last. Memory is buffer-local so different source files remember their own last-test.
+
+Candidate set for "Run a test...":
+- If buffer is a test file: parse the file, return its test definitions.
+- If buffer is a source file: find matching test file(s) and aggregate their test definitions.
+- No matches: error out with "No tests found for <buffer>". Don't silently fall through.
+
+Per-language test discovery:
+- Python, Go, TypeScript/JavaScript: tree-sitter queries (treesit-auto already configured, grammars auto-install)
+  - Python: (function_definition name: (identifier) @name (:match "^test_" @name))
+  - Go: (function_declaration name: (identifier) @name (:match "^Test" @name))
+  - TS/JS: (call_expression function: (identifier) @fn arguments: (arguments (string) @name) (:match "^\\(test\\|it\\)$" @fn))
+  - Parsing unopened test files: use with-temp-buffer + insert-file-contents + python-ts-mode (etc.) + treesit-query-capture
+- Elisp: built-in sexp navigation; scan for (ert-deftest <name> ...) forms. No tree-sitter needed.
+
+*F7 — coverage* (already designed in docs/design/coverage.org)
+
+**Required moves:**
+- Move blacken-buffer (python), shfmt-buffer (sh), clang-format-buffer (c) off F6 to C-; f prefix (already the format-buffer prefix).
+- Move projectile-run-project off F6 (folds into the new F4 completing-read).
+
+**Ordering:**
+Do this after the coverage-config work ships. No churn mid-flight.
+
+** TODO [#B] Review and rebind M-S- keybindings :refactor:
+
+Changed from M-uppercase to M-S-lowercase for terminal compatibility.
+These may override useful defaults - review and pick better bindings:
+- M-S-b calibredb (was overriding backward-word)
+- M-S-c time-zones (was overriding capitalize-word)
+- M-S-d dwim-shell-menu (was overriding kill-word)
+- M-S-e eww (was overriding forward-sentence)
+- M-S-f fontaine (was overriding forward-word)
+- M-S-h split-below
+- M-S-i edit-indirect
+- M-S-k show-kill-ring (was overriding kill-sentence)
+- M-S-l switch-themes (was overriding downcase-word)
+- M-S-m kill-all-buffers
+- M-S-o kill-other-window
+- M-S-r elfeed
+- M-S-s window-swap
+- M-S-t toggle-split (was overriding transpose-words)
+- M-S-u winner-undo (was overriding upcase-word)
+- M-S-v split-right (was overriding scroll-down)
+- M-S-w wttrin (was overriding kill-ring-save)
+- M-S-y yank-media (was overriding yank-pop)
+- M-S-z undo-kill-buffer (was overriding zap-to-char)
+
+** TODO [#B] Build cj/dev-setup-project helper (per docs/design/dev-setup-project.org) :feature:
+
+Interactive command that opens a review buffer with proposed per-subdirectory .dir-locals.el contents (projectile compile/run/test + cj/coverage-backend), optional starter Makefile when none exists, and gitignore updates. User edits inline, C-c C-c writes all files.
+
+Design: [[file:../docs/design/dev-setup-project.org][docs/design/dev-setup-project.org]]
+
+Scope of v1:
+- modules/dev-setup-config.el (command + review-buffer major mode)
+- Three-tier detection: existing Makefile, existing package.json/pyproject.toml scripts, fall-back starter Makefile generation.
+- Project shapes supported: pure Elisp, pure Go, pure Python, pure Node/TS, Docker Compose polyglot.
+- Re-run semantics: status banners (UNCHANGED / WILL UPDATE / WILL CREATE), idempotent gitignore append, never modifies an existing Makefile.
+- ERT tests for the pure helpers (Makefile parser, package.json parser, shape detection, target-to-role mapping, review-buffer parser).
+
+Deferred:
+- Rust (Cargo.toml), Java (pom.xml), other language shapes.
+- Project-wide override config file.
+- Auto-detecting external run scripts in conventional locations.
+
+Do this after the F-key rework ticket ships; don't want to churn project configs before the keys are stable.
+
+** TODO [#B] Pick and wire a debug backend for F5 :feature:
+
+Bind F5 globally to a debug entry point. Backend choice is the hard part:
+
+- dape (Debug Adapter Protocol for Emacs) — modern, multi-language via DAP. Single UX across Python, Go, TS, Rust, etc. Less mature than DAP clients in other editors.
+- realgud — wraps multiple debuggers (pdb, gdb, node --inspect, etc.). More mature; UX varies by backend.
+- Language-specific stacks — dap-mode (python-mode + dap), delve for go, ts-node --inspect, etc. Best per-language UX; most config work.
+
+F5 itself will be simple (start/resume debug). Likely modifier variants once the backend is picked:
+- C-F5 toggle breakpoint at point
+- M-F5 eval expression in debug context (or step-over shortcut)
+
+Evaluate against these projects' languages: elisp (edebug already works), Python, Go, TS, shell. Shell debug is usually print-based; skip.
+
+Do this after the F-key rework ticket ships so F5 is the only hole left.
+
+** TODO [#B] Build debug-profiling.el module :feature:
+
+Reusable profiling infrastructure for targeted slow-command investigation. Consolidates scattered profiler bindings (currently in =modules/config-utilities.el=) and adds two pure-helper-backed entry points: "profile next command" and "time region or sexp." Designed via =/brainstorm= 2026-04-26.
+
+Design: [[file:../docs/design/debug-profiling.org][docs/design/debug-profiling.org]]
+
+Implement via =/start-work= against the design — branch =feat/debug-profiling=, commits decomposed along the test-first split-for-testability boundary. Once shipped, use it as the v1 exercise on the queued [#B] org-capture target-building investigation.
+
+** DOING [#B] Module-by-module review and hardening :review:no-sync:
 
 Review every file in =modules/= and capture concrete bugs, tests, refactors,
 and design improvements as child tasks. This is intentionally separate from the
@@ -2493,8 +2084,8 @@ Discovered 2026-04-26 testing dashboard MVP F-key setup.
 Continue debugging and testing the custom org-noter workflow from 2025-11-21 session.
 This is partially implemented but has known issues that need fixing before it's usable.
 
-**Last worked on:** 2025-11-21
-**Current status:** Implementation complete but has bugs, needs testing
+*Last worked on:* 2025-11-21
+*Current status:* Implementation complete but has bugs, needs testing
 
 **Known Issues to Fix:**
 
@@ -2556,6 +2147,165 @@ Test the new REST API client integration in a running Emacs session.
 - C-; R s should replace :skyfi-key = PLACEHOLDER with real key
 - Key should NOT be written to disk (verify file still shows PLACEHOLDER)
   
+** TODO [#C] Implement flycheck modeline customization :feature:
+
+Spec: [[file:docs/design/flycheck-modeline-customization.org][docs/design/flycheck-modeline-customization.org]]
+
+Custom modeline (=modules/modeline-config.el=) omits =minor-mode-alist=,
+so flycheck's error/warning lighter is invisible.  Fix is a two-line
+=:custom= block in =flycheck-config.el= (prefix + success indicator) plus
+one guarded =(:eval ...)= form in =mode-line-format=.  See spec for the
+active-window-gating decision, risky-local-variable note, emoji
+candidates, and the manual verification walk.
+
+** TODO [#C] Migrate from Company to Corfu (with prescient integration) :feature:
+
+Spec: [[file:docs/design/company-to-corfu-migration.org][docs/design/company-to-corfu-migration.org]]
+
+Drop-in replacement for the in-buffer completion stack: =company= →
+=corfu=, =company-quickhelp= → =corfu-popupinfo=, =company-box= →
+=kind-icon=, =company-prescient= → =corfu-prescient=, plus =cape= for
+the file/keyword/dabbrev capfs that =company-files= / =company-keywords=
+used to handle.  Per-module fixups for ledger, AUCTeX, eshell, mu4e
+compose, and the three =prog-*= modules.  See the design doc for the
+full translation table, migration steps, tests, and risks.
+
+** TODO [#C] Consider removing gptel and the C-; a AI-assistant keymap :refactor:cleanup:
+
+Claude Code (via the F9 ai-vterm launcher) has fully replaced the gptel
+side-chat workflow. The =C-; a= prefix and the gptel use-package block
+in =modules/ai-config.el= no longer get used.
+
+Decide whether to:
+
+1. *Remove entirely.* Drop =modules/ai-config.el= +
+   =modules/ai-conversations.el=, the =C-; a= keymap registration,
+   the gptel/anthropic/openai package installs, and the saved-
+   conversations directory. Update =init.el= to stop requiring the
+   module. Net code reduction is large.
+2. *Keep but mothball.* Move the module to =modules/archived/= so the
+   bindings disappear but the code stays available for reference if
+   the workflow ever comes back.
+3. *Trim to the part that's still useful.* The rewrite-region command
+   (=C-; a r=) is the one piece Claude Code in a separate vterm can't
+   do as smoothly -- it edits the current buffer in place against a
+   prompt. If that's worth keeping, narrow =ai-config.el= to just
+   that command + its backend setup and drop everything else.
+
+Scope notes for whichever path:
+
+- =C-; a= keymap is registered in =ai-config.el='s tail; if removed,
+  the prefix becomes free for repurposing or stays unbound.
+- gptel pulls in =anthropic= / =openai= backends; both keys live in
+  =auth-config.el= but aren't referenced elsewhere -- safe to leave
+  the auth entries even if gptel goes.
+- =ai-conversations.el= is autoloaded via =ai-config.el= and stores
+  saved conversations in a designated dir; the dir + content go too
+  if removing entirely.
+- which-key registrations under =C-; a= disappear automatically when
+  the keymap goes.
+
+Companion to the F9 ai-vterm work shipped 2026-05-08. Filed because
+the C-F9 binding was already pulled from gptel during that work.
+
+** TODO [#C] Extend F2 "preview" convention across modes :feature:
+
+F2 is the universal preview key. Currently bound in markdown-mode (markdown-preview) and org-mode (org-reveal, moved from F5). Extend to other modes where a "preview" action is natural:
+
+- Hugo blog (hugo-config.el) — preview the post in browser
+- HTML / web-mode — open in browser
+- Any other mode with a natural "preview this" action
+
+Keep the binding mode-local so F2 stays available as a global candidate where no preview makes sense.
+
+** TODO [#C] Build localrepo and document limitations :feature:
+
+Repeatable installs and safe rollbacks.
+
+.localrepo only contains packages from package.el archives.
+Treesitter grammars are downloaded separately by treesit-auto on first use.
+For true offline reproducibility, need to cache treesitter grammars separately.
+
+** TODO [#C] Investigate sqlite finalizer error on init :bug:
+
+=*Messages*= shows =finalizer failed: (wrong-type-argument sqlitep nil)= during init. A package is finalizing an sqlite handle that's already nil — indicates a teardown bug somewhere. Likely culprits: forge, magit-todos, or any package using the sqlite backend.
+
+Investigation order:
+1. =M-x toggle-debug-on-message= with a regex matching =finalizer failed=.
+2. Restart Emacs to capture the backtrace.
+3. Check =modules/git-config.el= (forge) and any other sqlite-using module.
+
+Single occurrence per session, no visible impact yet. Track in case it grows.
+
+Discovered 2026-04-26 in =*Messages*=.
+
+** TODO [#C] Investigate TRAMP/dirvish showing question marks for file dates :bug:
+
+Remote directories in dirvish show "?" instead of actual modification dates.
+Tried several approaches without success - needs deeper investigation.
+
+**Attempted fixes (all reverted):**
+1. Connection-local dired-listing-switches with -alh (didn't help)
+2. Disabling tramp-direct-async-process (reported to cause this, but disabling didn't fix it)
+3. Hook to set different listing switches for remote vs local (didn't help)
+
+**Possible causes to investigate:**
+- dirvish may be using its own attribute fetching that bypasses dired-listing-switches
+- May need dirvish-specific configuration for remote file attributes
+- Could be an Emacs 29/30 + TRAMP + dirvish interaction issue
+- May require changes to how dirvish renders the file-size attribute on remote
+
+**Files involved:**
+- modules/tramp-config.el
+- modules/dirvish-config.el
+
+** TODO [#C] Finish terminal GPG pinentry configuration :feature:
+
+Continue work on terminal-mode GPG passphrase prompts (loopback mode).
+Branch: terminal-pinentry
+
+Changes in progress (modules/auth-config.el):
+- Use epa-pinentry-mode 'loopback in terminal
+- Use external pinentry (pinentry-dmenu) in GUI
+- Requires env-terminal-p from host-environment module
+
+** TODO [#D] Polish reveal.js presentation setup :feature:
+
+Three small reveal.js improvements; collected into one task because each on its own is too small to track separately.
+
+1. *Image insertion helper.* Function to insert images with proper org-reveal attributes (sizing, background images, etc.) without having to remember the syntax.
+2. *Default font sizing for slide elements.* Configure reveal.js font sizes for headings, body text, code blocks, etc. — better defaults via =org-reveal-head-preamble= CSS or a custom theme.
+3. *Custom dupre reveal.js theme.* CSS theme using the colors from =themes/dupre-palette.el=. Install into =reveal.js/css/theme/= for use with =#+REVEAL_THEME: dupre=.
+
+** TODO [#D] Evaluate and integrate Buttercup for behavior-driven integration tests :tests:
+
+Complex workflow testing capability.
+
+** TODO [#D] Track ELPA upstream byte-compile warnings (esxml, poetry) :chore:
+
+Two ELPA packages emit byte-compile warnings on =make compile= that aren't fixable in this repo:
+
+1. =elpa/esxml-20250421.1632/esxml.el= — =Warning: Unknown type: attrs= and =Unknown type: stringp= (a defcustom =:type= spec).
+2. =elpa/poetry-20240329.1103/poetry.el= — =Warning: Case 'X will match 'quote'= for four cases (=post-command=, =projectile=, =project=, =switch-buffer=). Quoted symbols inside =pcase= clauses — should be unquoted upstream.
+
+No action in this repo. Revisit when packages update. File upstream issues if warnings linger past a few months.
+
+Discovered 2026-04-26 in =*Messages*= during compile.
+
+** TODO [#D] Add status dashboard for dwim-shell-command processes :feature:
+
+Create a command to show all running dwim-shell-command processes with their status.
+Currently, there's no unified view of multiple running extractions/conversions.
+
+**Current behavior:**
+- Each command shows spinner in minibuffer while running
+- Process buffers created: `*Extract audio*`, etc.
+- On completion: buffer renamed to `*Extract audio done*` or `*Extract audio error*`
+- No way to see all running processes at once
+
+**Recommended approach:**
+Custom status buffer that reads `dwim-shell-command--commands`.
+Can add mode-line indicator later as enhancement.
 * Emacs Resolved
 ** DONE [#B] Fix likely =elpa-mirror-location= path bug :bug:quick:
 CLOSED: [2026-05-03 Sun]
@@ -2813,7 +2563,7 @@ Notifications were silently failing due to two bugs in =cj/slack-notify=:
 
 Verified in actual Slack use: desktop notifications fire correctly for DMs and @mentions, with the title and message body rendering as expected.
 
-**File:** modules/slack-config.el (cj/slack-notify function)
+*File:* modules/slack-config.el (cj/slack-notify function)
 
 ** DONE [#C] Clean up ai-config.el
 CLOSED: [2026-03-06 Fri]
@@ -3784,7 +3534,7 @@ CLOSED: [2026-05-11 Mon 14:38]
 
 Snapshot of test-coverage gaps as of 2026-04-26. The existing [#A] "Continue coverage push" task already targets =keybindings.el=, =config-utilities.el=, =org-noter-config.el=, and =host-environment.el=; this entry catalogs the rest so future sessions have a working list.
 
-**Methodology.** 102 modules in =modules/=, cross-referenced against =tests/= using fuzzy name matching (full module name, drop =-config=/=-setup= suffix, first hyphen segment). Categorized by likely test value.
+*Methodology.* 102 modules in =modules/=, cross-referenced against =tests/= using fuzzy name matching (full module name, drop =-config=/=-setup= suffix, first hyphen segment). Categorized by likely test value.
 
 **High-value untested (substantial logic, real test value):**
 - =ai-conversations= — gptel persistence + autosave; 13 functions
@@ -3811,7 +3561,7 @@ Snapshot of test-coverage gaps as of 2026-04-26. The existing [#A] "Continue cov
 **Likely low-value (mostly use-package wrappers):**
 About 28 modules are dominated by use-package + hooks + keybinds — testing them would mostly test Emacs/use-package itself. Examples: =auth-config=, =diff-config=, =dirvish-config=, =elfeed-config=, =erc-config=, =eww-config=, the =prog-*= language modules, etc. For each, review whether the file has any helper functions beyond use-package. If yes, write characterization tests. If not, document as "no unit tests appropriate" so the next audit skips it.
 
-**Approach.** Pick 2–3 modules per session from the high-value list. Refactor-first if needed (split interactive wrapper from pure helper per =.claude/rules/elisp-testing.md=), then write Normal/Boundary/Error coverage. Re-run =cj/coverage-report= (F7, project scope) after each batch so progress is measurable.
+*Approach.* Pick 2–3 modules per session from the high-value list. Refactor-first if needed (split interactive wrapper from pure helper per =.claude/rules/elisp-testing.md=), then write Normal/Boundary/Error coverage. Re-run =cj/coverage-report= (F7, project scope) after each batch so progress is measurable.
 
 **Cross-references:**
 - [[file:.ai/sessions/2026-04-22-09-49-coverage-v1-shipped-system-utils-tested.org][2026-04-22 session]] — coverage v1 shipped, 59.6% baseline
@@ -4178,7 +3928,7 @@ CLOSED: [2026-05-11 Mon 14:55]
 5. *Anonymous lambda for zathura keybinding* — ~("z" . (lambda ...))~ won't show
    a name in which-key or describe-key. Replace with a named function.
 
-**File:** modules/calibredb-epub-config.el
+*File:* modules/calibredb-epub-config.el
 
 Implemented 2026-05-11: removed the timed calibredb load, removed the explicit
 =nov-render-document= call from the =nov-mode= hook to avoid double rendering,
@@ -4276,7 +4026,7 @@ Open question: should the "save all" target be a fixed dir, prompt every time, o
 
 Decision: save all should prompt every time. 
 
-**Files:** =modules/mail-config.el= (add helpers, wire into mu4e-view-actions and the =C-; e= keymap).
+*Files:* =modules/mail-config.el= (add helpers, wire into mu4e-view-actions and the =C-; e= keymap).
 
 Implemented 2026-05-11: added direct mu4e view attachment save commands in
 =modules/mail-config.el=. =cj/mu4e-save-all-attachments= prompts once for a
@@ -4816,3 +4566,246 @@ CLOSED: [2026-05-14 Thu 23:39]
 After =b7c6b2c=, the EPUB text block is centered with `set-window-margins' at `(natural - nov-text-width) / 2' each side -- but the *rendered* text is a bit narrower than `nov-text-width' columns, because `shr' wraps at word boundaries, so the typical line ends a few columns short of the fill width. The text is left-aligned within its `nov-text-width'-wide fill region, so the unused tail of that region adds to the right margin -- the block reads as shifted left of center. Adjusting `cj/nov-margin-percent' (the `+'/`-' keys) re-flows and happens to look better at some widths (probably the line-ending pattern lands tighter), which is the same effect, not a real difference.
 
 Plan: in `cj/nov-update-layout', after the render, measure the actual widest line (`(save-excursion (goto-char (point-min)) (let ((m 0)) (while (not (eobp)) (end-of-line) (setq m (max m (current-column))) (forward-line 1)) m))') and center on *that* instead of on `nov-text-width'. Or, cheaper but coarser: bias the left margin by a small fudge (a column or two). The measure-the-text approach is correct; do it if it's not too slow on big chapters (it scans the buffer once per render -- the buffer's already in memory, so likely fine). =modules/calibredb-epub-config.el=, =tests/test-calibredb-epub-config.el=.
+** DONE [#B] Write spec on what's needed for music-config not to depend on EMMS
+CLOSED: [2026-05-15 Fri]
+What if we were writing this as it's own package and couldn't use EMMS. What would that look like?
+The spec should be in docs/
+Another task should be created to implement the spec
+Spec written in [[file:docs/design/music-config-without-emms.org][Design: music-config Without EMMS]].
+** DONE [#B] Update gptel models :chore:
+CLOSED: [2026-05-14 Thu]
+Anthropic side: bumped Opus 4.6 → 4.7 (current frontier); Sonnet 4.6
+and Haiku 4.5 stay (still current).  Default model setq also bumped
+to =claude-opus-4-7= in both places (=cj/ensure-gptel-backends= and
+the =use-package gptel :config= block).
+
+OpenAI side: bigger refresh.  Old menu (=gpt-4o=, =gpt-5= original,
+=gpt-4.1=, =o1=) was all in the cohort retired from ChatGPT on
+2026-02-13 -- still callable via API but no longer the path forward.
+New menu: =gpt-5.5= (current flagship), =gpt-5.4-mini= (fast/cheap),
+=o3= (reasoning).
+
+Stale docstring example in =cj/gptel--current-model-selection=
+also bumped to match.
+
+gptel's bundled =:models= list only goes through May-2025 model IDs
+but the constructor passes whatever string you supply straight to the
+API, so newer model names work fine without a gptel upgrade.
+** DONE [#B] Add gptel toggle to M-F9 :refactor:
+CLOSED: [2026-05-15 Fri]
+Rebound =M-<f9>= from =cj/ai-vterm-pick-buffer= to =cj/toggle-gptel=
+in both the global keymap and =vterm-mode-map=.  The pick-buffer
+command and its helper =cj/--ai-vterm-pick-buffer-candidates= were
+deleted entirely along with the candidates test file.
+
+F9 family after this change:
+- =<f9>=   ai-vterm toggle (unchanged)
+- =C-<f9>= ai-vterm project picker (unchanged)
+- =M-<f9>= gptel *AI-Assistant* window toggle (NEW)
+
+Two existing test files updated:
+=test-ai-vterm--f9-in-vterm.el= (binding assertions flipped to the
+new function).
+=test-ai-vterm--pick-buffer-candidates.el= deleted.
+
+Module commentary + the =cj/ai-vterm= docstring updated to describe
+the new M-F9 behavior.
+
+*** 2026-05-15 Fri @ 02:21:00 -0500 Add explicit ai-vterm -> ai-config command boundary for cj/toggle-gptel
+=make compile= warned that =cj/toggle-gptel= was not known to be
+defined when =modules/ai-vterm.el= was byte-compiled.  Added an
+interactive autoload declaration in =ai-vterm.el= alongside the
+other cross-module declarations:
+
+#+begin_src elisp
+(autoload 'cj/toggle-gptel "ai-config" nil t)
+#+end_src
+
+The dependency is now explicit, =make compile= is clean, and
+requiring =ai-vterm= in isolation leaves =cj/toggle-gptel= fboundp
+as an autoload sigil pointing at =ai-config=.  Added a regression
+test in =test-ai-vterm--f9-in-vterm.el=:
+=test-ai-vterm-toggle-gptel-autoloaded-without-ai-config=.  Verified
+with =make compile= (no warning) and
+=make test-file FILE=test-ai-vterm--f9-in-vterm.el= (5/5 pass).
+** DONE [#B] Modify C-; b p :feature:
+CLOSED: [2026-05-15 Fri]
+- (EWW) copy EWW url when in an EWW buffer.
+- (calibre) copy path to an epub or pdf or other document if those are shown in docview or pdfview
+
+Shipped this session: =cj/copy-buffer-source-as-kill= replaces the
+old =cj/copy-path-to-buffer-file-as-kill= (kept as a =defalias= for
+backwards compat).  Dispatch alist =cj/buffer-source-functions= keys
+on =major-mode= → thunk; =buffer-file-name= is the fallback.
+Bindings: =C-; b p= now copies whatever is the right "source" for
+the current mode.  which-key relabeled "copy buffer source" (was
+"copy file path").
+
+First-batch dispatches: =eww-mode= (eww URL), =elfeed-show-mode=
+(entry link), =dired-mode= / =dirvish-mode= (file at point),
+=doc-view-mode= / =pdf-view-mode= (covered by the fallback to
+=buffer-file-name=).  10 new ERT tests in
+=tests/test-custom-buffer-file-copy-buffer-source.el= cover the
+dispatch paths + the alias + the keymap.
+
+Deferred to a follow-up task: =mu4e-view-mode=, =org-mode= at a
+heading, =help-mode=, =Info-mode=, =magit-log-mode= /
+=magit-commit-mode= / =magit-status-mode=, =xref--xref-buffer-mode=
+/ =grep-mode= / =compilation-mode=, =image-mode=, =archive-mode=.
+These need format decisions (Message-ID vs link vs subject, id link
+vs CUSTOM_ID vs heading text, etc.) before implementation.
+** DONE [#C] Extend cj/buffer-source-functions to more modes :feature:
+CLOSED: [2026-05-15 Fri]
+Followup to =Modify C-; b p=.  The first batch covered eww,
+elfeed-show, dired/dirvish, and doc-view/pdf-view (via the
+buffer-file-name fallback).  These modes still need a decision +
+implementation:
+
+- =mu4e-view-mode= → Message-ID, =mu4e:msgid:...= link, or
+  Subject + From?
+- =Info-mode= → an org-style =[[info:(manual)Node][label]]= link
+
+Each one is a small addition to =cj/buffer-source-functions= in
+=modules/custom-buffer-file.el= plus a test.  Pick a format per
+mode, then implement.
+
+*** 2026-05-15 Fri @ 02:21:00 -0500 Make Info buffer-source output match the documented org link format
+Updated the =Info-mode= thunk in =cj/buffer-source-functions=
+(=modules/custom-buffer-file.el=) to return the full org bracket
+link =[[info:(manual)Node][(manual) Node]]= instead of the bare
+target =info:(manual)Node=.  Label format =(manual) Node= keeps the
+manual name and node name both grep-friendly in note files.
+
+Existing test
+=test-copy-buffer-source-info-mode-formats-as-org-info-link= on a
+=.info.gz= file now asserts the bracket form.  Added a new boundary
+test
+=test-copy-buffer-source-info-mode-handles-uncompressed-info-file=
+for plain =.info= input so the suffix-stripping branch is locked
+in.  Verified with
+=make test-file FILE=test-custom-buffer-file-copy-buffer-source.el=
+(15/15 pass).
+
+*** 2026-05-15 Fri @ 00:11:47 -0500 Brainstorm: additional buffer-source ideas
+
+Today =C-; b p= invokes =cj/copy-path-to-buffer-file-as-kill=, which only
+handles file-visiting buffers and errors otherwise.  The proposed
+extension turns it into a dispatcher: ask the current buffer "what's
+your source?" and copy that, falling back to =buffer-file-name=.
+
+Grouping ideas by yield (most useful first) so an implementation can
+prioritize:
+
+*Likely highest-leverage (matches Craig's daily workflows):*
+- =eww-mode= → =(eww-current-url)= (already in task body).
+- =elfeed-show-mode= → entry URL via =(elfeed-entry-link
+  elfeed-show-entry)=.  Closes the loop for "I'm reading this article,
+  let me share it / open it in browser."
+- =mu4e-view-mode= / =mu4e-headers-mode= → either the Message-ID as a
+  =mu4e:msgid:...= link or the From + Subject as plain text.  Useful
+  for citing emails in org notes.
+- =org-mode= on a heading → the heading's =CUSTOM_ID= or =ID= as a
+  full =[[id:...][title]]= link.  Already partly covered by
+  =org-store-link=; the value here is "give me the link form even
+  outside an org-store flow."
+- =dired-mode= / =dirvish-mode= → =(dired-get-filename)= for the file
+  at point, not the dired buffer's =default-directory=.  Subtly
+  different from current behavior because dired *is* file-visiting in
+  a sense.
+- =doc-view-mode= / =pdf-view-mode= → the underlying file path.  Often
+  IS =buffer-file-name=, but explicit dispatch makes the behavior
+  predictable.  Calibre integration (task body) is a special case of
+  this -- calibre wraps the path through a different lookup.
+
+*Useful for occasional workflows:*
+- =help-mode= → the symbol being described (=help-xref-following= or
+  parsing the *Help* buffer header).  Pairs with /describe-function/
+  /describe-variable/.
+- =Info-mode= → an org-style =[[info:(manual)Node][label]]= link.
+- =magit-log-mode= / =magit-commit-mode= → the commit SHA at point,
+  optionally as a clickable form for the remote.
+- =magit-status-mode= → the project root (or repo URL via
+  =vc-git-repository-url=).
+- =xref--xref-buffer-mode= / =grep-mode= / =compilation-mode= → the
+  =file:line= location at point.
+- =image-mode= → the image file path.
+- =archive-mode= (tar/zip) → =archive-file-name= plus the entry name.
+
+*Probably skip:*
+- =vterm-mode= / =eshell-mode= → no meaningful "source"; would just
+  copy the buffer name.  Edge case at best.
+- =w3m-mode= → covered by EWW for Craig; w3m use is rare here.
+- =calc-mode= → "current value" isn't really a "buffer source"; better
+  served by a dedicated calc keybinding.
+
+*Implementation shape:*
+
+A dispatch alist mapping major-mode → thunk that returns a string
+(or nil to fall through), with =buffer-file-name= as the final
+fallback.  Something like:
+
+#+begin_src emacs-lisp
+(defvar cj/buffer-source-functions
+  '((eww-mode . (lambda () (eww-current-url)))
+    (elfeed-show-mode . (lambda () (elfeed-entry-link elfeed-show-entry)))
+    (dired-mode . (lambda () (dired-get-filename nil t)))
+    ...))
+
+(defun cj/copy-buffer-source-as-kill ()
+  (interactive)
+  (let* ((handler (alist-get major-mode cj/buffer-source-functions))
+         (source (or (and handler (funcall handler))
+                     (buffer-file-name)
+                     (user-error "Buffer has no copyable source"))))
+    (kill-new source)
+    (message "Copied: %s" source)))
+#+end_src
+
+Rename the command (=cj/copy-buffer-source-as-kill=) since it's no
+longer specifically about a file path.  Keep =C-; b p= binding so
+muscle memory survives.
+** DONE [#C] Rebind org-noter insert-note to =n= (so it's =C-; n n=) :refactor:
+CLOSED: [2026-05-15 Fri]
+
+The org-noter prefix =C-; n= currently has =i= for insert-note and =n=
+for sync-next-note. Move insert-note onto =n= -- it's the most-used
+action in a noter session and deserves the doubled prefix letter.
+
+Current bindings in =modules/org-noter-config.el= (=cj/org-noter-map=):
+- =i= -> =cj/org-noter-insert-note-dwim=
+- =n= -> =org-noter-sync-next-note=
+- =p= -> =org-noter-sync-prev-note=
+- =.= -> =org-noter-sync-current-note=
+
+
+Proposed bindings
+- n -> =cj/org-noter-insert-note-dwim=
+- > -> =org-noter-sync-next-note=
+- < -> =org-noter-sync-prev-note=
+- =.= -> =org-noter-sync-current-note=
+
+Update the =which-key= labels in the same module and any test that asserts the keymap shape.
+** DONE [#D] Dedup the doubly-defined functions in calibredb-epub-config.el :cleanup:
+CLOSED: [2026-05-15 Fri]
+=make compile= flags =calibredb-epub-config.el= for defining =cj/calibredb-clear-filters= (line ~79) and =cj/nov-jump-to-calibredb= (line ~277) twice each — the later definition silently shadows the earlier. Find which copy is current, delete the stale one. Pre-existing; noticed 2026-05-12 while fixing the Nov text-width loop.
+
+Diagnosis: there was no actual duplicate.  Only one =(defun ...)=
+of each name in the source.  The "defined multiple times" warning
+fired because use-package's =:bind= expansion makes the
+byte-compiler count the referenced symbol as a definition when the
+target function is defined in the same file -- then sees the actual
+=defun= later and warns about a redefinition.
+
+Fix: reorder so each =defun= appears /before/ the =use-package=
+block that references it via =:bind=.  Concrete moves:
+
+- =cj/calibredb-clear-filters= moved above =(use-package calibredb
+  ...)=.
+- =cj/nov--metadata-get= + =cj/nov--file-path= +
+  =cj/nov-jump-to-calibredb= (the entire jump-to-calibredb cluster)
+  moved above =(use-package nov ...)=.  Helpers had to move
+  alongside the public function so the byte-compiler doesn't emit
+  free-function warnings for them.
+
+After: both "defined multiple times" warnings are gone.  All unit
+tests still pass.  Net line count unchanged (just reordered).
