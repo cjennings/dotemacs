@@ -55,101 +55,8 @@ Review snapshot:
   files. Caveat: 55 module files do not appear in the report at all, so the
   real project confidence is lower than the raw percentage suggests.
 
-*** PROJECT [#A] Un tangle the eager =init.el= load graph :architecture:refactor:
-
-=init.el= currently functions as the dependency graph by eagerly requiring
-almost every module in a fixed order. That makes modules harder to test in
-isolation and hides real dependencies behind "loaded earlier in init.el"
-assumptions.
-
-Spec: [[file:docs/design/init-load-graph.org][docs/design/init-load-graph.org]]
-
-**** VERIFY [#B] Write full design spec for the =init.el= load-graph refactor :architecture:refactor:
-
-Create a design document that defines the target architecture, module
-categories, migration phases, test strategy, acceptance criteria, and risk
-controls for untangling the eager =init.el= load graph.
-
-Review incorporation:
-- Treat helper consolidation as adjacent architecture work, not a direct
-  acceptance criterion for the load-graph refactor.
-- Mention utility extraction guardrails in the spec so Phase 2 dependency work
-  has a clear rule for duplicated helpers found along the way.
-
-Verify 2026-05-04:
-- Added [[file:docs/design/init-load-graph.org][docs/design/init-load-graph.org]].
-- Incorporated review feedback by making utility consolidation an explicit
-  sibling project with guardrails and candidate helper families.
-- Parsed the spec and =todo.org= with =org-element=.
-- Committed the tracked spec as =0528475=.
-
-**** TODO [#B] Classify modules by role and startup requirement :refactor:
-
-Create a simple inventory, probably in =docs/design/= or an org note linked
-from this task:
-- Pure library modules: should have explicit =require=s, no top-level keybinds,
-  no timers, no package install/load side effects.
-- Package configuration modules: mostly =use-package=, hooks, mode bindings.
-- Startup side-effect modules: server startup, timers, dashboard, weather,
-  calendar auto-sync, quick-video setup, etc.
-- User command modules: expose interactive commands but defer heavy package
-  loading until the command runs.
-
-Acceptance criteria:
-- Every module has an assigned category.
-- Any module that must be eager has a documented reason.
-- Obvious "modules in test" or "WIP need to fix" comments in =init.el= are
-  either retired or turned into actual tasks.
-
-**** TODO [#B] Add explicit module dependencies before changing load order :refactor:
-
-Several modules assume things like =cj/custom-keymap=, path constants, or
-environment predicates already exist. Before deferring load, make each module
-declare what it uses.
-
-Guidance:
-- Prefer runtime =(require 'foo)= for actual runtime dependencies.
-- Use =eval-when-compile= only for macros or compile-time declarations.
-- Avoid shims like "define this keymap if it does not exist" except in tests.
-- If a module only needs a command from another module, consider =autoload=.
-
-Acceptance criteria:
-- Loading a module directly in batch mode either succeeds or gives a clear
-  missing-package error.
-- =make validate-modules= still passes.
-- New tests cover any extracted pure dependency helpers.
-
-**** TODO [#B] Defer feature modules behind autoloads, hooks, and commands :refactor:
-
-Once dependencies are explicit, reduce the number of modules required at
-startup. Start with lower-risk feature modules:
-- Entertainment and optional integrations: =games-config=, =music-config=,
-  =weather-config=, =slack-config=, =erc-config=.
-- Heavy document/media modules: =pdf-config=, =calibredb-epub-config=,
-  =video-audio-recording=, =transcription-config=.
-- AI/rest tooling: =ai-config=, =restclient-config=, =ai-conversations=.
-
-Do this incrementally. After each batch:
-- Restart Emacs interactively.
-- Run =make test= or at least targeted tests.
-- Check that keybindings still resolve and which-key labels still appear.
-
-**** TODO [#B] Centralize custom keymap registration :refactor:
-
-Many modules mutate =cj/custom-keymap= or global keys at top level. This is a
-real architectural boundary because it forces load order and makes standalone
-module loading brittle.
-
-Expected outcome:
-- Define a small helper or convention for registering prefix maps.
-- Modules can expose their keymaps without assuming =keybindings.el= has already
-  loaded.
-- =keybindings.el= remains the owner of global prefixes like =C-;=.
-- Existing keymaps continue to work.
-
-Related existing task: [#B] "Review and rebind M-S- keybindings".
-
-*** PROJECT [#B] Consolidate shared utility helpers :architecture:refactor:
+*** DONE [#B] Consolidate shared utility helpers :architecture:refactor:
+CLOSED: [2026-05-15 Fri]
 
 Helpers are scattered across feature modules where they were first needed.
 Some are duplicated, and some private helpers are generic enough to belong in a
@@ -169,7 +76,8 @@ Guidance:
   coverage.
 - Do not add heavy package dependencies to foundation helpers.
 
-**** VERIFY [#B] Write full utility consolidation design spec :architecture:refactor:
+**** DONE [#B] Write full utility consolidation design spec :architecture:refactor:
+CLOSED: [2026-05-04 Mon]
 
 Create a design document that inventories candidate helper extractions,
 recommends grouping and naming, explains how the helpers fit into existing
@@ -191,7 +99,8 @@ Verify 2026-05-04:
   =use-package :if= load-order policy, and Phase 5 cache-design addendum
   requirement.
 
-**** VERIFY [#B] Inventory private helpers across modules :refactor:
+**** DONE [#B] Inventory private helpers across modules :refactor:
+CLOSED: [2026-05-10 Sun]
 
 Walk every module and tag private helpers as genuinely module-specific,
 generic-but-trapped, or duplicated. Capture likely consumers and any dependency
@@ -223,59 +132,42 @@ Verify 2026-05-10:
   shipped today in =dirvish-config.el= is the new form of OS-dispatch
   consolidation and should fold into =cj/external-open-command= during Phase 4.
 
-**** TODO [#B] Extract executable lookup with warning helper :refactor:
+**** DONE [#B] Extract executable lookup with warning helper :refactor:
+CLOSED: [2026-05-10 Sun]
 
 Create a generic helper such as =cj/find-executable-or-warn= from the useful
 =mail-config= pattern. It should return the executable path or nil and produce
 a clear warning when the executable is missing.
 
-**** TODO [#B] Extract argv-based process runner helper :refactor:
+Done 2026-05-10:
+- Shipped as =cj/executable-find-or-warn= in =modules/system-lib.el=
+  (commit =c75e36f4=, extracted from =mail-config=).
+- First consumer rewired in =12c2cb14= (=cj/set-wallpaper= in
+  =dirvish-config.el=).
+
+**** DONE [#B] Extract argv-based process runner helper :refactor:
+CLOSED: [2026-05-10 Sun]
 
 Generalize the =coverage-core= process pattern into a dependency-light helper
 that captures output and signals a clear =user-error= with command/status/output
 on failure. Consider a small git wrapper only after the generic runner exists.
 
-**** TODO [#B] Extract Org-safe text sanitizers :refactor:
+Done 2026-05-10:
+- Shipped =cj/process-output-or-error= plus the =cj/git-output-or-error=
+  wrapper in =modules/system-lib.el= (commit =57e558ce=, extracted from
+  =coverage-core=).
+
+**** DONE [#B] Extract Org-safe text sanitizers :refactor:
+CLOSED: [2026-05-10 Sun]
 
 Move heading/property/body sanitization into a shared helper once at least one
 non-calendar consumer is ready. Keep behavior explicit so external text cannot
 accidentally create headings or malformed properties.
 
-*** PROJECT [#A] Move package bootstrap out of =early-init.el= where possible :startup:refactor:
-
-=early-init.el= currently handles package archives, package refresh, installing
-=use-package=, and =use-package-always-ensure=. That is more than early startup
-needs and can make startup network-sensitive.
-
-**** TODO [#B] Split early startup from package bootstrap :refactor:
-
-Keep =early-init.el= focused on things that must happen before package and UI
-startup:
-- GC/file-name-handler startup tuning.
-- =load-prefer-newer=.
-- frame/UI suppression.
-- minimal debug behavior.
-
-Move package archive setup and =use-package= installation to a normal module or
-bootstrap command, unless there is a specific reason it must run in
-=early-init.el=.
-
-Acceptance criteria:
-- Fresh install/bootstrap still works from a documented command or script.
-- Normal startup does not refresh archives or install packages unexpectedly.
-- Offline startup remains quiet and predictable.
-
-**** TODO [#A] Revisit package signature policy
-
-=package-check-signature= is disabled. Decide whether that is still necessary
-for the localrepo/mirror workflow.
-
-Expected outcome:
-- Prefer signatures on by default.
-- If signatures must be disabled for local mirrors, scope that exception and
-  document why.
-- Add a note to the local repository docs so future package failures do not
-  lead to permanent insecure defaults.
+Done 2026-05-10:
+- Shipped =modules/cj-org-text-lib.el= (renamed to its final =-lib= form in
+  commit =0f9e3087=) with three sanitizers: =cj/org-sanitize-body-text=,
+  =cj/org-sanitize-property-value=, =cj/org-sanitize-heading=.
 
 *** DONE [#B] Make coverage reporting account for untracked modules :tests:
 CLOSED: [2026-05-15 Fri]
@@ -375,6 +267,136 @@ Done 2026-05-15:
   =org-refile-config.el=, =quick-video-capture.el=, and =wrap-up.el=.
 - Focused tests passed for the new architecture smoke file and the affected
   agenda/refile helpers.
+
+*** PROJECT [#A] Un tangle the eager =init.el= load graph :architecture:refactor:
+
+=init.el= currently functions as the dependency graph by eagerly requiring
+almost every module in a fixed order. That makes modules harder to test in
+isolation and hides real dependencies behind "loaded earlier in init.el"
+assumptions.
+
+Spec: [[file:docs/design/init-load-graph.org][docs/design/init-load-graph.org]]
+
+**** VERIFY [#B] Write full design spec for the =init.el= load-graph refactor :architecture:refactor:
+
+Create a design document that defines the target architecture, module
+categories, migration phases, test strategy, acceptance criteria, and risk
+controls for untangling the eager =init.el= load graph.
+
+Review incorporation:
+- Treat helper consolidation as adjacent architecture work, not a direct
+  acceptance criterion for the load-graph refactor.
+- Mention utility extraction guardrails in the spec so Phase 2 dependency work
+  has a clear rule for duplicated helpers found along the way.
+
+Verify 2026-05-04:
+- Added [[file:docs/design/init-load-graph.org][docs/design/init-load-graph.org]].
+- Incorporated review feedback by making utility consolidation an explicit
+  sibling project with guardrails and candidate helper families.
+- Parsed the spec and =todo.org= with =org-element=.
+- Committed the tracked spec as =0528475=.
+
+**** TODO [#B] Classify modules by role and startup requirement :refactor:
+
+Create a simple inventory, probably in =docs/design/= or an org note linked
+from this task:
+- Pure library modules: should have explicit =require=s, no top-level keybinds,
+  no timers, no package install/load side effects.
+- Package configuration modules: mostly =use-package=, hooks, mode bindings.
+- Startup side-effect modules: server startup, timers, dashboard, weather,
+  calendar auto-sync, quick-video setup, etc.
+- User command modules: expose interactive commands but defer heavy package
+  loading until the command runs.
+
+Acceptance criteria:
+- Every module has an assigned category.
+- Any module that must be eager has a documented reason.
+- Obvious "modules in test" or "WIP need to fix" comments in =init.el= are
+  either retired or turned into actual tasks.
+
+**** TODO [#B] Add explicit module dependencies before changing load order :refactor:
+
+Several modules assume things like =cj/custom-keymap=, path constants, or
+environment predicates already exist. Before deferring load, make each module
+declare what it uses.
+
+Guidance:
+- Prefer runtime =(require 'foo)= for actual runtime dependencies.
+- Use =eval-when-compile= only for macros or compile-time declarations.
+- Avoid shims like "define this keymap if it does not exist" except in tests.
+- If a module only needs a command from another module, consider =autoload=.
+
+Acceptance criteria:
+- Loading a module directly in batch mode either succeeds or gives a clear
+  missing-package error.
+- =make validate-modules= still passes.
+- New tests cover any extracted pure dependency helpers.
+
+**** TODO [#B] Defer feature modules behind autoloads, hooks, and commands :refactor:
+
+Once dependencies are explicit, reduce the number of modules required at
+startup. Start with lower-risk feature modules:
+- Entertainment and optional integrations: =games-config=, =music-config=,
+  =weather-config=, =slack-config=, =erc-config=.
+- Heavy document/media modules: =pdf-config=, =calibredb-epub-config=,
+  =video-audio-recording=, =transcription-config=.
+- AI/rest tooling: =ai-config=, =restclient-config=, =ai-conversations=.
+
+Do this incrementally. After each batch:
+- Restart Emacs interactively.
+- Run =make test= or at least targeted tests.
+- Check that keybindings still resolve and which-key labels still appear.
+
+**** TODO [#B] Centralize custom keymap registration :refactor:
+
+Many modules mutate =cj/custom-keymap= or global keys at top level. This is a
+real architectural boundary because it forces load order and makes standalone
+module loading brittle.
+
+Expected outcome:
+- Define a small helper or convention for registering prefix maps.
+- Modules can expose their keymaps without assuming =keybindings.el= has already
+  loaded.
+- =keybindings.el= remains the owner of global prefixes like =C-;=.
+- Existing keymaps continue to work.
+
+Related existing task: [#B] "Review and rebind M-S- keybindings".
+
+*** PROJECT [#A] Move package bootstrap out of =early-init.el= where possible :startup:refactor:
+
+=early-init.el= currently handles package archives, package refresh, installing
+=use-package=, and =use-package-always-ensure=. That is more than early startup
+needs and can make startup network-sensitive.
+
+**** TODO [#B] Split early startup from package bootstrap :refactor:
+
+Keep =early-init.el= focused on things that must happen before package and UI
+startup:
+- GC/file-name-handler startup tuning.
+- =load-prefer-newer=.
+- frame/UI suppression.
+- minimal debug behavior.
+
+Move package archive setup and =use-package= installation to a normal module or
+bootstrap command, unless there is a specific reason it must run in
+=early-init.el=.
+
+Acceptance criteria:
+- Fresh install/bootstrap still works from a documented command or script.
+- Normal startup does not refresh archives or install packages unexpectedly.
+- Offline startup remains quiet and predictable.
+
+**** TODO [#A] Revisit package signature policy
+
+=package-check-signature= is disabled. Decide whether that is still necessary
+for the localrepo/mirror workflow.
+
+Expected outcome:
+- Prefer signatures on by default.
+- If signatures must be disabled for local mirrors, scope that exception and
+  document why.
+- Add a note to the local repository docs so future package failures do not
+  lead to permanent insecure defaults.
 
 ** TODO [#B] Implement EMMS-free music-config architecture       :refactor:
 Implement the design in [[file:docs/design/music-config-without-emms.org][Design: music-config Without EMMS]].
