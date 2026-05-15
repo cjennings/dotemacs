@@ -421,21 +421,6 @@ Acceptance checks:
   where a compatibility adapter is explicitly under test.
 - New tests cover playlist state, backend command dispatch, M3U persistence,
   and the EMMS-free load smoke path.
-** TODO [#B] Investigate gptel-magit not working properly :bug:
-
-Wired up in =modules/ai-config.el= as three lazy entry points:
-- =M-g= in =git-commit-mode-map= -> =gptel-magit-generate-message=
-- =g= in =magit-commit= transient -> =gptel-magit-commit-generate=
-- =x= in =magit-diff= transient -> =gptel-magit-diff-explain=
-
-Specific failure mode TBD. First step: reproduce, note which entry point fails
-and how, then trace from there. Likely suspects: autoload chain (the three
-=autoload= calls run inside =with-eval-after-load 'magit=), transient suffix
-attachment via =transient-append-suffix=, or gptel-side backend/model config.
-
-Migration to current lazy form: commit =3eb1a0c refactor(gptel): lazy-load
-gptel-magit, rebind rewrite/context keys=.
-
 ** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
 
 Consolidate the developer F-key block into a coherent sequence. F5 reserved for debug (separate ticket). Format bindings move off F6 to C-; f.
@@ -2193,8 +2178,104 @@ used to handle.  Per-module fixups for ledger, AUCTeX, eshell, mu4e
 compose, and the three =prog-*= modules.  See the design doc for the
 full translation table, migration steps, tests, and risks.
 
-** TODO [#C] Gptel Work                                   :refactor:cleanup:
+** PROJECT [#B] Gptel Work :refactor:cleanup:feature:
 
+Keep gptel as a focused side-tool for one-off conversations, impromptu help, and the rewrite-region code helper. Workflow stays distinct from the dedicated Claude-Code agents launched via F9, so per-project agent sessions don't get cluttered with general-purpose chat.
+
+In scope:
+- The =cj/ai-keymap= (=C-; a=) commands in =modules/ai-config.el=.
+- The save/load/delete + autosave flow in =modules/ai-conversations.el=.
+- The local-tools surface in =gptel-tools/= and the loader =cj/gptel-load-local-tools=.
+- gptel-magit's three triggers (M-g in git-commit, =g= in magit-commit transient, =x= in magit-diff transient).
+
+Out of scope: the F9 =ai-vterm= Claude-Code launcher (=modules/ai-vterm.el=) — separate module, working well.
+
+*** TODO [#B] Wire update_text_file into cj/gptel-local-tool-features :refactor:quick:
+
+The tool already exists at =gptel-tools/update_text_file.el= (replace / append / prepend / insert-at-line / delete-lines, with diff preview and timestamped backups), but =cj/gptel-local-tool-features= in =modules/ai-config.el= doesn't list it, so it never autoloads. One-line addition to the defcustom default.
+
+Acceptance: after restart, =gptel-tools= (the transient context view) shows =update_text_file= alongside =read_buffer=, =read_text_file=, =write_text_file=, =list_directory_files=, =move_to_trash=.
+
+*** TODO [#B] Fix gptel-magit triggers :bug:
+
+Wired up in =modules/ai-config.el= as three lazy entry points:
+- =M-g= in =git-commit-mode-map= → =gptel-magit-generate-message=
+- =g= in the =magit-commit= transient → =gptel-magit-commit-generate=
+- =x= in the =magit-diff= transient → =gptel-magit-diff-explain=
+
+Specific failure mode TBD. First step: reproduce, note which entry point fails and how, then trace from there. Likely suspects: autoload chain (the three =autoload= calls run inside =with-eval-after-load 'magit=), transient suffix attachment via =transient-append-suffix=, or gptel-side backend/model config.
+
+Migration to the current lazy form: commit =3eb1a0c refactor(gptel): lazy-load gptel-magit, rebind rewrite/context keys=.
+
+*** TODO [#B] Add ERT coverage for ai-conversations.el :tests:
+
+Currently zero direct tests on the 274-line module. Cover at least:
+- =cj/gptel--slugify-topic= — Normal / Boundary (empty, all-special-chars, unicode, idempotent slug) / Error.
+- =cj/gptel--timestamp-from-filename= — Normal / Boundary (year/month/day/hour/min/sec edges) / Error (malformed filename → nil).
+- =cj/gptel--existing-topics= and =cj/gptel--latest-file-for-topic= — with a temp conversations directory containing multiple topics + multiple timestamps each.
+- =cj/gptel--conversation-candidates= — sort order honored for both =newest-first= and =oldest-first=.
+- =cj/gptel--save-buffer-to-file= — visibility headers prepended; round-trips back through =cj/gptel--strip-visibility-headers=.
+- The =with-eval-after-load 'gptel= advice/hook installs once and isn't duplicated on re-load.
+- Interactive entry points (=save= / =load= / =delete=) exercised via =cl-letf= stubs on =completing-read= and =y-or-n-p=.
+
+Use a per-test temp conversations directory; no writes outside it. Target ≥80% coverage on the module.
+
+*** TODO [#B] Add ERT coverage for gptel-tools .el files :tests:
+
+The six tool files have zero direct coverage. Focus on the pure helpers (the interactive =gptel-make-tool= entry points get smoke coverage only):
+
+- =read_text_file.el= — =cj/validate-file-path=, =cj/get-file-metadata=, =cj/check-file-size-limits=, =cj/detect-binary-file=, =cj/handle-special-file-types=.
+- =update_text_file.el= — =cj/build-sed-command= (each operation × Normal / Boundary / Error), backup-naming behavior.
+- =write_text_file.el= — overwrite-vs-error path, backup naming, parent-directory creation.
+- =list_directory_files.el= — =--mode-to-permissions=, =--get-file-info=, =--filter-by-extension=, =--format-file-entry=, recursive vs flat listing on a temp dir.
+- =move_to_trash.el= — =gptel--move-to-trash-validate-path= (home/tmp allowed, anywhere else rejected), =gptel--move-to-trash-generate-unique-name= name-conflict suffixing.
+- =read_buffer.el= — small smoke test that =read_buffer= returns the body of an existing buffer and errors on a nonexistent name.
+
+Skip mocking =gptel-make-tool= itself; cover the helpers it wraps.
+
+*** TODO [#C] Research and shortlist additional gptel tools :feature:research:
+
+Survey what published gptel community tools exist (the gptel README, karthink's gist/repo, MELPA, GitHub topic search). Compile a candidate list with one-line descriptions and a per-tool adopt / skip / defer decision. Useful candidates to evaluate first (some are inventions, some are commonly-published patterns):
+
+- =run_shell_command= — sandboxed to =~/= + =/tmp=, denylist for destructive ops (=rm=, =mv=, =dd=, =chmod=, etc.); confirmation for everything else.
+- =search_in_files= — =rg= wrapper with path/glob filtering and result-count cap.
+- =git_status= / =git_log= / =git_diff= — read-only git context tools (let the model see what's changed without manually pasting).
+- =org_capture= — capture a snippet from the AI response into a template (driven by template key).
+- =web_fetch= — =curl=-style URL fetch with body-length cap; html-to-text by default; opt-in raw mode.
+- =search_emacs_help= — =apropos= / =describe-function= / =describe-variable= query for "what does emacs already do for X".
+- =find_file_by_name= — =locate= or =fd= wrapper, capped result count.
+- =eval_elisp= — dangerous; require explicit confirm-each-call and a denylist of forms (=shell-command=, =delete-file=, =call-process=, etc.).
+- =take_screenshot= — Hyprland-native (=grim= + region selection); save to a known path; return the path so the model can reason about an attached image.
+
+Output: a shortlist in =docs/design/gptel-tools-shortlist.org= with the adopt/skip/defer decisions and a follow-up extraction sub-task per "adopt".
+
+*** TODO [#C] Promote gptel-rewrite ergonomics :feature:
+
+=gptel-rewrite= is the killer feature for the keep-gptel decision. Currently bound only to =C-; a r=. Make it land closer to the editing flow:
+
+- A directive-picker wrapper =cj/gptel-rewrite-with-directive= that =completing-read='s a directive name (=terse=, =fix-grammar=, =refactor-readability=, =add-docstring=, =explain-as-comment=, =shorten=) before delegating to =gptel-rewrite=. Directive bodies live in =ai-prompts/= so they share storage with =gptel-prompts=.
+- A =cj/gptel-rewrite-redo-with-different-directive= command for "the last rewrite was close — try this style instead". Walks back to the prior region (or kept selection) and re-prompts.
+
+Open question: should this build on =gptel-rewrite= directly via =:after= advice + state capture, or wrap the call in a =cj/= command that sets =gptel-directives= for the duration?
+
+*** TODO [#C] Saved-conversations browser :feature:
+
+=cj/gptel-load-conversation= prompts via =completing-read=. Once conversations accumulate, a browser buffer (dired-style) showing topic, timestamp, and last-message preview, with single-key bindings to load / delete / rename in-place, would be friendlier.
+
+Defer until ≥20 saved conversations exist (or the load prompt starts feeling slow). Tracking now so it isn't lost.
+
+*** TODO [#C] One-shot quick-ask command :feature:
+
+=cj/gptel-quick-ask= — read a prompt in the minibuffer, send to gptel, display the response in a transient =*GPTel-Quick*= buffer (or as a =message= for short responses). Doesn't touch the =*AI-Assistant*= side window, doesn't autosave anywhere. Intended for impromptu help where the conversation thread doesn't matter.
+
+Open question: stream the response into the temp buffer (gptel's default), or wait for the full message and message-echo it? Streaming into a temp buffer is probably right; into the minibuffer is awkward.
+
+*** TODO [#C] Autosave toggle command + indicator :feature:
+
+=cj/gptel-autosave-enabled= flips to =t= inside the save/load entry points. There's no command to flip it back off without manually setting the var or clearing the buffer, and no visible indicator that autosave is on.
+
+- Add =cj/gptel-autosave-toggle= bound under =C-; a A=.
+- Surface autosave state in the mode-line of the =*AI-Assistant*= buffer (a small =[AS]= when on, blank when off).
 
 ** TODO [#C] Extend F2 "preview" convention across modes :feature:
 
