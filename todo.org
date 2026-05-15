@@ -472,6 +472,59 @@ Per-language test discovery:
 **Ordering:**
 Do this after the coverage-config work ships. No churn mid-flight.
 
+** TODO [#B] Convert <cj structure template to universal yasnippet :feature:refactor:
+
+Today =<cj= + TAB only expands in org-mode, via =org-structure-template-alist= in =modules/org-babel-config.el:144=. The expansion is the literal text:
+
+#+begin_example
+#+begin_src cj: comment
+
+#+end_src
+#+end_example
+
+A Claude skill scans for this exact marker across files using a Python helper, so the marker needs to be insertable identically in any buffer (elisp, shell, plain text, anything) regardless of major mode. Language-aware variants (per-mode comment syntax) would break the script.
+
+*** TODO [#B] Wire yasnippet for universal availability :refactor:
+
+In =modules/prog-general.el= replace =:hook (prog-mode . yas-minor-mode)= with =(yas-global-mode 1)= in =:config=, so yasnippet activates in every buffer rather than only =prog-mode= ones. Also add a hook that turns on =fundamental-mode= as an extra mode in every buffer so the universal snippet table is always consulted:
+
+#+begin_src emacs-lisp
+(add-hook 'yas-minor-mode-hook
+          (lambda () (yas-activate-extra-mode 'fundamental-mode)))
+#+end_src
+
+Acceptance: =M-: yas-minor-mode= returns =t= in =org-mode=, =text-mode=, =fundamental-mode=, and any =prog-mode= buffer. =yas-extra-modes= contains =fundamental-mode= in every buffer.
+
+*** TODO [#B] Create the <cj fundamental-mode snippet :feature:
+
+Create =snippets/fundamental-mode/cj-comment-block= (or similar filename) with:
+
+#+begin_src snippet
+# -*- mode: snippet -*-
+# name: cj-comment-block
+# key: <cj
+# --
+#+begin_src cj: comment
+$0
+#+end_src
+#+end_src
+
+Acceptance: in a scratch buffer, in a =.el= buffer, in a =.sh= buffer, in an =org= buffer — typing =<cj= and hitting TAB expands to the three-line block with the cursor on the empty middle line.
+
+*** TODO [#B] Remove the org-tempo cj entry :refactor:
+
+Once the yasnippet handles every mode, the =org-structure-template-alist= entry at =modules/org-babel-config.el:144= becomes redundant in org-mode and creates a TAB-handler ordering question. Remove the line:
+
+#+begin_src emacs-lisp
+(add-to-list 'org-structure-template-alist '("cj" . "src cj: comment"))
+#+end_src
+
+Verify =<cj= + TAB still expands in =org-mode= afterwards (now via yasnippet rather than org-tempo).
+
+*** TODO [#C] Audit existing per-mode snippets for cross-mode use :refactor:
+
+While the universal-yas plumbing is fresh, walk =snippets/*-mode/= and decide for each snippet: does this belong in =fundamental-mode/= instead? Likely candidates: =visibility-showall=, =org-export-md=, =org_filetag_topic= — these are arguably org-only. Most of the c-mode / sh-mode / emacs-lisp-mode snippets are correctly mode-scoped. Spend ≤30 minutes; don't over-engineer.
+
 ** TODO [#B] Review and rebind M-S- keybindings :refactor:
 
 Changed from M-uppercase to M-S-lowercase for terminal compatibility.
@@ -2196,6 +2249,10 @@ The tool already exists at =gptel-tools/update_text_file.el= (replace / append /
 
 Acceptance: after restart, =gptel-tools= (the transient context view) shows =update_text_file= alongside =read_buffer=, =read_text_file=, =write_text_file=, =list_directory_files=, =move_to_trash=.
 
+#+begin_src cj: comment
+I think this tool need thorough testing and work. It's incomplete. Please add this to the task as well. Get as close to 100% coverage on this file as we can. Refactor wherever needed. 
+#+end_src>
+
 *** TODO [#B] Fix gptel-magit triggers :bug:
 
 Wired up in =modules/ai-config.el= as three lazy entry points:
@@ -2264,11 +2321,20 @@ Open question: should this build on =gptel-rewrite= directly via =:after= advice
 
 Defer until ≥20 saved conversations exist (or the load prompt starts feeling slow). Tracking now so it isn't lost.
 
+#+begin_src cj: comment
+I recommend doing this now. It's a much better interface that I would appreciate. 
+#+end_src>
+
 *** TODO [#C] One-shot quick-ask command :feature:
 
 =cj/gptel-quick-ask= — read a prompt in the minibuffer, send to gptel, display the response in a transient =*GPTel-Quick*= buffer (or as a =message= for short responses). Doesn't touch the =*AI-Assistant*= side window, doesn't autosave anywhere. Intended for impromptu help where the conversation thread doesn't matter.
 
 Open question: stream the response into the temp buffer (gptel's default), or wait for the full message and message-echo it? Streaming into a temp buffer is probably right; into the minibuffer is awkward.
+
+#+begin_src cj: comment
+a temp buffer that can be dismissed with the letter q or escape.
+it should also have a key so that if more discussion is necessary, it creates a conversation and loads it into the normal gptel buffer. 
+#+end_src>
 
 *** TODO [#C] Autosave toggle command + indicator :feature:
 
