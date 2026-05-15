@@ -1,0 +1,299 @@
+#+TITLE: Review: music-config Without EMMS -- Implementation Readiness
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-15
+#+OPTIONS: toc:nil num:nil
+
+Spec reviewed: =docs/design/music-config-without-emms.org=
+Third pass.  This review answers the single question: is the spec in
+shape to start =/start-work= against?
+
+Prior reviews (architectural critique, test/perf/parity/packaging
+analysis) are in git history and remain accurate.  This pass
+distills them into a go / no-go and a punch list of exactly what
+must change before implementation starts.
+
+* Verdict
+
+**No, not quite.** Step 1 of the Migration Plan can start today.
+Steps 2-7 need five interlocked decisions resolved in the spec first.
+Without them, the implementer would be making those decisions
+mid-flight -- exactly when the cost of being wrong is highest.
+
+Estimated spec work to reach implementable: **1-2 hours of focused
+editing.**  No new analysis needed; the answers are already in the
+prior reviews.
+
+* What is implementable today
+
+The pure-helper extraction (Migration Plan step 1) does not depend on
+any of the blocking decisions.  Specifically:
+
+- =cj/music--valid-file-p= (with =webm= and =ape= added per the prior format audit)
+- =cj/music--valid-directory-p=
+- =cj/music--collect-entries-recursive=
+- =cj/music--completion-table=
+- =cj/music--m3u-file-tracks=
+- =cj/music--get-m3u-files= / =--get-m3u-basenames=
+- =cj/music--safe-filename=
+- =cj/music--format-duration=
+- =cj/music--append-track-to-m3u-file=
+- =cj/music--assert-valid-playlist-file=
+- =cj/music-create-radio-station=
+
+These are already EMMS-free in spirit; their tests already pass
+without EMMS mocking.  Extracting them is roughly a 2-3 day commit
+with characterization tests as the safety net.
+
+That work can start before the spec revisions land.  But it should
+not be open-ended -- it is one phase, after which work stops until
+the spec is revised.
+
+* What is blocking the rest
+
+Five interlocked decisions.  Each is small to resolve; the cost of
+not resolving them is large.
+
+** B1: mpv IPC transport
+
+Spec lines 125-131 punt on this with "Pause/seek/volume can use
+mpv's JSON IPC socket if available; otherwise v1 may support only
+play/stop/next/previous and leave pause/seek/volume as explicit
+follow-up work."
+
+The fallback path produces a worse player than today's EMMS+mpv
+(which has working pause).  Per-track-restart pause is an 80-200 ms
+spawn cost plus the loss of the playing position.  That is a
+user-visible regression.
+
+**Decide**: long-running mpv + JSON-IPC socket from day one.
+
+This blocks Migration Plan step 4 (mpv backend).
+
+** B2: state-change hook contract
+
+Today's module subscribes to six EMMS hooks (=started=, =stopped=,
+=paused=, =finished=, =cleared=, plus advice on the three toggle
+commands).  The header overlay, consume-after-finish, random-history,
+auto-advance, and modeline updates all depend on them.
+
+Spec lists these hooks under "Existing EMMS Coupling" but the
+Proposed Architecture has no replacement -- the backend protocol on
+spec lines 100-111 is read-side only.
+
+**Decide**: abnormal hook =cj/music-state-change-functions= fired by
+the backend with a plist =(:event STARTED|STOPPED|PAUSED|RESUMED|FINISHED
+:track TRACK :error MAYBE)=.  Five events.  Dispatched from the mpv
+IPC process filter on the corresponding mpv events
+(=playback-restart=, =pause=, =end-file=).
+
+This blocks Migration Plan step 5 (rewire public commands).  Without
+it, "rewire" has no API to rewire to.
+
+** B3: selected-track representation
+
+Spec proposes =selected-index= in the playlist struct -- fine for
+state.  But the buffer view still needs a marker / overlay / face on
+the playing line.  The current code uses
+=emms-playlist-selected-marker= (a buffer marker) plus
+=emms-playlist-selected-face=.
+
+**Decide**: overlay at the line whose index matches
+=selected-index=, face =cj/music-playlist-selected-face=, repositioned
+on each =STARTED= event.  Single overlay reused across track
+changes.
+
+This blocks playlist-view rendering and reorder behavior.
+
+** B4: test architecture
+
+~110 of the 252 existing tests mock EMMS at the boundary (=emms-next=,
+=emms-random=, =emms-playlist-track-at=, =emms-playlist-mode-kill-track=,
+etc.).  Without a shared fake-backend testutil, the rewrite happens
+110 times in 110 different shapes.
+
+**Decide**: =tests/testutil-music-backend.el= provides
+=cj/test-music-fake-backend= (matching the real backend's plist
+shape) plus an =:events= ledger that records each call as
+=(verb . args)=.  Tests bind =cj/music-current-backend= to the fake
+and assert sequences against the ledger.  Build this first; rewrite
+tests against it second.
+
+Without this, effort balloons by roughly a factor of three.
+
+** B5: cross-platform stance
+
+mpv's IPC works over unix domain sockets on Linux+macOS but uses
+named pipes on Windows.  Emacs's =make-network-process= does not
+natively support Windows named pipes.
+
+**Decided this session (Craig, 2026-05-15)**: **best-effort on
+Windows.**  v1 ships full-feature on Linux + macOS; Windows gets a
+degraded mode with play / stop / next / previous only (no pause, no
+seek, no volume) via =start-process= + stdin or one-shot
+=call-process= per command.  The README documents the limitation.
+Anyone who wants to fund Option B (=mpvc.exe= shellout) or Option C
+(=w32-*= named-pipe client) can do it as a follow-up.
+
+This unblocks the implementer to write Linux+macOS code without
+spending the v1 budget on Windows IPC plumbing.  Quote Craig in
+the spec body so the rationale survives.
+
+* Smaller items the implementer should not have to invent
+
+** S1: feature-parity scope
+
+13 EMMS features are missing from the spec entirely (catalogued in
+the prior parity review): seek forward (=f=), seek backward (=b=),
+volume up (=+= / ===), volume down (=-=), one-shot shuffle (=Z=),
+info popup (=i=), center-on-current (=o=), kill-track (=d= or
+similar), bury buffer (=q=), append-to-M3U (=A=), active-window
+background tint, dired/dirvish add (=+= in dired).
+
+**Decide**: preserve all 13 in the playlist-mode keymap.  Volume and
+seek depend on B1 (IPC); if B1 is decided in favor of IPC, they all
+come along for free.  Dired/Dirvish add is independent and worth
+explicitly listing in the Goals section.
+
+** S2: URL-vs-file routing
+
+Today's mpv player detects URLs vs files via
+=emms-player-mpv-regexp=.  Spec does not carry this forward.
+
+**Decide**: small helper
+
+#+begin_src elisp
+(defun cj/music--track-type-from-name (name)
+  (cond ((string-match-p "\\`\\(?:https?\\|mms\\)://" name) 'url)
+        ((cj/music--valid-file-p name) 'file)
+        (t nil)))
+#+end_src
+
+Used when constructing tracks; populates the existing =type= slot.
+
+** S3: metadata strategy
+
+Track struct includes =title=, =artist=, =duration= but the spec
+says "tag extraction can be added later."
+
+**Decide one of two**:
+
+- Drop the metadata fields from v1's struct.  Track description
+  falls back to filename-without-extension (matches current
+  =cj/music--track-description= behavior for untagged files).
+- Keep the fields; populate via mpv IPC =get_property metadata= on
+  the =STARTED= event.  Lazy, free, fits the IPC story from B1.
+
+Recommend the second.  It's two lines of code given B1's IPC
+infrastructure is already there.
+
+** S4: scope declaration
+
+Spec is ambiguous on whether this stays a personal module or ships
+as a public package.
+
+**Decide**: personal Phase 1 (=modules/music-config.el=, =cj/=
+namespace).  Re-evaluate Phase 3 (=cadenza=, GitHub, MELPA) after
+~4 weeks of daily use.  Quote Craig's preference for this phasing in
+the spec body.
+
+* The exact spec edits
+
+Concrete inserts and deletions, in order.  Roughly 1-2 hours of
+focused work, no new analysis.
+
+1. **Rewrite "Initial Backend"** (spec lines 118-133) -- drop the
+   "if available" / "otherwise" fork.  Single decision: long-running
+   mpv with =--input-ipc-server=<PID-stamped socket under
+   =temporary-file-directory=>=, JSON commands over
+   =make-network-process :family 'local=, async event filter on the
+   socket's process buffer.
+
+2. **Insert "Process Lifecycle"** subsection after "Initial
+   Backend" -- one mpv per Emacs session, killed on =kill-emacs-hook=,
+   socket file removed in the same hook.  Stale-socket cleanup on
+   startup (loop =/tmp/cj-music-mpv-*.sock= or the platform
+   equivalent and unlink).
+
+3. **Insert "State-Change Hooks"** subsection after "Backend
+   Protocol" -- =cj/music-state-change-functions= abnormal hook
+   with the 5-event plist contract.  List the mpv events that
+   trigger each.
+
+4. **Insert "Selected-Track Representation"** subsection in the
+   Playlist Buffer section -- single overlay at the line whose
+   track-index matches =selected-index=, face
+   =cj/music-playlist-selected-face=, repositioned on the =STARTED=
+   event.
+
+5. **Insert "Test Architecture"** subsection at the top of the
+   Migration Plan -- =testutil-music-backend.el=, fake-backend plist
+   shape, events ledger, characterization tests for the six
+   user-facing commands (=next=, =previous=, =toggle-consume=,
+   =playlist-toggle=, =playlist-load=, =playlist-clear=) before any
+   non-pure code moves.
+
+6. **Insert "Platform Support"** subsection -- quote Craig's
+   2026-05-15 decision: full features on Linux + macOS; Windows is
+   best-effort with play/stop/next/previous only.  Document in the
+   README and surface in =M-x cj/music-doctor= when run on Windows.
+
+7. **Rewrite the track struct definition** (spec line 72-79) per
+   S3 -- either drop metadata fields or keep with a one-line note
+   about lazy population via mpv IPC.
+
+8. **Expand "Goals"** to list the 13 missing features per S1 with
+   "preserve" disposition.  Mark volume / seek as
+   "preserve if B1=IPC, drop otherwise" -- but B1 is IPC, so they
+   all stay.
+
+9. **Insert URL-detection helper** (S2) in the M3U Handling section
+   or alongside the track struct.  Cite where it's used.
+
+10. **Insert "Scope"** subsection before Goals -- this is a personal
+    module first; potential public package later.  Quote Craig's
+    preference.  Name the future public name candidate (=cadenza=).
+
+11. **Update "Existing EMMS Coupling"** inventory with the surfaces
+    missed in the prior review (kill-track, shift-track, bury,
+    selected-marker, =emms-source-file-default-directory=,
+    =emms-player-mpv-parameters=, =emms-player-mpv-regexp=,
+    =emms-track-description-function=, the custom-set-faces block,
+    and the =emms-all= / =emms-mode-line-mode= setup calls).
+
+12. **Strengthen "Acceptance Criteria"** with a parity-walk entry
+    (the 22-step user workflow from the prior review).
+
+13. **Add "Effort estimate"** and "Risks" sections to match the
+    format of the other =docs/design/= specs.
+
+14. **Add ~webm~ and ~ape~** to =cj/music-file-extensions= (or note
+    that the migration step does so).  Two extensions, two-line
+    edit; the audit confirms files of both types exist in =~/music=.
+
+* What stays as-is
+
+The spec's data model (track struct, playlist struct), backend
+plist shape, M3U-as-persistence stance, pure-helpers-first migration
+ordering, and the overall layering (data / backend / view) are all
+sound.  Don't rework them.  The fixes above are inserts and
+clarifications, not architectural changes.
+
+* Recommended next step
+
+Two paths, pick one:
+
+1. **Apply the 14 edits directly.**  I draft them as concrete inserts
+   into the spec, you review the final spec end-to-end, then
+   =/start-work= against the revised spec.  Roughly the same 1-2
+   hours but spent on review rather than writing.
+
+2. **You apply the edits.**  This review is the punch list.  Work
+   through items 1-14, ping me when ready, I do one more pass to
+   verify, then =/start-work=.
+
+Either way, the next milestone is "the spec passes Phase 3 (Approach)
+of =/start-work= without me having to invent the missing decisions
+on the fly."
+
+Until then, only the pure-helper extraction (Migration Plan step 1)
+is safe to start.

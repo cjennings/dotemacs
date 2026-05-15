@@ -1,0 +1,543 @@
+#+TITLE: Design: music-config Without EMMS
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-15
+
+* Status
+
+Specification only.  No implementation has been started.
+
+Effort: Large.  This is a multi-week module rewrite involving process
+management, player state, playlist state, a playlist major mode, and updates
+across the existing music test suite.
+
+* Problem
+
+=modules/music-config.el= is currently an EMMS configuration module, not an
+independent music module.  The useful workflows are local to this config, but
+the core state lives in EMMS: the playlist buffer is the source of truth, player
+state is reported through EMMS hooks, and track metadata is read through EMMS
+track objects.
+
+That shape makes the module harder to test and evolve than it needs to be.
+Simple playlist operations have to load or stub EMMS, and UI refresh,
+consume-on-finish, random history, and auto-advance are all coupled to EMMS
+player hooks.
+
+The target design is a standalone music module that owns playlist state,
+controls =mpv= directly through a small backend protocol, and renders a
+playlist buffer as a view over package-owned data.
+
+This remains a personal config module in =modules/music-config.el=.  It should
+be internally coherent enough that it could later become a package, but v1 does
+not target MELPA or a public package boundary.
+
+* Goals
+
+- Keep the current user workflows: fuzzy add, recursive directory add,
+  Dired/Dirvish add, M3U load/save/edit/reload, append-track-to-M3U, radio
+  station creation, playlist window toggle, random/repeat/single/consume
+  controls, track reordering, and mpv playback.
+- Make EMMS unnecessary for =music-config.el= load, tests, and normal use.
+- Separate domain logic from playback and UI so helpers stay easy to test.
+- Replace EMMS-bound keymap entries with =cj/music-*= commands.
+- Keep playlist files portable M3U files.
+
+* Non-Goals
+
+- Reimplementing the full EMMS feature set.
+- Building a music library database, tag editor, or metadata indexer.
+- Supporting multiple player daemons in v1.
+- Supporting album art, lyrics, queue persistence across Emacs restarts, or
+  remote control protocols beyond mpv.
+- Publishing a standalone =cj-music= package, adding MELPA metadata, or
+  converting all personal configuration variables to public =defcustom= forms.
+
+* Existing EMMS Coupling
+
+The current module depends on EMMS in these areas:
+
+- Playback commands: =emms-pause=, =emms-stop=, =emms-next=,
+  =emms-previous=, =emms-start=, =emms-random=,
+  =emms-seek-forward=, =emms-seek-backward=, =emms-volume-raise=,
+  =emms-volume-lower=, and shuffle/repeat/random toggles.
+- Add/load/save commands: =emms-add-file=, =emms-add-directory-tree=,
+  =emms-play-playlist=, =emms-playlist-save=,
+  =emms-source-playlist-ask-before-overwrite=, and
+  =emms-playlist-clear=.
+- Playlist buffer operations: =emms-playlist-buffer=,
+  =emms-playlist-mode=, =emms-playlist-track-at=,
+  =emms-playlist-current-selected-track=, =emms-playlist-select=,
+  =emms-playlist-mode-go=, =emms-playlist-mode-bury-buffer=,
+  =emms-playlist-mode-center-current=,
+  =emms-playlist-mode-shift-track-up=,
+  =emms-playlist-mode-shift-track-down=,
+  =emms-playlist-mode-kill-track=, and
+  =emms-playlist-selected-marker=.
+- Track representation: =emms-track-name=, =emms-track-type=,
+  =emms-track-get=, =emms-track-simple-description=, and
+  =emms-track-description-function=.
+- Lifecycle hooks and state: =emms-player-started-hook=,
+  =emms-player-stopped-hook=, =emms-player-paused-hook=,
+  =emms-player-finished-hook=, =emms-playlist-cleared-hook=,
+  =emms-player-playing-p=, =emms-player-paused-p=,
+  =emms-random-playlist=, =emms-repeat-playlist=, and
+  =emms-repeat-track=.
+- EMMS setup: =emms-all=, =emms-mode-line-mode=,
+  =emms-playing-time-disable-display=, =emms-source-file-default-directory=,
+  =emms-playlist-default-major-mode=, =emms-player-list=,
+  =emms-player-mpv-parameters=, =emms-player-mpv-regexp=, and EMMS playlist
+  faces.
+
+Anything outside those areas, especially file discovery, safe filename
+generation, M3U parsing, and radio station file creation, can remain mostly
+unchanged.
+
+* Proposed Architecture
+
+** Data Model
+
+Introduce a package-owned track model:
+
+#+begin_src emacs-lisp
+(cl-defstruct cj/music-track
+  type          ; 'file or 'url
+  name          ; absolute file path or stream URL
+  title
+  artist
+  duration)
+#+end_src
+
+The =title=, =artist=, and =duration= slots are populated opportunistically from
+mpv IPC metadata after a track starts.  V1 must still behave correctly when
+metadata is absent by displaying a filename or decoded URL.
+
+Introduce playlist state that belongs to this package:
+
+#+begin_src emacs-lisp
+(cl-defstruct cj/music-playlist
+  tracks
+  selected-index
+  file
+  repeat-playlist
+  repeat-track
+  random
+  consume
+  random-history)
+#+end_src
+
+The playlist buffer should render this state.  It should not be the source of
+truth.  Buffer text becomes a view over =cj/music-current-playlist=.
+
+Track construction should use a small type helper instead of EMMS's mpv regex:
+
+#+begin_src emacs-lisp
+(defun cj/music--track-type-from-name (name)
+  (cond ((string-match-p "\\`\\(?:https?\\|mms\\)://" name) 'url)
+        ((cj/music--valid-file-p name) 'file)
+        (t nil)))
+#+end_src
+
+** Read-Side State API
+
+UI code should read player and playlist state through package-owned helpers,
+not through backend internals:
+
+- =cj/music-playing-p=
+- =cj/music-paused-p=
+- =cj/music-current-track=
+- =cj/music-playlist-state=
+- =cj/music-track-description=
+
+The playlist header, modeline indicators, and tests should use these helpers.
+
+** Backend Protocol
+
+Playback should go through a narrow backend plist:
+
+#+begin_src emacs-lisp
+(:name 'mpv
+ :available-p cj/music-mpv-available-p
+ :play cj/music-mpv-play
+ :pause cj/music-mpv-pause
+ :resume cj/music-mpv-resume
+ :stop cj/music-mpv-stop
+ :seek cj/music-mpv-seek
+ :volume cj/music-mpv-volume
+ :status cj/music-mpv-status
+ :metadata cj/music-mpv-metadata)
+#+end_src
+
+The module should provide commands such as =cj/music-play=,
+=cj/music-pause=, =cj/music-stop=, =cj/music-next=, =cj/music-previous=,
+=cj/music-seek-forward=, =cj/music-seek-backward=,
+=cj/music-volume-raise=, and =cj/music-volume-lower=.  Those commands operate
+on package playlist state and then call the selected backend.
+
+** State-Change Hooks
+
+Replace EMMS player hooks with one package-owned abnormal hook:
+
+#+begin_src emacs-lisp
+(defvar cj/music-state-change-functions nil
+  "Abnormal hook run when music player state changes.
+Each function receives a plist:
+(:event EVENT :track TRACK :error ERROR).")
+#+end_src
+
+Events for v1:
+
+- =started=
+- =paused=
+- =resumed=
+- =stopped=
+- =finished=
+- =error=
+- =playlist-changed=
+- =mode-changed=
+
+The mpv backend is responsible for dispatching player events from process
+sentinels and IPC event messages.  Package features should subscribe here:
+
+- Header refresh runs on every event.
+- Random history records on =started= when random mode is active.
+- Consume mode removes the finished track on =finished=.
+- Auto-advance runs on =finished= unless playback was deliberately stopped.
+- Playlist-file reset runs on =playlist-changed= when the playlist is cleared.
+
+** mpv Backend
+
+V1 should use mpv JSON IPC from the start.  Pause, seek, and volume are core
+workflow parity, and implementing them later would leave a worse player than
+the current EMMS+mpv setup.
+
+Spawn mpv with:
+
+#+begin_src sh
+mpv --no-video --quiet --audio-display=no \
+    --input-ipc-server=<SOCKET-PATH> TRACK
+#+end_src
+
+The socket path lives under =temporary-file-directory= (=/tmp/= on
+Linux/macOS, =%TEMP%= on Windows) and includes the effective UID and Emacs
+process id, e.g. =cj-music-mpv-1000-12345.sock=.  On startup, remove stale
+=cj-music-mpv-*= sockets for the current UID when no matching process owns
+them.  On Emacs exit, stop playback and remove the active socket.
+
+Minimum mpv version: 0.17 (when JSON IPC stabilized).  All current
+Linux/macOS/Windows distributions ship something newer.
+
+Backend responsibilities:
+
+- Start mpv for the selected track and connect to the IPC socket with
+  =make-network-process=.
+- Send JSON commands for pause/resume, seek, and volume.
+- Subscribe to mpv events such as =playback-restart=, =pause=, and =end-file=.
+- Query metadata on track start with =get_property metadata= and update the
+  selected track's metadata slots.
+- Distinguish deliberate stops from natural track completion so the sentinel
+  does not auto-advance after an explicit stop.
+- Report process and IPC errors through =cj/music-state-change-functions= with
+  =:event error=.
+
+** Platform Support
+
+Linux and macOS are the primary v1 targets.  Both expose mpv's JSON IPC over
+a Unix domain socket, which Emacs reads with =make-network-process :family
+'local=.  All features (play/stop/next/previous, pause/resume, seek, volume,
+metadata) work identically on those platforms.
+
+Windows is best-effort.  mpv on Windows uses named pipes
+(=\\.\pipe\<name>=) for IPC instead of Unix sockets, and Emacs's
+=make-network-process= does not natively connect to Windows named pipes.
+Rather than block v1 on a Windows IPC layer, v1 ships a degraded mode on
+Windows:
+
+- Spawn mpv with =start-process= and feed commands over stdin or via
+  per-command =call-process= invocations.
+- Available commands: play, stop, next, previous.
+- Not available on Windows in v1: pause/resume, seek, volume.
+- =M-x cj/music-doctor= reports the degraded state on Windows so the user
+  is not surprised by missing functionality.
+
+Craig's call, 2026-05-15: best-effort on Windows is acceptable for v1.
+Anyone who needs full Windows parity can fund a follow-up that wires named
+pipes via =mpvc.exe= shellout or a =w32-*= named-pipe client.  This call
+unblocks the implementer to focus on the Linux/macOS path without spending
+v1 budget on Windows IPC plumbing.
+
+** Selected-Track Representation
+
+Use =selected-index= as the durable state value.  The playlist buffer should
+display the selected/current track with an overlay plus a selected-track face.
+
+Reordering should:
+
+1. Swap entries in the playlist state's =tracks= vector/list.
+2. Update =selected-index= so it continues to point at the same logical track.
+3. Re-render the playlist buffer.
+4. Reposition the selected overlay.
+
+Consume mode should remove the finished track from playlist state, then
+re-render.  It should not edit raw buffer text as the source of truth.
+
+** Playlist Buffer
+
+Define a package-owned major mode, for example =cj/music-playlist-mode=.
+
+The buffer should preserve the current key surface:
+
+- =RET= or =p= to play the selected track.
+- =SPC= to pause/resume.
+- =s= to stop.
+- =>= / =n= and =<= / =P= for next/previous.
+- =f= / =b= for seek forward/backward.
+- =+= / === / =-= for volume.
+- =a= to add music.
+- =A= to append the track at point to an M3U.
+- =c= / =C= to clear.
+- =L=, =S=, =E=, and =g= for playlist load/save/edit/reload.
+- =r=, =t=, =z=, and =x= for repeat playlist, repeat track, random, and
+  consume.
+- =Z= to shuffle.
+- =i= for track info.
+- =o= to jump to the playing track.
+- =q= to bury the playlist buffer.
+- =S-<up>= / =S-<down>= and =C-<up>= / =C-<down>= for reordering.
+
+The current overlay/header design can stay, but it should read from the
+package state APIs instead of EMMS variables.
+
+The active-window background highlight should be preserved, because it is part
+of the current playlist window affordance.
+
+** Playlist State Rules
+
+- Shuffle changes playlist order and clears random history.
+- Reload replaces playlist tracks from disk and clears random history.
+- Save writes only track names/URLs to M3U; random history and mode state are
+  not persisted.
+- Repeat playlist, repeat track, random, and consume are package-owned runtime
+  flags.
+- Clearing a playlist clears the associated M3U file path.
+
+** M3U Handling
+
+Keep M3U as the persistence format.  Existing helpers should be reused or moved
+behind pure APIs:
+
+- =cj/music--m3u-file-tracks= should parse paths and URLs.
+- Saving should write one track per line, using relative paths where possible.
+- Radio station creation should keep writing =#EXTM3U= and =#EXTINF= entries.
+
+** Test Architecture
+
+The rewrite should not update every command-flow test with one-off mocks.
+Introduce a shared fake backend first:
+
+#+begin_src emacs-lisp
+;; tests/testutil-music-backend.el
+(defvar cj/test-music-fake-backend
+  '(:name fake
+    :available-p cj/test-music--fake-available-p
+    :play cj/test-music--fake-play
+    :pause cj/test-music--fake-pause
+    :resume cj/test-music--fake-resume
+    :stop cj/test-music--fake-stop
+    :seek cj/test-music--fake-seek
+    :volume cj/test-music--fake-volume
+    :status cj/test-music--fake-status
+    :metadata cj/test-music--fake-metadata))
+#+end_src
+
+The fake backend should keep a simple event ledger, for example
+=(:playing-p BOOL :paused-p BOOL :track TRACK :events LIST)=.  Command tests
+bind =cj/music-current-backend= to this fake and assert ordered backend events
+instead of stubbing individual EMMS functions.
+
+Before rewriting non-pure command implementations, add or preserve
+characterization tests for:
+
+- =cj/music-next=
+- =cj/music-previous=
+- =cj/music-toggle-consume=
+- =cj/music-playlist-toggle=
+- =cj/music-playlist-load=
+- =cj/music-playlist-clear=
+
+The existing pure-helper tests should mostly survive unchanged.  The command
+tests, random-navigation tests, consume tests, playlist-buffer tests, and header
+tests should migrate to package state plus the fake backend.
+
+The real mpv IPC client should have integration tests tagged =:slow= and
+skipped when =mpv= is not on =PATH=.  Default =make test= should not depend on
+mpv being installed.
+
+** Performance Budget
+
+V1 should keep the UI responsive for realistic playlist sizes:
+
+- =cj/music-playlist-load= on a 1000-track M3U should complete in under 500 ms,
+  excluding disk cold-cache effects.
+- =S-<up>= and =S-<down>= should return control within 50 ms for playlists up
+  to 5000 tracks.
+- Pause/resume command dispatch over mpv IPC should complete in under 100 ms,
+  excluding audio-device resume latency.
+- Header refresh after metadata arrival should stay below a frame budget
+  target of 16 ms.
+
+Full playlist re-rendering is acceptable for load, clear, shuffle, reload, and
+consume-after-finish.  Reordering should avoid an obvious O(n) full erase and
+insert on every keypress if it misses the 50 ms budget.  Start simple, measure,
+then add incremental line swaps or rendered-line caching only if needed.
+
+Metadata extraction must be lazy.  Query mpv metadata when a track starts and
+refresh the header when it arrives.  Do not eagerly scan all tracks on playlist
+load.
+
+** Parity Walk
+
+Before removing the EMMS implementation, run a manual parity walk against the
+new implementation:
+
+1. =F10= opens the playlist in a bottom side window; =F10= again closes it.
+2. =C-; m a= completes files and dirs under =cj/music-root=; choosing a file
+   adds that track.
+3. Choosing a directory adds music files from that tree.
+4. In Dirvish, marking files and pressing =+= adds them.
+5. In the playlist, =RET= plays, =SPC= pauses, and =SPC= resumes.
+6. =>= advances and =<= goes back.
+7. =z= toggles random; next chooses randomly; previous uses random history.
+8. =r= toggles repeat-playlist.
+9. =t= toggles repeat-track.
+10. =x= toggles consume; finished tracks disappear.
+11. =S= saves an M3U in =cj/music-m3u-root=.
+12. =L= loads a saved playlist in order.
+13. =g= reloads the current M3U after manual edits.
+14. =E= opens the M3U for editing.
+15. =R= creates a radio-station M3U that can be loaded and played.
+16. =S-<up>= and =S-<down>= reorder tracks while state and view stay in sync.
+17. =c= and =C= clear the playlist.
+18. =q= buries the playlist buffer.
+19. =i= shows current track info.
+20. =o= centers the playlist on the current track.
+21. =+= and =-= adjust volume and the change persists across track changes.
+22. =f= and =b= seek forward/backward.
+
+* Migration Plan
+
+1. Extract pure helpers and tests into EMMS-free units: file validation,
+   recursive collection, M3U parsing/writing, safe filenames, radio station
+   content, URL/file track typing, and playlist state operations.
+2. Introduce package-owned track and playlist state structs.
+3. Add =cj/music-playlist-mode= and make it render package playlist state with
+   selected-track overlay support.
+4. Add =tests/testutil-music-backend.el= and migrate command-flow tests to the
+   fake backend.
+5. Implement the mpv backend in focused steps:
+   - Process spawn, socket path management, IPC connection, and state-change
+     hook plumbing.
+   - Play, stop, next, and previous, including finished-track auto-advance.
+   - Pause/resume, seek, and volume through IPC.
+   - Metadata read on track start through IPC.
+6. Rewire public commands and Dired/Dirvish integration to use the new
+   state/backend APIs.
+7. Replace EMMS functions in =cj/music-map= and the playlist-mode keymap with
+   =cj/music-*= commands.
+8. Remove =cj/emms--setup= and the on-demand EMMS loading pattern.
+9. Delete the =use-package emms= block once parity is covered.
+
+No EMMS compatibility adapter is planned.  This is a personal config, and the
+cleaner migration is to keep existing public =cj/music-*= command names while
+swapping their implementation behind the scenes.
+
+* Acceptance Criteria
+
+- Loading =music-config.el= does not require EMMS or reference EMMS symbols.
+- =init.el= still loads after the =use-package emms= block is removed.
+- A new smoke test confirms =music-config.el= can be required in batch with no
+  EMMS package installed.
+- Existing focused music tests pass without EMMS preload or EMMS stubs.
+- =tests/testutil-music-backend.el= exists and command-flow tests use it
+  instead of direct EMMS stubs.
+- New tests cover playlist state, backend command dispatch, IPC command
+  formatting, M3U persistence, Dired/Dirvish add routing, and the EMMS-free load
+  smoke path.
+- Slow mpv IPC integration tests are tagged =:slow= and skipped when =mpv= is
+  unavailable.
+- The F10 and =C-; m= workflows still open/show the playlist and expose the
+  same high-level commands.
+- All keys from the current playlist-mode keymap work in
+  =cj/music-playlist-mode=.
+- M3U load/save/reload/edit and radio station creation work without EMMS.
+- Local-file and stream URL playback work through mpv.
+- Pause/resume, seek, and volume work through mpv IPC.
+- Random, repeat playlist, repeat track, consume, shuffle, and track reordering
+  are represented in package-owned state and covered by focused tests.
+- The parity walk passes.
+- The performance budget is met or deviations are documented with measurements.
+
+* Risks
+
+| Risk                                          | Mitigation                                                                                                  |
+|-----------------------------------------------+-------------------------------------------------------------------------------------------------------------|
+| mpv IPC socket races or stale sockets         | Use UID/PID-stamped socket paths, clean stale sockets on startup, and remove the active socket on exit.     |
+| Auto-advance fires after explicit stop        | Track deliberate stop state and test sentinel/event ordering.                                               |
+| Metadata availability differs by stream/file  | Treat metadata as optional; filename/URL descriptions remain the fallback.                                  |
+| Playlist buffer gets out of sync with state   | Make state the only source of truth and render buffer text from state after every playlist mutation.        |
+| Dirvish =+= workflow regresses                  | Include Dired/Dirvish add routing in migration and tests.                                                   |
+| Test rewrite spreads bespoke fakes everywhere | Add one shared fake backend and migrate command tests through it.                                           |
+| Playlist rendering is too slow on large M3Us  | Start simple, measure against the budget, and add incremental rendering only if needed.                     |
+| Rewrite is too broad for one commit           | Split implementation by the migration plan; keep pure helpers and state changes separate from backend work. |
+
+* Considered But Not Chosen
+
+** Publish as a standalone MELPA package in v1
+
+Rejected for v1.  A public package would require namespace cleanup,
+=Package-Requires=, autoload cookies, defgroups/defcustoms, license headers,
+README/CHANGELOG work, package-lint/checkdoc cleanup, CI matrix support, and
+removal of personal config dependencies like =user-constants= and
+=cj/custom-keymap=.  That work is real and useful only after the personal
+module migration proves the design.  The v1 scope stays in
+=modules/music-config.el=.
+
+** Rewrite every test individually
+
+Rejected.  Roughly half of the current music tests exercise EMMS-backed command
+flows.  Replacing each EMMS mock one at a time would duplicate setup and make
+backend semantics inconsistent across tests.  A shared fake backend gives the
+rewrite one seam to test command dispatch, state changes, and event ordering.
+
+** Eager metadata extraction for every playlist track
+
+Rejected.  Scanning metadata for every track on load would require either many
+short mpv invocations or another tag-reading dependency, and it scales poorly
+for large M3Us.  V1 reads metadata lazily from mpv IPC only when a track starts.
+
+** Full incremental playlist renderer from the start
+
+Deferred.  Incremental rendering is more complex and may not be needed for the
+actual playlist sizes in this config.  The spec sets a budget instead: full
+rendering is fine where it meets the budget, and reorder operations should only
+gain incremental swaps or cached rendered lines if measurement shows a problem.
+
+** Depend on an external mpv IPC package immediately
+
+Undecided, not chosen as a requirement.  A local JSON IPC helper may be small
+enough and easier to test in this config.  Depending on an existing package is
+still open if the local helper starts to recreate too much protocol machinery.
+
+** Add =webm= and =ape= to =cj/music-file-extensions=
+
+Rejected.  =~/music= contains a small number of =webm= and =ape= files (~22
+each), and mpv can play both, but Craig's call (2026-05-15) is to leave the
+extension list as-is.  Those files stay silently filtered out of fuzzy
+completion and recursive directory adds.  Easy to revisit later by adding the
+two strings to the list; no architectural impact.
+
+* Open Decisions
+
+- Exact mpv IPC client implementation: small local JSON helper or dependency on
+  an existing mpv IPC package.
+- Whether metadata should be cached only in memory or written into extended M3U
+  comments later.
