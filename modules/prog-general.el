@@ -248,15 +248,23 @@ If no such file exists there, display a message."
 ;; ---------------------------------- Snippets ---------------------------------
 ;; reusable code and text
 
+(defun cj/--yas-activate-fundamental-extras ()
+  "Activate `fundamental-mode' as an extra yasnippet mode in this buffer.
+Hooked onto `yas-minor-mode-hook' so every buffer also consults
+`snippets/fundamental-mode/' regardless of the buffer's own major mode.
+This is what makes universal snippets like =<cj= work in any buffer."
+  (yas-activate-extra-mode 'fundamental-mode))
+
 (use-package yasnippet
-  :commands (yas-new-snippet yas-visit-snippet-file yas-global-mode)
-  :hook (prog-mode . yas-minor-mode)
+  :demand t
   :bind
   ("C-c s n" . yas-new-snippet)
   ("C-c s e" . yas-visit-snippet-file)
+  :hook (yas-minor-mode . cj/--yas-activate-fundamental-extras)
   :config
   (setq yas-snippet-dirs (list snippets-dir))
-  (yas-reload-all))
+  (yas-reload-all)
+  (yas-global-mode 1))
 
 ;; --------------------- Display Color On Color Declaration --------------------
 ;; display the actual color as highlight to color hex code
