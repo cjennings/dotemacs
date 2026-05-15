@@ -135,9 +135,15 @@ INFO is a plist containing :url and :title from the org-protocol call."
   "Handle web page clipping during org-capture.
 This function is called from the capture template.
 It fetches the page content and converts it to Org format."
-  ;; Load org-web-tools only when actually needed
+  ;; Load org-web-tools only when actually needed.  Use plain `setq'
+  ;; rather than `setopt' because the variable is a plain float with no
+  ;; custom-set handler that needs to fire, and `setopt' is a macro --
+  ;; tests that try to stub it via `cl-letf' on the function cell hit
+  ;; the already-expanded `setopt--set' in the byte-compiled handler
+  ;; and fail with a `void-variable widget-field-keymap' error from
+  ;; the customize machinery loading lazily.
   (require 'org-web-tools)
-  (setopt org-web-tools-pandoc-sleep-time 0.5)
+  (setq org-web-tools-pandoc-sleep-time 0.5)
 
   (let ((url cj/webclip-current-url)
         (title cj/webclip-current-title))
