@@ -472,60 +472,6 @@ Per-language test discovery:
 **Ordering:**
 Do this after the coverage-config work ships. No churn mid-flight.
 
-** DONE [#B] Convert <cj structure template to universal yasnippet :feature:refactor:
-CLOSED: [2026-05-15 Fri]
-
-Today =<cj= + TAB only expands in org-mode, via =org-structure-template-alist= in =modules/org-babel-config.el:144=. The expansion is the literal text:
-
-#+begin_example
-#+begin_src cj: comment
-
-#+end_src
-#+end_example
-
-A Claude skill scans for this exact marker across files using a Python helper, so the marker needs to be insertable identically in any buffer (elisp, shell, plain text, anything) regardless of major mode. Language-aware variants (per-mode comment syntax) would break the script.
-
-*** 2026-05-15 Fri @ 12:58:08 -0500 Wired yasnippet for universal availability
-
-In =modules/prog-general.el= replace =:hook (prog-mode . yas-minor-mode)= with =(yas-global-mode 1)= in =:config=, so yasnippet activates in every buffer rather than only =prog-mode= ones. Also add a hook that turns on =fundamental-mode= as an extra mode in every buffer so the universal snippet table is always consulted:
-
-#+begin_src emacs-lisp
-(add-hook 'yas-minor-mode-hook
-          (lambda () (yas-activate-extra-mode 'fundamental-mode)))
-#+end_src
-
-Acceptance: =M-: yas-minor-mode= returns =t= in =org-mode=, =text-mode=, =fundamental-mode=, and any =prog-mode= buffer. =yas-extra-modes= contains =fundamental-mode= in every buffer.
-
-*** 2026-05-15 Fri @ 12:58:08 -0500 Created the <cj fundamental-mode snippet
-
-Create =snippets/fundamental-mode/cj-comment-block= (or similar filename) with:
-
-#+begin_src snippet
-# -*- mode: snippet -*-
-# name: cj-comment-block
-# key: <cj
-# --
-#+begin_src cj: comment
-$0
-#+end_src
-#+end_src
-
-Acceptance: in a scratch buffer, in a =.el= buffer, in a =.sh= buffer, in an =org= buffer — typing =<cj= and hitting TAB expands to the three-line block with the cursor on the empty middle line.
-
-*** 2026-05-15 Fri @ 12:58:08 -0500 Removed the org-tempo cj entry
-
-Once the yasnippet handles every mode, the =org-structure-template-alist= entry at =modules/org-babel-config.el:144= becomes redundant in org-mode and creates a TAB-handler ordering question. Remove the line:
-
-#+begin_src emacs-lisp
-(add-to-list 'org-structure-template-alist '("cj" . "src cj: comment"))
-#+end_src
-
-Verify =<cj= + TAB still expands in =org-mode= afterwards (now via yasnippet rather than org-tempo).
-
-*** 2026-05-15 Fri @ 15:08:48 -0500 Audited existing per-mode snippets for cross-mode use
-
-Walked =snippets/c-mode/=, =/emacs-lisp-mode/=, =/eshell-mode/=, =/html-ts-mode/=, =/org-mode/=, =/sh-mode/=. Read the body of every snippet. Conclusion: no movers — all 28 existing per-mode snippets contain mode-specific syntax (C =int main=, elisp =defun=, shell =printf= / =[ -f $1 ]=, HTML tags, org =#+STARTUP:= / =:PROPERTIES:= drawers, etc.) and belong where they are. =snippets/fundamental-mode/= correctly holds only the universal =cj-comment-block= marker.
-
 ** TODO [#B] Review and rebind M-S- keybindings :refactor:
 
 Changed from M-uppercase to M-S-lowercase for terminal compatibility.
@@ -2113,33 +2059,6 @@ Done 2026-05-15:
   existing review tracks already cover.
 - Mark this task =DONE= once the per-finding sub-tasks above are
   triaged into the appropriate track's child list.
-
-** DONE [#B] Move lsp-file-watch-ignored-directories to global .emacs.d config :chore:refactor:
-CLOSED: [2026-05-15 Fri]
-SCHEDULED: <2026-04-27 Mon>
-
-Shipped 2026-04-26 in commit 781b46e. Implementation: =cj/lsp-file-watch-ignored-extras= (thirteen patterns) and =cj/lsp--add-file-watch-ignored-extras= in =modules/prog-lsp.el=, called from the lsp-mode use-package =:config=. Seven ERT tests in =tests/test-prog-lsp--add-file-watch-ignored-extras.el=, all green.
-
-Manual verify (tomorrow): restart Emacs, open =~/code/deepsat/orchestration_dashboard_mvp/backend/test_mission_image_api.py=, watch for the file-watch prompt. Expected: no prompt, or count well below the previous 1905. If still prompting at ~1905, iterate on the pattern list.
-
-After verification: drop the redundant =lsp-file-watch-ignored-directories= entry from the deepsat MVP's =.dir-locals.el= here and on velox.
-
-Setting =lsp-file-watch-ignored-directories= via the project's =.dir-locals.el= doesn't apply at the buffer level. Confirmed via =M-: lsp-file-watch-ignored-directories= in a Python buffer — value is the lsp-mode default, not the 7 patterns we wrote in dir-locals. The safety prompt was answered with =!= and the dir-locals are otherwise live (the projectile commands take effect).
-
-Fix: move the seven patterns into the lsp config module as a global default with =setq-default= or per-pattern =add-to-list=. The patterns are project-agnostic build/cache directories — safe as defaults for any project.
-
-Patterns to add:
-- =[/\\\\]node_modules\\'=
-- =[/\\\\]\\.ruff_cache\\'=
-- =[/\\\\]dist\\'=
-- =[/\\\\]coverage\\'=
-- =[/\\\\]test-results\\'=
-- =[/\\\\]playwright-report\\'=
-- =[/\\\\]tf[/\\\\]\\.terraform\\'=
-
-After landing: =M-x lsp-workspace-shutdown=, reopen a Python file, confirm the directory count drops well below the default threshold of 1000 (currently 1905). Then remove the redundant entries from the deepsat MVP's =.dir-locals.el= here and on velox.
-
-Discovered 2026-04-26 testing dashboard MVP F-key setup.
 
 ** VERIFY [#B] Continue org-noter custom workflow implementation (IN PROGRESS) :feature:bug:
 
@@ -4945,3 +4864,81 @@ block that references it via =:bind=.  Concrete moves:
 
 After: both "defined multiple times" warnings are gone.  All unit
 tests still pass.  Net line count unchanged (just reordered).
+** DONE [#B] Convert <cj structure template to universal yasnippet :feature:refactor:
+CLOSED: [2026-05-15 Fri]
+
+Today =<cj= + TAB only expands in org-mode, via =org-structure-template-alist= in =modules/org-babel-config.el:144=. The expansion is the literal text:
+
+#+begin_example
+#+begin_src cj: comment
+
+#+end_src
+#+end_example
+
+A Claude skill scans for this exact marker across files using a Python helper, so the marker needs to be insertable identically in any buffer (elisp, shell, plain text, anything) regardless of major mode. Language-aware variants (per-mode comment syntax) would break the script.
+
+*** 2026-05-15 Fri @ 12:58:08 -0500 Wired yasnippet for universal availability
+
+In =modules/prog-general.el= replace =:hook (prog-mode . yas-minor-mode)= with =(yas-global-mode 1)= in =:config=, so yasnippet activates in every buffer rather than only =prog-mode= ones. Also add a hook that turns on =fundamental-mode= as an extra mode in every buffer so the universal snippet table is always consulted:
+
+#+begin_src emacs-lisp
+(add-hook 'yas-minor-mode-hook
+          (lambda () (yas-activate-extra-mode 'fundamental-mode)))
+#+end_src
+
+Acceptance: =M-: yas-minor-mode= returns =t= in =org-mode=, =text-mode=, =fundamental-mode=, and any =prog-mode= buffer. =yas-extra-modes= contains =fundamental-mode= in every buffer.
+
+*** 2026-05-15 Fri @ 12:58:08 -0500 Created the <cj fundamental-mode snippet
+
+Create =snippets/fundamental-mode/cj-comment-block= (or similar filename) with:
+
+#+begin_src snippet
+# -*- mode: snippet -*-
+# name: cj-comment-block
+# key: <cj
+# --
+#+begin_src cj: comment
+$0
+#+end_src
+#+end_src
+
+Acceptance: in a scratch buffer, in a =.el= buffer, in a =.sh= buffer, in an =org= buffer — typing =<cj= and hitting TAB expands to the three-line block with the cursor on the empty middle line.
+
+*** 2026-05-15 Fri @ 12:58:08 -0500 Removed the org-tempo cj entry
+
+Once the yasnippet handles every mode, the =org-structure-template-alist= entry at =modules/org-babel-config.el:144= becomes redundant in org-mode and creates a TAB-handler ordering question. Remove the line:
+
+#+begin_src emacs-lisp
+(add-to-list 'org-structure-template-alist '("cj" . "src cj: comment"))
+#+end_src
+
+Verify =<cj= + TAB still expands in =org-mode= afterwards (now via yasnippet rather than org-tempo).
+
+*** 2026-05-15 Fri @ 15:08:48 -0500 Audited existing per-mode snippets for cross-mode use
+
+Walked =snippets/c-mode/=, =/emacs-lisp-mode/=, =/eshell-mode/=, =/html-ts-mode/=, =/org-mode/=, =/sh-mode/=. Read the body of every snippet. Conclusion: no movers — all 28 existing per-mode snippets contain mode-specific syntax (C =int main=, elisp =defun=, shell =printf= / =[ -f $1 ]=, HTML tags, org =#+STARTUP:= / =:PROPERTIES:= drawers, etc.) and belong where they are. =snippets/fundamental-mode/= correctly holds only the universal =cj-comment-block= marker.
+** DONE [#B] Move lsp-file-watch-ignored-directories to global .emacs.d config :chore:refactor:
+CLOSED: [2026-05-15 Fri] SCHEDULED: <2026-04-27 Mon>
+
+Shipped 2026-04-26 in commit 781b46e. Implementation: =cj/lsp-file-watch-ignored-extras= (thirteen patterns) and =cj/lsp--add-file-watch-ignored-extras= in =modules/prog-lsp.el=, called from the lsp-mode use-package =:config=. Seven ERT tests in =tests/test-prog-lsp--add-file-watch-ignored-extras.el=, all green.
+
+Manual verify (tomorrow): restart Emacs, open =~/code/deepsat/orchestration_dashboard_mvp/backend/test_mission_image_api.py=, watch for the file-watch prompt. Expected: no prompt, or count well below the previous 1905. If still prompting at ~1905, iterate on the pattern list.
+
+After verification: drop the redundant =lsp-file-watch-ignored-directories= entry from the deepsat MVP's =.dir-locals.el= here and on velox.
+
+Setting =lsp-file-watch-ignored-directories= via the project's =.dir-locals.el= doesn't apply at the buffer level. Confirmed via =M-: lsp-file-watch-ignored-directories= in a Python buffer — value is the lsp-mode default, not the 7 patterns we wrote in dir-locals. The safety prompt was answered with =!= and the dir-locals are otherwise live (the projectile commands take effect).
+
+Fix: move the seven patterns into the lsp config module as a global default with =setq-default= or per-pattern =add-to-list=. The patterns are project-agnostic build/cache directories — safe as defaults for any project.
+
+Patterns to add:
+- =[/\\\\]node_modules\\'=
+- =[/\\\\]\\.ruff_cache\\'=
+- =[/\\\\]dist\\'=
+- =[/\\\\]coverage\\'=
+- =[/\\\\]test-results\\'=
+- =[/\\\\]playwright-report\\'=
+- =[/\\\\]tf[/\\\\]\\.terraform\\'=
+
+After landing: =M-x lsp-workspace-shutdown=, reopen a Python file, confirm the directory count drops well below the default threshold of 1000 (currently 1905). Then remove the redundant entries from the deepsat MVP's =.dir-locals.el= here and on velox.
+
+Discovered 2026-04-26 testing dashboard MVP F-key setup.
