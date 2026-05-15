@@ -272,7 +272,20 @@ Test surface: =cj/--video-file-p= happy/edge cases, the ffmpeg
 extract step (stub =call-process=), and the dispatch in
 =cj/transcribe-audio-at-point= against a video path.
 
-** TODO [#C] Surface org narrowing + sparse-tree under =C-; O= :refactor:
+** DONE [#C] Surface org narrowing + sparse-tree under =C-; O= :refactor:
+CLOSED: [2026-05-14 Thu]
+Final layout flatter than the original proposal: no =n= or =s=
+sub-prefixes.  Lowercase letters create / narrow / sparse-tree;
+the same letter capitalized cancels.  `n' / `N' = narrow / widen.
+`s' / `S' = match-sparse-tree / show-all.  `t' / `T' =
+show-todo-tree / show-all (both capitals point at the same
+`org-show-all' so the mental model is "capital cancels the
+lowercase I just ran").  `R' = `org-reveal' (no lowercase pair --
+`r' is the table-row sub-prefix); F2 (the old reveal binding) is
+freed up.  Sibling-stepping is on `>' / `<' at the top level.
+
+Four new ERT assertions in
+=tests/test-org-config-keymap-ownership.el= lock the shape.
 
 The narrowing and sparse-tree commands already exist in
 =modules/org-config.el=, but they're bound only inside the
