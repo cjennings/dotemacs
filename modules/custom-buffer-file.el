@@ -214,16 +214,46 @@ When called interactively, prompts for confirmation if target file exists."
       (kill-new file-path)
       (message "Copied file link to kill ring: %s" file-path))))
 
-(defun cj/copy-path-to-buffer-file-as-kill ()
-  "Copy the full path of the current buffer's file to the kill ring.
-Signal an error if the buffer is not visiting a file."
+(defvar cj/buffer-source-functions
+  '((eww-mode         . (lambda () (eww-current-url)))
+    (elfeed-show-mode . (lambda () (elfeed-entry-link elfeed-show-entry)))
+    (dired-mode       . (lambda () (dired-get-filename nil t)))
+    (dirvish-mode     . (lambda () (dired-get-filename nil t))))
+  "Alist mapping major-mode -> thunk returning the buffer's \"source\".
+
+Each thunk is called with no arguments and should return a string
+to be copied to the kill ring, or nil to fall through to
+`buffer-file-name'.  Modes not listed here also fall through to
+`buffer-file-name'.
+
+Used by `cj/copy-buffer-source-as-kill' (`C-; b p').  Doc-view and
+PDF-view modes intentionally aren't listed -- their
+`buffer-file-name' already points at the underlying file, so the
+fallback handles them.")
+
+(defun cj/copy-buffer-source-as-kill ()
+  "Copy the current buffer's \"source\" to the kill ring.
+
+Source means the URL, file path, or other clickable reference that
+identifies what the buffer represents.  Dispatches by `major-mode'
+via `cj/buffer-source-functions'; falls back to `buffer-file-name'
+for modes without a dispatch entry.
+
+Signals `user-error' when no source can be determined."
   (interactive)
-  (let ((path (buffer-file-name)))
-    (if (not path)
-        (user-error "Current buffer is not visiting a file")
-      (kill-new path)
-      (message "Copied file path: %s" path)
-      path)))
+  (let* ((handler (alist-get major-mode cj/buffer-source-functions))
+         (source (or (and handler (funcall handler))
+                     (buffer-file-name))))
+    (unless source
+      (user-error "Buffer has no copyable source"))
+    (kill-new source)
+    (message "Copied: %s" source)
+    source))
+
+;; Backwards-compat alias.  The old name predates the dispatch
+;; extension and several test files still reference it; keep the
+;; alias so external callers and existing tests continue to work.
+(defalias 'cj/copy-path-to-buffer-file-as-kill 'cj/copy-buffer-source-as-kill)
 
 (defun cj/copy-whole-buffer ()
   "Copy the entire contents of the current buffer to the kill ring.
@@ -445,7 +475,7 @@ Signals an error if:
   :doc "Keymap for buffer and file operations."
   "m" #'cj/move-buffer-and-file
   "r" #'cj/rename-buffer-and-file
-  "p" #'cj/copy-path-to-buffer-file-as-kill
+  "p" #'cj/copy-buffer-source-as-kill
   "d" #'cj/delete-buffer-and-file
   "D" #'cj/diff-buffer-with-file
   "c" cj/copy-buffer-content-map
@@ -480,7 +510,7 @@ Signals an error if:
     "C-; b" "buffer and file menu"
     "C-; b m" "move file"
     "C-; b r" "rename file"
-    "C-; b p" "copy file path"
+    "C-; b p" "copy buffer source"
     "C-; b d" "delete file"
     "C-; b D" "diff buffer with file"
     "C-; b c" "buffer copy menu"
