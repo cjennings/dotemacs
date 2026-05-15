@@ -15,6 +15,13 @@
 			  ("<f2>" . markdown-preview)) ;; use same key as compile for consistency
   :init (setq markdown-command "multimarkdown"))
 
+;; Register markdown as a known org-src-block language so `org-lint'
+;; stops warning on `#+begin_src markdown ... #+end_src' and `C-c ''
+;; inside such a block opens it in `markdown-mode' instead of falling
+;; back to fundamental-mode.
+(with-eval-after-load 'org
+  (add-to-list 'org-src-lang-modes '("markdown" . markdown)))
+
 ;;;; ------------------------- Impatient-Mode ------------------------
 
 ;; allows for live previews of your html
