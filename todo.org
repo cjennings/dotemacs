@@ -39,6 +39,14 @@ Tags are additive. For example, a small wrong-behavior fix can be
 
 * Emacs Open Work
 
+** TODO [#B] Update gptel models
+cj: do some research and figure out what current OpenAI and Anthropic models gptel supports. Then update the config to support the latest in the menus. 
+
+** TODO [#B] Modify C-; b p 
+- (EWW) copy EWW url when in an EWW buffer.
+- (calibre) copy path to an epub or pdf or other document if those are shown in docview or pdfview
+cj: what other ideas do you have for extending the ""buffer source""? 
+
 ** TODO [#B] Investigate gptel-magit not working properly :bug:
 
 Wired up in =modules/ai-config.el= as three lazy entry points:
@@ -53,15 +61,6 @@ attachment via =transient-append-suffix=, or gptel-side backend/model config.
 
 Migration to current lazy form: commit =3eb1a0c refactor(gptel): lazy-load
 gptel-magit, rebind rewrite/context keys=.
-
-** STALLED [#C] EPUB text is slightly left-of-center (shr word-wrap shortfall) :bug:
-[2026-05-12] Visual review of the reading-width rework is done -- it's good. Not sure I actually need this nit fixed; the left-of-center bias is minor and the `+'/`-' keys let me nudge it. Parking here until I decide it bothers me enough.
-
-After =b7c6b2c=, the EPUB text block is centered with `set-window-margins' at `(natural - nov-text-width) / 2' each side -- but the *rendered* text is a bit narrower than `nov-text-width' columns, because `shr' wraps at word boundaries, so the typical line ends a few columns short of the fill width. The text is left-aligned within its `nov-text-width'-wide fill region, so the unused tail of that region adds to the right margin -- the block reads as shifted left of center. Adjusting `cj/nov-margin-percent' (the `+'/`-' keys) re-flows and happens to look better at some widths (probably the line-ending pattern lands tighter), which is the same effect, not a real difference.
-
-Plan: in `cj/nov-update-layout', after the render, measure the actual widest line (`(save-excursion (goto-char (point-min)) (let ((m 0)) (while (not (eobp)) (end-of-line) (setq m (max m (current-column))) (forward-line 1)) m))') and center on *that* instead of on `nov-text-width'. Or, cheaper but coarser: bias the left margin by a small fudge (a column or two). The measure-the-text approach is correct; do it if it's not too slow on big chapters (it scans the buffer once per render -- the buffer's already in memory, so likely fine). =modules/calibredb-epub-config.el=, =tests/test-calibredb-epub-config.el=.
-
-cj: this is now confirmed. mark it DONE. 
 
 ** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
 
@@ -4060,3 +4059,13 @@ Full investigation, reproduction, and fix-option analysis in:
 [[file:docs/python-treesit-predicate-mismatch.txt][docs/python-treesit-predicate-mismatch.txt]]
 
 Resolved 2026-05-14 by an upstream emacs Arch-package revision bump (=30.2-2= → =30.2-3=, shipped 2026-05-03) — most likely carrying a downstream patch to =treesit.c='s predicate translation. Bug no longer reproduces: the exact failing query runs cleanly via =treesit-query-capture=, and =font-lock-ensure= on a real Python file under =python-ts-mode= completes with no =treesit-query-error=. No local override applied to =modules/prog-python.el=. Matches option A from the investigation's fix-options ("WAIT FOR UPSTREAM EMACS FIX").
+** CANCELLED [#C] EPUB text is slightly left-of-center (shr word-wrap shortfall) :bug:
+CLOSED: [2026-05-14 Thu 23:39]
+[2026-05-12] Visual review of the reading-width rework is done -- it's good. Not sure I actually need this nit fixed; the left-of-center bias is minor and the `+'/`-' keys let me nudge it. Parking here until I decide it bothers me enough.
+
+After =b7c6b2c=, the EPUB text block is centered with `set-window-margins' at `(natural - nov-text-width) / 2' each side -- but the *rendered* text is a bit narrower than `nov-text-width' columns, because `shr' wraps at word boundaries, so the typical line ends a few columns short of the fill width. The text is left-aligned within its `nov-text-width'-wide fill region, so the unused tail of that region adds to the right margin -- the block reads as shifted left of center. Adjusting `cj/nov-margin-percent' (the `+'/`-' keys) re-flows and happens to look better at some widths (probably the line-ending pattern lands tighter), which is the same effect, not a real difference.
+
+Plan: in `cj/nov-update-layout', after the render, measure the actual widest line (`(save-excursion (goto-char (point-min)) (let ((m 0)) (while (not (eobp)) (end-of-line) (setq m (max m (current-column))) (forward-line 1)) m))') and center on *that* instead of on `nov-text-width'. Or, cheaper but coarser: bias the left margin by a small fudge (a column or two). The measure-the-text approach is correct; do it if it's not too slow on big chapters (it scans the buffer once per render -- the buffer's already in memory, so likely fine). =modules/calibredb-epub-config.el=, =tests/test-calibredb-epub-config.el=.
+
+cj: this is now confirmed. mark it DONE. 
+
