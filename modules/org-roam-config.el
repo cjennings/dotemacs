@@ -103,10 +103,22 @@ the arguments that org-roam-node-insert expects."
 
 ;; ------------------------- Tag Listing And Filtering -------------------------
 
+(defun cj/--org-roam-node-tags (node)
+  "Return NODE's tag list.
+
+Thin indirection over `org-roam-node-tags'.  The accessor is generated
+by `cl-defstruct' and ships with a compiler-macro that inlines call
+sites into an `aref' against `cl-struct-org-roam-node-tags' at
+byte-compile time.  Plain `(org-roam-node-tags node)' here would
+also be inlined, defeating `cl-letf' stubs in tests.  Using
+`funcall' with a quoted symbol skips the compiler-macro and forces
+runtime function-cell resolution, so the test stub fires."
+  (funcall 'org-roam-node-tags node))
+
 (defun cj/org-roam-filter-by-tag (tag-name)
   "Return a predicate function that filters org-roam nodes by TAG-NAME."
   (lambda (node)
-    (member tag-name (org-roam-node-tags node))))
+    (member tag-name (cj/--org-roam-node-tags node))))
 
 (defun cj/org-roam-list-notes-by-tag (tag-name)
   "Return a list of file paths for all org-roam nodes tagged with TAG-NAME."
