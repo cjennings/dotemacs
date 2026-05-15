@@ -39,8 +39,28 @@ Tags are additive. For example, a small wrong-behavior fix can be
 
 * Emacs Open Work
 
-** TODO [#B] Update gptel models
-cj: do some research and figure out what current OpenAI and Anthropic models gptel supports. Then update the config to support the latest in the menus. 
+** DONE [#B] Update gptel models :chore:
+CLOSED: [2026-05-14 Thu]
+Anthropic side: bumped Opus 4.6 → 4.7 (current frontier); Sonnet 4.6
+and Haiku 4.5 stay (still current).  Default model setq also bumped
+to =claude-opus-4-7= in both places (=cj/ensure-gptel-backends= and
+the =use-package gptel :config= block).
+
+OpenAI side: bigger refresh.  Old menu (=gpt-4o=, =gpt-5= original,
+=gpt-4.1=, =o1=) was all in the cohort retired from ChatGPT on
+2026-02-13 -- still callable via API but no longer the path forward.
+New menu: =gpt-5.5= (current flagship), =gpt-5.4-mini= (fast/cheap),
+=o3= (reasoning).
+
+Stale docstring example in =cj/gptel--current-model-selection=
+also bumped to match.
+
+gptel's bundled =:models= list only goes through May-2025 model IDs
+but the constructor passes whatever string you supply straight to the
+API, so newer model names work fine without a gptel upgrade.
+
+** TODO [#B] COMMENT Add gptel toggle to M-F9
+self-explatory. entirely remove what's there now (including supporting code). Update tests to match. 
 
 ** TODO [#B] Modify C-; b p 
 - (EWW) copy EWW url when in an EWW buffer.
@@ -149,11 +169,14 @@ Current bindings in =modules/org-noter-config.el= (=cj/org-noter-map=):
 - =p= -> =org-noter-sync-prev-note=
 - =.= -> =org-noter-sync-current-note=
 
-Proposed: =n= -> insert-note. Pick a new home for sync-next-note during
-implementation (free letters under the prefix include =N=, =j=, =f=
-among others) and decide whether to also move sync-prev-note for
-symmetry. Update the =which-key= labels in the same module and any test
-that asserts the keymap shape.
+
+Proposed bindings
+- n -> =cj/org-noter-insert-note-dwim=
+- > -> =org-noter-sync-next-note=
+- < -> =org-noter-sync-prev-note=
+- =.= -> =org-noter-sync-current-note=
+
+Update the =which-key= labels in the same module and any test that asserts the keymap shape.
 
 ** TODO [#B] Build cj/dev-setup-project helper (per docs/design/dev-setup-project.org) :feature:
 
