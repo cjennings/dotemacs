@@ -45,6 +45,31 @@ command (which moved to capital `C')."
   (should (eq (keymap-lookup cj/org-map "c i") #'org-table-insert-column))
   (should (eq (keymap-lookup cj/org-map "c d") #'org-table-delete-column)))
 
+(ert-deftest test-org-config-keymap-ownership-narrow-bindings ()
+  "Narrow / widen sit directly under `C-; O' (flat, no sub-prefix).
+Lowercase `n' narrows to the current subtree; capital `N' widens,
+matching the lowercase-creates / uppercase-cancels pattern shared
+with the sparse-tree sub-prefix.  Sibling-stepping is on `>' / `<'
+at the top level."
+  (should (eq (keymap-lookup cj/org-map "n") #'org-narrow-to-subtree))
+  (should (eq (keymap-lookup cj/org-map "N") #'widen))
+  (should (eq (keymap-lookup cj/org-map ">") #'cj/org-narrow-forward))
+  (should (eq (keymap-lookup cj/org-map "<") #'cj/org-narrow-backwards)))
+
+(ert-deftest test-org-config-keymap-ownership-sparse-tree-bindings ()
+  "Sparse-tree commands sit directly under `C-; O' (flat).
+Lowercase creates, capital of the same letter cancels: `s' /
+`S' for match-sparse-tree, `t' / `T' for show-todo-tree.  Both
+capitals resolve to `org-show-all' -- the user's mental model is
+\"capital cancels the lowercase I just ran\" without having to
+remember which letter the cancel actually lives on.  `R' is
+`org-reveal' (no lowercase pair -- `r' is the table-row sub-prefix)."
+  (should (eq (keymap-lookup cj/org-map "s") #'org-match-sparse-tree))
+  (should (eq (keymap-lookup cj/org-map "S") #'org-show-all))
+  (should (eq (keymap-lookup cj/org-map "t") #'org-show-todo-tree))
+  (should (eq (keymap-lookup cj/org-map "T") #'org-show-all))
+  (should (eq (keymap-lookup cj/org-map "R") #'org-reveal)))
+
 (ert-deftest test-org-config-keymap-ownership-regression-no-duplicate-org-keymap ()
   "The old duplicate `cj/org-keymap' binding should not exist."
   (should-not (boundp 'cj/org-keymap)))
