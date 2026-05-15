@@ -32,10 +32,10 @@
 ;;        picker, even when an agent buffer is currently displayed.
 ;;        Used when the user wants to start a new project session
 ;;        instead of toggling the current one.
-;; - M-F9 `cj/ai-vterm-pick-buffer' -- pick from the alive agent
-;;        buffers (no project candidates, no creation).  When an agent
-;;        buffer is currently displayed, the picked buffer replaces it
-;;        in that window so orientation and size are preserved.
+;; - M-F9 `cj/toggle-gptel' -- toggle gptel's *AI-Assistant* window.
+;;        Lives outside this module (defined in `modules/ai-config.el')
+;;        but the binding is grouped with the other F9-family launchers
+;;        here so the dispatch shape is visible in one place.
 ;;
 ;; Existing windmove (Shift-arrows) handles code <-> agent focus
 ;; toggling.  Buffer-move (C-M-arrows) handles side-swap.  Neither
@@ -595,27 +595,6 @@ without firing real `display-buffer' or `quit-window' calls."
          (buffers (cons 'redisplay-recent (car buffers)))
          (t '(pick-project))))))))
 
-(defun cj/--ai-vterm-pick-buffer-candidates (buffers shown-buffer)
-  "Build the M-F9 picker alist.
-
-BUFFERS is an MRU-ordered list of alive AI-vterm buffers.
-SHOWN-BUFFER is the AI-vterm buffer currently displayed in this frame,
-or nil.
-
-When SHOWN-BUFFER is one of BUFFERS, it sorts last with a
-\" [shown]\" suffix so the default `completing-read' selection lands
-on a non-shown candidate (i.e. RET picks \"the other one\").  When
-SHOWN-BUFFER is not in BUFFERS (a stale window state), every entry is
-treated as non-shown.
-
-Each cell is (DISPLAY-NAME . BUFFER)."
-  (let ((non-shown (seq-remove (lambda (b) (eq b shown-buffer)) buffers))
-        (shown (when (memq shown-buffer buffers) shown-buffer)))
-    (append
-     (mapcar (lambda (b) (cons (buffer-name b) b)) non-shown)
-     (when shown
-       (list (cons (format "%s [shown]" (buffer-name shown)) shown))))))
-
 (defun cj/ai-vterm-pick-project (&optional arg)
   "Pick an AI-agent project and open or reuse its vterm.
 
@@ -638,41 +617,6 @@ buffer is currently displayed."
         (when win (select-window win))))
     buf))
 
-(defun cj/ai-vterm-pick-buffer ()
-  "Pick from the alive AI-vterm buffers; switch to the chosen one.
-
-When an AI-vterm buffer is currently displayed in this frame, the
-picked buffer replaces it in the same window via `set-window-buffer'.
-Orientation and size are preserved so the user's split layout doesn't
-change.  When no AI-vterm buffer is displayed, default placement
-applies via `display-buffer'.
-
-The currently-displayed buffer (if any) is sorted last in the picker
-with a \" [shown]\" suffix; the default selection lands on a
-non-shown candidate so RET means \"give me the other one\".
-
-Signals `user-error' when no AI-vterm buffers exist.
-
-Bound to M-F9."
-  (interactive)
-  (let ((buffers (cj/--ai-vterm-agent-buffers)))
-    (unless buffers
-      (user-error "No agent buffers"))
-    (let* ((shown-win (cj/--ai-vterm-displayed-agent-window))
-           (shown-buf (and shown-win (window-buffer shown-win)))
-           (alist (cj/--ai-vterm-pick-buffer-candidates buffers shown-buf))
-           (chosen (completing-read "AI vterm buffer: " alist nil t))
-           (buf (cdr (assoc chosen alist))))
-      (cond
-       ((and shown-win (window-live-p shown-win))
-        (set-window-buffer shown-win buf)
-        (select-window shown-win))
-       (t
-        (display-buffer buf)
-        (let ((w (get-buffer-window buf)))
-          (when w (select-window w)))))
-      buf)))
-
 (defun cj/ai-vterm (&optional arg)
   "Smart F9 dispatch for the AI-vterm launcher.
 
@@ -687,9 +631,9 @@ Behavior depends on the current state:
 With prefix ARG, display the buffer without selecting its window
 when a buffer is being shown (no effect on the toggle-off branch).
 
-See `cj/ai-vterm-pick-project' (C-F9) to force the project picker
-and `cj/ai-vterm-pick-buffer' (M-F9) to switch among existing
-AI-vterm buffers without touching the project list."
+See `cj/ai-vterm-pick-project' (C-F9) to force the project picker.
+M-F9 toggles gptel's *AI-Assistant* window (`cj/toggle-gptel',
+defined in `modules/ai-config.el')."
   (interactive "P")
   (pcase (cj/--ai-vterm-dispatch)
     (`(toggle-off . ,win)
@@ -738,7 +682,7 @@ AI-vterm buffers without touching the project list."
 
 (keymap-global-set "<f9>"   #'cj/ai-vterm)
 (keymap-global-set "C-<f9>" #'cj/ai-vterm-pick-project)
-(keymap-global-set "M-<f9>" #'cj/ai-vterm-pick-buffer)
+(keymap-global-set "M-<f9>" #'cj/toggle-gptel)
 
 ;; vterm binds <f1>..<f12> to `vterm--self-insert', so a plain <f9> typed
 ;; while point is inside an agent buffer gets sent to the terminal program
@@ -749,7 +693,7 @@ AI-vterm buffers without touching the project list."
 (with-eval-after-load 'vterm
   (keymap-set vterm-mode-map "<f9>"   #'cj/ai-vterm)
   (keymap-set vterm-mode-map "C-<f9>" #'cj/ai-vterm-pick-project)
-  (keymap-set vterm-mode-map "M-<f9>" #'cj/ai-vterm-pick-buffer))
+  (keymap-set vterm-mode-map "M-<f9>" #'cj/toggle-gptel))
 
 ;; ---------- emacsclient: keep opened files off the agent vterm ----------
 ;;
