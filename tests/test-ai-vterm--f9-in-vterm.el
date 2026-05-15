@@ -24,19 +24,24 @@
   (should (eq (keymap-lookup vterm-mode-map "<f9>") #'cj/ai-vterm)))
 
 (ert-deftest test-ai-vterm-f9-family-bound-in-vterm-mode-map ()
-  "Normal: the C-/M- F9 variants are bound in `vterm-mode-map' too."
+  "Normal: the C-/M- F9 variants are bound in `vterm-mode-map' too.
+`M-<f9>' toggles gptel's *AI-Assistant* window (rebound here from
+the old `cj/ai-vterm-pick-buffer' command, which was removed)."
   (should (eq (keymap-lookup vterm-mode-map "C-<f9>") #'cj/ai-vterm-pick-project))
-  (should (eq (keymap-lookup vterm-mode-map "M-<f9>") #'cj/ai-vterm-pick-buffer)))
+  (should (eq (keymap-lookup vterm-mode-map "M-<f9>") #'cj/toggle-gptel)))
 
 (ert-deftest test-ai-vterm-f9-not-self-insert-in-vterm ()
   "Boundary: vterm's default <f9> -> `vterm--self-insert' was overridden."
   (should-not (eq (keymap-lookup vterm-mode-map "<f9>") 'vterm--self-insert)))
 
 (ert-deftest test-ai-vterm-f9-still-bound-globally ()
-  "Normal: the global F9 family bindings are intact."
+  "Normal: the global F9 family bindings are intact.
+`<f9>' toggles the ai-vterm agent window; `C-<f9>' picks a project
+agent; `M-<f9>' toggles gptel's *AI-Assistant* window (rebound from
+the retired `cj/ai-vterm-pick-buffer')."
   (should (eq (lookup-key (current-global-map) (kbd "<f9>")) #'cj/ai-vterm))
   (should (eq (lookup-key (current-global-map) (kbd "C-<f9>")) #'cj/ai-vterm-pick-project))
-  (should (eq (lookup-key (current-global-map) (kbd "M-<f9>")) #'cj/ai-vterm-pick-buffer)))
+  (should (eq (lookup-key (current-global-map) (kbd "M-<f9>")) #'cj/toggle-gptel)))
 
 (provide 'test-ai-vterm--f9-in-vterm)
 ;;; test-ai-vterm--f9-in-vterm.el ends here
