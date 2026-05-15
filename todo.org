@@ -380,13 +380,16 @@ Option 4 (Hybrid) from spec - customize flycheck variables + add to modeline.
 Simple, maintainable, respects flycheck's built-in logic.
 
 ** TODO [#C] Migrate from Company to Corfu (with prescient integration) :feature:
-:PROPERTIES:
-:COMPLETE_CONFIG: [[file:.ai/SOMEDAY-MAYBE.org::1611][todo.org:1611-1639]]
-:END:
 
-Complete config already exists in someday-maybe.org — just needs to be executed.
+Spec: [[file:docs/design/company-to-corfu-migration.org][docs/design/company-to-corfu-migration.org]]
 
-While migrating, also extend prescient (already wired into vertico) to Corfu for smart sorting. The prescient piece is a small follow-up to the migration, so handled in the same task.
+Drop-in replacement for the in-buffer completion stack: =company= →
+=corfu=, =company-quickhelp= → =corfu-popupinfo=, =company-box= →
+=kind-icon=, =company-prescient= → =corfu-prescient=, plus =cape= for
+the file/keyword/dabbrev capfs that =company-files= / =company-keywords=
+used to handle.  Per-module fixups for ledger, AUCTeX, eshell, mu4e
+compose, and the three =prog-*= modules.  See the design doc for the
+full translation table, migration steps, tests, and risks.
 
 ** TODO [#C] Consider removing gptel and the C-; a AI-assistant keymap :refactor:cleanup:
 

@@ -1,0 +1,324 @@
+#+TITLE: Design: Migrate from Company to Corfu (with prescient integration)
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-15
+#+OPTIONS: toc:nil num:nil
+
+* Status
+
+Draft.
+
+* Problem
+
+The in-buffer completion stack is built on =company= (=modules/selection-framework.el:192-243=), augmented with =company-quickhelp= (doc popups), =company-box= (icon kinds), and =company-prescient= (smart sorting). The configuration works, but =company= predates the modern =completion-at-point= machinery in Emacs 29+: it maintains its own backend list (=company-backends=) parallel to =completion-at-point-functions= and routes around the built-in protocol.
+
+=corfu= is the modern equivalent. It drives the same UI through =completion-at-point-functions= directly, which means every Emacs mode that already publishes a capf (eglot, elisp-mode, ledger-mode, AUCTeX, etc.) lights up without a custom company backend. The plugin ecosystem (=cape=, =kind-icon=, =corfu-popupinfo=, =corfu-prescient=) covers the remaining gaps: fallback completers, icon kinds, doc popups, and prescient sorting.
+
+This migration replaces the =company= stack with the equivalent =corfu= stack, preserving:
+
+- Global in-buffer completion across prog and text modes.
+- Tab to complete, =C-n=/=C-p= to navigate the candidate list.
+- File-path completion (currently via =company-files=).
+- Keyword completion in programming modes.
+- Doc popups for the selected candidate.
+- Icon kinds in the candidate list.
+- prescient-based smart sorting (recency + frequency + filter).
+- Disabling completion in mail compose buffers.
+- Per-mode prefix length and idle delay tuning where it differs.
+- Mode-specific backends (=company-ledger=, =company-auctex=, =company-shell=).
+
+* Goals
+
+1. =global-corfu-mode= replaces =global-company-mode=, with the same hook timing.
+2. Every current =company-*= package and helper has a corfu-side equivalent or a documented drop.
+3. Per-mode capf customizations (ledger, AUCTeX, eshell, mu4e compose) keep working.
+4. prescient sorting extends from vertico (where it already runs) to corfu via =corfu-prescient=.
+5. No regression in mu4e compose buffers — completion stays disabled there.
+
+* Non-Goals
+
+- Adding new completion sources beyond what =company= already provides. Source tuning is a follow-up.
+- Reworking =eglot= or LSP integration. =corfu= reads =completion-at-point-functions=; eglot already publishes a capf.
+- Touching =vertico=, =marginalia=, =consult=, =embark=, or =orderless=. Those operate on the minibuffer, not the in-buffer completion frontend.
+- Touching the =accent= package's =accent-company= command (=modules/text-config.el:97-99=). The name shares a prefix with =company= by coincidence; it is the package's own function and does not depend on =company-mode=.
+
+* Current State
+
+** Module: =modules/selection-framework.el:192-243=
+
+| What                       | How                                                                |
+|----------------------------+--------------------------------------------------------------------|
+| Global activation          | =:hook (after-init . global-company-mode)=                         |
+| Keymap (active)            | tab → complete, =C-n=/=C-p= → next/prev                            |
+| Backends                   | =(company-capf company-files company-keywords)=                    |
+| Idle delay                 | =2= seconds                                                        |
+| Minimum prefix             | =2= chars                                                          |
+| Show numbers               | =t=                                                                |
+| Tooltip alignment / flip   | annotations aligned, flip when above                               |
+| Tooltip limit              | =10=                                                               |
+| Selection wrap             | =t=                                                                |
+| Require match              | =nil=                                                              |
+| Global disable modes       | =message-mode=, =mu4e-compose-mode=, =org-msg-edit-mode=           |
+| Doc popups                 | =company-quickhelp= (=:config (company-quickhelp-mode)=)           |
+| Icon kinds                 | =company-box= (=:hook (company-mode . company-box-mode)=)          |
+| prescient sorting          | =company-prescient= (=:config (company-prescient-mode)=)           |
+
+** Other modules that touch company
+
+| Module                                            | What                                                                                                                                                  |
+|---------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| =modules/ledger-config.el:44-47=                  | =company-ledger= backend added to =company-backends= after =ledger-mode= loads                                                                        |
+| =modules/latex-config.el:44-46=                   | =company-auctex= with =:init (company-auctex-init)=                                                                                                   |
+| =modules/eshell-config.el:163-171=                | =company-shell= backend; eshell-mode-hook sets =company-minimum-prefix-length= and =company-idle-delay= to =2= locally, then enables =company-mode= |
+| =modules/mail-config.el:319-333=                  | =cj/disable-company-in-mu4e-compose= calls =(company-mode -1)= in =mu4e-compose-mode-hook= and =org-msg-edit-mode-hook=                               |
+| =modules/prog-go.el:41,50=                        | =(declare-function company-mode "company")= + =(company-mode)= in go-mode-hook                                                                        |
+| =modules/prog-python.el:28,46=                    | Same shape for python-mode-hook                                                                                                                       |
+| =modules/prog-webdev.el:32,47=                    | Same shape for web-mode-hook                                                                                                                          |
+
+The three prog-* modules are redundant once =global-company-mode= is on; they will become redundant in the same way once =global-corfu-mode= is on. They can either be deleted outright or rewritten to ensure capfs are wired.
+
+* Target State
+
+** New configuration in =modules/selection-framework.el=
+
+Replace the company block with:
+
+#+begin_src emacs-lisp
+;; ---------------------------------- Corfu ----------------------------------
+;; In-buffer completion built on completion-at-point-functions.
+
+(use-package corfu
+  :demand t
+  :hook (after-init . global-corfu-mode)
+  :bind
+  (:map corfu-map
+        ("<tab>"   . corfu-complete)
+        ("C-n"     . corfu-next)
+        ("C-p"     . corfu-previous))
+  :custom
+  (corfu-cycle t)                       ; wrap-around selection
+  (corfu-auto t)                        ; auto-popup like company
+  (corfu-auto-delay 2.0)                ; match company-idle-delay
+  (corfu-auto-prefix 2)                 ; match company-minimum-prefix-length
+  (corfu-count 10)                      ; match company-tooltip-limit
+  (corfu-quit-no-match 'separator)      ; quit only after explicit gap
+  (corfu-preview-current nil)           ; no inline preview (closer to company default)
+  :config
+  ;; History so frequently-used candidates float up across sessions.
+  (with-eval-after-load 'savehist
+    (corfu-history-mode 1)
+    (add-to-list 'savehist-additional-variables 'corfu-history))
+  ;; Mirror company-global-modes = (not message-mode mu4e-compose-mode
+  ;; org-msg-edit-mode): corfu has no built-in exclusion list, so the
+  ;; mail-config hook below toggles corfu-mode off in those buffers.
+  )
+
+;; Doc popups for the selected candidate (company-quickhelp equivalent).
+(use-package corfu-popupinfo
+  :ensure nil                           ; ships with corfu
+  :after corfu
+  :hook (corfu-mode . corfu-popupinfo-mode)
+  :custom
+  (corfu-popupinfo-delay '(0.5 . 0.2))) ; (initial . subsequent)
+
+;; Icon kinds (company-box equivalent).
+(use-package kind-icon
+  :after corfu
+  :custom
+  (kind-icon-default-face 'corfu-default)
+  :config
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+
+;; Cape: extra capfs (file paths, keywords, dabbrev, dict) so corfu
+;; covers the cases company-files / company-keywords used to handle.
+(use-package cape
+  :demand t
+  :config
+  ;; Order matters: file paths first (most specific), then keywords,
+  ;; then dabbrev (buffer words) as the catch-all.
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev))
+#+end_src
+
+The existing =prescient= and =vertico-prescient= use-package blocks stay.  =company-prescient= is replaced with =corfu-prescient=:
+
+#+begin_src emacs-lisp
+(use-package corfu-prescient
+  :demand t
+  :after (corfu prescient)
+  :config
+  (corfu-prescient-mode))
+#+end_src
+
+** Setting / Package Translation Table
+
+| Company setting / package    | Corfu equivalent                                       |
+|------------------------------+--------------------------------------------------------|
+| =global-company-mode=        | =global-corfu-mode=                                    |
+| =company-backends=           | =completion-at-point-functions= (set by modes + cape)  |
+| =company-capf=               | built-in (corfu reads capf directly)                   |
+| =company-files=              | =cape-file=                                            |
+| =company-keywords=           | =cape-keyword=                                         |
+| =company-idle-delay=         | =corfu-auto-delay= (when =corfu-auto= is =t=)          |
+| =company-minimum-prefix-length= | =corfu-auto-prefix=                                 |
+| =company-tooltip-limit=      | =corfu-count=                                          |
+| =company-selection-wrap-around= | =corfu-cycle=                                       |
+| =company-require-match=      | =corfu-quit-no-match='separator= (closest equivalent)  |
+| =company-show-numbers=       | no direct equivalent; drop (rarely used)               |
+| =company-tooltip-align-annotations= | corfu does this by default                      |
+| =company-tooltip-flip-when-above= | corfu repositions automatically                  |
+| =company-global-modes= (excludes) | per-mode hook toggling =corfu-mode= off           |
+| =company-quickhelp=          | =corfu-popupinfo= (ships with corfu)                   |
+| =company-box=                | =kind-icon=                                            |
+| =company-prescient=          | =corfu-prescient=                                      |
+| =company-ledger=             | =ledger-mode='s built-in capf (Emacs 28+) -- see below |
+| =company-auctex=             | AUCTeX's built-in capf + =cape-tex= -- see below       |
+| =company-shell=              | =cape-keyword= + eshell's own pcomplete via capf       |
+
+* Migration Steps
+
+Order matters: package install → core swap → per-module fixups → cleanup.
+
+** Step 1: install corfu-side packages
+
+Add to the package install list (ELPA pulls these in via use-package):
+
+- =corfu=
+- =cape=
+- =kind-icon=
+- =corfu-prescient=
+
+(=corfu-popupinfo= ships inside =corfu= and does not need a separate install.)
+
+** Step 2: rewrite =modules/selection-framework.el=
+
+Replace lines 192-226 (the three =company-*= use-package blocks) with the corfu / cape / corfu-popupinfo / kind-icon blocks above. Replace line 240-243 (=company-prescient=) with =corfu-prescient=. Section headers update from "Company" → "Corfu".
+
+** Step 3: rewrite mail-compose disabling (=modules/mail-config.el:319-333=)
+
+Replace the =cj/disable-company-in-mu4e-compose= helper:
+
+#+begin_src emacs-lisp
+(defun cj/disable-corfu-in-mu4e-compose ()
+  "Disable corfu in mu4e compose buffers (and org-msg-edit-mode).
+Mail composition reads more naturally without auto-popups."
+  (corfu-mode -1))
+
+(add-hook 'mu4e-compose-mode-hook #'cj/disable-corfu-in-mu4e-compose)
+(with-eval-after-load 'org-msg
+  (add-hook 'org-msg-edit-mode-hook #'cj/disable-corfu-in-mu4e-compose))
+#+end_src
+
+Also disable in =message-mode= (which company excluded via =company-global-modes=) by adding a hook:
+
+#+begin_src emacs-lisp
+(add-hook 'message-mode-hook #'cj/disable-corfu-in-mu4e-compose)
+#+end_src
+
+(The function name still says "mu4e-compose" but covers all three modes via the same toggle. Rename to =cj/--disable-corfu-in-mail= if that bothers; cosmetic.)
+
+** Step 4: rewrite =modules/ledger-config.el=
+
+Drop =company-ledger=. =ledger-mode= ships =ledger-complete-at-point= and registers it on =completion-at-point-functions= when the mode loads. Verify with =M-x describe-variable RET completion-at-point-functions RET= inside a ledger buffer after the migration. No new code needed unless verification shows the capf isn't being registered, in which case add a local capf push in =ledger-mode-hook=.
+
+** Step 5: rewrite =modules/latex-config.el=
+
+Drop =company-auctex= and its =(company-auctex-init)= call. AUCTeX 13+ publishes its own capf via =TeX-mode='s setup. =cape-tex= covers LaTeX macro / symbol completion as a fallback. Add to the LaTeX config:
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'tex-mode
+  (add-hook 'TeX-mode-hook
+            (lambda ()
+              (add-to-list 'completion-at-point-functions #'cape-tex))))
+#+end_src
+
+** Step 6: rewrite =modules/eshell-config.el:163-171=
+
+Drop =company-shell= and the eshell-mode-hook =company-mode= activation. Replace with per-mode capf wiring:
+
+#+begin_src emacs-lisp
+(add-hook 'eshell-mode-hook
+          (lambda ()
+            ;; eshell publishes pcomplete-completions-at-point.  cape
+            ;; wraps pcomplete so corfu picks it up.
+            (add-to-list 'completion-at-point-functions
+                         (cape-capf-buster #'pcomplete-completions-at-point))
+            (corfu-mode 1)))
+#+end_src
+
+The =cape-capf-buster= wrapper invalidates pcomplete's cache between completion calls; without it, eshell completion staleness shows.
+
+** Step 7: delete the three prog-* =company-mode= calls
+
+In =modules/prog-go.el=, =modules/prog-python.el=, and =modules/prog-webdev.el=:
+
+- Remove =(declare-function company-mode "company")=.
+- Remove =(company-mode)= from the mode hook (=global-corfu-mode= covers it).
+
+If any of the three modes needs a mode-specific capf override (most don't; eglot / language-server modes publish their own), add it in place of the deleted call.
+
+** Step 8: rename section header in selection-framework.el
+
+The header at line 189 (=;; ---- Company ----=) becomes =;; ---- Corfu ----=. Cosmetic but worth doing in the same change for grep-ability.
+
+** Step 9: byte-compile and uninstall company packages
+
+After the rewrite is green:
+
+- =M-x package-delete= on =company=, =company-quickhelp=, =company-box=, =company-prescient=, =company-ledger=, =company-auctex=, =company-shell=.
+- Confirm =M-x list-packages= shows none of them as installed.
+- Run =make clean && make compile= to refresh =.elc=.
+
+* Testing
+
+** Unit / integration
+
+- =tests/test-selection-framework-corfu.el= (new)
+  - =corfu= is required and =global-corfu-mode= is on after init.
+  - =completion-at-point-functions= includes =cape-file=, =cape-keyword=, =cape-dabbrev= in the global value.
+  - =corfu-prescient-mode= is enabled.
+- =tests/test-mail-config-corfu-disable.el= (new)
+  - Visiting a buffer in =mu4e-compose-mode= and =message-mode= leaves =corfu-mode= disabled.
+- Update =tests/test-ledger-config.el= and =tests/test-latex-config.el= (if they exist) to assert the relevant capf is registered.
+
+** Manual verification
+
+Run each:
+
+1. Open an =elisp= file, type =mes= → corfu popup shows =message=, =message-box=, etc. Tab completes.
+2. Open a =python= file with an eglot-attached pyright, type a partial identifier → capf candidates appear via corfu.
+3. Open a =.ledger= file, type a partial account → ledger's own capf surfaces matches.
+4. Open a =.tex= file, type =\beg= → AUCTeX capf shows =\begin{}=, etc.
+5. Open eshell, type =cd ~/=,/= → cape-pcomplete capf completes paths.
+6. =C-x m= or open mu4e compose → no popup; =corfu-mode= reports as off in the mode line.
+7. Recently-completed candidates float to the top after a few uses (prescient).
+8. Type a partial filename in a Lisp buffer (=/etc/pas=) → =cape-file= completes =/etc/passwd= path.
+
+** Regression watch
+
+- =accent-company= (=C-`= in text modes) still opens its own popup; it doesn't depend on =company-mode=.
+- =eglot= integration: capf priority should be eglot first, cape* last. If eglot completions get crowded out by =cape-dabbrev=, switch =cape-dabbrev= to a buffer-local addition only in modes that lack a richer capf.
+
+* Risks
+
+| Risk                                                                                  | Mitigation                                                                                          |
+|---------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------|
+| AUCTeX's built-in capf doesn't actually fire (some AUCTeX versions need a manual nudge) | Step 5 also adds =cape-tex=; verify in step-tested .tex file.                                       |
+| =cape-dabbrev= clutters language-server completions                                   | Make =cape-dabbrev= per-mode (text modes only) if regression appears; trivial to scope down.        |
+| ledger-mode capf is unregistered on first buffer open                                 | If verification fails, add =ledger-mode-hook= that pushes =ledger-complete-at-point= onto the capf list. |
+| eshell pcomplete cache staleness                                                      | =cape-capf-buster= in step 6 invalidates between calls.                                             |
+| prescient sort order resets                                                           | =corfu-history-mode= + =savehist-additional-variables= preserves across sessions; prescient stays for the frequency/recency weighting. |
+| Some modes (rare) only support company backends, never wrote a capf                   | Discovered case-by-case during step 7 verification. Worst case: keep =company= around in a tiny scope for that one mode, which defeats the migration -- unlikely. |
+
+* Rollback
+
+The change lives in one commit (or one branch). Revert restores company + the per-module integrations. =package-install= the deleted =company-*= packages back. Idempotent.
+
+* Effort estimate
+
+M (1 hour to 1 day). The rewrite of =selection-framework.el= is ~50 lines and mechanical. The per-module fixups are 5-15 lines each across six files. Testing the per-mode capfs is where the time goes.
+
+* Open questions
+
+- Keep =cape-dict= for spell-style completion in text modes? Out of scope for the migration but a natural follow-up. Decide after the base swap lands.
+- Switch eshell to =eat= or =eshell-toggle= as part of this? No — out of scope.
