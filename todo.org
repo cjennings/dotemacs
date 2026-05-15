@@ -79,10 +79,88 @@ new function).
 Module commentary + the =cj/ai-vterm= docstring updated to describe
 the new M-F9 behavior.
 
-** TODO [#B] Modify C-; b p 
+** TODO [#B] Modify C-; b p
 - (EWW) copy EWW url when in an EWW buffer.
 - (calibre) copy path to an epub or pdf or other document if those are shown in docview or pdfview
-cj: what other ideas do you have for extending the ""buffer source""? 
+
+*** 2026-05-15 Fri @ 00:11:47 -0500 Brainstorm: additional buffer-source ideas
+
+Today =C-; b p= invokes =cj/copy-path-to-buffer-file-as-kill=, which only
+handles file-visiting buffers and errors otherwise.  The proposed
+extension turns it into a dispatcher: ask the current buffer "what's
+your source?" and copy that, falling back to =buffer-file-name=.
+
+Grouping ideas by yield (most useful first) so an implementation can
+prioritize:
+
+*Likely highest-leverage (matches Craig's daily workflows):*
+- =eww-mode= → =(eww-current-url)= (already in task body).
+- =elfeed-show-mode= → entry URL via =(elfeed-entry-link
+  elfeed-show-entry)=.  Closes the loop for "I'm reading this article,
+  let me share it / open it in browser."
+- =mu4e-view-mode= / =mu4e-headers-mode= → either the Message-ID as a
+  =mu4e:msgid:...= link or the From + Subject as plain text.  Useful
+  for citing emails in org notes.
+- =org-mode= on a heading → the heading's =CUSTOM_ID= or =ID= as a
+  full =[[id:...][title]]= link.  Already partly covered by
+  =org-store-link=; the value here is "give me the link form even
+  outside an org-store flow."
+- =dired-mode= / =dirvish-mode= → =(dired-get-filename)= for the file
+  at point, not the dired buffer's =default-directory=.  Subtly
+  different from current behavior because dired *is* file-visiting in
+  a sense.
+- =doc-view-mode= / =pdf-view-mode= → the underlying file path.  Often
+  IS =buffer-file-name=, but explicit dispatch makes the behavior
+  predictable.  Calibre integration (task body) is a special case of
+  this -- calibre wraps the path through a different lookup.
+
+*Useful for occasional workflows:*
+- =help-mode= → the symbol being described (=help-xref-following= or
+  parsing the *Help* buffer header).  Pairs with /describe-function/
+  /describe-variable/.
+- =Info-mode= → an org-style =[[info:(manual)Node][label]]= link.
+- =magit-log-mode= / =magit-commit-mode= → the commit SHA at point,
+  optionally as a clickable form for the remote.
+- =magit-status-mode= → the project root (or repo URL via
+  =vc-git-repository-url=).
+- =xref--xref-buffer-mode= / =grep-mode= / =compilation-mode= → the
+  =file:line= location at point.
+- =image-mode= → the image file path.
+- =archive-mode= (tar/zip) → =archive-file-name= plus the entry name.
+
+*Probably skip:*
+- =vterm-mode= / =eshell-mode= → no meaningful "source"; would just
+  copy the buffer name.  Edge case at best.
+- =w3m-mode= → covered by EWW for Craig; w3m use is rare here.
+- =calc-mode= → "current value" isn't really a "buffer source"; better
+  served by a dedicated calc keybinding.
+
+*Implementation shape:*
+
+A dispatch alist mapping major-mode → thunk that returns a string
+(or nil to fall through), with =buffer-file-name= as the final
+fallback.  Something like:
+
+#+begin_src emacs-lisp
+(defvar cj/buffer-source-functions
+  '((eww-mode . (lambda () (eww-current-url)))
+    (elfeed-show-mode . (lambda () (elfeed-entry-link elfeed-show-entry)))
+    (dired-mode . (lambda () (dired-get-filename nil t)))
+    ...))
+
+(defun cj/copy-buffer-source-as-kill ()
+  (interactive)
+  (let* ((handler (alist-get major-mode cj/buffer-source-functions))
+         (source (or (and handler (funcall handler))
+                     (buffer-file-name)
+                     (user-error "Buffer has no copyable source"))))
+    (kill-new source)
+    (message "Copied: %s" source)))
+#+end_src
+
+Rename the command (=cj/copy-buffer-source-as-kill=) since it's no
+longer specifically about a file path.  Keep =C-; b p= binding so
+muscle memory survives.
 
 ** TODO [#B] Investigate gptel-magit not working properly :bug:
 
@@ -98,6 +176,27 @@ attachment via =transient-append-suffix=, or gptel-side backend/model config.
 
 Migration to current lazy form: commit =3eb1a0c refactor(gptel): lazy-load
 gptel-magit, rebind rewrite/context keys=.
+
+** TODO [#C] Rebind org-noter insert-note to =n= (so it's =C-; n n=) :refactor:
+
+The org-noter prefix =C-; n= currently has =i= for insert-note and =n=
+for sync-next-note. Move insert-note onto =n= -- it's the most-used
+action in a noter session and deserves the doubled prefix letter.
+
+Current bindings in =modules/org-noter-config.el= (=cj/org-noter-map=):
+- =i= -> =cj/org-noter-insert-note-dwim=
+- =n= -> =org-noter-sync-next-note=
+- =p= -> =org-noter-sync-prev-note=
+- =.= -> =org-noter-sync-current-note=
+
+
+Proposed bindings
+- n -> =cj/org-noter-insert-note-dwim=
+- > -> =org-noter-sync-next-note=
+- < -> =org-noter-sync-prev-note=
+- =.= -> =org-noter-sync-current-note=
+
+Update the =which-key= labels in the same module and any test that asserts the keymap shape.
 
 ** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
 
@@ -173,27 +272,6 @@ These may override useful defaults - review and pick better bindings:
 - M-S-w wttrin (was overriding kill-ring-save)
 - M-S-y yank-media (was overriding yank-pop)
 - M-S-z undo-kill-buffer (was overriding zap-to-char)
-
-** TODO [#C] Rebind org-noter insert-note to =n= (so it's =C-; n n=) :refactor:
-
-The org-noter prefix =C-; n= currently has =i= for insert-note and =n=
-for sync-next-note. Move insert-note onto =n= -- it's the most-used
-action in a noter session and deserves the doubled prefix letter.
-
-Current bindings in =modules/org-noter-config.el= (=cj/org-noter-map=):
-- =i= -> =cj/org-noter-insert-note-dwim=
-- =n= -> =org-noter-sync-next-note=
-- =p= -> =org-noter-sync-prev-note=
-- =.= -> =org-noter-sync-current-note=
-
-
-Proposed bindings
-- n -> =cj/org-noter-insert-note-dwim=
-- > -> =org-noter-sync-next-note=
-- < -> =org-noter-sync-prev-note=
-- =.= -> =org-noter-sync-current-note=
-
-Update the =which-key= labels in the same module and any test that asserts the keymap shape.
 
 ** TODO [#B] Build cj/dev-setup-project helper (per docs/design/dev-setup-project.org) :feature:
 
@@ -4099,7 +4177,7 @@ Full investigation, reproduction, and fix-option analysis in:
 [[file:docs/python-treesit-predicate-mismatch.txt][docs/python-treesit-predicate-mismatch.txt]]
 
 Resolved 2026-05-14 by an upstream emacs Arch-package revision bump (=30.2-2= → =30.2-3=, shipped 2026-05-03) — most likely carrying a downstream patch to =treesit.c='s predicate translation. Bug no longer reproduces: the exact failing query runs cleanly via =treesit-query-capture=, and =font-lock-ensure= on a real Python file under =python-ts-mode= completes with no =treesit-query-error=. No local override applied to =modules/prog-python.el=. Matches option A from the investigation's fix-options ("WAIT FOR UPSTREAM EMACS FIX").
-** CANCELLED [#C] EPUB text is slightly left-of-center (shr word-wrap shortfall) :bug:
+** DONE [#C] EPUB text is slightly left-of-center (shr word-wrap shortfall) :bug:
 CLOSED: [2026-05-14 Thu 23:39]
 [2026-05-12] Visual review of the reading-width rework is done -- it's good. Not sure I actually need this nit fixed; the left-of-center bias is minor and the `+'/`-' keys let me nudge it. Parking here until I decide it bothers me enough.
 
@@ -4107,5 +4185,4 @@ After =b7c6b2c=, the EPUB text block is centered with `set-window-margins' at `(
 
 Plan: in `cj/nov-update-layout', after the render, measure the actual widest line (`(save-excursion (goto-char (point-min)) (let ((m 0)) (while (not (eobp)) (end-of-line) (setq m (max m (current-column))) (forward-line 1)) m))') and center on *that* instead of on `nov-text-width'. Or, cheaper but coarser: bias the left margin by a small fudge (a column or two). The measure-the-text approach is correct; do it if it's not too slow on big chapters (it scans the buffer once per render -- the buffer's already in memory, so likely fine). =modules/calibredb-epub-config.el=, =tests/test-calibredb-epub-config.el=.
 
-cj: this is now confirmed. mark it DONE. 
 
