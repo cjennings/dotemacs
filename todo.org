@@ -114,21 +114,7 @@ implementation:
 
 - =mu4e-view-mode= → Message-ID, =mu4e:msgid:...= link, or
   Subject + From?
-- =org-mode= at a heading → org id link (=[[id:...][title]]=),
-  CUSTOM_ID, or plain heading text?
-- =help-mode= → the symbol being described (parsed from the *Help*
-  buffer header)
 - =Info-mode= → an org-style =[[info:(manual)Node][label]]= link
-- =magit-log-mode= / =magit-commit-mode= → commit SHA + maybe a
-  remote URL
-- =magit-status-mode= → project root or repo URL via
-  =vc-git-repository-url=
-- =xref--xref-buffer-mode= / =grep-mode= / =compilation-mode= →
-  the =file:line= location at point
-- =image-mode= → image file path (often the fallback covers it;
-  add explicit dispatch if there's a case where buffer-file-name
-  isn't right)
-- =archive-mode= (tar/zip) → =archive-file-name= plus the entry name
 
 Each one is a small addition to =cj/buffer-source-functions= in
 =modules/custom-buffer-file.el= plus a test.  Pick a format per
@@ -228,7 +214,8 @@ attachment via =transient-append-suffix=, or gptel-side backend/model config.
 Migration to current lazy form: commit =3eb1a0c refactor(gptel): lazy-load
 gptel-magit, rebind rewrite/context keys=.
 
-** TODO [#C] Rebind org-noter insert-note to =n= (so it's =C-; n n=) :refactor:
+** DONE [#C] Rebind org-noter insert-note to =n= (so it's =C-; n n=) :refactor:
+CLOSED: [2026-05-15 Fri]
 
 The org-noter prefix =C-; n= currently has =i= for insert-note and =n=
 for sync-next-note. Move insert-note onto =n= -- it's the most-used
@@ -577,7 +564,7 @@ Review snapshot:
   files. Caveat: 55 module files do not appear in the report at all, so the
   real project confidence is lower than the raw percentage suggests.
 
-*** PROJECT [#A] Untangle the eager =init.el= load graph :architecture:refactor:
+*** PROJECT [#A] Un tangle the eager =init.el= load graph :architecture:refactor:
 
 =init.el= currently functions as the dependency graph by eagerly requiring
 almost every module in a fixed order. That makes modules harder to test in
