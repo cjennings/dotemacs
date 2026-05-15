@@ -472,7 +472,8 @@ Per-language test discovery:
 **Ordering:**
 Do this after the coverage-config work ships. No churn mid-flight.
 
-** TODO [#B] Convert <cj structure template to universal yasnippet :feature:refactor:
+** DONE [#B] Convert <cj structure template to universal yasnippet :feature:refactor:
+CLOSED: [2026-05-15 Fri]
 
 Today =<cj= + TAB only expands in org-mode, via =org-structure-template-alist= in =modules/org-babel-config.el:144=. The expansion is the literal text:
 
@@ -484,7 +485,7 @@ Today =<cj= + TAB only expands in org-mode, via =org-structure-template-alist= i
 
 A Claude skill scans for this exact marker across files using a Python helper, so the marker needs to be insertable identically in any buffer (elisp, shell, plain text, anything) regardless of major mode. Language-aware variants (per-mode comment syntax) would break the script.
 
-*** TODO [#B] Wire yasnippet for universal availability :refactor:
+*** 2026-05-15 Fri @ 12:58:08 -0500 Wired yasnippet for universal availability
 
 In =modules/prog-general.el= replace =:hook (prog-mode . yas-minor-mode)= with =(yas-global-mode 1)= in =:config=, so yasnippet activates in every buffer rather than only =prog-mode= ones. Also add a hook that turns on =fundamental-mode= as an extra mode in every buffer so the universal snippet table is always consulted:
 
@@ -495,7 +496,7 @@ In =modules/prog-general.el= replace =:hook (prog-mode . yas-minor-mode)= with =
 
 Acceptance: =M-: yas-minor-mode= returns =t= in =org-mode=, =text-mode=, =fundamental-mode=, and any =prog-mode= buffer. =yas-extra-modes= contains =fundamental-mode= in every buffer.
 
-*** TODO [#B] Create the <cj fundamental-mode snippet :feature:
+*** 2026-05-15 Fri @ 12:58:08 -0500 Created the <cj fundamental-mode snippet
 
 Create =snippets/fundamental-mode/cj-comment-block= (or similar filename) with:
 
@@ -511,7 +512,7 @@ $0
 
 Acceptance: in a scratch buffer, in a =.el= buffer, in a =.sh= buffer, in an =org= buffer — typing =<cj= and hitting TAB expands to the three-line block with the cursor on the empty middle line.
 
-*** TODO [#B] Remove the org-tempo cj entry :refactor:
+*** 2026-05-15 Fri @ 12:58:08 -0500 Removed the org-tempo cj entry
 
 Once the yasnippet handles every mode, the =org-structure-template-alist= entry at =modules/org-babel-config.el:144= becomes redundant in org-mode and creates a TAB-handler ordering question. Remove the line:
 
@@ -521,9 +522,9 @@ Once the yasnippet handles every mode, the =org-structure-template-alist= entry 
 
 Verify =<cj= + TAB still expands in =org-mode= afterwards (now via yasnippet rather than org-tempo).
 
-*** TODO [#C] Audit existing per-mode snippets for cross-mode use :refactor:
+*** 2026-05-15 Fri @ 15:08:48 -0500 Audited existing per-mode snippets for cross-mode use
 
-While the universal-yas plumbing is fresh, walk =snippets/*-mode/= and decide for each snippet: does this belong in =fundamental-mode/= instead? Likely candidates: =visibility-showall=, =org-export-md=, =org_filetag_topic= — these are arguably org-only. Most of the c-mode / sh-mode / emacs-lisp-mode snippets are correctly mode-scoped. Spend ≤30 minutes; don't over-engineer.
+Walked =snippets/c-mode/=, =/emacs-lisp-mode/=, =/eshell-mode/=, =/html-ts-mode/=, =/org-mode/=, =/sh-mode/=. Read the body of every snippet. Conclusion: no movers — all 28 existing per-mode snippets contain mode-specific syntax (C =int main=, elisp =defun=, shell =printf= / =[ -f $1 ]=, HTML tags, org =#+STARTUP:= / =:PROPERTIES:= drawers, etc.) and belong where they are. =snippets/fundamental-mode/= correctly holds only the universal =cj-comment-block= marker.
 
 ** TODO [#B] Review and rebind M-S- keybindings :refactor:
 
