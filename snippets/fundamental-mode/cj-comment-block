@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: cj-comment-block
+# key: <cj
+# --
+#+begin_src cj: comment
+$0
+#+end_src
