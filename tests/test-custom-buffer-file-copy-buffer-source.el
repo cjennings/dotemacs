@@ -125,6 +125,60 @@ to `buffer-file-name'."
         (cj/copy-buffer-source-as-kill))
       (should (equal (car kill-ring) "/home/u/books/manual.pdf")))))
 
+;;; mu4e-view-mode dispatch
+
+(ert-deftest test-copy-buffer-source-mu4e-view-copies-msgid-link ()
+  "Normal: in mu4e-view-mode, copy a `mu4e:msgid:<id>' link form.
+The URL-shaped string pastes into org as a clickable link and
+matches mu4e's own org-protocol handler."
+  (let (kill-ring)
+    (cl-letf (((symbol-function 'mu4e-message-at-point)
+               (lambda () (list :message-id "abc123@example.test"
+                                :subject "Re: lunch"))))
+      (with-temp-buffer
+        (setq major-mode 'mu4e-view-mode)
+        (cl-letf (((symbol-function 'message) #'ignore))
+          (cj/copy-buffer-source-as-kill))
+        (should (equal (car kill-ring) "mu4e:msgid:abc123@example.test"))))))
+
+(ert-deftest test-copy-buffer-source-mu4e-view-without-message-falls-through ()
+  "Boundary: when `mu4e-message-at-point' returns nil (e.g. point
+isn't on a real message), the dispatcher falls back to
+`buffer-file-name' rather than erroring."
+  (let (kill-ring)
+    (cl-letf (((symbol-function 'mu4e-message-at-point) (lambda () nil)))
+      (with-temp-buffer
+        (setq major-mode 'mu4e-view-mode
+              buffer-file-name "/tmp/fallback.eml")
+        (cl-letf (((symbol-function 'message) #'ignore))
+          (cj/copy-buffer-source-as-kill))
+        (should (equal (car kill-ring) "/tmp/fallback.eml"))))))
+
+;;; Info-mode dispatch
+
+(ert-deftest test-copy-buffer-source-info-mode-formats-as-org-info-link ()
+  "Normal: in Info-mode, return `info:(manual)node' -- the form
+`org-info-store-link' produces, which org renders as a clickable
+link target."
+  (let (kill-ring)
+    (with-temp-buffer
+      (setq major-mode 'Info-mode)
+      (setq-local Info-current-file "/usr/share/info/emacs.info.gz")
+      (setq-local Info-current-node "Buffers")
+      (cl-letf (((symbol-function 'message) #'ignore))
+        (cj/copy-buffer-source-as-kill))
+      (should (equal (car kill-ring) "info:(emacs)Buffers")))))
+
+(ert-deftest test-copy-buffer-source-info-mode-without-context-falls-through ()
+  "Boundary: when Info hasn't populated `Info-current-file' or
+`Info-current-node' (uninitialized), the dispatcher falls through
+to `buffer-file-name' (here nil → user-error)."
+  (with-temp-buffer
+    (setq major-mode 'Info-mode)
+    (setq-local Info-current-file nil)
+    (setq-local Info-current-node nil)
+    (should-error (cj/copy-buffer-source-as-kill) :type 'user-error)))
+
 ;;; Backwards-compat alias
 
 (ert-deftest test-copy-path-old-name-aliases-new-command ()

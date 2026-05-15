@@ -39,6 +39,7 @@ Tags are additive. For example, a small wrong-behavior fix can be
 
 * Emacs Open Work
 
+** TODO [#B] Write spec on what's needed for music not to depend on EMMS
 ** DONE [#B] Update gptel models :chore:
 CLOSED: [2026-05-14 Thu]
 Anthropic side: bumped Opus 4.6 → 4.7 (current frontier); Sonnet 4.6
@@ -106,7 +107,8 @@ heading, =help-mode=, =Info-mode=, =magit-log-mode= /
 These need format decisions (Message-ID vs link vs subject, id link
 vs CUSTOM_ID vs heading text, etc.) before implementation.
 
-** TODO [#C] Extend cj/buffer-source-functions to more modes :feature:
+** DONE [#C] Extend cj/buffer-source-functions to more modes :feature:
+CLOSED: [2026-05-15 Fri]
 Followup to =Modify C-; b p=.  The first batch covered eww,
 elfeed-show, dired/dirvish, and doc-view/pdf-view (via the
 buffer-file-name fallback).  These modes still need a decision +

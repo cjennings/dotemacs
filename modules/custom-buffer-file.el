@@ -218,7 +218,28 @@ When called interactively, prompts for confirmation if target file exists."
   '((eww-mode         . (lambda () (eww-current-url)))
     (elfeed-show-mode . (lambda () (elfeed-entry-link elfeed-show-entry)))
     (dired-mode       . (lambda () (dired-get-filename nil t)))
-    (dirvish-mode     . (lambda () (dired-get-filename nil t))))
+    (dirvish-mode     . (lambda () (dired-get-filename nil t)))
+    (mu4e-view-mode   . (lambda ()
+                          (when-let* ((msg (mu4e-message-at-point))
+                                      (id (plist-get msg :message-id)))
+                            (format "mu4e:msgid:%s" id))))
+    (Info-mode        . (lambda ()
+                          (when (and (boundp 'Info-current-file)
+                                     (boundp 'Info-current-node)
+                                     Info-current-file
+                                     Info-current-node)
+                            ;; Strip the compression suffix (via
+                            ;; file-name-base) AND the .info suffix.
+                            ;; "emacs.info.gz" -> base "emacs.info" ->
+                            ;; manual "emacs".
+                            (let* ((base (file-name-base Info-current-file))
+                                   (manual (if (string-suffix-p ".info" base)
+                                               (substring base 0 -5)
+                                             base))
+                                   (node Info-current-node))
+                              (when (and (not (string-empty-p manual))
+                                         (not (string-empty-p node)))
+                                (format "info:(%s)%s" manual node)))))))
   "Alist mapping major-mode -> thunk returning the buffer's \"source\".
 
 Each thunk is called with no arguments and should return a string
