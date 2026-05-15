@@ -88,7 +88,8 @@ gptel's bundled =:models= list only goes through May-2025 model IDs
 but the constructor passes whatever string you supply straight to the
 API, so newer model names work fine without a gptel upgrade.
 
-** DOING [#B] Add gptel toggle to M-F9 :refactor:
+** DONE [#B] Add gptel toggle to M-F9 :refactor:
+CLOSED: [2026-05-15 Fri]
 Rebound =M-<f9>= from =cj/ai-vterm-pick-buffer= to =cj/toggle-gptel=
 in both the global keymap and =vterm-mode-map=.  The pick-buffer
 command and its helper =cj/--ai-vterm-pick-buffer-candidates= were
@@ -107,20 +108,23 @@ new function).
 Module commentary + the =cj/ai-vterm= docstring updated to describe
 the new M-F9 behavior.
 
-*** TODO [#B] Add explicit ai-vterm -> ai-config command boundary for =cj/toggle-gptel= :bug:
-=make compile= now warns from =modules/ai-vterm.el= that
-=cj/toggle-gptel= is not known to be defined.  The binding works in
-normal startup only because =init.el= loads =ai-config= later, but
-=ai-vterm.el= now has an implicit load-order dependency on a command
-defined in another module.
+*** 2026-05-15 Fri @ 02:21:00 -0500 Add explicit ai-vterm -> ai-config command boundary for cj/toggle-gptel
+=make compile= warned that =cj/toggle-gptel= was not known to be
+defined when =modules/ai-vterm.el= was byte-compiled.  Added an
+interactive autoload declaration in =ai-vterm.el= alongside the
+other cross-module declarations:
 
-Recommended fix: add an interactive autoload for =cj/toggle-gptel=
-near the other cross-module declarations in =modules/ai-vterm.el=,
-or otherwise make the dependency explicit without requiring all of
-=ai-config= at ai-vterm load time.  Add/adjust a test that loads
-=ai-vterm= without preloading =ai-config= and verifies =M-<f9>= is
-bound to an autoloadable interactive command.  Re-run =make compile=
-and =make test-file FILE=test-ai-vterm--f9-in-vterm.el=.
+#+begin_src elisp
+(autoload 'cj/toggle-gptel "ai-config" nil t)
+#+end_src
+
+The dependency is now explicit, =make compile= is clean, and
+requiring =ai-vterm= in isolation leaves =cj/toggle-gptel= fboundp
+as an autoload sigil pointing at =ai-config=.  Added a regression
+test in =test-ai-vterm--f9-in-vterm.el=:
+=test-ai-vterm-toggle-gptel-autoloaded-without-ai-config=.  Verified
+with =make compile= (no warning) and
+=make test-file FILE=test-ai-vterm--f9-in-vterm.el= (5/5 pass).
 
 ** DONE [#B] Modify C-; b p :feature:
 CLOSED: [2026-05-15 Fri]
@@ -149,7 +153,8 @@ heading, =help-mode=, =Info-mode=, =magit-log-mode= /
 These need format decisions (Message-ID vs link vs subject, id link
 vs CUSTOM_ID vs heading text, etc.) before implementation.
 
-** DOING [#C] Extend cj/buffer-source-functions to more modes :feature:
+** DONE [#C] Extend cj/buffer-source-functions to more modes :feature:
+CLOSED: [2026-05-15 Fri]
 Followup to =Modify C-; b p=.  The first batch covered eww,
 elfeed-show, dired/dirvish, and doc-view/pdf-view (via the
 buffer-file-name fallback).  These modes still need a decision +
@@ -163,20 +168,22 @@ Each one is a small addition to =cj/buffer-source-functions= in
 =modules/custom-buffer-file.el= plus a test.  Pick a format per
 mode, then implement.
 
-*** TODO [#C] Make Info buffer-source output match the documented org link format :bug:
-The DONE commit added an =Info-mode= dispatcher, but it copies the
-bare target string =info:(manual)Node=.  The task body calls for an
-org-style bracket link like =[[info:(manual)Node][label]]=.  The
-current output is a valid org link target, but pasting it into notes
-does not produce the documented labeled link form.
+*** 2026-05-15 Fri @ 02:21:00 -0500 Make Info buffer-source output match the documented org link format
+Updated the =Info-mode= thunk in =cj/buffer-source-functions=
+(=modules/custom-buffer-file.el=) to return the full org bracket
+link =[[info:(manual)Node][(manual) Node]]= instead of the bare
+target =info:(manual)Node=.  Label format =(manual) Node= keeps the
+manual name and node name both grep-friendly in note files.
 
-Recommended fix: decide the label convention, likely the Info node
-name or =(manual) Node=, then change the =Info-mode= thunk in
-=modules/custom-buffer-file.el= to return the full bracketed link.
-Update =test-copy-buffer-source-info-mode-formats-as-org-info-link=
-to assert the bracketed value and include a case for compressed
-=.info.gz= files.  Re-run
-=make test-file FILE=test-custom-buffer-file-copy-buffer-source.el=.
+Existing test
+=test-copy-buffer-source-info-mode-formats-as-org-info-link= on a
+=.info.gz= file now asserts the bracket form.  Added a new boundary
+test
+=test-copy-buffer-source-info-mode-handles-uncompressed-info-file=
+for plain =.info= input so the suffix-stripping branch is locked
+in.  Verified with
+=make test-file FILE=test-custom-buffer-file-copy-buffer-source.el=
+(15/15 pass).
 
 *** 2026-05-15 Fri @ 00:11:47 -0500 Brainstorm: additional buffer-source ideas
 
