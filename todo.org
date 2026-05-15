@@ -59,8 +59,25 @@ gptel's bundled =:models= list only goes through May-2025 model IDs
 but the constructor passes whatever string you supply straight to the
 API, so newer model names work fine without a gptel upgrade.
 
-** TODO [#B] COMMENT Add gptel toggle to M-F9
-self-explatory. entirely remove what's there now (including supporting code). Update tests to match. 
+** DONE [#B] Add gptel toggle to M-F9 :refactor:
+CLOSED: [2026-05-14 Thu]
+Rebound =M-<f9>= from =cj/ai-vterm-pick-buffer= to =cj/toggle-gptel=
+in both the global keymap and =vterm-mode-map=.  The pick-buffer
+command and its helper =cj/--ai-vterm-pick-buffer-candidates= were
+deleted entirely along with the candidates test file.
+
+F9 family after this change:
+- =<f9>=   ai-vterm toggle (unchanged)
+- =C-<f9>= ai-vterm project picker (unchanged)
+- =M-<f9>= gptel *AI-Assistant* window toggle (NEW)
+
+Two existing test files updated:
+=test-ai-vterm--f9-in-vterm.el= (binding assertions flipped to the
+new function).
+=test-ai-vterm--pick-buffer-candidates.el= deleted.
+
+Module commentary + the =cj/ai-vterm= docstring updated to describe
+the new M-F9 behavior.
 
 ** TODO [#B] Modify C-; b p 
 - (EWW) copy EWW url when in an EWW buffer.
