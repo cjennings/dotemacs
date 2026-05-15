@@ -239,7 +239,12 @@ When called interactively, prompts for confirmation if target file exists."
                                    (node Info-current-node))
                               (when (and (not (string-empty-p manual))
                                          (not (string-empty-p node)))
-                                (format "info:(%s)%s" manual node)))))))
+                                ;; Return the bracketed org link form so a
+                                ;; paste into notes lands as a labeled,
+                                ;; clickable link.  Label uses "(manual) Node"
+                                ;; for grep-friendliness.
+                                (format "[[info:(%s)%s][(%s) %s]]"
+                                        manual node manual node)))))))
   "Alist mapping major-mode -> thunk returning the buffer's \"source\".
 
 Each thunk is called with no arguments and should return a string

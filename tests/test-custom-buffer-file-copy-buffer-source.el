@@ -157,9 +157,10 @@ isn't on a real message), the dispatcher falls back to
 ;;; Info-mode dispatch
 
 (ert-deftest test-copy-buffer-source-info-mode-formats-as-org-info-link ()
-  "Normal: in Info-mode, return `info:(manual)node' -- the form
-`org-info-store-link' produces, which org renders as a clickable
-link target."
+  "Normal: in Info-mode on a compressed manual, return the org
+bracket link form `[[info:(manual)node][(manual) node]]'.  Pasting
+into notes lands a labeled, clickable link rather than a bare
+target string."
   (let (kill-ring)
     (with-temp-buffer
       (setq major-mode 'Info-mode)
@@ -167,7 +168,22 @@ link target."
       (setq-local Info-current-node "Buffers")
       (cl-letf (((symbol-function 'message) #'ignore))
         (cj/copy-buffer-source-as-kill))
-      (should (equal (car kill-ring) "info:(emacs)Buffers")))))
+      (should (equal (car kill-ring)
+                     "[[info:(emacs)Buffers][(emacs) Buffers]]")))))
+
+(ert-deftest test-copy-buffer-source-info-mode-handles-uncompressed-info-file ()
+  "Boundary: uncompressed `.info' files still strip the suffix and
+emit the same bracket link form.  Guards the `string-suffix-p
+\".info\"' branch in the dispatcher."
+  (let (kill-ring)
+    (with-temp-buffer
+      (setq major-mode 'Info-mode)
+      (setq-local Info-current-file "/usr/local/share/info/elisp.info")
+      (setq-local Info-current-node "Functions")
+      (cl-letf (((symbol-function 'message) #'ignore))
+        (cj/copy-buffer-source-as-kill))
+      (should (equal (car kill-ring)
+                     "[[info:(elisp)Functions][(elisp) Functions]]")))))
 
 (ert-deftest test-copy-buffer-source-info-mode-without-context-falls-through ()
   "Boundary: when Info hasn't populated `Info-current-file' or
