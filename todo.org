@@ -510,8 +510,30 @@ Three small reveal.js improvements; collected into one task because each on its 
 
 Complex workflow testing capability.
 
-** TODO [#D] Dedup the doubly-defined functions in calibredb-epub-config.el :cleanup:
+** DONE [#D] Dedup the doubly-defined functions in calibredb-epub-config.el :cleanup:
+CLOSED: [2026-05-15 Fri]
 =make compile= flags =calibredb-epub-config.el= for defining =cj/calibredb-clear-filters= (line ~79) and =cj/nov-jump-to-calibredb= (line ~277) twice each — the later definition silently shadows the earlier. Find which copy is current, delete the stale one. Pre-existing; noticed 2026-05-12 while fixing the Nov text-width loop.
+
+Diagnosis: there was no actual duplicate.  Only one =(defun ...)=
+of each name in the source.  The "defined multiple times" warning
+fired because use-package's =:bind= expansion makes the
+byte-compiler count the referenced symbol as a definition when the
+target function is defined in the same file -- then sees the actual
+=defun= later and warns about a redefinition.
+
+Fix: reorder so each =defun= appears /before/ the =use-package=
+block that references it via =:bind=.  Concrete moves:
+
+- =cj/calibredb-clear-filters= moved above =(use-package calibredb
+  ...)=.
+- =cj/nov--metadata-get= + =cj/nov--file-path= +
+  =cj/nov-jump-to-calibredb= (the entire jump-to-calibredb cluster)
+  moved above =(use-package nov ...)=.  Helpers had to move
+  alongside the public function so the byte-compiler doesn't emit
+  free-function warnings for them.
+
+After: both "defined multiple times" warnings are gone.  All unit
+tests still pass.  Net line count unchanged (just reordered).
 
 ** TODO [#D] Track ELPA upstream byte-compile warnings (esxml, poetry) :chore:
 
