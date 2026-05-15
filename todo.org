@@ -780,13 +780,29 @@ Expected outcome:
 - Add a note to the local repository docs so future package failures do not
   lead to permanent insecure defaults.
 
-*** PROJECT [#B] Make coverage reporting account for untracked modules :tests:
+*** DONE [#B] Make coverage reporting account for untracked modules :tests:
+CLOSED: [2026-05-15 Fri]
 
 The current coverage result is useful but easy to overread. =make coverage=
 reported =65.43%= for files that undercover saw, but only 49 of 104 module
 files appeared in =.coverage/simplecov.json=.
 
-**** TODO [#B] Teach the coverage report to list modules missing from SimpleCov
+Definition: in this task, "untracked modules" means repository-owned
+=modules/*.el= files that should be part of the Emacs configuration coverage
+universe but have no entry in =.coverage/simplecov.json= after =make coverage=
+runs. These files may be missing because no test required them, because loading
+was skipped due to package/environment guards, or because instrumentation did
+not see them. They are distinct from tracked modules with 0% covered lines,
+which already appear in SimpleCov and can be scored directly.
+
+Completed 2026-05-15:
+- Both child tasks are done.
+- =make coverage-summary= reports missing modules explicitly and also reports a
+  separate project-module score where missing modules count as 0%.
+- Focused summary tests and byte-compilation of the summary helper passed.
+
+**** DONE [#B] Teach the coverage report to list modules missing from SimpleCov
+CLOSED: [2026-05-15 Fri]
 
 Expected outcome:
 - Compare =modules/*.el= against paths present in =.coverage/simplecov.json=.
@@ -794,7 +810,19 @@ Expected outcome:
 - Do not silently fold those files into the percentage until we decide the
   semantics. A visible missing-file count is enough for v1.
 
-**** TODO [#B] Decide whether unreported modules count as 0% coverage
+Done 2026-05-15:
+- =make coverage-summary= now compares direct =modules/*.el= files on disk
+  against the module paths present in =.coverage/simplecov.json=.
+- The terminal report appends a =Not in SimpleCov report= section with a count
+  and the missing module paths.
+- Missing modules are explicitly excluded from the displayed percentage for
+  now; the policy question below remains open.
+- Added focused tests in =tests/test-coverage-summary.el= for missing-module
+  reporting and for ignoring =.elc= files and nested paths outside direct
+  =modules/*.el= ownership.
+
+**** DONE [#B] Decide whether unreported modules count as 0% coverage
+CLOSED: [2026-05-15 Fri]
 
 This is a policy decision:
 - Counting missing modules as 0% gives a more honest project-level number.
@@ -805,8 +833,25 @@ Recommendation: display both:
 - Project module coverage: includes unreported module files as 0% or reports
   them separately with an explicit caveat.
 
-Related existing task: [#B] "Coverage audit: untested and lightly-tested
-modules".
+Decision 2026-05-15:
+- Keep the existing SimpleCov percentage as the line-weighted
+  =instrumented coverage= number. It only covers modules that SimpleCov saw and
+  has real executable-line denominators for.
+- Also display a separate module-weighted =project module coverage= score over
+  all direct =modules/*.el= files. Modules present in SimpleCov contribute their
+  per-file coverage percentage; modules absent from SimpleCov count as 0%.
+- Do not pretend missing modules have known executable-line counts. Counting
+  them as 0% at the module level is honest about risk without inventing a line
+  denominator.
+
+Done 2026-05-15:
+- =make coverage-summary= now prints both the existing line-weighted summary
+  and a separate =Project module coverage= line that includes missing modules
+  as 0%.
+- The missing-module section now states that missing modules count as 0% in the
+  project-module score.
+- Updated =tests/test-coverage-summary.el= to assert the policy and the
+  displayed project-module percentage.
 
 *** TODO [#B] Add a lightweight architecture smoke test for startup contracts :tests:
 
