@@ -38,8 +38,36 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:feature:refactor:=.
 
 * Emacs Open Work
+** DONE [#B] Write spec on what's needed for music-config not to depend on EMMS
+CLOSED: [2026-05-15 Fri]
+What if we were writing this as it's own package and couldn't use EMMS. What would that look like?
+The spec should be in docs/
+Another task should be created to implement the spec
+Spec written in [[file:docs/design/music-config-without-emms.org][Design: music-config Without EMMS]].
 
-** TODO [#B] Write spec on what's needed for music not to depend on EMMS
+** TODO [#B] Implement EMMS-free music-config architecture       :refactor:
+Implement the design in [[file:docs/design/music-config-without-emms.org][Design: music-config Without EMMS]].
+
+The implementation should make =music-config.el= load without EMMS, introduce
+package-owned playlist and track state, add a =cj/music-playlist-mode= view,
+and route playback through a small backend protocol with an initial =mpv=
+backend.  Preserve the current F10 and =C-; m= user workflows where practical,
+and keep M3U load/save/edit/reload plus radio station creation working.
+
+Complexity estimate: high.  This is a module rewrite with a new internal data
+model, package-owned playlist mode, backend protocol, mpv process management,
+and migration of existing EMMS-backed commands/tests.
+
+Time estimate: 2-4 focused days for an EMMS-free v1 with play/stop/next/previous,
+M3U persistence, playlist UI, and focused tests.  Add another 1-2 days if v1
+must include full mpv IPC support for pause, seek, and volume parity.
+
+Acceptance checks:
+- =music-config.el= can be required in batch with no EMMS package installed.
+- Existing focused music tests pass without EMMS preload or EMMS stubs except
+  where a compatibility adapter is explicitly under test.
+- New tests cover playlist state, backend command dispatch, M3U persistence,
+  and the EMMS-free load smoke path.
 ** DONE [#B] Update gptel models :chore:
 CLOSED: [2026-05-14 Thu]
 Anthropic side: bumped Opus 4.6 → 4.7 (current frontier); Sonnet 4.6
@@ -907,7 +935,7 @@ Done 2026-05-15:
 - Focused tests passed for the new architecture smoke file and the affected
   agenda/refile helpers.
 
-** PROJECT [#B] Module-by-module review and hardening :review:
+** DOING [#B] Module-by-module review and hardening                 :review:
 
 Review every file in =modules/= and capture concrete bugs, tests, refactors,
 and design improvements as child tasks. This is intentionally separate from the
@@ -939,8 +967,7 @@ Suggested review order:
 6. Integrations and applications: mail, Slack, ERC, Elfeed, EWW, Dirvish,
    PDF, Calibre, music, recording/transcription, AI/rest tooling.
 
-*** DONE [#B] Review foundation modules :review:
-CLOSED: [2026-05-15 Fri]
+*** DOING [#B] Review foundation modules                           :review:
 
 Scope:
 - =system-lib.el=
@@ -1096,7 +1123,7 @@ Expected outcome:
 - Add a small test or validation helper around the computed package policy if
   package bootstrap is extracted.
 
-*** TODO [#B] Review custom editing utility modules :review:
+*** DOING [#B] Review custom editing utility modules :review:
 
 Scope:
 - =custom-buffer-file.el=
@@ -1116,6 +1143,14 @@ Review progress:
   direct ERT coverage compared with the rest of the config.
 - =external-open.el= and =media-utils.el= reviewed 2026-05-03. See child tasks.
 - =custom-buffer-file.el= reviewed 2026-05-03. See child tasks.
+
+Completion review 2026-05-15:
+- Re-checked the scoped custom editing utility modules and their test files.
+- The pure editing modules remain well covered by focused ERT tests.
+- Remaining actionable issues are already logged below: process-launch
+  hardening and coverage for =external-open.el= / =media-utils.el=,
+  destructive buffer/file keybinding policy, and explicit cross-module
+  autoload/require boundaries.
 
 **** TODO [#B] Harden external process launching in =external-open.el= and =media-utils.el= :security:refactor:
 
@@ -1192,7 +1227,7 @@ Expected outcome:
 - Add a simple module-load smoke test if this becomes part of the load-graph
   refactor.
 
-*** TODO [#B] Review UI and navigation modules :review:
+*** DOING [#B] Review UI and navigation modules :review:
 
 Scope:
 - =ui-config.el=
@@ -1212,6 +1247,28 @@ Review progress:
 - =font-config.el=, =ui-theme.el=, =selection-framework.el=, =ui-navigation.el=,
   and =popper-config.el= have little direct test coverage.
 
+Completion review 2026-05-15:
+- Re-checked the scoped UI/navigation modules and current tests.
+- =mousetrap-mode.el=, =ui-navigation.el=, =ui-theme.el=,
+  =selection-framework.el=, and selected modeline/UI helpers now have focused
+  tests, but the font/modeline/popper runtime policy remains under-tested.
+- Existing cleanup below covers the disabled =popper-config.el= load-graph
+  issue; added a separate test-gap task for the remaining UI smoke coverage.
+
+**** TODO [#B] Add UI/navigation runtime smoke coverage :tests:
+
+Several UI modules are mostly top-level runtime configuration and currently
+have only partial helper coverage. The highest-value missing assertions are:
+- =font-config.el=: font fallback/daemon frame setup does not error when
+  optional fonts or emoji packages are absent.
+- =modeline-config.el=: runtime segment assembly handles missing VC/project
+  data and does not signal in non-file buffers.
+- =popper-config.el=: if the module remains in =init.el= while disabled, a
+  smoke test should prove requiring it is an intentional no-op.
+
+Keep these tests batch-safe by stubbing frame/font/package functions rather
+than depending on a graphical session.
+
 **** TODO [#B] Decide whether =popper-config.el= should exist while disabled :cleanup:
 
 =popper-config.el= is required by =init.el=, but the only =use-package popper=
@@ -1226,7 +1283,7 @@ Expected outcome:
 This is low priority, but it is a good example of load graph noise to clean up
 during the =init.el= deferral work.
 
-*** TODO [#B] Review Org workflow modules :review:
+*** DOING [#B] Review Org workflow modules :review:
 
 Scope:
 - =org-config.el=
@@ -1261,6 +1318,16 @@ Review progress:
 - Deeper pass 2026-05-10 added follow-up tasks for org-roam done hooks, drill
   file selection/package loading, Org export defaults, Babel templates, and
   contact/Mu4e boundaries.
+
+Completion review 2026-05-15:
+- Re-checked the scoped Org workflow modules and their test coverage.
+- The broad parser/cache/helper areas now have useful focused tests, especially
+  =calendar-sync.el=, agenda/refile helpers, org-roam helpers, org-noter, Hugo,
+  reveal, and webclipper processing.
+- Remaining issues are already logged below, including security-sensitive
+  calendar config and Babel evaluation policy, cache lifecycle/timer behavior,
+  org-roam destructive workflow guardrails, executable checks, capture-template
+  smoke tests, and Org workflow ownership documentation.
 
 **** PROJECT [#A] Split personal calendar configuration from =calendar-sync.el= :security:refactor:
 
@@ -1509,7 +1576,7 @@ Recommended improvement:
 - Link this note from the Org workflow review task and the broader load-graph
   refactor.
 
-*** TODO [#B] Review programming workflow modules :review:
+*** DOING [#B] Review programming workflow modules :review:
 
 Scope:
 - =prog-c.el=
@@ -1538,6 +1605,28 @@ Review progress:
 - Language formatter wiring is covered for Python, Go, shell, webdev, JSON, and
   YAML.
 - =test-runner.el= has direct tests, but project-scoping is still a design gap.
+
+Completion review 2026-05-15:
+- Re-checked the scoped programming workflow modules and current tests.
+- =dev-fkeys.el=, coverage modules, formatter wiring, keyboard compatibility,
+  and test-runner helpers have meaningful focused coverage.
+- Remaining issues are logged below: F4 project capability classification,
+  LSP ownership and smoke coverage, tree-sitter auto-install policy, Git clone
+  process handling, shell-script executable policy, and formatter process
+  boundaries.
+
+**** TODO [#C] Add smoke coverage for lightweight programming modules with no direct tests :tests:
+
+Several low-risk programming modules currently have little or no direct test
+surface, especially =prog-general.el=, =prog-lisp.el=, and
+=prog-training.el=. Most behavior is package/hook configuration, so this should
+stay narrow:
+- require the modules with package side effects stubbed,
+- assert key hooks/settings that this config owns,
+- ensure batch loading does not trigger external installs or downloads.
+
+Prioritize this after the LSP and tree-sitter policy tasks, because those
+changes will define the stable assertions.
 
 **** TODO [#B] Revisit F4 project classification vs actual project capabilities :ux:
 
@@ -1648,7 +1737,7 @@ Expected outcome:
 - Keep existing formatter wiring tests and add command-construction tests if a
   helper is extracted.
 
-*** TODO [#B] Review integrations and application modules :review:
+*** DOING [#B] Review integrations and application modules :review:
 
 Scope:
 - AI/rest: =ai-config.el=, =ai-conversations.el=, =restclient-config.el=
@@ -1670,6 +1759,19 @@ Review progress:
 - Existing coverage audit already tracks =ai-conversations=, =quick-video-capture=,
   =dashboard-config=, =mail-config=, =show-kill-ring=, =system-commands=, and
   =wrap-up= as high-value test targets.
+
+Completion review 2026-05-15:
+- Re-checked the scoped integration/application modules with risky-pattern and
+  test-coverage searches.
+- Many integration modules now have focused tests, including AI config,
+  restclient, mail helpers, Slack commands, Dirvish helpers, music,
+  recording/transcription, system commands, browser/help/jumper/reconcile, and
+  undead buffer helpers.
+- Remaining issues are already logged below, especially system command safety,
+  REST key persistence, mail privacy/lifecycle policy, quick-video timers and
+  temp state, shell-heavy dwim/recording command hardening, AI conversation
+  persistence coverage, calendar operational behavior, Dirvish dependency/path
+  hardening, EWW/Elfeed network helpers, and Slack which-key registration.
 
 **** TODO [#B] Make system restart/shutdown commands more defensive :safety:
 
@@ -4336,4 +4438,3 @@ CLOSED: [2026-05-14 Thu 23:39]
 After =b7c6b2c=, the EPUB text block is centered with `set-window-margins' at `(natural - nov-text-width) / 2' each side -- but the *rendered* text is a bit narrower than `nov-text-width' columns, because `shr' wraps at word boundaries, so the typical line ends a few columns short of the fill width. The text is left-aligned within its `nov-text-width'-wide fill region, so the unused tail of that region adds to the right margin -- the block reads as shifted left of center. Adjusting `cj/nov-margin-percent' (the `+'/`-' keys) re-flows and happens to look better at some widths (probably the line-ending pattern lands tighter), which is the same effect, not a real difference.
 
 Plan: in `cj/nov-update-layout', after the render, measure the actual widest line (`(save-excursion (goto-char (point-min)) (let ((m 0)) (while (not (eobp)) (end-of-line) (setq m (max m (current-column))) (forward-line 1)) m))') and center on *that* instead of on `nov-text-width'. Or, cheaper but coarser: bias the left margin by a small fudge (a column or two). The measure-the-text approach is correct; do it if it's not too slow on big chapters (it scans the buffer once per render -- the buffer's already in memory, so likely fine). =modules/calibredb-epub-config.el=, =tests/test-calibredb-epub-config.el=.
-
