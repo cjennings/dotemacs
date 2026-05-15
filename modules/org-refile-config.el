@@ -101,13 +101,14 @@ so caching improves performance from 15-20 seconds to instant."
                               (- (float-time) (float-time start-time)))))))
     (setq org-refile-targets targets)))
 
-;; Build cache asynchronously after startup to avoid blocking Emacs
-(run-with-idle-timer
- 5  ; Wait 5 seconds after Emacs is idle
- nil ; Don't repeat
- (lambda ()
-   (cj/log-silently "Building org-refile targets cache in background...")
-   (cj/build-org-refile-targets)))
+;; Build cache asynchronously after startup to avoid blocking Emacs.
+(unless noninteractive
+  (run-with-idle-timer
+   5  ; Wait 5 seconds after Emacs is idle
+   nil ; Don't repeat
+   (lambda ()
+     (cj/log-silently "Building org-refile targets cache in background...")
+     (cj/build-org-refile-targets))))
 
 (defun cj/org-refile-refresh-targets ()
   "Force rebuild of refile targets cache.

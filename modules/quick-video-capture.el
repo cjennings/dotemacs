@@ -125,12 +125,13 @@ It's designed to be idempotent - safe to call multiple times."
 ;; Deferred initialization strategy:
 ;; 1. Try to load shortly after Emacs is idle following init
 ;; 2. Fallback timer ensures loading within 2 seconds regardless
-(add-hook 'after-init-hook
-          (lambda ()
-            (run-with-idle-timer 0.5 nil #'cj/setup-video-download)))
+(unless noninteractive
+  (add-hook 'after-init-hook
+            (lambda ()
+              (run-with-idle-timer 0.5 nil #'cj/setup-video-download)))
 
-;; Fallback: ensure initialization within 2 seconds of loading this file
-(run-with-timer 2 nil #'cj/setup-video-download)
+  ;; Fallback: ensure initialization within 2 seconds of loading this file
+  (run-with-timer 2 nil #'cj/setup-video-download))
 
 ;; If someone manually triggers capture before initialization
 (with-eval-after-load 'org-capture
