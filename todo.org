@@ -357,27 +357,16 @@ Design: [[file:../docs/design/debug-profiling.org][docs/design/debug-profiling.o
 
 Implement via =/start-work= against the design — branch =feat/debug-profiling=, commits decomposed along the test-first split-for-testability boundary. Once shipped, use it as the v1 exercise on the queued [#B] org-capture target-building investigation.
 
-** TODO [#C] Review and implement flycheck modeline customization spec :feature:
+** TODO [#C] Implement flycheck modeline customization :feature:
 
-Add flycheck status (error/warning counts) to custom modeline to make it visible again.
+Spec: [[file:docs/design/flycheck-modeline-customization.org][docs/design/flycheck-modeline-customization.org]]
 
-**Spec Document:**
-[[file:docs/flycheck-modeline-customization-spec.org][flycheck-modeline-customization-spec.org]]
-
-**Summary:**
-Current custom modeline excludes minor-mode-alist where flycheck displays its status.
-Need to either:
-1. Add flycheck's lighter directly to mode-line-format (simplest)
-2. Customize flycheck prefix/indicator and add to modeline
-3. Create custom flycheck segment with full control
-
-**Files to Modify:**
-- modules/flycheck-config.el (customize prefix/indicator)
-- modules/modeline-config.el (add to mode-line-format)
-
-**Recommended Approach:**
-Option 4 (Hybrid) from spec - customize flycheck variables + add to modeline.
-Simple, maintainable, respects flycheck's built-in logic.
+Custom modeline (=modules/modeline-config.el=) omits =minor-mode-alist=,
+so flycheck's error/warning lighter is invisible.  Fix is a two-line
+=:custom= block in =flycheck-config.el= (prefix + success indicator) plus
+one guarded =(:eval ...)= form in =mode-line-format=.  See spec for the
+active-window-gating decision, risky-local-variable note, emoji
+candidates, and the manual verification walk.
 
 ** TODO [#C] Migrate from Company to Corfu (with prescient integration) :feature:
 
@@ -865,7 +854,8 @@ Suggested review order:
 6. Integrations and applications: mail, Slack, ERC, Elfeed, EWW, Dirvish,
    PDF, Calibre, music, recording/transcription, AI/rest tooling.
 
-*** TODO [#B] Review foundation modules :review:
+*** DONE [#B] Review foundation modules :review:
+CLOSED: [2026-05-15 Fri]
 
 Scope:
 - =system-lib.el=
@@ -898,6 +888,18 @@ Review progress:
   [#B] "Split early startup from package bootstrap" task.
 - =init.el=: reviewed 2026-05-10. See child tasks below and the existing
   eager load-graph architecture tasks.
+
+Completion review 2026-05-15:
+- Re-read the parent =Module-by-module review and hardening= context and the
+  adjacent architecture follow-up so this review stays module-specific.
+- Re-checked all scoped files against the review protocol. Existing child
+  tasks below still cover the actionable module findings for
+  =user-constants.el=, =host-environment.el=, =system-defaults.el=, and
+  =early-init.el=.
+- =system-lib.el=, =keybindings.el=, =config-utilities.el=, and =init.el= do
+  not need additional module-specific child tasks from this pass; remaining
+  concerns are already tracked by the utility-consolidation, keymap
+  registration, debug-profiling, and eager-load-graph architecture tasks.
 
 **** PROJECT [#B] Split path constants from filesystem initialization in =user-constants.el= :refactor:
 
@@ -4249,5 +4251,4 @@ CLOSED: [2026-05-14 Thu 23:39]
 After =b7c6b2c=, the EPUB text block is centered with `set-window-margins' at `(natural - nov-text-width) / 2' each side -- but the *rendered* text is a bit narrower than `nov-text-width' columns, because `shr' wraps at word boundaries, so the typical line ends a few columns short of the fill width. The text is left-aligned within its `nov-text-width'-wide fill region, so the unused tail of that region adds to the right margin -- the block reads as shifted left of center. Adjusting `cj/nov-margin-percent' (the `+'/`-' keys) re-flows and happens to look better at some widths (probably the line-ending pattern lands tighter), which is the same effect, not a real difference.
 
 Plan: in `cj/nov-update-layout', after the render, measure the actual widest line (`(save-excursion (goto-char (point-min)) (let ((m 0)) (while (not (eobp)) (end-of-line) (setq m (max m (current-column))) (forward-line 1)) m))') and center on *that* instead of on `nov-text-width'. Or, cheaper but coarser: bias the left margin by a small fudge (a column or two). The measure-the-text approach is correct; do it if it's not too slow on big chapters (it scans the buffer once per render -- the buffer's already in memory, so likely fine). =modules/calibredb-epub-config.el=, =tests/test-calibredb-epub-config.el=.
-
 

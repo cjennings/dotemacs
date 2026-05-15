@@ -1,0 +1,315 @@
+#+TITLE: Design: Flycheck modeline customization
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-15
+#+OPTIONS: toc:nil num:nil
+
+* Status
+
+Draft. Supersedes the earlier =flycheck-modeline-customization-spec.org=
+draft in =.ai/= (2025-11-14), which used stale line numbers and conflated
+Option 3's risky-local-variable requirement with Option 4.
+
+* Problem
+
+Flycheck's status (error / warning counts, "checking" indicator) is not
+visible in the custom modeline. The cause is a deliberate choice in
+=modules/modeline-config.el=: =mode-line-format= is built from explicit
+segments (=cj/modeline-buffer-name=, =cj/modeline-position=,
+=cj/modeline-vc-branch=, etc.) and does not include =minor-mode-alist=
+or =mode-line-modes=. Flycheck publishes its lighter into
+=minor-mode-alist=, so the custom modeline never picks it up.
+
+The fix is to add a flycheck-aware segment to =mode-line-format=.
+
+* Goals
+
+1. Flycheck status appears in the custom modeline when =flycheck-mode= is on.
+2. The display picks up flycheck's existing color logic (error count in =error= face, warning count in =warning= face).
+3. The display gates on active window, matching the convention used by =cj/modeline-vc-branch= and =cj/modeline-misc-info=.
+4. The customization is small enough that swapping prefix / success indicator is a one-line edit.
+
+* Non-Goals
+
+- A "minor modes" segment that surfaces every lighter from =minor-mode-alist=. Flycheck is the specific case we care about; the rest stay invisible.
+- Reworking =flycheck-config.el= beyond the two =:custom= additions.
+- Adding flycheck-side checkers or changing what gets checked.
+
+* Current State
+
+** =modules/flycheck-config.el:47-97=
+
+#+begin_src emacs-lisp
+(use-package flycheck
+  :defer t
+  :commands (flycheck-list-errors cj/flycheck-list-errors)
+  :hook ((sh-mode emacs-lisp-mode) . flycheck-mode)
+  :bind (:map cj/custom-keymap ("?" . cj/flycheck-list-errors))
+  :custom
+  (checkdoc-arguments
+   '(("sentence-end-double-space" nil)
+     ("warn-escape" nil)))
+  :config
+  ...)
+#+end_src
+
+No flycheck-modeline customization. Defaults are in force:
+
+| Variable                            | Default                                   |
+|-------------------------------------+-------------------------------------------|
+| =flycheck-mode-line-prefix=         | ="FlyC"=                                  |
+| =flycheck-mode-success-indicator=   | =":0"=                                    |
+| =flycheck-mode-line-color=          | =t=  (apply error / warning faces)        |
+| =flycheck-mode-line=                | ='(:eval (flycheck-mode-line-status-text))= |
+
+** =modules/modeline-config.el:220-237=
+
+=mode-line-format= layout (left → right, with right-align edge):
+
+#+begin_src emacs-lisp
+(setq-default mode-line-format
+  '("%e"
+    " "
+    cj/modeline-major-mode
+    "  "
+    cj/modeline-buffer-name
+    "  "
+    cj/modeline-position
+    mode-line-format-right-align
+    (:eval (when (fboundp 'cj/recording-modeline-indicator)
+             (cj/recording-modeline-indicator)))
+    cj/modeline-vc-branch
+    "  "
+    cj/modeline-misc-info
+    "  "))
+#+end_src
+
+Risky-local-variable list (=modeline-config.el:240-246=):
+
+#+begin_src emacs-lisp
+(dolist (construct '(cj/modeline-buffer-name
+                     cj/modeline-position
+                     cj/modeline-vc-branch
+                     cj/modeline-vc-faces
+                     cj/modeline-major-mode
+                     cj/modeline-misc-info))
+  (put construct 'risky-local-variable t))
+#+end_src
+
+Note: =cj/modeline-vc-branch= and =cj/modeline-misc-info= both gate on
+=(mode-line-window-selected-p)= so they appear only in the active window.
+
+** Flycheck lighter outputs (for reference)
+
+Flycheck status text values that =flycheck-mode-line-status-text=
+returns, depending on =flycheck-last-status-change= and current errors:
+
+| Status                       | Display (with default prefix / indicator)          |
+|------------------------------+----------------------------------------------------|
+| Not yet checked              | =FlyC=                                             |
+| Currently checking           | =FlyC*=                                            |
+| Finished, no errors          | =FlyC:0=                                           |
+| Finished, 3 errors, 5 warns  | =FlyC:3|5=                                         |
+| Checker errored              | =FlyC!=                                            |
+| Interrupted                  | =FlyC.=                                            |
+| Suspicious                   | =FlyC?=                                            |
+| No checker available         | =FlyC-=                                            |
+
+With =flycheck-mode-line-color= = =t= (the default), the count portion
+is colored: error count in the =error= face, warning count in =warning=.
+
+* Approaches Considered
+
+** Option 1 (Reject): customize prefix / indicator only
+
+Setting =flycheck-mode-line-prefix= and =flycheck-mode-success-indicator=
+in =:custom= changes the lighter content, but the lighter still publishes
+to =minor-mode-alist=, which the custom modeline doesn't read. The lighter
+becomes prettier wherever it does show (e.g. doom-modeline if reinstated)
+but not here. Doesn't solve the visibility problem.
+
+** Option 2 (Reject): add the raw =flycheck-mode-line= variable
+
+Inserting =flycheck-mode-line= into =mode-line-format= directly works,
+but the form has no =flycheck-mode= guard. In a buffer where flycheck
+isn't loaded or not enabled, the =:eval (flycheck-mode-line-status-text)=
+call still fires and either errors or returns junk. Needs a wrapping
+guard, which is what Option 4 does.
+
+** Option 3 (Reject for now): custom segment with full control
+
+Define =cj/modeline-flycheck= as a =defvar-local= holding a =(:eval ...)=
+form that pulls error / warning counts directly from
+=flycheck-current-errors=, builds a per-status string, propertizes it
+with =error= / =warning= faces, and returns it. Reimplements what
+=flycheck-mode-line-status-text= already does, with bespoke formatting.
+
+Pros: full control over format. Cons: maintenance burden, drifts from
+flycheck's status model if flycheck changes it.
+
+If the Option 4 result ever stops being good enough -- e.g. you want a
+different layout (=E:3 W:5= instead of =:3|5=) -- come back to this.
+Until then, more code than the problem deserves.
+
+** Option 4 (Recommended): hybrid -- customize variables + add guarded segment
+
+Two changes:
+
+1. =modules/flycheck-config.el= =:custom= block gets prefix and success-indicator overrides. (Optional: also =flycheck-mode-line-color=.)
+
+2. =modules/modeline-config.el= adds a small =(:eval ...)= form inline in =mode-line-format= that guards on =flycheck-mode= and calls =(flycheck-mode-line-status-text)= directly.
+
+Pros: minimal code, uses flycheck's logic verbatim, prefix / indicator
+swappable with a one-line edit, picks up flycheck's face colors
+automatically.
+
+Cons: layout fixed to flycheck's =PREFIX[indicator|counts]= shape.
+Acceptable.
+
+* Recommended Implementation (Option 4)
+
+** Step 1: =modules/flycheck-config.el=
+
+Add to the =:custom= block (currently lines 55-59 in the file):
+
+#+begin_src emacs-lisp
+;; Modeline customization (rendered via mode-line-format in modeline-config.el).
+(flycheck-mode-line-prefix "🐛")
+(flycheck-mode-success-indicator " ✓")
+;; flycheck-mode-line-color stays t (default) so counts keep their face coloring.
+#+end_src
+
+Prefix and success indicator are taste; the **Emoji Reference** section
+below catalogs the candidates. Note that the prefix emoji itself does
+not inherit the =error= / =warning= face -- only the count portion does
+(via =flycheck-mode-line-color=). That trade-off is fine for a static
+prefix; an emoji prefix gives a recognizable shape that you scan for,
+and the colored count carries the alert signal.
+
+** Step 2: =modules/modeline-config.el=
+
+Insert a =(:eval ...)= form into =mode-line-format= (currently lines
+220-237). Recommended placement: between the recording indicator and
+=cj/modeline-vc-branch= so flycheck status sits with the other
+right-aligned status segments.
+
+After the change, the right-side block reads:
+
+#+begin_src emacs-lisp
+;; RIGHT SIDE
+mode-line-format-right-align
+(:eval (when (fboundp 'cj/recording-modeline-indicator)
+         (cj/recording-modeline-indicator)))
+(:eval (when (and (mode-line-window-selected-p)
+                  (bound-and-true-p flycheck-mode))
+         (flycheck-mode-line-status-text)))
+"  "
+cj/modeline-vc-branch
+"  "
+cj/modeline-misc-info
+"  ")
+#+end_src
+
+Two design choices baked in:
+
+- =(mode-line-window-selected-p)= gates the segment to the active window, matching the convention used by =cj/modeline-vc-branch= and =cj/modeline-misc-info=.
+- =(bound-and-true-p flycheck-mode)= prevents the function call in buffers where flycheck never loaded; safer than asking =flycheck-mode= directly.
+
+** Risky-local-variable: not needed here
+
+This implementation places =(:eval ...)= inline inside =mode-line-format=
+rather than wrapping it in a =defvar-local=. Inline forms are evaluated
+by mode-line processing without a risky-local-variable marker. The
+existing risky list (=modeline-config.el:240-246=) does not need to
+grow.
+
+(If you ever refactor this to a named segment -- =defvar-local cj/modeline-flycheck= -- then add it to the risky list. Option 3 above is the path that needs that step.)
+
+* Emoji Reference
+
+** Prefix candidates (=flycheck-mode-line-prefix=)
+
+| Glyph | Codepoint | Name                                  |
+|-------+-----------+---------------------------------------|
+| 🪰    | U+1FAB0   | FLY (literal "fly" for flycheck)      |
+| 🐛    | U+1F41B   | BUG (recommended -- broadest font support) |
+| 🐞    | U+1F41E   | LADY BEETLE                           |
+| ⚠     | U+26A0    | WARNING SIGN                          |
+| 🔍    | U+1F50D   | MAGNIFYING GLASS                      |
+| 📝    | U+1F4DD   | MEMO                                  |
+| ✓     | U+2713    | CHECK MARK (text)                     |
+
+🪰 (U+1FAB0) is from Unicode 13.0 (2020) and needs an up-to-date emoji
+font. 🐛 (U+1F41B) is older and renders everywhere. Default to 🐛 unless
+the fly is a strong preference and the GUI fonts are known to cover it.
+
+** Success indicator candidates (=flycheck-mode-success-indicator=)
+
+| Glyph | Codepoint | Name                                  |
+|-------+-----------+---------------------------------------|
+| ✓     | U+2713    | CHECK MARK (text)                     |
+| ✔     | U+2714    | HEAVY CHECK MARK                      |
+| ✅    | U+2705    | WHITE HEAVY CHECK MARK (green box)    |
+| 🟢    | U+1F7E2   | GREEN CIRCLE                          |
+| ⭐    | U+2B50    | WHITE MEDIUM STAR                     |
+
+Note the leading space in the recommended setting (=" ✓"=): flycheck
+joins the prefix and the success indicator with no separator, so a
+leading space in the indicator gives breathing room between the emoji
+prefix and the check mark.
+
+** Suggested combinations
+
+| Mood                | Prefix | Success indicator | Result example |
+|---------------------+--------+-------------------+----------------|
+| Recommended default | 🐛     | " ✓"              | =🐛 ✓= / =🐛:3|5=  |
+| Literal Flycheck    | 🪰     | " ✓"              | =🪰 ✓= / =🪰:3|5=  |
+| Minimal             | ""     | " ✓"              | = ✓= / =:3|5=     |
+| Status light        | ""     | " 🟢"             | = 🟢= / =:3|5=    |
+
+* Testing
+
+** Manual
+
+1. Open =modules/flycheck-config.el= (an =emacs-lisp-mode= buffer with =flycheck-mode= auto-enabled per the existing =:hook=). The right side of the modeline shows the prefix + success indicator when there are no errors.
+2. Introduce a deliberate parse error (drop a paren). Save. The modeline updates to show =:1|0= (or whatever count) in the =error= face.
+3. Trigger =M-x flycheck-buffer= in a fresh =sh-mode= buffer. The "currently checking" state (=PREFIX*=) flashes briefly before settling on success or counts.
+4. Open a second window onto the same buffer (=C-x 2=). The flycheck segment appears in the active window only; the inactive copy drops it. Confirms the active-window gate.
+5. Open a buffer where flycheck never engages (e.g. =*scratch*= in fundamental-mode, or a =dired= buffer). No segment, no errors.
+6. Run =cj/flycheck-prose-on-demand= in an org buffer (=C-; ?= in org-mode). The LanguageTool checker engages and the segment appears with prose-error counts.
+
+** Regression watch
+
+- The custom-modeline width should not jump distractingly as flycheck cycles "checking → finished". The status text is short (one to seven chars), so this should be invisible -- worth a glance.
+- Inactive-window display: confirm the segment disappears, not just greys out. The current pattern is "hide entirely" via the =mode-line-window-selected-p= guard.
+- =cj/modeline-misc-info= keeps showing chime / notification text. The flycheck segment sits to its left; verify the visual order matches the spec.
+
+* Files to Modify
+
+- =modules/flycheck-config.el= -- add two =:custom= lines.
+- =modules/modeline-config.el= -- insert one =(:eval ...)= form into =mode-line-format=.
+
+Two-line / one-form change. No new tests required (the existing tests
+don't lock the modeline content; they exercise behavior elsewhere). If
+you want a smoke test, add one assertion in =tests/test-modeline-config.el=
+(if that file exists or you create it) that =mode-line-format='s sexp
+contains a form mentioning =flycheck-mode-line-status-text=. Optional.
+
+* Risks
+
+| Risk                                                                              | Mitigation                                                                                                            |
+|-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------|
+| Emoji renders as a tofu square in terminal Emacs                                  | The user runs GUI Emacs primarily; if terminal use matters, set the prefix to a text glyph (=""= or =":"=) instead.   |
+| Modeline width thrash when flycheck transitions running → finished                | Status text is one to seven chars; jitter is negligible. Confirm during manual testing.                              |
+| Prefix emoji doesn't pick up =error= / =warning= face                             | Expected: =flycheck-mode-line-color= colors the count portion only. The static prefix is intentionally unstyled. If you want a colored prefix, switch to Option 3. |
+| Flycheck not yet loaded when modeline first evaluates                             | The =(bound-and-true-p flycheck-mode)= guard returns nil in that case, the =(:eval ...)= returns nil, mode-line skips the slot. |
+| Active-window gate is wrong for some workflow (e.g. multi-window comparison)      | Drop =(mode-line-window-selected-p)=. One-line change. Decide after living with the default.                          |
+
+* Rollback
+
+Revert the commit. Two-file change, no schema impact. Idempotent.
+
+* Effort estimate
+
+S (under 1 hour). Two lines in =flycheck-config.el=, one form in
+=modeline-config.el=, plus the manual verification walk-through. The
+emoji selection is the time sink, not the code.
