@@ -43,5 +43,18 @@ the retired `cj/ai-vterm-pick-buffer')."
   (should (eq (lookup-key (current-global-map) (kbd "C-<f9>")) #'cj/ai-vterm-pick-project))
   (should (eq (lookup-key (current-global-map) (kbd "M-<f9>")) #'cj/toggle-gptel)))
 
+(ert-deftest test-ai-vterm-toggle-gptel-autoloaded-without-ai-config ()
+  "Regression: loading `ai-vterm.el' must not require `ai-config.el'.
+The M-F9 binding targets `cj/toggle-gptel', which lives in
+`ai-config.el'.  The dependency is declared via `autoload' so that
+byte-compiling `ai-vterm.el' does not warn and so that requiring
+`ai-vterm' in isolation leaves `cj/toggle-gptel' fboundp as an
+autoload sigil pointing at `ai-config'.  Without this, ai-vterm
+would either need a full `(require 'ai-config)' at load time or
+ship a known byte-compile warning."
+  (should-not (featurep 'ai-config))
+  (should (fboundp 'cj/toggle-gptel))
+  (should (autoloadp (symbol-function 'cj/toggle-gptel))))
+
 (provide 'test-ai-vterm--f9-in-vterm)
 ;;; test-ai-vterm--f9-in-vterm.el ends here
