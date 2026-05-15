@@ -53,6 +53,12 @@
 (declare-function vterm-send-return "vterm" ())
 (defvar vterm-mode-map)
 
+;; `cj/toggle-gptel' lives in ai-config.el.  Declaring it as an interactive
+;; autoload (rather than `require'ing ai-config here) silences the byte-compile
+;; warning at line 685/696 while keeping ai-vterm.el free of a load-time
+;; dependency on the full ai-config stack.
+(autoload 'cj/toggle-gptel "ai-config" nil t)
+
 (defgroup ai-vterm nil
   "In-Emacs AI-agent launcher with vertical-split vterm."
   :group 'tools)
