@@ -19,7 +19,12 @@
 ;;
 ;;; Code:
 
-(eval-when-compile (require 'keybindings))
+;; `keybindings' provides `cj/custom-keymap', which is referenced at load
+;; time by the `keymap-set' call at the tail of this file.  An
+;; `eval-when-compile' require would silence the byte-compiler but leave
+;; the load-time reference void if anything required `system-commands'
+;; before `keybindings'.  Make the dependency explicit.
+(require 'keybindings)
 (eval-when-compile (require 'subr-x))
 (require 'rx)
 
