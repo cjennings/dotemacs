@@ -288,10 +288,14 @@ From a PDF/EPUB: starts org-noter session if inactive, then inserts note."
 ;;; ----------------------------- Org-Noter Keymap -----------------------------
 
 (defvar-keymap cj/org-noter-map
-  :doc "Keymap for org-noter operations."
-  "i" #'cj/org-noter-insert-note-dwim
-  "n" #'org-noter-sync-next-note
-  "p" #'org-noter-sync-prev-note
+  :doc "Keymap for org-noter operations.
+Insert-note (the most-used action) sits on the doubled-prefix
+letter `n' so the binding reads as `C-; n n'.  Sibling-stepping
+moved off `n'/`p' to the angle-bracket pair `>'/`<' to free up `n'
+and to read more naturally as direction."
+  "n" #'cj/org-noter-insert-note-dwim
+  ">" #'org-noter-sync-next-note
+  "<" #'org-noter-sync-prev-note
   "." #'org-noter-sync-current-note
   "s" #'org-noter-create-skeleton
   "q" #'org-noter-kill-session
@@ -302,9 +306,9 @@ From a PDF/EPUB: starts org-noter session if inactive, then inserts note."
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; n" "org-noter menu"
-    "C-; n i" "insert note"
-    "C-; n n" "sync next note"
-    "C-; n p" "sync prev note"
+    "C-; n n" "insert note"
+    "C-; n >" "sync next note"
+    "C-; n <" "sync prev note"
     "C-; n ." "sync current note"
     "C-; n s" "headings from TOC"
     "C-; n q" "kill session"
