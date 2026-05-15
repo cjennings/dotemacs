@@ -52,6 +52,18 @@
 
 ;; -------------------------- CalibreDB Ebook Manager --------------------------
 
+(defun cj/calibredb-clear-filters ()
+  "Clear active filters and show all results."
+  (interactive)
+  (setq calibredb-tag-filter-p nil
+		calibredb-favorite-filter-p nil
+		calibredb-author-filter-p nil
+		calibredb-date-filter-p nil
+		calibredb-format-filter-p nil
+		calibredb-search-current-page 1)
+  ;; empty string resets keyword filter and refreshes listing
+  (calibredb-search-keyword-filter ""))
+
 (use-package calibredb
   :commands calibredb
   :bind
@@ -74,18 +86,6 @@
   (setq calibredb-id-width 7)
   (setq calibredb-favorite-icon "🔖")
   (setq calibredb-favorite-keyword "in-progress"))
-
-(defun cj/calibredb-clear-filters ()
-  "Clear active filters and show all results."
-  (interactive)
-  (setq calibredb-tag-filter-p nil
-		calibredb-favorite-filter-p nil
-		calibredb-author-filter-p nil
-		calibredb-date-filter-p nil
-		calibredb-format-filter-p nil
-		calibredb-search-current-page 1)
-  ;; empty string resets keyword filter and refreshes listing
-  (calibredb-search-keyword-filter ""))
 
 ;; ------------------------------ Nov Epub Reader ------------------------------
 
@@ -235,6 +235,63 @@ A positive DELTA narrows the text column; a negative DELTA widens it."
   (interactive)
   (cj/open-file-with-command "zathura"))
 
+;; Jump from a Nov buffer to the corresponding CalibreDB entry.
+(defun cj/nov--metadata-get (key)
+  "Return a metadata value from nov-metadata trying KEY as symbol and string."
+  (let* ((v (or (and (boundp 'nov-metadata)
+					 (or (alist-get key nov-metadata nil nil #'equal)
+						 (alist-get (if (symbolp key) (symbol-name key) key)
+									nov-metadata nil nil #'equal)))
+				nil)))
+	(cond
+	 ((and (listp v) (= (length v) 1)) (car v))
+	 ((stringp v) v)
+	 (t v))))
+
+(defun cj/nov--file-path ()
+  "Return the current EPUB file path when in nov-mode, or nil.
+Falls back to nov's own `nov-file-name' (set by `nov-mode' from the visited
+file) so the function still resolves when `buffer-file-name' has been cleared."
+  (when (derived-mode-p 'nov-mode)
+	(or buffer-file-name
+		(and (boundp 'nov-file-name) nov-file-name))))
+
+(defun cj/nov-jump-to-calibredb ()
+  "Open CalibreDB focused on the current EPUB's book entry.
+Try to use the Calibre book id from the parent folder name (for example,
+\"Title (123)\"). Fall back to a title or author search when no id exists."
+  (interactive)
+  (require 'calibredb)
+  (let* ((file (cj/nov--file-path))
+		 (title (or (cj/nov--metadata-get 'title)
+					(cj/nov--metadata-get "title")))
+		 (author (or (cj/nov--metadata-get 'creator)
+					 (cj/nov--metadata-get 'author)
+					 (cj/nov--metadata-get "creator")
+					 (cj/nov--metadata-get "author")))
+		 (id (when file
+			   (let* ((parent (file-name-nondirectory
+							   (directory-file-name (file-name-directory file)))))
+				 (when (string-match " (\\([0-9]+\\))\\'" parent)
+				   (match-string 1 parent))))))
+	(calibredb)
+	(with-current-buffer (calibredb-find-create-search-buffer)
+	  (setq calibredb-search-current-page 1)
+	  (cond
+	   (id
+		(calibredb-search-keyword-filter (format "id:%s" id))
+		(message "CalibreDB: focused by id:%s" id))
+	   ((or title author)
+		(let* ((q (string-join
+				   (delq nil (list (and title (format "title:\"%s\"" title))
+								   (and author (format "authors:\"%s\"" author))))
+				   " and ")))
+		  (calibredb-search-keyword-filter q)
+		  (message "CalibreDB: search %s" (if (string-empty-p q) "<all>" q))))
+	   (t
+		(calibredb-search-keyword-filter "")
+		(message "CalibreDB: no metadata; showing all"))))))
+
 (use-package nov
   :mode
   ("\\.epub\\'" . nov-mode)
@@ -307,63 +364,6 @@ computed column based on the window text area width."
 				   t)))))))
 
 (add-hook 'nov-post-html-render-hook #'cj/nov-center-images)
-
-;; Jump from a Nov buffer to the corresponding CalibreDB entry.
-(defun cj/nov--metadata-get (key)
-  "Return a metadata value from nov-metadata trying KEY as symbol and string."
-  (let* ((v (or (and (boundp 'nov-metadata)
-					 (or (alist-get key nov-metadata nil nil #'equal)
-						 (alist-get (if (symbolp key) (symbol-name key) key)
-									nov-metadata nil nil #'equal)))
-				nil)))
-	(cond
-	 ((and (listp v) (= (length v) 1)) (car v))
-	 ((stringp v) v)
-	 (t v))))
-
-(defun cj/nov--file-path ()
-  "Return the current EPUB file path when in nov-mode, or nil.
-Falls back to nov's own `nov-file-name' (set by `nov-mode' from the visited
-file) so the function still resolves when `buffer-file-name' has been cleared."
-  (when (derived-mode-p 'nov-mode)
-	(or buffer-file-name
-		(and (boundp 'nov-file-name) nov-file-name))))
-
-(defun cj/nov-jump-to-calibredb ()
-  "Open CalibreDB focused on the current EPUB's book entry.
-Try to use the Calibre book id from the parent folder name (for example,
-\"Title (123)\"). Fall back to a title or author search when no id exists."
-  (interactive)
-  (require 'calibredb)
-  (let* ((file (cj/nov--file-path))
-		 (title (or (cj/nov--metadata-get 'title)
-					(cj/nov--metadata-get "title")))
-		 (author (or (cj/nov--metadata-get 'creator)
-					 (cj/nov--metadata-get 'author)
-					 (cj/nov--metadata-get "creator")
-					 (cj/nov--metadata-get "author")))
-		 (id (when file
-			   (let* ((parent (file-name-nondirectory
-							   (directory-file-name (file-name-directory file)))))
-				 (when (string-match " (\\([0-9]+\\))\\'" parent)
-				   (match-string 1 parent))))))
-	(calibredb)
-	(with-current-buffer (calibredb-find-create-search-buffer)
-	  (setq calibredb-search-current-page 1)
-	  (cond
-	   (id
-		(calibredb-search-keyword-filter (format "id:%s" id))
-		(message "CalibreDB: focused by id:%s" id))
-	   ((or title author)
-		(let* ((q (string-join
-				   (delq nil (list (and title (format "title:\"%s\"" title))
-								   (and author (format "authors:\"%s\"" author))))
-				   " and ")))
-		  (calibredb-search-keyword-filter q)
-		  (message "CalibreDB: search %s" (if (string-empty-p q) "<all>" q))))
-	   (t
-		(calibredb-search-keyword-filter "")
-		(message "CalibreDB: no metadata; showing all"))))))
 
 (provide 'calibredb-epub-config)
 ;;; calibredb-epub-config.el ends here
