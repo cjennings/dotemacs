@@ -199,13 +199,14 @@ improves performance from several seconds to instant."
                               (- (float-time) (float-time start-time)))))))
     (setq org-agenda-files files)))
 
-;; Build cache asynchronously after startup to avoid blocking Emacs
-(run-with-idle-timer
- 10  ; Wait 10 seconds after Emacs is idle
- nil ; Don't repeat
- (lambda ()
-   (cj/log-silently "Building org-agenda files cache in background...")
-   (cj/build-org-agenda-list)))
+;; Build cache asynchronously after startup to avoid blocking Emacs.
+(unless noninteractive
+  (run-with-idle-timer
+   10  ; Wait 10 seconds after Emacs is idle
+   nil ; Don't repeat
+   (lambda ()
+     (cj/log-silently "Building org-agenda files cache in background...")
+     (cj/build-org-agenda-list))))
 
 (defun cj/org-agenda-refresh-files ()
   "Force rebuild of agenda files cache.

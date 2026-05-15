@@ -853,7 +853,8 @@ Done 2026-05-15:
 - Updated =tests/test-coverage-summary.el= to assert the policy and the
   displayed project-module percentage.
 
-*** TODO [#B] Add a lightweight architecture smoke test for startup contracts :tests:
+*** DONE [#B] Add a lightweight architecture smoke test for startup contracts :tests:
+CLOSED: [2026-05-15 Fri]
 
 After the above refactors start, add one or two smoke tests that protect the
 architecture instead of individual functions.
@@ -866,6 +867,17 @@ Candidate checks:
 
 Keep this small. The goal is to catch accidental return to hidden load-order
 coupling, not to build a full static analyzer.
+
+Done 2026-05-15:
+- Added =tests/test-architecture-startup-contracts.el= with two source-level
+  smoke checks:
+  - only =keybindings.el= may globally own the exact =C-;= prefix;
+  - top-level timer scheduling forms must be guarded by =noninteractive= so
+    batch/test loads do not schedule startup timers.
+- Gated existing startup timers in =org-agenda-config.el=,
+  =org-refile-config.el=, =quick-video-capture.el=, and =wrap-up.el=.
+- Focused tests passed for the new architecture smoke file and the affected
+  agenda/refile helpers.
 
 ** PROJECT [#B] Module-by-module review and hardening :review:
 
