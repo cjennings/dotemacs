@@ -121,7 +121,7 @@ Call this only after loading `gptel' so the backend constructors exist."
               "Claude"
             :key (cj/anthropic-api-key)
             :models '(
-                      "claude-opus-4-6"
+                      "claude-opus-4-7"
                       "claude-sonnet-4-6"
                       "claude-haiku-4-5-20251001"
                       )
@@ -132,16 +132,15 @@ Call this only after loading `gptel' so the backend constructors exist."
               "ChatGPT"
             :key (cj/openai-api-key)
             :models '(
-                      "gpt-4o"
-                      "gpt-5"
-                      "gpt-4.1"
-                      "o1"
+                      "gpt-5.5"
+                      "gpt-5.4-mini"
+                      "o3"
                       )
             :stream t)))
   ;; Set default backend and model
   (unless gptel-backend
     (setq gptel-backend (or gptel-claude-backend gptel-chatgpt-backend))
-    (setq gptel-model "claude-opus-4-6")))
+    (setq gptel-model "claude-opus-4-7")))
 
 ;; ------------------ GPTel Conversation And Utility Commands ------------------
 
@@ -189,7 +188,7 @@ where DISPLAY-STRING is \"Backend: model\" for use in completing-read."
   "Format the current backend/model as a display string.
 BACKENDS is the alist from `cj/gptel--available-backends'.
 CURRENT-BACKEND and CURRENT-MODEL are the active gptel settings.
-Returns a string like \"Anthropic - Claude: claude-opus-4-6\"."
+Returns a string like \"Anthropic - Claude: claude-opus-4-7\"."
   (let ((backend-name (car (rassoc current-backend backends))))
     (format "%s: %s"
             (or backend-name "AI")
@@ -370,7 +369,7 @@ Works for any buffer, whether it's visiting a file or not."
   (cj/ensure-gptel-backends)
   ;; Set Claude as default after initialization
   (setq gptel-backend gptel-claude-backend)
-  (setq gptel-model "claude-opus-4-6")
+  (setq gptel-model "claude-opus-4-7")
 
   (setq gptel-confirm-tool-calls nil) ;; allow tool access by default
 
