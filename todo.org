@@ -949,6 +949,19 @@ and design improvements as child tasks. This is intentionally separate from the
 top-level architecture review: the architecture project tracks cross-cutting
 load/startup/test structure, while this project tracks module-specific work.
 
+Re-review pass 2026-05-15:
+- Each of the six existing review tracks (foundation, custom editing, UI /
+  navigation, Org workflow, programming workflow, integrations and
+  applications) was re-walked as if it had not been reviewed before.
+- 32 new sub-task findings filed across the tracks above (foundation 5,
+  custom editing 6, UI / navigation 9, Org workflow 3, programming 6,
+  integrations 2).  Findings already covered by an existing sub-task were
+  dropped during consolidation.
+- A separate =Review newly added modules= task lists the 24 modules that
+  were either added after the parent task was written (post-2026-04) or
+  fell outside the original scope lists.  Each is routed to its target
+  track; module-specific findings are filed under the relevant track.
+
 Review protocol for each module:
 - Read the module directly, not just the test names.
 - Check runtime dependencies, top-level side effects, keybindings, timers,
@@ -1130,6 +1143,56 @@ Expected outcome:
 - Add a small test or validation helper around the computed package policy if
   package bootstrap is extracted.
 
+**** TODO [#C] Consolidate duplicate =user-home-dir= constant :cleanup:
+
+=user-home-dir= is defined identically in =early-init.el:116-117= and
+=modules/user-constants.el:74-75=.  early-init.el defines it first
+because =package-archive= paths reference it, then user-constants.el
+redefines it.  Both definitions silently drift if one is edited.
+Consolidate: keep early-init.el's definition (load-order requirement)
+and reference it from user-constants.el with a comment explaining why
+the constant lives in early-init.
+
+**** TODO [#C] Drop redundant =eval-when-compile= alongside autoload in =system-defaults.el= :cleanup:
+
+=modules/system-defaults.el:20-24= wraps host-environment and
+user-constants under =eval-when-compile= require forms, then line 24
+also declares =(autoload 'env-bsd-p "host-environment" nil t)=.  The
+=eval-when-compile= is redundant given the autoload; the mixed pattern
+suggests one of the two requires was added without removing the other.
+Pick one boundary and document it.
+
+**** TODO [#C] Convert =cj/debug-modules= and =cj/use-online-repos= to =defcustom= :refactor:
+
+These are user-facing toggles defined as =defvar= in
+=modules/user-constants.el:25-30= and =early-init.el:84-87=.  Users
+cannot discover or change them through =M-x customize=.  Convert to
+=defcustom= with =:type=, =:group=, and a docstring so they show up in
+the customization UI alongside other config knobs.
+
+**** TODO [#B] Surface custom-file redirection so accidental Customize use isn't silent :safety:
+
+=modules/system-defaults.el:91-92= sends Customize UI writes to a
+temp file (=emacs-customizations-trashbin-...=) that is never read
+back.  This is intentional -- the convention is to manage config in
+Elisp -- but it silently discards user edits made through =M-x customize=.
+A user who occasionally clicks "Save for Future Sessions" in a
+Customize buffer loses those changes on Emacs exit.  Either surface a
+=display-warning= on first =custom-set-variables= attempt, or set
+=custom-file= to a versioned path under =data/= so the discard is at
+least durable for the session.
+
+**** TODO [#C] Name and document package archive priorities :refactor:
+
+=early-init.el:149-180= assigns priorities as magic numbers
+(localrepo=200, gnu-local=125, melpa-local=115, online gnu=25,
+melpa=15, melpa-stable=5).  Future maintainers cannot answer "why is
+gnu-local 125 but melpa-local 115?" without re-deriving the
+hierarchy.  Define named constants
+(=cj/package-priority-local-mirror=, =cj/package-priority-online=,
+etc.) at the top of early-init.el with a short comment explaining the
+local-first ordering.
+
 *** DOING [#B] Review custom editing utility modules :review:
 
 Scope:
@@ -1234,6 +1297,66 @@ Expected outcome:
 - Add a simple module-load smoke test if this becomes part of the load-graph
   refactor.
 
+**** TODO [#C] Reconcile region-or-buffer scope across editing helpers :bug:
+
+=modules/custom-text-enclose.el:135-180= helpers
+(=cj/append-to-lines-in-region-or-buffer=,
+=cj/prepend-to-lines-in-region-or-buffer=) fall back to the whole
+buffer when no region is active.  =modules/custom-ordering.el:38-41=
+and =:86-88= helpers
+(=cj/--arrayify=, =cj/--unarrayify=) accept explicit =(start end)=
+parameters but their docstrings imply "region or entire buffer" --
+the implementation does not match.  Pick one contract per pair and
+update docstrings, or extract a shared helper that decides the
+target range.
+
+**** TODO [#C] Preserve trailing newlines in custom-ordering output :bug:
+
+=modules/custom-ordering.el:38-41,86-88= splits input on whitespace
+and commas without tracking a trailing newline.  Compare with
+=custom-text-enclose.el=, which explicitly records and restores a
+trailing newline.  When the user invokes ordering on a buffer whose
+last line ends with =\n=, the output drops it -- which then breaks
+line-oriented operations on the result.
+
+**** TODO [#C] Guard =cj/duplicate-line-and-comment= against non-file buffers :safety:
+
+=modules/custom-line-paragraph.el:79-93= calls =(cj/comment-line)= via
+delegation.  =comment-line= reads =comment-start= from the current
+major-mode's syntax tables, which is unreliable in non-file buffers
+(=*scratch*= sometimes works, fundamental-mode buffers do not).  The
+duplicate-and-comment flow silently produces malformed output in
+those buffers.  Either error out clearly or only enable the binding
+in modes that have a comment syntax.
+
+**** TODO [#C] Make =external-open.el= advice setup idempotent at load time :cleanup:
+
+=modules/external-open.el:150-151= runs =advice-remove= followed by
+=advice-add= unconditionally during module load.  The pair is
+idempotent-by-construction, but the pattern leaves no signal that the
+module guards against duplicate loads -- if the module ever stops
+being load-once, the advice list grows.  Wrap the setup in a guarded
+form or move it behind an explicit init function.
+
+**** TODO [#C] Validate comment-delimiter character in =custom-comments.el= :safety:
+
+The comment-divider / border helpers in =modules/custom-comments.el=
+accept a delimiter string with no length or printability check.
+Passing =\n=, =\t=, or a multi-character string produces malformed
+output that can corrupt subsequent =M-q= flows.  Add a guard:
+=(unless (and (stringp delim) (= (length delim) 1) (string-match-p "[[:print:]]" delim))
+  (user-error "..."))=
+
+**** TODO [#C] Add coverage for =cj/title-case-region= state machine :tests:
+
+=modules/custom-case.el:40-120= implements title-casing via a
+character-by-character state machine (case rules, leading-quote /
+paren handling).  No focused tests exercise: empty region, unicode
+boundaries (combining marks, RTL), sequences of numbers + symbols,
+opening quote characters.  The state machine is the kind of helper
+that fails silently on the unusual case -- ERT coverage on those
+inputs catches regressions during refactors.
+
 *** DOING [#B] Review UI and navigation modules :review:
 
 Scope:
@@ -1289,6 +1412,92 @@ Expected outcome:
 
 This is low priority, but it is a good example of load graph noise to clean up
 during the =init.el= deferral work.
+
+**** TODO [#B] Move =popper-mode= activation out of =:init= so =:disabled t= actually disables it :bug:
+
+=modules/popper-config.el:40= activates =(popper-mode +1)= inside the
+=use-package= =:init= block.  =use-package='s =:disabled t= keyword
+prevents =:config= from running but =:init= forms run unconditionally.
+The =:disabled= marker is therefore a no-op: popper-mode is enabled
+on every load, including batch / test runs.  Move the activation into
+=:config= so disabling actually disables it.
+
+**** TODO [#C] Gracefully fallback in =cj/modeline-vc-fetch= when =vc-git--symbolic-ref= is missing :safety:
+
+=modules/modeline-config.el:149-151= calls the internal
+=vc-git--symbolic-ref= without a fallback if Emacs's =vc-git=
+implementation changes.  Internal functions can be renamed or
+removed between Emacs versions.  When that happens, the modeline
+errors during render, which blocks =mode-line-format= and produces a
+confusing failure.  Add an =fboundp= guard and fall back to
+=(vc-working-revision file backend)= when the internal accessor is
+unavailable.
+
+**** TODO [#C] Use theme-aware faces in =cj/display-available-fonts= :refactor:
+
+=modules/font-config.el:266= hardcodes ="Light Blue"= and gray
+foreground for font labels.  Switching themes (especially light
+themes) makes the labels nearly unreadable.  Replace the literal
+color with a face reference (=font-lock-keyword-face= or a face this
+config owns) so the labels follow theme contrast.
+
+**** TODO [#C] Handle TTY-first frame race in font setup :safety:
+
+=modules/font-config.el:168-176= checks =(env-gui-p)= once at module
+load.  In daemon mode, when the first =emacsclient -t= creates a TTY
+frame, the check returns nil and font setup never runs.  A
+later =emacsclient -c= creating a GUI frame inherits no font
+configuration.  Either move the GUI check inside
+=server-after-make-frame-hook= (per-frame), or invoke font setup
+unconditionally and let Emacs handle terminal frames gracefully.
+
+**** TODO [#C] Cache =mousetrap-mode= keymap rebuilds per profile :performance:
+
+=modules/mousetrap-mode.el:231-233= registers =mouse-trap-maybe-enable=
+on every major-mode hook (text, prog, special, plus custom profile
+modes).  Each mode switch rebuilds the keymap from scratch (~8
+prefixes × ~30 events).  Rapid mode-switching workflows (project
+switching, multi-buffer review) pay a measurable cost.  Cache by
+profile + active-events list and skip rebuild when the cache key
+matches.
+
+**** TODO [#C] Invalidate VC modeline cache on file symlink target changes :tests:
+
+=modules/modeline-config.el:131-140= keys the cache on =(list file
+cj/modeline-vc-show-remote)=.  If =file= is a symlink whose target
+moves (rare but possible on shared drives, CI workspaces), the cache
+stays warm with the old VC backend.  Add the resolved =file-truename=
+to the key, or invalidate the cache when =vc-backend= disagrees with
+the cached entry.
+
+**** TODO [#B] Move =C-s= binding into =consult= =:bind= for =isearch-mode-map= :safety:
+
+=modules/selection-framework.el:253= binds =C-s= globally to
+=cj/consult-line-or-repeat=.  The same module's =consult= =:bind=
+block rebinds =M-s e= in =isearch-mode-map=.  Once isearch is active,
+pressing =C-s= should advance to the next match -- isearch's own
+keymap convention -- but the global binding shadows that and exits
+isearch into consult-line.  Move the =C-s= binding into the consult
+=:bind= block under =:map isearch-mode-map= to preserve isearch's
+in-mode contract.
+
+**** TODO [#C] Guard cursor-color =post-command-hook= behind =display-graphic-p= :safety:
+
+=modules/ui-config.el:125,137= registers =cj/set-cursor-color-according-to-mode=
+on =post-command-hook= unconditionally.  In batch / test runs and TTY
+sessions, the hook fires on every command but the cursor color logic
+is meaningless.  Guard the =add-hook= behind
+=(display-graphic-p)= or move it inside =server-after-make-frame-hook=
+so it activates only for GUI frames.
+
+**** TODO [#C] Defer =nerd-icons-config= advice with =with-eval-after-load= :refactor:
+
+=modules/nerd-icons-config.el:73-75= uses =:demand t= and applies
+icon-color advice via =dolist= at module load.  This makes
+nerd-icons eagerly load on every Emacs start (not just when an icon
+is rendered).  Wrap the advice block in
+=(with-eval-after-load 'nerd-icons ...)= so the advice still applies
+but nerd-icons can stay deferred for batch and headless contexts.
 
 *** DOING [#B] Review Org workflow modules :review:
 
@@ -1583,6 +1792,37 @@ Recommended improvement:
 - Link this note from the Org workflow review task and the broader load-graph
   refactor.
 
+**** TODO [#C] De-duplicate =org-protocol-protocol-alist= registration in =org-webclipper= :cleanup:
+
+The =webclip= protocol handler is registered twice:
+=modules/org-webclipper.el:72-76= inside =cj/webclipper-ensure-initialized=
+(unconditional =add-to-list=) and =:207-214= inside a
+=with-eval-after-load 'org-protocol= block (=unless (assoc ...)= guard).
+=add-to-list= uses =equal= membership so the two are effectively
+idempotent, but maintaining two registration paths invites drift if
+the alist entry shape ever changes.  Pick one site -- the
+=with-eval-after-load= block is the more robust location -- and
+remove the other.
+
+**** TODO [#C] Validate =:url= and =:title= in =cj/org-protocol-webclip= :safety:
+
+=modules/org-webclipper.el:124-125= extracts =:url= and =:title= from
+the incoming protocol plist with no type or nil check.  An unexpected
+plist shape silently sets the globals to nil, and downstream code
+fails inside the capture handler with confusing messages.  Guard with
+=(unless (and (stringp url) (not (string-empty-p url))) (user-error ...))=
+before stashing.
+
+**** TODO [#C] Replace global mutation of =cj/webclip-current-url= / =title= with structured state :refactor:
+
+=modules/org-webclipper.el:128-129,151-152= relies on two top-level
+variables (=cj/webclip-current-url=, =cj/webclip-current-title=)
+=setq='d by the protocol handler and read by the capture template.
+Concurrent or rapidly-fired protocol invocations interleave and
+corrupt each other's state.  Pass the data through a plist on
+=org-capture-plist=, a per-invocation closure, or a queue, instead of
+global mutation.
+
 *** DOING [#B] Review programming workflow modules :review:
 
 Scope:
@@ -1743,6 +1983,65 @@ Expected outcome:
 - Keep point preservation behavior.
 - Keep existing formatter wiring tests and add command-construction tests if a
   helper is extracted.
+
+**** TODO [#C] Add =executable-find= checks for =prettier= and =pyright= at load time :safety:
+
+=modules/prog-webdev.el:34-40= declares =prettier-path= and
+=modules/prog-python.el:33-40= declares =pyright-path= as string
+literals.  No validation at module load means a missing executable
+surfaces only at first use -- format-on-save fires, then errors
+mid-edit, then the user has to discover why.  Wrap with
+=cj/executable-find-or-warn= (already in =system-lib.el=) at module
+load time so the missing dependency is reported up front.
+
+**** TODO [#C] Make =keyboard-compat= =server-after-make-frame-hook= idempotent :safety:
+
+=modules/keyboard-compat.el:169-174= adds the frame-setup hook
+unconditionally.  If the module is required twice (e.g. via two
+=eval-after-load= chains in different load orders), the hook runs
+twice per new frame and installs duplicate =key-translation-map=
+entries.  Wrap the =add-hook= in a guard, or use a named function
+and rely on =add-hook='s own duplicate-check.
+
+**** TODO [#C] Wire =dev-fkeys= F6 test-runner clause for typescript / tsx :refactor:
+
+=modules/dev-fkeys.el:261-269= maps =tsx= to =typescript= in the
+language detection table.  =modules/dev-fkeys.el:347-349=
+(=cj/--f6-test-runner-cmd-for=) has no clause for =typescript= --
+the catch-all =(_)= returns nil, so F6 errors instead of routing to
+a real runner.  Either add a =typescript= → =jest=/=vitest= clause
+or remove the =tsx= mapping until the runner side is implemented.
+
+**** TODO [#B] Fix =prog-lsp= eldoc-provider removal scope :bug:
+
+=modules/prog-lsp.el:51-54,76= attaches
+=cj/lsp--remove-eldoc-provider= globally to =lsp-managed-mode-hook=
+but the removal it performs uses =(remove-hook ... t)= -- a
+buffer-local removal.  The first LSP buffer activates the hook,
+which removes the provider for that buffer.  Subsequent LSP buffers
+still inherit the global default because the hook itself never
+re-fires the buffer-local removal in their context.  Either make
+the hook itself buffer-local-friendly (add it inside
+=lsp-managed-mode-hook= per-buffer) or remove from the global
+provider list once instead of per-buffer.
+
+**** TODO [#C] Externalize hardcoded LanguageTool script path in =flycheck-config= :cleanup:
+
+=modules/flycheck-config.el:69= hardcodes
+=~/.emacs.d/scripts/languagetool-flycheck= as the LanguageTool wrapper.
+Users running from a non-standard =user-emacs-directory= (or anyone
+auditing the module against a future package) get a broken checker.
+Replace with =(expand-file-name "scripts/languagetool-flycheck"
+user-emacs-directory)= or a defcustom.
+
+**** TODO [#C] Replace hardcoded Zathura viewer in =latex-config= :cleanup:
+
+=modules/latex-config.el:28= sets the LaTeX viewer to =zathura=
+unconditionally.  macOS / Windows users and anyone who prefers a
+different PDF viewer lose document review without explanation.
+Resolve via =executable-find= over a candidate list (=zathura=,
+=evince=, =okular=, =Preview.app= via =open=, =SumatraPDF.exe=) and
+fall back to =pdf-tools=.
 
 *** DOING [#B] Review integrations and application modules :review:
 
@@ -2090,6 +2389,78 @@ autoloaded as expected, Slack config can fail during require.
 Expected outcome:
 - Wrap the registration in =with-eval-after-load 'which-key=.
 - Add a module-load smoke test or byte-compile check if easy.
+
+**** TODO [#C] Remove =httpd-start= side effect from =markdown-preview= :safety:
+
+=modules/markdown-config.el:37-51= starts =simple-httpd= inside an
+interactive command, then opens a browser at
+=http://localhost:8080/imp=.  Starting a network listener as a side
+effect of a "preview" command surprises users; once started, the
+server keeps running until Emacs exits.  Either gate the start
+behind an explicit confirmation, document the listener clearly, or
+move the server start into a separate =cj/markdown-preview-server-start=
+command so =markdown-preview= just opens the URL once the server is
+known to be running.
+
+**** TODO [#C] Externalize hardcoded SSH hostnames in =eshell-config= :cleanup:
+
+=modules/eshell-config.el:74-76= sets up =cj/eshell-aliases= with
+SSH aliases pointing at specific hostnames (=gosb=, =gowolf=).
+Those identifiers are personal; they should live in a per-machine
+config (a defcustom, an alist read from disk, or
+=host-environment.el='s machine-table) so the module itself is
+portable.
+
+*** TODO [#B] Review newly added modules :review:
+
+Per the parent task's re-review pass (2026-05-15), 24 modules were
+either added after the parent task was written or never folded into
+any of the original six review tracks.  Each has been read end to
+end and routed to its proper track; specific findings have been
+filed under the relevant track above.
+
+Modules added after the parent task was written (post-2026-04):
+
+- =telega-config.el= (2026-05-13) → integrations
+- =mu4e-attachments.el= (2026-05-12) → integrations
+- =vterm-config.el= (2026-05-10) → integrations
+- =external-open-lib.el= (2026-05-10) → custom editing utilities
+- =eshell-config.el= (2026-05-10) → integrations
+- =cj-window-toggle-lib.el= (2026-05-10) → foundation
+- =cj-window-geometry-lib.el= (2026-05-10) → foundation
+- =cj-org-text-lib.el= (2026-05-10) → foundation
+- =cj-cache-lib.el= (2026-05-10) → foundation
+- =nerd-icons-config.el= (2026-05-07) → UI / navigation
+- =ai-vterm.el= (2026-05-07) → integrations
+
+Older modules that fell outside the original review-track scope
+lists:
+
+- =text-config.el= → custom editing utilities
+- =markdown-config.el= → integrations
+- =latex-config.el= → programming workflow
+- =flycheck-config.el= → programming workflow
+- =flyspell-and-abbrev.el= → custom editing utilities
+- =ledger-config.el= → integrations
+- =httpd-config.el= → integrations
+- =chrono-tools.el= → foundation
+- =diff-config.el= → custom editing utilities
+- =games-config.el= → integrations
+- =mu4e-org-contacts-setup.el= → Org workflow
+- =mu4e-org-contacts-integration.el= → Org workflow
+- =org-agenda-config-debug.el= → Org workflow (debug-only; verify it's opt-in)
+
+Done 2026-05-15:
+- All 24 modules read end to end.
+- 5 modules had actionable findings filed in their target tracks:
+  =markdown-config= (httpd start side effect), =flycheck-config=
+  (hardcoded LanguageTool path), =latex-config= (hardcoded Zathura
+  viewer), =eshell-config= (hardcoded SSH hostnames), and
+  =nerd-icons-config= (advice-timing / =:demand t=).
+- The remaining 19 modules had no concrete issues beyond what the
+  existing review tracks already cover.
+- Mark this task =DONE= once the per-finding sub-tasks above are
+  triaged into the appropriate track's child list.
 
 ** VERIFY [#B] Move lsp-file-watch-ignored-directories to global .emacs.d config :chore:refactor:
 SCHEDULED: <2026-04-27 Mon>
