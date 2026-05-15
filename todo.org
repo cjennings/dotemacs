@@ -2075,7 +2075,8 @@ Done 2026-05-15:
 - Mark this task =DONE= once the per-finding sub-tasks above are
   triaged into the appropriate track's child list.
 
-** VERIFY [#B] Move lsp-file-watch-ignored-directories to global .emacs.d config :chore:refactor:
+** DONE [#B] Move lsp-file-watch-ignored-directories to global .emacs.d config :chore:refactor:
+CLOSED: [2026-05-15 Fri]
 SCHEDULED: <2026-04-27 Mon>
 
 Shipped 2026-04-26 in commit 781b46e. Implementation: =cj/lsp-file-watch-ignored-extras= (thirteen patterns) and =cj/lsp--add-file-watch-ignored-extras= in =modules/prog-lsp.el=, called from the lsp-mode use-package =:config=. Seven ERT tests in =tests/test-prog-lsp--add-file-watch-ignored-extras.el=, all green.
@@ -2192,43 +2193,8 @@ used to handle.  Per-module fixups for ledger, AUCTeX, eshell, mu4e
 compose, and the three =prog-*= modules.  See the design doc for the
 full translation table, migration steps, tests, and risks.
 
-** TODO [#C] Consider removing gptel and the C-; a AI-assistant keymap :refactor:cleanup:
+** TODO [#C] Gptel Work                                   :refactor:cleanup:
 
-Claude Code (via the F9 ai-vterm launcher) has fully replaced the gptel
-side-chat workflow. The =C-; a= prefix and the gptel use-package block
-in =modules/ai-config.el= no longer get used.
-
-Decide whether to:
-
-1. *Remove entirely.* Drop =modules/ai-config.el= +
-   =modules/ai-conversations.el=, the =C-; a= keymap registration,
-   the gptel/anthropic/openai package installs, and the saved-
-   conversations directory. Update =init.el= to stop requiring the
-   module. Net code reduction is large.
-2. *Keep but mothball.* Move the module to =modules/archived/= so the
-   bindings disappear but the code stays available for reference if
-   the workflow ever comes back.
-3. *Trim to the part that's still useful.* The rewrite-region command
-   (=C-; a r=) is the one piece Claude Code in a separate vterm can't
-   do as smoothly -- it edits the current buffer in place against a
-   prompt. If that's worth keeping, narrow =ai-config.el= to just
-   that command + its backend setup and drop everything else.
-
-Scope notes for whichever path:
-
-- =C-; a= keymap is registered in =ai-config.el='s tail; if removed,
-  the prefix becomes free for repurposing or stays unbound.
-- gptel pulls in =anthropic= / =openai= backends; both keys live in
-  =auth-config.el= but aren't referenced elsewhere -- safe to leave
-  the auth entries even if gptel goes.
-- =ai-conversations.el= is autoloaded via =ai-config.el= and stores
-  saved conversations in a designated dir; the dir + content go too
-  if removing entirely.
-- which-key registrations under =C-; a= disappear automatically when
-  the keymap goes.
-
-Companion to the F9 ai-vterm work shipped 2026-05-08. Filed because
-the C-F9 binding was already pulled from gptel during that work.
 
 ** TODO [#C] Extend F2 "preview" convention across modes :feature:
 
