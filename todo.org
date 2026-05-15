@@ -79,9 +79,60 @@ new function).
 Module commentary + the =cj/ai-vterm= docstring updated to describe
 the new M-F9 behavior.
 
-** TODO [#B] Modify C-; b p
+** DONE [#B] Modify C-; b p :feature:
+CLOSED: [2026-05-15 Fri]
 - (EWW) copy EWW url when in an EWW buffer.
 - (calibre) copy path to an epub or pdf or other document if those are shown in docview or pdfview
+
+Shipped this session: =cj/copy-buffer-source-as-kill= replaces the
+old =cj/copy-path-to-buffer-file-as-kill= (kept as a =defalias= for
+backwards compat).  Dispatch alist =cj/buffer-source-functions= keys
+on =major-mode= → thunk; =buffer-file-name= is the fallback.
+Bindings: =C-; b p= now copies whatever is the right "source" for
+the current mode.  which-key relabeled "copy buffer source" (was
+"copy file path").
+
+First-batch dispatches: =eww-mode= (eww URL), =elfeed-show-mode=
+(entry link), =dired-mode= / =dirvish-mode= (file at point),
+=doc-view-mode= / =pdf-view-mode= (covered by the fallback to
+=buffer-file-name=).  10 new ERT tests in
+=tests/test-custom-buffer-file-copy-buffer-source.el= cover the
+dispatch paths + the alias + the keymap.
+
+Deferred to a follow-up task: =mu4e-view-mode=, =org-mode= at a
+heading, =help-mode=, =Info-mode=, =magit-log-mode= /
+=magit-commit-mode= / =magit-status-mode=, =xref--xref-buffer-mode=
+/ =grep-mode= / =compilation-mode=, =image-mode=, =archive-mode=.
+These need format decisions (Message-ID vs link vs subject, id link
+vs CUSTOM_ID vs heading text, etc.) before implementation.
+
+** TODO [#C] Extend cj/buffer-source-functions to more modes :feature:
+Followup to =Modify C-; b p=.  The first batch covered eww,
+elfeed-show, dired/dirvish, and doc-view/pdf-view (via the
+buffer-file-name fallback).  These modes still need a decision +
+implementation:
+
+- =mu4e-view-mode= → Message-ID, =mu4e:msgid:...= link, or
+  Subject + From?
+- =org-mode= at a heading → org id link (=[[id:...][title]]=),
+  CUSTOM_ID, or plain heading text?
+- =help-mode= → the symbol being described (parsed from the *Help*
+  buffer header)
+- =Info-mode= → an org-style =[[info:(manual)Node][label]]= link
+- =magit-log-mode= / =magit-commit-mode= → commit SHA + maybe a
+  remote URL
+- =magit-status-mode= → project root or repo URL via
+  =vc-git-repository-url=
+- =xref--xref-buffer-mode= / =grep-mode= / =compilation-mode= →
+  the =file:line= location at point
+- =image-mode= → image file path (often the fallback covers it;
+  add explicit dispatch if there's a case where buffer-file-name
+  isn't right)
+- =archive-mode= (tar/zip) → =archive-file-name= plus the entry name
+
+Each one is a small addition to =cj/buffer-source-functions= in
+=modules/custom-buffer-file.el= plus a test.  Pick a format per
+mode, then implement.
 
 *** 2026-05-15 Fri @ 00:11:47 -0500 Brainstorm: additional buffer-source ideas
 
