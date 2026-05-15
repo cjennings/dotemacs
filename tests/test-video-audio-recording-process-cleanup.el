@@ -295,12 +295,44 @@ so ffmpeg sees EOF on its video input pipe and starts finalizing the file."
     (when (and output (not (string-empty-p (string-trim output))))
       (mapcar #'string-to-number (split-string (string-trim output) "\n")))))
 
+(defvar test-cleanup--capture-probe nil
+  "Cached probe result: nil unprobed, `yes' capture works, `no' capture fails.")
+
+(defun test-cleanup--can-capture-frames ()
+  "Probe whether wf-recorder can actually capture frames in this environment.
+Uses the production `cj/ffmpeg-record-video' path — same shell pipeline the
+tests exercise — so the probe sees exactly what the tests see. Catches the
+case where wf-recorder is installed and XDG_SESSION_TYPE=wayland but the
+spawning context lacks Wayland screencast permission (wf-recorder exits
+sub-second with code 183). Cached: ~2.5s once per batch."
+  (when (null test-cleanup--capture-probe)
+    (let ((probe-dir (make-temp-file "wf-capture-probe-" t)))
+      (test-cleanup-setup)
+      (unwind-protect
+          (cl-letf (((symbol-function 'cj/recording--validate-system-audio)
+                     (lambda () nil)))
+            (let ((initial-count (test-cleanup--count-wf-recorder-processes)))
+              (cj/ffmpeg-record-video probe-dir)
+              (sit-for 1.0)
+              (setq test-cleanup--capture-probe
+                    (if (> (test-cleanup--count-wf-recorder-processes)
+                           initial-count)
+                        'yes 'no))
+              (ignore-errors (cj/video-recording-stop))
+              (sit-for 0.5)))
+        (ignore-errors (call-process "pkill" nil nil nil "-INT" "wf-recorder"))
+        (sit-for 0.5)
+        (test-cleanup-teardown)
+        (delete-directory probe-dir t))))
+  (eq test-cleanup--capture-probe 'yes))
+
 (ert-deftest test-integration-video-recording-no-orphan-wf-recorder-after-stop ()
   "Test that no wf-recorder processes remain after stopping recording.
 This is an integration test that requires wf-recorder and Wayland."
   :tags '(:integration :wayland)
   (skip-unless (executable-find "wf-recorder"))
   (skip-unless (cj/recording--wayland-p))
+  (skip-unless (test-cleanup--can-capture-frames))
   (test-cleanup-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'cj/recording--validate-system-audio)
@@ -321,6 +353,7 @@ This is an integration test that requires wf-recorder and Wayland."
   :tags '(:integration :wayland)
   (skip-unless (executable-find "wf-recorder"))
   (skip-unless (cj/recording--wayland-p))
+  (skip-unless (test-cleanup--can-capture-frames))
   (test-cleanup-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'cj/recording--validate-system-audio)
@@ -347,6 +380,7 @@ This is an integration test that requires wf-recorder and Wayland."
   :tags '(:integration :wayland)
   (skip-unless (executable-find "wf-recorder"))
   (skip-unless (cj/recording--wayland-p))
+  (skip-unless (test-cleanup--can-capture-frames))
   (test-cleanup-setup)
   (unwind-protect
       (cl-letf (((symbol-function 'cj/recording--validate-system-audio)
