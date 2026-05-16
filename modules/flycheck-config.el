@@ -56,6 +56,11 @@
   (checkdoc-arguments
    '(("sentence-end-double-space" nil)
      ("warn-escape"               nil)))
+  ;; Modeline customization (rendered via mode-line-format in modeline-config.el).
+  ;; The count portion picks up `error' / `warning' faces because
+  ;; `flycheck-mode-line-color' stays t (the default).
+  (flycheck-mode-line-prefix "🐛")
+  (flycheck-mode-success-indicator " ✓")
   :config
 
   ;; use the load-path of the currently running Emacs instance
