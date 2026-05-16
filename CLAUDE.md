@@ -71,3 +71,15 @@ Prefer Write over cumulative Edits for nontrivial new code. Small functions (und
 - Don't add comments to code you didn't change
 - Don't create abstractions for one-time operations
 - Don't commit `.env` files, credentials, or API keys — pre-commit hook catches common patterns but isn't a substitute for care
+
+## Codified Insights
+
+- **Run a full Emacs launch after any `use-package` `:config` block edit.** Two regressions this session (dashboard `void-function nerd-icons-faicon` from a `:defer t` change in `nerd-icons-config.el`; flycheck `Command executable... must be a string` from `(eval ...)` in a `:command` form) both passed unit tests and `make validate-modules` but failed at full Emacs launch. Drop the "non-trivial changes" threshold in `notes.org` to "any `:config` block edit" — `:config` runs at load time and is exactly the place where module-load errors hide. Smoke command: `emacs --batch --eval "(load (expand-file-name \"init.el\" user-emacs-directory) nil t)"`. (`verify` — 2026-05-16)
+
+- **`gptel-model` must be a symbol, not a string.** gptel's modeline-display code calls `symbolp` on `gptel-model` and signals `wrong-type-argument symbolp "..."` otherwise — manifests as Emacs hanging in the AI-Assistant buffer with "Querying ..." → process-sentinel quit → redisplay-error loop. The Anthropic backend tolerated string values (the prior `"claude-opus-4-7"` default looked correct), but the OpenAI backend's render is strict. Always write `'gpt-5.5`, never `"gpt-5.5"`. (`gotcha` — 2026-05-16)
+
+- **`flycheck-define-checker` `:command` executable must be a literal string at macro-expansion.** `flycheck.el:5927` does `(stringp (car command))` and errors otherwise. `(eval FORM)` is legal only in subsequent (argument) positions, not the executable slot. To inject a computed path like `(expand-file-name "scripts/foo" user-emacs-directory)`, wrap the entire `flycheck-define-checker` form in `eval` + backquote so the path splices in as a string literal before the macro inspects it. See `modules/flycheck-config.el` for the working shape. (`gotcha` — 2026-05-16)
+
+- **Emacs 30 batch mode: `provide` does not fire registered `eval-after-load` callbacks.** Only an actual `load` triggers them. Tests that drive lazy-loading via `(provide 'foo)` will see registered callbacks fail to run. Two robust alternatives: (a) `(load <temp-file-that-provides-foo>)`, or (b) assert against `after-load-alist` directly — stronger evidence anyway since it proves the hook is registered for the right feature, not just that the body happens to execute. See `tests/test-ai-config-gptel-magit-lazy-loading.el` for the after-load-alist inspection pattern. (`gotcha` — 2026-05-16)
+
+- **Warn at module load when an external tool path is configured but missing.** Calling `cj/executable-find-or-warn` (from `system-lib.el`) at `:config` time emits a `display-warning` if `prettier` / `pyright` / `pandoc` / etc. isn't on PATH, instead of letting the first format-on-save or LSP-attach fail with a confusing mid-edit error. Pattern in use: `modules/prog-webdev.el` (prettier), `modules/prog-python.el` (pyright). (`pattern` — 2026-05-16)
