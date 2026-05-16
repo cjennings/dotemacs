@@ -2548,16 +2548,25 @@ Test the new REST API client integration in a running Emacs session.
 - C-; R s should replace :skyfi-key = PLACEHOLDER with real key
 - Key should NOT be written to disk (verify file still shows PLACEHOLDER)
   
-** TODO [#C] Implement flycheck modeline customization :feature:
+** DONE [#C] Implement flycheck modeline customization :feature:
+CLOSED: [2026-05-16 Sat]
 
-Spec: [[file:docs/design/flycheck-modeline-customization.org][docs/design/flycheck-modeline-customization.org]]
+Spec: [[file:docs/design/flycheck-modeline-customization.org][docs/design/flycheck-modeline-customization.org]] (Option 4 / hybrid).
 
-Custom modeline (=modules/modeline-config.el=) omits =minor-mode-alist=,
-so flycheck's error/warning lighter is invisible.  Fix is a two-line
-=:custom= block in =flycheck-config.el= (prefix + success indicator) plus
-one guarded =(:eval ...)= form in =mode-line-format=.  See spec for the
-active-window-gating decision, risky-local-variable note, emoji
-candidates, and the manual verification walk.
+=modules/flycheck-config.el= got two new =:custom= lines:
+=flycheck-mode-line-prefix= → "🐛", =flycheck-mode-success-indicator= →
+" ✓".  =flycheck-mode-line-color= stays default-t so counts pick up
+=error= / =warning= faces automatically.
+
+=modules/modeline-config.el= got one new =(:eval ...)= form in
+=mode-line-format=, placed between the recording indicator and
+=cj/modeline-vc-branch=.  Two guards: =(mode-line-window-selected-p)=
+gates to the active window; =(bound-and-true-p flycheck-mode)= prevents
+the call from firing in buffers where flycheck hasn't loaded.
+
+=tests/test-modeline-config-flycheck-segment.el= -- 3 smoke tests
+asserting the segment is present and both guards are in place.  The
+existing modeline tests stay green.
 
 ** TODO [#C] Migrate from Company to Corfu (with prescient integration) :feature:
 

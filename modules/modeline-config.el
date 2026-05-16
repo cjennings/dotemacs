@@ -231,6 +231,13 @@ Shows only in active window.")
     mode-line-format-right-align
     (:eval (when (fboundp 'cj/recording-modeline-indicator)
              (cj/recording-modeline-indicator)))
+    ;; Flycheck status: prefix + counts (or success indicator).  Gated
+    ;; to the active window, and to buffers where flycheck has loaded
+    ;; and turned on, so the call is safe even before flycheck loads.
+    (:eval (when (and (mode-line-window-selected-p)
+                      (bound-and-true-p flycheck-mode))
+             (flycheck-mode-line-status-text)))
+    "  "
     cj/modeline-vc-branch
     "  "
     cj/modeline-misc-info
