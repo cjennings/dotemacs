@@ -1594,7 +1594,7 @@ Expected outcome:
 - Keep startup quiet; only check expensive/external requirements when the
   relevant command runs.
 
-**** TODO [#B] Guard the org-roam completed-task hook around non-file buffers :bug:refactor:
+**** 2026-05-16 Sat @ 03:44:45 -0500 Guarded org-roam completed-task hook with cj/--org-roam-should-copy-completed-task-p
 
 =org-roam-config.el= adds a global =org-after-todo-state-change-hook= that
 copies newly completed tasks to today's org-roam journal. The hook assumes the
@@ -1721,7 +1721,7 @@ Recommended improvement:
 - Link this note from the Org workflow review task and the broader load-graph
   refactor.
 
-**** TODO [#C] De-duplicate =org-protocol-protocol-alist= registration in =org-webclipper= :cleanup:
+**** 2026-05-16 Sat @ 03:44:45 -0500 Removed duplicate org-protocol-protocol-alist registration in cj/webclipper-ensure-initialized
 
 The =webclip= protocol handler is registered twice:
 =modules/org-webclipper.el:72-76= inside =cj/webclipper-ensure-initialized=
@@ -1733,7 +1733,7 @@ the alist entry shape ever changes.  Pick one site -- the
 =with-eval-after-load= block is the more robust location -- and
 remove the other.
 
-**** TODO [#C] Validate =:url= and =:title= in =cj/org-protocol-webclip= :safety:
+**** 2026-05-16 Sat @ 03:44:45 -0500 Validated :url and :title in cj/org-protocol-webclip before stashing
 
 =modules/org-webclipper.el:124-125= extracts =:url= and =:title= from
 the incoming protocol plist with no type or nil check.  An unexpected
@@ -1752,7 +1752,7 @@ corrupt each other's state.  Pass the data through a plist on
 =org-capture-plist=, a per-invocation closure, or a queue, instead of
 global mutation.
 
-**** TODO [#C] Declare cross-module free variables in =mu4e-org-contacts-integration.el= :cleanup:quick:
+**** 2026-05-16 Sat @ 03:44:45 -0500 Declared cross-module free vars in mu4e-org-contacts-integration.el
 
 The module reads =contacts-file= (defined in =user-constants.el=) and
 calls =cj/get-all-contact-emails= (defined in =org-contacts-config.el=)

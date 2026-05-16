@@ -68,12 +68,12 @@
     (require 'org-web-tools)
     (require 'user-constants) ;; for webclipped-file
 
-    ;; Register the org-protocol handler
-    (add-to-list 'org-protocol-protocol-alist
-                 '("webclip"
-                   :protocol "webclip"
-                   :function cj/org-protocol-webclip
-                   :kill-client t))
+    ;; The org-protocol handler registration lives in the
+    ;; `with-eval-after-load 'org-protocol' block at the bottom of
+    ;; this module -- that's the more robust home (it survives
+    ;; org-protocol being loaded before or after this module).  Two
+    ;; registration sites would silently drift if the alist entry
+    ;; shape ever changes.
 
     ;; Add capture templates if not already present
     (unless (assoc "W" org-capture-templates)
@@ -119,14 +119,23 @@ Returns the processed content as a string with:
 
 (defun cj/org-protocol-webclip (info)
   "Process org-protocol webclip requests.
-INFO is a plist containing :url and :title from the org-protocol call."
+INFO is a plist containing :url and :title from the org-protocol call.
+Signals `user-error' when :url is missing, nil, empty, or non-string -- an
+unexpected plist shape used to silently set the globals to nil and fail
+downstream inside the capture handler with confusing messages."
   (cj/webclipper-ensure-initialized)
   (let ((url (plist-get info :url))
         (title (plist-get info :title)))
-    (when url
-      ;; Store the URL and title for the capture template to use
-      (setq cj/webclip-current-url url
-            cj/webclip-current-title (or title "Untitled")))
+    (unless (and (stringp url) (not (string-empty-p url)))
+      (user-error
+       "org-protocol webclip: expected non-empty :url string, got %S" url))
+    (when (and title (not (stringp title)))
+      (user-error
+       "org-protocol webclip: :title must be a string when provided, got %S"
+       title))
+    ;; Store the URL and title for the capture template to use
+    (setq cj/webclip-current-url url
+          cj/webclip-current-title (or title "Untitled"))
     ;; Trigger the capture
     (org-capture nil "W")
     nil))  ; Return nil to indicate we handled it

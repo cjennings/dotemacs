@@ -29,18 +29,26 @@
 
 ;;; cj/webclipper-ensure-initialized
 
-(ert-deftest test-webclipper-ensure-initialized-registers-protocol-and-templates ()
-  "Normal: first call sets up the protocol entry + W and w capture templates,
-and flips the initialized flag."
+(ert-deftest test-webclipper-ensure-initialized-registers-templates ()
+  "Normal: first call sets up the W and w capture templates and flips the
+initialized flag.  Protocol registration lives in the
+`with-eval-after-load 'org-protocol' block at the bottom of the module --
+asserted separately below in `test-webclipper-protocol-registered-via-after-load'."
   (let ((cj/webclipper-initialized nil)
         (org-protocol-protocol-alist nil)
         (org-capture-templates nil))
     (cl-letf (((symbol-function 'require) (lambda (&rest _) t)))
       (cj/webclipper-ensure-initialized))
     (should cj/webclipper-initialized)
-    (should (assoc "webclip" org-protocol-protocol-alist))
     (should (assoc "W" org-capture-templates))
     (should (assoc "w" org-capture-templates))))
+
+(ert-deftest test-webclipper-protocol-registered-via-after-load ()
+  "Loading org-webclipper installs a `with-eval-after-load 'org-protocol' block
+that registers the webclip entry.  Providing `'org-protocol' fires the block."
+  (let ((org-protocol-protocol-alist nil))
+    (provide 'org-protocol)
+    (should (assoc "webclip" org-protocol-protocol-alist))))
 
 (ert-deftest test-webclipper-ensure-initialized-is-idempotent ()
   "Boundary: second call doesn't re-register or duplicate templates."
