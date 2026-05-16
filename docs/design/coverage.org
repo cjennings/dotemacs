@@ -66,6 +66,37 @@ Three files:
 
 =init.el= requires the core and the active backends.
 
+*** Elisp coverage producer
+
+For the Elisp backend, =make coverage= is the only supported producer of the
+coverage artifact.  It removes stale compiled files for instrumented sources,
+then runs each unit test file in its own batch Emacs process.  Before loading
+the test file, the Makefile loads =tests/run-coverage-file.el=, which
+initializes packages and configures Undercover:
+
+#+begin_src emacs-lisp
+(undercover "modules/*.el"
+            "gptel-tools/*.el"
+            (:report-format 'simplecov)
+            (:report-file ".coverage/simplecov.json")
+            (:merge-report t)
+            (:send-report nil))
+#+end_src
+
+Undercover is therefore the instrumentation layer: it instruments
+=modules/*.el= and =gptel-tools/*.el=, records Edebug stop-point hits while
+tests execute, and writes the line hit arrays.  SimpleCov is the local
+interchange format consumed by the rest of this design.  The split-per-test-file
+Makefile strategy depends on =:merge-report t=; Undercover can merge SimpleCov
+reports across separate Emacs processes, while its LCOV writer cannot merge
+reports.  This is the concrete reason the artifact is
+=.coverage/simplecov.json= rather than =coverage.lcov=.
+
+The Makefile excludes tests that are incompatible with instrumented source
+loading, such as byte-compilation checks.  If =.coverage/simplecov.json= is not
+created, the coverage run is considered failed; downstream report commands
+should not infer partial coverage from a missing artifact.
+
 *** Backend protocol
 
 Each backend is a plist registered into =cj/coverage-backends=:
