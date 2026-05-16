@@ -207,7 +207,7 @@ Returns the buffer string for assertions."
   "Should error when decoration-char is nil."
   (should-error
    (test-heavy-box-at-column 0 ";;" "" nil "Header" 70)
-   :type 'wrong-type-argument))
+   :type 'user-error))
 
 (ert-deftest test-heavy-box-elisp-nil-text ()
   "Should error when text is nil."

@@ -43,6 +43,8 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+
 ;; Forward declarations
 (eval-when-compile (defvar org-dir))
 (defvar flyspell-mode)
@@ -111,18 +113,26 @@
 ;; ------------------------------ Flyspell Toggle ------------------------------
 ;; easy toggling flyspell and also leverage the 'for-buffer-type' functionality.
 
+(defconst cj/--spell-checker-executables
+  '("aspell" "ispell" "hunspell")
+  "Spell-checker executables `cj/--require-spell-checker' looks for.")
+
+(defun cj/--require-spell-checker ()
+  "Signal `user-error' unless a known spell-checker is on PATH.
+Looked-up executables: `cj/--spell-checker-executables'.  Single point
+of change when a new checker (e.g. nuspell) is added."
+  (unless (cl-some #'executable-find cj/--spell-checker-executables)
+    (user-error
+     "No spell checker found. Install one of: %s"
+     (mapconcat #'identity cj/--spell-checker-executables ", "))))
+
 (defun cj/flyspell-toggle ()
   "Turn Flyspell on if it is off, or off if it is on.
 
 When turning on, it uses `cj/flyspell-on-for-buffer-type' so code-vs-text is
 handled appropriately."
   (interactive)
-  ;; Check if spell checker is available
-  (unless (or (executable-find "aspell")
-              (executable-find "ispell")
-              (executable-find "hunspell"))
-    (user-error "No spell checker found. Install aspell, ispell, or hunspell"))
-
+  (cj/--require-spell-checker)
   (if (bound-and-true-p flyspell-mode)
       (progn ; flyspell is on, turn it off
         (flyspell-mode -1)
@@ -208,12 +218,7 @@ Without prefix argument, it's created in the global abbrev table.
 
 Press C-' repeatedly to step through misspellings one at a time."
   (interactive "P")
-  ;; Check if spell checker is available
-  (unless (or (executable-find "aspell")
-              (executable-find "ispell")
-              (executable-find "hunspell"))
-    (user-error "No spell checker found. Install aspell, ispell, or hunspell"))
-
+  (cj/--require-spell-checker)
   ;; Run flyspell-buffer only if buffer hasn't been checked yet
   (unless (bound-and-true-p flyspell-mode)
     (flyspell-buffer))

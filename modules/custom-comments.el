@@ -85,6 +85,19 @@
 
 ;; ======================== Comment Generation Functions =======================
 
+(defun cj/--validate-decoration-char (decoration-char)
+  "Signal `user-error' unless DECORATION-CHAR is a printable single character.
+Returns DECORATION-CHAR unchanged on success.  Rejects multi-char
+strings, empty strings, control chars like newline/tab, and non-string
+inputs.  Used by all divider / border helpers below."
+  (unless (and (stringp decoration-char)
+               (= (length decoration-char) 1)
+               (string-match-p "[[:print:]]" decoration-char))
+    (user-error
+     "Decoration character must be a single printable character, got: %S"
+     decoration-char))
+  decoration-char)
+
 ;; ----------------------------- Inline Border ---------------------------------
 
 (defun cj/--comment-inline-border (cmt-start cmt-end decoration-char text length)
@@ -93,6 +106,7 @@ CMT-START and CMT-END are the comment syntax strings.
 DECORATION-CHAR is the character to use for borders (string).
 TEXT is the comment text (will be centered).
 LENGTH is the total width of the line."
+  (cj/--validate-decoration-char decoration-char)
   (let* ((current-column-pos (current-column))
          (text-length (length text))
          (comment-start-len (+ (length cmt-start)
@@ -157,6 +171,7 @@ CMT-START and CMT-END are the comment syntax strings.
 DECORATION-CHAR is the character to use for the divider lines.
 TEXT is the comment text.
 LENGTH is the total width of each line."
+  (cj/--validate-decoration-char decoration-char)
   (let* ((current-column-pos (current-column))
          (min-length (+ current-column-pos
                        (length cmt-start)
@@ -233,6 +248,7 @@ DECORATION-CHAR is the character to use for the divider lines.
 TEXT is the comment text.
 LENGTH is the total width of each line.
 PADDING is the number of spaces before the text."
+  (cj/--validate-decoration-char decoration-char)
   (when (< padding 0)
     (error "Padding %d cannot be negative" padding))
   (let* ((current-column-pos (current-column))
@@ -314,6 +330,7 @@ CMT-START and CMT-END are the comment syntax strings.
 DECORATION-CHAR is the character to use for borders.
 TEXT is the comment text (centered).
 LENGTH is the total width of each line."
+  (cj/--validate-decoration-char decoration-char)
   (let* ((current-column-pos (current-column))
          (comment-char (if (equal cmt-start ";") ";;" cmt-start))
          (comment-end-char (if (string-empty-p cmt-end) comment-char cmt-end))
@@ -377,6 +394,7 @@ CMT-START and CMT-END are the comment syntax strings.
 DECORATION-CHAR is the character to use for borders.
 TEXT is the comment text (centered).
 LENGTH is the total width of each line."
+  (cj/--validate-decoration-char decoration-char)
   (let* ((current-column-pos (current-column))
          (comment-char (if (equal cmt-start ";") ";;" cmt-start))
          (comment-end-char (if (string-empty-p cmt-end) comment-char cmt-end))
@@ -542,6 +560,7 @@ CMT-END should be the block comment end (e.g., '*/').
 DECORATION-CHAR is the character to use for the border line.
 TEXT is the comment text.
 LENGTH is the total width of each line."
+  (cj/--validate-decoration-char decoration-char)
   (let* ((current-column-pos (current-column))
          (min-length (+ current-column-pos
                        (length cmt-start)

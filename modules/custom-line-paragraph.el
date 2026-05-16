@@ -54,8 +54,15 @@
 
 (defun cj/duplicate-line-or-region (&optional comment)
   "Duplicate the current line or active region below.
-Comment the duplicated text when optional COMMENT is non-nil."
+Comment the duplicated text when optional COMMENT is non-nil.
+Signal `user-error' when COMMENT is non-nil but the current mode has
+no `comment-start' (e.g. `fundamental-mode'), since commenting would
+produce malformed output silently."
   (interactive "P")
+  (when (and comment (not (and (stringp comment-start)
+                                (> (length comment-start) 0))))
+    (user-error
+     "Cannot comment in %s: no comment syntax defined" major-mode))
   (let* ((b (if (region-active-p) (region-beginning) (line-beginning-position)))
          (e (if (region-active-p) (region-end) (line-end-position)))
          (lines (split-string (buffer-substring-no-properties b e) "\n")))

@@ -190,10 +190,12 @@ Returns the buffer string for assertions."
    :type 'error))
 
 (ert-deftest test-inline-border-elisp-nil-decoration ()
-  "Should error when decoration-char is nil."
+  "Should error when decoration-char is nil.
+The decoration-char validator signals `user-error' for any non-printable
+or non-single-character input."
   (should-error
    (test-inline-border-at-column 0 ";;" "" nil "Header" 70)
-   :type 'wrong-type-argument))
+   :type 'user-error))
 
 (ert-deftest test-inline-border-elisp-non-integer-length ()
   "Should error when length is not an integer."
