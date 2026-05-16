@@ -1334,25 +1334,24 @@ Expected outcome:
 This is low priority, but it is a good example of load graph noise to clean up
 during the =init.el= deferral work.
 
-**** TODO [#B] Move =popper-mode= activation out of =:init= so =:disabled t= actually disables it :bug:
+**** 2026-05-16 Sat @ 02:55:14 -0500 Moved popper-mode activation from :init to :config
 
-=modules/popper-config.el:40= activates =(popper-mode +1)= inside the
-=use-package= =:init= block.  =use-package='s =:disabled t= keyword
-prevents =:config= from running but =:init= forms run unconditionally.
-The =:disabled= marker is therefore a no-op: popper-mode is enabled
-on every load, including batch / test runs.  Move the activation into
-=:config= so disabling actually disables it.
+=popper-mode +1= and =popper-echo-mode +1= now live in the
+=:config= block of =modules/popper-config.el='s use-package form.
+=:disabled t= now actually disables the mode (=:config= is skipped
+when disabled; =:init= still runs but it only sets the reference-
+buffer list and the display-buffer-alist entry, both of which are
+harmless no-ops when popper itself never loads).  Comment in the
+module explains the split.
 
-**** TODO [#C] Gracefully fallback in =cj/modeline-vc-fetch= when =vc-git--symbolic-ref= is missing :safety:
+**** 2026-05-16 Sat @ 02:55:14 -0500 Made cj/modeline-vc-fetch fall back when vc-git--symbolic-ref is missing
 
-=modules/modeline-config.el:149-151= calls the internal
-=vc-git--symbolic-ref= without a fallback if Emacs's =vc-git=
-implementation changes.  Internal functions can be renamed or
-removed between Emacs versions.  When that happens, the modeline
-errors during render, which blocks =mode-line-format= and produces a
-confusing failure.  Add an =fboundp= guard and fall back to
-=(vc-working-revision file backend)= when the internal accessor is
-unavailable.
+The =require 'vc-git= now uses =nil 'noerror=, and the call to
+=vc-git--symbolic-ref= is gated on =(fboundp ...)= so an Emacs
+version that renames or removes the internal accessor just leaves
+=branch= at =vc-working-revision='s output instead of crashing the
+modeline render.  Added =ignore-errors= around the call too in case
+the internal accessor signals on unusual inputs.
 
 **** TODO [#C] Use theme-aware faces in =cj/display-available-fonts= :refactor:
 
@@ -1402,23 +1401,32 @@ isearch into consult-line.  Move the =C-s= binding into the consult
 =:bind= block under =:map isearch-mode-map= to preserve isearch's
 in-mode contract.
 
-**** TODO [#C] Guard cursor-color =post-command-hook= behind =display-graphic-p= :safety:
+**** 2026-05-16 Sat @ 02:55:14 -0500 Guarded cursor-color hook behind display-graphic-p (with daemon-mode catch)
 
-=modules/ui-config.el:125,137= registers =cj/set-cursor-color-according-to-mode=
-on =post-command-hook= unconditionally.  In batch / test runs and TTY
-sessions, the hook fires on every command but the cursor color logic
-is meaningless.  Guard the =add-hook= behind
-=(display-graphic-p)= or move it inside =server-after-make-frame-hook=
-so it activates only for GUI frames.
+Both the install (=add-hook= on =post-command-hook=) and the function
+body now gate on =(display-graphic-p)=.  Batch and TTY runs short-
+circuit cleanly: no per-command overhead, no =set-cursor-color= calls
+on frames that don't have a cursor color.  A =server-after-make-frame-hook=
+catches the daemon case where the first GUI frame is created after
+=ui-config= loads -- it installs the hook lazily the first time a
+GUI frame appears.
 
-**** TODO [#C] Defer =nerd-icons-config= advice with =with-eval-after-load= :refactor:
+The two cursor-color test files
+(=test-ui-config--buffer-cursor-state.el=,
+=test-ui-cursor-color-integration.el=) stub =display-graphic-p= to
+return t so the work body still runs in batch.
 
-=modules/nerd-icons-config.el:73-75= uses =:demand t= and applies
-icon-color advice via =dolist= at module load.  This makes
-nerd-icons eagerly load on every Emacs start (not just when an icon
-is rendered).  Wrap the advice block in
-=(with-eval-after-load 'nerd-icons ...)= so the advice still applies
-but nerd-icons can stay deferred for batch and headless contexts.
+**** 2026-05-16 Sat @ 02:55:14 -0500 Deferred nerd-icons by dropping :demand t plus an after-load safety net
+
+=(use-package nerd-icons :demand t ...)= flipped to =:defer t=.  The
+=:config= block already wraps the advice + tint in lazy-on-load
+semantics, so the advice now installs the first time nerd-icons
+loads (typically when a feature module like =dashboard-icon-type=
+or =dirvish-attributes= triggers a load).  An additional
+=(with-eval-after-load 'nerd-icons ...)= block at module bottom
+catches the "already-loaded when this module re-evaluates" case --
+it checks =advice-member-p= so it doesn't stack the advice on every
+re-eval.
 
 *** DOING [#B] Harden Org workflow modules :harden:
 
