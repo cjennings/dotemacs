@@ -150,7 +150,7 @@ Call this only after loading `gptel' so the backend constructors exist."
   ;; Set default backend and model
   (unless gptel-backend
     (setq gptel-backend (or gptel-chatgpt-backend gptel-claude-backend))
-    (setq gptel-model "gpt-5.5")))
+    (setq gptel-model 'gpt-5.5)))
 
 ;; ------------------ GPTel Conversation And Utility Commands ------------------
 
@@ -377,9 +377,11 @@ Works for any buffer, whether it's visiting a file or not."
   (gptel--debug nil)
   :config
   (cj/ensure-gptel-backends)
-  ;; Set ChatGPT (gpt-5.5) as default after initialization
+  ;; Set ChatGPT (gpt-5.5) as default after initialization.  Model
+  ;; must be a symbol -- gptel's modeline-display code calls `symbolp'
+  ;; on it and signals `wrong-type-argument' otherwise.
   (setq gptel-backend gptel-chatgpt-backend)
-  (setq gptel-model "gpt-5.5")
+  (setq gptel-model 'gpt-5.5)
 
   (setq gptel-confirm-tool-calls nil) ;; allow tool access by default
 
