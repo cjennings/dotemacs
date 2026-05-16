@@ -16,12 +16,13 @@
 (require 'server)
 (require 'bookmark)
 
-;; Loaded earlier in init.el
+;; `host-environment' and `user-constants' are loaded earlier in init.el,
+;; so they are available at runtime when this module loads.  The
+;; `eval-when-compile' forms here are byte-compile hints to silence
+;; free-variable / free-function warnings when this module is compiled
+;; in isolation; no runtime requires are needed.
 (eval-when-compile (require 'host-environment))
 (eval-when-compile (require 'user-constants))
-
-;; Function in system-utils.el; autoload to avoid requiring it here.
-(autoload 'env-bsd-p "host-environment" nil t)
 
 ;; -------------------------- Native Comp Preferences --------------------------
 

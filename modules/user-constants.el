@@ -22,12 +22,15 @@
 
 ;; -------------------------------- Debug Toggle -------------------------------
 
-(defvar cj/debug-modules nil
+(defcustom cj/debug-modules nil
   "List of modules with debug functions enabled.
-Possible values: org-agenda, mail, chime, etc.
 Set to t to enable all debug modules.
-Example: (setq cj/debug-modules '(org-agenda mail))
-         (setq cj/debug-modules t)  ; Enable all")
+Set to a list of module symbols (e.g. \\='(org-agenda mail)) to enable
+debug output for those modules only.  Possible values: org-agenda,
+mail, chime, etc."
+  :type '(choice (const :tag "All modules" t)
+                 (repeat :tag "Specific modules" symbol))
+  :group 'cj)
 
 ;; -------------------------------- Contact Info -------------------------------
 
@@ -71,8 +74,17 @@ the regular transcription pipeline.")
 (defconst emacs-early-init-file (expand-file-name "early-init.el" user-emacs-directory)
   "The location of Emacs's early init file.")
 
-(defconst user-home-dir (getenv "HOME")
-  "The user's home directory per the environment variable.")
+;; Canonical definition of `user-home-dir' lives in `early-init.el' so
+;; the package-archive paths there can reference it during package
+;; bootstrap.  The `defvar' below is a no-op at runtime (early-init's
+;; defconst wins, defvar doesn't reassign a bound symbol) -- it exists
+;; only so this module loads / byte-compiles standalone, when
+;; early-init hasn't run.  If you ever change the expression here, keep
+;; it identical to early-init.el's.
+(defvar user-home-dir (getenv "HOME")
+  "The user's home directory per the environment variable.
+Canonical definition in early-init.el; this form is a standalone-load
+fallback only.")
 
 (defconst books-dir (expand-file-name "sync/books/" user-home-dir)
   "The location of book files for CalibreDB.")
