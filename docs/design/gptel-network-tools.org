@@ -1,0 +1,407 @@
+#+TITLE: Design: gptel network tools
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-16
+#+OPTIONS: toc:nil num:nil
+
+* Status
+
+Draft.  Brainstorm output captured from a =/brainstorm= session on
+2026-05-16.  Sibling to
+=docs/design/gptel-git-tools-magit-backend.org= and the broader theme
+hierarchy under =** TODO [#B] GPTel Tool Work= in =todo.org=.
+
+The conventional vs tail-sample exploration covered three categories
+(network, text/data, build/code).  Network was selected as the next
+build target; this doc captures the network slice in full.  The other
+two categories are referenced briefly and live as theme stubs under
+=*** TODO [#B] Filesystem Related Tools= and
+=*** TODO [#B] Development Workflow Related Tools= in =todo.org=.
+
+* Problem
+
+The current =gptel-tools/= set covers filesystem CRUD, web fetch, and
+git status/log/diff.  When the user asks the agent "why can't I reach
+X?" or "what's on my LAN right now?" the agent has no affordances --
+it can only suggest commands the user runs manually.
+
+Network diagnosis is a recurring task on this laptop (homelab, mixed
+wifi/wired, occasional VPN, NetworkManager-managed connections).  The
+agent should be able to run read-only network probes directly, return
+structured findings, and synthesize an explanation.  Anything that
+mutates network state (=nmcli connection up=, route changes) stays
+behind =:confirm t=.
+
+* Non-goals
+
+- Active offensive scanning, vulnerability probes, or exploitation
+  tooling.  Out of scope at the wrapper boundary -- nmap's
+  =-A=/=-O=/aggressive modes are rejected, NSE is deferred.
+- Scanning networks the user doesn't own.  Public targets are gated
+  behind an explicit =external=t= flag and =:confirm t=.
+- Real-time/streaming inspection (=iftop=, =nethogs=, =tcpdump
+  follow=).  Snapshot tools only; streaming tools don't fit the
+  request/response shape of gptel tools.
+- Replacing Magit's git tooling, mu4e's mail handling, or any other
+  Emacs-native workflow.  Network tooling is the gap.
+
+* Approaches considered
+
+The =/brainstorm= run generated six candidate themes across three
+categories.  Three conventional (high-prior), three tail samples
+(genuinely different regions of the option space).  Network was
+chosen as the first build target; the others are recorded for
+follow-up sessions.
+
+** Recommended: network triage bundle (conventional #1)
+
+Five tools covering discovery, diagnostics, and inspection:
+
+| Tool              | Purpose                                          |
+|-------------------+--------------------------------------------------|
+| =net_diagnose=    | "Why can't I reach X?" -- composite probe        |
+| =net_discover=    | "What's on this subnet?" -- LAN host discovery   |
+| =net_services=    | "What's listening on host X?" -- service detect  |
+| =network_status=  | "What's my current network state?" -- snapshot   |
+| =dns_lookup=      | Typed DNS query (A/AAAA/MX/NS/TXT/SRV/CAA)       |
+
+Detailed in =* Design= below.
+
+*** Pros
+
+- Hits the highest-leverage daily question (connectivity diagnosis)
+  with a single mental entry point (=net_diagnose=).
+- Atomic tools (=dns_lookup=, =network_status=) for cases the
+  composite is too coarse for.
+- All read-only at the network layer; =:confirm nil= for RFC1918,
+  =:confirm t= for public targets.
+- nmap's two genuinely-unique capabilities (subnet discovery, service
+  enumeration) get first-class wrappers.
+
+*** Cons
+
+- Five tools is heavy for one category.  Some are thin wrappers around
+  a single command.
+- Composite =net_diagnose= hides which sub-check fired; debugging the
+  tool itself is harder than debugging atomic tools.
+- nmap is the one tool that *can* get the user in trouble.  Target
+  gating must be airtight or it's the wrong tool to ship.
+
+** Rejected: code-quality fan-out (conventional #2)
+
+=shellcheck_run=, =format_check= (black/prettier/gofmt/rustfmt/elisp,
+returns unified diff), =lint_run= (eslint/ruff/golangci-lint),
+=dot_render=, =mermaid_render=.
+
+Folded into =*** TODO [#B] Development Workflow Related Tools= as
+per-language work rather than a standalone bundle.  Most of the per-
+language wins land in the existing prog-*.el modules' format-on-save
+and LSP attachments; the agent benefits more from /reading/ those
+buffers than from re-running the formatters via tool calls.
+
+** Rejected: GitHub workspace (conventional #3)
+
+=gh_pr_view=, =gh_issue_search=, =gh_run_logs=, =gh_pr_diff=.
+
+Overlaps with the magit-backend track (=gptel-git-tools-magit-backend=)
+for several queries.  Better treated as a follow-on once the magit
+backend lands -- some queries are local (magit) and some are remote
+(gh), and the seam is clearer after the local side is built.
+
+** Rejected: DNS-chain inspector (tail sample)
+
+=dns_chain= walks NS -> A/AAAA -> MX -> SPF -> DMARC -> DKIM for a
+domain and returns a structured assessment with red flags ("MX
+missing TLS-RPT", "SPF includes >10 lookups", "DMARC policy=none").
+
+Real value when it's useful but probably 5 calls/year for this
+laptop.  =dns_lookup= covers 90% of the recurring need; the chain
+walker is parked for a possible follow-on.
+
+** Rejected: awk_eval / sed_eval with explanation (tail sample)
+
+Accept snippet + sample input, return both the transformed output and
+a plain-English explanation of what the snippet does.
+
+Doubles work the model already does internally -- the model is
+already good at generating and explaining awk/sed.  Real win would
+only be the actual execution against actual data, which the eshell
+escape hatch in the Filesystem section already covers.
+
+** Adopted as project convention: plan/apply split (tail sample)
+
+=rsync_plan= / =rsync_apply= split: plan always runs =--dry-run= and
+returns the file list and byte counts that *would* transfer; apply is
+a separate tool registration with =:confirm t=.  Same shape for
+=nmcli= (status read vs connection mutate) and any other mutating
+tool.
+
+Promoted to a documented convention rather than a single tool: any
+mutating wrapper in =gptel-tools/= should split into a preview and an
+apply.  The preview is =:confirm nil= so the agent can plan
+autonomously; the apply is =:confirm t= and stops cleanly for human
+review.  Applies to =rsync=, =nmcli connection up=, =ssh= mutations,
+and the pandoc/ffmpeg/imagemagick output-writing tools in the
+Filesystem section.
+
+* Design
+
+** Tool 1: =net_diagnose=
+
+Composite "why can't I reach X?" probe.  Given a target (hostname or
+IP), runs a sequence of sub-checks and returns a structured result:
+
+1. =dig +short= on the name (skip if target is an IP literal).
+2. =ping -c 3 -W 2= against the resolved IP.
+3. =traceroute -n -w 2 -q 1 -m 20= to the IP.
+4. If a port is given: =curl --max-time 5 -o /dev/null -sw '%{http_code}\n'=
+   for ports 80/443, or =nc -zv -w 3= for arbitrary TCP ports.
+
+Output shape (alist or plist returned to the model):
+
+#+begin_src text
+  ((target . "example.com")
+   (resolved-to . "93.184.216.34")
+   (dns-time-ms . 12)
+   (ping . ((sent . 3) (received . 3) (avg-ms . 14.2)))
+   (traceroute . ((hops . 8) (last-hop . "93.184.216.34")))
+   (port-check . ((port . 443) (status . "200") (tls . "ok"))))
+#+end_src
+
+Caps: total runtime <30s.  Each sub-check has its own timeout.  If a
+sub-check fails (no ping reply, no route, no DNS), the field carries
+the failure mode rather than aborting the whole call -- the agent
+needs the partial picture to reason.
+
+=:confirm nil=.  Read-only.
+
+** Tool 2: =net_discover=
+
+Wraps =nmap -sn <subnet>= for LAN host discovery.  Two argv shapes:
+
+- =net_discover ()= -- defaults to the current LAN, derived from
+  =ip route get 1.1.1.1= and the matching interface's =/24=.
+- =net_discover :subnet "192.168.1.0/24"= -- explicit subnet.
+
+Guardrails:
+
+- Subnet must be RFC1918, link-local (169.254/16), CGNAT (100.64/10),
+  or loopback.  Public subnets rejected at the validator.
+- Subnet mask must be /22 or smaller (no /16 or wider).  At /22 that's
+  ~1024 hosts -- enough for any homelab.  Default home network is /24.
+- =--host-timeout 30s --max-retries 1= to bound runtime.
+
+Output: list of =(ip mac hostname state)= tuples.
+
+=:confirm nil= for RFC1918 / link-local / CGNAT / loopback.  Public
+subnets never reach this tool (validator rejects).
+
+** Tool 3: =net_services=
+
+Wraps =nmap -sV= for service/version detection on a single host.
+
+Argv:
+
+- =:host= -- required.  RFC1918 / link-local / CGNAT / loopback by
+  default.  Public hosts require =:external t= which flips
+  =:confirm t=.
+- =:ports= -- optional port spec.  Default: top-100 (=--top-ports
+  100=).  Custom lists allowed: ="22,80,443,5432,6379"= or
+  ="1-1024"=.  Hard cap: 1024 ports total.
+- =:fast= -- if t, uses =--top-ports 20= for a quick check.
+
+Mode allowlist enforced at the wrapper: only =-sV= with optional
+=-p=.  Reject =-A=, =-O=, =-T4=/=-T5=, =--script=, raw-packet flags.
+
+Output: list of =(port protocol state service version banner)=
+tuples, parsed from =-oG -= (greppable output).
+
+=:confirm nil= for RFC1918 / link-local / CGNAT / loopback.
+=:confirm t= for any target reachable only as a public IP/hostname.
+
+** Tool 4: =network_status=
+
+Snapshot of the local network state.  Composite of:
+
+- =ip -br addr= -- interfaces and their addresses.
+- =ip route= -- routing table.
+- =nmcli -t -f NAME,TYPE,DEVICE,STATE connection show --active= --
+  active NetworkManager connections.
+- =ss -tulpn= (or =netstat -tulpn= fallback) -- listening sockets.
+- =resolvectl status= (or =/etc/resolv.conf= fallback) -- DNS
+  resolver state.
+
+Output: structured alist with sections for each.
+
+=:confirm nil=.  Read-only.
+
+Note: this is also the candidate target for the plan/apply split if
+=nmcli connection up=/=down= ever lands as a tool -- =network_status=
+becomes the "plan" side and any mutation is a separate tool.
+
+** Tool 5: =dns_lookup=
+
+Typed DNS query.  Argv:
+
+- =:name= -- required.  The DNS name to query.
+- =:type= -- record type.  Default =A=.  Allowed: =A=, =AAAA=, =MX=,
+  =NS=, =TXT=, =SRV=, =CAA=, =CNAME=, =PTR=, =SOA=.
+- =:server= -- optional resolver.  Default uses system resolver.
+  When set, must be RFC1918 or one of a small allowlist (=1.1.1.1=,
+  =8.8.8.8=, =9.9.9.9=) so the tool can't be used to probe arbitrary
+  hosts via DNS.
+
+Output: list of records with TTL.  For =MX= and =SRV=, includes
+priority/weight/port.  For =TXT=, the records are split into the
+quoted segments dig returns.
+
+=:confirm nil=.  Read-only.
+
+** Shared helpers
+
+In =gptel-tools/network_tools.el= (single file, mirrors the
+magit-backend plan for git tools):
+
+- =cj/gptel-net--validate-target HOST &optional ALLOW-PUBLIC=
+  - Resolves HOST.  Rejects unless resolved IP is RFC1918 /
+    link-local / CGNAT / loopback, unless ALLOW-PUBLIC is non-nil.
+  - Returns the resolved IP on success.
+
+- =cj/gptel-net--validate-subnet CIDR=
+  - Rejects non-private subnets and subnets wider than /22.
+  - Returns =(network mask)= on success.
+
+- =cj/gptel-net--current-lan=
+  - Derives the current /24 from =ip route get 1.1.1.1=.
+
+- =cj/gptel-net--run ARGS &key TIMEOUT=
+  - Wraps =process-file= with a uniform timeout, color/encoding
+    posture, and structured return =(exit-code stdout stderr)=.
+
+- =cj/gptel-net--parse-nmap-greppable STRING=
+  - Parses nmap =-oG -= output into structured tuples.
+
+- =cj/gptel-net--truncate TEXT MAX-BYTES=
+  - Same shape as the existing per-tool truncate helpers.  Open
+    question whether this consolidates into =system-lib.el= alongside
+    the matching helpers in =web_fetch.el= and =update_text_file.el=.
+
+** Caps
+
+| Tool             | Default cap            | Hard cap               |
+|------------------+------------------------+------------------------|
+| =net_diagnose=   | <30s total runtime     | <30s total runtime     |
+| =net_discover=   | /24 default, /22 max   | /22                    |
+| =net_services=   | top-100 ports          | 1024 ports             |
+| =network_status= | uncapped (snapshot)    | uncapped               |
+| =dns_lookup=     | uncapped               | uncapped               |
+
+** =:confirm= posture
+
+| Tool             | RFC1918 target    | Public target           |
+|------------------+-------------------+-------------------------|
+| =net_diagnose=   | =:confirm nil=    | =:confirm t=            |
+| =net_discover=   | =:confirm nil=    | rejected at validator   |
+| =net_services=   | =:confirm nil=    | =:confirm t=            |
+| =network_status= | =:confirm nil=    | n/a (local snapshot)    |
+| =dns_lookup=     | =:confirm nil=    | =:confirm nil=          |
+
+=dns_lookup= stays =:confirm nil= for public names because DNS is
+read-only and innocuous.  =net_diagnose= and =net_services= against
+public targets are gated because pinging/probing public hosts isn't
+*illegal* but it can trip rate-limits or get the user flagged on a
+managed network.
+
+** Tests
+
+Single file =tests/test-gptel-tools-network-tools.el=.  Real subnets
+are not available in CI, so:
+
+- =net_discover= and =net_services= are stubbed via =cl-letf= on
+  =cj/gptel-net--run=, returning canned nmap output.  Real nmap
+  invocation tested via one =:tags '(:integration)= test that runs
+  =nmap -sn 127.0.0.1/32= and asserts the parser handles the real
+  format.
+- =net_diagnose= sub-checks stubbed individually so each failure mode
+  can be exercised.
+- =network_status= sections stubbed per-command; one integration test
+  runs against the live system and asserts the structure parses.
+- =dns_lookup= stubbed against canned =dig= output; one integration
+  test against =localhost= via the system resolver.
+
+Rough count: ~12 shared-helper tests (validators, current-lan
+detector, parsers) + ~7 per tool x 5 tools = ~47 tests.
+
+** Risk surface
+
+| Risk                                                      | Mitigation                                                          |
+|-----------------------------------------------------------+---------------------------------------------------------------------|
+| nmap scan against an unintended target                    | Validator gates on resolved IP, not on the input string.  Public    |
+|                                                           | targets require explicit =:external t= flag + =:confirm t=.         |
+| Scan triggers IDS/IPS on a corporate/managed network      | Default modes are non-aggressive (=-sn=, =-sV= only).  No =-A=, no  |
+|                                                           | NSE, no high T-level.  =:confirm t= for non-RFC1918 targets gives   |
+|                                                           | the user a manual checkpoint.                                       |
+| =net_diagnose= hangs on a slow target                     | Per-sub-check timeouts; total runtime cap; partial-failure return   |
+|                                                           | rather than abort.                                                  |
+| nmap not installed on the system                          | =:command= check at module load via =cj/executable-find-or-warn=    |
+|                                                           | (matching the prettier/pyright pattern documented in CLAUDE.md).    |
+| Network tools shell out via =process-file=                | argv-list invocation, no shell.  =shell-quote-argument= unused      |
+|                                                           | because no shell is involved.                                       |
+| /tmp pollution or banner output writing to disk           | All output captured to buffer via =process-file=, never written.    |
+
+* Open questions
+
+1. *Default port set for =net_services=.*  Top-100 (nmap default),
+   top-1000 (full default scan, slower), or a custom homelab-tuned
+   list (=22, 80, 443, 445, 3389, 5432, 6379, 8080, 8443, 9090, 9000,
+   631=)?  My read: top-100 default + =:fast t= for top-20 + custom
+   override for the homelab list when needed.
+2. *NSE in v1 or deferred?*  Skip entirely (clean v1) or ship a small
+   allowlist (=ssl-cert=, =http-title=, =ssh-hostkey=)?  My read:
+   skip in v1.  If a real use case shows up (TLS audit), add a single
+   =net_tls_audit= tool wrapping just =ssl-enum-ciphers=/=ssl-cert=
+   rather than a generic NSE escape hatch.
+3. *Consolidate the truncate helper.*  Same open question as the
+   magit-backend doc: move =cj/gptel-net--truncate= and its siblings
+   into =system-lib.el= as =cj/gptel-tools--truncate-bytes=, or keep
+   per-module?  My read: consolidate when there are three callers
+   (web_fetch, update_text_file, network_tools all qualify).
+4. *Composite vs atomic for =net_diagnose=.*  Build it as one
+   composite, or break it into =ping_run=, =traceroute_run=,
+   =port_check= and let the agent compose?  My read: composite is
+   better -- the agent reasons in "diagnose-this-target" terms more
+   often than in "just-ping-this".  Atomic sub-tools can be added
+   later if the composite proves coarse-grained.
+5. *Promote plan/apply split to documented convention now?*  Or wait
+   until a second tool exercises it (post-rsync)?  My read: document
+   the convention in the Filesystem section body now, since pandoc /
+   ffmpeg / imagemagick all benefit, even before any of them ship.
+6. *nmcli mutation tools.*  Out of scope for this doc but worth
+   flagging: =nmcli connection up <name>= / =nmcli connection down
+   <name>= / =nmcli device wifi connect <ssid>=.  These would be the
+   first apply-side tools under the plan/apply convention, with
+   =network_status= as the plan side.
+
+* Effort estimate
+
+M (1-3 hours).  Five tools + shared helpers + ~47 tests.  Most of the
+time is test authoring (canned nmap output, dig output, ss output);
+production code is small because each tool is a thin =process-file=
+wrapper plus a parser.
+
+* Next steps
+
+- Resolve open questions #1 and #2 before any code lands (the
+  =net_services= shape can't be finalized without them).
+- Once approved, the work attaches to =*** TODO [#B] (Network bundle:
+  net_diagnose / net_discover / net_services / network_status /
+  dns_lookup)= -- a new theme under =*** TODO [#B] (Networking tools
+  category)= which itself becomes a new top-level under =** TODO [#B]
+  GPTel Tool Work= in =todo.org=, peer to the existing Filesystem
+  section.
+- Implementation follows =/start-work= flow: TDD, characterization
+  tests for the parsers first (canned nmap/dig/ss fixtures), then
+  the wrappers, then the registrations in
+  =cj/gptel-local-tool-features=.
+- After landing, revisit candidate #6 (plan/apply split) -- the
+  first apply-side tool (=nmcli connection up=, =rsync_apply=,
+  pandoc-output) exercises the convention end-to-end.
