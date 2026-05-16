@@ -1,0 +1,205 @@
+#+TITLE: GPTel Tools Shortlist
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-16
+
+* Purpose
+
+Inventory candidate gptel tools, give each a one-line description, and
+decide adopt / skip / defer.  The five tools currently wired in
+=cj/gptel-local-tool-features= (=read_buffer=, =read_text_file=,
+=write_text_file=, =update_text_file=, =list_directory_files=,
+=move_to_trash=) are out of scope for this doc -- this is about what
+ELSE to add.
+
+* Scope of the survey
+
+The task asked for a survey across published sources (gptel README,
+karthink's gist/repo, MELPA, GitHub topic search).  I haven't done a
+live community survey from this session -- the candidates below are the
+ones called out in todo.org plus a few obvious adjacents.  The
+community pass is the follow-up: walk the gptel README's tool-examples
+section, scan MELPA for =gptel-tool-*=, search GitHub for "gptel
+make-tool" code samples, and fold anything compelling into the table
+below.
+
+* Decision rubric
+
+- *ADOPT* -- low risk, clear win, build now.
+- *DEFER* -- useful but needs design work or a clear use case first.
+- *SKIP* -- risk outweighs value, no immediate use, or duplicates an
+  existing path.
+
+Risk dimensions: code execution, file mutation, network reach, blast
+radius on accident.  Value dimensions: how often the model would
+actually use it, how much manual context-copying it saves, how much
+better the answer becomes when the model can see the thing directly.
+
+* Candidate decisions
+
+** ADOPT (build next)
+
+*** search_in_files
+
+=rg= wrapper with path / glob filtering and a result-count cap.  Pure
+read.  =rg= is installed everywhere I work.  Lets the model find a
+pattern across a repo without me having to copy-paste hits.  High
+value for code work and notes-spelunking, low risk.
+
+Sketch:
+- Args: =pattern= (string), =path= (string, defaults to cwd),
+  =glob= (optional), =max-results= (optional, default 50, cap 200).
+- Validate path under =~= per the existing tool convention.
+- Shell out to =rg --json= or =rg --files-with-matches= depending on
+  mode (count, paths, lines).
+- Truncate output and report truncation.
+
+*** git_status, git_log, git_diff
+
+Three read-only git tools so the model can see what's changed without
+manual paste.  High value in =/start-work= and =/debug= flows where the
+model otherwise asks for diffs verbatim.
+
+Sketch (per tool):
+- =git_status=: =git -C PATH status --porcelain=v2= rendered as a
+  short text block.
+- =git_log=: =git -C PATH log --oneline -n N --since DATE=.  Cap N at
+  50.
+- =git_diff=: =git -C PATH diff [REF1 [REF2]] [-- PATH]= with size
+  cap (reject above N bytes or truncate and note).
+- Validate PATH under =~=.  Refuse outside.
+
+Each tool is its own file under =gptel-tools/= for isolation
+(mirrors the existing layout).
+
+*** web_fetch
+
+=curl=-style URL fetch with body-length cap.  HTML-to-text by default;
+opt-in raw mode.  High value -- the model can pull a doc page when it
+needs current API shape, instead of guessing from training data.
+
+Sketch:
+- Args: =url= (string), =raw= (boolean, default nil), =max-bytes=
+  (integer, default 200000).
+- Reject non-http/https.
+- Use =url-retrieve-synchronously= so no extra dependency.
+- HTML mode: pipe through =pandoc -f html -t plain= or fall back to
+  =w3m -dump=.  Reject if neither is present.
+- Truncate to =max-bytes= and report truncation.
+
+Privacy posture: this exposes outbound URLs to whoever runs the agent
+session.  Worth noting in the tool's description so the model thinks
+twice about pulling internal-network URLs.
+
+*** search_emacs_help
+
+=apropos= / =describe-function= / =describe-variable= for "what does
+Emacs already do for X."  High value when working in this project --
+the model can verify whether a function exists before generating code
+that imports a third-party version of the same thing.
+
+Sketch (one tool with a mode flag):
+- Args: =query= (string), =kind= (=apropos= / =function= /
+  =variable=, default =apropos=).
+- =apropos=: =apropos-internal QUERY= → list of symbols + first
+  line of docstring.
+- =function= / =variable=: =describe-function= / =describe-variable=
+  body as a string (use the underlying helper, not the interactive
+  buffer setup).
+
+Pure read, all in-process.
+
+*** find_file_by_name
+
+=fd= wrapper, capped result count.  Pure read.  Lower stakes than
+=search_in_files= (only filenames, no contents).  Good complement when
+the model needs to locate a file before reading it.
+
+Sketch:
+- Args: =pattern= (string), =path= (string, default =~=), =max-results=
+  (integer, default 100, cap 500).
+- Validate path under =~=.
+- Shell out to =fd --type f PATTERN PATH= (or =locate= if =fd= isn't
+  on PATH).
+- Truncate and report.
+
+*** take_screenshot
+
+Hyprland-native: =grim= + region selection.  Save to a known path under
+=/tmp= and return the path so the model can reason about an attached
+image.  Pure capture, user-initiated, no privacy concern (the model
+only sees what the user just selected).
+
+Sketch:
+- Args: =mode= (=region= / =active-window= / =screen=, default
+  =region=).
+- =region=: =grim -g "$(slurp)" PATH=
+- =active-window=: =grim -o "$(hyprctl monitors -j | jq -r ...)" PATH=
+- Save to =/tmp/gptel-screenshot-YYYYMMDD-HHMMSS.png=.
+- Return the path so the model can attach it as context with
+  =gptel-add-file=.
+
+Hyprland-specific; only register when =grim= is on =PATH=.
+
+** DEFER (worthwhile, not yet)
+
+*** run_shell_command
+
+Sandboxed to =~/= + =/tmp=, denylist for destructive ops (=rm=, =mv=,
+=dd=, =chmod=, etc.), confirmation for everything else.
+
+Powerful but the surface area is huge -- the denylist can never be
+exhaustive, and "confirmation for everything else" turns into
+click-fatigue fast.  Useful in the abstract, but
+=search_in_files= + =git_*= + =find_file_by_name= cover most of what
+I'd want shell access for, with vastly smaller blast radius.
+
+Defer until there's a concrete use case the read-only tools can't
+serve.
+
+*** org_capture
+
+Capture a snippet from the AI response into a template (driven by
+template key).  Useful but needs design work: which template, how to
+pre-fill, how to handle the round-trip if the user edits the capture
+before saving.  Defer until the UX is clearer.
+
+** SKIP
+
+*** eval_elisp
+
+Code execution from a model is too dangerous even with "confirm each
+call."  One slip on a fixed key during a long session is a worst-case
+outcome.  Specific tools (=git_*=, =read_buffer=, =list_directory_files=)
+cover most of the legitimate elisp-eval use cases without giving the
+model an open shell into the running Emacs.
+
+Skip until -- and unless -- there's a use case that genuinely can't
+be solved with a more targeted tool.
+
+* Follow-up work
+
+- *Live community survey.*  Walk the gptel README's tool examples,
+  scan MELPA for =gptel-tool-*= packages, GitHub search for
+  =gptel-make-tool=, karthink's gptel repo issues / discussions, and
+  any community gists.  Fold compelling finds into the ADOPT or
+  DEFER buckets.
+- *Per-tool implementation tasks.*  Each ADOPT entry deserves its
+  own [#B] sub-task in =Gptel Work= once this shortlist is reviewed,
+  so the implementation work can be sequenced.
+- *Sandboxing convention.*  Before building =web_fetch=, decide
+  whether outbound URLs should be allowlisted (no internal-network
+  fetches) or whether the description is enough.  Same call for
+  =run_shell_command= if it's ever promoted from DEFER.
+
+* Open questions for review
+
+1. The ADOPT bucket is 7 tools.  Build all 7, or stage them (e.g.
+   =git_*= and =search_in_files= first, then =web_fetch= +
+   =search_emacs_help=, then the rest)?  My read: stage them in
+   pairs so each lands with focused review surface.
+2. Do I want =fd= as a hard dependency, or fall back to =find=?
+   =fd= is installed everywhere I work, but the fallback makes the
+   tool more portable for a stranger reading the config.
+3. =take_screenshot= -- Hyprland only, or Wayland-generic via
+   =wl-copy= + a portal?  Hyprland-only is simpler; the desktop
+   I'm not on doesn't need this tool anyway.
