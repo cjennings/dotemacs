@@ -2571,7 +2571,8 @@ used to handle.  Per-module fixups for ledger, AUCTeX, eshell, mu4e
 compose, and the three =prog-*= modules.  See the design doc for the
 full translation table, migration steps, tests, and risks.
 
-** PROJECT [#B] Gptel Work :refactor:cleanup:feature:
+** DONE [#B] Gptel Work :refactor:cleanup:feature:
+CLOSED: [2026-05-16 Sat]
 
 Keep gptel as a focused side-tool for one-off conversations, impromptu help, and the rewrite-region code helper. Workflow stays distinct from the dedicated Claude-Code agents launched via F9, so per-project agent sessions don't get cluttered with general-purpose chat.
 
@@ -2582,6 +2583,18 @@ In scope:
 - gptel-magit's three triggers (M-g in git-commit, =g= in magit-commit transient, =x= in magit-diff transient).
 
 Out of scope: the F9 =ai-vterm= Claude-Code launcher (=modules/ai-vterm.el=) — separate module, working well.
+
+Closing event log:
+
+- Rewrote =gptel-tools/update_text_file.el= in pure Elisp + wired into =cj/gptel-local-tool-features=; 48 ERT tests.
+- Split gptel-magit wiring into per-feature =with-eval-after-load= blocks (=git-commit=, =magit-commit=, =magit-diff=); rewrote the lazy-loading test to inspect =after-load-alist= directly.
+- Added 36 ERT tests for =ai-conversations.el= (helpers, autosave hook, interactive save/delete).
+- Added 52 ERT tests for the other five gptel-tools files; small refactor on =read_buffer.el= and =write_text_file.el= to extract testable helpers.
+- =cj/gptel-autosave-toggle= + =[AS]= mode-line indicator, bound to =C-; a A=.
+- =cj/gptel-quick-ask= one-shot Q&A buffer with =q= / =escape= / =c= bindings (new module =ai-quick-ask.el=), bound to =C-; a q=.
+- Directive-picker wrappers around =gptel-rewrite= (=ai-rewrite.el=); =C-; a r= picks directive + rewrites, =C-; a R= redoes with a different directive.
+- Dired-style saved-conversations browser (=ai-conversations-browser.el=) with RET/l/d/r/g/q bindings, bound to =C-; a b=.
+- Shortlist design doc at =docs/design/gptel-tools-shortlist.org= for additional gptel tools (7 ADOPT, 2 DEFER, 1 SKIP); live community-tool survey remains as follow-up work for Craig.
 
 *** 2026-05-16 Sat @ 01:17:58 -0500 Rewrote update_text_file.el and wired it into cj/gptel-local-tool-features
 
@@ -2671,21 +2684,35 @@ Internal/Wrapper split documented in =elisp-testing.md=.
 
 52 new tests, all green.
 
-*** TODO [#C] Research and shortlist additional gptel tools :feature:research:
+*** 2026-05-16 Sat @ 02:01:48 -0500 Wrote the gptel-tools shortlist design doc
 
-Survey what published gptel community tools exist (the gptel README, karthink's gist/repo, MELPA, GitHub topic search). Compile a candidate list with one-line descriptions and a per-tool adopt / skip / defer decision. Useful candidates to evaluate first (some are inventions, some are commonly-published patterns):
+[[file:../docs/design/gptel-tools-shortlist.org][docs/design/gptel-tools-shortlist.org]] covers each of the candidates
+called out in the task body plus a few obvious adjacents.  Decisions:
 
-- =run_shell_command= — sandboxed to =~/= + =/tmp=, denylist for destructive ops (=rm=, =mv=, =dd=, =chmod=, etc.); confirmation for everything else.
-- =search_in_files= — =rg= wrapper with path/glob filtering and result-count cap.
-- =git_status= / =git_log= / =git_diff= — read-only git context tools (let the model see what's changed without manually pasting).
-- =org_capture= — capture a snippet from the AI response into a template (driven by template key).
-- =web_fetch= — =curl=-style URL fetch with body-length cap; html-to-text by default; opt-in raw mode.
-- =search_emacs_help= — =apropos= / =describe-function= / =describe-variable= query for "what does emacs already do for X".
-- =find_file_by_name= — =locate= or =fd= wrapper, capped result count.
-- =eval_elisp= — dangerous; require explicit confirm-each-call and a denylist of forms (=shell-command=, =delete-file=, =call-process=, etc.).
-- =take_screenshot= — Hyprland-native (=grim= + region selection); save to a known path; return the path so the model can reason about an attached image.
+- *ADOPT* (7): =search_in_files=, =git_status= / =git_log= /
+  =git_diff= (three tools), =web_fetch=, =search_emacs_help=,
+  =find_file_by_name=, =take_screenshot=.  Each gets a sketch in the
+  doc (args, validation, implementation outline).
+- *DEFER* (2): =run_shell_command= (huge surface, click-fatigue
+  risk; ADOPT-bucket tools cover most legit use cases), =org_capture=
+  (needs UX design for template pre-fill and round-trip).
+- *SKIP* (1): =eval_elisp= (code execution from a model is too
+  dangerous even with confirm-each-call).
 
-Output: a shortlist in =docs/design/gptel-tools-shortlist.org= with the adopt/skip/defer decisions and a follow-up extraction sub-task per "adopt".
+Follow-up work surfaced in the doc:
+
+1. *Live community survey* -- walk the gptel README's tool examples,
+   MELPA =gptel-tool-*=, GitHub =gptel-make-tool= search,
+   karthink's gptel repo.  I couldn't do live web research from
+   this session; that pass remains for Craig to do or to delegate.
+2. *Per-tool implementation sub-tasks* -- each ADOPT entry deserves
+   its own [#B] under =Gptel Work= when Craig reviews this shortlist.
+3. *Sandboxing convention* -- decide whether =web_fetch= needs an
+   allowlist of outbound URLs, and the same call for
+   =run_shell_command= if it's promoted from DEFER.
+
+Three open questions called out for review at the bottom of the
+doc.
 
 *** 2026-05-16 Sat @ 01:54:34 -0500 Added directive-picker wrappers around gptel-rewrite
 
