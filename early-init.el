@@ -81,10 +81,18 @@
 ;; --------------------------- Use Online Repos Flag ---------------------------
 ;; set to nil to only use localrepo and local elpa-mirrors (see script directory)
 
-(defvar cj/use-online-repos t
+(defgroup cj nil
+  "Craig's personal Emacs configuration."
+  :group 'convenience
+  :prefix "cj/")
+
+(defcustom cj/use-online-repos t
   "Whether to use online package repositories in addition to local repos.
-When t, online repos are added but .localrepo has highest priority (200).
-Set to nil to use only local repos.")
+When non-nil, online repos are added but .localrepo has highest priority
+(see `cj/package-priority-localrepo' below).  Set to nil to use only
+local repos."
+  :type 'boolean
+  :group 'cj)
 
 ;; ---------------------------- Startup Performance ----------------------------
 ;; increases garbage collection threshold and turns off file-name-handler
@@ -144,40 +152,73 @@ early-init.el.")
 
 (setq package-archives nil) ;; package-archives will be added below
 
+;; Named priorities for package archives.  Local-first: project-pinned
+;; .localrepo wins outright, then the local ELPA mirrors (kept on disk
+;; via the elpa-mirror scripts), then the online archives in fallback
+;; positions.  Within each tier the order is gnu > nongnu > melpa >
+;; melpa-stable, matching the trust ranking we want for resolution.
+(defconst cj/package-priority-localrepo 200
+  "Priority for the project-pinned .localrepo archive (highest).")
+(defconst cj/package-priority-mirror-gnu 125
+  "Priority for the local GNU ELPA mirror.")
+(defconst cj/package-priority-mirror-nongnu 120
+  "Priority for the local NonGNU ELPA mirror.")
+(defconst cj/package-priority-mirror-melpa 115
+  "Priority for the local MELPA mirror.")
+(defconst cj/package-priority-mirror-melpa-stable 100
+  "Priority for the local stable MELPA mirror.")
+(defconst cj/package-priority-online-gnu 25
+  "Priority for the online GNU ELPA archive.")
+(defconst cj/package-priority-online-nongnu 20
+  "Priority for the online NonGNU ELPA archive.")
+(defconst cj/package-priority-online-melpa 15
+  "Priority for the online MELPA archive.")
+(defconst cj/package-priority-online-melpa-stable 5
+  "Priority for the online stable MELPA archive (lowest).")
+
 ;; LOCAL REPOSITORY (packages in version control)
 (when (file-accessible-directory-p localrepo-location)
   (add-to-list 'package-archives (cons "localrepo" localrepo-location) t)
-  (add-to-list 'package-archive-priorities '("localrepo" . 200)))
+  (add-to-list 'package-archive-priorities
+               (cons "localrepo" cj/package-priority-localrepo)))
 
 ;; LOCAL REPOSITORY ELPA MIRRORS
 (when (file-accessible-directory-p elpa-mirror-gnu-location)
   (add-to-list 'package-archives (cons "gnu-local" elpa-mirror-gnu-location) t)
-  (add-to-list 'package-archive-priorities '("gnu-local" . 125)))
+  (add-to-list 'package-archive-priorities
+               (cons "gnu-local" cj/package-priority-mirror-gnu)))
 
 (when (file-accessible-directory-p elpa-mirror-nongnu-location)
   (add-to-list 'package-archives (cons "nongnu-local" elpa-mirror-nongnu-location) t)
-  (add-to-list 'package-archive-priorities '("nongnu-local" . 120)))
+  (add-to-list 'package-archive-priorities
+               (cons "nongnu-local" cj/package-priority-mirror-nongnu)))
 
 (when (file-accessible-directory-p elpa-mirror-melpa-location)
   (add-to-list 'package-archives (cons "melpa-local" elpa-mirror-melpa-location) t)
-  (add-to-list 'package-archive-priorities '("melpa-local" . 115)))
+  (add-to-list 'package-archive-priorities
+               (cons "melpa-local" cj/package-priority-mirror-melpa)))
 
 (when (file-accessible-directory-p elpa-mirror-stable-melpa-location)
   (add-to-list 'package-archives (cons "melpa-stable-local" elpa-mirror-stable-melpa-location) t)
-  (add-to-list 'package-archive-priorities '("melpa-stable-local" . 100)))
+  (add-to-list 'package-archive-priorities
+               (cons "melpa-stable-local" cj/package-priority-mirror-melpa-stable)))
 
 ;; ONLINE REPOSITORIES
 ;; Added regardless of network status. If offline, package operations fail gracefully.
-;; .localrepo has highest priority (200), so reproducible installs work offline.
+;; .localrepo has highest priority, so reproducible installs work offline.
 (when cj/use-online-repos
   (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/") t)
-  (add-to-list 'package-archive-priorities '("gnu" . 25))
+  (add-to-list 'package-archive-priorities
+               (cons "gnu" cj/package-priority-online-gnu))
   (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/") t)
-  (add-to-list 'package-archive-priorities '("nongnu" . 20))
+  (add-to-list 'package-archive-priorities
+               (cons "nongnu" cj/package-priority-online-nongnu))
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-  (add-to-list 'package-archive-priorities '("melpa" . 15))
+  (add-to-list 'package-archive-priorities
+               (cons "melpa" cj/package-priority-online-melpa))
   (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
-  (add-to-list 'package-archive-priorities '("melpa-stable" . 5)))
+  (add-to-list 'package-archive-priorities
+               (cons "melpa-stable" cj/package-priority-online-melpa-stable)))
 
 ;; Initialize package system
 (package-initialize)
