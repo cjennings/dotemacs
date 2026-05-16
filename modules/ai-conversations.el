@@ -51,10 +51,52 @@ If displaying on the top or bottom, treat this value as a height fraction."
 (defvar-local cj/gptel-autosave-filepath nil
   "File path used for auto-saving the conversation buffer.")
 
+(defvar-local cj/gptel-autosave--timer nil
+  "Repeating timer used to auto-save the current GPTel buffer.")
+
+(defcustom cj/gptel-autosave-interval 60
+  "Seconds between periodic GPTel conversation autosaves."
+  :type 'number
+  :group 'cj/ai-conversations)
+
 (defvar cj/gptel-autosave-mode-line-format
   '(:eval (when (bound-and-true-p cj/gptel-autosave-enabled) " [AS]"))
   "Mode-line construct that surfaces autosave state in GPTel buffers.")
 (put 'cj/gptel-autosave-mode-line-format 'risky-local-variable t)
+
+(defun cj/gptel--autosave-active-p ()
+  "Return non-nil when the current buffer has an autosave target."
+  (and (bound-and-true-p gptel-mode)
+       cj/gptel-autosave-enabled
+       (stringp cj/gptel-autosave-filepath)
+       (> (length cj/gptel-autosave-filepath) 0)))
+
+(defun cj/gptel--autosave-stop-timer ()
+  "Cancel the current buffer's periodic autosave timer, if any."
+  (when cj/gptel-autosave--timer
+    (cancel-timer cj/gptel-autosave--timer)
+    (setq-local cj/gptel-autosave--timer nil)))
+
+(defun cj/gptel--autosave-timer-callback (buffer)
+  "Auto-save BUFFER from a periodic timer when autosave is still active."
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      (if (cj/gptel--autosave-active-p)
+          (condition-case err
+              (cj/gptel--save-buffer-to-file (current-buffer) cj/gptel-autosave-filepath)
+            (error (message "cj/gptel periodic autosave failed: %s"
+                            (error-message-string err))))
+        (cj/gptel--autosave-stop-timer)))))
+
+(defun cj/gptel--autosave-start-timer ()
+  "Start the current buffer's periodic autosave timer when autosave is active."
+  (when (and (cj/gptel--autosave-active-p)
+             (not cj/gptel-autosave--timer))
+    (setq-local cj/gptel-autosave--timer
+                (run-with-timer cj/gptel-autosave-interval
+                                cj/gptel-autosave-interval
+                                #'cj/gptel--autosave-timer-callback
+                                (current-buffer)))))
 
 (defun cj/gptel-autosave-toggle ()
   "Toggle autosave on/off in the current GPTel buffer.
@@ -68,11 +110,13 @@ so a path exists to autosave to."
   (if cj/gptel-autosave-enabled
       (progn
         (setq-local cj/gptel-autosave-enabled nil)
+        (cj/gptel--autosave-stop-timer)
         (message "Autosave disabled"))
     (cond
      ((and (stringp cj/gptel-autosave-filepath)
            (> (length cj/gptel-autosave-filepath) 0))
       (setq-local cj/gptel-autosave-enabled t)
+      (cj/gptel--autosave-start-timer)
       (message "Autosave enabled (saving to %s)"
                (file-name-nondirectory cj/gptel-autosave-filepath)))
      ((y-or-n-p "No save target yet.  Save conversation first? ")
@@ -110,8 +154,13 @@ construct."
                 (append mode-line-format
                         (list 'cj/gptel-autosave-mode-line-format)))))
 
+(defun cj/gptel--install-autosave-buffer-hooks ()
+  "Install buffer-local cleanup hooks for GPTel autosave."
+  (add-hook 'kill-buffer-hook #'cj/gptel--autosave-stop-timer nil t))
+
 (with-eval-after-load 'gptel
-  (add-hook 'gptel-mode-hook #'cj/gptel--install-autosave-mode-line))
+  (add-hook 'gptel-mode-hook #'cj/gptel--install-autosave-mode-line)
+  (add-hook 'gptel-mode-hook #'cj/gptel--install-autosave-buffer-hooks))
 
 (defun cj/gptel--slugify-topic (s)
   "Return a filesystem-friendly slug for topic string S."
@@ -226,7 +275,8 @@ Enable autosave for subsequent AI responses to the same file."
 	  (cj/gptel--save-buffer-to-file buf filepath)
 	  (with-current-buffer buf
 		(setq-local cj/gptel-autosave-filepath filepath)
-		(setq-local cj/gptel-autosave-enabled t))
+		(setq-local cj/gptel-autosave-enabled t)
+		(cj/gptel--autosave-start-timer))
 	  (message "Conversation saved to: %s" filepath))))
 
 (defun cj/gptel-delete-conversation ()
@@ -261,7 +311,8 @@ Enable autosave for subsequent AI responses to the same file."
 (defun cj/gptel-load-conversation ()
   "Load a saved GPTel conversation into the AI-Assistant buffer.
 
-Prompt to save the current conversation first when appropriate, then enable autosave."
+Prompt to save the current conversation first when appropriate, then
+enable autosave."
   (interactive)
   (let ((ai-buffer (get-buffer-create "*AI-Assistant*")))
 	(when (and (with-current-buffer ai-buffer (> (buffer-size) 0))
@@ -289,7 +340,8 @@ Prompt to save the current conversation first when appropriate, then enable auto
 		(goto-char (point-max))
 		(set-buffer-modified-p t)
 		(setq-local cj/gptel-autosave-filepath filepath)
-		(setq-local cj/gptel-autosave-enabled t))
+		(setq-local cj/gptel-autosave-enabled t)
+		(cj/gptel--autosave-start-timer))
 	  (let ((buf (get-buffer "*AI-Assistant*")))
 		(unless (get-buffer-window buf)
 		  (display-buffer-in-side-window
