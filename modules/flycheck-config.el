@@ -66,17 +66,22 @@
   ;; use the load-path of the currently running Emacs instance
   (setq flycheck-emacs-lisp-load-path 'inherit)
 
-  ;; Define LanguageTool checker for comprehensive grammar checking
-  (flycheck-define-checker languagetool
-    "A grammar checker using LanguageTool.
+  ;; Define LanguageTool checker for comprehensive grammar checking.
+  ;; The :command executable must be a string literal at macro-expansion
+  ;; time (flycheck rejects `(eval ...)' in the first position), so we
+  ;; backquote-splice the expanded path into the form and eval it
+  ;; explicitly.  Survives a non-standard `user-emacs-directory'.
+  (eval
+   `(flycheck-define-checker languagetool
+      "A grammar checker using LanguageTool.
 Uses a wrapper script to format output for flycheck."
-    :command ((eval (expand-file-name "scripts/languagetool-flycheck"
-                                      user-emacs-directory))
-              source-inplace)
-    :error-patterns
-    ((warning line-start (file-name) ":" line ":" column ": "
-              (message) line-end))
-    :modes (text-mode markdown-mode gfm-mode org-mode))
+      :command (,(expand-file-name "scripts/languagetool-flycheck"
+                                   user-emacs-directory)
+                source-inplace)
+      :error-patterns
+      ((warning line-start (file-name) ":" line ":" column ": "
+                (message) line-end))
+      :modes (text-mode markdown-mode gfm-mode org-mode)))
   (add-to-list 'flycheck-checkers 'languagetool)
 
   (defun cj/flycheck-list-errors ()
