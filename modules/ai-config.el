@@ -59,7 +59,10 @@
     write_text_file
     update_text_file
     list_directory_files
-    move_to_trash)
+    move_to_trash
+    git_status
+    git_log
+    git_diff)
   "Feature symbols for optional local GPTel tool modules."
   :type '(repeat symbol)
   :group 'cj)
