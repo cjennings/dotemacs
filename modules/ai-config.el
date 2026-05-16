@@ -62,7 +62,8 @@
     move_to_trash
     git_status
     git_log
-    git_diff)
+    git_diff
+    web_fetch)
   "Feature symbols for optional local GPTel tool modules."
   :type '(repeat symbol)
   :group 'cj)
