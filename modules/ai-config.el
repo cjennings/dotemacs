@@ -426,27 +426,27 @@ Works for any buffer, whether it's visiting a file or not."
 
 ;;; -------------------------------- GPTel-Magit --------------------------------
 
-;; Lazy gptel-magit integration (replaces use-package gptel-magit block).
+;; `:init' wires the bindings as soon as magit loads, so M-g and the transient
+;; suffixes are ready before any keystroke.  `:commands' + `:defer t' delays
+;; loading gptel-magit itself until one of the entry points is invoked.
 ;;
-;; The original `(magit-mode . gptel-magit-install)' hook ran on every magit
-;; buffer, repeatedly re-installing keybindings and loading gptel eagerly.
-;;
-;; Instead, we register autoloads and wire up keybindings once when magit
-;; loads.  gptel-magit (and gptel) are only loaded when you actually press
-;; one of these keys:
+;; Keys:
 ;;   M-g  — generate commit message (in commit message buffer)
 ;;   g    — generate commit (in magit-commit transient)
 ;;   x    — explain diff (in magit-diff transient)
 
-(with-eval-after-load 'magit
-  (autoload 'gptel-magit-generate-message "gptel-magit" nil t)
-  (autoload 'gptel-magit-commit-generate "gptel-magit" nil t)
-  (autoload 'gptel-magit-diff-explain "gptel-magit" nil t)
-  (define-key git-commit-mode-map (kbd "M-g") #'gptel-magit-generate-message)
-  (transient-append-suffix 'magit-commit #'magit-commit-create
-    '("g" "Generate commit" gptel-magit-commit-generate))
-  (transient-append-suffix 'magit-diff #'magit-stash-show
-    '("x" "Explain" gptel-magit-diff-explain)))
+(use-package gptel-magit
+  :defer t
+  :commands (gptel-magit-generate-message
+             gptel-magit-commit-generate
+             gptel-magit-diff-explain)
+  :init
+  (with-eval-after-load 'magit
+    (define-key git-commit-mode-map (kbd "M-g") #'gptel-magit-generate-message)
+    (transient-append-suffix 'magit-commit #'magit-commit-create
+      '("g" "Generate commit" gptel-magit-commit-generate))
+    (transient-append-suffix 'magit-diff #'magit-stash-show
+      '("x" "Explain" gptel-magit-diff-explain))))
 
 ;; ------------------------------ GPTel Directives -----------------------------
 

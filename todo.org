@@ -38,6 +38,12 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:feature:refactor:=.
 
 * Emacs Open Work
+
+** DOING [#A] transient-setup error when running gptel magit :bug:
+When running gptel magit during a commit message on this machine, I get the following error consistently:
+transient-setup: Cannot open load file: No such file or directory, gptel-magit
+
+
 ** PROJECT [#A] Architecture review follow-up from 2026-05-03 :refactor:no-sync:
 
 High-level pass over =init.el=, =early-init.el=, and all 104 files in
