@@ -37,7 +37,6 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-
 ** PROJECT [#B] Architecture review follow-up from 2026-05-03 :refactor:no-sync:
 
 High-level pass over =init.el=, =early-init.el=, and all 104 files in
@@ -524,6 +523,507 @@ Acceptance: F7 invokes coverage-report; F4/F6/F7 are visibly grouped in one
 module; coverage track is shipped before this lands.
 
 Depends on: the coverage-config track shipping; F4 and F6 sub-tasks above.
+
+** TODO [#B] Fix up test runner
+*** 2026-05-16 Sat @ 11:15:51 -0500 Ideas
+**** Current State
+=modules/test-runner.el= is a solid first pass for an Emacs-config-specific ERT
+workflow:
+- project-scoped focus lists
+- run all vs focused mode
+- run ERT test at point
+- load all test files
+- clear ERT tests from other project roots
+- keybindings under =C-; t=
+
+The universal test-running direction is currently split across modules:
+- =test-runner.el= owns ERT focus/state/UI.
+- =dev-fkeys.el= owns F6 language detection and command generation for Elisp,
+  Python, Go, and partial TypeScript.
+
+That split is the biggest architectural pressure point.  The test runner should
+eventually own runner discovery, scopes, command construction, result handling,
+and UI.  F6 should become a thin entry point into the runner.
+
+**** Critical Design Issues
+***** Too ERT-specific at the core
+The current state model is named generically, but most operations assume:
+- test files live in =test/= or =tests/=
+- files match =test-*.el=
+- tests are ERT forms
+- individual tests can be selected by ERT selector regex
+- loading tests into the current Emacs process is acceptable
+
+This makes the module hard to extend cleanly to pytest, Jest, Vitest, Go, Rust,
+or shell test runners.  The common abstraction should be "test run request" and
+"test runner adapter", not "ERT file list".
+
+***** In-process ERT causes state contamination
+=cj/test-load-all= and focused runs load test files into the current Emacs
+session.  This is fast and ergonomic, but it can leak:
+- global variables
+- advice
+- loaded features
+- overridden functions
+- ERT test definitions
+- load-path mutations
+
+The runner should support two ERT execution modes:
+- =interactive= / in-process for fast local TDD
+- =isolated= / batch Emacs for reliable verification
+
+The isolated path should be preferred for "before commit", CI parity, and
+agent-driven verification.
+
+***** Test discovery is regex-based and fragile
+=cj/test--extract-test-names= scans files with a regex for =ert-deftest=.
+That misses or mishandles:
+- macro-generated tests
+- commented forms in unusual shapes
+- multiline or reader-conditional forms
+- non-ERT Elisp tests such as Buttercup
+- stale ERT tests already loaded in the session
+
+Better approach:
+- for ERT in isolated mode, let ERT discover tests after loading files
+- for source navigation, use syntax-aware forms where possible
+- store discovered tests as structured records with file, line, name, framework,
+  tags, and runner
+
+***** Path containment has at least one suspicious edge
+=cj/test--do-focus-add-file= checks:
+
+#+begin_src elisp
+(string-prefix-p (file-truename testdir) (file-truename filepath))
+#+end_src
+
+That should use =cj/test--file-in-directory-p= or ensure the directory has a
+trailing slash.  Otherwise sibling paths with a shared prefix are a recurring
+class of bug.
+
+***** Runner commands are shell strings too early
+=cj/--f6-test-runner-cmd-for= returns shell command strings.  That makes it
+harder to:
+- inspect command parts
+- safely quote arguments
+- offer command editing
+- run via =make-process= / =compilation-start= without shell ambiguity
+- attach metadata
+- rerun exact invocations
+- convert commands into UI labels
+
+Prefer a structured command object:
+
+#+begin_src elisp
+(:program "pytest"
+ :args ("tests/test_foo.py" "-q")
+ :default-directory "/project/"
+ :env (("PYTHONPATH" . "..."))
+ :runner pytest
+ :scope file)
+#+end_src
+
+Render to a shell string only at the final compilation boundary.
+
+***** F6 and =C-; t= workflows duplicate the same domain
+F6 already handles "all tests" and "current file's tests" for multiple
+languages.  =C-; t= handles ERT-only focus and run state.  These should converge
+on one runner service:
+- F6: quick entry point
+- =C-; t=: full runner menu
+- both call the same scope/adapter engine
+
+***** Test directory discovery is too narrow
+Current discovery prefers =test/= then =tests/=, with a global fallback.  Real
+projects often need:
+- Python: =tests/=, package-local =test_*.py=, =pytest.ini=, =pyproject.toml=
+- JS/TS: =package.json= scripts, =vitest.config.*=, =jest.config.*=,
+  =*.test.ts=, =*.spec.ts=
+- Go: package directories, =go.mod=
+- Rust: =Cargo.toml=, integration tests under =tests/=
+- Elisp packages: =Makefile=, =Eask=, =ert-runner=, Buttercup, =tests/=
+
+Discovery should be adapter-specific and project-config-aware.
+
+***** No structured result model
+=cj/test-last-results= exists but is not meaningfully populated.  A powerful
+runner needs a normalized result model:
+- run id
+- started/finished timestamps
+- status: passed/failed/errored/cancelled/skipped/xfail/xpass
+- command
+- runner adapter
+- scope
+- exit code
+- duration
+- failed test records
+- file/line locations
+- raw output buffer
+- coverage artifact paths
+
+This enables last-failed, failures-first, summaries, dashboards, and AI-assisted
+failure explanation.
+
+***** No failure parser / navigation layer
+Compilation buffers are useful, but the runner should parse common failure
+formats and provide:
+- next/previous failure
+- jump to source line
+- failure summary buffer
+- copy failure context
+- rerun failed test at point
+- annotate failing tests in source buffers
+
+Adapters can provide regexes/parsers for ERT, pytest, Jest/Vitest, Go, Rust,
+and shell.
+
+***** Missing watch/rerun modes
+Modern test runners optimize the feedback loop:
+- pytest supports selecting tests, markers, last-failed, failures-first,
+  stepwise, fixtures, xfail/skip, plugins, and cache state.
+- Jest/Vitest support watch workflows, changed-file selection, coverage,
+  snapshots, and rich interactive filtering.  Vitest also defaults to watch in
+  development and run mode in CI.
+- Go and Rust runners commonly support package-level runs, regex selection,
+  race/coverage flags, and cached test behavior.
+
+The Emacs runner should expose the subset that maps well to editor workflows:
+- current test
+- current file
+- related test file
+- focused set
+- last failed
+- failed first
+- changed since git base
+- watch current scope
+- full project
+- coverage for current scope
+
+**** Proposed Architecture
+***** Core Types
+Use plain plists initially; promote to =cl-defstruct= only if helpful.
+
+#+begin_src elisp
+;; Test runner adapter
+(:id pytest
+ :name "pytest"
+ :languages (python)
+ :detect cj/test-pytest-detect
+ :discover cj/test-pytest-discover
+ :build-command cj/test-pytest-build-command
+ :parse-results cj/test-pytest-parse-results
+ :capabilities (:current-test :file :project :last-failed :coverage :watch))
+
+;; Test run request
+(:project-root "/repo/"
+ :language python
+ :framework pytest
+ :scope file
+ :file "/repo/tests/test_api.py"
+ :test-name "test_create_user"
+ :extra-args ("-q")
+ :profile default)
+
+;; Test run result
+(:run-id "..."
+ :status failed
+ :exit-code 1
+ :duration 2.14
+ :failures (...)
+ :output-buffer "*test pytest*"
+ :artifacts (...))
+#+end_src
+
+***** Adapter Registry
+Create a registry like:
+
+#+begin_src elisp
+(defvar cj/test-runner-adapters nil)
+(cj/test-register-adapter 'pytest ...)
+(cj/test-register-adapter 'ert ...)
+(cj/test-register-adapter 'vitest ...)
+#+end_src
+
+Runner selection should consider:
+- buffer file extension
+- project files
+- explicit user override
+- available executables
+- package manager scripts
+- existing Makefile targets
+
+***** Scope Model
+Make scopes explicit and shared across languages:
+- =test-at-point=
+- =current-file=
+- =related-file=
+- =focused-files=
+- =last-failed=
+- =changed=
+- =package/module=
+- =project=
+- =coverage=
+- =watch=
+
+Each adapter can say which scopes it supports.  Unsupported scopes should produce
+clear user-errors with suggestions.
+
+***** Command Builder Pipeline
+1. Detect project.
+2. Detect language/framework candidates.
+3. Resolve user-requested scope.
+4. Build structured command object.
+5. Optionally let user edit command.
+6. Run via =compilation-start= or =make-process=.
+7. Parse output/result artifacts.
+8. Store normalized result.
+9. Update UI/modeline/messages/failure buffer.
+
+***** Keep Makefile Support But Do Not Require It
+For this Emacs config, =make test-file= and =make test-name= are useful and
+should remain the default Elisp isolated path.  But adapter detection should
+support:
+- direct =emacs --batch= ERT invocation
+- =make test=
+- =make test-file=
+- =make test-name=
+- Eask
+- Buttercup
+
+**** Elisp-Specific Improvements
+***** Add isolated ERT runs
+Support batch commands for:
+- all project tests
+- one test file
+- one test name
+- focused files
+- last failed, once result parsing exists
+
+Use the same Makefile targets in this repo, but design the adapter so other
+Elisp projects can run without this Makefile.
+
+***** Support Buttercup/Eask Later
+Buttercup uses BDD-style =describe= / =it= suites and is common in Elisp
+package testing.  Eask is often used to run package tests.  Add adapter slots
+for these instead of hard-coding ERT forever.
+
+***** Avoid unnecessary global ERT deletion
+=cj/ert-clear-tests= is a pragmatic fix for project contamination, but the
+stronger long-term answer is isolated runs plus project-scoped discovery.  Keep
+the cleanup command, but do not make correctness depend on deleting global ERT
+state.
+
+**** Python / pytest Ideas
+- Detect pytest by =pyproject.toml=, =pytest.ini=, =tox.ini=, =setup.cfg=, or
+  presence of =tests/=.
+- Build commands for:
+  - project: =pytest=
+  - file: =pytest path/to/test_file.py=
+  - test at point: =pytest path/to/test_file.py::test_name=
+  - class method: =pytest path::TestClass::test_method=
+  - marker: =pytest -m marker=
+  - last failed: =pytest --lf=
+  - failed first: =pytest --ff=
+  - stop after first: =pytest -x=
+  - coverage: =pytest --cov=...=
+- Parse output for failing node ids and file:line references.
+- Read pytest cache for last-failed where useful.
+- Offer marker completion by parsing =pytest --markers= or config files.
+- Surface xfail/skip separately from hard failures.
+
+**** TypeScript / JavaScript Ideas
+***** Detection
+Detect runner by project files and scripts:
+- =vitest.config.ts/js/mts/mjs=
+- =jest.config.ts/js/mjs/cjs=
+- =package.json= scripts: =test=, =test:watch=, =vitest=, =jest=
+- lockfile/package manager: =pnpm-lock.yaml=, =yarn.lock=, =package-lock.json=,
+  =bun.lockb=
+
+Prefer project scripts over raw =npx= when present:
+- =pnpm test -- path=
+- =npm test -- path=
+- =yarn test path=
+- =bun test path=
+
+***** Scopes
+- current file: =vitest run path= or =jest path=
+- test at point: use nearest =it= / =test= / =describe= string and pass =-t=
+- watch current file
+- changed tests where runner supports it
+- coverage current file/project
+- update snapshots
+
+***** Result Parsing
+Parse:
+- failing test names
+- file paths and line numbers
+- snapshot failures
+- coverage summary
+
+Treat snapshot updates as an explicit command, not an automatic side effect.
+
+**** Go Ideas
+- Detect =go.mod=.
+- Current file/source: run package =go test ./pkg=.
+- Test at point: nearest =func TestXxx= and run =go test ./pkg -run '^TestXxx$'=.
+- Bench at point: nearest =BenchmarkXxx= and run =go test -bench '^BenchmarkXxx$'=.
+- Add toggles for =-race=, =-cover=, =-count=1=, =-v=.
+- Parse =file.go:line:= output and package failure summaries.
+
+**** Rust Ideas
+- Detect =Cargo.toml=.
+- Use =cargo test= by default, optionally =cargo nextest run= when available.
+- Current test at point: nearest =#[test]= function.
+- Current file/module where possible.
+- Integration test file: =cargo test --test name=.
+- Support =-- --nocapture= toggle.
+- Parse compiler/test failures and file:line links.
+
+**** Shell / Generic Ideas
+- Adapter for Makefile targets:
+  - detect =make test=, =make check=, =make coverage=
+  - expose project-level commands even when language-specific detection fails
+- Adapter for arbitrary project command configured in dir-locals or a project
+  config plist.
+- Let users register custom command templates per project:
+
+#+begin_src elisp
+((:name "unit"
+  :command ("npm" "run" "test:unit" "--" "{file}"))
+ (:name "integration"
+  :command ("pytest" "tests/integration" "-q")))
+#+end_src
+
+**** UI Ideas
+***** Transient Menu
+Replace or complement the raw keymap with a =transient= menu:
+- scope: current test/file/focused/last failed/project
+- runner: auto/ert/pytest/vitest/jest/go/cargo/make
+- toggles: watch, coverage, debug, fail-fast, verbose, update snapshots
+- actions: run, rerun, edit command, show failures, open report
+
+***** Result Buffer
+Create a normalized =*Test Results*= buffer:
+- latest status per project
+- command and duration
+- pass/fail/skip counts
+- failure list with clickable file:line
+- actions to rerun failed/current/all
+- links to coverage artifacts
+
+***** Modeline / Headerline Signal
+Show the last run status for the current project:
+- green passed
+- red failed
+- yellow running
+- gray no run
+
+Keep it quiet and optional.
+
+***** History
+Store recent run requests per project:
+- rerun last
+- rerun last failed
+- choose previous command
+- compare duration/status against previous run
+
+**** Configuration Ideas
+- =cj/test-runner-default-scope=
+- =cj/test-runner-prefer-isolated-elisp=
+- =cj/test-runner-project-overrides=
+- =cj/test-runner-known-adapters=
+- =cj/test-runner-enable-watch=
+- =cj/test-runner-result-retention=
+- per-project override through =.dir-locals.el=
+
+Example:
+
+#+begin_src elisp
+((nil . ((cj/test-runner-project-overrides
+          . (:adapter pytest
+             :default-args ("-q")
+             :coverage-args ("--cov=src"))))))
+#+end_src
+
+**** Safety And Robustness
+- Use structured commands until the final boundary.
+- Quote only at render time.
+- Avoid shell when =make-process= / =process-file= is sufficient.
+- Keep command preview/editing available for surprising cases.
+- Detect missing executables before running.
+- Add timeouts/cancel commands for long-running or hung tests.
+- Do not silently fall back from a missing runner to a different runner unless
+  the fallback is visible in the command preview.
+- Avoid mutating global =load-path= permanently.
+- Keep remote/TRAMP behavior explicit; do not accidentally run local commands
+  for remote projects.
+
+**** Coverage Integration
+Tie this into the existing coverage work:
+- run coverage for current file/scope
+- open latest coverage report
+- summarize uncovered lines for current file
+- support Elisp SimpleCov/Undercover, pytest-cov, Vitest coverage, Go cover,
+  and Rust coverage later
+- store coverage artifact paths in the normalized run result
+
+**** AI-Assisted Debugging Ideas
+- Summarize failing tests from the parsed failure records and raw output.
+- Include command, changed files, failure snippets, and relevant source/test
+  locations.
+- Redact env vars, tokens, Authorization headers, and secrets before sending to
+  =gptel=.
+- Add commands:
+  - =cj/test-runner-explain-failure=
+  - =cj/test-runner-suggest-related-tests=
+  - =cj/test-runner-summarize-coverage-gap=
+
+**** Migration Plan
+***** Phase 1: Internal cleanup
+- Fix the task typo and rename current ERT-specific functions or wrap them under
+  an ERT adapter.
+- Move F6 language detection/command construction from =dev-fkeys.el= into
+  =test-runner.el= or a new =test-runner-core.el=.
+- Replace shell-string command builders with structured command plists.
+- Fix path containment in =cj/test--do-focus-add-file=.
+- Make =cj/test-last-results= real for ERT runs.
+
+***** Phase 2: ERT adapter
+- Implement adapter registry.
+- Add ERT adapter with in-process and isolated modes.
+- Preserve all current keybindings by routing them through the adapter.
+- Add failure/result normalization for ERT.
+- Add "rerun last" and "rerun failed" for ERT.
+
+***** Phase 3: Python and JS/TS adapters
+- Add pytest adapter.
+- Add Vitest/Jest adapter with package-manager/script detection.
+- Support current file and test-at-point for both.
+- Add parser/navigation for common failures.
+
+***** Phase 4: UI and watch modes
+- Add transient menu.
+- Add result buffer.
+- Add cancellation and rerun history.
+- Add watch commands where supported.
+
+***** Phase 5: Coverage and AI
+- Connect coverage commands to adapter capabilities.
+- Add failure summarization with redaction.
+- Add coverage-gap summarization.
+
+**** Acceptance Criteria For First Fix-Up Pass
+- Existing ERT workflow still works.
+- F6 and =C-; t= use the same underlying runner API.
+- Current-file test command generation is covered for Elisp, Python, Go,
+  TypeScript, and JavaScript.
+- At least one isolated ERT command path exists.
+- Path containment checks are robust against sibling-prefix paths and symlinks.
+- Runner requests and results are represented as data, not only messages.
+- Missing runner/tool errors are clear and actionable.
+- Tests cover adapter detection, command building, scope resolution, result
+  storage, and key interactive paths.
 
 ** DOING [#B] Module-by-module hardening :harden:no-sync:
 
@@ -2329,6 +2829,40 @@ of the spec heading once the spec is approved.  The magit-backend
 reimplementation of the shipped git tools is tracked separately in
 [[file:docs/design/gptel-git-tools-magit-backend.org][gptel-git-tools-magit-backend.org]].
 
+*** TODO [#B] Org Workflow Related Tools
+
+Affordances that expose the Org workspace -- agenda state, capture
+targets, org-roam nodes and backlinks, dailies, drill review state --
+to the agent as structured context, not raw .org buffer text.
+
+**** TODO [#B] Agenda state tools :feature:
+
+Read scheduled / deadline / waiting tasks for a date range; query by
+tag, priority, or TODO keyword; list what's blocking today.  Lets the
+agent answer "what's on the critical path this week" without me
+pasting agenda output, and feeds the daily-prep / wrap-up workflows.
+
+**** TODO [#B] Org-roam node tools :feature:
+
+Resolve a topic to its node; return body + backlinks; list nodes by
+tag; surface dailies for a date range.  Lets the agent reason over
+the personal knowledge graph and write back into it via the capture
+tools below.
+
+**** TODO [#B] Capture creation tools :feature:
+
+Drive =org-capture= from a template key + body string.  Lets the
+agent file inbox items, reading notes, journal entries, or roam
+nodes without me leaving the chat.  Tight pairing with the
+=cj/org-capture= optimization task in todo.org.
+
+**** TODO [#B] Org-drill review tools :feature:
+
+Surface next-due drill cards in =drill-dir=; let the agent quiz on a
+topic and report performance.  Useful for prompted recall sessions
+("ask me five medical-Spanish cards") and for "did this card stick"
+analysis.
+
 *** TODO [#B] Git Related Tools
 
 Affordances that expose magit's structured view of a repo -- sections,
@@ -2408,40 +2942,6 @@ Magit transient that runs a bisect-like reasoning workflow:
 Even when the agent can't run the whole bisect, it keeps the
 investigation structured and preserves why each commit was judged
 good or bad.
-
-*** TODO [#B] Org Workflow Related Tools
-
-Affordances that expose the Org workspace -- agenda state, capture
-targets, org-roam nodes and backlinks, dailies, drill review state --
-to the agent as structured context, not raw .org buffer text.
-
-**** TODO [#B] Agenda state tools :feature:
-
-Read scheduled / deadline / waiting tasks for a date range; query by
-tag, priority, or TODO keyword; list what's blocking today.  Lets the
-agent answer "what's on the critical path this week" without me
-pasting agenda output, and feeds the daily-prep / wrap-up workflows.
-
-**** TODO [#B] Org-roam node tools :feature:
-
-Resolve a topic to its node; return body + backlinks; list nodes by
-tag; surface dailies for a date range.  Lets the agent reason over
-the personal knowledge graph and write back into it via the capture
-tools below.
-
-**** TODO [#B] Capture creation tools :feature:
-
-Drive =org-capture= from a template key + body string.  Lets the
-agent file inbox items, reading notes, journal entries, or roam
-nodes without me leaving the chat.  Tight pairing with the
-=cj/org-capture= optimization task in todo.org.
-
-**** TODO [#B] Org-drill review tools :feature:
-
-Surface next-due drill cards in =drill-dir=; let the agent quiz on a
-topic and report performance.  Useful for prompted recall sessions
-("ask me five medical-Spanish cards") and for "did this card stick"
-analysis.
 
 *** TODO [#B] Messaging Related Tools
 
@@ -2896,16 +3396,332 @@ The core functionality is implemented but needs debugging before it's production
 3. Refine toggle behavior based on testing
 4. Document the final keybindings and workflow
 
-** VERIFY [#C] Test and review restclient.el implementation          :tests:
+** TODO [#C] Build an Org-native API workspace               :feature:tests:
 
-Test the new REST API client integration in a running Emacs session.
+Build an Emacs-native API workspace layer that keeps =restclient.el= useful for
+lightweight request execution while adding OpenAPI import, Org notebooks,
+response capture, inline images, and =gptel=-assisted API documentation.
 
-**Keybindings to test:**
+*** Spec
+
+**** Summary
+Build a small Emacs API-workspace layer that keeps =restclient.el= as the
+plain-text request executor, while adding higher-level discovery, generation,
+Org notebook, response handling, and =gptel=-assisted documentation workflows.
+
+The intended result is not a Postman clone.  It should feel like an
+Emacs-native API lab:
+- generate request collections from OpenAPI/Swagger specs
+- browse and execute requests from =.rest= files or Org notebooks
+- save useful responses back into Org
+- display image responses inline
+- use =gptel= to explain APIs, endpoints, request bodies, and responses
+- leave room for =verb.el= or Hurl where they are a better fit
+
+**** Goals
+- Preserve the current lightweight =restclient.el= workflow for ad-hoc calls.
+- Add an OpenAPI importer that can generate useful first-draft request files.
+- Add an Org workspace format for API notes, executable request blocks, results,
+  response links, and generated summaries.
+- Add response post-processing helpers for JSON, binary/image data, and model
+  summaries.
+- Make common auth flows easy to scaffold without storing secrets in generated
+  files.
+- Keep generated artifacts readable and editable by hand.
+- Keep implementation modular enough that =verb.el= can be evaluated as a richer
+  Org-native frontend.
+
+**** Non-Goals
+- Do not build a full graphical API client.
+- Do not store secrets directly in Org or =.rest= files.
+- Do not attempt complete OpenAPI 3.1 schema synthesis in the first pass.
+- Do not require =gptel= for ordinary request execution.
+- Do not make Hurl a runtime dependency for the restclient workflow.
+
+**** Primary User Flows
+***** Import An API
+1. User runs =cj/restclient-import-openapi=.
+2. Command prompts for a URL or local OpenAPI/Swagger file.
+3. Command parses the spec into normalized endpoint records.
+4. Command prompts for output format:
+   - =restclient= request collection
+   - Org API workspace
+   - both
+5. Command writes generated files under a project/API workspace directory.
+6. Generated file includes host variables, auth placeholders, request examples,
+   and a short summary of how to start using the collection.
+
+***** Describe An API
+1. User runs =cj/restclient-describe-api= from a generated workspace or spec file.
+2. Command extracts API metadata, paths, operations, schemas, auth, and tags.
+3. Command sends a bounded summary payload to =gptel=.
+4. Result is inserted under an Org =Overview= subtree.
+
+***** Execute And Capture A Request
+1. User executes a request via =restclient.el= or =ob-restclient=.
+2. Command captures response status, headers, content type, body, and timestamp
+   when available.
+3. JSON/XML responses can be inserted as source blocks or summarized.
+4. Image responses are saved to an assets directory and linked inline in Org.
+5. Binary responses that are not image-like are saved as file links.
+
+***** Iterate On A Response
+1. User runs helper commands against the last response:
+   - pretty-print JSON/XML
+   - run =jq=
+   - summarize with =gptel=
+   - extract a value into a restclient variable
+   - save body to a file
+2. The result is inserted near the endpoint subtree or shown in a temporary
+   buffer depending on command prefix/options.
+
+**** Proposed Modules
+***** =modules/restclient-workspace.el=
+Main configuration and user-facing commands.  Owns keybindings, workspace
+creation, dispatch commands, and integration with existing restclient config.
+
+***** =modules/restclient-openapi.el=
+OpenAPI/Swagger loading and normalization:
+- fetch URL or read file
+- parse JSON/YAML where available
+- normalize servers, paths, methods, parameters, request bodies, auth schemes,
+  tags, operation IDs, and examples
+- expose pure helper functions suitable for unit tests
+
+***** =modules/restclient-generate.el=
+Generation layer:
+- render =.rest= / =.http= request collections
+- render Org workspaces
+- synthesize simple JSON request bodies from schemas/examples
+- generate variables and auth placeholders
+
+***** =modules/restclient-response.el=
+Response helpers:
+- identify content type
+- save binary/image bodies
+- insert Org links
+- display inline images
+- route JSON/XML/text handling
+- track last response metadata
+
+***** =modules/restclient-ai.el=
+=gptel= integration:
+- summarize API specs
+- explain endpoint behavior
+- generate example payload notes
+- summarize responses
+- keep prompts bounded and avoid sending secrets
+
+**** File And Workspace Layout
+Default generated workspace:
+
+#+begin_src text
+data/apis/<api-slug>/
+  <api-slug>.rest
+  <api-slug>.org
+  openapi.json
+  assets/
+    responses/
+#+end_src
+
+The exact root should be configurable, defaulting to the existing REST data
+directory if one is already present in the config.
+
+**** Org Workspace Shape
+#+begin_example
+,* API Name
+:PROPERTIES:
+:OPENAPI_SOURCE: https://example.com/openapi.json
+:BASE_URL: https://api.example.com
+:END:
+
+,** Overview
+Generated or user-written API notes.
+
+,** Auth
+Token acquisition notes and placeholders.  No secrets stored here.
+
+,** Endpoints
+,*** GET /users
+:PROPERTIES:
+:OPERATION_ID: listUsers
+:METHOD: GET
+:PATH: /users
+:END:
+
+#+begin_src restclient :results raw
+GET :host/users
+Authorization: Bearer :token
+Accept: application/json
+#+end_src
+
+,**** Notes
+,**** Responses
+#+end_example
+
+**** Commands
+- =cj/restclient-new-scratch= :: open a scratch =restclient-mode= buffer.
+- =cj/restclient-open-file= :: open a REST file from the configured API data dir.
+- =cj/restclient-import-openapi= :: generate a workspace from OpenAPI/Swagger.
+- =cj/restclient-describe-api= :: insert a =gptel=-generated API overview.
+- =cj/restclient-describe-endpoint= :: explain the endpoint at point.
+- =cj/restclient-generate-example-body= :: generate or refresh sample JSON body.
+- =cj/restclient-save-last-response= :: save response body and metadata.
+- =cj/restclient-insert-last-response-org= :: insert response under Org subtree.
+- =cj/restclient-display-image-response= :: save and display image response.
+- =cj/restclient-response-jq= :: run =jq= against the last JSON response.
+- =cj/restclient-copy-curl= :: copy the request at point as curl if supported.
+
+**** Keybindings
+Keep the existing prefix shape under =C-; R=:
+- =C-; R n= :: new scratch request buffer
+- =C-; R o= :: open REST file
+- =C-; R i= :: import OpenAPI/Swagger
+- =C-; R d= :: describe API or endpoint
+- =C-; R s= :: save/capture last response
+- =C-; R j= :: run =jq= on last response
+- =C-; R m= :: transient menu for workspace commands
+
+**** OpenAPI Import Details
+Minimum first-pass support:
+- OpenAPI 3.x JSON
+- Swagger 2.0 JSON if easy to normalize
+- YAML via available Emacs YAML library or external converter if already present
+- =servers= / =host= + =basePath=
+- path-level and operation-level parameters
+- query/path/header parameters
+- JSON request bodies
+- examples and default schema values
+- security schemes:
+  - HTTP bearer
+  - basic
+  - API key header
+  - API key query
+
+First pass can skip or mark as unsupported:
+- polymorphic schemas beyond simple =oneOf= / =anyOf= note generation
+- multipart body generation
+- full OAuth flows
+- callbacks/webhooks
+- complete response schema rendering
+
+**** Secret Handling
+- Generated files must use placeholders like =:token=, =:api-key=, or
+  =:basic-auth=.
+- Do not write tokens into generated files.
+- Prefer variables loaded from auth-source, environment variables, or manually
+  entered restclient variables.
+- =gptel= prompts must strip obvious auth headers and secret-like values from
+  request/response payloads before sending context.
+
+**** Response Handling
+- Text JSON/XML/HTML/plain responses may be inserted into Org as source blocks.
+- JSON responses should support optional =jq= filters.
+- Image responses should be saved under =assets/responses/= and inserted as Org
+  file links.
+- After inserting image links, call =org-display-inline-images= when in Org.
+- Large responses should be saved as files and linked rather than inserted.
+- Binary non-image responses should be saved and linked with content type notes.
+
+**** Integration Choices To Evaluate
+- =restclient.el= remains the default executor for =.rest= files.
+- =ob-restclient= powers executable Org source blocks.
+- =verb.el= should be evaluated as an alternate frontend for Org-native API
+  workspaces because it already has tree inheritance, embedded Elisp, and image
+  response display.
+- Hurl should be evaluated as an export/test target, especially for chained
+  request tests and CI assertions.
+
+**** Testing Strategy
+- Unit-test OpenAPI normalization with small fixture specs.
+- Unit-test request generation for GET, POST, auth, query params, path params,
+  and request-body examples.
+- Unit-test secret redaction before =gptel= calls.
+- Unit-test response classification and Org insertion helpers.
+- Integration-test generated =.rest= files for representative APIs.
+- Integration-test generated Org workspaces with =ob-restclient= where feasible.
+- Avoid live network tests by default; use fixtures/stubs unless explicitly
+  tagged =:network=.
+
+**** First Milestone
+1. Keep/verify existing restclient scratch/open commands.
+2. Add a tiny OpenAPI JSON parser/normalizer for a fixture spec.
+3. Generate a readable =.rest= collection with variables and examples.
+4. Generate a matching Org workspace.
+5. Add response save/link helpers for JSON and images.
+6. Add a =gptel= API-summary command with secret redaction.
+7. Add focused unit tests and one sample fixture.
+
+**** Open Questions
+- Should the canonical workspace be =.rest= first, Org first, or generated in
+  both formats by default?
+- Is =verb.el= a better primary target than =ob-restclient= for the Org notebook
+  experience?
+- Which YAML parser should be used if no YAML package is already configured?
+- Where should API workspaces live by default: =data/=, =docs/=, or project root?
+- Should response capture hook into restclient internals, or should capture be a
+  separate explicit command operating on response buffers?
+- How much schema synthesis is useful before it becomes noisy?
+
+*** Ideas
+- Treat =restclient.el= as the lightweight request scratchpad, and layer richer workflow commands around it instead of trying to turn it into Postman.
+- Add an OpenAPI/Swagger importer:
+  - prompt for a spec URL or local file
+  - parse paths, methods, auth schemes, request bodies, and examples
+  - generate a =.http= / =.rest= request collection
+  - optionally generate an Org notebook with one subtree per endpoint
+- Add an API description command using =gptel=:
+  - summarize the API from an OpenAPI spec
+  - explain each endpoint, auth requirement, parameters, and response shape
+  - write the summary into the generated Org workspace
+- Generate example requests automatically:
+  - =GET= examples with query params
+  - =POST= / =PUT= / =PATCH= examples with sample JSON bodies
+  - =DELETE= examples with safe placeholder IDs
+  - shared variables like =:host=, =:token=, =:api-version=, =:tenant=
+- Add auth helpers:
+  - bearer token insertion
+  - basic auth
+  - API key header/query param
+  - OAuth token fetch request template
+- Improve Org integration:
+  - use =ob-restclient= for executable API notebooks
+  - support =:jq= filters for clean JSON results
+  - save response bodies under endpoint subtrees
+  - capture request/response metadata as Org properties
+- Handle images and binary responses:
+  - detect image =Content-Type=
+  - save response data into an assets directory
+  - insert =[[file:...]]= links into Org
+  - call =org-display-inline-images= after execution
+- Add response-processing commands:
+  - pretty-print JSON/XML
+  - run =jq= against the last response
+  - summarize response with =gptel=
+  - extract fields into restclient variables for follow-up calls
+- Add request collection ergonomics:
+  - imenu/consult navigation by endpoint
+  - transient menu for send/copy curl/jq/save response
+  - templates for common headers
+  - per-project API workspace discovery
+- Investigate =verb.el= as the richer Org-native frontend:
+  - Org tree inheritance for host/header/auth defaults
+  - embedded Elisp in request specs
+  - built-in display of image/PDF/SVG responses
+  - likely better base for a notebook-style API client
+- Investigate Hurl for repeatable API tests:
+  - request chaining
+  - captures
+  - assertions
+  - CI-friendly execution
+  - possible export target from generated API workspaces
+
+*** Original Goals
+**** Keybindings to test
 - C-; R n — new scratch *restclient* buffer (should open in restclient-mode)
 - C-; R o — open .rest file (should default to data/ directory)
-- C-; R s — open SkyFi template (should auto-inject API key from authinfo)
 
-**Functional tests:**
+**** Functional tests
 1. Open tutorial-api.rest, run JSONPlaceholder GET (C-c C-c) — verify response inline
 2. Run POST example — verify 201 response with fake ID
 3. Run httpbin header echo — verify custom headers echoed back
@@ -2913,15 +3729,16 @@ Test the new REST API client integration in a running Emacs session.
 5. Test jq filtering (requires jq installed): restclient-jq loaded?
 6. Open scratch buffer (C-; R n), type a request manually, execute
 7. which-key shows "REST client" menu under C-; R
-
-**SkyFi key injection (if authinfo entry exists):**
-- C-; R s should replace :skyfi-key = PLACEHOLDER with real key
-- Key should NOT be written to disk (verify file still shows PLACEHOLDER)
   
 ** TODO [#C] Migrate from Company to Corfu (with prescient integration) :feature:
 
 Spec: [[file:docs/design/company-to-corfu-migration.org][docs/design/company-to-corfu-migration.org]]
 
+#+begin_src cj: comment
+review the spec and add all the tasks to implement the spec at this level. 
+#+end_src
+
+*** 2026-05-16 Sat @ 11:07:24 -0500 Goals
 Drop-in replacement for the in-buffer completion stack: =company= →
 =corfu=, =company-quickhelp= → =corfu-popupinfo=, =company-box= →
 =kind-icon=, =company-prescient= → =corfu-prescient=, plus =cape= for
@@ -2990,31 +3807,6 @@ Three small reveal.js improvements; collected into one task because each on its 
 
 Complex workflow testing capability.
 
-** TODO [#D] Track ELPA upstream byte-compile warnings (esxml, poetry) :chore:
-
-Two ELPA packages emit byte-compile warnings on =make compile= that aren't fixable in this repo:
-
-1. =elpa/esxml-20250421.1632/esxml.el= — =Warning: Unknown type: attrs= and =Unknown type: stringp= (a defcustom =:type= spec).
-2. =elpa/poetry-20240329.1103/poetry.el= — =Warning: Case 'X will match 'quote'= for four cases (=post-command=, =projectile=, =project=, =switch-buffer=). Quoted symbols inside =pcase= clauses — should be unquoted upstream.
-
-No action in this repo. Revisit when packages update. File upstream issues if warnings linger past a few months.
-
-Discovered 2026-04-26 in =*Messages*= during compile.
-
-** TODO [#D] Add status dashboard for dwim-shell-command processes :feature:
-
-Create a command to show all running dwim-shell-command processes with their status.
-Currently, there's no unified view of multiple running extractions/conversions.
-
-**Current behavior:**
-- Each command shows spinner in minibuffer while running
-- Process buffers created: `*Extract audio*`, etc.
-- On completion: buffer renamed to `*Extract audio done*` or `*Extract audio error*`
-- No way to see all running processes at once
-
-**Recommended approach:**
-Custom status buffer that reads `dwim-shell-command--commands`.
-Can add mode-line indicator later as enhancement.
 * Emacs Resolved
 ** DONE [#B] Fix likely =elpa-mirror-location= path bug :bug:quick:
 CLOSED: [2026-05-03 Sun]
@@ -5915,3 +6707,33 @@ helper is idempotent.
 disable paths, the no-filepath prompt path, the
 not-a-gptel-buffer error path, the mode-line format evaluation, and
 the install idempotence.
+** CANCELLED [#D] Add status dashboard for dwim-shell-command processes :feature:
+CLOSED: [2026-05-16 Sat 11:12]
+
+This was closed because all of the dwim commands finish before this would be necessary. 
+
+Create a command to show all running dwim-shell-command processes with their status.
+Currently, there's no unified view of multiple running extractions/conversions.
+
+**Current behavior:**
+- Each command shows spinner in minibuffer while running
+- Process buffers created: `*Extract audio*`, etc.
+- On completion: buffer renamed to `*Extract audio done*` or `*Extract audio error*`
+- No way to see all running processes at once
+
+**Recommended approach:**
+Custom status buffer that reads `dwim-shell-command--commands`.
+Can add mode-line indicator later as enhancement.
+** CANCELLED [#D] Track ELPA upstream byte-compile warnings (esxml, poetry) :chore:
+CLOSED: [2026-05-16 Sat 11:13]
+
+Fixed the esxml issue in the config. not using poetry any longer
+
+Two ELPA packages emit byte-compile warnings on =make compile= that aren't fixable in this repo:
+
+1. =elpa/esxml-20250421.1632/esxml.el= — =Warning: Unknown type: attrs= and =Unknown type: stringp= (a defcustom =:type= spec).
+2. =elpa/poetry-20240329.1103/poetry.el= — =Warning: Case 'X will match 'quote'= for four cases (=post-command=, =projectile=, =project=, =switch-buffer=). Quoted symbols inside =pcase= clauses — should be unquoted upstream.
+
+No action in this repo. Revisit when packages update. File upstream issues if warnings linger past a few months.
+
+Discovered 2026-04-26 in =*Messages*= during compile.
