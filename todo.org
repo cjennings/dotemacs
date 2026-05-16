@@ -39,7 +39,8 @@ Tags are additive. For example, a small wrong-behavior fix can be
 
 * Emacs Open Work
 
-** DOING [#A] transient-setup error when running gptel magit :bug:
+** DONE [#A] transient-setup error when running gptel magit :bug:
+CLOSED: [2026-05-15 Fri]
 When running gptel magit during a commit message on this machine, I get the following error consistently:
 transient-setup: Cannot open load file: No such file or directory, gptel-magit
 
