@@ -70,9 +70,19 @@ every call. The `memq' check skips when the face is already present."
 ;; ------------------------------- Packages ------------------------------------
 
 (use-package nerd-icons
-  :demand t
+  :defer t
   :config
   (advice-add 'nerd-icons-icon-for-dir :filter-return #'cj/--nerd-icons-color-dir)
+  (cj/nerd-icons-apply-tint))
+
+;; If nerd-icons is already loaded (e.g. when this module is re-evaluated
+;; after a session in which a feature module already required it), the
+;; `:config' block above won't fire again -- fall through to install the
+;; advice and tint immediately.
+(with-eval-after-load 'nerd-icons
+  (unless (advice-member-p #'cj/--nerd-icons-color-dir 'nerd-icons-icon-for-dir)
+    (advice-add 'nerd-icons-icon-for-dir
+                :filter-return #'cj/--nerd-icons-color-dir))
   (cj/nerd-icons-apply-tint))
 
 (use-package nerd-icons-completion

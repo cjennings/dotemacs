@@ -37,6 +37,10 @@
                  (side . bottom)
                  (slot . 0)
                  (window-height . 0.5)))  ; Half the frame height
+  ;; Mode activation moves to :config so `:disabled t' actually
+  ;; disables it (`:init' runs even when `:disabled t', `:config'
+  ;; does not).
+  :config
   (popper-mode +1)
   (popper-echo-mode +1))
 

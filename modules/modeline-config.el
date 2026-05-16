@@ -141,15 +141,20 @@ Uses built-in cached values for performance.")
 
 (defun cj/modeline-vc-fetch (file)
   "Fetch modeline VC data for FILE.
-Return a plist with `:branch' and `:state', or nil when FILE has no VC data."
+Return a plist with `:branch' and `:state', or nil when FILE has no VC data.
+Uses `vc-git--symbolic-ref' for branch names when available (it returns the
+symbolic ref like \"main\" instead of a SHA when HEAD is on a branch), but
+falls back to `vc-working-revision' if the internal accessor is missing --
+the symbol is internal and can be renamed or removed between Emacs versions."
   (unless (and (file-remote-p file) (not cj/modeline-vc-show-remote))
     (when-let* ((backend (vc-backend file))
                 (branch (vc-working-revision file backend)))
       (when (eq backend 'Git)
         (unless (fboundp 'vc-git--symbolic-ref)
-          (require 'vc-git))
-        (when-let* ((symbolic (vc-git--symbolic-ref file)))
-          (setq branch symbolic)))
+          (require 'vc-git nil 'noerror))
+        (when (fboundp 'vc-git--symbolic-ref)
+          (when-let* ((symbolic (ignore-errors (vc-git--symbolic-ref file))))
+            (setq branch symbolic))))
       (list :branch branch
             :state (vc-state file backend)))))
 

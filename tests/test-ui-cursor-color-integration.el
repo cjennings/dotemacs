@@ -9,6 +9,17 @@
 
 (require 'ert)
 (require 'user-constants)
+
+;; `cj/set-cursor-color-according-to-mode' and the `post-command-hook'
+;; install both gate on `display-graphic-p' -- a TTY / batch run is a
+;; no-op for cursor coloring by design.  These integration tests
+;; exercise the work body, so we pretend we're in a graphical session
+;; for the whole file.  Stubbing the symbol BEFORE loading ui-config
+;; matters because the hook install reads `display-graphic-p' at load
+;; time.
+(advice-add 'display-graphic-p :around
+            (lambda (orig &rest args) (or (apply orig args) t)))
+
 (require 'ui-config)
 
 ;;; Hook Integration Tests

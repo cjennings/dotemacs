@@ -72,7 +72,9 @@ buffer the user navigates, so `read-only' (orange) is kept."
 
 (ert-deftest test-ui-config-set-cursor-color-live-vterm-not-orange ()
   "Normal: in a live vterm the cursor-color hook picks a writeable color,
-not the read-only orange -- even though the vterm buffer is read-only."
+not the read-only orange -- even though the vterm buffer is read-only.
+`display-graphic-p' is stubbed t so the function reaches its work body
+in batch mode (the live function no-ops on TTY frames by design)."
   (let ((buf (cj/test--make-fake-vterm-buffer "*test-vterm-cursor-color*"))
         (applied 'unset))
     (unwind-protect
@@ -81,7 +83,8 @@ not the read-only orange -- even though the vterm buffer is read-only."
           (setq-local vterm-copy-mode nil)
           (let ((cj/-cursor-last-color nil)
                 (cj/-cursor-last-buffer nil))
-            (cl-letf (((symbol-function 'set-cursor-color)
+            (cl-letf (((symbol-function 'display-graphic-p) (lambda () t))
+                      ((symbol-function 'set-cursor-color)
                        (lambda (c) (setq applied c))))
               (cj/set-cursor-color-according-to-mode)))
           (should (stringp applied))
