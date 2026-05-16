@@ -2687,14 +2687,36 @@ Survey what published gptel community tools exist (the gptel README, karthink's 
 
 Output: a shortlist in =docs/design/gptel-tools-shortlist.org= with the adopt/skip/defer decisions and a follow-up extraction sub-task per "adopt".
 
-*** TODO [#C] Promote gptel-rewrite ergonomics :feature:
+*** 2026-05-16 Sat @ 01:54:34 -0500 Added directive-picker wrappers around gptel-rewrite
 
-=gptel-rewrite= is the killer feature for the keep-gptel decision. Currently bound only to =C-; a r=. Make it land closer to the editing flow:
+New module =modules/ai-rewrite.el= with two commands:
 
-- A directive-picker wrapper =cj/gptel-rewrite-with-directive= that =completing-read='s a directive name (=terse=, =fix-grammar=, =refactor-readability=, =add-docstring=, =explain-as-comment=, =shorten=) before delegating to =gptel-rewrite=. Directive bodies live in =ai-prompts/= so they share storage with =gptel-prompts=.
-- A =cj/gptel-rewrite-redo-with-different-directive= command for "the last rewrite was close — try this style instead". Walks back to the prior region (or kept selection) and re-prompts.
+- =cj/gptel-rewrite-with-directive= (=C-; a r=, replacing the bare
+  =gptel-rewrite= binding): completing-read on a directive name from
+  =cj/gptel-rewrite-directives=, then rewrite the active region.
+- =cj/gptel-rewrite-redo-with-different-directive= (=C-; a R=): replay
+  the prior region with a different directive (markers are saved
+  buffer-local so the region survives accept/reject of the first
+  rewrite).
 
-Open question: should this build on =gptel-rewrite= directly via =:after= advice + state capture, or wrap the call in a =cj/= command that sets =gptel-directives= for the duration?
+Open-question answer: the directive is injected via a one-shot
+=let=-binding on =gptel-rewrite-directives-hook= (an abnormal hook
+that gptel-rewrite already supports for per-call system messages),
+not by mutating =gptel-directives= globally.  No advice on
+=gptel-rewrite= and no state to clean up after the call returns.
+
+Directives ship inline as a =defcustom= alist with the six names
+called out in the task body (=terse=, =fix-grammar=,
+=refactor-readability=, =add-docstring=, =explain-as-comment=,
+=shorten=) so customization is straightforward without a separate
+file layer.
+
+9 tests in =tests/test-ai-rewrite.el= cover the defcustom shape,
+the wrapper (normal path, no-region error, unknown-directive
+error, last-state recording), and the redo (replays prior region,
+errors when no previous, excludes the current directive from the
+re-pick prompt).  =gptel-rewrite= stubbed for tests so no rewrite
+UI fires.
 
 *** TODO [#B] Saved-conversations browser :feature:
 
