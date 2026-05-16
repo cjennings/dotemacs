@@ -33,6 +33,7 @@
 (autoload 'cj/gptel-save-conversation "ai-conversations" "Save the AI conversation to a file." t)
 (autoload 'cj/gptel-load-conversation "ai-conversations" "Load a saved AI conversation." t)
 (autoload 'cj/gptel-delete-conversation "ai-conversations" "Delete a saved AI conversation." t)
+(autoload 'cj/gptel-autosave-toggle "ai-conversations" "Toggle autosave in the current GPTel buffer." t)
 
 ;;; ------------------------- AI Config Helper Functions ------------------------
 
@@ -498,6 +499,7 @@ Works for any buffer, whether it's visiting a file or not."
 
 (defvar-keymap cj/ai-keymap
   :doc "Keymap for gptel and other AI operations."
+  "A" #'cj/gptel-autosave-toggle     ;; toggle autosave on the current GPTel buffer
   "B" #'cj/gptel-switch-backend      ;; change the backend (OpenAI, Anthropic, etc.
   "M" #'gptel-menu                   ;; gptel's transient menu
   "d" #'cj/gptel-delete-conversation ;; delete conversation
@@ -516,6 +518,7 @@ Works for any buffer, whether it's visiting a file or not."
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; a" "AI assistant menu"
+    "C-; a A" "toggle autosave"
     "C-; a B" "switch backend"
     "C-; a M" "gptel menu"
     "C-; a d" "delete conversation"
