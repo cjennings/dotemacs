@@ -449,9 +449,14 @@ Works for any buffer, whether it's visiting a file or not."
 
 ;;; -------------------------------- GPTel-Magit --------------------------------
 
-;; `:init' wires the bindings as soon as magit loads, so M-g and the transient
-;; suffixes are ready before any keystroke.  `:commands' + `:defer t' delays
-;; loading gptel-magit itself until one of the entry points is invoked.
+;; Each integration point waits on its actual dependency, not on `magit'
+;; broadly.  `magit.el' calls `(provide 'magit)' BEFORE its
+;; `cl-eval-when (load eval) ...' block requires `magit-commit' and
+;; `magit-stash', so a single `with-eval-after-load 'magit' fires while
+;; the transient prefixes the wiring references are still undefined.
+;; `transient-append-suffix' silently no-ops on missing prefixes (it
+;; calls `message' unless `transient-error-on-insert-failure' is set),
+;; which is how the failure stayed invisible.
 ;;
 ;; Keys:
 ;;   M-g  — generate commit message (in commit message buffer)
@@ -464,10 +469,12 @@ Works for any buffer, whether it's visiting a file or not."
              gptel-magit-commit-generate
              gptel-magit-diff-explain)
   :init
-  (with-eval-after-load 'magit
-    (define-key git-commit-mode-map (kbd "M-g") #'gptel-magit-generate-message)
+  (with-eval-after-load 'git-commit
+    (define-key git-commit-mode-map (kbd "M-g") #'gptel-magit-generate-message))
+  (with-eval-after-load 'magit-commit
     (transient-append-suffix 'magit-commit #'magit-commit-create
-      '("g" "Generate commit" gptel-magit-commit-generate))
+      '("g" "Generate commit" gptel-magit-commit-generate)))
+  (with-eval-after-load 'magit-diff
     (transient-append-suffix 'magit-diff #'magit-stash-show
       '("x" "Explain" gptel-magit-diff-explain))))
 
