@@ -14,7 +14,9 @@ error when no live buffer matches."
   (unless (buffer-live-p (get-buffer buffer))
     (error "Buffer %s is not live" buffer))
   (with-current-buffer buffer
-    (buffer-substring-no-properties (point-min) (point-max))))
+    (save-restriction
+      (widen)
+      (buffer-substring-no-properties (point-min) (point-max)))))
 
 (gptel-make-tool
  :name "read_buffer"

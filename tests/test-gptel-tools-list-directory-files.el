@@ -72,6 +72,14 @@
                   (expand-file-name "sub" root))))
        (should (plist-get info :is-directory))))))
 
+(ert-deftest test-gptel-tools-list-get-file-info-error ()
+  "Error: metadata failures are returned as failed info plists."
+  (cl-letf (((symbol-function 'file-attributes)
+             (lambda (&rest _args) (error "stat failed"))))
+    (let ((info (list-directory-files--get-file-info "/tmp/nope")))
+      (should-not (plist-get info :success))
+      (should (string-match-p "stat failed" (plist-get info :error))))))
+
 ;; -------------------------- filter-by-extension
 
 (ert-deftest test-gptel-tools-list-filter-by-extension-keeps-match ()
@@ -95,6 +103,18 @@
 (ert-deftest test-gptel-tools-list-filter-by-extension-no-extension-is-nil ()
   "No extension produces a nil filter (i.e. no filtering)."
   (should-not (list-directory-files--filter-by-extension nil)))
+
+(ert-deftest test-gptel-tools-list-filter-by-extension-case-insensitive ()
+  "Boundary: extension filtering is case-insensitive."
+  (let* ((filter (list-directory-files--filter-by-extension "txt"))
+         (info '(:success t :path "/x/FOO.TXT" :is-directory nil)))
+    (should (funcall filter info))))
+
+(ert-deftest test-gptel-tools-list-filter-by-extension-drops-failed-file-info ()
+  "Boundary: failed file info entries do not pass file extension filters."
+  (let* ((filter (list-directory-files--filter-by-extension "txt"))
+         (info '(:success nil :path "/x/foo.txt" :is-directory nil)))
+    (should-not (funcall filter info))))
 
 ;; -------------------------- format-file-entry
 
@@ -133,6 +153,49 @@
             (paths (mapcar (lambda (i) (plist-get i :path)) files)))
        (should (cl-some (lambda (p) (string-match-p "/c\\.txt\\'" p)) paths))))))
 
+(ert-deftest test-gptel-tools-list-list-directory-max-depth ()
+  "Boundary: max-depth limits recursive traversal."
+  (test-gptel-tools-list--with-tree
+   (lambda (root)
+     (let* ((result (list-directory-files--list-directory root t nil 0))
+            (files (plist-get result :files))
+            (paths (mapcar (lambda (i) (plist-get i :path)) files)))
+       (should-not (cl-some (lambda (p) (string-match-p "/c\\.txt\\'" p)) paths))))))
+
+(ert-deftest test-gptel-tools-list-list-directory-filtered-recursive-keeps-matching-files ()
+  "Normal: recursive extension filter returns matching nested files."
+  (test-gptel-tools-list--with-tree
+   (lambda (root)
+     (let* ((filter (list-directory-files--filter-by-extension "txt"))
+            (result (list-directory-files--list-directory root t filter))
+            (files (plist-get result :files))
+            (paths (mapcar (lambda (i) (plist-get i :path)) files)))
+       (should (cl-some (lambda (p) (string-match-p "/a\\.txt\\'" p)) paths))
+       (should (cl-some (lambda (p) (string-match-p "/c\\.txt\\'" p)) paths))
+       (should-not (cl-some (lambda (p) (string-match-p "/b\\.org\\'" p)) paths))))))
+
+(ert-deftest test-gptel-tools-list-list-directory-records-entry-errors ()
+  "Error: per-entry metadata failures are collected."
+  (test-gptel-tools-list--with-tree
+   (lambda (root)
+     (cl-letf (((symbol-function 'list-directory-files--get-file-info)
+                (lambda (path)
+                  (if (string-match-p "/a\\.txt\\'" path)
+                      (list :success nil :path path :error "denied")
+                    (let* ((attrs (file-attributes path 'string))
+                           (dirp (eq t (file-attribute-type attrs))))
+                      (list :success t
+                            :path path
+                            :size 0
+                            :last-modified (current-time)
+                            :is-directory dirp
+                            :permissions "-rw-r--r--"
+                            :executable nil))))))
+       (let ((errors (plist-get (list-directory-files--list-directory root nil nil)
+                                :errors)))
+         (should errors)
+         (should (string-match-p "denied" (car errors))))))))
+
 (ert-deftest test-gptel-tools-list-list-directory-error-not-a-directory ()
   "Non-directory path returns errors entry."
   (test-gptel-tools-list--with-tree
@@ -141,6 +204,17 @@
                      (expand-file-name "a.txt" root) nil nil))
             (errors (plist-get result :errors)))
        (should errors)))))
+
+(ert-deftest test-gptel-tools-list-list-directory-error-accessing-directory ()
+  "Error: directory access failures are collected."
+  (test-gptel-tools-list--with-tree
+   (lambda (root)
+     (cl-letf (((symbol-function 'directory-files)
+                (lambda (&rest _args) (error "cannot list"))))
+       (let ((errors (plist-get (list-directory-files--list-directory root nil nil)
+                                :errors)))
+         (should errors)
+         (should (string-match-p "cannot list" (car errors))))))))
 
 ;; -------------------------- format-output
 
@@ -157,6 +231,27 @@
   (let ((out (list-directory-files--format-output
               "/nowhere" '(:files nil :errors nil))))
     (should (string-match-p "No files found" out))))
+
+(ert-deftest test-gptel-tools-list-format-output-errors-only ()
+  "Format-output includes errors when no files are present."
+  (let ((out (list-directory-files--format-output
+              "/nowhere" '(:files nil :errors ("boom")))))
+    (should (string-match-p "Errors encountered" out))
+    (should (string-match-p "boom" out))))
+
+(ert-deftest test-gptel-tools-list-format-output-files-and-errors ()
+  "Format-output separates file listings and errors."
+  (let* ((info (list :success t
+                     :path (expand-file-name "foo.txt" "~")
+                     :size 1
+                     :last-modified (current-time)
+                     :is-directory nil
+                     :permissions "-rw-r--r--"
+                     :executable nil))
+         (out (list-directory-files--format-output
+               "~" (list :files (list info) :errors (list "boom")))))
+    (should (string-match-p "Found 1 file" out))
+    (should (string-match-p "Errors encountered" out))))
 
 (provide 'test-gptel-tools-list-directory-files)
 ;;; test-gptel-tools-list-directory-files.el ends here

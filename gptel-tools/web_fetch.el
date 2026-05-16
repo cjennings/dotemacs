@@ -62,7 +62,7 @@ from the response status line, or nil when the line is unrecognized."
           (let* ((status (when (re-search-forward
                                 "^HTTP/[0-9.]+ \\([0-9]+\\)" (point-max) t)
                            (string-to-number (match-string 1))))
-                 (body-start (when (re-search-forward "\n\n" nil t)
+                 (body-start (when (re-search-forward "\r?\n\r?\n" nil t)
                                (point))))
             (cons status
                   (if body-start

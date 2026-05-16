@@ -23,11 +23,17 @@
 PATH must resolve under the user's home directory, must be an
 existing directory, and must be inside a git working tree.  Returns
 the expanded path string on success; signals `error' otherwise."
-  (let ((full (expand-file-name (or path "~") "~")))
+  (let* ((home (file-name-as-directory (file-truename (expand-file-name "~"))))
+         (full (expand-file-name (or path "~") "~")))
     (unless (string-prefix-p (expand-file-name "~") full)
       (error "Path must be within home directory: %s" path))
     (unless (file-directory-p full)
       (error "Not a directory: %s" full))
+    (let ((resolved (file-truename full)))
+      (unless (or (string= resolved (directory-file-name home))
+                  (string-prefix-p home resolved))
+        (error "Resolved path must be within home directory: %s" path))
+      (setq full resolved))
     (let ((default-directory full))
       (unless (zerop (process-file "git" nil nil nil
                                    "rev-parse" "--is-inside-work-tree"))

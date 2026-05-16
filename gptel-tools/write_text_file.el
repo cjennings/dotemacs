@@ -22,9 +22,22 @@
 (defun cj/write-text-file--validate-path (path)
   "Validate PATH for write.  Return the expanded path on success.
 PATH must resolve inside the user's home directory."
-  (let ((full (expand-file-name path "~")))
+  (let* ((home (file-name-as-directory (file-truename (expand-file-name "~"))))
+         (full (expand-file-name path "~"))
+         (existing (and (file-exists-p full) (file-truename full)))
+         (parent (file-name-directory full))
+         (resolved-parent (and parent
+                               (file-exists-p parent)
+                               (file-truename parent))))
     (unless (string-prefix-p (expand-file-name "~") full)
       (error "Path must be within home directory: %s" path))
+    (when (and existing
+               (not (string-prefix-p home existing)))
+      (error "Resolved path must be within home directory: %s" path))
+    (when (and resolved-parent
+               (not (or (string= resolved-parent (directory-file-name home))
+                        (string-prefix-p home resolved-parent))))
+      (error "Resolved parent must be within home directory: %s" path))
     full))
 
 (defun cj/write-text-file--backup-name (path)

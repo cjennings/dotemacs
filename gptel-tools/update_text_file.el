@@ -40,20 +40,23 @@
 
 PATH must resolve inside the user's home directory, must exist, must
 be a regular file, and must be readable and writable."
-  (let ((full (expand-file-name path "~")))
+  (let* ((home (file-name-as-directory (file-truename (expand-file-name "~"))))
+         (full (expand-file-name path "~")))
     (unless (string-prefix-p (expand-file-name "~") full)
       (error "Path must be within home directory: %s" path))
     (unless (file-exists-p full)
       (error "File not found: %s" full))
-    (when (file-directory-p full)
-      (error "Path is a directory, not a file: %s" full))
-    (unless (file-readable-p full)
-      (error "No read permission for file: %s" full))
-    (unless (file-writable-p full)
-      (error "No write permission for file: %s" full))
-    (if (file-symlink-p full)
-        (file-truename full)
-      full)))
+    (let ((resolved (file-truename full)))
+      (unless (or (string= resolved (directory-file-name home))
+                  (string-prefix-p home resolved))
+        (error "Resolved path must be within home directory: %s" path))
+      (when (file-directory-p resolved)
+        (error "Path is a directory, not a file: %s" resolved))
+      (unless (file-readable-p resolved)
+        (error "No read permission for file: %s" resolved))
+      (unless (file-writable-p resolved)
+        (error "No write permission for file: %s" resolved))
+      resolved)))
 
 (defun cj/update-text-file--backup-name (path)
   "Return a backup filename for PATH timestamped to the current second."
@@ -113,9 +116,10 @@ on out-of-range LINE-NUM or empty TEXT."
          ;; extra empty element at the end.  Trim it so the line count
          ;; matches what a human would say.
          (trailing-newline (string-suffix-p "\n" content))
-         (line-count (if trailing-newline
-                         (1- (length lines))
-                       (length lines))))
+         (line-count (cond
+                      ((string-empty-p content) 0)
+                      (trailing-newline (1- (length lines)))
+                      (t (length lines)))))
     (when (> line-num (1+ line-count))
       (error "Line %d out of range (file has %d lines)" line-num line-count))
     (let* ((to-insert (if (string-suffix-p "\n" text)
