@@ -169,6 +169,12 @@ Meta+Shift+letter triggers M-S-letter keybindings."
 ;; In daemon mode, no frame exists at startup so env-gui-p returns nil.
 ;; Use server-after-make-frame-hook to set up translations when the first
 ;; GUI client connects. In non-daemon mode, run at startup as before.
+;;
+;; `add-hook' is idempotent for named functions (re-adding the same
+;; symbol is a no-op), and `cj/keyboard-compat-gui-setup' itself only
+;; calls `define-key' -- each key has one binding regardless of how many
+;; times the function fires -- so this block is safe under repeated
+;; module loads.
 (if (daemonp)
     (add-hook 'server-after-make-frame-hook #'cj/keyboard-compat-gui-setup)
   (add-hook 'emacs-startup-hook #'cj/keyboard-compat-gui-setup))

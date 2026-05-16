@@ -70,7 +70,8 @@
   (flycheck-define-checker languagetool
     "A grammar checker using LanguageTool.
 Uses a wrapper script to format output for flycheck."
-    :command ("~/.emacs.d/scripts/languagetool-flycheck"
+    :command ((eval (expand-file-name "scripts/languagetool-flycheck"
+                                      user-emacs-directory))
               source-inplace)
     :error-patterns
     ((warning line-start (file-name) ":" line ":" column ": "

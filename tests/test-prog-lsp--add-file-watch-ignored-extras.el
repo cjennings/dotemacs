@@ -87,23 +87,24 @@
     (should-error (cj/lsp--add-file-watch-ignored-extras)
                   :type 'wrong-type-argument)))
 
-(ert-deftest test-prog-lsp--remove-eldoc-provider-removes-lsp-provider-locally ()
-  "Normal: remove lsp-mode's Eldoc provider from the buffer-local hook."
-  (with-temp-buffer
-    (setq-local eldoc-documentation-functions
-                '(lsp-eldoc-function eldoc-documentation-default))
-    (cj/lsp--remove-eldoc-provider)
+(ert-deftest test-prog-lsp--remove-eldoc-provider-global-removes-from-default ()
+  "Normal: remove lsp-mode's Eldoc provider from the global hook value.
+The per-buffer removal that this replaced raced lsp-mode's own buffer-
+local hook population; removing globally before any LSP buffer attaches
+makes the absence stick for every subsequent lsp-managed buffer."
+  (let ((eldoc-documentation-functions
+         '(lsp-eldoc-function eldoc-documentation-default)))
+    (cj/lsp--remove-eldoc-provider-global)
     (should-not (memq #'lsp-eldoc-function eldoc-documentation-functions))
     (should (memq 'eldoc-documentation-default eldoc-documentation-functions))))
 
-(ert-deftest test-prog-lsp--remove-eldoc-provider-does-not-touch-default-value ()
-  "Boundary: removing the LSP provider in one buffer leaves the default hook alone."
-  (let ((eldoc-documentation-functions '(lsp-eldoc-function)))
-    (with-temp-buffer
-      (setq-local eldoc-documentation-functions '(lsp-eldoc-function))
-      (cj/lsp--remove-eldoc-provider)
-      (should-not (memq #'lsp-eldoc-function eldoc-documentation-functions)))
-    (should (memq #'lsp-eldoc-function eldoc-documentation-functions))))
+(ert-deftest test-prog-lsp--remove-eldoc-provider-global-is-idempotent ()
+  "Boundary: re-running the removal after the provider is gone is a no-op."
+  (let ((eldoc-documentation-functions '(eldoc-documentation-default)))
+    (cj/lsp--remove-eldoc-provider-global)
+    (cj/lsp--remove-eldoc-provider-global)
+    (should (equal eldoc-documentation-functions
+                   '(eldoc-documentation-default)))))
 
 (ert-deftest test-prog-lsp--module-no-obsolete-lsp-eldoc-hook-reference ()
   "Regression: prog-lsp should not reference obsolete `lsp-eldoc-hook'."

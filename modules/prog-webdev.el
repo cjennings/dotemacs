@@ -21,6 +21,8 @@
 
 ;;; Code:
 
+(require 'system-lib)  ; for cj/executable-find-or-warn
+
 (defvar typescript-ts-mode-map)
 (defvar tsx-ts-mode-map)
 (defvar js-ts-mode-map)
@@ -38,6 +40,10 @@ Install with: sudo pacman -S typescript-language-server")
 (defvar prettier-path "prettier"
   "Path to prettier executable.
 Install with: sudo pacman -S prettier")
+
+;; Warn at load time if prettier is missing rather than waiting for the
+;; first format-on-save to fail mid-edit.
+(cj/executable-find-or-warn prettier-path "prettier formatter" 'prog-webdev)
 
 ;; ------------------------------ Web Dev Setup --------------------------------
 ;; shared setup for TypeScript, JavaScript, and TSX modes
