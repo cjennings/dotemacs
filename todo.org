@@ -2637,18 +2637,39 @@ the install-once guard for the post-response hook, and the
 save/delete interactive entry points exercised via =cl-letf= stubs.
 Per-test temp directories; no writes outside them.
 
-*** TODO [#B] Add ERT coverage for gptel-tools .el files :tests:
+*** 2026-05-16 Sat @ 01:39:11 -0500 Added ERT coverage for the gptel-tools .el files
 
-The six tool files have zero direct coverage. Focus on the pure helpers (the interactive =gptel-make-tool= entry points get smoke coverage only):
+Five new test files cover the five remaining gptel tools beyond
+=update_text_file= (which was tested with its rewrite):
 
-- =read_text_file.el= — =cj/validate-file-path=, =cj/get-file-metadata=, =cj/check-file-size-limits=, =cj/detect-binary-file=, =cj/handle-special-file-types=.
-- =update_text_file.el= — =cj/build-sed-command= (each operation × Normal / Boundary / Error), backup-naming behavior.
-- =write_text_file.el= — overwrite-vs-error path, backup naming, parent-directory creation.
-- =list_directory_files.el= — =--mode-to-permissions=, =--get-file-info=, =--filter-by-extension=, =--format-file-entry=, recursive vs flat listing on a temp dir.
-- =move_to_trash.el= — =gptel--move-to-trash-validate-path= (home/tmp allowed, anywhere else rejected), =gptel--move-to-trash-generate-unique-name= name-conflict suffixing.
-- =read_buffer.el= — small smoke test that =read_buffer= returns the body of an existing buffer and errors on a nonexistent name.
+- =tests/test-gptel-tools-read-buffer.el= -- 5 tests for the new
+  =cj/read-buffer--get-content= helper extracted from the
+  =gptel-make-tool= lambda.
+- =tests/test-gptel-tools-write-text-file.el= -- 10 tests for the
+  helpers extracted from =write_text_file.el= (validate-path,
+  backup-name, ensure-parent, run with normal/overwrite/error
+  paths).
+- =tests/test-gptel-tools-read-text-file.el= -- 12 tests for the
+  pre-existing helpers: =cj/validate-file-path=,
+  =cj/get-file-metadata=, =cj/check-file-size-limits=,
+  =cj/detect-binary-file=, =cj/handle-special-file-types=.
+- =tests/test-gptel-tools-list-directory-files.el= -- 15 tests for
+  the =list-directory-files--*= helpers (mode-to-permissions for
+  files/dirs/executables, get-file-info, extension filter, formatter,
+  recursive vs flat listing, error path).
+- =tests/test-gptel-tools-move-to-trash.el= -- 10 tests for the
+  =gptel--move-to-trash-*= helpers (unique-name generation with and
+  without extension, path validation gating HOME and /tmp, critical
+  directory rejection, perform on files and directories).
 
-Skip mocking =gptel-make-tool= itself; cover the helpers it wraps.
+Two small refactors landed first to make the tooling testable:
+=read_buffer.el= and =write_text_file.el= had their main bodies
+inlined into the =gptel-make-tool= lambdas; I extracted them into
+=cj/read-buffer--get-content= and =cj/write-text-file--run= (plus
+=--validate-path=, =--backup-name=, =--ensure-parent=) following the
+Internal/Wrapper split documented in =elisp-testing.md=.
+
+52 new tests, all green.
 
 *** TODO [#C] Research and shortlist additional gptel tools :feature:research:
 
