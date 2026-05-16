@@ -167,7 +167,7 @@ Hash table mapping calendar name (string) to state plist with:
 Used to detect timezone changes (e.g., when traveling).")
 
 (defvar calendar-sync--state-file
-  (expand-file-name "data/calendar-sync-state.el" user-emacs-directory)
+  (expand-file-name "persist/calendar-sync-state.el" user-emacs-directory)
   "File to persist sync state across Emacs sessions.")
 
 ;;; Timezone Detection

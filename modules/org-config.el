@@ -25,6 +25,8 @@
   (setq org-startup-folded t)               ;; all org files should start in the folded state
   (setq org-cycle-open-archived-trees t)    ;; re-enable opening headings with archive tags with TAB
   (setq org-cycle-hide-drawers 'all)        ;; collapse :PROPERTIES: drawers when a heading folds
+  (setq org-id-locations-file
+        (expand-file-name "persist/org-id-locations" user-emacs-directory))
   (setopt org-outline-path-complete-in-steps nil)
   (setq org-return-follows-link t)          ;; hit return to follow an org-link
   (setq org-list-allow-alphabetical t)      ;; allow alpha ordered lists (i.e., a), A), a., etc.)

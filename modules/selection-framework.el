@@ -229,6 +229,8 @@
 
 (use-package prescient
   :demand t
+  :custom
+  (prescient-save-file (expand-file-name "persist/prescient-save.el" user-emacs-directory))
   :config
   (prescient-persist-mode))
 
