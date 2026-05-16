@@ -1,0 +1,139 @@
+• #+TITLE: Design: GPTel Git Tools and Magit Backend
+  #+AUTHOR: Craig Jennings
+  #+DATE: 2026-05-16
+  #+OPTIONS: toc:nil num:nil
+
+  * Status
+
+  Draft.
+
+  This document was created after the requested path was not present in
+  =docs/design=. It captures the apparent design center: make GPTel more useful
+  inside Magit and then broaden that into Emacs-native agents that can use this
+  configuration as their operating environment.
+
+  * Problem
+
+  =gptel-magit= currently gives this config useful Magit entry points:
+
+  - Generate a commit message from the staged diff.
+  - Create a commit from a generated message.
+  - Explain the diff at point.
+
+  That is valuable, but it is still a narrow "send this diff to the model"
+  workflow. The richer opportunity is to expose Git, Magit, Org, project state,
+  and this Emacs configuration's personal workflow tools as agent affordances.
+
+  The target agent should not treat Emacs as a text terminal. It should treat
+  Emacs as the user's live workspace: buffers, narrowed regions, Magit sections,
+  Org tasks, agenda state, roam notes, mail, compilation buffers, diagnostics,
+  and vterm sessions are all structured context.
+
+  * Existing Leverage
+
+  This configuration already has several pieces that make agent work more
+  interesting than generic filesystem tools:
+
+  - =ai-config.el= provides GPTel backends, model switching, saved
+    conversations, Org-formatted AI buffers, context management, local tools,
+    and =gptel-magit= bindings.
+  - =gptel-tools/= provides local filesystem and buffer tools with safety
+    features such as backups and trash moves.
+  - =reconcile-open-repos.el= scans active project roots, finds dirty repos,
+    pulls clean repos, and opens Magit for manual review.
+  - =ai-vterm.el= design work gives the agent project-scoped terminal sessions
+    that stay inside Emacs.
+  - Org modules provide agenda, capture, refile, org-roam, dailies, export,
+    reveal.js, org-noter, and org-drill.
+  - Mail modules provide =mu4e=, =org-msg=, contacts, account-specific mail
+    navigation, attachment workflows, and privacy toggles for remote content.
+  - Communication modules provide Telegram via =telega=, Slack via
+    =emacs-slack=, and IRC via ERC.
+  - File and shell modules provide Dirvish/Dired, Eshell, vterm, TRAMP-aware
+    shell navigation, file previews, rsync, wdired, and external-open helpers.
+  - Media modules provide EMMS/MPV music playback, M3U playlist management,
+    radio station entries, Dirvish-to-playlist integration, transcription,
+    video/audio recording, EWW, Elfeed, PDF, and EPUB workflows.
+  - Development modules provide project navigation, test/lint Makefile targets,
+    compilation buffers, coverage summaries, and profiling/debug docs.
+
+  * Magit Backend Ideas
+
+  ** Section-aware Git tools
+
+  Expose Magit sections as first-class GPTel tools. Instead of asking the model
+  to reason over plain diff text, let it request:
+
+  - Current Magit section type, heading, file, hunk range, and content.
+  - Sibling sections under the same file.
+  - Staged vs unstaged vs untracked status for the current repository.
+  - Commit metadata around the selected commit or branch.
+  - The exact staged patch that would be committed.
+
+  This would let prompts say "review the file section at point" or "explain this
+  hunk in the context of adjacent hunks" without manually copying context.
+
+  ** Commit intent workbench
+
+  Add a transient that builds a commit intentionally:
+
+  1. Agent reads unstaged/staged changes.
+  2. Agent proposes coherent commit groups.
+  3. User selects groups in a Magit-style buffer.
+  4. Agent stages those paths or hunks only after confirmation.
+  5. Agent generates a message that reflects the selected intent.
+
+  This is more useful than a single commit-message generator because many working
+  trees contain two or three unrelated edits.
+
+  ** Patch narrative buffer
+
+  Generate an Org buffer that explains the change set as a reviewable narrative:
+
+  - "What changed" by subsystem.
+  - "Why it appears to have changed" inferred from names, tests, and docs.
+  - "Risk areas" with links back to Magit file sections.
+  - "Suggested verification" using local Makefile targets when present.
+
+  The value is not only explanation; it is a reusable artifact that can be pasted
+  into a PR description, saved with an AI session, or filed into org-roam.
+
+  ** Review-thread simulator
+
+  Before opening a PR, create a local review buffer with inline comments attached
+  to Magit diff positions. The agent writes comments as if reviewing someone
+  else's patch, but the UI stays local:
+
+  - Comments are grouped by severity.
+  - Each comment links to the file and line.
+  - Resolved comments can be checked off in Org.
+  - Accepted suggestions can be applied through the existing text-update tools.
+
+  This makes "review my diff" less ephemeral and avoids losing useful review
+  findings inside a chat transcript.
+
+  ** Rebase and conflict coach
+
+  When Magit enters a rebase, cherry-pick, merge, or conflict state, offer an
+  agent command that reads:
+
+  - Git operation state from =.git/=.
+  - Conflict markers in the worktree.
+  - Relevant commits from =git log --merge= or the rebase todo.
+  - The current Magit status sections.
+
+  The agent should explain the conflict in domain terms and propose a resolution
+  patch, but leave the actual edit and =git add= under explicit user control.
+
+  ** Regression archaeology
+
+  A Magit transient command could run a bisect-like reasoning workflow:
+
+  - Ask for a symptom and a known-good/known-bad range.
+  - Summarize candidate commits in small batches.
+  - Use tests or user-provided repro commands when available.
+  - Maintain a bisect journal in an Org buffer.
+
+  Even when the agent cannot run the whole bisect, it can keep the investigation
+  structured and preserve why each commit was judged good or bad.
+
