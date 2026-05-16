@@ -123,5 +123,21 @@ a gptel-magit function is called."
 One for magit-commit (generate) and one for magit-diff (explain)."
   (should (= 2 (length test-gptel-magit--transient-calls))))
 
+;;; Error Cases — Install behavior
+
+(ert-deftest test-ai-config-gptel-magit-declared-via-use-package ()
+  "ai-config should declare gptel-magit via `use-package' so it gets installed.
+Raw `(autoload ...)' calls register the function name but leave the
+package uninstalled on machines that never ran `package-install'.  The
+\\=`use-package' form inherits `use-package-always-ensure' from
+early-init, which is how every other package in this config gets
+onto `load-path' before its autoloads fire."
+  (let ((source-file (expand-file-name "modules/ai-config.el"
+                                       user-emacs-directory)))
+    (with-temp-buffer
+      (insert-file-contents source-file)
+      (goto-char (point-min))
+      (should (re-search-forward "(use-package gptel-magit\\b" nil t)))))
+
 (provide 'test-ai-config-gptel-magit-lazy-loading)
 ;;; test-ai-config-gptel-magit-lazy-loading.el ends here
