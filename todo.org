@@ -399,6 +399,7 @@ Expected outcome:
   lead to permanent insecure defaults.
 
 ** TODO [#B] Implement EMMS-free music-config architecture       :refactor:
+*** 2026-05-15 Fri @ 19:17:01 -0500 Specification
 Implement the design in [[file:docs/design/music-config-without-emms.org][Design: music-config Without EMMS]].
 
 The implementation should make =music-config.el= load without EMMS, introduce
@@ -421,8 +422,104 @@ Acceptance checks:
   where a compatibility adapter is explicitly under test.
 - New tests cover playlist state, backend command dispatch, M3U persistence,
   and the EMMS-free load smoke path.
-** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
 
+*** TODO [#B] Pure helpers + state structs extraction                :refactor:
+Lift EMMS-free pure code into standalone form: file validation, recursive
+collection, M3U parse/write, safe filenames, radio-station content, and
+URL/file track typing.  Introduce =cj/music-track= and =cj/music-playlist=
+cl-structs plus state-mutation helpers (=cj/music-playlist-*= predicates and
+setters).  Files: =modules/music-config.el=, possibly a new
+=modules/music-state.el= split.  Existing pure-helper tests should pass
+unchanged.
+
+Acceptance: structs defined, helpers callable in batch without EMMS loaded.
+
+Depends on: none (start here).
+
+*** TODO [#B] Backend protocol + fake test backend                   :refactor:tests:
+Define the backend plist contract (=:available-p :play :pause :resume :stop
+:seek :volume :status :metadata=) and =cj/music-current-backend=.  Add
+=cj/music-state-change-functions= abnormal hook with the v1 event set
+(=started=, =paused=, =resumed=, =stopped=, =finished=, =error=,
+=playlist-changed=, =mode-changed=).  Create =tests/testutil-music-backend.el=
+exposing =cj/test-music-fake-backend= with an event ledger.
+
+Acceptance: fake backend installable in tests; ordered-event assertions work
+against a no-op playback flow.
+
+Depends on: pure helpers + state structs.
+
+*** TODO [#B] Read-side state API + characterization tests           :tests:refactor:
+Implement =cj/music-playing-p=, =cj/music-paused-p=, =cj/music-current-track=,
+=cj/music-playlist-state=, =cj/music-track-description=.  Before rewriting
+command bodies, add characterization tests against current behavior for
+=cj/music-next=, =cj/music-previous=, =cj/music-toggle-consume=,
+=cj/music-playlist-toggle=, =cj/music-playlist-load=, =cj/music-playlist-clear=
+so the migration has a safety net.
+
+Acceptance: read-side helpers covered; characterization tests green against
+the current EMMS-backed implementation.
+
+Depends on: backend protocol + fake test backend.
+
+*** TODO [#B] Playlist major mode + render-from-state                :feature:
+Add =cj/music-playlist-mode= rendering the buffer as a view over
+=cj/music-current-playlist=.  Selected-track overlay + face, header reads
+package state, full keymap from design Section "Playlist Buffer" (RET/p, SPC,
+s, >/<, f/b, +/=/-, a, A, c/C, L/S/E/g, r/t/z/x, Z, i, o, q, S-up/down).
+Preserve the active-window background highlight.
+
+Acceptance: opening the playlist renders package state; reorder/shuffle/clear
+go through state mutations and re-render; tests cover header + overlay
+positioning.
+
+Depends on: read-side state API.
+
+*** TODO [#B] mpv backend implementation                             :feature:
+Implement =cj/music-mpv-*= backend functions.  Phase the work per migration
+plan §5: (a) process spawn, UID/PID-stamped socket under
+=temporary-file-directory=, stale-socket sweep, IPC connect via
+=make-network-process :family 'local=, state-hook plumbing.  (b) play/stop/
+next/previous + finished-track auto-advance with deliberate-stop tracking.
+(c) pause/resume, seek, volume over JSON IPC.  (d) metadata read on track
+start.  Add =cj/music-doctor= reporting platform capabilities; ship Windows
+degraded mode (play/stop/next/previous only via stdin/=call-process=).
+
+Acceptance: integration tests tagged =:slow= and skipped when =mpv= not on
+PATH; on Linux/macOS pause/seek/volume parity works; clean socket lifecycle
+across Emacs restart and exit.
+
+Depends on: backend protocol + fake test backend.
+
+*** TODO [#B] Command + Dired/Dirvish rewire                         :refactor:
+Migrate user-facing commands (=cj/music-play=, =cj/music-pause=,
+=cj/music-stop=, =cj/music-next=, =cj/music-previous=, seek/volume,
+random/repeat/consume/shuffle toggles) to operate on package state and call
+=cj/music-current-backend=.  Update Dired/Dirvish =+= add routing,
+M3U load/save/edit/reload, radio-station creation, F10 toggle, and =C-; m=
+keymap entries to drop EMMS symbols.  Migrate command-flow tests to the fake
+backend.
+
+Acceptance: full keymap functional end-to-end against the fake backend;
+characterization tests still green; Dirvish =+= add path covered.
+
+Depends on: playlist major mode + mpv backend.
+
+*** TODO [#B] EMMS removal + parity walk                             :cleanup:tests:
+Remove =cj/emms--setup=, the on-demand EMMS loader, and the =use-package emms=
+block.  Add the EMMS-free batch-load smoke test (=music-config.el= requires
+clean without EMMS installed).  Run the 22-step parity walk from design
+§"Parity Walk" against the new implementation; record measurements against
+the performance budget (1000-track load <500ms, reorder <50ms, IPC dispatch
+<100ms, header refresh <16ms) and note any deviations.
+
+Acceptance: =init.el= loads cleanly without EMMS; =make test= passes; parity
+walk recorded as a completion log entry under the parent task.
+
+Depends on: command + Dired/Dirvish rewire.
+
+** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
+*** 2026-05-15 Fri @ 19:16:08 -0500 Specification
 Consolidate the developer F-key block into a coherent sequence. F5 reserved for debug (separate ticket). Format bindings move off F6 to C-; f.
 
 Menu mechanism: =completing-read= everywhere (consistent with F7 coverage scope prompt and with the vertico/consult workflow in the rest of the config). No transient definitions.
@@ -472,6 +569,82 @@ Per-language test discovery:
 **Ordering:**
 Do this after the coverage-config work ships. No churn mid-flight.
 
+*** TODO [#B] Format keybindings move off F6                         :refactor:cleanup:
+Move blacken-buffer (python), shfmt-buffer (sh), and clang-format-buffer (c)
+off F6 onto the =C-; f= prefix, which already hosts format-buffer bindings.
+Also remove projectile-run-project from F6 (it folds into the new F4).
+Touch the per-language config modules that currently bind F6 for formatting.
+
+Acceptance: F6 has no remaining format-or-run bindings in any module; =C-; f=
+prefix triggers the right formatter per major mode.
+
+Depends on: none (start here -- clears F6 before F4/F6 work lands).
+
+*** TODO [#B] Project-type detection helper                          :feature:
+Single helper that returns a project-type symbol (=compiled=, =interpreted=,
+=unknown=) from the current buffer's project.  Uses
+=projectile-project-compilation-cmd= when set, then heuristic fallbacks:
+=go.mod=, =Makefile=, =Eask=, =package.json=, =pyproject.toml=,
+=docker-compose.yml=.  Lives near the F4 dispatcher.
+
+Acceptance: ERT tests cover each heuristic in isolation plus a precedence
+case where projectile's cached cmd wins over the file heuristics.
+
+Depends on: none.
+
+*** TODO [#B] F4 compile+run dispatcher                              :feature:
+Build the F4 binding per spec: plain F4 opens a completing-read whose
+candidates depend on project-type (Compile / Run / Compile + Run [default] /
+Clean + Rebuild for compiled; Run only for interpreted).  C-F4 fast-paths to
+Compile; M-F4 fast-paths to Clean + Rebuild.  Both fast paths show a "not a
+compiled language" message and no-op on interpreted projects.  Reads
+projectile's per-project compile/run commands; no Docker-specific logic.
+
+Acceptance: each candidate dispatches to the right projectile command; fast
+paths no-op cleanly on interpreted projects; F4 bindings live in one module.
+
+Depends on: project-type detection helper.
+
+*** TODO [#B] Per-language test discovery                            :feature:tests:
+Provide a single =cj/--tests-in-buffer= function returning a list of test
+names for the current buffer's language.  Tree-sitter queries for Python,
+Go, TS/JS (treesit-auto already configured); built-in sexp scan for elisp
+(=ert-deftest= forms).  Parsing unopened test files uses with-temp-buffer +
+insert-file-contents + <lang>-ts-mode + treesit-query-capture.  Queries are
+spelled out in the spec above.
+
+Acceptance: ERT tests feed each language a fixture file and assert the
+expected test-name list comes back; missing grammar surfaces a clear error.
+
+Depends on: none (parallel-safe with F4 work).
+
+*** TODO [#B] F6 test dispatcher                                     :feature:tests:
+Build the F6 binding per spec: plain F6 opens completing-read with "All
+tests", "Current file's tests", "Run a test..."; C-F6 fast-paths to current
+file's tests; M-F6 fast-paths to "Run a test...".  "Current file's tests"
+runs the buffer directly if it's a test file, otherwise finds matching test
+files via language conventions (elisp =tests/test-<module>*.el=, python
+=tests/test_<module>.py=, etc.) and runs them aggregated.  "Run a test..."
+pre-selects =cj/--last-test-run= (buffer-local) and errors with "No tests
+found for <buffer>" when discovery returns nothing -- no silent fallthrough.
+
+Acceptance: each entry point dispatches to the right runner; buffer-local
+last-test memory persists per source file; no-match error fires correctly.
+
+Depends on: per-language test discovery.
+
+*** TODO [#B] F7 hand-off to dev-fkeys story                         :feature:
+Once the coverage track ships ([[file:../docs/design/coverage.org][docs/design/coverage.org]]),
+confirm F7 binds =cj/coverage-report= and lives alongside F4/F6 in the same
+dev-fkeys module so the three keys read as one unit.  No new coverage logic
+here -- only the binding placement and a short comment block in the module
+pointing at the coverage design doc.
+
+Acceptance: F7 invokes coverage-report; F4/F6/F7 are visibly grouped in one
+module; coverage track is shipped before this lands.
+
+Depends on: the coverage-config track shipping; F4 and F6 sub-tasks above.
+
 ** TODO [#B] Review and rebind M-S- keybindings :refactor:
 
 Changed from M-uppercase to M-S-lowercase for terminal compatibility.
@@ -497,6 +670,7 @@ These may override useful defaults - review and pick better bindings:
 - M-S-z undo-kill-buffer (was overriding zap-to-char)
 
 ** TODO [#B] Build cj/dev-setup-project helper (per docs/design/dev-setup-project.org) :feature:
+*** 2026-05-15 Fri @ 19:17:37 -0500 Specification
 
 Interactive command that opens a review buffer with proposed per-subdirectory .dir-locals.el contents (projectile compile/run/test + cj/coverage-backend), optional starter Makefile when none exists, and gitignore updates. User edits inline, C-c C-c writes all files.
 
@@ -516,8 +690,114 @@ Deferred:
 
 Do this after the F-key rework ticket ships; don't want to churn project configs before the keys are stable.
 
+*** TODO [#B] Pure detection + parsing helpers                       :feature:
+Implement the four pure helpers the rest of the command composes on:
+- =cj/--dev-setup-parse-makefile-targets FILE= (.PHONY + bare target lines, skip pattern rules)
+- =cj/--dev-setup-parse-package-json-scripts FILE= (scripts block, JSON)
+- =cj/--dev-setup-detect-project-shape ROOT= (Elisp / Go / Python / Node-TS / Docker-Compose polyglot / unknown)
+- =cj/--dev-setup-map-targets-to-roles TARGETS= (best-guess compile/run/test mapping per design § Detection)
+
+Files: =modules/dev-setup-config.el= (new).  No interactive surface, no I/O
+beyond reading the named file.
+
+Acceptance: each helper callable in isolation with handcrafted fixtures;
+no command yet.
+
+Depends on: none -- start here.
+
+*** TODO [#B] ERT coverage for the pure helpers                      :feature:tests:
+Normal/Boundary/Error tests for every helper from the prior sub-task,
+matching the design's testing section.
+
+Files: =tests/test-dev-setup-config.el=, plus
+=tests/testutil-dev-setup-config.el= for the temp-project fixture builder
+(writes Makefile / package.json / compose stub into =make-temp-file ... 'dir=).
+
+Acceptance: =make test-file FILE=tests/test-dev-setup-config.el= green;
+every helper has at least one Normal, one Boundary, one Error case.
+
+Depends on: pure detection + parsing helpers.
+
+*** TODO [#B] Starter-Makefile + .dir-locals.el proposal generator   :feature:
+Pure function =cj/--dev-setup-build-proposal SHAPE ROOT= returning a
+structured plist of proposed blocks: one per subproject =.dir-locals.el=
+(projectile compile/run/test + =cj/coverage-backend=), the optional starter
+Makefile (only when none exists, adapted per shape per design § Tier 3),
+and the gitignore append lines.
+
+Files: =modules/dev-setup-config.el=.
+
+Acceptance: given a shape plist, returns deterministic block list ready for
+the review buffer; ERT cases cover each shape (Elisp / Go / Python / Node-TS
+/ polyglot) plus the Tier-1 "Makefile already exists, suppress Makefile
+block" branch.
+
+Depends on: pure detection + parsing helpers.
+
+*** TODO [#B] Review-buffer major mode + parser                      :feature:
+Define =cj/dev-setup-review-mode= (derived from =emacs-lisp-mode=) with =C-c
+C-c= / =C-c C-k= bindings, plus the pure parser
+=cj/--dev-setup-review-buffer-parse CONTENTS= that turns buffer text back
+into a block list.  Banner syntax per design § Review Buffer (=;; ==== <path>
+====[ <status>]==, gitignore special, Makefile special).
+
+Files: =modules/dev-setup-config.el=, =tests/test-dev-setup-config.el=
+(parser cases: well-formed multi-block, single block, empty body, missing
+banner, malformed elisp inside a dir-locals block).
+
+Acceptance: round-trip -- render proposal -> parse buffer -> equal block
+list.  Mode keybindings smoke-tested.
+
+Depends on: starter-Makefile + .dir-locals.el proposal generator.
+
+*** TODO [#B] Writer + status diff + projectile cache reset          :feature:
+Implement the =C-c C-c= writer: diff each parsed block against the on-disk
+file to assign =UNCHANGED= / =WILL UPDATE= / =WILL CREATE=, write only the
+non-UNCHANGED ones, append gitignore idempotently, never touch an existing
+Makefile, honor the =;;; cj/dev-setup-project: ignore= escape hatch, clear
+projectile's per-project command cache, print the summary line.
+
+Files: =modules/dev-setup-config.el=, plus ERT cases for the diff +
+idempotent-append logic against temp dirs.
+
+Acceptance: re-run on an unchanged project writes nothing; renaming a
+Makefile target flips one block to =WILL UPDATE=; ignore-marked files stay
+untouched.
+
+Depends on: review-buffer major mode + parser.
+
+*** TODO [#B] Interactive command + smoke test                       :feature:tests:
+Thin =cj/dev-setup-project= interactive wrapper: resolve project root via
+projectile, run detection, build proposal, render the review buffer, pop to
+it.  One smoke test against a prepared temp project asserting the expected
+files exist after a simulated =C-c C-c=.
+
+Files: =modules/dev-setup-config.el=, =tests/test-dev-setup-config.el=.  Add
+=(require 'dev-setup-config)= to =init.el= (or the appropriate aggregator).
+
+Acceptance: =M-x cj/dev-setup-project= on a fixture project opens the review
+buffer; =C-c C-c= writes the expected files.
+
+Depends on: writer + status diff + projectile cache reset.
+
+*** TODO [#B] Resolve open questions + design follow-ups             :cleanup:
+Three design questions to close before / during implementation: (a) include
+=make coverage= target in starter Makefile? (b) project-wide override file
+=.cj-dev-setup.el=? (c) Cargo/pom detection.
+
+Body: park decisions inline in the design doc or run =arch-decide= if they
+turn out load-bearing.
+
+Depends on: none, but easiest after the writer sub-task surfaces real
+friction.
+
 ** TODO [#B] Pick and wire a debug backend for F5 :feature:
 
+#+begin_src emacs-lisp
+  Give me an idea of the amount of work and complexity and what allows for a consistent UX across languages. 
+#+end_src
+
+*** 2026-05-15 Fri @ 19:19:21 -0500 Inital Goals
 Bind F5 globally to a debug entry point. Backend choice is the hard part:
 
 - dape (Debug Adapter Protocol for Emacs) — modern, multi-language via DAP. Single UX across Python, Go, TS, Rust, etc. Less mature than DAP clients in other editors.
@@ -540,7 +820,7 @@ Design: [[file:../docs/design/debug-profiling.org][docs/design/debug-profiling.o
 
 Implement via =/start-work= against the design — branch =feat/debug-profiling=, commits decomposed along the test-first split-for-testability boundary. Once shipped, use it as the v1 exercise on the queued [#B] org-capture target-building investigation.
 
-** DOING [#B] Module-by-module review and hardening :review:no-sync:
+** DOING [#B] Module-by-module hardening :harden:no-sync:
 
 Review every file in =modules/= and capture concrete bugs, tests, refactors,
 and design improvements as child tasks. This is intentionally separate from the
@@ -585,7 +865,7 @@ Suggested review order:
 6. Integrations and applications: mail, Slack, ERC, Elfeed, EWW, Dirvish,
    PDF, Calibre, music, recording/transcription, AI/rest tooling.
 
-*** DOING [#B] Review foundation modules                           :review:
+*** DOING [#B] Harden foundation modules                           :harden:
 
 Scope:
 - =system-lib.el=
@@ -791,7 +1071,26 @@ hierarchy.  Define named constants
 etc.) at the top of early-init.el with a short comment explaining the
 local-first ordering.
 
-*** DOING [#B] Review custom editing utility modules :review:
+**** TODO [#C] Remove dead world-clock block in =chrono-tools.el= :cleanup:
+
+Lines 23-41 carry a 19-line commented-out =use-package time= block
+("old world-clock config while testing time-zone package above") left
+over from the time-zones migration.  Either delete it or replace with
+a one-line breadcrumb noting that =time-zones= superseded it.  Dead
+commented code lengthens the file with no value to future readers.
+
+**** TODO [#C] Add coverage for =cj/tmr-select-sound-file= in =chrono-tools.el= :tests:
+
+The two TMR sound-selection helpers (=cj/tmr-select-sound-file= and
+=cj/tmr-reset-sound-to-default=) currently have no tests.  The select
+function has nontrivial branching across the prefix-arg path, the
+missing-directory path, the empty-directory path, the cancel path,
+and the "default selected" message variant.  Refactor the
+prefix-arg branch to call =cj/tmr-reset-sound-to-default= directly
+so the duplication collapses, then add Normal/Boundary/Error tests
+against the resulting helper.
+
+*** DOING [#B] Harden custom editing utility modules :harden:
 
 Scope:
 - =custom-buffer-file.el=
@@ -955,7 +1254,27 @@ opening quote characters.  The state machine is the kind of helper
 that fails silently on the unusual case -- ERT coverage on those
 inputs catches regressions during refactors.
 
-*** DOING [#B] Review UI and navigation modules :review:
+**** TODO [#C] De-duplicate spell-checker availability guard in =flyspell-and-abbrev.el= :cleanup:
+
+=cj/flyspell-toggle= and =cj/flyspell-then-abbrev= each carry an
+identical =(unless (or (executable-find "aspell") (executable-find
+"ispell") (executable-find "hunspell")) (user-error ...))= block.
+Extract into =cj/--require-spell-checker= and call from both sites.
+Keeps the executable list in one place when a new checker (e.g.
+nuspell) is added.
+
+**** TODO [#C] Add coverage for =cj/flyspell-then-abbrev= and helpers in =flyspell-and-abbrev.el= :tests:
+
+The interactive flow has real logic worth pinning: previous-
+misspelling overlay walk in =cj/find-previous-flyspell-overlay=
+(face-change check, list reversal), the abbrev-table choice in
+=cj/flyspell-then-abbrev= (prefix arg switches local vs global), and
+the buffer-type dispatch in =cj/flyspell-on-for-buffer-type= (prog-
+mode -> flyspell-prog-mode vs text-mode -> flyspell-mode).  None of
+these have tests.  Pure-logic helpers can be exercised against
+synthetic overlay buffers without aspell on the path.
+
+*** DOING [#B] Harden UI and navigation modules :harden:
 
 Scope:
 - =ui-config.el=
@@ -1097,7 +1416,7 @@ is rendered).  Wrap the advice block in
 =(with-eval-after-load 'nerd-icons ...)= so the advice still applies
 but nerd-icons can stay deferred for batch and headless contexts.
 
-*** DOING [#B] Review Org workflow modules :review:
+*** DOING [#B] Harden Org workflow modules :harden:
 
 Scope:
 - =org-config.el=
@@ -1421,7 +1740,28 @@ corrupt each other's state.  Pass the data through a plist on
 =org-capture-plist=, a per-invocation closure, or a queue, instead of
 global mutation.
 
-*** DOING [#B] Review programming workflow modules :review:
+**** TODO [#C] Declare cross-module free variables in =mu4e-org-contacts-integration.el= :cleanup:quick:
+
+The module reads =contacts-file= (defined in =user-constants.el=) and
+calls =cj/get-all-contact-emails= (defined in =org-contacts-config.el=)
+without any forward declaration at the top of the file.  Byte-compile
+in isolation warns about both as free variables / unknown functions.
+Add =(eval-when-compile (defvar contacts-file))= and
+=(declare-function cj/get-all-contact-emails "org-contacts-config")=
+near the existing requires so the compile is clean and the
+cross-module dependency is explicit at the top of the file.
+
+**** TODO [#C] Add coverage for =mu4e-org-contacts-integration.el= completion logic :tests:
+
+No tests exist for =cj/org-contacts-completion-at-point=,
+=cj/mu4e-org-contacts-tab-complete=, =cj/mu4e-org-contacts-comma-
+complete=, or =cj/mu4e-org-contacts-insert-email=.  The header-field
+detection (=mail-abbrev-in-expansion-header-p=) and the TAB-cycle
+branch are the highest-value coverage targets.  Stub
+=cj/get-all-contact-emails= and run against a temp buffer in
+=mu4e-compose-mode= / =org-msg-edit-mode= where applicable.
+
+*** DOING [#B] Harden programming workflow modules :harden:
 
 Scope:
 - =prog-c.el=
@@ -1641,7 +1981,33 @@ Resolve via =executable-find= over a candidate list (=zathura=,
 =evince=, =okular=, =Preview.app= via =open=, =SumatraPDF.exe=) and
 fall back to =pdf-tools=.
 
-*** DOING [#B] Review integrations and application modules :review:
+**** 2026-05-15 Fri @ 18:49:24 -0500 Fixed abbrev-mode no-arg toggle in =cj/prose-helpers-on=
+
+Replaced the =(if (not (abbrev-mode)) (abbrev-mode))= shape with
+=(unless (bound-and-true-p abbrev-mode) (abbrev-mode 1))= and the same
+for =flycheck-mode= in =modules/flycheck-config.el:36-42=.  Dropped
+"flyspell" from the docstring (the commented-out
+=cj/flyspell-on-for-buffer-type= line had been gone for a while; the
+docstring was lying) and removed the stale comment marker.
+
+Added =tests/test-flycheck-config-prose-helpers-on.el= -- 4 tests
+covering Normal (both modes off -> each enabled once with a positive
+arg) and Boundary (both on -> no-op; each mixed state -> only the off
+one enabled).  The "both on -> no-op" assertion is the regression
+guard for the no-arg toggle shape: it would record a =(nil)= call list
+under the bug and a =()= call list under the fix.
+
+Test infra needed an explicit =(defvar abbrev-mode)= /
+=(defvar flycheck-mode)= at the top of the test file: with
+=lexical-binding: t= and flycheck loaded =:defer t=, =let= on the
+flycheck-mode symbol creates a lexical-only binding the production
+code's =bound-and-true-p= can't see; declaring both as special makes
+=let= dynamic and the test stable.
+
+Full suite: =make test= exits 0; 468 lines of output with =ALL UNIT
+TESTS PASSED= banner; no regressions.
+
+*** DOING [#B] Harden integrations and application modules :harden:
 
 Scope:
 - AI/rest: =ai-config.el=, =ai-conversations.el=, =restclient-config.el=
@@ -2009,56 +2375,109 @@ config (a defcustom, an alist read from disk, or
 =host-environment.el='s machine-table) so the module itself is
 portable.
 
-*** TODO [#B] Review newly added modules :review:
+**** TODO [#B] Fix HTTPS scheme in =markdown-preview= URL :bug:
 
-Per the parent task's re-review pass (2026-05-15), 24 modules were
-either added after the parent task was written or never folded into
-any of the original six review tracks.  Each has been read end to
-end and routed to its proper track; specific findings have been
-filed under the relevant track above.
+=modules/markdown-config.el:45= opens
+=https://localhost:8080/imp= via =browse-url-generic=, but the
+=simple-httpd= listener bound in =httpd-config.el= serves plain
+HTTP on port 8080.  The =https= scheme causes the browser to
+attempt a TLS handshake against a plaintext listener -- the request
+fails before any preview content reaches the page, so the entire
+feature is broken end-to-end.  Change the URL to
+=http://localhost:8080/imp= (and consider switching the launch to
+=browse-url= so the user's default protocol handler is respected).
 
-Modules added after the parent task was written (post-2026-04):
+**** TODO [#C] Document or vendor strapdown.js CDN dependency in =markdown-preview= :cleanup:
 
-- =telega-config.el= (2026-05-13) → integrations
-- =mu4e-attachments.el= (2026-05-12) → integrations
-- =vterm-config.el= (2026-05-10) → integrations
-- =external-open-lib.el= (2026-05-10) → custom editing utilities
-- =eshell-config.el= (2026-05-10) → integrations
-- =cj-window-toggle-lib.el= (2026-05-10) → foundation
-- =cj-window-geometry-lib.el= (2026-05-10) → foundation
-- =cj-org-text-lib.el= (2026-05-10) → foundation
-- =cj-cache-lib.el= (2026-05-10) → foundation
-- =nerd-icons-config.el= (2026-05-07) → UI / navigation
-- =ai-vterm.el= (2026-05-07) → integrations
+=cj/markdown-html= (=modules/markdown-config.el:48-51=) embeds a
+=<script src="http://ndossougbe.github.io/strapdown/dist/strapdown.js">=
+in every rendered page.  The preview silently fails when offline,
+when the GitHub Pages host is unreachable, or if the upstream project
+disappears.  Document the dependency in the module commentary at
+minimum; better, vendor a copy of =strapdown.js= under
+=assets/= and serve it from the local =simple-httpd= root.
 
-Older modules that fell outside the original review-track scope
-lists:
+**** TODO [#C] Reconsider global =TERM=xterm-256color= setenv in =eshell-config= :startup:
 
-- =text-config.el= → custom editing utilities
-- =markdown-config.el= → integrations
-- =latex-config.el= → programming workflow
-- =flycheck-config.el= → programming workflow
-- =flyspell-and-abbrev.el= → custom editing utilities
-- =ledger-config.el= → integrations
-- =httpd-config.el= → integrations
-- =chrono-tools.el= → foundation
-- =diff-config.el= → custom editing utilities
-- =games-config.el= → integrations
-- =mu4e-org-contacts-setup.el= → Org workflow
-- =mu4e-org-contacts-integration.el= → Org workflow
-- =org-agenda-config-debug.el= → Org workflow (debug-only; verify it's opt-in)
+=modules/eshell-config.el:131= calls =(setenv "TERM" "xterm-256color")=
+at config time inside the =xterm-color= use-package block.  That
+changes =TERM= for the entire Emacs process, so every subsequent
+=start-process= / =call-process= inherits =xterm-256color= rather
+than the terminal's actual emulator.  Most subprocesses treat it as
+truthful and emit ANSI escapes, which surface as raw =\e[31m= bytes
+in shells that aren't interpreting them.  Move the setenv into the
+eshell entry hook (=eshell-mode-hook= or =eshell-before-prompt-hook=)
+so it scopes to eshell processes only.
 
-Done 2026-05-15:
-- All 24 modules read end to end.
-- 5 modules had actionable findings filed in their target tracks:
-  =markdown-config= (httpd start side effect), =flycheck-config=
-  (hardcoded LanguageTool path), =latex-config= (hardcoded Zathura
-  viewer), =eshell-config= (hardcoded SSH hostnames), and
-  =nerd-icons-config= (advice-timing / =:demand t=).
-- The remaining 19 modules had no concrete issues beyond what the
-  existing review tracks already cover.
-- Mark this task =DONE= once the per-finding sub-tasks above are
-  triaged into the appropriate track's child list.
+**** TODO [#C] Quote agent command in =cj/--ai-vterm-launch-command= :safety:
+
+=modules/ai-vterm.el:236-240= builds the tmux launch command by
+wrapping =(concat cj/ai-vterm-agent-command "; exec bash")= in
+literal single quotes.  The default value carries embedded double
+quotes (=claude "Read .ai/protocols.org and follow all
+instructions."=) which survives that wrap, but a user-customized
+=cj/ai-vterm-agent-command= containing a single quote breaks the
+shell parse silently.  Run the inner command through
+=shell-quote-argument= (or pass the command as a separate tmux
+=new-session= positional argument) so any user-customized agent
+command launches safely.
+
+*** 2026-05-15 Fri @ 18:14:26 -0500 Reviewed newly added modules
+
+Fresh end-to-end re-read of the 24 modules listed for this review,
+applying the parent's protocol (runtime deps, top-level side effects,
+keybindings, timers, external-executable assumptions, secrets,
+host-specific paths, user-data writes, and test coverage).
+
+The 24 modules in scope:
+
+- Post-2026-04 additions (11): =telega-config.el=,
+  =mu4e-attachments.el=, =vterm-config.el=, =external-open-lib.el=,
+  =eshell-config.el=, =cj-window-toggle-lib.el=,
+  =cj-window-geometry-lib.el=, =cj-org-text-lib.el=,
+  =cj-cache-lib.el=, =nerd-icons-config.el=, =ai-vterm.el=.
+- Pre-existing modules outside the original scope (13):
+  =text-config.el=, =markdown-config.el=, =latex-config.el=,
+  =flycheck-config.el=, =flyspell-and-abbrev.el=, =ledger-config.el=,
+  =httpd-config.el=, =chrono-tools.el=, =diff-config.el=,
+  =games-config.el=, =mu4e-org-contacts-setup.el=,
+  =mu4e-org-contacts-integration.el=, =org-agenda-config-debug.el=.
+
+Confirmed the 5 findings from the 2026-05-15 re-review pass are
+filed and visible under their target Harden tracks:
+=markdown-config= httpd start (UI/integrations track), =flycheck-config=
+LanguageTool path (programming track), =latex-config= Zathura
+(programming), =eshell-config= SSH hostnames (integrations), and
+=nerd-icons-config= advice-timing / =:demand t= (UI/navigation).
+
+Filed 11 new sub-tasks across the Harden tracks this pass:
+
+- Foundation: dead world-clock block in =chrono-tools.el=, and
+  coverage for the TMR sound-selection helpers (with a refactor to
+  collapse the prefix-arg duplication).
+- Custom editing: de-duplicate the spell-checker availability guard
+  in =flyspell-and-abbrev.el=, and add coverage for
+  =cj/flyspell-then-abbrev= + helpers.
+- Org workflow: declare cross-module free variables in
+  =mu4e-org-contacts-integration.el=, and add coverage for the
+  completion-at-point / TAB / comma logic there.
+- Programming workflow: fix the =cj/prose-helpers-on= toggle bug in
+  =flycheck-config.el= (=(if (not (abbrev-mode)) (abbrev-mode))=
+  flips the mode twice; needs =bound-and-true-p= + explicit enable).
+- Integrations: fix the =https= vs =http= scheme mismatch in
+  =markdown-preview=, document/vendor its strapdown.js CDN
+  dependency, narrow the global =TERM=xterm-256color= setenv in
+  =eshell-config= so it doesn't leak into every subprocess, and
+  shell-quote the user-customized agent command in
+  =cj/--ai-vterm-launch-command=.
+
+The remaining 13 of the 24 modules had no concrete findings worth
+filing -- they are either pure libraries with strong test coverage
+(=cj-window-toggle-lib=, =cj-window-geometry-lib=, =cj-org-text-lib=,
+=cj-cache-lib=, =external-open-lib=) or thin declarative
+configuration (=text-config=, =diff-config=, =ledger-config=,
+=games-config=, =mu4e-org-contacts-setup=, =telega-config=,
+=httpd-config=, =org-agenda-config-debug=).
 
 ** VERIFY [#B] Continue org-noter custom workflow implementation (IN PROGRESS) :feature:bug:
 
@@ -2163,15 +2582,18 @@ In scope:
 
 Out of scope: the F9 =ai-vterm= Claude-Code launcher (=modules/ai-vterm.el=) — separate module, working well.
 
-*** TODO [#B] Wire update_text_file into cj/gptel-local-tool-features :refactor:quick:
+*** TODO [#B] Wire update_text_file into cj/gptel-local-tool-features, then harden it :refactor:tests:
 
-The tool already exists at =gptel-tools/update_text_file.el= (replace / append / prepend / insert-at-line / delete-lines, with diff preview and timestamped backups), but =cj/gptel-local-tool-features= in =modules/ai-config.el= doesn't list it, so it never autoloads. One-line addition to the defcustom default.
+The tool exists at =gptel-tools/update_text_file.el= (replace / append / prepend / insert-at-line / delete-lines, with diff preview and timestamped backups), but it's incomplete and needs hardening before it goes live in =cj/gptel-local-tool-features=.
 
-Acceptance: after restart, =gptel-tools= (the transient context view) shows =update_text_file= alongside =read_buffer=, =read_text_file=, =write_text_file=, =list_directory_files=, =move_to_trash=.
+Scope:
 
-#+begin_src cj: comment
-I think this tool need thorough testing and work. It's incomplete. Please add this to the task as well. Get as close to 100% coverage on this file as we can. Refactor wherever needed. 
-#+end_src>
+1. *Read the tool end-to-end* against the gptel-tools convention used by =read_buffer.el=, =write_text_file.el=, =move_to_trash.el=, and the other already-wired tools.  Note where =update_text_file.el= diverges in shape (argument naming, error handling, return-value structure, backup placement).
+2. *Refactor for completeness and consistency.*  Bring it in line with the other tools: same argument-validation style, same diff-preview surface, same backup directory and naming, same error categories.  Extract pure helpers where the current shape forces wrapper-heavy testing.
+3. *Add ERT coverage targeting ~100%.*  Normal / Boundary / Error per the standard project discipline: each verb (=replace=, =append=, =prepend=, =insert-at-line=, =delete-lines=) gets at least one Normal, one Boundary (empty file, single line, EOF, unicode), and one Error (missing file, line-range out of range, permission denied, write-conflict).  Diff preview and backup creation get their own focused tests.
+4. *Wire it into =cj/gptel-local-tool-features=* in =modules/ai-config.el= -- one-line addition to the defcustom default -- only once 1-3 are green.
+
+Acceptance: after restart, =gptel-tools= (the transient context view) shows =update_text_file= alongside =read_buffer=, =read_text_file=, =write_text_file=, =list_directory_files=, =move_to_trash=.  =make test-file FILE=test-update-text-file.el= exits 0.  =make coverage= reports =gptel-tools/update_text_file.el= at ≥95%.
 
 *** TODO [#B] Fix gptel-magit triggers :bug:
 
@@ -2235,26 +2657,21 @@ Output: a shortlist in =docs/design/gptel-tools-shortlist.org= with the adopt/sk
 
 Open question: should this build on =gptel-rewrite= directly via =:after= advice + state capture, or wrap the call in a =cj/= command that sets =gptel-directives= for the duration?
 
-*** TODO [#C] Saved-conversations browser :feature:
+*** TODO [#B] Saved-conversations browser :feature:
 
-=cj/gptel-load-conversation= prompts via =completing-read=. Once conversations accumulate, a browser buffer (dired-style) showing topic, timestamp, and last-message preview, with single-key bindings to load / delete / rename in-place, would be friendlier.
+=cj/gptel-load-conversation= prompts via =completing-read=.  A browser buffer (dired-style) showing topic, timestamp, and last-message preview, with single-key bindings to load / delete / rename in-place, would be a markedly better interface than the completing-read prompt.
 
-Defer until ≥20 saved conversations exist (or the load prompt starts feeling slow). Tracking now so it isn't lost.
-
-#+begin_src cj: comment
-I recommend doing this now. It's a much better interface that I would appreciate. 
-#+end_src>
+Priority bumped from [#C] to [#B] and the "defer until ≥20 conversations" hold lifted on 2026-05-15 -- the browser is the preferred entry point; build it now rather than wait for prompt friction to force the issue.
 
 *** TODO [#C] One-shot quick-ask command :feature:
 
-=cj/gptel-quick-ask= — read a prompt in the minibuffer, send to gptel, display the response in a transient =*GPTel-Quick*= buffer (or as a =message= for short responses). Doesn't touch the =*AI-Assistant*= side window, doesn't autosave anywhere. Intended for impromptu help where the conversation thread doesn't matter.
+=cj/gptel-quick-ask= -- read a prompt in the minibuffer, send to gptel, stream the response into a transient =*GPTel-Quick*= buffer.  Doesn't touch the =*AI-Assistant*= side window, doesn't autosave anywhere.  Intended for impromptu help where the conversation thread doesn't matter.
 
-Open question: stream the response into the temp buffer (gptel's default), or wait for the full message and message-echo it? Streaming into a temp buffer is probably right; into the minibuffer is awkward.
+UX (decided 2026-05-15):
 
-#+begin_src cj: comment
-a temp buffer that can be dismissed with the letter q or escape.
-it should also have a key so that if more discussion is necessary, it creates a conversation and loads it into the normal gptel buffer. 
-#+end_src>
+- The =*GPTel-Quick*= buffer is dismissible with =q= or =escape=.  Both bindings kill the buffer (or quit-window if Craig wants to revisit -- pick one; favor kill so the buffer doesn't pile up in =M-x= history).
+- A second key (suggested: =c= for "continue") escalates the one-shot into a full conversation: creates a new gptel conversation seeded with the quick-ask prompt + response, then opens it in the normal =*AI-Assistant*= side window.  After the escalation the =*GPTel-Quick*= buffer can be dismissed.
+- Stream the response into the temp buffer (gptel's default behavior) -- minibuffer echo is awkward for anything past a single line.
 
 *** TODO [#C] Autosave toggle command + indicator :feature:
 
@@ -2280,19 +2697,6 @@ Repeatable installs and safe rollbacks.
 .localrepo only contains packages from package.el archives.
 Treesitter grammars are downloaded separately by treesit-auto on first use.
 For true offline reproducibility, need to cache treesitter grammars separately.
-
-** TODO [#C] Investigate sqlite finalizer error on init :bug:
-
-=*Messages*= shows =finalizer failed: (wrong-type-argument sqlitep nil)= during init. A package is finalizing an sqlite handle that's already nil — indicates a teardown bug somewhere. Likely culprits: forge, magit-todos, or any package using the sqlite backend.
-
-Investigation order:
-1. =M-x toggle-debug-on-message= with a regex matching =finalizer failed=.
-2. Restart Emacs to capture the backtrace.
-3. Check =modules/git-config.el= (forge) and any other sqlite-using module.
-
-Single occurrence per session, no visible impact yet. Track in case it grows.
-
-Discovered 2026-04-26 in =*Messages*=.
 
 ** TODO [#C] Investigate TRAMP/dirvish showing question marks for file dates :bug:
 
@@ -4942,3 +5346,26 @@ Patterns to add:
 After landing: =M-x lsp-workspace-shutdown=, reopen a Python file, confirm the directory count drops well below the default threshold of 1000 (currently 1905). Then remove the redundant entries from the deepsat MVP's =.dir-locals.el= here and on velox.
 
 Discovered 2026-04-26 testing dashboard MVP F-key setup.
+** DONE [#C] Investigate sqlite finalizer error on init :bug:
+CLOSED: [2026-05-15 Fri]
+
+=*Messages*= shows =finalizer failed: (wrong-type-argument sqlitep nil)= during init. A package is finalizing an sqlite handle that's already nil — indicates a teardown bug somewhere. Likely culprits: forge, magit-todos, or any package using the sqlite backend.
+
+Investigation order:
+1. =M-x toggle-debug-on-message= with a regex matching =finalizer failed=.
+2. Restart Emacs to capture the backtrace.
+3. Check =modules/git-config.el= (forge) and any other sqlite-using module.
+
+Single occurrence per session, no visible impact yet. Track in case it grows.
+
+Discovered 2026-04-26 in =*Messages*=.
+
+Resolution 2026-05-15: confirmed gone.  Live session (2h uptime): no
+=finalizer= / =sqlitep= / =wrong-type-argument sqlite= match in
+=*Messages*= (3966 bytes) or =*Warnings*=.  Fresh namespaced daemon
+(=emacs --daemon=sqlite-verify=): forced =forge= load, ran 10 GC
+cycles with =sit-for= pauses, =sqlite-available-p= and
+=forge-database-file= both confirmed live -- still zero hits across
+1282 bytes of =*Messages*=.  If it recurs, arm
+=toggle-debug-on-message= on the regex =finalizer failed= to capture
+a backtrace.
