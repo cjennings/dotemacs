@@ -2625,18 +2625,17 @@ guard against the regression is "no entry for =magit=, entries for
 =git-commit=, =magit-commit=, =magit-diff=," which is exactly what
 the test asserts.
 
-*** TODO [#B] Add ERT coverage for ai-conversations.el :tests:
+*** 2026-05-16 Sat @ 01:33:20 -0500 Added ERT coverage for ai-conversations.el
 
-Currently zero direct tests on the 274-line module. Cover at least:
-- =cj/gptel--slugify-topic= — Normal / Boundary (empty, all-special-chars, unicode, idempotent slug) / Error.
-- =cj/gptel--timestamp-from-filename= — Normal / Boundary (year/month/day/hour/min/sec edges) / Error (malformed filename → nil).
-- =cj/gptel--existing-topics= and =cj/gptel--latest-file-for-topic= — with a temp conversations directory containing multiple topics + multiple timestamps each.
-- =cj/gptel--conversation-candidates= — sort order honored for both =newest-first= and =oldest-first=.
-- =cj/gptel--save-buffer-to-file= — visibility headers prepended; round-trips back through =cj/gptel--strip-visibility-headers=.
-- The =with-eval-after-load 'gptel= advice/hook installs once and isn't duplicated on re-load.
-- Interactive entry points (=save= / =load= / =delete=) exercised via =cl-letf= stubs on =completing-read= and =y-or-n-p=.
-
-Use a per-test temp conversations directory; no writes outside it. Target ≥80% coverage on the module.
+=tests/test-ai-conversations.el= covers every helper in the module
+plus the interactive entry points.  36 tests across Normal / Boundary /
+Error categories: slug normalization, timestamp decoding, file
+enumeration (existing topics, latest-for-topic, candidate ordering for
+both =newest-first= and =oldest-first=), the save-buffer/strip-headers
+round-trip, the autosave-after-send + autosave-after-response hooks,
+the install-once guard for the post-response hook, and the
+save/delete interactive entry points exercised via =cl-letf= stubs.
+Per-test temp directories; no writes outside them.
 
 *** TODO [#B] Add ERT coverage for gptel-tools .el files :tests:
 
