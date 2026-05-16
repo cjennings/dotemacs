@@ -51,7 +51,8 @@
         (setq org-state "DONE")     ; Dynamic variable used by org-mode hooks
         (cl-letf (((symbol-function 'cj/org-roam-copy-todo-to-today)
                    (lambda () (setq copy-function-called t))))
-          (run-hooks 'org-after-todo-state-change-hook)
+          (let ((buffer-file-name "/tmp/test-org-roam-fake.org"))
+            (run-hooks 'org-after-todo-state-change-hook))
           (should copy-function-called)))
     (test-org-roam-todo-hook-teardown)))
 
@@ -67,7 +68,8 @@
         (setq org-state "CANCELLED")    ; Dynamic variable used by org-mode hooks
         (cl-letf (((symbol-function 'cj/org-roam-copy-todo-to-today)
                    (lambda () (setq copy-function-called t))))
-          (run-hooks 'org-after-todo-state-change-hook)
+          (let ((buffer-file-name "/tmp/test-org-roam-fake.org"))
+            (run-hooks 'org-after-todo-state-change-hook))
           (should copy-function-called)))
     (test-org-roam-todo-hook-teardown)))
 
@@ -96,7 +98,8 @@
         (setq org-state "DONE")       ; New state is DONE
         (cl-letf (((symbol-function 'cj/org-roam-copy-todo-to-today)
                    (lambda () (setq copy-function-called t))))
-          (run-hooks 'org-after-todo-state-change-hook)
+          (let ((buffer-file-name "/tmp/test-org-roam-fake.org"))
+            (run-hooks 'org-after-todo-state-change-hook))
           (should copy-function-called)))
     (test-org-roam-todo-hook-teardown)))
 
@@ -112,7 +115,8 @@
         (setq org-state "DONE")              ; New state is DONE
         (cl-letf (((symbol-function 'cj/org-roam-copy-todo-to-today)
                    (lambda () (setq copy-function-called t))))
-          (run-hooks 'org-after-todo-state-change-hook)
+          (let ((buffer-file-name "/tmp/test-org-roam-fake.org"))
+            (run-hooks 'org-after-todo-state-change-hook))
           (should copy-function-called)))
     (test-org-roam-todo-hook-teardown)))
 
@@ -128,7 +132,8 @@
         (setq org-state "CANCELLED")      ; New state is CANCELLED
         (cl-letf (((symbol-function 'cj/org-roam-copy-todo-to-today)
                    (lambda () (setq copy-function-called t))))
-          (run-hooks 'org-after-todo-state-change-hook)
+          (let ((buffer-file-name "/tmp/test-org-roam-fake.org"))
+            (run-hooks 'org-after-todo-state-change-hook))
           (should copy-function-called)))
     (test-org-roam-todo-hook-teardown)))
 
