@@ -12,11 +12,10 @@
 
 (require 'ui-theme)
 
-(ert-deftest test-ui-theme-default-theme-file-is-emacs-dotfile ()
-  "The default theme file should live under `user-emacs-directory'."
+(ert-deftest test-ui-theme-default-theme-file-is-under-persist ()
+  "The default theme file should live under `persist/' inside `user-emacs-directory'."
   (should (equal theme-file
-                 (expand-file-name ".emacs-theme" user-emacs-directory)))
-  (should-not (string-match-p "emacs-theme\\.persist\\'" theme-file)))
+                 (expand-file-name "persist/emacs-theme" user-emacs-directory))))
 
 (ert-deftest test-ui-theme-read-missing-file-returns-nil ()
   "Reading a missing theme file should return nil."

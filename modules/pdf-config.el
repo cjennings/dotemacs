@@ -65,7 +65,7 @@
   :hook
   (pdf-view-mode . pdf-view-restore-mode)
   :config
-  (setq pdf-view-restore-filename (concat user-emacs-directory "/.pdf-view-restore")))
+  (setq pdf-view-restore-filename (expand-file-name "persist/pdf-view-restore" user-emacs-directory)))
 
 (provide 'pdf-config)
 ;;; pdf-config.el ends here.
