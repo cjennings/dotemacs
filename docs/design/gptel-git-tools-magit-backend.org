@@ -1,0 +1,192 @@
+#+TITLE: Design: gptel git tools on a magit backend
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-16
+
+* Status
+
+Draft.  Supersedes the three current git-tool implementations
+(=gptel-tools/git_status.el=, =gptel-tools/git_log.el=,
+=gptel-tools/git_diff.el=) shipped in commit =ceeae9b5=.  Trigger:
+Craig flagged that magit already does much of this and could carry
+the backend for more git tools cheaply.
+
+* Problem
+
+The three current git_* tools shell out to git directly via
+=process-file= and parse stdout.  Each carries:
+
+- Its own =--is-inside-work-tree= path-validation step.
+- Its own =-c color.ui=false= color suppression workaround (`git
+  status' doesn't accept =--no-color= the way `git log' / `git diff'
+  do).
+- Boilerplate to set up a temp buffer, run =process-file=, capture
+  output, return the string.
+
+There's also an opportunity cost: adding more git context tools
+(=git_blame=, =git_show=, =git_branches=, etc.) would mean
+duplicating the same boilerplate per tool.
+
+* Wins from a magit backend
+
+Three concrete things magit provides:
+
+1. *Path validation via =magit-toplevel=.*  One call replaces the
+   two-step =process-file= + =rev-parse --is-inside-work-tree=
+   check.  Returns the working-tree root or nil.
+
+2. *Process plumbing via =magit-git-insert= / =magit-git-string= /
+   =magit-git-lines=.*  These wrap git invocation with magit's
+   environment, encoding handling, and the right color posture.
+   Drops the per-subcommand color-flag bikeshedding.
+
+3. *Typed helpers for higher-level concepts* -- =magit-get-current-branch=,
+   =magit-list-branches=, =magit-rev-ancestor-p=, etc.  Most
+   relevant for the *new* tools (branches, show, blame), not the
+   three we already wrote.
+
+What magit doesn't give us: high-level "give me status as a string"
+helpers.  =magit-status= / =magit-log-current= etc. populate
+interactive magit buffers, not strings.  For tool output we'd still
+call =magit-git-insert "status" "--short" "--branch"= and grab the
+buffer string.  Same shape, less boilerplate.
+
+* Costs
+
+- *Magit loads on first invocation* of any git_* tool.  Magit pulls
+  in transient, with-editor, magit-section, magit-core -- heavyweight.
+  Mitigation: lazy =(require 'magit)= inside each tool's function
+  body so cold-start Emacs sessions don't pay the cost unless the
+  user actually calls a git tool.
+- *Tools no longer portable* to a no-magit Emacs.  Acceptable here
+  because magit is a non-negotiable in this config; a future
+  drop-in distribution would need to publish a magit-free fallback.
+
+* Proposed shape
+
+** Single-file module: =gptel-tools/git_tools.el=
+
+The current "one file per tool" convention exists because the
+existing tools share little.  These six tools share a lot
+(validate-path, run-git, truncate-output), so a single file with
+shared helpers is more honest.
+
+** Shared helpers
+
+- =cj/gptel-git--toplevel-or-error PATH=
+  - Wraps =magit-toplevel=.  Signals =user-error= when PATH escapes
+    HOME, doesn't exist, or isn't inside a working tree.
+  - Returns the resolved working-tree root on success.
+
+- =cj/gptel-git--insert ARGS...=
+  - Wraps =magit-git-insert= in a =with-temp-buffer=, returns
+    =buffer-string=.  Single chokepoint for color / encoding / error
+    handling.
+
+- =cj/gptel-git--truncate TEXT MAX-BYTES=
+  - Caps output, appends a one-line truncation marker when
+    triggered.
+
+  Open question: consolidate the matching helper from =web_fetch.el=
+  (=cj/gptel-web-fetch--truncate=) and the
+  =cj/update-text-file--*= analogue into a shared
+  =cj/gptel-tools--truncate-bytes= in =system-lib.el=, or keep
+  per-tool.
+
+** Six tools
+
+| Name             | Magit-flavored shape                                               |
+|------------------+--------------------------------------------------------------------|
+| =git_status=     | =magit-git-insert "status" "--short" "--branch"=                   |
+| =git_log=        | =magit-git-insert "log" "--oneline" (format "-n%d" N) ?--since=    |
+| =git_diff=       | =magit-git-insert "diff" REF1 REF2 "--" FILE= (each optional)      |
+| =git_blame=      | =magit-git-insert "blame" "--line-porcelain" FILE [-L S,E]=        |
+| =git_show=       | =magit-git-insert "show" REF= (message + full diff)                |
+| =git_branches=   | =magit-list-branches= (optionally filtered by =--list PATTERN=)    |
+
+Each tool:
+- Validates =path= via =cj/gptel-git--toplevel-or-error=.
+- Calls =cj/gptel-git--insert= with the appropriate args.
+- Truncates via =cj/gptel-git--truncate=.
+- Registered as a separate tool with =gptel-make-tool= for
+  description / argv clarity at the model side.
+
+** Caps
+
+| Tool          | Default cap    | Hard cap     |
+|---------------+----------------+--------------|
+| =git_status=  | uncapped       | uncapped     |
+| =git_log=     | 100 commits    | 100 commits  |
+| =git_diff=    | 500 KB         | 500 KB       |
+| =git_blame=   | 500 KB         | 500 KB       |
+| =git_show=    | 500 KB         | 500 KB       |
+| =git_branches=| uncapped       | uncapped     |
+
+=git_log='s cap is on commit count; the rest cap output bytes.
+
+** :confirm posture
+
+All six tools are read-only.  Same posture as the current
+implementation: =:confirm nil= (the model can call them
+autonomously, since they can't mutate state).  The current
+git_status / git_log / git_diff already ship with =:confirm nil= --
+keeping it.
+
+** Tests
+
+Single file =tests/test-gptel-tools-git-tools.el=, replacing the
+three current per-tool test files.  Real temp git repos via
+=process-file= (same pattern as current tests).  Coverage per tool:
+Normal / Boundary / Error.
+
+Rough count: ~12 shared-helper tests (validator, insert wrapper,
+truncate) + ~7 per tool × 6 tools = ~54 tests total.
+
+* Migration
+
+1. Delete =gptel-tools/git_status.el=, =git_log.el=, =git_diff.el=.
+2. Delete =tests/test-gptel-tools-git-status.el=,
+   =test-gptel-tools-git-log.el=, =test-gptel-tools-git-diff.el=.
+3. Create =gptel-tools/git_tools.el= containing all six tools +
+   shared helpers.
+4. Create =tests/test-gptel-tools-git-tools.el=.
+5. Update =cj/gptel-local-tool-features= in =modules/ai-config.el=:
+   replace the three =git_*= symbols with one =git_tools= symbol
+   (or six if each tool wants its own feature file -- decide during
+   implementation).
+6. Make sure =modules/ai-config.el= can re-load without breaking the
+   live gptel session if the old tool symbols are still registered
+   from a prior Emacs.
+
+* Risks
+
+| Risk                                                              | Mitigation                                                                                                |
+|-------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------|
+| Magit load slows first git_* tool call                            | One-time hit per session, scoped to the tool's :function body.  Acceptable for opt-in tools.              |
+| Tool registration name collision with the old git_* symbols       | Use distinct names (git_status / git_log / git_diff stay; new tools join them).  Or remove + restart.     |
+| =magit-toplevel= behavior on TRAMP / remote paths                 | Validator rejects paths outside HOME first, so TRAMP paths can't reach magit-toplevel.                    |
+| =git_blame= exposes code surfaces the model shouldn't read        | =:confirm nil= is the wrong posture if blame is sensitive.  Open question for review.                    |
+| =git_show= reveals past-self commit message wording               | Same as blame -- low risk on personal repo, but worth flagging.                                          |
+
+* Open questions
+
+1. Build all six tools in one push, or phase status/log/diff first
+   and add blame/show/branches in a follow-up?  My read: one push.
+   The helpers are shared, marginal cost of three more tools is
+   small, and the model gets meaningfully more useful git context.
+2. Consolidate the output-truncation helper into =system-lib.el=,
+   touching =web_fetch.el= and =update_text_file.el= for a cleaner
+   API?  Or defer that to a separate refactor commit?
+3. =git_blame= and =git_show= -- =:confirm nil= or =:confirm t=?
+   Personal repo lowers the stakes but the model could ask for
+   blame on /any/ file under HOME.
+4. Tool feature symbols: one =git_tools= entry in
+   =cj/gptel-local-tool-features=, or six (one per tool)?
+   Currently each tool lives in its own provide-symbol file.  With
+   the single-file design we'd register one feature symbol that
+   loads all six.
+
+* Effort estimate
+
+M (1-3 hours).  Helpers + six tool wrappers + ~50 tests + migration.
+Most of the time is test authoring; the production code is small
+because magit absorbs the boilerplate.

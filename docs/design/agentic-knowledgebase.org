@@ -1,0 +1,117 @@
+  ** Org-roam project knowledgebase
+
+  Use org-roam as the agent's durable project memory, with org-agenda as the
+  execution layer. The important distinction:
+
+  - Org-roam stores current understanding, decisions, people, open questions,
+    source links, and project history.
+  - Org-agenda stores commitments that require action.
+  - Mail, Slack, telega, ERC, Magit, and AI session files remain the raw sources.
+  - The agent writes concise summaries with backlinks rather than dumping
+    transcripts into roam.
+
+  Each active project gets one hub node tagged =Project=. The hub is the place to
+  ask "what is going on?" and should stay skimmable:
+
+  #+begin_src org
+  #+TITLE: Project: Example
+  #+FILETAGS: Project Example
+
+  * Status
+  Current goal, live state, blockers, and near-term plan.
+
+  * Next Actions
+  ** TODO Email Alice about API credentials
+  SCHEDULED: <2026-05-18 Mon>
+  :PROPERTIES:
+  :CONTACT: Alice Smith
+  :CHANNEL: email
+  :SOURCE: [[id:thread-20260515-api-credentials]]
+  :END:
+
+  ** WAITING Bob to review staging diff
+  :PROPERTIES:
+  :CONTACT: Bob Lee
+  :CHANNEL: Slack
+  :SOURCE: [[id:thread-20260516-review-request]]
+  :END:
+
+  * People
+  - [[id:person-alice-smith][Alice Smith]] - owns API credentials
+  - [[id:person-bob-lee][Bob Lee]] - reviewer
+
+  * Decisions
+  - [[id:decision-20260516-service-account-auth][Use service account auth]]
+
+  * Threads
+  - [[id:thread-20260515-api-credentials][Slack: API credentials]]
+  - [[id:thread-20260514-contract-clarification][Email: contract clarification]]
+
+  * Log
+  ** 2026-05-16
+  - Implemented first pass of Magit review tool design.
+  - Need to ask Alice whether staging access exists.
+  #+end_src
+
+  Supporting nodes should be small and typed:
+
+  - =Person: Alice Smith= - contact preferences, projects, open loops, recent
+    context.
+  - =Decision: Use service account auth= - decision, rationale, alternatives,
+    source links.
+  - =Thread: Slack API credentials= - durable summary and link to the source
+    message.
+  - =Meeting: Example kickoff 2026-05-16= - attendees, decisions, tasks, links.
+  - =Problem: Import job timing out= - symptoms, experiments, current theory.
+  - =Artifact: PR 123= - purpose, review state, verification, follow-ups.
+  - =Runbook: Deploy Example= - operational steps and caveats.
+
+  Agent commands:
+
+  - =cj/agent-project-brief= - build a temporary Org buffer with project status,
+    blockers, next actions, recent commits, recent messages, and open agenda
+    items.
+  - =cj/agent-capture-current-context= - capture the current Magit section, mail
+    message, Slack thread, telega chat, ERC buffer, Dired file, source buffer, or
+    agenda item into the active project.
+  - =cj/agent-project-next-contact= - show who needs a reply, who the user is
+    waiting on, channel, deadline, and source link.
+  - =cj/agent-summarize-project-day= - append a dated project log entry and
+    create or update agenda TODOs.
+  - =cj/agent-link-to-project= - link the current org-roam node or captured item
+    to a selected project hub.
+  - =cj/agent-promote-to-decision= - turn a line, thread summary, or meeting note
+    into a decision node and backlink it to the project.
+
+  Contact tracking should live in both person nodes and actionable TODOs. Person
+  nodes preserve relationship context; agenda TODOs preserve obligations:
+
+  #+begin_src org
+  #+TITLE: Alice Smith
+  #+FILETAGS: Person Contact
+
+  * Context
+  Works on infra. Best channel: Slack for quick questions, email for approvals.
+
+  * Projects
+  - [[id:project-example][Project: Example]]
+
+  * Waiting On
+  ** WAITING Alice to confirm API credentials
+  SCHEDULED: <2026-05-18 Mon>
+  :PROPERTIES:
+  :PROJECT: Example
+  :CHANNEL: Slack
+  :SOURCE: [[id:thread-20260515-api-credentials]]
+  :END:
+  #+end_src
+
+  The agent should maintain a short "project memory contract":
+
+  - Never create a note unless it will be useful after the chat window is gone.
+  - Prefer backlinks to raw sources over copied transcripts.
+  - Convert "someone needs to do something" into a TODO with owner/channel/source.
+  - Keep project hub status current, but keep detailed history in dated log,
+    meeting, decision, problem, and thread nodes.
+  - Ask before changing TODO states, scheduling work, or drafting messages to
+    real people.
