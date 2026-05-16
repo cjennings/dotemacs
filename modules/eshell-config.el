@@ -128,8 +128,17 @@
   :hook
   (eshell-before-prompt-hook . (lambda ()
                                  (setq xterm-color-preserve-properties t)))
-  :config
-  (setenv "TERM" "xterm-256color"))
+  ;; Scope `TERM=xterm-256color' to eshell-spawned processes only by
+  ;; binding the env var on the eshell mode hook.  The previous global
+  ;; `setenv' at config-time changed `process-environment' for the
+  ;; whole Emacs process, so every subsequent `start-process' inherited
+  ;; `xterm-256color' regardless of whether the receiver was a terminal
+  ;; that could actually interpret the escapes.
+  :hook
+  (eshell-mode . (lambda ()
+                   (setq-local process-environment
+                               (cons "TERM=xterm-256color"
+                                     process-environment)))))
 
 (use-package eshell-syntax-highlighting
   :after esh-mode

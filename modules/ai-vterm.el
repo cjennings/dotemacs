@@ -233,11 +233,19 @@ so the tmux window survives the AI command exiting -- the session stays
 alive with a bare bash prompt for recovery, and reattach works the same way."
   (let ((session (cj/--ai-vterm-tmux-session-name dir))
         (start-dir (expand-file-name dir)))
-    (format "tmux new-session -A -s %s -n %s -c %s '%s'"
+    ;; Pass the inner shell-command-string through `shell-quote-argument'
+    ;; so any single quotes embedded in a user-customized
+    ;; `cj/ai-vterm-agent-command' don't break the literal single-quote
+    ;; wrap below.  The default value carries embedded double quotes
+    ;; (\"Read .ai/protocols.org and follow all instructions.\") which
+    ;; was safe in the prior shape but a single-quoted custom value
+    ;; silently broke the shell parse.
+    (format "tmux new-session -A -s %s -n %s -c %s %s"
             (shell-quote-argument session)
             (shell-quote-argument cj/ai-vterm-tmux-window-name)
             (shell-quote-argument start-dir)
-            (concat cj/ai-vterm-agent-command "; exec bash"))))
+            (shell-quote-argument
+             (concat cj/ai-vterm-agent-command "; exec bash")))))
 
 (defun cj/--ai-vterm-has-marker-p (dir)
   "Return non-nil when DIR contains .ai/protocols.org."
