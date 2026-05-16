@@ -39,7 +39,8 @@ Tags are additive. For example, a small wrong-behavior fix can be
 
 * Emacs Open Work
 
-** DOING [#A] org-element--list-struct issue when using gptel magit :bug:
+** DONE [#A] org-element--list-struct issue when using gptel magit :bug:
+CLOSED: [2026-05-16 Sat]
 Launch Emacs
 Stage a file using magit
 Commit using magit
