@@ -405,5 +405,67 @@
     (should (= 1 (cl-count #'cj/gptel--autosave-after-response
                            gptel-post-response-functions)))))
 
+;; --------------------------------------------- autosave-toggle / indicator
+
+(ert-deftest test-ai-conversations-autosave-toggle-enables-with-filepath ()
+  "Toggle enables autosave when a filepath is set."
+  (with-temp-buffer
+    (setq-local gptel-mode t)
+    (setq-local cj/gptel-autosave-enabled nil)
+    (setq-local cj/gptel-autosave-filepath "/tmp/foo.gptel")
+    (cj/gptel-autosave-toggle)
+    (should cj/gptel-autosave-enabled)))
+
+(ert-deftest test-ai-conversations-autosave-toggle-disables ()
+  "Toggle turns autosave off when already on."
+  (with-temp-buffer
+    (setq-local gptel-mode t)
+    (setq-local cj/gptel-autosave-enabled t)
+    (setq-local cj/gptel-autosave-filepath "/tmp/foo.gptel")
+    (cj/gptel-autosave-toggle)
+    (should-not cj/gptel-autosave-enabled)))
+
+(ert-deftest test-ai-conversations-autosave-toggle-prompts-when-no-filepath ()
+  "Toggle prompts to save first when no filepath is configured."
+  (with-temp-buffer
+    (setq-local gptel-mode t)
+    (setq-local cj/gptel-autosave-enabled nil)
+    (setq-local cj/gptel-autosave-filepath nil)
+    (let ((prompted nil)
+          (save-called nil))
+      (cl-letf (((symbol-function 'y-or-n-p)
+                 (lambda (&rest _) (setq prompted t) nil))
+                ((symbol-function 'cj/gptel-save-conversation)
+                 (lambda () (setq save-called t))))
+        (cj/gptel-autosave-toggle))
+      (should prompted)
+      (should-not save-called)
+      (should-not cj/gptel-autosave-enabled))))
+
+(ert-deftest test-ai-conversations-autosave-toggle-error-outside-gptel-mode ()
+  "Toggle signals when called outside a gptel buffer."
+  (with-temp-buffer
+    (setq-local gptel-mode nil)
+    (should-error (cj/gptel-autosave-toggle))))
+
+(ert-deftest test-ai-conversations-autosave-mode-line-format-evaluates ()
+  "Mode-line format evaluates to \" [AS]\" only when autosave is enabled."
+  (with-temp-buffer
+    (setq-local cj/gptel-autosave-enabled t)
+    (should (equal (eval (cadr cj/gptel-autosave-mode-line-format))
+                   " [AS]")))
+  (with-temp-buffer
+    (setq-local cj/gptel-autosave-enabled nil)
+    (should-not (eval (cadr cj/gptel-autosave-mode-line-format)))))
+
+(ert-deftest test-ai-conversations-install-mode-line-idempotent ()
+  "Repeated installs do not duplicate the construct in mode-line-format."
+  (with-temp-buffer
+    (setq-local mode-line-format '("base"))
+    (cj/gptel--install-autosave-mode-line)
+    (cj/gptel--install-autosave-mode-line)
+    (cj/gptel--install-autosave-mode-line)
+    (should (= 1 (cl-count 'cj/gptel-autosave-mode-line-format mode-line-format)))))
+
 (provide 'test-ai-conversations)
 ;;; test-ai-conversations.el ends here

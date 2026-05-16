@@ -2712,12 +2712,24 @@ UX (decided 2026-05-15):
 - A second key (suggested: =c= for "continue") escalates the one-shot into a full conversation: creates a new gptel conversation seeded with the quick-ask prompt + response, then opens it in the normal =*AI-Assistant*= side window.  After the escalation the =*GPTel-Quick*= buffer can be dismissed.
 - Stream the response into the temp buffer (gptel's default behavior) -- minibuffer echo is awkward for anything past a single line.
 
-*** TODO [#C] Autosave toggle command + indicator :feature:
+*** 2026-05-16 Sat @ 01:41:51 -0500 Added cj/gptel-autosave-toggle + [AS] mode-line indicator
 
-=cj/gptel-autosave-enabled= flips to =t= inside the save/load entry points. There's no command to flip it back off without manually setting the var or clearing the buffer, and no visible indicator that autosave is on.
+=cj/gptel-autosave-toggle= flips =cj/gptel-autosave-enabled= in the
+current GPTel buffer.  Bound to =C-; a A= via =cj/ai-keymap=
+(which-key labelled "toggle autosave").  When autosave is OFF and no
+filepath is configured, the command prompts to save the conversation
+first so a save target exists.  When autosave is ON, the command
+turns it off.
 
-- Add =cj/gptel-autosave-toggle= bound under =C-; a A=.
-- Surface autosave state in the mode-line of the =*AI-Assistant*= buffer (a small =[AS]= when on, blank when off).
+=cj/gptel-autosave-mode-line-format= surfaces " [AS]" in the
+mode-line when autosave is on, blank when off.  Installed via a
+=gptel-mode-hook= so every GPTel buffer picks it up.  The install
+helper is idempotent.
+
+6 new tests in =tests/test-ai-conversations.el= cover the enable /
+disable paths, the no-filepath prompt path, the
+not-a-gptel-buffer error path, the mode-line format evaluation, and
+the install idempotence.
 
 ** TODO [#C] Extend F2 "preview" convention across modes :feature:
 

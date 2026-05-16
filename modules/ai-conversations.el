@@ -51,6 +51,36 @@ If displaying on the top or bottom, treat this value as a height fraction."
 (defvar-local cj/gptel-autosave-filepath nil
   "File path used for auto-saving the conversation buffer.")
 
+(defvar cj/gptel-autosave-mode-line-format
+  '(:eval (when (bound-and-true-p cj/gptel-autosave-enabled) " [AS]"))
+  "Mode-line construct that surfaces autosave state in GPTel buffers.")
+(put 'cj/gptel-autosave-mode-line-format 'risky-local-variable t)
+
+(defun cj/gptel-autosave-toggle ()
+  "Toggle autosave on/off in the current GPTel buffer.
+Flips `cj/gptel-autosave-enabled' and forces a mode-line redisplay so
+the [AS] indicator updates immediately.  When turning autosave ON
+without a configured filepath, prompt to save the conversation first
+so a path exists to autosave to."
+  (interactive)
+  (unless (bound-and-true-p gptel-mode)
+    (user-error "Not a GPTel buffer"))
+  (if cj/gptel-autosave-enabled
+      (progn
+        (setq-local cj/gptel-autosave-enabled nil)
+        (message "Autosave disabled"))
+    (cond
+     ((and (stringp cj/gptel-autosave-filepath)
+           (> (length cj/gptel-autosave-filepath) 0))
+      (setq-local cj/gptel-autosave-enabled t)
+      (message "Autosave enabled (saving to %s)"
+               (file-name-nondirectory cj/gptel-autosave-filepath)))
+     ((y-or-n-p "No save target yet.  Save conversation first? ")
+      (call-interactively #'cj/gptel-save-conversation))
+     (t
+      (message "Autosave not enabled (no save target)"))))
+  (force-mode-line-update))
+
 (defcustom cj/gptel-conversations-autosave-on-send t
   "Non-nil means auto-save the conversation immediately after `gptel-send'."
   :type 'boolean
@@ -70,6 +100,18 @@ If displaying on the top or bottom, treat this value as a height fraction."
 (with-eval-after-load 'gptel
   (unless (advice-member-p #'cj/gptel--autosave-after-send #'gptel-send)
 	(advice-add 'gptel-send :after #'cj/gptel--autosave-after-send)))
+
+(defun cj/gptel--install-autosave-mode-line ()
+  "Add the [AS] autosave indicator to the current buffer's mode-line.
+Idempotent: re-running in the same buffer does not duplicate the
+construct."
+  (unless (member 'cj/gptel-autosave-mode-line-format mode-line-format)
+    (setq-local mode-line-format
+                (append mode-line-format
+                        (list 'cj/gptel-autosave-mode-line-format)))))
+
+(with-eval-after-load 'gptel
+  (add-hook 'gptel-mode-hook #'cj/gptel--install-autosave-mode-line))
 
 (defun cj/gptel--slugify-topic (s)
   "Return a filesystem-friendly slug for topic string S."
