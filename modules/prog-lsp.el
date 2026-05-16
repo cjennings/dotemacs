@@ -48,10 +48,15 @@ Idempotent — `add-to-list' skips patterns already present."
   (dolist (pattern cj/lsp-file-watch-ignored-extras)
     (add-to-list 'lsp-file-watch-ignored-directories pattern)))
 
-(defun cj/lsp--remove-eldoc-provider ()
-  "Remove lsp-mode's provider from `eldoc-documentation-functions' here.
-Buffer-local — the global hook value is untouched."
-  (remove-hook 'eldoc-documentation-functions #'lsp-eldoc-function t))
+(defun cj/lsp--remove-eldoc-provider-global ()
+  "Remove lsp-mode's provider from the global `eldoc-documentation-functions'.
+Run once after lsp-mode loads.  The previous per-buffer removal raced
+lsp's own buffer-local add: the buffer-local remove fired before lsp
+populated the buffer-local hook (lsp inherits the global default and
+mutates from there), so the buffer-local hook ended up holding the
+provider anyway.  Removing globally before lsp ever attaches a buffer
+makes the absence stick for every subsequent lsp-managed buffer."
+  (remove-hook 'eldoc-documentation-functions #'lsp-eldoc-function))
 
 ;;;;; ---------------------------- LSP Mode ---------------------------
 
@@ -73,7 +78,10 @@ Buffer-local — the global hook value is untouched."
   (setq lsp-enable-on-type-formatting nil)
   (setq lsp-signature-auto-activate nil)
   (setq lsp-signature-render-documentation nil)
-  (add-hook 'lsp-managed-mode-hook #'cj/lsp--remove-eldoc-provider)
+  ;; Strip lsp-mode's eldoc provider from the GLOBAL hook value once,
+  ;; not per buffer.  See `cj/lsp--remove-eldoc-provider-global' for
+  ;; why per-buffer racing didn't stick.
+  (cj/lsp--remove-eldoc-provider-global)
   (setq lsp-modeline-code-actions-enable nil)
   (setq lsp-modeline-diagnostics-enable nil)
   (setq lsp-headerline-breadcrumb-enable nil)

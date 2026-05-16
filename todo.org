@@ -1934,7 +1934,7 @@ Expected outcome:
 - Keep existing formatter wiring tests and add command-construction tests if a
   helper is extracted.
 
-**** TODO [#C] Add =executable-find= checks for =prettier= and =pyright= at load time :safety:
+**** 2026-05-16 Sat @ 03:54:56 -0500 Added cj/executable-find-or-warn checks for prettier and pyright at load time
 
 =modules/prog-webdev.el:34-40= declares =prettier-path= and
 =modules/prog-python.el:33-40= declares =pyright-path= as string
@@ -1944,7 +1944,7 @@ mid-edit, then the user has to discover why.  Wrap with
 =cj/executable-find-or-warn= (already in =system-lib.el=) at module
 load time so the missing dependency is reported up front.
 
-**** TODO [#C] Make =keyboard-compat= =server-after-make-frame-hook= idempotent :safety:
+**** 2026-05-16 Sat @ 03:54:56 -0500 Documented keyboard-compat hook idempotence (already correct)
 
 =modules/keyboard-compat.el:169-174= adds the frame-setup hook
 unconditionally.  If the module is required twice (e.g. via two
@@ -1953,7 +1953,7 @@ twice per new frame and installs duplicate =key-translation-map=
 entries.  Wrap the =add-hook= in a guard, or use a named function
 and rely on =add-hook='s own duplicate-check.
 
-**** TODO [#C] Wire =dev-fkeys= F6 test-runner clause for typescript / tsx :refactor:
+**** 2026-05-16 Sat @ 03:54:56 -0500 Wired F6 TypeScript clause to npx vitest|jest
 
 =modules/dev-fkeys.el:261-269= maps =tsx= to =typescript= in the
 language detection table.  =modules/dev-fkeys.el:347-349=
@@ -1962,7 +1962,7 @@ the catch-all =(_)= returns nil, so F6 errors instead of routing to
 a real runner.  Either add a =typescript= → =jest=/=vitest= clause
 or remove the =tsx= mapping until the runner side is implemented.
 
-**** TODO [#B] Fix =prog-lsp= eldoc-provider removal scope :bug:
+**** 2026-05-16 Sat @ 03:54:56 -0500 Fixed prog-lsp eldoc-provider removal to act on the global hook
 
 =modules/prog-lsp.el:51-54,76= attaches
 =cj/lsp--remove-eldoc-provider= globally to =lsp-managed-mode-hook=
@@ -1975,7 +1975,7 @@ the hook itself buffer-local-friendly (add it inside
 =lsp-managed-mode-hook= per-buffer) or remove from the global
 provider list once instead of per-buffer.
 
-**** TODO [#C] Externalize hardcoded LanguageTool script path in =flycheck-config= :cleanup:
+**** 2026-05-16 Sat @ 03:54:56 -0500 Externalized LanguageTool script path via user-emacs-directory
 
 =modules/flycheck-config.el:69= hardcodes
 =~/.emacs.d/scripts/languagetool-flycheck= as the LanguageTool wrapper.
@@ -1984,7 +1984,7 @@ auditing the module against a future package) get a broken checker.
 Replace with =(expand-file-name "scripts/languagetool-flycheck"
 user-emacs-directory)= or a defcustom.
 
-**** TODO [#C] Replace hardcoded Zathura viewer in =latex-config= :cleanup:
+**** 2026-05-16 Sat @ 03:54:56 -0500 Replaced hardcoded Zathura viewer with executable-find candidate list
 
 =modules/latex-config.el:28= sets the LaTeX viewer to =zathura=
 unconditionally.  macOS / Windows users and anyone who prefers a

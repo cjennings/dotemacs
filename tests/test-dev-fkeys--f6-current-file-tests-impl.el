@@ -105,13 +105,17 @@ just that file's tests run, not the whole module's prefix."
                    "/home/u/proj/modules/foo.el" nil)
                   :type 'user-error)))
 
-(ert-deftest test-dev-fkeys-f6-current-file-tests-impl-unsupported-language-errors ()
-  "Error: a file with no language-specific runner signals a user-error
-naming the language."
-  (cl-letf (((symbol-function 'compile) (lambda (_cmd) nil)))
-    (should-error (cj/--f6-current-file-tests-impl
-                   "/home/u/proj/src/foo.test.ts" "/home/u/proj/")
-                  :type 'user-error)))
+(ert-deftest test-dev-fkeys-f6-current-file-tests-impl-typescript-runs-jest ()
+  "TypeScript now routes to the `npx --no-install jest|vitest <path>'
+runner instead of erroring as unsupported."
+  (let ((compile-called nil))
+    (cl-letf (((symbol-function 'compile)
+               (lambda (cmd) (setq compile-called cmd)))
+              ((symbol-function 'executable-find) (lambda (_) nil)))
+      (cj/--f6-current-file-tests-impl
+       "/home/u/proj/src/foo.test.ts" "/home/u/proj/")
+      (should (stringp compile-called))
+      (should (string-match-p "jest src/foo.test.ts" compile-called)))))
 
 (ert-deftest test-dev-fkeys-f6-current-file-tests-impl-unknown-language-errors ()
   "Error: an unknown extension signals a user-error rather than running
