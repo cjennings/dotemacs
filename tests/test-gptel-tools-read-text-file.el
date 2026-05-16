@@ -59,6 +59,53 @@
   "Error: a directory signals."
   (should-error (cj/validate-file-path "~")))
 
+(ert-deftest test-gptel-tools-read-text-file-validate-path-error-unreadable ()
+  "Error: unreadable files signal."
+  (test-gptel-tools-read-text-file--in-home
+   "unreadable" "secret"
+   (lambda (path)
+     (cl-letf (((symbol-function 'file-readable-p) (lambda (_) nil)))
+       (should-error (cj/validate-file-path path))))))
+
+(ert-deftest test-gptel-tools-read-text-file-validate-path-boundary-relative-home-path ()
+  "Boundary: relative paths resolve under HOME."
+  (test-gptel-tools-read-text-file--in-home
+   "relative" "hi"
+   (lambda (path)
+     (let ((relative (file-relative-name path (expand-file-name "~"))))
+       (should (equal (cj/validate-file-path relative)
+                      (file-truename path)))))))
+
+(ert-deftest test-gptel-tools-read-text-file-validate-path-boundary-symlink-inside-home ()
+  "Boundary: symlinks inside HOME resolving inside HOME are accepted."
+  (test-gptel-tools-read-text-file--in-home
+   "symlink-target" "hi"
+   (lambda (target)
+     (let ((link (expand-file-name
+                  (format ".test-gptel-tools-read-text-file-link-%s.tmp"
+                          (format-time-string "%s%N"))
+                  "~")))
+       (unwind-protect
+           (progn
+             (make-symbolic-link target link t)
+             (should (equal (cj/validate-file-path link)
+                            (file-truename target))))
+         (when (file-symlink-p link) (delete-file link)))))))
+
+(ert-deftest test-gptel-tools-read-text-file-validate-path-error-symlink-outside-home ()
+  "Error: symlinks inside HOME pointing outside HOME are rejected."
+  (let ((outside (make-temp-file "test-gptel-tools-read-text-file-outside-"))
+        (link (expand-file-name
+               (format ".test-gptel-tools-read-text-file-outside-link-%s.tmp"
+                       (format-time-string "%s%N"))
+               "~")))
+    (unwind-protect
+        (progn
+          (make-symbolic-link outside link t)
+          (should-error (cj/validate-file-path link)))
+      (when (file-exists-p outside) (delete-file outside))
+      (when (file-symlink-p link) (delete-file link)))))
+
 ;; -------------------------- get-file-metadata
 
 (ert-deftest test-gptel-tools-read-text-file-get-metadata-shape ()
@@ -87,6 +134,16 @@
   "Above 10MB but below 100MB with no-confirm passes through silently."
   (should-not (cj/check-file-size-limits (* 11 1024 1024) t)))
 
+(ert-deftest test-gptel-tools-read-text-file-size-limits-warning-user-accepts ()
+  "Above warning limit proceeds when the user accepts."
+  (cl-letf (((symbol-function 'y-or-n-p) (lambda (_prompt) t)))
+    (should-not (cj/check-file-size-limits (* 11 1024 1024) nil))))
+
+(ert-deftest test-gptel-tools-read-text-file-size-limits-warning-user-declines ()
+  "Above warning limit signals when the user declines."
+  (cl-letf (((symbol-function 'y-or-n-p) (lambda (_prompt) nil)))
+    (should-error (cj/check-file-size-limits (* 11 1024 1024) nil))))
+
 ;; -------------------------- detect-binary-file
 
 (ert-deftest test-gptel-tools-read-text-file-detect-binary-text-file ()
@@ -108,6 +165,33 @@
 (ert-deftest test-gptel-tools-read-text-file-handle-special-epub-error ()
   "EPUB special-type handler signals \"not yet implemented\"."
   (should-error (cj/handle-special-file-types "/tmp/foo.epub" t)))
+
+(ert-deftest test-gptel-tools-read-text-file-handle-special-epub-cancel ()
+  "EPUB special-type handler signals when user declines extraction."
+  (cl-letf (((symbol-function 'y-or-n-p) (lambda (_prompt) nil)))
+    (should-error (cj/handle-special-file-types "/tmp/foo.epub" nil))))
+
+(ert-deftest test-gptel-tools-read-text-file-handle-special-pdf-cancel ()
+  "PDF special-type handler signals when user declines extraction."
+  (cl-letf (((symbol-function 'y-or-n-p) (lambda (_prompt) nil)))
+    (should-error (cj/handle-special-file-types "/tmp/foo.pdf" nil))))
+
+(ert-deftest test-gptel-tools-read-text-file-handle-special-pdf-empty-extraction ()
+  "PDF special-type handler signals when extraction returns empty text."
+  (cl-letf (((symbol-function 'shell-command-to-string) (lambda (_cmd) "")))
+    (should-error (cj/handle-special-file-types "/tmp/foo.pdf" t))))
+
+(ert-deftest test-gptel-tools-read-text-file-handle-special-pdf-text ()
+  "PDF special-type handler returns extracted text."
+  (cl-letf (((symbol-function 'shell-command-to-string)
+             (lambda (_cmd) "pdf text\n")))
+    (should (equal (cj/handle-special-file-types "/tmp/foo.pdf" t)
+                   "pdf text\n"))))
+
+(ert-deftest test-gptel-tools-read-text-file-handle-special-binary-cancel ()
+  "Generic binary handler signals when user declines."
+  (cl-letf (((symbol-function 'y-or-n-p) (lambda (_prompt) nil)))
+    (should-error (cj/handle-special-file-types "/tmp/foo.bin" nil))))
 
 (ert-deftest test-gptel-tools-read-text-file-handle-special-binary-returns-nil ()
   "Generic binary file with no-confirm returns nil to indicate normal read."

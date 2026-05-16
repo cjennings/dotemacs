@@ -91,6 +91,10 @@
   "Error: a path outside HOME or /tmp signals."
   (should-error (gptel--move-to-trash-validate-path "/etc/hostname")))
 
+(ert-deftest test-gptel-tools-trash-validate-path-error-tmp-prefix-trick ()
+  "Error: paths that merely start with /tmp are not treated as /tmp children."
+  (should-error (gptel--move-to-trash-validate-path "/tmpnotreally/file")))
+
 (ert-deftest test-gptel-tools-trash-validate-path-error-critical-dir ()
   "Error: critical directories (home root, .emacs.d, .config, /tmp) signal."
   (should-error (gptel--move-to-trash-validate-path "~"))
@@ -106,6 +110,18 @@
                "~")))
     (when (file-exists-p path) (delete-file path))
     (should-error (gptel--move-to-trash-validate-path path))))
+
+(ert-deftest test-gptel-tools-trash-validate-path-error-symlink-outside-allowed ()
+  "Error: allowed-location symlinks resolving outside allowed roots are rejected."
+  (let ((link (expand-file-name
+               (format ".test-gptel-tools-trash-outside-link-%s.tmp"
+                       (format-time-string "%s%N"))
+               "~")))
+    (unwind-protect
+        (progn
+          (make-symbolic-link "/etc/hostname" link t)
+          (should-error (gptel--move-to-trash-validate-path link)))
+      (when (file-symlink-p link) (delete-file link)))))
 
 ;; -------------------------- perform
 
@@ -131,6 +147,73 @@
          (should (string-match-p "Directory moved to trash" status))
          (should-not (file-exists-p dir))
          (should (file-exists-p (expand-file-name "subdir/inside.txt" trash))))))))
+
+(ert-deftest test-gptel-tools-trash-perform-handles-symlink ()
+  "Perform: moving a symlink moves the link, not its target."
+  (test-gptel-tools-trash--with-tmp-tree
+   (lambda (src trash)
+     (let ((target (expand-file-name "target.txt" src))
+           (link (expand-file-name "link.txt" src)))
+       (with-temp-file target (insert "target"))
+       (make-symbolic-link target link t)
+       (let ((status (gptel--move-to-trash-perform link trash)))
+         (should (string-match-p "Symlink moved to trash" status))
+         (should (file-exists-p target))
+         (should-not (file-symlink-p link))
+         (should (file-symlink-p (expand-file-name "link.txt" trash))))))))
+
+(ert-deftest test-gptel-tools-trash-perform-error-rename-failure ()
+  "Error: rename failures are reported with context."
+  (test-gptel-tools-trash--with-tmp-tree
+   (lambda (src trash)
+     (let ((file (expand-file-name "doomed.txt" src)))
+       (with-temp-file file (insert "trash me"))
+       (cl-letf (((symbol-function 'rename-file)
+                  (lambda (&rest _args) (error "rename failed"))))
+         (should-error (gptel--move-to-trash-perform file trash)))
+       (should (file-exists-p file))))))
+
+(ert-deftest test-gptel-tools-trash-perform-error-permission-denied ()
+  "Error: permission-denied rename failures get a specific message."
+  (test-gptel-tools-trash--with-tmp-tree
+   (lambda (src trash)
+     (let ((file (expand-file-name "denied.txt" src)))
+       (with-temp-file file (insert "trash me"))
+       (cl-letf (((symbol-function 'rename-file)
+                  (lambda (&rest _args)
+                    (signal 'permission-denied '("denied")))))
+         (should-error (gptel--move-to-trash-perform file trash)
+                       :type 'error))
+       (should (file-exists-p file))))))
+
+(ert-deftest test-gptel-tools-trash-perform-error-original-still-exists ()
+  "Error: post-move verification catches a source path that remains."
+  (test-gptel-tools-trash--with-tmp-tree
+   (lambda (src trash)
+     (let ((file (expand-file-name "still-there.txt" src)))
+       (with-temp-file file (insert "trash me"))
+       (cl-letf (((symbol-function 'rename-file)
+                  (lambda (&rest _args) nil)))
+         (should-error (gptel--move-to-trash-perform file trash)))
+       (should (file-exists-p file))))))
+
+(ert-deftest test-gptel-tools-trash-perform-error-trash-missing-after-move ()
+  "Error: post-move verification catches a missing trash target."
+  (test-gptel-tools-trash--with-tmp-tree
+   (lambda (src trash)
+     (let ((file (expand-file-name "missing-trash.txt" src))
+           (real-file-exists-p (symbol-function 'file-exists-p)))
+       (with-temp-file file (insert "trash me"))
+       (cl-letf (((symbol-function 'rename-file)
+                  (lambda (&rest _args) nil))
+                 ((symbol-function 'file-exists-p)
+                  (lambda (path)
+                    (cond
+                     ((equal path file) nil)
+                     ((string-prefix-p trash path) nil)
+                     (t (funcall real-file-exists-p path))))))
+         (should-error (gptel--move-to-trash-perform file trash)))
+       (should (funcall real-file-exists-p file))))))
 
 (provide 'test-gptel-tools-move-to-trash)
 ;;; test-gptel-tools-move-to-trash.el ends here

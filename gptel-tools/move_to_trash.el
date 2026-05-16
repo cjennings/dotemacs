@@ -41,7 +41,7 @@ YYYY-MM-DD-HH-MM-SS."
 	  (let* ((extension (file-name-extension base-name t))
 			 (name-sans-ext (file-name-sans-extension base-name))
 			 (timestamp (format-time-string "%Y-%m-%d-%H-%M-%S"))
-			 (new-name (if extension
+			 (new-name (if (and extension (not (string= extension "")))
 						  (concat name-sans-ext "-" timestamp extension)
 						(concat base-name "-" timestamp))))
 		(expand-file-name new-name trash-dir)))))
@@ -51,15 +51,18 @@ YYYY-MM-DD-HH-MM-SS."
 Returns the expanded path if valid, signals an error otherwise.
 Ensures path is within home directory or /tmp, and prevents
 trashing of critical system directories."
-  (let ((expanded-path (expand-file-name path))
-		(home-dir (expand-file-name "~"))
-		(critical-dirs (list (expand-file-name "~")
-							(expand-file-name "~/.emacs.d")
-							(expand-file-name "~/.config")
-							"/tmp")))
+  (let* ((expanded-path (expand-file-name path))
+         (resolved-path (and (file-exists-p expanded-path)
+                             (file-truename expanded-path)))
+		 (home-dir (file-name-as-directory (file-truename (expand-file-name "~"))))
+         (tmp-dir (file-name-as-directory (file-truename "/tmp")))
+		 (critical-dirs (list (directory-file-name home-dir)
+							  (file-truename (expand-file-name "~/.emacs.d"))
+							  (file-truename (expand-file-name "~/.config"))
+							  (directory-file-name tmp-dir))))
 	;; Security check: must be within allowed directories
 	(unless (or (string-prefix-p home-dir expanded-path)
-				(string-prefix-p "/tmp" expanded-path))
+				(string-prefix-p tmp-dir expanded-path))
 	  (error "Path must be within home directory or /tmp: %s" path))
 
 	;; Prevent trashing critical directories
@@ -69,6 +72,10 @@ trashing of critical system directories."
 	;; Existence check
 	(unless (file-exists-p expanded-path)
 	  (error "File or directory does not exist: %s" path))
+
+    (unless (or (string-prefix-p home-dir resolved-path)
+                (string-prefix-p tmp-dir resolved-path))
+      (error "Resolved path must be within home directory or /tmp: %s" path))
 
 	expanded-path))
 

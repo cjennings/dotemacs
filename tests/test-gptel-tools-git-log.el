@@ -36,8 +36,13 @@ Call FN with the absolute path, clean up after."
             (call-process "git" nil nil nil "config" "user.email" "test@x")
             (call-process "git" nil nil nil "config" "user.name" "Test")
             (dotimes (i commit-count)
-              (call-process "git" nil nil nil "commit" "--allow-empty"
-                            "--quiet" "-m" (format "commit %d" i))))
+              (let ((process-environment
+                     (append
+                      (list "GIT_AUTHOR_DATE=2000-01-01T00:00:00+0000"
+                            "GIT_COMMITTER_DATE=2000-01-01T00:00:00+0000")
+                      process-environment)))
+                (call-process "git" nil nil nil "commit" "--allow-empty"
+                              "--quiet" "-m" (format "commit %d" i)))))
           (funcall fn dir))
       (when (file-exists-p dir) (delete-directory dir t)))))
 
@@ -92,6 +97,26 @@ Call FN with the absolute path, clean up after."
         (should-error (cj/gptel-git-log--validate-path dir))
       (when (file-exists-p dir) (delete-directory dir t)))))
 
+(ert-deftest test-gptel-tools-git-log-validate-path-error-not-a-directory ()
+  "Error: file paths are rejected."
+  (let ((file (make-temp-file
+               (expand-file-name ".test-gptel-tools-git-log-file-" "~"))))
+    (unwind-protect
+        (should-error (cj/gptel-git-log--validate-path file))
+      (when (file-exists-p file) (delete-file file)))))
+
+(ert-deftest test-gptel-tools-git-log-validate-path-error-symlink-outside-home ()
+  "Error: symlinked directories resolving outside HOME are rejected."
+  (let ((link (expand-file-name
+               (format ".test-gptel-tools-git-log-link-%s"
+                       (format-time-string "%s%N"))
+               "~")))
+    (unwind-protect
+        (progn
+          (make-symbolic-link "/tmp" link t)
+          (should-error (cj/gptel-git-log--validate-path link)))
+      (when (file-symlink-p link) (delete-file link)))))
+
 ;; ---------- run
 
 (ert-deftest test-gptel-tools-git-log-run-default-count ()
@@ -111,6 +136,29 @@ Call FN with the absolute path, clean up after."
      (let* ((out (cj/gptel-git-log--run dir 3))
             (lines (split-string (string-trim out) "\n")))
        (should (= (length lines) 3))))))
+
+(ert-deftest test-gptel-tools-git-log-run-since-no-match ()
+  "Boundary: --since filter with no matching commits returns marker."
+  (test-gptel-tools-git-log--with-repo
+   1
+   (lambda (dir)
+     (let ((out (cj/gptel-git-log--run dir 10 "2001-01-01")))
+       (should (string-match-p "No commits" out))))))
+
+(ert-deftest test-gptel-tools-git-log-run-error-on-git-log-failure ()
+  "Error: non-zero git log exits are surfaced."
+  (test-gptel-tools-git-log--with-repo
+   1
+   (lambda (dir)
+     (cl-letf (((symbol-function 'process-file)
+                (lambda (program infile destination display &rest args)
+                  (if (member "log" args)
+                      (progn
+                        (when (bufferp destination)
+                          (with-current-buffer destination (insert "bad log")))
+                        2)
+                    (apply #'call-process program infile destination display args)))))
+       (should-error (cj/gptel-git-log--run dir))))))
 
 (ert-deftest test-gptel-tools-git-log-run-empty-repo ()
   "Boundary: a repo with no commits returns the empty-result marker."

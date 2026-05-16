@@ -102,6 +102,26 @@
         (should-error (cj/gptel-git-diff--validate-path dir))
       (when (file-exists-p dir) (delete-directory dir t)))))
 
+(ert-deftest test-gptel-tools-git-diff-validate-path-error-not-a-directory ()
+  "Error: file paths are rejected."
+  (let ((file (make-temp-file
+               (expand-file-name ".test-gptel-tools-git-diff-file-" "~"))))
+    (unwind-protect
+        (should-error (cj/gptel-git-diff--validate-path file))
+      (when (file-exists-p file) (delete-file file)))))
+
+(ert-deftest test-gptel-tools-git-diff-validate-path-error-symlink-outside-home ()
+  "Error: symlinked directories resolving outside HOME are rejected."
+  (let ((link (expand-file-name
+               (format ".test-gptel-tools-git-diff-link-%s"
+                       (format-time-string "%s%N"))
+               "~")))
+    (unwind-protect
+        (progn
+          (make-symbolic-link "/tmp" link t)
+          (should-error (cj/gptel-git-diff--validate-path link)))
+      (when (file-symlink-p link) (delete-file link)))))
+
 ;; ---------- run
 
 (ert-deftest test-gptel-tools-git-diff-run-no-changes ()
@@ -132,6 +152,12 @@
      (let ((out (cj/gptel-git-diff--run dir nil nil "f.txt")))
        (should (string-match-p "f.txt" out))
        (should-not (string-match-p "g.txt" out))))))
+
+(ert-deftest test-gptel-tools-git-diff-run-error-on-bad-ref ()
+  "Error: git diff exits other than 0/1 are surfaced."
+  (test-gptel-tools-git-diff--with-repo
+   (lambda (dir)
+     (should-error (cj/gptel-git-diff--run dir "does-not-exist")))))
 
 (provide 'test-gptel-tools-git-diff)
 ;;; test-gptel-tools-git-diff.el ends here
