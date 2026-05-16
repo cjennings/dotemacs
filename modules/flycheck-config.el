@@ -34,13 +34,12 @@
 ;;; Code:
 
 (defun cj/prose-helpers-on ()
-  "Ensure that abbrev, flyspell, and flycheck are all on."
+  "Ensure that `abbrev-mode' and `flycheck-mode' are on in the current buffer."
   (interactive)
-  (if (not (abbrev-mode))
-      (abbrev-mode))
-  ;;  (flyspell-on-for-buffer-type)
-  (if (not (flycheck-mode))
-      (flycheck-mode)))
+  (unless (bound-and-true-p abbrev-mode)
+    (abbrev-mode 1))
+  (unless (bound-and-true-p flycheck-mode)
+    (flycheck-mode 1)))
 
 ;; ---------------------------------- Linting ----------------------------------
 
