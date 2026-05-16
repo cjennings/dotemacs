@@ -34,6 +34,7 @@
 (autoload 'cj/gptel-load-conversation "ai-conversations" "Load a saved AI conversation." t)
 (autoload 'cj/gptel-delete-conversation "ai-conversations" "Delete a saved AI conversation." t)
 (autoload 'cj/gptel-autosave-toggle "ai-conversations" "Toggle autosave in the current GPTel buffer." t)
+(autoload 'cj/gptel-quick-ask "ai-quick-ask" "One-shot quick-ask in a transient buffer." t)
 
 ;;; ------------------------- AI Config Helper Functions ------------------------
 
@@ -508,6 +509,7 @@ Works for any buffer, whether it's visiting a file or not."
   "l" #'cj/gptel-load-conversation   ;; load and continue conversation
   "m" #'cj/gptel-change-model        ;; change the LLM model
   "p" #'gptel-system-prompt          ;; change prompt
+  "q" #'cj/gptel-quick-ask           ;; one-shot quick ask
   "r" #'gptel-rewrite                ;; rewrite a region of code/text
   "c" #'cj/gptel-context-clear       ;; clear all context
   "s" #'cj/gptel-save-conversation   ;; save conversation
@@ -527,6 +529,7 @@ Works for any buffer, whether it's visiting a file or not."
     "C-; a l" "load conversation"
     "C-; a m" "change model"
     "C-; a p" "change prompt"
+    "C-; a q" "quick ask"
     "C-; a r" "rewrite region"
     "C-; a c" "clear context"
     "C-; a s" "save conversation"

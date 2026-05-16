@@ -9,7 +9,7 @@ cd "$REPO_ROOT"
 
 # --- 1. Secret scan ---
 # Patterns for common credentials. Scans only added lines in the staged diff.
-SECRET_PATTERNS='(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9_-]{20,}|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP)( PRIVATE)?( KEY| KEY BLOCK)?-----|(api[_-]?key|api[_-]?secret|auth[_-]?token|secret[_-]?key|bearer[_-]?token|access[_-]?token|password)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{16,}["'"'"'])'
+SECRET_PATTERNS='(AKIA[0-9A-Z]{16}|(^|[^a-zA-Z0-9])sk-[a-zA-Z0-9_-]{20,}|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP)( PRIVATE)?( KEY| KEY BLOCK)?-----|(api[_-]?key|api[_-]?secret|auth[_-]?token|secret[_-]?key|bearer[_-]?token|access[_-]?token|password)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{16,}["'"'"'])'
 
 secret_hits="$(git diff --cached -U0 --diff-filter=AM \
   | grep '^+' | grep -v '^+++' \
