@@ -69,16 +69,21 @@ every call. The `memq' check skips when the face is already present."
 
 ;; ------------------------------- Packages ------------------------------------
 
+;; `:demand t' is required: `dashboard-config.el' calls
+;; `nerd-icons-faicon' / `nerd-icons-mdicon' / `nerd-icons-devicon' at
+;; load time to build `dashboard-navigator-buttons', so nerd-icons must
+;; be loaded eagerly before dashboard-config requires.  The earlier
+;; deferral attempt (commit d618bb46) broke startup with a
+;; `void-function nerd-icons-faicon' error.
 (use-package nerd-icons
-  :defer t
+  :demand t
   :config
   (advice-add 'nerd-icons-icon-for-dir :filter-return #'cj/--nerd-icons-color-dir)
   (cj/nerd-icons-apply-tint))
 
-;; If nerd-icons is already loaded (e.g. when this module is re-evaluated
-;; after a session in which a feature module already required it), the
-;; `:config' block above won't fire again -- fall through to install the
-;; advice and tint immediately.
+;; Safety net: if this module is re-evaluated in a running Emacs where
+;; nerd-icons is already loaded, `:config' above won't fire again --
+;; ensure the advice and tint still apply.
 (with-eval-after-load 'nerd-icons
   (unless (advice-member-p #'cj/--nerd-icons-color-dir 'nerd-icons-icon-for-dir)
     (advice-add 'nerd-icons-icon-for-dir
