@@ -52,6 +52,7 @@
   '(read_buffer
     read_text_file
     write_text_file
+    update_text_file
     list_directory_files
     move_to_trash)
   "Feature symbols for optional local GPTel tool modules."

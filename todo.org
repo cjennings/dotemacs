@@ -2583,18 +2583,23 @@ In scope:
 
 Out of scope: the F9 =ai-vterm= Claude-Code launcher (=modules/ai-vterm.el=) — separate module, working well.
 
-*** TODO [#B] Wire update_text_file into cj/gptel-local-tool-features, then harden it :refactor:tests:
+*** 2026-05-16 Sat @ 01:17:58 -0500 Rewrote update_text_file.el and wired it into cj/gptel-local-tool-features
 
-The tool exists at =gptel-tools/update_text_file.el= (replace / append / prepend / insert-at-line / delete-lines, with diff preview and timestamped backups), but it's incomplete and needs hardening before it goes live in =cj/gptel-local-tool-features=.
+I rewrote =gptel-tools/update_text_file.el= in pure Elisp.  The previous
+version shelled out to sed for everything, had a stray quote terminator
+at EOF, produced literal backslash-n where actual newlines were
+expected, and prompted via =y-or-n-p= redundantly with gptel's own
+=:confirm t= flag.
 
-Scope:
+The five operations (=replace=, =append=, =prepend=, =insert-at-line=,
+=delete-lines=) split into pure string transforms that test without
+touching the disk.  The file-level wrapper validates the path, enforces
+the 10MB size limit, takes a timestamped backup, and writes atomically.
+No backup is created when the operation is a no-op.
 
-1. *Read the tool end-to-end* against the gptel-tools convention used by =read_buffer.el=, =write_text_file.el=, =move_to_trash.el=, and the other already-wired tools.  Note where =update_text_file.el= diverges in shape (argument naming, error handling, return-value structure, backup placement).
-2. *Refactor for completeness and consistency.*  Bring it in line with the other tools: same argument-validation style, same diff-preview surface, same backup directory and naming, same error categories.  Extract pure helpers where the current shape forces wrapper-heavy testing.
-3. *Add ERT coverage targeting ~100%.*  Normal / Boundary / Error per the standard project discipline: each verb (=replace=, =append=, =prepend=, =insert-at-line=, =delete-lines=) gets at least one Normal, one Boundary (empty file, single line, EOF, unicode), and one Error (missing file, line-range out of range, permission denied, write-conflict).  Diff preview and backup creation get their own focused tests.
-4. *Wire it into =cj/gptel-local-tool-features=* in =modules/ai-config.el= -- one-line addition to the defcustom default -- only once 1-3 are green.
-
-Acceptance: after restart, =gptel-tools= (the transient context view) shows =update_text_file= alongside =read_buffer=, =read_text_file=, =write_text_file=, =list_directory_files=, =move_to_trash=.  =make test-file FILE=test-update-text-file.el= exits 0.  =make coverage= reports =gptel-tools/update_text_file.el= at ≥95%.
+=tests/test-update-text-file.el= covers Normal / Boundary / Error per
+operation plus the wrapper -- 48 tests green.  Added =update_text_file=
+to =cj/gptel-local-tool-features= so gptel exposes it on next restart.
 
 *** TODO [#B] Fix gptel-magit triggers :bug:
 
