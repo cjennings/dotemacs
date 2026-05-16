@@ -13,6 +13,13 @@
 (require 'mu4e nil t)
 (require 'org-contacts nil t)
 
+;; Cross-module symbols this file references.  Declared so byte-compile in
+;; isolation doesn't warn about free variables / undefined functions; the
+;; actual definitions live where named.
+(eval-when-compile (defvar contacts-file))         ; user-constants.el
+(declare-function cj/get-all-contact-emails        ; org-contacts-config.el
+                  "org-contacts-config" ())
+
 ;; ---------------------- Completion at Point Function -------------------------
 
 (defun cj/org-contacts-completion-at-point ()

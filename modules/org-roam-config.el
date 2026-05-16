@@ -77,14 +77,26 @@
   (global-set-key (kbd "C-c n d") org-roam-dailies-map)
   (org-roam-db-autosync-mode))
 
-;; Move closed tasks to today's journal when marked done
+;; Move closed tasks to today's journal when marked done.
+
+(defun cj/--org-roam-should-copy-completed-task-p ()
+  "Return non-nil when the current org-state change should copy to today's journal.
+Skips:
+- Fileless buffers (org-capture, indirect buffers, temp Org buffers)
+- The gcal.org buffer (synced from Google Calendar)
+- State changes that didn't actually enter a done state
+- State changes where the previous state was already done (avoid re-copy)"
+  (let ((file (buffer-file-name)))
+    (and file
+         (bound-and-true-p org-state)
+         (member org-state org-done-keywords)
+         (not (member org-last-state org-done-keywords))
+         (not (string= file (expand-file-name gcal-file))))))
+
 (with-eval-after-load 'org
   (add-to-list 'org-after-todo-state-change-hook
                (lambda ()
-                 (when (and (member org-state org-done-keywords)
-                            (not (member org-last-state org-done-keywords))
-                            ;; Don't run for gcal.org - it's synced from Google Calendar
-                            (not (string= (buffer-file-name) (expand-file-name gcal-file))))
+                 (when (cj/--org-roam-should-copy-completed-task-p)
                    (cj/org-roam-copy-todo-to-today)))))
 
 ;; ------------------------- Org Roam Insert Immediate -------------------------
