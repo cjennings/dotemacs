@@ -1,93 +1,93 @@
 ;;; write_text_file.el --- Write text files for gptel  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2025
-
-;; Author: gptel-tool-writer
+;; Author: Craig Jennings <c@cjennings.net>
 ;; Keywords: convenience, tools
-;; Package-Requires: ((emacs "27.1") (gptel "0.9.0"))
 
 ;; This file is not part of GNU Emacs.
 
-;; This program is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version.
-
-;; This program is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;; GNU General Public License for more details.
-
 ;;; Commentary:
 
-;; This file provides a gptel tool for writing text files to the filesystem.
-;; The tool includes safety features like backup creation, size limits,
-;; and restriction to the user's home directory.
+;; Gptel tool for writing a text file under the user's home directory.
+;; Creates parent directories as needed, optionally overwrites an
+;; existing file (with a timestamped backup), and rejects writes
+;; larger than 1 GB unless the user confirms.
 
 ;;; Code:
 
 (require 'gptel)
 
+(defconst cj/write-text-file--size-limit (* 1024 1024 1024)
+  "Soft cap for new-file writes (1 GB).  Above this size a confirm is required.")
+
+(defun cj/write-text-file--validate-path (path)
+  "Validate PATH for write.  Return the expanded path on success.
+PATH must resolve inside the user's home directory."
+  (let ((full (expand-file-name path "~")))
+    (unless (string-prefix-p (expand-file-name "~") full)
+      (error "Path must be within home directory: %s" path))
+    full))
+
+(defun cj/write-text-file--backup-name (path)
+  "Return a timestamped backup filename for PATH."
+  (format "%s-%s.bak"
+          path
+          (format-time-string "%Y-%m-%d-%H%M%S")))
+
+(defun cj/write-text-file--ensure-parent (path)
+  "Ensure the parent directory of PATH exists and is writable.
+Create missing parents.  Signal on failure."
+  (let ((parent (file-name-directory path)))
+    (when parent
+      (unless (file-exists-p parent)
+        (condition-case err
+            (make-directory parent t)
+          (error (error "Cannot create directory %s: %s"
+                        parent (error-message-string err)))))
+      (unless (file-writable-p parent)
+        (error "No write permission for directory %s" parent)))))
+
+(defun cj/write-text-file--run (path content &optional overwrite)
+  "Write CONTENT to PATH.  Return a status string.
+PATH must be inside the user's home directory.  If the file exists
+and OVERWRITE is non-nil, make a timestamped backup before writing;
+otherwise signal."
+  (let* ((full (cj/write-text-file--validate-path path))
+         (content (or content ""))
+         (size (length content)))
+    (when (> size cj/write-text-file--size-limit)
+      (unless (y-or-n-p (format "File is %s. Write anyway? "
+                                (file-size-human-readable size)))
+        (error "File write cancelled: size exceeds 1GB limit")))
+    (cj/write-text-file--ensure-parent full)
+    (when (file-exists-p full)
+      (if overwrite
+          (let ((backup (cj/write-text-file--backup-name full)))
+            (copy-file full backup t)
+            (message "Backed up existing file to %s" backup))
+        (error "File %s already exists. Set overwrite to true to replace it" full)))
+    (with-temp-file full (insert content))
+    (format "Successfully wrote %d bytes to %s" size full)))
+
 (with-eval-after-load 'gptel
   (gptel-make-tool
    :name "write_text_file"
    :function (lambda (path content &optional overwrite)
-               (let* ((full-path (expand-file-name path "~"))
-                      (content (or content ""))
-                      (content-size (length content))
-                      (size-limit (* 1024 1024 1024))) ; 1 GB
-                 ;; Check if path is within home directory
-                 (unless (string-prefix-p (expand-file-name "~") full-path)
-                   (error "Path must be within home directory"))
-                 ;; Check size limit
-                 (when (> content-size size-limit)
-                   (unless (y-or-n-p (format "File is %s. Write anyway? "
-                                            (file-size-human-readable content-size)))
-                     (error "File write cancelled: size exceeds 1GB limit")))
-                 ;; Check write permission on parent directory
-                 (let ((parent-dir (file-name-directory full-path)))
-                   (when parent-dir
-                     ;; Create parent directories if needed
-                     (unless (file-exists-p parent-dir)
-                       (condition-case err
-                           (make-directory parent-dir t)
-                         (error (error "Cannot create directory %s: %s" 
-                                      parent-dir (error-message-string err)))))
-                     ;; Check write permission
-                     (unless (file-writable-p parent-dir)
-                       (error "No write permission for directory %s" parent-dir))))
-                 ;; Handle existing file
-                 (when (file-exists-p full-path)
-                   (if overwrite
-                       ;; Create backup with timestamp
-                       (let* ((backup-name 
-                              (format "%s-%s.bak" 
-                                     full-path
-                                     (format-time-string "%Y-%m-%d-%H%M%S"))))
-                         (copy-file full-path backup-name t)
-                         (message "Backed up existing file to %s" backup-name))
-                     (error "File %s already exists. Set overwrite to true to replace it" full-path)))
-                 ;; Write the file atomically
-                 (with-temp-file full-path
-                   (insert content))
-                 (format "Successfully wrote %d bytes to %s" 
-                         content-size full-path)))
+               (cj/write-text-file--run path content overwrite))
    :description "Write text content to a file within the user's home directory. Creates parent directories if needed. Backs up existing files with timestamp when overwriting."
    :args (list '(:name "path"
-                 :type string
-                 :description "File path relative to home directory, e.g., 'documents/myfile.txt' or '~/documents/myfile.txt'")
+                       :type string
+                       :description "File path relative to home directory, e.g., 'documents/myfile.txt' or '~/documents/myfile.txt'")
                '(:name "content"
-                 :type string
-                 :description "The text content to write to the file")
+                       :type string
+                       :description "The text content to write to the file")
                '(:name "overwrite"
-                 :type boolean
-                 :description "If true, backup and overwrite existing file. If false or omitted, error if file exists"
-                 :optional t))
+                       :type boolean
+                       :description "If true, backup and overwrite existing file. If false or omitted, error if file exists"
+                       :optional t))
    :category "filesystem"
    :confirm t
    :include t)
-  
-  ;; Automatically add to gptel-tools on load
+
   (add-to-list 'gptel-tools (gptel-get-tool '("filesystem" "write_text_file"))))
 
 (provide 'write_text_file)
