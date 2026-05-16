@@ -2356,7 +2356,7 @@ Expected outcome:
 - Add a small test or manual checklist for the EWW user-agent advice so it does
   not affect package.el or non-EWW URL callers.
 
-**** TODO [#B] Move Slack which-key registration behind =with-eval-after-load= :cleanup:quick:
+**** 2026-05-16 Sat @ 04:00:00 -0500 Moved Slack which-key registration behind with-eval-after-load
 
 =slack-config.el= calls =which-key-add-keymap-based-replacements= at top level,
 while most modules defer which-key registration. If which-key is not loaded or
@@ -2366,7 +2366,7 @@ Expected outcome:
 - Wrap the registration in =with-eval-after-load 'which-key=.
 - Add a module-load smoke test or byte-compile check if easy.
 
-**** TODO [#C] Remove =httpd-start= side effect from =markdown-preview= :safety:
+**** 2026-05-16 Sat @ 04:00:00 -0500 Removed httpd-start side effect from markdown-preview
 
 =modules/markdown-config.el:37-51= starts =simple-httpd= inside an
 interactive command, then opens a browser at
@@ -2387,7 +2387,7 @@ config (a defcustom, an alist read from disk, or
 =host-environment.el='s machine-table) so the module itself is
 portable.
 
-**** TODO [#B] Fix HTTPS scheme in =markdown-preview= URL :bug:
+**** 2026-05-16 Sat @ 04:00:00 -0500 Fixed https→http in markdown-preview + extracted server start
 
 =modules/markdown-config.el:45= opens
 =https://localhost:8080/imp= via =browse-url-generic=, but the
@@ -2409,7 +2409,7 @@ disappears.  Document the dependency in the module commentary at
 minimum; better, vendor a copy of =strapdown.js= under
 =assets/= and serve it from the local =simple-httpd= root.
 
-**** TODO [#C] Reconsider global =TERM=xterm-256color= setenv in =eshell-config= :startup:
+**** 2026-05-16 Sat @ 04:00:00 -0500 Scoped TERM=xterm-256color to eshell buffers via process-environment
 
 =modules/eshell-config.el:131= calls =(setenv "TERM" "xterm-256color")=
 at config time inside the =xterm-color= use-package block.  That
@@ -2421,7 +2421,7 @@ in shells that aren't interpreting them.  Move the setenv into the
 eshell entry hook (=eshell-mode-hook= or =eshell-before-prompt-hook=)
 so it scopes to eshell processes only.
 
-**** TODO [#C] Quote agent command in =cj/--ai-vterm-launch-command= :safety:
+**** 2026-05-16 Sat @ 04:00:00 -0500 Quoted agent command in cj/--ai-vterm-launch-command via shell-quote-argument
 
 =modules/ai-vterm.el:236-240= builds the tmux launch command by
 wrapping =(concat cj/ai-vterm-agent-command "; exec bash")= in
