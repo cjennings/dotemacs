@@ -194,7 +194,7 @@ Returns the buffer string for assertions."
   "Should error when decoration-char is nil."
   (should-error
    (test-block-banner-at-column 0 "/*" "*/" nil "Header" 70)
-   :type 'wrong-type-argument))
+   :type 'user-error))
 
 (ert-deftest test-block-banner-c-nil-text ()
   "Should error when text is nil."

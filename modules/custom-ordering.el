@@ -32,13 +32,18 @@ QUOTE specifies the quotation characters to surround each element.
   Use \"\" for no quotes, \"\\\"\" for double quotes, \"'\" for single quotes.
 PREFIX is an optional string to prepend to the result (e.g., \"[\" or \"(\").
 SUFFIX is an optional string to append to the result (e.g., \"]\" or \")\").
+Preserves a trailing newline if the input region ends with one, so
+line-oriented operations on the result behave the same as before.
 Returns the transformed string without modifying the buffer."
   (when (> start end)
     (error "Invalid region: start (%d) is greater than end (%d)" start end))
-  (let ((result (mapconcat
-                 (lambda (x) (format "%s%s%s" quote x quote))
-                 (split-string (buffer-substring start end)) ", ")))
-    (concat (or prefix "") result (or suffix ""))))
+  (let* ((raw (buffer-substring start end))
+         (trailing-newline (string-suffix-p "\n" raw))
+         (result (mapconcat
+                  (lambda (x) (format "%s%s%s" quote x quote))
+                  (split-string raw) ", ")))
+    (concat (or prefix "") result (or suffix "")
+            (if trailing-newline "\n" ""))))
 
 (defun cj/arrayify (start end quote)
   "Convert lines between START and END into quoted, comma-separated strings.
@@ -80,12 +85,16 @@ Example: `apple banana cherry' becomes `[\"apple\", \"banana\", \"cherry\"]'."
   "Internal implementation: Convert comma-separated array to lines.
 START and END define the region to operate on.
 Removes quotes (both single and double) and splits by ', '.
+Preserves a trailing newline if the input region ends with one.
 Returns the transformed string without modifying the buffer."
   (when (> start end)
     (error "Invalid region: start (%d) is greater than end (%d)" start end))
-  (mapconcat
-   (lambda (x) (replace-regexp-in-string "[\"']" "" x))
-   (split-string (buffer-substring start end) ", ") "\n"))
+  (let* ((raw (buffer-substring start end))
+         (trailing-newline (string-suffix-p "\n" raw))
+         (result (mapconcat
+                  (lambda (x) (replace-regexp-in-string "[\"']" "" x))
+                  (split-string raw ", ") "\n")))
+    (concat result (if trailing-newline "\n" ""))))
 
 (defun cj/unarrayify (start end)
   "Convert quoted comma-separated strings between START and END to separate lines.
