@@ -20,26 +20,6 @@
   :commands time-zones
   :bind ("M-S-c" . time-zones))  ;; was M-C, overrides capitalize-word
 
-;; Commented out old world-clock config while testing time-zone package above
-;; (use-package time
-;;   :ensure nil ;; built-in
-;;   :defer 0.5
-;;   :bind ("C-x c" . world-clock)
-;;   :config
-;;   (setq world-clock-list
-;; 		'(("Pacific/Honolulu"    " Honolulu")
-;; 		  ("America/Los_Angeles" " San Francisco, LA")
-;; 		  ("America/Chicago"     " Chicago, New Orleans")
-;; 		  ("America/New_York"    " New York, Boston")
-;; 		  ("Etc/UTC"             " UTC =================")
-;; 		  ("Europe/London"       " London, Lisbon")
-;; 		  ("Europe/Paris"        " Paris, Berlin, Rome")
-;; 		  ("Europe/Athens"       " Athens, Istanbul, Moscow")
-;; 		  ("Asia/Kolkata"        " India")
-;; 		  ("Asia/Shanghai"       " Shanghai, Singapore")
-;; 		  ("Asia/Tokyo"          " Tokyo, Seoul")))
-;;   (setq world-clock-time-format " %a, %d %b @ %I:%M %p %Z"))
-
 (use-package calendar
   :ensure nil ;; built-in
   :defer 0.5
@@ -56,50 +36,16 @@
 
 ;; ------------------------------------ TMR ------------------------------------
 
-(defun cj/tmr-select-sound-file ()
-  "Select a sound file from `sounds-dir' to use for tmr timers.
+(defconst cj/tmr--audio-extensions
+  '("mp3" "m4a" "ogg" "opus" "wav" "flac" "aac")
+  "Audio file extensions offered to `cj/tmr-select-sound-file'.")
 
-Present all audio files in the sounds directory and set the chosen file as
-`tmr-sound-file'. Use \\[universal-argument] to reset to the default sound."
-  (interactive)
-  (if current-prefix-arg
-	  ;; With prefix arg, reset to default
-	  (progn
-		(setq tmr-sound-file notification-sound)
-		(message "Timer sound reset to default: %s"
-				 (file-name-nondirectory notification-sound)))
-	;; Otherwise, select a new sound
-	(let* ((audio-extensions '("mp3" "m4a" "ogg" "opus" "wav" "flac" "aac"))
-		   (extension-regex (concat "\\." (regexp-opt audio-extensions t) "$"))
-		   (sound-files (when (file-directory-p sounds-dir)
-						  (directory-files sounds-dir nil extension-regex)))
-		   (current-file (when (and tmr-sound-file (file-exists-p tmr-sound-file))
-						   (file-name-nondirectory tmr-sound-file)))
-		   (selected-file (when sound-files
-							(completing-read
-							 (format "Select timer sound%s: "
-									 (if current-file
-										 (format " (current: %s)" current-file)
-									   ""))
-							 sound-files
-							 nil
-							 t
-							 nil
-							 nil
-							 current-file))))  ; Default to current file
-	  (cond
-	   ((not (file-directory-p sounds-dir))
-		(message "Sounds directory does not exist: %s" sounds-dir))
-	   ((null sound-files)
-		(message "No audio files found in %s" sounds-dir))
-	   (selected-file
-		(setq tmr-sound-file (expand-file-name selected-file sounds-dir))
-		(when (equal tmr-sound-file notification-sound)
-		  (message "Timer sound set to default: %s" selected-file))
-		(unless (equal tmr-sound-file notification-sound)
-		  (message "Timer sound set to: %s" selected-file)))
-	   (t
-		(message "No file selected"))))))
+(defun cj/tmr--available-sound-files ()
+  "Return a list of audio filenames in `sounds-dir', or nil if none.
+Returns nil if `sounds-dir' does not exist."
+  (when (and (boundp 'sounds-dir) (file-directory-p sounds-dir))
+    (let ((regex (concat "\\." (regexp-opt cj/tmr--audio-extensions t) "$")))
+      (directory-files sounds-dir nil regex))))
 
 (defun cj/tmr-reset-sound-to-default ()
   "Reset the tmr sound file to the default notification sound."
@@ -107,6 +53,43 @@ Present all audio files in the sounds directory and set the chosen file as
   (setq tmr-sound-file notification-sound)
   (message "Timer sound reset to default: %s"
 		   (file-name-nondirectory notification-sound)))
+
+(defun cj/tmr-select-sound-file ()
+  "Select a sound file from `sounds-dir' to use for tmr timers.
+
+Present all audio files in the sounds directory and set the chosen file as
+`tmr-sound-file'. Use \\[universal-argument] to reset to the default sound."
+  (interactive)
+  (cond
+   (current-prefix-arg
+    (cj/tmr-reset-sound-to-default))
+   ((not (and (boundp 'sounds-dir) (file-directory-p sounds-dir)))
+    (message "Sounds directory does not exist: %s"
+             (if (boundp 'sounds-dir) sounds-dir "<unset>")))
+   (t
+    (let ((sound-files (cj/tmr--available-sound-files)))
+      (cond
+       ((null sound-files)
+        (message "No audio files found in %s" sounds-dir))
+       (t
+        (let* ((current-file (when (and tmr-sound-file
+                                        (file-exists-p tmr-sound-file))
+                               (file-name-nondirectory tmr-sound-file)))
+               (selected-file
+                (completing-read
+                 (format "Select timer sound%s: "
+                         (if current-file
+                             (format " (current: %s)" current-file)
+                           ""))
+                 sound-files nil t nil nil current-file)))
+          (cond
+           ((or (null selected-file) (string-empty-p selected-file))
+            (message "No file selected"))
+           (t
+            (setq tmr-sound-file (expand-file-name selected-file sounds-dir))
+            (if (equal tmr-sound-file notification-sound)
+                (message "Timer sound set to default: %s" selected-file)
+              (message "Timer sound set to: %s" selected-file)))))))))))
 
 (use-package tmr
   :defer 0.5

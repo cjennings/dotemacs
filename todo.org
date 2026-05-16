@@ -1022,32 +1022,36 @@ Expected outcome:
 - Add a small test or validation helper around the computed package policy if
   package bootstrap is extracted.
 
-**** TODO [#C] Consolidate duplicate =user-home-dir= constant :cleanup:
+**** 2026-05-16 Sat @ 02:34:22 -0500 Consolidated user-home-dir into early-init as canonical
 
-=user-home-dir= is defined identically in =early-init.el:116-117= and
-=modules/user-constants.el:74-75=.  early-init.el defines it first
-because =package-archive= paths reference it, then user-constants.el
-redefines it.  Both definitions silently drift if one is edited.
-Consolidate: keep early-init.el's definition (load-order requirement)
-and reference it from user-constants.el with a comment explaining why
-the constant lives in early-init.
+Canonical defconst in =early-init.el= kept (the package-archive paths
+need it during package bootstrap, before normal modules load).
+=modules/user-constants.el= switched to a `defvar` with the identical
+=(getenv "HOME")= expression and a comment explaining the pattern:
+defvar is a no-op at runtime (early-init's defconst wins, defvar
+doesn't reassign a bound symbol), but it lets the module load /
+byte-compile standalone when early-init hasn't run.  Drift risk is
+mitigated by both expressions being =(getenv "HOME")= literally; the
+comment flags the requirement to keep them identical.
 
-**** TODO [#C] Drop redundant =eval-when-compile= alongside autoload in =system-defaults.el= :cleanup:
+**** 2026-05-16 Sat @ 02:34:22 -0500 Dropped redundant autoload alongside compile-time require in system-defaults.el
 
-=modules/system-defaults.el:20-24= wraps host-environment and
-user-constants under =eval-when-compile= require forms, then line 24
-also declares =(autoload 'env-bsd-p "host-environment" nil t)=.  The
-=eval-when-compile= is redundant given the autoload; the mixed pattern
-suggests one of the two requires was added without removing the other.
-Pick one boundary and document it.
+Kept the =eval-when-compile= requires for =host-environment= and
+=user-constants= (they silence free-variable / free-function warnings
+during byte-compile in isolation) and dropped the
+=(autoload 'env-bsd-p ...)= line — both modules are loaded earlier in
+init.el at runtime, and the eval-when-compile already exposes
+=env-bsd-p= to the byte-compiler.  Added a comment documenting the
+chosen boundary.
 
-**** TODO [#C] Convert =cj/debug-modules= and =cj/use-online-repos= to =defcustom= :refactor:
+**** 2026-05-16 Sat @ 02:34:22 -0500 Converted cj/debug-modules and cj/use-online-repos to defcustom
 
-These are user-facing toggles defined as =defvar= in
-=modules/user-constants.el:25-30= and =early-init.el:84-87=.  Users
-cannot discover or change them through =M-x customize=.  Convert to
-=defcustom= with =:type=, =:group=, and a docstring so they show up in
-the customization UI alongside other config knobs.
+Both toggles now live as =defcustom= with explicit =:type= and
+=:group 'cj=.  =cj/debug-modules='s type is the natural choice form:
+either =t= (all modules) or a list of module symbols.
+=cj/use-online-repos='s type is boolean.  Added a top-level
+=(defgroup cj ...)= in early-init.el so the group exists for both,
+plus the package-priority constants below it.
 
 **** TODO [#B] Surface custom-file redirection so accidental Customize use isn't silent :safety:
 
@@ -1061,35 +1065,33 @@ Customize buffer loses those changes on Emacs exit.  Either surface a
 =custom-file= to a versioned path under =data/= so the discard is at
 least durable for the session.
 
-**** TODO [#C] Name and document package archive priorities :refactor:
+**** 2026-05-16 Sat @ 02:34:22 -0500 Named the package archive priorities in early-init.el
 
-=early-init.el:149-180= assigns priorities as magic numbers
-(localrepo=200, gnu-local=125, melpa-local=115, online gnu=25,
-melpa=15, melpa-stable=5).  Future maintainers cannot answer "why is
-gnu-local 125 but melpa-local 115?" without re-deriving the
-hierarchy.  Define named constants
-(=cj/package-priority-local-mirror=, =cj/package-priority-online=,
-etc.) at the top of early-init.el with a short comment explaining the
-local-first ordering.
+Nine =defconst= entries replace the magic numbers:
+=cj/package-priority-localrepo= (200) for the project-pinned repo,
+four =cj/package-priority-mirror-*= entries for the local ELPA
+mirrors (125 / 120 / 115 / 100), four =cj/package-priority-online-*=
+entries for the online archives (25 / 20 / 15 / 5).  A header comment
+above the block explains the local-first ordering and the
+gnu > nongnu > melpa > melpa-stable trust ranking within each tier.
 
-**** TODO [#C] Remove dead world-clock block in =chrono-tools.el= :cleanup:
+**** 2026-05-16 Sat @ 02:34:22 -0500 Deleted dead world-clock block in chrono-tools.el
 
-Lines 23-41 carry a 19-line commented-out =use-package time= block
-("old world-clock config while testing time-zone package above") left
-over from the time-zones migration.  Either delete it or replace with
-a one-line breadcrumb noting that =time-zones= superseded it.  Dead
-commented code lengthens the file with no value to future readers.
+The 19-line commented-out =use-package time= block is gone.  The
+=time-zones= use-package directly above it is the active replacement;
+git history preserves the old config if anyone needs to dig it back up.
 
-**** TODO [#C] Add coverage for =cj/tmr-select-sound-file= in =chrono-tools.el= :tests:
+**** 2026-05-16 Sat @ 02:34:22 -0500 Added coverage for cj/tmr-select-sound-file with a pre-test refactor
 
-The two TMR sound-selection helpers (=cj/tmr-select-sound-file= and
-=cj/tmr-reset-sound-to-default=) currently have no tests.  The select
-function has nontrivial branching across the prefix-arg path, the
-missing-directory path, the empty-directory path, the cancel path,
-and the "default selected" message variant.  Refactor the
-prefix-arg branch to call =cj/tmr-reset-sound-to-default= directly
-so the duplication collapses, then add Normal/Boundary/Error tests
-against the resulting helper.
+The prefix-arg branch now delegates to =cj/tmr-reset-sound-to-default=
+directly (single source for the reset path).  Extracted a pure helper
+=cj/tmr--available-sound-files= so the directory scan is testable
+without driving =completing-read=.  =tests/test-chrono-tools-tmr-sound.el=
+covers Normal / Boundary / Error: available-sounds against a populated
+dir, empty dir, missing dir; reset path; select with prefix-arg
+(delegates to reset, no prompt); select normal (picks a file); select
+boundary paths for empty dir, missing dir, cancel (empty completion).
+9 tests, all green.
 
 *** DOING [#B] Harden custom editing utility modules :harden:
 
