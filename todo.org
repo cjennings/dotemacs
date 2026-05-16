@@ -2718,11 +2718,41 @@ errors when no previous, excludes the current directive from the
 re-pick prompt).  =gptel-rewrite= stubbed for tests so no rewrite
 UI fires.
 
-*** TODO [#B] Saved-conversations browser :feature:
+*** 2026-05-16 Sat @ 01:59:44 -0500 Built the saved-conversations browser
 
-=cj/gptel-load-conversation= prompts via =completing-read=.  A browser buffer (dired-style) showing topic, timestamp, and last-message preview, with single-key bindings to load / delete / rename in-place, would be a markedly better interface than the completing-read prompt.
+New module =modules/ai-conversations-browser.el= +
+=cj/gptel-browse-conversations= entry point bound to =C-; a b=
+(which-key labelled "browse conversations").  Opens a dired-style
+=*GPTel-Conversations*= buffer in =cj/gptel-browser-mode= (a
+=special-mode= derivative).
 
-Priority bumped from [#C] to [#B] and the "defer until ≥20 conversations" hold lifted on 2026-05-15 -- the browser is the preferred entry point; build it now rather than wait for prompt friction to force the issue.
+Each row shows date, time, topic slug, and a preview of the most
+recent message (configurable length via
+=cj/gptel-browser-preview-length=, default 60 chars).  Rows sort
+newest first.
+
+Bindings in the browser:
+- =RET= / =l=: load the conversation (delegates to
+  =cj/gptel-load-conversation= with the file pre-selected via a
+  =cl-letf= stub on =completing-read= so the user isn't prompted
+  twice), then bury the browser window.
+- =d=: delete the file under point after =y-or-n-p= confirmation,
+  re-render.
+- =r=: rename the file under point; preserves the timestamp,
+  slugifies the new topic, refuses unchanged input and existing
+  targets.
+- =g=: refresh.
+- =n= / =p=: next / previous row.
+- =q=: quit-window.
+
+21 tests in =tests/test-ai-conversations-browser.el= cover the
+helpers (topic parsing, header stripping, preview shaping for
+truncate / short / empty cases, row-for-file with both
+conversation and non-conversation filenames, rows enumeration,
+render output for empty and populated cases, newest-first sort,
+rename-target preservation of timestamp + slug, rename-target
+error on missing timestamp) and the file-touching actions (delete
+with y, cancel with n, rename, rename-on-empty-line error).
 
 *** 2026-05-16 Sat @ 01:46:55 -0500 Added cj/gptel-quick-ask one-shot command
 
