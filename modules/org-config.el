@@ -24,6 +24,7 @@
   ;; GENERAL
   (setq org-startup-folded t)               ;; all org files should start in the folded state
   (setq org-cycle-open-archived-trees t)    ;; re-enable opening headings with archive tags with TAB
+  (setq org-cycle-hide-drawers 'all)        ;; collapse :PROPERTIES: drawers when a heading folds
   (setopt org-outline-path-complete-in-steps nil)
   (setq org-return-follows-link t)          ;; hit return to follow an org-link
   (setq org-list-allow-alphabetical t)      ;; allow alpha ordered lists (i.e., a), A), a., etc.)
@@ -266,6 +267,16 @@ especially in tables with long URLs)."
         (message "org-appear disabled (links/emphasis stay hidden)"))
     (org-appear-mode 1)
     (message "org-appear enabled (links/emphasis show when editing)")))
+
+;; --------------------------------- Org-Tidy ----------------------------------
+
+;; Hide :PROPERTIES: drawers behind a small inline marker so headings stay
+;; clean.  Drawers remain editable -- cycle through them with TAB or toggle
+;; the package off with M-x org-tidy-mode.
+(use-package org-tidy
+  :hook (org-mode . org-tidy-mode)
+  :custom
+  (org-tidy-properties-style 'inline))  ;; 'inline | 'fringe | 'invisible
 
 ;; ------------------------------- Org-Checklist -------------------------------
 
