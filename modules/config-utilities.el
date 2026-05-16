@@ -7,6 +7,8 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'cl-generic)
+(require 'eieio)
 (require 'find-lisp)
 (require 'profiler)
 
@@ -44,6 +46,24 @@
 ;;; --------------------------- Toggle Debug On Error ---------------------------
 
 (keymap-set cj/debug-config-keymap "t" #'toggle-debug-on-error)
+
+;;; ----------------------------- Package Workarounds --------------------------
+
+;; EmacSQL 4.3.1 registers finalizers that call `emacsql-close'.  The sqlite
+;; backends set their handle slot to nil after an explicit close, so a later
+;; finalizer can otherwise call `sqlite-close' with nil and log:
+;;   finalizer failed: (wrong-type-argument sqlitep nil)
+(with-eval-after-load 'emacsql-sqlite-builtin
+  (cl-defmethod emacsql-close :around
+    ((connection emacsql-sqlite-builtin-connection))
+    (when (oref connection handle)
+      (cl-call-next-method))))
+
+(with-eval-after-load 'emacsql-sqlite-module
+  (cl-defmethod emacsql-close :around
+    ((connection emacsql-sqlite-module-connection))
+    (when (oref connection handle)
+      (cl-call-next-method))))
 
 ;;; -------------------------------- Benchmarking -------------------------------
 
