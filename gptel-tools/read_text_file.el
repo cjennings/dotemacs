@@ -25,19 +25,21 @@
 ;; Helper functions for read_text_file tool
 (defun cj/validate-file-path (path)
   "Validate PATH is within home directory and exists."
-  (let ((full-path (expand-file-name path "~")))
+  (let* ((home (file-name-as-directory (file-truename (expand-file-name "~"))))
+         (full-path (expand-file-name path "~")))
 	(unless (string-prefix-p (expand-file-name "~") full-path)
 	  (error "Path must be within home directory"))
 	(unless (file-exists-p full-path)
 	  (error "File not found: %s" full-path))
-	(when (file-directory-p full-path)
-	  (error "Path is a directory, not a file: %s" full-path))
-	(unless (file-readable-p full-path)
-	  (error "No read permission for file: %s" full-path))
-	;; Follow symlinks
-	(if (file-symlink-p full-path)
-		(file-truename full-path)
-	  full-path)))
+    (let ((resolved (file-truename full-path)))
+      (unless (or (string= resolved (directory-file-name home))
+                  (string-prefix-p home resolved))
+        (error "Resolved path must be within home directory: %s" path))
+      (when (file-directory-p resolved)
+        (error "Path is a directory, not a file: %s" resolved))
+      (unless (file-readable-p resolved)
+        (error "No read permission for file: %s" resolved))
+      resolved)))
 
 (defun cj/get-file-metadata (path)
   "Return formatted metadata string for file at PATH."

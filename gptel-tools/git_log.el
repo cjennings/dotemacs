@@ -25,11 +25,17 @@
   "Validate PATH for a git log call.  Return the expanded path on success.
 Same contract as the git_status validator: must be under HOME, must
 be a directory, must be inside a git working tree."
-  (let ((full (expand-file-name (or path "~") "~")))
+  (let* ((home (file-name-as-directory (file-truename (expand-file-name "~"))))
+         (full (expand-file-name (or path "~") "~")))
     (unless (string-prefix-p (expand-file-name "~") full)
       (error "Path must be within home directory: %s" path))
     (unless (file-directory-p full)
       (error "Not a directory: %s" full))
+    (let ((resolved (file-truename full)))
+      (unless (or (string= resolved (directory-file-name home))
+                  (string-prefix-p home resolved))
+        (error "Resolved path must be within home directory: %s" path))
+      (setq full resolved))
     (let ((default-directory full))
       (unless (zerop (process-file "git" nil nil nil
                                    "rev-parse" "--is-inside-work-tree"))

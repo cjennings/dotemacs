@@ -68,6 +68,18 @@
         (should-error (cj/gptel-git-status--validate-path dir))
       (when (file-exists-p dir) (delete-directory dir t)))))
 
+(ert-deftest test-gptel-tools-git-status-validate-path-error-symlink-outside-home ()
+  "Error: symlinked directories resolving outside HOME are rejected."
+  (let ((link (expand-file-name
+               (format ".test-gptel-tools-git-status-link-%s"
+                       (format-time-string "%s%N"))
+               "~")))
+    (unwind-protect
+        (progn
+          (make-symbolic-link "/tmp" link t)
+          (should-error (cj/gptel-git-status--validate-path link)))
+      (when (file-symlink-p link) (delete-file link)))))
+
 ;; ---------- run
 
 (ert-deftest test-gptel-tools-git-status-run-clean-tree ()
@@ -93,6 +105,20 @@
      (with-temp-file (expand-file-name "f.txt" dir) (insert "x"))
      (let ((out (cj/gptel-git-status--run dir)))
        (should (string-match-p "^## " out))))))
+
+(ert-deftest test-gptel-tools-git-status-run-error-on-git-status-failure ()
+  "Error: non-zero git status exits are surfaced."
+  (test-gptel-tools-git-status--with-repo
+   (lambda (dir)
+     (cl-letf (((symbol-function 'process-file)
+                (lambda (program infile destination display &rest args)
+                  (if (member "status" args)
+                      (progn
+                        (when (bufferp destination)
+                          (with-current-buffer destination (insert "bad status")))
+                        2)
+                    (apply #'call-process program infile destination display args)))))
+       (should-error (cj/gptel-git-status--run dir))))))
 
 (provide 'test-gptel-tools-git-status)
 ;;; test-gptel-tools-git-status.el ends here

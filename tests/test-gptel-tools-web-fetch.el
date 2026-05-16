@@ -109,6 +109,71 @@
   (cl-letf (((symbol-function 'executable-find) (lambda (_) nil)))
     (should-error (cj/gptel-web-fetch--html-to-text "<p>x</p>"))))
 
+(ert-deftest test-gptel-tools-web-fetch-html-to-text-error-on-tool-failure ()
+  "Error: a failing HTML stripping command is reported."
+  (cl-letf (((symbol-function 'executable-find)
+             (lambda (program) (and (equal program "pandoc") "/bin/pandoc")))
+            ((symbol-function 'call-process-region)
+             (lambda (&rest _args) 9)))
+    (should-error (cj/gptel-web-fetch--html-to-text "<p>x</p>"))))
+
+(ert-deftest test-gptel-tools-web-fetch-html-to-text-falls-back-to-w3m ()
+  "Boundary: w3m is used when pandoc is unavailable."
+  (let (called-program)
+    (cl-letf (((symbol-function 'executable-find)
+               (lambda (program) (and (equal program "w3m") "/bin/w3m")))
+              ((symbol-function 'call-process-region)
+               (lambda (start end program delete output display &rest _args)
+                 (setq called-program program)
+                 (should delete)
+                 (should output)
+                 (should-not display)
+                 (delete-region start end)
+                 (insert "w3m text")
+                 0)))
+      (should (equal (cj/gptel-web-fetch--html-to-text "<p>x</p>")
+                     "w3m text"))
+      (should (equal called-program "w3m")))))
+
+;; ---------- retrieve
+
+(ert-deftest test-gptel-tools-web-fetch-retrieve-normal-crlf-headers ()
+  "Normal: retrieval parses status and body after CRLF headers."
+  (let ((buffer (generate-new-buffer " *web-fetch-crlf*")))
+    (with-current-buffer buffer
+      (insert "HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\n\r\nhello"))
+    (cl-letf (((symbol-function 'url-retrieve-synchronously)
+               (lambda (&rest _args) buffer)))
+      (should (equal (cj/gptel-web-fetch--retrieve "https://example.com")
+                     '(201 . "hello"))))
+    (should-not (buffer-live-p buffer))))
+
+(ert-deftest test-gptel-tools-web-fetch-retrieve-boundary-lf-headers ()
+  "Boundary: retrieval also handles LF-only headers."
+  (let ((buffer (generate-new-buffer " *web-fetch-lf*")))
+    (with-current-buffer buffer
+      (insert "HTTP/1.1 200 OK\nContent-Type: text/plain\n\nhello"))
+    (cl-letf (((symbol-function 'url-retrieve-synchronously)
+               (lambda (&rest _args) buffer)))
+      (should (equal (cj/gptel-web-fetch--retrieve "https://example.com")
+                     '(200 . "hello"))))))
+
+(ert-deftest test-gptel-tools-web-fetch-retrieve-boundary-no-header-separator ()
+  "Boundary: unseparated responses return the full buffer as body."
+  (let ((buffer (generate-new-buffer " *web-fetch-no-separator*")))
+    (with-current-buffer buffer
+      (insert "not an http response"))
+    (cl-letf (((symbol-function 'url-retrieve-synchronously)
+               (lambda (&rest _args) buffer)))
+      (should (equal (cj/gptel-web-fetch--retrieve "https://example.com")
+                     '(nil . "not an http response"))))))
+
+(ert-deftest test-gptel-tools-web-fetch-retrieve-error-no-response ()
+  "Error: nil retrieval buffer signals network failure."
+  (cl-letf (((symbol-function 'url-retrieve-synchronously)
+             (lambda (&rest _args) nil)))
+    (should-error (cj/gptel-web-fetch--retrieve "https://example.com"))))
+
 ;; ---------- run (orchestrator)
 
 (ert-deftest test-gptel-tools-web-fetch-run-normal-strips-html ()
@@ -139,6 +204,13 @@
   (cl-letf (((symbol-function 'cj/gptel-web-fetch--retrieve)
              (lambda (_url) (cons 503 "service unavailable"))))
     (should-error (cj/gptel-web-fetch--run "https://example.com"))))
+
+(ert-deftest test-gptel-tools-web-fetch-run-boundary-nil-status ()
+  "Boundary: an unparseable status line does not trigger HTTP error handling."
+  (cl-letf (((symbol-function 'cj/gptel-web-fetch--retrieve)
+             (lambda (_url) (cons nil "raw body"))))
+    (should (equal (cj/gptel-web-fetch--run "https://example.com" t)
+                   "raw body"))))
 
 (ert-deftest test-gptel-tools-web-fetch-run-truncates-oversized-body ()
   "Boundary: an oversize body is truncated by the run wrapper."

@@ -40,6 +40,14 @@
     (should (equal (cj/read-buffer--get-content (current-buffer))
                    "from buffer object"))))
 
+(ert-deftest test-gptel-tools-read-buffer-boundary-widened-content ()
+  "Boundary: returns the whole buffer even when the buffer is narrowed."
+  (with-temp-buffer
+    (insert "visible\nhidden\n")
+    (narrow-to-region (point-min) (line-end-position))
+    (should (equal (cj/read-buffer--get-content (current-buffer))
+                   "visible\nhidden\n"))))
+
 (ert-deftest test-gptel-tools-read-buffer-boundary-strips-text-properties ()
   "Boundary: the returned string has no text properties."
   (with-temp-buffer
@@ -55,6 +63,12 @@
     (kill-buffer "test-gptel-tools-read-buffer-absent"))
   (should-error (cj/read-buffer--get-content
                  "test-gptel-tools-read-buffer-absent")))
+
+(ert-deftest test-gptel-tools-read-buffer-error-killed-buffer-object ()
+  "Error: a killed buffer object signals clearly."
+  (let ((buffer (generate-new-buffer "test-gptel-tools-read-buffer-killed")))
+    (kill-buffer buffer)
+    (should-error (cj/read-buffer--get-content buffer))))
 
 (provide 'test-gptel-tools-read-buffer)
 ;;; test-gptel-tools-read-buffer.el ends here
