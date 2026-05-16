@@ -39,11 +39,23 @@ Tags are additive. For example, a small wrong-behavior fix can be
 
 * Emacs Open Work
 
+** DOING [#A] org-element--list-struct issue when using gptel magit :bug:
+Launch Emacs
+Stage a file using magit
+Commit using magit
+Use gptel magit to generate a commit message
+Commit the file
+>>> commit is successful
+Stage another file using magit
+Commit using magit
+Use gptel magit to generate a commit message
+Commit the file
+>>> error  org-element--list-struct: Tab width in Org files must be 8, not 4.  Please adjust your ‘tab-width’ settings for Org mode
+
 ** DONE [#A] transient-setup error when running gptel magit :bug:
 CLOSED: [2026-05-15 Fri]
 When running gptel magit during a commit message on this machine, I get the following error consistently:
 transient-setup: Cannot open load file: No such file or directory, gptel-magit
-
 
 ** PROJECT [#A] Architecture review follow-up from 2026-05-03 :refactor:no-sync:
 
