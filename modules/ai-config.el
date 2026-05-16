@@ -35,6 +35,8 @@
 (autoload 'cj/gptel-delete-conversation "ai-conversations" "Delete a saved AI conversation." t)
 (autoload 'cj/gptel-autosave-toggle "ai-conversations" "Toggle autosave in the current GPTel buffer." t)
 (autoload 'cj/gptel-quick-ask "ai-quick-ask" "One-shot quick-ask in a transient buffer." t)
+(autoload 'cj/gptel-rewrite-with-directive "ai-rewrite" "Pick a directive and run gptel-rewrite on the region." t)
+(autoload 'cj/gptel-rewrite-redo-with-different-directive "ai-rewrite" "Re-run the previous rewrite with a different directive." t)
 
 ;;; ------------------------- AI Config Helper Functions ------------------------
 
@@ -510,7 +512,8 @@ Works for any buffer, whether it's visiting a file or not."
   "m" #'cj/gptel-change-model        ;; change the LLM model
   "p" #'gptel-system-prompt          ;; change prompt
   "q" #'cj/gptel-quick-ask           ;; one-shot quick ask
-  "r" #'gptel-rewrite                ;; rewrite a region of code/text
+  "r" #'cj/gptel-rewrite-with-directive ;; rewrite region with a chosen directive
+  "R" #'cj/gptel-rewrite-redo-with-different-directive ;; redo last rewrite, new directive
   "c" #'cj/gptel-context-clear       ;; clear all context
   "s" #'cj/gptel-save-conversation   ;; save conversation
   "t" #'cj/toggle-gptel              ;; toggles the ai-assistant window
@@ -530,7 +533,8 @@ Works for any buffer, whether it's visiting a file or not."
     "C-; a m" "change model"
     "C-; a p" "change prompt"
     "C-; a q" "quick ask"
-    "C-; a r" "rewrite region"
+    "C-; a r" "rewrite region (directive)"
+    "C-; a R" "redo rewrite, new directive"
     "C-; a c" "clear context"
     "C-; a s" "save conversation"
     "C-; a t" "toggle window"
