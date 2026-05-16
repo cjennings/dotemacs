@@ -118,10 +118,25 @@ would over-match. Pass just the basename — the Makefile re-prepends
 
 ;;; Error Cases
 
-(ert-deftest test-dev-fkeys-f6-cmd-for-typescript-returns-nil ()
-  "Error: TypeScript is punted for v1 and returns nil."
-  (should (null (cj/--f6-test-runner-cmd-for
-                 'typescript t "src/foo.test.ts" "foo" "src"))))
+(ert-deftest test-dev-fkeys-f6-cmd-for-typescript-uses-jest-or-vitest ()
+  "Normal: TypeScript builds an `npx vitest|jest <path>' command.
+Picks vitest when on PATH, jest otherwise.  Falls back to jest as the
+default runner so the command shape is always inspectable -- even if
+neither tool is present, the user gets a clear runner-not-found error
+rather than a silent nil that F6's outer wrapper interprets as
+\"language unsupported.\""
+  (cl-letf (((symbol-function 'executable-find)
+             (lambda (_) nil)))
+    (should (equal
+             (cj/--f6-test-runner-cmd-for
+              'typescript t "src/foo.test.ts" "foo" "src")
+             "npx --no-install jest src/foo.test.ts")))
+  (cl-letf (((symbol-function 'executable-find)
+             (lambda (p) (when (equal p "vitest") "/usr/bin/vitest"))))
+    (should (equal
+             (cj/--f6-test-runner-cmd-for
+              'typescript t "src/foo.test.ts" "foo" "src")
+             "npx --no-install vitest src/foo.test.ts"))))
 
 (ert-deftest test-dev-fkeys-f6-cmd-for-javascript-returns-nil ()
   "Error: JavaScript is punted for v1 and returns nil."

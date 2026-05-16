@@ -370,6 +370,15 @@ TypeScript / JavaScript and unknown languages return nil."
               (if (string-empty-p rel-dir)
                   "./"
                 (format "./%s" rel-dir)))))
+    ('typescript
+     ;; Prefer vitest when present on PATH, fall back to jest otherwise.
+     ;; Both runners take a path argument and accept relative paths.
+     (let ((runner (or (and (executable-find "vitest") "vitest")
+                       (and (executable-find "jest")   "jest")
+                       "jest")))  ; reasonable default for stack traces
+       (format "npx --no-install %s %s"
+               runner
+               (cj/shell-quote-argument-readable rel-path))))
     (_ nil)))
 
 ;; ---------- F6 current-file orchestrator ----------

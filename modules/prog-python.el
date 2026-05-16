@@ -21,6 +21,8 @@
 
 (defvar python-ts-mode-map)
 
+(require 'system-lib)  ; for cj/executable-find-or-warn
+
 ;; Forward declarations for LSP
 (declare-function lsp-deferred "lsp-mode")
 
@@ -37,6 +39,10 @@ Install with: pip install pyright")
 (defvar mypy-path "mypy"
   "Path to mypy static type checker.
 Install with: pip install mypy")
+
+;; Warn at load time if pyright is missing rather than waiting for the
+;; first LSP attach to fail with a confusing connection error.
+(cj/executable-find-or-warn pyright-path "pyright LSP" 'prog-python)
 
 ;; -------------------------------- Python Setup -------------------------------
 ;; preferences for Python programming
