@@ -253,21 +253,25 @@ swallows exceptions via `websocket-try-callback'."
 (define-key cj/slack-keymap (kbd "Q") #'cj/slack-close-all-buffers)
 (define-key cj/slack-keymap (kbd "S") #'cj/slack-stop)
 
-(which-key-add-keymap-based-replacements cj/slack-keymap
-  "" "slack menu"
-  "s" "start slack"
-  "c" "unread rooms"
-  "C" "select channel"
-  "d" "direct message"
-  "w" "compose message"
-  "r" "reply / thread"
-  "e" "insert emoji"
-  "!" "add reaction"
-  "@" "embed @mention"
-  "#" "embed #channel"
-  "q" "mark read & bury"
-  "Q" "close all slack"
-  "S" "disconnect")
+;; Register which-key labels lazily so this module's require doesn't
+;; depend on which-key being loaded.  Other config modules use the same
+;; pattern.
+(with-eval-after-load 'which-key
+  (which-key-add-keymap-based-replacements cj/slack-keymap
+    "" "slack menu"
+    "s" "start slack"
+    "c" "unread rooms"
+    "C" "select channel"
+    "d" "direct message"
+    "w" "compose message"
+    "r" "reply / thread"
+    "e" "insert emoji"
+    "!" "add reaction"
+    "@" "embed @mention"
+    "#" "embed #channel"
+    "q" "mark read & bury"
+    "Q" "close all slack"
+    "S" "disconnect"))
 
 ;; Send from compose buffer with C-<return>
 (with-eval-after-load 'slack-message-compose-buffer

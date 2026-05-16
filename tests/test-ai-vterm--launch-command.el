@@ -55,18 +55,32 @@
              (cj/--ai-vterm-launch-command "/code/foo")))))
 
 (ert-deftest test-ai-vterm--launch-command-includes-agent-command ()
-  "Normal: the configured agent command is in the launched shell command."
+  "Normal: the configured agent command is in the launched shell command.
+The inner command is passed through `shell-quote-argument', so spaces
+are escaped (`\\\\ ') -- the regex below accepts either form."
   (let ((cj/ai-vterm-agent-command "agent --some-flag"))
     (should (string-match-p
-             "agent --some-flag"
+             "agent\\(\\\\\\)? --some-flag"
              (cj/--ai-vterm-launch-command "/code/foo")))))
 
 (ert-deftest test-ai-vterm--launch-command-tails-with-exec-bash ()
-  "Boundary: `exec bash' tails so the tmux window survives the agent exiting."
+  "Boundary: `exec bash' tails so the tmux window survives the agent exiting.
+Accepts the post-`shell-quote-argument' shape (`exec\\\\ bash')."
   (let ((cj/ai-vterm-agent-command "agent"))
     (should (string-match-p
-             "exec bash"
+             "exec\\(\\\\\\)? bash"
              (cj/--ai-vterm-launch-command "/code/foo")))))
+
+(ert-deftest test-ai-vterm--launch-command-survives-single-quote-in-agent ()
+  "Normal: a user-customized agent command containing a single quote
+shouldn't break the shell parse.  `shell-quote-argument' produces a
+valid shell token regardless of the embedded quote shape -- the
+escaping is implementation-detail, so we assert the literal words
+\"hi\" and \"there\" both appear (the space between them may be
+escaped as \\\\ )."
+  (let ((cj/ai-vterm-agent-command "agent --say 'hi there'"))
+    (let ((cmd (cj/--ai-vterm-launch-command "/code/foo")))
+      (should (string-match-p "hi\\(\\\\\\)? there" cmd)))))
 
 (ert-deftest test-ai-vterm--launch-command-handles-spaces-in-basename ()
   "Boundary: a basename with whitespace becomes hyphenated before quoting."
