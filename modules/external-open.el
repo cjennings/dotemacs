@@ -146,9 +146,15 @@ Else call ORIG-FUN with ARGS."
 		(cj/xdg-open file)
 	  (apply orig-fun args))))
 
-;; Make advice idempotent if you reevaluate this form.
-(advice-remove 'find-file #'cj/find-file-auto)
-(advice-add 'find-file :around #'cj/find-file-auto)
+(defun cj/external-open-install-advice ()
+  "Install the `cj/find-file-auto' advice on `find-file'.
+Idempotent: re-running removes any prior copy of the advice before
+adding it back, so re-evaluating the module updates the advice rather
+than stacking it."
+  (advice-remove 'find-file #'cj/find-file-auto)
+  (advice-add 'find-file :around #'cj/find-file-auto))
+
+(cj/external-open-install-advice)
 
 (provide 'external-open)
 ;;; external-open.el ends here.

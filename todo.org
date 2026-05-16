@@ -1210,42 +1210,43 @@ the implementation does not match.  Pick one contract per pair and
 update docstrings, or extract a shared helper that decides the
 target range.
 
-**** TODO [#C] Preserve trailing newlines in custom-ordering output :bug:
+**** 2026-05-16 Sat @ 02:47:15 -0500 Preserved trailing newlines in custom-ordering output
 
-=modules/custom-ordering.el:38-41,86-88= splits input on whitespace
-and commas without tracking a trailing newline.  Compare with
-=custom-text-enclose.el=, which explicitly records and restores a
-trailing newline.  When the user invokes ordering on a buffer whose
-last line ends with =\n=, the output drops it -- which then breaks
-line-oriented operations on the result.
+Both =cj/--arrayify= and =cj/--unarrayify= now detect a trailing
+newline on the input region (via =string-suffix-p=) and re-append it
+to the result.  Matches the pattern =custom-text-enclose.el= already
+uses.  Docstrings updated to document the contract.
 
-**** TODO [#C] Guard =cj/duplicate-line-and-comment= against non-file buffers :safety:
+**** 2026-05-16 Sat @ 02:47:15 -0500 Guarded cj/duplicate-line-or-region against modes without comment syntax
 
-=modules/custom-line-paragraph.el:79-93= calls =(cj/comment-line)= via
-delegation.  =comment-line= reads =comment-start= from the current
-major-mode's syntax tables, which is unreliable in non-file buffers
-(=*scratch*= sometimes works, fundamental-mode buffers do not).  The
-duplicate-and-comment flow silently produces malformed output in
-those buffers.  Either error out clearly or only enable the binding
-in modes that have a comment syntax.
+=cj/duplicate-line-or-region= now signals a clear =user-error= when
+=COMMENT= is non-nil but the current mode has no =comment-start=
+(=fundamental-mode= and similar).  Docstring updated to document the
+error.  Picks the "error out clearly" branch from the task body --
+restricting the binding per-mode would be a larger refactor that
+isn't justified for the silent-malformed-output blast radius.
 
-**** TODO [#C] Make =external-open.el= advice setup idempotent at load time :cleanup:
+**** 2026-05-16 Sat @ 02:47:15 -0500 Made external-open advice install explicit via cj/external-open-install-advice
 
-=modules/external-open.el:150-151= runs =advice-remove= followed by
-=advice-add= unconditionally during module load.  The pair is
-idempotent-by-construction, but the pattern leaves no signal that the
-module guards against duplicate loads -- if the module ever stops
-being load-once, the advice list grows.  Wrap the setup in a guarded
-form or move it behind an explicit init function.
+Factored the =advice-remove= / =advice-add= pair into
+=cj/external-open-install-advice= and called it once at the bottom
+of the module.  Same idempotent shape (remove-then-add) but now the
+intent is named.  Re-running the module updates the advice rather
+than stacking it; if a future caller wants to opt out, they can
+=advice-remove= the helper or skip calling it altogether.
 
-**** TODO [#C] Validate comment-delimiter character in =custom-comments.el= :safety:
+**** 2026-05-16 Sat @ 02:47:15 -0500 Added cj/--validate-decoration-char across all six divider/border helpers
 
-The comment-divider / border helpers in =modules/custom-comments.el=
-accept a delimiter string with no length or printability check.
-Passing =\n=, =\t=, or a multi-character string produces malformed
-output that can corrupt subsequent =M-q= flows.  Add a guard:
-=(unless (and (stringp delim) (= (length delim) 1) (string-match-p "[[:print:]]" delim))
-  (user-error "..."))=
+New top-level validator =cj/--validate-decoration-char= rejects
+anything that isn't a printable single-character string and signals
+=user-error=.  Wired into all six internal helpers:
+=cj/--comment-inline-border=, =cj/--comment-simple-divider=,
+=cj/--comment-padded-divider=, =cj/--comment-box=,
+=cj/--comment-heavy-box=, =cj/--comment-block-banner=.  The five
+nil-decoration ERT tests updated from =:type 'wrong-type-argument=
+(the old crash signal from =string-to-char= on nil) to
+=:type 'user-error=, since the guard now produces a clear message
+instead of a deep crash.
 
 **** TODO [#C] Add coverage for =cj/title-case-region= state machine :tests:
 
@@ -1257,14 +1258,14 @@ opening quote characters.  The state machine is the kind of helper
 that fails silently on the unusual case -- ERT coverage on those
 inputs catches regressions during refactors.
 
-**** TODO [#C] De-duplicate spell-checker availability guard in =flyspell-and-abbrev.el= :cleanup:
+**** 2026-05-16 Sat @ 02:47:15 -0500 Extracted cj/--require-spell-checker
 
-=cj/flyspell-toggle= and =cj/flyspell-then-abbrev= each carry an
-identical =(unless (or (executable-find "aspell") (executable-find
-"ispell") (executable-find "hunspell")) (user-error ...))= block.
-Extract into =cj/--require-spell-checker= and call from both sites.
-Keeps the executable list in one place when a new checker (e.g.
-nuspell) is added.
+Both =cj/flyspell-toggle= and =cj/flyspell-then-abbrev= now call
+=cj/--require-spell-checker= instead of carrying their own copy of
+the executable-find check.  The checker list lives in the new
+defconst =cj/--spell-checker-executables=, so adding nuspell (or any
+other checker) is a one-line edit.  Top-level =(require 'cl-lib)=
+added since the new helper uses =cl-some=.
 
 **** TODO [#C] Add coverage for =cj/flyspell-then-abbrev= and helpers in =flyspell-and-abbrev.el= :tests:
 

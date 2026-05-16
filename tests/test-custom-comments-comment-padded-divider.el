@@ -200,7 +200,7 @@ Returns the buffer string for assertions."
   "Should error when decoration-char is nil."
   (should-error
    (test-padded-divider-at-column 0 ";;" "" nil "Header" 70 2)
-   :type 'wrong-type-argument))
+   :type 'user-error))
 
 (ert-deftest test-padded-divider-elisp-nil-text ()
   "Should error when text is nil."
