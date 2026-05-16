@@ -2702,15 +2702,37 @@ Open question: should this build on =gptel-rewrite= directly via =:after= advice
 
 Priority bumped from [#C] to [#B] and the "defer until ≥20 conversations" hold lifted on 2026-05-15 -- the browser is the preferred entry point; build it now rather than wait for prompt friction to force the issue.
 
-*** TODO [#C] One-shot quick-ask command :feature:
+*** 2026-05-16 Sat @ 01:46:55 -0500 Added cj/gptel-quick-ask one-shot command
 
-=cj/gptel-quick-ask= -- read a prompt in the minibuffer, send to gptel, stream the response into a transient =*GPTel-Quick*= buffer.  Doesn't touch the =*AI-Assistant*= side window, doesn't autosave anywhere.  Intended for impromptu help where the conversation thread doesn't matter.
+New module =modules/ai-quick-ask.el=.  Bound to =C-; a q= via
+=cj/ai-keymap= (which-key labelled "quick ask").
 
-UX (decided 2026-05-15):
+=cj/gptel-quick-ask=: read a prompt in the minibuffer, create the
+=*GPTel-Quick*= buffer in =cj/gptel-quick-mode= (a special-mode
+derivative with =q= / =escape= / =c= bindings), insert "Q: <prompt>"
+and the response marker, then call =gptel-request= with =:stream t=
+streaming into the buffer.
 
-- The =*GPTel-Quick*= buffer is dismissible with =q= or =escape=.  Both bindings kill the buffer (or quit-window if Craig wants to revisit -- pick one; favor kill so the buffer doesn't pile up in =M-x= history).
-- A second key (suggested: =c= for "continue") escalates the one-shot into a full conversation: creates a new gptel conversation seeded with the quick-ask prompt + response, then opens it in the normal =*AI-Assistant*= side window.  After the escalation the =*GPTel-Quick*= buffer can be dismissed.
-- Stream the response into the temp buffer (gptel's default behavior) -- minibuffer echo is awkward for anything past a single line.
+=cj/gptel-quick-dismiss= (=q= / =escape=): delete the window and
+kill the buffer.  Idempotent when the buffer is absent.
+
+=cj/gptel-quick-continue= (=c=): extract the prompt and response,
+seed them into =*AI-Assistant*= under proper org headings (matching
+=cj/gptel--fresh-org-prefix= shape), display the side window,
+dismiss the quick buffer.
+
+13 tests in =tests/test-ai-quick-ask.el=:
+- Pure helpers: initial-text shape, extract-response (normal /
+  multi-line / no-marker / empty), seed-text shape (with and without
+  response).
+- =ask=: creates the buffer in the right mode with the prompt
+  recorded, calls =gptel-request=, errors on empty prompt.
+- =dismiss=: kills the buffer, no-op when absent.
+- =continue=: seeds =*AI-Assistant*= with both prompt and response,
+  dismisses the quick buffer, errors when called outside a quick
+  buffer.
+
+=gptel-request= stubbed in tests so no network call happens.
 
 *** 2026-05-16 Sat @ 01:41:51 -0500 Added cj/gptel-autosave-toggle + [AS] mode-line indicator
 
