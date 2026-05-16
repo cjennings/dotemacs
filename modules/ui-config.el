@@ -120,21 +120,36 @@ through to `read-only' and keeps the orange cursor."
 
 (defun cj/set-cursor-color-according-to-mode ()
   "Change cursor color according to buffer state (modified, read-only, overwrite).
-Only updates for real user buffers, not internal/temporary buffers."
-  ;; Only update cursor for real buffers (not internal ones like *temp*, *Echo Area*, etc.)
-  (unless (string-prefix-p " " (buffer-name))  ; Internal buffers start with space
-	(let ((color (alist-get (cj/--buffer-cursor-state) cj/buffer-status-colors)))
-	  ;; Only skip if BOTH color AND buffer are the same (optimization)
-	  ;; This allows color to update when buffer state changes
-	  (unless (and (string= color cj/-cursor-last-color)
-				   (string= (buffer-name) cj/-cursor-last-buffer))
-		(set-cursor-color color)
-		(setq cj/-cursor-last-color color
-			  cj/-cursor-last-buffer (buffer-name))))))
+Only updates for real user buffers, not internal/temporary buffers.
+A no-op on non-graphical frames -- TTY/batch sessions have no cursor color
+to set."
+  (when (display-graphic-p)
+    ;; Only update cursor for real buffers (not internal ones like *temp*, *Echo Area*, etc.)
+    (unless (string-prefix-p " " (buffer-name))  ; Internal buffers start with space
+      (let ((color (alist-get (cj/--buffer-cursor-state) cj/buffer-status-colors)))
+        ;; Only skip if BOTH color AND buffer are the same (optimization)
+        ;; This allows color to update when buffer state changes
+        (unless (and (string= color cj/-cursor-last-color)
+                     (string= (buffer-name) cj/-cursor-last-buffer))
+          (set-cursor-color color)
+          (setq cj/-cursor-last-color color
+                cj/-cursor-last-buffer (buffer-name)))))))
 
 ;; Use post-command-hook to update cursor color after every command
-;; This ensures cursor color always matches the current buffer's state
-(add-hook 'post-command-hook #'cj/set-cursor-color-according-to-mode)
+;; This ensures cursor color always matches the current buffer's state.
+;; The hook only registers under a graphical session so batch / TTY runs
+;; don't pay per-command overhead for a no-op.
+(when (display-graphic-p)
+  (add-hook 'post-command-hook #'cj/set-cursor-color-according-to-mode))
+;; Daemon mode: the first frame may be created after this module loads.
+;; Re-attempt the hook install once a GUI frame appears.
+(add-hook 'server-after-make-frame-hook
+          (lambda ()
+            (when (and (display-graphic-p)
+                       (not (memq #'cj/set-cursor-color-according-to-mode
+                                  post-command-hook)))
+              (add-hook 'post-command-hook
+                        #'cj/set-cursor-color-according-to-mode))))
 
 ;; Don’t show a cursor in non-selected windows:
 (setq cursor-in-non-selected-windows nil)
