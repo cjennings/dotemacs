@@ -1,27 +1,31 @@
 ;;; read_buffer.el --- Read buffer tool for GPTel -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
-;;
+;; Gptel tool that returns the contents of an Emacs buffer by name.
 
 ;;; Code:
 
 (require 'gptel)
 
+(defun cj/read-buffer--get-content (buffer)
+  "Return the substring of BUFFER from `point-min' to `point-max'.
+BUFFER may be a buffer object or a buffer name string.  Signal an
+error when no live buffer matches."
+  (unless (buffer-live-p (get-buffer buffer))
+    (error "Buffer %s is not live" buffer))
+  (with-current-buffer buffer
+    (buffer-substring-no-properties (point-min) (point-max))))
+
 (gptel-make-tool
  :name "read_buffer"
- :function (lambda (buffer)
-			 (unless (buffer-live-p (get-buffer buffer))
-			   (error "Error: buffer %s is not live" buffer))
-			 (with-current-buffer  buffer
-			   (buffer-substring-no-properties (point-min) (point-max))))
+ :function (lambda (buffer) (cj/read-buffer--get-content buffer))
  :description "return the contents of an emacs buffer"
  :args (list '(:name "buffer"
-					 :type string            ; :type value must be a symbol
-					 :description "the name of the buffer whose contents are to be retrieved"))
+                     :type string
+                     :description "the name of the buffer whose contents are to be retrieved"))
  :category "emacs")
 
-;; Automatically add to gptel-tools on load
 (add-to-list 'gptel-tools (gptel-get-tool '("emacs" "read_buffer")))
 
 (provide 'read_buffer)
-;;; read_buffer.el ends here.
+;;; read_buffer.el ends here
