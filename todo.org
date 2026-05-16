@@ -2601,16 +2601,29 @@ No backup is created when the operation is a no-op.
 operation plus the wrapper -- 48 tests green.  Added =update_text_file=
 to =cj/gptel-local-tool-features= so gptel exposes it on next restart.
 
-*** TODO [#B] Fix gptel-magit triggers :bug:
+*** 2026-05-16 Sat @ 01:31:03 -0500 Split the magit wiring into per-feature with-eval-after-load blocks
 
-Wired up in =modules/ai-config.el= as three lazy entry points:
-- =M-g= in =git-commit-mode-map= → =gptel-magit-generate-message=
-- =g= in the =magit-commit= transient → =gptel-magit-commit-generate=
-- =x= in the =magit-diff= transient → =gptel-magit-diff-explain=
+Root cause: =magit.el= calls =(provide 'magit)= BEFORE its
+=(cl-eval-when (load eval) ...)= block requires =magit-commit= and
+=magit-stash=.  A single =with-eval-after-load 'magit= fires while
+those transient prefixes are still undefined, and
+=transient-append-suffix= silently no-ops on missing prefixes
+(documented behavior unless =transient-error-on-insert-failure= is
+set).  Two of three triggers failed silently because of this; only
+M-g worked, because =git-commit= IS required before the provide.
 
-Specific failure mode TBD. First step: reproduce, note which entry point fails and how, then trace from there. Likely suspects: autoload chain (the three =autoload= calls run inside =with-eval-after-load 'magit=), transient suffix attachment via =transient-append-suffix=, or gptel-side backend/model config.
+Fix: replace the single =with-eval-after-load 'magit= with three
+per-feature blocks (=git-commit=, =magit-commit=, =magit-diff=).  Each
+hooks the exact dependency the wiring needs.
 
-Migration to the current lazy form: commit =3eb1a0c refactor(gptel): lazy-load gptel-magit, rebind rewrite/context keys=.
+The existing lazy-loading test was rewritten to check
+=after-load-alist= registration directly rather than driving the
+hooks via =provide= -- in Emacs 30 batch mode, =provide= does not
+fire registered =eval-after-load= callbacks; only an actual =load=
+does.  Inspecting the registration is stronger evidence anyway: the
+guard against the regression is "no entry for =magit=, entries for
+=git-commit=, =magit-commit=, =magit-diff=," which is exactly what
+the test asserts.
 
 *** TODO [#B] Add ERT coverage for ai-conversations.el :tests:
 
