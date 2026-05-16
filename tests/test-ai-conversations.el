@@ -328,21 +328,107 @@
        ;; Must not signal even though the write will fail
        (cj/gptel--autosave-after-send)))))
 
+;; ------------------------------------------------------ autosave timer
+
+(ert-deftest test-ai-conversations-autosave-start-timer-normal ()
+  "Normal: starting autosave creates a repeating timer for the current buffer."
+  (with-temp-buffer
+    (setq-local gptel-mode t)
+    (setq-local cj/gptel-autosave-enabled t)
+    (setq-local cj/gptel-autosave-filepath "/tmp/foo.gptel")
+    (let ((calls nil))
+      (cl-letf (((symbol-function 'run-with-timer)
+                 (lambda (secs repeat function &rest args)
+                   (push (list secs repeat function args) calls)
+                   :fake-timer)))
+        (let ((cj/gptel-autosave-interval 17))
+          (cj/gptel--autosave-start-timer)))
+      (should (eq cj/gptel-autosave--timer :fake-timer))
+      (should (equal (caar calls) 17))
+      (should (equal (cadar calls) 17))
+      (should (eq (nth 2 (car calls)) #'cj/gptel--autosave-timer-callback))
+      (should (eq (car (nth 3 (car calls))) (current-buffer))))))
+
+(ert-deftest test-ai-conversations-autosave-start-timer-idempotent ()
+  "Boundary: starting autosave twice does not create a second timer."
+  (with-temp-buffer
+    (setq-local gptel-mode t)
+    (setq-local cj/gptel-autosave-enabled t)
+    (setq-local cj/gptel-autosave-filepath "/tmp/foo.gptel")
+    (setq-local cj/gptel-autosave--timer :existing-timer)
+    (let ((created 0))
+      (cl-letf (((symbol-function 'run-with-timer)
+                 (lambda (&rest _)
+                   (setq created (1+ created))
+                   :new-timer)))
+        (cj/gptel--autosave-start-timer))
+      (should (= created 0))
+      (should (eq cj/gptel-autosave--timer :existing-timer)))))
+
+(ert-deftest test-ai-conversations-autosave-stop-timer-cancels ()
+  "Normal: stopping autosave cancels the current buffer's timer."
+  (with-temp-buffer
+    (setq-local cj/gptel-autosave--timer :fake-timer)
+    (let ((cancelled nil))
+      (cl-letf (((symbol-function 'cancel-timer)
+                 (lambda (timer) (setq cancelled timer))))
+        (cj/gptel--autosave-stop-timer))
+      (should (eq cancelled :fake-timer))
+      (should-not cj/gptel-autosave--timer))))
+
+(ert-deftest test-ai-conversations-autosave-timer-callback-saves-active-buffer ()
+  "Normal: timer callback saves the live buffer when autosave is active."
+  (test-ai-conversations--with-temp-dir
+   (lambda (dir)
+     (let ((file (expand-file-name "timer.gptel" dir))
+           (buf (generate-new-buffer " *gptel timer test*")))
+       (unwind-protect
+           (with-current-buffer buf
+             (setq-local gptel-mode t)
+             (setq-local cj/gptel-autosave-enabled t)
+             (setq-local cj/gptel-autosave-filepath file)
+             (insert "timer body")
+             (cj/gptel--autosave-timer-callback buf)
+             (should (file-exists-p file)))
+         (when (buffer-live-p buf)
+           (kill-buffer buf)))))))
+
+(ert-deftest test-ai-conversations-autosave-timer-callback-stops-inactive-buffer ()
+  "Boundary: timer callback cancels itself when autosave is no longer active."
+  (let ((buf (generate-new-buffer " *gptel timer inactive*")))
+    (unwind-protect
+        (with-current-buffer buf
+          (setq-local gptel-mode t)
+          (setq-local cj/gptel-autosave-enabled nil)
+          (setq-local cj/gptel-autosave-filepath "/tmp/foo.gptel")
+          (setq-local cj/gptel-autosave--timer :fake-timer)
+          (let ((cancelled nil))
+            (cl-letf (((symbol-function 'cancel-timer)
+                       (lambda (timer) (setq cancelled timer))))
+              (cj/gptel--autosave-timer-callback buf))
+            (should (eq cancelled :fake-timer))
+            (should-not cj/gptel-autosave--timer)))
+      (when (buffer-live-p buf)
+        (kill-buffer buf)))))
+
 ;; ------------------------------------------------------ save-conversation
 
 (ert-deftest test-ai-conversations-save-conversation-interactive-new-topic ()
-  "Save-conversation writes file under the topic-slugged name."
+  "Save-conversation writes file, enables autosave, and starts a timer."
   (test-ai-conversations--with-temp-dir
    (lambda (dir)
      (let ((ai-buffer (generate-new-buffer "*AI-Assistant*")))
        (unwind-protect
            (progn
              (with-current-buffer ai-buffer
+               (setq-local gptel-mode t)
                (insert "session content"))
              (cl-letf (((symbol-function 'completing-read)
                         (lambda (&rest _) "Test Topic"))
                        ((symbol-function 'y-or-n-p)
-                        (lambda (&rest _) nil)))
+                        (lambda (&rest _) nil))
+                       ((symbol-function 'run-with-timer)
+                        (lambda (&rest _) :save-timer)))
                (cj/gptel-save-conversation)
                (let ((files (directory-files dir nil "test-topic_.*\\.gptel$")))
                  (should files)
@@ -350,7 +436,8 @@
                ;; Autosave state is set in the AI buffer
                (with-current-buffer ai-buffer
                  (should cj/gptel-autosave-enabled)
-                 (should (stringp cj/gptel-autosave-filepath)))))
+                 (should (stringp cj/gptel-autosave-filepath))
+                 (should (eq cj/gptel-autosave--timer :save-timer)))))
          (kill-buffer ai-buffer))))))
 
 (ert-deftest test-ai-conversations-save-conversation-error-no-buffer ()
@@ -417,13 +504,19 @@
     (should cj/gptel-autosave-enabled)))
 
 (ert-deftest test-ai-conversations-autosave-toggle-disables ()
-  "Toggle turns autosave off when already on."
+  "Toggle turns autosave off and cancels the periodic timer when already on."
   (with-temp-buffer
     (setq-local gptel-mode t)
     (setq-local cj/gptel-autosave-enabled t)
     (setq-local cj/gptel-autosave-filepath "/tmp/foo.gptel")
-    (cj/gptel-autosave-toggle)
-    (should-not cj/gptel-autosave-enabled)))
+    (setq-local cj/gptel-autosave--timer :fake-timer)
+    (let ((cancelled nil))
+      (cl-letf (((symbol-function 'cancel-timer)
+                 (lambda (timer) (setq cancelled timer))))
+        (cj/gptel-autosave-toggle))
+      (should-not cj/gptel-autosave-enabled)
+      (should (eq cancelled :fake-timer))
+      (should-not cj/gptel-autosave--timer))))
 
 (ert-deftest test-ai-conversations-autosave-toggle-prompts-when-no-filepath ()
   "Toggle prompts to save first when no filepath is configured."
