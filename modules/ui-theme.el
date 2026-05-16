@@ -48,7 +48,7 @@ Unloads any other applied themes before applying the chosen theme."
   "Theme persistence settings."
   :group 'faces)
 
-(defcustom theme-file (expand-file-name ".emacs-theme" user-emacs-directory)
+(defcustom theme-file (expand-file-name "persist/emacs-theme" user-emacs-directory)
   "The location of the file to persist the theme name.
 If you want your theme change to persist across instances, put this in a
 directory that is sync'd across machines with this configuration."

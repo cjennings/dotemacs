@@ -18,6 +18,9 @@
 (use-package time-zones
   :defer
   :commands time-zones
+  :init
+  (setq time-zones--city-list-file
+        (expand-file-name "persist/time-zones-cities.el" user-emacs-directory))
   :bind ("M-S-c" . time-zones))  ;; was M-C, overrides capitalize-word
 
 (use-package calendar
