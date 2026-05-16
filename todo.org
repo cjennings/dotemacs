@@ -36,10 +36,9 @@ Use tags to describe the work shape:
 Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
-
 * Emacs Open Work
 
-** PROJECT [#A] Architecture review follow-up from 2026-05-03 :refactor:no-sync:
+** PROJECT [#B] Architecture review follow-up from 2026-05-03 :refactor:no-sync:
 
 High-level pass over =init.el=, =early-init.el=, and all 104 files in
 =modules/=. The main theme: the config works, but load order, startup side
@@ -399,126 +398,6 @@ Expected outcome:
 - Add a note to the local repository docs so future package failures do not
   lead to permanent insecure defaults.
 
-** TODO [#B] Implement EMMS-free music-config architecture       :refactor:
-*** 2026-05-15 Fri @ 19:17:01 -0500 Specification
-Implement the design in [[file:docs/design/music-config-without-emms.org][Design: music-config Without EMMS]].
-
-The implementation should make =music-config.el= load without EMMS, introduce
-package-owned playlist and track state, add a =cj/music-playlist-mode= view,
-and route playback through a small backend protocol with an initial =mpv=
-backend.  Preserve the current F10 and =C-; m= user workflows where practical,
-and keep M3U load/save/edit/reload plus radio station creation working.
-
-Complexity estimate: high.  This is a module rewrite with a new internal data
-model, package-owned playlist mode, backend protocol, mpv process management,
-and migration of existing EMMS-backed commands/tests.
-
-Time estimate: 2-4 focused days for an EMMS-free v1 with play/stop/next/previous,
-M3U persistence, playlist UI, and focused tests.  Add another 1-2 days if v1
-must include full mpv IPC support for pause, seek, and volume parity.
-
-Acceptance checks:
-- =music-config.el= can be required in batch with no EMMS package installed.
-- Existing focused music tests pass without EMMS preload or EMMS stubs except
-  where a compatibility adapter is explicitly under test.
-- New tests cover playlist state, backend command dispatch, M3U persistence,
-  and the EMMS-free load smoke path.
-
-*** TODO [#B] Pure helpers + state structs extraction                :refactor:
-Lift EMMS-free pure code into standalone form: file validation, recursive
-collection, M3U parse/write, safe filenames, radio-station content, and
-URL/file track typing.  Introduce =cj/music-track= and =cj/music-playlist=
-cl-structs plus state-mutation helpers (=cj/music-playlist-*= predicates and
-setters).  Files: =modules/music-config.el=, possibly a new
-=modules/music-state.el= split.  Existing pure-helper tests should pass
-unchanged.
-
-Acceptance: structs defined, helpers callable in batch without EMMS loaded.
-
-Depends on: none (start here).
-
-*** TODO [#B] Backend protocol + fake test backend                   :refactor:tests:
-Define the backend plist contract (=:available-p :play :pause :resume :stop
-:seek :volume :status :metadata=) and =cj/music-current-backend=.  Add
-=cj/music-state-change-functions= abnormal hook with the v1 event set
-(=started=, =paused=, =resumed=, =stopped=, =finished=, =error=,
-=playlist-changed=, =mode-changed=).  Create =tests/testutil-music-backend.el=
-exposing =cj/test-music-fake-backend= with an event ledger.
-
-Acceptance: fake backend installable in tests; ordered-event assertions work
-against a no-op playback flow.
-
-Depends on: pure helpers + state structs.
-
-*** TODO [#B] Read-side state API + characterization tests           :tests:refactor:
-Implement =cj/music-playing-p=, =cj/music-paused-p=, =cj/music-current-track=,
-=cj/music-playlist-state=, =cj/music-track-description=.  Before rewriting
-command bodies, add characterization tests against current behavior for
-=cj/music-next=, =cj/music-previous=, =cj/music-toggle-consume=,
-=cj/music-playlist-toggle=, =cj/music-playlist-load=, =cj/music-playlist-clear=
-so the migration has a safety net.
-
-Acceptance: read-side helpers covered; characterization tests green against
-the current EMMS-backed implementation.
-
-Depends on: backend protocol + fake test backend.
-
-*** TODO [#B] Playlist major mode + render-from-state                :feature:
-Add =cj/music-playlist-mode= rendering the buffer as a view over
-=cj/music-current-playlist=.  Selected-track overlay + face, header reads
-package state, full keymap from design Section "Playlist Buffer" (RET/p, SPC,
-s, >/<, f/b, +/=/-, a, A, c/C, L/S/E/g, r/t/z/x, Z, i, o, q, S-up/down).
-Preserve the active-window background highlight.
-
-Acceptance: opening the playlist renders package state; reorder/shuffle/clear
-go through state mutations and re-render; tests cover header + overlay
-positioning.
-
-Depends on: read-side state API.
-
-*** TODO [#B] mpv backend implementation                             :feature:
-Implement =cj/music-mpv-*= backend functions.  Phase the work per migration
-plan §5: (a) process spawn, UID/PID-stamped socket under
-=temporary-file-directory=, stale-socket sweep, IPC connect via
-=make-network-process :family 'local=, state-hook plumbing.  (b) play/stop/
-next/previous + finished-track auto-advance with deliberate-stop tracking.
-(c) pause/resume, seek, volume over JSON IPC.  (d) metadata read on track
-start.  Add =cj/music-doctor= reporting platform capabilities; ship Windows
-degraded mode (play/stop/next/previous only via stdin/=call-process=).
-
-Acceptance: integration tests tagged =:slow= and skipped when =mpv= not on
-PATH; on Linux/macOS pause/seek/volume parity works; clean socket lifecycle
-across Emacs restart and exit.
-
-Depends on: backend protocol + fake test backend.
-
-*** TODO [#B] Command + Dired/Dirvish rewire                         :refactor:
-Migrate user-facing commands (=cj/music-play=, =cj/music-pause=,
-=cj/music-stop=, =cj/music-next=, =cj/music-previous=, seek/volume,
-random/repeat/consume/shuffle toggles) to operate on package state and call
-=cj/music-current-backend=.  Update Dired/Dirvish =+= add routing,
-M3U load/save/edit/reload, radio-station creation, F10 toggle, and =C-; m=
-keymap entries to drop EMMS symbols.  Migrate command-flow tests to the fake
-backend.
-
-Acceptance: full keymap functional end-to-end against the fake backend;
-characterization tests still green; Dirvish =+= add path covered.
-
-Depends on: playlist major mode + mpv backend.
-
-*** TODO [#B] EMMS removal + parity walk                             :cleanup:tests:
-Remove =cj/emms--setup=, the on-demand EMMS loader, and the =use-package emms=
-block.  Add the EMMS-free batch-load smoke test (=music-config.el= requires
-clean without EMMS installed).  Run the 22-step parity walk from design
-§"Parity Walk" against the new implementation; record measurements against
-the performance budget (1000-track load <500ms, reorder <50ms, IPC dispatch
-<100ms, header refresh <16ms) and note any deviations.
-
-Acceptance: =init.el= loads cleanly without EMMS; =make test= passes; parity
-walk recorded as a completion log entry under the parent task.
-
-Depends on: command + Dired/Dirvish rewire.
-
 ** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
 *** 2026-05-15 Fri @ 19:16:08 -0500 Specification
 Consolidate the developer F-key block into a coherent sequence. F5 reserved for debug (separate ticket). Format bindings move off F6 to C-; f.
@@ -645,181 +524,6 @@ Acceptance: F7 invokes coverage-report; F4/F6/F7 are visibly grouped in one
 module; coverage track is shipped before this lands.
 
 Depends on: the coverage-config track shipping; F4 and F6 sub-tasks above.
-
-** TODO [#B] Review and rebind M-S- keybindings :refactor:
-
-Changed from M-uppercase to M-S-lowercase for terminal compatibility.
-These may override useful defaults - review and pick better bindings:
-- M-S-b calibredb (was overriding backward-word)
-- M-S-c time-zones (was overriding capitalize-word)
-- M-S-d dwim-shell-menu (was overriding kill-word)
-- M-S-e eww (was overriding forward-sentence)
-- M-S-f fontaine (was overriding forward-word)
-- M-S-h split-below
-- M-S-i edit-indirect
-- M-S-k show-kill-ring (was overriding kill-sentence)
-- M-S-l switch-themes (was overriding downcase-word)
-- M-S-m kill-all-buffers
-- M-S-o kill-other-window
-- M-S-r elfeed
-- M-S-s window-swap
-- M-S-t toggle-split (was overriding transpose-words)
-- M-S-u winner-undo (was overriding upcase-word)
-- M-S-v split-right (was overriding scroll-down)
-- M-S-w wttrin (was overriding kill-ring-save)
-- M-S-y yank-media (was overriding yank-pop)
-- M-S-z undo-kill-buffer (was overriding zap-to-char)
-
-** TODO [#B] Build cj/dev-setup-project helper (per docs/design/dev-setup-project.org) :feature:
-*** 2026-05-15 Fri @ 19:17:37 -0500 Specification
-
-Interactive command that opens a review buffer with proposed per-subdirectory .dir-locals.el contents (projectile compile/run/test + cj/coverage-backend), optional starter Makefile when none exists, and gitignore updates. User edits inline, C-c C-c writes all files.
-
-Design: [[file:../docs/design/dev-setup-project.org][docs/design/dev-setup-project.org]]
-
-Scope of v1:
-- modules/dev-setup-config.el (command + review-buffer major mode)
-- Three-tier detection: existing Makefile, existing package.json/pyproject.toml scripts, fall-back starter Makefile generation.
-- Project shapes supported: pure Elisp, pure Go, pure Python, pure Node/TS, Docker Compose polyglot.
-- Re-run semantics: status banners (UNCHANGED / WILL UPDATE / WILL CREATE), idempotent gitignore append, never modifies an existing Makefile.
-- ERT tests for the pure helpers (Makefile parser, package.json parser, shape detection, target-to-role mapping, review-buffer parser).
-
-Deferred:
-- Rust (Cargo.toml), Java (pom.xml), other language shapes.
-- Project-wide override config file.
-- Auto-detecting external run scripts in conventional locations.
-
-Do this after the F-key rework ticket ships; don't want to churn project configs before the keys are stable.
-
-*** TODO [#B] Pure detection + parsing helpers                       :feature:
-Implement the four pure helpers the rest of the command composes on:
-- =cj/--dev-setup-parse-makefile-targets FILE= (.PHONY + bare target lines, skip pattern rules)
-- =cj/--dev-setup-parse-package-json-scripts FILE= (scripts block, JSON)
-- =cj/--dev-setup-detect-project-shape ROOT= (Elisp / Go / Python / Node-TS / Docker-Compose polyglot / unknown)
-- =cj/--dev-setup-map-targets-to-roles TARGETS= (best-guess compile/run/test mapping per design § Detection)
-
-Files: =modules/dev-setup-config.el= (new).  No interactive surface, no I/O
-beyond reading the named file.
-
-Acceptance: each helper callable in isolation with handcrafted fixtures;
-no command yet.
-
-Depends on: none -- start here.
-
-*** TODO [#B] ERT coverage for the pure helpers                      :feature:tests:
-Normal/Boundary/Error tests for every helper from the prior sub-task,
-matching the design's testing section.
-
-Files: =tests/test-dev-setup-config.el=, plus
-=tests/testutil-dev-setup-config.el= for the temp-project fixture builder
-(writes Makefile / package.json / compose stub into =make-temp-file ... 'dir=).
-
-Acceptance: =make test-file FILE=tests/test-dev-setup-config.el= green;
-every helper has at least one Normal, one Boundary, one Error case.
-
-Depends on: pure detection + parsing helpers.
-
-*** TODO [#B] Starter-Makefile + .dir-locals.el proposal generator   :feature:
-Pure function =cj/--dev-setup-build-proposal SHAPE ROOT= returning a
-structured plist of proposed blocks: one per subproject =.dir-locals.el=
-(projectile compile/run/test + =cj/coverage-backend=), the optional starter
-Makefile (only when none exists, adapted per shape per design § Tier 3),
-and the gitignore append lines.
-
-Files: =modules/dev-setup-config.el=.
-
-Acceptance: given a shape plist, returns deterministic block list ready for
-the review buffer; ERT cases cover each shape (Elisp / Go / Python / Node-TS
-/ polyglot) plus the Tier-1 "Makefile already exists, suppress Makefile
-block" branch.
-
-Depends on: pure detection + parsing helpers.
-
-*** TODO [#B] Review-buffer major mode + parser                      :feature:
-Define =cj/dev-setup-review-mode= (derived from =emacs-lisp-mode=) with =C-c
-C-c= / =C-c C-k= bindings, plus the pure parser
-=cj/--dev-setup-review-buffer-parse CONTENTS= that turns buffer text back
-into a block list.  Banner syntax per design § Review Buffer (=;; ==== <path>
-====[ <status>]==, gitignore special, Makefile special).
-
-Files: =modules/dev-setup-config.el=, =tests/test-dev-setup-config.el=
-(parser cases: well-formed multi-block, single block, empty body, missing
-banner, malformed elisp inside a dir-locals block).
-
-Acceptance: round-trip -- render proposal -> parse buffer -> equal block
-list.  Mode keybindings smoke-tested.
-
-Depends on: starter-Makefile + .dir-locals.el proposal generator.
-
-*** TODO [#B] Writer + status diff + projectile cache reset          :feature:
-Implement the =C-c C-c= writer: diff each parsed block against the on-disk
-file to assign =UNCHANGED= / =WILL UPDATE= / =WILL CREATE=, write only the
-non-UNCHANGED ones, append gitignore idempotently, never touch an existing
-Makefile, honor the =;;; cj/dev-setup-project: ignore= escape hatch, clear
-projectile's per-project command cache, print the summary line.
-
-Files: =modules/dev-setup-config.el=, plus ERT cases for the diff +
-idempotent-append logic against temp dirs.
-
-Acceptance: re-run on an unchanged project writes nothing; renaming a
-Makefile target flips one block to =WILL UPDATE=; ignore-marked files stay
-untouched.
-
-Depends on: review-buffer major mode + parser.
-
-*** TODO [#B] Interactive command + smoke test                       :feature:tests:
-Thin =cj/dev-setup-project= interactive wrapper: resolve project root via
-projectile, run detection, build proposal, render the review buffer, pop to
-it.  One smoke test against a prepared temp project asserting the expected
-files exist after a simulated =C-c C-c=.
-
-Files: =modules/dev-setup-config.el=, =tests/test-dev-setup-config.el=.  Add
-=(require 'dev-setup-config)= to =init.el= (or the appropriate aggregator).
-
-Acceptance: =M-x cj/dev-setup-project= on a fixture project opens the review
-buffer; =C-c C-c= writes the expected files.
-
-Depends on: writer + status diff + projectile cache reset.
-
-*** TODO [#B] Resolve open questions + design follow-ups             :cleanup:
-Three design questions to close before / during implementation: (a) include
-=make coverage= target in starter Makefile? (b) project-wide override file
-=.cj-dev-setup.el=? (c) Cargo/pom detection.
-
-Body: park decisions inline in the design doc or run =arch-decide= if they
-turn out load-bearing.
-
-Depends on: none, but easiest after the writer sub-task surfaces real
-friction.
-
-** TODO [#B] Pick and wire a debug backend for F5 :feature:
-
-#+begin_src emacs-lisp
-  Give me an idea of the amount of work and complexity and what allows for a consistent UX across languages. 
-#+end_src
-
-*** 2026-05-15 Fri @ 19:19:21 -0500 Inital Goals
-Bind F5 globally to a debug entry point. Backend choice is the hard part:
-
-- dape (Debug Adapter Protocol for Emacs) — modern, multi-language via DAP. Single UX across Python, Go, TS, Rust, etc. Less mature than DAP clients in other editors.
-- realgud — wraps multiple debuggers (pdb, gdb, node --inspect, etc.). More mature; UX varies by backend.
-- Language-specific stacks — dap-mode (python-mode + dap), delve for go, ts-node --inspect, etc. Best per-language UX; most config work.
-
-F5 itself will be simple (start/resume debug). Likely modifier variants once the backend is picked:
-- C-F5 toggle breakpoint at point
-- M-F5 eval expression in debug context (or step-over shortcut)
-
-Evaluate against these projects' languages: elisp (edebug already works), Python, Go, TS, shell. Shell debug is usually print-based; skip.
-
-Do this after the F-key rework ticket ships so F5 is the only hole left.
-
-** TODO [#B] Build debug-profiling.el module :feature:
-
-Reusable profiling infrastructure for targeted slow-command investigation. Consolidates scattered profiler bindings (currently in =modules/config-utilities.el=) and adds two pure-helper-backed entry points: "profile next command" and "time region or sexp." Designed via =/brainstorm= 2026-04-26.
-
-Design: [[file:../docs/design/debug-profiling.org][docs/design/debug-profiling.org]]
-
-Implement via =/start-work= against the design — branch =feat/debug-profiling=, commits decomposed along the test-first split-for-testability boundary. Once shipped, use it as the v1 exercise on the queued [#B] org-capture target-building investigation.
 
 ** DOING [#B] Module-by-module hardening :harden:no-sync:
 
@@ -2491,7 +2195,662 @@ configuration (=text-config=, =diff-config=, =ledger-config=,
 =games-config=, =mu4e-org-contacts-setup=, =telega-config=,
 =httpd-config=, =org-agenda-config-debug=).
 
-** VERIFY [#B] Continue org-noter custom workflow implementation (IN PROGRESS) :feature:bug:
+** TODO [#C] Implement EMMS-free music-config architecture        :refactor:
+*** 2026-05-15 Fri @ 19:17:01 -0500 Specification
+Implement the design in [[file:docs/design/music-config-without-emms.org][Design: music-config Without EMMS]].
+
+The implementation should make =music-config.el= load without EMMS, introduce
+package-owned playlist and track state, add a =cj/music-playlist-mode= view,
+and route playback through a small backend protocol with an initial =mpv=
+backend.  Preserve the current F10 and =C-; m= user workflows where practical,
+and keep M3U load/save/edit/reload plus radio station creation working.
+
+Complexity estimate: high.  This is a module rewrite with a new internal data
+model, package-owned playlist mode, backend protocol, mpv process management,
+and migration of existing EMMS-backed commands/tests.
+
+Time estimate: 2-4 focused days for an EMMS-free v1 with play/stop/next/previous,
+M3U persistence, playlist UI, and focused tests.  Add another 1-2 days if v1
+must include full mpv IPC support for pause, seek, and volume parity.
+
+Acceptance checks:
+- =music-config.el= can be required in batch with no EMMS package installed.
+- Existing focused music tests pass without EMMS preload or EMMS stubs except
+  where a compatibility adapter is explicitly under test.
+- New tests cover playlist state, backend command dispatch, M3U persistence,
+  and the EMMS-free load smoke path.
+
+*** TODO [#B] Pure helpers + state structs extraction                :refactor:
+Lift EMMS-free pure code into standalone form: file validation, recursive
+collection, M3U parse/write, safe filenames, radio-station content, and
+URL/file track typing.  Introduce =cj/music-track= and =cj/music-playlist=
+cl-structs plus state-mutation helpers (=cj/music-playlist-*= predicates and
+setters).  Files: =modules/music-config.el=, possibly a new
+=modules/music-state.el= split.  Existing pure-helper tests should pass
+unchanged.
+
+Acceptance: structs defined, helpers callable in batch without EMMS loaded.
+
+Depends on: none (start here).
+
+*** TODO [#B] Backend protocol + fake test backend                   :refactor:tests:
+Define the backend plist contract (=:available-p :play :pause :resume :stop
+:seek :volume :status :metadata=) and =cj/music-current-backend=.  Add
+=cj/music-state-change-functions= abnormal hook with the v1 event set
+(=started=, =paused=, =resumed=, =stopped=, =finished=, =error=,
+=playlist-changed=, =mode-changed=).  Create =tests/testutil-music-backend.el=
+exposing =cj/test-music-fake-backend= with an event ledger.
+
+Acceptance: fake backend installable in tests; ordered-event assertions work
+against a no-op playback flow.
+
+Depends on: pure helpers + state structs.
+
+*** TODO [#B] Read-side state API + characterization tests           :tests:refactor:
+Implement =cj/music-playing-p=, =cj/music-paused-p=, =cj/music-current-track=,
+=cj/music-playlist-state=, =cj/music-track-description=.  Before rewriting
+command bodies, add characterization tests against current behavior for
+=cj/music-next=, =cj/music-previous=, =cj/music-toggle-consume=,
+=cj/music-playlist-toggle=, =cj/music-playlist-load=, =cj/music-playlist-clear=
+so the migration has a safety net.
+
+Acceptance: read-side helpers covered; characterization tests green against
+the current EMMS-backed implementation.
+
+Depends on: backend protocol + fake test backend.
+
+*** TODO [#B] Playlist major mode + render-from-state                :feature:
+Add =cj/music-playlist-mode= rendering the buffer as a view over
+=cj/music-current-playlist=.  Selected-track overlay + face, header reads
+package state, full keymap from design Section "Playlist Buffer" (RET/p, SPC,
+s, >/<, f/b, +/=/-, a, A, c/C, L/S/E/g, r/t/z/x, Z, i, o, q, S-up/down).
+Preserve the active-window background highlight.
+
+Acceptance: opening the playlist renders package state; reorder/shuffle/clear
+go through state mutations and re-render; tests cover header + overlay
+positioning.
+
+Depends on: read-side state API.
+
+*** TODO [#B] mpv backend implementation                             :feature:
+Implement =cj/music-mpv-*= backend functions.  Phase the work per migration
+plan §5: (a) process spawn, UID/PID-stamped socket under
+=temporary-file-directory=, stale-socket sweep, IPC connect via
+=make-network-process :family 'local=, state-hook plumbing.  (b) play/stop/
+next/previous + finished-track auto-advance with deliberate-stop tracking.
+(c) pause/resume, seek, volume over JSON IPC.  (d) metadata read on track
+start.  Add =cj/music-doctor= reporting platform capabilities; ship Windows
+degraded mode (play/stop/next/previous only via stdin/=call-process=).
+
+Acceptance: integration tests tagged =:slow= and skipped when =mpv= not on
+PATH; on Linux/macOS pause/seek/volume parity works; clean socket lifecycle
+across Emacs restart and exit.
+
+Depends on: backend protocol + fake test backend.
+
+*** TODO [#B] Command + Dired/Dirvish rewire                         :refactor:
+Migrate user-facing commands (=cj/music-play=, =cj/music-pause=,
+=cj/music-stop=, =cj/music-next=, =cj/music-previous=, seek/volume,
+random/repeat/consume/shuffle toggles) to operate on package state and call
+=cj/music-current-backend=.  Update Dired/Dirvish =+= add routing,
+M3U load/save/edit/reload, radio-station creation, F10 toggle, and =C-; m=
+keymap entries to drop EMMS symbols.  Migrate command-flow tests to the fake
+backend.
+
+Acceptance: full keymap functional end-to-end against the fake backend;
+characterization tests still green; Dirvish =+= add path covered.
+
+Depends on: playlist major mode + mpv backend.
+
+*** TODO [#B] EMMS removal + parity walk                             :cleanup:tests:
+Remove =cj/emms--setup=, the on-demand EMMS loader, and the =use-package emms=
+block.  Add the EMMS-free batch-load smoke test (=music-config.el= requires
+clean without EMMS installed).  Run the 22-step parity walk from design
+§"Parity Walk" against the new implementation; record measurements against
+the performance budget (1000-track load <500ms, reorder <50ms, IPC dispatch
+<100ms, header refresh <16ms) and note any deviations.
+
+Acceptance: =init.el= loads cleanly without EMMS; =make test= passes; parity
+walk recorded as a completion log entry under the parent task.
+
+Depends on: command + Dired/Dirvish rewire.
+
+** TODO [#C] GPTel Tool Work
+
+Categories below thematize the agent affordances the design doc
+[[file:docs/design/gptel-agentic-tool-ideas.org][gptel-agentic-tool-ideas.org]]
+points at -- Git, Org, messaging, file / buffer / workspace state,
+media, and the dev loop.  The shortlist's first-batch ADOPT tools
+(git_status / git_log / git_diff / web_fetch) already shipped; the
+themes below are next-tier work where the agent treats Emacs as a
+structured workspace, not a text terminal.  Per-theme spec lives in
+the task body once written; implementation tasks land as siblings
+of the spec heading once the spec is approved.  The magit-backend
+reimplementation of the shipped git tools is tracked separately in
+[[file:docs/design/gptel-git-tools-magit-backend.org][gptel-git-tools-magit-backend.org]].
+
+*** TODO [#B] Git Related Tools
+
+Affordances that expose magit's structured view of a repo -- sections,
+staged-vs-unstaged, commit metadata, rebase / conflict state -- as
+first-class tools rather than asking the model to reason over raw
+diff text.
+
+**** TODO [#B] Section-aware git tools :feature:
+
+Expose Magit sections as first-class GPTel tools: current section type,
+heading, file, hunk range, and content; sibling sections under the same
+file; staged / unstaged / untracked status; commit metadata around the
+selected commit or branch; the exact staged patch that would be
+committed.  Lets prompts say "review the file section at point" or
+"explain this hunk in the context of adjacent hunks" without manual
+context-copying.
+
+**** TODO [#B] Commit intent workbench :feature:
+
+Transient that builds a commit intentionally:
+1. Agent reads unstaged + staged changes.
+2. Agent proposes coherent commit groups.
+3. User selects groups in a Magit-style buffer.
+4. Agent stages those paths or hunks only after confirmation.
+5. Agent generates a message reflecting the selected intent.
+
+Addresses the common case of two or three unrelated edits in one
+working tree -- a single commit-message generator can't handle that
+cleanly.
+
+**** TODO [#B] Patch narrative buffer :feature:
+
+Generate an Org buffer that explains a change set as a reviewable
+narrative:
+- "What changed" by subsystem.
+- "Why it appears to have changed" inferred from names, tests, and docs.
+- "Risk areas" with links back to Magit file sections.
+- "Suggested verification" using local Makefile targets when present.
+
+Reusable artifact: paste into a PR description, save with an AI
+session, or file into org-roam.
+
+**** TODO [#B] Review-thread simulator :feature:
+
+Before opening a PR, create a local review buffer with inline comments
+attached to Magit diff positions.  The agent writes comments as if
+reviewing someone else's patch:
+- Comments grouped by severity.
+- Each comment links to file and line.
+- Resolved comments check off in Org.
+- Accepted suggestions apply through the existing text-update tools.
+
+Makes "review my diff" less ephemeral and avoids losing useful findings
+inside a chat transcript.
+
+**** TODO [#B] Rebase and conflict coach :feature:
+
+When Magit enters a rebase, cherry-pick, merge, or conflict state,
+expose an agent command that reads:
+- Git operation state from =.git/=.
+- Conflict markers in the worktree.
+- Relevant commits from =git log --merge= or the rebase todo.
+- The current Magit status sections.
+
+The agent explains the conflict in domain terms and proposes a
+resolution patch; the actual edit and =git add= stay under explicit
+user control.
+
+**** TODO [#B] Regression archaeology :feature:
+
+Magit transient that runs a bisect-like reasoning workflow:
+- Ask for a symptom and a known-good / known-bad range.
+- Summarize candidate commits in small batches.
+- Use tests or user-provided repro commands when available.
+- Maintain a bisect journal in an Org buffer.
+
+Even when the agent can't run the whole bisect, it keeps the
+investigation structured and preserves why each commit was judged
+good or bad.
+
+*** TODO [#B] Org Workflow Related Tools
+
+Affordances that expose the Org workspace -- agenda state, capture
+targets, org-roam nodes and backlinks, dailies, drill review state --
+to the agent as structured context, not raw .org buffer text.
+
+**** TODO [#B] Agenda state tools :feature:
+
+Read scheduled / deadline / waiting tasks for a date range; query by
+tag, priority, or TODO keyword; list what's blocking today.  Lets the
+agent answer "what's on the critical path this week" without me
+pasting agenda output, and feeds the daily-prep / wrap-up workflows.
+
+**** TODO [#B] Org-roam node tools :feature:
+
+Resolve a topic to its node; return body + backlinks; list nodes by
+tag; surface dailies for a date range.  Lets the agent reason over
+the personal knowledge graph and write back into it via the capture
+tools below.
+
+**** TODO [#B] Capture creation tools :feature:
+
+Drive =org-capture= from a template key + body string.  Lets the
+agent file inbox items, reading notes, journal entries, or roam
+nodes without me leaving the chat.  Tight pairing with the
+=cj/org-capture= optimization task in todo.org.
+
+**** TODO [#B] Org-drill review tools :feature:
+
+Surface next-due drill cards in =drill-dir=; let the agent quiz on a
+topic and report performance.  Useful for prompted recall sessions
+("ask me five medical-Spanish cards") and for "did this card stick"
+analysis.
+
+*** TODO [#B] Messaging Related Tools
+
+Affordances over mu4e, Slack, Telegram, and ERC.  Same shape across
+protocols: read recent threads, search by sender / topic, compose a
+draft from a prompt + thread context, leave the send under explicit
+user control.
+
+**** TODO [#B] Mu4e thread and compose tools :feature:
+
+Read the message at point and surrounding thread (with attachments
+summarized); query the inbox by =from:= / =subject:= / date range;
+compose a draft from a prompt + thread context using =org-msg=.
+Pairs with the existing =mu4e-org-contacts-integration.el=.
+
+**** TODO [#B] Slack thread and compose tools :feature:
+
+Read channel / DM / thread history through =emacs-slack=; search by
+user or channel; compose a draft message but leave sending to me.
+Mirrors the mu4e shape so the agent's interface is uniform across
+messaging protocols.
+
+**** TODO [#B] Telegram and IRC read tools :feature:
+
+Same shape as Slack for =telega= (Telegram) and =erc= (IRC):
+recent-message reads, search, and draft compose.  Bundled because
+the API shape is identical even if the underlying clients differ.
+
+**** TODO [#B] Contact resolution tools :feature:
+
+Resolve a name to email / Slack ID / Telegram handle via
+=org-contacts= and the configured address books.  Removes the
+"who's this person again" friction from the compose flows above.
+
+*** TODO [#B] File and Buffer Related Tools
+
+Affordances that expose the user's actual workspace -- open buffers,
+narrowed regions, marked files, vterm / eshell sessions -- as
+structured context.  Stops the model from asking "what file are you
+looking at" or "what region is selected."
+
+**** TODO [#B] Buffer state tools :feature:
+
+List visible buffers with major-mode + file (when any); read the
+narrowed region instead of the whole buffer; report point + mark
+positions and the active region's text.  The single most-asked
+question between turns becomes a tool call.
+
+**** TODO [#B] Dirvish / Dired tools :feature:
+
+Read marked files, sort state, and filter state from a Dired or
+Dirvish buffer.  Lets the agent operate on "the files I just marked"
+rather than "files in this directory" -- a real distinction in any
+review or refactor workflow.
+
+**** TODO [#B] Vterm session tools :feature:
+
+Recent command output from a named vterm session; scroll-history
+search.  Pairs naturally with the =ai-vterm= design: the agent
+running in one project's vterm can read another project's vterm
+without leaving the chat.
+
+**** TODO [#B] Eshell session tools :feature:
+
+Same shape as the vterm tools for =eshell= sessions -- last-command
+output, history search, current directory.  Most useful for
+agent-driven inspection of long-running pipelines.
+
+*** TODO [#B] Filesystem Related Tools
+
+Affordances that let the agent operate on actual files on disk and
+run common CLI utilities -- pandoc, ffmpeg, imagemagick, ripgrep,
+fd, jq -- rather than relying on me to paste content or run
+commands by hand.
+
+*Design tension to resolve before any of these ship: one tool per
+utility, or one generic =run_shell_command=?*
+
+The shortlist's first pass DEFERRED a generic =run_shell_command=:
+sandboxing to HOME + /tmp with a denylist for destructive ops is
+straightforward, but the denylist can never be exhaustive, and
+"confirmation for everything else" becomes click-fatigue.
+
+The children below take the other path -- *one gptel tool per
+binary*, with a strictly-typed argv shape (e.g.
+=pandoc_convert(input_path, output_format)=, not
+=pandoc_convert(args_string)=).  Each tool:
+
+- Validates its own paths (must be under HOME, outputs in a
+  sandboxed dir).
+- Rejects dangerous flags explicitly (pandoc =--filter=, ffmpeg's
+  =-protocol_whitelist= chicanery, imagemagick's policy bypasses).
+- Runs via =call-process= with an argv list -- no shell parsing,
+  no string-interpolation injection.
+- Caps output and reports truncation inline.
+
+The trade-off is breadth: every new CLI tool means a new gptel tool
+file.  Acceptable because (a) the list of utilities I actually need
+agent access to is small (~8 below covers most of it), and (b) each
+wrapper gets type-checked argv and a focused description the model
+can reason over, which is genuinely better than a free-form
+=run_shell_command(string)=.
+
+The =eshell_submit= entry at the end is the escape hatch for one-
+off needs the wrappers don't cover -- =:confirm t= always.
+
+Adjacent categories: the existing =gptel-tools/= file CRUD
+(=read_text_file=, =write_text_file=, =update_text_file=,
+=list_directory_files=, =move_to_trash=) is the foundation this
+category extends.  =web_fetch= is the network-fetch counterpart.
+
+**** TODO [#B] Document conversion (pandoc) :feature:
+
+Convert between markdown, org, html, pdf, docx, latex, epub, plain
+text.  Most common use: "extract this docx to markdown so I can
+read it inline."  Strict argv: input path, output format, optional
+output path.  Reject =--filter= and =--lua-filter= (arbitrary code
+execution).  Output written to a sandbox dir unless explicit
+override.
+
+**** TODO [#B] Image manipulation (imagemagick) :feature:
+
+Resize, format-convert, get-metadata (=identify=), optionally crop /
+rotate / annotate.  Common use: "resize this PNG to a thumbnail" or
+"convert these HEICs to JPEGs."  Strict argv per operation.
+Reject pre-validated dangerous formats (the historical EXR / SVG /
+MVG CVE surface) unless explicitly enabled.  ImageMagick's
+=policy.xml= is the underlying defense; the wrapper enforces it at
+the tool boundary too.
+
+**** TODO [#B] Audio / video processing (ffmpeg) :feature:
+
+Trim, transcode, extract audio, get-metadata (=ffprobe=).  Paths
+under HOME only; reject network-protocol inputs (=http:= / =rtmp:=
+/ =rtsp:=) so the model can't pull from arbitrary sources.  Pairs
+with the existing transcription module -- the same "extract audio
+from video" path =cj/transcribe-media= uses internally.
+
+**** TODO [#B] Content search (ripgrep) :feature:
+
+=rg= wrapper with path / glob filtering, result-count cap, optional
+literal-vs-regex mode.  Pure read.  Was in the shortlist's ADOPT
+bucket as =search_in_files=.  Highest-leverage filesystem tool by
+expected call frequency -- "where in this repo is X" is the
+question I paste agent output for most often.
+
+**** TODO [#B] File discovery (fd) :feature:
+
+=fd= (or =find= fallback) wrapper, capped result count.  Pure
+read, lower stakes than =search_in_files= (filenames only, no
+content).  Common pairing: =find_file_by_name= then
+=read_text_file=.
+
+**** TODO [#B] Metadata extraction (file / exiftool) :feature:
+
+=file= for MIME-type detection; =exiftool= for image / video /
+audio metadata.  Lets the agent answer "what is this file" or
+"when was this photo taken" without me opening external tools.
+Pure read.
+
+**** TODO [#B] Structured data processing (jq / yq) :feature:
+
+=jq= for JSON, =yq= for YAML / TOML.  Filter / project / transform
+structured data into a smaller, more focused view before reading.
+Strictly read-only -- output goes to the chat, not to disk.  The
+agent often wants "the third element of .results" from a JSON file
+and this is much cheaper than pasting the whole thing.
+
+**** TODO [#B] Eshell command submission :feature:
+
+Submit a single eshell command line, return output (capped).
+=:confirm t= always -- this is the escape hatch where the
+strictly-typed wrappers above don't fit, so each invocation needs
+my eyeball.  Eshell parses in-process (no /bin/sh fork) so the
+security surface is narrower than a shell command runner, but it's
+still effectively arbitrary execution -- treat it as such.
+
+*** TODO [#B] Media and Reading Related Tools
+
+Affordances over non-code content: feeds, PDFs, EPUBs, music.  The
+agent's job here is summarize / extract / queue, not produce.
+
+**** TODO [#B] Elfeed entry tools :feature:
+
+Read entry body; list unread by feed or tag; mark read after a
+summary lands in a roam node or inbox.  Enables "give me the
+non-noise headlines from this week's feeds" flows.
+
+**** TODO [#B] PDF and EPUB text tools :feature:
+
+Extract plain text from a PDF page or page range (via =pdftotext=)
+and from an EPUB (via the existing nov-mode pipeline).  Lets the
+agent summarize / quote a research paper or book chapter without
+me pasting passages.
+
+**** TODO [#B] EMMS playback and queue tools :feature:
+
+Current track, queue contents, playback state; queue or play a
+path; compose a playlist from a prompt ("play something focusing
+that's not Nick Cave").  Light tools, but a frequent friction
+point.
+
+*** TODO [#B] Development Workflow Related Tools
+
+Affordances over the dev loop: compilation output, test invocation,
+coverage / profile data, flycheck / flymake diagnostics.
+
+**** TODO [#B] Compilation buffer tools :feature:
+
+Read the most recent =compile= buffer output; parse error locations
+to file:line; summarize what broke.  Pairs with the F6 test-runner
+flow -- "tell me what's failing" becomes a single agent turn
+instead of paste + parse.
+
+**** TODO [#B] Project test invocation tools :feature:
+
+Run =make test-file FILE=X= / =make test-name TEST=Y= /
+project-equivalent and return results.  Currently each agent guesses
+the project convention; expose the canonical invocation explicitly
+per project so the agent can run focused tests itself.
+
+**** TODO [#B] Coverage and profile tools :feature:
+
+Read the most recent SimpleCov JSON or profile dump.  Lets the
+agent answer "what's still uncovered after this push" or "what
+function dominates startup time" against real measured data.
+
+**** TODO [#B] Diagnostic tools (flycheck / flymake) :feature:
+
+Surface current-buffer or project-wide errors and warnings.  Useful
+both as a "what's broken right now" check and as input to the
+patch-narrative buffer / commit-intent workbench above.
+
+** TODO [#C] Review and rebind M-S- keybindings                   :refactor:
+
+Changed from M-uppercase to M-S-lowercase for terminal compatibility.
+These may override useful defaults - review and pick better bindings:
+- M-S-b calibredb (was overriding backward-word)
+- M-S-c time-zones (was overriding capitalize-word)
+- M-S-d dwim-shell-menu (was overriding kill-word)
+- M-S-e eww (was overriding forward-sentence)
+- M-S-f fontaine (was overriding forward-word)
+- M-S-h split-below
+- M-S-i edit-indirect
+- M-S-k show-kill-ring (was overriding kill-sentence)
+- M-S-l switch-themes (was overriding downcase-word)
+- M-S-m kill-all-buffers
+- M-S-o kill-other-window
+- M-S-r elfeed
+- M-S-s window-swap
+- M-S-t toggle-split (was overriding transpose-words)
+- M-S-u winner-undo (was overriding upcase-word)
+- M-S-v split-right (was overriding scroll-down)
+- M-S-w wttrin (was overriding kill-ring-save)
+- M-S-y yank-media (was overriding yank-pop)
+- M-S-z undo-kill-buffer (was overriding zap-to-char)
+
+** TODO [#C] Build cj/dev-setup-project helper (per docs/design/dev-setup-project.org) :feature:
+*** 2026-05-15 Fri @ 19:17:37 -0500 Specification
+
+Interactive command that opens a review buffer with proposed per-subdirectory .dir-locals.el contents (projectile compile/run/test + cj/coverage-backend), optional starter Makefile when none exists, and gitignore updates. User edits inline, C-c C-c writes all files.
+
+Design: [[file:../docs/design/dev-setup-project.org][docs/design/dev-setup-project.org]]
+
+Scope of v1:
+- modules/dev-setup-config.el (command + review-buffer major mode)
+- Three-tier detection: existing Makefile, existing package.json/pyproject.toml scripts, fall-back starter Makefile generation.
+- Project shapes supported: pure Elisp, pure Go, pure Python, pure Node/TS, Docker Compose polyglot.
+- Re-run semantics: status banners (UNCHANGED / WILL UPDATE / WILL CREATE), idempotent gitignore append, never modifies an existing Makefile.
+- ERT tests for the pure helpers (Makefile parser, package.json parser, shape detection, target-to-role mapping, review-buffer parser).
+
+Deferred:
+- Rust (Cargo.toml), Java (pom.xml), other language shapes.
+- Project-wide override config file.
+- Auto-detecting external run scripts in conventional locations.
+
+Do this after the F-key rework ticket ships; don't want to churn project configs before the keys are stable.
+
+*** TODO [#B] Pure detection + parsing helpers                       :feature:
+Implement the four pure helpers the rest of the command composes on:
+- =cj/--dev-setup-parse-makefile-targets FILE= (.PHONY + bare target lines, skip pattern rules)
+- =cj/--dev-setup-parse-package-json-scripts FILE= (scripts block, JSON)
+- =cj/--dev-setup-detect-project-shape ROOT= (Elisp / Go / Python / Node-TS / Docker-Compose polyglot / unknown)
+- =cj/--dev-setup-map-targets-to-roles TARGETS= (best-guess compile/run/test mapping per design § Detection)
+
+Files: =modules/dev-setup-config.el= (new).  No interactive surface, no I/O
+beyond reading the named file.
+
+Acceptance: each helper callable in isolation with handcrafted fixtures;
+no command yet.
+
+Depends on: none -- start here.
+
+*** TODO [#B] ERT coverage for the pure helpers                      :feature:tests:
+Normal/Boundary/Error tests for every helper from the prior sub-task,
+matching the design's testing section.
+
+Files: =tests/test-dev-setup-config.el=, plus
+=tests/testutil-dev-setup-config.el= for the temp-project fixture builder
+(writes Makefile / package.json / compose stub into =make-temp-file ... 'dir=).
+
+Acceptance: =make test-file FILE=tests/test-dev-setup-config.el= green;
+every helper has at least one Normal, one Boundary, one Error case.
+
+Depends on: pure detection + parsing helpers.
+
+*** TODO [#B] Starter-Makefile + .dir-locals.el proposal generator   :feature:
+Pure function =cj/--dev-setup-build-proposal SHAPE ROOT= returning a
+structured plist of proposed blocks: one per subproject =.dir-locals.el=
+(projectile compile/run/test + =cj/coverage-backend=), the optional starter
+Makefile (only when none exists, adapted per shape per design § Tier 3),
+and the gitignore append lines.
+
+Files: =modules/dev-setup-config.el=.
+
+Acceptance: given a shape plist, returns deterministic block list ready for
+the review buffer; ERT cases cover each shape (Elisp / Go / Python / Node-TS
+/ polyglot) plus the Tier-1 "Makefile already exists, suppress Makefile
+block" branch.
+
+Depends on: pure detection + parsing helpers.
+
+*** TODO [#B] Review-buffer major mode + parser                      :feature:
+Define =cj/dev-setup-review-mode= (derived from =emacs-lisp-mode=) with =C-c
+C-c= / =C-c C-k= bindings, plus the pure parser
+=cj/--dev-setup-review-buffer-parse CONTENTS= that turns buffer text back
+into a block list.  Banner syntax per design § Review Buffer (=;; ==== <path>
+====[ <status>]==, gitignore special, Makefile special).
+
+Files: =modules/dev-setup-config.el=, =tests/test-dev-setup-config.el=
+(parser cases: well-formed multi-block, single block, empty body, missing
+banner, malformed elisp inside a dir-locals block).
+
+Acceptance: round-trip -- render proposal -> parse buffer -> equal block
+list.  Mode keybindings smoke-tested.
+
+Depends on: starter-Makefile + .dir-locals.el proposal generator.
+
+*** TODO [#B] Writer + status diff + projectile cache reset          :feature:
+Implement the =C-c C-c= writer: diff each parsed block against the on-disk
+file to assign =UNCHANGED= / =WILL UPDATE= / =WILL CREATE=, write only the
+non-UNCHANGED ones, append gitignore idempotently, never touch an existing
+Makefile, honor the =;;; cj/dev-setup-project: ignore= escape hatch, clear
+projectile's per-project command cache, print the summary line.
+
+Files: =modules/dev-setup-config.el=, plus ERT cases for the diff +
+idempotent-append logic against temp dirs.
+
+Acceptance: re-run on an unchanged project writes nothing; renaming a
+Makefile target flips one block to =WILL UPDATE=; ignore-marked files stay
+untouched.
+
+Depends on: review-buffer major mode + parser.
+
+*** TODO [#B] Interactive command + smoke test                       :feature:tests:
+Thin =cj/dev-setup-project= interactive wrapper: resolve project root via
+projectile, run detection, build proposal, render the review buffer, pop to
+it.  One smoke test against a prepared temp project asserting the expected
+files exist after a simulated =C-c C-c=.
+
+Files: =modules/dev-setup-config.el=, =tests/test-dev-setup-config.el=.  Add
+=(require 'dev-setup-config)= to =init.el= (or the appropriate aggregator).
+
+Acceptance: =M-x cj/dev-setup-project= on a fixture project opens the review
+buffer; =C-c C-c= writes the expected files.
+
+Depends on: writer + status diff + projectile cache reset.
+
+*** TODO [#B] Resolve open questions + design follow-ups             :cleanup:
+Three design questions to close before / during implementation: (a) include
+=make coverage= target in starter Makefile? (b) project-wide override file
+=.cj-dev-setup.el=? (c) Cargo/pom detection.
+
+Body: park decisions inline in the design doc or run =arch-decide= if they
+turn out load-bearing.
+
+Depends on: none, but easiest after the writer sub-task surfaces real
+friction.
+
+** TODO [#C] Pick and wire a debug backend for F5                  :feature:
+
+#+begin_src emacs-lisp
+  Give me an idea of the amount of work and complexity and what allows for a consistent UX across languages. 
+#+end_src
+
+*** 2026-05-15 Fri @ 19:19:21 -0500 Inital Goals
+Bind F5 globally to a debug entry point. Backend choice is the hard part:
+
+- dape (Debug Adapter Protocol for Emacs) — modern, multi-language via DAP. Single UX across Python, Go, TS, Rust, etc. Less mature than DAP clients in other editors.
+- realgud — wraps multiple debuggers (pdb, gdb, node --inspect, etc.). More mature; UX varies by backend.
+- Language-specific stacks — dap-mode (python-mode + dap), delve for go, ts-node --inspect, etc. Best per-language UX; most config work.
+
+F5 itself will be simple (start/resume debug). Likely modifier variants once the backend is picked:
+- C-F5 toggle breakpoint at point
+- M-F5 eval expression in debug context (or step-over shortcut)
+
+Evaluate against these projects' languages: elisp (edebug already works), Python, Go, TS, shell. Shell debug is usually print-based; skip.
+
+Do this after the F-key rework ticket ships so F5 is the only hole left.
+
+** TODO [#C] Build debug-profiling.el module                       :feature:
+
+Reusable profiling infrastructure for targeted slow-command investigation. Consolidates scattered profiler bindings (currently in =modules/config-utilities.el=) and adds two pure-helper-backed entry points: "profile next command" and "time region or sexp." Designed via =/brainstorm= 2026-04-26.
+
+Design: [[file:../docs/design/debug-profiling.org][docs/design/debug-profiling.org]]
+
+Implement via =/start-work= against the design — branch =feat/debug-profiling=, commits decomposed along the test-first split-for-testability boundary. Once shipped, use it as the v1 exercise on the queued [#B] org-capture target-building investigation.
+
+** VERIFY [#C] Continue org-noter custom workflow implementation (IN PROGRESS) :feature:bug:
 
 Continue debugging and testing the custom org-noter workflow from 2025-11-21 session.
 This is partially implemented but has known issues that need fixing before it's usable.
@@ -2537,7 +2896,7 @@ The core functionality is implemented but needs debugging before it's production
 3. Refine toggle behavior based on testing
 4. Document the final keybindings and workflow
 
-** VERIFY [#B] Test and review restclient.el implementation :tests:
+** VERIFY [#C] Test and review restclient.el implementation          :tests:
 
 Test the new REST API client integration in a running Emacs session.
 
