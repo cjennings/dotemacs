@@ -2837,20 +2837,9 @@ reimplementation of the shipped git tools is tracked separately in
 
 Design doc: [[file:docs/design/mcp-el-gptel-integration.org][docs/design/mcp-el-gptel-integration.org]]
 
-**** TODO [#B] Phase 1 -- ai-mcp.el module + pure helpers :mcp:
+**** 2026-05-17 Sun @ 14:14:34 -0500 Landed ai-mcp.el pure-helper foundation
 
-*Goal:* land the static module skeleton with all defcustoms, the server spec, and pure helpers that perform no I/O.
-
-*Entry:* spec at revision 3.
-
-*Deliverables:*
-- =modules/ai-mcp.el= with sections 1 (constants / defcustoms) and 3 (pure helpers) populated per the Code organization outline.
-- Defcustoms: =cj/mcp-claude-config=, =cj/mcp-enabled-servers=, =cj/mcp-start-on-entry-points=, =cj/mcp-startup-timeout=, =cj/mcp-tool-timeout=, =cj/mcp-tool-confirm-overrides=, audit-log toggles.
-- Defconst: =cj/mcp-server-specs= (the nine servers).
-- Helpers: =cj/mcp--read-claude-config= (mtime-cached, structured returns), =cj/mcp--get-env=, =cj/mcp--get-secret-arg=, =cj/mcp--build-server-alist= (filtered by =cj/mcp-enabled-servers=), =cj/mcp--redact=, =cj/mcp--confirm-p=, =cj/mcp--normalize-description=.
-- Tests in =tests/test-ai-mcp-helpers.el= covering every helper against fixtures.  No real =~/.claude.json= reads.
-
-*Exit:* all helper tests green.  Sentinel =REDACTED_TEST_SECRET= never appears in any output of any helper.
+Commit =54d231be=.  Sections 1 (constants + defcustoms) and 3 (pure helpers) of the seven-section outline.  41 ERT tests, all green.  Refactor audit caught two duplications during Phase 4 and folded them into the same commit (=cj/mcp--get-server-entry= and =cj/mcp--name-matches-p=).  Phase 1.5 (confirmation contract) is next.
 
 **** TODO [#B] Phase 1.5 -- GPTel confirmation contract :mcp:
 
