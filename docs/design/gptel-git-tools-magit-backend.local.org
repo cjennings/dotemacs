@@ -1,0 +1,592 @@
+#+TITLE: Design: GPTel Git Tools and Magit Backend
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-16
+#+OPTIONS: toc:nil num:nil
+
+* Status
+
+Draft.
+
+This document was created after the requested path was not present in
+=docs/design=. It captures the apparent design center: make GPTel more useful
+inside Magit and then broaden that into Emacs-native agents that can use this
+configuration as their operating environment.
+
+* Problem
+
+=gptel-magit= currently gives this config useful Magit entry points:
+
+- Generate a commit message from the staged diff.
+- Create a commit from a generated message.
+- Explain the diff at point.
+
+That is valuable, but it is still a narrow "send this diff to the model"
+workflow. The richer opportunity is to expose Git, Magit, Org, project state,
+and this Emacs configuration's personal workflow tools as agent affordances.
+
+The target agent should not treat Emacs as a text terminal. It should treat
+Emacs as the user's live workspace: buffers, narrowed regions, Magit sections,
+Org tasks, agenda state, roam notes, mail, compilation buffers, diagnostics,
+and vterm sessions are all structured context.
+
+* Existing Leverage
+
+This configuration already has several pieces that make agent work more
+interesting than generic filesystem tools:
+
+- =ai-config.el= provides GPTel backends, model switching, saved
+  conversations, Org-formatted AI buffers, context management, local tools,
+  and =gptel-magit= bindings.
+- =gptel-tools/= provides local filesystem and buffer tools with safety
+  features such as backups and trash moves.
+- =reconcile-open-repos.el= scans active project roots, finds dirty repos,
+  pulls clean repos, and opens Magit for manual review.
+- =ai-vterm.el= design work gives the agent project-scoped terminal sessions
+  that stay inside Emacs.
+- Org modules provide agenda, capture, refile, org-roam, dailies, export,
+  reveal.js, org-noter, and org-drill.
+- Mail modules provide =mu4e=, =org-msg=, contacts, account-specific mail
+  navigation, attachment workflows, and privacy toggles for remote content.
+- Communication modules provide Telegram via =telega=, Slack via
+  =emacs-slack=, and IRC via ERC.
+- File and shell modules provide Dirvish/Dired, Eshell, vterm, TRAMP-aware
+  shell navigation, file previews, rsync, wdired, and external-open helpers.
+- Media modules provide EMMS/MPV music playback, M3U playlist management,
+  radio station entries, Dirvish-to-playlist integration, transcription,
+  video/audio recording, EWW, Elfeed, PDF, and EPUB workflows.
+- Development modules provide project navigation, test/lint Makefile targets,
+  compilation buffers, coverage summaries, and profiling/debug docs.
+
+* Magit Backend Ideas
+
+** Section-aware Git tools
+
+Expose Magit sections as first-class GPTel tools. Instead of asking the model
+to reason over plain diff text, let it request:
+
+- Current Magit section type, heading, file, hunk range, and content.
+- Sibling sections under the same file.
+- Staged vs unstaged vs untracked status for the current repository.
+- Commit metadata around the selected commit or branch.
+- The exact staged patch that would be committed.
+
+This would let prompts say "review the file section at point" or "explain this
+hunk in the context of adjacent hunks" without manually copying context.
+
+** Commit intent workbench
+
+Add a transient that builds a commit intentionally:
+
+1. Agent reads unstaged/staged changes.
+2. Agent proposes coherent commit groups.
+3. User selects groups in a Magit-style buffer.
+4. Agent stages those paths or hunks only after confirmation.
+5. Agent generates a message that reflects the selected intent.
+
+This is more useful than a single commit-message generator because many working
+trees contain two or three unrelated edits.
+
+** Patch narrative buffer
+
+Generate an Org buffer that explains the change set as a reviewable narrative:
+
+- "What changed" by subsystem.
+- "Why it appears to have changed" inferred from names, tests, and docs.
+- "Risk areas" with links back to Magit file sections.
+- "Suggested verification" using local Makefile targets when present.
+
+The value is not only explanation; it is a reusable artifact that can be pasted
+into a PR description, saved with an AI session, or filed into org-roam.
+
+** Review-thread simulator
+
+Before opening a PR, create a local review buffer with inline comments attached
+to Magit diff positions. The agent writes comments as if reviewing someone
+else's patch, but the UI stays local:
+
+- Comments are grouped by severity.
+- Each comment links to the file and line.
+- Resolved comments can be checked off in Org.
+- Accepted suggestions can be applied through the existing text-update tools.
+
+This makes "review my diff" less ephemeral and avoids losing useful review
+findings inside a chat transcript.
+
+** Rebase and conflict coach
+
+When Magit enters a rebase, cherry-pick, merge, or conflict state, offer an
+agent command that reads:
+
+- Git operation state from =.git/=.
+- Conflict markers in the worktree.
+- Relevant commits from =git log --merge= or the rebase todo.
+- The current Magit status sections.
+
+The agent should explain the conflict in domain terms and propose a resolution
+patch, but leave the actual edit and =git add= under explicit user control.
+
+** Regression archaeology
+
+A Magit transient command could run a bisect-like reasoning workflow:
+
+- Ask for a symptom and a known-good/known-bad range.
+- Summarize candidate commits in small batches.
+- Use tests or user-provided repro commands when available.
+- Maintain a bisect journal in an Org buffer.
+
+Even when the agent cannot run the whole bisect, it can keep the investigation
+structured and preserve why each commit was judged good or bad.
+
+* Broader Emacs Agent Ideas
+
+** Workspace cartographer
+
+An agent that periodically builds a map of the live Emacs session:
+
+- Open buffers grouped by project, mode, and modified state.
+- Recent files and recently visited org-roam nodes.
+- Live vterm, compilation, Magit, and GPTel buffers.
+- Current window layout and side-window roles.
+- Active TODOs, deadlines, and meetings for the day.
+
+The output should be a compact "working set" Org buffer the user can hand to a
+model as context. This makes the agent aware of what the user is actually doing,
+not just what files exist on disk.
+
+** Daily command center
+
+Combine =calendar-sync=, =org-agenda=, org-roam dailies, and saved GPTel
+conversations into a morning/evening agent:
+
+- Morning: summarize meetings, deadlines, active project repos with dirty work,
+  and unfinished tasks from yesterday's daily note.
+- During the day: capture interruptions into inbox items with source links.
+- Evening: summarize completed tasks, open loops, commits made, and follow-up
+  messages to draft.
+
+This is a natural fit because the config already treats calendars and tasks as
+Org data, not external application state.
+
+** Org-roam research librarian
+
+Expose org-roam as a retrieval and writing backend:
+
+- Find candidate notes by tag, title, backlink neighborhood, or recent edits.
+- Detect duplicate notes or concepts that should be linked.
+- Turn a chat answer into a new roam note with source links and tags.
+- Propose missing links from the current note to existing notes.
+- Create "literature note to permanent note" transformations for org-noter
+  reading sessions.
+
+The agent should write small, link-dense notes instead of long chat transcripts.
+
+** Org-roam project knowledgebase
+
+Use org-roam as the agent's durable project memory, with org-agenda as the
+execution layer. The important distinction:
+
+- Org-roam stores current understanding, decisions, people, open questions,
+  source links, and project history.
+- Org-agenda stores commitments that require action.
+- Mail, Slack, telega, ERC, Magit, and AI session files remain the raw sources.
+- The agent writes concise summaries with backlinks rather than dumping
+  transcripts into roam.
+
+Each active project gets one hub node tagged =Project=. The hub is the place to
+ask "what is going on?" and should stay skimmable:
+
+#+begin_src org
+#+TITLE: Project: Example
+#+FILETAGS: Project Example
+
+* Status
+Current goal, live state, blockers, and near-term plan.
+
+* Next Actions
+** TODO Email Alice about API credentials
+SCHEDULED: <2026-05-18 Mon>
+:PROPERTIES:
+:CONTACT: Alice Smith
+:CHANNEL: email
+:SOURCE: [[id:thread-20260515-api-credentials]]
+:END:
+
+** WAITING Bob to review staging diff
+:PROPERTIES:
+:CONTACT: Bob Lee
+:CHANNEL: Slack
+:SOURCE: [[id:thread-20260516-review-request]]
+:END:
+
+* People
+- [[id:person-alice-smith][Alice Smith]] - owns API credentials
+- [[id:person-bob-lee][Bob Lee]] - reviewer
+
+* Decisions
+- [[id:decision-20260516-service-account-auth][Use service account auth]]
+
+* Threads
+- [[id:thread-20260515-api-credentials][Slack: API credentials]]
+- [[id:thread-20260514-contract-clarification][Email: contract clarification]]
+
+* Log
+** 2026-05-16
+- Implemented first pass of Magit review tool design.
+- Need to ask Alice whether staging access exists.
+#+end_src
+
+Supporting nodes should be small and typed:
+
+- =Person: Alice Smith= - contact preferences, projects, open loops, recent
+  context.
+- =Decision: Use service account auth= - decision, rationale, alternatives,
+  source links.
+- =Thread: Slack API credentials= - durable summary and link to the source
+  message.
+- =Meeting: Example kickoff 2026-05-16= - attendees, decisions, tasks, links.
+- =Problem: Import job timing out= - symptoms, experiments, current theory.
+- =Artifact: PR 123= - purpose, review state, verification, follow-ups.
+- =Runbook: Deploy Example= - operational steps and caveats.
+
+Agent commands:
+
+- =cj/agent-project-brief= - build a temporary Org buffer with project status,
+  blockers, next actions, recent commits, recent messages, and open agenda
+  items.
+- =cj/agent-capture-current-context= - capture the current Magit section, mail
+  message, Slack thread, telega chat, ERC buffer, Dired file, source buffer, or
+  agenda item into the active project.
+- =cj/agent-project-next-contact= - show who needs a reply, who the user is
+  waiting on, channel, deadline, and source link.
+- =cj/agent-summarize-project-day= - append a dated project log entry and
+  create or update agenda TODOs.
+- =cj/agent-link-to-project= - link the current org-roam node or captured item
+  to a selected project hub.
+- =cj/agent-promote-to-decision= - turn a line, thread summary, or meeting note
+  into a decision node and backlink it to the project.
+
+Contact tracking should live in both person nodes and actionable TODOs. Person
+nodes preserve relationship context; agenda TODOs preserve obligations:
+
+#+begin_src org
+#+TITLE: Alice Smith
+#+FILETAGS: Person Contact
+
+* Context
+Works on infra. Best channel: Slack for quick questions, email for approvals.
+
+* Projects
+- [[id:project-example][Project: Example]]
+
+* Waiting On
+** WAITING Alice to confirm API credentials
+SCHEDULED: <2026-05-18 Mon>
+:PROPERTIES:
+:PROJECT: Example
+:CHANNEL: Slack
+:SOURCE: [[id:thread-20260515-api-credentials]]
+:END:
+#+end_src
+
+The agent should maintain a short "project memory contract":
+
+- Never create a note unless it will be useful after the chat window is gone.
+- Prefer backlinks to raw sources over copied transcripts.
+- Convert "someone needs to do something" into a TODO with owner/channel/source.
+- Keep project hub status current, but keep detailed history in dated log,
+  meeting, decision, problem, and thread nodes.
+- Ask before changing TODO states, scheduling work, or drafting messages to
+  real people.
+
+** Mail triage and reply drafter
+
+Use =mu4e=, =org-msg=, and =org-contacts= to create a mail-aware agent:
+
+- Summarize unread mail by project/person.
+- Detect messages that imply tasks and capture them into Org.
+- Draft replies in =org-msg= style using contact context.
+- Link replies back to agenda items or project notes.
+- Keep a "waiting on" list by scanning sent mail and unresolved tasks.
+- Suggest which account context to use from the configured cmail/gmail/dmail
+  maildirs.
+- Save or attach files through the existing attachment commands, but only after
+  showing the exact file names and target directory.
+- Flag messages with remote images, large attachments, or tracker-like HTML
+  before the user opens external content.
+
+This should stay draft-only. Sending mail is too consequential for a default
+agent action.
+
+** Unified communication digest
+
+Treat =mu4e=, =telega=, Slack, and ERC as one communication substrate:
+
+- Build a "what needs me" buffer from unread mail, Slack DMs/mentions, Telegram
+  chats, and active IRC channels.
+- Group items by person, project, and urgency instead of by protocol.
+- Detect when the same topic appears in multiple channels and link the threads.
+- Offer one command to capture a follow-up task with backlinks to the source
+  message buffer.
+- Draft replies in the native compose surface: =org-msg= for mail, Slack
+  compose buffer for Slack, telega chat buffer for Telegram, ERC input for IRC.
+
+The agent should not blur identity boundaries. It should make the account,
+workspace, network, and channel explicit in every draft.
+
+** Meeting-to-message follow-through
+
+Combine =calendar-sync=, Org agenda, contacts, and communication buffers:
+
+- Before a meeting, gather the agenda item, recent mail/Slack/Telegram threads
+  with attendees, and project TODOs.
+- During or after the meeting, turn notes into tasks, decisions, and outgoing
+  drafts.
+- After the meeting, suggest who needs a follow-up message and through which
+  channel.
+- File decisions into org-roam project/topic notes.
+
+This makes the agenda the spine and communication packages the evidence.
+
+** Build-failure diagnostician
+
+An agent that treats compilation, test, Flycheck/Flymake, and coverage buffers
+as structured evidence:
+
+- Read the latest compilation buffer and jump to failing files.
+- Compare failures against recent Git changes.
+- Suggest the smallest likely fix.
+- Update or add focused ERT tests.
+- Re-run the relevant Makefile target and keep a diagnostic trail in Org.
+
+This fits the existing =Makefile=, coverage scripts, and ERT-heavy module
+style.
+
+** Eshell operations copilot
+
+Use Eshell as a structured command surface rather than a raw terminal:
+
+- Explain and rewrite a shell pipeline before it is executed.
+- Convert risky one-off shell commands into safer Elisp or Dired operations.
+- Search Eshell history with intent labels, not just text matching.
+- Capture command output into Org source/result blocks or project notes.
+- Run TRAMP-aware commands against remote directories while preserving local
+  links to the originating project.
+
+The agent should prefer Eshell-native affordances when they are safer: redirect
+to buffers, open files with =find-file= aliases, use Dired for file sets, and
+avoid irreversible shell operations unless confirmed.
+
+** Dirvish file curator
+
+Use Dired/Dirvish as the file-selection UI for agent actions:
+
+- Summarize marked files before a bulk operation.
+- Suggest renames in a =wdired= buffer using project or media metadata.
+- Create M3U playlists from marked audio files with better names and ordering.
+- Identify duplicate, stale, large, generated, or untracked files in a tree.
+- Turn marked documents into an Org reading queue, drill source, or project
+  reference bundle.
+- Use Dirvish preview/metadata state so the user can inspect before accepting.
+
+This keeps file operations visible and reversible where possible. The agent
+should operate on marked files and current directory state, not hidden glob
+expansions.
+
+** Personal documentation maintainer
+
+An agent that watches config changes and keeps design docs current:
+
+- When a module changes, find or create the matching =docs/design/*.org= file.
+- Append implementation notes, tradeoffs, and follow-up tasks.
+- Detect stale design docs whose "Next Steps" are already implemented.
+- Generate changelog entries from Magit commits and AI session notes.
+
+This turns the design docs into a living index instead of a graveyard of old
+intent.
+
+** Multi-repo steward
+
+Build on =reconcile-open-repos.el=:
+
+- Produce an Org dashboard of dirty, unpushed, behind, and conflicted repos.
+- Group repos by client/domain/project root.
+- Suggest safe next actions: pull, open Magit, run tests, draft commit.
+- Attach each repo's latest AI session or todo.org file when present.
+- Create a "shutdown checklist" before closing Emacs.
+
+The existing reconcile command is already a good manual entry point; the agent
+would add prioritization and memory.
+
+** Presentation and publishing assistant
+
+Use Org export, reveal.js, and ox-hugo:
+
+- Turn a project note into a blog outline or slide deck.
+- Check exported HTML for missing assets or broken internal links.
+- Suggest section splits, speaker notes, and slide pacing.
+- Keep generated artifacts tied to source Org headings.
+
+This is a good example of an agent using Emacs-native publishing rather than
+generating detached Markdown.
+
+** Study deck coach
+
+Use =org-drill=, =gloss-config=, PDF/EPUB capture, and org-noter:
+
+- Turn highlighted text into cloze cards, definition cards, or short-answer
+  cards with source links.
+- Detect overloaded cards and split them into smaller prompts.
+- Find leech cards and explain why they may be failing.
+- Schedule short drill sessions from the agenda based on available time.
+- Generate "review before meeting/class" packets from due cards plus notes.
+
+The agent should edit drill files as Org, not maintain a separate flashcard
+database.
+
+** Media librarian and focus agent
+
+Use =music-config=, EMMS/MPV, M3U files, Dirvish, transcription, and recording:
+
+- Build playlists from natural-language intent: focus, coding, reading,
+  exercise, sleep, or "continue what I played yesterday."
+- Explain and repair broken M3U entries.
+- Suggest radio-station entries from stream URLs captured in notes.
+- Turn a directory of recordings into a transcription queue.
+- Link recordings, transcripts, and notes into an org-roam topic.
+- Respect the current task context: quiet instrumental playlists during coding,
+  spoken audio when no meeting or deep-work task is active.
+
+This is less about "AI DJ" novelty and more about using the media system as
+ambient workflow state.
+
+** Reading queue synthesizer
+
+Use Elfeed, EWW, PDF tools, EPUB/calibredb, org-noter, org-webclipper, and
+org-roam:
+
+- Collect unread feed items, clipped web pages, PDFs, and EPUB notes into a
+  single reading queue.
+- Summarize each item with why it is relevant to current projects or roam
+  topics.
+- Create drill cards from definitions and durable facts.
+- Convert finished reading into linked org-roam notes with citations.
+- Detect articles that should be archived unread because they duplicate
+  existing notes.
+
+The agent should preserve source links and avoid turning every read item into a
+long permanent note.
+
+** Interactive pair-programming sidebar
+
+Combine side-window GPTel, =ai-vterm=, Magit, and project navigation:
+
+- Left side remains source/test buffers.
+- Right side can swap between GPTel, Claude vterm, Magit, compilation, and
+  review buffers while preserving the project context.
+- The agent can ask Emacs for "what is visible right now" and use visible
+  buffers as high-priority context.
+- A command can package current window state into a prompt without requiring
+  manual file selection.
+
+This matches the actual ergonomics of code on the left and agent on the right.
+
+** Cross-buffer context broker
+
+Create a small tool layer that lets an agent ask for typed context from the
+current Emacs state:
+
+- "Current thing" from buffer, Dired file, Magit section, mail message, Slack
+  message, ERC channel, telega chat, agenda item, EMMS track, or org-drill card.
+- "Visible things" from all windows.
+- "Project things" from project root, todo.org, Magit status, compilation
+  buffer, and saved AI sessions.
+- "Person things" from org-contacts plus recent mail/chat mentions.
+
+This would be the generic substrate behind many of the ideas above.
+
+** Intent-aware capture
+
+Enhance =org-capture= with an agent that classifies captured text:
+
+- Task, reference, meeting note, bug, idea, recipe, topic, or project note.
+- Suggested tags and refile targets based on existing org-roam nodes.
+- Suggested deadline/schedule from natural-language dates.
+- Source backlink to current buffer, mail message, Magit commit, or webclip.
+
+The agent should make capture faster, not more conversational.
+
+** Interruption firewall
+
+Coordinate notifications from agenda, mu4e, Slack, ERC, telega, timers, music,
+and active coding sessions:
+
+- Detect deep-work state from visible buffers, active compilation/test runs,
+  current agenda block, or focus playlist.
+- Suppress or summarize non-urgent chat/mail notifications until the next break.
+- Let priority channels through: meeting starting, direct mention, urgent sender,
+  failing long-running job.
+- Produce a break digest with links back to messages and tasks.
+
+This uses Emacs as the place where work, communication, and attention state
+already intersect.
+
+** Config tutor and discoverability agent
+
+Because this Emacs has many personal commands, add an agent that answers "how
+do I do X here?" from the actual config:
+
+- Search keymaps, which-key labels, autoloaded commands, and module comments.
+- Return the command, keybinding, module file, and a brief usage example.
+- Notice when a capability exists but is unbound.
+- Suggest a binding only if it matches the =C-;= prefix convention.
+
+This is especially valuable for a lived-in config whose features outgrow memory.
+
+** Package health scout
+
+Use the local package repository, init-load graph docs, and module tests:
+
+- Report packages that are installed but unused by loaded modules.
+- Identify eager packages that could become command-loaded.
+- Notice modules that depend on missing external executables.
+- Compare local package snapshots with configured package usage.
+- Suggest tests for package-specific custom glue such as Slack reactions,
+  telega launcher behavior, Dirvish helpers, and music playlist logic.
+
+This is a maintenance agent for the Emacs distribution itself.
+
+** Privacy and safety governor
+
+Add an agent-side policy layer before GPTel sends context:
+
+- Show which buffers/files will be sent.
+- Flag likely secrets, auth files, private calendar URLs, and mail buffers.
+- Prefer summaries for sensitive Org/mail data.
+- Require confirmation for network-backed tools, mail actions, staging, commit,
+  rebase, branch delete, or file deletion.
+
+This config has powerful local access; useful agents need explicit boundaries.
+
+* Suggested First Build
+
+The highest-leverage first slice is a Magit "review current change set" command:
+
+1. Read staged and unstaged summaries.
+2. Generate a patch narrative buffer in Org.
+3. Add file/line links back into the repo.
+4. Include suggested verification commands from the local =Makefile=.
+5. Leave edits, staging, committing, and sending to explicit user commands.
+
+This keeps the first implementation read-only while proving the core idea:
+Emacs can provide richer state than a shell prompt, and the agent can return a
+structured artifact rather than a disposable chat reply.
+
+* Open Questions
+
+- Should agent artifacts live in =.ai/sessions=, org-roam, or project-local
+  =todo.org= files?
+- Should Magit agent commands be added to existing Magit transients or live
+  under the =C-; a= AI prefix?
+- Should =gptel-magit-backend= pin a cheaper/faster model for routine commit
+  messages while review workflows use the global high-capability model?
+- What is the minimum confirmation model for actions that mutate Git state?
