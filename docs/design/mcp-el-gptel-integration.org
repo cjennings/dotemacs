@@ -1,0 +1,1434 @@
+#+TITLE: Design: Wire mcp.el into GPTel for MCP server access
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-16
+#+OPTIONS: toc:nil num:nil
+
+* Status
+
+Draft (revision 3).  Pre-implementation; no code shipped yet.  The
+mcp.el package is cloned at =~/code/mcp.el/= (fork of
+[[https://github.com/lizqwerscott/mcp.el][lizqwerscott/mcp.el]]) but not wired into the config.
+
+Revision 3 tightens seven contracts the revision-2 review flagged:
+
+1. *GPTel confirmation* -- =gptel-confirm-tool-calls= is =nil= at
+   =ai-config.el:386=, which short-circuits every per-tool
+   =:confirm= slot.  The integration flips it to =auto= as a hard
+   precondition.
+2. *Async timeout mechanics* -- replaced =with-timeout= (which
+   only supervises dynamic extent) with an explicit timer/callback
+   race for async tool calls.
+3. *Startup completion semantics* -- the hub's completion callback
+   is opportunistic, not authoritative; the stall timer + polling
+   =mcp-server-connections= is the source of truth.
+4. *Server identity at registration* -- walk
+   =mcp-server-connections= directly instead of parsing
+   =:category mcp-SERVER= out of =mcp-hub-get-all-tool=.
+5. *Server enablement* -- =cj/mcp-enabled-servers= defcustom lets
+   users disable a server without writing code.  Profiles still
+   deferred.
+6. *Keymap pinned* -- =C-; a C= (Connect) is the MCP subprefix.
+   =M= (=gptel-menu=) and =m= (=cj/gptel-change-model=) stay
+   where they are.
+7. *mcp.el private-API isolation* -- a compat layer wraps every
+   =mcp--*= call so version drift surfaces in one place.
+
+Plus several smaller changes: every MCP tool registers async,
+description normalization adds a server-name prefix and a write
+risk note, =cj/mcp-start-on-entry-points= defcustom scopes
+startup triggers (default: full chat only), TRAMP processes
+local-only, doctor gains live-auth-check, =cj/mcp-wait-until-ready=
+command added, audit buffer surfaces failed servers prominently.
+
+* Problem
+
+GPTel exposes ten local tools today (=read_buffer=, =read_text_file=,
+=write_text_file=, =update_text_file=, =list_directory_files=,
+=move_to_trash=, =git_status=, =git_log=, =git_diff=, =web_fetch= --
+see =gptel-tools/=).  Claude Code, by contrast, has access to nine
+external MCP servers (linear, notion, figma, slack-deepsat,
+google-calendar, google-docs-personal, google-docs-work, drawio,
+google-keep), each exposing 10-70 additional tools.
+
+The asymmetry means agentic work done in GPTel can't touch the same
+external systems Claude Code can.  Wiring [[https://github.com/lizqwerscott/mcp.el][mcp.el]] into the config
+closes the gap: GPTel gains access to every MCP server Claude Code
+uses, modulo three claude.ai-hosted servers whose OAuth is bound to
+the Claude.ai session (see Non-Goals).
+
+* Goals
+
+1. GPTel sees every tool from the enabled subset of nine reusable
+   MCP servers in =gptel-menu=, grouped by server via the tool's
+   =:category= field.
+2. Servers spawn *asynchronously*.  Opening GPTel never blocks on
+   MCP startup; tools arrive incrementally and =gptel-tools= updates
+   as each server reports its inventory.  =cj/toggle-gptel= must
+   return without waiting for any MCP subprocess.
+3. Write/destructive MCP tools are gated by a confirmation prompt
+   the user actually sees.  Two preconditions:
+   =gptel-confirm-tool-calls= is set to =auto= (so the per-tool
+   =:confirm= slot is honored), and write/destructive tools are
+   registered with =:confirm t=.  Read-only tools execute without
+   confirmation.
+4. Secrets stay in =~/.claude.json= (single source of truth, shared
+   with Claude Code).  The Emacs config reads env vars from there
+   at server-spawn time, with an mtime-aware cache.  Secrets are
+   never echoed to status, errors, hub buffers, or tests.
+5. A per-server status alist tracks each server's lifecycle (idle /
+   starting / ready / failed / stopped) and is inspectable via
+   =cj/mcp-status= and a =cj/mcp-list-tools= audit buffer.
+6. Server-management commands live under a =C-; a C= (Connect)
+   subprefix so existing GPTel keys (=C-; a M=, =m=) aren't
+   disturbed.
+7. A failed server (network down, OAuth token expired, npx package
+   404) is surfaced clearly via the OAuth-recovery pattern matcher
+   and does not block GPTel itself.  Successful servers' tools are
+   available immediately; failed servers' tools are absent (not
+   stale).
+8. The config can swap between MELPA mcp.el and the local
+   =~/code/mcp.el/= checkout with a one-line uncomment, gated by a
+   capability check that asserts required API functions exist.
+9. A first-run =cj/mcp-doctor= command diagnoses missing
+   prerequisites (=npx=, =uvx=, =~/.claude.json=, per-server
+   commands, known local endpoints) and optionally runs a
+   live-auth probe before they fail at runtime.
+
+* Non-Goals
+
+- The three claude.ai-hosted MCP servers (Gmail / Drive / Calendar
+  served from =*.googleapis.com/mcp/v1=).  Their OAuth is issued
+  by the Claude.ai session and is not transferable to GPTel.
+- *MCP resources and prompts.*  v1 registers tools only.
+  Resource browsing and prompt invocation are tracked as
+  follow-ups; the local checkout has the API surface ready.
+- *Per-conversation tool profiles.*  v1 ships
+  =cj/mcp-enabled-servers= for whole-server enable/disable;
+  profiles (different tool subsets per chat) wait for v1.5 once
+  usage shows whether they're needed.
+- *Auth-source migration.*  Deferred until the OAuth re-auth flow
+  for expiring tokens is understood.  Tracked in Open Questions
+  §Q3.
+- *Automated OAuth re-auth when tokens expire.*  Out of scope; the
+  user re-authenticates via Claude Code, and the next GPTel
+  invocation picks up the refreshed values from =~/.claude.json=.
+- *Modifying mcp.el itself in this repo.*  Upstream patches and
+  tests live in =~/code/mcp.el/= and ship via PRs to lizqwerscott's
+  master.
+
+* Verified API Contracts
+
+These were checked against the actual source before each revision.
+Behavior summarized here so implementation can rely on it.
+
+** GPTel confirmation gating (=gptel.el:2244=)
+
+The confirmation check is:
+
+#+begin_src emacs-lisp
+(if (and gptel-confirm-tool-calls
+         (or (eq gptel-confirm-tool-calls t)
+             (gptel-tool-confirm tool-spec)))
+    ;; ask user
+    ...)
+#+end_src
+
+When =gptel-confirm-tool-calls= is =nil=, the =(and ...)=
+short-circuits and the tool's =:confirm= slot is ignored.
+
+The defcustom default is ='auto=, which "seeks confirmation only
+when the corresponding tool spec has a non-nil :confirm slot"
+(=gptel.el:1601-1603=).  =ai-config.el:386= currently sets it to
+=nil=.
+
+*Implementation consequence:* =ai-mcp.el= must =setq
+gptel-confirm-tool-calls 'auto= as part of its setup (and
+=ai-config.el= drops the explicit =nil= setting).  Without this,
+write-gated tools register =:confirm t= and gptel ignores it.
+
+** mcp-hub callback ownership (=~/code/mcp.el/mcp-hub.el:53-90=)
+
+=mcp-hub--start-server= unconditionally appends its own six
+callbacks (=:initial-callback=, =:tools-callback=,
+=:prompts-callback=, =:resources-callback=,
+=:resources-templates-callback=, =:error-callback=) to whatever
+the caller passes.  Per-server custom callbacks in the alist
+result in duplicate keyword arguments to =mcp-connect-server= --
+behavior implementation-defined.
+
+*Implementation consequence:* the integration does not slip custom
+callbacks through =mcp-hub-servers=.  It uses
+=mcp-hub-start-all-server='s top-level completion callback as an
+opportunistic signal, walks =mcp-server-connections= directly for
+authoritative state, and uses a stall timer as the deadline.
+
+** mcp-hub-start-all-server completion semantics
+
+The hub's completion callback (=mcp-hub-start-all-server='s
+=CALLBACK= argument) fires when its internal counter reaches the
+total server count.  The counter increments:
+
+- On immediate Elisp errors from =mcp-hub--start-server=.
+- When the =:inited-callback= passed to =mcp-hub--start-server=
+  fires, which happens inside the hub's =:tools-callback=.
+
+Async error paths flow through =:error-callback= -- which the hub
+also installs but does *not* obviously chain into the inited
+callback.  Servers without tools may not pass through the tools
+callback in the same way.
+
+*Implementation consequence:* the callback is treated as an
+opportunistic readiness signal, *not* as "all initialized or
+failed".  The authoritative state comes from polling
+=mcp-server-connections= (each entry has =mcp--status= of
+=connected= / =error= / =starting=) and from the stall timer
+deadline.
+
+** gptel-make-tool registration semantics (=gptel.el:1729-1820=)
+
+=gptel-make-tool= registers the tool into =gptel--known-tools=
+keyed by category + name.  It does *not* add the tool to
+=gptel-tools= (the per-buffer active list).  The existing local
+tools (=gptel-tools/git_log.el:97=) explicitly do:
+
+#+begin_src emacs-lisp
+(gptel-make-tool ...)
+(add-to-list 'gptel-tools (gptel-get-tool '("category" "name")))
+#+end_src
+
+*Implementation consequence:* the registration pipeline does
+both calls per tool, tracks tool names per server in a hash, and
+deregisters cleanly on restart/stop without disturbing local
+tools.
+
+** MELPA vs local checkout
+
+The local checkout (=~/code/mcp.el/=, tip =f10768e=) has HTTP
+transport (=mcp-http-process-connection=) and recent UX
+improvements (resource reading, imenu support, detail mode).
+MELPA parity not yet verified.
+
+*Implementation consequence:* =cj/mcp--assert-capabilities=
+checks for required functions at load time and signals a clear
+=user-error= if missing.  Use-package block defaults to MELPA;
+the local-checkout =:load-path= line stays commented until the
+capability check tells us MELPA is missing something.
+
+* GPTel Confirmation Contract
+
+The single most consequential precondition for the safety story:
+
+** Current state
+
+=modules/ai-config.el:386= sets =gptel-confirm-tool-calls= to
+=nil=.  This was a deliberate "allow tool access by default"
+choice when only the ten local tools existed -- all of which are
+either read-only (git_log, git_status, list_directory_files, etc.)
+or already wrap their own confirm prompts (web_fetch uses
+=:confirm t= but is ignored under the current setting; this was
+acceptable because the only "real" tool there is on a user-typed
+URL).
+
+** Required state
+
+The MCP integration cannot ship without flipping this to =auto=.
+Specifically, =modules/ai-mcp.el= must:
+
+1. =setq gptel-confirm-tool-calls 'auto= during its load.
+2. Audit the existing local tools and add =:confirm t= to any
+   that should be gated.  =web_fetch= is the obvious candidate;
+   =write_text_file=, =update_text_file=, =move_to_trash= may
+   also warrant it depending on Craig's preference.
+
+The existing =ai-config.el:386= line is removed.  A comment
+points readers at =ai-mcp.el= for the new value.
+
+** Verification test
+
+A test in =tests/test-ai-mcp-confirm-contract.el= asserts:
+
+- After =ai-mcp= loads, =gptel-confirm-tool-calls= is ='auto=.
+- A write-classified MCP tool registered with =:confirm t= takes
+  the confirmation branch in =gptel-send='s tool-dispatch code
+  (verified by stubbing gptel's confirm-prompt and checking it
+  fires).
+- A read-classified MCP tool registered with =:confirm nil= does
+  not take the confirmation branch.
+- Local =git_log= (=:confirm nil=) still runs without prompting.
+
+* Current State
+
+** =modules/ai-config.el=
+
+- =use-package gptel= block at lines 363-414, defer-loaded on the
+  =gptel= / =gptel-send= / =gptel-menu= commands.
+- =gptel-confirm-tool-calls nil= at line 386.  Removed by this
+  integration; see § GPTel Confirmation Contract.
+- =cj/gptel-load-local-tools= (lines 71-96) loads the ten local
+  tools from =gptel-tools/=.
+- =cj/toggle-gptel= (lines 418-441) is the primary entry point
+  (=C-; a t=).  Other entry points: =cj/gptel-quick-ask=
+  (=C-; a q=), =gptel-magit-commit-generate= (=g= in magit),
+  =cj/gptel-rewrite-with-directive= (=C-; a r=), =gptel-send=
+  (=C-RET= in gptel buffer).
+- =cj/ai-keymap= (lines 510-528) currently uses keys A B M d . f
+  b l m p q r R c s t x.  =C= (uppercase) is free and becomes the
+  MCP subprefix.
+
+** =gptel-tools/=
+
+Ten =.el= files.  =git_log.el= is the closest analogue;
+=web_fetch.el= demonstrates the =:confirm t= pattern.
+
+** =~/.claude.json=
+
+Mode 0600, ~75 KB.  Top-level =mcpServers= key holds the nine
+servers we want.  Env-var names per server (values redacted):
+
+| Server               | Env vars                                              |
+|----------------------+-------------------------------------------------------|
+| google-calendar      | =GOOGLE_OAUTH_CREDENTIALS=                            |
+| google-docs-personal | =GOOGLE_CLIENT_ID=, =GOOGLE_CLIENT_SECRET=, =GOOGLE_MCP_PROFILE= |
+| google-docs-work     | Same three vars (different values)                    |
+| google-keep          | =GOOGLE_EMAIL=, =GOOGLE_MASTER_TOKEN=                 |
+
+* Design
+
+** Module split
+
+Implementation lives in =modules/ai-mcp.el=.  =modules/ai-config.el=
+gains only autoload declarations and the =C-; a C= subprefix
+wiring.
+
+** Code organization outline (=ai-mcp.el=)
+
+The file is organized in seven sections so it stays readable as
+features land:
+
+1. *Constants and defcustoms* -- =cj/mcp-server-specs=,
+   =cj/mcp-claude-config=, =cj/mcp-enabled-servers=,
+   =cj/mcp-start-on-entry-points=, =cj/mcp-startup-timeout=,
+   =cj/mcp-tool-timeout=, =cj/mcp-tool-confirm-overrides=,
+   audit-log defcustoms.
+2. *Public commands* -- =cj/mcp-ensure-started=, =cj/mcp-hub=,
+   =cj/mcp-status=, =cj/mcp-list-tools=,
+   =cj/mcp-restart-failed=, =cj/mcp-restart-server=,
+   =cj/mcp-stop-all=, =cj/mcp-doctor=,
+   =cj/mcp-wait-until-ready=.
+3. *Pure helpers* -- Claude config reader, =cj/mcp--build-server-alist=,
+   =cj/mcp--redact=, =cj/mcp--confirm-p=,
+   =cj/mcp--normalize-description=.
+4. *mcp.el compatibility layer* -- 3-5 wrappers around private
+   API (=mcp--status=, =mcp--tools=, etc.).  Single source of
+   version-drift risk.
+5. *Registration pipeline* -- =cj/mcp--register-tool=,
+   =cj/mcp--register-server-tools=,
+   =cj/mcp--deregister-server-tools=,
+   =cj/mcp--registered-tools= hash.
+6. *Async state machine* -- =cj/mcp--state=,
+   =cj/mcp--server-status=, =cj/mcp--on-all-started=,
+   =cj/mcp--stall-timer=, =cj/mcp--poll-status=.
+7. *UI* -- audit-buffer mode, doctor buffer, recovery-pattern
+   matcher, response prefixes.
+
+This explicit outline doubles as the file's table of contents in
+its commentary block.
+
+** Server inventory: data first
+
+The nine servers are described as a defconst of plists, with no
+secrets baked in:
+
+#+begin_src emacs-lisp
+(defconst cj/mcp-server-specs
+  '((:name "linear"
+     :transport http
+     :url "https://mcp.linear.app/mcp"
+     :auth in-protocol
+     :risk write-capable)
+    (:name "notion"
+     :transport http
+     :url "https://mcp.notion.com/mcp"
+     :auth in-protocol
+     :risk write-capable)
+    (:name "figma"
+     :transport stdio
+     :command "npx"
+     :args ("-y" "figma-developer-mcp" "--stdio")
+     :secret-args ("--figma-api-key" :figma-api-key)
+     :auth args-token
+     :risk arg-leak)
+    (:name "slack-deepsat"
+     :transport sse
+     :url "http://127.0.0.1:13080/sse"
+     :auth local
+     :risk write-capable)
+    (:name "drawio"
+     :transport stdio
+     :command "npx"
+     :args ("-y" "@drawio/mcp")
+     :auth none
+     :risk none)
+    (:name "google-calendar"
+     :transport stdio
+     :command "npx"
+     :args ("-y" "@cocal/google-calendar-mcp")
+     :env (:GOOGLE_OAUTH_CREDENTIALS t)
+     :auth oauth
+     :risk write-capable)
+    (:name "google-docs-personal"
+     :transport stdio
+     :command "npx"
+     :args ("-y" "@a-bonus/google-docs-mcp")
+     :env (:GOOGLE_CLIENT_ID t :GOOGLE_CLIENT_SECRET t :GOOGLE_MCP_PROFILE t)
+     :auth oauth
+     :risk write-capable)
+    (:name "google-docs-work"
+     :transport stdio
+     :command "npx"
+     :args ("-y" "@a-bonus/google-docs-mcp")
+     :env (:GOOGLE_CLIENT_ID t :GOOGLE_CLIENT_SECRET t :GOOGLE_MCP_PROFILE t)
+     :auth oauth
+     :risk write-capable)
+    (:name "google-keep"
+     :transport stdio
+     :command "uvx"
+     :args ("--from" "keep-mcp" "python" "-m" "server.cli")
+     :env (:GOOGLE_EMAIL t :GOOGLE_MASTER_TOKEN t)
+     :auth token
+     :risk write-capable)))
+#+end_src
+
+The same data drives the doctor check list, status labels, and
+recovery messages -- a single source of truth keeps them from
+drifting.
+
+** Server enablement
+
+#+begin_src emacs-lisp
+(defcustom cj/mcp-enabled-servers
+  (mapcar (lambda (s) (plist-get s :name)) cj/mcp-server-specs)
+  "List of MCP server names to start.
+Defaults to every server in `cj/mcp-server-specs'.  Set to a
+shorter list to disable specific servers without editing the
+spec.  Changes take effect on next `cj/mcp-restart-failed' or
+Emacs restart."
+  :type '(repeat string)
+  :group 'cj)
+#+end_src
+
+=cj/mcp--build-server-alist= filters by this list before
+returning.  A user who wants only =linear= and =drawio= sets:
+
+#+begin_src emacs-lisp
+(setq cj/mcp-enabled-servers '("linear" "drawio"))
+#+end_src
+
+This is the answer to "100+ tools is overwhelming" without
+needing per-conversation profiles.
+
+** Entry-point policy
+
+Not every GPTel entry point should trigger MCP startup.  Quick
+ask, rewrite, and magit commit-message generation are
+lightweight; spinning up nine subprocesses for a 50-word commit
+message is surprising overhead.
+
+#+begin_src emacs-lisp
+(defcustom cj/mcp-start-on-entry-points
+  '(toggle-gptel)
+  "GPTel entry points that trigger MCP startup.
+Symbols correspond to commands: `toggle-gptel', `gptel-send',
+`gptel-quick-ask', `gptel-rewrite-with-directive',
+`gptel-magit-generate-message'.  Default: only full chat
+(`toggle-gptel')."
+  :type '(repeat symbol)
+  :group 'cj)
+#+end_src
+
+Each entry-point command checks membership before calling
+=cj/mcp-ensure-started=:
+
+#+begin_src emacs-lisp
+(defun cj/toggle-gptel ()
+  ...
+  (when (memq 'toggle-gptel cj/mcp-start-on-entry-points)
+    (cj/mcp-ensure-started))
+  ...)
+#+end_src
+
+** Claude config reader (mtime-cached, structured returns)
+
+#+begin_src emacs-lisp
+(defcustom cj/mcp-claude-config
+  (expand-file-name "~/.claude.json")
+  "Path to the Claude Code config that holds MCP server env vars."
+  :type 'file
+  :group 'cj)
+
+(defvar cj/mcp--config-cache nil
+  "Cons of (MTIME . PARSED) for `cj/mcp-claude-config'.")
+
+(defun cj/mcp--read-claude-config ()
+  "Return a structured result describing the Claude config state.
+Result shape:
+  (:ok t :data PLIST)
+  (:ok nil :reason missing-file)
+  (:ok nil :reason unreadable)
+  (:ok nil :reason malformed-json :message STR)
+Cached by mtime; subsequent calls reparse only on change."
+  ...)
+#+end_src
+
+** mcp.el compatibility layer
+
+All private-API access lives in 3-5 helpers documented with the
+upstream commit they target.  This is the only file that touches
+=mcp--*= names; everything else calls these wrappers.
+
+#+begin_src emacs-lisp
+;; ai-mcp-compat -- isolates private mcp.el API.
+;; Verified against upstream commit f10768e (2026-05-16).
+
+(defun cj/mcp--server-status (connection)
+  "Return CONNECTION's lifecycle status: connected, error, starting."
+  (mcp--status connection))
+
+(defun cj/mcp--server-tools (connection)
+  "Return CONNECTION's discovered tool list (plists)."
+  (mcp--tools connection))
+
+(defun cj/mcp--server-name (connection)
+  "Return CONNECTION's logical server name."
+  (jsonrpc-name connection))
+
+(defun cj/mcp--assert-capabilities ()
+  "Signal `user-error' if any required mcp.el function is missing."
+  (dolist (fn '(mcp-connect-server mcp-make-text-tool
+                mcp-hub mcp-hub-start-all-server
+                mcp-hub-get-all-tool mcp-server-connections))
+    (unless (fboundp fn)
+      (user-error "mcp.el too old; missing %s.  Upgrade or switch \
+to local checkout in `ai-mcp.el' use-package block" fn))))
+#+end_src
+
+If mcp.el renames a slot or changes a return shape, only these
+helpers break.  Tests cover each helper against stub objects.
+
+** Startup model: async + state machine + polling
+
+Three state structures capture lifecycle:
+
+#+begin_src emacs-lisp
+(defvar cj/mcp--state 'idle
+  "Overall MCP integration state: idle, starting, partial, ready, failed.")
+
+(defvar cj/mcp--server-status nil
+  "Alist mapping server name to status plist:
+  (:state STATE :tool-count N :tools (NAME ...) :last-error STR
+   :started-at TIME :ready-at TIME)")
+
+(defvar cj/mcp--stall-timer nil
+  "Timer guarding against servers that never call back.")
+#+end_src
+
+=cj/mcp-ensure-started= is the only entry point consumers call:
+
+#+begin_src emacs-lisp
+(defun cj/mcp-ensure-started ()
+  "Schedule MCP startup if it hasn't run yet this session.
+Returns immediately.  Servers spawn asynchronously."
+  (when (eq cj/mcp--state 'idle)
+    (setq cj/mcp--state 'starting)
+    (cj/mcp--assert-capabilities)
+    (cj/mcp--build-status-from-specs)
+    (setq mcp-hub-servers (cj/mcp--build-server-alist))
+    (message "MCP: starting %d server(s) in background..."
+             (length mcp-hub-servers))
+    ;; The hub callback is opportunistic.  We poll status on each
+    ;; tick and the stall timer is the authoritative deadline.
+    (mcp-hub-start-all-server #'cj/mcp--on-hub-callback nil nil)
+    (cj/mcp--start-stall-timer)))
+#+end_src
+
+State transitions and authority:
+
+- *Hub completion callback (opportunistic).*  Triggers an
+  immediate poll + registration pass for whatever's ready.  Does
+  not signal completion by itself.
+- *Stall timer (authoritative deadline).*  After
+  =cj/mcp-startup-timeout= (default 30 s), marks every server
+  still in =starting= state as =failed= with reason =timeout=,
+  registers tools from servers that did become ready, transitions
+  =cj/mcp--state= to its final value (=ready=, =partial=, or
+  =failed=).
+- *Polling (authoritative state).*  =cj/mcp--poll-status= walks
+  =mcp-server-connections= and maps each entry's =mcp--status= to
+  =cj/mcp--server-status=.  Called from the hub callback and from
+  the stall timer.  Servers that transitioned through
+  =:error-callback= (which the hub doesn't chain into the inited
+  callback) show up here.
+
+Properties:
+
+- =cj/mcp-ensure-started= returns in <100 ms regardless of
+  subprocess state.
+- =mcp-hub-start-all-server= itself is async (third =SYNCP= arg
+  is =nil=).
+- Servers transition independently; tools land in =gptel-tools=
+  as each server reports inventory.
+- A server that never connects, never errors, and never reports
+  tools is caught by the stall timer.
+
+** Tool registration pipeline
+
+Walks =mcp-server-connections= directly, per server, after each
+status poll.  This gives clean per-server bookkeeping without
+parsing the =mcp-SERVER= category prefix:
+
+#+begin_src emacs-lisp
+(defun cj/mcp--register-server-tools (server-name)
+  "Register every tool from the connected server SERVER-NAME.
+Idempotent: re-registration replaces the function pointer
+without duplicating menu entries."
+  (let ((connection (gethash server-name mcp-server-connections)))
+    (when (and connection
+               (eq (cj/mcp--server-status connection) 'connected))
+      ;; First, deregister any existing tools for this server.
+      (cj/mcp--deregister-server-tools server-name)
+      (dolist (raw-tool (cj/mcp--server-tools connection))
+        (cj/mcp--register-tool server-name raw-tool))
+      (cj/mcp--update-server-status server-name :state 'ready))))
+
+(defun cj/mcp--register-tool (server-name raw-tool)
+  "Register one tool from SERVER-NAME.
+RAW-TOOL is the plist from `mcp--tools' (untransformed)."
+  (let* ((remote-name (plist-get raw-tool :name))
+         (gptel-name (format "mcp__%s__%s" server-name remote-name))
+         (description (cj/mcp--normalize-description
+                       server-name raw-tool))
+         (confirm-p (cj/mcp--confirm-p gptel-name remote-name))
+         ;; mcp-make-text-tool builds the closure; we async by default.
+         (mcp-plist (mcp-make-text-tool server-name remote-name t))
+         ;; Rewrite name + description + confirm after mcp.el builds the closure.
+         (gptel-plist (cj/mcp--rewrite-plist
+                       mcp-plist
+                       :name gptel-name
+                       :description description
+                       :confirm confirm-p
+                       :async t
+                       :category (format "mcp-%s" server-name))))
+    (apply #'gptel-make-tool gptel-plist)
+    (add-to-list 'gptel-tools
+                 (gptel-get-tool
+                  (list (format "mcp-%s" server-name) gptel-name)))
+    (push gptel-name
+          (gethash server-name cj/mcp--registered-tools))))
+#+end_src
+
+Key properties:
+
+- *Async by default.*  All MCP tools register with =:async t=.
+  This avoids any sync MCP tool call blocking Emacs during
+  =gptel-send='s tool dispatch.  Per-call timeout uses the
+  timer-race pattern (next subsection).
+- *Closure preserves remote name.*  =mcp-make-text-tool= built
+  the function before we rewrote =:name=, so the closure calls
+  =mcp-call-tool SERVER REMOTE-NAME=, not the prefixed
+  =mcp__SERVER__TOOL=.
+- *Idempotent.*  Each registration deregisters first, so
+  callbacks firing multiple times or restarts don't accumulate
+  duplicate entries.
+- *Description normalization.*  See next subsection.
+
+** Per-call timeout: explicit timer/callback race
+
+=with-timeout= only supervises the dynamic extent of the form it
+wraps.  For async tools where the function returns immediately
+and the callback fires later, it does nothing.  The correct
+pattern is an explicit timer:
+
+#+begin_src emacs-lisp
+(defun cj/mcp--wrap-async-with-timeout (server-name remote-name
+                                        mcp-callback)
+  "Return a gptel-compatible async wrapper for an MCP tool.
+GPTel calls the returned function with (CALLBACK . ARGS).
+The wrapper races MCP's response against `cj/mcp-tool-timeout';
+whichever fires first wins, and late callbacks are ignored."
+  (lambda (gptel-callback &rest args)
+    (let* ((done nil)
+           (timer (run-at-time cj/mcp-tool-timeout nil
+                               (lambda ()
+                                 (unless done
+                                   (setq done t)
+                                   (funcall gptel-callback
+                                            (format "MCP tool %s/%s \
+timed out after %ds"
+                                                    server-name
+                                                    remote-name
+                                                    cj/mcp-tool-timeout)))))))
+      (mcp-async-call-tool
+       (gethash server-name mcp-server-connections)
+       remote-name
+       (cj/mcp--args-to-plist args)
+       (lambda (result)
+         (cancel-timer timer)
+         (unless done
+           (setq done t)
+           (funcall gptel-callback
+                    (mcp--parse-tool-call-result result))))
+       (lambda (code message)
+         (cancel-timer timer)
+         (unless done
+           (setq done t)
+           (funcall gptel-callback
+                    (format "MCP error %s: %s" code
+                            (cj/mcp--redact message)))))))))
+#+end_src
+
+Both branches set =done= before invoking gptel's callback so a
+late response (e.g., MCP responds after the timer fired but
+before its sentinel cancels) doesn't deliver twice.  Timer is
+canceled on the success and error paths.
+
+The closure that =mcp-make-text-tool= built gets replaced with
+this wrapper during registration (the =:function= slot of the
+rewritten plist).
+
+** Confirmation / safety policy
+
+All enabled tools are registered (per the goal of full
+visibility), but write/destructive tools get =:confirm t=.
+Classification is name-based:
+
+#+begin_src emacs-lisp
+(defconst cj/mcp--write-name-patterns
+  '("\\`create\\b" "\\`update\\b" "\\`delete\\b" "\\`remove\\b"
+    "\\`send\\b" "\\`post\\b" "\\`add\\b" "\\`move\\b"
+    "\\`invite\\b" "\\`share\\b" "\\`upload\\b" "\\`set\\b"
+    "\\`patch\\b" "\\`import\\b" "\\`sync\\b" "\\`merge\\b"
+    "\\`close\\b" "\\`reopen\\b" "\\`archive\\b" "\\`unarchive\\b"
+    "\\`approve\\b" "\\`reject\\b" "\\`label\\b" "\\`assign\\b"
+    "\\`reply\\b" "\\`comment\\b" "\\`trash\\b" "\\`restore\\b"
+    "\\`pin\\b" "\\`unpin\\b" "\\`copy\\b" "\\`rename\\b"))
+
+(defconst cj/mcp--read-name-patterns
+  '("\\`get\\b" "\\`list\\b" "\\`read\\b" "\\`search\\b"
+    "\\`find\\b" "\\`fetch\\b" "\\`view\\b" "\\`query\\b"
+    "\\`describe\\b" "\\`show\\b" "\\`check\\b"))
+
+(defcustom cj/mcp-tool-confirm-overrides nil
+  "Per-tool confirmation overrides.
+Alist mapping fully qualified MCP tool name (e.g.,
+\"mcp__linear__create_issue\") to t or nil.  Wins over the
+pattern-based classifier."
+  :type '(alist :key-type string :value-type boolean)
+  :group 'cj)
+
+(defun cj/mcp--confirm-p (gptel-name remote-name)
+  "Return non-nil if the tool should register with `:confirm t'."
+  (let ((override (assoc gptel-name cj/mcp-tool-confirm-overrides)))
+    (cond
+     (override (cdr override))
+     ((seq-some (lambda (p) (string-match-p p remote-name))
+                cj/mcp--write-name-patterns) t)
+     ((seq-some (lambda (p) (string-match-p p remote-name))
+                cj/mcp--read-name-patterns) nil)
+     (t t))))  ; unknown → confirm
+#+end_src
+
+This is the second half of the safety story; the first half
+(=gptel-confirm-tool-calls 'auto=) is enforced by ai-mcp.el at
+load time.
+
+** Description normalization
+
+mcp-side descriptions are written for an arbitrary client and
+vary in quality.  The registration pipeline prefixes a stable
+"server / write-risk" header so the agent and the user have
+consistent context:
+
+#+begin_src emacs-lisp
+(defun cj/mcp--normalize-description (server-name raw-tool)
+  "Return a normalized description string for RAW-TOOL.
+Prefix: [SERVER] for reads, [SERVER WRITE] for writes,
+[SERVER ?] for unknown classification.  Then the upstream
+description, unchanged."
+  (let* ((remote-name (plist-get raw-tool :name))
+         (upstream (or (plist-get raw-tool :description)
+                       "(no description provided by server)"))
+         (cls (cond
+               ((seq-some (lambda (p) (string-match-p p remote-name))
+                          cj/mcp--write-name-patterns) "WRITE")
+               ((seq-some (lambda (p) (string-match-p p remote-name))
+                          cj/mcp--read-name-patterns) "")
+               (t "?"))))
+    (format "[%s%s] %s" server-name
+            (if (string-empty-p cls) "" (concat " " cls))
+            upstream)))
+#+end_src
+
+Tools in =gptel-menu= show as:
+
+#+begin_example
+[linear WRITE] Create a new Linear issue in a team.
+[linear] List issues in a Linear team.
+[google-keep ?] Frobnicate a note (unknown classification).
+#+end_example
+
+** Tool deregistration
+
+Three triggers remove tools from =gptel-tools=:
+
+- =cj/mcp-stop-all= -- removes every MCP-registered tool, clears
+  =cj/mcp--registered-tools=, calls =mcp-stop-server= per server.
+  Local tools untouched.
+- =cj/mcp-restart-server= -- removes tools for the named server
+  before re-registering.
+- =cj/mcp-restart-failed= -- deregister + re-register each
+  =failed= server.
+
+#+begin_src emacs-lisp
+(defun cj/mcp--deregister-server-tools (server-name)
+  "Remove every GPTel tool this integration registered for SERVER-NAME.
+Local tools (those not in `cj/mcp--registered-tools') are
+preserved."
+  (let ((mcp-tools (gethash server-name cj/mcp--registered-tools)))
+    (dolist (tool-name mcp-tools)
+      (setq gptel-tools
+            (cl-remove-if (lambda (tool)
+                            (string= (gptel-tool-name tool) tool-name))
+                          gptel-tools)))
+    (remhash server-name cj/mcp--registered-tools)))
+#+end_src
+
+** Secrets redaction
+
+=cj/mcp--redact= masks every secret-bearing field before any
+string surfaces in messages, errors, status buffers, hub
+displays, or test fixtures.  Used by status formatting, audit
+buffer, failure surfacing, and error wrappers.  Tests assert
+sentinel =REDACTED_TEST_SECRET= never appears in any user-facing
+output.
+
+** Process cleanup
+
+=kill-emacs-hook= gets one entry: =cj/mcp-stop-all=.  Stdio
+process sentinels record abnormal exits into the per-server
+status.
+
+*Local-only constraint.*  MCP server processes are always spawned
+under the local Emacs's =default-directory='s root.  TRAMP /
+remote buffers do not relocate the spawn; MCP processes are
+local-only.  This is enforced implicitly (mcp-hub-start-all-server
+uses =make-process= which is local) and documented in the
+commentary.
+
+** Privacy: external tool output in saved conversations
+
+MCP tool results land in the GPTel buffer.  GPTel's autosave (when
+enabled) persists those results to
+=~/.emacs.d/ai-conversations/=.  Concrete implications:
+
+- A Slack channel excerpt the agent fetched is now on disk.
+- A Google Docs snippet the agent quoted is now on disk.
+- A Linear issue body the agent read is now on disk.
+
+This is normal external-tool behavior, but users may not realize
+it.  Two mitigations:
+
+- =ai-mcp.el='s commentary explicitly documents the autosave
+  privacy implication.
+- The audit buffer (=cj/mcp-list-tools=) includes a header note:
+  "Tool results land in =gptel-tools= responses; saved
+  conversations persist them.  Use =cj/gptel-autosave-toggle= per
+  buffer to opt out."
+
+A future enhancement (V1.5+) could mark MCP-sourced tool output
+with a visible delimiter in the GPTel buffer so the user sees
+"this came from an external server" during the chat.  Not v1.
+
+** Per-server auth matrix
+
+| =:auth= value | Servers | How it works | Recovery if failed |
+|---------------+---------+--------------+--------------------|
+| =in-protocol= | linear, notion | mcp.el HTTP transport handles OAuth handshake | Open URL surfaced in =cj/mcp-status= |
+| =local= | slack-deepsat | Local SSE; no auth but proxy must run | Start the local proxy |
+| =none= | drawio | No auth | n/a |
+| =args-token= | figma | API key in process args | Update Claude config, restart |
+| =oauth= | google-calendar, google-docs-* | OAuth token in env; refresh out-of-band | Re-auth via Claude Code, restart |
+| =token= | google-keep | Long-lived token in env | Regenerate, update Claude config, restart |
+
+Recovery surfaces via pattern matching on errors:
+
+#+begin_src emacs-lisp
+(defconst cj/mcp--recovery-patterns
+  '(("\\(401\\|unauthorized\\|token expired\\)"
+     . "Token expired -- re-auth via Claude Code, then C-; a C r SERVER")
+    ("\\(connection refused\\|ECONNREFUSED\\)"
+     . "Local endpoint unreachable -- check the upstream service is running")
+    ("\\(ENOENT\\|command not found\\)"
+     . "Missing dependency -- run `cj/mcp-doctor' to diagnose")))
+#+end_src
+
+** Timeouts
+
+| Timeout | Variable | Default | Behavior |
+|---------+----------+---------+----------|
+| Startup / tool discovery | =cj/mcp-startup-timeout= | 30 s | Server marked =failed/timeout=; integration continues with ready servers |
+| Per-call tool execution | =cj/mcp-tool-timeout= | 60 s | Tool call returns timeout string to agent via the timer-race wrapper; server stays connected |
+
+Both via defcustoms.  Per-tool override possible via
+=cj/mcp-tool-timeout-overrides= alist.
+
+* Status UX
+
+** Echo-area summary: =cj/mcp-status=
+
+Single-line summary keyed off =cj/mcp--state=:
+
+| State | Echo |
+|-------+------|
+| idle | =MCP: not started.  (C-; a t triggers it.)= |
+| starting | =MCP: starting (3/9 ready)...= |
+| partial | =MCP: 7/9 ready (failed: google-calendar, slack-deepsat).= |
+| ready | =MCP: 9/9 ready, 87 tools registered.= |
+| failed | =MCP: all 9 servers failed.  C-; a C d to diagnose.= |
+
+** Wait until ready: =cj/mcp-wait-until-ready=
+
+For the case where the agent asks for a Calendar tool immediately
+after =cj/toggle-gptel=:
+
+#+begin_src emacs-lisp
+(defun cj/mcp-wait-until-ready (&optional timeout)
+  "Block until MCP startup completes or TIMEOUT seconds pass.
+TIMEOUT defaults to `cj/mcp-startup-timeout'.  Returns the final
+state symbol (`ready', `partial', `failed', `starting')."
+  (interactive)
+  ...)
+#+end_src
+
+Bound to =C-; a C w=.  Reports progress every second via
+=message= so the user sees countdown.
+
+** Audit buffer: =cj/mcp-list-tools=
+
+Tabulated-list buffer.  Failed servers appear at the top with a
+red face so they're visually obvious.  Each row:
+
+#+begin_example
+Server               State    Tools  Confirm  Description
+-------------------- -------- -----  -------  ------------------------------
+google-calendar      FAILED   0      -        Token expired; see status
+slack-deepsat        FAILED   0      -        Local proxy unreachable
+-------------------- -------- -----  -------  ------------------------------
+linear/list_issues   ready    -      no       List issues in a Linear team
+linear/create_issue  ready    -      YES      Create a new Linear issue
+linear/...           ready    44 total
+...
+#+end_example
+
+Sort: failed servers first, then by server name, then by tool
+name.  Keys: =g= refresh, =RET= jump to tool's category in
+gptel-menu, =r= restart server under point, =c= toggle confirm
+override for tool under point.
+
+* Commands & Keymap
+
+=C-; a C= becomes the MCP (Connect) subprefix.  Existing keys are
+preserved: =M= keeps =gptel-menu=, =m= keeps
+=cj/gptel-change-model=.
+
+| Key | Command | Purpose |
+|-----+---------+---------|
+| =C-; a C h= | =cj/mcp-hub= | Open server-management buffer |
+| =C-; a C s= | =cj/mcp-status= | Echo state summary |
+| =C-; a C l= | =cj/mcp-list-tools= | Open audit buffer |
+| =C-; a C r= | =cj/mcp-restart-failed= | Restart failed servers |
+| =C-; a C R= | =cj/mcp-restart-server= | Restart a named server |
+| =C-; a C S= | =cj/mcp-stop-all= | Stop everything |
+| =C-; a C d= | =cj/mcp-doctor= | Diagnose prerequisites |
+| =C-; a C w= | =cj/mcp-wait-until-ready= | Block until ready |
+
+which-key labels mirror the table.
+
+** cj/mcp-doctor
+
+Diagnostic command.  Two modes:
+
+- *Static* (default) -- no side effects, no network: capability
+  check, =npx=/=uvx= on PATH, Claude config parseability,
+  per-server env-var presence, local endpoint reachability.
+- *Live* (=C-u C-; a C d=) -- opt-in: invokes a single safe read
+  per auth class to verify OAuth tokens haven't silently expired.
+  For example, =gh_search= against linear is one tool call; same
+  for notion, google-calendar, google-docs, google-keep.  Static
+  checks first; live probe only fires if static passes.
+
+Output buffer keys:
+
+- =c= copy diagnostic summary to kill ring (for pasting into
+  bug reports / notes).
+- =r= rerun all failed checks.
+- =q= quit.
+
+Each check row formats as: =PASS / FAIL / WARN  CHECK  RECOVERY=.
+
+* Implementation Plan
+
+Eight phases (was seven in rev 2; added Phase 1.5 for the
+confirmation-contract setup).  Each ends with green ERT tests +
+a manual smoke test before the next.
+
+** Phase 1 -- Module + pure helpers
+
+Create =modules/ai-mcp.el=.  Implement: =cj/mcp-server-specs=,
+=cj/mcp-enabled-servers=, =cj/mcp-start-on-entry-points=,
+=cj/mcp--read-claude-config=, =cj/mcp--get-env=,
+=cj/mcp--build-server-alist= (pure transformer; filters by
+=cj/mcp-enabled-servers=), =cj/mcp--redact=,
+=cj/mcp--confirm-p=, =cj/mcp--normalize-description=.
+
+Tests cover all of the above against fixtures.
+
+** Phase 1.5 -- Confirmation contract
+
+Flip =gptel-confirm-tool-calls= to ='auto= in =ai-mcp.el='s
+setup.  Remove the =(setq gptel-confirm-tool-calls nil)= line
+from =ai-config.el=.  Audit existing local tools and add
+=:confirm t= to any that should be gated (=web_fetch=
+guaranteed; =write_text_file=, =update_text_file=,
+=move_to_trash= per Craig's decision).
+
+Verification test in =tests/test-ai-mcp-confirm-contract.el=
+asserts the setting, the local-tool gating behavior, and that
+=git_log= (=:confirm nil=) still runs without prompting.
+
+** Phase 2 -- Compat layer + tool registration with fake inventory
+
+Add =ai-mcp-compat= helpers.  Build the registration pipeline
+against a stubbed =mcp-server-connections=.  Verify:
+- Tool name rewriting (=remote-name= stays in closure;
+  =gptel-name= is =mcp__SERVER__TOOL=).
+- =gptel-make-tool= + explicit =add-to-list 'gptel-tools=.
+- =:confirm= application per policy + overrides.
+- Description normalization adds expected prefix.
+- =cj/mcp--registered-tools= bookkeeping.
+- Deregister removes from =gptel-tools= without disturbing local
+  tools (test pre-populates =gptel-tools= with a local tool and
+  asserts it survives).
+- Re-register after deregister doesn't duplicate.
+- All tools register with =:async t=.
+
+** Phase 3 -- Async state machine + timeout wrapper
+
+Implement =cj/mcp-ensure-started=, =cj/mcp--on-hub-callback=,
+=cj/mcp--state= transitions, stall timer, polling.  Implement
+=cj/mcp--wrap-async-with-timeout=.  Stub
+=mcp-hub-start-all-server= with synthetic delayed callbacks and
+synthetic async errors.
+
+Verify:
+- =cj/mcp-ensure-started= returns in <100 ms regardless of stubs.
+- Hub callback triggers status poll + registration.
+- Stall timer fires for stuck servers.
+- Async error path (=:error-callback= without inited callback)
+  reaches =cj/mcp--server-status= via polling.
+- =cj/mcp--wrap-async-with-timeout=: timer-first ignores late MCP
+  response; MCP-first cancels timer; both branches deliver
+  exactly once.
+
+** Phase 4 -- First real connection (no auth)
+
+Wire one =drawio= or =slack-deepsat= server.  Verify the stubbed
+Phase 3 behavior matches real subprocesses.
+
+** Phase 5 -- Status UX + commands + doctor (static)
+
+Implement =cj/mcp-status=, =cj/mcp-list-tools= (with failed
+servers at top, red face), =cj/mcp-doctor= (static mode only),
+=cj/mcp-wait-until-ready=, restart commands, keymap entries,
+which-key labels.
+
+Investigate =gptel-menu= refresh behavior: if the transient is
+already open when a new tool registers, does it pick it up on
+next invocation?  Document and add an acceptance test:
+"register new tool while gptel-menu is open; close and reopen;
+new tool appears."
+
+** Phase 6 -- HTTP servers
+
+Add =linear= and =notion=.  Test in-protocol OAuth handshake.
+Add live-auth-check mode to doctor.
+
+** Phase 7 -- Env-dependent stdio servers
+
+Add =figma=, =google-calendar=, =google-docs-personal=,
+=google-docs-work=, =google-keep=.
+
+** Phase 8 -- Privacy + audit polish
+
+Add audit buffer's privacy header, autosave commentary, audit-log
+hygiene (=cj/mcp-tool-audit-log-enabled= defcustom).  Update
+=ai-mcp.el= commentary with the code-organization outline as a
+TOC.
+
+* Test Plan
+
+** Confirmation contract (Phase 1.5)
+
+- =gptel-confirm-tool-calls= is ='auto= after =ai-mcp= loads.
+- Write-classified MCP tool with =:confirm t= triggers confirm
+  prompt (stub gptel's prompt and assert it fires).
+- Read-classified MCP tool with =:confirm nil= does not trigger
+  prompt.
+- Pre-existing =git_log= (=:confirm nil=) does not trigger
+  prompt.
+- =web_fetch= (newly gated with =:confirm t=) triggers prompt.
+
+** Pure helpers (Phase 1-2)
+
+- =cj/mcp--read-claude-config=: good fixture, missing, unreadable,
+  malformed JSON, missing =:mcpServers=, missing server, empty
+  env, non-string env values.  Cache invalidation on mtime
+  change.
+- =cj/mcp--build-server-alist=: each transport, each auth class,
+  env merge, args splicing for figma, no mutation of
+  =cj/mcp-server-specs=, filter by =cj/mcp-enabled-servers=.
+- =cj/mcp--redact=: bearer tokens, OAuth credentials,
+  TOKEN/KEY/SECRET/CREDENTIALS-suffixed env vars, URL query
+  tokens, figma args slot.  Sentinel never leaks.
+- =cj/mcp--confirm-p=: read patterns, write patterns, unknown →
+  t, override map wins.
+- =cj/mcp--normalize-description=: prefix shape per
+  classification.
+
+** Registration pipeline (Phase 2)
+
+- Single tool registers into all three structures.
+- Two tools with same =:name= from different servers don't
+  collide.
+- Re-registration replaces function pointer without duplicating.
+- Deregister removes from =gptel-tools= without touching a
+  pre-populated local tool.
+- All tools register with =:async t=.
+- Confirm overrides win over patterns.
+
+** Compat layer (Phase 2)
+
+- Each =cj/mcp--*-server-*= helper returns expected value against
+  stub object.
+- =cj/mcp--assert-capabilities= signals when a required function
+  is missing.
+
+** State machine + timeout (Phase 3)
+
+- =cj/mcp-ensure-started= from idle returns in <100 ms with
+  delayed-callback stub.
+- Second call from =starting= is no-op.
+- Hub callback triggers status poll.
+- Stall timer marks slow servers =failed/timeout=.
+- Async error path: server emits error callback only (no inited
+  callback); polling catches it and marks =failed/error= within
+  stall window.
+- =cj/mcp--wrap-async-with-timeout=:
+  - MCP responds first, before timer: gptel callback fires once
+    with result; timer canceled.
+  - Timer fires first: gptel callback fires once with timeout
+    message; late MCP response is ignored (done flag).
+  - Error callback: cancels timer, fires once with redacted
+    error.
+
+** Async / freeze (Phase 3)
+
+- Stub =mcp-hub-start-all-server= to delay callbacks 5 s.
+  =cj/toggle-gptel= returns within 250 ms; buffer is
+  interactive.
+- Stub a server that never responds.  After
+  =cj/mcp-startup-timeout=, server is =failed=,
+  =cj/mcp--state= is =partial= or =failed=.
+
+** Entry-point policy (Phase 5)
+
+- With =cj/mcp-start-on-entry-points '(toggle-gptel)=, calling
+  =cj/toggle-gptel= triggers startup; calling
+  =cj/gptel-quick-ask= does not.
+- Adding =gptel-quick-ask= to the list makes quick-ask trigger.
+
+** Local-tool preservation (Phase 2)
+
+- =cj/mcp-stop-all= removes only MCP-registered tools from
+  =gptel-tools=; local tools like =git_log= remain.
+- =cj/mcp-restart-server= removes only that server's tools;
+  other MCP servers' tools and local tools both remain.
+
+** Process / cleanup (Phase 4+)
+
+- =kill-emacs-hook= calls =cj/mcp-stop-all=; subprocesses exit.
+- =cj/mcp-stop-all= clears =gptel-tools= MCP entries and
+  =cj/mcp--registered-tools=.
+- Restart doesn't leak process buffers or duplicate process
+  objects.
+- Process sentinel records abnormal exits into status.
+
+** Partial availability (Phase 4+)
+
+- 8 of 9 servers ready, 1 failed: ready tools available;
+  failed-server tools absent.
+- Restart-failed only retries the failed one.
+
+** Saved-conversation behavior (Phase 7+)
+
+- After a successful MCP tool call, GPTel autosave (when on)
+  persists the tool result.  Test asserts the saved file
+  contains the result text and the audit buffer's privacy
+  header is updated.
+- =cj/gptel-autosave-toggle= off → result not saved.
+
+** Keymap (Phase 5)
+
+- =C-; a C h/s/l/r/R/S/d/w= all bound after =ai-mcp= loads.
+- Existing =C-; a M=, =C-; a m= still bound to
+  =gptel-menu=, =cj/gptel-change-model=.
+- which-key labels present for every new binding.
+- No duplicate labels.
+
+** =gptel-menu= refresh (Phase 5)
+
+- Register new tool while a previously-opened gptel-menu is
+  closed; reopen; new tool appears.  Document whether mid-open
+  refresh works.
+
+** No-real-process rule
+
+All tests in =tests/test-ai-mcp*= use stubs for =process-file=,
+=make-process=, =mcp-hub-start-all-server=,
+=mcp-server-connections=, =mcp--tools=, =mcp--status=.  No real
+=npx=, no network, no real =~/.claude.json=.
+
+** Manual test matrix
+
+| Scenario | Expected |
+|----------+----------|
+| No =~/.claude.json= | Doctor warns; env-free servers still start |
+| Malformed Claude config | Status shows =malformed-json=; integration =failed= cleanly |
+| Network offline | HTTP servers fail; stdio servers start; status =partial= |
+| =npx= not on PATH | Doctor flags it; stdio servers fail with clear message |
+| One stdio server exits immediately | Sentinel records failure; others continue |
+| slack-deepsat endpoint down | Server =failed=; recovery message points at local proxy |
+| Google token expired | Server starts; tool calls fail; live-auth check (=C-u doctor=) surfaces it |
+| All servers available | =MCP: 9/9 ready, ~N tools registered= |
+| =cj/mcp-restart-failed= after fix | Only retried servers transition |
+| =cj/mcp-stop-all= then call a tool | Tool absent from =gptel-tools= |
+| Disable a server via defcustom | Doctor and status reflect the absence |
+| TRAMP buffer open + =cj/toggle-gptel= | MCP starts locally; no remote spawn |
+
+* Acceptance Criteria
+
+1. *No freeze.*  =cj/toggle-gptel= returns in <250 ms with mcp.el
+   wired and nine real servers starting in background.
+2. *Incremental registration.*  As each server reports tools,
+   =gptel-tools= updates; in-flight =gptel-send= calls see
+   newly-added tools on the next request.
+3. *No MCP failure breaks ordinary GPTel chat.*  With every MCP
+   server failing, =cj/toggle-gptel= still opens a usable chat
+   buffer; non-tool prompts work normally; local tools (git_log
+   etc.) still callable.
+4. *Confirm gate works.*  After =ai-mcp= loads, a write-classified
+   MCP tool actually prompts before invocation.  Verified by a
+   test that fails if =mcp-async-call-tool= is invoked before
+   gptel's confirm-prompt stub fires.
+5. *Local-tool preservation.*  =cj/mcp-stop-all= and per-server
+   restart remove only MCP-owned tools.
+6. *Partial availability.*  With one failed server, status is
+   =partial=, ready servers' tools work, failed server's tools
+   absent.
+7. *Idempotent restart.*  Calling =cj/mcp-restart-failed= twice
+   with no intervening change produces identical state.
+8. *No secret leakage.*  Grep every user-facing output for
+   sentinel fixture secrets; zero matches.
+9. *Doctor coverage (static).*  Identifies each diagnosable
+   failure in the manual test matrix.
+10. *Server enablement.*  Setting =cj/mcp-enabled-servers= to a
+    subset starts only those servers; doctor reports the disabled
+    ones as expected-absent.
+
+* Risks
+
+** R1 -- mcp.el API drift behind compat layer
+
+Even with the compat layer, an upstream rename could break us if
+the capability check misses it.
+
+*Mitigation:* compat helpers document the upstream commit and
+file location.  Tests cover each helper against stub objects;
+when mcp.el bumps, run those tests first.
+
+** R2 -- Cold-start latency for nine subprocesses
+
+Nine =npx -y= invocations cold-start over several seconds.  Time
+to =ready= state may be 10-30 seconds on a cold machine.
+
+*Mitigation:* async model means user doesn't wait.  Tools arrive
+incrementally; status indicator shows progress.
+=cj/mcp-wait-until-ready= for the rare case where the agent needs
+a specific tool immediately.
+
+** R3 -- OAuth token expiry surfaces silently
+
+A Google server starts cleanly but every tool call fails with
+auth errors.
+
+*Mitigation:* the OAuth recovery pattern matcher inspects every
+tool-call error.  Live-auth-check mode in doctor proactively
+calls one safe read per auth class.
+
+** R4 -- Tool count balloons gptel-menu
+
+Up to 100+ tools.  Even with category grouping, the transient
+menu is large.
+
+*Mitigation:* =cj/mcp-enabled-servers= lets users disable
+servers they don't need.  Audit buffer is the alternate browser.
+Per-conversation profiles deferred to v1.5.
+
+** R5 -- =~/.claude.json= schema change
+
+Parser breaks if Anthropic restructures the file.
+
+*Mitigation:* =cj/mcp--read-claude-config= returns structured
+errors that surface in status and doctor.  Integration degrades
+to "env-free servers work, env-dependent servers fail" rather
+than crashing.
+
+** R6 -- Process argument leakage (figma)
+
+figma's API key is in process args -- visible via =ps=,
+=/proc/PID/cmdline=, =list-system-processes=.
+
+*Mitigation:* accepted risk (the figma package only supports
+args-token).  =cj/mcp--redact= ensures the key never appears in
+Emacs-side output.  Commentary flags this.
+
+** R7 -- Confirmation fatigue from unknown-classification tools
+
+Default for unknown is =:confirm t=.  A server with many tools
+matching neither read nor write pattern produces many prompts.
+
+*Mitigation:* audit buffer surfaces unknown classifications with
+their confirm state.  =cj/mcp-tool-confirm-overrides= alist lets
+the user pin specific tools to =nil= once vetted.  A "review
+unknowns" doctor pass could enumerate them on demand (v1.5).
+
+** R8 -- Subprocess accumulation across sessions
+
+If =kill-emacs-hook= is bypassed (kill -9, crash), subprocesses
+persist.
+
+*Mitigation:* =cj/mcp-doctor= can detect orphaned mcp processes
+via =list-system-processes= (v1.5 enhancement).
+
+* Open Questions
+
+** Q1 -- Should =gptel-menu= refresh after mid-call tool registration?
+
+Investigation during Phase 5.  If gptel-menu's transient caches
+=gptel-tools= at open time, mid-call additions won't appear
+until close+reopen.  Document the behavior; if it's a real
+pain, file a gptel upstream issue.
+
+** Q2 -- Should write-confirmation overrides be per-host?
+
+A v1.5 question: when per-conversation profiles land, the
+override alist could also be scoped (e.g., "in /work/ folder,
+auto-confirm google-docs-work writes").  Out of v1 scope.
+
+** Q3 -- Auth-source migration path for OAuth tokens
+
+Three candidate paths (Elisp OAuth client / Claude Code refresh
+script / timer-based refresh) all have meaningful complexity.
+Until one is viable, =~/.claude.json= stays the source.
+
+** Q4 -- Live-auth check cadence
+
+Doctor's live-auth mode is opt-in.  Should there be a periodic
+auto-check (every N hours via timer) that catches expiry between
+explicit doctor runs?  Adds complexity; defer until usage shows
+need.
+
+* Considered Alternatives
+
+** =gptel-mcp.el= (declined; cited as prior art)
+
+[[https://github.com/lizqwerscott/gptel-mcp.el][lizqwerscott/gptel-mcp.el]] is a 96-line wrapper from the same
+author as mcp.el that bridges mcp.el's tool inventory into gptel.
+It exposes five functions:
+
+- =gptel-mcp-register-tool= -- walks =mcp-hub-get-all-tool= and
+  calls =gptel-make-tool= on each plist.
+- =gptel-mcp-activate-all-tool= -- pushes tools into
+  =gptel-tools=.
+- =gptel-mcp-deactivate-all-tool= -- removes them by category +
+  name lookup.
+- =gptel-mcp-start-all-server-and-register= -- chains
+  =mcp-hub-start-all-server= with the register callback.
+- =gptel-mcp-dispatch= -- a transient menu with three keys (=s=
+  start, =A= activate, =C= deactivate).
+
+*Why this matters for the spec.*  The package independently
+validates the integration shape this spec converged on:
+=mcp-hub-start-all-server= → walk connections → =gptel-make-tool=
+→ =add-to-list gptel-tools= is the canonical path.
+
+*Why we are not adopting it.*  The package solves the trivial
+"wire tools through" problem but skips every concern this spec
+exists to address:
+
+| Concern | Spec | gptel-mcp.el |
+|---------+------+--------------|
+| GPTel confirmation contract (=gptel-confirm-tool-calls 'auto=) | Required precondition | Not addressed |
+| Tool-name collisions | Rewrites to =mcp__SERVER__TOOL= | Silent overwrite |
+| Confirm-on-write policy | Per-tool =:confirm t= for writes | All tools register with default |
+| Async startup contract | =cj/mcp-ensure-started= returns in <100 ms | Synchronous-feel start |
+| Async per-call timeout | Explicit timer/callback race | None |
+| State machine | =cj/mcp--state= + per-server status | None |
+| Server identity strategy | Walks =mcp-server-connections= directly | Uses =mcp-hub-get-all-tool= + parses =mcp-SERVER= |
+| Secrets handling | Reads env from =~/.claude.json= with mtime cache | None |
+| Deregistration tracking | =cj/mcp--registered-tools= hash, preserves local tools | Removes by category, no local-tool guarantee |
+| Server enablement | =cj/mcp-enabled-servers= defcustom | None |
+| Entry-point scoping | =cj/mcp-start-on-entry-points= defcustom | Manual via dispatch menu |
+| Status UX | =cj/mcp-status=, =cj/mcp-list-tools= audit buffer | Just dispatch menu |
+| OAuth recovery | Pattern matcher with per-auth-class recovery | None |
+| Secrets redaction | =cj/mcp--redact= applied everywhere | None |
+| mcp.el compat layer | Isolated wrappers around private API | Direct =mcp--*= access scattered |
+| Tests | 10 acceptance criteria + manual matrix + no-real-process | None |
+| Doctor / live-auth check | Static + live-probe diagnostic | None |
+
+Adopting it would force shipping safely or wrapping with
+everything specified above (two layers, no code reduction).
+
+*What we are taking from it.*  Confidence the API path is right.
+The transient-dispatch UX was considered for the keymap (rev 2),
+but the keymap is now pinned to discrete commands under =C-; a
+C= so existing GPTel keys aren't disturbed (rev 3).
+
+* References
+
+- [[file:../../modules/ai-config.el][modules/ai-config.el]] -- =gptel-confirm-tool-calls nil= at
+  line 386 (removed by this integration); loader at lines 71-96.
+- [[file:gptel-tools-shortlist.org][gptel-tools-shortlist.org]] -- local-tools shortlist; MCP servers
+  slot in as the "external" tier.
+- [[file:gptel-agentic-tool-ideas.org][gptel-agentic-tool-ideas.org]] -- broader agentic-tool design.
+- [[file:gptel-gh-tool.org][gptel-gh-tool.org]] -- sibling design; same confirm-on-write
+  pattern.
+- [[https://github.com/lizqwerscott/mcp.el][lizqwerscott/mcp.el]] -- upstream.
+- [[https://github.com/lizqwerscott/gptel-mcp.el][lizqwerscott/gptel-mcp.el]] -- considered and declined; see §
+  Considered Alternatives.
+- =~/code/mcp.el/mcp-hub.el:53-90,131-160= -- verified callback
+  ownership and start-all helper.
+- =elpa/gptel-0.9.8.5/gptel.el:1595-1607,2244-2245= -- verified
+  =gptel-confirm-tool-calls= semantics and tool-confirm gate.
+- =elpa/gptel-0.9.8.5/gptel.el:1729-1820= -- verified
+  =gptel-make-tool= registration.
+- =~/.claude.json= -- Claude Code config.
