@@ -37,6 +37,8 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
+** TODO [#C] Dashboard buffer too long
+The dashboard sometimes doesn't stay put in the buffer because 
 ** PROJECT [#B] Architecture review follow-up from 2026-05-03 :refactor:no-sync:
 
 High-level pass over =init.el=, =early-init.el=, and all 104 files in
@@ -2815,7 +2817,7 @@ walk recorded as a completion log entry under the parent task.
 
 Depends on: command + Dired/Dirvish rewire.
 
-** TODO [#C] GPTel Tool Work
+** TODO [#C] GPTel Work
 
 Categories below thematize the agent affordances the design doc
 [[file:docs/design/gptel-agentic-tool-ideas.org][gptel-agentic-tool-ideas.org]]
@@ -2829,6 +2831,152 @@ of the spec heading once the spec is approved.  The magit-backend
 reimplementation of the shipped git tools is tracked separately in
 [[file:docs/design/gptel-git-tools-magit-backend.org][gptel-git-tools-magit-backend.org]].
 
+*** TODO [#B] Wire Up MCP.el so That GPTel Has Access to MCP Servers via GPTel Tools
+
+**** 2026-05-16 Sat @ 15:44:36 -0500 Spec
+
+Design doc: [[file:docs/design/mcp-el-gptel-integration.org][docs/design/mcp-el-gptel-integration.org]]
+
+**** TODO [#B] Phase 1 -- ai-mcp.el module + pure helpers :mcp:
+
+*Goal:* land the static module skeleton with all defcustoms, the server spec, and pure helpers that perform no I/O.
+
+*Entry:* spec at revision 3.
+
+*Deliverables:*
+- =modules/ai-mcp.el= with sections 1 (constants / defcustoms) and 3 (pure helpers) populated per the Code organization outline.
+- Defcustoms: =cj/mcp-claude-config=, =cj/mcp-enabled-servers=, =cj/mcp-start-on-entry-points=, =cj/mcp-startup-timeout=, =cj/mcp-tool-timeout=, =cj/mcp-tool-confirm-overrides=, audit-log toggles.
+- Defconst: =cj/mcp-server-specs= (the nine servers).
+- Helpers: =cj/mcp--read-claude-config= (mtime-cached, structured returns), =cj/mcp--get-env=, =cj/mcp--get-secret-arg=, =cj/mcp--build-server-alist= (filtered by =cj/mcp-enabled-servers=), =cj/mcp--redact=, =cj/mcp--confirm-p=, =cj/mcp--normalize-description=.
+- Tests in =tests/test-ai-mcp-helpers.el= covering every helper against fixtures.  No real =~/.claude.json= reads.
+
+*Exit:* all helper tests green.  Sentinel =REDACTED_TEST_SECRET= never appears in any output of any helper.
+
+**** TODO [#B] Phase 1.5 -- GPTel confirmation contract :mcp:
+
+*Goal:* flip =gptel-confirm-tool-calls= to ='auto= and gate the existing local tools that need it.
+
+*Entry:* Phase 1 module exists and helpers tested.
+
+*DECISION (cj):* which of the existing local tools register with =:confirm t= once ='auto= is in effect?  Reads (=read_buffer=, =read_text_file=, =list_directory_files=, =git_status=, =git_log=, =git_diff=) clearly stay =:confirm nil=.  Judgment calls:
+- =web_fetch= -- fetches arbitrary URLs the agent supplies.  Spec recommends gating.
+- =write_text_file= -- writes any path under =$HOME= with agent-supplied content.
+- =update_text_file= -- modifies an existing file with an agent-supplied transform.
+- =move_to_trash= -- moves a path to trash (reversible but disruptive).
+
+*Deliverables:*
+- =ai-mcp.el= setup section runs =(setq gptel-confirm-tool-calls 'auto)=.
+- Remove =(setq gptel-confirm-tool-calls nil)= from =modules/ai-config.el:386= with a comment pointing at =ai-mcp.el=.
+- For each tool the decision marks "gate," add =:confirm t= to its =gptel-make-tool= form.
+- Tests in =tests/test-ai-mcp-confirm-contract.el= asserting: =gptel-confirm-tool-calls= is ='auto= after load; write-classified stub MCP tool with =:confirm t= triggers the confirm branch in =gptel-send='s dispatch (stub the prompt); read-classified MCP tool with =:confirm nil= does not; =git_log= (=:confirm nil=) still runs without prompting; each newly-gated local tool does prompt.
+
+*Exit:* tests green.  Manual smoke: open GPTel, call a gated tool, confirm prompt appears.  Call =git_log=, no prompt.
+
+**** TODO [#B] Phase 2 -- Compat layer + registration pipeline (fake inventory) :mcp:
+
+*Goal:* implement the mcp.el compat wrappers and the tool-registration pipeline against stubbed =mcp-server-connections=.
+
+*Entry:* Phase 1.5 proves gptel respects per-tool =:confirm= slot.
+
+*Deliverables:*
+- Section 4 of =ai-mcp.el= (compat layer): =cj/mcp--server-status=, =cj/mcp--server-tools=, =cj/mcp--server-name=, =cj/mcp--assert-capabilities=.  Each helper documents the upstream commit / file location it targets.
+- Section 5 of =ai-mcp.el= (registration pipeline): =cj/mcp--register-tool=, =cj/mcp--register-server-tools=, =cj/mcp--deregister-server-tools=, =cj/mcp--rewrite-plist=, =cj/mcp--registered-tools= hash.
+- All MCP tools register with =:async t=.
+- Tests in =tests/test-ai-mcp-registration.el=.
+
+*Exit:* with a stubbed =mcp-server-connections=, registration produces correctly prefixed =mcp__SERVER__TOOL= entries in =gptel-tools=; closures call =mcp-call-tool SERVER REMOTE-NAME= (verified by stubbing =mcp-async-call-tool=); deregistration removes only MCP-owned tools and leaves a pre-populated local =git_log= entry intact; re-registration replaces function pointer without duplicating menu entries; confirm overrides win over patterns.
+
+**** TODO [#B] Phase 3 -- Async state machine + timer-race timeout wrapper :mcp:
+
+*Goal:* implement the lifecycle state machine and the per-call timer-race timeout.
+
+*Entry:* Phase 2 registration works against stubs.
+
+*Deliverables:*
+- Section 6 of =ai-mcp.el= (async state machine): =cj/mcp--state=, =cj/mcp--server-status= alist, =cj/mcp--stall-timer=, =cj/mcp-ensure-started=, =cj/mcp--on-hub-callback=, =cj/mcp--poll-status=, =cj/mcp--start-stall-timer=, =cj/mcp--build-status-from-specs=.
+- =cj/mcp--wrap-async-with-timeout= (timer/callback race; both branches set =done= before invoking gptel callback so late responses are ignored).
+- Tests in =tests/test-ai-mcp-async.el=.
+
+*Exit:* =cj/mcp-ensure-started= returns in <100 ms with delayed-callback stubs; stall timer fires for stuck servers; timer-race wrapper handles all three orderings (MCP-first, timer-first, late-MCP-after-timer); async error path (=:error-callback= without inited callback) reaches =failed= state via polling.
+
+**** TODO [#B] Phase 4 -- First real connection (drawio or slack-deepsat) :mcp:
+
+*Goal:* wire one real no-auth server end-to-end against actual mcp.el and prove the stubbed Phase 3 behavior matches reality.
+
+*Entry:* Phase 3 async works against stubs.
+
+*Deliverables:*
+- Add =use-package mcp= to =ai-mcp.el= (MELPA active, =:load-path= for local checkout commented).
+- =cj/mcp--assert-capabilities= called at load time; signals clearly if mcp.el is too old.
+- Set =cj/mcp-enabled-servers= temporarily to =("drawio")= (or =("slack-deepsat")= if the local proxy is running).
+- First real =cj/mcp-ensure-started= invocation from =cj/toggle-gptel=.
+
+*Exit:* manual smoke -- =C-; a t= opens GPTel without blocking; within 30 s, drawio (or slack-deepsat) tools appear in =gptel-menu= grouped by category; calling a tool returns expected output; killing the subprocess externally surfaces as =failed= in =cj/mcp--server-status=.
+
+**** TODO [#B] Phase 5 -- Status UX + commands + doctor (static) :mcp:
+
+*Goal:* ship the full server-management UX so partial-availability and failures are visible.
+
+*Entry:* Phase 4 proves a real connection works.
+
+*Deliverables:*
+- Section 7 of =ai-mcp.el= (UI).
+- Commands: =cj/mcp-status= (echo-area summary keyed off =cj/mcp--state=), =cj/mcp-list-tools= (tabulated buffer with failed servers at top in red face; keys =g r c RET q=), =cj/mcp-doctor= (static mode only -- capability, =npx=/=uvx=, Claude config, per-server env, local endpoints; output buffer keys =c r q=), =cj/mcp-wait-until-ready=, =cj/mcp-hub= (thin wrapper that ensures startup first), =cj/mcp-restart-failed=, =cj/mcp-restart-server=, =cj/mcp-stop-all=.
+- Keymap: =C-; a C= subprefix bound in =ai-config.el='s autoload section.  Keys =h s l r R S d w=.
+- which-key labels for every binding.
+- =kill-emacs-hook= registration for =cj/mcp-stop-all=.
+- Investigation: does =gptel-menu= refresh after mid-call tool registration?  Document the answer in =ai-mcp.el= commentary; if it requires close+reopen, add to known UX caveats.
+
+*Exit:* all keymap bindings work; audit buffer surfaces failed servers prominently; doctor identifies each scenario in the manual test matrix; status command shows the right state for each phase transition.
+
+**** TODO [#B] Phase 6 -- HTTP servers (linear, notion) :mcp:
+
+*Goal:* add the two HTTP-transport servers with in-protocol OAuth.
+
+*Entry:* Phase 5 UX shipped.
+
+*Deliverables:*
+- Add =linear= and =notion= back to =cj/mcp-enabled-servers=.
+- Doctor gains live-auth-check mode (=C-u C-; a C d=): invokes a single safe read per auth class to verify OAuth tokens haven't silently expired.  Static checks first; live probe only fires after static passes.
+- OAuth recovery pattern matcher surfaces auth URLs in =cj/mcp-status= on first connect.
+
+*Exit:* first connect surfaces the OAuth URL through the recovery pattern; after browser handshake completes, subsequent connects succeed without prompt; live-auth-check correctly identifies a deliberately revoked token; both servers appear ready in the audit buffer.
+
+**** TODO [#B] Phase 7 -- Env-dependent stdio servers (figma, google-*) :mcp:
+
+*Goal:* add the remaining five env-dependent servers.
+
+*Entry:* Phase 6 HTTP servers connect cleanly.
+
+*Deliverables:*
+- Add =figma=, =google-calendar=, =google-docs-personal=, =google-docs-work=, =google-keep= to =cj/mcp-enabled-servers=.
+- Verify env-merge from =~/.claude.json= for each (the mtime-cached reader from Phase 1).
+- Verify figma's =:secret-args= splicing places the API key correctly without echoing it.
+- Manual smoke: simulate token expiry on one Google server; recovery message points at "re-auth via Claude Code, then C-; a C r SERVER".
+
+*Exit:* all 9 servers reach =ready= state on a clean machine.  Sentinel-grep check across status / audit / hub / errors / audit-log shows zero secret leakage.  Doctor's live-auth covers each auth class (oauth, token, args-token, in-protocol, local, none).
+
+**** TODO [#B] Phase 8 -- Privacy + audit polish :mcp:
+
+*Goal:* land the final UX polish and documentation.
+
+*Entry:* all 9 servers working.
+
+*Deliverables:*
+- Audit buffer privacy header: "Tool results land in =gptel-tools= responses; saved conversations persist them.  Use =cj/gptel-autosave-toggle= per buffer to opt out."
+- =cj/mcp-tool-audit-log-enabled= defcustom + log writer (=~/.emacs.d/data/mcp-tool-log/YYYY-MM-DD.log= -- metadata only, one line per call, daily rotation).
+- =ai-mcp.el= commentary updated with the code-organization outline as a table of contents.
+- Final pass on tests covering saved-conversation behavior (autosave persists MCP tool results; toggling off prevents persistence).
+
+*Exit:* all 10 acceptance criteria from the spec pass.  Manual matrix run end-to-end on a fresh Emacs.  Working tree clean.
+
+*** TODO [#B] Wrap the gh CLI as a GPTel tool
+
+**** 2026-05-16 Sat @ 16:20:00 -0500 Spec
+
+Design doc: [[file:docs/design/gptel-gh-tool.org][docs/design/gptel-gh-tool.org]]
+
+*** TODO [#B] GPTel should autosave regularly after a conversation is saved
 *** TODO [#B] Org Workflow Related Tools
 
 Affordances that expose the Org workspace -- agenda state, capture

@@ -1,0 +1,1061 @@
+#+TITLE: Design: Wrap the gh CLI as a GPTel tool
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-16
+#+OPTIONS: toc:nil num:nil
+
+* Status
+
+Draft (revision 2).  Pre-implementation; no code shipped yet.  =gh=
+v2.92.0 installed and authenticated against both =github.com= (account
+=cjennings=) and =deepsat.ghe.com= (account =craig-jennings=).
+
+Revision 2 incorporates a code-review pass that caught several
+incorrect =gh= CLI assumptions and a critical safety gap: with
+=gptel-confirm-tool-calls= set to =nil= in =modules/ai-config.el:386=,
+the "irreversible-only blocklist" V1 from revision 1 would let the
+agent run unconfirmed writes (=pr merge=, =run cancel=, =api -f
+body=...=, =release create=, etc.).  Revision 2 keeps Craig's intent
+of a general-capability tool but applies =:confirm t= to every
+classified write, drops the "scan command string for =--hostname=
+and =-H=" approach in favor of argv-list builders, and expands the
+wrapper set so most agent workflows don't need to fall back to the
+general tool.
+
+* Problem
+
+GPTel agents can read git history locally (=git_log=, =git_diff=,
+=git_status=) but have no access to the GitHub side of the workflow:
+PRs, issues, reviews, CI runs, releases, gists, repo metadata.  The
+=gh= CLI does all of this and is already authenticated against both
+hosts the user works with.  Wrapping it as a GPTel tool gives the
+agent the same GitHub surface the user has.
+
+The wrapper has to handle four complications the local git tools
+don't:
+
+1. *Two authenticated hosts* -- personal (=github.com=) and work
+   GHE (=deepsat.ghe.com=) -- with different policies and different
+   blast radii for destructive operations.
+2. *A vast subcommand surface* (~30 top-level subcommands, hundreds
+   of leaves) that doesn't fit cleanly into one typed schema per
+   leaf.
+3. *Inconsistent flag semantics across subcommands.*  =--hostname=
+   exists only on =gh api= and =gh auth status=; the rest use
+   =--repo [HOST/]OWNER/REPO=.  =-H= means =--head= on =gh pr list=
+   but =--header= on =gh api=.  Naive string-scanning to detect
+   user intent is wrong.
+4. *Global GPTel setting* (=gptel-confirm-tool-calls nil=) means
+   the agent can call any registered tool without user confirmation
+   unless that specific tool is registered with =:confirm t=.  V1
+   safety must come from per-tool flags, not from a session-level
+   gate.
+
+* Goals
+
+1. The agent can invoke the non-interactive subset of =gh= against
+   either host, gated by a safety policy.
+2. High-frequency reads have typed wrappers with sensible defaults
+   (host/repo resolution, JSON-by-default with minimal fields,
+   output cap, timeout).  Wrappers auto-execute.
+3. The active host is resolved from a single context object that
+   considers (in order): explicit =hostname=/=repo= args, branch
+   upstream remote, =origin= remote, =cj/gh-default-host=.  Every
+   tool response prefixes the resolved host/repo so cross-host
+   mistakes are visible.
+4. Writes via the general tool execute only after user
+   confirmation (=:confirm t= on the gptel tool registration).
+   Unknown classifications fail closed (=:confirm t=).
+   Irreversible commands hard-block.
+5. Interactive commands (=auth login=, =codespace ssh=, =--web=,
+   =browse=, =pr checkout=, =repo clone=, =config set=,
+   =alias set=, =extension exec=) are hard-blocked in V1.
+6. File exfiltration paths (=api --input=, =api -F key=@file=,
+   =release upload=, =gist create=) are hard-blocked in V1.
+7. Output is capped *during capture*, not after, so a runaway
+   =--paginate= or =--log= can't fill memory or block Emacs.
+   Long-output commands have higher timeouts but the same byte
+   cap.
+8. Every call produces a structured debug record (host, repo, cwd,
+   sanitized argv, classification, policy decision, exit code,
+   duration, bytes captured, truncation flag, error kind) inspectable
+   via =cj/gh-tool-last-error=.
+9. =cj/gh-doctor= diagnoses missing prerequisites (=gh=
+   executable, version floor, auth per host, cwd repo detection,
+   environment overrides) before they fail at runtime.
+10. V2 adds true per-host policy (currently uniform across both
+    hosts), profile-based tool subsets, and bridge helpers between
+    local git tools and the gh wrappers.
+
+* Non-Goals
+
+- *Interactive subcommands.*  =gh auth login=, =gh codespace ssh=,
+  =gh pr checkout= (modifies working tree), =gh repo clone=
+  (writes outside controlled paths) are not in scope.  The user
+  runs those in a real terminal.
+- *Replicating gh extensions.*  Core gh only.  Extensions can be
+  invoked from a regular terminal if needed.
+- *Streaming long-running output.*  =gh run watch=, =gh
+  --paginate= for unbounded result sets, =gh repo clone= for large
+  repos.  V1 blocks =--paginate= and =watch= verbs; future
+  versions may add streaming support.
+- *Per-host write policies* (work-read-only / personal-full-write).
+  V1 applies the same write-confirmation policy to both hosts.
+  V2 makes the policy host-keyed.
+- *Conversation-context injection* and *local/remote bridge
+  helpers* (current branch → PR, changed files → PR comments).
+  Future enhancements; tracked as a follow-up.
+- *Artifact download* (=gh run download=).  Writes files; needs
+  its own confirmation flow.  Deferred to V2.
+
+* Verified gh CLI Contracts
+
+These were checked against =gh --version 2.92.0= help output before
+the spec was revised.  Implementation can rely on them.
+
+** Host / repo selection per subcommand
+
+- =gh api= and =gh auth status=: use =--hostname HOST= (long form
+  only; no short form).
+- =gh pr {view,list,diff,checks}=, =gh issue {view,list}=,
+  =gh run {view,list}=, =gh release *=, =gh search *=: use
+  =--repo [HOST/]OWNER/REPO= (short =-R=).
+- =gh repo view= and similar root-level commands: infer from cwd
+  remote; no =--hostname= or =--repo= flag.
+- Environment variables: =GH_HOST= and =GH_REPO= work for commands
+  that lack explicit flags.
+
+** Flags with overloaded short forms
+
+- =gh pr list -H FOO= → =--head FOO= (branch).
+- =gh search prs -H FOO= → =--head FOO= (branch).
+- =gh api -H KEY:VAL= → =--header KEY:VAL=.
+
+Substring scanning =-H= as "hostname" is wrong on every command
+that uses it.
+
+** =gh api= method classification
+
+The help text explicitly says: "adding request parameters will
+automatically switch the method to POST".  This means:
+
+- =gh api repos/x/y/issues= → GET (read).
+- =gh api repos/x/y/issues -f title=Foo= → POST (write).
+- =gh api repos/x/y/issues -F body=@file= → POST (write +
+  exfiltration).
+- =gh api --method GET repos/x/y/issues -f q=x= → GET (read,
+  explicit override).
+
+Classifier must inspect for =-f=, =-F=, =--field=, =--raw-field=,
+=--input=, and =--method= before defaulting to GET.
+
+** Wrappers without =--json= support
+
+- =gh pr diff= produces patch output; no =--json= flag.  Wrapper
+  is text-only.  Structured file metadata available via
+  =gh pr view --json files= (new wrapper =gh_pr_files=).
+
+** Environment variables for non-interactive use
+
+All confirmed via =gh help environment=:
+
+- =GH_PROMPT_DISABLED= -- disable interactive prompting.
+- =GH_PAGER= / =PAGER= -- set to =cat= so no pager fires.
+- =GH_NO_UPDATE_NOTIFIER= -- silence the "new version" banner.
+- =GH_NO_EXTENSION_UPDATE_NOTIFIER= -- same for extensions.
+- =GH_SPINNER_DISABLED= -- silence the progress spinner.
+- =NO_COLOR= -- disable ANSI color (cleaner LLM context).
+
+V1 subprocess env always includes all of the above.
+
+** Authentication
+
+#+begin_example
+✓ Logged in to github.com account cjennings (keyring)
+✓ Logged in to deepsat.ghe.com account craig-jennings (keyring)
+#+end_example
+
+Both stored in the system keyring.  =gh= reads the keyring per
+call; the wrapper does not handle tokens.  Expired auth surfaces
+as exit code 4 with a clear stderr message; recovery is interactive
+(=gh auth login --hostname HOST= in a terminal).
+
+* Current State
+
+** =modules/ai-config.el=
+
+- =gptel-confirm-tool-calls nil= at line 386.  Per-tool
+  =:confirm t= is the only confirmation mechanism in V1.
+- =cj/gptel-load-local-tools= (lines 71-96) loads tools from
+  =gptel-tools/=.  Add new gh feature names to
+  =cj/gptel-local-tool-features=.
+
+** =gptel-tools/=
+
+Ten tools today.  =git_log.el= is the closest analogue: validates
+input, runs subprocess with =process-file=, caps output, signals
+clear errors.  The gh wrappers follow the same shape with shared
+helpers in =gh-common.el=.
+
+* Design
+
+** File layout
+
+Two files plus per-wrapper registrations.  Wrappers are
+deliberately small (argv builders + JSON-field defaults) so they
+all live in one file:
+
+- =gptel-tools/gh-common.el= -- shared helpers: host/repo context,
+  argv runner, subprocess env, classifier, blocklist, redaction,
+  debug record, last-error buffer.  No tool registrations.
+- =gptel-tools/gh.el= -- the general tool + every wrapper
+  registration.  Pulls in =gh-common= via =require=.
+
+This matches Craig's preference for low loader surface (per the
+MCP revision discussion).  If =gh.el= grows past ~600 lines we
+split per-resource later (=gh-pr.el=, =gh-issue.el=, etc.).
+
+** Host / repo resolution
+
+A single helper returns a structured context object used by every
+tool entry point:
+
+#+begin_src emacs-lisp
+(defun cj/gh--resolve-context (cwd hostname repo)
+  "Return a context plist for a gh invocation.
+Resolution order:
+1. Explicit REPO argument (`[HOST/]OWNER/REPO').  If it contains
+   `HOST/', split off the host.
+2. Explicit HOSTNAME argument.
+3. CWD's branch upstream remote URL (`git rev-parse --abbrev-ref
+   @{u}' then `git remote get-url REMOTE').
+4. CWD's `origin' remote URL.
+5. `cj/gh-default-host'.
+
+Returns:
+  (:host HOST :owner OWNER :repo REPO :source SYM)
+where SOURCE is one of: explicit-repo, explicit-host, upstream,
+origin, default."
+  ...)
+#+end_src
+
+URL parsing handles all three forms produced by git:
+
+- =git@HOST:OWNER/REPO.git=
+- =ssh://git@HOST/OWNER/REPO.git=
+- =https://HOST/OWNER/REPO.git=
+
+Returns =nil host= if the URL doesn't match a known host; the
+caller uses =cj/gh-default-host= in that case.
+
+#+begin_src emacs-lisp
+(defcustom cj/gh-default-host "github.com"
+  "Host used when no other resolution path yields one."
+  :type 'string
+  :group 'cj)
+
+(defcustom cj/gh-known-hosts '("github.com" "deepsat.ghe.com")
+  "Hosts the gh CLI is authenticated against."
+  :type '(repeat string)
+  :group 'cj)
+#+end_src
+
+Context appears in every tool response as a one-line prefix:
+
+#+begin_example
+[gh github.com/cjennings/dotemacs read ok 12.4KB] ...
+[gh deepsat.ghe.com/org/repo write confirmed 0.8KB] ...
+[gh github.com api unknown blocked] ...
+#+end_example
+
+This makes cross-host accidents visible.
+
+** Argv-list builders, never command strings
+
+Every tool builds an explicit argv list and hands it to a shared
+runner.  Wrappers expose typed parameters that map directly into
+argv positions:
+
+#+begin_src emacs-lisp
+(defun cj/gh-pr-view--build-argv (context number include-comments fields)
+  "Return an argv list for `gh pr view NUMBER ...'."
+  (let ((repo-arg (format "%s/%s/%s"
+                          (plist-get context :host)
+                          (plist-get context :owner)
+                          (plist-get context :repo))))
+    (append (list "pr" "view" (number-to-string number)
+                  "--repo" repo-arg)
+            (when include-comments '("--comments"))
+            (when fields (list "--json" fields)))))
+#+end_src
+
+The general tool takes an =args= parameter typed as array-of-string
+(not a shell string) so the agent constructs argv directly:
+
+#+begin_src emacs-lisp
+;; agent passes: ["pr" "view" "171" "--repo" "deepsat.ghe.com/org/repo"]
+;; runner runs: gh pr view 171 --repo deepsat.ghe.com/org/repo
+#+end_src
+
+If the agent accidentally includes leading =gh= in args[0], the
+runner strips it and logs the normalization.
+
+** Subprocess contract
+
+One runner for everything:
+
+#+begin_src emacs-lisp
+(defun cj/gh--run (argv &key timeout context)
+  "Run gh with ARGV (a list of strings).
+Returns a plist:
+  (:exit-code N :stdout STR :stderr STR :truncated BOOL :duration-ms N
+   :argv ARGV :context CONTEXT)
+Enforces TIMEOUT (default `cj/gh--default-timeout').
+Captures output in-flight, killing the process at
+`cj/gh--max-bytes' to prevent runaway memory use."
+  ...)
+#+end_src
+
+Contract:
+
+- *Env vars set every call:* =GH_PROMPT_DISABLED=1=, =GH_PAGER=cat=,
+  =PAGER=cat=, =NO_COLOR=1=, =GH_NO_UPDATE_NOTIFIER=1=,
+  =GH_NO_EXTENSION_UPDATE_NOTIFIER=1=, =GH_SPINNER_DISABLED=1=.
+- *Timeout:* default 20 s for reads, 60 s for diffs/logs/search.
+  Per-tool override allowed but capped at 120 s.  Timeout kills
+  the process and returns =:error-kind 'timeout=.
+- *Output cap during capture:* a process filter accumulates bytes
+  up to =cj/gh--max-bytes= (64 KB).  At the cap, the filter sets
+  =truncated=, ignores further output, and sends SIGTERM after a
+  short grace.  Truncation marker appended to returned stdout.
+- *TRAMP rejection:* if =(file-remote-p default-directory)= is
+  non-nil, return =:error-kind 'remote-cwd= without invoking gh.
+- *Executable check:* if =(executable-find cj/gh--executable)= is
+  nil, return =:error-kind 'no-executable= with install
+  instructions.
+- *Version check:* the first call per session verifies
+  =gh --version= meets =cj/gh--min-version= (default "2.50.0");
+  cached for the session.
+
+** Read / write / destructive classifier
+
+Used to apply =:confirm t= and the irreversible blocklist:
+
+#+begin_src emacs-lisp
+(defconst cj/gh--read-verbs
+  '("view" "list" "status" "search" "diff" "checks" "describe"
+    "show" "logs" "auth-status"))
+
+(defconst cj/gh--write-verbs
+  '("create" "edit" "merge" "close" "reopen" "comment" "review"
+    "upload" "set" "add" "remove" "rerun" "cancel" "delete"
+    "fork" "archive" "unarchive" "lock" "unlock" "pin" "unpin"
+    "ready" "draft" "rename" "transfer" "approve" "label" "assign"))
+
+(defconst cj/gh--blocked-verbs
+  '(;; interactive / opens UI
+    "login" "logout" "checkout" "clone" "ssh" "code" "edit-prompt"
+    ;; modifies user config
+    "alias" "config" "extension"
+    ;; opens browser
+    "browse"))
+
+(defconst cj/gh--blocked-flags
+  '("--web"          ; many commands
+    "--paginate"     ; can produce unbounded output
+    "--input"        ; gh api file upload
+    "--editor"))     ; opens editor
+
+(defconst cj/gh--irreversible-patterns
+  '("\\`repo delete\\b"
+    "\\`release delete\\b"
+    "\\`secret delete\\b"
+    "\\`ssh-key delete\\b"
+    "\\`gpg-key delete\\b"
+    "\\`org delete\\b"
+    "\\`project delete\\b"
+    "\\`variable delete\\b"
+    "\\`ruleset delete\\b"
+    "\\`label delete\\b.*--yes"))
+#+end_src
+
+Classifier:
+
+#+begin_src emacs-lisp
+(defun cj/gh--classify (argv)
+  "Return one of: read, write, destructive, blocked, unknown."
+  (let* ((stripped (cj/gh--strip-flags argv))
+         (resource (car stripped))
+         (verb (cadr stripped)))
+    (cond
+     ;; Hard blocks first.
+     ((cj/gh--has-blocked-verb-p argv) 'blocked)
+     ((cj/gh--has-blocked-flag-p argv) 'blocked)
+     ((cj/gh--has-file-arg-p argv) 'blocked)  ; -F key=@file
+     ((cj/gh--matches-irreversible-p argv) 'destructive)
+     ;; gh api is special.
+     ((string= resource "api") (cj/gh--classify-api argv))
+     ;; Verb match.
+     ((member verb cj/gh--read-verbs) 'read)
+     ((member verb cj/gh--write-verbs) 'write)
+     (t 'unknown))))
+
+(defun cj/gh--classify-api (argv)
+  "Classify a `gh api ...' invocation.
+Reads: explicit method GET/HEAD with no -f/-F/--input.
+Writes: any -f/-F/--field/--raw-field/--input, OR explicit
+non-GET/HEAD method.
+Default (no method, no field): read (matches gh's GET default)."
+  (let* ((explicit-method (or (cadr (member "-X" argv))
+                              (cadr (member "--method" argv))))
+         (has-field (cl-some
+                     (lambda (f) (cl-some (lambda (a) (string-prefix-p f a))
+                                          argv))
+                     '("-f" "--raw-field" "-F" "--field")))
+         (has-input (member "--input" argv)))
+    (cond
+     (has-input 'blocked)                ; file exfiltration
+     ((and explicit-method
+           (not (member (upcase explicit-method) '("GET" "HEAD"))))
+      'write)
+     (has-field 'write)                   ; -f/-F auto-promotes to POST
+     ((and explicit-method
+           (member (upcase explicit-method) '("GET" "HEAD")))
+      'read)
+     (t 'read))))
+#+end_src
+
+Classifier-driven policy table:
+
+| Classification | Policy |
+|----------------+--------|
+| =read= | auto-execute |
+| =write= | =:confirm t= on registration; agent's call shows in confirm prompt |
+| =destructive= | hard-block; return =:error-kind 'irreversible-blocked= |
+| =blocked= | hard-block; return =:error-kind 'policy-blocked= with reason |
+| =unknown= | =:confirm t= (fail closed) |
+
+** Safety policy
+
+V1 uniform policy applied to both hosts:
+
+#+begin_src emacs-lisp
+(defcustom cj/gh-policy
+  '((read . auto)
+    (write . confirm)
+    (destructive . block)
+    (blocked . block)
+    (unknown . confirm))
+  "Per-classification policy.  V1 applies uniformly to both hosts."
+  :type '(alist :key-type symbol :value-type symbol)
+  :group 'cj)
+#+end_src
+
+Since GPTel's =:confirm t= flag is per-tool-registration (not
+per-call), the general tool is registered with =:confirm t=
+always.  The wrappers are registered per their classification:
+
+| Tool | Registered with |
+|------+-----------------|
+| Read wrappers (=gh_pr_view=, etc.) | =:confirm nil= |
+| =gh= general tool | =:confirm t= |
+
+The general tool then applies the policy table at invocation
+time: reads execute without further prompting (already past
+GPTel's confirm because :confirm t fires once); writes show
+detail before invocation; destructive/blocked never reach gh.
+
+** General tool: =gh=
+
+Single tool registered with =:confirm t= covering everything the
+wrappers don't.  Schema:
+
+| Arg | Type | Required | Purpose |
+|-----+------+----------+---------|
+| =args= | array of string | yes | argv list, e.g. =["pr", "view", "171", "--repo", "deepsat.ghe.com/org/repo"]= |
+| =hostname= | string | no | Override host for commands that accept =--hostname= (=api=, =auth status=); ignored otherwise |
+| =repo= | string | no | =[HOST/]OWNER/REPO= for repo-scoped commands; if HOST is present in repo, hostname arg is overridden |
+| =cwd= | string | no | Working directory; defaults to current buffer; must be under =$HOME=, must not be TRAMP |
+| =timeout= | integer | no | Seconds before kill; default 20, max 120 |
+
+Description (registered) explicitly says:
+
+#+begin_example
+Use this only when no task-specific gh_* tool fits.  Prefer
+gh_pr_view, gh_pr_list, gh_pr_checks, gh_issue_view, gh_issue_list,
+gh_run_view, gh_run_list, gh_run_logs_failed, gh_repo_view,
+gh_search_prs, gh_search_issues, gh_api_get.
+
+Writes (create/edit/merge/etc.) require user confirmation.
+Destructive (repo/release/secret delete) are hard-blocked.
+Interactive commands (auth login, codespace ssh, --web, browse)
+are hard-blocked.  File uploads (api --input, -F @file, release
+upload, gist create) are hard-blocked.
+#+end_example
+
+** Wrapper inventory
+
+Twelve wrappers grouped by resource.  Each has typed args, JSON
+field defaults, output truncation, timeout override, and a
+description that names its scope.
+
+| Tool | gh command | Defaults | Timeout |
+|------+------------+----------+---------|
+| =gh_repo_view= | =repo view --json= | JSON fields: =name,nameWithOwner,description,defaultBranchRef,url,visibility= | 20s |
+| =gh_pr_view= | =pr view N --json= | JSON fields: =number,title,state,author,createdAt,url,body= (body truncated) | 20s |
+| =gh_pr_list= | =pr list --json= | JSON fields: =number,title,state,author,createdAt,headRefName=; default =--limit 30= (capped at 100) | 20s |
+| =gh_pr_diff= | =pr diff N --color never= | text only; capped at 64 KB | 60s |
+| =gh_pr_checks= | =pr checks N --json= | JSON fields: =name,status,conclusion,startedAt,completedAt,link= | 20s |
+| =gh_pr_files= | =pr view N --json files= | JSON fields: =files= (path, additions, deletions, mode) | 20s |
+| =gh_pr_current= | =pr view --json= (no number — auto-detect) | Same as =gh_pr_view= | 20s |
+| =gh_issue_view= | =issue view N --json= | JSON fields: =number,title,state,author,createdAt,url,body= (body truncated) | 20s |
+| =gh_issue_list= | =issue list --json= | JSON fields: =number,title,state,author,createdAt,labels=; default =--limit 30= | 20s |
+| =gh_run_view= | =run view RUN-ID --json= | JSON fields: =databaseId,name,status,conclusion,startedAt,headBranch,event,url= | 20s |
+| =gh_run_list= | =run list --json= | JSON fields: =databaseId,name,status,conclusion,startedAt,headBranch=; default =--limit 20= | 20s |
+| =gh_run_logs_failed= | =run view RUN-ID --log-failed= | text only; capped at 64 KB | 60s |
+| =gh_search_prs= | =search prs --json= | JSON fields: =number,title,state,author,repository,url=; default =--limit 30= (capped at 100) | 30s |
+| =gh_search_issues= | =search issues --json= | Same as PR search | 30s |
+| =gh_api_get= | =api ENDPOINT --method GET= | text/JSON pass-through; rejects fields/input args | 30s |
+
+Common args for every wrapper (unless noted):
+
+| Arg | Type | Required | Purpose |
+|-----+------+----------+---------|
+| =repo= | string | no | =[HOST/]OWNER/REPO=; resolved from context otherwise |
+| =hostname= | string | no | Override host for context resolution |
+| =limit= | integer | no | =--limit= for list/search wrappers; clamped to per-wrapper max |
+
+The =gh_api_get= wrapper *explicitly* rejects =-f=, =-F=,
+=--field=, =--raw-field=, =--input=, =--method=, and any method
+override.  It only accepts =ENDPOINT= and optional =-H= headers
+that don't carry secrets (the runner redacts =Authorization:= and
+similar regardless).  Writes via API go through the general tool
+with confirmation.
+
+** JSON field defaults
+
+Per-wrapper defaults are minimal -- enough for the agent to decide
+whether to drill in, not so much that one call fills the context.
+
+For =gh_pr_view= specifically:
+
+- *Default* (no =fields= override): the small list above (number,
+  title, state, author, createdAt, url, body-truncated-to-2KB).
+- *Override*: agent passes =fields= as a comma-separated string;
+  wrapper validates against a per-resource allowlist (so the agent
+  can't request =reviews,comments,files= in one call to bypass the
+  cap).
+- *Include flags*: =include-body t/nil=, =include-comments t/nil=,
+  =include-reviews t/nil= as boolean args.  Each adds the
+  corresponding JSON field; agent opts in only when needed.
+
+** Output truncation
+
+Process filter pattern, not post-hoc cap:
+
+#+begin_src emacs-lisp
+(defun cj/gh--make-filter (state-var)
+  "Return a process filter that accumulates into STATE-VAR's :stdout,
+stops collecting after `cj/gh--max-bytes', sets :truncated, and
+sends SIGTERM to the process."
+  (lambda (proc output)
+    (let* ((state (symbol-value state-var))
+           (current (plist-get state :stdout))
+           (current-len (length current))
+           (remaining (- cj/gh--max-bytes current-len)))
+      (cond
+       ((<= remaining 0) nil)             ; already at cap
+       ((<= (length output) remaining)
+        (plist-put state :stdout (concat current output)))
+       (t
+        (plist-put state :stdout
+                   (concat current (substring output 0 remaining)))
+        (plist-put state :truncated t)
+        (ignore-errors (delete-process proc)))))))
+#+end_src
+
+Truncation marker appended before return:
+
+#+begin_example
+[truncated at 64KB; use --limit, narrower fields, or a specific
+wrapper to reduce output]
+#+end_example
+
+** Error classification + debug record
+
+Every call returns (and =cj/gh-tool-last-error= caches) a debug
+record:
+
+#+begin_src emacs-lisp
+(defun cj/gh--debug-record (argv context exit-code stdout stderr
+                            duration-ms truncated)
+  (list :host (plist-get context :host)
+        :repo (cj/gh--repo-arg context)
+        :cwd default-directory
+        :argv (cj/gh--redact-argv argv)
+        :classification (cj/gh--classify argv)
+        :policy (cj/gh--policy-decision argv)
+        :exit-code exit-code
+        :duration-ms duration-ms
+        :bytes-captured (length stdout)
+        :truncated truncated
+        :error-kind (cj/gh--error-kind exit-code stderr)))
+#+end_src
+
+=:error-kind= mapping:
+
+| Condition | =:error-kind= | Returned message |
+|-----------+---------------+------------------|
+| Exit 4 + "authentication required" | =auth= | "Run =gh auth login --hostname HOST= in a terminal." |
+| Process killed by timeout timer | =timeout= | "Command exceeded N seconds; narrow the query or use a more specific wrapper." |
+| Policy block | =policy-blocked= | "Blocked by V1 policy: REASON." |
+| Irreversible match | =irreversible-blocked= | "Hard-blocked irreversible command: COMMAND." |
+| Truncated output | =truncated= | "Output truncated at 64KB; reduce scope." |
+| TRAMP cwd | =remote-cwd= | "Cannot run gh from remote directory: CWD." |
+| Missing executable | =no-executable= | "gh not found at CJ/GH--EXECUTABLE; install via 'pacman -S github-cli' (or equivalent)." |
+| Other non-zero exit | =gh-exit= | (raw stderr, redacted) |
+
+Each error includes a sanitized reproduce line:
+
+#+begin_example
+Reproduce: GH_PROMPT_DISABLED=1 GH_PAGER=cat gh pr view 171 --repo HOST/OWNER/REPO
+#+end_example
+
+(Secrets, body text, file paths redacted via =cj/gh--redact-argv=.)
+
+** Audit log (V1, opt-out)
+
+Every call appends one line to
+=~/.emacs.d/data/gh-tool-log/YYYY-MM-DD.log=:
+
+#+begin_example
+2026-05-16T14:23:45-0500 host=github.com repo=cjennings/dotemacs class=read policy=auto exit=0 duration=128ms bytes=4321
+2026-05-16T14:24:02-0500 host=deepsat.ghe.com repo=org/repo class=write policy=confirm exit=0 duration=412ms bytes=88
+#+end_example
+
+Metadata only, not output bodies.  Defcustom
+=cj/gh-tool-audit-log-enabled= (default =t=).  Daily rotation
+implicit (one file per day).  Cleanup manual.
+
+** Secrets redaction
+
+=cj/gh--redact-argv= masks:
+
+- Anything after =--token=, =--secret=, =--password= flags.
+- Authorization headers (=-H "Authorization: ..."=).
+- =--figma-api-key=KEY= (in case general tool spawns figma-mcp
+  somehow).
+- Bearer tokens in URLs (=?token=...=).
+- Values for =-f=/=-F= keys named like =body=, =text=,
+  =description= (private content; metadata still logged).
+
+Applied to:
+- All stderr returned to the agent.
+- All audit-log lines.
+- All debug records.
+- The reproduce line on error.
+
+* Commands & UX
+
+** =cj/gh-doctor=
+
+Diagnostic command.  No side effects.  Checks:
+
+- =gh= executable found at =cj/gh--executable=.
+- =gh --version= meets =cj/gh--min-version=.
+- =gh auth status= for each host in =cj/gh-known-hosts=.
+- Current buffer's cwd repo detection: resolves to which host/repo?
+- Environment overrides effective (=GH_PROMPT_DISABLED= etc. would
+  be set by the runner).
+- Active account per host.
+- Warnings if any block-list-relevant env is set externally
+  (e.g. user already has =GH_PAGER= set to something that pages).
+
+Output: a buffer with PASS / FAIL / WARN per check + recovery
+actions for failures.
+
+** =cj/gh-tool-last-error=
+
+Opens a buffer showing the last call's debug record:
+
+#+begin_example
+Host:           deepsat.ghe.com
+Repo:           org/repo
+Source:         upstream
+CWD:            ~/projects/work/foo
+Argv:           ("pr" "view" "171" "--repo" "deepsat.ghe.com/org/repo")
+Classification: read
+Policy:         auto
+Exit code:      0
+Duration:       412 ms
+Bytes captured: 4321
+Truncated:      no
+Error kind:     none
+
+Reproduce:
+  GH_PROMPT_DISABLED=1 GH_PAGER=cat NO_COLOR=1 \
+    gh pr view 171 --repo deepsat.ghe.com/org/repo
+#+end_example
+
+** Tool response header
+
+Every tool result begins with a one-line header so cross-host /
+policy decisions are visible:
+
+#+begin_example
+[gh github.com/cjennings/dotemacs read ok 4.3KB]
+{ ... }
+[gh deepsat.ghe.com/org/repo write confirmed 0.2KB]
+{ ... }
+[gh github.com/cjennings/dotemacs api blocked policy-blocked]
+Error: Hard-blocked file-upload path: --input file.
+Reproduce: gh api repos/cjennings/dotemacs/contents/foo --input file
+#+end_example
+
+* Implementation Plan
+
+Eight phases.  Each ends with green ERT tests + manual smoke
+before the next.
+
+** Phase 1 -- Common helpers + context resolver
+
+=gh-common.el=: =cj/gh--executable=, =cj/gh--available-p=,
+=cj/gh--version= (cached), =cj/gh--validate-cwd= (HOME + non-TRAMP),
+=cj/gh--parse-remote-url=, =cj/gh--resolve-context=,
+=cj/gh--redact-argv=.  No subprocess execution yet.
+
+Tests cover all helpers against fixture remote URLs and synthetic
+git directories.  No real gh calls.
+
+** Phase 2 -- Runner with subprocess env + timeout + in-flight cap
+
+=cj/gh--run=, the process filter, the timer kill path, env-var
+setup.  Tests stub =make-process= to simulate output / exit / hang
+/ truncation paths.
+
+Acceptance: with stub configured to produce 100 KB of output,
+returned stdout is exactly 64 KB plus the truncation marker, and
+the process gets SIGTERM.
+
+** Phase 3 -- Classifier + blocklist + policy
+
+=cj/gh--classify=, =cj/gh--classify-api=, blocklist constants,
+=cj/gh--policy-decision=.  Tests for every blocklist pattern
+(verbs + flags + file-arg paths), API edge cases (=-f= promotes
+to POST, =--method GET -f x=y= stays GET, etc.), and the
+unknown-fails-closed contract.
+
+** Phase 4 -- Read wrappers (5 first)
+
+=gh_repo_view=, =gh_pr_view=, =gh_pr_list=, =gh_pr_diff=,
+=gh_issue_view=.  Each is a thin schema + argv builder + delegate
+to =cj/gh--run=.  Tests verify argv shape for typical args.
+
+Manual smoke against both hosts.  First real gh calls.
+
+** Phase 5 -- Remaining wrappers + JSON defaults
+
+Eight more wrappers (=gh_pr_checks=, =gh_pr_files=,
+=gh_pr_current=, =gh_issue_list=, =gh_run_view=, =gh_run_list=,
+=gh_run_logs_failed=, =gh_search_prs=, =gh_search_issues=,
+=gh_api_get=).  JSON-field defaults per wrapper.  Tests for the
+=gh_api_get= flag-rejection contract.
+
+** Phase 6 -- General tool
+
+=gh.el= general tool registration with =:confirm t=, blocklist
+enforcement, policy decision applied before invocation.  Tests
+verify confirmation gate (stub gptel's confirm flow), blocked
+commands never reach =cj/gh--run=, destructive commands return
+=:irreversible-blocked= without prompting.
+
+** Phase 7 -- UX: doctor, last-error, response header
+
+=cj/gh-doctor=, =cj/gh-tool-last-error=, response header
+formatting.  Audit log writer.  Defcustom for log enable.
+
+** Phase 8 -- Loader wiring + integration
+
+Add the 16 feature names to =cj/gptel-local-tool-features= (one
+per wrapper + the general tool + the helpers feature).  Verify
+they land in =gptel-tools=.
+
+* Test Plan
+
+Target: 55-70 ERT tests across four files.  No real subprocesses,
+no real network, no real =~/.claude.json= (gh tools don't use it,
+but the no-real-process rule applies uniformly).
+
+** =tests/test-gh-common.el= -- pure helpers (~25 tests)
+
+- =cj/gh--parse-remote-url=: ssh-scp, ssh-url, https, with/without
+  =.git=, with/without trailing slash, unknown host returns =:host
+  nil=, =github.com.evil.example= does NOT match =github.com=.
+- =cj/gh--resolve-context=: explicit repo wins; explicit hostname
+  wins over remote; upstream beats origin; origin beats default;
+  default fires when no git.
+- =cj/gh--validate-cwd=: HOME-rooted ok; outside HOME errors;
+  TRAMP errors; non-directory errors.
+- =cj/gh--redact-argv=: =--token=, =-H "Authorization: ..."=,
+  =--figma-api-key=, =-f body=...= → body redacted; sentinel
+  =REDACTED_TEST_SECRET= never appears in any output of any
+  helper.
+- =cj/gh--available-p=: nil when =executable-find= fails; t
+  otherwise.
+- =cj/gh--version=: caches per session; floor check rejects
+  too-old.
+
+** =tests/test-gh-runner.el= -- runner contract (~15 tests)
+
+Stub =make-process=:
+- Normal exit 0 with short output: returned verbatim, no
+  truncation flag.
+- Long output (100 KB stub): truncated at 64 KB exactly,
+  truncation marker present, =:truncated t=.
+- Process hangs past timeout: timer fires, SIGTERM sent, returns
+  =:error-kind 'timeout=.
+- Exit 4 + auth stderr: returns =:error-kind 'auth= with recovery
+  message.
+- TRAMP cwd: never invokes =make-process=, returns =:error-kind
+  'remote-cwd=.
+- Missing executable: returns =:error-kind 'no-executable=.
+- Environment: =process-environment= includes all six required
+  vars before =make-process= call.
+- Argv with leading "gh" stripped + logged.
+
+** =tests/test-gh-classifier.el= -- policy logic (~20 tests)
+
+- Every read verb classifies as read.
+- Every write verb classifies as write.
+- Every destructive pattern matches.
+- Every blocked verb (=login=, =browse=, =clone=, etc.) classifies
+  as blocked.
+- Every blocked flag (=--web=, =--paginate=, =--input=) classifies
+  as blocked.
+- File-upload (=-F key=@/path=) classifies as blocked.
+- =gh api= GET (no fields): read.
+- =gh api= GET (=-f x=y=): write (auto-POST per gh's rules).
+- =gh api --method GET -f q=x=: read (explicit override).
+- =gh api -X DELETE=: destructive.
+- =gh api -X PATCH=: write.
+- =gh api --input file=: blocked.
+- Unknown verb (=gh frobnicate=): unknown → confirm.
+- =-H= as branch (=gh pr list -H feature=) doesn't trigger host
+  treatment.
+- =-H= as header (=gh api -H Accept:json=) doesn't trigger host
+  treatment.
+- Policy decision: read → auto; write → confirm; destructive →
+  block; blocked → block; unknown → confirm.
+
+** =tests/test-gh-wrappers.el= -- per-wrapper builders + schemas (~15 tests)
+
+- Every wrapper's schema is valid (correct =:name=, =:type=,
+  =:description=, =:args= shape).
+- =gh_pr_view= argv with number 171 and repo "host/o/r" produces
+  =("pr" "view" "171" "--repo" "host/o/r" "--json" "DEFAULTS")=.
+- =gh_pr_diff= rejects =format='json=.
+- =gh_api_get= rejects =-f=, =-F=, =--field=, =--raw-field=,
+  =--input=, =--method= other than GET.
+- =gh_pr_current= invokes without a number arg (uses cwd).
+- =limit= clamped to per-wrapper max.
+- =fields= validated against per-resource allowlist.
+
+** Manual smoke (every phase)
+
+| Phase | Smoke |
+|-------+-------|
+| 4 | =gh_pr_view N= against both hosts |
+| 4 | =gh_pr_list= in =~/.emacs.d= → uses github.com/cjennings/dotemacs |
+| 5 | =gh_pr_checks= shows CI status without full logs |
+| 5 | =gh_run_logs_failed= cap kicks in on a long-failed run |
+| 5 | =gh_api_get= rejects a =-f= arg with clear error |
+| 6 | =gh= general tool: agent asked to merge a PR triggers GPTel confirm prompt |
+| 6 | Agent asked to =gh repo delete= gets irreversible-blocked |
+| 6 | Agent asked to =gh --web=... gets policy-blocked |
+| 7 | =cj/gh-doctor= correctly identifies an unauthenticated host |
+| 7 | =cj/gh-tool-last-error= shows debug record after a failing call |
+
+** Opt-in integration suite
+
+A small set of real-gh tests (in =tests/test-gh-integration.el=
+marked =:tag :integration=, default skipped):
+
+- =gh auth status --hostname github.com= ok.
+- =gh auth status --hostname deepsat.ghe.com= ok.
+- =gh repo view cjennings/dotemacs --json name=
+  returns parseable JSON.
+- =gh pr list --repo cjennings/dotemacs --limit 1= returns ≤ 1
+  PR.
+
+Run manually via =make test-name TEST=gh-integration=.
+
+* Acceptance Criteria
+
+1. *Argv contract.* No tool produces a command string for execution;
+   every call goes through the argv-list runner.
+2. *No silent writes.* Every classified write either prompts
+   GPTel's confirm or hard-blocks.  Verified by an end-to-end
+   test where the agent attempts =pr merge= and the test fails if
+   =make-process= is invoked before confirm.
+3. *In-flight cap.* A stubbed process emitting 1 MB returns
+   exactly 64 KB; the runner never holds more than 65 KB in
+   memory.
+4. *Host visibility.* Every successful tool response begins with
+   =[gh HOST/REPO ...]=.  Verified by a test that greps the
+   response text.
+5. *Doctor coverage.* =cj/gh-doctor= correctly identifies (a) no
+   gh executable, (b) too-old gh, (c) unauthenticated host, (d)
+   non-git cwd, (e) git cwd whose remote points to an unknown
+   host.
+6. *No secret leakage.* Test fixtures containing
+   =REDACTED_TEST_SECRET= in every secret-bearing slot
+   (=--token=, =-H Authorization=, =-f body=, etc.) produce zero
+   matches when grepping audit log, debug record, and any
+   user-facing message.
+
+* Risks
+
+** R1 -- gh CLI evolves and verbs drift
+
+New =gh= versions may add subcommands the blocklist doesn't
+cover.  Or rename verbs.
+
+*Mitigation:* the blocklist works on verbs (not full subcommand
+paths) so most additions are caught.  Doctor includes a
+=gh --version= floor.  Periodic review when gh bumps a major
+version.
+
+** R2 -- The "all reads auto-execute" default may still be too broad
+
+Some reads expose private content (issue bodies, PR descriptions
+from private repos).  An agent surfacing a confidential issue
+body into a saved conversation has data-leak implications.
+
+*Mitigation:* response header makes the host/repo visible in
+every result, so the saved conversation makes the privacy
+boundary auditable.  Wrappers truncate body/comments by default;
+agent must explicitly opt-in to include them.  Documented in
+commentary.
+
+** R3 -- The general tool's =:confirm t= prompt may become click-fatigue
+
+If the agent uses the general tool heavily during a write-heavy
+workflow (PR creation, label management), confirming every call
+becomes tedious.
+
+*Mitigation:* the expanded wrapper set covers most reads, so the
+general tool fires mainly for writes -- where confirmation is
+exactly the right behavior.  If usage shows confirm fatigue,
+V2's per-host policy can add =:auto= for explicit
+write-confirmed contexts.
+
+** R4 -- =--paginate= block conflicts with legitimate large queries
+
+Blocking =--paginate= globally means the agent can't get
+historical CI runs (which may need pagination).
+
+*Mitigation:* =gh_run_list= and =gh_search_*= accept a clamped
+=--limit= which usually substitutes.  If a use case needs more,
+the agent can request multiple non-paginated pages explicitly.
+
+** R5 -- Token expiry surfaces as cryptic exit 4
+
+When a host's keyring entry expires, every call returns exit 4
+with "authentication required" on stderr.  The agent sees the
+error but may not realize the fix is interactive.
+
+*Mitigation:* the runner's =:error-kind 'auth= mapping prepends
+the recovery message before returning to the agent.  =cj/gh-doctor=
+proactively checks auth status.
+
+** R6 -- TRAMP cwd silently runs gh remotely
+
+Without the explicit TRAMP rejection, =process-file= would try to
+spawn =gh= on the remote host (where it may not exist, or may
+authenticate against the wrong keyring).
+
+*Mitigation:* runner checks =(file-remote-p default-directory)=
+first and returns =:error-kind 'remote-cwd= with a clear message.
+
+** R7 -- =gh search= behaves differently on GHE
+
+GHE may not support every advanced search operator
+=github.com= does.  Search wrappers may return inconsistent
+results across hosts.
+
+*Mitigation:* documented in =gh_search_*= wrapper descriptions.
+Result header makes the host visible so the agent can adjust.
+
+** R8 -- Audit log grows unbounded
+
+One file per day, but no automatic cleanup.
+
+*Mitigation:* metadata-only entries are tiny (~150 bytes); a
+year of heavy use is a few MB.  Manual cleanup acceptable.
+Defcustom to disable for users who don't want it.
+
+* Open Questions
+
+** Q1 -- Should the general tool's confirmation prompt include the classification?
+
+When GPTel asks "Run gh tool? (y/n)" the prompt shows the argv but
+not the classification.  Showing "WRITE: gh pr merge 171" gives the
+user more context.  Need to investigate gptel's confirm-prompt
+extensibility.
+
+** Q2 -- Should =gh_pr_diff= cap differently from text wrappers?
+
+A PR diff can legitimately be 100KB+ for a large refactor.  The
+64KB cap is the same as everywhere else.  If diffs need a higher
+cap (256KB?), that's per-wrapper config.
+
+** Q3 -- Should wrappers expose =include-body=, =include-comments=, etc., as separate args, or as a comma-separated list?
+
+The spec proposes separate boolean args (=:include-body t=,
+=:include-comments t=).  Alternative: one =:include= comma-list
+arg.  Separate args are more discoverable; comma-list is more
+compact.  Decide during Phase 4.
+
+** Q4 -- Should =cj/gh-tool-audit-log= grow into a query interface?
+
+V1 writes one line per call.  Future: a command to query the
+log (=cj/gh-audit-search REGEX=) for surfacing "what did the agent
+do to this PR last week?".
+
+* V2 Roadmap
+
+Items intentionally deferred:
+
+- *Per-host policy.*  =cj/gh-host-policy= alist keyed by hostname
+  (mirror of the MCP spec's structure) so work GHE can be
+  read-only while personal allows writes-with-confirm.
+- *Conversation context injection.*  After a PR view, the wrapper
+  inserts a "GitHub context: HOST/REPO PR #N at URL" line into the
+  GPTel buffer so saved conversations stay traceable without
+  bundling full output.
+- *Local/remote bridge helpers.*  current-branch → PR-number,
+  changed-files → matching PR file comments, etc.
+- *Artifact download.*  =gh_run_artifacts=, =gh_release_download=
+  with explicit confirm and write to a controlled directory.
+- *Async general tool.*  =make-process= + sentinel for the cases
+  where 60s timeout isn't enough (rare, but real for some
+  =--paginate= scenarios).
+- *Audit log query interface.*  =cj/gh-audit-search=,
+  =cj/gh-audit-by-host=.
+- *Profile-based tool subsets.*  e.g. read-only profile
+  vs. write-capable profile per buffer.
+
+* References
+
+- [[file:../../gptel-tools/git_log.el][gptel-tools/git_log.el]] -- pattern reference for new tool files.
+- [[file:../../modules/ai-config.el][modules/ai-config.el]] -- =gptel-confirm-tool-calls nil= at
+  line 386; loader at lines 71-96.
+- [[file:gptel-agentic-tool-ideas.org][gptel-agentic-tool-ideas.org]] -- broader agentic-tool design;
+  =gh= sits alongside the MCP integration as the
+  collaboration tier.
+- [[file:mcp-el-gptel-integration.org][mcp-el-gptel-integration.org]] -- sibling design; same
+  confirm-on-write pattern for safety.
+- [[https://cli.github.com/manual/][gh CLI manual]] -- subcommand reference.
+- =gh --version 2.92.0= help output -- verified flag semantics
+  per subcommand.
+- =gh help environment= -- verified env-var names for non-interactive
+  mode.
