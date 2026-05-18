@@ -9,14 +9,19 @@
 ;; beginning-of-the-line in a shell, or the prefix key in a screen session.
 
 ;; Two ways to lift text out of a vterm, both with the same key story:
-;;   - C-; x c  enters vterm-copy-mode (the buffer becomes a normal Emacs
-;;     buffer: navigation keys, rectangles, etc.).
+;;   - C-; x c  enters copy-mode via `cj/vterm-copy-mode-dwim'.  When a tmux
+;;     client is attached to the vterm (typical -- `cj/vterm-launch-tmux'
+;;     auto-starts tmux), sends tmux's prefix C-b [ so the user lands in
+;;     tmux's own copy-mode with the full pane history available
+;;     (history-limit, default 100000 in this config's tmux.conf).  Without
+;;     tmux, falls back to `vterm-copy-mode' against vterm's scrollback.
 ;;   - C-; x h  captures the current tmux pane's full history into a temporary
 ;;     Emacs buffer.
-;; In both, M-w copies the active region and stays open, so several pieces can
-;; be grabbed in a row; C-g, <escape>, or q leaves (closing the history buffer
-;; / resuming the live terminal) without copying.  RET is left unbound -- no
-;; special "copy and exit" shortcut.
+;; In all three surfaces (vterm-copy-mode, tmux copy-mode, history buffer),
+;; M-w copies the active region and stays open so several pieces can be
+;; grabbed in a row; C-g, <escape>, or q leaves without copying; RET is
+;; unbound -- no special "copy and exit" shortcut.  The tmux-side bindings
+;; live in ~/code/archsetup/dotfiles/common/.tmux.conf.
 
 ;; ANSI-TERM & TERM
 ;; I haven't yet found a need for term or ansi-term in my workflows, so I leave
@@ -153,6 +158,63 @@ the live terminal back where it was."
     (user-error "This command is effective only in vterm-copy-mode"))
   (vterm-copy-mode -1))
 
+(defun cj/vterm--in-tmux-p ()
+  "Return non-nil when the current vterm has a tmux client attached.
+Errors from the pane-id lookup (not in vterm-mode, no tty, no
+matching client, tmux not installed) are treated as nil so callers
+can use this as a cheap boolean predicate."
+  (and (eq major-mode 'vterm-mode)
+       (condition-case _
+           (and (cj/vterm--current-tmux-pane-id) t)
+         (error nil))))
+
+(declare-function vterm-send-string "vterm" (string &optional paste-p))
+
+(defun cj/vterm-copy-mode-dwim ()
+  "Enter copy-mode using the engine appropriate to this vterm.
+
+When tmux is attached to the current vterm, write tmux's default
+prefix sequence (C-b [) into the pty so the user lands in tmux's
+copy-mode with the full pane history (`history-limit', default
+100000) available.  The matching tmux keys in
+`~/code/archsetup/dotfiles/common/.tmux.conf' mirror this module's
+Emacs story: M-w copies and stays, C-g / q / <escape> exit, Enter
+is unbound.
+
+Without tmux, falls through to `vterm-copy-mode' which walks only
+vterm's own scrollback (effectively just the visible screen,
+because tmux redraws via cursor positioning rather than scrolling
+new lines through vterm's buffer)."
+  (interactive)
+  (if (cj/vterm--in-tmux-p)
+      (vterm-send-string "\C-b[")
+    (vterm-copy-mode)))
+
+(defun cj/vterm--send-mouse-wheel (button)
+  "Forward a wheel event to the program running in the current vterm.
+
+BUTTON is the SGR mouse button code: 64 for wheel up, 65 for wheel
+down.  X / Y coordinates are placeholders (1,1); tmux dispatches
+`WheelUpPane' / `WheelDownPane' on the button code and ignores the
+position when there is only one pane.
+
+vterm's keymap binds only `mouse-1' and `mouse-yank-primary' --
+wheel events fall through to Emacs's default scroll behavior, which
+moves the window over vterm's scrollback instead of reaching the
+pty.  Without this forwarding, tmux's `set -g mouse on' never fires
+because tmux never sees the events."
+  (vterm-send-string (format "\e[<%d;1;1M" button)))
+
+(defun cj/vterm-mouse-wheel-up ()
+  "Forward a wheel-up event to the program running in this vterm."
+  (interactive)
+  (cj/vterm--send-mouse-wheel 64))
+
+(defun cj/vterm-mouse-wheel-down ()
+  "Forward a wheel-down event to the program running in this vterm."
+  (interactive)
+  (cj/vterm--send-mouse-wheel 65))
+
 (use-package vterm
   :defer .5
   :commands (vterm vterm-other-window)
@@ -189,7 +251,11 @@ ai-vterm.el is loaded."
 		("<f10>"   . nil)
 		("<f12>"   . nil)
 		("C-c C-t" . nil)
-		("C-y"     . vterm-yank))
+		("C-y"     . vterm-yank)
+		("<wheel-up>"   . cj/vterm-mouse-wheel-up)
+		("<wheel-down>" . cj/vterm-mouse-wheel-down)
+		("<mouse-4>"    . cj/vterm-mouse-wheel-up)
+		("<mouse-5>"    . cj/vterm-mouse-wheel-down))
   :custom
   (vterm-kill-buffer-on-exit t)
   (vterm-max-scrollback 100000)
@@ -354,7 +420,7 @@ C-F9 / M-F9 dispatch via `cj/ai-vterm'."
 
 (keymap-global-set "<f12>" #'cj/vterm-toggle)
 
-(keymap-set cj/vterm-map "c" #'vterm-copy-mode)
+(keymap-set cj/vterm-map "c" #'cj/vterm-copy-mode-dwim)
 (keymap-set cj/vterm-map "h" #'cj/vterm-tmux-history)
 (keymap-set cj/vterm-map "l" #'vterm-clear-scrollback)
 (keymap-set cj/vterm-map "N" #'vterm)
@@ -414,7 +480,7 @@ cursor-visibility tracking resumes."
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; x" "vterm menu"
-    "C-; x c" "vterm copy mode"
+    "C-; x c" "copy mode (tmux/vterm)"
     "C-; x h" "tmux scrollback history"
     "C-; x l" "clear vterm scrollback"
     "C-; x N" "new vterm"
