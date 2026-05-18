@@ -74,21 +74,6 @@
 ;; so the magit integration only activates when magit is provided.
 ;; See test-ai-config-gptel-magit-lazy-loading.el for magit stub tests.
 
-;; Stub `gptel--with-buffer-copy-internal' so the advice attached to it
-;; in ai-config.el can be exercised without loading real gptel-request.
-;; Mirrors the salient bits of the real function (gptel-request.el:945):
-;; create a temp buffer, copy major-mode as a symbol (no hooks), call
-;; body-thunk inside.  See test-ai-config-gptel-prompt-tab-width.el.
-(unless (fboundp 'gptel--with-buffer-copy-internal)
-  (defun gptel--with-buffer-copy-internal (buf _start _end body-thunk)
-    "Stub: create temp buffer, copy major-mode from BUF, run BODY-THUNK."
-    (let ((temp (generate-new-buffer " *gptel-prompt-stub*" t)))
-      (unwind-protect
-          (with-current-buffer temp
-            (setq major-mode (buffer-local-value 'major-mode buf))
-            (funcall body-thunk))
-        (kill-buffer temp)))))
-
 ;; Stub ai-conversations
 (provide 'ai-conversations)
 
