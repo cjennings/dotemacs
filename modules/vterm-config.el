@@ -215,6 +215,17 @@ because tmux never sees the events."
   (interactive)
   (cj/vterm--send-mouse-wheel 65))
 
+(defun cj/vterm-send-escape ()
+  "Send the ESC byte to the program running in this vterm.
+
+`<escape>' is bound globally to `keyboard-escape-quit' (see
+`modules/keybindings.el'), so without this override Emacs swallows
+the key before it can reach the pty.  Forwarding it here lets tmux
+copy-mode cancel, vi-mode exits, and any other in-terminal program
+that relies on Escape see the key."
+  (interactive)
+  (vterm-send-string "\e"))
+
 (use-package vterm
   :defer .5
   :commands (vterm vterm-other-window)
@@ -255,7 +266,8 @@ ai-vterm.el is loaded."
 		("<wheel-up>"   . cj/vterm-mouse-wheel-up)
 		("<wheel-down>" . cj/vterm-mouse-wheel-down)
 		("<mouse-4>"    . cj/vterm-mouse-wheel-up)
-		("<mouse-5>"    . cj/vterm-mouse-wheel-down))
+		("<mouse-5>"    . cj/vterm-mouse-wheel-down)
+		("<escape>"     . cj/vterm-send-escape))
   :custom
   (vterm-kill-buffer-on-exit t)
   (vterm-max-scrollback 100000)
