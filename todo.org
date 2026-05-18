@@ -1,4 +1,4 @@
-#+TITLE: Emacs Config Tasks
+#+TITLE: Emacs Config
 #+AUTHOR: Craig Jennings
 #+ARCHIVE: %s::* Emacs Resolved
 
