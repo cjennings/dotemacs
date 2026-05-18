@@ -352,6 +352,21 @@ its own copy-mode against the full pane history."
       (cj/vterm-mouse-wheel-down)
       (should (equal sent '("\e[<65;1;1M"))))))
 
+(ert-deftest test-vterm-send-escape-writes-esc-byte ()
+  "Normal: `cj/vterm-send-escape' forwards a literal ESC byte to the pty so
+tmux copy-mode, vi-mode exits, etc., can see the key past Emacs's global
+`<escape>' → `keyboard-escape-quit' binding."
+  (let ((sent nil))
+    (cl-letf (((symbol-function 'vterm-send-string)
+               (lambda (s &optional _paste-p) (push s sent))))
+      (cj/vterm-send-escape)
+      (should (equal sent '("\e"))))))
+
+(ert-deftest test-vterm-escape-binding-installed-on-vterm-mode-map ()
+  "Normal: `<escape>' in `vterm-mode-map' routes through `cj/vterm-send-escape'."
+  (should (eq (keymap-lookup vterm-mode-map "<escape>")
+              #'cj/vterm-send-escape)))
+
 (ert-deftest test-vterm-wheel-bindings-installed-on-vterm-mode-map ()
   "Normal: wheel-up / wheel-down (and X11 mouse-4 / mouse-5) route to the
 forwarding commands so tmux can see them via `set -g mouse on'."
