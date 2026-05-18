@@ -361,6 +361,8 @@ Works for any buffer, whether it's visiting a file or not."
 ;;; ---------------------------- GPTel Configuration ----------------------------
 
 (use-package gptel
+  :load-path "~/code/gptel"
+  :ensure nil
   :defer t
   :commands (gptel gptel-send gptel-menu)
   :bind
@@ -390,28 +392,6 @@ Works for any buffer, whether it's visiting a file or not."
         (cj/gptel--fresh-org-prefix))
   (advice-add 'gptel-send :before #'cj/gptel--refresh-org-prefix)
   (add-hook 'gptel-post-response-functions #'cj/gptel-insert-model-heading))
-
-;; Workaround: gptel's `gptel--with-buffer-copy-internal' copies the
-;; source buffer's `major-mode' symbol into the prompt buffer but does
-;; not run mode hooks, so `org-mode-hook' never fires there.  In this
-;; config the global `tab-width' default is 4, while `org-mode-hook'
-;; sets it to 8 — so an inherited-org-mode prompt buffer keeps
-;; `tab-width=4', and Org's `org-element--list-struct' guard raises
-;; "Tab width in Org files must be 8" when gptel later parses it.
-;;
-;; Triggered in practice by `gptel-magit-generate-message' run from
-;; COMMIT_EDITMSG with `git-commit-major-mode' set to `org-mode' (see
-;; modules/vc-config.el).  Force `tab-width=8' before `body-thunk'
-;; runs so the prompt buffer satisfies Org's invariant.
-(define-advice gptel--with-buffer-copy-internal
-    (:around (orig buf start end body-thunk) cj/fix-org-tab-width)
-  "Force `tab-width=8' in the gptel prompt buffer when its inherited
-`major-mode' is `org-mode'."
-  (funcall orig buf start end
-           (lambda ()
-             (when (eq major-mode 'org-mode)
-               (setq-local tab-width 8))
-             (funcall body-thunk))))
 
 ;;; ---------------------------- Toggle GPTel Window ----------------------------
 
