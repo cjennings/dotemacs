@@ -158,14 +158,16 @@ and C-g quit back to the vterm; RET is left unbound (no special exit)."
   (should-not (keymap-lookup cj/vterm-tmux-history-mode-map "RET")))
 
 (ert-deftest test-vterm-keymap-includes-history-and-copy-bindings ()
-  "Normal: personal vterm map owns the high-level vterm UX commands."
+  "Normal: personal vterm map owns the high-level vterm UX commands.
+`C-; x c' resolves to `cj/vterm-copy-mode-dwim' so the binding can pick
+the right copy-mode engine (tmux when attached, vterm otherwise)."
   (should (member "C-;" vterm-keymap-exceptions))
   (should-not (eq (keymap-lookup cj/custom-keymap "X c") #'vterm-copy-mode))
   (should (eq (keymap-lookup cj/custom-keymap "x h") #'cj/vterm-tmux-history))
-  (should (eq (keymap-lookup cj/custom-keymap "x c") #'vterm-copy-mode))
+  (should (eq (keymap-lookup cj/custom-keymap "x c") #'cj/vterm-copy-mode-dwim))
   (should (equal (keymap-lookup vterm-mode-map "C-;") cj/custom-keymap))
   (should (eq (keymap-lookup vterm-mode-map "C-; x h") #'cj/vterm-tmux-history))
-  (should (eq (keymap-lookup vterm-mode-map "C-; x c") #'vterm-copy-mode))
+  (should (eq (keymap-lookup vterm-mode-map "C-; x c") #'cj/vterm-copy-mode-dwim))
   (should-not (keymap-lookup vterm-mode-map "C-c C-t")))
 
 (ert-deftest test-vterm-keymap-prompt-navigation ()
@@ -226,6 +228,141 @@ AI-vterm name neither helps nor blocks resolution."
               (should (equal (cj/vterm--current-tmux-pane-id) "%8")))))
       (when (buffer-live-p agent)
         (kill-buffer agent)))))
+
+(ert-deftest test-vterm-in-tmux-p-true-when-client-attached ()
+  "Normal: predicate returns t when tmux reports a client for our tty."
+  (let ((agent (cj/test--make-fake-vterm-buffer "agent [emacs.d]")))
+    (unwind-protect
+        (with-current-buffer agent
+          (cl-letf (((symbol-function 'get-buffer-process)
+                     (lambda (_buffer) 'fake-process))
+                    ((symbol-function 'process-tty-name)
+                     (lambda (_process) "/dev/pts/8")))
+            (test-vterm-tmux-history--with-tmux-mock
+                '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
+                   "/dev/pts/8\t%8\n"))
+              (should (cj/vterm--in-tmux-p)))))
+      (when (buffer-live-p agent)
+        (kill-buffer agent)))))
+
+(ert-deftest test-vterm-in-tmux-p-nil-when-no-matching-client ()
+  "Boundary: predicate returns nil when tmux runs but our tty has no client."
+  (let ((agent (cj/test--make-fake-vterm-buffer "agent [emacs.d]")))
+    (unwind-protect
+        (with-current-buffer agent
+          (cl-letf (((symbol-function 'get-buffer-process)
+                     (lambda (_buffer) 'fake-process))
+                    ((symbol-function 'process-tty-name)
+                     (lambda (_process) "/dev/pts/8")))
+            (test-vterm-tmux-history--with-tmux-mock
+                '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
+                   "/dev/pts/1\t%1\n"))
+              (should-not (cj/vterm--in-tmux-p)))))
+      (when (buffer-live-p agent)
+        (kill-buffer agent)))))
+
+(ert-deftest test-vterm-in-tmux-p-nil-when-tmux-fails ()
+  "Error: predicate swallows tmux failures and returns nil."
+  (let ((agent (cj/test--make-fake-vterm-buffer "agent [emacs.d]")))
+    (unwind-protect
+        (with-current-buffer agent
+          (cl-letf (((symbol-function 'get-buffer-process)
+                     (lambda (_buffer) 'fake-process))
+                    ((symbol-function 'process-tty-name)
+                     (lambda (_process) "/dev/pts/8")))
+            (test-vterm-tmux-history--with-tmux-mock
+                '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 1
+                   "no server running"))
+              (should-not (cj/vterm--in-tmux-p)))))
+      (when (buffer-live-p agent)
+        (kill-buffer agent)))))
+
+(ert-deftest test-vterm-in-tmux-p-nil-when-not-vterm-mode ()
+  "Boundary: predicate refuses non-vterm buffers without calling tmux."
+  (with-temp-buffer
+    (let ((tmux-called nil))
+      (cl-letf (((symbol-function 'process-file)
+                 (lambda (&rest _) (setq tmux-called t) 0)))
+        (should-not (cj/vterm--in-tmux-p))
+        (should-not tmux-called)))))
+
+(ert-deftest test-vterm-copy-mode-dwim-sends-tmux-prefix-when-attached ()
+  "Normal: with tmux attached, dwim writes C-b [ into the pty.
+The literal control-B + open-bracket bytes reach tmux which then enters
+its own copy-mode against the full pane history."
+  (let ((agent (cj/test--make-fake-vterm-buffer "agent [emacs.d]"))
+        (sent nil)
+        (copy-mode-called nil))
+    (unwind-protect
+        (with-current-buffer agent
+          (cl-letf (((symbol-function 'get-buffer-process)
+                     (lambda (_buffer) 'fake-process))
+                    ((symbol-function 'process-tty-name)
+                     (lambda (_process) "/dev/pts/8"))
+                    ((symbol-function 'vterm-send-string)
+                     (lambda (s &optional _paste-p) (push s sent)))
+                    ((symbol-function 'vterm-copy-mode)
+                     (lambda (&optional _arg) (setq copy-mode-called t))))
+            (test-vterm-tmux-history--with-tmux-mock
+                '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
+                   "/dev/pts/8\t%8\n"))
+              (cj/vterm-copy-mode-dwim)
+              (should (equal sent '("\C-b[")))
+              (should-not copy-mode-called))))
+      (when (buffer-live-p agent)
+        (kill-buffer agent)))))
+
+(ert-deftest test-vterm-copy-mode-dwim-falls-back-without-tmux ()
+  "Boundary: without tmux, dwim calls `vterm-copy-mode' and sends nothing."
+  (let ((agent (cj/test--make-fake-vterm-buffer "agent [emacs.d]"))
+        (sent nil)
+        (copy-mode-called nil))
+    (unwind-protect
+        (with-current-buffer agent
+          (cl-letf (((symbol-function 'get-buffer-process)
+                     (lambda (_buffer) 'fake-process))
+                    ((symbol-function 'process-tty-name)
+                     (lambda (_process) "/dev/pts/8"))
+                    ((symbol-function 'vterm-send-string)
+                     (lambda (s &optional _paste-p) (push s sent)))
+                    ((symbol-function 'vterm-copy-mode)
+                     (lambda (&optional _arg) (setq copy-mode-called t))))
+            (test-vterm-tmux-history--with-tmux-mock
+                '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 1
+                   "no server running"))
+              (cj/vterm-copy-mode-dwim)
+              (should-not sent)
+              (should copy-mode-called))))
+      (when (buffer-live-p agent)
+        (kill-buffer agent)))))
+
+(ert-deftest test-vterm-mouse-wheel-up-sends-sgr-button-64 ()
+  "Normal: wheel-up emits the SGR mouse-wheel-up sequence (button 64)."
+  (let ((sent nil))
+    (cl-letf (((symbol-function 'vterm-send-string)
+               (lambda (s &optional _paste-p) (push s sent))))
+      (cj/vterm-mouse-wheel-up)
+      (should (equal sent '("\e[<64;1;1M"))))))
+
+(ert-deftest test-vterm-mouse-wheel-down-sends-sgr-button-65 ()
+  "Normal: wheel-down emits the SGR mouse-wheel-down sequence (button 65)."
+  (let ((sent nil))
+    (cl-letf (((symbol-function 'vterm-send-string)
+               (lambda (s &optional _paste-p) (push s sent))))
+      (cj/vterm-mouse-wheel-down)
+      (should (equal sent '("\e[<65;1;1M"))))))
+
+(ert-deftest test-vterm-wheel-bindings-installed-on-vterm-mode-map ()
+  "Normal: wheel-up / wheel-down (and X11 mouse-4 / mouse-5) route to the
+forwarding commands so tmux can see them via `set -g mouse on'."
+  (should (eq (keymap-lookup vterm-mode-map "<wheel-up>")
+              #'cj/vterm-mouse-wheel-up))
+  (should (eq (keymap-lookup vterm-mode-map "<wheel-down>")
+              #'cj/vterm-mouse-wheel-down))
+  (should (eq (keymap-lookup vterm-mode-map "<mouse-4>")
+              #'cj/vterm-mouse-wheel-up))
+  (should (eq (keymap-lookup vterm-mode-map "<mouse-5>")
+              #'cj/vterm-mouse-wheel-down)))
 
 (provide 'test-vterm-tmux-history)
 ;;; test-vterm-tmux-history.el ends here
