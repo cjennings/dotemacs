@@ -35,6 +35,12 @@
 (require 'cj-window-geometry-lib)
 (require 'cj-window-toggle-lib)
 
+;; Declare so `let'-bindings in this file are dynamic (special) rather than
+;; lexical.  Without this, `(let ((vterm-timer-delay 0)) (vterm-send-string
+;; ...))' creates a lexical binding that `vterm-send-string' (in vterm.el)
+;; cannot see, so its `accept-process-output' still blocks on the global nil.
+(defvar vterm-timer-delay)
+
 (defvar-keymap cj/vterm-map
   :doc "Personal vterm command map.")
 ;; Lowercase x picked over V for fewer Shift presses; v is the VC menu.
@@ -202,8 +208,17 @@ vterm's keymap binds only `mouse-1' and `mouse-yank-primary' --
 wheel events fall through to Emacs's default scroll behavior, which
 moves the window over vterm's scrollback instead of reaching the
 pty.  Without this forwarding, tmux's `set -g mouse on' never fires
-because tmux never sees the events."
-  (vterm-send-string (format "\e[<%d;1;1M" button)))
+because tmux never sees the events.
+
+`vterm-timer-delay' is locally pinned to 0 so
+`vterm-send-string''s `accept-process-output' returns immediately.
+With the buffer-local nil (`vterm-config' sets it for refresh
+batching), `accept-process-output' blocks forever when the program
+in the pty consumes the event without producing visible output --
+common for TUIs like Claude Code.  Result before the pin: spinning
+cursor until C-g, no actual scroll."
+  (let ((vterm-timer-delay 0))
+    (vterm-send-string (format "\e[<%d;1;1M" button))))
 
 (defun cj/vterm-mouse-wheel-up ()
   "Forward a wheel-up event to the program running in this vterm."
@@ -222,9 +237,13 @@ because tmux never sees the events."
 `modules/keybindings.el'), so without this override Emacs swallows
 the key before it can reach the pty.  Forwarding it here lets tmux
 copy-mode cancel, vi-mode exits, and any other in-terminal program
-that relies on Escape see the key."
+that relies on Escape see the key.
+
+`vterm-timer-delay' is locally pinned to 0; see
+`cj/vterm--send-mouse-wheel' for the hang scenario this avoids."
   (interactive)
-  (vterm-send-string "\e"))
+  (let ((vterm-timer-delay 0))
+    (vterm-send-string "\e")))
 
 (use-package vterm
   :defer .5
