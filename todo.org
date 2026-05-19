@@ -37,8 +37,29 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#C] Dashboard buffer too long
-The dashboard sometimes doesn't stay put in the buffer because 
+** DOING [#C] Dashboard buffer too long :bug:
+The dashboard often opens scrolled — content is partly above the visible
+window, the bottom half of content sits in the middle of the screen, and
+the actual bottom of the buffer is empty lines.  The banner image + the
+three navigator rows + several explicit newlines push the content too
+high.  Even the smallest screen would fit the content if the gratuitous
+empty lines were trimmed.
+
+** TODO [#C] Collapse dashboard navigator + keymap duplication :refactor:
+Triggered by: 2026-05-18 Dashboard buffer too long refactor audit.
+
+=modules/dashboard-config.el= inlines 12 launcher commands twice — once
+as anonymous lambdas inside =dashboard-navigator-buttons= (lines
+128-189) and once as anonymous lambdas inside the
+=dashboard-mode-map= =define-key= block (lines 200-218).  Adding a
+13th launcher requires editing two places, and the icon-row order and
+keymap order drift independently.
+
+Refactor sketch: a single =defconst cj/dashboard--launchers= holding
+=(KEY ICON-FAMILY ICON-NAME LABEL TOOLTIP COMMAND)= tuples, then
+derive both =dashboard-navigator-buttons= (grouped 4-per-row) and the
+keybindings from that list with a small helper.
+
 ** PROJECT [#B] Architecture review follow-up from 2026-05-03 :refactor:no-sync:
 
 High-level pass over =init.el=, =early-init.el=, and all 104 files in
@@ -56,7 +77,7 @@ Review snapshot:
   files. Caveat: 55 module files do not appear in the report at all, so the
   real project confidence is lower than the raw percentage suggests.
 
-*** DONE [#B] Consolidate shared utility helpers :architecture:refactor:
+*** 2026-05-15 Fri Consolidate shared utility helpers :architecture:refactor:
 CLOSED: [2026-05-15 Fri]
 
 Helpers are scattered across feature modules where they were first needed.
@@ -170,7 +191,7 @@ Done 2026-05-10:
   commit =0f9e3087=) with three sanitizers: =cj/org-sanitize-body-text=,
   =cj/org-sanitize-property-value=, =cj/org-sanitize-heading=.
 
-*** DONE [#B] Make coverage reporting account for untracked modules :tests:
+*** 2026-05-15 Fri Make coverage reporting account for untracked modules :tests:
 CLOSED: [2026-05-15 Fri]
 
 The current coverage result is useful but easy to overread. =make coverage=
@@ -191,7 +212,7 @@ Completed 2026-05-15:
   separate project-module score where missing modules count as 0%.
 - Focused summary tests and byte-compilation of the summary helper passed.
 
-**** DONE [#B] Teach the coverage report to list modules missing from SimpleCov
+**** 2026-05-15 Fri Teach the coverage report to list modules missing from SimpleCov
 CLOSED: [2026-05-15 Fri]
 
 Expected outcome:
@@ -211,7 +232,7 @@ Done 2026-05-15:
   reporting and for ignoring =.elc= files and nested paths outside direct
   =modules/*.el= ownership.
 
-**** DONE [#B] Decide whether unreported modules count as 0% coverage
+**** 2026-05-15 Fri Decide whether unreported modules count as 0% coverage
 CLOSED: [2026-05-15 Fri]
 
 This is a policy decision:
@@ -243,7 +264,7 @@ Done 2026-05-15:
 - Updated =tests/test-coverage-summary.el= to assert the policy and the
   displayed project-module percentage.
 
-*** DONE [#B] Add a lightweight architecture smoke test for startup contracts :tests:
+*** 2026-05-15 Fri Add a lightweight architecture smoke test for startup contracts :tests:
 CLOSED: [2026-05-15 Fri]
 
 After the above refactors start, add one or two smoke tests that protect the
@@ -400,56 +421,6 @@ Expected outcome:
   lead to permanent insecure defaults.
 
 ** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
-*** 2026-05-15 Fri @ 19:16:08 -0500 Specification
-Consolidate the developer F-key block into a coherent sequence. F5 reserved for debug (separate ticket). Format bindings move off F6 to C-; f.
-
-Menu mechanism: =completing-read= everywhere (consistent with F7 coverage scope prompt and with the vertico/consult workflow in the rest of the config). No transient definitions.
-
-**F4 — compile + run**
-
-- F4 (no modifier): completing-read with candidates filtered by project type. Detection via projectile-project-compilation-cmd and heuristic fallbacks (go.mod, Makefile, Eask, package.json, pyproject.toml, docker-compose.yml).
-  - Compiled project candidates: "Compile", "Run", "Compile + Run" (default), "Clean + Rebuild"
-  - Interpreted project candidates: "Run" only
-- C-F4: fast path = Compile only. On interpreted projects, shows "not a compiled language" and no-ops.
-- M-F4: fast path = Clean + Rebuild. Same "not applicable" behavior on interpreted projects.
-
-The dispatcher reads projectile's per-project compile/run/test commands. No Docker-specific logic in the command itself. Container workflows are configured via projectile's prompt-and-cache (or .dir-locals.el from the dev-project-setup helper).
-
-**F6 — run tests**
-
-- F6 (no modifier): completing-read top-level:
-  - "All tests"
-  - "Current file's tests"
-  - "Run a test..." (nested completing-read with individual tests)
-- C-F6: fast path = "Current file's tests"
-- M-F6: fast path = "Run a test..."
-
-"Current file's tests": if current buffer is a test file, run it directly. If source file, find matching test file(s) via language conventions (elisp: tests/test-<module>*.el; python: tests/test_<module>.py; etc.) and run them aggregated.
-
-"Run a test...": build a candidate list of individual tests, pre-select the last-chosen test for this buffer (buffer-local cj/--last-test-run), present via completing-read. Pressing RET re-runs last. Memory is buffer-local so different source files remember their own last-test.
-
-Candidate set for "Run a test...":
-- If buffer is a test file: parse the file, return its test definitions.
-- If buffer is a source file: find matching test file(s) and aggregate their test definitions.
-- No matches: error out with "No tests found for <buffer>". Don't silently fall through.
-
-Per-language test discovery:
-- Python, Go, TypeScript/JavaScript: tree-sitter queries (treesit-auto already configured, grammars auto-install)
-  - Python: (function_definition name: (identifier) @name (:match "^test_" @name))
-  - Go: (function_declaration name: (identifier) @name (:match "^Test" @name))
-  - TS/JS: (call_expression function: (identifier) @fn arguments: (arguments (string) @name) (:match "^\\(test\\|it\\)$" @fn))
-  - Parsing unopened test files: use with-temp-buffer + insert-file-contents + python-ts-mode (etc.) + treesit-query-capture
-- Elisp: built-in sexp navigation; scan for (ert-deftest <name> ...) forms. No tree-sitter needed.
-
-*F7 — coverage* (already designed in docs/design/coverage.org)
-
-**Required moves:**
-- Move blacken-buffer (python), shfmt-buffer (sh), clang-format-buffer (c) off F6 to C-; f prefix (already the format-buffer prefix).
-- Move projectile-run-project off F6 (folds into the new F4 completing-read).
-
-**Ordering:**
-Do this after the coverage-config work ships. No churn mid-flight.
-
 *** TODO [#B] Format keybindings move off F6                         :refactor:cleanup:
 Move blacken-buffer (python), shfmt-buffer (sh), and clang-format-buffer (c)
 off F6 onto the =C-; f= prefix, which already hosts format-buffer bindings.
@@ -525,6 +496,56 @@ Acceptance: F7 invokes coverage-report; F4/F6/F7 are visibly grouped in one
 module; coverage track is shipped before this lands.
 
 Depends on: the coverage-config track shipping; F4 and F6 sub-tasks above.
+
+*** 2026-05-15 Fri @ 19:16:08 -0500 Specification
+Consolidate the developer F-key block into a coherent sequence. F5 reserved for debug (separate ticket). Format bindings move off F6 to C-; f.
+
+Menu mechanism: =completing-read= everywhere (consistent with F7 coverage scope prompt and with the vertico/consult workflow in the rest of the config). No transient definitions.
+
+**F4 — compile + run**
+
+- F4 (no modifier): completing-read with candidates filtered by project type. Detection via projectile-project-compilation-cmd and heuristic fallbacks (go.mod, Makefile, Eask, package.json, pyproject.toml, docker-compose.yml).
+  - Compiled project candidates: "Compile", "Run", "Compile + Run" (default), "Clean + Rebuild"
+  - Interpreted project candidates: "Run" only
+- C-F4: fast path = Compile only. On interpreted projects, shows "not a compiled language" and no-ops.
+- M-F4: fast path = Clean + Rebuild. Same "not applicable" behavior on interpreted projects.
+
+The dispatcher reads projectile's per-project compile/run/test commands. No Docker-specific logic in the command itself. Container workflows are configured via projectile's prompt-and-cache (or .dir-locals.el from the dev-project-setup helper).
+
+**F6 — run tests**
+
+- F6 (no modifier): completing-read top-level:
+  - "All tests"
+  - "Current file's tests"
+  - "Run a test..." (nested completing-read with individual tests)
+- C-F6: fast path = "Current file's tests"
+- M-F6: fast path = "Run a test..."
+
+"Current file's tests": if current buffer is a test file, run it directly. If source file, find matching test file(s) via language conventions (elisp: tests/test-<module>*.el; python: tests/test_<module>.py; etc.) and run them aggregated.
+
+"Run a test...": build a candidate list of individual tests, pre-select the last-chosen test for this buffer (buffer-local cj/--last-test-run), present via completing-read. Pressing RET re-runs last. Memory is buffer-local so different source files remember their own last-test.
+
+Candidate set for "Run a test...":
+- If buffer is a test file: parse the file, return its test definitions.
+- If buffer is a source file: find matching test file(s) and aggregate their test definitions.
+- No matches: error out with "No tests found for <buffer>". Don't silently fall through.
+
+Per-language test discovery:
+- Python, Go, TypeScript/JavaScript: tree-sitter queries (treesit-auto already configured, grammars auto-install)
+  - Python: (function_definition name: (identifier) @name (:match "^test_" @name))
+  - Go: (function_declaration name: (identifier) @name (:match "^Test" @name))
+  - TS/JS: (call_expression function: (identifier) @fn arguments: (arguments (string) @name) (:match "^\\(test\\|it\\)$" @fn))
+  - Parsing unopened test files: use with-temp-buffer + insert-file-contents + python-ts-mode (etc.) + treesit-query-capture
+- Elisp: built-in sexp navigation; scan for (ert-deftest <name> ...) forms. No tree-sitter needed.
+
+*F7 — coverage* (already designed in docs/design/coverage.org)
+
+**Required moves:**
+- Move blacken-buffer (python), shfmt-buffer (sh), clang-format-buffer (c) off F6 to C-; f prefix (already the format-buffer prefix).
+- Move projectile-run-project off F6 (folds into the new F4 completing-read).
+
+**Ordering:**
+Do this after the coverage-config work ships. No churn mid-flight.
 
 ** TODO [#B] Fix up test runner
 *** 2026-05-16 Sat @ 11:15:51 -0500 Ideas
