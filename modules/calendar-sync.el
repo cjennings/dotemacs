@@ -124,6 +124,15 @@ If nil, user must manually call `calendar-sync-start'.")
 Used by `calendar-sync--find-user-status' to look up the user's
 PARTSTAT in event attendee lists.")
 
+(defvar calendar-sync-skip-declined t
+  "When non-nil, drop events whose PARTSTAT for the user is \"declined\".
+Declined events still arrive in the ICS feed, but they shouldn't show
+up on the agenda. Set to nil to keep them (each entry then carries a
+:STATUS: declined property drawer).
+Note: the ICS feed and the Google Calendar API can disagree — auto-
+declines via OOO sometimes write only on the API side, so a few
+declined events may still slip through.")
+
 (defvar calendar-sync-past-months 3
   "Number of months in the past to include when expanding recurring events.
 Default: 3 months. This keeps recent history visible in org-agenda.")
@@ -710,6 +719,21 @@ Returns lowercase status string (\"accepted\", \"declined\", etc.) or nil."
                 (cl-return found))))))
       found)))
 
+(defun calendar-sync--filter-declined (events)
+  "Return EVENTS with declined entries removed when the toggle is on.
+EVENTS is a list of plists produced by `calendar-sync--parse-event'.
+Each plist's :status is the lowercase PARTSTAT for the user (set by
+`calendar-sync--find-user-status'), or nil for events without an
+attendee block. Drops only events whose :status is exactly the string
+\"declined\" so that nil / accepted / tentative / needs-action all
+survive. When `calendar-sync-skip-declined' is nil, returns EVENTS
+unchanged."
+  (if (and calendar-sync-skip-declined events)
+      (cl-remove-if (lambda (event)
+                      (equal (plist-get event :status) "declined"))
+                    events)
+    events))
+
 (defun calendar-sync--parse-organizer (event-str)
   "Parse ORGANIZER property from EVENT-STR into plist.
 Returns plist (:cn NAME :email EMAIL), or nil if no ORGANIZER found."
@@ -1160,6 +1184,7 @@ RECURRENCE-ID exceptions are applied to override specific occurrences."
                     (setq events-generated (1+ events-generated))))))))
         (when (>= events-generated max-events)
           (calendar-sync--log-silently "calendar-sync: WARNING: Hit max events limit (%d), some events may be missing" max-events))
+        (setq parsed-events (calendar-sync--filter-declined parsed-events))
         (calendar-sync--log-silently "calendar-sync: Processing %d events..." (length parsed-events))
         ;; Sort and convert to org format
         (let* ((sorted-events (sort parsed-events
