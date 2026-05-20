@@ -87,15 +87,26 @@
 
 (defvar calendar-sync-calendars nil
   "List of calendars to sync.
-Each calendar is a plist with the following keys:
-  :name - Display name for the calendar (used in logs and prompts)
-  :url  - URL to fetch .ics file from
-  :file - Output file path for org format
+Each calendar is a plist.  Common keys:
+  :name    - Display name for the calendar (used in logs and prompts)
+  :file    - Output file path for org format
+  :fetcher - Fetch path: \\='ics (default) or \\='api
+
+For the default \\='ics fetcher (Proton, plain .ics feeds):
+  :url     - URL to fetch the .ics file from
+
+For the \\='api fetcher (Google Calendar, sees per-occurrence response
+status so OOO auto-declines on recurring events can be filtered):
+  :account     - OAuth account nickname (work, personal, ...) matching the
+                 token file under ~/.config/calendar-sync/
+  :calendar-id - Calendar ID (\"primary\" or a long calendar address)
 
 Example:
   (setq calendar-sync-calendars
         \\='((:name \"google\"
-           :url \"https://calendar.google.com/calendar/ical/.../basic.ics\"
+           :fetcher api
+           :account \"work\"
+           :calendar-id \"primary\"
            :file gcal-file)
           (:name \"proton\"
            :url \"https://calendar.proton.me/api/calendar/v1/url/.../calendar.ics\"
@@ -140,6 +151,11 @@ Default: 3 months. This keeps recent history visible in org-agenda.")
 (defvar calendar-sync-future-months 12
   "Number of months in the future to include when expanding recurring events.
 Default: 12 months. This provides a full year of future events.")
+
+(defvar calendar-sync-python-command "python3"
+  "Executable used to run the Google Calendar API helper script.
+Only the API fetch path (a calendar with `:fetcher' \\='api) uses it; the
+default .ics path shells out to curl instead.")
 
 (defvar calendar-sync-fetch-timeout 120
   "Maximum time in seconds for a calendar fetch to complete.
@@ -1388,14 +1404,102 @@ Checks `cj/debug-modules' for symbol `calendar-sync' or t (all)."
        (or (eq cj/debug-modules t)
            (memq 'calendar-sync cj/debug-modules))))
 
+;;; Google Calendar API Fetch Path
+
+(defun calendar-sync--api-script ()
+  "Return the absolute path to the Google Calendar API helper script.
+Resolved relative to this module so batch workers and tests don't depend
+on `user-emacs-directory'."
+  (let ((module-dir (file-name-directory calendar-sync--module-file)))
+    (expand-file-name "calendar_sync_api.py"
+                      (expand-file-name "scripts"
+                                        (file-name-parent-directory module-dir)))))
+
+(defun calendar-sync--api-command (account calendar-id output-file)
+  "Build the command list that runs the API helper.
+ACCOUNT and CALENDAR-ID select the OAuth account and calendar; OUTPUT-FILE
+is where the helper writes rendered org content.  The past/future window
+mirrors the .ics path's `calendar-sync-past-months' /
+`calendar-sync-future-months'.  When `calendar-sync-skip-declined' is nil,
+passes --keep-declined so the API path honors the same toggle."
+  (append
+   (list calendar-sync-python-command
+         (calendar-sync--api-script)
+         "--account" account
+         "--calendar-id" calendar-id
+         "--output" output-file
+         "--past-months" (number-to-string calendar-sync-past-months)
+         "--future-months" (number-to-string calendar-sync-future-months))
+   (unless calendar-sync-skip-declined
+     (list "--keep-declined"))))
+
+(defun calendar-sync--sync-calendar-api (calendar)
+  "Sync a single Google CALENDAR via the API helper script.
+CALENDAR is a plist with :name, :account, :calendar-id, and :file keys.
+The helper fetches, filters, and renders org in one pass and writes :file
+directly, so it runs in a single external process off the interactive thread."
+  (let* ((name (plist-get calendar :name))
+         (account (plist-get calendar :account))
+         (calendar-id (plist-get calendar :calendar-id))
+         (file (plist-get calendar :file))
+         (fetch-start (float-time)))
+    (calendar-sync--set-calendar-state name '(:status syncing))
+    (calendar-sync--log-silently "calendar-sync: [%s] Syncing (API)..." name)
+    (condition-case err
+        (let ((buffer (generate-new-buffer " *calendar-sync-api*")))
+          (make-process
+           :name "calendar-sync-api"
+           :buffer buffer
+           :command (calendar-sync--api-command account calendar-id file)
+           :sentinel
+           (lambda (process _event)
+             (when (memq (process-status process) '(exit signal))
+               (let* ((buf (process-buffer process))
+                      (success (and (eq (process-status process) 'exit)
+                                    (= (process-exit-status process) 0)))
+                      (output (when (buffer-live-p buf)
+                                (with-current-buffer buf
+                                  (string-trim (buffer-string))))))
+                 (when (buffer-live-p buf)
+                   (kill-buffer buf))
+                 (if (not success)
+                     (calendar-sync--mark-sync-failed
+                      name (if (or (null output) (string-empty-p output))
+                               "API helper failed"
+                             output))
+                   (calendar-sync--set-calendar-state
+                    name
+                    (list :status 'ok
+                          :last-sync (current-time)
+                          :last-error nil))
+                   (setq calendar-sync--last-timezone-offset
+                         (calendar-sync--current-timezone-offset))
+                   (calendar-sync--save-state)
+                   (let ((total-elapsed (- (float-time) fetch-start)))
+                     (message "calendar-sync: [%s] Sync complete (%.1fs total) → %s"
+                              name total-elapsed file))))))))
+      (error
+       (calendar-sync--log-silently "calendar-sync: [%s] API helper error: %s"
+                                    name (error-message-string err))
+       (calendar-sync--mark-sync-failed name (error-message-string err))))))
+
 ;;; Single Calendar Sync
 
 (defun calendar-sync--sync-calendar (calendar)
   "Sync a single CALENDAR asynchronously.
-CALENDAR is a plist with :name, :url, and :file keys.
+CALENDAR is a plist with :name, :file, and either :url (the default \\='ics
+fetcher) or :account + :calendar-id (the \\='api fetcher).  Dispatches on the
+:fetcher key, defaulting to the .ics path.
 Updates calendar state and saves to disk on completion.
 The fetch and conversion run in external processes so parsing and writing large
 calendar files do not block the interactive Emacs thread."
+  (if (eq (plist-get calendar :fetcher) 'api)
+      (calendar-sync--sync-calendar-api calendar)
+    (calendar-sync--sync-calendar-ics calendar)))
+
+(defun calendar-sync--sync-calendar-ics (calendar)
+  "Sync a single CALENDAR from its :url .ics feed asynchronously.
+CALENDAR is a plist with :name, :url, and :file keys."
   (let ((name (plist-get calendar :name))
         (url (plist-get calendar :url))
         (file (plist-get calendar :file))
