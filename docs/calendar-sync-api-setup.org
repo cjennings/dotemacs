@@ -1,0 +1,171 @@
+#+TITLE: Google Calendar API Sync — Setup
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-19
+
+* What this is for
+
+The default =calendar-sync.el= fetches each calendar's secret
+=.ics= URL.  That works for Proton and similar feeds, but Google
+drops per-occurrence response statuses from the =.ics= export —
+when an event is auto-declined by an Out-of-Office, the master
+event in =.ics= still shows =PARTSTAT=ACCEPTED= and the declined
+instances inherit it.
+
+The API path solves this.  It calls Google Calendar's REST API
+with =singleEvents=True= so each recurrence is expanded
+server-side, and every instance carries its own
+=attendees[].self.responseStatus= — including OOO declines.
+
+This setup is a one-time task per machine (the refresh token
+persists).  Once configured, the sync runs from Emacs the same
+way it did with =.ics=.
+
+* One-time setup
+
+** 1. Install Python dependencies
+
+#+begin_src bash
+sudo pacman -S python-google-api-python-client python-google-auth-oauthlib
+#+end_src
+
+** 2. Create a Google Cloud OAuth client
+
+The script needs an OAuth 2.0 Client ID to identify itself to
+Google.  This is free and per-user.
+
+1. Open [[https://console.cloud.google.com/][Google Cloud Console]].
+2. Create a new project (top bar, project selector → New
+   Project).  Name it something like =calendar-sync= — it doesn't
+   matter what it's called.
+3. Enable the Calendar API: APIs & Services → Library → search
+   "Google Calendar API" → Enable.
+4. Configure the OAuth consent screen: APIs & Services → OAuth
+   consent screen.  User Type = External, app name =
+   =calendar-sync=, support email = your address.  On the Scopes
+   page, add =.../auth/calendar.readonly=.  On Test Users, add
+   both your work and personal Gmail addresses.  (You don't need
+   to publish the app; staying in "Testing" mode is fine for
+   personal use.)
+5. Create the client: APIs & Services → Credentials → Create
+   Credentials → OAuth client ID.  Application type =
+   *Desktop app*.  Name = =calendar-sync-desktop=.  Download the
+   resulting JSON.
+
+** 3. Drop the client secret into place
+
+#+begin_src bash
+mkdir -p ~/.config/calendar-sync
+mv ~/Downloads/client_secret_*.json ~/.config/calendar-sync/client_secret.json
+chmod 600 ~/.config/calendar-sync/client_secret.json
+#+end_src
+
+** 4. Authorize each account once
+
+Run the script once per account.  It'll open a browser, ask for
+read-only calendar access, and write a refresh token alongside
+the client secret.
+
+#+begin_src bash
+~/.emacs.d/scripts/calendar_sync_api.py \
+  --account work \
+  --calendar-id primary \
+  --output /tmp/dcal-test.org
+
+~/.emacs.d/scripts/calendar_sync_api.py \
+  --account personal \
+  --calendar-id primary \
+  --output /tmp/gcal-test.org
+#+end_src
+
+After this you should have:
+
+#+begin_src
+~/.config/calendar-sync/
+  client_secret.json
+  token-work.json
+  token-personal.json
+#+end_src
+
+Each token file holds a refresh token; the script refreshes the
+access token automatically on subsequent runs.
+
+** 5. Flip =calendar-sync.local.el= over
+
+Add =:fetcher 'api= entries.  Old =:url= entries stay on the
+=.ics= path — useful for Proton or any non-Google feed.
+
+#+begin_src emacs-lisp
+(setq calendar-sync-calendars
+      `((:name "gcal"
+         :fetcher api
+         :account "personal"
+         :calendar-id "primary"
+         :file ,gcal-file)
+        (:name "dcal"
+         :fetcher api
+         :account "work"
+         :calendar-id "primary"
+         :file ,dcal-file)
+        (:name "pcal"
+         :fetcher ics
+         :url "***REMOVED***"
+         :file ,pcal-file)))
+#+end_src
+
+(The Elisp dispatch lives in =modules/calendar-sync.el=.  Default
+=:fetcher= is =ics= so existing entries keep working without
+changes.)
+
+* Running the script manually
+
+#+begin_src bash
+# Render an account's primary calendar to a file
+~/.emacs.d/scripts/calendar_sync_api.py \
+  --account work --calendar-id primary --output /tmp/out.org
+
+# Keep declined events in the output (debugging the filter)
+~/.emacs.d/scripts/calendar_sync_api.py \
+  --account work --calendar-id primary --output /tmp/out.org \
+  --keep-declined
+
+# Different time window
+~/.emacs.d/scripts/calendar_sync_api.py \
+  --account work --calendar-id primary --output /tmp/out.org \
+  --past-months 1 --future-months 6
+#+end_src
+
+* Calendar IDs
+
+For most cases, =primary= is what you want.  To sync a secondary
+calendar (e.g., DeepSat Team Travel), get its ID from Google
+Calendar settings → Integrate calendar → Calendar ID.  Looks
+like =c_<hash>@group.calendar.google.com=.
+
+* Running the tests
+
+#+begin_src bash
+cd ~/.emacs.d
+python3 -m unittest tests/test_calendar_sync_api.py
+#+end_src
+
+30 tests covering rendering, filtering, timestamp formatting,
+HTML cleanup, and the full event → org pipeline.  Auth and
+network calls are intentionally not covered — they're thin
+wrappers around the Google libraries and best verified by
+running step 4 above.
+
+* Troubleshooting
+
+- *"Missing Python dependency"* — install the pacman packages
+  from step 1.
+- *Browser tab won't open during auth* — set
+  =BROWSER= environment variable to your preferred browser, or
+  copy the URL the script prints and open it manually.
+- *"This app isn't verified"* — expected since you didn't go
+  through Google's verification process.  Click Advanced → Go to
+  =calendar-sync= (unsafe).  You are the developer; you're
+  trusting yourself.
+- *Token expired or revoked* — delete the affected
+  =token-<account>.json= and run the script once to re-auth.
+- *Wrong calendar* — pass =--calendar-id= explicitly.  =primary=
+  refers to whichever account =--account= picks.

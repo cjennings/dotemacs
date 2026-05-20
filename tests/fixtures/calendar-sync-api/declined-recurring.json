@@ -1,0 +1,15 @@
+{
+  "id": "4lu91bb3spgmru2bfndh0a4rrk_20260519T160000Z",
+  "summary": "STRATFI/FR Standup/IPM/Grooming",
+  "start": {"dateTime": "2026-05-19T12:00:00-04:00", "timeZone": "America/Los_Angeles"},
+  "end":   {"dateTime": "2026-05-19T13:00:00-04:00", "timeZone": "America/Los_Angeles"},
+  "status": "confirmed",
+  "organizer": {"email": "ryan@deepsat.com"},
+  "attendees": [
+    {"email": "nerses@deepsat.com", "responseStatus": "accepted"},
+    {"email": "ryan@deepsat.com", "responseStatus": "declined", "organizer": true},
+    {"email": "craig.jennings@deepsat.com", "responseStatus": "declined", "self": true,
+     "comment": "Out of office for SOFWeek (Tampa) through Friday 5/22."}
+  ],
+  "hangoutLink": "https://meet.google.com/suw-ornf-iuv"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "6hh36pj364sjibb161i3gb9kckr32bb161hjebb671hjcp9g6so68ob5c8",
+  "summary": "Breakout: Machine Speed, Human Will",
+  "location": "Marriott Water Street: Florida Salon V - VI / Breakout Room 2",
+  "start": {"dateTime": "2026-05-19T14:45:00-04:00", "timeZone": "America/New_York"},
+  "end":   {"dateTime": "2026-05-19T15:45:00-04:00", "timeZone": "America/New_York"},
+  "description": "AI's role in the future of special operations.<br/><br/>Bring your laptop.",
+  "status": "confirmed",
+  "organizer": {"email": "eric@deepsat.com", "displayName": "Eric Bell"},
+  "attendees": [
+    {"email": "craig.jennings@deepsat.com", "responseStatus": "accepted", "self": true},
+    {"email": "eric@deepsat.com", "responseStatus": "accepted", "organizer": true}
+  ],
+  "conferenceData": {
+    "entryPoints": [
+      {"entryPointType": "video", "uri": "https://meet.google.com/abc-defg-hij"}
+    ]
+  }
+}
