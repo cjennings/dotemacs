@@ -86,6 +86,10 @@ history
 # --- elisp ruleset ---
 *.eln
 
+# Python bytecode caches (scripts/, tests/)
+__pycache__/
+*.pyc
+
 # Emacs backup and auto-save files
 *~
 \#*\#
