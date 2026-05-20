@@ -9,6 +9,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'cl-lib)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (require 'ai-vterm)
@@ -27,19 +28,22 @@
        ,@body)))
 
 (ert-deftest test-ai-vterm--display-rule-routes-agent-buffer-to-right ()
-  "Normal: a buffer named \"agent [foo]\" lands in a window to the right.
+  "Normal: on a desktop, \"agent [foo]\" lands in a window to the right.
 
-The rule uses `display-buffer-in-direction' with `(direction . right)',
-which splits the current window so the new window's left edge sits at
-a positive column.  The buffer winds up in that new window."
+The desktop default direction is `right' (see
+`cj/--ai-vterm-default-direction'), so the rule splits the current
+window with `(direction . right)' and the new window's left edge
+sits at a positive column.  `env-laptop-p' is stubbed nil to pin the
+desktop branch; on a laptop the agent would land below instead."
   (let ((name "agent [display-rule-test]"))
     (test-ai-vterm--cleanup name)
     (unwind-protect
-        (test-ai-vterm--with-clean-frame
-          (let* ((buf (get-buffer-create name))
-                 (win (display-buffer buf)))
-            (should (windowp win))
-            (should (> (window-left-column win) 0))))
+        (cl-letf (((symbol-function 'env-laptop-p) (lambda () nil)))
+          (test-ai-vterm--with-clean-frame
+            (let* ((buf (get-buffer-create name))
+                   (win (display-buffer buf)))
+              (should (windowp win))
+              (should (> (window-left-column win) 0)))))
       (test-ai-vterm--cleanup name))))
 
 (ert-deftest test-ai-vterm--display-rule-skips-non-matching-buffer ()
