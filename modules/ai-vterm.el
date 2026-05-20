@@ -7,10 +7,13 @@
 ;; Picks an AI-agent project (a dir under ~/.emacs.d, ~/code/*, or
 ;; ~/projects/* containing .ai/protocols.org), opens or reuses a vterm
 ;; buffer named "agent [<basename>]", sends the agent's startup
-;; instruction to it, and routes the buffer to a right-side window via
-;; display-buffer-alist.  Multiple projects produce multiple coexisting
-;; buffers that share the same right-side slot; switching among them is a
-;; buffer-switch, not a kill-and-recreate.
+;; instruction to it, and routes the buffer to a side window via
+;; display-buffer-alist.  The default placement is host-aware: a
+;; right-side split at 50% width on a desktop, a bottom split at 75%
+;; height on a laptop (see `cj/--ai-vterm-default-direction').  Multiple
+;; projects produce multiple coexisting buffers that share the same
+;; slot; switching among them is a buffer-switch, not a
+;; kill-and-recreate.
 ;;
 ;; Each project's agent runs inside a tmux session named
 ;; "<cj/ai-vterm-tmux-session-prefix><basename>" (default prefix "aiv-").
@@ -47,6 +50,7 @@
 (require 'seq)
 (require 'cj-window-geometry-lib)
 (require 'cj-window-toggle-lib)
+(require 'host-environment)
 
 (declare-function vterm "vterm" (&optional buffer-name))
 (declare-function vterm-send-string "vterm" (string &optional paste-p))
@@ -332,16 +336,43 @@ the active group alphabetical too."
   (let ((proc (get-buffer-process buffer)))
     (and proc (process-live-p proc))))
 
-(defcustom cj/ai-vterm-window-width 0.5
-  "Default fraction of frame allocated to the AI-vterm window.
+(defcustom cj/ai-vterm-desktop-width 0.5
+  "Default fraction of frame width for the AI-vterm window on a desktop.
 
-Used by `cj/--ai-vterm-display-saved' as the size fallback when
-`cj/--ai-vterm-last-size' is nil (i.e. the user hasn't yet toggled
-off an agent window in this session).  Applies to both width and
-height axes -- the same fallback fraction is used for either default
-direction."
+On a desktop the agent opens as a right-side vertical split (see
+`cj/--ai-vterm-default-direction'), so this fraction is interpreted
+as a window width.  Used by `cj/--ai-vterm-default-size' as the size
+fallback when `cj/--ai-vterm-last-size' is nil (i.e. the user hasn't
+yet toggled off an agent window in this session)."
   :type 'number
   :group 'ai-vterm)
+
+(defcustom cj/ai-vterm-laptop-height 0.75
+  "Default fraction of frame height for the AI-vterm window on a laptop.
+
+On a laptop the agent opens as a bottom horizontal split (see
+`cj/--ai-vterm-default-direction'), so this fraction is interpreted
+as a window height.  Used by `cj/--ai-vterm-default-size' as the size
+fallback when `cj/--ai-vterm-last-size' is nil."
+  :type 'number
+  :group 'ai-vterm)
+
+(defun cj/--ai-vterm-default-direction ()
+  "Return the host-appropriate default split direction for the agent window.
+
+`below' on a laptop (bottom horizontal split), `right' on a desktop
+(right-side vertical split).  Detected via `env-laptop-p'."
+  (if (env-laptop-p) 'below 'right))
+
+(defun cj/--ai-vterm-default-size ()
+  "Return the host-appropriate default size fraction for the agent window.
+
+`cj/ai-vterm-laptop-height' on a laptop, `cj/ai-vterm-desktop-width'
+on a desktop -- pairing with the axis chosen by
+`cj/--ai-vterm-default-direction'."
+  (if (env-laptop-p)
+      cj/ai-vterm-laptop-height
+    cj/ai-vterm-desktop-width))
 
 (defvar cj/--ai-vterm-last-direction nil
   "Last user-chosen direction for the AI-vterm display.
@@ -366,7 +397,7 @@ the saved direction.")
 
 Positive integer: body-columns when `cj/--ai-vterm-last-direction'
 is right or left, body-lines when below or above.  nil means use
-the customizable default `cj/ai-vterm-window-width' (a float
+the host-aware default from `cj/--ai-vterm-default-size' (a float
 fraction).
 
 Body size, not total size, because total-width includes the
@@ -392,10 +423,12 @@ cost of not auto-scaling if the frame itself resizes.")
 Sets `cj/--ai-vterm-last-direction' and `cj/--ai-vterm-last-size'
 so a subsequent F9 display can restore the user's chosen orientation
 and size.  Called at toggle-off (just before the window is torn
-down).  The default direction is `right' -- the module's side-panel
-default.  Does nothing when WINDOW is not live."
+down).  The default direction is host-aware via
+`cj/--ai-vterm-default-direction' (used only when WINDOW fills its
+frame and no direction can be inferred).  Does nothing when WINDOW
+is not live."
   (cj/window-toggle-capture-state
-   window 'right
+   window (cj/--ai-vterm-default-direction)
    'cj/--ai-vterm-last-direction
    'cj/--ai-vterm-last-size))
 
@@ -429,7 +462,8 @@ than splitting -- preserves the user's lone-window layout across
 F9 toggles.
 
 Otherwise delegates to `cj/window-toggle-display-saved' against the
-F9 state vars, falling back to `right' and `cj/ai-vterm-window-width'."
+F9 state vars, falling back to the host-aware defaults from
+`cj/--ai-vterm-default-direction' and `cj/--ai-vterm-default-size'."
   (cond
    ((and cj/--ai-vterm-last-was-bury (one-window-p))
     (setq cj/--ai-vterm-last-was-bury nil)
@@ -440,8 +474,8 @@ F9 state vars, falling back to `right' and `cj/ai-vterm-window-width'."
     (setq cj/--ai-vterm-last-was-bury nil)
     (cj/window-toggle-display-saved
      buffer alist
-     'cj/--ai-vterm-last-direction 'right
-     'cj/--ai-vterm-last-size cj/ai-vterm-window-width))))
+     'cj/--ai-vterm-last-direction (cj/--ai-vterm-default-direction)
+     'cj/--ai-vterm-last-size (cj/--ai-vterm-default-size)))))
 
 (defun cj/--ai-vterm-display-rule-list ()
   "Return the `display-buffer-alist' entry list installed by this module.

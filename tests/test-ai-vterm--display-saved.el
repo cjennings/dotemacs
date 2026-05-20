@@ -20,16 +20,18 @@
 (require 'ai-vterm)
 (require 'testutil-vterm-buffers)
 
-(ert-deftest test-ai-vterm--display-saved-uses-defaults-when-state-nil ()
-  "Normal: nil state -> direction=rightmost, size=cj/ai-vterm-window-width.
+(ert-deftest test-ai-vterm--display-saved-uses-desktop-defaults-when-state-nil ()
+  "Normal: nil state on a desktop -> rightmost, size=cj/ai-vterm-desktop-width.
 The cardinal `right' default maps to the frame-edge variant
 `rightmost' so agent lands at the frame's right edge regardless of
-which window is selected."
+which window is selected.  `env-laptop-p' is stubbed nil to pin the
+desktop branch."
   (let (received-buf received-alist
         (cj/--ai-vterm-last-direction nil)
         (cj/--ai-vterm-last-size nil)
-        (cj/ai-vterm-window-width 0.5))
-    (cl-letf (((symbol-function 'display-buffer-in-direction)
+        (cj/ai-vterm-desktop-width 0.5))
+    (cl-letf (((symbol-function 'env-laptop-p) (lambda () nil))
+              ((symbol-function 'display-buffer-in-direction)
                (lambda (b a)
                  (setq received-buf b received-alist a)
                  'fake-window)))
@@ -38,6 +40,23 @@ which window is selected."
     (should (eq (cdr (assq 'direction received-alist)) 'rightmost))
     (should (= (cdr (assq 'window-width received-alist)) 0.5))
     (should (eq (cdr (assq 'inhibit-same-window received-alist)) t))))
+
+(ert-deftest test-ai-vterm--display-saved-uses-laptop-defaults-when-state-nil ()
+  "Normal: nil state on a laptop -> bottom, size=cj/ai-vterm-laptop-height.
+The cardinal `below' default maps to the frame-edge variant `bottom'
+and the size lands on the `window-height' axis.  `env-laptop-p' is
+stubbed t to pin the laptop branch."
+  (let (received-alist
+        (cj/--ai-vterm-last-direction nil)
+        (cj/--ai-vterm-last-size nil)
+        (cj/ai-vterm-laptop-height 0.75))
+    (cl-letf (((symbol-function 'env-laptop-p) (lambda () t))
+              ((symbol-function 'display-buffer-in-direction)
+               (lambda (_b a) (setq received-alist a) 'fake-window)))
+      (cj/--ai-vterm-display-saved 'fake-buf '((inhibit-same-window . t))))
+    (should (eq (cdr (assq 'direction received-alist)) 'bottom))
+    (should (= (cdr (assq 'window-height received-alist)) 0.75))
+    (should-not (assq 'window-width received-alist))))
 
 (ert-deftest test-ai-vterm--display-saved-uses-saved-direction-and-size-below ()
   "Normal: saved direction=below maps to bottom edge; size=0.4 passes through."
