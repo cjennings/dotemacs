@@ -71,6 +71,7 @@
 
 (require 'cl-lib)
 (require 'subr-x)
+(require 'auth-source)
 (require 'cj-org-text-lib)
 
 (defun calendar-sync--log-silently (format-string &rest args)
@@ -92,8 +93,13 @@ Each calendar is a plist.  Common keys:
   :file    - Output file path for org format
   :fetcher - Fetch path: \\='ics (default) or \\='api
 
-For the default \\='ics fetcher (Proton, plain .ics feeds):
-  :url     - URL to fetch the .ics file from
+For the default \\='ics fetcher (Proton, plain .ics feeds), give the feed
+URL one of two ways:
+  :url         - the feed URL inline (plaintext in this file)
+  :secret-host - an auth-source host whose secret holds the feed URL,
+                 looked up in ~/.authinfo.gpg (encrypted at rest).  Prefer
+                 this: the .ics URL is itself a secret token.  If both are
+                 set, :url wins.
 
 For the \\='api fetcher (Google Calendar, sees per-occurrence response
 status so OOO auto-declines on recurring events can be filtered):
@@ -1497,11 +1503,27 @@ calendar files do not block the interactive Emacs thread."
       (calendar-sync--sync-calendar-api calendar)
     (calendar-sync--sync-calendar-ics calendar)))
 
+(defun calendar-sync--calendar-url (calendar)
+  "Return the .ics feed URL for CALENDAR, or nil if none is configured.
+An explicit :url wins.  Otherwise :secret-host names an auth-source host
+whose stored secret is the URL (kept in auth-source because the .ics URL
+is itself a token)."
+  (or (plist-get calendar :url)
+      (let ((host (plist-get calendar :secret-host)))
+        (when host
+          (let ((secret (plist-get (car (auth-source-search :host host :max 1))
+                                   :secret)))
+            ;; auth-source's netrc backend returns the secret as a function
+            (cond ((functionp secret) (funcall secret))
+                  (secret secret)))))))
+
 (defun calendar-sync--sync-calendar-ics (calendar)
-  "Sync a single CALENDAR from its :url .ics feed asynchronously.
-CALENDAR is a plist with :name, :url, and :file keys."
+  "Sync a single CALENDAR from its .ics feed asynchronously.
+CALENDAR is a plist with :name, :file, and a feed URL resolved by
+`calendar-sync--calendar-url' (an explicit :url, or a :secret-host
+looked up in auth-source)."
   (let ((name (plist-get calendar :name))
-        (url (plist-get calendar :url))
+        (url (calendar-sync--calendar-url calendar))
         (file (plist-get calendar :file))
         (fetch-start (float-time)))
     (calendar-sync--set-calendar-state name '(:status syncing))
