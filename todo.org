@@ -37,15 +37,65 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** DOING [#C] Dashboard buffer too long :bug:
-The dashboard often opens scrolled — content is partly above the visible
-window, the bottom half of content sits in the middle of the screen, and
-the actual bottom of the buffer is empty lines.  The banner image + the
-three navigator rows + several explicit newlines push the content too
-high.  Even the smallest screen would fit the content if the gratuitous
-empty lines were trimmed.
+** TODO [#C] make test-name aborts on gptel-dependent test files :tests:
+=make test-name TEST=<pattern>= loads *every* test file before ERT applies the name selector, so an unrelated file that fails to load takes the whole run down. Currently =tests/test-gptel-tools-*.el= (and likely the transcription tests) error at load with =Symbol's function definition is void: gptel-make-tool= because gptel isn't available in batch, aborting with Error 255 even when the selected tests have nothing to do with gptel.
 
-** TODO [#C] Collapse dashboard navigator + keymap duplication :refactor:
+Surfaced 2026-05-21 while running the calendar-sync suite — had to fall back to loading the calendar-sync test files directly. Fix options: guard the gptel-dependent test files to skip cleanly when gptel is absent (e.g. =(when (require 'gptel nil t) ...)= or an ert skip), stub =gptel-make-tool= in a shared testutil, or have =test-name= load only files whose names match the pattern instead of all of them.
+** TODO [#C] Consolidate auth-source secret-funcall idiom :refactor:
+The auth-source lookup + funcall-the-secret block is duplicated four times: =calendar-sync--calendar-url= (calendar-sync.el), =cj/auth-source-secret= (ai-config.el), =cj/--auth-source-password= (transcription-config.el), and =cj/--slack-token= (slack-config.el). All share =(let ((secret (plist-get (car (auth-source-search ...)) :secret))) (if (functionp secret) (funcall secret) secret))=.
+
+Surfaced 2026-05-21 by the code review on the calendar auth-source work — flagged as the fourth copy. Extract one low-level helper into a leaf module both can load (=system-lib.el= or =auth-config.el=), then delegate all four to it. Note the semantics differ: =cj/auth-source-secret= forces =:user "apikey"= and =error=s on miss, while the calendar helper wants a no-user lookup that returns nil on miss — so the shared primitive needs optional user + nil-on-miss, with the erroring/required-user behavior layered on top where needed. Don't make calendar-sync depend on ai-config (it drags in the gptel stack).
+** TODO [#B] need a keybinding to replace todo status with date sorted
+#+begin_src cj: comment
+I would like a keybinding only when I'm in an org file. When I press it, it should replace the todo.org status and the priority with a "date sorted" time stamp like this: 2026-05-20 Wed @ 18:00:24 -0400.
+Write out the approach in a dated org header below, and recommend a few mnemonic keybindings that are free.
+#+end_src
+** TODO [#B] Verify + commit ai-vterm graceful close (C-S-<f9>) :test:
+Triggered by: 2026-05-20 ai-vterm close command.
+
+=cj/ai-vterm-close= is built but uncommitted (WIP in
+=modules/ai-vterm.el= + new =tests/test-ai-vterm--close.el=, 7 tests
+passing, clean-load smoke OK).  It kills the agent's tmux session, then
+its vterm buffer + window, after a =y-or-n-p= confirm.  Bound =C-S-<f9>=
+globally and in =vterm-mode-map=.  Needs live verification before commit:
+
+- Launch an agent (F9), press =C-S-<f9>=: the confirm prompt fires,
+  the vterm buffer + window go away, and =tmux ls= shows the
+  =aiv-<name>= session gone.
+- No-agent case: =C-S-<f9>= → "No AI-vterm agent buffers to close".
+- Confirm guard: answer =n= → the agent stays.
+- Confirm the =C-S-<f9>= chord actually reaches Emacs (PGTK/Wayland);
+  pick a different key if a layer swallows it.
+
+Once verified, =/review-code= + commit
+=feat(ai-vterm): add graceful agent close on C-S-<f9>=.
+
+** TODO [#C] Dashboard over-scroll: pin last line to window bottom :bug:
+Triggered by: 2026-05-20 Dashboard buffer too long follow-up.
+
+After the opens-at-top fix (=4ac1b81=), the dashboard can still be
+scrolled past its content: the banner image makes the buffer just over
+one screenful, so the wheel / =C-v= / =M->= pull the last line up and
+leave empty space below it.  Craig wants scrolling to stop once the
+trailing line reaches the window bottom (no void) while still allowing
+scroll-down to reach content below the window.
+
+Findings from the 2026-05-20 investigation:
+- =pixel-scroll-precision-mode= is off, so this is standard line-based
+  scroll overshoot (the tall banner image inflates the rendered height).
+- A =window-start= clamp does not work: =window-start= only lands on
+  line boundaries, so it can't express a position partway into the
+  banner image — it either blocks all scrolling or leaves the void.
+- A =recenter -1= pin on =post-command-hook= does not work: it fires on
+  every command, so it fights item navigation (the cursor can't reach
+  the projects / bookmarks / recents).
+- Right design: clamp only on actual scroll commands — advise
+  =mwheel-scroll= / =scroll-up-command= / =scroll-down-command= /
+  =end-of-buffer= to =recenter -1= when over-scrolled, never on
+  navigation commands.
+- Live experiment scratch file: =~/dashboard-overscroll-experiment.el=.
+
+** TODO [#B] Collapse dashboard navigator + keymap duplication    :refactor:
 Triggered by: 2026-05-18 Dashboard buffer too long refactor audit.
 
 =modules/dashboard-config.el= inlines 12 launcher commands twice — once
@@ -3911,6 +3961,7 @@ F2 is the universal preview key. Currently bound in markdown-mode (markdown-prev
 
 - Hugo blog (hugo-config.el) — preview the post in browser
 - HTML / web-mode — open in browser
+- Reveal presentations - preview in browser
 - Any other mode with a natural "preview this" action
 
 Keep the binding mode-local so F2 stays available as a global candidate where no preview makes sense.
@@ -6895,3 +6946,23 @@ Two ELPA packages emit byte-compile warnings on =make compile= that aren't fixab
 No action in this repo. Revisit when packages update. File upstream issues if warnings linger past a few months.
 
 Discovered 2026-04-26 in =*Messages*= during compile.
+** DONE [#B] ai vterm sizing :feature:
+CLOSED: [2026-05-20 Wed]
+if on a laptop, ai vterm should come up from the bottom 75%
+if on a desktop, ai vterm should come from the right side 50%
+
+Shipped =feedb78= "feat(ai-vterm): default to bottom-75% on laptop, right-50% on desktop". Host-aware defaults via =cj/--ai-vterm-default-direction= / =cj/--ai-vterm-default-size= (branch on =env-laptop-p=); defcustoms =cj/ai-vterm-desktop-width= (0.5) + =cj/ai-vterm-laptop-height= (0.75). 6 new tests. Laptop path confirmed live; desktop path unit-tested, manual GUI check pending until next at a desktop.
+** DONE [#C] Dashboard buffer too long :bug:
+CLOSED: [2026-05-20 Wed]
+The dashboard often opens scrolled — content is partly above the visible
+window, the bottom half of content sits in the middle of the screen, and
+the actual bottom of the buffer is empty lines.  The banner image + the
+three navigator rows + several explicit newlines push the content too
+high.  Even the smallest screen would fit the content if the gratuitous
+empty lines were trimmed.
+
+Shipped =4ac1b81= "fix(dashboard): trim padding newlines and reset
+window-start on open".  Trimmed the startupify padding from five
+newlines to two and added =set-window-start= to =point-min= in
+=cj/dashboard-only=; characterization test in
+=tests/test-dashboard-config.el=.  Opens at the top now, verified live.
