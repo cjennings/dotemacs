@@ -60,7 +60,10 @@ Adjust this if the title doesn't appear centered under the banner image.")
 ;; convenience function to redisplay dashboard and kill all other windows
 
 (defun cj/dashboard-only ()
-  "Switch to *dashboard* buffer, kill other buffers and windows, go to top."
+  "Switch to *dashboard* buffer, kill other buffers and windows, go to top.
+Reset `window-start' alongside point so a previously-scrolled view
+doesn't leak into this display when the buffer is taller than the
+window."
   (interactive)
   (if (get-buffer "*dashboard*")
 	  (progn
@@ -68,7 +71,8 @@ Adjust this if the title doesn't appear centered under the banner image.")
 		(cj/kill-all-other-buffers-and-windows))
 	(when (fboundp 'dashboard-open)
 	  (dashboard-open)))
-  (goto-char (point-min)))
+  (goto-char (point-min))
+  (set-window-start (selected-window) (point-min)))
 
 ;; --------------------------------- Dashboard ---------------------------------
 ;; a useful startup screen for Emacs
@@ -93,13 +97,10 @@ Adjust this if the title doesn't appear centered under the banner image.")
    '(dashboard-insert-banner
      dashboard-insert-banner-title
      dashboard-insert-newline
-     dashboard-insert-newline
      dashboard-insert-navigator
      ;; dashboard-insert-init-info  ; Disabled: package count and startup time
      dashboard-insert-newline
-     dashboard-insert-newline
-     dashboard-insert-items
-     dashboard-insert-newline))
+     dashboard-insert-items))
   :config
 
   ;; == general
