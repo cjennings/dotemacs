@@ -1,8 +1,8 @@
 ;;; calendar-sync.local.el.example --- Template for private calendar config -*- lexical-binding: t; -*-
 
 ;; Copy this file to `calendar-sync.local.el' (sibling of init.el) and
-;; replace the placeholder URLs with your actual private ICS feed
-;; addresses. The real file is gitignored; the template is tracked.
+;; replace the placeholders with your actual private ICS feeds. The real
+;; file is gitignored; the template is tracked.
 ;;
 ;; How it works:
 ;; - `modules/calendar-sync.el' defines `calendar-sync-private-config-file'
@@ -13,6 +13,16 @@
 ;; - `user-constants' is required earlier in init.el, so `gcal-file',
 ;;   `pcal-file', and `dcal-file' are bound when this file is evaluated.
 ;;
+;; Two ways to give each .ics calendar its feed URL:
+;;   :secret-host - PREFERRED. An auth-source host whose secret holds the
+;;                  feed URL, looked up in ~/.authinfo.gpg (encrypted at
+;;                  rest, and distributed with your other authinfo entries).
+;;                  The .ics URL is itself a secret token, so it belongs in
+;;                  the encrypted store. Add a line like:
+;;                    machine calendar-google login me password https://...ics
+;;   :url         - the feed URL inline (plaintext in this file). If both
+;;                  are set, :url wins.
+;;
 ;; Where to find the private .ics URL:
 ;; - Google Calendar: Settings -> Your Calendar -> Integrate calendar ->
 ;;   "Secret address in iCal format" (regenerate if leaked).
@@ -21,13 +31,13 @@
 
 (setq calendar-sync-calendars
       `((:name "google"
-         :url "***REMOVED***"
+         :secret-host "calendar-google"
          :file ,gcal-file)
         (:name "proton"
-         :url "***REMOVED***"
+         :secret-host "calendar-proton"
          :file ,pcal-file)
         (:name "deepsat"
-         :url "***REMOVED***"
+         :secret-host "calendar-deepsat"
          :file ,dcal-file)))
 
 (provide 'calendar-sync.local)
