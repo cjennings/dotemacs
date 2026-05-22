@@ -62,7 +62,8 @@ Surfaced 2026-05-21 while running the calendar-sync suite — had to fall back t
 The auth-source lookup + funcall-the-secret block is duplicated four times: =calendar-sync--calendar-url= (calendar-sync.el), =cj/auth-source-secret= (ai-config.el), =cj/--auth-source-password= (transcription-config.el), and =cj/--slack-token= (slack-config.el). All share =(let ((secret (plist-get (car (auth-source-search ...)) :secret))) (if (functionp secret) (funcall secret) secret))=.
 
 Surfaced 2026-05-21 by the code review on the calendar auth-source work — flagged as the fourth copy. Extract one low-level helper into a leaf module both can load (=system-lib.el= or =auth-config.el=), then delegate all four to it. Note the semantics differ: =cj/auth-source-secret= forces =:user "apikey"= and =error=s on miss, while the calendar helper wants a no-user lookup that returns nil on miss — so the shared primitive needs optional user + nil-on-miss, with the erroring/required-user behavior layered on top where needed. Don't make calendar-sync depend on ai-config (it drags in the gptel stack).
-** TODO [#B] Keybinding: rewrite TODO+priority as sorted timestamp :quick:
+** DONE [#B] Keybinding: rewrite TODO+priority as sorted timestamp :feature:quick:
+CLOSED: [2026-05-22 Fri]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
@@ -71,34 +72,27 @@ I would like a keybinding only when I'm in an org file. When I press it, it shou
 Write out the approach in a dated org header below, and recommend a few mnemonic keybindings that are free.
 #+end_src
 
-*** 2026-05-22 Fri @ 08:35:05 -0500 Approach: status→timestamp keybinding + key candidates
-Same transform as the depth-based completion rule in todo-format: drop the TODO keyword and =[#X]= priority cookie, prepend a sortable timestamp =YYYY-MM-DD Day @ HH:MM:SS -ZZZZ= to the heading text, keep the tags. A command automates it.
+*** 2026-05-22 Fri @ 08:35:05 -0500 Approach (revised): finalize-task command, journal-aware + depth-aware
+Bound =C-; O d= (=cj/org-map=, d = "date"). Command =cj/org-finalize-task=:
+1. Guard: in org-mode, on a heading carrying a non-done todo keyword (else =user-error=).
+2. =completing-read= over =org-done-keywords= (dynamic — tracks =org-todo-keywords=; default DONE).
+3. =(let ((org-log-done nil)) (org-todo STATE))= — fires the journal-copy hook (=org-roam-config= copies the whole subtree to today's daily under "Completed Tasks"). =org-log-done= is bound nil so the command owns the CLOSED line; the hook keys off =org-state=, not =org-log-done=, so the copy still fires.
+4. Dispatch per todo-format (capture the keyword BEFORE the transition):
+   - level >= 3, OR keyword was VERIFY → dated rewrite: strip keyword + =[#X]= cookie, prepend =(format-time-string "%Y-%m-%d %a @ %H:%M:%S %z")=, keep tags. Done as a text edit, not via =org-todo=, so the hook doesn't double-fire.
+   - level <= 2 and not VERIFY → close in place: keep the chosen done keyword, add a date-only =CLOSED: [YYYY-MM-DD Day]= line.
+Tests: ERT in org temp-buffers with the journal hook bound to nil; the pure transform helper tested directly with an injected TIME for a deterministic stamp. Commit: =feat(org-config): ... with tests=, direct to main.
 
-Format string =(format-time-string "%Y-%m-%d %a @ %H:%M:%S %z")= yields exactly =2026-05-20 Wed @ 18:00:24 -0400=.
+** TODO [#C] Reconcile duplicate org-log-done setting :refactor:
+=modules/org-config.el:120= sets =org-log-done nil=; =modules/org-roam-config.el:64= sets it ='time=. The effective value is load-order-dependent and fragile. Pick one home and one value intentionally.
+Triggered by: 2026-05-22 L56 finalize-task work.
 
-Sketch (org-local command):
-#+begin_src emacs-lisp
-(defun cj/org-heading-to-dated-log ()
-  "Drop the TODO keyword and priority cookie on the current heading and
-prepend a sortable timestamp, turning a task into a dated log entry."
-  (interactive)
-  (unless (derived-mode-p 'org-mode)
-    (user-error "Only available in Org buffers"))
-  (save-excursion
-    (org-back-to-heading t)
-    (org-todo 'none)                 ; remove the TODO/DOING/VERIFY keyword
-    (org-priority 'remove)           ; remove the [#X] cookie
-    (org-edit-headline
-     (concat (format-time-string "%Y-%m-%d %a @ %H:%M:%S %z")
-             " " (org-get-heading t t t t)))))
-#+end_src
+** TODO [#C] Always save the daily after a journal task-copy :feature:
+=cj/org-roam-copy-todo-to-today= (=org-roam-config.el=) only saves today's daily in the refile branch. Make the save fire whenever a completed task is added, so a crash or shutdown never loses a freshly-copied task and never prompts about an unsaved journal buffer.
+Triggered by: 2026-05-22 L56 finalize-task work.
 
-Mnemonic key candidates (org-mode-map only — verify each is free with =C-h k= first):
-- =C-c C-x l= — "log"; groups with org's other =C-c C-x= state actions (deadline, clock). Recommended primary.
-- =C-c L= — capital L for "Log"; org leaves this unbound.
-- =C-; d= — "date", under Craig's custom =C-;= prefix, if free in org buffers.
-
-Wire it where org keybindings consolidate (see the open org-keybinding-consolidation reminder), not scattered.
+** TODO [#C] Manually verify cj/org-finalize-task journal copy :test:
+Confirm the live behavior the unit tests mock out. In a real Emacs (org-roam loaded), run =C-; O d= on a level-3 sub-task and on a level-2 task. Expect the sub-task to flip to a dated entry, the level-2 to keep its keyword and gain a date-only CLOSED line, and in both cases a copy to land in today's daily under "Completed Tasks".
+Triggered by: 2026-05-22 L56 finalize-task work.
 
 ** TODO [#C] Dashboard over-scroll: pin last line to window bottom :bug:
 :PROPERTIES:
