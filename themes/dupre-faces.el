@@ -487,7 +487,7 @@
 ;;;;; Dashboard
      `(dashboard-banner-logo-title ((t (:foreground ,yellow :weight bold :height 1.2))))
      `(dashboard-heading ((t (:foreground ,blue :weight bold))))
-     `(dashboard-items-face ((t (:foreground ,fg))))
+     `(dashboard-items-face ((t (:foreground ,steel+2))))
      `(dashboard-no-items-face ((t (:foreground ,gray))))
      `(dashboard-navigator ((t (:foreground ,blue))))
      `(dashboard-footer ((t (:foreground ,gray :slant italic))))

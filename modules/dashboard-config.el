@@ -51,7 +51,7 @@
 ;; The default centering can be off due to font width calculations.
 ;; This override allows manual adjustment via dashboard-banner-title-offset.
 
-(defvar dashboard-banner-title-offset 5
+(defvar dashboard-banner-title-offset 3
   "Offset to adjust banner title centering.
 Positive values shift left, negative values shift right.
 Adjust this if the title doesn't appear centered under the banner image.")
