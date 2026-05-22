@@ -37,7 +37,15 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#C] make test-name aborts on gptel-dependent test files :tests:
+** TODO [#C] gptel fork not loading: gptel-make-anthropic void :bug:
+=cj/toggle-gptel= (and gptel chat generally) errors with:
+
+: cj/ensure-gptel-backends: Symbol's function definition is void: gptel-make-anthropic
+
+Surfaced 2026-05-21 (was hit via =M-f9=, which used to run =cj/toggle-gptel=). =gptel-make-anthropic= being void means gptel isn't loaded (or didn't load cleanly) at the point =cj/ensure-gptel-backends= runs. Lead suspect: the 2026-05-18 switch to the local fork via =:load-path "~/code/gptel"= + =:ensure nil= in =modules/ai-config.el= — if the fork doesn't load, none of the =gptel-make-*= constructors are defined. Check that =~/code/gptel= is on the load-path and loads (the prior session also trashed =elpa/gptel-0.9.9.4=, so elpa is no longer a fallback), then confirm =cj/ensure-gptel-backends= runs after gptel is available rather than before.
+
+Note: =M-f9= no longer triggers this — the F9 family was consolidated onto ai-vterm, so =M-<f9>= now runs =cj/ai-vterm-close= (permanent). =cj/toggle-gptel= lost its binding in the process; once gptel loads cleanly, decide on a new key for it (or leave it unbound).
+** TODO [#C] make test-name aborts on gptel-dependent test files :tests:quick:
 =make test-name TEST=<pattern>= loads *every* test file before ERT applies the name selector, so an unrelated file that fails to load takes the whole run down. Currently =tests/test-gptel-tools-*.el= (and likely the transcription tests) error at load with =Symbol's function definition is void: gptel-make-tool= because gptel isn't available in batch, aborting with Error 255 even when the selected tests have nothing to do with gptel.
 
 Surfaced 2026-05-21 while running the calendar-sync suite — had to fall back to loading the calendar-sync test files directly. Fix options: guard the gptel-dependent test files to skip cleanly when gptel is absent (e.g. =(when (require 'gptel nil t) ...)= or an ert skip), stub =gptel-make-tool= in a shared testutil, or have =test-name= load only files whose names match the pattern instead of all of them.
@@ -50,26 +58,6 @@ Surfaced 2026-05-21 by the code review on the calendar auth-source work — flag
 I would like a keybinding only when I'm in an org file. When I press it, it should replace the todo.org status and the priority with a "date sorted" time stamp like this: 2026-05-20 Wed @ 18:00:24 -0400.
 Write out the approach in a dated org header below, and recommend a few mnemonic keybindings that are free.
 #+end_src
-** TODO [#B] Verify + commit ai-vterm graceful close (C-S-<f9>) :test:
-Triggered by: 2026-05-20 ai-vterm close command.
-
-=cj/ai-vterm-close= is built but uncommitted (WIP in
-=modules/ai-vterm.el= + new =tests/test-ai-vterm--close.el=, 7 tests
-passing, clean-load smoke OK).  It kills the agent's tmux session, then
-its vterm buffer + window, after a =y-or-n-p= confirm.  Bound =C-S-<f9>=
-globally and in =vterm-mode-map=.  Needs live verification before commit:
-
-- Launch an agent (F9), press =C-S-<f9>=: the confirm prompt fires,
-  the vterm buffer + window go away, and =tmux ls= shows the
-  =aiv-<name>= session gone.
-- No-agent case: =C-S-<f9>= → "No AI-vterm agent buffers to close".
-- Confirm guard: answer =n= → the agent stays.
-- Confirm the =C-S-<f9>= chord actually reaches Emacs (PGTK/Wayland);
-  pick a different key if a layer swallows it.
-
-Once verified, =/review-code= + commit
-=feat(ai-vterm): add graceful agent close on C-S-<f9>=.
-
 ** TODO [#C] Dashboard over-scroll: pin last line to window bottom :bug:
 Triggered by: 2026-05-20 Dashboard buffer too long follow-up.
 
@@ -110,6 +98,14 @@ Refactor sketch: a single =defconst cj/dashboard--launchers= holding
 derive both =dashboard-navigator-buttons= (grouped 4-per-row) and the
 keybindings from that list with a small helper.
 
+** TODO [#C] Dashboard banner subtitle off-center :bug:quick:
+The banner subtitle "Emacs: The Editor That Saves Your Soul" renders off-center relative to the dashboard width.
+
+Surfaced 2026-05-21.
+** TODO [#C] Dashboard navigator icons and section titles uncolored :bug:quick:
+The navigator icons and the "Projects", "Bookmarks", and "Recent Files" section titles render in the default face. They should pick up colors from the Dupre color theme instead.
+
+Surfaced 2026-05-21.
 ** PROJECT [#B] Architecture review follow-up from 2026-05-03 :refactor:no-sync:
 
 High-level pass over =init.el=, =early-init.el=, and all 104 files in
@@ -2902,7 +2898,7 @@ of the spec heading once the spec is approved.  The magit-backend
 reimplementation of the shipped git tools is tracked separately in
 [[file:docs/design/gptel-git-tools-magit-backend.org][gptel-git-tools-magit-backend.org]].
 
-*** TODO [#B] Wire Up MCP.el so That GPTel Has Access to MCP Servers via GPTel Tools
+*** TODO [#C] Wire Up MCP.el so That GPTel Has Access to MCP Servers via GPTel Tools
 
 **** 2026-05-16 Sat @ 15:44:36 -0500 Spec
 
@@ -2912,7 +2908,7 @@ Design doc: [[file:docs/design/mcp-el-gptel-integration.org][docs/design/mcp-el-
 
 Commit =54d231be=.  Sections 1 (constants + defcustoms) and 3 (pure helpers) of the seven-section outline.  41 ERT tests, all green.  Refactor audit caught two duplications during Phase 4 and folded them into the same commit (=cj/mcp--get-server-entry= and =cj/mcp--name-matches-p=).  Phase 1.5 (confirmation contract) is next.
 
-**** TODO [#B] Phase 1.5 -- GPTel confirmation contract :mcp:
+**** TODO [#C] Phase 1.5 -- GPTel confirmation contract :mcp:
 
 *Goal:* flip =gptel-confirm-tool-calls= to ='auto= and gate the existing local tools that need it.
 
@@ -3030,13 +3026,13 @@ Commit =54d231be=.  Sections 1 (constants + defcustoms) and 3 (pure helpers) of 
 
 *Exit:* all 10 acceptance criteria from the spec pass.  Manual matrix run end-to-end on a fresh Emacs.  Working tree clean.
 
-*** TODO [#B] Wrap the gh CLI as a GPTel tool
+*** TODO [#C] Wrap the gh CLI as a GPTel tool
 
 **** 2026-05-16 Sat @ 16:20:00 -0500 Spec
 
 Design doc: [[file:docs/design/gptel-gh-tool.org][docs/design/gptel-gh-tool.org]]
 
-*** TODO [#B] GPTel should autosave regularly after a conversation is saved
+*** TODO [#C] GPTel should autosave regularly after a conversation is saved
 *** TODO [#B] Org Workflow Related Tools
 
 Affordances that expose the Org workspace -- agenda state, capture
@@ -6966,3 +6962,32 @@ window-start on open".  Trimmed the startupify padding from five
 newlines to two and added =set-window-start= to =point-min= in
 =cj/dashboard-only=; characterization test in
 =tests/test-dashboard-config.el=.  Opens at the top now, verified live.
+** DONE [#C] org-contacts-files nil error at launch :bug:quick:
+CLOSED: [2026-05-21 Thu]
+Root cause: =org-contacts-files= was set via the deferred =:custom=, so it was still nil when the agenda-finalize anniversaries hook fired at launch. Fixed by setting it eagerly at require time + guarding the wrapper. Shipped =099a771=.
+Launch emits:
+
+: [org-contacts] ERROR: Your custom variable 'org-contacts-files' is nil.
+
+Surfaced 2026-05-21. =org-contacts-files= isn't set (or is set after org-contacts loads / to an empty value), so org-contacts has no contacts file to read. Fix: point =org-contacts-files= at the intended contacts org file before org-contacts initializes.
+** DONE [#B] Verify + commit ai-vterm graceful close (C-S-<f9>) :test:quick:
+CLOSED: [2026-05-21 Thu]
+Verified live (M-f9 closes the agent + tmux session, confirm guard works). Shipped =c38683f=; also consolidated the F9 family onto ai-vterm (M-f9 = close).
+Triggered by: 2026-05-20 ai-vterm close command.
+
+=cj/ai-vterm-close= is built but uncommitted (WIP in
+=modules/ai-vterm.el= + new =tests/test-ai-vterm--close.el=, 7 tests
+passing, clean-load smoke OK).  It kills the agent's tmux session, then
+its vterm buffer + window, after a =y-or-n-p= confirm.  Bound =C-S-<f9>=
+globally and in =vterm-mode-map=.  Needs live verification before commit:
+
+- Launch an agent (F9), press =C-S-<f9>=: the confirm prompt fires,
+  the vterm buffer + window go away, and =tmux ls= shows the
+  =aiv-<name>= session gone.
+- No-agent case: =C-S-<f9>= → "No AI-vterm agent buffers to close".
+- Confirm guard: answer =n= → the agent stays.
+- Confirm the =C-S-<f9>= chord actually reaches Emacs (PGTK/Wayland);
+  pick a different key if a layer swallows it.
+
+Once verified, =/review-code= + commit
+=feat(ai-vterm): add graceful agent close on C-S-<f9>=.
