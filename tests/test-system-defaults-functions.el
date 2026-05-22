@@ -47,7 +47,12 @@
 ;; bodies.  Stubs deliberately scope only to the require so the
 ;; real primitives remain available for unrelated tests in the
 ;; same Emacs.
-(let ((use-package-always-ensure nil))
+;; Contain system-defaults' load-time `(setq default-directory user-home-dir)'
+;; so it doesn't leak into a shared batch session.  `make test-name' loads
+;; every test file into one Emacs; a leaked cwd there breaks the relative
+;; loads of every file that follows.
+(let ((default-directory default-directory)
+      (use-package-always-ensure nil))
   (cl-letf (((symbol-function 'server-running-p) (lambda (&rest _) t))
             ((symbol-function 'server-start) #'ignore)
             ((symbol-function 'set-locale-environment) #'ignore)

@@ -204,7 +204,7 @@ endif
 	@echo "Running tests matching pattern: $(TEST)..."
 	@$(EMACS_TEST) \
 		-l ert \
-		$(foreach test,$(ALL_TESTS),-l $(test)) \
+		$(foreach test,$(ALL_TESTS),-l $(abspath $(test))) \
 		--eval '(ert-run-tests-batch-and-exit "$(TEST)")'
 	@echo "✓ Tests matching '$(TEST)' complete"
 
