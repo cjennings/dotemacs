@@ -24,21 +24,24 @@
 ;; "[running]" when a live vterm buffer exists), the rest follow in
 ;; alphabetical order.
 ;;
-;; Three F-key entry points:
+;; Four F-key entry points:
 ;;
-;; - F9   `cj/ai-vterm' -- DWIM dispatch.  If an agent buffer is
-;;        currently displayed in this frame, F9 quits its window
-;;        (toggle off).  Otherwise, if exactly one agent buffer is
-;;        alive, F9 re-displays it; if zero or two-plus are alive, F9
-;;        falls through to the project picker.
-;; - C-F9 `cj/ai-vterm-pick-project' -- always show the project
-;;        picker, even when an agent buffer is currently displayed.
-;;        Used when the user wants to start a new project session
-;;        instead of toggling the current one.
-;; - M-F9 `cj/toggle-gptel' -- toggle gptel's *AI-Assistant* window.
-;;        Lives outside this module (defined in `modules/ai-config.el')
-;;        but the binding is grouped with the other F9-family launchers
-;;        here so the dispatch shape is visible in one place.
+;; - F9     `cj/ai-vterm' -- DWIM dispatch.  If an agent buffer is
+;;          currently displayed in this frame, F9 quits its window
+;;          (toggle off).  Otherwise, if exactly one agent buffer is
+;;          alive, F9 re-displays it; if zero or two-plus are alive, F9
+;;          falls through to the project picker.
+;; - C-F9   `cj/ai-vterm-pick-project' -- always show the project
+;;          picker, even when an agent buffer is currently displayed.
+;;          Used when the user wants to start a new project session
+;;          instead of toggling the current one.
+;; - M-F9   `cj/ai-vterm-close' -- gracefully close an agent: kill its
+;;          tmux session (stopping the agent process), then its vterm
+;;          buffer and window.  Confirms first.  Targets the current
+;;          agent, the sole live agent, or prompts among several.
+;; - C-S-F9 `cj/ai-vterm-close' -- same close command, second binding.
+;;          (M-F9 is the primary; C-S-F9 may be swallowed by the
+;;          Wayland/PGTK layer on some machines.)
 ;;
 ;; Existing windmove (Shift-arrows) handles code <-> agent focus
 ;; toggling.  Buffer-move (C-M-arrows) handles side-swap.  Neither
@@ -56,12 +59,6 @@
 (declare-function vterm-send-string "vterm" (string &optional paste-p))
 (declare-function vterm-send-return "vterm" ())
 (defvar vterm-mode-map)
-
-;; `cj/toggle-gptel' lives in ai-config.el.  Declaring it as an interactive
-;; autoload (rather than `require'ing ai-config here) silences the byte-compile
-;; warning at line 685/696 while keeping ai-vterm.el free of a load-time
-;; dependency on the full ai-config stack.
-(autoload 'cj/toggle-gptel "ai-config" nil t)
 
 (defgroup ai-vterm nil
   "In-Emacs AI-agent launcher with vertical-split vterm."
@@ -680,8 +677,7 @@ With prefix ARG, display the buffer without selecting its window
 when a buffer is being shown (no effect on the toggle-off branch).
 
 See `cj/ai-vterm-pick-project' (C-F9) to force the project picker.
-M-F9 toggles gptel's *AI-Assistant* window (`cj/toggle-gptel',
-defined in `modules/ai-config.el')."
+M-F9 (and C-S-F9) close an agent via `cj/ai-vterm-close'."
   (interactive "P")
   (pcase (cj/--ai-vterm-dispatch)
     (`(toggle-off . ,win)
@@ -728,9 +724,75 @@ defined in `modules/ai-config.el')."
     (`(pick-project)
      (cj/ai-vterm-pick-project arg))))
 
-(keymap-global-set "<f9>"   #'cj/ai-vterm)
-(keymap-global-set "C-<f9>" #'cj/ai-vterm-pick-project)
-(keymap-global-set "M-<f9>" #'cj/toggle-gptel)
+;; ----------------------------- Close an agent --------------------------------
+
+(defun cj/--ai-vterm-kill-tmux-session (session)
+  "Kill the tmux SESSION via `tmux kill-session -t SESSION'.
+
+Returns the process exit status (0 on success), or nil when tmux is
+unavailable or already gone -- a session that no longer exists is not
+an error worth surfacing, since the goal is just to make sure it's
+down."
+  (condition-case nil
+      (process-file "tmux" nil nil nil "kill-session" "-t" session)
+    (error nil)))
+
+(defun cj/--ai-vterm-close-buffer (buffer)
+  "Gracefully tear down AI-vterm BUFFER: tmux session, window, buffer.
+
+Derives the tmux session name from BUFFER's `default-directory' (the
+project dir the vterm was created in) and kills it so the agent
+process stops.  Deletes BUFFER's window when it's shown and isn't the
+only window in its frame, then kills BUFFER (suppressing the
+process-still-running prompt -- the session is already down).  No-op
+when BUFFER isn't an AI-vterm buffer."
+  (when (cj/--ai-vterm-buffer-p buffer)
+    (cj/--ai-vterm-kill-tmux-session
+     (cj/--ai-vterm-tmux-session-name
+      (buffer-local-value 'default-directory buffer)))
+    (let ((win (get-buffer-window buffer)))
+      (when (and win (> (length (window-list (window-frame win) 'never)) 1))
+        (delete-window win)))
+    (let ((kill-buffer-query-functions nil))
+      (kill-buffer buffer))))
+
+(defun cj/--ai-vterm-close-target ()
+  "Return the AI-vterm buffer `cj/ai-vterm-close' should act on, or nil.
+
+The current buffer when it is an agent buffer; else the sole live
+agent buffer; else a `completing-read' choice among the live agent
+buffers; nil when none are alive."
+  (cond
+   ((cj/--ai-vterm-buffer-p (current-buffer)) (current-buffer))
+   (t (let ((buffers (cj/--ai-vterm-agent-buffers)))
+        (cond
+         ((null buffers) nil)
+         ((null (cdr buffers)) (car buffers))
+         (t (get-buffer
+             (completing-read "Close AI vterm: "
+                              (mapcar #'buffer-name buffers) nil t))))))))
+
+(defun cj/ai-vterm-close ()
+  "Gracefully close an AI-vterm agent: kill its tmux session and buffer.
+
+Targets the current agent buffer, the sole live agent, or prompts when
+several are alive (see `cj/--ai-vterm-close-target').  Asks for
+confirmation first -- this kills the running agent process, which can
+interrupt work in progress.  Bound to M-<f9> (primary) and C-S-<f9>."
+  (interactive)
+  (let ((buffer (cj/--ai-vterm-close-target)))
+    (unless buffer
+      (user-error "No AI-vterm agent buffers to close"))
+    (let ((name (buffer-name buffer)))
+      (when (y-or-n-p (format "Close agent %s?  This kills its tmux session.  "
+                              name))
+        (cj/--ai-vterm-close-buffer buffer)
+        (message "Closed agent %s." name)))))
+
+(keymap-global-set "<f9>"     #'cj/ai-vterm)
+(keymap-global-set "C-<f9>"   #'cj/ai-vterm-pick-project)
+(keymap-global-set "M-<f9>"   #'cj/ai-vterm-close)
+(keymap-global-set "C-S-<f9>" #'cj/ai-vterm-close)
 
 ;; vterm binds <f1>..<f12> to `vterm--self-insert', so a plain <f9> typed
 ;; while point is inside an agent buffer gets sent to the terminal program
@@ -739,9 +801,10 @@ defined in `modules/ai-config.el')."
 ;; the toggle reaches Emacs from there too.  (C-<f9> / M-<f9> aren't in vterm's
 ;; intercept set, but bind them here as well so the behaviour is uniform.)
 (with-eval-after-load 'vterm
-  (keymap-set vterm-mode-map "<f9>"   #'cj/ai-vterm)
-  (keymap-set vterm-mode-map "C-<f9>" #'cj/ai-vterm-pick-project)
-  (keymap-set vterm-mode-map "M-<f9>" #'cj/toggle-gptel))
+  (keymap-set vterm-mode-map "<f9>"     #'cj/ai-vterm)
+  (keymap-set vterm-mode-map "C-<f9>"   #'cj/ai-vterm-pick-project)
+  (keymap-set vterm-mode-map "M-<f9>"   #'cj/ai-vterm-close)
+  (keymap-set vterm-mode-map "C-S-<f9>" #'cj/ai-vterm-close))
 
 ;; ---------- emacsclient: keep opened files off the agent vterm ----------
 ;;

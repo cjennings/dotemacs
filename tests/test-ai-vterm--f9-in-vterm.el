@@ -24,11 +24,11 @@
   (should (eq (keymap-lookup vterm-mode-map "<f9>") #'cj/ai-vterm)))
 
 (ert-deftest test-ai-vterm-f9-family-bound-in-vterm-mode-map ()
-  "Normal: the C-/M- F9 variants are bound in `vterm-mode-map' too.
-`M-<f9>' toggles gptel's *AI-Assistant* window (rebound here from
-the old `cj/ai-vterm-pick-buffer' command, which was removed)."
+  "Normal: the C-/M-/C-S- F9 variants are bound in `vterm-mode-map' too.
+`M-<f9>' and `C-S-<f9>' both close an agent via `cj/ai-vterm-close'."
   (should (eq (keymap-lookup vterm-mode-map "C-<f9>") #'cj/ai-vterm-pick-project))
-  (should (eq (keymap-lookup vterm-mode-map "M-<f9>") #'cj/toggle-gptel)))
+  (should (eq (keymap-lookup vterm-mode-map "M-<f9>") #'cj/ai-vterm-close))
+  (should (eq (keymap-lookup vterm-mode-map "C-S-<f9>") #'cj/ai-vterm-close)))
 
 (ert-deftest test-ai-vterm-f9-not-self-insert-in-vterm ()
   "Boundary: vterm's default <f9> -> `vterm--self-insert' was overridden."
@@ -37,24 +37,11 @@ the old `cj/ai-vterm-pick-buffer' command, which was removed)."
 (ert-deftest test-ai-vterm-f9-still-bound-globally ()
   "Normal: the global F9 family bindings are intact.
 `<f9>' toggles the ai-vterm agent window; `C-<f9>' picks a project
-agent; `M-<f9>' toggles gptel's *AI-Assistant* window (rebound from
-the retired `cj/ai-vterm-pick-buffer')."
+agent; `M-<f9>' and `C-S-<f9>' close an agent via `cj/ai-vterm-close'."
   (should (eq (lookup-key (current-global-map) (kbd "<f9>")) #'cj/ai-vterm))
   (should (eq (lookup-key (current-global-map) (kbd "C-<f9>")) #'cj/ai-vterm-pick-project))
-  (should (eq (lookup-key (current-global-map) (kbd "M-<f9>")) #'cj/toggle-gptel)))
-
-(ert-deftest test-ai-vterm-toggle-gptel-autoloaded-without-ai-config ()
-  "Regression: loading `ai-vterm.el' must not require `ai-config.el'.
-The M-F9 binding targets `cj/toggle-gptel', which lives in
-`ai-config.el'.  The dependency is declared via `autoload' so that
-byte-compiling `ai-vterm.el' does not warn and so that requiring
-`ai-vterm' in isolation leaves `cj/toggle-gptel' fboundp as an
-autoload sigil pointing at `ai-config'.  Without this, ai-vterm
-would either need a full `(require 'ai-config)' at load time or
-ship a known byte-compile warning."
-  (should-not (featurep 'ai-config))
-  (should (fboundp 'cj/toggle-gptel))
-  (should (autoloadp (symbol-function 'cj/toggle-gptel))))
+  (should (eq (lookup-key (current-global-map) (kbd "M-<f9>")) #'cj/ai-vterm-close))
+  (should (eq (lookup-key (current-global-map) (kbd "C-S-<f9>")) #'cj/ai-vterm-close)))
 
 (provide 'test-ai-vterm--f9-in-vterm)
 ;;; test-ai-vterm--f9-in-vterm.el ends here
