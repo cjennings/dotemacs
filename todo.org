@@ -49,13 +49,16 @@ CLOSED: [2026-05-22 Fri]
 Surfaced 2026-05-21 (was hit via =M-f9=, which used to run =cj/toggle-gptel=). =gptel-make-anthropic= being void means gptel isn't loaded (or didn't load cleanly) at the point =cj/ensure-gptel-backends= runs. Lead suspect: the 2026-05-18 switch to the local fork via =:load-path "~/code/gptel"= + =:ensure nil= in =modules/ai-config.el= — if the fork doesn't load, none of the =gptel-make-*= constructors are defined. Check that =~/code/gptel= is on the load-path and loads (the prior session also trashed =elpa/gptel-0.9.9.4=, so elpa is no longer a fallback), then confirm =cj/ensure-gptel-backends= runs after gptel is available rather than before.
 
 Note: =M-f9= no longer triggers this — the F9 family was consolidated onto ai-vterm, so =M-<f9>= now runs =cj/ai-vterm-close= (permanent). =cj/toggle-gptel= lost its binding in the process; once gptel loads cleanly, decide on a new key for it (or leave it unbound).
-** TODO [#C] make test-name aborts on gptel-dependent test files :tests:quick:
+** DONE [#C] make test-name aborts on gptel-dependent test files :tests:quick:
+CLOSED: [2026-05-22 Fri]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
 =make test-name TEST=<pattern>= loads *every* test file before ERT applies the name selector, so an unrelated file that fails to load takes the whole run down. Currently =tests/test-gptel-tools-*.el= (and likely the transcription tests) error at load with =Symbol's function definition is void: gptel-make-tool= because gptel isn't available in batch, aborting with Error 255 even when the selected tests have nothing to do with gptel.
 
 Surfaced 2026-05-21 while running the calendar-sync suite — had to fall back to loading the calendar-sync test files directly. Fix options: guard the gptel-dependent test files to skip cleanly when gptel is absent (e.g. =(when (require 'gptel nil t) ...)= or an ert skip), stub =gptel-make-tool= in a shared testutil, or have =test-name= load only files whose names match the pattern instead of all of them.
+
+Resolution (2026-05-22): the diagnosis above was wrong. The =test-gptel-tools-*.el= files already stub =gptel-make-tool= and =(provide 'gptel)= when gptel is absent, so they load fine in batch. The real abort was =tests/test-system-defaults-functions.el= leaking =default-directory=: it requires =system-defaults=, which runs =(setq default-directory user-home-dir)= at load, and =test-name= then resolved every following relative =-l tests/X.el= against the wrong directory. Fixed in 4fbe435f — =test-name= passes absolute paths to =-l=, and the test contains the leak with a =let=-binding around the require.
 ** TODO [#C] Consolidate auth-source secret-funcall idiom :refactor:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
