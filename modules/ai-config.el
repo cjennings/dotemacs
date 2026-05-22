@@ -122,9 +122,19 @@ HOST and USER must be strings that identify the credential to return."
       (setq cj/openai-api-key-cached
             (cj/auth-source-secret "api.openai.com" "apikey"))))
 
+(defun cj/--gptel-load-backend-libs ()
+  "Require the gptel backend libraries so their `gptel-make-*' constructors exist.
+The local fork (`:load-path \"~/code/gptel\"', `:ensure nil') ships no generated
+autoloads, so requiring `gptel' alone never loads `gptel-anthropic' /
+`gptel-openai', where the constructors are defined."
+  (require 'gptel-anthropic)
+  (require 'gptel-openai))
+
 (defun cj/ensure-gptel-backends ()
   "Initialize GPTel backends if they are not already available.
-Call this only after loading `gptel' so the backend constructors exist."
+Loads the backend libraries first so the `gptel-make-*' constructors are
+defined even when gptel is the local fork without generated autoloads."
+  (cj/--gptel-load-backend-libs)
   (unless gptel-claude-backend
     (setq gptel-claude-backend
           (gptel-make-anthropic
