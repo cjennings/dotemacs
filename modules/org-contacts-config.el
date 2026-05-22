@@ -12,6 +12,16 @@
 
 (require 'user-constants)
 
+;; Set `org-contacts-files' eagerly at require time.  Setting it in the
+;; `use-package' form below would only apply when org-contacts loads, which is
+;; deferred behind `:after (org mu4e)' -- later than the first
+;; `org-agenda-finalize'.  The anniversaries hook below runs on that finalize
+;; and calls `org-contacts-files', which *messages* (not signals) an error when
+;; the variable is nil, so the hook's `ignore-errors' can't suppress it.  Set
+;; it here so the variable is never nil by the time the hook fires.
+(defvar org-contacts-files nil)
+(setq org-contacts-files (list contacts-file))
+
 ;; --------------------------- Org Agenda Integration --------------------------
 
 (with-eval-after-load 'org-agenda
@@ -29,8 +39,12 @@
     (let ((date (calendar-current-date))
           (entry "")
           (original-date (calendar-current-date)))
-      (ignore-errors
-        (org-contacts-anniversaries))))
+      ;; `org-contacts-anniversaries' calls `org-contacts-files', which
+      ;; messages an error when the variable is nil.  A message isn't a
+      ;; signal, so `ignore-errors' alone can't suppress it -- guard the call.
+      (when org-contacts-files
+        (ignore-errors
+          (org-contacts-anniversaries)))))
 
   ;; Use the safe wrapper instead
   (add-hook 'org-agenda-finalize-hook 'cj/org-contacts-anniversaries-safe))
@@ -209,8 +223,8 @@ module provides more sophisticated completion."
 
 (use-package org-contacts
   :after (org mu4e)
-  :custom
-  (org-contacts-files (list contacts-file))
+  ;; `org-contacts-files' is set eagerly near the top of this file, not here,
+  ;; so the agenda-finalize anniversaries hook never sees it nil at startup.
   :config
   (require 'mu4e)
   ;; Basic settings
