@@ -348,6 +348,76 @@ status to preserve priority ordering within TODO groups."
       (user-error nil)))
   (message "Sorted entries by TODO status and priority"))
 
+;; --------------------- Finalize Task (done + journal + log) ------------------
+;; `cj/org-finalize-task' (C-; O d) marks the task at point done with a chosen
+;; finalized keyword -- which fires the org-roam journal-copy hook -- then
+;; reshapes the heading per todo-format: a dated log entry for sub-tasks (and
+;; VERIFY at any depth), or a kept keyword plus a date-only CLOSED line for
+;; top-level tasks.
+
+(defun cj/--org-finalize-dated-p (level keyword)
+  "Return non-nil when a finalized heading should become a dated log entry.
+Per todo-format: sub-tasks at LEVEL 3 or deeper flip to a dated entry, and a
+VERIFY (by KEYWORD) flips at any depth.  Top-level tasks stay task-shaped."
+  (or (>= level 3)
+      (equal keyword "VERIFY")))
+
+(defun cj/--org-finalize-rewrite-dated (&optional time)
+  "Rewrite the heading at point as a dated log entry.
+Strip the todo keyword and [#X] priority cookie, prepend a sortable timestamp
+built from TIME (default now), and keep the tags."
+  (org-back-to-heading t)
+  (let ((stamp (format-time-string "%Y-%m-%d %a @ %H:%M:%S %z" time))
+        (org-inhibit-logging t))
+    (when (org-get-todo-state) (org-todo 'none))
+    (when (nth 3 (org-heading-components))   ; only if a [#X] cookie is present
+      (org-priority 'remove))
+    (org-edit-headline (concat stamp " " (org-get-heading t t t t)))))
+
+(defun cj/--org-finalize-close-in-place (&optional time)
+  "Add a date-only CLOSED line under the heading at point, keeping the keyword.
+TIME defaults to now.  Used for top-level tasks that stay task-shaped."
+  (org-back-to-heading t)
+  (let ((org-inhibit-logging t))
+    (org-add-planning-info 'closed (or time (current-time))))
+  ;; org's CLOSED stamp may carry HH:MM; normalize to date-only per todo-format.
+  (save-excursion
+    (org-back-to-heading t)
+    (let ((end (save-excursion (outline-next-heading) (point)))
+          (stamp (format-time-string "[%Y-%m-%d %a]" time)))
+      (when (re-search-forward "CLOSED: \\[[^]]*\\]" end t)
+        (replace-match (concat "CLOSED: " stamp) t t)))))
+
+(defun cj/org-finalize-task (&optional state time)
+  "Finalize the task at point: mark it done and reshape it per todo-format.
+Prompt for a finalized keyword from `org-done-keywords' (STATE skips the
+prompt, TIME sets the timestamp -- both for testing).  Marking the task done
+fires the journal-copy hook, then a sub-task (level >= 3, or a VERIFY at any
+depth) becomes a dated log entry while a top-level task keeps its keyword and
+gains a date-only CLOSED line."
+  (interactive)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Only available in Org buffers"))
+  (org-back-to-heading t)
+  (let ((keyword (org-get-todo-state))
+        (level (org-current-level)))
+    (unless (member keyword org-not-done-keywords)
+      (user-error "Not on an open task (no actionable TODO keyword)"))
+    (let ((finalized
+           (or state
+               (let ((default (if (member "DONE" org-done-keywords)
+                                  "DONE"
+                                (car org-done-keywords))))
+                 (completing-read "Finalize as: " org-done-keywords
+                                  nil t nil nil default)))))
+      (let ((org-inhibit-logging t))
+        (org-todo finalized))           ; fires the journal-copy hook
+      (if (cj/--org-finalize-dated-p level keyword)
+          (cj/--org-finalize-rewrite-dated time)
+        (cj/--org-finalize-close-in-place time)))))
+
+(keymap-set cj/org-map "d" #'cj/org-finalize-task)
+
 ;; ------------------------------ Org Keybindings ------------------------------
 
 ;; which-key labels for org keymaps
