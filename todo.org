@@ -37,7 +37,10 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#C] gptel fork not loading: gptel-make-anthropic void :bug:
+** TODO [#B] gptel fork not loading: gptel-make-anthropic void :bug:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 =cj/toggle-gptel= (and gptel chat generally) errors with:
 
 : cj/ensure-gptel-backends: Symbol's function definition is void: gptel-make-anthropic
@@ -46,19 +49,61 @@ Surfaced 2026-05-21 (was hit via =M-f9=, which used to run =cj/toggle-gptel=). =
 
 Note: =M-f9= no longer triggers this — the F9 family was consolidated onto ai-vterm, so =M-<f9>= now runs =cj/ai-vterm-close= (permanent). =cj/toggle-gptel= lost its binding in the process; once gptel loads cleanly, decide on a new key for it (or leave it unbound).
 ** TODO [#C] make test-name aborts on gptel-dependent test files :tests:quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 =make test-name TEST=<pattern>= loads *every* test file before ERT applies the name selector, so an unrelated file that fails to load takes the whole run down. Currently =tests/test-gptel-tools-*.el= (and likely the transcription tests) error at load with =Symbol's function definition is void: gptel-make-tool= because gptel isn't available in batch, aborting with Error 255 even when the selected tests have nothing to do with gptel.
 
 Surfaced 2026-05-21 while running the calendar-sync suite — had to fall back to loading the calendar-sync test files directly. Fix options: guard the gptel-dependent test files to skip cleanly when gptel is absent (e.g. =(when (require 'gptel nil t) ...)= or an ert skip), stub =gptel-make-tool= in a shared testutil, or have =test-name= load only files whose names match the pattern instead of all of them.
 ** TODO [#C] Consolidate auth-source secret-funcall idiom :refactor:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 The auth-source lookup + funcall-the-secret block is duplicated four times: =calendar-sync--calendar-url= (calendar-sync.el), =cj/auth-source-secret= (ai-config.el), =cj/--auth-source-password= (transcription-config.el), and =cj/--slack-token= (slack-config.el). All share =(let ((secret (plist-get (car (auth-source-search ...)) :secret))) (if (functionp secret) (funcall secret) secret))=.
 
 Surfaced 2026-05-21 by the code review on the calendar auth-source work — flagged as the fourth copy. Extract one low-level helper into a leaf module both can load (=system-lib.el= or =auth-config.el=), then delegate all four to it. Note the semantics differ: =cj/auth-source-secret= forces =:user "apikey"= and =error=s on miss, while the calendar helper wants a no-user lookup that returns nil on miss — so the shared primitive needs optional user + nil-on-miss, with the erroring/required-user behavior layered on top where needed. Don't make calendar-sync depend on ai-config (it drags in the gptel stack).
-** TODO [#B] need a keybinding to replace todo status with date sorted
+** TODO [#B] Keybinding: rewrite TODO+priority as sorted timestamp :quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 #+begin_src cj: comment
 I would like a keybinding only when I'm in an org file. When I press it, it should replace the todo.org status and the priority with a "date sorted" time stamp like this: 2026-05-20 Wed @ 18:00:24 -0400.
 Write out the approach in a dated org header below, and recommend a few mnemonic keybindings that are free.
 #+end_src
+
+*** 2026-05-22 Fri @ 08:35:05 -0500 Approach: status→timestamp keybinding + key candidates
+Same transform as the depth-based completion rule in todo-format: drop the TODO keyword and =[#X]= priority cookie, prepend a sortable timestamp =YYYY-MM-DD Day @ HH:MM:SS -ZZZZ= to the heading text, keep the tags. A command automates it.
+
+Format string =(format-time-string "%Y-%m-%d %a @ %H:%M:%S %z")= yields exactly =2026-05-20 Wed @ 18:00:24 -0400=.
+
+Sketch (org-local command):
+#+begin_src emacs-lisp
+(defun cj/org-heading-to-dated-log ()
+  "Drop the TODO keyword and priority cookie on the current heading and
+prepend a sortable timestamp, turning a task into a dated log entry."
+  (interactive)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Only available in Org buffers"))
+  (save-excursion
+    (org-back-to-heading t)
+    (org-todo 'none)                 ; remove the TODO/DOING/VERIFY keyword
+    (org-priority 'remove)           ; remove the [#X] cookie
+    (org-edit-headline
+     (concat (format-time-string "%Y-%m-%d %a @ %H:%M:%S %z")
+             " " (org-get-heading t t t t)))))
+#+end_src
+
+Mnemonic key candidates (org-mode-map only — verify each is free with =C-h k= first):
+- =C-c C-x l= — "log"; groups with org's other =C-c C-x= state actions (deadline, clock). Recommended primary.
+- =C-c L= — capital L for "Log"; org leaves this unbound.
+- =C-; d= — "date", under Craig's custom =C-;= prefix, if free in org buffers.
+
+Wire it where org keybindings consolidate (see the open org-keybinding-consolidation reminder), not scattered.
+
 ** TODO [#C] Dashboard over-scroll: pin last line to window bottom :bug:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 Triggered by: 2026-05-20 Dashboard buffer too long follow-up.
 
 After the opens-at-top fix (=4ac1b81=), the dashboard can still be
@@ -84,6 +129,9 @@ Findings from the 2026-05-20 investigation:
 - Live experiment scratch file: =~/dashboard-overscroll-experiment.el=.
 
 ** TODO [#B] Collapse dashboard navigator + keymap duplication    :refactor:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 Triggered by: 2026-05-18 Dashboard buffer too long refactor audit.
 
 =modules/dashboard-config.el= inlines 12 launcher commands twice — once
@@ -99,10 +147,16 @@ derive both =dashboard-navigator-buttons= (grouped 4-per-row) and the
 keybindings from that list with a small helper.
 
 ** TODO [#C] Dashboard banner subtitle off-center :bug:quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 The banner subtitle "Emacs: The Editor That Saves Your Soul" renders off-center relative to the dashboard width.
 
 Surfaced 2026-05-21.
 ** TODO [#C] Dashboard navigator icons and section titles uncolored :bug:quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 The navigator icons and the "Projects", "Bookmarks", and "Recent Files" section titles render in the default face. They should pick up colors from the Dupre color theme instead.
 
 Surfaced 2026-05-21.
@@ -467,6 +521,9 @@ Expected outcome:
   lead to permanent insecure defaults.
 
 ** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 *** TODO [#B] Format keybindings move off F6                         :refactor:cleanup:
 Move blacken-buffer (python), shfmt-buffer (sh), and clang-format-buffer (c)
 off F6 onto the =C-; f= prefix, which already hosts format-buffer bindings.
@@ -594,6 +651,9 @@ Per-language test discovery:
 Do this after the coverage-config work ships. No churn mid-flight.
 
 ** TODO [#B] Fix up test runner
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 *** 2026-05-16 Sat @ 11:15:51 -0500 Ideas
 **** Current State
 =modules/test-runner.el= is a solid first pass for an Emacs-config-specific ERT
@@ -1095,6 +1155,9 @@ Tie this into the existing coverage work:
   storage, and key interactive paths.
 
 ** DOING [#B] Module-by-module hardening :harden:no-sync:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 
 Review every file in =modules/= and capture concrete bugs, tests, refactors,
 and design improvements as child tasks. This is intentionally separate from the
@@ -2765,6 +2828,9 @@ configuration (=text-config=, =diff-config=, =ledger-config=,
 =httpd-config=, =org-agenda-config-debug=).
 
 ** TODO [#C] Implement EMMS-free music-config architecture        :refactor:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 *** 2026-05-15 Fri @ 19:17:01 -0500 Specification
 Implement the design in [[file:docs/design/music-config-without-emms.org][Design: music-config Without EMMS]].
 
@@ -2885,6 +2951,9 @@ walk recorded as a completion log entry under the parent task.
 Depends on: command + Dired/Dirvish rewire.
 
 ** TODO [#C] GPTel Work
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 
 Categories below thematize the agent affordances the design doc
 [[file:docs/design/gptel-agentic-tool-ideas.org][gptel-agentic-tool-ideas.org]]
@@ -3380,6 +3449,9 @@ both as a "what's broken right now" check and as input to the
 patch-narrative buffer / commit-intent workbench above.
 
 ** TODO [#C] Review and rebind M-S- keybindings                   :refactor:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 
 Changed from M-uppercase to M-S-lowercase for terminal compatibility.
 These may override useful defaults - review and pick better bindings:
@@ -3404,6 +3476,9 @@ These may override useful defaults - review and pick better bindings:
 - M-S-z undo-kill-buffer (was overriding zap-to-char)
 
 ** TODO [#C] Build cj/dev-setup-project helper (per docs/design/dev-setup-project.org) :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 *** 2026-05-15 Fri @ 19:17:37 -0500 Specification
 
 Interactive command that opens a review buffer with proposed per-subdirectory .dir-locals.el contents (projectile compile/run/test + cj/coverage-backend), optional starter Makefile when none exists, and gitignore updates. User edits inline, C-c C-c writes all files.
@@ -3526,6 +3601,9 @@ Depends on: none, but easiest after the writer sub-task surfaces real
 friction.
 
 ** TODO [#C] Pick and wire a debug backend for F5                  :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 
 #+begin_src emacs-lisp
   Give me an idea of the amount of work and complexity and what allows for a consistent UX across languages. 
@@ -3547,6 +3625,9 @@ Evaluate against these projects' languages: elisp (edebug already works), Python
 Do this after the F-key rework ticket ships so F5 is the only hole left.
 
 ** TODO [#C] Build debug-profiling.el module                       :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 
 Reusable profiling infrastructure for targeted slow-command investigation. Consolidates scattered profiler bindings (currently in =modules/config-utilities.el=) and adds two pure-helper-backed entry points: "profile next command" and "time region or sexp." Designed via =/brainstorm= 2026-04-26.
 
@@ -3554,7 +3635,10 @@ Design: [[file:../docs/design/debug-profiling.org][docs/design/debug-profiling.o
 
 Implement via =/start-work= against the design — branch =feat/debug-profiling=, commits decomposed along the test-first split-for-testability boundary. Once shipped, use it as the v1 exercise on the queued [#B] org-capture target-building investigation.
 
-** VERIFY [#C] Continue org-noter custom workflow implementation (IN PROGRESS) :feature:bug:
+** TODO [#C] Org-noter custom workflow — fix and finish :feature:bug:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 
 Continue debugging and testing the custom org-noter workflow from 2025-11-21 session.
 This is partially implemented but has known issues that need fixing before it's usable.
@@ -3601,6 +3685,9 @@ The core functionality is implemented but needs debugging before it's production
 4. Document the final keybindings and workflow
 
 ** TODO [#C] Build an Org-native API workspace               :feature:tests:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 
 Build an Emacs-native API workspace layer that keeps =restclient.el= useful for
 lightweight request execution while adding OpenAPI import, Org notebooks,
@@ -3935,12 +4022,43 @@ First pass can skip or mark as unsupported:
 7. which-key shows "REST client" menu under C-; R
   
 ** TODO [#C] Migrate from Company to Corfu (with prescient integration) :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 
 Spec: [[file:docs/design/company-to-corfu-migration.org][docs/design/company-to-corfu-migration.org]]
 
 #+begin_src cj: comment
 review the spec and add all the tasks to implement the spec at this level. 
 #+end_src
+
+*** TODO [#C] Install corfu-side packages
+Add corfu, cape, kind-icon, corfu-prescient to the package list. corfu-popupinfo ships inside corfu. Spec step 1.
+
+*** TODO [#C] Rewrite selection-framework.el company block as corfu/cape stack
+Replace the three company-* use-package blocks (lines 192-226) and company-prescient (240-243) with corfu / cape / corfu-popupinfo / kind-icon / corfu-prescient. Rename the section header Company → Corfu in the same change. Spec steps 2 + 8.
+
+*** TODO [#C] Swap mail-compose completion disable to corfu
+Rewrite cj/disable-company-in-mu4e-compose to (corfu-mode -1) across mu4e-compose, org-msg-edit, and message modes (mail-config.el:319-333). Spec step 3.
+
+*** TODO [#C] Drop company-ledger for ledger's built-in capf
+ledger-config.el: remove company-ledger; verify ledger-complete-at-point registers on completion-at-point-functions, add a ledger-mode-hook capf push only if it doesn't. Spec step 4.
+
+*** TODO [#C] Drop company-auctex for AUCTeX capf + cape-tex
+latex-config.el: remove company-auctex and (company-auctex-init); add cape-tex on TeX-mode-hook. Spec step 5.
+
+*** TODO [#C] Rewire eshell completion to pcomplete capf
+eshell-config.el:163-171: drop company-shell and the company-mode activation; add cape-capf-buster around pcomplete-completions-at-point + corfu-mode. Spec step 6.
+
+*** TODO [#C] Remove company-mode calls from prog-go/python/webdev
+Delete (declare-function company-mode ...) and (company-mode) from the three mode hooks; global-corfu-mode covers them. Spec step 7.
+
+*** TODO [#C] Uninstall company packages + recompile
+After the rewrite is green: package-delete company, -quickhelp, -box, -prescient, -ledger, -auctex, -shell; make clean && make compile. Spec step 9.
+
+*** TODO [#C] Tests: corfu activation, mail-disable, capf registration
+New tests/test-selection-framework-corfu.el and tests/test-mail-config-corfu-disable.el; update ledger/latex tests to assert their capf registers. Spec Testing section.
+
 
 *** 2026-05-16 Sat @ 11:07:24 -0500 Goals
 Drop-in replacement for the in-buffer completion stack: =company= →
@@ -3952,6 +4070,9 @@ compose, and the three =prog-*= modules.  See the design doc for the
 full translation table, migration steps, tests, and risks.
 
 ** TODO [#C] Extend F2 "preview" convention across modes :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 
 F2 is the universal preview key. Currently bound in markdown-mode (markdown-preview) and org-mode (org-reveal, moved from F5). Extend to other modes where a "preview" action is natural:
 
@@ -3963,6 +4084,9 @@ F2 is the universal preview key. Currently bound in markdown-mode (markdown-prev
 Keep the binding mode-local so F2 stays available as a global candidate where no preview makes sense.
 
 ** TODO [#C] Build localrepo and document limitations :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 
 Repeatable installs and safe rollbacks.
 
@@ -3971,6 +4095,9 @@ Treesitter grammars are downloaded separately by treesit-auto on first use.
 For true offline reproducibility, need to cache treesitter grammars separately.
 
 ** TODO [#C] Investigate TRAMP/dirvish showing question marks for file dates :bug:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 
 Remote directories in dirvish show "?" instead of actual modification dates.
 Tried several approaches without success - needs deeper investigation.
@@ -3991,6 +4118,9 @@ Tried several approaches without success - needs deeper investigation.
 - modules/dirvish-config.el
 
 ** TODO [#C] Finish terminal GPG pinentry configuration :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
 
 Continue work on terminal-mode GPG passphrase prompts (loopback mode).
 Branch: terminal-pinentry
