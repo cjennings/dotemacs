@@ -144,20 +144,27 @@ Refactor sketch: a single =defconst cj/dashboard--launchers= holding
 derive both =dashboard-navigator-buttons= (grouped 4-per-row) and the
 keybindings from that list with a small helper.
 
-** TODO [#C] Dashboard banner subtitle off-center :bug:quick:
+** DONE [#C] Dashboard banner subtitle off-center :bug:quick:
+CLOSED: [2026-05-22 Fri]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
 The banner subtitle "Emacs: The Editor That Saves Your Soul" renders off-center relative to the dashboard width.
 
-Surfaced 2026-05-21.
-** TODO [#C] Dashboard navigator icons and section titles uncolored :bug:quick:
+Surfaced 2026-05-21. Fixed: dashboard-banner-title-offset 5 → 3 (5 over-shifted left). Verified centered via off-screen capture.
+** DONE [#C] Dashboard navigator icons and section titles uncolored :bug:quick:
+CLOSED: [2026-05-22 Fri]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
 The navigator icons and the "Projects", "Bookmarks", and "Recent Files" section titles render in the default face. They should pick up colors from the Dupre color theme instead.
 
-Surfaced 2026-05-21.
+Surfaced 2026-05-21. Fixed: set dashboard-items-face to steel+2 so the navigator (icons + labels) and the list items pick up a theme color; section titles stay blue via dashboard-heading. Root cause found while debugging: the navigator is rendered with a dashboard-items-face OVERLAY (overlays beat text properties), so the per-button dashboard-navigator face is inert — the nav and the items are painted by the same face, dashboard-items-face. Separating their colors would require overriding that overlay; tracked as a follow-up.
+
+** TODO [#C] Separate dashboard navigator color from list items :feature:
+The dashboard navigator (icons + labels) and the recentf/project/bookmark list items are both painted by =dashboard-items-face=: the navigator gets a =dashboard-items-face= overlay, and overlays beat text properties, so the per-button =dashboard-navigator= face is inert. To color the navigator independently of the items, override where that overlay is applied — advise or redefine =dashboard-insert-navigator=, or strip/replace the overlay's face.
+Triggered by: 2026-05-22 dashboard color work (L105).
+
 ** PROJECT [#B] Architecture review follow-up from 2026-05-03 :refactor:no-sync:
 
 High-level pass over =init.el=, =early-init.el=, and all 104 files in
