@@ -78,5 +78,20 @@ lowercase extension list."
   "Boundary: a name that's just `.m3u' becomes empty after stripping."
   (should (equal (cj/--playlist-sanitize-name ".m3u") "")))
 
+;;; cj/--playlist-name-safe-p
+
+(ert-deftest test-cj--playlist-name-safe-p-bare-name ()
+  "Normal: a bare filename is safe."
+  (should (cj/--playlist-name-safe-p "roadtrip")))
+
+(ert-deftest test-cj--playlist-name-safe-p-empty ()
+  "Boundary: an empty name is not safe."
+  (should-not (cj/--playlist-name-safe-p "")))
+
+(ert-deftest test-cj--playlist-name-safe-p-rejects-separators ()
+  "Error: any directory separator (relative, absolute, or nested) is rejected."
+  (dolist (bad '("../evil" "../../etc/cron" "/etc/passwd" "sub/dir/name"))
+    (should-not (cj/--playlist-name-safe-p bad))))
+
 (provide 'test-dirvish-config-playlist)
 ;;; test-dirvish-config-playlist.el ends here
