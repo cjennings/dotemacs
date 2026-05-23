@@ -41,6 +41,29 @@
       (cj/linear--ensure-api-key)
       (should-not linear-emacs-api-key))))
 
+(ert-deftest test-linear-install-key-advice-loads-before-check-setup ()
+  "Error-regression: `linear-emacs-check-setup' loads the key before reading it.
+The lazy loader originally only advised the GraphQL request entry point, so
+`check-setup' — which reads `linear-emacs-api-key' directly without making a
+request — falsely reported \"not set\" on a fresh session."
+  (let ((linear-emacs-api-key nil)
+        (key-at-read :unread))
+    (cl-letf (((symbol-function 'cj/auth-source-secret-value)
+               (lambda (&rest _) "lin_api_test"))
+              ((symbol-function 'linear-emacs--graphql-request-async)
+               (lambda (&rest _) nil))
+              ((symbol-function 'linear-emacs-check-setup)
+               (lambda () (setq key-at-read linear-emacs-api-key))))
+      (cj/linear--install-key-advice)
+      (unwind-protect
+          (progn
+            (linear-emacs-check-setup)
+            (should (equal key-at-read "lin_api_test")))
+        (advice-remove 'linear-emacs--graphql-request-async
+                       #'cj/linear--ensure-key-before)
+        (advice-remove 'linear-emacs-check-setup
+                       #'cj/linear--ensure-key-before)))))
+
 (ert-deftest test-linear-keymap-bound-under-prefix ()
   "Smoke: C-; L holds the linear keymap and the entry commands are bound."
   (should (keymapp cj/linear-keymap))
