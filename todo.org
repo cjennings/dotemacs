@@ -1586,15 +1586,8 @@ nil-decoration ERT tests updated from =:type 'wrong-type-argument=
 =:type 'user-error=, since the guard now produces a clear message
 instead of a deep crash.
 
-**** TODO [#C] Add coverage for =cj/title-case-region= state machine :tests:solo:
-
-=modules/custom-case.el:40-120= implements title-casing via a
-character-by-character state machine (case rules, leading-quote /
-paren handling).  No focused tests exercise: empty region, unicode
-boundaries (combining marks, RTL), sequences of numbers + symbols,
-opening quote characters.  The state machine is the kind of helper
-that fails silently on the unusual case -- ERT coverage on those
-inputs catches regressions during refactors.
+**** 2026-05-23 Sat @ 03:38:30 -0500 Filled the remaining title-case edge gaps
+=test-custom-case-title-case-region.el= already had 29 cases (empty region, unicode words, numbers, separators, colon resets, partial region). The named gaps that were missing — leading-quote and leading-paren handling, plus a caseless RTL first word — are now covered by three boundary tests (32 total). Added in 3841c59e.
 
 **** 2026-05-16 Sat @ 02:47:15 -0500 Extracted cj/--require-spell-checker
 
@@ -2637,18 +2630,8 @@ Switched =user-constants= and =system-utils= from =eval-when-compile= to plain =
 **** 2026-05-23 Sat @ 03:31:12 -0500 Hardened dirvish wallpaper + playlist path helpers
 =cj/set-wallpaper= passed =(dired-file-name-at-point)= straight into =expand-file-name=, so no-file-at-point raised a bare wrong-type-argument; added a nil guard that signals a clear user-error. =cj/dired-create-playlist-from-marked= expanded a raw name under =music-dir= with no check; added =cj/--playlist-name-safe-p= to reject any name carrying a directory separator (=../=, absolute, nested) before the path is built. Regression tests went into =test-dirvish-config-wrappers.el= and =test-dirvish-config-playlist.el=. The duplicate/copy-path helpers already guarded nil, so they were left alone. Fixed in 8fc6432d.
 
-**** TODO [#B] Add first smoke coverage for mail and system command modules :tests:solo:
-
-=mail-config.el= and =system-commands.el= are not currently represented in the
-coverage report. Both can get useful coverage without sending mail or invoking
-real system commands.
-
-Expected outcome:
-- For mail, stub executable discovery and assert the resulting config either
-  assigns valid commands or reports missing dependencies clearly.
-- For system commands, test keymap shape, menu candidates, confirmation routing,
-  and command-string construction with =shell-command= stubbed.
-- Keep all tests batch-safe and non-destructive.
+**** 2026-05-23 Sat @ 03:38:30 -0500 Coverage already in place for mail + system-commands
+The task premise was stale. =mail-config.el= has =test-mail-config-helpers.el= (4), =test-mail-config-transport.el= (7), and =test-mail-config.el= (1) covering executable discovery and transport command assignment. =system-commands.el= has =test-system-commands-keymap.el= (2, keymap shape + candidates) and =test-system-commands-resolve-and-run.el= (13, confirmation routing + command-string construction with shell-command stubbed). Both acceptance lists are satisfied; no new tests needed.
 
 **** TODO [#B] Harden EWW/Elfeed synchronous network helpers :cleanup:refactor:
 
