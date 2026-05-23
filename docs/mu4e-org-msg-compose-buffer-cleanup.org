@@ -1,0 +1,63 @@
+#+TITLE: Closing mu4e / org-msg Compose Buffers on Exit
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-23
+
+* What this controls
+
+Whether a mail compose buffer is killed when the message is sent or
+the compose is aborted, versus left behind for you to deal with.  The
+single knob is the built-in message-mode variable:
+
+: message-kill-buffer-on-exit
+
+- =t=   — kill the compose buffer on send / abort (no leftover buffers).
+- =nil= — keep the compose buffer after exit.
+
+* The one place to set it
+
+Set it once, in the =mu4e= =:config= block in =modules/mail-config.el=:
+
+#+begin_src emacs-lisp
+(setq message-kill-buffer-on-exit t)
+#+end_src
+
+That single setting governs *both* plain mu4e compose buffers and
+org-msg (HTML) compose buffers.  There is no need to set it anywhere
+else.
+
+* Why org-msg doesn't need its own setting
+
+org-msg-mode is the active composer in every compose buffer (the config
+runs =(org-msg-mode +1)=), so it's natural to assume org-msg needs its
+own copy of the policy.  It does not.
+
+org-msg only *reads* =message-kill-buffer-on-exit= — it never sets it.
+The single read is in =org-msg--widen-and-undo= (org-msg.el): when the
+value is =nil= (buffer will survive), org-msg widens and undoes its edits
+so the leftover buffer is clean; when the value is =t= (buffer will be
+killed), it skips that work because the buffer is about to go away.
+
+So whatever value the mu4e =:config= leaves in place is the value org-msg
+honors.
+
+* The trap to avoid
+
+A =(setq message-kill-buffer-on-exit ...)= inside the *org-msg* =:config=
+block silently wins over the mu4e one, because org-msg's =use-package=
+form loads after mu4e's and its =:config= runs later.  An older version
+of this config set =t= in mu4e and =nil= in org-msg, so compose buffers
+were always kept — the mu4e setting looked authoritative but was dead.
+
+Keep this policy in a single place (mu4e) so the effective value is
+obvious.  If you ever want to keep compose buffers again, flip the one
+setting to =nil=; don't reintroduce a second setter in org-msg.
+
+* Quick reference
+
+| Goal                          | Setting                                 |
+|-------------------------------+-----------------------------------------|
+| Kill compose buffers on exit  | =(setq message-kill-buffer-on-exit t)=   |
+| Keep compose buffers on exit  | =(setq message-kill-buffer-on-exit nil)= |
+
+Set it in the mu4e =:config= block of =modules/mail-config.el=, and
+nowhere else.
