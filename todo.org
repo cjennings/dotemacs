@@ -59,10 +59,12 @@ CLOSED: [2026-05-22 Fri]
 Surfaced 2026-05-21 while running the calendar-sync suite — had to fall back to loading the calendar-sync test files directly. Fix options: guard the gptel-dependent test files to skip cleanly when gptel is absent (e.g. =(when (require 'gptel nil t) ...)= or an ert skip), stub =gptel-make-tool= in a shared testutil, or have =test-name= load only files whose names match the pattern instead of all of them.
 
 Resolution (2026-05-22): the diagnosis above was wrong. The =test-gptel-tools-*.el= files already stub =gptel-make-tool= and =(provide 'gptel)= when gptel is absent, so they load fine in batch. The real abort was =tests/test-system-defaults-functions.el= leaking =default-directory=: it requires =system-defaults=, which runs =(setq default-directory user-home-dir)= at load, and =test-name= then resolved every following relative =-l tests/X.el= against the wrong directory. Fixed in 4fbe435f — =test-name= passes absolute paths to =-l=, and the test contains the leak with a =let=-binding around the require.
-** TODO [#C] Consolidate auth-source secret-funcall idiom :refactor:
+** DONE [#C] Consolidate auth-source secret-funcall idiom :refactor:
+CLOSED: [2026-05-22 Fri]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
+Fixed: extracted =cj/auth-source-secret-value= (host + optional user → secret or nil) into =system-lib.el= (a leaf, so calendar-sync stays off ai-config/gptel). All four callers delegate; ai-config layers its required-secret error on top. Dropped the now-dead =(require 'auth-source)= from the three delegating modules. f6e5885b.
 The auth-source lookup + funcall-the-secret block is duplicated four times: =calendar-sync--calendar-url= (calendar-sync.el), =cj/auth-source-secret= (ai-config.el), =cj/--auth-source-password= (transcription-config.el), and =cj/--slack-token= (slack-config.el). All share =(let ((secret (plist-get (car (auth-source-search ...)) :secret))) (if (functionp secret) (funcall secret) secret))=.
 
 Surfaced 2026-05-21 by the code review on the calendar auth-source work — flagged as the fourth copy. Extract one low-level helper into a leaf module both can load (=system-lib.el= or =auth-config.el=), then delegate all four to it. Note the semantics differ: =cj/auth-source-secret= forces =:user "apikey"= and =error=s on miss, while the calendar helper wants a no-user lookup that returns nil on miss — so the shared primitive needs optional user + nil-on-miss, with the erroring/required-user behavior layered on top where needed. Don't make calendar-sync depend on ai-config (it drags in the gptel stack).
