@@ -4105,28 +4105,28 @@ Repeatable installs and safe rollbacks.
 Treesitter grammars are downloaded separately by treesit-auto on first use.
 For true offline reproducibility, need to cache treesitter grammars separately.
 
-** TODO [#C] Investigate TRAMP/dirvish showing question marks for file dates :bug:
+** TODO [#C] TRAMP/dirvish "?" for remote dates — verify the fix per host :bug:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
 
-Remote directories in dirvish show "?" instead of actual modification dates.
-Tried several approaches without success - needs deeper investigation.
+Root cause is traced (see the dated investigation entry below). What's left needs a live remote: open each remote host in dirvish and run the three diagnostic evals to find which gate is closed, then close it.
 
-**Attempted fixes (all reverted):**
-1. Connection-local dired-listing-switches with -alh (didn't help)
-2. Disabling tramp-direct-async-process (reported to cause this, but disabling didn't fix it)
-3. Hook to set different listing switches for remote vs local (didn't help)
+Diagnostics (run with point in a remote dirvish buffer):
+- =M-: (dirvish-prop :remote-async)= — nil means =tramp-direct-async-process-p= is failing for this method/host, so dirvish's remote attribute fetch never runs.
+- =M-: (dirvish-prop :gnuls)= — nil means the remote has no GNU =ls= (the =ls --version= probe failed), so the parser gate stays shut. Likely on truenas (FreeBSD).
+- =M-: (tramp-direct-async-process-p)= — confirms whether direct-async is actually active for the connection.
 
-**Possible causes to investigate:**
-- dirvish may be using its own attribute fetching that bypasses dired-listing-switches
-- May need dirvish-specific configuration for remote file attributes
-- Could be an Emacs 29/30 + TRAMP + dirvish interaction issue
-- May require changes to how dirvish renders the file-size attribute on remote
+Likely fixes, by which gate is closed:
+- =:gnuls= nil → install GNU coreutils on the remote (FreeBSD: =pkg install coreutils=) and make =ls= resolve to GNU on the TRAMP path, or accept "?" on that host.
+- =:remote-async= nil → the scp/sshx method isn't advertising direct-async; switch to a method that supports it or check =tramp-direct-async-process= is taking effect for that protocol.
 
-**Files involved:**
-- modules/tramp-config.el
-- modules/dirvish-config.el
+Files involved: =modules/tramp-config.el=, =modules/dirvish-config.el=.
+
+*** 2026-05-22 Fri @ 20:24:44 -0500 Traced the root cause through dirvish source
+Remote dates/sizes don't come from the dired =ls= listing or =dired-listing-switches=. They come from =dirvish-data-for-dir= (=dirvish-tramp.el:95=), which runs =ls -1lahi= on the remote and parses the columns into the attribute cache. That method only fires when both =(dirvish-prop :remote-async)= is a number and =(dirvish-prop :gnuls)= is a string. When either gate is shut, dirvish falls back to its default, which deliberately skips =(file-attributes f-name)= for remote files (=dirvish.el:904=, a perf guard) — leaving attrs nil, so the file-size and file-time widgets render "?" (=dirvish-widgets.el:216,247=).
+
+That explains why every prior fix missed: dired-listing-switches feed a different code path entirely, and disabling =tramp-direct-async-process= shuts the =:remote-async= gate, which is the one path that populates remote attributes — exactly backwards. The config already enables direct-async for ssh/sshx (=tramp-config.el:79-88=), so the remaining closed gate is per-host: =:gnuls= (no GNU ls on FreeBSD-based truenas) or direct-async not taking effect for the method. Could not verify on a live remote from the work session — handed the per-host diagnostics up into the task body.
 
 ** TODO [#C] Finish terminal GPG pinentry configuration :feature:
 :PROPERTIES:
