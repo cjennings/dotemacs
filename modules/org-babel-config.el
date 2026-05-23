@@ -128,7 +128,7 @@ FLAG is the raw prefix argument passed interactively."
   (add-to-list 'org-structure-template-alist '("dot"      . "src dot :file temp.png :cmdline -Kdot -Tpng"))
   (add-to-list 'org-structure-template-alist '("el"       . "src emacs-lisp"))
   (add-to-list 'org-structure-template-alist '("js"       . "src javascript"))
-  (add-to-list 'org-structure-template-alist '("java"     . "src javas"))
+  (add-to-list 'org-structure-template-alist '("java"     . "src java"))
   (add-to-list 'org-structure-template-alist '("json"     . "src json"))
   (add-to-list 'org-structure-template-alist '("latex"    . "src latex"))
   (add-to-list 'org-structure-template-alist '("py"       . "src python"))
