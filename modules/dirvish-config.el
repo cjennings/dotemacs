@@ -24,8 +24,8 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'user-constants))
-(eval-when-compile (require 'system-utils))
+(require 'user-constants)   ;; code-dir, music-dir, pix-dir et al. used at load time
+(require 'system-utils)     ;; cj/xdg-open, cj/open-file-with-command bound to keys
 (require 'host-environment)
 (require 'system-lib)
 (require 'external-open-lib)
