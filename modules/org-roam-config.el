@@ -185,6 +185,15 @@ created in that subdirectory of `org-roam-directory'."
 
 ;; ------------------------ Org Roam Copy Done To Daily ------------------------
 
+(defun cj/--org-roam-save-daily (file)
+  "Save FILE's visiting buffer when it has unsaved changes.
+Keeps a freshly-copied task off the unsaved-buffer prompt at shutdown and
+guards against losing it to a crash."
+  (when-let ((target-buffer (find-buffer-visiting file)))
+    (with-current-buffer target-buffer
+      (when (buffer-modified-p)
+        (save-buffer)))))
+
 (defun cj/org-roam-copy-todo-to-today ()
   "Copy completed tasks to today's daily org-roam node."
   (interactive)
@@ -204,11 +213,10 @@ created in that subdirectory of `org-roam-directory'."
     ;; Only refile if the target file is different than the current file
     (unless (equal (file-truename today-file)
                    (file-truename (buffer-file-name)))
-	  (org-refile nil nil (list "Completed Tasks" today-file nil pos))
-	  ;; Save explicitly so shutdown doesn't prompt about an unsaved journal buffer.
-	  (when-let ((target-buffer (find-buffer-visiting today-file)))
-	    (with-current-buffer target-buffer
-	      (save-buffer))))))
+	  (org-refile nil nil (list "Completed Tasks" today-file nil pos)))
+
+    ;; Save the daily whether or not a refile happened, so the copy survives.
+    (cj/--org-roam-save-daily today-file)))
 
 ;; ------------------------ Org-Branch To Org-Roam-Node ------------------------
 
