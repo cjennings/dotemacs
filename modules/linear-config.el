@@ -50,6 +50,17 @@ GPG prompt fires at most once per session and only when Linear is actually used.
 Named (not a lambda) so the advice is idempotent across reloads and removable."
   (cj/linear--ensure-api-key))
 
+(defun cj/linear--install-key-advice ()
+  "Install the lazy API-key loader on every entry point that needs the key.
+The GraphQL request funnels all real operations.  `linear-emacs-check-setup'
+reads `linear-emacs-api-key' directly without making a request, so it needs the
+loader too — otherwise it reports \"not set\" on a fresh session before the key
+has ever been fetched."
+  (advice-add 'linear-emacs--graphql-request-async :before
+              #'cj/linear--ensure-key-before)
+  (advice-add 'linear-emacs-check-setup :before
+              #'cj/linear--ensure-key-before))
+
 (use-package linear-emacs
   :ensure nil                       ;; local checkout, not from an archive
   :load-path "~/code/linear-emacs"
@@ -63,10 +74,15 @@ Named (not a lambda) so the advice is idempotent across reloads and removable."
              linear-emacs-check-setup)
   :config
   (setq linear-emacs-default-team-id cj/linear-team-id)
-  ;; Load the key before any GraphQL request — lazy, and it retries if the key
-  ;; was added to authinfo after a first (failed) attempt this session.
-  (advice-add 'linear-emacs--graphql-request-async :before
-              #'cj/linear--ensure-key-before))
+  ;; Keep the synced org file inside emacs home, next to the calendar-sync
+  ;; output (gcal.org / pcal.org / dcal.org).  Without this it falls back to
+  ;; `org-directory'/gtd/linear.org and silently creates a stray ~/org tree.
+  (setq linear-emacs-org-file-path
+        (expand-file-name "data/linear.org" user-emacs-directory))
+  ;; Load the key lazily before any operation that reads it — both the GraphQL
+  ;; request and the check-setup diagnostic.  Retries if the key was added to
+  ;; authinfo after a first (failed) attempt this session.
+  (cj/linear--install-key-advice))
 
 ;; ------------------------------ Keybindings ----------------------------------
 
