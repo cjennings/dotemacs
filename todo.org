@@ -1304,7 +1304,7 @@ Corrected =env-desktop-p='s docstring (it described a laptop; the function retur
 
 Left =cj/match-localtime-to-zoneinfo= caching alone — it was a "consider if this runs during startup" note, not an acceptance item, and it doesn't run at startup. File a separate task if it ever shows up in a profile.
 
-**** TODO [#B] Add minimal =system-defaults.el= setting smoke tests :tests:
+**** TODO [#B] Add minimal =system-defaults.el= setting smoke tests :tests:solo:
 
 =system-defaults.el= has no direct test file, despite holding high-impact
 defaults: server startup, backup behavior, custom-file behavior, symlink
@@ -1505,7 +1505,7 @@ Expected outcome:
 - Consider safer wrappers for =erase-buffer= and =revert-buffer= under the
   personal keymap.
 
-**** TODO [#B] Add explicit autoloads/requires for cross-module command keybindings :cleanup:refactor:
+**** TODO [#B] Add explicit autoloads/requires for cross-module command keybindings :cleanup:refactor:solo:
 
 Several custom utility keymaps bind symbols owned by other modules without
 declaring the relationship:
@@ -1524,7 +1524,7 @@ Expected outcome:
 - Add a simple module-load smoke test if this becomes part of the load-graph
   refactor.
 
-**** TODO [#C] Reconcile region-or-buffer scope across editing helpers :bug:
+**** TODO [#C] Reconcile region-or-buffer scope across editing helpers :bug:solo:
 
 =modules/custom-text-enclose.el:135-180= helpers
 (=cj/append-to-lines-in-region-or-buffer=,
@@ -1618,7 +1618,7 @@ Completion review 2026-05-15:
 - Existing cleanup below covers the disabled =popper-config.el= load-graph
   issue; added a separate test-gap task for the remaining UI smoke coverage.
 
-**** TODO [#B] Add UI/navigation runtime smoke coverage :tests:
+**** TODO [#B] Add UI/navigation runtime smoke coverage :tests:solo:
 
 Several UI modules are mostly top-level runtime configuration and currently
 have only partial helper coverage. The highest-value missing assertions are:
@@ -1683,7 +1683,7 @@ configuration.  Either move the GUI check inside
 =server-after-make-frame-hook= (per-frame), or invoke font setup
 unconditionally and let Emacs handle terminal frames gracefully.
 
-**** TODO [#C] Cache =mousetrap-mode= keymap rebuilds per profile :performance:
+**** TODO [#C] Cache =mousetrap-mode= keymap rebuilds per profile :performance:solo:
 
 =modules/mousetrap-mode.el:231-233= registers =mouse-trap-maybe-enable=
 on every major-mode hook (text, prog, special, plus custom profile
@@ -1693,7 +1693,7 @@ switching, multi-buffer review) pay a measurable cost.  Cache by
 profile + active-events list and skip rebuild when the cache key
 matches.
 
-**** TODO [#C] Invalidate VC modeline cache on file symlink target changes :tests:
+**** TODO [#C] Invalidate VC modeline cache on file symlink target changes :tests:solo:
 
 =modules/modeline-config.el:131-140= keys the cache on =(list file
 cj/modeline-vc-show-remote)=.  If =file= is a symlink whose target
@@ -1702,7 +1702,7 @@ stays warm with the old VC backend.  Add the resolved =file-truename=
 to the key, or invalidate the cache when =vc-backend= disagrees with
 the cached entry.
 
-**** TODO [#B] Move =C-s= binding into =consult= =:bind= for =isearch-mode-map= :safety:
+**** TODO [#B] Move =C-s= binding into =consult= =:bind= for =isearch-mode-map= :safety:solo:
 
 =modules/selection-framework.el:253= binds =C-s= globally to
 =cj/consult-line-or-repeat=.  The same module's =consult= =:bind=
@@ -1786,47 +1786,17 @@ Completion review 2026-05-15:
   org-roam destructive workflow guardrails, executable checks, capture-template
   smoke tests, and Org workflow ownership documentation.
 
-**** PROJECT [#A] Split personal calendar configuration from =calendar-sync.el= :security:refactor:
-
-=calendar-sync.el= is a reusable sync engine, but it also defines the personal
-=calendar-sync-calendars= value at top level. The concrete URLs are private feed
-tokens, so they should be rotated and moved out of source. This overlaps the
-top-level architecture/security item; this module task tracks the implementation
-shape.
-
-***** TODO [#A] Load calendar definitions from a private source :refactor:
-
-Expected outcome:
-- =calendar-sync.el= should default =calendar-sync-calendars= to nil or a safe
-  placeholder.
-- Put real calendar plists in private machine config, auth-source, env-backed
-  elisp, or an ignored file loaded from =custom-file= / host config.
-- =calendar-sync-status= and =calendar-sync-start= should explain missing config
-  clearly without erroring.
-
-Pitfalls:
-- =org-agenda-config.el= expects =gcal-file=, =pcal-file=, and =dcal-file= in
-  agenda file lists. Missing calendar config should not break agenda startup.
-- Avoid logging URLs on fetch failures.
+**** 2026-05-23 Sat @ 04:18:44 -0500 Split personal calendar config out of calendar-sync.el
+=calendar-sync.el= now defaults =calendar-sync-calendars= to nil and loads the real plists from =calendar-sync-private-config-file= (an ignored file), so the engine carries no private feed tokens in source. =calendar-sync-status= / =calendar-sync-start= report missing config without erroring, and agenda startup is unaffected (tests/test-calendar-sync-no-config-startup.el). Rotating the previously-committed feed URLs remains a manual credential action — tracked under the L2557 calendar-sync hardening finding.
 
 **** PROJECT [#B] Normalize Org agenda/refile cache lifecycle :perf:refactor:
 
-=org-agenda-config.el= and =org-refile-config.el= both solve the same startup
-problem with hand-rolled globals: cache value, cache time, TTL, "building" flag,
-idle timer, force-refresh command, and a synchronous fallback. The behavior is
-useful, but the implementation is duplicated and has edge cases.
+Two of three children are done (shared cache helper extracted, idle timers gated). Still open: the directory-scan-failure visibility child below.
 
-***** TODO [#B] Extract a small reusable cache helper or shared pattern :refactor:
+***** 2026-05-23 Sat @ 04:18:44 -0500 Extracted a shared cache helper
+=cj-cache-lib.el= now provides =cj/cache-valid-p=, =cj/cache-building-p=, and =cj/cache-value-or-rebuild=, consumed by both =org-agenda-config.el= and =org-refile-config.el=; the contract is documented in =docs/design/cache-helper-design.org=. The agenda and refile public commands are unchanged.
 
-Expected outcome:
-- Keep the agenda and refile public commands unchanged.
-- Share the common "valid cache or rebuild" control flow, or at least document
-  why the two implementations intentionally differ.
-- Make "build in progress" semantics real. Today the message says "waiting",
-  but the code continues into a rebuild path rather than waiting or using the
-  old cache.
-
-***** TODO [#B] Make directory scan failures visible but non-fatal
+***** TODO [#B] Make directory scan failures visible but non-fatal :solo:
 
 =org-refile-config.el= silently ignores =permission-denied= while scanning
 directories, and =org-agenda-config.el= assumes =projects-dir= exists and is
@@ -1839,17 +1809,8 @@ Expected outcome:
 - Tests should cover missing =projects-dir= and permission/error cases by
   stubbing directory functions.
 
-***** TODO [#C] Suppress startup idle timers in batch/test contexts
-
-Both modules start cache builders with =run-with-idle-timer= at top level. That
-is fine for interactive startup, but awkward for tests and batch commands.
-
-Expected outcome:
-- Gate the idle timers behind =(not noninteractive)= or an explicit startup
-  function.
-- Preserve normal interactive behavior.
-- Add a smoke test that requiring the modules in batch does not schedule cache
-  builders.
+***** 2026-05-23 Sat @ 04:18:44 -0500 Gated cache idle timers out of batch
+Both cache builders' =run-with-idle-timer= calls are wrapped in =(unless noninteractive)= (=org-refile-config.el:105=, =org-agenda-config.el:203=), so requiring the modules in batch schedules nothing. =tests/test-architecture-startup-contracts.el= scans every module and asserts there are no unguarded top-level timer forms.
 
 **** TODO [#A] Revisit =org-confirm-babel-evaluate= default :security:
 
@@ -1865,7 +1826,7 @@ Expected outcome:
   toggles the current policy.
 - Add a test/smoke assertion for the chosen default.
 
-**** TODO [#B] Add guardrails to =cj/move-org-branch-to-roam= :ux:
+**** TODO [#B] Add guardrails to =cj/move-org-branch-to-roam= :ux:solo:
 
 =org-roam-config.el= implements =cj/move-org-branch-to-roam= by copying the
 subtree, cutting it from the source buffer, writing a new roam file, and syncing
@@ -1893,7 +1854,7 @@ Expected outcome:
 - Ensure aborted captures clear temp state.
 - Keep the existing browser bookmarklet workflow unchanged.
 
-**** TODO [#B] Review external executable assumptions in Org export/publishing modules :cleanup:
+**** TODO [#B] Review external executable assumptions in Org export/publishing modules :cleanup:solo:
 
 =org-export-config.el= assumes =zathura= for one Pandoc PDF path, =hugo-config.el=
 assumes =hugo= and a browser/file-manager opener, =org-reveal-config.el= assumes
@@ -1927,7 +1888,7 @@ Expected outcome:
 - Add tests for fileless buffers, =gcal-file=, already-daily buffers, and a
   normal project/todo buffer.
 
-**** TODO [#B] Make Org drill file selection robust and shared :bug:refactor:
+**** TODO [#B] Make Org drill file selection robust and shared :bug:refactor:solo:
 
 =org-capture-config.el= and =org-drill-config.el= both scan =drill-dir= for
 candidate =.org= files with inline =directory-files= calls. If =drill-dir= is
@@ -1941,7 +1902,7 @@ Expected outcome:
 - Preserve the current completing-read workflow when files exist.
 - Add tests for missing directory, empty directory, and normal selection list.
 
-**** TODO [#B] Clarify contradictory Org export task defaults :cleanup:tests:
+**** TODO [#B] Clarify contradictory Org export task defaults :cleanup:tests:solo:
 
 =org-export-config.el= sets =org-export-with-tasks= twice in a row: first to
 =("TODO")= and then to =nil=. The final behavior is "export no tasks", but the
@@ -1974,7 +1935,7 @@ Expected outcome:
 - Add a smoke test for loading =org-contacts-config.el= without Mu4e stubs if
   practical.
 
-**** TODO [#B] Add an Org workflow health check command :feature:ux:
+**** TODO [#B] Add an Org workflow health check command :feature:ux:solo:
 
 Several Org workflow modules depend on personal paths, optional external tools,
 and local package checkouts. Failures currently show up at command time in
@@ -1992,7 +1953,7 @@ Recommended improvement:
 - Make the checker return structured data so it can be unit-tested and displayed
   either in Messages or a buffer.
 
-**** TODO [#B] Add capture-template key collision and target smoke tests :tests:
+**** TODO [#B] Add capture-template key collision and target smoke tests :tests:solo:
 
 Org capture templates are assembled across =org-capture-config.el=,
 =org-contacts-config.el=, =org-webclipper.el=, and other feature modules. The
@@ -2007,7 +1968,7 @@ Recommended improvement:
 - Cover lazy additions for contact and webclipper templates without requiring a
   browser/org-protocol round trip.
 
-**** TODO [#B] Document Org workflow module ownership and load boundaries :docs:refactor:
+**** TODO [#B] Document Org workflow module ownership and load boundaries :docs:refactor:solo:
 
 The Org workflow is spread across many modules with overlapping responsibilities:
 capture templates, keymaps, org-protocol handlers, refile/agenda target
@@ -2045,7 +2006,7 @@ fails inside the capture handler with confusing messages.  Guard with
 =(unless (and (stringp url) (not (string-empty-p url))) (user-error ...))=
 before stashing.
 
-**** TODO [#C] Replace global mutation of =cj/webclip-current-url= / =title= with structured state :refactor:
+**** TODO [#C] Replace global mutation of =cj/webclip-current-url= / =title= with structured state :refactor:solo:
 
 =modules/org-webclipper.el:128-129,151-152= relies on two top-level
 variables (=cj/webclip-current-url=, =cj/webclip-current-title=)
@@ -2066,7 +2027,7 @@ Add =(eval-when-compile (defvar contacts-file))= and
 near the existing requires so the compile is clean and the
 cross-module dependency is explicit at the top of the file.
 
-**** TODO [#C] Add coverage for =mu4e-org-contacts-integration.el= completion logic :tests:
+**** TODO [#C] Add coverage for =mu4e-org-contacts-integration.el= completion logic :tests:solo:
 
 No tests exist for =cj/org-contacts-completion-at-point=,
 =cj/mu4e-org-contacts-tab-complete=, =cj/mu4e-org-contacts-comma-
@@ -2115,7 +2076,7 @@ Completion review 2026-05-15:
   process handling, shell-script executable policy, and formatter process
   boundaries.
 
-**** TODO [#C] Add smoke coverage for lightweight programming modules with no direct tests :tests:
+**** TODO [#C] Add smoke coverage for lightweight programming modules with no direct tests :tests:solo:
 
 Several low-risk programming modules currently have little or no direct test
 surface, especially =prog-general.el=, =prog-lisp.el=, and
@@ -2172,7 +2133,7 @@ Pitfalls:
 - Do not accidentally re-enable UI/doc/sideline behavior that was explicitly
   disabled for performance.
 
-***** TODO [#B] Add a startup smoke test for LSP config resolution
+***** TODO [#B] Add a startup smoke test for LSP config resolution :solo:
 
 Keep this narrow. A useful test can require the LSP-related modules with mocked
 =use-package= side effects and assert that:
@@ -2197,7 +2158,7 @@ syntax issue.  That one resolved upstream on 2026-05-14 (see =docs/python-
 treesit-predicate-mismatch.txt= RESOLVED footer), so this task no longer
 depends on it.
 
-**** TODO [#B] Harden git clone from clipboard in =vc-config.el= :robustness:refactor:
+**** TODO [#B] Harden git clone from clipboard in =vc-config.el= :robustness:refactor:solo:
 
 =cj/git-clone-clipboard-url= shells out to =git clone= from clipboard text and
 derives the clone directory with =file-name-nondirectory=. The URL is quoted, so
@@ -2225,7 +2186,7 @@ Expected outcome:
 - Keep the existing =cj/make-script-executable= tests updated for the chosen
   policy.
 
-**** TODO [#B] Review language formatter process boundaries :cleanup:
+**** TODO [#B] Review language formatter process boundaries :cleanup:solo:
 
 JSON, YAML, and webdev formatters use =shell-command-on-region= with command
 strings. Most inputs are fixed or shell-quoted, but formatter code is a good
@@ -2358,7 +2319,7 @@ Completion review 2026-05-15:
   persistence coverage, calendar operational behavior, Dirvish dependency/path
   hardening, EWW/Elfeed network helpers, and Slack which-key registration.
 
-**** TODO [#B] Make system restart/shutdown commands more defensive :safety:
+**** TODO [#B] Make system restart/shutdown commands more defensive :safety:solo:
 
 =system-commands.el= exposes high-impact shell commands through a convenience
 menu. The restart-Emacs path starts a shell command that restarts the user
@@ -2376,7 +2337,7 @@ Expected outcome:
 - Add smoke tests around key resolution and command selection without invoking
   real system commands.
 
-**** TODO [#A] Prevent REST API keys from being saved into template files :security:bug:
+**** TODO [#A] Prevent REST API keys from being saved into template files :security:bug:solo:
 
 =restclient-config.el= opens =data/skyfi-api.rest= and replaces the
 =:skyfi-key= line in that file-visiting buffer with the real key from
@@ -2407,7 +2368,7 @@ Expected outcome:
 **** 2026-05-23 Sat @ 03:52:00 -0500 Set compose buffers to kill on exit, both composers
 First clarified the ownership (dd671f8c): the org-msg comment "always kill buffers on exit" was backwards — org-msg set =nil= (keep), which won over mu4e's =t= because org-msg-mode runs in every compose buffer. Craig then chose to kill compose buffers on exit, so I set the org-msg value to =t= as well (82978c79). Both mu4e and org-msg now kill the buffer on send/exit, so HTML drafts don't linger.
 
-**** TODO [#B] Remove automatic startup timers from =quick-video-capture.el= :startup:refactor:
+**** TODO [#B] Remove automatic startup timers from =quick-video-capture.el= :startup:refactor:solo:
 
 =quick-video-capture.el= schedules both an =after-init-hook= idle timer and a
 fallback =run-with-timer= to initialize org-protocol/capture glue shortly after
@@ -2421,7 +2382,7 @@ Expected outcome:
 - Keep manual bookmarklet usage working when an org-protocol URL arrives before
   the rest of Org has been used.
 
-**** TODO [#B] Avoid global temp state in =quick-video-capture.el= :cleanup:refactor:
+**** TODO [#B] Avoid global temp state in =quick-video-capture.el= :cleanup:refactor:solo:
 
 Like =org-webclipper.el=, quick video capture passes URL state through a global
 =cj/video-download-current-url=. Interrupted captures or nested capture flows can
@@ -2446,7 +2407,7 @@ Expected outcome:
   safely quoted by =dwim-shell-command= and add focused tests around password
   temp-file cleanup.
 
-***** TODO [#A] Fix async password temp-file lifetime in dwim-shell commands :bug:
+***** TODO [#A] Fix async password temp-file lifetime in dwim-shell commands :bug:solo:
 
 Several password commands create a temp file, call
 =dwim-shell-command-on-marked-files=, and delete the temp file in
@@ -2465,7 +2426,7 @@ Expected outcome:
 - Add tests or a small harness that proves cleanup happens on success, failure,
   and user cancellation.
 
-***** TODO [#A] Quote or argv-ify user-controlled dwim-shell inputs :security:bug:
+***** TODO [#A] Quote or argv-ify user-controlled dwim-shell inputs :security:bug:solo:
 
 Several commands interpolate clipboard text, archive names, prefixes,
 recipients, timestamps, and output paths into shell templates. Some are quoted
@@ -2504,7 +2465,7 @@ Expected outcome:
   be renamed to describe overwrite-only behavior.
 - Add tests around command strings or extract small pure builders.
 
-***** TODO [#B] Quote X11 and audio recording command paths :bug:
+***** TODO [#B] Quote X11 and audio recording command paths :bug:solo:
 
 =video-audio-recording.el= quotes devices and filenames in the Wayland
 =wf-recorder= command path, but the X11 =ffmpeg= path and audio-only =ffmpeg=
@@ -2528,7 +2489,7 @@ Expected outcome:
 - Stop only that process or process group.
 - Preserve existing toggle behavior and tests for already-running recordings.
 
-***** TODO [#B] Ensure chosen recording directories are created directly :bug:
+***** TODO [#B] Ensure chosen recording directories are created directly :bug:solo:
 
 The recording toggles accept a directory via prefix argument, then derive parent
 directories in a way that can create the parent but not necessarily the selected
@@ -2571,18 +2532,8 @@ Expected outcome:
 - Write generated Org files atomically via a temp file and rename.
 - Read the local state file with =read-eval= disabled.
 
-**** TODO [#B] Add first coverage for AI conversation persistence :tests:
-
-=ai-conversations.el= is not currently represented in =.coverage/simplecov.json=.
-The module has several pure helper seams and a few file operations that can be
-tested without loading GPTel.
-
-Expected outcome:
-- Test slug generation, timestamp parsing, candidate sorting, and latest-file
-  selection.
-- Test save/load header stripping against a temp conversations directory.
-- Test autosave path setup and delete confirmation with stubbed prompts.
-- Keep GPTel itself mocked or avoided unless a later integration test needs it.
+**** 2026-05-23 Sat @ 04:18:44 -0500 AI conversation persistence coverage already in place
+Premise was stale. =tests/test-ai-conversations.el= (47 cases) already covers slug generation, timestamp parsing, candidate sorting (newest/oldest), latest-file selection, save/load header stripping against a temp dir, autosave path/timer, and delete confirmation — with GPTel stubbed throughout. Acceptance list satisfied; no new file needed.
 
 **** 2026-05-23 Sat @ 03:31:12 -0500 Dirvish helper coverage already in place
 The task premise was stale: =dirvish-config.el= now has 14 focused test files (=test-dirvish-config-*.el=, ~100 cases) covering duplicate-naming, resolve-display-path (project/home/absolute/org-link), ediff-pair, html/printable predicates, playlist filtering/sanitizing, wallpaper-program mapping, and the public wrappers. The remaining gaps (playlist name-safety, set-wallpaper nil-file) were filled by the L2668 hardening commit 8fc6432d. No new file needed.
@@ -2596,7 +2547,7 @@ Switched =user-constants= and =system-utils= from =eval-when-compile= to plain =
 **** 2026-05-23 Sat @ 03:38:30 -0500 Coverage already in place for mail + system-commands
 The task premise was stale. =mail-config.el= has =test-mail-config-helpers.el= (4), =test-mail-config-transport.el= (7), and =test-mail-config.el= (1) covering executable discovery and transport command assignment. =system-commands.el= has =test-system-commands-keymap.el= (2, keymap shape + candidates) and =test-system-commands-resolve-and-run.el= (13, confirmation routing + command-string construction with shell-command stubbed). Both acceptance lists are satisfied; no new tests needed.
 
-**** TODO [#B] Harden EWW/Elfeed synchronous network helpers :cleanup:refactor:
+**** TODO [#B] Harden EWW/Elfeed synchronous network helpers :cleanup:refactor:solo:
 
 =elfeed-config.el= includes synchronous URL retrieval helpers for converting
 YouTube channel/playlist URLs into feed entries, and =eww-config.el= advises URL
@@ -2651,7 +2602,7 @@ feature is broken end-to-end.  Change the URL to
 =http://localhost:8080/imp= (and consider switching the launch to
 =browse-url= so the user's default protocol handler is respected).
 
-**** TODO [#C] Document or vendor strapdown.js CDN dependency in =markdown-preview= :cleanup:
+**** TODO [#C] Document or vendor strapdown.js CDN dependency in =markdown-preview= :cleanup:solo:
 
 =cj/markdown-html= (=modules/markdown-config.el:48-51=) embeds a
 =<script src="http://ndossougbe.github.io/strapdown/dist/strapdown.js">=
