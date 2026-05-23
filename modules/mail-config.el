@@ -132,8 +132,9 @@ Prompts user for the action when executing."
   (setq message-citation-line-format "On %a %d %b %Y at %R, %f wrote:\n") ;; helps show up properly in Outlook/Gmail threads
   (setq message-citation-line-function 'message-insert-formatted-citation-line)
   ;; Kill the compose buffer on send/exit so compose buffers don't accumulate.
-  ;; org-msg (the active composer) sets this to t as well, so the policy holds
-  ;; whether or not org-msg is on.
+  ;; Single home for this policy: org-msg only reads this variable (to decide
+  ;; whether to widen-and-undo its edits) and never sets it, so the value set
+  ;; here governs both plain mu4e and org-msg compose buffers.
   (setq message-kill-buffer-on-exit t)
   (setq mu4e-change-filenames-when-moving t)                              ;; avoid gmail dup UID issues: https://goo.gl/RTCgVa
   (setq mu4e-completing-read-function 'completing-read)                   ;; use generic completing read, rather than ido
@@ -438,11 +439,6 @@ Prompts user for the action when executing."
 
   ;; enforce css usage; default renders too small
   (setq org-msg-enforce-css t)
-
-  ;; Kill the compose buffer on exit, matching the mu4e default above, so an
-  ;; org-msg HTML draft buffer doesn't linger after the message is sent or
-  ;; aborted.  org-msg defaults this to nil, so set it explicitly here.
-  (setq message-kill-buffer-on-exit t)
 
   ;; Override just the problematic styles with important tags
   (setq org-msg-extra-css
