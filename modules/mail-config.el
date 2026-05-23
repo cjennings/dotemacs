@@ -131,10 +131,9 @@ Prompts user for the action when executing."
   (setq mail-user-agent 'mu4e-user-agent)                                 ;; default to mu4e for email
   (setq message-citation-line-format "On %a %d %b %Y at %R, %f wrote:\n") ;; helps show up properly in Outlook/Gmail threads
   (setq message-citation-line-function 'message-insert-formatted-citation-line)
-  ;; Plain-mu4e default: kill the compose buffer on send/exit.  org-msg is the
-  ;; active composer (org-msg-mode is enabled in every compose buffer), and its
-  ;; :config overrides this to nil.  So this value only takes effect if org-msg
-  ;; is ever disabled.
+  ;; Kill the compose buffer on send/exit so compose buffers don't accumulate.
+  ;; org-msg (the active composer) sets this to t as well, so the policy holds
+  ;; whether or not org-msg is on.
   (setq message-kill-buffer-on-exit t)
   (setq mu4e-change-filenames-when-moving t)                              ;; avoid gmail dup UID issues: https://goo.gl/RTCgVa
   (setq mu4e-completing-read-function 'completing-read)                   ;; use generic completing read, rather than ido
@@ -440,10 +439,10 @@ Prompts user for the action when executing."
   ;; enforce css usage; default renders too small
   (setq org-msg-enforce-css t)
 
-  ;; org-msg owns the final compose-buffer policy: keep the buffer on exit
-  ;; (nil = don't kill) so an in-progress HTML draft isn't lost when it's buried
-  ;; or switched away from.  This overrides the plain-mu4e default set above.
-  (setq message-kill-buffer-on-exit nil)
+  ;; Kill the compose buffer on exit, matching the mu4e default above, so an
+  ;; org-msg HTML draft buffer doesn't linger after the message is sent or
+  ;; aborted.  org-msg defaults this to nil, so set it explicitly here.
+  (setq message-kill-buffer-on-exit t)
 
   ;; Override just the problematic styles with important tags
   (setq org-msg-extra-css
