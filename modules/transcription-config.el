@@ -38,7 +38,7 @@
 
 (require 'dired)
 (require 'notifications)
-(require 'auth-source)
+(require 'system-lib)      ; provides cj/auth-source-secret-value
 (require 'user-constants)  ; For cj/audio-file-extensions
 
 ;; Declare keymap defined in keybindings.el
@@ -121,14 +121,10 @@ SUCCESS-P indicates whether transcription succeeded."
     (expand-file-name (concat "scripts/" script-name) user-emacs-directory)))
 
 (defun cj/--auth-source-password (host)
-  "Retrieve password for HOST from authinfo.gpg.
-Expects entry like: machine HOST login api password <key>.
+  "Retrieve the auth-source secret for HOST from authinfo.gpg.
+Expects an entry like: machine HOST login api password <key>.
 Returns the password string, or nil if no matching entry exists."
-  (when-let* ((auth-info (car (auth-source-search :host host :require '(:secret))))
-              (secret (plist-get auth-info :secret)))
-    (if (functionp secret)
-        (funcall secret)
-      secret)))
+  (cj/auth-source-secret-value host))
 
 (defun cj/--build-process-environment (backend)
   "Return `process-environment' augmented with BACKEND's API-key env var.

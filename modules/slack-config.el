@@ -34,7 +34,7 @@
 
 ;;; Code:
 
-(require 'auth-source)
+(require 'system-lib)  ;; provides cj/auth-source-secret-value
 (require 'cl-lib)
 
 (defvar slack-current-buffer)
@@ -65,14 +65,7 @@
 
 (defun cj/slack--get-credential (login-key)
   "Look up LOGIN-KEY credential for the Slack workspace from auth-source."
-  (let ((entry (car (auth-source-search :host cj/slack-workspace
-                                        :user login-key
-                                        :max 1))))
-    (when entry
-      (let ((secret (plist-get entry :secret)))
-        (if (functionp secret)
-            (funcall secret)
-          secret)))))
+  (cj/auth-source-secret-value cj/slack-workspace login-key))
 
 (defun cj/slack-start ()
   "Connect to Slack, registering the team if needed."

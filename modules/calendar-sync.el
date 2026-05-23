@@ -71,7 +71,7 @@
 
 (require 'cl-lib)
 (require 'subr-x)
-(require 'auth-source)
+(require 'system-lib)  ;; provides cj/auth-source-secret-value (leaf; no ai-config dep)
 (require 'cj-org-text-lib)
 
 (defun calendar-sync--log-silently (format-string &rest args)
@@ -1509,13 +1509,8 @@ An explicit :url wins.  Otherwise :secret-host names an auth-source host
 whose stored secret is the URL (kept in auth-source because the .ics URL
 is itself a token)."
   (or (plist-get calendar :url)
-      (let ((host (plist-get calendar :secret-host)))
-        (when host
-          (let ((secret (plist-get (car (auth-source-search :host host :max 1))
-                                   :secret)))
-            ;; auth-source's netrc backend returns the secret as a function
-            (cond ((functionp secret) (funcall secret))
-                  (secret secret)))))))
+      (when-let* ((host (plist-get calendar :secret-host)))
+        (cj/auth-source-secret-value host))))
 
 (defun calendar-sync--sync-calendar-ics (calendar)
   "Sync a single CALENDAR from its .ics feed asynchronously.
