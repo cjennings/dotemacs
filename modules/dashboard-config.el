@@ -56,6 +56,52 @@
 Positive values shift left, negative values shift right.
 Adjust this if the title doesn't appear centered under the banner image.")
 
+;; --------------------------- Launcher Definitions ----------------------------
+;; Single source of truth for the dashboard launchers.  Both the navigator
+;; icon rows and the dashboard-mode-map keybindings derive from this table, so
+;; a launcher is added or reordered in exactly one place (no icon-row/keymap
+;; drift).  Each entry: (KEY ICON-FN ICON-NAME LABEL TOOLTIP ACTION); ACTION is
+;; a zero-argument function run by both the icon button and the key.
+
+(defconst cj/dashboard--launchers
+  (list
+   (list "c" #'nerd-icons-faicon  "nf-fa-code"         "Code"       "Switch Project"         (lambda () (projectile-switch-project)))
+   (list "d" #'nerd-icons-faicon  "nf-fa-folder_o"     "Files"      "Dirvish File Manager"   (lambda () (dirvish user-home-dir)))
+   (list "t" #'nerd-icons-devicon "nf-dev-terminal"    "Terminal"   "Launch VTerm"           (lambda () (vterm)))
+   (list "a" #'nerd-icons-mdicon  "nf-md-calendar"     "Agenda"     "Main Org Agenda"        (lambda () (cj/main-agenda-display)))
+   (list "r" #'nerd-icons-faicon  "nf-fa-rss_square"   "Feeds"      "Elfeed Feed Reader"     (lambda () (cj/elfeed-open)))
+   (list "b" #'nerd-icons-faicon  "nf-fae-book_open_o" "Books"      "Calibre Ebook Reader"   (lambda () (calibredb)))
+   (list "f" #'nerd-icons-mdicon  "nf-md-school"       "Flashcards" "Org-Drill"              (lambda () (cj/drill-start)))
+   (list "m" #'nerd-icons-mdicon  "nf-md-music"        "Music"      "EMMS Music Player"      (lambda () (cj/music-playlist-toggle) (cj/music-playlist-load)))
+   (list "e" #'nerd-icons-faicon  "nf-fa-envelope"     "Email"      "Mu4e Email Client"      (lambda () (mu4e)))
+   (list "i" #'nerd-icons-faicon  "nf-fa-comments"     "IRC"        "Emacs Relay Chat"       (lambda () (cj/erc-switch-to-buffer-with-completion)))
+   (list "s" #'nerd-icons-faicon  "nf-fa-slack"        "Slack"      "Slack Client"           (lambda () (cj/slack-start)))
+   (list "g" #'nerd-icons-faicon  "nf-fa-telegram"     "Telegram"   "Telega Telegram Client" (lambda () (cj/telega))))
+  "Dashboard launcher table: (KEY ICON-FN ICON-NAME LABEL TOOLTIP ACTION).
+Drives both `dashboard-navigator-buttons' and the dashboard-mode-map keys.")
+
+(defun cj/dashboard--navigator-rows ()
+  "Build `dashboard-navigator-buttons' rows from `cj/dashboard--launchers'.
+Chunks the launchers four per row and maps each to a navigator button."
+  (let (rows row)
+    (dolist (l cj/dashboard--launchers)
+      (let ((icon-fn (nth 1 l)) (icon-name (nth 2 l))
+            (label (nth 3 l)) (tooltip (nth 4 l)) (action (nth 5 l)))
+        (push (list (funcall icon-fn icon-name) label tooltip
+                    (lambda (&rest _) (funcall action)) nil " " "")
+              row))
+      (when (= (length row) 4)
+        (push (nreverse row) rows)
+        (setq row nil)))
+    (when row (push (nreverse row) rows))
+    (nreverse rows)))
+
+(defun cj/dashboard--bind-launchers (map)
+  "Bind each launcher KEY in MAP to a command that runs its ACTION."
+  (dolist (l cj/dashboard--launchers)
+    (let ((key (nth 0 l)) (action (nth 5 l)))
+      (define-key map (kbd key) (lambda () (interactive) (funcall action))))))
+
 ;; ----------------------------- Display Dashboard -----------------------------
 ;; convenience function to redisplay dashboard and kill all other windows
 
@@ -124,69 +170,7 @@ window."
 
   ;; == navigation
   (setq dashboard-set-navigator t)
-  (setq dashboard-navigator-buttons
-        `(;; Row 1 — Work tools
-          ((,(nerd-icons-faicon "nf-fa-code")
-            "Code" "Switch Project"
-            (lambda (&rest _) (projectile-switch-project))
-            nil " " "")
-
-           (,(nerd-icons-faicon "nf-fa-folder_o")
-            "Files" "Dirvish File Manager"
-            (lambda (&rest _) (dirvish user-home-dir))
-            nil " " "")
-
-           (,(nerd-icons-devicon "nf-dev-terminal")
-            "Terminal" "Launch VTerm"
-            (lambda (&rest _) (vterm))
-            nil " " "")
-
-           (,(nerd-icons-mdicon "nf-md-calendar")
-            "Agenda" "Main Org Agenda"
-            (lambda (&rest _) (cj/main-agenda-display))
-            nil " " ""))
-
-          ;; Row 2 — Read & Learn
-          ((,(nerd-icons-faicon "nf-fa-rss_square")
-            "Feeds" "Elfeed Feed Reader"
-            (lambda (&rest _) (cj/elfeed-open))
-            nil " " "")
-
-           (,(nerd-icons-faicon "nf-fae-book_open_o")
-            "Books" "Calibre Ebook Reader"
-            (lambda (&rest _) (calibredb))
-            nil " " "")
-
-           (,(nerd-icons-mdicon "nf-md-school")
-            "Flashcards" "Org-Drill"
-            (lambda (&rest _) (cj/drill-start))
-            nil " " "")
-
-           (,(nerd-icons-mdicon "nf-md-music")
-            "Music" "EMMS Music Player"
-            (lambda (&rest _) (cj/music-playlist-toggle) (cj/music-playlist-load))
-            nil " " ""))
-
-          ;; Row 3 — Communication
-          ((,(nerd-icons-faicon "nf-fa-envelope")
-            "Email" "Mu4e Email Client"
-            (lambda (&rest _) (mu4e))
-            nil " " "")
-
-           (,(nerd-icons-faicon "nf-fa-comments")
-            "IRC" "Emacs Relay Chat"
-            (lambda (&rest _) (cj/erc-switch-to-buffer-with-completion))
-            nil " " "")
-
-           (,(nerd-icons-faicon "nf-fa-slack")
-            "Slack" "Slack Client"
-            (lambda (&rest _) (cj/slack-start))
-            nil " " "")
-
-           (,(nerd-icons-faicon "nf-fa-telegram")
-            "Telegram" "Telega Telegram Client"
-            (lambda (&rest _) (cj/telega))
-            nil " " ""))))
+  (setq dashboard-navigator-buttons (cj/dashboard--navigator-rows))
 
   ;; == content
   (setq dashboard-show-shortcuts nil) ;; don't show dashboard item abbreviations
@@ -198,24 +182,9 @@ window."
   ;; Disable 'q' to quit dashboard
   (define-key dashboard-mode-map (kbd "q") nil)
 
-  ;; Dashboard launcher keybindings, ordered to mirror the icon rows.
-  ;; Row 1 — Work tools
-  (define-key dashboard-mode-map (kbd "c") (lambda () (interactive) (projectile-switch-project)))
-  (define-key dashboard-mode-map (kbd "d") (lambda () (interactive) (dirvish user-home-dir)))
-  (define-key dashboard-mode-map (kbd "t") (lambda () (interactive) (vterm)))
-  (define-key dashboard-mode-map (kbd "a") (lambda () (interactive) (cj/main-agenda-display)))
-  ;; Row 2 — Read & Learn
-  (define-key dashboard-mode-map (kbd "r") (lambda () (interactive) (cj/elfeed-open)))
-  (define-key dashboard-mode-map (kbd "b") (lambda () (interactive) (calibredb)))
-  (define-key dashboard-mode-map (kbd "f") (lambda () (interactive) (cj/drill-start)))
-  (define-key dashboard-mode-map (kbd "m") (lambda () (interactive)
-                                             (cj/music-playlist-toggle)
-                                             (cj/music-playlist-load)))
-  ;; Row 3 — Communication
-  (define-key dashboard-mode-map (kbd "e") (lambda () (interactive) (mu4e)))
-  (define-key dashboard-mode-map (kbd "i") (lambda () (interactive) (cj/erc-switch-to-buffer-with-completion)))
-  (define-key dashboard-mode-map (kbd "s") (lambda () (interactive) (cj/slack-start)))
-  (define-key dashboard-mode-map (kbd "g") (lambda () (interactive) (cj/telega))))
+  ;; Launcher keys, derived from `cj/dashboard--launchers' (same source as the
+  ;; navigator icons, so key order can't drift from the icon-row order).
+  (cj/dashboard--bind-launchers dashboard-mode-map))
 
 ;; Override banner title centering (must be after dashboard-widgets loads)
 (with-eval-after-load 'dashboard-widgets
