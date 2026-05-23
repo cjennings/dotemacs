@@ -88,8 +88,9 @@ Bound =C-; O d= (=cj/org-map=, d = "date"). Command =cj/org-finalize-task=:
    - level <= 2 and not VERIFY → close in place: keep the chosen done keyword, add a date-only =CLOSED: [YYYY-MM-DD Day]= line.
 Tests: ERT in org temp-buffers with the journal hook bound to nil; the pure transform helper tested directly with an injected TIME for a deterministic stamp. Commit: =feat(org-config): ... with tests=, direct to main.
 
-** TODO [#C] Reconcile duplicate org-log-done setting :refactor:
-=modules/org-config.el:120= sets =org-log-done nil=; =modules/org-roam-config.el:64= sets it ='time=. The effective value is load-order-dependent and fragile. Pick one home and one value intentionally.
+** DONE [#C] Reconcile duplicate org-log-done setting :refactor:
+CLOSED: [2026-05-22 Fri]
+=modules/org-config.el= and =modules/org-roam-config.el= both set =org-log-done=, so the effective value was load-order-dependent. Set it once in =cj/org-todo-settings= to ='time= (the dated-completion workflow wants a CLOSED timestamp on every TODO->DONE) and dropped the org-roam duplicate. Fixed in 5f8e1bc7.
 Triggered by: 2026-05-22 L56 finalize-task work.
 
 ** DONE [#C] Always save the daily after a journal task-copy :feature:
