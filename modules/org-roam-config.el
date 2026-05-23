@@ -61,7 +61,7 @@
          :map org-mode-map
          ("C-M-i" . completion-at-point))
   :config
-  (setq org-log-done  'time)
+  ;; org-log-done is set once in org-config.el (cj/org-todo-settings).
   (setq org-agenda-timegrid-use-ampm t)
 
   (when (fboundp 'cj/build-org-refile-targets)

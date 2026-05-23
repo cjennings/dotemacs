@@ -117,7 +117,7 @@
   (setq org-deadline-warning-days 7)    ;; warn me w/in a week of deadlines
   (setq org-treat-insert-todo-heading-as-state-change nil) ;; log task creation
   (setq org-log-into-drawer nil) ;; don't log into drawer
-  (setq org-log-done nil) ;; don't log completions
+  (setq org-log-done 'time) ;; record a CLOSED timestamp on TODO->DONE
 
   ;; inherit parents properties (sadly not schedules or deadlines)
   (setq org-use-property-inheritance t))
