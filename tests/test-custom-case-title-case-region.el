@@ -185,6 +185,22 @@ Note: 'is' is explicitly in the minor word list, so it stays lowercase."
                   "the lord of the rings: the return of the king")
                  "The Lord of the Rings: The Return of the King")))
 
+(ert-deftest test-custom-case-title-case-region-boundary-leading-quote ()
+  "A leading quote is skipped; the first real word is still capitalized."
+  (should (equal (test-title-case--on-string "\"the quick brown fox\"")
+                 "\"The Quick Brown Fox\"")))
+
+(ert-deftest test-custom-case-title-case-region-boundary-leading-paren ()
+  "A leading paren is skipped; the first real word is still capitalized."
+  (should (equal (test-title-case--on-string "(the lazy dog)")
+                 "(The Lazy Dog)")))
+
+(ert-deftest test-custom-case-title-case-region-boundary-rtl-first-word ()
+  "A caseless RTL first word passes through and consumes the is-first slot,
+so the following minor word stays lowercase."
+  (should (equal (test-title-case--on-string "שלום the world")
+                 "שלום the World")))
+
 ;;; Error Cases
 
 (ert-deftest test-custom-case-title-case-region-error-numeric-only ()
