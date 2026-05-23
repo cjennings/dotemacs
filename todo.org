@@ -126,10 +126,12 @@ Findings from the 2026-05-20 investigation:
   navigation commands.
 - Live experiment scratch file: =~/dashboard-overscroll-experiment.el=.
 
-** TODO [#B] Collapse dashboard navigator + keymap duplication    :refactor:
+** DONE [#B] Collapse dashboard navigator + keymap duplication    :refactor:
+CLOSED: [2026-05-22 Fri]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
+Fixed: extracted a single =cj/dashboard--launchers= table; =cj/dashboard--navigator-rows= and =cj/dashboard--bind-launchers= derive the icon rows and the keybindings from it. Behavior-preserving (verified by tests + a live dashboard check). 5 ERT tests in test-dashboard-config-launchers.el.
 Triggered by: 2026-05-18 Dashboard buffer too long refactor audit.
 
 =modules/dashboard-config.el= inlines 12 launcher commands twice — once
