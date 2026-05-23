@@ -2404,8 +2404,8 @@ Expected outcome:
 - Add a short manual checklist or mocked test for the variables that control
   remote image display.
 
-**** 2026-05-23 Sat @ 03:52:00 -0500 Clarified message-kill-buffer-on-exit ownership
-The effective policy was already settled: org-msg-mode runs in every compose buffer, so org-msg's =nil= (keep the buffer) always wins over mu4e's =t=. The org-msg comment ("always kill buffers on exit") was backwards. Rewrote both comments to name the owner: mu4e's =t= is the plain-mu4e fallback (only if org-msg is disabled), org-msg owns the live keep-the-draft policy. No behavior change — the decision the task asked for was already encoded; if Craig wants compose buffers killed on exit, flip the org-msg value. Fixed in dd671f8c.
+**** 2026-05-23 Sat @ 03:52:00 -0500 Set compose buffers to kill on exit, both composers
+First clarified the ownership (dd671f8c): the org-msg comment "always kill buffers on exit" was backwards — org-msg set =nil= (keep), which won over mu4e's =t= because org-msg-mode runs in every compose buffer. Craig then chose to kill compose buffers on exit, so I set the org-msg value to =t= as well (82978c79). Both mu4e and org-msg now kill the buffer on send/exit, so HTML drafts don't linger.
 
 **** TODO [#B] Remove automatic startup timers from =quick-video-capture.el= :startup:refactor:
 
