@@ -92,8 +92,9 @@ Tests: ERT in org temp-buffers with the journal hook bound to nil; the pure tran
 =modules/org-config.el:120= sets =org-log-done nil=; =modules/org-roam-config.el:64= sets it ='time=. The effective value is load-order-dependent and fragile. Pick one home and one value intentionally.
 Triggered by: 2026-05-22 L56 finalize-task work.
 
-** TODO [#C] Always save the daily after a journal task-copy :feature:
-=cj/org-roam-copy-todo-to-today= (=org-roam-config.el=) only saves today's daily in the refile branch. Make the save fire whenever a completed task is added, so a crash or shutdown never loses a freshly-copied task and never prompts about an unsaved journal buffer.
+** DONE [#C] Always save the daily after a journal task-copy :feature:
+CLOSED: [2026-05-22 Fri]
+=cj/org-roam-copy-todo-to-today= (=org-roam-config.el=) only saved today's daily in the refile branch. Pulled the save into =cj/--org-roam-save-daily=, which now runs on both paths and writes only when the buffer is modified, so a crash or shutdown never loses a freshly-copied task. Fixed in f07ce74d.
 Triggered by: 2026-05-22 L56 finalize-task work.
 
 ** TODO [#C] Manually verify cj/org-finalize-task journal copy :test:
