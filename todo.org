@@ -1587,16 +1587,8 @@ defconst =cj/--spell-checker-executables=, so adding nuspell (or any
 other checker) is a one-line edit.  Top-level =(require 'cl-lib)=
 added since the new helper uses =cl-some=.
 
-**** TODO [#C] Add coverage for =cj/flyspell-then-abbrev= and helpers in =flyspell-and-abbrev.el= :tests:solo:
-
-The interactive flow has real logic worth pinning: previous-
-misspelling overlay walk in =cj/find-previous-flyspell-overlay=
-(face-change check, list reversal), the abbrev-table choice in
-=cj/flyspell-then-abbrev= (prefix arg switches local vs global), and
-the buffer-type dispatch in =cj/flyspell-on-for-buffer-type= (prog-
-mode -> flyspell-prog-mode vs text-mode -> flyspell-mode).  None of
-these have tests.  Pure-logic helpers can be exercised against
-synthetic overlay buffers without aspell on the path.
+**** 2026-05-23 Sat @ 03:44:50 -0500 Covered flyspell-and-abbrev testable seams
+Added =test-flyspell-and-abbrev.el= (8 cases): =cj/--require-spell-checker= (PATH gate, mocked), =cj/find-previous-flyspell-overlay= against synthetic overlays (closest-previous match, non-flyspell skipped, nil when none), and =cj/flyspell-on-for-buffer-type= (prog-mode -> flyspell-prog-mode, text-mode -> flyspell-mode). Left =cj/flyspell-then-abbrev= to manual testing — pinning its flyspell-UI orchestration would mean mocking flyspell internals rather than our logic. Added in the test-flyspell-abbrev commit.
 
 *** DOING [#B] Harden UI and navigation modules :harden:
 
