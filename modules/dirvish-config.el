@@ -102,6 +102,14 @@ mixed-case names match."
 Pure helper.  An embedded `.m3u' that isn't at the end stays put."
   (replace-regexp-in-string "\\.m3u\\'" "" name))
 
+(defun cj/--playlist-name-safe-p (name)
+  "Return non-nil when NAME is a safe bare playlist filename.
+A safe name is non-empty and carries no directory separator, so it can't
+steer `cj/dired-create-playlist-from-marked' to write outside `music-dir'
+through a `../' or absolute path.  Pure helper."
+  (and (not (string-empty-p name))
+       (not (string-match-p "/" name))))
+
 (defun cj/dired-create-playlist-from-marked ()
   "Create an .m3u playlist file from marked files in Dired (or Dirvish).
 Filters for audio files, prompts for the playlist name, and saves the resulting
@@ -120,19 +128,21 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
         (while (not done)
           (setq base-name (cj/--playlist-sanitize-name
                            (read-string "Playlist name (without .m3u): ")))
-          (setq playlist-path (expand-file-name (concat base-name ".m3u") music-dir))
           (cond
-           ((not (file-exists-p playlist-path))
-            (setq done t))
+           ((not (cj/--playlist-name-safe-p base-name))
+            (message "Playlist name must be a bare filename, without '/'."))
            (t
-            (let ((choice (read-char-choice
-                           (format "Playlist '%s' exists. [o]verwrite, [c]ancel, [r]ename? "
-                                   (file-name-nondirectory playlist-path))
-                           '(?o ?c ?r))))
-              (cl-case choice
-                (?o (setq done t))
-                (?c (user-error "Cancelled playlist creation"))
-                (?r (setq done nil)))))))
+            (setq playlist-path (expand-file-name (concat base-name ".m3u") music-dir))
+            (if (not (file-exists-p playlist-path))
+                (setq done t)
+              (let ((choice (read-char-choice
+                             (format "Playlist '%s' exists. [o]verwrite, [c]ancel, [r]ename? "
+                                     (file-name-nondirectory playlist-path))
+                             '(?o ?c ?r))))
+                (cl-case choice
+                  (?o (setq done t))
+                  (?c (user-error "Cancelled playlist creation"))
+                  (?r (setq done nil))))))))
         (with-temp-file playlist-path
           (dolist (af audio-files)
             (insert af "\n")))
@@ -343,11 +353,14 @@ Pure helper used by `cj/set-wallpaper'."
   "Set the image at point as the desktop wallpaper.
 Uses feh on X11, swww on Wayland."
   (interactive)
-  (let* ((file (expand-file-name (dired-file-name-at-point)))
+  (let* ((raw (dired-file-name-at-point))
+         (file (and raw (expand-file-name raw)))
          (env (cond ((env-x11-p) 'x11)
                     ((env-wayland-p) 'wayland)
                     (t nil)))
          (cmd (cj/--wallpaper-program-for env)))
+    (unless file
+      (user-error "No file at point"))
     (if (null cmd)
         (message "Unknown display server (not X11 or Wayland)")
       (when-let ((path (cj/executable-find-or-warn

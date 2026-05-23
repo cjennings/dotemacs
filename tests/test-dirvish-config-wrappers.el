@@ -140,5 +140,11 @@ calls the wallpaper-setter binary."
     (should (member "/some/picture.jpg" call-process-args))
     (should (string-match-p "Wallpaper set" msg))))
 
+(ert-deftest test-dirvish-set-wallpaper-no-file-errors ()
+  "Error: with no file at point, set-wallpaper signals user-error rather
+than passing nil to expand-file-name."
+  (cl-letf (((symbol-function 'dired-file-name-at-point) (lambda () nil)))
+    (should-error (cj/set-wallpaper) :type 'user-error)))
+
 (provide 'test-dirvish-config-wrappers)
 ;;; test-dirvish-config-wrappers.el ends here
