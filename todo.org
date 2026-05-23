@@ -2641,35 +2641,14 @@ Expected outcome:
 - Test autosave path setup and delete confirmation with stubbed prompts.
 - Keep GPTel itself mocked or avoided unless a later integration test needs it.
 
-**** TODO [#B] Add first coverage for Dirvish utility helpers :tests:solo:
-
-=dirvish-config.el= is not currently represented in =.coverage/simplecov.json=.
-The pure-ish Dired helpers have a few sharp edges that are easy to characterize
-with mocked =dired-get-filename= / =dired-get-marked-files= calls.
-
-Expected outcome:
-- Test playlist path construction and reject playlist names that escape
-  =music-dir=.
-- Test duplicate/copy-path/wallpaper helpers when there is no file at point.
-- Test project-relative, home-relative, absolute, and Org-link path copying.
-- Keep Dirvish package loading mocked; these tests should not require the full
-  UI package.
+**** 2026-05-23 Sat @ 03:31:12 -0500 Dirvish helper coverage already in place
+The task premise was stale: =dirvish-config.el= now has 14 focused test files (=test-dirvish-config-*.el=, ~100 cases) covering duplicate-naming, resolve-display-path (project/home/absolute/org-link), ediff-pair, html/printable predicates, playlist filtering/sanitizing, wallpaper-program mapping, and the public wrappers. The remaining gaps (playlist name-safety, set-wallpaper nil-file) were filled by the L2668 hardening commit 8fc6432d. No new file needed.
 
 **** 2026-05-23 Sat @ 03:21:12 -0500 Declared dirvish-config runtime deps with plain require
 Switched =user-constants= and =system-utils= from =eval-when-compile= to plain =require= in =dirvish-config.el=, matching the three sibling requires below. The module builds =dirvish-quick-access-entries= from =code-dir=/=music-dir=/=pix-dir= at load and binds keys to =cj/xdg-open=/=cj/open-file-with-command=, so the deps are genuine runtime inputs. Added =tests/test-dirvish-config-runtime-requires.el= as a dependency-contract smoke test. Fixed in b63c4f83.
 
-**** TODO [#B] Harden Dirvish path helpers around nil files and path traversal :bug:solo:
-
-Several Dirvish helpers derive path components before checking whether Dired has
-a file at point. Playlist creation also accepts a raw playlist name and expands
-it under =music-dir= without rejecting =../= style input.
-
-Expected outcome:
-- In duplicate, copy-path, and wallpaper helpers, check for a file before
-  calling path functions.
-- Reject playlist names that contain directory separators or resolve outside
-  =music-dir=.
-- Add regression tests for no-file-at-point and traversal-like playlist names.
+**** 2026-05-23 Sat @ 03:31:12 -0500 Hardened dirvish wallpaper + playlist path helpers
+=cj/set-wallpaper= passed =(dired-file-name-at-point)= straight into =expand-file-name=, so no-file-at-point raised a bare wrong-type-argument; added a nil guard that signals a clear user-error. =cj/dired-create-playlist-from-marked= expanded a raw name under =music-dir= with no check; added =cj/--playlist-name-safe-p= to reject any name carrying a directory separator (=../=, absolute, nested) before the path is built. Regression tests went into =test-dirvish-config-wrappers.el= and =test-dirvish-config-playlist.el=. The duplicate/copy-path helpers already guarded nil, so they were left alone. Fixed in 8fc6432d.
 
 **** TODO [#B] Add first smoke coverage for mail and system command modules :tests:solo:
 
