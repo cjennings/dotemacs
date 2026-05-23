@@ -1954,17 +1954,8 @@ Expected outcome:
 - If task export should vary by workflow, expose an explicit command or local
   export option instead of relying on the global default.
 
-**** TODO [#B] Fix and cover Org Babel structure templates :bug:tests:solo:
-
-=org-babel-config.el= adds a Java structure template as =("java" . "src javas")=,
-which appears to expand to the wrong language name. The template list is useful
-but currently untested, so small typos can persist unnoticed.
-
-Expected outcome:
-- Correct the Java template or remove it if Java blocks are not used.
-- Add a focused test that loads the Org Tempo config and asserts key templates
-  expand to the intended language names for common aliases: =bash=, =zsh=,
-  =el=, =py=, =json=, =yaml=, and =java=.
+**** 2026-05-23 Sat @ 03:48:50 -0500 Fixed java structure-template typo and pinned the aliases
+=("java" . "src javas")= expanded to a bogus =#+begin_src javas=; corrected it to =src java=. Added =test-org-babel-config-structure-templates.el=, which requires the module then org-tempo (firing the deferred :config) and asserts =bash=, =zsh=, =el=, =py=, =json=, =yaml=, =java= each map to the intended src language. Fixed in the org-babel commit.
 
 **** TODO [#B] Make org-contacts/Mu4e boundaries explicit :cleanup:refactor:
 
