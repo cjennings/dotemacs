@@ -106,5 +106,19 @@ This does so without echoing in the minibuffer."
       (insert (apply #'format format-string args))
       (unless (bolp) (insert "\n")))))
 
+;; ------------------------------ Auth Source ----------------------------------
+
+(declare-function auth-source-search "auth-source")
+
+(defun cj/auth-source-secret-value (host &optional user)
+  "Return the auth-source secret for HOST, or nil when none is found.
+With USER, also match on the login.  Resolves a function-valued secret
+\(the netrc backend returns the secret as a function\) by calling it.
+Callers that must have a secret layer their own error on top."
+  (let* ((spec (append (list :host host :require '(:secret) :max 1)
+                       (when user (list :user user))))
+         (secret (plist-get (car (apply #'auth-source-search spec)) :secret)))
+    (if (functionp secret) (funcall secret) secret)))
+
 (provide 'system-lib)
 ;;; system-lib.el ends here
