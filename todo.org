@@ -1299,23 +1299,10 @@ Expected outcome:
 - Optional path failures should be logged but not block startup.
 - Add tests around success, optional failure, and required failure behavior.
 
-**** TODO [#B] Clean up host environment predicates and timezone detection :cleanup:refactor:solo:
+**** 2026-05-23 Sat @ 03:33:30 -0500 Fixed env-desktop-p doc and normalized the X predicates
+Corrected =env-desktop-p='s docstring (it described a laptop; the function returns t for the desktop/no-battery case). Switched =env-x-p= from =(string= (window-system) "x")= to =(eq (window-system) 'x)= to match =env-x11-p='s style, and documented the difference: =env-x-p= is any X display incl. XWayland, =env-x11-p= is a real X11 session with no WAYLAND_DISPLAY. Behavior unchanged, existing display-predicate tests stay green. Fixed in 14ec32b2.
 
-Small module-specific cleanup in =host-environment.el=:
-- =env-desktop-p= has a docstring that says "host is a laptop"; it should say
-  desktop / no battery.
-- =env-x-p= uses =(string= (window-system) "x")= while =env-x11-p= uses symbol
-  comparison. Existing tests pass, but the two predicates should use one style
-  and document the difference between "X display" and "X11 not Wayland".
-- =cj/match-localtime-to-zoneinfo= reads every zoneinfo file and compares
-  contents. That is fine as a fallback, but it is expensive enough to consider
-  caching or preferring symlink/env methods first if this ever runs during
-  startup.
-
-Acceptance criteria:
-- Fix the docstring.
-- Normalize or document =env-x-p= vs =env-x11-p= semantics.
-- Add or adjust tests only if behavior changes.
+Left =cj/match-localtime-to-zoneinfo= caching alone — it was a "consider if this runs during startup" note, not an acceptance item, and it doesn't run at startup. File a separate task if it ever shows up in a profile.
 
 **** TODO [#B] Add minimal =system-defaults.el= setting smoke tests :tests:
 
