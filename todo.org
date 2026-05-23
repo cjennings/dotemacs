@@ -32,6 +32,10 @@ Use tags to describe the work shape:
   changing behavior.
 - =:quick:= means the task appears low effort and localized. It is a planning
   hint, not a promise; remove it if the task grows during implementation.
+- =:solo:= means Claude can do the task end to end with no input from Craig:
+  bounded scope, no design or preference call, and verifiable in the local
+  setup (tests, byte-compile, launch). Tasks needing a policy/preference
+  decision, visual judgment, or a live remote do not get =:solo:=.
 
 Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
@@ -1295,7 +1299,7 @@ Expected outcome:
 - Optional path failures should be logged but not block startup.
 - Add tests around success, optional failure, and required failure behavior.
 
-**** TODO [#B] Clean up host environment predicates and timezone detection :cleanup:refactor:
+**** TODO [#B] Clean up host environment predicates and timezone detection :cleanup:refactor:solo:
 
 Small module-specific cleanup in =host-environment.el=:
 - =env-desktop-p= has a docstring that says "host is a laptop"; it should say
@@ -1498,7 +1502,7 @@ Pitfalls:
 - Some media players need different URL handling; preserve the existing
   =:needs-stream-url= behavior.
 
-**** TODO [#B] Add coverage for =external-open.el= and =media-utils.el= :tests:
+**** TODO [#B] Add coverage for =external-open.el= and =media-utils.el= :tests:solo:
 
 The core custom editing modules are covered, but these integration helpers have
 little or no direct test coverage despite owning shell/process boundaries.
@@ -1595,7 +1599,7 @@ nil-decoration ERT tests updated from =:type 'wrong-type-argument=
 =:type 'user-error=, since the guard now produces a clear message
 instead of a deep crash.
 
-**** TODO [#C] Add coverage for =cj/title-case-region= state machine :tests:
+**** TODO [#C] Add coverage for =cj/title-case-region= state machine :tests:solo:
 
 =modules/custom-case.el:40-120= implements title-casing via a
 character-by-character state machine (case rules, leading-quote /
@@ -1614,7 +1618,7 @@ defconst =cj/--spell-checker-executables=, so adding nuspell (or any
 other checker) is a one-line edit.  Top-level =(require 'cl-lib)=
 added since the new helper uses =cl-some=.
 
-**** TODO [#C] Add coverage for =cj/flyspell-then-abbrev= and helpers in =flyspell-and-abbrev.el= :tests:
+**** TODO [#C] Add coverage for =cj/flyspell-then-abbrev= and helpers in =flyspell-and-abbrev.el= :tests:solo:
 
 The interactive flow has real logic worth pinning: previous-
 misspelling overlay walk in =cj/find-previous-flyspell-overlay=
@@ -1989,7 +1993,7 @@ Expected outcome:
 - If task export should vary by workflow, expose an explicit command or local
   export option instead of relying on the global default.
 
-**** TODO [#B] Fix and cover Org Babel structure templates :bug:tests:
+**** TODO [#B] Fix and cover Org Babel structure templates :bug:tests:solo:
 
 =org-babel-config.el= adds a Java structure template as =("java" . "src javas")=,
 which appears to expand to the wrong language name. The template list is useful
@@ -2448,7 +2452,7 @@ Expected outcome:
 - Add a short manual checklist or mocked test for the variables that control
   remote image display.
 
-**** TODO [#B] Clean up mail compose buffer lifecycle conflicts :cleanup:quick:
+**** TODO [#B] Clean up mail compose buffer lifecycle conflicts :cleanup:quick:solo:
 
 =mail-config.el= first sets =message-kill-buffer-on-exit= to =t= in the mu4e
 configuration, then =org-msg= later sets it to nil. That may be intentional for
@@ -2637,7 +2641,7 @@ Expected outcome:
 - Test autosave path setup and delete confirmation with stubbed prompts.
 - Keep GPTel itself mocked or avoided unless a later integration test needs it.
 
-**** TODO [#B] Add first coverage for Dirvish utility helpers :tests:
+**** TODO [#B] Add first coverage for Dirvish utility helpers :tests:solo:
 
 =dirvish-config.el= is not currently represented in =.coverage/simplecov.json=.
 The pure-ish Dired helpers have a few sharp edges that are easy to characterize
@@ -2651,21 +2655,10 @@ Expected outcome:
 - Keep Dirvish package loading mocked; these tests should not require the full
   UI package.
 
-**** TODO [#B] Require runtime constants explicitly in =dirvish-config.el= :startup:bug:
+**** 2026-05-23 Sat @ 03:21:12 -0500 Declared dirvish-config runtime deps with plain require
+Switched =user-constants= and =system-utils= from =eval-when-compile= to plain =require= in =dirvish-config.el=, matching the three sibling requires below. The module builds =dirvish-quick-access-entries= from =code-dir=/=music-dir=/=pix-dir= at load and binds keys to =cj/xdg-open=/=cj/open-file-with-command=, so the deps are genuine runtime inputs. Added =tests/test-dirvish-config-runtime-requires.el= as a dependency-contract smoke test. Fixed in b63c4f83.
 
-=dirvish-config.el= uses =eval-when-compile= for =user-constants= and
-=system-utils=, but runtime configuration constructs quick-access entries from
-constants such as =code-dir=, =music-dir=, =pix-dir=, and recording directories.
-This depends on load order rather than the module declaring its runtime inputs.
-
-Expected outcome:
-- Require runtime dependencies normally or add clear =defvar= declarations for
-  values owned elsewhere.
-- Keep byte compilation clean without making standalone module loads depend on
-  accidental init order.
-- Add a module-load smoke test with required constants stubbed.
-
-**** TODO [#B] Harden Dirvish path helpers around nil files and path traversal :bug:
+**** TODO [#B] Harden Dirvish path helpers around nil files and path traversal :bug:solo:
 
 Several Dirvish helpers derive path components before checking whether Dired has
 a file at point. Playlist creation also accepts a raw playlist name and expands
@@ -2678,7 +2671,7 @@ Expected outcome:
   =music-dir=.
 - Add regression tests for no-file-at-point and traversal-like playlist names.
 
-**** TODO [#B] Add first smoke coverage for mail and system command modules :tests:
+**** TODO [#B] Add first smoke coverage for mail and system command modules :tests:solo:
 
 =mail-config.el= and =system-commands.el= are not currently represented in the
 coverage report. Both can get useful coverage without sending mail or invoking
@@ -4119,6 +4112,10 @@ Diagnostics (run with point in a remote dirvish buffer):
 
 Likely fixes, by which gate is closed:
 - =:gnuls= nil → install GNU coreutils on the remote (FreeBSD: =pkg install coreutils=) and make =ls= resolve to GNU on the TRAMP path, or accept "?" on that host.
+
+  #+begin_src cj: comment
+    Note: we will not be installing anything on the remote host. 
+  #+end_src
 - =:remote-async= nil → the scp/sshx method isn't advertising direct-async; switch to a method that supports it or check =tramp-direct-async-process= is taking effect for that protocol.
 
 Files involved: =modules/tramp-config.el=, =modules/dirvish-config.el=.
