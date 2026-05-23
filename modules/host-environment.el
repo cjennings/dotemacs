@@ -45,7 +45,7 @@ canonical signal.  On other platforms, falls back to `battery-format'
 	 (battery-format "%B" (funcall battery-status-function))))))
 
 (defun env-desktop-p ()
-  "Return t if host is a laptop (has a battery), nil if not."
+  "Return t if host is a desktop (no battery), nil if it has one."
   (when (not (env-laptop-p))
 	t))
 
@@ -66,11 +66,14 @@ canonical signal.  On other platforms, falls back to `battery-format'
   (memq system-type '(cygwin windows-nt ms-dos)))
 
 (defun env-x-p ()
-  "Return t if host system is running the X Window System."
-  (string= (window-system) "x"))
+  "Return t if the frame uses an X display, including XWayland.
+Compare `env-x11-p', which is t only in a real X11 session and nil under
+Wayland/XWayland.  Uses symbol comparison to match `env-x11-p' style."
+  (eq (window-system) 'x))
 
 (defun env-x11-p ()
-  "Return t if running under X11 (not Wayland)."
+  "Return t in a real X11 session: an X display with no WAYLAND_DISPLAY.
+Compare `env-x-p', which is also t under XWayland (X display, Wayland set)."
   (and (eq (window-system) 'x)
        (not (getenv "WAYLAND_DISPLAY"))))
 
