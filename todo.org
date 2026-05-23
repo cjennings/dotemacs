@@ -1489,19 +1489,8 @@ Pitfalls:
 - Some media players need different URL handling; preserve the existing
   =:needs-stream-url= behavior.
 
-**** TODO [#B] Add coverage for =external-open.el= and =media-utils.el= :tests:solo:
-
-The core custom editing modules are covered, but these integration helpers have
-little or no direct test coverage despite owning shell/process boundaries.
-
-Useful test seams:
-- Pure command-builder helpers for external open and media play.
-- Player availability selection from =cj/media-players=.
-- Error behavior when =yt-dlp=, =tsp=, or the selected player is missing.
-- Advice behavior for externally opened file extensions should not leave
-  surprising buffers behind.
-
-This pairs naturally with the process-launch hardening task above.
+**** 2026-05-23 Sat @ 03:41:00 -0500 Added media-utils coverage; external-open already covered
+=external-open= already had three test files (=test-external-open-commands.el=, =test-external-open-lib-command.el=, =test-external-open-lib-launcher-p.el=). =media-utils.el= had none, so I added =test-media-utils.el= (8 cases): player availability from =cj/media-players=, the play command-builder (direct vs yt-dlp -g stream wrap), and the missing-tool error paths for the player, =yt-dlp=, and =tsp=. All process/exec boundaries mocked. Added in the test-media-utils commit.
 
 **** TODO [#B] Audit destructive buffer/file keybindings for confirmation policy :ux:
 
