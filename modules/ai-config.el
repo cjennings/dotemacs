@@ -29,6 +29,7 @@
 ;;; Code:
 
 (require 'keybindings)  ;; provides cj/custom-keymap
+(require 'system-lib)   ;; provides cj/auth-source-secret-value
 
 (autoload 'cj/gptel-save-conversation "ai-conversations" "Save the AI conversation to a file." t)
 (autoload 'cj/gptel-load-conversation "ai-conversations" "Load a saved AI conversation." t)
@@ -100,15 +101,12 @@ tools are reported with `message' and do not signal."
   (cj/gptel-load-local-tools))
 
 (defun cj/auth-source-secret (host user)
-  "Fetch a secret from auth-source for HOST and USER.
+  "Fetch a required secret from auth-source for HOST and USER.
 
-HOST and USER must be strings that identify the credential to return."
-  (let* ((found (auth-source-search :host host :user user :require '(:secret) :max 1))
-         (secret (plist-get (car found) :secret)))
-    (cond
-     ((functionp secret) (funcall secret))
-     ((stringp secret) secret)
-     (t (error "No usable secret found for host %s and user %s" host user)))))
+HOST and USER must be strings that identify the credential to return.
+Errors when no secret is found."
+  (or (cj/auth-source-secret-value host user)
+      (error "No usable secret found for host %s and user %s" host user)))
 
 (defun cj/anthropic-api-key ()
   "Return the Anthropic API key, caching the result after first retrieval."
