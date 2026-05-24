@@ -65,62 +65,74 @@ that registers the webclip entry.  Providing `'org-protocol' fires the block."
 
 ;;; cj/org-protocol-webclip
 
-(ert-deftest test-webclipper-protocol-stores-url-title-and-captures ()
-  "Normal: the protocol handler stores url+title and triggers `org-capture'."
+(ert-deftest test-webclipper-protocol-binds-url-title-during-capture ()
+  "Normal: the protocol handler makes url+title visible to the capture call."
   (let ((cj/webclipper-initialized t)
-        (cj/webclip-current-url nil)
-        (cj/webclip-current-title nil)
-        (capture-key nil))
+        (seen-url nil) (seen-title nil) (capture-key nil))
     (cl-letf (((symbol-function 'org-capture)
-               (lambda (_arg k) (setq capture-key k))))
+               (lambda (_arg k)
+                 (setq capture-key k
+                       seen-url cj/--webclip-url
+                       seen-title cj/--webclip-title))))
       (cj/org-protocol-webclip
        '(:url "https://example.com" :title "Hello")))
-    (should (equal cj/webclip-current-url "https://example.com"))
-    (should (equal cj/webclip-current-title "Hello"))
+    (should (equal seen-url "https://example.com"))
+    (should (equal seen-title "Hello"))
     (should (equal capture-key "W"))))
 
-(ert-deftest test-webclipper-protocol-defaults-title-when-missing ()
-  "Boundary: a missing title in INFO becomes \"Untitled\"."
-  (let ((cj/webclipper-initialized t)
-        (cj/webclip-current-url nil)
-        (cj/webclip-current-title nil))
+(ert-deftest test-webclipper-protocol-leaves-no-stale-state ()
+  "Boundary: after the protocol capture returns, no url/title remains bound."
+  (let ((cj/webclipper-initialized t))
     (cl-letf (((symbol-function 'org-capture) #'ignore))
+      (cj/org-protocol-webclip '(:url "https://example.com" :title "Hello")))
+    (should (null cj/--webclip-url))
+    (should (null cj/--webclip-title))))
+
+(ert-deftest test-webclipper-protocol-aborted-capture-clears-state ()
+  "Error: a capture that errors mid-flow still leaves no stale url/title."
+  (let ((cj/webclipper-initialized t))
+    (cl-letf (((symbol-function 'org-capture)
+               (lambda (&rest _) (error "simulated capture abort"))))
+      (ignore-errors (cj/org-protocol-webclip '(:url "https://example.com"))))
+    (should (null cj/--webclip-url))
+    (should (null cj/--webclip-title))))
+
+(ert-deftest test-webclipper-protocol-defaults-title-when-missing ()
+  "Boundary: a missing title in INFO becomes \"Untitled\" during the capture."
+  (let ((cj/webclipper-initialized t)
+        (seen-title nil))
+    (cl-letf (((symbol-function 'org-capture)
+               (lambda (&rest _) (setq seen-title cj/--webclip-title))))
       (cj/org-protocol-webclip '(:url "https://x.test")))
-    (should (equal cj/webclip-current-title "Untitled"))))
+    (should (equal seen-title "Untitled"))))
 
 ;;; cj/org-protocol-webclip-handler
 
 (ert-deftest test-webclipper-protocol-handler-errors-when-no-url ()
-  "Error: handler with no stashed url signals an error."
-  (let ((cj/webclip-current-url nil)
-        (cj/webclip-current-title "Whatever"))
-    (cl-letf (((symbol-function 'require) (lambda (&rest _) t))
-              ((symbol-function 'setopt) (lambda (&rest _) nil)))
+  "Error: handler with no bound url signals an error."
+  (let ((cj/--webclip-url nil)
+        (cj/--webclip-title "Whatever"))
+    (cl-letf (((symbol-function 'require) (lambda (&rest _) t)))
       (should-error (cj/org-protocol-webclip-handler) :type 'error))))
 
 (ert-deftest test-webclipper-protocol-handler-returns-processed-content ()
-  "Normal: handler converts the stashed URL into processed org content."
-  (let ((cj/webclip-current-url "https://example.com")
-        (cj/webclip-current-title "Title"))
+  "Normal: handler converts the bound URL into processed org content."
+  (let ((cj/--webclip-url "https://example.com")
+        (cj/--webclip-title "Title"))
     (cl-letf (((symbol-function 'require) (lambda (&rest _) t))
-              ((symbol-function 'setopt) (lambda (&rest _) nil))
               ((symbol-function 'org-web-tools--url-as-readable-org)
                (lambda (_) "* Page Title\n** Sub heading\nBody.\n"))
               ((symbol-function 'message) #'ignore))
       (let ((out (cj/org-protocol-webclip-handler)))
         ;; The first H1 is stripped, sub-heading is demoted.
         (should (string-match-p "^\\*\\*\\* Sub heading" out))
-        (should (string-match-p "Body" out)))
-      ;; Stash is cleared.
-      (should (null cj/webclip-current-url))
-      (should (null cj/webclip-current-title)))))
+        (should (string-match-p "Body" out))))))
 
 (ert-deftest test-webclipper-protocol-handler-wraps-fetch-error ()
   "Error: a fetch failure is wrapped in a clear error message."
-  (let ((cj/webclip-current-url "https://example.com")
-        (cj/webclip-current-title "Title"))
+  (let ((cj/--webclip-url "https://example.com")
+        (cj/--webclip-title "Title"))
     (cl-letf (((symbol-function 'require) (lambda (&rest _) t))
-              ((symbol-function 'setopt) (lambda (&rest _) nil))
               ((symbol-function 'org-web-tools--url-as-readable-org)
                (lambda (_) (error "network down"))))
       (let ((err (should-error (cj/org-protocol-webclip-handler) :type 'error)))
