@@ -3,6 +3,15 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/S.
+;; Load shape: eager.
+;; Eager reason: registers the C-; ! system-command keymap; high-impact commands
+;;   that should run only by command (command-loaded target).
+;; Top-level side effects: defines a system-command keymap under cj/custom-keymap.
+;; Runtime requires: keybindings, rx.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; System commands for logout, lock, suspend, shutdown, reboot, and Emacs
 ;; exit/restart. Provides both a keymap (C-; !) and a completing-read menu.
 ;;

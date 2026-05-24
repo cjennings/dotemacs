@@ -2,6 +2,16 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P/S.
+;; Load shape: eager.
+;; Eager reason: none; optional music workflow that registers a music keymap, a
+;;   command-loaded deferral candidate. EMMS hooks should run only after EMMS.
+;; Top-level side effects: defines a music keymap under cj/custom-keymap, one
+;;   global key, package config.
+;; Runtime requires: subr-x, user-constants, keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; Music management in Emacs via EMMS with MPV backend.
 ;; Focus: simple, modular helpers; consistent error handling; streamlined UX.
 ;;

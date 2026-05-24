@@ -2,7 +2,16 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none; markdown editing, a mode-loaded deferral candidate.
+;; Top-level side effects: package configuration via use-package; org-src lang
+;;   mapping registered after-load.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;;; Code:
 
 ;;;; ------------------------- Markdown-Mode -------------------------

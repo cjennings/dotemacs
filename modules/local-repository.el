@@ -2,7 +2,16 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; local package-mirror workflow, a command-loaded deferral
+;;   candidate.
+;; Top-level side effects: none.
+;; Runtime requires: elpa-mirror.
+;; Direct test load: yes.
+;;
 ;;; Code:
 
 (require 'elpa-mirror nil t)  ;; optional; cj/update-localrepo-repository fails at call-time if absent

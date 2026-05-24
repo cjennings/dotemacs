@@ -1,7 +1,16 @@
 ;;; quick-video-capture.el --- Video Capturing with Org Capture -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
-
+;;
+;; Layer: 4 (Optional).
+;; Category: O/D/S.
+;; Load shape: eager.
+;; Eager reason: none; runs via org-protocol/command, a protocol/command-loaded
+;;   deferral candidate. (Startup timers were already removed.)
+;; Top-level side effects: org-protocol handler registration.
+;; Runtime requires: system-lib.
+;; Direct test load: yes.
+;;
 ;; This package provides a seamless "fire-and-forget" workflow for downloading
 ;; videos from the browser to your local system using yt-dlp and task-spooler.
 ;;

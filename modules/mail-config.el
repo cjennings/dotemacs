@@ -2,6 +2,19 @@
 ;; author Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: daily mail; registers cj/email-map. mu4e/org-msg are heavy, so a
+;;   command-loaded deferral candidate for Phase 5.
+;; Top-level side effects: registers cj/email-map under cj/custom-keymap, one
+;;   add-hook, two advice-add, one global key, package config.
+;; Runtime requires: user-constants, system-lib, mu4e-attachments. keybindings
+;;   is needed for the C-; e registration but is not required, so the module
+;;   errors standalone. Phase 2 fix.
+;; Direct test load: conditional (needs cj/custom-keymap from keybindings).
+;;
 ;; I found Aime Bertrand's blog post to be an excellent walkthrough of how to
 ;; setup a Mu4e config.
 ;;

@@ -3,6 +3,16 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; optional Telegram client that registers a keymap, a
+;;   command-loaded deferral candidate.
+;; Top-level side effects: registers a telega keymap under cj/custom-keymap,
+;;   package config.
+;; Runtime requires: keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; Configures telega.el (https://github.com/zevlg/telega.el) as an
 ;; in-Emacs Telegram client.
 ;;

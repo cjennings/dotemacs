@@ -3,6 +3,14 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none; remote-access config, a package-loaded deferral candidate.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; TRAMP (Transparent Remote Access, Multiple Protocol)
 ;;
 ;; To handle fancy prompts on remote servers, add this to your shell configuration:
