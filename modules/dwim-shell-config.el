@@ -90,6 +90,53 @@
 
 (require 'cl-lib)
 
+;; --------------------------- Password-file helpers ---------------------------
+
+(defun cj/dwim-shell--password-cleanup-callback (temp-file)
+  "Return an on-completion callback that deletes TEMP-FILE after the process exits.
+The callback fires from the dwim-shell process sentinel, on both success and
+failure, so the password file is removed once the spawned process is done — not
+when it was launched.  On success it refreshes the calling dired buffer so new
+files show up; on failure it leaves the output buffer visible for inspection."
+  (let ((calling-buffer (current-buffer)))
+    (lambda (proc-buffer process)
+      (when (and temp-file (file-exists-p temp-file))
+        (delete-file temp-file))
+      (if (and (processp process) (zerop (process-exit-status process)))
+          (progn
+            (when (buffer-live-p calling-buffer)
+              (with-current-buffer calling-buffer
+                (when (derived-mode-p 'dired-mode)
+                  (revert-buffer nil t))))
+            (when (buffer-live-p proc-buffer)
+              (kill-buffer proc-buffer)))
+        (when (buffer-live-p proc-buffer)
+          (display-buffer proc-buffer))))))
+
+(defun cj/dwim-shell--run-with-password-file (file-contents buffer-name script-fn &rest keys)
+  "Run a dwim-shell command needing a password file, with safe cleanup timing.
+Write FILE-CONTENTS to a mode-600 temp file, call SCRIPT-FN with the temp
+file's path to build the shell script, then run it via
+`dwim-shell-command-on-marked-files' under BUFFER-NAME with KEYS.  The temp file
+is deleted only after the spawned process exits (success or failure), via an
+`:on-completion' callback.  If the launch throws before the async process
+starts, the temp file is cleaned up synchronously instead."
+  (let ((temp-file (make-temp-file "dwim-pass-"))
+        (launched nil))
+    (unwind-protect
+        (progn
+          (with-temp-file temp-file (insert file-contents))
+          (set-file-modes temp-file #o600)
+          (apply #'dwim-shell-command-on-marked-files
+                 buffer-name
+                 (funcall script-fn temp-file)
+                 :on-completion (cj/dwim-shell--password-cleanup-callback temp-file)
+                 keys)
+          (setq launched t))
+      (unless launched
+        (when (file-exists-p temp-file)
+          (delete-file temp-file))))))
+
 ;; ----------------------------- Dwim Shell Command ----------------------------
 
 (use-package dwim-shell-command
@@ -295,50 +342,34 @@ Supports docx, odt, and other pandoc-compatible formats."
 
   (defun cj/dwim-shell-commands-pdf-password-protect ()
 	"Add a password to pdf(s).
-Uses temporary file with restrictive permissions to avoid exposing passwords
-in process lists or command history."
+Passwords are written to a temp file (mode 600) so they never appear in the
+process list, and the file is removed only after the spawned process exits."
 	(interactive)
-	(let* ((user-pass (read-passwd "user-password: "))
-		   (owner-pass (read-passwd "owner-password: "))
-		   (temp-file (make-temp-file "qpdf-pass-")))
-	  (unwind-protect
-		  (progn
-			;; Write passwords to temp file with restrictive permissions
-			(with-temp-file temp-file
-			  (insert user-pass "\n" owner-pass))
-			(set-file-modes temp-file #o600)
-			(dwim-shell-command-on-marked-files
-			 "Password protect pdf"
-			 (format "qpdf --verbose --password-file='%s' --encrypt --use-aes=y -- '<<f>>' '<<fne>>_protected.<<e>>'"
-					 temp-file)
-			 :utils "qpdf"
-			 :extensions "pdf"))
-		;; Always cleanup temp file
-		(when (file-exists-p temp-file)
-		  (delete-file temp-file)))))
+	(let ((user-pass (read-passwd "user-password: "))
+		  (owner-pass (read-passwd "owner-password: ")))
+	  (cj/dwim-shell--run-with-password-file
+	   (concat user-pass "\n" owner-pass)
+	   "Password protect pdf"
+	   (lambda (temp-file)
+		 (format "qpdf --verbose --password-file='%s' --encrypt --use-aes=y -- '<<f>>' '<<fne>>_protected.<<e>>'"
+				 temp-file))
+	   :utils "qpdf"
+	   :extensions "pdf")))
 
   (defun cj/dwim-shell-commands-pdf-password-unprotect ()
 	"Remove a password from pdf(s).
-Uses temporary file with restrictive permissions to avoid exposing passwords
-in process lists or command history."
+Password is written to a temp file (mode 600) so it never appears in the
+process list, and the file is removed only after the spawned process exits."
 	(interactive)
-	(let* ((password (read-passwd "password: "))
-		   (temp-file (make-temp-file "qpdf-pass-")))
-	  (unwind-protect
-		  (progn
-			;; Write password to temp file with restrictive permissions
-			(with-temp-file temp-file
-			  (insert password))
-			(set-file-modes temp-file #o600)
-			(dwim-shell-command-on-marked-files
-			 "Remove protection from pdf"
-			 (format "qpdf --verbose --decrypt --password-file='%s' -- '<<f>>' '<<fne>>_unprotected.<<e>>'"
-					 temp-file)
-			 :utils "qpdf"
-			 :extensions "pdf"))
-		;; Always cleanup temp file
-		(when (file-exists-p temp-file)
-		  (delete-file temp-file)))))
+	(let ((password (read-passwd "password: ")))
+	  (cj/dwim-shell--run-with-password-file
+	   password
+	   "Remove protection from pdf"
+	   (lambda (temp-file)
+		 (format "qpdf --verbose --decrypt --password-file='%s' -- '<<f>>' '<<fne>>_unprotected.<<e>>'"
+				 temp-file))
+	   :utils "qpdf"
+	   :extensions "pdf")))
 
   (defun cj/dwim-shell-commands-video-trim ()
 	"Trim video with options for beginning, end, or both."
@@ -619,50 +650,38 @@ in process lists or command history."
 
   (defun cj/dwim-shell-commands-remove-zip-encryption ()
 	"Remove password protection from archive file(s).
-Uses 7z for secure password handling via temporary file.
-Works with .7z, .zip, and other password-protected archives.
-Extracts and re-archives without password protection."
+Works with .7z, .zip, and other password-protected archives: extracts and
+re-archives without a password.  The password is written to a temp file
+(mode 600) removed only after the spawned process exits.  Note: 7z still takes
+the password as a command-line argument, so it is briefly visible in the
+process list."
 	(interactive)
-	(let* ((password (read-passwd "Current password: "))
-		   (temp-file (make-temp-file "7z-pass-")))
-	  (unwind-protect
-		  (progn
-			;; Write password to temp file with restrictive permissions
-			(with-temp-file temp-file
-			  (insert password))
-			(set-file-modes temp-file #o600)
-			(dwim-shell-command-on-marked-files
-			 "Remove archive encryption"
-			 (format "TMPDIR=$(mktemp -d) && 7z x -p\"$(cat '%s')\" '<<f>>' -o\"$TMPDIR\" && 7z a -tzip '<<fne>>_decrypted.zip' \"$TMPDIR\"/* && rm -rf \"$TMPDIR\""
-					 temp-file)
-			 :utils "7z"))
-		;; Always cleanup temp file
-		(when (file-exists-p temp-file)
-		  (delete-file temp-file)))))
+	(let ((password (read-passwd "Current password: ")))
+	  (cj/dwim-shell--run-with-password-file
+	   password
+	   "Remove archive encryption"
+	   (lambda (temp-file)
+		 (format "TMPDIR=$(mktemp -d) && 7z x -p\"$(cat '%s')\" '<<f>>' -o\"$TMPDIR\" && 7z a -tzip '<<fne>>_decrypted.zip' \"$TMPDIR\"/* && rm -rf \"$TMPDIR\""
+				 temp-file))
+	   :utils "7z")))
 
   (defun cj/dwim-shell-commands-create-encrypted-zip ()
 	"Create password-protected archive of file(s).
-Uses 7z instead of zip for secure password handling via temporary file.
-Creates a .7z archive with AES-256 encryption."
+Creates a .7z archive with AES-256 encryption.  The password is written to a
+temp file (mode 600) removed only after the spawned process exits.  Note: 7z
+still takes the password as a command-line argument, so it is briefly visible
+in the process list."
 	(interactive)
-	(let* ((password (read-passwd "Password: "))
-		   (temp-file (make-temp-file "7z-pass-"))
-		   (archive-name (read-string "Archive name (without extension): " "archive")))
-	  (unwind-protect
-		  (progn
-			;; Write password to temp file with restrictive permissions
-			(with-temp-file temp-file
-			  (insert password))
-			(set-file-modes temp-file #o600)
-			(dwim-shell-command-on-marked-files
-			 "Create encrypted archive"
-			 (format "7z a -t7z -mhe=on -p\"$(cat '%s')\" '%s.7z' '<<*>>'"
-					 temp-file
-					 archive-name)
-			 :utils "7z"))
-		;; Always cleanup temp file
-		(when (file-exists-p temp-file)
-		  (delete-file temp-file)))))
+	(let ((password (read-passwd "Password: "))
+		  (archive-name (read-string "Archive name (without extension): " "archive")))
+	  (cj/dwim-shell--run-with-password-file
+	   password
+	   "Create encrypted archive"
+	   (lambda (temp-file)
+		 (format "7z a -t7z -mhe=on -p\"$(cat '%s')\" '%s.7z' '<<*>>'"
+				 temp-file
+				 archive-name))
+	   :utils "7z")))
 
 
   (defun cj/dwim-shell-commands-list-archive-contents ()
