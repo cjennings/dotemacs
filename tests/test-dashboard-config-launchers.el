@@ -94,7 +94,7 @@ Slack and Linear sharing the last row."
               ((symbol-function 'cj/erc-switch-to-buffer-with-completion) (lambda (&rest _) (push 'irc calls)))
               ((symbol-function 'cj/slack-start) (lambda (&rest _) (push 'slack calls)))
               ((symbol-function 'cj/telega) (lambda (&rest _) (push 'tg calls)))
-              ((symbol-function 'linear-emacs-list-issues) (lambda (&rest _) (push 'linear calls))))
+              ((symbol-function 'pearl-list-issues) (lambda (&rest _) (push 'linear calls))))
       (cj/dashboard--bind-launchers map)
       (dolist (key test-dash--keys)
         (call-interactively (keymap-lookup map key)))
