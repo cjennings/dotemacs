@@ -2,6 +2,16 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: C.
+;; Load shape: eager.
+;; Eager reason: global kill-buffer remap and window-kill bindings wanted from
+;;   the first session.
+;; Top-level side effects: three keymap-global-set (remaps kill-buffer; binds
+;;   M-S-o, M-S-m).
+;; Runtime requires: none.
+;; Direct test load: yes.
+;;
 ;; This library allows for "burying" selected buffers instead of killing them.
 ;; Since they won't be killed, I'm calling them "undead buffers".
 ;; The main function cj/kill-buffer-or-bury-alive replaces kill-buffer.

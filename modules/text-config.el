@@ -3,6 +3,15 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: C/P.
+;; Load shape: eager.
+;; Eager reason: general text-editing defaults and mode hooks the first session
+;;   relies on.
+;; Top-level side effects: three add-hook plus use-package package configuration.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; Configuration for text editing features including:
 ;; - Basic text mode settings (visual line mode, indentation, spacing)
 ;; - Text manipulation (move-text, expand-region, change-inner)

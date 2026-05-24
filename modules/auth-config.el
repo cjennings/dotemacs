@@ -3,6 +3,15 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 1 (Foundation).
+;; Category: F/D.
+;; Load shape: eager.
+;; Eager reason: auth-source and GPG/epa setup that other modules rely on for
+;;   credentials early in the session.
+;; Top-level side effects: auth-source/epa configuration via use-package and setq.
+;; Runtime requires: system-lib, user-constants.
+;; Direct test load: yes (configuration only).
+;;
 ;; Configuration for Emacs authentication and GPG integration:
 
 ;; • auth-source

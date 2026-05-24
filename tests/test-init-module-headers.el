@@ -38,7 +38,15 @@
     "custom-misc"
     "custom-ordering"
     "custom-text-enclose"
-    "custom-whitespace")
+    "custom-whitespace"
+    ;; Batch 3 — Core libraries and command modules (Layer 1-3)
+    "external-open"
+    "media-utils"
+    "auth-config"
+    "keyboard-macros"
+    "system-utils"
+    "text-config"
+    "undead-buffers")
   "Modules annotated with the load-graph header contract.
 Grows one batch at a time.  Parity with the init.el require set is the
 Phase 1 exit criterion.")
