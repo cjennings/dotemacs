@@ -1,6 +1,16 @@
 ;;; system-lib.el --- System utility library functions -*- lexical-binding: t; -*-
 ;;
 ;;; Commentary:
+;;
+;; Layer: 1 (Foundation).
+;; Category: F/L.
+;; Load shape: eager.
+;; Eager reason: low-level helpers (executable lookup, process output, silent
+;;   logging) used by many eager modules during startup.
+;; Top-level side effects: none.
+;; Runtime requires: none (auth-source loaded on demand inside the helper).
+;; Direct test load: yes (pure helpers; batch-safe).
+;;
 ;; This module provides low-level system utility functions for checking
 ;; the availability of external programs and system capabilities.
 ;;

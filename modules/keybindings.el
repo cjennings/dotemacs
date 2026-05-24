@@ -3,6 +3,17 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 1 (Foundation).
+;; Category: F/C.
+;; Load shape: eager.
+;; Eager reason: owns `cj/custom-keymap' and the global C-; prefix that feature
+;;   modules register into; must exist before they load.
+;; Top-level side effects: defines `cj/custom-keymap'/`cj/jump-map', binds
+;;   global keys (C-;, C-z, and others), registers which-key labels after-load.
+;; Runtime requires: user-constants (currently eval-when-compile only),
+;;   which-key, free-keys.
+;; Direct test load: conditional (binds global keys; needs user-constants).
+;;
 ;; Global keybinding configuration and custom keymap framework.
 ;;
 ;; Main features include:
