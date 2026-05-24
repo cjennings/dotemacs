@@ -384,7 +384,7 @@ Verify 2026-05-04:
 - Parsed the spec and =todo.org= with =org-element=.
 - Committed the tracked spec as =0528475=.
 
-**** TODO [#B] Classify modules by role and startup requirement :refactor:
+**** DOING [#B] Classify modules by role and startup requirement :refactor:
 
 Create a simple inventory, probably in =docs/design/= or an org note linked
 from this task:
@@ -485,6 +485,12 @@ Expected outcome:
   document why.
 - Add a note to the local repository docs so future package failures do not
   lead to permanent insecure defaults.
+
+** TODO [#C] latex-config WIP state :refactor:
+The =init.el= require for =latex-config= carried a bare "WIP need to fix" comment with no detail on what was broken. Retired that comment while classifying foundation modules; the underlying state still needs investigation. Read =modules/latex-config.el=, determine what's incomplete, and either finish it or scope a real task.
+
+** TODO [#C] Decide prog-shell config home :refactor:
+The =init.el= require for =prog-shell= carried a "combine elsewhere" comment. Retired it during module classification. Decide whether shell-script editing config should fold into =prog-general= or stay its own module, then act or close.
 
 ** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
 :PROPERTIES:
