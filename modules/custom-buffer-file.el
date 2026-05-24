@@ -9,10 +9,8 @@
 ;;   by init order; a deferral candidate for Phase 3/4.
 ;; Top-level side effects: defines cj/copy-buffer-content-map and
 ;;   cj/buffer-and-file-map; conditionally registers the latter under C-; b.
-;; Runtime requires: external-open, mm-decode, system-lib. keybindings is needed
-;;   for the C-; b registration but is declared only via eval-when-compile and
-;;   guarded by `boundp', so the binding silently drops standalone. Phase 2 fix.
-;; Direct test load: conditional (C-; b registration skipped without keybindings).
+;; Runtime requires: keybindings, external-open, mm-decode, system-lib.
+;; Direct test load: yes (requires keybindings explicitly).
 ;;
 ;; This module provides custom buffer and file operations including PostScript
 ;; printing capabilities.
@@ -42,8 +40,7 @@
 ;;
 ;;; Code:
 
-;; cj/custom-keymap defined in keybindings.el
-(eval-when-compile (defvar cj/custom-keymap))
+(require 'keybindings) ;; provides cj/custom-keymap
 (eval-when-compile (require 'ps-print)) ;; for ps-print variables
 (declare-function ps-print-buffer-with-faces "ps-print")
 (declare-function ps-print-region-with-faces "ps-print")
@@ -541,8 +538,7 @@ Signals an error if:
   "<right>" #'cj/window-resize-sticky
   "<up>"    #'cj/window-resize-sticky
   "<down>"  #'cj/window-resize-sticky)
-(when (boundp 'cj/custom-keymap)
-  (keymap-set cj/custom-keymap "b" cj/buffer-and-file-map))
+(keymap-set cj/custom-keymap "b" cj/buffer-and-file-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

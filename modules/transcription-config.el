@@ -50,9 +50,6 @@
 (require 'system-lib)      ; provides cj/auth-source-secret-value
 (require 'user-constants)  ; For cj/audio-file-extensions
 
-;; Declare keymap defined in keybindings.el
-(eval-when-compile (defvar cj/custom-keymap))
-
 ;; ----------------------------- Configuration ---------------------------------
 
 (defvar cj/transcribe-backend 'assemblyai

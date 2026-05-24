@@ -10,10 +10,8 @@
 ;;   run only on command (command-loaded target).
 ;; Top-level side effects: defines cj/record-map and conditionally registers it
 ;;   under C-; r.
-;; Runtime requires: system-lib. keybindings is needed for the C-; r binding but
-;;   only reached through a boundp guard, so the binding silently drops
-;;   standalone. Phase 2 fix.
-;; Direct test load: conditional (C-; r registration skipped without keybindings).
+;; Runtime requires: system-lib, keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
 ;;
 ;; Desktop video and audio recording from within Emacs using ffmpeg.
 ;; Records from both microphone and system audio simultaneously, which
@@ -109,6 +107,7 @@
 ;;; Code:
 
 (require 'system-lib)
+(require 'keybindings)  ;; provides cj/custom-keymap
 
 ;;; ============================================================
 ;;; Configuration Variables
@@ -1089,9 +1088,7 @@ Changes take effect on the next recording (not the current one)."
     map)
   "Keymap for video/audio recording operations under C-; r.")
 
-;; Only bind keys when running interactively (not in batch/test mode)
-(when (boundp 'cj/custom-keymap)
-  (keymap-set cj/custom-keymap "r" cj/record-map))
+(keymap-set cj/custom-keymap "r" cj/record-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

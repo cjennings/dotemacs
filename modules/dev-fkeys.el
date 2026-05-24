@@ -8,10 +8,8 @@
 ;; Eager reason: the F4/F6 developer command entry points.
 ;; Top-level side effects: six global F-key bindings; conditionally registers a
 ;;   C-; P binding.
-;; Runtime requires: cl-lib, system-lib. keybindings is needed for the C-; P
-;;   binding but is declared only via eval-when-compile and guarded by `boundp',
-;;   so that binding silently drops standalone. Phase 2 fix.
-;; Direct test load: conditional (C-; P registration skipped without keybindings).
+;; Runtime requires: cl-lib, system-lib, keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
 ;;
 ;; Project-aware F-key block for developer workflows:
 ;;
@@ -54,6 +52,7 @@
 
 (require 'cl-lib)
 (require 'system-lib)
+(require 'keybindings) ;; provides cj/custom-keymap
 
 (declare-function projectile-compile-project "projectile" (arg))
 (declare-function projectile-run-project "projectile" (arg))
@@ -531,12 +530,7 @@ message."
 
 ;; ---------- Bindings ----------
 
-(eval-when-compile (defvar cj/custom-keymap)) ;; defined in keybindings.el
-
-;; Skip the binding if cj/custom-keymap isn't loaded yet (e.g. when this
-;; module is required directly in batch tests).
-(when (boundp 'cj/custom-keymap)
-  (keymap-set cj/custom-keymap "P" #'cj/projectile-reset-cmds))
+(keymap-set cj/custom-keymap "P" #'cj/projectile-reset-cmds)
 
 (keymap-global-set "<f4>"   #'cj/f4-compile-and-run)
 (keymap-global-set "C-<f4>" #'cj/f4-compile-only)
