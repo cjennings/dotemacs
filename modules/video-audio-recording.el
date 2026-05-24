@@ -843,11 +843,32 @@ On X11: ffmpeg captures screen directly via x11grab with PulseAudio audio."
                     "-filter_complex \"[1:a]volume=%.1f[mic];[2:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2[out]\" "
                     "-map 0:v -map \"[out]\" "
                     "%s")
-            mic-device
-            system-device
+            (shell-quote-argument mic-device)
+            (shell-quote-argument system-device)
             cj/recording-mic-boost
             cj/recording-system-volume
-            filename)))
+            (shell-quote-argument filename))))
+
+(defun cj/recording--build-audio-command (mic-device system-device filename)
+  "Build the ffmpeg shell command string for audio-only recording.
+MIC-DEVICE and SYSTEM-DEVICE are PulseAudio device names.  FILENAME is
+the output .m4a path.  Mixes mic + system monitor into a single AAC file."
+  (format (concat "ffmpeg "
+                  "-f pulse -i %s "   ; Input 0: microphone
+                  "-f pulse -i %s "   ; Input 1: system audio monitor
+                  "-filter_complex \""
+                  "[0:a]volume=%.1f[mic];"
+                  "[1:a]volume=%.1f[sys];"
+                  "[mic][sys]amix=inputs=2:duration=longest[out]\" "
+                  "-map \"[out]\" "
+                  "-c:a aac "
+                  "-b:a 64k "
+                  "%s")
+          (shell-quote-argument mic-device)
+          (shell-quote-argument system-device)
+          cj/recording-mic-boost
+          cj/recording-system-volume
+          (shell-quote-argument filename)))
 
 (defun cj/ffmpeg-record-video (directory)
   "Start a video recording, saving output to DIRECTORY.
@@ -898,22 +919,7 @@ The filter graph mixes two PulseAudio inputs:
            (name (format-time-string "%Y-%m-%d-%H-%M-%S"))
            (filename (expand-file-name (concat name ".m4a") location))
            (ffmpeg-command
-            (format (concat "ffmpeg "
-                            "-f pulse -i %s "   ; Input 0: microphone
-                            "-f pulse -i %s "   ; Input 1: system audio monitor
-                            "-filter_complex \""
-                            "[0:a]volume=%.1f[mic];"
-                            "[1:a]volume=%.1f[sys];"
-                            "[mic][sys]amix=inputs=2:duration=longest[out]\" "
-                            "-map \"[out]\" "
-                            "-c:a aac "
-                            "-b:a 64k "
-                            "%s")
-                    mic-device
-                    system-device
-                    cj/recording-mic-boost
-                    cj/recording-system-volume
-                    filename)))
+            (cj/recording--build-audio-command mic-device system-device filename)))
       (message "Recording from mic: %s + ALL system outputs" mic-device)
       (cj/log-silently "Audio recording ffmpeg command: %s" ffmpeg-command)
       (setq cj/audio-recording-ffmpeg-process
