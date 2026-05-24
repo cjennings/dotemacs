@@ -23,6 +23,10 @@
 (require 'cl-lib)
 (require 'keybindings)  ;; provides cj/custom-keymap
 
+;; Bound in the ordering keymap below but owned by org-config (loaded eagerly
+;; in init); declare it so byte-compiling this module standalone is clean.
+(declare-function cj/org-sort-by-todo-and-priority "org-config")
+
 (defvar cj/ordering-map)
 
 (defun cj/--arrayify (start end quote &optional prefix suffix)

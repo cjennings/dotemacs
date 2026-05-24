@@ -23,6 +23,12 @@
 
 (require 'keybindings)  ;; provides cj/custom-keymap
 
+;; Bound in the enclose keymap below but owned by the change-inner package
+;; (autoloaded via text-config's `use-package :commands'); declare them so
+;; byte-compiling this module standalone is clean.
+(declare-function change-inner "change-inner")
+(declare-function change-outer "change-inner")
+
 (defun cj/--surround (text surround-string)
   "Internal implementation: Surround TEXT with SURROUND-STRING.
 TEXT is the string to be surrounded.
