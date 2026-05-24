@@ -1,7 +1,17 @@
 ;;; custom-whitespace.el ---  -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: L/C.
+;; Load shape: eager.
+;; Eager reason: registers its C-; w whitespace submap at load. Currently eager
+;;   by init order; a deferral candidate for Phase 3/4 (command/autoload +
+;;   registration API).
+;; Top-level side effects: defines cj/whitespace-map, registers it under C-; w.
+;; Runtime requires: keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; This module provides whitespace manipulation operations for cleaning and transforming whitespace in text.
 
 ;; Functions include:

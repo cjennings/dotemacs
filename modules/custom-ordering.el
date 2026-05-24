@@ -1,7 +1,18 @@
 ;;; custom-ordering.el ---  -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: L/C.
+;; Load shape: eager.
+;; Eager reason: registers its C-; o ordering submap at load. Currently eager by
+;;   init order; a deferral candidate for Phase 3/4 (command/autoload +
+;;   registration API).
+;; Top-level side effects: defines cj/ordering-map, registers it under C-; o.
+;; Runtime requires: cl-lib, keybindings (org-config on demand via
+;;   declare-function).
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; Text transformation and sorting utilities for reformatting data structures.
 ;;
 ;; Array/list formatting:

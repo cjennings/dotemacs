@@ -1,6 +1,17 @@
 ;;; custom-datetime.el ---  -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
+;;
+;; Layer: 2 (Core UX).
+;; Category: L/C.
+;; Load shape: eager.
+;; Eager reason: registers its C-; d datetime submap at load. Currently eager by
+;;   init order; a deferral candidate for Phase 3/4 (command/autoload +
+;;   registration API).
+;; Top-level side effects: defines cj/datetime-map, registers it under C-; d.
+;; Runtime requires: keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; Utilities for inserting date/time stamps in multiple formats.
 ;;
 ;; Interactive commands:

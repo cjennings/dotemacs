@@ -23,7 +23,9 @@ This inventory is independent from the helper inventory owned by
 * Status
 
 - Phase 1 (Inventory and Contracts), in progress.
-- Batch 1 (Foundation, Layer 1): classified. 7 of 102 modules.
+- Batch 1 (Foundation, Layer 1): classified. 7 modules.
+- Batch 2 (Text/editing command modules, Layer 2): classified. 9 modules.
+- 16 of 102 modules classified.
 - No load-order changes have been made; =init.el= keeps its current eager order.
 
 * Legend
@@ -61,6 +63,25 @@ Every Batch 1 module stays eager: each satisfies a spec eager-reason condition
 (shared helpers, path constants, core Emacs behavior, or the global keymap
 owner). Reasons are recorded in each module's load-graph header.
 
+** Batch 2 — Text/editing command modules (Layer 2)
+
+The =custom-*= text-command helpers. Each is eager only to register a =C-;=
+submap (or direct bindings) at load; none has a necessary eager reason, so all
+are deferral candidates for Phase 3 (registration API) and Phase 4
+(command/autoload). Target load shape is command-driven.
+
+| Module | Layer | Cat | Current | Target | Runtime requires | Top-level side effects | Direct load |
+|--------+-------+-----+---------+--------+------------------+------------------------+-------------|
+| =custom-case= | 2 | L/C | eager | command | keybindings | cj/case-map under C-; c; remaps capitalize-region | yes |
+| =custom-comments= | 2 | L/C | eager | command | keybindings | cj/comment-map under C-; C | yes |
+| =custom-datetime= | 2 | L/C | eager | command | keybindings | cj/datetime-map under C-; d | yes |
+| =custom-buffer-file= | 2 | L/C | eager | command | external-open, mm-decode, system-lib | cj/copy-buffer-content-map, cj/buffer-and-file-map; C-; b registration boundp-guarded | conditional |
+| =custom-line-paragraph= | 2 | L/C | eager | command | keybindings (expand-region on demand) | cj/line-and-paragraph-map under C-; l | yes |
+| =custom-misc= | 2 | L/C | eager | command | keybindings | align-regexp advice; direct C-; bindings | yes |
+| =custom-ordering= | 2 | L/C | eager | command | cl-lib, keybindings (org-config on demand) | cj/ordering-map under C-; o | yes |
+| =custom-text-enclose= | 2 | L/C | eager | command | keybindings (change-inner on demand) | cj/enclose-map under C-; s | yes |
+| =custom-whitespace= | 2 | L/C | eager | command | keybindings | cj/whitespace-map under C-; w | yes |
+
 * Hidden dependencies found
 
 Discoveries that belong to Phase 2 (make dependencies explicit). Recorded here,
@@ -74,10 +95,16 @@ not fixed here.
   requires to plain runtime =require=. (Test
   =test-system-defaults-functions.el= was updated to require host-environment
   so the unit loads in isolation; the production fix is still pending.)
+- =custom-buffer-file= registers its =C-; b= submap behind =(when (boundp
+  'cj/custom-keymap) ...)= and declares =cj/custom-keymap= only via
+  =eval-when-compile=. Loaded standalone without keybindings, the =boundp= guard
+  is nil and the binding silently drops. That guard is the
+  "define-if-not-present" shim the spec warns against. Phase 2/3 fix: require
+  keybindings (or use the registration API once it exists) and drop the guard.
 
 * Pending classification
 
-The remaining 95 modules required by =init.el=, awaiting per-module inspection.
+The remaining 86 modules required by =init.el=, awaiting per-module inspection.
 Each batch reads these against their source and moves them into [[*Classified
 modules][Classified modules]] with a load-graph header. Suggested batch order
 follows the spec: text/editing command modules, then UI, then programming, then
@@ -92,15 +119,6 @@ Org, then optional integrations.
 - [ ] chrono-tools
 - [ ] coverage-core
 - [ ] coverage-elisp
-- [ ] custom-buffer-file
-- [ ] custom-case
-- [ ] custom-comments
-- [ ] custom-datetime
-- [ ] custom-line-paragraph
-- [ ] custom-misc
-- [ ] custom-ordering
-- [ ] custom-text-enclose
-- [ ] custom-whitespace
 - [ ] dashboard-config
 - [ ] dev-fkeys
 - [ ] diff-config

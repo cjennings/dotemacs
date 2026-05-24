@@ -3,6 +3,17 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: L/C.
+;; Load shape: eager.
+;; Eager reason: registers its C-; l line/paragraph submap at load. Currently
+;;   eager by init order; a deferral candidate for Phase 3/4 (command/autoload +
+;;   registration API).
+;; Top-level side effects: defines cj/line-and-paragraph-map, registers it under
+;;   C-; l.
+;; Runtime requires: keybindings (expand-region on demand via declare-function).
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; This module provides the following line and paragraph manipulation utilities:
 ;;
 ;; - joining lines in a region or the current line with the previous one
