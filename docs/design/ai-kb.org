@@ -5,7 +5,7 @@
 
 * Status
 
-Ready. Four reviews incorporated (=ai-kb-review.org=, =-review2.org=, =-review3.org=, =-review4.org=; all 2026-05-24). The four original blockers (version control + recovery, switch-state safety, startup surface, project-awareness) and the two write-loop caveats from review 4 (push-failure contract, index regeneration) have decisions. Review 3's operational shape (a repo-resident agent-neutral contract, a minimal CLI, maintenance commands, multi-agent provenance) is adopted. Cross-agent is *not a near-term goal* (Craig, 2026-05-24): v1 ships the Claude adapter over the neutral contract, and other-agent adapters (Codex/Ollama, MCP) are deferred to [[*vNext][vNext]]. Remaining open items are small — see [[*Open decisions][Open decisions]].
+Ready. Four reviews incorporated (=ai-kb-review.org=, =-review2.org=, =-review3.org=, =-review4.org=; all 2026-05-24). The four original blockers (version control + recovery, switch-state safety, startup surface, project-awareness) and the two write-loop caveats from review 4 (push-failure contract, index regeneration) have decisions. Review 3's operational shape (a repo-resident agent-neutral contract, a minimal CLI, maintenance commands, multi-agent provenance) is adopted. Cross-agent is *not a near-term goal* (Craig, 2026-05-24): v1 ships the Claude adapter over the neutral contract, and other-agent adapters (Codex/Ollama, MCP) are deferred to [[*vNext][vNext]]. All open decisions are now resolved (store path, CLI form, push cadence, curation trigger — see [[*Agreed decisions][Agreed decisions]]); the spec is fully decided and Step 1 is buildable.
 
 In scope: Step 1 (store + contract/CLI + global rule + provisioning) and Step 2 (Emacs browsing layer). Step 3 (migrating =.ai/sessions= and workflows in) and the full LLM-Wiki layer are *deferred to their own specs* — see [[*vNext][vNext]].
 
@@ -38,7 +38,7 @@ T2's =MEMORY.md= shrinks toward an index: for significant items it points at the
 
 ai-kb is its *own git repository* — not in =~/sync/org= (Syncthing has proven unreliable for backup/restore: no history, silent =.sync-conflict= files) and *not* in =~/.emacs.d= (publicly mirrored to GitHub; ai-kb holds personal/work-private knowledge that would leak).
 
-- *Location:* =~/.local/share/ai-kb= (XDG =$XDG_DATA_HOME/ai-kb=). Alternative: =~/.ai-kb= (see [[*Open decisions][Open decisions]]).
+- *Location:* =~/.local/share/ai-kb= (XDG =$XDG_DATA_HOME/ai-kb=).
 - *Origin:* a bare repo on =git.cjennings.net= (=git@cjennings.net:ai-kb.git=), *private — no public GitHub mirror*. This is the recovery layer: full history, clone-to-restore.
 - *No Syncthing.* git is the sole sync and backup; multi-machine concurrency surfaces as ordinary git merges, not silent conflict files.
 - *org-roam scope:* =org-roam-directory= points at the repo root; =raw/= is *excluded* from the scan (=org-roam-file-exclude-regexp= matching =/raw/=) so raw captures never become noisy roam nodes. The LLM-Wiki vNext would add a compiled =wiki/= layer; v1 keeps compiled nodes flat at root.
@@ -51,7 +51,7 @@ The agent writes nodes from the shell, possibly from several machines or concurr
 2. *Validate:* =org-lint= the node; reject on *error*-level problems (not warnings — see [[*Node validity (org-lint)][Node validity]]).
 3. *Regenerate the index* from node properties (see [[*Startup surface and retrieval contract][Startup surface]]).
 4. *Commit locally — always.* The local commit is the durable record.
-5. *Push — best-effort, non-blocking, never fatal.* A failed push (offline, network blip, gpg-agent SSH key not loaded — a real, observed failure mode) is *logged and ignored*, never errors or hangs the agent. The next successful write or a session-end flush carries the backlog. Push is debounced (commit per write; push on a timer or at session end) — local commits are already durable, so a round-trip per memory buys nothing and produces a long tail of one-line commits.
+5. *Push — best-effort, non-blocking, never fatal.* A failed push (offline, network blip, gpg-agent SSH key not loaded — a real, observed failure mode) is *logged and ignored*, never errors or hangs the agent. =remember= commits locally and does *not* push; a background =systemd --user= timer (~15 min) pushes when the repo is ahead, carrying the backlog. Local commits are already durable, so decoupling the push from the write keeps every =remember= fast and avoids a round-trip per memory.
 6. *On push rejection* (remote moved): do *not* blind-retry. Fetch, report the divergence, leave the local commit intact for resolution.
 7. *Same-machine concurrency:* =flock= around =remember= serializes concurrent agents (Claude + Codex + an Emacs save) so they don't race. A v1 file lock; not a daemon.
 
@@ -173,6 +173,7 @@ The proactive-write bar controls intake; nothing controls rot, and the system cr
 
 - =ai-kb doctor= / =ai-kb lint= — health and validity (above).
 - =ai-kb curate --dry-run= surfaces four buckets — duplicates to merge, stale/superseded nodes, orphans (no back- or forward-links), over-broad nodes to split. Craig decides; the agent executes *human-confirmed* merges/splits, repointing =[[id:]]= backlinks (grep + rewrite) and re-linting. A =:LAST_CURATED:= stamp rotates the pass through least-recently-touched nodes.
+- *Trigger (node-count):* curation is "due" when roughly N nodes have been added or gone untouched since the last =:LAST_CURATED:=; =ai-kb doctor= and the session-startup surface emit a one-line nudge when due (mirroring the existing task-review habit). The interactive pass itself is a global workflow at =~/code/rulesets/.ai/workflows/ai-kb-curate.org=, available from every project's session.
 - *Pointer integrity:* before deleting or merging a node, grep for inbound references (other nodes' =[[id:]]= and per-project =MEMORY.md= pointers) and repoint them; prefer stable =slug.org= names for pointer targets.
 
 * Security and privacy
@@ -185,9 +186,9 @@ The pieces span the rulesets repo, this repo, and the ai-kb repo. =make ai-kb-in
 
 Per-machine, ordered:
 1. Clone =git@cjennings.net:ai-kb.git= to =~/.local/share/ai-kb= (or =git init= + add remote on the very first machine).
-2. =make ai-kb-init=: seed =index.org= + a README/index node with a generated =:ID:=; install the =ai-kb= CLI; =ai-kb index=; best-effort =ai-kb sync= if an Emacs server is up.
-3. =cd ~/code/rulesets && make install= — symlinks the =claude-rules/ai-kb.md= adapter into =~/.claude/rules/=.
-4. =ai-kb doctor= to confirm the machine is wired correctly.
+2. =make ai-kb-init=: seed =index.org= + a README/index node with a generated =:ID:=; install the =ai-kb= CLI onto =PATH=; =ai-kb index=; install and =systemctl --user enable --now= the =ai-kb-push.timer= + =.service= units (the debounced background push); best-effort =ai-kb sync= if an Emacs server is up.
+3. =cd ~/code/rulesets && make install= — symlinks the =claude-rules/ai-kb.md= adapter into =~/.claude/rules/= (and syncs the =ai-kb-curate.org= workflow into projects via the usual startup rsync).
+4. =ai-kb doctor= to confirm the machine is wired correctly (repo, remote, CLI on PATH, push timer active, adapter linked, db buildable, no secrets).
 
 * Build plan
 
@@ -196,6 +197,8 @@ Per-machine, ordered:
 - The =ai-kb= git repo (bare on cjennings.net + clone at the XDG path), seed =index.org=, =AGENT_CONTRACT.org=.
 - The minimal =ai-kb= CLI (=doctor/index/query/remember/lint/curate/sync=) implementing the write protocol, index regeneration, org-lint gating, credential scan, =flock=.
 - =claude-rules/ai-kb.md= adapter (points at the contract; routing + proactive + contradiction rules + concrete L1 triggers + "use =ai-kb remember=, never bypass =ai-kb lint="); =make install= links it.
+- =ai-kb-push.timer= + =ai-kb-push.service= =systemd --user= units (the debounced background push) installed and enabled by =setup-ai-kb.sh=.
+- =~/code/rulesets/.ai/workflows/ai-kb-curate.org= — the human-gated curation workflow, surfaced when the node-count trigger makes it due.
 - =scripts/setup-ai-kb.sh= + =make ai-kb-init=; the one-time server bootstrap documented.
 
 After Step 1 the agent can remember, query, lint, and curate-report immediately, before the Emacs layer exists.
@@ -248,13 +251,11 @@ Everything not listed was accepted as written and woven in. Listed: modified, re
 - Write path: commit always, push best-effort/non-blocking/debounced; safe-fetch before; =flock=.
 - Operations are an agent-neutral contract fronted by a minimal =ai-kb= CLI; destructive ops human-only.
 - Cross-agent is not a near-term goal (Craig, 2026-05-24): v1 ships the Claude adapter; other-agent adapters + MCP are deferred to vNext. The contract stays neutral in shape so they are additive later.
+- *Resolved 2026-05-24:* store path = =~/.local/share/ai-kb= (XDG); CLI = a shell wrapper calling =emacs --batch= for the org-lint/sync steps; push = a background =systemd --user= timer (~15 min, push only if ahead), commits always local; curation = node-count trigger surfaced by =ai-kb doctor= + startup, workflow at =~/code/rulesets/.ai/workflows/ai-kb-curate.org=.
 
 * Open decisions
 
-- [ ] *Store path:* =~/.local/share/ai-kb= (XDG, recommended) vs =~/.ai-kb=.
-- [ ] *CLI language:* shell wrapper calling =emacs --batch= (recommended) vs Elisp-first.
-- [ ] *Push debounce:* timer interval vs flush-at-session-end only.
-- [ ] *Curation cadence/trigger* (calendar vs node-count) and where the workflow lives (rulesets =.ai/workflows/=).
+None — all four resolved 2026-05-24 (Craig). See [[*Agreed decisions][Agreed decisions]]. The spec is fully decided and buildable.
 
 * vNext
 
