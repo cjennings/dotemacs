@@ -71,8 +71,7 @@
 (require 'diff-config)           ;; diff and merge functionality w/in Emacs
 (require 'erc-config)            ;; seamless IRC client
 (require 'slack-config)          ;; slack client via emacs-slack
-;; (require 'linear-config)      ;; Linear.app issue tracking — disabled while linear-emacs is reworked; config needs rework after
-
+(require 'linear-config)         ;; Linear.app issue tracking (deepsat workspace)
 (require 'telega-config)         ;; telegram client via telega.el (TDLib in docker)
 (require 'eshell-config)         ;; emacs shell configuration
 (require 'vterm-config)          ;; vterm + F12 toggle + tmux history copy
