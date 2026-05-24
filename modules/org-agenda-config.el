@@ -149,13 +149,21 @@ the file keeps precedence."
   "Add todo.org files from immediate subdirectories of DIRECTORY.
 Only checks DIRECTORY/*/todo.org — does not recurse deeper."
   (interactive "D")
-  (let ((todo-files
-         (seq-filter
-          #'file-exists-p
-          (mapcar (lambda (dir) (expand-file-name "todo.org" dir))
-                  (seq-filter #'file-directory-p
-                              (directory-files directory t "^[^.]"))))))
-    (setq org-agenda-files (append todo-files org-agenda-files))))
+  (if (not (and (file-directory-p directory) (file-readable-p directory)))
+      ;; Non-fatal: a missing or unreadable project root shouldn't crash the
+      ;; whole agenda build — surface it and carry on with the other files.
+      (display-warning
+       'org-agenda
+       (format "Agenda scan: project directory missing or unreadable, skipped: %s"
+               directory)
+       :warning)
+    (let ((todo-files
+           (seq-filter
+            #'file-exists-p
+            (mapcar (lambda (dir) (expand-file-name "todo.org" dir))
+                    (seq-filter #'file-directory-p
+                                (directory-files directory t "^[^.]"))))))
+      (setq org-agenda-files (append todo-files org-agenda-files)))))
 
 ;; ---------------------------- Rebuild Org Agenda ---------------------------
 ;; builds the org agenda list from all agenda targets with caching.

@@ -16,6 +16,13 @@
 (require 'system-lib)
 (require 'cj-cache-lib)
 
+;; Forward-declare org-refile's dynamic var so byte-compiled code treats our
+;; `let'/`setq' on it as dynamic.  Without this, compiling the module turns
+;; `cj/org-refile-in-file's (let ((org-refile-targets ...)) ...) into a
+;; lexical binding that never reaches `org-refile', silently breaking
+;; in-file refiling under `make compile'.
+(defvar org-refile-targets)
+
 ;; ----------------------------- Org Refile Targets ----------------------------
 ;; sets refile targets
 ;; - adds project files in org-roam to the refile targets
@@ -43,6 +50,34 @@ This prevents issues where:
         (org-mode)))
     buf))
 
+(defun cj/--org-refile-scan-dir (dir)
+  "Return the todo.org files under DIR, or nil with a warning if unusable.
+A missing, unreadable, or permission-denied DIR is non-fatal: it logs a
+`display-warning' and returns nil so the rest of the refile-target scan
+continues, rather than silently swallowing the failure or crashing the
+whole scan on a missing directory."
+  (cond
+   ((not (file-directory-p dir))
+    (display-warning 'org-refile
+                     (format "Refile scan: directory missing, skipped: %s" dir)
+                     :warning)
+    nil)
+   ((not (file-readable-p dir))
+    (display-warning 'org-refile
+                     (format "Refile scan: directory unreadable, skipped: %s" dir)
+                     :warning)
+    nil)
+   (t
+    (condition-case _
+        (directory-files-recursively
+         dir "^[Tt][Oo][Dd][Oo]\\.[Oo][Rr][Gg]$" nil
+         (lambda (d) (not (string-match-p "airootfs" d))))
+      (permission-denied
+       (display-warning 'org-refile
+                        (format "Refile scan: permission denied, skipped: %s" dir)
+                        :warning)
+       nil)))))
+
 (defun cj/--org-refile-scan-targets ()
   "Scan disk for the refile-targets list.  Pure-ish: no caching, no logging.
 Returns the list to assign to `org-refile-targets'.  Slow -- walks
@@ -61,17 +96,11 @@ Returns the list to assign to `org-refile-targets'.  Slow -- walks
         (dolist (file project-and-topic-files)
           (unless (assoc file new-files)
             (push (cons file file-rule) new-files)))))
-    (dolist (dir (list user-emacs-directory code-dir projects-dir))
-      (condition-case nil
-          (let* ((todo-files (directory-files-recursively
-                              dir "^[Tt][Oo][Dd][Oo]\\.[Oo][Rr][Gg]$"
-                              nil
-                              (lambda (d) (not (string-match-p "airootfs" d)))))
-                 (file-rule '(:maxlevel . 1)))
-            (dolist (file todo-files)
-              (unless (assoc file new-files)
-                (push (cons file file-rule) new-files))))
-        (permission-denied nil)))
+    (let ((file-rule '(:maxlevel . 1)))
+      (dolist (dir (list user-emacs-directory code-dir projects-dir))
+        (dolist (file (cj/--org-refile-scan-dir dir))
+          (unless (assoc file new-files)
+            (push (cons file file-rule) new-files)))))
     (nreverse new-files)))
 
 (defun cj/build-org-refile-targets (&optional force-rebuild)
