@@ -774,6 +774,14 @@ Respects the user's explicit sink choice from quick-setup."
 ;;; Toggle Commands (User-Facing)
 ;;; ============================================================
 
+(defun cj/recording--normalize-recording-dir (location)
+  "Return LOCATION as an absolute directory path ending in a slash.
+The recording target is always a directory ffmpeg writes a timestamped
+file into, so normalizing here ensures the *selected* directory is the
+one created and recorded into, not its parent (which is what
+`file-name-directory' would yield for a path without a trailing slash)."
+  (file-name-as-directory (expand-file-name location)))
+
 (defun cj/video-recording-toggle (arg)
   "Toggle video recording: start if not recording, stop if recording.
 On first use (or when devices not configured), runs quick setup (C-; r s).
@@ -782,13 +790,12 @@ Otherwise use the default location in `video-recordings-dir'."
   (interactive "P")
   (if cj/video-recording-ffmpeg-process
       (cj/video-recording-stop)
-    (let* ((location (if arg
-                         (read-directory-name "Enter recording location: ")
-                       video-recordings-dir))
-           (directory (file-name-directory location)))
-      (unless (file-directory-p directory)
-        (make-directory directory t))
-      (cj/ffmpeg-record-video location))))
+    (let ((directory (cj/recording--normalize-recording-dir
+                      (if arg
+                          (read-directory-name "Enter recording location: ")
+                        video-recordings-dir))))
+      (make-directory directory t)
+      (cj/ffmpeg-record-video directory))))
 
 (defun cj/audio-recording-toggle (arg)
   "Toggle audio recording: start if not recording, stop if recording.
@@ -798,13 +805,12 @@ Otherwise use the default location in `audio-recordings-dir'."
   (interactive "P")
   (if cj/audio-recording-ffmpeg-process
       (cj/audio-recording-stop)
-    (let* ((location (if arg
-                         (read-directory-name "Enter recording location: ")
-                       audio-recordings-dir))
-           (directory (file-name-directory location)))
-      (unless (file-directory-p directory)
-        (make-directory directory t))
-      (cj/ffmpeg-record-audio location))))
+    (let ((directory (cj/recording--normalize-recording-dir
+                      (if arg
+                          (read-directory-name "Enter recording location: ")
+                        audio-recordings-dir))))
+      (make-directory directory t)
+      (cj/ffmpeg-record-audio directory))))
 
 ;;; ============================================================
 ;;; Start Recording
