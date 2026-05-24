@@ -2,6 +2,16 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: L/C.
+;; Load shape: eager.
+;; Eager reason: registers its C-; command bindings and an align-regexp advice
+;;   at load. Currently eager by init order; a deferral candidate for Phase 3/4.
+;; Top-level side effects: advises align-regexp; binds several commands directly
+;;   under C-; (")", "f", "A", "SPC", "|", and others).
+;; Runtime requires: keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; This module provides various utility functions for text manipulation,
 ;; formatting, and navigation.  Features include:
 ;; - Jump between matching delimiters
