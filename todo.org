@@ -2364,41 +2364,17 @@ Closed the four injection-quoting cases. git-clone-clipboard-url now validates t
 
 =remove-empty-directories= ran =find . -type d -empty -delete= from the ambient current directory. Now it prompts for an explicit root (via =read-directory-name=), names that root in the confirmation, and runs =find <quoted-root> ...= built by =cj/dwim-shell--empty-dirs-command= (2 ERT tests cover the command shape + space quoting). =secure-delete= called =shred= without =-u=, overwriting file contents but leaving the file in place despite the name and the "permanently destroy" prompt; added =-u= (=shred -vfzu=) so it actually unlinks. Both use the inert =<<*>>= comment trick for single-execution.
 
-***** TODO [#B] Quote X11 and audio recording command paths :bug:solo:
+***** 2026-05-24 Sun @ 04:10:20 -0500 Shell-quoted X11 and audio recording command paths
 
-=video-audio-recording.el= quotes devices and filenames in the Wayland
-=wf-recorder= command path, but the X11 =ffmpeg= path and audio-only =ffmpeg=
-path interpolate device names and output filenames without shell quoting. This
-will break on output directories with spaces and can mishandle unusual device
-names.
+The Wayland =wf-recorder= path already quoted its args, but the X11 =ffmpeg= path and the audio-only =ffmpeg= path interpolated mic device, system device, and output filename raw — breaking on directories with spaces or unusual device names. Wrapped all three in =shell-quote-argument= on both paths. Extracted =cj/recording--build-audio-command= (mirroring =cj/recording--build-video-command=) so the audio command is unit-testable, then quoted there. Tests cover device names and filenames with spaces on both builders. Commit =39795e85=.
 
-Expected outcome:
-- Shell-quote mic device, system device, and output file consistently in every
-  shell command path.
-- Prefer argv process APIs for ffmpeg where possible.
-- Add regression tests for recording directories with spaces.
+***** 2026-05-24 Sun @ 04:10:20 -0500 Scoped wf-recorder stop signal to our own process
 
-***** TODO [#B] Track recorder processes instead of killing by program name :safety:bug:
+Stop ran =pkill -INT wf-recorder=, signalling every wf-recorder on the system including an unrelated screen capture. Added =cj/recording--interrupt-child-wf-recorder=, which scopes the producer-first interrupt to the wf-recorder child of our own recording shell via =pkill -P <shell-pid>=. Producer-first ordering preserved (ffmpeg still sees a clean pipe EOF). The orphan-cleanup at recording start stays a broad by-name kill on purpose — those leftovers come from crashed sessions whose shells are already dead, so there is no live PID to scope to. Tests cover the scoped call, the nil-PID no-op, and that the bare system-wide form is never used. Commit =556f48a2=.
 
-The Wayland recording path stops recording with =pkill -INT wf-recorder=. That
-can interrupt unrelated =wf-recorder= processes outside Emacs.
+***** 2026-05-24 Sun @ 04:10:20 -0500 Created the selected recording directory, not its parent
 
-Expected outcome:
-- Store the process object or PID for the recorder launched by this module.
-- Stop only that process or process group.
-- Preserve existing toggle behavior and tests for already-running recordings.
-
-***** TODO [#B] Ensure chosen recording directories are created directly :bug:solo:
-
-The recording toggles accept a directory via prefix argument, then derive parent
-directories in a way that can create the parent but not necessarily the selected
-recording directory itself.
-
-Expected outcome:
-- Normalize the selected destination as either an explicit file or explicit
-  directory.
-- Ensure the actual target directory exists before launching ffmpeg/wf-recorder.
-- Add tests for new directories and paths containing spaces.
+The toggles ran =(file-name-directory location)= before =make-directory=, which returns the *parent* for a path without a trailing slash — so the selected directory went uncreated and ffmpeg failed to write into it. Both toggles now route the destination through =cj/recording--normalize-recording-dir= (expand + =file-name-as-directory=) and =make-directory= that, creating the selected directory itself (including names with spaces). Tests cover trailing-slash normalization, idempotence, spaces, and relative-to-absolute expansion. Commit =dc033c75=.
 
 **** TODO [#B] Make AI conversation persistence path-safe and project-aware :cleanup:refactor:
 
