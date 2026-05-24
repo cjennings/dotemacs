@@ -45,11 +45,16 @@
 
 
 ;; Variables for storing org-protocol data
-(defvar cj/webclip-current-url nil
-  "Temporary storage for URL passed via org-protocol.")
+(defvar cj/--webclip-url nil
+  "URL for the active web clip, dynamically bound around `org-capture'.
+The org-protocol entry point `let'-binds this for the dynamic extent of
+its capture call, so the capture template and handler see it while the
+capture runs, and an aborted or erroring capture unwinds the binding
+instead of leaving stale state for the next capture.")
 
-(defvar cj/webclip-current-title nil
-  "Temporary storage for page title passed via org-protocol.")
+(defvar cj/--webclip-title nil
+  "Page title for the active web clip, dynamically bound around `org-capture'.
+See `cj/--webclip-url' for the binding contract.")
 
 ;; Flag to track if we've done initialization
 (defvar cj/webclipper-initialized nil
@@ -80,7 +85,7 @@
       (add-to-list 'org-capture-templates
                    '("W" "Web Clipper (Protocol)" entry
                      (file+headline webclipped-file "Webclipped Inbox")
-                     "* [[%(identity cj/webclip-current-url)][%(identity cj/webclip-current-title)]] :website:\nURL: %(identity cj/webclip-current-url)\nCaptured On:%U\n%(cj/org-protocol-webclip-handler)\n"
+                     "* [[%(identity cj/--webclip-url)][%(identity cj/--webclip-title)]] :website:\nURL: %(identity cj/--webclip-url)\nCaptured On:%U\n%(cj/org-protocol-webclip-handler)\n"
 					 :prepend t
                      :immediate-finish t)
                    t))
@@ -133,11 +138,13 @@ downstream inside the capture handler with confusing messages."
       (user-error
        "org-protocol webclip: :title must be a string when provided, got %S"
        title))
-    ;; Store the URL and title for the capture template to use
-    (setq cj/webclip-current-url url
-          cj/webclip-current-title (or title "Untitled"))
-    ;; Trigger the capture
-    (org-capture nil "W")
+    ;; Bind url+title for the dynamic extent of the capture call only, so
+    ;; the template and handler see them while the capture runs and an
+    ;; aborted/erroring capture unwinds the binding rather than leaving
+    ;; stale state for the next clip.
+    (let ((cj/--webclip-url url)
+          (cj/--webclip-title (or title "Untitled")))
+      (org-capture nil "W"))
     nil))  ; Return nil to indicate we handled it
 
 (defun cj/org-protocol-webclip-handler ()
@@ -154,12 +161,8 @@ It fetches the page content and converts it to Org format."
   (require 'org-web-tools)
   (setq org-web-tools-pandoc-sleep-time 0.5)
 
-  (let ((url cj/webclip-current-url)
-        (title cj/webclip-current-title))
-    ;; Clear the stored values after using them
-    (setq cj/webclip-current-url nil
-          cj/webclip-current-title nil)
-
+  (let ((url cj/--webclip-url)
+        (title cj/--webclip-title))
     (if (not url)
         (error "No URL provided for clipping")
       (condition-case err
