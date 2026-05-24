@@ -2412,15 +2412,9 @@ Options to evaluate:
 
 Closed the four injection-quoting cases. git-clone-clipboard-url now validates the clipboard with =cj/dwim-shell--valid-git-url-p= and passes the URL via =shell-quote-argument= instead of the raw =<<cb>>= substitution. GPG recipient and the 7z archive name go through =shell-quote-argument= instead of hand-written single quotes. The ffmpeg thumbnail timestamp is validated with =cj/dwim-shell--valid-ffmpeg-timestamp-p= (digits/colons/dot only) before it reaches =-ss=. The sequential-rename prefix is validated filename-safe with =cj/dwim-shell--safe-rename-prefix-p=. 7 ERT tests cover the three validators (Normal/Boundary/Error); the two =shell-quote-argument= swaps trust the builtin. The fifth case — video concatenation's echo/tr/sed filelist — is a redesign rather than a quoting fix and is split out below.
 
-***** TODO [#B] Rebuild video-concat filelist without echo/tr/sed :bug:refactor:solo:
+***** 2026-05-23 Sat @ 19:58:00 -0500 Rebuilt video-concat filelist in Elisp
 
-=cj/dwim-shell-commands-concatenate-videos= builds the ffmpeg concat list with =echo '<<*>>' | tr ' ' '\n' | sed 's/^/file /'=. Splitting on spaces breaks filenames containing spaces, and the echo quoting breaks on filenames containing quotes.
-
-Triggered by: 2026-05-23 dwim-shell input-quoting pass.
-
-Expected outcome:
-- Build the concat filelist in Elisp from =(dwim-shell-command--files)= with each path written as a properly escaped =file '...'= line, rather than reconstructing it with shell text tools.
-- Mind the temp-filelist lifetime the same way the password commands do (delete after the process exits).
+=cj/dwim-shell-commands-concatenate-videos= built the ffmpeg concat list with =echo '<<*>>' | tr ' ' '\n' | sed 's/^/file /'=, which split on spaces and broke on quotes. Extracted =cj/dwim-shell--build-concat-filelist=, which renders each path as an escaped =file '...'= line (single quotes escaped as ='\''=), writes it to a temp file in Elisp, and runs =ffmpeg -f concat -i <quoted-listfile>= with a trailing =; rm -f= to clean up after the process exits. =<<*>>= stays only as an inert trailing shell comment so dwim-shell still runs one command over all marked files. 3 ERT tests cover plain paths, spaces, and an embedded quote.
 
 ***** TODO [#B] Clarify broad or misleading file-operation commands :safety:bug:
 
