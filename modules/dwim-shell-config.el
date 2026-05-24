@@ -726,9 +726,15 @@ directory happens to be."
 	"Remove password protection from archive file(s).
 Works with .7z, .zip, and other password-protected archives: extracts and
 re-archives without a password.  The password is written to a temp file
-(mode 600) removed only after the spawned process exits.  Note: 7z still takes
-the password as a command-line argument, so it is briefly visible in the
-process list."
+(mode 600) removed only after the spawned process exits, so it stays out of
+shell history.
+
+Accepted tradeoff: 7z reads the password only from its controlling TTY, not
+stdin or a file (verified on 7-Zip 26.01 — a piped password silently becomes
+an empty one), so it must go on argv via =$(cat tempfile)= and is briefly
+visible in the process list while 7z runs.  On a single-user workstation, for
+a short-lived process, that exposure is acceptable; closing it would mean
+switching off the .7z format to gpg-wrapped tar."
 	(interactive)
 	(let ((password (read-passwd "Current password: ")))
 	  (cj/dwim-shell--run-with-password-file
@@ -741,10 +747,16 @@ process list."
 
   (defun cj/dwim-shell-commands-create-encrypted-zip ()
 	"Create password-protected archive of file(s).
-Creates a .7z archive with AES-256 encryption.  The password is written to a
-temp file (mode 600) removed only after the spawned process exits.  Note: 7z
-still takes the password as a command-line argument, so it is briefly visible
-in the process list."
+Creates a .7z archive with AES-256 encryption and encrypted headers.  The
+password is written to a temp file (mode 600) removed only after the spawned
+process exits, so it stays out of shell history.
+
+Accepted tradeoff: 7z reads the password only from its controlling TTY, not
+stdin or a file (verified on 7-Zip 26.01 — a piped password silently becomes
+an empty one), so it must go on argv via =$(cat tempfile)= and is briefly
+visible in the process list while 7z runs.  On a single-user workstation, for
+a short-lived process, that exposure is acceptable; closing it would mean
+switching off the .7z format to gpg-wrapped tar."
 	(interactive)
 	(let ((password (read-passwd "Password: "))
 		  (archive-name (read-string "Archive name (without extension): " "archive")))
