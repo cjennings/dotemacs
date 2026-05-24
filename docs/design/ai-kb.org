@@ -1,0 +1,244 @@
+#+TITLE: Design: AI Knowledge Base (ai-kb)
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-24
+#+OPTIONS: toc:nil num:nil
+
+* Status
+
+Ready with caveats. Two reviews incorporated (=ai-kb-review.org= human+Claude, =ai-kb-review2.org= Codex; both 2026-05-24). Scope decided (memory store v1, LLM-Wiki deferred — see below). Storage decided (dedicated private git repo at an XDG path; Syncthing dropped). Findings that blocked readiness (version control, switch-state safety, startup surface, project-awareness) now have decisions. Remaining open items are small and named in [[*Open decisions][Open decisions]].
+
+In scope: Step 1 (store + global rule + provisioning) and Step 2 (Emacs browsing layer). Step 3 (migrating =.ai/sessions= and workflows in) and the full LLM-Wiki layer are *deferred to their own specs* — see [[*vNext][vNext]].
+
+* Scope decision: memory store, not (yet) an LLM Wiki
+
+ai-kb v1 is a *global, durable, cross-project memory store* for Claude Code: hand- or agent-authored org-roam nodes holding lessons, principles, Craig's preferences, reusable procedures, and durable observations. It is the concrete first slice of the broader "org-roam as agent memory" vision in [[file:agentic-knowledgebase.org][agentic-knowledgebase.org]].
+
+It is *not* a Karpathy-style LLM Wiki in v1. That pattern — immutable =raw/= sources, compiled =wiki/= synthesis pages, =schema.org=, source hashes, and full ingest/query/lint pipelines — is a larger product whose value is *grounding compiled knowledge in re-checkable sources*. v1 adopts the one piece of that idea that pays off immediately — a =raw/= capture for *external* sources, so a node compiled from an article/doc/transcript stays re-checkable (see [[*Grounding external sources][Grounding external sources]]) — but not the full compiled-=wiki/= layer, =schema.org=, source hashes, or ingest pipeline. The LLM-Wiki layer is the documented evolution path (see [[*vNext][vNext]]), and v1's structure is chosen so it can grow that way without a rewrite.
+
+* Problem
+
+Claude Code starts every session cold. Continuity today is per-project and flat: file memory at =~/.claude/projects/<encoded-cwd>/memory/=, plus =.ai/notes.org= and =.ai/sessions/=. There is no home for durable, *general* knowledge that should follow the agent into every repo — engineering lessons, Craig's cross-project preferences, reusable procedures (e.g. "move a local repo to git.cjennings.net with a mirror-to-GitHub hook") — and no link structure relating one piece of knowledge to another.
+
+A single shared lessons file in the rules layer would solve "general knowledge that follows the agent" on its own. org-roam is chosen over that flat file because it buys *link structure* (backlinks/forward-links the agent can traverse and the curation pass can exploit), *first-class browsing* (node-find, backlink buffer, graph) for Craig, and a substrate that grows toward the agentic-KB vision. The added complexity is earned by those three; a flat file gives none of them.
+
+* Concept: two layers
+
+** Layer 1 — the store
+
+A git repository of org files (location in [[*Storage, version control, and recovery][Storage]]). Each note is a valid org-roam node. The agent reads and writes these files directly with its normal file tools and never touches the SQLite database. The files are the source of truth.
+
+** Layer 2 — the Emacs/org-roam integration
+
+So Craig can browse with backlinks and the graph. org-roam keys off a single global =org-roam-directory= + =org-roam-db-location= per session, so the second database cannot be live alongside the personal roam. The integration is a *switch*: a command rebinds those variables to the ai-kb repo + its own database file, runs =org-roam-db-sync=, and now node-find and the backlink buffer operate on ai-kb. A companion command switches back. The switch carries a guard contract (see [[*The Emacs switch: guard contract][guard contract]]) because those globals have live side effects.
+
+* Storage, version control, and recovery
+
+ai-kb is its *own git repository* — not in =~/sync/org= (Syncthing has proven too unreliable for backup/restore: no history, silent =.sync-conflict= files on concurrent writes) and *not* in =~/.emacs.d= (that repo is publicly mirrored to GitHub, and ai-kb holds personal/work-private knowledge — it would leak).
+
+- *Location:* =~/.local/share/ai-kb= (XDG =$XDG_DATA_HOME/ai-kb=). Simpler alternative if preferred: =~/.ai-kb=. (Confirm in [[*Open decisions][Open decisions]].)
+- *Origin:* a bare repo on =git.cjennings.net= (=git@cjennings.net:ai-kb.git=), *private — no public GitHub mirror*, unlike the other repos. This is the recovery layer: full history, clone-to-restore on any machine.
+- *No Syncthing.* git is the sole sync and backup. Multi-machine concurrency surfaces as ordinary git merges (recoverable), not silent conflict files.
+- *Validate, then auto-commit on write.* The write path validates the node with =org-lint= (see [[*Node validity (org-lint)][Node validity]]) and only on a clean pass appends =git -C <ai-kb> add -A && git commit -m "<one-line>" && git push=, so every change is captured and pushed and malformed org never reaches the index. Low-risk (single-user, recoverable), and it keeps the store and its history in lockstep without a manual step.
+- *Store layout (v1):* compiled nodes live at the repo root; a =raw/= subdirectory holds captured external sources (see [[*Grounding external sources][Grounding external sources]]). =org-roam-directory= points at the repo root with =raw/= *excluded* from the scan (=org-roam-file-exclude-regexp= matching =/raw/=), so raw captures never become noisy roam nodes. The LLM-Wiki vNext would add a compiled =wiki/= layer + =schema.org=; v1 keeps compiled nodes flat at root.
+
+* Why a separate database
+
+org-roam supports one active =org-roam-directory= / =org-roam-db-location= at a time. ai-kb gets its own directory (the repo above) and its own database file (=~/.emacs.d/org-roam-ai.db= — a regenerable cache, fine to keep in emacs home). The personal roam (=~/sync/org/roam/= + =~/.emacs.d/org-roam.db=, recipes etc.) is never scanned or modified. Switching moves between them.
+
+* The sync model
+
+org-roam keeps the =.org= *files* (truth) and a SQLite *database* (a cache indexing every node and =[[id:...]]= link) that powers Emacs's backlink buffer, node-find, and graph. Editing inside Emacs updates the cache on save via =org-roam-db-autosync-mode=. Agent shell writes don't fire an Emacs save, so the cache goes stale until =org-roam-db-sync= re-scans.
+
+The key consequence: *the agent does not need the database to check links* — links live in the files. Forward links are the =[[id:UUID]]= entries in a node's file; backlinks are every file containing =[[id:<thisID>]]=. The agent computes both by grepping, always current regardless of sync. *Craig's Emacs browsing* needs the cache current, so the switch-to-ai-kb command runs =org-roam-db-sync= on entry. The agent may also fire =emacsclient -e '(cj/ai-kb-db-sync)'= after a write for immediacy, but that is convenience, never a correctness requirement — agent correctness never depends on Emacs running.
+
+* Memory routing (tiering)
+
+ai-kb shrinks the per-project memory files toward an *index*:
+
+- *ai-kb* ← anything significant and *general*: engineering lessons and principles, Craig's cross-project preferences, reusable procedures, durable observations worth recall in any future session, in any repo. A "general but Emacs-flavored" lesson lives here tagged =:emacs:=, not forced into a project's memory.
+- *Per-project claude memory files* ← minor or project-specific facts and session breadcrumbs. For significant items, =MEMORY.md= points at the ai-kb node (by title/id) rather than holding the content.
+
+* Proactive-write rule
+
+The agent writes a node *unprompted* when something is **durable** (true beyond this session) *and* **general** (not tied to the current repo; project-specific knowledge goes to the per-project memory file). The bar, to keep out noise: it must be genuinely worth recalling or linking later — a principle, a reusable procedure, a preference, a non-obvious lesson — not routine status or anything re-derivable from code or git. New nodes link to related existing ones (grep candidates by title/tag first), and the agent updates the index node (see [[*Startup surface and retrieval contract][Startup surface]]).
+
+*Contradiction guard:* if a write would contradict an existing node that affects agent behavior or a stated preference, the agent does *not* silently overwrite. It marks both as =:STATUS: contested=, records the conflict, and asks Craig before changing the canonical node.
+
+* Node format and conventions
+
+#+begin_src org
+:PROPERTIES:
+:ID:        <uuid, generated with `uuidgen`>
+:PROJECTS:  :general:          ; or :deepsat: :emacs: ... (relevant project slugs)
+:CREATED:   2026-05-24
+:UPDATED:   2026-05-24
+:SOURCE:    chat 2026-05-24    ; free-form: chat, a session file, a spec path, a URL
+:STATUS:    current            ; current | contested | superseded
+:END:
+#+title: Concise node title
+#+filetags: :principle:emacs:
+
+Body. Link related nodes with [[id:OTHER-UUID][Their title]].
+#+end_src
+
+- *Filename:* org-roam convention — =YYYYMMDDHHMMSS-slug.org= (or =slug.org= for stable, frequently-linked nodes).
+- *ID:* a real UUID (=uuidgen=) — org-roam won't index a node without a valid =:ID:=.
+- *Type tags* (=#+filetags:=): =:principle:=, =:preference:=, =:procedure:=, =:observation:=, =:reference:=.
+- *Project provenance:* =:PROJECTS:= property lists relevant project slugs; =:general:= marks truly cross-cutting nodes. Drives project-filtered startup surfacing.
+- *Provenance-lite:* =:CREATED:/:UPDATED:/:SOURCE:/:STATUS:=. (Source *hashes* and confidence levels are LLM-Wiki grounding machinery — deferred to vNext.)
+
+* Grounding external sources
+
+The one piece of the LLM-Wiki pattern adopted in v1, because its payoff is immediate: keep compiled knowledge *re-checkable against its source* wherever a source exists.
+
+- *Node authored from an external source* — a web article, a fetched doc, a transcript, an API result — captures the source under =raw/=: the fetched text/file, or for a URL a small =raw/<slug>.org= stub with the URL, retrieval date, and the relevant excerpt. The node's =:SOURCE:= points at that raw path. A later agent can then re-ground a suspicious node against the original instead of trusting its own prior summary — the failure mode where a wiki starts quoting itself as evidence.
+- *Node authored from the conversation or direct observation* — a lesson, a preference, an observation about a codebase — needs only the free-form =:SOURCE:= pointer (the chat, the session file, the repo). No raw capture: the source is not an external artifact, so there is nothing to preserve.
+- =raw/= is append-only in spirit (sources are not edited after capture) and is excluded from org-roam's scan, so it never clutters the graph.
+
+This is deliberately *selective*: a blanket =raw/= layer for every node would be overhead, since most agent memories have no external source. The full compiled-=wiki/= layer, source hashes, and confidence scoring — the rest of the grounding machinery — wait for vNext, when external ingestion is a real workflow rather than an occasional capture.
+
+* Startup surface and retrieval contract
+
+Passive grep-on-demand gets under-used — a memory not surfaced at startup behaves like no memory. But loading the whole KB into every session wastes context. The contract is two-tier (reconciling both reviews):
+
+- *L1 — always loaded:* the global rule =claude-rules/ai-kb.md= (tiny). It carries the path, the routing rule, the link-grep recipes, and the instruction: *when a task may involve durable preferences, known procedures, prior decisions, or cross-project knowledge, read the index first.*
+- *L2 — on demand:* =index.org= at the ai-kb root — a compact, generated navigation map (title, id, one-line, type, project, updated, status), optionally project-filtered. Read at session start only when L1's condition applies.
+- *Full nodes* are read only when the index points at them or Craig asks.
+
+=index.org= shape (sections by type/project; a "Contested / needs review" section; a size budget — when it outgrows the budget, split into =index-procedures.org= etc. rather than bloating one file):
+
+#+begin_src org
+* Procedures
+| Title | ID | Summary | Projects | Updated |
+* Preferences
+| Title | ID | Summary | Projects | Status |
+* Contested / needs review
+| Title | Issue | Last touched |
+#+end_src
+
+* Checking links (agent recipes)
+
+No database needed; grep the files.
+
+- *Forward links from a node* — grep that node's file for =id:= links.
+- *Backlinks to a node* — =grep -rl "id:<UUID>" ~/.local/share/ai-kb/=.
+- *Find a node to link to* — grep titles/tags.
+
+* Node validity (org-lint)
+
+Because the agent writes nodes as raw org from the shell — bypassing Emacs's structural editing — a malformed drawer, a bad property line, or a broken timestamp can slip in. =org-roam-db-sync= would then choke on or silently mis-index that node, and it would render wrong in Emacs. This is a *syntactic validity* check, distinct from the link-grep and credential scans above (which check *content*); both run, on different things.
+
+- *On write (the corruption guard):* after writing or editing a node, validate it with =org-lint= via =emacs --batch=, reusing/extending the project's existing =scripts/lint-org.el=. A node that *fails org-lint is not committed* — malformed org never enters the store or the index. This is part of the write path, alongside the auto-commit.
+- *In curation:* an =org-lint= sweep over all nodes catches anything that drifted or was hand-edited badly in Emacs after the fact.
+
+This is cheap (a sub-second batch call on a single small file) and is the safety net that makes "the agent writes raw org files" trustworthy.
+
+* The Emacs switch: guard contract
+
+The switch is not clean variable-rebinding. =org-roam-db-autosync-mode= is on, and a global =org-after-todo-state-change-hook= (=cj/org-roam-copy-todo-to-today=) copies completed tasks into the *active* roam's daily. Naive rebinding means completing a task or capturing while switched writes into ai-kb, and a forgotten switch-back silently misroutes personal captures. So:
+
+- *On entry* (=cj/org-roam-switch-to-ai-kb=): rebind =org-roam-directory= + =org-roam-db-location= to ai-kb; *rescope or disable* the completed-task→daily hook so personal-task completions never land in ai-kb (and vice-versa); run =org-roam-db-sync=; surface the active KB in the modeline/echo so a half-switched state is visible.
+- *On exit* (=cj/org-roam-switch-to-personal=): restore both variables to the personal values *exactly*, and restore the hook.
+- The commands state these guarantees; tests assert the completed-task hook does not fire into ai-kb while switched.
+
+* Curation
+
+The proactive-write bar controls intake; nothing controls rot. Over months the KB accrues near-duplicates, superseded nodes, and orphans. A human-gated curation pass (a "task-review for memory"), periodic or node-count-triggered, surfaces four buckets — duplicates to merge, stale/superseded nodes, orphans (no back- or forward-links), over-broad nodes to split. Craig decides; the agent executes, repointing =[[id:]]= backlinks on merges (grep + rewrite). A =:LAST_CURATED:= stamp rotates the pass through least-recently-touched nodes. org-roam's backlinks/tags/graph make it a better curation substrate than a flat file. (The full workflow is a Step-1.5 follow-up; v1 ships the convention and the stamp.)
+
+* Security and privacy
+
+ai-kb lives in a *private* repo (cjennings.net only, no public mirror), which removes the main leak surface. v1 rule: *ai-kb is private but not a secret store* — no credentials, tokens, or keys in nodes; the curation/lint pass scans =raw/= (none in v1) and =wiki/= for common credential patterns before commit. The full source-classification taxonomy (=:VISIBILITY: public|personal|work-private|secret=) is deferred to vNext, when sharing/publishing or a public/private split is actually on the table.
+
+* What Claude needs to leverage it
+
+The load-bearing requirement: because ai-kb is used from *every* project, the agent spec lives in the *global rules layer* (=~/code/rulesets/claude-rules/ai-kb.md=), installed by the rulesets =make install= as a symlink into =~/.claude/rules/= and loaded into every session. A note only in this repo's =CLAUDE.md= would not reach the agent in another repo. Step 1 is not complete until that rule is written *and* =make install= has linked it.
+
+ai-kb is *intentionally global* and crosses the per-project =.ai/= scope boundary by design — the agent's own knowledge base, not any single project's scope. This is the one sanctioned exception to =cross-project.md=.
+
+* Provisioning
+
+The pieces span three homes; name and order them. =make ai-kb-init= (wrapping =scripts/setup-ai-kb.sh=) is idempotent:
+
+1. Clone or init the ai-kb git repo at =~/.local/share/ai-kb= (bare origin =git@cjennings.net:ai-kb.git=).
+2. Seed =index.org= and a README/index node with a generated =:ID:=, =#+title:=, =#+filetags:= if absent.
+3. Best-effort initial sync: if an Emacs server is running, =emacsclient -e '(cj/ai-kb-db-sync)'= to build =org-roam-ai.db=; skip silently otherwise.
+4. Ensure the global rule is active: =cd ~/code/rulesets && make install= (symlinks =claude-rules/ai-kb.md= into =~/.claude/rules/=).
+
+Fresh-machine order: (a) ai-kb repo cloned, (b) =make ai-kb-init= seeds + builds the db, (c) rulesets =make install= so the global rule is linked.
+
+* Build plan
+
+** Step 1 — store + global rule + provisioning (immediate value)
+
+- The =ai-kb= git repo (bare on cjennings.net + clone at the XDG path) with seed =index.org=.
+- =~/code/rulesets/claude-rules/ai-kb.md= — the global L1 rule (path, node format incl. provenance + project tags, routing rule, proactive + contradiction rules, external-source raw-capture, link-grep recipes, "read the index first", validate-with-org-lint-then-auto-commit-on-write, no-secrets rule).
+- =scripts/setup-ai-kb.sh= + =make ai-kb-init=; confirm =make install= links the rule.
+
+After Step 1 the agent can write nodes, check links, and auto-commit immediately, before the Emacs layer exists.
+
+** Step 2 — Emacs browsing layer
+
+In =org-roam-config.el=: ai-kb directory constant + =org-roam-ai.db=; =cj/org-roam-switch-to-ai-kb= / =cj/org-roam-switch-to-personal= with the guard contract above; =cj/ai-kb-db-sync= helper; keybindings under =C-c n= (e.g. =C-c n a= ai-kb / =C-c n A= back, avoiding the dense existing =l/f/p/r/t/i/w/I/d=); which-key labels; ERT tests + =/review-code=.
+
+** Step 3 and the LLM-Wiki layer — deferred
+
+Separate specs. See [[*vNext][vNext]].
+
+* Test strategy
+
+- *Step 2 ERT* (=tests/test-<module>.el=, =make test-unit=): switch sets the ai-kb dir + db; switch-back restores personal values exactly; the completed-task hook does *not* fire into ai-kb while switched; the sync helper is callable.
+- *Provisioning* (bats/shell): =setup-ai-kb.sh= idempotent; seeds a node with a valid =:ID:=; initializes/validates git.
+- *Link recipes* (fixture KB): backlink-by-grep and forward-link-by-grep return correct sets.
+- *Node validity:* a well-formed node passes =org-lint=; a deliberately malformed node (broken drawer / bad property) fails, and the write path refuses to commit it.
+
+* Scaling path (planned, not built)
+
+- v1: =rg= over org files + a generated =index.org=.
+- v1.5: a scripted =ai-kb-search= over title/tags/properties/body.
+- vNext: a local BM25/vector tool (e.g. =qmd=) over the nodes, preserving links; no embeddings in v1.
+
+* Review dispositions
+
+Everything not listed here was accepted as written and woven into the body above. Listed: the modified and rejected recommendations, with reasons.
+
+- *Review 2 core reframe → MODIFIED (scope).* v1 is the org-roam memory store, not a full Karpathy LLM Wiki. Per Review 2's own off-ramp; matches Craig's stated intent (durable memory, not raw-source compilation). The LLM-Wiki layer is the documented vNext.
+- *Review 2 #1 (raw/wiki/schema separation) → PARTIALLY ADOPTED.* v1 adds a =raw/= capture for *external* sources only (see Grounding external sources), because that is where re-checkability pays off immediately. The compiled =wiki/= layer and =schema.org= stay vNext — most agent memories have no external source, so a blanket raw/wiki split would be overhead.
+- *Review 2 #2 (full ingest/query/lint operations) → MODIFIED.* Query = index + grep; semantic lint folds into the curation pass; =org-lint= syntactic validation is now an explicit write-time guard (see Node validity); the heavy ingest pipeline (source registration/compilation) → vNext.
+- *Review 2 #3 (full provenance: SOURCES + hashes + confidence) → MODIFIED to provenance-lite.* Adopted =:CREATED:/:UPDATED:/:SOURCE:/:STATUS:=; dropped source hashes + confidence (they serve raw-source grounding, deferred).
+- *Review 2 #8 (exclude =raw/= from org-roam's scan) → ADOPTED.* Now that v1 has a =raw/=, =org-roam-file-exclude-regexp= keeps raw captures out of the graph so they don't become noisy nodes.
+- *Review 2 #10 (full =:VISIBILITY:= taxonomy + credential lint) → MODIFIED to a v1 no-secrets rule + lint scan.* Private-repo location handles the main concern; the four-level taxonomy → vNext when publishing/sharing is real.
+- *Review 1 #5 (curation workflow) → ACCEPTED, partially deferred.* v1 ships the convention + =:LAST_CURATED:= stamp; the full human-gated workflow is a Step-1.5 follow-up.
+- *Storage location → Option 1 (emacs home) REJECTED* (public GitHub mirror would leak personal/work knowledge); *Option 3-XDG ACCEPTED* (dedicated private repo at =~/.local/share/ai-kb=); Syncthing dropped per Craig.
+
+* Agreed decisions
+
+- Building from the rulesets session is sanctioned cross-project work (Craig, 2026-05-24).
+- ai-kb is intentionally global and the one sanctioned exception to =cross-project.md=.
+- Scope: memory store v1; LLM Wiki deferred.
+- Storage: dedicated private git repo, XDG path, no Syncthing, auto-commit-on-write.
+
+* Open decisions
+
+- [ ] Store path: =~/.local/share/ai-kb= (XDG, recommended) vs =~/.ai-kb= (dotdir). Taste call; everything else is identical.
+- [ ] Curation cadence/trigger (calendar vs node-count) and where the Step-1.5 workflow lives (rulesets =.ai/workflows/=).
+
+* vNext
+
+Each idea below is valuable but out of v1 scope. The v1 bar is *token-efficient and fully recoverable*; an idea earns v1 inclusion only if it improves recall or grounding *now*, not at hypothetical scale. The reason for deferring or declining each is stated so a future reader (or reviewer) need not re-litigate it.
+
+- *Step 3 — migrate =.ai/sessions/= and =.ai/workflows/= into ai-kb* (sessions as dated log nodes, workflows as procedure nodes, linkable); its own spec. *Why not v1:* moving existing, working systems is a migration with its own tradeoffs. Build ai-kb, live with it, then decide whether the move earns its disruption.
+- *Compiled =wiki/= layer + =schema.org=* (synthesis pages held distinct from their sources). *Why not v1:* v1 already captures external sources under =raw/= and authors compiled nodes at the root. A formal source-vs-synthesis split only pays off once external ingestion is frequent enough that re-compiling synthesis across many sources is routine — until then it is structure without a workload.
+- *Source hashes + =:CONFIDENCE:= scoring.* *Why not v1:* hash-based drift detection only has value against a substantial =raw/= corpus to check against. With occasional captures, the =:SOURCE:= path + =:STATUS:= already let a future agent re-ground by hand. It adds bookkeeping with no current payoff.
+- *Formal ingest / query / lint operations.* *Why not v1:* "query" is already index-first + =rg=; "lint" already folds into the curation pass (broken links, orphans, duplicates, credential scan). Only the heavy "ingest pipeline" — register a source, compile across many pages, update index and log atomically — is genuinely new, and that is the external-corpus workflow that triggers the =wiki/= layer above. Premature without that workload.
+- *Semantic / embedding retrieval and =qmd=-style local search.* *Why not v1:* find-by-meaning is a real recall gain, but only above roughly hundreds of nodes. Below that, =rg= + the generated index builds faster, has no index-staleness, and adds no dependency. See [[*Scaling path (planned, not built)][Scaling path]] — adopt when the index stops fitting comfortably, not before. No embeddings in v1.
+- *Append-only =log.org= (chronological operation log).* *Why not v1:* a navigation/debugging aid, not a capability gain; git history already records every write via auto-commit. Cheap to add later if the git log proves too coarse.
+- *Source-classification taxonomy* (=:VISIBILITY: public|personal|work-private|secret=) and a public/private split. *Why not v1:* the dedicated *private* repo already removes the main leak surface, and the v1 no-secrets rule + credential lint cover the floor. The four-level taxonomy earns its place only when sharing or publishing a subset is actually on the table.
+- *Full agentic-knowledgebase vision* — project-hub nodes; person/decision/thread/meeting/problem/runbook node types; the =cj/agent-*= command set. *Why not v1:* a much larger product (see [[file:agentic-knowledgebase.org][agentic-knowledgebase.org]]); ai-kb is its first concrete slice and proves the substrate first.
+- *Live dual-roam browsing* — personal roam + ai-kb visible at once, no switch. *Why not v1:* org-roam supports one active database per session, so the switch is the only option today. Revisit if org-roam gains multi-db support, or via a second Emacs instance.
+
+* Relationship to existing mechanisms
+
+- *Per-project claude memory* — stays the session-recall layer; shrinks to an index pointing into ai-kb for significant items.
+- *.ai/notes.org and .ai/sessions/* — unchanged in v1 (migration is the deferred Step 3).
+- *Personal org-roam (recipes, etc.)* — never touched; reached by switching.
+- *agentic-knowledgebase.org* — the broader vision; ai-kb is its first concrete slice.
