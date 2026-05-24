@@ -137,6 +137,17 @@ interactive selection to jump to any changed line in the buffer."
 ;; Quick git clone from clipboard URL
 ;; Based on: https://xenodium.com/bending-emacs-episode-3-git-clone-the-lazy-way
 
+(defun cj/--git-clone-dir-name (url)
+  "Return the repository directory name implied by git clone URL.
+Handles HTTPS, scp-style SSH (git@host:user/repo.git or host:repo.git),
+ssh:// URLs, and local paths by taking the last path component — splitting
+on both `/' and `:' so scp-style URLs without a `/' work — and stripping a
+trailing .git.  `file-name-nondirectory' alone mishandles the colon-only
+scp form."
+  (let* ((trimmed (string-trim url))
+         (last (car (last (split-string trimmed "[/:]" t)))))
+    (and last (file-name-sans-extension last))))
+
 (defun cj/git-clone-clipboard-url (url target-dir)
   "Clone git repository from clipboard URL to TARGET-DIR.
 
@@ -144,7 +155,11 @@ With no prefix argument: uses first directory in `cj/git-clone-dirs'.
 With \\[universal-argument]: choose from `cj/git-clone-dirs'.
 With \\[universal-argument] \\[universal-argument]: choose any directory.
 
-After cloning, opens the repository's README file if found."
+Clones with a direct `git' process (no shell), into a path derived
+robustly from URL.  Aborts with a clear message when the clipboard is
+empty, the target is not a writable directory, the destination already
+exists, or `git' exits non-zero.  After a successful clone, opens the
+repository's README if found, else `dired's the clone."
   (interactive
    (list (current-kill 0)  ;; Get URL from clipboard
          (cond
@@ -157,20 +172,26 @@ After cloning, opens the repository's README file if found."
           ;; No prefix: Use default (first in list)
           (t (car cj/git-clone-dirs)))))
 
-  (let* ((default-directory target-dir)
-         (repo-name (file-name-sans-extension
-                     (file-name-nondirectory url)))
-         (clone-dir (expand-file-name repo-name target-dir)))
-
-    ;; Clone the repository
-    (message "Cloning %s to %s..." url target-dir)
-    (shell-command (format "git clone %s" (shell-quote-argument url)))
-
-    ;; Find and open README
-    (when (file-directory-p clone-dir)
+  (let ((url (string-trim (or url ""))))
+    (when (string-empty-p url)
+      (user-error "Clipboard does not contain a URL to clone"))
+    (unless (and (file-directory-p target-dir) (file-writable-p target-dir))
+      (user-error "Clone target is not a writable directory: %s" target-dir))
+    (let ((clone-dir (expand-file-name (cj/--git-clone-dir-name url) target-dir)))
+      (when (file-exists-p clone-dir)
+        (user-error "Clone destination already exists: %s" clone-dir))
+      (message "Cloning %s into %s..." url clone-dir)
+      ;; Direct process, no shell.  `--' stops option parsing so a URL
+      ;; beginning with `-' can't be read as a git flag.
+      (let ((status (call-process "git" nil "*git-clone*" nil
+                                  "clone" "--" url clone-dir)))
+        (unless (zerop status)
+          (pop-to-buffer "*git-clone*")
+          (user-error "git clone failed (exit %d); see *git-clone*" status)))
+      ;; Find and open README
       (let ((readme (seq-find
                      (lambda (file)
-                       (string-match-p "^README" (upcase file)))
+                       (string-match-p "\\`README" (upcase file)))
                      (directory-files clone-dir))))
         (if readme
             (find-file (expand-file-name readme clone-dir))
