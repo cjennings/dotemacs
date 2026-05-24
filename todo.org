@@ -41,67 +41,6 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** DONE [#B] gptel fork not loading: gptel-make-anthropic void :bug:
-CLOSED: [2026-05-22 Fri]
-:PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
-:END:
-=cj/toggle-gptel= (and gptel chat generally) errors with:
-
-: cj/ensure-gptel-backends: Symbol's function definition is void: gptel-make-anthropic
-
-Surfaced 2026-05-21 (was hit via =M-f9=, which used to run =cj/toggle-gptel=). =gptel-make-anthropic= being void means gptel isn't loaded (or didn't load cleanly) at the point =cj/ensure-gptel-backends= runs. Lead suspect: the 2026-05-18 switch to the local fork via =:load-path "~/code/gptel"= + =:ensure nil= in =modules/ai-config.el= — if the fork doesn't load, none of the =gptel-make-*= constructors are defined. Check that =~/code/gptel= is on the load-path and loads (the prior session also trashed =elpa/gptel-0.9.9.4=, so elpa is no longer a fallback), then confirm =cj/ensure-gptel-backends= runs after gptel is available rather than before.
-
-Note: =M-f9= no longer triggers this — the F9 family was consolidated onto ai-vterm, so =M-<f9>= now runs =cj/ai-vterm-close= (permanent). =cj/toggle-gptel= lost its binding in the process; once gptel loads cleanly, decide on a new key for it (or leave it unbound).
-** DONE [#C] make test-name aborts on gptel-dependent test files :tests:quick:
-CLOSED: [2026-05-22 Fri]
-:PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
-:END:
-=make test-name TEST=<pattern>= loads *every* test file before ERT applies the name selector, so an unrelated file that fails to load takes the whole run down. Currently =tests/test-gptel-tools-*.el= (and likely the transcription tests) error at load with =Symbol's function definition is void: gptel-make-tool= because gptel isn't available in batch, aborting with Error 255 even when the selected tests have nothing to do with gptel.
-
-Surfaced 2026-05-21 while running the calendar-sync suite — had to fall back to loading the calendar-sync test files directly. Fix options: guard the gptel-dependent test files to skip cleanly when gptel is absent (e.g. =(when (require 'gptel nil t) ...)= or an ert skip), stub =gptel-make-tool= in a shared testutil, or have =test-name= load only files whose names match the pattern instead of all of them.
-
-Resolution (2026-05-22): the diagnosis above was wrong. The =test-gptel-tools-*.el= files already stub =gptel-make-tool= and =(provide 'gptel)= when gptel is absent, so they load fine in batch. The real abort was =tests/test-system-defaults-functions.el= leaking =default-directory=: it requires =system-defaults=, which runs =(setq default-directory user-home-dir)= at load, and =test-name= then resolved every following relative =-l tests/X.el= against the wrong directory. Fixed in 4fbe435f — =test-name= passes absolute paths to =-l=, and the test contains the leak with a =let=-binding around the require.
-** DONE [#C] Consolidate auth-source secret-funcall idiom :refactor:
-CLOSED: [2026-05-22 Fri]
-:PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
-:END:
-Fixed: extracted =cj/auth-source-secret-value= (host + optional user → secret or nil) into =system-lib.el= (a leaf, so calendar-sync stays off ai-config/gptel). All four callers delegate; ai-config layers its required-secret error on top. Dropped the now-dead =(require 'auth-source)= from the three delegating modules. f6e5885b.
-The auth-source lookup + funcall-the-secret block is duplicated four times: =calendar-sync--calendar-url= (calendar-sync.el), =cj/auth-source-secret= (ai-config.el), =cj/--auth-source-password= (transcription-config.el), and =cj/--slack-token= (slack-config.el). All share =(let ((secret (plist-get (car (auth-source-search ...)) :secret))) (if (functionp secret) (funcall secret) secret))=.
-
-Surfaced 2026-05-21 by the code review on the calendar auth-source work — flagged as the fourth copy. Extract one low-level helper into a leaf module both can load (=system-lib.el= or =auth-config.el=), then delegate all four to it. Note the semantics differ: =cj/auth-source-secret= forces =:user "apikey"= and =error=s on miss, while the calendar helper wants a no-user lookup that returns nil on miss — so the shared primitive needs optional user + nil-on-miss, with the erroring/required-user behavior layered on top where needed. Don't make calendar-sync depend on ai-config (it drags in the gptel stack).
-** DONE [#B] Keybinding: rewrite TODO+priority as sorted timestamp :feature:quick:
-CLOSED: [2026-05-22 Fri]
-:PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
-:END:
-#+begin_src cj: comment
-I would like a keybinding only when I'm in an org file. When I press it, it should replace the todo.org status and the priority with a "date sorted" time stamp like this: 2026-05-20 Wed @ 18:00:24 -0400.
-Write out the approach in a dated org header below, and recommend a few mnemonic keybindings that are free.
-#+end_src
-
-*** 2026-05-22 Fri @ 08:35:05 -0500 Approach (revised): finalize-task command, journal-aware + depth-aware
-Bound =C-; O d= (=cj/org-map=, d = "date"). Command =cj/org-finalize-task=:
-1. Guard: in org-mode, on a heading carrying a non-done todo keyword (else =user-error=).
-2. =completing-read= over =org-done-keywords= (dynamic — tracks =org-todo-keywords=; default DONE).
-3. =(let ((org-log-done nil)) (org-todo STATE))= — fires the journal-copy hook (=org-roam-config= copies the whole subtree to today's daily under "Completed Tasks"). =org-log-done= is bound nil so the command owns the CLOSED line; the hook keys off =org-state=, not =org-log-done=, so the copy still fires.
-4. Dispatch per todo-format (capture the keyword BEFORE the transition):
-   - level >= 3, OR keyword was VERIFY → dated rewrite: strip keyword + =[#X]= cookie, prepend =(format-time-string "%Y-%m-%d %a @ %H:%M:%S %z")=, keep tags. Done as a text edit, not via =org-todo=, so the hook doesn't double-fire.
-   - level <= 2 and not VERIFY → close in place: keep the chosen done keyword, add a date-only =CLOSED: [YYYY-MM-DD Day]= line.
-Tests: ERT in org temp-buffers with the journal hook bound to nil; the pure transform helper tested directly with an injected TIME for a deterministic stamp. Commit: =feat(org-config): ... with tests=, direct to main.
-
-** DONE [#C] Reconcile duplicate org-log-done setting :refactor:
-CLOSED: [2026-05-22 Fri]
-=modules/org-config.el= and =modules/org-roam-config.el= both set =org-log-done=, so the effective value was load-order-dependent. Set it once in =cj/org-todo-settings= to ='time= (the dated-completion workflow wants a CLOSED timestamp on every TODO->DONE) and dropped the org-roam duplicate. Fixed in 5f8e1bc7.
-Triggered by: 2026-05-22 L56 finalize-task work.
-
-** DONE [#C] Always save the daily after a journal task-copy :feature:
-CLOSED: [2026-05-22 Fri]
-=cj/org-roam-copy-todo-to-today= (=org-roam-config.el=) only saved today's daily in the refile branch. Pulled the save into =cj/--org-roam-save-daily=, which now runs on both paths and writes only when the buffer is modified, so a crash or shutdown never loses a freshly-copied task. Fixed in f07ce74d.
-Triggered by: 2026-05-22 L56 finalize-task work.
-
 ** TODO [#C] Manually verify cj/org-finalize-task journal copy :test:
 Confirm the live behavior the unit tests mock out. In a real Emacs (org-roam loaded), run =C-; O d= on a level-3 sub-task and on a level-2 task. Expect the sub-task to flip to a dated entry, the level-2 to keep its keyword and gain a date-only CLOSED line, and in both cases a copy to land in today's daily under "Completed Tasks".
 Triggered by: 2026-05-22 L56 finalize-task work.
@@ -133,43 +72,6 @@ Findings from the 2026-05-20 investigation:
   =end-of-buffer= to =recenter -1= when over-scrolled, never on
   navigation commands.
 - Live experiment scratch file: =~/dashboard-overscroll-experiment.el=.
-
-** DONE [#B] Collapse dashboard navigator + keymap duplication    :refactor:
-CLOSED: [2026-05-22 Fri]
-:PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
-:END:
-Fixed: extracted a single =cj/dashboard--launchers= table; =cj/dashboard--navigator-rows= and =cj/dashboard--bind-launchers= derive the icon rows and the keybindings from it. Behavior-preserving (verified by tests + a live dashboard check). 5 ERT tests in test-dashboard-config-launchers.el.
-Triggered by: 2026-05-18 Dashboard buffer too long refactor audit.
-
-=modules/dashboard-config.el= inlines 12 launcher commands twice — once
-as anonymous lambdas inside =dashboard-navigator-buttons= (lines
-128-189) and once as anonymous lambdas inside the
-=dashboard-mode-map= =define-key= block (lines 200-218).  Adding a
-13th launcher requires editing two places, and the icon-row order and
-keymap order drift independently.
-
-Refactor sketch: a single =defconst cj/dashboard--launchers= holding
-=(KEY ICON-FAMILY ICON-NAME LABEL TOOLTIP COMMAND)= tuples, then
-derive both =dashboard-navigator-buttons= (grouped 4-per-row) and the
-keybindings from that list with a small helper.
-
-** DONE [#C] Dashboard banner subtitle off-center :bug:quick:
-CLOSED: [2026-05-22 Fri]
-:PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
-:END:
-The banner subtitle "Emacs: The Editor That Saves Your Soul" renders off-center relative to the dashboard width.
-
-Surfaced 2026-05-21. Fixed: dashboard-banner-title-offset 5 → 3 (5 over-shifted left). Verified centered via off-screen capture.
-** DONE [#C] Dashboard navigator icons and section titles uncolored :bug:quick:
-CLOSED: [2026-05-22 Fri]
-:PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
-:END:
-The navigator icons and the "Projects", "Bookmarks", and "Recent Files" section titles render in the default face. They should pick up colors from the Dupre color theme instead.
-
-Surfaced 2026-05-21. Fixed: set dashboard-items-face to steel+2 so the navigator (icons + labels) and the list items pick up a theme color; section titles stay blue via dashboard-heading. Root cause found while debugging: the navigator is rendered with a dashboard-items-face OVERLAY (overlays beat text properties), so the per-button dashboard-navigator face is inert — the nav and the items are painted by the same face, dashboard-items-face. Separating their colors would require overriding that overlay; tracked as a follow-up.
 
 ** TODO [#C] Separate dashboard navigator color from list items :feature:
 The dashboard navigator (icons + labels) and the recentf/project/bookmark list items are both painted by =dashboard-items-face=: the navigator gets a =dashboard-items-face= overlay, and overlays beat text properties, so the per-button =dashboard-navigator= face is inert. To color the navigator independently of the items, override where that overlay is applied — advise or redefine =dashboard-insert-navigator=, or strip/replace the overlay's face.
@@ -6947,3 +6849,96 @@ globally and in =vterm-mode-map=.  Needs live verification before commit:
 
 Once verified, =/review-code= + commit
 =feat(ai-vterm): add graceful agent close on C-S-<f9>=.
+** DONE [#B] gptel fork not loading: gptel-make-anthropic void :bug:
+CLOSED: [2026-05-22 Fri]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
+=cj/toggle-gptel= (and gptel chat generally) errors with:
+
+: cj/ensure-gptel-backends: Symbol's function definition is void: gptel-make-anthropic
+
+Surfaced 2026-05-21 (was hit via =M-f9=, which used to run =cj/toggle-gptel=). =gptel-make-anthropic= being void means gptel isn't loaded (or didn't load cleanly) at the point =cj/ensure-gptel-backends= runs. Lead suspect: the 2026-05-18 switch to the local fork via =:load-path "~/code/gptel"= + =:ensure nil= in =modules/ai-config.el= — if the fork doesn't load, none of the =gptel-make-*= constructors are defined. Check that =~/code/gptel= is on the load-path and loads (the prior session also trashed =elpa/gptel-0.9.9.4=, so elpa is no longer a fallback), then confirm =cj/ensure-gptel-backends= runs after gptel is available rather than before.
+
+Note: =M-f9= no longer triggers this — the F9 family was consolidated onto ai-vterm, so =M-<f9>= now runs =cj/ai-vterm-close= (permanent). =cj/toggle-gptel= lost its binding in the process; once gptel loads cleanly, decide on a new key for it (or leave it unbound).
+** DONE [#C] make test-name aborts on gptel-dependent test files :tests:quick:
+CLOSED: [2026-05-22 Fri]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
+=make test-name TEST=<pattern>= loads *every* test file before ERT applies the name selector, so an unrelated file that fails to load takes the whole run down. Currently =tests/test-gptel-tools-*.el= (and likely the transcription tests) error at load with =Symbol's function definition is void: gptel-make-tool= because gptel isn't available in batch, aborting with Error 255 even when the selected tests have nothing to do with gptel.
+
+Surfaced 2026-05-21 while running the calendar-sync suite — had to fall back to loading the calendar-sync test files directly. Fix options: guard the gptel-dependent test files to skip cleanly when gptel is absent (e.g. =(when (require 'gptel nil t) ...)= or an ert skip), stub =gptel-make-tool= in a shared testutil, or have =test-name= load only files whose names match the pattern instead of all of them.
+
+Resolution (2026-05-22): the diagnosis above was wrong. The =test-gptel-tools-*.el= files already stub =gptel-make-tool= and =(provide 'gptel)= when gptel is absent, so they load fine in batch. The real abort was =tests/test-system-defaults-functions.el= leaking =default-directory=: it requires =system-defaults=, which runs =(setq default-directory user-home-dir)= at load, and =test-name= then resolved every following relative =-l tests/X.el= against the wrong directory. Fixed in 4fbe435f — =test-name= passes absolute paths to =-l=, and the test contains the leak with a =let=-binding around the require.
+** DONE [#C] Consolidate auth-source secret-funcall idiom :refactor:
+CLOSED: [2026-05-22 Fri]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
+Fixed: extracted =cj/auth-source-secret-value= (host + optional user → secret or nil) into =system-lib.el= (a leaf, so calendar-sync stays off ai-config/gptel). All four callers delegate; ai-config layers its required-secret error on top. Dropped the now-dead =(require 'auth-source)= from the three delegating modules. f6e5885b.
+The auth-source lookup + funcall-the-secret block is duplicated four times: =calendar-sync--calendar-url= (calendar-sync.el), =cj/auth-source-secret= (ai-config.el), =cj/--auth-source-password= (transcription-config.el), and =cj/--slack-token= (slack-config.el). All share =(let ((secret (plist-get (car (auth-source-search ...)) :secret))) (if (functionp secret) (funcall secret) secret))=.
+
+Surfaced 2026-05-21 by the code review on the calendar auth-source work — flagged as the fourth copy. Extract one low-level helper into a leaf module both can load (=system-lib.el= or =auth-config.el=), then delegate all four to it. Note the semantics differ: =cj/auth-source-secret= forces =:user "apikey"= and =error=s on miss, while the calendar helper wants a no-user lookup that returns nil on miss — so the shared primitive needs optional user + nil-on-miss, with the erroring/required-user behavior layered on top where needed. Don't make calendar-sync depend on ai-config (it drags in the gptel stack).
+** DONE [#B] Keybinding: rewrite TODO+priority as sorted timestamp :feature:quick:
+CLOSED: [2026-05-22 Fri]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
+#+begin_src cj: comment
+I would like a keybinding only when I'm in an org file. When I press it, it should replace the todo.org status and the priority with a "date sorted" time stamp like this: 2026-05-20 Wed @ 18:00:24 -0400.
+Write out the approach in a dated org header below, and recommend a few mnemonic keybindings that are free.
+#+end_src
+
+*** 2026-05-22 Fri @ 08:35:05 -0500 Approach (revised): finalize-task command, journal-aware + depth-aware
+Bound =C-; O d= (=cj/org-map=, d = "date"). Command =cj/org-finalize-task=:
+1. Guard: in org-mode, on a heading carrying a non-done todo keyword (else =user-error=).
+2. =completing-read= over =org-done-keywords= (dynamic — tracks =org-todo-keywords=; default DONE).
+3. =(let ((org-log-done nil)) (org-todo STATE))= — fires the journal-copy hook (=org-roam-config= copies the whole subtree to today's daily under "Completed Tasks"). =org-log-done= is bound nil so the command owns the CLOSED line; the hook keys off =org-state=, not =org-log-done=, so the copy still fires.
+4. Dispatch per todo-format (capture the keyword BEFORE the transition):
+   - level >= 3, OR keyword was VERIFY → dated rewrite: strip keyword + =[#X]= cookie, prepend =(format-time-string "%Y-%m-%d %a @ %H:%M:%S %z")=, keep tags. Done as a text edit, not via =org-todo=, so the hook doesn't double-fire.
+   - level <= 2 and not VERIFY → close in place: keep the chosen done keyword, add a date-only =CLOSED: [YYYY-MM-DD Day]= line.
+Tests: ERT in org temp-buffers with the journal hook bound to nil; the pure transform helper tested directly with an injected TIME for a deterministic stamp. Commit: =feat(org-config): ... with tests=, direct to main.
+** DONE [#C] Reconcile duplicate org-log-done setting :refactor:
+CLOSED: [2026-05-22 Fri]
+=modules/org-config.el= and =modules/org-roam-config.el= both set =org-log-done=, so the effective value was load-order-dependent. Set it once in =cj/org-todo-settings= to ='time= (the dated-completion workflow wants a CLOSED timestamp on every TODO->DONE) and dropped the org-roam duplicate. Fixed in 5f8e1bc7.
+Triggered by: 2026-05-22 L56 finalize-task work.
+** DONE [#C] Always save the daily after a journal task-copy :feature:
+CLOSED: [2026-05-22 Fri]
+=cj/org-roam-copy-todo-to-today= (=org-roam-config.el=) only saved today's daily in the refile branch. Pulled the save into =cj/--org-roam-save-daily=, which now runs on both paths and writes only when the buffer is modified, so a crash or shutdown never loses a freshly-copied task. Fixed in f07ce74d.
+Triggered by: 2026-05-22 L56 finalize-task work.
+** DONE [#B] Collapse dashboard navigator + keymap duplication    :refactor:
+CLOSED: [2026-05-22 Fri]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
+Fixed: extracted a single =cj/dashboard--launchers= table; =cj/dashboard--navigator-rows= and =cj/dashboard--bind-launchers= derive the icon rows and the keybindings from it. Behavior-preserving (verified by tests + a live dashboard check). 5 ERT tests in test-dashboard-config-launchers.el.
+Triggered by: 2026-05-18 Dashboard buffer too long refactor audit.
+
+=modules/dashboard-config.el= inlines 12 launcher commands twice — once
+as anonymous lambdas inside =dashboard-navigator-buttons= (lines
+128-189) and once as anonymous lambdas inside the
+=dashboard-mode-map= =define-key= block (lines 200-218).  Adding a
+13th launcher requires editing two places, and the icon-row order and
+keymap order drift independently.
+
+Refactor sketch: a single =defconst cj/dashboard--launchers= holding
+=(KEY ICON-FAMILY ICON-NAME LABEL TOOLTIP COMMAND)= tuples, then
+derive both =dashboard-navigator-buttons= (grouped 4-per-row) and the
+keybindings from that list with a small helper.
+** DONE [#C] Dashboard banner subtitle off-center :bug:quick:
+CLOSED: [2026-05-22 Fri]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
+The banner subtitle "Emacs: The Editor That Saves Your Soul" renders off-center relative to the dashboard width.
+
+Surfaced 2026-05-21. Fixed: dashboard-banner-title-offset 5 → 3 (5 over-shifted left). Verified centered via off-screen capture.
+** DONE [#C] Dashboard navigator icons and section titles uncolored :bug:quick:
+CLOSED: [2026-05-22 Fri]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
+The navigator icons and the "Projects", "Bookmarks", and "Recent Files" section titles render in the default face. They should pick up colors from the Dupre color theme instead.
+
+Surfaced 2026-05-21. Fixed: set dashboard-items-face to steel+2 so the navigator (icons + labels) and the list items pick up a theme color; section titles stay blue via dashboard-heading. Root cause found while debugging: the navigator is rendered with a dashboard-items-face OVERLAY (overlays beat text properties), so the per-button dashboard-navigator face is inert — the nav and the items are painted by the same face, dashboard-items-face. Separating their colors would require overriding that overlay; tracked as a follow-up.
