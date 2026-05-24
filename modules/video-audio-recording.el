@@ -3,6 +3,18 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 4 (Optional).
+;; Category: O/D/S.
+;; Load shape: eager.
+;; Eager reason: none; registers a recording keymap, but device probing should
+;;   run only on command (command-loaded target).
+;; Top-level side effects: defines cj/record-map and conditionally registers it
+;;   under C-; r.
+;; Runtime requires: system-lib. keybindings is needed for the C-; r binding but
+;;   only reached through a boundp guard, so the binding silently drops
+;;   standalone. Phase 2 fix.
+;; Direct test load: conditional (C-; r registration skipped without keybindings).
+;;
 ;; Desktop video and audio recording from within Emacs using ffmpeg.
 ;; Records from both microphone and system audio simultaneously, which
 ;; makes it suitable for capturing meetings, presentations, and desktop activity.

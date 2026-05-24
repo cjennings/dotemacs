@@ -7,6 +7,16 @@
 ;; URL: https://github.com/yourname/cj-lipsum
 
 ;;; Commentary:
+;;
+;; Layer: 4 (Optional).
+;; Category: O/L.
+;; Load shape: eager.
+;; Eager reason: none; placeholder-text generator, a command-loaded deferral
+;;   candidate.
+;; Top-level side effects: none.
+;; Runtime requires: cl-lib.
+;; Direct test load: yes.
+;;
 ;; Generate pseudo-Latin placeholder text using a simple order-two
 ;; Markov chain.  You can train the chain on region, buffer, or file.
 ;; By default, it learns from a bundled Latin wordlist, which you can

@@ -2,7 +2,18 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: registers terminal keymaps and the F12 toggle; a command/hook
+;;   deferral candidate.
+;; Top-level side effects: defines two keymaps (one under cj/custom-keymap), one
+;;   global key, two add-hook, package config.
+;; Runtime requires: keybindings, seq, subr-x, cj-window-geometry-lib,
+;;   cj-window-toggle-lib.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; VTERM
 ;; At the moment, vterm behaves like a real terminal. For most keys, vterm will
 ;; just send them to the process that is currently running. So, C-a may be

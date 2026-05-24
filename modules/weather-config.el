@@ -2,6 +2,15 @@
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; optional weather command, a command-loaded deferral
+;;   candidate. Degrades cleanly when wttrin is absent.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; Call M-W to open wttrin with your preferred location list immediately.
 ;; Adjust the city list by editing `wttrin-default-locations` or answering wttrin prompts when asked.
 ;; Forecasts arrive in an Emacs buffer, so you can stay keyboard-only while checking weather.

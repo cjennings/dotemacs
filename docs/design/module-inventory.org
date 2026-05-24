@@ -31,7 +31,9 @@ This inventory is independent from the helper inventory owned by
 - Batch 6 (Programming modules, Layer 2-4): classified. 10 modules.
 - Batch 7 (Org modules, Layer 3-4): classified. 13 modules.
 - Batch 8 (Domain / integration / optional modules, Layer 2-4): classified. 17 modules.
-- 82 of 102 modules classified. (elfeed-config deferred — see Pending classification.)
+- Batch 9 (Remaining domain / integration / optional modules, Layer 2-4): classified. 19 modules.
+- 101 of 102 modules classified. Only elfeed-config remains, deferred on a test
+  fix (see Deferred classification).
 - No load-order changes have been made; =init.el= keeps its current eager order.
 
 * Legend
@@ -208,6 +210,35 @@ flyspell-and-abbrev is the one Core-UX member (text-mode hooks).
 | =jumper= | 4 | O/L | eager | command | cl-lib | jumper keymap | yes |
 | =latex-config= | 3 | D/P | eager | mode | none | package config | yes |
 
+** Batch 9 — Remaining domain / integration / optional modules (Layer 2-4)
+
+The last 19 modules: mail, terminals, chat, media capture, package mirror, and
+assorted optional tools. mail-config and the daily terminals stay practically
+eager; the rest are command/mode/package-loaded deferral candidates. wrap-up
+owns the intentional end-of-startup buffer-bury timer.
+
+| Module | Layer | Cat | Current | Target | Runtime requires | Top-level side effects | Direct load |
+|--------+-------+-----+---------+--------+------------------+------------------------+-------------|
+| =linear-config= | 3 | D/P | eager | command | system-lib | package config | yes |
+| =local-repository= | 4 | O/D/P | eager | command | elpa-mirror | none | yes |
+| =lorem-optimum= | 4 | O/L | eager | command | cl-lib | none | yes |
+| =mail-config= | 3 | D/P | eager | command | user-constants, system-lib, mu4e-attachments | cj/email-map under cj/custom-keymap, add-hook, 2 advice, 1 global key | conditional |
+| =markdown-config= | 3 | D/P | eager | mode | none | package config, org-src lang map | yes |
+| =music-config= | 4 | O/D/P/S | eager | command | subr-x, user-constants, keybindings | music keymap under cj/custom-keymap, 1 global key | yes |
+| =pdf-config= | 3 | D/P | eager | mode | none | package config | yes |
+| =quick-video-capture= | 4 | O/D/S | eager | command | system-lib | org-protocol handler | yes |
+| =reconcile-open-repos= | 3 | D/S | eager | command | cl-lib, subr-x | 1 global key | yes |
+| =restclient-config= | 3 | D/P | eager | command | none | package config | yes |
+| =slack-config= | 4 | O/D/P | eager | command | system-lib, cl-lib | package config | yes |
+| =system-commands= | 3 | D/S | eager | command | keybindings, rx | system-command keymap under cj/custom-keymap | yes |
+| =telega-config= | 4 | O/D/P | eager | command | keybindings | telega keymap under cj/custom-keymap | yes |
+| =tramp-config= | 3 | D/P | eager | package | none | package config | yes |
+| =transcription-config= | 4 | O/D/P | eager | command | dired, notifications, system-lib, user-constants | 1 add-to-list | yes |
+| =video-audio-recording= | 4 | O/D/S | eager | command | system-lib | cj/record-map under C-; r (boundp-guarded) | conditional |
+| =vterm-config= | 3 | D/P | eager | command | keybindings, seq, subr-x, cj-window-geometry-lib, cj-window-toggle-lib | 2 keymaps, 1 global key, 2 add-hook | yes |
+| =weather-config= | 4 | O/D/P | eager | command | none | package config | yes |
+| =wrap-up= | 2 | S | eager | eager | system-lib | one-shot startup buffer-bury timer | yes |
+
 * Hidden dependencies found
 
 Discoveries that belong to Phase 2 (make dependencies explicit). Recorded here,
@@ -236,6 +267,11 @@ not fixed here.
 - =calendar-sync= guards its =C-; g= registration with =(when (boundp
   'cj/custom-keymap) ...)= and does not require keybindings, so the binding
   silently drops standalone. Same boundp-shim pattern. Phase 2/3 fix.
+- =video-audio-recording= uses the same =(when (boundp 'cj/custom-keymap) ...)=
+  shim for its =C-; r= binding without requiring keybindings. Same Phase 2/3 fix.
+- =mail-config= registers =cj/custom-keymap "e"= directly (no boundp guard) and
+  does not require keybindings, so it errors standalone rather than degrading.
+  Phase 2 fix: require keybindings (or use the registration API).
 
 * Deferred classification
 
@@ -253,29 +289,10 @@ not fixed here.
 
 * Pending classification
 
-The remaining 20 modules required by =init.el=, awaiting per-module inspection.
+The remaining module (elfeed-config) is deferred on the test fix described above; everything else required by =init.el= is classified.
 Each batch reads these against their source and moves them into [[*Classified
 modules][Classified modules]] with a load-graph header. Suggested batch order
 follows the spec: text/editing command modules, then UI, then programming, then
 Org, then optional integrations.
 
 - [ ] elfeed-config
-- [ ] linear-config
-- [ ] local-repository
-- [ ] lorem-optimum
-- [ ] mail-config
-- [ ] markdown-config
-- [ ] music-config
-- [ ] pdf-config
-- [ ] quick-video-capture
-- [ ] reconcile-open-repos
-- [ ] restclient-config
-- [ ] slack-config
-- [ ] system-commands
-- [ ] telega-config
-- [ ] tramp-config
-- [ ] transcription-config
-- [ ] video-audio-recording
-- [ ] vterm-config
-- [ ] weather-config
-- [ ] wrap-up

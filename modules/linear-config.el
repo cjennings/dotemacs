@@ -2,7 +2,16 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none; Linear integration commands, a command-loaded deferral
+;;   candidate.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: system-lib.
+;; Direct test load: yes.
+;;
 ;; Wires the local pearl checkout (~/code/pearl) into the config,
 ;; pointed at DeepSat's Linear workspace.
 ;;

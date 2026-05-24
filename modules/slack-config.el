@@ -2,7 +2,16 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; optional Slack client, a command-loaded deferral
+;;   candidate. Auth and which-key labels should be after-load.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: system-lib, cl-lib.
+;; Direct test load: yes.
+;;
 ;; Slack client using emacs-slack (https://github.com/emacs-slack/emacs-slack).
 ;;
 ;; Authentication:

@@ -3,6 +3,15 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/S.
+;; Load shape: eager.
+;; Eager reason: none; registers one key, but repo scanning should run on command
+;;   not at startup, a command-loaded deferral candidate.
+;; Top-level side effects: one global key.
+;; Runtime requires: cl-lib, subr-x.
+;; Direct test load: yes.
+;;
 ;; Git repository reconciliation workflow for multiple projects. The workflow
 ;; iterates through all git repositories in projects-dir and code-dir, skips
 ;; local-only repos and remotes matching `cj/reconcile-skipped-remote-regexp',

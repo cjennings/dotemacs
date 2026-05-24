@@ -110,7 +110,27 @@
     "gloss-config"
     "httpd-config"
     "jumper"
-    "latex-config")
+    "latex-config"
+    ;; Batch 9 — Remaining domain / integration / optional modules (Layer 2-4)
+    "linear-config"
+    "local-repository"
+    "lorem-optimum"
+    "mail-config"
+    "markdown-config"
+    "music-config"
+    "pdf-config"
+    "quick-video-capture"
+    "reconcile-open-repos"
+    "restclient-config"
+    "slack-config"
+    "system-commands"
+    "telega-config"
+    "tramp-config"
+    "transcription-config"
+    "video-audio-recording"
+    "vterm-config"
+    "weather-config"
+    "wrap-up")
   "Modules annotated with the load-graph header contract.
 Grows one batch at a time.  Parity with the init.el require set is the
 Phase 1 exit criterion.")

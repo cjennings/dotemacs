@@ -5,6 +5,15 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; optional auth/process transcription workflow, a
+;;   command-loaded deferral candidate.
+;; Top-level side effects: one add-to-list.
+;; Runtime requires: dired, notifications, system-lib, user-constants.
+;; Direct test load: yes.
+;;
 ;; Audio transcription workflow with multiple backend options.
 ;;
 ;; USAGE:
