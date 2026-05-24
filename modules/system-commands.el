@@ -57,12 +57,20 @@ If CMD is deemed dangerous, ask for confirmation."
          (sym (nth 0 resolved))
          (cmdstr (nth 1 resolved))
          (label (nth 2 resolved)))
-    (when (and sym (get sym 'cj/system-confirm)
-               (memq (read-char-choice
-                      (format "Run %s now (%s)? (Y/n) " label cmdstr)
-                      '(?y ?Y ?n ?N ?\r ?\n ?\s))
-                     '(?n ?N)))
-      (user-error "Aborted"))
+    (let ((confirm (and sym (get sym 'cj/system-confirm))))
+      (cond
+       ;; Strong confirm for irreversible actions (shutdown, reboot):
+       ;; require an explicit "yes", so a stray RET/space can't trigger them.
+       ((eq confirm 'strong)
+        (unless (yes-or-no-p (format "Really run %s (%s)? " label cmdstr))
+          (user-error "Aborted")))
+       ;; Quick (Y/n) confirm for recoverable actions (logout, suspend).
+       (confirm
+        (when (memq (read-char-choice
+                     (format "Run %s now (%s)? (Y/n) " label cmdstr)
+                     '(?y ?Y ?n ?N ?\r ?\n ?\s))
+                    '(?n ?N))
+          (user-error "Aborted")))))
     (let ((proc (start-process-shell-command "cj/system-cmd" nil
                                              (format "nohup %s >/dev/null 2>&1 &" cmdstr))))
       (set-process-query-on-exit-flag proc nil)
@@ -71,11 +79,13 @@ If CMD is deemed dangerous, ask for confirmation."
 
 (defmacro cj/defsystem-command (name var cmdstr &optional confirm)
   "Define VAR with CMDSTR and interactive command NAME to run it.
-If CONFIRM is non-nil, mark VAR to always require confirmation."
+CONFIRM controls the confirmation prompt: t for a quick (Y/n) prompt,
+the symbol `strong' for an explicit yes-or-no-p (used for irreversible
+actions like shutdown and reboot), nil for no confirmation."
   (declare (indent defun))
   `(progn
      (defvar ,var ,cmdstr)
-     ,(when confirm `(put ',var 'cj/system-confirm t))
+     ,(when confirm `(put ',var 'cj/system-confirm ',confirm))
      (defun ,name ()
        ,(format "Run %s via `cj/system-cmd'." var)
        (interactive)
@@ -85,8 +95,8 @@ If CONFIRM is non-nil, mark VAR to always require confirmation."
 (cj/defsystem-command cj/system-cmd-logout   logout-cmd "loginctl terminate-user $(whoami)" t)
 (cj/defsystem-command cj/system-cmd-lock     lockscreen-cmd "slock")
 (cj/defsystem-command cj/system-cmd-suspend  suspend-cmd "systemctl suspend" t)
-(cj/defsystem-command cj/system-cmd-shutdown shutdown-cmd "systemctl poweroff" t)
-(cj/defsystem-command cj/system-cmd-reboot   reboot-cmd "systemctl reboot" t)
+(cj/defsystem-command cj/system-cmd-shutdown shutdown-cmd "systemctl poweroff" strong)
+(cj/defsystem-command cj/system-cmd-reboot   reboot-cmd "systemctl reboot" strong)
 
 (defun cj/system-cmd-exit-emacs ()
   "Exit Emacs server and all clients."
@@ -98,23 +108,41 @@ If CONFIRM is non-nil, mark VAR to always require confirmation."
     (user-error "Aborted"))
   (kill-emacs))
 
+(defun cj/system-cmd--emacs-service-available-p ()
+  "Return non-nil if a systemd --user emacs.service unit is present.
+Used to decide whether `cj/system-cmd-restart-emacs' can restart via the
+service before relying on it to cycle the daemon.  `systemctl --user cat'
+exits 0 when the unit exists, nonzero otherwise."
+  (and (executable-find "systemctl")
+       (eq 0 (call-process "systemctl" nil nil nil
+                           "--user" "cat" "emacs.service"))))
+
 (defun cj/system-cmd-restart-emacs ()
-  "Restart Emacs server after saving buffers."
+  "Restart the Emacs daemon via its systemd --user service, then reconnect.
+Aborts without terminating anything when not running as a daemon or when
+no emacs.service is present, so a missing or failed service can't leave
+you with no Emacs running.  The service owns the daemon lifecycle, so
+there is no separate `kill-emacs': a failed restart leaves the current
+daemon alive rather than killing the session blindly."
   (interactive)
+  (unless (daemonp)
+    (user-error "Not running as an Emacs daemon; restart Emacs manually"))
+  (unless (cj/system-cmd--emacs-service-available-p)
+    (user-error "No systemd --user emacs.service found; restart it manually"))
   (when (memq (read-char-choice
                "Restart Emacs? (Y/n) "
                '(?y ?Y ?n ?N ?\r ?\n ?\s))
               '(?n ?N))
     (user-error "Aborted"))
   (save-some-buffers)
-  ;; Start the restart process before killing Emacs
-  (run-at-time 0.5 nil
-               (lambda ()
-                 (call-process-shell-command
-                  "systemctl --user restart emacs.service && emacsclient -c"
-                  nil 0)))
-  (run-at-time 1 nil #'kill-emacs)
-  (message "Restarting Emacs..."))
+  ;; Hand the whole restart+reconnect to a detached shell.  `systemctl
+  ;; restart' tears down this daemon itself; the detached `emacsclient -c'
+  ;; reconnects to the fresh one.
+  (call-process-shell-command
+   (concat "nohup sh -c 'systemctl --user restart emacs.service "
+           "&& sleep 1 && emacsclient -c' >/dev/null 2>&1 &")
+   nil 0)
+  (message "Restarting Emacs via emacs.service..."))
 
 (defun cj/system-command-menu ()
   "Present system commands via \='completing-read\='."
