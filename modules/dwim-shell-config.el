@@ -169,6 +169,18 @@ single-quoted destination it is interpolated into."
   (and (stringp prefix)
        (string-match-p "\\`[[:alnum:] ._-]*\\'" prefix)))
 
+(defun cj/dwim-shell--build-concat-filelist (files)
+  "Return ffmpeg concat-demuxer filelist text for FILES.
+Each path becomes a single-quoted `file' line with embedded single quotes
+escaped as \\='\\\\\\='\\=', so paths with spaces, quotes, or shell
+metacharacters survive intact — unlike an echo/tr/sed pipeline over the raw
+file list."
+  (mapconcat
+   (lambda (f)
+     (format "file '%s'"
+             (replace-regexp-in-string "'" "'\\\\''" (expand-file-name f))))
+   files "\n"))
+
 ;; ----------------------------- Dwim Shell Command ----------------------------
 
 (use-package dwim-shell-command
@@ -578,12 +590,23 @@ clipboard contents cannot inject shell commands."
 	   :utils "ffmpeg")))
 
   (defun cj/dwim-shell-commands-concatenate-videos ()
-	"Concatenate multiple videos into one."
+	"Concatenate multiple videos into one.
+Builds the ffmpeg concat filelist in Elisp so paths with spaces or quotes are
+handled, instead of reconstructing it with echo/tr/sed over the raw file list.
+The temp filelist is removed after ffmpeg finishes.  The trailing =<<*>>= is an
+inert shell comment whose only job is to make dwim-shell run one command over
+all marked files rather than once per file."
 	(interactive)
-	(dwim-shell-command-on-marked-files
-	 "Concatenate videos"
-	 "echo '<<*>>' | tr ' ' '\n' | sed 's/^/file /' > '<<td>>/filelist.txt' && ffmpeg -f concat -safe 0 -i '<<td>>/filelist.txt' -c copy '<<concatenated.mp4(u)>>'"
-	 :utils "ffmpeg"))
+	(let ((listfile (make-temp-file "dwim-concat-" nil ".txt")))
+	  (with-temp-file listfile
+		(insert (cj/dwim-shell--build-concat-filelist (dwim-shell-command--files))
+				"\n"))
+	  (dwim-shell-command-on-marked-files
+	   "Concatenate videos"
+	   (format "ffmpeg -f concat -safe 0 -i %s -c copy '<<concatenated.mp4(u)>>'; rm -f %s  # <<*>>"
+			   (shell-quote-argument listfile)
+			   (shell-quote-argument listfile))
+	   :utils "ffmpeg")))
 
   (defun cj/dwim-shell-commands-create-video-thumbnail ()
 	"Extract thumbnail from video at specific time."
