@@ -27,7 +27,8 @@ This inventory is independent from the helper inventory owned by
 - Batch 2 (Text/editing command modules, Layer 2): classified. 9 modules.
 - Batch 3 (Core libraries and command modules): classified. 7 modules.
 - Batch 4 (UI / core-UX modules, Layer 2): classified. 10 modules.
-- 33 of 102 modules classified.
+- Batch 5 (Dev entry-points, diff, help, lint, VC, Layer 2): classified. 9 modules.
+- 42 of 102 modules classified.
 - No load-order changes have been made; =init.el= keeps its current eager order.
 
 * Legend
@@ -118,6 +119,23 @@ eager reason and stay eager.
 | =dashboard-config= | 2 | C/S | eager | eager | none | builds/opens dashboard buffer at startup | conditional |
 | =nerd-icons-config= | 2 | C/P | eager | eager | none | package config | yes |
 
+** Batch 5 — Dev entry-points, diff, help, lint, VC (Layer 2)
+
+Command entry points and package config for the development workflow: coverage
+(F7), F-keys (F4/F6), diff, help, lint, the ERT runner, and Magit.
+
+| Module | Layer | Cat | Current | Target | Runtime requires | Top-level side effects | Direct load |
+|--------+-------+-----+---------+--------+------------------+------------------------+-------------|
+| =coverage-core= | 2 | C/L | eager | eager | seq, subr-x, system-lib | 1 global key (F7) | yes |
+| =coverage-elisp= | 2 | C/P | eager | eager | coverage-core | backend registration | yes |
+| =dev-fkeys= | 2 | C | eager | eager | cl-lib, system-lib | 6 F-key bindings; C-; P boundp-guarded | conditional |
+| =diff-config= | 2 | C/P | eager | eager | none | package config | yes |
+| =help-config= | 2 | C/P | eager | eager | none | 2 global keys, package config | yes |
+| =help-utils= | 2 | L/D | eager | command | none | 1 global key, package config | yes |
+| =flycheck-config= | 2 | C/P | eager | hook | none (needs keybindings for :map) | package config; cj/custom-keymap :map binding | conditional |
+| =test-runner= | 2 | C/L | eager | eager | ert, cl-lib, keybindings | test keymap under cj/custom-keymap | yes |
+| =vc-config= | 2 | C/P | eager | eager | user-constants, keybindings | 2 keymaps under cj/custom-keymap, package config | yes |
+
 * Hidden dependencies found
 
 Discoveries that belong to Phase 2 (make dependencies explicit). Recorded here,
@@ -137,10 +155,16 @@ not fixed here.
   is nil and the binding silently drops. That guard is the
   "define-if-not-present" shim the spec warns against. Phase 2/3 fix: require
   keybindings (or use the registration API once it exists) and drop the guard.
+- =dev-fkeys= uses the same =(when (boundp 'cj/custom-keymap) ...)= shim plus an
+  =eval-when-compile= declaration for its =C-; P= binding, so the binding
+  silently drops when loaded without keybindings. Same Phase 2/3 fix.
+- =flycheck-config= binds =(:map cj/custom-keymap ...)= through use-package but
+  does not require keybindings, so the binding fails when the module loads
+  standalone. Phase 2 fix: require keybindings (or move to the registration API).
 
 * Pending classification
 
-The remaining 69 modules required by =init.el=, awaiting per-module inspection.
+The remaining 60 modules required by =init.el=, awaiting per-module inspection.
 Each batch reads these against their source and moves them into [[*Classified
 modules][Classified modules]] with a load-graph header. Suggested batch order
 follows the spec: text/editing command modules, then UI, then programming, then
@@ -152,22 +176,15 @@ Org, then optional integrations.
 - [ ] calendar-sync
 - [ ] calibredb-epub-config
 - [ ] chrono-tools
-- [ ] coverage-core
-- [ ] coverage-elisp
-- [ ] dev-fkeys
-- [ ] diff-config
 - [ ] dirvish-config
 - [ ] dwim-shell-config
 - [ ] elfeed-config
 - [ ] erc-config
 - [ ] eshell-config
 - [ ] eww-config
-- [ ] flycheck-config
 - [ ] flyspell-and-abbrev
 - [ ] games-config
 - [ ] gloss-config
-- [ ] help-config
-- [ ] help-utils
 - [ ] httpd-config
 - [ ] hugo-config
 - [ ] jumper
@@ -207,10 +224,8 @@ Org, then optional integrations.
 - [ ] slack-config
 - [ ] system-commands
 - [ ] telega-config
-- [ ] test-runner
 - [ ] tramp-config
 - [ ] transcription-config
-- [ ] vc-config
 - [ ] video-audio-recording
 - [ ] vterm-config
 - [ ] weather-config

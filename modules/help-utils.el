@@ -3,6 +3,15 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: L/D.
+;; Load shape: eager.
+;; Eager reason: documentation-search commands; eager only by init order, a
+;;   deferral candidate (autoload commands) for Phase 4.
+;; Top-level side effects: one global key, package configuration via use-package.
+;; Runtime requires: none.
+;; Direct test load: yes.
+;;
 ;; This module provides various utilities for accessing documentation and help resources
 ;; directly within Emacs.
 ;; DevDocs for programming documentation

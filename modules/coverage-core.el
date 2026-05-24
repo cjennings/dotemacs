@@ -2,6 +2,15 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/L.
+;; Load shape: eager.
+;; Eager reason: the F7 coverage entry point and the backend registry.
+;; Top-level side effects: one global key (F7).
+;; Runtime requires: seq, subr-x, system-lib.
+;; Direct test load: yes.
+;;
 ;; Language-agnostic core for diff-aware coverage reporting.
 ;;
 ;; Reads an LCOV file, invokes git diff at a selectable scope,
