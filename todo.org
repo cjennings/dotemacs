@@ -2416,21 +2416,9 @@ Closed the four injection-quoting cases. git-clone-clipboard-url now validates t
 
 =cj/dwim-shell-commands-concatenate-videos= built the ffmpeg concat list with =echo '<<*>>' | tr ' ' '\n' | sed 's/^/file /'=, which split on spaces and broke on quotes. Extracted =cj/dwim-shell--build-concat-filelist=, which renders each path as an escaped =file '...'= line (single quotes escaped as ='\''=), writes it to a temp file in Elisp, and runs =ffmpeg -f concat -i <quoted-listfile>= with a trailing =; rm -f= to clean up after the process exits. =<<*>>= stays only as an inert trailing shell comment so dwim-shell still runs one command over all marked files. 3 ERT tests cover plain paths, spaces, and an embedded quote.
 
-***** TODO [#B] Clarify broad or misleading file-operation commands :safety:bug:
+***** 2026-05-23 Sat @ 20:17:00 -0500 Clarified broad/misleading file-operation commands
 
-Two dwim-shell commands look broader or weaker than their names suggest:
-- =cj/dwim-shell-commands-remove-empty-directories= runs
-  =find . -type d -empty -delete= from the current directory, not from the marked
-  files.
-- =cj/dwim-shell-commands-secure-delete= calls =shred= without =-u=, so it may
-  overwrite file contents but leave the directory entry in place.
-
-Expected outcome:
-- Scope empty-directory cleanup to an explicit selected root and show that root
-  in the confirmation prompt.
-- Decide whether secure delete should actually remove files with =shred -u= or
-  be renamed to describe overwrite-only behavior.
-- Add tests around command strings or extract small pure builders.
+=remove-empty-directories= ran =find . -type d -empty -delete= from the ambient current directory. Now it prompts for an explicit root (via =read-directory-name=), names that root in the confirmation, and runs =find <quoted-root> ...= built by =cj/dwim-shell--empty-dirs-command= (2 ERT tests cover the command shape + space quoting). =secure-delete= called =shred= without =-u=, overwriting file contents but leaving the file in place despite the name and the "permanently destroy" prompt; added =-u= (=shred -vfzu=) so it actually unlinks. Both use the inert =<<*>>= comment trick for single-execution.
 
 ***** TODO [#B] Quote X11 and audio recording command paths :bug:solo:
 
