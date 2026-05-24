@@ -455,9 +455,9 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   ;; Modeline display: show upcoming events within 6 hours
   (setq chime-modeline-lookahead-minutes (* 6 60))
 
-  ;; Tooltip settings: show up to 10 upcoming events within 6 days
+  ;; Tooltip settings: show up to 20 upcoming events within the next 3 days
   (setq chime-modeline-tooltip-max-events 20)
-  (setq chime-tooltip-lookahead-hours (* 7 24))
+  (setq chime-tooltip-lookahead-hours (* 3 24))  ;; today, tomorrow, and the next
 
   ;; Modeline content: show title and countdown only (omit event time)
   (setq chime-notification-text-format "%t %u")
