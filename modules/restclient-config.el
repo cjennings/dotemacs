@@ -2,6 +2,15 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none; API exploration, a command-loaded deferral candidate.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; Integrates restclient.el for interactive API exploration from within Emacs.
 ;;
 ;; Write HTTP requests in plain text buffers, execute with C-c C-c, see

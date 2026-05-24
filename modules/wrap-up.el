@@ -2,7 +2,16 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: S.
+;; Load shape: eager.
+;; Eager reason: runs end-of-startup cleanup, burying the scratch/dashboard
+;;   buffers via a short startup timer.
+;; Top-level side effects: a one-shot startup timer that buries buffers.
+;; Runtime requires: system-lib.
+;; Direct test load: yes.
+;;
 ;;; Code:
 
 (require 'system-lib)
