@@ -46,7 +46,6 @@
   (setq org-export-headline-levels 6)        ;; export headlines 6 levels deep
   (setq org-export-with-section-numbers nil) ;; export without section numbers by default
   (setq org-export-with-tags nil)            ;; export without tags by default
-  (setq org-export-with-tasks '("TODO"))     ;; export with tasks by default
   (setq org-export-with-tasks nil)           ;; export WITHOUT tasks by default
   (setq org-export-with-toc t)               ;; export WITH table of contents by default
   (setq org-export-initial-scope 'buffer)   ;; 'subtree is your other choice
