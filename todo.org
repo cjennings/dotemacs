@@ -384,23 +384,11 @@ Verify 2026-05-04:
 - Parsed the spec and =todo.org= with =org-element=.
 - Committed the tracked spec as =0528475=.
 
-**** DOING [#B] Classify modules by role and startup requirement :refactor:
+**** 2026-05-24 Sun @ 17:07:03 -0500 Classified modules by role and startup requirement
+Built [[file:docs/design/module-inventory.org][docs/design/module-inventory.org]] across 9 batches: 101 of 102 init.el-required modules annotated with the load-graph header contract (Layer, Category, Load shape, Eager reason, Top-level side effects, Runtime requires, Direct test load) and tabulated in the inventory. Added =tests/test-init-module-headers.el= to enforce the contract on each classified module. Retired the three vague =init.el= comments (latex-config WIP, prog-shell "combine elsewhere", "Modules In Test" banner) into real tasks. Recorded seven hidden =cj/custom-keymap= / cross-module dependencies for the Phase 2 dependency pass. Tagged the span =load-graph-classify-start..load-graph-classify-end=. elfeed-config is the one module left, pulled to its own task below.
 
-Create a simple inventory, probably in =docs/design/= or an org note linked
-from this task:
-- Pure library modules: should have explicit =require=s, no top-level keybinds,
-  no timers, no package install/load side effects.
-- Package configuration modules: mostly =use-package=, hooks, mode bindings.
-- Startup side-effect modules: server startup, timers, dashboard, weather,
-  calendar auto-sync, quick-video setup, etc.
-- User command modules: expose interactive commands but defer heavy package
-  loading until the command runs.
-
-Acceptance criteria:
-- Every module has an assigned category.
-- Any module that must be eager has a documented reason.
-- Obvious "modules in test" or "WIP need to fix" comments in =init.el= are
-  either retired or turned into actual tasks.
+**** TODO [#B] Annotate elfeed-config load-graph header :refactor:
+The single init.el module left unclassified. Its source is read and understood (Layer 4, O/D/P, command-loaded; runtime requires user-constants, system-lib, media-utils) and documented under "Deferred classification" in the inventory, but annotating its header triggers the PostToolUse byte-compile, which breaks =tests/test-elfeed-config-helpers.el=. Blocked on the "Make elfeed-config tests byte-compile-safe" task. Once that lands: add the 7-line header, move the module from "Deferred classification" into a Batch table in the inventory, and add it to the validation allowlist.
 
 **** TODO [#B] Add explicit module dependencies before changing load order :refactor:
 
