@@ -137,6 +137,38 @@ starts, the temp file is cleaned up synchronously instead."
         (when (file-exists-p temp-file)
           (delete-file temp-file))))))
 
+;; ---------------------------- Input safety helpers ---------------------------
+
+(defun cj/dwim-shell--valid-git-url-p (url)
+  "Return non-nil when URL looks like a safe git clone URL.
+Accepts http(s)://, git://, ssh://, and scp-style host:path forms, and rejects
+empty strings, whitespace, and shell metacharacters.  The clone site also
+quotes the URL with `shell-quote-argument'; this check is the first line of
+defense and keeps junk clipboard text from being cloned."
+  (and (stringp url)
+       (not (string-empty-p url))
+       (string-match-p
+        (concat "\\`\\(?:https?://\\|git://\\|ssh://\\|"
+                "[A-Za-z0-9._-]+@[A-Za-z0-9._-]+:\\)"
+                "[A-Za-z0-9._:/~@-]+\\'")
+        url)))
+
+(defun cj/dwim-shell--valid-ffmpeg-timestamp-p (timestamp)
+  "Return non-nil when TIMESTAMP is a plain-seconds or HH:MM:SS ffmpeg time.
+Accepts forms like \"5\", \"90.5\", \"00:05\", and \"1:02:03.5\"; rejects
+negatives, non-numeric text, and anything carrying shell metacharacters."
+  (and (stringp timestamp)
+       (string-match-p "\\`\\(?:[0-9]+:\\)\\{0,2\\}[0-9]+\\(?:\\.[0-9]+\\)?\\'"
+                       timestamp)))
+
+(defun cj/dwim-shell--safe-rename-prefix-p (prefix)
+  "Return non-nil when PREFIX is a filename-safe rename prefix.
+Allows alphanumerics, spaces, dot, dash, and underscore (empty is fine), and
+rejects quotes, slashes, and shell metacharacters that would break out of the
+single-quoted destination it is interpolated into."
+  (and (stringp prefix)
+       (string-match-p "\\`[[:alnum:] ._-]*\\'" prefix)))
+
 ;; ----------------------------- Dwim Shell Command ----------------------------
 
 (use-package dwim-shell-command
@@ -432,12 +464,17 @@ process list, and the file is removed only after the spawned process exits."
 
 
   (defun cj/dwim-shell-commands-git-clone-clipboard-url ()
-	"Clone git URL in clipboard to `default-directory'."
+	"Clone the git URL in the clipboard to `default-directory'.
+Validates the clipboard as a git URL and passes it as a quoted argument, so
+clipboard contents cannot inject shell commands."
 	(interactive)
-	(dwim-shell-command-on-marked-files
-	 (format "Clone %s" (file-name-base (current-kill 0)))
-	 "git clone <<cb>>"
-	 :utils "git"))
+	(let ((url (string-trim (current-kill 0))))
+	  (unless (cj/dwim-shell--valid-git-url-p url)
+		(user-error "Clipboard does not contain a valid git URL: %s" url))
+	  (dwim-shell-command-on-marked-files
+	   (format "Clone %s" (file-name-base url))
+	   (format "git clone %s" (shell-quote-argument url))
+	   :utils "git")))
 
   (defun cj/dwim-shell-commands-open-file-manager ()
 	"Open the default file manager in the current directory."
@@ -552,6 +589,8 @@ process list, and the file is removed only after the spawned process exits."
 	"Extract thumbnail from video at specific time."
 	(interactive)
 	(let ((time (read-string "Time (HH:MM:SS or seconds): " "00:00:05")))
+	  (unless (cj/dwim-shell--valid-ffmpeg-timestamp-p time)
+		(user-error "Not a valid timestamp (use seconds or HH:MM:SS): %s" time))
 	  (dwim-shell-command-on-marked-files
 	   "Extract video thumbnail"
 	   (format "ffmpeg -i '<<f>>' -ss %s -vframes 1 '<<fne>>_thumb.jpg'" time)
@@ -678,9 +717,9 @@ in the process list."
 	   password
 	   "Create encrypted archive"
 	   (lambda (temp-file)
-		 (format "7z a -t7z -mhe=on -p\"$(cat '%s')\" '%s.7z' '<<*>>'"
+		 (format "7z a -t7z -mhe=on -p\"$(cat '%s')\" %s '<<*>>'"
 				 temp-file
-				 archive-name))
+				 (shell-quote-argument (concat archive-name ".7z"))))
 	   :utils "7z")))
 
 
@@ -722,6 +761,8 @@ in the process list."
 	"Rename files with sequential numbers."
 	(interactive)
 	(let ((prefix (read-string "Prefix (optional): ")))
+	  (unless (cj/dwim-shell--safe-rename-prefix-p prefix)
+		(user-error "Prefix may only contain letters, numbers, space, . _ -: %s" prefix))
 	  (dwim-shell-command-on-marked-files
 	   "Number files"
 	   (format "mv '<<f>>' '<<d>>/%s<<n>>.<<e>>'" prefix)
@@ -743,7 +784,7 @@ in the process list."
 	   "GPG encrypt"
 	   (if (string-empty-p recipient)
 		   "gpg --symmetric --cipher-algo AES256 '<<f>>'"
-		 (format "gpg --encrypt --recipient '%s' '<<f>>'" recipient))
+		 (format "gpg --encrypt --recipient %s '<<f>>'" (shell-quote-argument recipient)))
 	   :utils "gpg")))
 
   (defun cj/dwim-shell-commands-decrypt-with-gpg ()
