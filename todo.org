@@ -5026,29 +5026,23 @@ as intentionally low-value instead of forcing brittle tests.
 
 The per-module percentages previously listed here were stale.  This session's test-writing covered most of the originally-listed modules: =prog-python= 0%→100%, =hugo-config= 17.7%→91.7%, =undead-buffers= 5.7%→85.7%, and =selection-framework=, =keyboard-compat=, =system-utils=, =system-defaults=, =ui-navigation=, =prog-go= now sit at ~100%.  Re-measured against a clean =make coverage=; only modules genuinely below ~60% remain below as gaps, with current numbers.  Modules in the 60-80% band (e.g. =calendar-sync= 76%, =music-config= 77%, =ai-conversations= 74%, =calibredb-epub-config= 73%, =org-noter-config= 73%, =custom-misc= 72%, =test-runner= 72%) are adequately covered and dropped from the backlog.  Several remaining low entries are low only because the uncovered lines are use-package / interactive / process glue, not untested logic — flagged inline.
 
-*** TODO [#B] Add coverage for =markdown-config.el= (0.0%, 0/14) :tests:
-Pure seam: =cj/markdown-html= (buffer → HTML for impatient-mode).  The preview/server commands are interactive httpd glue — test the HTML builder, leave the rest as interactive-only.
+*** 2026-05-24 Sun @ 15:45 Assessed the sub-60% cluster; filled the real gaps, closed the rest
 
-*** TODO [#B] Add coverage for =prog-general.el= (10.0%, 1/10) :tests:
-Mostly LSP/use-package config.  Check for a pure helper; otherwise close as config-only.
+Read each sub-60% module to separate genuine untested logic from interactive/config glue.
 
-*** TODO [#B] Add coverage for =flyspell-and-abbrev.el= (40.7%, 22/54) :tests:
-Look for abbrev-table / spell-helper logic worth covering.
+Filled (new tests):
+- =markdown-config.el= — =cj/markdown-html= (buffer → strapdown HTML) now tested (normal + empty buffer).  Preview/server commands stay interactive-only.  Commit =c6a81743=.
+- =media-utils.el= — =cj/select-media-player= now tested (choice sets default; non-match leaves it).  Commit =c6a81743=.
+- =elfeed-config.el= — =cj/extract-stream-url= + =cj/elfeed-process-entries= covered earlier this session (32%→66%).  Commit =35fa6297=.
 
-*** TODO [#B] Add coverage for =dashboard-config.el= (47.7%, 21/44) :tests:
-Launcher dispatch is partly tested; check the remaining banner/section builders.
+Assessed already-covered (pure logic tested; remaining % is interactive only — no action):
+- =flyspell-and-abbrev.el= — =cj/find-previous-flyspell-overlay= and =cj/--require-spell-checker= already have Normal/Boundary/Error tests; the rest is interactive (toggle, goto-previous, then-abbrev).
+- =dashboard-config.el= — navigator builders + launcher binding already tested; the rest is =cj/dashboard-only= (interactive redisplay).
+- =ai-quick-ask.el= — =--initial-text=, =--extract-response=, =--seed-text= already tested; the rest is the interactive ask/dismiss/continue flow.
+- =prog-general.el= (10%) and =restclient-config.el= (50%) — LSP/use-package config and interactive new-buffer/open-file; no pure logic to cover.
+- =vc-config.el= (7.9%) and =quick-video-capture.el= (50%) — pure logic already tested (git-clone path derivation; video URL dynamic-binding + capture-template registration); uncovered lines are magit/difftastic/git-timemachine config and interactive toggles.
 
-*** TODO [#B] Add coverage for =restclient-config.el= (50.0%, 4/8) :tests:
-Small; check the non-interactive helpers.
-
-*** TODO [#B] Add coverage for =ai-quick-ask.el= (50.0%, 28/56) :tests:
-Check prompt-assembly / response-handling helpers.
-
-*** TODO [#B] Add coverage for =media-utils.el= (59.0%, 49/83) :tests:
-Remaining gap is =cj/select-media-player= (interactive) and =cj/media-play-it= process-sentinel branches.  Add a select-media-player smoke test and sentinel-branch coverage if feasible.
-
-*** =vc-config.el= (7.9%) and =quick-video-capture.el= (50%) — config/interactive-only, no action
-Their pure logic is already tested (git-clone path derivation; the video URL dynamic-binding + capture-template registration).  The uncovered lines are magit/difftastic/git-timemachine config and interactive toggles, not testable logic.
+Net: the coverage backlog is cleared — every module's testable logic is covered; the residual low percentages are interactive/config/process code that the testing rules say not to chase.
 
 ** DONE [#B] Review all config and pull library functions into system-lib file :refactor:
 Superseded by =PROJECT [#B] Consolidate shared utility helpers= (the structured version of this, with =docs/design/utility-consolidation.org= as the spec and =docs/design/utility-inventory.org= as the config-wide audit -- 30 candidate helpers across all modules, decided 11 Migrate / 3 Leave / 13 Defer). The system-lib extractions shipped 2026-05-10: =c75e36f= (=cj/executable-find-or-warn= from mail-config), =f1e8f08= (=cj/shell-quote-argument-readable= from dev-fkeys), =57e558c= (=cj/process-output-or-error= + =cj/git-output-or-error= from coverage-core), =aa72245= (=cj/file-from-context= from system-utils), plus the earlier =8e8152e= (=cj/log-silently=) -- each with its own test file. The rest of the 11 Migrate items landed as new =-lib.el= modules in the same marathon (=cj-cache-lib.el=, =cj-org-text-lib.el=, =external-open-lib.el=, =cj-window-geometry-lib.el=, =cj-window-toggle-lib.el=). The 13 deferred candidates remain tracked under the Consolidate-shared-utility-helpers PROJECT, not here.
