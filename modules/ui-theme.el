@@ -2,7 +2,16 @@
 ;; author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: C.
+;; Load shape: eager.
+;; Eager reason: theme persistence and the theme keybinding; the theme itself is
+;;   loaded by an explicit call in init.el.
+;; Top-level side effects: registers the custom theme load path, binds a theme key.
+;; Runtime requires: none.
+;; Direct test load: yes.
+;;
 ;; This module provides a theme management system with persistence across
 ;; Emacs sessions.
 ;;

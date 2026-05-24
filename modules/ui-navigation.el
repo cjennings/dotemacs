@@ -2,7 +2,17 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/P.
+;; Load shape: eager.
+;; Eager reason: window-navigation keybindings and winner/buffer-move setup for
+;;   the first session.
+;; Top-level side effects: defines a navigation keymap, binds five global keys,
+;;   configures packages via use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; Window Navigation
 
 ;; This section handles situations where we're navigating or arranging windows

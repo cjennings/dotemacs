@@ -26,7 +26,8 @@ This inventory is independent from the helper inventory owned by
 - Batch 1 (Foundation, Layer 1): classified. 7 modules.
 - Batch 2 (Text/editing command modules, Layer 2): classified. 9 modules.
 - Batch 3 (Core libraries and command modules): classified. 7 modules.
-- 23 of 102 modules classified.
+- Batch 4 (UI / core-UX modules, Layer 2): classified. 10 modules.
+- 33 of 102 modules classified.
 - No load-order changes have been made; =init.el= keeps its current eager order.
 
 * Legend
@@ -98,6 +99,25 @@ eager side-effect owners.
 | =text-config= | 2 | C/P | eager | eager | none | 3 add-hook, package config | yes |
 | =undead-buffers= | 2 | C | eager | eager | none | 3 global keys (kill-buffer remap) | yes |
 
+** Batch 4 — UI / core-UX modules (Layer 2)
+
+Modules that shape the first interactive frame: theme, font, modeline, window
+navigation, completion stack, and landing page. Most have a real first-frame
+eager reason and stay eager.
+
+| Module | Layer | Cat | Current | Target | Runtime requires | Top-level side effects | Direct load |
+|--------+-------+-----+---------+--------+------------------+------------------------+-------------|
+| =ui-config= | 2 | C/S | eager | eager | user-constants | UI defaults, post-command hook, display-buffer-alist | yes |
+| =ui-theme= | 2 | C | eager | eager | none | theme load path, theme key | yes |
+| =ui-navigation= | 2 | C/P | eager | eager | none | nav keymap, 5 global keys, package config | yes |
+| =font-config= | 2 | C/P/S | eager | eager | host-environment, keybindings | 5 global font keys, font-install checks | yes |
+| =selection-framework= | 2 | C/P | eager | eager | none | 1 global key, 15 use-package forms | yes |
+| =modeline-config= | 2 | C/S | eager | eager | user-constants | 2 add-hook (VC cache) | yes |
+| =mousetrap-mode= | 2 | C | eager | eager | cl-lib | 3 add-hook, 1 add-to-list, 1 global key | yes |
+| =popper-config= | 2 | C/P | eager | eager | none | package config (enabled-state open question) | yes |
+| =dashboard-config= | 2 | C/S | eager | eager | none | builds/opens dashboard buffer at startup | conditional |
+| =nerd-icons-config= | 2 | C/P | eager | eager | none | package config | yes |
+
 * Hidden dependencies found
 
 Discoveries that belong to Phase 2 (make dependencies explicit). Recorded here,
@@ -120,7 +140,7 @@ not fixed here.
 
 * Pending classification
 
-The remaining 79 modules required by =init.el=, awaiting per-module inspection.
+The remaining 69 modules required by =init.el=, awaiting per-module inspection.
 Each batch reads these against their source and moves them into [[*Classified
 modules][Classified modules]] with a load-graph header. Suggested batch order
 follows the spec: text/editing command modules, then UI, then programming, then
@@ -134,7 +154,6 @@ Org, then optional integrations.
 - [ ] chrono-tools
 - [ ] coverage-core
 - [ ] coverage-elisp
-- [ ] dashboard-config
 - [ ] dev-fkeys
 - [ ] diff-config
 - [ ] dirvish-config
@@ -145,7 +164,6 @@ Org, then optional integrations.
 - [ ] eww-config
 - [ ] flycheck-config
 - [ ] flyspell-and-abbrev
-- [ ] font-config
 - [ ] games-config
 - [ ] gloss-config
 - [ ] help-config
@@ -159,10 +177,7 @@ Org, then optional integrations.
 - [ ] lorem-optimum
 - [ ] mail-config
 - [ ] markdown-config
-- [ ] modeline-config
-- [ ] mousetrap-mode
 - [ ] music-config
-- [ ] nerd-icons-config
 - [ ] org-agenda-config
 - [ ] org-babel-config
 - [ ] org-capture-config
@@ -176,7 +191,6 @@ Org, then optional integrations.
 - [ ] org-roam-config
 - [ ] org-webclipper
 - [ ] pdf-config
-- [ ] popper-config
 - [ ] prog-c
 - [ ] prog-general
 - [ ] prog-go
@@ -190,16 +204,12 @@ Org, then optional integrations.
 - [ ] quick-video-capture
 - [ ] reconcile-open-repos
 - [ ] restclient-config
-- [ ] selection-framework
 - [ ] slack-config
 - [ ] system-commands
 - [ ] telega-config
 - [ ] test-runner
 - [ ] tramp-config
 - [ ] transcription-config
-- [ ] ui-config
-- [ ] ui-navigation
-- [ ] ui-theme
 - [ ] vc-config
 - [ ] video-audio-recording
 - [ ] vterm-config

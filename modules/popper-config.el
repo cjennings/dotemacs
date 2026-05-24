@@ -3,6 +3,16 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: C/P.
+;; Load shape: eager.
+;; Eager reason: configures popper so popup buffers (Messages, help, compilation)
+;;   appear as managed popups. The enabled/disabled state is an open question in
+;;   the spec; revisit during deferral.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: none.
+;; Direct test load: yes.
+;;
 ;; Configuration for popper.el, which manages secondary buffers as popup windows.
 ;; Popup buffers (like *Messages*, help, and compilation output) are displayed in
 ;; a dedicated bottom window and can be easily toggled, cycled, or promoted to
