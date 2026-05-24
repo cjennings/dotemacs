@@ -21,13 +21,24 @@
 (require 'seq)
 
 (defconst test-init-header--classified-modules
-  '("system-lib"
+  '(;; Batch 1 — Foundation (Layer 1)
+    "system-lib"
     "user-constants"
     "host-environment"
     "system-defaults"
     "keyboard-compat"
     "keybindings"
-    "config-utilities")
+    "config-utilities"
+    ;; Batch 2 — Text/editing command modules (Layer 2)
+    "custom-case"
+    "custom-comments"
+    "custom-datetime"
+    "custom-buffer-file"
+    "custom-line-paragraph"
+    "custom-misc"
+    "custom-ordering"
+    "custom-text-enclose"
+    "custom-whitespace")
   "Modules annotated with the load-graph header contract.
 Grows one batch at a time.  Parity with the init.el require set is the
 Phase 1 exit criterion.")
