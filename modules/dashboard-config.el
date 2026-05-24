@@ -2,7 +2,16 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/S.
+;; Load shape: eager.
+;; Eager reason: builds the startup dashboard landing page.
+;; Top-level side effects: initializes and opens the dashboard buffer at startup
+;;   via use-package.
+;; Runtime requires: none.
+;; Direct test load: conditional (builds the dashboard buffer on load).
+;;
 ;; Note:
 ;; Nerd-Icons Cheat Sheet: https://www.nerdfonts.com/cheat-sheet
 

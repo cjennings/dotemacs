@@ -3,6 +3,16 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: C/P.
+;; Load shape: eager.
+;; Eager reason: the completion/selection stack (vertico and friends) shapes
+;;   every interactive prompt from the first session.
+;; Top-level side effects: one global key binding, package configuration via
+;;   fifteen use-package forms.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; This module configures the completion and selection framework using:
 ;; - Vertico: Vertical completion UI
 ;; - Marginalia: Rich annotations in minibuffer

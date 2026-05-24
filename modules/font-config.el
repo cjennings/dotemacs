@@ -2,7 +2,16 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/P/S.
+;; Load shape: eager.
+;; Eager reason: font setup for the first frame, plus font keybindings.
+;; Top-level side effects: binds five global font keys, runs font-installation
+;;   checks, configures packages via use-package.
+;; Runtime requires: host-environment, keybindings.
+;; Direct test load: yes.
+;;
 ;; This module provides font configuration, including:
 ;;
 ;; 1. Font Management:

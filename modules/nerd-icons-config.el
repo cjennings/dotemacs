@@ -3,6 +3,15 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: C/P.
+;; Load shape: eager.
+;; Eager reason: provides the nerd-icons fonts that dashboard, modeline, and
+;;   completion render in the first frame.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: none.
+;; Direct test load: yes.
+;;
 ;; Single home for nerd-icons:
 ;;   - the package itself
 ;;   - completion integration (`nerd-icons-completion')

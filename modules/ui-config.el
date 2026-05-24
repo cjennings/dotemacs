@@ -2,7 +2,16 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/S.
+;; Load shape: eager.
+;; Eager reason: UI preferences that should be visible in the first frame.
+;; Top-level side effects: UI defaults, a post-command hook, and
+;;   display-buffer-alist entries.
+;; Runtime requires: user-constants.
+;; Direct test load: yes.
+;;
 ;; This file centralizes user interface preferences, including:
 
 ;; • Frame and window behavior

@@ -46,7 +46,18 @@
     "keyboard-macros"
     "system-utils"
     "text-config"
-    "undead-buffers")
+    "undead-buffers"
+    ;; Batch 4 — UI / core-UX modules (Layer 2)
+    "ui-config"
+    "ui-theme"
+    "ui-navigation"
+    "font-config"
+    "selection-framework"
+    "modeline-config"
+    "mousetrap-mode"
+    "popper-config"
+    "dashboard-config"
+    "nerd-icons-config")
   "Modules annotated with the load-graph header contract.
 Grows one batch at a time.  Parity with the init.el require set is the
 Phase 1 exit criterion.")

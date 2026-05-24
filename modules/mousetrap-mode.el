@@ -1,6 +1,16 @@
 ;;; mousetrap-mode.el ---  -*- coding: utf-8; lexical-binding: t; -*-
 ;;
 ;;; Commentary:
+;;
+;; Layer: 2 (Core UX).
+;; Category: C.
+;; Load shape: eager.
+;; Eager reason: a global minor mode that prevents accidental mouse edits,
+;;   wanted from the first session.
+;; Top-level side effects: three add-hook, one add-to-list, one global key.
+;; Runtime requires: cl-lib.
+;; Direct test load: yes.
+;;
 ;; Mouse Trap Mode is a minor mode for Emacs that disables most mouse and
 ;; trackpad events to prevent accidental text modifications.  Hitting the
 ;; trackpad and finding my text is being inserted in an unintended place is
