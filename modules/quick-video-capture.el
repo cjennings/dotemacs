@@ -77,23 +77,15 @@ bound by the org-protocol entry point, or prompts when invoked manually."
     (cj/setup-video-download)))
 
 (defun cj/setup-video-download ()
-  "Initialize video download functionality.
-This function sets up org-protocol handlers and capture templates.
-It's designed to be idempotent - safe to call multiple times."
+  "Register the video-download org-capture template, idempotently.
+Runs lazily on the first capture (via `org-capture-mode-hook') or the
+first protocol call, so module load has no startup side effect.  The
+org-protocol handler is registered separately in the
+`with-eval-after-load' block below, which is the lightweight piece a
+protocol URL needs; the capture template is the heavier piece deferred
+to here."
   (when (not cj/video-download-initialized)
-    ;; Load required packages
-    (require 'org-protocol)
     (require 'org-capture)
-    
-    ;; Register the org-protocol handler if not already registered
-    (unless (assoc "video-download" org-protocol-protocol-alist)
-      (add-to-list 'org-protocol-protocol-alist
-                   '("video-download"
-                     :protocol "video-download"
-                     :function cj/org-protocol-video-download
-                     :kill-client t)))
-    
-    ;; Add the capture template if not already added
     (unless (assoc "v" org-capture-templates)
       (add-to-list 'org-capture-templates
                    '("v" "Video Download" entry
@@ -101,9 +93,8 @@ It's designed to be idempotent - safe to call multiple times."
                      "%(cj/video-download-capture-handler)"
                      :immediate-finish t
                      :jump-to-captured nil)))
-    
     (setq cj/video-download-initialized t)
-    (cj/log-silently "Video download functionality initialized")))
+    (cj/log-silently "Video download capture template registered")))
 
 (defun cj/video-download-bookmarklet-instructions ()
   "Display instructions for setting up the browser bookmarklet."
@@ -124,18 +115,21 @@ It's designed to be idempotent - safe to call multiple times."
       (insert "and emacsclient is properly configured for org-protocol.\n"))
     (switch-to-buffer buf)))
 
-;; Deferred initialization strategy:
-;; 1. Try to load shortly after Emacs is idle following init
-;; 2. Fallback timer ensures loading within 2 seconds regardless
-(unless noninteractive
-  (add-hook 'after-init-hook
-            (lambda ()
-              (run-with-idle-timer 0.5 nil #'cj/setup-video-download)))
+;; Register the org-protocol handler as soon as org-protocol is available.
+;; This is the lightweight piece a "video-download" URL needs — it adds an
+;; entry to the alist without loading org-capture or yt-dlp.  No startup
+;; timer: the capture template is set up lazily on first use (below), and
+;; the protocol handler ensures it before capturing.
+(with-eval-after-load 'org-protocol
+  (unless (assoc "video-download" org-protocol-protocol-alist)
+    (add-to-list 'org-protocol-protocol-alist
+                 '("video-download"
+                   :protocol "video-download"
+                   :function cj/org-protocol-video-download
+                   :kill-client t))))
 
-  ;; Fallback: ensure initialization within 2 seconds of loading this file
-  (run-with-timer 2 nil #'cj/setup-video-download))
-
-;; If someone manually triggers capture before initialization
+;; Set up the capture template the first time a capture starts, so a manual
+;; C-c c never races an uninitialized template.
 (with-eval-after-load 'org-capture
   (add-hook 'org-capture-mode-hook #'cj/ensure-video-download-initialized))
 
