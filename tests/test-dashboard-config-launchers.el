@@ -25,33 +25,43 @@
 
 (require 'dashboard-config)
 
-(defconst test-dash--keys '("c" "d" "t" "a" "r" "b" "f" "m" "e" "i" "s" "g"))
+(defconst test-dash--keys '("c" "d" "t" "a" "r" "b" "f" "m" "e" "i" "g" "s" "l"))
 
 ;; ----------------------------- launcher table --------------------------------
 
 (ert-deftest test-dashboard-launchers-keys-in-order ()
-  "Normal: 12 launchers with the expected keys in display order."
-  (should (= 12 (length cj/dashboard--launchers)))
+  "Normal: 13 launchers with the expected keys in display order."
+  (should (= 13 (length cj/dashboard--launchers)))
   (should (equal test-dash--keys (mapcar (lambda (l) (nth 0 l)) cj/dashboard--launchers))))
 
 (ert-deftest test-dashboard-launchers-labels-in-order ()
-  "Normal: labels in display order."
+  "Normal: labels in display order (Telegram and Slack reordered so Slack sits
+next to Linear on the last navigator row)."
   (should (equal '("Code" "Files" "Terminal" "Agenda" "Feeds" "Books"
-                   "Flashcards" "Music" "Email" "IRC" "Slack" "Telegram")
+                   "Flashcards" "Music" "Email" "IRC" "Telegram" "Slack" "Linear")
                  (mapcar (lambda (l) (nth 3 l)) cj/dashboard--launchers))))
+
+(ert-deftest test-dashboard-row-sizes-cover-all-launchers ()
+  "Normal: the navigator row sizes sum to the launcher count."
+  (should (= (length cj/dashboard--launchers)
+             (apply #'+ cj/dashboard--row-sizes))))
 
 ;; --------------------------- navigator rows ----------------------------------
 
-(ert-deftest test-dashboard-navigator-rows-three-rows-of-four ()
-  "Normal: navigator derives 3 rows of 4, with the right labels and button shape."
+(ert-deftest test-dashboard-navigator-rows-grouped-4-4-3-2 ()
+  "Normal: navigator derives rows per `cj/dashboard--row-sizes' (4 4 3 2), with
+Slack and Linear sharing the last row."
   (cl-letf (((symbol-function 'nerd-icons-faicon)  (lambda (n &rest _) (concat "I:" n)))
             ((symbol-function 'nerd-icons-devicon) (lambda (n &rest _) (concat "I:" n)))
-            ((symbol-function 'nerd-icons-mdicon)  (lambda (n &rest _) (concat "I:" n))))
+            ((symbol-function 'nerd-icons-mdicon)  (lambda (n &rest _) (concat "I:" n)))
+            ((symbol-function 'nerd-icons-octicon) (lambda (n &rest _) (concat "I:" n))))
     (let ((rows (cj/dashboard--navigator-rows)))
-      (should (= 3 (length rows)))
-      (should (cl-every (lambda (r) (= 4 (length r))) rows))
+      (should (= 4 (length rows)))
+      (should (equal '(4 4 3 2) (mapcar #'length rows)))
       (should (equal '("Code" "Files" "Terminal" "Agenda")
                      (mapcar (lambda (b) (nth 1 b)) (nth 0 rows))))
+      (should (equal '("Slack" "Linear")
+                     (mapcar (lambda (b) (nth 1 b)) (nth 3 rows))))
       (let ((btn (car (car rows))))            ; (icon label tooltip action nil " " "")
         (should (string= "I:nf-fa-code" (nth 0 btn)))
         (should (string= "Code" (nth 1 btn)))
@@ -83,15 +93,17 @@
               ((symbol-function 'mu4e) (lambda (&rest _) (push 'email calls)))
               ((symbol-function 'cj/erc-switch-to-buffer-with-completion) (lambda (&rest _) (push 'irc calls)))
               ((symbol-function 'cj/slack-start) (lambda (&rest _) (push 'slack calls)))
-              ((symbol-function 'cj/telega) (lambda (&rest _) (push 'tg calls))))
+              ((symbol-function 'cj/telega) (lambda (&rest _) (push 'tg calls)))
+              ((symbol-function 'linear-emacs-list-issues) (lambda (&rest _) (push 'linear calls))))
       (cj/dashboard--bind-launchers map)
       (dolist (key test-dash--keys)
         (call-interactively (keymap-lookup map key)))
       (should (memq 'code calls))
       (should (memq 'tg calls))
+      (should (memq 'linear calls))
       (should (memq 'm-toggle calls))
       (should (memq 'm-load calls))
-      (should (= 13 (length calls))))))   ; 12 keys, Music fires two
+      (should (= 14 (length calls))))))   ; 13 keys, Music fires two
 
 (provide 'test-dashboard-config-launchers)
 ;;; test-dashboard-config-launchers.el ends here
