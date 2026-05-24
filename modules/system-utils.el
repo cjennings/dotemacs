@@ -3,6 +3,16 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: L/C/S.
+;; Load shape: eager.
+;; Eager reason: registers global keys (C-c b, C-<f10>, list-buffers remap) and
+;;   a startup hook for its enhanced commands.
+;; Top-level side effects: three keymap-global-set, one emacs-startup-hook, plus
+;;   use-package configuration.
+;; Runtime requires: system-lib, external-open-lib.
+;; Direct test load: yes.
+;;
 ;; A "system-util" is an enhancement to common a Emacs command, or the extension
 ;; of an existing command. Perhaps this group can be better named.
 ;;
