@@ -32,10 +32,23 @@
   "Return the drill Org file names directly inside DIR (no leading dots)."
   (directory-files dir nil "^[^.].*\\.org$"))
 
+(defun cj/--drill-files-or-error (dir)
+  "Return the drill Org files in DIR, or signal a clear `user-error'.
+Errors when DIR is missing, unreadable, or has no drill files, so callers
+fail with an actionable message instead of a low-level `directory-files'
+error or an empty `completing-read'.  This is the single entry point the
+drill commands and the drill capture templates share."
+  (unless (and (file-directory-p dir) (file-readable-p dir))
+    (user-error "Drill directory missing or unreadable: %s" dir))
+  (let ((files (cj/--drill-files-in dir)))
+    (unless files
+      (user-error "No drill files (.org) found in %s" dir))
+    files))
+
 (defun cj/--drill-pick-file (dir)
   "Prompt for one of the drill Org files in DIR; return its absolute path."
   (expand-file-name
-   (completing-read "Choose flashcard file: " (cj/--drill-files-in dir) nil t)
+   (completing-read "Choose flashcard file: " (cj/--drill-files-or-error dir) nil t)
    dir))
 
 (defun cj/--drill-pick-dir (other-dir)
