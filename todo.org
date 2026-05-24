@@ -1475,18 +1475,9 @@ Expected outcome:
 - Add a simple module-load smoke test if this becomes part of the load-graph
   refactor.
 
-**** TODO [#C] Reconcile region-or-buffer scope across editing helpers :bug:solo:
+**** 2026-05-24 Sun @ 07:26:31 -0500 Extracted shared region-or-buffer bounds helper
 
-=modules/custom-text-enclose.el:135-180= helpers
-(=cj/append-to-lines-in-region-or-buffer=,
-=cj/prepend-to-lines-in-region-or-buffer=) fall back to the whole
-buffer when no region is active.  =modules/custom-ordering.el:38-41=
-and =:86-88= helpers
-(=cj/--arrayify=, =cj/--unarrayify=) accept explicit =(start end)=
-parameters but their docstrings imply "region or entire buffer" --
-the implementation does not match.  Pick one contract per pair and
-update docstrings, or extract a shared helper that decides the
-target range.
+The described docstring mismatch was already resolved: =custom-ordering.el='s =cj/--arrayify=/=cj/--unarrayify= now document an explicit =(start end)= contract accurately and are region-required by design. The remaining work was the enclose side, where append/prepend/indent/dedent each inlined the same region-or-buffer bounds block (four copies). Extracted =cj/--region-or-buffer-bounds= as the single source of that contract and routed all four through it (behavior unchanged; public-wrapper tests still pass). Each pair now has one clear, consistent, documented contract. New tests cover the helper (region / no-region / empty buffer). Commit =a7cc8948=.
 
 **** 2026-05-16 Sat @ 02:47:15 -0500 Preserved trailing newlines in custom-ordering output
 
@@ -1644,14 +1635,9 @@ switching, multi-buffer review) pay a measurable cost.  Cache by
 profile + active-events list and skip rebuild when the cache key
 matches.
 
-**** TODO [#C] Invalidate VC modeline cache on file symlink target changes :tests:solo:
+**** 2026-05-24 Sun @ 07:26:31 -0500 Keyed VC modeline cache on resolved truename
 
-=modules/modeline-config.el:131-140= keys the cache on =(list file
-cj/modeline-vc-show-remote)=.  If =file= is a symlink whose target
-moves (rare but possible on shared drives, CI workspaces), the cache
-stays warm with the old VC backend.  Add the resolved =file-truename=
-to the key, or invalidate the cache when =vc-backend= disagrees with
-the cached entry.
+=cj/modeline-vc-cache-key= keyed on =(list file cj/modeline-vc-show-remote)=, so a symlink whose target moved (shared drives, CI workspaces) kept serving the old VC backend. Added =(file-truename file)= to the key — one stat per refresh, cheap next to the VC calls the cache avoids — so a re-pointed symlink produces a different key and refreshes. Tests cover truename inclusion, stability for an unchanged file, and a symlink whose target moves. Commit =9135298c=.
 
 **** 2026-05-24 Sun @ 04:01:02 -0500 Verified C-s already advances isearch — non-bug, no change
 
@@ -1740,18 +1726,9 @@ Two of three children are done (shared cache helper extracted, idle timers gated
 ***** 2026-05-23 Sat @ 04:18:44 -0500 Extracted a shared cache helper
 =cj-cache-lib.el= now provides =cj/cache-valid-p=, =cj/cache-building-p=, and =cj/cache-value-or-rebuild=, consumed by both =org-agenda-config.el= and =org-refile-config.el=; the contract is documented in =docs/design/cache-helper-design.org=. The agenda and refile public commands are unchanged.
 
-***** TODO [#B] Make directory scan failures visible but non-fatal :solo:
+***** 2026-05-24 Sun @ 07:26:31 -0500 Surfaced directory-scan failures instead of hiding/crashing
 
-=org-refile-config.el= silently ignores =permission-denied= while scanning
-directories, and =org-agenda-config.el= assumes =projects-dir= exists and is
-readable. These are acceptable interactive defaults only if the resulting
-agenda/refile target list tells the user what was skipped.
-
-Expected outcome:
-- Missing optional roots should log a concise warning once per refresh.
-- Required roots should produce an actionable error.
-- Tests should cover missing =projects-dir= and permission/error cases by
-  stubbing directory functions.
+The refile scan caught =permission-denied= and silently dropped the dir, and crashed outright on a missing root (only permission-denied was caught, so a missing =code-dir=/=projects-dir= raised =file-missing= and aborted the build); the agenda build had the same missing-dir crash via =directory-files=. Extracted =cj/--org-refile-scan-dir= (warns + returns nil for missing/unreadable/permission-denied so the scan continues) and guarded the agenda scan the same way. Also fixed a latent bug found here: =org-refile-targets= was never declared special, so under =make compile= =cj/org-refile-in-file= let-bound it lexically and the scoped targets never reached =org-refile= — added =(defvar org-refile-targets)=. Tests cover the helper + the agenda missing-dir guard. Commit =12fb0108=.
 
 ***** 2026-05-23 Sat @ 04:18:44 -0500 Gated cache idle timers out of batch
 Both cache builders' =run-with-idle-timer= calls are wrapped in =(unless noninteractive)= (=org-refile-config.el:105=, =org-agenda-config.el:203=), so requiring the modules in batch schedules nothing. =tests/test-architecture-startup-contracts.el= scans every module and asserts there are no unguarded top-level timer forms.
@@ -1936,15 +1913,9 @@ fails inside the capture handler with confusing messages.  Guard with
 =(unless (and (stringp url) (not (string-empty-p url))) (user-error ...))=
 before stashing.
 
-**** TODO [#C] Replace global mutation of =cj/webclip-current-url= / =title= with structured state :refactor:solo:
+**** 2026-05-24 Sun @ 07:26:31 -0500 Scoped webclip URL/title to dynamic bindings
 
-=modules/org-webclipper.el:128-129,151-152= relies on two top-level
-variables (=cj/webclip-current-url=, =cj/webclip-current-title=)
-=setq='d by the protocol handler and read by the capture template.
-Concurrent or rapidly-fired protocol invocations interleave and
-corrupt each other's state.  Pass the data through a plist on
-=org-capture-plist=, a per-invocation closure, or a queue, instead of
-global mutation.
+The protocol handler =setq= globals =cj/webclip-current-url= / =cj/webclip-current-title= that the "W" template and handler read (and cleared), so an aborted/erroring capture left stale state for the next clip. Renamed to =cj/--webclip-url= / =cj/--webclip-title= and =let=-bind them around the =org-capture= call: the template =%(identity ...)= forms and the handler run within that dynamic extent, and an abort/error unwinds the binding automatically — no stale state, no manual clear. Mirrors the quick-video-capture fix. Tests updated to the new contract (visible-during-capture, nothing-left-after, aborted-leaves-nothing). Commit =6dfc41af=.
 
 **** 2026-05-16 Sat @ 03:44:45 -0500 Declared cross-module free vars in mu4e-org-contacts-integration.el
 
@@ -2265,19 +2236,9 @@ Expected outcome:
 **** 2026-05-23 Sat @ 03:52:00 -0500 Set compose buffers to kill on exit, both composers
 First clarified the ownership (dd671f8c): the org-msg comment "always kill buffers on exit" was backwards — org-msg set =nil= (keep), which won over mu4e's =t= because org-msg-mode runs in every compose buffer. Craig then chose to kill compose buffers on exit, so I set the org-msg value to =t= as well (82978c79). Both mu4e and org-msg now kill the buffer on send/exit, so HTML drafts don't linger.
 
-**** TODO [#B] Remove automatic startup timers from =quick-video-capture.el= :startup:refactor:solo:
+**** 2026-05-24 Sun @ 07:26:31 -0500 Dropped startup timers for lazy protocol init
 
-=quick-video-capture.el= schedules both an =after-init-hook= idle timer and a
-fallback =run-with-timer= to initialize org-protocol/capture glue shortly after
-startup. This is a small side effect, but it loads Org capture/protocol plumbing
-even if the video workflow is never used.
-
-Expected outcome:
-- Register the protocol lazily through autoloadable setup, or initialize only
-  when Org/protocol support is already active.
-- Batch/test startup should not schedule timers.
-- Keep manual bookmarklet usage working when an org-protocol URL arrives before
-  the rest of Org has been used.
+=quick-video-capture.el= scheduled an =after-init-hook= idle timer + a 2s fallback =run-with-timer= to call setup, which required org-protocol/capture and registered both the protocol handler and the capture template at every startup. Split the concerns like =org-webclipper.el=: the org-protocol handler registers in a =with-eval-after-load 'org-protocol= block (lightweight =add-to-list=, in place whenever org-protocol loads — org-config requires it at startup), and =cj/setup-video-download= now registers only the capture template lazily (first capture or first protocol call). Both timers gone. Tests pin that setup registers the template idempotently and no longer touches the protocol alist; verified in a live daemon that the protocol registers on load. Commit =bc965275=.
 
 **** 2026-05-24 Sun @ 04:30:14 -0500 Scoped video-capture URL to a dynamic binding
 
