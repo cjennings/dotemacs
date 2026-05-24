@@ -278,12 +278,23 @@ Returns the complete file content as a string."
           "#+FILETAGS: Topic\n\n"
           content))
 
+(defconst cj/move-org-branch-confirm-lines 30
+  "Subtree size (in lines) at or above which `cj/move-org-branch-to-roam' confirms.
+Cutting a large subtree by accident is jarring even though the move is
+undoable, so the command asks first past this threshold.")
+
 (defun cj/move-org-branch-to-roam ()
   "Move the org subtree at point to a new org-roam node.
 The node filename will be timestamp-based with the heading name.
 The heading becomes the node title, and the entire subtree is demoted to
 level 1.  If the heading contains a link, extract the description for the
-title."
+title.
+
+Safety: the new node file is written and verified on disk *before* the
+subtree is cut from the source, so a failed write or db-sync can't lose
+the subtree.  The source buffer is left modified (not auto-saved) so the
+cut stays undoable.  A confirmation prompt guards large subtrees (see
+`cj/move-org-branch-confirm-lines') and buffers with unsaved changes."
   (interactive)
   ;; Lazy load org and org-roam when needed
   (require 'org)
@@ -304,29 +315,39 @@ title."
 		 (filename (format "%s-%s.org" timestamp title-slug))
 		 (filepath (expand-file-name filename org-roam-directory))
 		 ;; Generate a unique ID for the node
-		 (node-id (org-id-new))
-		 ;; Store the subtree in a temporary buffer
-		 subtree-content)
+		 (node-id (org-id-new)))
 
-	;; Copy the subtree content
+	;; Refuse to overwrite an existing node file (timestamp collision, re-run).
+	(when (file-exists-p filepath)
+	  (user-error "Roam node file already exists: %s" filepath))
+
+	;; Copy the subtree (non-destructive) and build the node text up front.
 	(org-copy-subtree)
-	(setq subtree-content (current-kill 0))
+	(let* ((subtree-content (cj/--demote-org-subtree (current-kill 0) current-level 1))
+		   (node-text (cj/--format-roam-node title node-id subtree-content))
+		   (line-count (length (split-string subtree-content "\n" t))))
 
-	;; Now cut it to remove from original buffer
-	(org-cut-subtree)
+	  ;; Confirm before the destructive cut for a large subtree or a buffer
+	  ;; with unsaved changes, where recovery is murkier.
+	  (when (or (>= line-count cj/move-org-branch-confirm-lines)
+				(buffer-modified-p))
+		(unless (yes-or-no-p
+				 (format "Move subtree \"%s\" (%d lines) to a new roam node? "
+						 title line-count))
+		  (user-error "Aborted")))
 
-	;; Process the subtree to demote it to level 1
-	(setq subtree-content (cj/--demote-org-subtree subtree-content current-level 1))
+	  ;; Write the new file BEFORE removing the source, and verify it landed,
+	  ;; so a write failure can't lose the subtree.
+	  (with-temp-file filepath
+		(insert node-text))
+	  (unless (file-exists-p filepath)
+		(error "Failed to create roam node file: %s" filepath))
 
-	;; Create the new org-roam file
-	(with-temp-file filepath
-	  (insert (cj/--format-roam-node title node-id subtree-content)))
-
-	;; Sync the org-roam database
-	(org-roam-db-sync)
-
-	;; Message to user
-	(message "'%s' added as an org-roam node." title)))
+	  ;; The subtree is safely on disk -- now cut it.  The buffer is left
+	  ;; modified and undoable (not auto-saved), so the move is reversible.
+	  (org-cut-subtree)
+	  (org-roam-db-sync)
+	  (message "'%s' moved to a new org-roam node (%s)." title filename))))
 
 ;; TASK: Need to decide keybindings before implementation and testing
 ;; (use-package consult-org-roam
