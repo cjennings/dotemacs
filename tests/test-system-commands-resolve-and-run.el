@@ -5,9 +5,10 @@
 ;; This file covers the runtime helpers and commands:
 ;;
 ;;   cj/system-cmd--resolve
-;;   cj/system-cmd
+;;   cj/system-cmd                       (quick + strong confirm)
+;;   cj/system-cmd--emacs-service-available-p
 ;;   cj/system-cmd-exit-emacs
-;;   cj/system-cmd-restart-emacs
+;;   cj/system-cmd-restart-emacs         (daemon + service guards)
 ;;   cj/system-command-menu
 ;;
 ;; Process and prompt primitives are stubbed.
@@ -73,7 +74,7 @@
     (should (string-match-p "&$" cmd-line))))
 
 (ert-deftest test-system-cmd-confirm-decline-aborts ()
-  "Boundary: a confirm-tagged var with N response signals user-error."
+  "Boundary: a quick-confirm var with N response signals user-error."
   (defvar test-sc-confirm-cmd "test-confirm-cmd")
   (put 'test-sc-confirm-cmd 'cj/system-confirm t)
   (unwind-protect
@@ -82,6 +83,57 @@
                  (lambda (&rest _) (error "shouldn't run"))))
         (should-error (cj/system-cmd 'test-sc-confirm-cmd) :type 'user-error))
     (put 'test-sc-confirm-cmd 'cj/system-confirm nil)))
+
+(ert-deftest test-system-cmd-strong-confirm-decline-aborts ()
+  "Boundary: a strong-confirm var uses yes-or-no-p; declining aborts and
+does not run the command."
+  (defvar test-sc-strong-cmd "test-strong-cmd")
+  (put 'test-sc-strong-cmd 'cj/system-confirm 'strong)
+  (unwind-protect
+      (cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest _) nil))
+                ((symbol-function 'read-char-choice)
+                 (lambda (&rest _) (error "strong confirm must not use read-char-choice")))
+                ((symbol-function 'start-process-shell-command)
+                 (lambda (&rest _) (error "shouldn't run"))))
+        (should-error (cj/system-cmd 'test-sc-strong-cmd) :type 'user-error))
+    (put 'test-sc-strong-cmd 'cj/system-confirm nil)))
+
+(ert-deftest test-system-cmd-strong-confirm-accept-runs ()
+  "Normal: a strong-confirm var runs the command when yes-or-no-p returns t."
+  (defvar test-sc-strong-cmd-2 "echo strong")
+  (put 'test-sc-strong-cmd-2 'cj/system-confirm 'strong)
+  (let (cmd-line)
+    (unwind-protect
+        (cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest _) t))
+                  ((symbol-function 'start-process-shell-command)
+                   (lambda (_name _buf c) (setq cmd-line c) 'fake-proc))
+                  ((symbol-function 'set-process-query-on-exit-flag) #'ignore)
+                  ((symbol-function 'set-process-sentinel) #'ignore)
+                  ((symbol-function 'message) #'ignore))
+          (cj/system-cmd 'test-sc-strong-cmd-2))
+      (put 'test-sc-strong-cmd-2 'cj/system-confirm nil))
+    (should (string-match-p "echo strong" cmd-line))))
+
+;;; cj/system-cmd--emacs-service-available-p
+
+(ert-deftest test-system-cmd-service-available-true-on-zero-exit ()
+  "Normal: service is available when systemctl exists and `cat' exits 0."
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/systemctl"))
+            ((symbol-function 'call-process) (lambda (&rest _) 0)))
+    (should (cj/system-cmd--emacs-service-available-p))))
+
+(ert-deftest test-system-cmd-service-available-false-on-nonzero-exit ()
+  "Boundary: a nonzero exit (no such unit) means not available."
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/systemctl"))
+            ((symbol-function 'call-process) (lambda (&rest _) 1)))
+    (should-not (cj/system-cmd--emacs-service-available-p))))
+
+(ert-deftest test-system-cmd-service-available-false-when-systemctl-absent ()
+  "Error: with no systemctl on PATH the service can't be available."
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p) nil))
+            ((symbol-function 'call-process)
+             (lambda (&rest _) (error "must not shell out without systemctl"))))
+    (should-not (cj/system-cmd--emacs-service-available-p))))
 
 ;;; cj/system-cmd-exit-emacs
 
@@ -105,49 +157,60 @@
 
 ;;; cj/system-cmd-restart-emacs
 
-(ert-deftest test-system-cmd-restart-emacs-decline-aborts ()
-  "Boundary: declining the prompt signals user-error before scheduling."
-  (let ((scheduled nil))
-    (cl-letf (((symbol-function 'read-char-choice) (lambda (&rest _) ?n))
-              ((symbol-function 'save-some-buffers) #'ignore)
-              ((symbol-function 'run-at-time)
-               (lambda (&rest _) (setq scheduled t))))
-      (should-error (cj/system-cmd-restart-emacs) :type 'user-error))
-    (should-not scheduled)))
-
-(ert-deftest test-system-cmd-restart-emacs-accept-schedules-restart ()
-  "Normal: accepting the prompt schedules the restart + kill timers."
-  (let ((schedules 0))
-    (cl-letf (((symbol-function 'read-char-choice) (lambda (&rest _) ?y))
-              ((symbol-function 'save-some-buffers) #'ignore)
-              ((symbol-function 'run-at-time)
-               (lambda (&rest _) (cl-incf schedules)))
-              ((symbol-function 'message) #'ignore))
-      (cj/system-cmd-restart-emacs))
-    (should (= schedules 2))))
-
-(ert-deftest test-system-cmd-restart-emacs-restart-lambda-shells-out ()
-  "Normal: the lambda scheduled by the first `run-at-time' call invokes
-`call-process-shell-command' with the systemctl restart line.
-
-Captures the lambda passed to the first scheduling call and invokes it
-directly with all relevant side effects stubbed, so the inner body
-registers under coverage even though the real timer never fires."
-  (let (captured-lambda call-args)
-    (cl-letf (((symbol-function 'read-char-choice) (lambda (&rest _) ?y))
-              ((symbol-function 'save-some-buffers) #'ignore)
-              ((symbol-function 'run-at-time)
-               (lambda (_when _repeat fn)
-                 (unless captured-lambda (setq captured-lambda fn))))
-              ((symbol-function 'message) #'ignore)
+(ert-deftest test-system-cmd-restart-emacs-not-daemon-aborts ()
+  "Error: a non-daemon Emacs refuses to restart-via-service and never prompts."
+  (let ((prompted nil) (ran nil))
+    (cl-letf (((symbol-function 'daemonp) (lambda () nil))
+              ((symbol-function 'read-char-choice)
+               (lambda (&rest _) (setq prompted t) ?y))
               ((symbol-function 'call-process-shell-command)
-               (lambda (&rest args) (setq call-args args))))
-      (cj/system-cmd-restart-emacs)
-      (should (functionp captured-lambda))
-      (funcall captured-lambda)
-      (should call-args)
-      (should (string-match-p "systemctl --user restart emacs.service"
-                              (car call-args))))))
+               (lambda (&rest _) (setq ran t))))
+      (should-error (cj/system-cmd-restart-emacs) :type 'user-error))
+    (should-not prompted)
+    (should-not ran)))
+
+(ert-deftest test-system-cmd-restart-emacs-no-service-aborts ()
+  "Error: when no emacs.service exists, restart aborts without running anything."
+  (let ((ran nil))
+    (cl-letf (((symbol-function 'daemonp) (lambda () t))
+              ((symbol-function 'cj/system-cmd--emacs-service-available-p)
+               (lambda () nil))
+              ((symbol-function 'read-char-choice) (lambda (&rest _) ?y))
+              ((symbol-function 'call-process-shell-command)
+               (lambda (&rest _) (setq ran t))))
+      (should-error (cj/system-cmd-restart-emacs) :type 'user-error))
+    (should-not ran)))
+
+(ert-deftest test-system-cmd-restart-emacs-decline-aborts ()
+  "Boundary: declining the prompt aborts before running the restart."
+  (let ((ran nil))
+    (cl-letf (((symbol-function 'daemonp) (lambda () t))
+              ((symbol-function 'cj/system-cmd--emacs-service-available-p)
+               (lambda () t))
+              ((symbol-function 'read-char-choice) (lambda (&rest _) ?n))
+              ((symbol-function 'save-some-buffers) #'ignore)
+              ((symbol-function 'call-process-shell-command)
+               (lambda (&rest _) (setq ran t))))
+      (should-error (cj/system-cmd-restart-emacs) :type 'user-error))
+    (should-not ran)))
+
+(ert-deftest test-system-cmd-restart-emacs-accept-runs-service-restart ()
+  "Normal: accepting runs the systemctl restart line and never calls
+kill-emacs directly (the service owns the daemon lifecycle)."
+  (let (cmd-line (killed nil))
+    (cl-letf (((symbol-function 'daemonp) (lambda () t))
+              ((symbol-function 'cj/system-cmd--emacs-service-available-p)
+               (lambda () t))
+              ((symbol-function 'read-char-choice) (lambda (&rest _) ?y))
+              ((symbol-function 'save-some-buffers) #'ignore)
+              ((symbol-function 'message) #'ignore)
+              ((symbol-function 'kill-emacs)
+               (lambda (&rest _) (setq killed t)))
+              ((symbol-function 'call-process-shell-command)
+               (lambda (c &rest _) (setq cmd-line c))))
+      (cj/system-cmd-restart-emacs))
+    (should (string-match-p "systemctl --user restart emacs.service" cmd-line))
+    (should-not killed)))
 
 ;;; cj/system-command-menu
 
