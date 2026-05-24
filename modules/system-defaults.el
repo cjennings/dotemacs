@@ -11,11 +11,9 @@
 ;; Top-level side effects: mutates global defaults (many `setq'), advises
 ;;   `display-warning', adds a `display-buffer-alist' entry, remaps one global
 ;;   key.
-;; Runtime requires: autorevert, server, bookmark; host-environment
-;;   (`env-bsd-p') and user-constants (`user-home-dir') are read at load but
-;;   currently only required via eval-when-compile — Phase 2 to make explicit.
-;; Direct test load: conditional (host-environment and user-constants must load
-;;   first; the compiled module cannot resolve them standalone yet).
+;; Runtime requires: autorevert, server, bookmark, host-environment
+;;   (`env-bsd-p'), user-constants (`user-home-dir').
+;; Direct test load: yes.
 ;;
 ;; Loads during init to set sane defaults: UTF-8 everywhere, quiet prompts, synced clipboards,
 ;; and hands-off async shell buffers. Nothing to call—just launch Emacs and the environment is ready.
@@ -31,13 +29,12 @@
 (require 'server)
 (require 'bookmark)
 
-;; `host-environment' and `user-constants' are loaded earlier in init.el,
-;; so they are available at runtime when this module loads.  The
-;; `eval-when-compile' forms here are byte-compile hints to silence
-;; free-variable / free-function warnings when this module is compiled
-;; in isolation; no runtime requires are needed.
-(eval-when-compile (require 'host-environment))
-(eval-when-compile (require 'user-constants))
+;; host-environment (`env-bsd-p') and user-constants (`user-home-dir') are read
+;; at load time below, so require them at runtime, not only at compile time.
+;; init.el already loads them earlier; the explicit requires let this module
+;; load standalone.
+(require 'host-environment)
+(require 'user-constants)
 
 ;; -------------------------- Native Comp Preferences --------------------------
 

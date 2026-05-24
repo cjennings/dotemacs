@@ -62,7 +62,7 @@ directly in batch without first loading the rest of init?
 | =system-lib= | 1 | F/L | eager | eager | none (auth-source on demand) | none | yes |
 | =user-constants= | 1 | F | eager | eager | none | file writes: creates configured dirs/files at load | conditional |
 | =host-environment= | 1 | F/L | eager | eager | none (battery on demand) | none | yes |
-| =system-defaults= | 1 | F/S | eager | eager | autorevert, server, bookmark, host-environment, user-constants | global setq, display-warning advice, display-buffer-alist entry, one key remap | conditional |
+| =system-defaults= | 1 | F/S | eager | eager | autorevert, server, bookmark, host-environment, user-constants | global setq, display-warning advice, display-buffer-alist entry, one key remap | yes |
 | =keyboard-compat= | 1 | F/S | eager | eager | host-environment | adds emacs-startup-hook | yes |
 | =keybindings= | 1 | F/C | eager | eager | user-constants, which-key, free-keys | defines cj/custom-keymap + cj/jump-map, binds global keys, which-key labels | conditional |
 | =config-utilities= | 1 | C/O | eager | eager | cl-lib, cl-generic, eieio, find-lisp, profiler | defines cj/debug-config-keymap, binds C-c d | yes |
@@ -83,7 +83,7 @@ are deferral candidates for Phase 3 (registration API) and Phase 4
 | =custom-case= | 2 | L/C | eager | command | keybindings | cj/case-map under C-; c; remaps capitalize-region | yes |
 | =custom-comments= | 2 | L/C | eager | command | keybindings | cj/comment-map under C-; C | yes |
 | =custom-datetime= | 2 | L/C | eager | command | keybindings | cj/datetime-map under C-; d | yes |
-| =custom-buffer-file= | 2 | L/C | eager | command | external-open, mm-decode, system-lib | cj/copy-buffer-content-map, cj/buffer-and-file-map; C-; b registration boundp-guarded | conditional |
+| =custom-buffer-file= | 2 | L/C | eager | command | keybindings, external-open, mm-decode, system-lib | cj/copy-buffer-content-map, cj/buffer-and-file-map; C-; b | yes |
 | =custom-line-paragraph= | 2 | L/C | eager | command | keybindings (expand-region on demand) | cj/line-and-paragraph-map under C-; l | yes |
 | =custom-misc= | 2 | L/C | eager | command | keybindings | align-regexp advice; direct C-; bindings | yes |
 | =custom-ordering= | 2 | L/C | eager | command | cl-lib, keybindings (org-config on demand) | cj/ordering-map under C-; o | yes |
@@ -133,11 +133,11 @@ Command entry points and package config for the development workflow: coverage
 |--------+-------+-----+---------+--------+------------------+------------------------+-------------|
 | =coverage-core= | 2 | C/L | eager | eager | seq, subr-x, system-lib | 1 global key (F7) | yes |
 | =coverage-elisp= | 2 | C/P | eager | eager | coverage-core | backend registration | yes |
-| =dev-fkeys= | 2 | C | eager | eager | cl-lib, system-lib | 6 F-key bindings; C-; P boundp-guarded | conditional |
+| =dev-fkeys= | 2 | C | eager | eager | cl-lib, system-lib, keybindings | 6 F-key bindings; C-; P | yes |
 | =diff-config= | 2 | C/P | eager | eager | none | package config | yes |
 | =help-config= | 2 | C/P | eager | eager | none | 2 global keys, package config | yes |
 | =help-utils= | 2 | L/D | eager | command | none | 1 global key, package config | yes |
-| =flycheck-config= | 2 | C/P | eager | hook | none (needs keybindings for :map) | package config; cj/custom-keymap :map binding | conditional |
+| =flycheck-config= | 2 | C/P | eager | hook | keybindings | package config; cj/custom-keymap :map binding | yes |
 | =test-runner= | 2 | C/L | eager | eager | ert, cl-lib, keybindings | test keymap under cj/custom-keymap | yes |
 | =vc-config= | 2 | C/P | eager | eager | user-constants, keybindings | 2 keymaps under cj/custom-keymap, package config | yes |
 
@@ -195,7 +195,7 @@ flyspell-and-abbrev is the one Core-UX member (text-mode hooks).
 | =ai-config= | 3 | D/P | eager | command | keybindings, system-lib | cj/ai-keymap under cj/custom-keymap | yes |
 | =ai-vterm= | 3 | D | eager | command | cl-lib, seq, cj-window-geometry-lib, cj-window-toggle-lib, host-environment | 4 global keys | yes |
 | =browser-config= | 3 | D/P | eager | command | cl-lib | 1 global key | yes |
-| =calendar-sync= | 3 | D/S | eager (.local.el) | eager (.local.el) | cl-lib, subr-x, system-lib, cj-org-text-lib | calendar keymap (boundp-guarded), guarded timer/network | conditional |
+| =calendar-sync= | 3 | D/S | eager (.local.el) | eager (.local.el) | cl-lib, subr-x, system-lib, cj-org-text-lib, keybindings | calendar keymap (C-; g), guarded timer/network | yes |
 | =calibredb-epub-config= | 4 | O/D/P | eager | command | user-constants, subr-x | add-hook, advice-add, package config | yes |
 | =chrono-tools= | 3 | D/P | eager | command | user-constants | package config | yes |
 | =dirvish-config= | 3 | D/P | eager | command | user-constants, system-utils, host-environment, system-lib, external-open-lib | 3 add-hook, package config | yes |
@@ -222,7 +222,7 @@ owns the intentional end-of-startup buffer-bury timer.
 | =linear-config= | 3 | D/P | eager | command | system-lib | package config | yes |
 | =local-repository= | 4 | O/D/P | eager | command | elpa-mirror | none | yes |
 | =lorem-optimum= | 4 | O/L | eager | command | cl-lib | none | yes |
-| =mail-config= | 3 | D/P | eager | command | user-constants, system-lib, mu4e-attachments | cj/email-map under cj/custom-keymap, add-hook, 2 advice, 1 global key | conditional |
+| =mail-config= | 3 | D/P | eager | command | user-constants, system-lib, mu4e-attachments, keybindings | cj/email-map under cj/custom-keymap, add-hook, 2 advice, 1 global key | yes |
 | =markdown-config= | 3 | D/P | eager | mode | none | package config, org-src lang map | yes |
 | =music-config= | 4 | O/D/P/S | eager | command | subr-x, user-constants, keybindings | music keymap under cj/custom-keymap, 1 global key | yes |
 | =pdf-config= | 3 | D/P | eager | mode | none | package config | yes |
@@ -234,15 +234,19 @@ owns the intentional end-of-startup buffer-bury timer.
 | =telega-config= | 4 | O/D/P | eager | command | keybindings | telega keymap under cj/custom-keymap | yes |
 | =tramp-config= | 3 | D/P | eager | package | none | package config | yes |
 | =transcription-config= | 4 | O/D/P | eager | command | dired, notifications, system-lib, user-constants | 1 add-to-list | yes |
-| =video-audio-recording= | 4 | O/D/S | eager | command | system-lib | cj/record-map under C-; r (boundp-guarded) | conditional |
+| =video-audio-recording= | 4 | O/D/S | eager | command | system-lib, keybindings | cj/record-map under C-; r | yes |
 | =vterm-config= | 3 | D/P | eager | command | keybindings, seq, subr-x, cj-window-geometry-lib, cj-window-toggle-lib | 2 keymaps, 1 global key, 2 add-hook | yes |
 | =weather-config= | 4 | O/D/P | eager | command | none | package config | yes |
 | =wrap-up= | 2 | S | eager | eager | system-lib | one-shot startup buffer-bury timer | yes |
 
-* Hidden dependencies found
+* Hidden dependencies (resolved in Phase 2)
 
-Discoveries that belong to Phase 2 (make dependencies explicit). Recorded here,
-not fixed here.
+Discoveries from classification, all resolved in Phase 2 by making each
+dependency explicit: requiring the owning module (=host-environment=,
+=user-constants=, =keybindings=) and dropping the =boundp= / =eval-when-compile=
+shims. Each consuming module now loads standalone (verified with a fresh
+=emacs --batch (require 'X)= per module). Kept here as the record of what was
+found and fixed; the =Phase 2 fix:= notes below describe the change applied.
 
 - =system-defaults= reads =env-bsd-p= (host-environment) and =user-home-dir=
   (user-constants) at *load* time, but declares both only via

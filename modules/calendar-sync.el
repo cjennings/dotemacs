@@ -13,11 +13,8 @@
 ;; Top-level side effects: defines a calendar keymap and conditionally registers
 ;;   it under cj/custom-keymap; timer and network fetches guarded by
 ;;   config/noninteractive checks.
-;; Runtime requires: cl-lib, subr-x, system-lib, cj-org-text-lib. keybindings is
-;;   needed for the C-; g binding but only reached through a boundp guard, so the
-;;   binding silently drops standalone. Phase 2 fix.
-;; Direct test load: conditional (C-; g registration skipped without keybindings;
-;;   private config optional).
+;; Runtime requires: cl-lib, subr-x, system-lib, cj-org-text-lib, keybindings.
+;; Direct test load: yes (private config optional; degrades cleanly when absent).
 ;;
 ;; Simple, reliable one-way sync from multiple calendars to Org mode.
 ;; Downloads .ics files from calendar URLs (Google, Proton, etc.) and
@@ -87,6 +84,7 @@
 (require 'subr-x)
 (require 'system-lib)  ;; provides cj/auth-source-secret-value (leaf; no ai-config dep)
 (require 'cj-org-text-lib)
+(require 'keybindings)  ;; provides cj/custom-keymap
 
 (defun calendar-sync--log-silently (format-string &rest args)
   "Log FORMAT-STRING with ARGS without requiring the full config."
@@ -1705,18 +1703,16 @@ Syncs all calendars immediately, then every `calendar-sync-interval-minutes'."
   "S" #'calendar-sync-start
   "x" #'calendar-sync-stop)
 
-;; Only set up keybindings if cj/custom-keymap exists (not in test environment)
-(when (boundp 'cj/custom-keymap)
-  (keymap-set cj/custom-keymap "g" cj/calendar-map)
+(keymap-set cj/custom-keymap "g" cj/calendar-map)
 
-  (with-eval-after-load 'which-key
-    (which-key-add-key-based-replacements
-      "C-; g" "calendar sync menu"
-      "C-; g s" "sync now"
-      "C-; g i" "sync status"
-      "C-; g t" "toggle auto-sync"
-      "C-; g S" "start auto-sync"
-      "C-; g x" "stop auto-sync")))
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-; g" "calendar sync menu"
+    "C-; g s" "sync now"
+    "C-; g i" "sync status"
+    "C-; g t" "toggle auto-sync"
+    "C-; g S" "start auto-sync"
+    "C-; g x" "stop auto-sync"))
 
 ;;; Initialization
 

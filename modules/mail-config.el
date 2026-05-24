@@ -10,10 +10,8 @@
 ;;   command-loaded deferral candidate for Phase 5.
 ;; Top-level side effects: registers cj/email-map under cj/custom-keymap, one
 ;;   add-hook, two advice-add, one global key, package config.
-;; Runtime requires: user-constants, system-lib, mu4e-attachments. keybindings
-;;   is needed for the C-; e registration but is not required, so the module
-;;   errors standalone. Phase 2 fix.
-;; Direct test load: conditional (needs cj/custom-keymap from keybindings).
+;; Runtime requires: user-constants, system-lib, mu4e-attachments, keybindings.
+;; Direct test load: yes (requires keybindings; mu4e package must be present).
 ;;
 ;; I found Aime Bertrand's blog post to be an excellent walkthrough of how to
 ;; setup a Mu4e config.
@@ -34,6 +32,7 @@
 (require 'user-constants)
 (require 'system-lib)
 (require 'mu4e-attachments)
+(require 'keybindings)  ;; provides cj/custom-keymap
 
 ;; cj/custom-keymap's real binding is in keybindings.el, which init.el loads
 ;; first. The use-package org-msg :preface below wraps in eval-and-compile, so

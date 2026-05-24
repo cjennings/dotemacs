@@ -390,23 +390,12 @@ Built [[file:docs/design/module-inventory.org][docs/design/module-inventory.org]
 **** TODO [#B] Annotate elfeed-config load-graph header :refactor:
 The single init.el module left unclassified. Its source is read and understood (Layer 4, O/D/P, command-loaded; runtime requires user-constants, system-lib, media-utils) and documented under "Deferred classification" in the inventory, but annotating its header triggers the PostToolUse byte-compile, which breaks =tests/test-elfeed-config-helpers.el=. Blocked on the "Make elfeed-config tests byte-compile-safe" task. Once that lands: add the 7-line header, move the module from "Deferred classification" into a Batch table in the inventory, and add it to the validation allowlist.
 
-**** TODO [#B] Add explicit module dependencies before changing load order :refactor:
+**** 2026-05-24 Sun @ 18:35:06 -0500 Made hidden module dependencies explicit
+Fixed the seven hidden dependencies the classification surfaced: system-defaults now requires host-environment and user-constants at runtime (was eval-when-compile); custom-buffer-file, dev-fkeys, calendar-sync, and video-audio-recording require keybindings and drop their =(when (boundp 'cj/custom-keymap) ...)= shims; flycheck-config and mail-config require keybindings for their cj/custom-keymap bindings. Removed a dead =eval-when-compile (defvar cj/custom-keymap)= in transcription-config (the var was never used).
 
-Several modules assume things like =cj/custom-keymap=, path constants, or
-environment predicates already exist. Before deferring load, make each module
-declare what it uses.
+No init.el load-order change — keybindings and the foundation modules already load before these, so the explicit requires are no-ops at startup and only fix standalone/test loading.
 
-Guidance:
-- Prefer runtime =(require 'foo)= for actual runtime dependencies.
-- Use =eval-when-compile= only for macros or compile-time declarations.
-- Avoid shims like "define this keymap if it does not exist" except in tests.
-- If a module only needs a command from another module, consider =autoload=.
-
-Acceptance criteria:
-- Loading a module directly in batch mode either succeeds or gives a clear
-  missing-package error.
-- =make validate-modules= still passes.
-- New tests cover any extracted pure dependency helpers.
+Verified each fix with a fresh =emacs --batch (require 'X)=, then swept all ~100 modules standalone: every one loads or fails only with a clear missing-package message (the spec's Phase 2 exit bar). Full =make test=, =make validate-modules=, and an init smoke all pass. Module headers and the inventory's hidden-dependency section updated to mark the seven resolved.
 
 **** TODO [#B] Defer feature modules behind autoloads, hooks, and commands :refactor:
 

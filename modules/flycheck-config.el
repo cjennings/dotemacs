@@ -10,9 +10,8 @@
 ;;   candidate.
 ;; Top-level side effects: package configuration via use-package, binds into
 ;;   cj/custom-keymap through use-package :map.
-;; Runtime requires: keybindings is needed for the cj/custom-keymap :map binding
-;;   but is not required here; the binding fails standalone. Phase 2 fix.
-;; Direct test load: conditional (needs cj/custom-keymap for the :map binding).
+;; Runtime requires: keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
 ;;
 ;; This file configures Flycheck for on-demand syntax and grammar checking.
 ;; - Flycheck starts automatically only in sh-mode and emacs-lisp-mode
@@ -43,6 +42,8 @@
 ;; JSON output into flycheck-compatible format.  It requires Python 3.
 
 ;;; Code:
+
+(require 'keybindings) ;; provides cj/custom-keymap (use-package :map below)
 
 (defun cj/prose-helpers-on ()
   "Ensure that `abbrev-mode' and `flycheck-mode' are on in the current buffer."
