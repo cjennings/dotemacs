@@ -2397,24 +2397,20 @@ Expected outcome:
   safely quoted by =dwim-shell-command= and add focused tests around password
   temp-file cleanup.
 
-***** TODO [#A] Fix async password temp-file lifetime in dwim-shell commands :bug:solo:
+***** 2026-05-23 Sat @ 19:11:30 -0500 Fixed async password temp-file lifetime in dwim-shell
 
-Several password commands create a temp file, call
-=dwim-shell-command-on-marked-files=, and delete the temp file in
-=unwind-protect= immediately after the command is launched. Because these
-commands are normally asynchronous, =qpdf= or =7z= may start after the password
-file is already gone.
+The four password commands (PDF protect/unprotect, remove-zip-encryption, create-encrypted-zip) deleted the password temp file in =unwind-protect= the instant the async command launched, so =qpdf=/=7z= could start after the file was gone. Extracted =cj/dwim-shell--run-with-password-file= + =cj/dwim-shell--password-cleanup-callback=: the temp file (mode 600) is now deleted from an =:on-completion= callback that fires after the process exits (success or failure), with the synchronous =unwind-protect= kept only as a pre-launch-failure backstop. Rewrote all four commands onto the helper. 5 ERT tests cover the cleanup callback (success/error/missing-file) and the runner (writes 600 file + defers cleanup; cleans up on launch failure). qpdf already passes the password via =--password-file= (out of argv); the 7z argv exposure is split into its own follow-up below.
 
-Affected workflows:
-- PDF password protect and unprotect.
-- Remove ZIP encryption.
-- Create encrypted ZIP.
+***** TODO [#B] Keep 7z password out of the command line :security:solo:
 
-Expected outcome:
-- Keep password material out of command-line arguments.
-- Delete password files only after the spawned process exits.
-- Add tests or a small harness that proves cleanup happens on success, failure,
-  and user cancellation.
+=cj/dwim-shell-commands-remove-zip-encryption= and =cj/dwim-shell-commands-create-encrypted-zip= pass the password to 7z as =-p"$(cat tempfile)"=, so it lands on 7z's argv and is briefly visible in the process list. qpdf avoids this via =--password-file=, but 7z has no password-file option.
+
+Triggered by: 2026-05-23 async password temp-file lifetime fix.
+
+Options to evaluate:
+- Feed the password to 7z another way (stdin is not supported for the password; investigate =7z='s newer options or a wrapper).
+- Switch the encrypted-archive commands to a tool that reads a password file (gpg-wrapped tar, or =zip= is worse not better).
+- Accept and document the brief exposure if no clean option exists (single-user workstation, short-lived process).
 
 ***** TODO [#A] Quote or argv-ify user-controlled dwim-shell inputs :security:bug:solo:
 
