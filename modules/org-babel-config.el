@@ -19,7 +19,7 @@
   (setq org-src-fontify-natively t)                                     ;; fontify the code in blocks
   (setq org-src-tab-acts-natively t)                                    ;; tabs act like in language major mode buffer
   (setq org-src-window-setup 'current-window)                           ;; don't split window when source editing wih C-c '
-  (setq org-confirm-babel-evaluate nil)                                 ;; just evaluate the source code
+  (setq org-confirm-babel-evaluate t)                                   ;; confirm before running babel; toggle with C-; k
   (setq org-babel-default-header-args
         (cons '(:tangle . "yes")
               (assq-delete-all :tangle org-babel-default-header-args)))) ;; default header args for babel
@@ -28,16 +28,17 @@
 ;; ------------------- Babel Execution Confirmation Toggle -------------------
 ;; org-babel verifies before each execution
 
-(defun babel-confirm (flag)
-  "Report the setting of `org-confirm-babel-evaluate'.
+(defun cj/org-babel-toggle-confirm ()
+  "Toggle whether Org babel blocks are confirmed before evaluation.
+`org-confirm-babel-evaluate' defaults to t (confirm), which is the safe default
+for files from cloned repos, web clips, or downloads.  Flip it off for the
+session when working in trusted files, and back on when done."
+  (interactive)
+  (setq org-confirm-babel-evaluate (not org-confirm-babel-evaluate))
+  (message "Babel evaluation confirmation %s"
+           (if org-confirm-babel-evaluate "ON" "OFF")))
 
-If invoked with \[universal-argument], toggle the setting based on FLAG.
-FLAG is the raw prefix argument passed interactively."
-  (interactive "P")
-  (if (equal flag '(4))
-      (setq org-confirm-babel-evaluate (not org-confirm-babel-evaluate)))
-  (message "Babel evaluation confirmation is %s"
-           (if org-confirm-babel-evaluate "on" "off")))
+(keymap-global-set "C-; k" #'cj/org-babel-toggle-confirm)
 
 
 ;; ---------------------------- Org Babel Languages ----------------------------
