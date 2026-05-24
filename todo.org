@@ -1812,19 +1812,15 @@ Expected outcome:
 ***** 2026-05-23 Sat @ 04:18:44 -0500 Gated cache idle timers out of batch
 Both cache builders' =run-with-idle-timer= calls are wrapped in =(unless noninteractive)= (=org-refile-config.el:105=, =org-agenda-config.el:203=), so requiring the modules in batch schedules nothing. =tests/test-architecture-startup-contracts.el= scans every module and asserts there are no unguarded top-level timer forms.
 
-**** TODO [#A] Revisit =org-confirm-babel-evaluate= default :security:
+**** 2026-05-23 Sat @ 19:48:00 -0500 Made org-confirm-babel-evaluate default to t with a toggle
 
-=org-babel-config.el= sets =org-confirm-babel-evaluate= to nil globally. That
-means every source block in every Org file can execute without confirmation,
-including files from cloned repos, downloaded notes, or web clips.
+=org-babel-config.el= set =org-confirm-babel-evaluate= to nil globally, so every source block in every Org file (cloned repos, downloaded notes, web clips) ran without confirmation. Changed the default to =t= (confirm before running). Replaced the old =babel-confirm= command (which reported, and toggled only with a prefix arg) with =cj/org-babel-toggle-confirm=, a plain toggle bound to =C-; k= for flipping confirmation off in trusted files and back on. 3 ERT tests cover the toggle both directions plus the binding.
 
-Expected outcome:
-- Decide whether the global default should be safe (=t=) with a fast toggle for
-  trusted buffers/projects, or whether only selected languages should skip
-  confirmation.
-- Keep =babel-confirm= or replace it with a clearer command that reports and
-  toggles the current policy.
-- Add a test/smoke assertion for the chosen default.
+**** TODO [#C] Rebind babel-confirm toggle off =C-; k= :keybinding:solo:
+
+=cj/org-babel-toggle-confirm= landed on =C-; k= as a placeholder. Pick a permanent home — likely under an Org-specific prefix rather than the global =C-;= map.
+
+Triggered by: 2026-05-23 org-confirm-babel-evaluate hardening.
 
 **** TODO [#B] Add guardrails to =cj/move-org-branch-to-roam= :ux:solo:
 
