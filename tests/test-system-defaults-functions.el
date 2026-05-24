@@ -31,9 +31,12 @@
 (require 'server)
 (require 'vc-hooks)
 
-;; user-constants supplies `user-home-dir' and `org-dir' that
-;; system-defaults reads.  Required first so they hold real paths
-;; before the require fires the side effects we don't stub away.
+;; user-constants supplies `user-home-dir' and `org-dir', and
+;; host-environment supplies `env-bsd-p', both of which system-defaults
+;; reads at load.  Required first so the symbols are defined before the
+;; require fires the side effects we don't stub away.  (system-defaults
+;; itself declares these only via `eval-when-compile', so the compiled
+;; module cannot resolve them standalone — tracked as a Phase 2 fix.)
 (add-to-list 'load-path
              (file-name-concat
               (file-name-directory
@@ -41,6 +44,7 @@
                 (file-name-directory (or load-file-name buffer-file-name))))
               "modules"))
 (require 'user-constants)
+(require 'host-environment)
 
 ;; Load system-defaults ONCE with side-effecting primitives stubbed.
 ;; This pattern lets undercover see and instrument the function
