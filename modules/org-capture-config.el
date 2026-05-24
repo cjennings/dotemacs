@@ -18,6 +18,7 @@
 (defvar org-capture-templates)
 (defvar org-complex-heading-regexp-format)
 
+(declare-function cj/--drill-pick-file "org-drill-config")
 (declare-function org-at-encrypted-entry-p "org-crypt")
 (declare-function org-at-heading-p "org")
 (declare-function org-back-to-heading "org")
@@ -230,21 +231,13 @@ Captured On: %U"
            :prepend t)
 
           ("d" "Drill Question" entry
-           (file (lambda ()
-                   (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
-                     (expand-file-name
-                      (completing-read "Choose file: " files)
-                      drill-dir))))
+           (file (lambda () (cj/--drill-pick-file drill-dir)))
            "* Item   :drill:\n%?
 ** Answer\n%i\nSource: [[%:link][%:description]]
 Captured On: %U" :prepend t)
 
           ("f" "Drill Question (from PDF)" entry
-           (file (lambda ()
-                   (let ((files (directory-files drill-dir nil "^[^.].*\\.org$")))
-                     (expand-file-name
-                      (completing-read "Choose file: " files)
-                      drill-dir))))
+           (file (lambda () (cj/--drill-pick-file drill-dir)))
            "* Item   :drill:\n%?
 ** Answer\n%(cj/org-capture-pdf-active-region)
 Source: [[%L][%(buffer-name (org-capture-get :original-buffer))]]
