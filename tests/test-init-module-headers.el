@@ -78,7 +78,21 @@
     "prog-json"
     "prog-yaml"
     "prog-shell"
-    "prog-training")
+    "prog-training"
+    ;; Batch 7 — Org modules (Layer 3-4)
+    "org-config"
+    "org-agenda-config"
+    "org-babel-config"
+    "org-capture-config"
+    "org-contacts-config"
+    "org-drill-config"
+    "org-export-config"
+    "org-noter-config"
+    "org-refile-config"
+    "org-reveal-config"
+    "org-roam-config"
+    "org-webclipper"
+    "hugo-config")
   "Modules annotated with the load-graph header contract.
 Grows one batch at a time.  Parity with the init.el require set is the
 Phase 1 exit criterion.")

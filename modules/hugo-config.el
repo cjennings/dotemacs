@@ -2,6 +2,16 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none; blog publishing is a command-loaded deferral candidate
+;;   for Phase 4.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: user-constants, host-environment.
+;; Direct test load: yes.
+;;
 ;; Integrates ox-hugo for publishing Org files to a Hugo website.
 ;;
 ;; One-file-per-post workflow:

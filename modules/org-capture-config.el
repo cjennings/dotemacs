@@ -2,6 +2,17 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: capture is a daily hot path; org-protocol capture handlers must
+;;   be registered for external capture to work.
+;; Top-level side effects: capture templates and org-protocol handlers via
+;;   use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; Customizations related to org-capture and org-refile.
 ;; Includes capture templates for tasks, links, PDFs, EPUBs, emails, and drill questions.
 

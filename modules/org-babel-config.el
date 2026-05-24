@@ -2,6 +2,16 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none necessary; Babel language setup belongs after Org loads
+;;   (after-load deferral candidate).
+;; Top-level side effects: one global key, package configuration via use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; All Org-Babel and Org-Tempo Packages, Settings, and Languages.
 
 ;;; Code:
