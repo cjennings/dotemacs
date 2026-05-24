@@ -1,6 +1,16 @@
 ;;; vc-config.el --- Version Control Configuration -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/P.
+;; Load shape: eager.
+;; Eager reason: the C-x g Magit entry point and the git keymap.
+;; Top-level side effects: defines two keymaps, registers under cj/custom-keymap,
+;;   package configuration via use-package.
+;; Runtime requires: user-constants, keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; C-x g is my general entry to Magit's version control via the status page.
 
 ;; Navigating changes in file happens via git gutter

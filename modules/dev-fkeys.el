@@ -1,6 +1,18 @@
 ;;; dev-fkeys.el --- Developer F-key dispatchers -*- lexical-binding: t -*-
 
 ;;; Commentary:
+;;
+;; Layer: 2 (Core UX).
+;; Category: C.
+;; Load shape: eager.
+;; Eager reason: the F4/F6 developer command entry points.
+;; Top-level side effects: six global F-key bindings; conditionally registers a
+;;   C-; P binding.
+;; Runtime requires: cl-lib, system-lib. keybindings is needed for the C-; P
+;;   binding but is declared only via eval-when-compile and guarded by `boundp',
+;;   so that binding silently drops standalone. Phase 2 fix.
+;; Direct test load: conditional (C-; P registration skipped without keybindings).
+;;
 ;; Project-aware F-key block for developer workflows:
 ;;
 ;;   F4    completing-read of compile/run candidates filtered by project type

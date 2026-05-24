@@ -57,7 +57,17 @@
     "mousetrap-mode"
     "popper-config"
     "dashboard-config"
-    "nerd-icons-config")
+    "nerd-icons-config"
+    ;; Batch 5 — Dev entry-points, diff, help, lint, VC (Layer 2)
+    "coverage-core"
+    "coverage-elisp"
+    "dev-fkeys"
+    "diff-config"
+    "help-config"
+    "help-utils"
+    "flycheck-config"
+    "test-runner"
+    "vc-config")
   "Modules annotated with the load-graph header contract.
 Grows one batch at a time.  Parity with the init.el require set is the
 Phase 1 exit criterion.")

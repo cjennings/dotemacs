@@ -2,6 +2,15 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/P.
+;; Load shape: eager.
+;; Eager reason: registers the elisp coverage backend after coverage-core; cheap.
+;; Top-level side effects: backend registration via use-package.
+;; Runtime requires: coverage-core.
+;; Direct test load: yes.
+;;
 ;; Registers the `elisp' coverage backend with `coverage-core'.
 ;;
 ;; Detection: a project root with a Makefile / Eask / Cask plus any
