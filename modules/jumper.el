@@ -7,7 +7,15 @@
 ;; URL: https://github.com/cjennings/jumper
 
 ;;; Commentary:
-
+;;
+;; Layer: 4 (Optional).
+;; Category: O/L.
+;; Load shape: eager.
+;; Eager reason: none; navigation helper, a command-loaded deferral candidate.
+;; Top-level side effects: defines a jumper keymap.
+;; Runtime requires: cl-lib.
+;; Direct test load: yes.
+;;
 ;; Jumper provides a simple way to store and jump between locations
 ;; in your codebase without needing to remember register assignments.
 ;;

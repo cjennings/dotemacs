@@ -3,7 +3,17 @@
 ;; Author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D.
+;; Load shape: eager.
+;; Eager reason: registers four global keys for the AI-agent vterm launcher; a
+;;   command-loaded deferral candidate.
+;; Top-level side effects: four global key bindings.
+;; Runtime requires: cl-lib, seq, cj-window-geometry-lib, cj-window-toggle-lib,
+;;   host-environment.
+;; Direct test load: yes.
+;;
 ;; Picks an AI-agent project (a dir under ~/.emacs.d, ~/code/*, or
 ;; ~/projects/* containing .ai/protocols.org), opens or reuses a vterm
 ;; buffer named "agent [<basename>]", sends the agent's startup

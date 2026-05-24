@@ -2,6 +2,16 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: registers one browser-selection key; a command-loaded deferral
+;;   candidate.
+;; Top-level side effects: one global key binding.
+;; Runtime requires: cl-lib.
+;; Direct test load: yes.
+;;
 ;; This module provides browser selection and configuration for Emacs.
 ;; It automatically discovers available browsers on the system, allows the user
 ;; to choose their preferred browser via completing-read, and persists the choice
