@@ -91,7 +91,7 @@
 (require 'eww-config)            ;; text mode web browsing, w/o javascript
 (require 'flyspell-and-abbrev)   ;; spell check and auto-correct
 (require 'httpd-config)
-(require 'latex-config)          ;; WIP need to fix
+(require 'latex-config)          ;; LaTeX/AUCTeX editing configuration
 (require 'mail-config)           ;; email using mu4e and org-msg
 (require 'markdown-config)
 (require 'pdf-config)            ;; pdf display settings
@@ -110,7 +110,7 @@
 (require 'prog-c)
 (require 'prog-go)
 (require 'prog-lisp)
-(require 'prog-shell)            ;; combine elsewhere
+(require 'prog-shell)            ;; shell-script editing configuration
 (require 'prog-python)
 (require 'prog-webdev)
 (require 'prog-json)
@@ -149,7 +149,7 @@
 (require 'music-config)
 (require 'games-config)
 
-;; ------------------------------ Modules In Test ------------------------------
+;; ------------------------------- Misc Modules --------------------------------
 
 (require 'lorem-optimum) ;; best fake latin text generator ever
 (require 'jumper)  ;; navigation help for large projects/lotsa buffers
