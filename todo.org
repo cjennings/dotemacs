@@ -1828,19 +1828,9 @@ Expected outcome:
 - Add tests for fileless buffers, =gcal-file=, already-daily buffers, and a
   normal project/todo buffer.
 
-**** TODO [#B] Make Org drill file selection robust and shared :bug:refactor:solo:
+**** 2026-05-24 Sun @ 04:30:14 -0500 Shared one validated drill-file selector
 
-=org-capture-config.el= and =org-drill-config.el= both scan =drill-dir= for
-candidate =.org= files with inline =directory-files= calls. If =drill-dir= is
-missing, empty, or unreadable, the user gets a low-level error from whichever
-command happened to run.
-
-Expected outcome:
-- Extract one helper that returns valid drill files or signals a clear
-  =user-error=.
-- Use it from drill capture templates, =cj/drill-start=, and =cj/drill-edit=.
-- Preserve the current completing-read workflow when files exist.
-- Add tests for missing directory, empty directory, and normal selection list.
+org-capture-config.el and org-drill-config.el each scanned =drill-dir= with an inline =directory-files= call, so a missing/empty/unreadable dir surfaced as a low-level error or an empty =completing-read= depending on which command ran. Added =cj/--drill-files-or-error=, the single validated entry point: clear =user-error= when the dir is missing, unreadable, or has no drill files; otherwise the list. =cj/--drill-pick-file= and both drill capture templates route through it; the pure =cj/--drill-files-in= primitive and its tests are unchanged. Tests cover missing/empty/non-org/normal. Commit =49038c41=.
 
 **** TODO [#B] Clarify contradictory Org export task defaults :cleanup:tests:solo:
 
@@ -2098,20 +2088,9 @@ syntax issue.  That one resolved upstream on 2026-05-14 (see =docs/python-
 treesit-predicate-mismatch.txt= RESOLVED footer), so this task no longer
 depends on it.
 
-**** TODO [#B] Harden git clone from clipboard in =vc-config.el= :robustness:refactor:solo:
+**** 2026-05-24 Sun @ 04:30:14 -0500 Hardened clipboard git-clone process and path handling
 
-=cj/git-clone-clipboard-url= shells out to =git clone= from clipboard text and
-derives the clone directory with =file-name-nondirectory=. The URL is quoted, so
-this is not an immediate shell-injection bug, but process handling and path
-derivation are still brittle.
-
-Expected outcome:
-- Use =start-process= or =call-process= with =("git" "clone" url)=.
-- Validate that the target directory exists and is writable before cloning.
-- Derive the expected repository directory robustly for HTTPS, SSH, and local
-  clone URLs.
-- Report clone failures from the process exit status instead of assuming the
-  directory appears.
+=cj/git-clone-clipboard-url= shelled out via =shell-command= and derived the dir with =file-name-nondirectory=, which mishandled scp-style SSH with no slash (=git@host:repo.git= → =git@host:repo=) and silently did nothing on a failed clone. Now clones as a direct =git= process (=call-process=, no shell) with =clone -- url dir= (so a =-=-leading URL can't be read as a flag); the destination comes from =cj/--git-clone-dir-name= (last component split on =/= and =:=, handling HTTPS, scp/ssh:// SSH, local paths); validates non-empty clipboard + writable target dir + non-existing destination; surfaces a non-zero git exit as a =user-error= with the =*git-clone*= output. Tests cover the deriver across schemes + empty-clipboard + clone-failure. Commit =35e4d701=.
 
 **** TODO [#B] Decide whether auto-executable shell scripts should be opt-in :ux:
 
@@ -2300,16 +2279,11 @@ Expected outcome:
 - Keep manual bookmarklet usage working when an org-protocol URL arrives before
   the rest of Org has been used.
 
-**** TODO [#B] Avoid global temp state in =quick-video-capture.el= :cleanup:refactor:solo:
+**** 2026-05-24 Sun @ 04:30:14 -0500 Scoped video-capture URL to a dynamic binding
 
-Like =org-webclipper.el=, quick video capture passes URL state through a global
-=cj/video-download-current-url=. Interrupted captures or nested capture flows can
-leave stale state.
+The protocol handler =setq= a global =cj/video-download-current-url= and the capture handler read/cleared it, so an aborted or erroring capture left the stale URL for the next manual capture. Renamed to =cj/--video-download-url= and =let=-bind it around the =org-capture= call instead of mutating a global: the binding lives only for the capture's dynamic extent, so the handler sees the URL while the capture runs and an abort/error unwinds it automatically — no stale state, no manual clear. Manual invocation still prompts. Tests cover bound-URL download, manual prompt, empty-URL error, URL-visible-during-capture, and aborted-capture-leaves-nothing. Commit =b26b74cb=.
 
-Expected outcome:
-- Pass the URL through capture/protocol state where possible.
-- Ensure aborted captures clear the temp URL.
-- Add coverage for manual URL prompt, protocol URL, and aborted capture cleanup.
+Note: the sibling =org-webclipper.el= still uses the same global-mutation pattern (=cj/webclip-current-url= / =title=); a separate =:solo:= task tracks that.
 
 **** TODO [#B] Audit shell-command-heavy recording and dwim-shell workflows :security:refactor:
 
