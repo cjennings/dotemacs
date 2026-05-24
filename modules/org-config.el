@@ -419,6 +419,28 @@ gains a date-only CLOSED line."
 
 (keymap-set cj/org-map "d" #'cj/org-finalize-task)
 
+;; which-key labels for the C-; O org prefix.  Registered lazily so this
+;; module's load doesn't depend on which-key being present.
+(with-eval-after-load 'which-key
+  (which-key-add-keymap-based-replacements cj/org-map
+    "n" "narrow to subtree"
+    "N" "widen"
+    ">" "narrow forward"
+    "<" "narrow backward"
+    "s" "sparse tree (match)"
+    "S" "cancel sparse tree"
+    "t" "todo tree"
+    "T" "cancel todo tree"
+    "R" "reveal"
+    "C" "clear element cache"
+    "d" "finalize task (dated)"
+    "r" "table row"
+    "r i" "insert row"
+    "r d" "kill row"
+    "c" "table column"
+    "c i" "insert column"
+    "c d" "delete column"))
+
 ;; ------------------------------ Org Keybindings ------------------------------
 
 ;; which-key labels for org keymaps
