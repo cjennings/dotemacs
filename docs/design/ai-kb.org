@@ -5,7 +5,7 @@
 
 * Status
 
-Ready. Five reviews incorporated (=ai-kb-review.org= through =-review5.org=; all 2026-05-24). The four original blockers (version control + recovery, switch-state safety, startup surface, project-awareness) and review 4's two write-loop caveats (push-failure contract, index regeneration) have decisions. Review 3's operational shape (a repo-resident agent-neutral contract, a minimal CLI, maintenance commands, multi-agent provenance) is adopted. Review 5's implementation-hardening is folded in: the commit gate runs the *full* =ai-kb lint= (not just node org-lint), an explicit org-lint fatal-check list, observable push failures, a testable =ai-kb query= contract, a Step 1a/1b split, and ID-first durable pointers. Cross-agent is *not a near-term goal* (Craig, 2026-05-24): v1 ships the Claude adapter over the neutral contract, and other-agent adapters (Codex/Ollama, MCP) are deferred to [[*vNext][vNext]]. All open decisions are resolved (see [[*Agreed decisions][Agreed decisions]]); the spec is fully decided and Step 1 is buildable.
+Ready. Six reviews incorporated (=ai-kb-review.org= through =-review6.org=; all 2026-05-24). Review 6's UX/performance pass is folded in: one safety model for human Emacs edits (after-save runs index+lint+commit), a required =:SUMMARY:=, the generated index made invisible to backlink/orphan logic, first-class browsing commands (dashboard/find/search/show/backlinks/map), a full org-roam *profile* on switch (not just dir/db), conditional sync, lexical query ranking, a =raw/= size/type policy, and performance budgets. The four original blockers (version control + recovery, switch-state safety, startup surface, project-awareness) and review 4's two write-loop caveats (push-failure contract, index regeneration) have decisions. Review 3's operational shape (a repo-resident agent-neutral contract, a minimal CLI, maintenance commands, multi-agent provenance) is adopted. Review 5's implementation-hardening is folded in: the commit gate runs the *full* =ai-kb lint= (not just node org-lint), an explicit org-lint fatal-check list, observable push failures, a testable =ai-kb query= contract, a Step 1a/1b split, and ID-first durable pointers. Cross-agent is *not a near-term goal* (Craig, 2026-05-24): v1 ships the Claude adapter over the neutral contract, and other-agent adapters (Codex/Ollama, MCP) are deferred to [[*vNext][vNext]]. The architecture is decided and Step 1 is buildable; the build-time implementation choices (limits, perf budgets, scoring weights, map, after-save UX + recursion guard) are settled with calibratable defaults in [[*Open decisions][Open decisions]].
 
 In scope: Step 1 (store + contract/CLI + global rule + provisioning) and Step 2 (Emacs browsing layer). Step 3 (migrating =.ai/sessions= and workflows in) and the full LLM-Wiki layer are *deferred to their own specs* — see [[*vNext][vNext]].
 
@@ -32,7 +32,7 @@ T2's =MEMORY.md= shrinks toward an index: for significant items it points at the
 * Concept: two layers
 
 - *Store* — a git repository of org files (each a valid org-roam node). The agent reads/writes these directly and never touches the SQLite database; the files are the source of truth.
-- *Emacs/org-roam integration* — so Craig can browse with backlinks and the graph. org-roam keys off one global =org-roam-directory= + =org-roam-db-location= per session, so ai-kb cannot be live alongside the personal roam; the integration is a *switch* with a guard contract (see [[*The Emacs switch: guard contract][guard contract]]).
+- *Emacs/org-roam integration* — so Craig can browse with backlinks and the graph. org-roam keys off one global =org-roam-directory= + =org-roam-db-location= per session, so ai-kb cannot be live alongside the personal roam; the integration is a *switch* that installs a full org-roam profile (see [[*The Emacs switch: a full org-roam profile][the switch profile]]).
 
 * Storage, version control, and recovery
 
@@ -41,7 +41,8 @@ ai-kb is its *own git repository* — not in =~/sync/org= (Syncthing has proven 
 - *Location:* =~/.local/share/ai-kb= (XDG =$XDG_DATA_HOME/ai-kb=).
 - *Origin:* a bare repo on =git.cjennings.net= (=git@cjennings.net:ai-kb.git=), *private — no public GitHub mirror*. This is the recovery layer: full history, clone-to-restore.
 - *No Syncthing.* git is the sole sync and backup; multi-machine concurrency surfaces as ordinary git merges, not silent conflict files.
-- *org-roam scope:* =org-roam-directory= points at the repo root; =raw/= is *excluded* from the scan (=org-roam-file-exclude-regexp= matching =/raw/=) so raw captures never become noisy roam nodes. The LLM-Wiki vNext would add a compiled =wiki/= layer; v1 keeps compiled nodes flat at root.
+- *org-roam scope:* =org-roam-directory= points at the repo root; =raw/= *and the generated index files* (=index*.org=) are *excluded* from the scan (=org-roam-file-exclude-regexp=) so neither raw captures nor the index become noisy roam nodes. The LLM-Wiki vNext would add a compiled =wiki/= layer; v1 keeps compiled nodes flat at root.
+- *Generated files are invisible to semantics.* =index*.org= and =raw/= are excluded from the org-roam scan, the graph/map, and curation's backlink/orphan calculations. The index references nodes as *plain text* (=Title (UUID)=), never =[[id:...]]= links — otherwise every node would gain an artificial backlink from the index and orphan detection would be meaningless. The index is a navigation artifact, not a semantic backlink source.
 
 * Write protocol and synchronization
 
@@ -66,7 +67,7 @@ The =.org= files are truth; the SQLite db is a cache indexing nodes and =[[id:..
 
 * Proactive-write rule
 
-The agent writes a node *unprompted* when something is **durable** (true beyond this session) *and* **general** (T3, not tied to the current repo; project-specific knowledge goes to T2). The bar, to keep out noise: genuinely worth recalling or linking later — a principle, a reusable procedure, a preference, a non-obvious lesson — not routine status or anything re-derivable from code or git. New nodes link to related existing ones (grep candidates by title/tag first) and trigger an index regeneration.
+The agent writes a node *unprompted* when something is =durable= (true beyond this session) *and* =general= (T3, not tied to the current repo; project-specific knowledge goes to T2). The bar, to keep out noise: genuinely worth recalling or linking later — a principle, a reusable procedure, a preference, a non-obvious lesson — not routine status or anything re-derivable from code or git. New nodes link to related existing ones (grep candidates by title/tag first) and trigger an index regeneration.
 
 *Contradiction guard:* if a write would contradict an existing node that affects agent behavior or a stated preference, the agent does *not* silently overwrite. It marks both =:STATUS: contested=, records the conflict, and asks Craig before changing the canonical node.
 
@@ -83,6 +84,7 @@ The agent writes a node *unprompted* when something is **durable** (true beyond 
 :VISIBILITY:  personal            ; personal | work-private
 :SOURCE:      chat 2026-05-24     ; free-form, or a raw/ path for external sources
 :STATUS:      current             ; current | contested | superseded
+:SUMMARY:     One sentence, written for retrieval and index display.
 :END:
 #+title: Concise node title
 #+filetags: :principle:emacs:
@@ -96,6 +98,7 @@ with a relation label: SUPERSEDES, CONTRADICTS, RELATES_TO, IMPLEMENTS, DERIVED_
 - *Type tags* (=#+filetags:=): =:principle:= =:preference:= =:procedure:= =:observation:= =:reference:=.
 - *Project slugs* (=:PROJECTS:=): derived from the project directory basename (so =~/.emacs.d= → =:emacs:=, the DeepSat repo → =:deepsat:=), with =:general:= for cross-cutting nodes. The derivation rule lives in the contract so every agent produces the same slug; new slugs are recorded in the index's project list.
 - *Provenance:* =:CREATED_BY:= and =:CONFIDENCE:= let later curation and trust policy distinguish "Craig stated this" from "a model inferred it." =:CONFIDENCE:= here is *provenance* (how the claim was obtained), not a numeric grounding score — the latter is vNext. =:VISIBILITY:= is two-valued in v1 (the full =public|work-private|secret= taxonomy is vNext); secrets are never stored at all (see [[*Security and privacy][Security]]).
+- *Summary:* a *required* one-line =:SUMMARY:= property, written for retrieval. =ai-kb index= and =ai-kb query= read it straight from the property, so the index rebuilds fast and locally — no inferring from the first paragraph (inconsistent) and no LLM call (slow, nonlocal).
 - *Relation labels:* a small fixed vocabulary used in link context now; full typed-link catalog storage is vNext.
 
 * Grounding external sources
@@ -105,6 +108,7 @@ The one LLM-Wiki piece adopted in v1: keep compiled knowledge re-checkable where
 - *Node authored from an external source* (web article, fetched doc, transcript, API result): capture under =raw/= and point =:SOURCE:= at that path. *By default store the URL, retrieval date, and the relevant excerpt* — store full external text only when it is user-owned, licensed for the use, or operationally necessary (this is a private KB, but copyright still applies). A later agent can re-ground a suspicious node against the source instead of trusting its own prior summary.
 - *Node authored from the conversation or direct observation*: only the free-form =:SOURCE:= pointer; no raw capture (the source is not an external artifact).
 - =raw/= is append-only in spirit and excluded from org-roam's scan.
+- *Size/type policy:* a small org stub (URL + retrieval date + bounded excerpt) is the default capture, under a maximum excerpt size; a larger full source file goes under =raw/files/= only when explicitly requested. The credential scan runs over *text* only — binary files are skipped (by type or byte-sniff). =ai-kb doctor= reports the raw-directory size and =curate --dry-run= flags unusually large raw files and raw captures with no compiled node, so bloat stays visible.
 
 * Startup surface and retrieval contract
 
@@ -116,14 +120,14 @@ Passive grep-on-demand gets under-used; loading the whole KB wastes context. Two
 
 =index.org= is *generated output*, never hand-maintained — that is what keeps it from drifting from the nodes. A regeneration script greps node properties (=#+title:=, =:ID:=, type tag, =:PROJECTS:=, =:UPDATED:=, =:STATUS:=) and rebuilds the file with a "generated, do not edit" marker. It runs in provisioning, in the curation pass, on demand, and as step 3 of every =remember=. =lint --index= checks: every listed id resolves, every =current= node is listed, contested/superseded sections are accurate, the size budget holds (split into =index-procedures.org= etc. when exceeded).
 
-#+begin_src org
-* Procedures
+#+begin_example
+,* Procedures
 | Title | ID | Summary | Projects | Updated |
-* Preferences
+,* Preferences
 | Title | ID | Summary | Projects | Status |
-* Contested / needs review
+,* Contested / needs review
 | Title | Issue | Last touched |
-#+end_src
+#+end_example
 
 * Checking links (agent recipes)
 
@@ -154,10 +158,13 @@ The access layer is an *agent-neutral contract*, not a Claude-only prompt snippe
 
 - *Canonical contract:* lives *in the repo* (=~/.local/share/ai-kb/AGENT_CONTRACT.org=) — the source of truth for the node format, routing rule, write protocol, and operations. It travels with the store.
 - *Adapters* point at it: =claude-rules/ai-kb.md= (symlinked into =~/.claude/rules/= by rulesets =make install=) is the Claude adapter. Other agents get their own thin adapter when wanted (deferred — see [[*Open decisions][Open decisions]]).
-- *Operations* — a small =ai-kb= CLI (shell, calling =emacs --batch= for org-lint/index work) is the canonical surface, so humans and every agent share one contract:
-  - =ai-kb doctor= — repo present, remote reachable + private, branch state, org-roam db buildable, required tools installed, adapter linked, no obvious secrets.
+- *Operations* — a small =ai-kb= CLI (shell, calling Emacs for org-lint/index work) is the canonical surface, so humans and every agent share one contract. For performance: prefer =emacsclient= when a daemon is up (=emacs --batch= fallback), and run lint + index in a *single* Emacs invocation per =remember= rather than one startup per check. The full-lint gate stays on for v1; if timing crosses the perf budget at scale, split lint into cheap always-on checks (the edited node + index) and a slower full-sweep, but don't pre-optimize.
+  - =ai-kb doctor= — repo present, remote reachable + private, branch state, org-roam db buildable, required tools installed (incl. =graphviz= if the map needs it), adapter linked, no obvious secrets, raw-directory size.
+  - =ai-kb status= — fast, non-diagnostic state for the dashboard/nudge: branch ahead, last push failure, node count, last index time, curation-due. (May be a =doctor --status= mode.)
+  - =ai-kb show <id-or-title>= — resolve an ID-first pointer and print the node (path + body); the testable primitive the Emacs =show-node= wraps.
+  - =ai-kb backlinks <id>= — list nodes linking to =<id>=, excluding =raw/= and the generated index.
   - =ai-kb index= — regenerate =index.org= from node properties.
-  - =ai-kb query <context>= — read the index, return relevant nodes. It is the surface adapters call before spending context on full nodes, so it has a *testable contract* even though v1 retrieval is plain lexical: default output is plain text (one node per line), with =--json= for tests and tools; fields are title, ID, summary, projects, status, updated, path; it searches index rows + title/tags/properties/body; a default max-result count and ordering (most-recently-updated first); =raw/= paths appear only as source references, never as primary results; exit codes distinguish no-match, invalid/missing KB, and a lint/index failure.
+  - =ai-kb query <context>= — read the index, return relevant nodes. It is the surface adapters call before spending context on full nodes, so it has a *testable contract* even though v1 retrieval is plain lexical: default output is plain text (one node per line), with =--json= for tests and tools; fields are title, ID, summary, projects, status, updated, path, and the *match reason* (matched-title / tag / summary / body); it searches index rows + title/tags/properties/body; ranking is a simple lexical score (title > tag/project/status > summary > body) with most-recently-updated as the *tie-breaker* — recency alone would bury old stable preferences and procedures, which are exactly what the store exists to preserve; a default max-result count; =raw/= paths appear only as source references, never as primary results; exit codes distinguish no-match, invalid/missing KB, and a lint/index failure.
   - =ai-kb remember= — the write protocol above (fetch/ff, write, regenerate index, full lint gate, commit; push is the timer's job; under =flock=).
   - =ai-kb lint= — org-lint fatal checks, duplicate ids, broken id-links (excl =raw/=), missing required properties, bad project slugs, stale/incomplete index, credential scan of nodes and =raw/=. This is what =remember= runs before commit and what curation runs as a sweep.
   - =ai-kb curate --dry-run= — report duplicates, orphans, contested/superseded nodes, raw captures with no compiled node, nodes untouched past a horizon.
@@ -165,14 +172,37 @@ The access layer is an *agent-neutral contract*, not a Claude-only prompt snippe
 - *Admin split:* destructive operations — merge nodes, delete a node or raw capture, rewrite backlinks, mark superseded — are *human-confirmed only*, never automatic.
 - *Capability levels* (named so adapters know their lane): =file-only= (read/grep/template-write), =cli= (call =ai-kb=), =mcp= and =semantic= are vNext. Claude v1 uses =cli= with the rule adapter; until the CLI exists, =file-only= following the contract template is the bootstrap path.
 
-* The Emacs switch: guard contract
+* The Emacs switch: a full org-roam profile
 
-=org-roam-db-autosync-mode= is on, and a global =org-after-todo-state-change-hook= (=cj/org-roam-copy-todo-to-today=) copies completed tasks into the *active* roam's daily. Naive rebinding means a task completion or capture while switched lands in the wrong roam.
+Switching is *not* a two-variable rebind. The personal org-roam surface has many globals and hooks that would misroute into ai-kb: =org-roam-directory=, =org-roam-db-location=, =org-roam-dailies-directory= (personal journals), capture templates, tag/topic/recipe find wrappers that reference personal template paths, the agenda/refile finalize hook (=cj/org-roam-add-node-to-agenda-files-finalize-hook=) that can add captured nodes to personal agenda files, and the completed-task→daily hook (=cj/org-roam-copy-todo-to-today=). The switch therefore installs an *ai-kb profile*, restored exactly on exit:
 
-- *On entry* (=cj/org-roam-switch-to-ai-kb=): rebind =org-roam-directory= + =org-roam-db-location=; *rescope or disable* the completed-task→daily hook; =org-roam-db-sync=; surface the active KB in the modeline/echo.
-- *On exit* (=cj/org-roam-switch-to-personal=): restore both variables *exactly* and restore the hook.
-- *Abnormal exit:* if Emacs is killed while switched, on-exit never runs. The config re-asserts personal-roam state at startup (or detects a stale switched state), so a crash can't leave the completed-task hook rescoped into ai-kb.
-- Tests assert the completed-task hook does not fire into ai-kb while switched.
+- directory + db location + the file-exclude regexp (=raw/= + =index*.org=)
+- dailies disabled (or pointed nowhere personal)
+- ai-kb-only capture templates
+- topic/project/recipe find wrappers disabled or rebound to the ai-kb profile
+- agenda/refile finalize hook + completed-task→daily hook neutralized so nothing from ai-kb lands in personal agenda files or journals
+- *Abnormal exit:* if Emacs is killed while switched, the config re-asserts the personal profile at startup, so a crash can't leave personal hooks rescoped into ai-kb.
+
+Tests assert *profile-level* behavior — not just dir/db restore, but that the completed-task and agenda hooks don't fire into ai-kb while switched, and that personal templates/dailies are untouched.
+
+* Human edits must use the same safety model
+
+One safety boundary for *both* agent and human writes. =ai-kb remember= linting + indexing + committing must not be bypassed when Craig edits a node in Emacs and saves. The v1 mechanism: an =ai-kb= minor mode on buffers under the store with an =after-save-hook= that runs the same post-save sequence under =flock= — regenerate index, full =ai-kb lint=, commit, update push state. A lint failure on save surfaces the problem rather than silently committing a broken node. (Read-only-with-an-edit-command is the fallback if the after-save approach proves fiddly; either way there is exactly one write path.)
+
+* Emacs browsing surface
+
+The spec promises first-class browsing, so Step 2 names the commands rather than leaving Craig to remember low-level org-roam + git details. All operate within the ai-kb profile and exclude =raw/= + generated index:
+
+- =cj/ai-kb-dashboard= — a status buffer (or =index.org= with a banner): active KB, node count, unpushed commits, push-failure state, curation-due, last index time, last sync time. Wraps =ai-kb status=/=doctor=.
+- =cj/ai-kb-find-node= — =org-roam-node-find= in the profile.
+- =cj/ai-kb-search= — =ai-kb query= or =consult-ripgrep= scoped to the store.
+- =cj/ai-kb-show-node= — resolve an ID-first pointer (=ai-kb: Title (UUID)=) and open the node.
+- =cj/ai-kb-backlinks= — backlinks excluding =raw/= and the generated index.
+- =cj/ai-kb-map= — a graph/map via built-in =org-roam-graph= or a small DOT export from =[[id:...]]= links, excluding =raw/= + index, filterable by project/tag/status. =graphviz= is checked by =ai-kb doctor= if this command needs it. Richer interactive graph (=org-roam-ui=) is vNext.
+
+* Sync only when stale
+
+=org-roam-db-sync= on every switch becomes a visible pause as the store grows, and agent correctness never depends on the db. So =ai-kb sync= (and the switch's entry sync) runs *only when needed* — db missing, or db older than the newest node/index — or when forced with a prefix arg, showing a "syncing…/done" status. Consider running it asynchronously from the dashboard/switch with a pending/running/done indicator.
 
 * Maintenance and curation
 
@@ -204,7 +234,7 @@ Step 1 splits into two slices by dependency — =remember= needs =index= + =lint
 *** Step 1a — the safe write path (minimum usable)
 
 - The =ai-kb= git repo (bare on cjennings.net + clone at the XDG path), seed =index.org=, =AGENT_CONTRACT.org=.
-- =ai-kb index= (regenerate from properties), =ai-kb lint= (the full check set + org-lint fatal gate + credential scan), =ai-kb remember= (write protocol: fetch/ff, write, regen index, full-lint gate, commit, =flock=), =ai-kb doctor= (health + push-state report).
+- =ai-kb index= (regenerate from properties incl. =:SUMMARY:=), =ai-kb lint= (full check set: org-lint fatal gate + required-property check incl. =:SUMMARY:= + credential scan), =ai-kb remember= (write protocol: fetch/ff, write, regen index, full-lint gate, commit, =flock=; lint+index in one Emacs invocation), =ai-kb doctor= / =ai-kb status= (health + push-state + raw-size report).
 - =claude-rules/ai-kb.md= adapter (points at the contract; routing + proactive + contradiction rules + concrete L1 triggers + "use =ai-kb remember=, never bypass =ai-kb lint="); =make install= links it.
 - =scripts/setup-ai-kb.sh= + =make ai-kb-init=; the one-time server bootstrap documented.
 
@@ -212,14 +242,19 @@ After 1a the agent can remember, lint, and check health — the safe write path 
 
 *** Step 1b — retrieval, maintenance, push
 
-- =ai-kb query= (the testable retrieval contract above) and ranking polish.
-- =ai-kb curate --dry-run= and =ai-kb sync=.
+- =ai-kb query= (the testable retrieval contract: lexical score + recency tie-break + match reason) plus the =ai-kb show= / =ai-kb backlinks= inspection helpers.
+- =ai-kb curate --dry-run= (incl. large/orphan =raw/= reporting) and =ai-kb sync= (only-when-stale).
 - =ai-kb-push.timer= + =ai-kb-push.service= =systemd --user= units (debounced background push) installed and enabled by =setup-ai-kb.sh=, plus the push-failure log + =doctor=/startup surfacing.
 - =~/code/rulesets/.ai/workflows/ai-kb-curate.org= — the human-gated curation workflow, surfaced when the node-count trigger makes it due.
 
 ** Step 2 — Emacs browsing layer
 
-In =org-roam-config.el=: ai-kb dir constant + =org-roam-ai.db=; =cj/org-roam-switch-to-ai-kb= / =…-to-personal= with the guard contract (incl. abnormal-exit re-assert); =cj/ai-kb-db-sync=; =C-c n= keybindings (e.g. =C-c n a= / =C-c n A=, avoiding the dense existing set); which-key labels; ERT tests + =/review-code=.
+In =org-roam-config.el=:
+- The *ai-kb org-roam profile* (=cj/org-roam-switch-to-ai-kb= / =…-to-personal=): dir + db + exclude regexp (=raw/= + =index*.org=), dailies/templates/find-wrappers/agenda+completed-task hooks all rescoped or neutralized, restored exactly on exit, re-asserted at startup after an abnormal exit.
+- *Edit safety:* an =ai-kb= minor mode whose =after-save-hook= runs index + full lint + commit + push-state under =flock=, so human edits use the one safety model.
+- *Conditional sync* =cj/ai-kb-db-sync=: only when the db is missing/stale or forced, with a status indicator.
+- *Browsing surface:* =cj/ai-kb-dashboard=, =-find-node=, =-search=, =-show-node=, =-backlinks=, =-map= (built-in =org-roam-graph= or DOT export, excl =raw/=+index).
+- =C-c n= keybindings (e.g. =C-c n a= switch / =C-c n A= back / a small transient for the browsing commands), which-key labels; profile-level + edit-path ERT tests + =/review-code=.
 
 ** Step 3 and the LLM-Wiki layer — deferred
 
@@ -229,11 +264,14 @@ Separate specs. See [[*vNext][vNext]].
 
 - *CLI / write path:* a write with the remote unreachable still commits locally and does *not* error the agent (push deferred); =flock= serializes concurrent =remember=; each fatal org-lint check (malformed drawer, missing/dup =:ID:=, invalid required property, missing =#+title:=, unparseable org) rejects the commit while a style warning does not; and — the safety boundary — =remember= aborts the commit when the full =ai-kb lint= fails (stale index, broken link, leaked secret in =raw/=), not only on node org-lint.
 - *Index:* regeneration from a fixture KB produces the expected entries; a node added out-of-band appears only after regeneration (proves no drift); =lint --index= flags a missing/stale entry.
-- *query contract:* =ai-kb query --json= returns the specified fields, ordering, and exit codes on a fixture KB; =raw/= paths appear only as source references.
-- *Push observability:* a simulated push failure is recorded to the state file and surfaced by =ai-kb doctor= ("ahead"/"push failed").
-- *Link recipes* (fixture KB): backlink-by-grep (excluding =raw/=) and forward-link-by-grep return correct sets.
-- *Step 2 ERT:* switch sets the ai-kb dir+db; switch-back restores personal exactly; the completed-task hook does not fire into ai-kb while switched; startup re-asserts personal state.
-- *Provisioning* (bats): =setup-ai-kb.sh= idempotent; seeds a node with a valid =:ID:=; =doctor= passes on a freshly-provisioned repo.
+- *Lint gates:* a node missing =:SUMMARY:= (or any required property) fails =ai-kb lint=; the credential scan rejects a secret in a node or =raw/= text file and skips binaries.
+- *query contract:* =ai-kb query --json= returns the specified fields (incl. match reason), exit codes, and =raw/= only as source refs on a fixture KB; a title match outranks a body-only match, with recency only breaking ties (an old preference is not buried under a newer body-only hit).
+- *Index is not a backlink source:* a node referenced only by =index.org= still reports as an orphan in =curate=; the index contains no =[[id:...]]= links.
+- *Push observability:* a simulated push failure is recorded to the state file and surfaced by =ai-kb doctor= / =ai-kb status= ("ahead"/"push failed").
+- *Link recipes* (fixture KB): backlink-by-grep (excluding =raw/= + index) and forward-link-by-grep return correct sets.
+- *Step 2 profile:* switch installs the ai-kb profile and switch-back restores personal *exactly* — completed-task hook, agenda/refile finalize hook, dailies, and capture templates all untouched by ai-kb while switched; a save in an ai-kb buffer runs the index+lint+commit sequence (and a bad save surfaces the lint failure rather than committing); startup re-asserts personal state after a simulated abnormal exit.
+- *Performance* (=:perf= tag): fixture KBs at 100 and 1,000 nodes; assert =index=, =query=, =lint=, and =remember= stay under a stated time budget (catches an accidental per-check Emacs startup or an O(n^2) scan early).
+- *Provisioning* (bats): =setup-ai-kb.sh= idempotent; seeds a node with a valid =:ID:= and =:SUMMARY:=; =doctor= passes on a freshly-provisioned repo.
 
 * Scaling path (planned, not built)
 
@@ -258,6 +296,7 @@ Everything not listed was accepted as written and woven in. Listed: modified, re
 - *Storage location → Option 1 (emacs home) REJECTED* (public mirror leaks); *XDG dedicated private repo ADOPTED;* Syncthing dropped.
 - *Curation full workflow → kept v1-minimal:* read-only =curate --dry-run= ships v1; the interactive merge/split flow is human-gated.
 - *Review 5 (all six) → ACCEPTED.* #1 (the only blocker): =remember= runs the *full* =ai-kb lint= — index freshness, dup IDs, broken links, secret scan — before commit, not just node org-lint. #2: an explicit org-lint fatal-check list (tests target it). #3: push failures are observable (state-file log + =doctor= + startup nudge). #4: =ai-kb query= gets a testable contract (text/=--json=, fixed fields, ordering, exit codes). #5: Step 1 split into 1a (safe write path) / 1b (query/curate/sync/timer/workflow). #6: durable pointers are ID-first (=ai-kb: <Title> (<UUID>)=), not filename-first. Nothing rejected — all six were sound hardening.
+- *Review 6 (all ten + enhancements) → ACCEPTED.* The UX/performance pass, all sound. #1 (the key gap): human Emacs edits use the *same* safety model as agent writes — an ai-kb minor mode whose after-save-hook runs index + full lint + commit under =flock=, so there's one write path, not two. #2: the generated =index.org= is invisible to backlink/orphan logic (excluded from the scan; its references are plain =Title (UUID)= text, not =id:= links). #3: a required =:SUMMARY:= property, so the index/query rebuild from properties without inferring or calling an LLM. #4: =ai-kb query= ranks lexically (title > tag/project/status > summary > body) with recency only as a tie-break, and returns a match reason. #5: performance budgets (100/1,000-node fixtures) + lint+index in one Emacs invocation + =emacsclient=-preferred-with-batch-fallback; the full-lint gate stays, with a cheap/full split held in reserve. #6: switch installs a full org-roam *profile* (dailies, templates, find wrappers, agenda/refile + completed-task hooks all rescoped), not a two-variable swap. #7/#8: a first-class browsing surface (=dashboard/find-node/search/show-node/backlinks/map=), map via built-in =org-roam-graph= or DOT export with =graphviz= in =doctor=. #9: a =raw/= size/type policy (bounded excerpt default, =raw/files/= for large, text-only secret scan, size reporting in =doctor=/=curate=). #10: sync only when stale. Enhancements: =ai-kb show=/=backlinks=/=status= CLI helpers and the generated-files-ignored rule, all folded in.
 
 * Agreed decisions
 
@@ -272,7 +311,14 @@ Everything not listed was accepted as written and woven in. Listed: modified, re
 
 * Open decisions
 
-None — all four resolved 2026-05-24 (Craig). See [[*Agreed decisions][Agreed decisions]]. The spec is fully decided and buildable.
+Architecture is decided. These implementation choices are now settled with build-time defaults (2026-05-24); the numeric ones in the first two are starting points to calibrate against the real repo and machine, not invariants.
+
+- [X] *Concrete limits.* Raw excerpt soft cap ~2,000 words (≈16 KB); anything larger is captured as a small pointer-stub plus the full file under =raw/files/=, and only on explicit request. =curate --dry-run= flags any =raw/= file over 256 KB as "unusually large." Curation nudge fires at 150 nodes, then re-fires every +50, tracked by =:LAST_CURATED:= rotation.
+- [X] *Performance budgets* (=:perf= fixtures; one =emacsclient= round-trip assumed, batch fallback ≈ +1s; calibrate, don't treat as invariants): =index= 100 < 0.5s / 1,000 < 3s; =query= 100 < 0.2s / 1,000 < 1s; =lint= 100 < 1s / 1,000 < 6s; =remember= (write + index + full lint, remote mocked) 100 < 1.5s / 1,000 < 8s; =sync= 100 < 2s / 1,000 < 15s. A miss is a *signal* (an accidental per-check Emacs startup, an O(n²) scan), surfaced for investigation, not an automatic build failure.
+- [X] *Lexical scoring weights.* A node's score is the sum of the weight of each field that matches, counted once per field: title 100, tag/project/status 50 each, summary 20, body 5. No term-frequency weighting in v1 — a field either matches or it doesn't. Recency tie-break: when scores are equal, the higher =:UPDATED:= wins.
+- [X] *Map implementation.* Built-in =org-roam-graph= first — the profile's =org-roam-file-exclude-regexp= already keeps =raw/= and =index*.org= out of the db, so the graph inherits the right scope for free, and it is the least code. A custom DOT export is the fallback only if project/tag/status *filtering* proves necessary (=org-roam-graph= can't filter), which is a small additive step on top.
+- [X] *After-save failure UX.* The save always writes to disk and the buffer stays fully editable — never read-only, never blocked. The pipeline runs after the write; on lint failure it *does not commit*, writes the findings to a =*ai-kb-lint*= buffer (popped to, not focus-stealing), and the uncommitted-failing state shows in the modeline + dashboard. Craig fixes and re-saves; a clean save commits. A briefly saved-but-uncommitted file is the intended state, not a trap.
+- [X] *After-save recursion guard.* Two layers. (a) The =ai-kb= minor mode's activation predicate excludes =index*.org= and =raw/=, so generated and captured files never carry the hook. (b) The pipeline binds a re-entrancy flag (=cj/ai-kb--in-pipeline=) that the after-save-hook checks and early-returns on, so programmatic =index.org= regeneration and the commit-time write can't retrigger it. Index regeneration also prefers =write-region= over =save-buffer= to avoid the hook entirely.
 
 * vNext
 
