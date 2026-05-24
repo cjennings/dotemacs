@@ -132,15 +132,21 @@ Returns the transformed string without modifying the buffer."
      (mapconcat (lambda (line) (concat line suffix)) lines-to-process "\n")
      (if has-trailing-newline "\n" ""))))
 
+(defun cj/--region-or-buffer-bounds ()
+  "Return a cons (START . END) for the active region, else the whole buffer.
+The single source of the region-or-buffer contract shared by the
+`*-in-region-or-buffer' commands: operate on the active region when one is
+active, otherwise the entire buffer."
+  (if (use-region-p)
+      (cons (region-beginning) (region-end))
+    (cons (point-min) (point-max))))
+
 (defun cj/append-to-lines-in-region-or-buffer (str)
   "Append STR to the end of each line in the region or entire buffer."
   (interactive "sEnter string to append: ")
-  (let* ((start-pos (if (use-region-p)
-                        (region-beginning)
-                      (point-min)))
-         (end-pos (if (use-region-p)
-                      (region-end)
-                    (point-max)))
+  (let* ((bounds (cj/--region-or-buffer-bounds))
+         (start-pos (car bounds))
+         (end-pos (cdr bounds))
          (text (buffer-substring start-pos end-pos))
          (insertion (cj/--append-to-lines text str)))
     (delete-region start-pos end-pos)
@@ -167,12 +173,9 @@ Returns the transformed string without modifying the buffer."
 (defun cj/prepend-to-lines-in-region-or-buffer (str)
   "Prepend STR to the beginning of each line in the region or entire buffer."
   (interactive "sEnter string to prepend: ")
-  (let* ((start-pos (if (use-region-p)
-                        (region-beginning)
-                      (point-min)))
-         (end-pos (if (use-region-p)
-                      (region-end)
-                    (point-max)))
+  (let* ((bounds (cj/--region-or-buffer-bounds))
+         (start-pos (car bounds))
+         (end-pos (cdr bounds))
          (text (buffer-substring start-pos end-pos))
          (insertion (cj/--prepend-to-lines text str)))
     (delete-region start-pos end-pos)
@@ -195,12 +198,9 @@ Returns the indented text without modifying the buffer."
 COUNT is the number of characters to indent (default 4).
 USE-TABS when non-nil (prefix argument) uses tabs instead of spaces."
   (interactive "p\nP")
-  (let* ((start-pos (if (use-region-p)
-                        (region-beginning)
-                      (point-min)))
-         (end-pos (if (use-region-p)
-                      (region-end)
-                    (point-max)))
+  (let* ((bounds (cj/--region-or-buffer-bounds))
+         (start-pos (car bounds))
+         (end-pos (cdr bounds))
          (text (buffer-substring start-pos end-pos))
          (insertion (cj/--indent-lines text count use-tabs)))
     (delete-region start-pos end-pos)
@@ -242,12 +242,9 @@ Returns the dedented text without modifying the buffer."
 COUNT is the number of characters to remove (default 4).
 Works on region if active, otherwise entire buffer."
   (interactive "p")
-  (let* ((start-pos (if (use-region-p)
-                        (region-beginning)
-                      (point-min)))
-         (end-pos (if (use-region-p)
-                      (region-end)
-                    (point-max)))
+  (let* ((bounds (cj/--region-or-buffer-bounds))
+         (start-pos (car bounds))
+         (end-pos (cdr bounds))
          (text (buffer-substring start-pos end-pos))
          (insertion (cj/--dedent-lines text count)))
     (delete-region start-pos end-pos)
