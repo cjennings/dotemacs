@@ -77,7 +77,7 @@ Adjust this if the title doesn't appear centered under the banner image.")
    (list "i" #'nerd-icons-faicon  "nf-fa-comments"     "IRC"        "Emacs Relay Chat"       (lambda () (cj/erc-switch-to-buffer-with-completion)))
    (list "g" #'nerd-icons-faicon  "nf-fa-telegram"     "Telegram"   "Telega Telegram Client" (lambda () (cj/telega)))
    (list "s" #'nerd-icons-faicon  "nf-fa-slack"        "Slack"      "Slack Client"           (lambda () (cj/slack-start)))
-   (list "l" #'nerd-icons-octicon "nf-oct-issue_tracks" "Linear"    "Linear Issue Tracker"   (lambda () (linear-emacs-list-issues))))
+   (list "l" #'nerd-icons-octicon "nf-oct-issue_tracks" "Linear"    "Linear Issue Tracker"   (lambda () (pearl-list-issues))))
   "Dashboard launcher table: (KEY ICON-FN ICON-NAME LABEL TOOLTIP ACTION).
 Drives both `dashboard-navigator-buttons' and the dashboard-mode-map keys.")
 

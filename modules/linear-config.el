@@ -3,7 +3,7 @@
 
 ;;; Commentary:
 
-;; Wires the local linear-emacs checkout (~/code/linear-emacs) into the config,
+;; Wires the local pearl checkout (~/code/pearl) into the config,
 ;; pointed at DeepSat's Linear workspace.
 ;;
 ;; Authentication:
@@ -31,21 +31,21 @@
 
 (require 'system-lib)  ;; provides cj/auth-source-secret-value
 
-;; Owned by linear-emacs, which loads lazily via :load-path below.
-(defvar linear-emacs-api-key)
-(defvar linear-emacs-default-team-id)
-(defvar linear-emacs-org-file-path)
-(declare-function linear-emacs--graphql-request-async "linear-emacs")
+;; Owned by pearl, which loads lazily via :load-path below.
+(defvar pearl-api-key)
+(defvar pearl-default-team-id)
+(defvar pearl-org-file-path)
+(declare-function pearl--graphql-request-async "pearl")
 
 (defconst cj/linear-team-id "9fca2cf6-390c-4102-a9ff-f94a4ed823c5"
   "Linear team id for DeepSat's Software Engineering team (the SE-* issues).")
 
 (defun cj/linear--ensure-api-key ()
-  "Load the Linear API key from authinfo.gpg into `linear-emacs-api-key' if unset.
+  "Load the Linear API key from authinfo.gpg into `pearl-api-key' if unset.
 Looks up host \"api.linear.app\".  This is a no-op once the key is set, so the
 GPG prompt fires at most once per session and only when Linear is actually used."
-  (unless linear-emacs-api-key
-    (setq linear-emacs-api-key (cj/auth-source-secret-value "api.linear.app"))))
+  (unless pearl-api-key
+    (setq pearl-api-key (cj/auth-source-secret-value "api.linear.app"))))
 
 (defun cj/linear--ensure-key-before (&rest _)
   "Advice: load the Linear API key before a GraphQL request runs.
@@ -54,50 +54,50 @@ Named (not a lambda) so the advice is idempotent across reloads and removable."
 
 (defun cj/linear--install-key-advice ()
   "Install the lazy API-key loader on every entry point that needs the key.
-The GraphQL request funnels all real operations.  `linear-emacs-check-setup'
-reads `linear-emacs-api-key' directly without making a request, so it needs the
+The GraphQL request funnels all real operations.  `pearl-check-setup'
+reads `pearl-api-key' directly without making a request, so it needs the
 loader too — otherwise it reports \"not set\" on a fresh session before the key
 has ever been fetched."
-  (advice-add 'linear-emacs--graphql-request-async :before
+  (advice-add 'pearl--graphql-request-async :before
               #'cj/linear--ensure-key-before)
-  (advice-add 'linear-emacs-check-setup :before
+  (advice-add 'pearl-check-setup :before
               #'cj/linear--ensure-key-before))
 
-(use-package linear-emacs
+(use-package pearl
   :ensure nil                       ;; local checkout, not from an archive
-  :load-path "~/code/linear-emacs"
+  :load-path "~/code/pearl"
   :defer t
-  :commands (linear-emacs-list-issues
-             linear-emacs-list-issues-by-project
-             linear-emacs-list-issues-filtered
-             linear-emacs-run-saved-query
-             linear-emacs-run-view
-             linear-emacs-refresh-current-view
-             linear-emacs-refresh-current-issue
-             linear-emacs-open-current-issue
-             linear-emacs-open-current-view-in-linear
-             linear-emacs-new-issue
-             linear-emacs-delete-current-issue
-             linear-emacs-add-comment
-             linear-emacs-set-assignee
-             linear-emacs-set-state
-             linear-emacs-set-priority
-             linear-emacs-set-labels
-             linear-emacs-sync-current-issue
-             linear-emacs-sync-current-issue-title
-             linear-emacs-enable-org-sync
-             linear-emacs-disable-org-sync
-             linear-emacs-clear-cache
-             linear-emacs-toggle-debug
-             linear-emacs-load-api-key-from-env
-             linear-emacs-test-connection
-             linear-emacs-check-setup)
+  :commands (pearl-list-issues
+             pearl-list-issues-by-project
+             pearl-list-issues-filtered
+             pearl-run-saved-query
+             pearl-run-view
+             pearl-refresh-current-view
+             pearl-refresh-current-issue
+             pearl-open-current-issue
+             pearl-open-current-view-in-linear
+             pearl-new-issue
+             pearl-delete-current-issue
+             pearl-add-comment
+             pearl-set-assignee
+             pearl-set-state
+             pearl-set-priority
+             pearl-set-labels
+             pearl-sync-current-issue
+             pearl-sync-current-issue-title
+             pearl-enable-org-sync
+             pearl-disable-org-sync
+             pearl-clear-cache
+             pearl-toggle-debug
+             pearl-load-api-key-from-env
+             pearl-test-connection
+             pearl-check-setup)
   :config
-  (setq linear-emacs-default-team-id cj/linear-team-id)
+  (setq pearl-default-team-id cj/linear-team-id)
   ;; Keep the synced org file inside emacs home, next to the calendar-sync
   ;; output (gcal.org / pcal.org / dcal.org).  Without this it falls back to
   ;; `org-directory'/gtd/linear.org and silently creates a stray ~/org tree.
-  (setq linear-emacs-org-file-path
+  (setq pearl-org-file-path
         (expand-file-name "data/linear.org" user-emacs-directory))
   ;; Load the key lazily before any operation that reads it — both the GraphQL
   ;; request and the check-setup diagnostic.  Retries if the key was added to
@@ -115,36 +115,36 @@ has ever been fetched."
 (global-set-key (kbd "C-; L") cj/linear-keymap)
 
 ;; Lists and views.
-(define-key cj/linear-keymap (kbd "l") #'linear-emacs-list-issues)
-(define-key cj/linear-keymap (kbd "p") #'linear-emacs-list-issues-by-project)
-(define-key cj/linear-keymap (kbd "f") #'linear-emacs-list-issues-filtered)
-(define-key cj/linear-keymap (kbd "q") #'linear-emacs-run-saved-query)
-(define-key cj/linear-keymap (kbd "v") #'linear-emacs-run-view)
+(define-key cj/linear-keymap (kbd "l") #'pearl-list-issues)
+(define-key cj/linear-keymap (kbd "p") #'pearl-list-issues-by-project)
+(define-key cj/linear-keymap (kbd "f") #'pearl-list-issues-filtered)
+(define-key cj/linear-keymap (kbd "q") #'pearl-run-saved-query)
+(define-key cj/linear-keymap (kbd "v") #'pearl-run-view)
 ;; Refresh.
-(define-key cj/linear-keymap (kbd "g") #'linear-emacs-refresh-current-view)
-(define-key cj/linear-keymap (kbd "r") #'linear-emacs-refresh-current-issue)
+(define-key cj/linear-keymap (kbd "g") #'pearl-refresh-current-view)
+(define-key cj/linear-keymap (kbd "r") #'pearl-refresh-current-issue)
 ;; Issue actions.
-(define-key cj/linear-keymap (kbd "o") #'linear-emacs-open-current-issue)
-(define-key cj/linear-keymap (kbd "V") #'linear-emacs-open-current-view-in-linear)
-(define-key cj/linear-keymap (kbd "n") #'linear-emacs-new-issue)
-(define-key cj/linear-keymap (kbd "D") #'linear-emacs-delete-current-issue)
+(define-key cj/linear-keymap (kbd "o") #'pearl-open-current-issue)
+(define-key cj/linear-keymap (kbd "V") #'pearl-open-current-view-in-linear)
+(define-key cj/linear-keymap (kbd "n") #'pearl-new-issue)
+(define-key cj/linear-keymap (kbd "D") #'pearl-delete-current-issue)
 ;; Sync.
-(define-key cj/linear-keymap (kbd "s") #'linear-emacs-enable-org-sync)
-(define-key cj/linear-keymap (kbd "S") #'linear-emacs-disable-org-sync)
-(define-key cj/linear-keymap (kbd "u") #'linear-emacs-sync-current-issue)
-(define-key cj/linear-keymap (kbd "U") #'linear-emacs-sync-current-issue-title)
+(define-key cj/linear-keymap (kbd "s") #'pearl-enable-org-sync)
+(define-key cj/linear-keymap (kbd "S") #'pearl-disable-org-sync)
+(define-key cj/linear-keymap (kbd "u") #'pearl-sync-current-issue)
+(define-key cj/linear-keymap (kbd "U") #'pearl-sync-current-issue-title)
 ;; Maintenance.
-(define-key cj/linear-keymap (kbd "t") #'linear-emacs-test-connection)
-(define-key cj/linear-keymap (kbd "?") #'linear-emacs-check-setup)
-(define-key cj/linear-keymap (kbd "k") #'linear-emacs-clear-cache)
-(define-key cj/linear-keymap (kbd "d") #'linear-emacs-toggle-debug)
+(define-key cj/linear-keymap (kbd "t") #'pearl-test-connection)
+(define-key cj/linear-keymap (kbd "?") #'pearl-check-setup)
+(define-key cj/linear-keymap (kbd "k") #'pearl-clear-cache)
+(define-key cj/linear-keymap (kbd "d") #'pearl-toggle-debug)
 ;; Edit-issue sub-prefix.
 (define-key cj/linear-keymap (kbd "e") cj/linear-edit-keymap)
-(define-key cj/linear-edit-keymap (kbd "a") #'linear-emacs-set-assignee)
-(define-key cj/linear-edit-keymap (kbd "s") #'linear-emacs-set-state)
-(define-key cj/linear-edit-keymap (kbd "p") #'linear-emacs-set-priority)
-(define-key cj/linear-edit-keymap (kbd "b") #'linear-emacs-set-labels)
-(define-key cj/linear-edit-keymap (kbd "c") #'linear-emacs-add-comment)
+(define-key cj/linear-edit-keymap (kbd "a") #'pearl-set-assignee)
+(define-key cj/linear-edit-keymap (kbd "s") #'pearl-set-state)
+(define-key cj/linear-edit-keymap (kbd "p") #'pearl-set-priority)
+(define-key cj/linear-edit-keymap (kbd "b") #'pearl-set-labels)
+(define-key cj/linear-edit-keymap (kbd "c") #'pearl-add-comment)
 
 ;; Register which-key labels lazily so this module's require doesn't depend on
 ;; which-key being loaded.  Same pattern as the other client modules.
