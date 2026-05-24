@@ -5,7 +5,7 @@
 
 * Status
 
-Ready. Four reviews incorporated (=ai-kb-review.org=, =-review2.org=, =-review3.org=, =-review4.org=; all 2026-05-24). The four original blockers (version control + recovery, switch-state safety, startup surface, project-awareness) and the two write-loop caveats from review 4 (push-failure contract, index regeneration) have decisions. Review 3's operational shape (a repo-resident agent-neutral contract, a minimal CLI, maintenance commands, multi-agent provenance) is adopted. Cross-agent is *not a near-term goal* (Craig, 2026-05-24): v1 ships the Claude adapter over the neutral contract, and other-agent adapters (Codex/Ollama, MCP) are deferred to [[*vNext][vNext]]. All open decisions are now resolved (store path, CLI form, push cadence, curation trigger — see [[*Agreed decisions][Agreed decisions]]); the spec is fully decided and Step 1 is buildable.
+Ready. Five reviews incorporated (=ai-kb-review.org= through =-review5.org=; all 2026-05-24). The four original blockers (version control + recovery, switch-state safety, startup surface, project-awareness) and review 4's two write-loop caveats (push-failure contract, index regeneration) have decisions. Review 3's operational shape (a repo-resident agent-neutral contract, a minimal CLI, maintenance commands, multi-agent provenance) is adopted. Review 5's implementation-hardening is folded in: the commit gate runs the *full* =ai-kb lint= (not just node org-lint), an explicit org-lint fatal-check list, observable push failures, a testable =ai-kb query= contract, a Step 1a/1b split, and ID-first durable pointers. Cross-agent is *not a near-term goal* (Craig, 2026-05-24): v1 ships the Claude adapter over the neutral contract, and other-agent adapters (Codex/Ollama, MCP) are deferred to [[*vNext][vNext]]. All open decisions are resolved (see [[*Agreed decisions][Agreed decisions]]); the spec is fully decided and Step 1 is buildable.
 
 In scope: Step 1 (store + contract/CLI + global rule + provisioning) and Step 2 (Emacs browsing layer). Step 3 (migrating =.ai/sessions= and workflows in) and the full LLM-Wiki layer are *deferred to their own specs* — see [[*vNext][vNext]].
 
@@ -48,12 +48,13 @@ ai-kb is its *own git repository* — not in =~/sync/org= (Syncthing has proven 
 The agent writes nodes from the shell, possibly from several machines or concurrent processes, so the write path is a defined protocol, not a bare =git push=. Encapsulated in the =ai-kb remember= operation (see [[*The agent contract and operations][operations]]):
 
 1. *Before write:* =git fetch=; if behind and clean, =git pull --ff-only=; if diverged or the tree is dirty with unrelated changes, *abort and surface* — don't auto-merge.
-2. *Validate:* =org-lint= the node; reject on *error*-level problems (not warnings — see [[*Node validity (org-lint)][Node validity]]).
+2. *Write/edit the node.*
 3. *Regenerate the index* from node properties (see [[*Startup surface and retrieval contract][Startup surface]]).
-4. *Commit locally — always.* The local commit is the durable record.
-5. *Push — best-effort, non-blocking, never fatal.* A failed push (offline, network blip, gpg-agent SSH key not loaded — a real, observed failure mode) is *logged and ignored*, never errors or hangs the agent. =remember= commits locally and does *not* push; a background =systemd --user= timer (~15 min) pushes when the repo is ahead, carrying the backlog. Local commits are already durable, so decoupling the push from the write keeps every =remember= fast and avoids a round-trip per memory.
-6. *On push rejection* (remote moved): do *not* blind-retry. Fetch, report the divergence, leave the local commit intact for resolution.
-7. *Same-machine concurrency:* =flock= around =remember= serializes concurrent agents (Claude + Codex + an Emacs save) so they don't race. A v1 file lock; not a daemon.
+4. *Validate the whole change, not just the node — this is the safety boundary.* Run the full =ai-kb lint= over the change set before committing: =org-lint= fatal checks on *both* the edited node and the regenerated index, index freshness/completeness, duplicate =:ID:=, broken =[[id:...]]= links (excl =raw/=), missing required properties, invalid project slugs, and a credential/secret scan of nodes *and* =raw/=. Any failure aborts the commit. (Gating only on single-node org-lint would let a stale index or a leaked secret through — then the write protocol isn't the boundary the spec claims.)
+5. *Commit locally — always.* The local commit is the durable record.
+6. *Push — best-effort, non-blocking, never fatal, and observable.* =remember= commits locally and does *not* push; a background =systemd --user= timer (~15 min) pushes when the repo is ahead. A failed push (offline, network blip, gpg-agent SSH key not loaded — observed this session) is *logged to a state file* (under the repo or =$XDG_STATE_HOME/ai-kb=) and ignored, never erroring or hanging the agent. Visibility comes from three surfaces so the KB can't go quietly local-only: the log, =ai-kb doctor= (reports "ahead N", "push failed", or "remote diverged"), and a one-line startup/adapter nudge when there are unpushed commits or a recorded rejection.
+7. *On push rejection* (remote moved): do *not* blind-retry. Fetch, record the divergence, leave the local commit intact for resolution.
+8. *Same-machine concurrency:* =flock= around =remember= serializes concurrent agents (Claude + Codex + an Emacs save) so they don't race. A v1 file lock; not a daemon.
 
 * Why a separate database
 
@@ -90,8 +91,8 @@ Body. Link related nodes with [[id:OTHER-UUID][Their title]], optionally prefixe
 with a relation label: SUPERSEDES, CONTRADICTS, RELATES_TO, IMPLEMENTS, DERIVED_FROM.
 #+end_src
 
-- *Filename:* org-roam convention — =YYYYMMDDHHMMSS-slug.org= (or =slug.org= for stable, frequently-linked nodes; prefer stable slugs for nodes that =MEMORY.md= will point at, so curation merges don't dangle the pointer).
-- *ID:* a real UUID (=uuidgen=) — org-roam won't index a node without one.
+- *Filename:* org-roam convention — =YYYYMMDDHHMMSS-slug.org= (or =slug.org= for stable, frequently-linked nodes). Filenames are for humans and can change during curation, so they are *not* the durable identity.
+- *ID:* a real UUID (=uuidgen=) — org-roam won't index a node without one, and the =:ID:= is the *durable identity*. External pointers (a per-project =MEMORY.md= → an ai-kb node) are *ID-first*: =ai-kb: <Title> (<UUID>)=, resolved by ID with title as fallback, so a rename or curation merge doesn't dangle the pointer.
 - *Type tags* (=#+filetags:=): =:principle:= =:preference:= =:procedure:= =:observation:= =:reference:=.
 - *Project slugs* (=:PROJECTS:=): derived from the project directory basename (so =~/.emacs.d= → =:emacs:=, the DeepSat repo → =:deepsat:=), with =:general:= for cross-cutting nodes. The derivation rule lives in the contract so every agent produces the same slug; new slugs are recorded in the index's project list.
 - *Provenance:* =:CREATED_BY:= and =:CONFIDENCE:= let later curation and trust policy distinguish "Craig stated this" from "a model inferred it." =:CONFIDENCE:= here is *provenance* (how the claim was obtained), not a numeric grounding score — the latter is vNext. =:VISIBILITY:= is two-valued in v1 (the full =public|work-private|secret= taxonomy is vNext); secrets are never stored at all (see [[*Security and privacy][Security]]).
@@ -136,10 +137,16 @@ No database needed; grep the files (excluding =raw/=):
 
 The agent writes raw org from the shell, bypassing Emacs's structural editing, so malformed org (broken drawer, bad property, broken timestamp) can slip in and make =org-roam-db-sync= choke or mis-index. Distinct from the semantic link/credential checks; both run.
 
-- *On write:* =org-lint= via =emacs --batch=, gating on *error*-level (structural) problems only — a benign style warning must not reject a good node. A node that fails is not committed.
+- *On write:* =org-lint= via =emacs --batch=, gating on a concrete *fatal-check* list (not the vague "error-level," so a future org-lint behavior change can't silently weaken or over-tighten the gate, and tests target the list directly):
+  - malformed property drawer
+  - missing or duplicate =:ID:=
+  - an invalid required-property line
+  - missing =#+title:=
+  - structurally invalid org that prevents parse/index
+  Style warnings stay non-fatal. A node hitting a fatal check is not committed.
 - *In curation:* an =org-lint= sweep over all nodes catches drift or bad Emacs-side hand-edits.
 
-Cheap (sub-second batch on one small file); the safety net that makes "the agent writes raw org" trustworthy. Reuses/extends the project's =scripts/lint-org.el=.
+Cheap (sub-second batch on one small file); the safety net that makes "the agent writes raw org" trustworthy. Reuses/extends the project's =scripts/lint-org.el=. This node-level gate is run as part of the full =ai-kb lint= the write protocol invokes before commit (step 4 above) — it never stands alone as the only check.
 
 * The agent contract and operations
 
@@ -150,9 +157,9 @@ The access layer is an *agent-neutral contract*, not a Claude-only prompt snippe
 - *Operations* — a small =ai-kb= CLI (shell, calling =emacs --batch= for org-lint/index work) is the canonical surface, so humans and every agent share one contract:
   - =ai-kb doctor= — repo present, remote reachable + private, branch state, org-roam db buildable, required tools installed, adapter linked, no obvious secrets.
   - =ai-kb index= — regenerate =index.org= from node properties.
-  - =ai-kb query <context>= — read the index, return relevant node ids/summaries + raw paths.
-  - =ai-kb remember= — the write protocol above (fetch/ff, validate, regenerate index, commit, best-effort push, under =flock=).
-  - =ai-kb lint= — org-lint, duplicate ids, broken id-links, missing required properties, bad project slugs, stale index, credential scan.
+  - =ai-kb query <context>= — read the index, return relevant nodes. It is the surface adapters call before spending context on full nodes, so it has a *testable contract* even though v1 retrieval is plain lexical: default output is plain text (one node per line), with =--json= for tests and tools; fields are title, ID, summary, projects, status, updated, path; it searches index rows + title/tags/properties/body; a default max-result count and ordering (most-recently-updated first); =raw/= paths appear only as source references, never as primary results; exit codes distinguish no-match, invalid/missing KB, and a lint/index failure.
+  - =ai-kb remember= — the write protocol above (fetch/ff, write, regenerate index, full lint gate, commit; push is the timer's job; under =flock=).
+  - =ai-kb lint= — org-lint fatal checks, duplicate ids, broken id-links (excl =raw/=), missing required properties, bad project slugs, stale/incomplete index, credential scan of nodes and =raw/=. This is what =remember= runs before commit and what curation runs as a sweep.
   - =ai-kb curate --dry-run= — report duplicates, orphans, contested/superseded nodes, raw captures with no compiled node, nodes untouched past a horizon.
   - =ai-kb sync= — =org-roam-db-sync= against ai-kb (Emacs-side helper).
 - *Admin split:* destructive operations — merge nodes, delete a node or raw capture, rewrite backlinks, mark superseded — are *human-confirmed only*, never automatic.
@@ -174,7 +181,7 @@ The proactive-write bar controls intake; nothing controls rot, and the system cr
 - =ai-kb doctor= / =ai-kb lint= — health and validity (above).
 - =ai-kb curate --dry-run= surfaces four buckets — duplicates to merge, stale/superseded nodes, orphans (no back- or forward-links), over-broad nodes to split. Craig decides; the agent executes *human-confirmed* merges/splits, repointing =[[id:]]= backlinks (grep + rewrite) and re-linting. A =:LAST_CURATED:= stamp rotates the pass through least-recently-touched nodes.
 - *Trigger (node-count):* curation is "due" when roughly N nodes have been added or gone untouched since the last =:LAST_CURATED:=; =ai-kb doctor= and the session-startup surface emit a one-line nudge when due (mirroring the existing task-review habit). The interactive pass itself is a global workflow at =~/code/rulesets/.ai/workflows/ai-kb-curate.org=, available from every project's session.
-- *Pointer integrity:* before deleting or merging a node, grep for inbound references (other nodes' =[[id:]]= and per-project =MEMORY.md= pointers) and repoint them; prefer stable =slug.org= names for pointer targets.
+- *Pointer integrity:* external pointers are ID-first, so a rename is safe; but a merge or supersede *changes the canonical ID*, so before merging/deleting, grep for inbound references (other nodes' =[[id:]]= and per-project =MEMORY.md= =ai-kb: ... (UUID)= pointers) and repoint the old ID to the new.
 
 * Security and privacy
 
@@ -192,16 +199,23 @@ Per-machine, ordered:
 
 * Build plan
 
-** Step 1 — store + contract/CLI + global rule + provisioning
+Step 1 splits into two slices by dependency — =remember= needs =index= + =lint=, and the adapter needs =remember=, so the safe write path (1a) lands first and the read/maintenance/timer pieces (1b) follow. Same scope, cleaner sequencing.
+
+*** Step 1a — the safe write path (minimum usable)
 
 - The =ai-kb= git repo (bare on cjennings.net + clone at the XDG path), seed =index.org=, =AGENT_CONTRACT.org=.
-- The minimal =ai-kb= CLI (=doctor/index/query/remember/lint/curate/sync=) implementing the write protocol, index regeneration, org-lint gating, credential scan, =flock=.
+- =ai-kb index= (regenerate from properties), =ai-kb lint= (the full check set + org-lint fatal gate + credential scan), =ai-kb remember= (write protocol: fetch/ff, write, regen index, full-lint gate, commit, =flock=), =ai-kb doctor= (health + push-state report).
 - =claude-rules/ai-kb.md= adapter (points at the contract; routing + proactive + contradiction rules + concrete L1 triggers + "use =ai-kb remember=, never bypass =ai-kb lint="); =make install= links it.
-- =ai-kb-push.timer= + =ai-kb-push.service= =systemd --user= units (the debounced background push) installed and enabled by =setup-ai-kb.sh=.
-- =~/code/rulesets/.ai/workflows/ai-kb-curate.org= — the human-gated curation workflow, surfaced when the node-count trigger makes it due.
 - =scripts/setup-ai-kb.sh= + =make ai-kb-init=; the one-time server bootstrap documented.
 
-After Step 1 the agent can remember, query, lint, and curate-report immediately, before the Emacs layer exists.
+After 1a the agent can remember, lint, and check health — the safe write path exists.
+
+*** Step 1b — retrieval, maintenance, push
+
+- =ai-kb query= (the testable retrieval contract above) and ranking polish.
+- =ai-kb curate --dry-run= and =ai-kb sync=.
+- =ai-kb-push.timer= + =ai-kb-push.service= =systemd --user= units (debounced background push) installed and enabled by =setup-ai-kb.sh=, plus the push-failure log + =doctor=/startup surfacing.
+- =~/code/rulesets/.ai/workflows/ai-kb-curate.org= — the human-gated curation workflow, surfaced when the node-count trigger makes it due.
 
 ** Step 2 — Emacs browsing layer
 
@@ -213,8 +227,10 @@ Separate specs. See [[*vNext][vNext]].
 
 * Test strategy
 
-- *CLI / write path:* a node write with the remote unreachable still commits locally and does *not* error the agent (push deferred); =flock= serializes concurrent =remember=; =org-lint= error-level rejects a malformed node, a style warning does not.
+- *CLI / write path:* a write with the remote unreachable still commits locally and does *not* error the agent (push deferred); =flock= serializes concurrent =remember=; each fatal org-lint check (malformed drawer, missing/dup =:ID:=, invalid required property, missing =#+title:=, unparseable org) rejects the commit while a style warning does not; and — the safety boundary — =remember= aborts the commit when the full =ai-kb lint= fails (stale index, broken link, leaked secret in =raw/=), not only on node org-lint.
 - *Index:* regeneration from a fixture KB produces the expected entries; a node added out-of-band appears only after regeneration (proves no drift); =lint --index= flags a missing/stale entry.
+- *query contract:* =ai-kb query --json= returns the specified fields, ordering, and exit codes on a fixture KB; =raw/= paths appear only as source references.
+- *Push observability:* a simulated push failure is recorded to the state file and surfaced by =ai-kb doctor= ("ahead"/"push failed").
 - *Link recipes* (fixture KB): backlink-by-grep (excluding =raw/=) and forward-link-by-grep return correct sets.
 - *Step 2 ERT:* switch sets the ai-kb dir+db; switch-back restores personal exactly; the completed-task hook does not fire into ai-kb while switched; startup re-asserts personal state.
 - *Provisioning* (bats): =setup-ai-kb.sh= idempotent; seeds a node with a valid =:ID:=; =doctor= passes on a freshly-provisioned repo.
@@ -240,7 +256,8 @@ Everything not listed was accepted as written and woven in. Listed: modified, re
 - *Review 4 #1 (push-failure contract) → ADOPTED,* and strengthened to debounced best-effort push (commit always; push never blocks/fails the agent) — directly informed by the gpg-agent SSH failure observed this session.
 - *Review 4 #2 (index regeneration) → ADOPTED:* generated by =ai-kb index=, never hand-maintained.
 - *Storage location → Option 1 (emacs home) REJECTED* (public mirror leaks); *XDG dedicated private repo ADOPTED;* Syncthing dropped.
-- *Curation full workflow → kept v1-minimal:* read-only =curate --dry-run= ships v1; the interactive merge/split flow is human-gated and its cadence is an Open decision.
+- *Curation full workflow → kept v1-minimal:* read-only =curate --dry-run= ships v1; the interactive merge/split flow is human-gated.
+- *Review 5 (all six) → ACCEPTED.* #1 (the only blocker): =remember= runs the *full* =ai-kb lint= — index freshness, dup IDs, broken links, secret scan — before commit, not just node org-lint. #2: an explicit org-lint fatal-check list (tests target it). #3: push failures are observable (state-file log + =doctor= + startup nudge). #4: =ai-kb query= gets a testable contract (text/=--json=, fixed fields, ordering, exit codes). #5: Step 1 split into 1a (safe write path) / 1b (query/curate/sync/timer/workflow). #6: durable pointers are ID-first (=ai-kb: <Title> (<UUID>)=), not filename-first. Nothing rejected — all six were sound hardening.
 
 * Agreed decisions
 
