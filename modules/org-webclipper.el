@@ -2,6 +2,15 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; web clipping runs via org-protocol/command, a Phase 4
+;;   protocol/command-loaded deferral candidate.
+;; Top-level side effects: org-protocol handler registration via use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; This package provides a seamless "fire-and-forget" workflow for clipping
 ;; web pages from the browser directly into an Org file using org-protocol
 ;; and org-web-tools.

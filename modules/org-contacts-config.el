@@ -2,6 +2,16 @@
 ;; author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none necessary; belongs after Org/mail load (after-load
+;;   deferral candidate).
+;; Top-level side effects: one global key, package configuration via use-package.
+;; Runtime requires: user-constants.
+;; Direct test load: yes.
+;;
 ;; Configuration for org-contacts, providing contact management within org-mode.
 ;; Integrates with mu4e for email address completion and org-roam for linking
 ;; contacts to projects and notes.

@@ -1,6 +1,17 @@
 ;;; org-refile-config.el --- Org Refile Customizations -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/S.
+;; Load shape: eager.
+;; Eager reason: daily refile workflow; the user expects refile targets ready at
+;;   the first session.
+;; Top-level side effects: an idle timer that builds the refile-target cache
+;;   (guarded; spec tracks the cache lifecycle).
+;; Runtime requires: system-lib, cj-cache-lib.
+;; Direct test load: yes.
+;;
 ;; Configuration and custom functions for org-mode refiling.
 ;;
 ;; Performance:

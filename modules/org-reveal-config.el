@@ -2,6 +2,16 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; presentation export is a command-loaded deferral
+;;   candidate for Phase 4.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; Integrates ox-reveal for creating reveal.js presentations from Org files.
 ;;
 ;; Fully offline workflow using a local reveal.js clone (managed by
