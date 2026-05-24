@@ -2329,16 +2329,11 @@ Expected outcome:
 
 The four password commands (PDF protect/unprotect, remove-zip-encryption, create-encrypted-zip) deleted the password temp file in =unwind-protect= the instant the async command launched, so =qpdf=/=7z= could start after the file was gone. Extracted =cj/dwim-shell--run-with-password-file= + =cj/dwim-shell--password-cleanup-callback=: the temp file (mode 600) is now deleted from an =:on-completion= callback that fires after the process exits (success or failure), with the synchronous =unwind-protect= kept only as a pre-launch-failure backstop. Rewrote all four commands onto the helper. 5 ERT tests cover the cleanup callback (success/error/missing-file) and the runner (writes 600 file + defers cleanup; cleans up on launch failure). qpdf already passes the password via =--password-file= (out of argv); the 7z argv exposure is split into its own follow-up below.
 
-***** TODO [#B] Keep 7z password out of the command line :security:solo:
+***** 2026-05-24 Sun @ 04:20:31 -0500 Accepted the brief 7z password-on-argv exposure, documented it
 
-=cj/dwim-shell-commands-remove-zip-encryption= and =cj/dwim-shell-commands-create-encrypted-zip= pass the password to 7z as =-p"$(cat tempfile)"=, so it lands on 7z's argv and is briefly visible in the process list. qpdf avoids this via =--password-file=, but 7z has no password-file option.
+Investigated whether 7z could take the password off argv. It can't: 7-Zip 26.01 reads the password only from its controlling TTY, not stdin or a file. Verified empirically — =printf pw | 7z a -p ...= silently created an archive with an *empty* password (the piped value never reaches it), and a round-trip with the same password failed. So the password must go on argv via =$(cat tempfile)= and is briefly visible in the process list while 7z runs.
 
-Triggered by: 2026-05-23 async password temp-file lifetime fix.
-
-Options to evaluate:
-- Feed the password to 7z another way (stdin is not supported for the password; investigate =7z='s newer options or a wrapper).
-- Switch the encrypted-archive commands to a tool that reads a password file (gpg-wrapped tar, or =zip= is worse not better).
-- Accept and document the brief exposure if no clean option exists (single-user workstation, short-lived process).
+Craig's call (2026-05-24): accept the exposure rather than switch off the .7z format. On a single-user workstation, for a short-lived process, with the password already kept out of shell history by the mode-600 temp file, the residual exposure is acceptable. The gpg-wrapped-tar alternative would close it but change the archive format and decrypt workflow. Recorded the tradeoff in both function docstrings in =dwim-shell-config.el= so the decision is visible at the call site, not just here.
 
 ***** 2026-05-23 Sat @ 19:18:00 -0500 Quoted/validated user-controlled dwim-shell inputs
 
