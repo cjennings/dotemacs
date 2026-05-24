@@ -2412,28 +2412,19 @@ Options to evaluate:
 - Switch the encrypted-archive commands to a tool that reads a password file (gpg-wrapped tar, or =zip= is worse not better).
 - Accept and document the brief exposure if no clean option exists (single-user workstation, short-lived process).
 
-***** TODO [#A] Quote or argv-ify user-controlled dwim-shell inputs :security:bug:solo:
+***** 2026-05-23 Sat @ 19:18:00 -0500 Quoted/validated user-controlled dwim-shell inputs
 
-Several commands interpolate clipboard text, archive names, prefixes,
-recipients, timestamps, and output paths into shell templates. Some are quoted
-by dwim-shell placeholders, but several explicit =format= calls are not robust
-against spaces, quotes, newlines, or shell metacharacters.
+Closed the four injection-quoting cases. git-clone-clipboard-url now validates the clipboard with =cj/dwim-shell--valid-git-url-p= and passes the URL via =shell-quote-argument= instead of the raw =<<cb>>= substitution. GPG recipient and the 7z archive name go through =shell-quote-argument= instead of hand-written single quotes. The ffmpeg thumbnail timestamp is validated with =cj/dwim-shell--valid-ffmpeg-timestamp-p= (digits/colons/dot only) before it reaches =-ss=. The sequential-rename prefix is validated filename-safe with =cj/dwim-shell--safe-rename-prefix-p=. 7 ERT tests cover the three validators (Normal/Boundary/Error); the two =shell-quote-argument= swaps trust the builtin. The fifth case — video concatenation's echo/tr/sed filelist — is a redesign rather than a quoting fix and is split out below.
 
-Specific cases to check first:
-- =cj/dwim-shell-commands-git-clone-clipboard-url= uses =git clone <<cb>>=
-  rather than an argv process call or a quoted URL.
-- Encrypted archive names and GPG recipients are interpolated into single-quoted
-  shell fragments.
-- Sequential rename prefixes are interpolated into =mv= destinations.
-- Video thumbnail timestamps come from =read-string= and are inserted into
-  =ffmpeg -ss=.
-- Video concatenation builds a concat list with =echo= / =tr= / =sed=, which is
-  fragile for filenames with spaces or quotes.
+***** TODO [#B] Rebuild video-concat filelist without echo/tr/sed :bug:refactor:solo:
+
+=cj/dwim-shell-commands-concatenate-videos= builds the ffmpeg concat list with =echo '<<*>>' | tr ' ' '\n' | sed 's/^/file /'=. Splitting on spaces breaks filenames containing spaces, and the echo quoting breaks on filenames containing quotes.
+
+Triggered by: 2026-05-23 dwim-shell input-quoting pass.
 
 Expected outcome:
-- Replace high-risk commands with process helpers where practical.
-- Where dwim-shell templates remain, add focused command-construction tests.
-- Validate user strings as domain values when possible, e.g. ffmpeg timestamps.
+- Build the concat filelist in Elisp from =(dwim-shell-command--files)= with each path written as a properly escaped =file '...'= line, rather than reconstructing it with shell text tools.
+- Mind the temp-filelist lifetime the same way the password commands do (delete after the process exits).
 
 ***** TODO [#B] Clarify broad or misleading file-operation commands :safety:bug:
 
