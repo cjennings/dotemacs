@@ -2,7 +2,15 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/S.
+;; Load shape: eager.
+;; Eager reason: the modeline is visible in the first frame.
+;; Top-level side effects: two add-hook (VC cache lifecycle).
+;; Runtime requires: user-constants.
+;; Direct test load: yes.
+;;
 ;; Simple, minimal modeline using only built-in Emacs functionality.
 ;; No external packages = no buffer issues, no native-comp errors.
 
