@@ -101,5 +101,31 @@
     (should (member "yt-dlp" captured))
     (should (member "https://example.com/v" captured))))
 
+;; ---------------------------- cj/select-media-player -------------------------
+
+(ert-deftest test-media-select-player-normal-sets-default-on-choice ()
+  "Normal: choosing an available player updates `cj/default-media-player'."
+  (let ((cj/media-players '((mpv . (:name "mpv" :command "mpv"))
+                            (vlc . (:name "VLC" :command "vlc"))))
+        (cj/default-media-player 'vlc))
+    (cl-letf (((symbol-function 'cj/get-available-media-players)
+               (lambda () '(mpv vlc)))
+              ((symbol-function 'completing-read) (lambda (&rest _) "mpv"))
+              ((symbol-function 'message) #'ignore))
+      (cj/select-media-player)
+      (should (eq cj/default-media-player 'mpv)))))
+
+(ert-deftest test-media-select-player-boundary-no-match-keeps-default ()
+  "Boundary: a selection matching no player leaves the default unchanged."
+  (let ((cj/media-players '((mpv . (:name "mpv" :command "mpv"))
+                            (vlc . (:name "VLC" :command "vlc"))))
+        (cj/default-media-player 'vlc))
+    (cl-letf (((symbol-function 'cj/get-available-media-players)
+               (lambda () '(mpv vlc)))
+              ((symbol-function 'completing-read) (lambda (&rest _) "Nonexistent"))
+              ((symbol-function 'message) #'ignore))
+      (cj/select-media-player)
+      (should (eq cj/default-media-player 'vlc)))))
+
 (provide 'test-media-utils)
 ;;; test-media-utils.el ends here
