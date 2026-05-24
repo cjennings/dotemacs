@@ -2,6 +2,17 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 1 (Foundation).
+;; Category: F/L.
+;; Load shape: eager.
+;; Eager reason: host predicates (laptop-p, battery presence) used by other
+;;   foundation/UI modules deciding behavior at startup.
+;; Top-level side effects: none.
+;; Runtime requires: none (battery loaded on demand; declared via
+;;   `declare-function').
+;; Direct test load: yes (pure predicates; batch-safe).
+;;
 ;; Convenience functions to report about the host environment
 ;;
 ;;; Code:

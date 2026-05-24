@@ -1,7 +1,17 @@
 ;;; user-constants.el --- User Constants -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
-
+;;
+;; Layer: 1 (Foundation).
+;; Category: F.
+;; Load shape: eager.
+;; Eager reason: defines the path constants referenced across the config and
+;;   creates the required directories/files before other modules load.
+;; Top-level side effects: file writes — creates configured directories and
+;;   stub files via `cj/initialize-user-directories-and-files' at load.
+;; Runtime requires: none.
+;; Direct test load: conditional (touches the filesystem on load).
+;;
 ;; This module defines important file and directory paths used throughout the
 ;; Emacs configuration, and ensures they exist during startup.
 ;;
