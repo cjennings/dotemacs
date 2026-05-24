@@ -119,6 +119,7 @@ syncs the roam db."
                    (lambda () "11111111-2222-3333-4444-555555555555"))
                   ((symbol-function 'org-roam-db-sync)
                    (lambda (&rest _) (setq synced t)))
+                  ((symbol-function 'yes-or-no-p) (lambda (&rest _) t))
                   ((symbol-function 'message) #'ignore))
           (with-temp-buffer
             (org-mode)
@@ -143,6 +144,25 @@ syncs the roam db."
                 (should (string-match-p "^\\* My Heading" text))
                 (should (string-match-p "^\\*\\* Sub heading" text))))))
       (delete-directory roam-dir t))))
+
+(ert-deftest test-org-roam-move-branch-write-failure-preserves-source ()
+  "Error: if writing the roam file fails, the source subtree is NOT cut.
+The destructive cut must come after a successful write, so a failed write
+(here: an unwritable roam directory) can't lose the subtree."
+  (let ((org-roam-directory "/no/such/cj-roam-move-dir/"))
+    (cl-letf (((symbol-function 'require) (lambda (&rest _) t))
+              ((symbol-function 'org-id-new) (lambda () "id-1"))
+              ((symbol-function 'org-roam-db-sync) #'ignore)
+              ((symbol-function 'yes-or-no-p) (lambda (&rest _) t))
+              ((symbol-function 'message) #'ignore))
+      (with-temp-buffer
+        (org-mode)
+        (insert "* My Heading\n** Sub heading\nbody text\n")
+        (goto-char (point-min))
+        (ignore-errors (cj/move-org-branch-to-roam))
+        ;; The write failed before the cut, so the subtree is intact.
+        (should (string-match-p "My Heading" (buffer-string)))
+        (should (string-match-p "body text" (buffer-string)))))))
 
 (ert-deftest test-org-roam-move-branch-errors-outside-heading ()
   "Error: move-branch outside an org heading signals `user-error'."
