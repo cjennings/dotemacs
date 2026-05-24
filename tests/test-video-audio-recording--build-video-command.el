@@ -76,6 +76,22 @@
         ;; Filename should be quoted/escaped
         (should (string-match-p "recording" cmd))))))
 
+(ert-deftest test-video-audio-recording--build-video-command-boundary-x11-device-quoted ()
+  "Boundary: X11 device names with spaces are shell-quoted."
+  (let ((cj/recording-mic-boost 1.0)
+        (cj/recording-system-volume 1.0))
+    (let ((cmd (cj/recording--build-video-command
+                "device with spaces" "sys" "/tmp/out.mkv" nil)))
+      (should (string-match-p "device\\\\ with\\\\ spaces" cmd)))))
+
+(ert-deftest test-video-audio-recording--build-video-command-boundary-x11-filename-quoted ()
+  "Boundary: X11 output filename with spaces is shell-quoted."
+  (let ((cj/recording-mic-boost 1.0)
+        (cj/recording-system-volume 1.0))
+    (let ((cmd (cj/recording--build-video-command
+                "mic" "sys" "/tmp/my recording.mkv" nil)))
+      (should (string-match-p "my\\\\ recording\\.mkv" cmd)))))
+
 (ert-deftest test-video-audio-recording--build-video-command-boundary-zero-volume ()
   "Zero volume values produce 0.0 in the command."
   (let ((cj/recording-mic-boost 0.0)
