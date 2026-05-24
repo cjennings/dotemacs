@@ -1,7 +1,17 @@
 ;;; custom-text-enclose.el ---  -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: L/C.
+;; Load shape: eager.
+;; Eager reason: registers its C-; s enclose submap at load. Currently eager by
+;;   init order; a deferral candidate for Phase 3/4 (command/autoload +
+;;   registration API).
+;; Top-level side effects: defines cj/enclose-map, registers it under C-; s.
+;; Runtime requires: keybindings (change-inner on demand via declare-function).
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; Text enclosure utilities for wrapping and line manipulation.
 ;;
 ;; Wrapping functions:

@@ -1,6 +1,17 @@
 ;;; custom-comments.el --- Custom Comment Operations -*- coding: utf-8; lexical-binding: t; -*-
 ;;
 ;;; Commentary:
+;;
+;; Layer: 2 (Core UX).
+;; Category: L/C.
+;; Load shape: eager.
+;; Eager reason: registers its C-; C comment submap at load. Currently eager by
+;;   init order; a deferral candidate for Phase 3/4 (command/autoload +
+;;   registration API).
+;; Top-level side effects: defines cj/comment-map, registers it under C-; C.
+;; Runtime requires: keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; This module provides custom comment formatting and manipulation utilities for code editing.
 ;;
 ;; Functions include:

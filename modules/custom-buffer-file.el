@@ -1,6 +1,19 @@
 ;;; custom-buffer-file.el --- Custom Buffer and File Operations -*- coding: utf-8; lexical-binding: t; -*-
 ;;
 ;;; Commentary:
+;;
+;; Layer: 2 (Core UX).
+;; Category: L/C.
+;; Load shape: eager.
+;; Eager reason: registers its C-; b buffer/file submap at load. Currently eager
+;;   by init order; a deferral candidate for Phase 3/4.
+;; Top-level side effects: defines cj/copy-buffer-content-map and
+;;   cj/buffer-and-file-map; conditionally registers the latter under C-; b.
+;; Runtime requires: external-open, mm-decode, system-lib. keybindings is needed
+;;   for the C-; b registration but is declared only via eval-when-compile and
+;;   guarded by `boundp', so the binding silently drops standalone. Phase 2 fix.
+;; Direct test load: conditional (C-; b registration skipped without keybindings).
+;;
 ;; This module provides custom buffer and file operations including PostScript
 ;; printing capabilities.
 ;;

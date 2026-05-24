@@ -2,6 +2,17 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: L/C.
+;; Load shape: eager.
+;; Eager reason: registers its C-; c case submap at load. Currently eager by
+;;   init order; a deferral candidate for Phase 3/4 (command/autoload +
+;;   registration API).
+;; Top-level side effects: defines cj/case-map, registers it under C-; c, remaps
+;;   capitalize-region.
+;; Runtime requires: keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; Utilities for changing text case.
 ;; - cj/title-case-region: Title-cases the active region, or the current line if
 ;;   no region. Follows common English rules: major words capitalized; minor words
