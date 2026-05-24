@@ -2,6 +2,17 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P/S.
+;; Load shape: eager.
+;; Eager reason: none necessary; currently eager but should load by shell major
+;;   mode (Phase 6 deferral candidate).
+;; Top-level side effects: five add-hook, including an after-save executable hook
+;;   the spec flags as needing opt-in/scoping; package config via use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; Modern shell scripting environment with LSP, tree-sitter, linting, and formatting.
 ;;
 ;; Installation:

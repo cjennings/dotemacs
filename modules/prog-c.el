@@ -2,6 +2,16 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none necessary; currently eager but should load by C major mode
+;;   (Phase 6 deferral candidate).
+;; Top-level side effects: six add-hook, package configuration via use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; Modern C programming environment with LSP, tree-sitter, debugging, and formatting.
 ;;
 ;; Installation:

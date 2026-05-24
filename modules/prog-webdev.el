@@ -2,6 +2,17 @@
 ;; Author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none necessary; currently eager but should load by web major
+;;   modes (Phase 6 deferral candidate).
+;; Top-level side effects: package configuration via use-package; warns at load
+;;   if prettier is missing.
+;; Runtime requires: system-lib.
+;; Direct test load: yes.
+;;
 ;; TypeScript, JavaScript, and HTML development with tree-sitter, LSP, and
 ;; prettier formatting.
 ;;
