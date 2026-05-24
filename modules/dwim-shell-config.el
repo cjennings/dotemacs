@@ -169,6 +169,13 @@ single-quoted destination it is interpolated into."
   (and (stringp prefix)
        (string-match-p "\\`[[:alnum:] ._-]*\\'" prefix)))
 
+(defun cj/dwim-shell--empty-dirs-command (root)
+  "Return a find command that deletes empty directories under ROOT.
+ROOT is shell-quoted so paths with spaces survive, and a trailing inert
+=<<*>>= comment makes dwim-shell run the command once rather than once per
+marked file."
+  (format "find %s -type d -empty -delete  # <<*>>" (shell-quote-argument root)))
+
 (defun cj/dwim-shell--build-concat-filelist (files)
   "Return ffmpeg concat-demuxer filelist text for FILES.
 Each path becomes a single-quoted `file' line with embedded single quotes
@@ -671,13 +678,18 @@ all marked files rather than once per file."
 	   :utils (if (eq system-type 'darwin) "say" "espeak"))))
 
   (defun cj/dwim-shell-commands-remove-empty-directories ()
-	"Remove all empty directories recursively."
+	"Remove empty directories under a chosen root.
+Prompts for the root (defaulting to the current directory) and names it in the
+confirmation, so the scope is explicit instead of whatever the current
+directory happens to be."
 	(interactive)
-	(when (yes-or-no-p "Remove all empty directories? ")
-	  (dwim-shell-command-on-marked-files
-	   "Remove empty dirs"
-	   "find . -type d -empty -delete"
-	   :utils "find")))
+	(let ((root (expand-file-name
+				 (read-directory-name "Remove empty dirs under: " default-directory))))
+	  (when (yes-or-no-p (format "Remove all empty directories under %s? " root))
+		(dwim-shell-command-on-marked-files
+		 "Remove empty dirs"
+		 (cj/dwim-shell--empty-dirs-command root)
+		 :utils "find"))))
 
   (defun cj/dwim-shell-commands-create-thumbnail-from-image ()
 	"Create thumbnail(s) from image(s)."
@@ -764,12 +776,14 @@ in the process list."
 	 :utils "chmod"))
 
   (defun cj/dwim-shell-commands-secure-delete ()
-	"Securely delete file(s) by overwriting with random data."
+	"Securely delete file(s): overwrite with random data, then remove.
+Uses =shred -u= so the file is unlinked after overwriting, matching the
+\"delete\" the command name and prompt promise."
 	(interactive)
 	(when (yes-or-no-p "This will permanently destroy files. Continue? ")
 	  (dwim-shell-command-on-marked-files
 	   "Secure delete"
-	   "shred -vfz -n 3 '<<f>>'"
+	   "shred -vfzu -n 3 '<<f>>'"
 	   :utils "shred")))
 
   (defun cj/dwim-shell-commands-sanitize-filename ()
