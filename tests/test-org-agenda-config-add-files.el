@@ -7,6 +7,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'cl-lib)
 
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'testutil-general)
@@ -128,6 +129,17 @@
           (should (= 2 (length org-agenda-files)))
           (should (member "/existing/file.org" org-agenda-files))))
     (cj/delete-test-base-dir)))
+
+(ert-deftest test-org-agenda-config-add-files-boundary-missing-dir-warns-not-errors ()
+  "Boundary: a missing project directory warns and adds nothing, without erroring.
+Previously `directory-files' on a missing dir crashed the agenda build."
+  (let ((org-agenda-files '("/existing/file.org"))
+        (warned nil))
+    (cl-letf (((symbol-function 'display-warning)
+               (lambda (&rest _) (setq warned t))))
+      (cj/add-files-to-org-agenda-files-list "/no/such/cj-agenda/dir/"))
+    (should warned)
+    (should (equal org-agenda-files '("/existing/file.org")))))
 
 (provide 'test-org-agenda-config-add-files)
 ;;; test-org-agenda-config-add-files.el ends here
