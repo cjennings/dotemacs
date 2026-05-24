@@ -278,7 +278,8 @@ especially in tables with long URLs)."
 (use-package org-tidy
   :hook (org-mode . org-tidy-mode)
   :custom
-  (org-tidy-properties-style 'inline))  ;; 'inline | 'fringe | 'invisible
+  (org-tidy-properties-style 'inline)   ;; 'inline | 'fringe | 'invisible
+  (org-tidy-properties-inline-symbol "·"))  ;; middle dot, subtler than the default sharp
 
 ;; ------------------------------- Org-Checklist -------------------------------
 
