@@ -1456,24 +1456,9 @@ Expected outcome:
 - Consider safer wrappers for =erase-buffer= and =revert-buffer= under the
   personal keymap.
 
-**** TODO [#B] Add explicit autoloads/requires for cross-module command keybindings :cleanup:refactor:solo:
+**** 2026-05-24 Sun @ 14:43:13 -0500 Declared cross-module commands bound in custom keymaps
 
-Several custom utility keymaps bind symbols owned by other modules without
-declaring the relationship:
-- =custom-ordering.el= binds =cj/org-sort-by-todo-and-priority=.
-- =custom-text-enclose.el= binds =change-inner= and =change-outer=.
-- =custom-buffer-file.el= binds =cj/kill-buffer-and-window= and external-open
-  commands.
-
-These work in the current eager =init.el= load order, but standalone module
-loading and future deferral will be cleaner if the dependencies are explicit.
-
-Expected outcome:
-- Use =autoload= for commands that should remain lazy.
-- Use =declare-function= for byte-compiler clarity when only the symbol is
-  needed.
-- Add a simple module-load smoke test if this becomes part of the load-graph
-  refactor.
+Byte-compiling =custom-ordering.el= and =custom-text-enclose.el= standalone warned "not known to be defined" for =cj/org-sort-by-todo-and-priority= (owned by org-config) and =change-inner=/=change-outer= (the change-inner package). Both work at runtime — org-config loads eagerly, and text-config autoloads change-inner via =use-package :commands= — so only the compiler needed telling; added =declare-function= for each (no autoload needed since the runtime autoload/eager-load already exists). =custom-buffer-file.el= byte-compiles clean already, so it needed no change. Commit =ad173a77=.
 
 **** 2026-05-24 Sun @ 07:26:31 -0500 Extracted shared region-or-buffer bounds helper
 
@@ -1743,20 +1728,9 @@ Both cache builders' =run-with-idle-timer= calls are wrapped in =(unless noninte
 
 Triggered by: 2026-05-23 org-confirm-babel-evaluate hardening.
 
-**** TODO [#B] Add guardrails to =cj/move-org-branch-to-roam= :ux:solo:
+**** 2026-05-24 Sun @ 14:43:13 -0500 Guarded move-branch-to-roam against data loss
 
-=org-roam-config.el= implements =cj/move-org-branch-to-roam= by copying the
-subtree, cutting it from the source buffer, writing a new roam file, and syncing
-the database. There is no confirmation, rollback, or save behavior around the
-destructive step.
-
-Expected outcome:
-- Confirm before cutting large subtrees or when the source buffer is modified.
-- Write the new file before deleting source content, and avoid losing the
-  subtree if file creation or =org-roam-db-sync= fails.
-- Decide whether the source buffer should be saved automatically or left dirty.
-- Add tests around the pure slug/demotion/format helpers are already present;
-  add one integration-style test around failure ordering if feasible.
+The command cut the subtree from the source before writing the new roam file, so any failure in demote/format/write/db-sync lost the subtree with no rollback. Reordered to write and verify the file on disk before =org-cut-subtree=, so a failed write aborts with the source intact. Added a no-clobber guard (refuse an existing target file) and a confirmation prompt for large subtrees (>= =cj/move-org-branch-confirm-lines=, 30) or buffers with unsaved changes. Decided: leave the source buffer modified and undoable rather than auto-saving, so the move stays reversible. New test drives the write-failure-preserves-source invariant via an unwritable roam dir. Commit =5c0fa15d=.
 
 **** TODO [#B] Make =org-webclipper.el= initialization less global-state-heavy :cleanup:refactor:
 
@@ -1809,18 +1783,9 @@ Expected outcome:
 
 org-capture-config.el and org-drill-config.el each scanned =drill-dir= with an inline =directory-files= call, so a missing/empty/unreadable dir surfaced as a low-level error or an empty =completing-read= depending on which command ran. Added =cj/--drill-files-or-error=, the single validated entry point: clear =user-error= when the dir is missing, unreadable, or has no drill files; otherwise the list. =cj/--drill-pick-file= and both drill capture templates route through it; the pure =cj/--drill-files-in= primitive and its tests are unchanged. Tests cover missing/empty/non-org/normal. Commit =49038c41=.
 
-**** TODO [#B] Clarify contradictory Org export task defaults :cleanup:tests:solo:
+**** 2026-05-24 Sun @ 14:43:13 -0500 Removed contradictory org-export-with-tasks default
 
-=org-export-config.el= sets =org-export-with-tasks= twice in a row: first to
-=("TODO")= and then to =nil=. The final behavior is "export no tasks", but the
-adjacent comments describe both policies.
-
-Expected outcome:
-- Pick the intended default and remove the contradictory assignment/comment.
-- Add a narrow smoke test for the chosen =org-export-with-tasks= value after
-  =ox= config loads.
-- If task export should vary by workflow, expose an explicit command or local
-  export option instead of relying on the global default.
+=org-export-config.el= set =org-export-with-tasks= twice (=("TODO")= then =nil=); the final =nil= won but the stale first line + comment contradicted it. Removed the leftover. =nil= (export no tasks) is the deliberate default — it was already winning, its comment matches, and it sits with the adjacent "without tags / section numbers by default" settings. Added a smoke test that fires the deferred =ox= :config and pins the value to =nil=. Commit =94ef5242=.
 
 **** 2026-05-23 Sat @ 03:48:50 -0500 Fixed java structure-template typo and pinned the aliases
 =("java" . "src javas")= expanded to a bogus =#+begin_src javas=; corrected it to =src java=. Added =test-org-babel-config-structure-templates.el=, which requires the module then org-tempo (firing the deferred :config) and asserts =bash=, =zsh=, =el=, =py=, =json=, =yaml=, =java= each map to the intended src language. Fixed in the org-babel commit.
@@ -1860,20 +1825,9 @@ Recommended improvement:
 - Make the checker return structured data so it can be unit-tested and displayed
   either in Messages or a buffer.
 
-**** TODO [#B] Add capture-template key collision and target smoke tests :tests:solo:
+**** 2026-05-24 Sun @ 14:43:13 -0500 Added capture-template key + target smoke tests
 
-Org capture templates are assembled across =org-capture-config.el=,
-=org-contacts-config.el=, =org-webclipper.el=, and other feature modules. The
-current setup works, but template ownership is implicit and duplicate keys or
-missing target files would be easy to miss.
-
-Recommended improvement:
-- Add a test helper that loads the Org capture-related modules with temp path
-  bindings.
-- Assert template keys are unique or intentionally overridden.
-- Assert templates that write to files point at non-empty path variables.
-- Cover lazy additions for contact and webclipper templates without requiring a
-  browser/org-protocol round trip.
+New =test-org-capture-templates-integrity.el= loads the cleanly-loadable capture modules (=org-capture-config=, =quick-video-capture=, =org-contacts-config=), applies their lazy additions, and asserts no two templates share a dispatch key and that every symbol-valued file target resolves to a non-empty path string. Literal-string targets (the video template's no-save =(file "")=) and lambda targets (drill file pickers) are excluded. Webclipper templates need org-web-tools at registration time, so they stay covered by their own test rather than this batch smoke test. Mutation-checked that the uniqueness assertion flags a duplicate key. Commit =2e3905c7=.
 
 **** TODO [#B] Document Org workflow module ownership and load boundaries :docs:refactor:solo:
 
@@ -2340,17 +2294,9 @@ Switched =user-constants= and =system-utils= from =eval-when-compile= to plain =
 **** 2026-05-23 Sat @ 03:38:30 -0500 Coverage already in place for mail + system-commands
 The task premise was stale. =mail-config.el= has =test-mail-config-helpers.el= (4), =test-mail-config-transport.el= (7), and =test-mail-config.el= (1) covering executable discovery and transport command assignment. =system-commands.el= has =test-system-commands-keymap.el= (2, keymap shape + candidates) and =test-system-commands-resolve-and-run.el= (13, confirmation routing + command-string construction with shell-command stubbed). Both acceptance lists are satisfied; no new tests needed.
 
-**** TODO [#B] Harden EWW/Elfeed synchronous network helpers :cleanup:refactor:solo:
+**** 2026-05-24 Sun @ 14:43:13 -0500 Bounded the elfeed YouTube fetch + locked EWW UA scoping
 
-=elfeed-config.el= includes synchronous URL retrieval helpers for converting
-YouTube channel/playlist URLs into feed entries, and =eww-config.el= advises URL
-retrieval to inject a user agent only from EWW buffers.
-
-Expected outcome:
-- Add timeouts/error handling to synchronous feed-conversion requests.
-- Kill temporary URL buffers after parsing.
-- Add a small test or manual checklist for the EWW user-agent advice so it does
-  not affect package.el or non-EWW URL callers.
+=cj/youtube-to-elfeed-feed-format= called =url-retrieve-synchronously= with no timeout (a hung request blocks Emacs) and only killed the temp URL buffer when an ID was extracted, leaking it on the parse-failure path. Passed =cj/elfeed-url-fetch-timeout= (10s) and moved fetch+parse into an =unwind-protect= that always kills the buffer. The EWW user-agent advice (=eww-config.el=) was already correctly scoped — it injects the UA only from eww-mode buffers, so package.el and other non-EWW url callers pass through untouched — so no code change there, just tests pinning that scoping and the replace-not-duplicate header behavior. Commit =c097b5b4=.
 
 **** 2026-05-16 Sat @ 04:00:00 -0500 Moved Slack which-key registration behind with-eval-after-load
 
