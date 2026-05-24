@@ -75,25 +75,37 @@ Adjust this if the title doesn't appear centered under the banner image.")
    (list "m" #'nerd-icons-mdicon  "nf-md-music"        "Music"      "EMMS Music Player"      (lambda () (cj/music-playlist-toggle) (cj/music-playlist-load)))
    (list "e" #'nerd-icons-faicon  "nf-fa-envelope"     "Email"      "Mu4e Email Client"      (lambda () (mu4e)))
    (list "i" #'nerd-icons-faicon  "nf-fa-comments"     "IRC"        "Emacs Relay Chat"       (lambda () (cj/erc-switch-to-buffer-with-completion)))
+   (list "g" #'nerd-icons-faicon  "nf-fa-telegram"     "Telegram"   "Telega Telegram Client" (lambda () (cj/telega)))
    (list "s" #'nerd-icons-faicon  "nf-fa-slack"        "Slack"      "Slack Client"           (lambda () (cj/slack-start)))
-   (list "g" #'nerd-icons-faicon  "nf-fa-telegram"     "Telegram"   "Telega Telegram Client" (lambda () (cj/telega))))
+   (list "l" #'nerd-icons-octicon "nf-oct-issue_tracks" "Linear"    "Linear Issue Tracker"   (lambda () (linear-emacs-list-issues))))
   "Dashboard launcher table: (KEY ICON-FN ICON-NAME LABEL TOOLTIP ACTION).
 Drives both `dashboard-navigator-buttons' and the dashboard-mode-map keys.")
 
+(defconst cj/dashboard--row-sizes '(4 4 3 2)
+  "Navigator row lengths.  Must sum to the number of `cj/dashboard--launchers'.
+The last row groups Slack and Linear together.")
+
+(defun cj/dashboard--navigator-button (l)
+  "Build a `dashboard-navigator-buttons' entry from launcher L."
+  (let ((icon-fn (nth 1 l)) (icon-name (nth 2 l))
+        (label (nth 3 l)) (tooltip (nth 4 l)) (action (nth 5 l)))
+    (list (funcall icon-fn icon-name) label tooltip
+          (lambda (&rest _) (funcall action)) nil " " "")))
+
 (defun cj/dashboard--navigator-rows ()
-  "Build `dashboard-navigator-buttons' rows from `cj/dashboard--launchers'.
-Chunks the launchers four per row and maps each to a navigator button."
-  (let (rows row)
-    (dolist (l cj/dashboard--launchers)
-      (let ((icon-fn (nth 1 l)) (icon-name (nth 2 l))
-            (label (nth 3 l)) (tooltip (nth 4 l)) (action (nth 5 l)))
-        (push (list (funcall icon-fn icon-name) label tooltip
-                    (lambda (&rest _) (funcall action)) nil " " "")
-              row))
-      (when (= (length row) 4)
-        (push (nreverse row) rows)
-        (setq row nil)))
-    (when row (push (nreverse row) rows))
+  "Build navigator rows from `cj/dashboard--launchers', grouped per
+`cj/dashboard--row-sizes'.  Any launchers beyond the declared row sizes form a
+final row, so a newly added launcher still shows up even if the sizes weren't
+updated."
+  (let ((launchers cj/dashboard--launchers) rows)
+    (dolist (size cj/dashboard--row-sizes)
+      (let (row)
+        (dotimes (_ size)
+          (when launchers
+            (push (cj/dashboard--navigator-button (pop launchers)) row)))
+        (when row (push (nreverse row) rows))))
+    (when launchers
+      (push (mapcar #'cj/dashboard--navigator-button launchers) rows))
     (nreverse rows)))
 
 (defun cj/dashboard--bind-launchers (map)
