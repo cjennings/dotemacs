@@ -2,6 +2,15 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/L.
+;; Load shape: eager.
+;; Eager reason: command library with no side effects; eager only by init order.
+;;   Downloads and players should run by command, so a Phase 4 deferral candidate.
+;; Top-level side effects: none.
+;; Runtime requires: system-lib.
+;; Direct test load: yes (pure command helpers).
+;;
 ;; This library provides reusable Emacs methods for working with online and
 ;; local media, to support media download and playback from Emacs.
 ;;

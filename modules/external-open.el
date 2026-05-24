@@ -3,6 +3,15 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: L/D.
+;; Load shape: eager.
+;; Eager reason: command library with no side effects; eager only by init order.
+;;   A deferral candidate (autoload commands) for Phase 4.
+;; Top-level side effects: none.
+;; Runtime requires: host-environment, system-lib, external-open-lib, cl-lib.
+;; Direct test load: yes (pure command helpers).
+;;
 ;; This library provides a simple mechanism for opening files with specific
 ;; extensions using your operating system’s default application rather than
 ;; visiting them in an Emacs buffer.  It offers:

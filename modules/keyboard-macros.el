@@ -3,6 +3,15 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: C/L.
+;; Load shape: eager.
+;; Eager reason: lightweight keyboard-macro commands; eager only by init order.
+;;   A deferral candidate (autoload commands) for Phase 4.
+;; Top-level side effects: none.
+;; Runtime requires: subr-x, user-constants.
+;; Direct test load: yes.
+;;
 ;; This library provides a simple, end-user–focused interface for
 ;; creating, naming, saving, and replaying keyboard macros in Emacs.
 ;; All commands are built on top of the built-in =kmacro= machinery, but

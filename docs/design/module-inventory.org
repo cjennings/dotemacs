@@ -25,7 +25,8 @@ This inventory is independent from the helper inventory owned by
 - Phase 1 (Inventory and Contracts), in progress.
 - Batch 1 (Foundation, Layer 1): classified. 7 modules.
 - Batch 2 (Text/editing command modules, Layer 2): classified. 9 modules.
-- 16 of 102 modules classified.
+- Batch 3 (Core libraries and command modules): classified. 7 modules.
+- 23 of 102 modules classified.
 - No load-order changes have been made; =init.el= keeps its current eager order.
 
 * Legend
@@ -82,6 +83,21 @@ are deferral candidates for Phase 3 (registration API) and Phase 4
 | =custom-text-enclose= | 2 | L/C | eager | command | keybindings (change-inner on demand) | cj/enclose-map under C-; s | yes |
 | =custom-whitespace= | 2 | L/C | eager | command | keybindings | cj/whitespace-map under C-; w | yes |
 
+** Batch 3 — Core libraries and command modules
+
+The remainder of init.el's early/core block: shared command libraries and a few
+eager side-effect owners.
+
+| Module | Layer | Cat | Current | Target | Runtime requires | Top-level side effects | Direct load |
+|--------+-------+-----+---------+--------+------------------+------------------------+-------------|
+| =external-open= | 2 | L/D | eager | command | host-environment, system-lib, external-open-lib, cl-lib | none | yes |
+| =media-utils= | 3 | D/L | eager | command | system-lib | none | yes |
+| =auth-config= | 1 | F/D | eager | eager | system-lib, user-constants | auth-source/epa config | yes |
+| =keyboard-macros= | 2 | C/L | eager | command | subr-x, user-constants | none | yes |
+| =system-utils= | 2 | L/C/S | eager | eager | system-lib, external-open-lib | 3 global keys, 1 startup hook | yes |
+| =text-config= | 2 | C/P | eager | eager | none | 3 add-hook, package config | yes |
+| =undead-buffers= | 2 | C | eager | eager | none | 3 global keys (kill-buffer remap) | yes |
+
 * Hidden dependencies found
 
 Discoveries that belong to Phase 2 (make dependencies explicit). Recorded here,
@@ -104,7 +120,7 @@ not fixed here.
 
 * Pending classification
 
-The remaining 86 modules required by =init.el=, awaiting per-module inspection.
+The remaining 79 modules required by =init.el=, awaiting per-module inspection.
 Each batch reads these against their source and moves them into [[*Classified
 modules][Classified modules]] with a load-graph header. Suggested batch order
 follows the spec: text/editing command modules, then UI, then programming, then
@@ -112,7 +128,6 @@ Org, then optional integrations.
 
 - [ ] ai-config
 - [ ] ai-vterm
-- [ ] auth-config
 - [ ] browser-config
 - [ ] calendar-sync
 - [ ] calibredb-epub-config
@@ -128,7 +143,6 @@ Org, then optional integrations.
 - [ ] erc-config
 - [ ] eshell-config
 - [ ] eww-config
-- [ ] external-open
 - [ ] flycheck-config
 - [ ] flyspell-and-abbrev
 - [ ] font-config
@@ -139,14 +153,12 @@ Org, then optional integrations.
 - [ ] httpd-config
 - [ ] hugo-config
 - [ ] jumper
-- [ ] keyboard-macros
 - [ ] latex-config
 - [ ] linear-config
 - [ ] local-repository
 - [ ] lorem-optimum
 - [ ] mail-config
 - [ ] markdown-config
-- [ ] media-utils
 - [ ] modeline-config
 - [ ] mousetrap-mode
 - [ ] music-config
@@ -181,16 +193,13 @@ Org, then optional integrations.
 - [ ] selection-framework
 - [ ] slack-config
 - [ ] system-commands
-- [ ] system-utils
 - [ ] telega-config
 - [ ] test-runner
-- [ ] text-config
 - [ ] tramp-config
 - [ ] transcription-config
 - [ ] ui-config
 - [ ] ui-navigation
 - [ ] ui-theme
-- [ ] undead-buffers
 - [ ] vc-config
 - [ ] video-audio-recording
 - [ ] vterm-config
