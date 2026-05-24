@@ -2,7 +2,17 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 1 (Foundation).
+;; Category: F/S.
+;; Load shape: eager.
+;; Eager reason: normalizes terminal/GUI key input so the first session's
+;;   keybindings resolve consistently.
+;; Top-level side effects: adds `cj/keyboard-compat-terminal-setup' to
+;;   `emacs-startup-hook'.
+;; Runtime requires: host-environment.
+;; Direct test load: yes (registers a startup hook; batch-safe).
+;;
 ;; This module fixes keyboard input differences between terminal and GUI Emacs.
 ;;
 ;; THE PROBLEM: Meta+Shift keybindings behave differently in terminal vs GUI

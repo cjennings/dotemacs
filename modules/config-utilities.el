@@ -2,6 +2,15 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 1 (Foundation).
+;; Category: C/O.
+;; Load shape: eager.
+;; Eager reason: the C-c d debug keymap is kept available during config work.
+;; Top-level side effects: defines `cj/debug-config-keymap', binds it to C-c d.
+;; Runtime requires: cl-lib, cl-generic, eieio, find-lisp, profiler.
+;; Direct test load: yes (defines a keymap and helpers; batch-safe).
+;;
 ;; Development and debugging utilities for Emacs configuration maintenance.
 ;;
 ;;; Code:

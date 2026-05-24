@@ -2,6 +2,21 @@
 ;; author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
+;;
+;; Layer: 1 (Foundation).
+;; Category: F/S.
+;; Load shape: eager.
+;; Eager reason: establishes core Emacs behavior (encoding, clipboard,
+;;   scrolling, kill/quit defaults) the first interactive session relies on.
+;; Top-level side effects: mutates global defaults (many `setq'), advises
+;;   `display-warning', adds a `display-buffer-alist' entry, remaps one global
+;;   key.
+;; Runtime requires: autorevert, server, bookmark; host-environment
+;;   (`env-bsd-p') and user-constants (`user-home-dir') are read at load but
+;;   currently only required via eval-when-compile — Phase 2 to make explicit.
+;; Direct test load: conditional (host-environment and user-constants must load
+;;   first; the compiled module cannot resolve them standalone yet).
+;;
 ;; Loads during init to set sane defaults: UTF-8 everywhere, quiet prompts, synced clipboards,
 ;; and hands-off async shell buffers. Nothing to call—just launch Emacs and the environment is ready.
 ;; Native compilation is tuned for performance and its warnings get logged to comp-warnings.log.

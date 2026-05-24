@@ -1,0 +1,180 @@
+#+TITLE: Module Inventory — init.el Load Graph
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-24
+
+* Purpose
+
+Living per-module inventory for the [[file:init-load-graph.org][init.el load-graph refactor]]. The
+spec's module-category table is the seed; this file is the per-module truth as
+each module is inspected and classified. A module moves from [[*Pending
+classification][Pending classification]] into [[*Classified modules][Classified
+modules]] once its source has been read and its load-graph header written.
+
+Phase 1 exit criterion: every module required by =init.el= (102 total) is
+represented here with a category and target load shape, every eager survivor
+has a documented reason, and top-level timer/process/network side effects are
+identified. Classification proceeds in batches; the header-validation test
+=tests/test-init-module-headers.el= enforces the contract on each classified
+module.
+
+This inventory is independent from the helper inventory owned by
+=utility-consolidation.org=.
+
+* Status
+
+- Phase 1 (Inventory and Contracts), in progress.
+- Batch 1 (Foundation, Layer 1): classified. 7 of 102 modules.
+- No load-order changes have been made; =init.el= keeps its current eager order.
+
+* Legend
+
+Category key (a module may carry two, e.g. =F/S=):
+
+- =F= foundation or shared library/config
+- =C= core eager UX
+- =P= package configuration (usually hook/command/package loaded)
+- =D= domain workflow with a possible eager reason
+- =S= startup side-effect / timer / process owner
+- =O= optional, entertainment, experimental, rarely used
+- =L= pure-ish library / command helpers, easy to load directly
+
+Load shape: =eager= | =hook= | =mode= | =command= | =after-load=.
+
+Direct test load: =yes= | =conditional= | =no= — can the module be loaded
+directly in batch without first loading the rest of init?
+
+* Classified modules
+
+** Batch 1 — Foundation (Layer 1)
+
+| Module | Layer | Cat | Current | Target | Runtime requires | Top-level side effects | Direct load |
+|--------+-------+-----+---------+--------+------------------+------------------------+-------------|
+| =system-lib= | 1 | F/L | eager | eager | none (auth-source on demand) | none | yes |
+| =user-constants= | 1 | F | eager | eager | none | file writes: creates configured dirs/files at load | conditional |
+| =host-environment= | 1 | F/L | eager | eager | none (battery on demand) | none | yes |
+| =system-defaults= | 1 | F/S | eager | eager | autorevert, server, bookmark, host-environment, user-constants | global setq, display-warning advice, display-buffer-alist entry, one key remap | conditional |
+| =keyboard-compat= | 1 | F/S | eager | eager | host-environment | adds emacs-startup-hook | yes |
+| =keybindings= | 1 | F/C | eager | eager | user-constants, which-key, free-keys | defines cj/custom-keymap + cj/jump-map, binds global keys, which-key labels | conditional |
+| =config-utilities= | 1 | C/O | eager | eager | cl-lib, cl-generic, eieio, find-lisp, profiler | defines cj/debug-config-keymap, binds C-c d | yes |
+
+Every Batch 1 module stays eager: each satisfies a spec eager-reason condition
+(shared helpers, path constants, core Emacs behavior, or the global keymap
+owner). Reasons are recorded in each module's load-graph header.
+
+* Hidden dependencies found
+
+Discoveries that belong to Phase 2 (make dependencies explicit). Recorded here,
+not fixed here.
+
+- =system-defaults= reads =env-bsd-p= (host-environment) and =user-home-dir=
+  (user-constants) at *load* time, but declares both only via
+  =eval-when-compile=. The compiled module therefore cannot load standalone —
+  it works at startup only because =init.el= requires host-environment and
+  user-constants earlier. Phase 2 fix: promote the two =eval-when-compile=
+  requires to plain runtime =require=. (Test
+  =test-system-defaults-functions.el= was updated to require host-environment
+  so the unit loads in isolation; the production fix is still pending.)
+
+* Pending classification
+
+The remaining 95 modules required by =init.el=, awaiting per-module inspection.
+Each batch reads these against their source and moves them into [[*Classified
+modules][Classified modules]] with a load-graph header. Suggested batch order
+follows the spec: text/editing command modules, then UI, then programming, then
+Org, then optional integrations.
+
+- [ ] ai-config
+- [ ] ai-vterm
+- [ ] auth-config
+- [ ] browser-config
+- [ ] calendar-sync
+- [ ] calibredb-epub-config
+- [ ] chrono-tools
+- [ ] coverage-core
+- [ ] coverage-elisp
+- [ ] custom-buffer-file
+- [ ] custom-case
+- [ ] custom-comments
+- [ ] custom-datetime
+- [ ] custom-line-paragraph
+- [ ] custom-misc
+- [ ] custom-ordering
+- [ ] custom-text-enclose
+- [ ] custom-whitespace
+- [ ] dashboard-config
+- [ ] dev-fkeys
+- [ ] diff-config
+- [ ] dirvish-config
+- [ ] dwim-shell-config
+- [ ] elfeed-config
+- [ ] erc-config
+- [ ] eshell-config
+- [ ] eww-config
+- [ ] external-open
+- [ ] flycheck-config
+- [ ] flyspell-and-abbrev
+- [ ] font-config
+- [ ] games-config
+- [ ] gloss-config
+- [ ] help-config
+- [ ] help-utils
+- [ ] httpd-config
+- [ ] hugo-config
+- [ ] jumper
+- [ ] keyboard-macros
+- [ ] latex-config
+- [ ] linear-config
+- [ ] local-repository
+- [ ] lorem-optimum
+- [ ] mail-config
+- [ ] markdown-config
+- [ ] media-utils
+- [ ] modeline-config
+- [ ] mousetrap-mode
+- [ ] music-config
+- [ ] nerd-icons-config
+- [ ] org-agenda-config
+- [ ] org-babel-config
+- [ ] org-capture-config
+- [ ] org-config
+- [ ] org-contacts-config
+- [ ] org-drill-config
+- [ ] org-export-config
+- [ ] org-noter-config
+- [ ] org-refile-config
+- [ ] org-reveal-config
+- [ ] org-roam-config
+- [ ] org-webclipper
+- [ ] pdf-config
+- [ ] popper-config
+- [ ] prog-c
+- [ ] prog-general
+- [ ] prog-go
+- [ ] prog-json
+- [ ] prog-lisp
+- [ ] prog-python
+- [ ] prog-shell
+- [ ] prog-training
+- [ ] prog-webdev
+- [ ] prog-yaml
+- [ ] quick-video-capture
+- [ ] reconcile-open-repos
+- [ ] restclient-config
+- [ ] selection-framework
+- [ ] slack-config
+- [ ] system-commands
+- [ ] system-utils
+- [ ] telega-config
+- [ ] test-runner
+- [ ] text-config
+- [ ] tramp-config
+- [ ] transcription-config
+- [ ] ui-config
+- [ ] ui-navigation
+- [ ] ui-theme
+- [ ] undead-buffers
+- [ ] vc-config
+- [ ] video-audio-recording
+- [ ] vterm-config
+- [ ] weather-config
+- [ ] wrap-up
