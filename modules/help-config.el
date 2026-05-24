@@ -3,6 +3,15 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 2 (Core UX).
+;; Category: C/P.
+;; Load shape: eager.
+;; Eager reason: help/info/man configuration and its keybindings; eager only by
+;;   init order, a deferral candidate.
+;; Top-level side effects: two global keys, package configuration via use-package.
+;; Runtime requires: none.
+;; Direct test load: yes.
+;;
 ;; This module enhances Emacs' built-in help system and documentation features.
 ;; It configures:
 ;;

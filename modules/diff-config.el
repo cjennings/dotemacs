@@ -2,7 +2,16 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/P.
+;; Load shape: eager.
+;; Eager reason: Ediff and diff UX defaults; eager only by init order, a
+;;   package-load deferral candidate.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: none.
+;; Direct test load: yes.
+;;
 ;; I've configured Ediff for a clean and efficient diff experience.
 
 ;; • Ediff will use a plain control window, horizontal splits, ignore whitespace, and only highlight the current change.

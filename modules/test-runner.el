@@ -2,7 +2,15 @@
 ;; author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/L.
+;; Load shape: eager.
+;; Eager reason: the test keymap entry point and project-scoped runner state.
+;; Top-level side effects: defines a test keymap, registers it under cj/custom-keymap.
+;; Runtime requires: ert, cl-lib, keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; This module provides a powerful ERT test runner with focus/unfocus workflow
 ;; for efficient test-driven development in Emacs Lisp projects.
 ;;

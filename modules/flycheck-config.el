@@ -2,7 +2,18 @@
 ;;  author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/P.
+;; Load shape: eager.
+;; Eager reason: general linting setup; spec target is hook-loaded, a deferral
+;;   candidate.
+;; Top-level side effects: package configuration via use-package, binds into
+;;   cj/custom-keymap through use-package :map.
+;; Runtime requires: keybindings is needed for the cj/custom-keymap :map binding
+;;   but is not required here; the binding fails standalone. Phase 2 fix.
+;; Direct test load: conditional (needs cj/custom-keymap for the :map binding).
+;;
 ;; This file configures Flycheck for on-demand syntax and grammar checking.
 ;; - Flycheck starts automatically only in sh-mode and emacs-lisp-mode
 
