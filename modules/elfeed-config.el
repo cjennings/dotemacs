@@ -208,6 +208,10 @@ Note: Function name kept for backwards compatibility."
 
 ;; --------------------- Youtube Url To Elfeed Feed Format ---------------------
 
+(defconst cj/elfeed-url-fetch-timeout 10
+  "Seconds to wait for a synchronous YouTube page fetch before giving up.
+Without a timeout a hung request would block Emacs indefinitely.")
+
 (defun cj/youtube-to-elfeed-feed-format (url type)
   "Convert YouTube URL to elfeed-feeds format.
 
@@ -225,44 +229,51 @@ TYPE should be either \='channel or \='playlist."
                        "Could not extract channel information"
                      "Could not extract playlist information")))
 
-    ;; Extract ID based on type
-    (if (eq type 'channel)
-        ;; For channels, we need to fetch the page to get the channel_id
+    (unwind-protect
         (progn
-          (setq buffer (url-retrieve-synchronously url))
-          (when buffer
-            (with-current-buffer buffer
-              ;; Decode the content as UTF-8
-              (set-buffer-multibyte t)
-              (decode-coding-region (point-min) (point-max) 'utf-8)
-              (goto-char (point-min))
-              ;; Search for the channel_id in the RSS feed link
-              (when (re-search-forward id-pattern nil t)
-                (setq id (match-string 1))))))
-      ;; For playlists, extract from URL first
-      (when (string-match id-pattern url)
-        (setq id (match-string 1 url))
-        (setq buffer (url-retrieve-synchronously url))))
+          ;; Extract ID based on type
+          (if (eq type 'channel)
+              ;; For channels, we need to fetch the page to get the channel_id
+              (progn
+                (setq buffer (url-retrieve-synchronously
+                              url nil nil cj/elfeed-url-fetch-timeout))
+                (when buffer
+                  (with-current-buffer buffer
+                    ;; Decode the content as UTF-8
+                    (set-buffer-multibyte t)
+                    (decode-coding-region (point-min) (point-max) 'utf-8)
+                    (goto-char (point-min))
+                    ;; Search for the channel_id in the RSS feed link
+                    (when (re-search-forward id-pattern nil t)
+                      (setq id (match-string 1))))))
+            ;; For playlists, extract from URL first
+            (when (string-match id-pattern url)
+              (setq id (match-string 1 url))
+              (setq buffer (url-retrieve-synchronously
+                            url nil nil cj/elfeed-url-fetch-timeout))))
 
-    ;; Get title from the page
-    (when (and buffer id)
-      (with-current-buffer buffer
-        (unless (eq type 'channel)
-          ;; Decode for playlist (already done for channel above)
-          (set-buffer-multibyte t)
-          (decode-coding-region (point-min) (point-max) 'utf-8))
-        ;; Search for the title in og:title meta tag
-        (goto-char (point-min))
-        (when (re-search-forward "<meta property=\"og:title\" content=\"\\([^\"]+\\)\"" nil t)
-          (setq title (match-string 1))
-          ;; Simple HTML entity decoding
-          (setq title (replace-regexp-in-string "&amp;" "&" title))
-          (setq title (replace-regexp-in-string "&lt;" "<" title))
-          (setq title (replace-regexp-in-string "&gt;" ">" title))
-          (setq title (replace-regexp-in-string "&quot;" "\"" title))
-          (setq title (replace-regexp-in-string "&#39;" "'" title))
-          (setq title (replace-regexp-in-string "&#x27;" "'" title))))
-      (kill-buffer buffer))
+          ;; Get title from the page
+          (when (and buffer id)
+            (with-current-buffer buffer
+              (unless (eq type 'channel)
+                ;; Decode for playlist (already done for channel above)
+                (set-buffer-multibyte t)
+                (decode-coding-region (point-min) (point-max) 'utf-8))
+              ;; Search for the title in og:title meta tag
+              (goto-char (point-min))
+              (when (re-search-forward "<meta property=\"og:title\" content=\"\\([^\"]+\\)\"" nil t)
+                (setq title (match-string 1))
+                ;; Simple HTML entity decoding
+                (setq title (replace-regexp-in-string "&amp;" "&" title))
+                (setq title (replace-regexp-in-string "&lt;" "<" title))
+                (setq title (replace-regexp-in-string "&gt;" ">" title))
+                (setq title (replace-regexp-in-string "&quot;" "\"" title))
+                (setq title (replace-regexp-in-string "&#39;" "'" title))
+                (setq title (replace-regexp-in-string "&#x27;" "'" title))))))
+      ;; Always kill the temporary URL buffer, even when extraction failed --
+      ;; the old code only killed it when an ID was found, leaking it otherwise.
+      (when (buffer-live-p buffer)
+        (kill-buffer buffer)))
 
     (if (and id title)
         (format ";; %s\n(\"%s\" yt)"
