@@ -2,6 +2,16 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none necessary; currently eager but should load by Lisp major
+;;   modes (Phase 6 deferral candidate).
+;; Top-level side effects: two add-hook, package configuration via use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; Configuration for Emacs Lisp, Common Lisp (SLIME), and Scheme (Guile).
 
 ;; ==== Common Lisp Setup (SLIME + Quicklisp) ====

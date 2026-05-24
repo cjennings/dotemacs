@@ -1,6 +1,16 @@
 ;;; prog-training.el --- Training -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
+;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; the C-h E / C-h L bindings already autoload their
+;;   packages, so the eager require can drop to autoloads in Phase 4.
+;; Top-level side effects: package configuration via use-package (autoloaded).
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; Use C-h E to launch Exercism when you want to fetch or submit practice problems.
 ;; Use C-h L for LeetCode sessions; the package drops solved files under ~/code/leetcode in Go format.
 ;; Both bindings autoload their packages, so invoking the key is the whole workflow.

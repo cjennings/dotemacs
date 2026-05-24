@@ -2,6 +2,17 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none necessary; currently eager but should load by Python major
+;;   mode (Phase 6 deferral candidate).
+;; Top-level side effects: package configuration via use-package; warns at load
+;;   if pyright is missing.
+;; Runtime requires: system-lib.
+;; Direct test load: yes.
+;;
 ;; Python programming environment with LSP, tree-sitter, and formatting.
 ;;
 ;; Installation:

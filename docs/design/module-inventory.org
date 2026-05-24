@@ -28,7 +28,8 @@ This inventory is independent from the helper inventory owned by
 - Batch 3 (Core libraries and command modules): classified. 7 modules.
 - Batch 4 (UI / core-UX modules, Layer 2): classified. 10 modules.
 - Batch 5 (Dev entry-points, diff, help, lint, VC, Layer 2): classified. 9 modules.
-- 42 of 102 modules classified.
+- Batch 6 (Programming modules, Layer 2-4): classified. 10 modules.
+- 52 of 102 modules classified.
 - No load-order changes have been made; =init.el= keeps its current eager order.
 
 * Legend
@@ -136,6 +137,25 @@ Command entry points and package config for the development workflow: coverage
 | =test-runner= | 2 | C/L | eager | eager | ert, cl-lib, keybindings | test keymap under cj/custom-keymap | yes |
 | =vc-config= | 2 | C/P | eager | eager | user-constants, keybindings | 2 keymaps under cj/custom-keymap, package config | yes |
 
+** Batch 6 — Programming modules (Layer 2-4)
+
+prog-general owns the shared programming defaults and tree-sitter/LSP policy and
+stays eager. The language modules are eager only by init order and should load
+by major mode (Phase 6); prog-training is optional and already autoloads.
+
+| Module | Layer | Cat | Current | Target | Runtime requires | Top-level side effects | Direct load |
+|--------+-------+-----+---------+--------+------------------+------------------------+-------------|
+| =prog-general= | 2 | C/P/S | eager | eager | none | 4 add-hook, package config | yes |
+| =prog-c= | 3 | D/P | eager | mode | none | 6 add-hook, package config | yes |
+| =prog-go= | 3 | D/P | eager | mode | none | package config | yes |
+| =prog-lisp= | 3 | D/P | eager | mode | none | 2 add-hook, package config | yes |
+| =prog-python= | 3 | D/P | eager | mode | system-lib | package config; warns if pyright missing | yes |
+| =prog-webdev= | 3 | D/P | eager | mode | system-lib | package config; warns if prettier missing | yes |
+| =prog-json= | 3 | D/P | eager | mode | none | 1 add-hook, package config | yes |
+| =prog-yaml= | 3 | D/P | eager | mode | none | 1 add-hook, package config | yes |
+| =prog-shell= | 3 | D/P/S | eager | mode | none | 5 add-hook (after-save executable hook flagged) | yes |
+| =prog-training= | 4 | O/D/P | eager | command | none | package config (autoloaded) | yes |
+
 * Hidden dependencies found
 
 Discoveries that belong to Phase 2 (make dependencies explicit). Recorded here,
@@ -164,7 +184,7 @@ not fixed here.
 
 * Pending classification
 
-The remaining 60 modules required by =init.el=, awaiting per-module inspection.
+The remaining 50 modules required by =init.el=, awaiting per-module inspection.
 Each batch reads these against their source and moves them into [[*Classified
 modules][Classified modules]] with a load-graph header. Suggested batch order
 follows the spec: text/editing command modules, then UI, then programming, then
@@ -208,16 +228,6 @@ Org, then optional integrations.
 - [ ] org-roam-config
 - [ ] org-webclipper
 - [ ] pdf-config
-- [ ] prog-c
-- [ ] prog-general
-- [ ] prog-go
-- [ ] prog-json
-- [ ] prog-lisp
-- [ ] prog-python
-- [ ] prog-shell
-- [ ] prog-training
-- [ ] prog-webdev
-- [ ] prog-yaml
 - [ ] quick-video-capture
 - [ ] reconcile-open-repos
 - [ ] restclient-config
