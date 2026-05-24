@@ -2,6 +2,16 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none necessary; currently eager but should load by Go major
+;;   mode (Phase 6 deferral candidate).
+;; Top-level side effects: package configuration via use-package (hooks via :hook).
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; Configuration for Go programming using go-ts-mode (tree-sitter based).
 ;; Requires go-mode package for gofmt and related commands.
 ;;

@@ -2,6 +2,16 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/P/S.
+;; Load shape: eager.
+;; Eager reason: generic programming defaults, projectile, and the tree-sitter /
+;;   LSP policy shared across every language mode.
+;; Top-level side effects: four add-hook, package configuration via use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; This module provides general programming functionality not related to a
 ;; specific programming language, such as code-folding, project management,
 ;; highlighting symbols, snippets, and whitespace management.

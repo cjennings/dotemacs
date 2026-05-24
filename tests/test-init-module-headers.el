@@ -67,7 +67,18 @@
     "help-utils"
     "flycheck-config"
     "test-runner"
-    "vc-config")
+    "vc-config"
+    ;; Batch 6 — Programming modules (Layer 2-4)
+    "prog-general"
+    "prog-c"
+    "prog-go"
+    "prog-lisp"
+    "prog-python"
+    "prog-webdev"
+    "prog-json"
+    "prog-yaml"
+    "prog-shell"
+    "prog-training")
   "Modules annotated with the load-graph header contract.
 Grows one batch at a time.  Parity with the init.el require set is the
 Phase 1 exit criterion.")

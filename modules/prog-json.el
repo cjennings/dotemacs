@@ -2,6 +2,16 @@
 ;; Author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none necessary; currently eager but should load by JSON major
+;;   mode (Phase 6 deferral candidate).
+;; Top-level side effects: one add-hook, package configuration via use-package.
+;; Runtime requires: none (configures packages via use-package).
+;; Direct test load: yes.
+;;
 ;; JSON editing with tree-sitter highlighting, one-key formatting, and
 ;; interactive jq queries against the current buffer.
 ;;
