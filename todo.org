@@ -2337,19 +2337,9 @@ Expected outcome:
 - Add smoke tests around key resolution and command selection without invoking
   real system commands.
 
-**** TODO [#A] Prevent REST API keys from being saved into template files :security:bug:solo:
+**** 2026-05-23 Sat @ 19:01:53 -0500 Removed SkyFi key-injection feature from restclient-config
 
-=restclient-config.el= opens =data/skyfi-api.rest= and replaces the
-=:skyfi-key= line in that file-visiting buffer with the real key from
-=authinfo.gpg=. Even if the function does not write to disk itself, an
-accidental save can persist the key.
-
-Expected outcome:
-- Open SkyFi requests in a scratch/indirect buffer, or mark the injected buffer
-  read-only with a save guard that restores =PLACEHOLDER= before writing.
-- Make the buffer visibly modified state sane after injection.
-- Keep the existing tests that assert the template file remains unchanged, and
-  add a test for accidental save behavior.
+Resolved by removing the feature rather than hardening it. =cj/restclient-skyfi-buffer= opened =data/skyfi-api.rest= in a file-visiting buffer and rewrote the =:skyfi-key= line with the real key from authinfo, so an accidental save would persist the key to local disk (the file was gitignored and never tracked, so no repo/public-mirror exposure — local plaintext only). Deleted =cj/skyfi-api-key=, =cj/restclient--inject-skyfi-key=, =cj/restclient-skyfi-buffer=, the =C-; R s= binding, the two SkyFi test files, and the local =data/skyfi-api.rest= template. Generic restclient (=C-; R n=, =C-; R o=, restclient/restclient-jq) kept.
 
 **** TODO [#B] Reconcile mail image/privacy settings :privacy:
 
