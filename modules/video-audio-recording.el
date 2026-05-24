@@ -877,7 +877,10 @@ Uses wf-recorder on Wayland, x11grab on X11."
   (unless cj/video-recording-ffmpeg-process
     ;; On Wayland, kill any orphan wf-recorder processes left over from
     ;; previous crashes. Without this, old wf-recorders hold the compositor
-    ;; capture and new ones fail silently.
+    ;; capture and new ones fail silently. This one stays a broad by-name
+    ;; kill on purpose: the orphans' launching shells are already dead, so
+    ;; there is no live PID to scope to. The stop path, by contrast, scopes
+    ;; to our own shell's child (see cj/recording--interrupt-child-wf-recorder).
     (when (cj/recording--wayland-p)
       (call-process "pkill" nil nil nil "-INT" "wf-recorder")
       (sit-for 0.1))
@@ -958,6 +961,16 @@ The filter graph mixes two PulseAudio inputs:
 ;; X11 shutdown: simpler — ffmpeg is the only process, so we just
 ;; send SIGINT to the process group and wait.
 
+(defun cj/recording--interrupt-child-wf-recorder (shell-pid)
+  "Send SIGINT to the wf-recorder child of SHELL-PID, if any.
+Scopes the producer-first stop to the wf-recorder this module launched
+\(a child of our recording shell) via `pkill -P', instead of killing
+every wf-recorder on the system by name.  Does nothing when SHELL-PID
+is nil (the shell already exited, so there is no child to signal)."
+  (when shell-pid
+    (call-process "pkill" nil nil nil
+                  "-INT" "-P" (number-to-string shell-pid) "wf-recorder")))
+
 (defun cj/video-recording-stop ()
   "Stop the video recording, waiting for ffmpeg to finalize the file.
 On Wayland, kills wf-recorder first so ffmpeg gets a clean EOF on its
@@ -973,7 +986,7 @@ for ffmpeg to write container metadata before giving up."
       ;; Without this, simultaneous SIGINT to both causes ffmpeg to abort
       ;; without creating a file.
       (when (cj/recording--wayland-p)
-        (call-process "pkill" nil nil nil "-INT" "wf-recorder")
+        (cj/recording--interrupt-child-wf-recorder (process-id proc))
         (sit-for 0.3))  ; Brief pause for pipe to close
       ;; Now send SIGINT to the process group. On Wayland, this reaches
       ;; ffmpeg (which is already shutting down from the pipe EOF) and
@@ -986,9 +999,11 @@ for ffmpeg to write container metadata before giving up."
       (let ((exited (cj/recording--wait-for-exit proc 5)))
         (unless exited
           (message "Warning: recording process did not exit within 5 seconds")))
-      ;; Safety net: kill any straggler wf-recorder on Wayland.
+      ;; Safety net: signal our own straggler wf-recorder on Wayland.
+      ;; If the shell already exited, process-id returns nil and this is
+      ;; a no-op (the child is already gone with it).
       (when (cj/recording--wayland-p)
-        (call-process "pkill" nil nil nil "-INT" "wf-recorder"))
+        (cj/recording--interrupt-child-wf-recorder (process-id proc)))
       ;; The sentinel handles clearing cj/video-recording-ffmpeg-process
       ;; and updating the modeline. If the process already exited during
       ;; our wait, the sentinel has already fired. If not, force cleanup.
