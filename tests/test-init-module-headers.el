@@ -92,7 +92,25 @@
     "org-reveal-config"
     "org-roam-config"
     "org-webclipper"
-    "hugo-config")
+    "hugo-config"
+    ;; Batch 8 — Domain / integration / optional modules (Layer 2-4)
+    "ai-config"
+    "ai-vterm"
+    "browser-config"
+    "calendar-sync"
+    "calibredb-epub-config"
+    "chrono-tools"
+    "dirvish-config"
+    "dwim-shell-config"
+    "erc-config"
+    "eshell-config"
+    "eww-config"
+    "flyspell-and-abbrev"
+    "games-config"
+    "gloss-config"
+    "httpd-config"
+    "jumper"
+    "latex-config")
   "Modules annotated with the load-graph header contract.
 Grows one batch at a time.  Parity with the init.el require set is the
 Phase 1 exit criterion.")
@@ -166,11 +184,14 @@ omits the reason."
                         ";; Direct test load: yes.\n")))
     (should (member "Eager reason:" (test-init-header--missing-labels header)))))
 
-(ert-deftest test-init-header-scoping-excludes-unclassified ()
-  "Error: an unclassified module is not enforced (scoping proof)."
-  ;; games-config is required by init.el but not yet classified; it must be
-  ;; absent from the allowlist so the suite stays green during migration.
-  (should-not (member "games-config" test-init-header--classified-modules)))
+(ert-deftest test-init-header-scoping-only-checks-allowlist ()
+  "Error: only allowlisted modules are enforced, and the list stays clean.
+A name never added to the allowlist stands in for any not-yet-classified
+module: the validator checks allowlist members only. The duplicate guard
+keeps the list honest as it grows batch by batch."
+  (should-not (member "not-a-classified-module" test-init-header--classified-modules))
+  (should (equal (length test-init-header--classified-modules)
+                 (length (delete-dups (copy-sequence test-init-header--classified-modules))))))
 
 (provide 'test-init-module-headers)
 ;;; test-init-module-headers.el ends here

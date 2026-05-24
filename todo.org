@@ -492,6 +492,9 @@ The =init.el= require for =latex-config= carried a bare "WIP need to fix" commen
 ** TODO [#C] Decide prog-shell config home :refactor:
 The =init.el= require for =prog-shell= carried a "combine elsewhere" comment. Retired it during module classification. Decide whether shell-script editing config should fold into =prog-general= or stay its own module, then act or close.
 
+** TODO [#C] Make elfeed-config tests byte-compile-safe :test:
+The =cj/elfeed-process-entries= tests in =tests/test-elfeed-config-helpers.el= only pass when =elfeed-config= loads as interpreted source. The byte-compiled function inlines the =elfeed-entry-link= struct accessor, so the function stubs are bypassed and the inlined accessor type-checks a real =elfeed-entry=. The batch test environment has no elfeed package, so the tests can't build real structs either. Rewrite the tests (define a stand-in =elfeed-entry= cl-struct, or make elfeed loadable in batch) so they survive byte-compilation. This blocks annotating elfeed-config with its load-graph header (the last unclassified init module).
+
 ** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22

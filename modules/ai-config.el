@@ -2,6 +2,16 @@
 ;; author Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: registers the cj/ai-keymap (C-; a); GPTel itself should load on
+;;   command, a Phase 5 deferral candidate.
+;; Top-level side effects: defines cj/ai-keymap, registers it under cj/custom-keymap.
+;; Runtime requires: keybindings, system-lib.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; Configuration for AI integrations in Emacs, focused on GPTel.
 ;;
 ;; Main Features:

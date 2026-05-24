@@ -3,6 +3,16 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; IRC should not be a startup load, a command-loaded
+;;   deferral candidate for Phase 5.
+;; Top-level side effects: defines an ERC keymap, registers it under
+;;   cj/custom-keymap, package configuration via use-package.
+;; Runtime requires: cl-lib, keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; Enhanced ERC configuration with multi-server support.
 ;;
 ;; Main keybindings:

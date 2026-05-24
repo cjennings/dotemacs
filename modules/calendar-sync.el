@@ -4,7 +4,21 @@
 ;; Created: 2025-11-16
 
 ;;; Commentary:
-
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/S.
+;; Load shape: eager only when calendar-sync.local.el configures calendars.
+;; Eager reason: daily-driver workflow; calendars are expected synced at the
+;;   first session. Timers and network fetches are guarded for batch/test loads.
+;; Top-level side effects: defines a calendar keymap and conditionally registers
+;;   it under cj/custom-keymap; timer and network fetches guarded by
+;;   config/noninteractive checks.
+;; Runtime requires: cl-lib, subr-x, system-lib, cj-org-text-lib. keybindings is
+;;   needed for the C-; g binding but only reached through a boundp guard, so the
+;;   binding silently drops standalone. Phase 2 fix.
+;; Direct test load: conditional (C-; g registration skipped without keybindings;
+;;   private config optional).
+;;
 ;; Simple, reliable one-way sync from multiple calendars to Org mode.
 ;; Downloads .ics files from calendar URLs (Google, Proton, etc.) and
 ;; converts to Org format. No OAuth, no API complexity, just file conversion.

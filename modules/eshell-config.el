@@ -2,7 +2,15 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none; shell/REPL, a command/hook-loaded deferral candidate.
+;; Top-level side effects: one add-hook, one advice-add, package config.
+;; Runtime requires: system-utils.
+;; Direct test load: yes.
+;;
 ;; ESHELL
 ;; - Eshell is useful as a REPL
 ;; - Redirect to the kill ring : ls > /dev/kill

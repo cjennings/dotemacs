@@ -3,6 +3,14 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none; LaTeX/AUCTeX editing, a hook/mode-loaded deferral candidate.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: none.
+;; Direct test load: yes.
+;;
 ;; WORKFLOW:
 ;;
 ;; Opening any tex file will put you into LaTeX mode.

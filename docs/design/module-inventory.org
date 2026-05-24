@@ -30,7 +30,8 @@ This inventory is independent from the helper inventory owned by
 - Batch 5 (Dev entry-points, diff, help, lint, VC, Layer 2): classified. 9 modules.
 - Batch 6 (Programming modules, Layer 2-4): classified. 10 modules.
 - Batch 7 (Org modules, Layer 3-4): classified. 13 modules.
-- 65 of 102 modules classified.
+- Batch 8 (Domain / integration / optional modules, Layer 2-4): classified. 17 modules.
+- 82 of 102 modules classified. (elfeed-config deferred — see Pending classification.)
 - No load-order changes have been made; =init.el= keeps its current eager order.
 
 * Legend
@@ -180,6 +181,33 @@ and refile idle-timer caches are the side effects the spec tracks separately.
 | =org-webclipper= | 4 | O/D/P | eager | command | none | org-protocol handler | yes |
 | =hugo-config= | 3 | D/P | eager | command | user-constants, host-environment | package config | yes |
 
+** Batch 8 — Domain / integration / optional modules (Layer 2-4)
+
+AI, browser, calendar, ebook, file-manager, shell, IRC, web, games, and other
+domain workflows. Almost all are eager only by init order and become command-,
+hook-, or mode-loaded. calendar-sync stays eager when its .local.el is present.
+flyspell-and-abbrev is the one Core-UX member (text-mode hooks).
+
+| Module | Layer | Cat | Current | Target | Runtime requires | Top-level side effects | Direct load |
+|--------+-------+-----+---------+--------+------------------+------------------------+-------------|
+| =ai-config= | 3 | D/P | eager | command | keybindings, system-lib | cj/ai-keymap under cj/custom-keymap | yes |
+| =ai-vterm= | 3 | D | eager | command | cl-lib, seq, cj-window-geometry-lib, cj-window-toggle-lib, host-environment | 4 global keys | yes |
+| =browser-config= | 3 | D/P | eager | command | cl-lib | 1 global key | yes |
+| =calendar-sync= | 3 | D/S | eager (.local.el) | eager (.local.el) | cl-lib, subr-x, system-lib, cj-org-text-lib | calendar keymap (boundp-guarded), guarded timer/network | conditional |
+| =calibredb-epub-config= | 4 | O/D/P | eager | command | user-constants, subr-x | add-hook, advice-add, package config | yes |
+| =chrono-tools= | 3 | D/P | eager | command | user-constants | package config | yes |
+| =dirvish-config= | 3 | D/P | eager | command | user-constants, system-utils, host-environment, system-lib, external-open-lib | 3 add-hook, package config | yes |
+| =dwim-shell-config= | 3 | D/P | eager | command | cl-lib | package config | yes |
+| =erc-config= | 4 | O/D/P | eager | command | cl-lib, keybindings | ERC keymap under cj/custom-keymap | yes |
+| =eshell-config= | 3 | D/P | eager | command | system-utils | add-hook, advice-add, package config | yes |
+| =eww-config= | 3 | D/P | eager | command | cl-lib | package config | yes |
+| =flyspell-and-abbrev= | 2 | C/P | eager | hook | cl-lib | mode-hook package config | yes |
+| =games-config= | 4 | O | eager | command | none | package config | yes |
+| =gloss-config= | 4 | O/D/P | eager | command | none | package config | yes |
+| =httpd-config= | 4 | O/D/P | eager | command | none | package config | yes |
+| =jumper= | 4 | O/L | eager | command | cl-lib | jumper keymap | yes |
+| =latex-config= | 3 | D/P | eager | mode | none | package config | yes |
+
 * Hidden dependencies found
 
 Discoveries that belong to Phase 2 (make dependencies explicit). Recorded here,
@@ -205,33 +233,33 @@ not fixed here.
 - =flycheck-config= binds =(:map cj/custom-keymap ...)= through use-package but
   does not require keybindings, so the binding fails when the module loads
   standalone. Phase 2 fix: require keybindings (or move to the registration API).
+- =calendar-sync= guards its =C-; g= registration with =(when (boundp
+  'cj/custom-keymap) ...)= and does not require keybindings, so the binding
+  silently drops standalone. Same boundp-shim pattern. Phase 2/3 fix.
+
+* Deferred classification
+
+- =elfeed-config= is read and understood (Layer 4, O/D/P, command-loaded; runtime
+  requires user-constants, system-lib, media-utils) but its header is not yet
+  annotated. Annotating triggers the PostToolUse byte-compile, and its tests
+  (=tests/test-elfeed-config-helpers.el=) only pass when elfeed-config loads as
+  interpreted source: the byte-compiled =cj/elfeed-process-entries= inlines the
+  =elfeed-entry-link= struct accessor, so the tests' function stubs are bypassed
+  and the inlined accessor type-checks a real =elfeed-entry=. The batch test
+  environment has no elfeed package on the load-path, so the tests cannot build
+  real structs either. Classifying elfeed-config needs that test rewritten first
+  (define a stand-in =elfeed-entry= struct, or make elfeed loadable in batch).
+  Tracked as a todo task.
 
 * Pending classification
 
-The remaining 37 modules required by =init.el=, awaiting per-module inspection.
+The remaining 20 modules required by =init.el=, awaiting per-module inspection.
 Each batch reads these against their source and moves them into [[*Classified
 modules][Classified modules]] with a load-graph header. Suggested batch order
 follows the spec: text/editing command modules, then UI, then programming, then
 Org, then optional integrations.
 
-- [ ] ai-config
-- [ ] ai-vterm
-- [ ] browser-config
-- [ ] calendar-sync
-- [ ] calibredb-epub-config
-- [ ] chrono-tools
-- [ ] dirvish-config
-- [ ] dwim-shell-config
 - [ ] elfeed-config
-- [ ] erc-config
-- [ ] eshell-config
-- [ ] eww-config
-- [ ] flyspell-and-abbrev
-- [ ] games-config
-- [ ] gloss-config
-- [ ] httpd-config
-- [ ] jumper
-- [ ] latex-config
 - [ ] linear-config
 - [ ] local-repository
 - [ ] lorem-optimum

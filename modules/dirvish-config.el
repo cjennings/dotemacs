@@ -2,7 +2,16 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none; file manager, a command/hook-loaded deferral candidate.
+;; Top-level side effects: three add-hook, package configuration via use-package.
+;; Runtime requires: user-constants, system-utils, host-environment, system-lib,
+;;   external-open-lib.
+;; Direct test load: yes.
+;;
 ;; Enhanced file management via Dirvish (modern dired replacement) with icons,
 ;; previews, and quick access directories (press 'g'). Includes utilities for
 ;; ediff, playlist creation, path copying, and external file manager integration.

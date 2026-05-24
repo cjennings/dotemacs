@@ -3,6 +3,15 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none; calendar/timer commands, a command-loaded deferral
+;;   candidate.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: user-constants.
+;; Direct test load: yes.
+;;
 ;; This module centralizes configuration for Emacs time-related tools:
 ;;
 ;; – time-zones: interactive world clock with fuzzy search and time shifting

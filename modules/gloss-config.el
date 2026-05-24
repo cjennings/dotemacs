@@ -3,6 +3,15 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; optional glossary workflow (v1 shakedown), a command-loaded
+;;   deferral candidate.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: none.
+;; Direct test load: yes.
+;;
 ;; gloss — Glossary Lookup with Online-Sourced Selection.
 ;;
 ;; Personal glossary on `C-h g'.  Looks up terms in a single git-tracked

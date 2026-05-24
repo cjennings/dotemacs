@@ -3,6 +3,14 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 4 (Optional).
+;; Category: O.
+;; Load shape: eager.
+;; Eager reason: none; optional games, a command-loaded deferral candidate.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: none.
+;; Direct test load: yes.
+;;
 ;; Configuration for game packages.
 ;;
 ;; - Malyon for playing interactive fiction and text adventures in Z-machine format
