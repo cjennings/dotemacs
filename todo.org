@@ -2259,23 +2259,11 @@ Completion review 2026-05-15:
   persistence coverage, calendar operational behavior, Dirvish dependency/path
   hardening, EWW/Elfeed network helpers, and Slack which-key registration.
 
-**** TODO [#B] Make system restart/shutdown commands more defensive :safety:solo:
+**** 2026-05-24 Sun @ 04:15:36 -0500 Made Emacs restart and destructive confirms defensive
 
-=system-commands.el= exposes high-impact shell commands through a convenience
-menu. The restart-Emacs path starts a shell command that restarts the user
-service and reconnects, then schedules =kill-emacs= after one second. If the
-service command is unavailable or fails, the current session can still be killed.
+Restart-Emacs scheduled an unconditional =kill-emacs= one second after firing the systemctl restart, so a missing or failed service killed the session with nothing to replace it. Restart now guards on =(daemonp)= and a present =emacs.service= (new =cj/system-cmd--emacs-service-available-p= via =systemctl --user cat=) before doing anything, and drops the separate =kill-emacs= — =systemctl restart= cycles the daemon itself, so a failed restart leaves the current Emacs alive. Shutdown and reboot moved to a strong =yes-or-no-p= confirm (a stray RET/space on the old quick prompt could power off the machine); logout and suspend keep the quick confirm since they are recoverable. Tests cover service detection, both restart guards, and the strong-confirm paths with system primitives stubbed. Commit =f1dbec16=.
 
-Expected outcome:
-- Check whether the Emacs daemon service exists before offering the service
-  restart command.
-- Start restart/reconnect work as a process with an exit sentinel.
-- Kill the current Emacs only after the replacement path has clearly started,
-  or keep a non-daemon fallback that does not kill the session on failure.
-- Consider requiring a stronger confirmation for shutdown/reboot than a single
-  RET/space confirmation.
-- Add smoke tests around key resolution and command selection without invoking
-  real system commands.
+Not done: the detached restart+reconnect (=nohup sh -c '... && emacsclient -c'=) may still race systemd's cgroup teardown of =emacs.service= before =emacsclient -c= runs. Couldn't verify from here without cycling the live daemon — eyeball the reconnect on the next real restart.
 
 **** 2026-05-23 Sat @ 19:01:53 -0500 Removed SkyFi key-injection feature from restclient-config
 
