@@ -3,6 +3,14 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none; web-browsing helpers, a command-loaded deferral candidate.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: cl-lib.
+;; Direct test load: yes.
+;;
 ;; This module provides a minimal, privacy-focused browsing experience with:
 ;; - Simplified navigation keybindings (< and > for back/forward)
 ;; - Quick URL copying to clipboard

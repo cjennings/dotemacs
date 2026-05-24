@@ -2,7 +2,15 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 2 (Core UX).
+;; Category: C/P.
+;; Load shape: eager.
+;; Eager reason: text-mode spelling and abbrev hooks; spec target is hook-loaded.
+;; Top-level side effects: package configuration via use-package (mode hooks).
+;; Runtime requires: cl-lib.
+;; Direct test load: yes.
+;;
 ;; WORKFLOW:
 ;; This module provides intelligent spell checking with automatic abbreviation
 ;; creation to prevent repeated misspellings.

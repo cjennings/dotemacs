@@ -2,7 +2,16 @@
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-
+;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; optional ebook workflow, a command-loaded deferral
+;;   candidate for Phase 4.
+;; Top-level side effects: one add-hook, one advice-add, package config.
+;; Runtime requires: user-constants, subr-x.
+;; Direct test load: yes.
+;;
 ;; This module provides a comprehensive ebook management and reading experience
 ;; within Emacs, integrating CalibreDB for library management and Nov for EPUB
 ;; reading.

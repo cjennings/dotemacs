@@ -2,6 +2,15 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none; Dired/Dirvish shell commands, a command-loaded deferral
+;;   candidate.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: cl-lib.
+;; Direct test load: yes.
+;;
 ;; This module provides a collection of DWIM (Do What I Mean) shell commands
 ;; for common file operations in Dired and other buffers. It leverages the
 ;; `dwim-shell-command' package to execute shell commands on marked files
