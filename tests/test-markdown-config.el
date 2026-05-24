@@ -23,5 +23,32 @@
 `C-c '' opens those blocks in `markdown-mode'."
   (should (equal (cdr (assoc "markdown" org-src-lang-modes)) 'markdown)))
 
+;;; cj/markdown-html (impatient-mode filter: source buffer -> HTML)
+
+(ert-deftest test-markdown-html-wraps-source-buffer-content ()
+  "Normal: the source buffer's text is embedded in the strapdown HTML shell."
+  (let ((src (generate-new-buffer " *md-src*")))
+    (unwind-protect
+        (progn
+          (with-current-buffer src (insert "# Title\n\nsome **markdown**"))
+          (with-temp-buffer
+            (cj/markdown-html src)
+            (let ((html (buffer-string)))
+              (should (string-match-p "<!DOCTYPE html>" html))
+              (should (string-match-p "<xmp" html))
+              (should (string-match-p "strapdown\\.js" html))
+              (should (string-match-p "some \\*\\*markdown\\*\\*" html)))))
+      (kill-buffer src))))
+
+(ert-deftest test-markdown-html-empty-source-buffer ()
+  "Boundary: an empty source buffer still yields the HTML shell."
+  (let ((src (generate-new-buffer " *md-empty*")))
+    (unwind-protect
+        (with-temp-buffer
+          (cj/markdown-html src)
+          (should (string-match-p "<!DOCTYPE html>" (buffer-string)))
+          (should (string-match-p "<xmp" (buffer-string))))
+      (kill-buffer src))))
+
 (provide 'test-markdown-config)
 ;;; test-markdown-config.el ends here
