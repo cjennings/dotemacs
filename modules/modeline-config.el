@@ -129,8 +129,12 @@ Uses built-in cached values for performance.")
         cj/modeline-vc-cache-set-p nil))
 
 (defun cj/modeline-vc-cache-key (file)
-  "Return the cache key for FILE."
-  (list file cj/modeline-vc-show-remote))
+  "Return the cache key for FILE.
+Includes the resolved `file-truename' so that if FILE is a symlink whose
+target moves to a different VC tree, the key changes and the cache is not
+served a stale backend.  The extra `file-truename' is one stat per refresh,
+cheap next to the VC calls the cache avoids."
+  (list file (file-truename file) cj/modeline-vc-show-remote))
 
 (defun cj/modeline-vc-cache-valid-p (key now)
   "Return non-nil when cached VC data is valid for KEY at NOW."
