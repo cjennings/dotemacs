@@ -35,8 +35,12 @@
   "JavaScript bookmarklet for triggering video downloads from the browser.
 Add this as a bookmark in your browser to enable one-click video downloads.")
 
-(defvar cj/video-download-current-url nil
-  "Temporary storage for URL passed via org-protocol.")
+(defvar cj/--video-download-url nil
+  "URL for the active video capture, dynamically bound around `org-capture'.
+The org-protocol entry point `let'-binds this for the dynamic extent of
+its capture call, so the capture handler sees the URL while the capture
+runs, and an aborted or erroring capture unwinds the binding instead of
+leaving a stale URL for the next manual capture.")
 
 (defvar cj/video-download-initialized nil
   "Flag to track if video download has been initialized.")
@@ -46,23 +50,21 @@ Add this as a bookmark in your browser to enable one-click video downloads.")
 INFO is a plist containing :url from the org-protocol call."
   ;; Ensure we're initialized when called via protocol
   (cj/ensure-video-download-initialized)
-  (let ((url (plist-get info :url)))
-    (when url
-      ;; Store the URL for the capture template to use
-      (setq cj/video-download-current-url url))
-    ;; Trigger the capture
-    (org-capture nil "v")
-    nil))  ; Return nil to indicate we handled it
+  ;; Bind the URL for the dynamic extent of the capture call only.  The
+  ;; capture handler reads it while the capture runs; an aborted or
+  ;; erroring capture unwinds this binding, so nothing stale survives.
+  (let ((cj/--video-download-url (plist-get info :url)))
+    (org-capture nil "v"))
+  nil)  ; Return nil to indicate we handled it
 
 (defun cj/video-download-capture-handler ()
   "Handle video download during org-capture.
-This function is called from the capture template."
+This function is called from the capture template.  It uses the URL
+bound by the org-protocol entry point, or prompts when invoked manually."
   ;; Ensure media-utils is loaded when we actually need to download
   (require 'media-utils)
-  (let ((url (or cj/video-download-current-url
+  (let ((url (or cj/--video-download-url
                  (read-string "Video URL: "))))
-    ;; Clear the stored URL after using it
-    (setq cj/video-download-current-url nil)
     (if (string-empty-p url)
         (error "No URL provided for download")
       (cj/yt-dl-it url)
