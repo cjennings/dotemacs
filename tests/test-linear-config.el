@@ -69,7 +69,18 @@ request — falsely reported \"not set\" on a fresh session."
   (should (keymapp cj/linear-keymap))
   (should (eq (keymap-lookup (current-global-map) "C-; L") cj/linear-keymap))
   (should (eq (keymap-lookup cj/linear-keymap "l") #'linear-emacs-list-issues))
-  (should (eq (keymap-lookup cj/linear-keymap "n") #'linear-emacs-new-issue)))
+  (should (eq (keymap-lookup cj/linear-keymap "n") #'linear-emacs-new-issue))
+  ;; commands added in the package rework
+  (should (eq (keymap-lookup cj/linear-keymap "f") #'linear-emacs-list-issues-filtered))
+  (should (eq (keymap-lookup cj/linear-keymap "v") #'linear-emacs-run-view))
+  (should (eq (keymap-lookup cj/linear-keymap "o") #'linear-emacs-open-current-issue)))
+
+(ert-deftest test-linear-edit-submap-bound ()
+  "Smoke: C-; L e holds the edit-issue sub-keymap with field commands."
+  (should (keymapp cj/linear-edit-keymap))
+  (should (eq (keymap-lookup cj/linear-keymap "e") cj/linear-edit-keymap))
+  (should (eq (keymap-lookup cj/linear-edit-keymap "a") #'linear-emacs-set-assignee))
+  (should (eq (keymap-lookup cj/linear-edit-keymap "s") #'linear-emacs-set-state)))
 
 (provide 'test-linear-config)
 ;;; test-linear-config.el ends here
