@@ -1,6 +1,17 @@
 ;;; org-roam-config.el --- Org-Roam Config -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P/S.
+;; Load shape: eager.
+;; Eager reason: daily knowledge-management workflow; capture/finalize hooks and
+;;   the roam database.
+;; Top-level side effects: one global key, org-roam database setup, package
+;;   configuration via use-package.
+;; Runtime requires: user-constants.
+;; Direct test load: yes.
+;;
 ;; Configuration and utilities for org-roam knowledge management.
 ;;
 ;; Key features:

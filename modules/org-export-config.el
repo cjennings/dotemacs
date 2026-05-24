@@ -2,6 +2,16 @@
 ;; author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/P.
+;; Load shape: eager.
+;; Eager reason: none; export backends/processes are a command-loaded deferral
+;;   candidate for Phase 4.
+;; Top-level side effects: package configuration via use-package.
+;; Runtime requires: system-lib.
+;; Direct test load: yes.
+;;
 ;; This module configures Org mode's export capabilities, providing multiple
 ;; backend options for converting Org documents to various formats.
 ;;

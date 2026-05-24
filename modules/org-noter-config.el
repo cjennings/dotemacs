@@ -2,6 +2,16 @@
 
 ;;; Commentary:
 ;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; PDF/EPUB note-taking is a command-loaded deferral
+;;   candidate for Phase 4.
+;; Top-level side effects: one add-hook, defines a keymap, registers under
+;;   cj/custom-keymap.
+;; Runtime requires: cl-lib, user-constants, keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; Org-noter configuration for taking notes on PDF and EPUB documents.
 ;;
 ;; Workflow:

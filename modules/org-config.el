@@ -1,7 +1,16 @@
 ;;; org-config --- Settings and Enhancements to Org Mode -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 ;;; Commentary:
-
+;;
+;; Layer: 3 (Domain Workflow).
+;; Category: C/D/P.
+;; Load shape: eager.
+;; Eager reason: core Org behavior and org-protocol setup; a daily-driver hot path.
+;; Top-level side effects: org-protocol setup, a cj/custom-keymap binding,
+;;   package configuration via use-package.
+;; Runtime requires: keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; note: org-archive-location is set in the :config section after org loads
 
 ;;; Code:

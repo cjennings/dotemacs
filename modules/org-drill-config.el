@@ -2,6 +2,15 @@
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; optional flashcard workflow, a command-loaded deferral
+;;   candidate for Phase 4.
+;; Top-level side effects: defines a drill keymap, registers it under cj/custom-keymap.
+;; Runtime requires: user-constants, keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
+;;
 ;; Notes: Org-Drill
 ;; `C-; D s' picks a flashcard file from `drill-dir' and starts a session;
 ;; `C-u C-; D s' lets you pick the directory first.  `C-; D f' drills

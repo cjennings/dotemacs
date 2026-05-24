@@ -3,6 +3,16 @@
 ;;
 ;;; Commentary:
 ;;
+;; Layer: 3 (Domain Workflow).
+;; Category: D/S.
+;; Load shape: eager.
+;; Eager reason: daily agenda workflow; the user expects agenda available at the
+;;   first session.
+;; Top-level side effects: one add-hook and an idle timer that builds the agenda
+;;   file cache 10s after startup (guarded; spec tracks the cache lifecycle).
+;; Runtime requires: user-constants, system-lib, cj-cache-lib.
+;; Direct test load: yes.
+;;
 ;; Performance:
 ;; - Caches agenda file list to avoid scanning projects directory on every view
 ;; - Cache builds asynchronously 10 seconds after Emacs startup (non-blocking)
