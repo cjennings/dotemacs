@@ -98,6 +98,8 @@
   (defun my/org-pandoc-export-to-pdf-and-open ()
 	"Export to PDF via pandoc and open with Zathura."
 	(interactive)
+	(unless (executable-find "zathura")
+	  (user-error "Cannot open the exported PDF: zathura is not installed or not on PATH"))
 	(let ((pdf-file (org-pandoc-export-to-latex-pdf)))
 	  (when pdf-file
 		(start-process "zathura-pdf" nil "zathura" pdf-file)

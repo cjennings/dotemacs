@@ -115,11 +115,34 @@ that registers the webclip entry.  Providing `'org-protocol' fires the block."
     (cl-letf (((symbol-function 'require) (lambda (&rest _) t)))
       (should-error (cj/org-protocol-webclip-handler) :type 'error))))
 
+(ert-deftest test-webclipper-protocol-handler-errors-when-pandoc-missing ()
+  "Error: handler signals a user-error naming pandoc when it's not on PATH."
+  (let ((cj/--webclip-url "https://example.com")
+        (cj/--webclip-title "Title"))
+    (cl-letf (((symbol-function 'require) (lambda (&rest _) t))
+              ((symbol-function 'executable-find) (lambda (_) nil)))
+      (let ((err (should-error (cj/org-protocol-webclip-handler)
+                               :type 'user-error)))
+        (should (string-match-p "pandoc" (cadr err)))))))
+
+(ert-deftest test-webclipper-protocol-handler-proceeds-when-pandoc-present ()
+  "Normal: with pandoc on PATH the guard passes through to conversion."
+  (let ((cj/--webclip-url "https://example.com")
+        (cj/--webclip-title "Title"))
+    (cl-letf (((symbol-function 'require) (lambda (&rest _) t))
+              ((symbol-function 'executable-find) (lambda (_) "/usr/bin/pandoc"))
+              ((symbol-function 'org-web-tools--url-as-readable-org)
+               (lambda (_) "* Page Title\n** Sub heading\nBody.\n"))
+              ((symbol-function 'message) #'ignore))
+      (should (string-match-p "Body"
+                              (cj/org-protocol-webclip-handler))))))
+
 (ert-deftest test-webclipper-protocol-handler-returns-processed-content ()
   "Normal: handler converts the bound URL into processed org content."
   (let ((cj/--webclip-url "https://example.com")
         (cj/--webclip-title "Title"))
     (cl-letf (((symbol-function 'require) (lambda (&rest _) t))
+              ((symbol-function 'executable-find) (lambda (_) "/usr/bin/pandoc"))
               ((symbol-function 'org-web-tools--url-as-readable-org)
                (lambda (_) "* Page Title\n** Sub heading\nBody.\n"))
               ((symbol-function 'message) #'ignore))

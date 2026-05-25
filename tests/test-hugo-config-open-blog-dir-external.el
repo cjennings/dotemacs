@@ -44,6 +44,7 @@ filesystem checks."
      (cl-letf (((symbol-function 'env-macos-p) (lambda () ,macos-p))
                ((symbol-function 'env-windows-p) (lambda () ,windows-p))
                ((symbol-function 'file-directory-p) (lambda (_d) t))
+               ((symbol-function 'executable-find) (lambda (cmd) cmd))
                ((symbol-function 'start-process)
                 (lambda (_name _buf cmd &rest _args)
                   (setq test-hugo--captured-process-cmd cmd))))
@@ -85,6 +86,7 @@ filesystem checks."
               ((symbol-function 'file-directory-p) (lambda (_d) nil))
               ((symbol-function 'make-directory)
                (lambda (_dir &rest _args) (setq mkdir-called t)))
+              ((symbol-function 'executable-find) (lambda (cmd) cmd))
               ((symbol-function 'start-process) #'ignore))
       (cj/hugo-open-blog-dir-external)
       (should mkdir-called))))
@@ -97,9 +99,22 @@ filesystem checks."
               ((symbol-function 'file-directory-p) (lambda (_d) t))
               ((symbol-function 'make-directory)
                (lambda (_dir &rest _args) (setq mkdir-called t)))
+              ((symbol-function 'executable-find) (lambda (cmd) cmd))
               ((symbol-function 'start-process) #'ignore))
       (cj/hugo-open-blog-dir-external)
       (should-not mkdir-called))))
+
+;;; Error Cases
+
+(ert-deftest test-hugo-config-open-blog-dir-external-error-opener-missing ()
+  "Error: missing opener executable signals user-error before start-process."
+  (cl-letf (((symbol-function 'env-macos-p) (lambda () nil))
+            ((symbol-function 'env-windows-p) (lambda () nil))
+            ((symbol-function 'file-directory-p) (lambda (_d) t))
+            ((symbol-function 'executable-find) (lambda (_) nil))
+            ((symbol-function 'start-process)
+             (lambda (&rest _) (error "start-process should not run"))))
+    (should-error (cj/hugo-open-blog-dir-external) :type 'user-error)))
 
 (provide 'test-hugo-config-open-blog-dir-external)
 ;;; test-hugo-config-open-blog-dir-external.el ends here
