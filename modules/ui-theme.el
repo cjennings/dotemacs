@@ -64,11 +64,14 @@ directory that is sync'd across machines with this configuration."
   :type 'file
   :group 'cj/ui-theme)
 
-(defcustom fallback-theme-name "modus-vivendi"
+(defcustom fallback-theme-name "dupre"
   "The name of the theme to fallback on.
 This is used when there's no file, or the theme name doesn't match
-any of the installed themes. This should be a built-in theme. If theme name is
-`nil', there will be no theme."
+any of the installed themes. It must be available wherever this config is
+loaded, since the fallback has no further fallback. dupre is bundled in
+themes/ and carries the dimming colors chosen for this config, so it is the
+default; a built-in theme like modus-vivendi works too but has no chosen
+dimming colors. If theme name is `nil', there will be no theme."
   :type 'string
   :group 'cj/ui-theme)
 

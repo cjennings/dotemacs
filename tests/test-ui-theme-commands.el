@@ -34,6 +34,16 @@
         (fallback-theme-name "modus-vivendi"))
     (should (equal "modus-vivendi" (cj/get-active-theme-name)))))
 
+;;; fallback-theme-name default
+
+(ert-deftest test-ui-theme-default-fallback-is-bundled-dupre ()
+  "Normal: the default fallback theme is dupre, the config's bundled theme.
+modus-vivendi ships with Emacs but has no chosen dimming colors; dupre is
+bundled in themes/, so it is available on every machine that loads this
+config and is the right default fallback.  Its loadability is covered by
+test-dupre-theme.el."
+  (should (equal "dupre" (default-value 'fallback-theme-name))))
+
 ;;; cj/save-theme-to-file
 
 (ert-deftest test-ui-theme-save-writes-active-name-to-file ()
