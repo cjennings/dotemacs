@@ -122,7 +122,9 @@ Findings from the 2026-05-20 investigation:
 The dashboard navigator (icons + labels) and the recentf/project/bookmark list items are both painted by =dashboard-items-face=: the navigator gets a =dashboard-items-face= overlay, and overlays beat text properties, so the per-button =dashboard-navigator= face is inert. To color the navigator independently of the items, override where that overlay is applied — advise or redefine =dashboard-insert-navigator=, or strip/replace the overlay's face.
 Triggered by: 2026-05-22 dashboard color work (L105).
 
-** TODO [#C] Make standalone byte-compile load paths match module dependencies :tests:cleanup:
+** DONE [#C] Make standalone byte-compile load paths match module dependencies :tests:cleanup:
+CLOSED: [2026-05-25 Mon]
+Resolved: added =make compile-file FILE== (load path = modules + themes + tests + package-initialize) as the documented single-file compile command, plus =-L themes= on =make compile=. Bare =emacs -Q= stays unsupported by design; the documented command resolves local compile-time deps. Verified dashboard-config.el (undead-buffers) and dupre-faces.el (dupre-palette) both compile. The parallel PostToolUse byte-compile hook also wants =-L themes=, but =.claude/hooks/validate-el.sh= is rulesets-owned (synced at startup, so a local edit reverts), so that fix is routed to the rulesets inbox rather than committed here.
 Bare =emacs -Q --batch --eval '(byte-compile-file "modules/dashboard-config.el")'= fails because =undead-buffers= is not on the load path, even though normal init/test loading succeeds. Decide whether standalone compile checks should use the project test harness/load path, or whether modules with compile-time local dependencies should add explicit load-path setup or lighter declarations.
 
 Acceptance:
@@ -463,13 +465,6 @@ Expected outcome:
 
 ** TODO [#C] latex-config WIP state                               :refactor:
 The =init.el= require for =latex-config= carried a bare "WIP need to fix" comment with no detail on what was broken. Retired that comment while classifying foundation modules; the underlying state still needs investigation. Read =modules/latex-config.el=, determine what's incomplete, and either finish it or scope a real task.
-
-** TODO [#C] Decide prog-shell config home :refactor:
-The =init.el= require for =prog-shell= carried a "combine elsewhere" comment. Retired it during module classification. Decide whether shell-script editing config should fold into =prog-general= or stay its own module, then act or close.
-
-#+begin_src cj: comment
-I believe it should stay where it is. Delete this task. 
-#+end_src
 
 ** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
 :PROPERTIES:
