@@ -1876,15 +1876,17 @@ Add =(eval-when-compile (defvar contacts-file))= and
 near the existing requires so the compile is clean and the
 cross-module dependency is explicit at the top of the file.
 
-**** TODO [#C] Add coverage for =mu4e-org-contacts-integration.el= completion logic :tests:solo:
+**** 2026-05-25 Mon @ 17:10:47 -0500 Added mu4e org-contacts completion coverage
 
-No tests exist for =cj/org-contacts-completion-at-point=,
-=cj/mu4e-org-contacts-tab-complete=, =cj/mu4e-org-contacts-comma-
-complete=, or =cj/mu4e-org-contacts-insert-email=.  The header-field
-detection (=mail-abbrev-in-expansion-header-p=) and the TAB-cycle
-branch are the highest-value coverage targets.  Stub
-=cj/get-all-contact-emails= and run against a temp buffer in
-=mu4e-compose-mode= / =org-msg-edit-mode= where applicable.
+Added =tests/test-mu4e-org-contacts-integration.el= (10 tests). The capf
+(cj/org-contacts-completion-at-point) is checked for the header-field and
+compose-mode gating both ways, the bounds/table it returns when contacts
+exist, and the empty-contacts case. TAB (cj/mu4e-org-contacts-tab-complete)
+is checked across all three branches: completion-at-point in a header,
+org-cycle in the org-msg body, indent elsewhere. Comma completion and the
+direct-insert no-op-outside-header path round it out. mail-abbrev-in-expansion-header-p,
+the mode actions, and cj/get-all-contact-emails are stubbed, so the run is
+headless with no mu4e/org-contacts dependency.
 
 *** DOING [#B] Harden programming workflow modules :harden:
 
