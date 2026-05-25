@@ -1,9 +1,9 @@
 ;;; test-cj-window-geometry-lib.el --- Tests for the shared window-geometry helpers -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests the three pure helpers in `cj-window-geometry-lib.el':
-;; `cj/window-direction', `cj/window-body-size', and
-;; `cj/cardinal-to-edge-direction'.
+;; Tests the pure helpers in `cj-window-geometry-lib.el':
+;; `cj/window-direction', `cj/window-body-size',
+;; `cj/cardinal-to-edge-direction', and `cj/window-at-edge'.
 
 ;;; Code:
 
@@ -98,6 +98,75 @@
   "Boundary: an unknown direction symbol -> nil."
   (should (null (cj/cardinal-to-edge-direction 'sideways)))
   (should (null (cj/cardinal-to-edge-direction nil))))
+
+;; ----------------------------- cj/window-at-edge -----------------------------
+
+(ert-deftest test-cj-window-geometry--at-edge-2col-right-returns-right-column ()
+  "Normal: 2-column split -> the right column is the right-edge half."
+  (save-window-excursion
+    (delete-other-windows)
+    (let ((right (split-window (selected-window) nil 'right)))
+      (should (eq (cj/window-at-edge 'right) right)))))
+
+(ert-deftest test-cj-window-geometry--at-edge-2col-left-returns-left-column ()
+  "Normal: 2-column split -> the left column is the left-edge half."
+  (save-window-excursion
+    (delete-other-windows)
+    (let ((left (selected-window)))
+      (split-window (selected-window) nil 'right)
+      (should (eq (cj/window-at-edge 'left) left)))))
+
+(ert-deftest test-cj-window-geometry--at-edge-2row-below-returns-bottom-row ()
+  "Normal: 2-row split -> the bottom row is the below-edge half."
+  (save-window-excursion
+    (delete-other-windows)
+    (let ((below (split-window (selected-window) nil 'below)))
+      (should (eq (cj/window-at-edge 'below) below)))))
+
+(ert-deftest test-cj-window-geometry--at-edge-2row-above-returns-top-row ()
+  "Normal: 2-row split -> the top row is the above-edge half."
+  (save-window-excursion
+    (delete-other-windows)
+    (let ((top (selected-window)))
+      (split-window (selected-window) nil 'below)
+      (should (eq (cj/window-at-edge 'above) top)))))
+
+(ert-deftest test-cj-window-geometry--at-edge-single-window-returns-nil ()
+  "Boundary: a single-window frame has no distinct half -> nil for all sides."
+  (save-window-excursion
+    (delete-other-windows)
+    (dolist (dir '(right left below above))
+      (should (null (cj/window-at-edge dir))))))
+
+(ert-deftest test-cj-window-geometry--at-edge-axis-mismatch-returns-nil ()
+  "Boundary: a 2-row split has no right/left column; a 2-col split has no row."
+  (save-window-excursion
+    (delete-other-windows)
+    (split-window (selected-window) nil 'below)
+    (should (null (cj/window-at-edge 'right)))
+    (should (null (cj/window-at-edge 'left))))
+  (save-window-excursion
+    (delete-other-windows)
+    (split-window (selected-window) nil 'right)
+    (should (null (cj/window-at-edge 'below)))
+    (should (null (cj/window-at-edge 'above)))))
+
+(ert-deftest test-cj-window-geometry--at-edge-nested-right-split-returns-nil ()
+  "Boundary: when the right side is itself split into rows, no single
+window forms the full-height right half -> nil."
+  (save-window-excursion
+    (delete-other-windows)
+    (let ((right (split-window (selected-window) nil 'right)))
+      (split-window right nil 'below)
+      (should (null (cj/window-at-edge 'right))))))
+
+(ert-deftest test-cj-window-geometry--at-edge-unknown-direction-returns-nil ()
+  "Error: an unknown direction symbol -> nil even in a split frame."
+  (save-window-excursion
+    (delete-other-windows)
+    (split-window (selected-window) nil 'right)
+    (should (null (cj/window-at-edge 'sideways)))
+    (should (null (cj/window-at-edge nil)))))
 
 (provide 'test-cj-window-geometry-lib)
 ;;; test-cj-window-geometry-lib.el ends here
