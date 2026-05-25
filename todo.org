@@ -1717,7 +1717,7 @@ Both cache builders' =run-with-idle-timer= calls are wrapped in =(unless noninte
 
 =org-babel-config.el= set =org-confirm-babel-evaluate= to nil globally, so every source block in every Org file (cloned repos, downloaded notes, web clips) ran without confirmation. Changed the default to =t= (confirm before running). Replaced the old =babel-confirm= command (which reported, and toggled only with a prefix arg) with =cj/org-babel-toggle-confirm=, a plain toggle bound to =C-; k= for flipping confirmation off in trusted files and back on. 3 ERT tests cover the toggle both directions plus the binding.
 
-**** TODO [#C] Rebind babel-confirm toggle off =C-; k= :keybinding:solo:
+**** TODO [#C] Rebind babel-confirm toggle off =C-; k= :keybinding:solo:discuss:
 
 =cj/org-babel-toggle-confirm= landed on =C-; k= as a placeholder. Pick a permanent home — likely under an Org-specific prefix rather than the global =C-;= map.
 
@@ -1809,7 +1809,7 @@ Expected outcome:
 - Add a smoke test for loading =org-contacts-config.el= without Mu4e stubs if
   practical.
 
-**** TODO [#B] Add an Org workflow health check command :feature:ux:solo:
+**** TODO [#B] Add an Org workflow health check command :feature:ux:solo:discuss:
 
 Several Org workflow modules depend on personal paths, optional external tools,
 and local package checkouts. Failures currently show up at command time in
@@ -1831,7 +1831,7 @@ Recommended improvement:
 
 New =test-org-capture-templates-integrity.el= loads the cleanly-loadable capture modules (=org-capture-config=, =quick-video-capture=, =org-contacts-config=), applies their lazy additions, and asserts no two templates share a dispatch key and that every symbol-valued file target resolves to a non-empty path string. Literal-string targets (the video template's no-save =(file "")=) and lambda targets (drill file pickers) are excluded. Webclipper templates need org-web-tools at registration time, so they stay covered by their own test rather than this batch smoke test. Mutation-checked that the uniqueness assertion flags a duplicate key. Commit =2e3905c7=.
 
-**** TODO [#B] Document Org workflow module ownership and load boundaries :docs:refactor:solo:
+**** TODO [#B] Document Org workflow module ownership and load boundaries :docs:refactor:solo:discuss:
 
 The Org workflow is spread across many modules with overlapping responsibilities:
 capture templates, keymaps, org-protocol handlers, refile/agenda target
@@ -2352,7 +2352,7 @@ feature is broken end-to-end.  Change the URL to
 =http://localhost:8080/imp= (and consider switching the launch to
 =browse-url= so the user's default protocol handler is respected).
 
-**** TODO [#C] Document or vendor strapdown.js CDN dependency in =markdown-preview= :cleanup:solo:
+**** TODO [#C] Document or vendor strapdown.js CDN dependency in =markdown-preview= :cleanup:solo:discuss:
 
 =cj/markdown-html= (=modules/markdown-config.el:48-51=) embeds a
 =<script src="http://ndossougbe.github.io/strapdown/dist/strapdown.js">=
