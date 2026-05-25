@@ -18,9 +18,13 @@
 ;; ~/projects/* containing .ai/protocols.org), opens or reuses a vterm
 ;; buffer named "agent [<basename>]", sends the agent's startup
 ;; instruction to it, and routes the buffer to a side window via
-;; display-buffer-alist.  The default placement is host-aware: a
-;; right-side split at 50% width on a desktop, a bottom split at 75%
-;; height on a laptop (see `cj/--ai-vterm-default-direction').  Multiple
+;; display-buffer-alist.  When the frame already has a window forming the
+;; half the agent would occupy (a right column on a desktop, a bottom row
+;; on a laptop), the agent reuses that slot rather than splitting a third
+;; window in; toggling off restores the displaced buffer to the slot.
+;; Otherwise placement is a host-aware split: a right-side split at 50%
+;; width on a desktop, a bottom split at 75% height on a laptop (see
+;; `cj/--ai-vterm-default-direction').  Multiple
 ;; projects produce multiple coexisting buffers that share the same
 ;; slot; switching among them is a buffer-switch, not a
 ;; kill-and-recreate.
@@ -37,10 +41,13 @@
 ;; Four F-key entry points:
 ;;
 ;; - F9     `cj/ai-vterm' -- DWIM dispatch.  If an agent buffer is
-;;          currently displayed in this frame, F9 quits its window
-;;          (toggle off).  Otherwise, if exactly one agent buffer is
-;;          alive, F9 re-displays it; if zero or two-plus are alive, F9
-;;          falls through to the project picker.
+;;          currently displayed in this frame, F9 toggles it off: when it
+;;          took over an existing window (a reused slot) the buffer it
+;;          displaced returns to that slot, when it was split into its own
+;;          window that window is removed, and when it fills the frame it
+;;          is buried.  Otherwise, if exactly one agent buffer is alive,
+;;          F9 re-displays it; if zero or two-plus are alive, F9 falls
+;;          through to the project picker.
 ;; - C-F9   `cj/ai-vterm-pick-project' -- always show the project
 ;;          picker, even when an agent buffer is currently displayed.
 ;;          Used when the user wants to start a new project session
@@ -459,6 +466,37 @@ project changes."
       (set-window-buffer win buffer)
       win)))
 
+(defun cj/--ai-vterm-reuse-edge-window (buffer _alist)
+  "Display-buffer action: reuse the existing window forming the target half.
+
+When the frame already holds a window forming the half the agent would
+occupy -- the right column on a desktop, the bottom row on a laptop, per
+the saved or default direction -- swap BUFFER into it with
+`set-window-buffer' and return that window, rather than splitting a third
+window in.  The target half is found by `cj/window-at-edge'.
+
+Returns nil when there is no such half to reuse (a single-window frame,
+or a layout split on the other axis), so the chain falls through to
+`cj/--ai-vterm-display-saved', which splits a fresh half.  Also returns
+nil when the edge window is dedicated -- those are not ours to replace.
+
+Records the displaced buffer through `display-buffer-record-window'
+\(type `reuse') before swapping, so the native `quit-restore-window'
+called at toggle-off puts that buffer back into the slot instead of
+deleting the window -- toggling swaps the slot's buffer between the
+displaced buffer and the agent, never changing the window count.
+
+Runs after `cj/--ai-vterm-reuse-existing-agent', so an agent already on
+screen has been handled already; the window reused here always holds a
+non-agent buffer, which is replaced (it stays alive, just unshown)."
+  (let* ((direction (or cj/--ai-vterm-last-direction
+                        (cj/--ai-vterm-default-direction)))
+         (win (cj/window-at-edge direction)))
+    (when (and win (not (window-dedicated-p win)))
+      (display-buffer-record-window 'reuse win buffer)
+      (set-window-buffer win buffer)
+      win)))
+
 (defun cj/--ai-vterm-display-saved (buffer alist)
   "Display-buffer action: split per saved direction and size.
 
@@ -488,7 +526,7 @@ F9 state vars, falling back to the host-aware defaults from
   "Return the `display-buffer-alist' entry list installed by this module.
 
 The single rule routes any buffer whose name starts with \"agent [\"
-through three actions in order:
+through four actions in order:
 
 1. `display-buffer-reuse-window' -- if the same buffer is already
    visible in any window, focus that one.
@@ -496,7 +534,12 @@ through three actions in order:
    window in this frame already shows an agent-prefixed buffer,
    swap its buffer for the new one (preserves geometry across
    project changes via C-F9).
-3. `cj/--ai-vterm-display-saved' -- otherwise, split per the saved
+3. `cj/--ai-vterm-reuse-edge-window' -- otherwise, if the frame
+   already has a window forming the half the agent would occupy
+   (the right column on a desktop, the bottom row on a laptop),
+   reuse it instead of splitting a third window in.
+4. `cj/--ai-vterm-display-saved' -- otherwise (single-window frame,
+   or a layout split on the other axis), split per the saved
    direction + size from the last toggle-off (or defaults when no
    capture has happened this session).
 
@@ -512,6 +555,7 @@ split) when the user is focused in agent and switches projects."
   '(("\\`agent \\["
      (display-buffer-reuse-window
       cj/--ai-vterm-reuse-existing-agent
+      cj/--ai-vterm-reuse-edge-window
       cj/--ai-vterm-display-saved)
      (inhibit-same-window . t))))
 
@@ -691,39 +735,43 @@ M-F9 (and C-S-F9) close an agent via `cj/ai-vterm-close'."
   (interactive "P")
   (pcase (cj/--ai-vterm-dispatch)
     (`(toggle-off . ,win)
-     (cj/--ai-vterm-capture-state win)
-     ;; `delete-window' rather than `quit-window' so the toggle-off
-     ;; semantics are unconditional.  `quit-window' only deletes the
-     ;; window when its `quit-restore' parameter records that it was
-     ;; created for the buffer.  Buffer-move (C-M-arrows) leaves the
-     ;; agent buffer in a window without that history, so
-     ;; `quit-window' would just bury -- the window stays with some
-     ;; other buffer in it, and the next toggle-on then creates a
-     ;; fresh side window for a count of N+1.  Skip the deletion
-     ;; only when agent is the lone window in the frame (delete
-     ;; would leave none); bury in that case.  The flag tells the
-     ;; next toggle-on (via `cj/--ai-vterm-display-saved') to restore
-     ;; in place rather than splitting -- preserves the single-window
-     ;; layout across F9 toggles.
      (cond
+      ;; Lone fullscreen agent (e.g. after `C-x 1' inside it): there is no
+      ;; prior layout for the native undo to restore and deleting would
+      ;; leave the frame empty.  Bury and flag, so the next toggle-on
+      ;; (`cj/--ai-vterm-display-saved') restores the agent in place at
+      ;; full frame rather than splitting.  Capture geometry for that
+      ;; restore.  `bury-buffer' can no-op when the window's prev-buffer
+      ;; history holds only the agent (common right after `C-x 1'), so
+      ;; force a swap to a non-agent buffer to keep the toggle observable.
       ((one-window-p)
+       (cj/--ai-vterm-capture-state win)
        (setq cj/--ai-vterm-last-was-bury t)
        (bury-buffer (window-buffer win))
-       ;; `bury-buffer' calls `switch-to-prev-buffer' to swap the
-       ;; lone window onto another buffer, but that no-ops when the
-       ;; window's `window-prev-buffers' list only contains the
-       ;; agent itself (common right after a `C-x 1' that cleared
-       ;; the other windows' histories).  Without an observable swap
-       ;; the toggle-off appears to do nothing -- a subsequent F9
-       ;; finds the agent still displayed and just buries again.
-       ;; Force the switch when bury's own swap didn't take.
        (when (and (window-live-p win)
                   (cj/--ai-vterm-buffer-p (window-buffer win)))
          (with-selected-window win
            (switch-to-buffer (other-buffer (window-buffer win) t)))))
+      ;; Multi-window: `quit-restore-window' is the native undo for a
+      ;; `display-buffer' display.  The agent's display path records the
+      ;; matching `quit-restore' state -- `display-buffer-record-window'
+      ;; (type `reuse') in `cj/--ai-vterm-reuse-edge-window' when it takes
+      ;; over a slot, `display-buffer-in-direction' (type `window') when it
+      ;; splits a fresh one.  So one call restores the displaced buffer
+      ;; into a reused slot, or deletes a window that was split for the
+      ;; agent.  No BURY-OR-KILL argument: burying would move the agent to
+      ;; the end of the buffer list, so with several agents alive the next
+      ;; F9 (`cj/--ai-vterm-dispatch' re-shows the most-recent agent) would
+      ;; bring back a different one instead of the agent just toggled off.
       (t
+       ;; Capture geometry first: when the agent had its own split window
+       ;; (axis-mismatch / single-window origin), `quit-restore-window'
+       ;; removes it and the next toggle-on splits afresh -- replaying the
+       ;; captured size preserves a user resize across the toggle.  Harmless
+       ;; in the reused-slot case, where the split path is never taken.
+       (cj/--ai-vterm-capture-state win)
        (setq cj/--ai-vterm-last-was-bury nil)
-       (delete-window win)))
+       (quit-restore-window win)))
      nil)
     (`(redisplay-recent . ,buf)
      (display-buffer buf)

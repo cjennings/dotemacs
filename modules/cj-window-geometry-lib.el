@@ -77,5 +77,40 @@ layouts."
     ('above 'top)
     (_ nil)))
 
+(defun cj/window-at-edge (direction &optional frame)
+  "Return the window forming FRAME's half on the side named by DIRECTION.
+
+DIRECTION is one of right, left, below, above.  A window qualifies as
+the half when it sits flush against that frame edge and spans the full
+perpendicular extent: for right or left it is a full-height side column
+(nothing above, below, or further toward the edge, but a sibling on the
+far side); for below or above it is a full-width row.  FRAME defaults to
+the selected frame.
+
+Existence is tested with `window-in-direction' rather than raw edge
+arithmetic -- frame-internal geometry makes the root window's edges
+disagree with its children's by a row, so an `=' comparison against the
+root edges never matches.  Asking \"is there a window on each side?\"
+sidesteps that.
+
+Returns nil when no window qualifies: a single-window frame (no sibling
+on the far side, so not a distinct half), an axis mismatch (a top/bottom
+split when DIRECTION is right has no full-height right column), or a
+nested edge no one window fills.  The caller then falls back to splitting
+a fresh half."
+  (when (memq direction '(right left below above))
+    (let ((far (pcase direction
+                 ('right 'left) ('left 'right) ('below 'above) ('above 'below)))
+          (perp (pcase direction
+                  ((or 'right 'left) '(above below))
+                  ((or 'below 'above) '(left right)))))
+      (seq-find
+       (lambda (w)
+         (and (window-in-direction far w)
+              (not (window-in-direction direction w))
+              (not (window-in-direction (nth 0 perp) w))
+              (not (window-in-direction (nth 1 perp) w))))
+       (window-list (or frame (selected-frame)) 'never)))))
+
 (provide 'cj-window-geometry-lib)
 ;;; cj-window-geometry-lib.el ends here

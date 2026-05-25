@@ -1,14 +1,22 @@
 ;;; test-ai-vterm--display-saved.el --- Tests for the display-saved action -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; The action reads `cj/--ai-vterm-last-direction' +
-;; `cj/--ai-vterm-last-size' (with default fallbacks), builds an
-;; alist with direction + the matching size key, strips any
-;; conflicting entries that came in via the rule, and delegates to
-;; `display-buffer-in-direction'.
+;; `cj/--ai-vterm-display-saved' is the split path of the F9 display
+;; chain -- it runs only when no agent window and no reusable edge slot
+;; exist (a single-window frame, or a layout split on the other axis).
+;; It reads `cj/--ai-vterm-last-direction' + `cj/--ai-vterm-last-size'
+;; (with default fallbacks), builds an alist with direction + the
+;; matching size key, strips any conflicting entries that came in via the
+;; rule, and delegates to `display-buffer-in-direction'.
 ;;
-;; Tests stub `display-buffer-in-direction' to capture the alist
-;; that would have reached it.
+;; Tests stub `display-buffer-in-direction' to capture the alist that
+;; would have reached it.
+;;
+;; Multi-window toggle round-trips no longer resplit -- they reuse the
+;; existing half (see test-ai-vterm--reuse-edge-window.el), so the former
+;; resplit/body-width-preservation round-trip tests were retired with the
+;; swap-the-slot model.  The buffer-move teardown test stays here because
+;; it exercises the split-window delete path on toggle-off.
 
 ;;; Code:
 
@@ -115,237 +123,17 @@ stubbed t to pin the laptop branch."
       (cj/--ai-vterm-display-saved 'sentinel-buffer nil))
     (should (eq received-buf 'sentinel-buffer))))
 
-(ert-deftest test-ai-vterm--display-saved-3window-roundtrip-preserves-body-width ()
-  "Regression: capture+delete+display in a 3-window layout preserves body-width.
-
-Reproduces Craig's `peeking ~1 col' report from 2026-05-09: when
-the new agent lands at a different position than the captured one
-(rightmost vs middle), `window-total-width' differs by 1 because
-of the right divider.  `window-body-width' is divider-independent
-and is what the user actually sees, so the assertion locks down
-the body match."
-  (cj/test--kill-agent-buffers)
-  (let ((agent-name "agent [3win-roundtrip]")
-        (left-name "*test-3win-left*")
-        (right-name "*test-3win-right*"))
-    (unwind-protect
-        (save-window-excursion
-          (delete-other-windows)
-          (let ((left-buf (get-buffer-create left-name))
-                (right-buf (get-buffer-create right-name))
-                (agent-buf (get-buffer-create agent-name)))
-            ;; Build: left | agent | right.  Selected window starts as
-            ;; the only window.  Split right twice to get three windows.
-            (set-window-buffer (selected-window) left-buf)
-            (let* ((right-win (split-window (selected-window) nil 'right))
-                   (_ (set-window-buffer right-win right-buf))
-                   (agent-win (split-window (selected-window) nil 'right)))
-              (set-window-buffer agent-win agent-buf)
-              ;; Capture agent's state.
-              (cj/--ai-vterm-capture-state agent-win)
-              (let ((captured-size cj/--ai-vterm-last-size)
-                    (captured-direction cj/--ai-vterm-last-direction))
-                ;; Simulate quit-window on agent.
-                (delete-window agent-win)
-                ;; Now route a fresh display through the actual rule.
-                (let* ((display-buffer-alist (cj/--ai-vterm-display-rule-list))
-                       (new-win (display-buffer agent-buf)))
-                  (should (windowp new-win))
-                  (should (eq (window-buffer new-win) agent-buf))
-                  ;; The captured size should be replayed exactly.
-                  (should (= (window-body-width new-win)
-                             captured-size))
-                  ;; Direction should also match.
-                  (should (eq captured-direction 'right)))))))
-      (when (get-buffer left-name) (kill-buffer left-name))
-      (when (get-buffer right-name) (kill-buffer right-name))
-      (cj/test--kill-agent-buffers))))
-
-(ert-deftest test-ai-vterm--display-saved-3window-agent-rightmost-roundtrip ()
-  "Round-trip when agent is the rightmost window (no right divider)."
-  (cj/test--kill-agent-buffers)
-  (let ((agent-name "agent [rightmost]")
-        (left-name "*test-rm-left*")
-        (mid-name "*test-rm-mid*"))
-    (unwind-protect
-        (save-window-excursion
-          (delete-other-windows)
-          (let ((left-buf (get-buffer-create left-name))
-                (mid-buf (get-buffer-create mid-name))
-                (agent-buf (get-buffer-create agent-name)))
-            ;; Build: left | mid | agent (agent rightmost)
-            (set-window-buffer (selected-window) left-buf)
-            (let* ((mid-win (split-window (selected-window) nil 'right))
-                   (agent-win (split-window mid-win nil 'right)))
-              (set-window-buffer mid-win mid-buf)
-              (set-window-buffer agent-win agent-buf)
-              (cj/--ai-vterm-capture-state agent-win)
-              (let ((captured-size cj/--ai-vterm-last-size))
-                (delete-window agent-win)
-                (let* ((display-buffer-alist (cj/--ai-vterm-display-rule-list))
-                       (new-win (display-buffer agent-buf)))
-                  (should (windowp new-win))
-                  (should (= (window-body-width new-win) captured-size)))))))
-      (when (get-buffer left-name) (kill-buffer left-name))
-      (when (get-buffer mid-name) (kill-buffer mid-name))
-      (cj/test--kill-agent-buffers))))
-
-(ert-deftest test-ai-vterm--display-saved-3window-after-mouse-resize ()
-  "Round-trip after a deliberate mid-window resize (mimics mouse-drag)."
-  (cj/test--kill-agent-buffers)
-  (let ((agent-name "agent [mouse-resize]")
-        (left-name "*test-mr-left*")
-        (right-name "*test-mr-right*"))
-    (unwind-protect
-        (save-window-excursion
-          (delete-other-windows)
-          (let ((left-buf (get-buffer-create left-name))
-                (right-buf (get-buffer-create right-name))
-                (agent-buf (get-buffer-create agent-name)))
-            (set-window-buffer (selected-window) left-buf)
-            (let* ((right-win (split-window (selected-window) nil 'right))
-                   (agent-win (split-window (selected-window) nil 'right)))
-              (set-window-buffer right-win right-buf)
-              (set-window-buffer agent-win agent-buf)
-              ;; Resize agent smaller to mimic the user dragging the
-              ;; divider.  Shrink agent by 5 cols, give to left.
-              (let ((delta -5))
-                (when (window--resizable-p agent-win delta t)
-                  (window-resize agent-win delta t)))
-              (cj/--ai-vterm-capture-state agent-win)
-              (let ((captured-size cj/--ai-vterm-last-size))
-                (delete-window agent-win)
-                (let* ((display-buffer-alist (cj/--ai-vterm-display-rule-list))
-                       (new-win (display-buffer agent-buf)))
-                  (should (windowp new-win))
-                  (should (= (window-body-width new-win) captured-size)))))))
-      (when (get-buffer left-name) (kill-buffer left-name))
-      (when (get-buffer right-name) (kill-buffer right-name))
-      (cj/test--kill-agent-buffers))))
-
-(ert-deftest test-ai-vterm--display-saved-roundtrip-via-cj/ai-vterm-toggle ()
-  "End-to-end: toggle-off via dispatch then redisplay -- preserves size."
-  (cj/test--kill-agent-buffers)
-  (let ((agent-name "agent [toggle-roundtrip]")
-        (left-name "*test-tr-left*")
-        (right-name "*test-tr-right*"))
-    (unwind-protect
-        (save-window-excursion
-          (delete-other-windows)
-          (let ((left-buf (get-buffer-create left-name))
-                (right-buf (get-buffer-create right-name))
-                (agent-buf (get-buffer-create agent-name)))
-            (set-window-buffer (selected-window) left-buf)
-            (let* ((right-win (split-window (selected-window) nil 'right))
-                   (agent-win (split-window (selected-window) nil 'right)))
-              (set-window-buffer right-win right-buf)
-              (set-window-buffer agent-win agent-buf)
-              (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list)))
-                ;; Focus agent (mimics `M-x cj/ai-vterm' from inside agent).
-                (select-window agent-win)
-                (let ((before-size (window-body-width agent-win)))
-                  ;; Toggle off via the actual command -- captures + quit-window.
-                  (cj/ai-vterm)
-                  (should-not (cj/--ai-vterm-displayed-agent-window))
-                  ;; Toggle on -- single-buffer DWIM redisplay path.
-                  (cj/ai-vterm)
-                  (let* ((new-win (cj/--ai-vterm-displayed-agent-window))
-                         (new-size (window-body-width new-win)))
-                    (should (windowp new-win))
-                    (should (= new-size before-size))))))))
-      (when (get-buffer left-name) (kill-buffer left-name))
-      (when (get-buffer right-name) (kill-buffer right-name))
-      (cj/test--kill-agent-buffers))))
-
-(ert-deftest test-ai-vterm--display-saved-two-toggle-cycles-stable ()
-  "Two consecutive toggle-off+toggle-on cycles -- no compounding error."
-  (cj/test--kill-agent-buffers)
-  (let ((agent-name "agent [two-cycle]")
-        (left-name "*test-2c-left*")
-        (right-name "*test-2c-right*"))
-    (unwind-protect
-        (save-window-excursion
-          (delete-other-windows)
-          (let ((left-buf (get-buffer-create left-name))
-                (right-buf (get-buffer-create right-name))
-                (agent-buf (get-buffer-create agent-name)))
-            (set-window-buffer (selected-window) left-buf)
-            (let* ((right-win (split-window (selected-window) nil 'right))
-                   (agent-win (split-window (selected-window) nil 'right)))
-              (set-window-buffer right-win right-buf)
-              (set-window-buffer agent-win agent-buf)
-              (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list))
-                    (initial-size (window-body-width agent-win)))
-                (select-window agent-win)
-                ;; Cycle 1
-                (cj/ai-vterm) ; off
-                (cj/ai-vterm) ; on
-                (let ((cycle1-size (window-body-width
-                                    (cj/--ai-vterm-displayed-agent-window))))
-                  (should (= cycle1-size initial-size))
-                  (select-window (cj/--ai-vterm-displayed-agent-window))
-                  ;; Cycle 2
-                  (cj/ai-vterm) ; off
-                  (cj/ai-vterm) ; on
-                  (let ((cycle2-size (window-body-width
-                                      (cj/--ai-vterm-displayed-agent-window))))
-                    (should (= cycle2-size initial-size))))))))
-      (when (get-buffer left-name) (kill-buffer left-name))
-      (when (get-buffer right-name) (kill-buffer right-name))
-      (cj/test--kill-agent-buffers))))
-
-(ert-deftest test-ai-vterm--display-saved-craig-c-x-3-roundtrip ()
-  "Reproduces Craig's repro from 2026-05-09:
-launch -> F9 -> dashboard splits via C-x 3 -> toggle off -> toggle on.
-Expected: new agent lands at the same total-width it had before."
-  (cj/test--kill-agent-buffers)
-  (let ((agent-name "agent [c-x-3-repro]")
-        (dash-name "*test-cx3-dashboard*"))
-    (unwind-protect
-        (save-window-excursion
-          (delete-other-windows)
-          (let ((dash-buf (get-buffer-create dash-name))
-                (agent-buf (get-buffer-create agent-name)))
-            (set-window-buffer (selected-window) dash-buf)
-            (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list)))
-              ;; Step 1: F9 displays agent.  Layout: dashboard | agent.
-              (let ((agent-win-1 (display-buffer agent-buf)))
-                (should (windowp agent-win-1)))
-              ;; Step 2: focus dashboard, C-x 3 (split-window-right).
-              (let ((dash-win (get-buffer-window dash-buf)))
-                (select-window dash-win)
-                (split-window-right))
-              ;; Layout now: dashboard1 | dashboard2 | agent
-              ;; Capture agent's pre-toggle body width for later assertion.
-              (let* ((agent-win-2 (cj/--ai-vterm-displayed-agent-window))
-                     (size-before (window-body-width agent-win-2)))
-                ;; Step 3: F9 toggles agent off (selected is dashboard).
-                (cj/ai-vterm)
-                (should-not (cj/--ai-vterm-displayed-agent-window))
-                ;; Step 4: F9 toggles agent on -- redisplay-single path.
-                (cj/ai-vterm)
-                (let* ((agent-win-3 (cj/--ai-vterm-displayed-agent-window))
-                       (size-after (window-body-width agent-win-3)))
-                  (should (windowp agent-win-3))
-                  (should (= size-after size-before)))))))
-      (when (get-buffer dash-name) (kill-buffer dash-name))
-      (cj/test--kill-agent-buffers))))
-
 (ert-deftest test-ai-vterm--toggle-after-buffer-move-no-extra-window ()
-  "Regression: toggle-off must remove agent's window even when buffer-move
-has cleared its `quit-restore' parameter.
+  "Regression: toggle-off must not leak a window even when buffer-move
+has cleared the agent window's `quit-restore' parameter.
 
 Reproduces Craig's repro from 2026-05-09: 3 windows, user uses
 buffer-move (C-M-arrows) to relocate agent.  buffer-move swaps
 buffers between windows and leaves the receiving window with no
-record that it was created for the agent buffer.  `quit-window'
-respects that history and only buries -- the window stays with
-some other buffer in it.  The next toggle-on then doesn't recognize
-that window as an agent home and creates a fresh one alongside,
-landing the user at N+1 windows instead of N.
+record that it was created for the agent buffer.
 
-Assertion: after toggle-off+toggle-on, the window count is back to
-its pre-cycle value, regardless of `quit-restore' state."
+Assertion: after toggle-off+toggle-on, the agent is displayed exactly
+once and no spurious extra window leaks."
   (cj/test--kill-agent-buffers)
   (let ((agent-name "agent [buffer-move-toggle]")
         (left-name "*test-bm-left*")
@@ -369,7 +157,7 @@ its pre-cycle value, regardless of `quit-restore' state."
                 (select-window agent-win)
                 (cj/ai-vterm) ; off
                 (cj/ai-vterm) ; on
-                (should (= (count-windows) window-count-before))
+                (should (<= (count-windows) window-count-before))
                 ;; Agent must be displayed exactly once.
                 (let ((agent-windows
                        (seq-filter
