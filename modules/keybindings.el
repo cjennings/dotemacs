@@ -36,6 +36,32 @@
   :doc "User custom prefix keymap base for nested keymaps.")
 (keymap-global-set "C-;" cj/custom-keymap)
 
+;; ------------------------ Custom Keymap Registration -------------------------
+
+;; Feature modules register into the C-; prefix through these helpers rather
+;; than mutating `cj/custom-keymap' directly.  This keeps keybindings.el the
+;; sole owner of the prefix and removes each module's hidden assumption that
+;; the keymap already exists.  KEY is a `keymap-set'-style key relative to the
+;; C-; prefix (e.g. "c" binds C-; c).  Modules must (require 'keybindings).
+
+(defun cj/register-prefix-map (key map &optional label)
+  "Bind prefix keymap MAP under KEY within `cj/custom-keymap'.
+When LABEL is non-nil, register it as the which-key description for the
+\"C-; KEY\" prefix once which-key loads."
+  (keymap-set cj/custom-keymap key map)
+  (when label
+    (with-eval-after-load 'which-key
+      (which-key-add-key-based-replacements (concat "C-; " key) label))))
+
+(defun cj/register-command (key command &optional label)
+  "Bind COMMAND under KEY within `cj/custom-keymap'.
+When LABEL is non-nil, register it as the which-key description for the
+\"C-; KEY\" key once which-key loads."
+  (keymap-set cj/custom-keymap key command)
+  (when label
+    (with-eval-after-load 'which-key
+      (which-key-add-key-based-replacements (concat "C-; " key) label))))
+
 ;; ------------------------------ Jump To Commands -----------------------------
 
 (defun cj/jump-open-var (var)
