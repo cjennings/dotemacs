@@ -26,6 +26,37 @@
 
 (require 'system-utils)
 
+(defgroup cj/eshell nil
+  "Personal Eshell configuration."
+  :group 'eshell)
+
+(defcustom cj/eshell-ssh-hosts
+  '(("gocj"   . "/sshx:cjennings@cjennings.net:/var/cjennings/")
+    ("gosb"   . "/sshx:cjennings@wolf.usbx.me:/home/cjennings/")
+    ("gowolf" . "/sshx:cjennings@wolf.usbx.me:/home/cjennings/"))
+  "Alist of Eshell SSH-jump aliases.
+Each entry is a cons cell (ALIAS-NAME . REMOTE-PATH).  At Eshell
+startup an alias named ALIAS-NAME is defined that runs `cd' to the
+given TRAMP REMOTE-PATH.  Override on a different machine to point at
+your own hosts, or set to nil to define no SSH aliases."
+  :type '(alist :key-type (string :tag "Alias")
+                :value-type (string :tag "Remote path"))
+  :group 'cj/eshell)
+
+(defun cj/--eshell-ssh-alias-commands (hosts)
+  "Return the SSH alias definitions for HOSTS.
+HOSTS is an alist of (ALIAS-NAME . REMOTE-PATH) as in
+`cj/eshell-ssh-hosts'.  The result is a list of (ALIAS-NAME . COMMAND)
+pairs where COMMAND is the `cd' string `eshell/alias' should run."
+  (mapcar (lambda (entry)
+            (cons (car entry) (concat "cd " (cdr entry))))
+          hosts))
+
+(defun cj/--eshell-define-ssh-aliases (hosts)
+  "Define the Eshell SSH-jump aliases for HOSTS via `eshell/alias'."
+  (dolist (pair (cj/--eshell-ssh-alias-commands hosts))
+    (eshell/alias (car pair) (cdr pair))))
+
 (use-package eshell
   :ensure nil ;; built-in
   :commands (eshell)
@@ -79,9 +110,7 @@
 			  (eshell/alias "em"     "find-file $1")
 			  (eshell/alias "emacs"  "find-file $1")
 			  (eshell/alias "open"   "cj/xdg-open $1")
-			  (eshell/alias "gocj"   "cd /sshx:cjennings@cjennings.net:/var/cjennings/")
-			  (eshell/alias "gosb"   "cd /sshx:cjennings@wolf.usbx.me:/home/cjennings/")
-			  (eshell/alias "gowolf" "cd /sshx:cjennings@wolf.usbx.me:/home/cjennings/")
+			  (cj/--eshell-define-ssh-aliases cj/eshell-ssh-hosts)
 			  (eshell/alias "v"      "eshell-exec-visual $*")
 			  (eshell/alias "ff"     "find-file-other-window $1")
 			  (eshell/alias "f"      "find-using-dired $1")
