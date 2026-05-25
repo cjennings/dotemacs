@@ -412,18 +412,10 @@ Do this incrementally. After each batch:
 - Run =make test= or at least targeted tests.
 - Check that keybindings still resolve and which-key labels still appear.
 
-**** DOING [#B] Centralize custom keymap registration :refactor:
+**** 2026-05-24 Sun @ 19:59:01 -0500 Centralized custom keymap registration
+Added cj/register-prefix-map and cj/register-command to keybindings.el (commit 47f222f6) with test-init-keymap-registration.el, then migrated all 31 cj/custom-keymap registration sites across 24 modules onto the API. Consumers no longer reference cj/custom-keymap directly — keybindings.el is the sole owner of the prefix, and modules require keybindings to reach the API.
 
-Many modules mutate =cj/custom-keymap= or global keys at top level. This is a
-real architectural boundary because it forces load order and makes standalone
-module loading brittle.
-
-Expected outcome:
-- Define a small helper or convention for registering prefix maps.
-- Modules can expose their keymaps without assuming =keybindings.el= has already
-  loaded.
-- =keybindings.el= remains the owner of global prefixes like =C-;=.
-- Existing keymaps continue to work.
+Verified behavior-preserving by dumping every C-; binding before and after: identical, 279 bindings, each resolving to the same command. Byte-compiled all 24 migrated files (no new free-variable warnings — the cj/custom-keymap coupling is gone), and full make test, validate-modules, and an init load all pass. which-key label blocks were left intact; they use string key descriptions and never assumed cj/custom-keymap existed.
 
 Related existing task: [#B] "Review and rebind M-S- keybindings".
 

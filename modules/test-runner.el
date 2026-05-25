@@ -523,7 +523,7 @@ Returns the number of tests deleted."
   "v" #'cj/test-view-focused
   "t" #'cj/test-toggle-mode)
 
-(keymap-set cj/custom-keymap "t" cj/testrunner-map)
+(cj/register-prefix-map "t" cj/testrunner-map)
 
 ;; which-key integration
 (with-eval-after-load 'which-key

@@ -280,7 +280,7 @@ Works on region if active, otherwise entire buffer."
   "I" #'change-inner
   "O" #'change-outer)
 
-(keymap-set cj/custom-keymap "s" cj/enclose-map)
+(cj/register-prefix-map "s" cj/enclose-map)
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; s" "text enclose menu"

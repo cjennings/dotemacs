@@ -524,7 +524,7 @@ Works for any buffer, whether it's visiting a file or not."
   "s" #'cj/gptel-save-conversation   ;; save conversation
   "t" #'cj/toggle-gptel              ;; toggles the ai-assistant window
   "x" #'cj/gptel-clear-buffer)        ;; clears the assistant buffer
-(keymap-set cj/custom-keymap "a" cj/ai-keymap)
+(cj/register-prefix-map "a" cj/ai-keymap)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

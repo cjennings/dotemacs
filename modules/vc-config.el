@@ -244,7 +244,7 @@ repository's README if found, else `dired's the clone."
 
 (keymap-set cj/vc-map "i" cj/vc-issues-map)
 
-(keymap-set cj/custom-keymap "v" cj/vc-map)
+(cj/register-prefix-map "v" cj/vc-map)
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; v" "version control menu"

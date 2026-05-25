@@ -192,7 +192,7 @@ Auto-adds # prefix if missing.  Offers completion from configured channels."
   "q" #'erc-part-from-channel                  ;; quit channel
   "Q" #'erc-quit-server)                       ;; Quit ERC entirely
 
-(keymap-set cj/custom-keymap "E" cj/erc-keymap)
+(cj/register-prefix-map "E" cj/erc-keymap)
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; E" "ERC chat menu"

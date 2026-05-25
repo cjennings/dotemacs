@@ -225,7 +225,7 @@ Operate on the active region designated by START and END."
   "t" #'untabify
   "T" #'tabify)
 
-(keymap-set cj/custom-keymap "w" cj/whitespace-map)
+(cj/register-prefix-map "w" cj/whitespace-map)
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; w" "whitespace menu"

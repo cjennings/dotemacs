@@ -73,7 +73,7 @@ pointed at =scripts/setup-telega.sh= and the manual fallback."
      (concat "telega not installed -- run scripts/setup-telega.sh, "
              "or `M-x package-install RET telega'"))))
 
-(keymap-set cj/custom-keymap "T" #'cj/telega)
+(cj/register-command "T" #'cj/telega)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

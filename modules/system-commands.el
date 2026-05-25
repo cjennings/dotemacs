@@ -177,7 +177,7 @@ daemon alive rather than killing the session blindly."
   "l" #'cj/system-cmd-lock
   "E" #'cj/system-cmd-exit-emacs
   "e" #'cj/system-cmd-restart-emacs)
-(keymap-set cj/custom-keymap "!" cj/system-command-map)
+(cj/register-prefix-map "!" cj/system-command-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

@@ -172,14 +172,14 @@ to nil."
 (advice-remove 'align-regexp #'cj/align-regexp-with-spaces)
 (advice-add    'align-regexp :around #'cj/align-regexp-with-spaces)
 
-(keymap-set cj/custom-keymap ")" #'cj/jump-to-matching-paren)
-(keymap-set cj/custom-keymap "f" #'cj/format-region-or-buffer)
-(keymap-set cj/custom-keymap "# w" #'cj/count-words-buffer-or-region)
-(keymap-set cj/custom-keymap "# c" #'cj/count-characters-buffer-or-region)
-(keymap-set cj/custom-keymap "/" #'cj/replace-fraction-glyphs)
-(keymap-set cj/custom-keymap "A" #'align-regexp)
-(keymap-set cj/custom-keymap "SPC" #'cj/switch-to-previous-buffer)
-(keymap-set cj/custom-keymap "|" #'display-fill-column-indicator-mode)
+(cj/register-command ")" #'cj/jump-to-matching-paren)
+(cj/register-command "f" #'cj/format-region-or-buffer)
+(cj/register-command "# w" #'cj/count-words-buffer-or-region)
+(cj/register-command "# c" #'cj/count-characters-buffer-or-region)
+(cj/register-command "/" #'cj/replace-fraction-glyphs)
+(cj/register-command "A" #'align-regexp)
+(cj/register-command "SPC" #'cj/switch-to-previous-buffer)
+(cj/register-command "|" #'display-fill-column-indicator-mode)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

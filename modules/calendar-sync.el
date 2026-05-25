@@ -1703,7 +1703,7 @@ Syncs all calendars immediately, then every `calendar-sync-interval-minutes'."
   "S" #'calendar-sync-start
   "x" #'calendar-sync-stop)
 
-(keymap-set cj/custom-keymap "g" cj/calendar-map)
+(cj/register-prefix-map "g" cj/calendar-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

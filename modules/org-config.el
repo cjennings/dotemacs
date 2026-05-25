@@ -140,7 +140,7 @@
   :init
   (defvar-keymap cj/org-map
     :doc "General org-mode operations and utilities.")
-  (keymap-set cj/custom-keymap "O" cj/org-map)
+  (cj/register-prefix-map "O" cj/org-map)
   ;; Keymap conventions for this prefix:
   ;; - Table operations claim `r' (row) and `c' (column) as
   ;;   sub-prefixes, so single-key commands that would otherwise

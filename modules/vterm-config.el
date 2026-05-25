@@ -55,7 +55,7 @@
 (defvar-keymap cj/vterm-map
   :doc "Personal vterm command map.")
 ;; Lowercase x picked over V for fewer Shift presses; v is the VC menu.
-(keymap-set cj/custom-keymap "x" cj/vterm-map)
+(cj/register-prefix-map "x" cj/vterm-map)
 
 (defvar-local cj/vterm-tmux-history--origin-buffer nil
   "Buffer active before opening the tmux history buffer.")
