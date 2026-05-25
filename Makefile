@@ -14,6 +14,7 @@
 #   make validate-parens   - Check for unbalanced parentheses
 #   make validate-modules  - Load all modules to verify they compile
 #   make compile           - Byte-compile all modules
+#   make compile-file FILE=  - Byte-compile one file with the project load path
 #   make lint              - Run all linters (checkdoc, package-lint, elisp-lint)
 #   make profile           - Profile Emacs startup performance
 #   make clean             - Remove test artifacts and compiled files
@@ -46,7 +47,7 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 
 .PHONY: help targets test test-all test-unit test-integration test-file test-name \
         test-bash benchmark coverage coverage-summary coverage-clean \
-        validate-parens validate-modules compile lint profile \
+        validate-parens validate-modules compile compile-file lint profile \
         clean clean-compiled clean-tests reset
 
 # Alias for help
@@ -76,6 +77,7 @@ help:
 	@echo "    make validate-parens   - Check for unbalanced parentheses in modules"
 	@echo "    make validate-modules  - Load all modules to verify they compile"
 	@echo "    make compile           - Byte-compile all module files"
+	@echo "    make compile-file FILE=path/to.el - Byte-compile one file with the project load path"
 	@echo "    make lint              - Run all linters (checkdoc, package-lint, elisp-lint)"
 	@echo ""
 	@echo "  Utilities:"
@@ -331,12 +333,25 @@ validate-modules:
 
 compile:
 	@echo "Byte-compiling all modules..."
-	@$(EMACS_BATCH) -L $(MODULE_DIR) \
+	@$(EMACS_BATCH) -L $(MODULE_DIR) -L themes \
 		--eval "(progn \
 			(package-initialize) \
 			(setq byte-compile-error-on-warn nil) \
 			(batch-byte-compile))" $(MODULE_FILES)
 	@echo "✓ Compilation complete"
+
+# Byte-compile a single file with the project load path (modules, themes,
+# tests) so local compile-time requires resolve.  Bare `emacs -Q --batch
+# byte-compile-file ...' fails on those requires (e.g. dupre-palette,
+# undead-buffers); use this instead.  Example:
+#   make compile-file FILE=modules/dashboard-config.el
+#   make compile-file FILE=themes/dupre-faces.el
+compile-file:
+	@test -n "$(FILE)" || { echo "Usage: make compile-file FILE=path/to/file.el"; exit 1; }
+	@$(EMACS_BATCH) -L $(MODULE_DIR) -L themes -L $(TEST_DIR) \
+		--eval "(package-initialize)" \
+		--eval "(or (byte-compile-file \"$(FILE)\") (kill-emacs 1))"
+	@echo "✓ Compiled $(FILE)"
 
 lint:
 	@echo "Running linters on all modules..."
