@@ -101,25 +101,29 @@
                                       "DELEGATED(x)" "|"
                                       "FAILED(f!)" "DONE(d!)" "CANCELLED(c!)")))
 
+  ;; Keyword and priority colors come from the active theme's dupre-org-*
+  ;; faces (themes/dupre-faces.el) rather than hard-coded color names, so they
+  ;; match the palette and dim with the rest of an unfocused window
+  ;; (auto-dim-config.el remaps each to its -dim variant).
   (setq org-todo-keyword-faces
-        '(("TODO"      . "green")
-          ("PROJECT"   . "blue")
-          ("DOING"     . "yellow")
-          ("WAITING"   . "white")
-          ("VERIFY"    . "orange")
-          ("STALLED"   . "light blue")
-          ("DELEGATED" . "green")
-          ("FAILED"    . "red")
-          ("DONE"      . "dark grey")
-          ("CANCELLED" . "dark grey")))
+        '(("TODO"      . dupre-org-todo)
+          ("PROJECT"   . dupre-org-project)
+          ("DOING"     . dupre-org-doing)
+          ("WAITING"   . dupre-org-waiting)
+          ("VERIFY"    . dupre-org-verify)
+          ("STALLED"   . dupre-org-stalled)
+          ("DELEGATED" . dupre-org-todo)
+          ("FAILED"    . dupre-org-failed)
+          ("DONE"      . dupre-org-done)
+          ("CANCELLED" . dupre-org-done)))
 
   (setq org-highest-priority ?A)
   (setq org-lowest-priority ?D)
   (setq org-default-priority ?D)
-  (setq org-priority-faces '((?A . (:foreground "Cyan" :weight bold))
-                             (?B . (:foreground "Yellow"))
-                             (?C . (:foreground "Green"))
-                             (?D . (:foreground "Grey"))))
+  (setq org-priority-faces '((?A . dupre-org-priority-a)
+                             (?B . dupre-org-priority-b)
+                             (?C . dupre-org-priority-c)
+                             (?D . dupre-org-priority-d)))
 
   (setq org-enforce-todo-dependencies t)
   (setq org-enforce-todo-checkbox-dependencies t)
