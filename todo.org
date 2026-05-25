@@ -463,8 +463,11 @@ Expected outcome:
 - Add a note to the local repository docs so future package failures do not
   lead to permanent insecure defaults.
 
-** TODO [#C] latex-config WIP state                               :refactor:
+** DONE [#C] latex-config WIP state                               :refactor:
+CLOSED: [2026-05-25 Mon]
 The =init.el= require for =latex-config= carried a bare "WIP need to fix" comment with no detail on what was broken. Retired that comment while classifying foundation modules; the underlying state still needs investigation. Read =modules/latex-config.el=, determine what's incomplete, and either finish it or scope a real task.
+
+Investigated 2026-05-25. The comment came from the original repo import (=092304d9=); no detail about the original breakage survives. The module byte-compiles clean and works. =company-auctex= is not a current bug — company is still the live framework, and its removal is already scoped under the corfu-migration spec below. Found one real defect: =cj/--latex-select-pdf-viewer= ran on every LaTeX buffer and blindly pushed onto =TeX-view-program-selection=, stacking duplicate =output-pdf= entries against its own idempotency docstring. Fixed in =b007a9b8= (remove-then-cons) and added =tests/test-latex-config.el= (the module had none) covering selection, preference order, fallback, idempotency, and default override.
 
 ** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
 :PROPERTIES:
