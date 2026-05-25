@@ -10,7 +10,7 @@ each module is inspected and classified. A module moves from [[*Pending
 classification][Pending classification]] into [[*Classified modules][Classified
 modules]] once its source has been read and its load-graph header written.
 
-Phase 1 exit criterion: every module required by =init.el= (102 total) is
+Phase 1 exit criterion: every module required by =init.el= (103 total) is
 represented here with a category and target load shape, every eager survivor
 has a documented reason, and top-level timer/process/network side effects are
 identified. Classification proceeds in batches; the header-validation test
@@ -26,13 +26,13 @@ This inventory is independent from the helper inventory owned by
 - Batch 1 (Foundation, Layer 1): classified. 7 modules.
 - Batch 2 (Text/editing command modules, Layer 2): classified. 9 modules.
 - Batch 3 (Core libraries and command modules): classified. 7 modules.
-- Batch 4 (UI / core-UX modules, Layer 2): classified. 10 modules.
+- Batch 4 (UI / core-UX modules, Layer 2): classified. 11 modules.
 - Batch 5 (Dev entry-points, diff, help, lint, VC, Layer 2): classified. 9 modules.
 - Batch 6 (Programming modules, Layer 2-4): classified. 10 modules.
 - Batch 7 (Org modules, Layer 3-4): classified. 13 modules.
 - Batch 8 (Domain / integration / optional modules, Layer 2-4): classified. 18 modules.
 - Batch 9 (Remaining domain / integration / optional modules, Layer 2-4): classified. 19 modules.
-- 102 of 102 modules classified. Phase 1 classification complete.
+- 103 of 103 modules classified. Phase 1 classification complete.
 - No load-order changes have been made; =init.el= keeps its current eager order.
 
 * Legend
@@ -112,6 +112,7 @@ eager reason and stay eager.
 
 | Module | Layer | Cat | Current | Target | Runtime requires | Top-level side effects | Direct load |
 |--------+-------+-----+---------+--------+------------------+------------------------+-------------|
+| =auto-dim-config= | 2 | C/O | eager | eager | none (loads ~/code auto-dim fork) | enables global minor mode, edits affected-faces | conditional |
 | =ui-config= | 2 | C/S | eager | eager | user-constants | UI defaults, post-command hook, display-buffer-alist | yes |
 | =ui-theme= | 2 | C | eager | eager | none | theme load path, theme key | yes |
 | =ui-navigation= | 2 | C/P | eager | eager | none | nav keymap, 5 global keys, package config | yes |
@@ -285,4 +286,4 @@ found and fixed; the =Phase 2 fix:= notes below describe the change applied.
 
 * Pending classification
 
-- None. Every module required by =init.el= is classified (102 of 102).
+- None. Every module required by =init.el= is classified (103 of 103).

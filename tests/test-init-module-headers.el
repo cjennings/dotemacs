@@ -48,6 +48,7 @@
     "text-config"
     "undead-buffers"
     ;; Batch 4 — UI / core-UX modules (Layer 2)
+    "auto-dim-config"
     "ui-config"
     "ui-theme"
     "ui-navigation"
