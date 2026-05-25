@@ -102,6 +102,7 @@
     "chrono-tools"
     "dirvish-config"
     "dwim-shell-config"
+    "elfeed-config"
     "erc-config"
     "eshell-config"
     "eww-config"

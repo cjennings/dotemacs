@@ -2,6 +2,17 @@
 ;; author Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
+;;
+;; Layer: 4 (Optional).
+;; Category: O/D/P.
+;; Load shape: eager.
+;; Eager reason: none; optional feed reader, a command-loaded deferral
+;;   candidate.
+;; Top-level side effects: package configuration via use-package (binds the
+;;   elfeed launch key and the search/show-mode keys).
+;; Runtime requires: user-constants, system-lib, media-utils.
+;; Direct test load: yes.
+;;
 ;; Launch Elfeed with M-R to update feeds and focus the newest entry right away.
 ;; Inside the search buffer:
 ;; - Use v to stream via the default player, d to download, w/b to open via EWW or browser.
