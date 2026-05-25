@@ -57,6 +57,7 @@
 (require 'ui-config)             ;; transparency, cursor color, icons, &c.
 (require 'ui-theme)              ;; themes and theme persistency
 (cj/load-theme-from-file)
+(require 'auto-dim-config)       ;; dim non-selected windows (faces live in the theme)
 (require 'ui-navigation)         ;; the movement and navigation of windows
 (require 'font-config)           ;; font and emoji configuration
 (require 'nerd-icons-config)     ;; nerd-icons + completion/ibuffer integration + tint

@@ -832,6 +832,16 @@
      `(shr-code ((t (:foreground ,green :background ,bg+1))))
      `(shr-mark ((t (:background ,yellow-2))))
 
+;;;;; auto-dim-other-buffers
+     ;; Non-selected windows recede to a pure-black background with faded
+     ;; gray text, so an inactive window reads as "disabled".  This face is
+     ;; remapped onto default, the font-lock faces, and org-block (see
+     ;; auto-dim-config.el), so code text fades too rather than staying lit.
+     ;; The -hide face keeps org hidden text invisible in dimmed windows (its
+     ;; foreground must match the dimmed background).
+     `(auto-dim-other-buffers ((t (:foreground ,gray-1 :background "#000000"))))
+     `(auto-dim-other-buffers-hide ((t (:foreground "#000000" :background "#000000"))))
+
      )))
 
 (provide 'dupre-faces)
