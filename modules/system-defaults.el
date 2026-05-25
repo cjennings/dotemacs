@@ -104,6 +104,22 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 (setq custom-file (make-temp-file
                    "emacs-customizations-trashbin-"))
 
+(defun cj/--warn-customize-discarded (&rest _)
+  "Warn once that Customize edits land in a throwaway `custom-file'.
+`custom-file' is a temp file that is never read back, so anything saved
+through the Customize interface is lost on exit.  This advice fires the
+first time `custom-save-all' writes, then removes itself so the warning
+appears only once per session."
+  (advice-remove 'custom-save-all #'cj/--warn-customize-discarded)
+  (display-warning
+   'cj/system-defaults
+   (concat "Customize edits are discarded: `custom-file' is a throwaway "
+           "temp file that is never loaded back. Edit configuration in the "
+           "Elisp init files instead.")
+   :warning))
+
+(advice-add 'custom-save-all :before #'cj/--warn-customize-discarded)
+
 ;; ------------------------- Re-Enabling Functionality -------------------------
 
 (put 'narrow-to-region 'disabled nil)               ;; narrow-to-region is extremely useful!

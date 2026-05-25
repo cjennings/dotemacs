@@ -64,5 +64,25 @@ they are actually wired onto the minibuffer hooks."
       (should (memq 'cj/minibuffer-setup-hook minibuffer-setup-hook))
       (should (memq 'cj/minibuffer-exit-hook minibuffer-exit-hook)))))
 
+;;; Customize-save warning
+
+(ert-deftest test-system-defaults-customize-save-warns-once ()
+  "Normal: the first custom-save-all warns; the second does not (one-shot).
+Customize writes land in a throwaway custom-file, so the user must be told
+their edit will not persist.  The advice removes itself after warning once."
+  (test-system-defaults--with-load-environment
+    (let ((warnings '()))
+      (cl-letf (((symbol-function 'display-warning)
+                 (lambda (group &rest _) (push group warnings)))
+                ((symbol-function 'custom-save-all) #'ignore))
+        (test-system-defaults--load)
+        ;; No warning merely from loading the module.
+        (should (null warnings))
+        (custom-save-all)
+        (should (equal warnings '(cj/system-defaults)))
+        ;; Second save must not warn again.
+        (custom-save-all)
+        (should (equal warnings '(cj/system-defaults)))))))
+
 (provide 'test-system-defaults)
 ;;; test-system-defaults.el ends here
