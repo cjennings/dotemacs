@@ -1604,15 +1604,16 @@ configuration.  Either move the GUI check inside
 =server-after-make-frame-hook= (per-frame), or invoke font setup
 unconditionally and let Emacs handle terminal frames gracefully.
 
-**** TODO [#C] Cache =mousetrap-mode= keymap rebuilds per profile :performance:solo:
+**** 2026-05-25 Mon @ 18:05:56 -0500 Cached mousetrap keymaps per profile
 
-=modules/mousetrap-mode.el:231-233= registers =mouse-trap-maybe-enable=
-on every major-mode hook (text, prog, special, plus custom profile
-modes).  Each mode switch rebuilds the keymap from scratch (~8
-prefixes × ~30 events).  Rapid mode-switching workflows (project
-switching, multi-buffer review) pay a measurable cost.  Cache by
-profile + active-events list and skip rebuild when the cache key
-matches.
+=mouse-trap--build-keymap= rebuilt the whole keymap on every major-mode hook.
+Moved the build into =mouse-trap--build-keymap-1= and cached its result in
+=mouse-trap--keymap-cache=, keyed on =(profile-name . allowed-categories)=, so
+the same profile reuses the cached map and editing a profile's categories
+changes the key and rebuilds. Sharing one keymap object across buffers is safe
+since the map only binds disallowed events to =ignore= and is never mutated.
+Added =mouse-trap--clear-keymap-cache=. Behavior is unchanged; 5 cache tests
+plus the existing 66 mousetrap tests pass. Done by subagent, reviewed.
 
 **** 2026-05-24 Sun @ 07:26:31 -0500 Keyed VC modeline cache on resolved truename
 
@@ -2037,17 +2038,20 @@ Expected outcome:
 - Keep the existing =cj/make-script-executable= tests updated for the chosen
   policy.
 
-**** TODO [#B] Review language formatter process boundaries :cleanup:solo:
+**** 2026-05-25 Mon @ 18:05:56 -0500 Moved JSON/YAML/webdev formatters to argv process calls
 
-JSON, YAML, and webdev formatters use =shell-command-on-region= with command
-strings. Most inputs are fixed or shell-quoted, but formatter code is a good
-place to standardize process handling.
-
-Expected outcome:
-- Prefer process APIs with argv lists where practical.
-- Keep point preservation behavior.
-- Keep existing formatter wiring tests and add command-construction tests if a
-  helper is extracted.
+Replaced =shell-command-on-region= with =call-process-region= (explicit program
++ argv, no shell) in cj/json-format-buffer (jq), cj/yaml-format-buffer
+(prettier), and cj/webdev-format-buffer (prettier). The webdev path dropped its
+=shell-quote-argument= once the filename became a plain argv element. Point
+preservation is unchanged. One deliberate, tested improvement: the old code
+clobbered the buffer with the formatter's error text on a non-zero exit; the new
+per-module =cj/--<lang>-format-region= helper captures output, checks the exit
+code, replaces only on success, and otherwise raises a user-error with stderr.
+Kept a small helper in each of the three modules rather than one shared one,
+since they share no module short of system-lib. Added argv-invocation and
+no-clobber tests per formatter; existing wiring tests stay green. Done by
+subagent, reviewed.
 
 **** 2026-05-16 Sat @ 03:54:56 -0500 Added cj/executable-find-or-warn checks for prettier and pyright at load time
 
