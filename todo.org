@@ -1739,18 +1739,25 @@ Expected outcome:
 - Ensure aborted captures clear temp state.
 - Keep the existing browser bookmarklet workflow unchanged.
 
-**** TODO [#B] Review external executable assumptions in Org export/publishing modules :cleanup:solo:
+**** 2026-05-25 Mon @ 17:51:17 -0500 Guarded external-tool assumptions in Org export/publishing
 
-=org-export-config.el= assumes =zathura= for one Pandoc PDF path, =hugo-config.el=
-assumes =hugo= and a browser/file-manager opener, =org-reveal-config.el= assumes
-a local =reveal.js= checkout, and =org-webclipper.el= assumes Pandoc through
-=org-web-tools=.
+Added command-time guards to four export/publishing commands so a missing tool
+fails with a user-error that names it, instead of an opaque process error (or,
+for reveal.js, a silently broken presentation):
+- =org-export-config.el=: zathura check in my/org-pandoc-export-to-pdf-and-open.
+- =hugo-config.el=: hugo binary check in cj/hugo-preview, and the platform
+  file-manager opener check in cj/hugo-open-blog-dir-external.
+- =org-reveal-config.el=: extracted =cj/--reveal-ensure-root= (checks the local
+  reveal.js clone, points at scripts/setup-reveal.sh), called from
+  cj/reveal-export and cj/reveal-preview-start.
+- =org-webclipper.el=: pandoc check in cj/org-protocol-webclip-handler, the
+  single path that shells out to pandoc via org-web-tools.
 
-Expected outcome:
-- Add explicit executable/directory checks before commands run.
-- Error messages should name the missing tool and the command/setup needed.
-- Keep startup quiet; only check expensive/external requirements when the
-  relevant command runs.
+All checks run at command time, not load, so startup stays quiet. Each guard
+has a user-error test; existing happy-path tests now stub the lookups. Things
+deliberately not guarded: hugo-publish (magit, internal), the preview filter
+(browse-url, internal), hugo-export-post (ox-hugo, Elisp). Done with four
+parallel implementation agents, reviewed individually; full suite green.
 
 **** 2026-05-16 Sat @ 03:44:45 -0500 Guarded org-roam completed-task hook with cj/--org-roam-should-copy-completed-task-p
 
