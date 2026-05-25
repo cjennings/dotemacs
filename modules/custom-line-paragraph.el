@@ -160,7 +160,7 @@ If the line is empty or contains only whitespace, abort with a message."
   "R" #'cj/remove-duplicate-lines-region-or-buffer
   "r" #'cj/remove-lines-containing
   "u" #'cj/underscore-line)
-(keymap-set cj/custom-keymap "l" cj/line-and-paragraph-map)
+(cj/register-prefix-map "l" cj/line-and-paragraph-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

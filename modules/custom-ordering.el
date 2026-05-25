@@ -275,7 +275,7 @@ Returns the transformed string without modifying the buffer."
   "L" #'cj/comma-separated-text-to-lines
   "o" #'cj/org-sort-by-todo-and-priority)
 
-(keymap-set cj/custom-keymap "o" cj/ordering-map)
+(cj/register-prefix-map "o" cj/ordering-map)
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; o" "ordering/sorting menu"

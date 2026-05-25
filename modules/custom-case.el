@@ -129,7 +129,7 @@ short prepositions, and all articles are considered minor words."
   "t" #'cj/title-case-region
   "u" #'cj/upcase-dwim
   "l" #'cj/downcase-dwim)
-(keymap-set cj/custom-keymap "c" cj/case-map)
+(cj/register-prefix-map "c" cj/case-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

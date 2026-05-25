@@ -110,7 +110,7 @@ With a prefix arg OTHER-DIR, prompt for the directory instead of `drill-dir'."
   "r" #'cj/drill-refile
   "R" #'org-drill-resume)
 
-(keymap-set cj/custom-keymap "D" cj/drill-map)
+(cj/register-prefix-map "D" cj/drill-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

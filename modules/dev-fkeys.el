@@ -530,7 +530,7 @@ message."
 
 ;; ---------- Bindings ----------
 
-(keymap-set cj/custom-keymap "P" #'cj/projectile-reset-cmds)
+(cj/register-command "P" #'cj/projectile-reset-cmds)
 
 (keymap-global-set "<f4>"   #'cj/f4-compile-and-run)
 (keymap-global-set "C-<f4>" #'cj/f4-compile-only)

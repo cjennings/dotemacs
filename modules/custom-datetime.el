@@ -124,7 +124,7 @@ Use `readable-date-format' for formatting."
   "T" #'cj/insert-readable-time
   "d" #'cj/insert-sortable-date
   "D" #'cj/insert-readable-date )
-(keymap-set cj/custom-keymap "d" cj/datetime-map)
+(cj/register-prefix-map "d" cj/datetime-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

@@ -538,7 +538,7 @@ Signals an error if:
   "<right>" #'cj/window-resize-sticky
   "<up>"    #'cj/window-resize-sticky
   "<down>"  #'cj/window-resize-sticky)
-(keymap-set cj/custom-keymap "b" cj/buffer-and-file-map)
+(cj/register-prefix-map "b" cj/buffer-and-file-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

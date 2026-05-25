@@ -646,7 +646,7 @@ Leverages cj/comment-inline-border."
   "h" #'cj/comment-heavy-box
   "u" #'cj/comment-unicode-box
   "n" #'cj/comment-block-banner)
-(keymap-set cj/custom-keymap "C" cj/comment-map)
+(cj/register-prefix-map "C" cj/comment-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

@@ -1088,7 +1088,7 @@ Changes take effect on the next recording (not the current one)."
     map)
   "Keymap for video/audio recording operations under C-; r.")
 
-(keymap-set cj/custom-keymap "r" cj/record-map)
+(cj/register-prefix-map "r" cj/record-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

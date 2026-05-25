@@ -600,7 +600,7 @@ Dirs added recursively."
   "z" #'emms-toggle-random-playlist
   "x" #'cj/music-toggle-consume)
 
-(keymap-set cj/custom-keymap "m" cj/music-map)
+(cj/register-prefix-map "m" cj/music-map)
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; m" "music menu"

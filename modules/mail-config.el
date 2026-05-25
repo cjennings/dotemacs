@@ -403,7 +403,7 @@ Prompts user for the action when executing."
 	  "d" cj/mail-dmail-map
 	  "g" cj/mail-gmail-map
 	  "s" #'cj/mu4e-save-attachment-here)
-	(keymap-set cj/custom-keymap "e" cj/email-map)
+	(cj/register-prefix-map "e" cj/email-map)
 	(with-eval-after-load 'which-key
 	  (which-key-add-key-based-replacements
         "C-; e" "email menu"

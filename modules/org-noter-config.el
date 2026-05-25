@@ -311,7 +311,7 @@ and to read more naturally as direction."
   "q" #'org-noter-kill-session
   "t" #'cj/org-noter-start
   "T" #'org-noter-toggle-notes-window-location)
-(keymap-set cj/custom-keymap "n" cj/org-noter-map)
+(cj/register-prefix-map "n" cj/org-noter-map)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
