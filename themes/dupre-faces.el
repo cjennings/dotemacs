@@ -13,6 +13,34 @@
 
 (require 'dupre-palette)
 
+(defgroup dupre-faces nil
+  "Semantic faces owned by the dupre theme."
+  :group 'faces)
+
+;; Register dupre's own faces so they are real faces (facep t): customizable,
+;; usable via `:inherit', and -- importantly -- applicable directly as a text
+;; property (which `org-todo-keyword-faces' and `org-priority-faces' do).
+;; `custom-theme-set-faces' below sets their colours; this only declares them.
+;; Without this, the faces existed only as theme specs and rendered only
+;; through `:inherit', silently failing wherever a face was applied directly.
+(dolist (face '(dupre-accent dupre-err dupre-warning dupre-success dupre-info
+                dupre-heading-1 dupre-heading-2 dupre-heading-3 dupre-heading-4
+                dupre-org-todo dupre-org-todo-dim
+                dupre-org-project dupre-org-project-dim
+                dupre-org-doing dupre-org-doing-dim
+                dupre-org-waiting dupre-org-waiting-dim
+                dupre-org-verify dupre-org-verify-dim
+                dupre-org-stalled dupre-org-stalled-dim
+                dupre-org-failed dupre-org-failed-dim
+                dupre-org-done dupre-org-done-dim
+                dupre-org-priority-a dupre-org-priority-a-dim
+                dupre-org-priority-b dupre-org-priority-b-dim
+                dupre-org-priority-c dupre-org-priority-c-dim
+                dupre-org-priority-d dupre-org-priority-d-dim))
+  (custom-declare-face
+   face '((t)) "Dupre theme face; colour set by `dupre-theme-set-faces'."
+   :group 'dupre-faces))
+
 (defun dupre-theme-set-faces ()
   "Set all faces for dupre-theme."
   (dupre-with-colors
@@ -181,6 +209,38 @@
      `(org-done ((t (:foreground ,green :weight bold))))
      `(org-headline-done ((t (:foreground ,gray))))
      `(org-headline-todo ((t (:foreground ,fg))))
+
+;;;;; Org TODO-keyword and priority status faces
+     ;; Focused colours (closest dupre palette to the former hard-coded
+     ;; names in org-config.el) plus a dimmed variant per status, for
+     ;; non-selected windows.  org-config.el points org-todo-keyword-faces and
+     ;; org-priority-faces at the focused faces; auto-dim-config.el remaps each
+     ;; focused face to its -dim variant in unfocused windows.
+     `(dupre-org-todo        ((t (:foreground ,green       :weight bold))))
+     `(dupre-org-todo-dim    ((t (:foreground ,green-1     :weight bold))))
+     `(dupre-org-project     ((t (:foreground ,blue        :weight bold))))
+     `(dupre-org-project-dim ((t (:foreground "#3d4a5a"    :weight bold))))
+     `(dupre-org-doing       ((t (:foreground ,yellow      :weight bold))))
+     `(dupre-org-doing-dim   ((t (:foreground ,yellow-2    :weight bold))))
+     `(dupre-org-waiting     ((t (:foreground ,fg          :weight bold))))
+     `(dupre-org-waiting-dim ((t (:foreground ,gray        :weight bold))))
+     `(dupre-org-verify      ((t (:foreground ,red         :weight bold))))
+     `(dupre-org-verify-dim  ((t (:foreground ,red-1       :weight bold))))
+     `(dupre-org-stalled     ((t (:foreground ,blue+1      :weight bold))))
+     `(dupre-org-stalled-dim ((t (:foreground ,blue        :weight bold))))
+     `(dupre-org-failed      ((t (:foreground ,intense-red :weight bold))))
+     `(dupre-org-failed-dim  ((t (:foreground ,red         :weight bold))))
+     `(dupre-org-done        ((t (:foreground ,gray-2      :weight bold))))
+     `(dupre-org-done-dim    ((t (:foreground ,bg+2        :weight bold))))
+     `(dupre-org-priority-a     ((t (:foreground ,blue+1 :weight bold))))
+     `(dupre-org-priority-a-dim ((t (:foreground ,blue   :weight bold))))
+     `(dupre-org-priority-b     ((t (:foreground ,yellow))))
+     `(dupre-org-priority-b-dim ((t (:foreground ,yellow-2))))
+     `(dupre-org-priority-c     ((t (:foreground ,green))))
+     `(dupre-org-priority-c-dim ((t (:foreground ,green-1))))
+     `(dupre-org-priority-d     ((t (:foreground ,gray))))
+     `(dupre-org-priority-d-dim ((t (:foreground ,gray-1))))
+
      `(org-date ((t (:foreground ,gray :underline t))))
      `(org-link ((t (:foreground ,blue :underline t))))
      `(org-code ((t (:foreground ,green :background ,bg+1))))

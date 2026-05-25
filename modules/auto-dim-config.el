@@ -54,7 +54,23 @@
 		  (font-lock-constant-face          . (auto-dim-other-buffers      . nil))
 		  (font-lock-builtin-face           . (auto-dim-other-buffers      . nil))
 		  (font-lock-preprocessor-face      . (auto-dim-other-buffers      . nil))
-		  (font-lock-warning-face           . (auto-dim-other-buffers      . nil))))
+		  (font-lock-warning-face           . (auto-dim-other-buffers      . nil))
+		  ;; Org TODO-keyword + priority faces dim to their own -dim variant
+		  ;; (a darker shade of the same colour) rather than the flat gray, so
+		  ;; a dimmed window's keywords stay recognizable.  Faces are defined
+		  ;; in themes/dupre-faces.el and wired in modules/org-config.el.
+		  (dupre-org-todo                   . (dupre-org-todo-dim          . nil))
+		  (dupre-org-project                . (dupre-org-project-dim       . nil))
+		  (dupre-org-doing                  . (dupre-org-doing-dim         . nil))
+		  (dupre-org-waiting                . (dupre-org-waiting-dim       . nil))
+		  (dupre-org-verify                 . (dupre-org-verify-dim        . nil))
+		  (dupre-org-stalled                . (dupre-org-stalled-dim       . nil))
+		  (dupre-org-failed                 . (dupre-org-failed-dim        . nil))
+		  (dupre-org-done                   . (dupre-org-done-dim          . nil))
+		  (dupre-org-priority-a             . (dupre-org-priority-a-dim    . nil))
+		  (dupre-org-priority-b             . (dupre-org-priority-b-dim    . nil))
+		  (dupre-org-priority-c             . (dupre-org-priority-c-dim    . nil))
+		  (dupre-org-priority-d             . (dupre-org-priority-d-dim    . nil))))
   (auto-dim-other-buffers-mode 1))
 
 (provide 'auto-dim-config)

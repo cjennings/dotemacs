@@ -204,5 +204,24 @@
   (load-theme 'dupre t)
   (should (string= (face-attribute 'success :foreground) "#a4ac64")))
 
+;;; Face registration
+
+(ert-deftest dupre-semantic-faces-are-registered ()
+  "Dupre's own faces must be real faces, not just theme specs.
+An unregistered face renders only through `:inherit'; applied directly as
+a text property (e.g. via `org-todo-keyword-faces') it silently fails.
+The defface registration in dupre-faces.el is what makes direct use work."
+  (load-theme 'dupre t)
+  (dolist (face '(dupre-accent dupre-heading-1
+                  dupre-org-todo dupre-org-todo-dim
+                  dupre-org-failed dupre-org-priority-a
+                  dupre-org-priority-a-dim))
+    (should (facep face)))
+  ;; and the theme colours them from the palette
+  (should (string= (face-attribute 'dupre-org-todo :foreground nil 'default)
+                   "#a4ac64"))
+  (should (string= (face-attribute 'dupre-org-todo-dim :foreground nil 'default)
+                   "#869038")))
+
 (provide 'test-dupre-theme)
 ;;; test-dupre-theme.el ends here
