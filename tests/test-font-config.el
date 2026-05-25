@@ -70,5 +70,28 @@
       (should (= calls 1))
       (should (memq (selected-frame) cj/fontaine-configured-frames)))))
 
+;;; cj/setup-emoji-fontset
+
+(ert-deftest test-font-config-setup-emoji-fontset-noop-without-gui ()
+  "Boundary: without a GUI the emoji setup does nothing and does not error."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (let ((called nil))
+    (cl-letf (((symbol-function 'env-gui-p) (lambda (&rest _) nil))
+              ((symbol-function 'set-fontset-font)
+               (lambda (&rest _) (setq called t))))
+      (cj/setup-emoji-fontset)
+      (should-not called))))
+
+(ert-deftest test-font-config-setup-emoji-fontset-runs-on-gui ()
+  "Normal: on a GUI frame the emoji setup runs without error."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (cl-letf (((symbol-function 'env-gui-p) (lambda (&rest _) t))
+            ((symbol-function 'font-family-list)
+             (lambda (&rest _) '("Noto Color Emoji")))
+            ((symbol-function 'set-fontset-font) (lambda (&rest _) t)))
+    (should (progn (cj/setup-emoji-fontset) t))))
+
 (provide 'test-font-config)
 ;;; test-font-config.el ends here

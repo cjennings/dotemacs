@@ -222,17 +222,28 @@ If FRAME is nil, uses the selected frame."
 ;; ----------------------------- Emoji Fonts Per OS ----------------------------
 ;; Set emoji fonts in priority order (first found wins)
 
-(when (env-gui-p)
-  (cond
-   ;; Prefer Noto Color Emoji (Linux)
-   ((member "Noto Color Emoji" (font-family-list))
-    (set-fontset-font t 'symbol (font-spec :family "Noto Color Emoji") nil 'prepend))
-   ;; Then Apple Color Emoji (macOS)
-   ((member "Apple Color Emoji" (font-family-list))
-    (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
-   ;; Finally Segoe UI Emoji (Windows)
-   ((member "Segoe UI Emoji" (font-family-list))
-    (set-fontset-font t 'symbol (font-spec :family "Segoe UI Emoji") nil 'prepend))))
+(defun cj/setup-emoji-fontset (&optional _frame)
+  "Set emoji fonts in priority order (first found wins).
+No-op unless a GUI frame is present.  Safe to run per-frame: setting
+the fontset repeatedly is harmless, so it can be called from
+`server-after-make-frame-hook' in daemon mode."
+  (when (env-gui-p)
+    (cond
+     ;; Prefer Noto Color Emoji (Linux)
+     ((member "Noto Color Emoji" (font-family-list))
+      (set-fontset-font t 'symbol (font-spec :family "Noto Color Emoji") nil 'prepend))
+     ;; Then Apple Color Emoji (macOS)
+     ((member "Apple Color Emoji" (font-family-list))
+      (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") nil 'prepend))
+     ;; Finally Segoe UI Emoji (Windows)
+     ((member "Segoe UI Emoji" (font-family-list))
+      (set-fontset-font t 'symbol (font-spec :family "Segoe UI Emoji") nil 'prepend)))))
+
+;; In daemon mode `env-gui-p' is nil at load time (no GUI frame yet), so run
+;; the setup per-frame as GUI frames are created.  Otherwise run it now.
+(if (daemonp)
+    (add-hook 'server-after-make-frame-hook #'cj/setup-emoji-fontset)
+  (cj/setup-emoji-fontset))
 
 ;; ---------------------------------- Emojify ----------------------------------
 ;; converts emoji identifiers into emojis; allows for easy emoji entry.
@@ -272,7 +283,7 @@ If FRAME is nil, uses the selected frame."
 	(with-current-buffer "*Available Fonts*"
 	  (erase-buffer)
 	  (dolist (font-family font-list)
-		(insert (propertize (concat font-family) 'face `((:foreground "Light Blue" :weight bold))))
+		(insert (propertize (concat font-family) 'face '(font-lock-keyword-face (:weight bold))))
 		(insert (concat "\n"(propertize "Regular: ")))
 		(insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
 							'face `((:family, font-family))))
