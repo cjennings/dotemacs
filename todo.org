@@ -1927,18 +1927,22 @@ Completion review 2026-05-15:
   process handling, shell-script executable policy, and formatter process
   boundaries.
 
-**** TODO [#C] Add smoke coverage for lightweight programming modules with no direct tests :tests:solo:
+**** 2026-05-25 Mon @ 17:35:02 -0500 Added prog-lisp smoke coverage; assessed the other two
 
-Several low-risk programming modules currently have little or no direct test
-surface, especially =prog-general.el=, =prog-lisp.el=, and
-=prog-training.el=. Most behavior is package/hook configuration, so this should
-stay narrow:
-- require the modules with package side effects stubbed,
-- assert key hooks/settings that this config owns,
-- ensure batch loading does not trigger external installs or downloads.
+Added =tests/test-prog-lisp.el= (4 tests) covering the config prog-lisp owns
+directly: cj/elisp-setup and cj/common-lisp-setup are each registered on their
+mode hook and apply the right buffer locals (4-space/no-tabs/fill-120 for
+elisp, 2-space/fill-100 for Common Lisp). The module loads with use-package
+stubbed to a no-op, so nothing installs or downloads in batch.
 
-Prioritize this after the LSP and tree-sitter policy tasks, because those
-changes will define the stable assertions.
+=prog-training.el= got no test: it's entirely deferred use-package config with
+no top-level surface, and its only owned settings (leetcode language/dir) live
+in a deferred =:config= that would make the test package-dependent for no real
+value. Forcing a test there would be coverage theater.
+
+=prog-general.el= is deferred: it's the one of the three that touches LSP and
+tree-sitter, and the task itself says to wait for the LSP/tree-sitter policy
+tasks to land before fixing its assertions. Its smoke coverage rides with those.
 
 **** TODO [#B] Revisit F4 project classification vs actual project capabilities :ux:
 
