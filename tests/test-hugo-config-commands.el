@@ -210,6 +210,7 @@ stubbed before the org-mode-derived guard runs."
   (let ((cj/hugo--preview-process nil)
         (start-args nil))
     (cl-letf (((symbol-function 'process-live-p) (lambda (_) nil))
+              ((symbol-function 'executable-find) (lambda (_) "/usr/bin/hugo"))
               ((symbol-function 'start-process)
                (lambda (&rest args)
                  (setq start-args args)
@@ -220,6 +221,16 @@ stubbed before the org-mode-derived guard runs."
       (cj/hugo-preview))
     (should (eq cj/hugo--preview-process 'fake-proc))
     (should (member "server" start-args))))
+
+(ert-deftest test-hugo-preview-errors-when-hugo-missing ()
+  "Error: a missing hugo binary signals user-error before start-process."
+  (let ((cj/hugo--preview-process nil))
+    (cl-letf (((symbol-function 'process-live-p) (lambda (_) nil))
+              ((symbol-function 'executable-find) (lambda (_) nil))
+              ((symbol-function 'start-process)
+               (lambda (&rest _) (error "start-process should not run")))
+              ((symbol-function 'message) #'ignore))
+      (should-error (cj/hugo-preview) :type 'user-error))))
 
 ;;; cj/hugo-publish
 

@@ -129,6 +129,15 @@ Returns the number of lines removed."
         (delete-char 1)))
     removed))
 
+(defun cj/--reveal-ensure-root ()
+  "Signal a `user-error' when the local reveal.js checkout is missing.
+Export needs the clone at `cj/reveal-root', installed by
+scripts/setup-reveal.sh.  Without it the exporter produces a broken
+presentation, so fail early with an actionable message."
+  (unless (file-directory-p cj/reveal-root)
+    (user-error "Local reveal.js not found at %s — run scripts/setup-reveal.sh"
+                cj/reveal-root)))
+
 (defun cj/--reveal-preview-export-on-save ()
   "Export current org buffer to reveal.js HTML silently.
 Intended for use as a buffer-local `after-save-hook'."
@@ -152,6 +161,7 @@ Intended for use as a buffer-local `after-save-hook'."
   (interactive)
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an Org buffer"))
+  (cj/--reveal-ensure-root)
   (let ((html-file (org-reveal-export-to-html)))
     (when html-file
       (browse-url-of-file html-file)
@@ -164,6 +174,7 @@ re-export silently; refresh the browser to see changes."
   (interactive)
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in an Org buffer"))
+  (cj/--reveal-ensure-root)
   (add-hook 'after-save-hook #'cj/--reveal-preview-export-on-save nil t)
   (let ((html-file (org-reveal-export-to-html)))
     (when html-file

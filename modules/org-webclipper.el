@@ -168,6 +168,9 @@ It fetches the page content and converts it to Org format."
   ;; and fail with a `void-variable widget-field-keymap' error from
   ;; the customize machinery loading lazily.
   (require 'org-web-tools)
+  (unless (executable-find "pandoc")
+    (user-error
+     "pandoc not found on PATH; it is required to convert the clipped page to Org"))
   (setq org-web-tools-pandoc-sleep-time 0.5)
 
   (let ((url cj/--webclip-url)

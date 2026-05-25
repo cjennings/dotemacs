@@ -80,7 +80,8 @@
         (msg nil))
     (with-temp-buffer
       (delay-mode-hooks (org-mode))
-      (cl-letf (((symbol-function 'org-reveal-export-to-html)
+      (cl-letf (((symbol-function 'file-directory-p) (lambda (_) t))
+                ((symbol-function 'org-reveal-export-to-html)
                  (lambda (&rest _) "/tmp/talk.html"))
                 ((symbol-function 'browse-url-of-file)
                  (lambda (f) (setq opened f)))
@@ -91,6 +92,18 @@
     (should (equal opened "/tmp/talk.html"))
     (should (string-match-p "Opened presentation" msg))))
 
+(ert-deftest test-reveal-export-errors-when-reveal-root-missing ()
+  "Error: when the local reveal.js dir is absent, export signals user-error."
+  (with-temp-buffer
+    (delay-mode-hooks (org-mode))
+    (cl-letf (((symbol-function 'file-directory-p) (lambda (_) nil))
+              ((symbol-function 'org-reveal-export-to-html)
+               (lambda (&rest _) (error "Exporter should not be reached"))))
+      (let ((err (should-error (cj/reveal-export) :type 'user-error)))
+        (should (string-match-p "reveal\\.js" (error-message-string err)))
+        (should (string-match-p "setup-reveal\\.sh"
+                                (error-message-string err)))))))
+
 ;;; cj/reveal-preview-start
 
 (ert-deftest test-reveal-preview-start-installs-hook-and-exports ()
@@ -99,7 +112,8 @@
         (opened nil))
     (with-temp-buffer
       (delay-mode-hooks (org-mode))
-      (cl-letf (((symbol-function 'org-reveal-export-to-html)
+      (cl-letf (((symbol-function 'file-directory-p) (lambda (_) t))
+                ((symbol-function 'org-reveal-export-to-html)
                  (lambda (&rest _) (setq exported t) "/tmp/preview.html"))
                 ((symbol-function 'browse-url-of-file)
                  (lambda (f) (setq opened f)))

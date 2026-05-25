@@ -109,6 +109,8 @@ new file with Hugo front matter keywords pre-filled."
               ((env-macos-p) "open")
               ((env-windows-p) "explorer.exe")
               (t "xdg-open"))))
+    (unless (executable-find cmd)
+      (user-error "Cannot open blog dir: file-manager opener %S not found on PATH" cmd))
     (start-process "hugo-file-manager" nil cmd cj/hugo-content-org-dir)))
 
 ;; ----------------------------- Draft Management ------------------------------
@@ -215,6 +217,8 @@ a template error), the sentinel reports the failure."
         (kill-process cj/hugo--preview-process)
         (setq cj/hugo--preview-process nil)
         (message "hugo server stopped"))
+    (unless (executable-find "hugo")
+      (user-error "Cannot start preview: hugo binary not found on PATH"))
     (let ((default-directory website-dir))
       (setq cj/hugo--preview-process
             (start-process "hugo-server" "*hugo-server*"
