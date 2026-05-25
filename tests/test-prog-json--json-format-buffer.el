@@ -7,8 +7,39 @@
 ;;; Code:
 
 (require 'ert)
+(require 'cl-lib)
 (require 'json)
 (require 'prog-json)
+
+;;; argv path — process invocation (stubbed, no shell)
+
+(ert-deftest test-prog-json--json-format-buffer-invokes-jq-argv ()
+  "Normal: with jq present, the formatter calls jq via argv, no shell."
+  (let (program args)
+    (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/jq"))
+              ((symbol-function 'call-process-region)
+               (lambda (_start _end prog &rest rest)
+                 (setq program prog
+                       args (nthcdr 3 rest))
+                 (with-current-buffer (nth 1 rest) (insert "{}"))
+                 0)))
+      (with-temp-buffer
+        (insert "{\"a\":1}")
+        (cj/json-format-buffer)))
+    (should (equal "jq" program))
+    (should (equal '("--sort-keys" ".") args))))
+
+(ert-deftest test-prog-json--json-format-buffer-no-clobber-on-failure ()
+  "Error: a non-zero jq exit leaves the buffer untouched and signals an error."
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/jq"))
+            ((symbol-function 'call-process-region)
+             (lambda (_start _end _prog _delete buffer &rest _)
+               (with-current-buffer buffer (insert "jq: parse error"))
+               1)))
+    (with-temp-buffer
+      (insert "{not valid json}")
+      (should-error (cj/json-format-buffer) :type 'user-error)
+      (should (string= (buffer-string) "{not valid json}")))))
 
 ;;; Normal Cases — jq path
 

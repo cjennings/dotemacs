@@ -41,15 +41,38 @@
 ;; -------------------------------- Formatting ---------------------------------
 ;; pretty-print with sorted keys, bound to standard format key
 
+(defun cj/--json-format-region (program &rest args)
+  "Replace the buffer with PROGRAM ARGS run over its contents, via argv.
+Runs PROGRAM (with ARGS) on the whole buffer through
+`call-process-region' — no shell, so no quoting or word-splitting.
+The buffer is replaced only when PROGRAM exits zero; on a non-zero
+exit the buffer is left untouched and an error is signalled with
+the program's stderr text.  Point is preserved as closely as the
+reformatted size allows.  Returns t on success."
+  (let* ((point (point))
+         (src (current-buffer))
+         (out (generate-new-buffer " *json-format-out*"))
+         (status (apply #'call-process-region
+                        (point-min) (point-max) program
+                        nil out nil args)))
+    (unwind-protect
+        (if (and (integerp status) (zerop status))
+            (progn
+              (with-current-buffer src
+                (replace-buffer-contents out)
+                (goto-char (min point (point-max))))
+              t)
+          (user-error "%s failed: %s" program
+                      (string-trim (with-current-buffer out (buffer-string)))))
+      (kill-buffer out))))
+
 (defun cj/json-format-buffer ()
   "Format the current JSON buffer with sorted keys.
 Uses jq if available for reliable formatting, otherwise falls
 back to the built-in `json-pretty-print-buffer-ordered'."
   (interactive)
   (if (executable-find "jq")
-      (let ((point (point)))
-        (shell-command-on-region (point-min) (point-max) "jq --sort-keys ." nil t)
-        (goto-char (min point (point-max))))
+      (cj/--json-format-region "jq" "--sort-keys" ".")
     (json-pretty-print-buffer-ordered)))
 
 (defun cj/json-setup ()

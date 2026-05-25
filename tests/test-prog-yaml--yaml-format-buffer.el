@@ -6,7 +6,38 @@
 ;;; Code:
 
 (require 'ert)
+(require 'cl-lib)
 (require 'prog-yaml)
+
+;;; argv path — process invocation (stubbed, no shell)
+
+(ert-deftest test-prog-yaml--yaml-format-buffer-invokes-prettier-argv ()
+  "Normal: with prettier present, the formatter calls it via argv, no shell."
+  (let (program args)
+    (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/prettier"))
+              ((symbol-function 'call-process-region)
+               (lambda (_start _end prog &rest rest)
+                 (setq program prog
+                       args (nthcdr 3 rest))
+                 (with-current-buffer (nth 1 rest) (insert "key: value\n"))
+                 0)))
+      (with-temp-buffer
+        (insert "key: value\n")
+        (cj/yaml-format-buffer)))
+    (should (equal "prettier" program))
+    (should (equal '("--parser" "yaml") args))))
+
+(ert-deftest test-prog-yaml--yaml-format-buffer-no-clobber-on-failure ()
+  "Error: a non-zero prettier exit leaves the buffer untouched and errors."
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/prettier"))
+            ((symbol-function 'call-process-region)
+             (lambda (_start _end _prog _delete buffer &rest _)
+               (with-current-buffer buffer (insert "[error] bad yaml"))
+               1)))
+    (with-temp-buffer
+      (insert "key: : bad\n")
+      (should-error (cj/yaml-format-buffer) :type 'user-error)
+      (should (string= (buffer-string) "key: : bad\n")))))
 
 ;;; Normal Cases
 
