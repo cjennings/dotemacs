@@ -137,6 +137,15 @@
 	(unless (file-exists-p projectile-bookmark-file)
 	  (run-at-time "3" nil 'projectile-discover-projects-in-search-path))))
 
+(defun cj/--find-file-respecting-split (file)
+  "Open FILE in another window when the frame is split, else in this window.
+\"Split\" means the selected window is not the only one in its frame, so
+opening the file lands it in the other pane rather than replacing the
+buffer the user is looking at."
+  (if (one-window-p)
+	  (find-file file)
+	(find-file-other-window file)))
+
 (use-package projectile
   :bind-keymap
   ("C-c p" . projectile-command-map)
@@ -171,7 +180,7 @@ If no such file exists there, display a message."
 	(if-let ((root (projectile-project-root)))
 		(let ((file (cj/find-project-root-file "^todo\\.org$")))
 		  (if file
-			  (find-file (expand-file-name file root))
+			  (cj/--find-file-respecting-split (expand-file-name file root))
 			(message "No todo.org in project root: %s" root)))
 	  (message "Not in a Projectile project")))
 
