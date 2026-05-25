@@ -36,15 +36,37 @@
 ;; -------------------------------- Formatting ---------------------------------
 ;; normalize indentation and style, bound to standard format key
 
+(defun cj/--yaml-format-region (program &rest args)
+  "Replace the buffer with PROGRAM ARGS run over its contents, via argv.
+Runs PROGRAM (with ARGS) on the whole buffer through
+`call-process-region' — no shell, so no quoting or word-splitting.
+The buffer is replaced only when PROGRAM exits zero; on a non-zero
+exit the buffer is left untouched and an error is signalled with
+the program's stderr text.  Point is preserved as closely as the
+reformatted size allows.  Returns t on success."
+  (let* ((point (point))
+         (src (current-buffer))
+         (out (generate-new-buffer " *yaml-format-out*"))
+         (status (apply #'call-process-region
+                        (point-min) (point-max) program
+                        nil out nil args)))
+    (unwind-protect
+        (if (and (integerp status) (zerop status))
+            (progn
+              (with-current-buffer src
+                (replace-buffer-contents out)
+                (goto-char (min point (point-max))))
+              t)
+          (user-error "%s failed: %s" program
+                      (string-trim (with-current-buffer out (buffer-string)))))
+      (kill-buffer out))))
+
 (defun cj/yaml-format-buffer ()
   "Format the current YAML buffer with prettier.
 Preserves point position as closely as possible."
   (interactive)
   (if (executable-find "prettier")
-      (let ((point (point)))
-        (shell-command-on-region (point-min) (point-max)
-                                "prettier --parser yaml" nil t)
-        (goto-char (min point (point-max))))
+      (cj/--yaml-format-region "prettier" "--parser" "yaml")
     (user-error "prettier not found; install with: npm install -g prettier")))
 
 (defun cj/yaml-setup ()
