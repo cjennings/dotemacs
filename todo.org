@@ -41,7 +41,7 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** PROJECT [#B] Implement ai-kb :feature:ai-kb:
+** PROJECT [#B] Implement ai-kb                              :feature:ai:kb:
 Build v1 of the AI knowledge base per [[file:docs/design/ai-kb.org][docs/design/ai-kb.org]] (Ready; six reviews incorporated, all decisions resolved 2026-05-24). Step 1 splits into 1a (the safe write path — minimum usable) and 1b (retrieval, maintenance, push), since =remember= depends on =index=+=lint= and the adapter depends on =remember=. Step 2 is the Emacs layer: a full org-roam profile on switch, the human-edit safety model (same write path as the agent), and the browsing surface. Step 3 and the LLM-Wiki layer are vNext. Children are ordered by build sequence; the server bootstrap is the prerequisite.
 
 *** TODO [#B] ai-kb bare repo on cjennings.net :ai-kb:
@@ -90,11 +90,7 @@ Bind the switch + sync + browsing commands under the =C-c n= roam prefix (e.g. =
 *** TODO [#B] Emacs: ai-kb Step-2 ERT tests :ai-kb:tests:
 Profile: switch installs the ai-kb dir + db + exclude regexp and switch-back restores personal *exactly* — completed-task hook, agenda/refile finalize hook, dailies, and capture templates all untouched by ai-kb while switched; startup re-asserts personal state after a simulated abnormal exit. Edit path: a save in an ai-kb buffer runs index+lint+commit (a bad save surfaces the lint failure rather than committing). Sync runs only when stale.
 
-** TODO [#C] Manually verify cj/org-finalize-task journal copy :test:
-Confirm the live behavior the unit tests mock out. In a real Emacs (org-roam loaded), run =C-; O d= on a level-3 sub-task and on a level-2 task. Expect the sub-task to flip to a dated entry, the level-2 to keep its keyword and gain a date-only CLOSED line, and in both cases a copy to land in today's daily under "Completed Tasks".
-Triggered by: 2026-05-22 L56 finalize-task work.
-
-** TODO [#C] Dashboard over-scroll: pin last line to window bottom :bug:
+** TODO [#D] Dashboard over-scroll: pin last line to window bottom     :bug:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
@@ -122,9 +118,19 @@ Findings from the 2026-05-20 investigation:
   navigation commands.
 - Live experiment scratch file: =~/dashboard-overscroll-experiment.el=.
 
-** TODO [#C] Separate dashboard navigator color from list items :feature:
+** TODO [#C] Separate dashboard navigator color from list items    :feature:
 The dashboard navigator (icons + labels) and the recentf/project/bookmark list items are both painted by =dashboard-items-face=: the navigator gets a =dashboard-items-face= overlay, and overlays beat text properties, so the per-button =dashboard-navigator= face is inert. To color the navigator independently of the items, override where that overlay is applied — advise or redefine =dashboard-insert-navigator=, or strip/replace the overlay's face.
 Triggered by: 2026-05-22 dashboard color work (L105).
+
+** TODO [#C] Make standalone byte-compile load paths match module dependencies :tests:cleanup:
+Bare =emacs -Q --batch --eval '(byte-compile-file "modules/dashboard-config.el")'= fails because =undead-buffers= is not on the load path, even though normal init/test loading succeeds. Decide whether standalone compile checks should use the project test harness/load path, or whether modules with compile-time local dependencies should add explicit load-path setup or lighter declarations.
+
+Acceptance:
+- =dashboard-config.el= can be byte-compiled through the documented local command without missing =undead-buffers=.
+- The fix generalizes to other modules with local compile-time dependencies instead of special-casing only dashboard.
+- Document the intended command in the Makefile/test docs if the answer is "use the harness, not bare =emacs -Q=".
+
+Triggered by: 2026-05-25 dashboard transparency and vterm auto-dim work.
 
 ** PROJECT [#B] Architecture review follow-up from 2026-05-03 :refactor:no-sync:
 
@@ -365,7 +371,7 @@ assumptions.
 
 Spec: [[file:docs/design/init-load-graph.org][docs/design/init-load-graph.org]]
 
-**** VERIFY [#B] Write full design spec for the =init.el= load-graph refactor :architecture:refactor:
+**** 2026-05-25 Mon @ 07:59:20 -0500 Wrote full design spec for the =init.el= load-graph refactor :architecture:refactor:
 
 Create a design document that defines the target architecture, module
 categories, migration phases, test strategy, acceptance criteria, and risk
@@ -387,8 +393,8 @@ Verify 2026-05-04:
 **** 2026-05-24 Sun @ 17:07:03 -0500 Classified modules by role and startup requirement
 Built [[file:docs/design/module-inventory.org][docs/design/module-inventory.org]] across 9 batches: 101 of 102 init.el-required modules annotated with the load-graph header contract (Layer, Category, Load shape, Eager reason, Top-level side effects, Runtime requires, Direct test load) and tabulated in the inventory. Added =tests/test-init-module-headers.el= to enforce the contract on each classified module. Retired the three vague =init.el= comments (latex-config WIP, prog-shell "combine elsewhere", "Modules In Test" banner) into real tasks. Recorded seven hidden =cj/custom-keymap= / cross-module dependencies for the Phase 2 dependency pass. Tagged the span =load-graph-classify-start..load-graph-classify-end=. elfeed-config is the one module left, pulled to its own task below.
 
-**** TODO [#B] Annotate elfeed-config load-graph header :refactor:
-The single init.el module left unclassified. Its source is read and understood (Layer 4, O/D/P, command-loaded; runtime requires user-constants, system-lib, media-utils) and documented under "Deferred classification" in the inventory, but annotating its header triggers the PostToolUse byte-compile, which breaks =tests/test-elfeed-config-helpers.el=. Blocked on the "Make elfeed-config tests byte-compile-safe" task. Once that lands: add the 7-line header, move the module from "Deferred classification" into a Batch table in the inventory, and add it to the validation allowlist.
+**** 2026-05-25 Mon @ 08:35:33 -0500 Annotated elfeed-config load-graph header
+Added the load-graph header to elfeed-config (Layer 4, O/D/P, current load shape eager with an eager reason, target command-loaded; runtime requires user-constants, system-lib, media-utils), added it to the header-contract allowlist in =tests/test-init-module-headers.el= (Batch 8), and moved it in =docs/design/module-inventory.org= from the Deferred/Pending sections into the Batch 8 table. Inventory now 102 of 102 classified. The header's "Load shape" records the current shape (eager, required in init.el) per the weather-config/games-config convention; "command-loaded" is the target, in the inventory's Target column. Shipped as a522e553.
 
 **** 2026-05-24 Sun @ 18:35:06 -0500 Made hidden module dependencies explicit
 Fixed the seven hidden dependencies the classification surfaced: system-defaults now requires host-environment and user-constants at runtime (was eval-when-compile); custom-buffer-file, dev-fkeys, calendar-sync, and video-audio-recording require keybindings and drop their =(when (boundp 'cj/custom-keymap) ...)= shims; flycheck-config and mail-config require keybindings for their cj/custom-keymap bindings. Removed a dead =eval-when-compile (defvar cj/custom-keymap)= in transcription-config (the var was never used).
@@ -455,14 +461,15 @@ Expected outcome:
 - Add a note to the local repository docs so future package failures do not
   lead to permanent insecure defaults.
 
-** TODO [#C] latex-config WIP state :refactor:
+** TODO [#C] latex-config WIP state                               :refactor:
 The =init.el= require for =latex-config= carried a bare "WIP need to fix" comment with no detail on what was broken. Retired that comment while classifying foundation modules; the underlying state still needs investigation. Read =modules/latex-config.el=, determine what's incomplete, and either finish it or scope a real task.
 
 ** TODO [#C] Decide prog-shell config home :refactor:
 The =init.el= require for =prog-shell= carried a "combine elsewhere" comment. Retired it during module classification. Decide whether shell-script editing config should fold into =prog-general= or stay its own module, then act or close.
 
-** TODO [#C] Make elfeed-config tests byte-compile-safe :test:
-The =cj/elfeed-process-entries= tests in =tests/test-elfeed-config-helpers.el= only pass when =elfeed-config= loads as interpreted source. The byte-compiled function inlines the =elfeed-entry-link= struct accessor, so the function stubs are bypassed and the inlined accessor type-checks a real =elfeed-entry=. The batch test environment has no elfeed package, so the tests can't build real structs either. Rewrite the tests (define a stand-in =elfeed-entry= cl-struct, or make elfeed loadable in batch) so they survive byte-compilation. This blocks annotating elfeed-config with its load-graph header (the last unclassified init module).
+#+begin_src cj: comment
+I believe it should stay where it is. Delete this task. 
+#+end_src
 
 ** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
 :PROPERTIES:
@@ -594,7 +601,7 @@ Per-language test discovery:
 **Ordering:**
 Do this after the coverage-config work ships. No churn mid-flight.
 
-** TODO [#B] Fix up test runner
+** TODO [#B] Fix up test runner                                        :bug:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
@@ -3612,10 +3619,6 @@ First pass can skip or mark as unsupported:
 
 Spec: [[file:docs/design/company-to-corfu-migration.org][docs/design/company-to-corfu-migration.org]]
 
-#+begin_src cj: comment
-review the spec and add all the tasks to implement the spec at this level. 
-#+end_src
-
 *** TODO [#C] Install corfu-side packages
 Add corfu, cape, kind-icon, corfu-prescient to the package list. corfu-popupinfo ships inside corfu. Spec step 1.
 
@@ -3642,7 +3645,6 @@ After the rewrite is green: package-delete company, -quickhelp, -box, -prescient
 
 *** TODO [#C] Tests: corfu activation, mail-disable, capf registration
 New tests/test-selection-framework-corfu.el and tests/test-mail-config-corfu-disable.el; update ledger/latex tests to assert their capf registers. Spec Testing section.
-
 
 *** 2026-05-16 Sat @ 11:07:24 -0500 Goals
 Drop-in replacement for the in-buffer completion stack: =company= →
@@ -6496,3 +6498,26 @@ CLOSED: [2026-05-22 Fri]
 The navigator icons and the "Projects", "Bookmarks", and "Recent Files" section titles render in the default face. They should pick up colors from the Dupre color theme instead.
 
 Surfaced 2026-05-21. Fixed: set dashboard-items-face to steel+2 so the navigator (icons + labels) and the list items pick up a theme color; section titles stay blue via dashboard-heading. Root cause found while debugging: the navigator is rendered with a dashboard-items-face OVERLAY (overlays beat text properties), so the per-button dashboard-navigator face is inert — the nav and the items are painted by the same face, dashboard-items-face. Separating their colors would require overriding that overlay; tracked as a follow-up.
+** DONE [#B] ai-vterm popup adds a third split instead of taking a half :bug:next:
+CLOSED: [2026-05-25 Mon]
+F9 raises ai-vterm in a new split rather than reusing the existing window layout. With the frame already split vertically (two side-by-side windows), F9 produces three columns with ai-vterm wedged in the center; expected: ai-vterm occupies the right half. Same failure horizontally — when the frame is split top/bottom and ai-vterm rises from the bottom, it should take the bottom half instead of adding a third row.
+
+Repro: split the frame in two (vertically or horizontally), press F9.
+Likely area: ai-vterm's display/window-placement rule splits the selected window unconditionally instead of reusing the target half (display-buffer-alist / side-window config).
+** DONE [#B] projectile open todo in other window                 :bug:next:
+CLOSED: [2026-05-25 Mon]
+Opening the project todo via C-c C-p t should always open in the other window if the window is split.
+** DONE [#C] Make elfeed-config tests byte-compile-safe               :test:
+CLOSED: [2026-05-25 Mon]
+The =cj/elfeed-process-entries= tests in =tests/test-elfeed-config-helpers.el= only pass when =elfeed-config= loads as interpreted source. The byte-compiled function inlines the =elfeed-entry-link= struct accessor, so the function stubs are bypassed and the inlined accessor type-checks a real =elfeed-entry=. The batch test environment has no elfeed package, so the tests can't build real structs either. Rewrite the tests (define a stand-in =elfeed-entry= cl-struct, or make elfeed loadable in batch) so they survive byte-compilation. This blocks annotating elfeed-config with its load-graph header (the last unclassified init module).
+
+** DONE [#C] Manually verify cj/org-finalize-task journal copy        :test:
+CLOSED: [2026-05-25 Mon 08:33]
+Confirm the live behavior the unit tests mock out. In a real Emacs (org-roam loaded), run =C-; O d= on a level-3 sub-task and on a level-2 task. Expect the sub-task to flip to a dated entry, the level-2 to keep its keyword and gain a date-only CLOSED line, and in both cases a copy to land in today's daily under "Completed Tasks".
+Triggered by: 2026-05-22 L56 finalize-task work.
+** DONE [#C] Org TODO-keyword colors not dupre-themed                  :bug:
+CLOSED: [2026-05-25 Mon]
+Fixed in 32cfe216: org-todo-keyword-faces and org-priority-faces now point at named dupre-org-* faces (closest palette color per keyword) with dimmed variants for unfocused windows. Root cause was that dupre defined its own faces only via custom-theme-set-faces, never defface, so they failed when applied directly; added a defface registration block for all dupre faces.
+The org TODO/DOING/DONE (and other keyword) colors don't match the dupre palette — they're showing default org colors rather than dupre tones. Likely needs changes in two places: the org keyword faces in the theme (=org-todo=, =org-done=, =org-headline-done=, and friends in =themes/dupre-faces.el=) and any =org-todo-keyword-faces= mapping set in the org config (=org-config.el= / =org-capture-config.el=), which may hardcode non-dupre colors. Reconcile both so keyword colors come from the palette.
+Triggered by: 2026-05-25 auto-dim theming work.
+
