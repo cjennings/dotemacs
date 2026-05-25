@@ -1324,17 +1324,15 @@ either =t= (all modules) or a list of module symbols.
 =(defgroup cj ...)= in early-init.el so the group exists for both,
 plus the package-priority constants below it.
 
-**** TODO [#B] Surface custom-file redirection so accidental Customize use isn't silent :safety:
+**** 2026-05-25 Mon @ 18:29:40 -0500 Made the Customize-save discard non-silent
 
-=modules/system-defaults.el:91-92= sends Customize UI writes to a
-temp file (=emacs-customizations-trashbin-...=) that is never read
-back.  This is intentional -- the convention is to manage config in
-Elisp -- but it silently discards user edits made through =M-x customize=.
-A user who occasionally clicks "Save for Future Sessions" in a
-Customize buffer loses those changes on Emacs exit.  Either surface a
-=display-warning= on first =custom-set-variables= attempt, or set
-=custom-file= to a versioned path under =data/= so the discard is at
-least durable for the session.
+Took the display-warning option. =cj/--warn-customize-discarded= advises
+=custom-save-all= (the chokepoint both =customize-save-variable= and the
+Customize "Save for Future Sessions" button funnel through) with a one-shot
+=:before= warning that explains the edit won't persist and points at the Elisp
+init files. The advice removes itself after firing, so it warns once per
+session, and the body never runs at load, so startup stays quiet. Kept the
+throwaway =custom-file= as-is. Test added in =tests/test-system-defaults.el=.
 
 **** 2026-05-16 Sat @ 02:34:22 -0500 Named the package archive priorities in early-init.el
 
@@ -1586,7 +1584,13 @@ version that renames or removes the internal accessor just leaves
 modeline render.  Added =ignore-errors= around the call too in case
 the internal accessor signals on unusual inputs.
 
-**** TODO [#C] Use theme-aware faces in =cj/display-available-fonts= :refactor:
+**** 2026-05-25 Mon @ 18:18:29 -0500 Theme-aware font label face in cj/display-available-fonts
+
+Replaced the hardcoded =((:foreground "Light Blue" :weight bold))= label
+face in =modules/font-config.el= with =(font-lock-keyword-face (:weight
+bold))= so the family header follows theme contrast instead of being
+unreadable on light themes. The Regular/Bold/Italic sample lines stay as-is
+(they render in each font family on purpose).
 
 =modules/font-config.el:266= hardcodes ="Light Blue"= and gray
 foreground for font labels.  Switching themes (especially light
@@ -1594,15 +1598,17 @@ themes) makes the labels nearly unreadable.  Replace the literal
 color with a face reference (=font-lock-keyword-face= or a face this
 config owns) so the labels follow theme contrast.
 
-**** TODO [#C] Handle TTY-first frame race in font setup :safety:
+**** 2026-05-25 Mon @ 18:18:29 -0500 Routed emoji fontset through per-frame hook in daemon mode
 
-=modules/font-config.el:168-176= checks =(env-gui-p)= once at module
-load.  In daemon mode, when the first =emacsclient -t= creates a TTY
-frame, the check returns nil and font setup never runs.  A
-later =emacsclient -c= creating a GUI frame inherits no font
-configuration.  Either move the GUI check inside
-=server-after-make-frame-hook= (per-frame), or invoke font setup
-unconditionally and let Emacs handle terminal frames gracefully.
+The emoji-fontset =(when (env-gui-p) (cond ...))= block in
+=modules/font-config.el= ran once at load. In daemon mode =env-gui-p= is
+nil at load (no GUI frame yet), so a later =emacsclient -c= frame inherited
+no emoji fontset. Wrapped it in =cj/setup-emoji-fontset= (idempotent, GUI-
+guarded) and, mirroring the fontaine pattern, added it to
+=server-after-make-frame-hook= in daemon mode / ran it directly otherwise.
+The all-the-icons install path already used the per-frame hook, so it was
+left alone. Manual daemon TTY-then-GUI test added under "Manual testing and
+validation" (batch can't drive it).
 
 **** 2026-05-25 Mon @ 18:05:56 -0500 Cached mousetrap keymaps per profile
 
@@ -1727,18 +1733,16 @@ Triggered by: 2026-05-23 org-confirm-babel-evaluate hardening.
 
 The command cut the subtree from the source before writing the new roam file, so any failure in demote/format/write/db-sync lost the subtree with no rollback. Reordered to write and verify the file on disk before =org-cut-subtree=, so a failed write aborts with the source intact. Added a no-clobber guard (refuse an existing target file) and a confirmation prompt for large subtrees (>= =cj/move-org-branch-confirm-lines=, 30) or buffers with unsaved changes. Decided: leave the source buffer modified and undoable rather than auto-saving, so the move stays reversible. New test drives the write-failure-preserves-source invariant via an unwritable roam dir. Commit =5c0fa15d=.
 
-**** TODO [#B] Make =org-webclipper.el= initialization less global-state-heavy :cleanup:refactor:
+**** 2026-05-25 Mon @ 18:29:40 -0500 Already done — clip URL/title scoped to dynamic bindings
 
-=org-webclipper.el= stores protocol URL/title in global variables, registers
-capture templates lazily, and clears those globals during template expansion.
-That is workable for one-at-a-time org-protocol calls, but brittle if a capture
-is interrupted or nested.
-
-Expected outcome:
-- Prefer passing URL/title through the capture plist or a lexical wrapper rather
-  than global temp vars where possible.
-- Ensure aborted captures clear temp state.
-- Keep the existing browser bookmarklet workflow unchanged.
+Found this already shipped in =6dfc41af= ("refactor(webclipper): scope clip
+URL/title to dynamic bindings", 2026-05-24). The temp vars =cj/--webclip-url= /
+=cj/--webclip-title= are now =let=-bound around the org-capture call instead of
+=setq='d and manually cleared, so they unwind on every exit path including a
+=C-g= abort — which covers the "aborted captures clear temp state" outcome more
+completely than a finalize hook would. The bookmarklet/org-protocol workflow is
+unchanged. =tests/test-org-webclipper-commands.el= already covers the
+leaves-no-stale-state and aborted-capture-clears-state cases. No new work needed.
 
 **** 2026-05-25 Mon @ 17:51:17 -0500 Guarded external-tool assumptions in Org export/publishing
 
@@ -2331,14 +2335,15 @@ move the server start into a separate =cj/markdown-preview-server-start=
 command so =markdown-preview= just opens the URL once the server is
 known to be running.
 
-**** TODO [#C] Externalize hardcoded SSH hostnames in =eshell-config= :cleanup:
+**** 2026-05-25 Mon @ 18:29:40 -0500 Moved eshell SSH hosts into a defcustom
 
-=modules/eshell-config.el:74-76= sets up =cj/eshell-aliases= with
-SSH aliases pointing at specific hostnames (=gosb=, =gowolf=).
-Those identifiers are personal; they should live in a per-machine
-config (a defcustom, an alist read from disk, or
-=host-environment.el='s machine-table) so the module itself is
-portable.
+Replaced the three inline =eshell/alias= SSH-jump lines with a
+=cj/eshell-ssh-hosts= defcustom (an alias→remote-path alist defaulting to the
+current gocj/gosb/gowolf entries) that a per-machine config can override or set
+to nil. The aliases are now built by iterating it via
+=cj/--eshell-define-ssh-aliases=; the pure =cj/--eshell-ssh-alias-commands=
+helper makes the construction testable without a live eshell. Tests added in
+=tests/test-eshell-config-ssh-aliases.el=.
 
 **** 2026-05-16 Sat @ 04:00:00 -0500 Fixed https→http in markdown-preview + extracted server start
 
@@ -3757,6 +3762,15 @@ Three small reveal.js improvements; collected into one task because each on its 
 ** TODO [#D] Evaluate and integrate Buttercup for behavior-driven integration tests :tests:
 
 Complex workflow testing capability.
+
+* Manual testing and validation
+*** Font setup reaches a GUI frame created after a TTY frame (daemon)
+What we're verifying: emoji glyphs + fonts apply in a GUI frame even when the first daemon frame was a TTY.
+- emacs --daemon
+- emacsclient -t   (TTY frame first)
+- emacsclient -c   (then a GUI frame)
+- in the GUI frame, open a buffer with an emoji and check it renders, and M-S-f / fonts look right
+Expected: emoji renders and fonts are applied in the GUI frame.
 
 * Emacs Resolved
 ** DONE [#B] Fix likely =elpa-mirror-location= path bug :bug:quick:
