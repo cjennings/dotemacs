@@ -170,6 +170,14 @@ window."
      dashboard-insert-items))
   :config
 
+  ;; == banner
+  ;; Set image props before `dashboard-setup-startup-hook' can build the
+  ;; dashboard buffer; otherwise the startup image descriptor may miss the
+  ;; transparency mask.
+  (setq dashboard-startup-banner (concat user-emacs-directory "assets/M-x_butterfly.png"))
+  (setq dashboard-image-extra-props '(:mask heuristic))
+  (setq dashboard-banner-logo-title "Emacs: The Editor That Saves Your Soul")
+
   ;; == general
   (dashboard-setup-startup-hook)                                      ;; run dashboard post emacs init
   (cj/make-buffer-undead "*dashboard*")                               ;; make this buffer unkillable
@@ -185,16 +193,14 @@ window."
   (setq recentf-exclude '("/emms/history"))                            ;; exclude EMMS history from recent files
   (setq dashboard-set-footer nil)                                     ;; don't show footer and quotes
 
-  ;; == banner
-  (setq dashboard-startup-banner (concat user-emacs-directory "assets/M-x_butterfly.png"))
-  (setq dashboard-banner-logo-title "Emacs: The Editor That Saves Your Soul")
-
   ;; == navigation
   (setq dashboard-set-navigator t)
   (setq dashboard-navigator-buttons (cj/dashboard--navigator-rows))
 
   ;; == content
   (setq dashboard-show-shortcuts nil) ;; don't show dashboard item abbreviations
+  (when (get-buffer "*dashboard*")
+    (dashboard-refresh-buffer))
   ) ;; end use-package dashboard
 
 ;; ------------------------ Dashboard Keybindings ------------------------------
