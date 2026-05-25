@@ -30,10 +30,9 @@ This inventory is independent from the helper inventory owned by
 - Batch 5 (Dev entry-points, diff, help, lint, VC, Layer 2): classified. 9 modules.
 - Batch 6 (Programming modules, Layer 2-4): classified. 10 modules.
 - Batch 7 (Org modules, Layer 3-4): classified. 13 modules.
-- Batch 8 (Domain / integration / optional modules, Layer 2-4): classified. 17 modules.
+- Batch 8 (Domain / integration / optional modules, Layer 2-4): classified. 18 modules.
 - Batch 9 (Remaining domain / integration / optional modules, Layer 2-4): classified. 19 modules.
-- 101 of 102 modules classified. Only elfeed-config remains, deferred on a test
-  fix (see Deferred classification).
+- 102 of 102 modules classified. Phase 1 classification complete.
 - No load-order changes have been made; =init.el= keeps its current eager order.
 
 * Legend
@@ -200,6 +199,7 @@ flyspell-and-abbrev is the one Core-UX member (text-mode hooks).
 | =chrono-tools= | 3 | D/P | eager | command | user-constants | package config | yes |
 | =dirvish-config= | 3 | D/P | eager | command | user-constants, system-utils, host-environment, system-lib, external-open-lib | 3 add-hook, package config | yes |
 | =dwim-shell-config= | 3 | D/P | eager | command | cl-lib | package config | yes |
+| =elfeed-config= | 4 | O/D/P | eager | command | user-constants, system-lib, media-utils | package config (elfeed bindings) | yes |
 | =erc-config= | 4 | O/D/P | eager | command | cl-lib, keybindings | ERC keymap under cj/custom-keymap | yes |
 | =eshell-config= | 3 | D/P | eager | command | system-utils | add-hook, advice-add, package config | yes |
 | =eww-config= | 3 | D/P | eager | command | cl-lib | package config | yes |
@@ -279,24 +279,10 @@ found and fixed; the =Phase 2 fix:= notes below describe the change applied.
 
 * Deferred classification
 
-- =elfeed-config= is read and understood (Layer 4, O/D/P, command-loaded; runtime
-  requires user-constants, system-lib, media-utils) but its header is not yet
-  annotated. Annotating triggers the PostToolUse byte-compile, and its tests
-  (=tests/test-elfeed-config-helpers.el=) only pass when elfeed-config loads as
-  interpreted source: the byte-compiled =cj/elfeed-process-entries= inlines the
-  =elfeed-entry-link= struct accessor, so the tests' function stubs are bypassed
-  and the inlined accessor type-checks a real =elfeed-entry=. The batch test
-  environment has no elfeed package on the load-path, so the tests cannot build
-  real structs either. Classifying elfeed-config needs that test rewritten first
-  (define a stand-in =elfeed-entry= struct, or make elfeed loadable in batch).
-  Tracked as a todo task.
+- None. =elfeed-config= was the last deferred module; its tests were rewritten
+  to build real =elfeed-entry= structs (so they survive byte-compilation) and it
+  is now classified in Batch 8.
 
 * Pending classification
 
-The remaining module (elfeed-config) is deferred on the test fix described above; everything else required by =init.el= is classified.
-Each batch reads these against their source and moves them into [[*Classified
-modules][Classified modules]] with a load-graph header. Suggested batch order
-follows the spec: text/editing command modules, then UI, then programming, then
-Org, then optional integrations.
-
-- [ ] elfeed-config
+- None. Every module required by =init.el= is classified (102 of 102).
