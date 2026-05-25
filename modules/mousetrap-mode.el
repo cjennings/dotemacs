@@ -92,6 +92,27 @@ When checking, the mode hierarchy is respected via `derived-mode-p'.")
 
 ;;; Keymap Builder
 
+(defvar mouse-trap--keymap-cache nil
+  "Cache of built keymaps, keyed by profile.
+
+An alist mapping `(profile-name . allowed-categories)' keys to the
+keymap object `mouse-trap--build-keymap' produced for that profile.
+Repeated major-mode switches reuse a cached keymap instead of
+rebuilding it.  The key includes the allowed-categories list so that
+editing a profile's categories at runtime changes the key and forces a
+rebuild.  Sharing one keymap object across buffers with the same
+profile is safe: the map is a read-only \"bind disallowed events to
+`ignore'\" map that is never mutated after it is built.")
+
+(defun mouse-trap--clear-keymap-cache ()
+  "Clear the cached profile keymaps.
+
+Call this after editing `mouse-trap-profiles' or
+`mouse-trap--event-categories' if you want the next keymap build to
+start fresh rather than reuse a previously cached map."
+  (interactive)
+  (setq mouse-trap--keymap-cache nil))
+
 (defun mouse-trap--get-profile-for-mode ()
   "Return the profile for the current major mode.
 
@@ -116,8 +137,17 @@ NOT allowed by the current profile.  This function is called each time
 the mode is toggled, allowing dynamic behavior without reloading config."
   (let* ((profile-name (mouse-trap--get-profile-for-mode))
          (allowed-categories (alist-get profile-name mouse-trap-profiles))
-         (prefixes '("" "C-" "M-" "S-" "C-M-" "C-S-" "M-S-" "C-M-S-"))
-         (map (make-sparse-keymap)))
+         (cache-key (cons profile-name allowed-categories))
+         (cached (cdr (assoc cache-key mouse-trap--keymap-cache))))
+    (or cached
+        (let ((map (mouse-trap--build-keymap-1 allowed-categories)))
+          (push (cons cache-key map) mouse-trap--keymap-cache)
+          map))))
+
+(defun mouse-trap--build-keymap-1 (allowed-categories)
+  "Build a fresh keymap binding events not in ALLOWED-CATEGORIES to `ignore'."
+  (let ((prefixes '("" "C-" "M-" "S-" "C-M-" "C-S-" "M-S-" "C-M-S-"))
+        (map (make-sparse-keymap)))
 
     ;; For each event category, disable it if not in allowed list
     (dolist (category-entry mouse-trap--event-categories)
