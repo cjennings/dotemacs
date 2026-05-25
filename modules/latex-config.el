@@ -44,15 +44,18 @@
 (declare-function pdf-view-mode "pdf-view")
 
 (defun cj/--latex-select-pdf-viewer ()
-  "Push the first available external PDF viewer onto `TeX-view-program-selection'.
-Falls back to PDF Tools when no external viewer is on PATH.  The new
-selection is consed onto the head of the alist so it wins over any
-default.  Idempotent: re-running picks the same viewer."
+  "Select the first available external PDF viewer for `output-pdf'.
+Falls back to PDF Tools when no external viewer is on PATH.  Any existing
+`output-pdf' entry is dropped first, then the chosen viewer is consed onto
+the head so it wins over any default.  Idempotent: re-running leaves a
+single entry."
   (let* ((found (cl-find-if (lambda (entry)
                               (executable-find (car entry)))
                             cj/--latex-pdf-viewer-candidates))
          (viewer-name (if found (cdr found) "PDF Tools")))
-    (push (list 'output-pdf viewer-name) TeX-view-program-selection)))
+    (setq TeX-view-program-selection
+          (cons (list 'output-pdf viewer-name)
+                (assq-delete-all 'output-pdf TeX-view-program-selection)))))
 
 ;; ----------------------------- Auctex And Related ----------------------------
 
