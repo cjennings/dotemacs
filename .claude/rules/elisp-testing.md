@@ -99,6 +99,50 @@ make test-name TEST=pattern             # Match by test name pattern
 
 A PostToolUse hook runs matching tests automatically after edits to a module, when the match count is small enough to be fast.
 
+## Batch-Mode Reproducibility
+
+Tests must pass under `emacs --batch` — the headless, scriptable path that CI and the `make` targets use. `--batch` is the source of truth, not an interactive session.
+
+- Don't depend on interactive-session state: window configuration, frame parameters, `this-command`, minibuffer activity, or anything a running editor accumulates. A test that passes in a live Emacs but fails (or hangs) under `--batch` is broken.
+- Don't block on a prompt. `--batch` has no one to answer `y-or-n-p` or `read-string`, so an unmocked prompt either errors or stalls the run. Test the internal directly (see *Interactive vs Internal* above) or `cl-letf` the prompt.
+- Keep tests deterministic: no reliance on test execution order, wall-clock time (mock `current-time`), or environment that differs between the developer's machine and CI.
+
+## Isolating Emacs State
+
+A test must not read or mutate the developer's real Emacs config. Bind a throwaway environment so the run is hermetic regardless of who runs it.
+
+- Bind `user-emacs-directory` (and, when relevant, `user-init-file`) to a temp directory so package state, `custom-file` writes, caches, and auto-save files land in the sandbox rather than the developer's `~/.emacs.d`.
+- Control `load-path` explicitly. Add only the project's own directories; don't lean on whatever happens to be installed in the developer's session.
+- Depend only on the project's declared dependencies. A test that passes because some unrelated package is installed on this machine will fail on a clean checkout or in CI.
+
+```elisp
+(ert-deftest test-foo-writes-to-sandbox ()
+  "Normal: writes under an isolated user-emacs-directory."
+  (let* ((sandbox (make-temp-file "elisp-test-" t))
+         (user-emacs-directory (file-name-as-directory sandbox)))
+    (unwind-protect
+        (progn
+          (cj/--foo)
+          (should (file-exists-p (expand-file-name "foo.cache" user-emacs-directory))))
+      (delete-directory sandbox t))))
+```
+
+## Byte-Compile and Native-Comp Warnings
+
+A clean compile is part of green. Byte-compile warnings (free variables, wrong argument counts, unused lexical bindings, obsolete-function calls) flag real defects, so treat them as failures rather than noise.
+
+This can be enforced in the test run by binding `byte-compile-error-on-warn` to `t` and compiling the modules under test, optionally extending to native compilation where `native-comp-async-report-warnings-errors` is available.
+
+Keep the native-comp half conditional. Native compilation exists only on builds with the `native-compile` feature (Emacs 28+ compiled with it); older or non-native builds lack `native-comp-*` variables and `native-compile` entirely. Gate on the feature so the suite still runs everywhere:
+
+```elisp
+(when (and (fboundp 'native-comp-available-p) (native-comp-available-p))
+  ;; native-comp-specific checks here
+  )
+```
+
+Make the warnings-as-errors gate opt-in or version-aware rather than absolute — a warning that's clean on the project's pinned Emacs may differ across versions, and a hard failure on every build penalizes contributors on a different Emacs than the maintainer's.
+
 ## Anti-Patterns
 
 - Hardcoded timestamps — generate relative to `current-time` or mock

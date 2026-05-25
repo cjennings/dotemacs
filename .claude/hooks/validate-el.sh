@@ -41,16 +41,13 @@ MAX_AUTO_TEST_FILES=20  # skip if more matches than this (large test suites)
 case "$f" in
   */init.el|*/early-init.el)
     # Byte-compile here would load the full package graph. Parens only.
-    if ! output="$(emacs --batch --no-site-file --no-site-lisp \
-                     --eval '(setq load-prefer-newer t)' \
-                     "$f" \
+    if ! output="$(emacs --batch --no-site-file --no-site-lisp "$f" \
                      --eval '(check-parens)' 2>&1)"; then
       fail_json "PAREN CHECK FAILED" "$f" "$output"
     fi
     ;;
   *.el)
     if ! output="$(emacs --batch --no-site-file --no-site-lisp \
-                     --eval '(setq load-prefer-newer t)' \
                      -L "$PROJECT_ROOT" \
                      -L "$PROJECT_ROOT/modules" \
                      -L "$PROJECT_ROOT/tests" \
@@ -92,13 +89,12 @@ if [ "$count" -ge 1 ] && [ "$count" -le "$MAX_AUTO_TEST_FILES" ]; then
   load_args=()
   for t in "${tests[@]}"; do load_args+=("-l" "$t"); done
   if ! output="$(emacs --batch --no-site-file --no-site-lisp \
-                   --eval '(setq load-prefer-newer t)' \
                    -L "$PROJECT_ROOT" \
                    -L "$PROJECT_ROOT/modules" \
                    -L "$PROJECT_ROOT/tests" \
                    --eval '(package-initialize)' \
                    -l ert "${load_args[@]}" \
-                   --eval "(ert-run-tests-batch-and-exit '(not (or (tag :slow) (tag :perf))))" 2>&1)"; then
+                   --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" 2>&1)"; then
     fail_json "TESTS FAILED ($count test file(s))" "$f" "$output"
   fi
 fi

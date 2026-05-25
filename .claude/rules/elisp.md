@@ -72,4 +72,4 @@ Then `(require 'foo-config)` in `init.el` (or a config aggregator).
 
 - A PostToolUse hook runs `check-parens` and `byte-compile-file` on every `.el` save
 - If it blocks, read the error — don't retry blindly
-- Prefer Write over repeated Edits for nontrivial new code; incremental edits accumulate subtle paren mismatches
+- Edit cohesively, then verify parens/byte-compile right away. For nontrivial Elisp, land a function as one complete, coherent change rather than dribbling it in over many tiny partial edits — incremental fragments accumulate subtle paren mismatches. Run the paren-balance and byte-compile checks immediately after editing, whatever editing mechanism the environment uses.
