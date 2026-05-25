@@ -412,7 +412,7 @@ Do this incrementally. After each batch:
 - Run =make test= or at least targeted tests.
 - Check that keybindings still resolve and which-key labels still appear.
 
-**** TODO [#B] Centralize custom keymap registration :refactor:
+**** DOING [#B] Centralize custom keymap registration :refactor:
 
 Many modules mutate =cj/custom-keymap= or global keys at top level. This is a
 real architectural boundary because it forces load order and makes standalone
