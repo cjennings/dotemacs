@@ -1238,20 +1238,19 @@ Corrected =env-desktop-p='s docstring (it described a laptop; the function retur
 
 Left =cj/match-localtime-to-zoneinfo= caching alone — it was a "consider if this runs during startup" note, not an acceptance item, and it doesn't run at startup. File a separate task if it ever shows up in a profile.
 
-**** TODO [#B] Add minimal =system-defaults.el= setting smoke tests :tests:solo:
+**** 2026-05-25 Mon @ 16:59:37 -0500 Added system-defaults settings smoke tests
 
-=system-defaults.el= has no direct test file, despite holding high-impact
-defaults: server startup, backup behavior, custom-file behavior, symlink
-prompting, minibuffer GC hooks, backup directory, and mouse/key disabling.
-
-Keep this narrow; do not test Emacs itself. Good smoke assertions:
-- =vc-follow-symlinks= has the intended explicit value.
-- =custom-file= points at a temp file and is not loaded from the repo.
-- =backup-directory-alist= points inside =user-emacs-directory/backups=.
-- Minibuffer GC hooks are registered.
-
-This should be done after the =vc-follow-symlinks= fix so the test captures the
-correct behavior.
+Added =tests/test-system-defaults.el= with three settings assertions the
+existing files didn't cover: custom-file is redirected to a temp trashbin
+(not the repo), backups land under =user-emacs-directory/backups=, and the
+minibuffer GC hooks are wired onto the minibuffer hooks. The module's
+functions were already covered by =test-system-defaults-functions.el= and the
+=vc-follow-symlinks= default by its own file, so this stayed narrow to the
+settings gap. Extracted the shared sandbox loader into
+=tests/testutil-system-defaults.el= so both the new file and the
+vc-follow-symlinks test use one copy. The backups test clears
+=cj/backup-directory= first because it's a defvar that only recomputes when
+unbound.
 
 **** TODO [#B] Move package bootstrap policy out of =early-init.el= :startup:refactor:
 
