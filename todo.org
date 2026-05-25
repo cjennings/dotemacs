@@ -1527,19 +1527,28 @@ Completion review 2026-05-15:
 - Existing cleanup below covers the disabled =popper-config.el= load-graph
   issue; added a separate test-gap task for the remaining UI smoke coverage.
 
-**** TODO [#B] Add UI/navigation runtime smoke coverage :tests:solo:
+**** 2026-05-25 Mon @ 17:05:00 -0500 Added UI/navigation runtime smoke coverage
 
-Several UI modules are mostly top-level runtime configuration and currently
-have only partial helper coverage. The highest-value missing assertions are:
+Added =tests/test-font-config.el= (4 tests): cj/font-installed-p returns t/nil
+off find-font, and cj/apply-font-settings-to-frame is a no-op on a non-GUI
+frame and applies the preset exactly once per frame (idempotent). find-font,
+env-gui-p, and fontaine-set-preset are stubbed so the run stays headless, and
+a skip-unless on the demanded packages keeps a bare checkout green.
+font-config had zero direct coverage; this fills the gap the task named.
+
+modeline-config was already well covered (string-cut-middle, string-truncate-p,
+vc-cache, vc-cache-key, the flycheck segment, the recording indicator), so it
+needed no net-new smoke tests. popper-config's no-op smoke test is gated on the
+"Decide whether popper-config.el should exist while disabled" task and was
+deferred there, since whether to write it depends on that keep/remove call.
+
+Original scope:
 - =font-config.el=: font fallback/daemon frame setup does not error when
   optional fonts or emoji packages are absent.
 - =modeline-config.el=: runtime segment assembly handles missing VC/project
   data and does not signal in non-file buffers.
 - =popper-config.el=: if the module remains in =init.el= while disabled, a
   smoke test should prove requiring it is an intentional no-op.
-
-Keep these tests batch-safe by stubbing frame/font/package functions rather
-than depending on a graphical session.
 
 **** TODO [#B] Decide whether =popper-config.el= should exist while disabled :cleanup:
 
@@ -1550,7 +1559,10 @@ in the load graph.
 Expected outcome:
 - Either remove it from =init.el= until Popper is wanted, or re-enable and test
   the popup behavior.
-- If kept disabled, add a clear task/comment explaining why it remains.
+- If kept disabled, add a clear task/comment explaining why it remains, plus a
+  smoke test proving =(require 'popper-config)= is an intentional no-op (the
+  UI/navigation smoke-coverage task deferred this here since it hinges on this
+  decision).
 
 This is low priority, but it is a good example of load graph noise to clean up
 during the =init.el= deferral work.
