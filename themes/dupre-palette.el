@@ -11,8 +11,8 @@
 
 (defconst dupre-palette
   '(;;; Base colors
-    (bg          "#151311")
-    (bg+0        "#151311")
+    (bg          "#0d0b0a")
+    (bg+0        "#0d0b0a")
     (bg+1        "#252321")
     (bg+2        "#474544")
 
