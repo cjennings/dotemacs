@@ -1197,41 +1197,35 @@ Completion review 2026-05-15:
   concerns are already tracked by the utility-consolidation, keymap
   registration, debug-profiling, and eager-load-graph architecture tasks.
 
-**** PROJECT [#B] Split path constants from filesystem initialization in =user-constants.el= :refactor:
+**** 2026-05-25 Mon @ 19:12:02 -0500 Split path constants from filesystem init in user-constants.el
 
-=user-constants.el= defines paths and immediately creates directories/files at
-module load time. That makes a simple =(require 'user-constants)= write to the
-filesystem, including org files and calendar placeholder files. This is useful
-for interactive startup but brittle for tests, batch tools, and future
-autoloading.
+=(require 'user-constants)= used to create ~8 directories and ~10 org/calendar
+files at load — the source of the stray =sync/org/= tree that appeared in the
+repo during test runs. Both load-time forms are gone now; the path defconsts
+stay pure, and init.el calls =cj/initialize-user-directories-and-files= on real
+startup (guarded by =(unless noninteractive)=) so a bare require is
+side-effect-free. Verified end-to-end: a require creates nothing, and the
+interactive guard creates the backbone dirs and files. Landed in two commits on
+the =refactor/user-constants-defer-fs-init= branch.
 
-***** TODO [#B] Extract pure path definitions from startup writes :refactor:
+***** 2026-05-25 Mon @ 19:12:02 -0500 Extracted pure path definitions from startup writes
 
-Expected outcome:
-- Loading path constants should not create files by default.
-- Put filesystem creation behind an explicit command/hook, e.g.
-  =cj/initialize-user-directories-and-files= called from startup/wrap-up, not
-  from the constant module's top level.
-- Keep startup behavior equivalent in normal interactive Emacs.
+Removed the top-level calendar =dolist= and the top-level initializer call, and
+folded gcal/pcal/dcal into =cj/initialize-user-directories-and-files=. init.el
+now calls it right after the require, guarded by =(unless noninteractive)=.
+Added =tests/test-user-constants.el= (loading creates nothing; the initializer
+creates the configured paths) and updated the module header — top-level side
+effects are now none and it's safe to load in tests.
 
-Pitfalls:
-- Some modules may assume =gcal-file=, =pcal-file=, =dcal-file=, agenda files,
-  or org inbox files already exist. Handle those call sites deliberately.
-- Calendar placeholder creation may belong in =calendar-sync= or
-  =org-agenda-config=, not in generic constants.
+***** 2026-05-25 Mon @ 19:12:02 -0500 Made initialization failures actionable
 
-***** TODO [#B] Make initialization failures actionable :refactor:
-
-=cj/verify-or-create-dir= and =cj/verify-or-create-file= currently catch errors
-and only =message= them. That can hide a broken environment until a later module
-fails less clearly.
-
-Expected outcome:
-- Decide which paths are required vs optional.
-- Required path failures should signal a clear =user-error= or startup warning
-  that is hard to miss.
-- Optional path failures should be logged but not block startup.
-- Add tests around success, optional failure, and required failure behavior.
+=cj/verify-or-create-dir=/=-file= took an optional =required= flag routed
+through =cj/--report-path-failure=: required failures raise a prominent
+=display-warning=, optional ones are logged. The initializer groups paths by
+that split — required: the sync/org/roam dirs and the gcal/pcal/dcal stubs;
+optional: the secondary dirs and content files. Chose a warning over a
+=user-error= so a directory hiccup surfaces loudly without aborting init. Added
+error-path tests for the optional-logs and required-warns behavior.
 
 **** 2026-05-23 Sat @ 03:33:30 -0500 Fixed env-desktop-p doc and normalized the X predicates
 Corrected =env-desktop-p='s docstring (it described a laptop; the function returns t for the desktop/no-battery case). Switched =env-x-p= from =(string= (window-system) "x")= to =(eq (window-system) 'x)= to match =env-x11-p='s style, and documented the difference: =env-x-p= is any X display incl. XWayland, =env-x11-p= is a real X11 session with no WAYLAND_DISPLAY. Behavior unchanged, existing display-predicate tests stay green. Fixed in 14ec32b2.
