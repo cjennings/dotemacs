@@ -77,5 +77,48 @@ The whole point of the split — a bare require must not touch the filesystem."
     (should (file-exists-p schedule-file))
     (should (file-exists-p inbox-file))))
 
+;;; verify-or-create failure reporting (required vs optional)
+
+;; A path under a nonexistent root makes file-directory-p / file-exists-p return
+;; nil naturally, so the only stub needed is make-directory failing — no need to
+;; redefine core predicates (which trips native-comp trampolines).
+
+(ert-deftest test-user-constants-verify-dir-optional-failure-logs ()
+  "Error: an optional directory failure is logged, never warned or signalled."
+  (test-user-constants--load)
+  (let ((warned nil) (messaged nil))
+    (cl-letf (((symbol-function 'make-directory) (lambda (&rest _) (error "boom")))
+              ((symbol-function 'display-warning) (lambda (&rest _) (setq warned t)))
+              ((symbol-function 'message) (lambda (&rest _) (setq messaged t))))
+      (cj/verify-or-create-dir "/nonexistent-uc-test/optional")
+      (should messaged)
+      (should-not warned))))
+
+(ert-deftest test-user-constants-verify-dir-required-failure-warns ()
+  "Error: a required directory failure raises a prominent user-constants warning."
+  (test-user-constants--load)
+  (let ((warn-args nil))
+    (cl-letf (((symbol-function 'make-directory) (lambda (&rest _) (error "boom")))
+              ((symbol-function 'display-warning)
+               (lambda (group _msg &optional level) (setq warn-args (list group level)))))
+      (cj/verify-or-create-dir "/nonexistent-uc-test/required" t)
+      (should (eq (nth 0 warn-args) 'user-constants))
+      (should (eq (nth 1 warn-args) :error)))))
+
+(ert-deftest test-user-constants-verify-file-required-failure-warns ()
+  "Error: a required file failure raises a prominent user-constants warning."
+  (test-user-constants--load)
+  (let ((dir (make-temp-file "uc-reqfile-" t))
+        (warn-args nil))
+    (unwind-protect
+        (cl-letf (((symbol-function 'write-region) (lambda (&rest _) (error "boom")))
+                  ((symbol-function 'display-warning)
+                   (lambda (group _msg &optional level) (setq warn-args (list group level)))))
+          ;; dir exists so the failure is the write, not the parent directory
+          (cj/verify-or-create-file (expand-file-name "required.org" dir) t)
+          (should (eq (nth 0 warn-args) 'user-constants))
+          (should (eq (nth 1 warn-args) :error)))
+      (delete-directory dir t))))
+
 (provide 'test-user-constants)
 ;;; test-user-constants.el ends here
