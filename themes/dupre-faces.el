@@ -197,10 +197,14 @@
      `(ediff-odd-diff-Ancestor ((t (:background ,bg+1))))
 
 ;;;;; Org-mode - Gold for level 1 only, blue for level 2, then neutrals
-     `(org-level-1 ((t (:inherit dupre-heading-1))))
-     `(org-level-2 ((t (:inherit dupre-heading-2))))
-     `(org-level-3 ((t (:inherit dupre-heading-3))))
-     `(org-level-4 ((t (:inherit dupre-heading-4))))
+     ;; Inherit the dupre-heading-* colour and height but force a normal
+     ;; weight: org headings read cleaner non-bold.  The override lives here
+     ;; rather than on dupre-heading-* so info, markdown, and shr headings
+     ;; (which also inherit those faces) keep their bold.
+     `(org-level-1 ((t (:inherit dupre-heading-1 :weight normal))))
+     `(org-level-2 ((t (:inherit dupre-heading-2 :weight normal))))
+     `(org-level-3 ((t (:inherit dupre-heading-3 :weight normal))))
+     `(org-level-4 ((t (:inherit dupre-heading-4 :weight normal))))
      `(org-level-5 ((t (:foreground ,gray+1))))
      `(org-level-6 ((t (:foreground ,gray+1))))
      `(org-level-7 ((t (:foreground ,gray))))
@@ -255,7 +259,7 @@
      `(org-block-begin-line ((t (:foreground ,gray :background ,bg :extend t))))
      `(org-block-end-line ((t (:foreground ,gray :background ,bg :extend t))))
      `(org-meta-line ((t (:foreground ,gray))))
-     `(org-document-title ((t (:foreground ,yellow :weight bold :height 1.4))))
+     `(org-document-title ((t (:foreground ,yellow :height 1.4))))
      `(org-document-info ((t (:foreground ,gray+1))))
      `(org-document-info-keyword ((t (:foreground ,gray))))
      `(org-tag ((t (:foreground ,gray))))
