@@ -124,6 +124,18 @@ Prompts user for the action when executing."
 (autoload 'mu4e "mu4e" "Launch mu4e email client." t)
 (keymap-global-set "C-c m" #'mu4e)
 
+;; mu4e's main view uses a display-buffer-full-frame action (see
+;; mu4e-display-buffer), which deletes the window split on launch.  Per that
+;; function's own docstring, the supported way to change it is
+;; display-buffer-alist.  Route the main buffer to the current window instead
+;; (reuse a window already showing it first), so launching mu4e in a split
+;; leaves the rest of the layout intact.  Registered eagerly rather than in
+;; mu4e's deferred :config so it applies on the first launch.
+(add-to-list 'display-buffer-alist
+             '("\\`\\*mu4e-main\\*\\'"
+               (display-buffer-reuse-window display-buffer-same-window)
+               (inhibit-same-window . nil)))
+
 (use-package mu4e
   :ensure nil  ;; mu4e gets installed by installing 'mu' via the system package manager
   :load-path "/usr/share/emacs/site-lisp/mu4e/"
