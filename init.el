@@ -21,6 +21,8 @@
 (require 'system-lib)            ;; low-level system utility functions
 (require 'config-utilities)      ;; enable for extra Emacs config debug helpers
 (require 'user-constants)        ;; paths for files referenced in this config
+(unless noninteractive
+  (cj/initialize-user-directories-and-files)) ;; create configured dirs/files on real startup
 (require 'host-environment)      ;; convenience functions re: host environment
 (require 'keyboard-compat)       ;; terminal/GUI keyboard compatibility
 (require 'system-defaults)       ;; native comp; log; unicode, backup, exec path
