@@ -5,15 +5,16 @@
 ;; Layer: 1 (Foundation).
 ;; Category: F.
 ;; Load shape: eager.
-;; Eager reason: defines the path constants referenced across the config and
-;;   creates the required directories/files before other modules load.
-;; Top-level side effects: file writes — creates configured directories and
-;;   stub files via `cj/initialize-user-directories-and-files' at load.
+;; Eager reason: defines the path constants referenced across the config; other
+;;   modules read them at their own load time.
+;; Top-level side effects: none — only path definitions. Filesystem creation
+;;   lives in `cj/initialize-user-directories-and-files', which init.el calls on
+;;   real startup (not at module load), so a bare require is side-effect-free.
 ;; Runtime requires: none.
-;; Direct test load: conditional (touches the filesystem on load).
+;; Direct test load: yes.
 ;;
 ;; This module defines important file and directory paths used throughout the
-;; Emacs configuration, and ensures they exist during startup.
+;; Emacs configuration, and provides a command to create them on startup.
 ;;
 ;; WHY THIS EXISTS:
 ;; 1. Centralizes all path definitions for easy reference and maintenance
@@ -22,7 +23,8 @@
 ;;
 ;; The module first defines constants and variables for directories and files,
 ;; then provides functions that verify their existence, creating them if needed.
-;; This happens automatically when the module loads.
+;; init.el calls `cj/initialize-user-directories-and-files' after requiring this
+;; module so the paths exist before the modules that depend on them load.
 ;;
 ;; The paths are designed with a hierarchical structure, allowing child paths
 ;; to reference their parents (e.g., roam-dir is inside org-dir) for better
@@ -170,12 +172,6 @@ Stored in .emacs.d/data/ so each machine syncs independently from Proton Calenda
   "The location of the org file containing DeepSat Calendar information.
 Stored in .emacs.d/data/ so each machine syncs independently from Google Calendar.")
 
-;; Ensure calendar data files exist so org-agenda-list doesn't hang
-;; prompting for missing files (calendar-sync populates them on first sync)
-(dolist (f (list gcal-file pcal-file dcal-file))
-  (unless (file-exists-p f)
-    (make-empty-file f t)))
-
 (defvar reference-file (expand-file-name "reference.org" org-dir)
   "The location of the org file containing reference information.")
 
@@ -241,7 +237,12 @@ and portable across different machines."
 									   video-recordings-dir
 									   audio-recordings-dir
 									   org-dir))
- (mapc 'cj/verify-or-create-file (list schedule-file
+  ;; gcal/pcal/dcal exist so org-agenda-list doesn't hang on missing files
+  ;; (calendar-sync populates them on first sync).
+  (mapc 'cj/verify-or-create-file (list gcal-file
+										pcal-file
+										dcal-file
+										schedule-file
                                         inbox-file
 										article-archive
 										reading-notes-file
@@ -249,8 +250,10 @@ and portable across different machines."
 										webclipped-file
                                         reference-file)))
 
-;; Initialize directories and files when this module is loaded
-(cj/initialize-user-directories-and-files)
+;; Creation is deferred to startup: init.el calls
+;; `cj/initialize-user-directories-and-files' after requiring this module, so a
+;; bare `(require 'user-constants)' (tests, byte-compile, batch) stays
+;; side-effect-free.
 
 (provide 'user-constants)
 ;;; user-constants.el ends here
