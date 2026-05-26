@@ -90,6 +90,55 @@
   (setq org-fontify-whole-heading-line t)                   ;; fontify the whole line for headings (for face-backgrounds)
   (add-hook 'org-mode-hook 'prettify-symbols-mode))
 
+;; ----------------------- Right-Aligned Org Tags ------------------------------
+;; org-tags-column only right-aligns tags to a fixed column by baking literal
+;; spaces into the file, so it can't track window width.  Instead, set the
+;; column to 0 (org keeps a single space, no padding) and stretch that space
+;; with a display property pinned to the window's right edge.  `:align-to' is
+;; resolved at redisplay, so the tags follow window width and splits live and
+;; nothing alignment-specific is written to disk.  Agenda has a native
+;; equivalent (`org-agenda-tags-column' 'auto').
+
+(setq org-tags-column 0)
+(setq org-agenda-tags-column 'auto)
+
+(defconst cj/org-tag-line-re
+  "^\\*+ .*?\\([ \t]\\)\\(:[[:alnum:]_@#%:]+:\\)[ \t]*$"
+  "Match an org headline ending in tags.
+Group 1 is the single gap character before the tags; group 2 is the tag
+string itself.")
+
+(defconst cj/org-tag-right-margin 1
+  "Columns of gap left between right-aligned tags and the window's right edge.
+At least 1: a glyph filling the final column makes a non-truncated line wrap,
+so the tags must stop short of the edge.")
+
+(defun cj/org--tag-align-spec (tag-string)
+  "Return a display spec that right-aligns TAG-STRING to the window edge.
+The spec stretches a space so the tag ends `cj/org-tag-right-margin' columns
+short of the window's right edge, leaving the tag flush right without wrapping
+the line."
+  `(space :align-to (- right ,(+ (string-width tag-string) cj/org-tag-right-margin))))
+
+(defconst cj/org-right-align-tags-keyword
+  `((,cj/org-tag-line-re
+     (1 (progn
+          (put-text-property
+           (match-beginning 1) (match-end 1)
+           'display (cj/org--tag-align-spec (match-string 2)))
+          nil)
+        t)))
+  "Font-lock keyword right-aligning org headline tags via a display property.
+The stretched space before the tag string is pinned to the window's right
+edge, less the tag width.")
+
+(defun cj/org--manage-tag-display-prop ()
+  "Let font-lock clear the right-align display property on refontify."
+  (add-to-list 'font-lock-extra-managed-props 'display))
+
+(add-hook 'org-mode-hook #'cj/org--manage-tag-display-prop)
+(font-lock-add-keywords 'org-mode cj/org-right-align-tags-keyword t)
+
 ;; ----------------------------- Org TODO Settings ---------------------------
 
 (defun cj/org-todo-settings ()
