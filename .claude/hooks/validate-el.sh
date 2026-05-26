@@ -51,6 +51,7 @@ case "$f" in
                      -L "$PROJECT_ROOT" \
                      -L "$PROJECT_ROOT/modules" \
                      -L "$PROJECT_ROOT/tests" \
+                     -L "$PROJECT_ROOT/themes" \
                      --eval '(package-initialize)' \
                      "$f" \
                      --eval '(check-parens)' \
@@ -92,6 +93,7 @@ if [ "$count" -ge 1 ] && [ "$count" -le "$MAX_AUTO_TEST_FILES" ]; then
                    -L "$PROJECT_ROOT" \
                    -L "$PROJECT_ROOT/modules" \
                    -L "$PROJECT_ROOT/tests" \
+                   -L "$PROJECT_ROOT/themes" \
                    --eval '(package-initialize)' \
                    -l ert "${load_args[@]}" \
                    --eval "(ert-run-tests-batch-and-exit '(not (tag :slow)))" 2>&1)"; then
