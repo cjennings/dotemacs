@@ -1,0 +1,121 @@
+#+title: Emacs Terminal Comparison: vterm, eat, ghostel
+#+date: 2026-05-25
+
+* Short version
+
+Keep =vterm= as the dependable default. Add =eat= because it is the most Emacs-native option and has the strongest Eshell/line-editing story. Try =ghostel= specifically for Claude Code and other modern TUIs, where faithful rendering matters.
+
+Recommended split:
+
+- =vterm=: general terminal buffers, heavy output, SSH, boring reliability.
+- =eat=: Eshell-adjacent workflows, lighter shells, Emacs-style line editing.
+- =ghostel=: Claude Code, rich TUIs, and experiments where Ghostty-style rendering may matter.
+
+I would not replace =vterm= globally yet. I would install the other two alongside it and route specific workflows to each.
+
+* Comparison table
+
+| Package | Implementation | Maintenance risk | Bug risk | User confidence | Best role |
+|---------+----------------+------------------+----------+-----------------+-----------|
+| =vterm= | Native C module using =libvterm= | Low | Medium | High | Stable default terminal |
+| =eat= | Pure Emacs Lisp | Medium | Medium-high | Mixed but enthusiastic | Emacs-native/Eshell workflows |
+| =ghostel= | Native module using Ghostty's VT engine | Medium-high | Unknown-medium | Early but excited | Claude Code / modern TUI experiment |
+
+* vterm
+
+=vterm= is still the conservative baseline for a real terminal inside Emacs. It has the largest visible footprint and the most battle testing. The README describes it as a full terminal emulator based on =libvterm= and says compiled code lets it handle large output well.
+
+The tradeoff is that it is terminal-first, not Emacs-first. The README explicitly says it is less integrated with Emacs than Eshell, and that some familiar editing keybindings may not work because keys are sent directly to the shell. It has =vterm-copy-mode= for using the buffer like a normal read-only Emacs buffer, but live interaction remains closer to an embedded external terminal.
+
+Maintenance and risk notes:
+
+- Visible GitHub footprint when checked: about 2k stars, 168 forks, 721 commits, 197 open issues, 25 PRs.
+- README says it is stable enough as a daily driver, but still alpha.
+- Native-module bugs can crash Emacs, so the risk is lower frequency but higher impact.
+- It is the strongest bet for heavy output and broad terminal compatibility.
+
+Links:
+
+- Repository: https://github.com/akermu/emacs-libvterm
+- README section describing performance/compatibility and caveats: https://github.com/akermu/emacs-libvterm
+
+* eat
+
+=eat= is the most interesting if the goal is "terminal, but more like Emacs." It is pure Elisp, available from NonGNU ELPA, and supports semi-char, char, Emacs, and line modes. Semi-char mode keeps many Emacs keys available while sending most normal input to the terminal.
+
+The Eshell story is the main reason to try it. =eat-eshell-mode= lets full-screen terminal programs run directly inside Eshell, and =eat-eshell-visual-command-mode= can run visual commands through Eat instead of Term. With shell integration, Eat can support prompt navigation and line-mode history integration.
+
+Maintenance and risk notes:
+
+- NonGNU ELPA stable has =eat= 0.9.4 from 2024-03-31.
+- NonGNU-devel showed a 2025-02-06 build when checked.
+- It has a real manual and package-archive presence, which are good signs.
+- Community sentiment is mixed: some users strongly like the Emacs-native workflow; others report freezes or terminal-compliance problems under heavy output.
+- Because it is pure Elisp, it should not crash Emacs through native-module faults, but heavy output can still freeze or stress Emacs.
+
+Links:
+
+- NonGNU ELPA package page: https://elpa.nongnu.org/nongnu/eat.html
+- NonGNU-devel package page: https://elpa.nongnu.org/nongnu-devel/eat.html
+- Manual: https://elpa.nongnu.org/nongnu/doc/eat.html
+- Project repository: https://codeberg.org/akib/emacs-eat
+- EmacsConf 2023 talk: https://emacsconf.org/2023/talks/eat/
+- Community discussion with mixed reports: https://www.reddit.com/r/emacs/comments/1hmtlue/vterm_vs_eat/
+
+* ghostel
+
+=ghostel= is the newer challenger to =vterm=. It uses =libghostty-vt=, the VT engine behind Ghostty, through a native Emacs module. Its README says the native module handles terminal state/rendering while Elisp manages the shell process, keymap, and buffer.
+
+It also adopts Eat-style modes: semi-char, char, Emacs, copy, and line. This gives it a potentially strong combination: a modern native terminal engine plus more Emacs-friendly interaction modes. Its README also describes automatic shell integration for bash, zsh, and fish, plus prompt navigation, copy mode, line mode, and prebuilt native modules for common platforms.
+
+Maintenance and risk notes:
+
+- Visible GitHub footprint when checked: about 342 stars, 29 forks, 454 commits, 4 open issues, 4 PRs.
+- Good early velocity and a serious design.
+- Smaller user base than =vterm=.
+- Native module still means possible Emacs crash risk.
+- Because it is new, expect faster changes and occasional sharp edges.
+- Especially worth testing for Claude Code because =claude-code.el= says =ghostel= typically renders the Claude TUI most faithfully.
+
+Links:
+
+- Repository: https://github.com/dakra/ghostel
+- README requirements/installation/input modes: https://github.com/dakra/ghostel
+- Announcement/community thread: https://www.reddit.com/r/emacs/comments/1sc4n6k/ghostel_terminal_emulator_powered_by_libghostty/
+
+* Claude Code angle
+
+For =claude-code.el= specifically, the README says it supports:
+
+- =eat= as the default backend.
+- =vterm= as generally snappier than =eat=.
+- =ghostel= as typically faster than =vterm= and the most faithful renderer for the Claude TUI.
+
+That makes =ghostel= the first backend I would test for Claude Code. If it misbehaves, fall back to =vterm=. If you want the fewest moving parts, use =eat=.
+
+Links:
+
+- =claude-code.el=: https://github.com/stevemolitor/claude-code.el
+- =claude-code-ide.el=: https://github.com/manzaltu/claude-code-ide.el
+
+* Practical evaluation plan
+
+Install =eat= and =ghostel= without removing =vterm=. Then test the same workloads in all three:
+
+- Claude Code TUI.
+- =lazygit= or another complex TUI.
+- =htop= or =btop=.
+- =yazi= if you use it.
+- A long build/test command with heavy output.
+- SSH to a remote host.
+- Eshell with =eat-eshell-mode=.
+
+Decision rule:
+
+- If =eat= feels good in Eshell and normal shell work, use it for Emacs-native shells.
+- If =ghostel= renders Claude Code better and stays stable, use it as the Claude Code backend.
+- If either behaves oddly under load, keep =vterm= for that workflow.
+
+* Bottom line
+
+=vterm= remains the safe default. =eat= is the one to try because it expands what an Emacs terminal can feel like. =ghostel= is the one to watch because it may become the best terminal-backed TUI experience inside Emacs, especially for Claude Code.
