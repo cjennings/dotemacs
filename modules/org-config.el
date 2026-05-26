@@ -108,10 +108,12 @@
 Group 1 is the single gap character before the tags; group 2 is the tag
 string itself.")
 
-(defconst cj/org-tag-right-margin 1
+(defconst cj/org-tag-right-margin 5
   "Columns of gap left between right-aligned tags and the window's right edge.
-At least 1: a glyph filling the final column makes a non-truncated line wrap,
-so the tags must stop short of the edge.")
+At least 1 keeps a glyph out of the final column, which would wrap a
+non-truncated line.  The extra columns leave room for the folded-heading
+ellipsis (`org-ellipsis', \" ▾\") that org appends after the tags, so it
+stays on the heading line instead of wrapping onto its own line.")
 
 (defun cj/org--tag-align-spec (tag-string)
   "Return a display spec that right-aligns TAG-STRING to the window edge.
