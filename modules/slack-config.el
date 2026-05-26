@@ -102,6 +102,20 @@
   (slack-ws-close)
   (message "Slack disconnected."))
 
+(defun cj/slack--display-buffer (buffer)
+  "Display Slack BUFFER in another window, never the selected one.
+With a split, reuse one of the other windows rather than taking over the
+window point is in or always spawning a fresh split; with a lone window,
+split.  Wired as `slack-buffer-function' so opening a room or thread lands
+beside the current work instead of clobbering it.  The default
+`switch-to-buffer-other-window' picks a least-recently-used window with three
+or more panes; this pins the choice to any non-selected window."
+  (pop-to-buffer buffer
+                 '((display-buffer-reuse-window
+                    display-buffer-use-some-window
+                    display-buffer-pop-up-window)
+                   (inhibit-same-window . t))))
+
 (use-package slack
   :defer t
   :commands (slack-start slack-select-rooms slack-select-unread-rooms
@@ -114,6 +128,9 @@
   ;; Re-enable if emojify/circe fix the interaction. (2026-03-16)
   (slack-buffer-emojify nil)
   (slack-prefer-current-team t)
+  ;; Open rooms/threads in another window, never the selected one (see
+  ;; cj/slack--display-buffer) so Slack lands beside the current work in a split.
+  (slack-buffer-function #'cj/slack--display-buffer)
   :config
   (setq slack-message-custom-notifier #'cj/slack-notify))
 
