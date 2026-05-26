@@ -132,5 +132,31 @@
                    '((term 25 97)
                      (term 24 97))))))
 
+(ert-deftest test-auto-dim-config-never-dim-dashboard-exempts-dashboard ()
+  "Normal: the *dashboard* buffer is exempt from dimming."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (let* ((existed (get-buffer "*dashboard*"))
+         (buffer (or existed (get-buffer-create "*dashboard*"))))
+    (unwind-protect
+        (should (cj/auto-dim--never-dim-dashboard-p buffer))
+      (unless existed (kill-buffer buffer)))))
+
+(ert-deftest test-auto-dim-config-never-dim-dashboard-near-miss-name-dims ()
+  "Boundary: a buffer whose name only resembles the dashboard is not exempt."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (let ((buffer (get-buffer-create "dashboard")))
+    (unwind-protect
+        (should-not (cj/auto-dim--never-dim-dashboard-p buffer))
+      (kill-buffer buffer))))
+
+(ert-deftest test-auto-dim-config-never-dim-dashboard-other-buffer-dims ()
+  "Error: an ordinary buffer is not exempt from dimming."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (with-temp-buffer
+    (should-not (cj/auto-dim--never-dim-dashboard-p (current-buffer)))))
+
 (provide 'test-auto-dim-config)
 ;;; test-auto-dim-config.el ends here

@@ -171,11 +171,16 @@ window."
   :config
 
   ;; == banner
-  ;; Set image props before `dashboard-setup-startup-hook' can build the
-  ;; dashboard buffer; otherwise the startup image descriptor may miss the
-  ;; transparency mask.
+  ;; The banner is an RGBA PNG with real transparency.  On this non-pgtk build
+  ;; Emacs composites the alpha against one solid background color at render
+  ;; time and caches the flat pixmap -- it can't re-blend against a window
+  ;; background that changes later.  The dashboard is exempt from dimming (see
+  ;; the never-dim predicate in auto-dim-config.el), so its background stays at
+  ;; the theme color in every window.  That makes the constant face background
+  ;; the right thing to composite against -- no :mask and no forced :background
+  ;; needed; the native alpha over the theme background leaves the transparent
+  ;; edges seamless.
   (setq dashboard-startup-banner (concat user-emacs-directory "assets/M-x_butterfly.png"))
-  (setq dashboard-image-extra-props '(:mask heuristic))
   (setq dashboard-banner-logo-title "Emacs: The Editor That Saves Your Soul")
 
   ;; == general
