@@ -192,6 +192,19 @@ the fallback that makes vterm repaint after auto-dim changes window state."
   (setq cj/auto-dim--last-selected-window (selected-window))
   (cj/auto-dim--schedule-vterm-refresh))
 
+(defun cj/auto-dim--never-dim-dashboard-p (buffer)
+  "Return non-nil when BUFFER is the dashboard, so it stays lit.
+The dashboard banner is a transparent PNG.  On this non-pgtk build Emacs
+composites image alpha against one background color at render time and
+caches the flat pixmap; it can't re-blend when dimming remaps the
+background to the near-black `auto-dim-other-buffers' face, so the
+transparent edges show a baked-in rectangle in a dimmed dashboard.  Live
+alpha would need a pgtk build, ruled out by its fractional-scaling input
+lag.  Exempting just this one short-lived buffer keeps the fix local --
+every other approach changes dimming for all buffers.  The cost is no
+focus cue on a split-displayed dashboard, accepted as a fair trade."
+  (equal (buffer-name buffer) "*dashboard*"))
+
 (use-package auto-dim-other-buffers
   :load-path "~/code/auto-dim-other-buffers.el"
   :ensure nil
@@ -242,6 +255,8 @@ the fallback that makes vterm repaint after auto-dim changes window state."
 		  (dupre-org-priority-b             . (dupre-org-priority-b-dim    . nil))
 		  (dupre-org-priority-c             . (dupre-org-priority-c-dim    . nil))
 		  (dupre-org-priority-d             . (dupre-org-priority-d-dim    . nil))))
+  (add-hook 'auto-dim-other-buffers-never-dim-buffer-functions
+            #'cj/auto-dim--never-dim-dashboard-p)
   (auto-dim-other-buffers-mode 1))
 
 (with-eval-after-load 'vterm
