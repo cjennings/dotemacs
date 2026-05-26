@@ -9,7 +9,8 @@
 ;; Eager reason: generic programming defaults, projectile, and the tree-sitter /
 ;;   LSP policy shared across every language mode.
 ;; Top-level side effects: four add-hook, package configuration via use-package.
-;; Runtime requires: none (configures packages via use-package).
+;; Runtime requires: user-constants (code-dir, projects-dir, snippets-dir, used
+;;   in the projectile and yasnippet configs).
 ;; Direct test load: yes.
 ;;
 ;; This module provides general programming functionality not related to a
@@ -37,9 +38,7 @@
 
 ;;; Code:
 
-(eval-when-compile (defvar code-dir))
-(eval-when-compile (defvar projects-dir))
-(eval-when-compile (defvar snippets-dir))
+(require 'user-constants)  ;; code-dir, projects-dir, snippets-dir
 
 (defvar display-line-numbers-type)
 (defvar outline-minor-mode-map)
