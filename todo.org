@@ -41,7 +41,7 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** DOING [#B] Find / Implement a Signal Client :feature:
+** DOING [#B] Implement a Signal Client :feature:
 *** 2026-05-26 Tue @ 15:15:43 -0500 Candidate Signal clients / CLIs
 Signal has no official API, so everything below is unofficial and can break on Signal-Server changes (signal-cli notably expires after about three months without updates). All link as a secondary device to an existing phone, the safer model.
 
@@ -68,6 +68,32 @@ Researched whether Claude Code runs cleanly in eat (Craig runs it in his Emacs t
 Recommendation: consolidate everyday terminals onto eat, but keep ghostel (or vterm) for the Claude Code workflow specifically — the scroll-pop / stuck-input bug and the slower heavy-stream handling are exactly what bites a long Claude session. Sources: [[https://github.com/cpoile/claudemacs][claudemacs]], [[https://github.com/stevemolitor/claude-code.el][claude-code.el]], [[https://codeberg.org/akib/emacs-eat][emacs-eat]].
 
 Eval plan (from the research doc): install EAT alongside vterm, run the same workloads through both, decide. Test matrix: Claude Code TUI, lazygit, htop/btop, yazi, a heavy-output build, ssh to a remote, and eshell with =eat-eshell-mode=. Assess rendering fidelity, stability under heavy output, and Emacs-native line editing. Switch only if it covers every workflow without regression.
+
+** DONE [#B] Restore the daily-prep keybinding under Projectile :feature:keybinding:
+CLOSED: [2026-05-26 Tue]
+Shipped in commit 8e5efcab and verified live: =C-c p d= opens =inbox/today-prep.org= in the other window, project-scoped; deadgrep-in-dir moved to =C-c p G=, plain deadgrep dropped, deadgrep-here stays on =C-c p g=. Settled questions: lowercase d, per-project, other window via =find-file-other-window=. Tests in =tests/test-prog-general-open-project-daily-prep.el=.
+=C-c p d= should open the project's daily prep (=<project-root>/inbox/today-prep.org=, a stable symlink) and no longer works. Keep it project-scoped under Projectile on purpose: the daily prep only exists in the work project, so a project-scoped opener in =projectile-command-map= is the right home, mirroring =cj/open-project-root-todo= (=C-c p t=). Filed from the work-project session 2026-05-26 — it's an Emacs-config change, so it lives here.
+
+Root cause: there is no daily-prep binding or opener anywhere in the config (checked the modules and the running daemon — no "prep" function). It was almost certainly eval'd live into the daemon in a past session and never written to a module, so it vanished on restart. The fix must be persisted to a module, not just eval'd live. =C-c p d= currently resolves to =cj/deadgrep-in-dir=, so the =d= slot is taken.
+
+Approach: mirror =cj/open-project-root-todo= at =modules/prog-general.el:175= and its =:bind (:map projectile-command-map ...)= block (lines 153-155). The prep file is in a subdir (=inbox/today-prep.org=), not the project root, so target the subdir path directly rather than =cj/find-project-root-file= (which only scans the root):
+
+#+begin_src emacs-lisp
+(defun cj/open-project-daily-prep ()
+  "Open inbox/today-prep.org in the current Projectile project root."
+  (interactive)
+  (if-let ((root (projectile-project-root)))
+      (let ((file (expand-file-name "inbox/today-prep.org" root)))
+        (if (file-exists-p file)
+            (cj/--find-file-respecting-split file)
+          (message "No inbox/today-prep.org in project: %s" root)))
+    (message "Not in a Projectile project")))
+#+end_src
+
+Open questions to settle when we tackle it:
+- Which key? =d= is taken (=cj/deadgrep-in-dir=). Free lowercase in =projectile-command-map=: =h=, =n=, =w=, =y= (none a strong "daily prep" mnemonic). Or override =d=, or add a sub-prefix.
+- Behavior outside the work project? Resolving relative to =projectile-project-root= makes it per-project; only work has a prep doc, so elsewhere it hits the "No prep" message. Acceptable, hard-scope to work, or offer to create one?
+- Same window or other window? Mirror =cj/open-project-root-todo='s =cj/--find-file-respecting-split=, or plain =find-file=?
 
 ** PROJECT [#B] Implement ai-kb :feature:ai:kb:
 Build v1 of the AI knowledge base per [[file:docs/design/ai-kb.org][docs/design/ai-kb.org]] (Ready; six reviews incorporated, all decisions resolved 2026-05-24). Step 1 splits into 1a (the safe write path — minimum usable) and 1b (retrieval, maintenance, push), since =remember= depends on =index=+=lint= and the adapter depends on =remember=. Step 2 is the Emacs layer: a full org-roam profile on switch, the human-edit safety model (same write path as the agent), and the browsing surface. Step 3 and the LLM-Wiki layer are vNext. Children are ordered by build sequence; the server bootstrap is the prerequisite.
@@ -1520,22 +1546,8 @@ Original scope:
 - =popper-config.el=: if the module remains in =init.el= while disabled, a
   smoke test should prove requiring it is an intentional no-op.
 
-**** TODO [#B] Remove =popper-config.el= (disabled no-op) :cleanup:quick:solo:
-
-=popper-config.el= is required by =init.el=, but the only =use-package popper=
-form is =:disabled t=. That makes the module a no-op while still participating
-in the load graph.
-
-Expected outcome:
-- Either remove it from =init.el= until Popper is wanted, or re-enable and test
-  the popup behavior.
-- If kept disabled, add a clear task/comment explaining why it remains, plus a
-  smoke test proving =(require 'popper-config)= is an intentional no-op (the
-  UI/navigation smoke-coverage task deferred this here since it hinges on this
-  decision).
-
-This is low priority, but it is a good example of load graph noise to clean up
-during the =init.el= deferral work.
+**** 2026-05-26 Tue @ 17:33:28 -0500 Removed popper-config.el (disabled no-op)
+Deleted =modules/popper-config.el= and its =(require 'popper-config)= in =init.el= (commit 1cca84c5). It was =use-package :disabled t=, so use-package elided the whole form and it ran nothing while still sitting in the load graph. No test existed and none was needed. validate-modules passes and init loads clean. The config stays in git history if popper is ever wanted.
 
 ***** 2026-05-26 Tue @ 15:15:43 -0500 Decided: remove popper-config.el
 Craig's call: remove it (quick, solo). It has been a disabled no-op in the load graph. Remaining action: drop =(require 'popper-config)= from =init.el= and delete =modules/popper-config.el= (and any test), then close this task.
