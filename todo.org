@@ -41,7 +41,35 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** PROJECT [#B] Implement ai-kb                              :feature:ai:kb:
+** DOING [#B] Find / Implement a Signal Client :feature:
+*** 2026-05-26 Tue @ 15:15:43 -0500 Candidate Signal clients / CLIs
+Signal has no official API, so everything below is unofficial and can break on Signal-Server changes (signal-cli notably expires after about three months without updates). All link as a secondary device to an existing phone, the safer model.
+
+- [[https://github.com/AsamK/signal-cli][signal-cli]] — CLI/daemon, the foundation. JSON-RPC over socket/TCP/HTTP, or D-Bus; easy to drive from elisp. Mature, actively maintained, headless-first. The engine to build on.
+- [[https://github.com/keenban/signel][signel]] — Emacs package. Drives signal-cli and parses its JSON; gives a conversation dashboard plus chat and send/receive. The only Emacs-native package doing the full loop. Lightly maintained.
+- [[https://github.com/bbernhard/signal-cli-rest-api][signal-cli-rest-api]] — REST/WebSocket wrapper around signal-cli (Docker). Clean HTTP surface, but adds a Docker dependency.
+- [[https://github.com/mrkrd/signal-msg][signal-msg]] — Emacs package, send-only via signal-cli. Trivial but no receive.
+- [[https://github.com/whisperfish/presage][presage]] — Rust library, not turnkey; too much glue for this.
+- [[https://github.com/foxl-ai/signal-cli][foxl-ai/signal-cli]] — newer Rust CLI on libsignal plus an MCP server; promising but v0.1.1 (March 2026) and unproven.
+
+Recommendation: evaluate signal-cli as the engine (mature, headless, scriptable from elisp) with signel as the ready-made Emacs front end on top of it.
+** DOING [#B] Consolidate to EAT as the single terminal :terminal:eval:
+Evaluate whether EAT can be the one terminal for all usage and, if it holds up, switch to it from vterm. Reference: [[file:docs/2026-05-25-emacs-terminal-comparison.org][docs/2026-05-25-emacs-terminal-comparison.org]] (vterm vs eat vs ghostel research).
+
+Goal: a single terminal engine across every workflow, including covering what eshell is used for today.
+
+Open question to settle first: eshell is a shell, EAT is a terminal emulator, so EAT can't literally replace eshell. EAT's eshell story is =eat-eshell-mode=, which makes eshell use EAT for terminal display (full-screen programs run inside eshell). So "use EAT for what eshell does" most likely means one terminal engine everywhere: EAT for standalone terminal buffers (replacing vterm) plus =eat-eshell-mode= as eshell's visual backend, keeping eshell as the shell. Confirm that reading versus dropping eshell entirely for EAT + zsh.
+
+*** 2026-05-26 Tue @ 15:15:43 -0500 Direction confirmed; Claude Code in eat needs a caveat
+Craig confirmed the consolidation: one terminal engine everywhere — eat for standalone terminal buffers (replacing vterm) plus =eat-eshell-mode= as eshell's visual backend, keeping eshell as the shell. Not dropping eshell for eat + zsh.
+
+Researched whether Claude Code runs cleanly in eat (Craig runs it in his Emacs terminal). Verdict: mostly, with caveats. eat is the default backend for claude-code.el and renders the TUI with color and full key handling, but there is an eat-specific bug where Claude Code's input handling makes the buffer scroll-pop to the top on window-buffer changes and the input box can get stuck mid-buffer (recoverable, but it does not happen in vterm or ghostel), and eat runs about 1.5x slower than vterm on heavy streaming output. claude-code.el's own docs name ghostel as the most faithful Claude TUI renderer.
+
+Recommendation: consolidate everyday terminals onto eat, but keep ghostel (or vterm) for the Claude Code workflow specifically — the scroll-pop / stuck-input bug and the slower heavy-stream handling are exactly what bites a long Claude session. Sources: [[https://github.com/cpoile/claudemacs][claudemacs]], [[https://github.com/stevemolitor/claude-code.el][claude-code.el]], [[https://codeberg.org/akib/emacs-eat][emacs-eat]].
+
+Eval plan (from the research doc): install EAT alongside vterm, run the same workloads through both, decide. Test matrix: Claude Code TUI, lazygit, htop/btop, yazi, a heavy-output build, ssh to a remote, and eshell with =eat-eshell-mode=. Assess rendering fidelity, stability under heavy output, and Emacs-native line editing. Switch only if it covers every workflow without regression.
+
+** PROJECT [#B] Implement ai-kb :feature:ai:kb:
 Build v1 of the AI knowledge base per [[file:docs/design/ai-kb.org][docs/design/ai-kb.org]] (Ready; six reviews incorporated, all decisions resolved 2026-05-24). Step 1 splits into 1a (the safe write path — minimum usable) and 1b (retrieval, maintenance, push), since =remember= depends on =index=+=lint= and the adapter depends on =remember=. Step 2 is the Emacs layer: a full org-roam profile on switch, the human-edit safety model (same write path as the agent), and the browsing surface. Step 3 and the LLM-Wiki layer are vNext. Children are ordered by build sequence; the server bootstrap is the prerequisite.
 
 *** TODO [#B] ai-kb bare repo on cjennings.net :ai-kb:
@@ -90,39 +118,7 @@ Bind the switch + sync + browsing commands under the =C-c n= roam prefix (e.g. =
 *** TODO [#B] Emacs: ai-kb Step-2 ERT tests :ai-kb:tests:
 Profile: switch installs the ai-kb dir + db + exclude regexp and switch-back restores personal *exactly* — completed-task hook, agenda/refile finalize hook, dailies, and capture templates all untouched by ai-kb while switched; startup re-asserts personal state after a simulated abnormal exit. Edit path: a save in an ai-kb buffer runs index+lint+commit (a bad save surfaces the lint failure rather than committing). Sync runs only when stale.
 
-** TODO [#D] Dashboard over-scroll: pin last line to window bottom     :bug:
-:PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
-:END:
-Triggered by: 2026-05-20 Dashboard buffer too long follow-up.
-
-After the opens-at-top fix (=4ac1b81=), the dashboard can still be
-scrolled past its content: the banner image makes the buffer just over
-one screenful, so the wheel / =C-v= / =M->= pull the last line up and
-leave empty space below it.  Craig wants scrolling to stop once the
-trailing line reaches the window bottom (no void) while still allowing
-scroll-down to reach content below the window.
-
-Findings from the 2026-05-20 investigation:
-- =pixel-scroll-precision-mode= is off, so this is standard line-based
-  scroll overshoot (the tall banner image inflates the rendered height).
-- A =window-start= clamp does not work: =window-start= only lands on
-  line boundaries, so it can't express a position partway into the
-  banner image — it either blocks all scrolling or leaves the void.
-- A =recenter -1= pin on =post-command-hook= does not work: it fires on
-  every command, so it fights item navigation (the cursor can't reach
-  the projects / bookmarks / recents).
-- Right design: clamp only on actual scroll commands — advise
-  =mwheel-scroll= / =scroll-up-command= / =scroll-down-command= /
-  =end-of-buffer= to =recenter -1= when over-scrolled, never on
-  navigation commands.
-- Live experiment scratch file: =~/dashboard-overscroll-experiment.el=.
-
-** TODO [#C] Separate dashboard navigator color from list items    :feature:
-The dashboard navigator (icons + labels) and the recentf/project/bookmark list items are both painted by =dashboard-items-face=: the navigator gets a =dashboard-items-face= overlay, and overlays beat text properties, so the per-button =dashboard-navigator= face is inert. To color the navigator independently of the items, override where that overlay is applied — advise or redefine =dashboard-insert-navigator=, or strip/replace the overlay's face.
-Triggered by: 2026-05-22 dashboard color work (L105).
-
-** PROJECT [#B] Architecture review follow-up from 2026-05-03 :refactor:no-sync:
+** PROJECT [#B] Architecture review follow-up from 2026-05-03 :refactor:nosync:
 
 High-level pass over =init.el=, =early-init.el=, and all 104 files in
 =modules/=. The main theme: the config works, but load order, startup side
@@ -455,7 +451,7 @@ Expected outcome:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
-*** TODO [#B] Format keybindings move off F6                         :refactor:cleanup:
+*** TODO [#B] Format keybindings move off F6 :refactor:cleanup:
 Move blacken-buffer (python), shfmt-buffer (sh), and clang-format-buffer (c)
 off F6 onto the =C-; f= prefix, which already hosts format-buffer bindings.
 Also remove projectile-run-project from F6 (it folds into the new F4).
@@ -466,7 +462,7 @@ prefix triggers the right formatter per major mode.
 
 Depends on: none (start here -- clears F6 before F4/F6 work lands).
 
-*** TODO [#B] Project-type detection helper                          :feature:
+*** TODO [#B] Project-type detection helper :feature:
 Single helper that returns a project-type symbol (=compiled=, =interpreted=,
 =unknown=) from the current buffer's project.  Uses
 =projectile-project-compilation-cmd= when set, then heuristic fallbacks:
@@ -478,7 +474,7 @@ case where projectile's cached cmd wins over the file heuristics.
 
 Depends on: none.
 
-*** TODO [#B] F4 compile+run dispatcher                              :feature:
+*** TODO [#B] F4 compile+run dispatcher :feature:
 Build the F4 binding per spec: plain F4 opens a completing-read whose
 candidates depend on project-type (Compile / Run / Compile + Run [default] /
 Clean + Rebuild for compiled; Run only for interpreted).  C-F4 fast-paths to
@@ -491,7 +487,7 @@ paths no-op cleanly on interpreted projects; F4 bindings live in one module.
 
 Depends on: project-type detection helper.
 
-*** TODO [#B] Per-language test discovery                            :feature:tests:
+*** TODO [#B] Per-language test discovery :feature:tests:
 Provide a single =cj/--tests-in-buffer= function returning a list of test
 names for the current buffer's language.  Tree-sitter queries for Python,
 Go, TS/JS (treesit-auto already configured); built-in sexp scan for elisp
@@ -504,7 +500,7 @@ expected test-name list comes back; missing grammar surfaces a clear error.
 
 Depends on: none (parallel-safe with F4 work).
 
-*** TODO [#B] F6 test dispatcher                                     :feature:tests:
+*** TODO [#B] F6 test dispatcher :feature:tests:
 Build the F6 binding per spec: plain F6 opens completing-read with "All
 tests", "Current file's tests", "Run a test..."; C-F6 fast-paths to current
 file's tests; M-F6 fast-paths to "Run a test...".  "Current file's tests"
@@ -519,7 +515,7 @@ last-test memory persists per source file; no-match error fires correctly.
 
 Depends on: per-language test discovery.
 
-*** TODO [#B] F7 hand-off to dev-fkeys story                         :feature:
+*** TODO [#B] F7 hand-off to dev-fkeys story :feature:
 Once the coverage track ships ([[file:../docs/design/coverage.org][docs/design/coverage.org]]),
 confirm F7 binds =cj/coverage-report= and lives alongside F4/F6 in the same
 dev-fkeys module so the three keys read as one unit.  No new coverage logic
@@ -581,7 +577,7 @@ Per-language test discovery:
 **Ordering:**
 Do this after the coverage-config work ships. No churn mid-flight.
 
-** TODO [#B] Fix up test runner                                        :bug:
+** TODO [#B] Fix up test runner :bug:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
@@ -1085,7 +1081,7 @@ Tie this into the existing coverage work:
 - Tests cover adapter detection, command building, scope resolution, result
   storage, and key interactive paths.
 
-** DOING [#B] Module-by-module hardening :harden:no-sync:
+** DOING [#B] Module-by-module hardening :harden:nosync:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
@@ -1133,7 +1129,7 @@ Suggested review order:
 6. Integrations and applications: mail, Slack, ERC, Elfeed, EWW, Dirvish,
    PDF, Calibre, music, recording/transcription, AI/rest tooling.
 
-*** DOING [#B] Harden foundation modules                           :harden:
+*** DOING [#B] Harden foundation modules :harden:
 
 Scope:
 - =system-lib.el=
@@ -1524,7 +1520,7 @@ Original scope:
 - =popper-config.el=: if the module remains in =init.el= while disabled, a
   smoke test should prove requiring it is an intentional no-op.
 
-**** TODO [#B] Decide whether =popper-config.el= should exist while disabled :cleanup:
+**** TODO [#B] Remove =popper-config.el= (disabled no-op) :cleanup:quick:solo:
 
 =popper-config.el= is required by =init.el=, but the only =use-package popper=
 form is =:disabled t=. That makes the module a no-op while still participating
@@ -1540,6 +1536,9 @@ Expected outcome:
 
 This is low priority, but it is a good example of load graph noise to clean up
 during the =init.el= deferral work.
+
+***** 2026-05-26 Tue @ 15:15:43 -0500 Decided: remove popper-config.el
+Craig's call: remove it (quick, solo). It has been a disabled no-op in the load graph. Remaining action: drop =(require 'popper-config)= from =init.el= and delete =modules/popper-config.el= (and any test), then close this task.
 
 **** 2026-05-16 Sat @ 02:55:14 -0500 Moved popper-mode activation from :init to :config
 
@@ -2425,7 +2424,14 @@ configuration (=text-config=, =diff-config=, =ledger-config=,
 =games-config=, =mu4e-org-contacts-setup=, =telega-config=,
 =httpd-config=, =org-agenda-config-debug=).
 
-** TODO [#C] Implement EMMS-free music-config architecture        :refactor:
+** TODO [#C] M-F9 ai-vterm close removes the window split :quick:solo:
+Closing the ai-vterm with M-F9 while its window is in a split deletes the split too (the sibling window goes away) instead of just closing the vterm and leaving the rest of the layout intact.
+
+** TODO [#C] Separate dashboard navigator color from list items :feature:
+The dashboard navigator (icons + labels) and the recentf/project/bookmark list items are both painted by =dashboard-items-face=: the navigator gets a =dashboard-items-face= overlay, and overlays beat text properties, so the per-button =dashboard-navigator= face is inert. To color the navigator independently of the items, override where that overlay is applied — advise or redefine =dashboard-insert-navigator=, or strip/replace the overlay's face.
+Triggered by: 2026-05-22 dashboard color work (L105).
+
+** TODO [#C] Implement EMMS-free music-config architecture :refactor:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
@@ -2453,7 +2459,7 @@ Acceptance checks:
 - New tests cover playlist state, backend command dispatch, M3U persistence,
   and the EMMS-free load smoke path.
 
-*** TODO [#B] Pure helpers + state structs extraction                :refactor:
+*** TODO [#B] Pure helpers + state structs extraction :refactor:
 Lift EMMS-free pure code into standalone form: file validation, recursive
 collection, M3U parse/write, safe filenames, radio-station content, and
 URL/file track typing.  Introduce =cj/music-track= and =cj/music-playlist=
@@ -2466,7 +2472,7 @@ Acceptance: structs defined, helpers callable in batch without EMMS loaded.
 
 Depends on: none (start here).
 
-*** TODO [#B] Backend protocol + fake test backend                   :refactor:tests:
+*** TODO [#B] Backend protocol + fake test backend :refactor:tests:
 Define the backend plist contract (=:available-p :play :pause :resume :stop
 :seek :volume :status :metadata=) and =cj/music-current-backend=.  Add
 =cj/music-state-change-functions= abnormal hook with the v1 event set
@@ -2479,7 +2485,7 @@ against a no-op playback flow.
 
 Depends on: pure helpers + state structs.
 
-*** TODO [#B] Read-side state API + characterization tests           :tests:refactor:
+*** TODO [#B] Read-side state API + characterization tests :tests:refactor:
 Implement =cj/music-playing-p=, =cj/music-paused-p=, =cj/music-current-track=,
 =cj/music-playlist-state=, =cj/music-track-description=.  Before rewriting
 command bodies, add characterization tests against current behavior for
@@ -2492,7 +2498,7 @@ the current EMMS-backed implementation.
 
 Depends on: backend protocol + fake test backend.
 
-*** TODO [#B] Playlist major mode + render-from-state                :feature:
+*** TODO [#B] Playlist major mode + render-from-state :feature:
 Add =cj/music-playlist-mode= rendering the buffer as a view over
 =cj/music-current-playlist=.  Selected-track overlay + face, header reads
 package state, full keymap from design Section "Playlist Buffer" (RET/p, SPC,
@@ -2505,7 +2511,7 @@ positioning.
 
 Depends on: read-side state API.
 
-*** TODO [#B] mpv backend implementation                             :feature:
+*** TODO [#B] mpv backend implementation :feature:
 Implement =cj/music-mpv-*= backend functions.  Phase the work per migration
 plan §5: (a) process spawn, UID/PID-stamped socket under
 =temporary-file-directory=, stale-socket sweep, IPC connect via
@@ -2521,7 +2527,7 @@ across Emacs restart and exit.
 
 Depends on: backend protocol + fake test backend.
 
-*** TODO [#B] Command + Dired/Dirvish rewire                         :refactor:
+*** TODO [#B] Command + Dired/Dirvish rewire :refactor:
 Migrate user-facing commands (=cj/music-play=, =cj/music-pause=,
 =cj/music-stop=, =cj/music-next=, =cj/music-previous=, seek/volume,
 random/repeat/consume/shuffle toggles) to operate on package state and call
@@ -2535,7 +2541,7 @@ characterization tests still green; Dirvish =+= add path covered.
 
 Depends on: playlist major mode + mpv backend.
 
-*** TODO [#B] EMMS removal + parity walk                             :cleanup:tests:
+*** TODO [#B] EMMS removal + parity walk :cleanup:tests:
 Remove =cj/emms--setup=, the on-demand EMMS loader, and the =use-package emms=
 block.  Add the EMMS-free batch-load smoke test (=music-config.el= requires
 clean without EMMS installed).  Run the 22-step parity walk from design
@@ -2548,7 +2554,7 @@ walk recorded as a completion log entry under the parent task.
 
 Depends on: command + Dired/Dirvish rewire.
 
-** TODO [#C] GPTel Work
+** TODO [#C] GPTel Work :feature:ai:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
@@ -3046,7 +3052,7 @@ Surface current-buffer or project-wide errors and warnings.  Useful
 both as a "what's broken right now" check and as input to the
 patch-narrative buffer / commit-intent workbench above.
 
-** TODO [#C] Review and rebind M-S- keybindings                   :refactor:
+** TODO [#C] Review and rebind M-S- keybindings :refactor:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
@@ -3097,7 +3103,7 @@ Deferred:
 
 Do this after the F-key rework ticket ships; don't want to churn project configs before the keys are stable.
 
-*** TODO [#B] Pure detection + parsing helpers                       :feature:
+*** TODO [#B] Pure detection + parsing helpers :feature:
 Implement the four pure helpers the rest of the command composes on:
 - =cj/--dev-setup-parse-makefile-targets FILE= (.PHONY + bare target lines, skip pattern rules)
 - =cj/--dev-setup-parse-package-json-scripts FILE= (scripts block, JSON)
@@ -3112,7 +3118,7 @@ no command yet.
 
 Depends on: none -- start here.
 
-*** TODO [#B] ERT coverage for the pure helpers                      :feature:tests:
+*** TODO [#B] ERT coverage for the pure helpers :feature:tests:
 Normal/Boundary/Error tests for every helper from the prior sub-task,
 matching the design's testing section.
 
@@ -3125,7 +3131,7 @@ every helper has at least one Normal, one Boundary, one Error case.
 
 Depends on: pure detection + parsing helpers.
 
-*** TODO [#B] Starter-Makefile + .dir-locals.el proposal generator   :feature:
+*** TODO [#B] Starter-Makefile + .dir-locals.el proposal generator :feature:
 Pure function =cj/--dev-setup-build-proposal SHAPE ROOT= returning a
 structured plist of proposed blocks: one per subproject =.dir-locals.el=
 (projectile compile/run/test + =cj/coverage-backend=), the optional starter
@@ -3141,7 +3147,7 @@ block" branch.
 
 Depends on: pure detection + parsing helpers.
 
-*** TODO [#B] Review-buffer major mode + parser                      :feature:
+*** TODO [#B] Review-buffer major mode + parser :feature:
 Define =cj/dev-setup-review-mode= (derived from =emacs-lisp-mode=) with =C-c
 C-c= / =C-c C-k= bindings, plus the pure parser
 =cj/--dev-setup-review-buffer-parse CONTENTS= that turns buffer text back
@@ -3157,7 +3163,7 @@ list.  Mode keybindings smoke-tested.
 
 Depends on: starter-Makefile + .dir-locals.el proposal generator.
 
-*** TODO [#B] Writer + status diff + projectile cache reset          :feature:
+*** TODO [#B] Writer + status diff + projectile cache reset :feature:
 Implement the =C-c C-c= writer: diff each parsed block against the on-disk
 file to assign =UNCHANGED= / =WILL UPDATE= / =WILL CREATE=, write only the
 non-UNCHANGED ones, append gitignore idempotently, never touch an existing
@@ -3173,7 +3179,7 @@ untouched.
 
 Depends on: review-buffer major mode + parser.
 
-*** TODO [#B] Interactive command + smoke test                       :feature:tests:
+*** TODO [#B] Interactive command + smoke test :feature:tests:
 Thin =cj/dev-setup-project= interactive wrapper: resolve project root via
 projectile, run detection, build proposal, render the review buffer, pop to
 it.  One smoke test against a prepared temp project asserting the expected
@@ -3187,7 +3193,7 @@ buffer; =C-c C-c= writes the expected files.
 
 Depends on: writer + status diff + projectile cache reset.
 
-*** TODO [#B] Resolve open questions + design follow-ups             :cleanup:
+*** TODO [#B] Resolve open questions + design follow-ups :cleanup:
 Three design questions to close before / during implementation: (a) include
 =make coverage= target in starter Makefile? (b) project-wide override file
 =.cj-dev-setup.el=? (c) Cargo/pom detection.
@@ -3198,7 +3204,7 @@ turn out load-bearing.
 Depends on: none, but easiest after the writer sub-task surfaces real
 friction.
 
-** TODO [#C] Pick and wire a debug backend for F5                  :feature:
+** TODO [#C] Pick and wire a debug backend for F5 :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
@@ -3222,7 +3228,7 @@ Evaluate against these projects' languages: elisp (edebug already works), Python
 
 Do this after the F-key rework ticket ships so F5 is the only hole left.
 
-** TODO [#C] Build debug-profiling.el module                       :feature:
+** TODO [#C] Build debug-profiling.el module :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
@@ -3282,7 +3288,7 @@ The core functionality is implemented but needs debugging before it's production
 3. Refine toggle behavior based on testing
 4. Document the final keybindings and workflow
 
-** TODO [#C] Build an Org-native API workspace               :feature:tests:
+** TODO [#C] Build an Org-native API workspace :feature:tests:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
@@ -3702,9 +3708,7 @@ Diagnostics (run with point in a remote dirvish buffer):
 Likely fixes, by which gate is closed:
 - =:gnuls= nil → install GNU coreutils on the remote (FreeBSD: =pkg install coreutils=) and make =ls= resolve to GNU on the TRAMP path, or accept "?" on that host.
 
-  #+begin_src cj: comment
-    Note: we will not be installing anything on the remote host. 
-  #+end_src
+  - Constraint: nothing gets installed on the remote host, so the =:gnuls= gate is resolved by accepting "?" on that host rather than installing coreutils.
 - =:remote-async= nil → the scp/sshx method isn't advertising direct-async; switch to a method that supports it or check =tramp-direct-async-process= is taking effect for that protocol.
 
 Files involved: =modules/tramp-config.el=, =modules/dirvish-config.el=.
@@ -3727,6 +3731,34 @@ Changes in progress (modules/auth-config.el):
 - Use external pinentry (pinentry-dmenu) in GUI
 - Requires env-terminal-p from host-environment module
 
+** TODO [#D] Dashboard over-scroll: pin last line to window bottom :bug:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
+Triggered by: 2026-05-20 Dashboard buffer too long follow-up.
+
+After the opens-at-top fix (=4ac1b81=), the dashboard can still be
+scrolled past its content: the banner image makes the buffer just over
+one screenful, so the wheel / =C-v= / =M->= pull the last line up and
+leave empty space below it.  Craig wants scrolling to stop once the
+trailing line reaches the window bottom (no void) while still allowing
+scroll-down to reach content below the window.
+
+Findings from the 2026-05-20 investigation:
+- =pixel-scroll-precision-mode= is off, so this is standard line-based
+  scroll overshoot (the tall banner image inflates the rendered height).
+- A =window-start= clamp does not work: =window-start= only lands on
+  line boundaries, so it can't express a position partway into the
+  banner image — it either blocks all scrolling or leaves the void.
+- A =recenter -1= pin on =post-command-hook= does not work: it fires on
+  every command, so it fights item navigation (the cursor can't reach
+  the projects / bookmarks / recents).
+- Right design: clamp only on actual scroll commands — advise
+  =mwheel-scroll= / =scroll-up-command= / =scroll-down-command= /
+  =end-of-buffer= to =recenter -1= when over-scrolled, never on
+  navigation commands.
+- Live experiment scratch file: =~/dashboard-overscroll-experiment.el=.
+
 ** TODO [#D] Polish reveal.js presentation setup :feature:
 
 Three small reveal.js improvements; collected into one task because each on its own is too small to track separately.
@@ -3739,7 +3771,7 @@ Three small reveal.js improvements; collected into one task because each on its 
 
 Complex workflow testing capability.
 
-* Manual testing and validation
+* Emacs Manual Testing and Validation
 *** Font setup reaches a GUI frame created after a TTY frame (daemon)
 What we're verifying: emoji glyphs + fonts apply in a GUI frame even when the first daemon frame was a TTY.
 - emacs --daemon
@@ -4230,7 +4262,7 @@ Done 2026-05-03:
 - Added =tests/test-testutil-general.el=.
 - Confirmed default sandbox =make test= passes: 312 test files.
 
-** DONE [#B] Fix C single-file compile command path handling     :review:bug:
+** DONE [#B] Fix C single-file compile command path handling :review:bug:
 CLOSED: [2026-05-03 Sun]
 :PROPERTIES:
 :ARCHIVE_TIME: 2026-05-03 Sun 20:11
@@ -4303,7 +4335,7 @@ Done 2026-05-03:
   argv, exit status, and command output.
 - Updated the interactive coverage report smoke test to stub =process-file=.
 
-** DONE [#B] Cache or cheapen VC work in the custom modeline    :review:perf:
+** DONE [#B] Cache or cheapen VC work in the custom modeline :review:perf:
 CLOSED: [2026-05-03 Sun]
 :PROPERTIES:
 :ARCHIVE_TIME: 2026-05-03 Sun 20:24
@@ -4552,7 +4584,7 @@ Verify 2026-05-03:
   =make test-file FILE=test-all-comp-errors.el=,
   =make test-file FILE=test-dupre-theme.el=, and full =make test=.
 
-** DONE [#B] Make test-runner focus state project-scoped   :review:tests:bug:
+** DONE [#B] Make test-runner focus state project-scoped :review:tests:bug:
 CLOSED: [2026-05-03 Sun]
 :PROPERTIES:
 :ARCHIVE_TIME: 2026-05-03 Sun 23:46
@@ -5090,7 +5122,7 @@ and installs/validates =~/.config/.dmailpass.gpg= using the same encrypted-file
 pattern as gmail. While there, the credential bootstrap was made explicit:
 gmail and dmail keep encrypted =.gpg= files because mbsync/msmtp decrypt them at
 use time, while cmail is decrypted to the plaintext ProtonBridge password file.
-** DONE [#C] Stand up packaging CI for personal Elisp packages  :ci:feature:
+** DONE [#C] Stand up packaging CI for personal Elisp packages :ci:feature:
 CLOSED: [2026-05-11 Mon 14:08]
 
 Get =chime=, =org-msg=, and =wttrin= covered by automated package-quality checks. Three pieces, all aimed at the same set of repos, so tracked together:
@@ -5141,7 +5173,7 @@ Implemented 2026-05-11: replaced the obsolete =lsp-eldoc-hook= assignment with
 removes =lsp-eldoc-function= from buffer-local
 =eldoc-documentation-functions= after lsp-mode adds it. Covered in
 =tests/test-prog-lsp--add-file-watch-ignored-extras.el=.
-** DONE [#B] Simplify mail attachment save workflow               :feature:
+** DONE [#B] Simplify mail attachment save workflow :feature:
 
 Saving attachments out of mu4e is currently a multi-step dance via =mu4e-view-save-attachments= + embark + vertico. The flow documented in =modules/mail-config.el:10-17= goes:
 
@@ -5329,7 +5361,7 @@ Regression coverage:
   expected order, the new VERIFICATION / IN-PROGRESS blocks reference
   the shared prefix-format symbol, carry the right
   =org-agenda-overriding-header=, and run the habit skip.
-** DONE [#A] Org Agenda fixes                                           :bug:
+** DONE [#A] Org Agenda fixes :bug:
 *** 2026-05-13 Wed @ 13:05:21 -0500 Skip CANCELLED entries from main agenda SCHEDULE
 see the following screenshot
 /home/cjennings/pictures/screenshots/2026-05-13_071428.png
@@ -6457,10 +6489,6 @@ CLOSED: [2026-05-22 Fri]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
 :END:
-#+begin_src cj: comment
-I would like a keybinding only when I'm in an org file. When I press it, it should replace the todo.org status and the priority with a "date sorted" time stamp like this: 2026-05-20 Wed @ 18:00:24 -0400.
-Write out the approach in a dated org header below, and recommend a few mnemonic keybindings that are free.
-#+end_src
 
 *** 2026-05-22 Fri @ 08:35:05 -0500 Approach (revised): finalize-task command, journal-aware + depth-aware
 Bound =C-; O d= (=cj/org-map=, d = "date"). Command =cj/org-finalize-task=:
@@ -6479,7 +6507,7 @@ Triggered by: 2026-05-22 L56 finalize-task work.
 CLOSED: [2026-05-22 Fri]
 =cj/org-roam-copy-todo-to-today= (=org-roam-config.el=) only saved today's daily in the refile branch. Pulled the save into =cj/--org-roam-save-daily=, which now runs on both paths and writes only when the buffer is modified, so a crash or shutdown never loses a freshly-copied task. Fixed in f07ce74d.
 Triggered by: 2026-05-22 L56 finalize-task work.
-** DONE [#B] Collapse dashboard navigator + keymap duplication    :refactor:
+** DONE [#B] Collapse dashboard navigator + keymap duplication :refactor:
 CLOSED: [2026-05-22 Fri]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
@@ -6520,18 +6548,18 @@ F9 raises ai-vterm in a new split rather than reusing the existing window layout
 
 Repro: split the frame in two (vertically or horizontally), press F9.
 Likely area: ai-vterm's display/window-placement rule splits the selected window unconditionally instead of reusing the target half (display-buffer-alist / side-window config).
-** DONE [#B] projectile open todo in other window                 :bug:next:
+** DONE [#B] projectile open todo in other window :bug:next:
 CLOSED: [2026-05-25 Mon]
 Opening the project todo via C-c C-p t should always open in the other window if the window is split.
-** DONE [#C] Make elfeed-config tests byte-compile-safe               :test:
+** DONE [#C] Make elfeed-config tests byte-compile-safe :test:
 CLOSED: [2026-05-25 Mon]
 The =cj/elfeed-process-entries= tests in =tests/test-elfeed-config-helpers.el= only pass when =elfeed-config= loads as interpreted source. The byte-compiled function inlines the =elfeed-entry-link= struct accessor, so the function stubs are bypassed and the inlined accessor type-checks a real =elfeed-entry=. The batch test environment has no elfeed package, so the tests can't build real structs either. Rewrite the tests (define a stand-in =elfeed-entry= cl-struct, or make elfeed loadable in batch) so they survive byte-compilation. This blocks annotating elfeed-config with its load-graph header (the last unclassified init module).
 
-** DONE [#C] Manually verify cj/org-finalize-task journal copy        :test:
+** DONE [#C] Manually verify cj/org-finalize-task journal copy :test:
 CLOSED: [2026-05-25 Mon 08:33]
 Confirm the live behavior the unit tests mock out. In a real Emacs (org-roam loaded), run =C-; O d= on a level-3 sub-task and on a level-2 task. Expect the sub-task to flip to a dated entry, the level-2 to keep its keyword and gain a date-only CLOSED line, and in both cases a copy to land in today's daily under "Completed Tasks".
 Triggered by: 2026-05-22 L56 finalize-task work.
-** DONE [#C] Org TODO-keyword colors not dupre-themed                  :bug:
+** DONE [#C] Org TODO-keyword colors not dupre-themed :bug:
 CLOSED: [2026-05-25 Mon]
 Fixed in 32cfe216: org-todo-keyword-faces and org-priority-faces now point at named dupre-org-* faces (closest palette color per keyword) with dimmed variants for unfocused windows. Root cause was that dupre defined its own faces only via custom-theme-set-faces, never defface, so they failed when applied directly; added a defface registration block for all dupre faces.
 The org TODO/DOING/DONE (and other keyword) colors don't match the dupre palette — they're showing default org colors rather than dupre tones. Likely needs changes in two places: the org keyword faces in the theme (=org-todo=, =org-done=, =org-headline-done=, and friends in =themes/dupre-faces.el=) and any =org-todo-keyword-faces= mapping set in the org config (=org-config.el= / =org-capture-config.el=), which may hardcode non-dupre colors. Reconcile both so keyword colors come from the palette.
@@ -6548,8 +6576,20 @@ Acceptance:
 - Document the intended command in the Makefile/test docs if the answer is "use the harness, not bare =emacs -Q=".
 
 Triggered by: 2026-05-25 dashboard transparency and vterm auto-dim work.
-** DONE [#C] latex-config WIP state                               :refactor:
+** DONE [#C] latex-config WIP state :refactor:
 CLOSED: [2026-05-25 Mon]
 The =init.el= require for =latex-config= carried a bare "WIP need to fix" comment with no detail on what was broken. Retired that comment while classifying foundation modules; the underlying state still needs investigation. Read =modules/latex-config.el=, determine what's incomplete, and either finish it or scope a real task.
 
 Investigated 2026-05-25. The comment came from the original repo import (=092304d9=); no detail about the original breakage survives. The module byte-compiles clean and works. =company-auctex= is not a current bug — company is still the live framework, and its removal is already scoped under the corfu-migration spec below. Found one real defect: =cj/--latex-select-pdf-viewer= ran on every LaTeX buffer and blindly pushed onto =TeX-view-program-selection=, stacking duplicate =output-pdf= entries against its own idempotency docstring. Fixed in =b007a9b8= (remove-then-cons) and added =tests/test-latex-config.el= (the module had none) covering selection, preference order, fallback, idempotency, and default override.
+** DONE [#C] Org tag column too close to the heading text :org:display:
+CLOSED: [2026-05-26 Tue]
+Shipped in commit 63192749: =org-tags-column= set to 0 plus a font-lock display property that right-aligns tags to the window edge, tracking width live with nothing baked into files. It was an org display setting, not pearl. The same change covers the inline "align further out" note that was queued separately.
+
+** DONE [#C] mu4e launch removes the window split :quick:solo:
+CLOSED: [2026-05-26 Tue]
+Shipped in commit 3acdb28e. Root cause was mu4e's main-view =display-buffer-full-frame= action (mu4e-window.el), not =delete-other-windows= on start. Fixed via a =display-buffer-alist= entry (mu4e's documented override point) routing =*mu4e-main*= to the current window (reuse-window then same-window), so the split survives. Registered eagerly so it applies on first launch. Tests cover registration + split preservation.
+
+** DONE [#C] Slack window should open in the other window when split :quick:solo:
+CLOSED: [2026-05-26 Tue]
+Shipped in commit 6c7f9ae2: =slack-buffer-function= set to =cj/slack--display-buffer= (=pop-to-buffer= with =inhibit-same-window= + reuse/use-some/pop-up action), so a room reuses the split's other window and never takes over the selected one. Tests cover split-placement and the selected-window-preserved invariant.
+
