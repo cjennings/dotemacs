@@ -146,13 +146,27 @@ buffer the user is looking at."
 	  (find-file file)
 	(find-file-other-window file)))
 
+(defun cj/open-project-daily-prep ()
+  "Open the current Projectile project's daily prep in another window.
+The prep file is inbox/today-prep.org under the project root (a stable
+symlink to the dated prep doc).  Project-scoped: a project without one gets a
+message.  Opens in another window so it sits beside the current work."
+  (interactive)
+  (if-let ((root (projectile-project-root)))
+      (let ((file (expand-file-name "inbox/today-prep.org" root)))
+        (if (file-exists-p file)
+            (find-file-other-window file)
+          (message "No inbox/today-prep.org in project: %s" root)))
+    (message "Not in a Projectile project")))
+
 (use-package projectile
   :bind-keymap
   ("C-c p" . projectile-command-map)
   :bind
   (:map projectile-command-map
 		("r" . projectile-replace-regexp)
-		("t" . cj/open-project-root-todo))
+		("t" . cj/open-project-root-todo)
+		("d" . cj/open-project-daily-prep))
   :custom
   (projectile-auto-discover nil)
   (projectile-project-search-path `(,code-dir ,projects-dir))
@@ -219,9 +233,8 @@ If no such file exists there, display a message."
   :after projectile
   :bind
   (:map projectile-command-map
-		("G" . deadgrep)                 ;; project-wide search
-		("g" . cj/deadgrep-here)     ;; search in context directory
-		("d" . cj/deadgrep-in-dir))  ;; prompt for directory
+		("G" . cj/deadgrep-in-dir)   ;; prompt for any directory
+		("g" . cj/deadgrep-here))    ;; search in context directory
 
   :config
   (require 'thingatpt)
