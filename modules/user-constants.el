@@ -205,23 +205,39 @@ For more information, see org webclipper section of org-capture-config.el")
   (and (file-directory-p dir)
        (file-writable-p dir)))
 
-(defun cj/verify-or-create-dir (dir)
-  "Verify the directory DIR exists; create it if it doesn't."
+(defun cj/--report-path-failure (kind path err required)
+  "Report a failure to create the KIND (a string) at PATH from ERR.
+A REQUIRED failure raises a prominent `display-warning' so a broken
+environment is hard to miss; an optional one is only logged, so it does not
+block startup."
+  (if required
+      (display-warning 'user-constants
+                       (format "Failed to create required %s %s: %s"
+                               kind path (error-message-string err))
+                       :error)
+    (message "Error creating %s %s: %s" kind path (error-message-string err))))
+
+(defun cj/verify-or-create-dir (dir &optional required)
+  "Verify the directory DIR exists; create it if it doesn't.
+With REQUIRED non-nil, a creation failure raises a prominent warning instead
+of being logged quietly."
   (condition-case err
       (unless (file-directory-p dir)
         (make-directory dir t)
         (message "Created directory: %s" dir))
-    (error (message "Error creating directory %s: %s" dir (error-message-string err)))))
+    (error (cj/--report-path-failure "directory" dir err required))))
 
-(defun cj/verify-or-create-file (file)
-  "Verify the file FILE exists; create it if it doesn't."
+(defun cj/verify-or-create-file (file &optional required)
+  "Verify the file FILE exists; create it if it doesn't.
+With REQUIRED non-nil, a creation failure raises a prominent warning instead
+of being logged quietly.  The parent directory inherits REQUIRED."
   (condition-case err
       (let ((dir (file-name-directory file)))
-        (when dir (cj/verify-or-create-dir dir))
+        (when dir (cj/verify-or-create-dir dir required))
         (unless (file-exists-p file)
           (write-region "" nil file)
           (message "Created file: %s" file)))
-    (error (message "Error creating file %s: %s" file (error-message-string err)))))
+    (error (cj/--report-path-failure "file" file err required))))
 
 (defun cj/initialize-user-directories-and-files ()
   "Initialize all necessary directories and files.
@@ -229,21 +245,24 @@ This ensures that all directories and files required by the Emacs configuration
 exist, creating them if necessary. This makes the configuration more robust
 and portable across different machines."
   (interactive)
-  (mapc 'cj/verify-or-create-dir (list sync-dir
-									   drill-dir
+  ;; Required: the backbone directories everything else hangs off.  If these
+  ;; can't be created the config is broken, so failure warns prominently.
+  (dolist (d (list sync-dir org-dir roam-dir))
+    (cj/verify-or-create-dir d t))
+  ;; Optional: secondary directories whose absence degrades one feature, not
+  ;; startup.
+  (mapc 'cj/verify-or-create-dir (list drill-dir
 									   journals-dir
-									   roam-dir
 									   snippets-dir
 									   video-recordings-dir
-									   audio-recordings-dir
-									   org-dir))
-  ;; gcal/pcal/dcal exist so org-agenda-list doesn't hang on missing files
-  ;; (calendar-sync populates them on first sync).
-  (mapc 'cj/verify-or-create-file (list gcal-file
-										pcal-file
-										dcal-file
-										schedule-file
-                                        inbox-file
+									   audio-recordings-dir))
+  ;; Required: the calendar stubs — org-agenda-list hangs prompting for these
+  ;; if they're missing (calendar-sync populates them on first sync).
+  (dolist (f (list gcal-file pcal-file dcal-file))
+    (cj/verify-or-create-file f t))
+  ;; Optional: content files each populated by their own workflow.
+  (mapc 'cj/verify-or-create-file (list schedule-file
+										inbox-file
 										article-archive
 										reading-notes-file
 										contacts-file
