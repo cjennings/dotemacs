@@ -89,6 +89,20 @@ PAIR is a cons cell of (string . symbol)."
                          ("#+end_src" . "λ")
                          ("lambda" . "λ")))))
 
+(defun cj/prettify-compose-block-markers-p (start end match)
+  "Always compose the org src-block markers; defer to the default otherwise.
+`prettify-symbols-default-compose-p' uses a syntax heuristic on the
+characters around MATCH that fires inconsistently for `#+begin_src' /
+`#+end_src' across blocks in the same org buffer, an interaction with org's
+own src-block fontification: some markers compose to the lambda glyph and
+others stay literal.  Force composition for the markers (matched
+case-insensitively, since the alist carries upcased variants too) and let
+everything else, such as `lambda', use the standard boundary check."
+  (or (member (downcase match) '("#+begin_src" "#+end_src"))
+      (prettify-symbols-default-compose-p start end match)))
+
+(setopt prettify-symbols-compose-predicate #'cj/prettify-compose-block-markers-p)
+
 (add-hook 'prog-mode-hook #'turn-on-prettify-symbols-mode)
 (add-hook 'org-mode-hook #'turn-on-prettify-symbols-mode)
 
