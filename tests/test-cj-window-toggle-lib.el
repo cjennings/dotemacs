@@ -184,5 +184,76 @@
     (should (eq (cdr (assq 'direction received-alist)) 'bottom))
     (should (= (cdr (assq 'window-height received-alist)) 0.4))))
 
+;; --------------------------- side-window helpers ---------------------------
+
+(defvar test-cj-side-window--size nil)
+
+(ert-deftest test-cj-side-window-capture-records-bottom-height ()
+  "Normal: a bottom side window writes a height fraction into the size var."
+  (save-window-excursion
+    (delete-other-windows)
+    (let* ((buf (get-buffer-create "*cj-side-test*"))
+           (win (display-buffer-in-side-window
+                 buf '((side . bottom) (window-height . 0.5))))
+           (test-cj-side-window--size nil))
+      (unwind-protect
+          (progn
+            (cj/side-window-capture-size win 'bottom 'test-cj-side-window--size)
+            (should (floatp test-cj-side-window--size))
+            (should (<= 0.05 test-cj-side-window--size 0.95)))
+        (when (window-live-p win) (delete-window win))
+        (kill-buffer buf)))))
+
+(ert-deftest test-cj-side-window-capture-noop-on-nil-window ()
+  "Error: nil window leaves the size var unchanged."
+  (let ((test-cj-side-window--size 0.42))
+    (cj/side-window-capture-size nil 'bottom 'test-cj-side-window--size)
+    (should (= test-cj-side-window--size 0.42))))
+
+(ert-deftest test-cj-side-window-capture-noop-on-deleted-window ()
+  "Error: a deleted window leaves the size var unchanged."
+  (let ((test-cj-side-window--size 0.42)
+        (dead (save-window-excursion
+                (delete-other-windows)
+                (let* ((buf (get-buffer-create "*cj-side-dead*"))
+                       (w (display-buffer-in-side-window
+                           buf '((side . bottom) (window-height . 0.5)))))
+                  (delete-window w)
+                  (kill-buffer buf)
+                  w))))
+    (cj/side-window-capture-size dead 'bottom 'test-cj-side-window--size)
+    (should (= test-cj-side-window--size 0.42))))
+
+(ert-deftest test-cj-side-window-display-uses-default-when-state-nil ()
+  "Normal: nil state -> default size under window-height for a bottom side."
+  (let (received-alist
+        (test-cj-side-window--size nil))
+    (cl-letf (((symbol-function 'display-buffer-in-side-window)
+               (lambda (_b a) (setq received-alist a) 'fake-window)))
+      (cj/side-window-display 'fake-buf 'bottom 'test-cj-side-window--size 0.3))
+    (should (eq (cdr (assq 'side received-alist)) 'bottom))
+    (should (= (cdr (assq 'window-height received-alist)) 0.3))
+    (should-not (assq 'window-width received-alist))))
+
+(ert-deftest test-cj-side-window-display-uses-stored-size ()
+  "Normal: a stored fraction overrides the default."
+  (let (received-alist
+        (test-cj-side-window--size 0.55))
+    (cl-letf (((symbol-function 'display-buffer-in-side-window)
+               (lambda (_b a) (setq received-alist a) 'fake-window)))
+      (cj/side-window-display 'fake-buf 'bottom 'test-cj-side-window--size 0.3))
+    (should (= (cdr (assq 'window-height received-alist)) 0.55))))
+
+(ert-deftest test-cj-side-window-display-left-uses-window-width ()
+  "Boundary: a left side puts the size under window-width, not window-height."
+  (let (received-alist
+        (test-cj-side-window--size nil))
+    (cl-letf (((symbol-function 'display-buffer-in-side-window)
+               (lambda (_b a) (setq received-alist a) 'fake-window)))
+      (cj/side-window-display 'fake-buf 'left 'test-cj-side-window--size 0.25))
+    (should (eq (cdr (assq 'side received-alist)) 'left))
+    (should (= (cdr (assq 'window-width received-alist)) 0.25))
+    (should-not (assq 'window-height received-alist))))
+
 (provide 'test-cj-window-toggle-lib)
 ;;; test-cj-window-toggle-lib.el ends here
