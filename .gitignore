@@ -52,6 +52,7 @@ auto-save-list/
 /multisession/
 /browser-choice.el
 /calendar-sync.local.el
+/signal-config.local.el
 /client_secret_491339091045-sjje1r54s22vn2ugh45khndjafp89vto.apps.googleusercontent.com.json
 
 # reveal.js local clone (managed by scripts/setup-reveal.sh)
