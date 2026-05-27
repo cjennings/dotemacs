@@ -1,0 +1,88 @@
+#+TITLE: Design: Signal client in Emacs (forked signel)
+#+DATE: 2026-05-26
+#+STATUS: Draft
+
+* Problem
+I want a Signal chat client inside Emacs: link it as a secondary device to my phone, pick a contact from my contact list, hold a text 1:1 conversation (read and send), and get a desktop notification on incoming messages, with an optional sound. Signal has no official API, so this is built on =signal-cli=, the mature headless CLI, driven over JSON-RPC.
+
+* Non-Goals
+- Groups, attachments, stickers, reactions, read receipts, typing indicators in the first version (text 1:1 only). The fork base already supports several of these, so they are deferred, not forbidden.
+- Replacing the phone as primary. This is a *linked secondary device*, like Signal Desktop.
+- Registering a phone number standalone.
+- Notifying for the conversation I'm actively viewing.
+
+* Assumptions
+- *Researched fact:* signal-cli (AsamK) is mature, headless, and exposes JSON-RPC; it runs as =signal-cli -a ACCOUNT jsonRpc=. Source: https://github.com/AsamK/signal-cli
+- *Researched fact:* signel (keenban) is GPL-3, single-file (642 lines), on MELPA, and already implements the signal-cli JSON-RPC process loop, a read-only chat buffer with guarded prompt, send, sync handling, media rendering, and an active-chats dashboard. Source: https://github.com/keenban/signel
+- *Researched fact:* signel is stale — all 40 commits in a ~10-day burst in Jan 2026, nothing since 2026-02-04, an unattended issue tracker (5 open, filed Mar 2026, none answered), no PRs ever, ~26 stars. Highest-severity open bug is #2 (incoming messages clobber in-progress input); no crashes, no signal-cli incompatibility, no data loss. So: fork-and-own, not depend-and-track.
+- *Researched fact:* signal-cli is AUR-only on Arch (=yay -S signal-cli=), needs a JRE (OpenJDK 17+, satisfied by the installed OpenJDK 26).
+- *Assumption (to confirm before building):* signal-cli must be updated roughly every three months or Signal-Server rejects the client version. (Widely reported; confirm cadence against the project's NEWS when it bites.)
+- *Assumption:* signal-cli =listContacts= returns the contact list in a shape usable for a completing-read picker. Confirm against a live linked account.
+
+* Approaches Considered
+
+** Recommended: fork signel into ~/code/signel and own it
+Clone is already at =~/code/signel=. Wire via =use-package :load-path= like the org-drill and auto-dim-other-buffers forks. The clean 642-line core handles the hard plumbing; layer three focused changes plus integration on top.
+- Pros: full control over the exact spec (contact picker, notify-when-not-viewing, sound toggle) in cj/ idioms; the hard JSON-RPC/receive/buffer/media work is already done; upstream is dead-quiet so there is no divergence cost to forking.
+- Cons: own the maintenance (the signal-cli update treadmill, reconnect/resync) and signel's existing bugs.
+
+** Rejected: install signel from MELPA + advice the internals
+=(use-package signel :ensure t)=, add the contact picker and link command as additive config, advice =signel--handle-receive= for the notify behavior.
+- Why not: the notification change and the #2 input-clobber fix are internal edits; advising them is fragile and ugly. With upstream dead, forking loses nothing and keeps those edits clean.
+
+** Rejected: custom Emacs client from scratch on signal-cli
+- Why not: rewrites the JSON-RPC loop, buffer management, and media that signel already does cleanly. "Read signel as reference then retype it" is forking with extra steps.
+
+** Rejected: signal-cli-rest-api (Docker)
+- Why not: a Docker dependency for a personal Emacs feature is heavy; two moving parts instead of one daemon.
+
+** Rejected (tail): Signal-as-MCP-tool via gptel
+- Why not: agent-mediated messaging, not a chat client; undershoots "pick a contact and chat"; foxl-ai MCP server is v0.1.1 and unproven.
+
+** Rejected (tail): bridge to ERC via a Signal↔IRC gateway
+- Why not: a second daemon plus a bridge to keep alive; double the breakage surface; bridge maturity unverified.
+
+** Rejected (tail): org-backed (receive-hook writes per-contact org)
+- Why not: org is not a live chat surface; reframes the picked option into note-taking.
+
+* Design
+
+** Fork integration
+- Fork lives at =~/code/signel= (already cloned). New module =modules/signal-config.el= wires it with =use-package signel :load-path "~/code/signel" :ensure nil=, mirroring the org-drill and auto-dim forks.
+- Keybindings under a dedicated prefix (candidate =C-; M= for Messages, since =C-; S= is Slack). Commands: start/link, contact picker, dashboard, toggle sound.
+- =signel-account= set from a defcustom or authinfo, not hardcoded.
+
+** Three changes on top of the fork
+1. *Contact picker.* New command =cj/signel-pick-contact= (or rename signel's =signel-chat=): call signal-cli =listContacts= over JSON-RPC, cache name→number, present a =completing-read= of names, open the chat buffer for the chosen contact. signel today opens by raw phone number and only lists chats that already received a message.
+2. *Linking / auth.* New command =cj/signel-link= wrapping =signal-cli link -n "Emacs"=, capturing the =tsdevice:= URI and rendering it as a scannable QR (via =qrencode= to an image buffer, or a CLI QR) so the phone's Linked Devices can scan it. signel assumes an already-linked account.
+3. *Notification behavior.* Edit =signel--handle-receive='s notify block: (a) suppress the notification when the message's chat buffer is the selected window's buffer (actively viewing); (b) route through Craig's =notify= script instead of bare =notifications-notify=; (c) sound off by default behind a defcustom toggle (=cj/signel-notify-sound=, default nil).
+
+** Folded-in upstream fix
+- Issue #2 (incoming messages clobber in-progress input): the redraw in =signel--insert-msg= / =signel--draw-prompt= replaces the prompt region while the user may be mid-type. Preserve and restore any unsent input across the insert. Fix it in the fork since it sits right next to the notification edit.
+
+** Data flow
+signal-cli (linked secondary device) ⇄ JSON-RPC over the subprocess stdio ⇄ signel process filter → dispatch → receive handler → chat buffer insert + notify. Send: chat-buffer prompt → =send= RPC. No persistence beyond what signal-cli stores; Emacs holds session state (contact cache, active chats) in memory.
+
+** Error handling
+- signal-cli not installed / not linked → =user-error= with the remedy (install, or =cj/signel-link=). signel already guards the missing executable and unset account.
+- RPC errors map to the originating chat buffer (signel already does this).
+- Process death → sentinel logs; add a visible message and a restart hint.
+
+** Testing
+- Pure helpers (contact-list parsing from a fixture JSON, the notify-suppression predicate given a buffer/window state, the input-preserve logic) get ERT unit tests with mocked signal-cli output — no live account needed.
+- The live loop (link, receive, send, notify) is verified manually against a linked account (scripted manual checklist), since it needs the phone and a real signal-cli.
+
+** Observability
+- signel already logs RPC traffic to =*signel-log*=. Keep it; it's the diagnostic surface for the update-treadmill breakages.
+
+* Open Questions
+- [ ] Fork-vs-MELPA+advice is decided (fork). Record as an ADR via =arch-decide= if a formal record is wanted.
+- [ ] Keybinding prefix: =C-; M= (Messages) vs another free chord — confirm against the existing =C-;= map.
+- [ ] Account source: defcustom vs authinfo lookup (mirror the Slack token pattern in slack-config.el?).
+- [ ] Whether to push the fork to cjennings.net as a tracked remote (like org-drill) or keep it a local checkout.
+
+* Next Steps
+1. Install signal-cli: =yay -S signal-cli= (interactive, Craig).
+2. Link as a secondary device (=cj/signel-link= once built, or =signal-cli link= directly) — scan the QR from the phone.
+3. Implement on the fork against the live engine (TDD the pure helpers, manual-verify the live loop) via =/start-work=.
+4. archsetup request to add signal-cli to the standard install — sent 2026-05-26.

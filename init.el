@@ -75,6 +75,7 @@
 (require 'slack-config)          ;; slack client via emacs-slack
 (require 'linear-config)         ;; Linear.app issue tracking (deepsat workspace)
 (require 'telega-config)         ;; telegram client via telega.el (TDLib in docker)
+(require 'signal-config)         ;; signal client via forked signel + signal-cli
 (require 'eshell-config)         ;; emacs shell configuration
 (require 'vterm-config)          ;; vterm + F12 toggle + tmux history copy
 (require 'ai-vterm)               ;; in-Emacs Claude launcher (vertical-split vterm)
