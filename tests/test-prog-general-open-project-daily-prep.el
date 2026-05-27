@@ -2,12 +2,14 @@
 
 ;;; Commentary:
 ;; `cj/open-project-daily-prep' (C-c p d) opens inbox/today-prep.org under the
-;; current Projectile project root, in another window.  It is project-scoped:
-;; projects without a prep file get a message instead.  `projectile-project-root'
-;; (external project state) and `find-file-other-window' (the window/visit
-;; boundary) are stubbed; real temp directories drive the file-exists check, and
-;; the message branches are checked via the command's return value rather than
-;; by stubbing `message'.
+;; current Projectile project root, via `cj/--find-file-respecting-split' so it
+;; lands in the other window when the frame is split and reuses the current
+;; window otherwise (matching `cj/open-project-root-todo').  It is
+;; project-scoped: projects without a prep file get a message instead.
+;; `projectile-project-root' (external project state) and
+;; `cj/--find-file-respecting-split' (the window/visit boundary) are stubbed;
+;; real temp directories drive the file-exists check, and the message branches
+;; are checked via the command's return value rather than by stubbing `message'.
 
 ;;; Code:
 
@@ -16,8 +18,8 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (require 'prog-general)
 
-(ert-deftest test-prog-general-daily-prep-opens-existing-in-other-window ()
-  "Normal: in a project with a prep file, open it in another window."
+(ert-deftest test-prog-general-daily-prep-opens-existing-respecting-split ()
+  "Normal: in a project with a prep file, open it respecting the split."
   (let* ((root (file-name-as-directory (make-temp-file "cj-prep-" t)))
          (prep (expand-file-name "inbox/today-prep.org" root))
          opened)
@@ -26,7 +28,8 @@
           (make-directory (expand-file-name "inbox" root) t)
           (write-region "" nil prep)
           (cl-letf (((symbol-function 'projectile-project-root) (lambda () root))
-                    ((symbol-function 'find-file-other-window) (lambda (f) (setq opened f))))
+                    ((symbol-function 'cj/--find-file-respecting-split)
+                     (lambda (f) (setq opened f))))
             (cj/open-project-daily-prep))
           (should (equal opened prep)))
       (delete-directory root t))))
