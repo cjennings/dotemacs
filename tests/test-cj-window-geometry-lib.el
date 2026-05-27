@@ -168,5 +168,34 @@ window forms the full-height right half -> nil."
     (should (null (cj/window-at-edge 'sideways)))
     (should (null (cj/window-at-edge nil)))))
 
+;; ----------------------------- window-size-fraction -----------------------------
+
+(ert-deftest test-cj-window-geometry-size-fraction-normal ()
+  "Normal: a window half the frame returns 0.5."
+  (should (= (cj/window-size-fraction 20 40) 0.5)))
+
+(ert-deftest test-cj-window-geometry-size-fraction-clamps-high ()
+  "Boundary: a near-full window is clamped to the 0.95 ceiling."
+  (should (= (cj/window-size-fraction 40 40) 0.95)))
+
+(ert-deftest test-cj-window-geometry-size-fraction-clamps-low ()
+  "Boundary: a vanishingly small window is clamped to the 0.05 floor."
+  (should (= (cj/window-size-fraction 0 40) 0.05)))
+
+(ert-deftest test-cj-window-geometry-size-fraction-custom-bounds ()
+  "Boundary: explicit MIN-FRAC/MAX-FRAC override the defaults."
+  (should (= (cj/window-size-fraction 1 40 0.1 0.9) 0.1))
+  (should (= (cj/window-size-fraction 39 40 0.1 0.9) 0.9)))
+
+(ert-deftest test-cj-window-geometry-size-fraction-zero-frame-nil ()
+  "Error: a non-positive frame size returns nil (no divide-by-zero)."
+  (should (null (cj/window-size-fraction 20 0)))
+  (should (null (cj/window-size-fraction 20 -5))))
+
+(ert-deftest test-cj-window-geometry-size-fraction-non-number-nil ()
+  "Error: non-numeric arguments return nil."
+  (should (null (cj/window-size-fraction nil 40)))
+  (should (null (cj/window-size-fraction 20 nil))))
+
 (provide 'test-cj-window-geometry-lib)
 ;;; test-cj-window-geometry-lib.el ends here

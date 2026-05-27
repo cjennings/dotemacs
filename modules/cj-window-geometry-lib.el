@@ -112,5 +112,22 @@ a fresh half."
               (not (window-in-direction (nth 1 perp) w))))
        (window-list (or frame (selected-frame)) 'never)))))
 
+(defun cj/window-size-fraction (window-size frame-size &optional min-frac max-frac)
+  "Return WINDOW-SIZE as a fraction of FRAME-SIZE, clamped to [MIN-FRAC, MAX-FRAC].
+
+WINDOW-SIZE and FRAME-SIZE are line or column counts.  MIN-FRAC and
+MAX-FRAC default to 0.05 and 0.95: a side window pinned to either extreme
+is almost certainly a mistake, and a 0.0 fraction makes
+`display-buffer-in-side-window' unusable.  Returns nil when FRAME-SIZE is
+not a positive number, or WINDOW-SIZE is not a number, so a caller can
+fall back to its own default instead of dividing by zero.
+
+This is the kernel for remembering a side window's user-resized size: capture
+the fraction at toggle-off, replay it on the next toggle-on."
+  (when (and (numberp window-size) (numberp frame-size) (> frame-size 0))
+    (let ((lo (or min-frac 0.05))
+          (hi (or max-frac 0.95)))
+      (max lo (min hi (/ (float window-size) frame-size))))))
+
 (provide 'cj-window-geometry-lib)
 ;;; cj-window-geometry-lib.el ends here

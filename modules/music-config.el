@@ -94,6 +94,7 @@
 (require 'subr-x)
 (require 'user-constants)
 (require 'keybindings)  ;; provides cj/custom-keymap
+(require 'cj-window-toggle-lib)  ;; side-window size memory (F10 toggle)
 
 ;;; Settings (no Customize)
 
@@ -513,20 +514,35 @@ Intended for use on `emms-player-finished-hook'."
 )
 
 
+(defvar cj/music-playlist-window-height 0.3
+  "Default fraction of frame height for the F10 music playlist side window.
+Used until the playlist is resized and toggled off this session; after that,
+the toggled-off height is remembered in `cj/--music-playlist-height'.")
+
+(defvar cj/--music-playlist-height nil
+  "Last height fraction the playlist side window was toggled off at.
+nil means fall back to `cj/music-playlist-window-height'.  In-memory only --
+resets each Emacs session.")
+
 (defun cj/music-playlist-toggle ()
-  "Toggle the EMMS playlist buffer in a bottom side window."
+  "Toggle the EMMS playlist buffer in a bottom side window.
+The window opens at `cj/music-playlist-window-height'; if it has been
+resized and toggled off this session, it reopens at that remembered height."
   (interactive)
   (let* ((buf-name cj/music-playlist-buffer-name)
          (buffer (get-buffer buf-name))
          (win (and buffer (get-buffer-window buffer))))
     (if win
         (progn
+          (cj/side-window-capture-size win 'bottom 'cj/--music-playlist-height)
           (delete-window win)
           (message "Playlist window closed"))
       (progn
         (cj/emms--setup)
         (setq buffer (cj/music--ensure-playlist-buffer))
-        (setq win (display-buffer-in-side-window buffer '((side . bottom) (window-height . 0.5))))
+        (setq win (cj/side-window-display
+                   buffer 'bottom 'cj/--music-playlist-height
+                   cj/music-playlist-window-height))
         (select-window win)
         (with-current-buffer buffer
           (if (and (fboundp 'emms-playlist-current-selected-track)

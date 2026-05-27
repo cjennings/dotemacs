@@ -81,5 +81,50 @@ placement; the remaining alist entries are passed through."
                      filtered)))
     (display-buffer-in-direction buffer effective)))
 
+;; --------------------------- side-window helpers ---------------------------
+;;
+;; A second, simpler pattern for `display-buffer-in-side-window' consumers.
+;; Side windows are atomic (they can't be split), so there's no direction to
+;; capture -- only a size on the side's axis.  These helpers remember that
+;; size across toggles: capture the user's mouse-resized size at toggle-off,
+;; replay it on the next toggle-on.  The remembered value is held in the
+;; consumer's own state variable (passed by symbol) and is in-memory only.
+
+(defun cj/side-window-capture-size (window side size-var)
+  "Write WINDOW's size on SIDE's axis, as a frame fraction, into SIZE-VAR.
+
+SIDE is a `display-buffer-in-side-window' side symbol: left or right
+capture width, top or bottom capture height.  SIZE-VAR is the symbol of the
+consumer's stored-fraction variable; it receives the captured value via
+`set'.  Capturing at toggle-off and replaying on the next toggle-on is what
+makes a manual mouse-resize stick for the rest of the session.
+
+No-op when WINDOW is nil or not live, or when the fraction can't be computed
+\(see `cj/window-size-fraction') -- SIZE-VAR keeps its prior value so the
+caller's default still applies."
+  (when (window-live-p window)
+    (let* ((horizontal (memq side '(left right)))
+           (frame (window-frame window))
+           (win-size (if horizontal
+                         (window-total-width window)
+                       (window-total-height window)))
+           (frame-size (if horizontal (frame-width frame) (frame-height frame)))
+           (frac (cj/window-size-fraction win-size frame-size)))
+      (when frac (set size-var frac)))))
+
+(defun cj/side-window-display (buffer side size-var default-size)
+  "Display BUFFER in a SIDE side window at the remembered or DEFAULT-SIZE size.
+
+SIDE is a `display-buffer-in-side-window' side symbol.  SIZE-VAR is the
+symbol of the consumer's stored-fraction variable; its value is used when
+bound and non-nil, otherwise DEFAULT-SIZE.  The size lands under
+`window-width' for a left/right side and `window-height' for top/bottom.
+Returns the displayed window (or nil if display fails)."
+  (let* ((stored (and (boundp size-var) (symbol-value size-var)))
+         (size (or stored default-size))
+         (size-key (if (memq side '(left right)) 'window-width 'window-height)))
+    (display-buffer-in-side-window
+     buffer (list (cons 'side side) (cons size-key size)))))
+
 (provide 'cj-window-toggle-lib)
 ;;; cj-window-toggle-lib.el ends here
