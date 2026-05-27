@@ -286,6 +286,28 @@ edge, less the tag width.")
     (org-backward-heading-same-level 1)
     (org-narrow-to-subtree))
 
+  (defun cj/--org-follow-link-same-window ()
+    "Follow the Org link at point, opening file links in the current window.
+Org's default for file links is `find-file-other-window' (via
+`org-link-frame-setup'); this overrides it so the file replaces the buffer
+the link sits in.  Off a link this does nothing, so a stray click is a silent
+no-op rather than a \"No link found\" error."
+    (when (eq (org-element-type (org-element-context)) 'link)
+      (let ((org-link-frame-setup (cons '(file . find-file) org-link-frame-setup)))
+        (org-open-at-point))))
+
+  (defun cj/org-follow-link-at-mouse-same-window (event)
+    "Follow the Org link clicked in EVENT, opening file links in the same window.
+Bound to S-mouse-1 and mouse-3 in `org-mouse-map' -- the keymap org attaches
+to each link as a `keymap' text property.  That layer outranks both
+`org-mode-map' and the `mouse-trap-mode' emulation keymap, so the gesture
+lands even where mouse-trap otherwise disables clicks.  A shift-click or
+right-click on a link opens it in place; org's other-window default
+(mouse-2 / plain click) is left alone."
+    (interactive "e")
+    (mouse-set-point event)
+    (cj/--org-follow-link-same-window))
+
   :hook
   (org-mode . turn-on-visual-line-mode)
   (org-mode . (lambda () (setq-local tab-width 8)))
@@ -300,7 +322,15 @@ edge, less the tag width.")
 
   (cj/org-general-settings)
   (cj/org-appearance-settings)
-  (cj/org-todo-settings))
+  (cj/org-todo-settings)
+
+  ;; Open a file link in the current window on shift-left-click or right-click.
+  ;; These bind into `org-mouse-map' (the per-link `keymap' text property)
+  ;; rather than `org-mode-map' so they outrank the `mouse-trap-mode' emulation
+  ;; keymap, which otherwise swallows clicks in org buffers.  mouse-2 / plain
+  ;; click keep org's other-window default.
+  (keymap-set org-mouse-map "S-<mouse-1>" #'cj/org-follow-link-at-mouse-same-window)
+  (keymap-set org-mouse-map "<mouse-3>" #'cj/org-follow-link-at-mouse-same-window))
 
 ;; ------------------------------- Org Superstar -------------------------------
 
