@@ -48,13 +48,17 @@
 ;; uncomment when repo signatures expire and package installation is necessary
 ;; (setq package-check-signature nil)
 
-(setq debug-on-error t)    ;; default nil. turn on to debug issues only.
-(setq debug-on-quit t)     ;; debug on C-g (breaking out of hangs/freezes)
+(setq debug-on-error t)    ;; default nil. on during startup to catch init errors.
+
+;; Deliberately NOT setting `debug-on-quit' here. Leaving it on wires C-g to
+;; the debugger, so the normal "break out of a hang" reflex traps you in a
+;; recursive-edit instead of aborting -- and if a startup error fires before
+;; the cleanup hook below runs, the flag stays on for the whole session.
+;; C-g stays an escape hatch.
 
 (add-hook 'emacs-startup-hook
           (lambda ()
-            (setq debug-on-error nil)
-            (setq debug-on-quit nil)))
+            (setq debug-on-error nil)))
 
 ;; ------------------------------ Bug Workarounds ------------------------------
 
