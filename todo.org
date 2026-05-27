@@ -41,7 +41,30 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** DOING [#B] Implement a Signal Client :feature:
+** DOING [#B] Signal client — forked signel :feature:
+Parent task for the Emacs Signal client. Engine: signal-cli (linked secondary device). Front end: a fork of signel at =~/code/signel=, wired through =modules/signal-config.el=. Design: [[file:docs/design/signal-client.org][docs/design/signal-client.org]]. Child issues below.
+
+*** 2026-05-26 Tue @ 20:06:58 -0500 Decided: fork signel rather than depend on it
+signel is on MELPA but stale (one-author v0.1, all commits in a Jan-2026 burst, unattended tracker, no PRs). The spec needs internal edits (notify behavior, input-clobber fix), which are clean in a fork and hacky via advice, and a dead upstream means no divergence cost. Rejected: adopt-from-MELPA + advice, build-from-scratch, signal-cli-rest-api (Docker), MCP-tool, ERC bridge. Full rationale in the design doc.
+
+*** 2026-05-26 Tue @ 20:06:58 -0500 Linked as secondary device; contact parser verified against live shape
+Installed signal-cli 0.14.4.1 (AUR; imported AsamK's signing key FA10826A... to clear the makepkg verification). Linked the account via QR. Built and unit-tested the pure helper layer in =modules/signal-config.el= (contact-list parsing, notify-when-not-viewing predicate) with =tests/test-signal-config.el=. Confirmed the live =listContacts= shape: givenName/familyName are top-level in 0.14, not under profile as first assumed; corrected the parser and verified it produces a picker entry for all 94 real contacts. Sent a request to archsetup to add signal-cli to the standard install.
+
+*** TODO [#B] Contact picker command :feature:
+=cj/signel-pick-contact=: call signal-cli =listContacts= over JSON-RPC, feed the result through =cj/signal--parse-contacts= (done), =completing-read= the labels, open the chosen recipient's chat. signel today opens by raw phone number only.
+
+*** TODO [#B] Notify only for the unviewed conversation :feature:
+Wire =cj/signal--should-notify-p= (done) into signel's =signel--handle-receive= notify block (signel.el:277), route through Craig's notify script instead of bare =notifications-notify=, and gate sound behind a defcustom that defaults off.
+
+*** TODO [#B] Input clobber on incoming message — upstream signel #2 :bug:
+signel.el:502 (=signel--insert-msg=) does =(delete-region (point) (point-max))=, wiping any unsent text in the prompt when a message arrives mid-typing. Preserve and restore the pending input across the redraw. Fix in the fork; it sits next to the notify edit.
+
+*** TODO [#B] Link command with QR :feature:
+=cj/signel-link= wrapping =signal-cli link -n NAME=, capturing the =sgnl://linkdevice= URI and rendering it as a scannable QR (qrencode). Convenience for re-linking; the first link was done by hand this session.
+
+*** TODO [#B] use-package wiring :feature:
+=use-package signel :load-path "~/code/signel" :ensure nil= in =signal-config.el=, plus a keybinding prefix (candidate =C-; M= for Messages), and the account source (defcustom vs authinfo, mirroring slack-config).
+
 *** 2026-05-26 Tue @ 15:15:43 -0500 Candidate Signal clients / CLIs
 Signal has no official API, so everything below is unofficial and can break on Signal-Server changes (signal-cli notably expires after about three months without updates). All link as a secondary device to an existing phone, the safer model.
 
@@ -69,31 +92,14 @@ Recommendation: consolidate everyday terminals onto eat, but keep ghostel (or vt
 
 Eval plan (from the research doc): install EAT alongside vterm, run the same workloads through both, decide. Test matrix: Claude Code TUI, lazygit, htop/btop, yazi, a heavy-output build, ssh to a remote, and eshell with =eat-eshell-mode=. Assess rendering fidelity, stability under heavy output, and Emacs-native line editing. Switch only if it covers every workflow without regression.
 
-** DONE [#B] Restore the daily-prep keybinding under Projectile :feature:keybinding:
-CLOSED: [2026-05-26 Tue]
-Shipped in commit 8e5efcab and verified live: =C-c p d= opens =inbox/today-prep.org= in the other window, project-scoped; deadgrep-in-dir moved to =C-c p G=, plain deadgrep dropped, deadgrep-here stays on =C-c p g=. Settled questions: lowercase d, per-project, other window via =find-file-other-window=. Tests in =tests/test-prog-general-open-project-daily-prep.el=.
-=C-c p d= should open the project's daily prep (=<project-root>/inbox/today-prep.org=, a stable symlink) and no longer works. Keep it project-scoped under Projectile on purpose: the daily prep only exists in the work project, so a project-scoped opener in =projectile-command-map= is the right home, mirroring =cj/open-project-root-todo= (=C-c p t=). Filed from the work-project session 2026-05-26 — it's an Emacs-config change, so it lives here.
+** TODO [#B] Headline indicators wrap to a second row :bug:org:
+The org-tidy property dot (=·=) and the fold ellipsis (=org-ellipsis= " ▾") spill onto a second visual row on some headings, with trailing whitespace after the heading. Seen across the agenda/todo view (e.g. "Rework dev F-keys", "Module-by-module hardening", "GPTel Work").
 
-Root cause: there is no daily-prep binding or opener anywhere in the config (checked the modules and the running daemon — no "prep" function). It was almost certainly eval'd live into the daemon in a past session and never written to a module, so it vanished on restart. The fix must be persisted to a module, not just eval'd live. =C-c p d= currently resolves to =cj/deadgrep-in-dir=, so the =d= slot is taken.
+Not a regression of the tag right-align work — that fix is intact. =cj/org-tag-right-margin= is 5, =org-tags-column= 0, org-tidy inline with =·=, both in =modules/org-config.el= and the running daemon.
 
-Approach: mirror =cj/open-project-root-todo= at =modules/prog-general.el:175= and its =:bind (:map projectile-command-map ...)= block (lines 153-155). The prep file is in a subdir (=inbox/today-prep.org=), not the project root, so target the subdir path directly rather than =cj/find-project-root-file= (which only scans the root):
+Trigger: a heading that has a hidden =:PROPERTIES:= drawer (→ org-tidy =·=) AND is folded with subtree content (→ org-ellipsis " ▾") carries both markers. Headings with only one marker stay on-line; the pair overflows. =cj/org--tag-align-spec= right-aligns the tag to =(- right (+ tagwidth 5))=, reserving 5 columns, but when the heading text runs long the =:align-to= target falls left of where the text ends, so the space can't stretch and the tag + =·= + " ▾" push past the window edge and wrap.
 
-#+begin_src emacs-lisp
-(defun cj/open-project-daily-prep ()
-  "Open inbox/today-prep.org in the current Projectile project root."
-  (interactive)
-  (if-let ((root (projectile-project-root)))
-      (let ((file (expand-file-name "inbox/today-prep.org" root)))
-        (if (file-exists-p file)
-            (cj/--find-file-respecting-split file)
-          (message "No inbox/today-prep.org in project: %s" root)))
-    (message "Not in a Projectile project")))
-#+end_src
-
-Open questions to settle when we tackle it:
-- Which key? =d= is taken (=cj/deadgrep-in-dir=). Free lowercase in =projectile-command-map=: =h=, =n=, =w=, =y= (none a strong "daily prep" mnemonic). Or override =d=, or add a sub-prefix.
-- Behavior outside the work project? Resolving relative to =projectile-project-root= makes it per-project; only work has a prep doc, so elsewhere it hits the "No prep" message. Acceptable, hard-scope to work, or offer to create one?
-- Same window or other window? Mirror =cj/open-project-root-todo='s =cj/--find-file-respecting-split=, or plain =find-file=?
+Fix direction: account for the indicator width in the reservation, or skip the right-align when the heading text is too long to fit tag+indicators (fall back to inline tags), or reconsider the display-property approach for long headings. Confirm against a few frame widths — the wrap point is width-dependent.
 
 ** PROJECT [#B] Implement ai-kb :feature:ai:kb:
 Build v1 of the AI knowledge base per [[file:docs/design/ai-kb.org][docs/design/ai-kb.org]] (Ready; six reviews incorporated, all decisions resolved 2026-05-24). Step 1 splits into 1a (the safe write path — minimum usable) and 1b (retrieval, maintenance, push), since =remember= depends on =index=+=lint= and the adapter depends on =remember=. Step 2 is the Emacs layer: a full org-roam profile on switch, the human-edit safety model (same write path as the agent), and the browsing surface. Step 3 and the LLM-Wiki layer are vNext. Children are ordered by build sequence; the server bootstrap is the prerequisite.
@@ -1710,7 +1716,7 @@ Both cache builders' =run-with-idle-timer= calls are wrapped in =(unless noninte
 
 =org-babel-config.el= set =org-confirm-babel-evaluate= to nil globally, so every source block in every Org file (cloned repos, downloaded notes, web clips) ran without confirmation. Changed the default to =t= (confirm before running). Replaced the old =babel-confirm= command (which reported, and toggled only with a prefix arg) with =cj/org-babel-toggle-confirm=, a plain toggle bound to =C-; k= for flipping confirmation off in trusted files and back on. 3 ERT tests cover the toggle both directions plus the binding.
 
-**** TODO [#C] Rebind babel-confirm toggle off =C-; k= :keybinding:solo:discuss:
+**** TODO [#B] Rebind babel-confirm toggle off =C-; k= :keybinding:solo:discuss:
 
 =cj/org-babel-toggle-confirm= landed on =C-; k= as a placeholder. Pick a permanent home — likely under an Org-specific prefix rather than the global =C-;= map.
 
@@ -2344,7 +2350,7 @@ feature is broken end-to-end.  Change the URL to
 =http://localhost:8080/imp= (and consider switching the launch to
 =browse-url= so the user's default protocol handler is respected).
 
-**** TODO [#C] Document or vendor strapdown.js CDN dependency in =markdown-preview= :cleanup:solo:discuss:
+**** TODO [#B] Document or vendor strapdown.js CDN dependency in =markdown-preview= :cleanup:solo:discuss:
 
 =cj/markdown-html= (=modules/markdown-config.el:48-51=) embeds a
 =<script src="http://ndossougbe.github.io/strapdown/dist/strapdown.js">=
@@ -6605,3 +6611,28 @@ Shipped in commit 3acdb28e. Root cause was mu4e's main-view =display-buffer-full
 CLOSED: [2026-05-26 Tue]
 Shipped in commit 6c7f9ae2: =slack-buffer-function= set to =cj/slack--display-buffer= (=pop-to-buffer= with =inhibit-same-window= + reuse/use-some/pop-up action), so a room reuses the split's other window and never takes over the selected one. Tests cover split-placement and the selected-window-preserved invariant.
 
+** DONE [#B] Restore the daily-prep keybinding under Projectile :feature:keybinding:
+CLOSED: [2026-05-26 Tue]
+Shipped in commit 8e5efcab and verified live: =C-c p d= opens =inbox/today-prep.org= in the other window, project-scoped; deadgrep-in-dir moved to =C-c p G=, plain deadgrep dropped, deadgrep-here stays on =C-c p g=. Settled questions: lowercase d, per-project, other window via =find-file-other-window=. Tests in =tests/test-prog-general-open-project-daily-prep.el=.
+=C-c p d= should open the project's daily prep (=<project-root>/inbox/today-prep.org=, a stable symlink) and no longer works. Keep it project-scoped under Projectile on purpose: the daily prep only exists in the work project, so a project-scoped opener in =projectile-command-map= is the right home, mirroring =cj/open-project-root-todo= (=C-c p t=). Filed from the work-project session 2026-05-26 — it's an Emacs-config change, so it lives here.
+
+Root cause: there is no daily-prep binding or opener anywhere in the config (checked the modules and the running daemon — no "prep" function). It was almost certainly eval'd live into the daemon in a past session and never written to a module, so it vanished on restart. The fix must be persisted to a module, not just eval'd live. =C-c p d= currently resolves to =cj/deadgrep-in-dir=, so the =d= slot is taken.
+
+Approach: mirror =cj/open-project-root-todo= at =modules/prog-general.el:175= and its =:bind (:map projectile-command-map ...)= block (lines 153-155). The prep file is in a subdir (=inbox/today-prep.org=), not the project root, so target the subdir path directly rather than =cj/find-project-root-file= (which only scans the root):
+
+#+begin_src emacs-lisp
+(defun cj/open-project-daily-prep ()
+  "Open inbox/today-prep.org in the current Projectile project root."
+  (interactive)
+  (if-let ((root (projectile-project-root)))
+      (let ((file (expand-file-name "inbox/today-prep.org" root)))
+        (if (file-exists-p file)
+            (cj/--find-file-respecting-split file)
+          (message "No inbox/today-prep.org in project: %s" root)))
+    (message "Not in a Projectile project")))
+#+end_src
+
+Open questions to settle when we tackle it:
+- Which key? =d= is taken (=cj/deadgrep-in-dir=). Free lowercase in =projectile-command-map=: =h=, =n=, =w=, =y= (none a strong "daily prep" mnemonic). Or override =d=, or add a sub-prefix.
+- Behavior outside the work project? Resolving relative to =projectile-project-root= makes it per-project; only work has a prep doc, so elsewhere it hits the "No prep" message. Acceptable, hard-scope to work, or offer to create one?
+- Same window or other window? Mirror =cj/open-project-root-todo='s =cj/--find-file-respecting-split=, or plain =find-file=?
