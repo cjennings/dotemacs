@@ -42,6 +42,9 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:feature:refactor:=.
 * Emacs Open Work
 ** DOING [#B] Signal client — forked signel :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-28
+:END:
 Parent task for the Emacs Signal client. Engine: signal-cli (linked secondary device). Front end: a fork of signel at =~/code/signel=, wired through =modules/signal-config.el=. Design: [[file:docs/design/signal-client.org][docs/design/signal-client.org]]. Child issues below.
 
 *** 2026-05-26 Tue @ 20:06:58 -0500 Decided: fork signel rather than depend on it
@@ -74,18 +77,90 @@ Fork commit 5ec56c0 added =signel--pending-input= (capture from input-marker to 
 *** TODO [#D] Include Signal groups in the picker :feature:no-sync:
 vNext after the 1:1 initiate-message flow is stable. Merge =listGroups= with =listContacts=, label groups distinctly, and preserve the current v1 behavior where the picker is contacts-only.
 
-*** 2026-05-26 Tue @ 15:15:43 -0500 Candidate Signal clients / CLIs
-Signal has no official API, so everything below is unofficial and can break on Signal-Server changes (signal-cli notably expires after about three months without updates). All link as a secondary device to an existing phone, the safer model.
+*** TODO [#B] C-; M prefix binding doesn't take effect on fresh Emacs launch :bug:
+Surfaced during the 2026-05-28 manual verify of test 1.  After a fresh restart, =C-; M SPC= did nothing — the =cj/signel-prefix-map= wasn't bound under =M= in =cj/custom-keymap=.  A live-reload of =modules/signal-config.el= via =emacsclient -e '(load ...)'= immediately activated the binding, so the wiring at =signal-config.el:278-280= (=(with-eval-after-load 'keybindings (when (boundp 'cj/custom-keymap) (keymap-set cj/custom-keymap "M" cj/signel-prefix-map)))=) IS correct in isolation but isn't firing on the real launch sequence.  Likely a load-order interaction or a use-package init/config timing issue (cf. the CLAUDE.md gotcha "Run a full Emacs launch after any use-package :config block edit" — modules can byte-compile clean and pass unit tests but fail at full Emacs launch).  Probable fix path: switch signal-config.el to the documented =cj/register-prefix-map= helper from =modules/keybindings.el= (the helpers exist exactly to remove each module's hidden assumption that =cj/custom-keymap= is bound at the right moment).  Reproduce: restart Emacs and try =C-; M SPC= without first reloading =signal-config.el=.
 
-- [[https://github.com/AsamK/signal-cli][signal-cli]] — CLI/daemon, the foundation. JSON-RPC over socket/TCP/HTTP, or D-Bus; easy to drive from elisp. Mature, actively maintained, headless-first. The engine to build on.
-- [[https://github.com/keenban/signel][signel]] — Emacs package. Drives signal-cli and parses its JSON; gives a conversation dashboard plus chat and send/receive. The only Emacs-native package doing the full loop. Lightly maintained.
-- [[https://github.com/bbernhard/signal-cli-rest-api][signal-cli-rest-api]] — REST/WebSocket wrapper around signal-cli (Docker). Clean HTTP surface, but adds a Docker dependency.
-- [[https://github.com/mrkrd/signal-msg][signal-msg]] — Emacs package, send-only via signal-cli. Trivial but no receive.
-- [[https://github.com/whisperfish/presage][presage]] — Rust library, not turnkey; too much glue for this.
-- [[https://github.com/foxl-ai/signal-cli][foxl-ai/signal-cli]] — newer Rust CLI on libsignal plus an MCP server; promising but v0.1.1 (March 2026) and unproven.
+*** TODO [#B] Chat buffer placement + exit keys :feature:ux:
+Surfaced during the 2026-05-28 manual verify of the initiate-message workflow.  The buffer where the user composes a message after picking a contact should:
+- Open in the bottom 50% of the frame (not float in whatever the default display-buffer rule picks).
+- Bind =C-c C-c= to send.
+- Bind =C-c C-k= to cancel and close the buffer gracefully (without leaving stale state in the signel fork's input-line cache).
+Touches both =modules/signal-config.el= (display-buffer rule + keymap) and the signel fork at =~/code/signel/signel.el= (the chat buffer's actual mode map and send/abort entry points).  Add ERT coverage for the abort path so the cache invariant survives.
 
-Recommendation: evaluate signal-cli as the engine (mature, headless, scriptable from elisp) with signel as the ready-made Emacs front end on top of it.
+** TODO [#B] Emacs Manual Testing and Validation :verify:
+SCHEDULED: <2026-05-29 Fri>
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-28
+:END:
+
+Hand-verify checklist Craig walks one item at a time after the relevant code lands. Each child names what is being verified, the exact steps to run, and the observable expected result. On pass, the child gets marked or deleted. On fail, the actual behavior gets logged under the step and the child is promoted to a top-level =TODO= bug per the verification.md handoff rule.
+
+Walk started 2026-05-28 (tests 1 + 2 verified — surfaced two Signel bugs along the way, both fixed before continuing).  Deferred to 2026-05-29: test 3 onward needs sending an actual Signal message, too late at night to be polite about it.  Picker → chat buffer opens cleanly; the send half is what remains to exercise.
+
+*** 2026-05-28 Thu @ 02:13:55 -0500 Verified: connect starts the daemon (after fix)
+=C-; M SPC= → "Signel connected." in echo area; =M-x list-processes= shows =signal-rpc= running (PID 1775279, command =/usr/bin/signal-cli -a +1510...=).  Two bugs surfaced and fixed during the verify:
+- The =with-eval-after-load 'keybindings= binding at =signal-config.el:280= didn't take effect on a fresh Emacs restart; a live-reload of =signal-config.el= activated the =C-; M= prefix.  Logged as a separate top-level TODO for follow-up (load-order or use-package interaction).
+- =cj/signel--ensure-started= referenced =signel--process-name= before signel had been autoloaded — the bare forward-declared =(defvar signel--process-name)= didn't actually bind the variable.  Fix: added =(require 'signel)= at the top of the function (=signal-config.el:170=) so the package loads before any of its private variables are read.  New ERT test =test-signal-config-ensure-started-requires-signel= captures the bug.
+
+*** 2026-05-28 Thu @ 02:16:45 -0500 Verified: picker opens with contact names
+=C-; M m= → minibuffer opened within ~1s, "Note to Self" pinned at the top, the 94 Signal contacts followed labeled "Name (+number)".  Picker behavior matches spec.  Surfaced a follow-up on the chat buffer that opens after a pick — placement + exit keys want refining; filed under L44 Signel.
+
+*** Signel: pick a contact and send a message
+What we're verifying: choosing a contact opens a chat buffer, =RET= at the prompt sends through =signel--send-input=, and the message arrives on the recipient's phone.
+- =C-; M m=, pick a contact you trust.
+- Type a short message at the prompt, press =RET=.
+- Check the recipient's phone.
+Expected: a =*Signel: +<number>*= buffer opens, the typed message renders with the =[HH:MM] <Me>= prefix on send, and arrives on the recipient's phone within a few seconds.
+
+*** Signel: Note-to-Self lands in the right Signal thread
+What we're verifying: =cj/signel-message-self= (=C-; M s=) resolves to =signel-account= and sending through it lands in the *Note to Self* thread on the phone, NOT a self-addressed display anomaly.  This is the spec's medium-priority manual verify from D3.
+- Press =C-; M s=.
+- Type "test note to self" at the prompt, press =RET=.
+- Open Signal on your phone, scroll to the *Note to Self* thread.
+Expected: a =*Signel: +<your-number>*= buffer opens in Emacs, the message sends, and the message appears in the phone's *Note to Self* thread (not in any other conversation).
+
+*** Signel: Note-to-Self via the picker's pinned entry
+What we're verifying: picking the pinned "Note to Self" entry through =cj/signel-message= resolves the same way as the direct command.
+- =C-; M m=, choose "Note to Self".
+Expected: the same =*Signel: +<your-number>*= buffer opens.  (No need to re-send; opening the right buffer proves the resolution.)
+
+*** Signel: typed input survives an incoming message
+What we're verifying: the clobber fix (fork commit 5ec56c0) preserves in-progress prompt input across =signel--insert-msg= when a message arrives mid-typing.
+- =C-; M m=, pick a contact.
+- Type a long unsent message at the prompt, do NOT press =RET=.
+- From a second device or by asking someone, send yourself a Signal message that lands in this chat (or any active chat).
+Expected: the incoming message renders above the prompt, the prompt redraws, and your typed text is still there at the prompt ready to send.
+
+*** Signel: dashboard opens
+What we're verifying: =signel-dashboard= (=C-; M d=) opens the active-chats dashboard.
+- Press =C-; M d=.
+Expected: a dashboard buffer opens listing active chats.
+
+*** Signel: stop tears down the daemon
+What we're verifying: =signel-stop= (=C-; M q=) deletes the process and clears the request-handler / buffer maps (the reconnect-invalidation contract from fork commit 4740d97).
+- Press =C-; M q=.
+- =M-x list-processes=.
+Expected: echo area shows "Signel service stopped.", and =list-processes= no longer lists =signal-rpc=.
+
+*** Signel: refresh forces a fresh contact fetch
+What we're verifying: =cj/signel-refresh-contacts= clears the cache and re-fetches via the new callback contract.
+- =C-; M SPC= to reconnect if you ran the stop test above.
+- =M-x cj/signel-refresh-contacts=.
+- Immediately =C-; M m=.
+Expected: the picker still opens cleanly with the same contact list (the refresh is silent; the picker is the visible check).  If you added a contact on the phone, it now appears.
+
+*** Font setup reaches a GUI frame created after a TTY frame (daemon)
+What we're verifying: emoji glyphs + fonts apply in a GUI frame even when the first daemon frame was a TTY.
+- emacs --daemon
+- emacsclient -t   (TTY frame first)
+- emacsclient -c   (then a GUI frame)
+- in the GUI frame, open a buffer with an emoji and check it renders, and M-S-f / fonts look right
+Expected: emoji renders and fonts are applied in the GUI frame.
+
 ** DOING [#B] Consolidate to EAT as the single terminal :terminal:eval:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-28
+:END:
 Evaluate whether EAT can be the one terminal for all usage and, if it holds up, switch to it from vterm. Reference: [[file:docs/2026-05-25-emacs-terminal-comparison.org][docs/2026-05-25-emacs-terminal-comparison.org]] (vterm vs eat vs ghostel research).
 
 Goal: a single terminal engine across every workflow, including covering what eshell is used for today.
@@ -100,15 +175,6 @@ Researched whether Claude Code runs cleanly in eat (Craig runs it in his Emacs t
 Recommendation: consolidate everyday terminals onto eat, but keep ghostel (or vterm) for the Claude Code workflow specifically — the scroll-pop / stuck-input bug and the slower heavy-stream handling are exactly what bites a long Claude session. Sources: [[https://github.com/cpoile/claudemacs][claudemacs]], [[https://github.com/stevemolitor/claude-code.el][claude-code.el]], [[https://codeberg.org/akib/emacs-eat][emacs-eat]].
 
 Eval plan (from the research doc): install EAT alongside vterm, run the same workloads through both, decide. Test matrix: Claude Code TUI, lazygit, htop/btop, yazi, a heavy-output build, ssh to a remote, and eshell with =eat-eshell-mode=. Assess rendering fidelity, stability under heavy output, and Emacs-native line editing. Switch only if it covers every workflow without regression.
-
-** TODO [#B] Headline indicators wrap to a second row :bug:org:
-The org-tidy property dot (=·=) and the fold ellipsis (=org-ellipsis= " ▾") spill onto a second visual row on some headings, with trailing whitespace after the heading. Seen across the agenda/todo view (e.g. "Rework dev F-keys", "Module-by-module hardening", "GPTel Work").
-
-Not a regression of the tag right-align work — that fix is intact. =cj/org-tag-right-margin= is 5, =org-tags-column= 0, org-tidy inline with =·=, both in =modules/org-config.el= and the running daemon.
-
-Trigger: a heading that has a hidden =:PROPERTIES:= drawer (→ org-tidy =·=) AND is folded with subtree content (→ org-ellipsis " ▾") carries both markers. Headings with only one marker stay on-line; the pair overflows. =cj/org--tag-align-spec= right-aligns the tag to =(- right (+ tagwidth 5))=, reserving 5 columns, but when the heading text runs long the =:align-to= target falls left of where the text ends, so the space can't stretch and the tag + =·= + " ▾" push past the window edge and wrap.
-
-Fix direction: account for the indicator width in the reservation, or skip the right-align when the heading text is too long to fit tag+indicators (fall back to inline tags), or reconsider the display-property approach for long headings. Confirm against a few frame widths — the wrap point is width-dependent.
 
 ** PROJECT [#B] Implement ai-kb :feature:ai:kb:
 Build v1 of the AI knowledge base per [[file:docs/design/ai-kb.org][docs/design/ai-kb.org]] (Ready; six reviews incorporated, all decisions resolved 2026-05-24). Step 1 splits into 1a (the safe write path — minimum usable) and 1b (retrieval, maintenance, push), since =remember= depends on =index=+=lint= and the adapter depends on =remember=. Step 2 is the Emacs layer: a full org-roam profile on switch, the human-edit safety model (same write path as the agent), and the browsing surface. Step 3 and the LLM-Wiki layer are vNext. Children are ordered by build sequence; the server bootstrap is the prerequisite.
@@ -488,139 +554,37 @@ Expected outcome:
 - Add a note to the local repository docs so future package failures do not
   lead to permanent insecure defaults.
 
-** TODO [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
+** TODO [#B] F-key Completion :feature:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-05-27
 :END:
-*** TODO [#B] Format keybindings move off F6 :refactor:cleanup:
-Move blacken-buffer (python), shfmt-buffer (sh), and clang-format-buffer (c)
-off F6 onto the =C-; f= prefix, which already hosts format-buffer bindings.
-Also remove projectile-run-project from F6 (it folds into the new F4).
-Touch the per-language config modules that currently bind F6 for formatting.
 
-Acceptance: F6 has no remaining format-or-run bindings in any module; =C-; f=
-prefix triggers the right formatter per major mode.
+The L546 ticket "Rework dev F-keys" landed roughly 75% as of the 2026-05-27 audit. F4 (compile+run dispatcher, project-type detection, clean-rebuild, projectile cache revert), F7 (coverage), and the format-key migration off F6 are all shipped with ERT coverage. F6 ships Phase 2a only — "All tests" and "Current file's tests" via plain F6 and C-F6.
 
-Depends on: none (start here -- clears F6 before F4/F6 work lands).
+Phase 2b remains: per-language test discovery, the "Run a test..." menu entry, M-F6 fast path, buffer-local last-test memory, and the spec-mandated "No tests found for <buffer>" error. The =dev-fkeys.el= header (L35–46) already sketches the tree-sitter capture-then-filter pattern needed to work around Emacs bug #79687 on the emacs-30 branch.
 
-*** TODO [#B] Project-type detection helper :feature:
-Single helper that returns a project-type symbol (=compiled=, =interpreted=,
-=unknown=) from the current buffer's project.  Uses
-=projectile-project-compilation-cmd= when set, then heuristic fallbacks:
-=go.mod=, =Makefile=, =Eask=, =package.json=, =pyproject.toml=,
-=docker-compose.yml=.  Lives near the F4 dispatcher.
+Two smaller cleanups also fall out: the header comment claims TS/JS is "punted for v1" while the cmd-builder at =dev-fkeys.el:384= actually emits a vitest/jest command, and the cmd-builder is a likely home for =cj/--tests-in-buffer= once it lands.
 
-Acceptance: ERT tests cover each heuristic in isolation plus a precedence
-case where projectile's cached cmd wins over the file heuristics.
+Open: helper home — keep =cj/--tests-in-buffer= in =dev-fkeys.el= (per L546 spec) or push it into =test-runner.el= (per the parallel "Fix up test runner" thread). Elisp "Run a test..." — drill into individual =ert-deftest= names, or keep the current regex-aggregate (=make test-name TEST=^test-<stem>-=).
 
-Depends on: none.
+*** TODO [#B] Per-language test discovery helper :feature:tests:
+Build =cj/--tests-in-buffer= returning a list of test names; tree-sitter capture-then-filter for python/go/ts/js per the bug #79687 workaround in =dev-fkeys.el= L35–46; sexp scan for elisp =ert-deftest= forms.
 
-*** TODO [#B] F4 compile+run dispatcher :feature:
-Build the F4 binding per spec: plain F4 opens a completing-read whose
-candidates depend on project-type (Compile / Run / Compile + Run [default] /
-Clean + Rebuild for compiled; Run only for interpreted).  C-F4 fast-paths to
-Compile; M-F4 fast-paths to Clean + Rebuild.  Both fast paths show a "not a
-compiled language" message and no-op on interpreted projects.  Reads
-projectile's per-project compile/run commands; no Docker-specific logic.
+*** TODO [#B] F6 Run-a-test menu entry :feature:tests:
+Add "Run a test..." to =cj/f6-test-runner= candidates; pre-select =cj/--last-test-run=; signal =user-error= "No tests found for <buffer>" when discovery returns nil.
 
-Acceptance: each candidate dispatches to the right projectile command; fast
-paths no-op cleanly on interpreted projects; F4 bindings live in one module.
+*** TODO [#B] M-F6 fast path :feature:tests:
+Bind =M-<f6>= to a thin wrapper that calls the same "Run a test..." path directly; release the reservation comment at =dev-fkeys.el:541=.
 
-Depends on: project-type detection helper.
+*** TODO [#B] Buffer-local cj/--last-test-run :feature:tests:
+Add the buffer-local var, set it on each "Run a test..." selection, use it as the completing-read default so a bare RET re-runs the last test.
 
-*** TODO [#B] Per-language test discovery :feature:tests:
-Provide a single =cj/--tests-in-buffer= function returning a list of test
-names for the current buffer's language.  Tree-sitter queries for Python,
-Go, TS/JS (treesit-auto already configured); built-in sexp scan for elisp
-(=ert-deftest= forms).  Parsing unopened test files uses with-temp-buffer +
-insert-file-contents + <lang>-ts-mode + treesit-query-capture.  Queries are
-spelled out in the spec above.
-
-Acceptance: ERT tests feed each language a fixture file and assert the
-expected test-name list comes back; missing grammar surfaces a clear error.
-
-Depends on: none (parallel-safe with F4 work).
-
-*** TODO [#B] F6 test dispatcher :feature:tests:
-Build the F6 binding per spec: plain F6 opens completing-read with "All
-tests", "Current file's tests", "Run a test..."; C-F6 fast-paths to current
-file's tests; M-F6 fast-paths to "Run a test...".  "Current file's tests"
-runs the buffer directly if it's a test file, otherwise finds matching test
-files via language conventions (elisp =tests/test-<module>*.el=, python
-=tests/test_<module>.py=, etc.) and runs them aggregated.  "Run a test..."
-pre-selects =cj/--last-test-run= (buffer-local) and errors with "No tests
-found for <buffer>" when discovery returns nothing -- no silent fallthrough.
-
-Acceptance: each entry point dispatches to the right runner; buffer-local
-last-test memory persists per source file; no-match error fires correctly.
-
-Depends on: per-language test discovery.
-
-*** TODO [#B] F7 hand-off to dev-fkeys story :feature:
-Once the coverage track ships ([[file:../docs/design/coverage.org][docs/design/coverage.org]]),
-confirm F7 binds =cj/coverage-report= and lives alongside F4/F6 in the same
-dev-fkeys module so the three keys read as one unit.  No new coverage logic
-here -- only the binding placement and a short comment block in the module
-pointing at the coverage design doc.
-
-Acceptance: F7 invokes coverage-report; F4/F6/F7 are visibly grouped in one
-module; coverage track is shipped before this lands.
-
-Depends on: the coverage-config track shipping; F4 and F6 sub-tasks above.
-
-*** 2026-05-15 Fri @ 19:16:08 -0500 Specification
-Consolidate the developer F-key block into a coherent sequence. F5 reserved for debug (separate ticket). Format bindings move off F6 to C-; f.
-
-Menu mechanism: =completing-read= everywhere (consistent with F7 coverage scope prompt and with the vertico/consult workflow in the rest of the config). No transient definitions.
-
-**F4 — compile + run**
-
-- F4 (no modifier): completing-read with candidates filtered by project type. Detection via projectile-project-compilation-cmd and heuristic fallbacks (go.mod, Makefile, Eask, package.json, pyproject.toml, docker-compose.yml).
-  - Compiled project candidates: "Compile", "Run", "Compile + Run" (default), "Clean + Rebuild"
-  - Interpreted project candidates: "Run" only
-- C-F4: fast path = Compile only. On interpreted projects, shows "not a compiled language" and no-ops.
-- M-F4: fast path = Clean + Rebuild. Same "not applicable" behavior on interpreted projects.
-
-The dispatcher reads projectile's per-project compile/run/test commands. No Docker-specific logic in the command itself. Container workflows are configured via projectile's prompt-and-cache (or .dir-locals.el from the dev-project-setup helper).
-
-**F6 — run tests**
-
-- F6 (no modifier): completing-read top-level:
-  - "All tests"
-  - "Current file's tests"
-  - "Run a test..." (nested completing-read with individual tests)
-- C-F6: fast path = "Current file's tests"
-- M-F6: fast path = "Run a test..."
-
-"Current file's tests": if current buffer is a test file, run it directly. If source file, find matching test file(s) via language conventions (elisp: tests/test-<module>*.el; python: tests/test_<module>.py; etc.) and run them aggregated.
-
-"Run a test...": build a candidate list of individual tests, pre-select the last-chosen test for this buffer (buffer-local cj/--last-test-run), present via completing-read. Pressing RET re-runs last. Memory is buffer-local so different source files remember their own last-test.
-
-Candidate set for "Run a test...":
-- If buffer is a test file: parse the file, return its test definitions.
-- If buffer is a source file: find matching test file(s) and aggregate their test definitions.
-- No matches: error out with "No tests found for <buffer>". Don't silently fall through.
-
-Per-language test discovery:
-- Python, Go, TypeScript/JavaScript: tree-sitter queries (treesit-auto already configured, grammars auto-install)
-  - Python: (function_definition name: (identifier) @name (:match "^test_" @name))
-  - Go: (function_declaration name: (identifier) @name (:match "^Test" @name))
-  - TS/JS: (call_expression function: (identifier) @fn arguments: (arguments (string) @name) (:match "^\\(test\\|it\\)$" @fn))
-  - Parsing unopened test files: use with-temp-buffer + insert-file-contents + python-ts-mode (etc.) + treesit-query-capture
-- Elisp: built-in sexp navigation; scan for (ert-deftest <name> ...) forms. No tree-sitter needed.
-
-*F7 — coverage* (already designed in docs/design/coverage.org)
-
-**Required moves:**
-- Move blacken-buffer (python), shfmt-buffer (sh), clang-format-buffer (c) off F6 to C-; f prefix (already the format-buffer prefix).
-- Move projectile-run-project off F6 (folds into the new F4 completing-read).
-
-**Ordering:**
-Do this after the coverage-config work ships. No churn mid-flight.
+*** TODO [#B] TS/JS coverage status sync :docs:cleanup:
+Update the =dev-fkeys.el= header comment (L33) — TS/JS is no longer punted; the cmd-builder at L384 emits vitest/jest. Document the prefer-vitest fallback.
 
 ** TODO [#B] Fix up test runner :bug:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-05-28
 :END:
 *** 2026-05-16 Sat @ 11:15:51 -0500 Ideas
 **** Current State
@@ -923,7 +887,7 @@ state.
   - failed first: =pytest --ff=
   - stop after first: =pytest -x=
   - coverage: =pytest --cov=...=
-- Parse output for failing node ids and file:line references.
+- Parse output for failing node ids and =file:line= references.
 - Read pytest cache for last-failed where useful.
 - Offer marker completion by parsing =pytest --markers= or config files.
 - Surface xfail/skip separately from hard failures.
@@ -975,7 +939,7 @@ Treat snapshot updates as an explicit command, not an automatic side effect.
 - Current file/module where possible.
 - Integration test file: =cargo test --test name=.
 - Support =-- --nocapture= toggle.
-- Parse compiler/test failures and file:line links.
+- Parse compiler/test failures and =file:line= links.
 
 **** Shell / Generic Ideas
 - Adapter for Makefile targets:
@@ -1005,7 +969,7 @@ Create a normalized =*Test Results*= buffer:
 - latest status per project
 - command and duration
 - pass/fail/skip counts
-- failure list with clickable file:line
+- failure list with clickable =file:line=
 - actions to rerun failed/current/all
 - links to coverage artifacts
 
@@ -1124,13 +1088,23 @@ Tie this into the existing coverage work:
 
 ** DOING [#B] Module-by-module hardening :harden:nosync:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-05-27
 :END:
 
 Review every file in =modules/= and capture concrete bugs, tests, refactors,
 and design improvements as child tasks. This is intentionally separate from the
 top-level architecture review: the architecture project tracks cross-cutting
 load/startup/test structure, while this project tracks module-specific work.
+
+Audit reconciliation 2026-05-27: four sessions between 2026-05-23 and
+2026-05-26 drained the umbrella significantly. Roughly 24 of the original
+~89 sub-task findings remain open (TODO/DOING/VERIFY) across all six tracks.
+Notable shipped work since the 2026-05-22 review: user-constants
+filesystem-init split, system-defaults smoke tests, env-desktop-p doc fix,
+popper-config removal, UI/navigation runtime smoke coverage, mu4e
+org-contacts coverage, prog-lisp smoke coverage, Org export tool guards.
+The six =***= track tasks are all still DOING (track status unchanged);
+the change is mass of completed sub-work, not track status.
 
 Re-review pass 2026-05-15:
 - Each of the six existing review tracks (foundation, custom editing, UI /
@@ -2452,9 +2426,15 @@ configuration (=text-config=, =diff-config=, =ledger-config=,
 =httpd-config=, =org-agenda-config-debug=).
 
 ** TODO [#C] M-F9 ai-vterm close removes the window split :quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-28
+:END:
 Closing the ai-vterm with M-F9 while its window is in a split deletes the split too (the sibling window goes away) instead of just closing the vterm and leaving the rest of the layout intact.
 
-** TODO [#C] Separate dashboard navigator color from list items :feature:
+** TODO [#C] Separate dashboard navigator color from list items :feature:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-28
+:END:
 The dashboard navigator (icons + labels) and the recentf/project/bookmark list items are both painted by =dashboard-items-face=: the navigator gets a =dashboard-items-face= overlay, and overlays beat text properties, so the per-button =dashboard-navigator= face is inert. To color the navigator independently of the items, override where that overlay is applied — advise or redefine =dashboard-insert-navigator=, or strip/replace the overlay's face.
 Triggered by: 2026-05-22 dashboard color work (L105).
 
@@ -2580,6 +2560,19 @@ Acceptance: =init.el= loads cleanly without EMMS; =make test= passes; parity
 walk recorded as a completion log entry under the parent task.
 
 Depends on: command + Dired/Dirvish rewire.
+
+** TODO [#C] music-config option-combination audit + tests :tests:harden:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-28
+:END:
+
+Two-part task surfaced 2026-05-28 during the Signel verify walk — generalized from the "are there combinations of options that we'd want to disallow together" question.
+
+Part 1 — enumerate the configurable option surface of =modules/music-config.el=: every =defcustom=, every behavior toggle, every backend-selection variable, every cross-cutting flag (auto-play, repeat, shuffle, follow-cursor, side-window-height-fraction, etc.). Audit each option for valid value ranges. Capture the matrix in =docs/design/music-config-options.org= (or inline in the test file's header — judgment call when the matrix lands).
+
+Part 2 — combinatorial test coverage. Use the =/pairwise-tests= skill: identify parameters, value partitions, and inter-parameter constraints, build a PICT model, generate the minimal test matrix that hits every 2-way combination. For each problematic combination the matrix surfaces, decide: (a) validate at config-load time with a =user-error= that names the conflict, (b) runtime guard in the affected command, or (c) doc-only warning in the option's docstring. Disallow only the genuinely-broken pairs; doc-warn the merely-confusing ones.
+
+The recent F10 side-window-height-fraction work and the EMMS-free refactor candidate ("Implement EMMS-free music-config architecture" above) are both natural near-term touchpoints — best to land this audit before the EMMS swap so the new architecture inherits a clean option spec.
 
 ** TODO [#C] GPTel Work :feature:ai:
 :PROPERTIES:
@@ -3056,7 +3049,7 @@ coverage / profile data, flycheck / flymake diagnostics.
 **** TODO [#B] Compilation buffer tools :feature:
 
 Read the most recent =compile= buffer output; parse error locations
-to file:line; summarize what broke.  Pairs with the F6 test-runner
+to =file:line=; summarize what broke.  Pairs with the F6 test-runner
 flow -- "tell me what's failing" becomes a single agent turn
 instead of paste + parse.
 
@@ -3114,7 +3107,7 @@ These may override useful defaults - review and pick better bindings:
 
 Interactive command that opens a review buffer with proposed per-subdirectory .dir-locals.el contents (projectile compile/run/test + cj/coverage-backend), optional starter Makefile when none exists, and gitignore updates. User edits inline, C-c C-c writes all files.
 
-Design: [[file:../docs/design/dev-setup-project.org][docs/design/dev-setup-project.org]]
+Design: [[file:docs/design/dev-setup-project.org][docs/design/dev-setup-project.org]]
 
 Scope of v1:
 - modules/dev-setup-config.el (command + review-buffer major mode)
@@ -3262,7 +3255,7 @@ Do this after the F-key rework ticket ships so F5 is the only hole left.
 
 Reusable profiling infrastructure for targeted slow-command investigation. Consolidates scattered profiler bindings (currently in =modules/config-utilities.el=) and adds two pure-helper-backed entry points: "profile next command" and "time region or sexp." Designed via =/brainstorm= 2026-04-26.
 
-Design: [[file:../docs/design/debug-profiling.org][docs/design/debug-profiling.org]]
+Design: [[file:docs/design/debug-profiling.org][docs/design/debug-profiling.org]]
 
 Implement via =/start-work= against the design — branch =feat/debug-profiling=, commits decomposed along the test-first split-for-testability boundary. Once shipped, use it as the v1 exercise on the queued [#B] org-capture target-building investigation.
 
@@ -3277,34 +3270,34 @@ This is partially implemented but has known issues that need fixing before it's 
 *Last worked on:* 2025-11-21
 *Current status:* Implementation complete but has bugs, needs testing
 
-**Known Issues to Fix:**
+*Known issues to fix:*
 
-1. **Double notes buffer appearing when pressing 'i' to insert note**
+1. /Double notes buffer appearing when pressing 'i' to insert note/
    - When user presses 'i' in document to insert a note, two notes buffers appear
    - Expected: single notes buffer appears
    - Need to debug why the insert-note function is creating duplicate buffers
 
-2. **Toggle behavior refinement needed**
+2. /Toggle behavior refinement needed/
    - The toggle between document and notes needs refinement
    - May have edge cases with window management
    - Need to test various scenarios
 
-**Testing Needed:**
+*Testing needed:*
 
-1. **EPUB files** - Test with EPUB documents (primary use case)
-2. **Reopening existing notes** - Verify it works when notes file already exists
-3. **Starting from notes file** - Test opening document from an existing notes file
-4. **PDF files** - Verify compatibility with PDF workflow
-5. **Edge cases:**
+1. /EPUB files/ - Test with EPUB documents (primary use case)
+2. /Reopening existing notes/ - Verify it works when notes file already exists
+3. /Starting from notes file/ - Test opening document from an existing notes file
+4. /PDF files/ - Verify compatibility with PDF workflow
+5. /Edge cases:/
    - Multiple windows open
    - Splitting behavior
    - Window focus after operations
 
-**Implementation Files:**
-- modules/org-noter-config.el - Custom workflow implementation
+*Implementation files:*
+- =modules/org-noter-config.el= - Custom workflow implementation
 - Contains custom functions for document/notes toggling and insertion
 
-**Context:**
+*Context:*
 This custom workflow is designed to make org-noter more ergonomic for Craig's reading/annotation
 workflow. It simplifies the toggle between document and notes, and streamlines note insertion.
 The core functionality is implemented but needs debugging before it's production-ready.
@@ -3700,7 +3693,7 @@ full translation table, migration steps, tests, and risks.
 :LAST_REVIEWED: 2026-05-22
 :END:
 
-F2 is the universal preview key. Currently bound in markdown-mode (markdown-preview) and org-mode (org-reveal, moved from F5). Extend to other modes where a "preview" action is natural:
+F2 is the universal preview key. Currently bound only in markdown-mode (markdown-preview, in =modules/markdown-config.el=). Org-reveal lives on =C-; o R= via =cj/org-map=, not F2. Extend F2 to other modes where a "preview" action is natural:
 
 - Hugo blog (hugo-config.el) — preview the post in browser
 - HTML / web-mode — open in browser
@@ -3709,16 +3702,41 @@ F2 is the universal preview key. Currently bound in markdown-mode (markdown-prev
 
 Keep the binding mode-local so F2 stays available as a global candidate where no preview makes sense.
 
-** TODO [#C] Build localrepo and document limitations :feature:
+** TODO [#C] Localrepo Documentation :feature:docs:localrepo:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-05-27
 :END:
 
-Repeatable installs and safe rollbacks.
+Audit on 2026-05-27 found the localrepo build half is shipped (=.localrepo/= holds 185 entries; =early-init.el= L135–165 wires the priority-200 pin above the local ELPA-mirror tier at 120–125 and the online fallback). The remaining "document limitations" half splits into one docs-set plus four gap-fix follow-ups that the docs cross-reference.
 
-.localrepo only contains packages from package.el archives.
-Treesitter grammars are downloaded separately by treesit-auto on first use.
-For true offline reproducibility, need to cache treesitter grammars separately.
+Docs land in three artifacts. =docs/design/localrepo.org= carries the full architecture (tier model, install path, refresh story, all four limitations with pointers to the follow-up tasks). =.localrepo/README.org= sits next to the artifact as the user-facing entry — a short summary that survives even if =early-init.el= moves. =early-init.el= grows a commentary header that points at the README, not at the design doc — the README is what future-Craig hits first.
+
+The four limitations the docs cover (each spun out below as its own task):
+- Treesitter grammars (downloaded by =treesit-auto= on first use; not in the localrepo)
+- Native-comp =.eln= cache (Emacs-version-specific; invalidated by version bumps)
+- System-tool deps (=ripgrep=, =fd=, =pandoc=, =prettier=, =pyright=, etc.; flagged at load by =cj/executable-find-or-warn=, not packageable via =package.el=)
+- Refresh / update story (no dedicated script today; ad-hoc =cp= from the elpa mirrors)
+
+*** TODO [#C] Design doc — docs/design/localrepo.org :docs:
+Write the design doc: tier model, priorities, install path, refresh story, all four limitations with cross-links to the follow-up tasks below.
+
+*** TODO [#C] README — .localrepo/README.org :docs:
+Write the README at the artifact: short prose entry point summarizing the tier model, pointing at =docs/design/localrepo.org= for full detail. This is what =early-init.el='s commentary header links to.
+
+*** TODO [#C] Commentary header in early-init.el :docs:
+Add a Commentary-section header in =early-init.el= pointing at =.localrepo/README.org= for usage and =docs/design/localrepo.org= for architecture. Sits at the top of the localrepo block (around L130).
+
+** TODO [#D] Treesitter grammar offline cache :feature:offline:localrepo:
+Treesitter grammars are downloaded by =treesit-auto= on first use and live outside the localrepo. For true offline reproducibility, cache the grammars next to the localrepo (a =.localrepo/treesitter/= tier, or a separate mirror script). Cross-linked from =docs/design/localrepo.org=.
+
+** TODO [#D] Native-comp .eln cache strategy :feature:offline:localrepo:
+The native-comp =.eln= cache is Emacs-version-specific; an Emacs upgrade invalidates everything. Document the cache location, what an upgrade triggers, and whether a warm-the-cache script is worth shipping. Cross-linked from =docs/design/localrepo.org=.
+
+** TODO [#D] System-tool dependency install script :feature:offline:localrepo:
+=ripgrep=, =fd=, =pandoc=, =prettier=, =pyright=, and other binaries that =cj/executable-find-or-warn= flags at module load are not in =package.el='s reach. Document the required-tool set and ship a setup script (or =pacman=/=apt= invocation set). Cross-linked from =docs/design/localrepo.org=.
+
+** TODO [#D] Localrepo refresh / update script :feature:offline:localrepo:
+No dedicated update path today — refreshing a pinned package means ad-hoc =cp= from the local elpa mirrors. Document the current shape and decide whether a =scripts/refresh-localrepo.sh= is worth writing. Cross-linked from =docs/design/localrepo.org=.
 
 ** TODO [#C] TRAMP/dirvish "?" for remote dates — verify the fix per host :bug:
 :PROPERTIES:
@@ -3758,6 +3776,40 @@ Changes in progress (modules/auth-config.el):
 - Use external pinentry (pinentry-dmenu) in GUI
 - Requires env-terminal-p from host-environment module
 
+** TODO [#C] Terminal GPG pinentry Completion :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-27
+:END:
+
+Audit on 2026-05-27 found no trace of the =terminal-pinentry= branch on this machine: no local or remote ref, no reflog entry across 732 entries reaching back through January, no stash, no dangling commit, no sibling worktree. The 2026-01-24 session log says the branch was created that day, but the work either lived on another machine or was deleted before reaching here. The original task above (=Finish terminal GPG pinentry configuration=) is superseded by this one.
+
+Surviving footprint on this machine: one commented line at =modules/auth-config.el:83= (=;; (setq epa-pinentry-mode 'loopback)=). The hook point =env-terminal-p= exists in =modules/host-environment.el:97=. Everything else (terminal-vs-GUI branching in the epa =:config=, external pinentry wiring for GUI, =GPG_TTY= export, tests) is to be written fresh off main.
+
+Goal: in terminal Emacs, GPG passphrase prompts land in the minibuffer via loopback mode; in GUI Emacs, prompts go to the existing external pinentry.
+
+Open: confirm the GUI pinentry tool (2026-01-24 notes named =pinentry-dmenu=; current =auth-config.el= names no pinentry program, leaving it to =gpg-agent='s config). Also worth checking whether the =terminal-pinentry= branch survives on the laptop and should be pulled here rather than rewritten.
+
+*** TODO [#C] env-terminal-p branch in epa :config :feature:
+Inside the epa =use-package= =:config= in =modules/auth-config.el=, set =epa-pinentry-mode= to ='loopback= when =(env-terminal-p)=, else leave the external pinentry path active. Replace the lone commented line at =auth-config.el:83=.
+
+*** TODO [#C] GPG_TTY export for terminal sessions :feature:
+When =(env-terminal-p)=, =(setenv "GPG_TTY" (shell-command-to-string "tty"))= so gpg-agent can target the controlling tty. Guard against a non-tty stdin.
+
+*** TODO [#C] gpg-agent updatestartuptty refresh in terminal :feature:
+The current =call-process= to "gpg-connect-agent updatestartuptty /bye" runs unconditionally; keep it for GUI, and re-fire it on terminal entry so the agent re-binds to the current tty.
+
+*** TODO [#C] ERT tests for terminal vs GUI pinentry branching :tests:
+Test that with =env-terminal-p= stubbed t, =epa-pinentry-mode= resolves to ='loopback= after =auth-config= loads; with it stubbed nil, the loopback setting is not applied. Use =cl-letf= around =env-terminal-p=; cover normal, boundary (=epa= already loaded), error (=gpg-connect-agent= missing).
+
+*** TODO [#C] Minibuffer prompt in real terminal Emacs :verify:
+=emacs -nw=, open an encrypted file or trigger an auth-source decrypt, confirm the passphrase prompt lands in the minibuffer rather than failing on missing pinentry.
+
+*** TODO [#C] External pinentry still fires in GUI Emacs :verify:
+Restart the daemon, open a GUI frame, trigger an encrypted decrypt, confirm =pinentry-dmenu= (or whatever GUI pinentry is configured) still appears.
+
+*** TODO [#C] Archive the original L3813 task :chore:
+After this work lands, mark the original "Finish terminal GPG pinentry configuration" task DONE with a =CLOSED:= stamp and a one-line note pointing at this parent task.
+
 ** TODO [#D] Dashboard over-scroll: pin last line to window bottom :bug:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
@@ -3793,75 +3845,6 @@ Three small reveal.js improvements; collected into one task because each on its 
 1. *Image insertion helper.* Function to insert images with proper org-reveal attributes (sizing, background images, etc.) without having to remember the syntax.
 2. *Default font sizing for slide elements.* Configure reveal.js font sizes for headings, body text, code blocks, etc. — better defaults via =org-reveal-head-preamble= CSS or a custom theme.
 3. *Custom dupre reveal.js theme.* CSS theme using the colors from =themes/dupre-palette.el=. Install into =reveal.js/css/theme/= for use with =#+REVEAL_THEME: dupre=.
-
-** TODO [#D] Evaluate and integrate Buttercup for behavior-driven integration tests :tests:
-
-Complex workflow testing capability.
-
-*** Signel: connect starts the daemon
-What we're verifying: =cj/signel-connect= (=C-; M SPC=) auto-starts =signal-cli= via =cj/signel--ensure-started= and pre-warms the contact cache in the background.
-- Restart Emacs so the new code loads fresh.
-- Press =C-; M SPC=.
-- =M-x list-processes=.
-Expected: echo area shows "Signel connected.", and =list-processes= shows a running =signal-rpc= process.
-
-*** Signel: picker opens with contact names
-What we're verifying: =cj/signel-message= (=C-; M m=) opens a completing-read populated by name from =cj/signel--contact-cache=, with "Note to Self" pinned first.
-- Press =C-; M m=.
-- Look at the candidate list.
-Expected: the minibuffer opens within ~1s, "Note to Self" sits at the top, and your 94 Signal contacts follow, labeled "Name (+number)".
-
-*** Signel: pick a contact and send a message
-What we're verifying: choosing a contact opens a chat buffer, =RET= at the prompt sends through =signel--send-input=, and the message arrives on the recipient's phone.
-- =C-; M m=, pick a contact you trust.
-- Type a short message at the prompt, press =RET=.
-- Check the recipient's phone.
-Expected: a =*Signel: +<number>*= buffer opens, the typed message renders with the =[HH:MM] <Me>= prefix on send, and arrives on the recipient's phone within a few seconds.
-
-*** Signel: Note-to-Self lands in the right Signal thread
-What we're verifying: =cj/signel-message-self= (=C-; M s=) resolves to =signel-account= and sending through it lands in the *Note to Self* thread on the phone, NOT a self-addressed display anomaly.  This is the spec's medium-priority manual verify from D3.
-- Press =C-; M s=.
-- Type "test note to self" at the prompt, press =RET=.
-- Open Signal on your phone, scroll to the *Note to Self* thread.
-Expected: a =*Signel: +<your-number>*= buffer opens in Emacs, the message sends, and the message appears in the phone's *Note to Self* thread (not in any other conversation).
-
-*** Signel: Note-to-Self via the picker's pinned entry
-What we're verifying: picking the pinned "Note to Self" entry through =cj/signel-message= resolves the same way as the direct command.
-- =C-; M m=, choose "Note to Self".
-Expected: the same =*Signel: +<your-number>*= buffer opens.  (No need to re-send; opening the right buffer proves the resolution.)
-
-*** Signel: typed input survives an incoming message
-What we're verifying: the clobber fix (fork commit 5ec56c0) preserves in-progress prompt input across =signel--insert-msg= when a message arrives mid-typing.
-- =C-; M m=, pick a contact.
-- Type a long unsent message at the prompt, do NOT press =RET=.
-- From a second device or by asking someone, send yourself a Signal message that lands in this chat (or any active chat).
-Expected: the incoming message renders above the prompt, the prompt redraws, and your typed text is still there at the prompt ready to send.
-
-*** Signel: dashboard opens
-What we're verifying: =signel-dashboard= (=C-; M d=) opens the active-chats dashboard.
-- Press =C-; M d=.
-Expected: a dashboard buffer opens listing active chats.
-
-*** Signel: stop tears down the daemon
-What we're verifying: =signel-stop= (=C-; M q=) deletes the process and clears the request-handler / buffer maps (the reconnect-invalidation contract from fork commit 4740d97).
-- Press =C-; M q=.
-- =M-x list-processes=.
-Expected: echo area shows "Signel service stopped.", and =list-processes= no longer lists =signal-rpc=.
-
-*** Signel: refresh forces a fresh contact fetch
-What we're verifying: =cj/signel-refresh-contacts= clears the cache and re-fetches via the new callback contract.
-- =C-; M SPC= to reconnect if you ran the stop test above.
-- =M-x cj/signel-refresh-contacts=.
-- Immediately =C-; M m=.
-Expected: the picker still opens cleanly with the same contact list (the refresh is silent; the picker is the visible check).  If you added a contact on the phone, it now appears.
-
-*** Font setup reaches a GUI frame created after a TTY frame (daemon)
-What we're verifying: emoji glyphs + fonts apply in a GUI frame even when the first daemon frame was a TTY.
-- emacs --daemon
-- emacsclient -t   (TTY frame first)
-- emacsclient -c   (then a GUI frame)
-- in the GUI frame, open a buffer with an emoji and check it renders, and M-S-f / fonts look right
-Expected: emoji renders and fonts are applied in the GUI frame.
 
 * Emacs Resolved
 ** DONE [#B] Fix likely =elpa-mirror-location= path bug :bug:quick:
@@ -4079,7 +4062,7 @@ CLOSED: [2026-04-23]
 
 Diff-aware coverage report with pluggable backends. Shipped v1 on 2026-04-23.
 
-Design: [[file:../docs/design/coverage.org][docs/design/coverage.org]]
+Design: [[file:docs/design/coverage.org][docs/design/coverage.org]]
 
 What shipped:
 - modules/coverage-core.el (engine, backend registry, cj/coverage-report, cj/coverage-report-mode)
@@ -4103,11 +4086,9 @@ Deferred to future tickets:
 ** DONE [#A] Fix "Invalid face attribute :foreground nil" flood :bug:
 CLOSED: [2026-04-26 Sun 20:15]
 
-Diagnosed 2026-04-26 — paused at /start-work Gate 2. Full diagnostic, root cause, proposed fix, test plan, and verification path saved to wttrin's inbox (the fix lives in that repo, so the diagnostic does too):
+Diagnosed 2026-04-26 — paused at /start-work Gate 2.  The diagnostic was originally saved to =~/code/emacs-wttrin/inbox/wttrin-face-flood-diagnosis.txt= but that file has since been cleaned out of the wttrin inbox; the summary below is the surviving record.
 
-[[file:~/code/emacs-wttrin/inbox/wttrin-face-flood-diagnosis.txt][~/code/emacs-wttrin/inbox/wttrin-face-flood-diagnosis.txt]]
-
-Summary: root cause is =wttrin--make-emoji-icon= in =/home/cjennings/code/emacs-wttrin/wttrin.el:598-608=. Builds a face spec with =:foreground foreground= unconditionally when =wttrin-mode-line-emoji-font= is set; the caller passes nil when the cache is fresh, producing =(:family ... :foreground nil)= which Emacs treats as invalid on every redisplay.
+Summary: root cause is =wttrin--make-emoji-icon= in =~/code/emacs-wttrin/wttrin.el:598-608=. Builds a face spec with =:foreground foreground= unconditionally when =wttrin-mode-line-emoji-font= is set; the caller passes nil when the cache is fresh, producing =(:family ... :foreground nil)= which Emacs treats as invalid on every redisplay.
 
 Fix lives in the wttrin repo (cross-repo), not =.emacs.d=. Two-commit scope: regression test + fix.
 
@@ -5085,7 +5066,7 @@ Implemented 2026-05-11:
   ~slack-message-reaction-input~.
 - Added regression coverage in =tests/test-slack-config-reactions.el=.
 
-**Discovered:** 2026-03-06
+*Discovered:* 2026-03-06
 ** DONE [#B] Coverage audit: untested and lightly-tested modules :tests:
 CLOSED: [2026-05-11 Mon 14:38]
 
@@ -5093,7 +5074,7 @@ Snapshot of test-coverage gaps as of 2026-04-26. The existing [#A] "Continue cov
 
 *Methodology.* 102 modules in =modules/=, cross-referenced against =tests/= using fuzzy name matching (full module name, drop =-config=/=-setup= suffix, first hyphen segment). Categorized by likely test value.
 
-**High-value untested (substantial logic, real test value):**
+*High-value untested (substantial logic, real test value):*
 - =ai-conversations= — gptel persistence + autosave; 13 functions
 - =quick-video-capture= — yt-dlp queue, org-protocol; 5 functions
 - =dashboard-config= — custom commands (=cj/dashboard-only=, etc.)
@@ -5106,7 +5087,7 @@ Snapshot of test-coverage gaps as of 2026-04-26. The existing [#A] "Continue cov
 - =ui-navigation= and =ui-theme= — navigation + theme switching
 - =wrap-up= — init-finalize helpers
 
-**Lightly covered (1–2 tests, likely many uncovered functions):**
+*Lightly covered (1–2 tests, likely many uncovered functions):*
 - =modeline-config= (2 tests)
 - =org-agenda-config= (2)
 - =org-capture-config= (2)
@@ -5115,16 +5096,16 @@ Snapshot of test-coverage gaps as of 2026-04-26. The existing [#A] "Continue cov
 - =jumper= (1)
 - =keyboard-macros= (1)
 
-**Likely low-value (mostly use-package wrappers):**
+*Likely low-value (mostly use-package wrappers):*
 About 28 modules are dominated by use-package + hooks + keybinds — testing them would mostly test Emacs/use-package itself. Examples: =auth-config=, =diff-config=, =dirvish-config=, =elfeed-config=, =erc-config=, =eww-config=, the =prog-*= language modules, etc. For each, review whether the file has any helper functions beyond use-package. If yes, write characterization tests. If not, document as "no unit tests appropriate" so the next audit skips it.
 
 *Approach.* Pick 2–3 modules per session from the high-value list. Refactor-first if needed (split interactive wrapper from pure helper per =.claude/rules/elisp-testing.md=), then write Normal/Boundary/Error coverage. Re-run =cj/coverage-report= (F7, project scope) after each batch so progress is measurable.
 
-**Cross-references:**
+*Cross-references:*
 - [[file:.ai/sessions/2026-04-22-09-49-coverage-v1-shipped-system-utils-tested.org][2026-04-22 session]] — coverage v1 shipped, 59.6% baseline
 - [[file:.claude/rules/elisp-testing.md][.claude/rules/elisp-testing.md]] — per-function test files, refactor-first, three required categories
 
-**2026-05-11 refresh.** Re-ran =make coverage= after excluding timing-sensitive
+*2026-05-11 refresh.* Re-ran =make coverage= after excluding timing-sensitive
 =tests/test-lorem-optimum-benchmark.el= from coverage instrumentation. The
 benchmark file still runs in normal test-file/unit flows, but Undercover slows
 timing assertions enough to make it unsuitable for coverage. Low-coverage means
@@ -5812,7 +5793,7 @@ Full investigation, reproduction, and fix-option analysis in:
 Resolved 2026-05-14 by an upstream emacs Arch-package revision bump (=30.2-2= → =30.2-3=, shipped 2026-05-03) — most likely carrying a downstream patch to =treesit.c='s predicate translation. Bug no longer reproduces: the exact failing query runs cleanly via =treesit-query-capture=, and =font-lock-ensure= on a real Python file under =python-ts-mode= completes with no =treesit-query-error=. No local override applied to =modules/prog-python.el=. Matches option A from the investigation's fix-options ("WAIT FOR UPSTREAM EMACS FIX").
 ** DONE [#C] EPUB text is slightly left-of-center (shr word-wrap shortfall) :bug:
 CLOSED: [2026-05-14 Thu 23:39]
-[2026-05-12] Visual review of the reading-width rework is done -- it's good. Not sure I actually need this nit fixed; the left-of-center bias is minor and the `+'/`-' keys let me nudge it. Parking here until I decide it bothers me enough.
+(2026-05-12) Visual review of the reading-width rework is done -- it's good. Not sure I actually need this nit fixed; the left-of-center bias is minor and the `+'/`-' keys let me nudge it. Parking here until I decide it bothers me enough.
 
 After =b7c6b2c=, the EPUB text block is centered with `set-window-margins' at `(natural - nov-text-width) / 2' each side -- but the *rendered* text is a bit narrower than `nov-text-width' columns, because `shr' wraps at word boundaries, so the typical line ends a few columns short of the fill width. The text is left-aligned within its `nov-text-width'-wide fill region, so the unused tail of that region adds to the right margin -- the block reads as shifted left of center. Adjusting `cj/nov-margin-percent' (the `+'/`-' keys) re-flows and happens to look better at some widths (probably the line-ending pattern lands tighter), which is the same effect, not a real difference.
 
@@ -6088,7 +6069,7 @@ Acceptance: =M-: yas-minor-mode= returns =t= in =org-mode=, =text-mode=, =fundam
 
 Create =snippets/fundamental-mode/cj-comment-block= (or similar filename) with:
 
-#+begin_src snippet
+#+begin_example
 # -*- mode: snippet -*-
 # name: cj-comment-block
 # key: <cj
@@ -6096,7 +6077,7 @@ Create =snippets/fundamental-mode/cj-comment-block= (or similar filename) with:
 #+begin_src cj: comment
 $0
 #+end_src
-#+end_src
+#+end_example
 
 Acceptance: in a scratch buffer, in a =.el= buffer, in a =.sh= buffer, in an =org= buffer — typing =<cj= and hitting TAB expands to the three-line block with the cursor on the empty middle line.
 
@@ -6312,7 +6293,7 @@ Internal/Wrapper split documented in =elisp-testing.md=.
 
 *** 2026-05-16 Sat @ 02:01:48 -0500 Wrote the gptel-tools shortlist design doc
 
-[[file:../docs/design/gptel-tools-shortlist.org][docs/design/gptel-tools-shortlist.org]] covers each of the candidates
+[[file:docs/design/gptel-tools-shortlist.org][docs/design/gptel-tools-shortlist.org]] covers each of the candidates
 called out in the task body plus a few obvious adjacents.  Decisions:
 
 - *ADOPT* (7): =search_in_files=, =git_status= / =git_log= /
@@ -6701,3 +6682,145 @@ Open questions to settle when we tackle it:
 - Which key? =d= is taken (=cj/deadgrep-in-dir=). Free lowercase in =projectile-command-map=: =h=, =n=, =w=, =y= (none a strong "daily prep" mnemonic). Or override =d=, or add a sub-prefix.
 - Behavior outside the work project? Resolving relative to =projectile-project-root= makes it per-project; only work has a prep doc, so elsewhere it hits the "No prep" message. Acceptable, hard-scope to work, or offer to create one?
 - Same window or other window? Mirror =cj/open-project-root-todo='s =cj/--find-file-respecting-split=, or plain =find-file=?
+** DONE [#B] Headline indicators wrap to a second row :bug:org:
+CLOSED: [2026-05-27 Wed]
+Fixed 2026-05-27 (commit 822e7a37). =cj/org-tag-right-margin= raised from 5 to 9 in =modules/org-config.el:111= — sized empirically from a rendered measurement via the headless screenshot harness, not from column arithmetic (the trailing " · ▾" measures 4 cols by =string-width= but the fallback ▾ renders wider than reported and =:align-to= stretch rounds, so the real overflow exceeded the nominal count). Regression fixture checked into =tests/manual/headline-wrap/{fixture.org,README.org}=.
+
+Trigger had been: a heading carrying both an org-tidy =·= (hidden =:PROPERTIES:= drawer) and the fold ellipsis " ▾" (folded with subtree) wrapped past the window edge because the reservation didn't account for the indicator pair under the rendered (not nominal) width.
+** CANCELLED [#B] Rework dev F-keys: compile+run (F4), test (F6), coverage (F7) :feature:
+CLOSED: [2026-05-28 Thu]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-22
+:END:
+
+Superseded by the F-key Completion task below. The 2026-05-27 audit found this ticket roughly 75% shipped (F4 dispatcher, F7 coverage, format-key migration off F6 all in); the remaining 25% (Phase 2b — per-language test discovery, "Run a test..." menu, M-F6 fast path, buffer-local last-test, "No tests found" error) is now tracked there with its own evidence-backed child tasks.
+
+*** TODO [#B] Format keybindings move off F6 :refactor:cleanup:
+Move blacken-buffer (python), shfmt-buffer (sh), and clang-format-buffer (c)
+off F6 onto the =C-; f= prefix, which already hosts format-buffer bindings.
+Also remove projectile-run-project from F6 (it folds into the new F4).
+Touch the per-language config modules that currently bind F6 for formatting.
+
+Acceptance: F6 has no remaining format-or-run bindings in any module; =C-; f=
+prefix triggers the right formatter per major mode.
+
+Depends on: none (start here -- clears F6 before F4/F6 work lands).
+
+*** TODO [#B] Project-type detection helper :feature:
+Single helper that returns a project-type symbol (=compiled=, =interpreted=,
+=unknown=) from the current buffer's project.  Uses
+=projectile-project-compilation-cmd= when set, then heuristic fallbacks:
+=go.mod=, =Makefile=, =Eask=, =package.json=, =pyproject.toml=,
+=docker-compose.yml=.  Lives near the F4 dispatcher.
+
+Acceptance: ERT tests cover each heuristic in isolation plus a precedence
+case where projectile's cached cmd wins over the file heuristics.
+
+Depends on: none.
+
+*** TODO [#B] F4 compile+run dispatcher :feature:
+Build the F4 binding per spec: plain F4 opens a completing-read whose
+candidates depend on project-type (Compile / Run / Compile + Run [default] /
+Clean + Rebuild for compiled; Run only for interpreted).  C-F4 fast-paths to
+Compile; M-F4 fast-paths to Clean + Rebuild.  Both fast paths show a "not a
+compiled language" message and no-op on interpreted projects.  Reads
+projectile's per-project compile/run commands; no Docker-specific logic.
+
+Acceptance: each candidate dispatches to the right projectile command; fast
+paths no-op cleanly on interpreted projects; F4 bindings live in one module.
+
+Depends on: project-type detection helper.
+
+*** TODO [#B] Per-language test discovery :feature:tests:
+Provide a single =cj/--tests-in-buffer= function returning a list of test
+names for the current buffer's language.  Tree-sitter queries for Python,
+Go, TS/JS (treesit-auto already configured); built-in sexp scan for elisp
+(=ert-deftest= forms).  Parsing unopened test files uses with-temp-buffer +
+insert-file-contents + <lang>-ts-mode + treesit-query-capture.  Queries are
+spelled out in the spec above.
+
+Acceptance: ERT tests feed each language a fixture file and assert the
+expected test-name list comes back; missing grammar surfaces a clear error.
+
+Depends on: none (parallel-safe with F4 work).
+
+*** TODO [#B] F6 test dispatcher :feature:tests:
+Build the F6 binding per spec: plain F6 opens completing-read with "All
+tests", "Current file's tests", "Run a test..."; C-F6 fast-paths to current
+file's tests; M-F6 fast-paths to "Run a test...".  "Current file's tests"
+runs the buffer directly if it's a test file, otherwise finds matching test
+files via language conventions (elisp =tests/test-<module>*.el=, python
+=tests/test_<module>.py=, etc.) and runs them aggregated.  "Run a test..."
+pre-selects =cj/--last-test-run= (buffer-local) and errors with "No tests
+found for <buffer>" when discovery returns nothing -- no silent fallthrough.
+
+Acceptance: each entry point dispatches to the right runner; buffer-local
+last-test memory persists per source file; no-match error fires correctly.
+
+Depends on: per-language test discovery.
+
+*** TODO [#B] F7 hand-off to dev-fkeys story :feature:
+Once the coverage track ships ([[file:docs/design/coverage.org][docs/design/coverage.org]]),
+confirm F7 binds =cj/coverage-report= and lives alongside F4/F6 in the same
+dev-fkeys module so the three keys read as one unit.  No new coverage logic
+here -- only the binding placement and a short comment block in the module
+pointing at the coverage design doc.
+
+Acceptance: F7 invokes coverage-report; F4/F6/F7 are visibly grouped in one
+module; coverage track is shipped before this lands.
+
+Depends on: the coverage-config track shipping; F4 and F6 sub-tasks above.
+
+*** 2026-05-15 Fri @ 19:16:08 -0500 Specification
+Consolidate the developer F-key block into a coherent sequence. F5 reserved for debug (separate ticket). Format bindings move off F6 to C-; f.
+
+Menu mechanism: =completing-read= everywhere (consistent with F7 coverage scope prompt and with the vertico/consult workflow in the rest of the config). No transient definitions.
+
+**F4 — compile + run**
+
+- F4 (no modifier): completing-read with candidates filtered by project type. Detection via projectile-project-compilation-cmd and heuristic fallbacks (go.mod, Makefile, Eask, package.json, pyproject.toml, docker-compose.yml).
+  - Compiled project candidates: "Compile", "Run", "Compile + Run" (default), "Clean + Rebuild"
+  - Interpreted project candidates: "Run" only
+- C-F4: fast path = Compile only. On interpreted projects, shows "not a compiled language" and no-ops.
+- M-F4: fast path = Clean + Rebuild. Same "not applicable" behavior on interpreted projects.
+
+The dispatcher reads projectile's per-project compile/run/test commands. No Docker-specific logic in the command itself. Container workflows are configured via projectile's prompt-and-cache (or .dir-locals.el from the dev-project-setup helper).
+
+**F6 — run tests**
+
+- F6 (no modifier): completing-read top-level:
+  - "All tests"
+  - "Current file's tests"
+  - "Run a test..." (nested completing-read with individual tests)
+- C-F6: fast path = "Current file's tests"
+- M-F6: fast path = "Run a test..."
+
+"Current file's tests": if current buffer is a test file, run it directly. If source file, find matching test file(s) via language conventions (elisp: tests/test-<module>*.el; python: tests/test_<module>.py; etc.) and run them aggregated.
+
+"Run a test...": build a candidate list of individual tests, pre-select the last-chosen test for this buffer (buffer-local cj/--last-test-run), present via completing-read. Pressing RET re-runs last. Memory is buffer-local so different source files remember their own last-test.
+
+Candidate set for "Run a test...":
+- If buffer is a test file: parse the file, return its test definitions.
+- If buffer is a source file: find matching test file(s) and aggregate their test definitions.
+- No matches: error out with "No tests found for <buffer>". Don't silently fall through.
+
+Per-language test discovery:
+- Python, Go, TypeScript/JavaScript: tree-sitter queries (treesit-auto already configured, grammars auto-install)
+  - Python: (function_definition name: (identifier) @name (:match "^test_" @name))
+  - Go: (function_declaration name: (identifier) @name (:match "^Test" @name))
+  - TS/JS: (call_expression function: (identifier) @fn arguments: (arguments (string) @name) (:match "^\\(test\\|it\\)$" @fn))
+  - Parsing unopened test files: use with-temp-buffer + insert-file-contents + python-ts-mode (etc.) + treesit-query-capture
+- Elisp: built-in sexp navigation; scan for (ert-deftest <name> ...) forms. No tree-sitter needed.
+
+*F7 — coverage* (already designed in docs/design/coverage.org)
+
+**Required moves:**
+- Move blacken-buffer (python), shfmt-buffer (sh), clang-format-buffer (c) off F6 to C-; f prefix (already the format-buffer prefix).
+- Move projectile-run-project off F6 (folds into the new F4 completing-read).
+
+**Ordering:**
+Do this after the coverage-config work ships. No churn mid-flight.
+** DONE [#D] Evaluate and integrate Buttercup for behavior-driven integration tests :tests:
+CLOSED: [2026-05-28 Thu]
+
+Evaluation landed at [[file:docs/design/buttercup-evaluation.org][docs/design/buttercup-evaluation.org]]. Verdict: not yet — ERT is enough for every project Craig owns today. Adopt Buttercup the moment a project crosses the threshold "the test reader is no longer the test author at write-time" (concrete trigger events listed in the doc). Re-read the doc when any such event fires.
