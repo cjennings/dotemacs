@@ -1,0 +1,41 @@
+#+TITLE: Headline-indicator wrap — manual render check
+
+* What this guards
+
+Org headline tags are right-aligned to the window edge by a font-lock display
+property (see =cj/org-right-align-tags-keyword= in =modules/org-config.el=).
+After the tag, a folded heading that also has a property drawer renders two
+extra glyphs: the org-tidy inline symbol (" ·") and the fold ellipsis
+(=org-ellipsis=, " ▾"). =cj/org-tag-right-margin= reserves columns between the
+tag and the edge so those glyphs stay on the heading line.
+
+If the reserve is too small, the trailing " · ▾" wraps onto a second screen
+row, leaving a stray indicator line under the heading. This is a redisplay
+bug: the column arithmetic can say the glyphs fit while they visibly wrap (the
+fallback triangle renders wider than its reported width, and the =:align-to=
+stretch rounds). So it must be checked by rendering and looking, never by
+column math.
+
+* How to check
+
+1. Open =fixture.org= in this directory with the full config:
+
+   #+begin_src bash
+   emacs tests/manual/headline-wrap/fixture.org
+   #+end_src
+
+2. The =#+STARTUP: content= line folds every heading on open, so the folded
+   property-drawer headings show their " ·" and " ▾" indicators.
+
+3. Look at each =**= heading. Every one must sit on a single screen row, with
+   its tag and any trailing " ·" / " ▾" all on the heading line.
+
+   - Expected: four single-line headings, no stray indicator wrapped below any
+     of them.
+   - Regression: the first two headings (folded, with property drawers) show
+     "· ▾" wrapped onto the line beneath them.
+
+* If it regresses
+
+Raise =cj/org-tag-right-margin= in =modules/org-config.el=, reload, and re-check
+here. Confirm by the render above, not by recomputing column widths.

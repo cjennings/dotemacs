@@ -1,0 +1,28 @@
+#+TITLE: Headline-indicator wrap fixture
+#+STARTUP: content
+
+# Regression fixture for the right-aligned-tag wrap bug.  A folded heading that
+# also has a property drawer renders two trailing indicators after its tag: the
+# org-tidy inline symbol (" ·") and the fold ellipsis (" ▾").  If the tag-align
+# reserve (cj/org-tag-right-margin in modules/org-config.el) is too small, those
+# indicators spill onto a second screen row.  Open this file, confirm every
+# heading below stays on a single line.  See README.org for steps.
+
+* Open Work
+** TODO [#B] Interactive sort/order changes for the agenda view :feature:
+:PROPERTIES:
+:ID: one
+:END:
+Body text under the first heading so the subtree folds with an ellipsis.
+** TODO [#C] Pager robustness: null customView and missing end-cursor :bug:discuss:
+:PROPERTIES:
+:ID: two
+:END:
+Body text under the second heading.
+** TODO [#B] GitHub Actions CI :chore:
+:PROPERTIES:
+:ID: three
+:END:
+Body text under the third heading.
+** TODO [#D] No property drawer here so org-tidy adds no dot :feature:
+Body under a heading that has no properties drawer.
