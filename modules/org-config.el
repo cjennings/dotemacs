@@ -108,12 +108,18 @@
 Group 1 is the single gap character before the tags; group 2 is the tag
 string itself.")
 
-(defconst cj/org-tag-right-margin 5
+(defconst cj/org-tag-right-margin 9
   "Columns of gap left between right-aligned tags and the window's right edge.
 At least 1 keeps a glyph out of the final column, which would wrap a
-non-truncated line.  The extra columns leave room for the folded-heading
-ellipsis (`org-ellipsis', \" ▾\") that org appends after the tags, so it
-stays on the heading line instead of wrapping onto its own line.")
+non-truncated line.  The remaining columns reserve room for the glyphs org
+appends AFTER the tags on a folded, property-drawer heading: the org-tidy
+inline symbol (`org-tidy-properties-inline-symbol', \" ·\") and the fold
+ellipsis (`org-ellipsis', \" ▾\").  Their nominal width is 4 columns, but the
+fallback font renders the triangle wider than its reported width and the
+`:align-to' stretch rounds, so the true overflow exceeds the nominal count.
+The value is set from rendered measurement (see the headline-wrap harness),
+not arithmetic -- that mismatch is what made the earlier 5-column reserve
+wrap.  Verify changes with a screenshot, never column math alone.")
 
 (defun cj/org--tag-align-spec (tag-string)
   "Return a display spec that right-aligns TAG-STRING to the window edge.
