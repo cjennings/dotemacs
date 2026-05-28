@@ -15,6 +15,14 @@
 
 ;;; Code:
 
+(require 'cj-window-toggle-lib)  ;; cj/side-window-display
+
+;; Shared *AI-Assistant* panel-width state, owned by ai-config.el.  Forward-
+;; declared here so the escalation reopens the panel at the same remembered
+;; width as the F-key toggle without a circular require.
+(defvar cj/ai-assistant-window-width)
+(defvar cj/--ai-assistant-width)
+
 (defvar-local cj/gptel-quick--prompt nil
   "Buffer-local: the prompt used for the current *GPTel-Quick* session.")
 
@@ -125,8 +133,8 @@ side window, then dismisses the quick buffer."
       (with-current-buffer ai-buf
         (goto-char (point-max))
         (insert seed))
-      (display-buffer-in-side-window
-       ai-buf '((side . right) (window-width . 0.4)))
+      (cj/side-window-display
+       ai-buf 'right 'cj/--ai-assistant-width cj/ai-assistant-window-width)
       (cj/gptel-quick-dismiss))))
 
 (provide 'ai-quick-ask)

@@ -40,6 +40,7 @@
 
 (require 'keybindings)  ;; provides cj/custom-keymap
 (require 'system-lib)   ;; provides cj/auth-source-secret-value
+(require 'cj-window-toggle-lib)  ;; side-window size memory for the panel
 
 (autoload 'cj/gptel-save-conversation "ai-conversations" "Save the AI conversation to a file." t)
 (autoload 'cj/gptel-load-conversation "ai-conversations" "Load a saved AI conversation." t)
@@ -413,14 +414,30 @@ Works for any buffer, whether it's visiting a file or not."
 
 ;;; ---------------------------- Toggle GPTel Window ----------------------------
 
+(defvar cj/ai-assistant-window-width 0.4
+  "Default fraction of frame width for the *AI-Assistant* side window.
+Used until the panel is resized and toggled off this session; after that,
+the toggled-off width is remembered in `cj/--ai-assistant-width'.")
+
+(defvar cj/--ai-assistant-width nil
+  "Last width fraction the *AI-Assistant* side window was toggled off at.
+nil falls back to `cj/ai-assistant-window-width'.  Shared by the panel's
+entry points (toggle, load-conversation, quick-ask escalation) so the
+panel reopens at one consistent width.  In-memory only -- resets each
+Emacs session.")
+
 (defun cj/toggle-gptel ()
-  "Toggle the visibility of the AI-Assistant buffer, and place point at its end."
+  "Toggle the visibility of the AI-Assistant buffer, and place point at its end.
+The panel opens at `cj/ai-assistant-window-width'; once it has been resized
+and toggled off this session, it reopens at that remembered width."
   (interactive)
   (let* ((buf-name "*AI-Assistant*")
          (buffer   (get-buffer buf-name))
          (win      (and buffer (get-buffer-window buffer))))
     (if win
-        (delete-window win)
+        (progn
+          (cj/side-window-capture-size win 'right 'cj/--ai-assistant-width)
+          (delete-window win))
       ;; Ensure GPTel and our backends are initialized before creating the buffer
       (unless (featurep 'gptel)
         (require 'gptel))
@@ -430,10 +447,9 @@ Works for any buffer, whether it's visiting a file or not."
         (gptel buf-name gptel-backend))
       (setq buffer (get-buffer buf-name))
       (setq win
-            (display-buffer-in-side-window
-             buffer
-             '((side . right)
-               (window-width . 0.4))))
+            (cj/side-window-display
+             buffer 'right 'cj/--ai-assistant-width
+             cj/ai-assistant-window-width))
       (select-window win)
       (with-current-buffer buffer
         (goto-char (point-max))))))
