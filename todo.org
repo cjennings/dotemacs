@@ -53,8 +53,11 @@ Installed signal-cli 0.14.4.1 (AUR; imported AsamK's signing key FA10826A... to 
 *** TODO [#B] Contact picker command :feature:
 =cj/signel-pick-contact=: call signal-cli =listContacts= over JSON-RPC, feed the result through =cj/signal--parse-contacts= (done), =completing-read= the labels, open the chosen recipient's chat. signel today opens by raw phone number only.
 
-*** TODO [#B] JSON-RPC success-result dispatch for signel :feature:
+*** DOING [#B] JSON-RPC success-result dispatch for signel :feature:
 The contact picker needs =listContacts= results, but signel currently dispatches only =receive= notifications and RPC errors; successful =((id . N) (result . VALUE))= responses have no callback/result path. Add a request handler table or equivalent success-result dispatch in the fork, clean handlers up on success/error/reconnect, then build =cj/signel--fetch-contacts= on that contract. Review: [[file:docs/design/signal-client-review.org][docs/design/signal-client-review.org]].
+
+*** TODO [#C] signel--handle-error leaks request-buffer-map entries :bug:
+Surfaced during the JSON-RPC dispatch refactor audit. =signel--handle-error= reads =signel--request-buffer-map= by id but never =remhash='es the entry, so every error response leaves the request-id → buffer-name mapping behind for the life of the process. Low impact (the map clears on stop/start, and id collisions are unlikely at the counter scale), but unbounded growth in a long-lived session and inconsistent with how the new request-handler-map is cleaned up on error.
 
 *** TODO [#B] Notify only for the unviewed conversation :feature:
 Wire =cj/signal--should-notify-p= (done) into signel's =signel--handle-receive= notify block (signel.el:277), route through Craig's notify script instead of bare =notifications-notify=, and gate sound behind a defcustom that defaults off.
