@@ -1,0 +1,89 @@
+#+TITLE: Review: Signal client in Emacs (forked signel)
+#+DATE: 2026-05-27
+#+STARTUP: showall
+
+* Scope reviewed
+
+- =.ai/workflows/spec-review.org=.
+- =docs/design/signal-client.org=, including the base design, open-question dispositions, initiate-message workflow, architecture additions, accepted caveats, test plan, scope summary, and readiness rubric.
+- =modules/signal-config.el=, including =cj/signal--parse-contacts=, notify-suppression helpers, private config loading, and current =use-package signel= wiring.
+- =~/code/signel/signel.el=, including =signel-start=, =signel--send-rpc=, =signel--dispatch=, =signel--handle-error=, =signel--handle-receive=, =signel--insert-msg=, =signel--insert-system-msg=, =signel--send-input=, =signel-chat=, and dashboard commands.
+- =tests/test-signal-config.el=, covering contact parsing and notify-suppression helpers.
+- =todo.org= Signal parent task and child tasks for contact picker, JSON-RPC result dispatch, notifications, input clobber, link command, wiring, and the vNext group picker.
+
+* Implementation-readiness
+
+=Ready=.
+
+The initiate-message spec is implementation-ready. It identifies the user-facing flow, v1 scope, deferred work, data ownership, sync/refresh behavior, error behavior, observability, performance shape, implementation order, and test strategy. The previous blockers have been folded into the spec: JSON-RPC result dispatch is step 1, the sync picker / async fetch gap is resolved with pre-warm plus bounded blocking, daemon/account guard behavior is concrete, contact cache ownership is explicit, and input preservation covers both message and system-error insertions.
+
+* Overall assessment
+
+The spec now leaves an implementer with an ordered build plan instead of hidden architecture choices. The current fork still lacks JSON-RPC success-result dispatch and still clobbers prompt input in =signel--insert-msg= / =signel--insert-system-msg=, but those are named implementation tasks with clear contracts and tests, not open design questions.
+
+The remaining notification details are explicitly flagged as out of scope for the initiate-message workflow and as a prerequisite for the later notification slice, which is the right boundary.
+
+* High-priority findings
+
+None.
+
+* Medium-priority findings
+
+None blocking or action-changing for this implementation pass.
+
+* UX observations
+
+- The primary flow is concrete: =C-; M m= opens a name picker, selection opens =signel-chat=, then the user types and sends.
+- Message-to-self has both discoverable and fast paths: a pinned picker row plus =cj/signel-message-self=.
+- Cold-cache behavior is defined: pre-warm on connect/restart, bounded wait on first command, useful timeout message.
+
+* Architecture observations
+
+- The callback/result map fits signel's existing async process filter.
+- Separating =cj/signel--contact-cache= from =signel--contact-map= avoids mixing complete contact-list data with opportunistic receive-time sender names.
+- The dependency order is correct: result dispatch, daemon guard, fetch/cache, commands, keymap, then clobber fix.
+
+* Robustness and performance observations
+
+- Cache-on-first-use plus explicit refresh is appropriate for the verified 94-contact scale.
+- Empty successful contact results are distinct from RPC/startup failures.
+- The bounded =accept-process-output= cold path prevents a wedged daemon from hanging Emacs indefinitely.
+
+* Test strategy recommendations
+
+Follow the spec's TDD list:
+- JSON-RPC result callback routing and cleanup on success/error/reconnect.
+- Fetch-result parsing and cache population.
+- Picker label resolution and =signel-account= message-self recipient.
+- =cj/signel--ensure-started= branches.
+- Cache invalidation and empty-success vs failure.
+- Prompt-input preservation for both incoming messages and system-error insertion.
+
+Keep the manual live checklist for pick/open/type/send, auto-connect, Note-to-Self, and incoming-message/system-error clobber cases.
+
+* Suggested spec edits
+
+None required for initiate-message implementation readiness.
+
+* Agreed decisions
+
+- Fork signel and own the internal edits.
+- Use =C-; M= as the Messages prefix.
+- Build JSON-RPC success-result dispatch before the picker.
+- Resolve synchronous picker over async fetch with pre-warm plus a bounded cold-cache wait.
+- Cache contacts on first use, support explicit refresh, and invalidate on reconnect.
+- Store picker contacts in a cj-owned cache separate from =signel--contact-map=.
+- Provide both pinned "Note to Self" and a direct message-self command.
+- Auto-start when configured/linked; otherwise raise a useful setup error.
+- Fix the input-clobber bug across message and system-error insertions.
+- Keep v1 picker to 1:1 contacts; defer groups.
+
+* Open questions
+
+None blocking.
+
+* vNext candidates
+
+- Include groups in the picker by merging =listGroups= with =listContacts= after the 1:1 flow is stable. Already tracked in =todo.org= as =[#D]=.
+- Add the QR-based =cj/signel-link= command after the initiate-message path ships.
+- Define the notification slice details before that later task starts: exact =notify= command shape, fallback when =notify= is missing, body truncation, and whether Signal message text is shown verbatim.

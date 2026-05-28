@@ -53,6 +53,9 @@ Installed signal-cli 0.14.4.1 (AUR; imported AsamK's signing key FA10826A... to 
 *** TODO [#B] Contact picker command :feature:
 =cj/signel-pick-contact=: call signal-cli =listContacts= over JSON-RPC, feed the result through =cj/signal--parse-contacts= (done), =completing-read= the labels, open the chosen recipient's chat. signel today opens by raw phone number only.
 
+*** TODO [#B] JSON-RPC success-result dispatch for signel :feature:
+The contact picker needs =listContacts= results, but signel currently dispatches only =receive= notifications and RPC errors; successful =((id . N) (result . VALUE))= responses have no callback/result path. Add a request handler table or equivalent success-result dispatch in the fork, clean handlers up on success/error/reconnect, then build =cj/signel--fetch-contacts= on that contract. Review: [[file:docs/design/signal-client-review.org][docs/design/signal-client-review.org]].
+
 *** TODO [#B] Notify only for the unviewed conversation :feature:
 Wire =cj/signal--should-notify-p= (done) into signel's =signel--handle-receive= notify block (signel.el:277), route through Craig's notify script instead of bare =notifications-notify=, and gate sound behind a defcustom that defaults off.
 
@@ -64,6 +67,9 @@ signel.el:502 (=signel--insert-msg=) does =(delete-region (point) (point-max))=,
 
 *** TODO [#B] use-package wiring :feature:
 =use-package signel :load-path "~/code/signel" :ensure nil= in =signal-config.el=, plus a keybinding prefix (candidate =C-; M= for Messages), and the account source (defcustom vs authinfo, mirroring slack-config).
+
+*** TODO [#D] Include Signal groups in the picker :feature:
+vNext after the 1:1 initiate-message flow is stable. Merge =listGroups= with =listContacts=, label groups distinctly, and preserve the current v1 behavior where the picker is contacts-only.
 
 *** 2026-05-26 Tue @ 15:15:43 -0500 Candidate Signal clients / CLIs
 Signal has no official API, so everything below is unofficial and can break on Signal-Server changes (signal-cli notably expires after about three months without updates). All link as a secondary device to an existing phone, the safer model.
