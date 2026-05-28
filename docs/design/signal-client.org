@@ -17,7 +17,7 @@ I want a Signal chat client inside Emacs: link it as a secondary device to my ph
 - *Researched fact:* signel is stale — all 40 commits in a ~10-day burst in Jan 2026, nothing since 2026-02-04, an unattended issue tracker (5 open, filed Mar 2026, none answered), no PRs ever, ~26 stars. Highest-severity open bug is #2 (incoming messages clobber in-progress input); no crashes, no signal-cli incompatibility, no data loss. So: fork-and-own, not depend-and-track.
 - *Researched fact:* signal-cli is AUR-only on Arch (=yay -S signal-cli=), needs a JRE (OpenJDK 17+, satisfied by the installed OpenJDK 26).
 - *Assumption (to confirm before building):* signal-cli must be updated roughly every three months or Signal-Server rejects the client version. (Widely reported; confirm cadence against the project's NEWS when it bites.)
-- *Assumption:* signal-cli =listContacts= returns the contact list in a shape usable for a completing-read picker. Confirm against a live linked account.
+- *Researched fact:* signal-cli =listContacts= returns a contact list in a shape usable for a completing-read picker. Verified 2026-05-26 against the live linked account (94 real contacts; =cj/signal--parse-contacts= ERT-covered).
 
 * Approaches Considered
 
@@ -77,12 +77,152 @@ signal-cli (linked secondary device) ⇄ JSON-RPC over the subprocess stdio ⇄ 
 
 * Open Questions
 - [ ] Fork-vs-MELPA+advice is decided (fork). Record as an ADR via =arch-decide= if a formal record is wanted.
-- [ ] Keybinding prefix: =C-; M= (Messages) vs another free chord — confirm against the existing =C-;= map.
-- [ ] Account source: defcustom vs authinfo lookup (mirror the Slack token pattern in slack-config.el?).
-- [ ] Whether to push the fork to cjennings.net as a tracked remote (like org-drill) or keep it a local checkout.
+- [X] Keybinding prefix: =C-; M= (Messages). Decided 2026-05-27 (workflow spec D1). Leaf keys: =m= message, =s= self, =d= dashboard, =l= link, =q= stop, =SPC= connect.
+- [X] Account source: defcustom in =signal-config.local.el= (=signel-account=, loaded by =cj/signal-private-config-file=). Decided 2026-05-27. The phone number is an identifier rather than a credential, so a gitignored local-config file is the right home (no GPG prompt at connect time, off the public mirror).
+- [X] Fork remote: keep as a local checkout at =~/code/signel= for now. Decided 2026-05-27. Upstream is dead-quiet so there's no remote to track; revisit if/when divergence is large enough that a backup remote on cjennings.net adds value.
 
 * Next Steps
 1. Install signal-cli: =yay -S signal-cli= (interactive, Craig).
 2. Link as a secondary device (=cj/signel-link= once built, or =signal-cli link= directly) — scan the QR from the phone.
 3. Implement on the fork against the live engine (TDD the pure helpers, manual-verify the live loop) via =/start-work=.
 4. archsetup request to add signal-cli to the standard install — sent 2026-05-26.
+
+* Initiate-message workflow (spec — 2026-05-27)
+
+This section specs the two requests that matter most right now and the end goal that ties them together:
+
+1. Wire signel to keybindings.
+2. A contact picker keyed by *name*, not phone number, so initiating a chat (including a message to self) is a pick-from-names action.
+
+End goal: invoke a key, pick a contact by name, land in the chat buffer, type, send — the whole flow intuitive and without rough edges.
+
+** Current state (what's already built)
+
+- =cj/signal--parse-contacts= turns signal-cli =listContacts= output into a sorted =(LABEL . RECIPIENT)= alist, where LABEL is "Name (recipient)". Unit-tested against all 94 real contacts. This is the data layer for the name-based picker — done.
+- The notify-suppression helpers (=cj/signal--should-notify-p= and friends) and the fork wiring (=use-package signel=, private-config load) are in =modules/signal-config.el=.
+- =signel-chat= (signel.el) opens a chat buffer for a recipient but prompts with raw =(interactive "sSignal Recipient (+Phone): ")= — typing a phone number. Replacing that prompt with a name pick is the core of request #2.
+
+** Happy path
+
+1. =C-; M m= (or chosen key) invokes =cj/signel-message=.
+2. It ensures the daemon is connected, gets the contact list (cached), and runs =completing-read= over names, with "Note to Self" pinned first.
+3. Pick a name → resolve to recipient → call =signel-chat=.
+4. Chat buffer opens; type at the prompt; send.
+
+** Pieces to build
+
+In dependency order (the picker can't be built before the RPC result path exists — see Architecture additions below):
+
+1. *JSON-RPC success-result dispatch* (fork edit) — signel today routes only =receive= notifications and RPC errors; successful =((id . N) (result . VALUE))= responses have no path. Add a request-callback table and result routing. Everything else depends on this.
+2. =cj/signel--ensure-started= — the daemon/link/account guard predicate.
+3. =cj/signel--fetch-contacts= — issue =listContacts= via the new callback contract, feed the result through the existing parser, populate the cache.
+4. =cj/signel--contact-cache= + =cj/signel-refresh-contacts= — cj-owned picker cache, separate from signel's receive-time map.
+5. =cj/signel-message= — the interactive picker command wrapping =signel-chat=.
+6. =cj/signel-message-self= — direct "Note to Self" command.
+7. The signel =C-; M= prefix keymap.
+8. The #2 input-clobber fix (fork edit) covering both =signel--insert-msg= and =signel--insert-system-msg=, since both delete from the prompt line through =point-max=. A mid-type send must survive an incoming message AND a system-error insertion.
+
+** Decisions (resolved 2026-05-27 — Craig accepted all recommendations)
+
+Each recommendation below stands as the accepted decision, including D5 (the input-clobber fix is in scope for this workflow). The Options/Why are kept as the record of what was weighed.
+
+*** D1 — Keymap prefix and layout
+Options:
+- (a) =C-; M= ("Messages"), per the original Design note — =C-; S= is Slack, =C-; M= is free.
+- (b) =C-; G= ("siGnal").
+- (c) Fold into an existing comms prefix.
+
+Recommendation: (a) =C-; M=. Why: it's already reserved in the design note, "Messages" reads as the general intent (room to add other messaging later), and it dodges the Slack collision. Proposed leaf keys: =m= message (picker), =s= message-self, =d= dashboard, =l= link, =q= stop, =SPC= start/connect. (Final key list itself is low-stakes; the prefix is the real choice.)
+
+*** D2 — Contact-list freshness
+Options:
+- (a) Fetch live on every invocation.
+- (b) Cache on first use, refresh with an explicit command, auto-invalidate on (re)connect.
+- (c) Cache with a TTL.
+
+Recommendation: (b). Why: =listContacts= over the RPC isn't instant, and "intuitive" means the picker pops immediately. Cache-plus-explicit-refresh keeps it snappy and predictable; invalidating on connect covers the "I added a contact on my phone" case without a guessed TTL. A =cj/signel-refresh-contacts= command (bound under the prefix) handles the rare staleness.
+
+*** D3 — Message-to-self affordance
+Options:
+- (a) Pin "Note to Self" as the first entry in the picker.
+- (b) A dedicated =cj/signel-message-self= command on its own key.
+- (c) Both.
+
+Recommendation: (c) both. Why: message-to-self is a distinct, frequent intent (it's how you use Signal as a personal scratchpad), so a direct key is the fast path; the pinned picker entry covers discoverability for when you're already in the picker. Low cost to do both since both resolve to the same account recipient.
+
+*** D4 — Daemon not connected
+Options:
+- (a) Auto-start/connect the daemon, then proceed.
+- (b) Prompt "Signal isn't connected — connect now?" then proceed.
+- (c) =user-error= with a hint to run start/link.
+
+Recommendation: (a) when an account is linked, falling back to (c) when it isn't. Why: "intuitive" means the picker just works when you're set up, so auto-connecting on first use removes a manual step; but the client can't fabricate a link, so an unlinked state has to point you at =cj/signel-link= rather than hang.
+
+*** D5 — Is the input-clobber bug (#2) in scope here?
+Options:
+- (a) Fix it as part of this workflow.
+- (b) Track it separately, ship the picker + keymap first.
+
+Recommendation: (a) in scope. Why: your stated bar is "send a message without issues," and the clobber bug corrupts in-progress input the moment a message arrives mid-type — that is the send flow failing. The fork already plans this fix (Design → Folded-in upstream fix), and it sits right next to the notify edit. Shipping the picker while the clobber remains would meet the letter of request #2 but miss the end goal.
+
+*** D6 — 1:1 only, or groups in the picker?
+Options:
+- (a) 1:1 contacts only for now.
+- (b) Include groups in the same picker.
+
+Recommendation: (a) 1:1 only. Why: groups are an explicit Non-Goal for v1, and =listContacts= is the 1:1 source; pulling groups in means a second RPC (=listGroups=) and merged labels. Defer to a follow-up, consistent with the rest of the spec.
+
+** Architecture additions (resolving the 2026-05-27 review blockers)
+
+The Codex review (=docs/design/signal-client-review.org=) found the workflow above hid three unspecified architecture decisions. Confirmed against the fork: =signel--dispatch= (signel.el:230) handles only =receive= and =error=; a successful =result= response is dropped, and =signel--send-rpc= maps request IDs to buffers for error display only. These resolve those gaps so the build isn't inventing contracts midstream.
+
+*** JSON-RPC result path (blocker 1)
+The picker needs a value back from =listContacts=, which the fork can't currently deliver.
+- Add =signel--request-handler-map=, a hash keyed by JSON-RPC id holding a success callback.
+- Add =cj/signel--send-rpc-with-callback= (or extend =signel--send-rpc= with an optional success callback) that registers the callback under the request id.
+- Extend =signel--dispatch= to route =((id . N) (result . VALUE))= to the registered callback, and to clean up the handler entry on success, on error, and on reconnect (so a dead request can't leak a stale callback).
+- =cj/signel--fetch-contacts= consumes this: send =listContacts=, and in the callback parse + cache the result. Picker-facing failures surface as =user-error=; full RPC detail stays in =*signel-log*=.
+
+*** Daemon / link / account guard (blocker 2)
+"Auto-connect when linked, =user-error= when not" needs a real definition of "linked" and of process death.
+- =cj/signel--ensure-started= contract:
+  - Return normally when =(process-live-p (get-process signel--process-name))=.
+  - When =signel-account= is set but no live process exists, call =signel-start=.
+  - When =signel-account= is nil, =user-error= with the exact remedy (set it in the private config, or run the future link command — linking is out of scope this pass and done manually for now).
+  - If startup exits before the first RPC response, fail with a message pointing at =*signel-stderr*= / =*signel-log*= and the manual-link remedy, rather than hanging or surfacing a raw process error.
+- "Linked for v1" means: =signel-account= configured in =signal-config.local.el= AND =signal-cli -a ACCOUNT jsonRpc= starts a live process. The client does not separately prove the account is linked on the server; a not-actually-linked account fails at first RPC and routes through the startup-death message above.
+
+*** Contact cache ownership + invalidation (blocker 3)
+- =cj/signel--contact-cache= holds the parsed =(LABEL . RECIPIENT)= picker alist, owned by =signal-config.el=, kept separate from signel's =signel--contact-map= (which is receive-time sender names, a different and noisier source).
+- =cj/signel-refresh-contacts= clears and refetches it.
+- Auto-invalidate on reconnect by clearing =cj/signel--contact-cache= in the same wrapper/fork edit that starts or restarts the signel process.
+- An empty success result ("No Signal contacts returned") is a distinct, user-facing message from an RPC/startup failure; the two must not collapse into the same error.
+
+*** Note-to-Self recipient (medium)
+- v1 resolves "Note to Self" as =signel-chat= / =send= to =signel-account= (the linked number). No special-casing beyond pinning the picker entry and the direct command.
+- Manual-verify: sending to =signel-account= lands in the Signal Note-to-Self thread, not as a self-addressed display anomaly.
+
+*** Synchronous picker over asynchronous fetch (final blocker — resolved 2026-05-27)
+=completing-read= is synchronous; =cj/signel--fetch-contacts= is asynchronous via the callback table. On a cold cache the picker has to bridge that gap mid-call. Resolved via pre-warm + bounded block:
+- =cj/signel--ensure-started= triggers a background fetch on connect / restart. The fetch's callback populates =cj/signel--contact-cache=; no user-visible step.
+- =cj/signel-message= opens =completing-read= immediately when the cache is non-empty. On a cold cache (pre-warm hasn't returned yet), the command kicks off a fetch and calls =accept-process-output= with a bounded timeout (default 3s, =cj/signel-fetch-timeout= defcustom). On result, the picker opens. On timeout, =user-error= "Signal contact fetch timed out — try again, or refresh with =M-x cj/signel-refresh-contacts=" and point at =*signel-log*= for detail.
+- Why this shape: warm cache is the common path so the picker feels instant; cold path still completes without a two-step "fetching… try again" UX; the timeout prevents a dead or wedged daemon from hanging Emacs.
+
+*** Caveats accepted (state at build time, none blocking)
+- *JSON-RPC result envelope* — JSON-RPC 2.0 success is =((jsonrpc . "2.0") (id . N) (result . VALUE))=. The parser was verified on a real =listContacts= return on the live linked account, so the envelope keying is observed-correct in practice. Confirm against the next live response when the dispatch lands.
+- *Diagnostic logging stance* — =*signel-log*= (signel's existing log) carries RPC traffic, which includes contact names/numbers and message text. Single-user local setup, log lives on disk under Emacs's control: accept-and-state, no redaction beyond what signel already does. Revisit if the log ever gets synced off-machine or the threat model widens.
+- *Keymap conflict check* — before binding =C-; M=, verify it's unbound on the global =C-;= map at wiring time. The global =C-;= map is owned by =keybindings.el= (=cj/custom-keymap=); a quick =(keymap-lookup cj/custom-keymap "M")= during the keymap step is enough.
+
+** Testing
+
+Unit-testable without a live account (TDD these): the result-dispatch routing (a =result= response with a registered id invokes the callback; handler cleaned up on success/error; an unknown id is a no-op), the live-fetch result handling (mocked RPC JSON → parser, already covered for parsing itself), recipient resolution from a picked label, the note-to-self recipient, the daemon-state guard predicate (=cj/signel--ensure-started= branches: live process, account-set-no-process, account-nil), cache invalidation (refresh clears; empty result vs failure produce distinct outcomes), and *prompt-input preservation across both =signel--insert-msg= and =signel--insert-system-msg=* (regression for the #2 clobber fix and the system-error insertion path). Manual checklist against the linked account: the actual pick → open → type → send round-trip, the clobber fix under a real incoming message, the clobber fix under a real system-error insertion, auto-connect on first use, and that Note-to-Self lands in the right thread. This mirrors the Testing section above (pure helpers ERT, live loop manual).
+
+** Scope summary
+
+In scope: =cj/signel-message=, =cj/signel-message-self=, =cj/signel--fetch-contacts=, =cj/signel-refresh-contacts=, the JSON-RPC result-dispatch fork edit, =cj/signel--ensure-started=, the cj-owned contact cache + pre-warm, the =C-; M= keymap, and the #2 clobber fix. Out of scope for this pass: linking/QR (=cj/signel-link=, separate request), groups, and the colon-alignment-style polish. Linking is assumed already done manually for the workflow to be exercised.
+
+Notification-slice forward-flag: the existing Design notes route notifications through Craig's =notify= script with an optional sound, but the slice-level details — exact =notify= command shape, fallback when =notify= is missing, body truncation, and whether Signal message text is shown verbatim in desktop notifications — are not specified here. Before the notification slice starts, add a short subsection to this spec naming those four. Not in scope for the initiate-message workflow because the notify-suppression predicates already exist and the notification edit isn't on the build path for the picker.
+
+** Readiness rubric
+
+*Ready* (2026-05-27 spec-review). All three Codex blockers folded in (Architecture additions); the final sync/async decision resolved as pre-warm + bounded block; three minor caveats stated for build time, none blocking. Implementation order follows the Pieces-to-build list — the JSON-RPC result-dispatch fork edit is step 1, everything else builds on it.
