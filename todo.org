@@ -3798,21 +3798,62 @@ Three small reveal.js improvements; collected into one task because each on its 
 
 Complex workflow testing capability.
 
-* Emacs Manual Testing and Validation
-*** Signel initiate-message workflow end-to-end against linked account
-What we're verifying: the new picker, daemon guard, cache, keymap, and clobber fix all work against a real signal-cli daemon and the linked phone.
+*** Signel: connect starts the daemon
+What we're verifying: =cj/signel-connect= (=C-; M SPC=) auto-starts =signal-cli= via =cj/signel--ensure-started= and pre-warms the contact cache in the background.
 - Restart Emacs so the new code loads fresh.
-- Press =C-; M SPC= (=cj/signel-connect=).  Expected: "Signel connected." in the echo area, the daemon starts (check =M-x list-processes= for =signal-rpc=), and contacts pre-warm in the background.
-- Press =C-; M m= (=cj/signel-message=).  Expected: a completing-read opens within ~1 second, "Note to Self" sits at the top, and all 94 real contacts appear by name.
-- Pick a contact you trust.  Expected: a =*Signel: +<number>*= buffer opens.
-- Type a short message, press =RET=.  Expected: the message sends, appears in the buffer with the timestamp prefix, and arrives on the recipient's phone.
-- Press =C-; M s= (=cj/signel-message-self=).  Expected: a Signel chat buffer opens addressed to your own account number.
-- Send "test note to self" through it.  Expected: the message lands in the *Note to Self* thread on your phone, NOT as a separate self-addressed conversation.
-- While typing a long unsent message into a chat buffer, have someone send you a Signal message (or send yourself one via the phone).  Expected: the incoming message renders above the prompt and your typed text is still there at the prompt.
-- Press =C-; M d= (=signel-dashboard=).  Expected: the active-chats dashboard opens.
-- Press =C-; M q= (=signel-stop=).  Expected: "Signel service stopped." and the process is gone from =list-processes=.
-- Press =M-x cj/signel-refresh-contacts=.  Expected: cache clears and re-fetches (silently; the picker is the visible check).
-Expected: every step matches its expected outcome.  Any deviation gets logged here under the failing step and promoted to a TODO bug.
+- Press =C-; M SPC=.
+- =M-x list-processes=.
+Expected: echo area shows "Signel connected.", and =list-processes= shows a running =signal-rpc= process.
+
+*** Signel: picker opens with contact names
+What we're verifying: =cj/signel-message= (=C-; M m=) opens a completing-read populated by name from =cj/signel--contact-cache=, with "Note to Self" pinned first.
+- Press =C-; M m=.
+- Look at the candidate list.
+Expected: the minibuffer opens within ~1s, "Note to Self" sits at the top, and your 94 Signal contacts follow, labeled "Name (+number)".
+
+*** Signel: pick a contact and send a message
+What we're verifying: choosing a contact opens a chat buffer, =RET= at the prompt sends through =signel--send-input=, and the message arrives on the recipient's phone.
+- =C-; M m=, pick a contact you trust.
+- Type a short message at the prompt, press =RET=.
+- Check the recipient's phone.
+Expected: a =*Signel: +<number>*= buffer opens, the typed message renders with the =[HH:MM] <Me>= prefix on send, and arrives on the recipient's phone within a few seconds.
+
+*** Signel: Note-to-Self lands in the right Signal thread
+What we're verifying: =cj/signel-message-self= (=C-; M s=) resolves to =signel-account= and sending through it lands in the *Note to Self* thread on the phone, NOT a self-addressed display anomaly.  This is the spec's medium-priority manual verify from D3.
+- Press =C-; M s=.
+- Type "test note to self" at the prompt, press =RET=.
+- Open Signal on your phone, scroll to the *Note to Self* thread.
+Expected: a =*Signel: +<your-number>*= buffer opens in Emacs, the message sends, and the message appears in the phone's *Note to Self* thread (not in any other conversation).
+
+*** Signel: Note-to-Self via the picker's pinned entry
+What we're verifying: picking the pinned "Note to Self" entry through =cj/signel-message= resolves the same way as the direct command.
+- =C-; M m=, choose "Note to Self".
+Expected: the same =*Signel: +<your-number>*= buffer opens.  (No need to re-send; opening the right buffer proves the resolution.)
+
+*** Signel: typed input survives an incoming message
+What we're verifying: the clobber fix (fork commit 5ec56c0) preserves in-progress prompt input across =signel--insert-msg= when a message arrives mid-typing.
+- =C-; M m=, pick a contact.
+- Type a long unsent message at the prompt, do NOT press =RET=.
+- From a second device or by asking someone, send yourself a Signal message that lands in this chat (or any active chat).
+Expected: the incoming message renders above the prompt, the prompt redraws, and your typed text is still there at the prompt ready to send.
+
+*** Signel: dashboard opens
+What we're verifying: =signel-dashboard= (=C-; M d=) opens the active-chats dashboard.
+- Press =C-; M d=.
+Expected: a dashboard buffer opens listing active chats.
+
+*** Signel: stop tears down the daemon
+What we're verifying: =signel-stop= (=C-; M q=) deletes the process and clears the request-handler / buffer maps (the reconnect-invalidation contract from fork commit 4740d97).
+- Press =C-; M q=.
+- =M-x list-processes=.
+Expected: echo area shows "Signel service stopped.", and =list-processes= no longer lists =signal-rpc=.
+
+*** Signel: refresh forces a fresh contact fetch
+What we're verifying: =cj/signel-refresh-contacts= clears the cache and re-fetches via the new callback contract.
+- =C-; M SPC= to reconnect if you ran the stop test above.
+- =M-x cj/signel-refresh-contacts=.
+- Immediately =C-; M m=.
+Expected: the picker still opens cleanly with the same contact list (the refresh is silent; the picker is the visible check).  If you added a contact on the phone, it now appears.
 
 *** Font setup reaches a GUI frame created after a TTY frame (daemon)
 What we're verifying: emoji glyphs + fonts apply in a GUI frame even when the first daemon frame was a TTY.
