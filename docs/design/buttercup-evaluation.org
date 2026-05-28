@@ -1,0 +1,117 @@
+#+TITLE: Buttercup Evaluation
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-05-28
+
+* Purpose
+
+Decide whether to adopt Buttercup for BDD-style testing over the project's current ERT-only baseline. Output of the 2026-04-26 brainstorm reminder that flagged the original one-liner Buttercup task as too thin to act on.
+
+The verdict is here at the top; the rubric, evidence, and trigger conditions follow. Re-read this when a project crosses the threshold described below.
+
+* Verdict
+
+Not yet — for any project Craig owns as of 2026-05-28. ERT is enough.
+
+Adopt Buttercup the moment a project crosses the adoption threshold described below. Until then the migration cost is real and the value it would unlock is theoretical.
+
+* Adoption Threshold
+
+The test reader is no longer the test author at write-time.
+
+That one line is the whole rubric. Every project archetype where Buttercup wins reduces to a way this threshold gets crossed.
+
+** What crossing the threshold looks like
+
+- An outside contributor opens a PR — they read the tests to understand the API surface before touching code.
+- The project ships through MELPA / a package archive — consumers read tests as documentation when something breaks.
+- An upstream PR is opened against another package — the reviewer reads the diff and any accompanying tests.
+- A second machine starts pulling the same local checkout — future-Craig on a different host counts.
+- A README declares a stated public API (=cj/foo-thing= is a "supported command", not just internal scratch) — consumers exist by definition.
+- A solo project ages past working-memory windows (six-plus months between substantive sessions) — future-self counts as a second reader and the spec-as-documentation value of describe/it grows with age.
+
+* Strengths Buttercup Brings Over ERT
+
+** Narrative test structure
+Nested =describe / it / expect= reads top-to-bottom as a scenario. "Given a connected daemon, given a contact selected, when the user sends a message, expect…" — the structure IS the spec.
+
+ERT's flat dispense-by-name leaves related tests as siblings with no visible grouping. =test-signel-connect=, =test-signel-message=, =test-signel-disconnect= are visually adjacent in a file but the relationship doesn't show up to a cold reader.
+
+** Built-in spies
+=spy-on= with =:and-return-value=, =:and-call-fake=, =:and-call-through=, =:to-have-been-called-with=, =:to-have-been-called-times= collapses =cl-letf= scaffolding linearly with mock count. Six lines of =cl-letf= for one mock become two of =spy-on=. The savings compound for tests that touch multiple side-effect boundaries — RPC sends, file writes, process sentinels.
+
+** Expressive matchers
+=:to-be=, =:to-equal=, =:to-match=, =:to-throw=, =:to-contain=, =:to-have-been-called-with= self-describe their failures: "expected X but got Y". Under ERT you write that prose yourself in a =should= message or you live with bare assertion text.
+
+** Async support
+The =done= callback finalizes asynchronous tests cleanly — process sentinels, network handlers, timers, event-loop work. ERT's equivalent is =accept-process-output= polling, =while-no-input= idioms, or =sit-for= sleeps.
+
+** Setup hooks at every depth
+=before-each=, =after-each=, =before-all=, =after-all= scope to each =describe= block, with guaranteed cleanup even on test failure. The pattern of =unwind-protect= around every test collapses to one declaration.
+
+** Random test order
+On by default. Catches order-dependent tests. ERT runs in declaration order — coupling between tests silently survives until the day someone reorders.
+
+** Ecosystem alignment
+Buttercup is the de facto MELPA-package testing standard. Clean JUnit XML output, runner CLI, GitHub Actions templates exist for it. The community CI workflows assume Buttercup, not ERT.
+
+* Project Archetypes Where Buttercup Wins
+
+Each is a different shape of "the test reader is no longer the test author at write-time."
+
+** MELPA-bound packages with outside contributors
+Community standard; new contributors expect =describe= / =it= / =expect=. CI templates land working.
+
+** Libraries with a public API surface
+The test file IS the spec. =describe('cj/signel-message')= reads as documentation for the next reader.
+
+** Heavily-integrated wrappers
+Slack, Signal, email, RPC, IPC. Anywhere four or five external boundaries get touched per test, =spy-on= eliminates the =cl-letf= weight that grows linearly with mock count.
+
+** Async-heavy code
+Process sentinels, network handlers, polling loops. The =done= callback is cleaner than sleep-and-assert.
+
+** Outside-in / BDD TDD
+The spec is written first as scenarios; tests evolve. =xit= / =xdescribe= pending markers and nested =describe= blocks let the whole spec be visible while only part of it is green.
+
+** Multi-developer projects
+Narrative test structure is easier for new contributors to read than a wall of =test-foo-bar-baz= function names.
+
+** Solo projects that outlive working memory
+Future-self counts as a second reader. The longer the gap between sessions, the more the spec-as-documentation value of =describe= / =it= matters.
+
+* Why ERT Stays the Right Default for Craig Today
+
+** ~/.emacs.d
+Public-mirrored to cjennings.net and GitHub, but the audience is "Craig + occasional curious onlooker," not "package consumer expecting reproducible install + reliable behavior." Single test consumer. ERT.
+
+** signel fork (~/code/signel)
+Local checkout. No remote. No upstream PR yet. Single test consumer. ERT.
+
+** Chime, org-msg, other local packages
+Local. No MELPA submission. No stated public-API README. Single test consumer. ERT.
+
+** Idiom alignment
+ERT is what Emacs itself uses. Code-near-Emacs-core stays cheaper to read and write in ERT.
+
+** Migration cost
+Sixty-plus ERT files in =~/.emacs.d/tests/= alone, plus the local package suites. Buttercup is a framework swap per project — not a per-file convert-as-you-go path the way some test migrations are.
+
+* When To Reach For This Doc Again
+
+Open this file the day any of the following happens:
+
+- Craig opens an upstream PR against keenban/signel
+- A Chime / org-msg / signel-fork MELPA recipe is submitted
+- Someone files an issue or opens a PR against =~/.emacs.d=
+- A second machine starts pulling a local-package checkout as a consumer
+- A README is added to a project declaring a public API surface
+- Six-plus months pass on a project and re-reading the ERT suite cold feels harder than it should
+
+That's the moment to revisit the verdict. The rubric doesn't change; the threshold flips.
+
+* References
+
+- Original task: =todo.org= — "Evaluate and integrate Buttercup for behavior-driven integration tests" (marked DONE 2026-05-28 with this doc as the evaluation deliverable)
+- Triggering reminder: 2026-04-26 entry in =.ai/notes.org= Active Reminders ("Buttercup eval brainstorm")
+- Buttercup project: https://github.com/jorgenschaefer/emacs-buttercup
+- ERT documentation: =info:ert=
