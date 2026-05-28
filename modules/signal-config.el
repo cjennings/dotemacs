@@ -127,6 +127,16 @@ time."
   (when (file-readable-p cj/signal-private-config-file)
     (load cj/signal-private-config-file nil t)))
 
+;; Chat buffers (named `*Signel: <id>*') open in the bottom 30% of the
+;; frame rather than wherever display-buffer's fallback rule picks.
+;; The fork's `signel-chat' uses `pop-to-buffer', so this entry applies.
+(add-to-list
+ 'display-buffer-alist
+ '("\\`\\*Signel: "
+   (display-buffer-reuse-window display-buffer-at-bottom)
+   (window-height . 0.3)
+   (reusable-frames . nil)))
+
 ;;; Connection guard, contact fetch, and cache
 
 ;; Forward declarations: signel.el is loaded by the use-package above (with

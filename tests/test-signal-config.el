@@ -368,5 +368,30 @@ commands the workflow spec names."
   (should (eq (keymap-lookup cj/signel-prefix-map "SPC")
               #'cj/signel-connect)))
 
+;;; display-buffer-alist entry for *Signel: ...* chat buffers
+
+(ert-deftest test-signal-config-chat-buffer-display-rule-uses-bottom-30 ()
+  "Normal: signal-config registers a `display-buffer-alist' entry that
+matches `*Signel: <id>*' buffers, routes them through
+`display-buffer-at-bottom', and sets `window-height' to 0.3 so the
+chat docks to the bottom 30% of the frame."
+  (let ((entry (seq-find (lambda (e) (equal (car e) "\\`\\*Signel: "))
+                         display-buffer-alist)))
+    (should entry)
+    (should (memq 'display-buffer-at-bottom (cadr entry)))
+    (should (equal 0.3 (cdr (assq 'window-height (cddr entry)))))))
+
+(ert-deftest test-signal-config-chat-buffer-display-rule-matches-buffer-name ()
+  "Boundary: the registered regex matches a realistic chat buffer name
+\(phone-number id and group-id) and does not match unrelated buffers."
+  (let* ((entry (seq-find (lambda (e) (equal (car e) "\\`\\*Signel: "))
+                          display-buffer-alist))
+         (regex (car entry)))
+    (should regex)
+    (should (string-match-p regex "*Signel: +15555550100*"))
+    (should (string-match-p regex "*Signel: groupid-abc*"))
+    (should-not (string-match-p regex "*signel-log*"))
+    (should-not (string-match-p regex "scratch"))))
+
 (provide 'test-signal-config)
 ;;; test-signal-config.el ends here
