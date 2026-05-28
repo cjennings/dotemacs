@@ -165,7 +165,14 @@ Three branches:
 If startup launches but the RPC handshake exits before the first response,
 the subsequent `signel--send-rpc' call (in the pre-warm or any later
 fetch) signals through its own error path; check =*signel-log*= and
-=*signel-stderr*= for detail and link the account manually."
+=*signel-stderr*= for detail and link the account manually.
+
+Loads the `signel' feature explicitly before reading any of its
+private variables: the use-package above autoloads only on
+`signel-start' / `signel-stop' / `signel-chat' / `signel-dashboard',
+so without this require the first branch's read of `signel--process-name'
+fires a void-variable error before the autoload would trigger."
+  (require 'signel)
   (cond
    ((process-live-p (get-process signel--process-name))
     nil)
