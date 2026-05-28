@@ -20,7 +20,8 @@
 (require 'cj-window-geometry-lib)
 
 (defun cj/window-toggle-capture-state (window default-direction
-                                              direction-var size-var)
+                                              direction-var size-var
+                                              &optional allowed)
   "Write WINDOW's direction and body size into DIRECTION-VAR and SIZE-VAR.
 
 DEFAULT-DIRECTION is the symbol used by `cj/window-direction' when
@@ -28,12 +29,24 @@ WINDOW fills its frame's root area.  DIRECTION-VAR and SIZE-VAR are
 the symbols of the consumer's state variables; they receive the
 captured values via `set'.
 
+ALLOWED, when non-nil, is a list of permitted direction symbols.  If
+WINDOW's captured direction isn't in it, fall back to DEFAULT-DIRECTION
+and clear SIZE-VAR (set to nil) so the consumer's default size applies --
+the captured body size was measured on the disallowed axis and wouldn't
+transfer meaningfully.  A consumer that wants to forbid a placement (e.g.
+an agent window that should never be remembered at the top of the frame)
+passes the directions it does allow.  Omit ALLOWED to keep every
+direction.
+
 No-op when WINDOW is nil or not live."
   (when (window-live-p window)
-    (let* ((dir (cj/window-direction window default-direction))
-           (size (cj/window-body-size window dir)))
-      (set direction-var dir)
-      (set size-var size))))
+    (let ((dir (cj/window-direction window default-direction)))
+      (if (or (null allowed) (memq dir allowed))
+          (progn
+            (set direction-var dir)
+            (set size-var (cj/window-body-size window dir)))
+        (set direction-var default-direction)
+        (set size-var nil)))))
 
 (defun cj/window-toggle-display-saved (buffer alist
                                               direction-var default-direction

@@ -341,8 +341,10 @@ Used as the size fallback when `cj/--vterm-toggle-last-size' is nil
 
 (defvar cj/--vterm-toggle-last-direction nil
   "Last user-chosen direction for the F12 vterm display.
-Symbol: right, left, below, above.  nil means use the default
-`below' for F12's traditional bottom split.")
+Symbol: right, left, or below.  `above' is never stored -- a top
+placement falls back to `below' at capture time, so F12 never reopens
+from the top.  nil means use the default `below' for F12's traditional
+bottom split.")
 
 (defvar cj/--vterm-toggle-last-size nil
   "Last user-chosen body size for the F12 vterm display.
@@ -384,7 +386,8 @@ split when WINDOW fills the frame's root area."
   (cj/window-toggle-capture-state
    window 'below
    'cj/--vterm-toggle-last-direction
-   'cj/--vterm-toggle-last-size))
+   'cj/--vterm-toggle-last-size
+   '(right below left)))
 
 (defun cj/--vterm-toggle-display-saved (buffer alist)
   "Display-buffer action: split per saved direction and body size.

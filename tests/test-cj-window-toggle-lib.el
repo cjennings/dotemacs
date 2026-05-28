@@ -91,6 +91,52 @@
     (should (eq test-cj-window-toggle--last-direction 'sentinel-dir))
     (should (= test-cj-window-toggle--last-size 0.123))))
 
+(ert-deftest test-cj-window-toggle-capture-allowed-keeps-permitted-direction ()
+  "Normal: a captured direction in ALLOWED is stored with its body size."
+  (save-window-excursion
+    (delete-other-windows)
+    (let ((below (split-window (selected-window) nil 'below))
+          (test-cj-window-toggle--last-direction nil)
+          (test-cj-window-toggle--last-size nil))
+      (cj/window-toggle-capture-state
+       below 'below
+       'test-cj-window-toggle--last-direction
+       'test-cj-window-toggle--last-size
+       '(right below left))
+      (should (eq test-cj-window-toggle--last-direction 'below))
+      (should (integerp test-cj-window-toggle--last-size)))))
+
+(ert-deftest test-cj-window-toggle-capture-allowed-rejects-disallowed-direction ()
+  "Boundary: a direction not in ALLOWED falls back to default, size cleared.
+The captured body size was measured on the disallowed axis, so it can't
+transfer; clearing it lets the consumer's default size apply."
+  (save-window-excursion
+    (delete-other-windows)
+    (let ((above (split-window (selected-window) nil 'above))
+          (test-cj-window-toggle--last-direction 'sentinel)
+          (test-cj-window-toggle--last-size 99))
+      (cj/window-toggle-capture-state
+       above 'below
+       'test-cj-window-toggle--last-direction
+       'test-cj-window-toggle--last-size
+       '(right below left))
+      (should (eq test-cj-window-toggle--last-direction 'below))
+      (should (null test-cj-window-toggle--last-size)))))
+
+(ert-deftest test-cj-window-toggle-capture-allowed-nil-keeps-all ()
+  "Boundary: omitting ALLOWED preserves the prior unconstrained behavior."
+  (save-window-excursion
+    (delete-other-windows)
+    (let ((above (split-window (selected-window) nil 'above))
+          (test-cj-window-toggle--last-direction nil)
+          (test-cj-window-toggle--last-size nil))
+      (cj/window-toggle-capture-state
+       above 'below
+       'test-cj-window-toggle--last-direction
+       'test-cj-window-toggle--last-size)
+      (should (eq test-cj-window-toggle--last-direction 'above))
+      (should (integerp test-cj-window-toggle--last-size)))))
+
 (ert-deftest test-cj-window-toggle-display-saved-uses-defaults-when-state-nil ()
   "Normal: nil state -> direction=edge of default, size=default."
   (let (received-alist

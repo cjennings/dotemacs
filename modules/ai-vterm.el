@@ -391,10 +391,13 @@ on a desktop -- pairing with the axis chosen by
 (defvar cj/--ai-vterm-last-direction nil
   "Last user-chosen direction for the AI-vterm display.
 
-Symbol: right, below, left, or above.  nil means no agent window
-has been toggled off yet this session, so the default direction
-applies.  Captured at toggle-off by `cj/--ai-vterm-capture-state'
-and consumed by `cj/--ai-vterm-display-saved'.")
+Symbol: right, below, or left.  `above' is never stored -- the agent
+window must not be remembered at the top of the frame, so a top
+placement falls back to the host default at capture time.  nil means no
+agent window has been toggled off yet this session, so the default
+direction applies.  Captured at toggle-off by
+`cj/--ai-vterm-capture-state' and consumed by
+`cj/--ai-vterm-display-saved'.")
 
 (defvar cj/--ai-vterm-last-was-bury nil
   "Non-nil when the last F9 toggle-off used `bury-buffer'.
@@ -444,7 +447,8 @@ is not live."
   (cj/window-toggle-capture-state
    window (cj/--ai-vterm-default-direction)
    'cj/--ai-vterm-last-direction
-   'cj/--ai-vterm-last-size))
+   'cj/--ai-vterm-last-size
+   '(right below left)))
 
 (defun cj/--ai-vterm-reuse-existing-agent (buffer _alist)
   "Display-buffer action: reuse any window in this frame already showing
