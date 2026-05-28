@@ -3799,6 +3799,21 @@ Three small reveal.js improvements; collected into one task because each on its 
 Complex workflow testing capability.
 
 * Emacs Manual Testing and Validation
+*** Signel initiate-message workflow end-to-end against linked account
+What we're verifying: the new picker, daemon guard, cache, keymap, and clobber fix all work against a real signal-cli daemon and the linked phone.
+- Restart Emacs so the new code loads fresh.
+- Press =C-; M SPC= (=cj/signel-connect=).  Expected: "Signel connected." in the echo area, the daemon starts (check =M-x list-processes= for =signal-rpc=), and contacts pre-warm in the background.
+- Press =C-; M m= (=cj/signel-message=).  Expected: a completing-read opens within ~1 second, "Note to Self" sits at the top, and all 94 real contacts appear by name.
+- Pick a contact you trust.  Expected: a =*Signel: +<number>*= buffer opens.
+- Type a short message, press =RET=.  Expected: the message sends, appears in the buffer with the timestamp prefix, and arrives on the recipient's phone.
+- Press =C-; M s= (=cj/signel-message-self=).  Expected: a Signel chat buffer opens addressed to your own account number.
+- Send "test note to self" through it.  Expected: the message lands in the *Note to Self* thread on your phone, NOT as a separate self-addressed conversation.
+- While typing a long unsent message into a chat buffer, have someone send you a Signal message (or send yourself one via the phone).  Expected: the incoming message renders above the prompt and your typed text is still there at the prompt.
+- Press =C-; M d= (=signel-dashboard=).  Expected: the active-chats dashboard opens.
+- Press =C-; M q= (=signel-stop=).  Expected: "Signel service stopped." and the process is gone from =list-processes=.
+- Press =M-x cj/signel-refresh-contacts=.  Expected: cache clears and re-fetches (silently; the picker is the visible check).
+Expected: every step matches its expected outcome.  Any deviation gets logged here under the failing step and promoted to a TODO bug.
+
 *** Font setup reaches a GUI frame created after a TTY frame (daemon)
 What we're verifying: emoji glyphs + fonts apply in a GUI frame even when the first daemon frame was a TTY.
 - emacs --daemon
