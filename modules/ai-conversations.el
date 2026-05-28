@@ -13,6 +13,13 @@
 
 ;;; Code:
 
+(require 'cj-window-toggle-lib)  ;; cj/side-window-display
+
+;; Shared *AI-Assistant* remembered-width state, owned by ai-config.el.
+;; Forward-declared so loading a conversation reopens the panel at the same
+;; width as the F-key toggle without a circular require.
+(defvar cj/--ai-assistant-width)
+
 (defgroup cj/ai-conversations nil
   "Conversation persistence for GPTel (save/load/delete, autosave)."
   :group 'gptel
@@ -344,9 +351,9 @@ enable autosave."
 		(cj/gptel--autosave-start-timer))
 	  (let ((buf (get-buffer "*AI-Assistant*")))
 		(unless (get-buffer-window buf)
-		  (display-buffer-in-side-window
-		   buf `((side . ,cj/gptel-conversations-window-side)
-				 (window-width . ,cj/gptel-conversations-window-width)))))
+		  (cj/side-window-display
+		   buf cj/gptel-conversations-window-side
+		   'cj/--ai-assistant-width cj/gptel-conversations-window-width)))
 	  (select-window (get-buffer-window "*AI-Assistant*"))
 	  (message "Loaded conversation from: %s" filepath))))
 

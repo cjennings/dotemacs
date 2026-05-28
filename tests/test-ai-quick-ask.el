@@ -20,6 +20,15 @@
 
 (require 'ai-quick-ask)
 
+;; The quick-ask escalation reopens *AI-Assistant* through
+;; cj/side-window-display, which reads the panel-width state ai-config owns.
+;; ai-config isn't loaded here (it would pull in gptel), so declare those vars
+;; globally to stand in for it -- a value-less defvar in the module is only
+;; file-local to the byte-compiler, so the function reads them dynamically and
+;; would otherwise hit void-variable.
+(defvar cj/ai-assistant-window-width 0.4)
+(defvar cj/--ai-assistant-width nil)
+
 ;; ------------------------------ pure helpers
 
 (ert-deftest test-ai-quick-ask-initial-text-shape ()
