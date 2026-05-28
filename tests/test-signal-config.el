@@ -199,6 +199,29 @@ starting an account-less daemon."
               ((symbol-function 'get-process) (lambda (_) nil)))
       (should-error (cj/signel--ensure-started) :type 'user-error))))
 
+(ert-deftest test-signal-config-ensure-started-requires-signel-first ()
+  "Error: ensure-started must `require' signel BEFORE reading any of
+its private variables, so a `void-variable' error cannot fire when
+called before signel has been autoloaded.  Captures the bug where
+`signel--process-name' was forward-declared in signal-config but not
+yet bound at runtime because the `use-package' autoload had not fired.
+
+Asserts ordering, not just presence: a future refactor that moves the
+`require' below the `cond' would still execute the require eventually
+but the variable read in the cond would fire void-variable first.
+The test fails if `require' isn't the first call inside the function."
+  (let ((call-order nil))
+    (cl-letf (((symbol-function 'require)
+               (lambda (feature &optional _filename _noerror)
+                 (push (list 'require feature) call-order)
+                 t))
+              ((symbol-function 'process-live-p)
+               (lambda (_) (push 'process-live-p call-order) t))
+              ((symbol-function 'get-process)
+               (lambda (_) (push 'get-process call-order) 'fake-proc)))
+      (cj/signel--ensure-started)
+      (should (equal (car (reverse call-order)) '(require signel))))))
+
 ;;; cj/signel--fetch-contacts + cj/signel--contact-cache
 
 (ert-deftest test-signal-config-fetch-contacts-issues-list-contacts-rpc ()
