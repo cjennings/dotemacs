@@ -56,7 +56,7 @@ Installed signal-cli 0.14.4.1 (AUR; imported AsamK's signing key FA10826A... to 
 *** 2026-05-27 Wed @ 21:55:57 -0500 Added JSON-RPC success-result dispatch in the signel fork
 Fork commit 4740d97 added =signel--request-handler-map= (id → success callback), extended =signel--send-rpc= with an optional =success-callback= that registers under the new request id, and gave =signel--dispatch= a result branch that invokes the callback and removes the handler.  Error responses also remhash the handler entry, and =signel-start= / =signel-stop= both =clrhash= the map so reconnect is reliably empty.  Backward-compatible: existing callers that don't pass a callback hit the same code path as before.  Five ERT tests in this project (=tests/test-signel-rpc-dispatch.el=, dotemacs commit bfec0eab) lock the contract: Normal (result invokes callback + cleanup, send-rpc registers), Boundary (unknown id is a no-op), Error (error response cleans up handler), reconnect (=signel-stop= empties the map).  Refactor audit surfaced a separate pre-existing leak in =signel--handle-error= (request-buffer-map entries aren't removed on error); filed as the [#C] follow-up below.
 
-*** TODO [#C] signel--handle-error leaks request-buffer-map entries :bug:
+*** TODO [#C] signel--handle-error leaks request-buffer-map entries :bug:no-sync:
 Surfaced during the JSON-RPC dispatch refactor audit. =signel--handle-error= reads =signel--request-buffer-map= by id but never =remhash='es the entry, so every error response leaves the request-id → buffer-name mapping behind for the life of the process. Low impact (the map clears on stop/start, and id collisions are unlikely at the counter scale), but unbounded growth in a long-lived session and inconsistent with how the new request-handler-map is cleaned up on error.
 
 *** TODO [#B] Notify only for the unviewed conversation :feature:
@@ -71,7 +71,7 @@ Fork commit 5ec56c0 added =signel--pending-input= (capture from input-marker to 
 *** 2026-05-27 Wed @ 22:08:40 -0500 use-package wired with C-; M keymap and local account config
 =use-package signel :load-path "~/code/signel" :ensure nil= already wired earlier with =signel-auto-open-buffer nil=.  Account source is =signel-account= set from =cj/signal-private-config-file= (=signal-config.local.el=, gitignored) loaded in =:config=, decided in the workflow spec.  Keymap prefix =C-; M= attached via =with-eval-after-load 'keybindings= so the binding survives load-order.
 
-*** TODO [#D] Include Signal groups in the picker :feature:
+*** TODO [#D] Include Signal groups in the picker :feature:no-sync:
 vNext after the 1:1 initiate-message flow is stable. Merge =listGroups= with =listContacts=, label groups distinctly, and preserve the current v1 behavior where the picker is contacts-only.
 
 *** 2026-05-26 Tue @ 15:15:43 -0500 Candidate Signal clients / CLIs
