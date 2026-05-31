@@ -2570,6 +2570,16 @@ Part 2 — combinatorial test coverage. Use the =/pairwise-tests= skill: identif
 
 The recent F10 side-window-height-fraction work and the EMMS-free refactor candidate ("Implement EMMS-free music-config architecture" above) are both natural near-term touchpoints — best to land this audit before the EMMS swap so the new architecture inherits a clean option spec.
 
+** TODO [#C] gptel-magit activation fails on velox :bug:ai:
+Surfaced 2026-05-25 while diagnosing an unrelated load failure over SSH. velox-specific — the workstation has a current gptel and does not show it.
+
+At startup (and reproducibly in batch) velox logs: "Unable to activate package `gptel-magit'. Required package `gptel-0.9.8' is unavailable." gptel-magit depends on gptel >= 0.9.8 and velox's installed gptel is older or missing, so it can't activate. A startup warning, not a blocker.
+
+Reproduce:
+: emacs --batch --no-site-file -L . -L modules --eval "(package-initialize)" --eval "(message \"done\")" 2>&1 | grep -i gptel
+
+Next step: check the installed gptel version (=(assq 'gptel package-alist)= or =M-x package-list-packages=), update gptel to >= 0.9.8, then re-evaluate gptel-magit activation. If gptel was pinned/held on velox, reconcile the pin against the gptel-magit dependency.
+
 ** TODO [#C] GPTel Work :feature:ai:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
