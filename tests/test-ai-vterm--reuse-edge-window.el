@@ -175,7 +175,7 @@ window count stays 2 (the native `quit-restore-window' puts 2 back)."
                 (should (= (count-windows) 2))
                 (should (member agent-name (cj/test--displayed-buffer-names)))
                 ;; Toggle off -> the displaced buffer (2) returns to the slot.
-                (cj/ai-vterm)
+                (cj/test--call-as-gui #'cj/ai-vterm)
                 (should (= (count-windows) 2))
                 (let ((bufs (cj/test--displayed-buffer-names)))
                   (should (member right-name bufs))
@@ -213,11 +213,11 @@ the same width."
                 (display-buffer agent-buf)
                 (should (= (count-windows) 2))
                 ;; off
-                (cj/ai-vterm)
+                (cj/test--call-as-gui #'cj/ai-vterm)
                 (should (= (count-windows) 2))
                 (should-not (cj/--ai-vterm-displayed-agent-window))
                 ;; on again
-                (cj/ai-vterm)
+                (cj/test--call-as-gui #'cj/ai-vterm)
                 (should (= (count-windows) 2))
                 (let ((win (cj/--ai-vterm-displayed-agent-window)))
                   (should (windowp win))
@@ -259,9 +259,9 @@ most-recent agent, which would now be the other one."
                 (display-buffer a2)                 ; | left | A2 |
                 (should (eq (window-buffer (cj/--ai-vterm-displayed-agent-window))
                             a2))
-                (cj/ai-vterm)                       ; off -> | left | right |
+                (cj/test--call-as-gui #'cj/ai-vterm)                       ; off -> | left | right |
                 (should-not (cj/--ai-vterm-displayed-agent-window))
-                (cj/ai-vterm)                       ; on -> must bring A2 back
+                (cj/test--call-as-gui #'cj/ai-vterm)                       ; on -> must bring A2 back
                 (should (eq (window-buffer (cj/--ai-vterm-displayed-agent-window))
                             a2))))))
       (when (get-buffer left-name) (kill-buffer left-name))

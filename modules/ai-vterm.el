@@ -698,6 +698,19 @@ without firing real `display-buffer' or `quit-window' calls."
          (buffers (cons 'redisplay-recent (car buffers)))
          (t '(pick-project))))))))
 
+(defun cj/--ai-vterm-refuse-in-terminal ()
+  "Signal a `user-error' when the current frame is a terminal frame.
+
+AI-vterm launches a graphical vterm side window, so it is GUI-only.
+Each interactive entry point calls this first, so F9 and friends
+decline -- with a message in the echo area -- in a terminal frame
+instead of launching a vterm.  The check is per-frame at command time
+rather than at load, so a daemon serving both GUI and terminal frames
+keeps the launcher working in its GUI frames and declines only in the
+terminal ones."
+  (when (env-terminal-p)
+    (user-error "AI-vterm is GUI-only; not available in a terminal frame")))
+
 (defun cj/ai-vterm-pick-project (&optional arg)
   "Pick an AI-agent project and open or reuse its vterm.
 
@@ -712,6 +725,7 @@ With prefix ARG, display the buffer without selecting its window.
 Bound to C-F9 -- always shows the project picker, even when an agent
 buffer is currently displayed."
   (interactive "P")
+  (cj/--ai-vterm-refuse-in-terminal)
   (let* ((dir (cj/--ai-vterm-pick-project))
          (name (cj/--ai-vterm-buffer-name dir))
          (buf (cj/--ai-vterm-show-or-create dir name)))
@@ -737,6 +751,7 @@ when a buffer is being shown (no effect on the toggle-off branch).
 See `cj/ai-vterm-pick-project' (C-F9) to force the project picker.
 M-F9 (and C-S-F9) close an agent via `cj/ai-vterm-close'."
   (interactive "P")
+  (cj/--ai-vterm-refuse-in-terminal)
   (pcase (cj/--ai-vterm-dispatch)
     (`(toggle-off . ,win)
      (cond
@@ -842,6 +857,7 @@ several are alive (see `cj/--ai-vterm-close-target').  Asks for
 confirmation first -- this kills the running agent process, which can
 interrupt work in progress.  Bound to M-<f9> (primary) and C-S-<f9>."
   (interactive)
+  (cj/--ai-vterm-refuse-in-terminal)
   (let ((buffer (cj/--ai-vterm-close-target)))
     (unless buffer
       (user-error "No AI-vterm agent buffers to close"))

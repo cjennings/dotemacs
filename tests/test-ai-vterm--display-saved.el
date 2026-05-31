@@ -155,8 +155,8 @@ once and no spurious extra window leaks."
               (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list))
                     (window-count-before (count-windows)))
                 (select-window agent-win)
-                (cj/ai-vterm) ; off
-                (cj/ai-vterm) ; on
+                (cj/test--call-as-gui #'cj/ai-vterm) ; off
+                (cj/test--call-as-gui #'cj/ai-vterm) ; on
                 (should (<= (count-windows) window-count-before))
                 ;; Agent must be displayed exactly once.
                 (let ((agent-windows
