@@ -1,0 +1,420 @@
+#+TITLE: Brainstorm: org-roam as shared human + agent knowledge base
+#+DATE: 2026-05-28
+#+SOURCE: rulesets discussion with Codex
+#+TARGET: .emacs.d / ai-kb / org-roam agent tooling
+
+* Prompt
+
+If the rulesets agents had full access to org-roam, how would they best be able
+to use it? Would it be a good idea? Consider not only project-related
+documents, but also using org-roam as a shared knowledge base for Craig and the
+agents.
+
+* Bottom line
+
+Yes, this is a good idea, but only if org-roam is treated as a curated shared
+memory system rather than a dumping ground, a transcript archive, or a second
+task tracker.
+
+The best shape is:
+
+- org-roam holds durable linked knowledge;
+- =.ai/= holds operational/session workflow state;
+- =todo.org= holds current work;
+- =docs/= holds formal project documentation;
+- agents access org-roam through a small structured tool layer;
+- human and agent writes use the same safety boundary;
+- curation is periodic and human-gated.
+
+This is close to the current =ai-kb= direction in =.emacs.d=: a private
+git-backed org-roam store with a shared write protocol, summaries, provenance,
+lint, index generation, and Emacs browsing.
+
+* What org-roam should be for agents
+
+** Durable cross-project memory
+
+Org-roam is strongest as the place for knowledge that should follow the agent
+across projects:
+
+- Craig's preferences;
+- recurring procedures;
+- engineering lessons;
+- architecture principles;
+- known gotchas;
+- durable decisions;
+- reusable workflows;
+- project relationships;
+- tool conventions;
+- "we tried X, rejected it because Y";
+- notes that later agents should discover by relationship, not just by keyword.
+
+Why this helps:
+
+- Agents stop rediscovering context.
+- Preferences become durable and linkable.
+- Lessons learned in one project can influence another project.
+- The graph structure lets an agent discover consequences and related decisions
+  rather than reading a flat memory file top to bottom.
+
+** Project memory with links
+
+For project-related documents, org-roam should not replace the current project
+surfaces. It should complement them.
+
+Suggested split:
+
+| Surface | Purpose |
+|---------+---------|
+| =.ai/session-context.org= | current session facts, live recovery, wrap-up archive |
+| =todo.org= | current tasks and commitments |
+| =docs/= | formal project docs, specs, architecture notes |
+| org-roam / ai-kb | durable concepts, decisions, procedures, lessons, relationships |
+
+Example:
+
+- A session discovers "startup must pull rulesets before project repos." That
+  might be logged in =.ai/session-context.org= today.
+- If it becomes a durable rule or reusable lesson, the agent writes an org-roam
+  node linking to related startup, sync, and failure-recovery nodes.
+- A future project can point to that node by ID instead of duplicating the rule.
+
+** Shared human + agent knowledge base
+
+The best version is not "agent memory" separate from Craig's tools. It is a
+shared knowledge base:
+
+- Craig can browse and edit with org-roam, backlinks, graph, node-find, and
+  normal Emacs affordances.
+- Agents can query, show, link, remember, and curate through structured tools.
+- Both sides see the same source of truth.
+- Every write has provenance so later readers know whether a fact was
+  user-stated, observed, inferred, or externally sourced.
+
+This is the main value over a flat =MEMORY.md=.
+
+* How agents should use it
+
+** Query before acting
+
+Agents should query org-roam before:
+
+- choosing a convention;
+- making an architectural recommendation;
+- writing a new workflow;
+- changing rulesets behavior;
+- touching personal preferences;
+- solving a problem that looks familiar;
+- giving advice where Craig's past decisions may matter;
+- contradicting an existing decision;
+- starting a multi-step procedure that may already exist.
+
+They should not load the whole graph. The retrieval path should be:
+
+1. read the tiny adapter rule;
+2. query the generated index / CLI;
+3. inspect summaries;
+4. open only the relevant nodes;
+5. follow backlinks only when they look useful.
+
+Why this helps:
+
+- Keeps token usage low.
+- Gives agents the right memory at the right time.
+- Avoids start-of-session context floods.
+
+** Read backlinks as context
+
+Backlinks are where org-roam gives agents more than a search index.
+
+When an agent reads a node, it should be able to ask:
+
+- What decisions depend on this?
+- What procedures reference this?
+- Which projects are affected?
+- Is this preference superseded?
+- What gotchas are related?
+- What unresolved contradictions exist?
+
+This supports reasoning by graph neighborhood rather than by raw text search.
+
+** Write only durable, general knowledge
+
+Agents should write unprompted only when the knowledge is:
+
+- durable: useful beyond this session;
+- general enough: useful across projects or likely to recur;
+- not re-derivable cheaply from code/git/docs;
+- not a secret;
+- not routine status.
+
+Good writes:
+
+- "Craig prefers no popup choice menus; present numbered options inline."
+- "When moving an org subtree to roam, write and verify the target before
+  cutting the source."
+- "Rulesets install artifacts are symlinks globally but copied per-project for
+  language bundles."
+- "Use ID-first pointers to ai-kb nodes because titles and filenames can
+  change."
+
+Bad writes:
+
+- today's status;
+- every session summary;
+- task lists;
+- raw chat transcripts;
+- temporary debugging observations;
+- guesses with no provenance;
+- secrets or credentials.
+
+** Use contradiction handling, not silent overwrite
+
+If a new observation conflicts with an existing node, agents should not silently
+replace the old node.
+
+Better flow:
+
+1. mark the new claim and old claim as contested, or create a contested note;
+2. explain the contradiction;
+3. ask Craig whether to update, scope as an exception, supersede, or reject.
+
+Example:
+
+Existing memory says "no popup menus." A new workflow proposes popup choice
+menus. The agent should surface the conflict and ask whether this is an
+exception or a rejected design.
+
+Why this helps:
+
+- Prevents model drift from rewriting preferences.
+- Makes changing a durable preference explicit.
+- Keeps the KB trustworthy.
+
+* Tool layer agents should get
+
+Agents should not use raw unrestricted file access as their primary interface.
+They should get a compact API over the org-roam store.
+
+Suggested tools / CLI commands:
+
+- =ai-kb query <context>=: ranked search over index, titles, tags, summaries,
+  properties, and body.
+- =ai-kb show <id-or-title>=: resolve ID first and print/open the node.
+- =ai-kb backlinks <id>=: list nodes linking to a node, excluding generated
+  index and raw captures.
+- =ai-kb remember=: write using the full protocol.
+- =ai-kb lint=: structural and semantic validation.
+- =ai-kb index=: regenerate the index.
+- =ai-kb status=: fast state for dashboard/startup.
+- =ai-kb doctor=: deeper health check.
+- =ai-kb curate --dry-run=: report duplicates, orphans, contested nodes, stale
+  nodes, raw bloat.
+
+Why this helps:
+
+- Agents compose predictable operations.
+- Humans can test behavior.
+- Token usage drops because agents can request structured summaries instead of
+  reading many org files.
+- Safety gates live in one place.
+
+* Required node shape
+
+Every shared KB node should have enough structure for retrieval, trust, and
+maintenance.
+
+Suggested required properties:
+
+#+begin_src org
+:PROPERTIES:
+:ID:          <uuid>
+:PROJECTS:    :general: :rulesets:
+:CREATED:     2026-05-28
+:UPDATED:     2026-05-28
+:CREATED_BY:  codex
+:CONFIDENCE:  user-stated
+:VISIBILITY:  personal
+:SOURCE:      chat 2026-05-28
+:STATUS:      current
+:SUMMARY:     One sentence written for retrieval and index display.
+:END:
+#+title: Concise node title
+#+filetags: :principle:preference:
+#+end_src
+
+Important conventions:
+
+- =:ID:= is the durable identity. Titles and filenames may change.
+- =:SUMMARY:= is required because query/index should not infer it.
+- =:CREATED_BY:= and =:CONFIDENCE:= separate user-stated knowledge from model
+  inference.
+- =:STATUS:= supports =current=, =contested=, =superseded=.
+- =:VISIBILITY:= keeps privacy boundaries visible.
+- relation labels in body links can express =SUPERSEDES=, =CONTRADICTS=,
+  =RELATES_TO=, =IMPLEMENTS=, =DERIVED_FROM=.
+
+* Human and agent writes need one safety boundary
+
+If both Craig and agents edit the KB, there should be exactly one write path.
+
+For agents:
+
+1. fetch / fast-forward if safe;
+2. write;
+3. regenerate index;
+4. run full lint;
+5. scan for secrets;
+6. commit locally;
+7. push later or via timer;
+8. surface push failures.
+
+For human Emacs edits:
+
+- an =ai-kb= minor mode should run the same post-save sequence;
+- save should not be blocked or made read-only;
+- lint failure should leave the buffer editable, avoid committing, and surface
+  findings in a buffer/modeline/dashboard;
+- a clean re-save commits.
+
+Why this helps:
+
+- Human edits cannot bypass the integrity model.
+- Agent writes cannot introduce malformed nodes silently.
+- The git history becomes the recovery layer.
+
+* Personal roam boundary
+
+There are two different ideas that should not be collapsed accidentally:
+
+1. =ai-kb=: shared human/agent operational knowledge.
+2. Craig's personal org-roam: personal notes, journals, recipes, dailies,
+   knowledge graph.
+
+Recommended default:
+
+- keep =ai-kb= as a separate private org-roam repo;
+- give agents rich access to =ai-kb=;
+- give agents narrower, permissioned access to personal roam;
+- bridge personal roam explicitly only when desired.
+
+Why:
+
+- Personal journals and private notes should not become agent scratch space.
+- Agent writes can pollute a personal graph if not isolated.
+- A separate repo makes sync, recovery, curation, and privacy easier.
+
+Still valuable personal-roam tools:
+
+- resolve topic to node;
+- return node body plus backlinks;
+- list nodes by tag;
+- surface dailies for a date range;
+- create notes via org-capture templates.
+
+But these should be structured affordances, not freeform agent mutation.
+
+* Curation workflow
+
+Any agent-written KB will rot unless curated.
+
+Add a periodic curation workflow that reports:
+
+- duplicate nodes;
+- orphan nodes;
+- stale nodes;
+- contested nodes;
+- superseded nodes still referenced;
+- over-broad nodes to split;
+- raw captures with no compiled node;
+- raw files that are too large;
+- external pointers that need repointing after a merge.
+
+Rules:
+
+- agents can propose merges/splits/deletions;
+- Craig confirms destructive changes;
+- merges must repoint inbound =[[id:]]= and external =ai-kb: Title (UUID)=
+  pointers;
+- curation stamps =:LAST_CURATED:= or equivalent.
+
+Why this helps:
+
+- Keeps the graph useful.
+- Prevents "AI memory" from turning into sediment.
+- Makes trust a maintained property, not a one-time design claim.
+
+* What to avoid
+
+- Do not let every session summary become a roam node.
+- Do not store secrets, credentials, tokens, or private keys.
+- Do not treat org-roam as the task system.
+- Do not load the whole graph at startup.
+- Do not let agents rewrite/delete/merge nodes without human confirmation.
+- Do not mix personal journals and agent KB by default.
+- Do not rely on org-roam's SQLite database as the agent source of truth.
+  Files and IDs should be canonical; SQLite is a browsing cache.
+- Do not let generated index files create semantic backlinks.
+- Do not let raw external captures become primary query results.
+
+* Best architecture
+
+Use three layers:
+
+** Operational layer
+
+=.ai/=, workflows, session logs, =todo.org=.
+
+This layer answers:
+
+- What are we doing now?
+- What happened this session?
+- What workflow should run?
+- What tasks are open?
+
+** Knowledge layer
+
+=ai-kb= as a private git-backed org-roam repo.
+
+This layer answers:
+
+- What should agents remember long-term?
+- What principles, procedures, and preferences apply?
+- What related decisions exist?
+- What has been superseded or contested?
+
+** Adapter layer
+
+Thin rules/tools for Claude, Codex, local models, and Emacs.
+
+This layer answers:
+
+- How does this runtime query memory?
+- How does this runtime write safely?
+- How does this runtime respect the same contract?
+
+* Best ideas to carry forward
+
+1. Treat org-roam as shared long-term semantic memory, not transcript storage.
+2. Keep =ai-kb= separate from personal roam by default.
+3. Give agents structured tools: query, show, backlinks, remember, lint, status,
+   curate.
+4. Require summaries and provenance on every node.
+5. Use ID-first links and pointers.
+6. Query before acting when durable preferences or prior decisions may matter.
+7. Use backlinks for graph-neighborhood context discovery.
+8. Make contradiction handling explicit.
+9. Run human and agent writes through the same lint/index/commit path.
+10. Make curation periodic and human-gated.
+
+* Possible next task
+
+Convert this brainstorm into a concrete design delta for the existing
+=docs/design/ai-kb.org= and the open =Implement ai-kb= task:
+
+- add agent query triggers;
+- specify personal-roam access boundaries;
+- define the structured tool interface for personal roam vs =ai-kb=;
+- add contradiction handling to the agent contract;
+- add curation acceptance criteria;
+- decide whether any subset of personal roam should be readable by default.
