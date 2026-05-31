@@ -30,6 +30,16 @@ Reserve `AskUserQuestion` only when the user explicitly asks for the popup form 
 
 This rule applies to all three approval gates in the `commits.md` publish flow (commit message, PR description, PR review reply): print the draft inline, then offer numbered approve / changes / edit options inline. Do not switch to the popup form for the gate even though the prior protocol referenced it.
 
+### Order options with the recommendation at item 1
+
+When the question has a clear recommended option, put it at item 1. The other paths stay visible so the user can override without having to type a custom answer, but the common case collapses to a single keystroke.
+
+Default to this pattern whenever the user needs to weigh a genuine choice — task-review actions, brainstorm decisions, judgment calls, approve/edit/cancel gates, "what should I do next" prompts. Skip it only when the question is free-form (open prose, names, dates), when the user has already issued a directive and a single confirmation suffices, or when there is no clearly-recommended option (in which case state that plainly: "I don't have a recommendation here — what's your read?").
+
+Include a "Skip" / "Defer" / "Tell me how" as the last option when the user's answer might be "none of these."
+
+The convention reinforces the popup-denial rule above by giving every inline choice list a single canonical shape, and it forces the model to actually pick a recommendation rather than offering a neutrally-ordered enumerate-and-defer list. A neutrally-ordered list is a covert way to push the decision back; recommendation-first puts skin in the game.
+
 **Enforcement:** a global `PreToolUse` hook (matcher `AskUserQuestion`) in `~/.claude/settings.json` hard-denies the popup and returns this rule as the reason — the prose alone proved too easy to forget. Because the deny is unconditional, the "use the popup for this one" exception above can't be honored in-turn; to get the popup, disable the hook via `/hooks` (or edit settings) first.
 
 ## No Reverse-Video Highlighting in Chat Output

@@ -37,6 +37,12 @@ Every non-trivial function needs at least:
 
 Missing a category is a test gap. If three cases look near-identical, parametrize with a loop or `dolist` rather than copy-pasting.
 
+### Measuring it — `make coverage-summary`
+
+The bundle ships a coverage summary at `.claude/scripts/coverage-summary.el` and a Makefile fragment (`coverage-makefile.txt`) with `coverage` and `coverage-summary` targets. After `make coverage` writes an undercover SimpleCov report, `make coverage-summary` prints a per-file table and a unit-weighted project number.
+
+The number to watch is the missing-file count. A module no test loads never appears in the SimpleCov report, so a line-weighted total skips it silently — the suite looks healthier than it is. The summary counts every `modules/*.el` on disk that's absent from the report as 0%, so an untested module drags the project number down where you can see it. Copy the fragment's targets into your own Makefile to adopt it; the bundle never edits your Makefile.
+
 ## TDD Workflow
 
 Write the failing test first. A failing test proves you understand the change. Assume the bug is in production code until the test proves otherwise — never fix the test before proving the test is wrong.
