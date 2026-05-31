@@ -153,6 +153,14 @@ What we're verifying: emoji glyphs + fonts apply in a GUI frame even when the fi
 - in the GUI frame, open a buffer with an emoji and check it renders, and M-S-f / fonts look right
 Expected: emoji renders and fonts are applied in the GUI frame.
 
+*** AI-vterm declines in a terminal frame, still launches in a GUI frame
+What we're verifying: the per-frame guard makes the F9 family decline — message only, no vterm — in a terminal frame, while a GUI frame still launches the agent.
+- emacsclient -t   (TTY frame, off the running daemon)
+- in the TTY frame, press F9 (also try C-F9 and M-F9)
+- emacsclient -c   (then a GUI frame)
+- in the GUI frame, press F9 and pick a project
+Expected: in the TTY frame the echo area shows "AI-vterm is GUI-only; not available in a terminal frame" and no vterm opens; in the GUI frame the project picker opens and the agent launches as before.
+
 ** DOING [#B] Consolidate to EAT as the single terminal :terminal:eval:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-28

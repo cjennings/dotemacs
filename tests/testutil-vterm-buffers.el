@@ -9,6 +9,19 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+
+(defun cj/test--call-as-gui (fn)
+  "Call FN with `env-terminal-p' stubbed to return nil (a GUI frame).
+
+The AI-vterm interactive commands refuse to run in a terminal frame
+via `cj/--ai-vterm-refuse-in-terminal'.  A batch test run is itself a
+terminal frame, so tests that exercise the GUI-frame window behavior
+of those commands call them through this helper to present a GUI
+context."
+  (cl-letf (((symbol-function 'env-terminal-p) (lambda () nil)))
+    (funcall fn)))
+
 (defun cj/test--kill-buffers-matching-prefix (prefix)
   "Kill all live buffers whose name starts with PREFIX."
   (dolist (b (buffer-list))
