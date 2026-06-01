@@ -147,16 +147,16 @@ buffer the user is looking at."
 
 (defun cj/open-project-daily-prep ()
   "Open the current Projectile project's daily prep, respecting the split.
-The prep file is inbox/today-prep.org under the project root (a stable
-symlink to the dated prep doc).  Project-scoped: a project without one gets a
-message.  Opens in the other window when the frame is split and reuses the
-current window otherwise, matching `cj/open-project-root-todo'."
+The prep file is daily-prep.org under the project root (a stable symlink
+to the dated prep doc in daily-prep/).  Project-scoped: a project without
+one gets a message.  Opens in the other window when the frame is split and
+reuses the current window otherwise, matching `cj/open-project-root-todo'."
   (interactive)
   (if-let ((root (projectile-project-root)))
-      (let ((file (expand-file-name "inbox/today-prep.org" root)))
+      (let ((file (expand-file-name "daily-prep.org" root)))
         (if (file-exists-p file)
             (cj/--find-file-respecting-split file)
-          (message "No inbox/today-prep.org in project: %s" root)))
+          (message "No daily-prep.org in project: %s" root)))
     (message "Not in a Projectile project")))
 
 (use-package projectile

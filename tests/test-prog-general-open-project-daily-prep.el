@@ -1,7 +1,7 @@
 ;;; test-prog-general-open-project-daily-prep.el --- daily-prep opener -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; `cj/open-project-daily-prep' (C-c p d) opens inbox/today-prep.org under the
+;; `cj/open-project-daily-prep' (C-c p d) opens daily-prep.org under the
 ;; current Projectile project root, via `cj/--find-file-respecting-split' so it
 ;; lands in the other window when the frame is split and reuses the current
 ;; window otherwise (matching `cj/open-project-root-todo').  It is
@@ -21,11 +21,10 @@
 (ert-deftest test-prog-general-daily-prep-opens-existing-respecting-split ()
   "Normal: in a project with a prep file, open it respecting the split."
   (let* ((root (file-name-as-directory (make-temp-file "cj-prep-" t)))
-         (prep (expand-file-name "inbox/today-prep.org" root))
+         (prep (expand-file-name "daily-prep.org" root))
          opened)
     (unwind-protect
         (progn
-          (make-directory (expand-file-name "inbox" root) t)
           (write-region "" nil prep)
           (cl-letf (((symbol-function 'projectile-project-root) (lambda () root))
                     ((symbol-function 'cj/--find-file-respecting-split)
@@ -44,7 +43,7 @@
                     ((symbol-function 'find-file-other-window) (lambda (f) (setq opened f))))
             (setq result (cj/open-project-daily-prep)))
           (should-not opened)
-          (should (string-match-p "No inbox/today-prep.org" result)))
+          (should (string-match-p "No daily-prep.org" result)))
       (delete-directory root t))))
 
 (ert-deftest test-prog-general-daily-prep-not-in-project-messages ()
