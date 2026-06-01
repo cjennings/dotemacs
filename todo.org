@@ -2444,7 +2444,7 @@ Triggered by: 2026-05-22 dashboard color work (L105).
 
 ** TODO [#C] Implement EMMS-free music-config architecture :refactor:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-06-01
 :END:
 *** 2026-05-15 Fri @ 19:17:01 -0500 Specification
 Implement the design in [[file:docs/design/music-config-without-emms.org][Design: music-config Without EMMS]].
@@ -2578,7 +2578,10 @@ Part 2 — combinatorial test coverage. Use the =/pairwise-tests= skill: identif
 
 The recent F10 side-window-height-fraction work and the EMMS-free refactor candidate ("Implement EMMS-free music-config architecture" above) are both natural near-term touchpoints — best to land this audit before the EMMS swap so the new architecture inherits a clean option spec.
 
-** TODO [#C] gptel-magit activation fails on velox :bug:ai:
+** TODO [#C] gptel-magit activation fails on velox :bug:ai:quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-01
+:END:
 Surfaced 2026-05-25 while diagnosing an unrelated load failure over SSH. velox-specific — the workstation has a current gptel and does not show it.
 
 At startup (and reproducibly in batch) velox logs: "Unable to activate package `gptel-magit'. Required package `gptel-0.9.8' is unavailable." gptel-magit depends on gptel >= 0.9.8 and velox's installed gptel is older or missing, so it can't activate. A startup warning, not a blocker.
@@ -2590,7 +2593,7 @@ Next step: check the installed gptel version (=(assq 'gptel package-alist)= or =
 
 ** TODO [#C] GPTel Work :feature:ai:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-06-01
 :END:
 
 Categories below thematize the agent affordances the design doc
@@ -3088,7 +3091,7 @@ patch-narrative buffer / commit-intent workbench above.
 
 ** TODO [#C] Review and rebind M-S- keybindings :refactor:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-06-01
 :END:
 
 Changed from M-uppercase to M-S-lowercase for terminal compatibility.
@@ -3115,7 +3118,7 @@ These may override useful defaults - review and pick better bindings:
 
 ** TODO [#C] Build cj/dev-setup-project helper (per docs/design/dev-setup-project.org) :feature:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-06-01
 :END:
 *** 2026-05-15 Fri @ 19:17:37 -0500 Specification
 
@@ -3240,7 +3243,7 @@ friction.
 
 ** TODO [#C] Pick and wire a debug backend for F5 :feature:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-06-01
 :END:
 
 #+begin_src emacs-lisp
@@ -3860,7 +3863,10 @@ Three small reveal.js improvements; collected into one task because each on its 
 2. *Default font sizing for slide elements.* Configure reveal.js font sizes for headings, body text, code blocks, etc. — better defaults via =org-reveal-head-preamble= CSS or a custom theme.
 3. *Custom dupre reveal.js theme.* CSS theme using the colors from =themes/dupre-palette.el=. Install into =reveal.js/css/theme/= for use with =#+REVEAL_THEME: dupre=.
 
-** TODO [#B] Add Signal to the dashboard
+** TODO [#B] Add Signal to the dashboard :quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-01
+:END:
 * Emacs Resolved
 ** DONE [#B] Fix likely =elpa-mirror-location= path bug :bug:quick:
 CLOSED: [2026-05-03 Sun]
