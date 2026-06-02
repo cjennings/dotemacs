@@ -164,9 +164,9 @@ What we're verifying: the per-frame guard makes the F9 family decline — messag
 - in the GUI frame, press F9 and pick a project
 Expected: in the TTY frame the echo area shows "AI-vterm is GUI-only; not available in a terminal frame" and no vterm opens; in the GUI frame the project picker opens and the agent launches as before.
 
-** DOING [#B] Consolidate to EAT as the single terminal :terminal:eval:
+** TODO [#B] Consolidate to EAT as the single terminal :terminal:eval:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-28
+:LAST_REVIEWED: 2026-06-02
 :END:
 Evaluate whether EAT can be the one terminal for all usage and, if it holds up, switch to it from vterm. Reference: [[file:docs/2026-05-25-emacs-terminal-comparison.org][docs/2026-05-25-emacs-terminal-comparison.org]] (vterm vs eat vs ghostel research).
 
@@ -182,6 +182,9 @@ Researched whether Claude Code runs cleanly in eat (Craig runs it in his Emacs t
 Recommendation: consolidate everyday terminals onto eat, but keep ghostel (or vterm) for the Claude Code workflow specifically — the scroll-pop / stuck-input bug and the slower heavy-stream handling are exactly what bites a long Claude session. Sources: [[https://github.com/cpoile/claudemacs][claudemacs]], [[https://github.com/stevemolitor/claude-code.el][claude-code.el]], [[https://codeberg.org/akib/emacs-eat][emacs-eat]].
 
 Eval plan (from the research doc): install EAT alongside vterm, run the same workloads through both, decide. Test matrix: Claude Code TUI, lazygit, htop/btop, yazi, a heavy-output build, ssh to a remote, and eshell with =eat-eshell-mode=. Assess rendering fidelity, stability under heavy output, and Emacs-native line editing. Switch only if it covers every workflow without regression.
+
+*** 2026-06-02 Tue @ 14:12:48 -0500 Audit: eval plan not yet run; back to TODO
+Task audit found no eval work recorded since the 2026-05-26 direction-confirmed note. The test matrix above is unrun, so the task isn't actively in progress — moved DOING back to TODO until the eval starts.
 
 ** PROJECT [#B] Implement ai-kb :feature:ai:kb:
 Build v1 of the AI knowledge base per [[file:docs/design/ai-kb.org][docs/design/ai-kb.org]] (Ready; six reviews incorporated, all decisions resolved 2026-05-24). Step 1 splits into 1a (the safe write path — minimum usable) and 1b (retrieval, maintenance, push), since =remember= depends on =index=+=lint= and the adapter depends on =remember=. Step 2 is the Emacs layer: a full org-roam profile on switch, the human-edit safety model (same write path as the agent), and the browsing surface. Step 3 and the LLM-Wiki layer are vNext. Children are ordered by build sequence; the server bootstrap is the prerequisite.
@@ -563,7 +566,7 @@ Expected outcome:
 
 ** TODO [#B] F-key Completion :feature:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-27
+:LAST_REVIEWED: 2026-06-02
 :END:
 
 The L546 ticket "Rework dev F-keys" landed roughly 75% as of the 2026-05-27 audit. F4 (compile+run dispatcher, project-type detection, clean-rebuild, projectile cache revert), F7 (coverage), and the format-key migration off F6 are all shipped with ERT coverage. F6 ships Phase 2a only — "All tests" and "Current file's tests" via plain F6 and C-F6.
@@ -2434,9 +2437,12 @@ configuration (=text-config=, =diff-config=, =ledger-config=,
 
 ** TODO [#C] M-F9 ai-vterm close removes the window split :quick:solo:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-28
+:LAST_REVIEWED: 2026-06-02
 :END:
 Closing the ai-vterm with M-F9 while its window is in a split deletes the split too (the sibling window goes away) instead of just closing the vterm and leaving the rest of the layout intact.
+
+*** 2026-06-02 Tue @ 14:12:48 -0500 Audit: still a bug, distinct from the F9 collapse
+The F9 toggle-off rework (38dad92) made F9 collapse the split by design, but that's the toggle path. This is M-F9 close (kills the agent process): close should leave the surrounding layout intact, not delete the sibling window. Craig confirmed it's still a bug. cj/--ai-vterm-close-buffer still calls delete-window.
 
 ** TODO [#C] Separate dashboard navigator color from list items :feature:quick:solo:
 :PROPERTIES:
@@ -3270,7 +3276,7 @@ Do this after the F-key rework ticket ships so F5 is the only hole left.
 
 ** TODO [#C] Build debug-profiling.el module :feature:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-06-02
 :END:
 
 Reusable profiling infrastructure for targeted slow-command investigation. Consolidates scattered profiler bindings (currently in =modules/config-utilities.el=) and adds two pure-helper-backed entry points: "profile next command" and "time region or sexp." Designed via =/brainstorm= 2026-04-26.
@@ -3281,7 +3287,7 @@ Implement via =/start-work= against the design — branch =feat/debug-profiling=
 
 ** TODO [#C] Org-noter custom workflow — fix and finish :feature:bug:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-06-02
 :END:
 
 Continue debugging and testing the custom org-noter workflow from 2025-11-21 session.
@@ -3330,7 +3336,7 @@ The core functionality is implemented but needs debugging before it's production
 
 ** TODO [#C] Build an Org-native API workspace :feature:tests:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-06-02
 :END:
 
 Build an Emacs-native API workspace layer that keeps =restclient.el= useful for
@@ -3667,7 +3673,7 @@ First pass can skip or mark as unsupported:
   
 ** TODO [#C] Migrate from Company to Corfu (with prescient integration) :feature:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-06-02
 :END:
 
 Spec: [[file:docs/design/company-to-corfu-migration.org][docs/design/company-to-corfu-migration.org]]
@@ -3710,7 +3716,7 @@ full translation table, migration steps, tests, and risks.
 
 ** TODO [#C] Extend F2 "preview" convention across modes :feature:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-06-02
 :END:
 
 F2 is the universal preview key. Currently bound only in markdown-mode (markdown-preview, in =modules/markdown-config.el=). Org-reveal lives on =C-; o R= via =cj/org-map=, not F2. Extend F2 to other modes where a "preview" action is natural:
@@ -3760,7 +3766,7 @@ No dedicated update path today — refreshing a pinned package means ad-hoc =cp=
 
 ** TODO [#C] TRAMP/dirvish "?" for remote dates — verify the fix per host :bug:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-06-02
 :END:
 
 Root cause is traced (see the dated investigation entry below). What's left needs a live remote: open each remote host in dirvish and run the three diagnostic evals to find which gate is closed, then close it.
@@ -3783,10 +3789,13 @@ Remote dates/sizes don't come from the dired =ls= listing or =dired-listing-swit
 
 That explains why every prior fix missed: dired-listing-switches feed a different code path entirely, and disabling =tramp-direct-async-process= shuts the =:remote-async= gate, which is the one path that populates remote attributes — exactly backwards. The config already enables direct-async for ssh/sshx (=tramp-config.el:79-88=), so the remaining closed gate is per-host: =:gnuls= (no GNU ls on FreeBSD-based truenas) or direct-async not taking effect for the method. Could not verify on a live remote from the work session — handed the per-host diagnostics up into the task body.
 
-** TODO [#C] Finish terminal GPG pinentry configuration :feature:
+** CANCELLED [#C] Finish terminal GPG pinentry configuration :feature:
+CLOSED: [2026-06-02 Tue]
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-22
+:LAST_REVIEWED: 2026-06-02
 :END:
+
+Superseded by "Terminal GPG pinentry Completion" below. That task's 2026-05-27 audit found the =terminal-pinentry= branch is gone (no local/remote ref, no reflog, no stash, no worktree), so the work restarts from main and is tracked there. Consolidated 2026-06-02.
 
 Continue work on terminal-mode GPG passphrase prompts (loopback mode).
 Branch: terminal-pinentry
@@ -5126,7 +5135,7 @@ About 28 modules are dominated by use-package + hooks + keybinds — testing the
 *Approach.* Pick 2–3 modules per session from the high-value list. Refactor-first if needed (split interactive wrapper from pure helper per =.claude/rules/elisp-testing.md=), then write Normal/Boundary/Error coverage. Re-run =cj/coverage-report= (F7, project scope) after each batch so progress is measurable.
 
 *Cross-references:*
-- [[file:.ai/sessions/2026-04-22-09-49-coverage-v1-shipped-system-utils-tested.org][2026-04-22 session]] — coverage v1 shipped, 59.6% baseline
+- 2026-04-22 session (not archived) — coverage v1 shipped, 59.6% baseline
 - [[file:.claude/rules/elisp-testing.md][.claude/rules/elisp-testing.md]] — per-function test files, refactor-first, three required categories
 
 *2026-05-11 refresh.* Re-ran =make coverage= after excluding timing-sensitive
