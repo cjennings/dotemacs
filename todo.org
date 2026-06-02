@@ -41,6 +41,9 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
+** DONE [#A] f9 should toggle the entire ai-vterm split, not just the buffer
+CLOSED: [2026-06-02 Tue]
+F9 toggle-off now collapses the agent split (delete-window) instead of quit-restore-window, which went stale across multi-agent slot reuse and surfaced a different agent. Toggle-on reopens the exact agent that was hidden (cj/--ai-vterm-last-hidden-buffer). Sole-window toggle-off returns to the most-recent non-agent buffer. Split width preserved across the toggle.
 ** DOING [#B] Signal client — forked signel :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-28

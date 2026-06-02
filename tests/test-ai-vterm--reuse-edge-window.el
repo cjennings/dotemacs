@@ -150,10 +150,12 @@ ends up displayed."
       (when (get-buffer bottom-name) (kill-buffer bottom-name))
       (cj/test--kill-agent-buffers))))
 
-(ert-deftest test-ai-vterm--reuse-edge-window-toggle-off-restores-displaced ()
-  "Normal: toggle-off after a slot reuse restores the displaced buffer.
-=| 1 | 2 |= + show agent -> =| 1 | A |=; toggle off -> =| 1 | 2 |= again,
-window count stays 2 (the native `quit-restore-window' puts 2 back)."
+(ert-deftest test-ai-vterm--reuse-edge-window-toggle-off-collapses-split ()
+  "Normal: toggle-off after a slot reuse collapses the agent split.
+=| 1 | 2 |= + show agent -> =| 1 | A |=; toggle off -> =| 1 |= (one
+window).  F9 always collapses the agent split back to the working layout
+regardless of how the agent window came to be -- it deletes the agent
+window rather than restoring the displaced buffer into a kept slot."
   (cj/test--kill-agent-buffers)
   (let ((agent-name "agent [edge-restore]")
         (left-name "*test-restore-left*")
@@ -174,22 +176,23 @@ window count stays 2 (the native `quit-restore-window' puts 2 back)."
                 (display-buffer agent-buf)
                 (should (= (count-windows) 2))
                 (should (member agent-name (cj/test--displayed-buffer-names)))
-                ;; Toggle off -> the displaced buffer (2) returns to the slot.
+                ;; Toggle off -> the agent window is deleted, leaving the
+                ;; working buffer at full frame.
                 (cj/test--call-as-gui #'cj/ai-vterm)
-                (should (= (count-windows) 2))
+                (should (= (count-windows) 1))
                 (let ((bufs (cj/test--displayed-buffer-names)))
-                  (should (member right-name bufs))
                   (should (member left-name bufs))
                   (should-not (member agent-name bufs)))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer right-name) (kill-buffer right-name))
       (cj/test--kill-agent-buffers))))
 
-(ert-deftest test-ai-vterm--reuse-edge-window-cycle-keeps-count-and-swaps ()
-  "Normal: on/off/on cycle keeps the window count at 2 and swaps the slot.
-=| 1 | 2 |= -> on =| 1 | A |= -> off =| 1 | 2 |= -> on =| 1 | A |=, never
-creating or deleting a window, and the agent returns to the same slot at
-the same width."
+(ert-deftest test-ai-vterm--reuse-edge-window-cycle-collapses-then-resplits ()
+  "Normal: on/off/on cycle collapses on off and re-splits at the same width.
+=| 1 | 2 |= -> on =| 1 | A |= (2 windows) -> off =| 1 |= (1 window,
+collapsed) -> on =| 1 | A |= (2 windows again), with the agent re-split at
+the width captured at toggle-off -- the user's chosen split width is
+preserved across the toggle (respect-split-width)."
   (cj/test--kill-agent-buffers)
   (let ((agent-name "agent [edge-cycle]")
         (left-name "*test-cycle-left*")
@@ -206,26 +209,24 @@ the same width."
                   slot-width)
               (set-window-buffer (selected-window) left-buf)
               (let ((rw (split-window (selected-window) nil 'right)))
-                (set-window-buffer rw right-buf)
-                (setq slot-width (window-body-width rw)))
+                (set-window-buffer rw right-buf))
               (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list)))
-                ;; on
+                ;; on -- agent takes the existing right slot
                 (display-buffer agent-buf)
                 (should (= (count-windows) 2))
-                ;; off
+                (setq slot-width
+                      (window-body-width (cj/--ai-vterm-displayed-agent-window)))
+                ;; off -- the split collapses to a single window
                 (cj/test--call-as-gui #'cj/ai-vterm)
-                (should (= (count-windows) 2))
+                (should (= (count-windows) 1))
                 (should-not (cj/--ai-vterm-displayed-agent-window))
-                ;; on again
+                ;; on again -- re-split at the captured width
                 (cj/test--call-as-gui #'cj/ai-vterm)
                 (should (= (count-windows) 2))
                 (let ((win (cj/--ai-vterm-displayed-agent-window)))
                   (should (windowp win))
                   (should (eq (window-buffer win) agent-buf))
-                  ;; reused the same slot -> same body width as the
-                  ;; original right column
-                  (should (= (window-body-width win) slot-width)))
-                (should-not (member right-name (cj/test--displayed-buffer-names)))))))
+                  (should (= (window-body-width win) slot-width)))))))
       (when (get-buffer left-name) (kill-buffer left-name))
       (when (get-buffer right-name) (kill-buffer right-name))
       (cj/test--kill-agent-buffers))))
