@@ -176,6 +176,21 @@ recently-selected first.  Non-AI-vterm buffers are filtered out via
 `cj/--ai-vterm-buffer-p'."
   (seq-filter #'cj/--ai-vterm-buffer-p (buffer-list)))
 
+(defun cj/--ai-vterm-most-recent-non-agent-buffer ()
+  "Return the most-recently-selected live non-agent buffer, or nil.
+
+Walks `buffer-list' (most-recently-selected first) and returns the
+first buffer that is not an AI-vterm agent buffer (per
+`cj/--ai-vterm-buffer-p') and is not an internal buffer (name starting
+with a space).  Used by the single-window F9 toggle-off so dismissing a
+full-frame agent returns to the file the user was working in (e.g.
+todo.org) rather than swapping in another agent."
+  (seq-find (lambda (b)
+              (and (buffer-live-p b)
+                   (not (cj/--ai-vterm-buffer-p b))
+                   (not (string-prefix-p " " (buffer-name b)))))
+            (buffer-list)))
+
 (defun cj/--ai-vterm-displayed-agent-window (&optional frame)
   "Return a window in FRAME currently displaying an AI-vterm buffer, or nil.
 
@@ -408,6 +423,17 @@ without deleting), nil when the window was deleted.  Consumed by
 `cj/--ai-vterm-display-saved' to decide between restoring the
 buried agent in the current window (the only one) or splitting per
 the saved direction.")
+
+(defvar cj/--ai-vterm-last-hidden-buffer nil
+  "The agent buffer hidden by the most recent F9 toggle-off.
+
+Captured in `cj/ai-vterm' just before an agent window is torn down, and
+consumed by `cj/--ai-vterm-dispatch' so the next toggle-on reopens the
+SAME agent that was on screen rather than whichever agent happens to be
+most-recent in `buffer-list'.  Without this, hiding one agent and
+reopening could surface a different one when several agents are alive --
+the \"the displayed buffer changes\" bug.  Falls back to the buffer-list
+MRU when nil or when the remembered buffer has been killed.")
 
 (defvar cj/--ai-vterm-last-size nil
   "Last user-chosen body size for the AI-vterm display.
@@ -695,7 +721,15 @@ without firing real `display-buffer' or `quit-window' calls."
      (t
       (let ((buffers (cj/--ai-vterm-agent-buffers)))
         (cond
-         (buffers (cons 'redisplay-recent (car buffers)))
+         (buffers
+          ;; Reopen the agent the last toggle-off hid (faithful toggle), so
+          ;; long as it's still alive and among the live agents.  Otherwise
+          ;; fall back to the most-recently-selected agent.
+          (cons 'redisplay-recent
+                (if (and (buffer-live-p cj/--ai-vterm-last-hidden-buffer)
+                         (memq cj/--ai-vterm-last-hidden-buffer buffers))
+                    cj/--ai-vterm-last-hidden-buffer
+                  (car buffers))))
          (t '(pick-project))))))))
 
 (defun cj/--ai-vterm-refuse-in-terminal ()
@@ -754,6 +788,9 @@ M-F9 (and C-S-F9) close an agent via `cj/ai-vterm-close'."
   (cj/--ai-vterm-refuse-in-terminal)
   (pcase (cj/--ai-vterm-dispatch)
     (`(toggle-off . ,win)
+     ;; Remember which agent we're hiding so the next toggle-on reopens this
+     ;; same one, not whichever agent is most-recent in `buffer-list'.
+     (setq cj/--ai-vterm-last-hidden-buffer (window-buffer win))
      (cond
       ;; Lone fullscreen agent (e.g. after `C-x 1' inside it): there is no
       ;; prior layout for the native undo to restore and deleting would
@@ -770,27 +807,35 @@ M-F9 (and C-S-F9) close an agent via `cj/ai-vterm-close'."
        (when (and (window-live-p win)
                   (cj/--ai-vterm-buffer-p (window-buffer win)))
          (with-selected-window win
-           (switch-to-buffer (other-buffer (window-buffer win) t)))))
-      ;; Multi-window: `quit-restore-window' is the native undo for a
-      ;; `display-buffer' display.  The agent's display path records the
-      ;; matching `quit-restore' state -- `display-buffer-record-window'
-      ;; (type `reuse') in `cj/--ai-vterm-reuse-edge-window' when it takes
-      ;; over a slot, `display-buffer-in-direction' (type `window') when it
-      ;; splits a fresh one.  So one call restores the displaced buffer
-      ;; into a reused slot, or deletes a window that was split for the
-      ;; agent.  No BURY-OR-KILL argument: burying would move the agent to
-      ;; the end of the buffer list, so with several agents alive the next
-      ;; F9 (`cj/--ai-vterm-dispatch' re-shows the most-recent agent) would
-      ;; bring back a different one instead of the agent just toggled off.
+           (switch-to-buffer
+            (or (cj/--ai-vterm-most-recent-non-agent-buffer)
+                (other-buffer (window-buffer win) t))))))
+      ;; Multi-window: collapse the agent split outright by deleting its
+      ;; window, so the working buffer (e.g. todo.org) reclaims the space.
+      ;; F9 is a pure show/hide toggle of THE agent split -- it must never
+      ;; surface a different agent.  `quit-restore-window' can't guarantee
+      ;; that here: switching among several agents reuses the one slot via
+      ;; `set-window-buffer' (see `cj/--ai-vterm-reuse-existing-agent'),
+      ;; which leaves the window's `quit-restore' parameter pointing at the
+      ;; FIRST agent shown.  Once it's stale, `quit-restore-window' falls
+      ;; back to `switch-to-prev-buffer' and surfaces another agent instead
+      ;; of removing the window -- exactly the "F9 shows another agent"
+      ;; bug.  `delete-window' is unconditional and slot-history-independent.
+      ;; Capture geometry first so the next toggle-on splits at the same
+      ;; size (the user's chosen split width is preserved across the toggle).
       (t
-       ;; Capture geometry first: when the agent had its own split window
-       ;; (axis-mismatch / single-window origin), `quit-restore-window'
-       ;; removes it and the next toggle-on splits afresh -- replaying the
-       ;; captured size preserves a user resize across the toggle.  Harmless
-       ;; in the reused-slot case, where the split path is never taken.
        (cj/--ai-vterm-capture-state win)
        (setq cj/--ai-vterm-last-was-bury nil)
-       (quit-restore-window win)))
+       (if (and (window-live-p win)
+                (> (length (window-list (window-frame win) 'never)) 1))
+           (delete-window win)
+         ;; Degenerate fallback (window became sole between dispatch and
+         ;; here): swap to a non-agent buffer rather than leave the agent up.
+         (when (window-live-p win)
+           (with-selected-window win
+             (switch-to-buffer
+              (or (cj/--ai-vterm-most-recent-non-agent-buffer)
+                  (other-buffer (window-buffer win) t))))))))
      nil)
     (`(redisplay-recent . ,buf)
      (display-buffer buf)
