@@ -36,6 +36,7 @@ auto-save-list/
 /request/
 /.elpa-mirror/
 /ielm-history.eld
+/slime-history.eld
 /.elpa-mirrors/
 /forge-database.sqlite
 /.scratch
