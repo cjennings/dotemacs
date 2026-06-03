@@ -148,7 +148,7 @@ Added: %U"
   (interactive)
   (find-file contacts-file)
   (goto-char (point-min))
-  (let ((contact (completing-read "Contact: "
+  (let ((contact (completing-read "Find contact: "
                                   (org-map-entries
                                    (lambda () (nth 4 (org-heading-components)))
                                    nil (list contacts-file)))))
@@ -226,7 +226,7 @@ For use outside of mu4e compose buffers. In mu4e, the integration
 module provides more sophisticated completion."
   (interactive)
   (let* ((items (cj/get-all-contact-emails))
-         (selected (completing-read "Contact: " items nil t)))
+         (selected (completing-read "Insert contact email: " items nil t)))
     (insert selected)))
 
 ;;; -------------------------------- Org Contacts --------------------------------

@@ -459,7 +459,7 @@ Prompts via `completing-read' between \"All tests\" (delegates to
 `cj/--f6-current-file-tests-impl')."
   (interactive)
   (let* ((candidates '("All tests" "Current file's tests"))
-         (label (completing-read "F6: " candidates nil t nil nil (car candidates))))
+         (label (completing-read "Run tests: " candidates nil t nil nil (car candidates))))
     (pcase label
       ("All tests" (projectile-test-project current-prefix-arg))
       ("Current file's tests"

@@ -533,7 +533,7 @@ clipboard contents cannot inject shell commands."
   (defun cj/dwim-shell-commands-checksum ()
 	"Generate checksums for file(s) and save to .checksum file."
 	(interactive)
-	(let ((algorithm (completing-read "Algorithm: "
+	(let ((algorithm (completing-read "Checksum algorithm: "
 									  '("md5" "sha1" "sha256" "sha512")
 									  nil t)))
       (dwim-shell-command-on-marked-files
@@ -656,7 +656,7 @@ all marked files rather than once per file."
   (defun cj/dwim-shell-commands-compress-pdf ()
 	"Compress PDF file size."
 	(interactive)
-	(let ((quality (completing-read "Quality: "
+	(let ((quality (completing-read "PDF compression quality: "
 									'("screen" "ebook" "printer" "prepress")
 									nil t "ebook")))
       (dwim-shell-command-on-marked-files
@@ -677,7 +677,7 @@ all marked files rather than once per file."
 	"Convert text file to speech (audio file)."
 	(interactive)
 	(let ((voice (if (eq system-type 'darwin)
-					 (completing-read "Voice: " '("Alex" "Samantha" "Victoria" "Karen") nil t "Alex")
+					 (completing-read "Text-to-speech voice: " '("Alex" "Samantha" "Victoria" "Karen") nil t "Alex")
 				   "en")))
 	  (dwim-shell-command-on-marked-files
 	   "Text to speech"
@@ -917,7 +917,7 @@ gpg: decryption failed: No pinentry"
 											(symbol-name cmd)))
 										  cmd))
 								  commands))
-		   (selected (completing-read "Command: "
+		   (selected (completing-read "Run dwim-shell command: "
 									  command-alist
 									  nil
 									  t

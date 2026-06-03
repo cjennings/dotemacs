@@ -78,7 +78,7 @@ Pure helper used by `cj/dired-ediff-files'."
          (pair (cj/--ediff-pair-from-files
                 (dired-get-marked-files)
                 (lambda ()
-                  (read-file-name "file: " (dired-dwim-target-directory)))
+                  (read-file-name "Ediff with file: " (dired-dwim-target-directory)))
                 #'file-newer-than-file-p)))
     (ediff-files (car pair) (cdr pair))
     (add-hook 'ediff-after-quit-hook-internal

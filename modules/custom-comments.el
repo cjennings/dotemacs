@@ -236,7 +236,7 @@ Prompts for decoration character, text, and length option."
                        ""))
          (decoration-char (read-string "Decoration character (default =): " nil nil "="))
          (text (read-string "Comment text: "))
-         (length-option (completing-read "Length: "
+         (length-option (completing-read "Comment length: "
                                         '("fill-column" "half-column" "match-text")
                                         nil t nil nil "fill-column"))
          (length (cond
@@ -318,7 +318,7 @@ Prompts for decoration character, text, padding, and length option."
          (decoration-char (read-string "Decoration character (default =): " nil nil "="))
          (text (read-string "Comment text: "))
          (padding (string-to-number (read-string "Padding spaces (default 2): " nil nil "2")))
-         (length-option (completing-read "Length: "
+         (length-option (completing-read "Comment length: "
                                         '("fill-column" "half-column" "match-text")
                                         nil t nil nil "fill-column"))
          (length (cond
@@ -463,7 +463,7 @@ Prompts for decoration character, text, and length option."
                        ""))
          (decoration-char (read-string "Decoration character (default *): " nil nil "*"))
          (text (read-string "Comment text: "))
-         (length-option (completing-read "Length: "
+         (length-option (completing-read "Comment length: "
                                         '("fill-column" "half-column" "padded-text")
                                         nil t nil nil "fill-column"))
          (length (cond
@@ -545,10 +545,10 @@ Prompts for text, box style, and length option."
                          comment-end
                        ""))
          (text (read-string "Comment text: "))
-         (box-style (intern (completing-read "Box style: "
+         (box-style (intern (completing-read "Comment box style: "
                                              '("single" "double")
                                              nil t nil nil "single")))
-         (length-option (completing-read "Length: "
+         (length-option (completing-read "Comment length: "
                                         '("fill-column" "half-column" "padded-text")
                                         nil t nil nil "fill-column"))
          (length (cond
@@ -611,7 +611,7 @@ Prompts for decoration character, text, and length option."
                        (read-string "Block comment end (e.g., */): " nil nil "*/")))
          (decoration-char (read-string "Decoration character (default *): " nil nil "*"))
          (text (read-string "Comment text: "))
-         (length-option (completing-read "Length: "
+         (length-option (completing-read "Comment length: "
                                         '("fill-column" "half-column" "match-text")
                                         nil t nil nil "fill-column"))
          (length (cond

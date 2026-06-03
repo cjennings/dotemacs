@@ -92,7 +92,7 @@ This bypasses the completion-at-point system for direct selection."
   (interactive)
   (when (mail-abbrev-in-expansion-header-p)
     (let* ((contacts (cj/get-all-contact-emails))
-           (selected (completing-read "Contact: " contacts nil t)))
+           (selected (completing-read "Insert contact email: " contacts nil t)))
       ;; If we're not at the beginning of a field, check if we need a comma
       (when (and (not (save-excursion
                         (skip-chars-backward " \t")

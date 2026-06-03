@@ -509,7 +509,7 @@ gains a date-only CLOSED line."
                (let ((default (if (member "DONE" org-done-keywords)
                                   "DONE"
                                 (car org-done-keywords))))
-                 (completing-read "Finalize as: " org-done-keywords
+                 (completing-read "Finalize task as: " org-done-keywords
                                   nil t nil nil default)))))
       (let ((org-inhibit-logging t))
         (org-todo finalized))           ; fires the journal-copy hook
