@@ -41,9 +41,14 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** DONE [#A] f9 should toggle the entire ai-vterm split, not just the buffer
-CLOSED: [2026-06-02 Tue]
-F9 toggle-off now collapses the agent split (delete-window) instead of quit-restore-window, which went stale across multi-agent slot reuse and surfaced a different agent. Toggle-on reopens the exact agent that was hidden (cj/--ai-vterm-last-hidden-buffer). Sole-window toggle-off returns to the most-recent non-agent buffer. Split width preserved across the toggle.
+** TODO [#C] Pearl vanilla dogfooding follow-ups :pearl:cleanup:
+From the pearl-session handoff (2026-06-02) after =modules/linear-config.el= was reduced to a vanilla pearl setup (commit 09b3b13). Open items to revisit after dogfooding pearl's out-of-box config:
+
+- =.claude/rules/keybinding-display.md= example (~lines 37-38) uses retired pearl command names (=pearl-set-priority=, =pearl-set-state=). It's a synced rules file owned by the rulesets global layer — fix the canonical copy in =~/code/rulesets/claude-rules/keybinding-display.md= (a project-only edit gets reverted by the next startup sync), refresh to current names (=pearl-edit-state= etc.).
+- Decide whether to restore any conveniences dropped in the vanilla rework: default team (DeepSat SE id, in a commented =:custom= block in linear-config.el), the custom keymap, the lazy-key advice. Weigh the eager-:config key read (fires the GPG prompt on first pearl command vs never-at-startup).
+- Confirm linear-config.el's module-header fields (Layer / Runtime requires / Direct test load) pass any module-doc linter this repo runs.
+- custom-file interaction: =system-defaults.el= redirects =custom-file= to a throwaway temp, so pearl's =customize-save-variable= persistence (default view/team) holds for the session but vanishes on restart. Set those via init-level =:custom= instead. (A pearl-side task was filed to harden pearl's persistence against a disabled custom-file.)
+
 ** DOING [#B] Signal client — forked signel :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-28
@@ -2444,28 +2449,6 @@ Closing the ai-vterm with M-F9 while its window is in a split deletes the split 
 *** 2026-06-02 Tue @ 14:12:48 -0500 Audit: still a bug, distinct from the F9 collapse
 The F9 toggle-off rework (38dad92) made F9 collapse the split by design, but that's the toggle path. This is M-F9 close (kills the agent process): close should leave the surrounding layout intact, not delete the sibling window. Craig confirmed it's still a bug. cj/--ai-vterm-close-buffer still calls delete-window.
 
-** DONE [#C] Descriptive completing-read prompts :feature:ux:
-CLOSED: [2026-06-02 Tue]
-:PROPERTIES:
-:LAST_REVIEWED: 2026-06-02
-:END:
-Reworded 17 picker prompts across 8 modules so each names the operation (C-f8 "Project:" → "Show agenda for project:", "F6:" → "Run tests:", the dwim-shell sub-prompts, both contact pickers, dirvish ediff, org finalize, and the custom-comments length/box-style prompts). Audited ~124 completing-read / read-* sites; the rest already named their operation.
-
-Audit every =completing-read= (and =read-*= picker) prompt in the config so the prompt names the operation about to happen, not just the kind of thing being chosen. The prompt is the only confirmation the user gets before committing to an action, so a generic one leaves a mis-keyed command ambiguous.
-
-Concrete trigger: C-f8 (project-filtered agenda) prompts just "Project". If Craig meant C-f9 (AI-vterm project picker) and hit C-f8 by accident, the bare "Project" prompt gives no signal which operation he's about to run — both pick a project, for different ends.
-
-Goal: each picker prompt makes the pending operation obvious, e.g. "Agenda for project: " vs "Open AI vterm for project: ". Sweep the call sites (grep =completing-read=, =read-directory-name=, =read-file-name=, =completing-read-multiple= across modules/), reword the ambiguous ones, keep the wording short.
-
-Filed 2026-06-02 from a C-f8/C-f9 mix-up. Priority set [#C] (UX polish) — re-grade if it deserves higher.
-
-
-:PROPERTIES:
-:LAST_REVIEWED: 2026-05-28
-:END:
-The dashboard navigator (icons + labels) and the recentf/project/bookmark list items are both painted by =dashboard-items-face=: the navigator gets a =dashboard-items-face= overlay, and overlays beat text properties, so the per-button =dashboard-navigator= face is inert. To color the navigator independently of the items, override where that overlay is applied — advise or redefine =dashboard-insert-navigator=, or strip/replace the overlay's face.
-Triggered by: 2026-05-22 dashboard color work (L105).
-
 ** TODO [#C] Implement EMMS-free music-config architecture :refactor:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-01
@@ -3803,22 +3786,6 @@ Files involved: =modules/tramp-config.el=, =modules/dirvish-config.el=.
 Remote dates/sizes don't come from the dired =ls= listing or =dired-listing-switches=. They come from =dirvish-data-for-dir= (=dirvish-tramp.el:95=), which runs =ls -1lahi= on the remote and parses the columns into the attribute cache. That method only fires when both =(dirvish-prop :remote-async)= is a number and =(dirvish-prop :gnuls)= is a string. When either gate is shut, dirvish falls back to its default, which deliberately skips =(file-attributes f-name)= for remote files (=dirvish.el:904=, a perf guard) — leaving attrs nil, so the file-size and file-time widgets render "?" (=dirvish-widgets.el:216,247=).
 
 That explains why every prior fix missed: dired-listing-switches feed a different code path entirely, and disabling =tramp-direct-async-process= shuts the =:remote-async= gate, which is the one path that populates remote attributes — exactly backwards. The config already enables direct-async for ssh/sshx (=tramp-config.el:79-88=), so the remaining closed gate is per-host: =:gnuls= (no GNU ls on FreeBSD-based truenas) or direct-async not taking effect for the method. Could not verify on a live remote from the work session — handed the per-host diagnostics up into the task body.
-
-** CANCELLED [#C] Finish terminal GPG pinentry configuration :feature:
-CLOSED: [2026-06-02 Tue]
-:PROPERTIES:
-:LAST_REVIEWED: 2026-06-02
-:END:
-
-Superseded by "Terminal GPG pinentry Completion" below. That task's 2026-05-27 audit found the =terminal-pinentry= branch is gone (no local/remote ref, no reflog, no stash, no worktree), so the work restarts from main and is tracked there. Consolidated 2026-06-02.
-
-Continue work on terminal-mode GPG passphrase prompts (loopback mode).
-Branch: terminal-pinentry
-
-Changes in progress (modules/auth-config.el):
-- Use epa-pinentry-mode 'loopback in terminal
-- Use external pinentry (pinentry-dmenu) in GUI
-- Requires env-terminal-p from host-environment module
 
 ** TODO [#C] Terminal GPG pinentry Completion :feature:
 :PROPERTIES:
@@ -6872,3 +6839,42 @@ Do this after the coverage-config work ships. No churn mid-flight.
 CLOSED: [2026-05-28 Thu]
 
 Evaluation landed at [[file:docs/design/buttercup-evaluation.org][docs/design/buttercup-evaluation.org]]. Verdict: not yet — ERT is enough for every project Craig owns today. Adopt Buttercup the moment a project crosses the threshold "the test reader is no longer the test author at write-time" (concrete trigger events listed in the doc). Re-read the doc when any such event fires.
+** DONE [#A] f9 should toggle the entire ai-vterm split, not just the buffer
+CLOSED: [2026-06-02 Tue]
+F9 toggle-off now collapses the agent split (delete-window) instead of quit-restore-window, which went stale across multi-agent slot reuse and surfaced a different agent. Toggle-on reopens the exact agent that was hidden (cj/--ai-vterm-last-hidden-buffer). Sole-window toggle-off returns to the most-recent non-agent buffer. Split width preserved across the toggle.
+** DONE [#C] Descriptive completing-read prompts :feature:ux:
+CLOSED: [2026-06-02 Tue]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-02
+:END:
+Reworded 17 picker prompts across 8 modules so each names the operation (C-f8 "Project:" → "Show agenda for project:", "F6:" → "Run tests:", the dwim-shell sub-prompts, both contact pickers, dirvish ediff, org finalize, and the custom-comments length/box-style prompts). Audited ~124 completing-read / read-* sites; the rest already named their operation.
+
+Audit every =completing-read= (and =read-*= picker) prompt in the config so the prompt names the operation about to happen, not just the kind of thing being chosen. The prompt is the only confirmation the user gets before committing to an action, so a generic one leaves a mis-keyed command ambiguous.
+
+Concrete trigger: C-f8 (project-filtered agenda) prompts just "Project". If Craig meant C-f9 (AI-vterm project picker) and hit C-f8 by accident, the bare "Project" prompt gives no signal which operation he's about to run — both pick a project, for different ends.
+
+Goal: each picker prompt makes the pending operation obvious, e.g. "Agenda for project: " vs "Open AI vterm for project: ". Sweep the call sites (grep =completing-read=, =read-directory-name=, =read-file-name=, =completing-read-multiple= across modules/), reword the ambiguous ones, keep the wording short.
+
+Filed 2026-06-02 from a C-f8/C-f9 mix-up. Priority set [#C] (UX polish) — re-grade if it deserves higher.
+
+
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-28
+:END:
+The dashboard navigator (icons + labels) and the recentf/project/bookmark list items are both painted by =dashboard-items-face=: the navigator gets a =dashboard-items-face= overlay, and overlays beat text properties, so the per-button =dashboard-navigator= face is inert. To color the navigator independently of the items, override where that overlay is applied — advise or redefine =dashboard-insert-navigator=, or strip/replace the overlay's face.
+Triggered by: 2026-05-22 dashboard color work (L105).
+** CANCELLED [#C] Finish terminal GPG pinentry configuration :feature:
+CLOSED: [2026-06-02 Tue]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-02
+:END:
+
+Superseded by "Terminal GPG pinentry Completion" below. That task's 2026-05-27 audit found the =terminal-pinentry= branch is gone (no local/remote ref, no reflog, no stash, no worktree), so the work restarts from main and is tracked there. Consolidated 2026-06-02.
+
+Continue work on terminal-mode GPG passphrase prompts (loopback mode).
+Branch: terminal-pinentry
+
+Changes in progress (modules/auth-config.el):
+- Use epa-pinentry-mode 'loopback in terminal
+- Use external pinentry (pinentry-dmenu) in GUI
+- Requires env-terminal-p from host-environment module
