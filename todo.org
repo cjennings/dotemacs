@@ -2444,7 +2444,22 @@ Closing the ai-vterm with M-F9 while its window is in a split deletes the split 
 *** 2026-06-02 Tue @ 14:12:48 -0500 Audit: still a bug, distinct from the F9 collapse
 The F9 toggle-off rework (38dad92) made F9 collapse the split by design, but that's the toggle path. This is M-F9 close (kills the agent process): close should leave the surrounding layout intact, not delete the sibling window. Craig confirmed it's still a bug. cj/--ai-vterm-close-buffer still calls delete-window.
 
-** TODO [#C] Separate dashboard navigator color from list items :feature:quick:solo:
+** DONE [#C] Descriptive completing-read prompts :feature:ux:
+CLOSED: [2026-06-02 Tue]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-02
+:END:
+Reworded 17 picker prompts across 8 modules so each names the operation (C-f8 "Project:" → "Show agenda for project:", "F6:" → "Run tests:", the dwim-shell sub-prompts, both contact pickers, dirvish ediff, org finalize, and the custom-comments length/box-style prompts). Audited ~124 completing-read / read-* sites; the rest already named their operation.
+
+Audit every =completing-read= (and =read-*= picker) prompt in the config so the prompt names the operation about to happen, not just the kind of thing being chosen. The prompt is the only confirmation the user gets before committing to an action, so a generic one leaves a mis-keyed command ambiguous.
+
+Concrete trigger: C-f8 (project-filtered agenda) prompts just "Project". If Craig meant C-f9 (AI-vterm project picker) and hit C-f8 by accident, the bare "Project" prompt gives no signal which operation he's about to run — both pick a project, for different ends.
+
+Goal: each picker prompt makes the pending operation obvious, e.g. "Agenda for project: " vs "Open AI vterm for project: ". Sweep the call sites (grep =completing-read=, =read-directory-name=, =read-file-name=, =completing-read-multiple= across modules/), reword the ambiguous ones, keep the wording short.
+
+Filed 2026-06-02 from a C-f8/C-f9 mix-up. Priority set [#C] (UX polish) — re-grade if it deserves higher.
+
+
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-28
 :END:
