@@ -44,7 +44,6 @@ Tags are additive. For example, a small wrong-behavior fix can be
 ** TODO [#C] Pearl vanilla dogfooding follow-ups :pearl:cleanup:
 From the pearl-session handoff (2026-06-02) after =modules/linear-config.el= was reduced to a vanilla pearl setup (commit 09b3b13). Open items to revisit after dogfooding pearl's out-of-box config:
 
-- =.claude/rules/keybinding-display.md= example (~lines 37-38) uses retired pearl command names (=pearl-set-priority=, =pearl-set-state=). It's a synced rules file owned by the rulesets global layer — fix the canonical copy in =~/code/rulesets/claude-rules/keybinding-display.md= (a project-only edit gets reverted by the next startup sync), refresh to current names (=pearl-edit-state= etc.).
 - Decide whether to restore any conveniences dropped in the vanilla rework: default team (DeepSat SE id, in a commented =:custom= block in linear-config.el), the custom keymap, the lazy-key advice. Weigh the eager-:config key read (fires the GPG prompt on first pearl command vs never-at-startup).
 - Confirm linear-config.el's module-header fields (Layer / Runtime requires / Direct test load) pass any module-doc linter this repo runs.
 - custom-file interaction: =system-defaults.el= redirects =custom-file= to a throwaway temp, so pearl's =customize-save-variable= persistence (default view/team) holds for the session but vanishes on restart. Set those via init-level =:custom= instead. (A pearl-side task was filed to harden pearl's persistence against a disabled custom-file.)
