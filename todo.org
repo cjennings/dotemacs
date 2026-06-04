@@ -48,6 +48,18 @@ From the pearl-session handoff (2026-06-02) after =modules/linear-config.el= was
 - Confirm linear-config.el's module-header fields (Layer / Runtime requires / Direct test load) pass any module-doc linter this repo runs.
 - custom-file interaction: =system-defaults.el= redirects =custom-file= to a throwaway temp, so pearl's =customize-save-variable= persistence (default view/team) holds for the session but vanishes on restart. Set those via init-level =:custom= instead. (A pearl-side task was filed to harden pearl's persistence against a disabled custom-file.)
 
+** TODO [#B] TTY-accessible personal C-; keymap :feature:ux:
+The personal prefix =C-;= (Control-semicolon) is GUI-only — terminals can't encode it, so the entire custom command family (=C-; g= calendar, =C-; a= AI, =C-; S= Slack, =C-; O= org, =C-; M= Signal, =C-; L= pearl, =C-; j= jump, …) is unreachable in a terminal frame (=emacsclient -nw=, Emacs inside vterm/tmux). Surfaced 2026-06-03 out of the pearl =C-; L= prefix discussion.
+
+Goal: keep =C-;= in GUI and add a TTY-typable mirror prefix so the same leaf keys work in a terminal. The fix is a single point: =modules/keybindings.el= defines =cj/custom-keymap= once, binds it globally with =(keymap-global-set "C-;" cj/custom-keymap)=, and every module registers into it via =cj/bind-prefix= / =cj/bind-command=. Binding that one keymap under a second prefix mirrors the whole family for free — no per-module edits.
+
+Easy prefix candidates (home-row-leaning, TTY-safe), same leaf keys under each:
+- =C-c ;= (recommended) — keeps the semicolon mnemonic; =C-c= is the standard user prefix and always TTY-encodable, =;= is home row. =C-; L= becomes =C-c ; L=, zero leaf-key relearning. Bind it unconditionally alongside =C-;= so both GUI and TTY reach the identical map — no =env-terminal-p= branch needed.
+- =C-c SPC= — easy reach, but collides with =org-table-blank-field= (=C-c SPC=) inside org buffers.
+- Bare =C-c <leaf>= (the literal "C-c L" idea) — rejected: =C-c= is shared with org (=C-c l= = =org-store-link=, confirmed live), the LSP prefix (=lsp-keymap-prefix "C-c l"=), and pdf-view; binding the whole family under bare =C-c= would shadow/conflict with those.
+
+While in here, audit individual leaf chords for other non-TTY keys (any =C-RET=, super/hyper bindings — terminals can't send super/hyper either) and note or remap them. Verify the result in an actual =emacs -nw= / =emacsclient -nw= frame, not just GUI. Relates to the standing "org-mode keybinding consolidation" reminder.
+
 ** DOING [#B] Signal client — forked signel :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-28
@@ -6856,7 +6868,7 @@ Goal: each picker prompt makes the pending operation obvious, e.g. "Agenda for p
 
 Filed 2026-06-02 from a C-f8/C-f9 mix-up. Priority set [#C] (UX polish) — re-grade if it deserves higher.
 
-
+** TODO [#C] Color dashboard navigator independently of list items :feature:ux:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-28
 :END:
