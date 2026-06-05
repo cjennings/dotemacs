@@ -327,6 +327,17 @@ instead of being forwarded to the terminal program."
   (should-not (eq (keymap-lookup ghostel-semi-char-mode-map "C-M-<left>")
                   'ghostel--send-event)))
 
+(ert-deftest test-term-f10-music-and-shutdown-in-keymap-exceptions ()
+  "Regression: F10 (music playlist toggle) and C-F10 (server shutdown) are in
+`ghostel-keymap-exceptions' so they reach Emacs from inside a ghostel buffer
+instead of being forwarded to the terminal program.  Both are global bindings,
+so dropping them from the semi-char map lets the lookup fall through to the
+global map."
+  (dolist (key '("<f10>" "C-<f10>"))
+    (should (member key ghostel-keymap-exceptions)))
+  (should-not (eq (keymap-lookup ghostel-semi-char-mode-map "<f10>")
+                  'ghostel--send-event)))
+
 (ert-deftest test-term-c-spc-forwarded-not-set-mark ()
   "Regression: C-SPC is forwarded to the terminal, not bound to the global
 `set-mark-command'.  ghostel only forwards the `C-@' event, so without this an
