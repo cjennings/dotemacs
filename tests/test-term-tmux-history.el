@@ -317,5 +317,22 @@ F12 toggle reach Emacs inside ghostel buffers."
   (should-not (eq (keymap-lookup ghostel-semi-char-mode-map "<f12>")
                   'ghostel--send-event)))
 
+(ert-deftest test-term-window-nav-keys-in-keymap-exceptions ()
+  "Regression: windmove (S-arrows) and buffer-move (C-M-arrows) are in
+`ghostel-keymap-exceptions' so they reach Emacs from inside a ghostel buffer
+instead of being forwarded to the terminal program."
+  (dolist (key '("S-<up>" "S-<down>" "S-<left>" "S-<right>"
+                 "C-M-<up>" "C-M-<down>" "C-M-<left>" "C-M-<right>"))
+    (should (member key ghostel-keymap-exceptions)))
+  (should-not (eq (keymap-lookup ghostel-semi-char-mode-map "C-M-<left>")
+                  'ghostel--send-event)))
+
+(ert-deftest test-term-c-spc-forwarded-not-set-mark ()
+  "Regression: C-SPC is forwarded to the terminal, not bound to the global
+`set-mark-command'.  ghostel only forwards the `C-@' event, so without this an
+Emacs region gets stuck in the ghostel buffer and tmux copy-mode's
+begin-selection never starts."
+  (should (eq (keymap-lookup ghostel-mode-map "C-SPC") #'cj/term-send-C-SPC)))
+
 (provide 'test-term-tmux-history)
 ;;; test-term-tmux-history.el ends here
