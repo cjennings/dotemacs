@@ -255,6 +255,9 @@ D3 — ghostel-eshell as eshell visual backend; ghostel-compile against F4 dev-f
 *** TODO [#C] Revisit auto-dim for ghostel terminals :terminal:ghostel:auto-dim:
 D1 shipped "terminal buffers don't participate in unfocused-window dimming" because ghostel resolves its color palette to hex and pushes it into the native module per-terminal (=ghostel--apply-palette= / =ghostel--set-palette=), so there's no per-window color hook like vterm's =vterm--get-color= advice. The spike confirmed buffer-local =face-remap= does NOT dim a ghostel buffer. Investigate the alternatives: (a) keep no-dim (current); (b) buffer-wide dim on focus-loss by re-pushing a palette blended toward bg via =ghostel-sync-theme= + redraw (per-buffer, forces a repaint, only coherent when the buffer is in one window — measure the flicker cost); (c) check whether ghostel gains/exposes a per-window dim hook upstream. Acceptance: a measured decision, not just left at the v1 default. Context: [[file:docs/design/vterm-to-ghostel-migration-spec.org][migration spec]] D1.
 
+*** TODO [#C] Investigate ghostel selection/highlight color :terminal:ghostel:
+Look at how selected text is highlighted in a ghostel buffer — the region face in =ghostel-copy-mode= and any live selection — surfaced during the copy-mode debugging. Check whether the highlight is legible against the dupre background and consistent with the rest of the config; if it needs theming, fold it in with D2 (theming the ghostel faces in dupre).
+
 *** 2026-05-26 Tue @ 15:15:43 -0500 Direction confirmed; Claude Code in eat needs a caveat
 Craig confirmed the consolidation: one terminal engine everywhere — eat for standalone terminal buffers (replacing vterm) plus =eat-eshell-mode= as eshell's visual backend, keeping eshell as the shell. Not dropping eshell for eat + zsh.
 
@@ -278,6 +281,9 @@ Folded the external review via spec-response. Craig accepted D1-D5; baked them p
 
 *** 2026-06-04 Thu @ 23:30:18 -0500 External re-review: ready
 Re-reviewed [[file:docs/design/vterm-to-ghostel-migration-spec.org][docs/design/vterm-to-ghostel-migration-spec.org]] after incorporation. Verdict: =Ready=. No further blocking review notes; implementation can start from the phase plan and acceptance criteria in the spec.
+
+** TODO [#C] Slack message buffers in a reused popup window :slack:ux:
+Display slack.el message and thread buffers in a dedicated popup window (side or bottom) and reuse that one window instead of spawning a new window per buffer. Likely a =display-buffer-alist= rule (or popper integration) in =modules/slack-config.el=.
 
 ** PROJECT [#B] Implement ai-kb :feature:ai:kb:
 Build v1 of the AI knowledge base per [[file:docs/design/ai-kb.org][docs/design/ai-kb.org]] (Ready; six reviews incorporated, all decisions resolved 2026-05-24). Step 1 splits into 1a (the safe write path — minimum usable) and 1b (retrieval, maintenance, push), since =remember= depends on =index=+=lint= and the adapter depends on =remember=. Step 2 is the Emacs layer: a full org-roam profile on switch, the human-edit safety model (same write path as the agent), and the browsing surface. Step 3 and the LLM-Wiki layer are vNext. Children are ordered by build sequence; the server bootstrap is the prerequisite.
