@@ -42,13 +42,19 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:feature:refactor:=.
 * Emacs Open Work
 ** TODO [#C] Pearl vanilla dogfooding follow-ups :pearl:cleanup:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-05
+:END:
 From the pearl-session handoff (2026-06-02) after =modules/linear-config.el= was reduced to a vanilla pearl setup (commit 09b3b13). Open items to revisit after dogfooding pearl's out-of-box config:
 
 - Decide whether to restore any conveniences dropped in the vanilla rework: default team (DeepSat SE id, in a commented =:custom= block in linear-config.el), the custom keymap, the lazy-key advice. Weigh the eager-:config key read (fires the GPG prompt on first pearl command vs never-at-startup).
 - Confirm linear-config.el's module-header fields (Layer / Runtime requires / Direct test load) pass any module-doc linter this repo runs.
 - custom-file interaction: =system-defaults.el= redirects =custom-file= to a throwaway temp, so pearl's =customize-save-variable= persistence (default view/team) holds for the session but vanishes on restart. Set those via init-level =:custom= instead. (A pearl-side task was filed to harden pearl's persistence against a disabled custom-file.)
 
-** TODO [#B] TTY-accessible personal C-; keymap :feature:ux:
+** TODO [#B] TTY-accessible personal C-; keymap :feature:ux:solo:quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-05
+:END:
 The personal prefix =C-;= (Control-semicolon) is GUI-only — terminals can't encode it, so the entire custom command family (=C-; g= calendar, =C-; a= AI, =C-; S= Slack, =C-; O= org, =C-; M= Signal, =C-; L= pearl, =C-; j= jump, …) is unreachable in a terminal frame (=emacsclient -nw=, Emacs inside vterm/tmux). Surfaced 2026-06-03 out of the pearl =C-; L= prefix discussion.
 
 Goal: keep =C-;= in GUI and add a TTY-typable mirror prefix so the same leaf keys work in a terminal. The fix is a single point: =modules/keybindings.el= defines =cj/custom-keymap= once, binds it globally with =(keymap-global-set "C-;" cj/custom-keymap)=, and every module registers into it via =cj/bind-prefix= / =cj/bind-command=. Binding that one keymap under a second prefix mirrors the whole family for free — no per-module edits.
@@ -62,7 +68,7 @@ While in here, audit individual leaf chords for other non-TTY keys (any =C-RET=,
 
 ** DOING [#B] Signal client — forked signel :feature:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-28
+:LAST_REVIEWED: 2026-06-05
 :END:
 Parent task for the Emacs Signal client. Engine: signal-cli (linked secondary device). Front end: a fork of signel at =~/code/signel=, wired through =modules/signal-config.el=. Design: [[file:docs/design/signal-client.org][docs/design/signal-client.org]]. Child issues below.
 
@@ -282,7 +288,10 @@ Folded the external review via spec-response. Craig accepted D1-D5; baked them p
 *** 2026-06-04 Thu @ 23:30:18 -0500 External re-review: ready
 Re-reviewed [[file:docs/design/vterm-to-ghostel-migration-spec.org][docs/design/vterm-to-ghostel-migration-spec.org]] after incorporation. Verdict: =Ready=. No further blocking review notes; implementation can start from the phase plan and acceptance criteria in the spec.
 
-** TODO [#C] Slack message buffers in a reused popup window :slack:ux:
+** TODO [#C] Slack message buffers in a reused popup window :slack:ux:quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-05
+:END:
 Display slack.el message and thread buffers in a dedicated popup window (side or bottom) and reuse that one window instead of spawning a new window per buffer. Likely a =display-buffer-alist= rule (or popper integration) in =modules/slack-config.el=.
 
 ** PROJECT [#B] Implement ai-kb :feature:ai:kb:
@@ -1197,7 +1206,7 @@ Tie this into the existing coverage work:
 
 ** DOING [#B] Module-by-module hardening :harden:nosync:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-27
+:LAST_REVIEWED: 2026-06-05
 :END:
 
 Review every file in =modules/= and capture concrete bugs, tests, refactors,
@@ -3822,7 +3831,7 @@ Keep the binding mode-local so F2 stays available as a global candidate where no
 
 ** TODO [#C] Localrepo Documentation :feature:docs:localrepo:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-27
+:LAST_REVIEWED: 2026-06-05
 :END:
 
 Audit on 2026-05-27 found the localrepo build half is shipped (=.localrepo/= holds 185 entries; =early-init.el= L135–165 wires the priority-200 pin above the local ELPA-mirror tier at 120–125 and the online fallback). The remaining "document limitations" half splits into one docs-set plus four gap-fix follow-ups that the docs cross-reference.
@@ -3883,7 +3892,7 @@ That explains why every prior fix missed: dired-listing-switches feed a differen
 
 ** TODO [#C] Terminal GPG pinentry Completion :feature:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-27
+:LAST_REVIEWED: 2026-06-05
 :END:
 
 Audit on 2026-05-27 found no trace of the =terminal-pinentry= branch on this machine: no local or remote ref, no reflog entry across 732 entries reaching back through January, no stash, no dangling commit, no sibling worktree. The 2026-01-24 session log says the branch was created that day, but the work either lived on another machine or was deleted before reaching here. The original task above (=Finish terminal GPG pinentry configuration=) is superseded by this one.
