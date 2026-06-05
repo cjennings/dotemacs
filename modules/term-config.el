@@ -53,6 +53,7 @@
 (declare-function ghostel-next-prompt "ghostel" (&optional n))
 (declare-function ghostel-previous-prompt "ghostel" (&optional n))
 (declare-function ghostel-send-next-key "ghostel" ())
+(declare-function ghostel--rebuild-semi-char-keymap "ghostel" ())
 (defvar ghostel-mode-map)
 (defvar ghostel-keymap-exceptions)
 (defvar ghostel-buffer-name)
@@ -220,9 +221,16 @@ run its own project-named tmux session instead of a bare, auto-named one.
   :ensure t
   :commands (ghostel)
   :init
-  ;; C-; must reach Emacs so the personal prefix keymap works in terminals.
+  ;; C-; and F12 must reach Emacs (not the terminal program) inside ghostel
+  ;; buffers.  In semi-char mode ghostel forwards every key NOT in
+  ;; `ghostel-keymap-exceptions' to the pty, and `ghostel-semi-char-mode-map'
+  ;; is rebuilt from that list by `ghostel--rebuild-semi-char-keymap' --
+  ;; `add-to-list' alone updates the list but not the already-built map, so the
+  ;; rebuild is what actually lets the key through to `ghostel-mode-map'.
   (with-eval-after-load 'ghostel
-    (add-to-list 'ghostel-keymap-exceptions "C-;"))
+    (dolist (key '("C-;" "<f12>"))
+      (add-to-list 'ghostel-keymap-exceptions key))
+    (ghostel--rebuild-semi-char-keymap))
   :hook
   ((ghostel-mode . cj/turn-off-chrome-for-term)
    (ghostel-mode . cj/term-launch-tmux))

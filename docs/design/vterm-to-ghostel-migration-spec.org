@@ -53,9 +53,14 @@ in the real config. Emacs 30.2 GTK, x86_64, modules supported.
 - *F8 / key forwarding (diagnostic)*: ghostel's default semi-char mode
   forwards unlisted keys to the terminal program; only
   =ghostel-keymap-exceptions= (default =C-c C-x C-u C-h M-x M-: C-\=) reach
-  Emacs. This is why F-key bindings (F9 family, F12) must be installed in
-  =ghostel-mode-map= for terminal buffers, exactly as the current config does
-  for =vterm-mode-map=.
+  Emacs. Unlike vterm, binding F9/F12 in =ghostel-mode-map= is NOT enough:
+  =ghostel-semi-char-mode-map= is rebuilt from =ghostel-keymap-exceptions= and
+  outranks the major-mode map, so a key not in the exceptions is sent to the
+  pty before the mode-map binding can fire. The F9 family, F12, and C-; must be
+  added to =ghostel-keymap-exceptions= AND the semi-char map rebuilt
+  (=ghostel--rebuild-semi-char-keymap=; =add-to-list= alone updates the list
+  but not the already-built map). (Shipped wrong in the first cut — F9 did
+  nothing in agent buffers until the keys were added to the exceptions.)
 - *GUI / TTY visual*: Craig confirmed the Claude Code TUI and a TTY frame
   both render great. dupre chrome applies; the 16 ANSI terminal faces are
   ghostel defaults (dupre does not theme them) — Decision D2.

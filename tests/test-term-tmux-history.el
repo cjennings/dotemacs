@@ -308,5 +308,14 @@ its own copy-mode against the full pane history."
       (when (buffer-live-p agent)
         (kill-buffer agent)))))
 
+(ert-deftest test-term-prefix-and-f12-in-keymap-exceptions ()
+  "Regression: C-; and F12 are in `ghostel-keymap-exceptions' and the rebuilt
+semi-char map no longer forwards them to the pty, so the prefix keymap and the
+F12 toggle reach Emacs inside ghostel buffers."
+  (dolist (key '("C-;" "<f12>"))
+    (should (member key ghostel-keymap-exceptions)))
+  (should-not (eq (keymap-lookup ghostel-semi-char-mode-map "<f12>")
+                  'ghostel--send-event)))
+
 (provide 'test-term-tmux-history)
 ;;; test-term-tmux-history.el ends here
