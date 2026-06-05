@@ -221,14 +221,19 @@ run its own project-named tmux session instead of a bare, auto-named one.
   :ensure t
   :commands (ghostel)
   :init
-  ;; C-; and F12 must reach Emacs (not the terminal program) inside ghostel
+  ;; These keys must reach Emacs (not the terminal program) inside ghostel
   ;; buffers.  In semi-char mode ghostel forwards every key NOT in
   ;; `ghostel-keymap-exceptions' to the pty, and `ghostel-semi-char-mode-map'
   ;; is rebuilt from that list by `ghostel--rebuild-semi-char-keymap' --
   ;; `add-to-list' alone updates the list but not the already-built map, so the
-  ;; rebuild is what actually lets the key through to `ghostel-mode-map'.
+  ;; rebuild is what actually lets the key through to `ghostel-mode-map' / the
+  ;; global map.  C-; and F12 are the prefix + toggle; the modified arrows are
+  ;; windmove (S-arrows, focus) and buffer-move (C-M-arrows, swap), which the
+  ;; ai-term workflow expects to work from inside an agent buffer.
   (with-eval-after-load 'ghostel
-    (dolist (key '("C-;" "<f12>"))
+    (dolist (key '("C-;" "<f12>"
+                   "S-<up>" "S-<down>" "S-<left>" "S-<right>"
+                   "C-M-<up>" "C-M-<down>" "C-M-<left>" "C-M-<right>"))
       (add-to-list 'ghostel-keymap-exceptions key))
     (ghostel--rebuild-semi-char-keymap))
   :hook
@@ -377,12 +382,27 @@ Excludes agent-prefixed buffers; those have their own F9 dispatch via
 (keymap-set cj/term-map "q" #'ghostel-send-next-key)
 (keymap-set cj/term-map "t" #'cj/term-toggle)
 
+(defun cj/term-send-C-SPC ()
+  "Forward C-SPC (NUL) to the terminal instead of setting an Emacs mark.
+
+ghostel forwards the `C-@' event but not the distinct `C-SPC' event GUI
+Emacs produces, so a bare C-SPC in a ghostel buffer falls through to the
+global `set-mark-command'.  That sets an Emacs region in the terminal buffer
+that follows point as output streams (a stuck \"selection\" C-g / Escape
+can't clear) and, worse, never reaches tmux -- so tmux copy-mode's
+begin-selection (C-Space) never starts and M-w then copies nothing.
+Forwarding NUL makes C-Space behave like a terminal key."
+  (interactive)
+  (ghostel-send-string "\C-@"))
+
 (defun cj/term-install-keys ()
-  "Make `C-;' resolve as the personal keymap inside ghostel buffers, and bind
-the F-key toggles so they reach Emacs from inside a terminal buffer."
+  "Make `C-;' resolve as the personal keymap inside ghostel buffers, bind the
+F12 toggle, and forward C-SPC so it reaches the terminal (see
+`cj/term-send-C-SPC')."
   (when (boundp 'ghostel-mode-map)
     (keymap-set ghostel-mode-map "C-;" cj/custom-keymap)
-    (keymap-set ghostel-mode-map "<f12>" #'cj/term-toggle)))
+    (keymap-set ghostel-mode-map "<f12>" #'cj/term-toggle)
+    (keymap-set ghostel-mode-map "C-SPC" #'cj/term-send-C-SPC)))
 
 (cj/term-install-keys)
 (with-eval-after-load 'ghostel
