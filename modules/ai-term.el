@@ -74,6 +74,8 @@
 
 (declare-function ghostel "ghostel" (&optional arg))
 (declare-function ghostel-send-string "ghostel" (string))
+(declare-function ghostel--rebuild-semi-char-keymap "ghostel" ())
+(defvar ghostel-keymap-exceptions)
 (defvar ghostel-mode-map)
 (defvar ghostel-buffer-name)
 (defvar ghostel-buffer-name-function)
@@ -923,7 +925,16 @@ interrupt work in progress.  Bound to M-<f9> (primary) and C-S-<f9>."
   (keymap-set ghostel-mode-map "<f9>"     #'cj/ai-term)
   (keymap-set ghostel-mode-map "C-<f9>"   #'cj/ai-term-pick-project)
   (keymap-set ghostel-mode-map "M-<f9>"   #'cj/ai-term-close)
-  (keymap-set ghostel-mode-map "C-S-<f9>" #'cj/ai-term-close))
+  (keymap-set ghostel-mode-map "C-S-<f9>" #'cj/ai-term-close)
+  ;; The bindings above live in `ghostel-mode-map', but in semi-char mode
+  ;; ghostel's own `ghostel-semi-char-mode-map' forwards every key not in
+  ;; `ghostel-keymap-exceptions' to the pty -- and that map outranks the
+  ;; major-mode map, so it would swallow the F9 family before the bindings
+  ;; above fire.  Add the family to the exceptions and rebuild the semi-char
+  ;; map so the keys fall through to `ghostel-mode-map' inside agent buffers.
+  (dolist (key '("<f9>" "C-<f9>" "M-<f9>" "C-S-<f9>"))
+    (add-to-list 'ghostel-keymap-exceptions key))
+  (ghostel--rebuild-semi-char-keymap))
 
 ;; ---------- emacsclient: keep opened files off the agent terminal ----------
 ;;
