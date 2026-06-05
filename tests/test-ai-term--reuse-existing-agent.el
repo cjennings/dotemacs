@@ -1,8 +1,8 @@
-;;; test-ai-vterm--reuse-existing-agent.el --- Tests for reuse-existing-agent action -*- lexical-binding: t; -*-
+;;; test-ai-term--reuse-existing-agent.el --- Tests for reuse-existing-agent action -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 ;; The action looks for any window in the selected frame whose buffer
-;; satisfies `cj/--ai-vterm-buffer-p'.  When found, swaps that
+;; satisfies `cj/--ai-term-buffer-p'.  When found, swaps that
 ;; window's buffer for the one being displayed and returns the
 ;; window.  When not found, returns nil so the next action in the
 ;; chain runs.
@@ -16,10 +16,10 @@
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
-(require 'ai-vterm)
-(require 'testutil-vterm-buffers)
+(require 'ai-term)
+(require 'testutil-ghostel-buffers)
 
-(ert-deftest test-ai-vterm--reuse-existing-agent-swaps-buffer-when-window-exists ()
+(ert-deftest test-ai-term--reuse-existing-agent-swaps-buffer-when-window-exists ()
   "Normal: an agent window exists -> swap its buffer, return the window."
   (cj/test--kill-agent-buffers)
   (save-window-excursion
@@ -30,23 +30,23 @@
       (unwind-protect
           (progn
             (set-window-buffer split existing)
-            (let ((result (cj/--ai-vterm-reuse-existing-agent new-buf nil)))
+            (let ((result (cj/--ai-term-reuse-existing-agent new-buf nil)))
               (should (eq result split))
               (should (eq (window-buffer split) new-buf))))
         (kill-buffer existing)
         (kill-buffer new-buf)))))
 
-(ert-deftest test-ai-vterm--reuse-existing-agent-returns-nil-when-no-agent-window ()
+(ert-deftest test-ai-term--reuse-existing-agent-returns-nil-when-no-agent-window ()
   "Boundary: no agent window in frame -> nil (chain continues to next action)."
   (cj/test--kill-agent-buffers)
   (save-window-excursion
     (delete-other-windows)
     (let ((new-buf (get-buffer-create "agent [no-existing]")))
       (unwind-protect
-          (should (null (cj/--ai-vterm-reuse-existing-agent new-buf nil)))
+          (should (null (cj/--ai-term-reuse-existing-agent new-buf nil)))
         (kill-buffer new-buf)))))
 
-(ert-deftest test-ai-vterm--reuse-existing-agent-leaves-non-agent-windows-alone ()
+(ert-deftest test-ai-term--reuse-existing-agent-leaves-non-agent-windows-alone ()
   "Boundary: only non-agent windows in frame -> nil; other windows untouched."
   (cj/test--kill-agent-buffers)
   (save-window-excursion
@@ -58,7 +58,7 @@
           (progn
             (set-window-buffer (selected-window) code-buf)
             (set-window-buffer other-win code-buf)
-            (let ((result (cj/--ai-vterm-reuse-existing-agent
+            (let ((result (cj/--ai-term-reuse-existing-agent
                            new-agent nil)))
               (should (null result))
               (should (eq (window-buffer (selected-window)) code-buf))
@@ -66,7 +66,7 @@
         (kill-buffer code-buf)
         (kill-buffer new-agent)))))
 
-(ert-deftest test-ai-vterm--reuse-existing-agent-preserves-non-agent-window-when-swapping ()
+(ert-deftest test-ai-term--reuse-existing-agent-preserves-non-agent-window-when-swapping ()
   "Normal: swap agent window only; the other window keeps its buffer.
 
 This is the C-F9-from-agent regression: with agent at the bottom
@@ -86,7 +86,7 @@ buffer, not the top window's."
             (set-window-buffer bottom-win agent-a)
             ;; Focus the agent window -- this is the regression scenario.
             (select-window bottom-win)
-            (let ((result (cj/--ai-vterm-reuse-existing-agent
+            (let ((result (cj/--ai-term-reuse-existing-agent
                            agent-b nil)))
               (should (eq result bottom-win))
               (should (eq (window-buffer bottom-win) agent-b))
@@ -95,5 +95,5 @@ buffer, not the top window's."
         (kill-buffer agent-a)
         (kill-buffer agent-b)))))
 
-(provide 'test-ai-vterm--reuse-existing-agent)
-;;; test-ai-vterm--reuse-existing-agent.el ends here
+(provide 'test-ai-term--reuse-existing-agent)
+;;; test-ai-term--reuse-existing-agent.el ends here

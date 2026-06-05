@@ -1,4 +1,4 @@
-;;; ai-vterm.el --- In-Emacs AI-agent launcher with vertical-split vterm -*- lexical-binding: t; -*-
+;;; ai-term.el --- In-Emacs AI-agent launcher with vertical-split terminal -*- lexical-binding: t; -*-
 
 ;; Author: Craig Jennings <c@cjennings.net>
 
@@ -7,7 +7,7 @@
 ;; Layer: 3 (Domain Workflow).
 ;; Category: D.
 ;; Load shape: eager.
-;; Eager reason: registers four global keys for the AI-agent vterm launcher; a
+;; Eager reason: registers four global keys for the AI-agent terminal launcher; a
 ;;   command-loaded deferral candidate.
 ;; Top-level side effects: four global key bindings.
 ;; Runtime requires: cl-lib, seq, cj-window-geometry-lib, cj-window-toggle-lib,
@@ -15,7 +15,7 @@
 ;; Direct test load: yes.
 ;;
 ;; Picks an AI-agent project (a dir under ~/.emacs.d, ~/code/*, or
-;; ~/projects/* containing .ai/protocols.org), opens or reuses a vterm
+;; ~/projects/* containing .ai/protocols.org), opens or reuses a terminal
 ;; buffer named "agent [<basename>]", sends the agent's startup
 ;; instruction to it, and routes the buffer to a side window via
 ;; display-buffer-alist.  When the frame already has a window forming the
@@ -24,23 +24,23 @@
 ;; window in; toggling off restores the displaced buffer to the slot.
 ;; Otherwise placement is a host-aware split: a right-side split at 50%
 ;; width on a desktop, a bottom split at 75% height on a laptop (see
-;; `cj/--ai-vterm-default-direction').  Multiple
+;; `cj/--ai-term-default-direction').  Multiple
 ;; projects produce multiple coexisting buffers that share the same
 ;; slot; switching among them is a buffer-switch, not a
 ;; kill-and-recreate.
 ;;
 ;; Each project's agent runs inside a tmux session named
-;; "<cj/ai-vterm-tmux-session-prefix><basename>" (default prefix "aiv-").
-;; The prefix lets `tmux ls' be filtered to AI-vterm's own sessions, so
+;; "<cj/ai-term-tmux-session-prefix><basename>" (default prefix "aiv-").
+;; The prefix lets `tmux ls' be filtered to AI-term's own sessions, so
 ;; after an Emacs crash the project picker can match surviving sessions
 ;; back to their directories: matched projects sort to the top of the
 ;; picker (flagged "[detached]" -- session alive, no Emacs buffer -- or
-;; "[running]" when a live vterm buffer exists), the rest follow in
+;; "[running]" when a live terminal buffer exists), the rest follow in
 ;; alphabetical order.
 ;;
 ;; Four F-key entry points:
 ;;
-;; - F9     `cj/ai-vterm' -- DWIM dispatch.  If an agent buffer is
+;; - F9     `cj/ai-term' -- DWIM dispatch.  If an agent buffer is
 ;;          currently displayed in this frame, F9 toggles it off: when it
 ;;          took over an existing window (a reused slot) the buffer it
 ;;          displaced returns to that slot, when it was split into its own
@@ -48,15 +48,15 @@
 ;;          is buried.  Otherwise, if exactly one agent buffer is alive,
 ;;          F9 re-displays it; if zero or two-plus are alive, F9 falls
 ;;          through to the project picker.
-;; - C-F9   `cj/ai-vterm-pick-project' -- always show the project
+;; - C-F9   `cj/ai-term-pick-project' -- always show the project
 ;;          picker, even when an agent buffer is currently displayed.
 ;;          Used when the user wants to start a new project session
 ;;          instead of toggling the current one.
-;; - M-F9   `cj/ai-vterm-close' -- gracefully close an agent: kill its
-;;          tmux session (stopping the agent process), then its vterm
+;; - M-F9   `cj/ai-term-close' -- gracefully close an agent: kill its
+;;          tmux session (stopping the agent process), then its terminal
 ;;          buffer and window.  Confirms first.  Targets the current
 ;;          agent, the sole live agent, or prompts among several.
-;; - C-S-F9 `cj/ai-vterm-close' -- same close command, second binding.
+;; - C-S-F9 `cj/ai-term-close' -- same close command, second binding.
 ;;          (M-F9 is the primary; C-S-F9 may be swallowed by the
 ;;          Wayland/PGTK layer on some machines.)
 ;;
@@ -72,65 +72,66 @@
 (require 'cj-window-toggle-lib)
 (require 'host-environment)
 
-(declare-function vterm "vterm" (&optional buffer-name))
-(declare-function vterm-send-string "vterm" (string &optional paste-p))
-(declare-function vterm-send-return "vterm" ())
-(defvar vterm-mode-map)
+(declare-function ghostel "ghostel" (&optional arg))
+(declare-function ghostel-send-string "ghostel" (string))
+(defvar ghostel-mode-map)
+(defvar ghostel-buffer-name)
+(defvar ghostel-buffer-name-function)
 
-(defgroup ai-vterm nil
-  "In-Emacs AI-agent launcher with vertical-split vterm."
+(defgroup ai-term nil
+  "In-Emacs AI-agent launcher with a vertical-split ghostel terminal."
   :group 'tools)
 
-(defcustom cj/ai-vterm-agent-command
+(defcustom cj/ai-term-agent-command
   "claude \"Read .ai/protocols.org and follow all instructions.\""
-  "Shell command sent to a fresh AI-vterm to start the agent.
+  "Shell command sent to a fresh AI-term to start the agent.
 
 The default invokes the Claude Code CLI; set it to whatever terminal
 agent you run (aider, an open-source LLM TUI, etc.)."
   :type 'string
-  :group 'ai-vterm)
+  :group 'ai-term)
 
-(defvar cj/--ai-vterm-suppress-tmux nil
-  "When non-nil, the generic vterm tmux-launch hook skips its auto-tmux step.
+(defvar cj/--ai-term-suppress-tmux nil
+  "When non-nil, the generic ghostel tmux-launch hook skips its auto-tmux step.
 
-ai-vterm dynamically binds this around `(vterm)' so the hook in
-vterm-config.el doesn't send a bare \"tmux\\n\" before the named
+ai-term dynamically binds this around `(ghostel)' so the hook in
+term-config.el doesn't send a bare \"tmux\\n\" before the named
 session launch command runs.  The hook reads the variable via
 `bound-and-true-p' so loading order between the two modules doesn't
 matter.")
 
-(defcustom cj/ai-vterm-project-roots
+(defcustom cj/ai-term-project-roots
   (list (expand-file-name "~/.emacs.d"))
   "Directories that are themselves AI-agent projects.
 Each entry is included as a candidate when it exists and contains
 .ai/protocols.org.  Use this for single-project roots like ~/.emacs.d."
   :type '(repeat directory)
-  :group 'ai-vterm)
+  :group 'ai-term)
 
-(defcustom cj/ai-vterm-container-roots
+(defcustom cj/ai-term-container-roots
   (list (expand-file-name "~/code")
         (expand-file-name "~/projects"))
   "Directories whose immediate children are scanned for agent projects.
 Each entry's child directories are included as candidates when they
 contain .ai/protocols.org.  Use this for container dirs like ~/code."
   :type '(repeat directory)
-  :group 'ai-vterm)
+  :group 'ai-term)
 
-(defcustom cj/ai-vterm-tmux-session-prefix "aiv-"
-  "Prefix prepended to tmux session names AI-vterm creates.
+(defcustom cj/ai-term-tmux-session-prefix "aiv-"
+  "Prefix prepended to tmux session names AI-term creates.
 
 The session name for a project is this prefix followed by the
 project's basename (whitespace collapsed to hyphens).  The prefix
-lets `tmux ls' output be filtered down to AI-vterm's own sessions --
+lets `tmux ls' output be filtered down to AI-term's own sessions --
 so after an Emacs crash the project picker can match surviving
 sessions back to their directories and surface them first.  Pick
 something unlikely to collide with hand-rolled tmux sessions; the
-default \"aiv-\" is short for \"ai-vterm\"."
+default \"aiv-\" is short for \"ai-term\"."
   :type 'string
-  :group 'ai-vterm)
+  :group 'ai-term)
 
-(defcustom cj/ai-vterm-tmux-window-name "ai"
-  "Name given to the first tmux window in an AI-vterm session.
+(defcustom cj/ai-term-tmux-window-name "ai"
+  "Name given to the first tmux window in an AI-term session.
 
 Passed as `tmux new-session -n', so the window running the AI tool
 shows up as this name in `tmux ls' / the status line.  A later
@@ -138,98 +139,98 @@ window opened by hand (e.g. a shell) auto-names after its command,
 so the two read distinctly instead of both showing up as the
 running program."
   :type 'string
-  :group 'ai-vterm)
+  :group 'ai-term)
 
-(defconst cj/--ai-vterm-name-prefix "agent ["
-  "Buffer-name prefix shared by all AI-vterm buffers.
+(defconst cj/--ai-term-name-prefix "agent ["
+  "Buffer-name prefix shared by all AI-term buffers.
 
 Single source of truth for both buffer construction in
-`cj/--ai-vterm-buffer-name' and detection in
-`cj/--ai-vterm-buffer-p'.  The display-buffer-alist rule keys on the
+`cj/--ai-term-buffer-name' and detection in
+`cj/--ai-term-buffer-p'.  The display-buffer-alist rule keys on the
 escaped form \"\\\\`agent \\\\[\" -- they must stay in sync.")
 
-(defun cj/--ai-vterm-buffer-name (dir)
-  "Return the AI-vterm buffer name for project directory DIR.
+(defun cj/--ai-term-buffer-name (dir)
+  "Return the AI-term buffer name for project directory DIR.
 
 The name pattern is \"agent [<basename>]\".  The display-buffer-alist
 rule keys on the literal prefix \"agent [\", so changing the format
 breaks routing to the right-side window."
   (format "%s%s]"
-          cj/--ai-vterm-name-prefix
+          cj/--ai-term-name-prefix
           (file-name-nondirectory (directory-file-name dir))))
 
-(defun cj/--ai-vterm-buffer-p (buffer)
-  "Return non-nil when BUFFER is an AI-vterm buffer.
+(defun cj/--ai-term-buffer-p (buffer)
+  "Return non-nil when BUFFER is an AI-term buffer.
 
 A buffer qualifies when its name starts with the literal prefix in
-`cj/--ai-vterm-name-prefix' (\"agent [\").  The check is anchored at
+`cj/--ai-term-name-prefix' (\"agent [\").  The check is anchored at
 the start so names like \"foo agent [bar]\" do not match."
   (and (bufferp buffer)
        (buffer-live-p buffer)
-       (string-prefix-p cj/--ai-vterm-name-prefix (buffer-name buffer))))
+       (string-prefix-p cj/--ai-term-name-prefix (buffer-name buffer))))
 
-(defun cj/--ai-vterm-agent-buffers ()
-  "Return the live AI-vterm buffers in `buffer-list' order.
+(defun cj/--ai-term-agent-buffers ()
+  "Return the live AI-term buffers in `buffer-list' order.
 
 Order matches `buffer-list' on the selected frame, which is most-
-recently-selected first.  Non-AI-vterm buffers are filtered out via
-`cj/--ai-vterm-buffer-p'."
-  (seq-filter #'cj/--ai-vterm-buffer-p (buffer-list)))
+recently-selected first.  Non-AI-term buffers are filtered out via
+`cj/--ai-term-buffer-p'."
+  (seq-filter #'cj/--ai-term-buffer-p (buffer-list)))
 
-(defun cj/--ai-vterm-most-recent-non-agent-buffer ()
+(defun cj/--ai-term-most-recent-non-agent-buffer ()
   "Return the most-recently-selected live non-agent buffer, or nil.
 
 Walks `buffer-list' (most-recently-selected first) and returns the
-first buffer that is not an AI-vterm agent buffer (per
-`cj/--ai-vterm-buffer-p') and is not an internal buffer (name starting
+first buffer that is not an AI-term agent buffer (per
+`cj/--ai-term-buffer-p') and is not an internal buffer (name starting
 with a space).  Used by the single-window F9 toggle-off so dismissing a
 full-frame agent returns to the file the user was working in (e.g.
 todo.org) rather than swapping in another agent."
   (seq-find (lambda (b)
               (and (buffer-live-p b)
-                   (not (cj/--ai-vterm-buffer-p b))
+                   (not (cj/--ai-term-buffer-p b))
                    (not (string-prefix-p " " (buffer-name b)))))
             (buffer-list)))
 
-(defun cj/--ai-vterm-displayed-agent-window (&optional frame)
-  "Return a window in FRAME currently displaying an AI-vterm buffer, or nil.
+(defun cj/--ai-term-displayed-agent-window (&optional frame)
+  "Return a window in FRAME currently displaying an AI-term buffer, or nil.
 
 FRAME defaults to the selected frame.  When more than one window in
 the frame shows an agent buffer, the first one in `window-list' order
 is returned.  The minibuffer is excluded from the search."
   (seq-find (lambda (w)
-              (cj/--ai-vterm-buffer-p (window-buffer w)))
+              (cj/--ai-term-buffer-p (window-buffer w)))
             (window-list (or frame (selected-frame)) 'never)))
 
-(defun cj/--ai-vterm-tmux-session-name (dir)
+(defun cj/--ai-term-tmux-session-name (dir)
   "Return the tmux session name for project directory DIR.
 
-`cj/ai-vterm-tmux-session-prefix' followed by DIR's basename, sanitized
+`cj/ai-term-tmux-session-prefix' followed by DIR's basename, sanitized
 to a form tmux won't re-mangle: runs of whitespace become a single
 hyphen, and `.' / `:' become `_'.  tmux disallows `.' and `:' in
 session names and silently rewrites them to `_', so a project like
 `.emacs.d' really runs in session `aiv-_emacs_d', not `aiv-.emacs.d' --
 sanitizing up front keeps the computed name matching the live one (and
-keeps `cj/--ai-vterm-session-active-p' and the crash-recovery picker
+keeps `cj/--ai-term-session-active-p' and the crash-recovery picker
 from missing such projects).  The prefix lets `tmux ls' output be
-filtered to AI-vterm's own sessions (see
-`cj/--ai-vterm-live-tmux-sessions')."
-  (concat cj/ai-vterm-tmux-session-prefix
+filtered to AI-term's own sessions (see
+`cj/--ai-term-live-tmux-sessions')."
+  (concat cj/ai-term-tmux-session-prefix
           (replace-regexp-in-string
            "[.:]" "_"
            (replace-regexp-in-string
             "[[:space:]]+" "-"
             (file-name-nondirectory (directory-file-name dir))))))
 
-(defun cj/--ai-vterm-live-tmux-sessions ()
-  "Return live tmux session names that carry the AI-vterm prefix.
+(defun cj/--ai-term-live-tmux-sessions ()
+  "Return live tmux session names that carry the AI-term prefix.
 
 Runs `tmux list-sessions'.  Returns the names beginning with
-`cj/ai-vterm-tmux-session-prefix', or nil when tmux is not installed,
+`cj/ai-term-tmux-session-prefix', or nil when tmux is not installed,
 no server is running, or the command exits non-zero -- the picker
 treats nil as \"no sessions to surface\" and falls back to a plain
 alphabetical list."
-  (let* ((prefix cj/ai-vterm-tmux-session-prefix)
+  (let* ((prefix cj/ai-term-tmux-session-prefix)
          (exit nil)
          (output (with-temp-buffer
                    (setq exit (condition-case nil
@@ -242,105 +243,105 @@ alphabetical list."
       (seq-filter (lambda (name) (string-prefix-p prefix name))
                   (split-string output "\n" t)))))
 
-(defun cj/--ai-vterm-session-active-p (dir sessions)
+(defun cj/--ai-term-session-active-p (dir sessions)
   "Return non-nil when DIR's tmux session name is in SESSIONS.
 
-SESSIONS is the list from `cj/--ai-vterm-live-tmux-sessions' (or nil).
+SESSIONS is the list from `cj/--ai-term-live-tmux-sessions' (or nil).
 The match is forward: DIR's expected session name is computed and
 looked up in SESSIONS, so the lossy whitespace->hyphen transform in
-`cj/--ai-vterm-tmux-session-name' never needs reversing."
-  (and (member (cj/--ai-vterm-tmux-session-name dir) sessions) t))
+`cj/--ai-term-tmux-session-name' never needs reversing."
+  (and (member (cj/--ai-term-tmux-session-name dir) sessions) t))
 
-(defun cj/--ai-vterm-launch-command (dir)
+(defun cj/--ai-term-launch-command (dir)
   "Return the shell command line that runs the AI tool in a project tmux session.
 
 Uses `tmux new-session -A' so a second F9 on the same project reattaches
 to the running session instead of spawning a new one.  The session name
-comes from `cj/--ai-vterm-tmux-session-name'; the first window is named
-`cj/ai-vterm-tmux-window-name' (default \"ai\") so a later hand-opened
+comes from `cj/--ai-term-tmux-session-name'; the first window is named
+`cj/ai-term-tmux-window-name' (default \"ai\") so a later hand-opened
 window auto-names after its command and the two read distinctly.
 
 The shell command run on first creation is
-  <cj/ai-vterm-agent-command>; exec bash
+  <cj/ai-term-agent-command>; exec bash
 so the tmux window survives the AI command exiting -- the session stays
 alive with a bare bash prompt for recovery, and reattach works the same way."
-  (let ((session (cj/--ai-vterm-tmux-session-name dir))
+  (let ((session (cj/--ai-term-tmux-session-name dir))
         (start-dir (expand-file-name dir)))
     ;; Pass the inner shell-command-string through `shell-quote-argument'
     ;; so any single quotes embedded in a user-customized
-    ;; `cj/ai-vterm-agent-command' don't break the literal single-quote
+    ;; `cj/ai-term-agent-command' don't break the literal single-quote
     ;; wrap below.  The default value carries embedded double quotes
     ;; (\"Read .ai/protocols.org and follow all instructions.\") which
     ;; was safe in the prior shape but a single-quoted custom value
     ;; silently broke the shell parse.
     (format "tmux new-session -A -s %s -n %s -c %s %s"
             (shell-quote-argument session)
-            (shell-quote-argument cj/ai-vterm-tmux-window-name)
+            (shell-quote-argument cj/ai-term-tmux-window-name)
             (shell-quote-argument start-dir)
             (shell-quote-argument
-             (concat cj/ai-vterm-agent-command "; exec bash")))))
+             (concat cj/ai-term-agent-command "; exec bash")))))
 
-(defun cj/--ai-vterm-has-marker-p (dir)
+(defun cj/--ai-term-has-marker-p (dir)
   "Return non-nil when DIR contains .ai/protocols.org."
   (file-exists-p (expand-file-name ".ai/protocols.org" dir)))
 
-(defun cj/--ai-vterm-candidates ()
+(defun cj/--ai-term-candidates ()
   "Return the list of AI-agent project paths.
 
-Each entry of `cj/ai-vterm-project-roots' contributes itself when it
+Each entry of `cj/ai-term-project-roots' contributes itself when it
 exists and contains .ai/protocols.org.  Each entry of
-`cj/ai-vterm-container-roots' contributes its immediate child
+`cj/ai-term-container-roots' contributes its immediate child
 directories that contain .ai/protocols.org.
 
 Returns absolute paths.  Nonexistent roots are skipped silently."
   (let (result)
-    (dolist (root cj/ai-vterm-project-roots)
+    (dolist (root cj/ai-term-project-roots)
       (let ((expanded (expand-file-name root)))
         (when (and (file-directory-p expanded)
-                   (cj/--ai-vterm-has-marker-p expanded))
+                   (cj/--ai-term-has-marker-p expanded))
           (push expanded result))))
-    (dolist (root cj/ai-vterm-container-roots)
+    (dolist (root cj/ai-term-container-roots)
       (let ((expanded (expand-file-name root)))
         (when (file-directory-p expanded)
           (dolist (child (directory-files
                           expanded t directory-files-no-dot-files-regexp t))
             (when (and (file-directory-p child)
-                       (cj/--ai-vterm-has-marker-p child))
+                       (cj/--ai-term-has-marker-p child))
               (push child result))))))
     (nreverse result)))
 
-(defvar cj/--ai-vterm-mru nil
-  "Project dirs opened via the AI-vterm launcher this session, newest first.
+(defvar cj/--ai-term-mru nil
+  "Project dirs opened via the AI-term launcher this session, newest first.
 
-Maintained by `cj/--ai-vterm-record-mru' (called from
-`cj/--ai-vterm-show-or-create') and consumed by
-`cj/--ai-vterm-sort-candidates' so the project picker puts
+Maintained by `cj/--ai-term-record-mru' (called from
+`cj/--ai-term-show-or-create') and consumed by
+`cj/--ai-term-sort-candidates' so the project picker puts
 recently-opened projects at the top of the active-sessions group.
 In-memory only -- not persisted across Emacs restarts.")
 
-(defun cj/--ai-vterm-record-mru (dir)
-  "Move DIR to the front of `cj/--ai-vterm-mru'.
+(defun cj/--ai-term-record-mru (dir)
+  "Move DIR to the front of `cj/--ai-term-mru'.
 
 DIR is normalized with `expand-file-name' + `directory-file-name' so a
 trailing slash or `~' form doesn't create a duplicate entry; any prior
 occurrence is removed first, keeping the list a true MRU order."
   (let ((d (directory-file-name (expand-file-name dir))))
-    (setq cj/--ai-vterm-mru (cons d (delete d cj/--ai-vterm-mru)))))
+    (setq cj/--ai-term-mru (cons d (delete d cj/--ai-term-mru)))))
 
-(defun cj/--ai-vterm-mru-rank (dir)
-  "Return DIR's index in `cj/--ai-vterm-mru', or nil when it isn't there.
+(defun cj/--ai-term-mru-rank (dir)
+  "Return DIR's index in `cj/--ai-term-mru', or nil when it isn't there.
 
-DIR is normalized the same way `cj/--ai-vterm-record-mru' stores
+DIR is normalized the same way `cj/--ai-term-record-mru' stores
 entries, so a trailing slash doesn't defeat the lookup."
-  (seq-position cj/--ai-vterm-mru
+  (seq-position cj/--ai-term-mru
                 (directory-file-name (expand-file-name dir))))
 
-(defun cj/--ai-vterm-sort-candidates (dirs sessions)
+(defun cj/--ai-term-sort-candidates (dirs sessions)
   "Order DIRS for the project picker.
 
 DIRS with a live tmux session in SESSIONS (per
-`cj/--ai-vterm-session-active-p') come first, ordered most-recently-
-opened first (per `cj/--ai-vterm-mru'); active dirs not opened yet this
+`cj/--ai-term-session-active-p') come first, ordered most-recently-
+opened first (per `cj/--ai-term-mru'); active dirs not opened yet this
 session fall after them, alphabetical by abbreviated path.  DIRS with no
 session follow, always alphabetical.  SESSIONS nil means nothing is
 active, so the result is a plain alphabetical list; an empty MRU makes
@@ -349,98 +350,98 @@ the active group alphabetical too."
                   (string< (abbreviate-file-name a) (abbreviate-file-name b))))
          (mru-then-alpha
           (lambda (a b)
-            (let ((ra (cj/--ai-vterm-mru-rank a))
-                  (rb (cj/--ai-vterm-mru-rank b)))
+            (let ((ra (cj/--ai-term-mru-rank a))
+                  (rb (cj/--ai-term-mru-rank b)))
               (cond ((and ra rb) (< ra rb))
                     (ra t)
                     (rb nil)
                     (t (funcall alpha a b))))))
-         (active-p (lambda (d) (cj/--ai-vterm-session-active-p d sessions)))
+         (active-p (lambda (d) (cj/--ai-term-session-active-p d sessions)))
          (active (seq-filter active-p dirs))
          (inactive (seq-remove active-p dirs)))
     (append (sort active mru-then-alpha) (sort inactive alpha))))
 
-(defun cj/--ai-vterm-process-live-p (buffer)
+(defun cj/--ai-term-process-live-p (buffer)
   "Return non-nil when BUFFER has a live process attached."
   (let ((proc (get-buffer-process buffer)))
     (and proc (process-live-p proc))))
 
-(defcustom cj/ai-vterm-desktop-width 0.5
-  "Default fraction of frame width for the AI-vterm window on a desktop.
+(defcustom cj/ai-term-desktop-width 0.5
+  "Default fraction of frame width for the AI-term window on a desktop.
 
 On a desktop the agent opens as a right-side vertical split (see
-`cj/--ai-vterm-default-direction'), so this fraction is interpreted
-as a window width.  Used by `cj/--ai-vterm-default-size' as the size
-fallback when `cj/--ai-vterm-last-size' is nil (i.e. the user hasn't
+`cj/--ai-term-default-direction'), so this fraction is interpreted
+as a window width.  Used by `cj/--ai-term-default-size' as the size
+fallback when `cj/--ai-term-last-size' is nil (i.e. the user hasn't
 yet toggled off an agent window in this session)."
   :type 'number
-  :group 'ai-vterm)
+  :group 'ai-term)
 
-(defcustom cj/ai-vterm-laptop-height 0.75
-  "Default fraction of frame height for the AI-vterm window on a laptop.
+(defcustom cj/ai-term-laptop-height 0.75
+  "Default fraction of frame height for the AI-term window on a laptop.
 
 On a laptop the agent opens as a bottom horizontal split (see
-`cj/--ai-vterm-default-direction'), so this fraction is interpreted
-as a window height.  Used by `cj/--ai-vterm-default-size' as the size
-fallback when `cj/--ai-vterm-last-size' is nil."
+`cj/--ai-term-default-direction'), so this fraction is interpreted
+as a window height.  Used by `cj/--ai-term-default-size' as the size
+fallback when `cj/--ai-term-last-size' is nil."
   :type 'number
-  :group 'ai-vterm)
+  :group 'ai-term)
 
-(defun cj/--ai-vterm-default-direction ()
+(defun cj/--ai-term-default-direction ()
   "Return the host-appropriate default split direction for the agent window.
 
 `below' on a laptop (bottom horizontal split), `right' on a desktop
 (right-side vertical split).  Detected via `env-laptop-p'."
   (if (env-laptop-p) 'below 'right))
 
-(defun cj/--ai-vterm-default-size ()
+(defun cj/--ai-term-default-size ()
   "Return the host-appropriate default size fraction for the agent window.
 
-`cj/ai-vterm-laptop-height' on a laptop, `cj/ai-vterm-desktop-width'
+`cj/ai-term-laptop-height' on a laptop, `cj/ai-term-desktop-width'
 on a desktop -- pairing with the axis chosen by
-`cj/--ai-vterm-default-direction'."
+`cj/--ai-term-default-direction'."
   (if (env-laptop-p)
-      cj/ai-vterm-laptop-height
-    cj/ai-vterm-desktop-width))
+      cj/ai-term-laptop-height
+    cj/ai-term-desktop-width))
 
-(defvar cj/--ai-vterm-last-direction nil
-  "Last user-chosen direction for the AI-vterm display.
+(defvar cj/--ai-term-last-direction nil
+  "Last user-chosen direction for the AI-term display.
 
 Symbol: right, below, or left.  `above' is never stored -- the agent
 window must not be remembered at the top of the frame, so a top
 placement falls back to the host default at capture time.  nil means no
 agent window has been toggled off yet this session, so the default
 direction applies.  Captured at toggle-off by
-`cj/--ai-vterm-capture-state' and consumed by
-`cj/--ai-vterm-display-saved'.")
+`cj/--ai-term-capture-state' and consumed by
+`cj/--ai-term-display-saved'.")
 
-(defvar cj/--ai-vterm-last-was-bury nil
+(defvar cj/--ai-term-last-was-bury nil
   "Non-nil when the last F9 toggle-off used `bury-buffer'.
 
-Set by `cj/ai-vterm' in its `toggle-off' branch: t when the agent
+Set by `cj/ai-term' in its `toggle-off' branch: t when the agent
 window was the only window in the frame (so toggle-off buried
 without deleting), nil when the window was deleted.  Consumed by
-`cj/--ai-vterm-display-saved' to decide between restoring the
+`cj/--ai-term-display-saved' to decide between restoring the
 buried agent in the current window (the only one) or splitting per
 the saved direction.")
 
-(defvar cj/--ai-vterm-last-hidden-buffer nil
+(defvar cj/--ai-term-last-hidden-buffer nil
   "The agent buffer hidden by the most recent F9 toggle-off.
 
-Captured in `cj/ai-vterm' just before an agent window is torn down, and
-consumed by `cj/--ai-vterm-dispatch' so the next toggle-on reopens the
+Captured in `cj/ai-term' just before an agent window is torn down, and
+consumed by `cj/--ai-term-dispatch' so the next toggle-on reopens the
 SAME agent that was on screen rather than whichever agent happens to be
 most-recent in `buffer-list'.  Without this, hiding one agent and
 reopening could surface a different one when several agents are alive --
 the \"the displayed buffer changes\" bug.  Falls back to the buffer-list
 MRU when nil or when the remembered buffer has been killed.")
 
-(defvar cj/--ai-vterm-last-size nil
-  "Last user-chosen body size for the AI-vterm display.
+(defvar cj/--ai-term-last-size nil
+  "Last user-chosen body size for the AI-term display.
 
-Positive integer: body-columns when `cj/--ai-vterm-last-direction'
+Positive integer: body-columns when `cj/--ai-term-last-direction'
 is right or left, body-lines when below or above.  nil means use
-the host-aware default from `cj/--ai-vterm-default-size' (a float
+the host-aware default from `cj/--ai-term-default-size' (a float
 fraction).
 
 Body size, not total size, because total-width includes the
@@ -460,27 +461,27 @@ and a fraction-of-frame produces the wrong size on replay
 (squeezes the other windows).  An integer is unambiguous, at the
 cost of not auto-scaling if the frame itself resizes.")
 
-(defun cj/--ai-vterm-capture-state (window)
+(defun cj/--ai-term-capture-state (window)
   "Capture WINDOW's direction and size into module-level state.
 
-Sets `cj/--ai-vterm-last-direction' and `cj/--ai-vterm-last-size'
+Sets `cj/--ai-term-last-direction' and `cj/--ai-term-last-size'
 so a subsequent F9 display can restore the user's chosen orientation
 and size.  Called at toggle-off (just before the window is torn
 down).  The default direction is host-aware via
-`cj/--ai-vterm-default-direction' (used only when WINDOW fills its
+`cj/--ai-term-default-direction' (used only when WINDOW fills its
 frame and no direction can be inferred).  Does nothing when WINDOW
 is not live."
   (cj/window-toggle-capture-state
-   window (cj/--ai-vterm-default-direction)
-   'cj/--ai-vterm-last-direction
-   'cj/--ai-vterm-last-size
+   window (cj/--ai-term-default-direction)
+   'cj/--ai-term-last-direction
+   'cj/--ai-term-last-size
    '(right below left)))
 
-(defun cj/--ai-vterm-reuse-existing-agent (buffer _alist)
+(defun cj/--ai-term-reuse-existing-agent (buffer _alist)
   "Display-buffer action: reuse any window in this frame already showing
 an agent buffer.
 
-Looks up `cj/--ai-vterm-displayed-agent-window' on the selected
+Looks up `cj/--ai-term-displayed-agent-window' on the selected
 frame.  When an agent window exists, replaces its buffer with BUFFER
 and returns the window.  When none exists, returns nil so the next
 action in the chain runs.
@@ -491,12 +492,12 @@ above the agent split) when the user is focused in agent and
 swaps projects via C-F9.  The selective lookup here keeps non-agent
 windows undisturbed and preserves the user's split geometry across
 project changes."
-  (let ((win (cj/--ai-vterm-displayed-agent-window)))
+  (let ((win (cj/--ai-term-displayed-agent-window)))
     (when win
       (set-window-buffer win buffer)
       win)))
 
-(defun cj/--ai-vterm-reuse-edge-window (buffer _alist)
+(defun cj/--ai-term-reuse-edge-window (buffer _alist)
   "Display-buffer action: reuse the existing window forming the target half.
 
 When the frame already holds a window forming the half the agent would
@@ -507,7 +508,7 @@ window in.  The target half is found by `cj/window-at-edge'.
 
 Returns nil when there is no such half to reuse (a single-window frame,
 or a layout split on the other axis), so the chain falls through to
-`cj/--ai-vterm-display-saved', which splits a fresh half.  Also returns
+`cj/--ai-term-display-saved', which splits a fresh half.  Also returns
 nil when the edge window is dedicated -- those are not ours to replace.
 
 Records the displaced buffer through `display-buffer-record-window'
@@ -516,43 +517,43 @@ called at toggle-off puts that buffer back into the slot instead of
 deleting the window -- toggling swaps the slot's buffer between the
 displaced buffer and the agent, never changing the window count.
 
-Runs after `cj/--ai-vterm-reuse-existing-agent', so an agent already on
+Runs after `cj/--ai-term-reuse-existing-agent', so an agent already on
 screen has been handled already; the window reused here always holds a
 non-agent buffer, which is replaced (it stays alive, just unshown)."
-  (let* ((direction (or cj/--ai-vterm-last-direction
-                        (cj/--ai-vterm-default-direction)))
+  (let* ((direction (or cj/--ai-term-last-direction
+                        (cj/--ai-term-default-direction)))
          (win (cj/window-at-edge direction)))
     (when (and win (not (window-dedicated-p win)))
       (display-buffer-record-window 'reuse win buffer)
       (set-window-buffer win buffer)
       win)))
 
-(defun cj/--ai-vterm-display-saved (buffer alist)
+(defun cj/--ai-term-display-saved (buffer alist)
   "Display-buffer action: split per saved direction and size.
 
 When the prior toggle-off was a bury (single-window state, flagged
-via `cj/--ai-vterm-last-was-bury') and the frame is still single-
+via `cj/--ai-term-last-was-bury') and the frame is still single-
 window, restore the agent into the selected window in place rather
 than splitting -- preserves the user's lone-window layout across
 F9 toggles.
 
 Otherwise delegates to `cj/window-toggle-display-saved' against the
 F9 state vars, falling back to the host-aware defaults from
-`cj/--ai-vterm-default-direction' and `cj/--ai-vterm-default-size'."
+`cj/--ai-term-default-direction' and `cj/--ai-term-default-size'."
   (cond
-   ((and cj/--ai-vterm-last-was-bury (one-window-p))
-    (setq cj/--ai-vterm-last-was-bury nil)
+   ((and cj/--ai-term-last-was-bury (one-window-p))
+    (setq cj/--ai-term-last-was-bury nil)
     (let ((win (selected-window)))
       (set-window-buffer win buffer)
       win))
    (t
-    (setq cj/--ai-vterm-last-was-bury nil)
+    (setq cj/--ai-term-last-was-bury nil)
     (cj/window-toggle-display-saved
      buffer alist
-     'cj/--ai-vterm-last-direction (cj/--ai-vterm-default-direction)
-     'cj/--ai-vterm-last-size (cj/--ai-vterm-default-size)))))
+     'cj/--ai-term-last-direction (cj/--ai-term-default-direction)
+     'cj/--ai-term-last-size (cj/--ai-term-default-size)))))
 
-(defun cj/--ai-vterm-display-rule-list ()
+(defun cj/--ai-term-display-rule-list ()
   "Return the `display-buffer-alist' entry list installed by this module.
 
 The single rule routes any buffer whose name starts with \"agent [\"
@@ -560,15 +561,15 @@ through four actions in order:
 
 1. `display-buffer-reuse-window' -- if the same buffer is already
    visible in any window, focus that one.
-2. `cj/--ai-vterm-reuse-existing-agent' -- otherwise, if any
+2. `cj/--ai-term-reuse-existing-agent' -- otherwise, if any
    window in this frame already shows an agent-prefixed buffer,
    swap its buffer for the new one (preserves geometry across
    project changes via C-F9).
-3. `cj/--ai-vterm-reuse-edge-window' -- otherwise, if the frame
+3. `cj/--ai-term-reuse-edge-window' -- otherwise, if the frame
    already has a window forming the half the agent would occupy
    (the right column on a desktop, the bottom row on a laptop),
    reuse it instead of splitting a third window in.
-4. `cj/--ai-vterm-display-saved' -- otherwise (single-window frame,
+4. `cj/--ai-term-display-saved' -- otherwise (single-window frame,
    or a layout split on the other axis), split per the saved
    direction + size from the last toggle-off (or defaults when no
    capture has happened this session).
@@ -584,59 +585,67 @@ steal any non-selected window (e.g. a code window above an agent
 split) when the user is focused in agent and switches projects."
   '(("\\`agent \\["
      (display-buffer-reuse-window
-      cj/--ai-vterm-reuse-existing-agent
-      cj/--ai-vterm-reuse-edge-window
-      cj/--ai-vterm-display-saved)
+      cj/--ai-term-reuse-existing-agent
+      cj/--ai-term-reuse-edge-window
+      cj/--ai-term-display-saved)
      (inhibit-same-window . t))))
 
-(dolist (entry (cj/--ai-vterm-display-rule-list))
+(dolist (entry (cj/--ai-term-display-rule-list))
   (add-to-list 'display-buffer-alist entry))
 
-(defun cj/--ai-vterm-show-or-create (dir name)
-  "Show or create the AI-vterm buffer for project DIR with buffer NAME.
+(defun cj/--ai-term-show-or-create (dir name)
+  "Show or create the AI-term buffer for project DIR with buffer NAME.
 
 If a buffer named NAME exists with a live process, display it.  If
 the buffer exists but its process is dead, kill it and recreate.  If
-no such buffer exists, create a new vterm in DIR and send the
-project's tmux launch command (see `cj/--ai-vterm-launch-command') so
+no such buffer exists, create a new ghostel terminal in DIR and send
+the project's tmux launch command (see `cj/--ai-term-launch-command') so
 the same project basename reattaches across Emacs restarts.
 
-The dynamic binding of `cj/--ai-vterm-suppress-tmux' around `(vterm)'
-suppresses the generic tmux-launch hook in vterm-config.el so
+The dynamic binding of `cj/--ai-term-suppress-tmux' around `(ghostel)'
+suppresses the generic tmux-launch hook in term-config.el so
 it doesn't fire a bare \"tmux\\n\" before the project-named launch
 command runs.
 
-Records DIR in `cj/--ai-vterm-mru' (whichever branch runs) so the
+Records DIR in `cj/--ai-term-mru' (whichever branch runs) so the
 project picker can list recently-opened projects first.  Returns the
 buffer."
-  (cj/--ai-vterm-record-mru dir)
+  (cj/--ai-term-record-mru dir)
   (let ((existing (get-buffer name)))
     (cond
-     ((and existing (cj/--ai-vterm-process-live-p existing))
+     ((and existing (cj/--ai-term-process-live-p existing))
       (display-buffer existing)
       existing)
      (t
       (when existing
         (kill-buffer existing))
-      ;; `vterm' calls pop-to-buffer-same-window internally, which
-      ;; replaces the selected window's buffer (e.g. the dashboard at
-      ;; fresh startup) before our display-buffer-alist rule has a
-      ;; chance to route it.  `save-window-excursion' reverts that
-      ;; side-effect; the explicit display-buffer call below then
-      ;; routes the buffer through the alist into a right-side split.
+      ;; `ghostel' switches to its buffer in the selected window before our
+      ;; display-buffer-alist rule can route it; `save-window-excursion'
+      ;; reverts that, and the explicit display-buffer below routes the buffer
+      ;; through the alist into the agent slot.  `ghostel-buffer-name' is bound
+      ;; to NAME so the terminal is created under the agent name, and
+      ;; `ghostel-buffer-name-function' is pinned nil (dynamically during
+      ;; creation, then buffer-locally) so OSC title escapes from the agent
+      ;; don't rename it out from under the "agent [" prefix that buffer
+      ;; detection and the display rule key on.
       (save-window-excursion
         (let ((default-directory dir)
-              (cj/--ai-vterm-suppress-tmux t))
-          (vterm name)))
+              (ghostel-buffer-name name)
+              (ghostel-buffer-name-function nil)
+              (cj/--ai-term-suppress-tmux t))
+          (let ((buf (ghostel)))
+            (when (buffer-live-p buf)
+              (with-current-buffer buf
+                (setq-local ghostel-buffer-name-function nil))))))
       (let ((buf (get-buffer name)))
         (with-current-buffer buf
-          (vterm-send-string (cj/--ai-vterm-launch-command dir))
-          (vterm-send-return))
+          (ghostel-send-string (cj/--ai-term-launch-command dir))
+          (ghostel-send-string "\n"))
         (display-buffer buf)
         buf)))))
 
-(defun cj/--ai-vterm-format-candidate (path &optional sessions)
-  "Return the display name for PATH in the AI-vterm project picker.
+(defun cj/--ai-term-format-candidate (path &optional sessions)
+  "Return the display name for PATH in the AI-term project picker.
 
 Appends \" [running]\" when the project's agent buffer exists with
 a live process; otherwise \" [detached]\" when PATH's tmux session
@@ -644,18 +653,18 @@ name is in SESSIONS (a session that survived an Emacs crash, no
 buffer yet); otherwise just the abbreviated path.  Path is
 abbreviated via `abbreviate-file-name' so it reads as ~/code/foo
 rather than the full home-dir form."
-  (let* ((name (cj/--ai-vterm-buffer-name path))
+  (let* ((name (cj/--ai-term-buffer-name path))
          (buf (get-buffer name))
-         (running (and buf (cj/--ai-vterm-process-live-p buf)))
+         (running (and buf (cj/--ai-term-process-live-p buf)))
          (detached (and (not running)
-                        (cj/--ai-vterm-session-active-p path sessions)))
+                        (cj/--ai-term-session-active-p path sessions)))
          (display-path (abbreviate-file-name path)))
     (cond
      (running  (format "%s [running]" display-path))
      (detached (format "%s [detached]" display-path))
      (t        display-path))))
 
-(defun cj/--ai-vterm-completion-table (alist)
+(defun cj/--ai-term-completion-table (alist)
   "Return a `completing-read' table over ALIST that pins candidate order.
 
 `completing-read' over a bare alist lets the front-end (Vertico)
@@ -669,38 +678,38 @@ the metadata keeps the order ALIST was built in."
                    (cycle-sort-function . identity))
       (complete-with-action action alist string predicate))))
 
-(defun cj/--ai-vterm-pick-project ()
+(defun cj/--ai-term-pick-project ()
   "Prompt for an AI-agent project; return its absolute path.
 
-Candidates come from `cj/--ai-vterm-candidates', ordered by
-`cj/--ai-vterm-sort-candidates' so projects with a live tmux session
+Candidates come from `cj/--ai-term-candidates', ordered by
+`cj/--ai-term-sort-candidates' so projects with a live tmux session
 appear first (then alphabetical by abbreviated path).  Display uses
-`cj/--ai-vterm-format-candidate', which abbreviates the path and
-flags a live session via \" [running]\" (an Emacs vterm buffer is
+`cj/--ai-term-format-candidate', which abbreviates the path and
+flags a live session via \" [running]\" (an Emacs terminal buffer is
 alive) or \" [detached]\" (the tmux session survived, no buffer).
 Signals `user-error' when no candidates exist."
-  (let ((candidates (cj/--ai-vterm-candidates)))
+  (let ((candidates (cj/--ai-term-candidates)))
     (unless candidates
       (user-error "No AI-agent projects found under %s"
                   (mapconcat #'identity
-                             (append cj/ai-vterm-project-roots
-                                     cj/ai-vterm-container-roots)
+                             (append cj/ai-term-project-roots
+                                     cj/ai-term-container-roots)
                              ", ")))
-    (let* ((sessions (cj/--ai-vterm-live-tmux-sessions))
-           (sorted (cj/--ai-vterm-sort-candidates candidates sessions))
+    (let* ((sessions (cj/--ai-term-live-tmux-sessions))
+           (sorted (cj/--ai-term-sort-candidates candidates sessions))
            (display-alist
             (mapcar (lambda (p)
-                      (cons (cj/--ai-vterm-format-candidate p sessions) p))
+                      (cons (cj/--ai-term-format-candidate p sessions) p))
                     sorted))
            (chosen (completing-read
-                    "AI vterm project: "
-                    (cj/--ai-vterm-completion-table display-alist)
+                    "AI terminal project: "
+                    (cj/--ai-term-completion-table display-alist)
                     nil t)))
       (or (cdr (assoc chosen display-alist))
           (expand-file-name chosen)))))
 
-(defun cj/--ai-vterm-dispatch ()
-  "Compute the F9 (`cj/ai-vterm') action without performing it.
+(defun cj/--ai-term-dispatch ()
+  "Compute the F9 (`cj/ai-term') action without performing it.
 
 Returns one of:
 - (toggle-off . WINDOW)        -- agent is displayed in WINDOW; quit it.
@@ -715,107 +724,95 @@ job: toggle whichever agent was last in use.
 
 A pure-decision helper so the dispatch logic is exercisable in tests
 without firing real `display-buffer' or `quit-window' calls."
-  (let ((win (cj/--ai-vterm-displayed-agent-window)))
+  (let ((win (cj/--ai-term-displayed-agent-window)))
     (cond
      (win (cons 'toggle-off win))
      (t
-      (let ((buffers (cj/--ai-vterm-agent-buffers)))
+      (let ((buffers (cj/--ai-term-agent-buffers)))
         (cond
          (buffers
           ;; Reopen the agent the last toggle-off hid (faithful toggle), so
           ;; long as it's still alive and among the live agents.  Otherwise
           ;; fall back to the most-recently-selected agent.
           (cons 'redisplay-recent
-                (if (and (buffer-live-p cj/--ai-vterm-last-hidden-buffer)
-                         (memq cj/--ai-vterm-last-hidden-buffer buffers))
-                    cj/--ai-vterm-last-hidden-buffer
+                (if (and (buffer-live-p cj/--ai-term-last-hidden-buffer)
+                         (memq cj/--ai-term-last-hidden-buffer buffers))
+                    cj/--ai-term-last-hidden-buffer
                   (car buffers))))
          (t '(pick-project))))))))
 
-(defun cj/--ai-vterm-refuse-in-terminal ()
-  "Signal a `user-error' when the current frame is a terminal frame.
-
-AI-vterm launches a graphical vterm side window, so it is GUI-only.
-Each interactive entry point calls this first, so F9 and friends
-decline -- with a message in the echo area -- in a terminal frame
-instead of launching a vterm.  The check is per-frame at command time
-rather than at load, so a daemon serving both GUI and terminal frames
-keeps the launcher working in its GUI frames and declines only in the
-terminal ones."
-  (when (env-terminal-p)
-    (user-error "AI-vterm is GUI-only; not available in a terminal frame")))
-
-(defun cj/ai-vterm-pick-project (&optional arg)
-  "Pick an AI-agent project and open or reuse its vterm.
+(defun cj/ai-term-pick-project (&optional arg)
+  "Pick an AI-agent project and open or reuse its ghostel terminal.
 
 The project is picked from a filtered completing-read list of dirs
-that contain .ai/protocols.org.  The vterm buffer is named
+that contain .ai/protocols.org.  The terminal buffer is named
 \"agent [<basename>]\" and is routed to a right-side window via
 `display-buffer-alist'.  Multiple projects coexist as separate
-buffers; reinvoking on the same project reuses its existing vterm.
+buffers; reinvoking on the same project reuses its existing terminal.
 
 With prefix ARG, display the buffer without selecting its window.
 
 Bound to C-F9 -- always shows the project picker, even when an agent
-buffer is currently displayed."
+buffer is currently displayed.
+
+ghostel renders in terminal frames as well as GUI frames, so this
+launches from either (only kitty inline-graphics degrade in a TTY)."
   (interactive "P")
-  (cj/--ai-vterm-refuse-in-terminal)
-  (let* ((dir (cj/--ai-vterm-pick-project))
-         (name (cj/--ai-vterm-buffer-name dir))
-         (buf (cj/--ai-vterm-show-or-create dir name)))
+  (let* ((dir (cj/--ai-term-pick-project))
+         (name (cj/--ai-term-buffer-name dir))
+         (buf (cj/--ai-term-show-or-create dir name)))
     (unless arg
       (let ((win (get-buffer-window buf)))
         (when win (select-window win))))
     buf))
 
-(defun cj/ai-vterm (&optional arg)
-  "Smart F9 dispatch for the AI-vterm launcher.
+(defun cj/ai-term (&optional arg)
+  "Smart F9 dispatch for the AI-term launcher.
 
 Behavior depends on the current state:
 
-- If an AI-vterm buffer is currently displayed in this frame, F9
+- If an AI-term buffer is currently displayed in this frame, F9
   quits its window (toggle off, buffer stays alive).
-- Else, if exactly one alive AI-vterm buffer exists, F9 re-displays
+- Else, if exactly one alive AI-term buffer exists, F9 re-displays
   it (DWIM -- the obvious next step is to look at it).
-- Else (zero or 2+), F9 falls through to `cj/ai-vterm-pick-project'.
+- Else (zero or 2+), F9 falls through to `cj/ai-term-pick-project'.
 
 With prefix ARG, display the buffer without selecting its window
 when a buffer is being shown (no effect on the toggle-off branch).
 
-See `cj/ai-vterm-pick-project' (C-F9) to force the project picker.
-M-F9 (and C-S-F9) close an agent via `cj/ai-vterm-close'."
+See `cj/ai-term-pick-project' (C-F9) to force the project picker.
+M-F9 (and C-S-F9) close an agent via `cj/ai-term-close'."
   (interactive "P")
-  (cj/--ai-vterm-refuse-in-terminal)
-  (pcase (cj/--ai-vterm-dispatch)
+  (pcase (cj/--ai-term-dispatch)
     (`(toggle-off . ,win)
      ;; Remember which agent we're hiding so the next toggle-on reopens this
      ;; same one, not whichever agent is most-recent in `buffer-list'.
-     (setq cj/--ai-vterm-last-hidden-buffer (window-buffer win))
+     (setq cj/--ai-term-last-hidden-buffer (window-buffer win))
      (cond
       ;; Lone fullscreen agent (e.g. after `C-x 1' inside it): there is no
       ;; prior layout for the native undo to restore and deleting would
       ;; leave the frame empty.  Bury and flag, so the next toggle-on
-      ;; (`cj/--ai-vterm-display-saved') restores the agent in place at
+      ;; (`cj/--ai-term-display-saved') restores the agent in place at
       ;; full frame rather than splitting.  Capture geometry for that
       ;; restore.  `bury-buffer' can no-op when the window's prev-buffer
       ;; history holds only the agent (common right after `C-x 1'), so
       ;; force a swap to a non-agent buffer to keep the toggle observable.
       ((one-window-p)
-       (cj/--ai-vterm-capture-state win)
-       (setq cj/--ai-vterm-last-was-bury t)
+       (cj/--ai-term-capture-state win)
+       (setq cj/--ai-term-last-was-bury t)
        (bury-buffer (window-buffer win))
        (when (and (window-live-p win)
-                  (cj/--ai-vterm-buffer-p (window-buffer win)))
+                  (cj/--ai-term-buffer-p (window-buffer win)))
          (with-selected-window win
            (switch-to-buffer
-            (or (cj/--ai-vterm-most-recent-non-agent-buffer)
+            (or (cj/--ai-term-most-recent-non-agent-buffer)
                 (other-buffer (window-buffer win) t))))))
       ;; Multi-window: collapse the agent split outright by deleting its
       ;; window, so the working buffer (e.g. todo.org) reclaims the space.
       ;; F9 is a pure show/hide toggle of THE agent split -- it must never
       ;; surface a different agent.  `quit-restore-window' can't guarantee
       ;; that here: switching among several agents reuses the one slot via
-      ;; `set-window-buffer' (see `cj/--ai-vterm-reuse-existing-agent'),
+      ;; `set-window-buffer' (see `cj/--ai-term-reuse-existing-agent'),
       ;; which leaves the window's `quit-restore' parameter pointing at the
       ;; FIRST agent shown.  Once it's stale, `quit-restore-window' falls
       ;; back to `switch-to-prev-buffer' and surfaces another agent instead
@@ -824,8 +821,8 @@ M-F9 (and C-S-F9) close an agent via `cj/ai-vterm-close'."
       ;; Capture geometry first so the next toggle-on splits at the same
       ;; size (the user's chosen split width is preserved across the toggle).
       (t
-       (cj/--ai-vterm-capture-state win)
-       (setq cj/--ai-vterm-last-was-bury nil)
+       (cj/--ai-term-capture-state win)
+       (setq cj/--ai-term-last-was-bury nil)
        (if (and (window-live-p win)
                 (> (length (window-list (window-frame win) 'never)) 1))
            (delete-window win)
@@ -834,7 +831,7 @@ M-F9 (and C-S-F9) close an agent via `cj/ai-vterm-close'."
          (when (window-live-p win)
            (with-selected-window win
              (switch-to-buffer
-              (or (cj/--ai-vterm-most-recent-non-agent-buffer)
+              (or (cj/--ai-term-most-recent-non-agent-buffer)
                   (other-buffer (window-buffer win) t))))))))
      nil)
     (`(redisplay-recent . ,buf)
@@ -844,11 +841,11 @@ M-F9 (and C-S-F9) close an agent via `cj/ai-vterm-close'."
          (when w (select-window w))))
      buf)
     (`(pick-project)
-     (cj/ai-vterm-pick-project arg))))
+     (cj/ai-term-pick-project arg))))
 
 ;; ----------------------------- Close an agent --------------------------------
 
-(defun cj/--ai-vterm-kill-tmux-session (session)
+(defun cj/--ai-term-kill-tmux-session (session)
   "Kill the tmux SESSION via `tmux kill-session -t SESSION'.
 
 Returns the process exit status (0 on success), or nil when tmux is
@@ -859,18 +856,18 @@ down."
       (process-file "tmux" nil nil nil "kill-session" "-t" session)
     (error nil)))
 
-(defun cj/--ai-vterm-close-buffer (buffer)
-  "Gracefully tear down AI-vterm BUFFER: tmux session, window, buffer.
+(defun cj/--ai-term-close-buffer (buffer)
+  "Gracefully tear down AI-term BUFFER: tmux session, window, buffer.
 
 Derives the tmux session name from BUFFER's `default-directory' (the
-project dir the vterm was created in) and kills it so the agent
+project dir the terminal was created in) and kills it so the agent
 process stops.  Deletes BUFFER's window when it's shown and isn't the
 only window in its frame, then kills BUFFER (suppressing the
 process-still-running prompt -- the session is already down).  No-op
-when BUFFER isn't an AI-vterm buffer."
-  (when (cj/--ai-vterm-buffer-p buffer)
-    (cj/--ai-vterm-kill-tmux-session
-     (cj/--ai-vterm-tmux-session-name
+when BUFFER isn't an AI-term buffer."
+  (when (cj/--ai-term-buffer-p buffer)
+    (cj/--ai-term-kill-tmux-session
+     (cj/--ai-term-tmux-session-name
       (buffer-local-value 'default-directory buffer)))
     (let ((win (get-buffer-window buffer)))
       (when (and win (> (length (window-list (window-frame win) 'never)) 1))
@@ -878,92 +875,91 @@ when BUFFER isn't an AI-vterm buffer."
     (let ((kill-buffer-query-functions nil))
       (kill-buffer buffer))))
 
-(defun cj/--ai-vterm-close-target ()
-  "Return the AI-vterm buffer `cj/ai-vterm-close' should act on, or nil.
+(defun cj/--ai-term-close-target ()
+  "Return the AI-term buffer `cj/ai-term-close' should act on, or nil.
 
 The current buffer when it is an agent buffer; else the sole live
 agent buffer; else a `completing-read' choice among the live agent
 buffers; nil when none are alive."
   (cond
-   ((cj/--ai-vterm-buffer-p (current-buffer)) (current-buffer))
-   (t (let ((buffers (cj/--ai-vterm-agent-buffers)))
+   ((cj/--ai-term-buffer-p (current-buffer)) (current-buffer))
+   (t (let ((buffers (cj/--ai-term-agent-buffers)))
         (cond
          ((null buffers) nil)
          ((null (cdr buffers)) (car buffers))
          (t (get-buffer
-             (completing-read "Close AI vterm: "
+             (completing-read "Close AI terminal: "
                               (mapcar #'buffer-name buffers) nil t))))))))
 
-(defun cj/ai-vterm-close ()
-  "Gracefully close an AI-vterm agent: kill its tmux session and buffer.
+(defun cj/ai-term-close ()
+  "Gracefully close an AI-term agent: kill its tmux session and buffer.
 
 Targets the current agent buffer, the sole live agent, or prompts when
-several are alive (see `cj/--ai-vterm-close-target').  Asks for
+several are alive (see `cj/--ai-term-close-target').  Asks for
 confirmation first -- this kills the running agent process, which can
 interrupt work in progress.  Bound to M-<f9> (primary) and C-S-<f9>."
   (interactive)
-  (cj/--ai-vterm-refuse-in-terminal)
-  (let ((buffer (cj/--ai-vterm-close-target)))
+  (let ((buffer (cj/--ai-term-close-target)))
     (unless buffer
-      (user-error "No AI-vterm agent buffers to close"))
+      (user-error "No AI-term agent buffers to close"))
     (let ((name (buffer-name buffer)))
       (when (y-or-n-p (format "Close agent %s?  This kills its tmux session.  "
                               name))
-        (cj/--ai-vterm-close-buffer buffer)
+        (cj/--ai-term-close-buffer buffer)
         (message "Closed agent %s." name)))))
 
-(keymap-global-set "<f9>"     #'cj/ai-vterm)
-(keymap-global-set "C-<f9>"   #'cj/ai-vterm-pick-project)
-(keymap-global-set "M-<f9>"   #'cj/ai-vterm-close)
-(keymap-global-set "C-S-<f9>" #'cj/ai-vterm-close)
+(keymap-global-set "<f9>"     #'cj/ai-term)
+(keymap-global-set "C-<f9>"   #'cj/ai-term-pick-project)
+(keymap-global-set "M-<f9>"   #'cj/ai-term-close)
+(keymap-global-set "C-S-<f9>" #'cj/ai-term-close)
 
-;; vterm binds <f1>..<f12> to `vterm--self-insert', so a plain <f9> typed
-;; while point is inside an agent buffer gets sent to the terminal program
-;; instead of toggling the agent -- which bites hard when the agent buffer is
-;; the only window in the frame.  Re-bind the F9 family in `vterm-mode-map' so
-;; the toggle reaches Emacs from there too.  (C-<f9> / M-<f9> aren't in vterm's
-;; intercept set, but bind them here as well so the behaviour is uniform.)
-(with-eval-after-load 'vterm
-  (keymap-set vterm-mode-map "<f9>"     #'cj/ai-vterm)
-  (keymap-set vterm-mode-map "C-<f9>"   #'cj/ai-vterm-pick-project)
-  (keymap-set vterm-mode-map "M-<f9>"   #'cj/ai-vterm-close)
-  (keymap-set vterm-mode-map "C-S-<f9>" #'cj/ai-vterm-close))
+;; ghostel's semi-char mode forwards keys not in `ghostel-keymap-exceptions' to
+;; the terminal program, so a plain <f9> typed while point is inside an agent
+;; buffer would be sent to the program instead of toggling the agent -- which
+;; bites hard when the agent buffer is the only window in the frame.  Re-bind
+;; the F9 family in `ghostel-mode-map' so the toggle reaches Emacs from there
+;; too.  (C-<f9> / M-<f9> are bound here as well so the behaviour is uniform.)
+(with-eval-after-load 'ghostel
+  (keymap-set ghostel-mode-map "<f9>"     #'cj/ai-term)
+  (keymap-set ghostel-mode-map "C-<f9>"   #'cj/ai-term-pick-project)
+  (keymap-set ghostel-mode-map "M-<f9>"   #'cj/ai-term-close)
+  (keymap-set ghostel-mode-map "C-S-<f9>" #'cj/ai-term-close))
 
-;; ---------- emacsclient: keep opened files off the agent vterm ----------
+;; ---------- emacsclient: keep opened files off the agent terminal ----------
 ;;
 ;; `server-start' (in system-defaults.el) leaves `server-window' nil, so
 ;; `server-switch-buffer' opens an `emacsclient -n' file in the *selected*
-;; window.  When the user is typing in the agent vterm, that's the agent
+;; window.  When the user is typing in the agent terminal, that's the agent
 ;; window -- so "tell the agent to open X" would replace the agent buffer
 ;; with X.  The function below, wired as `server-window', routes such files
 ;; into a non-agent window instead (splitting one off the agent when the
 ;; agent is the only window).  emacsclient invocations from anywhere else
 ;; fall through to `pop-to-buffer' and behave as before.
 
-(defun cj/--ai-vterm-non-agent-window (&optional exclude)
+(defun cj/--ai-term-non-agent-window (&optional exclude)
   "Return a window in the selected frame fit to show a non-agent buffer.
 
 Skips the minibuffer, the EXCLUDE window, dedicated windows, and any
-window already showing an AI-vterm agent buffer.  Returns nil when no
+window already showing an AI-term agent buffer.  Returns nil when no
 such window exists."
   (seq-find (lambda (w)
               (and (not (eq w exclude))
                    (not (window-dedicated-p w))
-                   (not (cj/--ai-vterm-buffer-p (window-buffer w)))))
+                   (not (cj/--ai-term-buffer-p (window-buffer w)))))
             (window-list (selected-frame) 'never)))
 
-(defun cj/--ai-vterm-server-display (buffer)
-  "Display BUFFER for `server-window', keeping it off the agent vterm.
+(defun cj/--ai-term-server-display (buffer)
+  "Display BUFFER for `server-window', keeping it off the agent terminal.
 
-When the selected window shows an AI-vterm agent buffer, put BUFFER in
-a non-agent window (`cj/--ai-vterm-non-agent-window'), splitting a
+When the selected window shows an AI-term agent buffer, put BUFFER in
+a non-agent window (`cj/--ai-term-non-agent-window'), splitting a
 left-side window off the agent when the agent is the only window, then
 select that window.  Otherwise hand off to `pop-to-buffer'.  Returns
 the window BUFFER ends up in -- the value `server-switch-buffer'
 expects from a `server-window' function."
-  (if (cj/--ai-vterm-buffer-p (window-buffer (selected-window)))
+  (if (cj/--ai-term-buffer-p (window-buffer (selected-window)))
       (let* ((agent-win (selected-window))
-             (target (or (cj/--ai-vterm-non-agent-window agent-win)
+             (target (or (cj/--ai-term-non-agent-window agent-win)
                          (split-window agent-win nil 'left))))
         (set-window-buffer target buffer)
         (select-window target))
@@ -972,7 +968,7 @@ expects from a `server-window' function."
 
 (defvar server-window)
 (with-eval-after-load 'server
-  (setq server-window #'cj/--ai-vterm-server-display))
+  (setq server-window #'cj/--ai-term-server-display))
 
-(provide 'ai-vterm)
-;;; ai-vterm.el ends here
+(provide 'ai-term)
+;;; ai-term.el ends here

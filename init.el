@@ -77,8 +77,8 @@
 (require 'telega-config)         ;; telegram client via telega.el (TDLib in docker)
 (require 'signal-config)         ;; signal client via forked signel + signal-cli
 (require 'eshell-config)         ;; emacs shell configuration
-(require 'vterm-config)          ;; vterm + F12 toggle + tmux history copy
-(require 'ai-vterm)               ;; in-Emacs Claude launcher (vertical-split vterm)
+(require 'term-config)           ;; ghostel + F12 toggle + tmux history copy
+(require 'ai-term)               ;; in-Emacs Claude launcher (vertical-split ghostel)
 (require 'help-utils)            ;; search: arch-wiki, devdoc, tldr, wikipedia
 (require 'help-config)           ;; info, man, help config
 (require 'tramp-config)          ;; remote shell connections

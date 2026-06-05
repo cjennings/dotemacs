@@ -83,7 +83,7 @@ Slack and Linear sharing the last row."
   (let ((map (make-sparse-keymap)) (calls nil))
     (cl-letf (((symbol-function 'projectile-switch-project) (lambda (&rest _) (push 'code calls)))
               ((symbol-function 'dirvish) (lambda (&rest _) (push 'files calls)))
-              ((symbol-function 'vterm) (lambda (&rest _) (push 'term calls)))
+              ((symbol-function 'ghostel) (lambda (&rest _) (push 'term calls)))
               ((symbol-function 'cj/main-agenda-display) (lambda (&rest _) (push 'agenda calls)))
               ((symbol-function 'cj/elfeed-open) (lambda (&rest _) (push 'feeds calls)))
               ((symbol-function 'calibredb) (lambda (&rest _) (push 'books calls)))

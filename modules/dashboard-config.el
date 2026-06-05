@@ -20,6 +20,7 @@
 (eval-when-compile (require 'undead-buffers))
 (declare-function cj/make-buffer-undead "undead-buffers" (string))
 (autoload 'cj/make-buffer-undead "undead-buffers" nil t)
+(declare-function ghostel "ghostel" (&optional arg))
 
 ;; ------------------------ Dashboard Bookmarks Override -----------------------
 ;; overrides the bookmark insertion from the dashboard package to provide an
@@ -76,7 +77,7 @@ Adjust this if the title doesn't appear centered under the banner image.")
   (list
    (list "c" #'nerd-icons-faicon  "nf-fa-code"         "Code"       "Switch Project"         (lambda () (projectile-switch-project)))
    (list "d" #'nerd-icons-faicon  "nf-fa-folder_o"     "Files"      "Dirvish File Manager"   (lambda () (dirvish user-home-dir)))
-   (list "t" #'nerd-icons-devicon "nf-dev-terminal"    "Terminal"   "Launch VTerm"           (lambda () (vterm)))
+   (list "t" #'nerd-icons-devicon "nf-dev-terminal"    "Terminal"   "Launch Terminal"        (lambda () (ghostel)))
    (list "a" #'nerd-icons-mdicon  "nf-md-calendar"     "Agenda"     "Main Org Agenda"        (lambda () (cj/main-agenda-display)))
    (list "r" #'nerd-icons-faicon  "nf-fa-rss_square"   "Feeds"      "Elfeed Feed Reader"     (lambda () (cj/elfeed-open)))
    (list "b" #'nerd-icons-faicon  "nf-fae-book_open_o" "Books"      "Calibre Ebook Reader"   (lambda () (calibredb)))

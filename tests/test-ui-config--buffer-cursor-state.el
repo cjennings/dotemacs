@@ -3,12 +3,12 @@
 ;;; Commentary:
 ;; `cj/--buffer-cursor-state' picks the buffer-state symbol that
 ;; `cj/set-cursor-color-according-to-mode' maps to a cursor color via
-;; `cj/buffer-status-colors'.  The subtle case: a live vterm buffer is
-;; technically `buffer-read-only' (the `vterm-mode' body sets it) but the
-;; user can type into it -- keystrokes go to the terminal process -- so it
-;; must report a writeable state, not `read-only'.  `vterm-copy-mode' is
-;; the exception: there the buffer really is a read-only Emacs buffer the
-;; user navigates, so `read-only' (the orange cursor) is correct and kept.
+;; `cj/buffer-status-colors'.  The subtle case: a live ghostel terminal is
+;; technically `buffer-read-only' but the user types into it -- keystrokes go
+;; to the terminal process -- so it must report a writeable state, not
+;; `read-only'.  ghostel's `copy' / `emacs' input modes are the exception:
+;; there the buffer really is a read-only Emacs buffer the user navigates, so
+;; `read-only' (the orange cursor) is correct and kept.
 
 ;;; Code:
 
@@ -18,9 +18,9 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (setq load-prefer-newer t)
-(defvar vterm-copy-mode nil)
+(defvar ghostel--input-mode nil)
 (require 'ui-config)
-(require 'testutil-vterm-buffers)
+(require 'testutil-ghostel-buffers)
 
 (ert-deftest test-ui-config-buffer-cursor-state-readwrite-unmodified ()
   "Normal: a clean writeable buffer reports `unmodified'."
@@ -47,40 +47,40 @@
     (overwrite-mode 1)
     (should (eq (cj/--buffer-cursor-state) 'overwrite))))
 
-(ert-deftest test-ui-config-buffer-cursor-state-live-vterm-is-writeable ()
-  "Boundary: a live vterm buffer is `buffer-read-only' but reports a
+(ert-deftest test-ui-config-buffer-cursor-state-live-ghostel-is-writeable ()
+  "Boundary: a live ghostel buffer is `buffer-read-only' but reports a
 writeable state -- the user types into the terminal process there, so the
 read-only (orange) cursor would be misleading."
-  (let ((buf (cj/test--make-fake-vterm-buffer "*test-vterm-cursor-state*")))
+  (let ((buf (cj/test--make-fake-ghostel-buffer "*test-ghostel-cursor-state*")))
     (unwind-protect
         (with-current-buffer buf
-          (setq buffer-read-only t)            ; `vterm-mode' does this
-          (setq-local vterm-copy-mode nil)
+          (setq buffer-read-only t)            ; ghostel keeps the buffer read-only
+          (setq-local ghostel--input-mode 'semi-char)
           (should-not (eq (cj/--buffer-cursor-state) 'read-only)))
       (when (buffer-live-p buf) (kill-buffer buf)))))
 
-(ert-deftest test-ui-config-buffer-cursor-state-vterm-copy-mode-is-read-only ()
-  "Boundary: in `vterm-copy-mode' the vterm buffer is a read-only Emacs
-buffer the user navigates, so `read-only' (orange) is kept."
-  (let ((buf (cj/test--make-fake-vterm-buffer "*test-vterm-cursor-state-copy*")))
+(ert-deftest test-ui-config-buffer-cursor-state-ghostel-copy-mode-is-read-only ()
+  "Boundary: in ghostel `copy' mode the buffer is a read-only Emacs buffer
+the user navigates, so `read-only' (orange) is kept."
+  (let ((buf (cj/test--make-fake-ghostel-buffer "*test-ghostel-cursor-state-copy*")))
     (unwind-protect
         (with-current-buffer buf
           (setq buffer-read-only t)
-          (setq-local vterm-copy-mode t)
+          (setq-local ghostel--input-mode 'copy)
           (should (eq (cj/--buffer-cursor-state) 'read-only)))
       (when (buffer-live-p buf) (kill-buffer buf)))))
 
-(ert-deftest test-ui-config-set-cursor-color-live-vterm-not-orange ()
-  "Normal: in a live vterm the cursor-color hook picks a writeable color,
-not the read-only orange -- even though the vterm buffer is read-only.
-`display-graphic-p' is stubbed t so the function reaches its work body
-in batch mode (the live function no-ops on TTY frames by design)."
-  (let ((buf (cj/test--make-fake-vterm-buffer "*test-vterm-cursor-color*"))
+(ert-deftest test-ui-config-set-cursor-color-live-ghostel-not-orange ()
+  "Normal: in a live ghostel terminal the cursor-color hook picks a writeable
+color, not the read-only orange -- even though the buffer is read-only.
+`display-graphic-p' is stubbed t so the function reaches its work body in
+batch mode (the live function no-ops on TTY frames by design)."
+  (let ((buf (cj/test--make-fake-ghostel-buffer "*test-ghostel-cursor-color*"))
         (applied 'unset))
     (unwind-protect
         (with-current-buffer buf
           (setq buffer-read-only t)
-          (setq-local vterm-copy-mode nil)
+          (setq-local ghostel--input-mode 'semi-char)
           (let ((cj/-cursor-last-color nil)
                 (cj/-cursor-last-buffer nil))
             (cl-letf (((symbol-function 'display-graphic-p) (lambda () t))
