@@ -111,16 +111,17 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 One of `read-only', `overwrite', `modified', or `unmodified' — keys
 of `cj/buffer-status-colors'.
 
-A live vterm buffer (in `vterm-mode' but NOT `vterm-copy-mode')
-reports `unmodified' even though `vterm-mode' sets `buffer-read-only':
-keystrokes there go to the terminal process, so from the user's side
-the buffer is writeable, and the read-only (orange) cursor would be
-misleading.  `vterm-copy-mode' is the exception — there the buffer
-really is a read-only Emacs buffer the user navigates, so it falls
-through to `read-only' and keeps the orange cursor."
+A live ghostel terminal (in `ghostel-mode' and an input mode that
+forwards keys — semi-char / char / line) reports `unmodified' even
+though the buffer is read-only: keystrokes go to the terminal process,
+so from the user's side the buffer is writeable and the read-only
+(orange) cursor would be misleading.  ghostel's `copy' and `emacs'
+input modes are the exception — there the buffer really is a read-only
+Emacs buffer the user navigates, so it falls through to `read-only'
+and keeps the orange cursor."
   (cond
-   ((and (eq major-mode 'vterm-mode)
-		 (not (bound-and-true-p vterm-copy-mode)))
+   ((and (eq major-mode 'ghostel-mode)
+		 (not (memq (bound-and-true-p ghostel--input-mode) '(copy emacs))))
 	'unmodified)
    (buffer-read-only       'read-only)
    (overwrite-mode         'overwrite)

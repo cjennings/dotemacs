@@ -1,4 +1,4 @@
-;;; test-ai-vterm--collapse-split.el --- F9 collapses the agent split -*- lexical-binding: t; -*-
+;;; test-ai-term--collapse-split.el --- F9 collapses the agent split -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 ;; Regression coverage for the F9 toggle-off behavior Craig reported: with
@@ -13,7 +13,7 @@
 ;;   NON-agent buffer (the file being worked on), not another agent -- the prior
 ;;   `other-buffer' call could pick another live agent.
 ;;
-;; Also covers the `cj/--ai-vterm-most-recent-non-agent-buffer' helper.
+;; Also covers the `cj/--ai-term-most-recent-non-agent-buffer' helper.
 
 ;;; Code:
 
@@ -22,12 +22,12 @@
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
-(require 'ai-vterm)
-(require 'testutil-vterm-buffers)
+(require 'ai-term)
+(require 'testutil-ghostel-buffers)
 
-;;; cj/--ai-vterm-most-recent-non-agent-buffer
+;;; cj/--ai-term-most-recent-non-agent-buffer
 
-(ert-deftest test-ai-vterm--most-recent-non-agent-buffer-skips-agents ()
+(ert-deftest test-ai-term--most-recent-non-agent-buffer-skips-agents ()
   "Normal: returns a live non-agent buffer even when agents are most-recent."
   (cj/test--kill-agent-buffers)
   (let ((work (get-buffer-create "*test-mrna-work*"))
@@ -40,16 +40,16 @@
           (set-window-buffer (selected-window) work)
           (set-window-buffer (selected-window) agent-b)
           (set-window-buffer (selected-window) agent-a)
-          (let ((result (cj/--ai-vterm-most-recent-non-agent-buffer)))
+          (let ((result (cj/--ai-term-most-recent-non-agent-buffer)))
             (should (bufferp result))
             (should (buffer-live-p result))
-            (should-not (cj/--ai-vterm-buffer-p result))))
+            (should-not (cj/--ai-term-buffer-p result))))
       (when (get-buffer "*test-mrna-work*") (kill-buffer "*test-mrna-work*"))
       (cj/test--kill-agent-buffers))))
 
 ;;; Multi-window: F9 collapses the split
 
-(ert-deftest test-ai-vterm--collapse-multi-window-deletes-agent-split ()
+(ert-deftest test-ai-term--collapse-multi-window-deletes-agent-split ()
   "Normal/Regression: agent in a bottom split with other agents alive; F9
 collapses the split so the working buffer reclaims the frame, and no agent is
 surfaced.  Before the fix, `quit-restore-window' could switch the slot to a
@@ -59,7 +59,7 @@ different agent (stale quit-restore after slot reuse)."
         (agent-a (get-buffer-create "agent [collapse-a]"))
         (agent-b (get-buffer-create "agent [collapse-b]"))
         (agent-c (get-buffer-create "agent [collapse-c]"))
-        (cj/--ai-vterm-last-was-bury nil))
+        (cj/--ai-term-last-was-bury nil))
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
@@ -72,16 +72,16 @@ different agent (stale quit-restore after slot reuse)."
             (set-window-buffer agent-win agent-c)
             (select-window agent-win)
             (should-not (one-window-p))
-            (cj/test--call-as-gui #'cj/ai-vterm)
+            (cj/test--call-as-gui #'cj/ai-term)
             (should (one-window-p))
-            (should-not (cj/--ai-vterm-displayed-agent-window))
+            (should-not (cj/--ai-term-displayed-agent-window))
             (should (eq (window-buffer (selected-window)) work))))
       (when (get-buffer "*test-collapse-work*") (kill-buffer "*test-collapse-work*"))
       (cj/test--kill-agent-buffers))))
 
 ;;; Single-window: F9 returns to a non-agent buffer
 
-(ert-deftest test-ai-vterm--collapse-single-window-returns-non-agent ()
+(ert-deftest test-ai-term--collapse-single-window-returns-non-agent ()
   "Normal/Regression: agent fills the frame, other agents alive; F9 toggles back
 to a NON-agent buffer (the working file), never another agent.  Before the fix,
 `other-buffer' could pick another live agent."
@@ -89,7 +89,7 @@ to a NON-agent buffer (the working file), never another agent.  Before the fix,
   (let ((work (get-buffer-create "*test-collapse-sw-work*"))
         (agent-a (get-buffer-create "agent [collapse-sw-a]"))
         (agent-b (get-buffer-create "agent [collapse-sw-b]"))
-        (cj/--ai-vterm-last-was-bury nil))
+        (cj/--ai-term-last-was-bury nil))
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
@@ -99,16 +99,16 @@ to a NON-agent buffer (the working file), never another agent.  Before the fix,
           (set-window-buffer (selected-window) agent-b)
           (set-window-buffer (selected-window) agent-a)
           (should (one-window-p))
-          (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list)))
-            (cj/test--call-as-gui #'cj/ai-vterm))
+          (let ((display-buffer-alist (cj/--ai-term-display-rule-list)))
+            (cj/test--call-as-gui #'cj/ai-term))
           (should (one-window-p))
-          (should-not (cj/--ai-vterm-buffer-p (window-buffer (selected-window)))))
+          (should-not (cj/--ai-term-buffer-p (window-buffer (selected-window)))))
       (when (get-buffer "*test-collapse-sw-work*") (kill-buffer "*test-collapse-sw-work*"))
       (cj/test--kill-agent-buffers))))
 
 ;;; Faithful toggle: reopen the SAME agent that was hidden
 
-(ert-deftest test-ai-vterm--dispatch-prefers-last-hidden-agent ()
+(ert-deftest test-ai-term--dispatch-prefers-last-hidden-agent ()
   "Regression: dispatch reopens the last-hidden agent, not the buffer-list MRU.
 After F9 hides an agent, the next F9 must reopen the SAME one even when a
 different agent is ahead of it in `buffer-list'.  Falls back to the MRU when
@@ -116,25 +116,25 @@ nothing was hidden yet or the remembered buffer was killed."
   (cj/test--kill-agent-buffers)
   (let ((a1 (get-buffer-create "agent [disp-mru]"))
         (a2 (get-buffer-create "agent [disp-shown]"))
-        (cj/--ai-vterm-last-hidden-buffer nil))
+        (cj/--ai-term-last-hidden-buffer nil))
     (unwind-protect
-        (cl-letf (((symbol-function 'cj/--ai-vterm-displayed-agent-window)
+        (cl-letf (((symbol-function 'cj/--ai-term-displayed-agent-window)
                    (lambda (&optional _f) nil))
-                  ((symbol-function 'cj/--ai-vterm-agent-buffers)
+                  ((symbol-function 'cj/--ai-term-agent-buffers)
                    (lambda () (list a1 a2))))      ; a1 is the MRU
           ;; No memory yet -> falls back to MRU (a1).
-          (should (equal (cj/--ai-vterm-dispatch) (cons 'redisplay-recent a1)))
+          (should (equal (cj/--ai-term-dispatch) (cons 'redisplay-recent a1)))
           ;; Remember a2 as last hidden -> dispatch prefers it.
-          (setq cj/--ai-vterm-last-hidden-buffer a2)
-          (should (equal (cj/--ai-vterm-dispatch) (cons 'redisplay-recent a2)))
+          (setq cj/--ai-term-last-hidden-buffer a2)
+          (should (equal (cj/--ai-term-dispatch) (cons 'redisplay-recent a2)))
           ;; A killed last-hidden buffer -> falls back to MRU.
           (let ((dead (get-buffer-create "agent [disp-dead]")))
-            (setq cj/--ai-vterm-last-hidden-buffer dead)
+            (setq cj/--ai-term-last-hidden-buffer dead)
             (kill-buffer dead))
-          (should (equal (cj/--ai-vterm-dispatch) (cons 'redisplay-recent a1))))
+          (should (equal (cj/--ai-term-dispatch) (cons 'redisplay-recent a1))))
       (cj/test--kill-agent-buffers))))
 
-(ert-deftest test-ai-vterm--toggle-roundtrip-reopens-same-agent ()
+(ert-deftest test-ai-term--toggle-roundtrip-reopens-same-agent ()
   "Regression: hide then show brings back the agent that was on screen.
 With several agents alive and a different one most-recent in `buffer-list',
 F9 off then F9 on restores the SAME agent that was visible -- not a swap to
@@ -143,10 +143,10 @@ another.  Reproduces the \"the displayed buffer changes\" report."
   (let ((work (get-buffer-create "*test-roundtrip-work*"))
         (a1 (get-buffer-create "agent [rt-1]"))
         (a2 (get-buffer-create "agent [rt-2]"))
-        (cj/--ai-vterm-last-was-bury nil)
-        (cj/--ai-vterm-last-direction nil)
-        (cj/--ai-vterm-last-size nil)
-        (cj/--ai-vterm-last-hidden-buffer nil))
+        (cj/--ai-term-last-was-bury nil)
+        (cj/--ai-term-last-direction nil)
+        (cj/--ai-term-last-size nil)
+        (cj/--ai-term-last-hidden-buffer nil))
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
@@ -157,15 +157,15 @@ another.  Reproduces the \"the displayed buffer changes\" report."
             (bury-buffer a1)            ; a1 stays alive, demoted in MRU
             (set-window-buffer agent-win a2)
             (select-window agent-win)
-            (should (eq (window-buffer (cj/--ai-vterm-displayed-agent-window)) a2))
-            (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list)))
-              (cj/test--call-as-gui #'cj/ai-vterm)        ; off
-              (should-not (cj/--ai-vterm-displayed-agent-window))
-              (cj/test--call-as-gui #'cj/ai-vterm)        ; on -> must be a2
-              (should (eq (window-buffer (cj/--ai-vterm-displayed-agent-window))
+            (should (eq (window-buffer (cj/--ai-term-displayed-agent-window)) a2))
+            (let ((display-buffer-alist (cj/--ai-term-display-rule-list)))
+              (cj/test--call-as-gui #'cj/ai-term)        ; off
+              (should-not (cj/--ai-term-displayed-agent-window))
+              (cj/test--call-as-gui #'cj/ai-term)        ; on -> must be a2
+              (should (eq (window-buffer (cj/--ai-term-displayed-agent-window))
                           a2)))))
       (when (get-buffer "*test-roundtrip-work*") (kill-buffer "*test-roundtrip-work*"))
       (cj/test--kill-agent-buffers))))
 
-(provide 'test-ai-vterm--collapse-split)
-;;; test-ai-vterm--collapse-split.el ends here
+(provide 'test-ai-term--collapse-split)
+;;; test-ai-term--collapse-split.el ends here

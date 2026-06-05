@@ -1,0 +1,415 @@
+#+TITLE: Migration: vterm → ghostel (single terminal engine)
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-04
+
+* Status
+
+READY. Review incorporated (external review, 2026-06-04). Supersedes the
+EAT-consolidation direction in =todo.org= (task "Migrate all terminals from
+vterm to ghostel"). Research background:
+[[file:../2026-05-25-emacs-terminal-comparison.org][docs/2026-05-25-emacs-terminal-comparison.org]].
+
+* Goal
+
+Replace vterm with [[https://github.com/dakra/ghostel][ghostel]] (a native Emacs module over libghostty-vt, the
+Ghostty terminal engine) as the single terminal engine across every
+workflow, and rename the AI-agent launcher =ai-vterm= → =ai-term=. When the
+migration lands, vterm and vterm-toggle are removed from the config.
+
+Why ghostel over the prior EAT plan: ghostel is the most faithful Claude
+Code TUI renderer and the fastest engine (≈81 vs vterm 34 vs eat 4.9 MB/s),
+and an audit confirmed it exposes an analog for every vterm primitive this
+config uses. EAT's washed colors, its scroll-pop / stuck-input bug under
+Claude Code, and its slowest throughput made it the weaker single-engine
+pick. One engine beats running two.
+
+* What the spike established (2026-06-04, read-only)
+
+Sandbox: =/tmp/ghostel-spike= via =emacs --init-directory=, nothing touched
+in the real config. Emacs 30.2 GTK, x86_64, modules supported.
+
+- *Install / multi-machine*: ghostel installs from MELPA; the native module
+  auto-downloaded (=v0.33.0 ghostel-module-x86_64-linux.so=) and loaded with
+  no toolchain. Confirms the per-machine prebuilt-binary story works
+  (x86_64-linux covers velox). Only a non-prebuilt arch needs the Zig build.
+- *tmux pty (linchpin)*: a spawned ghostel reports =process-tty-name
+  "/dev/pts/1"=. The tmux pane-id lookup in the current vterm-config keys on
+  exactly that, so the tmux copy-mode / history machinery ports unchanged.
+- *Colorization model*: =ghostel-color-palette= is a vector of 16 named
+  faces, but =ghostel--apply-palette= RESOLVES those faces (+ =ghostel-default=
+  fg/bg) to hex and pushes them to the native module
+  (=ghostel--set-palette= / =ghostel--set-default-colors=); the module bakes
+  the colors into the grid. Theme changes are handled by =ghostel-sync-theme=
+  (hooked to =enable-theme-functions= / =load-theme= advice), which
+  re-resolves and re-pushes. *Consequence:* buffer-local =face-remap= does
+  NOT dim a ghostel buffer, and there is no per-window color hook. This
+  drives Decision D1.
+- *TTY frames*: no =display-graphic-p= / =window-system= guards in
+  =ghostel.el= — it renders text + faces and only kitty inline-graphics
+  degrade in a TTY. ghostel works in terminal frames (Decision D4).
+- *copy-mode*: a read-only input-mode toggle (=ghostel-copy-mode=) with
+  standard Emacs nav / mark; =q= / =C-g= exit, =M-w= copies and stays. The
+  vterm copy-mode contract maps near-free.
+- *F8 / key forwarding (diagnostic)*: ghostel's default semi-char mode
+  forwards unlisted keys to the terminal program; only
+  =ghostel-keymap-exceptions= (default =C-c C-x C-u C-h M-x M-: C-\=) reach
+  Emacs. This is why F-key bindings (F9 family, F12) must be installed in
+  =ghostel-mode-map= for terminal buffers, exactly as the current config does
+  for =vterm-mode-map=.
+- *GUI / TTY visual*: Craig confirmed the Claude Code TUI and a TTY frame
+  both render great. dupre chrome applies; the 16 ANSI terminal faces are
+  ghostel defaults (dupre does not theme them) — Decision D2.
+
+* Agreed decisions
+
+All confirmed by Craig 2026-06-04 (incorporating the external review).
+
+- *D1 — auto-dim*: terminal buffers do NOT participate in unfocused-window
+  dimming in v1. =auto-dim-config.el= drops its entire vterm integration
+  (~140 lines of =vterm--get-color= advice + redraw scheduling). Rationale:
+  ghostel bakes the palette per-terminal, not per-window, so vterm's
+  per-window dim is not achievable; a buffer-wide palette re-push on
+  focus-loss is more code, forces repaints, and only works when the buffer is
+  in one window — not worth it.
+- *D2 — dupre ANSI palette*: a follow-up, not v1. The 16 =ghostel-color-*=
+  faces (+ =ghostel-default=) get themed in dupre later, unless the engine
+  swap exposes visibly poor colors during verification.
+- *D3 — eshell*: out of scope. =ghostel-eshell= adoption is a separate
+  follow-up task; eshell stays the shell.
+- *D4 — TTY refuse-guard*: dropped. =cj/--ai-vterm-refuse-in-terminal= and
+  its echo-area refusal message are removed; F9 launches in a terminal frame.
+  Its manual-verify test is removed too (it asserted the refusal).
+- *D5 — module names*: =vterm-config.el= → =term-config.el=; =ai-vterm.el= →
+  =ai-term.el=; =cj/vterm-*= → =cj/term-*=; =cj/ai-vterm-*= → =cj/ai-term-*=.
+  The "agent [" buffer prefix is unchanged.
+- *D6 — module-failure behavior*: ghostel degrades with a warning rather than
+  failing startup. Load it guarded (=(require 'ghostel nil t)=) and, on
+  failure, emit a =display-warning= and leave the terminal commands defined
+  but inert. Rationale: the daemon serves many frames across machines, and
+  the project idiom is graceful degradation (the =(when (require 'foo nil t)
+  ...)= rule and =cj/executable-find-or-warn=); hard-failing startup on a
+  machine missing the prebuilt module is worse than a warned degrade. Tests
+  stub ghostel and never require the native module. (Modifies the reviewer's
+  recommendation of "fail loudly" — see Review dispositions.)
+- *D7 — scrollback value*: =ghostel-max-scrollback= set to =10 MB= (=(* 10
+  1024 1024)=) as a defcustom, the byte analog of the prior =100000=-line
+  intent (~100 bytes/line). Verified under heavy output during manual
+  testing.
+
+* Primitive mapping (vterm → ghostel)
+
+| vterm                          | ghostel                                   | note |
+|--------------------------------+-------------------------------------------+------|
+| =(vterm NAME)=                 | =(ghostel)= + rename to NAME              | via =ghostel-buffer-name-function= or post-create rename |
+| =vterm-send-string=            | =ghostel-send-string=                     | public; confirmed |
+| =vterm-send-return=            | =(ghostel-send-string "\n")=              | |
+| =vterm-mode=                   | =ghostel-mode=                            | all major-mode checks |
+| =vterm-mode-map=               | =ghostel-mode-map=                        | F9 + F12 rebind, C-; install |
+| =vterm-keymap-exceptions=      | =ghostel-keymap-exceptions=               | add =C-;= |
+| =vterm-copy-mode=              | =ghostel-copy-mode=                       | read-only input mode |
+| =vterm-copy-mode-map= bindings | input-mode (q/C-g exit, M-w copies-stays) | near-free parity |
+| =vterm-clear-scrollback=       | =ghostel-clear-scrollback=                | C-; x l |
+| =vterm-next-prompt=            | =ghostel-next-prompt=                     | C-; x n |
+| =vterm-previous-prompt=        | =ghostel-previous-prompt=                 | C-; x p |
+| =vterm-send-next-key=          | =ghostel-send-next-key=                   | C-; x q |
+| =vterm-yank=                   | =ghostel-yank=                            | C-y |
+| =vterm-reset-cursor-point=     | drop (renderer owns point)                | decided: no analog needed |
+| =vterm-other-window=           | =(ghostel)= + other-window display        | thin wrapper |
+| =vterm-max-scrollback= (lines) | =ghostel-max-scrollback= = 10 MB (D7)     | unit change lines→bytes |
+| =vterm-kill-buffer-on-exit=    | =ghostel-kill-buffer-on-exit=             | |
+| =vterm-timer-delay= (nil hack) | =ghostel-timer-delay= / adaptive-fps      | hacks DROP |
+| =cj/vterm--send-mouse-wheel=   | drop (ghostel forwards SGR natively)      | net deletion; verify under tmux/Claude/lazygit |
+| =cj/vterm-send-escape=         | =(ghostel-send-string "\e")= if needed    | re-check =<escape>= global conflict |
+| =vterm--get-color= advice      | none (D1)                                 | auto-dim integration deleted |
+| =vterm-always-compile-module=  | =ghostel-module-auto-install=             | + D6 guarded load |
+| tmux pane-id via =process-tty-name= | unchanged                            | confirmed /dev/pts |
+
+* Surface to change
+
+Audited file set.
+
+** Main modules
+- =modules/vterm-config.el= (~540L) → =modules/term-config.el=. Ports with
+  renamed primitives; deletes the mouse-wheel forwarding and the
+  =vterm-timer-delay= hacks; renames =cj/vterm-*= → =cj/term-*= (no
+  compatibility shim). Keeps the tmux history / copy-mode-dwim logic pure
+  around =process-tty-name= and =tmux= process calls (engine-agnostic — the
+  part most worth preserving). =cj/vterm-map= (C-; x) → =cj/term-map=;
+  which-key label "vterm menu" → "terminal menu".
+- =modules/ai-vterm.el= (~978L) → =modules/ai-term.el=. Only ~6 call sites
+  are vterm-specific (=vterm= / =vterm-send-string= / =vterm-send-return=,
+  the suppress-tmux coupling, the =vterm-mode-map= F9 rebind, the
+  declare-functions). The ~970L of picker / MRU / crash-recovery / display
+  chain / dispatch / geometry is engine-agnostic and renames cleanly
+  (=cj/ai-vterm-*= → =cj/ai-term-*=). Buffer prefix "agent [" stays. The
+  refuse-in-terminal guard is deleted (D4).
+
+  *tmux-suppression invariant (contract).* =cj/--ai-term-show-or-create= must
+  preserve exactly one tmux launch path for agent buffers: the dynamic
+  binding of the suppress flag around =(ghostel)= keeps the generic
+  auto-tmux hook from sending a bare =tmux\n= before the project-named
+  =tmux new-session -A= command runs. Porting must not introduce a second
+  launch path.
+
+** Satellites
+- =modules/auto-dim-config.el= — per D1, delete the vterm color advice +
+  redraw scheduling entirely (no ghostel replacement in v1).
+- =modules/ui-config.el= — =vterm-mode= / =vterm-copy-mode= cursor/modeline
+  check → ghostel equivalents (live ghostel = writeable cursor state;
+  =ghostel-copy-mode= = read-only).
+- =modules/dashboard-config.el= — launcher lambda → =(ghostel)=; label
+  "Launch VTerm" → "Launch Terminal".
+- =modules/cj-window-geometry-lib.el=, =modules/cj-window-toggle-lib.el= —
+  vterm only in comments; update doc references.
+- =init.el= — =(require 'ai-vterm)= → =(require 'ai-term)=; add term-config
+  require (guarded per D6).
+
+** Docs (active references only — historical notes stay)
+- =todo.org= current task link (already updated to this -spec path).
+- =docs/design/module-inventory.org=, =docs/design/init-load-graph.org= —
+  update active =vterm-config= / =ai-vterm= references to the new names.
+
+** Tests (~35 files)
+- 24 =test-ai-vterm--*.el= are mostly engine-agnostic logic (buffer-name,
+  candidates, sort, dispatch, geometry, MRU) → rename to =test-ai-term--*.el=
+  mechanically, only after a green baseline; assertions stand.
+- Coupled, need rework: =testutil-vterm-buffers.el= (→ stub ghostel),
+  =test-ai-vterm--f9-in-vterm.el=, =test-ai-vterm--show-or-create.el=,
+  =test-vterm-copy-mode-cursor.el=, =test-vterm-tmux-history.el=,
+  =test-vterm-toggle--*.el= (×3).
+- Cross-cutting touch: =test-auto-dim-config.el= (delete vterm-integration
+  tests per D1), =test-ui-config--buffer-cursor-state.el=,
+  =test-dashboard-config-launchers.el=, =test-init-module-headers.el=,
+  =test-cj-window-toggle-lib.el=.
+
+* Dependency / module failure behavior (D6)
+
+- ghostel is a required MELPA package. It loads guarded:
+  =(unless (require 'ghostel nil t) (display-warning 'term "..."))=.
+- On a prebuilt arch the native module auto-downloads
+  (=ghostel-module-auto-install=). On a non-prebuilt arch the user installs
+  Zig 0.15.2 and builds per ghostel's instructions; until then the warning
+  fires and terminal commands are inert (defined but no-op / user-error),
+  never breaking startup or other frames.
+- Tests stub ghostel in the test-util layer and never require the native
+  module, so the suite runs on any machine and in CI/batch.
+
+* Key & menu ownership (per phase)
+
+To avoid order-dependent duplicate bindings, ownership transfers cleanly:
+
+- *Before*: =vterm-config= owns F12, =C-; x=, the vterm display rule, and the
+  which-key labels.
+- *Phase 1*: =term-config= is added and immediately becomes the owner of F12
+  and =C-; x= (and the terminal display rule). =vterm-config= is no longer
+  required, so its bindings do not co-install. The vterm package remains
+  installed only as a fallback engine until Phase 4.
+- *Phase 2*: =ai-term= owns the F9 family (global + in =ghostel-mode-map=);
+  =ai-vterm= is no longer required.
+- *Phase 4*: vterm / vterm-toggle packages removed; no vterm ownership
+  remains anywhere.
+
+* Implementation phases (TDD, green at each step)
+
+Each phase is a shippable deliverable; the suite + byte-compile stay green at
+every step.
+
+- *Phase 0 — characterization baseline.* Before any port, add/confirm
+  characterization tests for the behaviors that must survive: F12
+  dispatch/display, tmux pane-id + history-buffer replacement, AI
+  show-or-create tmux launch command, F9 from inside terminal mode,
+  cursor-state classification, dashboard launcher action. Green baseline.
+  Deliverable: characterization tests committed; no behavior change.
+- *Phase 1 — ghostel + term-config.* Add ghostel (use-package, MELPA,
+  guarded per D6). New =term-config.el= owning F12, =cj/term-map= (C-; x),
+  copy-mode parity, tmux history/copy-mode-dwim (pure =process-tty-name=
+  path), which-key "terminal menu", =ghostel-max-scrollback= 10 MB,
+  =ghostel-keymap-exceptions= incl. =C-;=. =vterm-config= dropped from the
+  require list (ownership transfers). Tests for the new module + ghostel
+  stubs. Deliverable: F12 general terminal runs on ghostel.
+- *Phase 2 — ai-term.* Rename =ai-vterm.el= → =ai-term.el=; swap the ~6 vterm
+  call sites to ghostel; F9/C-F9/M-F9 on global + =ghostel-mode-map=; drop
+  the refuse-in-terminal guard (D4); preserve the tmux-suppression invariant.
+  Rename engine-agnostic tests to =test-ai-term--*= (after green); rework the
+  coupled ones; add D4 regression tests (no refusal path; F9 installed in
+  =ghostel-mode-map=) and a negative test that agent buffers are excluded
+  from F12 toggling under the new names. Deliverable: agents run on ghostel.
+- *Phase 3 — satellites.* auto-dim vterm integration deleted (D1);
+  ui-config cursor/modeline check ported; dashboard launcher + label;
+  geometry/toggle-lib doc refs; init.el requires; active doc references.
+  Deliverable: no module references vterm except the package itself.
+- *Phase 4 — remove vterm.* Delete vterm + vterm-toggle packages, dead
+  config, the mouse-wheel / timer hacks. Full test sweep + byte-compile +
+  manual smoke after a daemon restart (the restart is an acceptance gate —
+  see below). Deliverable: vterm gone; ghostel is the only terminal engine.
+
+** Follow-up / vNext (not this series)
+- D2 — theme the 16 =ghostel-color-*= + =ghostel-default= faces in dupre.
+- D3 — evaluate =ghostel-eshell= as eshell's visual backend.
+- Evaluate =ghostel-compile= against the F4 dev-fkeys compile flow.
+- =ghostel-comint= for =M-x shell= / REPL output fidelity (optional).
+
+* Acceptance criteria
+
+The migration is complete when all hold:
+
+1. =init.el= requires =term-config= and =ai-term=; nothing in the config
+   requires =vterm-config= or =ai-vterm=.
+2. vterm / vterm-toggle packages and their keybindings are removed, after
+   ghostel parity is green.
+3. F12 normal-terminal toggle excludes agent buffers and preserves saved
+   geometry.
+4. F9 / C-F9 / M-F9 work from normal buffers AND inside =ghostel-mode=
+   buffers.
+5. AI project launch reuses/reattaches the named =aiv-= tmux session and does
+   NOT receive the generic auto-tmux launch.
+6. =C-; x c= and =C-; x h= preserve the tmux copy / history behavior.
+7. Live ghostel buffers report a writeable cursor state; ghostel copy-mode
+   reports read-only.
+8. Terminal-frame F9 launches (the refusal path and its test are gone).
+9. ghostel-unavailable degrades with a warning, not a startup failure (D6).
+10. Full test suite, byte-compile, and manual smoke all pass after a daemon
+    restart.
+
+* Test strategy
+
+- *Characterization first* (Phase 0): capture current behavior before porting
+  so parity is measurable.
+- *Stub ghostel* in the test-util layer; tests never require the native
+  module (runs in batch/CI on any machine).
+- *Rename mechanically after green*: only rename engine-agnostic
+  =test-ai-vterm--*= → =test-ai-term--*= once the baseline is green.
+- *Regression tests for D4*: no terminal-frame refusal path remains; F9
+  bindings are installed in =ghostel-mode-map=.
+- *Negative test*: agent buffers are excluded from F12 normal-terminal
+  toggling under the new buffer/mode names.
+
+* Manual-verify test matrix
+
+Per =verification.md=, filed under "Emacs Manual Testing and Validation" at
+Phase 4, run again after a daemon restart. Each: steps + expected.
+
+- Claude Code TUI in ghostel (GUI): colors true, flicker-free under heavy
+  stream, box-drawing + cursor correct.
+- Claude Code TUI in a TTY frame (velox-style =emacs -nw=): renders as
+  text+color, layout intact; inline images absent (expected).
+- F9 / C-F9 / M-F9 dispatch: toggle, pick-project, close — same behavior as
+  the vterm era, on ghostel, including from a terminal frame (now launches).
+- tmux: agent launches in its named session; second F9 reattaches; close
+  kills the session; =C-; x h= captures tmux history; =C-; x c= enters tmux
+  copy-mode.
+- copy-mode parity: =M-w= copies and stays, =q= / =C-g= exit.
+- mouse wheel inside tmux / Claude Code / lazygit scrolls correctly (this was
+  a prior explicit vterm fix being removed — confirm ghostel's native SGR
+  forwarding covers it).
+- lazygit, htop/btop, a heavy-output build, ssh to a remote: render + behave.
+- Crash recovery: kill Emacs with a live =aiv-= tmux session, restart, the
+  picker flags it =[detached]= and reattaches.
+
+* Risks / notes
+
+- *Daemon module reload*: a loaded native module needs a daemon restart to
+  upgrade; the Phase 4 restart is an acceptance gate before deleting vterm
+  (plus the gold-standard full-launch smoke per CLAUDE.md after =:config=
+  edits).
+- *Buffer naming*: forcing "agent [basename]" goes through
+  =ghostel-buffer-name-function= or a post-create rename — confirm the exact
+  hook in Phase 2.
+- *<escape> global rebind*: vterm needed a custom escape forwarder because
+  =<escape>= is globally =keyboard-escape-quit=; re-check whether ghostel in
+  semi-char mode forwards it or needs the same treatment.
+- *ssh terminfo*: ghostel advertises =TERM=xterm-ghostty=; outbound ssh to
+  hosts lacking that terminfo may need =ghostel-ssh-install-terminfo= or a
+  fallback =ghostel-term=. Covered by the ssh manual-verify row.
+- *ANSI palette*: until D2 lands, terminal ANSI colors are ghostel defaults.
+
+* Implementation tasks (drop-in for todo.org)
+
+#+begin_src org
+*** TODO [#B] Phase 0: terminal characterization baseline :terminal:ghostel:tests:
+Characterization tests for F12 dispatch/display, tmux pane-id + history replacement, AI show-or-create launch command, F9-in-terminal, cursor-state classification, dashboard launcher. Green baseline, no behavior change.
+*** TODO [#B] Phase 1: add ghostel + term-config.el :terminal:ghostel:
+ghostel use-package (MELPA, guarded per D6); term-config.el owns F12 + C-; x + copy-mode + tmux history; which-key "terminal menu"; ghostel-max-scrollback 10MB; C-; in ghostel-keymap-exceptions. Drop vterm-config from requires. Tests + ghostel stubs.
+*** TODO [#B] Phase 2: rename ai-vterm→ai-term on ghostel :terminal:ghostel:
+Swap the 6 vterm call sites; F9 family on global + ghostel-mode-map; drop refuse-in-terminal guard (D4); preserve tmux-suppression invariant. Rename engine-agnostic tests after green; rework coupled tests; add D4 + F12-excludes-agent regression tests.
+*** TODO [#B] Phase 3: port satellites to ghostel :terminal:ghostel:
+Delete auto-dim vterm integration (D1); port ui-config cursor check; dashboard launcher + "Launch Terminal" label; geometry/toggle-lib doc refs; init.el requires; module-inventory + init-load-graph doc refs.
+*** TODO [#B] Phase 4: remove vterm and vterm-toggle :terminal:ghostel:
+Delete packages + dead config + mouse-wheel/timer hacks. Full suite + byte-compile + manual smoke after daemon restart (acceptance gate). Run the manual-verify matrix.
+*** TODO [#C] Follow-up: theme ghostel ANSI faces in dupre :terminal:ghostel:dupre:
+D2 — set the 16 ghostel-color-* + ghostel-default faces in dupre-faces/palette.
+*** TODO [#C] Follow-up: evaluate ghostel-eshell + ghostel-compile :terminal:ghostel:eval:
+D3 — ghostel-eshell as eshell visual backend; ghostel-compile against F4 dev-fkeys.
+#+end_src
+
+* Review dispositions
+
+Only the *modified* recommendations are listed; everything else in the external
+review was accepted as written.
+
+- *Module-failure behavior (modified).* The reviewer recommended ghostel be required
+  and "startup may fail loudly" if the package/module can't load. Modified to
+  degrade-with-warning (D6): guarded require + =display-warning=, terminal
+  commands inert, startup unaffected. Reason: the daemon serves many frames
+  across machines and the project idiom is graceful degradation; hard-failing
+  startup on a machine missing the prebuilt module is worse than a warned
+  degrade. The rest of the recommendation (ghostel required; non-prebuilt
+  needs Zig; tests stub the module) is accepted.
+- *Scrollback value (modified → concretized).* The reviewer asked for a concrete
+  byte value or a defcustom. Chose =10 MB= as a defcustom (D7), the byte
+  analog of 100000 lines, verified under heavy output. (Not a disagreement —
+  filling the gap the review flagged.)
+
+Everything else accepted as written: D1-D5 baked as Agreed decisions;
+Implementation phases + Acceptance criteria + Dependency-failure + Test
+strategy sections added; key/menu ownership made explicit per phase;
+tmux-suppression stated as a contract; UX changes (TTY-refusal removal,
+"Launch Terminal", "terminal menu"); architecture (rename =cj/vterm-*= →
+=cj/term-*=, keep tmux fns pure, no vterm-private-redraw port); doc cleanup
+for active references; mouse-wheel manual verify; daemon-restart acceptance
+gate.
+
+* Review and iteration history
+
+** 2026-06-04 Thursday @ 23:17:54 -0500 — reviewer
+
+- *What changed or was recommended:* Ran the spec-review workflow after
+  renaming this file to the required =-spec.org= suffix. Wrote a companion
+  review with a =Not ready= rubric: D1-D5 still need acceptance, the handoff
+  needs an =Implementation phases= section, acceptance criteria are missing,
+  and ghostel package/native-module failure behavior needs an explicit v1
+  contract.
+- *Why:* The migration direction is sound, but the current draft still leaves
+  implementation-affecting decisions and completion criteria for the builder
+  to infer.
+- *Artifacts:* review file (deleted on incorporation).
+
+** 2026-06-04 Thursday @ 23:24:28 -0500 — responder
+
+- *What changed:* Incorporated the external review via the spec-response
+  workflow. Craig accepted D1-D5; baked them (plus D6 module-failure and D7
+  scrollback) into a new "Agreed decisions" section and out of "Open
+  decisions." Added Implementation phases, Acceptance criteria, Dependency /
+  module failure behavior, Test strategy, explicit per-phase key/menu
+  ownership, the tmux-suppression contract, and an Implementation-tasks
+  drop-in block. Applied the UX, architecture, doc-cleanup, and
+  manual-verify additions. Status raised DRAFT → READY.
+- *Why:* Close the "Not ready" findings — resolve the open decisions,
+  give the builder phases + acceptance criteria, and define
+  ghostel-unavailable behavior — so a reader can implement from this file.
+- *Modified vs the review:* module-failure = degrade-with-warning, not
+  fail-loud (D6 rationale); scrollback concretized to 10 MB (D7). See Review
+  dispositions. Everything else accepted as written.
+- *Artifacts:* This spec; review file deleted; =todo.org= task link updated.
+
+** 2026-06-04 Thursday @ 23:30:18 -0500 — reviewer
+
+- *What changed or was recommended:* Re-reviewed the incorporated spec and
+  assigned a =Ready= rubric. No further blocking review notes. The prior
+  blockers are closed: D1-D7 are accepted decisions, implementation phases and
+  acceptance criteria are present, ghostel-unavailable behavior is explicit,
+  key/menu ownership is phased, and implementation tasks are enumerated.
+- *Why:* Confirm the spec-response pass left an implementable handoff rather
+  than just adding prose.
+- *Artifacts:* This history entry; no new review file because the spec is
+  implementation-ready.

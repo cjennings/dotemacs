@@ -193,7 +193,7 @@ flyspell-and-abbrev is the one Core-UX member (text-mode hooks).
 | Module | Layer | Cat | Current | Target | Runtime requires | Top-level side effects | Direct load |
 |--------+-------+-----+---------+--------+------------------+------------------------+-------------|
 | =ai-config= | 3 | D/P | eager | command | keybindings, system-lib | cj/ai-keymap under cj/custom-keymap | yes |
-| =ai-vterm= | 3 | D | eager | command | cl-lib, seq, cj-window-geometry-lib, cj-window-toggle-lib, host-environment | 4 global keys | yes |
+| =ai-term= | 3 | D | eager | command | cl-lib, seq, cj-window-geometry-lib, cj-window-toggle-lib, host-environment | 4 global keys | yes |
 | =browser-config= | 3 | D/P | eager | command | cl-lib | 1 global key | yes |
 | =calendar-sync= | 3 | D/S | eager (.local.el) | eager (.local.el) | cl-lib, subr-x, system-lib, cj-org-text-lib, keybindings | calendar keymap (C-; g), guarded timer/network | yes |
 | =calibredb-epub-config= | 4 | O/D/P | eager | command | user-constants, subr-x | add-hook, advice-add, package config | yes |
@@ -236,7 +236,7 @@ owns the intentional end-of-startup buffer-bury timer.
 | =tramp-config= | 3 | D/P | eager | package | none | package config | yes |
 | =transcription-config= | 4 | O/D/P | eager | command | dired, notifications, system-lib, user-constants | 1 add-to-list | yes |
 | =video-audio-recording= | 4 | O/D/S | eager | command | system-lib, keybindings | cj/record-map under C-; r | yes |
-| =vterm-config= | 3 | D/P | eager | command | keybindings, seq, subr-x, cj-window-geometry-lib, cj-window-toggle-lib | 2 keymaps, 1 global key, 2 add-hook | yes |
+| =term-config= | 3 | D/P | eager | command | keybindings, seq, subr-x, cj-window-geometry-lib, cj-window-toggle-lib | 2 keymaps, 1 global key, 2 add-hook | yes |
 | =weather-config= | 4 | O/D/P | eager | command | none | package config | yes |
 | =wrap-up= | 2 | S | eager | eager | system-lib | one-shot startup buffer-bury timer | yes |
 

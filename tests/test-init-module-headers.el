@@ -56,7 +56,6 @@
     "selection-framework"
     "modeline-config"
     "mousetrap-mode"
-    "popper-config"
     "dashboard-config"
     "nerd-icons-config"
     ;; Batch 5 — Dev entry-points, diff, help, lint, VC (Layer 2)
@@ -96,7 +95,7 @@
     "hugo-config"
     ;; Batch 8 — Domain / integration / optional modules (Layer 2-4)
     "ai-config"
-    "ai-vterm"
+    "ai-term"
     "browser-config"
     "calendar-sync"
     "calibredb-epub-config"
@@ -130,7 +129,7 @@
     "tramp-config"
     "transcription-config"
     "video-audio-recording"
-    "vterm-config"
+    "term-config"
     "weather-config"
     "wrap-up")
   "Modules annotated with the load-graph header contract.

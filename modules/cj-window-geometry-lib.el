@@ -5,8 +5,8 @@
 ;;; Commentary:
 
 ;; Pure helpers for classifying a window's position in its frame and
-;; computing body sizes.  Shared between `ai-vterm.el' (F9 dispatch)
-;; and `vterm-config.el' (F12 dispatch); the geometry-
+;; computing body sizes.  Shared between `ai-term.el' (F9 dispatch)
+;; and `term-config.el' (F12 dispatch); the geometry-
 ;; preservation pattern in both modules captures direction + body
 ;; size at toggle-off and replays them on the next toggle-on.
 ;;

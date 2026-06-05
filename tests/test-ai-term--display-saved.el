@@ -1,10 +1,10 @@
-;;; test-ai-vterm--display-saved.el --- Tests for the display-saved action -*- lexical-binding: t; -*-
+;;; test-ai-term--display-saved.el --- Tests for the display-saved action -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; `cj/--ai-vterm-display-saved' is the split path of the F9 display
+;; `cj/--ai-term-display-saved' is the split path of the F9 display
 ;; chain -- it runs only when no agent window and no reusable edge slot
 ;; exist (a single-window frame, or a layout split on the other axis).
-;; It reads `cj/--ai-vterm-last-direction' + `cj/--ai-vterm-last-size'
+;; It reads `cj/--ai-term-last-direction' + `cj/--ai-term-last-size'
 ;; (with default fallbacks), builds an alist with direction + the
 ;; matching size key, strips any conflicting entries that came in via the
 ;; rule, and delegates to `display-buffer-in-direction'.
@@ -13,7 +13,7 @@
 ;; would have reached it.
 ;;
 ;; Multi-window toggle round-trips no longer resplit -- they reuse the
-;; existing half (see test-ai-vterm--reuse-edge-window.el), so the former
+;; existing half (see test-ai-term--reuse-edge-window.el), so the former
 ;; resplit/body-width-preservation round-trip tests were retired with the
 ;; swap-the-slot model.  The buffer-move teardown test stays here because
 ;; it exercises the split-window delete path on toggle-off.
@@ -25,79 +25,79 @@
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
-(require 'ai-vterm)
-(require 'testutil-vterm-buffers)
+(require 'ai-term)
+(require 'testutil-ghostel-buffers)
 
-(ert-deftest test-ai-vterm--display-saved-uses-desktop-defaults-when-state-nil ()
-  "Normal: nil state on a desktop -> rightmost, size=cj/ai-vterm-desktop-width.
+(ert-deftest test-ai-term--display-saved-uses-desktop-defaults-when-state-nil ()
+  "Normal: nil state on a desktop -> rightmost, size=cj/ai-term-desktop-width.
 The cardinal `right' default maps to the frame-edge variant
 `rightmost' so agent lands at the frame's right edge regardless of
 which window is selected.  `env-laptop-p' is stubbed nil to pin the
 desktop branch."
   (let (received-buf received-alist
-        (cj/--ai-vterm-last-direction nil)
-        (cj/--ai-vterm-last-size nil)
-        (cj/ai-vterm-desktop-width 0.5))
+        (cj/--ai-term-last-direction nil)
+        (cj/--ai-term-last-size nil)
+        (cj/ai-term-desktop-width 0.5))
     (cl-letf (((symbol-function 'env-laptop-p) (lambda () nil))
               ((symbol-function 'display-buffer-in-direction)
                (lambda (b a)
                  (setq received-buf b received-alist a)
                  'fake-window)))
-      (cj/--ai-vterm-display-saved 'fake-buf '((inhibit-same-window . t))))
+      (cj/--ai-term-display-saved 'fake-buf '((inhibit-same-window . t))))
     (should (eq received-buf 'fake-buf))
     (should (eq (cdr (assq 'direction received-alist)) 'rightmost))
     (should (= (cdr (assq 'window-width received-alist)) 0.5))
     (should (eq (cdr (assq 'inhibit-same-window received-alist)) t))))
 
-(ert-deftest test-ai-vterm--display-saved-uses-laptop-defaults-when-state-nil ()
-  "Normal: nil state on a laptop -> bottom, size=cj/ai-vterm-laptop-height.
+(ert-deftest test-ai-term--display-saved-uses-laptop-defaults-when-state-nil ()
+  "Normal: nil state on a laptop -> bottom, size=cj/ai-term-laptop-height.
 The cardinal `below' default maps to the frame-edge variant `bottom'
 and the size lands on the `window-height' axis.  `env-laptop-p' is
 stubbed t to pin the laptop branch."
   (let (received-alist
-        (cj/--ai-vterm-last-direction nil)
-        (cj/--ai-vterm-last-size nil)
-        (cj/ai-vterm-laptop-height 0.75))
+        (cj/--ai-term-last-direction nil)
+        (cj/--ai-term-last-size nil)
+        (cj/ai-term-laptop-height 0.75))
     (cl-letf (((symbol-function 'env-laptop-p) (lambda () t))
               ((symbol-function 'display-buffer-in-direction)
                (lambda (_b a) (setq received-alist a) 'fake-window)))
-      (cj/--ai-vterm-display-saved 'fake-buf '((inhibit-same-window . t))))
+      (cj/--ai-term-display-saved 'fake-buf '((inhibit-same-window . t))))
     (should (eq (cdr (assq 'direction received-alist)) 'bottom))
     (should (= (cdr (assq 'window-height received-alist)) 0.75))
     (should-not (assq 'window-width received-alist))))
 
-(ert-deftest test-ai-vterm--display-saved-uses-saved-direction-and-size-below ()
+(ert-deftest test-ai-term--display-saved-uses-saved-direction-and-size-below ()
   "Normal: saved direction=below maps to bottom edge; size=0.4 passes through."
   (let (received-alist
-        (cj/--ai-vterm-last-direction 'below)
-        (cj/--ai-vterm-last-size 0.4))
+        (cj/--ai-term-last-direction 'below)
+        (cj/--ai-term-last-size 0.4))
     (cl-letf (((symbol-function 'display-buffer-in-direction)
                (lambda (_b a) (setq received-alist a) 'fake-window)))
-      (cj/--ai-vterm-display-saved 'fake-buf nil))
+      (cj/--ai-term-display-saved 'fake-buf nil))
     (should (eq (cdr (assq 'direction received-alist)) 'bottom))
     (should (= (cdr (assq 'window-height received-alist)) 0.4))
     (should-not (assq 'window-width received-alist))))
 
-(ert-deftest test-ai-vterm--display-saved-uses-saved-direction-and-size-right ()
+(ert-deftest test-ai-term--display-saved-uses-saved-direction-and-size-right ()
   "Normal: saved direction=right maps to rightmost edge; size=0.7 passes through."
   (let (received-alist
-        (cj/--ai-vterm-last-direction 'right)
-        (cj/--ai-vterm-last-size 0.7))
+        (cj/--ai-term-last-direction 'right)
+        (cj/--ai-term-last-size 0.7))
     (cl-letf (((symbol-function 'display-buffer-in-direction)
                (lambda (_b a) (setq received-alist a) 'fake-window)))
-      (cj/--ai-vterm-display-saved 'fake-buf nil))
+      (cj/--ai-term-display-saved 'fake-buf nil))
     (should (eq (cdr (assq 'direction received-alist)) 'rightmost))
     (should (= (cdr (assq 'window-width received-alist)) 0.7))
     (should-not (assq 'window-height received-alist))))
 
-(ert-deftest test-ai-vterm--display-saved-strips-conflicting-alist-entries ()
+(ert-deftest test-ai-term--display-saved-strips-conflicting-alist-entries ()
   "Boundary: caller-supplied direction/size are stripped, saved values win."
   (let (received-alist
-        (cj/--ai-vterm-last-direction 'right)
-        (cj/--ai-vterm-last-size 0.7))
+        (cj/--ai-term-last-direction 'right)
+        (cj/--ai-term-last-size 0.7))
     (cl-letf (((symbol-function 'display-buffer-in-direction)
                (lambda (_b a) (setq received-alist a) 'fake-window)))
-      (cj/--ai-vterm-display-saved
+      (cj/--ai-term-display-saved
        'fake-buf
        '((direction . below)
          (window-width . 0.2)
@@ -113,17 +113,17 @@ stubbed t to pin the laptop branch."
                      received-alist)))
       (should (null wh-cells)))))
 
-(ert-deftest test-ai-vterm--display-saved-passes-buffer-through ()
+(ert-deftest test-ai-term--display-saved-passes-buffer-through ()
   "Normal: BUFFER argument reaches display-buffer-in-direction unchanged."
   (let (received-buf
-        (cj/--ai-vterm-last-direction 'right)
-        (cj/--ai-vterm-last-size 0.5))
+        (cj/--ai-term-last-direction 'right)
+        (cj/--ai-term-last-size 0.5))
     (cl-letf (((symbol-function 'display-buffer-in-direction)
                (lambda (b _a) (setq received-buf b) 'fake-window)))
-      (cj/--ai-vterm-display-saved 'sentinel-buffer nil))
+      (cj/--ai-term-display-saved 'sentinel-buffer nil))
     (should (eq received-buf 'sentinel-buffer))))
 
-(ert-deftest test-ai-vterm--toggle-after-buffer-move-no-extra-window ()
+(ert-deftest test-ai-term--toggle-after-buffer-move-no-extra-window ()
   "Regression: toggle-off must not leak a window even when buffer-move
 has cleared the agent window's `quit-restore' parameter.
 
@@ -152,11 +152,11 @@ once and no spurious extra window leaks."
               ;; Mimic buffer-move's effect: agent lives in this
               ;; window but quit-restore says nothing about it.
               (set-window-parameter agent-win 'quit-restore nil)
-              (let ((display-buffer-alist (cj/--ai-vterm-display-rule-list))
+              (let ((display-buffer-alist (cj/--ai-term-display-rule-list))
                     (window-count-before (count-windows)))
                 (select-window agent-win)
-                (cj/test--call-as-gui #'cj/ai-vterm) ; off
-                (cj/test--call-as-gui #'cj/ai-vterm) ; on
+                (cj/test--call-as-gui #'cj/ai-term) ; off
+                (cj/test--call-as-gui #'cj/ai-term) ; on
                 (should (<= (count-windows) window-count-before))
                 ;; Agent must be displayed exactly once.
                 (let ((agent-windows
@@ -169,5 +169,5 @@ once and no spurious extra window leaks."
       (when (get-buffer right-name) (kill-buffer right-name))
       (cj/test--kill-agent-buffers))))
 
-(provide 'test-ai-vterm--display-saved)
-;;; test-ai-vterm--display-saved.el ends here
+(provide 'test-ai-term--display-saved)
+;;; test-ai-term--display-saved.el ends here

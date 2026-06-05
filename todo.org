@@ -172,23 +172,88 @@ What we're verifying: emoji glyphs + fonts apply in a GUI frame even when the fi
 - in the GUI frame, open a buffer with an emoji and check it renders, and M-S-f / fonts look right
 Expected: emoji renders and fonts are applied in the GUI frame.
 
-*** AI-vterm declines in a terminal frame, still launches in a GUI frame
-What we're verifying: the per-frame guard makes the F9 family decline — message only, no vterm — in a terminal frame, while a GUI frame still launches the agent.
+*** ghostel migration: Claude Code TUI in a GUI frame
+What we're verifying: an agent runs in ghostel with good rendering (the reason for the engine swap).
+- restart Emacs (the migration changes load order + a use-package :config block)
+- in a GUI frame press F9, pick a project, let Claude stream a long response (big diff or file read)
+Expected: colors look right (not washed out), no flicker/strobing during the stream, box-drawing and the cursor render correctly.
+
+*** ghostel migration: Claude Code TUI in a TTY frame (replaces the old refuse test)
+What we're verifying: D4 dropped the GUI-only guard, so F9 now launches in a terminal frame too.
 - emacsclient -t   (TTY frame, off the running daemon)
-- in the TTY frame, press F9 (also try C-F9 and M-F9)
-- emacsclient -c   (then a GUI frame)
-- in the GUI frame, press F9 and pick a project
-Expected: in the TTY frame the echo area shows "AI-vterm is GUI-only; not available in a terminal frame" and no vterm opens; in the GUI frame the project picker opens and the agent launches as before.
+- in the TTY frame press F9 and pick a project
+Expected: the agent launches and renders as text + color in the TTY (no echo-area refusal message); inline images are absent, which is expected.
 
-** TODO [#B] Consolidate to EAT as the single terminal :terminal:eval:
+*** ghostel migration: F9 / C-F9 / M-F9 dispatch
+What we're verifying: the agent dispatch behaves as it did on vterm.
+- F9 toggles the agent window off/on; C-F9 always opens the project picker; M-F9 closes (kills the tmux session) after confirm
+- press F9 from inside an agent buffer (full-frame) — it should toggle, not get swallowed by the terminal
+Expected: each chord does its job from both normal and agent buffers.
+
+*** ghostel migration: tmux integration + C-; x menu
+What we're verifying: the tmux machinery ported intact.
+- launch an agent; M-x list it — runs in tmux session aiv-<project>
+- second F9 on the same project reattaches (no duplicate session)
+- C-; x h captures the tmux pane history into an Emacs buffer; C-; x c enters tmux copy-mode
+- C-; x l clears scrollback; C-; x n / p navigate prompts
+Expected: all menu commands work against the ghostel buffer; history capture + copy-mode behave as before.
+
+*** ghostel migration: copy-mode parity + mouse wheel
+What we're verifying: copy/selection and wheel scrolling survived the engine swap.
+- in a ghostel buffer enter copy-mode (C-; x c without tmux, or the tmux path with tmux); M-w copies and stays; q / C-g exit
+- mouse-wheel scroll inside tmux, inside Claude Code, and inside lazygit
+Expected: M-w copies without leaving; q/C-g exit; the wheel scrolls the program (this replaces the removed vterm wheel-forwarding — confirm ghostel's native SGR mouse covers it).
+
+*** ghostel migration: other TUIs + ssh
+What we're verifying: general terminal workloads render.
+- run lazygit, htop/btop, a heavy-output build, and ssh to a remote host in a ghostel terminal (F12)
+Expected: each renders and behaves correctly; ssh out works (if a remote lacks xterm-ghostty terminfo, note it — ghostel-ssh-install-terminfo / ghostel-term is the lever).
+
+*** ghostel migration: F12 general terminal + dashboard launcher
+What we're verifying: F12 manages non-agent terminals only, and the dashboard launcher uses ghostel.
+- F12 opens/toggles a general terminal; confirm it does NOT grab an agent buffer; resize it, toggle off and on — geometry is preserved
+- from the dashboard press t (Terminal) — opens a ghostel terminal (tooltip reads "Launch Terminal")
+Expected: F12 excludes agent buffers and keeps saved geometry; the dashboard launches ghostel.
+
+*** ghostel migration: crash recovery
+What we're verifying: the aiv- tmux session survives an Emacs crash and reattaches.
+- with a live agent, kill Emacs (not the tmux session); restart Emacs; F9 → project picker
+Expected: the project shows "[detached]" and reattaches to the surviving tmux session.
+
+** DOING [#B] Migrate all terminals from vterm to ghostel :terminal:ghostel:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-06-02
+:LAST_REVIEWED: 2026-06-04
 :END:
-Evaluate whether EAT can be the one terminal for all usage and, if it holds up, switch to it from vterm. Reference: [[file:docs/2026-05-25-emacs-terminal-comparison.org][docs/2026-05-25-emacs-terminal-comparison.org]] (vterm vs eat vs ghostel research).
+Replace vterm with ghostel (libghostty-vt) as the single terminal engine across every workflow, and rename ai-vterm → ai-term. References: [[file:docs/2026-05-25-emacs-terminal-comparison.org][docs/2026-05-25-emacs-terminal-comparison.org]] (vterm vs eat vs ghostel research); migration spec [[file:docs/design/vterm-to-ghostel-migration-spec.org][docs/design/vterm-to-ghostel-migration-spec.org]] (READY; external review incorporated 2026-06-04, D1-D7 agreed). Build in 5 phases (0-4); see the spec's Implementation tasks block.
 
-Goal: a single terminal engine across every workflow, including covering what eshell is used for today.
+Decisions D1-D7 are settled in the spec's Agreed-decisions section. Build order below; each phase stays green (suite + byte-compile) at every step.
 
-Open question to settle first: eshell is a shell, EAT is a terminal emulator, so EAT can't literally replace eshell. EAT's eshell story is =eat-eshell-mode=, which makes eshell use EAT for terminal display (full-screen programs run inside eshell). So "use EAT for what eshell does" most likely means one terminal engine everywhere: EAT for standalone terminal buffers (replacing vterm) plus =eat-eshell-mode= as eshell's visual backend, keeping eshell as the shell. Confirm that reading versus dropping eshell entirely for EAT + zsh.
+*** 2026-06-04 Thu @ 23:57:09 -0500 Phase 0 done: characterization baseline green
+=make test= green except the 5 documented pre-existing failures (4 test-dupre-theme, 1 test-init-module-headers), none terminal-related. Characterization coverage already present + green for all six must-survive behaviors: vterm-toggle--dispatch/display/buffer-filter, vterm-tmux-history, ai-vterm--show-or-create/launch-command/f9-in-vterm, ui-config--buffer-cursor-state + vterm-copy-mode-cursor, dashboard-config-launchers. Add a characterization test before any behavior change in later phases if a gap appears.
+
+*** 2026-06-05 Fri @ 00:38:34 -0500 Phase 1 done: ghostel + term-config.el
+=modules/term-config.el= written (full port of vterm-config: tmux history/copy-mode-dwim preserved via process-tty-name + ghostel-send-string; F12 toggle + display rule + geometry; cj/term-map C-; x menu → ghostel commands; which-key "terminal menu"; ghostel-max-scrollback 10MB; C-; added to ghostel-keymap-exceptions; F12 + C-; in ghostel-mode-map; use-package ghostel guarded per D6). Dropped: mouse-wheel SGR forwarding, vterm-timer-delay hacks, copy-mode cursor hook, goto-address hook. ghostel installed into elpa (MELPA + auto-downloaded native module). Tests: test-term-toggle--{dispatch,display,buffer-filter} + test-term-tmux-history (16) ported with a ghostel stub in testutil-ghostel-buffers; all green.
+
+*** 2026-06-05 Fri @ 00:38:34 -0500 Phase 2 done: ai-vterm→ai-term on ghostel
+=modules/ai-vterm.el= → =modules/ai-term.el=: 6 vterm call sites swapped to ghostel (buffer named via let-bound ghostel-buffer-name + pinned ghostel-buffer-name-function so OSC titles don't rename agent buffers); F9/C-F9/M-F9 on global + ghostel-mode-map; refuse-in-terminal guard removed (D4 — F9 launches in TTY frames); tmux-suppression invariant preserved (cj/--ai-term-suppress-tmux). 23 ai-vterm tests renamed → test-ai-term--* (terminal-guard test deleted, obsolete); show-or-create + f9-in-term rewritten for ghostel; all green. ui-config cursor-state ported (ghostel-mode + ghostel--input-mode; copy/emacs = read-only, else writeable) + its test. init.el now requires term-config + ai-term; vterm-config.el + ai-vterm.el deleted. Full suite green except the 5 documented pre-existing failures (4 dupre-theme, 1 init-module-headers/popper-config-missing — both unrelated). validate-modules ✓; full early-init+init smoke clean (no ghostel/term/ai-term errors). vterm package still installed (Phase 4) — dashboard "Launch VTerm" + dormant auto-dim still reference it until Phase 3/4. Restart Emacs to pick up ghostel (load-order + use-package :config change).
+
+*** TODO [#B] Phase 2: rename ai-vterm→ai-term on ghostel :terminal:ghostel:
+Swap the 6 vterm call sites; F9 family on global + ghostel-mode-map; drop refuse-in-terminal guard (D4); preserve the tmux-suppression invariant. Rename engine-agnostic tests after green; rework coupled tests; add D4 + F12-excludes-agent regression tests.
+
+*** 2026-06-05 Fri @ 00:50:58 -0500 Phase 3 done: satellites ported to ghostel
+Deleted auto-dim's vterm color-advice + redraw integration (~165 lines; D1 — terminals don't dim, ghostel bakes its palette per-terminal so there's no per-window color hook); dashboard launcher → =(ghostel)= + "Launch Terminal" label; cj-window-geometry/toggle-lib doc comments; module-inventory + init-load-graph doc refs. (ui-config cursor-state + init.el requires landed in Phase 2.) Trimmed test-auto-dim-config (dropped the 6 vterm tests) + updated the dashboard-launcher test stub. Incidental: removed the stale =popper-config= entry from the test-init-module-headers allowlist (the file doesn't exist + isn't required) — fixes the long-standing pre-existing test failure.
+
+*** 2026-06-05 Fri @ 00:50:58 -0500 Phase 4 done: vterm + vterm-toggle removed
+=package-delete='d vterm + vterm-toggle from elpa. No vterm refs remain in modules/init except intentional historical comments. Suite green except the 4 pre-existing dupre-theme failures (the popper-config one is now fixed). validate-modules ✓; full early-init+init batch smoke = INIT-SMOKE-OK. The migration parent stays DOING until Craig restarts Emacs and walks the ghostel manual-verify matrix under "Emacs Manual Testing and Validation".
+
+*** TODO [#C] Follow-up: theme ghostel ANSI faces in dupre :terminal:ghostel:dupre:
+D2 — set the 16 ghostel-color-* + ghostel-default faces in dupre-faces/palette.
+
+*** TODO [#C] Follow-up: evaluate ghostel-eshell + ghostel-compile :terminal:ghostel:eval:
+D3 — ghostel-eshell as eshell visual backend; ghostel-compile against F4 dev-fkeys.
+
+*** TODO [#C] Revisit auto-dim for ghostel terminals :terminal:ghostel:auto-dim:
+D1 shipped "terminal buffers don't participate in unfocused-window dimming" because ghostel resolves its color palette to hex and pushes it into the native module per-terminal (=ghostel--apply-palette= / =ghostel--set-palette=), so there's no per-window color hook like vterm's =vterm--get-color= advice. The spike confirmed buffer-local =face-remap= does NOT dim a ghostel buffer. Investigate the alternatives: (a) keep no-dim (current); (b) buffer-wide dim on focus-loss by re-pushing a palette blended toward bg via =ghostel-sync-theme= + redraw (per-buffer, forces a repaint, only coherent when the buffer is in one window — measure the flicker cost); (c) check whether ghostel gains/exposes a per-window dim hook upstream. Acceptance: a measured decision, not just left at the v1 default. Context: [[file:docs/design/vterm-to-ghostel-migration-spec.org][migration spec]] D1.
 
 *** 2026-05-26 Tue @ 15:15:43 -0500 Direction confirmed; Claude Code in eat needs a caveat
 Craig confirmed the consolidation: one terminal engine everywhere — eat for standalone terminal buffers (replacing vterm) plus =eat-eshell-mode= as eshell's visual backend, keeping eshell as the shell. Not dropping eshell for eat + zsh.
@@ -201,6 +266,18 @@ Eval plan (from the research doc): install EAT alongside vterm, run the same wor
 
 *** 2026-06-02 Tue @ 14:12:48 -0500 Audit: eval plan not yet run; back to TODO
 Task audit found no eval work recorded since the 2026-05-26 direction-confirmed note. The test matrix above is unrun, so the task isn't actively in progress — moved DOING back to TODO until the eval starts.
+
+*** 2026-06-04 Thu @ 22:40:27 -0500 Pivot: ghostel as the single engine (not eat)
+Direction changed from eat-everyday + ghostel-for-Claude to ghostel-for-everything, and the task is now a migration rather than an eval. Rationale: ghostel is claude-code.el's most-faithful Claude TUI renderer and the fastest engine (81 vs vterm 34 vs eat 4.9 MB/s), and an audit confirmed it exposes an analog for every vterm primitive this config uses (=ghostel-send-string=, =ghostel-keymap-exceptions=, =ghostel-copy-mode=, =ghostel-clear-scrollback=, =ghostel-send-next-key=, =ghostel-next-prompt= / =ghostel-previous-prompt=, =ghostel-max-scrollback=, =ghostel-kill-buffer-on-exit=). eat's washed colors, the scroll-pop / stuck-input bug under Claude Code, and slowest throughput made it the weaker single-engine pick; one engine beats running two. Surface audited: 2 main modules (=vterm-config.el=, =ai-vterm.el=) + 4 satellites (=auto-dim-config.el= is the heavy one) + ~35 test files + init.el. Next: spike ghostel read-only to answer the open migration questions (auto-dim rework — ARCHITECTURE.md forbids the around-redraw color advice vterm uses; tmux pane-id via =process-tty-name= on a ghostel process; buffer naming; TTY-frame behavior; copy-mode keybinding parity), then write the migration spec under =docs/design/= and review it.
+
+*** 2026-06-04 Thu @ 23:17:54 -0500 Spec review: not ready until decisions and handoff shape are closed
+Ran the spec-review workflow against [[file:docs/design/vterm-to-ghostel-migration-spec.org][docs/design/vterm-to-ghostel-migration-spec.org]] and wrote a companion review file (incorporated and deleted 2026-06-04). Verdict: =Not ready=. Direction is sound, but the draft still has open D1-D5 decisions, lacks the workflow-required =Implementation phases= section and acceptance criteria, and needs explicit ghostel package/native-module failure behavior before implementation tasks can be emitted.
+
+*** 2026-06-04 Thu @ 23:24:28 -0500 Spec-response: review incorporated, raised to READY
+Folded the external review via spec-response. Craig accepted D1-D5; baked them plus D6 (module-failure = degrade-with-warning, modifying the reviewer's fail-loud) and D7 (=ghostel-max-scrollback= 10 MB) into a new Agreed-decisions section. Added Implementation phases (0-4), Acceptance criteria, Dependency/module-failure behavior, Test strategy, per-phase key/menu ownership, the tmux-suppression contract, and an Implementation-tasks drop-in block. Status DRAFT → READY; review file deleted. Build is now unblocked.
+
+*** 2026-06-04 Thu @ 23:30:18 -0500 External re-review: ready
+Re-reviewed [[file:docs/design/vterm-to-ghostel-migration-spec.org][docs/design/vterm-to-ghostel-migration-spec.org]] after incorporation. Verdict: =Ready=. No further blocking review notes; implementation can start from the phase plan and acceptance criteria in the spec.
 
 ** PROJECT [#B] Implement ai-kb :feature:ai:kb:
 Build v1 of the AI knowledge base per [[file:docs/design/ai-kb.org][docs/design/ai-kb.org]] (Ready; six reviews incorporated, all decisions resolved 2026-05-24). Step 1 splits into 1a (the safe write path — minimum usable) and 1b (retrieval, maintenance, push), since =remember= depends on =index=+=lint= and the adapter depends on =remember=. Step 2 is the Emacs layer: a full org-roam profile on switch, the human-edit safety model (same write path as the agent), and the browsing surface. Step 3 and the LLM-Wiki layer are vNext. Children are ordered by build sequence; the server bootstrap is the prerequisite.

@@ -284,7 +284,7 @@ Category key:
 | =diff-config= | C/P | eager or package-loaded | Diff/merge UX. |
 | =erc-config= | O/D/P | command-loaded | IRC should not be startup load by default. |
 | =slack-config= | O/D/P | command-loaded | Slack package/auth and which-key registration should be after-load. |
-| =eshell-vterm-config= | D/P | command/hook-loaded | Shell/terminal packages. |
+| =eshell + term-config= | D/P | command/hook-loaded | Shell/terminal packages. |
 | =help-utils= | L/D | autoload commands | Search/help commands. |
 | =help-config= | C/P | eager or after help | Info/man/help config. |
 | =tramp-config= | D/P | package-loaded | Remote shell configuration. |
