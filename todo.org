@@ -3966,6 +3966,14 @@ Three small reveal.js improvements; collected into one task because each on its 
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-01
 :END:
+** TODO Bookmarking Calibre books should have a better title
+When I hit m in calibre, I'm making my place in the book with a bookmark.
+While sometimes, the books look fine: "The A.B.C. Murders - Agatha Christie.epub"
+Sometimes they look not so good: Engines of Logic_ Mathematicians and the O - Martin Davis.pdf or Software Architecture_ The Hard Parts _ Mo - Neal Ford.pdf
+
+What I would like to do is to have the bookmarks be saved in the following format:
+
+Author, Title [no extension]. Underscores should be stripped. 
 * Emacs Resolved
 ** DONE [#B] Fix likely =elpa-mirror-location= path bug :bug:quick:
 CLOSED: [2026-05-03 Sun]
