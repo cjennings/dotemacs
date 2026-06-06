@@ -252,16 +252,16 @@ Deleted auto-dim's vterm color-advice + redraw integration (~165 lines; D1 — t
 *** 2026-06-05 Fri @ 00:50:58 -0500 Phase 4 done: vterm + vterm-toggle removed
 =package-delete='d vterm + vterm-toggle from elpa. No vterm refs remain in modules/init except intentional historical comments. Suite green except the 4 pre-existing dupre-theme failures (the popper-config one is now fixed). validate-modules ✓; full early-init+init batch smoke = INIT-SMOKE-OK. The migration parent stays DOING until Craig restarts Emacs and walks the ghostel manual-verify matrix under "Emacs Manual Testing and Validation".
 
-*** TODO [#C] Follow-up: theme ghostel ANSI faces in dupre :terminal:ghostel:dupre:
+*** TODO [#B] Follow-up: theme ghostel ANSI faces in dupre :terminal:ghostel:dupre:
 D2 — set the 16 ghostel-color-* + ghostel-default faces in dupre-faces/palette.
 
-*** TODO [#C] Follow-up: evaluate ghostel-eshell + ghostel-compile :terminal:ghostel:eval:
+*** TODO [#B] Follow-up: evaluate ghostel-eshell + ghostel-compile :terminal:ghostel:eval:
 D3 — ghostel-eshell as eshell visual backend; ghostel-compile against F4 dev-fkeys.
 
 *** 2026-06-05 Fri @ 14:24:02 -0500 Auto-dim revisit cancelled — current no-dim behavior is fine
 Craig confirmed the shipped auto-dim setup works fine as-is: terminal buffers don't participate in unfocused-window dimming (D1), and the rest of auto-dim behaves. That is the measured decision the original task asked for — option (a), keep no-dim — so no rework (the focus-loss palette-blend in option (b) or an upstream per-window hook in option (c)) is needed. Closing without further investigation. Context: [[file:docs/design/vterm-to-ghostel-migration-spec.org][migration spec]] D1.
 
-*** TODO [#C] Investigate ghostel selection/highlight color :terminal:ghostel:
+*** TODO [#B] Investigate ghostel selection/highlight color :terminal:ghostel:
 Look at how selected text is highlighted in a ghostel buffer — the region face in =ghostel-copy-mode= and any live selection — surfaced during the copy-mode debugging. Check whether the highlight is legible against the dupre background and consistent with the rest of the config; if it needs theming, fold it in with D2 (theming the ghostel faces in dupre).
 
 *** 2026-05-26 Tue @ 15:15:43 -0500 Direction confirmed; Claude Code in eat needs a caveat
