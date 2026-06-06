@@ -41,16 +41,10 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#C] Pearl vanilla dogfooding follow-ups :pearl:cleanup:
-:PROPERTIES:
-:LAST_REVIEWED: 2026-06-05
-:END:
-From the pearl-session handoff (2026-06-02) after =modules/linear-config.el= was reduced to a vanilla pearl setup (commit 09b3b13). Open items to revisit after dogfooding pearl's out-of-box config:
-
-- Decide whether to restore any conveniences dropped in the vanilla rework: default team (DeepSat SE id, in a commented =:custom= block in linear-config.el), the custom keymap, the lazy-key advice. Weigh the eager-:config key read (fires the GPG prompt on first pearl command vs never-at-startup).
-- Confirm linear-config.el's module-header fields (Layer / Runtime requires / Direct test load) pass any module-doc linter this repo runs.
-- custom-file interaction: =system-defaults.el= redirects =custom-file= to a throwaway temp, so pearl's =customize-save-variable= persistence (default view/team) holds for the session but vanishes on restart. Set those via init-level =:custom= instead. (A pearl-side task was filed to harden pearl's persistence against a disabled custom-file.)
-
+** TODO [#A] dashboard keybinding changes
+pressing g has should refresh. find another binding for Telegram. 
+** TODO [#C] Consider consolidating/harmonizing the UI in all Message Clients
+They should have the same UI paradigms and patters for consistency. 
 ** TODO [#B] TTY-accessible personal C-; keymap :feature:ux:solo:quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-05
@@ -66,10 +60,7 @@ Easy prefix candidates (home-row-leaning, TTY-safe), same leaf keys under each:
 
 While in here, audit individual leaf chords for other non-TTY keys (any =C-RET=, super/hyper bindings — terminals can't send super/hyper either) and note or remap them. Verify the result in an actual =emacs -nw= / =emacsclient -nw= frame, not just GUI. Relates to the standing "org-mode keybinding consolidation" reminder.
 
-** DOING [#B] Signal client — forked signel :feature:
-:PROPERTIES:
-:LAST_REVIEWED: 2026-06-05
-:END:
+** DOING [#B] Signel Client Open Work
 Parent task for the Emacs Signal client. Engine: signal-cli (linked secondary device). Front end: a fork of signel at =~/code/signel=, wired through =modules/signal-config.el=. Design: [[file:docs/design/signal-client.org][docs/design/signal-client.org]]. Child issues below.
 
 *** 2026-05-26 Tue @ 20:06:58 -0500 Decided: fork signel rather than depend on it
@@ -110,125 +101,7 @@ Verified: (1) new contract test =test-signal-config-prefix-map-registered-under-
 *** 2026-05-28 Thu @ 03:09:18 -0500 Chat buffer docks bottom 30% and C-c C-k cancels
 =display-buffer-alist= entry in =modules/signal-config.el= matches =^\*Signel: = chat buffers and routes them through =display-buffer-at-bottom= with =window-height . 0.3=, so the chat docks to the bottom 30% of the frame.  The signel fork's =signel-chat= switched from =switch-to-buffer= to =pop-to-buffer= so the rule can apply (=switch-to-buffer= ignores =display-buffer-alist=).  =C-c C-c= was already bound to =signel--send-input= in the mode; =C-c C-k= now binds =signel--cancel-input=, a new fork helper that clears the editable region between =signel--input-marker= and =point-max= and then calls =quit-window=.  Buffer stays alive so chat history above the marker survives revisits; cleared input means the next visit lands on a fresh prompt.  Five ERT tests in =tests/test-signel-cancel-input.el= (clears pending, empty-area no-op, quit-window called, buffer preserved, keymap binding) and two new tests in =tests/test-signal-config.el= (entry shape + regex match set).  Dotemacs commit 998e9c7a, fork commit df02d79.
 
-** TODO [#B] Emacs Manual Testing and Validation :verify:
-SCHEDULED: <2026-05-29 Fri>
-:PROPERTIES:
-:LAST_REVIEWED: 2026-05-28
-:END:
-
-Hand-verify checklist Craig walks one item at a time after the relevant code lands. Each child names what is being verified, the exact steps to run, and the observable expected result. On pass, the child gets marked or deleted. On fail, the actual behavior gets logged under the step and the child is promoted to a top-level =TODO= bug per the verification.md handoff rule.
-
-Walk started 2026-05-28 (tests 1 + 2 verified — surfaced two Signel bugs along the way, both fixed before continuing).  Deferred to 2026-05-29: test 3 onward needs sending an actual Signal message, too late at night to be polite about it.  Picker → chat buffer opens cleanly; the send half is what remains to exercise.
-
-*** 2026-05-28 Thu @ 02:13:55 -0500 Verified: connect starts the daemon (after fix)
-=C-; M SPC= → "Signel connected." in echo area; =M-x list-processes= shows =signal-rpc= running (PID 1775279, command =/usr/bin/signal-cli -a +1510...=).  Two bugs surfaced and fixed during the verify:
-- The =with-eval-after-load 'keybindings= binding at =signal-config.el:280= didn't take effect on a fresh Emacs restart; a live-reload of =signal-config.el= activated the =C-; M= prefix.  Logged as a separate top-level TODO for follow-up (load-order or use-package interaction).
-- =cj/signel--ensure-started= referenced =signel--process-name= before signel had been autoloaded — the bare forward-declared =(defvar signel--process-name)= didn't actually bind the variable.  Fix: added =(require 'signel)= at the top of the function (=signal-config.el:170=) so the package loads before any of its private variables are read.  New ERT test =test-signal-config-ensure-started-requires-signel= captures the bug.
-
-*** 2026-05-28 Thu @ 02:16:45 -0500 Verified: picker opens with contact names
-=C-; M m= → minibuffer opened within ~1s, "Note to Self" pinned at the top, the 94 Signal contacts followed labeled "Name (+number)".  Picker behavior matches spec.  Surfaced a follow-up on the chat buffer that opens after a pick — placement + exit keys want refining; filed under L44 Signel.
-
-*** Signel: pick a contact and send a message
-What we're verifying: choosing a contact opens a chat buffer, =RET= at the prompt sends through =signel--send-input=, and the message arrives on the recipient's phone.
-- =C-; M m=, pick a contact you trust.
-- Type a short message at the prompt, press =RET=.
-- Check the recipient's phone.
-Expected: a =*Signel: +<number>*= buffer opens, the typed message renders with the =[HH:MM] <Me>= prefix on send, and arrives on the recipient's phone within a few seconds.
-
-*** Signel: Note-to-Self lands in the right Signal thread
-What we're verifying: =cj/signel-message-self= (=C-; M s=) resolves to =signel-account= and sending through it lands in the *Note to Self* thread on the phone, NOT a self-addressed display anomaly.  This is the spec's medium-priority manual verify from D3.
-- Press =C-; M s=.
-- Type "test note to self" at the prompt, press =RET=.
-- Open Signal on your phone, scroll to the *Note to Self* thread.
-Expected: a =*Signel: +<your-number>*= buffer opens in Emacs, the message sends, and the message appears in the phone's *Note to Self* thread (not in any other conversation).
-
-*** Signel: Note-to-Self via the picker's pinned entry
-What we're verifying: picking the pinned "Note to Self" entry through =cj/signel-message= resolves the same way as the direct command.
-- =C-; M m=, choose "Note to Self".
-Expected: the same =*Signel: +<your-number>*= buffer opens.  (No need to re-send; opening the right buffer proves the resolution.)
-
-*** Signel: typed input survives an incoming message
-What we're verifying: the clobber fix (fork commit 5ec56c0) preserves in-progress prompt input across =signel--insert-msg= when a message arrives mid-typing.
-- =C-; M m=, pick a contact.
-- Type a long unsent message at the prompt, do NOT press =RET=.
-- From a second device or by asking someone, send yourself a Signal message that lands in this chat (or any active chat).
-Expected: the incoming message renders above the prompt, the prompt redraws, and your typed text is still there at the prompt ready to send.
-
-*** Signel: dashboard opens
-What we're verifying: =signel-dashboard= (=C-; M d=) opens the active-chats dashboard.
-- Press =C-; M d=.
-Expected: a dashboard buffer opens listing active chats.
-
-*** Signel: stop tears down the daemon
-What we're verifying: =signel-stop= (=C-; M q=) deletes the process and clears the request-handler / buffer maps (the reconnect-invalidation contract from fork commit 4740d97).
-- Press =C-; M q=.
-- =M-x list-processes=.
-Expected: echo area shows "Signel service stopped.", and =list-processes= no longer lists =signal-rpc=.
-
-*** Signel: refresh forces a fresh contact fetch
-What we're verifying: =cj/signel-refresh-contacts= clears the cache and re-fetches via the new callback contract.
-- =C-; M SPC= to reconnect if you ran the stop test above.
-- =M-x cj/signel-refresh-contacts=.
-- Immediately =C-; M m=.
-Expected: the picker still opens cleanly with the same contact list (the refresh is silent; the picker is the visible check).  If you added a contact on the phone, it now appears.
-
-*** Font setup reaches a GUI frame created after a TTY frame (daemon)
-What we're verifying: emoji glyphs + fonts apply in a GUI frame even when the first daemon frame was a TTY.
-- emacs --daemon
-- emacsclient -t   (TTY frame first)
-- emacsclient -c   (then a GUI frame)
-- in the GUI frame, open a buffer with an emoji and check it renders, and M-S-f / fonts look right
-Expected: emoji renders and fonts are applied in the GUI frame.
-
-*** ghostel migration: Claude Code TUI in a GUI frame
-What we're verifying: an agent runs in ghostel with good rendering (the reason for the engine swap).
-- restart Emacs (the migration changes load order + a use-package :config block)
-- in a GUI frame press F9, pick a project, let Claude stream a long response (big diff or file read)
-Expected: colors look right (not washed out), no flicker/strobing during the stream, box-drawing and the cursor render correctly.
-
-*** ghostel migration: Claude Code TUI in a TTY frame (replaces the old refuse test)
-What we're verifying: D4 dropped the GUI-only guard, so F9 now launches in a terminal frame too.
-- emacsclient -t   (TTY frame, off the running daemon)
-- in the TTY frame press F9 and pick a project
-Expected: the agent launches and renders as text + color in the TTY (no echo-area refusal message); inline images are absent, which is expected.
-
-*** ghostel migration: F9 / C-F9 / M-F9 dispatch
-What we're verifying: the agent dispatch behaves as it did on vterm.
-- F9 toggles the agent window off/on; C-F9 always opens the project picker; M-F9 closes (kills the tmux session) after confirm
-- press F9 from inside an agent buffer (full-frame) — it should toggle, not get swallowed by the terminal
-Expected: each chord does its job from both normal and agent buffers.
-
-*** ghostel migration: tmux integration + C-; x menu
-What we're verifying: the tmux machinery ported intact.
-- launch an agent; M-x list it — runs in tmux session aiv-<project>
-- second F9 on the same project reattaches (no duplicate session)
-- C-; x h captures the tmux pane history into an Emacs buffer; C-; x c enters tmux copy-mode
-- C-; x l clears scrollback; C-; x n / p navigate prompts
-Expected: all menu commands work against the ghostel buffer; history capture + copy-mode behave as before.
-
-*** ghostel migration: copy-mode parity + mouse wheel
-What we're verifying: copy/selection and wheel scrolling survived the engine swap.
-- in a ghostel buffer enter copy-mode (C-; x c without tmux, or the tmux path with tmux); M-w copies and stays; q / C-g exit
-- mouse-wheel scroll inside tmux, inside Claude Code, and inside lazygit
-Expected: M-w copies without leaving; q/C-g exit; the wheel scrolls the program (this replaces the removed vterm wheel-forwarding — confirm ghostel's native SGR mouse covers it).
-
-*** ghostel migration: other TUIs + ssh
-What we're verifying: general terminal workloads render.
-- run lazygit, htop/btop, a heavy-output build, and ssh to a remote host in a ghostel terminal (F12)
-Expected: each renders and behaves correctly; ssh out works (if a remote lacks xterm-ghostty terminfo, note it — ghostel-ssh-install-terminfo / ghostel-term is the lever).
-
-*** ghostel migration: F12 general terminal + dashboard launcher
-What we're verifying: F12 manages non-agent terminals only, and the dashboard launcher uses ghostel.
-- F12 opens/toggles a general terminal; confirm it does NOT grab an agent buffer; resize it, toggle off and on — geometry is preserved
-- from the dashboard press t (Terminal) — opens a ghostel terminal (tooltip reads "Launch Terminal")
-Expected: F12 excludes agent buffers and keeps saved geometry; the dashboard launches ghostel.
-
-*** ghostel migration: crash recovery
-What we're verifying: the aiv- tmux session survives an Emacs crash and reattaches.
-- with a live agent, kill Emacs (not the tmux session); restart Emacs; F9 → project picker
-Expected: the project shows "[detached]" and reattaches to the surviving tmux session.
-
-** DOING [#B] Migrate all terminals from vterm to ghostel :terminal:ghostel:
+** DOING [#B] Migrate All Terminals From Vterm to Ghostel :terminal:ghostel:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-04
 :END:
@@ -3966,14 +3839,55 @@ Three small reveal.js improvements; collected into one task because each on its 
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-01
 :END:
-** TODO Bookmarking Calibre books should have a better title
+** DOING Project-aware bug capture via C-c c t :feature:capture:
+Relocated from the global capture inbox 2026-06-06. When inside a projectile project, C-c c t (Task) files into that project's root todo.org under the "<Project> Open Work" header. If the project has no todo.org, fall back to the global inbox-file and warn naming the project.
+
+Implemented 2026-06-06 in =modules/org-capture-config.el=: a shared project-aware =function= capture target (=cj/--org-capture-project-location=) used by =C-c c t= (Task, =* TODO=) and a new =C-c c b= (Bug, =* TODO [#C]=). Matches an existing top-level "... Open Work" heading (so ~/.emacs.d hits "Emacs Open Work") and creates "<Capitalized project> Open Work" only when absent. Outside a project / no todo.org -> global inbox under "Inbox" (with a warning in the no-todo.org case). 15 ERT tests in =tests/test-org-capture-config-project-target.el=; daemon e2e confirmed a real capture lands "** TODO [#C] ..." prepended under Open Work. Awaiting Craig's interactive manual verify (see the Manual Testing task) before close. NOTE: the matching "<Project> Resolved Work" header for the wrap-up workflow is a separate concern, not handled here.
+
+** TODO [#A] Calibre Open Work :calibre:
+Parent grouping the open Calibre / ebook-workflow issues; close each child independently. The EPUB reading-width tasks were already resolved (2026-05-12/14).
+
+*** DOING Calibre bookmark title format :feature:solo:quick:
 When I hit m in calibre, I'm making my place in the book with a bookmark.
 While sometimes, the books look fine: "The A.B.C. Murders - Agatha Christie.epub"
 Sometimes they look not so good: Engines of Logic_ Mathematicians and the O - Martin Davis.pdf or Software Architecture_ The Hard Parts _ Mo - Neal Ford.pdf
 
 What I would like to do is to have the bookmarks be saved in the following format:
 
-Author, Title [no extension]. Underscores should be stripped. 
+Author, Title [no extension]. Underscores should be stripped.
+
+Root cause: in a nov buffer =m= is =bookmark-set= (rebound at calibredb-epub-config.el:311); nov's =nov-bookmark-make-record= names the record =(buffer-name)= -- the EPUB filename.
+
+Implemented 2026-06-06. Source decision: parse the *filename*, not the embedded EPUB metadata -- under Calibre's "<Title> - <Author>.epub" naming the filename is more complete (the embedded metadata had truncated titles, author-sort "Last, First" forms, and lost punctuation; see the separate metadata-cleanup task). A =:filter-return= advice on =nov-bookmark-make-record= rebuilds the name from the record's filename: split on the last " - " into title/author, restore the colon Calibre sanitized to "_ " (-> ": "), reorder to "Author, Title". Pure helpers =cj/--nov-clean-title= + =cj/--nov-bookmark-name-from-file= in =modules/calibredb-epub-config.el=; 10 ERT tests in =tests/test-calibredb-epub-config--bookmark-name.el=. Live in the daemon.
+
+Existing bookmarks: the 3 nov bookmarks in =~/sync/org/emacs_bookmarks= were renamed by hand (one-pass, in the daemon + saved; backup at =emacs_bookmarks.bak-2026-06-06=): "Edward Kanterian, Frege: A Guide for the Perplexed", "Agatha Christie, The A.B.C. Murders", "Edward Abbey, The Fool's Progress: An Honest Novel".
+
+Awaiting Craig's manual confirm: make a NEW bookmark (open an EPUB, hit m) and check the default name is "Author, Title" from the filename.
+
+*** DOING [#A] Reconsider Calibre keybindings :feature:ux:
+Relocated from the global capture inbox 2026-06-06. Want a discoverable set of keybindings (visible in which-key) for the most frequent calibredb workflows:
+- Switch to a library (e.g. Literature), sort by last name, scroll the list.
+- Scope/filter the list in place, keeping the current library scope:
+  - by format (e.g. epubs only)
+  - by author last name (exact == or ^begins-with some text)
+  - sort by title, publication date, or group by format
+- One key pops up the selected book's description in a bottom-30% buffer, dismissed with q (same display pattern as the signel chat dock).
+- RET opens the book in the appropriate viewer.
+Survey finding 2026-06-06: calibredb already binds almost all of this in calibredb-search-mode-map (S/L library, g filter [f format, a author, t tag, d date], o sort [t title, a author, p pubdate, f format], RET open) and even ships transient menus (? = calibredb-dispatch, g, o). The real problem was discoverability -- they are top-level single keys (which-key never pops up) and Craig didn't know ? opened a menu. calibredb-quick-look is macOS-only; the detail view (v -> *calibredb-entry*, q quits) is the description but opens full-window.
+
+Implemented 2026-06-06 in =modules/calibredb-epub-config.el=:
+- A curated transient =cj/calibredb-menu= (library switch; filter format/author/reset; sort author/title/pubdate/format; open; describe; H = full calibredb-dispatch) bound to =?= in calibredb-search-mode-map. calibredb's own full dispatch moved to =H=. Defined in the use-package =:config= (needs the elpa transient, which batch doesn't load) -- the "? brings up a curated help menu" convention.
+- Bottom-30% description dock: =calibredb-show-entry-switch= -> =pop-to-buffer= + a =display-buffer-alist= rule for =*calibredb-entry*= (display-buffer-at-bottom, height 0.3); =cj/calibredb-describe-at-point= shows the entry without switching focus so q dismisses it. Same pattern as the signel chat dock.
+1 ERT test (the describe command; the transient/bindings/dock need the elpa transient + live calibredb, verified in the daemon). Author "begins-with" is covered well enough by g a's completing-read over "Last, First"; a true regex filter was not built. Awaiting Craig's manual verify (M-B -> ? menu; d/v docked description; H full menu).
+
+*** TODO Embed Calibre DB metadata into the EPUB files :data:maintenance:
+Surfaced 2026-06-06 while building the bookmark naming: the metadata embedded in the EPUB files' OPF is worse than Calibre's database metadata. nov reads the embedded OPF and got truncated titles ("Frege" vs the filename's "Frege: A Guide for the Perplexed"), author-sort "Last, First" forms ("Christie, Agatha"), and lost punctuation ("A.B.C." -> "A B C"). The filenames (from Calibre's curated DB) are the good copy. Fix on the Calibre side: select all (or by library), run "Edit metadata -> Embed metadata into book files" so the DB metadata is written into each EPUB's OPF. Consider auditing author vs author_sort first. After embedding, the in-file metadata matches the library and any tool reading the files (nov, other readers, re-imports) gets the good data. Not an Emacs task; Calibre-side bulk maintenance.
+
+** TODO "? = curated help menu" convention across modes :feature:ux:discoverability:
+From the calibredb keybindings work 2026-06-06. The pattern that worked: in a modal/major-mode buffer (calibredb), bind =?= to a curated transient of the frequent workflows, and move the package's own full dispatch to =H=. It fixes the "I can't discover the keys" problem that which-key can't help with (which-key only pops up after a prefix, not for top-level single keys in a mode-map).
+
+Task: survey the modes/modules Craig works in and identify where a =?= -> curated-help-menu (transient) makes sense. Candidates: any major-mode buffer with single-key bindings and no good discovery affordance -- calibredb (done), nov, dirvish, mu4e, ghostel/term, signel, pearl/linear, ELFeed, etc. For each, note whether =?= is free or already a help dispatch, and whether a curated menu (vs the package's own) adds value. Establish it as a convention (and maybe a small helper/macro to define a curated =?= menu consistently).
+
 * Emacs Resolved
 ** DONE [#B] Fix likely =elpa-mirror-location= path bug :bug:quick:
 CLOSED: [2026-05-03 Sun]
@@ -6991,3 +6905,162 @@ Changes in progress (modules/auth-config.el):
 - Use epa-pinentry-mode 'loopback in terminal
 - Use external pinentry (pinentry-dmenu) in GUI
 - Requires env-terminal-p from host-environment module
+** DONE [#B] Emacs Manual Testing and Validation :verify:
+CLOSED: [2026-06-06 Sat 13:59] SCHEDULED: <2026-05-29 Fri>
+:PROPERTIES:
+:LAST_REVIEWED: 2026-05-28
+:END:
+
+Hand-verify checklist Craig walks one item at a time after the relevant code lands. Each child names what is being verified, the exact steps to run, and the observable expected result. On pass, the child gets marked or deleted. On fail, the actual behavior gets logged under the step and the child is promoted to a top-level =TODO= bug per the verification.md handoff rule.
+
+Walk started 2026-05-28 (tests 1 + 2 verified — surfaced two Signel bugs along the way, both fixed before continuing).  Deferred to 2026-05-29: test 3 onward needs sending an actual Signal message, too late at night to be polite about it.  Picker → chat buffer opens cleanly; the send half is what remains to exercise.
+
+*** Project-aware capture: C-c c t files into the project's Open Work
+What we're verifying: inside a projectile project that has a root todo.org, C-c c t (Task) files the new entry under that project's "<Project> Open Work" heading.
+- Open a file inside a projectile project whose root has a todo.org (e.g. this one, ~/.emacs.d).
+- Press C-c c, then t.
+- Type a short task, finish with C-c C-c.
+Expected: the entry lands as a new "** TODO ..." at the top of that project's "... Open Work" heading (e.g. "Emacs Open Work"), not in the global inbox.
+
+*** Project-aware capture: C-c c b files a [#C] bug
+What we're verifying: C-c c b (Bug) behaves like the Task capture but stamps the entry [#C].
+- Inside the same project, press C-c c, then b.
+- Type a short bug description, finish with C-c C-c.
+Expected: a "** TODO [#C] ..." entry lands at the top of the project's "... Open Work" heading.
+
+*** Nov bookmark naming: "Author, Title" instead of the raw filename
+What we're verifying: bookmarking your place in an EPUB names the bookmark "Author, Title" parsed from the filename (Calibre's "<Title> - <Author>.epub"), reordered with the colon restored — not the raw filename.
+- Open an EPUB in nov (m is bound to bookmark-set there).
+- Press m to set a bookmark.
+- Look at the default name in the bookmark prompt.
+Expected: the default is "<Author>, <Title>" (e.g. "Agatha Christie, The A.B.C. Murders"; a colon where the filename had "_ "), no extension, no underscores — not the raw filename.
+
+*** Calibredb curated menu on ? and full dispatch on H
+What we're verifying: in the calibredb buffer, ? opens the curated workflow menu and H opens calibredb's full dispatch.
+- M-B to open calibredb.
+- Press ?.
+- Press a key for a workflow (e.g. o to open, f format filter), or q to quit the menu.
+- Press H.
+Expected: ? shows the curated transient (Library / Filter / Sort / Book columns with your workflows); the keys run the right calibredb commands; q quits. H shows calibredb's full menu.
+
+*** Calibredb description docks to the bottom 30%
+What we're verifying: viewing a book's description docks it to the bottom 30% and q dismisses it.
+- M-B, move to a book.
+- Press ? then d (or v).
+- Read the description.
+- Press q.
+Expected: the *calibredb-entry* detail buffer opens docked across the bottom ~30% of the frame (not full-window); q closes it and returns to the list.
+
+*** Project-aware capture: inbox fallback + warning
+What we're verifying: outside a project (or in a project with no todo.org) the capture falls back to the global inbox; the no-todo.org case also warns.
+- Open a scratch file not inside any projectile project, C-c c t, type a task, C-c C-c. Expect it under "Inbox" in the global inbox file.
+- (If easy) open a file in a projectile project that has NO todo.org, C-c c t. Expect it in the global inbox AND an echo-area message naming the project.
+
+*** 2026-05-28 Thu @ 02:13:55 -0500 Verified: connect starts the daemon (after fix)
+=C-; M SPC= → "Signel connected." in echo area; =M-x list-processes= shows =signal-rpc= running (PID 1775279, command =/usr/bin/signal-cli -a +1510...=).  Two bugs surfaced and fixed during the verify:
+- The =with-eval-after-load 'keybindings= binding at =signal-config.el:280= didn't take effect on a fresh Emacs restart; a live-reload of =signal-config.el= activated the =C-; M= prefix.  Logged as a separate top-level TODO for follow-up (load-order or use-package interaction).
+- =cj/signel--ensure-started= referenced =signel--process-name= before signel had been autoloaded — the bare forward-declared =(defvar signel--process-name)= didn't actually bind the variable.  Fix: added =(require 'signel)= at the top of the function (=signal-config.el:170=) so the package loads before any of its private variables are read.  New ERT test =test-signal-config-ensure-started-requires-signel= captures the bug.
+
+*** 2026-05-28 Thu @ 02:16:45 -0500 Verified: picker opens with contact names
+=C-; M m= → minibuffer opened within ~1s, "Note to Self" pinned at the top, the 94 Signal contacts followed labeled "Name (+number)".  Picker behavior matches spec.  Surfaced a follow-up on the chat buffer that opens after a pick — placement + exit keys want refining; filed under L44 Signel.
+
+*** Signel: pick a contact and send a message
+What we're verifying: choosing a contact opens a chat buffer, =RET= at the prompt sends through =signel--send-input=, and the message arrives on the recipient's phone.
+- =C-; M m=, pick a contact you trust.
+- Type a short message at the prompt, press =RET=.
+- Check the recipient's phone.
+Expected: a =*Signel: +<number>*= buffer opens, the typed message renders with the =[HH:MM] <Me>= prefix on send, and arrives on the recipient's phone within a few seconds.
+
+*** Signel: Note-to-Self lands in the right Signal thread
+What we're verifying: =cj/signel-message-self= (=C-; M s=) resolves to =signel-account= and sending through it lands in the *Note to Self* thread on the phone, NOT a self-addressed display anomaly.  This is the spec's medium-priority manual verify from D3.
+- Press =C-; M s=.
+- Type "test note to self" at the prompt, press =RET=.
+- Open Signal on your phone, scroll to the *Note to Self* thread.
+Expected: a =*Signel: +<your-number>*= buffer opens in Emacs, the message sends, and the message appears in the phone's *Note to Self* thread (not in any other conversation).
+
+*** Signel: Note-to-Self via the picker's pinned entry
+What we're verifying: picking the pinned "Note to Self" entry through =cj/signel-message= resolves the same way as the direct command.
+- =C-; M m=, choose "Note to Self".
+Expected: the same =*Signel: +<your-number>*= buffer opens.  (No need to re-send; opening the right buffer proves the resolution.)
+
+*** Signel: typed input survives an incoming message
+What we're verifying: the clobber fix (fork commit 5ec56c0) preserves in-progress prompt input across =signel--insert-msg= when a message arrives mid-typing.
+- =C-; M m=, pick a contact.
+- Type a long unsent message at the prompt, do NOT press =RET=.
+- From a second device or by asking someone, send yourself a Signal message that lands in this chat (or any active chat).
+Expected: the incoming message renders above the prompt, the prompt redraws, and your typed text is still there at the prompt ready to send.
+
+*** Signel: dashboard opens
+What we're verifying: =signel-dashboard= (=C-; M d=) opens the active-chats dashboard.
+- Press =C-; M d=.
+Expected: a dashboard buffer opens listing active chats.
+
+*** Signel: stop tears down the daemon
+What we're verifying: =signel-stop= (=C-; M q=) deletes the process and clears the request-handler / buffer maps (the reconnect-invalidation contract from fork commit 4740d97).
+- Press =C-; M q=.
+- =M-x list-processes=.
+Expected: echo area shows "Signel service stopped.", and =list-processes= no longer lists =signal-rpc=.
+
+*** Signel: refresh forces a fresh contact fetch
+What we're verifying: =cj/signel-refresh-contacts= clears the cache and re-fetches via the new callback contract.
+- =C-; M SPC= to reconnect if you ran the stop test above.
+- =M-x cj/signel-refresh-contacts=.
+- Immediately =C-; M m=.
+Expected: the picker still opens cleanly with the same contact list (the refresh is silent; the picker is the visible check).  If you added a contact on the phone, it now appears.
+
+*** Font setup reaches a GUI frame created after a TTY frame (daemon)
+What we're verifying: emoji glyphs + fonts apply in a GUI frame even when the first daemon frame was a TTY.
+- emacs --daemon
+- emacsclient -t   (TTY frame first)
+- emacsclient -c   (then a GUI frame)
+- in the GUI frame, open a buffer with an emoji and check it renders, and M-S-f / fonts look right
+Expected: emoji renders and fonts are applied in the GUI frame.
+
+*** ghostel migration: Claude Code TUI in a GUI frame
+What we're verifying: an agent runs in ghostel with good rendering (the reason for the engine swap).
+- restart Emacs (the migration changes load order + a use-package :config block)
+- in a GUI frame press F9, pick a project, let Claude stream a long response (big diff or file read)
+Expected: colors look right (not washed out), no flicker/strobing during the stream, box-drawing and the cursor render correctly.
+
+*** ghostel migration: Claude Code TUI in a TTY frame (replaces the old refuse test)
+What we're verifying: D4 dropped the GUI-only guard, so F9 now launches in a terminal frame too.
+- emacsclient -t   (TTY frame, off the running daemon)
+- in the TTY frame press F9 and pick a project
+Expected: the agent launches and renders as text + color in the TTY (no echo-area refusal message); inline images are absent, which is expected.
+
+*** ghostel migration: F9 / C-F9 / M-F9 dispatch
+What we're verifying: the agent dispatch behaves as it did on vterm.
+- F9 toggles the agent window off/on; C-F9 always opens the project picker; M-F9 closes (kills the tmux session) after confirm
+- press F9 from inside an agent buffer (full-frame) — it should toggle, not get swallowed by the terminal
+Expected: each chord does its job from both normal and agent buffers.
+
+*** ghostel migration: tmux integration + C-; x menu
+What we're verifying: the tmux machinery ported intact.
+- launch an agent; M-x list it — runs in tmux session aiv-<project>
+- second F9 on the same project reattaches (no duplicate session)
+- C-; x h captures the tmux pane history into an Emacs buffer; C-; x c enters tmux copy-mode
+- C-; x l clears scrollback; C-; x n / p navigate prompts
+Expected: all menu commands work against the ghostel buffer; history capture + copy-mode behave as before.
+
+*** ghostel migration: copy-mode parity + mouse wheel
+What we're verifying: copy/selection and wheel scrolling survived the engine swap.
+- in a ghostel buffer enter copy-mode (C-; x c without tmux, or the tmux path with tmux); M-w copies and stays; q / C-g exit
+- mouse-wheel scroll inside tmux, inside Claude Code, and inside lazygit
+Expected: M-w copies without leaving; q/C-g exit; the wheel scrolls the program (this replaces the removed vterm wheel-forwarding — confirm ghostel's native SGR mouse covers it).
+
+*** ghostel migration: other TUIs + ssh
+What we're verifying: general terminal workloads render.
+- run lazygit, htop/btop, a heavy-output build, and ssh to a remote host in a ghostel terminal (F12)
+Expected: each renders and behaves correctly; ssh out works (if a remote lacks xterm-ghostty terminfo, note it — ghostel-ssh-install-terminfo / ghostel-term is the lever).
+
+*** ghostel migration: F12 general terminal + dashboard launcher
+What we're verifying: F12 manages non-agent terminals only, and the dashboard launcher uses ghostel.
+- F12 opens/toggles a general terminal; confirm it does NOT grab an agent buffer; resize it, toggle off and on — geometry is preserved
+- from the dashboard press t (Terminal) — opens a ghostel terminal (tooltip reads "Launch Terminal")
+Expected: F12 excludes agent buffers and keeps saved geometry; the dashboard launches ghostel.
+
+*** ghostel migration: crash recovery
+What we're verifying: the aiv- tmux session survives an Emacs crash and reattaches.
+- with a live agent, kill Emacs (not the tmux session); restart Emacs; F9 → project picker
+Expected: the project shows "[detached]" and reattaches to the surviving tmux session.
+
