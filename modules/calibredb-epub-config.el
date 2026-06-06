@@ -51,6 +51,7 @@
 
 (require 'user-constants)  ;; for books-dir
 (require 'subr-x)
+(require 'transient)       ;; cj/calibredb-menu is a transient prefix
 
 ;; Declare functions from lazy-loaded packages
 (declare-function calibredb-find-create-search-buffer "calibredb" ())
@@ -58,6 +59,24 @@
 (declare-function cj/open-file-with-command "system-utils" (command))
 (declare-function nov-render-document "nov" ())
 (defvar nov-text-width)                 ; from nov.el; set buffer-local here
+
+;; calibredb commands the curated menu drives (all autoloaded by calibredb)
+(declare-function calibredb-switch-library "calibredb" ())
+(declare-function calibredb-filter-by-book-format "calibredb" ())
+(declare-function calibredb-filter-by-author-sort "calibredb" ())
+(declare-function calibredb-search-clear-filter "calibredb" ())
+(declare-function calibredb-sort-by-author "calibredb" ())
+(declare-function calibredb-sort-by-title "calibredb" ())
+(declare-function calibredb-sort-by-pubdate "calibredb" ())
+(declare-function calibredb-sort-by-format "calibredb" ())
+(declare-function calibredb-find-file "calibredb" ())
+(declare-function calibredb-dispatch "calibredb" ())
+(declare-function calibredb-show-entry "calibredb" (entry &optional switch))
+(declare-function calibredb-find-candidate-at-point "calibredb" ())
+(declare-function calibredb-search-refresh-or-resume "calibredb" (&optional begin position))
+(defvar calibredb-show-entry-switch)    ; from calibredb-show.el
+(defvar calibredb-sort-by)              ; from calibredb-core.el
+(defvar calibredb-search-filter)        ; from calibredb-search.el
 
 ;; -------------------------- CalibreDB Ebook Manager --------------------------
 
@@ -73,6 +92,23 @@
   ;; empty string resets keyword filter and refreshes listing
   (calibredb-search-keyword-filter ""))
 
+(defun cj/calibredb-describe-at-point ()
+  "Show the book at point in the docked *calibredb-entry* buffer.
+Displays the entry without switching focus back to the list, so it lands
+in the bottom-docked window (see the `display-buffer-alist' entry below)
+and q (`calibredb-entry-quit') dismisses it."
+  (interactive)
+  (calibredb-show-entry (car (calibredb-find-candidate-at-point))))
+
+(defun cj/--calibredb-sort-preserving-filter (field)
+  "Set `calibredb-sort-by' to FIELD and refresh, keeping the active filter.
+calibredb's own `calibredb-sort-by-*' commands refresh with
+`calibredb-search-refresh-and-clear-filter', which drops the active filter
+on every sort.  This refreshes with `calibredb-search-refresh-or-resume',
+which re-applies `calibredb-search-filter' instead."
+  (setq calibredb-sort-by field)
+  (calibredb-search-refresh-or-resume))
+
 (use-package calibredb
   :commands calibredb
   :bind
@@ -80,7 +116,10 @@
   ;; use built-in filter by tag, add clear-filters
   (:map calibredb-search-mode-map
 		("l" . calibredb-filter-by-tag)
-		("L" . cj/calibredb-clear-filters))
+		("L" . cj/calibredb-clear-filters)
+		;; "?" -> curated menu of frequent workflows; "H" -> the full dispatch
+		("?" . cj/calibredb-menu)
+		("H" . calibredb-dispatch))
   :config
   ;; basic config
   (setq calibredb-root-dir books-dir)
@@ -88,6 +127,50 @@
   (setq calibredb-program "/usr/bin/calibredb")
   (setq calibredb-preferred-format "epub")
   (setq calibredb-search-page-max-rows 500)
+  ;; Dock the book-detail buffer to the bottom 30%; q dismisses it.
+  ;; `pop-to-buffer' honours `display-buffer-alist' (the default
+  ;; `switch-to-buffer-other-window' would not).
+  (setq calibredb-show-entry-switch #'pop-to-buffer)
+  (add-to-list 'display-buffer-alist
+			   '("\\`\\*calibredb-entry\\*\\'"
+				 (display-buffer-at-bottom)
+				 (window-height . 0.3)))
+  ;; A curated menu of the frequent calibredb workflows, bound to `?' in the
+  ;; search buffer; calibredb's own full dispatch (the wall of every command)
+  ;; moves to `H'.  Defined here in `:config' so it only builds once calibredb
+  ;; (and its matching transient) is loaded.  This is the "? brings up a
+  ;; discoverable help menu" convention.
+  (transient-define-prefix cj/calibredb-menu ()
+	"Frequent calibredb workflows."
+	[["Library"
+	  ("l" "switch library"      calibredb-switch-library)]
+	 ["Filter"
+	  ("f" "format"              calibredb-filter-by-book-format)
+	  ("a" "author"              calibredb-filter-by-author-sort)
+	  ("x" "reset filter"        calibredb-search-clear-filter)]
+	 ["Sort"
+	  ("A" "author (last name)"  calibredb-sort-by-author)
+	  ("t" "title"               calibredb-sort-by-title)
+	  ("p" "pubdate"             calibredb-sort-by-pubdate)
+	  ("g" "group by format"     calibredb-sort-by-format)]
+	 ["Book"
+	  ("o" "open"                calibredb-find-file)
+	  ("d" "describe"            cj/calibredb-describe-at-point)
+	  ("H" "full calibredb menu" calibredb-dispatch)]]
+	[("q" "quit" transient-quit-one)])
+
+  ;; Keep the active filter when sorting.  calibredb's macro-generated
+  ;; `calibredb-sort-by-*' commands refresh-and-clear-filter, dropping the
+  ;; filter on every sort; override each to refresh-or-resume so the filter
+  ;; survives.  Named advice keeps the override idempotent across reloads.
+  (dolist (field '(id title author format date pubdate tag size language))
+	(let ((cmd (intern (format "calibredb-sort-by-%s" field)))
+		  (adv (intern (format "cj/--calibredb-sort-keep-filter-%s" field)))
+		  (f field))
+	  (defalias adv
+		(lambda (&rest _) (interactive) (cj/--calibredb-sort-preserving-filter f))
+		(format "Sort by %s, keeping the active filter (override)." field))
+	  (advice-add cmd :override adv)))
 
   ;; search window display
   (setq calibredb-size-show nil)
