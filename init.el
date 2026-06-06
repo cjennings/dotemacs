@@ -73,7 +73,7 @@
 (require 'diff-config)           ;; diff and merge functionality w/in Emacs
 (require 'erc-config)            ;; seamless IRC client
 (require 'slack-config)          ;; slack client via emacs-slack
-(require 'linear-config)         ;; Linear.app issue tracking (deepsat workspace)
+(require 'pearl-config)          ;; Linear.app issue tracking via pearl (deepsat + craigjennings)
 (require 'telega-config)         ;; telegram client via telega.el (TDLib in docker)
 (require 'signal-config)         ;; signal client via forked signel + signal-cli
 (require 'eshell-config)         ;; emacs shell configuration
