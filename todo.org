@@ -41,10 +41,53 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#A] dashboard keybinding changes
-pressing g has should refresh. find another binding for Telegram. 
-** TODO [#C] Consider consolidating/harmonizing the UI in all Message Clients
-They should have the same UI paradigms and patters for consistency. 
+** TODO [#B] Dashboard keybinding changes :quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-06
+:END:
+pressing g has should refresh. find another binding for Telegram.
+** TODO [#A] Calibre Open Work :calibre:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-06
+:END:
+Parent grouping the open Calibre / ebook-workflow issues; close each child independently. The EPUB reading-width tasks were already resolved (2026-05-12/14).
+
+*** DOING Calibre bookmark title format :feature:solo:quick:
+When I hit m in calibre, I'm making my place in the book with a bookmark.
+While sometimes, the books look fine: "The A.B.C. Murders - Agatha Christie.epub"
+Sometimes they look not so good: Engines of Logic_ Mathematicians and the O - Martin Davis.pdf or Software Architecture_ The Hard Parts _ Mo - Neal Ford.pdf
+
+What I would like to do is to have the bookmarks be saved in the following format:
+
+Author, Title [no extension]. Underscores should be stripped.
+
+Root cause: in a nov buffer =m= is =bookmark-set= (rebound at calibredb-epub-config.el:311); nov's =nov-bookmark-make-record= names the record =(buffer-name)= -- the EPUB filename.
+
+Implemented 2026-06-06. Source decision: parse the *filename*, not the embedded EPUB metadata -- under Calibre's "<Title> - <Author>.epub" naming the filename is more complete (the embedded metadata had truncated titles, author-sort "Last, First" forms, and lost punctuation; see the separate metadata-cleanup task). A =:filter-return= advice on =nov-bookmark-make-record= rebuilds the name from the record's filename: split on the last " - " into title/author, restore the colon Calibre sanitized to "_ " (-> ": "), reorder to "Author, Title". Pure helpers =cj/--nov-clean-title= + =cj/--nov-bookmark-name-from-file= in =modules/calibredb-epub-config.el=; 10 ERT tests in =tests/test-calibredb-epub-config--bookmark-name.el=. Live in the daemon.
+
+Existing bookmarks: the 3 nov bookmarks in =~/sync/org/emacs_bookmarks= were renamed by hand (one-pass, in the daemon + saved; backup at =emacs_bookmarks.bak-2026-06-06=): "Edward Kanterian, Frege: A Guide for the Perplexed", "Agatha Christie, The A.B.C. Murders", "Edward Abbey, The Fool's Progress: An Honest Novel".
+
+Awaiting Craig's manual confirm: make a NEW bookmark (open an EPUB, hit m) and check the default name is "Author, Title" from the filename.
+
+*** DOING [#A] Reconsider Calibre keybindings :feature:ux:
+Relocated from the global capture inbox 2026-06-06. Want a discoverable set of keybindings (visible in which-key) for the most frequent calibredb workflows:
+- Switch to a library (e.g. Literature), sort by last name, scroll the list.
+- Scope/filter the list in place, keeping the current library scope:
+  - by format (e.g. epubs only)
+  - by author last name (exact == or ^begins-with some text)
+  - sort by title, publication date, or group by format
+- One key pops up the selected book's description in a bottom-30% buffer, dismissed with q (same display pattern as the signel chat dock).
+- RET opens the book in the appropriate viewer.
+Survey finding 2026-06-06: calibredb already binds almost all of this in calibredb-search-mode-map (S/L library, g filter [f format, a author, t tag, d date], o sort [t title, a author, p pubdate, f format], RET open) and even ships transient menus (? = calibredb-dispatch, g, o). The real problem was discoverability -- they are top-level single keys (which-key never pops up) and Craig didn't know ? opened a menu. calibredb-quick-look is macOS-only; the detail view (v -> *calibredb-entry*, q quits) is the description but opens full-window.
+
+Implemented 2026-06-06 in =modules/calibredb-epub-config.el=:
+- A curated transient =cj/calibredb-menu= (library switch; filter format/author/reset; sort author/title/pubdate/format; open; describe; H = full calibredb-dispatch) bound to =?= in calibredb-search-mode-map. calibredb's own full dispatch moved to =H=. Defined in the use-package =:config= (needs the elpa transient, which batch doesn't load) -- the "? brings up a curated help menu" convention.
+- Bottom-30% description dock: =calibredb-show-entry-switch= -> =pop-to-buffer= + a =display-buffer-alist= rule for =*calibredb-entry*= (display-buffer-at-bottom, height 0.3); =cj/calibredb-describe-at-point= shows the entry without switching focus so q dismisses it. Same pattern as the signel chat dock.
+1 ERT test (the describe command; the transient/bindings/dock need the elpa transient + live calibredb, verified in the daemon). Author "begins-with" is covered well enough by g a's completing-read over "Last, First"; a true regex filter was not built. Awaiting Craig's manual verify (M-B -> ? menu; d/v docked description; H full menu).
+
+*** TODO Embed Calibre DB metadata into the EPUB files :data:maintenance:
+Surfaced 2026-06-06 while building the bookmark naming: the metadata embedded in the EPUB files' OPF is worse than Calibre's database metadata. nov reads the embedded OPF and got truncated titles ("Frege" vs the filename's "Frege: A Guide for the Perplexed"), author-sort "Last, First" forms ("Christie, Agatha"), and lost punctuation ("A.B.C." -> "A B C"). The filenames (from Calibre's curated DB) are the good copy. Fix on the Calibre side: select all (or by library), run "Edit metadata -> Embed metadata into book files" so the DB metadata is written into each EPUB's OPF. Consider auditing author vs author_sort first. After embedding, the in-file metadata matches the library and any tool reading the files (nov, other readers, re-imports) gets the good data. Not an Emacs task; Calibre-side bulk maintenance.
+
 ** TODO [#B] TTY-accessible personal C-; keymap :feature:ux:solo:quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-05
@@ -61,6 +104,9 @@ Easy prefix candidates (home-row-leaning, TTY-safe), same leaf keys under each:
 While in here, audit individual leaf chords for other non-TTY keys (any =C-RET=, super/hyper bindings — terminals can't send super/hyper either) and note or remap them. Verify the result in an actual =emacs -nw= / =emacsclient -nw= frame, not just GUI. Relates to the standing "org-mode keybinding consolidation" reminder.
 
 ** DOING [#B] Signel Client Open Work
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-06
+:END:
 Parent task for the Emacs Signal client. Engine: signal-cli (linked secondary device). Front end: a fork of signel at =~/code/signel=, wired through =modules/signal-config.el=. Design: [[file:docs/design/signal-client.org][docs/design/signal-client.org]]. Child issues below.
 
 *** 2026-05-26 Tue @ 20:06:58 -0500 Decided: fork signel rather than depend on it
@@ -162,12 +208,6 @@ Folded the external review via spec-response. Craig accepted D1-D5; baked them p
 
 *** 2026-06-04 Thu @ 23:30:18 -0500 External re-review: ready
 Re-reviewed [[file:docs/design/vterm-to-ghostel-migration-spec.org][docs/design/vterm-to-ghostel-migration-spec.org]] after incorporation. Verdict: =Ready=. No further blocking review notes; implementation can start from the phase plan and acceptance criteria in the spec.
-
-** TODO [#C] Slack message buffers in a reused popup window :slack:ux:quick:
-:PROPERTIES:
-:LAST_REVIEWED: 2026-06-05
-:END:
-Display slack.el message and thread buffers in a dedicated popup window (side or bottom) and reuse that one window instead of spawning a new window per buffer. Likely a =display-buffer-alist= rule (or popper integration) in =modules/slack-config.el=.
 
 ** PROJECT [#B] Implement ai-kb :feature:ai:kb:
 Build v1 of the AI knowledge base per [[file:docs/design/ai-kb.org][docs/design/ai-kb.org]] (Ready; six reviews incorporated, all decisions resolved 2026-05-24). Step 1 splits into 1a (the safe write path — minimum usable) and 1b (retrieval, maintenance, push), since =remember= depends on =index=+=lint= and the adapter depends on =remember=. Step 2 is the Emacs layer: a full org-roam profile on switch, the human-edit safety model (same write path as the agent), and the browsing surface. Step 3 and the LLM-Wiki layer are vNext. Children are ordered by build sequence; the server bootstrap is the prerequisite.
@@ -577,7 +617,7 @@ Update the =dev-fkeys.el= header comment (L33) — TS/JS is no longer punted; th
 
 ** TODO [#B] Fix up test runner :bug:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-28
+:LAST_REVIEWED: 2026-06-06
 :END:
 *** 2026-05-16 Sat @ 11:15:51 -0500 Ideas
 **** Current State
@@ -2418,7 +2458,23 @@ configuration (=text-config=, =diff-config=, =ledger-config=,
 =games-config=, =mu4e-org-contacts-setup=, =telega-config=,
 =httpd-config=, =org-agenda-config-debug=).
 
-** TODO [#C] M-F9 ai-vterm close removes the window split :quick:solo:
+** TODO [#B] Add Signal to the dashboard :quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-01
+:END:
+** TODO [#C] Consider consolidating/harmonizing the UI in all Message Clients
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-06
+:END:
+They should have the same UI paradigms and patters for consistency.
+** TODO [#C] Slack message buffers in a reused popup window :slack:ux:quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-05
+:END:
+Display slack.el message and thread buffers in a dedicated popup window (side or bottom) and reuse that one window instead of spawning a new window per buffer. Likely a =display-buffer-alist= rule (or popper integration) in =modules/slack-config.el=.
+
+** DONE [#C] M-F9 ai-vterm close removes the window split :quick:solo:
+CLOSED: [2026-06-06 Sat]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-02
 :END:
@@ -2426,6 +2482,9 @@ Closing the ai-vterm with M-F9 while its window is in a split deletes the split 
 
 *** 2026-06-02 Tue @ 14:12:48 -0500 Audit: still a bug, distinct from the F9 collapse
 The F9 toggle-off rework (38dad92) made F9 collapse the split by design, but that's the toggle path. This is M-F9 close (kills the agent process): close should leave the surrounding layout intact, not delete the sibling window. Craig confirmed it's still a bug. cj/--ai-vterm-close-buffer still calls delete-window.
+
+*** 2026-06-06 Sat @ 18:18:17 -0500 Fixed: close swaps the window to a non-agent buffer instead of deleting it
+=cj/--ai-term-close-buffer= no longer calls =delete-window=; it swaps the agent's window to the working buffer (=cj/--ai-term-most-recent-non-agent-buffer=), then kills the agent buffer, so the split survives. F9 hide still collapses the split by design; close no longer does. Regression test =test-ai-term--close-buffer-keeps-window-split=. Commit =1a097b7e=.
 
 ** TODO [#C] Implement EMMS-free music-config architecture :refactor:
 :PROPERTIES:
@@ -2552,7 +2611,7 @@ Depends on: command + Dired/Dirvish rewire.
 
 ** TODO [#C] music-config option-combination audit + tests :tests:harden:solo:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-28
+:LAST_REVIEWED: 2026-06-06
 :END:
 
 Two-part task surfaced 2026-05-28 during the Signel verify walk — generalized from the "are there combinations of options that we'd want to disallow together" question.
@@ -3728,18 +3787,6 @@ Write the README at the artifact: short prose entry point summarizing the tier m
 *** TODO [#C] Commentary header in early-init.el :docs:
 Add a Commentary-section header in =early-init.el= pointing at =.localrepo/README.org= for usage and =docs/design/localrepo.org= for architecture. Sits at the top of the localrepo block (around L130).
 
-** TODO [#D] Treesitter grammar offline cache :feature:offline:localrepo:
-Treesitter grammars are downloaded by =treesit-auto= on first use and live outside the localrepo. For true offline reproducibility, cache the grammars next to the localrepo (a =.localrepo/treesitter/= tier, or a separate mirror script). Cross-linked from =docs/design/localrepo.org=.
-
-** TODO [#D] Native-comp .eln cache strategy :feature:offline:localrepo:
-The native-comp =.eln= cache is Emacs-version-specific; an Emacs upgrade invalidates everything. Document the cache location, what an upgrade triggers, and whether a warm-the-cache script is worth shipping. Cross-linked from =docs/design/localrepo.org=.
-
-** TODO [#D] System-tool dependency install script :feature:offline:localrepo:
-=ripgrep=, =fd=, =pandoc=, =prettier=, =pyright=, and other binaries that =cj/executable-find-or-warn= flags at module load are not in =package.el='s reach. Document the required-tool set and ship a setup script (or =pacman=/=apt= invocation set). Cross-linked from =docs/design/localrepo.org=.
-
-** TODO [#D] Localrepo refresh / update script :feature:offline:localrepo:
-No dedicated update path today — refreshing a pinned package means ad-hoc =cp= from the local elpa mirrors. Document the current shape and decide whether a =scripts/refresh-localrepo.sh= is worth writing. Cross-linked from =docs/design/localrepo.org=.
-
 ** TODO [#C] TRAMP/dirvish "?" for remote dates — verify the fix per host :bug:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-02
@@ -3799,6 +3846,18 @@ Restart the daemon, open a GUI frame, trigger an encrypted decrypt, confirm =pin
 *** TODO [#C] Archive the original L3813 task :chore:
 After this work lands, mark the original "Finish terminal GPG pinentry configuration" task DONE with a =CLOSED:= stamp and a one-line note pointing at this parent task.
 
+** TODO [#D] Treesitter grammar offline cache :feature:offline:localrepo:
+Treesitter grammars are downloaded by =treesit-auto= on first use and live outside the localrepo. For true offline reproducibility, cache the grammars next to the localrepo (a =.localrepo/treesitter/= tier, or a separate mirror script). Cross-linked from =docs/design/localrepo.org=.
+
+** TODO [#D] Native-comp .eln cache strategy :feature:offline:localrepo:
+The native-comp =.eln= cache is Emacs-version-specific; an Emacs upgrade invalidates everything. Document the cache location, what an upgrade triggers, and whether a warm-the-cache script is worth shipping. Cross-linked from =docs/design/localrepo.org=.
+
+** TODO [#D] System-tool dependency install script :feature:offline:localrepo:
+=ripgrep=, =fd=, =pandoc=, =prettier=, =pyright=, and other binaries that =cj/executable-find-or-warn= flags at module load are not in =package.el='s reach. Document the required-tool set and ship a setup script (or =pacman=/=apt= invocation set). Cross-linked from =docs/design/localrepo.org=.
+
+** TODO [#D] Localrepo refresh / update script :feature:offline:localrepo:
+No dedicated update path today — refreshing a pinned package means ad-hoc =cp= from the local elpa mirrors. Document the current shape and decide whether a =scripts/refresh-localrepo.sh= is worth writing. Cross-linked from =docs/design/localrepo.org=.
+
 ** TODO [#D] Dashboard over-scroll: pin last line to window bottom :bug:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-05-22
@@ -3835,53 +3894,10 @@ Three small reveal.js improvements; collected into one task because each on its 
 2. *Default font sizing for slide elements.* Configure reveal.js font sizes for headings, body text, code blocks, etc. — better defaults via =org-reveal-head-preamble= CSS or a custom theme.
 3. *Custom dupre reveal.js theme.* CSS theme using the colors from =themes/dupre-palette.el=. Install into =reveal.js/css/theme/= for use with =#+REVEAL_THEME: dupre=.
 
-** TODO [#B] Add Signal to the dashboard :quick:
-:PROPERTIES:
-:LAST_REVIEWED: 2026-06-01
-:END:
 ** DOING Project-aware bug capture via C-c c t :feature:capture:
 Relocated from the global capture inbox 2026-06-06. When inside a projectile project, C-c c t (Task) files into that project's root todo.org under the "<Project> Open Work" header. If the project has no todo.org, fall back to the global inbox-file and warn naming the project.
 
 Implemented 2026-06-06 in =modules/org-capture-config.el=: a shared project-aware =function= capture target (=cj/--org-capture-project-location=) used by =C-c c t= (Task, =* TODO=) and a new =C-c c b= (Bug, =* TODO [#C]=). Matches an existing top-level "... Open Work" heading (so ~/.emacs.d hits "Emacs Open Work") and creates "<Capitalized project> Open Work" only when absent. Outside a project / no todo.org -> global inbox under "Inbox" (with a warning in the no-todo.org case). 15 ERT tests in =tests/test-org-capture-config-project-target.el=; daemon e2e confirmed a real capture lands "** TODO [#C] ..." prepended under Open Work. Awaiting Craig's interactive manual verify (see the Manual Testing task) before close. NOTE: the matching "<Project> Resolved Work" header for the wrap-up workflow is a separate concern, not handled here.
-
-** TODO [#A] Calibre Open Work :calibre:
-Parent grouping the open Calibre / ebook-workflow issues; close each child independently. The EPUB reading-width tasks were already resolved (2026-05-12/14).
-
-*** DOING Calibre bookmark title format :feature:solo:quick:
-When I hit m in calibre, I'm making my place in the book with a bookmark.
-While sometimes, the books look fine: "The A.B.C. Murders - Agatha Christie.epub"
-Sometimes they look not so good: Engines of Logic_ Mathematicians and the O - Martin Davis.pdf or Software Architecture_ The Hard Parts _ Mo - Neal Ford.pdf
-
-What I would like to do is to have the bookmarks be saved in the following format:
-
-Author, Title [no extension]. Underscores should be stripped.
-
-Root cause: in a nov buffer =m= is =bookmark-set= (rebound at calibredb-epub-config.el:311); nov's =nov-bookmark-make-record= names the record =(buffer-name)= -- the EPUB filename.
-
-Implemented 2026-06-06. Source decision: parse the *filename*, not the embedded EPUB metadata -- under Calibre's "<Title> - <Author>.epub" naming the filename is more complete (the embedded metadata had truncated titles, author-sort "Last, First" forms, and lost punctuation; see the separate metadata-cleanup task). A =:filter-return= advice on =nov-bookmark-make-record= rebuilds the name from the record's filename: split on the last " - " into title/author, restore the colon Calibre sanitized to "_ " (-> ": "), reorder to "Author, Title". Pure helpers =cj/--nov-clean-title= + =cj/--nov-bookmark-name-from-file= in =modules/calibredb-epub-config.el=; 10 ERT tests in =tests/test-calibredb-epub-config--bookmark-name.el=. Live in the daemon.
-
-Existing bookmarks: the 3 nov bookmarks in =~/sync/org/emacs_bookmarks= were renamed by hand (one-pass, in the daemon + saved; backup at =emacs_bookmarks.bak-2026-06-06=): "Edward Kanterian, Frege: A Guide for the Perplexed", "Agatha Christie, The A.B.C. Murders", "Edward Abbey, The Fool's Progress: An Honest Novel".
-
-Awaiting Craig's manual confirm: make a NEW bookmark (open an EPUB, hit m) and check the default name is "Author, Title" from the filename.
-
-*** DOING [#A] Reconsider Calibre keybindings :feature:ux:
-Relocated from the global capture inbox 2026-06-06. Want a discoverable set of keybindings (visible in which-key) for the most frequent calibredb workflows:
-- Switch to a library (e.g. Literature), sort by last name, scroll the list.
-- Scope/filter the list in place, keeping the current library scope:
-  - by format (e.g. epubs only)
-  - by author last name (exact == or ^begins-with some text)
-  - sort by title, publication date, or group by format
-- One key pops up the selected book's description in a bottom-30% buffer, dismissed with q (same display pattern as the signel chat dock).
-- RET opens the book in the appropriate viewer.
-Survey finding 2026-06-06: calibredb already binds almost all of this in calibredb-search-mode-map (S/L library, g filter [f format, a author, t tag, d date], o sort [t title, a author, p pubdate, f format], RET open) and even ships transient menus (? = calibredb-dispatch, g, o). The real problem was discoverability -- they are top-level single keys (which-key never pops up) and Craig didn't know ? opened a menu. calibredb-quick-look is macOS-only; the detail view (v -> *calibredb-entry*, q quits) is the description but opens full-window.
-
-Implemented 2026-06-06 in =modules/calibredb-epub-config.el=:
-- A curated transient =cj/calibredb-menu= (library switch; filter format/author/reset; sort author/title/pubdate/format; open; describe; H = full calibredb-dispatch) bound to =?= in calibredb-search-mode-map. calibredb's own full dispatch moved to =H=. Defined in the use-package =:config= (needs the elpa transient, which batch doesn't load) -- the "? brings up a curated help menu" convention.
-- Bottom-30% description dock: =calibredb-show-entry-switch= -> =pop-to-buffer= + a =display-buffer-alist= rule for =*calibredb-entry*= (display-buffer-at-bottom, height 0.3); =cj/calibredb-describe-at-point= shows the entry without switching focus so q dismisses it. Same pattern as the signel chat dock.
-1 ERT test (the describe command; the transient/bindings/dock need the elpa transient + live calibredb, verified in the daemon). Author "begins-with" is covered well enough by g a's completing-read over "Last, First"; a true regex filter was not built. Awaiting Craig's manual verify (M-B -> ? menu; d/v docked description; H full menu).
-
-*** TODO Embed Calibre DB metadata into the EPUB files :data:maintenance:
-Surfaced 2026-06-06 while building the bookmark naming: the metadata embedded in the EPUB files' OPF is worse than Calibre's database metadata. nov reads the embedded OPF and got truncated titles ("Frege" vs the filename's "Frege: A Guide for the Perplexed"), author-sort "Last, First" forms ("Christie, Agatha"), and lost punctuation ("A.B.C." -> "A B C"). The filenames (from Calibre's curated DB) are the good copy. Fix on the Calibre side: select all (or by library), run "Edit metadata -> Embed metadata into book files" so the DB metadata is written into each EPUB's OPF. Consider auditing author vs author_sort first. After embedding, the in-file metadata matches the library and any tool reading the files (nov, other readers, re-imports) gets the good data. Not an Emacs task; Calibre-side bulk maintenance.
 
 ** TODO "? = curated help menu" convention across modes :feature:ux:discoverability:
 From the calibredb keybindings work 2026-06-06. The pattern that worked: in a modal/major-mode buffer (calibredb), bind =?= to a curated transient of the frequent workflows, and move the package's own full dispatch to =H=. It fixes the "I can't discover the keys" problem that which-key can't help with (which-key only pops up after a prefix, not for top-level single keys in a mode-map).
@@ -6886,7 +6902,7 @@ Filed 2026-06-02 from a C-f8/C-f9 mix-up. Priority set [#C] (UX polish) — re-g
 
 ** TODO [#C] Color dashboard navigator independently of list items :feature:ux:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-05-28
+:LAST_REVIEWED: 2026-06-06
 :END:
 The dashboard navigator (icons + labels) and the recentf/project/bookmark list items are both painted by =dashboard-items-face=: the navigator gets a =dashboard-items-face= overlay, and overlays beat text properties, so the per-button =dashboard-navigator= face is inert. To color the navigator independently of the items, override where that overlay is applied — advise or redefine =dashboard-insert-navigator=, or strip/replace the overlay's face.
 Triggered by: 2026-05-22 dashboard color work (L105).
