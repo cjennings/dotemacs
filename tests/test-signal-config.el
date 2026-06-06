@@ -368,6 +368,16 @@ commands the workflow spec names."
   (should (eq (keymap-lookup cj/signel-prefix-map "SPC")
               #'cj/signel-connect)))
 
+(ert-deftest test-signal-config-prefix-map-registered-under-c-semi-m ()
+  "Normal: loading signal-config registers `cj/signel-prefix-map' under
+`M' in `cj/custom-keymap', so C-; M reaches the signel prefix.  Guards
+the wiring contract that the load-order bug broke: signal-config must
+register through `cj/register-prefix-map', not a boundp-guarded direct
+mutation that silently no-ops when keybindings loaded in a different
+order."
+  (require 'keybindings)
+  (should (eq (keymap-lookup cj/custom-keymap "M") cj/signel-prefix-map)))
+
 ;;; display-buffer-alist entry for *Signel: ...* chat buffers
 
 (ert-deftest test-signal-config-chat-buffer-display-rule-uses-bottom-30 ()
