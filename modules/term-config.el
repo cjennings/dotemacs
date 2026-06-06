@@ -29,10 +29,12 @@
 ;; Two ways to lift text out of a terminal, both with the same key story:
 ;;   - C-; x c  enters copy-mode via `cj/term-copy-mode-dwim'.  When a tmux
 ;;     client is attached (typical -- `cj/term-launch-tmux' auto-starts tmux),
-;;     sends tmux's prefix C-b [ so the user lands in tmux's own copy-mode with
-;;     the full pane history available.  Without tmux, falls back to
+;;     sends tmux's prefix C-b [ then C-a, so the user lands in tmux's own
+;;     copy-mode with the full pane history and the cursor at column 0 (so
+;;     scrolling up runs up the left, not the right).  Without tmux, falls back to
 ;;     `ghostel-copy-mode' (read-only standard-Emacs navigation over the
-;;     scrollback; M-w copies and stays, q / C-g exit).
+;;     scrollback; M-w copies and stays, q / C-g exit) and moves point to the
+;;     start of the line for the same column-0 reason.
 ;;   - C-; x h  captures the current tmux pane's full history into a temporary
 ;;     Emacs buffer.
 ;; In both copy surfaces, M-w copies the active region and stays open so several
@@ -190,13 +192,19 @@ cheap boolean predicate."
   "Enter copy-mode using the engine appropriate to this terminal.
 
 When tmux is attached, write tmux's default prefix sequence (C-b [) into the
-pty so the user lands in tmux's copy-mode with the full pane history.  Without
-tmux, falls through to `ghostel-copy-mode', a read-only standard-Emacs view of
-the scrollback (M-w copies and stays, q / C-g exit)."
+pty so the user lands in tmux's copy-mode with the full pane history, then
+C-a to land the cursor at the start of the line.  Without the trailing C-a
+the copy cursor inherits the live column (far right after a prompt) and
+scrolling up runs up the right edge; tmux's emacs copy-mode binds C-a to
+start-of-line, so column 0 makes it run up the left.  Without tmux, falls
+through to `ghostel-copy-mode' (a read-only standard-Emacs view of the
+scrollback; M-w copies and stays, q / C-g exit), then moves point to the
+start of the line for the same column-0 reason."
   (interactive)
   (if (cj/term--in-tmux-p)
-      (ghostel-send-string "\C-b[")
-    (ghostel-copy-mode)))
+      (ghostel-send-string "\C-b[\C-a")
+    (ghostel-copy-mode)
+    (beginning-of-line)))
 
 ;; ----------------------------- ghostel package -------------------------------
 

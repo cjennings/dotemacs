@@ -260,8 +260,11 @@ ghostel-mode terminal."
         (should-not tmux-called)))))
 
 (ert-deftest test-term-copy-mode-dwim-sends-tmux-prefix-when-attached ()
-  "Normal: with tmux attached, dwim writes C-b [ into the pty so tmux enters
-its own copy-mode against the full pane history."
+  "Normal: with tmux attached, dwim writes C-b [ then C-a into the pty so
+tmux enters its own copy-mode and lands the cursor at the start of the
+line.  Without the trailing C-a the cursor inherits the live column (far
+right after a prompt) and scrolling up runs up the right edge; start-of-line
+puts it at column 0 so it runs up the left."
   (let ((agent (cj/test--make-fake-ghostel-buffer "agent [emacs.d]"))
         (sent nil)
         (copy-mode-called nil))
@@ -279,16 +282,20 @@ its own copy-mode against the full pane history."
                 '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
                    "/dev/pts/8\t%8\n"))
               (cj/term-copy-mode-dwim)
-              (should (equal sent '("\C-b[")))
+              (should (equal sent '("\C-b[\C-a")))
               (should-not copy-mode-called))))
       (when (buffer-live-p agent)
         (kill-buffer agent)))))
 
 (ert-deftest test-term-copy-mode-dwim-falls-back-without-tmux ()
-  "Boundary: without tmux, dwim calls `ghostel-copy-mode' and sends nothing."
+  "Boundary: without tmux, dwim calls `ghostel-copy-mode' then moves point
+to the start of the line and sends nothing to the pty.  The
+`beginning-of-line' must run after `ghostel-copy-mode' so it repositions
+inside the copy view; column 0 keeps the cursor on the left edge while
+scrolling, parity with the tmux branch's trailing C-a."
   (let ((agent (cj/test--make-fake-ghostel-buffer "agent [emacs.d]"))
         (sent nil)
-        (copy-mode-called nil))
+        (dwim-order nil))
     (unwind-protect
         (with-current-buffer agent
           (cl-letf (((symbol-function 'get-buffer-process)
@@ -298,13 +305,15 @@ its own copy-mode against the full pane history."
                     ((symbol-function 'ghostel-send-string)
                      (lambda (s) (push s sent)))
                     ((symbol-function 'ghostel-copy-mode)
-                     (lambda () (setq copy-mode-called t))))
+                     (lambda () (push 'copy-mode dwim-order)))
+                    ((symbol-function 'beginning-of-line)
+                     (lambda (&optional _n) (push 'beginning-of-line dwim-order))))
             (test-term-tmux-history--with-tmux-mock
                 '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 1
                    "no server running"))
               (cj/term-copy-mode-dwim)
               (should-not sent)
-              (should copy-mode-called))))
+              (should (equal (reverse dwim-order) '(copy-mode beginning-of-line))))))
       (when (buffer-live-p agent)
         (kill-buffer agent)))))
 
