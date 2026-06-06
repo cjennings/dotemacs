@@ -54,8 +54,10 @@
 ;;          instead of toggling the current one.
 ;; - M-F9   `cj/ai-term-close' -- gracefully close an agent: kill its
 ;;          tmux session (stopping the agent process), then its terminal
-;;          buffer and window.  Confirms first.  Targets the current
-;;          agent, the sole live agent, or prompts among several.
+;;          buffer.  Its window stays in the layout (swapped to the
+;;          working buffer), so closing never collapses a split.  Confirms
+;;          first.  Targets the current agent, the sole live agent, or
+;;          prompts among several.
 ;; - C-S-F9 `cj/ai-term-close' -- same close command, second binding.
 ;;          (M-F9 is the primary; C-S-F9 may be swallowed by the
 ;;          Wayland/PGTK layer on some machines.)
@@ -859,12 +861,14 @@ down."
     (error nil)))
 
 (defun cj/--ai-term-close-buffer (buffer)
-  "Gracefully tear down AI-term BUFFER: tmux session, window, buffer.
+  "Gracefully tear down AI-term BUFFER: tmux session, then buffer.
 
 Derives the tmux session name from BUFFER's `default-directory' (the
 project dir the terminal was created in) and kills it so the agent
-process stops.  Deletes BUFFER's window when it's shown and isn't the
-only window in its frame, then kills BUFFER (suppressing the
+process stops.  When BUFFER is shown, swaps its window to a non-agent
+buffer (the working file) rather than deleting the window -- closing an
+agent must not collapse the user's window layout; the F9 hide toggle is
+what collapses the split.  Then kills BUFFER (suppressing the
 process-still-running prompt -- the session is already down).  No-op
 when BUFFER isn't an AI-term buffer."
   (when (cj/--ai-term-buffer-p buffer)
@@ -872,8 +876,11 @@ when BUFFER isn't an AI-term buffer."
      (cj/--ai-term-tmux-session-name
       (buffer-local-value 'default-directory buffer)))
     (let ((win (get-buffer-window buffer)))
-      (when (and win (> (length (window-list (window-frame win) 'never)) 1))
-        (delete-window win)))
+      (when (window-live-p win)
+        (with-selected-window win
+          (switch-to-buffer
+           (or (cj/--ai-term-most-recent-non-agent-buffer)
+               (other-buffer buffer t))))))
     (let ((kill-buffer-query-functions nil))
       (kill-buffer buffer))))
 
