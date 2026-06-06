@@ -113,7 +113,7 @@
     "jumper"
     "latex-config"
     ;; Batch 9 — Remaining domain / integration / optional modules (Layer 2-4)
-    "linear-config"
+    "pearl-config"
     "local-repository"
     "lorem-optimum"
     "mail-config"

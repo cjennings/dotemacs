@@ -220,7 +220,7 @@ owns the intentional end-of-startup buffer-bury timer.
 
 | Module | Layer | Cat | Current | Target | Runtime requires | Top-level side effects | Direct load |
 |--------+-------+-----+---------+--------+------------------+------------------------+-------------|
-| =linear-config= | 3 | D/P | eager | command | system-lib | package config | yes |
+| =pearl-config= | 3 | D/P | eager | command | system-lib | package config | yes |
 | =local-repository= | 4 | O/D/P | eager | command | elpa-mirror | none | yes |
 | =lorem-optimum= | 4 | O/L | eager | command | cl-lib | none | yes |
 | =mail-config= | 3 | D/P | eager | command | user-constants, system-lib, mu4e-attachments, keybindings | cj/email-map under cj/custom-keymap, add-hook, 2 advice, 1 global key | yes |
