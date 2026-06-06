@@ -42,6 +42,8 @@
 (declare-function org-get-heading "org")
 (declare-function org-parse-time-string "org")
 (declare-function pdf-view-active-region-text "pdf-view")
+(declare-function projectile-project-root "projectile" (&optional dir))
+(defvar inbox-file)
 
 (defvar cj/org-capture--file-headline-target-cache (make-hash-table :test #'equal)
   "Cache Org capture file+headline target markers by expanded file and headline.")
@@ -132,6 +134,88 @@ re-scanning large target files after the first successful lookup."
   (advice-add 'org-capture-set-target-location
               :around #'cj/org-capture--set-target-location-advice))
 
+;; ----------------------- Project-Aware Capture Target ------------------------
+;; C-c c t (Task) and C-c c b (Bug) file into the current projectile project's
+;; todo.org under its "... Open Work" heading.  Outside a project they fall back
+;; to the global inbox; in a project with no todo.org they fall back to the
+;; inbox with a warning (they never create a project's todo.org).
+
+(defconst cj/--org-open-work-heading-regexp
+  "^\\*[ \t]+.*Open Work\\(?:[ \t]+:[^\n]*:\\)?[ \t]*$"
+  "Regexp matching a top-level \"... Open Work\" Org heading line.")
+
+(defun cj/--org-capture-project-name (root)
+  "Return a display project name for ROOT directory, or nil.
+The basename of ROOT with a single leading dot stripped and the first
+letter upcased: \"~/.emacs.d/\" -> \"Emacs.d\", \"~/code/duet/\" -> \"Duet\"."
+  (when (and (stringp root) (not (string-empty-p root)))
+    (let* ((base (file-name-nondirectory (directory-file-name root)))
+           (clean (if (and (> (length base) 1) (eq ?. (aref base 0)))
+                      (substring base 1)
+                    base)))
+      (and (not (string-empty-p clean))
+           (concat (upcase (substring clean 0 1)) (substring clean 1))))))
+
+(defun cj/--org-capture-project-target (root inbox)
+  "Pure capture-target decision for project-aware capture.
+ROOT is the projectile project root (or nil); INBOX is the global inbox
+file path.  Return a plist (:file F :open-work BOOL :project NAME :warn MSG):
+- ROOT with a todo.org -> F is that todo.org, :open-work t.
+- ROOT without a todo.org -> F is INBOX, :open-work nil, :warn names the project.
+- ROOT nil -> F is INBOX, :open-work nil, :warn nil."
+  (if (and (stringp root) (not (string-empty-p root)))
+      (let ((todo (expand-file-name "todo.org" root))
+            (name (cj/--org-capture-project-name root)))
+        (if (file-exists-p todo)
+            (list :file todo :open-work t :project name :warn nil)
+          (list :file inbox :open-work nil :project name
+                :warn (format "No todo.org in project \"%s\"; captured to the inbox instead"
+                              name))))
+    (list :file inbox :open-work nil :project nil :warn nil)))
+
+(defun cj/--org-capture-goto-open-work (project-name)
+  "Move point to a top-level \"... Open Work\" heading in the current buffer.
+Create \"* PROJECT-NAME Open Work\" at end of buffer when none exists.
+Leave point at the start of the heading line."
+  (goto-char (point-min))
+  (if (re-search-forward cj/--org-open-work-heading-regexp nil t)
+      (forward-line 0)
+    (goto-char (point-max))
+    (unless (bolp) (insert "\n"))
+    (insert (format "* %s Open Work\n" project-name))
+    (forward-line -1)))
+
+(defun cj/--org-capture-goto-exact-headline (headline)
+  "Move point to the top-level HEADLINE in the current buffer.
+Create \"* HEADLINE\" at end of buffer when absent.  Leave point at the
+start of the heading line."
+  (goto-char (point-min))
+  (if (re-search-forward (format org-complex-heading-regexp-format
+                                 (regexp-quote headline))
+                         nil t)
+      (forward-line 0)
+    (goto-char (point-max))
+    (unless (bolp) (insert "\n"))
+    (insert "* " headline "\n")
+    (forward-line -1)))
+
+(defun cj/--org-capture-project-location ()
+  "Org-capture `function' target for project-aware Task/Bug capture.
+File into the current projectile project's todo.org under its \"... Open
+Work\" heading, else the global inbox (`inbox-file') under \"Inbox\"."
+  (let* ((root (and (fboundp 'projectile-project-root)
+                    (ignore-errors (projectile-project-root))))
+         (plan (cj/--org-capture-project-target root inbox-file)))
+    (when (plist-get plan :warn)
+      (message "%s" (plist-get plan :warn)))
+    (set-buffer (org-capture-target-buffer (plist-get plan :file)))
+    (unless (derived-mode-p 'org-mode) (org-mode))
+    (org-capture-put-target-region-and-position)
+    (widen)
+    (if (plist-get plan :open-work)
+        (cj/--org-capture-goto-open-work (plist-get plan :project))
+      (cj/--org-capture-goto-exact-headline "Inbox"))))
+
 ;; --------------------------- Org-Capture Templates ---------------------------
 ;; you can bring up the org capture menu with C-c c
 
@@ -201,8 +285,11 @@ Intended to be called within an org capture template."
   ;; ORG-CAPTURE TEMPLATES
   (setq org-protocol-default-template-key "L")
   (setq org-capture-templates
-        '(("t" "Task" entry (file+headline inbox-file "Inbox")
+        '(("t" "Task" entry (function cj/--org-capture-project-location)
            "* TODO %?" :prepend t)
+
+          ("b" "Bug" entry (function cj/--org-capture-project-location)
+           "* TODO [#C] %?" :prepend t)
 
           ("e" "Event" entry (file+headline schedule-file "Scheduled Events")
            "* %?%:description
