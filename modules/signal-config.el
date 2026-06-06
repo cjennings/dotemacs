@@ -16,6 +16,7 @@
 ;;; Code:
 
 (require 'seq)
+(require 'keybindings)  ;; provides cj/custom-keymap + cj/register-prefix-map
 
 (defun cj/signal--jstr (value)
   "Return VALUE if it is a non-blank string, else nil.
@@ -291,10 +292,11 @@ that on first use."
 Leaves =l= unbound for now -- the future =cj/signel-link= command lands
 in a later pass.  See =docs/design/signal-client.org= scope summary.")
 
-(declare-function cj/custom-keymap "keybindings" ())
-(with-eval-after-load 'keybindings
-  (when (boundp 'cj/custom-keymap)
-    (keymap-set cj/custom-keymap "M" cj/signel-prefix-map)))
+;; Register the messages prefix under C-; M via the documented helper.
+;; keybindings.el owns cj/custom-keymap; the (require 'keybindings) above
+;; guarantees it is loaded before this runs, so no load-order guard is
+;; needed.  This is the same pattern every other feature module uses.
+(cj/register-prefix-map "M" cj/signel-prefix-map "signal messages")
 
 (provide 'signal-config)
 ;;; signal-config.el ends here
