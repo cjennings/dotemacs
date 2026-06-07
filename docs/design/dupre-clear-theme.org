@@ -1,0 +1,89 @@
+#+TITLE: dupre-clear — a contrast-first AAA sibling theme
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-07
+
+* Status
+
+Spec / not started. Working name *dupre-clear* (final name TBD — see Open Questions). Sibling to the in-progress *dupre revision* (see "Relationship" below). Linked from a task in =todo.org= under Emacs Open Work.
+
+* One-line concept
+
+Take dupre's color identity and rebuild it the way Prot built modus: *contrast-first*. Where the dupre revision optimizes for mood and depth (lands at WCAG AA), dupre-clear optimizes for legibility (targets WCAG AAA, ~7:1 on the ground) — the same soul, dialed for maximum clarity.
+
+* Motivation
+
+This came out of a long 2026-06-07 design session that produced the *dupre revision* (an elegant, AA-level theme — see the dupre-redesign entry in =.ai/session-context.org= for the full palette + mapping). Near the end we analyzed how Prot actually generated the modus palette, and the finding reframes the whole approach:
+
+- We built our palette *aesthetics-first*: pick a beautiful/deep/dusty color, accept whatever contrast falls out. Result: a rich palette that mostly lands at AA (4.5–6.5:1), with a couple of colors needing a nudge to clear AA at all.
+- Prot built modus *contrast-first*: the ~7:1 AAA floor is the non-negotiable starting constraint; he then hand-picks the nicest color that clears it for each role.
+
+dupre-clear is the "what if we applied Prot's discipline to dupre's colors" theme. It's not a fix to the dupre revision — both are valid, they're just tuned for different priorities. Some people (and some lighting / monitor / eyesight conditions) want the maximally-legible version; this is that version, without abandoning dupre's character.
+
+* The Prot methodology (evidence, so we don't re-derive it)
+
+Pulled from =/usr/share/emacs/30.2/etc/themes/modus-vivendi-theme.el= on 2026-06-07. modus has 6 hue families (red, green, yellow, blue, magenta, cyan), each with base + =-warmer= / =-cooler= / =-faint= / =-intense=, plus bg/fg roles and a large semantic-mapping layer (~128 named colors, ~177 mappings).
+
+Key finding: *the variants are NOT algorithmically derived from the base.* If they were (e.g. warmer = hue rotate by N, faint = saturation × 0.5), the HSL numbers inside each family would move regularly. They don't:
+
+- "faint" is not a consistent saturation cut: =red-faint= is S100 (fully saturated, just lighter), =green-faint= is S38 (heavily desaturated), yellow/blue/magenta/cyan faint land at S48/74/47/53.
+- "cooler" is not a consistent lightness move: =red-cooler= is lighter (L67→75), =green-cooler= is darker (L50→38).
+
+What IS systematic is *contrast*. Every modus-vivendi color clears roughly 7:1 on the =#000000= background (red family 7.0–9.9, green 8.5–11.9, cyan 11–14, the lowest being blue-intense at 6.5). So the invariant is the AAA contrast floor; the colors are individually hand-curated to (a) read as their named relationship and (b) clear the floor. The variant names are *descriptions of perceptual roles*, not outputs of a formula.
+
+Implication for dupre-clear: don't write an HSL-transform generator. Set the 7:1 floor, then hand-pick (or constraint-solve) the richest dupre-flavored color that clears it for each role.
+
+* Design principles for dupre-clear
+
+1. *Keep dupre's identity*: the warm near-black ground =#0d0b0a=, the warm-grey/metallic neutrals, and the hue families (the dupre blue, emerald, gold, terracotta, regal violet, mint). The HUES stay recognizably dupre; the brightness/saturation change to meet contrast.
+2. *Contrast-first*: target ~7:1 AAA on the ground for all foreground syntax text. Comments may sit at AA-large (de-emphasis is intentional). Fills (navy, regal purple) are exempt — they carry light text, so their own ground-contrast is irrelevant.
+3. *Accept the cost*: the deep/dusty choices from the dupre revision will have to brighten to reach AAA. dupre-clear is allowed to be more vivid than the revision — that's the point. Don't try to keep both depth and AAA on the same black; they pull opposite ways (proven repeatedly in the session).
+4. *Same mapping, brighter values*: reuse the dupre revision's role assignments (below); only the color values move.
+5. *Same modus two-layer structure*: a raw palette + a semantic-mapping layer, so it can retarget cleanly and read like a real systematized theme.
+
+* Starting point: the dupre revision palette + mapping (the AA version to brighten)
+
+These are the dupre-revision (AA) values as of 2026-06-07. dupre-clear keeps the roles, brightens the values to AAA. Ground =#0d0b0a=, default/fg silver =#d8d8d8=.
+
+| role | dupre revision (AA) | contrast | dupre-clear target |
+|------+---------------------+----------+--------------------|
+| keyword (BOLD) | blue #67809c | 4.8 | a dupre-blue bright enough to clear ~7:1 as bold text (note: a deep blue can't be AAA on near-black — may need to lighten meaningfully, or keep bold + accept ~AA for blue as the one exception, OR lift the ground; this is the hardest slot) |
+| function | gold metallic #e8bd30 | 11.0 | already AAA — keep |
+| type | regal violet #9b5fd0 | 4.6 | brighten toward ~7:1 (the L57→L66 sweep showed #ab79d8 ≈ 6.0; go a touch brighter for 7) |
+| string | emerald dusty #2ba178 | 6.1 | brighten/saturate to ~7:1 (the vivid #1bb17d was 7.1) |
+| constant/number | terracotta #cb6b4d | 5.4 | brighten toward 7:1 (toward the lighter terracotta #d19475 ≈ 7.7, or re-pick) |
+| default / vars / punct | silver #d8d8d8 | 13.8 | already AAA — keep |
+| comment | warm-dim #6f655a | 3.4 | intentionally recessive; AA-large is fine even in the clear theme |
+| docstring | muted emerald #5d9b86 | 6.1 | brighten to ~7 |
+| spare | mint #8dc4af | 10.0 | already AAA |
+
+Structural / fills (unchanged role): metallic greyscale ramp (gunmetal #2f343a → pewter #5e6770 → steel #838d97 → silver), navy fill #264364, regal-purple fill #562d76. Silver text on navy/regal both clear ~7:1.
+
+The hardest slot is *blue keywords*: a deep dupre blue (#67809c) is intrinsically sub-AAA on near-black (depth and AAA are mutually exclusive there — proven in-session). Options to decide at build time: (a) brighten the blue toward a lighter steel (loses depth), (b) keep blue bold at AA as the single deliberate exception (modus-vivendi itself has blue-intense at 6.5), or (c) lift the ground slightly so a deeper blue clears AAA (changes dupre's signature warm near-black). Worth a focused decision.
+
+* Build approach
+
+1. Decide whether dupre-clear is its own =themes/dupre-clear-*.el= (palette + faces + theme) or shares structure with the dupre revision. Likely its own files: a =dupre-clear-palette.el= + =dupre-clear-faces.el= + =dupre-clear-theme.el=, mirroring the dupre file layout.
+2. Pick each color contrast-first per the table above; verify every foreground color clears the AAA floor with the WCAG helper.
+3. Wire the same semantic mapping (keyword=blue bold, function=gold, type=violet, string=emerald, const=terracotta, comment=warm-grey, default=silver, structural=metallic/navy/regal).
+4. TDD via a =tests/test-dupre-clear-theme.el=, including a WCAG-contrast assertion that every syntax face clears 7:1 (the inverse of the AA test the dupre revision gets — here it's a hard AAA gate). Reuse the contrast helper pattern from =tests/test-dupre-theme.el= (=dupre-test--contrast= etc.).
+5. Live-reload + screenshot to verify per =emacs.md=.
+
+* Relationship to the dupre revision
+
+- *dupre revision* (in progress, 2026-06-07): the elegant-AA reinterpretation of the current dupre theme — mood/depth first. This is the one being built first. Full design in =.ai/session-context.org= (the dupre-redesign entry).
+- *dupre-clear* (this spec): the contrast-first AAA sibling — legibility first, same hues brightened.
+- They share the hue identity and the role mapping; they differ in brightness/saturation and in the contrast target (AA vs AAA). Build the revision first; dupre-clear reuses its hue choices as the starting point and brightens them.
+
+* Tooling + references (so this is resumable cold)
+
+- The session's exploration tooling was a set of throwaway =/tmp/gen-*.py= scripts that render palette + 4-language code samples to HTML and open them in a browser; they include WCAG-contrast and CIEDE2000 (perceptual distance) helpers. Those /tmp files won't survive a reboot — re-derive the helpers (WCAG: relative luminance with the sRGB linearization, contrast = (L1+0.05)/(L2+0.05); CIEDE2000 for separation). The math is also embedded in =tests/test-dupre-theme.el= (the WCAG half).
+- modus reference palette: =/usr/share/emacs/30.2/etc/themes/modus-vivendi-theme.el= (and the operandi/tinted variants alongside it).
+- dupre lineage: dupre ← distinguished (emacs, Kim Silkebaekken) ← vim-distinguished. The dupre palette lives in =themes/dupre-palette.el= + =themes/dupre-faces.el=; swatch PNG at =themes/dupre-palette.png=.
+- The key perceptual lessons from the session (also in the anchor): thin colored text desaturates (muted hues grey out as glyphs — bold helps); a near-black ground forces depth-vs-AAA as a hard tradeoff; Hyprland inactive-window dimming silently shifts colors (disable with =hyprctl keyword decoration:dim_inactive false= during color work).
+
+* Open questions
+
+1. *Name.* "dupre-clear" is a working placeholder; Craig wants a different final name. Candidates to brainstorm: something in the distinguished/dupre lineage that signals "the legible/clear one." Decide at build start.
+2. *Blue keywords at AAA.* The depth-vs-AAA conflict on the dupre blue (see the build-approach note) — pick (a) brighten, (b) keep AA as the deliberate exception, or (c) lift the ground.
+3. *File sharing vs separate.* Whether dupre-clear shares any palette/faces machinery with the dupre revision or stands fully alone.
+4. *Light variant?* Modus ships both vivendi (dark) and operandi (light). Out of scope for v1, but worth noting whether a dupre-clear-light is ever wanted.
