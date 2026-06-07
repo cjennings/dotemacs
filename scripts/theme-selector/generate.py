@@ -1,4 +1,4 @@
-import json, re, os
+import json, os
 HERE=os.path.dirname(os.path.abspath(__file__))
 ns={}
 src=open(os.path.join(HERE,'samples.py')).read()
@@ -38,8 +38,6 @@ UIMAP={"cursor":{"fg":None,"bg":"#a9b2bb"},"region":{"fg":None,"bg":"#264364"},
  "show-paren-mismatch":{"fg":"#0d0b0a","bg":"#cb6b4d"},"link":{"fg":"#67809c","bg":None},
  "error":{"fg":"#cb6b4d","bg":None},"warning":{"fg":"#e8bd30","bg":None},
  "success":{"fg":"#5d9b86","bg":None},"vertical-border":{"fg":"#2f343a","bg":None}}
-def cid(l): return re.sub(r'\W','',l)
-code_cont="".join(f'<div class="col"><h2>{l}</h2><pre id="code-{cid(l)}"></pre></div>' for l in SAMPLES)
 HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
 <style>
  body{background:#0d0b0a;color:#cdced1;font:15px/1.55 monospace;margin:20px}
@@ -67,32 +65,49 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
  #export{width:100%;height:180px;margin-top:10px;background:#0d0b0a;color:#a4ac64;border:1px solid #252321;border-radius:6px;font:10pt monospace;padding:10px}
  .filebar{margin:6px 0 0;display:flex;gap:8px;align-items:center}
  #pagetitle{font-size:30px;color:#cdced1;font-weight:normal;border:none;margin:4px 0 18px;padding:0}
+ .cols{display:flex;gap:28px;align-items:flex-start}
+ .pane{min-width:0} .pane.grow{flex:1} .pane.saveload{flex:0 0 auto;margin-left:auto}
+ .pane h1{margin-top:0}
+ .filebar.end{justify-content:flex-end} .langbar{margin-bottom:10px;display:flex;gap:8px;align-items:center}
+ #codepre{width:100%;box-sizing:border-box}
 </style>
-<h1 id="pagetitle">Untitled: color palette</h1>
-<h1>code samples</h1>
-<div class="wrap">CODE_CONT</div>
-<h1>color &rarr; category — chip reassigns · N/B/I sets weight &amp; slant · click a header to sort</h1>
-<table class="leg" id="legtable"><thead><tr><th onclick="srt(0)">color &#9651;</th><th>style</th><th onclick="srt(1)">category &#9651;</th><th>example</th></tr></thead><tbody id="legbody"></tbody></table>
-<h1>UI / interface faces — foreground &amp; background per face</h1>
+<h1 id="pagetitle">Untitled: theme</h1>
+<div class="cols">
+ <section class="pane grow">
+  <h1>palette</h1>
+  <div class="pals" id="pals"></div>
+  <div class="palctl">
+   <input type="color" id="newhex" value="#888888" oninput="syncHex('swatch')">
+   <input type="text" id="newhexstr" placeholder="#rrggbb" value="#888888" oninput="syncHex('text')" style="width:110px">
+   <input type="text" id="newname" placeholder="name">
+   <button onclick="addColor()">+ add color</button>
+  </div>
+ </section>
+ <section class="pane saveload">
+  <h1>save / load theme</h1>
+  <div class="filebar end">
+   <label style="color:#b4b1a2">theme name</label><input type="text" id="themename" value="" placeholder="untitled" oninput="updateTitle()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:200px">
+  </div>
+  <div class="filebar end">
+   <button onclick="download()">&#11015; download &lt;name&gt;.json</button>
+   <label class="fbtn">&#11014; load theme.json<input type="file" accept=".json" onchange="importFile(event)" style="display:none"></label>
+   <button id="jsonbtn" onclick="toggleJSON()">show JSON</button>
+  </div>
+  <textarea id="export" style="display:none" readonly></textarea>
+ </section>
+</div>
+<h1>code/color assignments</h1>
+<div class="cols">
+ <section class="pane">
+  <table class="leg" id="legtable"><thead><tr><th onclick="srt(0)">color &#9651;</th><th>style</th><th onclick="srt(1)">category &#9651;</th><th>example</th><th title="WCAG contrast of this color on the background">contrast</th></tr></thead><tbody id="legbody"></tbody></table>
+ </section>
+ <section class="pane grow">
+  <div class="langbar"><label style="color:#b4b1a2">language</label><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode()"></select></div>
+  <pre id="codepre"></pre>
+ </section>
+</div>
+<h1>interface faces</h1>
 <table class="leg" id="uitable"><thead><tr><th>face</th><th>foreground</th><th>background</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
-<h1>palette — add / remove / rename / drag to reorder</h1>
-<div class="pals" id="pals"></div>
-<div class="palctl">
- <input type="color" id="newhex" value="#888888" oninput="syncHex('swatch')">
- <input type="text" id="newhexstr" placeholder="#rrggbb" value="#888888" oninput="syncHex('text')" style="width:110px">
- <input type="text" id="newname" placeholder="name">
- <button onclick="addColor()">+ add color</button>
-</div>
-<h1>save / load theme</h1>
-<div class="filebar">
- <label style="color:#b4b1a2">theme name</label><input type="text" id="themename" value="" placeholder="untitled" oninput="updateTitle()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:200px">
-</div>
-<div class="filebar">
- <button onclick="download()">&#11015; download &lt;name&gt;.json</button>
- <label class="fbtn">&#11014; load theme.json<input type="file" accept=".json" onchange="importFile(event)" style="display:none"></label>
- <button id="jsonbtn" onclick="toggleJSON()">show JSON</button>
-</div>
-<textarea id="export" style="display:none" readonly></textarea>
 <script>
 const SAMPLES=SAMPLES_J, CATS=CATS_J, UI_FACES=UIFACES_J;
 let MAP=MAP_J, PALETTE=PALETTE_J, BOLD=BOLD_J, ITALIC={}, UIMAP=UIMAP_J;
@@ -100,15 +115,19 @@ function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g
 function lin(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);}
 function rl(h){return 0.2126*lin(parseInt(h.substr(1,2),16))+0.7152*lin(parseInt(h.substr(3,2),16))+0.0722*lin(parseInt(h.substr(5,2),16));}
 function textOn(h){const L=rl(h);return ((L+0.05)/0.05)>(1.05/(L+0.05))?'#000':'#fff';}
+function contrast(a,b){const L1=rl(a),L2=rl(b),hi=Math.max(L1,L2),lo=Math.min(L1,L2);return (hi+0.05)/(lo+0.05);}
+function rating(r){return r>=7?'AAA':r>=4.5?'AA':'FAIL';}
+function ratingColor(r){return r>=7?'#5d9b86':r>=4.5?'#a9b2bb':'#cb6b4d';}
 function cid(l){return l.replace(/\\W/g,'');}
+function buildLangSel(){const s=document.getElementById('langsel');s.innerHTML='';for(const lang in SAMPLES){const o=document.createElement('option');o.value=lang;o.textContent=lang;s.appendChild(o);}}
 function renderCode(){
-  for(const lang in SAMPLES){let html='';
-    for(const line of SAMPLES[lang]){
-      if(line.length===0){html+='\\n';continue;}
-      for(const [k,t] of line){const c=MAP[k]||'#cdced1';const w=BOLD[k]?'bold':'normal';const s=ITALIC[k]?'italic':'normal';
-        html+=`<span style="color:${c};font-weight:${w};font-style:${s}">${esc(t)}</span>`;}
-      html+='\\n';}
-    document.getElementById('code-'+cid(lang)).innerHTML=html;}
+  const lang=document.getElementById('langsel').value;let html='';
+  for(const line of SAMPLES[lang]){
+    if(line.length===0){html+='\\n';continue;}
+    for(const [k,t] of line){const c=MAP[k]||'#cdced1';const w=BOLD[k]?'bold':'normal';const s=ITALIC[k]?'italic':'normal';
+      html+=`<span style="color:${c};font-weight:${w};font-style:${s}">${esc(t)}</span>`;}
+    html+='\\n';}
+  document.getElementById('codepre').innerHTML=html;
 }
 function buildTable(){
   const tb=document.getElementById('legbody');tb.innerHTML='';
@@ -120,10 +139,12 @@ function buildTable(){
     for(const [hex,name] of list){const o=document.createElement('option');o.value=hex;o.textContent=name+'  '+hex;o.style.background=hex;o.style.color=textOn(hex);sel.appendChild(o);}
     sel.value=cur;
     const exTd=document.createElement('td');exTd.className='ex';exTd.textContent=ex;
+    const crTd=document.createElement('td');crTd.style.whiteSpace='nowrap';crTd.style.fontSize='10pt';
     function styleChip(){sel.style.background=sel.value;sel.style.color=textOn(sel.value);}
     function styleEx(){exTd.style.color=(kind==='bg'?MAP['p']:MAP[kind]);exTd.style.background=MAP['bg'];exTd.style.fontWeight=BOLD[kind]?'bold':'normal';exTd.style.fontStyle=ITALIC[kind]?'italic':'normal';}
-    styleChip();styleEx();
-    sel.onchange=()=>{MAP[kind]=sel.value;styleChip();styleEx();renderCode();if(kind==='bg')applyGround();};
+    function styleCr(){const r=contrast((kind==='bg'?MAP['p']:MAP[kind]),MAP['bg']);crTd.innerHTML=`<span style="color:${ratingColor(r)}">${r.toFixed(1)}  ${rating(r)}</span>`;}
+    styleChip();styleEx();styleCr();
+    sel.onchange=()=>{MAP[kind]=sel.value;styleChip();styleEx();styleCr();renderCode();if(kind==='bg'){applyGround();buildTable();}};
     // style buttons
     const stTd=document.createElement('td');
     if(kind!=='bg'){const defs=[['N','a','normal'],['B','a','bold'],['I','a','italic']];
@@ -135,7 +156,7 @@ function buildTable(){
     refresh();}
     const c0=document.createElement('td');c0.appendChild(sel);
     const c2=document.createElement('td');c2.className='cat';c2.textContent=label;
-    tr.appendChild(c0);tr.appendChild(stTd);tr.appendChild(c2);tr.appendChild(exTd);
+    tr.appendChild(c0);tr.appendChild(stTd);tr.appendChild(c2);tr.appendChild(exTd);tr.appendChild(crTd);
     tb.appendChild(tr);}
 }
 let dragFrom=null;
@@ -162,7 +183,7 @@ function fileSlug(){return themeName().replace(/[^A-Za-z0-9._-]+/g,'-').replace(
 function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);return {name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};}
 function exportState(){const t=document.getElementById('export');t.value=JSON.stringify(exportObj(),null,1);t.style.display='block';t.focus();t.select();}
 function toggleJSON(){const t=document.getElementById('export'),b=document.getElementById('jsonbtn');if(t.style.display==='block'){t.style.display='none';b.textContent='show JSON';}else{exportState();b.textContent='hide JSON';}}
-function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': color palette';}
+function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': theme';}
 function download(){const blob=new Blob([JSON.stringify(exportObj(),null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileSlug()+'.json';a.click();}
 function importFile(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette;if(d.assignments)Object.assign(MAP,d.assignments);
@@ -198,9 +219,9 @@ function srt(c){const tb=document.getElementById('legbody');const r=[...tb.rows]
   r.sort((a,b)=>{const x=(c===0?a.querySelector('select').value:a.cells[2].innerText).toLowerCase(),
                        y=(c===0?b.querySelector('select').value:b.cells[2].innerText).toLowerCase();
                  return (x<y?-1:x>y?1:0)*(D[c]?1:-1);});r.forEach(x=>tb.appendChild(x));}
-renderPalette();buildTable();buildUITable();renderCode();applyGround();updateTitle();
+buildLangSel();renderPalette();buildTable();buildUITable();renderCode();applyGround();updateTitle();
 </script>"""
-HTML=(HTML.replace("CODE_CONT",code_cont).replace("SAMPLES_J",json.dumps(SAMPLES))
+HTML=(HTML.replace("SAMPLES_J",json.dumps(SAMPLES))
  .replace("PALETTE_J",json.dumps(PALETTE)).replace("CATS_J",json.dumps(CATS))
  .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP))
  .replace("BOLD_J",json.dumps(BOLD)).replace("MAP_J",json.dumps(MAP)))

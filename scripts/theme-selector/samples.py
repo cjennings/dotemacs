@@ -32,6 +32,13 @@ PYS=[
  [('p','        '),('var','v'),('p',' '),('op','='),('p',' '),('var','self'),('op','.'),('prop','colors'),('op','.'),('fnc','get'),('punc','('),('var','key'),('punc',','),('p',' '),('str','"'),('esc','\\t'),('str','none"'),('punc',')')],
  [('p','        '),('kw','if'),('p',' '),('bi','len'),('punc','('),('var','v'),('punc',')'),('p',' '),('op','=='),('p',' '),('num','0'),('op',':'),('p',' '),('kw','return'),('p',' '),('con','None')],
  [('p','        '),('kw','return'),('p',' '),('var','v')],
+ [],
+ [('p','    '),('dec','@property')],
+ [('p','    '),('kw','def'),('p',' '),('fnd','size'),('punc','('),('var','self'),('punc',')'),('p',' '),('op','->'),('p',' '),('ty','int'),('op',':')],
+ [('p','        '),('kw','return'),('p',' '),('bi','len'),('punc','('),('var','self'),('op','.'),('prop','colors'),('punc',')')],
+ [],
+ [('var','theme'),('p',' '),('op','='),('p',' '),('ty','Theme'),('punc','('),('str','"dupre"'),('punc',')')],
+ [('fnc','print'),('punc','('),('var','theme'),('op','.'),('fnc','resolve'),('punc','('),('str','"bg"'),('punc','))')],
 ]
 ELS=[
  [('cmd',';;'),('cm',' cache.el')],
@@ -45,6 +52,20 @@ ELS=[
  [('p','  '),('punc','('),('kw','or'),('p',' '),('punc','('),('fnc','gethash'),('p',' '),('var','key'),('p',' '),('var','cache--tbl'),('punc',')')],
  [('p','      '),('punc','('),('kw','let'),('p',' '),('punc','(('),('var','v'),('p',' '),('punc','('),('fnc','compute'),('p',' '),('var','key'),('p',' '),('num','42'),('punc','))) ')],
  [('p','        '),('punc','('),('fnc','puthash'),('p',' '),('var','key'),('p',' '),('var','v'),('p',' '),('var','cache--tbl'),('punc',') '),('var','v'),('punc','))))')],
+ [],
+ [('punc','('),('kw','defun'),('p',' '),('fnd','cache-clear'),('p',' '),('punc','()')],
+ [('p','  '),('doc','"Empty the memo table."')],
+ [('p','  '),('punc','('),('kw','interactive'),('punc',')')],
+ [('p','  '),('punc','('),('fnc','clrhash'),('p',' '),('var','cache--tbl'),('punc',')')],
+ [('p','  '),('punc','('),('fnc','message'),('p',' '),('str','"cleared'),('esc','\\n'),('str','"'),('punc','))')],
+ [],
+ [('punc','('),('kw','defun'),('p',' '),('fnd','cache-keys'),('p',' '),('punc','()')],
+ [('p','  '),('doc','"Return all keys."')],
+ [('p','  '),('punc','('),('kw','let'),('p',' '),('punc','(('),('var','acc'),('p',' '),('con','nil'),('punc','))')],
+ [('p','    '),('punc','('),('fnc','maphash'),('p',' '),('punc','('),('kw','lambda'),('p',' '),('punc','('),('var','k'),('p',' '),('var','_v'),('punc',')'),('p',' '),('punc','('),('fnc','push'),('p',' '),('var','k'),('p',' '),('var','acc'),('punc','))')],
+ [('p','      '),('var','cache--tbl'),('punc',')'),('p',' '),('var','acc'),('punc','))')],
+ [],
+ [('punc','('),('kw','provide'),('p',' '),('con',"'cache"),('punc',')')],
 ]
 GOS=[
  [('cmd','//'),('cm',' queue.go')],
@@ -67,6 +88,10 @@ GOS=[
  [('p','    '),('var','q'),('op','.'),('prop','items'),('p',' '),('op','='),('p',' '),('fnc','append'),('punc','('),('var','q'),('op','.'),('prop','items'),('punc',','),('p',' '),('var','o'),('punc',')')],
  [('p','    '),('kw','return'),('p',' '),('con','nil')],
  [('punc','}')],
+ [],
+ [('kw','func'),('p',' '),('fnd','main'),('punc','()'),('p',' '),('punc','{')],
+ [('p','    '),('fnc','fmt.Println'),('punc','('),('op','&'),('ty','Queue'),('punc','{}'),('punc',')')],
+ [('punc','}')],
 ]
 TSS=[
  [('cmd','//'),('cm',' orders.ts')],
@@ -87,6 +112,11 @@ TSS=[
  [('p','    '),('kw','return'),('p',' '),('con','true'),('punc',';')],
  [('p','  '),('punc','}')],
  [('punc','}')],
+ [],
+ [('kw','const'),('p',' '),('con','LIMIT'),('op',':'),('p',' '),('ty','number'),('p',' '),('op','='),('p',' '),('num','50'),('punc',';')],
+ [('kw','const'),('p',' '),('var','q'),('p',' '),('op','='),('p',' '),('kw','new'),('p',' '),('ty','OrderQueue'),('punc','()'),('punc',';')],
+ [('var','q'),('op','.'),('fnd','push'),('punc','('),('punc','{'),('p',' '),('prop','id'),('op',':'),('p',' '),('num','1'),('p',' '),('punc','}'),('p',' '),('kw','as'),('p',' '),('ty','Order'),('punc',')'),('punc',';')],
+ [('var','console'),('op','.'),('fnc','log'),('punc','('),('var','q'),('op','.'),('prop','max'),('punc',')'),('punc',';')],
 ]
 
 CS=[
@@ -106,6 +136,13 @@ CS=[
  [('p','    '),('fnc','printf'),('punc','('),('str','"id=%d'),('esc',chr(92)+'n'),('str','"'),('punc',','),('p',' '),('var','o'),('op','->'),('prop','id'),('punc',');')],
  [('p','    '),('kw','return'),('p',' '),('num','0'),('punc',';')],
  [('punc','}')],
+ [],
+ [('cmd','//'),('cm',' entrypoint')],
+ [('ty','int'),('p',' '),('fnd','main'),('punc','('),('ty','void'),('punc',')'),('p',' '),('punc','{')],
+ [('p','    '),('ty','Order'),('p',' '),('var','o'),('p',' '),('op','='),('p',' '),('punc','{'),('p',' '),('op','.'),('prop','id'),('p',' '),('op','='),('p',' '),('num','1'),('p',' '),('punc','}'),('punc',';')],
+ [('p','    '),('fnc','push'),('punc','('),('op','&'),('var','o'),('punc',')'),('punc',';')],
+ [('p','    '),('kw','return'),('p',' '),('num','0'),('punc',';')],
+ [('punc','}')],
 ]
 SHS=[
  [('cmd','#!'),('cm','/bin/bash')],
@@ -123,6 +160,15 @@ SHS=[
  [('p','    '),('kw','fi')],
  [('p','    '),('fnc','rsync'),('p',' '),('op','-az'),('p',' '),('str','"$NAME"'),('p',' '),('str','"$target"')],
  [('punc','}')],
+ [],
+ [('fnd','main'),('punc','()'),('p',' '),('punc','{')],
+ [('p','    '),('kw','for'),('p',' '),('var','host'),('p',' '),('kw','in'),('p',' '),('str','"$@"'),('punc',';'),('p',' '),('kw','do')],
+ [('p','        '),('fnc','deploy'),('p',' '),('str','"$host"'),('p',' '),('op','||'),('p',' '),('bi','exit'),('p',' '),('num','1')],
+ [('p','    '),('kw','done')],
+ [('p','    '),('bi','echo'),('p',' '),('str','"all done"')],
+ [('punc','}')],
+ [],
+ [('fnc','main'),('p',' '),('str','"$@"')],
 ]
 
 cols="".join(f'<div class="col"><h2>{n}</h2><pre>{render(s)}</pre></div>' for n,s in [("Elisp",ELS),("Go",GOS),("Python",PYS),("TypeScript",TSS),("Shell",SHS),("C/C++",CS)])
