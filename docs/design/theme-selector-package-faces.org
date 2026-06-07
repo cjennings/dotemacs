@@ -1,0 +1,220 @@
+#+TITLE: theme-selector — package faces (tier 3), starting with org-mode
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-07
+
+* Status
+
+Spec / awaiting review. Proposes a third tier for the theme-selector
+(scripts/theme-selector/) that lets a theme colorize package-specific faces,
+built one application at a time. org-mode is the first application.
+
+* Background — the three tiers
+
+The theme-selector already models two tiers of faces:
+
+1. *Syntax* — the font-lock / tree-sitter categories (keyword, string, type,
+   comment, etc.), in the "code/color assignments" table.
+2. *UI* — Emacs's built-in interface faces (cursor, region, mode-line, fringe,
+   line numbers, isearch, and the rest), in the "ui faces" table with the live
+   mock-frame preview.
+
+Tier 3 is *package faces*: faces a package declares with =defface= so a theme
+can color the package as it wishes. The running config has 1,146 such faces
+across 186 packages (magit 111, lsp-mode 97, telega 91, web-mode 82, org ~30
+core, and a long tail). No theme colors all of them; quality themes hand-pick
+the packages the user actually lives in and theme those.
+
+This spec adds a tier-3 section to the tool, structured so applications are
+added one at a time. org-mode ships first.
+
+* Goal
+
+A new "package faces" section with:
+
+1. An *application dropdown* — pick which package's faces to edit (org-mode
+   first; magit, elfeed, dirvish, telega, marginalia, consult to follow).
+2. A *face table* for the selected app — one row per curated face, each with a
+   foreground dropdown, a background dropdown, and bold / italic toggles, all
+   drawing from the same palette as the other tables.
+3. A *preview pane* for the selected app — a realistic mock of that package
+   rendered with the live theme, the way the ui-faces mock-frame shows the UI
+   faces in a buffer. org-mode gets a mock org document.
+
+The export (=theme.json=) gains a =packages= object so the build step can set
+these faces too.
+
+* UI placement
+
+A new top-level section under the ui-faces row:
+
+#+begin_example
+<h1>package faces</h1>
+[ application: (org-mode v) ]
+<div class="cols stretch">
+  left  = the selected app's face table (fg / bg / B / I per face)
+  right = the selected app's preview pane (e.g. the org document mock)
+</div>
+#+end_example
+
+Same two-column stretch layout as the ui-faces row, so the preview matches the
+table's height.
+
+* Data model
+
+A single data structure drives everything, keyed by application:
+
+#+begin_src js
+APPS = {
+  "org-mode": {
+    label: "org-mode",
+    faces: [
+      // face, human label, default {fg, bg, bold, italic}
+      ["org-document-title", "document title", {fg:"gold", bold:true}],
+      ["org-level-1",        "heading 1",      {fg:"blue", bold:true}],
+      ["org-level-2",        "heading 2",      {fg:"gold"}],
+      ["org-level-3",        "heading 3",      {fg:"regal"}],
+      ["org-todo",           "TODO keyword",   {fg:"terracotta", bold:true}],
+      ["org-done",           "DONE keyword",   {fg:"sage", bold:true}],
+      ["org-link",           "link",           {fg:"blue"}],     // base `link`
+      ["org-code",           "inline code",    {fg:"terracotta"}],
+      ["org-verbatim",       "verbatim",       {fg:"steel"}],
+      ["org-block",          "src block body", {fg:"white", bg:"bg-dim"}],
+      ["org-block-begin-line","block delim",   {fg:"pewter", bg:"bg-dim"}],
+      ["org-table",          "table",          {fg:"steel"}],
+      ["org-date",           "timestamp",      {fg:"steel"}],
+      ["org-tag",            "tag",            {fg:"tan"}],
+      ["org-special-keyword","keyword/drawer", {fg:"pewter"}],
+      ["org-meta-line",      "#+meta line",    {fg:"pewter"}],
+      ["org-checkbox",       "checkbox",       {fg:"gold"}],
+      ["org-headline-done",  "done headline",  {fg:"pewter"}],
+    ],
+    preview: "org"   // names the preview renderer
+  },
+  // magit, elfeed, ... added later with the same shape
+}
+#+end_src
+
+Defaults reference palette *names* (blue, gold, ...) resolved to hexes at load,
+so a curated app seeds sensibly from the current palette. The user reassigns
+any face from the palette dropdowns exactly like the other tables.
+
+State mirrors the other tiers: a =PKGMAP= of
+={app: {face: {fg, bg, bold, italic}}}=, edited live, rendered into the table
+and the preview.
+
+* The org preview
+
+A mock org document painted from PKGMAP["org-mode"] plus the palette ground/fg.
+One bespoke renderer (=renderOrgPreview()=) drawing a representative document:
+
+#+begin_example
+#+TITLE: Project Notes          <- org-document-title
+#+AUTHOR: ...                   <- org-meta-line / document-info
+
+* Inbox  :work:                 <- org-level-1 + org-tag
+** TODO Draft the spec          <- org-level-2 + org-todo
+   SCHEDULED: <2026-06-08 Sun>  <- org-special-keyword + org-date
+** DONE Ship the tool           <- org-level-2 + org-done (headline-done)
+*** Heading three               <- org-level-3
+   A line with =inline code=,   <- org-code
+   ~verbatim~, and a [[link]].  <- org-verbatim + org-link
+   - [X] a checkbox item        <- org-checkbox
+
+   #+begin_src elisp            <- org-block-begin-line
+     (message "hi")             <- org-block
+   #+end_src                    <- org-block-end-line
+
+   | name | hex     |           <- org-table (header row org-table-header)
+   |------+---------|
+   | blue | #67809c |
+#+end_example
+
+Each marked element is a span colored from the corresponding PKGMAP face. The
+preview rebuilds whenever a package face or the palette changes, same as the
+mock frame.
+
+For later apps, each gets its own preview renderer (magit -> a status buffer
+mock, elfeed -> a search-list mock). Until an app has a bespoke preview, it
+falls back to a generic "face name rendered in its own colors" list, so a new
+app is usable the moment its face list is added, and gets a real preview when
+one is written.
+
+* Export schema
+
+=theme.json= gains a =packages= key:
+
+#+begin_src json
+{
+  "name": "dupre",
+  "palette": [...],
+  "assignments": {...},
+  "bold": [...], "italic": [...],
+  "ui": {...},
+  "packages": {
+    "org-mode": {
+      "org-level-1": {"fg":"#67809c","bg":null,"bold":true,"italic":false},
+      "org-todo":    {"fg":"#cb6b4d","bg":null,"bold":true,"italic":false}
+    }
+  }
+}
+#+end_src
+
+Only faces the user actually touched (or the curated defaults) are written. The
+build step's converter sets each as a normal face. Backward compatible: a file
+without =packages= loads fine.
+
+* Build-step consumption
+
+The eventual =theme.json= -> =dupre-*.el= converter already owns tiers 1 and 2.
+Tier 3 adds, per package face:
+
+#+begin_src elisp
+(org-level-1 ((t (:foreground "#67809c" :weight bold))))
+(org-todo    ((t (:foreground "#cb6b4d" :weight bold))))
+#+end_src
+
+No new converter machinery — package faces are just more faces. This is the
+TDD-worthy part (JSON in, valid faces out), same as the rest of the converter.
+
+* Scope for v1
+
+- Build the section, the app dropdown, the org-mode face table, and the org
+  preview.
+- Seed org's ~18 curated faces (above), not all 104 org-* faces (most are
+  org-roam / superstar / agenda noise the core theme need not touch).
+- Wire export/import of the =packages= key.
+- Leave the converter for the separate build-step task; the spec only needs the
+  schema to be right.
+
+* Extensibility (adding the next app)
+
+1. Add an entry to =APPS= (label, curated face list with palette-name defaults,
+   preview key).
+2. Optionally write a bespoke preview renderer; until then the generic fallback
+   renders.
+3. Nothing else changes — the dropdown, table, export, and import are all
+   data-driven off =APPS= / =PKGMAP=.
+
+* Open questions
+
+1. *Curated set size.* ~18 org faces proposed. Add =org-level-4..8=, quote,
+   verse, drawer, footnote, priority? Or keep it tight and grow on demand?
+2. *Bold/italic source.* org defaults carry weight (headings, todo). Seed those
+   as the curated defaults, or start everything normal and let the user set
+   weight? Proposed: seed the obvious ones (title, levels, todo, done bold).
+3. *Inherit relationships.* Many org faces inherit (org-level-N from outline-N;
+   org-code/verbatim from =shr= / =fixed-pitch=). Model inheritance, or set
+   absolute values per face? Proposed: absolute values, simplest and matches
+   how the converter writes them.
+4. *App order after org.* magit (111 faces, highest payoff), elfeed, dirvish,
+   marginalia, consult, telega — which next, and how many?
+5. *Preview fidelity.* Bespoke per-app previews are the most work. Is the
+   generic fallback acceptable for the long tail, with bespoke previews only
+   for org and magit?
+
+* Files touched
+
+- =scripts/theme-selector/generate.py= — the section, =APPS= data, the package
+  face table, =renderOrgPreview()=, export/import of =packages=.
+- =scripts/theme-selector/theme-selector.html= — regenerated.
+- (later) the =theme.json= -> =dupre-*.el= converter — consumes =packages=.
