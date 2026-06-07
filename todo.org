@@ -59,6 +59,10 @@ A full =make test= run (2026-06-07) is green across 516 of 517 files; the only f
 
 *** TODO org-todo color mismatch: test expects #ff2a00, theme renders #a7502d
 =dupre-theme-org-todo= (test:130) asserts the org-todo foreground is "#ff2a00" (intense-red), but the theme renders "#a7502d" (red-1). Design call: should org-todo be the bright intense-red or the muted red-1? Fix whichever side loses the decision.
+** TODO [#C] dupre-clear theme — contrast-first AAA sibling :feature:theme:dupre:
+Build a new theme (working name "dupre-clear", final name TBD) that takes dupre's color identity and rebuilds it Prot's way: contrast-first, targeting WCAG AAA (~7:1 on the ground), where the in-progress dupre revision is mood/depth-first and lands at AA. Same hues (dupre blue, emerald, gold, terracotta, regal violet, mint) brightened to clear the AAA floor; same modus-style role mapping (blue keywords bold, gold functions, violet types, emerald strings, terracotta constants, silver default, warm-grey comments, metallic greys, navy + regal fills). Build the dupre revision first; this reuses its hue choices as the starting point.
+
+Full design + methodology + starting palette + open questions in the spec: [[file:docs/design/dupre-clear-theme.org][docs/design/dupre-clear-theme.org]]. Key prerequisite/context: the dupre-redesign entry in =.ai/session-context.org= (the AA palette this brightens). Hardest slot: blue keywords (a deep dupre blue can't be AAA on near-black — decide brighten vs keep-AA-exception vs lift-the-ground).
 ** TODO [#B] Dashboard keybinding changes :quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-06
