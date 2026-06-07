@@ -15,7 +15,7 @@
  .sbtn.on{background:#0d0b0a;color:#cdced1;border-color:#8a9496}
  .pals{display:flex;gap:8px;flex-wrap:wrap}
  .pchip{width:128px;height:58px;border-radius:6px;border:1px solid #00000060;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab}
- .pchip.drag{opacity:.4} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none}
+ .pchip.drag{opacity:.4} .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none}
  .pchip .hx{font-size:10pt;opacity:.8} .pchip .rm{position:absolute;top:2px;right:5px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:bold;opacity:.7}
  .palctl{margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
  .palctl input[type=text]{background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace}
@@ -25,13 +25,13 @@
  #export{width:100%;height:180px;margin-top:10px;background:#0d0b0a;color:#a4ac64;border:1px solid #252321;border-radius:6px;font:10pt monospace;padding:10px}
  .filebar{margin:6px 0 0;display:flex;gap:8px;align-items:center}
  #pagetitle{font-size:30px;color:#cdced1;font-weight:normal;border:none;margin:4px 0 18px;padding:0}
- .cols{display:flex;gap:28px;align-items:flex-start}
+ .cols{display:flex;gap:28px;align-items:flex-start} .cols.stretch{align-items:stretch}
  .pane{min-width:0} .pane.grow{flex:1} .pane.saveload{flex:0 0 auto;margin-left:auto}
  .pane h1{margin-top:0}
  .filebar.end{justify-content:flex-end} .langbar{margin-bottom:10px;display:flex;gap:8px;align-items:center}
  #codepre{width:100%;box-sizing:border-box}
- .mock{border:1px solid #252321;border-radius:8px;overflow:hidden;font:15px/1.7 monospace}
- .mock .ln{display:flex;align-items:stretch;white-space:pre}
+ .mock{border:1px solid #252321;border-radius:8px;overflow:hidden;font:15px/1.7 monospace;display:flex;flex-direction:column}
+ .mock .mbuf{flex:1} .mock .ln{display:flex;align-items:stretch;white-space:pre}
  .mock .fr{width:10px;flex:0 0 auto} .mock .num{width:36px;flex:0 0 auto;text-align:right;padding-right:10px}
  .mock .cd{flex:1;padding-left:8px} .mock .bar,.mock .echo{padding:4px 10px;white-space:pre}
 </style>
@@ -45,6 +45,7 @@
    <input type="text" id="newhexstr" placeholder="#rrggbb" value="#888888" oninput="syncHex('text')" style="width:110px">
    <input type="text" id="newname" placeholder="name">
    <button onclick="addColor()">+ add color</button>
+   <button onclick="updateColor()">&#8635; update selected</button>
   </div>
  </section>
  <section class="pane saveload">
@@ -70,13 +71,13 @@
   <pre id="codepre"></pre>
  </section>
 </div>
-<h1>interface faces</h1>
-<div class="cols">
+<h1>ui faces</h1>
+<div class="cols stretch">
  <section class="pane">
   <table class="leg" id="uitable"><thead><tr><th>face</th><th>foreground</th><th>background</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
  </section>
- <section class="pane grow">
-  <div class="langbar"><label style="color:#b4b1a2">mock frame — the faces in a live buffer</label></div>
+ <section class="pane grow" style="display:flex;flex-direction:column">
+  <div class="langbar"><label style="color:#b4b1a2">live buffer preview</label></div>
   <div id="mockframe" class="mock"></div>
  </section>
 </div>
@@ -132,25 +133,37 @@ function buildTable(){
     tr.appendChild(c0);tr.appendChild(stTd);tr.appendChild(c2);tr.appendChild(exTd);tr.appendChild(crTd);
     tb.appendChild(tr);}
 }
-let dragFrom=null;
+let dragFrom=null,selectedIdx=null;
 function renderPalette(){
   const p=document.getElementById('pals');p.innerHTML='';
   PALETTE.forEach((pc,i)=>{const [hex,name]=pc;const tc=textOn(hex);
-    const d=document.createElement('div');d.className='pchip';d.style.background=hex;d.draggable=true;
+    const d=document.createElement('div');d.className='pchip'+(i===selectedIdx?' sel':'');d.style.background=hex;d.draggable=true;
     d.innerHTML=`<button class="rm" title="remove" style="color:${tc}">×</button><input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
-    d.querySelector('.rm').onclick=()=>{PALETTE.splice(i,1);renderPalette();buildTable();};
+    d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();};
     d.querySelector('.nm').onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
+    d.onclick=(e)=>{if(e.target.closest('.rm')||e.target.closest('.nm'))return;selectColor(i);};
     d.ondragstart=()=>{dragFrom=i;d.classList.add('drag');};
     d.ondragend=()=>d.classList.remove('drag');
     d.ondragover=(e)=>e.preventDefault();
-    d.ondrop=(e)=>{e.preventDefault();if(dragFrom===null||dragFrom===i)return;const m=PALETTE.splice(dragFrom,1)[0];PALETTE.splice(i,0,m);dragFrom=null;renderPalette();buildTable();};
+    d.ondrop=(e)=>{e.preventDefault();if(dragFrom===null||dragFrom===i)return;const m=PALETTE.splice(dragFrom,1)[0];PALETTE.splice(i,0,m);dragFrom=null;selectedIdx=null;renderPalette();buildTable();};
     p.appendChild(d);});
   buildUITable();
+}
+function selectColor(i){selectedIdx=i;const [hex,name]=PALETTE[i];document.getElementById('newhexstr').value=hex;document.getElementById('newhex').value=hex;document.getElementById('newname').value=name;renderPalette();}
+function updateColor(){
+  if(selectedIdx===null){alert('click a palette color to select it first');return;}
+  const i=selectedIdx,oldHex=PALETTE[i][0];
+  const newHex=normHex(document.getElementById('newhexstr').value)||document.getElementById('newhex').value;
+  const newName=document.getElementById('newname').value||PALETTE[i][1];
+  PALETTE[i]=[newHex,newName];
+  for(const k in MAP){if(MAP[k]===oldHex)MAP[k]=newHex;}
+  for(const f in UIMAP){if(UIMAP[f].fg===oldHex)UIMAP[f].fg=newHex;if(UIMAP[f].bg===oldHex)UIMAP[f].bg=newHex;}
+  renderPalette();buildTable();buildUITable();renderCode();applyGround();
 }
 function normHex(s){s=s.trim();if(/^[0-9a-fA-F]{6}$/.test(s))s='#'+s;return /^#[0-9a-fA-F]{6}$/.test(s)?s.toLowerCase():null;}
 function syncHex(src){const sw=document.getElementById('newhex'),tx=document.getElementById('newhexstr');
   if(src==='swatch'){tx.value=sw.value;}else{const h=normHex(tx.value);if(h)sw.value=h;}}
-function addColor(){const h=normHex(document.getElementById('newhexstr').value)||document.getElementById('newhex').value;const name=document.getElementById('newname').value||h;PALETTE.push([h,name]);document.getElementById('newname').value='';renderPalette();buildTable();}
+function addColor(){const h=normHex(document.getElementById('newhexstr').value)||document.getElementById('newhex').value;const name=document.getElementById('newname').value||h;PALETTE.push([h,name]);document.getElementById('newname').value='';selectedIdx=null;renderPalette();buildTable();}
 function themeName(){return (document.getElementById('themename').value||'theme').trim()||'theme';}
 function fileSlug(){return themeName().replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'theme';}
 function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);return {name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};}
@@ -181,7 +194,7 @@ function buildMockFrame(){
     {plain:'    (cl-incf count)',lazy:1},
     {t:[['p','  '],['punc','('],['kw','setq'],['p',' '],['var','done'],['p',' '],['con','t'],['punc',')']],paren:1}
   ];
-  let html='';
+  let buf='';
   lines.forEach((L,i)=>{
     const isc=L.cur;
     const nFg=isc?(lnc.fg||fg):(ln.fg||fg), nBg=isc?(lnc.bg||'transparent'):(ln.bg||'transparent');
@@ -192,8 +205,9 @@ function buildMockFrame(){
     else if(L.paren){cd=L.t.map(([k,t],j)=>j===L.t.length-1?`<span style="background:${par.bg||'transparent'};color:${par.fg||MAP[k]||fg};font-weight:bold">${esc(t)}</span>`:mockSpan(k,t)).join('');}
     else{cd=L.t.map(([k,t])=>mockSpan(k,t)).join('');if(L.region)cd=`<span style="background:${reg.bg||'transparent'}">${cd}</span>`;}
     if(isc)cd+=`<span style="background:${cur.bg||fg};color:${bg}"> </span>`;
-    html+=`<div class="ln" style="background:${rowBg}"><span class="fr" style="background:${frng.bg||bg}"></span><span class="num" style="color:${nFg};background:${nBg}">${i+1}</span><span class="cd">${cd}</span></div>`;
+    buf+=`<div class="ln" style="background:${rowBg}"><span class="fr" style="background:${frng.bg||bg}"></span><span class="num" style="color:${nFg};background:${nBg}">${i+1}</span><span class="cd">${cd}</span></div>`;
   });
+  let html=`<div class="mbuf" style="background:${bg}">${buf}</div>`;
   html+=`<div class="bar" style="background:${ml.bg||fg};color:${ml.fg||bg}">  init.el      (Emacs Lisp)      L3      git:main  </div>`;
   html+=`<div class="bar" style="background:${mli.bg||bg};color:${mli.fg||fg}">  *Messages*      (Fundamental)  </div>`;
   html+=`<div class="echo" style="color:${fg}"><span style="color:${mb.fg||fg}">I-search:</span> count</div>`;
