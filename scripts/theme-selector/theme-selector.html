@@ -34,6 +34,9 @@
  .mock .mbuf{flex:1} .mock .ln{display:flex;align-items:stretch;white-space:pre}
  .mock .fr{width:10px;flex:0 0 auto} .mock .num{width:36px;flex:0 0 auto;text-align:right;padding-right:10px}
  .mock .cd{flex:1;padding-left:8px} .mock .bar,.mock .echo{padding:4px 10px;white-space:pre}
+ #codepre [data-k],.mock [data-k],.mock [data-face]{cursor:pointer}
+ @keyframes flashcell{0%,55%{background:#e8bd3066}100%{background:transparent}}
+ tr.flash td{animation:flashcell 1.1s ease-out}
 </style>
 <h1 id="pagetitle">Untitled: theme</h1>
 <div class="cols">
@@ -98,15 +101,16 @@ function renderCode(){
   for(const line of SAMPLES[lang]){
     if(line.length===0){html+='\n';continue;}
     for(const [k,t] of line){const c=MAP[k]||'#cdced1';const w=BOLD[k]?'bold':'normal';const s=ITALIC[k]?'italic':'normal';
-      html+=`<span style="color:${c};font-weight:${w};font-style:${s}">${esc(t)}</span>`;}
+      html+=`<span data-k="${k}" style="color:${c};font-weight:${w};font-style:${s}">${esc(t)}</span>`;}
     html+='\n';}
-  document.getElementById('codepre').innerHTML=html;
+  const cp=document.getElementById('codepre');cp.innerHTML=html;
+  cp.onclick=(e)=>{const s=e.target.closest('[data-k]');if(s)flashAssign(s.dataset.k);};
   buildMockFrame();
 }
 function buildTable(){
   const tb=document.getElementById('legbody');tb.innerHTML='';
   for(const [kind,label,ex] of CATS){
-    const tr=document.createElement('tr');
+    const tr=document.createElement('tr');tr.dataset.kind=kind;
     const sel=document.createElement('select');sel.className='chip';
     const cur=MAP[kind];const have=PALETTE.some(p=>p[0]===cur);
     const list=have?PALETTE:[[cur,'(gone) '+cur],...PALETTE];
@@ -179,7 +183,10 @@ function importFile(ev){const f=ev.target.files[0];if(!f)return;const r=new File
   r.readAsText(f);ev.target.value='';}
 function applyGround(){document.querySelectorAll('pre').forEach(p=>p.style.background=MAP['bg']);document.querySelectorAll('.ex').forEach(e=>e.style.background=MAP['bg']);}
 function uf(f){return UIMAP[f]||{};}
-function mockSpan(k,t){return `<span style="color:${MAP[k]||MAP['p']};font-weight:${BOLD[k]?'bold':'normal'};font-style:${ITALIC[k]?'italic':'normal'}">${esc(t)}</span>`;}
+function flashRow(tr){if(!tr)return;tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}
+function flashAssign(k){flashRow(document.querySelector(`#legbody tr[data-kind="${k}"]`));}
+function flashUi(f){flashRow(document.querySelector(`#uibody tr[data-face="${f}"]`));}
+function mockSpan(k,t){return `<span data-k="${k}" style="color:${MAP[k]||MAP['p']};font-weight:${BOLD[k]?'bold':'normal'};font-style:${ITALIC[k]?'italic':'normal'}">${esc(t)}</span>`;}
 function buildMockFrame(){
   const fr=document.getElementById('mockframe');if(!fr)return;
   const bg=MAP['bg'],fg=MAP['p'];
@@ -200,19 +207,21 @@ function buildMockFrame(){
     const nFg=isc?(lnc.fg||fg):(ln.fg||fg), nBg=isc?(lnc.bg||'transparent'):(ln.bg||'transparent');
     const rowBg=isc?(hl.bg||'transparent'):'transparent';
     let cd;
-    if(L.plain&&L.match){cd=`<span style="color:${isr.fg||fg};background:${isr.bg||'transparent'}">${esc(L.plain)}</span>`;}
-    else if(L.plain&&L.lazy){cd=`<span style="color:${laz.fg||fg};background:${laz.bg||'transparent'}">${esc(L.plain)}</span>`;}
-    else if(L.paren){cd=L.t.map(([k,t],j)=>j===L.t.length-1?`<span style="background:${par.bg||'transparent'};color:${par.fg||MAP[k]||fg};font-weight:bold">${esc(t)}</span>`:mockSpan(k,t)).join('');}
-    else{cd=L.t.map(([k,t])=>mockSpan(k,t)).join('');if(L.region)cd=`<span style="background:${reg.bg||'transparent'}">${cd}</span>`;}
-    if(isc)cd+=`<span style="background:${cur.bg||fg};color:${bg}"> </span>`;
-    buf+=`<div class="ln" style="background:${rowBg}"><span class="fr" style="background:${frng.bg||bg}"></span><span class="num" style="color:${nFg};background:${nBg}">${i+1}</span><span class="cd">${cd}</span></div>`;
+    if(L.plain&&L.match){cd=`<span data-face="isearch" style="color:${isr.fg||fg};background:${isr.bg||'transparent'}">${esc(L.plain)}</span>`;}
+    else if(L.plain&&L.lazy){cd=`<span data-face="lazy-highlight" style="color:${laz.fg||fg};background:${laz.bg||'transparent'}">${esc(L.plain)}</span>`;}
+    else if(L.paren){cd=L.t.map(([k,t],j)=>j===L.t.length-1?`<span data-face="show-paren-match" style="background:${par.bg||'transparent'};color:${par.fg||MAP[k]||fg};font-weight:bold">${esc(t)}</span>`:mockSpan(k,t)).join('');}
+    else{cd=L.t.map(([k,t])=>mockSpan(k,t)).join('');if(L.region)cd=`<span data-face="region" style="background:${reg.bg||'transparent'}">${cd}</span>`;}
+    if(isc)cd+=`<span data-face="cursor" style="background:${cur.bg||fg};color:${bg}"> </span>`;
+    const nFace=isc?'line-number-current-line':'line-number';
+    buf+=`<div class="ln" style="background:${rowBg}"><span class="fr" data-face="fringe" style="background:${frng.bg||bg}"></span><span class="num" data-face="${nFace}" style="color:${nFg};background:${nBg}">${i+1}</span><span class="cd">${cd}</span></div>`;
   });
   let html=`<div class="mbuf" style="background:${bg}">${buf}</div>`;
-  html+=`<div class="bar" style="background:${ml.bg||fg};color:${ml.fg||bg}">  init.el      (Emacs Lisp)      L3      git:main  </div>`;
-  html+=`<div class="bar" style="background:${mli.bg||bg};color:${mli.fg||fg}">  *Messages*      (Fundamental)  </div>`;
-  html+=`<div class="echo" style="color:${fg}"><span style="color:${mb.fg||fg}">I-search:</span> count</div>`;
-  html+=`<div class="echo"><span style="color:${lnk.fg||fg};text-decoration:underline">https://gnu.org</span>   <span style="color:${err.fg||fg}">error</span>   <span style="color:${wrn.fg||fg}">warning</span>   <span style="color:${suc.fg||fg}">ok</span></div>`;
+  html+=`<div class="bar" data-face="mode-line" style="background:${ml.bg||fg};color:${ml.fg||bg}">  init.el      (Emacs Lisp)      L3      git:main  </div>`;
+  html+=`<div class="bar" data-face="mode-line-inactive" style="background:${mli.bg||bg};color:${mli.fg||fg}">  *Messages*      (Fundamental)  </div>`;
+  html+=`<div class="echo" style="color:${fg}"><span data-face="minibuffer-prompt" style="color:${mb.fg||fg}">I-search:</span> count</div>`;
+  html+=`<div class="echo"><span data-face="link" style="color:${lnk.fg||fg};text-decoration:underline">https://gnu.org</span>   <span data-face="error" style="color:${err.fg||fg}">error</span>   <span data-face="warning" style="color:${wrn.fg||fg}">warning</span>   <span data-face="success" style="color:${suc.fg||fg}">ok</span></div>`;
   fr.innerHTML=html;fr.style.background=bg;fr.style.color=fg;
+  fr.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u){flashUi(u.dataset.face);return;}const k=e.target.closest('[data-k]');if(k)flashAssign(k.dataset.k);};
 }
 function uiSelect(face,attr){
   const sel=document.createElement('select');sel.className='chip';
@@ -228,7 +237,7 @@ function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)r
 function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
-    const tr=document.createElement('tr');
+    const tr=document.createElement('tr');tr.dataset.face=face;
     const c0=document.createElement('td');c0.className='cat';c0.textContent=label;
     const cF=document.createElement('td');cF.appendChild(uiSelect(face,'fg'));
     const cB=document.createElement('td');cB.appendChild(uiSelect(face,'bg'));
