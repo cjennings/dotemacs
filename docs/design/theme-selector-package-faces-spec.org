@@ -7,11 +7,12 @@
 Spec / Craig's first-round answers folded in (2026-06-07). Proposes a third tier
 for the theme-selector (scripts/theme-selector/) that lets a theme colorize
 package-specific faces, built one application at a time. v1 apps: org-mode
-(incl. org-agenda), magit, elfeed. Two items still open: Craig's confirm on the
-inheritance representation, and whether to build the custom color picker before,
-during, or after tier 3. A Codex review file was referenced but is not present
-in the repo (see iteration history); when it lands as
-=theme-selector-package-faces-review.org=, run spec-response against it.
+(incl. org-agenda), magit, elfeed. Codex review incorporated (2026-06-07): added
+implementation phases, acceptance criteria, the package-face inventory source
+(hybrid, split), and state/export semantics. Rubric now =Ready with caveats=.
+Three opens remain for Craig: confirm the inheritance representation
+(absolute-default + opt-in inherit), confirm hybrid-and-split inventory (vs
+curated-only v1), and the custom color picker timing.
 
 * Background — the three tiers
 
@@ -40,9 +41,10 @@ A new "package faces" section with:
    org-mode (including org-agenda), magit, and elfeed; the rest of Craig's
    packages (calibredb, ghostel, mu4e, IRC, org-drill, dirvish + dired, slack)
    follow one at a time.
-2. A *face table* for the selected app — one row per curated face, each with a
-   foreground dropdown, a background dropdown, and bold / italic toggles, all
-   drawing from the same palette as the other tables.
+2. A *face table* for the selected app — one row per face in the app's complete
+   set, each with a foreground dropdown, a background dropdown, bold / italic
+   toggles, and an optional inherit, all drawing from the same palette as the
+   other tables. Grouped, with a text filter for the large apps.
 3. A *preview pane* for the selected app — a realistic mock of that package
    rendered with the live theme, the way the ui-faces mock-frame shows the UI
    faces in a buffer. org-mode gets a mock org document.
@@ -243,6 +245,93 @@ TDD-worthy part (JSON in, valid faces out), same as the rest of the converter.
 - Leave the converter for the separate build-step task (Elisp, per Craig); the
   spec only needs the schema to be right.
 
+* Implementation phases
+
+Phased so each step ships without a broken intermediate, and the three bespoke
+apps don't wait on the all-package inventory.
+
+1. *State + schema.* Add =PKGMAP= ({app:{face:{fg,bg,bold,italic,inherit,source}}})
+   and the =APPS= registry. Extend export/import with the =packages= key; old
+   JSON (no =packages=) still imports cleanly. No UI yet.
+2. *Curated app data.* Complete own-defface face lists + seeded defaults for org
+   (incl. org-agenda), magit, elfeed, in =APPS=. Pure data.
+3. *Package face table UI.* App selector; grouped rows; fg/bg dropdowns + bold /
+   italic toggles + optional inherit; per-face and per-app reset; a text filter
+   (org/magit are large); a contrast readout per fg/bg. Built on a generalized
+   face-control helper shared with the ui-faces table, not a fork of =uiSelect=.
+4. *Org preview.* =renderOrgPreview()=, live, refreshing on palette/face change.
+5. *Magit + elfeed previews.* Bespoke mocks (magit status buffer, elfeed search
+   list).
+6. *Generated all-package inventory* (the "theme every package" path). A build
+   step queries Emacs for installed packages' faces grouped by package, writes a
+   data file =generate.py= embeds; the dropdown then lists every package with an
+   editable table + the generic fallback preview. Lands after phases 1-5 without
+   blocking the three bespoke apps.
+7. *Docs + validation.* README =packages= schema + inventory-refresh command;
+   regenerate HTML; fixtures + manual checklist.
+
+Phases 1-5 deliver the three high-value apps fully; phase 6 opens the long tail;
+phase 7 documents.
+
+* Package face inventory source
+
+*Hybrid, split across phases.* Curated app metadata (org/magit/elfeed: complete
+face lists, seeded defaults, bespoke previews) is hand-maintained in =APPS= and
+ships in phases 2-5. A *generated* =PACKAGE_FACE_INVENTORY= — produced by a build
+step that asks the running Emacs for each installed package's faces grouped by
+package, written to a JSON/Python data file =generate.py= embeds — supplies the
+generic fallback packages and ships in phase 6.
+
+Why hybrid and split: the static generator can't discover packages at runtime in
+the browser, so "theme every package" needs a generated inventory; but making the
+full inventory a prerequisite for the three bespoke apps invites the scope
+explosion the review flagged. Splitting it lets v1's core ship first; the
+inventory is additive.
+
+The generated inventory is an *input artifact* to =generate.py= (a committed data
+file refreshed by an explicit command), never browser-side discovery. The refresh
+command's dependency on a loaded Emacs config is documented.
+
+Open for Craig: confirm hybrid-and-split, or keep v1 to curated org/magit/elfeed
+only and defer the generated inventory entirely.
+
+* State and export policy
+
+Each package face object carries a =source= marker so export can tell a seeded
+default from a user edit from a deliberate clear:
+
+#+begin_src js
+{ fg:"#67809c", bg:null, bold:true, italic:false, inherit:null, source:"default" }
+// source: "default" (seeded) | "user" (edited) | "cleared" (user removed a default)
+#+end_src
+
+Export policy:
+
+- Write =default= and =user= entries.
+- Write =cleared= entries — they must suppress a curated default on reload.
+- Omit untouched faces that have no default.
+- When =inherit= is set, write =inherit= plus only the explicit overrides.
+- Preserve package faces present in an imported file but absent from the current
+  inventory (or warn) — don't silently drop them.
+
+Import tolerates a missing =packages= key, unknown app keys, unknown face keys,
+and a missing =inherit=. A deleted palette color leaves package face references
+in the same "(gone)" recoverable state syntax colors use. Inheritance cycles are
+rejected (treated as no inheritance) during preview resolution.
+
+* Acceptance criteria
+
+- Existing =dupre.json= (no =packages= key) imports cleanly.
+- Export includes =packages= once defaults or edits exist;
+  =fg/bg/bold/italic/inherit/source= round-trip through import/export.
+- org, magit, elfeed appear in the app selector with complete grouped face tables.
+- (phase 6) generic inventory packages appear with editable tables + fallback
+  previews, the fallback visibly labeled as generic.
+- A palette color update propagates to package faces the same way it does to
+  syntax / ui faces.
+- =python3 scripts/theme-selector/generate.py= rebuilds =theme-selector.html=.
+- README documents the =packages= schema, inheritance, and the inventory source.
+
 * Extensibility (adding the next app)
 
 1. Add an entry to =APPS= (label, curated face list with palette-name defaults,
@@ -333,9 +422,12 @@ helpers for the readout and =normHex()= for the field sync. No dependency. It
 replaces the =<input type=color>= in the add-color row and, later, becomes the
 picker the package-face dropdowns can also invoke.
 
-Open question for Craig: build the custom picker as its own task before tier 3,
-fold it into the tier-3 build, or after. It is independent of package faces, so
-any order works.
+It stays *off* the tier-3 critical path: a separate task before or after the
+package-face build, not folded into it, since folding it in widens the blast
+radius for no dependency benefit. Build it only sooner if package-face editing
+proves painful with the native swatch.
+
+Open question for Craig: custom picker before tier 3, after it, or vNext.
 
 * Files touched
 
@@ -344,6 +436,32 @@ any order works.
 - =scripts/theme-selector/theme-selector.html= — regenerated.
 - (later) the =theme.json= -> =dupre-*.el= converter (Elisp) — consumes
   =packages=.
+
+* Review dispositions
+
+Codex review (2026-06-07), =Not ready=. Findings processed:
+
+- *Modified — generated inventory (high, blocking).* Codex recommended a hybrid
+  inventory so every installed package is reachable. Accepted the hybrid, but
+  *split* it: the generated all-package inventory is its own phase (6), after the
+  three bespoke apps (phases 1-5), rather than a v1 prerequisite. Reason: Codex
+  named scope explosion as the main risk, and gating org/magit/elfeed on a
+  full-inventory mechanism is exactly that. The split keeps v1's core shippable
+  and makes "theme every package" additive. Confirm-with-Craig flagged as an
+  open.
+- *Modified — preview depth (UX obs).* Codex suggested level 4-8 examples in the
+  org preview. The preview stays a curated document drawing the prominent faces
+  (incl. a couple of deeper levels as representative); the complete level set
+  lives in the *table*, which is where every face is assignable. A full 8-level
+  preview block would bloat the mock without adding assignability.
+
+Everything else in the review accepted as written: implementation phases,
+acceptance criteria, the =source= state field + export policy, curated-vs-complete
+wording, keeping the custom picker off the critical path, unknown-import
+preservation, the test-strategy fixtures, and the UX/architecture/robustness
+observations (grouping + filter, reset controls, package-fg/bg contrast readout,
+generalized face-control helper, package style kept inside the package object,
+"(gone)" recoverable state, inheritance-cycle rejection).
 
 * Review and iteration history
 
@@ -366,3 +484,28 @@ any order works.
   repo — the review file could not be found, so only the author-side cj-comment
   fold was done; the Codex review remains to be processed when its file is
   located.
+
+** 2026-06-07 Sun @ 18:20:16 -0500 — Codex — reviewer
+- *What changed or was recommended:* Created the missing formal review and
+  marked the spec =Not ready=. The review recommends adding implementation
+  phases, acceptance criteria, an explicit package-face inventory source, and
+  default/user/cleared/inherited export semantics.
+- *Why:* The direction is coherent and the first-round decisions are folded in,
+  but v1 now depends on behavior that is not yet implementable from the current
+  static generator without a defined inventory and state/export contract.
+- *Artifacts:* [[file:theme-selector-package-faces-spec-review.org][theme-selector-package-faces-spec-review.org]]
+
+** 2026-06-07 Sun @ 18:28:02 -0500 — Claude Code (emacs-d) — responder
+- *What:* Ran spec-response against the Codex review. Added Implementation
+  phases (7), Package face inventory source (hybrid, split), State and export
+  policy (=source= field + export rules), and Acceptance criteria. Wove in the
+  UX/architecture/robustness observations. Two reasoned modifies (generated
+  inventory split into its own phase; org preview stays curated rather than
+  all-8-levels), everything else accepted — see Review dispositions. Status
+  moved to =Ready with caveats=. Deleted the review file.
+- *Why:* The four blocking findings were real implementation-contract gaps; the
+  inventory split answers Codex's own scope-explosion warning while still
+  reaching "theme every package."
+- *Artifacts:* This spec (Review dispositions section); review file deleted per
+  the spec-response close-out. Three opens remain for Craig (inheritance confirm,
+  hybrid-inventory confirm, picker timing).
