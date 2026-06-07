@@ -51,6 +51,14 @@ Ask:
 Reference values -- modus-vivendi: refine-changed bg #4a4a00 fg #efef80, changed bg #363300 fg #efef80. modus-operandi: refine-changed bg #fac090 fg #553d00, changed bg #ffdfa9 fg #553d00.
 
 Side-by-side legibility render: [[file:assets/2026-06-07-dupre-diff-face-legibility-compare.png][assets/2026-06-07-dupre-diff-face-legibility-compare.png]].
+** TODO [#B] dupre-theme test failures :bug:dupre:tests:
+A full =make test= run (2026-06-07) is green across 516 of 517 files; the only failures are 4 tests in =tests/test-dupre-theme.el=, long pre-existing. Two root causes. For each, decide whether the palette or the test assertion is canonical, then fix the loser so =make test= goes fully green.
+
+*** TODO Background drift: 3 tests expect #151311, palette bg is #0d0b0a
+=dupre-get-color-base= (test:46), =dupre-theme-default-face= (test:84), and =dupre-with-colors-binds-values= (test:62) all assert the default background is "#151311", but =themes/dupre-palette.el= defines =bg= as "#0d0b0a". The committed palette looks intentional, so the three assertions are likely just stale -- confirm #0d0b0a is the wanted background, then update the tests.
+
+*** TODO org-todo color mismatch: test expects #ff2a00, theme renders #a7502d
+=dupre-theme-org-todo= (test:130) asserts the org-todo foreground is "#ff2a00" (intense-red), but the theme renders "#a7502d" (red-1). Design call: should org-todo be the bright intense-red or the muted red-1? Fix whichever side loses the decision.
 ** TODO [#B] Dashboard keybinding changes :quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-06
