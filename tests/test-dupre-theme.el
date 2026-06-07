@@ -223,5 +223,39 @@ The defface registration in dupre-faces.el is what makes direct use work."
   (should (string= (face-attribute 'dupre-org-todo-dim :foreground nil 'default)
                    "#869038")))
 
+;;; Diff face legibility (WCAG contrast)
+
+(defun dupre-test--channel-luminance (c)
+  "Linearize an 8-bit channel value C (0-255) per the WCAG formula."
+  (let ((x (/ c 255.0)))
+    (if (<= x 0.03928) (/ x 12.92) (expt (/ (+ x 0.055) 1.055) 2.4))))
+
+(defun dupre-test--relative-luminance (hex)
+  "WCAG relative luminance of HEX color \"#rrggbb\"."
+  (+ (* 0.2126 (dupre-test--channel-luminance (string-to-number (substring hex 1 3) 16)))
+     (* 0.7152 (dupre-test--channel-luminance (string-to-number (substring hex 3 5) 16)))
+     (* 0.0722 (dupre-test--channel-luminance (string-to-number (substring hex 5 7) 16)))))
+
+(defun dupre-test--contrast (fg bg)
+  "WCAG contrast ratio between hex colors FG and BG."
+  (let ((l1 (dupre-test--relative-luminance fg))
+        (l2 (dupre-test--relative-luminance bg)))
+    (/ (+ (max l1 l2) 0.05) (+ (min l1 l2) 0.05))))
+
+(ert-deftest dupre-diff-changed-faces-meet-wcag-aa ()
+  "Error/Regression: diff-changed and diff-refine-changed must stay legible as
+standalone backgrounds (WCAG AA, >= 4.5:1 for normal text).  Guards the bug
+where diff-refine-changed rendered the default fg (#f0fef0) on the bright-gold
+yellow-1 (#ffd700) at 1.35:1 -- unreadable wherever the face is used as a plain
+background, not just inside diff-mode's own foreground overlay."
+  (require 'diff-mode)
+  (load-theme 'dupre t)
+  (dolist (face '(diff-changed diff-refine-changed))
+    (let ((fg (face-attribute face :foreground nil t))
+          (bg (face-attribute face :background nil t)))
+      (should (string-match-p "^#[0-9a-fA-F]\\{6\\}$" fg))
+      (should (string-match-p "^#[0-9a-fA-F]\\{6\\}$" bg))
+      (should (>= (dupre-test--contrast fg bg) 4.5)))))
+
 (provide 'test-dupre-theme)
 ;;; test-dupre-theme.el ends here
