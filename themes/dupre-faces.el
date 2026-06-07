@@ -164,10 +164,10 @@
 ;;;;; Diff mode
      `(diff-added ((t (:foreground ,green :background ,green-2))))
      `(diff-removed ((t (:foreground ,red :background ,red-3))))
-     `(diff-changed ((t (:foreground ,yellow :background ,yellow-2))))
+     `(diff-changed ((t (:foreground ,fg :background ,yellow-2))))
      `(diff-refine-added ((t (:foreground ,fg :background ,green-1 :weight bold))))
      `(diff-refine-removed ((t (:foreground ,fg :background ,red-2 :weight bold))))
-     `(diff-refine-changed ((t (:foreground ,fg :background ,yellow-1 :weight bold))))
+     `(diff-refine-changed ((t (:foreground ,fg :background ,yellow-2 :weight bold))))
      `(diff-header ((t (:foreground ,fg :background ,bg+2))))
      `(diff-file-header ((t (:foreground ,blue :background ,bg+2 :weight bold))))
      `(diff-hunk-header ((t (:foreground ,gray+1 :background ,bg+1))))

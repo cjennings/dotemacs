@@ -95,7 +95,7 @@ Each entry is (NAME VALUE) where VALUE is a hex color string.")
     (diff-removed-bg  red-3)
     (diff-removed-fg  red)
     (diff-changed-bg  yellow-2)
-    (diff-changed-fg  yellow))
+    (diff-changed-fg  fg))
   "Semantic color mappings for dupre-theme.
 Each entry maps a semantic name to a palette color name.")
 
