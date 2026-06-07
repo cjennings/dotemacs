@@ -41,6 +41,16 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
+** TODO [#B] Dupre diff-changed / diff-refine-changed legibility :bug:dupre:
+Surfaced 2026-06-07 from a pearl session designing its modified-ticket indicator (pearl marks a changed field by inheriting =diff-changed=). dupre's =diff-refine-changed= is bright gold (#ffd700) under near-white text (#f0fef0) -- WCAG contrast ~1.35, unreadable as a plain background. It only looks fine inside diff-mode because diff-mode overlays its own dark foreground. =diff-changed= (#875f00 amber) is ~5.49, readable but off the modus model. Every modus variant keeps both faces legible (contrast 9-16) by pairing a dark low-saturation background with a hue-matched foreground.
+
+Ask:
+1. Rework dupre's =diff-changed= and =diff-refine-changed= on modus lines: dark low-saturation background, legible foreground (plain default fg for simplicity, or hue-tinted per modus -- decide), and keep refine slightly stronger than changed (refine is the word-level emphasis inside a changed region; modus keeps them distinct).
+2. While there, audit dupre's broader diff/palette faces against modus conventions (background/foreground tinting, contrast targets) and flag where it diverges.
+
+Reference values -- modus-vivendi: refine-changed bg #4a4a00 fg #efef80, changed bg #363300 fg #efef80. modus-operandi: refine-changed bg #fac090 fg #553d00, changed bg #ffdfa9 fg #553d00.
+
+Side-by-side legibility render: [[file:assets/2026-06-07-dupre-diff-face-legibility-compare.png][assets/2026-06-07-dupre-diff-face-legibility-compare.png]].
 ** TODO [#B] Dashboard keybinding changes :quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-06
