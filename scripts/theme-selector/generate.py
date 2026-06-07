@@ -70,6 +70,10 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
  .pane h1{margin-top:0}
  .filebar.end{justify-content:flex-end} .langbar{margin-bottom:10px;display:flex;gap:8px;align-items:center}
  #codepre{width:100%;box-sizing:border-box}
+ .mock{border:1px solid #252321;border-radius:8px;overflow:hidden;font:15px/1.7 monospace}
+ .mock .ln{display:flex;align-items:stretch;white-space:pre}
+ .mock .fr{width:10px;flex:0 0 auto} .mock .num{width:36px;flex:0 0 auto;text-align:right;padding-right:10px}
+ .mock .cd{flex:1;padding-left:8px} .mock .bar,.mock .echo{padding:4px 10px;white-space:pre}
 </style>
 <h1 id="pagetitle">Untitled: theme</h1>
 <div class="cols">
@@ -107,7 +111,15 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
  </section>
 </div>
 <h1>interface faces</h1>
-<table class="leg" id="uitable"><thead><tr><th>face</th><th>foreground</th><th>background</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
+<div class="cols">
+ <section class="pane">
+  <table class="leg" id="uitable"><thead><tr><th>face</th><th>foreground</th><th>background</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
+ </section>
+ <section class="pane grow">
+  <div class="langbar"><label style="color:#b4b1a2">mock frame — the faces in a live buffer</label></div>
+  <div id="mockframe" class="mock"></div>
+ </section>
+</div>
 <script>
 const SAMPLES=SAMPLES_J, CATS=CATS_J, UI_FACES=UIFACES_J;
 let MAP=MAP_J, PALETTE=PALETTE_J, BOLD=BOLD_J, ITALIC={}, UIMAP=UIMAP_J;
@@ -128,6 +140,7 @@ function renderCode(){
       html+=`<span style="color:${c};font-weight:${w};font-style:${s}">${esc(t)}</span>`;}
     html+='\\n';}
   document.getElementById('codepre').innerHTML=html;
+  buildMockFrame();
 }
 function buildTable(){
   const tb=document.getElementById('legbody');tb.innerHTML='';
@@ -192,6 +205,41 @@ function importFile(ev){const f=ev.target.files[0];if(!f)return;const r=new File
     renderPalette();buildTable();buildUITable();renderCode();applyGround();updateTitle();}catch(e){alert('bad theme file: '+e.message);}};
   r.readAsText(f);ev.target.value='';}
 function applyGround(){document.querySelectorAll('pre').forEach(p=>p.style.background=MAP['bg']);document.querySelectorAll('.ex').forEach(e=>e.style.background=MAP['bg']);}
+function uf(f){return UIMAP[f]||{};}
+function mockSpan(k,t){return `<span style="color:${MAP[k]||MAP['p']};font-weight:${BOLD[k]?'bold':'normal'};font-style:${ITALIC[k]?'italic':'normal'}">${esc(t)}</span>`;}
+function buildMockFrame(){
+  const fr=document.getElementById('mockframe');if(!fr)return;
+  const bg=MAP['bg'],fg=MAP['p'];
+  const ln=uf('line-number'),lnc=uf('line-number-current-line'),hl=uf('hl-line'),reg=uf('region'),isr=uf('isearch'),laz=uf('lazy-highlight'),par=uf('show-paren-match'),cur=uf('cursor'),ml=uf('mode-line'),mli=uf('mode-line-inactive'),mb=uf('minibuffer-prompt'),frng=uf('fringe'),lnk=uf('link'),err=uf('error'),wrn=uf('warning'),suc=uf('success');
+  const lines=[
+    {t:[['cmd',';; '],['cm','init.el - your config']]},
+    {t:[['punc','('],['kw','defun'],['p',' '],['fnd','cj/greet'],['p',' '],['punc','('],['var','name'],['punc',')']]},
+    {t:[['p','  '],['punc','('],['fnc','message'],['p',' '],['str','"hi %s"'],['p',' '],['var','name'],['punc','))']],cur:1},
+    {t:[['p','  '],['punc','('],['kw','setq'],['p',' '],['var','count'],['p',' '],['num','42'],['punc',')']],region:1},
+    {plain:'  (if (> count 0)',match:1},
+    {t:[['p','      '],['punc','('],['fnc','process'],['p',' '],['var','items'],['punc',')']]},
+    {plain:'    (cl-incf count)',lazy:1},
+    {t:[['p','  '],['punc','('],['kw','setq'],['p',' '],['var','done'],['p',' '],['con','t'],['punc',')']],paren:1}
+  ];
+  let html='';
+  lines.forEach((L,i)=>{
+    const isc=L.cur;
+    const nFg=isc?(lnc.fg||fg):(ln.fg||fg), nBg=isc?(lnc.bg||'transparent'):(ln.bg||'transparent');
+    const rowBg=isc?(hl.bg||'transparent'):'transparent';
+    let cd;
+    if(L.plain&&L.match){cd=`<span style="color:${isr.fg||fg};background:${isr.bg||'transparent'}">${esc(L.plain)}</span>`;}
+    else if(L.plain&&L.lazy){cd=`<span style="color:${laz.fg||fg};background:${laz.bg||'transparent'}">${esc(L.plain)}</span>`;}
+    else if(L.paren){cd=L.t.map(([k,t],j)=>j===L.t.length-1?`<span style="background:${par.bg||'transparent'};color:${par.fg||MAP[k]||fg};font-weight:bold">${esc(t)}</span>`:mockSpan(k,t)).join('');}
+    else{cd=L.t.map(([k,t])=>mockSpan(k,t)).join('');if(L.region)cd=`<span style="background:${reg.bg||'transparent'}">${cd}</span>`;}
+    if(isc)cd+=`<span style="background:${cur.bg||fg};color:${bg}"> </span>`;
+    html+=`<div class="ln" style="background:${rowBg}"><span class="fr" style="background:${frng.bg||bg}"></span><span class="num" style="color:${nFg};background:${nBg}">${i+1}</span><span class="cd">${cd}</span></div>`;
+  });
+  html+=`<div class="bar" style="background:${ml.bg||fg};color:${ml.fg||bg}">  init.el      (Emacs Lisp)      L3      git:main  </div>`;
+  html+=`<div class="bar" style="background:${mli.bg||bg};color:${mli.fg||fg}">  *Messages*      (Fundamental)  </div>`;
+  html+=`<div class="echo" style="color:${fg}"><span style="color:${mb.fg||fg}">I-search:</span> count</div>`;
+  html+=`<div class="echo"><span style="color:${lnk.fg||fg};text-decoration:underline">https://gnu.org</span>   <span style="color:${err.fg||fg}">error</span>   <span style="color:${wrn.fg||fg}">warning</span>   <span style="color:${suc.fg||fg}">ok</span></div>`;
+  fr.innerHTML=html;fr.style.background=bg;fr.style.color=fg;
+}
 function uiSelect(face,attr){
   const sel=document.createElement('select');sel.className='chip';
   const none=document.createElement('option');none.value='';none.textContent='— none —';none.style.background='#161412';none.style.color='#b4b1a2';sel.appendChild(none);
@@ -199,7 +247,7 @@ function uiSelect(face,attr){
   sel.value=UIMAP[face][attr]||'';
   function style(){if(sel.value){sel.style.background=sel.value;sel.style.color=textOn(sel.value);}else{sel.style.background='#161412';sel.style.color='#b4b1a2';}}
   style();
-  sel.onchange=()=>{UIMAP[face][attr]=sel.value||null;style();paintUI(face);};
+  sel.onchange=()=>{UIMAP[face][attr]=sel.value||null;style();paintUI(face);buildMockFrame();};
   return sel;
 }
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;pv.style.color=UIMAP[face].fg||MAP['p'];pv.style.background=UIMAP[face].bg||MAP['bg'];}
