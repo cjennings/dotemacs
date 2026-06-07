@@ -4,9 +4,14 @@
 
 * Status
 
-Spec / awaiting review. Proposes a third tier for the theme-selector
-(scripts/theme-selector/) that lets a theme colorize package-specific faces,
-built one application at a time. org-mode is the first application.
+Spec / Craig's first-round answers folded in (2026-06-07). Proposes a third tier
+for the theme-selector (scripts/theme-selector/) that lets a theme colorize
+package-specific faces, built one application at a time. v1 apps: org-mode
+(incl. org-agenda), magit, elfeed. Two items still open: Craig's confirm on the
+inheritance representation, and whether to build the custom color picker before,
+during, or after tier 3. A Codex review file was referenced but is not present
+in the repo (see iteration history); when it lands as
+=theme-selector-package-faces-review.org=, run spec-response against it.
 
 * Background — the three tiers
 
@@ -31,8 +36,10 @@ added one at a time. org-mode ships first.
 
 A new "package faces" section with:
 
-1. An *application dropdown* — pick which package's faces to edit (org-mode
-   first; magit, elfeed, dirvish, telega, marginalia, consult to follow).
+1. An *application dropdown* — pick which package's faces to edit. v1 ships
+   org-mode (including org-agenda), magit, and elfeed; the rest of Craig's
+   packages (calibredb, ghostel, mu4e, IRC, org-drill, dirvish + dired, slack)
+   follow one at a time.
 2. A *face table* for the selected app — one row per curated face, each with a
    foreground dropdown, a background dropdown, and bold / italic toggles, all
    drawing from the same palette as the other tables.
@@ -99,8 +106,50 @@ so a curated app seeds sensibly from the current palette. The user reassigns
 any face from the palette dropdowns exactly like the other tables.
 
 State mirrors the other tiers: a =PKGMAP= of
-={app: {face: {fg, bg, bold, italic}}}=, edited live, rendered into the table
-and the preview.
+={app: {face: {fg, bg, bold, italic, inherit}}}=, edited live, rendered into
+the table and the preview. The =APPS= block above shows ~18 org faces only as a
+shape illustration; the real org entry is the complete set below.
+
+** Data model — org face set (complete)
+
+Per the completeness decision, org's table lists org's entire own =defface= set
+(org-faces.el + org-agenda.el), ~88 faces, grouped. Seed defaults for the
+prominent groups; the long tail seeds to fg or an =inherit= of its group base,
+which the user overrides. The groups (face names verbatim from the running
+Emacs):
+
+- *Document:* org-document-title, org-document-info, org-document-info-keyword
+- *Headings:* org-level-1 .. org-level-8, org-headline-todo, org-headline-done
+- *Status / keywords:* org-todo, org-done, org-priority, org-tag, org-tag-group,
+  org-special-keyword, org-drawer, org-property-value, org-checkbox,
+  org-checkbox-statistics-todo, org-checkbox-statistics-done, org-warning
+- *Links / dates / refs:* org-link, org-footnote, org-date, org-sexp-date,
+  org-date-selected, org-target, org-macro, org-cite, org-cite-key
+- *Blocks / code / quote:* org-block, org-block-begin-line, org-block-end-line,
+  org-code, org-verbatim, org-inline-src-block, org-quote, org-verse,
+  org-latex-and-related
+- *Tables / columns:* org-table, org-table-header, org-table-row, org-formula,
+  org-column, org-column-title
+- *Lists / meta / structure:* org-list-dt, org-meta-line, org-ellipsis,
+  org-hide, org-indent, org-archived, org-default, org-dispatcher-highlight
+- *Agenda — structure & dates:* org-agenda-structure,
+  org-agenda-structure-secondary, org-agenda-structure-filter, org-agenda-date,
+  org-agenda-date-today, org-agenda-date-weekend, org-agenda-date-weekend-today,
+  org-agenda-current-time, org-agenda-done, org-agenda-dimmed-todo-face
+- *Agenda — calendar & filters:* org-agenda-calendar-event,
+  org-agenda-calendar-sexp, org-agenda-calendar-daterange, org-agenda-diary,
+  org-agenda-clocking, org-agenda-column-dateline, org-agenda-restriction-lock,
+  org-agenda-filter-category, org-agenda-filter-effort, org-agenda-filter-regexp,
+  org-agenda-filter-tags
+- *Scheduling / deadlines / clock:* org-scheduled, org-scheduled-today,
+  org-scheduled-previously, org-upcoming-deadline, org-upcoming-distant-deadline,
+  org-imminent-deadline, org-time-grid, org-clock-overlay, org-mode-line-clock,
+  org-mode-line-clock-overrun
+
+The org *preview* below stays a curated document exercising the prominent
+faces; the *table* carries the complete set so every face is assignable, even
+the ones the preview doesn't draw. magit and elfeed get the same treatment
+(complete own-defface set in the table, a bespoke preview for the common faces).
 
 * The org preview
 
@@ -133,11 +182,13 @@ Each marked element is a span colored from the corresponding PKGMAP face. The
 preview rebuilds whenever a package face or the palette changes, same as the
 mock frame.
 
-For later apps, each gets its own preview renderer (magit -> a status buffer
-mock, elfeed -> a search-list mock). Until an app has a bespoke preview, it
-falls back to a generic "face name rendered in its own colors" list, so a new
-app is usable the moment its face list is added, and gets a real preview when
-one is written.
+org, magit, and elfeed get bespoke preview renderers (magit -> a status buffer
+mock, elfeed -> a search-list mock). Every *other* package is still fully
+themeable: its face *table* is always present and editable, only the rich
+*preview* is replaced by a generic fallback — each face's name rendered in its
+own colors on the ground. So a user can theme every package they have the
+moment its face list is added; the bespoke preview is a polish layer on top, not
+a gate. This is the v1 answer to "some will want to touch every package."
 
 * Export schema
 
@@ -152,12 +203,16 @@ one is written.
   "ui": {...},
   "packages": {
     "org-mode": {
-      "org-level-1": {"fg":"#67809c","bg":null,"bold":true,"italic":false},
-      "org-todo":    {"fg":"#cb6b4d","bg":null,"bold":true,"italic":false}
+      "org-level-1": {"fg":"#67809c","bg":null,"bold":true,"italic":false,"inherit":null},
+      "org-level-2": {"fg":"#e8bd30","bg":null,"bold":false,"italic":false,"inherit":"org-level-1"},
+      "org-todo":    {"fg":"#cb6b4d","bg":null,"bold":true,"italic":false,"inherit":null}
     }
   }
 }
 #+end_src
+
+=inherit= is optional and =null= when absent. When set, the converter writes
+=:inherit PARENT= plus only the overridden attributes.
 
 Only faces the user actually touched (or the curated defaults) are written. The
 build step's converter sets each as a normal face. Backward compatible: a file
@@ -178,13 +233,15 @@ TDD-worthy part (JSON in, valid faces out), same as the rest of the converter.
 
 * Scope for v1
 
-- Build the section, the app dropdown, the org-mode face table, and the org
-  preview.
-- Seed org's ~18 curated faces (above), not all 104 org-* faces (most are
-  org-roam / superstar / agenda noise the core theme need not touch).
-- Wire export/import of the =packages= key.
-- Leave the converter for the separate build-step task; the spec only needs the
-  schema to be right.
+- Build the section, the app dropdown, and the face tables + previews for the
+  three v1 apps: org-mode (incl. org-agenda), magit, elfeed.
+- org's table carries its complete own-defface set (~88 faces, grouped above),
+  seeded with defaults; the org preview draws the prominent ones.
+- Every other installed package is reachable in the dropdown with an editable
+  face table and the generic fallback preview, so any package can be themed.
+- Wire export/import of the =packages= key (with the optional =inherit= field).
+- Leave the converter for the separate build-step task (Elisp, per Craig); the
+  spec only needs the schema to be right.
 
 * Extensibility (adding the next app)
 
@@ -195,26 +252,117 @@ TDD-worthy part (JSON in, valid faces out), same as the rest of the converter.
 3. Nothing else changes — the dropdown, table, export, and import are all
    data-driven off =APPS= / =PKGMAP=.
 
-* Open questions
+* Agreed decisions
 
-1. *Curated set size.* ~18 org faces proposed. Add =org-level-4..8=, quote,
-   verse, drawer, footnote, priority? Or keep it tight and grow on demand?
-2. *Bold/italic source.* org defaults carry weight (headings, todo). Seed those
-   as the curated defaults, or start everything normal and let the user set
-   weight? Proposed: seed the obvious ones (title, levels, todo, done bold).
-3. *Inherit relationships.* Many org faces inherit (org-level-N from outline-N;
-   org-code/verbatim from =shr= / =fixed-pitch=). Model inheritance, or set
-   absolute values per face? Proposed: absolute values, simplest and matches
-   how the converter writes them.
-4. *App order after org.* magit (111 faces, highest payoff), elfeed, dirvish,
-   marginalia, consult, telega — which next, and how many?
-5. *Preview fidelity.* Bespoke per-app previews are the most work. Is the
-   generic fallback acceptable for the long tail, with bespoke previews only
-   for org and magit?
+Craig's answers to the first review round, baked in (the body sections above
+reflect these; this records the decisions):
+
+1. *Curated set is complete, not iterative.* For org, list its *entire* own
+   defface set (org-faces.el + org-agenda.el), ~88 faces, not a hand-picked
+   ~18. The user wants every choice present, not a set that grows on demand.
+   See "Data model — org face set" for the full grouped list.
+2. *Seed curated defaults.* Seed sensible fg/bg and weight per face (headings,
+   title, TODO/DONE bold; agenda dates and deadlines colored by role). The user
+   reassigns from there.
+3. *App order: org, magit, elfeed for v1.* Then the rest one at a time, drawn
+   from the packages Craig actually runs: calibredb, ghostel, mu4e, the IRC
+   client, org-drill, dirvish + dired, slack. A finite "most-used" list gets
+   picked later; we do not try to do everything at once.
+4. *Generic fallback is real, not display-only.* Any package not given a
+   bespoke preview still gets a fully editable face table (so a user can theme
+   *every* package they have); only the rich preview is missing, replaced by a
+   swatch-in-context fallback. Bespoke previews ship for org, magit, elfeed.
+
+* Inheritance representation (answer to Craig's question)
+
+Craig asked how inheritance would be represented. Proposal:
+
+Each face carries an optional =inherit= field naming another face (or =null=).
+The face's own =fg/bg/bold/italic= are *overrides* layered on top of what it
+inherits.
+
+#+begin_src js
+["org-level-2", "heading 2", {inherit:"org-level-1", fg:"gold"}]
+// exports as: (org-level-2 ((t (:inherit org-level-1 :foreground "#e8bd30"))))
+["org-agenda-date-today", "agenda today", {inherit:"org-agenda-date", bold:true}]
+// exports as: (org-agenda-date-today ((t (:inherit org-agenda-date :weight bold))))
+#+end_src
+
+In the tool, an inheriting row shows an "inherits <face>" chip; attributes left
+unset render greyed (they come from the parent) until the user overrides one.
+The converter writes =:inherit PARENT= followed by only the overridden
+attributes.
+
+*Recommendation: default to absolute values, offer inherit as opt-in.* Emacs
+face inheritance surprises people — an inherited background or weight rides
+along silently — so seeding every face with absolute attributes is the
+predictable default. Inheritance is available for the cases where a cascade is
+genuinely wanted (all heading levels off one base; agenda-date variants off
+=org-agenda-date=), expressed with the =inherit= field above. This keeps the
+common path obvious and the export deterministic, while still letting a user
+model the relationships org itself uses.
+
+Decision pending Craig's confirm: absolute-default with opt-in inherit (above),
+or model inheritance for the face families that have it out of the box.
+
+* Custom color picker (proposal)
+
+Craig wants a custom in-page color picker to replace the native browser swatch.
+The native =<input type=color>= opens the OS color chooser, which the page
+cannot size or restyle; a custom picker is the only way to get a larger,
+on-theme picker and to show the palette/contrast in the picker itself.
+
+Proposed widget — a popup anchored to the swatch, drawn in-page:
+
+- A *saturation/value square* (click or drag to set S and V) plus a *hue
+  slider* down the side. Standard HSV picker geometry.
+- A *hex field* synced both ways with the square/slider (already exists in the
+  add-color row; the picker writes to it).
+- The current *palette* shown as clickable chips along the bottom, so picking
+  an existing color is one click and the overlap problem (many roles, one
+  color) is visible while choosing.
+- A live *contrast readout* against the current background (ratio + AAA / AA /
+  FAIL) updating as the color moves, so a color is judged for legibility at
+  pick time, not after assignment.
+- Sized generously (the native popup's size was the original complaint); opens
+  on click of the swatch, closes on pick or click-away.
+
+Implementation: ~120 lines of vanilla JS/canvas (or CSS gradients) for the
+square + slider, reusing the existing =rl()= / =contrast()= / =rating()=
+helpers for the readout and =normHex()= for the field sync. No dependency. It
+replaces the =<input type=color>= in the add-color row and, later, becomes the
+picker the package-face dropdowns can also invoke.
+
+Open question for Craig: build the custom picker as its own task before tier 3,
+fold it into the tier-3 build, or after. It is independent of package faces, so
+any order works.
 
 * Files touched
 
 - =scripts/theme-selector/generate.py= — the section, =APPS= data, the package
   face table, =renderOrgPreview()=, export/import of =packages=.
 - =scripts/theme-selector/theme-selector.html= — regenerated.
-- (later) the =theme.json= -> =dupre-*.el= converter — consumes =packages=.
+- (later) the =theme.json= -> =dupre-*.el= converter (Elisp) — consumes
+  =packages=.
+
+* Review and iteration history
+
+** 2026-06-07 Sun @ 18:17:14 -0500 — Claude Code (emacs-d) — author + responder
+- *What:* Folded Craig's first-round cj-comment answers into the body. Curated
+  org set changed from ~18 to org's complete own-defface set (~88, grouped, incl.
+  org-agenda). v1 apps fixed to org/magit/elfeed with the rest deferred to a
+  one-at-a-time list. Generic fallback clarified as a fully editable table for
+  every package (only the rich preview is bespoke). Answered the inheritance
+  question with an optional =inherit= field (absolute-default, opt-in cascade)
+  and added it to the schema. Added a custom-color-picker proposal at Craig's
+  request. Converted Open questions to Agreed decisions; two genuine opens
+  remain (inheritance confirm, picker timing).
+- *Why:* Craig answered the five open questions inline and asked for the
+  spec-response fold plus a custom-picker proposal. Completeness over iterative
+  growth was his explicit call on the curated set.
+- *Artifacts:* This spec. The converter language (Elisp) confirmed by Craig.
+  Note: Craig referenced a Codex spec review, but no
+  =theme-selector-package-faces-review.org= (or any =*-review.org=) exists in the
+  repo — the review file could not be found, so only the author-side cj-comment
+  fold was done; the Codex review remains to be processed when its file is
+  located.
