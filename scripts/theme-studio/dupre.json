@@ -1,0 +1,175 @@
+{
+ "name": "dupre",
+ "palette": [
+  [
+   "#67809c",
+   "blue"
+  ],
+  [
+   "#e8bd30",
+   "gold"
+  ],
+  [
+   "#9b5fd0",
+   "regal"
+  ],
+  [
+   "#2ba178",
+   "emerald"
+  ],
+  [
+   "#5d9b86",
+   "sage"
+  ],
+  [
+   "#cb6b4d",
+   "terracotta"
+  ],
+  [
+   "#be9e74",
+   "tan"
+  ],
+  [
+   "#cdced1",
+   "white"
+  ],
+  [
+   "#a9b2bb",
+   "silver"
+  ],
+  [
+   "#838d97",
+   "steel"
+  ],
+  [
+   "#5e6770",
+   "pewter"
+  ],
+  [
+   "#2f343a",
+   "gunmetal"
+  ],
+  [
+   "#264364",
+   "navy"
+  ],
+  [
+   "#0d0b0a",
+   "ground"
+  ],
+  [
+   "#1a1714",
+   "bg-dim"
+  ]
+ ],
+ "assignments": {
+  "bg": "#0d0b0a",
+  "p": "#cdced1",
+  "kw": "#67809c",
+  "bi": "#67809c",
+  "pp": "#67809c",
+  "fnd": "#a9b2bb",
+  "fnc": "#a9b2bb",
+  "dec": "#e8bd30",
+  "ty": "#9b5fd0",
+  "prop": "#838d97",
+  "con": "#cb6b4d",
+  "num": "#cb6b4d",
+  "str": "#5d9b86",
+  "esc": "#cb6b4d",
+  "re": "#5d9b86",
+  "doc": "#5d9b86",
+  "cm": "#be9e74",
+  "cmd": "#a9b2bb",
+  "var": "#e8bd30",
+  "op": "#a9b2bb",
+  "punc": "#a9b2bb"
+ },
+ "bold": [
+  "kw",
+  "fnd"
+ ],
+ "italic": [],
+ "ui": {
+  "cursor": {
+   "fg": null,
+   "bg": "#a9b2bb"
+  },
+  "region": {
+   "fg": null,
+   "bg": "#264364"
+  },
+  "hl-line": {
+   "fg": null,
+   "bg": "#1a1714"
+  },
+  "highlight": {
+   "fg": null,
+   "bg": "#2f343a"
+  },
+  "mode-line": {
+   "fg": "#cdced1",
+   "bg": "#2f343a"
+  },
+  "mode-line-inactive": {
+   "fg": "#838d97",
+   "bg": "#1a1714"
+  },
+  "fringe": {
+   "fg": null,
+   "bg": "#0d0b0a"
+  },
+  "line-number": {
+   "fg": "#5e6770",
+   "bg": null
+  },
+  "line-number-current-line": {
+   "fg": "#e8bd30",
+   "bg": "#1a1714"
+  },
+  "minibuffer-prompt": {
+   "fg": "#67809c",
+   "bg": null
+  },
+  "isearch": {
+   "fg": "#0d0b0a",
+   "bg": "#e8bd30"
+  },
+  "lazy-highlight": {
+   "fg": "#0d0b0a",
+   "bg": "#838d97"
+  },
+  "isearch-fail": {
+   "fg": "#cb6b4d",
+   "bg": null
+  },
+  "show-paren-match": {
+   "fg": null,
+   "bg": "#264364"
+  },
+  "show-paren-mismatch": {
+   "fg": "#0d0b0a",
+   "bg": "#cb6b4d"
+  },
+  "link": {
+   "fg": "#67809c",
+   "bg": null
+  },
+  "error": {
+   "fg": "#cb6b4d",
+   "bg": null
+  },
+  "warning": {
+   "fg": "#e8bd30",
+   "bg": null
+  },
+  "success": {
+   "fg": "#5d9b86",
+   "bg": null
+  },
+  "vertical-border": {
+   "fg": "#2f343a",
+   "bg": null
+  }
+ }
+}
