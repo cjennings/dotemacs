@@ -45,8 +45,9 @@ A new "package faces" section with:
    follow one at a time.
 2. A *face table* for the selected app — one row per face in the app's complete
    set, each with a foreground dropdown, a background dropdown, bold / italic
-   toggles, and an optional inherit, all drawing from the same palette as the
-   other tables. Grouped, with a text filter for the large apps.
+   toggles, an optional inherit, and a relative-height stepper, all drawing from
+   the same palette as the other tables. Grouped, with a text filter for the
+   large apps.
 3. A *preview pane* for the selected app — a realistic mock of that package
    rendered with the live theme, the way the ui-faces mock-frame shows the UI
    faces in a buffer. org-mode gets a mock org document.
@@ -110,7 +111,7 @@ so a curated app seeds sensibly from the current palette. The user reassigns
 any face from the palette dropdowns exactly like the other tables.
 
 State mirrors the other tiers: a =PKGMAP= of
-={app: {face: {fg, bg, bold, italic, inherit}}}=, edited live, rendered into
+={app: {face: {fg, bg, bold, italic, inherit, height, source}}}=, edited live, rendered into
 the table and the preview. The =APPS= block above shows ~18 org faces only as a
 shape illustration; the real org entry is the complete set below.
 
@@ -207,8 +208,8 @@ a gate. This is the v1 answer to "some will want to touch every package."
   "ui": {...},
   "packages": {
     "org-mode": {
-      "org-level-1": {"fg":"#67809c","bg":null,"bold":true,"italic":false,"inherit":null},
-      "org-level-2": {"fg":"#e8bd30","bg":null,"bold":false,"italic":false,"inherit":"org-level-1"},
+      "org-level-1": {"fg":"#67809c","bg":null,"bold":true,"italic":false,"inherit":null,"height":1.3},
+      "org-level-2": {"fg":"#e8bd30","bg":null,"bold":false,"italic":false,"inherit":"org-level-1","height":1.2},
       "org-todo":    {"fg":"#cb6b4d","bg":null,"bold":true,"italic":false,"inherit":null}
     }
   }
@@ -243,7 +244,8 @@ TDD-worthy part (JSON in, valid faces out), same as the rest of the converter.
   seeded with defaults; the org preview draws the prominent ones.
 - Every other installed package is reachable in the dropdown with an editable
   face table and the generic fallback preview, so any package can be themed.
-- Wire export/import of the =packages= key (with the optional =inherit= field).
+- Wire export/import of the =packages= key (with the optional =inherit= and
+  =height= fields).
 - Leave the converter for the separate build-step task (Elisp, per Craig); the
   spec only needs the schema to be right.
 
@@ -252,15 +254,18 @@ TDD-worthy part (JSON in, valid faces out), same as the rest of the converter.
 Phased so each step ships without a broken intermediate, and the three bespoke
 apps don't wait on the all-package inventory.
 
-1. *State + schema.* Add =PKGMAP= ({app:{face:{fg,bg,bold,italic,inherit,source}}})
-   and the =APPS= registry. Extend export/import with the =packages= key; old
-   JSON (no =packages=) still imports cleanly. No UI yet.
+1. *State + schema.* Add =PKGMAP=
+   ({app:{face:{fg,bg,bold,italic,inherit,height,source}}}) and the =APPS=
+   registry. Extend export/import with the =packages= key; old JSON (no
+   =packages=) still imports cleanly. No UI yet.
 2. *Curated app data.* Complete own-defface face lists + seeded defaults for org
-   (incl. org-agenda), magit, elfeed, in =APPS=. Pure data.
+   (incl. org-agenda), magit, elfeed, in =APPS= — including heading heights and
+   the fixed-pitch inherits. Pure data.
 3. *Package face table UI.* App selector; grouped rows; fg/bg dropdowns + bold /
-   italic toggles + optional inherit; per-face and per-app reset; a text filter
-   (org/magit are large); a contrast readout per fg/bg. Built on a generalized
-   face-control helper shared with the ui-faces table, not a fork of =uiSelect=.
+   italic toggles + optional inherit + a relative-height stepper; per-face and
+   per-app reset; a text filter (org/magit are large); a contrast readout per
+   fg/bg. Built on a generalized face-control helper shared with the ui-faces
+   table, not a fork of =uiSelect=.
 4. *Org preview.* =renderOrgPreview()=, live, refreshing on palette/face change.
 5. *Magit + elfeed previews.* Bespoke mocks (magit status buffer, elfeed search
    list).
@@ -302,7 +307,8 @@ Each package face object carries a =source= marker so export can tell a seeded
 default from a user edit from a deliberate clear:
 
 #+begin_src js
-{ fg:"#67809c", bg:null, bold:true, italic:false, inherit:null, source:"default" }
+{ fg:"#67809c", bg:null, bold:true, italic:false, inherit:null, height:1.0, source:"default" }
+// height: float multiplier off the base font (1.0 = unchanged); see Relative height
 // source: "default" (seeded) | "user" (edited) | "cleared" (user removed a default)
 #+end_src
 
@@ -312,19 +318,56 @@ Export policy:
 - Write =cleared= entries — they must suppress a curated default on reload.
 - Omit untouched faces that have no default.
 - When =inherit= is set, write =inherit= plus only the explicit overrides.
+- Write =height= only when it differs from 1.0.
 - Preserve package faces present in an imported file but absent from the current
   inventory (or warn) — don't silently drop them.
 
 Import tolerates a missing =packages= key, unknown app keys, unknown face keys,
-and a missing =inherit=. A deleted palette color leaves package face references
-in the same "(gone)" recoverable state syntax colors use. Inheritance cycles are
-rejected (treated as no inheritance) during preview resolution.
+a missing =inherit=, and a missing =height= (defaults 1.0). A deleted palette
+color leaves package face references in the same "(gone)" recoverable state
+syntax colors use. Inheritance cycles are rejected (treated as no inheritance)
+during preview resolution.
+
+* Relative height
+
+Some faces want to be bigger than body text — org headings above all, also
+=org-document-title=. A face's =height= field is a *float multiplier* off the
+base font (=1.3= = 1.3× the running font, whatever it is), never an absolute
+point size, so it stays portable across fonts and machines. =1.0= means
+unchanged. The base monospace family is *not* a theme/tool concern — it lives in
+=modules/font-config.el=; the tool owns only relative size.
+
+*Height does not cascade through =inherit=.* This is the one attribute resolved
+directly off the face, not through its inherit chain. Emacs multiplies float
+heights along an inherit chain, so a level-2 that inherits level-1 (1.3) and
+also sets 1.1 would render at 1.43 — almost never what's wanted. Headings should
+each size off the *body*, so the seeded defaults set =org-level-1= 1.3,
+=org-level-2= 1.2, =org-level-3= 1.15, etc., each independent, and the tool reads
+=height= from the face while still resolving *color* through inherit.
+
+- *Schema:* the =height= float on the face object (above), default 1.0, omitted
+  from export when 1.0.
+- *UI:* a small numeric stepper in the face row (range ~0.8–2.0, step 0.05);
+  meaningful only for the size-bearing faces but shown on every row at 1.0.
+- *Preview:* the row renders at the scaled =font-size= so a heading visibly
+  grows in the mock.
+- *Converter:* writes =:height 1.3= into the face spec when ≠ 1.0.
+
+Related, same mechanism: org's mixed-pitch faces (=org-block=, =org-code=,
+=org-verbatim=, =org-table=, =org-meta-line=, =org-date=) seed =inherit:
+"fixed-pitch"= so they stay monospace when a buffer switches to a proportional
+font via =variable-pitch-mode= / =mixed-pitch=. The proportional family itself
+stays in =font-config.el= (the presets already carry =:variable-pitch-family=);
+the tool only carries the fixed-pitch inherit relationship, shown like any other
+inherited value.
 
 * Acceptance criteria
 
 - Existing =dupre.json= (no =packages= key) imports cleanly.
 - Export includes =packages= once defaults or edits exist;
-  =fg/bg/bold/italic/inherit/source= round-trip through import/export.
+  =fg/bg/bold/italic/inherit/height/source= round-trip through import/export.
+- A face =height= renders as a scaled font-size in the preview (heading visibly
+  grows) and is read off the face, not cascaded through =inherit=.
 - org, magit, elfeed appear in the app selector with complete grouped face tables.
 - (phase 6) generic inventory packages appear with editable tables + fallback
   previews, the fallback visibly labeled as generic.
@@ -516,3 +559,27 @@ generalized face-control helper, package style kept inside the package object,
 - *Artifacts:* This spec (Review dispositions section); review file deleted per
   the spec-response close-out. Three opens remain for Craig (inheritance confirm,
   hybrid-inventory confirm, picker timing).
+
+** 2026-06-08 Mon @ 00:12:38 -0500 — Codex — reviewer
+- *What changed or was recommended:* Reran spec-review after the response pass.
+  Assigned rubric =Ready= and did not create a new review file. The previous
+  blockers are now addressed: implementation phases, acceptance criteria,
+  hybrid/split inventory source, package-face state/export semantics, task
+  tracking, and the open inheritance/inventory/picker decisions are resolved.
+- *Why:* The spec now gives an implementer concrete behavior, phase boundaries,
+  validation criteria, and deferred-work handling without forcing product
+  decisions during implementation.
+- *Artifacts:* This spec; implementation tasks in [[file:../../todo.org][todo.org]].
+
+** 2026-06-08 Mon @ 00:38:23 -0500 — Claude Code (emacs-d) — author
+- *What:* Added a relative =height= field to the face schema (float multiplier
+  off the base font, default 1.0, omitted at 1.0), a new "Relative height"
+  section, a per-face stepper in the table, preview scaling, and converter
+  output. Established the rule that =height= is read off the face and does *not*
+  cascade through =inherit= (Emacs multiplies float heights along the chain).
+  Noted the mixed-pitch =fixed-pitch= inherits as the same-mechanism companion.
+  Brought Phase 1's shipped schema plumbing in line with the new field.
+- *Why:* Craig asked to fold height in — it matters for org headings above all.
+  Font *family* stays in =modules/font-config.el=; the theme owns relative size
+  and the fixed-pitch inherit relationships only.
+- *Artifacts:* This spec; =scripts/theme-selector/generate.py= phase-1 plumbing.
