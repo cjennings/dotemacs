@@ -429,7 +429,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
  @keyframes flashcell{0%,55%{background:#e8bd3066}100%{background:transparent}}
  tr.flash td{animation:flashcell 1.1s ease-out}
  @keyframes flashtok{0%,55%{background:#e8bd30aa;color:#000}100%{background:transparent}}
- #codepre .flashtok,.ex.flashtok{animation:flashtok 1.1s ease-out;border-radius:2px}
+ .flashtok{animation:flashtok 1.1s ease-out;border-radius:2px}
 </style>
 <h1 id="pagetitle">Untitled: theme</h1>
 <div class="cols">
@@ -662,13 +662,16 @@ function applyGround(){document.querySelectorAll('pre').forEach(p=>p.style.backg
 function uf(f){return UIMAP[f]||{};}
 function udeco(o){return `font-weight:${o.bold?'bold':'normal'};font-style:${o.italic?'italic':'normal'};text-decoration:${(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none'}`;}
 function flashRow(tr){if(!tr)return;tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}
-function flashEl(el){if(!el)return;el.classList.remove('flashtok');void el.offsetWidth;el.classList.add('flashtok');}
-function flashTokens(kind){const sp=document.querySelectorAll('#codepre [data-k="'+kind+'"]');if(sp.length){sp.forEach(flashEl);return;}const row=document.querySelector('#legbody tr[data-kind="'+kind+'"]');if(row)flashEl(row.querySelector('.ex'));}
+function flashEl(el){if(!el)return;el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});el.classList.remove('flashtok');void el.offsetWidth;el.classList.add('flashtok');}
+// Flash every matching element but scroll only the first into view, so a face
+// that maps to several preview spans still lands the viewport on the first.
+function flashEls(els){els=[...els];if(!els.length)return;els[0].scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});els.forEach(el=>{el.classList.remove('flashtok');void el.offsetWidth;el.classList.add('flashtok');});}
+function flashTokens(kind){const sp=document.querySelectorAll('#codepre [data-k="'+kind+'"]');if(sp.length){flashEls(sp);return;}const row=document.querySelector('#legbody tr[data-kind="'+kind+'"]');if(row)flashEl(row.querySelector('.ex'));}
 function flashAssign(k){flashRow(document.querySelector(`#legbody tr[data-kind="${k}"]`));}
 function flashUi(f){flashRow(document.querySelector(`#uibody tr[data-face="${f}"]`));}
-function flashUiPreview(f){const sp=document.querySelectorAll(`#mockframe [data-face="${f}"]`);if(sp.length){sp.forEach(flashEl);return;}const cell=document.getElementById('uiprev-'+f);if(cell)flashEl(cell);}
+function flashUiPreview(f){const sp=document.querySelectorAll(`#mockframe [data-face="${f}"]`);if(sp.length){flashEls(sp);return;}const cell=document.getElementById('uiprev-'+f);if(cell)flashEl(cell);}
 function flashPkg(f){flashRow(document.querySelector(`#pkgbody tr[data-face="${f}"]`));}
-function flashPkgPreview(f){const sp=document.querySelectorAll(`#pkgpreview [data-face="${f}"]`);if(sp.length){sp.forEach(flashEl);return;}const row=document.querySelector(`#pkgbody tr[data-face="${f}"]`);if(row)flashEl(row.querySelector('.cat'));}
+function flashPkgPreview(f){const sp=document.querySelectorAll(`#pkgpreview [data-face="${f}"]`);if(sp.length){flashEls(sp);return;}const row=document.querySelector(`#pkgbody tr[data-face="${f}"]`);if(row)flashEl(row.querySelector('.cat'));}
 function mockSpan(k,t){return `<span data-k="${k}" style="color:${MAP[k]||MAP['p']};font-weight:${BOLD[k]?'bold':'normal'};font-style:${ITALIC[k]?'italic':'normal'}">${esc(t)}</span>`;}
 function syncMockHeight(){const t=document.getElementById('uitable'),m=document.getElementById('mockframe');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function buildMockFrame(){
