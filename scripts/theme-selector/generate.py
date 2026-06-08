@@ -462,7 +462,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
   <div class="filebar end">
    <button id="savebtn" onclick="saveTheme()" style="display:none">&#128190; save</button>
    <button onclick="exportTheme()">&#11015; export</button>
-   <label class="fbtn">&#11014; import<input type="file" accept=".json" onchange="importFile(event)" style="display:none"></label>
+   <button class="fbtn" onclick="importTheme()">&#11014; import</button><input type="file" id="fileinput" accept=".json" onchange="importFile(event)" style="display:none">
    <button id="jsonbtn" onclick="toggleJSON()">show</button>
   </div>
   <textarea id="export" style="display:none" readonly></textarea>
@@ -634,21 +634,30 @@ function fileSlug(){return themeName().replace(/[^A-Za-z0-9._-]+/g,'-').replace(
 function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);const o={name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};const pk=packagesForExport(PKGMAP);if(Object.keys(pk).length)o.packages=pk;return o;}
 function exportState(){const t=document.getElementById('export');t.value=JSON.stringify(exportObj(),null,1);t.style.display='block';t.focus();t.select();}
 function toggleJSON(){const t=document.getElementById('export'),b=document.getElementById('jsonbtn');if(t.style.display==='block'){t.style.display='none';b.textContent='show';}else{exportState();b.textContent='hide';}}
-function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': theme';const sb=document.getElementById('savebtn');if(sb)sb.style.display=n?'':'none';fileHandle=null;}
+function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': theme';const sb=document.getElementById('savebtn');if(sb){sb.style.display=n||fileHandle?'':'none';sb.title=fileHandle?'overwrite the imported/saved file':'choose where to save';}}
 let fileHandle=null;
 function exportTheme(){const blob=new Blob([JSON.stringify(exportObj(),null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileSlug()+'.json';a.click();}
 async function saveTheme(){const data=JSON.stringify(exportObj(),null,1);
   if(!window.showSaveFilePicker){exportTheme();notify('saved via download (browser has no Save-File support)',false);return;}
   try{if(!fileHandle)fileHandle=await window.showSaveFilePicker({suggestedName:fileSlug()+'.json',types:[{description:'theme JSON',accept:{'application/json':['.json']}}]});
-    const w=await fileHandle.createWritable();await w.write(data);await w.close();notify('saved "'+themeName()+'"',false);
+    const w=await fileHandle.createWritable();await w.write(data);await w.close();notify('saved "'+themeName()+'"',false);updateTitle();
   }catch(e){if(e&&e.name!=='AbortError')notify('save failed: '+e.message,true);}}
+function applyImported(text){const d=JSON.parse(text);if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette;if(d.assignments)Object.assign(MAP,d.assignments);
+  BOLD={};(d.bold||[]).forEach(k=>BOLD[k]=true);ITALIC={};(d.italic||[]).forEach(k=>ITALIC[k]=true);
+  if(d.ui)Object.assign(UIMAP,d.ui);
+  PKGMAP=seedPkgmap();if(d.packages)mergePackagesInto(PKGMAP,d.packages);
+  renderPalette();buildTable();buildUITable();buildPkgTable();buildPkgPreview();renderCode();applyGround();updateTitle();}
+// File-input fallback (no File System Access API): no writable handle, so save still prompts.
 function importFile(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{const d=JSON.parse(r.result);if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette;if(d.assignments)Object.assign(MAP,d.assignments);
-    BOLD={};(d.bold||[]).forEach(k=>BOLD[k]=true);ITALIC={};(d.italic||[]).forEach(k=>ITALIC[k]=true);
-    if(d.ui)Object.assign(UIMAP,d.ui);
-    PKGMAP=seedPkgmap();if(d.packages)mergePackagesInto(PKGMAP,d.packages);
-    renderPalette();buildTable();buildUITable();buildPkgTable();buildPkgPreview();renderCode();applyGround();updateTitle();}catch(e){alert('bad theme file: '+e.message);}};
+  r.onload=()=>{try{applyImported(r.result);fileHandle=null;updateTitle();}catch(e){alert('bad theme file: '+e.message);}};
   r.readAsText(f);ev.target.value='';}
+// Preferred import: keep the file handle so a later save overwrites the same file.
+async function importTheme(){
+  if(!window.showOpenFilePicker){const fi=document.getElementById('fileinput');if(fi)fi.click();return;}
+  try{const [h]=await window.showOpenFilePicker({types:[{description:'theme JSON',accept:{'application/json':['.json']}}]});
+    const file=await h.getFile();applyImported(await file.text());fileHandle=h;updateTitle();
+    notify('imported "'+(themeName()||file.name)+'" — save now overwrites it',false);
+  }catch(e){if(e&&e.name!=='AbortError')notify('import failed: '+e.message,true);}}
 function applyGround(){document.querySelectorAll('pre').forEach(p=>p.style.background=MAP['bg']);document.querySelectorAll('.ex').forEach(e=>e.style.background=MAP['bg']);}
 function uf(f){return UIMAP[f]||{};}
 function udeco(o){return `font-weight:${o.bold?'bold':'normal'};font-style:${o.italic?'italic':'normal'};text-decoration:${(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none'}`;}
