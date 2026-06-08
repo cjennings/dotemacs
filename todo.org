@@ -41,6 +41,23 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
+** TODO [#A] theme-selector theme.json -> dupre-*.el converter :feature:theme:theme-selector:
+The last link in the pipeline: turn a theme.json exported by the theme-selector into a real loadable Emacs theme. Elisp (per Craig), TDD — this is the correctness-sensitive piece.
+
+Inputs (all on disk; no chat history needed):
+- theme.json contract: =scripts/theme-selector/README.md= (theme.json section) and =docs/design/theme-selector-package-faces-spec.org= (State and export policy, Relative height, Inheritance).
+- Reference face layout: existing =themes/dupre-palette.el= + =themes/dupre-faces.el= + =themes/dupre-theme.el=, and =tests/test-dupre-theme.el= (WCAG-contrast helper to reuse).
+- Conventions: =.claude/rules/elisp.md=, =.claude/rules/elisp-testing.md=.
+
+Scope:
+1. Read theme.json. Set =default= from =assignments.bg= / =assignments.p=.
+2. Author the syntax category -> font-lock face map (~21 keys: kw->font-lock-keyword-face, str->font-lock-string-face, fnd->font-lock-function-name-face, fnc->font-lock-function-call-face, op->font-lock-operator-face, punc->font-lock-punctuation-face, etc. incl. the Emacs-29 tree-sitter additions). Apply =bold= / =italic= sets.
+3. UI faces: the =ui= keys are already real face names (region, cursor, mode-line, ...) -> near 1:1 passthrough of fg/bg.
+4. Package faces: =packages= -> each face spec, writing =:inherit PARENT= for inherited faces + only the overridden attrs, =:height= when != 1.0, weight/slant.
+5. Emit a deftheme file (or palette+faces+theme trio mirroring dupre's layout).
+
+TDD targets: old-JSON (no packages) loads; every category maps; round-trip of fg/bg/bold/italic/inherit/height into valid face specs; WCAG-contrast assertion on the result. Decide whether the converter lives under =scripts/theme-selector/= (emits to =themes/=) or =themes/=.
+
 ** TODO [#B] Dupre diff-changed / diff-refine-changed legibility :bug:dupre:
 Surfaced 2026-06-07 from a pearl session designing its modified-ticket indicator (pearl marks a changed field by inheriting =diff-changed=). dupre's =diff-refine-changed= is bright gold (#ffd700) under near-white text (#f0fef0) -- WCAG contrast ~1.35, unreadable as a plain background. It only looks fine inside diff-mode because diff-mode overlays its own dark foreground. =diff-changed= (#875f00 amber) is ~5.49, readable but off the modus model. Every modus variant keeps both faces legible (contrast 9-16) by pairing a dark low-saturation background with a hue-matched foreground.
 
