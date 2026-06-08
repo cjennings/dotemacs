@@ -94,29 +94,39 @@ the way Craig's downloaded exports under scripts/theme-selector/ can.")
 
 (ert-deftest test-build-theme-attrs-fg-and-bold ()
   "Normal: a foreground plus bold yields :foreground and :weight bold."
-  (should (equal (build-theme/--attrs nil "#67809c" nil t nil nil)
+  (should (equal (build-theme/--attrs nil "#67809c" nil t nil nil nil nil)
                  '(:foreground "#67809c" :weight bold))))
 
 (ert-deftest test-build-theme-attrs-full-ordering ()
   "Normal: every attribute present, in canonical order."
-  (should (equal (build-theme/--attrs 'org-level-1 "#e8bd30" "#1a1714" t t 1.3)
+  (should (equal (build-theme/--attrs 'org-level-1 "#e8bd30" "#1a1714" t t t t 1.3)
                  '(:inherit org-level-1 :foreground "#e8bd30" :background "#1a1714"
-                            :weight bold :slant italic :height 1.3))))
+                            :weight bold :slant italic :underline t :strike-through t :height 1.3))))
+
+(ert-deftest test-build-theme-attrs-underline-and-strike ()
+  "Normal: underline and strike yield :underline t and :strike-through t."
+  (should (equal (build-theme/--attrs nil "#67809c" nil nil nil t t nil)
+                 '(:foreground "#67809c" :underline t :strike-through t)))
+  ;; either alone
+  (should (equal (build-theme/--attrs nil nil nil nil nil t nil nil)
+                 '(:underline t)))
+  (should (equal (build-theme/--attrs nil nil nil nil nil nil t nil)
+                 '(:strike-through t))))
 
 (ert-deftest test-build-theme-attrs-empty-is-nil ()
   "Boundary: a fully-cleared face (all nil) yields an empty plist."
-  (should (equal (build-theme/--attrs nil nil nil nil nil nil) '())))
+  (should (equal (build-theme/--attrs nil nil nil nil nil nil nil nil) '())))
 
 (ert-deftest test-build-theme-attrs-bold-false-omits-weight ()
   "Boundary: bold false produces no :weight key (only overrides are written)."
-  (should (equal (build-theme/--attrs nil "#cdced1" nil nil nil nil)
+  (should (equal (build-theme/--attrs nil "#cdced1" nil nil nil nil nil nil)
                  '(:foreground "#cdced1"))))
 
 (ert-deftest test-build-theme-attrs-height-one-omitted ()
   "Boundary: a height of exactly 1.0 is omitted (the default multiplier)."
-  (should (equal (build-theme/--attrs nil "#cdced1" nil nil nil 1.0)
+  (should (equal (build-theme/--attrs nil "#cdced1" nil nil nil nil nil 1.0)
                  '(:foreground "#cdced1")))
-  (should (equal (build-theme/--attrs nil "#cdced1" nil nil nil 1)
+  (should (equal (build-theme/--attrs nil "#cdced1" nil nil nil nil nil 1)
                  '(:foreground "#cdced1"))))
 
 ;;; ---------------------------------------------------------------------------
@@ -194,6 +204,16 @@ mapping dec would clobber the type color."
                                                (source . "user")))))))))
     (should (member '(org-level-2 ((t (:inherit org-level-1 :foreground "#e8bd30" :height 1.2))))
                     specs))))
+
+(ert-deftest test-build-theme-package-underline-and-strike ()
+  "Normal: a package face writes :underline and :strike-through from the flags."
+  (let ((specs (build-theme/--package-face-specs
+                '((shr . ((shr-link . ((fg . "#67809c") (bg . nil) (bold . nil) (italic . nil)
+                                       (underline . t) (strike . nil) (inherit . nil) (source . "default")))
+                          (shr-strike-through . ((fg . "#5e6770") (bg . nil) (bold . nil) (italic . nil)
+                                                 (underline . nil) (strike . t) (inherit . nil) (source . "default")))))))))
+    (should (member '(shr-link ((t (:foreground "#67809c" :underline t)))) specs))
+    (should (member '(shr-strike-through ((t (:foreground "#5e6770" :strike-through t)))) specs))))
 
 (ert-deftest test-build-theme-package-cleared-skipped ()
   "Boundary: a cleared package face (no renderable attrs) is not emitted."
