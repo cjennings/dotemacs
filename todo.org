@@ -41,8 +41,9 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#B] theme-selector comprehensive org preview :feature:theme:theme-selector:
-The bespoke org preview (=renderOrgPreview= in =scripts/theme-selector/generate.py=) only mocks a curated subset of org faces. The click-to-flash linking (face row <-> preview, added 2026-06-08) falls back to flashing the row's own cell when a face isn't shown, so rows for off-screen faces have nothing to light up. Build a fuller org-mode mock document that exercises the vast majority of the ~88 org faces in =APPS['org-mode']= (headings, agenda, tables, blocks, todo/priority keywords, dates, tags, drawers, columns, etc.) so most rows flash a real preview element and the preview is a genuine judging surface. Same idea applies to magit/elfeed but org is the big one.
+** DONE [#B] theme-selector comprehensive previews (org/magit/elfeed/ghostel/mu4e/dashboard) :feature:theme:theme-selector:
+CLOSED: [2026-06-08 Mon]
+Expanded the bespoke previews to near-complete face coverage and added three new ones. org now exercises 83/88 faces (document + agenda; the 5 skipped are non-visual: org-hide, org-indent, org-clock-overlay, org-default, org-date-selected). magit 97/98 (status buffer + blame/reflog/sequence/bisect/signature sampler rows). elfeed 13/13. New bespoke previews: ghostel 19/19 (mock terminal, 16 ANSI colors + default + fake cursor), mu4e 37/37 (curated face list, not in the generated inventory; headers list + message view + compose), dashboard 8/8. So clicking a face row flashes a real preview element for nearly every face. Originally filed as just the org preview.
 
 ** DONE [#A] theme-selector theme.json -> dupre-*.el converter :feature:theme:theme-selector:
 CLOSED: [2026-06-08 Mon]
