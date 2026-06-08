@@ -110,7 +110,7 @@
 <h1>ui faces</h1>
 <div class="cols stretch">
  <section class="pane">
-  <table class="leg" id="uitable"><thead><tr><th>face</th><th>foreground</th><th>background</th><th>style</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
+  <table class="leg" id="uitable"><thead><tr><th onclick="srtTable('uibody',0)">face &#9651;</th><th onclick="srtTable('uibody',1)">foreground &#9651;</th><th onclick="srtTable('uibody',2)">background &#9651;</th><th>style</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label style="color:#b4b1a2">live buffer preview</label></div>
@@ -125,7 +125,7 @@
 </div>
 <div class="cols stretch">
  <section class="pane">
-  <table class="leg" id="pkgtable"><thead><tr><th>face</th><th>fg</th><th>bg</th><th>style</th><th>inherit</th><th>size</th><th>contrast</th><th></th></tr></thead><tbody id="pkgbody"></tbody></table>
+  <table class="leg" id="pkgtable"><thead><tr><th onclick="srtTable('pkgbody',0)">face &#9651;</th><th onclick="srtTable('pkgbody',1)">fg &#9651;</th><th onclick="srtTable('pkgbody',2)">bg &#9651;</th><th>style</th><th onclick="srtTable('pkgbody',4)">inherit &#9651;</th><th onclick="srtTable('pkgbody',5)">size &#9651;</th><th onclick="srtTable('pkgbody',6)">contrast &#9651;</th><th></th></tr></thead><tbody id="pkgbody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label id="pkgprevlabel" style="color:#b4b1a2">preview</label></div>
@@ -379,6 +379,7 @@ function buildPkgTable(){
     const cr=document.createElement('td');const rb=document.createElement('button');rb.className='sbtn';rb.textContent='↺';rb.title='reset to default';rb.onclick=()=>{PKGMAP[app][face]=seedFace(def);pkgChanged();};cr.appendChild(rb);
     tr.append(c0,cf,cb,cw,ci,ch,cc,cr);tb.appendChild(tr);
   }
+  applyTableSort('pkgbody');
 }
 function ofs(app,face){const f=PKGMAP[app][face]||{},fg=pkgEffFg(app,face)||MAP['p'],bg=pkgEffBg(app,face);const dec=(f.underline?'underline ':'')+(f.strike?'line-through':'');return `color:${fg};${bg?'background:'+bg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};text-decoration:${dec.trim()||'none'};font-size:${(f.height||1)}em`;}
 function os(app,face,txt){return `<span data-face="${face}" style="${ofs(app,face)}">${txt}</span>`;}
@@ -693,12 +694,21 @@ function buildUITable(){
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
     tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cP);tb.appendChild(tr);paintUI(face);
   }
+  applyTableSort('uibody');
 }
 let D={};
 function srt(c){const tb=document.getElementById('legbody');const r=[...tb.rows];D[c]=!D[c];
   r.sort((a,b)=>{const x=(c===0?a.querySelector('select').value:a.cells[0].innerText).toLowerCase(),
                        y=(c===0?b.querySelector('select').value:b.cells[0].innerText).toLowerCase();
                  return (x<y?-1:x>y?1:0)*(D[c]?1:-1);});r.forEach(x=>tb.appendChild(x));}
+// Generic header-click sort for the package and UI tables. Reads a select
+// value, a numeric input, or cell text (numeric when the text leads with a
+// number, e.g. contrast or size). The sort is remembered per table and
+// re-applied after a rebuild so editing a face does not reset it.
+let tableSort={};
+function cellVal(td){if(!td)return '';const s=td.querySelector('select');if(s)return s.value.toLowerCase();const i=td.querySelector('input');if(i)return parseFloat(i.value)||0;const t=td.innerText.trim();const n=parseFloat(t);return (!isNaN(n)&&/^[-\d.]/.test(t))?n:t.toLowerCase();}
+function srtTable(tbId,col){tableSort[tbId]={col,asc:!(tableSort[tbId]&&tableSort[tbId].col===col&&tableSort[tbId].asc)};applyTableSort(tbId);}
+function applyTableSort(tbId){const s=tableSort[tbId];if(!s)return;const tb=document.getElementById(tbId);if(!tb)return;const dir=s.asc?1:-1;const r=[...tb.rows];r.sort((a,b)=>{const x=cellVal(a.cells[s.col]),y=cellVal(b.cells[s.col]);return ((typeof x==='number'&&typeof y==='number')?x-y:(x<y?-1:x>y?1:0))*dir;});r.forEach(x=>tb.appendChild(x));}
 buildLangSel();buildAppSel();renderPalette();buildTable();buildUITable();renderCode();applyGround();updateTitle();initPicker();buildPkgTable();buildPkgPreview();syncMockHeight();syncPkgHeight();
 addEventListener('resize',()=>{syncMockHeight();syncPkgHeight();});
 // Phase-1 self-test (open with #selftest): seed -> export -> import -> compare.
