@@ -192,7 +192,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
  h2{font-size:10pt;color:#8a9496;font-weight:normal;margin:0 0 4px}
  .wrap{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:14px;padding-bottom:10px}
  .col{flex:0 0 auto;width:460px}
- pre{background:#0d0b0a;border:1px solid #252321;border-radius:8px;padding:14px 16px;font-size:19px;overflow:auto;white-space:pre}
+ pre{background:#0d0b0a;border:1px solid #252321;border-radius:8px;padding:14px 16px;font-size:10pt;overflow:auto;white-space:pre}
  table.leg{border-collapse:collapse} table.leg td{padding:4px 12px;vertical-align:middle}
  table.leg th{cursor:pointer;color:#b4b1a2;text-align:left;padding:4px 12px;user-select:none;font-weight:normal}
  table.leg th:hover{color:#e8bd30}
@@ -237,7 +237,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
  .hstep{background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:3px 4px;font:10pt monospace;width:56px}
  #pkgbody td{padding:3px 8px}
  #codepre{width:100%;box-sizing:border-box}
- .mock{border:1px solid #252321;border-radius:8px;overflow:hidden;font:15px/1.7 monospace;display:flex;flex-direction:column}
+ .mock{border:1px solid #252321;border-radius:8px;overflow:hidden;font:10pt/1.7 monospace;display:flex;flex-direction:column}
  .mock .mbuf{flex:1} .mock .ln{display:flex;align-items:stretch;white-space:pre}
  .mock .fr{width:14px;flex:0 0 auto;border-right:1px solid #ffffff14} .mock .num{width:36px;flex:0 0 auto;text-align:right;padding-right:10px}
  .mock .cd{flex:1;padding-left:8px} .mock .bar,.mock .echo{padding:4px 10px;white-space:pre}
@@ -580,7 +580,7 @@ function renderOrgPreview(){const a='org-mode',L=[];
   L.push('   '+os(a,'org-table-header','| name | hex     |'));
   L.push('   '+os(a,'org-table','|------+---------|'));
   L.push('   '+os(a,'org-table','| blue | #67809c |'));
-  return `<div style="padding:12px 16px;font:15px/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;
+  return `<div style="padding:12px 16px;font:10pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;
 }
 function renderMagitPreview(){const a='magit',L=[];
   L.push(os(a,'magit-head','Head:')+'     '+os(a,'magit-branch-local','main')+'  '+os(a,'magit-diff-revision-summary','Ship the tool'));
@@ -601,7 +601,7 @@ function renderMagitPreview(){const a='magit',L=[];
   L.push(os(a,'magit-hash','b5b1869f')+'  '+os(a,'magit-log-author','Craig')+'  enlarge the picker');
   L.push(os(a,'magit-hash','4fa5e995')+'  '+os(a,'magit-log-author','Craig')+'  '+os(a,'magit-keyword','feat')+' color picker');
   L.push(os(a,'magit-hash','de07e01a')+'  '+os(a,'magit-log-author','Craig')+'  '+os(a,'magit-tag','v0.3')+' relative height');
-  return `<div style="padding:12px 16px;font:15px/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+  return `<div style="padding:12px 16px;font:10pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
 function renderElfeedPreview(){const a='elfeed',L=[];
   L.push(os(a,'elfeed-search-filter-face','@6-months-ago +unread')+'   '+os(a,'elfeed-search-unread-count-face','3/120'));
   L.push('');
@@ -612,8 +612,8 @@ function renderElfeedPreview(){const a='elfeed',L=[];
   L.push(os(a,'elfeed-log-date-face','02:24:01')+'  '+os(a,'elfeed-log-info-level-face','INFO ')+' updated 12 feeds');
   L.push(os(a,'elfeed-log-date-face','02:24:02')+'  '+os(a,'elfeed-log-warn-level-face','WARN ')+' slow feed: example.com');
   L.push(os(a,'elfeed-log-date-face','02:24:03')+'  '+os(a,'elfeed-log-error-level-face','ERROR')+' failed: bad.example');
-  return `<div style="padding:12px 16px;font:15px/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
-function genericPreview(app){let h='<div style="padding:10px 14px;font:15px/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
+  return `<div style="padding:12px 16px;font:10pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function genericPreview(app){let h='<div style="padding:10px 14px;font:10pt/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
 function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=pv==='org'||pv==='magit'||pv==='elfeed';p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():genericPreview(app);p.style.background=MAP['bg'];const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
