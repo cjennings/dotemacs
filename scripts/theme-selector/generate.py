@@ -323,6 +323,13 @@ TELEGA_SEED={
  "telega-describe-item-title":{"fg":"steel","bold":True},"telega-describe-section-title":{"fg":"blue","bold":True},"telega-describe-subsection-title":{"fg":"blue"},"telega-enckey-00":{"fg":"pewter"},"telega-enckey-01":{"fg":"sage"},"telega-enckey-10":{"fg":"gold"},"telega-enckey-11":{"fg":"blue"},
  "telega-palette-builtin-blue":{"fg":"blue"},"telega-palette-builtin-green":{"fg":"emerald"},"telega-palette-builtin-orange":{"fg":"terracotta"},"telega-palette-builtin-purple":{"fg":"regal"},
  "telega-webpage-title":{"fg":"blue","bold":True},"telega-webpage-subtitle":{"fg":"steel"},"telega-webpage-header":{"fg":"gold","bold":True},"telega-webpage-subheader":{"fg":"gold"},"telega-webpage-outline":{"fg":"pewter"},"telega-webpage-fixed":{"fg":"terracotta"},"telega-webpage-preformatted":{"fg":"terracotta","bg":"bg-dim"},"telega-webpage-marked":{"fg":"#000000","bg":"gold"},"telega-webpage-strike-through":{"fg":"pewter"},"telega-webpage-chat-link":{"fg":"blue"},"telega-link-preview-sitename":{"fg":"steel"},"telega-link-preview-title":{"fg":"blue","bold":True}}
+# shr is built-in (not in the inventory). It is the HTML renderer behind nov
+# (EPUB), eww, elfeed article view, and HTML mail, so theming it themes them all.
+SHR_FACES=("shr-h1 shr-h2 shr-h3 shr-h4 shr-h5 shr-h6 shr-text shr-link shr-selected-link "
+ "shr-code shr-mark shr-strike-through shr-sup shr-abbreviation shr-sliced-image").split()
+SHR_SEED={
+ "shr-h1":{"fg":"gold","bold":True,"height":1.4},"shr-h2":{"fg":"blue","bold":True,"height":1.2},"shr-h3":{"fg":"blue","bold":True},"shr-h4":{"fg":"silver","bold":True},"shr-h5":{"fg":"steel","bold":True},"shr-h6":{"fg":"pewter","bold":True},
+ "shr-text":{"fg":"#cdced1"},"shr-link":{"fg":"blue"},"shr-selected-link":{"fg":"gold","bold":True},"shr-code":{"fg":"terracotta","bg":"bg-dim"},"shr-mark":{"fg":"#000000","bg":"gold"},"shr-strike-through":{"fg":"pewter"},"shr-sup":{"fg":"steel"},"shr-abbreviation":{"fg":"steel","italic":True},"shr-sliced-image":{"fg":"pewter"}}
 def _faces(names,prefix,seed):
     out=[]
     for f in names:
@@ -347,13 +354,14 @@ APPS={"org-mode":{"label":"org-mode","preview":"org","faces":_faces(ORG_FACES,"o
  "signel":{"label":"signel","preview":"signel","faces":_faces(SIGNEL_FACES,"signel-",SIGNEL_SEED)},
  "pearl":{"label":"pearl","preview":"pearl","faces":_faces(PEARL_FACES,"pearl-",PEARL_SEED)},
  "slack":{"label":"slack","preview":"slack","faces":_faces(SLACK_FACES,"slack-",SLACK_SEED)},
- "telega":{"label":"telega","preview":"telega","faces":_faces(TELEGA_FACES,"telega-",TELEGA_SEED)}}
+ "telega":{"label":"telega","preview":"telega","faces":_faces(TELEGA_FACES,"telega-",TELEGA_SEED)},
+ "shr":{"label":"shr (HTML: nov/eww/mail)","preview":"shr","faces":_faces(SHR_FACES,"shr-",SHR_SEED)}}
 # Phase 6: merge the generated all-package inventory (refresh with build-inventory.el).
 # Bespoke apps stay; every other installed package becomes an editable generic app.
 _inv_path=os.path.join(HERE,"package-inventory.json")
 if os.path.exists(_inv_path):
     _INV=json.load(open(_inv_path))
-    _BESPOKE={"magit","elfeed","org","org-mode","mu4e","ghostel","dashboard","lsp-mode","git-gutter","flycheck","dired","dirvish","calibredb","erc","org-drill","org-noter","signel","pearl","slack","telega"}
+    _BESPOKE={"magit","elfeed","org","org-mode","mu4e","ghostel","dashboard","lsp-mode","git-gutter","flycheck","dired","dirvish","calibredb","erc","org-drill","org-noter","signel","pearl","slack","telega","shr"}
     for _pkg in sorted(_INV):
         if _pkg in _BESPOKE or _pkg in APPS: continue
         APPS[_pkg]={"label":_pkg,"preview":"generic","faces":[
@@ -979,6 +987,16 @@ function renderPearlPreview(){const a='pearl',L=[];
   L.push('  '+os(a,'pearl-editable-comment','&gt; add a comment (editable)'));
   L.push('  '+os(a,'pearl-readonly-comment','&gt; created by automation (read-only)'));
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderShrPreview(){const a='shr',L=[];
+  L.push(os(a,'shr-text','shr renders nov (EPUB), eww (web), elfeed, and HTML mail.'));
+  L.push('');
+  L.push(os(a,'shr-h1','Chapter One: The Beginning'));
+  L.push(os(a,'shr-h2','A Section Heading'));
+  L.push(os(a,'shr-h3','A subsection')+'   '+os(a,'shr-h4','h4')+' / '+os(a,'shr-h5','h5')+' / '+os(a,'shr-h6','h6'));
+  L.push(os(a,'shr-text','Body text flows in shr-text, with a ')+os(a,'shr-link','hyperlink')+os(a,'shr-text',' and a ')+os(a,'shr-selected-link','focused link')+os(a,'shr-text',','));
+  L.push(os(a,'shr-text','some ')+os(a,'shr-code','inline_code()')+os(a,'shr-text',', a ')+os(a,'shr-mark','highlighted mark')+os(a,'shr-text',', ')+os(a,'shr-strike-through','struck out')+os(a,'shr-text',', a footnote')+os(a,'shr-sup','[1]')+os(a,'shr-text',','));
+  L.push(os(a,'shr-text','an ')+os(a,'shr-abbreviation','HTML')+os(a,'shr-text',' abbreviation, and an ')+os(a,'shr-sliced-image','[image]')+os(a,'shr-text',' slice.'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
 function renderSlackPreview(){const a='slack',L=[];
   L.push(os(a,'slack-room-info-title-room-name-face','#general')+'  '+os(a,'slack-room-info-title-face','Acme Workspace'));
   L.push(os(a,'slack-room-info-section-title-face','Topic')+'  '+os(a,'slack-room-info-section-label-face','daily standup')+'   '+os(a,'slack-room-unread-face','3 unread'));
@@ -1019,7 +1037,7 @@ function renderTelegaPreview(){const a='telega',L=[];
   L.push('Webpage '+os(a,'telega-webpage-title','Title')+' '+os(a,'telega-webpage-subtitle','Subtitle')+' '+os(a,'telega-webpage-header','Header')+' '+os(a,'telega-webpage-subheader','Subheader')+' '+os(a,'telega-webpage-outline','outline')+' '+os(a,'telega-webpage-fixed','fixed')+' '+os(a,'telega-webpage-preformatted','pre')+' '+os(a,'telega-webpage-marked','marked')+' '+os(a,'telega-webpage-strike-through','strike')+' '+os(a,'telega-webpage-chat-link','chat-link'));
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
 function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div data-face="${face}" style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
-function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e','lsp','gitgutter','flycheck','dired','dirvish','calibredb','erc','orgdrill','orgnoter','signel','pearl','slack','telega'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():pv==='lsp'?renderLspPreview():pv==='gitgutter'?renderGitGutterPreview():pv==='flycheck'?renderFlycheckPreview():pv==='dired'?renderDiredPreview():pv==='dirvish'?renderDirvishPreview():pv==='calibredb'?renderCalibredbPreview():pv==='erc'?renderErcPreview():pv==='orgdrill'?renderOrgdrillPreview():pv==='orgnoter'?renderOrgnoterPreview():pv==='signel'?renderSignelPreview():pv==='pearl'?renderPearlPreview():pv==='slack'?renderSlackPreview():pv==='telega'?renderTelegaPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
+function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e','lsp','gitgutter','flycheck','dired','dirvish','calibredb','erc','orgdrill','orgnoter','signel','pearl','slack','telega','shr'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():pv==='lsp'?renderLspPreview():pv==='gitgutter'?renderGitGutterPreview():pv==='flycheck'?renderFlycheckPreview():pv==='dired'?renderDiredPreview():pv==='dirvish'?renderDirvishPreview():pv==='calibredb'?renderCalibredbPreview():pv==='erc'?renderErcPreview():pv==='orgdrill'?renderOrgdrillPreview():pv==='orgnoter'?renderOrgnoterPreview():pv==='signel'?renderSignelPreview():pv==='pearl'?renderPearlPreview():pv==='slack'?renderSlackPreview():pv==='telega'?renderTelegaPreview():pv==='shr'?renderShrPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;pv.style.color=UIMAP[face].fg||MAP['p'];pv.style.background=UIMAP[face].bg||MAP['bg'];}
