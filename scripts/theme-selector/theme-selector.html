@@ -21,7 +21,16 @@
  .palctl{margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
  .palctl input[type=text]{background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace}
  .palctl input[type=text]::placeholder{color:#b4b1a2;opacity:1}
- .palctl input[type=color]{width:128px;height:58px;border:1px solid #00000060;border-radius:6px;padding:2px;cursor:pointer}
+ .palctl{position:relative}
+ .swatch{width:128px;height:58px;border:1px solid #00000060;border-radius:6px;cursor:pointer;background:#888}
+ .picker{display:none;position:absolute;top:66px;left:0;z-index:60;background:#161412;border:1px solid #3a3a3a;border-radius:8px;padding:10px;box-shadow:0 10px 30px #000b;width:250px}
+ .picker .prow{display:flex;gap:8px}
+ .sv{position:relative;width:200px;height:160px;border-radius:4px;cursor:crosshair}
+ .svcur{position:absolute;width:12px;height:12px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 1px #0008;pointer-events:none}
+ .hue{position:relative;width:18px;height:160px;border-radius:4px;cursor:ns-resize;background:linear-gradient(to bottom,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+ .huecur{position:absolute;left:-2px;right:-2px;height:3px;background:#fff;border:1px solid #0008;transform:translateY(-50%);pointer-events:none}
+ .pinfo{display:flex;justify-content:space-between;margin:8px 2px 6px;font:10pt monospace;color:#cdced1}
+ .pkchips{display:flex;flex-wrap:wrap;gap:4px} .pkchips .pc{width:22px;height:22px;border-radius:3px;border:1px solid #00000066;cursor:pointer}
  .palctl button,.filebar button,.fbtn{background:#252321;color:#e8bd30;border:1px solid #3a3a3a;border-radius:4px;padding:6px 12px;font:10pt monospace;cursor:pointer}
  #palmsg{font:10pt monospace;opacity:0;transition:opacity .35s;margin-left:6px}
  #export{width:100%;height:180px;margin-top:10px;background:#0d0b0a;color:#a4ac64;border:1px solid #252321;border-radius:6px;font:10pt monospace;padding:10px}
@@ -46,12 +55,20 @@
   <h1>palette</h1>
   <div class="pals" id="pals"></div>
   <div class="palctl">
-   <input type="color" id="newhex" value="#888888" oninput="syncHex('swatch')" onchange="document.getElementById('newhexstr').focus()">
-   <input type="text" id="newhexstr" placeholder="#rrggbb" value="#888888" oninput="syncHex('text')" onkeydown="if(event.key==='Enter')applyEdit()" style="width:110px">
+   <div id="swatch" class="swatch" title="open color picker"></div>
+   <input type="text" id="newhexstr" placeholder="#rrggbb" value="#888888" oninput="syncHex()" onkeydown="if(event.key==='Enter')applyEdit()" style="width:110px">
    <input type="text" id="newname" placeholder="name" onkeydown="if(event.key==='Enter')applyEdit()">
    <button onclick="addColor()">+ add color</button>
    <button onclick="updateColor()">&#8635; update selected</button>
    <span id="palmsg"></span>
+   <div id="picker" class="picker">
+    <div class="prow">
+     <div id="sv" class="sv"><div id="svcur" class="svcur"></div></div>
+     <div id="hue" class="hue"><div id="huecur" class="huecur"></div></div>
+    </div>
+    <div class="pinfo"><span id="pkhex">#888888</span><span id="pkcon"></span></div>
+    <div id="pkchips" class="pkchips"></div>
+   </div>
   </div>
  </section>
  <section class="pane saveload">
@@ -170,25 +187,42 @@ function renderPalette(){
 function notify(msg,err){const m=document.getElementById('palmsg');if(!m)return;m.textContent=msg;m.style.color=err?'#cb6b4d':'#8a9496';m.style.opacity='1';clearTimeout(m._t);m._t=setTimeout(()=>{m.style.opacity='0';},err?4000:2800);}
 function applyEdit(){if(selectedIdx!==null)updateColor();else addColor();}
 function moveColor(i,dir){const j=i+dir;if(j<0||j>=PALETTE.length)return;const t=PALETTE[i];PALETTE[i]=PALETTE[j];PALETTE[j]=t;if(selectedIdx===i)selectedIdx=j;else if(selectedIdx===j)selectedIdx=i;renderPalette();buildTable();buildUITable();}
-function selectColor(i){selectedIdx=i;const [hex,name]=PALETTE[i];document.getElementById('newhexstr').value=hex;document.getElementById('newhex').value=hex;document.getElementById('newname').value=name;renderPalette();notify('editing "'+name+'" — change the value, then Enter (or Update selected) to save',false);}
+function selectColor(i){selectedIdx=i;const [hex,name]=PALETTE[i];setHex(hex);document.getElementById('newname').value=name;renderPalette();notify('editing "'+name+'" — change the value, then Enter (or Update selected) to save',false);}
 function updateColor(){
   if(selectedIdx===null){notify('click a palette color to select it first',true);return;}
   const i=selectedIdx,oldHex=PALETTE[i][0];
-  const newHex=normHex(document.getElementById('newhexstr').value)||document.getElementById('newhex').value;
+  const newHex=curHex();
   const newName=(document.getElementById('newname').value.trim())||PALETTE[i][1];
   if(PALETTE.some((p,j)=>j!==i&&p[1].toLowerCase()===newName.toLowerCase())){notify('another color is already named "'+newName+'" — names must be unique',true);return;}
   PALETTE[i]=[newHex,newName];
   for(const k in MAP){if(MAP[k]===oldHex)MAP[k]=newHex;}
   for(const f in UIMAP){if(UIMAP[f].fg===oldHex)UIMAP[f].fg=newHex;if(UIMAP[f].bg===oldHex)UIMAP[f].bg=newHex;}
-  renderPalette();buildTable();buildUITable();renderCode();applyGround();notify('updated "'+newName+'"',false);
+  closePicker();renderPalette();buildTable();buildUITable();renderCode();applyGround();notify('updated "'+newName+'"',false);
 }
 function normHex(s){s=s.trim();if(/^[0-9a-fA-F]{6}$/.test(s))s='#'+s;return /^#[0-9a-fA-F]{6}$/.test(s)?s.toLowerCase():null;}
-function syncHex(src){const sw=document.getElementById('newhex'),tx=document.getElementById('newhexstr');
-  if(src==='swatch'){tx.value=sw.value;}else{const h=normHex(tx.value);if(h)sw.value=h;}}
-function addColor(){const h=normHex(document.getElementById('newhexstr').value)||document.getElementById('newhex').value;const name=document.getElementById('newname').value.trim();
+function curHex(){return normHex(document.getElementById('newhexstr').value)||'#888888';}
+function hsv2rgb(h,s,v){h=(h%360+360)%360/360;const i=Math.floor(h*6),f=h*6-i,p=v*(1-s),q=v*(1-f*s),t=v*(1-(1-f)*s);let r,g,b;switch(((i%6)+6)%6){case 0:[r,g,b]=[v,t,p];break;case 1:[r,g,b]=[q,v,p];break;case 2:[r,g,b]=[p,v,t];break;case 3:[r,g,b]=[p,q,v];break;case 4:[r,g,b]=[t,p,v];break;default:[r,g,b]=[v,p,q];}return[Math.round(r*255),Math.round(g*255),Math.round(b*255)];}
+function rgb2hsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;if(d){if(mx===r)h=((g-b)/d+6)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;}return[h,mx?d/mx:0,mx];}
+function hex2rgb(h){return[parseInt(h.substr(1,2),16),parseInt(h.substr(3,2),16),parseInt(h.substr(5,2),16)];}
+function rgb2hex(r,g,b){return '#'+[r,g,b].map(x=>Math.max(0,Math.min(255,x)).toString(16).padStart(2,'0')).join('');}
+let pkH=0,pkS=0,pkV=0.5,pickerOn=false;
+function paintPicker(){const sv=document.getElementById('sv');if(!sv)return;sv.style.background=`linear-gradient(to top,#000,rgba(0,0,0,0)),linear-gradient(to right,#fff,rgba(255,255,255,0)),hsl(${pkH},100%,50%)`;document.getElementById('svcur').style.left=(pkS*200)+'px';document.getElementById('svcur').style.top=((1-pkV)*160)+'px';document.getElementById('huecur').style.top=((pkH/360)*160)+'px';}
+function pkReadout(h){const e=document.getElementById('pkhex');if(e)e.textContent=h;const c=document.getElementById('pkcon');if(c){const r=contrast(h,MAP['bg']);c.textContent=r.toFixed(1)+'  '+rating(r);c.style.color=ratingColor(r);}}
+function syncHex(){const v=normHex(document.getElementById('newhexstr').value);if(!v)return;document.getElementById('swatch').style.background=v;[pkH,pkS,pkV]=rgb2hsv(...hex2rgb(v));if(pickerOn)paintPicker();pkReadout(v);}
+function setHex(h){h=normHex(h)||h;document.getElementById('newhexstr').value=h;document.getElementById('swatch').style.background=h;[pkH,pkS,pkV]=rgb2hsv(...hex2rgb(h));if(pickerOn)paintPicker();pkReadout(h);}
+function pkSet(){const hex=rgb2hex(...hsv2rgb(pkH,pkS,pkV));document.getElementById('newhexstr').value=hex;document.getElementById('swatch').style.background=hex;paintPicker();pkReadout(hex);}
+function buildPkChips(){const c=document.getElementById('pkchips');if(!c)return;c.innerHTML='';PALETTE.forEach(([hex,name])=>{const s=document.createElement('div');s.className='pc';s.style.background=hex;s.title=name+' '+hex;s.onclick=()=>setHex(hex);c.appendChild(s);});}
+function openPicker(){pickerOn=true;[pkH,pkS,pkV]=rgb2hsv(...hex2rgb(curHex()));buildPkChips();paintPicker();pkReadout(curHex());document.getElementById('picker').style.display='block';setTimeout(()=>document.addEventListener('pointerdown',pkOutside),0);}
+function closePicker(){if(!pickerOn)return;pickerOn=false;const p=document.getElementById('picker');if(p)p.style.display='none';document.removeEventListener('pointerdown',pkOutside);}
+function pkOutside(e){if(!e.target.closest('#picker')&&!e.target.closest('#swatch'))closePicker();}
+function pkDrag(el,fn){el.addEventListener('pointerdown',e=>{e.preventDefault();fn(e);const mv=ev=>fn(ev),up=()=>{document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);};document.addEventListener('pointermove',mv);document.addEventListener('pointerup',up);});}
+function initPicker(){const sw=document.getElementById('swatch');if(!sw)return;sw.style.background=curHex();sw.onclick=()=>pickerOn?closePicker():openPicker();
+  pkDrag(document.getElementById('sv'),e=>{const r=document.getElementById('sv').getBoundingClientRect();pkS=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));pkV=1-Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));pkSet();});
+  pkDrag(document.getElementById('hue'),e=>{const r=document.getElementById('hue').getBoundingClientRect();pkH=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))*360;pkSet();});}
+function addColor(){const h=curHex();const name=document.getElementById('newname').value.trim();
   if(!name){notify('name the color before adding it',true);return;}
   if(PALETTE.some(p=>p[1].toLowerCase()===name.toLowerCase())){notify('a color named "'+name+'" already exists — select it and use Update selected to change its value',true);return;}
-  PALETTE.push([h,name]);document.getElementById('newname').value='';selectedIdx=null;renderPalette();buildTable();notify('added "'+name+'"',false);}
+  PALETTE.push([h,name]);document.getElementById('newname').value='';selectedIdx=null;closePicker();renderPalette();buildTable();notify('added "'+name+'"',false);}
 function themeName(){return (document.getElementById('themename').value||'theme').trim()||'theme';}
 function fileSlug(){return themeName().replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'theme';}
 function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);const o={name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};const pk=packagesForExport(PKGMAP);if(Object.keys(pk).length)o.packages=pk;return o;}
@@ -280,7 +314,7 @@ function srt(c){const tb=document.getElementById('legbody');const r=[...tb.rows]
   r.sort((a,b)=>{const x=(c===0?a.querySelector('select').value:a.cells[2].innerText).toLowerCase(),
                        y=(c===0?b.querySelector('select').value:b.cells[2].innerText).toLowerCase();
                  return (x<y?-1:x>y?1:0)*(D[c]?1:-1);});r.forEach(x=>tb.appendChild(x));}
-buildLangSel();renderPalette();buildTable();buildUITable();renderCode();applyGround();updateTitle();
+buildLangSel();renderPalette();buildTable();buildUITable();renderCode();applyGround();updateTitle();initPicker();
 // Phase-1 self-test (open with #selftest): seed -> export -> import -> compare.
 function pkgSelftest(){
   const seeded=seedPkgmap();
@@ -297,4 +331,5 @@ function pkgSelftest(){
   const d=document.createElement('div');d.id='selftest';d.textContent='SELFTEST '+verdict+' roundtrip='+roundtrip+' oldjson='+oldjson+' inherit='+inherited+' height='+height;document.body.appendChild(d);
 }
 if(location.hash==='#selftest')pkgSelftest();
+if(location.hash==='#pick')openPicker();
 </script>
