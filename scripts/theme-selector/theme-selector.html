@@ -27,6 +27,10 @@
  .picker{display:none;position:absolute;top:66px;left:0;z-index:60;background:#161412;border:1px solid #3a3a3a;border-radius:8px;padding:12px;box-shadow:0 10px 30px #000b;width:470px}
  .picker .prow{display:flex;gap:10px}
  .sv{position:relative;width:400px;height:320px;border-radius:4px;cursor:crosshair}
+ .svmask{position:absolute;inset:0;pointer-events:none;border-radius:4px}
+ .pmode{margin:2px 2px 8px;font:10pt monospace;color:#b4b1a2;display:flex;gap:6px;align-items:center}
+ .pmode button{background:#252321;color:#cdced1;border:1px solid #3a3a3a;border-radius:4px;padding:2px 9px;font:10pt monospace;cursor:pointer}
+ .pmode button.on{background:#e8bd30;color:#000;border-color:#e8bd30}
  .svcur{position:absolute;width:16px;height:16px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 1px #0008;pointer-events:none}
  .hue{position:relative;width:34px;height:320px;border-radius:4px;cursor:ns-resize;background:linear-gradient(to bottom,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
  .huecur{position:absolute;left:-2px;right:-2px;height:4px;background:#fff;border:1px solid #0008;transform:translateY(-50%);pointer-events:none}
@@ -49,6 +53,8 @@
  #codepre [data-k],.mock [data-k],.mock [data-face]{cursor:pointer}
  @keyframes flashcell{0%,55%{background:#e8bd3066}100%{background:transparent}}
  tr.flash td{animation:flashcell 1.1s ease-out}
+ @keyframes flashtok{0%,55%{background:#e8bd30aa;color:#000}100%{background:transparent}}
+ #codepre .flashtok,.ex.flashtok{animation:flashtok 1.1s ease-out;border-radius:2px}
 </style>
 <h1 id="pagetitle">Untitled: theme</h1>
 <div class="cols">
@@ -64,10 +70,11 @@
    <span id="palmsg"></span>
    <div id="picker" class="picker">
     <div class="prow">
-     <div id="sv" class="sv"><div id="svcur" class="svcur"></div></div>
+     <div id="sv" class="sv"><canvas id="svmask" class="svmask"></canvas><div id="svcur" class="svcur"></div></div>
      <div id="hue" class="hue"><div id="huecur" class="huecur"></div></div>
     </div>
     <div class="pinfo"><span id="pkhex">#888888</span><span id="pkcon"></span></div>
+    <div class="pmode">limit <button data-m="any" class="on">any</button><button data-m="aa">AA+</button><button data-m="aaa">AAA</button></div>
     <div id="pkchips" class="pkchips"></div>
    </div>
   </div>
@@ -161,7 +168,7 @@ function buildTable(){
     function refresh(){btns.normal.classList.toggle('on',!BOLD[kind]&&!ITALIC[kind]);btns.bold.classList.toggle('on',!!BOLD[kind]);btns.italic.classList.toggle('on',!!ITALIC[kind]);}
     refresh();}
     const c0=document.createElement('td');c0.appendChild(sel);
-    const c2=document.createElement('td');c2.className='cat';c2.textContent=label;
+    const c2=document.createElement('td');c2.className='cat';c2.textContent=label;c2.style.cursor='pointer';c2.title='flash this category in the code';c2.onclick=()=>flashTokens(kind);
     tr.appendChild(c0);tr.appendChild(stTd);tr.appendChild(c2);tr.appendChild(exTd);tr.appendChild(crTd);
     tb.appendChild(tr);}
 }
@@ -210,19 +217,23 @@ function rgb2hsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.mi
 function hex2rgb(h){return[parseInt(h.substr(1,2),16),parseInt(h.substr(3,2),16),parseInt(h.substr(5,2),16)];}
 function rgb2hex(r,g,b){return '#'+[r,g,b].map(x=>Math.max(0,Math.min(255,x)).toString(16).padStart(2,'0')).join('');}
 let pkH=0,pkS=0,pkV=0.5,pickerOn=false;
-function paintPicker(){const sv=document.getElementById('sv');if(!sv)return;sv.style.background=`linear-gradient(to top,#000,rgba(0,0,0,0)),linear-gradient(to right,#fff,rgba(255,255,255,0)),hsl(${pkH},100%,50%)`;const w=sv.clientWidth,h=sv.clientHeight,hh=document.getElementById('hue').clientHeight;document.getElementById('svcur').style.left=(pkS*w)+'px';document.getElementById('svcur').style.top=((1-pkV)*h)+'px';document.getElementById('huecur').style.top=((pkH/360)*hh)+'px';}
+let pkMode='any';
+function pkThresh(){return pkMode==='aa'?4.5:pkMode==='aaa'?7:0;}
+function drawMask(){const cv=document.getElementById('svmask');if(!cv)return;const sv=document.getElementById('sv'),w=cv.width=sv.clientWidth,h=cv.height=sv.clientHeight,ctx=cv.getContext('2d');ctx.clearRect(0,0,w,h);const T=pkThresh();if(!T)return;ctx.fillStyle='rgba(8,7,6,0.66)';const step=4;for(let x=0;x<w;x+=step){const S=x/w;for(let y=0;y<h;y+=step){const V=1-y/h,[r,g,b]=hsv2rgb(pkH,S,V);if(contrast(rgb2hex(r,g,b),MAP['bg'])<T)ctx.fillRect(x,y,step,step);}}}
+function paintPicker(){const sv=document.getElementById('sv');if(!sv)return;sv.style.background=`linear-gradient(to top,#000,rgba(0,0,0,0)),linear-gradient(to right,#fff,rgba(255,255,255,0)),hsl(${pkH},100%,50%)`;const w=sv.clientWidth,h=sv.clientHeight,hh=document.getElementById('hue').clientHeight;document.getElementById('svcur').style.left=(pkS*w)+'px';document.getElementById('svcur').style.top=((1-pkV)*h)+'px';document.getElementById('huecur').style.top=((pkH/360)*hh)+'px';drawMask();}
 function pkReadout(h){const e=document.getElementById('pkhex');if(e)e.textContent=h;const c=document.getElementById('pkcon');if(c){const r=contrast(h,MAP['bg']);c.textContent=r.toFixed(1)+'  '+rating(r);c.style.color=ratingColor(r);}}
 function syncHex(){const v=normHex(document.getElementById('newhexstr').value);if(!v)return;document.getElementById('swatch').style.background=v;[pkH,pkS,pkV]=rgb2hsv(...hex2rgb(v));if(pickerOn)paintPicker();pkReadout(v);}
 function setHex(h){h=normHex(h)||h;document.getElementById('newhexstr').value=h;document.getElementById('swatch').style.background=h;[pkH,pkS,pkV]=rgb2hsv(...hex2rgb(h));if(pickerOn)paintPicker();pkReadout(h);}
 function pkSet(){const hex=rgb2hex(...hsv2rgb(pkH,pkS,pkV));document.getElementById('newhexstr').value=hex;document.getElementById('swatch').style.background=hex;paintPicker();pkReadout(hex);}
-function buildPkChips(){const c=document.getElementById('pkchips');if(!c)return;c.innerHTML='';PALETTE.forEach(([hex,name])=>{const s=document.createElement('div');s.className='pc';s.style.background=hex;s.title=name+' '+hex;s.onclick=()=>setHex(hex);c.appendChild(s);});}
+function buildPkChips(){const c=document.getElementById('pkchips');if(!c)return;c.innerHTML='';const T=pkThresh();PALETTE.forEach(([hex,name])=>{const s=document.createElement('div');s.className='pc';s.style.background=hex;s.title=name+' '+hex;const ok=!T||contrast(hex,MAP['bg'])>=T;if(!ok){s.style.opacity='0.22';s.title+=' (below '+pkMode.toUpperCase()+')';}s.onclick=()=>{if(ok)setHex(hex);};c.appendChild(s);});}
 function openPicker(){pickerOn=true;[pkH,pkS,pkV]=rgb2hsv(...hex2rgb(curHex()));buildPkChips();paintPicker();pkReadout(curHex());document.getElementById('picker').style.display='block';setTimeout(()=>document.addEventListener('pointerdown',pkOutside),0);}
 function closePicker(){if(!pickerOn)return;pickerOn=false;const p=document.getElementById('picker');if(p)p.style.display='none';document.removeEventListener('pointerdown',pkOutside);}
 function pkOutside(e){if(!e.target.closest('#picker')&&!e.target.closest('#swatch'))closePicker();}
 function pkDrag(el,fn){el.addEventListener('pointerdown',e=>{e.preventDefault();fn(e);const mv=ev=>fn(ev),up=()=>{document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);};document.addEventListener('pointermove',mv);document.addEventListener('pointerup',up);});}
 function initPicker(){const sw=document.getElementById('swatch');if(!sw)return;sw.style.background=curHex();sw.onclick=()=>pickerOn?closePicker():openPicker();
   pkDrag(document.getElementById('sv'),e=>{const r=document.getElementById('sv').getBoundingClientRect();pkS=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));pkV=1-Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));pkSet();});
-  pkDrag(document.getElementById('hue'),e=>{const r=document.getElementById('hue').getBoundingClientRect();pkH=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))*360;pkSet();});}
+  pkDrag(document.getElementById('hue'),e=>{const r=document.getElementById('hue').getBoundingClientRect();pkH=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))*360;pkSet();});
+  document.querySelectorAll('.pmode button').forEach(b=>b.onclick=()=>{pkMode=b.dataset.m;document.querySelectorAll('.pmode button').forEach(x=>x.classList.toggle('on',x===b));drawMask();buildPkChips();});}
 function addColor(){const h=curHex();const name=document.getElementById('newname').value.trim();
   if(!name){notify('name the color before adding it',true);return;}
   if(PALETTE.some(p=>p[1].toLowerCase()===name.toLowerCase())){notify('a color named "'+name+'" already exists — select it and use Update selected to change its value',true);return;}
@@ -250,9 +261,12 @@ function importFile(ev){const f=ev.target.files[0];if(!f)return;const r=new File
 function applyGround(){document.querySelectorAll('pre').forEach(p=>p.style.background=MAP['bg']);document.querySelectorAll('.ex').forEach(e=>e.style.background=MAP['bg']);}
 function uf(f){return UIMAP[f]||{};}
 function flashRow(tr){if(!tr)return;tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}
+function flashEl(el){if(!el)return;el.classList.remove('flashtok');void el.offsetWidth;el.classList.add('flashtok');}
+function flashTokens(kind){const sp=document.querySelectorAll('#codepre [data-k="'+kind+'"]');if(sp.length){sp.forEach(flashEl);return;}const row=document.querySelector('#legbody tr[data-kind="'+kind+'"]');if(row)flashEl(row.querySelector('.ex'));}
 function flashAssign(k){flashRow(document.querySelector(`#legbody tr[data-kind="${k}"]`));}
 function flashUi(f){flashRow(document.querySelector(`#uibody tr[data-face="${f}"]`));}
 function mockSpan(k,t){return `<span data-k="${k}" style="color:${MAP[k]||MAP['p']};font-weight:${BOLD[k]?'bold':'normal'};font-style:${ITALIC[k]?'italic':'normal'}">${esc(t)}</span>`;}
+function syncMockHeight(){const t=document.getElementById('uitable'),m=document.getElementById('mockframe');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function buildMockFrame(){
   const fr=document.getElementById('mockframe');if(!fr)return;
   const bg=MAP['bg'],fg=MAP['p'];
@@ -324,7 +338,8 @@ function srt(c){const tb=document.getElementById('legbody');const r=[...tb.rows]
   r.sort((a,b)=>{const x=(c===0?a.querySelector('select').value:a.cells[2].innerText).toLowerCase(),
                        y=(c===0?b.querySelector('select').value:b.cells[2].innerText).toLowerCase();
                  return (x<y?-1:x>y?1:0)*(D[c]?1:-1);});r.forEach(x=>tb.appendChild(x));}
-buildLangSel();renderPalette();buildTable();buildUITable();renderCode();applyGround();updateTitle();initPicker();
+buildLangSel();renderPalette();buildTable();buildUITable();renderCode();applyGround();updateTitle();initPicker();syncMockHeight();
+addEventListener('resize',syncMockHeight);
 // Phase-1 self-test (open with #selftest): seed -> export -> import -> compare.
 function pkgSelftest(){
   const seeded=seedPkgmap();
@@ -341,5 +356,5 @@ function pkgSelftest(){
   const d=document.createElement('div');d.id='selftest';d.textContent='SELFTEST '+verdict+' roundtrip='+roundtrip+' oldjson='+oldjson+' inherit='+inherited+' height='+height;document.body.appendChild(d);
 }
 if(location.hash==='#selftest')pkgSelftest();
-if(location.hash==='#pick')openPicker();
+if(location.hash.startsWith('#pick')){openPicker();const m=location.hash.slice(5);if(m){const b=document.querySelector('.pmode button[data-m="'+m+'"]');if(b)b.click();}}
 </script>
