@@ -69,8 +69,8 @@ Package-specific face editing in the theme-selector: org/magit/elfeed bespoke (c
 *** 2026-06-08 Mon @ 00:17:41 -0500 Phase 1 — package state + schema landed
 Added =APPS= (org starter) and =PKGMAP= ({app:{face:{fg,bg,bold,italic,inherit,height,source}}}), pure helpers (=seedPkgmap= / =packagesForExport= / =mergePackagesInto=), and wired export/import for the =packages= key with old-JSON compat. The =height= float (relative size, read off the face not cascaded through inherit) and the fixed-pitch inherits are seeded in the org starter. No UI yet (Phase 3). Verified: node-check, plus a guarded =#selftest= harness (headless Chrome) confirming seed->export->import round-trip, old-JSON merge, and inherit/height/source survival — all PASS.
 
-*** TODO [#B] Phase 2 — curated app data (org/magit/elfeed) :solo:
-Complete own-defface face lists + seeded defaults modeling org's real inherit cascade, for org (incl. org-agenda), magit, elfeed, in =APPS=. Pure data. Verify: each app lists its full grouped set. Seeded-default aesthetics go to Manual testing. Spec phase 2.
+*** 2026-06-08 Mon @ 02:16:24 -0500 Phase 2 — curated app data (org/magit/elfeed) landed
+Filled =APPS= with the complete own-defface sets built from embedded face-name lists + a curated seed-color map: org 88 (85 seeded, incl. org-agenda, heading heights, fixed-pitch inherits), magit 98 (64 seeded), elfeed 13 (all seeded). Long-tail faces seed to default fg. Verified: 199 faces total, no seed typos / no dupes, schema self-test PASS seeding all of them. Seeded-default aesthetics still go to Manual testing once the Phase 3 UI lands.
 
 *** TODO [#B] Phase 3 — package face table UI :solo:
 App selector; grouped rows; fg/bg dropdowns + bold/italic + optional inherit (resolved color shown, marked inherited); per-face + per-app reset; text filter; per-fg/bg contrast readout; a generalized face-control helper shared with the ui-faces table (not a =uiSelect= fork). Verify: headless screenshot; reassign / inherit / override / reset behave. Spec phase 3.
