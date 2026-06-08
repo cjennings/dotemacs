@@ -81,8 +81,8 @@ Added =renderOrgPreview()=: a mock org document painted live from the org packag
 *** 2026-06-08 Mon @ 02:30:42 -0500 Phase 5 — magit + elfeed previews landed
 Bespoke =renderMagitPreview()= (status buffer: head/branches, untracked, a diff hunk with context/added/removed, recent commits with hashes/authors/keyword/tag) and =renderElfeedPreview()= (search list: filter, dated entries with feed/unread-title/read-title/tags, log lines by level). The preview label now names the app and notes generic vs bespoke. Verified: node, headless screenshots, self-test PASS.
 
-*** TODO [#B] Phase 6 — generated all-package inventory :solo:
-Build step queries Emacs for installed packages' faces grouped by package, writes a data file =generate.py= embeds; the dropdown then lists every package with an editable table + a labeled generic fallback preview. Verify: data file generates, dropdown lists packages, a fallback package edits and round-trips. Spec phase 6.
+*** 2026-06-08 Mon @ 02:32:44 -0500 Phase 6 — generated all-package inventory landed
+=build-inventory.el= (loaded into a running Emacs) groups every installed package's faces by the defining package and writes =package-inventory.json=. =generate.py= embeds it and merges each package into the dropdown as an editable generic app, leaving org/magit/elfeed bespoke. 40 apps now (3 bespoke + 37 inventory, 643 faces). Committed data artifact, refreshed by reloading the .el; never browser-side discovery. Verified: node, self-test PASS, app count + bespoke-preserved checks.
 
 *** TODO [#B] Phase 7 — docs + validation :solo:
 README: =packages= schema, inheritance behavior, inventory-refresh command and its loaded-config dependency; note =theme-selector.html= is generated. Regenerate HTML. Spec phase 7.
