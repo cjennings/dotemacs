@@ -1,0 +1,473 @@
+#+TITLE: Usual Color Theme Rules
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-08
+#+STARTUP: showall
+
+* How to use this guide
+
+This guide has one idea under it: color by the role a thing plays for the
+reader, spend attention deliberately, and draw everything from one disciplined
+palette. Everything else is that idea applied.
+
+It runs general to specific:
+
+1. *Principles*: the seven laws that generate the rest.
+2. *Roles and the seed table*: the reader-roles the principles color, and the
+   single table that says how each role is treated. This is the executable core.
+3. *The tiers*: syntax, UI faces, and package faces are the same roles applied
+   to three sets of Emacs faces. Each tier's rules derive from the principles,
+   not apart from them.
+4. *Cross-tier practice*: weight, contrast, accessibility, and the checks that
+   apply everywhere.
+
+If you only read one thing, read the principles and the seed table. The tiers
+are worked examples.
+
+* Principles
+
+1. *Color by reader-role, not by source category.* A color means "these things
+   play the same role while reading." The parser's category is irrelevant; the
+   reader's intent is everything. The theme should make control flow,
+   definitions, literals, comments, and errors easy to scan without making every
+   token compete for attention.
+
+2. *One disciplined palette; relatedness lives inside a hue family.* Prefer six
+   to eight stable accents over one color per category, and reuse each for the
+   same role everywhere. Related roles share a hue and separate by lightness,
+   chroma, or weight rather than taking unrelated colors. The six to eight are
+   hue families, not swatches: each family carries one to three shades (a keyword
+   and its quieter builtin, a string and its muted docstring), so the palette
+   holds roughly fifteen to twenty swatches across few hues. The Shade budget
+   section counts them.
+
+3. *Spend salience deliberately.* Chroma, brightness, and bold all say "look
+   here"; muted and low-chroma say "supporting structure." Reserve the loudest
+   treatment for the few things that matter, and make the anchor (a definition,
+   the active element) louder than the echo (a use, the idle element).
+
+4. *Two channels: foreground is identity, background is state.* Foreground
+   carries what a thing is (its role). A background tint carries transient state:
+   selection, current line, search match, diff hunk. Do not recolor a
+   foreground to show state. Tint behind the text so the token keeps its
+   meaning while highlighted. A transient match chip may invert; persistent state
+   must only tint.
+
+5. *Tier the contrast, and judge it honestly.* Comfortable contrast for content,
+   low contrast for idle structure, high contrast for alerts. Avoid pure black or
+   white grounds. They cause halation (light text on a dark ground blooms at the
+   glyph edges and smears the letterforms, worst for astigmatic eyes) and general
+   eye strain. Low contrast does not mean low distinguishability. If contrast is
+   soft, keep enough lightness/chroma separation between roles. Pick and judge
+   colors in a perceptual space, OKLCH or CIELAB, not HSL. (OKLCH is the
+   cylindrical lightness/chroma/hue form of the OKLab perceptual color space,
+   [[https://bottosson.github.io/posts/oklab/][Ottosson 2020]]; CIELAB is the CIE 1976 Lab color space; HSL is
+   hue/saturation/lightness, whose "lightness" is not perceptual.) Judge on the
+   real display in the real room, because contrast and chroma are relative to the
+   ground and the ambient light.
+
+6. *Encode redundantly; never rely on color alone.* Anything that matters (errors,
+   diffs, matches, done-states) pairs its color with weight, underline,
+   or shape, so it survives color blindness and a poor display. Around 8% of men
+   have red-green color-vision deficiency; keep the palette distinguishable
+   without the color, and never let red-versus-green be the only signal.
+
+7. *Honor convention for the signal layer.* Red means error or deletion, green
+   means success or addition, amber means warning or modified, blue means
+   information or a link. Keep these consistent and, where you can, out of the
+   syntax accent pool, so a signal never reads as just another keyword.
+
+* Roles and the seed table
+
+The principles color a fixed set of reader-roles. Most are familiar from code,
+but three of them (heading ramp, transient state, and signal) appear once you
+look past syntax to UI and document faces. Every face in every tier classifies
+into one of these roles; seeding a tier is classifying its faces and applying the
+table.
+
+| Role                                                | Palette family                      | Weight / shape    | Channel             |
+|-----------------------------------------------------+-------------------------------------+-------------------+---------------------|
+| Base / identity (default text, variables)           | foreground                          | normal            | fg                  |
+| Structure (punctuation, operators, delimiters)      | muted foreground                    | normal            | fg                  |
+| Control (keywords, preprocessor)                    | primary cool accent                 | bold, sparingly   | fg                  |
+| Builtins                                            | control hue, lower chroma/lightness | normal            | fg                  |
+| Names: definitions                                  | warm anchor accent                  | bold              | fg                  |
+| Names: uses / calls                                 | same hue, quieter                   | normal            | fg                  |
+| Types / metadata / decorators                       | secondary accent                    | normal            | fg                  |
+| Strings / docstrings                                | green family                        | docstrings italic | fg                  |
+| Escapes / regexps                                   | brighter / teal green               | normal            | fg                  |
+| Numbers / constants                                 | warm literal accent                 | normal            | fg                  |
+| Comments                                            | low-contrast lane                   | italic            | fg                  |
+| Heading ramp                                        | one hue, lightness descending       | level 1 strongest | fg                  |
+| Transient state (region, current line, match, hunk) | quiet tint                          | none              | bg                  |
+| Signal: error / deletion                            | red                                 | + weight/shape    | fg, or bg for hunks |
+| Signal: success / addition                          | green                               | none              | fg / bg             |
+| Signal: warning / modified                          | amber                               | none              | fg / bg             |
+| Signal: info / link                                 | blue                                | underline         | fg                  |
+
+This table is the guide made executable. The three tiers below are it, projected
+onto three face inventories.
+
+** Shade budget
+
+The sharing rules fix how many shades each hue family needs and what each is for.
+This is the swatch count a palette has to provide, and what =dupre= is built to:
+
+- *Neutrals (~5):* background, dim background, default foreground, muted
+  foreground (punctuation and operators), comment.
+- *Cool accent, blue (2):* keyword, and builtin (the same hue at lower
+  chroma/lightness).
+- *Warm anchor, gold (2):* definition (the strong anchor), and call (quieter,
+  same hue).
+- *Secondary accent, violet (1):* types and decorators.
+- *Green family (3):* string, docstring (muted), escape (brighter).
+- *Teal (1):* regexp.
+- *Warm literal, terracotta (1):* numbers and constants.
+- *Signal (4):* error red, warning amber, success green, info/link blue, kept
+  out of the syntax accents where the palette can afford it (principle 7).
+- *Heading ramp:* one hue across three or four lightness steps; document tiers
+  reuse an accent rather than spend a new hue.
+
+That is roughly fifteen swatches across seven or eight hues: few colors, each
+doing related work by shade. The exact hex values live in the seeding-engine
+spec; this section fixes the counts and the uses.
+
+* Syntax tier
+
+The syntax tier colors font-lock / tree-sitter categories. These are the roles
+in the table, grouped the way a reader meets them.
+
+** Usual grouping
+
+Use these as starting groups:
+
+- *Base text:* foreground/default text, variable/use.
+- *Structure:* punctuation, operators, comment delimiters.
+- *Control / language syntax:* keywords, preprocessor forms, builtins.
+- *Names / definitions:* function definitions, function calls, properties/fields.
+- *Types / metadata:* types/classes, decorators, sometimes constants.
+- *Literals:* strings, docstrings, regexps, escapes, numbers.
+- *Comments:* comments and comment delimiters.
+
+** Sharing rules
+
+- Variables should usually look like normal text. If every variable is colored,
+  the buffer gets noisy quickly.
+- Definitions should stand out more than uses. A function definition can be
+  brighter or bold while a function call stays in the same hue family but
+  quieter.
+- Function calls and definitions can share hue. Use weight or brightness to mark
+  the definition as the stronger anchor.
+- Types/classes and decorators often share a color because both describe shape,
+  annotation, or metadata rather than ordinary runtime values.
+- Strings, docstrings, regexps, and escapes should be related but not identical.
+  Example: strings green, docstrings muted green, escapes brighter green, regexps
+  teal.
+- Comments get their own low-contrast lane. Comment delimiters can be dimmer
+  than comment text.
+- Punctuation and operators should be quiet. Usually use a muted foreground,
+  not a strong accent.
+- Constants and numbers can share a warm literal color. If the palette is small,
+  constants can also share with types.
+- Preprocessor forms can share with keywords unless they need to feel more
+  infrastructural; then make them slightly muted.
+- Builtins should sit between keywords and normal identifiers: they should be
+  more noticeable than a user variable, but less commanding than syntax/control
+  keywords. In practice, use the keyword hue at lower chroma/lightness, or use
+  foreground with a subtle accent.
+
+** What "builtins between keywords and identifiers" means
+
+Keywords are language structure: =if=, =defun=, =class=, =return=, =let=.
+They guide control flow and code shape, so they can carry a strong syntax color.
+
+Normal identifiers are user-authored names: local variables, arguments, ordinary
+bindings. They are everywhere, so they should usually stay close to the default
+foreground.
+
+Builtins are language-provided identifiers: =print=, =len=, =map=,
+=Array.from=, =Promise=, =self=, =this=, standard macros, or core functions.
+They are not syntax, but they are more meaningful than a random local variable.
+"Between" means:
+
+- If keywords are blue and variables are foreground, builtins might be muted
+  blue-grey.
+- If keywords are bold, builtins usually are not bold.
+- If variables are plain foreground, builtins can be foreground plus a slight
+  hue shift.
+- Builtins should be recognizable when scanning, but they should not dominate a
+  line the way control-flow keywords do.
+
+** Suggested compact mapping
+
+This is the canonical syntax mapping. It is what the bundled =dupre= theme should
+seed to (note: dupre historically diverged, builtins on blue rather than
+blue-grey and function definitions on silver rather than gold, and is being
+reseeded to match this mapping).
+
+- *Foreground:* default text, variables.
+- *Muted foreground:* punctuation, operators, comment delimiters.
+- *Comment:* comments, disabled text.
+- *Blue:* keywords, preprocessor.
+- *Blue-grey:* builtins.
+- *Gold:* function definitions and calls, with definitions stronger.
+- *Violet:* types, classes, decorators.
+- *Green:* strings, docstrings.
+- *Teal / brighter green:* escapes, regexps.
+- *Terracotta / warm accent:* numbers, constants, special literals.
+
+* UI faces tier
+
+UI faces carry almost no identity: they are the state, structure, and signal
+layers of the table. So principles 4 (channels), 3 (active louder than idle), 7
+(convention), 5 (tiering), and 6 (redundancy) do nearly all the work, and they
+draw their colors from the same palette (principle 2), never new ones.
+
+- *State is a background tint* (principle 4): =region=, =hl-line=, =highlight=,
+  =show-paren-match= tint behind syntax-colored text and set no foreground.
+  =isearch= may invert to a chip because a match marker is transient; persistent
+  state never does.
+- *Active louder than idle* (principle 3): =mode-line= brighter than
+  =mode-line-inactive=; =line-number-current-line= accented against a dim
+  =line-number=; =isearch= (current match) louder than =lazy-highlight= (other
+  matches). Make the active and inactive mode-line clearly different: it is the
+  highest-traffic element and the cue for which window has focus.
+- *Signals by convention* (principle 7): =error= red, =warning= amber, =success=
+  green, =isearch-fail= and =show-paren-mismatch= red. These are the semantic
+  layer, drawn from the palette's warm/cool accents.
+- *Chrome recedes* (principle 5): =fringe= near the background,
+  =vertical-border= barely there, idle line numbers dim. Interactive and alert
+  faces get real contrast; structural chrome does not compete.
+- *Redundant encoding* (principle 6): =link= is blue and underlined;
+  =show-paren-mismatch= uses a background plus shape, not color alone.
+
+The current dupre UI map already follows this, which is the point: it is a
+seedable default, not a per-face tuning job.
+
+* Package faces tier: org-mode
+
+A package has many faces but few roles. org-mode (~88 faces) collapses into about
+six, each driven by a principle. The long tail of other packages seeds to the
+default foreground until any one earns the same treatment; org is worth doing
+because it is a daily buffer.
+
+- *Heading ramp*: =org-level-1= through =org-level-8=. The textbook case for
+  principles 2 and 3: one hue family, level 1 the strongest (bright or bold),
+  each deeper level quieter. A lightness ramp in a single hue. Highest-value seed
+  in org, since headings dominate the view.
+- *Markup that recedes*: =org-meta-line=, =org-drawer=, =org-special-keyword=,
+  =org-property-value=, =org-block-begin-line= / =org-block-end-line=,
+  =org-ellipsis=, =org-tag=, =org-date=, =org-document-info-keyword=. These are
+  org's punctuation and comments: the muted lane (principle 3 recede).
+- *Code-like content reuses the syntax palette*: =org-block=, =org-code=,
+  =org-verbatim=, =org-inline-src-block=. Principle 1 at its clearest: a source
+  block is code, so it looks like code (the literal lane, the same accents as the
+  syntax tier).
+- *State by convention*: =org-todo= and imminent deadlines read warm/red
+  (attention); =org-upcoming-deadline= amber; =org-scheduled= and =org-done=
+  recede to muted/cool, with =org-done= taking strikethrough or dim-italic so it
+  is not color-alone (principles 7, 3, 6). The agenda's deadline/scheduled/done
+  faces map straight onto the signal colors.
+- *Links*: =org-link= is the link role: the same blue plus underline as the UI
+  link (principles 2, 6, 7).
+- *Emphasis and quotes*: =org-quote=, =org-verse=, and doc-like text take
+  italic, the documentation lane (weight and slant below), kept readable.
+
+* Weight and slant
+
+- Use bold sparingly. Good targets: keywords, function definitions, TODO/error
+  states, important headings, or active/current UI elements.
+- Avoid bolding every function call. It makes code visually lumpy and reduces
+  the value of bold for definitions and warnings.
+- Italic works well for comments, docstrings, documentation-like text, and
+  sometimes parameters or decorators. Use it only if your chosen font has a
+  readable italic.
+- Avoid italic for core control-flow keywords unless the theme is deliberately
+  stylized. Italic keywords can look decorative rather than structural.
+- Keep bold and high chroma separate most of the time. A token that is both
+  bright and bold will dominate the buffer.
+
+* Contrast, chroma, and palette discipline
+
+- Keep default foreground/background comfortable first. Everything else depends
+  on the ground.
+- Use high contrast for ordinary text and important UI states; use lower contrast
+  for comments, delimiters, and inactive UI.
+- Avoid making comments so dim that they disappear. Comments are secondary, not
+  garbage.
+- Use chroma to express semantic salience. More chroma means "look here"; lower
+  chroma means "supporting structure."
+- Keep related roles in the same hue family and separate them by lightness,
+  chroma, or weight.
+- Reserve the brightest accent for one or two roles. Common choices: function
+  definitions, strings, or keywords.
+- Avoid assigning adjacent categories highly saturated unrelated hues. It makes
+  code look like a diagnostic heatmap.
+- Use warm/cool balance deliberately. Warm colors advance visually; cool colors
+  recede. Put warm colors on rare, meaningful tokens if you want them noticed.
+- Reuse hues across language families. A function definition should feel like a
+  function definition in Lisp, Python, JavaScript, and shell.
+
+* Signal colors and convention
+
+Principle 7 leans on conventions a reader already holds, and those conventions
+are well-grounded. Not in what colors make us feel: the affective color-emotion
+research is weak (brightness and saturation carry most of the effect, not hue),
+culturally variable, and aimed at mood and branding rather than glyphs on a
+ground. The grounding is in learned signal standards and in how the eye is
+drawn. Red-stop and green-go trace to railway and traffic signaling and are
+codified in the safety-color standards (ISO 3864, ANSI Z535); the pull of a
+saturated color in a quiet field is pre-attentive (Treisman and Gelade 1980;
+Ware, /Information Visualization/).
+
+| Signal     | Conventional meaning          | Where it shows                                    | Basis                              |
+|------------+-------------------------------+---------------------------------------------------+------------------------------------|
+| Red        | error, deletion, danger, stop | error, diff-removed, isearch-fail, paren-mismatch | traffic/rail stop; ISO 3864 danger |
+| Amber      | warning, caution, modified    | warning, modified version-control state           | ISO 3864 caution                   |
+| Green      | success, addition, ok, go     | success, diff-added                               | traffic go; ISO 3864 safe          |
+| Blue       | information, link, navigable  | link, info messages                               | web-link convention; cool recedes  |
+| Muted grey | disabled, inactive, secondary | comments, inactive mode-line, dimmed text         | low salience by design             |
+
+Keep these consistent across the syntax, UI, and package tiers, and out of the
+syntax accent pool where the palette can afford it, so a signal never reads as
+just another token. This is a convention table, not an emotion table: it records
+what a color has come to mean by use, which is what a reader actually decodes.
+
+* Accessibility and color vision
+
+- Run the palette through a color-blindness simulator before trusting it. Check
+  deuteranopia and protanopia (the common green-weak and red-weak deficiencies),
+  not just the urgent states.
+- Blue and yellow stay distinct for nearly everyone; red and green are the risky
+  pair. When two roles must be told apart at a glance, prefer a blue/yellow or a
+  light/dark separation over a red/green one.
+- For anything that must not be missed (diffs, errors, search hits, region),
+  pair the color with weight, underline, or shape, so the meaning survives
+  without it (principle 6).
+
+* Practical checks
+
+- Open real code in at least three languages before judging the palette.
+- Squint at a buffer (or blur it): definitions, control flow, literals, and
+  comments should form distinct layers. If they don't, the palette is too flat or
+  too noisy.
+- Check long files, not just curated snippets. Noise shows up in dense code.
+- Check inactive windows, search highlights, region, diff, completions, and
+  diagnostics; syntax colors are only one part of a usable theme.
+- If everything feels important, reduce chroma, remove bold, or merge colors.
+- If nothing is scannable, increase separation between the main groups before
+  adding more hues.
+
+* Emacs specifics
+
+The rules above are general. In Emacs they land on concrete faces and a few
+platform realities.
+
+** Theme the foundation faces first, inherit the rest
+
+- Map the syntax roles onto Emacs's canonical font-lock faces:
+  =font-lock-keyword-face=, =font-lock-function-name-face=,
+  =font-lock-variable-name-face=, =font-lock-type-face=,
+  =font-lock-constant-face=, =font-lock-builtin-face=, =font-lock-string-face=,
+  =font-lock-doc-face=, =font-lock-comment-face=,
+  =font-lock-comment-delimiter-face=, =font-lock-preprocessor-face=, and
+  =font-lock-warning-face=.
+- Style those base faces well and let package faces inherit them. Most packages
+  declare faces that already =:inherit= a sensible base, so a good foundation
+  themes the long tail for free. Theme the base; do not chase every package.
+
+** Tree-sitter gives the finer faces this guide wants
+
+- Emacs 29's tree-sitter font-lock added the distinctions this guide asks for as
+  real faces. =font-lock-function-call-face= versus =font-lock-function-name-face=
+  is exactly "definitions stronger than calls"; there are also
+  =font-lock-variable-use-face=, =font-lock-property-use-face=,
+  =font-lock-property-name-face=, =font-lock-operator-face=,
+  =font-lock-bracket-face=, =font-lock-delimiter-face=, =font-lock-number-face=,
+  =font-lock-escape-face=, and =font-lock-regexp-face=.
+- This is where "escapes brighter than strings, regexps teal" and "definitions
+  bolder than calls" become directly expressible. Note =treesit-font-lock-level=
+  controls how many of these levels actually fontify (default 3); some faces only
+  apply at higher levels.
+
+** Never leave the interface faces at their defaults
+
+- A usable theme is more than syntax. Always style =region=, =hl-line=,
+  =highlight=, =isearch= / =lazy-highlight= / =isearch-fail=,
+  =show-paren-match= / =show-paren-mismatch=, =cursor=, =mode-line= /
+  =mode-line-inactive=, =fringe=, =vertical-border=, =line-number= /
+  =line-number-current-line=, =minibuffer-prompt=, =link=, and =error= /
+  =warning= / =success=.
+
+** Handle terminal Emacs
+
+- The GUI is truecolor; =emacs -nw= may have only 256, 16, or 8 colors. Either
+  write display-class specs (a =((class color) (min-colors 256) ...)= clause with
+  a =(t ...)= fallback) or decide the theme is GUI-first and say so.
+- Either way, define the 16 ANSI colors (ANSI is the terminal's standard set)
+  coherently with the palette: terminals, =ansi-color= in shells, and
+  compilation buffers all draw from them.
+
+** Build-and-audit tooling
+
+- =describe-face= (or =C-u C-x ==) at point tells you which face you are actually
+  looking at. It is the fastest way to find what to change.
+- =M-x list-faces-display= shows every face in one buffer for a whole-theme audit.
+- Test the daily buffers, not just code samples: org, magit (its diffs exercise
+  the semantic colors hard), dired, the completion popup (corfu / vertico /
+  company), and flymake/flycheck diagnostics.
+
+* Using this with theme-studio
+
+This guide is the design philosophy behind the theme-studio in this directory.
+The tool is where the rules get applied, by eye and increasingly by metric.
+
+- *Worked example:* the bundled =dupre= theme is built from a palette of these
+  role-colors (blue, gold, regal/violet, sage/green, terracotta, plus neutral
+  silvers). Its role-to-color bindings live in =dupre.json= under =assignments=;
+  read it next to the seed table and the compact mapping above. (dupre is being
+  reseeded to match the compact mapping exactly; see the Syntax tier note.)
+- *Checking contrast and palette discipline:* the tool's readouts verify by
+  number what this guide states as principle. Today that is the AA/AAA contrast
+  mask (the 4.5:1 and 7:1 tiers from WCAG, the Web Content Accessibility
+  Guidelines, [[https://www.w3.org/TR/WCAG21/][w3.org/TR/WCAG21]]). The planned OKLCH, APCA (Accessible Perceptual
+  Contrast Algorithm, [[https://github.com/Myndex/apca-w3][Myndex]]), and pairwise ΔE (perceptual color-difference)
+  diagnostics make "use chroma to express salience" and "low contrast does not
+  mean low distinguishability" checkable instead of eyeballed. See
+  [[file:../../docs/design/theme-studio-perceptual-color-metrics-spec.org][docs/design/theme-studio-perceptual-color-metrics-spec.org]].
+- *Seeding:* the seed table is the contract the tool seeds from: syntax, UI, and
+  org tiers each start from guide-correct defaults, leaving you to retune hues
+  rather than build a theme from blank.
+- *Shipping a palette:* =build-theme.el= converts a =theme.json= exported from
+  the tool into a loadable Emacs deftheme, so a palette designed under these
+  rules becomes a real theme.
+
+* Sources and further reading
+
+Contrast, color space, and accessibility:
+
+- WCAG 2.1, especially SC 1.4.3 Contrast (Minimum) and SC 1.4.1 Use of Color:
+  [[https://www.w3.org/TR/WCAG21/][w3.org/TR/WCAG21]]. The baseline contrast model and the canonical "never rely
+  on color alone" rule.
+- WCAG 3.0 Working Draft: [[https://www.w3.org/TR/wcag-3.0/][w3.org/TR/wcag-3.0]]. Still a draft and years from
+  final; its contrast method is undetermined, so treat it as direction, not law.
+- APCA (Accessible Perceptual Contrast Algorithm), Myndex:
+  [[https://github.com/Myndex/apca-w3][github.com/Myndex/apca-w3]] and [[https://apcacontrast.com/][apcacontrast.com]]. The polarity-aware perceptual
+  contrast model, more trustworthy than WCAG 2 in the low-contrast band.
+- Björn Ottosson, "A perceptual color space for image processing" (OKLab, 2020):
+  [[https://bottosson.github.io/posts/oklab/][bottosson.github.io/posts/oklab]]. Why OKLCH, with the conversion math.
+- Sharma, Wu & Dalal, "The CIEDE2000 Color-Difference Formula" (2005). The
+  perceptual color-difference standard that ΔE-OK approximates more cheaply.
+
+Emacs faces and theming:
+
+- Elisp manual: [[info:elisp#Faces][(elisp) Faces]], [[info:elisp#Faces for Font Lock][(elisp) Faces for Font Lock]], and
+  [[info:elisp#Display Feature Testing][(elisp) Display Feature Testing]] (the display-class / =min-colors= specs for
+  terminal fallback).
+- Emacs manual: [[info:emacs#Standard Faces][(emacs) Standard Faces]] and [[info:emacs#Custom Themes][(emacs) Custom Themes]].
+- Tree-sitter font-lock faces and =treesit-font-lock-level= (Emacs 29+): the
+  Elisp manual's font-lock sections, and =M-x describe-variable treesit-font-lock-level=.
+- Protesilaos Stavrou, Modus Themes: [[https://protesilaos.com/emacs/modus-themes][protesilaos.com/emacs/modus-themes]]. A
+  rigorously accessible Emacs theme with documented contrast rationale, and the
+  high-contrast counterpoint to the low-contrast school this guide leans toward.
+- base16, Chris Kempson: [[https://github.com/chriskempson/base16][github.com/chriskempson/base16]]. A 16-color scheme
+  convention, useful for the terminal/ANSI palette mapping above.

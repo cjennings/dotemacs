@@ -8,6 +8,10 @@ Reassign colors against the palette, judge legibility with live WCAG-contrast
 readouts, then export a `theme.json` that a build step turns into
 `themes/<name>-*.el`.
 
+For the color-assignment philosophy behind the tool — how to group syntax roles,
+what to share, where to spend chroma and bold — see
+[`theme-coloring-guide.org`](theme-coloring-guide.org).
+
 ## Run
 
 ```bash
