@@ -367,7 +367,36 @@ function buildPkgTable(){
     tr.append(c0,cf,cb,cw,ci,ch,cc,cr);tb.appendChild(tr);
   }
 }
-function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;let h='<div style="padding:10px 14px;font:15px/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}p.innerHTML=h+'</div>';p.style.background=MAP['bg'];}
+function ofs(app,face){const f=PKGMAP[app][face]||{},fg=pkgEffFg(app,face)||MAP['p'],bg=pkgEffBg(app,face);return `color:${fg};${bg?'background:'+bg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em`;}
+function os(app,face,txt){return `<span style="${ofs(app,face)}">${txt}</span>`;}
+function renderOrgPreview(){const a='org-mode',L=[];
+  L.push(os(a,'org-document-info-keyword','#+TITLE:')+' '+os(a,'org-document-title','Project Notes'));
+  L.push(os(a,'org-document-info-keyword','#+AUTHOR:')+' '+os(a,'org-document-info','Craig Jennings'));
+  L.push('');
+  L.push(os(a,'org-level-1','* Inbox')+'  '+os(a,'org-tag',':work:'));
+  L.push(os(a,'org-level-2','** ')+os(a,'org-todo','TODO')+os(a,'org-level-2',' Draft the spec')+' '+os(a,'org-priority','[#A]'));
+  L.push('   '+os(a,'org-special-keyword','SCHEDULED:')+' '+os(a,'org-date','&lt;2026-06-08 Sun&gt;'));
+  L.push('   '+os(a,'org-drawer',':PROPERTIES:'));
+  L.push('   '+os(a,'org-special-keyword',':ID:')+' '+os(a,'org-property-value','abc-123'));
+  L.push('   '+os(a,'org-drawer',':END:'));
+  L.push(os(a,'org-level-2','** ')+os(a,'org-done','DONE')+os(a,'org-headline-done',' Ship the tool'));
+  L.push(os(a,'org-level-3','*** Heading three'));
+  L.push('   A line with '+os(a,'org-code','=inline code=')+', '+os(a,'org-verbatim','~verbatim~')+',');
+  L.push('   and a '+os(a,'org-link','[[https://gnu.org][link]]')+'.');
+  L.push('   - '+os(a,'org-checkbox','[X]')+' a checkbox item');
+  L.push('   '+os(a,'org-quote','> a quoted line'));
+  L.push('');
+  L.push('   '+os(a,'org-block-begin-line','#+begin_src elisp'));
+  L.push('   '+os(a,'org-block','  (message "hi")'));
+  L.push('   '+os(a,'org-block-end-line','#+end_src'));
+  L.push('');
+  L.push('   '+os(a,'org-table-header','| name | hex     |'));
+  L.push('   '+os(a,'org-table','|------+---------|'));
+  L.push('   '+os(a,'org-table','| blue | #67809c |'));
+  return `<div style="padding:12px 16px;font:15px/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;
+}
+function genericPreview(app){let h='<div style="padding:10px 14px;font:15px/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
+function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;p.innerHTML=(APPS[app].preview==='org')?renderOrgPreview():genericPreview(app);p.style.background=MAP['bg'];}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;pv.style.color=UIMAP[face].fg||MAP['p'];pv.style.background=UIMAP[face].bg||MAP['bg'];}

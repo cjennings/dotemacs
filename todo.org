@@ -75,8 +75,8 @@ Filled =APPS= with the complete own-defface sets built from embedded face-name l
 *** 2026-06-08 Mon @ 02:23:56 -0500 Phase 3 — package face table UI landed
 Added the "package faces" section: app selector (org/magit/elfeed), per-app face table with fg/bg dropdowns, bold/italic toggles, inherit dropdown (base faces + the app's own faces), relative-height stepper, live contrast readout on the effective (inherit-resolved) color, per-face and per-app reset, and a text filter. Refactored the fg/bg dropdown into a shared =colorDropdown= helper the ui-faces table now also uses (no =uiSelect= fork). Palette edits propagate to package faces; import/export carry them. Right pane is the generic preview (face names in their own resolved colors) until the bespoke org/magit/elfeed previews land (phases 4-5). Verified: node, headless screenshot, schema self-test PASS.
 
-*** TODO [#B] Phase 4 — org preview :solo:
-=renderOrgPreview()=: a mock org document painted live from the org package faces + palette, refreshing on change. Verify: screenshot. Fidelity to Manual testing. Spec phase 4.
+*** 2026-06-08 Mon @ 02:27:51 -0500 Phase 4 — org preview landed
+Added =renderOrgPreview()=: a mock org document painted live from the org package faces (title, headings with heights, TODO/DONE, tag, scheduled date, property drawer, inline code/verbatim, link, checkbox, quote, src block, header-row table). The preview pane dispatches on the app's preview key; org-mode gets this, others keep the generic list. Verified: node, headless screenshot, self-test PASS.
 
 *** TODO [#B] Phase 5 — magit + elfeed previews :solo:
 Bespoke mocks: a magit status buffer and an elfeed search list, live from their faces. Verify: screenshot. Fidelity to Manual testing. Spec phase 5.
