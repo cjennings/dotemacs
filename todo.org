@@ -84,8 +84,8 @@ Bespoke =renderMagitPreview()= (status buffer: head/branches, untracked, a diff 
 *** 2026-06-08 Mon @ 02:32:44 -0500 Phase 6 — generated all-package inventory landed
 =build-inventory.el= (loaded into a running Emacs) groups every installed package's faces by the defining package and writes =package-inventory.json=. =generate.py= embeds it and merges each package into the dropdown as an editable generic app, leaving org/magit/elfeed bespoke. 40 apps now (3 bespoke + 37 inventory, 643 faces). Committed data artifact, refreshed by reloading the .el; never browser-side discovery. Verified: node, self-test PASS, app count + bespoke-preserved checks.
 
-*** TODO [#B] Phase 7 — docs + validation :solo:
-README: =packages= schema, inheritance behavior, inventory-refresh command and its loaded-config dependency; note =theme-selector.html= is generated. Regenerate HTML. Spec phase 7.
+*** 2026-06-08 Mon @ 02:34:01 -0500 Phase 7 — docs landed
+Rewrote =README.md= for the full tool: three face tiers + palette, the in-page picker (with the AA/AAA mask), package faces (bespoke vs generic previews), modeled inheritance + relative height (family stays in font-config.el), the packages schema with inherit/height/source, export-vs-save, and the inventory-refresh command (=build-inventory.el=) + its loaded-config dependency. Notes =theme-selector.html= is generated. Test-surface fixtures tracked separately below.
 
 *** TODO [#B] theme-selector tier 3 — test surface :test:solo:
 Fixtures: =dupre.json= (no =packages=) imports clean; =packages= fg/bg/bold/italic/inherit/source round-trip; cleared/default/user export per policy; unknown package/face data preserved-or-warned; inheritance cycle resolves to none. Regression: palette color update propagates to package faces; deleted palette color leaves package refs "(gone)" recoverable. Generated output: =generate.py= rebuilds =theme-selector.html=. Spec: Acceptance criteria.
