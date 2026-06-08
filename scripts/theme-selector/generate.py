@@ -198,6 +198,63 @@ MU4E_SEED={
  "mu4e-contact-face":{"fg":"#cdced1"},"mu4e-special-header-value-face":{"fg":"silver"},"mu4e-attach-number-face":{"fg":"blue","bold":True},"mu4e-url-number-face":{"fg":"blue","bold":True},"mu4e-link-face":{"fg":"blue"},
  "mu4e-cited-1-face":{"fg":"silver"},"mu4e-cited-2-face":{"fg":"steel"},"mu4e-cited-3-face":{"fg":"sage"},"mu4e-cited-4-face":{"fg":"pewter"},"mu4e-cited-5-face":{"fg":"tan"},"mu4e-cited-6-face":{"fg":"terracotta"},"mu4e-cited-7-face":{"fg":"regal"},
  "mu4e-footer-face":{"fg":"pewter"},"mu4e-region-code":{"bg":"bg-dim"},"mu4e-system-face":{"fg":"pewter","italic":True},"mu4e-highlight-face":{"fg":"gold","bold":True},"mu4e-compose-header-face":{"fg":"blue","bold":True},"mu4e-compose-separator-face":{"fg":"pewter"}}
+LSP_FACES=("lsp-signature-face lsp-signature-highlight-function-argument lsp-signature-posframe "
+ "lsp-face-highlight-read lsp-face-highlight-write lsp-face-highlight-textual lsp-face-rename lsp-rename-placeholder-face "
+ "lsp-inlay-hint-face lsp-inlay-hint-parameter-face lsp-inlay-hint-type-face lsp-details-face "
+ "lsp-installation-buffer-face lsp-installation-finished-buffer-face").split()
+LSP_SEED={
+ "lsp-signature-face":{"fg":"silver"},"lsp-signature-highlight-function-argument":{"fg":"gold","bold":True},"lsp-signature-posframe":{"bg":"bg-dim"},
+ "lsp-face-highlight-read":{"bg":"navy"},"lsp-face-highlight-write":{"bg":"#3d2f4a"},"lsp-face-highlight-textual":{"bg":"gunmetal"},
+ "lsp-face-rename":{"bg":"gunmetal","bold":True},"lsp-rename-placeholder-face":{"fg":"gold","bold":True},
+ "lsp-inlay-hint-face":{"fg":"pewter","italic":True},"lsp-inlay-hint-parameter-face":{"fg":"steel","italic":True},"lsp-inlay-hint-type-face":{"fg":"sage","italic":True},
+ "lsp-details-face":{"fg":"pewter","italic":True},"lsp-installation-buffer-face":{"fg":"blue"},"lsp-installation-finished-buffer-face":{"fg":"sage"}}
+GITGUTTER_FACES=("git-gutter:added git-gutter:modified git-gutter:deleted git-gutter:unchanged git-gutter:separator").split()
+GITGUTTER_SEED={
+ "git-gutter:added":{"fg":"emerald"},"git-gutter:modified":{"fg":"gold"},"git-gutter:deleted":{"fg":"terracotta"},
+ "git-gutter:unchanged":{"fg":"pewter"},"git-gutter:separator":{"fg":"steel"}}
+FLYCHECK_FACES=("flycheck-error flycheck-warning flycheck-info flycheck-fringe-error flycheck-fringe-warning flycheck-fringe-info "
+ "flycheck-delimited-error flycheck-error-delimiter flycheck-error-list-error flycheck-error-list-warning flycheck-error-list-info "
+ "flycheck-error-list-error-message flycheck-error-list-checker-name flycheck-error-list-column-number flycheck-error-list-line-number "
+ "flycheck-error-list-filename flycheck-error-list-id flycheck-error-list-id-with-explainer flycheck-error-list-highlight flycheck-verify-select-checker").split()
+FLYCHECK_SEED={
+ "flycheck-error":{"fg":"terracotta"},"flycheck-warning":{"fg":"gold"},"flycheck-info":{"fg":"blue"},
+ "flycheck-fringe-error":{"fg":"terracotta"},"flycheck-fringe-warning":{"fg":"gold"},"flycheck-fringe-info":{"fg":"blue"},
+ "flycheck-delimited-error":{"fg":"terracotta"},"flycheck-error-delimiter":{"fg":"terracotta"},
+ "flycheck-error-list-error":{"fg":"terracotta"},"flycheck-error-list-warning":{"fg":"gold"},"flycheck-error-list-info":{"fg":"blue"},
+ "flycheck-error-list-error-message":{"fg":"#cdced1"},"flycheck-error-list-checker-name":{"fg":"steel"},
+ "flycheck-error-list-column-number":{"fg":"pewter"},"flycheck-error-list-line-number":{"fg":"pewter"},"flycheck-error-list-filename":{"fg":"blue"},
+ "flycheck-error-list-id":{"fg":"steel"},"flycheck-error-list-id-with-explainer":{"fg":"steel","bold":True},
+ "flycheck-error-list-highlight":{"bg":"gunmetal"},"flycheck-verify-select-checker":{"fg":"gold"}}
+DIRED_FACES=("dired-header dired-directory dired-symlink dired-broken-symlink dired-special dired-set-id "
+ "dired-perm-write dired-mark dired-marked dired-flagged dired-ignored dired-warning").split()
+DIRED_SEED={
+ "dired-header":{"fg":"blue","bold":True},"dired-directory":{"fg":"blue","bold":True},"dired-symlink":{"fg":"sage"},
+ "dired-broken-symlink":{"fg":"#de4949","bold":True},"dired-special":{"fg":"regal"},"dired-set-id":{"fg":"terracotta"},
+ "dired-perm-write":{"fg":"silver"},"dired-mark":{"fg":"gold"},"dired-marked":{"fg":"gold","bold":True},
+ "dired-flagged":{"fg":"terracotta","bold":True},"dired-ignored":{"fg":"pewter"},"dired-warning":{"fg":"gold","bold":True}}
+DIRVISH_FACES=("dirvish-inactive dirvish-free-space dirvish-hl-line dirvish-hl-line-inactive "
+ "dirvish-file-modes dirvish-file-link-number dirvish-file-user-id dirvish-file-group-id dirvish-file-size dirvish-file-time "
+ "dirvish-file-inode-number dirvish-file-device-number dirvish-subtree-guide dirvish-subtree-state "
+ "dirvish-collapse-dir-face dirvish-collapse-empty-dir-face dirvish-collapse-file-face dirvish-emerge-group-title "
+ "dirvish-media-info-heading dirvish-media-info-property-key dirvish-narrow-match-face-0 dirvish-narrow-match-face-1 "
+ "dirvish-narrow-match-face-2 dirvish-narrow-match-face-3 dirvish-narrow-split dirvish-proc-running dirvish-proc-finished "
+ "dirvish-proc-failed dirvish-git-commit-message-face dirvish-vc-added-state dirvish-vc-edited-state dirvish-vc-removed-state "
+ "dirvish-vc-conflict-state dirvish-vc-locked-state dirvish-vc-missing-state dirvish-vc-needs-merge-face "
+ "dirvish-vc-needs-update-state dirvish-vc-unregistered-face").split()
+DIRVISH_SEED={
+ "dirvish-inactive":{"fg":"pewter"},"dirvish-free-space":{"fg":"sage"},"dirvish-hl-line":{"bg":"gunmetal"},"dirvish-hl-line-inactive":{"bg":"bg-dim"},
+ "dirvish-file-modes":{"fg":"steel"},"dirvish-file-link-number":{"fg":"pewter"},"dirvish-file-user-id":{"fg":"blue"},"dirvish-file-group-id":{"fg":"steel"},
+ "dirvish-file-size":{"fg":"sage"},"dirvish-file-time":{"fg":"pewter"},"dirvish-file-inode-number":{"fg":"pewter"},"dirvish-file-device-number":{"fg":"pewter"},
+ "dirvish-subtree-guide":{"fg":"pewter"},"dirvish-subtree-state":{"fg":"steel"},"dirvish-collapse-dir-face":{"fg":"blue"},
+ "dirvish-collapse-empty-dir-face":{"fg":"pewter"},"dirvish-collapse-file-face":{"fg":"silver"},"dirvish-emerge-group-title":{"fg":"gold","bold":True},
+ "dirvish-media-info-heading":{"fg":"blue","bold":True},"dirvish-media-info-property-key":{"fg":"steel"},
+ "dirvish-narrow-match-face-0":{"fg":"gold","bold":True},"dirvish-narrow-match-face-1":{"fg":"blue","bold":True},
+ "dirvish-narrow-match-face-2":{"fg":"emerald","bold":True},"dirvish-narrow-match-face-3":{"fg":"regal","bold":True},"dirvish-narrow-split":{"fg":"pewter"},
+ "dirvish-proc-running":{"fg":"gold"},"dirvish-proc-finished":{"fg":"sage"},"dirvish-proc-failed":{"fg":"terracotta"},
+ "dirvish-git-commit-message-face":{"fg":"tan","italic":True},"dirvish-vc-added-state":{"fg":"sage"},"dirvish-vc-edited-state":{"fg":"gold"},
+ "dirvish-vc-removed-state":{"fg":"terracotta"},"dirvish-vc-conflict-state":{"fg":"terracotta","bold":True},"dirvish-vc-locked-state":{"fg":"blue"},
+ "dirvish-vc-missing-state":{"fg":"terracotta"},"dirvish-vc-needs-merge-face":{"fg":"gold"},"dirvish-vc-needs-update-state":{"fg":"gold"},
+ "dirvish-vc-unregistered-face":{"fg":"pewter"}}
 def _faces(names,prefix,seed):
     out=[]
     for f in names:
@@ -209,13 +266,18 @@ APPS={"org-mode":{"label":"org-mode","preview":"org","faces":_faces(ORG_FACES,"o
  "elfeed":{"label":"elfeed","preview":"elfeed","faces":_faces(ELFEED_FACES,"elfeed-",ELFEED_SEED)},
  "mu4e":{"label":"mu4e","preview":"mu4e","faces":_faces(MU4E_FACES,"mu4e-",MU4E_SEED)},
  "ghostel":{"label":"ghostel","preview":"ghostel","faces":_faces(GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED)},
- "dashboard":{"label":"dashboard","preview":"dashboard","faces":_faces(DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED)}}
+ "dashboard":{"label":"dashboard","preview":"dashboard","faces":_faces(DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED)},
+ "lsp-mode":{"label":"lsp-mode","preview":"lsp","faces":_faces(LSP_FACES,"lsp-",LSP_SEED)},
+ "git-gutter":{"label":"git-gutter","preview":"gitgutter","faces":_faces(GITGUTTER_FACES,"git-gutter:",GITGUTTER_SEED)},
+ "flycheck":{"label":"flycheck","preview":"flycheck","faces":_faces(FLYCHECK_FACES,"flycheck-",FLYCHECK_SEED)},
+ "dired":{"label":"dired","preview":"dired","faces":_faces(DIRED_FACES,"dired-",DIRED_SEED)},
+ "dirvish":{"label":"dirvish","preview":"dirvish","faces":_faces(DIRVISH_FACES,"dirvish-",DIRVISH_SEED)}}
 # Phase 6: merge the generated all-package inventory (refresh with build-inventory.el).
 # Bespoke apps stay; every other installed package becomes an editable generic app.
 _inv_path=os.path.join(HERE,"package-inventory.json")
 if os.path.exists(_inv_path):
     _INV=json.load(open(_inv_path))
-    _BESPOKE={"magit","elfeed","org","org-mode","mu4e","ghostel","dashboard"}
+    _BESPOKE={"magit","elfeed","org","org-mode","mu4e","ghostel","dashboard","lsp-mode","git-gutter","flycheck","dired","dirvish"}
     for _pkg in sorted(_INV):
         if _pkg in _BESPOKE or _pkg in APPS: continue
         APPS[_pkg]={"label":_pkg,"preview":"generic","faces":[
@@ -745,8 +807,61 @@ function renderMu4ePreview(){const a='mu4e',L=[];
   L.push(os(a,'mu4e-compose-header-face','Subject:')+' new mail');
   L.push(os(a,'mu4e-compose-separator-face','--text follows this line--'));
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderLspPreview(){const a='lsp-mode',L=[];
+  L.push(os(a,'lsp-signature-face','process(')+os(a,'lsp-signature-highlight-function-argument','items: list')+os(a,'lsp-signature-face',') -> None'));
+  L.push(os(a,'lsp-signature-posframe',' docs: iterate over items and process each one '));
+  L.push('');
+  L.push('def process(items):');
+  L.push('    n = len(items)'+os(a,'lsp-inlay-hint-type-face',': int'));
+  L.push('    handle('+os(a,'lsp-inlay-hint-parameter-face','arg:')+'n)'+os(a,'lsp-inlay-hint-face','   # hint'));
+  L.push('    '+os(a,'lsp-face-highlight-read','value')+' = '+os(a,'lsp-face-highlight-write','value')+' + '+os(a,'lsp-face-highlight-textual','value'));
+  L.push('    rename '+os(a,'lsp-face-rename','oldName')+' to '+os(a,'lsp-rename-placeholder-face','newName'));
+  L.push('    getName()   '+os(a,'lsp-details-face','str   the cached getter'));
+  L.push('');
+  L.push(os(a,'lsp-installation-buffer-face','Installing pyright...')+'   '+os(a,'lsp-installation-finished-buffer-face','done.'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderGitGutterPreview(){const a='git-gutter',L=[];
+  L.push(os(a,'git-gutter:added','+')+os(a,'git-gutter:separator','|')+' added line of code');
+  L.push(os(a,'git-gutter:modified','~')+os(a,'git-gutter:separator','|')+' modified line of code');
+  L.push(os(a,'git-gutter:deleted','_')+os(a,'git-gutter:separator','|')+' (deleted lines marker)');
+  L.push(os(a,'git-gutter:unchanged',' ')+os(a,'git-gutter:separator','|')+' '+os(a,'git-gutter:unchanged','unchanged line of code'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderFlycheckPreview(){const a='flycheck',L=[];
+  L.push(os(a,'flycheck-fringe-error','E')+os(a,'flycheck-fringe-warning','W')+os(a,'flycheck-fringe-info','I')+'  x = '+os(a,'flycheck-error','undefined_name')+'('+os(a,'flycheck-warning','unused_arg')+')  '+os(a,'flycheck-info','# note'));
+  L.push('       '+os(a,'flycheck-delimited-error','[')+os(a,'flycheck-error-delimiter','err')+os(a,'flycheck-delimited-error',']'));
+  L.push('');
+  L.push(os(a,'flycheck-error-list-checker-name','pyright')+'   '+os(a,'flycheck-verify-select-checker','(selected checker)'));
+  L.push(os(a,'flycheck-error-list-filename','main.py')+':'+os(a,'flycheck-error-list-line-number','12')+':'+os(a,'flycheck-error-list-column-number','4')+'  '+os(a,'flycheck-error-list-error','error')+'    '+os(a,'flycheck-error-list-error-message','undefined name x')+'  '+os(a,'flycheck-error-list-id','[E0602]'));
+  L.push(os(a,'flycheck-error-list-filename','main.py')+':'+os(a,'flycheck-error-list-line-number','18')+':'+os(a,'flycheck-error-list-column-number','1')+'  '+os(a,'flycheck-error-list-warning','warning')+'  '+os(a,'flycheck-error-list-error-message','unused import')+'  '+os(a,'flycheck-error-list-id-with-explainer','[W0611?]'));
+  L.push(os(a,'flycheck-error-list-highlight','main.py:20    '+os(a,'flycheck-error-list-info','info')+'     highlighted row'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderDiredPreview(){const a='dired',L=[];
+  L.push(os(a,'dired-header','/home/craig/code:'));
+  L.push('  '+os(a,'dired-perm-write','drwxr-xr-x')+'  craig  4096  '+os(a,'dired-directory','src/'));
+  L.push('  -rw-r--r--  craig   120  notes.org');
+  L.push('  '+os(a,'dired-perm-write','lrwxrwxrwx')+'  craig    18  '+os(a,'dired-symlink','latest -> v2.1'));
+  L.push('  lrwxrwxrwx  craig    --  '+os(a,'dired-broken-symlink','dead -> gone'));
+  L.push(os(a,'dired-flagged','D')+' -rw-r--r--  craig    40  deleteme.tmp');
+  L.push(os(a,'dired-mark','*')+' '+os(a,'dired-marked','-rw-r--r--  craig   210  marked.txt'));
+  L.push('  -rw-r--r--  craig     0  '+os(a,'dired-ignored','.gitignore'));
+  L.push('  '+os(a,'dired-set-id','-rwsr-xr-x')+'  root    900  setuid.bin');
+  L.push('  '+os(a,'dired-special','prw-r--r--')+'  craig     0  fifo.pipe');
+  L.push(os(a,'dired-warning','! disk space low on /home'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderDirvishPreview(){const a='dirvish',L=[];
+  L.push(os(a,'dirvish-inactive','~/code')+'    '+os(a,'dirvish-free-space','[free 24G]'));
+  L.push(os(a,'dirvish-hl-line',' '+os(a,'dirvish-file-modes','-rw-r--r--')+' '+os(a,'dirvish-file-link-number','1')+' '+os(a,'dirvish-file-user-id','craig')+' '+os(a,'dirvish-file-group-id','staff')+' '+os(a,'dirvish-file-size','4.0K')+' '+os(a,'dirvish-file-time','Jun  8 02:24')+'  init.el '));
+  L.push(' '+os(a,'dirvish-file-modes','drwxr-xr-x')+' '+os(a,'dirvish-file-link-number','5')+' '+os(a,'dirvish-file-user-id','craig')+' '+os(a,'dirvish-file-group-id','staff')+' '+os(a,'dirvish-file-size','  - ')+' '+os(a,'dirvish-file-time','Jun  7 18:00')+'  '+os(a,'dirvish-collapse-dir-face','src')+os(a,'dirvish-subtree-state','+')+os(a,'dirvish-subtree-guide',' |'));
+  L.push(os(a,'dirvish-hl-line-inactive',' inactive-window current line '));
+  L.push(' inode '+os(a,'dirvish-file-inode-number','1048576')+'  dev '+os(a,'dirvish-file-device-number','8,1')+'   '+os(a,'dirvish-collapse-empty-dir-face','empty/')+' '+os(a,'dirvish-collapse-file-face','file.txt'));
+  L.push(' VC '+os(a,'dirvish-vc-added-state','A')+os(a,'dirvish-vc-edited-state','M')+os(a,'dirvish-vc-removed-state','D')+os(a,'dirvish-vc-conflict-state','C')+os(a,'dirvish-vc-locked-state','L')+os(a,'dirvish-vc-missing-state','!')+os(a,'dirvish-vc-needs-merge-face','m')+os(a,'dirvish-vc-needs-update-state','u')+os(a,'dirvish-vc-unregistered-face','?'));
+  L.push(' git '+os(a,'dirvish-git-commit-message-face','feat: enlarge the picker'));
+  L.push(' '+os(a,'dirvish-media-info-heading','Media')+'  '+os(a,'dirvish-media-info-property-key','Dimensions:')+' 1920x1080');
+  L.push(' proc '+os(a,'dirvish-proc-running','running')+' / '+os(a,'dirvish-proc-finished','finished')+' / '+os(a,'dirvish-proc-failed','failed'));
+  L.push(' narrow '+os(a,'dirvish-narrow-match-face-0','m0')+' '+os(a,'dirvish-narrow-match-face-1','m1')+' '+os(a,'dirvish-narrow-match-face-2','m2')+' '+os(a,'dirvish-narrow-match-face-3','m3')+os(a,'dirvish-narrow-split',' | ')+os(a,'dirvish-emerge-group-title','Group: images'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
 function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div data-face="${face}" style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
-function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
+function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e','lsp','gitgutter','flycheck','dired','dirvish'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():pv==='lsp'?renderLspPreview():pv==='gitgutter'?renderGitGutterPreview():pv==='flycheck'?renderFlycheckPreview():pv==='dired'?renderDiredPreview():pv==='dirvish'?renderDirvishPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;pv.style.color=UIMAP[face].fg||MAP['p'];pv.style.background=UIMAP[face].bg||MAP['bg'];}
