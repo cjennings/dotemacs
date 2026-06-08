@@ -125,10 +125,28 @@ The export (and what a build step consumes):
 `export` always downloads a fresh file; `save` (shown once a name is entered)
 writes the same file in place via the File System Access API.
 
-## Next step (not yet built)
+## Build step — `build-theme.el`
 
-A `theme.json` → `themes/<name>-palette.el` + `-faces.el` + `-theme.el`
-converter, in Elisp. That step is the correctness-sensitive part and the one
-worth TDD: JSON in, valid Emacs palette + faces out, every face (syntax, UI, and
-package) mapped, `:inherit`/`:height` written correctly, and WCAG-contrast
-asserted on the result.
+`build-theme.el` converts a `theme.json` into a single self-contained
+`themes/<name>-theme.el` deftheme. JSON in, valid Emacs faces out, across all
+four tiers: `default` from `assignments.bg`/`.p`, the syntax categories mapped
+to their font-lock / tree-sitter faces (with the `bold`/`italic` sets applied),
+the UI faces passed through, and the package faces with `:inherit`/`:height`
+and weight/slant written.
+
+```bash
+emacs --batch -l scripts/theme-selector/build-theme.el \
+  --eval '(build-theme/convert-file "scripts/theme-selector/dupre-revised.json" "themes")'
+```
+
+Output is a flat generated deftheme, not the palette/faces/theme trio the
+original dupre ships — a `theme.json` carries resolved per-face hex, not dupre's
+semantic-mapping layer, so a flat deftheme is the faithful output and never
+clobbers the curated dupre files.
+
+One mapping limitation: the `dec` (decorator) syntax key has no independent
+Emacs face. Emacs renders decorators with `font-lock-type-face`, which the `ty`
+key already owns, so `dec` is omitted from the output and decorators follow the
+type color (as they do in stock Emacs). Tests live in
+`tests/test-build-theme.el` (Normal / Boundary / Error, plus a WCAG-contrast
+assertion on the round-tripped result).
