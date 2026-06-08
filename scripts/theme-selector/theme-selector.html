@@ -33,7 +33,7 @@
  #codepre{width:100%;box-sizing:border-box}
  .mock{border:1px solid #252321;border-radius:8px;overflow:hidden;font:15px/1.7 monospace;display:flex;flex-direction:column}
  .mock .mbuf{flex:1} .mock .ln{display:flex;align-items:stretch;white-space:pre}
- .mock .fr{width:10px;flex:0 0 auto} .mock .num{width:36px;flex:0 0 auto;text-align:right;padding-right:10px}
+ .mock .fr{width:14px;flex:0 0 auto;border-right:1px solid #ffffff14} .mock .num{width:36px;flex:0 0 auto;text-align:right;padding-right:10px}
  .mock .cd{flex:1;padding-left:8px} .mock .bar,.mock .echo{padding:4px 10px;white-space:pre}
  #codepre [data-k],.mock [data-k],.mock [data-face]{cursor:pointer}
  @keyframes flashcell{0%,55%{background:#e8bd3066}100%{background:transparent}}
@@ -205,16 +205,20 @@ function mockSpan(k,t){return `<span data-k="${k}" style="color:${MAP[k]||MAP['p
 function buildMockFrame(){
   const fr=document.getElementById('mockframe');if(!fr)return;
   const bg=MAP['bg'],fg=MAP['p'];
-  const ln=uf('line-number'),lnc=uf('line-number-current-line'),hl=uf('hl-line'),reg=uf('region'),isr=uf('isearch'),laz=uf('lazy-highlight'),par=uf('show-paren-match'),cur=uf('cursor'),ml=uf('mode-line'),mli=uf('mode-line-inactive'),mb=uf('minibuffer-prompt'),frng=uf('fringe'),lnk=uf('link'),err=uf('error'),wrn=uf('warning'),suc=uf('success');
+  const ln=uf('line-number'),lnc=uf('line-number-current-line'),hl=uf('hl-line'),hil=uf('highlight'),reg=uf('region'),isr=uf('isearch'),isf=uf('isearch-fail'),laz=uf('lazy-highlight'),par=uf('show-paren-match'),parx=uf('show-paren-mismatch'),cur=uf('cursor'),ml=uf('mode-line'),mli=uf('mode-line-inactive'),mb=uf('minibuffer-prompt'),frng=uf('fringe'),vb=uf('vertical-border'),lnk=uf('link'),err=uf('error'),wrn=uf('warning'),suc=uf('success');
   const lines=[
     {t:[['cmd',';; '],['cm','init.el - your config']]},
+    {t:[['punc','('],['kw','require'],['p',' '],['con',"'cl-lib"],['punc',')']]},
+    {t:[]},
     {t:[['punc','('],['kw','defun'],['p',' '],['fnd','cj/greet'],['p',' '],['punc','('],['var','name'],['punc',')']]},
     {t:[['p','  '],['punc','('],['fnc','message'],['p',' '],['str','"hi %s"'],['p',' '],['var','name'],['punc','))']],cur:1},
     {t:[['p','  '],['punc','('],['kw','setq'],['p',' '],['var','count'],['p',' '],['num','42'],['punc',')']],region:1},
     {plain:'  (if (> count 0)',match:1},
+    {plain:'    (setq total (+ total count))',hl:1},
     {t:[['p','      '],['punc','('],['fnc','process'],['p',' '],['var','items'],['punc',')']]},
     {plain:'    (cl-incf count)',lazy:1},
-    {t:[['p','  '],['punc','('],['kw','setq'],['p',' '],['var','done'],['p',' '],['con','t'],['punc',')']],paren:1}
+    {t:[['p','  '],['punc','('],['kw','setq'],['p',' '],['var','done'],['p',' '],['con','t'],['punc',')']],paren:1},
+    {plain:'    (oops nested))',mismatch:1}
   ];
   let buf='';
   lines.forEach((L,i)=>{
@@ -222,18 +226,22 @@ function buildMockFrame(){
     const nFg=isc?(lnc.fg||fg):(ln.fg||fg), nBg=isc?(lnc.bg||'transparent'):(ln.bg||'transparent');
     const rowBg=isc?(hl.bg||'transparent'):'transparent';
     let cd;
-    if(L.plain&&L.match){cd=`<span data-face="isearch" style="color:${isr.fg||fg};background:${isr.bg||'transparent'}">${esc(L.plain)}</span>`;}
-    else if(L.plain&&L.lazy){cd=`<span data-face="lazy-highlight" style="color:${laz.fg||fg};background:${laz.bg||'transparent'}">${esc(L.plain)}</span>`;}
-    else if(L.paren){cd=L.t.map(([k,t],j)=>j===L.t.length-1?`<span data-face="show-paren-match" style="background:${par.bg||'transparent'};color:${par.fg||MAP[k]||fg};font-weight:bold">${esc(t)}</span>`:mockSpan(k,t)).join('');}
+    if(L.plain){
+      if(L.match)cd=`<span data-face="isearch" style="color:${isr.fg||fg};background:${isr.bg||'transparent'}">${esc(L.plain)}</span>`;
+      else if(L.lazy)cd=`<span data-face="lazy-highlight" style="color:${laz.fg||fg};background:${laz.bg||'transparent'}">${esc(L.plain)}</span>`;
+      else if(L.hl)cd=`<span data-face="highlight" style="background:${hil.bg||'transparent'};color:${hil.fg||fg}">${esc(L.plain)}</span>`;
+      else if(L.mismatch)cd=esc(L.plain.slice(0,-1))+`<span data-face="show-paren-mismatch" style="background:${parx.bg||'transparent'};color:${parx.fg||fg};font-weight:bold">${esc(L.plain.slice(-1))}</span>`;
+      else cd=esc(L.plain);
+    } else if(L.paren){cd=L.t.map(([k,t],j)=>j===L.t.length-1?`<span data-face="show-paren-match" style="background:${par.bg||'transparent'};color:${par.fg||MAP[k]||fg};font-weight:bold">${esc(t)}</span>`:mockSpan(k,t)).join('');}
     else{cd=L.t.map(([k,t])=>mockSpan(k,t)).join('');if(L.region)cd=`<span data-face="region" style="background:${reg.bg||'transparent'}">${cd}</span>`;}
     if(isc)cd+=`<span data-face="cursor" style="background:${cur.bg||fg};color:${bg}"> </span>`;
     const nFace=isc?'line-number-current-line':'line-number';
-    buf+=`<div class="ln" style="background:${rowBg}"><span class="fr" data-face="fringe" style="background:${frng.bg||bg}"></span><span class="num" data-face="${nFace}" style="color:${nFg};background:${nBg}">${i+1}</span><span class="cd">${cd}</span></div>`;
+    buf+=`<div class="ln" style="background:${rowBg}"><span class="fr" data-face="fringe" style="background:${frng.bg||bg}"></span><span class="num" data-face="${nFace}" style="color:${nFg};background:${nBg}">${i+1}</span><span class="cd">${cd||'&nbsp;'}</span></div>`;
   });
-  let html=`<div class="mbuf" style="background:${bg}">${buf}</div>`;
-  html+=`<div class="bar" data-face="mode-line" style="background:${ml.bg||fg};color:${ml.fg||bg}">  init.el      (Emacs Lisp)      L3      git:main  </div>`;
+  let html=`<div class="mbuf" style="display:flex;background:${bg}"><div style="flex:1;min-width:0">${buf}</div><div data-face="vertical-border" title="vertical-border" style="width:3px;flex:0 0 auto;background:${vb.fg||vb.bg||'#2f343a'}"></div></div>`;
+  html+=`<div class="bar" data-face="mode-line" style="background:${ml.bg||fg};color:${ml.fg||bg}">  init.el      (Emacs Lisp)      L5      git:main  </div>`;
   html+=`<div class="bar" data-face="mode-line-inactive" style="background:${mli.bg||bg};color:${mli.fg||fg}">  *Messages*      (Fundamental)  </div>`;
-  html+=`<div class="echo" style="color:${fg}"><span data-face="minibuffer-prompt" style="color:${mb.fg||fg}">I-search:</span> count</div>`;
+  html+=`<div class="echo" style="color:${fg}"><span data-face="minibuffer-prompt" style="color:${mb.fg||fg}">I-search:</span> count   <span data-face="isearch-fail" style="color:${isf.fg||fg};background:${isf.bg||'transparent'}">zzz [no match]</span></div>`;
   html+=`<div class="echo"><span data-face="link" style="color:${lnk.fg||fg};text-decoration:underline">https://gnu.org</span>   <span data-face="error" style="color:${err.fg||fg}">error</span>   <span data-face="warning" style="color:${wrn.fg||fg}">warning</span>   <span data-face="success" style="color:${suc.fg||fg}">ok</span></div>`;
   fr.innerHTML=html;fr.style.background=bg;fr.style.color=fg;
   fr.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u){flashUi(u.dataset.face);return;}const k=e.target.closest('[data-k]');if(k)flashAssign(k.dataset.k);};
