@@ -1,0 +1,576 @@
+#+TITLE: theme-studio — perceptual color metrics (OKLCH, APCA, ΔE)
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-08
+
+* Status
+
+Spec / review incorporated (Codex, 2026-06-08, two passes). Adds perceptual color metrics to
+the theme-studio (=scripts/theme-studio/=) so it can build deliberately
+low-contrast themes (Solarized / Zenburn class) with the same rigor it already
+brings to high-contrast WCAG checking. Four additions: an OKLCH color model, a
+per-color perceptual-lightness readout, an APCA contrast score alongside the
+existing WCAG ratio, and a pairwise ΔE distinguishability check across the
+palette.
+
+Came out of a design conversation comparing the low-contrast school (Solarized,
+Zenburn) against Prot's high-contrast Modus themes. The conclusion: a theme has
+three independent dials — contrast ratio, overall luminance, and chroma — and
+the low-contrast camp turns down the first while Modus leaves it high and turns
+down the other two. The current tool only measures the first (WCAG contrast) and
+edits color in HSV, whose "lightness" is not perceptually uniform. To build
+low-contrast themes by metric rather than by eye, the tool needs
+perceptually-uniform lightness and chroma controls plus distinguishability and
+polarity-aware contrast measures.
+
+Rubric: *Ready.* The four v1 product questions are decided in "Agreed decisions
+(v1)" below and confirmed by Craig (2026-06-08); the testing strategy was
+revised on his direction to a layered pyramid (Node-unit-tested color core +
+thin UI hash tests + measured coverage). No remaining blocking ambiguity — the
+implementer no longer has to invent product behavior while coding. Implementation
+is sequenced into five phases, each independently shippable and tested. Tasks
+filed in =todo.org=.
+
+* Background — the current color model
+
+The tool today works entirely in sRGB hex, HSV, and WCAG luminance. The relevant
+cluster in =generate.py=:
+
+- =rl(hex)= (line 517) — WCAG relative luminance, via the existing =lin()=
+  sRGB-linearization helper.
+- =contrast(a,b)= (line 519) — the WCAG 2.x ratio =(L1+0.05)/(L2+0.05)=.
+- =rating(r)= / =ratingColor(r)= (lines 520-521) — AA (≥4.5) / AAA (≥7) verdict
+  and its display color.
+- =hsv2rgb=, =rgb2hsv=, =hex2rgb=, =rgb2hex=, =normHex= (lines 604-609).
+- The picker holds state as =pkH, pkS, pkV= (HSV) and renders an SV box (=#sv=),
+  a hue strip (=#hue=), crosshairs (=#svcur=, =#huecur=), a hex+contrast readout
+  (=#pkhex= / =#pkcon=, line 451), the contrast-mask buttons (=.pmode=, state
+  =pkMode=, values =any= / =aa= / =aaa=), and palette chips (=#pkchips=).
+- =drawMask()= (line 613) greys SV-box regions whose contrast against the
+  background falls below the selected mask threshold (=pkThresh()=).
+- Per-face contrast readouts appear across *three* tables — syntax (line 548),
+  UI (line 1064), and package faces (line 752) — each via =contrast()= +
+  =rating()=. The package-face tier has grown large since the tool's early
+  versions (51 packages in the current inventory), so any "add a column to the
+  table readouts" change now touches that whole surface, not just the two
+  original tables.
+
+Two limitations this spec addresses:
+
+1. *HSV lightness lies.* Two colors at the same HSV =V= can differ markedly in
+   perceived brightness, so the SV box cannot hold perceived lightness constant
+   while hue changes — exactly the operation a calm, even palette needs.
+2. *WCAG 2.x is a known-flawed contrast model in the low-contrast / dark band.*
+   Its ratio misjudges contrast most where this work operates, and it is not
+   polarity-aware: it scores light-on-dark and dark-on-light identically, which
+   perception does not. WCAG 3 is reworking contrast but is years out — still a
+   Working Draft in 2026, with the final Recommendation not expected until
+   roughly 2028–2030 — and its contrast algorithm is undetermined: APCA was moved
+   *out* of the WCAG 3 draft in 2023 for further evaluation. So APCA enters here
+   as a well-regarded independent perceptual model used as an additional
+   diagnostic, not as a coming standard. WCAG 2.x stays the baseline precisely
+   because nothing has replaced it yet.
+
+* Goal
+
+Add four metrics, each a discrete increment:
+
+1. *OKLCH color model* — perceptually-uniform Lightness / Chroma / Hue, so the
+   editor can move one axis without disturbing the others, plus a gamut clamp
+   for OKLCH values outside sRGB.
+2. *Perceptual-lightness readout* — show each color's OKLCH L (and C, H) in the
+   picker, so "low, even lightness steps" becomes a number rather than a guess.
+3. *APCA score* — the Accessible Perceptual Contrast Algorithm Lc value
+   displayed next to the WCAG ratio, as the more trustworthy contrast metric in
+   the low-contrast band.
+4. *Pairwise ΔE check* — perceptual color-difference between every pair of
+   palette entries, flagging pairs too similar to tell apart, which is the
+   constraint that keeps a low-chroma / low-lightness-spread palette from
+   collapsing into mush.
+
+Non-goals: replacing WCAG (it stays as the compatibility baseline, shown
+alongside APCA, which is an additional perceptual diagnostic, not a
+replacement); replacing the HSV picker outright (OKLCH is added as a parallel
+color model, HSV remains the default); CIEDE2000 in v1 (ΔE-OK is the v1
+difference metric — see vNext).
+
+* Agreed decisions (v1)
+
+Settled on author + reviewer alignment and confirmed by Craig (2026-06-08).
+
+1. *ΔE metric and threshold.* Use ΔE-OK (Euclidean distance in OKLab) on its
+   native scale (OKLab L is 0..1). Default "too similar" warning threshold is
+   *0.02* — the just-noticeable-difference floor, so the warning fires only when
+   two palette colors are genuinely hard to tell apart. The threshold is a named
+   constant, calibratable in one place. CIEDE2000 (the CIE's 2000 perceptual
+   color-difference standard — more accurate than plain Euclidean distance, but
+   ~40 lines of trigonometric lightness/chroma/hue corrections plus a blue-region
+   rotation term) is deferred to vNext: ΔE-OK is accurate enough to flag
+   indistinguishable pairs, which is all this check needs, and it is five lines.
+2. *Low-contrast preset.* v1 ships *readouts only* (OKLCH, APCA, ΔE). No named
+   low-contrast preset / mask mode yet. No such preset exists anywhere today — it
+   would be a new feature: a saved low-contrast target (e.g. an APCA Lc band, or
+   a contrast ceiling as well as a floor) that masks the palette to a comfortable
+   range in one click, the way the current any/AA+/AAA buttons mask by a contrast
+   floor. It is deferred until the raw readouts are in use, because only then is
+   it clear which band is worth presetting. v1 gives the numbers; the preset
+   would automate a judgment the numbers first have to inform.
+3. *APCA placement.* v1 shows APCA *only in the picker* readout, not in the
+   syntax/UI/package table contrast cells. Adding it to the tables is
+   low-complexity once =apca()= exists — the same pattern as the existing
+   =contrast()= + =rating()= cells, repeated across the three tables — so the
+   deferral is about table *density*, not difficulty: the package table alone is
+   51 packages wide, and a second contrast number per row risks clutter before
+   it is clear anyone reads it there. Table-wide APCA is a vNext candidate if
+   picker-only proves too hidden.
+4. *Picker default model.* HSV stays the *default* picker model; OKLCH is
+   opt-in via a color-model control. The reason: HSV is the familiar 2D SV-box
+   the picker already has, and OKLCH is slider-only until the C×L plane (Phase
+   4b) lands — so defaulting to OKLCH before 4b would hand users a worse default
+   editing surface than they have now. Once 4b ships the C×L plane, making OKLCH
+   the default becomes a real option worth revisiting; until then, HSV default
+   keeps the current editing experience intact and makes OKLCH an additive
+   choice, not a regression.
+
+* Color-math foundation (Phase 1, prerequisite)
+
+The pure color math is *extracted into its own importable module* rather than
+inlined as loose functions in the page. This is the core architectural change
+this spec makes to the test surface: the math is logic, so it gets tested as
+logic — directly, in Node, with exhaustive fixtures — and the picker becomes a
+thin UI layer over a tested core, not the only way to exercise the math.
+
+- New file: =scripts/theme-studio/colormath.js= — the pure, side-effect-free
+  conversion + metric functions, written as an ES module (each =export=-ed),
+  with a small guard so the same source loads both ways: =import=-ed by the Node
+  tests and spliced into the page by the generator.
+- =generate.py= inlines =colormath.js= into the page's =<script>= the same way
+  it already inlines =samples.py='s data, so there is *one source of truth* — the
+  exact code the browser runs is the code the tests import. An inline-integrity
+  check (see Verification strategy) asserts the page contains the module verbatim
+  so the two can never drift.
+- The existing inline helpers it supersedes (=lin=, =rl=, =contrast=, =rating=,
+  =hsv2rgb=, =rgb2hsv=, =hex2rgb=, =rgb2hex=) move into =colormath.js= too, so the
+  whole color core lives and is tested in one place. =normHex= stays at the UI
+  boundary; module functions assume a normalized =#rrggbb= and the Node tests
+  cover their edges directly.
+
+The functions (standard published algorithms):
+
+- =srgb2oklab(hex)= / =oklab2srgb(L,a,b)= — Björn Ottosson's OKLab matrices
+  (2020). sRGB → linear (reuse =lin()=) → LMS → cube-root → OKLab, and the
+  inverse. ~20 lines.
+- =oklab2oklch(L,a,b)= / =oklch2oklab(L,C,H)= — Cartesian↔polar: =C=√(a²+b²)=,
+  =H=atan2(b,a)=. Trivial.
+- =oklch2hex(L,C,H)= with the *gamut clamp* (see below). Returns
+  ={hex, clamped}= — the in-gamut hex plus a boolean flag.
+- =apca(textHex, bgHex)= — the APCA-W3 algorithm. Returns a signed Lc (positive
+  for dark-text-on-light, negative for light-text-on-dark; magnitude ~0–107).
+- =deltaE(aHex, bHex)= — ΔE-OK: Euclidean distance in OKLab,
+  =√((ΔL)²+(Δa)²+(Δb)²)=. Five lines.
+
+** Gamut clamp policy (v1, fixed)
+
+OKLCH can express colors sRGB cannot show (high C at some L/H). The v1 policy is
+*binary-search chroma reduction*: hold L and H fixed, reduce C until the color
+is in sRGB gamut. This preserves the two perceptual axes the user is reasoning
+about and only sacrifices saturation. Component clipping (which can shift all
+three axes and make a slider feel broken) is explicitly *not* used.
+
+=oklch2hex= returns ={hex, clamped}= where =clamped= is true when chroma was
+reduced. The picker keeps its sliders and readouts on the *actual clamped color*
+after conversion, and shows a short status ("chroma clamped to sRGB") when
+=clamped= is true — so the user never sees an axis silently move.
+
+** APCA source (pinned)
+
+Implement against *APCA-W3 0.1.9* (Myndex), transcribing the constants verbatim:
+
+- Source: =https://github.com/Myndex/apca-w3= (the =apca-w3= package, version
+  0.1.9). The implementation puts this URL + version in a code comment beside
+  =apca()=.
+- Screen luminance per color uses the *exact* APCA-W3 0.1.9 =colorSpace=
+  constants, not rounded values: =Ys = 0.2126729·R^2.4 + 0.7151522·G^2.4 +
+  0.0721750·B^2.4= on the 0..1 sRGB channels (straight 2.4 power, not the WCAG
+  piecewise). All remaining APCA constants — the black soft-clamp
+  (=blkThrs=/=blkClmp=), the polarity-specific text/background exponents
+  (=normBG=/=normTXT=/=revTXT=/=revBG=), the low-contrast roll-off
+  (=loBoThresh=/=loBoFactor=/=loClip=), =deltaYmin=, and =scaleBoW= — are
+  likewise transcribed verbatim from the pinned source. The spec does not restate
+  those numbers, to avoid becoming a second, drift-prone source: the pinned
+  =apca-w3= 0.1.9 is the single authority.
+- Fixture values asserted by the Node unit tests: =apca('#000000','#ffffff')=
+  Lc ≈ *106.0* (dark on light, positive); =apca('#ffffff','#000000')= Lc ≈
+  *-107.9* (light on dark, negative); plus at least one *chromatic* APCA fixture
+  (e.g. =apca('#67809c','#ffffff')=) computed from the pinned reference —
+  black/white alone cannot reveal rounded-coefficient drift, since the rounding
+  error is near zero at the channel extremes.
+
+The tool ships as a single self-contained generated HTML file with no runtime
+build step or package manager, so the APCA algorithm is transcribed into
+=colormath.js= (inlined into the page) rather than vendored as an npm dependency.
+The Node test harness is dev-only — it imports =colormath.js= to assert against
+fixtures — and does not make the shipped artifact depend on Node or any package.
+
+** Verification — Node unit tests (=test-colormath.mjs=)
+
+The math is tested *directly*, not through the browser: =scripts/theme-studio/test-colormath.mjs=
+imports =colormath.js= and asserts against fixtures under =node --test=. No DOM,
+no Chrome, sub-second, and not capped by what the UI happens to exercise — this
+is where the bulk of the feature's test value lives, and it can be far more
+exhaustive than a hash test. It must include *chromatic* fixtures and properties,
+because many incorrect matrix/sign implementations still pass black, white, and
+round-trip:
+
+- =srgb2oklab('#ffffff')= L ≈ 1.0, a ≈ 0, b ≈ 0; =srgb2oklab('#000000')= L ≈ 0.
+- chromatic fixture 1 — saturated red =#ff0000=: OKLab/OKLCH within epsilon of
+  the reference (L ≈ 0.628, C ≈ 0.258, H ≈ 29.2°).
+- chromatic fixture 2 — the dupre blue =#67809c=: OKLCH ≈ (L 0.591, C 0.052,
+  H 252°), epsilon ~0.005 on L/C and ~1° on H. Computed from the Ottosson
+  reference; the implementation verifies against the same reference it
+  transcribes.
+- round-trip *property*: for a generated sample of hexes,
+  =oklch2hex(oklab2oklch(srgb2oklab(h))).hex= ≈ =h= within epsilon. A property
+  test over random inputs, not a fixed list — it explores corners a hand-written
+  list would miss.
+- =apca= both polarities against the pinned fixtures above (assert sign and
+  magnitude), plus the chromatic APCA fixture.
+- =deltaE(h,h)= = 0; =deltaE('#000000','#ffffff')= > 0; ordering: a near pair
+  scores below the 0.02 threshold, a well-separated pair above it.
+- gamut clamp: a known out-of-gamut OKLCH (very high C) returns a valid
+  =#rrggbb= with L and H preserved within epsilon, C reduced, and =clamped=
+  true; an in-gamut input returns =clamped= false unchanged.
+
+Pure-function TDD with no rendering dependency: write the failing Node test,
+confirm it FAILs (e.g. with a deliberately wrong constant), then make it pass.
+There is no =#mathtest= browser hash — the math is not a UI concern, so it is not
+tested through the UI.
+
+* Phase 2 — perceptual L and APCA readouts
+
+Smallest visible change; validates Phase 1 by eye.
+
+- Extend =pkReadout(hex)= (line 615) to populate new spans for OKLCH L / C / H
+  and APCA Lc, alongside the existing WCAG ratio in the =.pinfo= bar (line 451).
+  Add the spans to the picker DOM (lines 448-451) and minimal CSS.
+- The APCA span carries a compact polarity-aware label (e.g. =APCA Lc -58=); the
+  sign convention (positive = dark-on-light, negative = light-on-dark) is
+  documented in its tooltip and in the README.
+- WCAG remains exactly as-is in the picker and in all three table contrast cells.
+  Per "Agreed decisions" #3, no APCA in the tables for v1.
+
+Pure additions; no behavior changes. Headless guard: =#readouttest= loads a
+known hex and asserts the OKLCH L/C/H and APCA Lc spans carry the expected
+values and the WCAG readout is unchanged.
+
+* Phase 3 — pairwise ΔE across the palette
+
+Self-contained, high value for low-contrast work.
+
+- On =renderPalette()=, compute =deltaE= for every unordered pair of =PALETTE=
+  entries. Flag any pair below the threshold (0.02, the named constant).
+- Warning copy and ordering: sort failing pairs ascending by ΔE (closest first),
+  show the first *5*, and append "and N more" when capped — so a noisy palette
+  never silently hides the count. Format: "blue / steel — ΔE 0.014, hard to
+  distinguish".
+- Each palette chip's =title= gains its nearest-neighbor ΔE.
+- Reuses the chip rendering already in =renderPalette= / =buildPkChips= (line
+  619). No new rendering surface.
+
+Headless guard: =#deltatest= seeds two near-identical palette colors and asserts
+the warning fires (and names the pair); seeds a well-spread palette and asserts
+it does not; if the cap triggers, asserts the "and N more" suffix and ascending
+order.
+
+* Phase 4 — the OKLCH editor
+
+The largest piece, and the one that delivers "hold lightness while changing
+chroma." Two shippable sub-phases, in order.
+
+** Phase 4a — OKLCH sliders + color-model control
+
+- Add a *separate color-model control* — a segmented =HSV= / =OKLCH= toggle with
+  its *own* state variable =pkModel= — distinct from the existing contrast-mask
+  control (=.pmode= / =pkMode=, values =any= / =aa= / =aaa=). The two are
+  orthogonal concepts: =pkModel= is "how I edit the color," =pkMode= is "what
+  constraint I mask." They must not share state.
+- In OKLCH mode, show L / C / H as numeric + range inputs that drive the color
+  through =oklch2hex=, updating =#newhexstr=, the swatch, and the readouts. On
+  clamp, the sliders snap to the clamped color and the status text appears.
+- No canvas work; delivers the independent-dials benefit immediately.
+
+Headless guard: =#oklchtest= asserts that switching =pkModel= to OKLCH preserves
+the selected color, that toggling the AA/AAA mask does *not* reset =pkModel=, and
+that switching =pkModel= does *not* reset =pkMode=.
+
+** Phase 4b — Chroma×Lightness plane
+
+- When =pkModel= is OKLCH, render the SV box (=#sv=, line 448) as a Chroma (x) by
+  Lightness (y) plane at the current fixed hue; the hue strip is unchanged. The
+  crosshair maps to (C, L) instead of (S, V).
+- *Gamut masking*: high chroma is unreachable at some L/H, so grey out the
+  out-of-gamut region of the plane — reuse the =drawMask()= pattern (line 613),
+  swapping the per-pixel test from "contrast < threshold" to "OKLCH(C,L,H) not
+  in sRGB gamut." The existing AA/AAA contrast mask can overlay on top.
+- *Render cost*: =drawMask()= already samples at =step=4= and runs =contrast()=
+  per cell; the gamut test adds an OKLCH→sRGB conversion per cell, and a naive
+  per-cell binary search on top would be expensive while dragging. Bound it: use
+  a coarse sampling step, cache the rendered plane on a key of
+  (hue + dimensions + mask mode + background hex) so it only recomputes when one
+  changes, and defer the redraw until pointer movement settles. The background
+  hex is in the key because when the AA/AAA contrast overlay is active the mask
+  depends on =MAP['bg']=, so a background edit must invalidate the cached plane.
+  The in-gamut test per cell
+  needs only a forward conversion + channel-range check, not the full binary
+  search (that is reserved for committing a chosen color).
+- This per-pixel gamut render is the only genuinely new rendering logic in the
+  spec, which is why it is sequenced last.
+
+Headless guard: open the picker in OKLCH mode on a known hex via a hash; assert
+the C×L crosshair lands at the expected plane coordinates and that a known
+out-of-gamut coordinate is masked.
+
+* Verification strategy (whole feature)
+
+The test surface is *layered* — a proper pyramid, broad and fast at the bottom,
+thin and DOM-bound at the top:
+
+1. *Unit (Node, the core)* — =test-colormath.mjs= imports =colormath.js= and
+   asserts the math directly under =node --test=. No browser. This is the bulk of
+   the coverage and the place exhaustive testing lives (every conversion, both
+   APCA polarities + chromatic, gamut clamp, ΔE ordering, round-trip property
+   over random hexes). *Coverage is measured here* with Node's built-in reporter
+   (no extra dependency): =node --test --experimental-test-coverage scripts/theme-studio/=.
+   Target for =colormath.js= is ≥90% line/branch (testing.md's utility-code bar);
+   in practice a pure, fully-fixtured module should land at or near 100%, and a
+   gap points at an untested branch worth a case. Coverage of the *core* is a
+   gate; coverage of the browser-executed UI code is out of scope for v1 (it
+   needs CDP/c8 instrumentation and the UI is verified by assertion, not line
+   count).
+2. *UI wiring (browser hash tests)* — only the things that genuinely need a DOM
+   or layout, now that the math is tested below them: =#cursortest= (crosshair
+   pixel position — needs real layout), =#readouttest= (Phase 2, spans populated),
+   =#deltatest= (Phase 3, warning list rendered), =#oklchtest= (Phase 4a,
+   =pkModel= / =pkMode= independence + color preserved across mode switch), the 4b
+   plane test (canvas render + gamut mask). Each appends a =PASS/FAIL= node;
+   command shape:
+   =google-chrome-stable --headless=new --dump-dom 'file://…/theme-studio.html#readouttest'=.
+3. *Integration smoke* — =#selftest= (data roundtrip), re-run every phase to
+   confirm no regression.
+4. *Inline-integrity* — a check (Node or grep) that the generated
+   =theme-studio.html= contains the =colormath.js= source verbatim, so the
+   tested module and the shipped inline copy cannot drift.
+
+Per-phase loop: edit the source (=colormath.js= for math, =generate.py= for the
+page — never hand-edit =theme-studio.html=); =python3 generate.py= to regenerate;
+=node --check= the emitted =<script>=; run the phase's tests (Node unit tests for
+Phase 1, the matching hash test for UI phases); re-run =#selftest= and the
+inline-integrity check; Chrome eyeball for the visible phases (2, 3, 4).
+
+On coverage and why this shape: =generate.py= (~1120 lines) and =samples.py=
+(~269) are the templating/assembly + data layer — string-emission and a sample
+corpus — so Python unit tests there are low value and stay out of scope. The
+logic worth hammering is the color *math*, which is JavaScript; extracting it to
+=colormath.js= makes it directly unit-testable in Node instead of only reachable
+through the rendered app. That is the correction this revision makes: the earlier
+draft tested the math through browser hash tests, which coupled math correctness
+to the DOM and capped coverage at what the UI exercises. With the core extracted,
+the math gets exhaustive direct unit tests and the browser tests shrink to UI
+wiring — the thin-UI-over-tested-core shape an API-first build would have
+produced. The separate =build-theme.el= converter keeps its 22 ERT tests.
+
+* Documentation
+
+Folded into the phases, landing with the code each describes:
+
+- README (=scripts/theme-studio/README.md=): document OKLCH, APCA, and ΔE; the
+  meaning of the signed APCA value; that WCAG remains the compatibility baseline
+  and APCA is an additional perceptual diagnostic, not a replacement.
+- Add the exact commands beside the existing run instructions: the Node unit run
+  with coverage (=node --test --experimental-test-coverage scripts/theme-studio/=)
+  and the headless hash tests (=#readouttest=, =#deltatest=, =#oklchtest=, the 4b
+  plane test).
+
+* Acceptance criteria
+
+- *Phase 1*: =colormath.js= extracted and inlined by =generate.py=;
+  =node --test= green — achromatic, chromatic, and round-trip conversions within
+  epsilon; APCA matches the pinned fixtures (magnitude and sign, both polarities,
+  plus a chromatic fixture); gamut clamp preserves L/H within epsilon, reduces C,
+  returns =clamped= true on out-of-gamut and false unchanged on in-gamut;
+  inline-integrity check confirms the page contains =colormath.js= verbatim;
+  =node --test --experimental-test-coverage= reports =colormath.js= at ≥90%
+  line/branch.
+- *Phase 2*: picker shows OKLCH L/C/H and APCA Lc (with polarity label) next to
+  the WCAG ratio; values match the Node-test references for hand-checked colors;
+  no behavior change to existing flows; tables unchanged; =#selftest= still PASS;
+  =#readouttest= PASS.
+- *Phase 3*: a palette with two near-identical colors raises a visible warning
+  naming the pair and ΔE, sorted closest-first, capped at 5 with "and N more"; a
+  well-spread palette raises none; chip titles carry nearest-neighbor ΔE;
+  =#deltatest= PASS.
+- *Phase 4a*: dragging L changes only lightness (C and H readouts hold); same for
+  C and H independently; =pkModel= and =pkMode= are independent (=#oklchtest=
+  PASS); clamp shows status text.
+- *Phase 4b*: the C×L plane crosshair opens on the current color's (C, L);
+  out-of-gamut regions are masked; the plane render stays responsive while
+  dragging (cached on hue/dims/mask key).
+
+* Implementation phases
+
+One shippable phase per increment, in dependency order, each gated on its own
+headless test plus a clean =#selftest=. These map to the drop-in =todo.org=
+tasks (filed in workflow Phase 6, after Craig confirms Ready):
+
+1. *Math foundation* — extract the color core into =colormath.js= (OKLab/OKLCH,
+   APCA-W3 0.1.9, ΔE-OK, gamut clamp, plus the migrated lin/rl/contrast/hsv
+   helpers); =generate.py= inlines it; =test-colormath.mjs= unit tests + the
+   inline-integrity check; gate =node --test= green.
+2. *Picker readouts* — OKLCH L/C/H + APCA Lc spans beside WCAG; gate
+   =#readouttest= + =#selftest=.
+3. *Palette ΔE warnings* — pairwise ΔE, sorted/capped warning, chip-title
+   nearest-neighbor; gate =#deltatest=.
+4a. *OKLCH sliders + color-model control* — =pkModel= separate from =pkMode=,
+   L/C/H inputs, clamp status; gate =#oklchtest=.
+4b. *Chroma×Lightness plane* — gamut-masked C×L render with caching; gate the 4b
+   plane test.
+
+A test-surface task keeps the Node unit tests, the UI hash tests, the
+inline-integrity check, =#selftest=, the script syntax check, and manual Chrome
+validation green across the feature.
+
+* Review dispositions
+
+Modified or rejected recommendations only; everything else in the Codex review
+(2026-06-08) was accepted as written and woven into the body above.
+
+- *Modified — APCA "transcribe vs vendor" question (high-priority finding 4).*
+  The review asked the spec to "state whether the project is comfortable
+  transcribing the algorithm rather than vendoring a package." Reframed as
+  settled rather than open: the tool is a single self-contained generated HTML
+  file with no build step or package manager, so transcription is the only path
+  consistent with the architecture. The source URL + version pin and the fixture
+  values were accepted in full.
+- *Modified — ΔE-OK default threshold (high-priority finding 1 / open question).*
+  The review accepted ΔE-OK on its native scale "with a named default threshold"
+  but left the number to the author. Concretized to 0.02 (the OKLab
+  just-noticeable-difference floor) as a named, calibratable constant, so the
+  warning fires only on genuinely indistinguishable pairs rather than deferring
+  the choice to implementation.
+
+* Review and iteration history
+
+** 2026-06-08 Mon @ 13:00:34 -0500 — Codex — reviewer
+- *What changed or was recommended:* Created the implementation-readiness review
+  and marked the spec =Not ready=. The review recommends resolving the listed
+  open questions, pinning the APCA source/fixtures, specifying OKLCH gamut clamp
+  semantics, separating color-model mode from contrast-mask mode, and converting
+  the increments into todo-ready implementation phases.
+- *Why:* The feature direction fits the current theme-studio architecture, but
+  coding from this draft would force the implementer to decide product behavior
+  around DeltaE thresholds, APCA placement, OKLCH UI state, and out-of-gamut
+  colors.
+- *Artifacts:* the review file (consumed and deleted on response).
+
+** 2026-06-08 Mon @ 13:08:00 -0500 — Claude Code — responder
+- *What changed:* Processed every Codex recommendation. Accepted all five
+  high-priority findings — resolved the four open questions into "Agreed
+  decisions (v1)", fixed the gamut clamp as binary-search chroma reduction
+  returning a =clamped= flag with picker status text, separated =pkModel=
+  (HSV/OKLCH) from =pkMode= (mask), pinned APCA-W3 0.1.9 with black/white
+  fixtures, and added an "Implementation phases" decomposition (1, 2, 3, 4a, 4b)
+  with per-phase test gates. Accepted the medium findings: chromatic =#mathtest=
+  fixtures, ΔE warning sort/cap copy, C×L render-cost bounds, refreshed
+  background to include the package-face table surface, the named hash tests
+  (=#readouttest=, =#oklchtest=), and the README/doc additions. Two modifications
+  recorded in "Review dispositions": the APCA transcribe-vs-vendor question
+  (settled by the no-build architecture) and the ΔE-OK default threshold (set to
+  0.02).
+- *Why:* Converge to implementation-ready — remove every product decision from
+  the coding path. Rubric raised Draft → Ready pending Craig's confirm on the
+  four baked-in v1 decisions.
+- *Artifacts:* consumed and deleted =theme-studio-perceptual-color-metrics-spec-review.org=;
+  see "Review dispositions" and "Agreed decisions (v1)". Implementation tasks to
+  be filed in =todo.org= on confirm (workflow Phase 6).
+
+** 2026-06-08 Mon @ 13:15:26 -0500 — Codex — reviewer
+- *What changed or was recommended:* Re-reviewed the updated spec and marked it
+  =Not ready= on one remaining blocker: the APCA section pins =apca-w3= 0.1.9 and
+  says to transcribe constants verbatim, but still shows rounded luminance
+  coefficients instead of the exact published =colorSpace= constants. Also noted
+  two non-blocking edits: include background hex in the 4b mask cache key when
+  contrast masking is active, and either provide the =#67809c= OKLCH fixture
+  values or make that second chromatic fixture optional.
+- *Why:* The implementation is otherwise ready-shaped, but APCA math and numeric
+  fixtures need a single authoritative source before coding starts.
+- *Artifacts:* [[file:theme-studio-perceptual-color-metrics-spec-review.org][theme-studio-perceptual-color-metrics-spec-review.org]]
+
+** 2026-06-08 Mon @ 13:19:15 -0500 — Claude Code — responder
+- *What changed:* Processed Codex's second pass. Accepted all three findings, no
+  modify/reject. Blocking: replaced the rounded APCA luminance coefficients
+  (=0.2126=/=0.7152=/=0.0722=) with the exact APCA-W3 0.1.9 =colorSpace=
+  constants (=0.2126729=/=0.7151522=/=0.0721750=), and stated the remaining APCA
+  constants are transcribed verbatim from the pinned source rather than restated
+  in the spec, so there is one authority. Non-blocking: added =MAP['bg']= to the
+  Phase 4b mask cache key (the AA/AAA overlay depends on background); added
+  concrete OKLCH fixture values for =#67809c= (L 0.591, C 0.052, H 252°); added a
+  chromatic APCA fixture to =#mathtest= so black/white can't hide coefficient
+  drift.
+- *Why:* Remove the last numeric ambiguity so =#mathtest= fixtures and the
+  implementation agree on one exact APCA algorithm. Reviewer confirmed no design
+  gaps remain — only the author-confirm caveat.
+- *Artifacts:* consumed and deleted the second
+  =theme-studio-perceptual-color-metrics-spec-review.org=. Rubric stays =Ready,
+  pending author confirm= on the four v1 decisions; Phase 6 task-filing still
+  holds for that confirm.
+
+** 2026-06-08 Mon @ 13:21:11 -0500 — Codex — reviewer
+- *What changed or was recommended:* Re-read the spec-review workflow and
+  critically reviewed the updated spec against the current theme-studio code,
+  README, prior review dispositions, and task tracking. Assigned =Ready with
+  caveats=: no blocking implementation ambiguity remains, and the prior APCA
+  coefficient issue is resolved by the exact =apca-w3= =colorSpace= constants.
+  The only caveat is the spec's explicit author-confirm step before Phase 1.
+- *Why:* The spec now defines v1 scope, APCA source/fixtures, OKLCH gamut policy,
+  picker state ownership, DeltaE threshold/copy, performance guardrails, docs,
+  acceptance criteria, and shippable phases well enough for implementation.
+- *Artifacts:* No review file written; no blocking findings.
+
+** 2026-06-08 Mon @ 15:21:55 -0500 — Craig Jennings (review) + Claude Code (responder) — final review
+- *What changed:* Craig's final-review questions (six cj comments) answered and
+  the load-bearing ones folded into the body. Factual correction: WCAG 3 is still
+  a Working Draft (final Recommendation ~2028–2030) and APCA was moved *out* of
+  the WCAG 3 draft in 2023 — so the Background no longer frames APCA as a coming
+  standard, only as an independent diagnostic, with WCAG 2.x kept as baseline
+  because nothing has replaced it. Clarifications added to the Agreed decisions:
+  what CIEDE2000 is and why ΔE-OK suffices (#1); that no low-contrast preset
+  exists today and what one would add (#2); that table APCA is low-complexity and
+  the deferral is about density not difficulty (#3); the reason HSV stays default
+  until the 4b plane lands (#4). The Verification section now states Python
+  coverage is ~0% by design (the generator is output-tested via hash tests) and
+  the target is per-behavior hash-test gating, not a line-coverage number.
+- *Why:* Craig interrogated the decisions before confirming; the answers either
+  reinforce them or give him what he needs to override. No decision changed.
+- *Artifacts:* WCAG 3 status via W3C/industry sources (June 2026); repo check
+  confirmed no Python test files / pytest config for =scripts/theme-studio/=.
+
+** 2026-06-08 Mon @ 15:34:36 -0500 — Craig Jennings (direction) + Claude Code (responder) — testing-strategy override
+- *What changed:* Craig overrode the v1 testing approach. The prior draft tested
+  the color math through browser hash tests (=#mathtest=), which coupled math
+  correctness to the DOM and capped coverage at what the UI exercises. Corrected
+  to a layered pyramid: the pure math is extracted into =scripts/theme-studio/colormath.js=
+  (an importable ES module that =generate.py= inlines into the page), unit-tested
+  directly in Node (=test-colormath.mjs=, =node --test=) with exhaustive fixtures
+  + a round-trip property test; the browser hash tests shrink to UI wiring only
+  (=#cursortest=/=#readouttest=/=#deltatest=/=#oklchtest=/4b-plane); =#selftest=
+  stays as integration smoke; an inline-integrity check guards the module and the
+  inlined copy against drift. =#mathtest= is removed — the math is no longer a UI
+  concern. Updated Phase 1, Verification, Acceptance, Implementation phases, and
+  Documentation to match. Language correction: the math is JavaScript (emitted by
+  the Python), so the "Python unit tests" instinct lands as Node unit tests on the
+  extracted JS core; the Python stays templating/data and is out of test scope.
+- *Why:* Test the core directly, keep the UI thin — the API-first shape this
+  app grew past. Direct unit tests on the math are faster, more exhaustive, and
+  not limited by the UI surface.
+- *Decisions 1-4 confirmed* as written (4: OKLCH readouts always shown; only the
+  editing model is opt-in until 4b). Phase 6 task-filing + commit still pending
+  Craig's go.
