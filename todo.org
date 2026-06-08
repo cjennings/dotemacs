@@ -63,7 +63,8 @@ A full =make test= run (2026-06-07) is green across 516 of 517 files; the only f
 Build a new theme (working name "dupre-clear", final name TBD) that takes dupre's color identity and rebuilds it Prot's way: contrast-first, targeting WCAG AAA (~7:1 on the ground), where the in-progress dupre revision is mood/depth-first and lands at AA. Same hues (dupre blue, emerald, gold, terracotta, regal violet, mint) brightened to clear the AAA floor; same modus-style role mapping (blue keywords bold, gold functions, violet types, emerald strings, terracotta constants, silver default, warm-grey comments, metallic greys, navy + regal fills). Build the dupre revision first; this reuses its hue choices as the starting point.
 
 Full design + methodology + starting palette + open questions in the spec: [[file:docs/design/dupre-clear-theme.org][docs/design/dupre-clear-theme.org]]. Key prerequisite/context: the dupre-redesign entry in =.ai/session-context.org= (the AA palette this brightens). Hardest slot: blue keywords (a deep dupre blue can't be AAA on near-black — decide brighten vs keep-AA-exception vs lift-the-ground).
-** DOING [#B] theme-selector tier-3 package faces :feature:theme:theme-selector:
+** DONE [#B] theme-selector tier-3 package faces :feature:theme:theme-selector:
+CLOSED: [2026-06-08 Mon]
 Package-specific face editing in the theme-selector: org/magit/elfeed bespoke (complete face tables + live previews) plus a generated all-package inventory so every installed package is themeable. Spec is Ready, all opens resolved: [[file:docs/design/theme-selector-package-faces-spec.org][docs/design/theme-selector-package-faces-spec.org]]. Phases below run in dependency order; phases 1-5 deliver the three high-value apps, phase 6 opens the long tail, phase 7 documents. The =theme.json= -> =dupre-*.el= converter (Elisp) is a separate downstream task.
 
 *** 2026-06-08 Mon @ 00:17:41 -0500 Phase 1 — package state + schema landed
@@ -87,8 +88,8 @@ Bespoke =renderMagitPreview()= (status buffer: head/branches, untracked, a diff 
 *** 2026-06-08 Mon @ 02:34:01 -0500 Phase 7 — docs landed
 Rewrote =README.md= for the full tool: three face tiers + palette, the in-page picker (with the AA/AAA mask), package faces (bespoke vs generic previews), modeled inheritance + relative height (family stays in font-config.el), the packages schema with inherit/height/source, export-vs-save, and the inventory-refresh command (=build-inventory.el=) + its loaded-config dependency. Notes =theme-selector.html= is generated. Test-surface fixtures tracked separately below.
 
-*** TODO [#B] theme-selector tier 3 — test surface :test:solo:
-Fixtures: =dupre.json= (no =packages=) imports clean; =packages= fg/bg/bold/italic/inherit/source round-trip; cleared/default/user export per policy; unknown package/face data preserved-or-warned; inheritance cycle resolves to none. Regression: palette color update propagates to package faces; deleted palette color leaves package refs "(gone)" recoverable. Generated output: =generate.py= rebuilds =theme-selector.html=. Spec: Acceptance criteria.
+*** 2026-06-08 Mon @ 02:40:00 -0500 theme-selector tier 3 — test surface landed
+Extended the guarded =#selftest= harness (headless Chrome) to assert the acceptance criteria against the real emitted code: old-JSON import (no =packages=), full round-trip (fg/bg/bold/italic/inherit/height/source), cleared-state export, unknown-package/face preservation, and inheritance-cycle termination — all PASS. The two DOM-coupled regressions are handled structurally: =updateColor= remaps =PKGMAP= on a palette-color edit, and =PKGMAP= stores hexes so a deleted palette color leaves package refs in the "(gone)" recoverable state. =generate.py= rebuilds =theme-selector.html= each run.
 
 ** TODO Manual testing and validation :verify:theme-selector:
 Exercised once the phases above land.
