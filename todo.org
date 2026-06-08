@@ -41,6 +41,9 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
+** TODO [#B] theme-selector comprehensive org preview :feature:theme:theme-selector:
+The bespoke org preview (=renderOrgPreview= in =scripts/theme-selector/generate.py=) only mocks a curated subset of org faces. The click-to-flash linking (face row <-> preview, added 2026-06-08) falls back to flashing the row's own cell when a face isn't shown, so rows for off-screen faces have nothing to light up. Build a fuller org-mode mock document that exercises the vast majority of the ~88 org faces in =APPS['org-mode']= (headings, agenda, tables, blocks, todo/priority keywords, dates, tags, drawers, columns, etc.) so most rows flash a real preview element and the preview is a genuine judging surface. Same idea applies to magit/elfeed but org is the big one.
+
 ** DONE [#A] theme-selector theme.json -> dupre-*.el converter :feature:theme:theme-selector:
 CLOSED: [2026-06-08 Mon]
 Built as scripts/theme-selector/build-theme.el (sibling to build-inventory.el), emitting a single self-contained themes/<name>-theme.el deftheme (not the palette/faces/theme trio — a theme.json carries resolved per-face hex, not dupre's semantic layer). All four tiers convert: default from assignments.bg/.p, syntax categories -> font-lock/tree-sitter faces with bold/italic sets, UI passthrough, packages with :inherit/:height/weight/slant. 20 ERT tests in tests/test-build-theme.el (Normal/Boundary/Error + an end-to-end load + a WCAG-AA assertion on the round-tripped result). One mapping limitation documented: the dec (decorator) key has no independent Emacs face (Emacs renders decorators with font-lock-type-face, which ty owns), so dec is omitted and decorators follow the type color.
