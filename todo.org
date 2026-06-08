@@ -118,6 +118,20 @@ Rewrote =README.md= for the full tool: three face tiers + palette, the in-page p
 *** 2026-06-08 Mon @ 02:40:00 -0500 theme-studio tier 3 — test surface landed
 Extended the guarded =#selftest= harness (headless Chrome) to assert the acceptance criteria against the real emitted code: old-JSON import (no =packages=), full round-trip (fg/bg/bold/italic/inherit/height/source), cleared-state export, unknown-package/face preservation, and inheritance-cycle termination — all PASS. The two DOM-coupled regressions are handled structurally: =updateColor= remaps =PKGMAP= on a palette-color edit, and =PKGMAP= stores hexes so a deleted palette color leaves package refs in the "(gone)" recoverable state. =generate.py= rebuilds =theme-studio.html= each run.
 
+** TODO [#B] theme-studio perceptual color metrics :feature:theme:theme-studio:
+Spec (Ready, opens confirmed 2026-06-08): [[file:docs/design/theme-studio-perceptual-color-metrics-spec.org][docs/design/theme-studio-perceptual-color-metrics-spec.org]]. OKLCH model + perceptual-L/APCA readouts + pairwise ΔE, for building low-contrast themes by metric rather than by eye. Phases run in dependency order; the math core extracts to a Node-unit-tested =colormath.js= and the browser hash tests verify UI wiring. vNext deferrals (low-contrast preset, CIEDE2000) are the two [#D] tasks below.
+*** TODO [#B] Color-math foundation + Node tests :solo:
+Extract the pure color core into =scripts/theme-studio/colormath.js= (OKLab/OKLCH, APCA-W3 0.1.9 exact =colorSpace= constants, ΔE-OK, binary-search gamut clamp returning ={hex,clamped}=, plus migrated lin/rl/contrast/hsv helpers). =generate.py= inlines it. =test-colormath.mjs= unit tests (chromatic fixtures, both APCA polarities, round-trip property over random hexes, gamut clamp, ΔE ordering) + an inline-integrity check that the page contains the module verbatim. Gate: =node --test --experimental-test-coverage scripts/theme-studio/= green, =colormath.js= ≥90% line/branch.
+*** TODO [#B] Picker OKLCH/APCA readouts :solo:
+Phase 2. OKLCH L/C/H + signed APCA Lc (polarity label + tooltip) beside the WCAG ratio in the picker =.pinfo=; always shown. Tables unchanged. Gate: =#readouttest= + =#selftest= PASS, no behavior change.
+*** TODO [#B] Palette ΔE warnings :solo:
+Phase 3. Pairwise ΔE-OK across =PALETTE=; warn on pairs below 0.02 (named constant), sorted closest-first, capped at 5 with "and N more"; nearest-neighbor ΔE in each chip title. Gate: =#deltatest= PASS.
+*** TODO [#B] OKLCH sliders + color-model control :solo:
+Phase 4a. Separate =pkModel= (HSV/OKLCH) from =pkMode= (AA/AAA mask); OKLCH L/C/H numeric + range inputs driving =oklch2hex=; clamp status text. HSV stays default. Gate: =#oklchtest= (model/mask independence + color preserved across switch) PASS.
+*** TODO [#B] Chroma×Lightness plane :solo:
+Phase 4b. Render the SV box as a C×L plane at fixed hue in OKLCH mode; gamut-mask the out-of-range region (reuse the =drawMask()= pattern); cache on (hue + dims + mask + bg hex); defer redraw until pointer settles. Gate: the 4b plane hash test (crosshair lands at the color's C/L; a known out-of-gamut coordinate is masked).
+*** TODO [#B] Test surface green :solo:tests:
+Keep the Node unit tests (+coverage), the UI hash tests (=#cursortest=/=#readouttest=/=#deltatest=/=#oklchtest=/4b), =#selftest=, the inline-integrity check, =node --check=, and the README/doc updates green across the feature.
 ** TODO Manual testing and validation :verify:theme-studio:
 Exercised once the phases above land.
 *** TODO Seeded package-face defaults look right
@@ -132,6 +146,25 @@ What we're verifying: org's ~88-face and magit's ~111-face tables stay navigable
 - Type "agenda" in the filter
 - Reassign one face and watch the preview
 Expected: rows are grouped, the filter narrows them, and a reassignment updates the preview live.
+*** TODO Perceptual readouts read well in the picker
+What we're verifying: the OKLCH L/C/H and APCA Lc readouts are legible and correctly placed beside the WCAG number.
+- Open =scripts/theme-studio/theme-studio.html= in Chrome and open the picker on a few colors
+- Read the OKLCH and APCA values against the WCAG ratio
+Expected: the new readouts are clear, the APCA sign/polarity is understandable, and nothing crowds the readout bar.
+*** TODO ΔE warnings read clearly
+What we're verifying: the too-similar-pair warning is legible and the cap behaves.
+- Build a palette with two near-identical colors, then a well-spread one
+- Read the warning line each time
+Expected: the close pair is named with its ΔE, sorted closest-first, capped at 5 with "and N more"; the well-spread palette shows no warning.
+*** TODO OKLCH editor feels right
+What we're verifying: the OKLCH sliders / C×L plane edit cleanly and clamping is visible.
+- Switch the picker to OKLCH mode and drag L, then C, then H
+- Push chroma past the sRGB gamut, then toggle the AA/AAA mask
+Expected: each axis moves independently; the C×L plane (once 4b lands) opens on the current color; "chroma clamped to sRGB" shows on clamp; toggling the mask does not reset OKLCH mode.
+** TODO [#D] theme-studio low-contrast preset/mask mode :feature:theme-studio:
+Deferred from the perceptual color metrics spec (vNext). After raw OKLCH/APCA/DeltaE readouts exist, decide whether to add a named low-contrast workflow: APCA Lc bands, a contrast ceiling/floor mask, or a "soft" sibling to the existing any/AA+/AAA picker mask. Spec: [[file:docs/design/theme-studio-perceptual-color-metrics-spec.org][spec]] (vNext candidates; review folded in 2026-06-08).
+** TODO [#D] theme-studio CIEDE2000 DeltaE option :feature:theme-studio:
+Deferred from the perceptual color metrics spec (vNext). v1 uses DeltaE-OK on its native scale with a 0.02 threshold (decided); revisit CIEDE2000 only if the native OKLab scale proves too unfamiliar or poorly calibrated for palette distinguishability. Spec: [[file:docs/design/theme-studio-perceptual-color-metrics-spec.org][spec]] (vNext candidates; review folded in 2026-06-08).
 ** TODO [#B] Dashboard keybinding changes :quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-06
@@ -7170,4 +7203,3 @@ Expected: F12 excludes agent buffers and keeps saved geometry; the dashboard lau
 What we're verifying: the aiv- tmux session survives an Emacs crash and reattaches.
 - with a live agent, kill Emacs (not the tmux session); restart Emacs; F9 → project picker
 Expected: the project shows "[detached]" and reattaches to the surviving tmux session.
-
