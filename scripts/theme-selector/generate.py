@@ -255,6 +255,30 @@ DIRVISH_SEED={
  "dirvish-vc-removed-state":{"fg":"terracotta"},"dirvish-vc-conflict-state":{"fg":"terracotta","bold":True},"dirvish-vc-locked-state":{"fg":"blue"},
  "dirvish-vc-missing-state":{"fg":"terracotta"},"dirvish-vc-needs-merge-face":{"fg":"gold"},"dirvish-vc-needs-update-state":{"fg":"gold"},
  "dirvish-vc-unregistered-face":{"fg":"pewter"}}
+ORGDRILL_FACES=("org-drill-hidden-cloze-face org-drill-visible-cloze-face org-drill-visible-cloze-hint-face").split()
+ORGDRILL_SEED={"org-drill-hidden-cloze-face":{"fg":"#000000","bg":"steel"},"org-drill-visible-cloze-face":{"fg":"gold","bold":True},"org-drill-visible-cloze-hint-face":{"fg":"pewter","italic":True}}
+ORGNOTER_FACES=("org-noter-notes-exist-face org-noter-no-notes-exist-face").split()
+ORGNOTER_SEED={"org-noter-notes-exist-face":{"fg":"sage"},"org-noter-no-notes-exist-face":{"fg":"pewter"}}
+SIGNEL_FACES=("signel-timestamp-face signel-my-msg-face signel-other-msg-face signel-error-face").split()
+SIGNEL_SEED={"signel-timestamp-face":{"fg":"pewter"},"signel-my-msg-face":{"fg":"blue"},"signel-other-msg-face":{"fg":"silver"},"signel-error-face":{"fg":"terracotta","bold":True}}
+PEARL_FACES=("pearl-preamble-summary pearl-editable-comment pearl-readonly-comment pearl-modified-highlight pearl-modified-local pearl-modified-unknown").split()
+PEARL_SEED={"pearl-preamble-summary":{"fg":"blue","bold":True},"pearl-editable-comment":{"fg":"silver"},"pearl-readonly-comment":{"fg":"pewter","italic":True},"pearl-modified-highlight":{"bg":"navy"},"pearl-modified-local":{"fg":"gold"},"pearl-modified-unknown":{"fg":"pewter"}}
+CALIBREDB_FACES=("calibredb-search-header-library-name-face calibredb-search-header-library-path-face calibredb-search-header-total-face calibredb-search-header-filter-face calibredb-search-header-sort-face calibredb-search-header-highlight-face "
+ "calibredb-id-face calibredb-title-face calibredb-author-face calibredb-format-face calibredb-size-face calibredb-tag-face calibredb-date-face calibredb-mark-face calibredb-series-face calibredb-publisher-face calibredb-pubdate-face "
+ "calibredb-language-face calibredb-comment-face calibredb-archive-face calibredb-favorite-face calibredb-file-face calibredb-ids-face calibredb-highlight-face calibredb-current-page-button-face calibredb-mouse-face "
+ "calibredb-title-detailed-view-face calibredb-edit-annotation-header-title-face").split()
+CALIBREDB_SEED={
+ "calibredb-search-header-library-name-face":{"fg":"blue","bold":True},"calibredb-search-header-library-path-face":{"fg":"pewter"},"calibredb-search-header-total-face":{"fg":"sage"},"calibredb-search-header-filter-face":{"fg":"gold"},"calibredb-search-header-sort-face":{"fg":"steel"},"calibredb-search-header-highlight-face":{"fg":"gold","bold":True},
+ "calibredb-id-face":{"fg":"pewter"},"calibredb-title-face":{"fg":"blue","bold":True},"calibredb-author-face":{"fg":"sage"},"calibredb-format-face":{"fg":"steel"},"calibredb-size-face":{"fg":"pewter"},"calibredb-tag-face":{"fg":"tan"},"calibredb-date-face":{"fg":"pewter"},"calibredb-mark-face":{"fg":"gold","bold":True},"calibredb-series-face":{"fg":"regal"},"calibredb-publisher-face":{"fg":"steel"},"calibredb-pubdate-face":{"fg":"pewter"},
+ "calibredb-language-face":{"fg":"steel"},"calibredb-comment-face":{"fg":"silver","italic":True},"calibredb-archive-face":{"fg":"pewter"},"calibredb-favorite-face":{"fg":"gold"},"calibredb-file-face":{"fg":"blue"},"calibredb-ids-face":{"fg":"pewter"},"calibredb-highlight-face":{"fg":"gold","bold":True},"calibredb-current-page-button-face":{"fg":"blue","bold":True},"calibredb-mouse-face":{"bg":"gunmetal"},
+ "calibredb-title-detailed-view-face":{"fg":"gold","bold":True},"calibredb-edit-annotation-header-title-face":{"fg":"blue","bold":True}}
+ERC_FACES=("erc-header-line erc-timestamp-face erc-notice-face erc-default-face erc-current-nick-face erc-my-nick-face erc-my-nick-prefix-face erc-nick-default-face erc-nick-prefix-face erc-button-nick-default-face "
+ "erc-nick-msg-face erc-direct-msg-face erc-action-face erc-keyword-face erc-pal-face erc-fool-face erc-dangerous-host-face erc-error-face erc-input-face erc-prompt-face erc-command-indicator-face erc-information "
+ "erc-button erc-bold-face erc-italic-face erc-underline-face erc-inverse-face erc-spoiler-face erc-fill-wrap-merge-indicator-face erc-keep-place-indicator-arrow erc-keep-place-indicator-line").split()
+ERC_SEED={
+ "erc-header-line":{"fg":"white","bg":"gunmetal","bold":True},"erc-timestamp-face":{"fg":"pewter"},"erc-notice-face":{"fg":"steel"},"erc-default-face":{"fg":"#cdced1"},"erc-current-nick-face":{"fg":"gold","bold":True},"erc-my-nick-face":{"fg":"gold","bold":True},"erc-my-nick-prefix-face":{"fg":"gold"},"erc-nick-default-face":{"fg":"blue"},"erc-nick-prefix-face":{"fg":"sage"},"erc-button-nick-default-face":{"fg":"blue"},
+ "erc-nick-msg-face":{"fg":"regal"},"erc-direct-msg-face":{"fg":"regal"},"erc-action-face":{"fg":"sage","italic":True},"erc-keyword-face":{"fg":"gold","bold":True},"erc-pal-face":{"fg":"emerald"},"erc-fool-face":{"fg":"pewter"},"erc-dangerous-host-face":{"fg":"terracotta","bold":True},"erc-error-face":{"fg":"terracotta","bold":True},"erc-input-face":{"fg":"silver"},"erc-prompt-face":{"fg":"blue","bold":True},"erc-command-indicator-face":{"fg":"steel","bold":True},"erc-information":{"fg":"steel"},
+ "erc-button":{"fg":"blue"},"erc-bold-face":{"bold":True},"erc-italic-face":{"italic":True},"erc-underline-face":{"fg":"silver"},"erc-inverse-face":{"fg":"#000000","bg":"silver"},"erc-spoiler-face":{"fg":"#000000","bg":"gunmetal"},"erc-fill-wrap-merge-indicator-face":{"fg":"pewter"},"erc-keep-place-indicator-arrow":{"fg":"gold"},"erc-keep-place-indicator-line":{"bg":"bg-dim"}}
 def _faces(names,prefix,seed):
     out=[]
     for f in names:
@@ -271,13 +295,19 @@ APPS={"org-mode":{"label":"org-mode","preview":"org","faces":_faces(ORG_FACES,"o
  "git-gutter":{"label":"git-gutter","preview":"gitgutter","faces":_faces(GITGUTTER_FACES,"git-gutter:",GITGUTTER_SEED)},
  "flycheck":{"label":"flycheck","preview":"flycheck","faces":_faces(FLYCHECK_FACES,"flycheck-",FLYCHECK_SEED)},
  "dired":{"label":"dired","preview":"dired","faces":_faces(DIRED_FACES,"dired-",DIRED_SEED)},
- "dirvish":{"label":"dirvish","preview":"dirvish","faces":_faces(DIRVISH_FACES,"dirvish-",DIRVISH_SEED)}}
+ "dirvish":{"label":"dirvish","preview":"dirvish","faces":_faces(DIRVISH_FACES,"dirvish-",DIRVISH_SEED)},
+ "calibredb":{"label":"calibredb","preview":"calibredb","faces":_faces(CALIBREDB_FACES,"calibredb-",CALIBREDB_SEED)},
+ "erc":{"label":"erc","preview":"erc","faces":_faces(ERC_FACES,"erc-",ERC_SEED)},
+ "org-drill":{"label":"org-drill","preview":"orgdrill","faces":_faces(ORGDRILL_FACES,"org-drill-",ORGDRILL_SEED)},
+ "org-noter":{"label":"org-noter","preview":"orgnoter","faces":_faces(ORGNOTER_FACES,"org-noter-",ORGNOTER_SEED)},
+ "signel":{"label":"signel","preview":"signel","faces":_faces(SIGNEL_FACES,"signel-",SIGNEL_SEED)},
+ "pearl":{"label":"pearl","preview":"pearl","faces":_faces(PEARL_FACES,"pearl-",PEARL_SEED)}}
 # Phase 6: merge the generated all-package inventory (refresh with build-inventory.el).
 # Bespoke apps stay; every other installed package becomes an editable generic app.
 _inv_path=os.path.join(HERE,"package-inventory.json")
 if os.path.exists(_inv_path):
     _INV=json.load(open(_inv_path))
-    _BESPOKE={"magit","elfeed","org","org-mode","mu4e","ghostel","dashboard","lsp-mode","git-gutter","flycheck","dired","dirvish"}
+    _BESPOKE={"magit","elfeed","org","org-mode","mu4e","ghostel","dashboard","lsp-mode","git-gutter","flycheck","dired","dirvish","calibredb","erc","org-drill","org-noter","signel","pearl"}
     for _pkg in sorted(_INV):
         if _pkg in _BESPOKE or _pkg in APPS: continue
         APPS[_pkg]={"label":_pkg,"preview":"generic","faces":[
@@ -860,8 +890,51 @@ function renderDirvishPreview(){const a='dirvish',L=[];
   L.push(' proc '+os(a,'dirvish-proc-running','running')+' / '+os(a,'dirvish-proc-finished','finished')+' / '+os(a,'dirvish-proc-failed','failed'));
   L.push(' narrow '+os(a,'dirvish-narrow-match-face-0','m0')+' '+os(a,'dirvish-narrow-match-face-1','m1')+' '+os(a,'dirvish-narrow-match-face-2','m2')+' '+os(a,'dirvish-narrow-match-face-3','m3')+os(a,'dirvish-narrow-split',' | ')+os(a,'dirvish-emerge-group-title','Group: images'));
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderCalibredbPreview(){const a='calibredb',L=[];
+  L.push(os(a,'calibredb-search-header-library-name-face','Calibre')+'  '+os(a,'calibredb-search-header-library-path-face','~/books')+'  '+os(a,'calibredb-search-header-total-face','412 books')+'  '+os(a,'calibredb-search-header-filter-face','tag:scifi')+'  '+os(a,'calibredb-search-header-sort-face','sort:date')+'  '+os(a,'calibredb-search-header-highlight-face','[*]'));
+  L.push('');
+  L.push(os(a,'calibredb-id-face','1')+'  '+os(a,'calibredb-title-face','Dune')+'  '+os(a,'calibredb-author-face','Herbert')+'  '+os(a,'calibredb-format-face','EPUB')+'  '+os(a,'calibredb-size-face','2.1M')+'  '+os(a,'calibredb-tag-face',':scifi:')+'  '+os(a,'calibredb-date-face','2026-06-08'));
+  L.push(os(a,'calibredb-mark-face','*')+os(a,'calibredb-id-face','2')+'  '+os(a,'calibredb-title-face','Foundation')+'  '+os(a,'calibredb-author-face','Asimov')+'  '+os(a,'calibredb-series-face','[Foundation #1]')+'  '+os(a,'calibredb-publisher-face','Bantam')+'  '+os(a,'calibredb-pubdate-face','1951'));
+  L.push('');
+  L.push(os(a,'calibredb-title-detailed-view-face','Foundation (detailed)')+'   '+os(a,'calibredb-language-face','eng')+'  '+os(a,'calibredb-favorite-face','* fav')+'  '+os(a,'calibredb-archive-face','archived'));
+  L.push(os(a,'calibredb-ids-face','isbn:0553293354')+'  '+os(a,'calibredb-file-face','foundation.epub')+'  '+os(a,'calibredb-comment-face','A classic of the genre.'));
+  L.push(os(a,'calibredb-edit-annotation-header-title-face','Annotations')+'  '+os(a,'calibredb-highlight-face','highlighted passage')+'  '+os(a,'calibredb-current-page-button-face','[page 42]')+'  '+os(a,'calibredb-mouse-face','hover row'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderErcPreview(){const a='erc',L=[];
+  L.push(os(a,'erc-header-line',' #emacs on Libera.Chat  18 users '));
+  L.push(os(a,'erc-timestamp-face','[10:24]')+' '+os(a,'erc-notice-face','*** alice has joined #emacs'));
+  L.push(os(a,'erc-timestamp-face','[10:25]')+' &lt;'+os(a,'erc-my-nick-prefix-face','@')+os(a,'erc-my-nick-face','craig')+'&gt; '+os(a,'erc-default-face','hello everyone'));
+  L.push(os(a,'erc-timestamp-face','[10:25]')+' &lt;'+os(a,'erc-nick-prefix-face','+')+os(a,'erc-nick-default-face','bob')+'&gt; '+os(a,'erc-input-face','hi craig, see ')+os(a,'erc-button','this link')+os(a,'erc-input-face',' cc ')+os(a,'erc-button-nick-default-face','@alice'));
+  L.push(os(a,'erc-timestamp-face','[10:26]')+' '+os(a,'erc-action-face','* craig waves')+'   '+os(a,'erc-keyword-face','emacs')+' '+os(a,'erc-pal-face','&lt;friend&gt;')+' '+os(a,'erc-fool-face','&lt;troll&gt;')+' '+os(a,'erc-dangerous-host-face','&lt;bad@host&gt;'));
+  L.push(os(a,'erc-timestamp-face','[10:27]')+' '+os(a,'erc-direct-msg-face','(DM)')+' &lt;'+os(a,'erc-nick-msg-face','bob')+'&gt; psst   '+os(a,'erc-current-nick-face','craig')+'   '+os(a,'erc-information','-info-'));
+  L.push(os(a,'erc-error-face','*** ERROR: connection reset'));
+  L.push(os(a,'erc-command-indicator-face','/help')+'   '+os(a,'erc-bold-face','bold')+' '+os(a,'erc-italic-face','italic')+' '+os(a,'erc-underline-face','underline')+' '+os(a,'erc-inverse-face','inverse')+' '+os(a,'erc-spoiler-face','spoiler'));
+  L.push(os(a,'erc-keep-place-indicator-arrow','&gt;')+os(a,'erc-keep-place-indicator-line',' ---- last read ---- ')+os(a,'erc-fill-wrap-merge-indicator-face','+'));
+  L.push(os(a,'erc-prompt-face','craig&gt;')+' '+os(a,'erc-input-face','type a message...'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderOrgdrillPreview(){const a='org-drill',L=[];
+  L.push('Q: The capital of France is '+os(a,'org-drill-hidden-cloze-face','[...]')+'.');
+  L.push('A: The capital of France is '+os(a,'org-drill-visible-cloze-face','Paris')+'.');
+  L.push('   '+os(a,'org-drill-visible-cloze-hint-face','hint: P____'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderOrgnoterPreview(){const a='org-noter',L=[];
+  L.push('org-noter   paper.pdf');
+  L.push('  page 1   '+os(a,'org-noter-notes-exist-face','[notes]'));
+  L.push('  page 2   '+os(a,'org-noter-no-notes-exist-face','[no notes]'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderSignelPreview(){const a='signel',L=[];
+  L.push(os(a,'signel-timestamp-face','[10:24]')+' '+os(a,'signel-my-msg-face','Me: hey, are we still on for tonight?'));
+  L.push(os(a,'signel-timestamp-face','[10:25]')+' '+os(a,'signel-other-msg-face','Alice: yes! see you at 7'));
+  L.push(os(a,'signel-error-face','(failed to send -- retrying)'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderPearlPreview(){const a='pearl',L=[];
+  L.push(os(a,'pearl-preamble-summary','PEARL-42  Fix the broken picker'));
+  L.push('State: '+os(a,'pearl-modified-local','In Progress')+'   Priority: '+os(a,'pearl-modified-highlight','High')+'   Estimate: '+os(a,'pearl-modified-unknown','?'));
+  L.push('  '+os(a,'pearl-editable-comment','&gt; add a comment (editable)'));
+  L.push('  '+os(a,'pearl-readonly-comment','&gt; created by automation (read-only)'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
 function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div data-face="${face}" style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
-function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e','lsp','gitgutter','flycheck','dired','dirvish'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():pv==='lsp'?renderLspPreview():pv==='gitgutter'?renderGitGutterPreview():pv==='flycheck'?renderFlycheckPreview():pv==='dired'?renderDiredPreview():pv==='dirvish'?renderDirvishPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
+function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e','lsp','gitgutter','flycheck','dired','dirvish','calibredb','erc','orgdrill','orgnoter','signel','pearl'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():pv==='lsp'?renderLspPreview():pv==='gitgutter'?renderGitGutterPreview():pv==='flycheck'?renderFlycheckPreview():pv==='dired'?renderDiredPreview():pv==='dirvish'?renderDirvishPreview():pv==='calibredb'?renderCalibredbPreview():pv==='erc'?renderErcPreview():pv==='orgdrill'?renderOrgdrillPreview():pv==='orgnoter'?renderOrgnoterPreview():pv==='signel'?renderSignelPreview():pv==='pearl'?renderPearlPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;pv.style.color=UIMAP[face].fg||MAP['p'];pv.style.background=UIMAP[face].bg||MAP['bg'];}
