@@ -38,6 +38,8 @@ UIMAP={"cursor":{"fg":None,"bg":"#a9b2bb"},"region":{"fg":None,"bg":"#264364"},
  "show-paren-mismatch":{"fg":"#0d0b0a","bg":"#cb6b4d"},"link":{"fg":"#67809c","bg":None},
  "error":{"fg":"#cb6b4d","bg":None},"warning":{"fg":"#e8bd30","bg":None},
  "success":{"fg":"#5d9b86","bg":None},"vertical-border":{"fg":"#2f343a","bg":None}}
+# link is underlined by default (matches the built-in link face).
+UIMAP["link"]["underline"]=True
 # Tier-3 package faces (Phase 2): complete own-defface sets for org/magit/elfeed,
 # built from face-name lists + a curated seed-color map. Prominent faces are
 # seeded; the long tail seeds to the default foreground for the user to tune.
@@ -479,7 +481,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
 <h1>ui faces</h1>
 <div class="cols stretch">
  <section class="pane">
-  <table class="leg" id="uitable"><thead><tr><th>face</th><th>foreground</th><th>background</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
+  <table class="leg" id="uitable"><thead><tr><th>face</th><th>foreground</th><th>background</th><th>style</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label style="color:#b4b1a2">live buffer preview</label></div>
@@ -649,6 +651,7 @@ function importFile(ev){const f=ev.target.files[0];if(!f)return;const r=new File
   r.readAsText(f);ev.target.value='';}
 function applyGround(){document.querySelectorAll('pre').forEach(p=>p.style.background=MAP['bg']);document.querySelectorAll('.ex').forEach(e=>e.style.background=MAP['bg']);}
 function uf(f){return UIMAP[f]||{};}
+function udeco(o){return `font-weight:${o.bold?'bold':'normal'};font-style:${o.italic?'italic':'normal'};text-decoration:${(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none'}`;}
 function flashRow(tr){if(!tr)return;tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}
 function flashEl(el){if(!el)return;el.classList.remove('flashtok');void el.offsetWidth;el.classList.add('flashtok');}
 function flashTokens(kind){const sp=document.querySelectorAll('#codepre [data-k="'+kind+'"]');if(sp.length){sp.forEach(flashEl);return;}const row=document.querySelector('#legbody tr[data-kind="'+kind+'"]');if(row)flashEl(row.querySelector('.ex'));}
@@ -696,10 +699,10 @@ function buildMockFrame(){
     buf+=`<div class="ln" style="background:${rowBg}"><span class="fr" data-face="fringe" style="background:${frng.bg||bg}"></span><span class="num" data-face="${nFace}" style="color:${nFg};background:${nBg}">${i+1}</span><span class="cd">${cd||'&nbsp;'}</span></div>`;
   });
   let html=`<div class="mbuf" style="display:flex;background:${bg}"><div style="flex:1;min-width:0">${buf}</div><div data-face="vertical-border" title="vertical-border" style="width:3px;flex:0 0 auto;background:${vb.fg||vb.bg||'#2f343a'}"></div></div>`;
-  html+=`<div class="bar" data-face="mode-line" style="background:${ml.bg||fg};color:${ml.fg||bg}">  init.el      (Emacs Lisp)      L5      git:main  </div>`;
-  html+=`<div class="bar" data-face="mode-line-inactive" style="background:${mli.bg||bg};color:${mli.fg||fg}">  *Messages*      (Fundamental)  </div>`;
-  html+=`<div class="echo" style="color:${fg}"><span data-face="minibuffer-prompt" style="color:${mb.fg||fg}">I-search:</span> count   <span data-face="isearch-fail" style="color:${isf.fg||fg};background:${isf.bg||'transparent'}">zzz [no match]</span></div>`;
-  html+=`<div class="echo"><span data-face="link" style="color:${lnk.fg||fg};text-decoration:underline">https://gnu.org</span>   <span data-face="error" style="color:${err.fg||fg}">error</span>   <span data-face="warning" style="color:${wrn.fg||fg}">warning</span>   <span data-face="success" style="color:${suc.fg||fg}">ok</span></div>`;
+  html+=`<div class="bar" data-face="mode-line" style="background:${ml.bg||fg};color:${ml.fg||bg};${udeco(ml)}">  init.el      (Emacs Lisp)      L5      git:main  </div>`;
+  html+=`<div class="bar" data-face="mode-line-inactive" style="background:${mli.bg||bg};color:${mli.fg||fg};${udeco(mli)}">  *Messages*      (Fundamental)  </div>`;
+  html+=`<div class="echo" style="color:${fg}"><span data-face="minibuffer-prompt" style="color:${mb.fg||fg};${udeco(mb)}">I-search:</span> count   <span data-face="isearch-fail" style="color:${isf.fg||fg};background:${isf.bg||'transparent'};${udeco(isf)}">zzz [no match]</span></div>`;
+  html+=`<div class="echo"><span data-face="link" style="color:${lnk.fg||fg};${udeco(lnk)}">https://gnu.org</span>   <span data-face="error" style="color:${err.fg||fg};${udeco(err)}">error</span>   <span data-face="warning" style="color:${wrn.fg||fg};${udeco(wrn)}">warning</span>   <span data-face="success" style="color:${suc.fg||fg};${udeco(suc)}">ok</span></div>`;
   fr.innerHTML=html;fr.style.background=bg;fr.style.color=fg;
   fr.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u){flashUi(u.dataset.face);return;}const k=e.target.closest('[data-k]');if(k)flashAssign(k.dataset.k);};
 }
@@ -1040,7 +1043,7 @@ function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 
 function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e','lsp','gitgutter','flycheck','dired','dirvish','calibredb','erc','orgdrill','orgnoter','signel','pearl','slack','telega','shr'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():pv==='lsp'?renderLspPreview():pv==='gitgutter'?renderGitGutterPreview():pv==='flycheck'?renderFlycheckPreview():pv==='dired'?renderDiredPreview():pv==='dirvish'?renderDirvishPreview():pv==='calibredb'?renderCalibredbPreview():pv==='erc'?renderErcPreview():pv==='orgdrill'?renderOrgdrillPreview():pv==='orgnoter'?renderOrgnoterPreview():pv==='signel'?renderSignelPreview():pv==='pearl'?renderPearlPreview():pv==='slack'?renderSlackPreview():pv==='telega'?renderTelegaPreview():pv==='shr'?renderShrPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
-function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;pv.style.color=UIMAP[face].fg||MAP['p'];pv.style.background=UIMAP[face].bg||MAP['bg'];}
+function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=o.fg||MAP['p'];pv.style.background=o.bg||MAP['bg'];pv.style.fontWeight=o.bold?'bold':'normal';pv.style.fontStyle=o.italic?'italic':'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';}
 function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
@@ -1048,8 +1051,9 @@ function buildUITable(){
     const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.style.cursor='pointer';c0.title='flash this face in the live preview';c0.onclick=()=>flashUiPreview(face);
     const cF=document.createElement('td');cF.appendChild(uiSelect(face,'fg'));
     const cB=document.createElement('td');cB.appendChild(uiSelect(face,'bg'));
+    const cS=document.createElement('td');[['B','bold'],['I','italic'],['U','underline'],['S','strike']].forEach(([ch,at])=>{const b=document.createElement('button');b.className='sbtn'+(UIMAP[face][at]?' on':'');b.textContent='a';b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';b.style.textDecoration=at==='underline'?'underline':at==='strike'?'line-through':'none';b.title=at;b.onclick=()=>{UIMAP[face][at]=!UIMAP[face][at];paintUI(face);buildMockFrame();};cS.appendChild(b);});
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
-    tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cP);tb.appendChild(tr);paintUI(face);
+    tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cP);tb.appendChild(tr);paintUI(face);
   }
 }
 let D={};
