@@ -41,6 +41,9 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
+** TODO [#C] Evaluate jamescherti essential-emacs-packages list :packages:research:
+Review [[https://www.jamescherti.com/essential-emacs-packages/][James Cherti's essential Emacs packages]] for anything worth installing. Cross-check each candidate against what is already in the config (=modules/= + =init.el=), skip the ones already present, and shortlist the genuinely new ones with a one-line rationale. Future-installation research, not a commitment to install.
+
 ** DONE [#B] theme-selector comprehensive previews (org/magit/elfeed/ghostel/mu4e/dashboard) :feature:theme:theme-selector:
 CLOSED: [2026-06-08 Mon]
 Expanded the bespoke previews to near-complete face coverage and added three new ones. org now exercises 83/88 faces (document + agenda; the 5 skipped are non-visual: org-hide, org-indent, org-clock-overlay, org-default, org-date-selected). magit 97/98 (status buffer + blame/reflog/sequence/bisect/signature sampler rows). elfeed 13/13. New bespoke previews: ghostel 19/19 (mock terminal, 16 ANSI colors + default + fake cursor), mu4e 37/37 (curated face list, not in the generated inventory; headers list + message view + compose), dashboard 8/8. So clicking a face row flashes a real preview element for nearly every face. Originally filed as just the org preview.
