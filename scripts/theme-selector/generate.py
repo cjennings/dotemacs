@@ -472,6 +472,9 @@ function flashEl(el){if(!el)return;el.classList.remove('flashtok');void el.offse
 function flashTokens(kind){const sp=document.querySelectorAll('#codepre [data-k="'+kind+'"]');if(sp.length){sp.forEach(flashEl);return;}const row=document.querySelector('#legbody tr[data-kind="'+kind+'"]');if(row)flashEl(row.querySelector('.ex'));}
 function flashAssign(k){flashRow(document.querySelector(`#legbody tr[data-kind="${k}"]`));}
 function flashUi(f){flashRow(document.querySelector(`#uibody tr[data-face="${f}"]`));}
+function flashUiPreview(f){const sp=document.querySelectorAll(`#mockframe [data-face="${f}"]`);if(sp.length){sp.forEach(flashEl);return;}const cell=document.getElementById('uiprev-'+f);if(cell)flashEl(cell);}
+function flashPkg(f){flashRow(document.querySelector(`#pkgbody tr[data-face="${f}"]`));}
+function flashPkgPreview(f){const sp=document.querySelectorAll(`#pkgpreview [data-face="${f}"]`);if(sp.length){sp.forEach(flashEl);return;}const row=document.querySelector(`#pkgbody tr[data-face="${f}"]`);if(row)flashEl(row.querySelector('.cat'));}
 function mockSpan(k,t){return `<span data-k="${k}" style="color:${MAP[k]||MAP['p']};font-weight:${BOLD[k]?'bold':'normal'};font-style:${ITALIC[k]?'italic':'normal'}">${esc(t)}</span>`;}
 function syncMockHeight(){const t=document.getElementById('uitable'),m=document.getElementById('mockframe');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function buildMockFrame(){
@@ -542,8 +545,8 @@ function buildPkgTable(){
   const inh=[''].concat(BASE_INHERITS).concat(APPS[app].faces.map(r=>r[0]));
   for(const [face,label,def] of APPS[app].faces){
     if(flt&&!(face.toLowerCase().includes(flt)||label.toLowerCase().includes(flt)))continue;
-    const f=PKGMAP[app][face],tr=document.createElement('tr');
-    const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.title=face;
+    const f=PKGMAP[app][face],tr=document.createElement('tr');tr.dataset.face=face;
+    const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.title=face;c0.style.cursor='pointer';c0.onclick=()=>flashPkgPreview(face);
     const cf=document.createElement('td');cf.appendChild(colorDropdown(f.fg,v=>{f.fg=v;f.source='user';pkgChanged();}));
     const cb=document.createElement('td');cb.appendChild(colorDropdown(f.bg,v=>{f.bg=v;f.source='user';pkgChanged();}));
     const cw=document.createElement('td');[['B','bold'],['I','italic']].forEach(([ch,at])=>{const b=document.createElement('button');b.className='sbtn'+(f[at]?' on':'');b.textContent='a';b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';b.onclick=()=>{f[at]=!f[at];f.source='user';pkgChanged();};cw.appendChild(b);});
@@ -555,7 +558,7 @@ function buildPkgTable(){
   }
 }
 function ofs(app,face){const f=PKGMAP[app][face]||{},fg=pkgEffFg(app,face)||MAP['p'],bg=pkgEffBg(app,face);return `color:${fg};${bg?'background:'+bg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em`;}
-function os(app,face,txt){return `<span style="${ofs(app,face)}">${txt}</span>`;}
+function os(app,face,txt){return `<span data-face="${face}" style="${ofs(app,face)}">${txt}</span>`;}
 function renderOrgPreview(){const a='org-mode',L=[];
   L.push(os(a,'org-document-info-keyword','#+TITLE:')+' '+os(a,'org-document-title','Project Notes'));
   L.push(os(a,'org-document-info-keyword','#+AUTHOR:')+' '+os(a,'org-document-info','Craig Jennings'));
@@ -613,8 +616,8 @@ function renderElfeedPreview(){const a='elfeed',L=[];
   L.push(os(a,'elfeed-log-date-face','02:24:02')+'  '+os(a,'elfeed-log-warn-level-face','WARN ')+' slow feed: example.com');
   L.push(os(a,'elfeed-log-date-face','02:24:03')+'  '+os(a,'elfeed-log-error-level-face','ERROR')+' failed: bad.example');
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
-function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
-function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=pv==='org'||pv==='magit'||pv==='elfeed';p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():genericPreview(app);p.style.background=MAP['bg'];const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
+function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div data-face="${face}" style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
+function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=pv==='org'||pv==='magit'||pv==='elfeed';p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;pv.style.color=UIMAP[face].fg||MAP['p'];pv.style.background=UIMAP[face].bg||MAP['bg'];}
@@ -622,7 +625,7 @@ function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
     const tr=document.createElement('tr');tr.dataset.face=face;
-    const c0=document.createElement('td');c0.className='cat';c0.textContent=label;
+    const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.style.cursor='pointer';c0.title='flash this face in the live preview';c0.onclick=()=>flashUiPreview(face);
     const cF=document.createElement('td');cF.appendChild(uiSelect(face,'fg'));
     const cB=document.createElement('td');cB.appendChild(uiSelect(face,'bg'));
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
