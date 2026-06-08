@@ -64,14 +64,18 @@ foreground and background dropdown, bold/italic toggles, an `inherit` dropdown
 height stepper, a contrast readout, and a per-face reset. There's a per-app
 reset and a text filter for the large sets.
 
-Eleven applications have bespoke previews that exercise nearly all of their
+Nineteen applications have bespoke previews that exercise nearly all of their
 faces: org-mode (a document plus an agenda view), magit (a status buffer plus
 blame, reflog, sequence, bisect, and signature rows), elfeed (a search list and
 log), ghostel (a mock terminal with the 16 ANSI colors), mu4e (a headers list,
 message view, and compose stub), dashboard, lsp-mode (signatures, inlay hints,
 symbol highlights, rename), git-gutter, flycheck (a diagnostic line plus an
-error-list buffer), dired, and dirvish (attribute columns, vc states, media,
-proc, narrow). Every other installed package is reachable too, with an editable
+error-list buffer), dired, dirvish (attribute columns, vc states, media, proc,
+narrow), calibredb (a library listing and detail view), erc (an IRC channel),
+org-drill (a cloze flashcard), org-noter, signel (a Signal chat), pearl (a
+ticket), slack (a channel with mrkdwn, attachments, blocks, and dialogs), and
+telega (chat entities, reactions, buttons, and webpage rendering). Every other
+installed package is reachable too, with an editable
 table and a generic preview (each face name in its own colors), so any package
 can be themed. Clicking a face row flashes that face in the preview, and clicking
 a preview element flashes its row.
