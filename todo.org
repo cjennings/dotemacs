@@ -72,8 +72,8 @@ Added =APPS= (org starter) and =PKGMAP= ({app:{face:{fg,bg,bold,italic,inherit,h
 *** 2026-06-08 Mon @ 02:16:24 -0500 Phase 2 — curated app data (org/magit/elfeed) landed
 Filled =APPS= with the complete own-defface sets built from embedded face-name lists + a curated seed-color map: org 88 (85 seeded, incl. org-agenda, heading heights, fixed-pitch inherits), magit 98 (64 seeded), elfeed 13 (all seeded). Long-tail faces seed to default fg. Verified: 199 faces total, no seed typos / no dupes, schema self-test PASS seeding all of them. Seeded-default aesthetics still go to Manual testing once the Phase 3 UI lands.
 
-*** TODO [#B] Phase 3 — package face table UI :solo:
-App selector; grouped rows; fg/bg dropdowns + bold/italic + optional inherit (resolved color shown, marked inherited); per-face + per-app reset; text filter; per-fg/bg contrast readout; a generalized face-control helper shared with the ui-faces table (not a =uiSelect= fork). Verify: headless screenshot; reassign / inherit / override / reset behave. Spec phase 3.
+*** 2026-06-08 Mon @ 02:23:56 -0500 Phase 3 — package face table UI landed
+Added the "package faces" section: app selector (org/magit/elfeed), per-app face table with fg/bg dropdowns, bold/italic toggles, inherit dropdown (base faces + the app's own faces), relative-height stepper, live contrast readout on the effective (inherit-resolved) color, per-face and per-app reset, and a text filter. Refactored the fg/bg dropdown into a shared =colorDropdown= helper the ui-faces table now also uses (no =uiSelect= fork). Palette edits propagate to package faces; import/export carry them. Right pane is the generic preview (face names in their own resolved colors) until the bespoke org/magit/elfeed previews land (phases 4-5). Verified: node, headless screenshot, schema self-test PASS.
 
 *** TODO [#B] Phase 4 — org preview :solo:
 =renderOrgPreview()=: a mock org document painted live from the org package faces + palette, refreshing on change. Verify: screenshot. Fidelity to Manual testing. Spec phase 4.
