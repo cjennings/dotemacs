@@ -307,7 +307,8 @@ Each package face object carries a =source= marker so export can tell a seeded
 default from a user edit from a deliberate clear:
 
 #+begin_src js
-{ fg:"#67809c", bg:null, bold:true, italic:false, inherit:null, height:1.0, source:"default" }
+{ fg:"#67809c", bg:null, bold:true, italic:false, underline:false, strike:false, inherit:null, height:1.0, source:"default" }
+// underline / strike: booleans -> the converter writes :underline t / :strike-through t
 // height: float multiplier off the base font (1.0 = unchanged); see Relative height
 // source: "default" (seeded) | "user" (edited) | "cleared" (user removed a default)
 #+end_src

@@ -118,6 +118,7 @@ The export (and what a build step consumes):
   "packages": {
     "org-mode": {
       "org-level-1": {"fg": "#67809c", "bg": null, "bold": true, "italic": false,
+                      "underline": false, "strike": false,
                       "inherit": null, "height": 1.3, "source": "default"}
     }
   }
@@ -127,9 +128,10 @@ The export (and what a build step consumes):
 - `assignments` maps syntax category keys to hexes; `bg` is the `default` face
   background, `p` the foreground.
 - `ui` and `packages` faces carry `fg`/`bg` (hex or `null`), `bold`, `italic`,
-  and for package faces `inherit` (a face name or `null`), `height` (a float,
-  omitted at 1.0), and `source` (`"default"` seeded, `"user"` edited,
-  `"cleared"`).
+  `underline`, `strike`, and for package faces `inherit` (a face name or
+  `null`), `height` (a float, omitted at 1.0), and `source` (`"default"` seeded,
+  `"user"` edited, `"cleared"`). The converter writes `underline` as
+  `:underline t` and `strike` as `:strike-through t`.
 - The theme name is both the `name` field and the download filename. Import a
   `theme.json` to start from a prior theme; a file with no `packages` key still
   loads.
