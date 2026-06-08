@@ -38,28 +38,142 @@ UIMAP={"cursor":{"fg":None,"bg":"#a9b2bb"},"region":{"fg":None,"bg":"#264364"},
  "show-paren-mismatch":{"fg":"#0d0b0a","bg":"#cb6b4d"},"link":{"fg":"#67809c","bg":None},
  "error":{"fg":"#cb6b4d","bg":None},"warning":{"fg":"#e8bd30","bg":None},
  "success":{"fg":"#5d9b86","bg":None},"vertical-border":{"fg":"#2f343a","bg":None}}
-# Tier-3 package faces. Phase 1 ships the schema + an org starter; Phase 2 fills
-# the complete org/magit/elfeed sets. Defaults reference palette names.
-APPS={"org-mode":{"label":"org-mode","preview":"org","faces":[
- ["org-document-title","document title",{"fg":"gold","bold":True,"height":1.5}],
- ["org-level-1","heading 1",{"fg":"blue","bold":True,"height":1.3}],
- ["org-level-2","heading 2",{"fg":"gold","height":1.2}],
- ["org-level-3","heading 3",{"fg":"regal","height":1.15}],
- ["org-todo","TODO keyword",{"fg":"terracotta","bold":True}],
- ["org-done","DONE keyword",{"fg":"sage","bold":True}],
- ["org-link","link",{"fg":"blue"}],
- ["org-code","inline code",{"fg":"terracotta","inherit":"fixed-pitch"}],
- ["org-verbatim","verbatim",{"fg":"steel","inherit":"fixed-pitch"}],
- ["org-block","src block body",{"fg":"white","bg":"bg-dim","inherit":"fixed-pitch"}],
- ["org-block-begin-line","block delim",{"fg":"pewter","bg":"bg-dim","inherit":"fixed-pitch"}],
- ["org-table","table",{"fg":"steel","inherit":"fixed-pitch"}],
- ["org-date","timestamp",{"fg":"steel","inherit":"fixed-pitch"}],
- ["org-tag","tag",{"fg":"tan"}],
- ["org-special-keyword","keyword/drawer",{"fg":"pewter"}],
- ["org-meta-line","#+meta line",{"fg":"pewter","inherit":"fixed-pitch"}],
- ["org-checkbox","checkbox",{"fg":"gold","inherit":"fixed-pitch"}],
- ["org-headline-done","done headline",{"fg":"pewter"}]
-]}}
+# Tier-3 package faces (Phase 2): complete own-defface sets for org/magit/elfeed,
+# built from face-name lists + a curated seed-color map. Prominent faces are
+# seeded; the long tail seeds to the default foreground for the user to tune.
+ORG_FACES=("org-document-title org-document-info org-document-info-keyword "
+ "org-level-1 org-level-2 org-level-3 org-level-4 org-level-5 org-level-6 org-level-7 org-level-8 "
+ "org-headline-todo org-headline-done org-todo org-done org-priority org-tag org-tag-group "
+ "org-special-keyword org-drawer org-property-value org-checkbox org-checkbox-statistics-todo "
+ "org-checkbox-statistics-done org-warning org-link org-footnote org-date org-sexp-date "
+ "org-date-selected org-target org-macro org-cite org-cite-key org-block org-block-begin-line "
+ "org-block-end-line org-code org-verbatim org-inline-src-block org-quote org-verse "
+ "org-latex-and-related org-table org-table-header org-table-row org-formula org-column "
+ "org-column-title org-list-dt org-meta-line org-ellipsis org-hide org-indent org-archived "
+ "org-default org-dispatcher-highlight org-agenda-structure org-agenda-structure-secondary "
+ "org-agenda-structure-filter org-agenda-date org-agenda-date-today org-agenda-date-weekend "
+ "org-agenda-date-weekend-today org-agenda-current-time org-agenda-done org-agenda-dimmed-todo-face "
+ "org-agenda-calendar-event org-agenda-calendar-sexp org-agenda-calendar-daterange org-agenda-diary "
+ "org-agenda-clocking org-agenda-column-dateline org-agenda-restriction-lock org-agenda-filter-category "
+ "org-agenda-filter-effort org-agenda-filter-regexp org-agenda-filter-tags org-scheduled "
+ "org-scheduled-today org-scheduled-previously org-upcoming-deadline org-upcoming-distant-deadline "
+ "org-imminent-deadline org-time-grid org-clock-overlay org-mode-line-clock org-mode-line-clock-overrun").split()
+MAGIT_FACES=("magit-section-heading magit-section-secondary-heading magit-section-heading-selection "
+ "magit-section-highlight magit-section-child-count magit-diff-added magit-diff-added-highlight "
+ "magit-diff-removed magit-diff-removed-highlight magit-diff-context magit-diff-context-highlight "
+ "magit-diff-file-heading magit-diff-file-heading-highlight magit-diff-file-heading-selection "
+ "magit-diff-hunk-heading magit-diff-hunk-heading-highlight magit-diff-hunk-heading-selection "
+ "magit-diff-hunk-region magit-diff-lines-heading magit-diff-lines-boundary magit-diff-base "
+ "magit-diff-base-highlight magit-diff-our magit-diff-our-highlight magit-diff-their "
+ "magit-diff-their-highlight magit-diff-conflict-heading magit-diff-conflict-heading-highlight "
+ "magit-diff-revision-summary magit-diff-revision-summary-highlight magit-diff-whitespace-warning "
+ "magit-diffstat-added magit-diffstat-removed magit-branch-current magit-branch-local "
+ "magit-branch-remote magit-branch-remote-head magit-branch-upstream magit-branch-warning "
+ "magit-head magit-tag magit-hash magit-filename magit-dimmed magit-keyword magit-keyword-squash "
+ "magit-refname magit-refname-stash magit-refname-wip magit-refname-pullreq magit-log-author "
+ "magit-log-date magit-log-graph magit-header-line magit-header-line-key magit-header-line-log-select "
+ "magit-process-ok magit-process-ng magit-mode-line-process magit-mode-line-process-error "
+ "magit-bisect-good magit-bisect-bad magit-bisect-skip magit-blame-heading magit-blame-highlight "
+ "magit-blame-hash magit-blame-name magit-blame-date magit-blame-summary magit-blame-dimmed "
+ "magit-blame-margin magit-cherry-equivalent magit-cherry-unmatched magit-signature-good "
+ "magit-signature-bad magit-signature-untrusted magit-signature-expired magit-signature-expired-key "
+ "magit-signature-revoked magit-signature-error magit-reflog-commit magit-reflog-amend "
+ "magit-reflog-merge magit-reflog-checkout magit-reflog-reset magit-reflog-rebase "
+ "magit-reflog-cherry-pick magit-reflog-remote magit-reflog-other magit-sequence-pick "
+ "magit-sequence-stop magit-sequence-part magit-sequence-head magit-sequence-drop magit-sequence-done "
+ "magit-sequence-onto magit-sequence-exec magit-left-margin").split()
+ELFEED_FACES=("elfeed-search-date-face elfeed-search-title-face elfeed-search-unread-title-face "
+ "elfeed-search-feed-face elfeed-search-tag-face elfeed-search-unread-count-face "
+ "elfeed-search-filter-face elfeed-search-last-update-face elfeed-log-date-face "
+ "elfeed-log-error-level-face elfeed-log-warn-level-face elfeed-log-info-level-face "
+ "elfeed-log-debug-level-face").split()
+ORG_SEED={
+ "org-document-title":{"fg":"gold","bold":True,"height":1.5},"org-document-info":{"fg":"steel"},
+ "org-document-info-keyword":{"fg":"pewter","inherit":"fixed-pitch"},
+ "org-level-1":{"fg":"blue","bold":True,"height":1.3},"org-level-2":{"fg":"gold","height":1.2},
+ "org-level-3":{"fg":"regal","height":1.15},"org-level-4":{"fg":"emerald","height":1.1},
+ "org-level-5":{"fg":"terracotta"},"org-level-6":{"fg":"tan"},"org-level-7":{"fg":"sage"},"org-level-8":{"fg":"steel"},
+ "org-headline-done":{"fg":"pewter"},"org-todo":{"fg":"terracotta","bold":True},"org-done":{"fg":"sage","bold":True},
+ "org-priority":{"fg":"gold","bold":True},"org-tag":{"fg":"tan"},"org-tag-group":{"fg":"tan"},
+ "org-special-keyword":{"fg":"pewter"},"org-drawer":{"fg":"pewter"},"org-property-value":{"fg":"steel"},
+ "org-checkbox":{"fg":"gold","inherit":"fixed-pitch"},"org-checkbox-statistics-todo":{"fg":"terracotta"},
+ "org-checkbox-statistics-done":{"fg":"sage"},"org-warning":{"fg":"terracotta","bold":True},
+ "org-link":{"fg":"blue"},"org-footnote":{"fg":"blue"},"org-date":{"fg":"steel","inherit":"fixed-pitch"},
+ "org-sexp-date":{"fg":"steel"},"org-date-selected":{"fg":"ground","bg":"gold"},"org-target":{"fg":"regal"},
+ "org-macro":{"fg":"regal"},"org-cite":{"fg":"blue"},"org-cite-key":{"fg":"blue"},
+ "org-block":{"fg":"white","bg":"bg-dim","inherit":"fixed-pitch"},
+ "org-block-begin-line":{"fg":"pewter","bg":"bg-dim","inherit":"fixed-pitch"},
+ "org-block-end-line":{"fg":"pewter","bg":"bg-dim","inherit":"fixed-pitch"},
+ "org-code":{"fg":"terracotta","inherit":"fixed-pitch"},"org-verbatim":{"fg":"steel","inherit":"fixed-pitch"},
+ "org-inline-src-block":{"fg":"terracotta","inherit":"fixed-pitch"},"org-quote":{"fg":"silver","italic":True},
+ "org-verse":{"fg":"silver","italic":True},"org-latex-and-related":{"fg":"gold"},
+ "org-table":{"fg":"steel","inherit":"fixed-pitch"},"org-table-header":{"fg":"white","bold":True,"bg":"gunmetal"},
+ "org-formula":{"fg":"terracotta"},"org-column":{"bg":"gunmetal"},"org-column-title":{"fg":"white","bold":True,"bg":"gunmetal"},
+ "org-list-dt":{"fg":"gold","bold":True},"org-meta-line":{"fg":"pewter","inherit":"fixed-pitch"},
+ "org-ellipsis":{"fg":"pewter"},"org-hide":{"fg":"ground"},"org-indent":{"fg":"ground"},
+ "org-archived":{"fg":"pewter"},"org-dispatcher-highlight":{"fg":"gold","bold":True,"bg":"navy"},
+ "org-agenda-structure":{"fg":"blue","bold":True,"height":1.1},"org-agenda-structure-secondary":{"fg":"blue"},
+ "org-agenda-structure-filter":{"fg":"terracotta","bold":True},"org-agenda-date":{"fg":"steel","height":1.05},
+ "org-agenda-date-today":{"fg":"gold","bold":True,"height":1.05},"org-agenda-date-weekend":{"fg":"steel","bold":True},
+ "org-agenda-date-weekend-today":{"fg":"gold","bold":True},"org-agenda-current-time":{"fg":"gold"},
+ "org-agenda-done":{"fg":"sage"},"org-agenda-dimmed-todo-face":{"fg":"pewter"},
+ "org-agenda-calendar-event":{"fg":"white"},"org-agenda-calendar-sexp":{"fg":"steel"},
+ "org-agenda-calendar-daterange":{"fg":"steel"},"org-agenda-diary":{"fg":"sage"},
+ "org-agenda-clocking":{"bg":"navy"},"org-agenda-column-dateline":{"bg":"gunmetal"},
+ "org-agenda-restriction-lock":{"bg":"terracotta"},"org-agenda-filter-category":{"fg":"gold","bold":True},
+ "org-agenda-filter-effort":{"fg":"gold","bold":True},"org-agenda-filter-regexp":{"fg":"gold","bold":True},
+ "org-agenda-filter-tags":{"fg":"gold","bold":True},"org-scheduled":{"fg":"sage"},
+ "org-scheduled-today":{"fg":"sage","bold":True},"org-scheduled-previously":{"fg":"terracotta"},
+ "org-upcoming-deadline":{"fg":"gold"},"org-upcoming-distant-deadline":{"fg":"tan"},
+ "org-imminent-deadline":{"fg":"terracotta","bold":True},"org-time-grid":{"fg":"tan"},
+ "org-clock-overlay":{"bg":"navy"},"org-mode-line-clock":{"fg":"steel"},"org-mode-line-clock-overrun":{"fg":"terracotta","bold":True}}
+MAGIT_SEED={
+ "magit-section-heading":{"fg":"gold","bold":True},"magit-section-secondary-heading":{"fg":"tan","bold":True},
+ "magit-section-heading-selection":{"fg":"gold","bg":"navy"},"magit-section-highlight":{"bg":"bg-dim"},
+ "magit-section-child-count":{"fg":"pewter"},"magit-diff-added":{"fg":"sage"},
+ "magit-diff-added-highlight":{"fg":"sage","bg":"bg-dim"},"magit-diff-removed":{"fg":"terracotta"},
+ "magit-diff-removed-highlight":{"fg":"terracotta","bg":"bg-dim"},"magit-diff-context":{"fg":"pewter"},
+ "magit-diff-context-highlight":{"fg":"silver","bg":"bg-dim"},"magit-diff-file-heading":{"fg":"white","bold":True},
+ "magit-diff-file-heading-highlight":{"fg":"white","bold":True,"bg":"bg-dim"},
+ "magit-diff-hunk-heading":{"fg":"steel","bg":"gunmetal"},"magit-diff-hunk-heading-highlight":{"fg":"white","bg":"gunmetal"},
+ "magit-diffstat-added":{"fg":"sage"},"magit-diffstat-removed":{"fg":"terracotta"},
+ "magit-branch-current":{"fg":"blue","bold":True},"magit-branch-local":{"fg":"blue"},
+ "magit-branch-remote":{"fg":"sage"},"magit-branch-remote-head":{"fg":"sage","bold":True},
+ "magit-head":{"fg":"blue","bold":True},"magit-tag":{"fg":"gold"},"magit-hash":{"fg":"pewter"},
+ "magit-filename":{"fg":"steel"},"magit-dimmed":{"fg":"pewter"},"magit-keyword":{"fg":"regal"},
+ "magit-keyword-squash":{"fg":"terracotta"},"magit-refname":{"fg":"pewter"},"magit-log-author":{"fg":"tan"},
+ "magit-log-date":{"fg":"steel"},"magit-log-graph":{"fg":"pewter"},
+ "magit-header-line":{"fg":"white","bold":True,"bg":"gunmetal"},"magit-process-ok":{"fg":"sage","bold":True},
+ "magit-process-ng":{"fg":"terracotta","bold":True},"magit-mode-line-process":{"fg":"sage"},
+ "magit-mode-line-process-error":{"fg":"terracotta"},"magit-bisect-good":{"fg":"sage"},
+ "magit-bisect-bad":{"fg":"terracotta"},"magit-bisect-skip":{"fg":"gold"},
+ "magit-blame-heading":{"fg":"steel","bg":"gunmetal"},"magit-blame-hash":{"fg":"pewter"},
+ "magit-blame-name":{"fg":"tan"},"magit-blame-date":{"fg":"steel"},"magit-cherry-equivalent":{"fg":"regal"},
+ "magit-cherry-unmatched":{"fg":"sage"},"magit-signature-good":{"fg":"sage"},
+ "magit-signature-bad":{"fg":"terracotta","bold":True},"magit-signature-untrusted":{"fg":"gold"},
+ "magit-signature-expired":{"fg":"tan"},"magit-diff-whitespace-warning":{"bg":"terracotta"},
+ "magit-reflog-commit":{"fg":"sage"},"magit-reflog-amend":{"fg":"regal"},"magit-reflog-merge":{"fg":"sage"},
+ "magit-reflog-checkout":{"fg":"blue"},"magit-reflog-reset":{"fg":"terracotta"},"magit-reflog-rebase":{"fg":"regal"},
+ "magit-reflog-cherry-pick":{"fg":"sage"},"magit-reflog-remote":{"fg":"steel"},"magit-reflog-other":{"fg":"steel"},
+ "magit-sequence-pick":{"fg":"white"},"magit-sequence-stop":{"fg":"terracotta"},"magit-sequence-done":{"fg":"pewter"},
+ "magit-sequence-head":{"fg":"blue"}}
+ELFEED_SEED={
+ "elfeed-search-date-face":{"fg":"steel"},"elfeed-search-title-face":{"fg":"silver"},
+ "elfeed-search-unread-title-face":{"fg":"white","bold":True},"elfeed-search-feed-face":{"fg":"sage"},
+ "elfeed-search-tag-face":{"fg":"tan"},"elfeed-search-unread-count-face":{"fg":"gold"},
+ "elfeed-search-filter-face":{"fg":"blue","bold":True},"elfeed-search-last-update-face":{"fg":"pewter"},
+ "elfeed-log-date-face":{"fg":"steel"},"elfeed-log-error-level-face":{"fg":"terracotta","bold":True},
+ "elfeed-log-warn-level-face":{"fg":"gold"},"elfeed-log-info-level-face":{"fg":"sage"},
+ "elfeed-log-debug-level-face":{"fg":"pewter"}}
+def _faces(names,prefix,seed):
+    out=[]
+    for f in names:
+        lbl=(f[len(prefix):] if f.startswith(prefix) else f).replace("-face","").replace("-"," ")
+        out.append([f,lbl,seed.get(f,{})])
+    return out
+APPS={"org-mode":{"label":"org-mode","preview":"org","faces":_faces(ORG_FACES,"org-",ORG_SEED)},
+ "magit":{"label":"magit","preview":"magit","faces":_faces(MAGIT_FACES,"magit-",MAGIT_SEED)},
+ "elfeed":{"label":"elfeed","preview":"elfeed","faces":_faces(ELFEED_FACES,"elfeed-",ELFEED_SEED)}}
 HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
 <style>
  body{background:#0d0b0a;color:#cdced1;font:15px/1.55 monospace;margin:20px}
