@@ -78,8 +78,8 @@ Added the "package faces" section: app selector (org/magit/elfeed), per-app face
 *** 2026-06-08 Mon @ 02:27:51 -0500 Phase 4 — org preview landed
 Added =renderOrgPreview()=: a mock org document painted live from the org package faces (title, headings with heights, TODO/DONE, tag, scheduled date, property drawer, inline code/verbatim, link, checkbox, quote, src block, header-row table). The preview pane dispatches on the app's preview key; org-mode gets this, others keep the generic list. Verified: node, headless screenshot, self-test PASS.
 
-*** TODO [#B] Phase 5 — magit + elfeed previews :solo:
-Bespoke mocks: a magit status buffer and an elfeed search list, live from their faces. Verify: screenshot. Fidelity to Manual testing. Spec phase 5.
+*** 2026-06-08 Mon @ 02:30:42 -0500 Phase 5 — magit + elfeed previews landed
+Bespoke =renderMagitPreview()= (status buffer: head/branches, untracked, a diff hunk with context/added/removed, recent commits with hashes/authors/keyword/tag) and =renderElfeedPreview()= (search list: filter, dated entries with feed/unread-title/read-title/tags, log lines by level). The preview label now names the app and notes generic vs bespoke. Verified: node, headless screenshots, self-test PASS.
 
 *** TODO [#B] Phase 6 — generated all-package inventory :solo:
 Build step queries Emacs for installed packages' faces grouped by package, writes a data file =generate.py= embeds; the dropdown then lists every package with an editable table + a labeled generic fallback preview. Verify: data file generates, dropdown lists packages, a fallback package edits and round-trips. Spec phase 6.

@@ -304,7 +304,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
   <table class="leg" id="pkgtable"><thead><tr><th>face</th><th>fg</th><th>bg</th><th>weight</th><th>inherit</th><th>size</th><th>contrast</th><th></th></tr></thead><tbody id="pkgbody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
-  <div class="langbar"><label style="color:#b4b1a2">preview (generic — face names in their own colors)</label></div>
+  <div class="langbar"><label id="pkgprevlabel" style="color:#b4b1a2">preview</label></div>
   <div id="pkgpreview" class="mock" style="overflow:auto"></div>
  </section>
 </div>
@@ -571,8 +571,39 @@ function renderOrgPreview(){const a='org-mode',L=[];
   L.push('   '+os(a,'org-table','| blue | #67809c |'));
   return `<div style="padding:12px 16px;font:15px/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;
 }
+function renderMagitPreview(){const a='magit',L=[];
+  L.push(os(a,'magit-head','Head:')+'     '+os(a,'magit-branch-local','main')+'  '+os(a,'magit-diff-revision-summary','Ship the tool'));
+  L.push(os(a,'magit-head','Merge:')+'    '+os(a,'magit-branch-remote','origin/main'));
+  L.push(os(a,'magit-head','Push:')+'     '+os(a,'magit-branch-remote','origin/main'));
+  L.push('');
+  L.push(os(a,'magit-section-heading','Untracked files (1)'));
+  L.push('  '+os(a,'magit-filename','notes.txt'));
+  L.push('');
+  L.push(os(a,'magit-section-heading','Unstaged changes (1)'));
+  L.push(os(a,'magit-diff-file-heading','modified   generate.py'));
+  L.push(os(a,'magit-diff-hunk-heading','@@ -1,4 +1,5 @@ def main'));
+  L.push(os(a,'magit-diff-context','   unchanged context'));
+  L.push(os(a,'magit-diff-removed','- old line'));
+  L.push(os(a,'magit-diff-added','+ new line'));
+  L.push('');
+  L.push(os(a,'magit-section-heading','Recent commits'));
+  L.push(os(a,'magit-hash','b5b1869f')+'  '+os(a,'magit-log-author','Craig')+'  enlarge the picker');
+  L.push(os(a,'magit-hash','4fa5e995')+'  '+os(a,'magit-log-author','Craig')+'  '+os(a,'magit-keyword','feat')+' color picker');
+  L.push(os(a,'magit-hash','de07e01a')+'  '+os(a,'magit-log-author','Craig')+'  '+os(a,'magit-tag','v0.3')+' relative height');
+  return `<div style="padding:12px 16px;font:15px/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderElfeedPreview(){const a='elfeed',L=[];
+  L.push(os(a,'elfeed-search-filter-face','@6-months-ago +unread')+'   '+os(a,'elfeed-search-unread-count-face','3/120'));
+  L.push('');
+  L.push(os(a,'elfeed-search-date-face','2026-06-08')+'  '+os(a,'elfeed-search-feed-face','Planet Emacs')+'  '+os(a,'elfeed-search-unread-title-face','New release of Magit')+'  '+os(a,'elfeed-search-tag-face',':emacs:'));
+  L.push(os(a,'elfeed-search-date-face','2026-06-07')+'  '+os(a,'elfeed-search-feed-face','LWN')+'  '+os(a,'elfeed-search-unread-title-face','Kernel 6.18 lands')+'  '+os(a,'elfeed-search-tag-face',':linux:'));
+  L.push(os(a,'elfeed-search-date-face','2026-06-05')+'  '+os(a,'elfeed-search-feed-face','Hacker News')+'  '+os(a,'elfeed-search-title-face','Show HN: a theme editor')+'  '+os(a,'elfeed-search-tag-face',':show:'));
+  L.push('');
+  L.push(os(a,'elfeed-log-date-face','02:24:01')+'  '+os(a,'elfeed-log-info-level-face','INFO ')+' updated 12 feeds');
+  L.push(os(a,'elfeed-log-date-face','02:24:02')+'  '+os(a,'elfeed-log-warn-level-face','WARN ')+' slow feed: example.com');
+  L.push(os(a,'elfeed-log-date-face','02:24:03')+'  '+os(a,'elfeed-log-error-level-face','ERROR')+' failed: bad.example');
+  return `<div style="padding:12px 16px;font:15px/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
 function genericPreview(app){let h='<div style="padding:10px 14px;font:15px/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
-function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;p.innerHTML=(APPS[app].preview==='org')?renderOrgPreview():genericPreview(app);p.style.background=MAP['bg'];}
+function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=pv==='org'||pv==='magit'||pv==='elfeed';p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():genericPreview(app);p.style.background=MAP['bg'];const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;pv.style.color=UIMAP[face].fg||MAP['p'];pv.style.background=UIMAP[face].bg||MAP['bg'];}
@@ -611,6 +642,7 @@ function pkgSelftest(){
 }
 if(location.hash==='#selftest')pkgSelftest();
 if(location.hash.startsWith('#pick')){openPicker();const m=location.hash.slice(5);if(m){const b=document.querySelector('.pmode button[data-m="'+m+'"]');if(b)b.click();}}
+if(location.hash.startsWith('#app')){const ap=location.hash.slice(4),s=document.getElementById('appsel');if(s&&ap){s.value=ap;pkgChanged();}}
 </script>"""
 HTML=(HTML.replace("SAMPLES_J",json.dumps(SAMPLES))
  .replace("PALETTE_J",json.dumps(PALETTE)).replace("CATS_J",json.dumps(CATS))
