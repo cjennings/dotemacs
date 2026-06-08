@@ -64,10 +64,14 @@ foreground and background dropdown, bold/italic toggles, an `inherit` dropdown
 height stepper, a contrast readout, and a per-face reset. There's a per-app
 reset and a text filter for the large sets.
 
-org-mode, magit, and elfeed have bespoke previews (a mock org document, a magit
-status buffer, an elfeed search list). Every other installed package is reachable
+Six applications have bespoke previews that exercise nearly all of their faces:
+org-mode (a document plus an agenda view), magit (a status buffer plus blame,
+reflog, sequence, bisect, and signature rows), elfeed (a search list and log),
+ghostel (a mock terminal with the 16 ANSI colors), mu4e (a headers list, message
+view, and compose stub), and dashboard. Every other installed package is reachable
 too, with an editable table and a generic preview (each face name in its own
-colors), so any package can be themed.
+colors), so any package can be themed. Clicking a face row flashes that face in
+the preview, and clicking a preview element flashes its row.
 
 **Inheritance** is modeled, not flattened: a face's effective color is resolved
 through its `inherit` chain and shown in the table and preview; setting an

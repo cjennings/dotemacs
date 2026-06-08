@@ -165,6 +165,39 @@ ELFEED_SEED={
  "elfeed-log-date-face":{"fg":"steel"},"elfeed-log-error-level-face":{"fg":"terracotta","bold":True},
  "elfeed-log-warn-level-face":{"fg":"gold"},"elfeed-log-info-level-face":{"fg":"sage"},
  "elfeed-log-debug-level-face":{"fg":"pewter"}}
+# ghostel (terminal): the 16 ANSI colors plus default and the fake cursor.
+GHOSTEL_FACES=("ghostel-default ghostel-fake-cursor ghostel-fake-cursor-box "
+ "ghostel-color-black ghostel-color-red ghostel-color-green ghostel-color-yellow "
+ "ghostel-color-blue ghostel-color-magenta ghostel-color-cyan ghostel-color-white "
+ "ghostel-color-bright-black ghostel-color-bright-red ghostel-color-bright-green ghostel-color-bright-yellow "
+ "ghostel-color-bright-blue ghostel-color-bright-magenta ghostel-color-bright-cyan ghostel-color-bright-white").split()
+GHOSTEL_SEED={
+ "ghostel-default":{"fg":"#cdced1"},"ghostel-fake-cursor":{"fg":"#000000","bg":"silver"},"ghostel-fake-cursor-box":{"fg":"silver"},
+ "ghostel-color-black":{"fg":"pewter"},"ghostel-color-red":{"fg":"terracotta"},"ghostel-color-green":{"fg":"emerald"},"ghostel-color-yellow":{"fg":"gold"},
+ "ghostel-color-blue":{"fg":"blue"},"ghostel-color-magenta":{"fg":"regal"},"ghostel-color-cyan":{"fg":"sage"},"ghostel-color-white":{"fg":"silver"},
+ "ghostel-color-bright-black":{"fg":"steel"},"ghostel-color-bright-red":{"fg":"#de4949"},"ghostel-color-bright-green":{"fg":"#84b068"},"ghostel-color-bright-yellow":{"fg":"#eed376"},
+ "ghostel-color-bright-blue":{"fg":"#7a9abe"},"ghostel-color-bright-magenta":{"fg":"#b07fd0"},"ghostel-color-bright-cyan":{"fg":"#7fc0a8"},"ghostel-color-bright-white":{"fg":"white"}}
+DASHBOARD_FACES=("dashboard-banner-logo-title dashboard-text-banner dashboard-heading "
+ "dashboard-items-face dashboard-navigator dashboard-no-items-face dashboard-footer-face dashboard-footer-icon-face").split()
+DASHBOARD_SEED={
+ "dashboard-banner-logo-title":{"fg":"gold","bold":True},"dashboard-text-banner":{"fg":"steel"},"dashboard-heading":{"fg":"blue","bold":True},
+ "dashboard-items-face":{"fg":"#cdced1"},"dashboard-navigator":{"fg":"blue"},"dashboard-no-items-face":{"fg":"pewter"},
+ "dashboard-footer-face":{"fg":"tan"},"dashboard-footer-icon-face":{"fg":"gold"}}
+# mu4e is not in the generated inventory (not loaded when it was built), so its
+# face list is curated from the set the dupre theme already themes.
+MU4E_FACES=("mu4e-title-face mu4e-context-face mu4e-modeline-face mu4e-ok-face mu4e-warning-face "
+ "mu4e-header-title-face mu4e-header-key-face mu4e-header-value-face mu4e-header-face mu4e-header-highlight-face mu4e-header-marks-face "
+ "mu4e-unread-face mu4e-flagged-face mu4e-replied-face mu4e-forwarded-face mu4e-draft-face mu4e-trashed-face mu4e-moved-face mu4e-related-face "
+ "mu4e-contact-face mu4e-special-header-value-face mu4e-attach-number-face mu4e-url-number-face mu4e-link-face "
+ "mu4e-cited-1-face mu4e-cited-2-face mu4e-cited-3-face mu4e-cited-4-face mu4e-cited-5-face mu4e-cited-6-face mu4e-cited-7-face "
+ "mu4e-footer-face mu4e-region-code mu4e-system-face mu4e-highlight-face mu4e-compose-header-face mu4e-compose-separator-face").split()
+MU4E_SEED={
+ "mu4e-title-face":{"fg":"blue","bold":True},"mu4e-context-face":{"fg":"blue","bold":True},"mu4e-modeline-face":{"fg":"silver"},"mu4e-ok-face":{"fg":"sage","bold":True},"mu4e-warning-face":{"fg":"gold","bold":True},
+ "mu4e-header-title-face":{"fg":"blue","bold":True},"mu4e-header-key-face":{"fg":"blue","bold":True},"mu4e-header-value-face":{"fg":"silver"},"mu4e-header-face":{"fg":"#cdced1"},"mu4e-header-highlight-face":{"bg":"gunmetal"},"mu4e-header-marks-face":{"fg":"gold"},
+ "mu4e-unread-face":{"fg":"white","bold":True},"mu4e-flagged-face":{"fg":"gold"},"mu4e-replied-face":{"fg":"silver"},"mu4e-forwarded-face":{"fg":"silver"},"mu4e-draft-face":{"fg":"steel","italic":True},"mu4e-trashed-face":{"fg":"pewter"},"mu4e-moved-face":{"fg":"steel","italic":True},"mu4e-related-face":{"fg":"steel","italic":True},
+ "mu4e-contact-face":{"fg":"#cdced1"},"mu4e-special-header-value-face":{"fg":"silver"},"mu4e-attach-number-face":{"fg":"blue","bold":True},"mu4e-url-number-face":{"fg":"blue","bold":True},"mu4e-link-face":{"fg":"blue"},
+ "mu4e-cited-1-face":{"fg":"silver"},"mu4e-cited-2-face":{"fg":"steel"},"mu4e-cited-3-face":{"fg":"sage"},"mu4e-cited-4-face":{"fg":"pewter"},"mu4e-cited-5-face":{"fg":"tan"},"mu4e-cited-6-face":{"fg":"terracotta"},"mu4e-cited-7-face":{"fg":"regal"},
+ "mu4e-footer-face":{"fg":"pewter"},"mu4e-region-code":{"bg":"bg-dim"},"mu4e-system-face":{"fg":"pewter","italic":True},"mu4e-highlight-face":{"fg":"gold","bold":True},"mu4e-compose-header-face":{"fg":"blue","bold":True},"mu4e-compose-separator-face":{"fg":"pewter"}}
 def _faces(names,prefix,seed):
     out=[]
     for f in names:
@@ -173,13 +206,16 @@ def _faces(names,prefix,seed):
     return out
 APPS={"org-mode":{"label":"org-mode","preview":"org","faces":_faces(ORG_FACES,"org-",ORG_SEED)},
  "magit":{"label":"magit","preview":"magit","faces":_faces(MAGIT_FACES,"magit-",MAGIT_SEED)},
- "elfeed":{"label":"elfeed","preview":"elfeed","faces":_faces(ELFEED_FACES,"elfeed-",ELFEED_SEED)}}
+ "elfeed":{"label":"elfeed","preview":"elfeed","faces":_faces(ELFEED_FACES,"elfeed-",ELFEED_SEED)},
+ "mu4e":{"label":"mu4e","preview":"mu4e","faces":_faces(MU4E_FACES,"mu4e-",MU4E_SEED)},
+ "ghostel":{"label":"ghostel","preview":"ghostel","faces":_faces(GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED)},
+ "dashboard":{"label":"dashboard","preview":"dashboard","faces":_faces(DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED)}}
 # Phase 6: merge the generated all-package inventory (refresh with build-inventory.el).
 # Bespoke apps stay; every other installed package becomes an editable generic app.
 _inv_path=os.path.join(HERE,"package-inventory.json")
 if os.path.exists(_inv_path):
     _INV=json.load(open(_inv_path))
-    _BESPOKE={"magit","elfeed","org","org-mode"}
+    _BESPOKE={"magit","elfeed","org","org-mode","mu4e","ghostel","dashboard"}
     for _pkg in sorted(_INV):
         if _pkg in _BESPOKE or _pkg in APPS: continue
         APPS[_pkg]={"label":_pkg,"preview":"generic","faces":[
@@ -666,8 +702,51 @@ function renderElfeedPreview(){const a='elfeed',L=[];
   L.push(os(a,'elfeed-log-date-face','02:24:03')+'  '+os(a,'elfeed-log-error-level-face','ERROR')+' failed: bad.example');
   L.push(os(a,'elfeed-log-date-face','02:24:04')+'  '+os(a,'elfeed-log-debug-level-face','DEBUG')+' parsed 340 entries');
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderGhostelPreview(){const a='ghostel',L=[];
+  L.push(os(a,'ghostel-default','craig@host')+' '+os(a,'ghostel-color-green','~/code')+' $ ls'+os(a,'ghostel-fake-cursor',' ')+os(a,'ghostel-fake-cursor-box','[ ]'));
+  L.push('');
+  L.push(os(a,'ghostel-default','normal:')+'  '+os(a,'ghostel-color-black','black')+' '+os(a,'ghostel-color-red','red')+' '+os(a,'ghostel-color-green','green')+' '+os(a,'ghostel-color-yellow','yellow')+' '+os(a,'ghostel-color-blue','blue')+' '+os(a,'ghostel-color-magenta','magenta')+' '+os(a,'ghostel-color-cyan','cyan')+' '+os(a,'ghostel-color-white','white'));
+  L.push(os(a,'ghostel-default','bright:')+'  '+os(a,'ghostel-color-bright-black','black')+' '+os(a,'ghostel-color-bright-red','red')+' '+os(a,'ghostel-color-bright-green','green')+' '+os(a,'ghostel-color-bright-yellow','yellow')+' '+os(a,'ghostel-color-bright-blue','blue')+' '+os(a,'ghostel-color-bright-magenta','magenta')+' '+os(a,'ghostel-color-bright-cyan','cyan')+' '+os(a,'ghostel-color-bright-white','white'));
+  L.push('');
+  L.push(os(a,'ghostel-default','default terminal output, 256-color text and a blinking ')+os(a,'ghostel-fake-cursor','cursor')+'.');
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderDashboardPreview(){const a='dashboard',L=[];
+  L.push(os(a,'dashboard-text-banner','   ___ _ __ ___   __ _  ___ ___'));
+  L.push(os(a,'dashboard-banner-logo-title','   Welcome back, Craig'));
+  L.push('');
+  L.push(os(a,'dashboard-heading','Recent Files'));
+  L.push('  '+os(a,'dashboard-items-face','init.el'));
+  L.push('  '+os(a,'dashboard-items-face','notes.org'));
+  L.push(os(a,'dashboard-heading','Bookmarks'));
+  L.push('  '+os(a,'dashboard-no-items-face','-- no items --'));
+  L.push('');
+  L.push(os(a,'dashboard-navigator','[ Projects ]  [ Recent ]  [ Agenda ]'));
+  L.push(os(a,'dashboard-footer-icon-face','*')+' '+os(a,'dashboard-footer-face','Happy hacking, Craig!'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
+function renderMu4ePreview(){const a='mu4e',L=[];
+  L.push(os(a,'mu4e-title-face','mu4e')+'  '+os(a,'mu4e-context-face','[Personal]')+'  '+os(a,'mu4e-ok-face','online')+'  '+os(a,'mu4e-warning-face','2 retry')+'  '+os(a,'mu4e-modeline-face','12/340'));
+  L.push('');
+  L.push(os(a,'mu4e-header-title-face','Date        Flags  From          Subject'));
+  L.push(os(a,'mu4e-header-value-face','2026-06-08')+'  '+os(a,'mu4e-header-marks-face','N')+'    '+os(a,'mu4e-unread-face','Alice')+'         '+os(a,'mu4e-unread-face','Unread message'));
+  L.push(os(a,'mu4e-header-value-face','2026-06-07')+'  '+os(a,'mu4e-header-marks-face','R')+'    '+os(a,'mu4e-header-face','Bob')+'           '+os(a,'mu4e-replied-face','Replied thread'));
+  L.push(os(a,'mu4e-header-value-face','2026-06-06')+'  '+os(a,'mu4e-header-marks-face','F')+'    '+os(a,'mu4e-header-face','Carol')+'         '+os(a,'mu4e-forwarded-face','Forwarded note'));
+  L.push(os(a,'mu4e-header-value-face','2026-06-05')+'  '+os(a,'mu4e-header-marks-face','D')+'    '+os(a,'mu4e-draft-face','(draft)')+'       '+os(a,'mu4e-draft-face','Draft in progress'));
+  L.push(os(a,'mu4e-header-value-face','2026-06-04')+'  '+os(a,'mu4e-header-marks-face','T')+'    '+os(a,'mu4e-trashed-face','Dan')+'           '+os(a,'mu4e-moved-face','Trashed and moved'));
+  L.push(os(a,'mu4e-header-highlight-face','2026-06-03  !    Eve           Flagged ')+os(a,'mu4e-flagged-face','important')+os(a,'mu4e-related-face',' (related)'));
+  L.push('');
+  L.push(os(a,'mu4e-header-key-face','From:')+'   '+os(a,'mu4e-contact-face','Alice &lt;alice@example.com&gt;'));
+  L.push(os(a,'mu4e-header-key-face','To:')+'     '+os(a,'mu4e-special-header-value-face','craig, list@gnu.org'));
+  L.push(os(a,'mu4e-header-key-face','Attach:')+' '+os(a,'mu4e-attach-number-face','[1]')+' report.pdf   link '+os(a,'mu4e-url-number-face','[2]')+' '+os(a,'mu4e-link-face','https://gnu.org'));
+  L.push('');
+  L.push('  body with a '+os(a,'mu4e-highlight-face','search hit')+' and '+os(a,'mu4e-region-code','code region')+'.');
+  L.push('  '+os(a,'mu4e-cited-1-face','&gt; level 1')+' '+os(a,'mu4e-cited-2-face','&gt;&gt; 2')+' '+os(a,'mu4e-cited-3-face','&gt;&gt;&gt; 3')+' '+os(a,'mu4e-cited-4-face','&gt; 4')+' '+os(a,'mu4e-cited-5-face','&gt; 5')+' '+os(a,'mu4e-cited-6-face','&gt; 6')+' '+os(a,'mu4e-cited-7-face','&gt; 7'));
+  L.push('  '+os(a,'mu4e-system-face','*** system message ***')+'   '+os(a,'mu4e-footer-face','-- sent with mu4e'));
+  L.push('');
+  L.push(os(a,'mu4e-compose-header-face','Subject:')+' new mail');
+  L.push(os(a,'mu4e-compose-separator-face','--text follows this line--'));
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\\n')}</div>`;}
 function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div data-face="${face}" style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
-function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=pv==='org'||pv==='magit'||pv==='elfeed';p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
+function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;pv.style.color=UIMAP[face].fg||MAP['p'];pv.style.background=UIMAP[face].bg||MAP['bg'];}
