@@ -57,10 +57,10 @@
       :api-key-source (:auth-source :host "api.linear.app" :user "pearl-personal")
       :org-file "~/org/gtd/craigjennings.pearl.org"
       :default-team-id "ee285e6c-fcc9-4dd6-9292-c47f2df75b82")))      ;; Pearl
-  ;; Which workspace pearl opens into.  Dogfooding the personal account through
-  ;; Sunday; flip back to "deepsat" to make work primary again (one string), or
-  ;; switch per-session at runtime with `M-x pearl-switch-account'.
-  (pearl-default-account "craigjennings"))
+  ;; Which workspace pearl opens into.  Work is primary; switch per-session at
+  ;; runtime with `M-x pearl-switch-account' (e.g. to dogfood the personal
+  ;; "craigjennings" workspace).
+  (pearl-default-account "deepsat"))
 
 (provide 'pearl-config)
 ;;; pearl-config.el ends here
