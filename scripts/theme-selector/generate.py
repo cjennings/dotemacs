@@ -76,7 +76,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
  .sbtn{width:26px;height:24px;border:1px solid #3a3a3a;border-radius:3px;background:#eaeaea;color:#111;cursor:pointer;font-size:15px;margin-right:2px;padding:0}
  .sbtn.on{background:#0d0b0a;color:#cdced1;border-color:#8a9496}
  .pals{display:flex;gap:8px;flex-wrap:wrap}
- .pchip{width:128px;height:58px;border-radius:6px;border:1px solid #00000060;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab}
+ .pchip{width:128px;height:58px;border-radius:6px;border:1px solid #555;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab}
  .pchip.drag{opacity:.4} .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip.over{outline:2px dashed #e8bd30;outline-offset:1px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none}
  .pchip .mv{position:absolute;bottom:-1px;background:none;border:none;cursor:pointer;font-size:22px;line-height:1;font-weight:bold;opacity:.5;padding:0 5px} .pchip .mv:hover{opacity:1} .pchip .mv.l{left:0} .pchip .mv.r{right:0}
  .pchip .hx{font-size:10pt;opacity:.8} .pchip .rm{position:absolute;top:2px;right:5px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:bold;opacity:.7}
@@ -85,7 +85,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
  .palctl input[type=text]{background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace}
  .palctl input[type=text]::placeholder{color:#b4b1a2;opacity:1}
  .palctl{position:relative}
- .swatch{width:128px;height:58px;border:1px solid #00000060;border-radius:6px;cursor:pointer;background:#888}
+ .swatch{width:128px;height:58px;border:1px solid #555;border-radius:6px;cursor:pointer;background:#888}
  .picker{display:none;position:absolute;top:66px;left:0;z-index:60;background:#161412;border:1px solid #3a3a3a;border-radius:8px;padding:12px;box-shadow:0 10px 30px #000b;width:470px}
  .picker .prow{display:flex;gap:10px}
  .sv{position:relative;width:400px;height:320px;border-radius:4px;cursor:crosshair}
@@ -97,7 +97,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
  .hue{position:relative;width:34px;height:320px;border-radius:4px;cursor:ns-resize;background:linear-gradient(to bottom,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
  .huecur{position:absolute;left:-2px;right:-2px;height:4px;background:#fff;border:1px solid #0008;transform:translateY(-50%);pointer-events:none}
  .pinfo{display:flex;justify-content:space-between;margin:10px 2px 8px;font:12pt monospace;color:#cdced1}
- .pkchips{display:flex;flex-wrap:wrap;gap:5px} .pkchips .pc{width:28px;height:28px;border-radius:3px;border:1px solid #00000066;cursor:pointer}
+ .pkchips{display:flex;flex-wrap:wrap;gap:5px} .pkchips .pc{width:28px;height:28px;border-radius:3px;border:1px solid #555;cursor:pointer}
  .palctl button,.filebar button,.fbtn{background:#252321;color:#e8bd30;border:1px solid #3a3a3a;border-radius:4px;padding:6px 12px;font:10pt monospace;cursor:pointer}
  #palmsg{font:10pt monospace;opacity:0;transition:opacity .35s;margin-left:6px}
  #export{width:100%;height:180px;margin-top:10px;background:#0d0b0a;color:#a4ac64;border:1px solid #252321;border-radius:6px;font:10pt monospace;padding:10px}
@@ -142,7 +142,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
   </div>
  </section>
  <section class="pane saveload">
-  <h1>save / load theme</h1>
+  <h1>export, import, and save</h1>
   <div class="filebar end">
    <label style="color:#b4b1a2">theme name</label><input type="text" id="themename" value="" placeholder="untitled" oninput="updateTitle()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:200px">
   </div>
@@ -158,7 +158,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
 <h1>code/color assignments</h1>
 <div class="cols">
  <section class="pane">
-  <table class="leg" id="legtable"><thead><tr><th onclick="srt(0)">color &#9651;</th><th>style</th><th onclick="srt(1)">category &#9651;</th><th>example</th><th title="WCAG contrast of this color on the background">contrast</th></tr></thead><tbody id="legbody"></tbody></table>
+  <table class="leg" id="legtable"><thead><tr><th onclick="srt(0)">color &#9651;</th><th>style</th><th onclick="srt(1)">elements &#9651;</th><th>example</th><th title="WCAG contrast of this color on the background">contrast</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
   <div class="langbar"><label style="color:#b4b1a2">language</label><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode()"></select></div>
