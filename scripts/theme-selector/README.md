@@ -1,10 +1,12 @@
 # theme-selector
 
-A self-contained tool for designing Emacs color themes by eye. It renders six
-languages of tree-sitter-tokenized code, a category→color assignment table, a
-UI-faces table, and an editable palette into one HTML page you drive in the
-browser. Reassign colors, toggle weight/slant, edit the palette, then export a
-`theme.json` that a build step turns into `themes/<name>-*.el`.
+A self-contained tool for designing Emacs color themes by eye. One generated
+HTML page drives the whole theme: a palette, the syntax (font-lock /
+tree-sitter) layer, the built-in UI faces with a live mock-frame preview, and
+package-specific faces (org, magit, elfeed, plus every other installed package).
+Reassign colors against the palette, judge legibility with live WCAG-contrast
+readouts, then export a `theme.json` that a build step turns into
+`themes/<name>-*.el`.
 
 ## Run
 
@@ -26,20 +28,68 @@ hyprctl keyword decoration:dim_inactive false
 
 ## Files
 
-- `generate.py` — emits the HTML+JS. Edit here to change layout or behavior.
-- `samples.py` — the language code samples and the default category→color map
-  (`COLS`). `generate.py` reads the part before the `cols=` marker.
+- `generate.py` — emits the HTML+JS, and embeds the package data. Edit here to
+  change layout or behavior.
+- `samples.py` — the six language code samples and the default syntax
+  category→color map (`COLS`). `generate.py` reads the part before the `cols=`
+  marker.
+- `package-inventory.json` — generated map of every installed package to the
+  faces it defines (see Package faces below). A committed data artifact.
+- `build-inventory.el` — refreshes `package-inventory.json` from a running
+  Emacs.
 - `theme-selector.html` — generated output. Regenerate; don't hand-edit.
 
 ## What it captures
 
-- Background and foreground (the `default` face's `:background` / `:foreground`).
-- The syntax layer: every font-lock / tree-sitter category (keyword, string,
-  function, type, comment, and the rest), each with normal/bold/italic.
-- UI faces: cursor, region, mode-line, fringe, line numbers, isearch, paren
-  match, link, error/warning/success, and more — foreground and background per
-  face.
-- The palette itself: add by hex or swatch, remove, rename, drag to reorder.
+Three tiers of faces, plus the palette:
+
+- **Palette** — named colors. Add by hex or with the in-page color picker
+  (saturation/value square, hue slider, palette reuse chips, live contrast
+  readout, and an any / AA+ / AAA legibility mask). Remove, rename, reorder with
+  arrows or drag. The colors serving as background and foreground are locked.
+- **Syntax** — every font-lock / tree-sitter category (keyword, string,
+  function, type, comment, and the rest), each with normal/bold/italic and a
+  contrast rating. Click a category to flash its tokens in the code; click a
+  token to flash its row.
+- **UI faces** — cursor, region, mode-line, fringe, line numbers, isearch, paren
+  match, link, error/warning/success, and the rest, foreground and background
+  per face, shown in a live mock Emacs buffer.
+- **Package faces** — per-package face tables with a live preview (below).
+
+## Package faces
+
+Pick an application from the dropdown to edit its faces. Each row has a
+foreground and background dropdown, bold/italic toggles, an `inherit` dropdown
+(base faces like `fixed-pitch`/`link` plus the app's own faces), a relative
+height stepper, a contrast readout, and a per-face reset. There's a per-app
+reset and a text filter for the large sets.
+
+org-mode, magit, and elfeed have bespoke previews (a mock org document, a magit
+status buffer, an elfeed search list). Every other installed package is reachable
+too, with an editable table and a generic preview (each face name in its own
+colors), so any package can be themed.
+
+**Inheritance** is modeled, not flattened: a face's effective color is resolved
+through its `inherit` chain and shown in the table and preview; setting an
+explicit color overrides it. `height` is a float multiplier off the base font
+and is read directly off the face (not cascaded through `inherit`, since Emacs
+multiplies float heights along a chain). The base monospace family is *not* the
+theme's job — it lives in `modules/font-config.el`; the tool owns only relative
+size and the `fixed-pitch` inherit relationships.
+
+### Refreshing the package inventory
+
+The reachable packages come from `package-inventory.json`. Regenerate it from a
+running Emacs (so it reflects what's actually installed), then rebuild the HTML:
+
+```bash
+emacsclient -e '(load "/home/cjennings/.emacs.d/scripts/theme-selector/build-inventory.el")'
+python3 generate.py
+```
+
+`build-inventory.el` groups each face by the package whose file defines it; it
+depends on the target Emacs having those packages loaded. Built-in faces are
+skipped (they're covered by the syntax and UI tiers).
 
 ## theme.json contract
 
@@ -47,21 +97,38 @@ The export (and what a build step consumes):
 
 ```json
 {
-  "name": "dupre-revision",
+  "name": "dupre",
   "palette": [["#67809c", "blue"], ["#e8bd30", "gold"]],
-  "assignments": {"kw": "#67809c", "str": "#5d9b86", "bg": "#0d0b0a", "p": "#cdced1"},
+  "assignments": {"kw": "#67809c", "str": "#5d9b86", "bg": "#000000", "p": "#ffffff"},
   "bold": ["kw", "fnd"],
   "italic": [],
-  "ui": {"region": {"fg": null, "bg": "#264364"}, "cursor": {"fg": null, "bg": "#a9b2bb"}}
+  "ui": {"region": {"fg": null, "bg": "#264364"}, "cursor": {"fg": null, "bg": "#a9b2bb"}},
+  "packages": {
+    "org-mode": {
+      "org-level-1": {"fg": "#67809c", "bg": null, "bold": true, "italic": false,
+                      "inherit": null, "height": 1.3, "source": "default"}
+    }
+  }
 }
 ```
 
-The theme name is both the `name` field and the download filename
-(`<name>.json`, sanitized). Upload a `theme.json` to start from a prior theme.
+- `assignments` maps syntax category keys to hexes; `bg` is the `default` face
+  background, `p` the foreground.
+- `ui` and `packages` faces carry `fg`/`bg` (hex or `null`), `bold`, `italic`,
+  and for package faces `inherit` (a face name or `null`), `height` (a float,
+  omitted at 1.0), and `source` (`"default"` seeded, `"user"` edited,
+  `"cleared"`).
+- The theme name is both the `name` field and the download filename. Import a
+  `theme.json` to start from a prior theme; a file with no `packages` key still
+  loads.
+
+`export` always downloads a fresh file; `save` (shown once a name is entered)
+writes the same file in place via the File System Access API.
 
 ## Next step (not yet built)
 
 A `theme.json` → `themes/<name>-palette.el` + `-faces.el` + `-theme.el`
-converter. That step is the correctness-sensitive part and is the one worth
-TDD: JSON in, valid Emacs palette + faces out, every face mapped, WCAG-contrast
+converter, in Elisp. That step is the correctness-sensitive part and the one
+worth TDD: JSON in, valid Emacs palette + faces out, every face (syntax, UI, and
+package) mapped, `:inherit`/`:height` written correctly, and WCAG-contrast
 asserted on the result.
