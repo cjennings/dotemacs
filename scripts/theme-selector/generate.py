@@ -38,6 +38,28 @@ UIMAP={"cursor":{"fg":None,"bg":"#a9b2bb"},"region":{"fg":None,"bg":"#264364"},
  "show-paren-mismatch":{"fg":"#0d0b0a","bg":"#cb6b4d"},"link":{"fg":"#67809c","bg":None},
  "error":{"fg":"#cb6b4d","bg":None},"warning":{"fg":"#e8bd30","bg":None},
  "success":{"fg":"#5d9b86","bg":None},"vertical-border":{"fg":"#2f343a","bg":None}}
+# Tier-3 package faces. Phase 1 ships the schema + an org starter; Phase 2 fills
+# the complete org/magit/elfeed sets. Defaults reference palette names.
+APPS={"org-mode":{"label":"org-mode","preview":"org","faces":[
+ ["org-document-title","document title",{"fg":"gold","bold":True}],
+ ["org-level-1","heading 1",{"fg":"blue","bold":True}],
+ ["org-level-2","heading 2",{"fg":"gold"}],
+ ["org-level-3","heading 3",{"fg":"regal"}],
+ ["org-todo","TODO keyword",{"fg":"terracotta","bold":True}],
+ ["org-done","DONE keyword",{"fg":"sage","bold":True}],
+ ["org-link","link",{"fg":"blue"}],
+ ["org-code","inline code",{"fg":"terracotta"}],
+ ["org-verbatim","verbatim",{"fg":"steel"}],
+ ["org-block","src block body",{"fg":"white","bg":"bg-dim"}],
+ ["org-block-begin-line","block delim",{"fg":"pewter","bg":"bg-dim"}],
+ ["org-table","table",{"fg":"steel"}],
+ ["org-date","timestamp",{"fg":"steel"}],
+ ["org-tag","tag",{"fg":"tan"}],
+ ["org-special-keyword","keyword/drawer",{"fg":"pewter"}],
+ ["org-meta-line","#+meta line",{"fg":"pewter"}],
+ ["org-checkbox","checkbox",{"fg":"gold"}],
+ ["org-headline-done","done headline",{"fg":"pewter"}]
+]}}
 HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
 <style>
  body{background:#0d0b0a;color:#cdced1;font:15px/1.55 monospace;margin:20px}
@@ -127,8 +149,14 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
  </section>
 </div>
 <script>
-const SAMPLES=SAMPLES_J, CATS=CATS_J, UI_FACES=UIFACES_J;
+const SAMPLES=SAMPLES_J, CATS=CATS_J, UI_FACES=UIFACES_J, APPS=APPS_J;
 let MAP=MAP_J, PALETTE=PALETTE_J, BOLD=BOLD_J, ITALIC={}, UIMAP=UIMAP_J;
+// --- tier-3 package faces: pure state helpers (Phase 1) ---
+function pname(n){if(!n)return null;if(/^#/.test(n))return n;const p=PALETTE.find(p=>p[1]===n);return p?p[0]:null;}
+function seedPkgmap(){const m={};for(const app in APPS){m[app]={};for(const row of APPS[app].faces){const face=row[0],d=row[2]||{};m[app][face]={fg:pname(d.fg),bg:pname(d.bg),bold:!!d.bold,italic:!!d.italic,inherit:d.inherit||null,source:'default'};}}return m;}
+function packagesForExport(map){const out={};for(const app in map){const faces={};for(const face in map[app]){const f=map[app][face];if(f.source==='default'||f.source==='user'||f.source==='cleared'){faces[face]={fg:f.fg,bg:f.bg,bold:f.bold,italic:f.italic,inherit:f.inherit,source:f.source};}}if(Object.keys(faces).length)out[app]=faces;}return out;}
+function mergePackagesInto(map,pkgs){if(!pkgs)return;for(const app in pkgs){if(!map[app])map[app]={};for(const face in pkgs[app]){const f=pkgs[app][face]||{};map[app][face]={fg:f.fg??null,bg:f.bg??null,bold:!!f.bold,italic:!!f.italic,inherit:f.inherit??null,source:f.source||'user'};}}}
+let PKGMAP=seedPkgmap();
 function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function lin(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);}
 function rl(h){return 0.2126*lin(parseInt(h.substr(1,2),16))+0.7152*lin(parseInt(h.substr(3,2),16))+0.0722*lin(parseInt(h.substr(5,2),16));}
@@ -218,7 +246,7 @@ function addColor(){const h=normHex(document.getElementById('newhexstr').value)|
   PALETTE.push([h,name]);document.getElementById('newname').value='';selectedIdx=null;renderPalette();buildTable();notify('added "'+name+'"',false);}
 function themeName(){return (document.getElementById('themename').value||'theme').trim()||'theme';}
 function fileSlug(){return themeName().replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'theme';}
-function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);return {name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};}
+function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);const o={name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};const pk=packagesForExport(PKGMAP);if(Object.keys(pk).length)o.packages=pk;return o;}
 function exportState(){const t=document.getElementById('export');t.value=JSON.stringify(exportObj(),null,1);t.style.display='block';t.focus();t.select();}
 function toggleJSON(){const t=document.getElementById('export'),b=document.getElementById('jsonbtn');if(t.style.display==='block'){t.style.display='none';b.textContent='show JSON';}else{exportState();b.textContent='hide JSON';}}
 function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': theme';}
@@ -227,6 +255,7 @@ function importFile(ev){const f=ev.target.files[0];if(!f)return;const r=new File
   r.onload=()=>{try{const d=JSON.parse(r.result);if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette;if(d.assignments)Object.assign(MAP,d.assignments);
     BOLD={};(d.bold||[]).forEach(k=>BOLD[k]=true);ITALIC={};(d.italic||[]).forEach(k=>ITALIC[k]=true);
     if(d.ui)Object.assign(UIMAP,d.ui);
+    PKGMAP=seedPkgmap();if(d.packages)mergePackagesInto(PKGMAP,d.packages);
     renderPalette();buildTable();buildUITable();renderCode();applyGround();updateTitle();}catch(e){alert('bad theme file: '+e.message);}};
   r.readAsText(f);ev.target.value='';}
 function applyGround(){document.querySelectorAll('pre').forEach(p=>p.style.background=MAP['bg']);document.querySelectorAll('.ex').forEach(e=>e.style.background=MAP['bg']);}
@@ -299,10 +328,24 @@ function srt(c){const tb=document.getElementById('legbody');const r=[...tb.rows]
                        y=(c===0?b.querySelector('select').value:b.cells[2].innerText).toLowerCase();
                  return (x<y?-1:x>y?1:0)*(D[c]?1:-1);});r.forEach(x=>tb.appendChild(x));}
 buildLangSel();renderPalette();buildTable();buildUITable();renderCode();applyGround();updateTitle();
+// Phase-1 self-test (open with #selftest): seed -> export -> import -> compare.
+function pkgSelftest(){
+  const seeded=seedPkgmap();
+  seeded['org-mode']['org-level-2']={fg:'#e8bd30',bg:null,bold:false,italic:false,inherit:'org-level-1',source:'user'};
+  const exp=packagesForExport(seeded);
+  const round=seedPkgmap();mergePackagesInto(round,exp);
+  const roundtrip=JSON.stringify(exp)===JSON.stringify(packagesForExport(round));
+  let oldjson=true;try{const m=seedPkgmap();mergePackagesInto(m,undefined);oldjson=!!(m['org-mode']&&m['org-mode']['org-todo'].source==='default');}catch(e){oldjson=false;}
+  const inherited=exp['org-mode']['org-level-2'].inherit==='org-level-1'&&exp['org-mode']['org-level-2'].source==='user';
+  const verdict=(roundtrip&&oldjson&&inherited)?'PASS':'FAIL';
+  document.title='SELFTEST '+verdict;
+  const d=document.createElement('div');d.id='selftest';d.textContent='SELFTEST '+verdict+' roundtrip='+roundtrip+' oldjson='+oldjson+' inherit='+inherited;document.body.appendChild(d);
+}
+if(location.hash==='#selftest')pkgSelftest();
 </script>"""
 HTML=(HTML.replace("SAMPLES_J",json.dumps(SAMPLES))
  .replace("PALETTE_J",json.dumps(PALETTE)).replace("CATS_J",json.dumps(CATS))
- .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP))
+ .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP)).replace("APPS_J",json.dumps(APPS))
  .replace("BOLD_J",json.dumps(BOLD)).replace("MAP_J",json.dumps(MAP)))
 OUT=os.path.join(HERE,'theme-selector.html')
 open(OUT,"w").write(HTML)
