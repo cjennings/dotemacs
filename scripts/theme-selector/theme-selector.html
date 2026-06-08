@@ -15,7 +15,8 @@
  .sbtn.on{background:#0d0b0a;color:#cdced1;border-color:#8a9496}
  .pals{display:flex;gap:8px;flex-wrap:wrap}
  .pchip{width:128px;height:58px;border-radius:6px;border:1px solid #00000060;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab}
- .pchip.drag{opacity:.4} .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none}
+ .pchip.drag{opacity:.4} .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip.over{outline:2px dashed #e8bd30;outline-offset:1px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none}
+ .pchip .mv{position:absolute;bottom:-1px;background:none;border:none;cursor:pointer;font-size:22px;line-height:1;font-weight:bold;opacity:.5;padding:0 5px} .pchip .mv:hover{opacity:1} .pchip .mv.l{left:0} .pchip .mv.r{right:0}
  .pchip .hx{font-size:10pt;opacity:.8} .pchip .rm{position:absolute;top:2px;right:5px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:bold;opacity:.7}
  .palctl{margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
  .palctl input[type=text]{background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace}
@@ -150,19 +151,25 @@ function renderPalette(){
   const p=document.getElementById('pals');p.innerHTML='';
   PALETTE.forEach((pc,i)=>{const [hex,name]=pc;const tc=textOn(hex);
     const d=document.createElement('div');d.className='pchip'+(i===selectedIdx?' sel':'');d.style.background=hex;d.draggable=true;
-    d.innerHTML=`<button class="rm" title="remove" style="color:${tc}">×</button><input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
-    d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();};
+    const lft=i>0?`<button class="mv l" title="move left" style="color:${tc}">&#8249;</button>`:'';
+    const rgt=i<PALETTE.length-1?`<button class="mv r" title="move right" style="color:${tc}">&#8250;</button>`:'';
+    d.innerHTML=`<button class="rm" title="remove" style="color:${tc}">×</button>${lft}${rgt}<input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
+    d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
+    if(lft)d.querySelector('.mv.l').onclick=(e)=>{e.stopPropagation();moveColor(i,-1);};
+    if(rgt)d.querySelector('.mv.r').onclick=(e)=>{e.stopPropagation();moveColor(i,1);};
     d.querySelector('.nm').onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
-    d.onclick=(e)=>{if(e.target.closest('.rm')||e.target.closest('.nm'))return;selectColor(i);};
+    d.onclick=(e)=>{if(e.target.closest('.rm')||e.target.closest('.nm')||e.target.closest('.mv'))return;selectColor(i);};
     d.ondragstart=()=>{dragFrom=i;d.classList.add('drag');};
-    d.ondragend=()=>d.classList.remove('drag');
-    d.ondragover=(e)=>e.preventDefault();
-    d.ondrop=(e)=>{e.preventDefault();if(dragFrom===null||dragFrom===i)return;const m=PALETTE.splice(dragFrom,1)[0];PALETTE.splice(i,0,m);dragFrom=null;selectedIdx=null;renderPalette();buildTable();};
+    d.ondragend=()=>{d.classList.remove('drag');document.querySelectorAll('.pchip.over').forEach(x=>x.classList.remove('over'));};
+    d.ondragover=(e)=>{e.preventDefault();if(dragFrom!==null&&dragFrom!==i)d.classList.add('over');};
+    d.ondragleave=()=>d.classList.remove('over');
+    d.ondrop=(e)=>{e.preventDefault();d.classList.remove('over');if(dragFrom===null||dragFrom===i)return;const m=PALETTE.splice(dragFrom,1)[0];PALETTE.splice(i,0,m);dragFrom=null;selectedIdx=null;renderPalette();buildTable();buildUITable();};
     p.appendChild(d);});
   buildUITable();
 }
 function notify(msg,err){const m=document.getElementById('palmsg');if(!m)return;m.textContent=msg;m.style.color=err?'#cb6b4d':'#8a9496';m.style.opacity='1';clearTimeout(m._t);m._t=setTimeout(()=>{m.style.opacity='0';},err?4000:2800);}
 function applyEdit(){if(selectedIdx!==null)updateColor();else addColor();}
+function moveColor(i,dir){const j=i+dir;if(j<0||j>=PALETTE.length)return;const t=PALETTE[i];PALETTE[i]=PALETTE[j];PALETTE[j]=t;if(selectedIdx===i)selectedIdx=j;else if(selectedIdx===j)selectedIdx=i;renderPalette();buildTable();buildUITable();}
 function selectColor(i){selectedIdx=i;const [hex,name]=PALETTE[i];document.getElementById('newhexstr').value=hex;document.getElementById('newhex').value=hex;document.getElementById('newname').value=name;renderPalette();notify('editing "'+name+'" — change the value, then Enter (or Update selected) to save',false);}
 function updateColor(){
   if(selectedIdx===null){notify('click a palette color to select it first',true);return;}
