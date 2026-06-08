@@ -71,15 +71,17 @@ independently is not possible without clobbering types.")
   "Non-nil when S is a \"#rrggbb\" hex color string."
   (and (stringp s) (string-match-p "\\`#[0-9a-fA-F]\\{6\\}\\'" s)))
 
-(defun build-theme/--attrs (inherit fg bg bold italic height)
+(defun build-theme/--attrs (inherit fg bg bold italic underline strike height)
   "Build a face-attribute plist from the given fields, in canonical order.
-INHERIT is a face symbol or nil.  FG and BG are hex strings or nil.  BOLD and
-ITALIC are booleans.  HEIGHT is a float multiplier; 1.0 (or nil) is omitted as
-the default.  Only set attributes are written, so a fully-nil face yields an
-empty plist."
+INHERIT is a face symbol or nil.  FG and BG are hex strings or nil.  BOLD,
+ITALIC, UNDERLINE, and STRIKE are booleans.  HEIGHT is a float multiplier; 1.0
+(or nil) is omitted as the default.  Only set attributes are written, so a
+fully-nil face yields an empty plist."
   (let (plist)
     (when (and height (numberp height) (/= height 1.0))
       (setq plist (list :height height)))
+    (when strike (setq plist (append (list :strike-through t) plist)))
+    (when underline (setq plist (append (list :underline t) plist)))
     (when italic (setq plist (append (list :slant 'italic) plist)))
     (when bold (setq plist (append (list :weight 'bold) plist)))
     (when bg (setq plist (append (list :background bg) plist)))
@@ -111,7 +113,7 @@ Return nil when ATTRS is empty, so cleared faces emit nothing."
   "Build the `default' face spec from ASSIGNMENTS bg / p."
   (let ((bg (build-theme/--obj-get assignments 'bg))
         (fg (build-theme/--obj-get assignments 'p)))
-    (build-theme/--face-spec 'default (build-theme/--attrs nil fg bg nil nil nil))))
+    (build-theme/--face-spec 'default (build-theme/--attrs nil fg bg nil nil nil nil nil))))
 
 (defun build-theme/--syntax-face-specs (assignments bold italic)
   "Build syntax-tier face specs from ASSIGNMENTS plus the BOLD and ITALIC sets.
@@ -124,7 +126,7 @@ the font-lock faces in `build-theme/--syntax-face-map'."
              (hex (build-theme/--obj-get assignments cat)))
         (when hex
           (let ((attrs (build-theme/--attrs nil hex nil
-                                            (memq cat bold) (memq cat italic) nil)))
+                                            (memq cat bold) (memq cat italic) nil nil nil)))
             (dolist (face faces)
               (when-let ((spec (build-theme/--face-spec face attrs)))
                 (push spec specs)))))))
@@ -141,6 +143,8 @@ the font-lock faces in `build-theme/--syntax-face-map'."
                                          (build-theme/--obj-get obj 'bg)
                                          (build-theme/--obj-get obj 'bold)
                                          (build-theme/--obj-get obj 'italic)
+                                         (build-theme/--obj-get obj 'underline)
+                                         (build-theme/--obj-get obj 'strike)
                                          nil)))
         (when-let ((spec (build-theme/--face-spec face attrs)))
           (push spec specs))))
@@ -159,6 +163,8 @@ the font-lock faces in `build-theme/--syntax-face-map'."
                        (build-theme/--obj-get obj 'bg)
                        (build-theme/--obj-get obj 'bold)
                        (build-theme/--obj-get obj 'italic)
+                       (build-theme/--obj-get obj 'underline)
+                       (build-theme/--obj-get obj 'strike)
                        (build-theme/--obj-get obj 'height))))
           (when-let ((spec (build-theme/--face-spec face attrs)))
             (push spec specs)))))
