@@ -132,11 +132,6 @@ What we're verifying: org's ~88-face and magit's ~111-face tables stay navigable
 - Type "agenda" in the filter
 - Reassign one face and watch the preview
 Expected: rows are grouped, the filter narrows them, and a reassignment updates the preview live.
-*** TODO F8 opens the agenda from inside a ghostel buffer
-What we're verifying: F8 reaches Emacs (not the pty) inside a ghostel terminal, so it opens the main agenda like everywhere else. Verified at the source/data-structure level (=<f8>= is now a ghostel-keymap-exception and the rebuilt semi-char map no longer forwards it); only the live keypress needs a human.
-- Open a ghostel terminal (=F12=, or an ai-term agent with =F9=) and click into it so point is inside the terminal
-- Press F8
-Expected: =cj/main-agenda-display= runs and the agenda opens; the keypress is NOT echoed into the shell/terminal program.
 ** TODO [#B] Dashboard keybinding changes :quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-06
