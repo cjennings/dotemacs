@@ -5,10 +5,10 @@ src=open(os.path.join(HERE,'samples.py')).read()
 exec(src[:src.index('cols=')], ns)
 SAMPLES={"Elisp":ns['ELS'],"Go":ns['GOS'],"Python":ns['PYS'],"TypeScript":ns['TSS'],"Shell":ns['SHS'],"C/C++":ns['CS']}
 COLS=ns['COLS']
-MAP={k:v[0] for k,v in COLS.items()}; BOLD={k:v[1] for k,v in COLS.items()}; MAP['str']='#5d9b86'; MAP['bg']='#0d0b0a'
+MAP={k:v[0] for k,v in COLS.items()}; BOLD={k:v[1] for k,v in COLS.items()}; MAP['str']='#5d9b86'; MAP['bg']='#000000'
 PALETTE=[["#67809c","blue"],["#e8bd30","gold"],["#9b5fd0","regal"],["#2ba178","emerald"],["#5d9b86","sage"],
- ["#cb6b4d","terracotta"],["#be9e74","tan"],["#cdced1","white"],["#a9b2bb","silver"],["#838d97","steel"],
- ["#5e6770","pewter"],["#2f343a","gunmetal"],["#264364","navy"],["#0d0b0a","ground"],["#1a1714","bg-dim"]]
+ ["#cb6b4d","terracotta"],["#be9e74","tan"],["#ffffff","white"],["#a9b2bb","silver"],["#838d97","steel"],
+ ["#5e6770","pewter"],["#2f343a","gunmetal"],["#264364","navy"],["#000000","ground"],["#1a1714","bg-dim"]]
 CATS=[["bg","background (ground)","Aa Bb 123"],["p","fg · default text","other / whitespace"],["kw","keyword","class  def  if  return"],["bi","builtin","len  echo  printf"],
  ["pp","preprocessor","#include  #define"],["fnd","function · def","resolve  push"],
  ["fnc","function · call","printf  rsync  get"],["dec","decorator","@dataclass"],
@@ -80,6 +80,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
  .pchip.drag{opacity:.4} .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip.over{outline:2px dashed #e8bd30;outline-offset:1px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none}
  .pchip .mv{position:absolute;bottom:-1px;background:none;border:none;cursor:pointer;font-size:22px;line-height:1;font-weight:bold;opacity:.5;padding:0 5px} .pchip .mv:hover{opacity:1} .pchip .mv.l{left:0} .pchip .mv.r{right:0}
  .pchip .hx{font-size:10pt;opacity:.8} .pchip .rm{position:absolute;top:2px;right:5px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:bold;opacity:.7}
+ .pchip .lock{position:absolute;top:3px;right:5px;font-size:10px;opacity:.6}
  .palctl{margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
  .palctl input[type=text]{background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace}
  .palctl input[type=text]::placeholder{color:#b4b1a2;opacity:1}
@@ -139,9 +140,10 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
    <label style="color:#b4b1a2">theme name</label><input type="text" id="themename" value="" placeholder="untitled" oninput="updateTitle()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:200px">
   </div>
   <div class="filebar end">
-   <button onclick="download()">&#11015; download &lt;name&gt;.json</button>
-   <label class="fbtn">&#11014; load theme.json<input type="file" accept=".json" onchange="importFile(event)" style="display:none"></label>
-   <button id="jsonbtn" onclick="toggleJSON()">show JSON</button>
+   <button id="savebtn" onclick="saveTheme()" style="display:none">&#128190; save</button>
+   <button onclick="exportTheme()">&#11015; export</button>
+   <label class="fbtn">&#11014; import<input type="file" accept=".json" onchange="importFile(event)" style="display:none"></label>
+   <button id="jsonbtn" onclick="toggleJSON()">show</button>
   </div>
   <textarea id="export" style="display:none" readonly></textarea>
  </section>
@@ -229,11 +231,13 @@ let dragFrom=null,selectedIdx=null;
 function renderPalette(){
   const p=document.getElementById('pals');p.innerHTML='';
   PALETTE.forEach((pc,i)=>{const [hex,name]=pc;const tc=textOn(hex);
+    const locked=(hex===MAP['bg']||hex===MAP['p']);
     const d=document.createElement('div');d.className='pchip'+(i===selectedIdx?' sel':'');d.style.background=hex;d.draggable=true;
     const lft=i>0?`<button class="mv l" title="move left" style="color:${tc}">&#8249;</button>`:'';
     const rgt=i<PALETTE.length-1?`<button class="mv r" title="move right" style="color:${tc}">&#8250;</button>`:'';
-    d.innerHTML=`<button class="rm" title="remove" style="color:${tc}">×</button>${lft}${rgt}<input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
-    d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
+    const rm=locked?`<span class="lock" title="${hex===MAP['bg']?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
+    d.innerHTML=`${rm}${lft}${rgt}<input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
+    if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
     if(lft)d.querySelector('.mv.l').onclick=(e)=>{e.stopPropagation();moveColor(i,-1);};
     if(rgt)d.querySelector('.mv.r').onclick=(e)=>{e.stopPropagation();moveColor(i,1);};
     d.querySelector('.nm').onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
@@ -289,9 +293,15 @@ function themeName(){return (document.getElementById('themename').value||'theme'
 function fileSlug(){return themeName().replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'theme';}
 function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);const o={name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};const pk=packagesForExport(PKGMAP);if(Object.keys(pk).length)o.packages=pk;return o;}
 function exportState(){const t=document.getElementById('export');t.value=JSON.stringify(exportObj(),null,1);t.style.display='block';t.focus();t.select();}
-function toggleJSON(){const t=document.getElementById('export'),b=document.getElementById('jsonbtn');if(t.style.display==='block'){t.style.display='none';b.textContent='show JSON';}else{exportState();b.textContent='hide JSON';}}
-function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': theme';}
-function download(){const blob=new Blob([JSON.stringify(exportObj(),null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileSlug()+'.json';a.click();}
+function toggleJSON(){const t=document.getElementById('export'),b=document.getElementById('jsonbtn');if(t.style.display==='block'){t.style.display='none';b.textContent='show';}else{exportState();b.textContent='hide';}}
+function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': theme';const sb=document.getElementById('savebtn');if(sb)sb.style.display=n?'':'none';fileHandle=null;}
+let fileHandle=null;
+function exportTheme(){const blob=new Blob([JSON.stringify(exportObj(),null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileSlug()+'.json';a.click();}
+async function saveTheme(){const data=JSON.stringify(exportObj(),null,1);
+  if(!window.showSaveFilePicker){exportTheme();notify('saved via download (browser has no Save-File support)',false);return;}
+  try{if(!fileHandle)fileHandle=await window.showSaveFilePicker({suggestedName:fileSlug()+'.json',types:[{description:'theme JSON',accept:{'application/json':['.json']}}]});
+    const w=await fileHandle.createWritable();await w.write(data);await w.close();notify('saved "'+themeName()+'"',false);
+  }catch(e){if(e&&e.name!=='AbortError')notify('save failed: '+e.message,true);}}
 function importFile(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette;if(d.assignments)Object.assign(MAP,d.assignments);
     BOLD={};(d.bold||[]).forEach(k=>BOLD[k]=true);ITALIC={};(d.italic||[]).forEach(k=>ITALIC[k]=true);
