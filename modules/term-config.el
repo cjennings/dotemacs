@@ -237,12 +237,12 @@ run its own project-named tmux session instead of a bare, auto-named one.
   ;; rebuild is what actually lets the key through to `ghostel-mode-map' / the
   ;; global map.  C-; and F12 are the prefix + toggle; the modified arrows are
   ;; windmove (S-arrows, focus) and buffer-move (C-M-arrows, swap), which the
-  ;; ai-term workflow expects to work from inside an agent buffer.  F10 and
-  ;; C-F10 are global bindings (music-playlist toggle, server shutdown) that
-  ;; reach Emacs by falling through to the global map once the semi-char map
-  ;; stops forwarding them.
+  ;; ai-term workflow expects to work from inside an agent buffer.  F8, F10 and
+  ;; C-F10 are global bindings (org agenda, music-playlist toggle, server
+  ;; shutdown) that reach Emacs by falling through to the global map once the
+  ;; semi-char map stops forwarding them.
   (with-eval-after-load 'ghostel
-    (dolist (key '("C-;" "<f12>" "<f10>" "C-<f10>"
+    (dolist (key '("C-;" "<f8>" "<f12>" "<f10>" "C-<f10>"
                    "S-<up>" "S-<down>" "S-<left>" "S-<right>"
                    "C-M-<up>" "C-M-<down>" "C-M-<left>" "C-M-<right>"))
       (add-to-list 'ghostel-keymap-exceptions key))
