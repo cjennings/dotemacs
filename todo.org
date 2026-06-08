@@ -63,6 +63,47 @@ A full =make test= run (2026-06-07) is green across 516 of 517 files; the only f
 Build a new theme (working name "dupre-clear", final name TBD) that takes dupre's color identity and rebuilds it Prot's way: contrast-first, targeting WCAG AAA (~7:1 on the ground), where the in-progress dupre revision is mood/depth-first and lands at AA. Same hues (dupre blue, emerald, gold, terracotta, regal violet, mint) brightened to clear the AAA floor; same modus-style role mapping (blue keywords bold, gold functions, violet types, emerald strings, terracotta constants, silver default, warm-grey comments, metallic greys, navy + regal fills). Build the dupre revision first; this reuses its hue choices as the starting point.
 
 Full design + methodology + starting palette + open questions in the spec: [[file:docs/design/dupre-clear-theme.org][docs/design/dupre-clear-theme.org]]. Key prerequisite/context: the dupre-redesign entry in =.ai/session-context.org= (the AA palette this brightens). Hardest slot: blue keywords (a deep dupre blue can't be AAA on near-black — decide brighten vs keep-AA-exception vs lift-the-ground).
+** TODO [#B] theme-selector tier-3 package faces :feature:theme:theme-selector:
+Package-specific face editing in the theme-selector: org/magit/elfeed bespoke (complete face tables + live previews) plus a generated all-package inventory so every installed package is themeable. Spec is Ready, all opens resolved: [[file:docs/design/theme-selector-package-faces-spec.org][docs/design/theme-selector-package-faces-spec.org]]. Phases below run in dependency order; phases 1-5 deliver the three high-value apps, phase 6 opens the long tail, phase 7 documents. The =theme.json= -> =dupre-*.el= converter (Elisp) is a separate downstream task.
+
+*** TODO [#B] Phase 1 — package state + schema :solo:
+Add =PKGMAP= ({app:{face:{fg,bg,bold,italic,inherit,source}}}) and the =APPS= registry; extend export/import with the =packages= key; keep old JSON (no =packages=) importing cleanly. Verify: node-check, =dupre.json= imports clean, =packages= round-trips. Spec phase 1.
+
+*** TODO [#B] Phase 2 — curated app data (org/magit/elfeed) :solo:
+Complete own-defface face lists + seeded defaults modeling org's real inherit cascade, for org (incl. org-agenda), magit, elfeed, in =APPS=. Pure data. Verify: each app lists its full grouped set. Seeded-default aesthetics go to Manual testing. Spec phase 2.
+
+*** TODO [#B] Phase 3 — package face table UI :solo:
+App selector; grouped rows; fg/bg dropdowns + bold/italic + optional inherit (resolved color shown, marked inherited); per-face + per-app reset; text filter; per-fg/bg contrast readout; a generalized face-control helper shared with the ui-faces table (not a =uiSelect= fork). Verify: headless screenshot; reassign / inherit / override / reset behave. Spec phase 3.
+
+*** TODO [#B] Phase 4 — org preview :solo:
+=renderOrgPreview()=: a mock org document painted live from the org package faces + palette, refreshing on change. Verify: screenshot. Fidelity to Manual testing. Spec phase 4.
+
+*** TODO [#B] Phase 5 — magit + elfeed previews :solo:
+Bespoke mocks: a magit status buffer and an elfeed search list, live from their faces. Verify: screenshot. Fidelity to Manual testing. Spec phase 5.
+
+*** TODO [#B] Phase 6 — generated all-package inventory :solo:
+Build step queries Emacs for installed packages' faces grouped by package, writes a data file =generate.py= embeds; the dropdown then lists every package with an editable table + a labeled generic fallback preview. Verify: data file generates, dropdown lists packages, a fallback package edits and round-trips. Spec phase 6.
+
+*** TODO [#B] Phase 7 — docs + validation :solo:
+README: =packages= schema, inheritance behavior, inventory-refresh command and its loaded-config dependency; note =theme-selector.html= is generated. Regenerate HTML. Spec phase 7.
+
+*** TODO [#B] theme-selector tier 3 — test surface :test:solo:
+Fixtures: =dupre.json= (no =packages=) imports clean; =packages= fg/bg/bold/italic/inherit/source round-trip; cleared/default/user export per policy; unknown package/face data preserved-or-warned; inheritance cycle resolves to none. Regression: palette color update propagates to package faces; deleted palette color leaves package refs "(gone)" recoverable. Generated output: =generate.py= rebuilds =theme-selector.html=. Spec: Acceptance criteria.
+
+** TODO Manual testing and validation :verify:theme-selector:
+Exercised once the phases above land.
+*** TODO Seeded package-face defaults look right
+What we're verifying: the seeded org/magit/elfeed default colors read well before any tuning.
+- Open =scripts/theme-selector/theme-selector.html= in Chrome
+- Switch the app selector to org-mode, then magit, then elfeed
+- Read each preview pane against the dupre ground
+Expected: each package's seeded defaults look coherent and legible; nothing is unreadable or jarring. Override anything off in the tool.
+*** TODO Large face tables stay usable
+What we're verifying: org's ~88-face and magit's ~111-face tables stay navigable.
+- Select org-mode and scroll the grouped face table
+- Type "agenda" in the filter
+- Reassign one face and watch the preview
+Expected: rows are grouped, the filter narrows them, and a reassignment updates the preview live.
 ** TODO [#B] Dashboard keybinding changes :quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-06

@@ -9,11 +9,12 @@ for the theme-selector (scripts/theme-selector/) that lets a theme colorize
 package-specific faces, built one application at a time. v1 apps: org-mode
 (incl. org-agenda), magit, elfeed. Codex review incorporated (2026-06-07): added
 implementation phases, acceptance criteria, the package-face inventory source
-(hybrid, split), and state/export semantics. Rubric now =Ready with caveats=.
-Inheritance resolved (Craig, 2026-06-07): model it, show each face's resolved
-color in the table + preview, override what looks bad. Two opens remain for
-Craig: confirm hybrid-and-split inventory (vs curated-only v1), and the custom
-color picker timing.
+(hybrid, split), and state/export semantics. Rubric now =Ready=.
+All opens resolved (Craig, 2026-06-07/08): inheritance is modeled (show each
+face's resolved color in the table + preview, override what looks bad); inventory
+is hybrid-and-split (org/magit/elfeed bespoke first, generated all-package
+inventory as a later phase); the custom color picker is built after tier 3.
+Implementation tasks live in =todo.org=.
 
 * Background — the three tiers
 
@@ -293,8 +294,7 @@ The generated inventory is an *input artifact* to =generate.py= (a committed dat
 file refreshed by an explicit command), never browser-side discovery. The refresh
 command's dependency on a loaded Emacs config is documented.
 
-Open for Craig: confirm hybrid-and-split, or keep v1 to curated org/magit/elfeed
-only and defer the generated inventory entirely.
+Decided (Craig, 2026-06-08): hybrid-and-split, as above.
 
 * State and export policy
 
@@ -434,7 +434,7 @@ package-face build, not folded into it, since folding it in widens the blast
 radius for no dependency benefit. Build it only sooner if package-face editing
 proves painful with the native swatch.
 
-Open question for Craig: custom picker before tier 3, after it, or vNext.
+Decided (Craig, 2026-06-08): after tier 3, as its own task.
 
 * Files touched
 
