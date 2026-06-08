@@ -41,7 +41,10 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#A] theme-selector theme.json -> dupre-*.el converter :feature:theme:theme-selector:
+** DONE [#A] theme-selector theme.json -> dupre-*.el converter :feature:theme:theme-selector:
+CLOSED: [2026-06-08 Mon]
+Built as scripts/theme-selector/build-theme.el (sibling to build-inventory.el), emitting a single self-contained themes/<name>-theme.el deftheme (not the palette/faces/theme trio — a theme.json carries resolved per-face hex, not dupre's semantic layer). All four tiers convert: default from assignments.bg/.p, syntax categories -> font-lock/tree-sitter faces with bold/italic sets, UI passthrough, packages with :inherit/:height/weight/slant. 20 ERT tests in tests/test-build-theme.el (Normal/Boundary/Error + an end-to-end load + a WCAG-AA assertion on the round-tripped result). One mapping limitation documented: the dec (decorator) key has no independent Emacs face (Emacs renders decorators with font-lock-type-face, which ty owns), so dec is omitted and decorators follow the type color.
+
 The last link in the pipeline: turn a theme.json exported by the theme-selector into a real loadable Emacs theme. Elisp (per Craig), TDD — this is the correctness-sensitive piece.
 
 Inputs (all on disk; no chat history needed):
