@@ -5,7 +5,7 @@
  h2{font-size:10pt;color:#8a9496;font-weight:normal;margin:0 0 4px}
  .wrap{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:14px;padding-bottom:10px}
  .col{flex:0 0 auto;width:460px}
- pre{background:#0d0b0a;border:1px solid #252321;border-radius:8px;padding:14px 16px;font-size:10pt;overflow:auto;white-space:pre}
+ pre{background:#0d0b0a;border:1px solid #252321;border-radius:8px;padding:14px 16px;font-size:12pt;overflow:auto;white-space:pre}
  table.leg{border-collapse:collapse} table.leg td{padding:4px 12px;vertical-align:middle}
  table.leg th{cursor:pointer;color:#b4b1a2;text-align:left;padding:4px 12px;user-select:none;font-weight:normal}
  table.leg th:hover{color:#e8bd30}
@@ -50,7 +50,7 @@
  .hstep{background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:3px 4px;font:10pt monospace;width:56px}
  #pkgbody td{padding:3px 8px}
  #codepre{width:100%;box-sizing:border-box}
- .mock{border:1px solid #252321;border-radius:8px;overflow:hidden;font:10pt/1.7 monospace;display:flex;flex-direction:column}
+ .mock{border:1px solid #252321;border-radius:8px;overflow:hidden;font:12pt/1.7 monospace;display:flex;flex-direction:column}
  .mock .mbuf{flex:1} .mock .ln{display:flex;align-items:stretch;white-space:pre}
  .mock .fr{width:14px;flex:0 0 auto;border-right:1px solid #ffffff14} .mock .num{width:36px;flex:0 0 auto;text-align:right;padding-right:10px}
  .mock .cd{flex:1;padding-left:8px} .mock .bar,.mock .echo{padding:4px 10px;white-space:pre}
@@ -100,7 +100,7 @@
 <h1>code/color assignments</h1>
 <div class="cols">
  <section class="pane">
-  <table class="leg" id="legtable"><thead><tr><th onclick="srt(0)">color &#9651;</th><th>style</th><th onclick="srt(1)">elements &#9651;</th><th>example</th><th title="WCAG contrast of this color on the background">contrast</th></tr></thead><tbody id="legbody"></tbody></table>
+  <table class="leg" id="legtable"><thead><tr><th onclick="srt(1)">elements &#9651;</th><th onclick="srt(0)">color &#9651;</th><th>style</th><th>example</th><th title="WCAG contrast of this color on the background">contrast</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
   <div class="langbar"><label style="color:#b4b1a2">language</label><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode()"></select></div>
@@ -179,16 +179,16 @@ function buildTable(){
     sel.onchange=()=>{MAP[kind]=sel.value;styleChip();styleEx();styleCr();renderCode();if(kind==='bg'){applyGround();buildTable();}};
     // style buttons
     const stTd=document.createElement('td');
-    if(kind!=='bg'){const defs=[['N','a','normal'],['B','a','bold'],['I','a','italic']];
+    if(kind!=='bg'){const defs=[['B','a','bold'],['I','a','italic']];
     const btns={};
     defs.forEach(([id,ch,mode])=>{const b=document.createElement('button');b.className='sbtn';b.style.fontWeight=mode==='bold'?'bold':'normal';b.style.fontStyle=mode==='italic'?'italic':'normal';b.textContent=ch;
-      b.onclick=()=>{if(mode==='normal'){BOLD[kind]=false;ITALIC[kind]=false;}else if(mode==='bold'){BOLD[kind]=!BOLD[kind];}else{ITALIC[kind]=!ITALIC[kind];}refresh();renderCode();styleEx();};
+      b.onclick=()=>{if(mode==='bold'){BOLD[kind]=!BOLD[kind];}else{ITALIC[kind]=!ITALIC[kind];}refresh();renderCode();styleEx();};
       btns[mode]=b;stTd.appendChild(b);});
-    function refresh(){btns.normal.classList.toggle('on',!BOLD[kind]&&!ITALIC[kind]);btns.bold.classList.toggle('on',!!BOLD[kind]);btns.italic.classList.toggle('on',!!ITALIC[kind]);}
+    function refresh(){btns.bold.classList.toggle('on',!!BOLD[kind]);btns.italic.classList.toggle('on',!!ITALIC[kind]);}
     refresh();}
     const c0=document.createElement('td');c0.appendChild(sel);
     const c2=document.createElement('td');c2.className='cat';c2.textContent=label;c2.style.cursor='pointer';c2.title='flash this category in the code';c2.onclick=()=>flashTokens(kind);
-    tr.appendChild(c0);tr.appendChild(stTd);tr.appendChild(c2);tr.appendChild(exTd);tr.appendChild(crTd);
+    tr.appendChild(c2);tr.appendChild(c0);tr.appendChild(stTd);tr.appendChild(exTd);tr.appendChild(crTd);
     tb.appendChild(tr);}
 }
 let dragFrom=null,selectedIdx=null;
@@ -393,7 +393,7 @@ function renderOrgPreview(){const a='org-mode',L=[];
   L.push('   '+os(a,'org-table-header','| name | hex     |'));
   L.push('   '+os(a,'org-table','|------+---------|'));
   L.push('   '+os(a,'org-table','| blue | #67809c |'));
-  return `<div style="padding:12px 16px;font:10pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;
 }
 function renderMagitPreview(){const a='magit',L=[];
   L.push(os(a,'magit-head','Head:')+'     '+os(a,'magit-branch-local','main')+'  '+os(a,'magit-diff-revision-summary','Ship the tool'));
@@ -414,7 +414,7 @@ function renderMagitPreview(){const a='magit',L=[];
   L.push(os(a,'magit-hash','b5b1869f')+'  '+os(a,'magit-log-author','Craig')+'  enlarge the picker');
   L.push(os(a,'magit-hash','4fa5e995')+'  '+os(a,'magit-log-author','Craig')+'  '+os(a,'magit-keyword','feat')+' color picker');
   L.push(os(a,'magit-hash','de07e01a')+'  '+os(a,'magit-log-author','Craig')+'  '+os(a,'magit-tag','v0.3')+' relative height');
-  return `<div style="padding:12px 16px;font:10pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}
 function renderElfeedPreview(){const a='elfeed',L=[];
   L.push(os(a,'elfeed-search-filter-face','@6-months-ago +unread')+'   '+os(a,'elfeed-search-unread-count-face','3/120'));
   L.push('');
@@ -425,8 +425,8 @@ function renderElfeedPreview(){const a='elfeed',L=[];
   L.push(os(a,'elfeed-log-date-face','02:24:01')+'  '+os(a,'elfeed-log-info-level-face','INFO ')+' updated 12 feeds');
   L.push(os(a,'elfeed-log-date-face','02:24:02')+'  '+os(a,'elfeed-log-warn-level-face','WARN ')+' slow feed: example.com');
   L.push(os(a,'elfeed-log-date-face','02:24:03')+'  '+os(a,'elfeed-log-error-level-face','ERROR')+' failed: bad.example');
-  return `<div style="padding:12px 16px;font:10pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}
-function genericPreview(app){let h='<div style="padding:10px 14px;font:10pt/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
+  return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}
+function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face);h+=`<div style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
 function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=pv==='org'||pv==='magit'||pv==='elfeed';p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():genericPreview(app);p.style.background=MAP['bg'];const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
@@ -444,8 +444,8 @@ function buildUITable(){
 }
 let D={};
 function srt(c){const tb=document.getElementById('legbody');const r=[...tb.rows];D[c]=!D[c];
-  r.sort((a,b)=>{const x=(c===0?a.querySelector('select').value:a.cells[2].innerText).toLowerCase(),
-                       y=(c===0?b.querySelector('select').value:b.cells[2].innerText).toLowerCase();
+  r.sort((a,b)=>{const x=(c===0?a.querySelector('select').value:a.cells[0].innerText).toLowerCase(),
+                       y=(c===0?b.querySelector('select').value:b.cells[0].innerText).toLowerCase();
                  return (x<y?-1:x>y?1:0)*(D[c]?1:-1);});r.forEach(x=>tb.appendChild(x));}
 buildLangSel();buildAppSel();renderPalette();buildTable();buildUITable();renderCode();applyGround();updateTitle();initPicker();buildPkgTable();buildPkgPreview();syncMockHeight();syncPkgHeight();
 addEventListener('resize',()=>{syncMockHeight();syncPkgHeight();});
