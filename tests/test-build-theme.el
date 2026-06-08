@@ -2,8 +2,8 @@
 
 ;;; Commentary:
 
-;; ERT tests for scripts/theme-selector/build-theme.el, the converter that
-;; turns a theme.json exported by the theme-selector into a loadable Emacs
+;; ERT tests for scripts/theme-studio/build-theme.el, the converter that
+;; turns a theme.json exported by the theme-studio into a loadable Emacs
 ;; deftheme file.  This is the correctness-sensitive end of the pipeline, so
 ;; it is covered Normal / Boundary / Error per category.
 
@@ -18,7 +18,7 @@
 (eval-and-compile
   (add-to-list 'load-path
                (expand-file-name
-                "../scripts/theme-selector"
+                "../scripts/theme-studio"
                 (file-name-directory
                  (or load-file-name
                      (bound-and-true-p byte-compile-current-file)
@@ -55,7 +55,7 @@
   "A self-contained theme.json exercising every tier: default, syntax (bold +
 italic + the unmappable dec key), UI, and packages (a plain face, an
 inherit+height face, and a cleared face).  Owned by the test so it can't drift
-the way Craig's downloaded exports under scripts/theme-selector/ can.")
+the way Craig's downloaded exports under scripts/theme-studio/ can.")
 
 (defun test-build-theme--write-fixture (dir)
   "Write the fixture JSON into DIR and return its path."

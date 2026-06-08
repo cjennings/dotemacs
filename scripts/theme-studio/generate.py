@@ -369,7 +369,7 @@ if os.path.exists(_inv_path):
         APPS[_pkg]={"label":_pkg,"preview":"generic","faces":[
             [f,(f[len(_pkg)+1:] if f.startswith(_pkg+"-") else f).replace("-face","").replace("-"," "),{}]
             for f in _INV[_pkg]]}
-HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
+HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
 <style>
  body{background:#0d0b0a;color:#cdced1;font:15px/1.55 monospace;margin:20px}
  h1{font-size:22px;font-weight:normal;color:#e8bd30;margin:26px 0 10px;border-bottom:1px solid #252321;padding-bottom:6px}
@@ -1111,6 +1111,6 @@ HTML=(HTML.replace("SAMPLES_J",json.dumps(SAMPLES))
  .replace("PALETTE_J",json.dumps(PALETTE)).replace("CATS_J",json.dumps(CATS))
  .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP)).replace("APPS_J",json.dumps(APPS))
  .replace("BOLD_J",json.dumps(BOLD)).replace("MAP_J",json.dumps(MAP)))
-OUT=os.path.join(HERE,'theme-selector.html')
+OUT=os.path.join(HERE,'theme-studio.html')
 open(OUT,"w").write(HTML)
 print("wrote",OUT)
