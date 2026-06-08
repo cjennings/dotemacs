@@ -1,11 +1,11 @@
-#+TITLE: theme-selector — package faces (tier 3), starting with org-mode
+#+TITLE: theme-studio — package faces (tier 3), starting with org-mode
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-07
 
 * Status
 
 Spec / Craig's first-round answers folded in (2026-06-07). Proposes a third tier
-for the theme-selector (scripts/theme-selector/) that lets a theme colorize
+for the theme-studio (scripts/theme-studio/) that lets a theme colorize
 package-specific faces, built one application at a time. v1 apps: org-mode
 (incl. org-agenda), magit, elfeed. Codex review incorporated (2026-06-07): added
 implementation phases, acceptance criteria, the package-face inventory source
@@ -18,7 +18,7 @@ Implementation tasks live in =todo.org=.
 
 * Background — the three tiers
 
-The theme-selector already models two tiers of faces:
+The theme-studio already models two tiers of faces:
 
 1. *Syntax* — the font-lock / tree-sitter categories (keyword, string, type,
    comment, etc.), in the "code/color assignments" table.
@@ -374,7 +374,7 @@ inherited value.
   previews, the fallback visibly labeled as generic.
 - A palette color update propagates to package faces the same way it does to
   syntax / ui faces.
-- =python3 scripts/theme-selector/generate.py= rebuilds =theme-selector.html=.
+- =python3 scripts/theme-studio/generate.py= rebuilds =theme-studio.html=.
 - README documents the =packages= schema, inheritance, and the inventory source.
 
 * Extensibility (adding the next app)
@@ -482,9 +482,9 @@ Decided (Craig, 2026-06-08): after tier 3, as its own task.
 
 * Files touched
 
-- =scripts/theme-selector/generate.py= — the section, =APPS= data, the package
+- =scripts/theme-studio/generate.py= — the section, =APPS= data, the package
   face table, =renderOrgPreview()=, export/import of =packages=.
-- =scripts/theme-selector/theme-selector.html= — regenerated.
+- =scripts/theme-studio/theme-studio.html= — regenerated.
 - (later) the =theme.json= -> =dupre-*.el= converter (Elisp) — consumes
   =packages=.
 
@@ -531,7 +531,7 @@ generalized face-control helper, package style kept inside the package object,
   growth was his explicit call on the curated set.
 - *Artifacts:* This spec. The converter language (Elisp) confirmed by Craig.
   Note: Craig referenced a Codex spec review, but no
-  =theme-selector-package-faces-review.org= (or any =*-review.org=) exists in the
+  =theme-studio-package-faces-review.org= (or any =*-review.org=) exists in the
   repo — the review file could not be found, so only the author-side cj-comment
   fold was done; the Codex review remains to be processed when its file is
   located.
@@ -544,7 +544,7 @@ generalized face-control helper, package style kept inside the package object,
 - *Why:* The direction is coherent and the first-round decisions are folded in,
   but v1 now depends on behavior that is not yet implementable from the current
   static generator without a defined inventory and state/export contract.
-- *Artifacts:* [[file:theme-selector-package-faces-spec-review.org][theme-selector-package-faces-spec-review.org]]
+- *Artifacts:* [[file:theme-studio-package-faces-spec-review.org][theme-studio-package-faces-spec-review.org]]
 
 ** 2026-06-07 Sun @ 18:28:02 -0500 — Claude Code (emacs-d) — responder
 - *What:* Ran spec-response against the Codex review. Added Implementation
@@ -583,4 +583,4 @@ generalized face-control helper, package style kept inside the package object,
 - *Why:* Craig asked to fold height in — it matters for org headings above all.
   Font *family* stays in =modules/font-config.el=; the theme owns relative size
   and the fixed-pitch inherit relationships only.
-- *Artifacts:* This spec; =scripts/theme-selector/generate.py= phase-1 plumbing.
+- *Artifacts:* This spec; =scripts/theme-studio/generate.py= phase-1 plumbing.

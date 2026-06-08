@@ -1,4 +1,4 @@
-# theme-selector
+# theme-studio
 
 A self-contained tool for designing Emacs color themes by eye. One generated
 HTML page drives the whole theme: a palette, the syntax (font-lock /
@@ -11,13 +11,13 @@ readouts, then export a `theme.json` that a build step turns into
 ## Run
 
 ```bash
-python3 generate.py          # writes theme-selector.html beside this script
+python3 generate.py          # writes theme-studio.html beside this script
 ```
 
 Then open it in Chrome (Firefox had color-rendering flakiness during design):
 
 ```bash
-WAYLAND_DISPLAY=wayland-1 google-chrome-stable theme-selector.html
+WAYLAND_DISPLAY=wayland-1 google-chrome-stable theme-studio.html
 ```
 
 During color work, disable Hyprland inactive-window dimming so colors read true:
@@ -37,7 +37,7 @@ hyprctl keyword decoration:dim_inactive false
   faces it defines (see Package faces below). A committed data artifact.
 - `build-inventory.el` — refreshes `package-inventory.json` from a running
   Emacs.
-- `theme-selector.html` — generated output. Regenerate; don't hand-edit.
+- `theme-studio.html` — generated output. Regenerate; don't hand-edit.
 
 ## What it captures
 
@@ -95,7 +95,7 @@ The reachable packages come from `package-inventory.json`. Regenerate it from a
 running Emacs (so it reflects what's actually installed), then rebuild the HTML:
 
 ```bash
-emacsclient -e '(load "/home/cjennings/.emacs.d/scripts/theme-selector/build-inventory.el")'
+emacsclient -e '(load "/home/cjennings/.emacs.d/scripts/theme-studio/build-inventory.el")'
 python3 generate.py
 ```
 
@@ -149,8 +149,8 @@ the UI faces passed through, and the package faces with `:inherit`/`:height`
 and weight/slant written.
 
 ```bash
-emacs --batch -l scripts/theme-selector/build-theme.el \
-  --eval '(build-theme/convert-file "scripts/theme-selector/dupre-revised.json" "themes")'
+emacs --batch -l scripts/theme-studio/build-theme.el \
+  --eval '(build-theme/convert-file "scripts/theme-studio/dupre-revised.json" "themes")'
 ```
 
 Output is a flat generated deftheme, not the palette/faces/theme trio the

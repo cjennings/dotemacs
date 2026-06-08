@@ -1,10 +1,10 @@
-;;; build-inventory.el --- emit package->faces inventory for theme-selector -*- lexical-binding: t -*-
+;;; build-inventory.el --- emit package->faces inventory for theme-studio -*- lexical-binding: t -*-
 ;;; Commentary:
 ;; Loaded into a running Emacs (emacsclient -e '(load ".../build-inventory.el")')
 ;; to write package-inventory.json next to itself: a JSON object mapping each
 ;; installed (elpa/straight) package to the faces it defines, grouped by the
 ;; package that owns the face's definition file. Built-in faces are skipped.
-;; generate.py embeds the JSON so the theme-selector dropdown can reach every
+;; generate.py embeds the JSON so the theme-studio dropdown can reach every
 ;; installed package (tier-3 phase 6, the "theme every package" path).
 ;;; Code:
 
@@ -23,7 +23,7 @@
     (with-temp-file (expand-file-name
                      "package-inventory.json"
                      (file-name-directory (or load-file-name buffer-file-name
-                                              "~/.emacs.d/scripts/theme-selector/")))
+                                              "~/.emacs.d/scripts/theme-studio/")))
       (let ((json-encoding-pretty-print t))
         (insert (json-encode al) "\n")))))
 

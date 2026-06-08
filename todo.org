@@ -44,18 +44,18 @@ Tags are additive. For example, a small wrong-behavior fix can be
 ** TODO [#C] Evaluate jamescherti essential-emacs-packages list :packages:research:
 Review [[https://www.jamescherti.com/essential-emacs-packages/][James Cherti's essential Emacs packages]] for anything worth installing. Cross-check each candidate against what is already in the config (=modules/= + =init.el=), skip the ones already present, and shortlist the genuinely new ones with a one-line rationale. Future-installation research, not a commitment to install.
 
-** DONE [#B] theme-selector comprehensive previews (org/magit/elfeed/ghostel/mu4e/dashboard) :feature:theme:theme-selector:
+** DONE [#B] theme-studio comprehensive previews (org/magit/elfeed/ghostel/mu4e/dashboard) :feature:theme:theme-studio:
 CLOSED: [2026-06-08 Mon]
 Expanded the bespoke previews to near-complete face coverage and added three new ones. org now exercises 83/88 faces (document + agenda; the 5 skipped are non-visual: org-hide, org-indent, org-clock-overlay, org-default, org-date-selected). magit 97/98 (status buffer + blame/reflog/sequence/bisect/signature sampler rows). elfeed 13/13. New bespoke previews: ghostel 19/19 (mock terminal, 16 ANSI colors + default + fake cursor), mu4e 37/37 (curated face list, not in the generated inventory; headers list + message view + compose), dashboard 8/8. So clicking a face row flashes a real preview element for nearly every face. Originally filed as just the org preview.
 
-** DONE [#A] theme-selector theme.json -> dupre-*.el converter :feature:theme:theme-selector:
+** DONE [#A] theme-studio theme.json -> dupre-*.el converter :feature:theme:theme-studio:
 CLOSED: [2026-06-08 Mon]
-Built as scripts/theme-selector/build-theme.el (sibling to build-inventory.el), emitting a single self-contained themes/<name>-theme.el deftheme (not the palette/faces/theme trio — a theme.json carries resolved per-face hex, not dupre's semantic layer). All four tiers convert: default from assignments.bg/.p, syntax categories -> font-lock/tree-sitter faces with bold/italic sets, UI passthrough, packages with :inherit/:height/weight/slant. 20 ERT tests in tests/test-build-theme.el (Normal/Boundary/Error + an end-to-end load + a WCAG-AA assertion on the round-tripped result). One mapping limitation documented: the dec (decorator) key has no independent Emacs face (Emacs renders decorators with font-lock-type-face, which ty owns), so dec is omitted and decorators follow the type color.
+Built as scripts/theme-studio/build-theme.el (sibling to build-inventory.el), emitting a single self-contained themes/<name>-theme.el deftheme (not the palette/faces/theme trio — a theme.json carries resolved per-face hex, not dupre's semantic layer). All four tiers convert: default from assignments.bg/.p, syntax categories -> font-lock/tree-sitter faces with bold/italic sets, UI passthrough, packages with :inherit/:height/weight/slant. 20 ERT tests in tests/test-build-theme.el (Normal/Boundary/Error + an end-to-end load + a WCAG-AA assertion on the round-tripped result). One mapping limitation documented: the dec (decorator) key has no independent Emacs face (Emacs renders decorators with font-lock-type-face, which ty owns), so dec is omitted and decorators follow the type color.
 
-The last link in the pipeline: turn a theme.json exported by the theme-selector into a real loadable Emacs theme. Elisp (per Craig), TDD — this is the correctness-sensitive piece.
+The last link in the pipeline: turn a theme.json exported by the theme-studio into a real loadable Emacs theme. Elisp (per Craig), TDD — this is the correctness-sensitive piece.
 
 Inputs (all on disk; no chat history needed):
-- theme.json contract: =scripts/theme-selector/README.md= (theme.json section) and =docs/design/theme-selector-package-faces-spec.org= (State and export policy, Relative height, Inheritance).
+- theme.json contract: =scripts/theme-studio/README.md= (theme.json section) and =docs/design/theme-studio-package-faces-spec.org= (State and export policy, Relative height, Inheritance).
 - Reference face layout: existing =themes/dupre-palette.el= + =themes/dupre-faces.el= + =themes/dupre-theme.el=, and =tests/test-dupre-theme.el= (WCAG-contrast helper to reuse).
 - Conventions: =.claude/rules/elisp.md=, =.claude/rules/elisp-testing.md=.
 
@@ -66,7 +66,7 @@ Scope:
 4. Package faces: =packages= -> each face spec, writing =:inherit PARENT= for inherited faces + only the overridden attrs, =:height= when != 1.0, weight/slant.
 5. Emit a deftheme file (or palette+faces+theme trio mirroring dupre's layout).
 
-TDD targets: old-JSON (no packages) loads; every category maps; round-trip of fg/bg/bold/italic/inherit/height into valid face specs; WCAG-contrast assertion on the result. Decide whether the converter lives under =scripts/theme-selector/= (emits to =themes/=) or =themes/=.
+TDD targets: old-JSON (no packages) loads; every category maps; round-trip of fg/bg/bold/italic/inherit/height into valid face specs; WCAG-contrast assertion on the result. Decide whether the converter lives under =scripts/theme-studio/= (emits to =themes/=) or =themes/=.
 
 ** TODO [#B] Dupre diff-changed / diff-refine-changed legibility :bug:dupre:
 Surfaced 2026-06-07 from a pearl session designing its modified-ticket indicator (pearl marks a changed field by inheriting =diff-changed=). dupre's =diff-refine-changed= is bright gold (#ffd700) under near-white text (#f0fef0) -- WCAG contrast ~1.35, unreadable as a plain background. It only looks fine inside diff-mode because diff-mode overlays its own dark foreground. =diff-changed= (#875f00 amber) is ~5.49, readable but off the modus model. Every modus variant keeps both faces legible (contrast 9-16) by pairing a dark low-saturation background with a hue-matched foreground.
@@ -90,9 +90,9 @@ A full =make test= run (2026-06-07) is green across 516 of 517 files; the only f
 Build a new theme (working name "dupre-clear", final name TBD) that takes dupre's color identity and rebuilds it Prot's way: contrast-first, targeting WCAG AAA (~7:1 on the ground), where the in-progress dupre revision is mood/depth-first and lands at AA. Same hues (dupre blue, emerald, gold, terracotta, regal violet, mint) brightened to clear the AAA floor; same modus-style role mapping (blue keywords bold, gold functions, violet types, emerald strings, terracotta constants, silver default, warm-grey comments, metallic greys, navy + regal fills). Build the dupre revision first; this reuses its hue choices as the starting point.
 
 Full design + methodology + starting palette + open questions in the spec: [[file:docs/design/dupre-clear-theme.org][docs/design/dupre-clear-theme.org]]. Key prerequisite/context: the dupre-redesign entry in =.ai/session-context.org= (the AA palette this brightens). Hardest slot: blue keywords (a deep dupre blue can't be AAA on near-black — decide brighten vs keep-AA-exception vs lift-the-ground).
-** DONE [#B] theme-selector tier-3 package faces :feature:theme:theme-selector:
+** DONE [#B] theme-studio tier-3 package faces :feature:theme:theme-studio:
 CLOSED: [2026-06-08 Mon]
-Package-specific face editing in the theme-selector: org/magit/elfeed bespoke (complete face tables + live previews) plus a generated all-package inventory so every installed package is themeable. Spec is Ready, all opens resolved: [[file:docs/design/theme-selector-package-faces-spec.org][docs/design/theme-selector-package-faces-spec.org]]. Phases below run in dependency order; phases 1-5 deliver the three high-value apps, phase 6 opens the long tail, phase 7 documents. The =theme.json= -> =dupre-*.el= converter (Elisp) is a separate downstream task.
+Package-specific face editing in the theme-studio: org/magit/elfeed bespoke (complete face tables + live previews) plus a generated all-package inventory so every installed package is themeable. Spec is Ready, all opens resolved: [[file:docs/design/theme-studio-package-faces-spec.org][docs/design/theme-studio-package-faces-spec.org]]. Phases below run in dependency order; phases 1-5 deliver the three high-value apps, phase 6 opens the long tail, phase 7 documents. The =theme.json= -> =dupre-*.el= converter (Elisp) is a separate downstream task.
 
 *** 2026-06-08 Mon @ 00:17:41 -0500 Phase 1 — package state + schema landed
 Added =APPS= (org starter) and =PKGMAP= ({app:{face:{fg,bg,bold,italic,inherit,height,source}}}), pure helpers (=seedPkgmap= / =packagesForExport= / =mergePackagesInto=), and wired export/import for the =packages= key with old-JSON compat. The =height= float (relative size, read off the face not cascaded through inherit) and the fixed-pitch inherits are seeded in the org starter. No UI yet (Phase 3). Verified: node-check, plus a guarded =#selftest= harness (headless Chrome) confirming seed->export->import round-trip, old-JSON merge, and inherit/height/source survival — all PASS.
@@ -113,16 +113,16 @@ Bespoke =renderMagitPreview()= (status buffer: head/branches, untracked, a diff 
 =build-inventory.el= (loaded into a running Emacs) groups every installed package's faces by the defining package and writes =package-inventory.json=. =generate.py= embeds it and merges each package into the dropdown as an editable generic app, leaving org/magit/elfeed bespoke. 40 apps now (3 bespoke + 37 inventory, 643 faces). Committed data artifact, refreshed by reloading the .el; never browser-side discovery. Verified: node, self-test PASS, app count + bespoke-preserved checks.
 
 *** 2026-06-08 Mon @ 02:34:01 -0500 Phase 7 — docs landed
-Rewrote =README.md= for the full tool: three face tiers + palette, the in-page picker (with the AA/AAA mask), package faces (bespoke vs generic previews), modeled inheritance + relative height (family stays in font-config.el), the packages schema with inherit/height/source, export-vs-save, and the inventory-refresh command (=build-inventory.el=) + its loaded-config dependency. Notes =theme-selector.html= is generated. Test-surface fixtures tracked separately below.
+Rewrote =README.md= for the full tool: three face tiers + palette, the in-page picker (with the AA/AAA mask), package faces (bespoke vs generic previews), modeled inheritance + relative height (family stays in font-config.el), the packages schema with inherit/height/source, export-vs-save, and the inventory-refresh command (=build-inventory.el=) + its loaded-config dependency. Notes =theme-studio.html= is generated. Test-surface fixtures tracked separately below.
 
-*** 2026-06-08 Mon @ 02:40:00 -0500 theme-selector tier 3 — test surface landed
-Extended the guarded =#selftest= harness (headless Chrome) to assert the acceptance criteria against the real emitted code: old-JSON import (no =packages=), full round-trip (fg/bg/bold/italic/inherit/height/source), cleared-state export, unknown-package/face preservation, and inheritance-cycle termination — all PASS. The two DOM-coupled regressions are handled structurally: =updateColor= remaps =PKGMAP= on a palette-color edit, and =PKGMAP= stores hexes so a deleted palette color leaves package refs in the "(gone)" recoverable state. =generate.py= rebuilds =theme-selector.html= each run.
+*** 2026-06-08 Mon @ 02:40:00 -0500 theme-studio tier 3 — test surface landed
+Extended the guarded =#selftest= harness (headless Chrome) to assert the acceptance criteria against the real emitted code: old-JSON import (no =packages=), full round-trip (fg/bg/bold/italic/inherit/height/source), cleared-state export, unknown-package/face preservation, and inheritance-cycle termination — all PASS. The two DOM-coupled regressions are handled structurally: =updateColor= remaps =PKGMAP= on a palette-color edit, and =PKGMAP= stores hexes so a deleted palette color leaves package refs in the "(gone)" recoverable state. =generate.py= rebuilds =theme-studio.html= each run.
 
-** TODO Manual testing and validation :verify:theme-selector:
+** TODO Manual testing and validation :verify:theme-studio:
 Exercised once the phases above land.
 *** TODO Seeded package-face defaults look right
 What we're verifying: the seeded org/magit/elfeed default colors read well before any tuning.
-- Open =scripts/theme-selector/theme-selector.html= in Chrome
+- Open =scripts/theme-studio/theme-studio.html= in Chrome
 - Switch the app selector to org-mode, then magit, then elfeed
 - Read each preview pane against the dupre ground
 Expected: each package's seeded defaults look coherent and legible; nothing is unreadable or jarring. Override anything off in the tool.
