@@ -174,6 +174,17 @@ def _faces(names,prefix,seed):
 APPS={"org-mode":{"label":"org-mode","preview":"org","faces":_faces(ORG_FACES,"org-",ORG_SEED)},
  "magit":{"label":"magit","preview":"magit","faces":_faces(MAGIT_FACES,"magit-",MAGIT_SEED)},
  "elfeed":{"label":"elfeed","preview":"elfeed","faces":_faces(ELFEED_FACES,"elfeed-",ELFEED_SEED)}}
+# Phase 6: merge the generated all-package inventory (refresh with build-inventory.el).
+# Bespoke apps stay; every other installed package becomes an editable generic app.
+_inv_path=os.path.join(HERE,"package-inventory.json")
+if os.path.exists(_inv_path):
+    _INV=json.load(open(_inv_path))
+    _BESPOKE={"magit","elfeed","org","org-mode"}
+    for _pkg in sorted(_INV):
+        if _pkg in _BESPOKE or _pkg in APPS: continue
+        APPS[_pkg]={"label":_pkg,"preview":"generic","faces":[
+            [f,(f[len(_pkg)+1:] if f.startswith(_pkg+"-") else f).replace("-face","").replace("-"," "),{}]
+            for f in _INV[_pkg]]}
 HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
 <style>
  body{background:#0d0b0a;color:#cdced1;font:15px/1.55 monospace;margin:20px}
