@@ -41,23 +41,23 @@ UIMAP={"cursor":{"fg":None,"bg":"#a9b2bb"},"region":{"fg":None,"bg":"#264364"},
 # Tier-3 package faces. Phase 1 ships the schema + an org starter; Phase 2 fills
 # the complete org/magit/elfeed sets. Defaults reference palette names.
 APPS={"org-mode":{"label":"org-mode","preview":"org","faces":[
- ["org-document-title","document title",{"fg":"gold","bold":True}],
- ["org-level-1","heading 1",{"fg":"blue","bold":True}],
- ["org-level-2","heading 2",{"fg":"gold"}],
- ["org-level-3","heading 3",{"fg":"regal"}],
+ ["org-document-title","document title",{"fg":"gold","bold":True,"height":1.5}],
+ ["org-level-1","heading 1",{"fg":"blue","bold":True,"height":1.3}],
+ ["org-level-2","heading 2",{"fg":"gold","height":1.2}],
+ ["org-level-3","heading 3",{"fg":"regal","height":1.15}],
  ["org-todo","TODO keyword",{"fg":"terracotta","bold":True}],
  ["org-done","DONE keyword",{"fg":"sage","bold":True}],
  ["org-link","link",{"fg":"blue"}],
- ["org-code","inline code",{"fg":"terracotta"}],
- ["org-verbatim","verbatim",{"fg":"steel"}],
- ["org-block","src block body",{"fg":"white","bg":"bg-dim"}],
- ["org-block-begin-line","block delim",{"fg":"pewter","bg":"bg-dim"}],
- ["org-table","table",{"fg":"steel"}],
- ["org-date","timestamp",{"fg":"steel"}],
+ ["org-code","inline code",{"fg":"terracotta","inherit":"fixed-pitch"}],
+ ["org-verbatim","verbatim",{"fg":"steel","inherit":"fixed-pitch"}],
+ ["org-block","src block body",{"fg":"white","bg":"bg-dim","inherit":"fixed-pitch"}],
+ ["org-block-begin-line","block delim",{"fg":"pewter","bg":"bg-dim","inherit":"fixed-pitch"}],
+ ["org-table","table",{"fg":"steel","inherit":"fixed-pitch"}],
+ ["org-date","timestamp",{"fg":"steel","inherit":"fixed-pitch"}],
  ["org-tag","tag",{"fg":"tan"}],
  ["org-special-keyword","keyword/drawer",{"fg":"pewter"}],
- ["org-meta-line","#+meta line",{"fg":"pewter"}],
- ["org-checkbox","checkbox",{"fg":"gold"}],
+ ["org-meta-line","#+meta line",{"fg":"pewter","inherit":"fixed-pitch"}],
+ ["org-checkbox","checkbox",{"fg":"gold","inherit":"fixed-pitch"}],
  ["org-headline-done","done headline",{"fg":"pewter"}]
 ]}}
 HTML = """<!doctype html><meta charset=utf-8><title>theme-selector</title>
@@ -153,9 +153,9 @@ const SAMPLES=SAMPLES_J, CATS=CATS_J, UI_FACES=UIFACES_J, APPS=APPS_J;
 let MAP=MAP_J, PALETTE=PALETTE_J, BOLD=BOLD_J, ITALIC={}, UIMAP=UIMAP_J;
 // --- tier-3 package faces: pure state helpers (Phase 1) ---
 function pname(n){if(!n)return null;if(/^#/.test(n))return n;const p=PALETTE.find(p=>p[1]===n);return p?p[0]:null;}
-function seedPkgmap(){const m={};for(const app in APPS){m[app]={};for(const row of APPS[app].faces){const face=row[0],d=row[2]||{};m[app][face]={fg:pname(d.fg),bg:pname(d.bg),bold:!!d.bold,italic:!!d.italic,inherit:d.inherit||null,source:'default'};}}return m;}
-function packagesForExport(map){const out={};for(const app in map){const faces={};for(const face in map[app]){const f=map[app][face];if(f.source==='default'||f.source==='user'||f.source==='cleared'){faces[face]={fg:f.fg,bg:f.bg,bold:f.bold,italic:f.italic,inherit:f.inherit,source:f.source};}}if(Object.keys(faces).length)out[app]=faces;}return out;}
-function mergePackagesInto(map,pkgs){if(!pkgs)return;for(const app in pkgs){if(!map[app])map[app]={};for(const face in pkgs[app]){const f=pkgs[app][face]||{};map[app][face]={fg:f.fg??null,bg:f.bg??null,bold:!!f.bold,italic:!!f.italic,inherit:f.inherit??null,source:f.source||'user'};}}}
+function seedPkgmap(){const m={};for(const app in APPS){m[app]={};for(const row of APPS[app].faces){const face=row[0],d=row[2]||{};m[app][face]={fg:pname(d.fg),bg:pname(d.bg),bold:!!d.bold,italic:!!d.italic,inherit:d.inherit||null,height:d.height||1,source:'default'};}}return m;}
+function packagesForExport(map){const out={};for(const app in map){const faces={};for(const face in map[app]){const f=map[app][face];if(f.source==='default'||f.source==='user'||f.source==='cleared'){const o={fg:f.fg,bg:f.bg,bold:f.bold,italic:f.italic,inherit:f.inherit,source:f.source};if(f.height&&f.height!==1)o.height=f.height;faces[face]=o;}}if(Object.keys(faces).length)out[app]=faces;}return out;}
+function mergePackagesInto(map,pkgs){if(!pkgs)return;for(const app in pkgs){if(!map[app])map[app]={};for(const face in pkgs[app]){const f=pkgs[app][face]||{};map[app][face]={fg:f.fg??null,bg:f.bg??null,bold:!!f.bold,italic:!!f.italic,inherit:f.inherit??null,height:f.height||1,source:f.source||'user'};}}}
 let PKGMAP=seedPkgmap();
 function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function lin(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);}
@@ -339,15 +339,17 @@ buildLangSel();renderPalette();buildTable();buildUITable();renderCode();applyGro
 // Phase-1 self-test (open with #selftest): seed -> export -> import -> compare.
 function pkgSelftest(){
   const seeded=seedPkgmap();
-  seeded['org-mode']['org-level-2']={fg:'#e8bd30',bg:null,bold:false,italic:false,inherit:'org-level-1',source:'user'};
+  seeded['org-mode']['org-level-2']={fg:'#e8bd30',bg:null,bold:false,italic:false,inherit:'org-level-1',height:1.2,source:'user'};
   const exp=packagesForExport(seeded);
   const round=seedPkgmap();mergePackagesInto(round,exp);
   const roundtrip=JSON.stringify(exp)===JSON.stringify(packagesForExport(round));
   let oldjson=true;try{const m=seedPkgmap();mergePackagesInto(m,undefined);oldjson=!!(m['org-mode']&&m['org-mode']['org-todo'].source==='default');}catch(e){oldjson=false;}
-  const inherited=exp['org-mode']['org-level-2'].inherit==='org-level-1'&&exp['org-mode']['org-level-2'].source==='user';
-  const verdict=(roundtrip&&oldjson&&inherited)?'PASS':'FAIL';
+  const l2=exp['org-mode']['org-level-2'];
+  const inherited=l2.inherit==='org-level-1'&&l2.source==='user';
+  const height=l2.height===1.2 && !('height' in (exp['org-mode']['org-todo']));
+  const verdict=(roundtrip&&oldjson&&inherited&&height)?'PASS':'FAIL';
   document.title='SELFTEST '+verdict;
-  const d=document.createElement('div');d.id='selftest';d.textContent='SELFTEST '+verdict+' roundtrip='+roundtrip+' oldjson='+oldjson+' inherit='+inherited;document.body.appendChild(d);
+  const d=document.createElement('div');d.id='selftest';d.textContent='SELFTEST '+verdict+' roundtrip='+roundtrip+' oldjson='+oldjson+' inherit='+inherited+' height='+height;document.body.appendChild(d);
 }
 if(location.hash==='#selftest')pkgSelftest();
 </script>"""
