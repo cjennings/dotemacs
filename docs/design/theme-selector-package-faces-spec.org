@@ -10,9 +10,10 @@ package-specific faces, built one application at a time. v1 apps: org-mode
 (incl. org-agenda), magit, elfeed. Codex review incorporated (2026-06-07): added
 implementation phases, acceptance criteria, the package-face inventory source
 (hybrid, split), and state/export semantics. Rubric now =Ready with caveats=.
-Three opens remain for Craig: confirm the inheritance representation
-(absolute-default + opt-in inherit), confirm hybrid-and-split inventory (vs
-curated-only v1), and the custom color picker timing.
+Inheritance resolved (Craig, 2026-06-07): model it, show each face's resolved
+color in the table + preview, override what looks bad. Two opens remain for
+Craig: confirm hybrid-and-split inventory (vs curated-only v1), and the custom
+color picker timing.
 
 * Background — the three tiers
 
@@ -362,9 +363,7 @@ reflect these; this records the decisions):
    *every* package they have); only the rich preview is missing, replaced by a
    swatch-in-context fallback. Bespoke previews ship for org, magit, elfeed.
 
-* Inheritance representation (answer to Craig's question)
-
-Craig asked how inheritance would be represented. Proposal:
+* Inheritance representation (decided)
 
 Each face carries an optional =inherit= field naming another face (or =null=).
 The face's own =fg/bg/bold/italic= are *overrides* layered on top of what it
@@ -377,22 +376,30 @@ inherits.
 // exports as: (org-agenda-date-today ((t (:inherit org-agenda-date :weight bold))))
 #+end_src
 
-In the tool, an inheriting row shows an "inherits <face>" chip; attributes left
-unset render greyed (they come from the parent) until the user overrides one.
-The converter writes =:inherit PARENT= followed by only the overridden
-attributes.
+*Decision (Craig, 2026-06-07): model inheritance, show the resolved result,
+override what looks bad.* The point is to see what a face ends up looking like
+when it inherits, judge it in the preview, and fix only the ones that look
+wrong:
 
-*Recommendation: default to absolute values, offer inherit as opt-in.* Emacs
-face inheritance surprises people — an inherited background or weight rides
-along silently — so seeding every face with absolute attributes is the
-predictable default. Inheritance is available for the cases where a cascade is
-genuinely wanted (all heading levels off one base; agenda-date variants off
-=org-agenda-date=), expressed with the =inherit= field above. This keeps the
-common path obvious and the export deterministic, while still letting a user
-model the relationships org itself uses.
+- Each face's *effective* color is resolved through its inherit chain and shown
+  in its table row, visibly marked "inherited from <face>" so it reads as
+  not-explicitly-set. The face's own =fg/bg/bold/italic= are overrides layered
+  on top.
+- The mock preview on the right renders every face with its effective color, so
+  inherited faces are judged in context, not in the abstract.
+- Overriding is one action: assign a color (or toggle weight) and the row flips
+  from inherited to explicit (=source: "user"=), shown at once in the table and
+  preview.
+- Export writes =:inherit PARENT= for faces left inherited (carrying the
+  relationship, so they follow the parent the theme also sets) and explicit
+  attributes for the ones overridden — never a frozen copy of an inherited
+  color.
 
-Decision pending Craig's confirm: absolute-default with opt-in inherit (above),
-or model inheritance for the face families that have it out of the box.
+Seeded defaults express the inherit relationships org itself uses out of the box
+(heading levels off a base, =org-agenda-date= variants off =org-agenda-date=,
+=org-code= / =org-verbatim= off =fixed-pitch=), so the table opens showing
+org's real cascade, which the user then tunes. Inheritance cycles resolve to no
+inheritance.
 
 * Custom color picker (proposal)
 
