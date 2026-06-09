@@ -386,7 +386,7 @@ SHR_FACES=("shr-h1 shr-h2 shr-h3 shr-h4 shr-h5 shr-h6 shr-text shr-link shr-sele
  "shr-code shr-mark shr-strike-through shr-sup shr-abbreviation shr-sliced-image").split()
 SHR_SEED={
  "shr-h1":{"fg":"gold","bold":True,"height":1.4},"shr-h2":{"fg":"blue","bold":True,"height":1.2},"shr-h3":{"fg":"blue","bold":True},"shr-h4":{"fg":"silver","bold":True},"shr-h5":{"fg":"steel","bold":True},"shr-h6":{"fg":"pewter","bold":True},
- "shr-text":{"fg":"#cdced1"},"shr-link":{"fg":"blue","underline":True},"shr-selected-link":{"fg":"gold","bold":True,"underline":True},"shr-code":{"fg":"terracotta","bg":"bg-dim"},"shr-mark":{"fg":"#000000","bg":"gold"},"shr-strike-through":{"fg":"pewter","strike":True},"shr-sup":{"fg":"steel","height":0.8},"shr-abbreviation":{"fg":"steel","italic":True,"underline":True},"shr-sliced-image":{"fg":"pewter"}}
+ "shr-text":{"fg":"#cdced1"},"shr-link":{"fg":"blue","underline":True},"shr-selected-link":{"fg":"gold","bold":True,"underline":True},"shr-code":{"fg":"terracotta","bg":"bg-dim"},"shr-mark":{"fg":"#000000","bg":"gold"},"shr-strike-through":{"fg":"pewter","strike":True},"shr-sup":{"fg":"steel","height":0.8},"shr-abbreviation":{"fg":"steel","italic":True,"underline":True}}
 def _faces(names,prefix,seed):
     out=[]
     for f in names:
