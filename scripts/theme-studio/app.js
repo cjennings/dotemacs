@@ -300,6 +300,20 @@ async function importTheme(){
 function applyGround(){document.querySelectorAll('pre').forEach(p=>p.style.background=MAP['bg']);document.querySelectorAll('.ex').forEach(e=>e.style.background=MAP['bg']);}
 function uf(f){return UIMAP[f]||{};}
 function udeco(o){return `font-weight:${o.bold?'bold':'normal'};font-style:${o.italic?'italic':'normal'};text-decoration:${(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none'}`;}
+// A face's :box, rendered as an inset box-shadow (no layout shift). Returns the
+// box-shadow VALUE (or '' for no box). 'line' is a flat border in the box color
+// (or the face's own color when unset); 'released'/'pressed' are the 3D button
+// styles Emacs draws, derived from the background so they read on any color.
+function boxCss(b){if(!b||!b.style)return '';const w=b.width||1;
+  if(b.style==='released')return `inset ${w}px ${w}px 0 #ffffff33,inset -${w}px -${w}px 0 #00000066`;
+  if(b.style==='pressed')return `inset ${w}px ${w}px 0 #00000066,inset -${w}px -${w}px 0 #ffffff33`;
+  return `inset 0 0 0 ${w}px ${b.color||'currentColor'}`;}
+// The per-row box control: none / line / raised / pressed. get()/set() read and
+// write the face's box object (null = no box).
+function mkBoxSelect(get,set){const s=document.createElement('select');s.className='chip';s.style.cssText='width:84px;font:10pt monospace';
+  [['','no box'],['line','line'],['released','raised'],['pressed','pressed']].forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;s.appendChild(o);});
+  const cur=get();s.value=cur&&cur.style?cur.style:'';
+  s.onchange=()=>set(s.value?{style:s.value,width:1,color:null}:null);return s;}
 function flashRow(tr){if(!tr)return;tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}
 function flashEl(el){if(!el)return;el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});el.classList.remove('flashtok');void el.offsetWidth;el.classList.add('flashtok');}
 // Flash every matching element but scroll only the first into view, so a face
@@ -376,9 +390,9 @@ function buildMockFrame(){
     buf+=`<div class="ln" style="background:${rowBg}"><span class="fr" data-face="fringe" style="background:${frng.bg||bg};color:${frng.fg||fg};text-align:center;font-size:10px;overflow:hidden" title="fringe">${L.cont?'&#8618;':''}</span><span class="num" data-face="${nFace}" style="color:${nFg};background:${nBg};${udeco(isc?lnc:ln)}">${i+1}</span><span class="cd">${cd||'&nbsp;'}</span></div>`;
   });
   let html=`<div class="mbuf" style="display:flex;background:${bg}"><div style="flex:1;min-width:0">${buf}</div><div data-face="vertical-border" title="vertical-border" style="width:3px;flex:0 0 auto;background:${vb.fg||vb.bg||'#2f343a'}"></div></div>`;
-  const mlbox='box-shadow:inset 1px 1px 0 #ffffff33,inset -1px -1px 0 #00000066';  // 3D released-button box, the Emacs mode-line default
-  html+=`<div class="bar" data-face="mode-line" style="background:${ml.bg||fg};color:${ml.fg||bg};${udeco(ml)};${mlbox}">  init.el      (Emacs Lisp)      L5      git:main  </div>`;
-  html+=`<div class="bar" data-face="mode-line-inactive" style="background:${mli.bg||bg};color:${mli.fg||fg};${udeco(mli)};${mlbox}">  *Messages*      (Fundamental)  </div>`;
+  const mlbx=boxCss(ml.box),mlibx=boxCss(mli.box);
+  html+=`<div class="bar" data-face="mode-line" style="background:${ml.bg||fg};color:${ml.fg||bg};${udeco(ml)}${mlbx?';box-shadow:'+mlbx:''}">  init.el      (Emacs Lisp)      L5      git:main  </div>`;
+  html+=`<div class="bar" data-face="mode-line-inactive" style="background:${mli.bg||bg};color:${mli.fg||fg};${udeco(mli)}${mlibx?';box-shadow:'+mlibx:''}">  *Messages*      (Fundamental)  </div>`;
   html+=`<div class="echo" style="color:${fg}"><span data-face="minibuffer-prompt" style="color:${mb.fg||fg};${udeco(mb)}">I-search:</span> count   <span data-face="isearch-fail" style="color:${isf.fg||fg};background:${isf.bg||'transparent'};${udeco(isf)}">zzz [no match]</span></div>`;
   html+=`<div class="echo"><span data-face="link" style="color:${lnk.fg||fg};${udeco(lnk)}">https://gnu.org</span>   <span data-face="error" style="color:${err.fg||fg};${udeco(err)}">error</span>   <span data-face="warning" style="color:${wrn.fg||fg};${udeco(wrn)}">warning</span>   <span data-face="success" style="color:${suc.fg||fg};${udeco(suc)}">ok</span></div>`;
   fr.innerHTML=html;fr.style.background=bg;fr.style.color=fg;
@@ -390,7 +404,7 @@ function buildMockFrame(){
 function uiSelect(face,attr){const cur=UIMAP[face][attr]||'';
   return mkColorDropdown(ddList(cur),cur,h=>{UIMAP[face][attr]=h||null;paintUI(face);buildMockFrame();});}
 const BASE_INHERITS=['fixed-pitch','variable-pitch','default','link','bold','italic','shadow'];
-function seedFace(d){return {fg:pname(d.fg),bg:pname(d.bg),bold:!!d.bold,italic:!!d.italic,underline:!!d.underline,strike:!!d.strike,inherit:d.inherit||null,height:d.height||1,source:'default'};}
+function seedFace(d){return {fg:pname(d.fg),bg:pname(d.bg),bold:!!d.bold,italic:!!d.italic,underline:!!d.underline,strike:!!d.strike,inherit:d.inherit||null,height:d.height||1,box:d.box||null,source:'default'};}
 function curApp(){const s=document.getElementById('appsel');return s&&s.value?s.value:Object.keys(APPS)[0];}
 function pkgEffFg(app,face,seen){return effResolve(PKGMAP,app,face,'fg',seen);}
 function pkgEffBg(app,face,seen){return effResolve(PKGMAP,app,face,'bg',seen);}
@@ -414,13 +428,14 @@ function buildPkgTable(){
     const ci=document.createElement('td');const isel=document.createElement('select');isel.className='chip';isel.style.cssText='width:150px;font:10pt monospace';inh.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});isel.value=f.inherit||'';isel.onchange=()=>{f.inherit=isel.value||null;f.source='user';pkgChanged();};ci.appendChild(isel);
     const ch=document.createElement('td');const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.value=f.height||1;hin.className='hstep';hin.onchange=()=>{f.height=parseFloat(hin.value)||1;f.source='user';pkgChanged();};ch.appendChild(hin);
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=effFg(pkgEffFg(app,face)),ebg=effBg(pkgEffBg(app,face)),r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
+    const cx=document.createElement('td');const boxSel=mkBoxSelect(()=>f.box,b=>{f.box=b;f.source='user';pkgChanged();});cx.appendChild(boxSel);
     const cr=document.createElement('td');const rb=document.createElement('button');rb.className='sbtn';rb.textContent='↺';rb.title='reset to default';rb.onclick=()=>{PKGMAP[app][face]=seedFace(def);pkgChanged();};cr.appendChild(rb);
-    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkBtns,isel,hin,rb]);
-    tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cr);tb.appendChild(tr);
+    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkBtns,isel,hin,boxSel,rb]);
+    tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cx,cr);tb.appendChild(tr);
   }
   applyTableSort('pkgbody');
 }
-function ofs(app,face){const f=PKGMAP[app][face]||{},fg=effFg(pkgEffFg(app,face)),bg=pkgEffBg(app,face);const dec=(f.underline?'underline ':'')+(f.strike?'line-through':'');return `color:${fg};${bg?'background:'+bg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};text-decoration:${dec.trim()||'none'};font-size:${(f.height||1)}em`;}
+function ofs(app,face){const f=PKGMAP[app][face]||{},fg=effFg(pkgEffFg(app,face)),bg=pkgEffBg(app,face);const dec=(f.underline?'underline ':'')+(f.strike?'line-through':'');const bx=boxCss(f.box);return `color:${fg};${bg?'background:'+bg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};text-decoration:${dec.trim()||'none'};font-size:${(f.height||1)}em${bx?';box-shadow:'+bx:''}`;}
 function os(app,face,txt){return `<span data-face="${face}" style="${ofs(app,face)}">${txt}</span>`;}
 function renderOrgPreview(){const a='org-mode',L=[];
   L.push(os(a,'org-document-info-keyword','#+TITLE:')+' '+os(a,'org-document-title','Project Notes'));
@@ -721,7 +736,7 @@ function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 
 function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e','lsp','gitgutter','flycheck','dired','dirvish','calibredb','erc','orgdrill','orgnoter','signel','pearl','slack','telega','shr'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():pv==='lsp'?renderLspPreview():pv==='gitgutter'?renderGitGutterPreview():pv==='flycheck'?renderFlycheckPreview():pv==='dired'?renderDiredPreview():pv==='dirvish'?renderDirvishPreview():pv==='calibredb'?renderCalibredbPreview():pv==='erc'?renderErcPreview():pv==='orgdrill'?renderOrgdrillPreview():pv==='orgnoter'?renderOrgnoterPreview():pv==='signel'?renderSignelPreview():pv==='pearl'?renderPearlPreview():pv==='slack'?renderSlackPreview():pv==='telega'?renderTelegaPreview():pv==='shr'?renderShrPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
-function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=effFg(o.fg);pv.style.background=effBg(o.bg);pv.style.fontWeight=o.bold?'bold':'normal';pv.style.fontStyle=o.italic?'italic':'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';
+function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=effFg(o.fg);pv.style.background=effBg(o.bg);pv.style.fontWeight=o.bold?'bold':'normal';pv.style.fontStyle=o.italic?'italic':'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';pv.style.boxShadow=boxCss(o.box);
   const cr=document.getElementById('uicr-'+face);if(cr){const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}
 function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
@@ -736,8 +751,9 @@ function buildUITable(){
     stBtns.forEach(b=>cS.appendChild(b));
     const cC=document.createElement('td');cC.id='uicr-'+face;cC.style.whiteSpace='nowrap';cC.style.fontSize='10pt';
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
-    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stBtns]);
-    tr.appendChild(c0);tr.appendChild(cL);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tb.appendChild(tr);paintUI(face);
+    const cX=document.createElement('td');const boxSel=mkBoxSelect(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();});cX.appendChild(boxSel);
+    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stBtns,boxSel]);
+    tr.appendChild(c0);tr.appendChild(cL);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);paintUI(face);
   }
   applyTableSort('uibody');
 }

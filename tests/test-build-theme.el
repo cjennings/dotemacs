@@ -192,6 +192,27 @@ mapping dec would clobber the type color."
     (should (member '(region ((t (:background "#264364")))) specs))
     (should (member '(mode-line ((t (:foreground "#cdced1" :background "#2f343a")))) specs))))
 
+(ert-deftest test-build-theme-box-styles ()
+  "Normal/Boundary: a face box spec converts to the right Emacs :box value."
+  (should (equal (build-theme/--box '((style . "released") (width . 1)))
+                 '(:line-width 1 :style released-button)))
+  (should (equal (build-theme/--box '((style . "pressed") (width . 2)))
+                 '(:line-width 2 :style pressed-button)))
+  (should (equal (build-theme/--box '((style . "line") (color . "#67809c")))
+                 '(:line-width 1 :color "#67809c")))
+  (should (equal (build-theme/--box '((style . "line"))) '(:line-width 1)))
+  (should (null (build-theme/--box nil)))
+  (should (null (build-theme/--box '((style . "none"))))))
+
+(ert-deftest test-build-theme-ui-face-emits-box ()
+  "Normal: a ui face with a box exports a :box attribute."
+  (let ((specs (build-theme/--ui-face-specs
+                '((mode-line . ((fg . "#cdced1") (bg . "#2f343a")
+                                (box . ((style . "released") (width . 1)))))))))
+    (should (member '(mode-line ((t (:foreground "#cdced1" :background "#2f343a"
+                                     :box (:line-width 1 :style released-button)))))
+                    specs))))
+
 ;;; ---------------------------------------------------------------------------
 ;;; Package tier
 

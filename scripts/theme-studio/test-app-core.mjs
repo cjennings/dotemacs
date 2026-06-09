@@ -62,7 +62,7 @@ test('buildPkgmap: Boundary — a face with no default dict still seeds blank', 
   const m = buildPkgmap({ a: { faces: [['f', 'f']] } }, PAL);
   assert.deepEqual(m.a.f, {
     fg: null, bg: null, bold: false, italic: false, underline: false,
-    strike: false, inherit: null, height: 1, source: 'default',
+    strike: false, inherit: null, height: 1, box: null, source: 'default',
   });
 });
 
@@ -117,7 +117,7 @@ test('mergePackagesInto: Normal — fills missing fields with defaults', () => {
   mergePackagesInto(m, { a: { f: { fg: '#112233' } } });
   assert.deepEqual(m.a.f, {
     fg: '#112233', bg: null, bold: false, italic: false, underline: false,
-    strike: false, inherit: null, height: 1, source: 'user',
+    strike: false, inherit: null, height: 1, box: null, source: 'user',
   });
 });
 
