@@ -4,6 +4,12 @@
 // the browser runs the same code the tests import. The app.js wrappers (pname,
 // seedPkgmap, ddList, pkgEffFg, pkgEffBg) are thin delegators that pass the
 // live PALETTE / APPS / PKGMAP into these.
+//
+// The imports below are for the Node tests; generate.py strips them on inline,
+// where normHex (app-util.js) and the colormath helpers are already present from
+// the bodies inlined above this one.
+import { normHex } from './app-util.js';
+import { oklch2hex, srgb2oklab, oklab2oklch } from './colormath.js';
 
 // Resolve a palette name (or a raw #hex) to a hex; null when the name is unknown.
 function nameToHex(n,palette){if(!n)return null;if(/^#/.test(n))return n;const p=palette.find(p=>p[1]===n);return p?p[0]:null;}
@@ -29,4 +35,36 @@ function optList(cur,palette){const have=cur===''||palette.some(p=>p[0]===cur);r
 // characters to a single dash, trim leading/trailing dashes, fall back to 'theme'.
 function slugify(name){return name.replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'theme';}
 
-export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, slugify };
+// Generate a tonal ramp from one base color: 2n steps at offsets -n..-1 and
+// +1..+n (the base itself is excluded — it already lives in the palette),
+// ordered darkest -> lightest. Holds the OKLCH hue, steps lightness by stepL per
+// stop, and eases chroma toward the extremes (quadratic in |offset|/n, so only
+// the farthest step loses most of its color). Every step is gamut-clamped and
+// carries its own clamped flag. Returns {steps:[{hex,clamped,offset}], adjusted}
+// where adjusted names any knob clamped/rounded into range, or {steps:[],
+// error:'bad-hex'} for an unparseable base. Pure — opts are clamped, never thrown.
+function ramp(baseHex,opts){
+  const hex=typeof baseHex==='string'?normHex(baseHex):null;
+  if(!hex)return {steps:[],error:'bad-hex'};
+  const o=opts||{},adjusted=[];
+  const knob=(name,def,lo,hi,isInt)=>{
+    const v=o[name];
+    if(typeof v!=='number'||!isFinite(v))return def;
+    const r=isInt?Math.round(v):v,c=Math.min(hi,Math.max(lo,r));
+    if(c!==v)adjusted.push(name);
+    return c;
+  };
+  const n=knob('n',2,1,4,true),stepL=knob('stepL',0.08,0.04,0.12,false),chromaEase=knob('chromaEase',0.5,0,1,false);
+  const {L:L0,C:C0,H:H0}=oklab2oklch(srgb2oklab(hex));
+  const steps=[];
+  for(let off=-n;off<=n;off++){
+    if(off===0)continue;
+    const L=Math.min(1,Math.max(0,L0+off*stepL));
+    const t=Math.abs(off)/n,C=C0*(1-chromaEase*t*t);
+    const {hex:h,clamped}=oklch2hex(L,C,H0);
+    steps.push({hex:h,clamped,offset:off});
+  }
+  return {steps,adjusted};
+}
+
+export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, slugify, ramp };
