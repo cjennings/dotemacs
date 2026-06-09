@@ -9,7 +9,7 @@
 // where normHex (app-util.js) and the colormath helpers are already present from
 // the bodies inlined above this one.
 import { normHex } from './app-util.js';
-import { oklch2hex, srgb2oklab, oklab2oklch } from './colormath.js';
+import { oklch2hex, srgb2oklab, oklab2oklch, contrast } from './colormath.js';
 
 // Resolve a palette name (or a raw #hex) to a hex; null when the name is unknown.
 function nameToHex(n,palette){if(!n)return null;if(/^#/.test(n))return n;const p=palette.find(p=>p[1]===n);return p?p[0]:null;}
@@ -67,4 +67,58 @@ function ramp(baseHex,opts){
   return {steps,adjusted};
 }
 
-export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, slugify, ramp };
+// --- background-contrast safety (palette-ramps spec, Phase 3) ----------------
+// An overlay background sits behind many foregrounds at once, so its real
+// constraint is the worst-case contrast over the whole set, not one fg/bg pair.
+
+// The closed v1 set of code-overlay faces whose worst-case floor we compute.
+// Other overlay faces (secondary-selection, isearch-fail, ...) are vNext, added
+// explicitly rather than by a heuristic. Shared by app.js and the tests.
+const COVERED_FACES=['region','hl-line','highlight','lazy-highlight','isearch'];
+
+// A covered face's foreground set: the distinct syntax-token colors plus the
+// default foreground, each labeled (syntax role preferred, else 'default').
+// state = {covered:[face], syntaxAssignments:[{role,hex}], defaultFg}. Returns
+// {set:[{hex,label}]}, or {set:[],reason} where reason is 'out-of-scope' (the
+// face isn't in the covered set) or 'empty' (no syntax assignments constrain it).
+function fgSetFor(face,state){
+  const covered=(state&&state.covered)||COVERED_FACES;
+  if(!covered.includes(face))return {set:[],reason:'out-of-scope'};
+  const syn=((state&&state.syntaxAssignments)||[]).filter(a=>a&&a.hex);
+  if(!syn.length)return {set:[],reason:'empty'};
+  const byHex=new Map();
+  const add=(hex,label,isRole)=>{const k=hex.toLowerCase(),cur=byHex.get(k);if(!cur)byHex.set(k,{hex:k,label});else if(isRole&&cur.label==='default')cur.label=label;};
+  if(state&&state.defaultFg)add(state.defaultFg,'default',false);
+  for(const a of syn)add(a.hex,a.role||a.hex,true);
+  return {set:[...byHex.values()]};
+}
+
+// Worst-case (minimum) WCAG contrast of a background against a foreground set,
+// with the limiting foreground's hex and label. fgSet is fgSetFor's set. An empty
+// set returns nulls so the caller can show the no-set readout instead of a floor.
+function floor(bgHex,fgSet){
+  if(!fgSet||!fgSet.length)return {ratio:null,limitingHex:null,limitingLabel:null};
+  let best=Infinity,lh=null,ll=null;
+  for(const f of fgSet){const r=contrast(f.hex,bgHex);if(r<best){best=r;lh=f.hex;ll=f.label;}}
+  return {ratio:best,limitingHex:lh,limitingLabel:ll};
+}
+
+// The lightest background at (hue, chroma) whose worst-case floor over fgSet still
+// clears target (a WCAG ratio). Scans L up from black to bracket the first
+// dark-side crossing, then binary-searches it to tol 0.001. status:
+//   'ok'    - a ceiling L was found
+//   'none'  - even pure black fails (a foreground is too dark for the target)
+//   'all'   - no foreground set to constrain (vacuously safe everywhere)
+//   'clamp' - the ceiling L can't hold the requested chroma (gamut-clamped there)
+function lMax(hue,chroma,fgSet,target){
+  if(!fgSet||!fgSet.length)return {L:1,status:'all'};
+  const at=(L)=>{const {hex,clamped}=oklch2hex(L,chroma,hue);return {r:floor(hex,fgSet).ratio,clamped};};
+  if(at(0).r<target)return {L:null,status:'none'};
+  let loL=0,hiL=null;
+  for(let L=0.01;L<=1+1e-9;L+=0.01){const c=Math.min(L,1);if(at(c).r<target){hiL=c;break;}loL=c;}
+  if(hiL===null)return {L:1,status:'all'};
+  for(let i=0;i<20;i++){const mid=(loL+hiL)/2;if(at(mid).r>=target)loL=mid;else hiL=mid;}
+  return {L:loL,status:at(loL).clamped?'clamp':'ok'};
+}
+
+export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES };
