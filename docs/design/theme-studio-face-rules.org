@@ -1,0 +1,47 @@
+#+TITLE: theme-studio face rules
+#+DATE: 2026-06-09
+
+Two kinds of rules govern a theme's face structure. They are different in kind and must be kept separate: Design Rules are the designer's taste and may change per theme; Fidelity Rules come from the principles and never change. A face's final structure is its defface baseline (Fidelity), with Design Rules applied deliberately on top.
+
+* Design Rules (personal, optional, per-theme)
+
+Aesthetic choices the designer makes. They override package/Emacs defaults on purpose and are applied consistently across a whole face family. They can change from theme to theme. The tool should let the designer declare them and flag where the theme breaks one (these are not bugs — they are the rule being enforced).
+
+Structural only (weight/slant/underline/box/overline/height). Color is the palette, decided separately.
+
+** D1 — Headings and titles are bold
+
+Every heading/title face carries =:weight bold=, overriding per-package size-only or plain conventions: =org-level-*=, =shr-h1=..=shr-h6=, =magit-*-heading=, =*-title=, =org-document-title=, =dashboard-heading=, =telega-*-title= / =telega-*-heading=, etc.
+
+Open question for dupre: does the rule mean *all* headings bold, or *headings get emphasis via bold OR descending size*? org-level-2..8 use size, not weight.
+
+dupre faces that break D1 (heading/title but not bold):
+- size-based (intentional? — org distinguishes levels by height): org-level-2, org-level-3, org-level-4, org-level-5, org-level-6, org-level-7, org-level-8
+- genuinely plain (no bold, no height): magit-blame-heading, magit-diff-hunk-heading, telega-msg-heading, telega-describe-subsection-title, telega-secret-title
+
+** D2 — Hyperlinks are underlined
+
+Every hyperlink face carries =:underline=, applied across packages: =link=, =org-link=, =shr-link=, =shr-selected-link=, =mu4e-link-face=, =telega-link*=, etc. (Symlinks and link-count faces are not hyperlinks and are exempt.)
+
+dupre faces that break D2 (hyperlink but not underlined):
+- telega-link, telega-link-preview-sitename, telega-link-preview-title, telega-webpage-chat-link
+
+* Fidelity Rules (principle-derived, mandatory, theme-independent)
+
+Correctness and honesty invariants. They do not change between themes. A violation is a bug, not a preference.
+
+** F1 — Preview only what the theme controls
+
+Every element a preview draws must correspond to a real face the generated theme exports. No hardcoded decoration that implies theme control (this is why the mode-line box became a real =:box= attribute instead of a painted-on bevel, and why the fg/bg contrast cell must rate the face's own pair). Representational stand-ins are allowed only for theme-controlled *colors* whose shape/presence Emacs controls elsewhere — e.g. the cursor drawn as a box (the color is the =cursor= face; the shape is =cursor-type=), the fringe indicator (the color is the =fringe= face; the arrow's presence is truncation state).
+
+** F2 — Render the way Emacs renders
+
+A face is drawn the way Emacs would draw it. Overlay-style faces (region, highlight, isearch, lazy-highlight) merge like Emacs: the background applies and the foreground falls through to the underlying syntax colors unless the face sets its own. The block cursor sits on a glyph in the frame background over the cursor color. Every modeled attribute (weight/slant/underline/strike/box/height) actually renders, in both the table preview and the live buffer.
+
+** F3 — Preserve each face's defface structural baseline
+
+A face's own defface structural attributes (weight/slant/underline/box/overline/height/inherit) carry through into the theme's default for that face, except where a Design Rule deliberately overrides. An accidental drop — e.g. replacing =:inherit link= with a bare foreground and losing the underline — is a bug. For Emacs's built-in faces the baseline is verified against =emacs -Q= (error/warning/success bold; link, lazy-highlight, show-paren-match underline); for package faces, against the package's defface source.
+
+** F4 — Reference only real faces
+
+Every face the theme sets or previews must exist in Emacs. A face the theme defines that no package defines (a typo, a renamed/obsolete face) controls nothing and shows a phantom sample in the preview; it is removed. (This took out 11 dead mu4e faces.)
