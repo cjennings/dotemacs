@@ -402,7 +402,7 @@ document.addEventListener('pointerdown',e=>{if(_ddPop&&!e.target.closest('.cdd')
 function mkColorDropdown(options,cur,onPick){
   const t=document.createElement('div');t.className='cdd';t.tabIndex=0;
   const nameOf=h=>{const o=options.find(p=>p[0]===h);return o?o[1]:(h||'none');};
-  function paint(){t.style.background=cur||'#161412';t.style.color=cur?textOn(cur):'#b4b1a2';
+  function paint(){t.style.background=cur||'#161412';t.style.color=cur?textOn(cur):'#b4b1a2';t.dataset.val=cur||'';
     t.innerHTML=`<span class="cddsw" style="background:${cur||'transparent'}"></span>${esc(nameOf(cur))}`;}
   paint();
   t.onclick=(e)=>{e.stopPropagation();if(t.dataset.locked==='1')return;if(_ddPop){closeColorDropdown();return;}
@@ -419,6 +419,11 @@ function mkColorDropdown(options,cur,onPick){
     _ddPop=pop;};
   t.setValue=h=>{cur=h;paint();};
   return t;}
+// Standard option list for a swatch dropdown: a "default" entry, then the
+// palette. If cur is set but no longer in the palette, surface it as a "(gone)"
+// entry so the row still shows what it points at. Shared by all three tiers.
+function ddList(cur){const have=cur===''||PALETTE.some(p=>p[0]===cur);
+  return [['','— default —'],...(have?PALETTE:[[cur,'(gone) '+cur],...PALETTE])];}
 // Shared lock toggle for any table row. lockKey is namespaced per tier (bare
 // syntax kind, 'ui:'+face, 'pkg:'+app+':'+face). els are the row's editable
 // controls — native selects/buttons/inputs are disabled; the custom swatch
@@ -454,8 +459,7 @@ function buildTable(){
   const tb=document.getElementById('legbody');tb.innerHTML='';
   for(const [kind,label,ex] of CATS){
     const tr=document.createElement('tr');tr.dataset.kind=kind;
-    const cur=MAP[kind]||'';const have=cur===''||PALETTE.some(p=>p[0]===cur);
-    const list=[['','— default —'],...(have?PALETTE:[[cur,'(gone) '+cur],...PALETTE])];
+    const cur=MAP[kind]||'';const list=ddList(cur);
     const exTd=document.createElement('td');exTd.className='ex';exTd.textContent=ex;
     const crTd=document.createElement('td');crTd.style.whiteSpace='nowrap';crTd.style.fontSize='10pt';
     function styleEx(){exTd.style.color=(kind==='bg'?MAP['p']:(MAP[kind]||MAP['p']));exTd.style.background=MAP['bg'];exTd.style.fontWeight=BOLD[kind]?'bold':'normal';exTd.style.fontStyle=ITALIC[kind]?'italic':'normal';}
@@ -697,17 +701,11 @@ function buildMockFrame(){
   fr.innerHTML=html;fr.style.background=bg;fr.style.color=fg;
   fr.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u){flashUi(u.dataset.face);return;}const k=e.target.closest('[data-k]');if(k)flashAssign(k.dataset.k);};
 }
-function colorDropdown(value,onpick){
-  const sel=document.createElement('select');sel.className='chip';
-  const none=document.createElement('option');none.value='';none.textContent='— none —';none.style.background='#161412';none.style.color='#b4b1a2';sel.appendChild(none);
-  for(const [hex,name] of PALETTE){const o=document.createElement('option');o.value=hex;o.textContent=name+'  '+hex;o.style.background=hex;o.style.color=textOn(hex);sel.appendChild(o);}
-  sel.value=value||'';
-  function style(){if(sel.value){sel.style.background=sel.value;sel.style.color=textOn(sel.value);}else{sel.style.background='#161412';sel.style.color='#b4b1a2';}}
-  style();
-  sel.onchange=()=>{style();onpick(sel.value||null);};
-  return sel;
-}
-function uiSelect(face,attr){return colorDropdown(UIMAP[face][attr],v=>{UIMAP[face][attr]=v;paintUI(face);buildMockFrame();});}
+// All three tiers share one dropdown — the swatch div from mkColorDropdown. The
+// native <select> rendered swatch colors unreliably on Linux Chrome, so it is
+// gone. '' (the default entry) maps back to null in the stored model.
+function uiSelect(face,attr){const cur=UIMAP[face][attr]||'';
+  return mkColorDropdown(ddList(cur),cur,h=>{UIMAP[face][attr]=h||null;paintUI(face);buildMockFrame();});}
 const BASE_INHERITS=['fixed-pitch','variable-pitch','default','link','bold','italic','shadow'];
 function seedFace(d){return {fg:pname(d.fg),bg:pname(d.bg),bold:!!d.bold,italic:!!d.italic,underline:!!d.underline,strike:!!d.strike,inherit:d.inherit||null,height:d.height||1,source:'default'};}
 function curApp(){const s=document.getElementById('appsel');return s&&s.value?s.value:Object.keys(APPS)[0];}
@@ -723,7 +721,8 @@ function buildPkgTable(){
     if(flt&&!(face.toLowerCase().includes(flt)||label.toLowerCase().includes(flt)))continue;
     const f=PKGMAP[app][face],tr=document.createElement('tr');tr.dataset.face=face;
     const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.title=face;c0.style.cursor='pointer';c0.onclick=()=>flashPkgPreview(face);
-    const fgd=colorDropdown(f.fg,v=>{f.fg=v;f.source='user';pkgChanged();}),bgd=colorDropdown(f.bg,v=>{f.bg=v;f.source='user';pkgChanged();});
+    const fgd=mkColorDropdown(ddList(f.fg||''),f.fg||'',h=>{f.fg=h||null;f.source='user';pkgChanged();}),
+          bgd=mkColorDropdown(ddList(f.bg||''),f.bg||'',h=>{f.bg=h||null;f.source='user';pkgChanged();});
     const cf=document.createElement('td');cf.appendChild(fgd);
     const cb=document.createElement('td');cb.appendChild(bgd);
     const pkBtns=[];
@@ -1067,7 +1066,7 @@ function srt(c){const tb=document.getElementById('legbody');const r=[...tb.rows]
 // number, e.g. contrast or size). The sort is remembered per table and
 // re-applied after a rebuild so editing a face does not reset it.
 let tableSort={};
-function cellVal(td){if(!td)return '';const s=td.querySelector('select');if(s)return s.value.toLowerCase();const i=td.querySelector('input');if(i)return parseFloat(i.value)||0;const t=td.innerText.trim();const n=parseFloat(t);return (!isNaN(n)&&/^[-\d.]/.test(t))?n:t.toLowerCase();}
+function cellVal(td){if(!td)return '';const dd=td.querySelector('.cdd');if(dd)return (dd.dataset.val||'').toLowerCase();const s=td.querySelector('select');if(s)return s.value.toLowerCase();const i=td.querySelector('input');if(i)return parseFloat(i.value)||0;const t=td.innerText.trim();const n=parseFloat(t);return (!isNaN(n)&&/^[-\d.]/.test(t))?n:t.toLowerCase();}
 function srtTable(tbId,col){tableSort[tbId]={col,asc:!(tableSort[tbId]&&tableSort[tbId].col===col&&tableSort[tbId].asc)};applyTableSort(tbId);}
 function applyTableSort(tbId){const s=tableSort[tbId];if(!s)return;const tb=document.getElementById(tbId);if(!tb)return;const dir=s.asc?1:-1;const r=[...tb.rows];r.sort((a,b)=>{const x=cellVal(a.cells[s.col]),y=cellVal(b.cells[s.col]);return ((typeof x==='number'&&typeof y==='number')?x-y:(x<y?-1:x>y?1:0))*dir;});r.forEach(x=>tb.appendChild(x));}
 buildLangSel();buildAppSel();renderPalette();buildTable();buildUITable();renderCode();applyGround();updateTitle();initPicker();buildPkgTable();buildPkgPreview();syncMockHeight();syncPkgHeight();
@@ -1108,10 +1107,10 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
   A(dd.dataset.locked!=='1','syntax-unlock-reenables-dd');}
  LOCKED.clear();buildUITable();
  {const f=UI_FACES[0][0];
-  const tr=document.querySelector('#uibody tr[data-face="'+f+'"]'),sel=tr.querySelector('select'),lb=tr.querySelector('.lockbtn');
-  A(sel.disabled===false,'ui-sel-starts-enabled');lb.click();
-  A(sel.disabled===true,'ui-lock-disables-sel');lb.click();
-  A(sel.disabled===false,'ui-unlock-reenables-sel');}
+  const tr=document.querySelector('#uibody tr[data-face="'+f+'"]'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
+  A(dd.dataset.locked!=='1','ui-dd-starts-unlocked');lb.click();
+  A(dd.dataset.locked==='1'&&dd.classList.contains('locked'),'ui-lock-disables-dd');lb.click();
+  A(dd.dataset.locked!=='1','ui-unlock-reenables-dd');}
  {const ks=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p'),k1=ks[0],k2=ks[1];
   MAP[k1]='#111111';MAP[k2]='#222222';LOCKED.clear();LOCKED.add(k1);clearUnlocked();
   A(MAP[k1]==='#111111','syntax-clear-keeps-locked');A(MAP[k2]==='','syntax-clear-wipes-unlocked');}
