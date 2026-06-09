@@ -25,4 +25,8 @@ function effResolve(map,app,face,attr,seen){seen=seen||{};const f=map[app]&&map[
 // cur is set but no longer in the palette, surface it as a "(gone)" entry first.
 function optList(cur,palette){const have=cur===''||palette.some(p=>p[0]===cur);return [['','— default —'],...(have?palette:[[cur,'(gone) '+cur],...palette])];}
 
-export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList };
+// Turn a theme name into a safe filename slug: collapse runs of disallowed
+// characters to a single dash, trim leading/trailing dashes, fall back to 'theme'.
+function slugify(name){return name.replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'theme';}
+
+export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, slugify };

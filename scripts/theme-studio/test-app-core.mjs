@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList,
+  nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, slugify,
 } from './app-core.js';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
@@ -125,6 +125,23 @@ test('mergePackagesInto: Boundary — undefined pkgs is a no-op', () => {
   const m = { a: { f: { fg: '#000000' } } };
   mergePackagesInto(m, undefined);
   assert.deepEqual(m, { a: { f: { fg: '#000000' } } });
+});
+
+test('slugify: Normal — spaces and punctuation collapse to single dashes', () => {
+  assert.equal(slugify('My Cool Theme'), 'My-Cool-Theme');
+  assert.equal(slugify('dupre revised'), 'dupre-revised');
+  assert.equal(slugify('keeps.dots_and-dashes'), 'keeps.dots_and-dashes');
+});
+
+test('slugify: Boundary — leading/trailing junk is trimmed', () => {
+  assert.equal(slugify('  spaced  '), 'spaced');
+  assert.equal(slugify('!!!edges!!!'), 'edges');
+  assert.equal(slugify(''), 'theme'); // empty falls back
+});
+
+test('slugify: Error — an all-disallowed name falls back to "theme"', () => {
+  assert.equal(slugify('!!!'), 'theme');
+  assert.equal(slugify('   '), 'theme');
 });
 
 // Guards the one-source-of-truth contract, same as the colormath integrity test:

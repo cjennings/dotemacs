@@ -2,15 +2,19 @@ import json, os
 HERE=os.path.dirname(os.path.abspath(__file__))
 
 def strip_exports(src):
-    """Drop ES-module `export` lines so the body loads as a classic <script>.
+    """Drop ES-module `export`/`import` lines so the body loads as a classic <script>.
 
-    A top-level `export` is a syntax error outside a module, so it must go before
-    the body is spliced into the page. test-colormath.mjs applies the identical
-    strip and asserts the page carries the result verbatim (inline-integrity), so
-    the two copies cannot drift. NOTE: this is line-based — the export statement in
-    colormath.js must stay on a single line or the continuation lines survive.
+    A top-level `export` (or `import`) is a syntax error outside a module, so it
+    must go before the body is spliced into the page. Imports are stripped too so a
+    pure module may import a peer for its own unit tests (e.g. app-util.js imports
+    rl from colormath.js) while the inlined copy relies on the peer already being
+    in the page. The .mjs inline-integrity tests apply the identical strip and
+    assert the page carries the result verbatim, so the two copies cannot drift.
+    NOTE: this is line-based — each export/import statement must stay on a single
+    line or the continuation lines survive.
     """
-    return '\n'.join(l for l in src.splitlines() if not l.startswith('export')).rstrip()
+    return '\n'.join(l for l in src.splitlines()
+                     if not (l.startswith('export') or l.startswith('import'))).rstrip()
 
 # Pure color-math core, inlined verbatim into the page so the browser runs the
 # same code the Node tests import (one source of truth).
@@ -25,6 +29,10 @@ APP_BODY=open(os.path.join(HERE,'app.js')).read()
 # Pure package-model + dropdown logic, inlined into the page (and unit-tested via
 # test-app-core.mjs) the same way colormath.js is.
 APP_CORE_BODY=strip_exports(open(os.path.join(HERE,'app-core.js')).read())
+# Pure color/UI-boundary helpers (normHex/ratingColor/textOn), unit-tested via
+# test-app-util.mjs. Its `import rl` line is stripped on inline (rl is already in
+# the page from the colormath core).
+APP_UTIL_BODY=strip_exports(open(os.path.join(HERE,'app-util.js')).read())
 ns={}
 src=open(os.path.join(HERE,'samples.py')).read()
 exec(src[:src.index('cols=')], ns)
@@ -509,6 +517,7 @@ APP_JS</script>"""
 def fill_data(s):
     return (s.replace("COLORMATH_J",COLORMATH_BODY)
      .replace("APP_CORE_J",APP_CORE_BODY)
+     .replace("APP_UTIL_J",APP_UTIL_BODY)
      .replace("SAMPLES_J",json.dumps(SAMPLES))
      .replace("PALETTE_J",json.dumps(PALETTE)).replace("CATS_J",json.dumps(CATS))
      .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP)).replace("APPS_J",json.dumps(APPS))
