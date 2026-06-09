@@ -24,7 +24,7 @@ MAP={k:v[0] for k,v in COLS.items()}; BOLD={k:v[1] for k,v in COLS.items()}; MAP
 PALETTE=[["#67809c","blue"],["#e8bd30","gold"],["#9b5fd0","regal"],["#2ba178","emerald"],["#5d9b86","sage"],
  ["#cb6b4d","terracotta"],["#be9e74","tan"],["#ffffff","white"],["#a9b2bb","silver"],["#838d97","steel"],
  ["#5e6770","pewter"],["#2f343a","gunmetal"],["#264364","navy"],["#000000","ground"],["#1a1714","bg-dim"]]
-CATS=[["bg","background (ground)","Aa Bb 123"],["p","fg · default text","other / whitespace"],["kw","keyword","class  def  if  return"],["bi","builtin","len  echo  printf"],
+CATS=[["bg","bg (ground)","Aa Bb 123"],["p","fg","other / whitespace"],["kw","keyword","class  def  if  return"],["bi","builtin","len  echo  printf"],
  ["pp","preprocessor","#include  #define"],["fnd","function · def","resolve  push"],
  ["fnc","function · call","printf  rsync  get"],["dec","decorator","@dataclass"],
  ["ty","type / class","int  str  Order  Queue"],["prop","property / field","id  name  items"],
@@ -53,6 +53,23 @@ UIMAP={"cursor":{"fg":None,"bg":"#a9b2bb"},"region":{"fg":None,"bg":"#264364"},
  "show-paren-mismatch":{"fg":"#0d0b0a","bg":"#cb6b4d"},"link":{"fg":"#67809c","bg":None},
  "error":{"fg":"#cb6b4d","bg":None},"warning":{"fg":"#e8bd30","bg":None},
  "success":{"fg":"#5d9b86","bg":None},"vertical-border":{"fg":"#2f343a","bg":None}}
+
+# Optional palette seed: THEME_STUDIO_SEED=<file.json> seeds the tool's starting
+# palette / assignments / bold / italic / UI from a theme.json (path relative to
+# this dir), instead of the hardcoded defaults above. Unset leaves them unchanged.
+# Placed after every default it overrides (notably UIMAP) so the merge has targets.
+# Mirrors what the in-page Import does, so reseed and import agree.
+LOCKS=[]; ITALIC=[]
+_seed=os.environ.get('THEME_STUDIO_SEED')
+if _seed:
+    _d=json.load(open(os.path.join(HERE,_seed)))
+    if _d.get('palette'): PALETTE=_d['palette']
+    if _d.get('assignments'): MAP.update(_d['assignments'])
+    if 'bold' in _d: BOLD={k:(k in _d['bold']) for k in BOLD}
+    if 'italic' in _d: ITALIC=_d['italic']
+    if _d.get('ui'):
+        for _k,_v in _d['ui'].items(): UIMAP[_k]=_v
+    if 'locks' in _d: LOCKS=_d['locks']
 # link is underlined by default (matches the built-in link face).
 UIMAP["link"]["underline"]=True
 # Tier-3 package faces (Phase 2): complete own-defface sets for org/magit/elfeed,
@@ -396,6 +413,18 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
  table.leg th{cursor:pointer;color:#b4b1a2;text-align:left;padding:4px 12px;user-select:none;font-weight:normal}
  table.leg th:hover{color:#e8bd30}
  select.chip{appearance:none;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 14px monospace;width:160px;cursor:pointer}
+ .cdd{display:inline-flex;align-items:center;gap:7px;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 13px monospace;width:160px;cursor:pointer;box-sizing:border-box;overflow:hidden;white-space:nowrap}
+ .cddsw{display:inline-block;width:13px;height:13px;border-radius:3px;border:1px solid #0007;flex:none}
+ .cddpop{position:fixed;z-index:200;background:#161412;border:1px solid #3a3a3a;border-radius:6px;box-shadow:0 12px 34px #000c;max-height:60vh;overflow:auto;padding:4px}
+ .cddrow{display:flex;align-items:center;gap:9px;padding:4px 9px;cursor:pointer;color:#cdced1;font:12px monospace;border-radius:4px;white-space:nowrap}
+ .cddrow:hover{background:#252321}
+ .cddrow.sel{outline:1px solid #e8bd30;outline-offset:-1px}
+ .cddrow .cddnm{flex:1}
+ .cddrow .cddhx{opacity:.55;margin-left:10px}
+ .cdd.locked{cursor:default;opacity:.85;box-shadow:inset 0 0 0 2px #e8bd3088}
+ .lockbtn{background:none;border:none;cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;opacity:.5;filter:grayscale(1)}
+ .lockbtn.on{opacity:1;filter:none}
+ .legctl{margin:0 0 8px;display:flex;gap:8px;align-items:center}
  .cat{color:#b4b1a2} .ex{font-size:17px}
  .sbtn{width:26px;height:24px;border:1px solid #3a3a3a;border-radius:3px;background:#eaeaea;color:#111;cursor:pointer;font-size:15px;margin-right:2px;padding:0}
  .sbtn.on{background:#0d0b0a;color:#cdced1;border-color:#8a9496}
@@ -511,7 +540,8 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
 <h1>code/color assignments</h1>
 <div class="cols">
  <section class="pane">
-  <table class="leg" id="legtable"><thead><tr><th onclick="srt(1)">elements &#9651;</th><th onclick="srt(0)">color &#9651;</th><th>style</th><th>example</th><th title="WCAG contrast of this color on the background">contrast</th></tr></thead><tbody id="legbody"></tbody></table>
+  <div class="legctl"><button class="fbtn" onclick="clearUnlocked()" title="reset every unlocked element to default (reads as plain foreground text); locked rows are left untouched">clear unlocked</button></div>
+  <table class="leg" id="legtable"><thead><tr><th onclick="srt(1)">elements &#9651;</th><th title="lock a decided element↔color association"></th><th onclick="srt(0)">color &#9651;</th><th>style</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
   <div class="langbar"><label style="color:#b4b1a2">language</label><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode()"></select></div>
@@ -521,7 +551,8 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
 <h1>ui faces</h1>
 <div class="cols stretch">
  <section class="pane">
-  <table class="leg" id="uitable"><thead><tr><th onclick="srtTable('uibody',0)">face &#9651;</th><th onclick="srtTable('uibody',1)">foreground &#9651;</th><th onclick="srtTable('uibody',2)">background &#9651;</th><th>style</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
+  <div class="legctl"><button class="fbtn" onclick="clearUnlockedUI()" title="reset every unlocked UI face to default (no foreground/background); locked rows are left untouched">clear unlocked</button></div>
+  <table class="leg" id="uitable"><thead><tr><th onclick="srtTable('uibody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('uibody',2)">foreground &#9651;</th><th onclick="srtTable('uibody',3)">background &#9651;</th><th>style</th><th onclick="srtTable('uibody',5)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label style="color:#b4b1a2">live buffer preview</label></div>
@@ -533,10 +564,11 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
  <label style="color:#b4b1a2">application</label><select id="appsel" class="chip" style="width:auto;font:bold 10pt monospace"></select>
  <label style="color:#b4b1a2">filter</label><input id="pkgfilter" type="text" placeholder="face name" oninput="buildPkgTable()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:160px">
  <button onclick="resetApp()">&#8635; reset all</button>
+ <button class="fbtn" onclick="clearUnlockedPkg()" title="reset every unlocked face in this app to default (no fg/bg); locked rows are left untouched">clear unlocked</button>
 </div>
 <div class="cols stretch">
  <section class="pane">
-  <table class="leg" id="pkgtable"><thead><tr><th onclick="srtTable('pkgbody',0)">face &#9651;</th><th onclick="srtTable('pkgbody',1)">fg &#9651;</th><th onclick="srtTable('pkgbody',2)">bg &#9651;</th><th>style</th><th onclick="srtTable('pkgbody',4)">inherit &#9651;</th><th onclick="srtTable('pkgbody',5)">size &#9651;</th><th onclick="srtTable('pkgbody',6)">contrast &#9651;</th><th></th></tr></thead><tbody id="pkgbody"></tbody></table>
+  <table class="leg" id="pkgtable"><thead><tr><th onclick="srtTable('pkgbody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th onclick="srtTable('pkgbody',5)">contrast &#9651;</th><th onclick="srtTable('pkgbody',6)">inherit &#9651;</th><th onclick="srtTable('pkgbody',7)">size &#9651;</th><th></th></tr></thead><tbody id="pkgbody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label id="pkgprevlabel" style="color:#b4b1a2">preview</label></div>
@@ -545,7 +577,8 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
 </div>
 <script>
 const SAMPLES=SAMPLES_J, CATS=CATS_J, UI_FACES=UIFACES_J, APPS=APPS_J;
-let MAP=MAP_J, PALETTE=PALETTE_J, BOLD=BOLD_J, ITALIC={}, UIMAP=UIMAP_J;
+let MAP=MAP_J, PALETTE=PALETTE_J, BOLD=BOLD_J, ITALIC=ITALIC_J, UIMAP=UIMAP_J;
+let LOCKED=new Set(LOCKS_J);   // syntax categories whose element↔color is decided (dropdown disabled, skipped by clear-unlocked)
 const DELTAE_MIN=0.02; // OKLab ΔE below this = colors too close to tell apart (perceptual-metrics spec)
 // --- tier-3 package faces: pure state helpers (Phase 1) ---
 function pname(n){if(!n)return null;if(/^#/.test(n))return n;const p=PALETTE.find(p=>p[1]===n);return p?p[0]:null;}
@@ -566,29 +599,83 @@ function renderCode(){
   const lang=document.getElementById('langsel').value;let html='';
   for(const line of SAMPLES[lang]){
     if(line.length===0){html+='\\n';continue;}
-    for(const [k,t] of line){const c=MAP[k]||'#cdced1';const w=BOLD[k]?'bold':'normal';const s=ITALIC[k]?'italic':'normal';
+    for(const [k,t] of line){const c=MAP[k]||MAP['p']||'#cdced1';const w=BOLD[k]?'bold':'normal';const s=ITALIC[k]?'italic':'normal';
       html+=`<span data-k="${k}" style="color:${c};font-weight:${w};font-style:${s}">${esc(t)}</span>`;}
     html+='\\n';}
   const cp=document.getElementById('codepre');cp.innerHTML=html;
   cp.onclick=(e)=>{const s=e.target.closest('[data-k]');if(s)flashAssign(s.dataset.k);};
   buildMockFrame();
 }
+// Custom color dropdown: a real swatch + name + hex per row, since native
+// <option> background colors render unreliably on Linux Chrome. The popup is
+// fixed-positioned on <body> so a table's overflow can't clip it.
+let _ddPop=null;
+function closeColorDropdown(){if(_ddPop){_ddPop.remove();_ddPop=null;}}
+document.addEventListener('pointerdown',e=>{if(_ddPop&&!e.target.closest('.cdd')&&!e.target.closest('.cddpop'))closeColorDropdown();});
+function mkColorDropdown(options,cur,onPick){
+  const t=document.createElement('div');t.className='cdd';t.tabIndex=0;
+  const nameOf=h=>{const o=options.find(p=>p[0]===h);return o?o[1]:(h||'none');};
+  function paint(){t.style.background=cur||'#161412';t.style.color=cur?textOn(cur):'#b4b1a2';
+    t.innerHTML=`<span class="cddsw" style="background:${cur||'transparent'}"></span>${esc(nameOf(cur))}`;}
+  paint();
+  t.onclick=(e)=>{e.stopPropagation();if(t.dataset.locked==='1')return;if(_ddPop){closeColorDropdown();return;}
+    const pop=document.createElement('div');pop.className='cddpop';
+    for(const [hex,name] of options){const row=document.createElement('div');row.className='cddrow'+(hex===cur?' sel':'');
+      row.innerHTML=`<span class="cddsw" style="background:${hex||'transparent'}"></span><span class="cddnm">${esc(name)}</span><span class="cddhx">${hex||''}</span>`;
+      row.onclick=(ev)=>{ev.stopPropagation();cur=hex;paint();closeColorDropdown();onPick(hex);};
+      pop.appendChild(row);}
+    document.body.appendChild(pop);const r=t.getBoundingClientRect();
+    pop.style.left=r.left+'px';pop.style.minWidth=r.width+'px';
+    pop.style.top=(r.bottom+2)+'px';
+    const ph=pop.getBoundingClientRect().height;
+    if(r.bottom+ph>window.innerHeight-6)pop.style.top=Math.max(6,r.top-ph-2)+'px';
+    _ddPop=pop;};
+  t.setValue=h=>{cur=h;paint();};
+  return t;}
+// Shared lock toggle for any table row. lockKey is namespaced per tier (bare
+// syntax kind, 'ui:'+face, 'pkg:'+app+':'+face). els are the row's editable
+// controls — native selects/buttons/inputs are disabled; the custom swatch
+// dropdown (a div) gets data-locked so its onclick refuses to open.
+function mkLockCell(lockKey,els){
+  const td=document.createElement('td');td.style.textAlign='center';
+  const lk=document.createElement('button');lk.className='lockbtn';
+  function paint(){const on=LOCKED.has(lockKey);lk.textContent=on?'🔒':'🔓';lk.classList.toggle('on',on);
+    lk.title=on?'locked — click to unlock':'click to lock this decision';
+    (els||[]).forEach(el=>{if(!el)return;
+      if(el.tagName==='SELECT'||el.tagName==='BUTTON'||el.tagName==='INPUT')el.disabled=on;
+      else{el.dataset.locked=on?'1':'';el.classList.toggle('locked',on);}});}
+  lk.onclick=()=>{LOCKED.has(lockKey)?LOCKED.delete(lockKey):LOCKED.add(lockKey);paint();};
+  paint();td.appendChild(lk);return td;}
+// Reset every unlocked syntax category to default (unset -> reads as plain
+// foreground text). Locked rows, plus bg and the default fg, are left alone.
+function clearUnlocked(){
+  for(const [kind] of CATS){if(kind==='bg'||kind==='p')continue;if(!LOCKED.has(kind))MAP[kind]='';}
+  buildTable();renderCode();notify('cleared unlocked elements to default',false);
+}
+// Same idea per tier: wipe unlocked UI faces / current-app package faces back to
+// unset (no fg/bg/style). Locked rows (ui:/pkg: keys) are left untouched.
+function clearUnlockedUI(){
+  for(const [face] of UI_FACES){if(!LOCKED.has('ui:'+face))UIMAP[face]={fg:null,bg:null,bold:false,italic:false,underline:false,strike:false};}
+  buildUITable();buildMockFrame();notify('cleared unlocked UI faces to default',false);
+}
+function clearUnlockedPkg(){
+  const app=curApp();
+  for(const [face] of APPS[app].faces){if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]={fg:null,bg:null,bold:false,italic:false,underline:false,strike:false,inherit:null,height:1,source:'cleared'};}
+  pkgChanged();notify('cleared unlocked '+app+' faces to default',false);
+}
 function buildTable(){
   const tb=document.getElementById('legbody');tb.innerHTML='';
   for(const [kind,label,ex] of CATS){
     const tr=document.createElement('tr');tr.dataset.kind=kind;
-    const sel=document.createElement('select');sel.className='chip';
-    const cur=MAP[kind];const have=PALETTE.some(p=>p[0]===cur);
-    const list=have?PALETTE:[[cur,'(gone) '+cur],...PALETTE];
-    for(const [hex,name] of list){const o=document.createElement('option');o.value=hex;o.textContent=name+'  '+hex;o.style.background=hex;o.style.color=textOn(hex);sel.appendChild(o);}
-    sel.value=cur;
+    const cur=MAP[kind]||'';const have=cur===''||PALETTE.some(p=>p[0]===cur);
+    const list=[['','— default —'],...(have?PALETTE:[[cur,'(gone) '+cur],...PALETTE])];
     const exTd=document.createElement('td');exTd.className='ex';exTd.textContent=ex;
     const crTd=document.createElement('td');crTd.style.whiteSpace='nowrap';crTd.style.fontSize='10pt';
-    function styleChip(){sel.style.background=sel.value;sel.style.color=textOn(sel.value);}
-    function styleEx(){exTd.style.color=(kind==='bg'?MAP['p']:MAP[kind]);exTd.style.background=MAP['bg'];exTd.style.fontWeight=BOLD[kind]?'bold':'normal';exTd.style.fontStyle=ITALIC[kind]?'italic':'normal';}
-    function styleCr(){const r=contrast((kind==='bg'?MAP['p']:MAP[kind]),MAP['bg']);crTd.innerHTML=`<span style="color:${ratingColor(r)}">${r.toFixed(1)}  ${rating(r)}</span>`;}
-    styleChip();styleEx();styleCr();
-    sel.onchange=()=>{MAP[kind]=sel.value;styleChip();styleEx();styleCr();renderCode();if(kind==='bg'){applyGround();buildTable();}};
+    function styleEx(){exTd.style.color=(kind==='bg'?MAP['p']:(MAP[kind]||MAP['p']));exTd.style.background=MAP['bg'];exTd.style.fontWeight=BOLD[kind]?'bold':'normal';exTd.style.fontStyle=ITALIC[kind]?'italic':'normal';}
+    function styleCr(){const r=contrast((kind==='bg'?MAP['p']:(MAP[kind]||MAP['p'])),MAP['bg']);crTd.innerHTML=`<span style="color:${ratingColor(r)}">${r.toFixed(1)}  ${rating(r)}</span>`;}
+    const dd=mkColorDropdown(list,cur,(hex)=>{MAP[kind]=hex;styleEx();styleCr();renderCode();if(kind==='bg'){applyGround();buildTable();}});
+    styleEx();styleCr();
+    const lkTd=mkLockCell(kind,[dd]);
     // style buttons
     const stTd=document.createElement('td');
     if(kind!=='bg'){const defs=[['B','a','bold'],['I','a','italic']];
@@ -598,9 +685,9 @@ function buildTable(){
       btns[mode]=b;stTd.appendChild(b);});
     function refresh(){btns.bold.classList.toggle('on',!!BOLD[kind]);btns.italic.classList.toggle('on',!!ITALIC[kind]);}
     refresh();}
-    const c0=document.createElement('td');c0.appendChild(sel);
+    const c0=document.createElement('td');c0.appendChild(dd);
     const c2=document.createElement('td');c2.className='cat';c2.textContent=label;c2.style.cursor='pointer';c2.title='flash this category in the code';c2.onclick=()=>flashTokens(kind);
-    tr.appendChild(c2);tr.appendChild(c0);tr.appendChild(stTd);tr.appendChild(exTd);tr.appendChild(crTd);
+    tr.appendChild(c2);tr.appendChild(lkTd);tr.appendChild(c0);tr.appendChild(stTd);tr.appendChild(crTd);tr.appendChild(exTd);
     tb.appendChild(tr);}
 }
 let dragFrom=null,selectedIdx=null;
@@ -735,7 +822,7 @@ function addColor(){const h=curHex();const name=document.getElementById('newname
   PALETTE.push([h,name]);document.getElementById('newname').value='';selectedIdx=null;closePicker();renderPalette();buildTable();notify('added "'+name+'"',false);}
 function themeName(){return (document.getElementById('themename').value||'theme').trim()||'theme';}
 function fileSlug(){return themeName().replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'theme';}
-function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);const o={name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};const pk=packagesForExport(PKGMAP);if(Object.keys(pk).length)o.packages=pk;return o;}
+function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);const o={name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};if(LOCKED.size)o.locks=[...LOCKED];const pk=packagesForExport(PKGMAP);if(Object.keys(pk).length)o.packages=pk;return o;}
 function exportState(){const t=document.getElementById('export');t.value=JSON.stringify(exportObj(),null,1);t.style.display='block';t.focus();t.select();}
 function toggleJSON(){const t=document.getElementById('export'),b=document.getElementById('jsonbtn');if(t.style.display==='block'){t.style.display='none';b.textContent='show';}else{exportState();b.textContent='hide';}}
 function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': theme';const sb=document.getElementById('savebtn');if(sb){sb.style.display=n||fileHandle?'':'none';sb.title=fileHandle?'overwrite the imported/saved file':'choose where to save';}}
@@ -748,6 +835,7 @@ async function saveTheme(){const data=JSON.stringify(exportObj(),null,1);
   }catch(e){if(e&&e.name!=='AbortError')notify('save failed: '+e.message,true);}}
 function applyImported(text){const d=JSON.parse(text);if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette;if(d.assignments)Object.assign(MAP,d.assignments);
   BOLD={};(d.bold||[]).forEach(k=>BOLD[k]=true);ITALIC={};(d.italic||[]).forEach(k=>ITALIC[k]=true);
+  LOCKED=new Set(d.locks||[]);
   if(d.ui)Object.assign(UIMAP,d.ui);
   PKGMAP=seedPkgmap();if(d.packages)mergePackagesInto(PKGMAP,d.packages);
   renderPalette();buildTable();buildUITable();buildPkgTable();buildPkgPreview();renderCode();applyGround();updateTitle();}
@@ -848,14 +936,17 @@ function buildPkgTable(){
     if(flt&&!(face.toLowerCase().includes(flt)||label.toLowerCase().includes(flt)))continue;
     const f=PKGMAP[app][face],tr=document.createElement('tr');tr.dataset.face=face;
     const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.title=face;c0.style.cursor='pointer';c0.onclick=()=>flashPkgPreview(face);
-    const cf=document.createElement('td');cf.appendChild(colorDropdown(f.fg,v=>{f.fg=v;f.source='user';pkgChanged();}));
-    const cb=document.createElement('td');cb.appendChild(colorDropdown(f.bg,v=>{f.bg=v;f.source='user';pkgChanged();}));
-    const cw=document.createElement('td');[['B','bold'],['I','italic'],['U','underline'],['S','strike']].forEach(([ch,at])=>{const b=document.createElement('button');b.className='sbtn'+(f[at]?' on':'');b.textContent='a';b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';b.style.textDecoration=at==='underline'?'underline':at==='strike'?'line-through':'none';b.title=at;b.onclick=()=>{f[at]=!f[at];f.source='user';pkgChanged();};cw.appendChild(b);});
+    const fgd=colorDropdown(f.fg,v=>{f.fg=v;f.source='user';pkgChanged();}),bgd=colorDropdown(f.bg,v=>{f.bg=v;f.source='user';pkgChanged();});
+    const cf=document.createElement('td');cf.appendChild(fgd);
+    const cb=document.createElement('td');cb.appendChild(bgd);
+    const pkBtns=[];
+    const cw=document.createElement('td');[['B','bold'],['I','italic'],['U','underline'],['S','strike']].forEach(([ch,at])=>{const b=document.createElement('button');b.className='sbtn'+(f[at]?' on':'');b.textContent='a';b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';b.style.textDecoration=at==='underline'?'underline':at==='strike'?'line-through':'none';b.title=at;b.onclick=()=>{f[at]=!f[at];f.source='user';pkgChanged();};cw.appendChild(b);pkBtns.push(b);});
     const ci=document.createElement('td');const isel=document.createElement('select');isel.className='chip';isel.style.cssText='width:150px;font:10pt monospace';inh.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});isel.value=f.inherit||'';isel.onchange=()=>{f.inherit=isel.value||null;f.source='user';pkgChanged();};ci.appendChild(isel);
     const ch=document.createElement('td');const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.value=f.height||1;hin.className='hstep';hin.onchange=()=>{f.height=parseFloat(hin.value)||1;f.source='user';pkgChanged();};ch.appendChild(hin);
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face)||MAP['bg'],r=contrast(efg,ebg);cc.innerHTML=`<span style="color:${ratingColor(r)}">${r.toFixed(1)}  ${rating(r)}</span>`;
     const cr=document.createElement('td');const rb=document.createElement('button');rb.className='sbtn';rb.textContent='↺';rb.title='reset to default';rb.onclick=()=>{PKGMAP[app][face]=seedFace(def);pkgChanged();};cr.appendChild(rb);
-    tr.append(c0,cf,cb,cw,ci,ch,cc,cr);tb.appendChild(tr);
+    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkBtns,isel,hin,rb]);
+    tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cr);tb.appendChild(tr);
   }
   applyTableSort('pkgbody');
 }
@@ -1160,24 +1251,29 @@ function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 
 function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e','lsp','gitgutter','flycheck','dired','dirvish','calibredb','erc','orgdrill','orgnoter','signel','pearl','slack','telega','shr'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():pv==='lsp'?renderLspPreview():pv==='gitgutter'?renderGitGutterPreview():pv==='flycheck'?renderFlycheckPreview():pv==='dired'?renderDiredPreview():pv==='dirvish'?renderDirvishPreview():pv==='calibredb'?renderCalibredbPreview():pv==='erc'?renderErcPreview():pv==='orgdrill'?renderOrgdrillPreview():pv==='orgnoter'?renderOrgnoterPreview():pv==='signel'?renderSignelPreview():pv==='pearl'?renderPearlPreview():pv==='slack'?renderSlackPreview():pv==='telega'?renderTelegaPreview():pv==='shr'?renderShrPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
-function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=o.fg||MAP['p'];pv.style.background=o.bg||MAP['bg'];pv.style.fontWeight=o.bold?'bold':'normal';pv.style.fontStyle=o.italic?'italic':'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';}
+function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=o.fg||MAP['p'];pv.style.background=o.bg||MAP['bg'];pv.style.fontWeight=o.bold?'bold':'normal';pv.style.fontStyle=o.italic?'italic':'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';
+  const cr=document.getElementById('uicr-'+face);if(cr){const efg=o.fg||MAP['p'],ebg=o.bg||MAP['bg'],r=contrast(efg,ebg);cr.innerHTML=`<span style="color:${ratingColor(r)}">${r.toFixed(1)}  ${rating(r)}</span>`;}}
 function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
     const tr=document.createElement('tr');tr.dataset.face=face;
     const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.style.cursor='pointer';c0.title='flash this face in the live preview';c0.onclick=()=>flashUiPreview(face);
-    const cF=document.createElement('td');cF.appendChild(uiSelect(face,'fg'));
-    const cB=document.createElement('td');cB.appendChild(uiSelect(face,'bg'));
-    const cS=document.createElement('td');[['B','bold'],['I','italic'],['U','underline'],['S','strike']].forEach(([ch,at])=>{const b=document.createElement('button');b.className='sbtn'+(UIMAP[face][at]?' on':'');b.textContent='a';b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';b.style.textDecoration=at==='underline'?'underline':at==='strike'?'line-through':'none';b.title=at;b.onclick=()=>{UIMAP[face][at]=!UIMAP[face][at];paintUI(face);buildMockFrame();};cS.appendChild(b);});
+    const fgSel=uiSelect(face,'fg'),bgSel=uiSelect(face,'bg');
+    const cF=document.createElement('td');cF.appendChild(fgSel);
+    const cB=document.createElement('td');cB.appendChild(bgSel);
+    const stBtns=[];
+    const cS=document.createElement('td');[['B','bold'],['I','italic'],['U','underline'],['S','strike']].forEach(([ch,at])=>{const b=document.createElement('button');b.className='sbtn'+(UIMAP[face][at]?' on':'');b.textContent='a';b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';b.style.textDecoration=at==='underline'?'underline':at==='strike'?'line-through':'none';b.title=at;b.onclick=()=>{UIMAP[face][at]=!UIMAP[face][at];paintUI(face);buildMockFrame();};cS.appendChild(b);stBtns.push(b);});
+    const cC=document.createElement('td');cC.id='uicr-'+face;cC.style.whiteSpace='nowrap';cC.style.fontSize='10pt';
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
-    tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cP);tb.appendChild(tr);paintUI(face);
+    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stBtns]);
+    tr.appendChild(c0);tr.appendChild(cL);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tb.appendChild(tr);paintUI(face);
   }
   applyTableSort('uibody');
 }
 let D={};
 function srt(c){const tb=document.getElementById('legbody');const r=[...tb.rows];D[c]=!D[c];
-  r.sort((a,b)=>{const x=(c===0?a.querySelector('select').value:a.cells[0].innerText).toLowerCase(),
-                       y=(c===0?b.querySelector('select').value:b.cells[0].innerText).toLowerCase();
+  r.sort((a,b)=>{const x=(c===0?(MAP[a.dataset.kind]||''):a.cells[0].innerText).toLowerCase(),
+                       y=(c===0?(MAP[b.dataset.kind]||''):b.cells[0].innerText).toLowerCase();
                  return (x<y?-1:x>y?1:0)*(D[c]?1:-1);});r.forEach(x=>tb.appendChild(x));}
 // Generic header-click sort for the package and UI tables. Reads a select
 // value, a numeric input, or cell text (numeric when the text leads with a
@@ -1274,7 +1370,7 @@ HTML=(HTML.replace("COLORMATH_J",COLORMATH_BODY)
  .replace("SAMPLES_J",json.dumps(SAMPLES))
  .replace("PALETTE_J",json.dumps(PALETTE)).replace("CATS_J",json.dumps(CATS))
  .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP)).replace("APPS_J",json.dumps(APPS))
- .replace("BOLD_J",json.dumps(BOLD)).replace("MAP_J",json.dumps(MAP)))
+ .replace("BOLD_J",json.dumps(BOLD)).replace("MAP_J",json.dumps(MAP)).replace("LOCKS_J",json.dumps(LOCKS)).replace("ITALIC_J",json.dumps({k:True for k in ITALIC})))
 OUT=os.path.join(HERE,'theme-studio.html')
 
 if __name__=='__main__':
