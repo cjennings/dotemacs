@@ -30,6 +30,24 @@ During color work, disable Hyprland inactive-window dimming so colors read true:
 hyprctl keyword decoration:dim_inactive false
 ```
 
+## Tests
+
+```bash
+make theme-studio-test       # from the repo root, runs the whole pyramid
+scripts/theme-studio/run-tests.sh   # or call the runner directly
+```
+
+The runner regenerates the page, runs the Python templating tests
+(`test_generate.py`), the Node unit tests for `colormath.js`
+(`test-colormath.mjs`, including the inline-integrity check), a syntax check of
+the spliced page script, and the browser hash gates in headless Chrome
+(`#selftest`, `#cursortest`, `#readouttest`, `#deltatest`, `#oklchtest`,
+`#planetest`). It exits non-zero on any failure. The browser gates need a
+Chromium-family browser; without one they report SKIPPED rather than passing
+silently. The pure color math and the extracted picker logic (`planeCell`,
+`paletteWarnings`) live in `colormath.js` so they are unit-tested directly in
+Node; the DOM glue is covered by the browser hash gates.
+
 ## Files
 
 - `generate.py` — emits the HTML+JS, and embeds the package data. Edit here to
