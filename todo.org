@@ -41,6 +41,11 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
+** TODO [#A] theme-studio contrast cell uses the wrong fg/bg pair :bug:theme-studio:
+The contrast readout on every item with two color selections (a fg AND a bg — the UI faces table and the package faces table) is computing the wrong pair. It needs to contrast the face's selected fg against the face's selected bg, not how the bg contrasts with the currently-selected (ground) bg.
+
+Investigation start: the two-color contrast cells are =paintUI= (UI faces, app.js ~line 740) and =buildPkgTable= (package faces, app.js ~line 430), both currently calling =contrast(effFg(fg), effBg(bg))= where =effFg(v)=v||MAP['p']= and =effBg(v)=v||MAP['bg']=. Reproduce a face that has BOTH a fg and a bg set, confirm the displayed ratio, and check whether it's actually evaluating selected-fg vs selected-bg or falling through to the ground bg. Fix so a two-color face always rates its own fg-on-bg. (Single-color contexts — the picker/palette-chip/plane checks that rate a color against the ground — are correct and out of scope.) Add a characterization gate (a #contrasttest hash gate) pinning fg-vs-bg for a two-color face.
+
 ** TODO [#C] Evaluate jamescherti essential-emacs-packages list :packages:research:
 Review [[https://www.jamescherti.com/essential-emacs-packages/][James Cherti's essential Emacs packages]] for anything worth installing. Cross-check each candidate against what is already in the config (=modules/= + =init.el=), skip the ones already present, and shortlist the genuinely new ones with a one-line rationale. Future-installation research, not a commitment to install.
 
