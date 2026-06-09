@@ -50,7 +50,7 @@ Investigation start: the two-color contrast cells are =paintUI= (UI faces, app.j
 The mode-line box (3D released-button bevel) in the live buffer preview renders slimmer than the bevel Emacs actually draws. Make them match. The bevel comes from =boxCss= in app.js (~line 307), currently =inset 1px 1px 0 #ffffff33,inset -1px -1px 0 #00000066= for the released style — a 1px inset with faint translucent highlight/shadow. Emacs's released-button box is wider/stronger (it shades the highlight and shadow from the actual background color, not a flat translucent white/black). Fix: widen the bevel and derive the highlight/shadow from the box's background so it reads like Emacs. Verify side-by-side against a real Emacs mode-line.
 
 ** TODO [#C] theme-studio face-consistency check :feature:theme-studio:
-Two related checks, both surfacing structural-attribute (weight/slant/underline/box/overline/height) issues; color is the theme's design and out of scope.
+Rule taxonomy captured in [[file:docs/design/theme-studio-face-rules.org][docs/design/theme-studio-face-rules.org]] (Design Rules vs Fidelity Rules). The two checks below map to those two rule kinds. Both surface structural-attribute (weight/slant/underline/box/overline/height) issues; color is the theme's design and out of scope.
 
 1. Theme cross-cutting consistency (primary, per Craig 2026-06-09): the theme has deliberate cross-cutting rules — e.g. headings/titles are bold, links are underlined, errors/warnings/success are bold. Flag where the theme BREAKS ITS OWN rule (a heading that isn't bold, a link that isn't underlined). The designer declares the rules; the check finds the violators. This is the "tell me where I broke the rule" guardrail.
 
