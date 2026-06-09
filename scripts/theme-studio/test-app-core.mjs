@@ -148,7 +148,7 @@ test('slugify: Error — an all-disallowed name falls back to "theme"', () => {
 // the page must carry app-core.js's body (sans exports) verbatim. Requires
 // `python3 generate.py` to have run first.
 const stripExports = (s) =>
-  s.split('\n').filter((l) => !l.startsWith('export')).join('\n').replace(/\s+$/, '');
+  s.split('\n').filter((l) => !(l.startsWith('export') || l.startsWith('import'))).join('\n').replace(/\s+$/, '');
 
 test('inline-integrity: theme-studio.html contains the app-core.js body verbatim', () => {
   const body = stripExports(readFileSync(here + 'app-core.js', 'utf8'));
