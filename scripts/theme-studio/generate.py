@@ -1,5 +1,13 @@
 import json, os
 HERE=os.path.dirname(os.path.abspath(__file__))
+# Pure color-math core, inlined verbatim into the page so the browser runs the
+# same code the Node tests import (one source of truth). Strip the ES-module
+# `export` line(s) — a top-level export is a syntax error in a classic <script>.
+# test-colormath.mjs applies the identical strip and asserts the page carries this
+# body verbatim (inline-integrity), so the two copies cannot drift.
+COLORMATH_BODY='\n'.join(
+    l for l in open(os.path.join(HERE,'colormath.js')).read().splitlines()
+    if not l.startswith('export')).rstrip()
 ns={}
 src=open(os.path.join(HERE,'samples.py')).read()
 exec(src[:src.index('cols=')], ns)
@@ -513,11 +521,11 @@ function packagesForExport(map){const out={};for(const app in map){const faces={
 function mergePackagesInto(map,pkgs){if(!pkgs)return;for(const app in pkgs){if(!map[app])map[app]={};for(const face in pkgs[app]){const f=pkgs[app][face]||{};map[app][face]={fg:f.fg??null,bg:f.bg??null,bold:!!f.bold,italic:!!f.italic,underline:!!f.underline,strike:!!f.strike,inherit:f.inherit??null,height:f.height||1,source:f.source||'user'};}}}
 let PKGMAP=seedPkgmap();
 function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function lin(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);}
-function rl(h){return 0.2126*lin(parseInt(h.substr(1,2),16))+0.7152*lin(parseInt(h.substr(3,2),16))+0.0722*lin(parseInt(h.substr(5,2),16));}
+// Pure color-math core (lin/rl/contrast/rating/hsv2rgb/rgb2hsv/hex2rgb/rgb2hex,
+// plus OKLab/OKLCH/APCA/deltaE), inlined verbatim from colormath.js. normHex,
+// textOn, and ratingColor stay below as UI-boundary helpers.
+COLORMATH_J
 function textOn(h){const L=rl(h);return ((L+0.05)/0.05)>(1.05/(L+0.05))?'#000':'#fff';}
-function contrast(a,b){const L1=rl(a),L2=rl(b),hi=Math.max(L1,L2),lo=Math.min(L1,L2);return (hi+0.05)/(lo+0.05);}
-function rating(r){return r>=7?'AAA':r>=4.5?'AA':'FAIL';}
 function ratingColor(r){return r>=7?'#5d9b86':r>=4.5?'#a9b2bb':'#cb6b4d';}
 function cid(l){return l.replace(/\\W/g,'');}
 function buildLangSel(){const s=document.getElementById('langsel');s.innerHTML='';for(const lang in SAMPLES){const o=document.createElement('option');o.value=lang;o.textContent=lang;s.appendChild(o);}}
@@ -603,10 +611,6 @@ function updateColor(){
 }
 function normHex(s){s=s.trim();if(/^[0-9a-fA-F]{6}$/.test(s))s='#'+s;return /^#[0-9a-fA-F]{6}$/.test(s)?s.toLowerCase():null;}
 function curHex(){return normHex(document.getElementById('newhexstr').value)||'#888888';}
-function hsv2rgb(h,s,v){h=(h%360+360)%360/360;const i=Math.floor(h*6),f=h*6-i,p=v*(1-s),q=v*(1-f*s),t=v*(1-(1-f)*s);let r,g,b;switch(((i%6)+6)%6){case 0:[r,g,b]=[v,t,p];break;case 1:[r,g,b]=[q,v,p];break;case 2:[r,g,b]=[p,v,t];break;case 3:[r,g,b]=[p,q,v];break;case 4:[r,g,b]=[t,p,v];break;default:[r,g,b]=[v,p,q];}return[Math.round(r*255),Math.round(g*255),Math.round(b*255)];}
-function rgb2hsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;if(d){if(mx===r)h=((g-b)/d+6)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;}return[h,mx?d/mx:0,mx];}
-function hex2rgb(h){return[parseInt(h.substr(1,2),16),parseInt(h.substr(3,2),16),parseInt(h.substr(5,2),16)];}
-function rgb2hex(r,g,b){return '#'+[r,g,b].map(x=>Math.max(0,Math.min(255,x)).toString(16).padStart(2,'0')).join('');}
 let pkH=0,pkS=0,pkV=0.5,pickerOn=false;
 let pkMode='any';
 function pkThresh(){return pkMode==='aa'?4.5:pkMode==='aaa'?7:0;}
@@ -1111,7 +1115,8 @@ if(location.hash.startsWith('#pick')){openPicker();const m=location.hash.slice(5
 if(location.hash==='#cursortest'){document.getElementById('newhexstr').value='#67809c';openPicker();const sc=document.getElementById('svcur'),hc=document.getElementById('huecur');const L=parseFloat(sc.style.left||'0'),T=parseFloat(sc.style.top||'0'),H=parseFloat(hc.style.top||'0');const ok=L>1&&T>1&&H>1;document.title='CURSORTEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='cursortest';d.textContent='CURSORTEST '+(ok?'PASS':'FAIL')+' left='+sc.style.left+' top='+sc.style.top+' hue='+hc.style.top;document.body.appendChild(d);}
 if(location.hash.startsWith('#app')){const ap=location.hash.slice(4),s=document.getElementById('appsel');if(s&&ap){s.value=ap;pkgChanged();}}
 </script>"""
-HTML=(HTML.replace("SAMPLES_J",json.dumps(SAMPLES))
+HTML=(HTML.replace("COLORMATH_J",COLORMATH_BODY)
+ .replace("SAMPLES_J",json.dumps(SAMPLES))
  .replace("PALETTE_J",json.dumps(PALETTE)).replace("CATS_J",json.dumps(CATS))
  .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP)).replace("APPS_J",json.dumps(APPS))
  .replace("BOLD_J",json.dumps(BOLD)).replace("MAP_J",json.dumps(MAP)))

@@ -7,9 +7,18 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { srgb2oklab, oklab2oklch, oklch2hex, apca, deltaE } from './colormath.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import {
+  srgb2oklab, oklab2oklch, oklch2hex, apca, deltaE,
+  hex2rgb, rl, contrast, rating, hsv2rgb, rgb2hsv, rgb2hex,
+} from './colormath.js';
 
 const close = (a, b, eps = 0.005) => Math.abs(a - b) <= eps;
+const here = fileURLToPath(new URL('.', import.meta.url));
+// Same export-strip generate.py applies before inlining (drop `export` lines, rstrip).
+const stripExports = (s) =>
+  s.split('\n').filter((l) => !l.startsWith('export')).join('\n').replace(/\s+$/, '');
 
 test('srgb2oklab achromatic anchors', () => {
   const w = srgb2oklab('#ffffff');
@@ -66,4 +75,75 @@ test('gamut clamp preserves L/H, reduces C, flags clamped', () => {
   assert.ok(got.C < 0.5, `C reduced ${got.C}`);
   const ing = oklch2hex(0.591, 0.052, 251.6); // in gamut
   assert.equal(ing.clamped, false);
+});
+
+test('hex2rgb parses channels', () => {
+  assert.deepEqual(hex2rgb('#000000'), [0, 0, 0]);
+  assert.deepEqual(hex2rgb('#ffffff'), [255, 255, 255]);
+  assert.deepEqual(hex2rgb('#67809c'), [0x67, 0x80, 0x9c]);
+});
+
+test('WCAG relative luminance anchors', () => {
+  assert.ok(close(rl('#ffffff'), 1.0, 1e-9), `white ${rl('#ffffff')}`);
+  assert.ok(close(rl('#000000'), 0.0, 1e-9), `black ${rl('#000000')}`);
+  assert.ok(rl('#ff0000') < rl('#00ff00'), 'green brighter than red'); // 0.2126 vs 0.7152
+});
+
+test('WCAG contrast: symmetry, identity, and known extremes', () => {
+  assert.ok(close(contrast('#000000', '#ffffff'), 21, 1e-6), 'black/white = 21:1');
+  assert.equal(contrast('#67809c', '#67809c'), 1); // identical colors
+  assert.ok(close(contrast('#0d0b0a', '#67809c'), contrast('#67809c', '#0d0b0a'), 1e-12),
+    'order-independent');
+  // dupre keyword-blue on ground, a real palette pair (sanity, not a hand-typed number).
+  assert.ok(contrast('#67809c', '#0d0b0a') > 4.5, 'dupre blue clears AA on ground');
+});
+
+test('rating bands at the AA/AAA boundaries', () => {
+  assert.equal(rating(7.0), 'AAA');
+  assert.equal(rating(6.99), 'AA');
+  assert.equal(rating(4.5), 'AA');
+  assert.equal(rating(4.49), 'FAIL');
+  assert.equal(rating(0), 'FAIL');
+});
+
+test('hsv2rgb primaries and achromatic edges', () => {
+  assert.deepEqual(hsv2rgb(0, 1, 1), [255, 0, 0]);
+  assert.deepEqual(hsv2rgb(120, 1, 1), [0, 255, 0]);
+  assert.deepEqual(hsv2rgb(240, 1, 1), [0, 0, 255]);
+  assert.deepEqual(hsv2rgb(0, 0, 1), [255, 255, 255]); // s=0 -> grey (white)
+  assert.deepEqual(hsv2rgb(0, 0, 0), [0, 0, 0]);        // v=0 -> black
+  assert.deepEqual(hsv2rgb(360, 1, 1), [255, 0, 0]);    // hue wraps
+});
+
+test('rgb2hsv inverts hsv2rgb (saturation/value), hue for chromatic inputs', () => {
+  assert.deepEqual(rgb2hsv(255, 0, 0), [0, 1, 1]);
+  assert.deepEqual(rgb2hsv(0, 0, 0), [0, 0, 0]); // black: h and s undefined -> 0
+  const [h, s, v] = rgb2hsv(0, 255, 0);
+  assert.ok(close(h, 120, 1e-9) && s === 1 && v === 1, `green hsv ${h},${s},${v}`);
+});
+
+test('hsv <-> rgb round-trip property over random colors', () => {
+  let seed = 1234567; // deterministic LCG: no Math.random, repeatable failures
+  const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  for (let i = 0; i < 500; i++) {
+    const rgb = [Math.floor(rnd() * 256), Math.floor(rnd() * 256), Math.floor(rnd() * 256)];
+    const [h, s, v] = rgb2hsv(...rgb);
+    assert.deepEqual(hsv2rgb(h, s, v), rgb, `round-trip ${rgb}`);
+  }
+});
+
+test('rgb2hex formats and clamps out-of-range channels', () => {
+  assert.equal(rgb2hex(0, 0, 0), '#000000');
+  assert.equal(rgb2hex(255, 255, 255), '#ffffff');
+  assert.equal(rgb2hex(0x67, 0x80, 0x9c), '#67809c');
+  assert.equal(rgb2hex(-5, 300, 128), '#00ff80'); // clamps below 0 and above 255
+});
+
+// Guards the one-source-of-truth contract: the page must carry colormath.js's
+// body (sans exports) verbatim, so the inlined copy and the tested module cannot
+// drift. Requires `python3 generate.py` to have run first.
+test('inline-integrity: theme-studio.html contains the colormath.js body verbatim', () => {
+  const body = stripExports(readFileSync(here + 'colormath.js', 'utf8'));
+  const html = readFileSync(here + 'theme-studio.html', 'utf8');
+  assert.ok(html.includes(body), 'generated page is missing the colormath.js body verbatim');
 });

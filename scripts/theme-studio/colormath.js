@@ -117,4 +117,54 @@ function deltaE(aHex, bHex) {
   return Math.hypot(x.L - y.L, x.a - y.a, x.b - y.b);
 }
 
-export { srgb2oklab, oklab2oklch, oklch2oklab, oklch2hex, apca, deltaE };
+// --- WCAG 2.x relative luminance + contrast (migrated from the page inline) ---
+// rl reuses the canonical lin() above. On 8-bit channels lin's 0.04045 cutoff is
+// byte-identical to the WCAG 0.03928 piecewise the inline copy used — no channel
+// value falls between the two thresholds (10/255 = 0.0392, 11/255 = 0.0431) — so
+// every #rrggbb contrast value is preserved exactly.
+function rl(hex) {
+  const [R, G, B] = hex2rgb(hex);
+  return 0.2126 * lin(R / 255) + 0.7152 * lin(G / 255) + 0.0722 * lin(B / 255);
+}
+
+function contrast(aHex, bHex) {
+  const L1 = rl(aHex), L2 = rl(bHex), hi = Math.max(L1, L2), lo = Math.min(L1, L2);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+function rating(r) { return r >= 7 ? 'AAA' : r >= 4.5 ? 'AA' : 'FAIL'; }
+
+// --- HSV <-> sRGB for the color picker (migrated from the page inline) ---
+function hsv2rgb(h, s, v) {
+  h = (h % 360 + 360) % 360 / 360;
+  const i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+  let r, g, b;
+  switch (((i % 6) + 6) % 6) {
+    case 0: [r, g, b] = [v, t, p]; break;
+    case 1: [r, g, b] = [q, v, p]; break;
+    case 2: [r, g, b] = [p, v, t]; break;
+    case 3: [r, g, b] = [p, q, v]; break;
+    case 4: [r, g, b] = [t, p, v]; break;
+    default: [r, g, b] = [v, p, q];
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+function rgb2hsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let h = 0;
+  if (d) {
+    if (mx === r) h = ((g - b) / d + 6) % 6;
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+  return [h, mx ? d / mx : 0, mx];
+}
+
+function rgb2hex(r, g, b) {
+  return '#' + [r, g, b].map(x => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join('');
+}
+
+export { srgb2oklab, oklab2oklch, oklch2oklab, oklch2hex, apca, deltaE, hex2rgb, lin, rl, contrast, rating, hsv2rgb, rgb2hsv, rgb2hex };
