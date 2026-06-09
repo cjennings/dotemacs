@@ -1,0 +1,152 @@
+#+TITLE: theme-studio Palette Ramps & Background-Contrast Safety — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-09
+
+* Metadata
+| Status   | draft                                                                 |
+| Owner    | Craig                                                                 |
+| Reviewer | (unassigned)                                                          |
+| Related  | [[file:../todo.org][todo.org: theme-studio color-harmony explainer + ramp/fill features]] |
+
+* Summary
+
+Give theme-studio two things it lacks: a generator that turns one base color into a harmonized tonal ramp (base, plus lighter and darker steps), and a readout that tells the designer whether a color is safe to use as a background behind editor text. Both rest on the same OKLCH math worked out 2026-06-09, and they're coupled: the dark end of a ramp is where background tints come from, and a background tint is only usable if it keeps every foreground on it readable.
+
+* Problem / Context
+
+Building a theme, the designer needs a family of related shades per hue (blue, blue+1, blue-1, and so on) and a set of dim tinted backgrounds for effects like highlight, region, isearch, and hl-line. Today every shade is hand-picked by eye. Getting them to harmonize is guesswork, and there's no signal for the harder half of the problem: a background effect is an overlay, so the same tint sits behind many different foreground colors at once. A tint that looks fine against the default text can fail against the darkest token. The designer can't see that failure, because the picker shows one fg-on-bg pair, which is the wrong number.
+
+The cost is concrete. sterling's keyword blue (#67809c, OKLCH-L 0.59) is the darkest foreground; it barely clears WCAG AA on pure black and drops below AA the instant any highlight background lifts off black. So one color silently caps every highlight to near-black, and nothing in the tool surfaces it. The designer either over-darkens everything defensively or ships unreadable highlights without knowing.
+
+* Goals and Non-Goals
+
+** Goals
+- From a base color, generate its tonal ramp (base, +1..+N lighter, -1..-N darker) that harmonizes by construction.
+- For any face used as a background, show the worst-case contrast across the foregrounds that can land on it, and name the limiting foreground.
+- Guide the usable background lightness so a generated or chosen background keeps all text readable.
+
+** Non-Goals
+- Not auto-assigning ramp steps to faces — the designer picks which step goes where.
+- Not the harmonic-fill feature (generate a whole palette from a few seed colors). Separate, deferred.
+- Not a new color model or palette format — OKLCH mode and the palette already exist; this extends them.
+
+** Scope tiers
+- v1: ramp generation from a base; worst-case-contrast readout + safe-lightness guidance for background-effect faces.
+- Out of scope: harmonic fill; auto-assignment of steps to faces.
+- vNext: harmonic fill (palette from seeds); richer per-face foreground-set detection.
+
+* Design
+
+The two features share OKLCH (perceptually uniform, so lightness / chroma / hue move independently) and reuse colormath.js, which already has =oklch2hex=, =contrast=, =apca=, and =deltaE=.
+
+*Ramp generation.* A ramp is one hue at many lightnesses. Convert the base to OKLCH, hold the hue fixed, and step lightness by a fixed perceptual delta per stop — lighter for +N, darker for -N. Chroma eases toward zero at the extremes (a near-white or near-black step carries almost no color), and every step is clamped back into sRGB. The harmony is structural: the steps share a hue and sit on an even lightness ladder, so they read as one family rather than a grab-bag. The output is a row of hexes the designer can name (=blue+1=, =blue-2=) and drop into the palette.
+
+*Background-contrast safety.* A background tint is only as good as its worst case. For a face used as a background, define its foreground set — the colors that actually render on top of it. For a code-context face (region, hl-line, isearch, highlight, lazy-highlight), that set is the syntax token colors plus the default foreground. The floor is the minimum, over that set, of =contrast(fg, candidate-bg)=; the limiting foreground is the argmin. From the floor we derive L_max: the lightest background, at the chosen hue and chroma, whose floor still clears the target (WCAG AA/AAA, or an APCA Lc). Sweep lightness to find it — deterministic.
+
+The two altitudes:
+- *For the designer:* pick a base swatch, see its ramp, add the steps you want. When editing a background-effect face, the contrast cell shows the worst case — "worst: keyword #67809c — 3.3 FAIL" — not a misleading single pair, and OKLCH mode marks the safe-lightness ceiling so you can't unknowingly cross it.
+- *For the implementer:* =ramp(baseHex, {n, stepL, chromaEase})= → =[hex]=; =fgSetFor(face, state)= → =[hex]=; =floor(bgHex, fgSet)= → ={ratio, limitingHex}=; =lMax(hue, chroma, fgSet, target)= → =L=. All pure, all in app-core.js / colormath.js, all unit-tested.
+
+* Alternatives Considered
+
+** Ramp stepping in OKLCH lightness (chosen)
+- Good, because steps are perceptually even and the hue holds, so the family looks deliberate.
+- Bad, because extreme steps can leave the sRGB gamut and need clamping.
+- Neutral, because it depends on colormath's OKLCH path, which already exists.
+
+** Ramp stepping in HSL/HSV
+- Bad, because HSL/HSV aren't perceptually uniform — equal numeric steps give uneven visual steps and the hue drifts at the light/dark ends.
+
+** Ramp by interpolating base↔white and base↔black
+- Good, because it's trivial to implement.
+- Bad, because lightness and chroma drift together unpredictably and the hue can shift, so the steps don't harmonize reliably.
+
+** Worst-case shown as one readout + limiting fg (chosen), with an OKLCH picker mask
+- Good, because one honest number (the floor) plus the name of the bottleneck is the actionable lever, and the mask shows the safe band visually.
+- Neutral, because it replaces the existing single-pair contrast cell for background faces only.
+
+** Worst-case shown as a full per-foreground heatmap
+- Bad, because it's noise — the designer needs the floor and the one color setting it, not twenty ratios.
+
+* Decisions
+
+** Work in OKLCH for ramps and tints
+- State: accepted
+- Context: ramps and background tints both need even, hue-stable steps; the tool already exposes OKLCH.
+- Decision: We will compute ramps and the contrast floor in OKLCH via colormath.js.
+- Consequences: easier — even families, reuse of existing math; harder — must gamut-clamp every generated step.
+
+** Ramp = fixed lightness step + chroma ease on a held hue
+- State: accepted
+- Context: alternatives drift hue/chroma; uniform L steps read as a ladder.
+- Decision: We will step lightness by a fixed delta, ease chroma toward the extremes, and hold the hue.
+- Consequences: easier — predictable families; harder — chroma easing needs tuning so mid steps don't go muddy.
+
+** Background safety = worst-case floor over a per-face foreground set
+- State: accepted
+- Context: a single fg-on-bg pair misleads; overlays carry many foregrounds.
+- Decision: We will compute the floor over a face's foreground set and surface the floor + limiting foreground.
+- Consequences: easier — the real constraint is visible; harder — we must define each face's foreground set.
+
+** v1 foreground set for code-context faces = syntax tokens + default fg
+- State: proposed
+- Owner / by-when: Craig / before Phase 2 implementation
+- Context: the exact face→context mapping is fuzzy; code-effect faces clearly carry the syntax palette.
+- Decision: We will scope v1 to code-context faces, using the syntax token colors plus the default foreground as the set.
+- Consequences: easier — covers the high-value effects; harder — UI/package overlays need a later mapping.
+
+** Contrast target for the floor
+- State: proposed
+- Owner / by-when: Craig / before Phase 3 implementation
+- Context: AA (4.5) is the floor most reach for, but transient highlights might accept less, and APCA models text-on-color better than WCAG.
+- Decision: (open) default target — WCAG AA, AAA, or an APCA Lc threshold.
+- Consequences: tighter targets shrink the safe-lightness band; APCA needs a chosen Lc.
+
+* Implementation phases
+
+** Phase 1 — Ramp generator (pure)
+=ramp(baseHex, opts)= in app-core.js with Normal/Boundary/Error tests (mid base, near-white/near-black base, out-of-gamut request). Leaves the tree green; no UI yet.
+
+** Phase 2 — Ramp UI in the palette
+A base swatch → preview the ramp → add chosen steps as named palette entries. Reuses the palette panel and the OKLCH picker.
+
+** Phase 3 — Foreground-set + floor (pure)
+=fgSetFor=, =floor=, =lMax= in app-core.js with tests, including the keyword-blue worst case as a fixture.
+
+** Phase 4 — Worst-case readout
+For background-effect faces, the contrast cell shows the floor + the limiting foreground name instead of a single pair. Add a hash-gate (#contrasttest-style) pinning floor-over-set.
+
+** Phase 5 — Safe-lightness in OKLCH mode
+When a background-effect face is open in the picker, mark L_max on the lightness slider and mask the unsafe band, reusing the existing AA/AAA mask machinery against the foreground set.
+
+* Acceptance criteria
+- [ ] From a base hex, the tool produces N lighter + N darker steps, perceptually even, all in sRGB gamut.
+- [ ] Generated steps can be added to the palette as named entries.
+- [ ] A background-effect face shows the worst-case contrast and names the limiting foreground.
+- [ ] OKLCH mode marks the maximum safe lightness for the chosen hue/chroma given the foreground set + target.
+- [ ] Unit tests cover ramp generation, the floor, and L_max; a browser gate pins the worst-case readout.
+
+* Readiness dimensions
+- Data model & ownership: ramp steps and tints are user-authored palette entries the designer adds; floor and L_max are computed live, not stored. Nothing new persists.
+- Errors, empty states & failure: an out-of-gamut/invalid base clamps and flags; a face with no foreground set shows "no fg set" rather than a bogus ratio. No silent data loss.
+- Security & privacy: N/A — local color math, no credentials or sensitive data.
+- Observability: the worst-case readout *is* the observability — the designer sees the floor and the bottleneck color directly.
+- Performance & scale: N/A meaningfully — tens of colors, instant; no long-running ops.
+- Reuse & lost opportunities: reuse colormath.js (=oklch2hex=/=contrast=/=apca=/=deltaE=), the OKLCH picker, and the AA/AAA mask. Don't reimplement color math.
+- Architecture fit & weak points: pure logic in app-core.js (tested, importable like the Stage-7 split); UI in app.js; integration points are the palette panel, the picker, and the UI/package contrast cells. Weak point: defining each face's foreground set — mitigated by scoping v1 to code-context faces.
+- Config surface: step size, step count, chroma-ease amount, and the contrast target — knobs with defaults; document safe ranges.
+- Documentation plan: the color-harmony explainer (=docs/design/theme-studio-color-harmony.org=, already a task) carries the method; this spec carries the build.
+- Dev tooling: =make theme-studio-test= covers it via new node tests + a browser gate; no new tooling.
+- Rollout, compatibility & rollback: additive — no change to the theme.json format or existing themes. The worst-case readout replaces a misleading single-pair number for background faces (a strict improvement). No migration, nothing to roll back.
+- External APIs & deps: none — pure color math, no external schema.
+
+* Risks, Rabbit Holes, and Drawbacks
+- Chroma easing at the ramp extremes can go muddy or out-of-gamut — dodge by clamping and previewing every step before it's added.
+- The foreground-set definition is the fuzzy core. v1 limits it to code-context faces (syntax tokens + default fg); an over-broad set would over-constrain backgrounds that those foregrounds never actually touch.
+- A very dark foreground (sterling's keyword blue) can collapse the safe band to near-black. That's a true finding, not a tool bug — the readout should make the designer fix the foreground's lightness, not silently absorb it.
+
+* Review and iteration history
+** 2026-06-09 Tue @ 17:18:54 -0500 — Craig — author
+- What: initial draft.
+- Why: ramp generation and background-contrast safety are coupled, design-uncertain, and worth solving on paper before code.
+- Artifacts: this spec; the color-harmony explainer task in todo.org.
