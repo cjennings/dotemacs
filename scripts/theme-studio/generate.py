@@ -88,8 +88,12 @@ if _seed:
     if _d.get('ui'):
         for _k,_v in _d['ui'].items(): UIMAP[_k]=_v
     if 'locks' in _d: LOCKS=_d['locks']
-# link is underlined by default (matches the built-in link face).
+# These faces carry a fixed style in Emacs's built-in definitions (verified with
+# emacs -Q), independent of any theme: link / lazy-highlight / show-paren-match
+# are underlined; error / warning / success are bold. Seed the defaults to match.
 UIMAP["link"]["underline"]=True
+for _f in ("lazy-highlight","show-paren-match"): UIMAP[_f]["underline"]=True
+for _f in ("error","warning","success"): UIMAP[_f]["bold"]=True
 # Tier-3 package faces (Phase 2): complete own-defface sets for org/magit/elfeed,
 # built from face-name lists + a curated seed-color map. Prominent faces are
 # seeded; the long tail seeds to the default foreground for the user to tune.
