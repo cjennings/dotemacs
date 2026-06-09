@@ -1,13 +1,20 @@
 import json, os
 HERE=os.path.dirname(os.path.abspath(__file__))
+
+def strip_exports(src):
+    """Drop ES-module `export` lines so the body loads as a classic <script>.
+
+    A top-level `export` is a syntax error outside a module, so it must go before
+    the body is spliced into the page. test-colormath.mjs applies the identical
+    strip and asserts the page carries the result verbatim (inline-integrity), so
+    the two copies cannot drift. NOTE: this is line-based — the export statement in
+    colormath.js must stay on a single line or the continuation lines survive.
+    """
+    return '\n'.join(l for l in src.splitlines() if not l.startswith('export')).rstrip()
+
 # Pure color-math core, inlined verbatim into the page so the browser runs the
-# same code the Node tests import (one source of truth). Strip the ES-module
-# `export` line(s) — a top-level export is a syntax error in a classic <script>.
-# test-colormath.mjs applies the identical strip and asserts the page carries this
-# body verbatim (inline-integrity), so the two copies cannot drift.
-COLORMATH_BODY='\n'.join(
-    l for l in open(os.path.join(HERE,'colormath.js')).read().splitlines()
-    if not l.startswith('export')).rstrip()
+# same code the Node tests import (one source of truth).
+COLORMATH_BODY=strip_exports(open(os.path.join(HERE,'colormath.js')).read())
 ns={}
 src=open(os.path.join(HERE,'samples.py')).read()
 exec(src[:src.index('cols=')], ns)
@@ -1269,5 +1276,7 @@ HTML=(HTML.replace("COLORMATH_J",COLORMATH_BODY)
  .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP)).replace("APPS_J",json.dumps(APPS))
  .replace("BOLD_J",json.dumps(BOLD)).replace("MAP_J",json.dumps(MAP)))
 OUT=os.path.join(HERE,'theme-studio.html')
-open(OUT,"w").write(HTML)
-print("wrote",OUT)
+
+if __name__=='__main__':
+    open(OUT,"w").write(HTML)
+    print("wrote",OUT)
