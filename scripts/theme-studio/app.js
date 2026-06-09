@@ -267,6 +267,48 @@ function addColor(){const h=curHex();const name=document.getElementById('newname
   if(!name){notify('name the color before adding it',true);return;}
   if(PALETTE.some(p=>p[1].toLowerCase()===name.toLowerCase())){notify('a color named "'+name+'" already exists — select it and use Update selected to change its value',true);return;}
   PALETTE.push([h,name]);document.getElementById('newname').value='';selectedIdx=null;closePicker();renderPalette();buildTable();notify('added "'+name+'"',false);}
+// --- ramp generator UI (palette-ramps spec, Phase 2) -------------------------
+// Generate a tonal ramp from the current color, preview the steps, add the ones
+// you want as named palette entries. The pure ramp() lives in app-core.js; this
+// is the DOM around it. Names derive from the source swatch (blue -> blue+1).
+let rampBase=null; // {hex,name} the ramp is generated from
+function openRamp(){const hex=curHex();const name=(selectedIdx!=null?PALETTE[selectedIdx][1]:document.getElementById('newname').value.trim())||'ramp';rampBase={hex,name};document.getElementById('rampname').textContent=name+' '+hex;document.getElementById('ramp').style.display='block';renderRamp();}
+function closeRamp(){const r=document.getElementById('ramp');if(r)r.style.display='none';}
+function rampOpts(){return {n:parseInt(document.getElementById('rampn').value,10),stepL:parseFloat(document.getElementById('rampstepl').value),chromaEase:parseFloat(document.getElementById('rampce').value)};}
+function rampStepName(off){return rampBase.name+(off>0?'+'+off:String(off));}
+function rampNote(msg,err){const m=document.getElementById('rampmsg');if(!m)return;m.textContent=msg||'';m.style.color=err?'#cb6b4d':'#8a9496';}
+function renderRamp(){
+  if(!rampBase)return;
+  const r=ramp(rampBase.hex,rampOpts()),prev=document.getElementById('rampprev');prev.innerHTML='';
+  if(r.error){rampNote('not a valid base color',true);return;}
+  rampNote(r.adjusted.length?('adjusted: '+r.adjusted.join(', ')):'',false);
+  r.steps.forEach(s=>{const nm=rampStepName(s.offset);const c=document.createElement('div');c.className='rchip';c.style.background=s.hex;c.style.color=textOn(s.hex);
+    c.title=nm+' '+s.hex+(s.clamped?' (gamut-clamped)':'');
+    c.innerHTML=`<span>${esc(nm)}</span>${s.clamped?'<span class="rclamp" title="clamped to sRGB">!</span>':''}`;
+    c.onclick=()=>addRampStep(s);prev.appendChild(c);});
+}
+// Insert a step adjacent to the source swatch, keeping the ramp siblings in
+// -n..+n order. A name collision is flagged and skipped (never overwrites); a
+// hex that already exists under another name is added but flagged as a duplicate.
+function rampInsertIndex(off){
+  const bn=rampBase.name,re=new RegExp('^'+bn.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([+-]\\d+)$');
+  let src=PALETTE.findIndex(p=>p[1]===bn);if(src<0)src=PALETTE.length-1;
+  let idx=src+1;while(idx<PALETTE.length){const m=PALETTE[idx][1].match(re);if(m&&parseInt(m[1],10)<off){idx++;continue;}break;}
+  return idx;
+}
+function addRampStep(s){
+  const nm=rampStepName(s.offset);
+  if(PALETTE.some(p=>p[1].toLowerCase()===nm.toLowerCase())){rampNote('"'+nm+'" already exists — rename or skip',true);return false;}
+  const dup=PALETTE.find(p=>p[0].toLowerCase()===s.hex.toLowerCase());
+  PALETTE.splice(rampInsertIndex(s.offset),0,[s.hex,nm]);renderPalette();buildTable();buildUITable();
+  rampNote(dup?('added "'+nm+'" (same hex as "'+dup[1]+'")'):('added "'+nm+'"'),false);return true;
+}
+function addAllRampSteps(){
+  if(!rampBase)return;const r=ramp(rampBase.hex,rampOpts());
+  if(r.error){rampNote('not a valid base color',true);return;}
+  let added=0,skipped=0;r.steps.forEach(s=>{addRampStep(s)?added++:skipped++;});
+  rampNote('added '+added+(skipped?(', skipped '+skipped+' (name exists)'):''),false);
+}
 function themeName(){return (document.getElementById('themename').value||'theme').trim()||'theme';}
 function fileSlug(){return slugify(themeName());}
 function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);const o={name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};if(LOCKED.size)o.locks=[...LOCKED];const pk=packagesForExport(PKGMAP);if(Object.keys(pk).length)o.packages=pk;return o;}
@@ -914,3 +956,20 @@ if(location.hash==='#readouttest'){const hex='#67809c';document.getElementById('
  const sane=Math.abs(lch.L-0.591)<0.01&&Math.abs(lch.C-0.052)<0.01&&Math.abs(lch.H-251.6)<2;
  const ok=wired&&sane;document.title='READOUTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='readouttest';d.textContent='READOUTTEST '+(ok?'PASS':'FAIL')+' oklch='+o+' | apca='+a+' | wcag='+w;document.body.appendChild(d);}
+// Ramp UI gate (open with #ramptest): generation count, ordered insertion after
+// the source swatch, name-collision skip, and a clamp badge on an out-of-gamut step.
+if(location.hash==='#ramptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const save=PALETTE.slice();
+ PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue']];renderPalette();
+ selectedIdx=PALETTE.findIndex(p=>p[1]==='blue');document.getElementById('newhexstr').value='#67809c';document.getElementById('newname').value='blue';
+ openRamp();document.getElementById('rampn').value='2';document.getElementById('rampstepl').value='0.08';document.getElementById('rampce').value='0.5';renderRamp();
+ A(document.querySelectorAll('#rampprev .rchip').length===4,'expected 4 step chips, got '+document.querySelectorAll('#rampprev .rchip').length);
+ addAllRampSteps();
+ const names=PALETTE.map(p=>p[1]),bi=names.indexOf('blue');
+ A(names.slice(bi,bi+5).join(',')==='blue,blue-2,blue-1,blue+1,blue+2','order after blue: '+names.slice(bi,bi+5).join(','));
+ const before=PALETTE.length;addAllRampSteps();A(PALETTE.length===before,'re-add should skip existing names');
+ rampBase={hex:'#2040e0',name:'vivid'};document.getElementById('rampname').textContent='vivid';document.getElementById('rampce').value='0';renderRamp();
+ A(document.querySelectorAll('#rampprev .rclamp').length>0,'vivid base at chroma-ease 0 should clamp an extreme step');
+ PALETTE=save;selectedIdx=null;renderPalette();closeRamp();
+ document.title='RAMPTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='ramptest';d.textContent='RAMPTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
