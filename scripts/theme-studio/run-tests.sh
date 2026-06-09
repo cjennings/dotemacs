@@ -16,6 +16,10 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$HERE"
 
+# --no-browser skips the headless-Chrome hash gates for a fast inner loop.
+NO_BROWSER=0
+[ "${1:-}" = "--no-browser" ] && NO_BROWSER=1
+
 fail=0
 pass_msg() { printf '  PASS  %s\n' "$1"; }
 fail_msg() { printf '  FAIL  %s\n' "$1"; fail=1; }
@@ -50,7 +54,9 @@ for c in google-chrome-stable google-chrome chromium chromium-browser; do
   if command -v "$c" >/dev/null 2>&1; then CHROME="$c"; break; fi
 done
 HASHES="selftest cursortest readouttest deltatest oklchtest planetest locktest sorttest"
-if [ -z "$CHROME" ]; then
+if [ "$NO_BROWSER" = 1 ]; then
+  skip_msg "browser hash gates (--no-browser)"
+elif [ -z "$CHROME" ]; then
   for t in $HASHES; do skip_msg "#$t (no Chromium-family browser found)"; done
 else
   PROF="$(mktemp -d)"
