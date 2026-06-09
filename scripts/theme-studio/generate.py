@@ -414,7 +414,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
  .hue{position:relative;width:34px;height:320px;border-radius:4px;cursor:ns-resize;background:linear-gradient(to bottom,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
  .huecur{position:absolute;left:-2px;right:-2px;height:4px;background:#fff;border:1px solid #0008;transform:translateY(-50%);pointer-events:none}
  .pinfo{display:flex;justify-content:space-between;margin:10px 2px 4px;font:12pt monospace;color:#cdced1}
- .pinfo2{margin:0 2px 9px;font:10pt monospace;color:#9aa3ad}
+ .pinfo2{display:flex;justify-content:space-between;margin:0 2px 9px;font:10pt monospace;color:#9aa3ad}
  .pinfo2 span{cursor:default}
  .pkchips{display:flex;flex-wrap:wrap;gap:5px} .pkchips .pc{width:28px;height:28px;border-radius:3px;border:1px solid #555;cursor:pointer}
  .palctl button,.filebar button,.fbtn{background:#252321;color:#e8bd30;border:1px solid #3a3a3a;border-radius:4px;padding:6px 12px;font:10pt monospace;cursor:pointer}
