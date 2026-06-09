@@ -188,8 +188,12 @@ Then extracted the =<style>= block to =styles.css= and the =<script>= body to =a
 Gate green: 12 python templating tests, 25 node tests, spliced-script =node --check=, all 7 hash gates. =node --check app.js= passes standalone (placeholders are valid JS identifiers). The escaping-bug class is gone — =str.replace= is literal, so the JS no longer lives inside a Python string.
 *** 2026-06-09 Tue @ 05:07:10 -0500 Stage 2 — unified color dropdowns on the swatch picker
 Deleted native =colorDropdown=; routed UI + package fg/bg through =mkColorDropdown= so all three tiers show real swatches (commit aee14bff). The inherit column stays a select — it picks a face name, not a color. Pulled the option-list build into a shared =ddList= helper (default + palette + "(gone)" entry), replacing the inline copy in the syntax table. Preserved value-based sort: the swatch dropdown now exposes =data-val= and =cellVal= reads it. Updated =#locktest='s UI assertion to the div lock path (data-locked). Verified via headless DOM: legbody 21 cdd / 0 select, uibody 40 cdd / 0 select, pkgbody 176 cdd + 88 inherit selects. All gates green.
-*** TODO Stage 3 — extract shared row/cell helpers :solo:
-Three table builders duplicate scaffolding: the B/I/U/S style-button loop (3x), the contrast→ratingColor→rating cell (5x), the name/lock/color row pattern. Extract =mkStyleButtons=, =mkContrastCell=, a row scaffold (=mkLockCell= is the model). Node-unit-test the pure pieces. Gate: tables identical; hash gates green.
+*** 2026-06-09 Tue @ 05:12:00 -0500 Stage 3 — extracted crHtml + mkStyleButtons
+Extracted =crHtml(r)= (the contrast→ratingColor→rating span, was copy-pasted at 5 sites; now syntax/UI/pkg cells share it — the picker readout renders differently and stays) and =mkStyleButtons(isOn,onToggle)= (the B/I/U/S loop, was near-identical in the UI + pkg tables; returns the button list for mkLockCell). Commit 62b53bc5.
+
+Deliberately NOT done: the syntax bold/italic buttons (2 buttons, BOLD/ITALIC dicts, in-place refresh closure — poor fit for the same helper), and a shared row scaffold (the three tables differ enough in columns/order that one would leak — premature abstraction). Node-unit-testing the pure pieces deferred to Stage 7, where app.js is made importable.
+
+Verified behavior-preserving by diffing the runtime-rendered DOM (Stage 2 page vs Stage 3 page in headless Chrome): the only differences are inside the inline =<script>= source, never a built tr/td/button/span — the tables build identically. All hash gates + node + python green.
 *** TODO Stage 4 — unify the two sort systems :solo:
 =srt= (syntax) and =srtTable=/=cellVal=/=applyTableSort= (UI/pkg) collapse into one table sort all three use. Gate: each column sorts on each table; hash gates green.
 *** TODO Stage 5 — parameterize clear-unlocked + effFg helper :solo:
