@@ -194,8 +194,8 @@ Extracted =crHtml(r)= (the contrast→ratingColor→rating span, was copy-pasted
 Deliberately NOT done: the syntax bold/italic buttons (2 buttons, BOLD/ITALIC dicts, in-place refresh closure — poor fit for the same helper), and a shared row scaffold (the three tables differ enough in columns/order that one would leak — premature abstraction). Node-unit-testing the pure pieces deferred to Stage 7, where app.js is made importable.
 
 Verified behavior-preserving by diffing the runtime-rendered DOM (Stage 2 page vs Stage 3 page in headless Chrome): the only differences are inside the inline =<script>= source, never a built tr/td/button/span — the tables build identically. All hash gates + node + python green.
-*** TODO Stage 4 — unify the two sort systems :solo:
-=srt= (syntax) and =srtTable=/=cellVal=/=applyTableSort= (UI/pkg) collapse into one table sort all three use. Gate: each column sorts on each table; hash gates green.
+*** 2026-06-09 Tue @ 05:16:33 -0500 Stage 4 — unified syntax table onto the shared sort
+Deleted =srt= + =D{}= (the syntax table's own sort); pointed its headers at =srtTable('legbody',col)= so all three tables share =srtTable=/=cellVal=/=applyTableSort= (commit d947944b). Mapping is exact: the legtable color cell is a swatch dropdown whose =data-val= is the hex (what =srt= sorted on via MAP[kind]); elements cell is text; first-click stays ascending. Syntax sorts on click only — it doesn't opt into the cross-rebuild persistence the UI/pkg tables get, preserving its prior behavior. Added a =#sorttest= gate (sort was untested): syntax sorts by color asc, reverses on re-click, sorts by element name; UI + pkg still sort. asc/desc pair is self-validating.
 *** TODO Stage 5 — parameterize clear-unlocked + effFg helper :solo:
 Three near-identical clear-unlocked functions → one parameterized over (collection, lock-key, reset). The =MAP[kind]||MAP['p']= effective-fg fallback appears 9x → one =effFg=/=effBg= helper. Node-unit-test both. Gate: clear-unlocked works per tier; hash gates green.
 *** TODO Stage 6 — (optional) namespace state + data-file the bespoke faces :solo:
