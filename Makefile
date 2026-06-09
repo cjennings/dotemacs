@@ -46,7 +46,7 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 # No colors - using plain text symbols instead
 
 .PHONY: help targets test test-all test-unit test-integration test-file test-name \
-        test-bash benchmark coverage coverage-summary coverage-clean \
+        test-bash theme-studio-test benchmark coverage coverage-summary coverage-clean \
         validate-parens validate-modules compile compile-file lint profile \
         clean clean-compiled clean-tests reset
 
@@ -66,6 +66,7 @@ help:
 	@echo "    make test-file FILE=<filename>  - Run specific test file"
 	@echo "    make test-name TEST=<pattern>   - Run tests matching pattern"
 	@echo "    make test-bash         - Run the bats shell-script tests ($(words $(BASH_TESTS)) files)"
+	@echo "    make theme-studio-test - Run the theme-studio tool tests (Python + Node + browser)"
 	@echo "    make benchmark         - Run performance benchmarks (:perf-tagged)"
 	@echo ""
 	@echo "  Coverage:"
@@ -120,6 +121,9 @@ test-bash:
 	fi
 	@echo "[i] Running bats shell-script tests ($(words $(BASH_TESTS)) files)..."
 	@bats $(BASH_TESTS)
+
+theme-studio-test:
+	@scripts/theme-studio/run-tests.sh
 
 BANNER = ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
