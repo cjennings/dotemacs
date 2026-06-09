@@ -78,7 +78,9 @@ UIMAP={"cursor":{"fg":None,"bg":"#a9b2bb"},"region":{"fg":None,"bg":"#264364"},
 # Placed after every default it overrides (notably UIMAP) so the merge has targets.
 # Mirrors what the in-page Import does, so reseed and import agree.
 LOCKS=[]; ITALIC=[]
-_seed=os.environ.get('THEME_STUDIO_SEED')
+# sterling is the default theme; THEME_STUDIO_SEED=<file>.json overrides to view another.
+_seed=os.environ.get('THEME_STUDIO_SEED') or 'sterling.json'
+_d={}
 if _seed:
     _d=json.load(open(os.path.join(HERE,_seed)))
     if _d.get('palette'): PALETTE=_d['palette']
@@ -424,6 +426,13 @@ if os.path.exists(_inv_path):
         APPS[_pkg]={"label":_pkg,"preview":"generic","faces":[
             [f,(f[len(_pkg)+1:] if f.startswith(_pkg+"-") else f).replace("-face","").replace("-"," "),{}]
             for f in _INV[_pkg]]}
+# Apply the seed theme's package overrides (sterling by default): each full per-face
+# spec (color + structure) replaces the hardcoded face seed before the page renders.
+if _seed and _d.get('packages'):
+    for _app,_pkfaces in _d['packages'].items():
+        if _app in APPS:
+            for _row in APPS[_app]['faces']:
+                if _row[0] in _pkfaces: _row[2]=_pkfaces[_row[0]]
 HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
 <style>
 STYLES_CSS</style>
