@@ -705,15 +705,11 @@ function buildUITable(){
   }
   applyTableSort('uibody');
 }
-let D={};
-function srt(c){const tb=document.getElementById('legbody');const r=[...tb.rows];D[c]=!D[c];
-  r.sort((a,b)=>{const x=(c===0?(MAP[a.dataset.kind]||''):a.cells[0].innerText).toLowerCase(),
-                       y=(c===0?(MAP[b.dataset.kind]||''):b.cells[0].innerText).toLowerCase();
-                 return (x<y?-1:x>y?1:0)*(D[c]?1:-1);});r.forEach(x=>tb.appendChild(x));}
-// Generic header-click sort for the package and UI tables. Reads a select
-// value, a numeric input, or cell text (numeric when the text leads with a
-// number, e.g. contrast or size). The sort is remembered per table and
-// re-applied after a rebuild so editing a face does not reset it.
+// Generic header-click sort, shared by all three tables. Reads a swatch
+// dropdown's value, a select value, a numeric input, or cell text (numeric when
+// the text leads with a number, e.g. contrast or size). The UI and package
+// tables remember the sort (applyTableSort runs on rebuild) so editing a row
+// does not reset it; the syntax table sorts on click only.
 let tableSort={};
 function cellVal(td){if(!td)return '';const dd=td.querySelector('.cdd');if(dd)return (dd.dataset.val||'').toLowerCase();const s=td.querySelector('select');if(s)return s.value.toLowerCase();const i=td.querySelector('input');if(i)return parseFloat(i.value)||0;const t=td.innerText.trim();const n=parseFloat(t);return (!isNaN(n)&&/^[-\d.]/.test(t))?n:t.toLowerCase();}
 function srtTable(tbId,col){tableSort[tbId]={col,asc:!(tableSort[tbId]&&tableSort[tbId].col===col&&tableSort[tbId].asc)};applyTableSort(tbId);}
@@ -771,6 +767,22 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
   A(PKGMAP[app][p1].fg==='#111111','pkg-clear-keeps-locked');A(PKGMAP[app][p2].fg===null,'pkg-clear-wipes-unlocked');}
  document.title='LOCKTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='locktest';d.textContent='LOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Sort gate (open with #sorttest): all three tables now share srtTable/cellVal.
+// Verifies the syntax table (which used to have its own srt) sorts by color
+// value and by element name, that a repeat click reverses, and that the UI and
+// package tables still sort. Guards the unified sort for the later stages.
+if(location.hash==='#sorttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const ddVals=tb=>[...document.querySelectorAll('#'+tb+' tr')].map(tr=>{const dd=tr.cells[2].querySelector('.cdd');return dd?(dd.dataset.val||''):'';});
+ const txtVals=tb=>[...document.querySelectorAll('#'+tb+' tr')].map(tr=>tr.cells[0].innerText.trim().toLowerCase());
+ const asc=a=>a.every((v,i)=>i===0||a[i-1]<=v),desc=a=>a.every((v,i)=>i===0||a[i-1]>=v);
+ buildTable();
+ srtTable('legbody',2);A(asc(ddVals('legbody')),'legbody-color-asc');
+ srtTable('legbody',2);A(desc(ddVals('legbody')),'legbody-color-desc');
+ srtTable('legbody',0);A(asc(txtVals('legbody')),'legbody-elements-asc');
+ buildUITable();srtTable('uibody',0);A(asc(txtVals('uibody')),'uibody-face-asc');
+ buildPkgTable();srtTable('pkgbody',2);A(asc(ddVals('pkgbody')),'pkgbody-fg-asc');
+ document.title='SORTTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='sorttest';d.textContent='SORTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 if(location.hash.startsWith('#pick')){openPicker();const m=location.hash.slice(5);if(m){const b=document.querySelector('.pmode button[data-m="'+m+'"]');if(b)b.click();}}
 if(location.hash==='#cursortest'){document.getElementById('newhexstr').value='#67809c';openPicker();const sc=document.getElementById('svcur'),hc=document.getElementById('huecur');const L=parseFloat(sc.style.left||'0'),T=parseFloat(sc.style.top||'0'),H=parseFloat(hc.style.top||'0');const ok=L>1&&T>1&&H>1;document.title='CURSORTEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='cursortest';d.textContent='CURSORTEST '+(ok?'PASS':'FAIL')+' left='+sc.style.left+' top='+sc.style.top+' hue='+hc.style.top;document.body.appendChild(d);}
 if(location.hash.startsWith('#app')){const ap=location.hash.slice(4),s=document.getElementById('appsel');if(s&&ap){s.value=ap;pkgChanged();}}

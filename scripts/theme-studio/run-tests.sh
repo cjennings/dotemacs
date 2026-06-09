@@ -49,7 +49,7 @@ CHROME=""
 for c in google-chrome-stable google-chrome chromium chromium-browser; do
   if command -v "$c" >/dev/null 2>&1; then CHROME="$c"; break; fi
 done
-HASHES="selftest cursortest readouttest deltatest oklchtest planetest locktest"
+HASHES="selftest cursortest readouttest deltatest oklchtest planetest locktest sorttest"
 if [ -z "$CHROME" ]; then
   for t in $HASHES; do skip_msg "#$t (no Chromium-family browser found)"; done
 else

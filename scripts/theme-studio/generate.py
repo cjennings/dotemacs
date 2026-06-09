@@ -461,7 +461,7 @@ STYLES_CSS</style>
 <div class="cols">
  <section class="pane">
   <div class="legctl"><button class="fbtn" onclick="clearUnlocked()" title="reset every unlocked element to default (reads as plain foreground text); locked rows are left untouched">clear unlocked</button></div>
-  <table class="leg" id="legtable"><thead><tr><th onclick="srt(1)">elements &#9651;</th><th title="lock a decided element↔color association"></th><th onclick="srt(0)">color &#9651;</th><th>style</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th></tr></thead><tbody id="legbody"></tbody></table>
+  <table class="leg" id="legtable"><thead><tr><th onclick="srtTable('legbody',0)">elements &#9651;</th><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',2)">color &#9651;</th><th>style</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
   <div class="langbar"><label style="color:#b4b1a2">language</label><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode()"></select></div>
