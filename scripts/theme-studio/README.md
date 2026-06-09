@@ -51,6 +51,13 @@ Three tiers of faces, plus the palette:
   (saturation/value square, hue slider, palette reuse chips, live contrast
   readout, and an any / AA+ / AAA legibility mask). Remove, rename, reorder with
   arrows or drag. The colors serving as background and foreground are locked.
+
+  The picker also shows perceptual readouts beside the WCAG ratio: the OKLCH
+  coordinates (lightness, chroma, hue°) and the APCA Lc contrast against the
+  ground color. APCA Lc is signed — positive means dark text on a light
+  background, negative means light text on a dark background — so a light color
+  on dupre's dark ground reads as a negative Lc. WCAG stays the rating used in
+  the syntax/UI/package tables; APCA and OKLCH are picker-only diagnostics.
 - **Syntax** — every font-lock / tree-sitter category (keyword, string,
   function, type, comment, and the rest), each with normal/bold/italic and a
   contrast rating. Click a category to flash its tokens in the code; click a
