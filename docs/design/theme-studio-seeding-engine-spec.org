@@ -1,0 +1,350 @@
+#+TITLE: theme-studio — seeding engine (role table to guide-correct defaults)
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-08
+
+* Status
+
+Spec / review incorporated (Codex, 2026-06-08). Turns the color-assignment guide's seed table
+and shade budget into an executable seeding engine: the tool opens with every
+tier (syntax, UI faces, org-mode package faces) already colored to the guide's
+defaults, so the user retunes hues with the picker rather than building a theme
+from blank. Also reseeds the bundled =dupre= theme to the canonical compact
+mapping (it currently diverges on two roles).
+
+Derives directly from =scripts/theme-studio/theme-coloring-guide.org= — the seed
+table (role to palette-family / weight / channel) and the Shade budget (how many
+shades each hue family carries). This spec encodes that table as data, classifies
+each tier's faces into roles, and applies the table to produce the defaults.
+
+Rubric: *Ready.* Craig answered the four open questions (folded into Agreed
+decisions) and Codex's review is incorporated. One decision reshapes the plan: v1
+generates shades with OKLCH (Craig's call), reusing the perceptual-metrics
+=colormath.js= core, so this feature sequences after that spec's Phase 1. Two v1
+phases, each headless-testable.
+
+* Background — how the tool seeds today
+
+=scripts/theme-studio/generate.py= holds three face inventories, each with its
+own ad-hoc default source:
+
+- *Syntax* — =CATS=, 21 categories keyed =bg p kw bi pp fnd fnc dec ty prop con
+  num str esc re doc cm cmd var op punc=. Defaults come from =COLS= (in
+  =samples.py=) into =MAP= and =BOLD=. There is no role layer; each category
+  carries a hand-set color.
+- *UI faces* — =UI_FACES= (20 faces) with defaults in =UIMAP=, hand-authored.
+  This map already follows the guide closely (state faces are background-only,
+  active louder than idle, error/warning/success on the conventional hues), which
+  is the validation that the guide's principles describe a good UI tier rather
+  than invent one.
+- *Package faces* — =APPS[app].faces=, each row =[face, label, default-dict]=.
+  =seedPkgmap()= reads the per-face default-dict. About twenty bespoke packages
+  (org, magit, elfeed, mu4e, ghostel, dashboard, lsp-mode, flycheck, dired,
+  dirvish, calibredb, erc, signel, pearl, slack, telega, shr, and more) carry
+  curated seed colors; generic inventory packages (from =package-inventory.json=)
+  seed to the default foreground.
+
+Three problems this spec addresses:
+
+1. *No role layer.* Each tier's defaults are set face-by-face by hand. There is
+   no single place that says "definitions are the warm anchor, bold" and projects
+   it onto syntax, UI, and org at once. The guide now states that table; the tool
+   does not consume it.
+2. *dupre diverges from its own guide.* The compact mapping says builtins are
+   blue-grey and function definitions are gold; =dupre= assigns builtins to blue
+   (=bi= shares =kw='s hue) and definitions to silver (=fnd=). The guide records
+   this as a known divergence to be reseeded.
+3. *Tiers do not open guide-correct.* UI is close by luck of hand-tuning; syntax
+   carries dupre's divergence; org's long tail is unseeded. Opening seeded across
+   all three is the goal.
+
+* Goal
+
+A seeding engine with three parts and one surfacing rule:
+
+1. *The seed model as data* — a named palette with the shade budget, a
+   role-to-treatment table, and a face-to-role map per tier. The guide's table,
+   made executable.
+2. *A =seed()= operation* — applies the role table through each tier's
+   face-to-role map to produce the default assignments (=MAP=/=BOLD= for syntax,
+   =UIMAP= for UI, =PKGMAP= defaults for packages).
+3. *Reseed dupre* — regenerate =dupre-revised.json= from the engine so it matches
+   the compact mapping (builtins blue-grey, definitions gold).
+
+Surfacing rule (Craig): the tool *opens seeded*. The syntax tier is already
+guide-correct on load, so the user adjusts hues with the picker, then scrolls to
+the UI faces. A "reseed from guide" button restores the defaults on demand.
+
+Non-goals: role-mapping the non-org bespoke packages (org is the one document
+package worth a role map; the other ~20 keep their existing curated =APPS= seeds,
+and reseed resets them to those defaults rather than flattening them — see
+Package scope); per-tier reseed controls (v1 reseeds all three owned tiers at
+once).
+
+* The seed model
+
+** Palette and shade budget
+
+A named swatch set, one to three shades per hue family, per the guide's Shade
+budget. The names are the contract. v1 *generates* the shades with OKLCH (Craig's
+call): each family is anchored by a base hue (the dupre anchors — blue, gold,
+regal, sage, terracotta), and its quieter or brighter shades are derived by
+stepping OKLCH lightness/chroma from that anchor, using the perceptual-metrics
+=colormath.js= core. Generation is a first guess; any hue that reads wrong gets a
+hand-authored override swatch. Rough shape:
+
+- *Neutrals:* =ground= (bg), =bg-dim=, =fg=, =muted-fg=, =comment=.
+- *Blue:* =blue= (keyword), =blue-grey= (builtin — blue at lower chroma/lightness).
+- *Gold:* =gold= (definition), =gold-quiet= (call).
+- *Violet:* =regal= (types/decorators).
+- *Green:* =sage= (string), =sage-muted= (docstring), =sage-bright= (escape).
+- *Teal:* =teal= (regexp).
+- *Terracotta:* =terracotta= (numbers/constants).
+- *Signal:* =red=, =amber=, =green=, =blue= (reused) for error/warning/success/link.
+
+Roughly fifteen swatches across seven or eight hues. The builtin =blue-grey= and
+the call =gold-quiet= are the swatches dupre is missing today and gains on
+reseed.
+
+** Role-to-treatment table
+
+The guide's seed table as data: each role maps to a swatch, a weight, an optional
+slant/underline, and a channel (foreground or background). One literal object,
+e.g.
+
+#+begin_src js
+ROLES = {
+  base:      {swatch:'fg',         weight:'normal', channel:'fg'},
+  structure: {swatch:'muted-fg',   weight:'normal', channel:'fg'},
+  control:   {swatch:'blue',       weight:'bold',   channel:'fg'},
+  builtin:   {swatch:'blue-grey',  weight:'normal', channel:'fg'},
+  def:       {swatch:'gold',       weight:'bold',   channel:'fg'},
+  call:      {swatch:'gold-quiet', weight:'normal', channel:'fg'},
+  type:      {swatch:'regal',      weight:'normal', channel:'fg'},
+  string:    {swatch:'sage',       weight:'normal', channel:'fg'},
+  docstring: {swatch:'sage-muted', slant:'italic',  channel:'fg'},
+  escape:    {swatch:'sage-bright',weight:'normal', channel:'fg'},
+  literal:   {swatch:'terracotta', weight:'normal', channel:'fg'},
+  comment:   {swatch:'comment',    slant:'italic',  channel:'fg'},
+  state:     {swatch:'tint',       channel:'bg'},
+  sig_error: {swatch:'red',        channel:'fg'},
+  sig_warn:  {swatch:'amber',      channel:'fg'},
+  sig_ok:    {swatch:'green',      channel:'fg'},
+  sig_link:  {swatch:'blue',       underline:true,  channel:'fg'},
+  heading:   {swatch:'ramp',       channel:'fg'},   // see heading ramp
+}
+#+end_src
+
+** Face-to-role maps
+
+*** Syntax (CATS key to role)
+
+=p=, =var= to base; =op=, =punc=, =cmd= to structure; =kw= to control; =pp= to
+control (shared, optionally muted); =bi= to builtin; =fnd= to def; =fnc= to call;
+=dec=, =ty=, =prop= to type; =con=, =num= to literal; =str= to string; =doc= to
+docstring; =esc=, =re= to escape (=re= to a teal variant if present); =cm= to
+comment; =cmd= to structure (delimiter, dimmer). =bg= is the ground, set
+directly.
+
+*** UI faces (UI_FACES to role)
+
+=region=, =hl-line=, =highlight=, =show-paren-match= to state (background tint,
+no fg); =isearch= to an active match chip (may invert); =lazy-highlight= to a
+quieter match; =isearch-fail=, =show-paren-mismatch= to sig_error; =error= to
+sig_error, =warning= to sig_warn, =success= to sig_ok; =link= to sig_link;
+=mode-line= to active chrome, =mode-line-inactive=, =line-number=, =fringe=,
+=vertical-border= to idle/receding chrome; =line-number-current-line= to active
+chrome; =cursor= to its own; =minibuffer-prompt= to control.
+
+*** Org-mode (face to one of six roles)
+
+=org-level-1..8= to heading ramp; =org-meta-line=, =org-drawer=,
+=org-special-keyword=, =org-property-value=, =org-block-begin-line= /
+=org-block-end-line=, =org-ellipsis=, =org-tag=, =org-date=,
+=org-document-info-keyword= to markup-recede; =org-block=, =org-code=,
+=org-verbatim=, =org-inline-src-block= to code-like (reuse the syntax literal
+lane); =org-todo= / imminent deadlines to sig (warm), =org-upcoming-deadline= to
+sig_warn, =org-scheduled= / =org-done= to receded/cool (with =org-done= taking
+strikethrough); =org-link= to sig_link; =org-quote=, =org-verse= to emphasis
+(italic). The org long tail that does not classify seeds to base, as today.
+
+** Package scope
+
+The role engine owns three default sources: syntax, UI, and the *org-mode*
+package faces. It does not touch the other ~20 bespoke packages in =APPS= (magit,
+elfeed, mu4e, and the rest): their curated seed colors stay exactly as today, and
+the reseed button *resets them to their existing =APPS= defaults* rather than
+role-generating or flattening them to foreground. Generic inventory packages keep
+seeding empty/default. So =seed(model)= returns =packages.org-mode= only; the
+non-org defaults continue to flow from =seedPkgmap()= over the curated =APPS=
+dicts, and reseed re-runs =seedPkgmap()= for them. A =#seedtest= asserts a non-org
+bespoke package (e.g. magit) keeps its curated seed after open and after reseed.
+
+Reseeding preserves the package-face import guarantees already established by
+=mergePackagesInto= / =packagesForExport= (unknown app/face preservation, old-JSON
+compatibility, recoverable references to deleted palette colors); this spec does
+not re-decide them.
+
+** Heading ramp
+
+=org-level-1..8= share one hue across three or four lightness steps (the guide
+does not spend eight distinct shades). v1 generates the steps with OKLCH: from a
+base hue, step lightness down per level (level 1 strongest and bold, deeper levels
+quieter), cycling the steps past level 4. This uses the same =colormath.js= shade
+generation as the palette above.
+
+* The seed() operation
+
+A pure function, =seed(model)= returns ={syntax, ui, packages}= default
+assignments:
+
+- *syntax*: for each =CATS= key, look up its role, resolve the role's swatch to a
+  hex and its weight, produce =MAP[key]= and =BOLD[key]=.
+- *ui*: for each =UI_FACES= face, resolve its role to =UIMAP[face]= ({fg, bg,
+  bold, italic, underline}), honoring the channel (state roles set bg only).
+- *packages.org-mode*: for each org face, resolve its role to a default-dict
+  ({fg, bg, bold, italic, strike, inherit, height}).
+
+The output is exactly the shape =exportObj()= already emits (=assignments=,
+=ui=, =packages=), so =seed()= produces a =theme.json= the existing import path
+loads unchanged. =packages= carries only =org-mode= (Package scope); the non-org
+curated defaults flow through =seedPkgmap()= as today. Reseeding dupre is
+=seed(model)= combined with the curated package seeds, written to
+=dupre-revised.json= (the canonical package-aware artifact — see Surfacing).
+
+* Surfacing in the tool
+
+- *Open seeded.* The page's initial =MAP=/=UIMAP= come from =seed(model)= (inlined
+  defaults), not from hand-set =COLS=/=UIMAP=; =PKGMAP= comes from =seed(model)='s
+  org defaults plus =seedPkgmap()= over the curated =APPS= dicts for the rest. On
+  load the syntax tier is guide-correct; the user retunes hues and scrolls to UI.
+- *Reseed button.* A "reseed from guide" control reapplies the seeds to all three
+  owned tiers and resets the non-org packages to their curated =APPS= defaults. It
+  warns first, naming the scope: "Reseed syntax, UI, and package defaults from the
+  guide? This discards current color assignments."
+- *Canonical artifact.* The reseeded bundle is written to =dupre-revised.json=,
+  the full package-aware file the README and =build-theme.el= example use.
+  =dupre.json= stays a legacy minimal import fixture (no =packages= key) unless
+  deliberately migrated. Importing the reseeded =dupre-revised.json= and opening
+  fresh land on the same state.
+
+* Implementation phases
+
+1. *Seed model + seed() + tests.* Add the palette anchors + OKLCH shade
+   generation (reusing =colormath.js=), the =ROLES= table, and the three
+   face-to-role maps as data in =generate.py= (or a sibling inlined like
+   =samples.py=); write the pure =seed()=. Gate: =#seedtest= asserts representative
+   faces land on the right swatch/weight/channel in each tier (=bi= blue-grey,
+   =fnd= gold + bold, =var= base, =op= / =punc= muted, =doc= italic; =region= /
+   =hl-line= bg-only, =link= underlined, =error= / =warning= / =success= on signal
+   hues, active vs inactive chrome differentiated; =org-level-1= strongest,
+   =org-code= the fixed-pitch literal lane, =org-done= receded/struck) AND that a
+   non-org bespoke package (e.g. magit) keeps its curated seed.
+2. *Open seeded + reseed + dupre-revised regen.* Wire the initial state to
+   =seed(model)= (plus =seedPkgmap()= for the non-org packages); add the all-tier
+   reseed button with the scope-named overwrite warning, resetting non-org
+   packages to their =APPS= defaults; regenerate =dupre-revised.json= from the
+   engine. Gate: =#selftest= still PASS; a headless check that default-on-open
+   equals =seed(model)=; an *artifact round-trip* check that the regenerated
+   =dupre-revised.json= imports back to the same seeded state (package defaults and
+   source markers included); a Chrome eyeball that the seeded syntax tier reads as
+   a coherent dupre.
+
+Dependency: v1 reuses the perceptual-metrics =colormath.js= core for OKLCH shade
+generation, so it sequences after that spec's Phase 1 (the math foundation). No
+second color-math implementation.
+
+* vNext candidates
+
+- Per-tier reseed controls (reseed just syntax, just UI, just org) after the
+  all-at-once v1 button.
+- Role-mapping selected non-org bespoke packages beyond org, if their curated
+  defaults prove worth regenerating from the table.
+- The guide-support views and advisories already tracked in =todo.org=.
+
+* Acceptance criteria
+
+- *Phase 1*: =seed()= is pure and table-driven; representative faces in all three
+  tiers resolve to the guide's seed-table treatment; a non-org bespoke package
+  keeps its curated seed; OKLCH generation produces the family shades and the
+  heading ramp; =#seedtest= PASS.
+- *Phase 2*: the tool opens with syntax/UI/org seeded from =seed(model)= and the
+  non-org packages on their curated =APPS= defaults; the reseed button restores
+  all three owned tiers (and resets non-org to curated defaults) behind a
+  scope-named warning; =dupre-revised.json= is regenerated, matches the compact
+  mapping (=bi= blue-grey, =fnd= gold), and round-trips back to =seed(model)= on
+  import; =#selftest= PASS; a Chrome eyeball confirms a coherent dupre.
+
+* Agreed decisions (v1)
+
+Answered by Craig (2026-06-08), folded in.
+
+1. *Palette swatch source.* Generate the shades with OKLCH and fix hues that read
+   wrong by hand override (Craig overrode the hand-authored recommendation). This
+   moves OKLCH generation into v1 and makes the feature reuse the
+   perceptual-metrics =colormath.js= core, sequencing after that spec's Phase 1.
+2. *Heading ramp depth.* Three or four distinct lightness steps, cycled across
+   levels 1-8.
+3. *Converter sharing.* Tool-only for v1; =build-theme.el= consumes the exported
+   =theme.json= regardless.
+4. *Reseed scope.* All three owned tiers at once; per-tier reseed is vNext.
+
+* Review dispositions
+
+Codex's review (2026-06-08) was accepted in full. The items below note the two
+findings that corrected factual errors in the draft and the one open choice this
+response resolved; everything else was woven into the body as written.
+
+- *Corrected — package scope (high-priority finding 2).* The draft said non-org
+  packages "seed to the default foreground." Wrong: =APPS= carries curated seeds
+  for ~20 bespoke packages. Rewritten so the role engine owns only org among
+  packages and the rest keep their curated =APPS= defaults, with reseed resetting
+  to those (see Package scope).
+- *Corrected — canonical artifact (high-priority finding 3).* The draft named
+  =dupre.json=; the package-aware bundle is =dupre-revised.json=. Replaced
+  throughout, with =dupre.json= noted as the legacy minimal fixture.
+- *Resolved — OKLCH dependency (high-priority finding 1).* The review offered two
+  routes to OKLCH-in-v1 (depend on the perceptual-metrics core, or build a local
+  minimal helper). Chose the dependency, to avoid a second color-math
+  implementation.
+
+* Sources
+
+- =scripts/theme-studio/theme-coloring-guide.org= — the seed table and Shade
+  budget this engine executes.
+- =scripts/theme-studio/generate.py= — =CATS=, =UI_FACES=/=UIMAP=, =APPS= /
+  =seedPkgmap=, =exportObj= (the target shape).
+- =docs/design/theme-studio-perceptual-color-metrics-spec.org= — the
+  =colormath.js= core that v1 OKLCH shade generation uses.
+
+* Review and iteration history
+
+** 2026-06-08 Mon @ 19:00:17 -0500 — Codex — reviewer
+- *What changed or was recommended:* Created the implementation-readiness review
+  and marked the spec =Not ready=. The review treats the inline =cj: comment=
+  blocks as answered product input, then flags three remaining implementation
+  blockers: the palette-source answer moves OKLCH generation into v1 while the
+  phase plan still says vNext; the package seeding scope conflicts with the
+  current many-bespoke-app =APPS= surface; and the spec names =dupre.json= even
+  though the current README/build path uses =dupre-revised.json= as the full
+  package-aware artifact.
+- *Why:* The role-table direction is sound, but those conflicts would force the
+  implementer to decide dependency order, package-default preservation, and
+  which bundled JSON file to write.
+- *Artifacts:* the review file (consumed and deleted on response; see Review dispositions).
+
+** 2026-06-08 Mon @ 19:06:06 -0500 — Claude Code — responder
+- *What changed:* Folded Craig's four answers into Agreed decisions and accepted every Codex finding. OKLCH shade generation moved into v1 (reusing =colormath.js=, sequenced after perceptual-metrics Phase 1); package scope rewritten so the engine owns only org and the ~20 non-org bespoke packages keep their curated =APPS= seeds (reseed resets to those); =dupre.json= references replaced with =dupre-revised.json= (canonical, package-aware) and =dupre.json= noted legacy; phases collapsed to two v1 phases with a vNext section; added the non-org-preserved and artifact-round-trip tests, the scope-named reseed warning, and the import-guarantee citation.
+- *Why:* The draft described an older, narrower package surface and the wrong dupre artifact; left uncorrected, an implementer could wipe curated package defaults or write the wrong file. Two of the three blockers fixed errors in my draft. Rubric Draft to Ready.
+- *Artifacts:* consumed and deleted the review file; see Review dispositions and Agreed decisions.
+
+** 2026-06-08 Mon @ 19:11:06 -0500 — Codex — reviewer
+- *What changed or was recommended:* Re-reviewed the incorporated spec against
+  the current generator, README, task tracking, and previous findings. Assigned
+  =Ready=: the OKLCH dependency, non-org package seed preservation, and
+  =dupre-revised.json= artifact story are now explicit. Fixed one stale
+  non-blocking source note that still referred to Phase 3.
+- *Why:* The spec now gives an implementer a coherent v1: two phases, explicit
+  dependency on perceptual-metrics Phase 1, table-driven =seed()=, open-seeded
+  and reseed behavior, package preservation rules, artifact round-trip tests,
+  and vNext boundaries.
+- *Artifacts:* No review file written; no blocking findings.

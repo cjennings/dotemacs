@@ -163,10 +163,20 @@ What we're verifying: the OKLCH sliders / C×L plane edit cleanly and clamping i
 Expected: each axis moves independently; the C×L plane (once 4b lands) opens on the current color; "chroma clamped to sRGB" shows on clamp; toggling the mask does not reset OKLCH mode.
 ** TODO [#B] theme-studio guide-support features :feature:theme-studio:
 From the color-assignment guide work (2026-06-08): make the tool support the guide without mandating it — everything a seed, an advisory, or a view, never a gate. Two specs to write, both deriving from the rewritten guide and its seed table ([[file:scripts/theme-studio/theme-coloring-guide.org][theme-coloring-guide.org]]).
-*** TODO Seeding-engine spec :solo:
-The role-to-treatment table plus per-tier face→role maps; seeds syntax, UI, and org-mode to guide-correct defaults and reseeds dupre to the compact mapping (builtins blue-grey, function definitions gold). Priority / starting point.
+*** 2026-06-08 Mon @ 19:08:00 -0500 Seeding-engine spec written and Ready
+[[file:docs/design/theme-studio-seeding-engine-spec.org][theme-studio-seeding-engine-spec.org]] — role table + face→role maps for syntax/UI/org, OKLCH shade generation, reseed dupre-revised to the compact mapping. Codex-reviewed, Ready. Implementation tracked under the seeding-engine parent below.
 *** TODO Guide-support views and advisories spec :solo:
 Five optional surfaces, all dismissible and non-blocking, in one collapsible panel where they advise: (1) CVD-simulation toggle on previews (deuteranopia/protanopia/tritanopia); (2) squint/blur preview toggle; (3) lightness-ramp view + palette advisories (accent count over 6-8, roles separated only by red/green) — depends on the OKLCH/ΔE core; (4) definition-vs-call / weight advisories; (5) state-over-syntax preview (region/search/diff tint over real syntax-colored text). Sequence: rewritten guide reviewed → seeding-engine spec → this. Advisories (3, 4) layer on the perceptual-metrics feature.
+** TODO [#B] theme-studio seeding engine :feature:theme:theme-studio:
+Spec (Ready): [[file:docs/design/theme-studio-seeding-engine-spec.org][spec]]. Role table → guide-correct defaults for syntax/UI/org; reseed dupre-revised.json to the compact mapping; opens seeded with an all-tier reseed button. Depends on the perceptual-metrics colormath.js core for OKLCH shade generation, so it runs after that feature's Phase 1.
+*** TODO Seed model + seed() + #seedtest :solo:
+Phase 1. Palette anchors + OKLCH shade generation (reusing colormath.js), the ROLES table, and the three face→role maps as data; pure seed(). Gate: #seedtest asserts representative syntax/UI/org faces resolve correctly (bi→blue-grey, fnd→gold+bold, region bg-only, link underlined, org-level-1 strongest, org-code literal lane) and a non-org bespoke package (magit) keeps its curated seed.
+*** TODO Open-seeded + reseed + dupre-revised regen :solo:
+Phase 2. Initial state from seed() plus seedPkgmap for the non-org packages; all-tier reseed button with a scope-named overwrite warning, resetting non-org to their APPS defaults; regenerate dupre-revised.json. Gate: #selftest PASS; default-on-open equals seed(); artifact round-trip (regenerated dupre-revised.json imports back to the same seeded state); Chrome eyeball.
+*** TODO Seeding-engine test surface :solo:tests:
+Keep #seedtest, #selftest, the default-on-open check, the dupre-revised round-trip, node --check, and Chrome validation green.
+** TODO [#D] theme-studio per-tier reseed controls :feature:theme-studio:
+Deferred from the seeding-engine spec (vNext). V1 reseeds all three guide-owned tiers at once; later consider separate "reseed syntax", "reseed UI", and "reseed package/org" controls if all-at-once proves too blunt. Spec: [[file:docs/design/theme-studio-seeding-engine-spec.org][spec]] (vNext; review folded in 2026-06-08).
 ** TODO [#D] theme-studio low-contrast preset/mask mode :feature:theme-studio:
 Deferred from the perceptual color metrics spec (vNext). After raw OKLCH/APCA/DeltaE readouts exist, decide whether to add a named low-contrast workflow: APCA Lc bands, a contrast ceiling/floor mask, or a "soft" sibling to the existing any/AA+/AAA picker mask. Spec: [[file:docs/design/theme-studio-perceptual-color-metrics-spec.org][spec]] (vNext candidates; review folded in 2026-06-08).
 ** TODO [#D] theme-studio CIEDE2000 DeltaE option :feature:theme-studio:
