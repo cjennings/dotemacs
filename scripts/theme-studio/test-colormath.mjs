@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import {
   srgb2oklab, oklab2oklch, oklch2oklab, oklch2hex, apca, deltaE,
   hex2rgb, rl, contrast, rating, hsv2rgb, rgb2hsv, rgb2hex,
-  oklab2lrgb, inGamut, lrgb2hex,
+  oklab2lrgb, inGamut, lrgb2hex, planeCell, paletteWarnings,
 } from './colormath.js';
 
 const close = (a, b, eps = 0.005) => Math.abs(a - b) <= eps;
@@ -158,6 +158,76 @@ test('inGamut flags reachable vs unreachable OKLCH (forward-only gamut test)', (
   // the commit path share one gamut boundary).
   assert.equal(inGamut(oklab2lrgb(ok.L, ok.a, ok.b)), !oklch2hex(0.591, 0.052, 251.6).clamped);
   assert.equal(inGamut(oklab2lrgb(bad.L, bad.a, bad.b)), !oklch2hex(0.7, 0.4, 140).clamped);
+});
+
+test('planeCell: reachable cell returns its exact hex, agrees with oklch2hex', () => {
+  // Normal: a low-chroma blue is reachable; the hex matches the commit path.
+  const cell = planeCell(0.591, 0.052, 251.6);
+  assert.equal(cell.inGamut, true);
+  assert.equal(cell.hex, oklch2hex(0.591, 0.052, 251.6).hex);
+});
+
+test('planeCell: C=0 is the achromatic grey for its lightness', () => {
+  // Boundary: zero chroma -> a neutral grey, always in gamut, hue irrelevant.
+  const a = planeCell(0.5, 0, 0), b = planeCell(0.5, 0, 251.6);
+  assert.equal(a.inGamut, true);
+  assert.equal(a.hex, b.hex, 'hue must not matter at C=0');
+  assert.equal(a.hex[1], a.hex[3]); // r==g==b nibble: grey
+});
+
+test('planeCell: out-of-gamut chroma is flagged, no hex', () => {
+  // Error/boundary: chroma past sRGB at this L/H.
+  const cell = planeCell(0.7, 0.4, 140);
+  assert.equal(cell.inGamut, false);
+  assert.equal(cell.hex, null);
+  assert.equal(cell.inGamut, !oklch2hex(0.7, 0.4, 140).clamped); // shares the boundary
+});
+
+test('paletteWarnings: a near-identical pair warns, named, with its ΔE', () => {
+  const { warnings, overflow, nearest } = paletteWarnings(
+    [['#0d0b0a', 'ground'], ['#cdced1', 'fg'], ['#67809c', 'blue'], ['#69829e', 'blue2']]);
+  assert.equal(warnings.length, 1);
+  assert.equal(overflow, 0);
+  const w = warnings[0];
+  assert.deepEqual([w.aName, w.bName], ['blue', 'blue2']);
+  assert.ok(w.dE > 0 && w.dE < 0.02, `dE ${w.dE}`);
+  assert.equal(nearest.length, 4);
+  assert.ok(nearest[2] < 0.02 && nearest[3] < 0.02, 'blue/blue2 are each other’s nearest');
+});
+
+test('paletteWarnings: a well-spread palette warns about nothing', () => {
+  const { warnings, overflow } = paletteWarnings(
+    [['#0d0b0a', 'ground'], ['#cdced1', 'fg'], ['#67809c', 'blue'], ['#e8bd30', 'gold'], ['#cb6b4d', 'terra']]);
+  assert.equal(warnings.length, 0);
+  assert.equal(overflow, 0);
+});
+
+test('paletteWarnings: boundary cases — empty, single, identical', () => {
+  assert.deepEqual(paletteWarnings([]), { warnings: [], overflow: 0, nearest: [] });
+  const one = paletteWarnings([['#67809c', 'blue']]);
+  assert.deepEqual(one.warnings, []);
+  assert.deepEqual(one.nearest, [Infinity]); // no neighbor
+  const dup = paletteWarnings([['#67809c', 'a'], ['#67809c', 'b']]);
+  assert.equal(dup.warnings.length, 1);
+  assert.equal(dup.warnings[0].dE, 0); // identical colors -> ΔE 0
+});
+
+test('paletteWarnings: closest-first ordering and cap with overflow', () => {
+  // Seven near-identical colors -> C(7,2)=21 sub-threshold pairs.
+  const pal = [['#0d0b0a', 'ground'], ['#cdced1', 'fg']];
+  for (let k = 0; k < 7; k++) pal.push(['#' + (0x67 + k).toString(16).padStart(2, '0') + '809c', 'c' + k]);
+  const { warnings, overflow } = paletteWarnings(pal, 0.02, 5);
+  assert.equal(warnings.length, 5, 'capped at 5');
+  assert.equal(overflow, 16, '21 pairs - 5 shown');
+  for (let i = 1; i < warnings.length; i++)
+    assert.ok(warnings[i].dE >= warnings[i - 1].dE, 'ascending by ΔE');
+});
+
+test('paletteWarnings: threshold is inclusive-exclusive at the boundary', () => {
+  // A custom threshold lets a pair fall just inside or just outside.
+  const pal = [['#67809c', 'a'], ['#69829e', 'b']]; // dE ~0.0067
+  assert.equal(paletteWarnings(pal, 0.0067).warnings.length, 0, 'd < threshold is strict');
+  assert.equal(paletteWarnings(pal, 0.007).warnings.length, 1, 'just above the pair distance');
 });
 
 // Guards the one-source-of-truth contract: the page must carry colormath.js's

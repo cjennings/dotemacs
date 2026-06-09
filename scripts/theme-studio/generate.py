@@ -599,26 +599,18 @@ function buildTable(){
 let dragFrom=null,selectedIdx=null;
 // Pairwise OKLab ΔE over the palette. Returns the sub-threshold pairs (sorted
 // closest-first) and each color's nearest-neighbor distance for its chip title.
-function paletteDeltas(){
-  const n=PALETTE.length,nearest=new Array(n).fill(Infinity),pairs=[];
-  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const d=deltaE(PALETTE[i][0],PALETTE[j][0]);
-    if(d<nearest[i])nearest[i]=d;if(d<nearest[j])nearest[j]=d;
-    if(d<DELTAE_MIN)pairs.push({i,j,d});}
-  pairs.sort((a,b)=>a.d-b.d);
-  return {pairs,nearest};
-}
-function renderPaletteWarnings(pairs){
+// Pure pairwise ΔE analysis lives in colormath.js (paletteWarnings); this renders it.
+function renderPaletteWarnings(warnings,overflow){
   const w=document.getElementById('palwarn');if(!w)return;
-  if(!pairs.length){w.style.display='none';w.innerHTML='';return;}
-  const cap=5,shown=pairs.slice(0,cap);
+  if(!warnings.length){w.style.display='none';w.innerHTML='';return;}
   let html='<div class="pwh">too-similar colors</div>';
-  html+=shown.map(p=>`<div class="pwl">${esc(PALETTE[p.i][1]+' / '+PALETTE[p.j][1])} — \\u0394E ${p.d.toFixed(3)}, hard to distinguish</div>`).join('');
-  if(pairs.length>cap)html+=`<div class="pwl">and ${pairs.length-cap} more</div>`;
+  html+=warnings.map(p=>`<div class="pwl">${esc(p.aName+' / '+p.bName)} — \\u0394E ${p.dE.toFixed(3)}, hard to distinguish</div>`).join('');
+  if(overflow>0)html+=`<div class="pwl">and ${overflow} more</div>`;
   w.innerHTML=html;w.style.display='block';
 }
 function renderPalette(){
   const p=document.getElementById('pals');p.innerHTML='';
-  const {pairs,nearest}=paletteDeltas();
+  const {warnings,overflow,nearest}=paletteWarnings(PALETTE,DELTAE_MIN,5);
   PALETTE.forEach((pc,i)=>{const [hex,name]=pc;const tc=textOn(hex);
     const nde=nearest[i];
     const locked=(hex===MAP['bg']||hex===MAP['p']);
@@ -639,7 +631,7 @@ function renderPalette(){
     d.ondragleave=()=>d.classList.remove('over');
     d.ondrop=(e)=>{e.preventDefault();d.classList.remove('over');if(dragFrom===null||dragFrom===i)return;const m=PALETTE.splice(dragFrom,1)[0];PALETTE.splice(i,0,m);dragFrom=null;selectedIdx=null;renderPalette();buildTable();buildUITable();};
     p.appendChild(d);});
-  renderPaletteWarnings(pairs);
+  renderPaletteWarnings(warnings,overflow);
   buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
 }
 function notify(msg,err){const m=document.getElementById('palmsg');if(!m)return;m.textContent=msg;m.style.color=err?'#cb6b4d':'#8a9496';m.style.opacity='1';clearTimeout(m._t);m._t=setTimeout(()=>{m.style.opacity='0';},err?4000:2800);}
@@ -678,10 +670,10 @@ function paintOklchPlane(H){
   if(_planeCache.key===key&&_planeCache.data){ctx.putImageData(_planeCache.data,0,0);return;}
   const step=4;
   for(let x=0;x<w;x+=step){const C=(x/w)*OKLCH_CMAX;
-    for(let y=0;y<h;y+=step){const L=1-y/h,lab=oklch2oklab(L,C,H),lrgb=oklab2lrgb(lab.L,lab.a,lab.b);
-      if(!inGamut(lrgb)){ctx.fillStyle='#15120f';ctx.fillRect(x,y,step,step);continue;}
-      const hex=lrgb2hex(lrgb);ctx.fillStyle=hex;ctx.fillRect(x,y,step,step);
-      if(T&&contrast(hex,MAP['bg'])<T){ctx.fillStyle='rgba(8,7,6,0.66)';ctx.fillRect(x,y,step,step);}}}
+    for(let y=0;y<h;y+=step){const L=1-y/h,cell=planeCell(L,C,H);
+      if(!cell.inGamut){ctx.fillStyle='#15120f';ctx.fillRect(x,y,step,step);continue;}
+      ctx.fillStyle=cell.hex;ctx.fillRect(x,y,step,step);
+      if(T&&contrast(cell.hex,MAP['bg'])<T){ctx.fillStyle='rgba(8,7,6,0.66)';ctx.fillRect(x,y,step,step);}}}
   _planeCache={key,data:ctx.getImageData(0,0,w,h)};
 }
 function paintPicker(){const sv=document.getElementById('sv');if(!sv)return;
