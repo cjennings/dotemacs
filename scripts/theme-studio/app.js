@@ -11,14 +11,14 @@ function seedPkgmap(){return buildPkgmap(APPS,PALETTE);}
 let PKGMAP=seedPkgmap();
 function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 // Pure color-math core (lin/rl/contrast/rating/hsv2rgb/rgb2hsv/hex2rgb/rgb2hex,
-// plus OKLab/OKLCH/APCA/deltaE), inlined verbatim from colormath.js. normHex,
-// textOn, and ratingColor stay below as UI-boundary helpers.
+// plus OKLab/OKLCH/APCA/deltaE), inlined verbatim from colormath.js.
 COLORMATH_J
 // Pure package-model + dropdown logic, inlined verbatim from app-core.js. The
 // wrappers above (pname/seedPkgmap/ddList/pkgEffFg/pkgEffBg) delegate here.
 APP_CORE_J
-function textOn(h){const L=rl(h);return ((L+0.05)/0.05)>(1.05/(L+0.05))?'#000':'#fff';}
-function ratingColor(r){return r>=7?'#5d9b86':r>=4.5?'#a9b2bb':'#cb6b4d';}
+// Pure color/UI-boundary helpers (normHex, ratingColor, textOn), inlined from
+// app-util.js. textOn uses rl from the colormath core above.
+APP_UTIL_J
 // The contrast-cell readout shared by every table: a WCAG ratio colored by its
 // AA/AAA rating, with the rating word. Callers compute r for their own fg/bg.
 function crHtml(r){return `<span style="color:${ratingColor(r)}">${r.toFixed(1)}  ${rating(r)}</span>`;}
@@ -192,7 +192,6 @@ function updateColor(){
   for(const ap in PKGMAP)for(const fc in PKGMAP[ap]){const o=PKGMAP[ap][fc];if(o.fg===oldHex)o.fg=newHex;if(o.bg===oldHex)o.bg=newHex;}
   closePicker();renderPalette();buildTable();buildUITable();renderCode();applyGround();notify('updated "'+newName+'"',false);
 }
-function normHex(s){s=s.trim();if(/^[0-9a-fA-F]{6}$/.test(s))s='#'+s;return /^#[0-9a-fA-F]{6}$/.test(s)?s.toLowerCase():null;}
 function curHex(){return normHex(document.getElementById('newhexstr').value)||'#888888';}
 let pkH=0,pkS=0,pkV=0.5,pickerOn=false;
 let pkMode='any';   // contrast mask: any / aa / aaa (what constraint to mask)
@@ -269,7 +268,7 @@ function addColor(){const h=curHex();const name=document.getElementById('newname
   if(PALETTE.some(p=>p[1].toLowerCase()===name.toLowerCase())){notify('a color named "'+name+'" already exists — select it and use Update selected to change its value',true);return;}
   PALETTE.push([h,name]);document.getElementById('newname').value='';selectedIdx=null;closePicker();renderPalette();buildTable();notify('added "'+name+'"',false);}
 function themeName(){return (document.getElementById('themename').value||'theme').trim()||'theme';}
-function fileSlug(){return themeName().replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'theme';}
+function fileSlug(){return slugify(themeName());}
 function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);const o={name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};if(LOCKED.size)o.locks=[...LOCKED];const pk=packagesForExport(PKGMAP);if(Object.keys(pk).length)o.packages=pk;return o;}
 function exportState(){const t=document.getElementById('export');t.value=JSON.stringify(exportObj(),null,1);t.style.display='block';t.focus();t.select();}
 function toggleJSON(){const t=document.getElementById('export'),b=document.getElementById('jsonbtn');if(t.style.display==='block'){t.style.display='none';b.textContent='show';}else{exportState();b.textContent='hide';}}

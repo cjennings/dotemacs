@@ -30,6 +30,12 @@ class StripExports(unittest.TestCase):
         src = "export const a=1;\ncode();\nexport { a };"
         self.assertEqual(generate.strip_exports(src), "code();")
 
+    def test_removes_import_lines_too(self):
+        # A pure module may import a peer for its own tests; the import must be
+        # stripped on inline (the peer is already in the page).
+        src = "import { rl } from './colormath.js';\nfunction f(){return rl();}"
+        self.assertEqual(generate.strip_exports(src), "function f(){return rl();}")
+
     def test_matches_the_js_side_strip_so_integrity_holds(self):
         # test-colormath.mjs strips with the same rule: drop lines starting with
         # 'export', then trim trailing whitespace. Keep the two in lockstep.
@@ -62,7 +68,7 @@ class ColormathInlining(unittest.TestCase):
 
 class AssembledPage(unittest.TestCase):
     PLACEHOLDERS = [
-        "STYLES_CSS", "APP_JS", "APP_CORE_J",
+        "STYLES_CSS", "APP_JS", "APP_CORE_J", "APP_UTIL_J",
         "COLORMATH_J", "SAMPLES_J", "PALETTE_J", "CATS_J",
         "UIFACES_J", "UIMAP_J", "APPS_J", "BOLD_J", "MAP_J",
     ]
@@ -81,6 +87,15 @@ class AssembledPage(unittest.TestCase):
         # and the unit-tested module cannot drift.
         self.assertIn(generate.APP_CORE_BODY, generate.HTML)
 
+    def test_page_carries_the_app_util_body_verbatim(self):
+        # app-util.js inlines verbatim after its import line is stripped.
+        self.assertIn(generate.APP_UTIL_BODY, generate.HTML)
+
+    def test_app_util_inlined_body_has_no_import_line(self):
+        # The `import rl` line must be gone, or the page <script> is invalid.
+        for line in generate.APP_UTIL_BODY.splitlines():
+            self.assertFalse(line.startswith("import"), f"import survived: {line!r}")
+
     def test_page_carries_the_stylesheet_verbatim(self):
         # styles.css has no placeholders, so it inlines verbatim: the inlined copy
         # and the source file cannot drift.
@@ -95,6 +110,31 @@ class AssembledPage(unittest.TestCase):
     def test_page_is_a_single_script_document(self):
         self.assertEqual(generate.HTML.count("<script>"), 1)
         self.assertEqual(generate.HTML.count("</script>"), 1)
+
+
+class FacesHelper(unittest.TestCase):
+    def test_strips_prefix_and_derives_label_and_merges_seed(self):
+        # Normal: the prefix comes off the label, and the per-face seed is attached.
+        rows = generate._faces(["org-todo", "org-done"], "org-", {"org-todo": {"fg": "gold"}})
+        self.assertEqual(rows, [
+            ["org-todo", "todo", {"fg": "gold"}],
+            ["org-done", "done", {}],
+        ])
+
+    def test_label_drops_face_suffix_and_spaces_remaining_dashes(self):
+        # Boundary: "-face" is removed and the rest of the dashes become spaces.
+        rows = generate._faces(["lsp-rename-placeholder-face"], "lsp-", {})
+        self.assertEqual(rows[0][1], "rename placeholder")
+
+    def test_name_without_the_prefix_is_left_intact(self):
+        # Boundary: a name that doesn't start with the prefix keeps its full text
+        # (only "-face" removal and dash-spacing apply).
+        rows = generate._faces(["shr-text"], "org-", {})
+        self.assertEqual(rows[0], ["shr-text", "shr text", {}])
+
+    def test_empty_names_gives_empty_list(self):
+        # Error/Boundary: nothing in, nothing out.
+        self.assertEqual(generate._faces([], "org-", {"org-todo": {"fg": "gold"}}), [])
 
 
 if __name__ == "__main__":
