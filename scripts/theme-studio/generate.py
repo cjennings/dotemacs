@@ -393,6 +393,9 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
  .sbtn{width:26px;height:24px;border:1px solid #3a3a3a;border-radius:3px;background:#eaeaea;color:#111;cursor:pointer;font-size:15px;margin-right:2px;padding:0}
  .sbtn.on{background:#0d0b0a;color:#cdced1;border-color:#8a9496}
  .pals{display:flex;gap:8px;flex-wrap:wrap}
+ .palwarn{display:none;margin-top:8px;font:10pt monospace;color:#cb6b4d}
+ .palwarn .pwh{font-weight:bold;margin-bottom:2px}
+ .palwarn .pwl{opacity:.92}
  .pchip{width:128px;height:58px;border-radius:6px;border:1px solid #555;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab}
  .pchip.drag{opacity:.4} .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip.over{outline:2px dashed #e8bd30;outline-offset:1px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none}
  .pchip .mv{position:absolute;bottom:-1px;background:none;border:none;cursor:pointer;font-size:22px;line-height:1;font-weight:bold;opacity:.5;padding:0 5px} .pchip .mv:hover{opacity:1} .pchip .mv.l{left:0} .pchip .mv.r{right:0}
@@ -446,6 +449,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
  <section class="pane grow">
   <h1>palette</h1>
   <div class="pals" id="pals"></div>
+  <div class="palwarn" id="palwarn"></div>
   <div class="palctl">
    <div id="swatch" class="swatch" title="open color picker"></div>
    <input type="text" id="newhexstr" placeholder="#rrggbb" value="#888888" oninput="syncHex()" onkeydown="if(event.key==='Enter')applyEdit()" style="width:110px">
@@ -517,6 +521,7 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
 <script>
 const SAMPLES=SAMPLES_J, CATS=CATS_J, UI_FACES=UIFACES_J, APPS=APPS_J;
 let MAP=MAP_J, PALETTE=PALETTE_J, BOLD=BOLD_J, ITALIC={}, UIMAP=UIMAP_J;
+const DELTAE_MIN=0.02; // OKLab ΔE below this = colors too close to tell apart (perceptual-metrics spec)
 // --- tier-3 package faces: pure state helpers (Phase 1) ---
 function pname(n){if(!n)return null;if(/^#/.test(n))return n;const p=PALETTE.find(p=>p[1]===n);return p?p[0]:null;}
 function seedPkgmap(){const m={};for(const app in APPS){m[app]={};for(const row of APPS[app].faces){const face=row[0],d=row[2]||{};m[app][face]={fg:pname(d.fg),bg:pname(d.bg),bold:!!d.bold,italic:!!d.italic,underline:!!d.underline,strike:!!d.strike,inherit:d.inherit||null,height:d.height||1,source:'default'};}}return m;}
@@ -574,11 +579,33 @@ function buildTable(){
     tb.appendChild(tr);}
 }
 let dragFrom=null,selectedIdx=null;
+// Pairwise OKLab ΔE over the palette. Returns the sub-threshold pairs (sorted
+// closest-first) and each color's nearest-neighbor distance for its chip title.
+function paletteDeltas(){
+  const n=PALETTE.length,nearest=new Array(n).fill(Infinity),pairs=[];
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const d=deltaE(PALETTE[i][0],PALETTE[j][0]);
+    if(d<nearest[i])nearest[i]=d;if(d<nearest[j])nearest[j]=d;
+    if(d<DELTAE_MIN)pairs.push({i,j,d});}
+  pairs.sort((a,b)=>a.d-b.d);
+  return {pairs,nearest};
+}
+function renderPaletteWarnings(pairs){
+  const w=document.getElementById('palwarn');if(!w)return;
+  if(!pairs.length){w.style.display='none';w.innerHTML='';return;}
+  const cap=5,shown=pairs.slice(0,cap);
+  let html='<div class="pwh">too-similar colors</div>';
+  html+=shown.map(p=>`<div class="pwl">${esc(PALETTE[p.i][1]+' / '+PALETTE[p.j][1])} — \\u0394E ${p.d.toFixed(3)}, hard to distinguish</div>`).join('');
+  if(pairs.length>cap)html+=`<div class="pwl">and ${pairs.length-cap} more</div>`;
+  w.innerHTML=html;w.style.display='block';
+}
 function renderPalette(){
   const p=document.getElementById('pals');p.innerHTML='';
+  const {pairs,nearest}=paletteDeltas();
   PALETTE.forEach((pc,i)=>{const [hex,name]=pc;const tc=textOn(hex);
+    const nde=nearest[i];
     const locked=(hex===MAP['bg']||hex===MAP['p']);
     const d=document.createElement('div');d.className='pchip'+(i===selectedIdx?' sel':'');d.style.background=hex;d.draggable=true;
+    d.title=name+' '+hex+(nde===Infinity?'':' — nearest \\u0394E '+nde.toFixed(3));
     const lft=i>0?`<button class="mv l" title="move left" style="color:${tc}">&#8249;</button>`:'';
     const rgt=i<PALETTE.length-1?`<button class="mv r" title="move right" style="color:${tc}">&#8250;</button>`:'';
     const rm=locked?`<span class="lock" title="${hex===MAP['bg']?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
@@ -594,6 +621,7 @@ function renderPalette(){
     d.ondragleave=()=>d.classList.remove('over');
     d.ondrop=(e)=>{e.preventDefault();d.classList.remove('over');if(dragFrom===null||dragFrom===i)return;const m=PALETTE.splice(dragFrom,1)[0];PALETTE.splice(i,0,m);dragFrom=null;selectedIdx=null;renderPalette();buildTable();buildUITable();};
     p.appendChild(d);});
+  renderPaletteWarnings(pairs);
   buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
 }
 function notify(msg,err){const m=document.getElementById('palmsg');if(!m)return;m.textContent=msg;m.style.color=err?'#cb6b4d':'#8a9496';m.style.opacity='1';clearTimeout(m._t);m._t=setTimeout(()=>{m.style.opacity='0';},err?4000:2800);}
@@ -1119,6 +1147,17 @@ if(location.hash==='#selftest')pkgSelftest();
 if(location.hash.startsWith('#pick')){openPicker();const m=location.hash.slice(5);if(m){const b=document.querySelector('.pmode button[data-m="'+m+'"]');if(b)b.click();}}
 if(location.hash==='#cursortest'){document.getElementById('newhexstr').value='#67809c';openPicker();const sc=document.getElementById('svcur'),hc=document.getElementById('huecur');const L=parseFloat(sc.style.left||'0'),T=parseFloat(sc.style.top||'0'),H=parseFloat(hc.style.top||'0');const ok=L>1&&T>1&&H>1;document.title='CURSORTEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='cursortest';d.textContent='CURSORTEST '+(ok?'PASS':'FAIL')+' left='+sc.style.left+' top='+sc.style.top+' hue='+hc.style.top;document.body.appendChild(d);}
 if(location.hash.startsWith('#app')){const ap=location.hash.slice(4),s=document.getElementById('appsel');if(s&&ap){s.value=ap;pkgChanged();}}
+if(location.hash==='#deltatest'){const save=PALETTE.slice();let ok=true;const notes=[];const W=()=>document.getElementById('palwarn');
+ PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue'],['#69829e','blue2']];renderPalette();
+ const t1=W().textContent;if(!(W().style.display!=='none'&&/blue \\/ blue2/.test(t1)&&/ΔE/.test(t1))){ok=false;notes.push('near-pair did not fire: '+t1);}
+ PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue'],['#e8bd30','gold'],['#cb6b4d','terra']];renderPalette();
+ if(W().style.display!=='none'){ok=false;notes.push('spread palette warned: '+W().textContent);}
+ PALETTE=[['#0d0b0a','ground'],['#cdced1','fg']];for(let k=0;k<7;k++){const v=(0x67+k).toString(16).padStart(2,'0');PALETTE.push(['#'+v+'809c','c'+k]);}renderPalette();
+ const tc=W().textContent;const nums=[...tc.matchAll(/ΔE (\\d+\\.\\d+)/g)].map(m=>parseFloat(m[1]));
+ if(!/and \\d+ more/.test(tc)){ok=false;notes.push('no cap suffix: '+tc);}
+ if(!(nums.length===5&&nums.every((n,k)=>k===0||n>=nums[k-1]))){ok=false;notes.push('not 5-capped ascending: '+nums.join(','));}
+ PALETTE=save;renderPalette();
+ document.title='DELTATEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='deltatest';d.textContent='DELTATEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 if(location.hash==='#readouttest'){const hex='#67809c';document.getElementById('newhexstr').value=hex;openPicker();pkReadout(hex);
  const o=document.getElementById('pkoklch').textContent,a=document.getElementById('pkapca').textContent,w=document.getElementById('pkcon').textContent;
  const lch=oklab2oklch(srgb2oklab(hex));
