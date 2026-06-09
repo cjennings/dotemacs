@@ -46,6 +46,9 @@ The contrast readout on every item with two color selections (a fg AND a bg — 
 
 Investigation start: the two-color contrast cells are =paintUI= (UI faces, app.js ~line 740) and =buildPkgTable= (package faces, app.js ~line 430), both currently calling =contrast(effFg(fg), effBg(bg))= where =effFg(v)=v||MAP['p']= and =effBg(v)=v||MAP['bg']=. Reproduce a face that has BOTH a fg and a bg set, confirm the displayed ratio, and check whether it's actually evaluating selected-fg vs selected-bg or falling through to the ground bg. Fix so a two-color face always rates its own fg-on-bg. (Single-color contexts — the picker/palette-chip/plane checks that rate a color against the ground — are correct and out of scope.) Add a characterization gate (a #contrasttest hash gate) pinning fg-vs-bg for a two-color face.
 
+** TODO [#C] Internet radio now-playing song :feature:music:emms:
+Show the currently-playing song while streaming an internet radio station. Lives in =modules/music-config.el= (EMMS + MPV backend, M3U radio stations). The track title comes from the stream's ICY metadata — EMMS exposes it via =emms-track-description= / =emms-playing-time= and updates it on the metadata-change hook; MPV reports the ICY title too. Add an option to show the song in the minibuffer (e.g. echo on track change, or an on-demand command). Consider also a mode-line indicator as a second surface.
+
 ** TODO [#C] Evaluate jamescherti essential-emacs-packages list :packages:research:
 Review [[https://www.jamescherti.com/essential-emacs-packages/][James Cherti's essential Emacs packages]] for anything worth installing. Cross-check each candidate against what is already in the config (=modules/= + =init.el=), skip the ones already present, and shortlist the genuinely new ones with a one-line rationale. Future-installation research, not a commitment to install.
 
