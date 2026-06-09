@@ -62,6 +62,7 @@ class ColormathInlining(unittest.TestCase):
 
 class AssembledPage(unittest.TestCase):
     PLACEHOLDERS = [
+        "STYLES_CSS", "APP_JS",
         "COLORMATH_J", "SAMPLES_J", "PALETTE_J", "CATS_J",
         "UIFACES_J", "UIMAP_J", "APPS_J", "BOLD_J", "MAP_J",
     ]
@@ -74,6 +75,17 @@ class AssembledPage(unittest.TestCase):
         # Python-side inline-integrity: the same guarantee the JS test asserts, but
         # checked at the point the page is built rather than after a round-trip.
         self.assertIn(generate.COLORMATH_BODY, generate.HTML)
+
+    def test_page_carries_the_stylesheet_verbatim(self):
+        # styles.css has no placeholders, so it inlines verbatim: the inlined copy
+        # and the source file cannot drift.
+        self.assertIn(generate.STYLES, generate.HTML)
+
+    def test_page_carries_the_app_script_faithfully(self):
+        # app.js does carry placeholders, so the page holds it as fill_data renders
+        # it (APP_FILLED), not the raw file. This guards the splice: the script
+        # reaches the page intact, with its data placeholders correctly filled.
+        self.assertIn(generate.APP_FILLED, generate.HTML)
 
     def test_page_is_a_single_script_document(self):
         self.assertEqual(generate.HTML.count("<script>"), 1)
