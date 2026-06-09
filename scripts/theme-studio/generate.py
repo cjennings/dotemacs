@@ -22,6 +22,9 @@ COLORMATH_BODY=strip_exports(open(os.path.join(HERE,'colormath.js')).read())
 # (MAP_J, PALETTE_J, COLORMATH_J, ...); those are filled after it is spliced in.
 STYLES=open(os.path.join(HERE,'styles.css')).read()
 APP_BODY=open(os.path.join(HERE,'app.js')).read()
+# Pure package-model + dropdown logic, inlined into the page (and unit-tested via
+# test-app-core.mjs) the same way colormath.js is.
+APP_CORE_BODY=strip_exports(open(os.path.join(HERE,'app-core.js')).read())
 ns={}
 src=open(os.path.join(HERE,'samples.py')).read()
 exec(src[:src.index('cols=')], ns)
@@ -502,6 +505,7 @@ APP_JS</script>"""
 # the triple-quoted string used to cause is gone now that app.js is a real file.
 def fill_data(s):
     return (s.replace("COLORMATH_J",COLORMATH_BODY)
+     .replace("APP_CORE_J",APP_CORE_BODY)
      .replace("SAMPLES_J",json.dumps(SAMPLES))
      .replace("PALETTE_J",json.dumps(PALETTE)).replace("CATS_J",json.dumps(CATS))
      .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP)).replace("APPS_J",json.dumps(APPS))

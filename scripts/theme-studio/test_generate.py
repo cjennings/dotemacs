@@ -62,7 +62,7 @@ class ColormathInlining(unittest.TestCase):
 
 class AssembledPage(unittest.TestCase):
     PLACEHOLDERS = [
-        "STYLES_CSS", "APP_JS",
+        "STYLES_CSS", "APP_JS", "APP_CORE_J",
         "COLORMATH_J", "SAMPLES_J", "PALETTE_J", "CATS_J",
         "UIFACES_J", "UIMAP_J", "APPS_J", "BOLD_J", "MAP_J",
     ]
@@ -75,6 +75,11 @@ class AssembledPage(unittest.TestCase):
         # Python-side inline-integrity: the same guarantee the JS test asserts, but
         # checked at the point the page is built rather than after a round-trip.
         self.assertIn(generate.COLORMATH_BODY, generate.HTML)
+
+    def test_page_carries_the_app_core_body_verbatim(self):
+        # app-core.js inlines verbatim (no data placeholders), so the inlined copy
+        # and the unit-tested module cannot drift.
+        self.assertIn(generate.APP_CORE_BODY, generate.HTML)
 
     def test_page_carries_the_stylesheet_verbatim(self):
         # styles.css has no placeholders, so it inlines verbatim: the inlined copy

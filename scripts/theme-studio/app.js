@@ -3,16 +3,20 @@ let MAP=MAP_J, PALETTE=PALETTE_J, BOLD=BOLD_J, ITALIC=ITALIC_J, UIMAP=UIMAP_J;
 let LOCKED=new Set(LOCKS_J);   // syntax categories whose element↔color is decided (dropdown disabled, skipped by clear-unlocked)
 const DELTAE_MIN=0.02; // OKLab ΔE below this = colors too close to tell apart (perceptual-metrics spec)
 // --- tier-3 package faces: pure state helpers (Phase 1) ---
-function pname(n){if(!n)return null;if(/^#/.test(n))return n;const p=PALETTE.find(p=>p[1]===n);return p?p[0]:null;}
-function seedPkgmap(){const m={};for(const app in APPS){m[app]={};for(const row of APPS[app].faces){const face=row[0],d=row[2]||{};m[app][face]={fg:pname(d.fg),bg:pname(d.bg),bold:!!d.bold,italic:!!d.italic,underline:!!d.underline,strike:!!d.strike,inherit:d.inherit||null,height:d.height||1,source:'default'};}}return m;}
-function packagesForExport(map){const out={};for(const app in map){const faces={};for(const face in map[app]){const f=map[app][face];if(f.source==='default'||f.source==='user'||f.source==='cleared'){const o={fg:f.fg,bg:f.bg,bold:f.bold,italic:f.italic,underline:!!f.underline,strike:!!f.strike,inherit:f.inherit,source:f.source};if(f.height&&f.height!==1)o.height=f.height;faces[face]=o;}}if(Object.keys(faces).length)out[app]=faces;}return out;}
-function mergePackagesInto(map,pkgs){if(!pkgs)return;for(const app in pkgs){if(!map[app])map[app]={};for(const face in pkgs[app]){const f=pkgs[app][face]||{};map[app][face]={fg:f.fg??null,bg:f.bg??null,bold:!!f.bold,italic:!!f.italic,underline:!!f.underline,strike:!!f.strike,inherit:f.inherit??null,height:f.height||1,source:f.source||'user'};}}}
+// Thin wrappers over the pure logic in app-core.js (inlined further down),
+// passing the live module state. packagesForExport / mergePackagesInto live in
+// the core verbatim and are used by name.
+function pname(n){return nameToHex(n,PALETTE);}
+function seedPkgmap(){return buildPkgmap(APPS,PALETTE);}
 let PKGMAP=seedPkgmap();
 function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 // Pure color-math core (lin/rl/contrast/rating/hsv2rgb/rgb2hsv/hex2rgb/rgb2hex,
 // plus OKLab/OKLCH/APCA/deltaE), inlined verbatim from colormath.js. normHex,
 // textOn, and ratingColor stay below as UI-boundary helpers.
 COLORMATH_J
+// Pure package-model + dropdown logic, inlined verbatim from app-core.js. The
+// wrappers above (pname/seedPkgmap/ddList/pkgEffFg/pkgEffBg) delegate here.
+APP_CORE_J
 function textOn(h){const L=rl(h);return ((L+0.05)/0.05)>(1.05/(L+0.05))?'#000':'#fff';}
 function ratingColor(r){return r>=7?'#5d9b86':r>=4.5?'#a9b2bb':'#cb6b4d';}
 // The contrast-cell readout shared by every table: a WCAG ratio colored by its
@@ -65,8 +69,7 @@ function mkColorDropdown(options,cur,onPick){
 // Standard option list for a swatch dropdown: a "default" entry, then the
 // palette. If cur is set but no longer in the palette, surface it as a "(gone)"
 // entry so the row still shows what it points at. Shared by all three tiers.
-function ddList(cur){const have=cur===''||PALETTE.some(p=>p[0]===cur);
-  return [['','— default —'],...(have?PALETTE:[[cur,'(gone) '+cur],...PALETTE])];}
+function ddList(cur){return optList(cur,PALETTE);}
 // Shared lock toggle for any table row. lockKey is namespaced per tier (bare
 // syntax kind, 'ui:'+face, 'pkg:'+app+':'+face). els are the row's editable
 // controls — native selects/buttons/inputs are disabled; the custom swatch
@@ -363,8 +366,8 @@ function uiSelect(face,attr){const cur=UIMAP[face][attr]||'';
 const BASE_INHERITS=['fixed-pitch','variable-pitch','default','link','bold','italic','shadow'];
 function seedFace(d){return {fg:pname(d.fg),bg:pname(d.bg),bold:!!d.bold,italic:!!d.italic,underline:!!d.underline,strike:!!d.strike,inherit:d.inherit||null,height:d.height||1,source:'default'};}
 function curApp(){const s=document.getElementById('appsel');return s&&s.value?s.value:Object.keys(APPS)[0];}
-function pkgEffFg(app,face,seen){seen=seen||{};const f=PKGMAP[app]&&PKGMAP[app][face];if(!f||seen[face])return null;seen[face]=1;if(f.fg)return f.fg;if(f.inherit&&PKGMAP[app][f.inherit])return pkgEffFg(app,f.inherit,seen);return null;}
-function pkgEffBg(app,face,seen){seen=seen||{};const f=PKGMAP[app]&&PKGMAP[app][face];if(!f||seen[face])return null;seen[face]=1;if(f.bg)return f.bg;if(f.inherit&&PKGMAP[app][f.inherit])return pkgEffBg(app,f.inherit,seen);return null;}
+function pkgEffFg(app,face,seen){return effResolve(PKGMAP,app,face,'fg',seen);}
+function pkgEffBg(app,face,seen){return effResolve(PKGMAP,app,face,'bg',seen);}
 function buildAppSel(){const s=document.getElementById('appsel');if(!s)return;s.innerHTML='';for(const app in APPS){const o=document.createElement('option');o.value=app;o.textContent=APPS[app].label;s.appendChild(o);}s.onchange=pkgChanged;}
 function pkgChanged(){buildPkgTable();buildPkgPreview();syncPkgHeight();}
 function buildPkgTable(){
