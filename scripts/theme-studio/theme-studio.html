@@ -1094,6 +1094,35 @@ function pkgSelftest(){
   const d=document.createElement('div');d.id='selftest';d.textContent='SELFTEST '+verdict+' roundtrip='+roundtrip+' oldjson='+oldjson+' inherit='+inherited+' height='+height+' cleared='+cleared+' unknown='+unknown+' cycle='+cyc;document.body.appendChild(d);
 }
 if(location.hash==='#selftest')pkgSelftest();
+// Lock-mechanism gate (open with #locktest): two behaviors the refactor must
+// preserve, across all three tiers. (1) Locking a row disables its control via
+// the shared mkLockCell — syntax uses a swatch div (data-locked), UI a native
+// select (.disabled). (2) clear-unlocked wipes unlocked rows to default but
+// leaves locked rows (syntax bare-kind, ui:, pkg: keys) untouched.
+if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ LOCKED.clear();buildTable();
+ {const k=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p')[0];
+  const tr=document.querySelector('#legbody tr[data-kind="'+k+'"]'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
+  A(dd.dataset.locked!=='1','syntax-dd-starts-unlocked');lb.click();
+  A(dd.dataset.locked==='1'&&dd.classList.contains('locked'),'syntax-lock-disables-dd');lb.click();
+  A(dd.dataset.locked!=='1','syntax-unlock-reenables-dd');}
+ LOCKED.clear();buildUITable();
+ {const f=UI_FACES[0][0];
+  const tr=document.querySelector('#uibody tr[data-face="'+f+'"]'),sel=tr.querySelector('select'),lb=tr.querySelector('.lockbtn');
+  A(sel.disabled===false,'ui-sel-starts-enabled');lb.click();
+  A(sel.disabled===true,'ui-lock-disables-sel');lb.click();
+  A(sel.disabled===false,'ui-unlock-reenables-sel');}
+ {const ks=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p'),k1=ks[0],k2=ks[1];
+  MAP[k1]='#111111';MAP[k2]='#222222';LOCKED.clear();LOCKED.add(k1);clearUnlocked();
+  A(MAP[k1]==='#111111','syntax-clear-keeps-locked');A(MAP[k2]==='','syntax-clear-wipes-unlocked');}
+ {const f1=UI_FACES[0][0],f2=UI_FACES[1][0];
+  UIMAP[f1].fg='#111111';UIMAP[f2].fg='#222222';LOCKED.clear();LOCKED.add('ui:'+f1);clearUnlockedUI();
+  A(UIMAP[f1].fg==='#111111','ui-clear-keeps-locked');A(UIMAP[f2].fg===null,'ui-clear-wipes-unlocked');}
+ {const app=curApp(),pf=APPS[app].faces.map(r=>r[0]),p1=pf[0],p2=pf[1];
+  PKGMAP[app][p1].fg='#111111';PKGMAP[app][p2].fg='#222222';LOCKED.clear();LOCKED.add('pkg:'+app+':'+p1);clearUnlockedPkg();
+  A(PKGMAP[app][p1].fg==='#111111','pkg-clear-keeps-locked');A(PKGMAP[app][p2].fg===null,'pkg-clear-wipes-unlocked');}
+ document.title='LOCKTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='locktest';d.textContent='LOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 if(location.hash.startsWith('#pick')){openPicker();const m=location.hash.slice(5);if(m){const b=document.querySelector('.pmode button[data-m="'+m+'"]');if(b)b.click();}}
 if(location.hash==='#cursortest'){document.getElementById('newhexstr').value='#67809c';openPicker();const sc=document.getElementById('svcur'),hc=document.getElementById('huecur');const L=parseFloat(sc.style.left||'0'),T=parseFloat(sc.style.top||'0'),H=parseFloat(hc.style.top||'0');const ok=L>1&&T>1&&H>1;document.title='CURSORTEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='cursortest';d.textContent='CURSORTEST '+(ok?'PASS':'FAIL')+' left='+sc.style.left+' top='+sc.style.top+' hue='+hc.style.top;document.body.appendChild(d);}
 if(location.hash.startsWith('#app')){const ap=location.hash.slice(4),s=document.getElementById('appsel');if(s&&ap){s.value=ap;pkgChanged();}}
