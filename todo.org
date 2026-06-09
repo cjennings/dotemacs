@@ -73,7 +73,22 @@ Two features it enables (both worth building):
 
 Open design problem to address in the explainer + the ramp feature: a background-over-text effect (highlight/region/isearch/hl-line) must stay readable for EVERY foreground that can appear on it — i.e. the worst-case (lowest) contrast across the whole set of element fg colors, not a single pair. The usable background lightness is therefore capped by the darkest/closest fg in that set.
 
-The v1 feature (ramp generation + background-contrast safety, with the worst-case-floor UX) is designed in [[file:docs/theme-studio-palette-ramps-spec.org][docs/theme-studio-palette-ramps-spec.org]]. Codex review incorporated 2026-06-09: both open decisions resolved (WCAG AA default target; v1 foreground set = distinct syntax hexes + default fg), v1 covered faces closed to region/hl-line/highlight/lazy-highlight/isearch, ramp defaults + function contracts pinned. Spec is implementation-ready pending Craig's go; build tasks (6 phases) get created then, per spec-response Phase 6. Harmonic fill (feature 2) stays vNext. This task is the explainer doc itself (=docs/design/theme-studio-color-harmony.org=, the methodology).
+The v1 feature (ramp generation + background-contrast safety, with the worst-case-floor UX) is designed in [[file:docs/theme-studio-palette-ramps-spec.org][docs/theme-studio-palette-ramps-spec.org]]. Codex review incorporated 2026-06-09: both open decisions resolved (WCAG AA default target; v1 foreground set = distinct syntax hexes + default fg), v1 covered faces closed to region/hl-line/highlight/lazy-highlight/isearch, ramp defaults + function contracts pinned. Spec is Ready (Craig confirmed 2026-06-09); the v1 build is tracked under the sibling parent below. Harmonic fill (feature 2) stays vNext. This task is the explainer doc itself (=docs/design/theme-studio-color-harmony.org=, the methodology).
+
+** TODO [#B] theme-studio palette ramps + contrast safety v1 :feature:theme-studio:
+The v1 build from [[file:docs/theme-studio-palette-ramps-spec.org][theme-studio-palette-ramps-spec.org]] (Ready, Codex-reviewed). Two coupled features: a ramp generator (one base color → harmonized tonal ramp) and background-contrast safety (worst-case floor over a face's foreground set + safe-lightness guidance). Phases land in spec order, each leaving the tree green and =make theme-studio-test= passing. Aesthetic and real-Emacs-fidelity sign-off lives under the Manual testing parent below.
+*** TODO [#B] Ramp generator core :solo:
+Phase 1. =ramp(baseHex, {n, stepL, chromaEase})= in app-core.js → ={steps: [{hex, clamped}], error?}=. Holds hue, steps OKLCH-L by =stepL=, eases chroma toward the extremes, gamut-clamps each step. Defaults n=2, stepL=0.08, chromaEase=0.5; clamp out-of-range knobs with a flag; malformed =baseHex= → ={steps: [], error: 'bad-hex'}= (not thrown). Node tests: Normal (mid base), Boundary (near-white/near-black base, n at 1 and 4), Error (bad hex, out-of-range knobs). No UI. Verify: =make theme-studio-test= green.
+*** TODO [#B] Ramp UI in palette :solo:
+Phase 2. Base swatch → preview ramp row (darkest→lightest, base marked, clamp badge per step) → add selected steps as named palette entries. Names derive from source swatch (=blue= → =blue+1=/=blue-1=); base preview-only by default; steps insert adjacent to source in =-n..+n= order. Collisions never silent: name collision flags + forces rename, hex collision flags as duplicate but allows add. Add a #ramptest hash-gate pinning generation + insertion + collision behavior. Depends on Phase 1. Verify: hash-gate green + headless screenshot read.
+*** TODO [#B] Foreground-set + floor + L_max core :solo:
+Phase 3. In app-core.js, all pure, explicit-state, structured errors: =fgSetFor(face, {syntaxAssignments, palette, defaultFg, locks})= → ={set, error?}= (distinct syntax hexes + default fg, locked bg-only roles excluded; out-of-scope face → reason 'out-of-scope'; no assignments → reason 'empty'); =floor(bgHex, fgSet)= → ={ratio, limitingHex, limitingLabel}= (min WCAG over set, argmin, role/palette/hex label; empty set → ratio null); =lMax(hue, chroma, fgSet, target)= → ={L, status}= binary-searching L at tol 0.001, status ok/none/all/clamp. Node tests including the keyword-blue #67809c worst-case fixture, and lMax's none/all/clamp branches. Verify: =make theme-studio-test= green.
+*** TODO [#B] Worst-case contrast readout :solo:
+Phase 4. For the five v1 covered faces (region, hl-line, highlight, lazy-highlight, isearch), the contrast cell shows floor + limiting foreground instead of a single pair. Readout string =worst: <limitingLabel> <limitingHex> — <ratio> <PASS|FAIL>=; no-set string exactly =no fg set=. Default target WCAG AA (4.5), AAA (7) selectable; APCA shown as a diagnostic only. Package and non-overlay UI cells stay single-pair. Add a #contrasttest hash-gate asserting fields (not punctuation) over the keyword-blue fixture and the no-set string. Depends on Phase 3. Verify: hash-gate green.
+*** TODO [#B] Safe-lightness picker guidance :solo:
+Phase 5. When a covered face is open in OKLCH mode, mark L_max on the lightness slider and shade the unsafe band above it — a single marker + one-band shade computed once per =(hue, chroma, fgSet, target)= via =lMax=, not a per-pixel foreground-set mask (the existing per-pixel AA/AAA mask stays single-foreground). Add a hash-gate that the marker appears for an in-scope face and is absent for an out-of-scope one. Depends on Phase 3 + the picker. Verify: hash-gate green + headless screenshot read.
+*** TODO [#B] README + test-surface close-out :solo:
+Update =scripts/theme-studio/README.md=: what a ramp is, the ramp controls and their defaults, what worst-case floor / limiting foreground mean, the five v1 covered faces, and that WCAG drives PASS/FAIL with APCA shown as a diagnostic. Confirm =make theme-studio-test= carries the new node tests and the #ramptest / #contrasttest / safe-lightness gates. Closes the README and unit-test/browser-gate acceptance criteria.
 
 ** TODO [#C] Internet radio now-playing song :feature:music:emms:
 Show the currently-playing song while streaming an internet radio station. Lives in =modules/music-config.el= (EMMS + MPV backend, M3U radio stations). The track title comes from the stream's ICY metadata — EMMS exposes it via =emms-track-description= / =emms-playing-time= and updates it on the metadata-change hook; MPV reports the ICY title too. Add an option to show the song in the minibuffer (e.g. echo on track change, or an on-demand command). Consider also a mode-line indicator as a second surface.
@@ -199,6 +214,24 @@ What we're verifying: the OKLCH sliders / C×L plane edit cleanly and clamping i
 - Switch the picker to OKLCH mode and drag L, then C, then H
 - Push chroma past the sRGB gamut, then toggle the AA/AAA mask
 Expected: each axis moves independently; the C×L plane (once 4b lands) opens on the current color; "chroma clamped to sRGB" shows on clamp; toggling the mask does not reset OKLCH mode.
+*** TODO Generated ramp harmonizes
+What we're verifying: a ramp generated from a base color reads as one family, not a grab-bag (the aesthetic the math is meant to produce).
+- Open =scripts/theme-studio/theme-studio.html= in Chrome
+- Pick a mid-lightness base swatch (e.g. a blue) and generate its ramp at the defaults
+- Read the row of steps left to right, then try a near-black and a near-white base
+Expected: the steps share an obvious hue and step evenly in lightness; the chroma-ease keeps the extreme steps from going muddy or garish; nothing looks like it belongs to a different color.
+*** TODO Safe-lightness guidance reads clearly
+What we're verifying: the L_max marker and unsafe-band shade are legible and land in the right place when editing a covered face.
+- Open the picker in OKLCH mode on region (or hl-line), with syntax colors assigned
+- Read the L_max marker and the shaded unsafe band on the lightness slider
+- Drag lightness up toward and past the marker
+Expected: the marker is visible and correctly placed, the band above it reads as "unsafe," and crossing it is obvious; an out-of-scope face shows no marker.
+*** TODO Safe tint actually reads in real Emacs
+What we're verifying: a background tint the tool calls safe really keeps every token readable behind real syntax-colored text — the whole point of the worst-case floor.
+- In the tool, set a covered face (e.g. region) to a tint at or just below its L_max with the worst-case readout showing PASS
+- Build the theme and load it in Emacs, open a code buffer with varied syntax, and select a region spanning many token colors
+- Read every token through the region highlight, paying attention to the limiting foreground the tool named
+Expected: every token stays readable over the tint, including the limiting one; a tint pushed just past L_max (readout FAIL) shows a visibly strained or unreadable token, confirming the floor matches reality.
 ** TODO [#B] theme-studio guide-support features :feature:theme-studio:
 From the color-assignment guide work (2026-06-08): make the tool support the guide without mandating it — everything a seed, an advisory, or a view, never a gate. Two specs to write, both deriving from the rewritten guide and its seed table ([[file:scripts/theme-studio/theme-coloring-guide.org][theme-coloring-guide.org]]).
 *** 2026-06-08 Mon @ 19:08:00 -0500 Seeding-engine spec written and Ready
