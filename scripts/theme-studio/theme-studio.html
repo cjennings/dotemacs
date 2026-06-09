@@ -380,6 +380,9 @@ function paletteWarnings(palette, threshold = 0.02, cap = 5) {
 }
 function textOn(h){const L=rl(h);return ((L+0.05)/0.05)>(1.05/(L+0.05))?'#000':'#fff';}
 function ratingColor(r){return r>=7?'#5d9b86':r>=4.5?'#a9b2bb':'#cb6b4d';}
+// The contrast-cell readout shared by every table: a WCAG ratio colored by its
+// AA/AAA rating, with the rating word. Callers compute r for their own fg/bg.
+function crHtml(r){return `<span style="color:${ratingColor(r)}">${r.toFixed(1)}  ${rating(r)}</span>`;}
 function cid(l){return l.replace(/\W/g,'');}
 function buildLangSel(){const s=document.getElementById('langsel');s.innerHTML='';for(const lang in SAMPLES){const o=document.createElement('option');o.value=lang;o.textContent=lang;s.appendChild(o);}}
 function renderCode(){
@@ -438,6 +441,15 @@ function mkLockCell(lockKey,els){
       else{el.dataset.locked=on?'1':'';el.classList.toggle('locked',on);}});}
   lk.onclick=()=>{LOCKED.has(lockKey)?LOCKED.delete(lockKey):LOCKED.add(lockKey);paint();};
   paint();td.appendChild(lk);return td;}
+// B/I/U/S style buttons shared by the UI and package tables. isOn(attr) reads the
+// current state of an attribute, onToggle(attr) flips it and repaints. Returns
+// the button list so the caller appends them and hands them to mkLockCell.
+function mkStyleButtons(isOn,onToggle){
+  return ['bold','italic','underline','strike'].map(at=>{
+    const b=document.createElement('button');b.className='sbtn'+(isOn(at)?' on':'');b.textContent='a';
+    b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';
+    b.style.textDecoration=at==='underline'?'underline':at==='strike'?'line-through':'none';b.title=at;
+    b.onclick=()=>onToggle(at);return b;});}
 // Reset every unlocked syntax category to default (unset -> reads as plain
 // foreground text). Locked rows, plus bg and the default fg, are left alone.
 function clearUnlocked(){
@@ -463,7 +475,7 @@ function buildTable(){
     const exTd=document.createElement('td');exTd.className='ex';exTd.textContent=ex;
     const crTd=document.createElement('td');crTd.style.whiteSpace='nowrap';crTd.style.fontSize='10pt';
     function styleEx(){exTd.style.color=(kind==='bg'?MAP['p']:(MAP[kind]||MAP['p']));exTd.style.background=MAP['bg'];exTd.style.fontWeight=BOLD[kind]?'bold':'normal';exTd.style.fontStyle=ITALIC[kind]?'italic':'normal';}
-    function styleCr(){const r=contrast((kind==='bg'?MAP['p']:(MAP[kind]||MAP['p'])),MAP['bg']);crTd.innerHTML=`<span style="color:${ratingColor(r)}">${r.toFixed(1)}  ${rating(r)}</span>`;}
+    function styleCr(){const r=contrast((kind==='bg'?MAP['p']:(MAP[kind]||MAP['p'])),MAP['bg']);crTd.innerHTML=crHtml(r);}
     const dd=mkColorDropdown(list,cur,(hex)=>{MAP[kind]=hex;styleEx();styleCr();renderCode();if(kind==='bg'){applyGround();buildTable();}});
     styleEx();styleCr();
     const lkTd=mkLockCell(kind,[dd]);
@@ -725,11 +737,12 @@ function buildPkgTable(){
           bgd=mkColorDropdown(ddList(f.bg||''),f.bg||'',h=>{f.bg=h||null;f.source='user';pkgChanged();});
     const cf=document.createElement('td');cf.appendChild(fgd);
     const cb=document.createElement('td');cb.appendChild(bgd);
-    const pkBtns=[];
-    const cw=document.createElement('td');[['B','bold'],['I','italic'],['U','underline'],['S','strike']].forEach(([ch,at])=>{const b=document.createElement('button');b.className='sbtn'+(f[at]?' on':'');b.textContent='a';b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';b.style.textDecoration=at==='underline'?'underline':at==='strike'?'line-through':'none';b.title=at;b.onclick=()=>{f[at]=!f[at];f.source='user';pkgChanged();};cw.appendChild(b);pkBtns.push(b);});
+    const cw=document.createElement('td');
+    const pkBtns=mkStyleButtons(at=>f[at],at=>{f[at]=!f[at];f.source='user';pkgChanged();});
+    pkBtns.forEach(b=>cw.appendChild(b));
     const ci=document.createElement('td');const isel=document.createElement('select');isel.className='chip';isel.style.cssText='width:150px;font:10pt monospace';inh.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});isel.value=f.inherit||'';isel.onchange=()=>{f.inherit=isel.value||null;f.source='user';pkgChanged();};ci.appendChild(isel);
     const ch=document.createElement('td');const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.value=f.height||1;hin.className='hstep';hin.onchange=()=>{f.height=parseFloat(hin.value)||1;f.source='user';pkgChanged();};ch.appendChild(hin);
-    const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face)||MAP['bg'],r=contrast(efg,ebg);cc.innerHTML=`<span style="color:${ratingColor(r)}">${r.toFixed(1)}  ${rating(r)}</span>`;
+    const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=pkgEffFg(app,face)||MAP['p'],ebg=pkgEffBg(app,face)||MAP['bg'],r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
     const cr=document.createElement('td');const rb=document.createElement('button');rb.className='sbtn';rb.textContent='↺';rb.title='reset to default';rb.onclick=()=>{PKGMAP[app][face]=seedFace(def);pkgChanged();};cr.appendChild(rb);
     const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkBtns,isel,hin,rb]);
     tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cr);tb.appendChild(tr);
@@ -1038,7 +1051,7 @@ function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgprev
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=o.fg||MAP['p'];pv.style.background=o.bg||MAP['bg'];pv.style.fontWeight=o.bold?'bold':'normal';pv.style.fontStyle=o.italic?'italic':'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';
-  const cr=document.getElementById('uicr-'+face);if(cr){const efg=o.fg||MAP['p'],ebg=o.bg||MAP['bg'],r=contrast(efg,ebg);cr.innerHTML=`<span style="color:${ratingColor(r)}">${r.toFixed(1)}  ${rating(r)}</span>`;}}
+  const cr=document.getElementById('uicr-'+face);if(cr){const efg=o.fg||MAP['p'],ebg=o.bg||MAP['bg'],r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}
 function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
@@ -1047,8 +1060,9 @@ function buildUITable(){
     const fgSel=uiSelect(face,'fg'),bgSel=uiSelect(face,'bg');
     const cF=document.createElement('td');cF.appendChild(fgSel);
     const cB=document.createElement('td');cB.appendChild(bgSel);
-    const stBtns=[];
-    const cS=document.createElement('td');[['B','bold'],['I','italic'],['U','underline'],['S','strike']].forEach(([ch,at])=>{const b=document.createElement('button');b.className='sbtn'+(UIMAP[face][at]?' on':'');b.textContent='a';b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';b.style.textDecoration=at==='underline'?'underline':at==='strike'?'line-through':'none';b.title=at;b.onclick=()=>{UIMAP[face][at]=!UIMAP[face][at];paintUI(face);buildMockFrame();};cS.appendChild(b);stBtns.push(b);});
+    const cS=document.createElement('td');
+    const stBtns=mkStyleButtons(at=>UIMAP[face][at],at=>{UIMAP[face][at]=!UIMAP[face][at];paintUI(face);buildMockFrame();});
+    stBtns.forEach(b=>cS.appendChild(b));
     const cC=document.createElement('td');cC.id='uicr-'+face;cC.style.whiteSpace='nowrap';cC.style.fontSize='10pt';
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
     const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stBtns]);
