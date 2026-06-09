@@ -503,6 +503,9 @@ APP_JS</script>"""
 # Fill the data placeholders. str.replace is literal (no backref interpretation),
 # so backslashes in the inlined JS survive intact — the escaping-bug class that
 # the triple-quoted string used to cause is gone now that app.js is a real file.
+# Caveat: these tokens are replaced everywhere they appear, including inside code
+# comments. Don't write a placeholder name (COLORMATH_J, APP_CORE_J, ...) in
+# prose in any inlined file, or that prose gets the body spliced into it too.
 def fill_data(s):
     return (s.replace("COLORMATH_J",COLORMATH_BODY)
      .replace("APP_CORE_J",APP_CORE_BODY)
