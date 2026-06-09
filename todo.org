@@ -176,6 +176,24 @@ Phase 1. Palette anchors + OKLCH shade generation (reusing colormath.js), the RO
 Phase 2. Initial state from seed() plus seedPkgmap for the non-org packages; all-tier reseed button with a scope-named overwrite warning, resetting non-org to their APPS defaults; regenerate dupre-revised.json. Gate: #selftest PASS; default-on-open equals seed(); artifact round-trip (regenerated dupre-revised.json imports back to the same seeded state); Chrome eyeball.
 *** TODO Seeding-engine test surface :solo:tests:
 Keep #seedtest, #selftest, the default-on-open check, the dupre-revised round-trip, node --check, and Chrome validation green.
+** TODO [#B] theme-studio refactor — extract app from generate.py :feature:theme-studio:refactor:
+Examined 2026-06-09. generate.py is 1378 lines, ~1300 of them a single triple-quoted string holding the whole app (CSS + HTML + ~1000+ lines of JS). That string is the root of every refactor here: the app logic can't be unit-tested (only =colormath.js= is, because it is the one extracted module); backslash-doubling in the string caused real bugs this session (the multi-line export strip, the =#deltatest= regex); and there is no lint, highlight, or brace-check until Chrome runs it. The rest of the directory is healthy: =colormath.js= (pure, 100/96 tested) and =build-theme.el= (13 small functions) are the model.
+
+Run the whole set in NO-APPROVALS mode: TDD per stage (characterization hash tests before each behavior-preserving move; node unit tests as extraction makes logic importable), commit + push at each green stage. Tooling committed at c7518d6f before starting. Order:
+*** TODO Stage 1 — characterization net + extract CSS and JS to files :solo:tests:
+First add hash tests pinning the behaviors the move must preserve: =#locktest= (locking a row disables its dropdown; clear-unlocked resets unlocked + skips locked, per tier) plus any gap the existing gates miss. Then move the =<style>= block to =styles.css= and the =<script>= body to =app.js= (or split: state / dropdowns / tables / picker / io), and have =generate.py= inline them exactly as it already inlines =colormath.js= (strip + placeholder + inline-integrity). =generate.py= shrinks to a templating shell. Gate: every hash gate + integrity check green; =node --check= each new .js; =make theme-studio-test= green. The keystone — unlocks unit-testing the app and kills the escaping-bug class.
+*** TODO Stage 2 — unify the color dropdowns :solo:
+Delete native =colorDropdown= (UI + package tables, the unreliable-swatch one); route those through =mkColorDropdown= so all three tiers use the swatch dropdown. Gate: hash gates green; UI/pkg show swatches.
+*** TODO Stage 3 — extract shared row/cell helpers :solo:
+Three table builders duplicate scaffolding: the B/I/U/S style-button loop (3x), the contrast→ratingColor→rating cell (5x), the name/lock/color row pattern. Extract =mkStyleButtons=, =mkContrastCell=, a row scaffold (=mkLockCell= is the model). Node-unit-test the pure pieces. Gate: tables identical; hash gates green.
+*** TODO Stage 4 — unify the two sort systems :solo:
+=srt= (syntax) and =srtTable=/=cellVal=/=applyTableSort= (UI/pkg) collapse into one table sort all three use. Gate: each column sorts on each table; hash gates green.
+*** TODO Stage 5 — parameterize clear-unlocked + effFg helper :solo:
+Three near-identical clear-unlocked functions → one parameterized over (collection, lock-key, reset). The =MAP[kind]||MAP['p']= effective-fg fallback appears 9x → one =effFg=/=effBg= helper. Node-unit-test both. Gate: clear-unlocked works per tier; hash gates green.
+*** TODO Stage 6 — (optional) namespace state + data-file the bespoke faces :solo:
+Group free module-level state (MAP/PALETTE/BOLD/ITALIC/UIMAP/PKGMAP/LOCKED/pkMode/pkModel) into a state object; consider moving the large inline org/magit/elfeed face dicts to json data files like =package-inventory.json=. Lower priority; works today.
+*** TODO Stage 7 — test surface :solo:tests:
+After extraction, add node unit tests for the now-importable app logic (the coverage payoff): dropdown value/format, lock + clear, row builders, sort, effFg. Keep all hash gates + node tests + python templating tests green via =make theme-studio-test=.
 ** TODO [#C] theme-studio terminal/ANSI colors :feature:theme-studio:
 theme-studio represents GUI faces only; terminal colors aren't surfaced at all. Scope decided 2026-06-09: GUI-first faces, NOT full per-face display-class fallback. Two pieces:
 
