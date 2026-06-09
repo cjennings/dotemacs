@@ -3,9 +3,9 @@
 #+DATE: 2026-06-09
 
 * Metadata
-| Status   | draft                                                                 |
+| Status   | draft — review incorporated (Codex, 2026-06-09)                       |
 | Owner    | Craig                                                                 |
-| Reviewer | (unassigned)                                                          |
+| Reviewer | Codex                                                                |
 | Related  | [[file:../todo.org][todo.org: theme-studio color-harmony explainer + ramp/fill features]] |
 
 * Summary
@@ -45,7 +45,54 @@ The two features share OKLCH (perceptually uniform, so lightness / chroma / hue 
 
 The two altitudes:
 - *For the designer:* pick a base swatch, see its ramp, add the steps you want. When editing a background-effect face, the contrast cell shows the worst case — "worst: keyword #67809c — 3.3 FAIL" — not a misleading single pair, and OKLCH mode marks the safe-lightness ceiling so you can't unknowingly cross it.
-- *For the implementer:* =ramp(baseHex, {n, stepL, chromaEase})= → =[hex]=; =fgSetFor(face, state)= → =[hex]=; =floor(bgHex, fgSet)= → ={ratio, limitingHex}=; =lMax(hue, chroma, fgSet, target)= → =L=. All pure, all in app-core.js / colormath.js, all unit-tested.
+- *For the implementer:* =ramp(baseHex, {n, stepL, chromaEase})= → =[hex]=; =fgSetFor(face, state)= → =[hex]=; =floor(bgHex, fgSet)= → ={ratio, limitingHex}=; =lMax(hue, chroma, fgSet, target)= → =L=. All pure, all in app-core.js / colormath.js, all unit-tested. Function contracts (inputs, outputs, validation, edge cases) are pinned below.
+
+* v1 covered faces
+
+v1 computes a worst-case floor for a *closed, enumerated* set of code-overlay faces — backgrounds the live buffer renders syntax-colored text over:
+
+- =region=
+- =hl-line=
+- =highlight=
+- =lazy-highlight=
+- =isearch=
+
+That set is exhaustive for v1. Other overlay faces (=secondary-selection=, =isearch-fail=, and any future built-in) are vNext, added explicitly rather than matched by a heuristic. The deliberately closed list is what makes the contract testable: an open "any face the buffer renders as text-over-syntax" rule would hand the implementer the same invent-the-behavior problem the foreground-set decision exists to close.
+
+Everything outside this set keeps its existing single-pair contrast cell:
+
+- *Package contrast cells* stay single-pair in v1. Package faces own their foregrounds through inheritance, which needs a per-preview foreground-set model that doesn't exist yet (vNext).
+- *Non-overlay UI rows* (mode-line, fringe, and the rest) stay single-pair — their foreground set isn't a syntax palette.
+
+A covered face whose foreground set resolves empty (no syntax assignments yet) shows the no-set readout (below), not a bogus ratio.
+
+* Ramp defaults and palette insertion
+
+*Generation defaults* (all exposed as controls, these are the starting values):
+- =n= (steps each direction): default =2= → base plus +1,+2,-1,-2. Safe range 1-4.
+- =stepL= (OKLCH-L delta per step): default =0.08=. Safe range 0.04-0.12.
+- =chromaEase= (fraction of chroma removed at the farthest step, eased toward the extremes): default =0.5=. Range 0-1; 0 holds chroma flat, 1 fully desaturates the last step.
+
+*Preview and insertion:*
+- The ramp previews as a row ordered darkest → lightest (=-n .. base .. +n=), the base marked.
+- Each generated swatch shows a clamp badge when =oklch2hex= reports =clamped= true, so the designer sees an out-of-gamut step before adding it.
+- The base is preview-only by default (it's the source swatch, already in the palette); the designer may opt to add it.
+- Selected steps insert adjacent to the source swatch, in =-n .. +n= order.
+
+*Naming:* step names derive from the source swatch name — base =blue= → =blue+1=, =blue+2=, =blue-1=, =blue-2=. If the source swatch is unnamed, names fall back to a hex-based label the designer can edit before add.
+
+*Collisions — never silent:*
+- *Name collision* (=blue+1= already exists): the row is flagged and the designer renames before add; no overwrite.
+- *Hex collision* (the generated hex already exists under another name): flagged as a duplicate, add still allowed (two names for one hex is legal in the palette).
+
+* Function contracts
+
+All four are pure, live in app-core.js (or colormath.js for the color math), take explicit state — never read globals — and validate user input by *returning a structured result*, not throwing. Throwing is reserved for genuine programmer error (wrong argument arity/type), not for malformed user-entered values.
+
+- =ramp(baseHex, {n, stepL, chromaEase})= → ={steps: [{hex, clamped}], error?}=. Validates: malformed =baseHex= (not a parseable hex — can't be clamped) → ={steps: [], error: 'bad-hex'}=; =n= outside 1-4 or non-integer → clamped into range with a flag; =stepL=/=chromaEase= outside range → clamped with a flag. Holds hue, steps OKLCH-L by =stepL=, eases chroma toward the extremes, gamut-clamps every step and reports per-step =clamped=.
+- =fgSetFor(face, state)= → ={set: [hex], error?}=, where =state= is explicit slices ={syntaxAssignments, palette, defaultFg, locks}=. Returns the distinct syntax-assignment hexes plus =defaultFg=, excluding locked background-only roles. A face outside the v1 covered set → ={set: [], reason: 'out-of-scope'}=. No syntax assignments → ={set: [], reason: 'empty'}=.
+- =floor(bgHex, fgSet)= → ={ratio, limitingHex, limitingLabel}=. =ratio= is the minimum WCAG contrast over =fgSet= against =bgHex=; =limitingHex= is the argmin; =limitingLabel= is its role/palette/hex name. Empty =fgSet= → ={ratio: null, limitingHex: null}= (caller shows the no-set readout).
+- =lMax(hue, chroma, fgSet, target)= → ={L, status}=. Binary-searches OKLCH-L (tolerance 0.001) for the lightest background at =hue=/=chroma= whose =floor= still clears =target=. =status= is =ok= (an L found), =none= (no L satisfies the target — every background fails), =all= (every L satisfies it — no ceiling needed), or =clamp= (the chroma clamps before the target is reached; returns the L at the clamp boundary).
 
 * Alternatives Considered
 
@@ -88,19 +135,18 @@ The two altitudes:
 - Decision: We will compute the floor over a face's foreground set and surface the floor + limiting foreground.
 - Consequences: easier — the real constraint is visible; harder — we must define each face's foreground set.
 
-** v1 foreground set for code-context faces = syntax tokens + default fg
-- State: proposed
-- Owner / by-when: Craig / before Phase 2 implementation
-- Context: the exact face→context mapping is fuzzy; code-effect faces clearly carry the syntax palette.
-- Decision: We will scope v1 to code-context faces, using the syntax token colors plus the default foreground as the set.
-- Consequences: easier — covers the high-value effects; harder — UI/package overlays need a later mapping.
+** v1 foreground set for code-overlay faces = syntax tokens + default fg
+- State: accepted
+- Context: the exact face→context mapping is fuzzy; code-overlay faces clearly carry the syntax palette. The reviewer flagged that an open ("proposed") contract forces the Phase 3 implementer to invent what counts as foreground text.
+- Decision: We will scope v1 to the closed code-overlay face set (see "v1 covered faces"), and define the foreground set as the distinct hexes of the syntax-assignment colors plus the default foreground (=fg=). Duplicate hexes collapse to one entry. Locked structural colors (=bg= and any palette entry flagged as a background-only role) are excluded from the set. The limiting foreground is labeled by its syntax role name when one exists, else its palette name, else its hex.
+- Consequences: easier — a pinned, enumerable contract the implementer and tests can rely on; harder — UI/package overlays need a later per-preview foreground-set model (vNext).
 
-** Contrast target for the floor
-- State: proposed
-- Owner / by-when: Craig / before Phase 3 implementation
-- Context: AA (4.5) is the floor most reach for, but transient highlights might accept less, and APCA models text-on-color better than WCAG.
-- Decision: (open) default target — WCAG AA, AAA, or an APCA Lc threshold.
-- Consequences: tighter targets shrink the safe-lightness band; APCA needs a chosen Lc.
+** Contrast target for the floor = WCAG AA default, AAA optional, APCA diagnostic
+- State: accepted
+- Context: AA (4.5) is the floor most reach for; AAA (7) is the stricter option; APCA models text-on-color better than WCAG but needs a chosen Lc and signed/absolute handling. The reviewer recommended a WCAG-only v1 so =floor=, =lMax=, labels, masks, and tests all key off one model.
+- Decision: We will drive v1 PASS/FAIL and =L_max= off WCAG contrast: default target =AA= (4.5), with =AAA= (7) selectable. APCA Lc is shown as a displayed diagnostic only and does not drive PASS/FAIL or the safe band in v1; an APCA-driven safety mode is vNext.
+- Consequences: easier — one metric for every safety surface and stable tests; harder — APCA's better text-on-color model is deferred, so a color that reads fine under APCA may still be flagged by WCAG.
+- Owner note: this and the foreground-set decision were Craig-owned open decisions; resolved here per the reviewer's recommendation to keep the spec converging. Craig can override either before implementation starts.
 
 * Implementation phases
 
@@ -114,10 +160,10 @@ A base swatch → preview the ramp → add chosen steps as named palette entries
 =fgSetFor=, =floor=, =lMax= in app-core.js with tests, including the keyword-blue worst case as a fixture.
 
 ** Phase 4 — Worst-case readout
-For background-effect faces, the contrast cell shows the floor + the limiting foreground name instead of a single pair. Add a hash-gate (#contrasttest-style) pinning floor-over-set.
+For the v1 covered faces, the contrast cell shows the floor + the limiting foreground name instead of a single pair. Pinned readout shape, so =#contrasttest= asserts fields not punctuation: =worst: <limitingLabel> <limitingHex> — <ratio> <PASS|FAIL>= (example: =worst: keyword #67809c — 3.3 FAIL=). The no-foreground-set readout is exactly =no fg set=. Add a hash-gate (#contrasttest-style) pinning floor-over-set and the no-set string.
 
 ** Phase 5 — Safe-lightness in OKLCH mode
-When a background-effect face is open in the picker, mark L_max on the lightness slider and mask the unsafe band, reusing the existing AA/AAA mask machinery against the foreground set.
+When a v1 covered face is open in the picker, mark L_max on the lightness slider and shade the unsafe band above it. v1 renders this as a *single L_max marker plus a one-band shade* (safe below, unsafe above) computed once per =(hue, chroma, fgSet, target)= via =lMax= — not a full per-pixel foreground-set contrast mask over the plane. The per-pixel AA/AAA plane mask stays single-foreground; extending it to a full foreground-set sweep is vNext if profiling ever shows the marker is insufficient.
 
 * Acceptance criteria
 - [ ] From a base hex, the tool produces N lighter + N darker steps, perceptually even, all in sRGB gamut.
@@ -125,17 +171,18 @@ When a background-effect face is open in the picker, mark L_max on the lightness
 - [ ] A background-effect face shows the worst-case contrast and names the limiting foreground.
 - [ ] OKLCH mode marks the maximum safe lightness for the chosen hue/chroma given the foreground set + target.
 - [ ] Unit tests cover ramp generation, the floor, and L_max; a browser gate pins the worst-case readout.
+- [ ] =scripts/theme-studio/README.md= documents ramp controls and defaults, the worst-case-floor / limiting-foreground meaning, the v1 covered faces, and that WCAG drives PASS/FAIL with APCA shown as a diagnostic.
 
 * Readiness dimensions
 - Data model & ownership: ramp steps and tints are user-authored palette entries the designer adds; floor and L_max are computed live, not stored. Nothing new persists.
-- Errors, empty states & failure: an out-of-gamut/invalid base clamps and flags; a face with no foreground set shows "no fg set" rather than a bogus ratio. No silent data loss.
+- Errors, empty states & failure: an out-of-gamut step clamps and flags (a real but unrepresentable color); a malformed base hex can't be clamped, so =ramp= returns a structured =bad-hex= error and the row produces nothing rather than a garbage swatch; a covered face with no foreground set shows =no fg set= rather than a bogus ratio. All four core functions return structured results for bad user input instead of throwing. No silent data loss.
 - Security & privacy: N/A — local color math, no credentials or sensitive data.
 - Observability: the worst-case readout *is* the observability — the designer sees the floor and the bottleneck color directly.
 - Performance & scale: N/A meaningfully — tens of colors, instant; no long-running ops.
 - Reuse & lost opportunities: reuse colormath.js (=oklch2hex=/=contrast=/=apca=/=deltaE=), the OKLCH picker, and the AA/AAA mask. Don't reimplement color math.
-- Architecture fit & weak points: pure logic in app-core.js (tested, importable like the Stage-7 split); UI in app.js; integration points are the palette panel, the picker, and the UI/package contrast cells. Weak point: defining each face's foreground set — mitigated by scoping v1 to code-context faces.
-- Config surface: step size, step count, chroma-ease amount, and the contrast target — knobs with defaults; document safe ranges.
-- Documentation plan: the color-harmony explainer (=docs/design/theme-studio-color-harmony.org=, already a task) carries the method; this spec carries the build.
+- Architecture fit & weak points: pure logic in app-core.js (tested, importable like the Stage-7 split); UI in app.js; integration points are the palette panel, the OKLCH picker, and the contrast cells of the v1 covered faces only (region, hl-line, highlight, lazy-highlight, isearch). Package and non-overlay UI cells are out of v1 scope and keep their single-pair behavior. Weak point: defining each face's foreground set — mitigated by the closed v1 covered-face set and explicit-state =fgSetFor=.
+- Config surface: =n= (steps each direction, default 2, range 1-4), =stepL= (OKLCH-L delta, default 0.08, range 0.04-0.12), =chromaEase= (default 0.5, range 0-1), and the contrast target (default WCAG AA 4.5, AAA 7 selectable). Defaults and safe ranges pinned in "Ramp defaults and palette insertion."
+- Documentation plan: the color-harmony explainer (=docs/design/theme-studio-color-harmony.org=, already a task) carries the method; this spec carries the build; =scripts/theme-studio/README.md= is the operational doc and gets the ramp controls, contrast-target semantics, covered faces, and worst-case-floor meaning (an acceptance-criteria item).
 - Dev tooling: =make theme-studio-test= covers it via new node tests + a browser gate; no new tooling.
 - Rollout, compatibility & rollback: additive — no change to the theme.json format or existing themes. The worst-case readout replaces a misleading single-pair number for background faces (a strict improvement). No migration, nothing to roll back.
 - External APIs & deps: none — pure color math, no external schema.
@@ -145,8 +192,24 @@ When a background-effect face is open in the picker, mark L_max on the lightness
 - The foreground-set definition is the fuzzy core. v1 limits it to code-context faces (syntax tokens + default fg); an over-broad set would over-constrain backgrounds that those foregrounds never actually touch.
 - A very dark foreground (sterling's keyword blue) can collapse the safe band to near-black. That's a true finding, not a tool bug — the readout should make the designer fix the foreground's lightness, not silently absorb it.
 
+* Review dispositions
+
+Only modified and rejected recommendations are listed; everything else from the Codex review was accepted as written and is woven into the body above.
+
+- *Modified — v1 covered-face set closed, not open-ended.* The review's suggested list ended with "and any other named built-in face the live buffer renders as text-over-syntax." Adopted the five named faces (region, hl-line, highlight, lazy-highlight, isearch) but dropped the open-ended trailing clause: an open set hands the implementer the same invent-the-behavior problem the foreground-set decision exists to close. The v1 set is exhaustive; new faces are added explicitly in vNext.
+- *Modified — invalid-input handling distinguishes user error from programmer error.* The review said "prefer pure functions returning structured errors rather than throwing." Accepted for user-entered values (malformed hex, out-of-range knobs) which return structured results; kept throwing for genuine programmer error (wrong argument arity/type), matching colormath.js's existing idiom rather than blanket no-throw.
+- *Deferred (not rejected) — implementation-task drop-in block.* The review supplied six ready TODOs. Per the spec-response workflow, implementation tasks are created only after the author confirms the spec is Ready (Phase 6), so they are not yet logged to todo.org. They land on the Ready go.
+
 * Review and iteration history
 ** 2026-06-09 Tue @ 17:18:54 -0500 — Craig — author
 - What: initial draft.
 - Why: ramp generation and background-contrast safety are coupled, design-uncertain, and worth solving on paper before code.
 - Artifacts: this spec; the color-harmony explainer task in todo.org.
+** 2026-06-09 Tue @ 17:34:17 -0500 — Codex — reviewer
+- What changed or was recommended: reviewed the spec against the implementation context and marked it =Not ready=. Recommended pinning the v1 contrast target, accepting the foreground-set contract, narrowing the exact covered background faces, and specifying ramp defaults / palette insertion behavior.
+- Why: the current code architecture supports the feature, but the open metric and foreground-scope decisions would make implementation invent user-visible behavior and produce unstable tests.
+- Artifacts: theme-studio-palette-ramps-spec-review.org (consumed and deleted on response).
+** 2026-06-09 Tue @ 17:53:02 -0500 — Claude Code (dotemacs) — responder
+- What changed or was recommended: dispositioned every Codex finding. Resolved both open Decisions to accepted — contrast target = WCAG AA default (AAA selectable, APCA diagnostic only), v1 foreground set = distinct syntax hexes + default fg with locked roles excluded. Added "v1 covered faces" (closed five-face set), "Ramp defaults and palette insertion" (n/stepL/chromaEase defaults, naming, collision, clamp display), and "Function contracts" (explicit-state, structured-error signatures for ramp/fgSetFor/floor/lMax with edge cases). Pinned the worst-case readout string and no-set message, clarified Phase 5 as a single L_max marker + band shade, added a README acceptance-criteria item, and corrected the architecture/config readiness lines. Two findings modified, one deferred — see Review dispositions.
+- Why: the review's blockers were product-contract gaps (open metric, proposed foreground set, conflicting scope, underspecified ramp write) that would have made two correct implementations diverge. Pinning them converges the spec to implementation-ready.
+- Artifacts: review file deleted; Review dispositions section; this entry. Two Craig-owned open decisions resolved per reviewer recommendation, override available before implementation.
