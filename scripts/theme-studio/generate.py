@@ -413,6 +413,17 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
  .pmode{margin:2px 2px 8px;font:10pt monospace;color:#b4b1a2;display:flex;gap:6px;align-items:center}
  .pmode button{background:#252321;color:#cdced1;border:1px solid #3a3a3a;border-radius:4px;padding:2px 9px;font:10pt monospace;cursor:pointer}
  .pmode button.on{background:#e8bd30;color:#000;border-color:#e8bd30}
+ .pmodel{margin:8px 2px 4px;font:10pt monospace;color:#b4b1a2;display:flex;gap:6px;align-items:center}
+ .pmodel button{background:#252321;color:#cdced1;border:1px solid #3a3a3a;border-radius:4px;padding:2px 9px;font:10pt monospace;cursor:pointer}
+ .pmodel button.on{background:#67809c;color:#000;border-color:#67809c}
+ .oklchctl{display:none;margin:0 2px 6px;font:10pt monospace;color:#9aa3ad}
+ .oklchctl.show{display:block}
+ .oklchctl .ocrow{display:flex;align-items:center;gap:6px;margin:3px 0}
+ .oklchctl .ocrow label{width:12px;color:#cdced1}
+ .oklchctl .ocrow input[type=range]{flex:1}
+ .oklchctl .ocrow input[type=number]{width:62px;background:#252321;color:#cdced1;border:1px solid #3a3a3a;border-radius:3px;font:10pt monospace;padding:1px 3px}
+ .oklchctl .pclamp{display:none;color:#cb6b4d;margin-top:3px}
+ .oklchctl .pclamp.show{display:block}
  .svcur{position:absolute;width:16px;height:16px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 1px #0008;pointer-events:none}
  .hue{position:relative;width:34px;height:320px;border-radius:4px;cursor:ns-resize;background:linear-gradient(to bottom,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
  .huecur{position:absolute;left:-2px;right:-2px;height:4px;background:#fff;border:1px solid #0008;transform:translateY(-50%);pointer-events:none}
@@ -461,6 +472,13 @@ HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
     <div class="prow">
      <div id="sv" class="sv"><canvas id="svmask" class="svmask"></canvas><div id="svcur" class="svcur"></div></div>
      <div id="hue" class="hue"><div id="huecur" class="huecur"></div></div>
+    </div>
+    <div class="pmodel">edit <button data-pm="hsv" class="on">HSV</button><button data-pm="oklch">OKLCH</button></div>
+    <div class="oklchctl" id="oklchctl">
+     <div class="ocrow"><label title="perceptual lightness">L</label><input type="range" id="okL" min="0" max="1" step="0.001"><input type="number" id="okLn" min="0" max="1" step="0.001"></div>
+     <div class="ocrow"><label title="chroma (colorfulness)">C</label><input type="range" id="okC" min="0" max="0.4" step="0.001"><input type="number" id="okCn" min="0" max="0.4" step="0.001"></div>
+     <div class="ocrow"><label title="hue angle, degrees">H</label><input type="range" id="okH" min="0" max="360" step="1"><input type="number" id="okHn" min="0" max="360" step="1"></div>
+     <div class="pclamp" id="pkclamp"></div>
     </div>
     <div class="pinfo"><span id="pkhex">#888888</span><span id="pkcon"></span></div>
     <div class="pinfo2"><span id="pkoklch" title="OKLCH perceptual coordinates: lightness L (0..1), chroma C, hue H in degrees"></span><span id="pkapca"></span></div>
@@ -643,7 +661,8 @@ function updateColor(){
 function normHex(s){s=s.trim();if(/^[0-9a-fA-F]{6}$/.test(s))s='#'+s;return /^#[0-9a-fA-F]{6}$/.test(s)?s.toLowerCase():null;}
 function curHex(){return normHex(document.getElementById('newhexstr').value)||'#888888';}
 let pkH=0,pkS=0,pkV=0.5,pickerOn=false;
-let pkMode='any';
+let pkMode='any';   // contrast mask: any / aa / aaa (what constraint to mask)
+let pkModel='hsv';  // color model for editing: hsv / oklch (orthogonal to pkMode)
 function pkThresh(){return pkMode==='aa'?4.5:pkMode==='aaa'?7:0;}
 function drawMask(){const cv=document.getElementById('svmask');if(!cv)return;const sv=document.getElementById('sv'),w=cv.width=sv.clientWidth,h=cv.height=sv.clientHeight,ctx=cv.getContext('2d');ctx.clearRect(0,0,w,h);const T=pkThresh();if(!T)return;ctx.fillStyle='rgba(8,7,6,0.66)';const step=4;for(let x=0;x<w;x+=step){const S=x/w;for(let y=0;y<h;y+=step){const V=1-y/h,[r,g,b]=hsv2rgb(pkH,S,V);if(contrast(rgb2hex(r,g,b),MAP['bg'])<T)ctx.fillRect(x,y,step,step);}}}
 function paintPicker(){const sv=document.getElementById('sv');if(!sv)return;sv.style.background=`linear-gradient(to top,#000,rgba(0,0,0,0)),linear-gradient(to right,#fff,rgba(255,255,255,0)),hsl(${pkH},100%,50%)`;const w=sv.clientWidth,h=sv.clientHeight,hh=document.getElementById('hue').clientHeight;document.getElementById('svcur').style.left=(pkS*w)+'px';document.getElementById('svcur').style.top=((1-pkV)*h)+'px';document.getElementById('huecur').style.top=((pkH/360)*hh)+'px';drawMask();}
@@ -652,16 +671,37 @@ function pkReadout(h){const e=document.getElementById('pkhex');if(e)e.textConten
  const a=document.getElementById('pkapca');if(a){const lc=apca(h,MAP['bg']);a.textContent='APCA Lc '+lc.toFixed(0);a.title='APCA Lc '+lc.toFixed(1)+' (APCA-W3 0.1.9), text on the ground color. Positive = dark text on a light background, negative = light text on a dark background.';}}
 function syncHex(){const v=normHex(document.getElementById('newhexstr').value);if(!v)return;document.getElementById('swatch').style.background=v;[pkH,pkS,pkV]=rgb2hsv(...hex2rgb(v));if(pickerOn)paintPicker();pkReadout(v);}
 function setHex(h){h=normHex(h)||h;document.getElementById('newhexstr').value=h;document.getElementById('swatch').style.background=h;[pkH,pkS,pkV]=rgb2hsv(...hex2rgb(h));if(pickerOn)paintPicker();pkReadout(h);}
-function pkSet(){const hex=rgb2hex(...hsv2rgb(pkH,pkS,pkV));document.getElementById('newhexstr').value=hex;document.getElementById('swatch').style.background=hex;paintPicker();pkReadout(hex);}
+function pkSet(){const hex=rgb2hex(...hsv2rgb(pkH,pkS,pkV));document.getElementById('newhexstr').value=hex;document.getElementById('swatch').style.background=hex;paintPicker();pkReadout(hex);if(pkModel==='oklch')oklchInputsFromHex(hex);}
+// --- OKLCH editing model (Phase 4a): L/C/H dials orthogonal to the HSV square ---
+function setOklchInputs(L,C,H){
+  const put=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;};
+  put('okL',L.toFixed(3));put('okLn',L.toFixed(3));put('okC',C.toFixed(3));put('okCn',C.toFixed(3));
+  const h=String(Math.round(H));put('okH',h);put('okHn',h);}
+function oklchInputsFromHex(hex){const lch=oklab2oklch(srgb2oklab(normHex(hex)||'#888888'));setOklchInputs(lch.L,lch.C,lch.H);}
+function readOklch(){return [parseFloat(document.getElementById('okL').value)||0,parseFloat(document.getElementById('okC').value)||0,parseFloat(document.getElementById('okH').value)||0];}
+function pkClampStatus(on){const s=document.getElementById('pkclamp');if(!s)return;s.classList.toggle('show',on);s.textContent=on?'chroma clamped to sRGB':'';}
+function pkOklchSet(){const [L,C,H]=readOklch();const {hex,clamped}=oklch2hex(L,C,H);
+  document.getElementById('newhexstr').value=hex;document.getElementById('swatch').style.background=hex;
+  [pkH,pkS,pkV]=rgb2hsv(...hex2rgb(hex));paintPicker();pkReadout(hex);
+  if(clamped)oklchInputsFromHex(hex); // snap the dials to the reachable color
+  pkClampStatus(clamped);}
+function setPkModel(m){pkModel=m;document.querySelectorAll('.pmodel button').forEach(x=>x.classList.toggle('on',x.dataset.pm===m));
+  const oc=document.getElementById('oklchctl');if(oc)oc.classList.toggle('show',m==='oklch');
+  if(m==='oklch')oklchInputsFromHex(curHex());else pkClampStatus(false);}
 function buildPkChips(){const c=document.getElementById('pkchips');if(!c)return;c.innerHTML='';const T=pkThresh();PALETTE.forEach(([hex,name])=>{const s=document.createElement('div');s.className='pc';s.style.background=hex;s.title=name+' '+hex;const ok=!T||contrast(hex,MAP['bg'])>=T;if(!ok){s.style.opacity='0.22';s.title+=' (below '+pkMode.toUpperCase()+')';}s.onclick=()=>{if(ok)setHex(hex);};c.appendChild(s);});}
-function openPicker(){pickerOn=true;[pkH,pkS,pkV]=rgb2hsv(...hex2rgb(curHex()));buildPkChips();document.getElementById('picker').style.display='block';paintPicker();pkReadout(curHex());setTimeout(()=>document.addEventListener('pointerdown',pkOutside),0);}
+function openPicker(){pickerOn=true;[pkH,pkS,pkV]=rgb2hsv(...hex2rgb(curHex()));buildPkChips();document.getElementById('picker').style.display='block';paintPicker();pkReadout(curHex());setPkModel(pkModel);setTimeout(()=>document.addEventListener('pointerdown',pkOutside),0);}
 function closePicker(){if(!pickerOn)return;pickerOn=false;const p=document.getElementById('picker');if(p)p.style.display='none';document.removeEventListener('pointerdown',pkOutside);}
 function pkOutside(e){if(!e.target.closest('#picker')&&!e.target.closest('#swatch'))closePicker();}
 function pkDrag(el,fn){el.addEventListener('pointerdown',e=>{e.preventDefault();fn(e);const mv=ev=>fn(ev),up=()=>{document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);};document.addEventListener('pointermove',mv);document.addEventListener('pointerup',up);});}
 function initPicker(){const sw=document.getElementById('swatch');if(!sw)return;sw.style.background=curHex();sw.onclick=()=>pickerOn?closePicker():openPicker();
   pkDrag(document.getElementById('sv'),e=>{const r=document.getElementById('sv').getBoundingClientRect();pkS=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));pkV=1-Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));pkSet();});
   pkDrag(document.getElementById('hue'),e=>{const r=document.getElementById('hue').getBoundingClientRect();pkH=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))*360;pkSet();});
-  document.querySelectorAll('.pmode button').forEach(b=>b.onclick=()=>{pkMode=b.dataset.m;document.querySelectorAll('.pmode button').forEach(x=>x.classList.toggle('on',x===b));drawMask();buildPkChips();});}
+  document.querySelectorAll('.pmode button').forEach(b=>b.onclick=()=>{pkMode=b.dataset.m;document.querySelectorAll('.pmode button').forEach(x=>x.classList.toggle('on',x===b));drawMask();buildPkChips();});
+  document.querySelectorAll('.pmodel button').forEach(b=>b.onclick=()=>setPkModel(b.dataset.pm));
+  [['okL','okLn',3],['okC','okCn',3],['okH','okHn',0]].forEach(([r,n,dp])=>{
+    const re=document.getElementById(r),ne=document.getElementById(n);
+    if(re)re.addEventListener('input',()=>{if(ne)ne.value=(+re.value).toFixed(dp);pkOklchSet();});
+    if(ne)ne.addEventListener('input',()=>{if(re)re.value=ne.value;pkOklchSet();});});}
 function addColor(){const h=curHex();const name=document.getElementById('newname').value.trim();
   if(!name){notify('name the color before adding it',true);return;}
   if(PALETTE.some(p=>p[1].toLowerCase()===name.toLowerCase())){notify('a color named "'+name+'" already exists — select it and use Update selected to change its value',true);return;}
@@ -1147,6 +1187,25 @@ if(location.hash==='#selftest')pkgSelftest();
 if(location.hash.startsWith('#pick')){openPicker();const m=location.hash.slice(5);if(m){const b=document.querySelector('.pmode button[data-m="'+m+'"]');if(b)b.click();}}
 if(location.hash==='#cursortest'){document.getElementById('newhexstr').value='#67809c';openPicker();const sc=document.getElementById('svcur'),hc=document.getElementById('huecur');const L=parseFloat(sc.style.left||'0'),T=parseFloat(sc.style.top||'0'),H=parseFloat(hc.style.top||'0');const ok=L>1&&T>1&&H>1;document.title='CURSORTEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='cursortest';d.textContent='CURSORTEST '+(ok?'PASS':'FAIL')+' left='+sc.style.left+' top='+sc.style.top+' hue='+hc.style.top;document.body.appendChild(d);}
 if(location.hash.startsWith('#app')){const ap=location.hash.slice(4),s=document.getElementById('appsel');if(s&&ap){s.value=ap;pkgChanged();}}
+if(location.hash==='#oklchtest'){let ok=true;const notes=[];
+ document.getElementById('newhexstr').value='#67809c';openPicker();
+ const before=document.getElementById('newhexstr').value;
+ setPkModel('oklch');
+ if(pkModel!=='oklch'){ok=false;notes.push('model not oklch');}
+ if(!document.getElementById('oklchctl').classList.contains('show')){ok=false;notes.push('oklch dials hidden');}
+ if(document.getElementById('newhexstr').value!==before){ok=false;notes.push('color changed on model switch: '+document.getElementById('newhexstr').value);}
+ pkMode='any';document.querySelector('.pmode button[data-m="aa"]').click();
+ if(pkModel!=='oklch'){ok=false;notes.push('mask toggle reset model');}
+ if(pkMode!=='aa'){ok=false;notes.push('mask did not set aa');}
+ setPkModel('hsv');
+ if(pkMode!=='aa'){ok=false;notes.push('model switch reset mask to '+pkMode);}
+ if(pkModel!=='hsv'){ok=false;notes.push('model not hsv after switch');}
+ setPkModel('oklch');setOklchInputs(0.591,0.052,251.6);pkOklchSet();
+ const driven=document.getElementById('newhexstr').value,dl=oklab2oklch(srgb2oklab(driven));
+ if(!(Math.abs(dl.L-0.591)<0.02&&Math.abs(dl.C-0.052)<0.02)){ok=false;notes.push('dials did not drive color: '+driven);}
+ const {clamped}=oklch2hex(0.7,0.4,140);setOklchInputs(0.7,0.4,140);pkOklchSet();
+ if(!(clamped&&document.getElementById('pkclamp').classList.contains('show'))){ok=false;notes.push('clamp status missing for out-of-gamut C');}
+ document.title='OKLCHTEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='oklchtest';d.textContent='OKLCHTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 if(location.hash==='#deltatest'){const save=PALETTE.slice();let ok=true;const notes=[];const W=()=>document.getElementById('palwarn');
  PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue'],['#69829e','blue2']];renderPalette();
  const t1=W().textContent;if(!(W().style.display!=='none'&&/blue \\/ blue2/.test(t1)&&/ΔE/.test(t1))){ok=false;notes.push('near-pair did not fire: '+t1);}
