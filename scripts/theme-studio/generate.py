@@ -448,7 +448,21 @@ STYLES_CSS</style>
    <input type="text" id="newname" placeholder="name" onkeydown="if(event.key==='Enter')applyEdit()">
    <button onclick="addColor()">+ add color</button>
    <button onclick="updateColor()">&#8635; update selected</button>
+   <button onclick="openRamp()" title="generate a tonal ramp (lighter/darker steps) from the current color">&#9968; ramp</button>
    <span id="palmsg"></span>
+   <div id="ramp" class="ramp" style="display:none">
+    <div class="ramprow">
+     <label>ramp from <b id="rampname">&mdash;</b></label>
+     <label title="steps each direction (1-4)">steps <input type="number" id="rampn" min="1" max="4" step="1" value="2" style="width:48px"></label>
+     <label title="OKLCH lightness delta per step (0.04-0.12)">stepL <input type="number" id="rampstepl" min="0.04" max="0.12" step="0.01" value="0.08" style="width:62px"></label>
+     <label title="how much chroma eases out toward the extremes (0-1)">chroma ease <input type="number" id="rampce" min="0" max="1" step="0.1" value="0.5" style="width:58px"></label>
+     <button onclick="renderRamp()">preview</button>
+     <button onclick="addAllRampSteps()">+ add all</button>
+     <button onclick="closeRamp()">close</button>
+    </div>
+    <div id="rampprev" class="rampprev"></div>
+    <div id="rampmsg"></div>
+   </div>
    <div id="picker" class="picker">
     <div class="prow">
      <div id="sv" class="sv"><canvas id="svmask" class="svmask"></canvas><div id="svcur" class="svcur"></div></div>
