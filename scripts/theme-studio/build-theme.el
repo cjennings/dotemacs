@@ -71,15 +71,31 @@ independently is not possible without clobbering types.")
   "Non-nil when S is a \"#rrggbb\" hex color string."
   (and (stringp s) (string-match-p "\\`#[0-9a-fA-F]\\{6\\}\\'" s)))
 
-(defun build-theme/--attrs (inherit fg bg bold italic underline strike height)
+(defun build-theme/--box (box)
+  "Convert a box spec alist (style/color/width) to an Emacs `:box' value, or nil.
+STYLE is \"line\", \"released\", or \"pressed\"; WIDTH defaults to 1; COLOR (a hex
+string) applies to the line style and falls through to the face foreground when
+unset."
+  (when box
+    (let ((style (build-theme/--obj-get box 'style))
+          (color (build-theme/--obj-get box 'color))
+          (width (or (build-theme/--obj-get box 'width) 1)))
+      (cond ((equal style "released") (list :line-width width :style 'released-button))
+            ((equal style "pressed") (list :line-width width :style 'pressed-button))
+            ((equal style "line") (if color (list :line-width width :color color)
+                                    (list :line-width width)))
+            (t nil)))))
+
+(defun build-theme/--attrs (inherit fg bg bold italic underline strike height &optional box)
   "Build a face-attribute plist from the given fields, in canonical order.
 INHERIT is a face symbol or nil.  FG and BG are hex strings or nil.  BOLD,
 ITALIC, UNDERLINE, and STRIKE are booleans.  HEIGHT is a float multiplier; 1.0
-(or nil) is omitted as the default.  Only set attributes are written, so a
-fully-nil face yields an empty plist."
-  (let (plist)
+(or nil) is omitted as the default.  BOX is a box spec alist or nil.  Only set
+attributes are written, so a fully-nil face yields an empty plist."
+  (let ((plist nil) (bx (build-theme/--box box)))
+    (when bx (setq plist (list :box bx)))
     (when (and height (numberp height) (/= height 1.0))
-      (setq plist (list :height height)))
+      (setq plist (append (list :height height) plist)))
     (when strike (setq plist (append (list :strike-through t) plist)))
     (when underline (setq plist (append (list :underline t) plist)))
     (when italic (setq plist (append (list :slant 'italic) plist)))
@@ -145,7 +161,8 @@ the font-lock faces in `build-theme/--syntax-face-map'."
                                          (build-theme/--obj-get obj 'italic)
                                          (build-theme/--obj-get obj 'underline)
                                          (build-theme/--obj-get obj 'strike)
-                                         nil)))
+                                         nil
+                                         (build-theme/--obj-get obj 'box))))
         (when-let ((spec (build-theme/--face-spec face attrs)))
           (push spec specs))))
     (nreverse specs)))
@@ -165,7 +182,8 @@ the font-lock faces in `build-theme/--syntax-face-map'."
                        (build-theme/--obj-get obj 'italic)
                        (build-theme/--obj-get obj 'underline)
                        (build-theme/--obj-get obj 'strike)
-                       (build-theme/--obj-get obj 'height))))
+                       (build-theme/--obj-get obj 'height)
+                       (build-theme/--obj-get obj 'box))))
           (when-let ((spec (build-theme/--face-spec face attrs)))
             (push spec specs)))))
     (nreverse specs)))

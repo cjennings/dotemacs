@@ -94,6 +94,8 @@ if _seed:
 UIMAP["link"]["underline"]=True
 for _f in ("lazy-highlight","show-paren-match"): UIMAP[_f]["underline"]=True
 for _f in ("error","warning","success"): UIMAP[_f]["bold"]=True
+# The mode line carries a 3D released-button box by default in Emacs.
+for _f in ("mode-line","mode-line-inactive"): UIMAP[_f]["box"]={"style":"released","width":1,"color":None}
 # Tier-3 package faces (Phase 2): complete own-defface sets for org/magit/elfeed,
 # built from face-name lists + a curated seed-color map. Prominent faces are
 # seeded; the long tail seeds to the default foreground for the user to tune.
@@ -487,7 +489,7 @@ STYLES_CSS</style>
 <div class="cols stretch">
  <section class="pane">
   <div class="legctl"><button class="fbtn" onclick="clearUnlockedUI()" title="reset every unlocked UI face to default (no foreground/background); locked rows are left untouched">clear unlocked</button></div>
-  <table class="leg" id="uitable"><thead><tr><th onclick="srtTable('uibody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('uibody',2)">foreground &#9651;</th><th onclick="srtTable('uibody',3)">background &#9651;</th><th>style</th><th onclick="srtTable('uibody',5)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
+  <table class="leg" id="uitable"><thead><tr><th onclick="srtTable('uibody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('uibody',2)">foreground &#9651;</th><th onclick="srtTable('uibody',3)">background &#9651;</th><th>style</th><th onclick="srtTable('uibody',5)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th>preview</th><th title="face :box (border)">box</th></tr></thead><tbody id="uibody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label style="color:#b4b1a2">live buffer preview</label></div>
@@ -503,7 +505,7 @@ STYLES_CSS</style>
 </div>
 <div class="cols stretch">
  <section class="pane">
-  <table class="leg" id="pkgtable"><thead><tr><th onclick="srtTable('pkgbody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th onclick="srtTable('pkgbody',5)">contrast &#9651;</th><th onclick="srtTable('pkgbody',6)">inherit &#9651;</th><th onclick="srtTable('pkgbody',7)">size &#9651;</th><th></th></tr></thead><tbody id="pkgbody"></tbody></table>
+  <table class="leg" id="pkgtable"><thead><tr><th onclick="srtTable('pkgbody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th onclick="srtTable('pkgbody',5)">contrast &#9651;</th><th onclick="srtTable('pkgbody',6)">inherit &#9651;</th><th onclick="srtTable('pkgbody',7)">size &#9651;</th><th title="face :box (border)">box</th><th></th></tr></thead><tbody id="pkgbody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label id="pkgprevlabel" style="color:#b4b1a2">preview</label></div>
