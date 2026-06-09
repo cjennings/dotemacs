@@ -46,7 +46,8 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 # No colors - using plain text symbols instead
 
 .PHONY: help targets test test-all test-unit test-integration test-file test-name \
-        test-bash theme-studio-test theme-studio-coverage benchmark coverage coverage-summary coverage-clean \
+        test-bash theme-studio-test theme-studio-check theme-studio-coverage theme-studio-gen theme-studio-open \
+        benchmark coverage coverage-summary coverage-clean \
         validate-parens validate-modules compile compile-file lint profile \
         clean clean-compiled clean-tests reset
 
@@ -66,9 +67,14 @@ help:
 	@echo "    make test-file FILE=<filename>  - Run specific test file"
 	@echo "    make test-name TEST=<pattern>   - Run tests matching pattern"
 	@echo "    make test-bash         - Run the bats shell-script tests ($(words $(BASH_TESTS)) files)"
-	@echo "    make theme-studio-test - Run the theme-studio tool tests (Python + Node + browser)"
-	@echo "    make theme-studio-coverage - Coverage for the theme-studio JS + generate.py"
 	@echo "    make benchmark         - Run performance benchmarks (:perf-tagged)"
+	@echo ""
+	@echo "  theme-studio (delegates to scripts/theme-studio/Makefile):"
+	@echo "    make theme-studio-test     - Full suite (Python + Node + browser gates)"
+	@echo "    make theme-studio-check    - Fast gate (regenerate + Python + Node, no browser)"
+	@echo "    make theme-studio-coverage - JS + generate.py coverage numbers"
+	@echo "    make theme-studio-gen      - Regenerate theme-studio.html (SEED=x.json optional)"
+	@echo "    make theme-studio-open     - Regenerate and open the page in Chrome"
 	@echo ""
 	@echo "  Coverage:"
 	@echo "    make coverage          - Generate simplecov JSON and summarize modules"
@@ -126,8 +132,17 @@ test-bash:
 theme-studio-test:
 	@$(MAKE) -C scripts/theme-studio test
 
+theme-studio-check:
+	@$(MAKE) -C scripts/theme-studio check
+
 theme-studio-coverage:
 	@$(MAKE) -C scripts/theme-studio coverage
+
+theme-studio-gen:
+	@$(MAKE) -C scripts/theme-studio gen SEED='$(SEED)'
+
+theme-studio-open:
+	@$(MAKE) -C scripts/theme-studio open SEED='$(SEED)'
 
 BANNER = ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
