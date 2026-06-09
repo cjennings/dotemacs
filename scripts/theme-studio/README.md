@@ -58,6 +58,13 @@ Three tiers of faces, plus the palette:
   background, negative means light text on a dark background — so a light color
   on dupre's dark ground reads as a negative Lc. WCAG stays the rating used in
   the syntax/UI/package tables; APCA and OKLCH are picker-only diagnostics.
+
+  An edit-model toggle switches the picker between HSV and OKLCH, independent of
+  the contrast mask. In OKLCH mode the L/C/H dials drive the color and the square
+  becomes a Chroma×Lightness plane at the current hue, with the out-of-gamut
+  region greyed out; the hue strip selects the hue. Pushing chroma past sRGB
+  snaps to the reachable color and shows a clamp note. The palette also warns
+  when two colors fall below a perceptual ΔE threshold, hard to tell apart.
 - **Syntax** — every font-lock / tree-sitter category (keyword, string,
   function, type, comment, and the rest), each with normal/bold/italic and a
   contrast rating. Click a category to flash its tokens in the code; click a

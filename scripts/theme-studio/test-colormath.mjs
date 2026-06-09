@@ -10,8 +10,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  srgb2oklab, oklab2oklch, oklch2hex, apca, deltaE,
+  srgb2oklab, oklab2oklch, oklch2oklab, oklch2hex, apca, deltaE,
   hex2rgb, rl, contrast, rating, hsv2rgb, rgb2hsv, rgb2hex,
+  oklab2lrgb, inGamut, lrgb2hex,
 } from './colormath.js';
 
 const close = (a, b, eps = 0.005) => Math.abs(a - b) <= eps;
@@ -137,6 +138,26 @@ test('rgb2hex formats and clamps out-of-range channels', () => {
   assert.equal(rgb2hex(255, 255, 255), '#ffffff');
   assert.equal(rgb2hex(0x67, 0x80, 0x9c), '#67809c');
   assert.equal(rgb2hex(-5, 300, 128), '#00ff80'); // clamps below 0 and above 255
+});
+
+test('oklab2lrgb / lrgb2hex round-trip through known sRGB colors', () => {
+  for (const h of ['#000000', '#ffffff', '#67809c', '#e8bd30']) {
+    const lab = srgb2oklab(h);
+    assert.equal(lrgb2hex(oklab2lrgb(lab.L, lab.a, lab.b)), h, `round-trip ${h}`);
+  }
+});
+
+test('inGamut flags reachable vs unreachable OKLCH (forward-only gamut test)', () => {
+  // dupre-blue is a real sRGB color -> in gamut.
+  const ok = oklch2oklab(0.591, 0.052, 251.6);
+  assert.equal(inGamut(oklab2lrgb(ok.L, ok.a, ok.b)), true, 'reachable');
+  // very high chroma at mid lightness -> outside sRGB.
+  const bad = oklch2oklab(0.7, 0.4, 140);
+  assert.equal(inGamut(oklab2lrgb(bad.L, bad.a, bad.b)), false, 'unreachable');
+  // the in-gamut verdict must agree with oklch2hex's clamped flag (the plane and
+  // the commit path share one gamut boundary).
+  assert.equal(inGamut(oklab2lrgb(ok.L, ok.a, ok.b)), !oklch2hex(0.591, 0.052, 251.6).clamped);
+  assert.equal(inGamut(oklab2lrgb(bad.L, bad.a, bad.b)), !oklch2hex(0.7, 0.4, 140).clamped);
 });
 
 // Guards the one-source-of-truth contract: the page must carry colormath.js's
