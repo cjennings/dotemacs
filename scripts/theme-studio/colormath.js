@@ -167,4 +167,27 @@ function rgb2hex(r, g, b) {
   return '#' + [r, g, b].map(x => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join('');
 }
 
-export { srgb2oklab, oklab2oklch, oklch2oklab, oklch2hex, apca, deltaE, hex2rgb, lin, rl, contrast, rating, hsv2rgb, rgb2hsv, rgb2hex, oklab2lrgb, inGamut, lrgb2hex };
+// One Chroma×Lightness plane cell at a fixed hue: the sRGB color if the (L,C,H)
+// is reachable, else flagged out of gamut. Forward-only (one conversion + a
+// range check) — the binary-search clamp is reserved for committing a color.
+function planeCell(L, C, H) {
+  const lab = oklch2oklab(L, C, H), lrgb = oklab2lrgb(lab.L, lab.a, lab.b);
+  return inGamut(lrgb) ? { inGamut: true, hex: lrgb2hex(lrgb) } : { inGamut: false, hex: null };
+}
+
+// Pairwise palette analysis. palette is [[hex, name], ...]. Returns the pairs
+// closer than threshold (OKLab ΔE), closest-first and capped, the overflow count
+// beyond the cap, and each color's nearest-neighbor distance for its chip title.
+function paletteWarnings(palette, threshold = 0.02, cap = 5) {
+  const n = palette.length, nearest = new Array(n).fill(Infinity), pairs = [];
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    const d = deltaE(palette[i][0], palette[j][0]);
+    if (d < nearest[i]) nearest[i] = d;
+    if (d < nearest[j]) nearest[j] = d;
+    if (d < threshold) pairs.push({ i, j, aName: palette[i][1], bName: palette[j][1], dE: d });
+  }
+  pairs.sort((a, b) => a.dE - b.dE);
+  return { warnings: pairs.slice(0, cap), overflow: Math.max(0, pairs.length - cap), nearest };
+}
+
+export { srgb2oklab, oklab2oklch, oklch2oklab, oklch2hex, apca, deltaE, hex2rgb, lin, rl, contrast, rating, hsv2rgb, rgb2hsv, rgb2hex, oklab2lrgb, inGamut, lrgb2hex, planeCell, paletteWarnings };
