@@ -46,6 +46,18 @@ The contrast readout on every item with two color selections (a fg AND a bg — 
 
 Investigation start: the two-color contrast cells are =paintUI= (UI faces, app.js ~line 740) and =buildPkgTable= (package faces, app.js ~line 430), both currently calling =contrast(effFg(fg), effBg(bg))= where =effFg(v)=v||MAP['p']= and =effBg(v)=v||MAP['bg']=. Reproduce a face that has BOTH a fg and a bg set, confirm the displayed ratio, and check whether it's actually evaluating selected-fg vs selected-bg or falling through to the ground bg. Fix so a two-color face always rates its own fg-on-bg. (Single-color contexts — the picker/palette-chip/plane checks that rate a color against the ground — are correct and out of scope.) Add a characterization gate (a #contrasttest hash gate) pinning fg-vs-bg for a two-color face.
 
+** TODO [#B] theme-studio live-preview bevel thinner than Emacs :bug:theme-studio:
+The mode-line box (3D released-button bevel) in the live buffer preview renders slimmer than the bevel Emacs actually draws. Make them match. The bevel comes from =boxCss= in app.js (~line 307), currently =inset 1px 1px 0 #ffffff33,inset -1px -1px 0 #00000066= for the released style — a 1px inset with faint translucent highlight/shadow. Emacs's released-button box is wider/stronger (it shades the highlight and shadow from the actual background color, not a flat translucent white/black). Fix: widen the bevel and derive the highlight/shadow from the box's background so it reads like Emacs. Verify side-by-side against a real Emacs mode-line.
+
+** TODO [#C] theme-studio face-consistency check :feature:theme-studio:
+Two related checks, both surfacing structural-attribute (weight/slant/underline/box/overline/height) issues; color is the theme's design and out of scope.
+
+1. Theme cross-cutting consistency (primary, per Craig 2026-06-09): the theme has deliberate cross-cutting rules — e.g. headings/titles are bold, links are underlined, errors/warnings/success are bold. Flag where the theme BREAKS ITS OWN rule (a heading that isn't bold, a link that isn't underlined). The designer declares the rules; the check finds the violators. This is the "tell me where I broke the rule" guardrail.
+
+2. defface-baseline divergence (secondary): flag where a face's structural attrs differ from its package =defface= so each divergence is deliberate, not an accidental drop. Would have caught the dropped underline/bold defaults and the contradictions (shr-h3 bold-vs-italic, erc-action italic-vs-bold) from the package-face audit as they were introduced.
+
+Bake into the tool (a lint surfaced in the UI) or run as a build-time check (seeds vs live deffaces via emacsclient).
+
 ** TODO [#C] Internet radio now-playing song :feature:music:emms:
 Show the currently-playing song while streaming an internet radio station. Lives in =modules/music-config.el= (EMMS + MPV backend, M3U radio stations). The track title comes from the stream's ICY metadata — EMMS exposes it via =emms-track-description= / =emms-playing-time= and updates it on the metadata-change hook; MPV reports the ICY title too. Add an option to show the song in the minibuffer (e.g. echo on track change, or an on-demand command). Consider also a mode-line indicator as a second surface.
 
