@@ -324,34 +324,61 @@ function buildMockFrame(){
     {t:[['punc','('],['kw','defun'],['p',' '],['fnd','cj/greet'],['p',' '],['punc','('],['var','name'],['punc',')']]},
     {t:[['p','  '],['punc','('],['fnc','message'],['p',' '],['str','"hi %s"'],['p',' '],['var','name'],['punc','))']],cur:1},
     {t:[['p','  '],['punc','('],['kw','setq'],['p',' '],['var','count'],['p',' '],['num','42'],['punc',')']],region:1},
-    {plain:'  (if (> count 0)',match:1},
-    {plain:'    (setq total (+ total count))',hl:1},
-    {t:[['p','      '],['punc','('],['fnc','process'],['p',' '],['var','items'],['punc',')']]},
-    {plain:'    (cl-incf count)',lazy:1},
+    {t:[['p','  '],['punc','('],['kw','if'],['p',' '],['punc','('],['op','>'],['p',' '],['var','count'],['p',' '],['num','0'],['punc',')']],match:1},
+    {t:[['p','    '],['punc','('],['kw','setq'],['p',' '],['var','total'],['p',' '],['punc','('],['op','+'],['p',' '],['var','total'],['p',' '],['var','count'],['punc','))']],hl:1},
+    {t:[['p','      '],['punc','('],['fnc','process'],['p',' '],['var','items'],['punc',')']],cont:1},
+    {t:[['p','    '],['punc','('],['fnc','cl-incf'],['p',' '],['var','count'],['punc',')']],lazy:1},
     {t:[['p','  '],['punc','('],['kw','setq'],['p',' '],['var','done'],['p',' '],['con','t'],['punc',')']],paren:1},
-    {plain:'    (oops nested))',mismatch:1}
+    {t:[['p','    '],['punc','('],['fnc','oops'],['p',' '],['var','nested'],['punc','))']],mismatch:1}
   ];
+  // An overlay face (region, highlight, isearch, lazy-highlight) merges the way
+  // Emacs does: its background applies, and its foreground overrides the tokens
+  // only when set — otherwise the underlying syntax colors show through.
+  const overlay=(tokens,face,dface)=>{
+    const inner=face.fg
+      ? `<span style="color:${face.fg}">${tokens.map(([,t])=>esc(t)).join('')}</span>`
+      : tokens.map(([k,t])=>mockSpan(k,t)).join('');
+    return `<span data-face="${dface}" style="background:${face.bg||'transparent'};${udeco(face)}">${inner}</span>`;
+  };
+  // Emacs box cursor: it sits on the character at point, drawn in the frame
+  // background over the cursor color (the cursor face's foreground is ignored).
+  // Falls back to a trailing block only if the line has no glyph (point at EOL).
+  const withCursor=(tokens)=>{
+    let out='',placed=false;
+    const cell=ch=>`<span data-face="cursor" style="background:${cur.bg||fg};color:${bg}">${esc(ch)}</span>`;
+    for(const [k,t] of tokens){
+      const m=placed?-1:t.search(/\S/);
+      if(m>=0){
+        if(m>0)out+=mockSpan(k,t.slice(0,m));
+        out+=cell(t[m]);
+        if(t.length>m+1)out+=mockSpan(k,t.slice(m+1));
+        placed=true;
+      } else out+=mockSpan(k,t);
+    }
+    if(!placed)out+=cell(' ');
+    return out;
+  };
   let buf='';
   lines.forEach((L,i)=>{
     const isc=L.cur;
     const nFg=isc?(lnc.fg||fg):(ln.fg||fg), nBg=isc?(lnc.bg||'transparent'):(ln.bg||'transparent');
     const rowBg=isc?(hl.bg||'transparent'):'transparent';
     let cd;
-    if(L.plain){
-      if(L.match)cd=`<span data-face="isearch" style="color:${isr.fg||fg};background:${isr.bg||'transparent'}">${esc(L.plain)}</span>`;
-      else if(L.lazy)cd=`<span data-face="lazy-highlight" style="color:${laz.fg||fg};background:${laz.bg||'transparent'}">${esc(L.plain)}</span>`;
-      else if(L.hl)cd=`<span data-face="highlight" style="background:${hil.bg||'transparent'};color:${hil.fg||fg}">${esc(L.plain)}</span>`;
-      else if(L.mismatch)cd=esc(L.plain.slice(0,-1))+`<span data-face="show-paren-mismatch" style="background:${parx.bg||'transparent'};color:${parx.fg||fg};font-weight:bold">${esc(L.plain.slice(-1))}</span>`;
-      else cd=esc(L.plain);
-    } else if(L.paren){cd=L.t.map(([k,t],j)=>j===L.t.length-1?`<span data-face="show-paren-match" style="background:${par.bg||'transparent'};color:${par.fg||MAP[k]||fg};font-weight:bold">${esc(t)}</span>`:mockSpan(k,t)).join('');}
-    else{cd=L.t.map(([k,t])=>mockSpan(k,t)).join('');if(L.region)cd=`<span data-face="region" style="background:${reg.bg||'transparent'}">${cd}</span>`;}
-    if(isc)cd+=`<span data-face="cursor" style="background:${cur.bg||fg};color:${bg}"> </span>`;
+    if(isc)cd=withCursor(L.t);
+    else if(L.region)cd=overlay(L.t,reg,'region');
+    else if(L.hl)cd=overlay(L.t,hil,'highlight');
+    else if(L.match)cd=overlay(L.t,isr,'isearch');
+    else if(L.lazy)cd=overlay(L.t,laz,'lazy-highlight');
+    else if(L.paren)cd=L.t.map(([k,t],j)=>j===L.t.length-1?`<span data-face="show-paren-match" style="background:${par.bg||'transparent'};color:${par.fg||MAP[k]||fg};${udeco(par)}">${esc(t)}</span>`:mockSpan(k,t)).join('');
+    else if(L.mismatch)cd=L.t.map(([k,t],j)=>{if(j!==L.t.length-1)return mockSpan(k,t);const head=t.slice(0,-1),bad=t.slice(-1);return (head?mockSpan(k,head):'')+`<span data-face="show-paren-mismatch" style="background:${parx.bg||'transparent'};color:${parx.fg||MAP[k]||fg};${udeco(parx)}">${esc(bad)}</span>`;}).join('');
+    else cd=L.t.map(([k,t])=>mockSpan(k,t)).join('');
     const nFace=isc?'line-number-current-line':'line-number';
-    buf+=`<div class="ln" style="background:${rowBg}"><span class="fr" data-face="fringe" style="background:${frng.bg||bg}"></span><span class="num" data-face="${nFace}" style="color:${nFg};background:${nBg}">${i+1}</span><span class="cd">${cd||'&nbsp;'}</span></div>`;
+    buf+=`<div class="ln" style="background:${rowBg}"><span class="fr" data-face="fringe" style="background:${frng.bg||bg};color:${frng.fg||fg};text-align:center;font-size:10px;overflow:hidden" title="fringe">${L.cont?'&#8618;':''}</span><span class="num" data-face="${nFace}" style="color:${nFg};background:${nBg};${udeco(isc?lnc:ln)}">${i+1}</span><span class="cd">${cd||'&nbsp;'}</span></div>`;
   });
   let html=`<div class="mbuf" style="display:flex;background:${bg}"><div style="flex:1;min-width:0">${buf}</div><div data-face="vertical-border" title="vertical-border" style="width:3px;flex:0 0 auto;background:${vb.fg||vb.bg||'#2f343a'}"></div></div>`;
-  html+=`<div class="bar" data-face="mode-line" style="background:${ml.bg||fg};color:${ml.fg||bg};${udeco(ml)}">  init.el      (Emacs Lisp)      L5      git:main  </div>`;
-  html+=`<div class="bar" data-face="mode-line-inactive" style="background:${mli.bg||bg};color:${mli.fg||fg};${udeco(mli)}">  *Messages*      (Fundamental)  </div>`;
+  const mlbox='box-shadow:inset 1px 1px 0 #ffffff33,inset -1px -1px 0 #00000066';  // 3D released-button box, the Emacs mode-line default
+  html+=`<div class="bar" data-face="mode-line" style="background:${ml.bg||fg};color:${ml.fg||bg};${udeco(ml)};${mlbox}">  init.el      (Emacs Lisp)      L5      git:main  </div>`;
+  html+=`<div class="bar" data-face="mode-line-inactive" style="background:${mli.bg||bg};color:${mli.fg||fg};${udeco(mli)};${mlbox}">  *Messages*      (Fundamental)  </div>`;
   html+=`<div class="echo" style="color:${fg}"><span data-face="minibuffer-prompt" style="color:${mb.fg||fg};${udeco(mb)}">I-search:</span> count   <span data-face="isearch-fail" style="color:${isf.fg||fg};background:${isf.bg||'transparent'};${udeco(isf)}">zzz [no match]</span></div>`;
   html+=`<div class="echo"><span data-face="link" style="color:${lnk.fg||fg};${udeco(lnk)}">https://gnu.org</span>   <span data-face="error" style="color:${err.fg||fg};${udeco(err)}">error</span>   <span data-face="warning" style="color:${wrn.fg||fg};${udeco(wrn)}">warning</span>   <span data-face="success" style="color:${suc.fg||fg};${udeco(suc)}">ok</span></div>`;
   fr.innerHTML=html;fr.style.background=bg;fr.style.color=fg;
@@ -792,6 +819,27 @@ if(location.hash==='#sorttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  buildPkgTable();srtTable('pkgbody',2);A(asc(ddVals('pkgbody')),'pkgbody-fg-asc');
  document.title='SORTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='sorttest';d.textContent='SORTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Live-buffer rendering gate (open with #mocktest): pins the face-faithfulness
+// fixes so they cannot silently regress — overlay faces keep syntax colors and
+// honor their styles, the cursor sits on a glyph, line numbers honor weight, the
+// fringe shows its foreground indicator, and the mode-line carries its box.
+if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const Q=s=>document.querySelector('#mockframe '+s);
+ buildMockFrame();
+ A(Q('[data-face="highlight"] [data-k]'),'highlight-keeps-token-colors');
+ A(Q('[data-face="region"] [data-k]'),'region-keeps-token-colors');
+ const curCell=Q('[data-face="cursor"]');
+ A(curCell&&curCell.textContent.trim().length===1,'cursor-on-glyph');
+ const laz=Q('[data-face="lazy-highlight"]');
+ A(laz&&/underline/.test(laz.getAttribute('style')||''),'overlay-honors-style');
+ A([...document.querySelectorAll('#mockframe .fr')].some(e=>e.textContent.trim()),'fringe-indicator-present');
+ const mlbar=Q('[data-face="mode-line"]');
+ A(mlbar&&/box-shadow/.test(mlbar.getAttribute('style')||''),'mode-line-box');
+ UIMAP['line-number-current-line'].bold=true;buildMockFrame();
+ const curNum=Q('[data-face="line-number-current-line"]');
+ A(curNum&&/font-weight:\s*bold/.test(curNum.getAttribute('style')||''),'line-number-honors-weight');
+ document.title='MOCKTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='mocktest';d.textContent='MOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 if(location.hash.startsWith('#pick')){openPicker();const m=location.hash.slice(5);if(m){const b=document.querySelector('.pmode button[data-m="'+m+'"]');if(b)b.click();}}
 if(location.hash==='#cursortest'){document.getElementById('newhexstr').value='#67809c';openPicker();const sc=document.getElementById('svcur'),hc=document.getElementById('huecur');const L=parseFloat(sc.style.left||'0'),T=parseFloat(sc.style.top||'0'),H=parseFloat(hc.style.top||'0');const ok=L>1&&T>1&&H>1;document.title='CURSORTEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='cursortest';d.textContent='CURSORTEST '+(ok?'PASS':'FAIL')+' left='+sc.style.left+' top='+sc.style.top+' hue='+hc.style.top;document.body.appendChild(d);}
 if(location.hash.startsWith('#app')){const ap=location.hash.slice(4),s=document.getElementById('appsel');if(s&&ap){s.value=ap;pkgChanged();}}
