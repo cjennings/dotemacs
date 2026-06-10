@@ -1,0 +1,119 @@
+#+TITLE: Theme-Studio Spec: Declared Palette Columns
+#+DATE: 2026-06-10
+
+* Metadata
+
+- Status: Draft (Ready after Craig's read)
+- Source: design discussion 2026-06-10 (Craig + session), folding in the shipped ramps v1 and color-families work it supersedes
+- Related: [[file:theme-studio-palette-ramps-spec.org][palette-ramps spec]] (ramp math, floor/L_max safety — still in force), [[file:theme-studio-color-families-spec.org][color-families spec]] (superseded in its grouping half), [[file:design/theme-studio-color-harmony.org][color-harmony explainer]]
+
+* Summary
+
+The palette stops being a flat bag of colors grouped by hex inference and becomes a declared structure: a ground pair (bg, fg) plus user-created columns, each column a parametric ramp (name, base hex, count, knobs) whose steps are always computed, never stored. Membership is known by construction, naming is mechanical (name+N / name-N), ordering is canonical everywhere, and the file format saves the structure explicitly. Theme-studio launches empty (bg and fg only); legacy flat palettes import through a one-time LCCL shim. The declared structure is the substrate the future generate-palette (harmonic fill) feature needs.
+
+* Problem / Context
+
+The shipped color-families feature derives groups from hexes every render (LCCL clustering). That solved display grouping for arbitrary flat palettes, but membership stays inferred: the geometrically irreducible cases (yellow+2 on the distinguished palette) need a per-hex override layer, renames and regenerates need repoint machinery to keep names and groups coherent, and a generate-palette feature would have to emit colors that the inference then re-groups, hoping it agrees with the generator's intent.
+
+When the user creates every group themselves, inference is the wrong tool. A column created by hitting + and ramping a chosen base is declared; nothing needs deriving, and the LCCL machinery retires to one job it is actually right for: proposing columns when importing a legacy flat palette.
+
+* Goals and Non-Goals
+
+** Goals
+
+1. Palette = ground pair + declared columns; column steps parametric (computed from base + count + knobs, never stored).
+2. Mechanical naming: column name + offset (=blue+1=, =blue-2=); renaming a column renames its steps atomically.
+3. Canonical ordering everywhere (strips, dropdowns, export): bg column, fg column, then user columns left to right.
+4. Explicit v2 file format; old flat files import through a confirm-gated LCCL shim.
+5. Launch state: bg and fg only, no columns, packages and UI faces at inherit/ground defaults.
+6. bg and fg are themselves columns (pinned first), ramp-able like any other.
+7. Foundation for generate-palette: "N columns, here are my chosen colors, fill the rest harmoniously."
+
+** Non-Goals
+
+- Harmonic fill itself (vNext; see the color-harmony explainer).
+- Per-step hand-tweaks. Parametric is provisional by agreement: if it fights the actual workflow, we revisit (stored steps or per-step deltas).
+- Symbolic references (column+offset identity for assignments). References stay hexes with the existing repoint machinery; symbolic refs are a possible vNext.
+- Any change to the ramp math, contrast floor, L_max, or picker safety machinery — all carried forward as-is.
+
+* Design
+
+** Data model
+
+#+begin_example
+palette = {
+  bg:      {name: 'bg', base: '#141210', count: 0, stepL: 0.08, chromaEase: 0.5},
+  fg:      {name: 'fg', base: '#f2efe9', count: 0, stepL: 0.08, chromaEase: 0.5},
+  columns: [{name, base, count, stepL, chromaEase}, ...]
+}
+#+end_example
+
+A column's swatches are =steps(column)= → =ramp(base, {n: count, stepL, chromaEase})= plus the base, ordered and named mechanically. =count= 0 is a single-swatch column (a one-off accent). bg and fg are columns with fixed identity (cannot be removed, names fixed) but ramp like any other: =bg+1=/=bg+2= are the hl-line/mode-line tint slots, =fg-1=/=fg-2= the dimmed-text slots; steps that fall outside the gamut clamp with the existing badge.
+
+Column identity is positional (the array); the display name is the only name. Renaming changes =name= and thereby every step label. Step hexes are deterministic from (base, count, knobs), so two renders never disagree.
+
+** References and regenerate
+
+Assignments (syntax MAP, UI faces, package faces) keep storing hexes. Editing a base or count regenerates the column and runs the existing repoint plan: surviving steps repoint by signed lightness rank, removed steps leave the reference on its now-gone hex with the visible "(gone)" dropdown entry. This is the shipped =stepRepointPlan= behavior, re-grounded on declared columns.
+
+** UI
+
+- The palette area renders the pinned bg column, the pinned fg column, the user columns left to right, then a trailing empty column whose header is "+".
+- Hitting + opens the existing picker to choose a base. The new column lands with the single base swatch (count 0) and the default hue-word name (red, orange, gold, green, cyan, blue, purple, pink, gray from the base's OKLCH hue; collision-suffixed). The count control then expands it to base ±N.
+- Each column keeps: editable name (header), count control (0-4), per-chip select for assignment, base editable through the picker. Per-chip rename/remove disappear for step chips (names are mechanical, removal happens via count); a user column with count 0 can be removed whole.
+- Display order within a column: lightest at top to darkest at bottom, matching the dropdown order (DECISION 9 below — this flips the current dark-to-light strip direction).
+- Dropdown chooser order: default entry, then bg and its steps (lightest to darkest), fg and its steps, then each user column lightest to darkest, left to right (DECISION 10 below places the base within its column run).
+
+** Launch state and the baked page
+
+theme-studio.html bakes an empty v2 theme: bg #141210 (warm near-black), fg #f2efe9 (warm near-white), no columns. The dupre palette no longer ships baked in; it loads through import like any saved theme. Package-face seeds already degrade gracefully (=pname= on an unknown name returns null), so seeded faces keep their structural attrs (bold/box/etc.) and inherit ground colors until the designer assigns; the seeding-engine task later makes seeding palette-aware.
+
+** Export / import
+
+- Export writes the v2 structure verbatim (plus assignments, locks, packages as today). Round-trip is byte-identical, same gate discipline as the flat format had.
+- Import detects the shape: v2 structure loads directly; a legacy flat palette triggers the shim — run LCCL once to propose columns (each proposed column: inferred base = most-saturated member, count from member span, name from the longest-common name prefix or hue word), show the proposal, and only commit on confirm. Members the clustering can't reconcile with a parametric ramp land as count-0 single columns rather than being silently bent.
+- The shim is the LCCL code's retirement home: it runs at import only, never at render.
+
+* Decisions
+
+1. Parametric columns (2026-06-10, Craig): steps computed, never stored. Provisional — abandoned or amended if it fights real use.
+2. bg and fg ramp too (Craig): one bg column and one fg column, pinned first.
+3. Explicit structure storage (Craig): no name-grammar parsing; breaking format change accepted.
+4. Legacy import via LCCL shim (Craig): confirm-gated, propose-then-commit.
+5. + lands a single-swatch column (Craig): picker chooses the base; count expands it. No surprise default ramp.
+6. Empty launch (Craig): bg and fg only; packages/UI at defaults until assigned.
+7. References stay hexes + repoint (session, unvetoed): least churn, machinery already gate-covered.
+8. Default column name = hue word from the base's OKLCH hue (session, unvetoed).
+9. Column strips display lightest→darkest top→bottom, matching the dropdown (session — flips the current strip direction; flag to Craig on read).
+10. Dropdown: each column appears as one run, lightest to darkest, with the base in its natural lightness position within the run (session; Craig said "bg color, fg color, then lightest to darkest each column" — flag on read whether the bg/fg BASES should instead lead before any steps).
+
+* Alternatives Considered
+
+** Flat ordered list with name-grammar membership (rejected)
+
+Saving a flat list where =blue+2..blue-2= adjacency and suffix parsing carry membership honors "saved in order" but resurrects the name-grammar inference the families spec already rejected. Explicit structure is strictly simpler; names become output.
+
+** Stored steps with hand-tweaks (deferred, not rejected)
+
+Keeping steps as real palette entries preserves per-step nudging but re-opens every coherence question (drifted steps vs mechanical names, regenerate vs hand edits). Parametric first; revisit on real-use pain per Decision 1.
+
+** Keep LCCL at render with declared hints (rejected)
+
+The hint-override task taken to its conclusion. Declaring membership at creation makes both the inference and its overrides unnecessary.
+
+* Implementation Phases
+
+Each phase lands TDD with the usual commit-per-green-phase; =make theme-studio-test= green throughout.
+
+1. *Core model.* Column type, =steps()=, mechanical naming, canonical ordering, v2 export/import round-trip. Pure functions in app-core.js, node tests.
+2. *Renderer.* Pinned bg/fg columns, user columns, the + column, picker-for-base flow, count expansion, column rename/remove. Gate: #columnstest.
+3. *References.* Dropdown canonical ordering, repoint on base/count edits re-grounded on columns, "(gone)" behavior. Adapt #counttest/#baseedittest.
+4. *Import shim.* Flat-shape detection, LCCL proposal, confirm gate, conversion. Gate: #shimtest (a fixture flat palette converts to the expected columns).
+5. *Launch + bake.* Empty v2 default in generate.py, seeds degrade verified, README rewrite for the new model. Adapt #roundtriptest, #familytest retires or becomes #columnstest coverage.
+6. *Test-surface reconciliation.* Sweep remaining gates and node tests for flat-palette assumptions; retire dead LCCL render paths (clustering stays, callable from the shim only).
+
+* Task fallout (todo.org, at breakdown time)
+
+- The [#C] per-hex family-hint override task dies (CANCELLED — membership is declared now).
+- The color-families manual sign-off items change shape: grouping-reads-right becomes moot (nothing is inferred); regenerate/"(gone)" checks carry over.
+- The seeding-engine task gains a dependency note (palette-aware seeding presumes columns exist to reference).
