@@ -408,9 +408,14 @@ function udeco(o){return `font-weight:${o.bold?'bold':'normal'};font-style:${o.i
 // box-shadow VALUE (or '' for no box). 'line' is a flat border in the box color
 // (or the face's own color when unset); 'released'/'pressed' are the 3D button
 // styles Emacs draws, derived from the background so they read on any color.
-function boxCss(b){if(!b||!b.style)return '';const w=b.width||1;
-  if(b.style==='released')return `inset ${w}px ${w}px 0 #ffffff33,inset -${w}px -${w}px 0 #00000066`;
-  if(b.style==='pressed')return `inset ${w}px ${w}px 0 #00000066,inset -${w}px -${w}px 0 #ffffff33`;
+function boxCss(b,bg){if(!b||!b.style)return '';const w=b.width||1;
+  if(b.style==='released'||b.style==='pressed'){
+    // Emacs derives the 3D edges from the face's background (reliefColors,
+    // ported from xterm.c); the translucent pair is only the no-bg fallback.
+    const r=bg?reliefColors(bg):{hl:null,sh:null};
+    const hl=r.hl||'#ffffff33',sh=r.sh||'#00000066';
+    const [a,z]=b.style==='released'?[hl,sh]:[sh,hl];
+    return `inset ${w}px ${w}px 0 ${a},inset -${w}px -${w}px 0 ${z}`;}
   return `inset 0 0 0 ${w}px ${b.color||'currentColor'}`;}
 // The per-row box control: none / line / raised / pressed. get()/set() read and
 // write the face's box object (null = no box).
@@ -494,7 +499,7 @@ function buildMockFrame(){
     buf+=`<div class="ln" style="background:${rowBg}"><span class="fr" data-face="fringe" style="background:${frng.bg||bg};color:${frng.fg||fg};text-align:center;font-size:10px;overflow:hidden" title="fringe">${L.cont?'&#8618;':''}</span><span class="num" data-face="${nFace}" style="color:${nFg};background:${nBg};${udeco(isc?lnc:ln)}">${i+1}</span><span class="cd">${cd||'&nbsp;'}</span></div>`;
   });
   let html=`<div class="mbuf" style="display:flex;background:${bg}"><div style="flex:1;min-width:0">${buf}</div><div data-face="vertical-border" title="vertical-border" style="width:3px;flex:0 0 auto;background:${vb.fg||vb.bg||'#2f343a'}"></div></div>`;
-  const mlbx=boxCss(ml.box),mlibx=boxCss(mli.box);
+  const mlbx=boxCss(ml.box,ml.bg||bg),mlibx=boxCss(mli.box,mli.bg||bg);
   html+=`<div class="bar" data-face="mode-line" style="background:${ml.bg||fg};color:${ml.fg||bg};${udeco(ml)}${mlbx?';box-shadow:'+mlbx:''}">  init.el      (Emacs Lisp)      L5      git:main  </div>`;
   html+=`<div class="bar" data-face="mode-line-inactive" style="background:${mli.bg||bg};color:${mli.fg||fg};${udeco(mli)}${mlibx?';box-shadow:'+mlibx:''}">  *Messages*      (Fundamental)  </div>`;
   html+=`<div class="echo" style="color:${fg}"><span data-face="minibuffer-prompt" style="color:${mb.fg||fg};${udeco(mb)}">I-search:</span> count   <span data-face="isearch-fail" style="color:${isf.fg||fg};background:${isf.bg||'transparent'};${udeco(isf)}">zzz [no match]</span></div>`;
@@ -539,7 +544,7 @@ function buildPkgTable(){
   }
   applyTableSort('pkgbody');
 }
-function ofs(app,face){const f=PKGMAP[app][face]||{},fg=effFg(pkgEffFg(app,face)),bg=pkgEffBg(app,face);const dec=(f.underline?'underline ':'')+(f.strike?'line-through':'');const bx=boxCss(f.box);return `color:${fg};${bg?'background:'+bg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};text-decoration:${dec.trim()||'none'};font-size:${(f.height||1)}em${bx?';box-shadow:'+bx:''}`;}
+function ofs(app,face){const f=PKGMAP[app][face]||{},fg=effFg(pkgEffFg(app,face)),bg=pkgEffBg(app,face);const dec=(f.underline?'underline ':'')+(f.strike?'line-through':'');const bx=boxCss(f.box,bg||MAP['bg']);return `color:${fg};${bg?'background:'+bg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};text-decoration:${dec.trim()||'none'};font-size:${(f.height||1)}em${bx?';box-shadow:'+bx:''}`;}
 function os(app,face,txt){return `<span data-face="${face}" style="${ofs(app,face)}">${txt}</span>`;}
 function renderOrgPreview(){const a='org-mode',L=[];
   L.push(os(a,'org-document-info-keyword','#+TITLE:')+' '+os(a,'org-document-title','Project Notes'));
@@ -863,7 +868,7 @@ function worstCellHtml(face){
 // Repaint every covered overlay face (their floors depend on the syntax palette,
 // so a syntax-color edit has to refresh them even though it doesn't rebuild the table).
 function repaintCovered(){COVERED_FACES.forEach(f=>{if(UIMAP[f]&&document.getElementById('uicr-'+f))paintUI(f);});}
-function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=effFg(o.fg);pv.style.background=effBg(o.bg);pv.style.fontWeight=o.bold?'bold':'normal';pv.style.fontStyle=o.italic?'italic':'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';pv.style.boxShadow=boxCss(o.box);
+function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=effFg(o.fg);pv.style.background=effBg(o.bg);pv.style.fontWeight=o.bold?'bold':'normal';pv.style.fontStyle=o.italic?'italic':'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';pv.style.boxShadow=boxCss(o.box,effBg(o.bg));
   const cr=document.getElementById('uicr-'+face);if(cr){const w=worstCellHtml(face);if(w!==null){cr.innerHTML=w;}else{const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}}
 function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
@@ -1076,7 +1081,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  // two-color ratio alone, and must re-rate a ground-dependent face's cell.
  UIMAP['fringe']={fg:'#ddeeff',bg:null,bold:false,italic:false,underline:false,strike:false};
  buildUITable();
- const gb=MAP['bg'];MAP['bg']='#440000';applyGround();
+ MAP['bg']='#440000';applyGround();
  const pv=document.getElementById('uiprev-mode-line');
  A(pv&&pv.style.background==='rgb(170, 187, 204)','ground change keeps a face own preview bg: got '+(pv&&pv.style.background));
  const twoAfter=document.getElementById('uicr-mode-line');
@@ -1100,6 +1105,25 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();applyGround();
  document.title='CONTRASTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='contrasttest';d.textContent='CONTRASTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Bevel gate (open with #beveltest): released/pressed boxes derive their
+// highlight and shadow from the face's effective bg per Emacs's relief
+// algorithm, and pressed draws the shadow edge first.
+if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveUI=JSON.parse(JSON.stringify(UIMAP));
+ UIMAP['mode-line']={fg:'#d8dee9',bg:'#30343c',bold:false,italic:false,underline:false,strike:false,box:{style:'released',width:1,color:null}};
+ buildUITable();
+ const pv=document.getElementById('uiprev-mode-line');
+ const bs=pv&&pv.style.boxShadow;
+ A(bs&&bs.includes('rgb(113, 118, 127)'),'released highlight derives from the face bg (#71767f): '+bs);
+ A(bs&&bs.includes('rgb(15, 17, 22)'),'released shadow derives from the face bg (#0f1116): '+bs);
+ UIMAP['mode-line'].box={style:'pressed',width:1,color:null};paintUI('mode-line');
+ const bs2=pv&&pv.style.boxShadow;
+ A(bs2&&bs2.includes('rgb(15, 17, 22)')&&bs2.includes('rgb(113, 118, 127)')&&bs2.indexOf('rgb(15, 17, 22)')<bs2.indexOf('rgb(113, 118, 127)'),'pressed swaps the pair (shadow edge first): '+bs2);
+ UIMAP['mode-line'].box={style:'line',width:1,color:'#ff0000'};paintUI('mode-line');
+ A(pv&&pv.style.boxShadow.includes('rgb(255, 0, 0)'),'line style keeps its explicit color: '+(pv&&pv.style.boxShadow));
+ for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();
+ document.title='BEVELTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='beveltest';d.textContent='BEVELTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Safe-lightness gate (open with #safetest): the OKLCH picker shades the unsafe
 // lightness band for a selected covered face and hides it when no face is selected.
 if(location.hash==='#safetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
