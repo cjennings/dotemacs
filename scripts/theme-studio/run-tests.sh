@@ -59,11 +59,14 @@ if [ "$NO_BROWSER" = 1 ]; then
 elif [ -z "$CHROME" ]; then
   for t in $HASHES; do skip_msg "#$t (no Chromium-family browser found)"; done
 else
-  PROF="$(mktemp -d)"
+  # An empty --user-data-dir makes Chrome fall back to the user's real default
+  # profile and take its SingletonLock; a hung headless render then blocks every
+  # interactive Chrome launch until killed. Never let an empty PROF reach Chrome.
+  PROF="$(mktemp -d)" && [ -n "$PROF" ] || { echo "mktemp -d failed — refusing to run browser gates" >&2; exit 1; }
   trap 'rm -rf "$PROF"' EXIT
   for t in $HASHES; do
     upper="$(echo "$t" | tr '[:lower:]' '[:upper:]')"
-    res="$("$CHROME" --headless --no-sandbox --disable-gpu --user-data-dir="$PROF" \
+    res="$(timeout --kill-after=5 30 "$CHROME" --headless --no-sandbox --disable-gpu --user-data-dir="$PROF" \
       --virtual-time-budget=8000 --dump-dom "file://$HERE/theme-studio.html#$t" 2>/dev/null \
       | grep -o "${upper}[^<]*" | head -1)"
     case "$res" in
