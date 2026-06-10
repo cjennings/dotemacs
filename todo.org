@@ -93,9 +93,19 @@ Phase 5 (commit =843bbf08=). The OKLCH picker gets a "safe for" selector over th
 Commit =23926837=. README documents the ramp controls and defaults, the worst-case floor / limiting foreground, the five covered faces, the safe-lightness guidance, and WCAG-drives-PASS-FAIL with APCA as a diagnostic; the browser-gate list is updated. =make theme-studio-test= carries all new node tests and the #ramptest/#contrasttest/#safetest gates. All acceptance criteria met.
 
 ** TODO [#B] theme-studio color families :feature:theme-studio:
-Show the palette as hue-grouped strips (dark→light) over the existing flat, individually-editable palette. Grouping is by OKLCH hue from the hex, so renaming a color never moves it. A per-strip count control generates a symmetric ramp (N → base ±N) from the strip's most-saturated color; regenerate is authoritative, repointing surviving-step references by lightness rank and leaving removed-step references a visible "(gone)". The ground strip is synthesized from the bg/fg assignments and pinned first; the standalone ramp panel is removed. Designed in [[file:docs/theme-studio-color-families-spec.org][docs/theme-studio-color-families-spec.org]]. Codex-reviewed and response folded 2026-06-09: pivoted from name-derived families to hex-derived families over a flat palette, which designs out the name-grammar/import-inference and chip-ownership blockers. All review findings dispositioned; both open decisions resolved. Builds on and supersedes the palette-ramps v1 ramp UI. Six phases; build tasks created on Craig's Ready confirmation.
-
-Codex review 2026-06-09: =Not ready=. Review file: [[file:docs/theme-studio-color-families-spec-review.org][docs/theme-studio-color-families-spec-review.org]]. Blockers: accept/resolve the two open decisions; define exact family name grammar/import inference; define the =fg/bg= ground-strip source of truth; specify legal chip-level operations in family mode; define reference behavior for assignments pointing at steps removed by lowering N.
+Show the palette as hue-grouped strips (dark→light) over the existing flat, individually-editable palette. Grouping is by OKLCH hue from the hex, so renaming a color never moves it. A per-strip count control generates a symmetric ramp (N → base ±N) from the strip's most-saturated color; regenerate is authoritative, repointing surviving-step references by lightness rank and leaving removed-step references a visible "(gone)". The ground strip is synthesized from the bg/fg assignments and pinned first; the standalone ramp panel is removed. Designed in [[file:docs/theme-studio-color-families-spec.org][docs/theme-studio-color-families-spec.org]]. Codex-reviewed Ready 2026-06-10 after response folded: pivoted from name-derived families to hex-derived families over a flat palette, which designs out the name-grammar/import-inference and chip-ownership blockers. All review findings dispositioned; both open decisions resolved. Builds on and supersedes the palette-ramps v1 ramp UI. Six phases below; manual aesthetic checks under the Manual testing parent.
+*** TODO [#B] Family model core :solo:
+Phase 1. In app-core.js, pure: =familiesFromPalette(palette, groundHexes)= → ground strip (from the two ground hexes, de-duped) + hue-clustered families (gap-split at 25°, neutrals at C<0.02 separated), each with a base (most-saturated, tie toward mid-lightness); =regenFamily(baseHex, n, opts)= → members (n=0 → base only, handled without =ramp()='s 1-4 clamp; n≥1 → ramp base±n); =stepRepointPlan(oldMembers, newMembers)= → {map: [[oldHex,newHex]], removed: [hex]} by signed lightness rank. Node tests: spectrum splits, near-pair stays, neutrals/ground-absent, n=0, repoint survivors + removed. Verify: =make theme-studio-test= green.
+*** TODO [#B] Family sort core :solo:
+Phase 2. =sortFamilies= orders ground-first, neutrals (C<0.02) next, chromatic by base hue (ties by base lightness then hex); within-strip by OKLCH lightness. Node tests: spectrum order, all-neutral, ties, the 25° gap boundary. Sorting is display-only; the stored palette order is untouched.
+*** TODO [#B] Family-strip rendering :solo:
+Phase 3. Render the palette panel as the pinned ground strip + hue-sorted family strips (base marked, dark→light), reusing chip styling; the existing per-chip rename/remove/edit keep working over the still-flat palette. No count control yet. Verify: headless screenshot + the panel still drives the existing flows.
+*** TODO [#B] Count control + regenerate :solo:
+Phase 4. Per-strip count input (0-4). On change: =regenFamily=, apply =stepRepointPlan= (repoint survivors via =repointHex=, leave removed refs "(gone)"), update PALETTE, re-render. New browser gate: count up adds symmetric steps; count down drops extremes and a ref to a dropped step reads "(gone)" while a ref to a surviving step follows the new hex. Depends on Phase 1.
+*** TODO [#B] Ground strip + base edit + retire ramp panel :solo:
+Phase 5. Synthesize the ground strip from =MAP.bg=/=MAP.p= (editable, pinned, de-duped by hex, works when the ground hex isn't a palette entry). Base edit regenerates + repoints. Remove the standalone ramp panel and its #ramptest gate; adding a color yields a singleton strip that fans via its count. New gate: ground-strip derivation (incl. assignment-only ground hex) + base-edit repoint.
+*** TODO [#B] Warnings, seeding, export, README close-out :solo:
+Phase 6. Keep =paletteWarnings= on the flattened palette but exempt adjacent same-family ramp steps from the too-similar warning. Confirm =seedPkgmap= still reads the flat palette unchanged. Confirm export emits the flat palette unchanged and import needs no reconstruction; gate an import→render→export round-trip leaving the JSON identical. Update README (families, ground strip, regenerate, removed-step refs, ramp-panel removal). Closes the README + round-trip acceptance criteria.
 
 ** TODO [#C] Internet radio now-playing song :feature:music:emms:
 Show the currently-playing song while streaming an internet radio station. Lives in =modules/music-config.el= (EMMS + MPV backend, M3U radio stations). The track title comes from the stream's ICY metadata — EMMS exposes it via =emms-track-description= / =emms-playing-time= and updates it on the metadata-change hook; MPV reports the ICY title too. Add an option to show the song in the minibuffer (e.g. echo on track change, or an on-demand command). Consider also a mode-line indicator as a second surface.
@@ -239,6 +249,25 @@ What we're verifying: a background tint the tool calls safe really keeps every t
 - Build the theme and load it in Emacs, open a code buffer with varied syntax, and select a region spanning many token colors
 - Read every token through the region highlight, paying attention to the limiting foreground the tool named
 Expected: every token stays readable over the tint, including the limiting one; a tint pushed just past L_max (readout FAIL) shows a visibly strained or unreadable token, confirming the floor matches reality.
+*** TODO Color families group the way the eye reads them
+What we're verifying: the OKLCH hue clustering (25° gap) splits and merges families the way you'd expect, and renaming never moves a color.
+- Open =scripts/theme-studio/theme-studio.html= in Chrome and load a real theme (e.g. sterling)
+- Read the strips top to bottom: are "the blues" one strip, "the greens" another, neutrals and ground pinned at the top
+- Find a pair you'd consider one family that landed in two strips (or two you'd consider separate that merged)
+- Rename any swatch to something absurd and confirm it stays in the same strip
+Expected: families match your mental grouping; the few that don't are the cue to revisit the 25° gap; renaming never regroups.
+*** TODO Regenerate-replace reads as deliberate
+What we're verifying: the count control clearly signals it rewrites the whole family, so replacing hand-added same-hue colors isn't a surprise.
+- Add two unrelated colors at a similar hue so they share a strip
+- Set that strip's count to 2
+- Watch what happens to the two colors
+Expected: the strip becomes a clean base±2 ramp, the two loose colors are gone, and the control made it obvious that's what it would do before you committed.
+*** TODO Removed-step references read clearly as "(gone)"
+What we're verifying: lowering a family's count leaves a referencing face visibly stale, not silently re-pointed.
+- Assign a UI or syntax element to an outer step of a family (e.g. region = a blue+3)
+- Lower that family's count to 2 so blue+3 disappears
+- Read the assignment's dropdown
+Expected: the dropdown shows "(gone)" for the removed step, never a silent jump to a different color; re-pointing it is a deliberate choice.
 ** TODO [#B] theme-studio guide-support features :feature:theme-studio:
 From the color-assignment guide work (2026-06-08): make the tool support the guide without mandating it — everything a seed, an advisory, or a view, never a gate. Two specs to write, both deriving from the rewritten guide and its seed table ([[file:scripts/theme-studio/theme-coloring-guide.org][theme-coloring-guide.org]]).
 *** 2026-06-08 Mon @ 19:08:00 -0500 Seeding-engine spec written and Ready

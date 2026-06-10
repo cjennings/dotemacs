@@ -3,7 +3,7 @@
 #+DATE: 2026-06-09
 
 * Metadata
-| Status   | draft — review incorporated (Codex, 2026-06-09); pivoted to hex grouping |
+| Status   | Ready (Craig confirmed 2026-06-10); review incorporated, hex grouping |
 | Owner    | Craig                                                                  |
 | Reviewer | Codex                                                                  |
 | Related  | [[file:../todo.org][todo.org: theme-studio color families]]            |
@@ -196,3 +196,7 @@ Only modified and rejected review recommendations are listed; everything else fr
 - What changed or was recommended: folded the Codex review and Craig's three clarifications. Resolved both open decisions (flat persistence; remove the standalone ramp panel). Pivoted the whole model from name-derived families to hex-derived families over a still-flat, still-editable palette — which designs out the name-grammar/import-inference blocker and the chip-ownership blocker. Pinned the ground strip to the bg/p assignments, the removed-step references to a visible "(gone)", n=0 handled without =ramp()=, the 0.02 neutral and 25° hue-gap thresholds, the sort tie-breakers, the warnings exemption, and the unchanged package seeding. See Review dispositions for the two reframed findings.
 - Why: Craig's "group by hex, never by name; rename anything freely" both answers the review's hardest questions and simplifies the design — the palette no longer changes ownership, so most of the missing contracts disappear.
 - Artifacts: review file deleted; Review dispositions section; this entry. Remaining fuzzy area is the hue-clustering threshold (pinned default, vNext tuning).
+** 2026-06-10 Wed @ 00:03:39 -0500 — Codex — reviewer
+- What changed or was recommended: re-reviewed the updated spec and found it implementation-ready. No new blocking review notes; the prior blockers are resolved by the hex-derived grouping model, accepted flat-palette persistence, accepted ramp-panel removal, explicit ground-strip source, retained per-chip flat-palette ownership, removed-step "(gone)" policy, pinned clustering/sort thresholds, and README/test acceptance criteria.
+- Why: the updated design now gives the implementer stable behavior for grouping, regeneration, references, ground colors, import/export, and UI ownership while fitting the current =app-core.js= / =app.js= split.
+- Artifacts: no new review file; this Ready verification entry.
