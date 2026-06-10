@@ -138,7 +138,7 @@ function buildTable(){
     tr.appendChild(c2);tr.appendChild(lkTd);tr.appendChild(c0);tr.appendChild(stTd);tr.appendChild(crTd);tr.appendChild(exTd);
     tb.appendChild(tr);}
 }
-let dragFrom=null,selectedIdx=null;
+let selectedIdx=null;
 // When a named palette color is deleted, remember its hex keyed by name so that
 // recreating a color with the same name can re-bind the assignments still pointing
 // at the old (now "(gone)") hex. Consumed once per name; cleared on import.
@@ -166,35 +166,47 @@ function renderPaletteWarnings(warnings,overflow){
   if(overflow>0)html+=`<div class="pwl">and ${overflow} more</div>`;
   w.innerHTML=html;w.style.display='block';
 }
+// One palette chip for PALETTE[i], with its remove / rename / select handlers.
+// Families sort deterministically, so the old move-arrow / drag reordering is gone.
+function paletteChip(i,nearest){
+  const [hex,name]=PALETTE[i],tc=textOn(hex),nde=nearest[i];
+  const locked=(hex===MAP['bg']||hex===MAP['p']);
+  const d=document.createElement('div');d.className='pchip'+(i===selectedIdx?' sel':'');d.style.background=hex;
+  d.title=name+' '+hex+(nde===Infinity||nde===undefined?'':' — nearest ΔE '+nde.toFixed(3));
+  const rm=locked?`<span class="lock" title="${hex===MAP['bg']?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
+  d.innerHTML=`${rm}<input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
+  if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();if(name)lastGone[name.toLowerCase()]=hex;PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
+  d.querySelector('.nm').onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
+  d.onclick=(e)=>{if(e.target.closest('.rm')||e.target.closest('.nm'))return;selectColor(i);};
+  return d;
+}
+// Render the palette as hue families: the pinned ground strip, then hue-sorted
+// family strips, each dark to light. Grouping is derived from the hex by
+// familiesFromPalette every render, so renaming a color never moves it. The flat
+// PALETTE stays the editable truth; chips keep their per-chip controls.
 function renderPalette(){
   const p=document.getElementById('pals');p.innerHTML='';
   const {warnings,overflow,nearest}=paletteWarnings(PALETTE,DELTAE_MIN,5);
-  PALETTE.forEach((pc,i)=>{const [hex,name]=pc;const tc=textOn(hex);
-    const nde=nearest[i];
-    const locked=(hex===MAP['bg']||hex===MAP['p']);
-    const d=document.createElement('div');d.className='pchip'+(i===selectedIdx?' sel':'');d.style.background=hex;d.draggable=true;
-    d.title=name+' '+hex+(nde===Infinity?'':' — nearest \u0394E '+nde.toFixed(3));
-    const lft=i>0?`<button class="mv l" title="move left" style="color:${tc}">&#8249;</button>`:'';
-    const rgt=i<PALETTE.length-1?`<button class="mv r" title="move right" style="color:${tc}">&#8250;</button>`:'';
-    const rm=locked?`<span class="lock" title="${hex===MAP['bg']?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
-    d.innerHTML=`${rm}${lft}${rgt}<input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
-    if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();if(name)lastGone[name.toLowerCase()]=hex;PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
-    if(lft)d.querySelector('.mv.l').onclick=(e)=>{e.stopPropagation();moveColor(i,-1);};
-    if(rgt)d.querySelector('.mv.r').onclick=(e)=>{e.stopPropagation();moveColor(i,1);};
-    d.querySelector('.nm').onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
-    d.onclick=(e)=>{if(e.target.closest('.rm')||e.target.closest('.nm')||e.target.closest('.mv'))return;selectColor(i);};
-    d.ondragstart=()=>{dragFrom=i;d.classList.add('drag');};
-    d.ondragend=()=>{d.classList.remove('drag');document.querySelectorAll('.pchip.over').forEach(x=>x.classList.remove('over'));};
-    d.ondragover=(e)=>{e.preventDefault();if(dragFrom!==null&&dragFrom!==i)d.classList.add('over');};
-    d.ondragleave=()=>d.classList.remove('over');
-    d.ondrop=(e)=>{e.preventDefault();d.classList.remove('over');if(dragFrom===null||dragFrom===i)return;const m=PALETTE.splice(dragFrom,1)[0];PALETTE.splice(i,0,m);dragFrom=null;selectedIdx=null;renderPalette();buildTable();buildUITable();};
-    p.appendChild(d);});
+  const {ground,families}=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+  const used=new Set();
+  const idxOf=(hex,name)=>{for(let i=0;i<PALETTE.length;i++)if(!used.has(i)&&PALETTE[i][0]===hex&&PALETTE[i][1]===name){used.add(i);return i;}return -1;};
+  const strip=(cls)=>{const s=document.createElement('div');s.className='fstrip'+(cls||'');p.appendChild(s);return s;};
+  const gs=strip(' ground');gs.dataset.family='ground';
+  ground.forEach(g=>{
+    const i=PALETTE.findIndex((pp,k)=>!used.has(k)&&pp[0]===g.hex);
+    if(i>=0){used.add(i);gs.appendChild(paletteChip(i,nearest));}
+    else{const tc=textOn(g.hex),sw=document.createElement('div');sw.className='pchip';sw.style.background=g.hex;sw.title=(g.role||'')+' '+g.hex;
+      sw.innerHTML=`<input class="nm" value="${g.role||''}" disabled style="color:${tc}"><div class="hx" style="color:${tc}">${g.hex}</div>`;gs.appendChild(sw);}
+  });
+  sortFamilies(families).forEach(f=>{
+    const s=strip('');s.dataset.family=f.base;
+    f.members.forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest));});
+  });
   renderPaletteWarnings(warnings,overflow);
   buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
 }
 function notify(msg,err){const m=document.getElementById('palmsg');if(!m)return;m.textContent=msg;m.style.color=err?'#cb6b4d':'#8a9496';m.style.opacity='1';clearTimeout(m._t);m._t=setTimeout(()=>{m.style.opacity='0';},err?4000:2800);}
 function applyEdit(){if(selectedIdx!==null)updateColor();else addColor();}
-function moveColor(i,dir){const j=i+dir;if(j<0||j>=PALETTE.length)return;const t=PALETTE[i];PALETTE[i]=PALETTE[j];PALETTE[j]=t;if(selectedIdx===i)selectedIdx=j;else if(selectedIdx===j)selectedIdx=i;renderPalette();buildTable();buildUITable();}
 function selectColor(i){selectedIdx=i;const [hex,name]=PALETTE[i];setHex(hex);document.getElementById('newname').value=name;renderPalette();notify('editing "'+name+'" — change the value, then Enter (or Update selected) to save',false);}
 function updateColor(){
   if(selectedIdx===null){notify('click a palette color to select it first',true);return;}
@@ -1113,3 +1125,23 @@ if(location.hash==='#healtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
  document.title='HEALTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='healtest';d.textContent='HEALTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Family-strip gate (open with #familytest): the palette renders as the pinned
+// ground strip plus hue families, chips keep their controls, and renaming a color
+// to anything leaves it in the same strip (grouping is by hex, not name).
+if(location.hash==='#familytest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveSel=selectedIdx;
+ MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';
+ PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg'],['#c0402a','red'],['#3a6ea5','blue'],['#808080','gray']];selectedIdx=null;renderPalette();
+ const strips=[...document.querySelectorAll('#pals .fstrip')];
+ A(strips.length&&strips[0].classList.contains('ground'),'ground strip is pinned first');
+ A(strips[0].querySelectorAll('.pchip').length===2,'ground strip carries bg + fg');
+ A(strips.length>=4,'ground + neutral + red + blue strips, got '+strips.length);
+ const redChip=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='red');
+ A(!!redChip&&!!redChip.querySelector('.rm')&&!!redChip.querySelector('.nm'),'a family chip keeps remove + rename controls');
+ const redFamily=redChip&&redChip.closest('.fstrip').dataset.family;
+ const ri=PALETTE.findIndex(p=>p[1]==='red');PALETTE[ri][1]='zztop-absurd';renderPalette();
+ const renamed=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='zztop-absurd');
+ A(!!renamed&&renamed.closest('.fstrip').dataset.family===redFamily,'a renamed color stays in the same strip');
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);selectedIdx=saveSel;renderPalette();
+ document.title='FAMILYTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='familytest';d.textContent='FAMILYTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}

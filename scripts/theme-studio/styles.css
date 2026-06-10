@@ -23,13 +23,15 @@
  .cat{color:#b4b1a2} .ex{font-size:17px}
  .sbtn{width:26px;height:24px;border:1px solid #3a3a3a;border-radius:3px;background:#eaeaea;color:#111;cursor:pointer;font-size:15px;margin-right:2px;padding:0}
  .sbtn.on{background:#0d0b0a;color:#cdced1;border-color:#8a9496}
- .pals{display:flex;gap:8px;flex-wrap:wrap}
+ .pals{display:flex;flex-direction:column;gap:8px}
+ .fstrip{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:5px;border-radius:7px;border:1px solid transparent}
+ .fstrip.ground{border-color:#252321;background:#161412}
+ .fstrip .slabel{font:9pt monospace;color:#6f6a5e;min-width:30px;text-align:right;padding-right:4px}
  .palwarn{display:none;margin-top:8px;font:10pt monospace;color:#cb6b4d}
  .palwarn .pwh{font-weight:bold;margin-bottom:2px}
  .palwarn .pwl{opacity:.92}
  .pchip{width:128px;height:58px;border-radius:6px;border:1px solid #555;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab}
- .pchip.drag{opacity:.4} .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip.over{outline:2px dashed #e8bd30;outline-offset:1px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none}
- .pchip .mv{position:absolute;bottom:-1px;background:none;border:none;cursor:pointer;font-size:22px;line-height:1;font-weight:bold;opacity:.5;padding:0 5px} .pchip .mv:hover{opacity:1} .pchip .mv.l{left:0} .pchip .mv.r{right:0}
+ .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none}
  .pchip .hx{font-size:10pt;opacity:.8} .pchip .rm{position:absolute;top:2px;right:5px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:bold;opacity:.7}
  .pchip .lock{position:absolute;top:3px;right:5px;font-size:10px;opacity:.6}
  .palctl{margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
