@@ -757,7 +757,7 @@ function buildTable(){
     const crTd=document.createElement('td');crTd.style.whiteSpace='nowrap';crTd.style.fontSize='10pt';
     function styleEx(){exTd.style.color=(kind==='bg'?MAP['p']:effFg(MAP[kind]));exTd.style.background=MAP['bg'];exTd.style.fontWeight=BOLD[kind]?'bold':'normal';exTd.style.fontStyle=ITALIC[kind]?'italic':'normal';}
     function styleCr(){const r=contrast((kind==='bg'?MAP['p']:effFg(MAP[kind])),MAP['bg']);crTd.innerHTML=crHtml(r);}
-    const dd=mkColorDropdown(list,cur,(hex)=>{MAP[kind]=hex;styleEx();styleCr();renderCode();if(kind==='bg'){applyGround();buildTable();}repaintCovered();});
+    const dd=mkColorDropdown(list,cur,(hex)=>{MAP[kind]=hex;styleEx();styleCr();renderCode();if(kind==='bg'){applyGround();buildTable();buildPkgTable();buildPkgPreview();}repaintCovered();});
     styleEx();styleCr();
     const lkTd=mkLockCell(kind,[dd]);
     // style buttons
@@ -1033,7 +1033,11 @@ async function importTheme(){
     const file=await h.getFile();applyImported(await file.text());fileHandle=h;updateTitle();
     notify('imported "'+(themeName()||file.name)+'" — save now overwrites it',false);
   }catch(e){if(e&&e.name!=='AbortError')notify('import failed: '+e.message,true);}}
-function applyGround(){document.querySelectorAll('pre').forEach(p=>p.style.background=MAP['bg']);document.querySelectorAll('.ex').forEach(e=>e.style.background=MAP['bg']);}
+// The blanket covers only the code panes and syntax example cells. UI-face
+// preview cells also carry .ex, but a face with its own bg must keep it, so
+// those rows repaint through paintUI (which also re-rates the contrast cell
+// against the new ground for faces without their own bg).
+function applyGround(){document.querySelectorAll('pre').forEach(p=>p.style.background=MAP['bg']);document.querySelectorAll('#legbody .ex').forEach(e=>e.style.background=MAP['bg']);UI_FACES.forEach(([f])=>{if(document.getElementById('uiprev-'+f))paintUI(f);});}
 function uf(f){return UIMAP[f]||{};}
 function udeco(o){return `font-weight:${o.bold?'bold':'normal'};font-style:${o.italic?'italic':'normal'};text-decoration:${(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none'}`;}
 // A face's :box, rendered as an inset box-shadow (no layout shift). Returns the
@@ -1694,7 +1698,28 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  MAP['p']='';CATS.forEach(c=>{if(c[0]!=='bg')MAP[c[0]]='';});buildUITable();
  const empty=document.getElementById('uicr-region');
  A(empty&&empty.textContent.trim()==='no fg set','empty set reads the no-set message: '+(empty&&empty.textContent));
- for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();
+ // A two-color face (own fg AND own bg) rates its own pair, never the ground bg.
+ UIMAP['mode-line']={fg:'#112233',bg:'#aabbcc',bold:false,italic:false,underline:false,strike:false};
+ buildUITable();
+ const two=document.getElementById('uicr-mode-line'),twoWant=contrast('#112233','#aabbcc');
+ A(two&&Math.abs(parseFloat(two.textContent)-twoWant)<0.06,'ui two-color face rates own fg-on-bg: got '+(two&&two.textContent.trim())+' want '+twoWant.toFixed(1));
+ const tApp=Object.keys(APPS)[0],tFace=APPS[tApp].faces[0][0],savePF=JSON.parse(JSON.stringify(PKGMAP[tApp][tFace]));
+ Object.assign(PKGMAP[tApp][tFace],{fg:'#112233',bg:'#aabbcc',inherit:null});buildPkgTable();
+ const prow=document.querySelector('#pkgbody tr[data-face="'+tFace+'"]'),pcell=prow&&prow.children[5];
+ A(pcell&&Math.abs(parseFloat(pcell.textContent)-twoWant)<0.06,'pkg two-color face rates own fg-on-bg: got '+(pcell&&pcell.textContent.trim())+' want '+twoWant.toFixed(1));
+ PKGMAP[tApp][tFace]=savePF;buildPkgTable();
+ // A ground-bg change must not clobber a face's own preview bg, must leave a
+ // two-color ratio alone, and must re-rate a ground-dependent face's cell.
+ UIMAP['fringe']={fg:'#ddeeff',bg:null,bold:false,italic:false,underline:false,strike:false};
+ buildUITable();
+ const gb=MAP['bg'];MAP['bg']='#440000';applyGround();
+ const pv=document.getElementById('uiprev-mode-line');
+ A(pv&&pv.style.background==='rgb(170, 187, 204)','ground change keeps a face own preview bg: got '+(pv&&pv.style.background));
+ const twoAfter=document.getElementById('uicr-mode-line');
+ A(twoAfter&&Math.abs(parseFloat(twoAfter.textContent)-twoWant)<0.06,'ground change leaves a two-color ratio alone: got '+(twoAfter&&twoAfter.textContent.trim()));
+ const frc=document.getElementById('uicr-fringe'),frWant=contrast('#ddeeff','#440000');
+ A(frc&&Math.abs(parseFloat(frc.textContent)-frWant)<0.06,'ground change re-rates a ground-dependent face: got '+(frc&&frc.textContent.trim())+' want '+frWant.toFixed(1));
+ for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();applyGround();
  document.title='CONTRASTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='contrasttest';d.textContent='CONTRASTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Safe-lightness gate (open with #safetest): the OKLCH picker shades the unsafe
