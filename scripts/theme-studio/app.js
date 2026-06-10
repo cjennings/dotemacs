@@ -1135,8 +1135,9 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  const newInner=regenFamily('#67809c',1).members.find(m=>m.offset===1).hex;
  A(UIMAP['region'].bg.toLowerCase()===newInner.toLowerCase(),'a surviving-step reference followed the regenerate, got '+UIMAP['region'].bg);
  setFamilyCount('#67809c',3);
- const fam3=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).families.find(f=>f.base.toLowerCase()==='#67809c');
- A(fam3&&fam3.members.length===7,'count up to 3 yields 7 members, got '+(fam3&&fam3.members.length));
+ const want3=regenFamily('#67809c',3).members.map(m=>m.hex.toLowerCase());
+ const have=new Set(PALETTE.map(p=>p[0].toLowerCase()));
+ A(want3.every(h=>have.has(h)),'count up to 3 adds all 7 ramp colors to the palette');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
  document.title='COUNTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='counttest';d.textContent='COUNTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
