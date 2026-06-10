@@ -665,6 +665,22 @@ function buildTable(){
     tb.appendChild(tr);}
 }
 let dragFrom=null,selectedIdx=null;
+// When a named palette color is deleted, remember its hex keyed by name so that
+// recreating a color with the same name can re-bind the assignments still pointing
+// at the old (now "(gone)") hex. Consumed once per name; cleared on import.
+let lastGone={};
+// Re-point every assignment — syntax map, UI faces, package faces — from one hex
+// to another. Used when a palette color's value is edited and when a deleted name
+// is recreated.
+function repointHex(oldHex,newHex){
+  if(oldHex===newHex)return;
+  for(const k in MAP){if(MAP[k]===oldHex)MAP[k]=newHex;}
+  for(const f in UIMAP){if(UIMAP[f].fg===oldHex)UIMAP[f].fg=newHex;if(UIMAP[f].bg===oldHex)UIMAP[f].bg=newHex;}
+  for(const ap in PKGMAP)for(const fc in PKGMAP[ap]){const o=PKGMAP[ap][fc];if(o.fg===oldHex)o.fg=newHex;if(o.bg===oldHex)o.bg=newHex;}
+}
+// On adding a color, if its name matches a recently-deleted one, re-bind the
+// stranded assignments to the new hex. Returns true when a heal context existed.
+function healGone(name,newHex){const k=name.toLowerCase();if(!(k in lastGone))return false;const g=lastGone[k];delete lastGone[k];repointHex(g,newHex);return true;}
 // Pairwise OKLab ΔE over the palette. Returns the sub-threshold pairs (sorted
 // closest-first) and each color's nearest-neighbor distance for its chip title.
 // Pure pairwise ΔE analysis lives in colormath.js (paletteWarnings); this renders it.
@@ -688,7 +704,7 @@ function renderPalette(){
     const rgt=i<PALETTE.length-1?`<button class="mv r" title="move right" style="color:${tc}">&#8250;</button>`:'';
     const rm=locked?`<span class="lock" title="${hex===MAP['bg']?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
     d.innerHTML=`${rm}${lft}${rgt}<input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
-    if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
+    if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();if(name)lastGone[name.toLowerCase()]=hex;PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
     if(lft)d.querySelector('.mv.l').onclick=(e)=>{e.stopPropagation();moveColor(i,-1);};
     if(rgt)d.querySelector('.mv.r').onclick=(e)=>{e.stopPropagation();moveColor(i,1);};
     d.querySelector('.nm').onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
@@ -713,9 +729,7 @@ function updateColor(){
   const newName=(document.getElementById('newname').value.trim())||PALETTE[i][1];
   if(PALETTE.some((p,j)=>j!==i&&p[1].toLowerCase()===newName.toLowerCase())){notify('another color is already named "'+newName+'" — names must be unique',true);return;}
   PALETTE[i]=[newHex,newName];
-  for(const k in MAP){if(MAP[k]===oldHex)MAP[k]=newHex;}
-  for(const f in UIMAP){if(UIMAP[f].fg===oldHex)UIMAP[f].fg=newHex;if(UIMAP[f].bg===oldHex)UIMAP[f].bg=newHex;}
-  for(const ap in PKGMAP)for(const fc in PKGMAP[ap]){const o=PKGMAP[ap][fc];if(o.fg===oldHex)o.fg=newHex;if(o.bg===oldHex)o.bg=newHex;}
+  repointHex(oldHex,newHex);
   closePicker();renderPalette();buildTable();buildUITable();renderCode();applyGround();notify('updated "'+newName+'"',false);
 }
 function curHex(){return normHex(document.getElementById('newhexstr').value)||'#888888';}
@@ -811,7 +825,10 @@ function initPicker(){const sw=document.getElementById('swatch');if(!sw)return;s
 function addColor(){const h=curHex();const name=document.getElementById('newname').value.trim();
   if(!name){notify('name the color before adding it',true);return;}
   if(PALETTE.some(p=>p[1].toLowerCase()===name.toLowerCase())){notify('a color named "'+name+'" already exists — select it and use Update selected to change its value',true);return;}
-  PALETTE.push([h,name]);document.getElementById('newname').value='';selectedIdx=null;closePicker();renderPalette();buildTable();notify('added "'+name+'"',false);}
+  PALETTE.push([h,name]);const healed=healGone(name,h);document.getElementById('newname').value='';selectedIdx=null;closePicker();
+  renderPalette();buildTable();buildUITable();
+  if(healed){renderCode();applyGround();if(document.getElementById('pkgbody'))buildPkgTable();buildPkgPreview();}
+  notify(healed?('added "'+name+'" and reconnected its assignments'):('added "'+name+'"'),false);}
 // --- ramp generator UI (palette-ramps spec, Phase 2) -------------------------
 // Generate a tonal ramp from the current color, preview the steps, add the ones
 // you want as named palette entries. The pure ramp() lives in app-core.js; this
@@ -857,7 +874,8 @@ function addRampStep(s){
   const nm=rampStepName(s.offset);
   if(PALETTE.some(p=>p[1].toLowerCase()===nm.toLowerCase())){rampNote('"'+nm+'" already exists — rename or skip',true);return false;}
   const dup=PALETTE.find(p=>p[0].toLowerCase()===s.hex.toLowerCase());
-  PALETTE.splice(rampInsertIndex(s.offset),0,[s.hex,nm]);renderPalette();buildTable();buildUITable();
+  PALETTE.splice(rampInsertIndex(s.offset),0,[s.hex,nm]);const healed=healGone(nm,s.hex);renderPalette();buildTable();buildUITable();
+  if(healed){renderCode();applyGround();}
   rampNote(dup?('added "'+nm+'" (same hex as "'+dup[1]+'")'):('added "'+nm+'"'),false);return true;
 }
 function addAllRampSteps(){
@@ -879,7 +897,7 @@ async function saveTheme(){const data=JSON.stringify(exportObj(),null,1);
   try{if(!fileHandle)fileHandle=await window.showSaveFilePicker({suggestedName:fileSlug()+'.json',types:[{description:'theme JSON',accept:{'application/json':['.json']}}]});
     const w=await fileHandle.createWritable();await w.write(data);await w.close();notify('saved "'+themeName()+'"',false);updateTitle();
   }catch(e){if(e&&e.name!=='AbortError')notify('save failed: '+e.message,true);}}
-function applyImported(text){const d=JSON.parse(text);if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette;if(d.assignments)Object.assign(MAP,d.assignments);
+function applyImported(text){const d=JSON.parse(text);lastGone={};if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette;if(d.assignments)Object.assign(MAP,d.assignments);
   BOLD={};(d.bold||[]).forEach(k=>BOLD[k]=true);ITALIC={};(d.italic||[]).forEach(k=>ITALIC[k]=true);
   LOCKED=new Set(d.locks||[]);
   if(d.ui)Object.assign(UIMAP,d.ui);
@@ -1600,4 +1618,21 @@ if(location.hash==='#safetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  setPkModel('hsv');closePicker();
  document.title='SAFETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='safetest';d.textContent='SAFETEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Gone-rebind gate (open with #healtest): deleting a named color then recreating
+// the name re-points the assignments stranded on the old hex to the new color.
+if(location.hash==='#healtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),savePK=JSON.parse(JSON.stringify(PKGMAP)),saveG=Object.assign({},lastGone),saveSel=selectedIdx;
+ PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue']];MAP['kw']='#67809c';lastGone={};selectedIdx=null;renderPalette();buildTable();
+ const blue=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='blue');
+ A(!!(blue&&blue.querySelector('.rm')),'blue chip has a remove button');
+ if(blue&&blue.querySelector('.rm'))blue.querySelector('.rm').click();
+ A(!PALETTE.some(p=>p[1]==='blue'),'blue was deleted');
+ A(lastGone['blue']==='#67809c','delete recorded the gone name->hex');
+ document.getElementById('newhexstr').value='#5a7a9a';document.getElementById('newname').value='blue';selectedIdx=null;addColor();
+ A(MAP['kw']==='#5a7a9a','assignment re-bound to the recreated name, got '+MAP['kw']);
+ A(!('blue' in lastGone),'heal consumed the gone entry');
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);PKGMAP=savePK;lastGone=saveG;selectedIdx=saveSel;
+ renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
+ document.title='HEALTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='healtest';d.textContent='HEALTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 </script>
