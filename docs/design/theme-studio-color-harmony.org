@@ -1,0 +1,77 @@
+#+TITLE: Theme-Studio Color Harmony: the OKLCH Method
+#+DATE: 2026-06-10
+
+* Summary
+
+Color harmony in a theme palette is mostly calculable. Work in OKLCH, borrow the hue from a semantic accent, fix lightness and chroma across a tier, and let three hard constraints bound the free dials: contrast (WCAG, with APCA as a diagnostic), ΔE separation between palette entries, and the sRGB gamut. What remains for taste is small and deliberate: which hues carry which semantic roles, and how warm or cool the whole page should sit.
+
+This document captures the method worked out on 2026-06-09. The ramp generator and background-contrast safety shipped in theme-studio implement the first two applications (see [[file:../theme-studio-palette-ramps-spec.org][the palette-ramps spec]]); harmonic fill remains a future feature.
+
+* Why OKLCH
+
+OKLCH is a perceptually uniform color space: equal numeric steps read as equal visual steps. Its three axes separate the jobs cleanly.
+
+- L (lightness, 0-1) carries legibility. Contrast against a background is almost entirely an L question.
+- C (chroma) carries intensity. High C shouts, low C recedes.
+- H (hue angle) carries identity. Two colors with the same H read as kin regardless of how light or saturated they are.
+
+HSL and HSV fail at exactly this: their lightness axis is not perceptual (yellow at HSL L=0.5 is far brighter than blue at L=0.5), so "step the lightness evenly" produces uneven, muddy ramps. Stepping OKLCH-L produces even ladders by construction.
+
+* The method
+
+The recipe for a harmonious tier of colors:
+
+1. Borrow the hue. Take H from a semantic accent already in the palette (the keyword blue, the string green). New colors inherit identity from colors the theme already committed to, so nothing arrives as a stranger.
+2. Fix L and C across the tier. Every member of a tier (all the dim background tints, all the bright text accents) shares one lightness and one chroma. Hue varies; weight does not. This is what makes a row of chips read as one family.
+3. Let the constraints bound the dials. The free choices left after steps 1-2 are checked, not felt:
+   - Contrast: the tier's L must clear the WCAG target against whatever it pairs with (text on bg, or bg under text). APCA Lc is a useful diagnostic alongside, since it models polarity and font weight.
+   - ΔE separation: two palette entries closer than the just-noticeable threshold are duplicates in disguise. The tool's too-similar warning enforces this.
+   - sRGB gamut: not every OKLCH point is displayable. Clamp back into gamut and surface the clamp, because a clamped step has silently changed its C or L and may have left its tier.
+
+Harmony, in this framing, is structural: shared hue within a ramp, shared L/C within a tier, even spacing between steps. It is not a mystery of taste; taste picks the hues and the overall register, arithmetic does the rest.
+
+* Terminology
+
+The whole family generated from one base is a ramp (or tonal scale). Darker steps are shades, lighter steps are tints, gray-mixed variants are tones. "Ramp" or "scale" is the precise word for the family; "shades" names only the dark half.
+
+* Worked example: the background-tint tier
+
+The problem: per-hue dim backgrounds (a red-tinted bg for errors, a green-tinted bg for diff additions) that stay readable under normal text.
+
+The recipe applied:
+
+- Borrow H from each semantic accent (the error red, the diff green).
+- Fix L ≈ 0.28 and C ≈ 0.045 across the tier.
+
+L ≈ 0.28 keeps the tint dim enough that light foregrounds clear AA over it. C ≈ 0.045 is enough chroma to read the hue ("this block is reddish") without the background competing with the text. Each accent hue dropped into that fixed L/C slot yields a dim, readable, hue-identified background, and the whole tier reads as one system because every member carries the same weight.
+
+* The fg-vs-bg role split
+
+A palette color is built for one side of the text/background divide, and the sides want opposite settings:
+
+- Text accents: bright (high L against a dark theme) and chromatic (C high enough to carry identity at small sizes). Legibility comes from the L gap to the background.
+- Background tints: dim and low-chroma (the fixed slot above). A background's job is to mark a region while every foreground stays readable on it.
+
+Reusing a text accent as a background (or the reverse) is the classic mistake this split prevents; the dupre diff-refine-changed legibility bug (bright gold as a background under near-white text, ratio ~1.35) is exactly that failure.
+
+* The worst-case background problem
+
+A background-over-text effect (region, hl-line, highlight, lazy-highlight, isearch) does not pair with one foreground. Any syntax color can land inside a selection, so the background must stay readable under every foreground that can appear on it. The single-pair contrast number is the wrong question.
+
+The right question: define the face's foreground set (the distinct syntax hexes plus the default fg), and rate the background by its floor, the minimum contrast over that set. The limiting foreground (the argmin) names which color caps you. From the floor follows L_max: at a chosen hue and chroma, the lightest background whose floor still clears the target. The usable background lightness is capped by the darkest or nearest foreground in the set, not by the average.
+
+This shipped in theme-studio: the five covered overlay faces show the worst-case floor and name the limiting foreground, and the OKLCH picker shades the lightness band that is too light for the selected face (the lMax ceiling). Contracts and defaults live in the [[file:../theme-studio-palette-ramps-spec.org][ramps spec]].
+
+* Ramp generation (shipped)
+
+From one base color, the generator holds H, steps L by a fixed delta per stop (default 0.08), and eases C quadratically toward zero at the extremes (default 0.5 at the farthest step), clamping each step into sRGB with a visible badge on clamp. Defaults: 2 steps each direction, named base+1/+2/-1/-2 from the source swatch. The chroma ease matters: a near-white or near-black step carries almost no color, and holding C flat out there just produces clamping, not color.
+
+In the current tool the ramp lives in the color-families view: each hue column has a count control that regenerates the family as base ±N.
+
+* Harmonic fill (future)
+
+The unshipped second application: from a few chosen colors (say the slate-blue accent plus the bg), generate a table of harmonic candidates to fill the missing palette slots. Hue-angle schemes (complementary, split-complementary, triadic, analogous) applied at matched L/C give candidate hues; the same three constraints (contrast, ΔE, gamut) filter them. The designer picks from a table of pre-validated candidates instead of free-wheeling in a picker. Tracked as vNext in the ramps spec.
+
+* What stays taste
+
+The method does not pick: which hue means "error" versus "string", how warm the ground should be, whether the theme reads austere or lush. Those are the design. Everything downstream of those calls (the ramp steps, the tint weights, the safe lightness band) is arithmetic the tool now does.
