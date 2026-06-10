@@ -813,14 +813,20 @@ function addColor(){const h=curHex();const name=document.getElementById('newname
 // Generate a tonal ramp from the current color, preview the steps, add the ones
 // you want as named palette entries. The pure ramp() lives in app-core.js; this
 // is the DOM around it. Names derive from the source swatch (blue -> blue+1).
-let rampBase=null; // {hex,name} the ramp is generated from
-function openRamp(){const hex=curHex();const name=(selectedIdx!=null?PALETTE[selectedIdx][1]:document.getElementById('newname').value.trim())||'ramp';rampBase={hex,name};document.getElementById('rampname').textContent=name+' '+hex;document.getElementById('ramp').style.display='block';renderRamp();}
+let rampBase=null; // {hex,name} of the last previewed base (refreshed from the tile on preview)
+// The base the ramp generates from is whatever sits on the color-selection tile
+// right now: the selected palette color, or a typed hex and name. Reading it at
+// preview time means selecting a new palette color then pressing preview just
+// works, the same as reopening the panel.
+function rampBaseFromTile(){const hex=curHex(),name=(selectedIdx!=null?PALETTE[selectedIdx][1]:document.getElementById('newname').value.trim())||'ramp';return {hex,name};}
+function openRamp(){document.getElementById('ramp').style.display='block';renderRamp();}
 function closeRamp(){const r=document.getElementById('ramp');if(r)r.style.display='none';}
 function rampOpts(){return {n:parseInt(document.getElementById('rampn').value,10),stepL:parseFloat(document.getElementById('rampstepl').value),chromaEase:parseFloat(document.getElementById('rampce').value)};}
 function rampStepName(off){return rampBase.name+(off>0?'+'+off:String(off));}
 function rampNote(msg,err){const m=document.getElementById('rampmsg');if(!m)return;m.textContent=msg||'';m.style.color=err?'#cb6b4d':'#8a9496';}
 function renderRamp(){
-  if(!rampBase)return;
+  rampBase=rampBaseFromTile();
+  document.getElementById('rampname').textContent=rampBase.name+' '+rampBase.hex;
   const r=ramp(rampBase.hex,rampOpts()),prev=document.getElementById('rampprev');prev.innerHTML='';
   if(r.error){rampNote('not a valid base color',true);return;}
   rampNote(r.adjusted.length?('adjusted: '+r.adjusted.join(', ')):'',false);
@@ -1533,7 +1539,9 @@ if(location.hash==='#ramptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const names=PALETTE.map(p=>p[1]),bi=names.indexOf('blue');
  A(names.slice(bi,bi+5).join(',')==='blue,blue-2,blue-1,blue+1,blue+2','order after blue: '+names.slice(bi,bi+5).join(','));
  const before=PALETTE.length;addAllRampSteps();A(PALETTE.length===before,'re-add should skip existing names');
- rampBase={hex:'#2040e0',name:'vivid'};document.getElementById('rampname').textContent='vivid';document.getElementById('rampce').value='0';renderRamp();
+ // preview re-reads the color-selection tile: change the tile, press preview, the base follows
+ document.getElementById('newhexstr').value='#2040e0';document.getElementById('newname').value='vivid';selectedIdx=null;document.getElementById('rampce').value='0';renderRamp();
+ A(/^vivid #2040e0/.test(document.getElementById('rampname').textContent),'preview reads the tile: '+document.getElementById('rampname').textContent);
  A(document.querySelectorAll('#rampprev .rclamp').length>0,'vivid base at chroma-ease 0 should clamp an extreme step');
  PALETTE=save;selectedIdx=null;renderPalette();closeRamp();
  document.title='RAMPTEST '+(ok?'PASS':'FAIL');
