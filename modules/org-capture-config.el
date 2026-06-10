@@ -344,5 +344,19 @@ Captured On: %U" :prepend t)
           )) ;; end setq
   ) ;; end use-package org-protocol
 
+;; ---------------------- Popup Capture Frame Auto-Close ----------------------
+;; The quick-capture script (Hyprland Super+Shift+N) opens an emacsclient
+;; frame named "org-capture"; Hyprland window rules float and center it by
+;; that name. These hooks close the frame when the capture finalizes or
+;; aborts, so the popup never lingers. Frames not named "org-capture" are
+;; untouched — normal in-Emacs captures keep their windows.
+
+(defun cj/org-capture--delete-popup-frame ()
+  "Delete the current frame when it is the quick-capture popup."
+  (when (equal (frame-parameter nil 'name) "org-capture")
+    (delete-frame)))
+
+(add-hook 'org-capture-after-finalize-hook #'cj/org-capture--delete-popup-frame)
+
 (provide 'org-capture-config)
 ;;; org-capture-config.el ends here.
