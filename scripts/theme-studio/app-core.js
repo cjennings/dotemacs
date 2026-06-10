@@ -121,4 +121,91 @@ function lMax(hue,chroma,fgSet,target){
   return {L:loL,status:at(loL).clamped?'clamp':'ok'};
 }
 
-export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES };
+// --- color families (color-families spec, Phase 1) ---------------------------
+// Families are a display grouping derived from the hex every render — never from
+// names — so renaming a color can't move it. The flat palette stays the editable
+// truth; these pure functions group it, regenerate a family's ramp, and plan the
+// assignment re-point across a regenerate.
+
+const NEUTRAL_C=0.02;  // OKLCH chroma below this has no meaningful hue (neutral)
+const HUE_GAP=25;      // a hue gap wider than this (degrees) splits two families
+function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
+function nameOfHex(palette,hex){const p=palette.find(p=>p[0].toLowerCase()===hex.toLowerCase());return p?p[1]:null;}
+
+// Split hue-bearing items (each {H,...}) into clusters by hue proximity: sort
+// around the circle and cut wherever the gap to the next item exceeds HUE_GAP,
+// handling the 360 wrap so a family straddling 0 stays together.
+function clusterByHue(items,gap){
+  if(items.length<=1)return items.length?[items]:[];
+  const s=[...items].sort((a,b)=>a.H-b.H),cuts=[];
+  for(let i=0;i<s.length;i++){const d=i<s.length-1?s[i+1].H-s[i].H:(s[0].H+360)-s[i].H;if(d>gap)cuts.push(i);}
+  if(!cuts.length)return [s];
+  const start=(cuts[cuts.length-1]+1)%s.length,rot=[...s.slice(start),...s.slice(0,start)],out=[];
+  let cur=[rot[0]];
+  for(let i=1;i<rot.length;i++){let d=rot[i].H-rot[i-1].H;if(d<0)d+=360;if(d>gap){out.push(cur);cur=[rot[i]];}else cur.push(rot[i]);}
+  out.push(cur);return out;
+}
+// A family from its members: base is the most-saturated member (tie toward
+// mid-lightness), the anchor for a generated ramp.
+function makeFamily(ms,neutral){
+  let base=ms[0];
+  for(const m of ms)if(m.C>base.C||(m.C===base.C&&Math.abs(m.L-0.5)<Math.abs(base.L-0.5)))base=m;
+  return {base:base.hex,neutral:!!neutral,members:ms.map(m=>({hex:m.hex,name:m.name}))};
+}
+// Group a flat palette into the ground strip plus hue families. ground is
+// {bg,fg}: those two hexes form the pinned ground strip even when absent from the
+// palette, and a palette chip at a ground hex is not duplicated into a family.
+function familiesFromPalette(palette,ground){
+  const bg=ground&&ground.bg,fg=ground&&ground.fg;
+  const gset=new Set([bg,fg].filter(Boolean).map(h=>h.toLowerCase()));
+  const groundStrip=[];
+  if(bg)groundStrip.push({hex:bg,role:'bg',name:nameOfHex(palette,bg)});
+  if(fg)groundStrip.push({hex:fg,role:'fg',name:nameOfHex(palette,fg)});
+  const neutrals=[],chromatic=[];
+  for(const [hex,name] of palette){
+    if(gset.has(hex.toLowerCase()))continue;
+    const c=oklchOf(hex),m={hex,name,L:c.L,C:c.C,H:c.H};
+    (c.C<NEUTRAL_C?neutrals:chromatic).push(m);
+  }
+  const families=[];
+  if(neutrals.length)families.push(makeFamily(neutrals,true));
+  for(const cl of clusterByHue(chromatic,HUE_GAP))families.push(makeFamily(cl,false));
+  return {ground:groundStrip,families};
+}
+// Regenerate a family's members as a symmetric ramp around the base: n=0 is the
+// base alone (without ramp()'s 1-4 clamp), n>=1 is base plus ramp() steps, sorted
+// by offset. {members:[{hex,offset,clamped}]} or {members:[],error:'bad-hex'}.
+function regenFamily(baseHex,n,opts){
+  const hex=typeof baseHex==='string'?normHex(baseHex):null;
+  if(!hex)return {members:[],error:'bad-hex'};
+  const k=Math.min(4,Math.max(0,Math.round(n||0)));
+  if(k===0)return {members:[{hex,offset:0,clamped:false}]};
+  const r=ramp(hex,Object.assign({},opts,{n:k}));
+  if(r.error)return {members:[],error:r.error};
+  const members=[...r.steps,{hex,offset:0,clamped:false}].sort((a,b)=>a.offset-b.offset);
+  return {members};
+}
+// Rank a family's current member hexes by lightness and give each a signed offset
+// from the base (the matching hex, or the nearest by lightness if the base isn't
+// present). Lets a regenerate match old positions to new ramp offsets.
+function rankByLightness(memberHexes,baseHex){
+  const items=memberHexes.map(h=>({hex:h,L:oklchOf(h).L})).sort((a,b)=>a.L-b.L);
+  let bi=items.findIndex(m=>m.hex.toLowerCase()===(baseHex||'').toLowerCase());
+  if(bi<0){const bl=oklchOf(baseHex).L;let best=Infinity;items.forEach((m,i)=>{const d=Math.abs(m.L-bl);if(d<best){best=d;bi=i;}});}
+  return items.map((m,i)=>({hex:m.hex,offset:i-bi}));
+}
+// Plan the assignment re-point for a regenerate: for each old ranked member, the
+// new member at the same offset is the same position. {map:[[old,new]]} for
+// positions whose hex changed; {removed:[hex]} for positions with no new
+// counterpart (the caller leaves their references a visible "(gone)").
+function stepRepointPlan(oldRanked,newMembers){
+  const byOff=new Map(newMembers.map(m=>[m.offset,m.hex])),map=[],removed=[];
+  for(const o of oldRanked){
+    const nh=byOff.get(o.offset);
+    if(nh===undefined)removed.push(o.hex);
+    else if(nh.toLowerCase()!==o.hex.toLowerCase())map.push([o.hex,nh]);
+  }
+  return {map,removed};
+}
+
+export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, familiesFromPalette, regenFamily, rankByLightness, stepRepointPlan };
