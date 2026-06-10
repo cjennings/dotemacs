@@ -5,8 +5,8 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { familiesFromPalette, regenFamily, rankByLightness, stepRepointPlan } from './app-core.js';
-import { oklch2hex } from './colormath.js';
+import { familiesFromPalette, regenFamily, rankByLightness, stepRepointPlan, sortFamilies } from './app-core.js';
+import { oklch2hex, srgb2oklab, oklab2oklch } from './colormath.js';
 
 // Build a palette entry at a controlled OKLCH hue so clustering is deterministic.
 const at = (L, C, H, name) => [oklch2hex(L, C, H).hex, name || ('c' + H)];
@@ -110,4 +110,38 @@ test('stepRepointPlan: Boundary — an offset with no new counterpart is removed
   const { map, removed } = stepRepointPlan(oldR, neu);
   assert.deepEqual(map, []);
   assert.deepEqual(removed, ['#000033']);
+});
+
+// --- sortFamilies -----------------------------------------------------------
+
+const fam = (baseHex, neutral, members) => ({ base: baseHex, neutral: !!neutral, members: (members || [baseHex]).map(h => ({ hex: h, name: h })) });
+
+test('sortFamilies: Normal — chromatic families order by base hue', () => {
+  const fams = [fam(oklch2hex(0.6, 0.1, 270).hex), fam(oklch2hex(0.6, 0.1, 30).hex), fam(oklch2hex(0.6, 0.1, 150).hex)];
+  const sorted = sortFamilies(fams);
+  const hues = sorted.map(f => Math.round(oklab2oklch(srgb2oklab(f.base)).H));
+  for (let i = 1; i < hues.length; i++) assert.ok(hues[i] > hues[i - 1], 'ascending hue: ' + hues.join(','));
+});
+
+test('sortFamilies: Boundary — neutral families pin ahead of chromatic ones', () => {
+  const sorted = sortFamilies([fam(oklch2hex(0.6, 0.1, 200).hex, false), fam('#808080', true)]);
+  assert.equal(sorted[0].neutral, true, 'neutral first');
+  assert.equal(sorted[1].neutral, false);
+});
+
+test('sortFamilies: Normal — members within a family sort dark to light', () => {
+  const members = ['#dddddd', '#222222', '#888888'];
+  const sorted = sortFamilies([fam(oklch2hex(0.6, 0.1, 200).hex, false, members)]);
+  const ls = sorted[0].members.map(m => oklab2oklch(srgb2oklab(m.hex)).L);
+  for (let i = 1; i < ls.length; i++) assert.ok(ls[i] > ls[i - 1], 'ascending lightness');
+});
+
+test('sortFamilies: Boundary — order is (hue, then lightness); a hue tie falls to lightness', () => {
+  const bases = [oklch2hex(0.6, 0.1, 200).hex, oklch2hex(0.5, 0.1, 200).hex, oklch2hex(0.6, 0.1, 40).hex];
+  const sorted = sortFamilies(bases.map(b => fam(b, false)));
+  const key = h => { const c = oklab2oklch(srgb2oklab(h)); return [Math.round(c.H), c.L]; };
+  for (let i = 1; i < sorted.length; i++) {
+    const [h0, l0] = key(sorted[i - 1].base), [h1, l1] = key(sorted[i].base);
+    assert.ok(h0 < h1 || (h0 === h1 && l0 <= l1), `order at ${i}: hue ${h0}/${h1} L ${l0.toFixed(3)}/${l1.toFixed(3)}`);
+  }
 });
