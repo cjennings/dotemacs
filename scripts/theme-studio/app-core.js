@@ -127,20 +127,48 @@ function lMax(hue,chroma,fgSet,target){
 // truth; these pure functions group it, regenerate a family's ramp, and plan the
 // assignment re-point across a regenerate.
 
-// Perceptual hue-category centers (OKLCH degrees). A chromatic color joins the
-// family of its nearest anchor, so adjacent categories (yellow vs green) stay
-// separate by construction and there's no single-linkage chaining across them.
-const HUE_ANCHORS=[30,65,100,145,200,255,310,350]; // red,orange,yellow,green,teal,blue,purple,pink
 function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
 function nameOfHex(palette,hex){const p=palette.find(p=>p[0].toLowerCase()===hex.toLowerCase());return p?p[1]:null;}
+function hueDist(a,b){const d=Math.abs(a-b);return Math.min(d,360-d);}
 
-// Nearest hue anchor to H, by circular distance.
-function nearestAnchor(H){let best=HUE_ANCHORS[0],bd=999;for(const a of HUE_ANCHORS){let d=Math.abs(H-a);d=Math.min(d,360-d);if(d<bd){bd=d;best=a;}}return best;}
 // A color reads as neutral below this chroma. Lightness-scaled (the Munsell
-// insight): the mid-tones need more chroma to read as a hue, so a faint warm gray
-// at mid lightness is neutral while an equally-faint tint near either extreme keeps
-// its hue. A tent peaking near mid lightness and tapering toward both ends.
-function neutralThreshold(L){const PK=0.6,MAX=0.035,d=L<PK?(PK-L)/PK:(L-PK)/(1-PK);return MAX*(1-Math.min(1,d));}
+// insight): the mid-tones need more chroma to read as a hue. Floored at both ends
+// rather than tapering to zero, so pale warm grays stay neutral (and pure white,
+// C=0 at L=1, doesn't evade a zero threshold) while pale chromatic tints stay
+// colored. Tuned on real palettes (Codex + Fable color-sorting reviews).
+function neutralThreshold(L){
+  if(L<=0.2)return 0.020;
+  if(L<0.6)return 0.020+0.015*(L-0.2)/0.4;
+  if(L<0.85)return 0.035-0.017*(L-0.6)/0.25;
+  return 0.018;
+}
+// Lightness-conditioned compatibility of two chromatic colors (Fable's LCCL):
+// hue must match tightly at equal lightness and may drift across a lightness gap,
+// because a tonal ramp drifts in hue with lightness by design. The low-chroma noise
+// term widens the hue tolerance where hue is ill-defined (pale tints). A chroma
+// clause keeps a vivid accent out of a soft family at the same lightness. <=1 is
+// compatible. Source: ~/color-sorting-fable.org.
+function pairRatio(a,b){
+  const dL=Math.abs(a.L-b.L),dH=hueDist(a.H,b.H);
+  const noise=Math.min(45,Math.atan(0.015/Math.max(Math.min(a.C,b.C),1e-6))*180/Math.PI);
+  return Math.max(dH/(12+60*dL+noise),Math.abs(a.C-b.C)/(0.08+0.3*dL));
+}
+// Complete-linkage agglomerative clustering on pairRatio: greedily merge the two
+// clusters whose worst cross-pair is most compatible, stopping when no merge has
+// every cross-pair compatible. Complete linkage makes single-linkage chaining
+// structurally impossible — two ramps can't fuse through their converging pale
+// ends because their mid-lightness members stay far apart.
+function clusterChromatic(ms){
+  let cl=ms.map(m=>[m]);
+  const cd=(A,B)=>Math.max(...A.flatMap(a=>B.map(b=>pairRatio(a,b))));
+  for(;;){
+    let best=null;
+    for(let i=0;i<cl.length;i++)for(let j=i+1;j<cl.length;j++){const d=cd(cl[i],cl[j]);if(!best||d<best.d)best={d,i,j};}
+    if(!best||best.d>1)break;
+    cl[best.i]=cl[best.i].concat(cl[best.j]);cl.splice(best.j,1);
+  }
+  return cl;
+}
 // A family from its members: base is the most-saturated member (tie toward
 // mid-lightness), the anchor for a generated ramp.
 function makeFamily(ms,neutral){
@@ -152,23 +180,22 @@ function makeFamily(ms,neutral){
 // those two hexes form the pinned ground strip even when absent from the palette,
 // and a palette chip at a ground hex is not duplicated into a family. Near-neutrals
 // (chroma below the lightness-scaled threshold) form one neutral family; the rest
-// bucket by nearest hue anchor.
+// cluster by lightness-conditioned complete linkage (clusterChromatic).
 function familiesFromPalette(palette,ground){
   const bg=ground&&ground.bg,fg=ground&&ground.fg;
   const gset=new Set([bg,fg].filter(Boolean).map(h=>h.toLowerCase()));
   const groundStrip=[];
   if(bg)groundStrip.push({hex:bg,role:'bg',name:nameOfHex(palette,bg)});
   if(fg)groundStrip.push({hex:fg,role:'fg',name:nameOfHex(palette,fg)});
-  const neutrals=[],buckets=new Map();
+  const neutrals=[],chromatic=[];
   for(const [hex,name] of palette){
     if(gset.has(hex.toLowerCase()))continue;
     const c=oklchOf(hex),m={hex,name,L:c.L,C:c.C,H:c.H};
-    if(c.C<neutralThreshold(c.L))neutrals.push(m);
-    else{const a=nearestAnchor(c.H);if(!buckets.has(a))buckets.set(a,[]);buckets.get(a).push(m);}
+    (c.C<neutralThreshold(c.L)?neutrals:chromatic).push(m);
   }
   const families=[];
   if(neutrals.length)families.push(makeFamily(neutrals,true));
-  for(const ms of buckets.values())families.push(makeFamily(ms,false));
+  for(const cl of clusterChromatic(chromatic))families.push(makeFamily(cl,false));
   return {ground:groundStrip,families};
 }
 // Regenerate a family's members as a symmetric ramp around the base: n=0 is the

@@ -21,30 +21,24 @@ test('familiesFromPalette: Normal — separated hues split into one family each'
   for (const f of families) assert.equal(f.members.length, 1);
 });
 
-test('familiesFromPalette: Boundary — hues sharing an anchor stay one family', () => {
-  const pal = [at(0.55, 0.1, 250, 'b1'), at(0.6, 0.1, 256, 'b2')]; // both nearest the blue anchor
+test('familiesFromPalette: Boundary — near hues at the same lightness stay one family', () => {
+  const pal = [at(0.55, 0.1, 250, 'b1'), at(0.6, 0.1, 256, 'b2')];
   const { families } = familiesFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
   assert.equal(families.length, 1, 'a near hue-pair is one family');
   assert.equal(families[0].members.length, 2);
 });
 
-test('familiesFromPalette: Boundary — different anchors split (blue vs teal)', () => {
+test('familiesFromPalette: Boundary — well-separated hues split', () => {
   const pal = [at(0.6, 0.1, 255, 'b'), at(0.6, 0.1, 200, 'c')];
   const { families } = familiesFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
   assert.equal(families.length, 2);
 });
 
-test('familiesFromPalette: Normal — yellow and green land in separate families', () => {
-  const pal = [at(0.7, 0.12, 100, 'yellow'), at(0.6, 0.12, 145, 'green')];
-  const { families } = familiesFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
-  assert.equal(families.length, 2, 'yellow and green are separate anchors');
-});
-
-test('familiesFromPalette: Boundary — an intermediate chain does not merge yellow into green', () => {
-  // gold, olive, yellow-green, green: anchor assignment buckets by nearest, no single-linkage chaining
+test('familiesFromPalette: Boundary — an intermediate chain does not merge gold into green', () => {
+  // complete linkage requires every cross-pair compatible, so the far endpoints (90° vs 150°) keep the chain from fusing
   const pal = [at(0.7, 0.1, 90, 'gold'), at(0.65, 0.1, 110, 'olive'), at(0.6, 0.1, 130, 'yg'), at(0.55, 0.1, 150, 'green')];
   const { families } = familiesFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
-  assert.equal(families.length, 2, 'two anchors (yellow, green), not one chained family');
+  assert.equal(families.length, 2, 'not one chained family');
 });
 
 test('familiesFromPalette: Boundary — a pale tint keeps its hue while a mid gray goes neutral', () => {
@@ -63,6 +57,56 @@ test('familiesFromPalette: Boundary — near-neutral colors form a separate fami
   assert.ok(neutral, 'a neutral family exists');
   assert.ok(neutral.members.some(m => m.name === 'gray'));
   assert.ok(families.some(f => !f.neutral && f.members.some(m => m.name === 'blue')));
+});
+
+// --- real-palette grouping (the hard cases the color-sorting reviews measured) ---
+
+// The contested region of the distinguished/sterling palette: the gold ramp and
+// the olive ramp whose hue ranges nearly touch but whose mid-tones are far apart.
+const GOLD = [['#875f00', 'yellow-2'], ['#8e784c', 'yellow-1'], ['#d7af5f', 'yellow'], ['#ffd75f', 'yellow+1']];
+const OLIVE = [['#646d14', 'green-2'], ['#869038', 'green-1'], ['#a4ac64', 'green'], ['#ccc768', 'green+1']];
+const famOf = (families, name) => families.find(f => f.members.some(m => m.name === name));
+
+test('familiesFromPalette: Normal — the gold and olive ramps separate', () => {
+  const { families } = familiesFromPalette([...GOLD, ...OLIVE], { bg: '#000000', fg: '#ffffff' });
+  const gold = famOf(families, 'yellow'), olive = famOf(families, 'green');
+  assert.notEqual(gold, olive, 'gold and olive are different families');
+  assert.ok(!gold.members.some(m => m.name.startsWith('green')), 'gold family has no greens');
+  assert.ok(!olive.members.some(m => m.name.startsWith('yellow')), 'olive family has no yellows');
+});
+
+test('familiesFromPalette: Normal — the blue ramp stays whole despite pale-tint hue drift', () => {
+  // blue (H 252), blue+1 (H 231), blue+2 (H 272): low-chroma pale tints swing in hue but belong together
+  const pal = [['#67809c', 'blue'], ['#b2c3cc', 'blue+1'], ['#d9e2ff', 'blue+2']];
+  const { families } = familiesFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
+  const blue = famOf(families, 'blue');
+  assert.equal(blue.members.length, 3, 'all three blues in one family');
+});
+
+test('familiesFromPalette: Boundary — pale warm grays and pure white read as neutral', () => {
+  const pal = [['#b4b1a2', 'gray+1'], ['#d0cbc0', 'gray+2'], ['#ffffff', 'white'], ['#67809c', 'blue']];
+  const { families } = familiesFromPalette(pal, { bg: '#000000', fg: '#f0fef0' }); // fg distinct from the white swatch
+  const neutral = families.find(f => f.neutral);
+  for (const n of ['gray+1', 'gray+2', 'white']) assert.ok(neutral.members.some(m => m.name === n), n + ' is neutral');
+  assert.ok(famOf(families, 'blue') && !famOf(families, 'blue').neutral, 'blue stays chromatic');
+});
+
+test('familiesFromPalette: Boundary — a vivid accent stays out of a soft same-hue family', () => {
+  // intense-red (C 0.246) vs red (C 0.120) at similar lightness: the chroma clause keeps them apart
+  const pal = [['#ff2a00', 'intense-red'], ['#d47c59', 'red'], ['#a7502d', 'red-1']];
+  const { families } = familiesFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
+  assert.notEqual(famOf(families, 'intense-red'), famOf(families, 'red'), 'intense-red is its own family');
+});
+
+test('familiesFromPalette: Boundary — grouping is independent of palette order', () => {
+  const base = [...GOLD, ...OLIVE, ['#67809c', 'blue'], ['#b2c3cc', 'blue+1'], ['#969385', 'gray']];
+  const key = pal => familiesFromPalette(pal, { bg: '#000000', fg: '#ffffff' }).families
+    .map(f => f.members.map(m => m.name).sort().join(',')).sort().join(' | ');
+  const ref = key(base);
+  for (const seed of [1, 2, 3]) { // a few deterministic shuffles
+    const shuffled = base.map((e, i) => [e, ((i + 1) * seed * 7) % base.length]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
+    assert.equal(key(shuffled), ref, 'shuffle ' + seed + ' yields the same grouping');
+  }
 });
 
 test('familiesFromPalette: Boundary — ground hex absent from the palette still forms the strip', () => {
