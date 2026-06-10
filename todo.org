@@ -41,19 +41,23 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#A] theme-studio contrast cell uses the wrong fg/bg pair :bug:theme-studio:solo:
+** DOING [#A] theme-studio contrast cell uses the wrong fg/bg pair :bug:theme-studio:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10
 :END:
 The contrast readout on every item with two color selections (a fg AND a bg — the UI faces table and the package faces table) is computing the wrong pair. It needs to contrast the face's selected fg against the face's selected bg, not how the bg contrasts with the currently-selected (ground) bg.
 
 Investigation start: the two-color contrast cells are =paintUI= (UI faces, app.js ~line 740) and =buildPkgTable= (package faces, app.js ~line 430), both currently calling =contrast(effFg(fg), effBg(bg))= where =effFg(v)=v||MAP['p']= and =effBg(v)=v||MAP['bg']=. Reproduce a face that has BOTH a fg and a bg set, confirm the displayed ratio, and check whether it's actually evaluating selected-fg vs selected-bg or falling through to the ground bg. Fix so a two-color face always rates its own fg-on-bg. (Single-color contexts — the picker/palette-chip/plane checks that rate a color against the ground — are correct and out of scope.) Add a characterization gate (a #contrasttest hash gate) pinning fg-vs-bg for a two-color face.
+*** 2026-06-10 Wed @ 14:40:22 -0500 Diagnosed and fixed at the root, shared with the preview-bg bug
+The ratio computation was already correct (gate-verified: both tables rate a two-color face's own fg-on-bg). What made it READ wrong: (1) =applyGround= blanketed every =.ex= cell — including the per-face preview cells — with the ground bg, so the preview showed fg-on-ground-bg next to a ratio for fg-on-face-bg; (2) a ground-bg change never repainted the UI/package tables, leaving ground-dependent ratios stale. Fix: =applyGround= now blankets only the code panes and =#legbody= example cells and repaints UI faces through =paintUI=; the ground-bg handler also rebuilds the package table/preview. New #contrasttest assertions pin two-color fg-on-bg (both tables), preview-bg survival, ratio stability, and ground-dependent re-rating. Suite green. Awaiting Craig's repro check (manual-test child under the Manual testing parent).
 
 ** TODO [#B] theme-studio UI-faces preview cell ignores the face bg :bug:theme-studio:quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10
 :END:
 In the UI faces table, the preview cell for a face with its own bg renders with the ground bg instead. Repro: set mode-line fg=black, bg=blue — the preview cell should be black text on blue, but shows black on black (the live buffer mode-line is fine). Root cause: =applyGround= (app.js:300) blankets EVERY =.ex= element's background to =MAP['bg']=, and the preview cell =cP= shares =className='ex'= (app.js:753), so it clobbers the per-face bg =paintUI= sets (app.js:739) — runs on load and on every ground change. Fix: stop applyGround from touching the UI-face preview cells (scope its =.ex= selector to the code/example cells, give the preview cell its own class, or re-run paintUI after). The contrast cell shares the same staleness, so confirm both.
+*** 2026-06-10 Wed @ 14:40:22 -0500 Fixed by the applyGround scoping under the contrast-cell task
+Same root cause as the [#A] contrast-cell task, fixed there in one change: =applyGround= scopes its blanket to =#legbody .ex= + the code panes and repaints UI faces through =paintUI=. #contrasttest pins the preview-bg survival. Awaiting the same repro check.
 
 ** TODO [#B] Split window opens the dashboard in the other window :feature:ux:windows:quick:solo:
 :PROPERTIES:
@@ -163,6 +167,13 @@ Build a new theme (working name "dupre-clear", final name TBD) that takes dupre'
 Full design + methodology + starting palette + open questions in the spec: [[file:docs/design/dupre-clear-theme.org][docs/design/dupre-clear-theme.org]]. Key prerequisite/context: the dupre-redesign entry in =.ai/session-context.org= (the AA palette this brightens). Hardest slot: blue keywords (a deep dupre blue can't be AAA on near-black — decide brighten vs keep-AA-exception vs lift-the-ground).
 ** TODO Manual testing and validation :verify:theme-studio:
 Exercised once the phases above land.
+*** TODO UI-face preview and contrast survive a ground bg change
+What we're verifying: a face with its own bg keeps it (preview and ratio) when the ground bg changes, and ground-dependent rows re-rate (the 2026-06-10 applyGround fix).
+- Open =scripts/theme-studio/theme-studio.html= in Chrome.
+- In the UI faces table, set mode-line fg to a dark color and bg to blue.
+- Confirm the preview cell shows that fg on blue and the ratio matches the pair.
+- In the syntax table, change the bg (ground) assignment to a different color.
+Expected: the mode-line preview keeps its own blue bg and its ratio is unchanged; rows without their own bg re-rate against the new ground; the package-faces contrast column updates too.
 *** TODO Seeded package-face defaults look right
 What we're verifying: the seeded org/magit/elfeed default colors read well before any tuning.
 - Open =scripts/theme-studio/theme-studio.html= in Chrome
