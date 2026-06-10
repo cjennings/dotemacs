@@ -465,10 +465,11 @@ STYLES_CSS</style>
    </div>
    <div id="picker" class="picker">
     <div class="prow">
-     <div id="sv" class="sv"><canvas id="svmask" class="svmask"></canvas><div id="svcur" class="svcur"></div></div>
+     <div id="sv" class="sv"><canvas id="svmask" class="svmask"></canvas><div id="svsafe" class="svsafe" style="display:none"></div><div id="svcur" class="svcur"></div></div>
      <div id="hue" class="hue"><div id="huecur" class="huecur"></div></div>
     </div>
     <div class="pmodel">edit <button data-pm="hsv" class="on">HSV</button><button data-pm="oklch">OKLCH</button></div>
+    <div class="pmodel" title="in OKLCH mode, shade the lightness too light to keep this overlay face readable over its foreground set">safe for <select id="safefor" onchange="setSafeFace(this.value)"><option value="">none</option></select></div>
     <div class="oklchctl" id="oklchctl">
      <div class="ocrow"><label title="perceptual lightness">L</label><input type="range" id="okL" min="0" max="1" step="0.001"><input type="number" id="okLn" min="0" max="1" step="0.001"></div>
      <div class="ocrow"><label title="chroma (colorfulness)">C</label><input type="range" id="okC" min="0" max="0.4" step="0.001"><input type="number" id="okCn" min="0" max="0.4" step="0.001"></div>

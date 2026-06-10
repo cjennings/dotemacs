@@ -55,7 +55,7 @@
  .oklchctl .ocrow input[type=number]{width:62px;background:#252321;color:#cdced1;border:1px solid #3a3a3a;border-radius:3px;font:10pt monospace;padding:1px 3px}
  .oklchctl .pclamp{display:none;color:#cb6b4d;margin-top:3px}
  .oklchctl .pclamp.show{display:block}
- .svcur{position:absolute;width:16px;height:16px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 1px #0008;pointer-events:none}
+ .svcur{position:absolute;width:16px;height:16px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 1px #0008;pointer-events:none;z-index:3}
  .hue{position:relative;width:34px;height:320px;border-radius:4px;cursor:ns-resize;background:linear-gradient(to bottom,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
  .huecur{position:absolute;left:-2px;right:-2px;height:4px;background:#fff;border:1px solid #0008;transform:translateY(-50%);pointer-events:none}
  .pinfo{display:flex;justify-content:space-between;margin:10px 2px 4px;font:12pt monospace;color:#cdced1}
@@ -69,6 +69,7 @@
  .rchip{width:74px;height:48px;border-radius:5px;border:1px solid #555;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;font:bold 9pt monospace}
  .rchip .rclamp{position:absolute;top:2px;right:4px;color:#cb6b4d;font-weight:bold;font-size:12px}
  #rampmsg{font:10pt monospace;margin-top:6px;min-height:14px;color:#8a9496}
+ .svsafe{position:absolute;left:0;width:100%;background:rgba(203,107,77,0.30);border-bottom:2px solid #cb6b4d;pointer-events:none;z-index:2}
  .palctl button,.filebar button,.fbtn{background:#252321;color:#e8bd30;border:1px solid #3a3a3a;border-radius:4px;padding:6px 12px;font:10pt monospace;cursor:pointer}
  #palmsg{font:10pt monospace;opacity:0;transition:opacity .35s;margin-left:6px}
  #export{width:100%;height:180px;margin-top:10px;background:#0d0b0a;color:#a4ac64;border:1px solid #252321;border-radius:6px;font:10pt monospace;padding:10px}
