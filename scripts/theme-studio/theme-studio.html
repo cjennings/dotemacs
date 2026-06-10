@@ -57,7 +57,7 @@
  .oklchctl .ocrow input[type=number]{width:62px;background:#252321;color:#cdced1;border:1px solid #3a3a3a;border-radius:3px;font:10pt monospace;padding:1px 3px}
  .oklchctl .pclamp{display:none;color:#cb6b4d;margin-top:3px}
  .oklchctl .pclamp.show{display:block}
- .svcur{position:absolute;width:16px;height:16px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 1px #0008;pointer-events:none}
+ .svcur{position:absolute;width:16px;height:16px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 1px #0008;pointer-events:none;z-index:3}
  .hue{position:relative;width:34px;height:320px;border-radius:4px;cursor:ns-resize;background:linear-gradient(to bottom,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
  .huecur{position:absolute;left:-2px;right:-2px;height:4px;background:#fff;border:1px solid #0008;transform:translateY(-50%);pointer-events:none}
  .pinfo{display:flex;justify-content:space-between;margin:10px 2px 4px;font:12pt monospace;color:#cdced1}
@@ -71,6 +71,7 @@
  .rchip{width:74px;height:48px;border-radius:5px;border:1px solid #555;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;font:bold 9pt monospace}
  .rchip .rclamp{position:absolute;top:2px;right:4px;color:#cb6b4d;font-weight:bold;font-size:12px}
  #rampmsg{font:10pt monospace;margin-top:6px;min-height:14px;color:#8a9496}
+ .svsafe{position:absolute;left:0;width:100%;background:rgba(203,107,77,0.30);border-bottom:2px solid #cb6b4d;pointer-events:none;z-index:2}
  .palctl button,.filebar button,.fbtn{background:#252321;color:#e8bd30;border:1px solid #3a3a3a;border-radius:4px;padding:6px 12px;font:10pt monospace;cursor:pointer}
  #palmsg{font:10pt monospace;opacity:0;transition:opacity .35s;margin-left:6px}
  #export{width:100%;height:180px;margin-top:10px;background:#0d0b0a;color:#a4ac64;border:1px solid #252321;border-radius:6px;font:10pt monospace;padding:10px}
@@ -124,10 +125,11 @@
    </div>
    <div id="picker" class="picker">
     <div class="prow">
-     <div id="sv" class="sv"><canvas id="svmask" class="svmask"></canvas><div id="svcur" class="svcur"></div></div>
+     <div id="sv" class="sv"><canvas id="svmask" class="svmask"></canvas><div id="svsafe" class="svsafe" style="display:none"></div><div id="svcur" class="svcur"></div></div>
      <div id="hue" class="hue"><div id="huecur" class="huecur"></div></div>
     </div>
     <div class="pmodel">edit <button data-pm="hsv" class="on">HSV</button><button data-pm="oklch">OKLCH</button></div>
+    <div class="pmodel" title="in OKLCH mode, shade the lightness too light to keep this overlay face readable over its foreground set">safe for <select id="safefor" onchange="setSafeFace(this.value)"><option value="">none</option></select></div>
     <div class="oklchctl" id="oklchctl">
      <div class="ocrow"><label title="perceptual lightness">L</label><input type="range" id="okL" min="0" max="1" step="0.001"><input type="number" id="okLn" min="0" max="1" step="0.001"></div>
      <div class="ocrow"><label title="chroma (colorfulness)">C</label><input type="range" id="okC" min="0" max="0.4" step="0.001"><input type="number" id="okCn" min="0" max="0.4" step="0.001"></div>
@@ -738,12 +740,30 @@ function paintOklchPlane(H){
       if(T&&contrast(cell.hex,MAP['bg'])<T){ctx.fillStyle='rgba(8,7,6,0.66)';ctx.fillRect(x,y,step,step);}}}
   _planeCache={key,data:ctx.getImageData(0,0,w,h)};
 }
+// --- safe-lightness guidance (spec Phase 5) ----------------------------------
+let pkSafeFace='';   // covered overlay face the picker's lightness is checked against (or '')
+function setSafeFace(f){pkSafeFace=f;if(pickerOn)paintPicker();}
+// Shade the band of the C×L plane whose lightness is too light to keep pkSafeFace
+// readable over its foreground set, with the L_max ceiling as the band's lower
+// edge. One marker computed via lMax at the current chroma, not a per-pixel mask.
+function paintSafeBand(C,H){
+  const el=document.getElementById('svsafe');if(!el)return;
+  if(!pkSafeFace||pkModel!=='oklch'){el.style.display='none';return;}
+  const fs=fgSetForFace(pkSafeFace);
+  if(fs.reason||!fs.set.length){el.style.display='none';return;}
+  const sv=document.getElementById('sv'),h=sv.clientHeight,res=lMax(H,C,fs.set,WORST_TARGET);
+  if(res.status==='all'){el.style.display='none';return;}
+  el.style.display='block';el.style.top='0px';
+  el.style.height=(res.status==='none'?h:Math.max(0,(1-res.L)*h))+'px';
+  el.title='safe-lightness ceiling for '+pkSafeFace+' ('+(res.status==='none'?'no safe lightness — a foreground is too dark':'L_max '+res.L.toFixed(3)+(res.status==='clamp'?', chroma-clamped':''))+')';
+}
 function paintPicker(){const sv=document.getElementById('sv');if(!sv)return;
   const w=sv.clientWidth,h=sv.clientHeight,hh=document.getElementById('hue').clientHeight;
   if(pkModel==='oklch'){const [L,C,H]=readOklch();sv.style.background='#15120f';paintOklchPlane(H);
     document.getElementById('svcur').style.left=(Math.min(1,C/OKLCH_CMAX)*w)+'px';
     document.getElementById('svcur').style.top=((1-L)*h)+'px';
-    document.getElementById('huecur').style.top=((H/360)*hh)+'px';return;}
+    document.getElementById('huecur').style.top=((H/360)*hh)+'px';paintSafeBand(C,H);return;}
+  const sb=document.getElementById('svsafe');if(sb)sb.style.display='none';
   sv.style.background=`linear-gradient(to top,#000,rgba(0,0,0,0)),linear-gradient(to right,#fff,rgba(255,255,255,0)),hsl(${pkH},100%,50%)`;
   document.getElementById('svcur').style.left=(pkS*w)+'px';document.getElementById('svcur').style.top=((1-pkV)*h)+'px';document.getElementById('huecur').style.top=((pkH/360)*hh)+'px';drawMask();}
 function pkReadout(h){const e=document.getElementById('pkhex');if(e)e.textContent=h;const c=document.getElementById('pkcon');if(c){const r=contrast(h,MAP['bg']);c.textContent=r.toFixed(1)+'  '+rating(r);c.style.color=ratingColor(r);}
@@ -774,6 +794,7 @@ function closePicker(){if(!pickerOn)return;pickerOn=false;const p=document.getEl
 function pkOutside(e){if(!e.target.closest('#picker')&&!e.target.closest('#swatch'))closePicker();}
 function pkDrag(el,fn){el.addEventListener('pointerdown',e=>{e.preventDefault();fn(e);const mv=ev=>fn(ev),up=()=>{document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);};document.addEventListener('pointermove',mv);document.addEventListener('pointerup',up);});}
 function initPicker(){const sw=document.getElementById('swatch');if(!sw)return;sw.style.background=curHex();sw.onclick=()=>pickerOn?closePicker():openPicker();
+  const sf=document.getElementById('safefor');if(sf&&sf.options.length<=1)COVERED_FACES.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;sf.appendChild(o);});
   pkDrag(document.getElementById('sv'),e=>{const r=document.getElementById('sv').getBoundingClientRect();const fx=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),fy=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));
     if(pkModel==='oklch'){setOklchInputs(1-fy,fx*OKLCH_CMAX,readOklch()[2]);pkOklchSet();}else{pkS=fx;pkV=1-fy;pkSet();}});
   pkDrag(document.getElementById('hue'),e=>{const r=document.getElementById('hue').getBoundingClientRect();const fy=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));
@@ -1541,4 +1562,20 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();
  document.title='CONTRASTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='contrasttest';d.textContent='CONTRASTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Safe-lightness gate (open with #safetest): the OKLCH picker shades the unsafe
+// lightness band for a selected covered face and hides it when no face is selected.
+if(location.hash==='#safetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveMAP=Object.assign({},MAP);
+ MAP['p']='#f0fef0';MAP['kw']='#67809c';MAP['bg']='#000000';
+ document.getElementById('newhexstr').value='#202830';openPicker();setPkModel('oklch');
+ setSafeFace('region');
+ const band=document.getElementById('svsafe');
+ A(band&&band.style.display==='block','safe band shows for an in-scope face');
+ A(band&&parseFloat(band.style.height)>0,'safe band has a positive height: '+(band&&band.style.height));
+ setSafeFace('');
+ A(band&&band.style.display==='none','safe band hidden when no face is selected');
+ for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);
+ setPkModel('hsv');closePicker();
+ document.title='SAFETEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='safetest';d.textContent='SAFETEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 </script>
