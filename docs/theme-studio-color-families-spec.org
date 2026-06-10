@@ -3,166 +3,196 @@
 #+DATE: 2026-06-09
 
 * Metadata
-| Status   | draft                                                                 |
-| Owner    | Craig                                                                |
-| Reviewer | (unassigned)                                                         |
-| Related  | [[file:../todo.org][todo.org: theme-studio palette ramps + contrast safety v1]] |
+| Status   | draft — review incorporated (Codex, 2026-06-09); pivoted to hex grouping |
+| Owner    | Craig                                                                  |
+| Reviewer | Codex                                                                  |
+| Related  | [[file:../todo.org][todo.org: theme-studio color families]]            |
 
 * Summary
 
-Restructure theme-studio's palette panel from one flat row of color chips into color families: a base color and its tonal ramp, shown as a horizontal strip ordered dark to light, with a per-family control for how many steps sit on each side of the base. Families are live — change the step count and the strip regenerates; edit the base and the family recolors. Strips sort by hue across the panel and by lightness within, so the palette reads like a spectrum.
+Show the palette as color families: colors grouped into horizontal strips by their actual color (OKLCH hue), each strip ordered dark to light, with a per-strip control to generate a symmetric tonal ramp (N gives base ±N) from the strip's most-saturated color. Grouping is derived from the hex every render, so renaming a color to anything never moves it between strips. The flat palette underneath stays exactly what it is today — an editable list — and families are a view over it, not a new owner of the colors.
 
 * Problem / Context
 
-The ramp generator (shipped in the palette-ramps v1 build) generates a tonal ramp from a base color and adds the steps as flat palette entries. After that, the relationship is gone: blue-2, blue-1, blue, blue+1, blue+2 are five unrelated chips in a wrapping row, sorted by nothing. To widen or narrow the ramp you delete the steps and regenerate. To recolor the family you edit each step by hand. The palette doesn't show, or let you edit, the structure that the ramp math actually produces.
+The ramp generator (palette-ramps v1) can produce blue-2, blue-1, blue, blue+1, blue+2, but the moment they land in the palette the relationship is gone: five chips in a wrapping row, sorted by nothing. To widen or narrow the ramp you delete and regenerate; to recolor it you edit each chip. Nothing shows the structure the ramp math produced.
 
-The designer thinks in families ("the blues", "the warm grays") and in symmetric ramps around a base. The tool stores a flat bag of colors. The gap is the whole interaction: there's no family object to point a step-count control at, no grouping to lay out, and no ordering that reflects the colors' actual hue and lightness.
+The designer thinks in families — "the blues", "the warm grays" — and wants to grow or shrink a ramp in place. Critically, the family a color belongs to is a fact about the *color*, not its label: renaming blue+1 to "azure" or "my favorite" must never change which group it sorts into. So grouping has to come from the hex, not from a naming convention.
 
 * Goals and Non-Goals
 
 ** Goals
-- Group the palette into families (a base plus its ramp steps) and render each as a horizontal strip, dark to light.
-- Give each family a live, symmetric step-count control (N gives base ±N); changing it regenerates the strip.
-- Editing a family's base recolors the whole family; regeneration is authoritative.
-- Sort families by OKLCH hue across the panel and steps by OKLCH lightness within, with the neutral ground strip pinned.
+- Group the palette into families by OKLCH hue (from the hex), and render each as a horizontal strip, dark to light.
+- Per-strip control to generate a symmetric ramp (N gives base ±N) from the strip's base; regenerate is authoritative.
+- Renaming any color never changes its family or sort position.
+- Sort families by hue across the panel and colors by lightness within; pin the fg/bg ground strip and neutral grays to the front.
 
 ** Non-Goals
-- Not changing the theme.json on-disk format — it stays a flat palette (see Decisions).
-- Not preserving hand-edits to individual generated steps across a regenerate (regeneration overwrites — Craig's call).
-- Not per-family hue/scheme generation (complementary, triadic) — that's the deferred harmonic-fill feature.
-- Not manual drag-reordering of families — the hue sort is deterministic and replaces it.
+- No name-based grouping, no step-name grammar, no import inference from names — grouping is purely by hex.
+- No theme.json format change — the palette stays a flat, ordered, individually-editable list.
+- No preserving hand-edits to generated steps across a regenerate (regenerate overwrites — Craig's call).
+- No asymmetric ramps, no per-family stepL/chroma-ease, no harmonic fill, no manual family ordering in v1.
 
 ** Scope tiers
-- v1: family model, family-strip palette panel, per-family step count (live regenerate), fg/bg shared strip, singleton families, hue/lightness sort.
-- Out of scope: per-family stepL / chroma-ease controls (defaulted in v1), harmonic fill, manual family ordering.
-- vNext: exposing stepL / chroma-ease per family; a "convert flat import into families" review step.
+- v1: hue-grouped family strips over the existing flat palette; per-strip ramp-generate control; ground strip from the bg/fg assignments; hue/lightness sort with neutrals pinned; the family control replaces the standalone ramp panel.
+- Out of scope: per-family stepL/chroma-ease, harmonic fill, asymmetric ramps, manual ordering.
+- vNext: tunable clustering, per-family knobs, asymmetric ramps.
 
 * Design
 
-A *family* is a base color plus a symmetric ramp: =\{base, n, stepL, chromaEase, steps\}=. =n= is the per-side step count (0 means a lone color, no ramp). The members are the base in the middle and the =ramp()= steps on each side, named =base-n .. base .. base+n=. The flat palette every other part of the tool already uses (assignments, export, dropdowns) is *derived* from the families by flattening them in display order. Families are the editing model; the flat palette is the projection.
+*The palette stays flat.* This is the pivot from the first draft. The palette remains the flat =[[hex,name]]= list it is today, with the same per-chip operations — edit hex, rename, remove. Families do *not* own the colors. A "family" is a derived grouping computed from the hexes on every render, like sorting. Because it's derived from the hex, renaming a color can't change its group, there's no structure to store, and there's nothing to reconstruct on import. Most of what the first-draft review flagged (name grammar, import inference, chip-ownership transfer) simply doesn't exist in this model.
 
-*The ground strip.* =fg= and =bg= are the locked foreground and background. They share one fixed strip with no step control — they aren't a ramp, they're the two poles the theme is built between. Every other color is a family: a hand-added color starts as a singleton (=n=0=), and raising its count fans it into a ramp.
+*Grouping by hue.* Convert each palette color to OKLCH. A color whose chroma is below a neutral threshold (C < 0.02) has no meaningful hue; it joins the neutral group. The rest cluster by hue *proximity*, not fixed bins: sort by hue, walk the circle, and start a new family wherever the gap to the previous color exceeds a gap threshold (25°), wrapping at 360. Two blues at 250° and 256° stay together; a blue and a green a hue-gap apart split. Each family's *base* is its most-saturated member (tie-break toward mid-lightness), the natural anchor for a ramp.
 
-*Live regeneration.* The per-family count control sets =n=. Changing it calls =ramp(base, \{n, stepL, chromaEase\})= and replaces the family's steps. Because a regenerated step keeps its name (=blue+1=) but gets a new hex, any assignment pointing at the old step hex is re-pointed to the new one by name — the same heal the editor already does on a color edit — so a region face set to =blue+1= follows the regeneration instead of going "(gone)". Editing the base (its hex) regenerates the same way. Regeneration is authoritative: a hand-edited step hex is overwritten by the next regenerate.
+*The ground strip.* The foreground and background are the =bg= and =p= (plain/default-fg) assignments — =MAP.bg= and =MAP.p= — not palette names. The ground strip is synthesized from those two hexes and pinned first, even if neither hex is a palette entry (an imported theme can set them to colors absent from the palette). Editing a ground swatch writes the assignment hex (and the matching palette entry, if one exists at that hex). Neutral grays (low chroma, not the ground pair) form their own strip(s) pinned after the ground.
 
-*Sorting.* Across the panel, families sort by the OKLCH hue of their base, so the strips run red, orange, yellow, green, blue. A near-neutral base (chroma below a small threshold) has no meaningful hue, so the ground strip and any gray families pin to the front rather than scattering through the spectrum. Within a strip, steps always run dark to light by OKLCH lightness, which for a generated ramp is just =-n .. +n=. Sorting is presentational — palette order carries no theme semantics — so it's safe to impose.
+*The ramp-generate control.* Each strip carries a count input. Its value reflects the family's current per-side reach (the count of members on the busier side of the base by lightness). Setting it to N regenerates the family as a clean symmetric ramp: =ramp(base, {n:N, stepL, chromaEase})= for N≥1, or just the base for N=0, *replacing* the family's current members. Regenerate is authoritative — same-hue colors that were there, hand-added or hand-edited, are replaced. This is the one family-level action; everything else is still per-chip.
+
+*References across a regenerate.* A regenerate changes member hexes, and assignments point at hexes. Map old members to new steps by lightness rank: an old member and the new step at the same signed offset are the "same" position, so repoint references old→new for every surviving position. A position *removed* by lowering N (its old hex has no new counterpart) leaves its references showing "(gone)" — a visible stale reference the designer can re-point, never a silent jump to a surprise color (the review's robustness point). =repointHex= already does the old→new sweep across syntax/UI/package assignments.
+
+*Sorting is display-only.* Strips order by base hue (ground first, then neutrals, then chromatic families by hue; ties by base lightness then hex). Within a strip, colors order by OKLCH lightness. The stored palette keeps its existing order — export emits it unchanged — so theme.json diffs stay deterministic and the sort never rewrites the file.
 
 The two altitudes:
-- *For the designer:* the palette is a stack of horizontal strips, one per family, each a dark-to-light run of swatches with the base marked. A small number control on each strip sets how many steps per side; type 3 and the strip grows to ±3, type 0 and it collapses to the base. Recolor the base and the whole strip slides to the new hue. The strips are ordered by hue, so finding "the blues" is finding the blue strip.
-- *For the implementer:* pure functions in app-core.js — =familiesFromPalette(palette, ground)= groups a flat palette into families by name convention; =flattenFamilies(families)= projects back to =[[hex,name]]=; =sortFamilies(families)= orders by base hue with neutrals pinned; =regenFamily(family)= returns the family with fresh steps from =ramp()=. The DOM (strip rendering, the count control, wiring regenerate to the assignment re-point) stays in app.js. The existing =ramp()= and =repointHex()= are reused unchanged.
+- *For the designer:* the palette is a stack of strips, one per hue family, each dark to light with the base marked, ground pinned at the top. A count input on each strip fans it to ±N or collapses it to the base. Rename a swatch to anything — it stays put. Find "the blues" by finding the blue strip.
+- *For the implementer:* pure functions in app-core.js — =familiesFromPalette(palette, groundHexes)= returns the ground strip plus hue-clustered families with a base each; =sortFamilies= orders them; =regenFamily(baseHex, n, opts)= returns the ramp members (handling n=0 without calling =ramp()=); =stepRepointPlan(oldMembers, newMembers)= returns the old→new map and the removed set. The DOM (strip rendering, the count control, calling =repointHex= per the plan) stays in app.js. The existing =ramp()= and =repointHex()= are reused unchanged.
 
 * Alternatives Considered
 
-** Families as the editor model, flat palette derived, theme.json stays flat (chosen)
-- Good, because no format change and no migration — every existing theme.json loads, and the family grouping is reconstructed from the ramp naming on import.
-- Good, because assignments and export already key on the flat palette; deriving keeps one source of truth on disk.
-- Bad, because reconstruction leans on the name convention (=base±k=); a hand-named color that looks like a step could be mis-grouped.
-- Neutral, because the editor still needs a live family object in memory; only the persistence stays flat.
+** Hex-derived families over a still-flat palette (chosen)
+- Good, because grouping from the hex is rename-proof, needs no stored structure, and requires no import inference — the first draft's hardest contracts vanish.
+- Good, because the palette stays individually editable, so per-chip rename/remove/edit keep working unchanged.
+- Bad, because hue clustering has a threshold; an awkward gap can split a family the eye reads as one, or merge two.
+- Neutral, because regenerate is still authoritative, so generating a ramp over a hue cluster replaces whatever was there.
+
+** Name-derived families (first draft, rejected)
+- Bad, because the group would depend on the label; renaming blue+1 would move it, which Craig explicitly ruled out. It also needs a brittle step-name grammar and import inference (the review's top blocker).
 
 ** Families as a stored structure in theme.json
-- Good, because the family (base, n, knobs) round-trips exactly with no name-convention inference.
-- Bad, because it's a format change with a migration, and every consumer of the flat palette (build-theme.el, the assignments) would need to learn the new shape or read a flattened view anyway.
+- Good, because base/N round-trip exactly.
+- Bad, because it's a format change with a migration, and every flat-palette consumer (build-theme.el, the assignments) would need the new shape.
 
-** Keep the flat palette as source of truth, families as a pure view
-- Good, because nothing new is stored, even in memory.
-- Bad, because a live count control has nowhere to keep =n=, stepL, or chroma-ease — they'd have to be re-inferred from the present steps every interaction, and "0 steps" (a lone color) is indistinguishable from "a family someone collapsed".
+** Hue clustering by fixed bins vs. proximity gaps (gaps chosen)
+- Good (gaps), because nearby hues group regardless of where they fall, with no arbitrary bin edge splitting a near-pair.
+- Bad (gaps), because a chain of evenly-spaced hues never breaks; mitigated by the gap threshold and the small palette size.
 
-** Auto-sort by hue vs. manual drag-ordering
-- Good (sort), because it's deterministic, calculable from the hex, and matches how the designer hunts for a color; palette order has no theme meaning so nothing is lost.
-- Bad (sort), because the current drag-to-reorder affordance goes away. Mitigated: ordering was never load-bearing, and within-family order is the ramp.
+** Removed-step references: visible "(gone)" vs. silent repoint (gone chosen)
+- Good (gone), because a stale reference is visible and recoverable; a silent jump to an unexpected swatch is worse (the review's robustness note).
+- Bad (gone), because the designer must re-point manually after shrinking a family that something referenced.
 
 * Decisions
 
-** Editor holds live families; theme.json stays a flat palette
-- State: proposed
-- Owner / by-when: Craig / before Phase 1 implementation
-- Context: live families need a base + count + knobs in memory; the on-disk format and every flat-palette consumer argue for no change.
-- Decision: We will model families in the editor and derive the flat palette for assignments, dropdowns, and export; theme.json stays flat and families are reconstructed on import by name convention.
-- Consequences: easier — backward compatible, one on-disk source of truth; harder — import must infer families from names, and a step-shaped hand-named color can be mis-grouped.
+** Group by OKLCH hue from the hex, never by name
+- State: accepted
+- Context: the family is a fact about the color; renaming must not move it. The first-draft name convention failed this and needed a grammar + import inference.
+- Decision: We will derive families by clustering palette colors on OKLCH hue every render; names are labels only and never affect grouping or sort.
+- Consequences: easier — rename-proof, no grammar, no import inference, no stored structure; harder — clustering needs a tuned hue-gap threshold.
 
-** A family is base + symmetric step count N (base ±N)
+** The palette stays flat and individually editable; families are a derived view
+- State: accepted
+- Context: making families own the colors would transfer ownership away from the per-chip controls and force an import/edit/delete contract.
+- Decision: We will keep =PALETTE= a flat editable list with its current per-chip rename/remove/edit; families are computed for display, not stored.
+- Consequences: easier — existing controls and export are untouched, no migration; harder — the count control is the only family-level action, so "regenerate" must reconcile with loose hand-added colors (it replaces them).
+
+** A family generates a symmetric ramp: base ±N (0-4)
 - State: accepted
 - Context: the designer asked for a per-side count where 2 means ±2 and 3 means ±3.
-- Decision: We will give each family one symmetric integer N (0-4); N=0 is a lone color, N=k generates base-k..base+k.
-- Consequences: easier — one control per family, predictable; harder — asymmetric ramps (more darks than lights) aren't expressible in v1.
+- Decision: We will give each strip a count input; N=0 is the base alone, N=k generates base-k..base+k via =ramp()=; =regenFamily= handles N=0 without calling =ramp()= (which clamps to 1-4).
+- Consequences: easier — one control, predictable; harder — asymmetric reach isn't expressible in v1.
 
-** Regeneration is authoritative; assignments re-point by name
+** Regenerate is authoritative; repoint survivors by lightness rank, removed steps go "(gone)"
 - State: accepted
-- Context: changing N or the base must reshape the strip; steps carry assignments.
-- Decision: We will regenerate steps from =ramp()= on any base/N change, overwriting prior step hexes, and re-point assignments from each old step hex to the new one by step name (reusing the edit-time heal).
-- Consequences: easier — the strip always reflects the math, assignments follow; harder — a hand-tweaked step hex is lost on the next regenerate (accepted).
+- Context: regenerate changes member hexes; references point at hexes; lowering N drops the extremes.
+- Decision: We will replace the family's members on regenerate, repoint references for each surviving position (matched by signed lightness rank) old hex → new hex via =repointHex=, and leave references to removed positions as a visible "(gone)" rather than reassigning them.
+- Consequences: easier — surviving references follow, removed ones are recoverable; harder — a hand-edited step hex and a reference to a dropped step are both lost/stale (accepted; the latter is visible).
 
-** fg and bg share one fixed ground strip
+** The ground strip is synthesized from the bg/fg assignments
 - State: accepted
-- Context: fg/bg are locked poles, not a ramp.
-- Decision: We will render fg and bg as a single fixed strip with no count control, pinned ahead of the families.
-- Consequences: easier — the special pair is visually grouped and protected; harder — the strip is a special case in the layout code.
+- Context: fg/bg are the =MAP.bg= / =MAP.p= assignments, which may be hexes not present in the palette.
+- Decision: We will synthesize a fixed two-swatch ground strip from =MAP.bg= and =MAP.p=, pinned first, no count control; editing a ground swatch writes the assignment hex (and the matching palette entry if one exists). A palette chip whose hex equals the ground hex is shown in the ground strip, not duplicated into a family.
+- Consequences: easier — the ground is explicit and protected, imported themes with assignment-only ground colors work; harder — the strip is a special case, and ground-vs-family de-duplication is by hex.
 
-** Sort families by base hue, steps by lightness, neutrals pinned
+** Sort families by hue, colors by lightness, neutrals pinned; thresholds pinned
 - State: accepted
-- Context: the designer asked whether ordering can come from the hex; OKLCH gives hue and lightness directly.
-- Decision: We will sort families by base OKLCH hue (chroma below a threshold pins to the front as neutral) and steps by OKLCH lightness; sorting is presentational only.
-- Consequences: easier — spectrum ordering, deterministic; harder — manual family drag-ordering is dropped.
+- Context: ordering should come from the hex; clustering and neutral detection need fixed values so tests don't bake accidental ones.
+- Decision: We will sort strips ground-first, then neutral (C < 0.02) strips, then chromatic families by base hue (ties by base lightness then hex); colors within a strip by OKLCH lightness; hue clustering splits on a 25° adjacent-hue gap. Sorting is display-only; the stored palette order is unchanged on export.
+- Consequences: easier — deterministic spectrum order, stable theme.json diffs; harder — manual drag-ordering is dropped, and the thresholds are tuning the eye may want to revisit (vNext).
 
-** The per-family count control replaces the standalone ramp panel
-- State: proposed
-- Owner / by-when: Craig / before Phase 6
-- Context: the v1 ramp panel (button, preview row, add-all) and the family count control do the same job two ways.
-- Decision: (open) fold the ramp generator into the family strip and remove the standalone panel, or keep both.
-- Consequences: removing it is less duplicated UI; keeping it is a smaller diff over the just-shipped panel.
+** The family count control replaces the standalone ramp panel
+- State: accepted
+- Context: the v1 ramp panel and the per-strip count do the same job two ways.
+- Decision: We will remove the standalone ramp panel; fanning a color into a ramp happens from its strip (add a color → it appears as a singleton strip → raise its count).
+- Consequences: easier — one way to ramp, less UI; harder — churn over the few-day-old ramp panel, and "ramp from an arbitrary typed hex" now means "add the color first, then fan it".
 
 * Implementation phases
 
 ** Phase 1 — Family model (pure)
-=familiesFromPalette=, =flattenFamilies=, =regenFamily= in app-core.js with Normal/Boundary/Error tests. Round-trip property: =flattenFamilies(familiesFromPalette(p))= preserves a ramp-named palette. Reconstruct N from the highest suffix present; lone colors become N=0. No UI.
+=familiesFromPalette(palette, groundHexes)=, =regenFamily(baseHex, n, opts)=, =stepRepointPlan(oldMembers, newMembers)= in app-core.js. =familiesFromPalette= returns the ground strip (from groundHexes, de-duped by hex) plus hue-clustered families each with a base. Tests: a spectrum splits into families, a near-pair stays together, neutrals separate, ground hexes absent from the palette still form the strip, =regenFamily= handles n=0 (base only) and n≥1 (ramp), =stepRepointPlan= maps survivors and lists removed. No UI.
 
-** Phase 2 — Family sort (pure)
-=sortFamilies= orders by base OKLCH hue with a neutral-chroma threshold pinning grays/ground to the front; a helper sorts steps by lightness. Tests cover a spectrum, an all-neutral set, and a mixed set.
+** Phase 2 — Sort (pure)
+=sortFamilies= orders ground-first, neutrals (C<0.02) next, chromatic by hue with the lightness/hex tie-breakers; a helper orders colors within a strip by lightness. Tests cover a spectrum, an all-neutral set, ties, and the 25° gap boundary.
 
-** Phase 3 — Family-strip rendering (read-only)
-Render the palette panel as one strip per family, base marked, dark to light, ground strip pinned first, families hue-sorted. Reuses chip styling. No editing yet; the existing flat controls keep working against the derived palette.
+** Phase 3 — Strip rendering (read-only)
+Render the palette panel as the pinned ground strip plus hue-sorted family strips, base marked, dark to light. Reuse chip styling; the existing per-chip controls (rename/remove/edit) keep working since the palette is still flat. No count control yet.
 
-** Phase 4 — Live step-count control
-A per-strip count input (0-4). On change, =regenFamily= and re-point assignments for every step whose hex changed, then re-render. A browser gate pins: count up adds symmetric steps, count down removes them, assignments on a surviving step name follow the regenerate.
+** Phase 4 — Count control + regenerate
+A per-strip count input (0-4). On change, =regenFamily=, apply =stepRepointPlan= (repoint survivors via =repointHex=, leave removed references "(gone)"), update =PALETTE=, re-render. Browser gate: count up adds symmetric steps, count down drops the extremes and a reference to a dropped step reads "(gone)", a reference to a surviving step follows the new hex.
 
-** Phase 5 — Base edit + ground strip + singletons
-Editing a base recolors its family (regenerate + re-point). The fg/bg strip renders fixed with no count. A hand-added color enters as a singleton (N=0) and can be fanned out. Remove/keep the standalone ramp panel per the open decision.
+** Phase 5 — Ground strip + base edit + retire the ramp panel
+Synthesize the ground strip from =MAP.bg= / =MAP.p=, editable, pinned, de-duped. Editing a family's base regenerates it (same repoint plan). Remove the standalone ramp panel and its gate; adding a color yields a singleton strip that fans via its count. Gate the ground-strip derivation (including assignment-only ground hexes) and the base-edit repoint.
 
-** Phase 6 — Export/import round-trip
-Confirm export still emits a flat palette (flattened, in strip order) and import reconstructs families. A gate round-trips a families → JSON → families cycle.
+** Phase 6 — Warnings, seeding, export, README
+Keep =paletteWarnings= on the flattened palette but exempt adjacent same-family ramp steps from the too-similar warning (they're intentionally close). Confirm package seeding still reads the flat palette (families are display-only, so =seedPkgmap= is unchanged). Confirm export emits the flat palette unchanged and import needs no reconstruction. Update README. Gate an import → render → export round-trip leaving the palette JSON identical.
 
 * Acceptance criteria
-- [ ] The palette panel renders families as horizontal strips, base marked, dark to light.
-- [ ] A per-family count control sets base ±N live; raising it adds symmetric steps, lowering removes them.
-- [ ] Editing a family's base recolors the whole family; a regenerate overwrites prior step hexes.
-- [ ] An assignment set to a step (e.g. region = blue+1) survives a regenerate instead of going "(gone)".
-- [ ] fg and bg render as one fixed strip with no count control, pinned first.
-- [ ] Families sort by base hue (neutrals pinned); steps sort dark to light.
-- [ ] Export emits a flat palette that re-imports to the same families; existing flat theme.json files still load.
-- [ ] Unit tests cover the family model and sort; browser gates cover the count control, the base-edit re-point, and the round-trip.
+- [ ] The palette renders as hue-grouped strips, base marked, dark to light, ground pinned first.
+- [ ] Renaming any color to any string never changes its strip or sort position.
+- [ ] A per-strip count control sets base ±N live; raising it adds symmetric steps, lowering removes the extremes.
+- [ ] On regenerate, references to surviving steps follow the new hex; references to removed steps read "(gone)", never a silent reassignment.
+- [ ] The ground strip is synthesized from the bg/fg assignments (even when those hexes aren't palette entries), pinned first, with no count control; a palette chip at a ground hex isn't duplicated.
+- [ ] Families sort by base hue (ground and neutrals pinned); colors sort dark to light; the stored palette order is unchanged on export.
+- [ ] Existing flat theme.json files load and re-export byte-stable through the family view.
+- [ ] Unit tests cover the family model, regen, repoint plan, and sort; browser gates cover the count control (up/down + removed-step "(gone)"), the ground strip, the base-edit repoint, and the round-trip.
+- [ ] README documents families, the ground strip, regenerate behavior, removed-step references, and the removal of the standalone ramp panel.
 
 * Readiness dimensions
-- Data model & ownership: families are session-editor state derived from the flat palette on load; the flat palette + assignments stay the persisted truth. Nothing new on disk.
-- Errors, empty states & failure: a malformed base regenerates to nothing for that family (per =ramp=)'s bad-hex), the rest unaffected; an empty palette shows just the ground strip; a step-name collision across families is prevented by the per-family naming.
+- Data model & ownership: the flat palette stays the persisted, individually-editable truth; families are a derived display grouping computed from the hex each render; nothing new on disk; the ground strip reads/writes the bg/p assignments.
+- Errors, empty states & failure: a malformed chip hex is excluded from clustering (no OKLCH) and shown as a loose/neutral entry rather than crashing the panel; a regenerate of a bad base yields nothing for that family (per =ramp='s bad-hex); an empty palette shows only the ground strip; references to removed steps degrade to a visible "(gone)", never silent.
 - Security & privacy: N/A — local color math.
-- Observability: the strip *is* the observability — the family structure and ramp are visible, not inferred.
-- Performance & scale: tens of colors, a few families; regenerate is one =ramp()= call plus a re-point sweep. Instant.
-- Reuse & lost opportunities: reuse =ramp()=, =repointHex()=, the heal-by-name registry, chip styling, and colormath OKLCH. Don't reimplement the ramp or the re-point.
-- Architecture fit & weak points: pure family logic in app-core.js (tested, importable like the ramp core); strip DOM in app.js; integration points are the palette panel, the assignment dropdowns (read the derived palette), and export/import. Weak point: name-convention family inference on import — mitigated by treating an unparseable name as a singleton.
-- Config surface: per-family N (0-4, default from the source); stepL / chroma-ease defaulted (0.08 / 0.5), exposed later.
-- Documentation plan: the README's ramp section grows a "color families" subsection; the color-harmony explainer carries the why.
+- Observability: the strips are the observability — grouping, ramp reach, and the base are visible; "(gone)" surfaces stranded references.
+- Performance & scale: tens of colors, a few families; clustering is one sort + a linear pass, regenerate is one =ramp()= + a repoint sweep. Instant.
+- Reuse & lost opportunities: reuse =ramp()=, =repointHex()=, the chip styling, =optList= (dropdowns still read the flat palette), and colormath OKLCH. Don't reimplement the ramp or the re-point.
+- Architecture fit & weak points: pure family logic in app-core.js (importable, tested like the ramp core); strip DOM in app.js; integration points are the palette panel, the assignment dropdowns (unchanged, still read the flat palette), the bg/p assignments (ground strip), and export/import (unchanged). Weak point: the hue-gap and neutral thresholds — pinned defaults, tunable in vNext.
+- Config surface: per-family N (0-4); hue-gap (25°) and neutral-chroma (0.02) thresholds and stepL/chroma-ease (0.08/0.5) are pinned constants in v1.
+- Documentation plan: the README grows a "color families" section; the color-harmony explainer carries the why.
 - Dev tooling: =make theme-studio-test= covers it via new node tests + browser gates; no new tooling.
-- Rollout, compatibility & rollback: additive in the editor; theme.json format unchanged, so old themes load and new exports stay flat. Rollback is reverting the panel; no data migration.
+- Rollout, compatibility & rollback: additive and display-only over the existing palette; theme.json unchanged, so old themes load and re-export stable; rollback is reverting the panel; no migration.
 - External APIs & deps: none — pure color math.
 
 * Risks, Rabbit Holes, and Drawbacks
-- Family inference on import is the fuzzy core: a hand-named color matching =foo+1= could be pulled into a family it isn't part of. Dodge: only group when a plausible base (no suffix) exists; otherwise singleton.
-- Regenerate stranding assignments is the same hazard the ramp build already solved; the risk is forgetting to re-point on the base-edit path as well as the count-change path. Both must call the re-point.
-- Dropping manual order could bother a designer who arranged colors deliberately — but palette order is presentational, so the loss is cosmetic.
-- The count control overlaps the just-shipped ramp panel; leaving both in place is duplicated UI, removing it is churn over a few-day-old feature. Open decision.
+- The hue-gap threshold is the fuzzy core now (not name inference): an awkward gap can split a family the eye reads as one, or merge two adjacent hues. Dodge: a sane 25° default, small palettes, and a vNext tuning knob.
+- Regenerate-authoritative replaces loose same-hue colors the designer may have hand-placed in that hue band. Accepted per the regenerate decision, but the strip UI should make "this control rewrites the family" obvious before it's used.
+- Removed-step references going "(gone)" is the deliberate, recoverable choice; the risk is forgetting to also repoint survivors on the base-edit path (not just the count path). Both paths run the same repoint plan.
+- Retiring the just-shipped ramp panel is churn; the count control must cover the same discovery path (add a color, fan it from its strip).
+
+* Review dispositions
+
+Only modified and rejected review recommendations are listed; everything else from the Codex review is accepted and folded into the body above.
+
+- *Rejected as framed — "family inference from flat palette names" / the name-grammar section.* Craig's directive is to group by hex, never by name, so renaming is free. There is no step-name grammar and no import inference to specify; the review's underlying need (a deterministic grouping contract) is met instead by the hue-clustering contract (25° gap, 0.02 neutral threshold). The whole name-parsing surface is designed out.
+- *Modified — "chip-level edits need a new ownership contract".* Accepted the concern, changed the resolution: rather than defining transfer of ownership to family objects, the palette stays flat and individually editable, so per-chip rename/remove/edit keep working as today. Only drag/move-reorder is dropped (the sort is deterministic). The count control is the sole family-level action.
+- *Modified — "two Decisions open/proposed".* Both resolved per Craig: flat persistence accepted, the standalone ramp panel is removed (not left for Phase 6).
+- *Accepted with a change of mechanism — ground strip, removed-step policy, n=0, neutral threshold, sort tie-breakers, palette warnings, package seeding, README in acceptance criteria.* All folded as written, adapted to the flat-palette/hex-grouping model (e.g. seeding is unchanged because the palette is still flat).
+- *Deferred — the review's implementation-task drop-in block.* Per spec-response, tasks are created only after the author confirms Ready (Phase 6); they are not yet logged.
 
 * Review and iteration history
 ** 2026-06-09 Tue @ 22:50:43 -0500 — Craig — author
-- What: initial draft.
-- Why: live color families restructure the palette panel, change persistence/derivation, and supersede part of the just-shipped ramp UI — design-uncertain and cross-cutting, worth settling on paper first.
+- What: initial draft (name-derived families owning the palette).
+- Why: live color families restructure the palette panel and supersede part of the shipped ramp UI — design-uncertain and cross-cutting.
 - Artifacts: this spec; the palette-ramps v1 build it builds on.
+** 2026-06-09 Tue @ 23:31:28 -0500 — Codex — reviewer
+- What changed or was recommended: marked =Not ready=; flagged two open decisions, an underspecified name/import inference contract, the ground-strip source of truth, chip-level ownership in family mode, and removed-step assignment behavior.
+- Why: the first draft moved palette ownership to name-derived families without pinning import, edit, delete, and reference-healing behavior.
+- Artifacts: theme-studio-color-families-spec-review.org (consumed and deleted on response).
+** 2026-06-09 Tue @ 23:40:35 -0500 — Claude Code (dotemacs) — responder
+- What changed or was recommended: folded the Codex review and Craig's three clarifications. Resolved both open decisions (flat persistence; remove the standalone ramp panel). Pivoted the whole model from name-derived families to hex-derived families over a still-flat, still-editable palette — which designs out the name-grammar/import-inference blocker and the chip-ownership blocker. Pinned the ground strip to the bg/p assignments, the removed-step references to a visible "(gone)", n=0 handled without =ramp()=, the 0.02 neutral and 25° hue-gap thresholds, the sort tie-breakers, the warnings exemption, and the unchanged package seeding. See Review dispositions for the two reframed findings.
+- Why: Craig's "group by hex, never by name; rename anything freely" both answers the review's hardest questions and simplifies the design — the palette no longer changes ownership, so most of the missing contracts disappear.
+- Artifacts: review file deleted; Review dispositions section; this entry. Remaining fuzzy area is the hue-clustering threshold (pinned default, vNext tuning).
