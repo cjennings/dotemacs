@@ -41,21 +41,36 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#A] theme-studio contrast cell uses the wrong fg/bg pair :bug:theme-studio:
+** TODO [#A] theme-studio contrast cell uses the wrong fg/bg pair :bug:theme-studio:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-10
+:END:
 The contrast readout on every item with two color selections (a fg AND a bg — the UI faces table and the package faces table) is computing the wrong pair. It needs to contrast the face's selected fg against the face's selected bg, not how the bg contrasts with the currently-selected (ground) bg.
 
 Investigation start: the two-color contrast cells are =paintUI= (UI faces, app.js ~line 740) and =buildPkgTable= (package faces, app.js ~line 430), both currently calling =contrast(effFg(fg), effBg(bg))= where =effFg(v)=v||MAP['p']= and =effBg(v)=v||MAP['bg']=. Reproduce a face that has BOTH a fg and a bg set, confirm the displayed ratio, and check whether it's actually evaluating selected-fg vs selected-bg or falling through to the ground bg. Fix so a two-color face always rates its own fg-on-bg. (Single-color contexts — the picker/palette-chip/plane checks that rate a color against the ground — are correct and out of scope.) Add a characterization gate (a #contrasttest hash gate) pinning fg-vs-bg for a two-color face.
 
-** TODO [#B] theme-studio UI-faces preview cell ignores the face bg :bug:theme-studio:
+** TODO [#B] theme-studio UI-faces preview cell ignores the face bg :bug:theme-studio:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-10
+:END:
 In the UI faces table, the preview cell for a face with its own bg renders with the ground bg instead. Repro: set mode-line fg=black, bg=blue — the preview cell should be black text on blue, but shows black on black (the live buffer mode-line is fine). Root cause: =applyGround= (app.js:300) blankets EVERY =.ex= element's background to =MAP['bg']=, and the preview cell =cP= shares =className='ex'= (app.js:753), so it clobbers the per-face bg =paintUI= sets (app.js:739) — runs on load and on every ground change. Fix: stop applyGround from touching the UI-face preview cells (scope its =.ex= selector to the code/example cells, give the preview cell its own class, or re-run paintUI after). The contrast cell shares the same staleness, so confirm both.
 
-** TODO [#B] Split window opens the dashboard in the other window :feature:ux:windows:
+** TODO [#B] Split window opens the dashboard in the other window :feature:ux:windows:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-10
+:END:
 When splitting with C-x 2 (=split-window-below=) or C-x 3 (=split-window-right=), the new/other window should default to the =*dashboard*= buffer instead of mirroring the current buffer. Advise =split-window-below= / =split-window-right= (or rebind the keys) to select the dashboard in the freshly-created window. Keep point in the original window.
 
 ** TODO [#B] theme-studio live-preview bevel thinner than Emacs :bug:theme-studio:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-10
+:END:
 The mode-line box (3D released-button bevel) in the live buffer preview renders slimmer than the bevel Emacs actually draws. Make them match. The bevel comes from =boxCss= in app.js (~line 307), currently =inset 1px 1px 0 #ffffff33,inset -1px -1px 0 #00000066= for the released style — a 1px inset with faint translucent highlight/shadow. Emacs's released-button box is wider/stronger (it shades the highlight and shadow from the actual background color, not a flat translucent white/black). Fix: widen the bevel and derive the highlight/shadow from the box's background so it reads like Emacs. Verify side-by-side against a real Emacs mode-line.
 
 ** TODO [#C] theme-studio face-consistency check :feature:theme-studio:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-10
+:END:
 Rule taxonomy captured in [[file:docs/design/theme-studio-face-rules.org][docs/design/theme-studio-face-rules.org]] (Design Rules vs Fidelity Rules). The two checks below map to those two rule kinds. Both surface structural-attribute (weight/slant/underline/box/overline/height) issues; color is the theme's design and out of scope.
 
 1. Theme cross-cutting consistency (primary, per Craig 2026-06-09): the theme has deliberate cross-cutting rules — e.g. headings/titles are bold, links are underlined, errors/warnings/success are bold. Flag where the theme BREAKS ITS OWN rule (a heading that isn't bold, a link that isn't underlined). The designer declares the rules; the check finds the violators. This is the "tell me where I broke the rule" guardrail.
@@ -64,7 +79,10 @@ Rule taxonomy captured in [[file:docs/design/theme-studio-face-rules.org][docs/d
 
 Bake into the tool (a lint surfaced in the UI) or run as a build-time check (seeds vs live deffaces via emacsclient).
 
-** TODO [#B] theme-studio color-harmony explainer + ramp/fill features :feature:theme-studio:docs:
+** TODO [#B] theme-studio color-harmony explainer :feature:theme-studio:docs:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-10
+:END:
 Write an explainer in =docs/design/theme-studio-color-harmony.org= capturing the OKLCH harmony method worked out 2026-06-09: harmony is mostly calculable — work in OKLCH, borrow the hue from a semantic accent, fix lightness + chroma across a tier, and let contrast (WCAG/APCA), ΔE separation, and the sRGB gamut bound the free dials. Include the worked background-tint tier (borrow accent hue, fix L≈0.28 C≈0.045 → dim readable bg per hue) and the fg-vs-bg role split (bright accents for text, dim low-chroma tints for backgrounds).
 
 Two features it enables (both worth building):
@@ -76,6 +94,9 @@ Open design problem to address in the explainer + the ramp feature: a background
 The v1 feature (ramp generation + background-contrast safety, with the worst-case-floor UX) is designed in [[file:docs/theme-studio-palette-ramps-spec.org][docs/theme-studio-palette-ramps-spec.org]]. Codex review incorporated 2026-06-09: both open decisions resolved (WCAG AA default target; v1 foreground set = distinct syntax hexes + default fg), v1 covered faces closed to region/hl-line/highlight/lazy-highlight/isearch, ramp defaults + function contracts pinned. Spec is Ready (Craig confirmed 2026-06-09); the v1 build is tracked under the sibling parent below. Harmonic fill (feature 2) stays vNext. This task is the explainer doc itself (=docs/design/theme-studio-color-harmony.org=, the methodology).
 
 ** TODO [#B] theme-studio palette ramps + contrast safety v1 :feature:theme-studio:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-10
+:END:
 The v1 build from [[file:docs/theme-studio-palette-ramps-spec.org][theme-studio-palette-ramps-spec.org]] (Ready, Codex-reviewed). Two coupled features: a ramp generator (one base color → harmonized tonal ramp) and background-contrast safety (worst-case floor over a face's foreground set + safe-lightness guidance).
 
 All five phases + the README close-out landed 2026-06-09 (commits 1d51a332, 9da6c663, e7021bfe, 1d8b9f9e, 843bbf08, 23926837); =make theme-studio-test= green (78 node tests, 12 browser gates). Code-complete and self-verified. Remaining: the aesthetic and real-Emacs-fidelity sign-off under the Manual testing parent below (does a ramp harmonize, does the safe band read clearly, does a "safe" tint actually read behind real syntax). Mark this DONE once that passes.
