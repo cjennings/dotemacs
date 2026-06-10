@@ -219,14 +219,12 @@ function familyCountControl(f){
 // References to a surviving position (matched by signed lightness rank) follow the
 // new hex; references to a position removed by lowering N leave their old hex,
 // which is no longer in the palette and so renders as "(gone)".
-function setFamilyCount(baseHex,n){
-  const {families}=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
-  const fam=families.find(f=>f.base.toLowerCase()===baseHex.toLowerCase());
-  if(!fam)return;
-  const baseName=(fam.members.find(m=>m.hex.toLowerCase()===baseHex.toLowerCase())||{}).name||'color';
-  const oldHexes=fam.members.map(m=>m.hex);
+// Replace oldHexes in the palette with a fresh base ±n ramp, repointing surviving
+// references and leaving removed ones on their now-gone hex. Returns the removed
+// count, or null on a bad base. Shared by the count control and the base edit.
+function regenFamilyInPlace(oldHexes,baseHex,baseName,n){
   const r=regenFamily(baseHex,n,{});
-  if(r.error){notify('cannot regenerate from '+baseHex,true);return;}
+  if(r.error){notify('cannot regenerate from '+baseHex,true);return null;}
   const plan=stepRepointPlan(rankByLightness(oldHexes,baseHex),r.members);
   const oldSet=new Set(oldHexes.map(h=>h.toLowerCase()));
   let at=PALETTE.length;
@@ -235,8 +233,17 @@ function setFamilyCount(baseHex,n){
   const entries=r.members.map(m=>[m.hex,m.offset===0?baseName:baseName+(m.offset>0?'+'+m.offset:String(m.offset))]);
   PALETTE.splice(Math.min(at,PALETTE.length),0,...entries);
   for(const [o,nw] of plan.map)repointHex(o,nw);
+  return plan.removed.length;
+}
+function setFamilyCount(baseHex,n){
+  const {families}=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+  const fam=families.find(f=>f.base.toLowerCase()===baseHex.toLowerCase());
+  if(!fam)return;
+  const baseName=(fam.members.find(m=>m.hex.toLowerCase()===baseHex.toLowerCase())||{}).name||'color';
+  const removed=regenFamilyInPlace(fam.members.map(m=>m.hex),baseHex,baseName,n);
+  if(removed===null)return;
   selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();
-  notify('regenerated "'+baseName+'" to ±'+n+(plan.removed.length?(' — '+plan.removed.length+' removed step(s) show "(gone)" where used'):''),false);
+  notify('regenerated "'+baseName+'" to ±'+n+(removed?(' — '+removed+' removed step(s) show "(gone)" where used'):''),false);
 }
 function notify(msg,err){const m=document.getElementById('palmsg');if(!m)return;m.textContent=msg;m.style.color=err?'#cb6b4d':'#8a9496';m.style.opacity='1';clearTimeout(m._t);m._t=setTimeout(()=>{m.style.opacity='0';},err?4000:2800);}
 function applyEdit(){if(selectedIdx!==null)updateColor();else addColor();}
@@ -247,8 +254,17 @@ function updateColor(){
   const newHex=curHex();
   const newName=(document.getElementById('newname').value.trim())||PALETTE[i][1];
   if(PALETTE.some((p,j)=>j!==i&&p[1].toLowerCase()===newName.toLowerCase())){notify('another color is already named "'+newName+'" — names must be unique',true);return;}
+  // If the edited color is a family base with a ramp, recolor the whole family: regenerate from the new base at the same count.
+  const fams=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).families;
+  const fam=fams.find(f=>!f.neutral&&f.base.toLowerCase()===oldHex.toLowerCase());
+  const count=fam?Math.max(0,...rankByLightness(fam.members.map(m=>m.hex),fam.base).map(m=>Math.abs(m.offset))):0;
   PALETTE[i]=[newHex,newName];
   repointHex(oldHex,newHex);
+  if(fam&&count>0){
+    const oldHexes=fam.members.map(m=>m.hex.toLowerCase()===oldHex.toLowerCase()?newHex:m.hex);
+    regenFamilyInPlace(oldHexes,newHex,newName,count);
+    closePicker();selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();notify('recolored "'+newName+'" family from the new base',false);return;
+  }
   closePicker();renderPalette();buildTable();buildUITable();renderCode();applyGround();notify('updated "'+newName+'"',false);
 }
 function curHex(){return normHex(document.getElementById('newhexstr').value)||'#888888';}
@@ -348,65 +364,6 @@ function addColor(){const h=curHex();const name=document.getElementById('newname
   renderPalette();buildTable();buildUITable();
   if(healed){renderCode();applyGround();if(document.getElementById('pkgbody'))buildPkgTable();buildPkgPreview();}
   notify(healed?('added "'+name+'" and reconnected its assignments'):('added "'+name+'"'),false);}
-// --- ramp generator UI (palette-ramps spec, Phase 2) -------------------------
-// Generate a tonal ramp from the current color, preview the steps, add the ones
-// you want as named palette entries. The pure ramp() lives in app-core.js; this
-// is the DOM around it. Names derive from the source swatch (blue -> blue+1).
-let rampBase=null; // {hex,name} of the last previewed base (refreshed from the tile on preview)
-// The base the ramp generates from is whatever sits on the color-selection tile
-// right now: the selected palette color, or a typed hex and name. Reading it at
-// preview time means selecting a new palette color then pressing preview just
-// works, the same as reopening the panel.
-function rampBaseFromTile(){const hex=curHex(),name=(selectedIdx!=null?PALETTE[selectedIdx][1]:document.getElementById('newname').value.trim())||'ramp';return {hex,name};}
-function openRamp(){document.getElementById('ramp').style.display='block';renderRamp();}
-function closeRamp(){const r=document.getElementById('ramp');if(r)r.style.display='none';}
-function rampOpts(){return {n:parseInt(document.getElementById('rampn').value,10),stepL:parseFloat(document.getElementById('rampstepl').value),chromaEase:parseFloat(document.getElementById('rampce').value)};}
-function rampStepName(off){return rampBase.name+(off>0?'+'+off:String(off));}
-function rampNote(msg,err){const m=document.getElementById('rampmsg');if(!m)return;m.textContent=msg||'';m.style.color=err?'#cb6b4d':'#8a9496';}
-function rampNameTaken(nm){return PALETTE.some(p=>p[1].toLowerCase()===nm.toLowerCase());}
-function renderRamp(){
-  rampBase=rampBaseFromTile();
-  document.getElementById('rampname').textContent=rampBase.name+' '+rampBase.hex;
-  const r=ramp(rampBase.hex,rampOpts()),prev=document.getElementById('rampprev');prev.innerHTML='';
-  if(r.error){rampNote('not a valid base color',true);return;}
-  const dups=[];
-  r.steps.forEach(s=>{const nm=rampStepName(s.offset),taken=rampNameTaken(nm);if(taken)dups.push(nm);
-    const c=document.createElement('div');c.className='rchip'+(taken?' dup':'');c.style.background=s.hex;c.style.color=textOn(s.hex);
-    c.title=nm+' '+s.hex+(s.clamped?' (gamut-clamped)':'')+(taken?' — a palette color is already named this; it will be skipped on add':'');
-    c.innerHTML=`<span>${esc(nm)}</span><span class="rhex">${s.hex}</span>${s.clamped?'<span class="rclamp" title="clamped to sRGB">!</span>':''}${taken?'<span class="rdup" title="name already in the palette">&#8856;</span>':''}`;
-    c.onclick=()=>addRampStep(s);prev.appendChild(c);});
-  const parts=[];
-  if(r.adjusted.length)parts.push('adjusted: '+r.adjusted.join(', '));
-  if(dups.length)parts.push('name already in palette, will be skipped on add: '+dups.join(', '));
-  rampNote(parts.join('   |   '),dups.length>0);
-}
-// Insert a step around the source swatch so the family reads -n .. base .. +n:
-// darker (negative) steps go before the base, lighter (positive) ones after, each
-// ordered among its existing siblings. A name collision is skipped (never
-// overwrites); a hex matching another entry is added but flagged as a duplicate.
-function rampInsertIndex(off){
-  const bn=rampBase.name,re=new RegExp('^'+bn.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([+-]\\d+)$');
-  let src=PALETTE.findIndex(p=>p[1]===bn);if(src<0)src=PALETTE.length;
-  const sib=i=>{const m=i>=0&&i<PALETTE.length&&PALETTE[i][1].match(re);return m?parseInt(m[1],10):NaN;};
-  if(off>0){let idx=src+1;while(idx<PALETTE.length){const v=sib(idx);if(v>0&&v<off){idx++;continue;}break;}return idx;}
-  let idx=src;while(idx>0){const v=sib(idx-1);if(v<0&&v>off){idx--;continue;}break;}return idx;
-}
-function addRampStep(s){
-  const nm=rampStepName(s.offset);
-  if(PALETTE.some(p=>p[1].toLowerCase()===nm.toLowerCase())){rampNote('"'+nm+'" already exists — rename or skip',true);return false;}
-  const dup=PALETTE.find(p=>p[0].toLowerCase()===s.hex.toLowerCase());
-  const at=rampInsertIndex(s.offset);PALETTE.splice(at,0,[s.hex,nm]);
-  if(selectedIdx!=null&&at<=selectedIdx)selectedIdx++; // a darker step inserted before the base keeps the selection on the base
-  const healed=healGone(nm,s.hex);renderPalette();buildTable();buildUITable();
-  if(healed){renderCode();applyGround();}
-  rampNote(dup?('added "'+nm+'" (same hex as "'+dup[1]+'")'):('added "'+nm+'"'),false);return true;
-}
-function addAllRampSteps(){
-  if(!rampBase)return;const r=ramp(rampBase.hex,rampOpts());
-  if(r.error){rampNote('not a valid base color',true);return;}
-  let added=0;const skipped=[];r.steps.forEach(s=>{addRampStep(s)?added++:skipped.push(rampStepName(s.offset));});
-  rampNote('added '+added+(skipped.length?('   |   skipped (name already in palette): '+skipped.join(', ')):''),skipped.length>0);
-}
 function themeName(){return (document.getElementById('themename').value||'theme').trim()||'theme';}
 function fileSlug(){return slugify(themeName());}
 function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);const o={name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};if(LOCKED.size)o.locks=[...LOCKED];const pk=packagesForExport(PKGMAP);if(Object.keys(pk).length)o.packages=pk;return o;}
@@ -1077,30 +1034,6 @@ if(location.hash==='#readouttest'){const hex='#67809c';document.getElementById('
  const sane=Math.abs(lch.L-0.591)<0.01&&Math.abs(lch.C-0.052)<0.01&&Math.abs(lch.H-251.6)<2;
  const ok=wired&&sane;document.title='READOUTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='readouttest';d.textContent='READOUTTEST '+(ok?'PASS':'FAIL')+' oklch='+o+' | apca='+a+' | wcag='+w;document.body.appendChild(d);}
-// Ramp UI gate (open with #ramptest): generation count, ordered insertion after
-// the source swatch, name-collision skip, and a clamp badge on an out-of-gamut step.
-if(location.hash==='#ramptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
- const save=PALETTE.slice();
- PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue']];renderPalette();
- selectedIdx=PALETTE.findIndex(p=>p[1]==='blue');document.getElementById('newhexstr').value='#67809c';document.getElementById('newname').value='blue';
- openRamp();document.getElementById('rampn').value='2';document.getElementById('rampstepl').value='0.08';document.getElementById('rampce').value='0.5';renderRamp();
- A(document.querySelectorAll('#rampprev .rchip').length===4,'expected 4 step chips, got '+document.querySelectorAll('#rampprev .rchip').length);
- A(document.querySelectorAll('#rampprev .rchip .rhex').length===4,'each step tile shows its hex');
- addAllRampSteps();
- const names=PALETTE.map(p=>p[1]),bi=names.indexOf('blue');
- A(names.slice(bi-2,bi+3).join(',')==='blue-2,blue-1,blue,blue+1,blue+2','order around blue: '+names.slice(Math.max(0,bi-2),bi+3).join(','));
- const before=PALETTE.length;addAllRampSteps();A(PALETTE.length===before,'re-add should skip existing names');
- A(/skipped \(name already in palette\): blue-2, blue-1, blue\+1, blue\+2/.test(document.getElementById('rampmsg').textContent),'add-all names the skipped collisions: '+document.getElementById('rampmsg').textContent);
- renderRamp();
- A(document.querySelectorAll('#rampprev .rchip.dup').length===4,'re-preview marks the now-existing names as dup');
- A(/already in palette.*blue-2, blue-1, blue\+1, blue\+2/.test(document.getElementById('rampmsg').textContent),'preview names the colliding tiles: '+document.getElementById('rampmsg').textContent);
- // preview re-reads the color-selection tile: change the tile, press preview, the base follows
- document.getElementById('newhexstr').value='#2040e0';document.getElementById('newname').value='vivid';selectedIdx=null;document.getElementById('rampce').value='0';renderRamp();
- A(/^vivid #2040e0/.test(document.getElementById('rampname').textContent),'preview reads the tile: '+document.getElementById('rampname').textContent);
- A(document.querySelectorAll('#rampprev .rclamp').length>0,'vivid base at chroma-ease 0 should clamp an extreme step');
- PALETTE=save;selectedIdx=null;renderPalette();closeRamp();
- document.title='RAMPTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='ramptest';d.textContent='RAMPTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Worst-case readout gate (open with #contrasttest): a covered overlay face shows
 // the floor over its foreground set and names the limiting foreground, an
 // out-of-scope face keeps the single-pair readout, and an empty set reads "no fg set".
@@ -1204,3 +1137,29 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
  document.title='COUNTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='counttest';d.textContent='COUNTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Base-edit + ground-edit gate (open with #baseedittest): editing a family base
+// recolors the whole family at the same count and references follow; editing a
+// ground swatch writes the bg/fg assignment.
+if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),saveSel=selectedIdx;
+ MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';
+ PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg']];
+ regenFamily('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
+ UIMAP['region']={fg:null,bg:'#67809c',bold:false,italic:false,underline:false,strike:false};
+ renderPalette();buildUITable();
+ selectedIdx=PALETTE.findIndex(p=>p[0].toLowerCase()==='#67809c');
+ document.getElementById('newhexstr').value='#3a8a8a';document.getElementById('newname').value='teal';
+ updateColor();
+ const fam=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).families.find(f=>!f.neutral);
+ A(fam&&fam.members.some(m=>m.hex.toLowerCase()==='#3a8a8a'),'family base recolored to the new hex');
+ A(fam&&fam.members.length===5,'count preserved (±2 → 5 members), got '+(fam&&fam.members.length));
+ A(!new Set(PALETTE.map(p=>p[0].toLowerCase())).has('#67809c'),'old base removed from palette');
+ A(UIMAP['region'].bg.toLowerCase()==='#3a8a8a','a reference to the base followed to the new base hex');
+ // ground edit: select bg, change hex, MAP.bg follows
+ selectedIdx=PALETTE.findIndex(p=>p[0].toLowerCase()==='#0d0b0a');
+ document.getElementById('newhexstr').value='#101010';document.getElementById('newname').value='ground';
+ updateColor();
+ A(MAP['bg'].toLowerCase()==='#101010','editing the bg swatch wrote the bg assignment, got '+MAP['bg']);
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
+ document.title='BASEEDITTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='baseedittest';d.textContent='BASEEDITTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
