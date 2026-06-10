@@ -21,17 +21,39 @@ test('familiesFromPalette: Normal — separated hues split into one family each'
   for (const f of families) assert.equal(f.members.length, 1);
 });
 
-test('familiesFromPalette: Boundary — hues within the gap stay one family', () => {
-  const pal = [at(0.55, 0.1, 250, 'b1'), at(0.6, 0.1, 256, 'b2')]; // 6° apart < 25°
+test('familiesFromPalette: Boundary — hues sharing an anchor stay one family', () => {
+  const pal = [at(0.55, 0.1, 250, 'b1'), at(0.6, 0.1, 256, 'b2')]; // both nearest the blue anchor
   const { families } = familiesFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
   assert.equal(families.length, 1, 'a near hue-pair is one family');
   assert.equal(families[0].members.length, 2);
 });
 
-test('familiesFromPalette: Boundary — hues past the gap split', () => {
-  const pal = [at(0.6, 0.1, 250, 'b'), at(0.6, 0.1, 200, 'c')]; // 50° apart > 25°
+test('familiesFromPalette: Boundary — different anchors split (blue vs teal)', () => {
+  const pal = [at(0.6, 0.1, 255, 'b'), at(0.6, 0.1, 200, 'c')];
   const { families } = familiesFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
   assert.equal(families.length, 2);
+});
+
+test('familiesFromPalette: Normal — yellow and green land in separate families', () => {
+  const pal = [at(0.7, 0.12, 100, 'yellow'), at(0.6, 0.12, 145, 'green')];
+  const { families } = familiesFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
+  assert.equal(families.length, 2, 'yellow and green are separate anchors');
+});
+
+test('familiesFromPalette: Boundary — an intermediate chain does not merge yellow into green', () => {
+  // gold, olive, yellow-green, green: anchor assignment buckets by nearest, no single-linkage chaining
+  const pal = [at(0.7, 0.1, 90, 'gold'), at(0.65, 0.1, 110, 'olive'), at(0.6, 0.1, 130, 'yg'), at(0.55, 0.1, 150, 'green')];
+  const { families } = familiesFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
+  assert.equal(families.length, 2, 'two anchors (yellow, green), not one chained family');
+});
+
+test('familiesFromPalette: Boundary — a pale tint keeps its hue while a mid gray goes neutral', () => {
+  const paleBlue = oklch2hex(0.9, 0.03, 255).hex;   // light, faint -> still blue
+  const midGray = oklch2hex(0.6, 0.025, 100).hex;   // mid, faint -> reads neutral
+  const { families } = familiesFromPalette([[paleBlue, 'paleblue'], [midGray, 'graytone']], { bg: '#000000', fg: '#ffffff' });
+  const neutral = families.find(f => f.neutral);
+  assert.ok(neutral && neutral.members.some(m => m.name === 'graytone'), 'mid faint color is neutral');
+  assert.ok(families.some(f => !f.neutral && f.members.some(m => m.name === 'paleblue')), 'pale tint stays chromatic');
 });
 
 test('familiesFromPalette: Boundary — near-neutral colors form a separate family', () => {

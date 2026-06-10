@@ -534,24 +534,20 @@ function lMax(hue,chroma,fgSet,target){
 // truth; these pure functions group it, regenerate a family's ramp, and plan the
 // assignment re-point across a regenerate.
 
-const NEUTRAL_C=0.02;  // OKLCH chroma below this has no meaningful hue (neutral)
-const HUE_GAP=25;      // a hue gap wider than this (degrees) splits two families
+// Perceptual hue-category centers (OKLCH degrees). A chromatic color joins the
+// family of its nearest anchor, so adjacent categories (yellow vs green) stay
+// separate by construction and there's no single-linkage chaining across them.
+const HUE_ANCHORS=[30,65,100,145,200,255,310,350]; // red,orange,yellow,green,teal,blue,purple,pink
 function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
 function nameOfHex(palette,hex){const p=palette.find(p=>p[0].toLowerCase()===hex.toLowerCase());return p?p[1]:null;}
 
-// Split hue-bearing items (each {H,...}) into clusters by hue proximity: sort
-// around the circle and cut wherever the gap to the next item exceeds HUE_GAP,
-// handling the 360 wrap so a family straddling 0 stays together.
-function clusterByHue(items,gap){
-  if(items.length<=1)return items.length?[items]:[];
-  const s=[...items].sort((a,b)=>a.H-b.H),cuts=[];
-  for(let i=0;i<s.length;i++){const d=i<s.length-1?s[i+1].H-s[i].H:(s[0].H+360)-s[i].H;if(d>gap)cuts.push(i);}
-  if(!cuts.length)return [s];
-  const start=(cuts[cuts.length-1]+1)%s.length,rot=[...s.slice(start),...s.slice(0,start)],out=[];
-  let cur=[rot[0]];
-  for(let i=1;i<rot.length;i++){let d=rot[i].H-rot[i-1].H;if(d<0)d+=360;if(d>gap){out.push(cur);cur=[rot[i]];}else cur.push(rot[i]);}
-  out.push(cur);return out;
-}
+// Nearest hue anchor to H, by circular distance.
+function nearestAnchor(H){let best=HUE_ANCHORS[0],bd=999;for(const a of HUE_ANCHORS){let d=Math.abs(H-a);d=Math.min(d,360-d);if(d<bd){bd=d;best=a;}}return best;}
+// A color reads as neutral below this chroma. Lightness-scaled (the Munsell
+// insight): the mid-tones need more chroma to read as a hue, so a faint warm gray
+// at mid lightness is neutral while an equally-faint pale tint at high lightness
+// keeps its hue. Highest near mid lightness, tapering toward the light end.
+function neutralThreshold(L){const HI=0.6,LO=0.85,CMAX=0.04,CMIN=0.015;if(L<=HI)return CMAX;if(L>=LO)return CMIN;return CMAX-(L-HI)/(LO-HI)*(CMAX-CMIN);}
 // A family from its members: base is the most-saturated member (tie toward
 // mid-lightness), the anchor for a generated ramp.
 function makeFamily(ms,neutral){
@@ -559,24 +555,27 @@ function makeFamily(ms,neutral){
   for(const m of ms)if(m.C>base.C||(m.C===base.C&&Math.abs(m.L-0.5)<Math.abs(base.L-0.5)))base=m;
   return {base:base.hex,neutral:!!neutral,members:ms.map(m=>({hex:m.hex,name:m.name}))};
 }
-// Group a flat palette into the ground strip plus hue families. ground is
-// {bg,fg}: those two hexes form the pinned ground strip even when absent from the
-// palette, and a palette chip at a ground hex is not duplicated into a family.
+// Group a flat palette into the ground strip plus families. ground is {bg,fg}:
+// those two hexes form the pinned ground strip even when absent from the palette,
+// and a palette chip at a ground hex is not duplicated into a family. Near-neutrals
+// (chroma below the lightness-scaled threshold) form one neutral family; the rest
+// bucket by nearest hue anchor.
 function familiesFromPalette(palette,ground){
   const bg=ground&&ground.bg,fg=ground&&ground.fg;
   const gset=new Set([bg,fg].filter(Boolean).map(h=>h.toLowerCase()));
   const groundStrip=[];
   if(bg)groundStrip.push({hex:bg,role:'bg',name:nameOfHex(palette,bg)});
   if(fg)groundStrip.push({hex:fg,role:'fg',name:nameOfHex(palette,fg)});
-  const neutrals=[],chromatic=[];
+  const neutrals=[],buckets=new Map();
   for(const [hex,name] of palette){
     if(gset.has(hex.toLowerCase()))continue;
     const c=oklchOf(hex),m={hex,name,L:c.L,C:c.C,H:c.H};
-    (c.C<NEUTRAL_C?neutrals:chromatic).push(m);
+    if(c.C<neutralThreshold(c.L))neutrals.push(m);
+    else{const a=nearestAnchor(c.H);if(!buckets.has(a))buckets.set(a,[]);buckets.get(a).push(m);}
   }
   const families=[];
   if(neutrals.length)families.push(makeFamily(neutrals,true));
-  for(const cl of clusterByHue(chromatic,HUE_GAP))families.push(makeFamily(cl,false));
+  for(const ms of buckets.values())families.push(makeFamily(ms,false));
   return {ground:groundStrip,families};
 }
 // Regenerate a family's members as a symmetric ramp around the base: n=0 is the
