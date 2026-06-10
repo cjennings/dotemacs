@@ -26,6 +26,8 @@
  .pals{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;align-items:flex-start}
  .fstrip{display:flex;flex-direction:column;gap:6px;padding:5px;border-radius:7px;border:1px solid transparent}
  .fstrip.ground{border-color:#252321;background:#161412}
+ .fcount{margin-top:3px;font:9pt monospace;color:#8a9496;text-align:center}
+ .fcount input{width:40px;background:#0d0b0a;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:2px 4px;font:9pt monospace;text-align:center}
  .palwarn{display:none;margin-top:8px;font:10pt monospace;color:#cb6b4d}
  .palwarn .pwh{font-weight:bold;margin-bottom:2px}
  .palwarn .pwl{opacity:.92}

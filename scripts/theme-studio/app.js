@@ -199,11 +199,44 @@ function renderPalette(){
       sw.innerHTML=`<input class="nm" value="${g.role||''}" disabled style="color:${tc}"><div class="hx" style="color:${tc}">${g.hex}</div>`;gs.appendChild(sw);}
   });
   sortFamilies(families).forEach(f=>{
-    const s=strip('');s.dataset.family=f.base;
+    const s=strip(f.neutral?' neutral':'');s.dataset.family=f.base;
     f.members.forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest));});
+    if(!f.neutral)s.appendChild(familyCountControl(f));
   });
   renderPaletteWarnings(warnings,overflow);
   buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
+}
+// The per-family count control under a chromatic strip. Its value is the family's
+// current per-side reach; setting N regenerates the family as base ±N.
+function familyCountControl(f){
+  const per=Math.max(0,...rankByLightness(f.members.map(m=>m.hex),f.base).map(m=>Math.abs(m.offset)));
+  const d=document.createElement('div');d.className='fcount';
+  d.innerHTML=`<span title="generate a symmetric ramp of N steps each side of this family's base — this replaces the family">&#177; <input type="number" min="0" max="4" value="${per}"></span>`;
+  d.querySelector('input').onchange=(e)=>setFamilyCount(f.base,Math.max(0,Math.min(4,parseInt(e.target.value,10)||0)));
+  return d;
+}
+// Regenerate a family as a symmetric base ±N ramp, replacing its current members.
+// References to a surviving position (matched by signed lightness rank) follow the
+// new hex; references to a position removed by lowering N leave their old hex,
+// which is no longer in the palette and so renders as "(gone)".
+function setFamilyCount(baseHex,n){
+  const {families}=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+  const fam=families.find(f=>f.base.toLowerCase()===baseHex.toLowerCase());
+  if(!fam)return;
+  const baseName=(fam.members.find(m=>m.hex.toLowerCase()===baseHex.toLowerCase())||{}).name||'color';
+  const oldHexes=fam.members.map(m=>m.hex);
+  const r=regenFamily(baseHex,n,{});
+  if(r.error){notify('cannot regenerate from '+baseHex,true);return;}
+  const plan=stepRepointPlan(rankByLightness(oldHexes,baseHex),r.members);
+  const oldSet=new Set(oldHexes.map(h=>h.toLowerCase()));
+  let at=PALETTE.length;
+  for(let i=0;i<PALETTE.length;i++)if(oldSet.has(PALETTE[i][0].toLowerCase())){at=i;break;}
+  for(let i=PALETTE.length-1;i>=0;i--)if(oldSet.has(PALETTE[i][0].toLowerCase()))PALETTE.splice(i,1);
+  const entries=r.members.map(m=>[m.hex,m.offset===0?baseName:baseName+(m.offset>0?'+'+m.offset:String(m.offset))]);
+  PALETTE.splice(Math.min(at,PALETTE.length),0,...entries);
+  for(const [o,nw] of plan.map)repointHex(o,nw);
+  selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();
+  notify('regenerated "'+baseName+'" to ±'+n+(plan.removed.length?(' — '+plan.removed.length+' removed step(s) show "(gone)" where used'):''),false);
 }
 function notify(msg,err){const m=document.getElementById('palmsg');if(!m)return;m.textContent=msg;m.style.color=err?'#cb6b4d':'#8a9496';m.style.opacity='1';clearTimeout(m._t);m._t=setTimeout(()=>{m.style.opacity='0';},err?4000:2800);}
 function applyEdit(){if(selectedIdx!==null)updateColor();else addColor();}
@@ -1145,3 +1178,29 @@ if(location.hash==='#familytest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);selectedIdx=saveSel;renderPalette();
  document.title='FAMILYTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='familytest';d.textContent='FAMILYTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Count-control gate (open with #counttest): the per-family count regenerates the
+// family — count up adds symmetric steps, count down drops the extremes, a
+// reference to a surviving step follows the new hex, a reference to a removed step
+// is left on its old (now-gone) hex.
+if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),saveSel=selectedIdx;
+ MAP['bg']='#000000';MAP['p']='#f0fef0';
+ PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg']];
+ regenFamily('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
+ const innerOld=regenFamily('#67809c',2).members.find(m=>m.offset===1).hex; // survives a count change
+ const outerOld=regenFamily('#67809c',2).members.find(m=>m.offset===2).hex; // dropped on count-down
+ UIMAP['region']={fg:null,bg:innerOld,bold:false,italic:false,underline:false,strike:false};
+ UIMAP['highlight']={fg:null,bg:outerOld,bold:false,italic:false,underline:false,strike:false};
+ selectedIdx=null;renderPalette();
+ setFamilyCount('#67809c',1);
+ const palHexes=new Set(PALETTE.map(p=>p[0].toLowerCase()));
+ A(!palHexes.has(outerOld.toLowerCase()),'outer step removed from palette on count down');
+ A(UIMAP['highlight'].bg.toLowerCase()===outerOld.toLowerCase(),'a removed-step reference stays on its old (gone) hex');
+ const newInner=regenFamily('#67809c',1).members.find(m=>m.offset===1).hex;
+ A(UIMAP['region'].bg.toLowerCase()===newInner.toLowerCase(),'a surviving-step reference followed the regenerate, got '+UIMAP['region'].bg);
+ setFamilyCount('#67809c',3);
+ const fam3=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).families.find(f=>f.base.toLowerCase()==='#67809c');
+ A(fam3&&fam3.members.length===7,'count up to 3 yields 7 members, got '+(fam3&&fam3.members.length));
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
+ document.title='COUNTTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='counttest';d.textContent='COUNTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
