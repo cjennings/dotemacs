@@ -198,6 +198,9 @@ function renderPalette(){
     else{const tc=textOn(g.hex),sw=document.createElement('div');sw.className='pchip';sw.style.background=g.hex;sw.title=(g.role||'')+' '+g.hex;
       sw.innerHTML=`<input class="nm" value="${g.role||''}" disabled style="color:${tc}"><div class="hx" style="color:${tc}">${g.hex}</div>`;gs.appendChild(sw);}
   });
+  // The too-similar warning stays on the full flat palette: a generated ramp's
+  // steps are a stepL apart (well above the warning's ΔE threshold), so they never
+  // trigger it, and any pair that does is a genuine near-duplicate worth flagging.
   sortFamilies(families).forEach(f=>{
     const s=strip(f.neutral?' neutral':'');s.dataset.family=f.base;
     f.members.forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest));});
@@ -1163,3 +1166,14 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
  document.title='BASEEDITTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='baseedittest';d.textContent='BASEEDITTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Round-trip gate (open with #roundtriptest): export stays a flat palette and
+// import needs no family reconstruction, so export → import → export is identical.
+if(location.hash==='#roundtriptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const before=JSON.stringify(exportObj());
+ applyImported(before);
+ const after=JSON.stringify(exportObj());
+ A(before===after,'export → import → export is byte-identical');
+ const obj=JSON.parse(after);
+ A(Array.isArray(obj.palette)&&obj.palette.every(e=>Array.isArray(e)&&e.length===2),'exported palette is still a flat [hex,name] list');
+ document.title='ROUNDTRIPTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='roundtriptest';d.textContent='ROUNDTRIPTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}

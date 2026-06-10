@@ -42,8 +42,9 @@ The runner regenerates the page, runs the Python templating tests
 (`test-colormath.mjs`, including the inline-integrity check), a syntax check of
 the spliced page script, and the browser hash gates in headless Chrome
 (`#selftest`, `#cursortest`, `#readouttest`, `#deltatest`, `#oklchtest`,
-`#planetest`, `#locktest`, `#sorttest`, `#mocktest`, `#ramptest`,
-`#contrasttest`, `#safetest`). It exits non-zero on any failure. The browser gates need a
+`#planetest`, `#locktest`, `#sorttest`, `#mocktest`, `#contrasttest`,
+`#safetest`, `#healtest`, `#familytest`, `#counttest`, `#baseedittest`,
+`#roundtriptest`). It exits non-zero on any failure. The browser gates need a
 Chromium-family browser; without one they report SKIPPED rather than passing
 silently. The pure color math and the extracted picker logic (`planeCell`,
 `paletteWarnings`) live in `colormath.js` so they are unit-tested directly in
@@ -66,10 +67,11 @@ Node; the DOM glue is covered by the browser hash gates.
 
 Three tiers of faces, plus the palette:
 
-- **Palette** — named colors. Add by hex or with the in-page color picker
+- **Palette** — named colors, shown grouped into hue *families* (see Color
+  families below). Add by hex or with the in-page color picker
   (saturation/value square, hue slider, palette reuse chips, live contrast
-  readout, and an any / AA+ / AAA legibility mask). Remove, rename, reorder with
-  arrows or drag. The colors serving as background and foreground are locked.
+  readout, and an any / AA+ / AAA legibility mask). Remove and rename per chip;
+  the colors serving as background and foreground are locked.
 
   The picker also shows perceptual readouts beside the WCAG ratio: the OKLCH
   coordinates (lightness, chroma, hue°) and the APCA Lc contrast against the
@@ -93,28 +95,42 @@ Three tiers of faces, plus the palette:
   per face, shown in a live mock Emacs buffer.
 - **Package faces** — per-package face tables with a live preview (below).
 
-## Ramps and background-contrast safety
+## Color families
 
-Two coupled features help build a harmonized palette and keep background tints
-readable. Both work in OKLCH, where lightness, chroma, and hue move
-independently. The pure math is in `app-core.js` (`ramp`, `fgSetFor`, `floor`,
-`lMax`); the DOM is in `app.js`.
+The palette is displayed as **families**: colors grouped into vertical columns by
+their actual color, dark at the top and light at the bottom, columns arranged left
+to right. Grouping is derived from the hex on every render — never from the name —
+so renaming a color to anything never moves it between columns. The flat palette
+underneath is unchanged (export stays a flat `[hex, name]` list); families are a
+view over it, and the per-chip rename/remove still work.
 
-**Ramps.** The "ramp" button on the palette controls generates a tonal ramp from
-the current color: lighter and darker steps on a held hue, with the chroma easing
-out toward the extremes. Three controls set the shape, with defaults that produce
-a sensible first ramp:
+- **Grouping.** Chromatic colors bucket by their nearest perceptual hue (red,
+  orange, yellow, green, teal, blue, purple, pink). Near-neutrals — grays, the
+  background and foreground ramps — collapse into one neutral column ordered by
+  lightness, using a lightness-scaled chroma threshold so a faint pale tint keeps
+  its hue while a faint mid gray reads as neutral. Columns sort by hue; the ground
+  strip (the `bg` and `fg` assignments) pins first, neutrals next. (Hue-adjacent
+  warm colors like olive-greens and golds can still share a column — a known
+  limitation, since by hue they really are adjacent.)
+- **The count control** under each chromatic column sets how many steps sit on
+  each side of the family's base (its most-saturated color). Setting N regenerates
+  the family as a symmetric base ±N tonal ramp via `ramp()` — lighter and darker
+  steps on the base's hue with chroma easing toward the extremes — *replacing* the
+  column's current colors. N=0 collapses to the base alone.
+- **Editing a base** recolors the whole family: change a base color and the family
+  regenerates from it at the same count.
+- **References follow.** When a regenerate changes a step's hex, any face assigned
+  to that step is re-pointed to the new hex. A step *removed* by lowering the count
+  leaves its references showing "(gone)" — visible and recoverable, never a silent
+  jump to a different color.
 
-- `steps` — how many steps each direction (default 2, range 1-4).
-- `stepL` — the OKLCH lightness delta per step (default 0.08, range 0.04-0.12).
-- `chroma ease` — how much chroma drops at the farthest step (default 0.5, range
-  0-1; 0 holds chroma flat, 1 fully desaturates the last step).
+The standalone ramp generator is gone; fanning a color into a ramp is now "add the
+color, then raise its column's count."
 
-Each previewed step is named after the source swatch (`blue` gives `blue+1`,
-`blue-1`) and shows a clamp badge when it left the sRGB gamut. Click a step to
-add it, or "add all"; steps insert next to the source in order. A name that
-already exists is skipped (never overwritten); a generated hex that matches
-another entry is added but flagged as a duplicate.
+## Background-contrast safety
+
+Keep background tints readable. Works in OKLCH; the pure math is in `app-core.js`
+(`fgSetFor`, `floor`, `lMax`), the DOM in `app.js`.
 
 **Worst-case contrast.** A background overlay sits behind many foregrounds at
 once, so one fg/bg contrast pair is the wrong number. For the covered overlay
