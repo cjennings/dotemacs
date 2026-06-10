@@ -65,10 +65,13 @@ Same root cause as the [#A] contrast-cell task, fixed there in one change: =appl
 :END:
 When splitting with C-x 2 (=split-window-below=) or C-x 3 (=split-window-right=), the new/other window should default to the =*dashboard*= buffer instead of mirroring the current buffer. Advise =split-window-below= / =split-window-right= (or rebind the keys) to select the dashboard in the freshly-created window. Keep point in the original window.
 
-** TODO [#B] theme-studio live-preview bevel thinner than Emacs :bug:theme-studio:
+** DONE [#B] theme-studio live-preview bevel thinner than Emacs :bug:theme-studio:
+CLOSED: [2026-06-10 Wed]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10
 :END:
+Craig confirmed the bevel reads right 2026-06-10 after the reliefColors port (commit bb2aed2f).
+
 The mode-line box (3D released-button bevel) in the live buffer preview renders slimmer than the bevel Emacs actually draws. Make them match. The bevel comes from =boxCss= in app.js (~line 307), currently =inset 1px 1px 0 #ffffff33,inset -1px -1px 0 #00000066= for the released style — a 1px inset with faint translucent highlight/shadow. Emacs's released-button box is wider/stronger (it shades the highlight and shadow from the actual background color, not a flat translucent white/black). Fix: widen the bevel and derive the highlight/shadow from the box's background so it reads like Emacs. Verify side-by-side against a real Emacs mode-line.
 *** 2026-06-10 Wed @ 15:22:48 -0500 Ported Emacs's relief algorithm into boxCss
 Implemented =reliefColors= in colormath.js as a direct port of Emacs 30's =x_alloc_lighter_color= (xterm.c): highlight = bg x1.2 (delta 0x8000), shadow = bg x0.6 (delta 0x4000), an additive dark boost below brightness 48000/65535, and the same-color fallback (pure-black shadow lifts to #404040, as Emacs does). =boxCss= now takes the face's effective bg and derives both edges from it; pressed swaps the pair; the translucent pair survives only as a no-bg fallback. Width stays at the box's width (default 1px): dupre declares =:line-width -1=, so Emacs draws 1px lines too — the "wider" impression was the strength of the derived colors (on the dupre mode-line bg, Emacs's highlight is #71767f vs the old overlay's effective #595d63). 5 node tests with hand-computed fixtures from the C source + a new #beveltest gate (derived colors in paintUI, pressed swap, line-style passthrough). Algorithm evidence: emacs-30 xterm.c lines 9599-9665 (fetched 2026-06-10). Awaiting the side-by-side check below.
@@ -172,11 +175,6 @@ Build a new theme (working name "dupre-clear", final name TBD) that takes dupre'
 Full design + methodology + starting palette + open questions in the spec: [[file:docs/design/dupre-clear-theme.org][docs/design/dupre-clear-theme.org]]. Key prerequisite/context: the dupre-redesign entry in =.ai/session-context.org= (the AA palette this brightens). Hardest slot: blue keywords (a deep dupre blue can't be AAA on near-black — decide brighten vs keep-AA-exception vs lift-the-ground).
 ** TODO Manual testing and validation :verify:theme-studio:
 Exercised once the phases above land.
-*** TODO Mode-line bevel matches a real Emacs released-button box
-What we're verifying: the live-preview mode-line bevel now reads like the one Emacs draws (the 2026-06-10 reliefColors port).
-- Open =scripts/theme-studio/theme-studio.html= in Chrome next to a real Emacs frame with the dupre mode-line.
-- Compare the mode-line top/left highlight and bottom/right shadow edges between the two.
-Expected: the tool's bevel matches Emacs in strength and width (1px, background-derived edges); if it still reads thinner, note by how much and promote per the verification rule.
 *** TODO UI-face preview and contrast survive a ground bg change
 What we're verifying: a face with its own bg keeps it (preview and ratio) when the ground bg changes, and ground-dependent rows re-rate (the 2026-06-10 applyGround fix).
 - Open =scripts/theme-studio/theme-studio.html= in Chrome.
