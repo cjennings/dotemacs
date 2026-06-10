@@ -53,7 +53,7 @@ CHROME=""
 for c in google-chrome-stable google-chrome chromium chromium-browser; do
   if command -v "$c" >/dev/null 2>&1; then CHROME="$c"; break; fi
 done
-HASHES="selftest cursortest readouttest deltatest oklchtest planetest locktest sorttest mocktest contrasttest safetest healtest familytest counttest baseedittest roundtriptest"
+HASHES="selftest cursortest readouttest deltatest oklchtest planetest locktest sorttest mocktest contrasttest safetest healtest familytest counttest baseedittest roundtriptest beveltest"
 if [ "$NO_BROWSER" = 1 ]; then
   skip_msg "browser hash gates (--no-browser)"
 elif [ -z "$CHROME" ]; then

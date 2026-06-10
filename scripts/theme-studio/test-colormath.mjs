@@ -13,6 +13,7 @@ import {
   srgb2oklab, oklab2oklch, oklch2oklab, oklch2hex, apca, deltaE,
   hex2rgb, rl, contrast, rating, hsv2rgb, rgb2hsv, rgb2hex,
   oklab2lrgb, inGamut, lrgb2hex, planeCell, paletteWarnings,
+  reliefColors,
 } from './colormath.js';
 
 const close = (a, b, eps = 0.005) => Math.abs(a - b) <= eps;
@@ -228,6 +229,37 @@ test('paletteWarnings: threshold is inclusive-exclusive at the boundary', () => 
   const pal = [['#67809c', 'a'], ['#69829e', 'b']]; // dE ~0.0067
   assert.equal(paletteWarnings(pal, 0.0067).warnings.length, 0, 'd < threshold is strict');
   assert.equal(paletteWarnings(pal, 0.007).warnings.length, 1, 'just above the pair distance');
+});
+
+// Fixtures hand-computed from Emacs 30's xterm.c x_alloc_lighter_color
+// (factor 1.2 / delta 0x8000 highlight, 0.6 / 0x4000 shadow, dark boost
+// below brightness 48000/65535, same-color fallback adds delta).
+test('reliefColors: dark mode-line bg gets the dark boost (Normal)', () => {
+  const { hl, sh } = reliefColors('#30343c');
+  assert.equal(hl, '#71767f');
+  assert.equal(sh, '#0f1116');
+});
+
+test('reliefColors: grey75 brightness is above the boost limit (Normal)', () => {
+  const { hl, sh } = reliefColors('#bfbfbf');
+  assert.equal(hl, '#e5e5e5'); // 1.2x only, no additive boost
+  assert.equal(sh, '#737373'); // 0.6x only
+});
+
+test('reliefColors: pure black hits the same-color fallback for the shadow (Boundary)', () => {
+  const { hl, sh } = reliefColors('#000000');
+  assert.equal(hl, '#4d4d4d'); // boost lifts the highlight off black
+  assert.equal(sh, '#404040'); // 0.6x + boost still black -> fallback adds delta
+});
+
+test('reliefColors: pure white highlight saturates, shadow scales (Boundary)', () => {
+  const { hl, sh } = reliefColors('#ffffff');
+  assert.equal(hl, '#ffffff'); // clamped, fallback also clamps to white
+  assert.equal(sh, '#999999');
+});
+
+test('reliefColors: malformed hex returns null pair (Error)', () => {
+  assert.deepEqual(reliefColors('nonsense'), { hl: null, sh: null });
 });
 
 // Guards the one-source-of-truth contract: the page must carry colormath.js's

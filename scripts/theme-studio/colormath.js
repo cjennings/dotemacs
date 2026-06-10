@@ -190,4 +190,31 @@ function paletteWarnings(palette, threshold = 0.02, cap = 5) {
   return { warnings: pairs.slice(0, cap), overflow: Math.max(0, pairs.length - cap), nearest };
 }
 
-export { srgb2oklab, oklab2oklch, oklch2oklab, oklch2hex, apca, deltaE, hex2rgb, lin, rl, contrast, rating, hsv2rgb, rgb2hsv, rgb2hex, oklab2lrgb, inGamut, lrgb2hex, planeCell, paletteWarnings };
+// --- 3D-box relief colors, matching Emacs's renderer ---------------------
+// Port of x_alloc_lighter_color (Emacs 30 xterm.c): highlight = bg x 1.2
+// (delta 0x8000), shadow = bg x 0.6 (delta 0x4000), both in 16-bit channel
+// space. Backgrounds dimmer than 48000/65535 (by Emacs's 2R+3G+B/6 weighting)
+// get an additive boost of delta*dimness*factor/2, because scaling alone
+// barely moves a dark color. When the result still equals the background
+// (pure black shadow, pure white highlight), Emacs retries with bg+delta.
+function reliefColors(bgHex) {
+  const rgb = hex2rgb(bgHex);
+  if (rgb.some((c) => Number.isNaN(c))) return { hl: null, sh: null };
+  const ch16 = rgb.map((c) => c * 257);
+  const one = (factor, delta) => {
+    let nw = ch16.map((c) => Math.min(0xffff, factor * c));
+    const bright = (2 * ch16[0] + 3 * ch16[1] + ch16[2]) / 6;
+    if (bright < 48000) {
+      const md = delta * (1 - bright / 48000) * factor / 2;
+      nw = factor < 1
+        ? nw.map((v) => Math.max(0, v - md))
+        : nw.map((v) => Math.min(0xffff, v + md));
+    }
+    if (nw.every((v, i) => Math.round(v) === ch16[i]))
+      nw = ch16.map((c) => Math.min(0xffff, c + delta));
+    return '#' + nw.map((v) => Math.round(v / 257).toString(16).padStart(2, '0')).join('');
+  };
+  return { hl: one(1.2, 0x8000), sh: one(0.6, 0x4000) };
+}
+
+export { srgb2oklab, oklab2oklch, oklch2oklab, oklch2hex, apca, deltaE, hex2rgb, lin, rl, contrast, rating, hsv2rgb, rgb2hsv, rgb2hex, oklab2lrgb, inGamut, lrgb2hex, planeCell, paletteWarnings, reliefColors };
