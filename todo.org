@@ -92,6 +92,9 @@ Phase 5 (commit =843bbf08=). The OKLCH picker gets a "safe for" selector over th
 *** 2026-06-09 Tue @ 19:06:46 -0500 README + test-surface close-out landed
 Commit =23926837=. README documents the ramp controls and defaults, the worst-case floor / limiting foreground, the five covered faces, the safe-lightness guidance, and WCAG-drives-PASS-FAIL with APCA as a diagnostic; the browser-gate list is updated. =make theme-studio-test= carries all new node tests and the #ramptest/#contrasttest/#safetest gates. All acceptance criteria met.
 
+** TODO [#B] theme-studio color families :feature:theme-studio:
+Restructure the palette panel into live color families: a base + its ramp shown as a dark→light strip, with a per-family symmetric step count (N → base ±N), fg/bg sharing a fixed strip, and strips hue-sorted (steps lightness-sorted). Live regenerate on count/base change; regeneration authoritative; theme.json stays flat (families derived from names). Designed in [[file:docs/theme-studio-color-families-spec.org][docs/theme-studio-color-families-spec.org]] (draft, pre-review). Two open decisions are Craig's: flat-vs-structured persistence, and whether to remove the standalone ramp panel. Builds on and partly supersedes the palette-ramps v1 ramp UI above.
+
 ** TODO [#C] Internet radio now-playing song :feature:music:emms:
 Show the currently-playing song while streaming an internet radio station. Lives in =modules/music-config.el= (EMMS + MPV backend, M3U radio stations). The track title comes from the stream's ICY metadata — EMMS exposes it via =emms-track-description= / =emms-playing-time= and updates it on the metadata-change hook; MPV reports the ICY title too. Add an option to show the song in the minibuffer (e.g. echo on track change, or an on-demand command). Consider also a mode-line indicator as a second surface.
 
