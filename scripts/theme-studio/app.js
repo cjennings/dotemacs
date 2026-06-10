@@ -309,7 +309,7 @@ function renderRamp(){
   rampNote(r.adjusted.length?('adjusted: '+r.adjusted.join(', ')):'',false);
   r.steps.forEach(s=>{const nm=rampStepName(s.offset);const c=document.createElement('div');c.className='rchip';c.style.background=s.hex;c.style.color=textOn(s.hex);
     c.title=nm+' '+s.hex+(s.clamped?' (gamut-clamped)':'');
-    c.innerHTML=`<span>${esc(nm)}</span>${s.clamped?'<span class="rclamp" title="clamped to sRGB">!</span>':''}`;
+    c.innerHTML=`<span>${esc(nm)}</span><span class="rhex">${s.hex}</span>${s.clamped?'<span class="rclamp" title="clamped to sRGB">!</span>':''}`;
     c.onclick=()=>addRampStep(s);prev.appendChild(c);});
 }
 // Insert a step adjacent to the source swatch, keeping the ramp siblings in
@@ -1012,6 +1012,7 @@ if(location.hash==='#ramptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  selectedIdx=PALETTE.findIndex(p=>p[1]==='blue');document.getElementById('newhexstr').value='#67809c';document.getElementById('newname').value='blue';
  openRamp();document.getElementById('rampn').value='2';document.getElementById('rampstepl').value='0.08';document.getElementById('rampce').value='0.5';renderRamp();
  A(document.querySelectorAll('#rampprev .rchip').length===4,'expected 4 step chips, got '+document.querySelectorAll('#rampprev .rchip').length);
+ A(document.querySelectorAll('#rampprev .rchip .rhex').length===4,'each step tile shows its hex');
  addAllRampSteps();
  const names=PALETTE.map(p=>p[1]),bi=names.indexOf('blue');
  A(names.slice(bi,bi+5).join(',')==='blue,blue-2,blue-1,blue+1,blue+2','order after blue: '+names.slice(bi,bi+5).join(','));
