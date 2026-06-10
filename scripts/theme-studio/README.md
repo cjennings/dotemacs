@@ -42,7 +42,8 @@ The runner regenerates the page, runs the Python templating tests
 (`test-colormath.mjs`, including the inline-integrity check), a syntax check of
 the spliced page script, and the browser hash gates in headless Chrome
 (`#selftest`, `#cursortest`, `#readouttest`, `#deltatest`, `#oklchtest`,
-`#planetest`). It exits non-zero on any failure. The browser gates need a
+`#planetest`, `#locktest`, `#sorttest`, `#mocktest`, `#ramptest`,
+`#contrasttest`, `#safetest`). It exits non-zero on any failure. The browser gates need a
 Chromium-family browser; without one they report SKIPPED rather than passing
 silently. The pure color math and the extracted picker logic (`planeCell`,
 `paletteWarnings`) live in `colormath.js` so they are unit-tested directly in
@@ -91,6 +92,48 @@ Three tiers of faces, plus the palette:
   match, link, error/warning/success, and the rest, foreground and background
   per face, shown in a live mock Emacs buffer.
 - **Package faces** — per-package face tables with a live preview (below).
+
+## Ramps and background-contrast safety
+
+Two coupled features help build a harmonized palette and keep background tints
+readable. Both work in OKLCH, where lightness, chroma, and hue move
+independently. The pure math is in `app-core.js` (`ramp`, `fgSetFor`, `floor`,
+`lMax`); the DOM is in `app.js`.
+
+**Ramps.** The "ramp" button on the palette controls generates a tonal ramp from
+the current color: lighter and darker steps on a held hue, with the chroma easing
+out toward the extremes. Three controls set the shape, with defaults that produce
+a sensible first ramp:
+
+- `steps` — how many steps each direction (default 2, range 1-4).
+- `stepL` — the OKLCH lightness delta per step (default 0.08, range 0.04-0.12).
+- `chroma ease` — how much chroma drops at the farthest step (default 0.5, range
+  0-1; 0 holds chroma flat, 1 fully desaturates the last step).
+
+Each previewed step is named after the source swatch (`blue` gives `blue+1`,
+`blue-1`) and shows a clamp badge when it left the sRGB gamut. Click a step to
+add it, or "add all"; steps insert next to the source in order. A name that
+already exists is skipped (never overwritten); a generated hex that matches
+another entry is added but flagged as a duplicate.
+
+**Worst-case contrast.** A background overlay sits behind many foregrounds at
+once, so one fg/bg contrast pair is the wrong number. For the covered overlay
+faces — `region`, `hl-line`, `highlight`, `lazy-highlight`, `isearch` — the
+contrast cell shows the *worst-case floor*: the lowest contrast over the face's
+foreground set (the syntax-token colors plus the default foreground), naming the
+*limiting foreground* that sets it. A tint that clears the default text but fails
+the darkest token reads FAIL, with that token named. Package faces and the other
+UI rows keep their single-pair readout.
+
+The verdict is WCAG: AA (4.5) by default, AAA (7) selectable. APCA Lc stays a
+picker-only diagnostic and does not drive PASS/FAIL.
+
+**Safe lightness.** In the OKLCH picker, the "safe for" selector picks one
+covered face. The Chroma×Lightness plane then shades the lightness band too light
+to keep that face readable over its foreground set, with the L_max ceiling as the
+band's lower edge. If even pure black can't satisfy the target (a foreground is
+too dark), the whole plane shades; that is a true finding about the foreground,
+not a tool bug.
 
 ## Package faces
 
