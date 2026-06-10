@@ -7116,13 +7116,13 @@ What we're verifying: inside a projectile project that has a root todo.org, C-c 
 - Open a file inside a projectile project whose root has a todo.org (e.g. this one, ~/.emacs.d).
 - Press C-c c, then t.
 - Type a short task, finish with C-c C-c.
-Expected: the entry lands as a new "** TODO ..." at the top of that project's "... Open Work" heading (e.g. "Emacs Open Work"), not in the global inbox.
+Expected: the entry lands as a new level-2 TODO at the top of that project's "... Open Work" heading (e.g. "Emacs Open Work"), not in the global inbox.
 
 *** Project-aware capture: C-c c b files a [#C] bug
 What we're verifying: C-c c b (Bug) behaves like the Task capture but stamps the entry [#C].
 - Inside the same project, press C-c c, then b.
 - Type a short bug description, finish with C-c C-c.
-Expected: a "** TODO [#C] ..." entry lands at the top of the project's "... Open Work" heading.
+Expected: a level-2 "TODO [#C]" entry lands at the top of the project's "... Open Work" heading.
 
 *** Nov bookmark naming: "Author, Title" instead of the raw filename
 What we're verifying: bookmarking your place in an EPUB names the bookmark "Author, Title" parsed from the filename (Calibre's "<Title> - <Author>.epub"), reordered with the colon restored — not the raw filename.
