@@ -83,10 +83,13 @@ Rule taxonomy captured in [[file:docs/design/theme-studio-face-rules.org][docs/d
 
 Bake into the tool (a lint surfaced in the UI) or run as a build-time check (seeds vs live deffaces via emacsclient).
 
-** TODO [#B] theme-studio color-harmony explainer :feature:theme-studio:docs:solo:
+** DONE [#B] theme-studio color-harmony explainer :feature:theme-studio:docs:solo:
+CLOSED: [2026-06-10 Wed]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10
 :END:
+Written 2026-06-10 as [[file:docs/design/theme-studio-color-harmony.org][docs/design/theme-studio-color-harmony.org]]: the OKLCH method (borrow hue, fix L/C per tier, constraints bound the dials), the L≈0.28/C≈0.045 background-tint tier, the fg-vs-bg role split, the worst-case floor / L_max problem (cross-referenced to the shipped ramps spec), ramp generation as shipped, and harmonic fill as the vNext application. Harmonic fill itself stays tracked in the ramps spec.
+
 Write an explainer in =docs/design/theme-studio-color-harmony.org= capturing the OKLCH harmony method worked out 2026-06-09: harmony is mostly calculable — work in OKLCH, borrow the hue from a semantic accent, fix lightness + chroma across a tier, and let contrast (WCAG/APCA), ΔE separation, and the sRGB gamut bound the free dials. Include the worked background-tint tier (borrow accent hue, fix L≈0.28 C≈0.045 → dim readable bg per hue) and the fg-vs-bg role split (bright accents for text, dim low-chroma tints for backgrounds).
 
 Two features it enables (both worth building):
