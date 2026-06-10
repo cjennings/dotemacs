@@ -69,6 +69,8 @@
  .rchip{width:128px;height:48px;border-radius:5px;border:1px solid #555;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font:bold 9pt monospace;line-height:1.3}
  .rchip .rhex{font-weight:normal;font-size:8pt;opacity:.85}
  .rchip .rclamp{position:absolute;top:2px;right:4px;color:#cb6b4d;font-weight:bold;font-size:12px}
+ .rchip.dup{outline:2px dashed #e8bd30;outline-offset:-2px}
+ .rchip .rdup{position:absolute;top:2px;left:4px;color:#e8bd30;font-weight:bold;font-size:12px}
  #rampmsg{font:10pt monospace;margin-top:6px;min-height:14px;color:#8a9496}
  .svsafe{position:absolute;left:0;width:100%;background:rgba(203,107,77,0.30);border-bottom:2px solid #cb6b4d;pointer-events:none;z-index:2}
  .palctl button,.filebar button,.fbtn{background:#252321;color:#e8bd30;border:1px solid #3a3a3a;border-radius:4px;padding:6px 12px;font:10pt monospace;cursor:pointer}

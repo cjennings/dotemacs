@@ -301,16 +301,22 @@ function closeRamp(){const r=document.getElementById('ramp');if(r)r.style.displa
 function rampOpts(){return {n:parseInt(document.getElementById('rampn').value,10),stepL:parseFloat(document.getElementById('rampstepl').value),chromaEase:parseFloat(document.getElementById('rampce').value)};}
 function rampStepName(off){return rampBase.name+(off>0?'+'+off:String(off));}
 function rampNote(msg,err){const m=document.getElementById('rampmsg');if(!m)return;m.textContent=msg||'';m.style.color=err?'#cb6b4d':'#8a9496';}
+function rampNameTaken(nm){return PALETTE.some(p=>p[1].toLowerCase()===nm.toLowerCase());}
 function renderRamp(){
   rampBase=rampBaseFromTile();
   document.getElementById('rampname').textContent=rampBase.name+' '+rampBase.hex;
   const r=ramp(rampBase.hex,rampOpts()),prev=document.getElementById('rampprev');prev.innerHTML='';
   if(r.error){rampNote('not a valid base color',true);return;}
-  rampNote(r.adjusted.length?('adjusted: '+r.adjusted.join(', ')):'',false);
-  r.steps.forEach(s=>{const nm=rampStepName(s.offset);const c=document.createElement('div');c.className='rchip';c.style.background=s.hex;c.style.color=textOn(s.hex);
-    c.title=nm+' '+s.hex+(s.clamped?' (gamut-clamped)':'');
-    c.innerHTML=`<span>${esc(nm)}</span><span class="rhex">${s.hex}</span>${s.clamped?'<span class="rclamp" title="clamped to sRGB">!</span>':''}`;
+  const dups=[];
+  r.steps.forEach(s=>{const nm=rampStepName(s.offset),taken=rampNameTaken(nm);if(taken)dups.push(nm);
+    const c=document.createElement('div');c.className='rchip'+(taken?' dup':'');c.style.background=s.hex;c.style.color=textOn(s.hex);
+    c.title=nm+' '+s.hex+(s.clamped?' (gamut-clamped)':'')+(taken?' — a palette color is already named this; it will be skipped on add':'');
+    c.innerHTML=`<span>${esc(nm)}</span><span class="rhex">${s.hex}</span>${s.clamped?'<span class="rclamp" title="clamped to sRGB">!</span>':''}${taken?'<span class="rdup" title="name already in the palette">&#8856;</span>':''}`;
     c.onclick=()=>addRampStep(s);prev.appendChild(c);});
+  const parts=[];
+  if(r.adjusted.length)parts.push('adjusted: '+r.adjusted.join(', '));
+  if(dups.length)parts.push('name already in palette, will be skipped on add: '+dups.join(', '));
+  rampNote(parts.join('   |   '),dups.length>0);
 }
 // Insert a step adjacent to the source swatch, keeping the ramp siblings in
 // -n..+n order. A name collision is flagged and skipped (never overwrites); a
@@ -331,8 +337,8 @@ function addRampStep(s){
 function addAllRampSteps(){
   if(!rampBase)return;const r=ramp(rampBase.hex,rampOpts());
   if(r.error){rampNote('not a valid base color',true);return;}
-  let added=0,skipped=0;r.steps.forEach(s=>{addRampStep(s)?added++:skipped++;});
-  rampNote('added '+added+(skipped?(', skipped '+skipped+' (name exists)'):''),false);
+  let added=0;const skipped=[];r.steps.forEach(s=>{addRampStep(s)?added++:skipped.push(rampStepName(s.offset));});
+  rampNote('added '+added+(skipped.length?('   |   skipped (name already in palette): '+skipped.join(', ')):''),skipped.length>0);
 }
 function themeName(){return (document.getElementById('themename').value||'theme').trim()||'theme';}
 function fileSlug(){return slugify(themeName());}
@@ -1017,6 +1023,10 @@ if(location.hash==='#ramptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const names=PALETTE.map(p=>p[1]),bi=names.indexOf('blue');
  A(names.slice(bi,bi+5).join(',')==='blue,blue-2,blue-1,blue+1,blue+2','order after blue: '+names.slice(bi,bi+5).join(','));
  const before=PALETTE.length;addAllRampSteps();A(PALETTE.length===before,'re-add should skip existing names');
+ A(/skipped \(name already in palette\): blue-2, blue-1, blue\+1, blue\+2/.test(document.getElementById('rampmsg').textContent),'add-all names the skipped collisions: '+document.getElementById('rampmsg').textContent);
+ renderRamp();
+ A(document.querySelectorAll('#rampprev .rchip.dup').length===4,'re-preview marks the now-existing names as dup');
+ A(/already in palette.*blue-2, blue-1, blue\+1, blue\+2/.test(document.getElementById('rampmsg').textContent),'preview names the colliding tiles: '+document.getElementById('rampmsg').textContent);
  // preview re-reads the color-selection tile: change the tile, press preview, the base follows
  document.getElementById('newhexstr').value='#2040e0';document.getElementById('newname').value='vivid';selectedIdx=null;document.getElementById('rampce').value='0';renderRamp();
  A(/^vivid #2040e0/.test(document.getElementById('rampname').textContent),'preview reads the tile: '+document.getElementById('rampname').textContent);
