@@ -3,10 +3,10 @@
 #+DATE: 2026-06-09
 
 * Metadata
-| Status   | draft — review incorporated (Codex, 2026-06-09)                       |
-| Owner    | Craig                                                                 |
-| Reviewer | Codex                                                                |
-| Related  | [[file:../todo.org][todo.org: theme-studio color-harmony explainer + ramp/fill features]] |
+| Status   | draft — review incorporated (Codex, 2026-06-09)                     |
+| Owner    | Craig                                                               |
+| Reviewer | Codex                                                               |
+| Related  | [[file:../todo.org][todo.org: theme-studio color-harmony explainer + ramp/fill features]]  |
 
 * Summary
 
@@ -213,3 +213,7 @@ Only modified and rejected recommendations are listed; everything else from the 
 - What changed or was recommended: dispositioned every Codex finding. Resolved both open Decisions to accepted — contrast target = WCAG AA default (AAA selectable, APCA diagnostic only), v1 foreground set = distinct syntax hexes + default fg with locked roles excluded. Added "v1 covered faces" (closed five-face set), "Ramp defaults and palette insertion" (n/stepL/chromaEase defaults, naming, collision, clamp display), and "Function contracts" (explicit-state, structured-error signatures for ramp/fgSetFor/floor/lMax with edge cases). Pinned the worst-case readout string and no-set message, clarified Phase 5 as a single L_max marker + band shade, added a README acceptance-criteria item, and corrected the architecture/config readiness lines. Two findings modified, one deferred — see Review dispositions.
 - Why: the review's blockers were product-contract gaps (open metric, proposed foreground set, conflicting scope, underspecified ramp write) that would have made two correct implementations diverge. Pinning them converges the spec to implementation-ready.
 - Artifacts: review file deleted; Review dispositions section; this entry. Two Craig-owned open decisions resolved per reviewer recommendation, override available before implementation.
+** 2026-06-09 Tue @ 18:10:48 -0500 — Codex — reviewer
+- What changed or was recommended: re-reviewed the updated spec and found it implementation-ready. No new blocking review notes; the prior blockers are resolved in the accepted WCAG target, closed v1 face list, explicit foreground-set contract, ramp defaults/insertion rules, function contracts, readout strings, Phase 5 marker behavior, and README acceptance criterion.
+- Why: the updated spec now gives an implementer stable product behavior, testable pure-function contracts, and integration boundaries that match the current =scripts/theme-studio= architecture.
+- Artifacts: no new review file; this Ready verification entry.
