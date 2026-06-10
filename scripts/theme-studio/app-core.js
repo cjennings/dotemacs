@@ -138,9 +138,9 @@ function nameOfHex(palette,hex){const p=palette.find(p=>p[0].toLowerCase()===hex
 function nearestAnchor(H){let best=HUE_ANCHORS[0],bd=999;for(const a of HUE_ANCHORS){let d=Math.abs(H-a);d=Math.min(d,360-d);if(d<bd){bd=d;best=a;}}return best;}
 // A color reads as neutral below this chroma. Lightness-scaled (the Munsell
 // insight): the mid-tones need more chroma to read as a hue, so a faint warm gray
-// at mid lightness is neutral while an equally-faint pale tint at high lightness
-// keeps its hue. Highest near mid lightness, tapering toward the light end.
-function neutralThreshold(L){const HI=0.6,LO=0.85,CMAX=0.04,CMIN=0.015;if(L<=HI)return CMAX;if(L>=LO)return CMIN;return CMAX-(L-HI)/(LO-HI)*(CMAX-CMIN);}
+// at mid lightness is neutral while an equally-faint tint near either extreme keeps
+// its hue. A tent peaking near mid lightness and tapering toward both ends.
+function neutralThreshold(L){const PK=0.6,MAX=0.035,d=L<PK?(PK-L)/PK:(L-PK)/(1-PK);return MAX*(1-Math.min(1,d));}
 // A family from its members: base is the most-saturated member (tie toward
 // mid-lightness), the anchor for a generated ramp.
 function makeFamily(ms,neutral){
