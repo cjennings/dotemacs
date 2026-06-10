@@ -642,7 +642,7 @@ function buildTable(){
     const crTd=document.createElement('td');crTd.style.whiteSpace='nowrap';crTd.style.fontSize='10pt';
     function styleEx(){exTd.style.color=(kind==='bg'?MAP['p']:effFg(MAP[kind]));exTd.style.background=MAP['bg'];exTd.style.fontWeight=BOLD[kind]?'bold':'normal';exTd.style.fontStyle=ITALIC[kind]?'italic':'normal';}
     function styleCr(){const r=contrast((kind==='bg'?MAP['p']:effFg(MAP[kind])),MAP['bg']);crTd.innerHTML=crHtml(r);}
-    const dd=mkColorDropdown(list,cur,(hex)=>{MAP[kind]=hex;styleEx();styleCr();renderCode();if(kind==='bg'){applyGround();buildTable();}});
+    const dd=mkColorDropdown(list,cur,(hex)=>{MAP[kind]=hex;styleEx();styleCr();renderCode();if(kind==='bg'){applyGround();buildTable();}repaintCovered();});
     styleEx();styleCr();
     const lkTd=mkLockCell(kind,[dd]);
     // style buttons
@@ -1299,8 +1299,31 @@ function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 
 function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e','lsp','gitgutter','flycheck','dired','dirvish','calibredb','erc','orgdrill','orgnoter','signel','pearl','slack','telega','shr'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():pv==='lsp'?renderLspPreview():pv==='gitgutter'?renderGitGutterPreview():pv==='flycheck'?renderFlycheckPreview():pv==='dired'?renderDiredPreview():pv==='dirvish'?renderDirvishPreview():pv==='calibredb'?renderCalibredbPreview():pv==='erc'?renderErcPreview():pv==='orgdrill'?renderOrgdrillPreview():pv==='orgnoter'?renderOrgnoterPreview():pv==='signel'?renderSignelPreview():pv==='pearl'?renderPearlPreview():pv==='slack'?renderSlackPreview():pv==='telega'?renderTelegaPreview():pv==='shr'?renderShrPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
 function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
+// --- worst-case readout for the covered overlay faces (spec Phase 4) ---------
+// Default WCAG target for the worst-case verdict (AA). AAA is selectable.
+let WORST_TARGET=4.5;
+// The live v1 foreground set for a covered overlay face: the syntax-token colors
+// (every assignable category except the ground) plus the default foreground.
+function fgSetForFace(face){
+  const syntaxAssignments=CATS.filter(c=>c[0]!=='bg'&&c[0]!=='p').map(c=>({role:c[0],hex:effFg(MAP[c[0]])}));
+  return fgSetFor(face,{covered:COVERED_FACES,syntaxAssignments,defaultFg:MAP['p']});
+}
+// The worst-case contrast cell for a covered face: the floor over its foreground
+// set against its effective background, naming the limiting foreground. Returns
+// null for an out-of-scope face so the caller keeps the single-pair readout.
+function worstCellHtml(face){
+  const r=fgSetForFace(face);
+  if(r.reason==='out-of-scope')return null;
+  if(r.reason==='empty'||!r.set.length)return '<span title="this overlay has no syntax foreground set yet">no fg set</span>';
+  const bg=effBg(uf(face).bg),fl=floor(bg,r.set),verdict=fl.ratio>=WORST_TARGET?'PASS':'FAIL';
+  const s='worst: '+fl.limitingLabel+' '+fl.limitingHex+' — '+fl.ratio.toFixed(1)+' '+verdict;
+  return `<span style="color:${ratingColor(fl.ratio)}" title="${esc(s)}">${esc(s)}</span>`;
+}
+// Repaint every covered overlay face (their floors depend on the syntax palette,
+// so a syntax-color edit has to refresh them even though it doesn't rebuild the table).
+function repaintCovered(){COVERED_FACES.forEach(f=>{if(UIMAP[f]&&document.getElementById('uicr-'+f))paintUI(f);});}
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=effFg(o.fg);pv.style.background=effBg(o.bg);pv.style.fontWeight=o.bold?'bold':'normal';pv.style.fontStyle=o.italic?'italic':'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';pv.style.boxShadow=boxCss(o.box);
-  const cr=document.getElementById('uicr-'+face);if(cr){const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}
+  const cr=document.getElementById('uicr-'+face);if(cr){const w=worstCellHtml(face);if(w!==null){cr.innerHTML=w;}else{const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}}
 function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
@@ -1494,4 +1517,28 @@ if(location.hash==='#ramptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  PALETTE=save;selectedIdx=null;renderPalette();closeRamp();
  document.title='RAMPTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='ramptest';d.textContent='RAMPTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Worst-case readout gate (open with #contrasttest): a covered overlay face shows
+// the floor over its foreground set and names the limiting foreground, an
+// out-of-scope face keeps the single-pair readout, and an empty set reads "no fg set".
+if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveMAP=Object.assign({},MAP),saveUI=JSON.parse(JSON.stringify(UIMAP));
+ MAP['p']='#f0fef0';MAP['kw']='#67809c';MAP['str']='#a3b18a';MAP['bg']='#000000';
+ UIMAP['region']={fg:null,bg:'#202830',bold:false,italic:false,underline:false,strike:false};
+ buildUITable();
+ const cell=document.getElementById('uicr-region');
+ A(cell&&/^worst:/.test(cell.textContent),'region shows the worst-case readout: '+(cell&&cell.textContent));
+ A(cell&&cell.textContent.includes('#67809c'),'limiting fg is keyword blue: '+(cell&&cell.textContent));
+ A(cell&&/\b(PASS|FAIL)\b/.test(cell.textContent),'readout carries a verdict');
+ const fl=floor('#202830',fgSetForFace('region').set);
+ A(fl.limitingHex==='#67809c','floor limiting is blue, got '+fl.limitingHex);
+ A(Math.abs(fl.ratio-contrast('#67809c','#202830'))<1e-9,'floor ratio matches blue-on-bg');
+ const ml=document.getElementById('uicr-mode-line');
+ A(worstCellHtml('mode-line')===null,'mode-line is out of scope (single-pair)');
+ A(ml&&/^\d/.test(ml.textContent.trim()),'mode-line cell is a numeric ratio: '+(ml&&ml.textContent));
+ MAP['p']='';CATS.forEach(c=>{if(c[0]!=='bg')MAP[c[0]]='';});buildUITable();
+ const empty=document.getElementById('uicr-region');
+ A(empty&&empty.textContent.trim()==='no fg set','empty set reads the no-set message: '+(empty&&empty.textContent));
+ for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();
+ document.title='CONTRASTTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='contrasttest';d.textContent='CONTRASTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 </script>
