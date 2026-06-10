@@ -757,7 +757,7 @@ function buildTable(){
     const crTd=document.createElement('td');crTd.style.whiteSpace='nowrap';crTd.style.fontSize='10pt';
     function styleEx(){exTd.style.color=(kind==='bg'?MAP['p']:effFg(MAP[kind]));exTd.style.background=MAP['bg'];exTd.style.fontWeight=BOLD[kind]?'bold':'normal';exTd.style.fontStyle=ITALIC[kind]?'italic':'normal';}
     function styleCr(){const r=contrast((kind==='bg'?MAP['p']:effFg(MAP[kind])),MAP['bg']);crTd.innerHTML=crHtml(r);}
-    const dd=mkColorDropdown(list,cur,(hex)=>{MAP[kind]=hex;styleEx();styleCr();renderCode();if(kind==='bg'){applyGround();buildTable();buildPkgTable();buildPkgPreview();}repaintCovered();});
+    const dd=mkColorDropdown(list,cur,(hex)=>{MAP[kind]=hex;styleEx();styleCr();renderCode();if(kind==='bg'||kind==='p'){applyGround();buildTable();buildPkgTable();buildPkgPreview();}repaintCovered();});
     styleEx();styleCr();
     const lkTd=mkLockCell(kind,[dd]);
     // style buttons
@@ -1719,6 +1719,20 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  A(twoAfter&&Math.abs(parseFloat(twoAfter.textContent)-twoWant)<0.06,'ground change leaves a two-color ratio alone: got '+(twoAfter&&twoAfter.textContent.trim()));
  const frc=document.getElementById('uicr-fringe'),frWant=contrast('#ddeeff','#440000');
  A(frc&&Math.abs(parseFloat(frc.textContent)-frWant)<0.06,'ground change re-rates a ground-dependent face: got '+(frc&&frc.textContent.trim())+' want '+frWant.toFixed(1));
+ // A default-fg (p) change through the real syntax dropdown re-rates a face
+ // whose fg falls back to it. Drives the DOM so the handler wiring is pinned.
+ UIMAP['fringe']={fg:null,bg:'#aabbcc',bold:false,italic:false,underline:false,strike:false};
+ buildUITable();
+ const pLocked=LOCKED.has('p');if(pLocked){LOCKED.delete('p');buildTable();}
+ const pdd=document.querySelector('#legbody tr[data-kind="p"] .cdd');
+ if(pdd){pdd.click();
+  const pHex=PALETTE.find(p=>p[0]!==MAP['p'])[0];
+  const prow=[...document.querySelectorAll('.cddpop .cddrow')].find(r=>r.querySelector('.cddhx').textContent===pHex);
+  if(prow)prow.click();
+  const pf=document.getElementById('uicr-fringe'),pfWant=contrast(pHex,'#aabbcc');
+  A(prow&&pf&&Math.abs(parseFloat(pf.textContent)-pfWant)<0.06,'default-fg change re-rates a p-fallback face: got '+(pf&&pf.textContent.trim())+' want '+pfWant.toFixed(1));
+ }else A(false,'syntax table has a p row with a dropdown');
+ if(pLocked){LOCKED.add('p');buildTable();}
  for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();applyGround();
  document.title='CONTRASTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='contrasttest';d.textContent='CONTRASTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
