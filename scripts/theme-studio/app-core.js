@@ -208,4 +208,22 @@ function stepRepointPlan(oldRanked,newMembers){
   return {map,removed};
 }
 
-export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, familiesFromPalette, regenFamily, rankByLightness, stepRepointPlan };
+// Order a family's members dark to light by OKLCH lightness.
+function sortFamilyMembers(fam){return Object.assign({},fam,{members:[...fam.members].sort((a,b)=>oklchOf(a.hex).L-oklchOf(b.hex).L)});}
+// Order families for display: neutrals first (by base lightness), then chromatic
+// by base hue, ties broken by base lightness then base hex. Each family's members
+// are lightness-sorted. Display-only — the stored palette order is untouched.
+function sortFamilies(families){
+  const keyed=families.map(f=>{const c=oklchOf(f.base);return {f,neutral:!!f.neutral,H:c.H,L:c.L,base:f.base};});
+  keyed.sort((a,b)=>{
+    if(a.neutral!==b.neutral)return a.neutral?-1:1;
+    if(a.neutral&&b.neutral)return a.L-b.L;
+    const ah=Math.round(a.H),bh=Math.round(b.H);   // a hue hair shouldn't outrank lightness
+    if(ah!==bh)return ah-bh;
+    if(a.L!==b.L)return a.L-b.L;
+    return a.base.toLowerCase()<b.base.toLowerCase()?-1:a.base.toLowerCase()>b.base.toLowerCase()?1:0;
+  });
+  return keyed.map(k=>sortFamilyMembers(k.f));
+}
+
+export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, familiesFromPalette, regenFamily, rankByLightness, stepRepointPlan, sortFamilies, sortFamilyMembers };
