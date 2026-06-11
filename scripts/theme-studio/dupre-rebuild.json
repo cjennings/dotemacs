@@ -1,0 +1,54 @@
+{
+ "name": "dupre-rebuild",
+ "palette": [
+  [
+   "#000F08",
+   "onyx"
+  ],
+  [
+   "#00080F",
+   "cyan-black"
+  ],
+  [
+   "#030b18",
+   "blue-black"
+  ],
+  [
+   "#010b1b",
+   "blue-black2"
+  ],
+  [
+   "#020d20",
+   "navy"
+  ],
+  [
+   "#67809c",
+   "dupre-blue"
+  ]
+ ],
+ "assignments": {
+  "p": "#cdced1",
+  "kw": "#cdced1",
+  "bi": "#cdced1",
+  "pp": "#cdced1",
+  "fnd": "#cdced1",
+  "fnc": "#cdced1",
+  "dec": "#cdced1",
+  "ty": "#cdced1",
+  "prop": "#cdced1",
+  "con": "#cdced1",
+  "num": "#cdced1",
+  "str": "#cdced1",
+  "esc": "#cdced1",
+  "re": "#cdced1",
+  "doc": "#cdced1",
+  "cm": "#cdced1",
+  "cmd": "#cdced1",
+  "var": "#cdced1",
+  "op": "#cdced1",
+  "punc": "#cdced1",
+  "bg": "#000F08"
+ },
+ "bold": [],
+ "italic": []
+}
