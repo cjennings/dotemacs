@@ -26,6 +26,8 @@ For pick-one decisions, same shape: numbered list, one-line prompt at the end.
 
 For multi-select decisions, say so explicitly: "Pick any combination — reply with the numbers."
 
+**Render-merge guard.** GFM renderers merge adjacent ordered lists and renumber them — a message with a 1-3 content list followed by a 1-3 options list rendered as options 4-6 on the user's screen, and his pick ("4") didn't exist in the author's numbering (work session, 2026-06-10). Numerals belong to the options list only: any other enumeration in the same message uses dashes or prose, and a short prose lead-in line sits directly above the options so no renderer can merge them. When the user picks a number outside the offered range, suspect the render-merge and ask which item text they meant rather than treating it as an error.
+
 Reserve `AskUserQuestion` only when the user explicitly asks for the popup form ("use the popup for this one") or for genuinely free-form input where numbered options don't fit.
 
 This rule applies to all three approval gates in the `commits.md` publish flow (commit message, PR description, PR review reply): print the draft inline, then offer numbered approve / changes / edit options inline. Do not switch to the popup form for the gate even though the prior protocol referenced it.
