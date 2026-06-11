@@ -41,9 +41,6 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#B] Telegram mark-read path for triage :bug:telega:
-Work's triage handoff (2026-06-11 09:20): find a reliable way to mark Telegram noise chats read — 49 unread chats keep resurfacing every sweep. Two findings from work's attempt: the plugin's documented verb =telega-chat--mark-read= doesn't exist in the installed telega (=telega-chat-toggle-read= looks right), and the dockerized telega-server reaches Ready but SIGSEGVs (exit 139) the moment =telega-chat-toggle-read= fires — reproduced twice after clean restarts. Scans still work off the cached =telega--chats= hash; no action verb can run. Candidates: call =telega--viewMessages= directly, batch via =telega-filter-read-all= in the root buffer, or bump tdlib in the zevlg/telega-server image. Deliverable: a working verb, then update the canonical =triage-intake.telegram.org= Actions section in rulesets.
-
 ** TODO [#B] Memory sweep into the agent KB :chore:
 One-time Phase 1.5 sweep from the rulesets agent-KB rollout (handoff 2026-06-10): read this project's harness memory dir, classify each fact against ~/.claude/rules/knowledge-base.md inclusion criteria (KB-worthy / stays local / stale-delete), propose the batch to Craig, write approved facts one-node-per-file under ~/org/roam/agents/ (pull first, commit + push after), then reply to rulesets' inbox with counts.
 
@@ -341,6 +338,20 @@ Surfaced during the JSON-RPC dispatch refactor audit. =signel--handle-error= rea
 
 *** DOING [#B] Notify only for the unviewed conversation :feature:
 Wire =cj/signal--should-notify-p= (done) into signel's =signel--handle-receive= notify block (signel.el:277), route through Craig's notify script instead of bare =notifications-notify=, and gate sound behind a defcustom that defaults off. Spec addendum (the four notify details + wiring architecture) accepted 2026-06-11 — see [[file:docs/design/signal-client.org][signal-client.org]] "Notification slice".
+
+Built 2026-06-11 (TDD; fork commit e263367, dotemacs 9afc6128): =signel-notify-function= customization point in the fork; =cj/signel--notify= + =cj/signal--format-notify-body= + =cj/signel-notify-sound= in signal-config.el, wired in =:config= with a load-time =cj/executable-find-or-warn=. 17 new ERT tests green; full launch smoke clean; live-reloaded into the daemon and a synthetic toast fired through the script path. Stays DOING until the two manual checks below pass.
+
+**** Signel: real incoming message raises a toast through the notify script
+What we're verifying: the full receive path (signal-cli → signel --handle-receive → cj/signel--notify → notify script) fires on a real message.
+- Make sure you are NOT viewing the sender's chat buffer.
+- Have a real message sent to you on Signal (or send one from your phone to a second device thread that lands here).
+Expected: a transient info toast titled "Signal: <sender>" with the message text (one line, truncated if long), no sound.
+
+**** Signel: actively-viewed chat stays quiet
+What we're verifying: the suppression predicate gates the toast when you're reading that chat.
+- Open the sender's chat buffer (=C-; M m=) and keep it the selected window in a focused frame.
+- Have the same sender message you again.
+Expected: the message renders in the buffer, but no desktop toast appears.
 
 *** 2026-05-27 Wed @ 22:08:40 -0500 Shipped clobber fix for both insert paths
 Fork commit 5ec56c0 added =signel--pending-input= (capture from input-marker to point-max) and =signel--restore-input= (re-insert after the redrawn prompt; nil-safe), and wired both into =signel--insert-msg= (the receive path) and =signel--insert-system-msg= (the error path).  A mid-type send now survives both an incoming message and a system-error insertion.  Four ERT tests in =tests/test-signel-input-preservation.el= cover the helpers (typed text, empty) and both insert paths via a temp =signel-chat-mode= buffer.
@@ -7401,3 +7412,8 @@ Two features it enables (both worth building):
 Open design problem to address in the explainer + the ramp feature: a background-over-text effect (highlight/region/isearch/hl-line) must stay readable for EVERY foreground that can appear on it — i.e. the worst-case (lowest) contrast across the whole set of element fg colors, not a single pair. The usable background lightness is therefore capped by the darkest/closest fg in that set.
 
 The v1 feature (ramp generation + background-contrast safety, with the worst-case-floor UX) is designed in [[file:docs/theme-studio-palette-ramps-spec.org][docs/theme-studio-palette-ramps-spec.org]]. Codex review incorporated 2026-06-09: both open decisions resolved (WCAG AA default target; v1 foreground set = distinct syntax hexes + default fg), v1 covered faces closed to region/hl-line/highlight/lazy-highlight/isearch, ramp defaults + function contracts pinned. Spec is Ready (Craig confirmed 2026-06-09); the v1 build is tracked under the sibling parent below. Harmonic fill (feature 2) stays vNext. This task is the explainer doc itself (=docs/design/theme-studio-color-harmony.org=, the methodology).
+** DONE [#B] Telegram mark-read path for triage :bug:telega:
+CLOSED: [2026-06-11 Thu]
+Work's triage handoff (2026-06-11 09:20): find a reliable way to mark Telegram noise chats read — 49 unread chats keep resurfacing every sweep. Two findings from work's attempt: the plugin's documented verb =telega-chat--mark-read= doesn't exist in the installed telega (=telega-chat-toggle-read= looks right), and the dockerized telega-server reaches Ready but SIGSEGVs (exit 139) the moment =telega-chat-toggle-read= fires — reproduced twice after clean restarts. Scans still work off the cached =telega--chats= hash; no action verb can run. Candidates: call =telega--viewMessages= directly, batch via =telega-filter-read-all= in the root buffer, or bump tdlib in the zevlg/telega-server image. Deliverable: a working verb, then update the canonical =triage-intake.telegram.org= Actions section in rulesets.
+
+Resolved 2026-06-11: the verbs were never broken (=telega--viewMessages= verified live; =telega-chat-toggle-read= works but toggles, so guard on unread). The SIGSEGVs are spontaneous memory-corruption crashes in the zevlg/telega-server:latest musl build (11 coredumps since 2026-06-09, several with zero verb traffic) — work's correlation was timing. Also deleted 41 join-notice-only chats per Craig's standing call (unread chats 48 → 16). Canonical workflow updated (rulesets e32a7f5); resolution replied to work's inbox. Watchlist: if the spontaneous crashes worsen, pin a pre-2026-06 image digest, build telega-server natively, or report upstream with =coredumpctl= evidence.
