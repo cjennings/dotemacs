@@ -226,3 +226,25 @@ Notification-slice forward-flag: the existing Design notes route notifications t
 ** Readiness rubric
 
 *Ready* (2026-05-27 spec-review). All three Codex blockers folded in (Architecture additions); the final sync/async decision resolved as pre-warm + bounded block; three minor caveats stated for build time, none blocking. Implementation order follows the Pieces-to-build list — the JSON-RPC result-dispatch fork edit is step 1, everything else builds on it.
+
+* Notification slice (spec addendum — 2026-06-11)
+
+Resolves the four details the forward-flag in Scope summary required before this slice starts. Craig accepted all four recommendations 2026-06-11.
+
+** The four decisions
+
+1. *Command shape.* =notify info "Signal: <sender>" "<body>"=, launched via =start-process= so the receive filter never blocks on the script. Type =info= (blue icon, confident tone). No =--persist=: messages arrive as a stream and persistent toasts pile up; a missed toast is still in the chat buffer, unlike an alarm. Sound follows =cj/signel-notify-sound= (defcustom, default nil): pass =--silent= unless it is non-nil.
+2. *Fallback when =notify= is missing.* Warn once at module load via =cj/executable-find-or-warn= (the established external-tool pattern), and at runtime fall back to the fork's =notifications-notify= call so an incoming message is never silently dropped on a machine without the script.
+3. *Body truncation.* Collapse whitespace runs (including newlines) to single spaces and truncate to 120 characters with an ellipsis. Long messages flood the toast and the daemon clips unpredictably; the full text is always in the chat buffer.
+4. *Verbatim text.* Show the (truncated) message text verbatim. Same accept-and-state stance as the =*signel-log*= caveat — single-user local machine. Revisit if notifications ever route off-machine.
+
+** Wiring architecture
+
+The fork stays generic; the policy lives in =signal-config.el=:
+
+- *Fork edit* — =signel.el= gains =signel-notify-function= (defvar, default =signel--notify-default= which preserves today's bare =notifications-notify= behavior). =signel--handle-receive='s notify block becomes =(funcall signel-notify-function chat-id sender notify-body)= — chat-id added so a custom function can make per-chat decisions. The fork never references cj/ symbols and remains loadable standalone.
+- *cj layer* — =cj/signel--notify= (set as =signel-notify-function= in the use-package =:config=) gates on =cj/signal--should-notify-p= (the existing suppression predicate), formats the body via a pure helper (=cj/signal--format-notify-body=: whitespace collapse + 120-char truncation), and routes: =notify= script when =executable-find= sees it, =notifications-notify= fallback otherwise.
+
+** Testing
+
+ERT, no live account: the body formatter (Normal/Boundary — passthrough, newline collapse, exact-limit, over-limit + ellipsis, empty, unicode); =cj/signel--notify= routing (suppressed when the predicate says no; script path args including =--silent= by default and its absence when sound is enabled; fallback path when the script is missing); the fork dispatch (a text message calls =signel-notify-function= with chat-id/sender/body; sticker → "[Sticker]"; attachment → "[Attachment]"; default function preserved). Manual: a real incoming message raises the toast through the script; no toast while viewing that chat in a focused frame.
