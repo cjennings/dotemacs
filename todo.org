@@ -41,6 +41,9 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
+** TODO [#B] Telegram mark-read path for triage :bug:telega:
+Work's triage handoff (2026-06-11 09:20): find a reliable way to mark Telegram noise chats read — 49 unread chats keep resurfacing every sweep. Two findings from work's attempt: the plugin's documented verb =telega-chat--mark-read= doesn't exist in the installed telega (=telega-chat-toggle-read= looks right), and the dockerized telega-server reaches Ready but SIGSEGVs (exit 139) the moment =telega-chat-toggle-read= fires — reproduced twice after clean restarts. Scans still work off the cached =telega--chats= hash; no action verb can run. Candidates: call =telega--viewMessages= directly, batch via =telega-filter-read-all= in the root buffer, or bump tdlib in the zevlg/telega-server image. Deliverable: a working verb, then update the canonical =triage-intake.telegram.org= Actions section in rulesets.
+
 ** TODO [#B] Memory sweep into the agent KB :chore:
 One-time Phase 1.5 sweep from the rulesets agent-KB rollout (handoff 2026-06-10): read this project's harness memory dir, classify each fact against ~/.claude/rules/knowledge-base.md inclusion criteria (KB-worthy / stays local / stale-delete), propose the batch to Craig, write approved facts one-node-per-file under ~/org/roam/agents/ (pull first, commit + push after), then reply to rulesets' inbox with counts.
 
@@ -336,8 +339,8 @@ Fork commit 4740d97 added =signel--request-handler-map= (id → success callback
 *** TODO [#C] signel--handle-error leaks request-buffer-map entries :bug:no-sync:
 Surfaced during the JSON-RPC dispatch refactor audit. =signel--handle-error= reads =signel--request-buffer-map= by id but never =remhash='es the entry, so every error response leaves the request-id → buffer-name mapping behind for the life of the process. Low impact (the map clears on stop/start, and id collisions are unlikely at the counter scale), but unbounded growth in a long-lived session and inconsistent with how the new request-handler-map is cleaned up on error.
 
-*** TODO [#B] Notify only for the unviewed conversation :feature:
-Wire =cj/signal--should-notify-p= (done) into signel's =signel--handle-receive= notify block (signel.el:277), route through Craig's notify script instead of bare =notifications-notify=, and gate sound behind a defcustom that defaults off.
+*** DOING [#B] Notify only for the unviewed conversation :feature:
+Wire =cj/signal--should-notify-p= (done) into signel's =signel--handle-receive= notify block (signel.el:277), route through Craig's notify script instead of bare =notifications-notify=, and gate sound behind a defcustom that defaults off. Spec addendum (the four notify details + wiring architecture) accepted 2026-06-11 — see [[file:docs/design/signal-client.org][signal-client.org]] "Notification slice".
 
 *** 2026-05-27 Wed @ 22:08:40 -0500 Shipped clobber fix for both insert paths
 Fork commit 5ec56c0 added =signel--pending-input= (capture from input-marker to point-max) and =signel--restore-input= (re-insert after the redrawn prompt; nil-safe), and wired both into =signel--insert-msg= (the receive path) and =signel--insert-system-msg= (the error path).  A mid-type send now survives both an incoming message and a system-error insertion.  Four ERT tests in =tests/test-signel-input-preservation.el= cover the helpers (typed text, empty) and both insert paths via a temp =signel-chat-mode= buffer.
@@ -7130,7 +7133,7 @@ CLOSED: [2026-06-06 Sat 13:59] SCHEDULED: <2026-05-29 Fri>
 
 Hand-verify checklist Craig walks one item at a time after the relevant code lands. Each child names what is being verified, the exact steps to run, and the observable expected result. On pass, the child gets marked or deleted. On fail, the actual behavior gets logged under the step and the child is promoted to a top-level =TODO= bug per the verification.md handoff rule.
 
-Walk started 2026-05-28 (tests 1 + 2 verified — surfaced two Signel bugs along the way, both fixed before continuing).  Deferred to 2026-05-29: test 3 onward needs sending an actual Signal message, too late at night to be polite about it.  Picker → chat buffer opens cleanly; the send half is what remains to exercise.
+Walk started 2026-05-28 (tests 1 + 2 verified — surfaced two Signel bugs along the way, both fixed before continuing).  Deferred to 2026-05-29: test 3 onward needs sending an actual Signal message, too late at night to be polite about it.  2026-06-11: Craig confirmed the send half (contact send + Note-to-Self delivery) — closed as a dated entry below.  Still unwalked: input-survives-incoming, dashboard, stop-teardown, refresh, font-setup-post-TTY, and the non-Signel capture/calibredb/nov children.
 
 *** Project-aware capture: C-c c t files into the project's Open Work
 What we're verifying: inside a projectile project that has a root todo.org, C-c c t (Task) files the new entry under that project's "<Project> Open Work" heading.
@@ -7181,24 +7184,8 @@ What we're verifying: outside a project (or in a project with no todo.org) the c
 *** 2026-05-28 Thu @ 02:16:45 -0500 Verified: picker opens with contact names
 =C-; M m= → minibuffer opened within ~1s, "Note to Self" pinned at the top, the 94 Signal contacts followed labeled "Name (+number)".  Picker behavior matches spec.  Surfaced a follow-up on the chat buffer that opens after a pick — placement + exit keys want refining; filed under L44 Signel.
 
-*** Signel: pick a contact and send a message
-What we're verifying: choosing a contact opens a chat buffer, =RET= at the prompt sends through =signel--send-input=, and the message arrives on the recipient's phone.
-- =C-; M m=, pick a contact you trust.
-- Type a short message at the prompt, press =RET=.
-- Check the recipient's phone.
-Expected: a =*Signel: +<number>*= buffer opens, the typed message renders with the =[HH:MM] <Me>= prefix on send, and arrives on the recipient's phone within a few seconds.
-
-*** Signel: Note-to-Self lands in the right Signal thread
-What we're verifying: =cj/signel-message-self= (=C-; M s=) resolves to =signel-account= and sending through it lands in the *Note to Self* thread on the phone, NOT a self-addressed display anomaly.  This is the spec's medium-priority manual verify from D3.
-- Press =C-; M s=.
-- Type "test note to self" at the prompt, press =RET=.
-- Open Signal on your phone, scroll to the *Note to Self* thread.
-Expected: a =*Signel: +<your-number>*= buffer opens in Emacs, the message sends, and the message appears in the phone's *Note to Self* thread (not in any other conversation).
-
-*** Signel: Note-to-Self via the picker's pinned entry
-What we're verifying: picking the pinned "Note to Self" entry through =cj/signel-message= resolves the same way as the direct command.
-- =C-; M m=, choose "Note to Self".
-Expected: the same =*Signel: +<your-number>*= buffer opens.  (No need to re-send; opening the right buffer proves the resolution.)
+*** 2026-06-11 Thu @ 09:30:11 -0500 Verified: send delivery (contact send + Note-to-Self)
+Craig walked the send half by hand and confirmed it 2026-06-11: a picked contact's chat buffer sends through =signel--send-input= and the message arrives on the recipient's phone; Note-to-Self (=C-; M s= and the picker's pinned entry) resolves to =signel-account= and lands in the phone's *Note to Self* thread.  Same session, the receive/RPC side was re-verified live in the daemon: =listContacts= round-trip returned 93 contacts, =*signel-stderr*= empty, =C-; M= prefix bound.
 
 *** Signel: typed input survives an incoming message
 What we're verifying: the clobber fix (fork commit 5ec56c0) preserves in-progress prompt input across =signel--insert-msg= when a message arrives mid-typing.
