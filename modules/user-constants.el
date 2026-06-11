@@ -125,8 +125,10 @@ fallback only.")
 (defconst org-dir (expand-file-name "org/" sync-dir)
   "This directory is synchronized across machines.")
 
-(defconst roam-dir (expand-file-name "roam/" org-dir)
-  "The location of org-roam files.")
+(defconst roam-dir (expand-file-name "org/roam/" user-home-dir)
+  "The location of org-roam files.
+A standalone git repo (cjennings.net:roam.git), no longer inside the
+Syncthing-synced `org-dir' — see the 2026-06-10 transport migration.")
 
 (defconst journals-dir (expand-file-name "journal/" roam-dir)
   "The location of org-roam dailies or journals files.")
