@@ -17,6 +17,9 @@
 
 (require 'seq)
 (require 'keybindings)  ;; provides cj/custom-keymap + cj/register-prefix-map
+(require 'system-lib)   ;; for cj/executable-find-or-warn
+
+(declare-function notifications-notify "notifications")
 
 (defun cj/signal--jstr (value)
   "Return VALUE if it is a non-blank string, else nil.
@@ -102,6 +105,46 @@ window of a focused frame."
         (buffer-name (window-buffer (selected-window)))
         (cj/signal--frame-focused-p))))
 
+;;; Notifications
+
+(defcustom cj/signel-notify-sound nil
+  "When non-nil, incoming-message notifications play the notify script's sound.
+Nil (the default) passes --silent so the toast is visual only."
+  :type 'boolean
+  :group 'signel)
+
+(defconst cj/signal--notify-body-max 120
+  "Maximum character length of a desktop-notification body.
+Longer message text truncates to this length ending in an ellipsis;
+the full text is always in the chat buffer.")
+
+(defun cj/signal--format-notify-body (text)
+  "Collapse whitespace in TEXT and truncate it for a notification body.
+Whitespace runs (including newlines) become single spaces, the result
+is trimmed, and anything over `cj/signal--notify-body-max' characters
+truncates to that length with a trailing ellipsis."
+  (let ((flat (string-trim (replace-regexp-in-string "[ \t\n\r]+" " " text))))
+    (if (<= (length flat) cj/signal--notify-body-max)
+        flat
+      (concat (substring flat 0 (1- cj/signal--notify-body-max)) "…"))))
+
+(defun cj/signel--notify (chat-id sender body)
+  "Raise a desktop notification for an incoming Signal message.
+Suppressed via `cj/signal--should-notify-p' when the user is actively
+viewing CHAT-ID.  Routes through the external notify script when it is
+on PATH (type info, sound gated by `cj/signel-notify-sound'), falling
+back to `notifications-notify' otherwise.  SENDER names the title;
+BODY is formatted by `cj/signal--format-notify-body'.  Installed as
+`signel-notify-function' in the use-package :config below."
+  (when (cj/signal--should-notify-p chat-id)
+    (let ((title (format "Signal: %s" sender))
+          (text (cj/signal--format-notify-body body))
+          (script (executable-find "notify")))
+      (if script
+          (apply #'start-process "signel-notify" nil script "info" title text
+                 (unless cj/signel-notify-sound (list "--silent")))
+        (notifications-notify :title title :body text)))))
+
 ;;; signel — fork integration
 
 (defcustom cj/signal-private-config-file
@@ -126,7 +169,13 @@ time."
   (signel-auto-open-buffer nil)
   :config
   (when (file-readable-p cj/signal-private-config-file)
-    (load cj/signal-private-config-file nil t)))
+    (load cj/signal-private-config-file nil t))
+  ;; Route incoming-message notifications through cj/signel--notify
+  ;; (suppression + notify script + truncation); warn once at load when
+  ;; the script is missing — the runtime path still falls back to
+  ;; notifications-notify, so messages are never silently dropped.
+  (setq signel-notify-function #'cj/signel--notify)
+  (cj/executable-find-or-warn "notify" "Signal desktop notifications via the notify script (falling back to notifications-notify)" 'signal-config))
 
 ;; Chat buffers (named `*Signel: <id>*') open in the bottom 30% of the
 ;; frame rather than wherever display-buffer's fallback rule picks.
