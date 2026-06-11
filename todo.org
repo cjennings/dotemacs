@@ -41,6 +41,13 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
+** TODO [#B] Memory sweep into the agent KB :chore:
+One-time Phase 1.5 sweep from the rulesets agent-KB rollout (handoff 2026-06-10): read this project's harness memory dir, classify each fact against ~/.claude/rules/knowledge-base.md inclusion criteria (KB-worthy / stays local / stale-delete), propose the batch to Craig, write approved facts one-node-per-file under ~/org/roam/agents/ (pull first, commit + push after), then reply to rulesets' inbox with counts.
+
+** VERIFY Palette-columns spec review :theme-studio:
+SCHEDULED: <2026-06-12 Fri>
+Read [[file:docs/theme-studio-palette-columns-spec.org][docs/theme-studio-palette-columns-spec.org]] (Draft, from the 2026-06-10 design discussion) and bless or amend. Decisions 9 and 10 are the two session calls awaiting your word: strips flip to lightest→darkest top→bottom to match the dropdown, and each dropdown column run places the base at its natural lightness position (vs bg/fg bases leading before any steps). On "spec's good": mark Ready, file the phase breakdown, cancel the [#C] hint-override task, start Phase 1.
+
 ** DOING [#A] theme-studio contrast cell uses the wrong fg/bg pair :bug:theme-studio:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10
@@ -65,17 +72,6 @@ Same root cause as the [#A] contrast-cell task, fixed there in one change: =appl
 :END:
 When splitting with C-x 2 (=split-window-below=) or C-x 3 (=split-window-right=), the new/other window should default to the =*dashboard*= buffer instead of mirroring the current buffer. Advise =split-window-below= / =split-window-right= (or rebind the keys) to select the dashboard in the freshly-created window. Keep point in the original window.
 
-** DONE [#B] theme-studio live-preview bevel thinner than Emacs :bug:theme-studio:
-CLOSED: [2026-06-10 Wed]
-:PROPERTIES:
-:LAST_REVIEWED: 2026-06-10
-:END:
-Craig confirmed the bevel reads right 2026-06-10 after the reliefColors port (commit bb2aed2f).
-
-The mode-line box (3D released-button bevel) in the live buffer preview renders slimmer than the bevel Emacs actually draws. Make them match. The bevel comes from =boxCss= in app.js (~line 307), currently =inset 1px 1px 0 #ffffff33,inset -1px -1px 0 #00000066= for the released style — a 1px inset with faint translucent highlight/shadow. Emacs's released-button box is wider/stronger (it shades the highlight and shadow from the actual background color, not a flat translucent white/black). Fix: widen the bevel and derive the highlight/shadow from the box's background so it reads like Emacs. Verify side-by-side against a real Emacs mode-line.
-*** 2026-06-10 Wed @ 15:22:48 -0500 Ported Emacs's relief algorithm into boxCss
-Implemented =reliefColors= in colormath.js as a direct port of Emacs 30's =x_alloc_lighter_color= (xterm.c): highlight = bg x1.2 (delta 0x8000), shadow = bg x0.6 (delta 0x4000), an additive dark boost below brightness 48000/65535, and the same-color fallback (pure-black shadow lifts to #404040, as Emacs does). =boxCss= now takes the face's effective bg and derives both edges from it; pressed swaps the pair; the translucent pair survives only as a no-bg fallback. Width stays at the box's width (default 1px): dupre declares =:line-width -1=, so Emacs draws 1px lines too — the "wider" impression was the strength of the derived colors (on the dupre mode-line bg, Emacs's highlight is #71767f vs the old overlay's effective #595d63). 5 node tests with hand-computed fixtures from the C source + a new #beveltest gate (derived colors in paintUI, pressed swap, line-style passthrough). Algorithm evidence: emacs-30 xterm.c lines 9599-9665 (fetched 2026-06-10). Awaiting the side-by-side check below.
-
 ** TODO [#C] theme-studio face-consistency check :feature:theme-studio:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10
@@ -87,23 +83,6 @@ Rule taxonomy captured in [[file:docs/design/theme-studio-face-rules.org][docs/d
 2. defface-baseline divergence (secondary): flag where a face's structural attrs differ from its package =defface= so each divergence is deliberate, not an accidental drop. Would have caught the dropped underline/bold defaults and the contradictions (shr-h3 bold-vs-italic, erc-action italic-vs-bold) from the package-face audit as they were introduced.
 
 Bake into the tool (a lint surfaced in the UI) or run as a build-time check (seeds vs live deffaces via emacsclient).
-
-** DONE [#B] theme-studio color-harmony explainer :feature:theme-studio:docs:solo:
-CLOSED: [2026-06-10 Wed]
-:PROPERTIES:
-:LAST_REVIEWED: 2026-06-10
-:END:
-Written 2026-06-10 as [[file:docs/design/theme-studio-color-harmony.org][docs/design/theme-studio-color-harmony.org]]: the OKLCH method (borrow hue, fix L/C per tier, constraints bound the dials), the L≈0.28/C≈0.045 background-tint tier, the fg-vs-bg role split, the worst-case floor / L_max problem (cross-referenced to the shipped ramps spec), ramp generation as shipped, and harmonic fill as the vNext application. Harmonic fill itself stays tracked in the ramps spec.
-
-Write an explainer in =docs/design/theme-studio-color-harmony.org= capturing the OKLCH harmony method worked out 2026-06-09: harmony is mostly calculable — work in OKLCH, borrow the hue from a semantic accent, fix lightness + chroma across a tier, and let contrast (WCAG/APCA), ΔE separation, and the sRGB gamut bound the free dials. Include the worked background-tint tier (borrow accent hue, fix L≈0.28 C≈0.045 → dim readable bg per hue) and the fg-vs-bg role split (bright accents for text, dim low-chroma tints for backgrounds).
-
-Two features it enables (both worth building):
-1. Ramp generation (focus first): from a base color, generate its tonal ramp — base, +1/+2/+3 (lighter) and -1/-2/-3 (darker) — by stepping OKLCH lightness (and easing chroma) on a fixed hue. Term note: the whole family is a "ramp"/"tonal scale"; darker steps are "shades", lighter are "tints", gray-mixed are "tones" — so "ramp" or "scale" is the precise word, not "shades".
-2. Harmonic fill: from a few chosen colors (e.g. slate blue + bg), generate a table of harmonic candidates (hue-angle schemes at matched L/C) to fill the missing palette slots.
-
-Open design problem to address in the explainer + the ramp feature: a background-over-text effect (highlight/region/isearch/hl-line) must stay readable for EVERY foreground that can appear on it — i.e. the worst-case (lowest) contrast across the whole set of element fg colors, not a single pair. The usable background lightness is therefore capped by the darkest/closest fg in that set.
-
-The v1 feature (ramp generation + background-contrast safety, with the worst-case-floor UX) is designed in [[file:docs/theme-studio-palette-ramps-spec.org][docs/theme-studio-palette-ramps-spec.org]]. Codex review incorporated 2026-06-09: both open decisions resolved (WCAG AA default target; v1 foreground set = distinct syntax hexes + default fg), v1 covered faces closed to region/hl-line/highlight/lazy-highlight/isearch, ramp defaults + function contracts pinned. Spec is Ready (Craig confirmed 2026-06-09); the v1 build is tracked under the sibling parent below. Harmonic fill (feature 2) stays vNext. This task is the explainer doc itself (=docs/design/theme-studio-color-harmony.org=, the methodology).
 
 ** TODO [#B] theme-studio palette ramps + contrast safety v1 :feature:theme-studio:
 :PROPERTIES:
@@ -4124,6 +4103,8 @@ From the calibredb keybindings work 2026-06-06. The pattern that worked: in a mo
 
 Task: survey the modes/modules Craig works in and identify where a =?= -> curated-help-menu (transient) makes sense. Candidates: any major-mode buffer with single-key bindings and no good discovery affordance -- calibredb (done), nov, dirvish, mu4e, ghostel/term, signel, pearl/linear, ELFeed, etc. For each, note whether =?= is free or already a help dispatch, and whether a curated menu (vs the package's own) adds value. Establish it as a convention (and maybe a small helper/macro to define a curated =?= menu consistently).
 
+** TODO the preview splits an already split window into 3 temporarily. 
+looks strange. potentially problematic for ai-terms. 
 * Emacs Resolved
 ** DONE [#B] Fix likely =elpa-mirror-location= path bug :bug:quick:
 CLOSED: [2026-05-03 Sun]
@@ -7407,3 +7388,29 @@ The F9 toggle-off rework (38dad92) made F9 collapse the split by design, but tha
 
 *** 2026-06-06 Sat @ 18:18:17 -0500 Fixed: close swaps the window to a non-agent buffer instead of deleting it
 =cj/--ai-term-close-buffer= no longer calls =delete-window=; it swaps the agent's window to the working buffer (=cj/--ai-term-most-recent-non-agent-buffer=), then kills the agent buffer, so the split survives. F9 hide still collapses the split by design; close no longer does. Regression test =test-ai-term--close-buffer-keeps-window-split=. Commit =1a097b7e=.
+** DONE [#B] theme-studio live-preview bevel thinner than Emacs :bug:theme-studio:
+CLOSED: [2026-06-10 Wed]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-10
+:END:
+Craig confirmed the bevel reads right 2026-06-10 after the reliefColors port (commit bb2aed2f).
+
+The mode-line box (3D released-button bevel) in the live buffer preview renders slimmer than the bevel Emacs actually draws. Make them match. The bevel comes from =boxCss= in app.js (~line 307), currently =inset 1px 1px 0 #ffffff33,inset -1px -1px 0 #00000066= for the released style — a 1px inset with faint translucent highlight/shadow. Emacs's released-button box is wider/stronger (it shades the highlight and shadow from the actual background color, not a flat translucent white/black). Fix: widen the bevel and derive the highlight/shadow from the box's background so it reads like Emacs. Verify side-by-side against a real Emacs mode-line.
+*** 2026-06-10 Wed @ 15:22:48 -0500 Ported Emacs's relief algorithm into boxCss
+Implemented =reliefColors= in colormath.js as a direct port of Emacs 30's =x_alloc_lighter_color= (xterm.c): highlight = bg x1.2 (delta 0x8000), shadow = bg x0.6 (delta 0x4000), an additive dark boost below brightness 48000/65535, and the same-color fallback (pure-black shadow lifts to #404040, as Emacs does). =boxCss= now takes the face's effective bg and derives both edges from it; pressed swaps the pair; the translucent pair survives only as a no-bg fallback. Width stays at the box's width (default 1px): dupre declares =:line-width -1=, so Emacs draws 1px lines too — the "wider" impression was the strength of the derived colors (on the dupre mode-line bg, Emacs's highlight is #71767f vs the old overlay's effective #595d63). 5 node tests with hand-computed fixtures from the C source + a new #beveltest gate (derived colors in paintUI, pressed swap, line-style passthrough). Algorithm evidence: emacs-30 xterm.c lines 9599-9665 (fetched 2026-06-10). Awaiting the side-by-side check below.
+** DONE [#B] theme-studio color-harmony explainer :feature:theme-studio:docs:solo:
+CLOSED: [2026-06-10 Wed]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-10
+:END:
+Written 2026-06-10 as [[file:docs/design/theme-studio-color-harmony.org][docs/design/theme-studio-color-harmony.org]]: the OKLCH method (borrow hue, fix L/C per tier, constraints bound the dials), the L≈0.28/C≈0.045 background-tint tier, the fg-vs-bg role split, the worst-case floor / L_max problem (cross-referenced to the shipped ramps spec), ramp generation as shipped, and harmonic fill as the vNext application. Harmonic fill itself stays tracked in the ramps spec.
+
+Write an explainer in =docs/design/theme-studio-color-harmony.org= capturing the OKLCH harmony method worked out 2026-06-09: harmony is mostly calculable — work in OKLCH, borrow the hue from a semantic accent, fix lightness + chroma across a tier, and let contrast (WCAG/APCA), ΔE separation, and the sRGB gamut bound the free dials. Include the worked background-tint tier (borrow accent hue, fix L≈0.28 C≈0.045 → dim readable bg per hue) and the fg-vs-bg role split (bright accents for text, dim low-chroma tints for backgrounds).
+
+Two features it enables (both worth building):
+1. Ramp generation (focus first): from a base color, generate its tonal ramp — base, +1/+2/+3 (lighter) and -1/-2/-3 (darker) — by stepping OKLCH lightness (and easing chroma) on a fixed hue. Term note: the whole family is a "ramp"/"tonal scale"; darker steps are "shades", lighter are "tints", gray-mixed are "tones" — so "ramp" or "scale" is the precise word, not "shades".
+2. Harmonic fill: from a few chosen colors (e.g. slate blue + bg), generate a table of harmonic candidates (hue-angle schemes at matched L/C) to fill the missing palette slots.
+
+Open design problem to address in the explainer + the ramp feature: a background-over-text effect (highlight/region/isearch/hl-line) must stay readable for EVERY foreground that can appear on it — i.e. the worst-case (lowest) contrast across the whole set of element fg colors, not a single pair. The usable background lightness is therefore capped by the darkest/closest fg in that set.
+
+The v1 feature (ramp generation + background-contrast safety, with the worst-case-floor UX) is designed in [[file:docs/theme-studio-palette-ramps-spec.org][docs/theme-studio-palette-ramps-spec.org]]. Codex review incorporated 2026-06-09: both open decisions resolved (WCAG AA default target; v1 foreground set = distinct syntax hexes + default fg), v1 covered faces closed to region/hl-line/highlight/lazy-highlight/isearch, ramp defaults + function contracts pinned. Spec is Ready (Craig confirmed 2026-06-09); the v1 build is tracked under the sibling parent below. Harmonic fill (feature 2) stays vNext. This task is the explainer doc itself (=docs/design/theme-studio-color-harmony.org=, the methodology).
