@@ -405,7 +405,7 @@ Uses feh on X11, swww on Wayland."
      ("mx" "~/music/"                                       "music")
      ("pdx" "~/projects/documents/"                         "project documents")
      ("pdl" "~/projects/danneel/"                           "project danneel")
-     ("pcl" "~/projects/clipper/"                            "project clipper")
+     ("pcl" "~/projects/home/clipper/"                       "clipper area")
      ("pwk" "~/projects/work/"                               "project work")
      ("pl" "~/projects/elibrary/"                           "project elibrary")
      ("pf" "~/projects/finances/"                           "project finances")
