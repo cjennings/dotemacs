@@ -41,7 +41,10 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#B] Memory sweep into the agent KB :chore:
+** TODO [#B] Memory sweep into the agent KB :chore:quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-11
+:END:
 One-time Phase 1.5 sweep from the rulesets agent-KB rollout (handoff 2026-06-10): read this project's harness memory dir, classify each fact against ~/.claude/rules/knowledge-base.md inclusion criteria (KB-worthy / stays local / stale-delete), propose the batch to Craig, write approved facts one-node-per-file under ~/org/roam/agents/ (pull first, commit + push after), then reply to rulesets' inbox with counts.
 
 ** VERIFY Palette-columns spec review :theme-studio:
@@ -105,6 +108,9 @@ Phase 5 (commit =843bbf08=). The OKLCH picker gets a "safe for" selector over th
 Commit =23926837=. README documents the ramp controls and defaults, the worst-case floor / limiting foreground, the five covered faces, the safe-lightness guidance, and WCAG-drives-PASS-FAIL with APCA as a diagnostic; the browser-gate list is updated. =make theme-studio-test= carries all new node tests and the #ramptest/#contrasttest/#safetest gates. All acceptance criteria met.
 
 ** TODO [#B] theme-studio color families :feature:theme-studio:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-11
+:END:
 Show the palette as hue-grouped strips (dark→light) over the existing flat, individually-editable palette. Grouping is by OKLCH hue from the hex, so renaming a color never moves it. A per-strip count control generates a symmetric ramp (N → base ±N) from the strip's most-saturated color; regenerate is authoritative, repointing surviving-step references by lightness rank and leaving removed-step references a visible "(gone)". The ground strip is synthesized from the bg/fg assignments and pinned first; the standalone ramp panel is removed. Designed in [[file:docs/theme-studio-color-families-spec.org][docs/theme-studio-color-families-spec.org]]. Codex-reviewed Ready 2026-06-10 after response folded: pivoted from name-derived families to hex-derived families over a flat palette, which designs out the name-grammar/import-inference and chip-ownership blockers. All review findings dispositioned; both open decisions resolved. Builds on and supersedes the palette-ramps v1 ramp UI.
 
 All six phases landed 2026-06-10 (commits ebe18d51, 74db9a52, 111687b0, e7ae18c4, 77783126, f6ab0001, 9daeff15, and the Phase 6 commit); =make theme-studio-test= green (98 node tests, 16 browser gates). Code-complete and self-verified. The hue-adjacent warm-color grouping limitation is filed as a separate research task (=~/color-sorting.org=). Remaining: the manual aesthetic/fidelity sign-off under the Manual testing parent (hue grouping reads right, regenerate-replace reads as deliberate, removed-step "(gone)" is clear). Mark this DONE once that passes.
@@ -122,15 +128,27 @@ Phase 5 (commit =9daeff15=). Editing a family base recolors the whole family (sh
 Phase 6 (commit =c175e2be=). Export stays a flat palette and import needs no reconstruction (#roundtriptest: export→import→export byte-identical). =seedPkgmap= reads the flat palette unchanged. The too-similar warning stays on the full palette — the planned ramp-step exemption was dropped after analysis: ramp steps are a stepL apart (well above the ΔE threshold) so they never warn, and exempting same-family pairs would hide genuine near-duplicates (caught by #deltatest). README documents families, the ground strip, the count control/regenerate, removed-step references, and the ramp-panel removal.
 
 ** TODO [#C] Color-family per-hex hint override :feature:theme-studio:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-11
+:END:
 For the ~1 color per palette that sits on a ramp-collision point (e.g. yellow+2 on the distinguished palette, which by every hex signal belongs to the olive ramp though its name says gold), automatic grouping cannot recover the designer's intent. Add a per-hex family override: drag a swatch to a different column, store the override keyed by hex (never the name, so renaming is still free), consult it after the LCCL clustering, and drop/mark-stale it when the hex changes substantially. Export stays mostly flat; only overrides are extra metadata. Both reviews recommend this exact shape; details in =~/color-sorting-fable.org= (§ "The irreducible case") and =~/color-sorting-codex.org= (§ "What to store").
 
-** TODO [#C] Internet radio now-playing song :feature:music:emms:
+** TODO [#C] Internet radio now-playing song :feature:music:emms:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-11
+:END:
 Show the currently-playing song while streaming an internet radio station. Lives in =modules/music-config.el= (EMMS + MPV backend, M3U radio stations). The track title comes from the stream's ICY metadata — EMMS exposes it via =emms-track-description= / =emms-playing-time= and updates it on the metadata-change hook; MPV reports the ICY title too. Add an option to show the song in the minibuffer (e.g. echo on track change, or an on-demand command). Consider also a mode-line indicator as a second surface.
 
-** TODO [#C] Evaluate jamescherti essential-emacs-packages list :packages:research:
+** TODO [#C] Evaluate jamescherti essential-emacs-packages list :packages:research:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-11
+:END:
 Review [[https://www.jamescherti.com/essential-emacs-packages/][James Cherti's essential Emacs packages]] for anything worth installing. Cross-check each candidate against what is already in the config (=modules/= + =init.el=), skip the ones already present, and shortlist the genuinely new ones with a one-line rationale. Future-installation research, not a commitment to install.
 
 ** TODO [#B] Dupre diff-changed / diff-refine-changed legibility :bug:dupre:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-11
+:END:
 Surfaced 2026-06-07 from a pearl session designing its modified-ticket indicator (pearl marks a changed field by inheriting =diff-changed=). dupre's =diff-refine-changed= is bright gold (#ffd700) under near-white text (#f0fef0) -- WCAG contrast ~1.35, unreadable as a plain background. It only looks fine inside diff-mode because diff-mode overlays its own dark foreground. =diff-changed= (#875f00 amber) is ~5.49, readable but off the modus model. Every modus variant keeps both faces legible (contrast 9-16) by pairing a dark low-saturation background with a hue-matched foreground.
 
 Ask:
@@ -140,8 +158,13 @@ Ask:
 Reference values -- modus-vivendi: refine-changed bg #4a4a00 fg #efef80, changed bg #363300 fg #efef80. modus-operandi: refine-changed bg #fac090 fg #553d00, changed bg #ffdfa9 fg #553d00.
 
 Side-by-side legibility render: [[file:assets/2026-06-07-dupre-diff-face-legibility-compare.png][assets/2026-06-07-dupre-diff-face-legibility-compare.png]].
-** TODO [#B] dupre-theme test failures :bug:dupre:tests:
+** TODO [#B] dupre-theme test failures :bug:dupre:tests:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-11
+:END:
 A full =make test= run (2026-06-07) is green across 516 of 517 files; the only failures are 4 tests in =tests/test-dupre-theme.el=, long pre-existing. Two root causes. For each, decide whether the palette or the test assertion is canonical, then fix the loser so =make test= goes fully green.
+
+Decided 2026-06-11 (Craig): #0d0b0a is the canonical background — the three drift assertions are stale, update them. org-todo stays the muted red-1 #a7502d — update the test's expected value. Both sides decided; this is now a pure assertion fix.
 
 *** TODO Background drift: 3 tests expect #151311, palette bg is #0d0b0a
 =dupre-get-color-base= (test:46), =dupre-theme-default-face= (test:84), and =dupre-with-colors-binds-values= (test:62) all assert the default background is "#151311", but =themes/dupre-palette.el= defines =bg= as "#0d0b0a". The committed palette looks intentional, so the three assertions are likely just stale -- confirm #0d0b0a is the wanted background, then update the tests.
