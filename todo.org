@@ -41,33 +41,33 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#B] Memory sweep into the agent KB :chore:quick:
-:PROPERTIES:
-:LAST_REVIEWED: 2026-06-11
-:END:
-One-time Phase 1.5 sweep from the rulesets agent-KB rollout (handoff 2026-06-10): read this project's harness memory dir, classify each fact against ~/.claude/rules/knowledge-base.md inclusion criteria (KB-worthy / stays local / stale-delete), propose the batch to Craig, write approved facts one-node-per-file under ~/org/roam/agents/ (pull first, commit + push after), then reply to rulesets' inbox with counts.
-
 ** VERIFY Palette-columns spec review :theme-studio:
 SCHEDULED: <2026-06-12 Fri>
 Read [[file:docs/theme-studio-palette-columns-spec.org][docs/theme-studio-palette-columns-spec.org]] (Draft, from the 2026-06-10 design discussion) and bless or amend. Decisions 9 and 10 are the two session calls awaiting your word: strips flip to lightest→darkest top→bottom to match the dropdown, and each dropdown column run places the base at its natural lightness position (vs bg/fg bases leading before any steps). On "spec's good": mark Ready, file the phase breakdown, cancel the [#C] hint-override task, start Phase 1.
 
-** DOING [#A] theme-studio contrast cell uses the wrong fg/bg pair :bug:theme-studio:solo:
+** TODO [#B] theme-studio preview face mislinks (org, erc, flycheck) :bug:theme-studio:quick:solo:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-06-10
+:LAST_REVIEWED: 2026-06-11
 :END:
-The contrast readout on every item with two color selections (a fg AND a bg — the UI faces table and the package faces table) is computing the wrong pair. It needs to contrast the face's selected fg against the face's selected bg, not how the bg contrasts with the currently-selected (ground) bg.
+Found by Craig 2026-06-11 during the manual-test walk (org case), then a full audit of all 20 bespoke previews confirmed three mislinks; the rest are clean:
 
-Investigation start: the two-color contrast cells are =paintUI= (UI faces, app.js ~line 740) and =buildPkgTable= (package faces, app.js ~line 430), both currently calling =contrast(effFg(fg), effBg(bg))= where =effFg(v)=v||MAP['p']= and =effBg(v)=v||MAP['bg']=. Reproduce a face that has BOTH a fg and a bg set, confirm the displayed ratio, and check whether it's actually evaluating selected-fg vs selected-bg or falling through to the ground bg. Fix so a two-color face always rates its own fg-on-bg. (Single-color contexts — the picker/palette-chip/plane checks that rate a color against the ground — are correct and out of scope.) Add a characterization gate (a #contrasttest hash gate) pinning fg-vs-bg for a two-color face.
-*** 2026-06-10 Wed @ 14:40:22 -0500 Diagnosed and fixed at the root, shared with the preview-bg bug
-The ratio computation was already correct (gate-verified: both tables rate a two-color face's own fg-on-bg). What made it READ wrong: (1) =applyGround= blanketed every =.ex= cell — including the per-face preview cells — with the ground bg, so the preview showed fg-on-ground-bg next to a ratio for fg-on-face-bg; (2) a ground-bg change never repainted the UI/package tables, leaving ground-dependent ratios stale. Fix: =applyGround= now blankets only the code panes and =#legbody= example cells and repaints UI faces through =paintUI=; the ground-bg handler also rebuilds the package table/preview. New #contrasttest assertions pin two-color fg-on-bg (both tables), preview-bg survival, ratio stability, and ground-dependent re-rating. Suite green. Awaiting Craig's repro check (manual-test child under the Manual testing parent).
+1. app.js:564 (org) — "Heading three" carries data-face org-headline-todo on a line with no TODO keyword; org-headline-todo's docstring says it applies to the part of the headline after the TODO keyword. Fix: add an org-todo keyword span mirroring the DONE line at app.js:563 (stars = org-level-3, keyword = org-todo, text = org-headline-todo).
+2. app.js:765-766 (erc) — swapped: craig's own message text is erc-default-face and bob's is erc-input-face. erc-input-face is "ERC face used for your input"; swap them.
+3. app.js:720 (flycheck) — swapped: brackets carry flycheck-delimited-error and the content flycheck-error-delimiter. In flycheck's delimiters highlighting style the delimiter strings get error-delimiter and the enclosed text gets delimited-error; swap them.
 
-** TODO [#B] theme-studio UI-faces preview cell ignores the face bg :bug:theme-studio:quick:solo:
+Pin with a browser-gate assertion that these preview elements link the right faces (e.g. the org headline-todo span sits after an org-todo span; the erc my-message line uses input-face).
+
+** TODO [#C] theme-studio picker panel blends into the page :bug:theme-studio:ux:quick:solo:
 :PROPERTIES:
-:LAST_REVIEWED: 2026-06-10
+:LAST_REVIEWED: 2026-06-11
 :END:
-In the UI faces table, the preview cell for a face with its own bg renders with the ground bg instead. Repro: set mode-line fg=black, bg=blue — the preview cell should be black text on blue, but shows black on black (the live buffer mode-line is fine). Root cause: =applyGround= (app.js:300) blankets EVERY =.ex= element's background to =MAP['bg']=, and the preview cell =cP= shares =className='ex'= (app.js:753), so it clobbers the per-face bg =paintUI= sets (app.js:739) — runs on load and on every ground change. Fix: stop applyGround from touching the UI-face preview cells (scope its =.ex= selector to the code/example cells, give the preview cell its own class, or re-run paintUI after). The contrast cell shares the same staleness, so confirm both.
-*** 2026-06-10 Wed @ 14:40:22 -0500 Fixed by the applyGround scoping under the contrast-cell task
-Same root cause as the [#A] contrast-cell task, fixed there in one change: =applyGround= scopes its blanket to =#legbody .ex= + the code panes and repaints UI faces through =paintUI=. #contrasttest pins the preview-bg survival. Awaiting the same repro check.
+Craig, 2026-06-11 manual-test walk: the color picker's background is hard to distinguish from the page background. Give the picker panel a visibly distinct background or a highlighted border so it stands out. Pin with a gate asserting the picker element carries the distinct style.
+
+** TODO [#C] theme-studio Rust + Zig language previews :feature:theme-studio:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-11
+:END:
+Requested by Craig 2026-06-11: add Rust and Zig code samples to the language previews (samples.py currently carries Elisp, Go, Python, TypeScript, Java, C, C++, Shell). Each sample should exercise the treesit token categories distinctive to its language (Rust: lifetimes, macros, attributes, traits; Zig: comptime, builtins, error unions), then regenerate theme-studio.html and extend the test surface.
 
 ** TODO [#B] Split window opens the dashboard in the other window :feature:ux:windows:quick:solo:
 :PROPERTIES:
@@ -177,35 +177,16 @@ Build a new theme (working name "dupre-clear", final name TBD) that takes dupre'
 Full design + methodology + starting palette + open questions in the spec: [[file:docs/design/dupre-clear-theme.org][docs/design/dupre-clear-theme.org]]. Key prerequisite/context: the dupre-redesign entry in =.ai/session-context.org= (the AA palette this brightens). Hardest slot: blue keywords (a deep dupre blue can't be AAA on near-black — decide brighten vs keep-AA-exception vs lift-the-ground).
 ** TODO Manual testing and validation :verify:theme-studio:
 Exercised once the phases above land.
-*** TODO UI-face preview and contrast survive a ground bg change
-What we're verifying: a face with its own bg keeps it (preview and ratio) when the ground bg changes, and ground-dependent rows re-rate (the 2026-06-10 applyGround fix).
-- Open =scripts/theme-studio/theme-studio.html= in Chrome.
-- In the UI faces table, set mode-line fg to a dark color and bg to blue.
-- Confirm the preview cell shows that fg on blue and the ratio matches the pair.
-- In the syntax table, change the bg (ground) assignment to a different color.
-Expected: the mode-line preview keeps its own blue bg and its ratio is unchanged; rows without their own bg re-rate against the new ground; the package-faces contrast column updates too.
-*** TODO Seeded package-face defaults look right
-What we're verifying: the seeded org/magit/elfeed default colors read well before any tuning.
-- Open =scripts/theme-studio/theme-studio.html= in Chrome
-- Switch the app selector to org-mode, then magit, then elfeed
-- Read each preview pane against the dupre ground
-Expected: each package's seeded defaults look coherent and legible; nothing is unreadable or jarring. Override anything off in the tool.
-*** TODO Large face tables stay usable
-What we're verifying: org's ~88-face and magit's ~111-face tables stay navigable.
-- Select org-mode and scroll the grouped face table
-- Type "agenda" in the filter
-- Reassign one face and watch the preview
-Expected: rows are grouped, the filter narrows them, and a reassignment updates the preview live.
-*** TODO Perceptual readouts read well in the picker
-What we're verifying: the OKLCH L/C/H and APCA Lc readouts are legible and correctly placed beside the WCAG number.
-- Open =scripts/theme-studio/theme-studio.html= in Chrome and open the picker on a few colors
-- Read the OKLCH and APCA values against the WCAG ratio
-Expected: the new readouts are clear, the APCA sign/polarity is understandable, and nothing crowds the readout bar.
-*** TODO ΔE warnings read clearly
-What we're verifying: the too-similar-pair warning is legible and the cap behaves.
-- Build a palette with two near-identical colors, then a well-spread one
-- Read the warning line each time
-Expected: the close pair is named with its ΔE, sorted closest-first, capped at 5 with "and N more"; the well-spread palette shows no warning.
+*** 2026-06-11 Thu @ 18:29:39 -0500 Verified UI-face preview and contrast survive a ground bg change
+Craig walked the repro: mode-line with its own fg/bg kept its preview bg and ratio through a ground change; ground-dependent rows re-rated; package-faces contrast column updated. Pass. Closed the [#A] contrast-cell and [#B] preview-bg parents.
+*** 2026-06-11 Thu @ 18:29:39 -0500 Verified seeded package-face defaults, with steel tuning
+Craig read org/magit/elfeed against the ground. Pass with tuning: steel reads a bit dark — flipped to steel+1 on magit (better), but org wanted darker; these are updated selections, NOT final — he expects to adjust many more before the theme ships. His export saved to scripts/theme-studio/theme.json (replaced the 2026-06-09 state, prior version in git at 4f2d00eb). Side find: the org preview's heading-three ↔ headline-todo flash linkage is cross-wired — filed as its own bug task.
+*** 2026-06-11 Thu @ 18:29:39 -0500 Verified large face tables stay usable
+Craig scrolled the org table, filtered on "agenda", reassigned a face — grouping, narrowing, and live preview update all behaved. Pass.
+*** 2026-06-11 Thu @ 18:29:39 -0500 Verified perceptual readouts in the picker
+Craig validated the readouts against computed reference values (default fg #f0fef0 on ground #000000: APCA Lc -104.7 / WCAG 20.14; keyword blue #67809c: Lc -33.7 / WCAG 5.14 — negative polarity correct for light-on-dark). Legible, uncrowded. Pass. Side find filed separately: the picker panel itself blends into the page background ([#C] picker-visibility task).
+*** 2026-06-11 Thu @ 18:29:39 -0500 Verified ΔE warnings read clearly
+Craig built a near-duplicate pair and a well-spread palette: the close pair was named with its ΔE, sorted closest-first with the cap behaving; no warning on the spread palette. Pass.
 *** TODO OKLCH editor feels right
 What we're verifying: the OKLCH sliders / C×L plane edit cleanly and clamping is visible.
 - Switch the picker to OKLCH mode and drag L, then C, then H
@@ -7440,3 +7421,29 @@ CLOSED: [2026-06-11 Thu]
 Work's triage handoff (2026-06-11 09:20): find a reliable way to mark Telegram noise chats read — 49 unread chats keep resurfacing every sweep. Two findings from work's attempt: the plugin's documented verb =telega-chat--mark-read= doesn't exist in the installed telega (=telega-chat-toggle-read= looks right), and the dockerized telega-server reaches Ready but SIGSEGVs (exit 139) the moment =telega-chat-toggle-read= fires — reproduced twice after clean restarts. Scans still work off the cached =telega--chats= hash; no action verb can run. Candidates: call =telega--viewMessages= directly, batch via =telega-filter-read-all= in the root buffer, or bump tdlib in the zevlg/telega-server image. Deliverable: a working verb, then update the canonical =triage-intake.telegram.org= Actions section in rulesets.
 
 Resolved 2026-06-11: the verbs were never broken (=telega--viewMessages= verified live; =telega-chat-toggle-read= works but toggles, so guard on unread). The SIGSEGVs are spontaneous memory-corruption crashes in the zevlg/telega-server:latest musl build (11 coredumps since 2026-06-09, several with zero verb traffic) — work's correlation was timing. Also deleted 41 join-notice-only chats per Craig's standing call (unread chats 48 → 16). Canonical workflow updated (rulesets e32a7f5); resolution replied to work's inbox. Watchlist: if the spontaneous crashes worsen, pin a pre-2026-06 image digest, build telega-server natively, or report upstream with =coredumpctl= evidence.
+** DONE [#B] Memory sweep into the agent KB :chore:quick:
+CLOSED: [2026-06-11 Thu]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-11
+:END:
+One-time Phase 1.5 sweep from the rulesets agent-KB rollout (handoff 2026-06-10): read this project's harness memory dir, classify each fact against ~/.claude/rules/knowledge-base.md inclusion criteria (KB-worthy / stays local / stale-delete), propose the batch to Craig, write approved facts one-node-per-file under ~/org/roam/agents/ (pull first, commit + push after), then reply to rulesets' inbox with counts.
+
+Resolved 2026-06-11: 7 memories swept. 3 promoted (no-make-frame-in-live-daemon, proton-bridge cert mismatch, open-images-with-imv — roam commit a915760, pushed); 3 stayed local per Craig (commit-flow waiver is per-project; both theme items held); 1 deleted (numbered-options, superseded by the canonical interaction.md rule). Counts replied to rulesets' inbox.
+** DONE [#A] theme-studio contrast cell uses the wrong fg/bg pair :bug:theme-studio:solo:
+CLOSED: [2026-06-11 Thu]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-10
+:END:
+The contrast readout on every item with two color selections (a fg AND a bg — the UI faces table and the package faces table) is computing the wrong pair. It needs to contrast the face's selected fg against the face's selected bg, not how the bg contrasts with the currently-selected (ground) bg.
+
+Investigation start: the two-color contrast cells are =paintUI= (UI faces, app.js ~line 740) and =buildPkgTable= (package faces, app.js ~line 430), both currently calling =contrast(effFg(fg), effBg(bg))= where =effFg(v)=v||MAP['p']= and =effBg(v)=v||MAP['bg']=. Reproduce a face that has BOTH a fg and a bg set, confirm the displayed ratio, and check whether it's actually evaluating selected-fg vs selected-bg or falling through to the ground bg. Fix so a two-color face always rates its own fg-on-bg. (Single-color contexts — the picker/palette-chip/plane checks that rate a color against the ground — are correct and out of scope.) Add a characterization gate (a #contrasttest hash gate) pinning fg-vs-bg for a two-color face.
+*** 2026-06-10 Wed @ 14:40:22 -0500 Diagnosed and fixed at the root, shared with the preview-bg bug
+The ratio computation was already correct (gate-verified: both tables rate a two-color face's own fg-on-bg). What made it READ wrong: (1) =applyGround= blanketed every =.ex= cell — including the per-face preview cells — with the ground bg, so the preview showed fg-on-ground-bg next to a ratio for fg-on-face-bg; (2) a ground-bg change never repainted the UI/package tables, leaving ground-dependent ratios stale. Fix: =applyGround= now blankets only the code panes and =#legbody= example cells and repaints UI faces through =paintUI=; the ground-bg handler also rebuilds the package table/preview. New #contrasttest assertions pin two-color fg-on-bg (both tables), preview-bg survival, ratio stability, and ground-dependent re-rating. Suite green. Awaiting Craig's repro check (manual-test child under the Manual testing parent).
+** DONE [#B] theme-studio UI-faces preview cell ignores the face bg :bug:theme-studio:quick:solo:
+CLOSED: [2026-06-11 Thu]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-10
+:END:
+In the UI faces table, the preview cell for a face with its own bg renders with the ground bg instead. Repro: set mode-line fg=black, bg=blue — the preview cell should be black text on blue, but shows black on black (the live buffer mode-line is fine). Root cause: =applyGround= (app.js:300) blankets EVERY =.ex= element's background to =MAP['bg']=, and the preview cell =cP= shares =className='ex'= (app.js:753), so it clobbers the per-face bg =paintUI= sets (app.js:739) — runs on load and on every ground change. Fix: stop applyGround from touching the UI-face preview cells (scope its =.ex= selector to the code/example cells, give the preview cell its own class, or re-run paintUI after). The contrast cell shares the same staleness, so confirm both.
+*** 2026-06-10 Wed @ 14:40:22 -0500 Fixed by the applyGround scoping under the contrast-cell task
+Same root cause as the [#A] contrast-cell task, fixed there in one change: =applyGround= scopes its blanket to =#legbody .ex= + the code panes and repaints UI faces through =paintUI=. #contrasttest pins the preview-bg survival. Awaiting the same repro check.
