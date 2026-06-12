@@ -50,7 +50,7 @@ Tags are additive. For example, a small wrong-behavior fix can be
 :END:
 Parent grouping the open Calibre / ebook-workflow issues; close each child independently. The EPUB reading-width tasks were already resolved (2026-05-12/14).
 
-*** DOING Calibre bookmark title format :feature:solo:quick:
+*** 2026-06-12 Fri @ 07:34:05 -0500 Calibre bookmark naming ships "Author, Title" from the filename
 When I hit m in calibre, I'm making my place in the book with a bookmark.
 While sometimes, the books look fine: "The A.B.C. Murders - Agatha Christie.epub"
 Sometimes they look not so good: Engines of Logic_ Mathematicians and the O - Martin Davis.pdf or Software Architecture_ The Hard Parts _ Mo - Neal Ford.pdf
@@ -65,9 +65,9 @@ Implemented 2026-06-06. Source decision: parse the *filename*, not the embedded 
 
 Existing bookmarks: the 3 nov bookmarks in =~/sync/org/emacs_bookmarks= were renamed by hand (one-pass, in the daemon + saved; backup at =emacs_bookmarks.bak-2026-06-06=): "Edward Kanterian, Frege: A Guide for the Perplexed", "Agatha Christie, The A.B.C. Murders", "Edward Abbey, The Fool's Progress: An Honest Novel".
 
-Awaiting Craig's manual confirm: make a NEW bookmark (open an EPUB, hit m) and check the default name is "Author, Title" from the filename.
+Manual verify filed under the Manual testing and validation parent.
 
-*** DOING [#A] Reconsider Calibre keybindings :feature:
+*** 2026-06-12 Fri @ 07:34:05 -0500 Curated Calibre keybinding menu + docked description shipped
 Relocated from the global capture inbox 2026-06-06. Want a discoverable set of keybindings (visible in which-key) for the most frequent calibredb workflows:
 - Switch to a library (e.g. Literature), sort by last name, scroll the list.
 - Scope/filter the list in place, keeping the current library scope:
@@ -81,7 +81,7 @@ Survey finding 2026-06-06: calibredb already binds almost all of this in calibre
 Implemented 2026-06-06 in =modules/calibredb-epub-config.el=:
 - A curated transient =cj/calibredb-menu= (library switch; filter format/author/reset; sort author/title/pubdate/format; open; describe; H = full calibredb-dispatch) bound to =?= in calibredb-search-mode-map. calibredb's own full dispatch moved to =H=. Defined in the use-package =:config= (needs the elpa transient, which batch doesn't load) -- the "? brings up a curated help menu" convention.
 - Bottom-30% description dock: =calibredb-show-entry-switch= -> =pop-to-buffer= + a =display-buffer-alist= rule for =*calibredb-entry*= (display-buffer-at-bottom, height 0.3); =cj/calibredb-describe-at-point= shows the entry without switching focus so q dismisses it. Same pattern as the signel chat dock.
-1 ERT test (the describe command; the transient/bindings/dock need the elpa transient + live calibredb, verified in the daemon). Author "begins-with" is covered well enough by g a's completing-read over "Last, First"; a true regex filter was not built. Awaiting Craig's manual verify (M-B -> ? menu; d/v docked description; H full menu).
+1 ERT test (the describe command; the transient/bindings/dock need the elpa transient + live calibredb, verified in the daemon). Author "begins-with" is covered well enough by g a's completing-read over "Last, First"; a true regex filter was not built. Manual verify filed under the Manual testing and validation parent.
 
 *** TODO Embed Calibre DB metadata into the EPUB files
 Surfaced 2026-06-06 while building the bookmark naming: the metadata embedded in the EPUB files' OPF is worse than Calibre's database metadata. nov reads the embedded OPF and got truncated titles ("Frege" vs the filename's "Frege: A Guide for the Perplexed"), author-sort "Last, First" forms ("Christie, Agatha"), and lost punctuation ("A.B.C." -> "A B C"). The filenames (from Calibre's curated DB) are the good copy. Fix on the Calibre side: select all (or by library), run "Edit metadata -> Embed metadata into book files" so the DB metadata is written into each EPUB's OPF. Consider auditing author vs author_sort first. After embedding, the in-file metadata matches the library and any tool reading the files (nov, other readers, re-imports) gets the good data. Not an Emacs task; Calibre-side bulk maintenance.
@@ -1508,22 +1508,10 @@ Surfaced during the JSON-RPC dispatch refactor audit. =signel--handle-error= rea
 *** TODO [#D] Include Signal groups in the picker :feature:
 vNext after the 1:1 initiate-message flow is stable. Merge =listGroups= with =listContacts=, label groups distinctly, and preserve the current v1 behavior where the picker is contacts-only.
 
-*** DOING [#B] Notify only for the unviewed conversation :feature:
+*** 2026-06-12 Fri @ 07:34:05 -0500 Signel notify-only-for-unviewed-conversation shipped
 Wire =cj/signal--should-notify-p= (done) into signel's =signel--handle-receive= notify block (signel.el:277), route through Craig's notify script instead of bare =notifications-notify=, and gate sound behind a defcustom that defaults off. Spec addendum (the four notify details + wiring architecture) accepted 2026-06-11 — see [[file:docs/design/signal-client.org][signal-client.org]] "Notification slice".
 
-Built 2026-06-11 (TDD; fork commit e263367, dotemacs 9afc6128): =signel-notify-function= customization point in the fork; =cj/signel--notify= + =cj/signal--format-notify-body= + =cj/signel-notify-sound= in signal-config.el, wired in =:config= with a load-time =cj/executable-find-or-warn=. 17 new ERT tests green; full launch smoke clean; live-reloaded into the daemon and a synthetic toast fired through the script path. Stays DOING until the two manual checks below pass.
-
-**** Signel: real incoming message raises a toast through the notify script
-What we're verifying: the full receive path (signal-cli → signel --handle-receive → cj/signel--notify → notify script) fires on a real message.
-- Make sure you are NOT viewing the sender's chat buffer.
-- Have a real message sent to you on Signal (or send one from your phone to a second device thread that lands here).
-Expected: a transient info toast titled "Signal: <sender>" with the message text (one line, truncated if long), no sound.
-
-**** Signel: actively-viewed chat stays quiet
-What we're verifying: the suppression predicate gates the toast when you're reading that chat.
-- Open the sender's chat buffer (=C-; M m=) and keep it the selected window in a focused frame.
-- Have the same sender message you again.
-Expected: the message renders in the buffer, but no desktop toast appears.
+Built 2026-06-11 (TDD; fork commit e263367, dotemacs 9afc6128): =signel-notify-function= customization point in the fork; =cj/signel--notify= + =cj/signal--format-notify-body= + =cj/signel-notify-sound= in signal-config.el, wired in =:config= with a load-time =cj/executable-find-or-warn=. 17 new ERT tests green; full launch smoke clean; live-reloaded into the daemon and a synthetic toast fired through the script path. The two manual checks moved to the Manual testing and validation parent.
 
 *** 2026-05-26 Tue @ 20:06:58 -0500 Decided: fork signel rather than depend on it
 signel is on MELPA but stale (one-author v0.1, all commits in a Jan-2026 burst, unattended tracker, no PRs). The spec needs internal edits (notify behavior, input-clobber fix), which are clean in a fork and hacky via advice, and a dead upstream means no divergence cost. Rejected: adopt-from-MELPA + advice, build-from-scratch, signal-cli-rest-api (Docker), MCP-tool, ERC bridge. Full rationale in the design doc.
@@ -4433,6 +4421,38 @@ What we're verifying: lowering a family's count leaves a referencing face visibl
 - Lower that family's count to 2 so blue+3 disappears
 - Read the assignment's dropdown
 Expected: the dropdown shows "(gone)" for the removed step, never a silent jump to a different color; re-pointing it is a deliberate choice.
+*** TODO Calibre bookmark default name is "Author, Title"
+What we're verifying: a new nov bookmark takes the "Author, Title" form parsed from the filename, not the raw EPUB filename.
+- Open an EPUB in Calibre (nov buffer).
+- Hit m to set a bookmark.
+Expected: the default bookmark name is "Author, Title" (underscores stripped, colon restored), e.g. "Agatha Christie, The A.B.C. Murders".
+
+*** TODO Calibre curated ? menu and docked description
+What we're verifying: the curated ? transient, the docked description, and the full dispatch all work in a live calibredb buffer.
+- In a calibredb search buffer, press ? and confirm the curated menu (library / filter / sort / open / describe) appears.
+- Press d or v to dock the selected book's description in a bottom-30% buffer; press q to dismiss it.
+- Press H and confirm calibredb's full dispatch opens.
+Expected: ? shows the curated menu, d/v dock the description (q dismisses), H opens the full calibredb dispatch.
+
+*** TODO Signel: real incoming message raises a toast through the notify script
+What we're verifying: the full receive path (signal-cli → signel --handle-receive → cj/signel--notify → notify script) fires on a real message.
+- Make sure you are NOT viewing the sender's chat buffer.
+- Have a real message sent to you on Signal (or send one from your phone to a second device thread that lands here).
+Expected: a transient info toast titled "Signal: <sender>" with the message text (one line, truncated if long), no sound.
+
+*** TODO Signel: actively-viewed chat stays quiet
+What we're verifying: the suppression predicate gates the toast when you're reading that chat.
+- Open the sender's chat buffer (=C-; M m=) and keep it the selected window in a focused frame.
+- Have the same sender message you again.
+Expected: the message renders in the buffer, but no desktop toast appears.
+
+*** TODO Project-aware capture files into the right todo.org
+What we're verifying: C-c c t and C-c c b file into the current projectile project's todo.org under its "<Project> Open Work" header, and fall back to the global inbox outside a project.
+- Inside a projectile project that has a todo.org, run C-c c t (Task), capture a test entry, and confirm it lands under "<Project> Open Work".
+- Run C-c c b (Bug) similarly and confirm it lands as "* TODO [#C] ..." under the same header.
+- Run a capture from outside any project (or a project with no todo.org) and confirm the global-inbox fallback with a warning.
+Expected: in-project captures land in that project's Open Work; out-of-project captures fall back to the global inbox with a warning.
+
 ** TODO [#D] theme-studio per-tier reseed controls :feature:
 Deferred from the seeding-engine spec (vNext). V1 reseeds all three guide-owned tiers at once; later consider separate "reseed syntax", "reseed UI", and "reseed package/org" controls if all-at-once proves too blunt. Spec: [[file:docs/design/theme-studio-seeding-engine-spec.org][spec]] (vNext; review folded in 2026-06-08).
 ** TODO [#D] theme-studio low-contrast preset/mask mode :feature:
@@ -4495,10 +4515,11 @@ Task: survey the modes/modules Craig works in and identify where a =?= -> curate
 ** TODO [#C] the preview splits an already split window into 3 temporarily.
 looks strange. potentially problematic for ai-terms.
 
-** DOING [#C] Project-aware bug capture via C-c c t :feature:
+** DONE [#C] Project-aware bug capture via C-c c t :feature:
+CLOSED: [2026-06-12 Fri]
 Relocated from the global capture inbox 2026-06-06. When inside a projectile project, C-c c t (Task) files into that project's root todo.org under the "<Project> Open Work" header. If the project has no todo.org, fall back to the global inbox-file and warn naming the project.
 
-Implemented 2026-06-06 in =modules/org-capture-config.el=: a shared project-aware =function= capture target (=cj/--org-capture-project-location=) used by =C-c c t= (Task, =* TODO=) and a new =C-c c b= (Bug, =* TODO [#C]=). Matches an existing top-level "... Open Work" heading (so ~/.emacs.d hits "Emacs Open Work") and creates "<Capitalized project> Open Work" only when absent. Outside a project / no todo.org -> global inbox under "Inbox" (with a warning in the no-todo.org case). 15 ERT tests in =tests/test-org-capture-config-project-target.el=; daemon e2e confirmed a real capture lands "** TODO [#C] ..." prepended under Open Work. Awaiting Craig's interactive manual verify (see the Manual Testing task) before close. NOTE: the matching "<Project> Resolved Work" header for the wrap-up workflow is a separate concern, not handled here.
+Implemented 2026-06-06 in =modules/org-capture-config.el=: a shared project-aware =function= capture target (=cj/--org-capture-project-location=) used by =C-c c t= (Task, =* TODO=) and a new =C-c c b= (Bug, =* TODO [#C]=). Matches an existing top-level "... Open Work" heading (so ~/.emacs.d hits "Emacs Open Work") and creates "<Capitalized project> Open Work" only when absent. Outside a project / no todo.org -> global inbox under "Inbox" (with a warning in the no-todo.org case). 15 ERT tests in =tests/test-org-capture-config-project-target.el=; daemon e2e confirmed a real capture lands "** TODO [#C] ..." prepended under Open Work. Manual verify filed under the Manual testing and validation parent. NOTE: the matching "<Project> Resolved Work" header for the wrap-up workflow is a separate concern, not handled here.
 
 ** VERIFY [#C] Palette-columns spec review
 SCHEDULED: <2026-06-12 Fri>
