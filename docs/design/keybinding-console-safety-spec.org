@@ -1,0 +1,531 @@
+#+TITLE: Keymap Consolidation — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-12
+
+* Metadata
+| Status   | draft                                                              |
+| Owner    | Craig Jennings                                                     |
+| Reviewer | TBD (multi-reviewer cycle)                                         |
+| Related  | [[file:../../todo.org][todo.org]] — "M-S- launcher keys" task (to be reclassified, Phase 0) |
+
+* Summary
+
+Some commonly-used window/layout commands are bound to =M-S-<letter>= chords that only work in GUI frames, via a fragile =key-translation-map= layer that already caused a regression.
+
+This spec makes the common commands reachable everywhere — GUI, terminal emulator, and the Linux console — by consolidating them under the =C-;= personal keymap. It will then give that one keymap a second, console-safe prefix, then retire the translation layer.
+
+The aim is to consolidate these commands to have the same console-safe prefix, usable anywhere. 
+
+* Problem / Context
+
+A subset of common commands is bound to =M-S-<letter>= chords (Meta + Shift + lowercase letter). Pressing Meta+Shift+e emits the event =M-E= (uppercase Meta), but the command is bound to =M-S-e=; the bridge between them is a =key-translation-map= entry that =modules/keyboard-compat.el= installs *only* in GUI frames (=env-gui-p=). So these chords are dead in terminal frames and dead in the Linux console.
+
+Craig does not use terminal or console Emacs often, but falls back to the console in emergencies (a broken graphical session). When common keys are unavailable there, the editor stops being usable for the emergency and he has to switch tools. For *uncommon* commands, =M-x= is an acceptable fallback; for *common* ones it is not.
+
+How each key family actually behaves across the three contexts (the facts the design turns on):
+
+| Context           | Meta sent as | =M-S-e= (as bound)     | =M-E= (uppercase Meta)   | =C-;=                     |
+|-------------------+--------------+----------------------+------------------------+-------------------------|
+| GUI frame         | native event | reached only via the | intercepted by the     | works natively          |
+|                   |              | GUI translation map  | translation map        |                         |
+|-------------------+--------------+----------------------+------------------------+-------------------------|
+| Terminal emulator | ESC prefix   | dead (keypress emits | works (ESC E), if no   | works if the emulator   |
+| (xterm-family)    |              | =M-E=, binding is on   | translation intercepts | speaks                  |
+|                   |              | =M-S-e=)               |                        | modifyOtherKeys/kitty   |
+|                   |              |                      |                        | (recent Emacs           |
+|                   |              |                      |                        | auto-enables for        |
+|                   |              |                      |                        | xterm-family)           |
+|-------------------+--------------+----------------------+------------------------+-------------------------|
+| Linux console     | ESC prefix   | dead (same reason)   | works (ESC E)          | DEAD — semicolon is not |
+| (TERM=linux)      |              |                      |                        | a control char; cannot  |
+|                   |              |                      |                        | be transmitted          |
+|-------------------+--------------+----------------------+------------------------+-------------------------|
+
+Three consequences: =M-S-e= is dead outside GUI by construction; =C-;= is solid in GUI, conditional in terminal emulators, and dead in the Linux console (so it cannot be the *only* home for console-critical commands); and =M-E= plus function keys and =C-c= sequences are transmittable everywhere, which is the material to build a console-safe path from.
+
+** The regression that triggered this
+
+Commit =4a1ecf64= "fixed" three launcher keys (=eww=/=elfeed=/=calibredb=) by rebinding them from =M-S-e/r/b= to =M-E/M-R/M-B=. It was wrong, and three review passes missed it because they all used =key-binding=, which consults keymaps only and ignores =key-translation-map=. The original audit "verified dead in the live daemon" with that blind check (false positive); the fix bound =M-E= but left the =M-E -> M-S-e= translation entry in place, so in GUI the keypress is rewritten to the now-unbound =M-S-e= and the launchers break on the next restart; and the new test asserted =(key-binding (kbd "M-E"))=, passing against a configuration broken at the keyboard. It only appears to work in the running daemon because the pre-fix binding is still loaded as stale state — the stale-daemon trap.
+
+The lesson is encoded into the acceptance criteria: real reachability is not =key-binding= when a translation map participates.
+
+* Goals and Non-Goals
+
+** Goals
+- Every *commonly used* command is reachable in GUI, terminal emulators, and the Linux console.
+- One canonical personal command surface, so console-reachability is solved once at the prefix level rather than per command.
+- Retire the =keyboard-compat.el= =M-uppercase -> M-S-lowercase= translation block, the root of the fragility.
+- Keep daily ergonomics: high-frequency commands keep a fast chord in GUI.
+
+** Non-Goals
+- Making *every* binding console-safe. Uncommon commands may live on =M-x= only.
+- A ground-up keymap redesign. This is about reachability and retiring one fragile mechanism.
+- Defeating the Linux virtual console's hard limits (it cannot transmit =C-;=, and Meta+Shift behaviour varies). The design routes around them.
+
+** Scope tiers
+- *v1:*
+  - drop the uncommon chords;
+  - migrate the common window/layout =M-S-= commands into =C-;=;
+  - bind =cj/custom-keymap= to a console-safe second prefix;
+  - retire the translation block;
+  - translation-aware tests;
+  - revert =4a1ecf64=.
+- *Out of scope:*
+  - enabling modifyOtherKeys/kitty for terminal emulators (helps terminals, not the console; orthogonal).
+- *vNext:* a =C-;= "apps" sub-prefix for =eww=/=elfeed=/=calibredb=/=wttrin= if =M-x= proves annoying; auditing non-=M-S-= GUI-only chords (modified function keys, =C-+/C-==) for console behaviour.
+
+* Design
+
+#+begin_src cj: comment
+note that I am also happy to retrain my muscle memory and choose one keymap that works in both. Ideally this will be a control and a key on the home row that's infrequently or less frequently used or one that can be rebound easily and intuitively within the personal keymaps. Let's list out all the candidates that fit this criteria in the appendix. This is my first choice. Failing this, we'll go with your idea of adding a console safe prefix. 
+#+end_src
+
+The personal command surface is already a single keymap object, =cj/custom-keymap= (=modules/keybindings.el=), bound to =C-;=. The whole design rests on one Emacs fact: a keymap is an object and can be bound to more than one prefix. So console-reachability is a *prefix* problem, not a per-command problem.
+
+For a user: you reach your personal commands with =C-;= in the GUI as today, and with a second, console-safe prefix (a function key or =C-c ;=) anywhere — same menu, same keys after the prefix. In the console emergency you type the alt prefix and everything under =C-;= is there.
+
+For the implementer: add one line — =(keymap-global-set "<console-safe-prefix>" cj/custom-keymap)= — and the entire tree in Appendix A becomes reachable through it; nothing per-command. The work then is to move the *common* console-dead commands (the window/layout =M-S-= subset, Appendix B) *into* =cj/custom-keymap= so they inherit that reachability, drop the *uncommon* =M-S-= chords to =M-x=, and delete the now-unused translation block. High-frequency window commands additionally keep a fast chord so daily GUI use doesn't regress to a 3-key sequence (Decision D4).
+
+The console-dead common set is window/layout work, which has no =C-;= sub-prefix today, so v1 adds one (a new window sub-map; letter is Decision D5). The =C-c=/=C-h=/=C-z=/=C-x= and plain function-key bindings already work in the console and stay where they are.
+
+* Alternatives Considered
+
+** A — Revert 4a1ecf64 and keep the translation layer as the end state
+- Good, because it is the smallest change and restores correctness immediately.
+- Bad, because it keeps 18 keys on the GUI-only mechanism that already bit us and
+  leaves the console-dead problem unsolved.
+- Neutral, because the revert itself is still needed as Phase 0; this option just
+  stops there.
+
+** B — Migrate the whole family to direct uppercase-Meta, delete the translation block, no C-; move
+- Good, because it preserves every single-chord and =M-E= (ESC + uppercase) is
+  transmittable in GUI, terminal, and console alike.
+- Bad, because it bets the emergency-console guarantee on Meta+Shift behaving
+  cleanly on every console keyboard, which is probable but not certain, and it
+  gives the common commands no robust prefix-based fallback.
+- Neutral, because it still deletes the translation block (shared with the chosen
+  design) and could be layered onto the frequent-chord subset (see D4 Option B).
+
+** C — Enable an enhanced keyboard protocol (modifyOtherKeys / kitty) so C-; works in terminals
+- Good, because it makes =C-;= itself work in capable terminal emulators.
+- Bad, because it does nothing for the Linux virtual console (a hard limit), and
+  adds a terminal-capability dependency.
+- Neutral, because it is orthogonal and could be added later without conflicting.
+
+** Chosen — one map, two prefixes (consolidate common commands under C-;, add a console-safe alt prefix)
+- Good, because console-reachability is solved once at the prefix; it depends on
+  exactly one prefix working, and that prefix is chosen to be bulletproof.
+- Bad, because moved commands cost a muscle-memory transition, and a pure
+  sub-prefix path is 3 keys (mitigated by D4 for the frequent ones).
+- Neutral, because it still requires the revert (Phase 0) and the translation-
+  block deletion (shared with B).
+
+* Decisions
+
+** D1 — One map, two prefixes
+- State: proposed
+- Owner / by-when: Craig / review cycle
+- Context: the common console-dead commands need to be reachable in the console;
+  =C-;= alone is dead there; per-command console bindings would not scale.
+- Decision: We will keep =cj/custom-keymap= as the single personal surface and
+  bind it to both =C-;= (GUI) and one console-safe alternate prefix.
+- Consequences: easier — one prefix to make console-safe, whole tree travels;
+  harder — every console-critical command must actually live under
+  =cj/custom-keymap=, so the common =M-S-= set has to be migrated in.
+
+** D2 — Migrate only the common (window/layout) M-S- set; drop the uncommon to M-x
+- State: proposed
+- Owner / by-when: Craig / review cycle
+- Context: of the 18 =M-S-= commands, only window/layout control is plausibly
+  needed in an emergency console session; apps and one-off tools are not.
+- Decision: We will move the window/layout subset (=M-S-o/m/v/h/t/u/z=, and
+  =M-S-k= pending review) into =C-;=, and remove the other ten =M-S-= chords,
+  leaving those commands on =M-x=.
+- Consequences: easier — shrinks the translation block to nothing, focuses the
+  console surface on essentials; harder — the dropped commands lose a chord;
+  =show-kill-ring='s classification is a judgment call.
+
+** D3 — Console-safe alternate prefix
+- State: proposed
+- Owner / by-when: Craig / review cycle
+- Context: the second binding must transmit in the Linux console and terminal
+  emulators. Candidates: =C-c ;= (=C-c= transmits; =;= is a plain key; mnemonic
+  mirror of =C-;=) or a free function key (single press, fully console-safe, uses
+  a scarce F-key).
+- Decision: We will bind =cj/custom-keymap= to =C-c ;= (recommended), pending
+  confirmation it is free against existing =C-c= bindings.
+- Consequences: easier — two keys, no F-key spent, easy to remember; harder — one
+  more key than a function key; must verify =C-c ;= is unbound.
+
+** D4 — Fast-chord strategy for high-frequency window ops
+- State: proposed
+- Owner / by-when: Craig / review cycle
+- Context: =split-and-follow-right/below= and =undo-kill-buffer= are pressed
+  constantly; a 3-key =C-; <w> v= sequence is a real downgrade.
+- Decision: We will (Option A) keep a fast GUI chord for the frequent commands in
+  addition to their =C-;= entry, OR (Option B) bind them to direct uppercase-Meta
+  single chords and retire the translation block. Review picks.
+- Consequences: A — preserves speed, but the fast chord may itself be GUI-only
+  unless it is a function key; B — single chord works in all three contexts but
+  leans on console Meta+Shift.
+
+** D5 — Window sub-prefix and apps disposition
+- State: proposed
+- Owner / by-when: Craig / review cycle
+- Context: window/layout has no =C-;= sub-prefix; free single letters are
+  =i q u y z= plus most uppercase (=w= is whitespace). The four apps could go to
+  =M-x= or a small launcher sub-prefix.
+- Decision: We will add a window sub-prefix under =C-;= (letter TBD) and decide
+  apps = =M-x= (default) vs a launcher sub-prefix (=e/f/b/w= leaves).
+- Consequences: easier — groups window ops discoverably under which-key; harder —
+  picks another scarce top-level =C-;= letter; the apps call trades discoverability
+  against top-level letter budget.
+
+* Implementation phases
+
+** Phase 0 — Revert the regression
+Revert =4a1ecf64=: restore =M-S-e/r/b= in the three modules, delete the flawed =key-binding= test, and reclassify the "M-S- launcher keys" task as not-a-bug (the keys worked via the GUI translation layer). Leaves a clean, correct baseline. Tree working.
+
+#+begin_src cj: comment
+list out the flawed keybinding test.
+we should find other keys for the launcher keys. I'll make that decision now. if needed, we can remove the ai-assistant window off C-; a. That functionality isn't finished and is far less used than ai-term. 
+#+end_src
+
+** Phase 1 — Console-safe alternate prefix
+Bind =cj/custom-keymap= to the chosen alt prefix (D3). Verify the whole tree is reachable from an =emacs -nw= xterm-family terminal and the Linux console. One line plus a reachability check. Tree working.
+
+#+begin_src cj: comment
+we need a candidate list of console-safe alternatives. this stage is gated by choosing that alternative, so we need the list to choose from.
+also, we should change the rest of the phases to reflect the choices above.   
+#+end_src
+
+** Phase 2 — Migrate the common set + window sub-prefix
+Add the window sub-prefix under =C-;= (D5) with the window/layout leaves; apply the fast-chord strategy (D4). Per D2, the common commands now live under =cj/custom-keymap=. Tree working.
+
+** Phase 3 — Drop uncommon chords + retire the translation block
+Remove the ten uncommon =M-S-= bindings; delete =cj/keyboard-compat-gui-setup='s translation block and its hook; update the module header. The arrow-key =input-decode-map= terminal setup stays. Tree working.
+
+** Phase 4 — Tests + docs
+Translation-aware keybinding tests (see Acceptance criteria); update keybinding docs / the keyboard-compat header; re-run the full suite.
+
+* Acceptance criteria
+- [ ] The whole =cj/custom-keymap= tree is reachable in a GUI frame, an =emacs -nw= xterm-family terminal, and the Linux virtual console via the alt prefix.
+- [ ] The final "common" commands are reachable in all three contexts.
+- [ ] =keyboard-compat.el='s translation block is gone; no command depends on it.
+- [ ] For any chord claimed to run command X, tests assert BOTH =(key-binding (kbd CHORD))= AND =(lookup-key key-translation-map (kbd CHORD))= are consistent (the latter =nil=, or pointing where intended). =key-binding= alone is insufficient — it is what let =4a1ecf64= through.
+- [ ] Reachability is verified in a *fresh* frame/session, not the live daemon (the stale-daemon trap masks results).
+- [ ] =make test= fully green (the 4 pre-existing =test-dupre-theme= failures are tracked separately and out of scope).
+
+* Readiness dimensions
+- Data model & ownership: keybindings are user-authored code in =modules/=;
+  =cj/custom-keymap= is the owned surface. Nothing generated/cached/remote;
+  nothing persists.
+- Errors, empty states & failure: N/A — a missing command symbol surfaces as a
+  load-time =void-function=, caught by byte-compile and the launch smoke test.
+- Security & privacy: N/A — no credentials or sensitive data.
+- Observability: which-key shows each prefix's menu; =C-h k= / =describe-bindings=
+  report the live binding; the translation-aware test reports reachability.
+- Performance & scale: N/A — keymap lookup is constant-time; one extra prefix
+  binding has no measurable cost.
+- Reuse & lost opportunities: reuse Emacs's native multi-prefix keymap binding
+  (one keymap object, two prefix keys) instead of duplicating bindings; reuse
+  which-key and the existing =cj/register-prefix-map= / =cj/register-command=
+  helpers. Deletes (does not wrap) the bespoke translation layer.
+- Architecture fit & weak points: integration points are =keybindings.el=
+  (=cj/custom-keymap=, the register helpers), =keyboard-compat.el= (translation
+  block to delete; arrow-key decode to keep), and the per-module =:bind= /
+  register calls for the migrated commands. Weak point: the stale-daemon trap can
+  mask whether a change actually works — mitigated by verifying in a fresh
+  =-nw=/console session (acceptance criterion).
+- Config surface: the console-safe alt prefix (D3) and the window sub-prefix
+  letter (D5) are the only new knobs; both are constants set once in config.
+- Documentation plan: update the =keyboard-compat.el= header (it documents the
+  retired translation table); note the moved/dropped keys wherever keybindings
+  are documented. No user-facing migration doc beyond that.
+- Dev tooling: existing =make test= / byte-compile / launch smoke cover it; the
+  new translation-aware assertion is an ERT test like the others.
+- Rollout, compatibility & rollback: user-facing keybinding change; rollback is
+  =git revert=. No persisted data, no public API, no external state. The only
+  compatibility cost is Craig's muscle memory for the moved/dropped keys —
+  a transition note, not a migration.
+- External APIs & deps: N/A — no external APIs; no new dependencies.
+
+* Risks, Rabbit Holes, and Drawbacks
+- *Muscle-memory disruption* for moved/dropped keys. Dodge: keep fast chords for the highest-frequency commands (D4); accept =M-x= only for genuinely uncommon ones.
+- *Console Meta+Shift uncertainty* if D4 Option B is chosen. Dodge: the prefix path (D1/D3) does not depend on it, so the emergency guarantee holds regardless of the fast-chord choice.
+- *Stale-daemon trap* masking test results — the exact failure mode behind the regression. Dodge: the acceptance criteria mandate verification in a fresh frame/session and a translation-aware assertion.
+
+* References / Appendix
+
+** Appendix A — Full C-; keybinding tree (live, 2026-06-12)
+
+Dumped from the running daemon by walking =cj/custom-keymap= recursively.
+Format: chord — command — what it does.
+
+*** Top-level leaves (directly on C-;)
+- C-; ) — cj/jump-to-matching-paren — jump to the matching paren
+- C-; / — cj/replace-fraction-glyphs — replace 1/2-style fractions with glyphs
+- C-; ? — cj/flycheck-list-errors — list flycheck errors for the buffer
+- C-; A — align-regexp — align region by a regexp
+- C-; B — cj/choose-browser — pick the default browser
+- C-; f — cj/format-region-or-buffer — format region or whole buffer
+- C-; k — cj/org-babel-toggle-confirm — toggle the org-babel eval confirmation
+- C-; P — cj/projectile-reset-cmds — reset projectile's cached project commands
+- C-; SPC — cj/switch-to-previous-buffer — toggle to the previous buffer
+- C-; T — cj/telega — open Telegram (telega)
+- C-; | — display-fill-column-indicator-mode — toggle the fill-column rule
+- C-; # c — cj/count-characters-buffer-or-region — count characters
+- C-; # w — cj/count-words-buffer-or-region — count words
+
+*** C-; ! — System commands
+- C-; ! ! — cj/system-command-menu — the system-command transient menu
+- C-; ! e — cj/system-cmd-restart-emacs — restart Emacs
+- C-; ! E — cj/system-cmd-exit-emacs — exit Emacs
+- C-; ! l — cj/system-cmd-lock — lock the screen
+- C-; ! L — cj/system-cmd-logout — log out of the session
+- C-; ! r — cj/system-cmd-reboot — reboot
+- C-; ! s — cj/system-cmd-shutdown — shut down
+- C-; ! S — cj/system-cmd-suspend — suspend
+
+*** C-; a — AI / gptel
+- C-; a . — cj/gptel-add-this-buffer — add current buffer to the gptel context
+- C-; a A — cj/gptel-autosave-toggle — toggle conversation autosave
+- C-; a b — cj/gptel-browse-conversations — browse saved conversations
+- C-; a B — cj/gptel-switch-backend — switch the LLM backend
+- C-; a c — cj/gptel-context-clear — clear the gptel context
+- C-; a d — cj/gptel-delete-conversation — delete a saved conversation
+- C-; a f — cj/gptel-add-file — add a file to the context
+- C-; a l — cj/gptel-load-conversation — load a saved conversation
+- C-; a m — cj/gptel-change-model — change the model
+- C-; a M — gptel-menu — the gptel transient menu
+- C-; a p — gptel-system-prompt — edit the system prompt
+- C-; a q — cj/gptel-quick-ask — quick one-off ask
+- C-; a r — cj/gptel-rewrite-with-directive — rewrite region with a directive
+- C-; a R — cj/gptel-rewrite-redo-with-different-directive — redo rewrite, new directive
+- C-; a s — cj/gptel-save-conversation — save the conversation
+- C-; a t — cj/toggle-gptel — toggle the gptel chat buffer
+- C-; a x — cj/gptel-clear-buffer — clear the chat buffer
+
+*** C-; b — Buffer & file operations
+- C-; b <arrows> — cj/window-resize-sticky — sticky window resize (arrow keys)
+- C-; b b — cj/clear-to-bottom-of-buffer — clear from point to end
+- C-; b c b — cj/copy-to-bottom-of-buffer — copy point-to-end
+- C-; b c t — cj/copy-to-top-of-buffer — copy point-to-start
+- C-; b c w — cj/copy-whole-buffer — copy the whole buffer
+- C-; b d — cj/delete-buffer-and-file — delete the buffer and its file
+- C-; b D — cj/diff-buffer-with-file — diff buffer against its file on disk
+- C-; b e — eval-buffer — eval the buffer
+- C-; b E — cj/view-email-in-buffer — view the buffer as email
+- C-; b g — revert-buffer — revert from disk
+- C-; b k — cj/kill-buffer-and-window — kill buffer and close its window
+- C-; b K — cj/kill-other-window-buffer — kill the other window's buffer
+- C-; b l — cj/copy-link-to-buffer-file — copy an org link to the file
+- C-; b m — cj/move-buffer-and-file — move/rename buffer + file
+- C-; b n — cj/copy-buffer-name — copy the buffer name
+- C-; b o — cj/xdg-open — open the file with the system handler
+- C-; b O — cj/open-this-file-with — open with a chosen program
+- C-; b p — cj/copy-buffer-source-as-kill — copy buffer source
+- C-; b P — cj/print-buffer-ps — print the buffer (PostScript)
+- C-; b r — cj/rename-buffer-and-file — rename buffer + file
+- C-; b s — mark-whole-buffer — select all
+- C-; b S — write-file — write/save-as
+- C-; b t — cj/clear-to-top-of-buffer — clear from start to point
+- C-; b w — cj/view-buffer-in-eww — render the buffer in EWW
+- C-; b x — erase-buffer — erase the buffer
+
+*** C-; c — Case
+- C-; c l — cj/downcase-dwim — downcase (dwim)
+- C-; c t — cj/title-case-region — title-case the region
+- C-; c u — cj/upcase-dwim — upcase (dwim)
+
+*** C-; C — Comments
+- C-; C - — cj/comment-hyphen — hyphen divider comment
+- C-; C b — cj/comment-box — boxed comment
+- C-; C c — cj/comment-inline-border — inline bordered comment
+- C-; C d — cj/delete-buffer-comments — delete all comments in the buffer
+- C-; C h — cj/comment-heavy-box — heavy box comment
+- C-; C n — cj/comment-block-banner — block banner comment
+- C-; C p — cj/comment-padded-divider — padded divider comment
+- C-; C r — cj/comment-reformat — reformat a comment
+- C-; C s — cj/comment-simple-divider — simple divider comment
+- C-; C u — cj/comment-unicode-box — unicode box comment
+
+*** C-; d — Date / time insertion
+- C-; d d — cj/insert-sortable-date — insert YYYY-MM-DD
+- C-; d D — cj/insert-readable-date — insert a human-readable date
+- C-; d r — cj/insert-readable-date-time — readable date + time
+- C-; d s — cj/insert-sortable-date-time — sortable date + time
+- C-; d t — cj/insert-sortable-time — sortable time
+- C-; d T — cj/insert-readable-time — readable time
+
+*** C-; D — Org-drill (flashcards)
+- C-; D c — cj/drill-capture — capture a drill question
+- C-; D e — cj/drill-edit — open a drill file to edit
+- C-; D f — cj/drill-this-file — drill the current file
+- C-; D r — cj/drill-refile — refile into a drill file
+- C-; D R — org-drill-resume — resume a drill session
+- C-; D s — cj/drill-start — start a drill session
+
+*** C-; e — Email (mu4e)
+- C-; e s — cj/mu4e-save-attachment-here — save attachment to current dir
+- C-; e S — cj/mu4e-save-all-attachments — save all attachments
+- C-; e m — cj/mu4e-save-some-attachments — save selected attachments
+- C-; e {c,d,g} {i,l,s,u} — mu4e maildir searches: account {c=cmail, d=dmail,
+  g=gmail} x view {i=inbox, l=large >5M, s=starred/flagged, u=unread}
+
+*** C-; E — ERC (IRC)
+- C-; E b — cj/erc-switch-to-buffer-with-completion — switch ERC buffer
+- C-; E c — cj/erc-join-channel-with-completion — join a channel
+- C-; E C — cj/erc-connect-server-with-completion — connect to a server
+- C-; E l — cj/erc-connected-servers — list connected servers
+- C-; E q — erc-part-from-channel — leave a channel
+- C-; E Q — erc-quit-server — quit a server
+
+*** C-; g — Calendar sync (Google Calendar)
+- C-; g s — calendar-sync-now — sync now
+- C-; g S — calendar-sync-start — start auto-sync
+- C-; g x — calendar-sync-stop — stop auto-sync
+- C-; g t — calendar-sync-toggle — toggle auto-sync
+- C-; g i — calendar-sync-status — sync status
+
+*** C-; h — Hugo (website/blog)
+- C-; h n — cj/hugo-new-post — new post
+- C-; h d — cj/hugo-open-draft — open a draft
+- C-; h D — cj/hugo-toggle-draft — toggle a post's draft flag
+- C-; h e — cj/hugo-export-post — export a post
+- C-; h p — cj/hugo-preview — preview the site
+- C-; h P — cj/hugo-publish — publish the site
+- C-; h o — cj/hugo-open-blog-dir — open the blog dir in Emacs
+- C-; h O — cj/hugo-open-blog-dir-external — open the blog dir externally
+
+*** C-; j — Jump to files
+- C-; j c — cj/jump-to-contacts ; C-; j g — cj/jump-to-gcal
+- C-; j i — cj/jump-to-inbox ; C-; j I — cj/jump-to-emacs-init
+- C-; j m — cj/jump-to-macros ; C-; j n — cj/jump-to-reading-notes
+- C-; j r — cj/jump-to-reference ; C-; j s — cj/jump-to-schedule
+- C-; j w — cj/jump-to-webclipped
+
+*** C-; L — Pearl (Linear tickets)
+- C-; L … — pearl-prefix-map — Pearl/Linear ticket commands (lazy sub-map)
+
+*** C-; l — Line & paragraph
+- C-; l c — duplicate line/region (comment variant) ; C-; l d — cj/duplicate-line-or-region
+- C-; l j — cj/join-line-or-region ; C-; l J — cj/join-paragraph
+- C-; l r — cj/remove-lines-containing ; C-; l R — cj/remove-duplicate-lines-region-or-buffer
+- C-; l u — cj/underscore-line
+
+#+begin_src cj: comment
+note that I am reserving C-; L as a leader key for the pearl package (Linear integration). 
+#+end_src  
+
+*** C-; m — Music (EMMS)
+- C-; m m — cj/music-playlist-toggle ; C-; m M — cj/music-playlist-show
+- C-; m SPC — emms-pause ; C-; m s — emms-stop
+- C-; m n — cj/music-next ; C-; m p — cj/music-previous
+- C-; m a — cj/music-fuzzy-select-and-add ; C-; m g — emms-playlist-mode-go
+- C-; m r — emms-toggle-repeat-playlist ; C-; m t — emms-toggle-repeat-track
+- C-; m x — cj/music-toggle-consume ; C-; m z — emms-toggle-random-playlist
+- C-; m Z — emms-shuffle ; C-; m R — cj/music-create-radio-station
+
+*** C-; M — Signal (signel)
+- C-; M m — cj/signel-message — message a contact
+- C-; M s — cj/signel-message-self — note to self
+- C-; M SPC — cj/signel-connect — start/connect the daemon
+- C-; M d — signel-dashboard — the Signal dashboard
+- C-; M q — signel-stop — stop the daemon
+
+*** C-; n — Org-noter
+- C-; n t — cj/org-noter-start — start noter on the document
+- C-; n n — cj/org-noter-insert-note-dwim — insert a note (dwim)
+
+*** C-; o — Ordering / text transforms
+- C-; o a — cj/arrayify ; C-; o j — cj/arrayify-json ; C-; o p — cj/arrayify-python
+- C-; o u — cj/unarrayify ; C-; o l — cj/listify ; C-; o L — cj/comma-separated-text-to-lines
+- C-; o A — cj/alphabetize-region ; C-; o r — cj/reverse-lines ; C-; o n — cj/number-lines
+- C-; o q — cj/toggle-quotes ; C-; o o — cj/org-sort-by-todo-and-priority
+
+*** C-; p — reveal.js presentations
+- C-; p n — cj/reveal-new ; C-; p h — cj/reveal-insert-header ; C-; p H — cj/reveal-remove-headers
+- C-; p e — cj/reveal-export ; C-; p SPC — cj/reveal-present
+- C-; p p — cj/reveal-preview-start ; C-; p s — cj/reveal-preview-stop
+
+*** C-; r — Recording (audio/video)
+- C-; r a — cj/audio-recording-toggle ; C-; r v — cj/video-recording-toggle
+- C-; r s — cj/recording-quick-setup ; C-; r S — cj/recording-select-devices
+- C-; r d — cj/recording-list-devices ; C-; r l — cj/recording-adjust-volumes
+- C-; r w — cj/recording-show-active-audio
+- C-; r t b/m/s — cj/recording-test-both / -mic / -monitor
+
+*** C-; R — restclient
+- C-; R n — cj/restclient-new-buffer ; C-; R o — cj/restclient-open-file
+
+*** C-; s — Enclose / surround / indent
+- C-; s s — cj/surround-word-or-region ; C-; s u — cj/unwrap-word-or-region
+- C-; s w — cj/wrap-word-or-region ; C-; s i — cj/indent-lines-in-region-or-buffer
+- C-; s d — cj/dedent-lines-in-region-or-buffer ; C-; s a — cj/append-to-lines-in-region-or-buffer
+- C-; s p — cj/prepend-to-lines-in-region-or-buffer
+- C-; s I — change-inner ; C-; s O — change-outer
+
+*** C-; t — Test runner
+- C-; t r — cj/test-run-smart ; C-; t R — cj/test-run-all ; C-; t . — cj/run-test-at-point
+- C-; t a — cj/test-focus-add ; C-; t b — cj/test-focus-add-this-buffer-file
+- C-; t c — cj/test-focus-clear ; C-; t v — cj/test-view-focused
+- C-; t L — cj/test-load-all ; C-; t t — cj/test-toggle-mode
+
+*** C-; v — Version control (git / forge)
+- C-; v c — cj/git-clone-clipboard-url ; C-; v d — cj/goto-git-gutter-diff-hunks
+- C-; v t — cj/git-timemachine ; C-; v f — forge-pull ; C-; v r — forge-list-pullreqs
+- C-; v i c — cj/forge-create-issue ; C-; v i l — forge-list-issues
+
+*** C-; w — Whitespace
+- C-; w c — cj/collapse-whitespace-line-or-region ; C-; w d — cj/delete-all-whitespace
+- C-; w l — cj/delete-blank-lines-region-or-buffer ; C-; w 1 — cj/ensure-single-blank-line
+- C-; w r — cj/remove-leading-trailing-whitespace ; C-; w - — cj/hyphenate-whitespace-in-region
+- C-; w t — untabify ; C-; w T — tabify
+
+*** C-; x — Terminal (ghostel)
+- C-; x t — cj/term-toggle ; C-; x N — ghostel (new) ; C-; x c — cj/term-copy-mode-dwim
+- C-; x h — cj/term-tmux-history ; C-; x l — ghostel-clear-scrollback
+- C-; x n — ghostel-next-prompt ; C-; x p — ghostel-previous-prompt
+- C-; x q — ghostel-send-next-key
+
+** Appendix B — The M-S- family (18 keys)
+
+All bound as =M-S-<letter>= and reachable in GUI only, via the
+=keyboard-compat.el= translation layer. Format: chord — command — what it does —
+source module.
+
+- M-S-o — cj/kill-other-window — kill the other window's buffer and close it — undead-buffers.el
+- M-S-m — cj/kill-all-other-buffers-and-windows — close all other windows, kill their buffers — undead-buffers.el
+- M-S-y — yank-media — paste an image/media object from the clipboard — keybindings.el
+- M-S-f — fontaine-set-preset — switch the font preset — font-config.el
+- M-S-w — wttrin — show the weather report — weather-config.el
+- M-S-e — eww — open the EWW web browser — eww-config.el
+- M-S-l — cj/switch-themes — select/cycle the theme — ui-theme.el
+- M-S-r — cj/elfeed-open — open the Elfeed RSS reader — elfeed-config.el
+- M-S-v — cj/split-and-follow-right — split window right and move focus there — ui-navigation.el
+- M-S-h — cj/split-and-follow-below — split window below and move focus there — ui-navigation.el
+- M-S-t — toggle-window-split — toggle horizontal/vertical split — ui-navigation.el
+- M-S-z — cj/undo-kill-buffer — reopen the most-recently-killed file buffer — ui-navigation.el
+- M-S-u — winner-undo — undo the last window-configuration change — ui-navigation.el
+- M-S-d — dwim-shell-commands-menu — DWIM shell-command menu on marked files — dwim-shell-config.el
+- M-S-i — edit-indirect-region — edit the region in an indirect buffer — text-config.el
+- M-S-c — time-zones — show the world-clock / time-zones view — chrono-tools.el
+- M-S-b — calibredb — open the Calibre ebook library — calibredb-epub-config.el
+- M-S-k — show-kill-ring — browse the kill ring — show-kill-ring.el
+
+Note: =4a1ecf64= (in-flight, reverted in Phase 0) currently leaves
+=eww=/=elfeed=/=calibredb= mis-bound to =M-E=/=M-R=/=M-B=; the table lists the
+intended/original =M-S-= bindings.
+
+* Review and iteration history
+** 2026-06-12 Fri @ 11:21:56 -0500 — Craig Jennings — author
+- What: initial draft. Problem, three-context analysis, the 4a1ecf64 regression
+  as motivating evidence, the one-map/two-prefix design, alternatives, five
+  open decisions, phased plan, acceptance criteria, readiness dimensions, and the
+  full C-; tree + M-S- family appendices.
+- Why: a touched key family broke in GUI and is dead in console; the fix path is
+  cross-cutting (18 keys, a translation layer to retire, a console-safety
+  architecture) with real trade-offs, so it clears the spec bar.
+- Artifacts: docs/design/keybinding-console-safety-spec.org; supersedes the
+  pre-template draft docs/design/keybinding-console-safety.org.
