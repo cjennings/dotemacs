@@ -4121,8 +4121,393 @@ From the calibredb keybindings work 2026-06-06. The pattern that worked: in a mo
 
 Task: survey the modes/modules Craig works in and identify where a =?= -> curated-help-menu (transient) makes sense. Candidates: any major-mode buffer with single-key bindings and no good discovery affordance -- calibredb (done), nov, dirvish, mu4e, ghostel/term, signel, pearl/linear, ELFeed, etc. For each, note whether =?= is free or already a help dispatch, and whether a curated menu (vs the package's own) adds value. Establish it as a convention (and maybe a small helper/macro to define a curated =?= menu consistently).
 
-** TODO the preview splits an already split window into 3 temporarily. 
-looks strange. potentially problematic for ai-terms. 
+** TODO the preview splits an already split window into 3 temporarily.
+looks strange. potentially problematic for ai-terms.
+
+** TODO [#C] Google Contacts ↔ org-contacts sync investigation :feature:research:
+From the 2026-06-11 brainstorm. Goal: keep [[file:~/sync/org/contacts.org][contacts.org]] (real org-contacts: PROPERTIES drawers, mu4e completion, org-roam links) in sync with Google Contacts. Google side is solid — official People API (OAuth2, incremental syncToken) or CardDAV; no ToS risk. The hard parts are local: (1) identity — entries have no UID, so two-way needs a GOOGLE_ID property per entry plus a one-time fuzzy reconciliation of the two populated datasets (name/email/phone matching); (2) field mapping — space-separated multi-email in one property, free-text body notes, inconsistent phone formats (normalization decision); (3) conflict policy. First decision gates the rest: one-way Google→org read model (simple) vs true two-way. Candidate architectures: vdirsyncer (proven two-way engine w/ Google support; build only the vCard↔org translation, evaluate org-vcard fidelity) vs a direct People API script with sync state in org properties. Output: recommendation doc in docs/design/ naming direction + the normalization/conflict decisions for Craig. Not :solo: — the one-way-vs-two-way call and normalization policy are Craig's.
+
+** TODO [#C] Google Voice in Emacs — SMS + dialer investigation :feature:research:solo:
+From the 2026-06-11 messenger-unification brainstorm. Google Voice has no official API; the viable routes ride the Matrix bridge ecosystem's reverse engineering (mautrix-gvoice). Research pass to establish the 2026 state of play: (1) is mautrix-gvoice healthy and what does its auth flow look like now; (2) any better-maintained alternative (CLI/daemon) for the signel-pattern architecture (external daemon + JSON-RPC + thin Emacs chat client); (3) does call initiation (ring-linked-phone-then-connect, Emacs as dialer) survive in the current protocol — two-way audio in Emacs is out of scope (WebRTC); (4) ToS/account-flag risk assessment for Craig's account. Output: a recommendation doc in docs/design/ naming the architecture (signel-pattern daemon vs Matrix bridge + ement.el) or a no-go with reasons. If go, GV becomes a registered backend under the messenger-unification convention (see the [#B] task below).
+
+** TODO [#B] Messenger window/key unification :feature:ux:
+Spec: [[file:docs/design/messenger-unification-spec.org][messenger-unification-spec.org]] (Draft, 2026-06-11). One library (=cj-messenger-lib.el=) gives every messenger the same shape: chat windows rise from the bottom (the signel rule, generalized), C-c C-c confirms, C-c C-k cancels, C-c C-a attaches — dispatched per backend through a registry + minor mode. Signel already conforms (reference backend); telega and slack join in phases 2-3; ERC later. All eight decisions settled 2026-06-11 (cancel closes an idle window; telega's filter-cancel shadow accepted; slack rooms join the bottom rule). Spec held open — Craig has more ideas to fold in before it's marked Ready.
+
+** TODO [#A] Lock screen silently fails — slock is X11-only :bug:
+=modules/system-commands.el:105= binds the lockscreen command to =slock=, which can't grab a Wayland session; =cj/system-cmd= launches it detached with output silenced, so C-; ! l does nothing and the screen never locks. Security issue: Craig believes the screen locks when it doesn't. Fix: =hyprlock= (or =swaylock=), ideally resolved per session type via =env-wayland-p= so an X11 fallback survives for other machines. From the 2026-06 config audit.
+
+** TODO [#B] cj/undo-kill-buffer off-by-one on plain invocation :bug:quick:solo:
+=modules/ui-navigation.el:181= — =(interactive "p")= makes arg always ≥1, and the body does =(if arg (nth arg list) (car list))=, so the nth branch always runs and plain M-S-z reopens the SECOND-most-recently-killed file. The existing test passes 0 explicitly, masking it. Fix the indexing (=(interactive "P")= + =prefix-numeric-value=, or =nth (1- arg)=) and fix the test to cover the no-prefix path. From the 2026-06 config audit.
+
+** TODO [#B] reconcile-open-repos skips any repo with a dot in its name :bug:solo:
+=modules/reconcile-open-repos.el:174= — discovery regexp ="^[^.]+$"= matches only dot-free names, so =~/code/mcp.el=, =capture.el=, =google-contacts.el=, =auto-dim-other-buffers.el= etc. are never reconciled while M-P still reports "Complete." Replace with =directory-files-no-dot-files-regexp= + a hidden-dir check; add a regression test with a dotted repo name. From the 2026-06 config audit.
+
+** TODO [#B] jumper: register collisions and dead-marker errors :bug:solo:
+Two related defects from the 2026-06 config audit:
+- =modules/jumper.el:155= — removal shifts the vector without renumbering registers, so a later store allocates a register still held by a surviving location and silently overwrites it. Allocate the first free register char in the live slice; =set-register nil= on removal so freed markers don't pin buffers.
+- =modules/jumper.el:117,132= — guards check =(markerp marker)= but not =(buffer-live-p (marker-buffer marker))=; after killing a buffer holding a location, M-SPC SPC and M-SPC j signal wrong-type errors. Treat dead entries as skippable/removable.
+Also =jumper.el:178= — the promised single-location toggle never toggles back ('already-there branch should =jump-to-register= z when set).
+
+** TODO [#B] C-s C-s vertico-repeat path never works :bug:quick:solo:
+=modules/selection-framework.el:263= — =cj/consult-line-or-repeat= calls =vertico-repeat= on the second consecutive C-s, but nothing adds =vertico-repeat-save= to =minibuffer-setup-hook= (grep: zero hits config-wide), so it always signals "No Vertico session". Add the hook next to the vertico use-package block. From the 2026-06 config audit.
+
+** TODO [#B] dashboard-config setq wipes recentf-exclude list :bug:quick:solo:
+=modules/dashboard-config.el:199= =(setq recentf-exclude '("/emms/history"))= discards the five exclusions system-defaults.el:239-243 added earlier in init order (bookmarks, elpa, recentf, ElfeedDB, airootfs). Change to =add-to-list=. From the 2026-06 config audit.
+
+** TODO [#B] auth-config: unguarded gpg-connect-agent call + compile-time require :bug:quick:solo:
+From the 2026-06 config audit. =modules/auth-config.el:88= — bare =(call-process "gpg-connect-agent" ...)= in a =:demand t= :config signals file-missing and aborts init on machines without the binary; guard with =cj/executable-find-or-warn=. =auth-config.el:36= — =user-constants= is required only =eval-when-compile= but =authinfo-file= is read at load time; works from .el source, fails from standalone .elc. Use a runtime require (system-defaults.el:32-35 documents this exact trap).
+
+** TODO [#B] system-defaults: top-level server-start unguarded in batch :bug:quick:solo:
+=modules/system-defaults.el:140= — raw module load under =--batch= (make validate-modules on a machine with no daemon socket) starts a server from a batch process; the suite only passes because the testutil stubs it. Wrap in =(unless noninteractive ...)= — the repo's established guard for this defect class; same guard stops the =custom-file= =make-temp-file= at line 104 littering temp files per batch load. From the 2026-06 config audit.
+
+** TODO [#B] markdown live preview clobbered by markdown-mode :bug:quick:solo:
+=modules/markdown-config.el:54= defines bare =markdown-preview=, which markdown-mode redefines the moment the first .md loads — the impatient-mode live preview is dead and F2 silently runs the package command (agent verified in the live daemon). Also =:61= guards on =(boundp 'httpd-process)=, a variable that doesn't exist in simple-httpd — use =(httpd-running-p)=. And the =:config= =(setq imp-set-user-filter 'markdown-html)= at line 41 is doubly dead (function-not-variable, symbol names nothing) — delete. Rename to =cj/markdown-preview=, rebind F2. From the 2026-06 config audit.
+
+** TODO [#B] org-roam dailies template writes FILETAGS and TITLE on one line :bug:quick:solo:
+=modules/org-roam-config.el:42= — the "d" dailies head is ="#+FILETAGS: Journal #+TITLE: %<%Y-%m-%d>"= with no newline, so every C-c n d daily is malformed: no parsed #+TITLE, FILETAGS value "Journal #+TITLE: ...". The journal-copy template (lines 213-216) has it right. Add the newline; consider a sweep of existing dailies for the malformed first line. From the 2026-06 config audit.
+
+** TODO [#B] agenda sources: roam Projects missing, no existence filtering :bug:solo:
+From the 2026-06 config audit, =modules/org-agenda-config.el=:
+- =:182-191= — commentary and docstrings promise org-roam nodes tagged "Project" as agenda sources, but =cj/--org-agenda-scan-files= never scans them, and files added by the roam finalize-hook are wiped on the next =cj/build-org-agenda-list= cache rebuild (≤1h). Add a roam Project pass (mirror =org-refile-config.el:101-109=) or correct the docs.
+- =:186,456= — agenda file list built unconditionally (inbox/calendars may not exist on a fresh machine) and =org-agenda-skip-unavailable-files= is unset — the exact interactive-prompt class that once hung the chime daemon. Filter with =file-exists-p= + set the var as backstop.
+
+** TODO [#B] org-roam :config triggers the 15-20s refile scan synchronously at first idle :bug:solo:
+=modules/org-roam-config.el:78-79= — org-roam is =:defer 1=, so its :config calls =cj/build-org-refile-targets= at 1s idle, BEFORE the 5s background timer (=org-refile-config.el:144-151=); on a cold cache the 30k-file scan runs inline and freezes Emacs at first idle. Drop the call — org-roam is loaded long before the 5s timer fires. Likely a player in the filed org-capture 15-20s perf task (=[#B] Optimize org-capture target building performance=) — check both together. From the 2026-06 config audit.
+
+** TODO [#B] heavy-box comment inserts non-comment lines :bug:solo:
+=modules/custom-comments.el:427= — =cj/--comment-heavy-box= interior/empty lines carry no comment prefix, so in line-comment languages (elisp, Python) C-; C h injects syntax-breaking bare =*...= lines. The existing test characterizes the broken output (asserts =^\*.*\*$=). Prefix interiors like =cj/--comment-box= does; add the missing min-length validation (negative width hits make-string with a raw error); fix the test to assert corrected output. From the 2026-06 config audit.
+
+** TODO [#C] latexmk workflow never activates (two breaks) :bug:solo:
+=modules/latex-config.el:66= — =:hook (TeX-mode-hook . ...)= gets use-package's =-hook= suffix appended (unbound symbol not ending in =-mode=), registering on nonexistent =TeX-mode-hook-hook=, so =TeX-command-default "latexmk"= is never set. Independently =:80= auctex-latexmk is =:defer t= with no trigger, so =auctex-latexmk-setup= never runs and "latexmk" isn't in TeX-command-list. Fix hook name to =TeX-mode=; change auctex-latexmk to =:after tex=. From the 2026-06 config audit.
+
+** TODO [#A] mu4e: cmail can't trash, no account can refile :bug:
+=modules/mail-config.el:217-220= — the cmail context (primary account) sets only drafts/sent, so D falls back to default "/trash" which doesn't exist under ~/.mail (=/cmail/Trash= does); and NO context sets =mu4e-refile-folder=, so r targets nonexistent "/archive" everywhere. Accepting mu4e's offer to create the maildir strands mail in a directory mbsync never syncs — messages silently vanish from the server's view. Add =mu4e-trash-folder= to cmail + per-context =mu4e-refile-folder=. From the 2026-06 config audit.
+
+** TODO [#A] calendar-sync drops final occurrences and resurrects cancelled meetings :bug:solo:
+RFC 5545 conformance holes in =modules/calendar-sync.el=, all agenda-visible (from the 2026-06 config audit):
+- =:973,1015,1024= — UNTIL treated as exclusive (strict =calendar-sync--before-date-p=); RFC and Google make it inclusive, so the LAST instance of every UNTIL-bounded series vanishes. Tests assert loose count ranges, so it's unpinned. Allow equality.
+- =:578= — comma-separated EXDATE lists (Google emits them) never parse; the exclusion drops silently and cancelled occurrences reappear on the agenda. Split on "," before parsing; no comma-case test exists.
+- =:902= — timed events without DTEND render as all-day (time lost); multi-day all-day spans collapse to one day (end date unused, exclusive-DTEND unhandled). Emit start-time-only stamps and org date ranges.
+
+** TODO [#B] calendar-sync robustness: atomic writes, curl --fail, zero-event false errors :bug:solo:
+From the 2026-06 config audit, =modules/calendar-sync.el=:
+- =:1309= — agenda file written via =with-temp-file= directly on the target (truncate-in-place); org-agenda/chime reading mid-write sees a partial calendar, hourly. Write temp + =rename-file= (atomic same-fs). Same for =--save-state= :258.
+- =:1284= — curl runs without =--fail=: an HTTP 404/500 error page exits 0 and the HTML proceeds into conversion.
+- =:1229-1233= — =--parse-ics= returns nil for both garbage and a valid calendar with zero in-window events, so healthy near-empty calendars report "parse failed" in =calendar-sync-status=. Distinguish the cases.
+
+** TODO [#B] drill-refile clobbers global org-refile-targets with an invalid spec :bug:quick:solo:
+=modules/org-drill-config.el:95-98= — =setq org-refile-targets= replaces the session-wide value, so after one drill refile every org-refile everywhere offers only drill targets until restart; and the =(drill-dir :maxlevel . 1)= spec names a directory-path variable where org expects files, so the drill side yields nothing usable. Let-bind around the call with =((directory-files drill-dir t "\\.org$") :maxlevel . 1)=. From the 2026-06 config audit.
+
+** TODO [#B] ERC: double mention notifications + tautological server list :bug:quick:solo:
+From the 2026-06 config audit, =modules/erc-config.el=:
+- =:281= — =erc-modules= includes the built-in =notifications= module AND :config adds =cj/erc-notify-on-mention= to the same hook — every mention fires two desktop notifications. Pick one path (keep the custom one, slated for messenger unification).
+- =:100= — =cj/erc-connected-servers=: inside =with-current-buffer=, the free =erc-server-process= is the buffer's own local value, so the eq test is tautologically true — returns ALL ERC buffers (channels, dead connections). Use =erc-server-buffer-p= + =erc-server-process-alive=.
+- =:238= — =user-whole-name= read at load but =user-constants= only required at compile time (same trap as auth-config/keyboard-macros).
+
+** TODO [#B] slack-config lifecycle gaps :bug:quick:solo:
+From the 2026-06 config audit, =modules/slack-config.el=:
+- =:265= — w / @ / # bound to commands neither autoloaded nor in :commands — void-function before slack loads. Add to :commands.
+- =:246= — =cj/slack-close-all-buffers= reads =slack-current-buffer= (declared but unbound) without the boundp guard its sibling has — void-variable on C-; S Q before slack loads.
+- =:259= — raw =global-set-key= for C-; S bypasses =cj/register-prefix-map= (signal/erc use it); invisible to the keybindings registry and the planned unification enumeration.
+
+** TODO [#B] erc-yank silently publishes >5-line pastes as public gists :bug:
+=modules/erc-config.el:345= — C-y in any ERC buffer auto-creates a public gist for anything over 5 lines: clipboard content goes to a public URL with no confirmation, and no executable-find guard for =gist= (errors mid-send if absent). Privacy trap. Add a =yes-or-no-p= gate or drop the package for plain C-y. From the 2026-06 config audit.
+
+** TODO [#B] F7 diff-aware coverage classifies every changed file "not tracked" :bug:solo:
+=modules/coverage-core.el:252= — =cj/--coverage-intersect= joins covered×changed by exact string key, but simplecov.json keys are ABSOLUTE paths while the git-diff parser returns repo-RELATIVE ones — zero matches ever, so working-tree/staged/branch scopes report ":tracked nil" for everything and F7's main feature is inert (whole-project scope works, same-source keys). Unit tests hand-build matching keys so they pass; add one integration test feeding a real undercover report + real diff. Normalize both sides to repo-relative. From the 2026-06 config audit.
+
+** TODO [#B] eshell: visual-commands nested-list + xterm-color dead hook :bug:quick:solo:
+=modules/eshell-config.el:104= — =add-to-list= pushes one LIST into the flat string list =eshell-visual-commands=, so lf/ranger/htop/top never get a visual terminal (and the r→ranger alias garbles). dolist the strings. =:166= — =:hook (eshell-before-prompt-hook . ...)= gets "-hook" appended → registers on nonexistent =eshell-before-prompt-hook-hook=; and =xterm-color-filter= is never added to =eshell-preoutput-filter-functions= anyway while TERM advertises xterm-256color. Wire xterm-color fully per its README or drop it + the TERM override. From the 2026-06 config audit.
+
+** TODO [#B] dirvish M (mark all files) marks every other file :bug:quick:solo:
+=modules/dirvish-config.el:218= — =dired-mark= advances point to the next line itself; the loop's extra =forward-line 1= then skips it, so consecutive files are marked alternately. Live mis-marking on a key that feeds batch operations (delete/copy on marked files) — data-loss adjacent. Drop the manual forward-line when a mark was made (or =dired-unmark-all-marks= + mark dirs + =dired-toggle-marks=). The trivial line-predicate helper is tested; the loop isn't — add the marked-count test. From the 2026-06 config audit.
+
+** TODO [#B] dwim-shell: zip overwrites its own name, backup timestamp never expands, dired menu key dead :bug:quick:solo:
+From the 2026-06 config audit, =modules/dwim-shell-config.el=:
+- =:338= — single-file zip is =zip -r '<<fne>>.<<e>>' '<<f>>'= — reconstructs the input filename as the archive ("Zip file structure invalid"; directories produce =foo.=). Should be ='<<fne>>.zip'= like the tar-gzip sibling.
+- =:549= — backup destination single-quotes =$(date ...)= so the substitution is literal: =foo.txt.$(date +%Y%m%d_%H%M%S).bak=. Move it outside the quotes or format-time-string in Elisp.
+- =:932= — dired-mode binding "M-S-d" is unreachable (Meta+Shift+d generates M-D); the dirvish binding two lines down is correctly "M-D". Fix + the stale commentary at dirvish-config.el:30.
+
+** TODO [#B] Go: format key void-functions, go-mode :config never runs :bug:quick:solo:
+=modules/prog-go.el:99,113-118= — .go maps to go-ts-mode so the go-mode package never loads, and =gofmt= isn't autoloaded in go-mode 1.6.0 — C-; f signals void-function, and the :config (exec-path += ~/go/bin, =gofmt-command "goimports"=) never executes. Wrapper that requires go-mode first (or autoload gofmt), move the setup to top level. From the 2026-06 config audit.
+
+** TODO [#B] prog hooks mutate global state per buffer :bug:quick:solo:
+From the 2026-06 config audit: =prog-go.el:64=, =prog-c.el:73=, =prog-shell.el:77= call global =(electric-pair-mode t)= from buffer setup hooks — one Go/C/shell buffer turns on pairing in org/text everywhere (python/webdev correctly use =electric-pair-local-mode=). =prog-general.el:79-80= — =display-line-numbers-type 'relative= setq/setq-default run from the hook AFTER the mode is enabled, so the first prog buffer of a session gets absolute numbers. Local-mode for the three; move the line-number setqs to top level.
+
+** TODO [#B] M-S- launcher keys dead: eww, elfeed, calibredb unreachable :bug:quick:solo:
+=eww-config.el:70= (M-S-e), =elfeed-config.el:36= (M-S-r), =calibredb-epub-config.el:115= (M-S-b) — Meta+Shift+letter generates the uppercase event (M-E/M-R/M-B), which never matches an explicit S- spec on a lowercase letter; verified dead in the live daemon (chord falls through to M-r move-to-window-line etc.). Same class as the text-config M-S-i finding. Write them as "M-E"/"M-R"/"M-B". Weather's M-S-w works only via the keyboard-compat translation layer — audit that layer's coverage while here. From the 2026-06 config audit.
+
+** TODO [#B] ai-rewrite: chosen directive never reaches the request :bug:solo:
+=modules/ai-rewrite.el:64= — the directive is let-bound around =(call-interactively #'gptel-rewrite)=, but gptel-rewrite is a transient prefix that returns when the menu shows; the send resolves the directive AFTER the binding unwound (verified against ~/code/gptel/gptel-rewrite.el:780-799). The picker's choice is silently dropped — the module's core feature is inert. Set =gptel--rewrite-directive= buffer-locally (restore via =gptel-post-rewrite-functions=) or use a self-removing global hook entry. From the 2026-06 config audit.
+
+** TODO [#B] ai-conversations: dead-buffer load, role flattening, non-atomic writes :bug:solo:
+From the 2026-06 config audit, =modules/ai-conversations.el=:
+- =:324= — load in a fresh session does =get-buffer-create "*AI-Assistant*"= (plain fundamental-mode buffer); =--ensure-ai-buffer= then sees it exists and never calls =(gptel)=. Sending doesn't work, autosave self-cancels (requires gptel-mode). Use =get-buffer= for the check; let ensure create. The browser RET/l path inherits this.
+- =:240= — persistence drops gptel's =response= text properties, so a reloaded history replays to the model as ONE user message (model re-reads its own answers as Craig's words). Adopt gptel's native bounds persistence or re-mark on load from the "* Backend:" headings.
+- =:248= — =write-region= straight at the target; crash mid-write truncates the only copy of the history (autosave hits this constantly). Temp + rename.
+- =:140= — three overlapping autosave mechanisms (after-send advice that fires before the response exists, post-response hook, 60s timer). Keep the hook; drop the advice (and likely the timer).
+
+** TODO [#B] cj/gptel-switch-backend reintroduces the string-model crash :bug:quick:solo:
+=modules/ai-config.el:272= — =(setq gptel-model model)= with the raw completing-read STRING — the documented wrong-type-argument-symbolp modeline hang (CLAUDE.md gotcha), reachable from C-; a B today. =cj/gptel-change-model= (C-; a m) already does backend+model switching and interns correctly. Intern here, or delete switch-backend and keep one command. From the 2026-06 config audit.
+
+** TODO [#B] transcription: stderr never reaches the log, video transcripts stranded in /tmp :bug:solo:
+From the 2026-06 config audit, =modules/transcription-config.el=:
+- =:210= — =make-process :stderr= with a file PATH creates a BUFFER named like the path (verified by probe); the "Errored. Logs in <file>" notification points at a log without the error text, and the hidden stderr buffer leaks per transcription. Route stderr into the process buffer or write it out in the sentinel.
+- =:370-374= — video path derives txt/log from the temp mp3's /tmp path; the transcript lands in /tmp and dies on reboot, contradicting the "alongside the source" docstring. Pass the video's path as the output base.
+
+** TODO [#B] ledger-config is orphaned — ledger-mode never configured :bug:quick:
+Nothing requires =modules/ledger-config.el= (verified by grep), so .dat/.ledger/.journal open without ledger-mode, reports, or flycheck-ledger. The module looks finished, not staged (unlike duet-config, which documents its pre-alpha orphaning). Decide: wire into init.el (+ =cj/executable-find-or-warn= for the ledger binary) or delete. From the 2026-06 config audit.
+
+** TODO [#B] eww quick-add bookmarks split the store and break the default file :bug:quick:solo:
+=modules/eww-config.el:116-126= — quick-add let-binds =eww-bookmarks-directory= to ~/.emacs.d/eww-bookmarks/ (creating a DIRECTORY at the path where the daemon's default store expects a FILE ~/.emacs.d/eww-bookmarks). After one quick-add, B reads an unreadable path and quick-added bookmarks are invisible post-restart. Drop the let-binding or setq the directory once in :config so both commands share one store. From the 2026-06 config audit.
+
+** TODO [#B] help-config: three defects in one small file :bug:quick:solo:
+From the 2026-06 config audit, =modules/help-config.el=:
+- =:67= — =cl-return-from= inside a plain =defun= (no cl-block): declining the save prompt signals "No catch for tag" instead of canceling. =cl-defun= or restructure.
+- =:108= — =:hook (info-mode . info-persist-history-mode)= is dead twice: Info's hook is =Info-mode-hook= (capital I), and =info-persist-history-mode= doesn't exist anywhere. Implement the intent or delete.
+- =:111= — auto-mode-alist maps .info to an interactive command that KILLS the buffer mid find-file — programmatic =find-file-noselect= of any .info destroys buffers and pops Info windows. Drop the entry; keep the explicit command. Zero test coverage on this module (the two broken paths are exactly the untested ones).
+
+** TODO [#A] Native compilation disabled config-wide; GC at stock 800KB :bug:
+From the 2026-06 config audit (verified against the live daemon). =early-init.el:69= =(setq native-comp-deferred-compilation nil)= — the obsolete alias of =native-comp-jit-compilation= — turns JIT native compilation OFF entirely, not "synchronous" as the comment claims: 19 .eln files exist for 184 packages, ~100 of 121 modules run interpreted for the daemon's lifetime, and system-defaults.el:42-44's speed-3/8-jobs/always-compile settings are dead. Plus =early-init.el:113-116= restores =gc-cons-threshold= to the captured STOCK default (800000, verified) post-startup — frequent small GC pauses forever. Together these plausibly feed the filed org-capture 15-20s task more than anything in the capture path itself. Actions: retest the old "Selecting deleted buffer" race on 30.2 and re-enable JIT (or AOT sweep); set a deliberate 16-64MB threshold (or gcmh). Check both before burning time on the capture-perf debug task.
+
+** TODO [#B] modeline runs synchronous git on the redisplay path, unguarded :bug:solo:
+=modules/modeline-config.el:173,154,145= — the mode-line :eval calls vc-backend/vc-state/vc-working-revision (synchronous git) on TTL expiry; a slow or unmounted filesystem stalls ALL redisplay. The cache key computes =file-truename= on every render (the "one stat per refresh" comment is wrong), and nothing is condition-case-wrapped, so a signal lands inside the mode-line eval. Defer the truename behind the TTL check; wrap the fetch in condition-case caching nil. From the 2026-06 config audit.
+
+** TODO [#A] Global yes-or-no-p fset defeats every strong confirmation :bug:quick:
+=modules/system-defaults.el:203= =(fset 'yes-or-no-p 'y-or-n-p)= — verified live. Several modules deliberately chose yes-or-no-p as the strong tier for irreversible actions: shutdown/reboot (=system-commands.el:74=, whose comment explicitly says "so a stray RET/space can't trigger them"), "permanently destroy files" (=dwim-shell-config.el:804=), file overwrites (=custom-buffer-file.el:159,199=, =music-config.el:374=). The fset makes all of them single-keystroke — the two-tier design is dead. Drop the fset, or provide a real =cj/confirm-strong= (typed "yes") for the irreversible set. From the 2026-06 config audit.
+
+** TODO [#B] Stale elpa gptel shadows the local fork — likely the gptel-magit root :bug:quick:solo:
+=elpa/gptel-0.9.8.5= is still installed alongside the =~/code/gptel= fork (=ai-config.el:383=); package activation puts the elpa dir + autoloads on load-path, so which copy wins depends on ordering, and a mixed load (fork .el + elpa .elc) produces "impossible" bugs. =gptel-magit= (elpa) declares gptel as a dependency, so IT may be pulling the stale copy — check this first when working the open "[#B] Investigate gptel-magit not working properly" task. Fix: =package-delete= the elpa gptel + remove from .localrepo so the fork is the only copy on disk. From the 2026-06 config audit.
+
+** TODO [#B] vertico-prescient clobbers orderless filtering :bug:quick:solo:
+=modules/selection-framework.el:250= — =vertico-prescient-mode= defaults =vertico-prescient-enable-filtering t=, overriding =completion-styles= to prescient inside vertico sessions; the orderless config at :151 is dead exactly where it matters. Set =vertico-prescient-enable-filtering nil= — orderless matches, prescient sorts (and this resolves the dead =vertico-sort-function= finding in the buffer/window-libs child the other way around). From the 2026-06 config audit.
+
+** TODO [#B] 2026-06 full config audit — findings backlog :refactor:
+Module-by-module review of all 121 modules + init/early-init, holistic passes (startup/perf, stability, UX consistency, package strategy), and spin-offs into pearl, chime, emacs-wttrin. Method: parallel read-only review agents per module group; key claims spot-verified (incl. against the live daemon) before filing. Run 2026-06-11/12, COMPLETE. Tally: ~165 module findings + ~40 holistic + 30 spin-off ≈ 235 total; 40 high-impact bugs filed as standalone tasks above this parent; the rest live in the group children below. Spin-off findings delivered as inbox handoffs to pearl, chime, and emacs-wttrin (2026-06-12-0057). Start with the synthesis child below for the recommended attack order.
+
+*** Synthesis: the overall picture and attack order
+Six cross-cutting themes, then the order I'd work them.
+
+Themes:
+1. Performance has one systemic lever, not many small ones: native-comp is accidentally OFF config-wide and GC sits at the stock 800KB ([#A] task). Daemon init itself is healthy (1.11s measured). Fix the lever before any micro-deferral work, and before burning time on the org-capture-perf debug.
+2. A "dangerous defaults" safety cluster: yes-or-no-p fset (single-keystroke shutdown/file-destruction), the silently-failing Wayland lock screen, erc-yank's public gists, mu4e's broken trash/refile on the primary account. All four are [#A]/[#B] standalones; do these first — they're where the config can actually hurt you.
+3. Calendar/agenda data correctness: calendar-sync's RFC trio (vanishing final occurrences, resurrected cancelled meetings, collapsed multi-day events) + agenda sources missing roam Projects. Meetings are missed over this.
+4. Recurring mechanical defect classes worth sweeping as one commit each, config-wide: use-package :hook "-hook" suffix trap (org-babel, eshell, latex); eval-when-compile-only requires read at runtime (auth-config, keyboard-macros, erc-config); M-S-<letter> bindings vs uppercase events (4 dead keys + 1 asymmetry); raw C-; entries bypassing cj/register-prefix-map (8 modules); unreachable modules (prog-lsp, ledger-config, show-kill-ring, mu4e-org-contacts-setup); config for package versions long gone (mu4e 1.7 block, dashboard override, org timeline, checkdoc-arguments).
+5. The test suite has a blind-spot class: characterization tests asserting BROKEN output (reverse-lines, heavy-box, undo-kill's explicit 0), unit tests hand-building data that hides integration mismatches (F7 coverage paths), and an integration gate that prints green over "Ran 0 tests" (chime). When fixing any standalone bug above, fix its test to assert correct behavior — and consider extending the architecture smoke test to mechanically pin the class-4 sweeps (hooks must be bound after load, no raw C-; binds, no M-S-<letter> specs, no eval-when-compile requires of runtime vars).
+6. Consistency wants conventions, not patches: one notification facade (cj/notify — messenger spec addendum already covers the messenger half), one confirmation tier (the fset fix), one prefix-registration mechanism with labels, one buffer-naming shape. The messenger-unification registry mindset generalizes.
+
+Attack order: (a) the three [#A]s + gptel-shadow (it's blocking the filed gptel-magit investigation); (b) the daily-data pair — mail trash/refile + calendar RFC trio; (c) the :quick:solo: standalone sweep — roughly 20 one-to-five-line fixes, a satisfying solo batch; (d) the class-4 mechanical sweeps, one commit per class, each with its smoke-test guard; (e) the consistency conventions, opportunistically as those modules get touched.
+
+*** TODO Findings: foundation/system group
+From agents 2026-06-11; spot-verified sample. Remaining findings beyond the standalone bug tasks:
+- [BUG] =keyboard-compat.el:121= — terminal arrow-key fix runs once on emacs-startup-hook; =input-decode-map= is terminal-local, so =emacsclient -t= frames under the daemon never get it. Register on =tty-setup-hook= (GUI half already uses =server-after-make-frame-hook=).
+- [BUG] =config-utilities.el:142= — =cj/recompile-emacs-home=: =(boundp 'native-compile-async)= is always nil (it's a function — needs =fboundp=), so native compilation is never selected; and the helper deletes =<dir>/eln= when the real cache is =eln-cache/= (derive from =native-comp-eln-load-path=). Extend the existing test.
+- [BUG] =system-utils.el:94= — success message args swapped: prints "Running notes.txt on mpv...". Trivial; wired into dirvish (O) and calibredb so it shows regularly.
+- [REMOVE] =local-repository.el:51= — =localrepo-initialize=, its three defcustoms, and unprefixed =car-member= are dead; early-init owns archive setup with its own divergent path constant. Shrink to =cj/update-localrepo-repository= pointed at early-init's =localrepo-location=.
+- [REMOVE] =keybindings.el:146-147= — C-x C-f unset/reset is a no-op (already find-file); comment wrong. Delete or retarget.
+- [COVERAGE] =local-repository.el= — only module in the group with no test file.
+
+*** TODO Findings: UI core group
+From agents 2026-06-11; spot-verified sample. Remaining findings beyond the standalone bug tasks:
+- [BUG] =font-config.el:262= — emojify =:defer 1= means :config runs before any daemon GUI frame exists; =env-gui-p= picks ='unicode= permanently, GUI frames never get image emojis. Compute per-frame (=server-after-make-frame-hook=) or test =(daemonp)=.
+- [BUG] =font-config.el:283= — =cj/display-available-fonts= errors on second invocation: first call's =special-mode= sets read-only; next call's erase/insert signals. Wrap in =inhibit-read-only=. (Also [COVERAGE]: untested — a call-twice test catches it.)
+- [UX] =undead-buffers.el:82= — =cj/kill-other-window= in a single-window frame kills the buffer you're looking at (other-window no-ops; only delete-window is guarded). Add the sibling's =(user-error "No other window")= guard.
+- [UX] =undead-buffers.el:48= — C-u C-x k silently marks a buffer undead (then it refuses to die with no explanation later). Undocumented mode-switch inside a core-command remap; document or split into its own command.
+- [ENHANCE] =ui-theme.el:87= — theme persistence silently fails on a fresh machine until =persist/= exists; =make-directory= before the writability check.
+- [REMOVE] =dashboard-config.el:32-58= — =dashboard-insert-bookmarks= override is dead code: the :demand t require lets upstream dashboard-widgets.el redefine it; behavior survives only because upstream natively honors the settings now. Delete.
+- [REMOVE] =font-config.el:199-220= — all-the-icons stack (2 =:demand t= packages + unprompted network font install on fresh machines) likely redundant with nerd-icons everywhere; verify keyboard-compat's reference then drop.
+- [REMOVE] =ui-config.el:185= — duplicate =(use-package nerd-icons :defer t)= stanza; nerd-icons-config owns it. Delete stanza + stale Commentary bullet.
+
+*** TODO Findings: buffer/window libs group
+From agents 2026-06-11; spot-verified sample. Remaining findings beyond the standalone bug tasks:
+- [REMOVE] =show-kill-ring.el= — loaded by nothing (init require deliberately removed in b785a19d), so its M-S-k binding is dead; =keyboard-compat.el:177= still installs the M-K → M-S-k translation whose only purpose was this module. Re-add or delete module + stale translation/comment (consult-yank-pop largely supersedes it).
+- [UX] =selection-framework.el:38= — =vertico-sort-function= custom is dead config: =vertico-prescient-mode= (line 250) replaces sorting when it activates. Pick one policy (drop the custom, or =vertico-prescient-enable-sorting nil=).
+- [BUG] =custom-buffer-file.el:486= — =cj/view-email-in-buffer= leaks MIME handles when no displayable part: =user-error= fires before =mm-destroy-parts=. unwind-protect.
+- [ENHANCE] =custom-buffer-file.el:49= — eager =(require 'mm-decode)= at startup only for macro expansion; runtime require already exists at line 481. Make it =eval-when-compile=.
+- [UX] =custom-buffer-file.el:221= — =cj/copy-link-to-buffer-file= is a silent no-op in non-file buffers while siblings signal =user-error=. Match them.
+
+*** TODO Findings: editing helpers group
+From agents 2026-06-11; spot-verified sample (jump-paren, sortable-time confirmed). Beyond the standalone heavy-box task:
+- [BUG] =custom-misc.el:48= — jump-to-matching-paren with point ON a closer lands at the last inner sexp, not the opener (batch-verified). =(forward-char)= before =(backward-sexp)= in the char-after-closer case; the test only covers the after-closer position.
+- [BUG] =custom-datetime.el:71= — "sortable" time format is 12-hour ="%I:%M:%S %p %Z"= — "01:00:00 PM" sorts before "09:00:00 AM". Should be ="%H:%M:%S"=.
+- [BUG] =custom-comments.el:82= — =cj/comment-reformat= prints "No region was selected" even on success (message outside the if-else), and the fill-column shrink/restore isn't unwind-protected — an error leaves fill-column permanently -3. Use let-binding + =user-error=; also =mark-active= vs the config's usual =use-region-p=.
+- [BUG] =custom-line-paragraph.el:52= — join-line-or-region without region inserts a spurious blank line mid-buffer (verified); only insert the newline at eobp.
+- [BUG] =custom-line-paragraph.el:77= — duplicate-line-or-region splits a mid-line-ending region via open-line and duplicates an extra empty line when the region ends at bol. Normalize bounds to whole lines.
+- [BUG] =custom-ordering.el:158= — reverse-lines and number-lines mishandle the trailing newline ("a\nb\n" → "\nb\na"); the trailing-newline test asserts the broken output. =cj/--arrayify= (line 43) has the correct pattern — apply it; fix the characterization test.
+- [BUG] =custom-comments.el:152= — inline-border lines come out 2 chars short for even-length or empty text (parity computed from text length instead of remaining width); stacked dividers misalign.
+- [UX] =custom-text-enclose.el:216= — indent-lines =(interactive "p\nP")= couples COUNT and USE-TABS to one prefix arg — multi-column space indent is impossible interactively; docstrings claim "default 4" but "p" defaults to 1 (same in dedent :256).
+- [REMOVE] =custom-ordering.el:90= — =cj/arrayify-python= is byte-identical to =cj/arrayify-json= (two bindings, same output). Delete one or differentiate (single quotes for Python).
+- [UX] =custom-case.el:66= — title-case contradicts its docstring: "is" is in word-skip despite "linking verbs are major words"; no sentence-restart capitalization after periods; no capitalize-last-word rule. Align list + docstring.
+
+*** TODO Findings: text/prose tools group
+From agents 2026-06-11. Beyond the standalone markdown/latex tasks:
+- [BUG] =text-config.el:72= — "M-S-i" for edit-indirect-region is unreachable: Meta+Shift+i generates the event M-I, not M-S-i, so the keypress falls back to M-i tab-to-tab-stop. Rebind as "M-I" (the "was M-I" comment thought the rename was a no-op; it wasn't).
+- [BUG] =keyboard-macros.el:46= — user-constants required only =eval-when-compile= but =macros-file= is read at runtime; works only because init.el loads user-constants first. Plain require (same trap as auth-config).
+- [BUG] =keyboard-macros.el:137= — kill-emacs-hook fires =y-or-n-p= + an interactive name prompt whenever any last-kbd-macro exists — hazardous for daemon/systemd shutdown (no one to answer) and noisy for throwaway macros. Guard =(and last-kbd-macro (not noninteractive))= minimum; consider dropping the prompt (M-F3 already persists named macros).
+- [BUG] =lorem-optimum.el:221= — empty Markov chain (missing assets/liber-primus.txt) makes =cj/lipsum-insert= do =(insert nil)= — cryptic wrong-type error far from cause. Signal =user-error= naming the fix; also Commentary advertises "M-x cj/lipsum" but it has no interactive spec.
+- [UX] =flyspell-and-abbrev.el:230= — every C-' press re-runs =flyspell-buffer= over the whole buffer while flyspell-mode is off (the documented word-by-word workflow = O(buffer) per keypress in large files). Call =cj/flyspell-on-for-buffer-type= so the mode sticks and the scan runs once.
+- [ENHANCE] =text-config.el:121= — accent is wired to the company backend (=accent-company=); the filed Company→Corfu migration task doesn't list it, so C-` breaks silently post-migration. Add to the migration scope or switch to =accent-menu= now.
+
+*** TODO Findings: org core group
+From agents 2026-06-11; spot-verified sample (dailies head, babel hook, void bindings confirmed). Beyond the standalone tasks:
+- [BUG] =org-babel-config.el:27= — =:hook (org-babel-after-execute-hook . org-redisplay-inline-images)= gets a second "-hook" appended (symbol unbound at expansion, doesn't end in -mode) → registers on nonexistent =org-babel-after-execute-hook-hook=; inline dot-graph images never refresh after C-c C-c. Write =(org-babel-after-execute . ...)= or add-hook in :config.
+- [BUG] =org-roam-config.el:67,71= — C-c n p / C-c n w bound (and which-key-labeled) to =cj/org-roam-find-node-project= / =-webclip=, defined nowhere — keypress errors "autoloading failed to define function". Define via =cj/org-roam-find-node= (a project template exists) or drop bindings + labels.
+- [BUG] =org-export-config.el:74-81= — ox-texinfo block can never run (=:defer t=, no trigger, excluded from line-47 dolist and =org-export-backends=); commentary still advertises Texinfo. Add to the dolist or delete; also commentary says "subtree default scope" vs actual ='buffer= (line 61).
+- [UX] =org-roam-config.el:50-63= — two parallel template dirs drift: :custom templates read =~/.emacs.d/org-roam-templates/= while find-node-topic/recipe read =roam-dir/templates/= — overlapping recipe/topic/v2mom files, edits don't propagate. Pick one canonical dir.
+- [REMOVE] =org-agenda-config.el:84= — dead =timeline= entry in org-agenda-prefix-format (removed in org 9.1). Also =org-config.el:47-48= — the TASK note claiming =org-indent-indentation-per-level= "doesn't exist" is wrong (real org-indent defcustom); restore the setq or fix the comment.
+- [REMOVE] =org-babel-config.el:161= — =org-html-footnote-separator= is an ox-html setting parked in the babel module with a wrong comment; =org-roam-config.el:76= similarly hides =org-agenda-timegrid-use-ampm= in roam's :config (only takes effect after roam loads). Move both to their owning modules.
+- [REMOVE] =org-roam-config.el:363-390= — 28-line commented consult-org-roam block on a TASK comment; its proposed C-c n l / C-c n r now collide with live bindings, so it can't ship as written. Decide + delete (git keeps the draft).
+- [COVERAGE] =org-agenda-config.el:423= cj/add-timestamp-to-org-entry (defvar-inside-defun smell), =org-roam-config.el:115,185= node-insert-immediate + finalize-hook — untested.
+
+*** TODO Findings: org apps + calendar-sync group
+From agents 2026-06-11/12; spot-verified sample (UNTIL comparisons, EXDATE regex, drill setq confirmed). Beyond the standalone tasks:
+- [BUG] =org-reveal-config.el:241= — seven raw =global-set-key= "C-; p ..." calls carry a hidden load-order dependency on keybindings.el (signals "non-prefix key" otherwise); every sibling uses =defvar-keymap= + =cj/register-prefix-map=. Convert.
+- [BUG] =org-drill-config.el:131= — =:load-path "~/code/org-drill"= dev checkout breaks drill on machines without it (velox already diverges per the gptel-magit task). Guard with =file-directory-p= fallback to :vc.
+- [UX] =org-contacts-config.el:146= — =cj/org-contacts-find= visits the file BEFORE prompting (C-g strands you at point-min) and plain =search-forward= can match body text in another entry. Collect heading positions in org-map-entries, goto after prompt.
+- [REMOVE] =calendar-sync.el:1240= — =calendar-sync--fetch-ics= (buffer-string variant) is dead; the sync path uses the temp-file variant exclusively. 30 lines of duplicate curl/sentinel logic that will drift.
+- [REMOVE] =org-webclipper.el:216-241= dead commented keymap blocks; =org-contacts-config.el:118-124= commented duplicate capture template flagged "TASK: duplicate?!?". Delete both (git keeps drafts).
+- [COVERAGE] =calendar-sync.el:1274= — fetch sentinel branches (curl failure, temp-file cleanup, signal exit) untested; dispatch tests stub above this layer.
+
+*** TODO Findings: mail group
+From agents 2026-06-12; spot-verified sample (cmail trash gap, no refile folders, gmail-first contexts confirmed). Beyond the standalone [#A] task:
+- [BUG] =mail-config.el:392-407= — C-; e account nav lambdas call =mu4e-search=, not autoloaded — void-function before first mu4e launch. Add to :commands or require first.
+- [BUG] =mail-config.el:481-484= — unconditional =org-msg-edit-mode= :after advice on replies defeats the =(reply-to-text . (text))= alternative at :459 and re-runs a major mode org-msg already set up. Gate or remove.
+- [BUG] =mu4e-attachments.el:222= — the *mu4e attachments* selection buffer saves through stale MIME handles if the view changed before s — errors or saves the wrong message's parts. Check =buffer-live-p= per handle at save.
+- [BUG] =mail-config.el:329= — "save attachment" in =mu4e-headers-actions= can't work from headers (MIME vars are view-buffer-local, nil in headers-mode). Drop it there.
+- [BUG] =mail-config.el:282-305= — HTML view block sets variables obsolete since mu4e 1.7 (installed 1.14.1): =mu4e-view-prefer-html=, =mu4e-html2text-command= (also set twice: 186, 285), =mu4e-view-show-images=, =mu4e-view-image-max-width=. The pandoc/w3m selection never runs; shr renders regardless. Delete the dead block (image/privacy reconciliation already filed separately).
+- [BUG] =mail-config.el:45-49,80-89= — top-level =(defvar message-send-mail-function nil)= pre-empts message.el's defcustom default; with msmtp absent the fallback leaves it nil → "invalid function: nil" on first send. Explicit =smtpmail-send-it= fallback or descriptive user-error.
+- [UX] =mail-config.el:171,196-199= — =pick-first= + gmail listed first makes gmail the startup context though cmail reads as primary everywhere else — quiet wrong-account hazard for the first compose. Reorder contexts.
+- [REMOVE] =mu4e-org-contacts-setup.el= — unreachable (nothing requires it; mail-config calls activation directly) and its featurep gate would be nil at init anyway. Delete or fold its two setqs into mail-config.
+- [REMOVE] =mail-config.el:208,232= — =mu4e-starred-folder= isn't a mu4e variable (invented, no effect); =:174= =mu4e-maildir= is the obsolete alias of root-maildir set on the previous line. Drop all three.
+- [REMOVE] =mu4e-org-contacts-integration.el:158,171-172= — hook surgery on =mu4e--compose-setup-completion= is a no-op on mu4e 1.14 (called directly, not via hook; already gated by the var activation sets). Delete both hook calls.
+- [COVERAGE] =mu4e-attachments.el:101-105= — mid-batch save-failure path and stale-handle scenario untested.
+
+*** TODO Findings: messengers group
+From agents 2026-06-12. Beyond the standalone tasks; several feed the messenger-unification spec:
+- [BUG] =signal-config.el:201= — contact cache docstring claims "cleared on signel-stop/restart"; nothing clears it (grep: fork never references it). Stale list after relink/reconnect. Advise =signel-stop= or clear on start.
+- [BUG] =signal-config.el:298= — fetched-and-empty contact list is indistinguishable from cold cache (nil), so a zero-contact account re-runs the blocking fetch (up to fetch-timeout) on every C-; M m. Cache a sentinel.
+- [UX] =slack-config.el:208= — =cj/slack-notify= lacks signel's hardening: no truncation (giant toasts), no sound gating, no notifications-notify fallback when the script is absent. Unification-relevant: extract a shared =cj/messenger-notify= (title prefix, truncation, sound flag, script-with-fallback) — noted in the unification spec.
+- [ENHANCE] =telega-config.el:52= — telega has NO notification path (=telega-notifications-mode= not enabled); incoming Telegram messages invisible unless the buffer is on screen. Enable, or route through the shared notifier. Unification-relevant.
+- [COVERAGE] — =cj/erc-join-channel-with-completion= (erc:148, four-way reconnect branching), =cj/erc-connected-servers= (would have caught the tautology), =cj/slack-notify= predicates, =cj/signel--ensure-started= branches — all untested.
+
+*** TODO Findings: programming group
+From agents 2026-06-12; spot-verified sample (prog-lsp unreachable confirmed by grep). Beyond the standalone tasks:
+- [BUG→FOLD] =prog-lsp.el= — the module is UNREACHABLE: nothing requires it, so its entire LSP policy (TRAMP guard, file-watch ignores, read-process-output-max, idle-delay 0.5) is dead while prog-general.el:388-416's older conflicting block wins (idle 0.1, lsp-ui-doc on). Fold this fact into the filed "Make prog-lsp.el the single owner of generic LSP policy" task — it doesn't currently record that prog-lsp never loads.
+- [BUG] =flycheck-config.el:68-70= — =checkdoc-arguments= isn't a real variable (invented name + invented format); the intended checkdoc suppression has never worked. Use =flycheck-emacs-lisp-checkdoc-variables= or drop.
+- [BUG] =prog-json.el:87-90= — C-c C-q → jq-interactively binding defers to eval-after-load of jq-mode, which nothing loads — dead key. Bind in =cj/json-setup= via local-set-key (jq-interactively IS autoloaded).
+- [BUG] =prog-python.el:129-132= — lsp-pyright's :hook lambda calls =lsp-deferred= unguarded on the same hook as the guarded =cj/python-setup= — pyright-absent machines still get the LSP attach prompt the guard exists to prevent. Move the require into the guarded branch; delete the hook.
+- [BUG] =prog-lisp.el:122-125= — =:after (flycheck package-lint)= waits for a manual M-x to load package-lint, so =flycheck-package-setup= effectively never runs. Hook on flycheck load + require inside.
+- [UX] =prog-python.el:111-115=, =prog-go.el:111-114=, =prog-webdev.el:128-147= — setup hooks attach to ts-modes only (C/shell hook both variants); grammar-unavailable fallback to classic modes silently loses indent/keys/formatter/LSP. Add classic-mode hooks.
+- [UX] =prog-webdev.el:165-173= — web-mode gets the format key but none of the promised setup (no company/flyspell/LSP in HTML buffers). Add to the setup hook or fix the Commentary.
+- [ENHANCE] gopls, clangd, bash-language-server, shfmt, shellcheck lack the =cj/executable-find-or-warn= load-time warnings pyright/prettier have; prog-shell's =:if (executable-find ...)= evaluates once at startup and silently disables shfmt/flycheck setup forever.
+- [REMOVE] =prog-training.el:36-37= — =(url-debug t)= turns on GLOBAL url.el debug logging once leetcode loads. Debugging leftover; delete.
+- [REMOVE] =prog-webdev.el:85=, =prog-json.el:44=, =prog-yaml.el:39= — three byte-identical format-region helpers. Extract one shared tested helper (system-lib).
+
+*** TODO Findings: dev tooling group
+From agents 2026-06-12; spot-verified sample. Beyond the standalone F7 task:
+- [BUG] =vc-config.el:138-144= — =cj/goto-git-gutter-diff-hunks= (C-; v d) never did what it claims: consult-line over "^[+\\-]" matches source text, not gutter hunks. Build candidates from =git-gutter:diffinfos= or drop the binding (C-; v n/p covers it).
+- [BUG] =dev-fkeys.el:116-122= — F4 compile+run one-shot hook installs on GLOBAL =compilation-finish-functions= before the prompt; C-g leaves it armed and the next unrelated compile triggers projectile-run-project. Use the buffer-local pattern the module already uses for cache-revert (same in =--f4-clean-rebuild-impl=:143).
+- [BUG] =test-runner.el:84,222= — documented ~/.emacs.d/tests fallback doesn't exist (=cj/test-global-directory= defvar'd nil, never set); outside a project =(file-directory-p nil)= crashes in three commands. Initialize the defvar or guard with user-error. (Adds specifics to the open "Fix up test runner" task — fold.)
+- [BUG] =test-runner.el:288= — focus-add prefix check lacks the trailing slash so =tests-scratch/= passes the "inside tests/" check; the correct helper =cj/test--file-in-directory-p= exists at :168 — use it.
+- [BUG] =vc-config.el:217-219= — difftastic blame map binds D and S to the same command (show); D should be diff per the transient four lines down.
+- [UX] =diff-config.el:37= — =ediff-diff-options "-w"= ignores ALL whitespace in every ediff session — indentation-only Python changes compare as identical. Drop the default; toggle per-session.
+- [UX] =restclient-config.el:64-65= — raw global-set-key "C-; R n" hides a load-order dependency (header claims "Runtime requires: none"); use defvar-keymap + =cj/register-prefix-map= like siblings (same class as org-reveal, slack).
+- [UX] =vc-config.el:196= — clipboard clone via synchronous =call-process= freezes every emacsclient frame for the whole clone. make-process + sentinel.
+- [REMOVE] =vc-config.el:80-82= — phantom autoload =git-timemachine-show-selected-revision= (no such function in the package) appears in M-x and errors. Drop from :commands.
+- [REMOVE] =httpd-config.el:19-30= — pointless =:defer 1= (impatient-mode loads simple-httpd on demand) + unprefixed eager globals =wwwdir=/=check-or-create-wwwdir= creating www/ on every startup. =:defer t=, prefix, or fold into markdown-config.
+- [COVERAGE] — intersect/parse unit tests hand-build matching keys (the F7 bug's escape route); =--coverage-elisp-run='s compilation-finish wiring, goto-git-gutter-diff-hunks, timemachine candidate round-trip untested. F-key sweep clean: no collisions; F5 free for the debug-backend task.
+
+*** TODO Findings: shell/term/files group
+From agents 2026-06-12; spot-verified sample (eshell nested list confirmed). Beyond the standalone tasks:
+- [BUG] =dirvish-config.el:37= — =cj/xdg-open= attributed to system-utils in the require-comment but defined in external-open.el; neither dirvish-config nor dwim-shell-config (caller at :876) requires it — "Direct test load: yes" headers are false. Require external-open (or move the fn into external-open-lib) + fix comment.
+- [UX] =tramp-config.el:73= — =revert-without-query '(".*")= kills revert confirmation for EVERY file in Emacs, buried in the TRAMP module. Scope to =tramp-file-name-regexp= or move deliberately to an editing module.
+- [UX] =dirvish-config.el:403= — quick-access entries lx (~/archive/lectures), phl (~/projects/homelab), pn (~/projects/nextjob) point at directories that don't exist on this machine. Prune or create.
+- [REMOVE] =dwim-shell-config.el:474,507= — open-externally (raw xdg-open) and open-file-manager (thunar/nautilus probe chain) duplicate cj/xdg-open (dirvish o) and cj/dirvish-open-file-manager-here (f); ascii-art references jp2a, the module's only absent binary. Delete the two duplicates; install jp2a or drop ascii-art.
+- [REMOVE] =tramp-config.el:115= — custom =sshfast= method referenced nowhere (everything uses sshx); =tramp-own-remote-path= added twice (:39,:128); =dirtrack-list= and =magit-git-executable "/usr/bin/git"= are unrelated globals hiding here. Prune/relocate.
+- [COVERAGE] — eshell visual-commands/xterm-color wiring and the dirvish mark-all loop had no load-and-assert tests (both standalone bugs above); TRAMP perf settings look sound for the DUET latency concern (attr caching, no remote VC, direct-async + controlmaster).
+
+*** TODO Findings: AI group
+From agents 2026-06-12; spot-verified sample (string-model setq confirmed). Beyond the standalone tasks:
+- [BUG] =ai-term.el:875= — close derives the tmux session name from =default-directory=, which ghostel retargets via OSC 7; after a cd the kill-session misses (orphaned agent session) or name-collides with a different aiv- session. Derive from the buffer name's immutable basename.
+- [UX] =ai-term.el:827= — multi-window F9 toggle-off unconditionally delete-windows, never restoring the displaced edge-window buffer the Commentary (:24) and reuse-edge docstring (:521) promise. Restore when quit-restore still matches, or fix the docs to describe delete-window reality.
+- [UX] =ai-conversations-browser.el:191= — browser load stubs =y-or-n-p= to nil, silently discarding an unsaved in-progress conversation (the direct C-; a l path offers to save). Give ai-conversations a file-arg internal instead of puppeting the interactive command via cl-letf; also the =(caar cands)= fallback loads the newest conversation on a filename mismatch — fail loudly.
+- [ENHANCE] =ai-quick-ask.el:103= — dismiss mid-stream kills the buffer without =gptel-abort= — request keeps streaming to a dead buffer (wasted tokens).
+- [NOTE] =ai-mcp.el= — unreachable from init, consistent with the paused Phase 1.5; add a one-line Commentary note ("not wired until Phase 2") so future audits don't re-flag, and revisit =cj/mcp-enabled-servers= defaulting to all nine servers before wiring.
+- [COVERAGE] — load/autosave lifecycle untested (fresh-session load, timer self-cancel, close-buffer session-name derivation).
+
+*** TODO Findings: media/reading group
+From agents 2026-06-12; spot-verified sample (M-S- bindings, eww store split confirmed). Beyond the standalone tasks:
+- [BUG] =music-config.el:585= — =cj/music-add-dired-selection= gates =dired-get-marked-files= on =(use-region-p)= — but dired marks aren't a region; marked files are ignored, + adds only file-at-point. Drop the conditional (the function already falls back correctly). Note for the EMMS-free rewrite: dirvish + shadows =dired-create-directory= — deliberate decision needed before carrying it over.
+- [UX] =media-utils.el:195-204= — =cj/yt-dl-it= watches tsp (which enqueues and exits), so "Finished downloading" fires immediately while yt-dlp may fail later, silently; also affects elfeed d. Message "queued" honestly or watch the real job (tsp -f).
+- [UX] =browser-config.el:34-47,171= — first-run fallback picks EWW (first, "always available") over installed real browsers; fresh machines get org links in a text browser until cj/choose-browser runs. Prefer the first external match.
+- [REMOVE] =video-audio-recording.el:442-488= — =cj/recording-group-devices-by-hardware= is dead code (nothing calls it) carrying a hardcoded "Jabra SPEAK 510 USB" branch. Delete + its test file.
+- [REMOVE] =calibredb-epub-config.el:198-212= — =set-auto-mode= :around advice for .epub is redundant with nov's :mode registration (auto-mode-alist wins before magic-fallback); overhead + failure surface on every file visit. Remove and verify.
+- [COVERAGE] — eww interactive commands (switch-search-engine, bookmark-quick-add, copy-url) and =cj/nov-center-images= untested.
+
+*** TODO Findings: apps/misc group
+From agents 2026-06-12. Beyond the standalone tasks:
+- [BUG] =hugo-config.el:49= — =cj/hugo-new-post= void-functions on =org-hugo-slug= in a fresh session (ox-hugo is :after ox, which loads on first export); =cj/hugo-export-post= already requires ox-hugo — do the same here.
+- [BUG] =help-utils.el:73= — arch-wiki search signals raw file-missing when the docs dir is absent; the friendly install hint at :81 is unreachable. Guard with =file-directory-p= + user-error up front.
+- [UX] =hugo-config.el:244= — eight raw global-set-key C-; h calls + hand-rolled which-key mutate cj/custom-keymap directly, against keybindings.el's own instruction. Convert to defvar-keymap + =cj/register-prefix-map= (same class as org-reveal, restclient, slack).
+- [ENHANCE] =games-config.el:25= — =:defer 1= pulls malyon + 2048 into every session for nothing; use =:commands=. Also :config references =org-dir= without requiring user-constants (free-variable warning at byte-compile).
+- [REMOVE] =wrap-up.el:29= — =elisp-compile-mode= doesn't exist (real mode emacs-lisp-compilation-mode derives from compilation-mode, already covered at :27); dead line. (The prior unguarded-timer fix is intact.)
+- [REMOVE] =help-config.el:99-106= — stray empty :preface + dead commented Info-directory-list block. Delete.
+- [NOTE] =duet-config.el= — orphaned BY DESIGN (Commentary documents pre-alpha staging; Stage 1 is the wire-in trigger). Audit record only.
+- [COVERAGE] — help-config and help-utils have zero test files; the two broken paths above are exactly the untested branches.
+
+*** TODO Findings: holistic — startup & performance
+From the 2026-06-12 holistic pass; daemon init measured at 1.11s (healthy). Beyond the standalone [#A] native-comp/GC task:
+- [BUG→FOLD] the eager-org chain: =org-config.el:352= org-appear has no defer trigger (only :custom) → requires all of org at init; org-agenda (=:after org :demand t=) cascades; chime's =:demand t= pulls it anyway. org-config is the most expensive require (0.229s of 1.11s). Decide fully-eager vs fully-deferred — and =init.el:146='s "calendar-sync must come after org-agenda" contract exists only as a comment (three uncoordinated writers of =org-agenda-files=). Both facts belong in the filed defer-modules task before that refactor starts.
+- [PERF] =dirvish-config.el:385-387= — =:defer 0.5= defeated by :init calling autoloaded =dirvish-override-dired-mode= → dirvish fully loads at init (0.072s, third most expensive; trace-confirmed). Own the eager load or defer the override to a dired-mode-hook shim.
+- [PERF] timed =:defer N= loads unused packages into every start: simple-httpd (:1s + startup mkdir despite the defer), malyon, 2048-game, emojify (may hit network), ligature. Convert to :commands/mode hooks.
+- [UX] =early-init.el:235-256= — synchronous =package-refresh-contents= on the startup path when any archive cache is >7 days old (MELPA ~6MB) — multi-second network-bound start, fires in batch too. Make async post-startup or push into the localrepo update script (distinct from the filed bootstrap-relocation task).
+- [PERF] =early-init.el:228= — no =package-quickstart= with 184 packages; activation walks every package dir each start (~0.3s of early-init). Free win; regenerate after package ops.
+- [PERF] =prog-general.el:298= — =yas-reload-all= immediately before =yas-global-mode= scans snippet dirs twice per start (doubled "[yas] Prepared..." message). Delete the line.
+- [REMOVE] cross-ref: the all-the-icons stack (already in UI core findings) is 2 of the :demand t packages plus a per-frame install-check hook.
+
+*** TODO Findings: holistic — daemon stability
+From the 2026-06-12 holistic pass. Architecture-level verdict good (timers cancelled/guarded, calendar-sync async well-contained, advice mostly named + guarded). Residual:
+- [STABILITY] =transcription-config.el:293= — sentinel chain has no unwind-protect; =--append-to-log='s =insert-file-contents= signals if the log is missing → process buffer leaks, entry stuck 'running in the modeline forever, no notification. Extends the filed transcription standalone — fix together.
+- [STABILITY] =calendar-sync.el:1646= — hourly timer body: fetch/parse guarded but the timezone check and =--require-calendars= run bare — any signal repeats hourly forever (the exact class fixed in four modules once). Condition-case the body; demote the hourly echo-area message to the silent log.
+- [STABILITY] =music-config.el:865= — four anonymous-lambda advice in :config stack per live reload (verified: lambdas don't dedupe) and can't be advice-removed. Name the function.
+- [STABILITY] =system-defaults.el:69= — =display-warning= advice appends to comp-warnings-log with no condition-case (unwritable path → every async comp warning signals from inside display-warning) and the log grows unbounded. Guard + cap.
+- [STABILITY] =media-utils.el:164= — playback sentinel assumes the process buffer is alive (user killed *player:...* → sentinel error, diagnostics lost); sibling yt-dl sentinel shares the kill-buffer gap. buffer-live-p guards.
+- [ENHANCE] =system-commands.el:86= — =#'ignore= sentinel + output to /dev/null makes failing lock/suspend indistinguishable from success — the user walks away from an unlocked machine. Message on nonzero exit. (Compounds the [#A] slock task: the broken lock currently fails through exactly this silent path.)
+- [ENHANCE] =ui-config.el:153= — post-command cursor hook unguarded: any future signal self-removes it silently (cursor stops signaling modified/read-only until restart); frame-hook lambda also accumulates per reload. with-demoted-errors + name it.
+- (kill-emacs-hook y-or-n-p prompt independently re-found here — already filed in the text/prose child; convergence noted.)
+
+*** TODO Findings: holistic — UX consistency
+From the 2026-06-12 holistic pass. Verdict: more coherent than most 120-module configs (~85% prefix-helper adoption, M-S translation fully covers its 18 bindings, F-keys collision-free, DEF-arg prompts dominate). Beyond the standalone [#A] fset task:
+- [BUG] notification env gate: =transcription-config.el:169-171= gates desktop notifications on =(getenv "DISPLAY")= — an X11 predicate that works only because XWayland exports it. Use =env-gui-p= (host-environment.el provides it).
+- [UX] four notification stacks beyond the messenger split (notify script ± fallback, alert.el, raw notifications-notify, echo-only for calendar-sync/recording completions). Proposed: one cj/notify facade (transcription's =cj/--notify= is the right shape) — config-wide companion to the messenger-notify addendum in the unification spec.
+- [UX] five more C-; entries bypass the register helpers or lack labels: =browser-config.el:182= (C-; B, no label), =org-babel-config.el:51= (C-; k, no label), =flycheck-config.el:62-64= (:bind into cj/custom-keymap), =pearl-config.el:43= (:bind-keymap C-; L, no label), =dev-fkeys.el:533= (helper but no label). Sweep onto cj/register-prefix-map with labels.
+- [UX] user-error vs message inconsistent for "nothing to act on" config-wide (examples: =custom-whitespace.el:190=, =jumper.el:202=, =chrono-tools.el:99= message; =mu4e-attachments.el:112=, =ai-rewrite.el:79= user-error; =test-runner.el:392/394= mixes both 2 lines apart). Convention: user-error when the command can't proceed; message when it ran and found nothing.
+- [ENHANCE] M-S translation layer: complete for GUI (18/18) but installs only on env-gui-p paths — terminal frames have no M-uppercase route; and =dwim-shell-config.el:932/934= binds M-S-d (dired) vs raw M-D (dirvish) asymmetrically. Feeds the filed M-S review task with the concrete map.
+- [ENHANCE] which-key labels: register-helper's LABEL arg used by exactly 1 of 23 registrants (rest use separate with-eval-after-load blocks); label style drifts ("X menu" vs bare nouns). Adopt LABEL arg + one style.
+- [ENHANCE] "?" curated-menu candidates (for the filed convention task): elfeed search/show, dirvish, signel chat/dashboard, music playlist, ai-conversations-browser, mu4e-attachments, transcription status, pearl. calibredb remains the model.
+- [UX] ="(Cancel)"= pseudo-candidate in =music-config.el:253-256= vs C-g everywhere else (90+ prompts). Drop it.
+- [UX] buffer-naming drifts across three conventions (*AI-Assistant* / *Kill Ring* / *dashboard*); pick Title Case + "*Name: param*", lowercase for process logs.
+- [ENHANCE] C-; f formatter shadowing implemented 3 ways (:bind :map vs local-set-key in hooks); unify on :bind. Also =keybindings.el:21= commentary still says "C-c j" for the jump prefix the code binds at C-; j.
+- [ENHANCE] initial-input anti-pattern at =dwim-shell-config.el:661,680= and =erc-config.el:176-177= against the config's DEF-arg norm.
+
+*** TODO Findings: holistic — package strategy
+From the 2026-06-12 holistic pass (184 elpa dirs). Core stack modern (vertico/consult/embark/orderless, treesit-auto, built-in which-key, current magit/forge/telega/slack). Beyond the standalone gptel/prescient tasks:
+- [REMOVE] true orphans, nothing references them: js2-mode, tide, json-mode (pre-treesit JS stack). package-delete + drop from .localrepo.
+- [REMOVE] emojify: 2021 snapshot, dormant upstream, crashes in lui (slack disabled it), Emacs 30 renders emoji natively. Drop the use-package + hooks (=font-config.el:253=, =erc-config.el:211=); it stays on disk only as slack's declared dep.
+- [BUG] legacy-mode hooks miss the ts modes: =prog-general.el:91-92= hooks =yaml-mode-hook=/=toml-mode-hook= but the config runs yaml-ts/toml-ts — general prog settings silently don't apply in YAML/TOML buffers. Rehook; delete toml-mode + eldoc-toml + yaml-mode packages (superseded by treesit).
+- [RISK→FOLD] localrepo priority 200 is absolute, so package-upgrade silently no-ops on everything mirrored — the engine that fossilized emojify@2021/toml-mode@2016/js2@2023. The filed refresh-script task at [#D] deserves [#B] + a quarterly cadence, else every orphan finding regrows.
+- [RISK] fork fleet sync-back stories: org-drill flip back to :vc when done (filed dev-checkout finding); auto-dim-other-buffers local checkout with :vc commented — decide its home; org-msg pins =:rev :newest= (unpinned moving target) — pin a known rev. signel/duet/pearl/wttrin/gloss/chime self-owned remotes are fine.
+- [UPGRADE] wiki-summary (2018, dead upstream, predates Wikipedia's REST API; sole caller help-utils) — the audit's one write-your-own: ~30-line url-retrieve against the REST summary endpoint. Delete the package, inline the helper.
+- [UPGRADE] xterm-color droppable in eshell on Emacs 30's native ansi-color (its only use; also doubly-broken per the eshell standalone task — fixing by deletion is an option).
+- [ENHANCE] Python tier: poetry.el (sluggish) + pyvenv (2021) keep only if Poetry projects are still real; blacken fine until ruff-format (reformatter.el already installed). lsp-pyright current.
+- [DECIDED] projectile, lsp-mode, dirvish: keep (wired into 10/7/many modules, maintained, migration cost > benefit). On the record so future audits don't relitigate.
+
+*** TODO Findings: spin-off repos (pearl, chime, emacs-wttrin)
+Full findings delivered as handoffs to each repo's inbox/ (2026-06-12-0057-from-.emacs.d-handoff-*.org); each repo's next session files them through its own value gate. Highlights:
+- pearl (10 findings; suite green, 66 ERT files): auth-source negative-cache trap in pearl-clear-cache (the 2026-06-01 incident class, unfixed); sync wrapper ignores pearl-request-timeout + async has no timeout; mutation errors discard Linear's GraphQL reason; no RATELIMITED handling; dead legacy API layer (~150 lines).
+- chime (10 findings; suite green; the 2026-06-11 watchdog handoff VERIFIED landed in full): lookahead vars never injected into the async child (documented feature silently capped at 8 days — one-line fix); days-until-event nil crash on mixed timed/all-day events; stale-callback race after watchdog interrupt (generation counter needed); default test run prints green integration banner over "Ran 0 tests".
+- emacs-wttrin (10 findings; ~56 ERT files, CI; the face-flood reminder VERIFIED resolved — test 8f3c770 + fix c5e5e1d, reminder cleared from notes.org): no network timeouts (wttr.in stalls hang the loading buffer); error-path response-buffer leak; non-favorite cache never expires; 17 unreleased commits incl. two features — tag v0.4.0.
+
 * Emacs Resolved
 ** DONE [#B] Fix likely =elpa-mirror-location= path bug :bug:quick:
 CLOSED: [2026-05-03 Sun]
