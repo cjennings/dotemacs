@@ -411,7 +411,7 @@ Uses feh on X11, swww on Wayland."
      ("pf" "~/projects/home/finances/"                      "project finances")
      ("pjr" "~/projects/home/jr-estate/"                    "project jr-estate")
      ("phx" "~/projects/home/health/"                       "health area")
-     ("phl" "~/projects/homelab/"                           "project homelab")
+     ("phl" "~/projects/home/"                              "project home")
      ("pk" "~/projects/home/kit/"                           "kit area")
      ("pn" "~/projects/nextjob/"                            "project nextjob")
      ("ps" ,(concat pix-dir "/screenshots/")                "pictures screenshots")
