@@ -151,7 +151,7 @@ Syncthing-synced `org-dir' — see the 2026-06-10 transport migration.")
 (defconst music-dir (expand-file-name "music/" user-home-dir)
   "The location to save your music files.")
 
-(defconst website-dir (expand-file-name "projects/website/" user-home-dir)
+(defconst website-dir (expand-file-name "code/website/" user-home-dir)
   "Root directory of the Hugo website project.")
 
 
