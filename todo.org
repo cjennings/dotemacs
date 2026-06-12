@@ -25,23 +25,26 @@ For =PROJECT= headings, use the highest priority of the meaningful child work
 inside the project. If a project only contains exploration or review, assign the
 priority by the expected decision value rather than the number of files touched.
 
-Use tags to describe the work shape:
+Use tags to describe the work shape. These six are the ONLY tags allowed on a
+task. Do not invent topic, scope, or status tags — the heading and the parent
+section already carry that context.
 - =:bug:= means the current behavior is wrong or likely broken.
 - =:feature:= means the task adds a new user-visible capability or workflow.
 - =:refactor:= means the task changes structure/ownership without primarily
   changing behavior.
+- =:test:= means the task primarily adds or fixes test coverage.
 - =:quick:= means the task appears low effort and localized. It is a planning
   hint, not a promise; remove it if the task grows during implementation.
 - =:solo:= means Claude can do the task end to end with no input from Craig:
   bounded scope, no design or preference call, and verifiable in the local
   setup (tests, byte-compile, launch). Tasks needing a policy/preference
-  decision, visual judgment, or a live remote do not get =:solo:=.
+  decision or a live remote do not get =:solo:=.
 
 Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#A] Calibre Open Work :calibre:
+** TODO [#A] Calibre Open Work
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-06
 :END:
@@ -64,7 +67,7 @@ Existing bookmarks: the 3 nov bookmarks in =~/sync/org/emacs_bookmarks= were ren
 
 Awaiting Craig's manual confirm: make a NEW bookmark (open an EPUB, hit m) and check the default name is "Author, Title" from the filename.
 
-*** DOING [#A] Reconsider Calibre keybindings :feature:ux:
+*** DOING [#A] Reconsider Calibre keybindings :feature:
 Relocated from the global capture inbox 2026-06-06. Want a discoverable set of keybindings (visible in which-key) for the most frequent calibredb workflows:
 - Switch to a library (e.g. Literature), sort by last name, scroll the list.
 - Scope/filter the list in place, keeping the current library scope:
@@ -80,13 +83,13 @@ Implemented 2026-06-06 in =modules/calibredb-epub-config.el=:
 - Bottom-30% description dock: =calibredb-show-entry-switch= -> =pop-to-buffer= + a =display-buffer-alist= rule for =*calibredb-entry*= (display-buffer-at-bottom, height 0.3); =cj/calibredb-describe-at-point= shows the entry without switching focus so q dismisses it. Same pattern as the signel chat dock.
 1 ERT test (the describe command; the transient/bindings/dock need the elpa transient + live calibredb, verified in the daemon). Author "begins-with" is covered well enough by g a's completing-read over "Last, First"; a true regex filter was not built. Awaiting Craig's manual verify (M-B -> ? menu; d/v docked description; H full menu).
 
-*** TODO Embed Calibre DB metadata into the EPUB files :data:maintenance:
+*** TODO Embed Calibre DB metadata into the EPUB files
 Surfaced 2026-06-06 while building the bookmark naming: the metadata embedded in the EPUB files' OPF is worse than Calibre's database metadata. nov reads the embedded OPF and got truncated titles ("Frege" vs the filename's "Frege: A Guide for the Perplexed"), author-sort "Last, First" forms ("Christie, Agatha"), and lost punctuation ("A.B.C." -> "A B C"). The filenames (from Calibre's curated DB) are the good copy. Fix on the Calibre side: select all (or by library), run "Edit metadata -> Embed metadata into book files" so the DB metadata is written into each EPUB's OPF. Consider auditing author vs author_sort first. After embedding, the in-file metadata matches the library and any tool reading the files (nov, other readers, re-imports) gets the good data. Not an Emacs task; Calibre-side bulk maintenance.
 
-** TODO [#A] Lock screen silently fails — slock is X11-only :bug:
+** TODO [#A] Lock screen silently fails — slock is X11-only :bug:quick:
 =modules/system-commands.el:105= binds the lockscreen command to =slock=, which can't grab a Wayland session; =cj/system-cmd= launches it detached with output silenced, so C-; ! l does nothing and the screen never locks. Security issue: Craig believes the screen locks when it doesn't. Fix: =hyprlock= (or =swaylock=), ideally resolved per session type via =env-wayland-p= so an X11 fallback survives for other machines. From the 2026-06 config audit.
 
-** TODO [#A] mu4e: cmail can't trash, no account can refile :bug:
+** TODO [#A] mu4e: cmail can't trash, no account can refile :bug:quick:solo:
 =modules/mail-config.el:217-220= — the cmail context (primary account) sets only drafts/sent, so D falls back to default "/trash" which doesn't exist under ~/.mail (=/cmail/Trash= does); and NO context sets =mu4e-refile-folder=, so r targets nonexistent "/archive" everywhere. Accepting mu4e's offer to create the maildir strands mail in a directory mbsync never syncs — messages silently vanish from the server's view. Add =mu4e-trash-folder= to cmail + per-context =mu4e-refile-folder=. From the 2026-06 config audit.
 
 ** TODO [#A] calendar-sync drops final occurrences and resurrects cancelled meetings :bug:solo:
@@ -101,7 +104,7 @@ From the 2026-06 config audit (verified against the live daemon). =early-init.el
 ** TODO [#A] Global yes-or-no-p fset defeats every strong confirmation :bug:quick:
 =modules/system-defaults.el:203= =(fset 'yes-or-no-p 'y-or-n-p)= — verified live. Several modules deliberately chose yes-or-no-p as the strong tier for irreversible actions: shutdown/reboot (=system-commands.el:74=, whose comment explicitly says "so a stray RET/space can't trigger them"), "permanently destroy files" (=dwim-shell-config.el:804=), file overwrites (=custom-buffer-file.el:159,199=, =music-config.el:374=). The fset makes all of them single-keystroke — the two-tier design is dead. Drop the fset, or provide a real =cj/confirm-strong= (typed "yes") for the irreversible set. From the 2026-06 config audit.
 
-** TODO [#B] theme-studio preview face mislinks (org, erc, flycheck) :bug:theme-studio:quick:solo:
+** TODO [#B] theme-studio preview face mislinks (org, erc, flycheck) :bug:quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-11
 :END:
@@ -113,13 +116,13 @@ Found by Craig 2026-06-11 during the manual-test walk (org case), then a full au
 
 Pin with a browser-gate assertion that these preview elements link the right faces (e.g. the org headline-todo span sits after an org-todo span; the erc my-message line uses input-face).
 
-** TODO [#B] Split window opens the dashboard in the other window :feature:ux:windows:quick:solo:
+** TODO [#B] Split window opens the dashboard in the other window :feature:quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10
 :END:
 When splitting with C-x 2 (=split-window-below=) or C-x 3 (=split-window-right=), the new/other window should default to the =*dashboard*= buffer instead of mirroring the current buffer. Advise =split-window-below= / =split-window-right= (or rebind the keys) to select the dashboard in the freshly-created window. Keep point in the original window.
 
-** TODO [#B] theme-studio palette ramps + contrast safety v1 :feature:theme-studio:
+** TODO [#B] theme-studio palette ramps + contrast safety v1 :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10
 :END:
@@ -139,7 +142,7 @@ Phase 5 (commit =843bbf08=). The OKLCH picker gets a "safe for" selector over th
 *** 2026-06-09 Tue @ 19:06:46 -0500 README + test-surface close-out landed
 Commit =23926837=. README documents the ramp controls and defaults, the worst-case floor / limiting foreground, the five covered faces, the safe-lightness guidance, and WCAG-drives-PASS-FAIL with APCA as a diagnostic; the browser-gate list is updated. =make theme-studio-test= carries all new node tests and the #ramptest/#contrasttest/#safetest gates. All acceptance criteria met.
 
-** TODO [#B] theme-studio color families :feature:theme-studio:
+** TODO [#B] theme-studio color families :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-11
 :END:
@@ -159,7 +162,7 @@ Phase 5 (commit =9daeff15=). Editing a family base recolors the whole family (sh
 *** 2026-06-10 Wed @ 01:17:45 -0500 Warnings, seeding, export, README close-out landed
 Phase 6 (commit =c175e2be=). Export stays a flat palette and import needs no reconstruction (#roundtriptest: export→import→export byte-identical). =seedPkgmap= reads the flat palette unchanged. The too-similar warning stays on the full palette — the planned ramp-step exemption was dropped after analysis: ramp steps are a stepL apart (well above the ΔE threshold) so they never warn, and exempting same-family pairs would hide genuine near-duplicates (caught by #deltatest). README documents families, the ground strip, the count control/regenerate, removed-step references, and the ramp-panel removal.
 
-** TODO [#B] Dupre diff-changed / diff-refine-changed legibility :bug:dupre:
+** TODO [#B] Dupre diff-changed / diff-refine-changed legibility :bug:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-11
 :END:
@@ -172,7 +175,7 @@ Ask:
 Reference values -- modus-vivendi: refine-changed bg #4a4a00 fg #efef80, changed bg #363300 fg #efef80. modus-operandi: refine-changed bg #fac090 fg #553d00, changed bg #ffdfa9 fg #553d00.
 
 Side-by-side legibility render: [[file:assets/2026-06-07-dupre-diff-face-legibility-compare.png][assets/2026-06-07-dupre-diff-face-legibility-compare.png]].
-** TODO [#B] dupre-theme test failures :bug:dupre:tests:quick:solo:
+** TODO [#B] dupre-theme test failures :bug:test:quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-11
 :END:
@@ -185,26 +188,26 @@ Decided 2026-06-11 (Craig): #0d0b0a is the canonical background — the three dr
 
 *** TODO org-todo color mismatch: test expects #ff2a00, theme renders #a7502d
 =dupre-theme-org-todo= (test:130) asserts the org-todo foreground is "#ff2a00" (intense-red), but the theme renders "#a7502d" (red-1). Design call: should org-todo be the bright intense-red or the muted red-1? Fix whichever side loses the decision.
-** TODO [#B] theme-studio guide-support features :feature:theme-studio:
+** TODO [#B] theme-studio guide-support features :feature:
 From the color-assignment guide work (2026-06-08): make the tool support the guide without mandating it — everything a seed, an advisory, or a view, never a gate. Two specs to write, both deriving from the rewritten guide and its seed table ([[file:scripts/theme-studio/theme-coloring-guide.org][theme-coloring-guide.org]]).
 *** 2026-06-08 Mon @ 19:08:00 -0500 Seeding-engine spec written and Ready
 [[file:docs/design/theme-studio-seeding-engine-spec.org][theme-studio-seeding-engine-spec.org]] — role table + face→role maps for syntax/UI/org, OKLCH shade generation, reseed dupre-revised to the compact mapping. Codex-reviewed, Ready. Implementation tracked under the seeding-engine parent below.
-*** TODO Guide-support views and advisories spec :solo:
+*** TODO Guide-support views and advisories spec
 Five optional surfaces, all dismissible and non-blocking, in one collapsible panel where they advise: (1) CVD-simulation toggle on previews (deuteranopia/protanopia/tritanopia); (2) squint/blur preview toggle; (3) lightness-ramp view + palette advisories (accent count over 6-8, roles separated only by red/green) — depends on the OKLCH/ΔE core; (4) definition-vs-call / weight advisories; (5) state-over-syntax preview (region/search/diff tint over real syntax-colored text). Sequence: rewritten guide reviewed → seeding-engine spec → this. Advisories (3, 4) layer on the perceptual-metrics feature.
-** TODO [#B] theme-studio seeding engine :feature:theme:theme-studio:
+** TODO [#B] theme-studio seeding engine :feature:
 Spec (Ready): [[file:docs/design/theme-studio-seeding-engine-spec.org][spec]]. Role table → guide-correct defaults for syntax/UI/org; reseed dupre-revised.json to the compact mapping; opens seeded with an all-tier reseed button. Depends on the perceptual-metrics colormath.js core for OKLCH shade generation, so it runs after that feature's Phase 1.
 *** TODO Seed model + seed() + #seedtest :solo:
 Phase 1. Palette anchors + OKLCH shade generation (reusing colormath.js), the ROLES table, and the three face→role maps as data; pure seed(). Gate: #seedtest asserts representative syntax/UI/org faces resolve correctly (bi→blue-grey, fnd→gold+bold, region bg-only, link underlined, org-level-1 strongest, org-code literal lane) and a non-org bespoke package (magit) keeps its curated seed.
 *** TODO Open-seeded + reseed + dupre-revised regen :solo:
 Phase 2. Initial state from seed() plus seedPkgmap for the non-org packages; all-tier reseed button with a scope-named overwrite warning, resetting non-org to their APPS defaults; regenerate dupre-revised.json. Gate: #selftest PASS; default-on-open equals seed(); artifact round-trip (regenerated dupre-revised.json imports back to the same seeded state); Chrome eyeball.
-*** TODO Seeding-engine test surface :solo:tests:
+*** TODO Seeding-engine test surface :solo:test:
 Keep #seedtest, #selftest, the default-on-open check, the dupre-revised round-trip, node --check, and Chrome validation green.
-** TODO [#B] Dashboard keybinding changes :quick:
+** TODO [#B] Dashboard keybinding changes :quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-06
 :END:
 pressing g has should refresh. find another binding for Telegram.
-** TODO [#B] TTY-accessible personal C-; keymap :feature:ux:solo:quick:
+** TODO [#B] TTY-accessible personal C-; keymap :feature:solo:quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-05
 :END:
@@ -232,19 +235,19 @@ Two smaller cleanups also fall out: the header comment claims TS/JS is "punted f
 
 Open: helper home — keep =cj/--tests-in-buffer= in =dev-fkeys.el= (per L546 spec) or push it into =test-runner.el= (per the parallel "Fix up test runner" thread). Elisp "Run a test..." — drill into individual =ert-deftest= names, or keep the current regex-aggregate (=make test-name TEST=^test-<stem>-=).
 
-*** TODO [#B] Per-language test discovery helper :feature:tests:
+*** TODO [#B] Per-language test discovery helper :feature:test:
 Build =cj/--tests-in-buffer= returning a list of test names; tree-sitter capture-then-filter for python/go/ts/js per the bug #79687 workaround in =dev-fkeys.el= L35–46; sexp scan for elisp =ert-deftest= forms.
 
-*** TODO [#B] F6 Run-a-test menu entry :feature:tests:
+*** TODO [#B] F6 Run-a-test menu entry :feature:test:
 Add "Run a test..." to =cj/f6-test-runner= candidates; pre-select =cj/--last-test-run=; signal =user-error= "No tests found for <buffer>" when discovery returns nil.
 
-*** TODO [#B] M-F6 fast path :feature:tests:
+*** TODO [#B] M-F6 fast path :feature:test:
 Bind =M-<f6>= to a thin wrapper that calls the same "Run a test..." path directly; release the reservation comment at =dev-fkeys.el:541=.
 
-*** TODO [#B] Buffer-local cj/--last-test-run :feature:tests:
+*** TODO [#B] Buffer-local cj/--last-test-run :feature:test:
 Add the buffer-local var, set it on each "Run a test..." selection, use it as the completing-read default so a bare RET re-runs the last test.
 
-*** TODO [#B] TS/JS coverage status sync :docs:cleanup:
+*** TODO [#B] TS/JS coverage status sync
 Update the =dev-fkeys.el= header comment (L33) — TS/JS is no longer punted; the cmd-builder at L384 emits vitest/jest. Document the prefer-vitest fallback.
 
 ** TODO [#B] Fix up test runner :bug:
@@ -751,11 +754,11 @@ Tie this into the existing coverage work:
 - Tests cover adapter detection, command building, scope resolution, result
   storage, and key interactive paths.
 
-** TODO [#B] Add Signal to the dashboard :quick:
+** TODO [#B] Add Signal to the dashboard :quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-01
 :END:
-** TODO [#B] Messenger window/key unification :feature:ux:
+** TODO [#B] Messenger window/key unification :feature:
 Spec: [[file:docs/design/messenger-unification-spec.org][messenger-unification-spec.org]] (Draft, 2026-06-11). One library (=cj-messenger-lib.el=) gives every messenger the same shape: chat windows rise from the bottom (the signel rule, generalized), C-c C-c confirms, C-c C-k cancels, C-c C-a attaches — dispatched per backend through a registry + minor mode. Signel already conforms (reference backend); telega and slack join in phases 2-3; ERC later. All eight decisions settled 2026-06-11 (cancel closes an idle window; telega's filter-cancel shadow accepted; slack rooms join the bottom rule). Spec held open — Craig has more ideas to fold in before it's marked Ready.
 
 ** TODO [#B] cj/undo-kill-buffer off-by-one on plain invocation :bug:quick:solo:
@@ -1112,56 +1115,56 @@ Full findings delivered as handoffs to each repo's inbox/ (2026-06-12-0057-from-
 - chime (10 findings; suite green; the 2026-06-11 watchdog handoff VERIFIED landed in full): lookahead vars never injected into the async child (documented feature silently capped at 8 days — one-line fix); days-until-event nil crash on mixed timed/all-day events; stale-callback race after watchdog interrupt (generation counter needed); default test run prints green integration banner over "Ran 0 tests".
 - emacs-wttrin (10 findings; ~56 ERT files, CI; the face-flood reminder VERIFIED resolved — test 8f3c770 + fix c5e5e1d, reminder cleared from notes.org): no network timeouts (wttr.in stalls hang the loading buffer); error-path response-buffer leak; non-favorite cache never expires; 17 unreleased commits incl. two features — tag v0.4.0.
 
-** PROJECT [#B] Implement ai-kb :feature:ai:kb:
+** PROJECT [#B] Implement ai-kb :feature:
 Build v1 of the AI knowledge base per [[file:docs/design/ai-kb.org][docs/design/ai-kb.org]] (Ready; six reviews incorporated, all decisions resolved 2026-05-24). Step 1 splits into 1a (the safe write path — minimum usable) and 1b (retrieval, maintenance, push), since =remember= depends on =index=+=lint= and the adapter depends on =remember=. Step 2 is the Emacs layer: a full org-roam profile on switch, the human-edit safety model (same write path as the agent), and the browsing surface. Step 3 and the LLM-Wiki layer are vNext. Children are ordered by build sequence; the server bootstrap is the prerequisite.
 
-*** TODO [#B] ai-kb bare repo on cjennings.net :ai-kb:
+*** TODO [#B] ai-kb bare repo on cjennings.net
 Prerequisite, one-time server bootstrap (not doable by the local script): =sudo git init --bare /var/git/ai-kb.git= + chown on cjennings.net. Leave the github-mirror hook OFF — this repo is private. Required before every per-machine clone.
 
-*** TODO [#B] ai-kb store + contract + seed :ai-kb:
+*** TODO [#B] ai-kb store + contract + seed
 Step 1a. Clone =git@cjennings.net:ai-kb.git= to =~/.local/share/ai-kb=. Author =AGENT_CONTRACT.org= (canonical repo-resident contract: node format, write protocol, operations, routing) and seed =index.org= + a README/index node with a generated =:ID:=. Node format per spec — a *required* one-line =:SUMMARY:= (the index/query read it straight, no inference/LLM), provenance (=:CREATED_BY:/:CONFIDENCE:/:VISIBILITY:/:SOURCE:/:STATUS:=), =:PROJECTS:= slugs, type filetags, relation labels. Define the durable external-pointer format as *ID-first*: =ai-kb: <Title> (<UUID>)=, resolved by ID with title fallback (filenames can change in curation).
 
-*** TODO [#B] ai-kb CLI 1a: index, lint, remember, doctor :ai-kb:
+*** TODO [#B] ai-kb CLI 1a: index, lint, remember, doctor
 Step 1a. Shell wrapper calling Emacs for org work — =emacsclient= when a daemon is up, =emacs --batch= fallback, lint+index in *one* invocation per =remember=. =index= regenerates =index.org= from node properties incl. =:SUMMARY:= (never hand-maintained); the index references nodes as plain =Title (UUID)= text, never =[[id:]]= links, and is excluded from the scan so it can't manufacture backlinks or hide orphans. =lint= = org-lint fatal checks + duplicate IDs + broken id-links (excl =raw/= + index) + missing required props (incl =:SUMMARY:=) + bad project slugs + stale/incomplete index + credential scan of nodes *and* =raw/= text files (binaries skipped). =remember= = the write protocol: fetch + =pull --ff-only= (abort on diverge/dirty), write, regenerate index, then run the *full =ai-kb lint=* over the change as the commit gate (not just node org-lint — this is the safety boundary), commit locally, =flock=; no push. =doctor= / =status= = health + push-state + raw-dir-size report (repo, private remote, CLI on PATH, =graphviz= if the map needs it, adapter linked, db buildable, no secrets, "ahead N"/"push failed"/"diverged"); =status= is the fast non-diagnostic mode for the dashboard/nudge.
 
-*** TODO [#B] claude-rules/ai-kb.md adapter :ai-kb:
+*** TODO [#B] claude-rules/ai-kb.md adapter
 Step 1a. Global L1 rule in rulesets pointing at the repo-resident =AGENT_CONTRACT.org=: path, routing (T1/T2/T3 tiers; per-project =MEMORY.md= shrinks to ID-first pointers into ai-kb), proactive + contradiction rules, concrete "read the index first" triggers, link-grep recipes, "use =ai-kb remember=, never bypass =ai-kb lint=", one-line nudge on unpushed commits / recorded push rejection. =make install= symlinks it into =~/.claude/rules/=.
 
-*** TODO [#B] ai-kb provisioning: setup-ai-kb.sh + make ai-kb-init :ai-kb:
+*** TODO [#B] ai-kb provisioning: setup-ai-kb.sh + make ai-kb-init
 Step 1a (core; the timer-install line is added with 1b). Idempotent =scripts/setup-ai-kb.sh=: clone (or init+add-remote on first machine), seed, install the CLI on PATH, =ai-kb index=, =ai-kb doctor=. =make ai-kb-init= wraps it. The one-time server bootstrap stays a separate documented step.
 
-*** TODO [#B] ai-kb Step-1a tests :ai-kb:tests:
+*** TODO [#B] ai-kb Step-1a tests :test:
 Write-path: a write with the remote unreachable still commits locally and does not error; =flock= serializes concurrent =remember=; each org-lint *fatal* check (malformed drawer, missing/dup =:ID:=, invalid required property, missing =#+title:=, unparseable org) rejects the commit, a style warning does not; a node missing =:SUMMARY:= fails lint; =remember= aborts the commit when the *full* lint fails (stale index, broken link, secret in a node or =raw/= text file); the credential scan skips binaries. Index: regen from a fixture produces expected entries; an out-of-band node appears only after regen; a node referenced only by =index.org= still reports as an orphan (the index is not a backlink source). Link recipes: backlink (excl =raw/= + index) + forward correct. Provisioning (bats): idempotent, valid =:ID:= + =:SUMMARY:=, =doctor= passes.
 
-*** TODO [#B] ai-kb CLI 1b: query, curate, sync :ai-kb:
+*** TODO [#B] ai-kb CLI 1b: query, curate, sync
 Step 1b. =query <context>= with a *testable contract*: plain-text default + =--json=; fields title/ID/summary/projects/status/updated/path + *match reason*; searches index rows + title/tags/properties/body; ranks by lexical score — sum of each matched field's weight, counted once per field: title 100, tag/project/status 50 each, summary 20, body 5; no term-frequency weighting in v1 — with most-recently-updated (=:UPDATED:=) only as the *tie-break* on equal scores (recency alone buries stable old preferences); default max-results; =raw/= paths only as source references; exit codes for no-match / invalid KB / lint-index failure. =show <id-or-title>= (resolve ID-first, print the node) and =backlinks <id>= (excl =raw/= + index) as the inspection primitives the Emacs commands wrap. =curate --dry-run= (four buckets; also flags orphan =raw/= captures and any =raw/= file over 256 KB; destructive ops human-only). =sync= (=org-roam-db-sync= against ai-kb) only when the db is missing/stale or forced.
 
-*** TODO [#B] ai-kb push timer + failure observability :ai-kb:
+*** TODO [#B] ai-kb push timer + failure observability
 Step 1b. =ai-kb-push.timer= + =ai-kb-push.service= =systemd --user= units: push only if ahead, ~15 min; installed + =enable --now= by the setup script (add this line to =setup-ai-kb.sh=). A failed push is logged to a state file (=$XDG_STATE_HOME/ai-kb=), never fatal; surfaced by =ai-kb doctor= and the adapter's startup nudge.
 
-*** TODO [#B] ai-kb-curate workflow in rulesets :ai-kb:
+*** TODO [#B] ai-kb-curate workflow in rulesets
 Step 1b. =~/code/rulesets/.ai/workflows/ai-kb-curate.org= — human-gated curation: the four buckets, node-count trigger (nudge at 150 nodes, re-fire every +50), =:LAST_CURATED:= rotation, pointer-integrity (merge/supersede changes the canonical ID, so grep inbound =[[id:]]= + =MEMORY.md= =ai-kb: ... (UUID)= refs and repoint before deleting). Surfaced by =ai-kb doctor= + session startup when due.
 
-*** TODO [#B] ai-kb Step-1b tests :ai-kb:tests:
+*** TODO [#B] ai-kb Step-1b tests :test:
 =query --json= returns the specified fields (incl. match reason)/exit-codes on a fixture KB and =raw/= appears only as a source ref; a title match outranks a body-only match with recency only breaking ties (an old preference is not buried under a newer body-only hit); a simulated push failure is recorded to the state file and surfaced by =ai-kb doctor= / =status=. Performance (=:perf= tag): 100- and 1,000-node fixtures keep =index=/=query=/=lint=/=remember= under a stated time budget (catches an accidental per-check Emacs startup or an O(n²) scan).
 
-*** TODO [#B] Emacs: org-roam ai-kb profile + switch :ai-kb:
+*** TODO [#B] Emacs: org-roam ai-kb profile + switch
 Step 2.
 =org-roam-config.el=: =cj/org-roam-switch-to-ai-kb= / =cj/org-roam-switch-to-personal= install a full org-roam *profile*, not a two-variable swap — dir + =org-roam-ai.db= + =org-roam-file-exclude-regexp= (=raw/= + =index*.org=), and dailies, capture templates, topic/project/recipe find wrappers, and the agenda/refile + completed-task→daily hooks all rescoped or neutralized so ai-kb nodes never leak into personal journals/agenda. Restore everything exactly on exit; re-assert personal state at startup (abnormal-exit safety). =cj/ai-kb-db-sync= syncs only when the db is missing/stale or forced, with a status indicator.
 
-*** TODO [#B] Emacs: ai-kb edit safety (same write path) :ai-kb:
+*** TODO [#B] Emacs: ai-kb edit safety (same write path)
 Step 2. An =ai-kb= minor mode whose =after-save-hook= runs the agent's post-write sequence under =flock= — =ai-kb index=, full =ai-kb lint=, commit, push-state update — so a human Emacs edit can't bypass index/lint/commit. One write path for both agent and human. Failure UX: the save always writes to disk and the buffer stays editable (never read-only/blocked); on lint failure it does *not* commit, pops findings to a =*ai-kb-lint*= buffer (no focus steal), and shows the uncommitted-failing state in the modeline + dashboard — Craig fixes and re-saves, a clean save commits. Recursion guard, two layers: the mode's activation predicate excludes =index*.org= + =raw/=, and the pipeline binds a re-entrancy flag (=cj/ai-kb--in-pipeline=) the hook early-returns on; index regen prefers =write-region= over =save-buffer=.
 
-*** TODO [#B] Emacs: ai-kb browsing surface :ai-kb:
+*** TODO [#B] Emacs: ai-kb browsing surface
 Step 2. =cj/ai-kb-dashboard= (status banner: active KB, node count, unpushed commits, push-failure state, curation due, last index/sync), =cj/ai-kb-find-node= (=org-roam-node-find= in the ai-kb profile), =cj/ai-kb-search= (=ai-kb query= or scoped =consult-ripgrep=), =cj/ai-kb-show-node= (resolve ID-first, open), =cj/ai-kb-backlinks= (excl =raw/= + index), =cj/ai-kb-map= (built-in =org-roam-graph= *first* — the profile's exclude regexp already keeps =raw/= + index out of the db, so the graph inherits the right scope; custom DOT export only if project/tag/status filtering proves necessary; =graphviz= dep). Simple wrappers over the CLI primitives where possible.
 
-*** TODO [#B] Emacs: ai-kb keybindings + which-key :ai-kb:
+*** TODO [#B] Emacs: ai-kb keybindings + which-key
 Bind the switch + sync + browsing commands under the =C-c n= roam prefix (e.g. =C-c n a= → ai-kb, =C-c n A= → personal, a small transient for the browsing commands), avoiding the dense existing set; which-key labels.
 
-*** TODO [#B] Emacs: ai-kb Step-2 ERT tests :ai-kb:tests:
+*** TODO [#B] Emacs: ai-kb Step-2 ERT tests :test:
 Profile: switch installs the ai-kb dir + db + exclude regexp and switch-back restores personal *exactly* — completed-task hook, agenda/refile finalize hook, dailies, and capture templates all untouched by ai-kb while switched; startup re-asserts personal state after a simulated abnormal exit. Edit path: a save in an ai-kb buffer runs index+lint+commit (a bad save surfaces the lint failure rather than committing). Sync runs only when stale.
 
-** PROJECT [#B] Architecture review follow-up from 2026-05-03 :refactor:nosync:
+** PROJECT [#B] Architecture review follow-up from 2026-05-03 :refactor:
 
 High-level pass over =init.el=, =early-init.el=, and all 104 files in
 =modules/=. The main theme: the config works, but load order, startup side
@@ -1178,7 +1181,7 @@ Review snapshot:
   files. Caveat: 55 module files do not appear in the report at all, so the
   real project confidence is lower than the raw percentage suggests.
 
-*** 2026-05-15 Fri Consolidate shared utility helpers :architecture:refactor:
+*** 2026-05-15 Fri Consolidate shared utility helpers :refactor:
 CLOSED: [2026-05-15 Fri]
 
 Helpers are scattered across feature modules where they were first needed.
@@ -1199,7 +1202,7 @@ Guidance:
   coverage.
 - Do not add heavy package dependencies to foundation helpers.
 
-**** DONE [#B] Write full utility consolidation design spec :architecture:refactor:
+**** DONE [#B] Write full utility consolidation design spec :refactor:
 CLOSED: [2026-05-04 Mon]
 
 Create a design document that inventories candidate helper extractions,
@@ -1292,7 +1295,7 @@ Done 2026-05-10:
   commit =0f9e3087=) with three sanitizers: =cj/org-sanitize-body-text=,
   =cj/org-sanitize-property-value=, =cj/org-sanitize-heading=.
 
-*** 2026-05-15 Fri Make coverage reporting account for untracked modules :tests:
+*** 2026-05-15 Fri Make coverage reporting account for untracked modules :test:
 CLOSED: [2026-05-15 Fri]
 
 The current coverage result is useful but easy to overread. =make coverage=
@@ -1365,7 +1368,7 @@ Done 2026-05-15:
 - Updated =tests/test-coverage-summary.el= to assert the policy and the
   displayed project-module percentage.
 
-*** 2026-05-15 Fri Add a lightweight architecture smoke test for startup contracts :tests:
+*** 2026-05-15 Fri Add a lightweight architecture smoke test for startup contracts :test:
 CLOSED: [2026-05-15 Fri]
 
 After the above refactors start, add one or two smoke tests that protect the
@@ -1391,7 +1394,7 @@ Done 2026-05-15:
 - Focused tests passed for the new architecture smoke file and the affected
   agenda/refile helpers.
 
-*** PROJECT [#A] Un tangle the eager =init.el= load graph :architecture:refactor:
+*** PROJECT [#A] Un tangle the eager =init.el= load graph :refactor:
 
 =init.el= currently functions as the dependency graph by eagerly requiring
 almost every module in a fixed order. That makes modules harder to test in
@@ -1400,7 +1403,7 @@ assumptions.
 
 Spec: [[file:docs/design/init-load-graph.org][docs/design/init-load-graph.org]]
 
-**** 2026-05-25 Mon @ 07:59:20 -0500 Wrote full design spec for the =init.el= load-graph refactor :architecture:refactor:
+**** 2026-05-25 Mon @ 07:59:20 -0500 Wrote full design spec for the =init.el= load-graph refactor :refactor:
 
 Create a design document that defines the target architecture, module
 categories, migration phases, test strategy, acceptance criteria, and risk
@@ -1454,7 +1457,7 @@ Verified behavior-preserving by dumping every C-; binding before and after: iden
 
 Related existing task: [#B] "Review and rebind M-S- keybindings".
 
-*** PROJECT [#A] Move package bootstrap out of =early-init.el= where possible :startup:refactor:
+*** PROJECT [#A] Move package bootstrap out of =early-init.el= where possible :refactor:
 
 =early-init.el= currently handles package archives, package refresh, installing
 =use-package=, and =use-package-always-ensure=. That is more than early startup
@@ -1496,13 +1499,13 @@ Expected outcome:
 :END:
 Parent task for the Emacs Signal client. Engine: signal-cli (linked secondary device). Front end: a fork of signel at =~/code/signel=, wired through =modules/signal-config.el=. Design: [[file:docs/design/signal-client.org][docs/design/signal-client.org]]. Child issues below.
 
-*** TODO [#C] signel--handle-error leaks request-buffer-map entries :bug:no-sync:
+*** TODO [#C] signel--handle-error leaks request-buffer-map entries :bug:quick:solo:
 Surfaced during the JSON-RPC dispatch refactor audit. =signel--handle-error= reads =signel--request-buffer-map= by id but never =remhash='es the entry, so every error response leaves the request-id → buffer-name mapping behind for the life of the process. Low impact (the map clears on stop/start, and id collisions are unlikely at the counter scale), but unbounded growth in a long-lived session and inconsistent with how the new request-handler-map is cleaned up on error.
 
 *** TODO [#B] Link command with QR :feature:
 =cj/signel-link= wrapping =signal-cli link -n NAME=, capturing the =sgnl://linkdevice= URI and rendering it as a scannable QR (qrencode). Convenience for re-linking; the first link was done by hand this session.
 
-*** TODO [#D] Include Signal groups in the picker :feature:no-sync:
+*** TODO [#D] Include Signal groups in the picker :feature:
 vNext after the 1:1 initiate-message flow is stable. Merge =listGroups= with =listContacts=, label groups distinctly, and preserve the current v1 behavior where the picker is contacts-only.
 
 *** DOING [#B] Notify only for the unviewed conversation :feature:
@@ -1548,7 +1551,7 @@ Verified: (1) new contract test =test-signal-config-prefix-map-registered-under-
 *** 2026-05-28 Thu @ 03:09:18 -0500 Chat buffer docks bottom 30% and C-c C-k cancels
 =display-buffer-alist= entry in =modules/signal-config.el= matches =^\*Signel: = chat buffers and routes them through =display-buffer-at-bottom= with =window-height . 0.3=, so the chat docks to the bottom 30% of the frame.  The signel fork's =signel-chat= switched from =switch-to-buffer= to =pop-to-buffer= so the rule can apply (=switch-to-buffer= ignores =display-buffer-alist=).  =C-c C-c= was already bound to =signel--send-input= in the mode; =C-c C-k= now binds =signel--cancel-input=, a new fork helper that clears the editable region between =signel--input-marker= and =point-max= and then calls =quit-window=.  Buffer stays alive so chat history above the marker survives revisits; cleared input means the next visit lands on a fresh prompt.  Five ERT tests in =tests/test-signel-cancel-input.el= (clears pending, empty-area no-op, quit-window called, buffer preserved, keymap binding) and two new tests in =tests/test-signal-config.el= (entry shape + regex match set).  Dotemacs commit 998e9c7a, fork commit df02d79.
 
-** DOING [#B] Migrate All Terminals From Vterm to Ghostel :terminal:ghostel:
+** DOING [#B] Migrate All Terminals From Vterm to Ghostel
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-04
 :END:
@@ -1556,16 +1559,13 @@ Replace vterm with ghostel (libghostty-vt) as the single terminal engine across 
 
 Decisions D1-D7 are settled in the spec's Agreed-decisions section. Build order below; each phase stays green (suite + byte-compile) at every step.
 
-*** TODO [#B] Phase 2: rename ai-vterm→ai-term on ghostel :terminal:ghostel:
-Swap the 6 vterm call sites; F9 family on global + ghostel-mode-map; drop refuse-in-terminal guard (D4); preserve the tmux-suppression invariant. Rename engine-agnostic tests after green; rework coupled tests; add D4 + F12-excludes-agent regression tests.
-
-*** TODO [#B] Follow-up: theme ghostel ANSI faces in dupre :terminal:ghostel:dupre:
+*** TODO [#B] Follow-up: theme ghostel ANSI faces in dupre
 D2 — set the 16 ghostel-color-* + ghostel-default faces in dupre-faces/palette.
 
-*** TODO [#B] Follow-up: evaluate ghostel-eshell + ghostel-compile :terminal:ghostel:eval:
+*** TODO [#B] Follow-up: evaluate ghostel-eshell + ghostel-compile
 D3 — ghostel-eshell as eshell visual backend; ghostel-compile against F4 dev-fkeys.
 
-*** TODO [#B] Investigate ghostel selection/highlight color :terminal:ghostel:
+*** TODO [#B] Investigate ghostel selection/highlight color
 Look at how selected text is highlighted in a ghostel buffer — the region face in =ghostel-copy-mode= and any live selection — surfaced during the copy-mode debugging. Check whether the highlight is legible against the dupre background and consistent with the rest of the config; if it needs theming, fold it in with D2 (theming the ghostel faces in dupre).
 
 *** 2026-06-04 Thu @ 23:57:09 -0500 Phase 0 done: characterization baseline green
@@ -1610,7 +1610,7 @@ Folded the external review via spec-response. Craig accepted D1-D5; baked them p
 *** 2026-06-04 Thu @ 23:30:18 -0500 External re-review: ready
 Re-reviewed [[file:docs/design/vterm-to-ghostel-migration-spec.org][docs/design/vterm-to-ghostel-migration-spec.org]] after incorporation. Verdict: =Ready=. No further blocking review notes; implementation can start from the phase plan and acceptance criteria in the spec.
 
-** DOING [#B] Module-by-module hardening :harden:nosync:
+** DOING [#B] Module-by-module hardening
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-05
 :END:
@@ -1668,7 +1668,7 @@ Suggested review order:
 6. Integrations and applications: mail, Slack, ERC, Elfeed, EWW, Dirvish,
    PDF, Calibre, music, recording/transcription, AI/rest tooling.
 
-*** DOING [#B] Harden foundation modules :harden:
+*** DOING [#B] Harden foundation modules
 
 Scope:
 - =system-lib.el=
@@ -1763,7 +1763,7 @@ vc-follow-symlinks test use one copy. The backups test clears
 =cj/backup-directory= first because it's a defvar that only recomputes when
 unbound.
 
-**** TODO [#B] Move package bootstrap policy out of =early-init.el= :startup:refactor:
+**** TODO [#B] Move package bootstrap policy out of =early-init.el= :refactor:
 
 =early-init.el= currently handles performance/debug setup, package archive
 construction, archive refresh policy, =use-package= installation, package
@@ -1789,7 +1789,7 @@ Pitfalls:
 - Keep local repositories higher priority than online archives.
 - Avoid prompting or refreshing archives during batch tests.
 
-**** TODO [#B] Decide and test package signature policy :security:startup:
+**** TODO [#B] Decide and test package signature policy
 
 =early-init.el= sets =package-check-signature= to =nil= after package setup, with
 an earlier commented emergency toggle for expired signatures. That may be
@@ -1873,7 +1873,7 @@ dir, empty dir, missing dir; reset path; select with prefix-arg
 boundary paths for empty dir, missing dir, cancel (empty completion).
 9 tests, all green.
 
-*** DOING [#B] Harden custom editing utility modules :harden:
+*** DOING [#B] Harden custom editing utility modules
 
 Scope:
 - =custom-buffer-file.el=
@@ -1902,7 +1902,7 @@ Completion review 2026-05-15:
   destructive buffer/file keybinding policy, and explicit cross-module
   autoload/require boundaries.
 
-**** TODO [#B] Harden external process launching in =external-open.el= and =media-utils.el= :security:refactor:
+**** TODO [#B] Harden external process launching in =external-open.el= and =media-utils.el= :refactor:
 
 =external-open.el= and =media-utils.el= use shell command strings for launching
 external applications:
@@ -1934,7 +1934,7 @@ Pitfalls:
 **** 2026-05-23 Sat @ 03:41:00 -0500 Added media-utils coverage; external-open already covered
 =external-open= already had three test files (=test-external-open-commands.el=, =test-external-open-lib-command.el=, =test-external-open-lib-launcher-p.el=). =media-utils.el= had none, so I added =test-media-utils.el= (8 cases): player availability from =cj/media-players=, the play command-builder (direct vs yt-dlp -g stream wrap), and the missing-tool error paths for the player, =yt-dlp=, and =tsp=. All process/exec boundaries mocked. Added in the test-media-utils commit.
 
-**** TODO [#B] Audit destructive buffer/file keybindings for confirmation policy :ux:
+**** TODO [#B] Audit destructive buffer/file keybindings for confirmation policy
 
 =cj/buffer-and-file-map= includes destructive operations under =C-; b=,
 including delete file, erase buffer, clear top, clear bottom, and revert. Some
@@ -2008,7 +2008,7 @@ added since the new helper uses =cl-some=.
 **** 2026-05-23 Sat @ 03:44:50 -0500 Covered flyspell-and-abbrev testable seams
 Added =test-flyspell-and-abbrev.el= (8 cases): =cj/--require-spell-checker= (PATH gate, mocked), =cj/find-previous-flyspell-overlay= against synthetic overlays (closest-previous match, non-flyspell skipped, nil when none), and =cj/flyspell-on-for-buffer-type= (prog-mode -> flyspell-prog-mode, text-mode -> flyspell-mode). Left =cj/flyspell-then-abbrev= to manual testing — pinning its flyspell-UI orchestration would mean mocking flyspell internals rather than our logic. Added in the test-flyspell-abbrev commit.
 
-*** DOING [#B] Harden UI and navigation modules :harden:
+*** 2026-06-12 Fri @ 07:14:11 -0500 Hardened UI and navigation modules
 
 Scope:
 - =ui-config.el=
@@ -2156,7 +2156,7 @@ catches the "already-loaded when this module re-evaluates" case --
 it checks =advice-member-p= so it doesn't stack the advice on every
 re-eval.
 
-*** DOING [#B] Harden Org workflow modules :harden:
+*** DOING [#B] Harden Org workflow modules
 
 Scope:
 - =org-config.el=
@@ -2205,9 +2205,9 @@ Completion review 2026-05-15:
 **** 2026-05-23 Sat @ 04:18:44 -0500 Split personal calendar config out of calendar-sync.el
 =calendar-sync.el= now defaults =calendar-sync-calendars= to nil and loads the real plists from =calendar-sync-private-config-file= (an ignored file), so the engine carries no private feed tokens in source. =calendar-sync-status= / =calendar-sync-start= report missing config without erroring, and agenda startup is unaffected (tests/test-calendar-sync-no-config-startup.el). Rotating the previously-committed feed URLs remains a manual credential action — tracked under the L2557 calendar-sync hardening finding.
 
-**** PROJECT [#B] Normalize Org agenda/refile cache lifecycle :perf:refactor:
+**** 2026-06-12 Fri @ 07:14:11 -0500 Normalized Org agenda/refile cache lifecycle
 
-Two of three children are done (shared cache helper extracted, idle timers gated). Still open: the directory-scan-failure visibility child below.
+All three children landed: shared cache helper extracted, idle timers gated, and directory-scan failures surfaced instead of hidden.
 
 ***** 2026-05-23 Sat @ 04:18:44 -0500 Extracted a shared cache helper
 =cj-cache-lib.el= now provides =cj/cache-valid-p=, =cj/cache-building-p=, and =cj/cache-value-or-rebuild=, consumed by both =org-agenda-config.el= and =org-refile-config.el=; the contract is documented in =docs/design/cache-helper-design.org=. The agenda and refile public commands are unchanged.
@@ -2223,7 +2223,7 @@ Both cache builders' =run-with-idle-timer= calls are wrapped in =(unless noninte
 
 =org-babel-config.el= set =org-confirm-babel-evaluate= to nil globally, so every source block in every Org file (cloned repos, downloaded notes, web clips) ran without confirmation. Changed the default to =t= (confirm before running). Replaced the old =babel-confirm= command (which reported, and toggled only with a prefix arg) with =cj/org-babel-toggle-confirm=, a plain toggle bound to =C-; k= for flipping confirmation off in trusted files and back on. 3 ERT tests cover the toggle both directions plus the binding.
 
-**** TODO [#B] Rebind babel-confirm toggle off =C-; k= :keybinding:solo:discuss:
+**** TODO [#B] Rebind babel-confirm toggle off =C-; k=
 
 =cj/org-babel-toggle-confirm= landed on =C-; k= as a placeholder. Pick a permanent home — likely under an Org-specific prefix rather than the global =C-;= map.
 
@@ -2296,7 +2296,7 @@ org-capture-config.el and org-drill-config.el each scanned =drill-dir= with an i
 **** 2026-05-23 Sat @ 03:48:50 -0500 Fixed java structure-template typo and pinned the aliases
 =("java" . "src javas")= expanded to a bogus =#+begin_src javas=; corrected it to =src java=. Added =test-org-babel-config-structure-templates.el=, which requires the module then org-tempo (firing the deferred :config) and asserts =bash=, =zsh=, =el=, =py=, =json=, =yaml=, =java= each map to the intended src language. Fixed in the org-babel commit.
 
-**** TODO [#B] Make org-contacts/Mu4e boundaries explicit :cleanup:refactor:
+**** TODO [#B] Make org-contacts/Mu4e boundaries explicit :refactor:
 
 =org-contacts-config.el= defines helpers that call Mu4e functions when the
 current major mode is a Mu4e mode, and the =use-package org-contacts= block is
@@ -2313,7 +2313,7 @@ Expected outcome:
 - Add a smoke test for loading =org-contacts-config.el= without Mu4e stubs if
   practical.
 
-**** TODO [#B] Add an Org workflow health check command :feature:ux:solo:discuss:
+**** TODO [#B] Add an Org workflow health check command :feature:solo:
 
 Several Org workflow modules depend on personal paths, optional external tools,
 and local package checkouts. Failures currently show up at command time in
@@ -2335,7 +2335,7 @@ Recommended improvement:
 
 New =test-org-capture-templates-integrity.el= loads the cleanly-loadable capture modules (=org-capture-config=, =quick-video-capture=, =org-contacts-config=), applies their lazy additions, and asserts no two templates share a dispatch key and that every symbol-valued file target resolves to a non-empty path string. Literal-string targets (the video template's no-save =(file "")=) and lambda targets (drill file pickers) are excluded. Webclipper templates need org-web-tools at registration time, so they stay covered by their own test rather than this batch smoke test. Mutation-checked that the uniqueness assertion flags a duplicate key. Commit =2e3905c7=.
 
-**** TODO [#B] Document Org workflow module ownership and load boundaries :docs:refactor:solo:discuss:
+**** TODO [#B] Document Org workflow module ownership and load boundaries :refactor:solo:
 
 The Org workflow is spread across many modules with overlapping responsibilities:
 capture templates, keymaps, org-protocol handlers, refile/agenda target
@@ -2400,7 +2400,7 @@ direct-insert no-op-outside-header path round it out. mail-abbrev-in-expansion-h
 the mode actions, and cj/get-all-contact-emails are stubbed, so the run is
 headless with no mu4e/org-contacts dependency.
 
-*** DOING [#B] Harden programming workflow modules :harden:
+*** DOING [#B] Harden programming workflow modules
 
 Scope:
 - =prog-c.el=
@@ -2456,7 +2456,7 @@ value. Forcing a test there would be coverage theater.
 tree-sitter, and the task itself says to wait for the LSP/tree-sitter policy
 tasks to land before fixing its assertions. Its smoke coverage rides with those.
 
-**** TODO [#B] Revisit F4 project classification vs actual project capabilities :ux:
+**** TODO [#B] Revisit F4 project classification vs actual project capabilities
 
 =dev-fkeys.el= classifies a project as =interpreted= if it has
 =pyproject.toml=, =requirements.txt=, =Pipfile=, or =package.json=, even when it
@@ -2473,7 +2473,7 @@ Expected outcome:
 - Keep the current "interpreted markers win" behavior only if that remains the
   intentional UX after trying it in mixed Python/Node projects.
 
-**** PROJECT [#B] Consolidate LSP ownership across programming modules :architecture:refactor:
+**** PROJECT [#B] Consolidate LSP ownership across programming modules :refactor:
 
 LSP setup is currently split across =prog-general.el=, =prog-lsp.el=, and each
 language module. There are multiple =use-package lsp-mode= forms and some
@@ -2500,7 +2500,7 @@ Pitfalls:
 - Do not accidentally re-enable UI/doc/sideline behavior that was explicitly
   disabled for performance.
 
-***** TODO [#B] Add a startup smoke test for LSP config resolution :solo:
+***** TODO [#B] Add a startup smoke test for LSP config resolution :quick:solo:
 
 Keep this narrow. A useful test can require the LSP-related modules with mocked
 =use-package= side effects and assert that:
@@ -2508,7 +2508,7 @@ Keep this narrow. A useful test can require the LSP-related modules with mocked
 - no duplicate hook entries are installed for the same mode,
 - =lsp-enable-remote= remains nil.
 
-**** TODO [#B] Gate tree-sitter grammar auto-install behind an explicit policy :startup:
+**** TODO [#B] Gate tree-sitter grammar auto-install behind an explicit policy
 
 =prog-general.el= sets =treesit-auto-install= to =t=. That means opening a file
 can trigger grammar download/build/install behavior. This is convenient on a
@@ -2529,7 +2529,7 @@ depends on it.
 
 =cj/git-clone-clipboard-url= shelled out via =shell-command= and derived the dir with =file-name-nondirectory=, which mishandled scp-style SSH with no slash (=git@host:repo.git= → =git@host:repo=) and silently did nothing on a failed clone. Now clones as a direct =git= process (=call-process=, no shell) with =clone -- url dir= (so a =-=-leading URL can't be read as a flag); the destination comes from =cj/--git-clone-dir-name= (last component split on =/= and =:=, handling HTTPS, scp/ssh:// SSH, local paths); validates non-empty clipboard + writable target dir + non-existing destination; surfaces a non-zero git exit as a =user-error= with the =*git-clone*= output. Tests cover the deriver across schemes + empty-clipboard + clone-failure. Commit =35e4d701=.
 
-**** TODO [#B] Decide whether auto-executable shell scripts should be opt-in :ux:
+**** TODO [#B] Decide whether auto-executable shell scripts should be opt-in
 
 =prog-shell.el= adds a global =after-save-hook= that sets executable bits on any
 saved file with a shebang. This is convenient, but it silently changes file
@@ -2642,7 +2642,7 @@ code's =bound-and-true-p= can't see; declaring both as special makes
 Full suite: =make test= exits 0; 468 lines of output with =ALL UNIT
 TESTS PASSED= banner; no regressions.
 
-*** DOING [#B] Harden integrations and application modules :harden:
+*** DOING [#B] Harden integrations and application modules
 
 Scope:
 - AI/rest: =ai-config.el=, =ai-conversations.el=, =restclient-config.el=
@@ -2688,7 +2688,7 @@ Not done: the detached restart+reconnect (=nohup sh -c '... && emacsclient -c'=)
 
 Resolved by removing the feature rather than hardening it. =cj/restclient-skyfi-buffer= opened =data/skyfi-api.rest= in a file-visiting buffer and rewrote the =:skyfi-key= line with the real key from authinfo, so an accidental save would persist the key to local disk (the file was gitignored and never tracked, so no repo/public-mirror exposure — local plaintext only). Deleted =cj/skyfi-api-key=, =cj/restclient--inject-skyfi-key=, =cj/restclient-skyfi-buffer=, the =C-; R s= binding, the two SkyFi test files, and the local =data/skyfi-api.rest= template. Generic restclient (=C-; R n=, =C-; R o=, restclient/restclient-jq) kept.
 
-**** TODO [#B] Reconcile mail image/privacy settings :privacy:
+**** TODO [#B] Reconcile mail image/privacy settings
 
 =mail-config.el= documents blocked remote images and sets
 =gnus-blocked-images=, but later enables both =mu4e-show-images= and
@@ -2715,7 +2715,7 @@ The protocol handler =setq= a global =cj/video-download-current-url= and the cap
 
 Note: the sibling =org-webclipper.el= still uses the same global-mutation pattern (=cj/webclip-current-url= / =title=); a separate =:solo:= task tracks that.
 
-**** TODO [#B] Audit shell-command-heavy recording and dwim-shell workflows :security:refactor:
+**** 2026-06-12 Fri @ 07:14:11 -0500 Audited shell-command-heavy recording and dwim-shell workflows
 
 =video-audio-recording.el= and =dwim-shell-config.el= are intentionally close to
 the shell: pactl/ffmpeg/qpdf/7z/tesseract/media conversion commands are the
@@ -2763,7 +2763,7 @@ Stop ran =pkill -INT wf-recorder=, signalling every wf-recorder on the system in
 
 The toggles ran =(file-name-directory location)= before =make-directory=, which returns the *parent* for a path without a trailing slash — so the selected directory went uncreated and ffmpeg failed to write into it. Both toggles now route the destination through =cj/recording--normalize-recording-dir= (expand + =file-name-as-directory=) and =make-directory= that, creating the selected directory itself (including names with spaces). Tests cover trailing-slash normalization, idempotence, spaces, and relative-to-absolute expansion. Commit =dc033c75=.
 
-**** TODO [#B] Make AI conversation persistence path-safe and project-aware :cleanup:refactor:
+**** TODO [#B] Make AI conversation persistence path-safe and project-aware :refactor:
 
 =ai-conversations.el= has good pure helper seams but is currently untested in
 this repo. The path slugging is simple and the save/load/delete commands operate
@@ -2777,7 +2777,7 @@ Expected outcome:
 - Confirm autosave never writes partial prompt/response state to an unexpected
   file after loading a different conversation.
 
-**** TODO [#B] Harden calendar sync operational behavior around the parser :data:refactor:
+**** TODO [#B] Harden calendar sync operational behavior around the parser :refactor:
 
 =calendar-sync.el= has broad parser/recurrence coverage, but the operational
 path around it still has startup, persistence, and fetch risks.
@@ -2857,7 +2857,7 @@ feature is broken end-to-end.  Change the URL to
 =http://localhost:8080/imp= (and consider switching the launch to
 =browse-url= so the user's default protocol handler is respected).
 
-**** TODO [#B] Document or vendor strapdown.js CDN dependency in =markdown-preview= :cleanup:solo:discuss:
+**** TODO [#B] Document or vendor strapdown.js CDN dependency in =markdown-preview= :solo:
 
 =cj/markdown-html= (=modules/markdown-config.el:48-51=) embeds a
 =<script src="http://ndossougbe.github.io/strapdown/dist/strapdown.js">=
@@ -2949,19 +2949,19 @@ configuration (=text-config=, =diff-config=, =ledger-config=,
 =games-config=, =mu4e-org-contacts-setup=, =telega-config=,
 =httpd-config=, =org-agenda-config-debug=).
 
-** TODO [#C] theme-studio picker panel blends into the page :bug:theme-studio:ux:quick:solo:
+** TODO [#C] theme-studio picker panel blends into the page :bug:quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-11
 :END:
 Craig, 2026-06-11 manual-test walk: the color picker's background is hard to distinguish from the page background. Give the picker panel a visibly distinct background or a highlighted border so it stands out. Pin with a gate asserting the picker element carries the distinct style.
 
-** TODO [#C] theme-studio Rust + Zig language previews :feature:theme-studio:solo:
+** TODO [#C] theme-studio Rust + Zig language previews :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-11
 :END:
 Requested by Craig 2026-06-11: add Rust and Zig code samples to the language previews (samples.py currently carries Elisp, Go, Python, TypeScript, Java, C, C++, Shell). Each sample should exercise the treesit token categories distinctive to its language (Rust: lifetimes, macros, attributes, traits; Zig: comptime, builtins, error unions), then regenerate theme-studio.html and extend the test surface.
 
-** TODO [#C] theme-studio face-consistency check :feature:theme-studio:
+** TODO [#C] theme-studio face-consistency check :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10
 :END:
@@ -2973,29 +2973,29 @@ Rule taxonomy captured in [[file:docs/design/theme-studio-face-rules.org][docs/d
 
 Bake into the tool (a lint surfaced in the UI) or run as a build-time check (seeds vs live deffaces via emacsclient).
 
-** TODO [#C] Color-family per-hex hint override :feature:theme-studio:
+** TODO [#C] Color-family per-hex hint override :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-11
 :END:
 For the ~1 color per palette that sits on a ramp-collision point (e.g. yellow+2 on the distinguished palette, which by every hex signal belongs to the olive ramp though its name says gold), automatic grouping cannot recover the designer's intent. Add a per-hex family override: drag a swatch to a different column, store the override keyed by hex (never the name, so renaming is still free), consult it after the LCCL clustering, and drop/mark-stale it when the hex changes substantially. Export stays mostly flat; only overrides are extra metadata. Both reviews recommend this exact shape; details in =~/color-sorting-fable.org= (§ "The irreducible case") and =~/color-sorting-codex.org= (§ "What to store").
 
-** TODO [#C] Internet radio now-playing  song :feature:music:emms:solo:
+** TODO [#C] Internet radio now-playing  song :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-11
 :END:
 Show the currently-playing song while streaming an internet radio station. Lives in =modules/music-config.el= (EMMS + MPV backend, M3U radio stations). The track title comes from the stream's ICY metadata — EMMS exposes it via =emms-track-description= / =emms-playing-time= and updates it on the metadata-change hook; MPV reports the ICY title too. Add an option to show the song in the minibuffer (e.g. echo on track change, or an on-demand command). Consider also a mode-line indicator as a second surface.
 
-** TODO [#C] Evaluate jamescherti essential-emacs-packages list :packages:research:quick:solo:
+** TODO [#C] Evaluate jamescherti essential-emacs-packages list :quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-11
 :END:
 Review [[https://www.jamescherti.com/essential-emacs-packages/][James Cherti's essential Emacs packages]] for anything worth installing. Cross-check each candidate against what is already in the config (=modules/= + =init.el=), skip the ones already present, and shortlist the genuinely new ones with a one-line rationale. Future-installation research, not a commitment to install.
 
-** TODO [#C] dupre-clear theme — contrast-first AAA sibling :feature:theme:dupre:
+** TODO [#C] dupre-clear theme — contrast-first AAA sibling :feature:
 Build a new theme (working name "dupre-clear", final name TBD) that takes dupre's color identity and rebuilds it Prot's way: contrast-first, targeting WCAG AAA (~7:1 on the ground), where the in-progress dupre revision is mood/depth-first and lands at AA. Same hues (dupre blue, emerald, gold, terracotta, regal violet, mint) brightened to clear the AAA floor; same modus-style role mapping (blue keywords bold, gold functions, violet types, emerald strings, terracotta constants, silver default, warm-grey comments, metallic greys, navy + regal fills). Build the dupre revision first; this reuses its hue choices as the starting point.
 
 Full design + methodology + starting palette + open questions in the spec: [[file:docs/design/dupre-clear-theme.org][docs/design/dupre-clear-theme.org]]. Key prerequisite/context: the dupre-redesign entry in =.ai/session-context.org= (the AA palette this brightens). Hardest slot: blue keywords (a deep dupre blue can't be AAA on near-black — decide brighten vs keep-AA-exception vs lift-the-ground).
-** TODO [#C] theme-studio terminal/ANSI colors :feature:theme-studio:
+** TODO [#C] theme-studio terminal/ANSI colors :feature:
 theme-studio represents GUI faces only; terminal colors aren't surfaced at all. Scope decided 2026-06-09: GUI-first faces, NOT full per-face display-class fallback. Two pieces:
 
 1. ANSI-16 panel. Map the 16 ANSI slots (black/red/green/yellow/blue/magenta/cyan/white + bright variants) to palette colors, with a preview, and export them so =build-theme.el= emits the =ansi-color-*= / =term-color-*= faces. This matters even in pure-GUI Emacs: colored shell output, compilation buffers, eshell, and vterm/eat all draw from these. Signals must line up with their ANSI slot (error red→ansi red, success→green, warning→yellow, info/link→blue) so a signal reads the same in a terminal.
@@ -3008,7 +3008,7 @@ Why this scope: the GUI and the normal terminal (foot + tmux, truecolor / ≥256
 :LAST_REVIEWED: 2026-06-06
 :END:
 They should have the same UI paradigms and patters for consistency.
-** TODO [#C] Slack message buffers in a reused popup window :slack:ux:quick:
+** TODO [#C] Slack message buffers in a reused popup window :quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-05
 :END:
@@ -3055,7 +3055,7 @@ Acceptance: structs defined, helpers callable in batch without EMMS loaded.
 
 Depends on: none (start here).
 
-*** TODO [#B] Backend protocol + fake test backend :refactor:tests:
+*** TODO [#B] Backend protocol + fake test backend :refactor:test:
 Define the backend plist contract (=:available-p :play :pause :resume :stop
 :seek :volume :status :metadata=) and =cj/music-current-backend=.  Add
 =cj/music-state-change-functions= abnormal hook with the v1 event set
@@ -3068,7 +3068,7 @@ against a no-op playback flow.
 
 Depends on: pure helpers + state structs.
 
-*** TODO [#B] Read-side state API + characterization tests :tests:refactor:
+*** TODO [#B] Read-side state API + characterization tests :test:refactor:
 Implement =cj/music-playing-p=, =cj/music-paused-p=, =cj/music-current-track=,
 =cj/music-playlist-state=, =cj/music-track-description=.  Before rewriting
 command bodies, add characterization tests against current behavior for
@@ -3124,7 +3124,7 @@ characterization tests still green; Dirvish =+= add path covered.
 
 Depends on: playlist major mode + mpv backend.
 
-*** TODO [#B] EMMS removal + parity walk :cleanup:tests:
+*** TODO [#B] EMMS removal + parity walk :test:
 Remove =cj/emms--setup=, the on-demand EMMS loader, and the =use-package emms=
 block.  Add the EMMS-free batch-load smoke test (=music-config.el= requires
 clean without EMMS installed).  Run the 22-step parity walk from design
@@ -3137,7 +3137,7 @@ walk recorded as a completion log entry under the parent task.
 
 Depends on: command + Dired/Dirvish rewire.
 
-** TODO [#C] music-config option-combination audit + tests :tests:harden:solo:
+** TODO [#C] music-config option-combination audit + tests :test:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-06
 :END:
@@ -3150,7 +3150,7 @@ Part 2 — combinatorial test coverage. Use the =/pairwise-tests= skill: identif
 
 The recent F10 side-window-height-fraction work and the EMMS-free refactor candidate ("Implement EMMS-free music-config architecture" above) are both natural near-term touchpoints — best to land this audit before the EMMS swap so the new architecture inherits a clean option spec.
 
-** TODO [#C] gptel-magit activation fails on velox :bug:ai:quick:
+** TODO [#C] gptel-magit activation fails on velox :bug:quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-01
 :END:
@@ -3163,7 +3163,7 @@ Reproduce:
 
 Next step: check the installed gptel version (=(assq 'gptel package-alist)= or =M-x package-list-packages=), update gptel to >= 0.9.8, then re-evaluate gptel-magit activation. If gptel was pinned/held on velox, reconcile the pin against the gptel-magit dependency.
 
-** TODO [#C] GPTel Work :feature:ai:
+** TODO [#C] GPTel Work :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-01
 :END:
@@ -3190,7 +3190,7 @@ Design doc: [[file:docs/design/mcp-el-gptel-integration.org][docs/design/mcp-el-
 
 Commit =54d231be=.  Sections 1 (constants + defcustoms) and 3 (pure helpers) of the seven-section outline.  41 ERT tests, all green.  Refactor audit caught two duplications during Phase 4 and folded them into the same commit (=cj/mcp--get-server-entry= and =cj/mcp--name-matches-p=).  Phase 1.5 (confirmation contract) is next.
 
-**** TODO [#C] Phase 1.5 -- GPTel confirmation contract :mcp:
+**** TODO [#C] Phase 1.5 -- GPTel confirmation contract
 
 *Goal:* flip =gptel-confirm-tool-calls= to ='auto= and gate the existing local tools that need it.
 
@@ -3210,7 +3210,7 @@ Commit =54d231be=.  Sections 1 (constants + defcustoms) and 3 (pure helpers) of 
 
 *Exit:* tests green.  Manual smoke: open GPTel, call a gated tool, confirm prompt appears.  Call =git_log=, no prompt.
 
-**** TODO [#B] Phase 2 -- Compat layer + registration pipeline (fake inventory) :mcp:
+**** TODO [#B] Phase 2 -- Compat layer + registration pipeline (fake inventory)
 
 *Goal:* implement the mcp.el compat wrappers and the tool-registration pipeline against stubbed =mcp-server-connections=.
 
@@ -3224,7 +3224,7 @@ Commit =54d231be=.  Sections 1 (constants + defcustoms) and 3 (pure helpers) of 
 
 *Exit:* with a stubbed =mcp-server-connections=, registration produces correctly prefixed =mcp__SERVER__TOOL= entries in =gptel-tools=; closures call =mcp-call-tool SERVER REMOTE-NAME= (verified by stubbing =mcp-async-call-tool=); deregistration removes only MCP-owned tools and leaves a pre-populated local =git_log= entry intact; re-registration replaces function pointer without duplicating menu entries; confirm overrides win over patterns.
 
-**** TODO [#B] Phase 3 -- Async state machine + timer-race timeout wrapper :mcp:
+**** TODO [#B] Phase 3 -- Async state machine + timer-race timeout wrapper
 
 *Goal:* implement the lifecycle state machine and the per-call timer-race timeout.
 
@@ -3237,7 +3237,7 @@ Commit =54d231be=.  Sections 1 (constants + defcustoms) and 3 (pure helpers) of 
 
 *Exit:* =cj/mcp-ensure-started= returns in <100 ms with delayed-callback stubs; stall timer fires for stuck servers; timer-race wrapper handles all three orderings (MCP-first, timer-first, late-MCP-after-timer); async error path (=:error-callback= without inited callback) reaches =failed= state via polling.
 
-**** TODO [#B] Phase 4 -- First real connection (drawio or slack-deepsat) :mcp:
+**** TODO [#B] Phase 4 -- First real connection (drawio or slack-deepsat)
 
 *Goal:* wire one real no-auth server end-to-end against actual mcp.el and prove the stubbed Phase 3 behavior matches reality.
 
@@ -3251,7 +3251,7 @@ Commit =54d231be=.  Sections 1 (constants + defcustoms) and 3 (pure helpers) of 
 
 *Exit:* manual smoke -- =C-; a t= opens GPTel without blocking; within 30 s, drawio (or slack-deepsat) tools appear in =gptel-menu= grouped by category; calling a tool returns expected output; killing the subprocess externally surfaces as =failed= in =cj/mcp--server-status=.
 
-**** TODO [#B] Phase 5 -- Status UX + commands + doctor (static) :mcp:
+**** TODO [#B] Phase 5 -- Status UX + commands + doctor (static)
 
 *Goal:* ship the full server-management UX so partial-availability and failures are visible.
 
@@ -3267,7 +3267,7 @@ Commit =54d231be=.  Sections 1 (constants + defcustoms) and 3 (pure helpers) of 
 
 *Exit:* all keymap bindings work; audit buffer surfaces failed servers prominently; doctor identifies each scenario in the manual test matrix; status command shows the right state for each phase transition.
 
-**** TODO [#B] Phase 6 -- HTTP servers (linear, notion) :mcp:
+**** TODO [#B] Phase 6 -- HTTP servers (linear, notion)
 
 *Goal:* add the two HTTP-transport servers with in-protocol OAuth.
 
@@ -3280,7 +3280,7 @@ Commit =54d231be=.  Sections 1 (constants + defcustoms) and 3 (pure helpers) of 
 
 *Exit:* first connect surfaces the OAuth URL through the recovery pattern; after browser handshake completes, subsequent connects succeed without prompt; live-auth-check correctly identifies a deliberately revoked token; both servers appear ready in the audit buffer.
 
-**** TODO [#B] Phase 7 -- Env-dependent stdio servers (figma, google-*) :mcp:
+**** TODO [#B] Phase 7 -- Env-dependent stdio servers (figma, google-*)
 
 *Goal:* add the remaining five env-dependent servers.
 
@@ -3294,7 +3294,7 @@ Commit =54d231be=.  Sections 1 (constants + defcustoms) and 3 (pure helpers) of 
 
 *Exit:* all 9 servers reach =ready= state on a clean machine.  Sentinel-grep check across status / audit / hub / errors / audit-log shows zero secret leakage.  Doctor's live-auth covers each auth class (oauth, token, args-token, in-protocol, local, none).
 
-**** TODO [#B] Phase 8 -- Privacy + audit polish :mcp:
+**** TODO [#B] Phase 8 -- Privacy + audit polish
 
 *Goal:* land the final UX polish and documentation.
 
@@ -3727,7 +3727,7 @@ no command yet.
 
 Depends on: none -- start here.
 
-*** TODO [#B] ERT coverage for the pure helpers :feature:tests:
+*** TODO [#B] ERT coverage for the pure helpers :feature:test:
 Normal/Boundary/Error tests for every helper from the prior sub-task,
 matching the design's testing section.
 
@@ -3788,7 +3788,7 @@ untouched.
 
 Depends on: review-buffer major mode + parser.
 
-*** TODO [#B] Interactive command + smoke test :feature:tests:
+*** TODO [#B] Interactive command + smoke test :feature:test:
 Thin =cj/dev-setup-project= interactive wrapper: resolve project root via
 projectile, run detection, build proposal, render the review buffer, pop to
 it.  One smoke test against a prepared temp project asserting the expected
@@ -3802,7 +3802,7 @@ buffer; =C-c C-c= writes the expected files.
 
 Depends on: writer + status diff + projectile cache reset.
 
-*** TODO [#B] Resolve open questions + design follow-ups :cleanup:
+*** TODO [#B] Resolve open questions + design follow-ups
 Three design questions to close before / during implementation: (a) include
 =make coverage= target in starter Makefile? (b) project-wide override file
 =.cj-dev-setup.el=? (c) Cargo/pom detection.
@@ -3897,7 +3897,7 @@ The core functionality is implemented but needs debugging before it's production
 3. Refine toggle behavior based on testing
 4. Document the final keybindings and workflow
 
-** TODO [#C] Build an Org-native API workspace :feature:tests:
+** TODO [#C] Build an Org-native API workspace :feature:test:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-02
 :END:
@@ -4291,7 +4291,7 @@ F2 is the universal preview key. Currently bound only in markdown-mode (markdown
 
 Keep the binding mode-local so F2 stays available as a global candidate where no preview makes sense.
 
-** TODO [#C] Localrepo Documentation :feature:docs:localrepo:
+** TODO [#C] Localrepo Documentation :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-05
 :END:
@@ -4305,11 +4305,11 @@ The four limitations the docs cover (each spun out below as its own task):
 - Native-comp =.eln= cache (Emacs-version-specific; invalidated by version bumps)
 - System-tool deps (=ripgrep=, =fd=, =pandoc=, =prettier=, =pyright=, etc.; flagged at load by =cj/executable-find-or-warn=, not packageable via =package.el=)
 - Refresh / update story (no dedicated script today; ad-hoc =cp= from the elpa mirrors)
-*** TODO [#C] Design doc — docs/design/localrepo.org :docs:
+*** TODO [#C] Design doc — docs/design/localrepo.org
 Write the design doc: tier model, priorities, install path, refresh story, all four limitations with cross-links to the follow-up tasks below.
-*** TODO [#C] README — .localrepo/README.org :docs:
+*** TODO [#C] README — .localrepo/README.org
 Write the README at the artifact: short prose entry point summarizing the tier model, pointing at =docs/design/localrepo.org= for full detail. This is what =early-init.el='s commentary header links to.
-*** TODO [#C] Commentary header in early-init.el :docs:
+*** TODO [#C] Commentary header in early-init.el
 Add a Commentary-section header in =early-init.el= pointing at =.localrepo/README.org= for usage and =docs/design/localrepo.org= for architecture. Sits at the top of the localrepo block (around L130).
 ** TODO [#C] TRAMP/dirvish "?" for remote dates — verify the fix per host :bug:
 :PROPERTIES:
@@ -4358,28 +4358,28 @@ When =(env-terminal-p)=, =(setenv "GPG_TTY" (shell-command-to-string "tty"))= so
 *** TODO [#C] gpg-agent updatestartuptty refresh in terminal :feature:
 The current =call-process= to "gpg-connect-agent updatestartuptty /bye" runs unconditionally; keep it for GUI, and re-fire it on terminal entry so the agent re-binds to the current tty.
 
-*** TODO [#C] ERT tests for terminal vs GUI pinentry branching :tests:
+*** TODO [#C] ERT tests for terminal vs GUI pinentry branching :test:
 Test that with =env-terminal-p= stubbed t, =epa-pinentry-mode= resolves to ='loopback= after =auth-config= loads; with it stubbed nil, the loopback setting is not applied. Use =cl-letf= around =env-terminal-p=; cover normal, boundary (=epa= already loaded), error (=gpg-connect-agent= missing).
 
-*** TODO [#C] Minibuffer prompt in real terminal Emacs :verify:
+*** TODO [#C] Minibuffer prompt in real terminal Emacs
 =emacs -nw=, open an encrypted file or trigger an auth-source decrypt, confirm the passphrase prompt lands in the minibuffer rather than failing on missing pinentry.
 
-*** TODO [#C] External pinentry still fires in GUI Emacs :verify:
+*** TODO [#C] External pinentry still fires in GUI Emacs
 Restart the daemon, open a GUI frame, trigger an encrypted decrypt, confirm =pinentry-dmenu= (or whatever GUI pinentry is configured) still appears.
 
-*** TODO [#C] Archive the original L3813 task :chore:
+*** TODO [#C] Archive the original L3813 task
 After this work lands, mark the original "Finish terminal GPG pinentry configuration" task DONE with a =CLOSED:= stamp and a one-line note pointing at this parent task.
 
-** TODO [#C] Google Contacts ↔ org-contacts sync investigation :feature:research:
+** TODO [#C] Google Contacts ↔ org-contacts sync investigation :feature:
 From the 2026-06-11 brainstorm. Goal: keep [[file:~/sync/org/contacts.org][contacts.org]] (real org-contacts: PROPERTIES drawers, mu4e completion, org-roam links) in sync with Google Contacts. Google side is solid — official People API (OAuth2, incremental syncToken) or CardDAV; no ToS risk. The hard parts are local: (1) identity — entries have no UID, so two-way needs a GOOGLE_ID property per entry plus a one-time fuzzy reconciliation of the two populated datasets (name/email/phone matching); (2) field mapping — space-separated multi-email in one property, free-text body notes, inconsistent phone formats (normalization decision); (3) conflict policy. First decision gates the rest: one-way Google→org read model (simple) vs true two-way. Candidate architectures: vdirsyncer (proven two-way engine w/ Google support; build only the vCard↔org translation, evaluate org-vcard fidelity) vs a direct People API script with sync state in org properties. Output: recommendation doc in docs/design/ naming direction + the normalization/conflict decisions for Craig. Not :solo: — the one-way-vs-two-way call and normalization policy are Craig's.
 
-** TODO [#C] Google Voice in Emacs — SMS + dialer investigation :feature:research:solo:
+** TODO [#C] Google Voice in Emacs — SMS + dialer investigation :feature:
 From the 2026-06-11 messenger-unification brainstorm. Google Voice has no official API; the viable routes ride the Matrix bridge ecosystem's reverse engineering (mautrix-gvoice). Research pass to establish the 2026 state of play: (1) is mautrix-gvoice healthy and what does its auth flow look like now; (2) any better-maintained alternative (CLI/daemon) for the signel-pattern architecture (external daemon + JSON-RPC + thin Emacs chat client); (3) does call initiation (ring-linked-phone-then-connect, Emacs as dialer) survive in the current protocol — two-way audio in Emacs is out of scope (WebRTC); (4) ToS/account-flag risk assessment for Craig's account. Output: a recommendation doc in docs/design/ naming the architecture (signel-pattern daemon vs Matrix bridge + ement.el) or a no-go with reasons. If go, GV becomes a registered backend under the messenger-unification convention (see the [#B] task below).
 
-** TODO [#C] latexmk workflow never activates (two breaks) :bug:solo:
+** TODO [#C] latexmk workflow never activates (two breaks) :bug:quick:solo:
 =modules/latex-config.el:66= — =:hook (TeX-mode-hook . ...)= gets use-package's =-hook= suffix appended (unbound symbol not ending in =-mode=), registering on nonexistent =TeX-mode-hook-hook=, so =TeX-command-default "latexmk"= is never set. Independently =:80= auctex-latexmk is =:defer t= with no trigger, so =auctex-latexmk-setup= never runs and "latexmk" isn't in TeX-command-list. Fix hook name to =TeX-mode=; change auctex-latexmk to =:after tex=. From the 2026-06 config audit.
 
-** TODO Manual testing and validation :verify:theme-studio:
+** TODO Manual testing and validation
 Exercised once the phases above land.
 *** 2026-06-11 Thu @ 18:29:39 -0500 Verified UI-face preview and contrast survive a ground bg change
 Craig walked the repro: mode-line with its own fg/bg kept its preview bg and ratio through a ground change; ground-dependent rows re-rated; package-faces contrast column updated. Pass. Closed the [#A] contrast-cell and [#B] preview-bg parents.
@@ -4433,22 +4433,22 @@ What we're verifying: lowering a family's count leaves a referencing face visibl
 - Lower that family's count to 2 so blue+3 disappears
 - Read the assignment's dropdown
 Expected: the dropdown shows "(gone)" for the removed step, never a silent jump to a different color; re-pointing it is a deliberate choice.
-** TODO [#D] theme-studio per-tier reseed controls :feature:theme-studio:
+** TODO [#D] theme-studio per-tier reseed controls :feature:
 Deferred from the seeding-engine spec (vNext). V1 reseeds all three guide-owned tiers at once; later consider separate "reseed syntax", "reseed UI", and "reseed package/org" controls if all-at-once proves too blunt. Spec: [[file:docs/design/theme-studio-seeding-engine-spec.org][spec]] (vNext; review folded in 2026-06-08).
-** TODO [#D] theme-studio low-contrast preset/mask mode :feature:theme-studio:
+** TODO [#D] theme-studio low-contrast preset/mask mode :feature:
 Deferred from the perceptual color metrics spec (vNext). After raw OKLCH/APCA/DeltaE readouts exist, decide whether to add a named low-contrast workflow: APCA Lc bands, a contrast ceiling/floor mask, or a "soft" sibling to the existing any/AA+/AAA picker mask. Spec: [[file:docs/design/theme-studio-perceptual-color-metrics-spec.org][spec]] (vNext candidates; review folded in 2026-06-08).
-** TODO [#D] theme-studio CIEDE2000 DeltaE option :feature:theme-studio:
+** TODO [#D] theme-studio CIEDE2000 DeltaE option :feature:
 Deferred from the perceptual color metrics spec (vNext). v1 uses DeltaE-OK on its native scale with a 0.02 threshold (decided); revisit CIEDE2000 only if the native OKLab scale proves too unfamiliar or poorly calibrated for palette distinguishability. Spec: [[file:docs/design/theme-studio-perceptual-color-metrics-spec.org][spec]] (vNext candidates; review folded in 2026-06-08).
-** TODO [#D] Treesitter grammar offline cache :feature:offline:localrepo:
+** TODO [#D] Treesitter grammar offline cache :feature:
 Treesitter grammars are downloaded by =treesit-auto= on first use and live outside the localrepo. For true offline reproducibility, cache the grammars next to the localrepo (a =.localrepo/treesitter/= tier, or a separate mirror script). Cross-linked from =docs/design/localrepo.org=.
 
-** TODO [#D] Native-comp .eln cache strategy :feature:offline:localrepo:
+** TODO [#D] Native-comp .eln cache strategy :feature:
 The native-comp =.eln= cache is Emacs-version-specific; an Emacs upgrade invalidates everything. Document the cache location, what an upgrade triggers, and whether a warm-the-cache script is worth shipping. Cross-linked from =docs/design/localrepo.org=.
 
-** TODO [#D] System-tool dependency install script :feature:offline:localrepo:
+** TODO [#D] System-tool dependency install script :feature:
 =ripgrep=, =fd=, =pandoc=, =prettier=, =pyright=, and other binaries that =cj/executable-find-or-warn= flags at module load are not in =package.el='s reach. Document the required-tool set and ship a setup script (or =pacman=/=apt= invocation set). Cross-linked from =docs/design/localrepo.org=.
 
-** TODO [#D] Localrepo refresh / update script :feature:offline:localrepo:
+** TODO [#D] Localrepo refresh / update script :feature:
 No dedicated update path today — refreshing a pinned package means ad-hoc =cp= from the local elpa mirrors. Document the current shape and decide whether a =scripts/refresh-localrepo.sh= is worth writing. Cross-linked from =docs/design/localrepo.org=.
 
 ** TODO [#D] Dashboard over-scroll: pin last line to window bottom :bug:
@@ -4487,7 +4487,7 @@ Three small reveal.js improvements; collected into one task because each on its 
 2. *Default font sizing for slide elements.* Configure reveal.js font sizes for headings, body text, code blocks, etc. — better defaults via =org-reveal-head-preamble= CSS or a custom theme.
 3. *Custom dupre reveal.js theme.* CSS theme using the colors from =themes/dupre-palette.el=. Install into =reveal.js/css/theme/= for use with =#+REVEAL_THEME: dupre=.
 
-** TODO [#B] "? = curated help menu" convention across modes :feature:ux:discoverability:
+** TODO [#B] "? = curated help menu" convention across modes :feature:
 From the calibredb keybindings work 2026-06-06. The pattern that worked: in a modal/major-mode buffer (calibredb), bind =?= to a curated transient of the frequent workflows, and move the package's own full dispatch to =H=. It fixes the "I can't discover the keys" problem that which-key can't help with (which-key only pops up after a prefix, not for top-level single keys in a mode-map).
 
 Task: survey the modes/modules Craig works in and identify where a =?= -> curated-help-menu (transient) makes sense. Candidates: any major-mode buffer with single-key bindings and no good discovery affordance -- calibredb (done), nov, dirvish, mu4e, ghostel/term, signel, pearl/linear, ELFeed, etc. For each, note whether =?= is free or already a help dispatch, and whether a curated menu (vs the package's own) adds value. Establish it as a convention (and maybe a small helper/macro to define a curated =?= menu consistently).
@@ -4495,12 +4495,12 @@ Task: survey the modes/modules Craig works in and identify where a =?= -> curate
 ** TODO [#C] the preview splits an already split window into 3 temporarily.
 looks strange. potentially problematic for ai-terms.
 
-** DOING [#C] Project-aware bug capture via C-c c t :feature:capture:
+** DOING [#C] Project-aware bug capture via C-c c t :feature:
 Relocated from the global capture inbox 2026-06-06. When inside a projectile project, C-c c t (Task) files into that project's root todo.org under the "<Project> Open Work" header. If the project has no todo.org, fall back to the global inbox-file and warn naming the project.
 
 Implemented 2026-06-06 in =modules/org-capture-config.el=: a shared project-aware =function= capture target (=cj/--org-capture-project-location=) used by =C-c c t= (Task, =* TODO=) and a new =C-c c b= (Bug, =* TODO [#C]=). Matches an existing top-level "... Open Work" heading (so ~/.emacs.d hits "Emacs Open Work") and creates "<Capitalized project> Open Work" only when absent. Outside a project / no todo.org -> global inbox under "Inbox" (with a warning in the no-todo.org case). 15 ERT tests in =tests/test-org-capture-config-project-target.el=; daemon e2e confirmed a real capture lands "** TODO [#C] ..." prepended under Open Work. Awaiting Craig's interactive manual verify (see the Manual Testing task) before close. NOTE: the matching "<Project> Resolved Work" header for the wrap-up workflow is a separate concern, not handled here.
 
-** VERIFY [#C] Palette-columns spec review :theme-studio:
+** VERIFY [#C] Palette-columns spec review
 SCHEDULED: <2026-06-12 Fri>
 Read [[file:docs/theme-studio-palette-columns-spec.org][docs/theme-studio-palette-columns-spec.org]] (Draft, from the 2026-06-10 design discussion) and bless or amend. Decisions 9 and 10 are the two session calls awaiting your word: strips flip to lightest→darkest top→bottom to match the dropdown, and each dropdown column run places the base at its natural lightness position (vs bg/fg bases leading before any steps). On "spec's good": mark Ready, file the phase breakdown, cancel the [#C] hint-override task, start Phase 1.
 
