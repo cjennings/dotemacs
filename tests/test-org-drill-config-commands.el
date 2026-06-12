@@ -71,21 +71,34 @@
 
 ;;; cj/drill-refile
 
-(ert-deftest test-org-drill-refile-sets-targets-and-delegates ()
-  "Normal: drill-refile narrows `org-refile-targets' to current buffer +
-`drill-dir', then dispatches to `org-refile' via `call-interactively'."
+(ert-deftest test-org-drill-refile-delegates-with-file-targets ()
+  "Normal: drill-refile dispatches to `org-refile' with current buffer +
+the list of drill .org files (not the `drill-dir' variable symbol)."
   (let (seen-targets called-fn)
-    (cl-letf (((symbol-function 'call-interactively)
+    (cl-letf (((symbol-function 'directory-files)
+               (lambda (&rest _) '("/tmp/cj-drill/a.org" "/tmp/cj-drill/b.org")))
+              ((symbol-function 'call-interactively)
                (lambda (fn)
                  (setq called-fn fn
                        seen-targets org-refile-targets))))
       (cj/drill-refile))
     (should (eq called-fn 'org-refile))
-    (should seen-targets)
-    ;; Two entries: (nil :maxlevel . 1) and (drill-dir :maxlevel . 1).
     (should (= 2 (length seen-targets)))
     (should (assoc nil seen-targets))
-    (should (assoc 'drill-dir seen-targets))))
+    ;; The drill entry's car is a real list of .org files, never the
+    ;; `drill-dir' symbol (org reads a bound symbol as the directory string).
+    (let ((files (car (nth 1 seen-targets))))
+      (should (equal files '("/tmp/cj-drill/a.org" "/tmp/cj-drill/b.org")))
+      (should-not (eq files 'drill-dir)))))
+
+(ert-deftest test-org-drill-refile-does-not-clobber-global-targets ()
+  "Error: drill-refile let-binds `org-refile-targets'; the session-wide value
+survives the call instead of being permanently replaced."
+  (let ((org-refile-targets '((sentinel :maxlevel . 9))))
+    (cl-letf (((symbol-function 'directory-files) (lambda (&rest _) nil))
+              ((symbol-function 'call-interactively) (lambda (_fn) nil)))
+      (cj/drill-refile))
+    (should (equal org-refile-targets '((sentinel :maxlevel . 9))))))
 
 (provide 'test-org-drill-config-commands)
 ;;; test-org-drill-config-commands.el ends here

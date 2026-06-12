@@ -95,9 +95,10 @@ With a prefix arg OTHER-DIR, prompt for the directory instead of `drill-dir'."
 (defun cj/drill-refile ()
   "Refile to a drill file."
   (interactive)
-  (setq org-refile-targets '((nil :maxlevel . 1)
-                             (drill-dir :maxlevel . 1)))
-  (call-interactively 'org-refile))
+  (let ((org-refile-targets
+         `((nil :maxlevel . 1)
+           (,(directory-files drill-dir t "\\.org$") :maxlevel . 1))))
+    (call-interactively 'org-refile)))
 
 ;; ------------------------------- Drill Keymap --------------------------------
 
