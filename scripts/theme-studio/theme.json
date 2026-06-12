@@ -2,132 +2,220 @@
  "name": "theme",
  "palette": [
   [
-   "#0d0b0a",
-   "dupre black"
+   "#f0fef0",
+   "fg"
   ],
   [
-   "#dddfdf",
-   "Alabaster"
+   "#000000",
+   "bg"
+  ],
+  [
+   "#151311",
+   "bg+0"
+  ],
+  [
+   "#252321",
+   "bg+1"
+  ],
+  [
+   "#474544",
+   "bg+2"
+  ],
+  [
+   "#58574e",
+   "gray-2"
+  ],
+  [
+   "#6c6a60",
+   "gray-1"
+  ],
+  [
+   "#969385",
+   "gray"
+  ],
+  [
+   "#b4b1a2",
+   "gray+1"
+  ],
+  [
+   "#d0cbc0",
+   "gray+2"
+  ],
+  [
+   "#8a9496",
+   "steel"
+  ],
+  [
+   "#acb0b3",
+   "steel+1"
+  ],
+  [
+   "#c0c7ca",
+   "steel+2"
   ],
   [
    "#67809c",
-   "dupre-blue"
+   "blue"
   ],
   [
-   "#05204a",
-   "Prussian Blue"
+   "#b2c3cc",
+   "blue+1"
   ],
   [
-   "#cba328",
-   "Golden Bronze"
+   "#d9e2ff",
+   "blue+2"
   ],
   [
-   "#a7754d",
-   "Faded Copper"
+   "#646d14",
+   "green-2"
   ],
   [
-   "#dd413a",
-   "Heinz Red"
+   "#869038",
+   "green-1"
   ],
   [
-   "#31081f",
-   "Midnight Violet"
+   "#a4ac64",
+   "green"
   ],
   [
-   "#462521",
-   "Espresso"
+   "#ccc768",
+   "green+1"
   ],
   [
-   "#3a2e39",
-   "Shadow Grey"
+   "#3f1c0f",
+   "red-3"
   ],
   [
-   "#9f956c",
-   "Desert Sand"
+   "#7c2a09",
+   "red-2"
   ],
   [
-   "#7b287d",
-   "Purple"
+   "#a7502d",
+   "red-1"
   ],
   [
-   "#3081c3",
-   "Disney Blue"
+   "#d47c59",
+   "red"
   ],
   [
-   "#4c9462",
-   "Green Peas"
+   "#edb08f",
+   "red+1"
+  ],
+  [
+   "#edbca2",
+   "red+2"
+  ],
+  [
+   "#875f00",
+   "yellow-2"
+  ],
+  [
+   "#8e784c",
+   "yellow-1"
+  ],
+  [
+   "#d7af5f",
+   "yellow"
+  ],
+  [
+   "#ffd75f",
+   "yellow+1"
+  ],
+  [
+   "#f9ee98",
+   "yellow+2"
+  ],
+  [
+   "#ff2a00",
+   "intense-red"
   ]
  ],
  "assignments": {
-  "bg": "#0d0b0a",
-  "p": "#dddfdf",
-  "kw": "",
-  "bi": "",
-  "pp": "",
-  "fnd": "#67809c",
-  "fnc": "#67809c",
+  "bg": "#000000",
+  "p": "#f0fef0",
+  "kw": "#67809c",
+  "bi": "#d7af5f",
+  "pp": "#acb0b3",
+  "fnd": "#d47c59",
+  "fnc": "",
   "dec": "",
-  "ty": "#3081c3",
+  "ty": "#a4ac64",
   "prop": "",
-  "con": "",
-  "num": "",
-  "str": "#4c9462",
-  "esc": "#4c9462",
-  "re": "#4c9462",
-  "doc": "#4c9462",
-  "cm": "#a7754d",
-  "cmd": "#a7754d",
-  "var": "",
+  "con": "#d7af5f",
+  "num": "#d7af5f",
+  "str": "#a4ac64",
+  "esc": "",
+  "re": "",
+  "doc": "#969385",
+  "cm": "#969385",
+  "cmd": "#969385",
+  "var": "#b2c3cc",
   "op": "",
   "punc": ""
  },
  "bold": [
   "kw",
-  "fnd"
+  "bi",
+  "pp",
+  "fnd",
+  "ty",
+  "con"
  ],
  "italic": [
+  "pp",
   "cm",
+  "var",
   "cmd"
  ],
  "ui": {
   "cursor": {
    "fg": null,
-   "bg": null
+   "bg": "#f0fef0"
   },
   "region": {
    "fg": null,
-   "bg": null
+   "bg": "#474544"
   },
   "hl-line": {
    "fg": null,
-   "bg": null
+   "bg": "#151311"
   },
   "highlight": {
    "fg": null,
-   "bg": null
+   "bg": "#646d14"
   },
   "mode-line": {
-   "fg": null,
-   "bg": null
+   "fg": "#000000",
+   "bg": "#67809c",
+   "box": {
+    "style": "released",
+    "width": 1,
+    "color": null
+   }
   },
   "mode-line-inactive": {
-   "fg": null,
-   "bg": null
+   "fg": "#67809c",
+   "bg": "#000000",
+   "box": {
+    "style": "released",
+    "width": 1,
+    "color": null
+   }
   },
   "fringe": {
-   "fg": null,
-   "bg": null
+   "fg": "#58574e",
+   "bg": "#151311"
   },
   "line-number": {
-   "fg": null,
+   "fg": "#58574e",
    "bg": null
   },
   "line-number-current-line": {
-   "fg": null,
+   "fg": "#d7af5f",
    "bg": null
   },
   "minibuffer-prompt": {
-   "fg": null,
+   "fg": "#d7af5f",
    "bg": null
   },
   "isearch": {
@@ -136,49 +224,77 @@
   },
   "lazy-highlight": {
    "fg": null,
-   "bg": null
+   "bg": "#8e784c",
+   "underline": true
   },
   "isearch-fail": {
-   "fg": null,
-   "bg": null
+   "fg": "#f0fef0",
+   "bg": "#a7502d"
   },
   "show-paren-match": {
-   "fg": null,
-   "bg": null
+   "fg": "#000000",
+   "bg": "#a4ac64",
+   "underline": true
   },
   "show-paren-mismatch": {
-   "fg": null,
-   "bg": null
+   "fg": "#f0fef0",
+   "bg": "#a7502d"
   },
   "link": {
-   "fg": null,
+   "fg": "#b2c3cc",
    "bg": null,
    "underline": true
   },
   "error": {
-   "fg": null,
-   "bg": null
+   "fg": "#d47c59",
+   "bg": null,
+   "bold": true
   },
   "warning": {
-   "fg": null,
-   "bg": null
+   "fg": "#ffd75f",
+   "bg": null,
+   "bold": true
   },
   "success": {
-   "fg": null,
-   "bg": null
+   "fg": "#a4ac64",
+   "bg": null,
+   "bold": true
   },
   "vertical-border": {
-   "fg": null,
+   "fg": "#58574e",
    "bg": null
   }
  },
  "locks": [
+  "kw",
   "bg",
   "p",
+  "bi",
+  "pp",
   "fnd",
-  "fnc",
+  "ty",
+  "con",
+  "str",
+  "var",
   "cm",
-  "cmd"
+  "doc",
+  "cmd",
+  "num",
+  "ui:mode-line",
+  "ui:mode-line-inactive",
+  "ui:link",
+  "ui:hl-line",
+  "ui:warning",
+  "ui:success",
+  "ui:error",
+  "ui:line-number-current-line",
+  "ui:minibuffer-prompt",
+  "ui:show-paren-mismatch",
+  "ui:show-paren-match",
+  "ui:vertical-border",
+  "ui:line-number",
+  "ui:fringe",
+  "ui:region"
  ],
  "packages": {
   "org-mode": {
@@ -194,7 +310,7 @@
     "height": 1.5
    },
    "org-document-info": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -204,7 +320,7 @@
     "source": "default"
    },
    "org-document-info-keyword": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -214,7 +330,7 @@
     "source": "default"
    },
    "org-level-1": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -288,7 +404,7 @@
     "source": "default"
    },
    "org-level-8": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -368,34 +484,34 @@
     "source": "default"
    },
    "org-special-keyword": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "org-drawer": {
-    "fg": null,
+    "fg": "#969385",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "org-property-value": {
-    "fg": null,
+    "fg": "#969385",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "org-checkbox": {
     "fg": null,
@@ -438,17 +554,17 @@
     "source": "default"
    },
    "org-link": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
    },
    "org-footnote": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -458,24 +574,24 @@
     "source": "default"
    },
    "org-date": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": "fixed-pitch",
-    "source": "default"
+    "source": "user"
    },
    "org-sexp-date": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "org-date-selected": {
     "fg": null,
@@ -508,21 +624,21 @@
     "source": "default"
    },
    "org-cite": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
    },
    "org-cite-key": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -568,14 +684,14 @@
     "source": "default"
    },
    "org-verbatim": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": "fixed-pitch",
-    "source": "default"
+    "source": "user"
    },
    "org-inline-src-block": {
     "fg": null,
@@ -618,18 +734,18 @@
     "source": "default"
    },
    "org-table": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": "fixed-pitch",
-    "source": "default"
+    "source": "user"
    },
    "org-table-header": {
     "fg": null,
-    "bg": null,
+    "bg": "#58574e",
     "bold": true,
     "italic": false,
     "underline": false,
@@ -758,7 +874,7 @@
     "source": "default"
    },
    "org-agenda-structure": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -769,7 +885,7 @@
     "height": 1.1
    },
    "org-agenda-structure-secondary": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -789,14 +905,14 @@
     "source": "default"
    },
    "org-agenda-date": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
+    "source": "user",
     "height": 1.05
    },
    "org-agenda-date-today": {
@@ -811,14 +927,14 @@
     "height": 1.05
    },
    "org-agenda-date-weekend": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "org-agenda-date-weekend-today": {
     "fg": null,
@@ -871,7 +987,7 @@
     "source": "default"
    },
    "org-agenda-calendar-sexp": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -881,7 +997,7 @@
     "source": "default"
    },
    "org-agenda-calendar-daterange": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -1051,14 +1167,14 @@
     "source": "default"
    },
    "org-mode-line-clock": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "org-mode-line-clock-overrun": {
     "fg": null,
@@ -1094,7 +1210,7 @@
    },
    "magit-section-heading-selection": {
     "fg": null,
-    "bg": "#020d20",
+    "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
@@ -1213,14 +1329,14 @@
     "source": "default"
    },
    "magit-diff-hunk-heading": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "magit-diff-hunk-heading-highlight": {
     "fg": null,
@@ -1403,17 +1519,22 @@
     "source": "default"
    },
    "magit-branch-current": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "line",
+     "width": 1,
+     "color": null
+    }
    },
    "magit-branch-local": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -1440,7 +1561,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "line",
+     "width": 1,
+     "color": null
+    }
    },
    "magit-branch-upstream": {
     "fg": null,
@@ -1463,7 +1589,7 @@
     "source": "default"
    },
    "magit-head": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -1493,14 +1619,14 @@
     "source": "default"
    },
    "magit-filename": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "magit-dimmed": {
     "fg": null,
@@ -1583,14 +1709,14 @@
     "source": "default"
    },
    "magit-log-date": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "magit-log-graph": {
     "fg": null,
@@ -1703,14 +1829,14 @@
     "source": "default"
    },
    "magit-blame-heading": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "magit-blame-highlight": {
     "fg": null,
@@ -1743,14 +1869,14 @@
     "source": "default"
    },
    "magit-blame-date": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "magit-blame-summary": {
     "fg": null,
@@ -1903,7 +2029,7 @@
     "source": "default"
    },
    "magit-reflog-checkout": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -1943,24 +2069,24 @@
     "source": "default"
    },
    "magit-reflog-remote": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "magit-reflog-other": {
-    "fg": null,
+    "fg": "#acb0b3",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "magit-sequence-pick": {
     "fg": null,
@@ -1993,7 +2119,7 @@
     "source": "default"
    },
    "magit-sequence-head": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2055,7 +2181,7 @@
   },
   "elfeed": {
    "elfeed-search-date-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2115,7 +2241,7 @@
     "source": "default"
    },
    "elfeed-search-filter-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -2135,7 +2261,7 @@
     "source": "default"
    },
    "elfeed-log-date-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2187,7 +2313,7 @@
   },
   "mu4e": {
    "mu4e-title-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -2197,7 +2323,7 @@
     "source": "default"
    },
    "mu4e-context-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -2237,7 +2363,7 @@
     "source": "default"
    },
    "mu4e-header-title-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -2247,7 +2373,7 @@
     "source": "default"
    },
    "mu4e-header-key-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -2281,7 +2407,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -2337,7 +2463,7 @@
     "source": "default"
    },
    "mu4e-draft-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": true,
@@ -2356,18 +2482,8 @@
     "inherit": null,
     "source": "default"
    },
-   "mu4e-moved-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": true,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
    "mu4e-related-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": true,
@@ -2396,18 +2512,8 @@
     "inherit": null,
     "source": "default"
    },
-   "mu4e-attach-number-face": {
-    "fg": null,
-    "bg": null,
-    "bold": true,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
    "mu4e-url-number-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -2417,81 +2523,11 @@
     "source": "default"
    },
    "mu4e-link-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": true,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-1-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-2-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-3-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-4-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-5-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-6-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-7-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -2527,16 +2563,6 @@
     "source": "default"
    },
    "mu4e-highlight-face": {
-    "fg": null,
-    "bg": null,
-    "bold": true,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-compose-header-face": {
     "fg": null,
     "bg": null,
     "bold": true,
@@ -2629,7 +2655,7 @@
     "source": "default"
    },
    "ghostel-color-blue": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2669,7 +2695,7 @@
     "source": "default"
    },
    "ghostel-color-bright-black": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2761,7 +2787,7 @@
     "source": "default"
    },
    "dashboard-text-banner": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2771,7 +2797,7 @@
     "source": "default"
    },
    "dashboard-heading": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -2791,7 +2817,7 @@
     "source": "default"
    },
    "dashboard-navigator": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2864,10 +2890,10 @@
    },
    "lsp-face-highlight-read": {
     "fg": null,
-    "bg": "#020d20",
+    "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -2875,7 +2901,7 @@
    "lsp-face-highlight-write": {
     "fg": null,
     "bg": "#3d2f4a",
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2897,7 +2923,7 @@
     "bg": null,
     "bold": true,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -2923,7 +2949,7 @@
     "source": "default"
    },
    "lsp-inlay-hint-parameter-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": true,
@@ -2950,10 +2976,11 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "height": 0.8
    },
    "lsp-installation-buffer-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2977,7 +3004,7 @@
    "git-gutter:added": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2987,7 +3014,7 @@
    "git-gutter:modified": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2997,7 +3024,7 @@
    "git-gutter:deleted": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3015,9 +3042,9 @@
     "source": "default"
    },
    "git-gutter:separator": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3031,7 +3058,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -3041,17 +3068,17 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
    },
    "flycheck-info": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -3077,7 +3104,7 @@
     "source": "default"
    },
    "flycheck-fringe-info": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3127,7 +3154,7 @@
     "source": "default"
    },
    "flycheck-error-list-info": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3147,7 +3174,7 @@
     "source": "default"
    },
    "flycheck-error-list-checker-name": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3177,7 +3204,7 @@
     "source": "default"
    },
    "flycheck-error-list-filename": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3187,7 +3214,7 @@
     "source": "default"
    },
    "flycheck-error-list-id": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3197,19 +3224,24 @@
     "source": "default"
    },
    "flycheck-error-list-id-with-explainer": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "flycheck-error-list-highlight": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3224,12 +3256,17 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    }
   },
   "dired": {
    "dired-header": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -3239,7 +3276,7 @@
     "source": "default"
    },
    "dired-directory": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -3391,7 +3428,7 @@
     "source": "default"
    },
    "dirvish-file-modes": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3411,7 +3448,7 @@
     "source": "default"
    },
    "dirvish-file-user-id": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3421,7 +3458,7 @@
     "source": "default"
    },
    "dirvish-file-group-id": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3481,7 +3518,7 @@
     "source": "default"
    },
    "dirvish-subtree-state": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3491,7 +3528,7 @@
     "source": "default"
    },
    "dirvish-collapse-dir-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3531,7 +3568,7 @@
     "source": "default"
    },
    "dirvish-media-info-heading": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -3541,10 +3578,10 @@
     "source": "default"
    },
    "dirvish-media-info-property-key": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
-    "italic": false,
+    "italic": true,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -3561,7 +3598,7 @@
     "source": "default"
    },
    "dirvish-narrow-match-face-1": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -3681,7 +3718,7 @@
     "source": "default"
    },
    "dirvish-vc-locked-state": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3733,7 +3770,7 @@
   },
   "calibredb": {
    "calibredb-search-header-library-name-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -3773,7 +3810,7 @@
     "source": "default"
    },
    "calibredb-search-header-sort-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3787,7 +3824,7 @@
     "bg": null,
     "bold": true,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -3803,7 +3840,7 @@
     "source": "default"
    },
    "calibredb-title-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -3823,7 +3860,7 @@
     "source": "default"
    },
    "calibredb-format-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3883,7 +3920,7 @@
     "source": "default"
    },
    "calibredb-publisher-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3903,7 +3940,7 @@
     "source": "default"
    },
    "calibredb-language-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3943,7 +3980,7 @@
     "source": "default"
    },
    "calibredb-file-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3973,14 +4010,15 @@
     "source": "default"
    },
    "calibredb-current-page-button-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "height": 1.1
    },
    "calibredb-mouse-face": {
     "fg": null,
@@ -4003,7 +4041,7 @@
     "source": "default"
    },
    "calibredb-edit-annotation-header-title-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4035,9 +4073,9 @@
     "source": "default"
    },
    "erc-notice-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4077,7 +4115,7 @@
    "erc-my-nick-prefix-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4085,9 +4123,9 @@
     "source": "default"
    },
    "erc-nick-default-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4097,7 +4135,7 @@
    "erc-nick-prefix-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4105,9 +4143,9 @@
     "source": "default"
    },
    "erc-button-nick-default-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4117,7 +4155,7 @@
    "erc-nick-msg-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4157,7 +4195,7 @@
    "erc-pal-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4205,7 +4243,7 @@
     "source": "default"
    },
    "erc-prompt-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4215,7 +4253,7 @@
     "source": "default"
    },
    "erc-command-indicator-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4225,7 +4263,7 @@
     "source": "default"
    },
    "erc-information": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4235,9 +4273,9 @@
     "source": "default"
    },
    "erc-button": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4328,7 +4366,7 @@
   "org-drill": {
    "org-drill-hidden-cloze-face": {
     "fg": "#000000",
-    "bg": null,
+    "bg": "#8a9496",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -4361,7 +4399,7 @@
    "org-noter-notes-exist-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4371,7 +4409,7 @@
    "org-noter-no-notes-exist-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4391,7 +4429,7 @@
     "source": "default"
    },
    "signel-my-msg-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4423,7 +4461,7 @@
   },
   "pearl": {
    "pearl-preamble-summary": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4454,7 +4492,7 @@
    },
    "pearl-modified-highlight": {
     "fg": null,
-    "bg": "#020d20",
+    "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
@@ -4485,7 +4523,7 @@
   },
   "slack": {
    "slack-room-info-title-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4505,7 +4543,7 @@
     "source": "default"
    },
    "slack-room-info-section-title-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4515,9 +4553,9 @@
     "source": "default"
    },
    "slack-room-info-section-label-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4535,11 +4573,11 @@
     "source": "default"
    },
    "slack-message-output-header": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -4555,14 +4593,19 @@
     "source": "default"
    },
    "slack-message-output-reaction": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-message-output-reaction-pressed": {
     "fg": null,
@@ -4572,7 +4615,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-message-deleted-face": {
     "fg": null,
@@ -4595,7 +4643,7 @@
     "source": "default"
    },
    "slack-all-thread-buffer-thread-header-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4605,7 +4653,7 @@
     "source": "default"
    },
    "slack-message-mention-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4616,7 +4664,7 @@
    },
    "slack-message-mention-me-face": {
     "fg": null,
-    "bg": "#020d20",
+    "bg": null,
     "bold": true,
     "italic": false,
     "underline": false,
@@ -4635,11 +4683,11 @@
     "source": "default"
    },
    "slack-channel-button-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -4715,7 +4763,7 @@
     "source": "default"
    },
    "slack-attachment-header": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4745,7 +4793,7 @@
     "source": "default"
    },
    "slack-attachment-field-title": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4755,9 +4803,9 @@
     "source": "default"
    },
    "slack-message-attachment-preview-header-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4785,14 +4833,19 @@
     "source": "default"
    },
    "slack-message-action-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-message-action-primary-face": {
     "fg": null,
@@ -4802,7 +4855,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-message-action-danger-face": {
     "fg": null,
@@ -4812,7 +4870,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-button-block-element-face": {
     "fg": null,
@@ -4822,7 +4885,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-button-primary-block-element-face": {
     "fg": null,
@@ -4832,7 +4900,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-button-danger-block-element-face": {
     "fg": null,
@@ -4842,40 +4915,60 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-select-block-element-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-overflow-block-element-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-date-picker-block-element-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-dialog-title-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4885,9 +4978,9 @@
     "source": "default"
    },
    "slack-dialog-element-label-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4932,7 +5025,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-dialog-cancel-button-face": {
     "fg": null,
@@ -4942,7 +5040,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-dialog-select-element-input-face": {
     "fg": null,
@@ -4952,7 +5055,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-user-active-face": {
     "fg": null,
@@ -4975,7 +5083,7 @@
     "source": "default"
    },
    "slack-user-profile-header-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4985,7 +5093,7 @@
     "source": "default"
    },
    "slack-user-profile-property-name-face": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5005,7 +5113,7 @@
     "source": "default"
    },
    "slack-search-result-message-header-face": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5057,7 +5165,7 @@
   },
   "telega": {
    "telega-root-heading": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -5087,7 +5195,7 @@
     "source": "default"
    },
    "telega-username": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5167,7 +5275,7 @@
     "source": "default"
    },
    "telega-has-chatbuf-brackets": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5197,7 +5305,7 @@
     "source": "default"
    },
    "telega-link": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5207,7 +5315,7 @@
     "source": "default"
    },
    "telega-blue": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5227,7 +5335,7 @@
     "source": "default"
    },
    "telega-msg-heading": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5237,7 +5345,7 @@
     "source": "default"
    },
    "telega-msg-user-title": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -5277,7 +5385,7 @@
     "source": "default"
    },
    "telega-msg-inline-reply": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5377,7 +5485,7 @@
     "source": "default"
    },
    "telega-entity-type-mention": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5387,7 +5495,7 @@
     "source": "default"
    },
    "telega-entity-type-hashtag": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5417,7 +5525,7 @@
     "source": "default"
    },
    "telega-entity-type-texturl": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5437,7 +5545,7 @@
     "source": "default"
    },
    "telega-reaction": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5497,7 +5605,7 @@
     "source": "default"
    },
    "telega-chat-prompt": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -5507,7 +5615,7 @@
     "source": "default"
    },
    "telega-chat-prompt-aux": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5527,7 +5635,7 @@
     "source": "default"
    },
    "telega-topic-button": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5557,7 +5665,7 @@
     "source": "default"
    },
    "telega-filter-button-inactive": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5577,7 +5685,7 @@
     "source": "default"
    },
    "telega-checklist-stats-todo": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5587,24 +5695,34 @@
     "source": "default"
    },
    "telega-box-button": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-active": {
     "fg": "#000000",
-    "bg": null,
+    "bg": "#67809c",
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-default-active": {
     "fg": "#000000",
@@ -5614,37 +5732,57 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-default-passive": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-primary-active": {
     "fg": "#000000",
-    "bg": null,
+    "bg": "#67809c",
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-primary-passive": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-success-active": {
     "fg": "#000000",
@@ -5654,7 +5792,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-success-passive": {
     "fg": null,
@@ -5664,7 +5807,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-danger-active": {
     "fg": "#000000",
@@ -5674,7 +5822,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-danger-passive": {
     "fg": null,
@@ -5684,7 +5837,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-ui-active": {
     "fg": "#000000",
@@ -5694,7 +5852,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-ui-passive": {
     "fg": null,
@@ -5704,11 +5867,16 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button2-active": {
     "fg": "#000000",
-    "bg": null,
+    "bg": "#67809c",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -5717,7 +5885,7 @@
     "source": "default"
    },
    "telega-box-button2-passive": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5737,7 +5905,7 @@
     "source": "default"
    },
    "telega-describe-item-title": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -5747,17 +5915,17 @@
     "source": "default"
    },
    "telega-describe-section-title": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
    },
    "telega-describe-subsection-title": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5797,7 +5965,7 @@
     "source": "default"
    },
    "telega-enckey-11": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5807,7 +5975,7 @@
     "source": "default"
    },
    "telega-palette-builtin-blue": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5847,7 +6015,7 @@
     "source": "default"
    },
    "telega-webpage-title": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -5857,7 +6025,7 @@
     "source": "default"
    },
    "telega-webpage-subtitle": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5937,7 +6105,7 @@
     "source": "default"
    },
    "telega-webpage-chat-link": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5947,7 +6115,7 @@
     "source": "default"
    },
    "telega-link-preview-sitename": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5957,7 +6125,7 @@
     "source": "default"
    },
    "telega-link-preview-title": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -5980,7 +6148,7 @@
     "height": 1.4
    },
    "shr-h2": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -5991,7 +6159,7 @@
     "height": 1.2
    },
    "shr-h3": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -6011,7 +6179,7 @@
     "source": "default"
    },
    "shr-h5": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -6041,7 +6209,7 @@
     "source": "default"
    },
    "shr-link": {
-    "fg": null,
+    "fg": "#67809c",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6091,21 +6259,22 @@
     "source": "default"
    },
    "shr-sup": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "height": 0.8
    },
    "shr-abbreviation": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": true,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
