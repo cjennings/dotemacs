@@ -54,8 +54,9 @@
 
 ;;; cj/undo-kill-buffer
 
-(ert-deftest test-ui-navigation-undo-kill-buffer-opens-most-recent ()
-  "Normal: with no arg, opens the head of recentf-list that isn't currently visited."
+(ert-deftest test-ui-navigation-undo-kill-buffer-no-prefix-opens-most-recent ()
+  "Normal: no prefix (arg=1, the value `\"p\"' yields) opens the most-recent
+non-visited entry, not the second."
   (let ((opened nil)
         (recentf-mode t)
         (recentf-list '("/tmp/dead.org" "/tmp/alive.txt")))
@@ -71,12 +72,12 @@
               ((symbol-function 'find-file)
                (lambda (f) (setq opened f))))
       (unwind-protect
-          (cj/undo-kill-buffer 0)
+          (cj/undo-kill-buffer 1)
         (when (get-buffer "*test-alive*") (kill-buffer "*test-alive*"))))
     (should (equal opened "/tmp/dead.org"))))
 
-(ert-deftest test-ui-navigation-undo-kill-buffer-honors-numeric-arg ()
-  "Normal: with N=1, opens the second non-visited entry from recentf-list."
+(ert-deftest test-ui-navigation-undo-kill-buffer-numeric-arg-is-one-based ()
+  "Normal: a numeric prefix is 1-based — N=2 opens the second non-visited entry."
   (let ((opened nil)
         (recentf-mode t)
         (recentf-list '("/tmp/a.org" "/tmp/b.org" "/tmp/c.org")))
@@ -85,10 +86,7 @@
               ((symbol-function 'buffer-list) (lambda (&rest _) nil))
               ((symbol-function 'find-file)
                (lambda (f) (setq opened f))))
-      ;; cj/undo-kill-buffer takes a prefix `arg' and indexes into the list
-      ;; with `(nth arg ...)` when arg is non-nil.  Passing 1 grabs the 2nd
-      ;; entry.
-      (cj/undo-kill-buffer 1))
+      (cj/undo-kill-buffer 2))
     (should (equal opened "/tmp/b.org"))))
 
 (ert-deftest test-ui-navigation-undo-kill-buffer-no-op-when-list-empty ()

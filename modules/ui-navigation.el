@@ -160,7 +160,9 @@ This function won't work with more than one split window."
 
 ;; UNDO KILL BUFFER
 (defun cj/undo-kill-buffer (arg)
-  "Re-open the last buffer killed.  With ARG, re-open the nth buffer."
+  "Re-open the last buffer killed.
+With numeric prefix ARG, re-open the ARGth most-recently-killed file
+\(1-based, so no prefix re-opens the most recent)."
   (interactive "p")
   (require 'recentf)
   (unless recentf-mode
@@ -178,8 +180,7 @@ This function won't work with more than one split window."
 	 buffer-files-list)
 	(when recently-killed-list
 	  (find-file
-	   (if arg (nth arg recently-killed-list)
-		 (car recently-killed-list))))))
+	   (nth (1- arg) recently-killed-list)))))
 (keymap-global-set "M-S-z" #'cj/undo-kill-buffer)  ;; was M-Z, overrides zap-to-char
 
 ;; ---------------------------- Undo Layout Changes ----------------------------
