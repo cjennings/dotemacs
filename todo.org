@@ -780,8 +780,9 @@ Also =jumper.el:178= — the promised single-location toggle never toggles back 
 ** TODO [#B] C-s C-s vertico-repeat path never works :bug:quick:solo:
 =modules/selection-framework.el:263= — =cj/consult-line-or-repeat= calls =vertico-repeat= on the second consecutive C-s, but nothing adds =vertico-repeat-save= to =minibuffer-setup-hook= (grep: zero hits config-wide), so it always signals "No Vertico session". Add the hook next to the vertico use-package block. From the 2026-06 config audit.
 
-** TODO [#B] dashboard-config setq wipes recentf-exclude list :bug:quick:solo:
-=modules/dashboard-config.el:199= =(setq recentf-exclude '("/emms/history"))= discards the five exclusions system-defaults.el:239-243 added earlier in init order (bookmarks, elpa, recentf, ElfeedDB, airootfs). Change to =add-to-list=. From the 2026-06 config audit.
+** DONE [#B] dashboard-config setq wipes recentf-exclude list :bug:quick:solo:
+CLOSED: [2026-06-12 Fri]
+Fixed in =modules/dashboard-config.el=: extracted the EMMS exclusion into =cj/--dashboard-exclude-emms-from-recentf= (the =:config= side-effect was not reachable for a test) and switched =setq= to =add-to-list=, so the five exclusions system-defaults adds earlier in init order survive. Two ERT tests in =tests/test-dashboard-config-recentf-exclude.el= (preserves prior entries / adds the pattern); the preservation test was red before, green after. Live-reloaded into the daemon and restored the five wiped entries in the running session.
 
 ** TODO [#B] auth-config: unguarded gpg-connect-agent call + compile-time require :bug:quick:solo:
 From the 2026-06 config audit. =modules/auth-config.el:88= — bare =(call-process "gpg-connect-agent" ...)= in a =:demand t= :config signals file-missing and aborts init on machines without the binary; guard with =cj/executable-find-or-warn=. =auth-config.el:36= — =user-constants= is required only =eval-when-compile= but =authinfo-file= is read at load time; works from .el source, fails from standalone .elc. Use a runtime require (system-defaults.el:32-35 documents this exact trap).

@@ -145,6 +145,12 @@ window."
 ;; --------------------------------- Dashboard ---------------------------------
 ;; a useful startup screen for Emacs
 
+(defun cj/--dashboard-exclude-emms-from-recentf ()
+  "Exclude the EMMS history file from recentf.
+Adds to `recentf-exclude' so entries set elsewhere (e.g. in
+system-defaults) are preserved rather than overwritten."
+  (add-to-list 'recentf-exclude "/emms/history"))
+
 (use-package dashboard
   :demand t
   :hook (emacs-startup . cj/dashboard-only)
@@ -196,7 +202,7 @@ window."
   (setq dashboard-bookmarks-show-path nil)                            ;; don't show paths in bookmarks
   (setq dashboard-recentf-show-base t)                                ;; show filename, not full path
   (setq dashboard-recentf-item-format "%s")
-  (setq recentf-exclude '("/emms/history"))                            ;; exclude EMMS history from recent files
+  (cj/--dashboard-exclude-emms-from-recentf)                            ;; exclude EMMS history from recent files
   (setq dashboard-set-footer nil)                                     ;; don't show footer and quotes
 
   ;; == navigation
