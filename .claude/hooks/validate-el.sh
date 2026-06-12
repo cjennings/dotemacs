@@ -51,7 +51,12 @@ case "$f" in
     fi
     ;;
   *.el)
+    # -L the file's own directory (and a sibling project root for files
+    # under a tests/ subdir) so cross-project edits compile against their
+    # own modules, not just this project's.
     if ! output="$(emacs --batch --no-site-file --no-site-lisp \
+                     -L "$(dirname "$f")" \
+                     -L "$(dirname "$f")/.." \
                      -L "$PROJECT_ROOT" \
                      -L "$PROJECT_ROOT/modules" \
                      -L "$PROJECT_ROOT/tests" \
