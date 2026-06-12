@@ -97,7 +97,9 @@ With a prefix arg OTHER-DIR, prompt for the directory instead of `drill-dir'."
   (interactive)
   (let ((org-refile-targets
          `((nil :maxlevel . 1)
-           (,(directory-files drill-dir t "\\.org$") :maxlevel . 1))))
+           (,(mapcar (lambda (f) (expand-file-name f drill-dir))
+                     (cj/--drill-files-or-error drill-dir))
+            :maxlevel . 1))))
     (call-interactively 'org-refile)))
 
 ;; ------------------------------- Drill Keymap --------------------------------

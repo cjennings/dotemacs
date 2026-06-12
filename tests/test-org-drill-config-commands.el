@@ -71,12 +71,19 @@
 
 ;;; cj/drill-refile
 
-(ert-deftest test-org-drill-refile-delegates-with-file-targets ()
-  "Normal: drill-refile dispatches to `org-refile' with current buffer +
-the list of drill .org files (not the `drill-dir' variable symbol)."
-  (let (seen-targets called-fn)
-    (cl-letf (((symbol-function 'directory-files)
-               (lambda (&rest _) '("/tmp/cj-drill/a.org" "/tmp/cj-drill/b.org")))
+(ert-deftest test-org-drill-refile-targets-from-validated-helper ()
+  "Normal: drill-refile builds its drill targets from the shared
+`cj/--drill-files-or-error' helper, expanded against `drill-dir' — not from
+a raw `directory-files' call (so it inherits the helper's dot-file exclusion
+and validation)."
+  (let ((drill-dir "/tmp/cj-drill/")
+        seen-targets called-fn)
+    (cl-letf (((symbol-function 'cj/--drill-files-or-error)
+               (lambda (_dir) '("a.org" "b.org")))
+              ;; If the old raw path were still in use it would call
+              ;; `directory-files'; a sentinel here keeps it from masquerading.
+              ((symbol-function 'directory-files)
+               (lambda (&rest _) '("/WRONG/raw.org")))
               ((symbol-function 'call-interactively)
                (lambda (fn)
                  (setq called-fn fn
@@ -85,20 +92,29 @@ the list of drill .org files (not the `drill-dir' variable symbol)."
     (should (eq called-fn 'org-refile))
     (should (= 2 (length seen-targets)))
     (should (assoc nil seen-targets))
-    ;; The drill entry's car is a real list of .org files, never the
-    ;; `drill-dir' symbol (org reads a bound symbol as the directory string).
-    (let ((files (car (nth 1 seen-targets))))
-      (should (equal files '("/tmp/cj-drill/a.org" "/tmp/cj-drill/b.org")))
-      (should-not (eq files 'drill-dir)))))
+    (should (equal (car (nth 1 seen-targets))
+                   '("/tmp/cj-drill/a.org" "/tmp/cj-drill/b.org")))))
 
 (ert-deftest test-org-drill-refile-does-not-clobber-global-targets ()
   "Error: drill-refile let-binds `org-refile-targets'; the session-wide value
 survives the call instead of being permanently replaced."
-  (let ((org-refile-targets '((sentinel :maxlevel . 9))))
-    (cl-letf (((symbol-function 'directory-files) (lambda (&rest _) nil))
+  (let ((drill-dir "/tmp/cj-drill/")
+        (org-refile-targets '((sentinel :maxlevel . 9))))
+    (cl-letf (((symbol-function 'cj/--drill-files-or-error) (lambda (_dir) '("a.org")))
               ((symbol-function 'call-interactively) (lambda (_fn) nil)))
       (cj/drill-refile))
     (should (equal org-refile-targets '((sentinel :maxlevel . 9))))))
+
+(ert-deftest test-org-drill-refile-errors-on-missing-drill-dir ()
+  "Error: a missing or unreadable drill dir signals a clear `user-error' via
+the shared validated helper, instead of a low-level error, and never reaches
+`org-refile'."
+  (let ((drill-dir (expand-file-name "cj-drill-nonexistent-XYZ/"
+                                     temporary-file-directory))
+        (called nil))
+    (cl-letf (((symbol-function 'call-interactively) (lambda (_fn) (setq called t))))
+      (should-error (cj/drill-refile) :type 'user-error))
+    (should-not called)))
 
 (provide 'test-org-drill-config-commands)
 ;;; test-org-drill-config-commands.el ends here
