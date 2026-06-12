@@ -102,5 +102,18 @@ non-visited entry, not the second."
       (cj/undo-kill-buffer 0))
     (should-not opened)))
 
+(ert-deftest test-ui-navigation-undo-kill-buffer-out-of-range-arg-errors ()
+  "Error: a prefix larger than the killed-file list signals a clear user-error,
+not a wrong-type-argument from find-file on nil."
+  (let ((opened nil)
+        (recentf-mode t)
+        (recentf-list '("/tmp/a.org")))
+    (cl-letf (((symbol-function 'require) (lambda (&rest _) t))
+              ((symbol-function 'recentf-mode) (lambda (&rest _) t))
+              ((symbol-function 'buffer-list) (lambda (&rest _) nil))
+              ((symbol-function 'find-file) (lambda (f) (setq opened f))))
+      (should-error (cj/undo-kill-buffer 5) :type 'user-error))
+    (should-not opened)))
+
 (provide 'test-ui-navigation-split-follow-undo-kill)
 ;;; test-ui-navigation-split-follow-undo-kill.el ends here

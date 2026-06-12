@@ -179,8 +179,11 @@ With numeric prefix ARG, re-open the ARGth most-recently-killed file
 			 (delq buf-file recently-killed-list)))
 	 buffer-files-list)
 	(when recently-killed-list
-	  (find-file
-	   (nth (1- arg) recently-killed-list)))))
+	  (let ((file (nth (1- arg) recently-killed-list)))
+		(if file
+			(find-file file)
+		  (user-error "Only %d killed file(s) to choose from"
+					  (length recently-killed-list)))))))
 (keymap-global-set "M-S-z" #'cj/undo-kill-buffer)  ;; was M-Z, overrides zap-to-char
 
 ;; ---------------------------- Undo Layout Changes ----------------------------
