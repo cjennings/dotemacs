@@ -149,6 +149,7 @@ window."
   "Exclude the EMMS history file from recentf.
 Adds to `recentf-exclude' so entries set elsewhere (e.g. in
 system-defaults) are preserved rather than overwritten."
+  (require 'recentf)
   (add-to-list 'recentf-exclude "/emms/history"))
 
 (use-package dashboard
