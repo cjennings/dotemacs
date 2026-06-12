@@ -409,7 +409,7 @@ Uses feh on X11, swww on Wayland."
      ("pwk" "~/projects/work/"                               "project work")
      ("pl" "~/projects/elibrary/"                           "project elibrary")
      ("pf" "~/projects/finances/"                           "project finances")
-     ("pjr" "~/projects/jr-estate/"                         "project jr-estate")
+     ("pjr" "~/projects/home/jr-estate/"                    "project jr-estate")
      ("phx" "~/projects/health/"                            "project health")
      ("phl" "~/projects/homelab/"                           "project homelab")
      ("pk" "~/projects/kit/"                                "project kit")
