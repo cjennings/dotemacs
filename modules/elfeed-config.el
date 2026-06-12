@@ -33,7 +33,7 @@
 
 (use-package elfeed
   :bind
-  ("M-S-r" . cj/elfeed-open)  ;; was M-R
+  ("M-R" . cj/elfeed-open)  ;; Meta+Shift+r emits the uppercase event
   (:map elfeed-show-mode-map
         ("w"  . eww-open-in-new-buffer))
   (:map elfeed-search-mode-map
