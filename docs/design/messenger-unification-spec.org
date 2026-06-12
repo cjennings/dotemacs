@@ -1,7 +1,7 @@
 #+TITLE: Messenger Unification — Shared Window Placement and Key Conventions
 #+AUTHOR: Craig Jennings & Claude
 #+DATE: 2026-06-11
-#+STATUS: Draft — decisions 1-8 settled (Craig, 2026-06-11); held open for further ideas before Ready
+#+STATUS: Draft — decisions 1-9 settled (Craig, 2026-06-11/12); held open for further ideas before Ready
 
 * Problem
 
@@ -116,9 +116,13 @@ directions.
 
 ** Backend wiring (per messenger, in its existing config module)
 
-- Signel: registration call only. The fork's own local-set-key bindings stay —
-  they're identical to the minor mode's dispatch, and harmless duplication
-  beats a fork edit.
+- Smoke (the ground-up signel replacement at =~/code/smoke=, decided
+  2026-06-12): implements the conventions natively from day one — bottom
+  drawer, dismiss-preserving C-c C-k per decision 3, unread tracking feeding
+  jump-to-unread — per its architecture spec. Signel remains the running
+  reference until smoke reaches parity; =signal-config.el='s private display
+  entry retires at the switchover. Registration stays one call; smoke is the
+  reference backend. (Tracked in the smoke project's todo.)
 - telega: =:confirm #'telega-chatbuf-input-send=, =:cancel= wraps
   =telega-chatbuf-cancel-dwim= (decision 3 ladder), =:buffer-match
   '(telega-chat-mode)=.
@@ -132,11 +136,18 @@ directions.
    height defcustom 0.3. Proven by signel. (Proposed.)
 2. One registry call per messenger is the entire integration surface; the
    library owns the display rule and keymap. (Proposed.)
-3. Cancel semantics (Craig, 2026-06-11): the dwim ladder for C-c C-k —
-   (a) pending typed input → clear it; (b) backend pending state (telega
-   edit/reply/forward) → backend's own dwim cancel; (c) nothing pending →
-   =quit-window= (window closes, buffer buries). Bare C-c C-k on an idle chat
-   closes the window.
+3. Cancel semantics (Craig, 2026-06-11; superseded 2026-06-12): C-c C-k
+   dismisses, never destroys — (a) backend pending state (telega
+   edit/reply/forward) → the backend's own dwim cancel; (b) otherwise →
+   =quit-window=. Typed drafts are not cancel's business: input survives the
+   burial and is waiting at the prompt on the next visit (signel's
+   pending-input machinery, generalized). Where a backend wants an explicit
+   clear-draft, it kills to the kill-ring so the text is recoverable.
+   /Superseded version (2026-06-11):/ a three-rung ladder whose first rung
+   cleared typed input before a second press closed the window — dropped
+   because the first press destroyed text while dismissing nothing, and it
+   broke the org-capture/git-commit muscle memory where C-c C-k means
+   "abandon and dismiss" in one press.
 4. Telega shadow accepted (Craig, 2026-06-11): the minor mode's C-c C-c hides
    =telega-chatbuf-filter-cancel= in telega chats. Craig doesn't use chat
    filters; the command stays reachable via M-x and the C-c / filter flow.
@@ -144,8 +155,12 @@ directions.
    from the beside-work split to the shared bottom rule; =cj/slack--display-buffer=
    is retired in favor of the library's placement entry. Compose buffers
    conform via the minor mode as planned.
-6. v1 verb set: confirm, cancel, attach. Candidates for a later phase:
-   next/prev unread, jump-to-chat picker, mark-read-and-bury. (Proposed.)
+6. v1 verb set: confirm, cancel, attach. Revised 2026-06-12 (Craig):
+   jump-to-unread is promoted from candidate to committed verb — a global
+   chord that raises the most recent unread conversation in the bottom
+   window, completing the pull flow (toast → chord → chat). Backends supply
+   an unread source at registration (=:unread=). Still candidates:
+   next/prev-unread, jump-to-chat picker, mark-read-and-bury.
    Addendum from the 2026-06 config audit: the notification path is the same
    unification shape on the inbound side — four messengers, four mechanisms
    (signel hardened with truncation/sound-gating/fallback; slack unhardened;
@@ -158,6 +173,11 @@ directions.
    investigation task in =todo.org= — if it goes, it joins through the same
    registration surface.
 8. RET is never rebound or removed. (Proposed.)
+9. No auto-open, ever (Craig, 2026-06-12): no backend claims the bottom slot
+   unbidden — awareness is pull-based (hardened notifications +
+   jump-to-unread). =signel-auto-open-buffer= stays nil and equivalent knobs
+   in other backends are configured off. The drawer is summoned by the user,
+   not by traffic.
 
 * Phases
 
@@ -168,8 +188,9 @@ directions.
 - *Phase 2 — telega.* Registration + the decision-3 cancel ladder; audit what
   else the minor-mode map hides in =telega-chat-mode-map=.
 - *Phase 3 — slack.* Per decision 5; conform compose buffers either way.
-- *Phase 4 (optional) — shared verbs + ERC.* Decision-6 candidates, each verb
-  landing in every backend at once.
+- *Phase 4 — shared verbs + ERC.* jump-to-unread first (committed per the
+  decision-6 revision), then remaining decision-6 candidates, each verb
+  landing in every backend at once. ERC joins when wanted.
 
 Each phase ends with a manual-test checklist filed under the
 "Manual testing and validation" parent in =todo.org= (placement, each chord,
