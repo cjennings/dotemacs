@@ -792,8 +792,9 @@ From the 2026-06 config audit. =modules/auth-config.el:88= — bare =(call-proce
 ** TODO [#B] markdown live preview clobbered by markdown-mode :bug:quick:solo:
 =modules/markdown-config.el:54= defines bare =markdown-preview=, which markdown-mode redefines the moment the first .md loads — the impatient-mode live preview is dead and F2 silently runs the package command (agent verified in the live daemon). Also =:61= guards on =(boundp 'httpd-process)=, a variable that doesn't exist in simple-httpd — use =(httpd-running-p)=. And the =:config= =(setq imp-set-user-filter 'markdown-html)= at line 41 is doubly dead (function-not-variable, symbol names nothing) — delete. Rename to =cj/markdown-preview=, rebind F2. From the 2026-06 config audit.
 
-** TODO [#B] org-roam dailies template writes FILETAGS and TITLE on one line :bug:quick:solo:
-=modules/org-roam-config.el:42= — the "d" dailies head is ="#+FILETAGS: Journal #+TITLE: %<%Y-%m-%d>"= with no newline, so every C-c n d daily is malformed: no parsed #+TITLE, FILETAGS value "Journal #+TITLE: ...". The journal-copy template (lines 213-216) has it right. Add the newline; consider a sweep of existing dailies for the malformed first line. From the 2026-06 config audit.
+** DONE [#B] org-roam dailies template writes FILETAGS and TITLE on one line :bug:quick:solo:
+CLOSED: [2026-06-12 Fri]
+Fixed in =modules/org-roam-config.el=: extracted the dailies head into the =cj/--org-roam-dailies-head= defconst (so it is unit-testable, the value was unreachable inside the use-package =:custom= form) and gave it real newlines — =#+FILETAGS: Journal\n#+TITLE: %<%Y-%m-%d>\n=. Two ERT tests in =tests/test-org-roam-config-dailies-head.el= assert FILETAGS and TITLE sit on separate lines and the head ends in a newline (both red before, green after). Live-reloaded into the daemon. Open follow-up for Craig: existing malformed daily files (with the run-together first line) are data, not code — sweep them by hand if desired.
 
 ** TODO [#B] agenda sources: roam Projects missing, no existence filtering :bug:solo:
 From the 2026-06 config audit, =modules/org-agenda-config.el=:

@@ -29,6 +29,12 @@
 
 ;; ---------------------------------- Org Roam ---------------------------------
 
+(defconst cj/--org-roam-dailies-head
+  "#+FILETAGS: Journal\n#+TITLE: %<%Y-%m-%d>\n"
+  "Head inserted into a new org-roam daily file.
+FILETAGS and TITLE must sit on separate lines so Org parses the
+#+TITLE keyword (see `org-roam-dailies-capture-templates').")
+
 (use-package org-roam
   :defer 1
   :commands (org-roam-node-find org-roam-node-insert org-roam-db-autosync-mode)
@@ -37,9 +43,9 @@
   (org-roam-dailies-directory journals-dir)
   (org-roam-completion-everywhere t)
   (org-roam-dailies-capture-templates
-   '(("d" "default" entry "* %<%I:%M:%S %p %Z> %?"
+   `(("d" "default" entry "* %<%I:%M:%S %p %Z> %?"
 	  :if-new (file+head "%<%Y-%m-%d>.org"
-						 "#+FILETAGS: Journal #+TITLE: %<%Y-%m-%d>"))))
+						 ,cj/--org-roam-dailies-head))))
 
   (org-roam-capture-templates
    `(("d" "default" plain "%?"
