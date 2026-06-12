@@ -44,6 +44,9 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
+** TODO [#B] ai-term adaptive side/bottom window placement :feature:solo:
+The ai-term window should dock from whichever edge conserves more screen space, chosen at display time from the frame's aspect ratio: when the frame is wider than it is tall, dock from the right; when it is square or taller than wide, dock from the bottom. Compare the frame's pixel width against its height in the display-buffer rule to pick the edge.
+
 ** TODO [#A] Calibre Open Work
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-06
@@ -1454,20 +1457,14 @@ Expected outcome:
 - Add a note to the local repository docs so future package failures do not
   lead to permanent insecure defaults.
 
-** DOING [#B] Signel Client Open Work
+** DONE [#B] Signel Client Open Work
+CLOSED: [2026-06-12 Fri]
 :PROPERTIES:
-:LAST_REVIEWED: 2026-06-06
+:LAST_REVIEWED: 2026-06-12
 :END:
-Parent task for the Emacs Signal client. Engine: signal-cli (linked secondary device). Front end: a fork of signel at =~/code/signel=, wired through =modules/signal-config.el=. Design: [[file:docs/design/signal-client.org][docs/design/signal-client.org]]. Child issues below.
+Parent task for the Emacs Signal client bring-up. Engine: signal-cli (linked secondary device). Front end: a fork of signel at =~/code/signel=, wired through =modules/signal-config.el=. Design: [[file:docs/design/signal-client.org][docs/design/signal-client.org]].
 
-*** TODO [#C] signel--handle-error leaks request-buffer-map entries :bug:quick:solo:
-Surfaced during the JSON-RPC dispatch refactor audit. =signel--handle-error= reads =signel--request-buffer-map= by id but never =remhash='es the entry, so every error response leaves the request-id → buffer-name mapping behind for the life of the process. Low impact (the map clears on stop/start, and id collisions are unlikely at the counter scale), but unbounded growth in a long-lived session and inconsistent with how the new request-handler-map is cleaned up on error.
-
-*** TODO [#B] Link command with QR :feature:
-=cj/signel-link= wrapping =signal-cli link -n NAME=, capturing the =sgnl://linkdevice= URI and rendering it as a scannable QR (qrencode). Convenience for re-linking; the first link was done by hand this session.
-
-*** TODO [#D] Include Signal groups in the picker :feature:
-vNext after the 1:1 initiate-message flow is stable. Merge =listGroups= with =listContacts=, label groups distinctly, and preserve the current v1 behavior where the picker is contacts-only.
+Closed 2026-06-12: the bring-up shipped (dated history below). The signel project now has its own =.ai/= scope, so all open signel/signal-cli issues moved to [[file:~/code/signel/todo.org][the signel todo]] and are tracked there flat (the three open children here — handle-error leak, link-with-QR, groups in picker — moved in that pass). Work on =modules/signal-config.el= stays in this file.
 
 *** 2026-06-12 Fri @ 07:34:05 -0500 Signel notify-only-for-unviewed-conversation shipped
 Wire =cj/signal--should-notify-p= (done) into signel's =signel--handle-receive= notify block (signel.el:277), route through Craig's notify script instead of bare =notifications-notify=, and gate sound behind a defcustom that defaults off. Spec addendum (the four notify details + wiring architecture) accepted 2026-06-11 — see [[file:docs/design/signal-client.org][signal-client.org]] "Notification slice".
@@ -4485,6 +4482,12 @@ Implemented 2026-06-06 in =modules/org-capture-config.el=: a shared project-awar
 ** VERIFY [#C] Palette-columns spec review
 SCHEDULED: <2026-06-12 Fri>
 Read [[file:docs/theme-studio-palette-columns-spec.org][docs/theme-studio-palette-columns-spec.org]] (Draft, from the 2026-06-10 design discussion) and bless or amend. Decisions 9 and 10 are the two session calls awaiting your word: strips flip to lightest→darkest top→bottom to match the dropdown, and each dropdown column run places the base at its natural lightness position (vs bg/fg bases leading before any steps). On "spec's good": mark Ready, file the phase breakdown, cancel the [#C] hint-override task, start Phase 1.
+
+** VERIFY [#C] page-signal pager account deregistered — re-registration needs your hands
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-12
+:END:
+Reported by .emacs.d 2026-06-12 01:01: the dedicated pager number (+15045173983, the Claude Pager Google Voice number on signal-cli) returns "User ... is not registered" on every send — Signal appears to have deregistered it (GV numbers get periodically re-verified). Re-registration requires captcha/SMS, which only you can do. Until then every page-signal call fails; .emacs.d's config-audit page fell back to email. Wrapper lives at claude-templates/bin/page-signal.
 
 * Emacs Resolved
 ** DONE [#B] Fix likely =elpa-mirror-location= path bug :bug:quick:
