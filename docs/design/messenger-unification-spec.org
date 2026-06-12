@@ -1,0 +1,187 @@
+#+TITLE: Messenger Unification — Shared Window Placement and Key Conventions
+#+AUTHOR: Craig Jennings & Claude
+#+DATE: 2026-06-11
+#+STATUS: Draft — decisions 1-8 settled (Craig, 2026-06-11); held open for further ideas before Ready
+
+* Problem
+
+Three messengers live in this config — Signel (Signal), telega (Telegram), and
+emacs-slack — and each invented its own window placement and its own send/cancel
+chords. Switching between them means re-learning the same two gestures three
+times. The goal: chat windows rise from the bottom of the frame under one rule,
+C-c C-c acts as the okay button, C-c C-k cancels, and a messenger joins the
+convention with one registration call instead of bespoke config. The same
+registration should carry a shared verb set (attach now; next-unread,
+jump-to-chat later) so future chords land everywhere at once.
+
+* Current State (surveyed 2026-06-11)
+
+** Signel (fork at ~/code/signel, =signel-chat-mode=)
+
+- Placement: bottom 30% via a private =display-buffer-alist= entry
+  (=modules/signal-config.el:184=, matches =\`\*Signel: =).
+- Keys (bound in the fork, =signel.el:493=): RET and C-c C-c send
+  (=signel--send-input=), C-c C-k clears input (=signel--cancel-input=),
+  C-c C-a attaches a file.
+- Verdict: already the proposed convention. Becomes the reference backend.
+
+** telega (=telega-chat-mode=)
+
+- Placement: none configured — falls to display-buffer's defaults.
+- Keys (upstream =telega-chat.el=): RET sends
+  (=telega-chatbuf-newline-or-input-send=, line 1796); C-c C-k already cancels
+  (=telega-chatbuf-cancel-dwim=, line 1790 — also on C-M-c and ESC ESC);
+  C-c C-c is taken by =telega-chatbuf-filter-cancel= (line 1832).
+- Verdict: half-conformant. Cancel matches; confirm needs the chord, which
+  shadows filter-cancel (decision 4).
+
+** emacs-slack
+
+- Placement: room buffers route through =cj/slack--display-buffer=
+  (=modules/slack-config.el:105=) — reuse / some-window / pop-up, deliberately
+  landing beside current work in a split.
+- Keys: compose/edit buffers derive from =slack-edit-message-mode=, which
+  already binds C-c C-c send (=slack-message-send-from-buffer=) and C-c C-k
+  cancel (=slack-message-cancel-edit=) upstream (=slack-message-editor.el:46=).
+  Config adds C-<return> send (=slack-config.el:297=). Room buffers are
+  read-only; composing happens in the separate compose buffer.
+- Verdict: keys already conform in compose. The open question is placement
+  (decision 5).
+
+** ERC
+
+Present (=modules/erc-config.el=) but out of scope for v1; joins later with one
+registration call (decision 7).
+
+* Design
+
+Two cooperating mechanisms in one new library, =modules/cj-messenger-lib.el=.
+Each messenger's =*-config.el= makes a single registration call; the library
+owns the display rule and the keymap.
+
+** The registry
+
+#+begin_src elisp
+(cj/messenger-register 'signel
+  :buffer-match "\\`\\*Signel: "          ; regexp, or a list of major modes
+  :chat-modes  '(signel-chat-mode)        ; hooks that enable the minor mode
+  :confirm     #'signel--send-input
+  :cancel      #'signel--cancel-input
+  :attach      #'signel-attach-file)
+#+end_src
+
+- =:buffer-match= feeds the window-placement predicate.
+- =:chat-modes= names the major-mode hooks where =cj/messenger-mode= turns on.
+- The verb keys (=:confirm=, =:cancel=, =:attach=, future verbs) populate
+  buffer-local dispatch variables when the minor mode enables. A nil verb means
+  "not supported here" — the dispatcher reports it instead of erroring.
+
+** Window placement
+
+One =display-buffer-alist= entry, installed by the library:
+
+- Condition: =cj/messenger-buffer-p= — true when the buffer matches any
+  registered =:buffer-match=.
+- Action: =(display-buffer-reuse-window display-buffer-at-bottom)= with
+  =window-height= from a shared defcustom =cj/messenger-window-height=
+  (default 0.3) and =reusable-frames nil= — the exact shape signel uses today.
+  Signel's private entry in =signal-config.el= is removed in favor of this one.
+- A registration may override the height for one backend if a real need
+  appears; the default is the convention.
+
+Deliberately a normal bottom window (=display-buffer-at-bottom=), not a side
+window: side windows are atomic, refuse splits, and fight other display
+commands. The signel entry has proven the at-bottom shape in daily use. The
+geometry capture/replay helpers in =cj-window-toggle-lib.el= can be layered on
+later if remembered sizing is wanted (out of scope for v1).
+
+** The minor mode and dispatch
+
+=cj/messenger-mode=, a buffer-local minor mode whose keymap outranks the major
+mode's:
+
+- C-c C-c → =cj/messenger-confirm=
+- C-c C-k → =cj/messenger-cancel=
+- C-c C-a → =cj/messenger-attach=
+
+Each command funcalls its buffer-local dispatch variable
+(=cj/messenger--confirm-fn= etc.), set from the registry when the mode enables
+via the registered =:chat-modes= hooks. Unset verb → =user-error= naming the
+messenger and the missing verb. RET is untouched — every backend keeps its
+native RET behavior; the convention adds chords, it never removes keys.
+
+This is the established Emacs-wide C-c C-c / C-c C-k convention (org-capture,
+message-mode, with-editor/git-commit), so the muscle memory transfers in both
+directions.
+
+** Backend wiring (per messenger, in its existing config module)
+
+- Signel: registration call only. The fork's own local-set-key bindings stay —
+  they're identical to the minor mode's dispatch, and harmless duplication
+  beats a fork edit.
+- telega: =:confirm #'telega-chatbuf-input-send=, =:cancel= wraps
+  =telega-chatbuf-cancel-dwim= (decision 3 ladder), =:buffer-match
+  '(telega-chat-mode)=.
+- Slack: compose modes get the minor mode for uniformity (shadowing upstream's
+  identical bindings — a no-op in practice); room-buffer placement per
+  decision 5.
+
+* Decisions
+
+1. Placement engine is =display-buffer-at-bottom= in a normal window, shared
+   height defcustom 0.3. Proven by signel. (Proposed.)
+2. One registry call per messenger is the entire integration surface; the
+   library owns the display rule and keymap. (Proposed.)
+3. Cancel semantics (Craig, 2026-06-11): the dwim ladder for C-c C-k —
+   (a) pending typed input → clear it; (b) backend pending state (telega
+   edit/reply/forward) → backend's own dwim cancel; (c) nothing pending →
+   =quit-window= (window closes, buffer buries). Bare C-c C-k on an idle chat
+   closes the window.
+4. Telega shadow accepted (Craig, 2026-06-11): the minor mode's C-c C-c hides
+   =telega-chatbuf-filter-cancel= in telega chats. Craig doesn't use chat
+   filters; the command stays reachable via M-x and the C-c / filter flow.
+5. Slack joins the bottom convention (Craig, 2026-06-11): room buffers move
+   from the beside-work split to the shared bottom rule; =cj/slack--display-buffer=
+   is retired in favor of the library's placement entry. Compose buffers
+   conform via the minor mode as planned.
+6. v1 verb set: confirm, cancel, attach. Candidates for a later phase:
+   next/prev unread, jump-to-chat picker, mark-read-and-bury. (Proposed.)
+   Addendum from the 2026-06 config audit: the notification path is the same
+   unification shape on the inbound side — four messengers, four mechanisms
+   (signel hardened with truncation/sound-gating/fallback; slack unhardened;
+   ERC double-notifying; telega notifying not at all). A shared
+   =cj/messenger-notify= (title prefix, truncation, sound flag,
+   script-with-fallback) belongs in this library, registered per backend like
+   the verbs. Details in the audit's messengers findings in =todo.org=.
+7. ERC deferred; one registration call when wanted. (Proposed.) Google Voice
+   (SMS + dialer) is a future backend candidate behind its own [#C]
+   investigation task in =todo.org= — if it goes, it joins through the same
+   registration surface.
+8. RET is never rebound or removed. (Proposed.)
+
+* Phases
+
+- *Phase 1 — library + signel (reference backend).* =cj-messenger-lib.el=
+  (registry, predicate, display rule, minor mode, dispatchers), TDD: ERT over
+  the pure parts (registration shape, buffer matching, dispatch with stub
+  fns, nil-verb error). Wire signel; retire its private display entry.
+- *Phase 2 — telega.* Registration + the decision-3 cancel ladder; audit what
+  else the minor-mode map hides in =telega-chat-mode-map=.
+- *Phase 3 — slack.* Per decision 5; conform compose buffers either way.
+- *Phase 4 (optional) — shared verbs + ERC.* Decision-6 candidates, each verb
+  landing in every backend at once.
+
+Each phase ends with a manual-test checklist filed under the
+"Manual testing and validation" parent in =todo.org= (placement, each chord,
+the not-supported message), per the verification discipline.
+
+* Risks
+
+- Minor-mode shadowing in telega beyond C-c C-c — Phase 2 audits the C-c
+  prefix in =telega-chat-mode-map= before shipping.
+- Slack's many buffer modes: room buffers derive from =slack-buffer-mode=,
+  compose from =slack-edit-message-mode= — =:buffer-match= must name the right
+  ancestors or the placement rule over- or under-matches.
+- Live-daemon rollout: the display-buffer-alist swap and mode hooks need a
+  module reload plus re-opening existing chat buffers (already-open buffers
+  won't have the minor mode until their mode hook reruns).
