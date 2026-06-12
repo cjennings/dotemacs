@@ -818,6 +818,8 @@ From the 2026-06 config audit, =modules/calendar-sync.el=:
 CLOSED: [2026-06-12 Fri]
 Fixed in =modules/org-drill-config.el=: =cj/drill-refile= now =let=-binds =org-refile-targets= (the session-wide value survives) and supplies =(directory-files drill-dir t "\\.org$")= as the file list instead of the bound =drill-dir= symbol (org reads a bound symbol as a directory string, which yielded nothing). Rewrote the stale test (it asserted the buggy =(assoc 'drill-dir ...)=) into two: targets are a real .org file list, and the global is not clobbered. Both red before, green after. Live-reloaded into the daemon.
 
+Follow-up 2026-06-12 (Codex review): the first fix reinvented file-listing with a raw =directory-files= call, bypassing the shared validated entry point =cj/--drill-files-or-error= — no missing/unreadable-dir =user-error=, silent fall-through on an empty dir, and it included leading-dot =.org= files the rest of the module excludes. Re-routed through =cj/--drill-files-or-error= + =expand-file-name=; the test was rewritten into three (validated-helper targets, no global clobber, =user-error= on a missing dir).
+
 ** TODO [#B] ERC: double mention notifications + tautological server list :bug:quick:solo:
 From the 2026-06 config audit, =modules/erc-config.el=:
 - =:281= — =erc-modules= includes the built-in =notifications= module AND :config adds =cj/erc-notify-on-mention= to the same hook — every mention fires two desktop notifications. Pick one path (keep the custom one, slated for messenger unification).
