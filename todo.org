@@ -4305,16 +4305,12 @@ The four limitations the docs cover (each spun out below as its own task):
 - Native-comp =.eln= cache (Emacs-version-specific; invalidated by version bumps)
 - System-tool deps (=ripgrep=, =fd=, =pandoc=, =prettier=, =pyright=, etc.; flagged at load by =cj/executable-find-or-warn=, not packageable via =package.el=)
 - Refresh / update story (no dedicated script today; ad-hoc =cp= from the elpa mirrors)
-
 *** TODO [#C] Design doc — docs/design/localrepo.org :docs:
 Write the design doc: tier model, priorities, install path, refresh story, all four limitations with cross-links to the follow-up tasks below.
-
 *** TODO [#C] README — .localrepo/README.org :docs:
 Write the README at the artifact: short prose entry point summarizing the tier model, pointing at =docs/design/localrepo.org= for full detail. This is what =early-init.el='s commentary header links to.
-
 *** TODO [#C] Commentary header in early-init.el :docs:
 Add a Commentary-section header in =early-init.el= pointing at =.localrepo/README.org= for usage and =docs/design/localrepo.org= for architecture. Sits at the top of the localrepo block (around L130).
-
 ** TODO [#C] TRAMP/dirvish "?" for remote dates — verify the fix per host :bug:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-02
@@ -4491,20 +4487,20 @@ Three small reveal.js improvements; collected into one task because each on its 
 2. *Default font sizing for slide elements.* Configure reveal.js font sizes for headings, body text, code blocks, etc. — better defaults via =org-reveal-head-preamble= CSS or a custom theme.
 3. *Custom dupre reveal.js theme.* CSS theme using the colors from =themes/dupre-palette.el=. Install into =reveal.js/css/theme/= for use with =#+REVEAL_THEME: dupre=.
 
-** TODO "? = curated help menu" convention across modes :feature:ux:discoverability:
+** TODO [#B] "? = curated help menu" convention across modes :feature:ux:discoverability:
 From the calibredb keybindings work 2026-06-06. The pattern that worked: in a modal/major-mode buffer (calibredb), bind =?= to a curated transient of the frequent workflows, and move the package's own full dispatch to =H=. It fixes the "I can't discover the keys" problem that which-key can't help with (which-key only pops up after a prefix, not for top-level single keys in a mode-map).
 
 Task: survey the modes/modules Craig works in and identify where a =?= -> curated-help-menu (transient) makes sense. Candidates: any major-mode buffer with single-key bindings and no good discovery affordance -- calibredb (done), nov, dirvish, mu4e, ghostel/term, signel, pearl/linear, ELFeed, etc. For each, note whether =?= is free or already a help dispatch, and whether a curated menu (vs the package's own) adds value. Establish it as a convention (and maybe a small helper/macro to define a curated =?= menu consistently).
 
-** TODO the preview splits an already split window into 3 temporarily.
+** TODO [#C] the preview splits an already split window into 3 temporarily.
 looks strange. potentially problematic for ai-terms.
 
-** DOING Project-aware bug capture via C-c c t :feature:capture:
+** DOING [#C] Project-aware bug capture via C-c c t :feature:capture:
 Relocated from the global capture inbox 2026-06-06. When inside a projectile project, C-c c t (Task) files into that project's root todo.org under the "<Project> Open Work" header. If the project has no todo.org, fall back to the global inbox-file and warn naming the project.
 
 Implemented 2026-06-06 in =modules/org-capture-config.el=: a shared project-aware =function= capture target (=cj/--org-capture-project-location=) used by =C-c c t= (Task, =* TODO=) and a new =C-c c b= (Bug, =* TODO [#C]=). Matches an existing top-level "... Open Work" heading (so ~/.emacs.d hits "Emacs Open Work") and creates "<Capitalized project> Open Work" only when absent. Outside a project / no todo.org -> global inbox under "Inbox" (with a warning in the no-todo.org case). 15 ERT tests in =tests/test-org-capture-config-project-target.el=; daemon e2e confirmed a real capture lands "** TODO [#C] ..." prepended under Open Work. Awaiting Craig's interactive manual verify (see the Manual Testing task) before close. NOTE: the matching "<Project> Resolved Work" header for the wrap-up workflow is a separate concern, not handled here.
 
-** VERIFY Palette-columns spec review :theme-studio:
+** VERIFY [#C] Palette-columns spec review :theme-studio:
 SCHEDULED: <2026-06-12 Fri>
 Read [[file:docs/theme-studio-palette-columns-spec.org][docs/theme-studio-palette-columns-spec.org]] (Draft, from the 2026-06-10 design discussion) and bless or amend. Decisions 9 and 10 are the two session calls awaiting your word: strips flip to lightest→darkest top→bottom to match the dropdown, and each dropdown column run places the base at its natural lightness position (vs bg/fg bases leading before any steps). On "spec's good": mark Ready, file the phase breakdown, cancel the [#C] hint-override task, start Phase 1.
 
