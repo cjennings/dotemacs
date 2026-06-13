@@ -613,7 +613,7 @@ function renderOrgPreview(){const a='org-mode',L=[];
   L.push('   '+os(a,'org-checkbox','[X]')+' done item   '+os(a,'org-checkbox-statistics-done','[2/2]'));
   L.push('   '+os(a,'org-checkbox','[ ]')+' open item   '+os(a,'org-checkbox-statistics-todo','[0/3]')+'  '+os(a,'org-warning','(!)'));
   L.push(os(a,'org-level-2','** ')+os(a,'org-done','DONE')+os(a,'org-headline-done',' Ship the tool'));
-  L.push(os(a,'org-level-3','*** ')+os(a,'org-headline-todo','Heading three'));
+  L.push(os(a,'org-level-3','*** ')+os(a,'org-todo','TODO')+os(a,'org-headline-todo',' Heading three'));
   L.push(os(a,'org-level-4','**** four')+' / '+os(a,'org-level-5','***** five')+' / '+os(a,'org-level-6','****** six')+' / '+os(a,'org-level-7','******* seven')+' / '+os(a,'org-level-8','******** eight'));
   L.push('   Inline '+os(a,'org-code','=code=')+', '+os(a,'org-verbatim','~verbatim~')+', '+os(a,'org-inline-src-block','src_py{1+1}')+',');
   L.push('   a '+os(a,'org-link','[[https://gnu.org][link]]')+', a '+os(a,'org-target','&lt;&lt;target&gt;&gt;')+', a '+os(a,'org-macro','{{{macro}}}')+',');
@@ -769,7 +769,7 @@ function renderGitGutterPreview(){const a='git-gutter',L=[];
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}
 function renderFlycheckPreview(){const a='flycheck',L=[];
   L.push(os(a,'flycheck-fringe-error','E')+os(a,'flycheck-fringe-warning','W')+os(a,'flycheck-fringe-info','I')+'  x = '+os(a,'flycheck-error','undefined_name')+'('+os(a,'flycheck-warning','unused_arg')+')  '+os(a,'flycheck-info','# note'));
-  L.push('       '+os(a,'flycheck-delimited-error','[')+os(a,'flycheck-error-delimiter','err')+os(a,'flycheck-delimited-error',']'));
+  L.push('       '+os(a,'flycheck-error-delimiter','[')+os(a,'flycheck-delimited-error','err')+os(a,'flycheck-error-delimiter',']'));
   L.push('');
   L.push(os(a,'flycheck-error-list-checker-name','pyright')+'   '+os(a,'flycheck-verify-select-checker','(selected checker)'));
   L.push(os(a,'flycheck-error-list-filename','main.py')+':'+os(a,'flycheck-error-list-line-number','12')+':'+os(a,'flycheck-error-list-column-number','4')+'  '+os(a,'flycheck-error-list-error','error')+'    '+os(a,'flycheck-error-list-error-message','undefined name x')+'  '+os(a,'flycheck-error-list-id','[E0602]'));
@@ -814,8 +814,8 @@ function renderCalibredbPreview(){const a='calibredb',L=[];
 function renderErcPreview(){const a='erc',L=[];
   L.push(os(a,'erc-header-line',' #emacs on Libera.Chat  18 users '));
   L.push(os(a,'erc-timestamp-face','[10:24]')+' '+os(a,'erc-notice-face','*** alice has joined #emacs'));
-  L.push(os(a,'erc-timestamp-face','[10:25]')+' &lt;'+os(a,'erc-my-nick-prefix-face','@')+os(a,'erc-my-nick-face','craig')+'&gt; '+os(a,'erc-default-face','hello everyone'));
-  L.push(os(a,'erc-timestamp-face','[10:25]')+' &lt;'+os(a,'erc-nick-prefix-face','+')+os(a,'erc-nick-default-face','bob')+'&gt; '+os(a,'erc-input-face','hi craig, see ')+os(a,'erc-button','this link')+os(a,'erc-input-face',' cc ')+os(a,'erc-button-nick-default-face','@alice'));
+  L.push(os(a,'erc-timestamp-face','[10:25]')+' &lt;'+os(a,'erc-my-nick-prefix-face','@')+os(a,'erc-my-nick-face','craig')+'&gt; '+os(a,'erc-input-face','hello everyone'));
+  L.push(os(a,'erc-timestamp-face','[10:25]')+' &lt;'+os(a,'erc-nick-prefix-face','+')+os(a,'erc-nick-default-face','bob')+'&gt; '+os(a,'erc-default-face','hi craig, see ')+os(a,'erc-button','this link')+os(a,'erc-default-face',' cc ')+os(a,'erc-button-nick-default-face','@alice'));
   L.push(os(a,'erc-timestamp-face','[10:26]')+' '+os(a,'erc-action-face','* craig waves')+'   '+os(a,'erc-keyword-face','emacs')+' '+os(a,'erc-pal-face','&lt;friend&gt;')+' '+os(a,'erc-fool-face','&lt;troll&gt;')+' '+os(a,'erc-dangerous-host-face','&lt;bad@host&gt;'));
   L.push(os(a,'erc-timestamp-face','[10:27]')+' '+os(a,'erc-direct-msg-face','(DM)')+' &lt;'+os(a,'erc-nick-msg-face','bob')+'&gt; psst   '+os(a,'erc-current-nick-face','craig')+'   '+os(a,'erc-information','-info-'));
   L.push(os(a,'erc-error-face','*** ERROR: connection reset'));
@@ -1177,6 +1177,25 @@ if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();
  document.title='BEVELTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='beveltest';d.textContent='BEVELTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Preview-link gate (open with #previewlinktest): known bespoke-preview face
+// mappings stay wired to the face that Emacs actually uses.
+if(location.hash==='#previewlinktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const box=document.createElement('div');
+ box.innerHTML=renderOrgPreview();
+ const headline=[...box.querySelectorAll('[data-face="org-headline-todo"]')].find(e=>e.textContent.includes('Heading three'));
+ A(!!headline&&headline.previousElementSibling&&headline.previousElementSibling.dataset.face==='org-todo','org headline-todo follows a TODO keyword span');
+ box.innerHTML=renderFlycheckPreview();
+ const delim=[...box.querySelectorAll('[data-face="flycheck-error-delimiter"]')].map(e=>e.textContent).join('');
+ const enclosed=[...box.querySelectorAll('[data-face="flycheck-delimited-error"]')].map(e=>e.textContent).join('');
+ A(delim==='[]','flycheck delimiters use flycheck-error-delimiter');
+ A(enclosed==='err','flycheck enclosed text uses flycheck-delimited-error');
+ box.innerHTML=renderErcPreview();
+ const own=[...box.querySelectorAll('[data-face="erc-input-face"]')].some(e=>e.textContent.includes('hello everyone'));
+ const bob=[...box.querySelectorAll('[data-face="erc-default-face"]')].some(e=>e.textContent.includes('hi craig'));
+ A(own,'erc own sent message uses erc-input-face');
+ A(bob,'erc remote message uses erc-default-face');
+ document.title='PREVIEWLINKTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='previewlinktest';d.textContent='PREVIEWLINKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Safe-lightness gate (open with #safetest): the OKLCH picker shades the unsafe
 // lightness band for a selected covered face and hides it when no face is selected.
 if(location.hash==='#safetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
@@ -1294,11 +1313,16 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
 // Round-trip gate (open with #roundtriptest): export stays a flat palette with
 // stable column ids, and import does not need color-derived column reconstruction.
 if(location.hash==='#roundtriptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP);
+ PALETTE=[['#ffffff','bg','ground'],['#000000','fg','ground'],['#224466','blue','blue'],['#446688','renamed-blue','blue']];
+ MAP['bg']='#ffffff';MAP['p']='#000000';
  const before=JSON.stringify(exportObj());
  applyImported(before);
  const after=JSON.stringify(exportObj());
  A(before===after,'export → import → export is byte-identical');
  const obj=JSON.parse(after);
  A(Array.isArray(obj.palette)&&obj.palette.every(e=>Array.isArray(e)&&e.length>=3&&typeof e[2]==='string'),'exported palette carries flat [hex,name,columnId] entries');
+ A(obj.palette.some(e=>e[1]==='renamed-blue'&&e[2]==='blue'),'renamed color keeps its stable column id through export/import');
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);
  document.title='ROUNDTRIPTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='roundtriptest';d.textContent='ROUNDTRIPTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}

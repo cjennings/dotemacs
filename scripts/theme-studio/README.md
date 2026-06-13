@@ -44,7 +44,7 @@ the spliced page script, and the browser hash gates in headless Chrome
 (`#selftest`, `#cursortest`, `#readouttest`, `#deltatest`, `#oklchtest`,
 `#planetest`, `#locktest`, `#sorttest`, `#mocktest`, `#contrasttest`,
 `#safetest`, `#healtest`, `#columntest`, `#counttest`, `#baseedittest`,
-`#roundtriptest`). It exits non-zero on any failure. The browser gates need a
+`#roundtriptest`, `#beveltest`, `#previewlinktest`). It exits non-zero on any failure. The browser gates need a
 Chromium-family browser; without one they report SKIPPED rather than passing
 silently. The pure color math and the extracted picker logic (`planeCell`,
 `paletteWarnings`) live in `colormath.js` so they are unit-tested directly in
