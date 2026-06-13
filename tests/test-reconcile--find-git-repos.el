@@ -81,6 +81,15 @@
      (should (= (length repos) 1))
      (should (string-suffix-p "visible-repo" (car repos))))))
 
+(ert-deftest test-find-git-repos-boundary-dotted-repo-name-found ()
+  "Boundary: a repo whose directory name contains a dot (e.g. mcp.el) is
+discovered.  Regression for the `^[^.]+$' filter that matched only dot-free
+names and silently skipped dotted repos like mcp.el / capture.el."
+  (reconcile-test-with-temp-dirs
+   ("mcp.el/.git/" "capture.el/.git/" "plain-repo/.git/")
+   (let ((repos (cj/find-git-repos test-root)))
+     (should (= (length repos) 3)))))
+
 (ert-deftest test-find-git-repos-boundary-prunes-heavy-directories ()
   "Skips generated/heavy directories while discovering repos."
   (reconcile-test-with-temp-dirs

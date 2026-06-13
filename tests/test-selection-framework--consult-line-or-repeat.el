@@ -64,5 +64,11 @@
   "Normal: `cj/consult-line-or-repeat' is an interactive command."
   (should (commandp #'cj/consult-line-or-repeat)))
 
+(ert-deftest test-selection-framework-vertico-repeat-save-on-minibuffer-setup ()
+  "Normal: loading the module registers `vertico-repeat-save' on
+`minibuffer-setup-hook'.  Without it `vertico-repeat' has no saved session
+and the second C-s signals \"No Vertico session\"."
+  (should (memq 'vertico-repeat-save minibuffer-setup-hook)))
+
 (provide 'test-selection-framework--consult-line-or-repeat)
 ;;; test-selection-framework--consult-line-or-repeat.el ends here

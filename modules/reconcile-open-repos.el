@@ -171,8 +171,11 @@ Prunes generated/heavy directories.  Once a repository root is found, do not
 descend into it unless INCLUDE-NESTED is non-nil."
   (let (repos)
     (when (file-directory-p directory)
-      (dolist (child (directory-files directory t "^[^.]+$" 'nosort))
+      (dolist (child (directory-files directory t directory-files-no-dot-files-regexp 'nosort))
         (when (and (file-directory-p child)
+                   ;; Skip hidden dirs (.git, .config) but keep dotted repo
+                   ;; names like mcp.el; the old "^[^.]+$" filter dropped both.
+                   (not (string-prefix-p "." (file-name-nondirectory child)))
                    (not (cj/reconcile--pruned-directory-p child)))
           (if (file-directory-p (expand-file-name ".git" child))
               (progn
