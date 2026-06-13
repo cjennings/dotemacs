@@ -135,10 +135,27 @@ function lMax(hue,chroma,fgSet,target){
 // assignment re-point across a regenerate.
 
 function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
-function nameOfHex(palette,hex){const p=palette.find(p=>p[0].toLowerCase()===hex.toLowerCase());return p?p[1]:null;}
 function columnStem(name){name=name||'color';if(/^color-\d+$/.test(name))return name;name=name.replace(/[+-]\d+$/,'');return name.replace(/\d+$/,'')||'color';}
 function columnOffset(name){const m=(name||'').match(/([+-]\d+)$/);return m?parseInt(m[1],10):0;}
 function columnIdOf(entry){return (entry&&entry[2])||columnStem(entry&&entry[1]);}
+function groundRoleOfEntry(entry,ground){
+  if(!entry)return null;
+  const [hex,name]=entry,col=entry[2],n=(name||'').toLowerCase(),h=(hex||'').toLowerCase();
+  const bg=(ground&&ground.bg||'').toLowerCase(),fg=(ground&&ground.fg||'').toLowerCase();
+  if(/^ground-\d+$/i.test(name||''))return 'step';
+  if(col==='ground'){
+    if(bg&&h===bg)return 'bg';
+    if(fg&&h===fg)return 'fg';
+    return 'step';
+  }
+  if(bg&&h===bg&&(n==='bg'||n==='ground'))return 'bg';
+  if(fg&&h===fg&&n==='fg')return 'fg';
+  return null;
+}
+function nameOfGroundRole(palette,ground,role){
+  const found=palette.find(entry=>groundRoleOfEntry(entry,ground)===role);
+  return found?found[1]:null;
+}
 
 // Group a flat palette into the ground strip plus structural columns. ground is
 // {bg,fg}; those endpoint hexes form the pinned ground column even when absent
@@ -147,15 +164,13 @@ function columnIdOf(entry){return (entry&&entry[2])||columnStem(entry&&entry[1])
 // Legacy two-field entries fall back to their generated-name stem until edited.
 function columnsFromPalette(palette,ground){
   const bg=ground&&ground.bg,fg=ground&&ground.fg;
-  const gset=new Set([bg,fg].filter(Boolean).map(h=>h.toLowerCase()));
   const groundStrip=[];
-  if(bg)groundStrip.push({hex:bg,role:'bg',name:nameOfHex(palette,bg)});
-  if(fg)groundStrip.push({hex:fg,role:'fg',name:nameOfHex(palette,fg)});
+  if(bg)groundStrip.push({hex:bg,role:'bg',name:nameOfGroundRole(palette,ground,'bg')});
+  if(fg)groundStrip.push({hex:fg,role:'fg',name:nameOfGroundRole(palette,ground,'fg')});
   const byColumn=new Map(),columns=[];
   for(const entry of palette){
     const [hex,name]=entry;
-    if(gset.has(hex.toLowerCase()))continue;
-    if(/^ground-\d+$/i.test(name||''))continue;
+    if(groundRoleOfEntry(entry,ground))continue;
     const column=columnIdOf(entry);
     if(!byColumn.has(column))byColumn.set(column,{column,members:[]});
     byColumn.get(column).members.push({hex,name,offset:columnOffset(name),column});
@@ -217,10 +232,10 @@ function paletteOptionList(cur,palette,ground){
   const add=(hex,name)=>{if(!hex)return;const key=hex.toLowerCase()+'|'+(name||'');if(seen.has(key))return;seen.add(key);out.push([hex,name||hex]);};
   const grouped=columnsFromPalette(palette,ground||{});
   const groundMembers=grouped.ground.map(g=>({hex:g.hex,name:g.name||g.role}))
-    .concat(palette.filter(([,name])=>/^ground-\d+$/i.test(name||'')).map(([hex,name])=>({hex,name})));
+    .concat(palette.filter(entry=>groundRoleOfEntry(entry,ground)==='step').map(([hex,name])=>({hex,name})));
   sortColumnMembers({base:(ground&&ground.bg)||'',members:groundMembers}).members.forEach(m=>add(m.hex,m.name));
   sortColumns(grouped.columns).forEach(f=>f.members.forEach(m=>add(m.hex,m.name)));
   return out;
 }
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers };
+export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry };
