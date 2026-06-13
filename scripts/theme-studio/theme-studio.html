@@ -42,7 +42,8 @@
  .palwarn .pwh{font-weight:bold;margin-bottom:2px}
  .palwarn .pwl{opacity:.92}
  .pchip{width:128px;height:58px;border-radius:6px;border:1px solid #555;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab}
- .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none}
+ .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none;cursor:pointer}
+ .pchip input.nm.editing{cursor:text;text-align:left}
  .pchip .hx{font-size:10pt;opacity:.8} .pchip .rm{position:absolute;top:2px;right:5px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:bold;opacity:.7}
  .pchip .lock{position:absolute;top:3px;right:5px;font-size:10px;opacity:.6}
  .palctl{margin:0 0 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -948,10 +949,16 @@ function paletteChip(i,nearest){
   const d=document.createElement('div');d.className='pchip'+(i===selectedIdx?' sel':'');d.style.background=hex;
   d.title=name+' '+hex+(nde===Infinity||nde===undefined?'':' — nearest ΔE '+nde.toFixed(3));
   const rm=locked?`<span class="lock" title="${role==='bg'?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
-  d.innerHTML=`${rm}<input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
+  d.innerHTML=`${rm}<input class="nm" value="${name}" readonly style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
   if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();rememberGone(hex,name);PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
-  d.querySelector('.nm').onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
-  d.onclick=(e)=>{if(e.target.closest('.rm')||e.target.closest('.nm'))return;selectColor(i);};
+  const nm=d.querySelector('.nm');
+  const finishNameEdit=()=>{nm.readOnly=true;nm.classList.remove('editing');};
+  nm.onclick=(e)=>{e.preventDefault();e.stopPropagation();selectColor(i);};
+  nm.ondblclick=(e)=>{e.preventDefault();e.stopPropagation();nm.readOnly=false;nm.classList.add('editing');nm.focus();nm.setSelectionRange(0,0);};
+  nm.onblur=finishNameEdit;
+  nm.onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();nm.blur();}else if(e.key==='Escape'){e.preventDefault();nm.value=PALETTE[i][1];nm.blur();}};
+  nm.onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
+  d.onclick=(e)=>{if(e.target.closest('.rm'))return;selectColor(i);};
   return d;
 }
 function paletteIndexByHexName(hex,name){
@@ -2066,6 +2073,15 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  A(!document.querySelector('#pals .fstrip[data-column="ground"] .cdel'),'ground column has no delete button');
  const redChip=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='red');
  A(!!redChip&&!!redChip.querySelector('.rm')&&!!redChip.querySelector('.nm'),'a column chip keeps remove + rename controls');
+ if(redChip){
+  const redName=redChip.querySelector('.nm');selectedIdx=null;redName.click();
+  A(selectedIdx!==null&&PALETTE[selectedIdx][1]==='red','single-clicking a tile name selects the whole tile');
+  A(redName.readOnly===true&&!redName.classList.contains('editing'),'single-clicking a tile name does not enter name edit mode');
+  redName.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+  A(redName.readOnly===false&&redName.classList.contains('editing'),'double-clicking a tile name enters edit mode');
+  A(redName.selectionStart===0&&redName.selectionEnd===0,'double-clicking places the cursor at the beginning of the name');
+  redName.blur();
+ }
  const redColumn=redChip&&redChip.closest('.fstrip').dataset.column;
  const ri=PALETTE.findIndex(p=>p[1]==='red');PALETTE[ri][1]='zztop-absurd';renderPalette();
  const renamed=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='zztop-absurd');
