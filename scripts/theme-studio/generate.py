@@ -48,7 +48,10 @@ MAP={k:'' for k in COLS}; MAP['bg']='#000000'; MAP['p']='#ffffff'
 BOLD={k:False for k in COLS}
 ITALIC_MAP={k:False for k in COLS}
 def column_id(name):
-    return re.sub(r'[+-]\d+$', '', name or 'color')
+    name = name or 'color'
+    if re.fullmatch(r'color-\d+', name):
+        return name
+    return re.sub(r'[+-]\d+$', '', name)
 
 def normalize_palette(palette):
     return [[p[0], p[1] if len(p) > 1 else 'color', p[2] if len(p) > 2 else column_id(p[1] if len(p) > 1 else 'color')]

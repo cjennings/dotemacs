@@ -165,6 +165,12 @@ class FaceSpecDefaults(unittest.TestCase):
             "box": None,
         })
 
+    def test_generated_color_names_are_base_columns_when_legacy(self):
+        self.assertEqual(generate.column_id("color-22"), "color-22")
+        self.assertEqual(generate.column_id("color-129"), "color-129")
+        self.assertEqual(generate.column_id("blue-1"), "blue")
+        self.assertEqual(generate.column_id("blue+1"), "blue")
+
 
 class DefaultFaceAdapter(unittest.TestCase):
     def setUp(self):
