@@ -158,7 +158,7 @@ function repointHex(oldHex,newHex){
 function healGone(name,newHex){const k=name.toLowerCase();if(!(k in lastGone))return false;const g=lastGone[k];delete lastGone[k];repointHex(g,newHex);return true;}
 function normalizePaletteEntry(entry){
   const hex=entry&&entry[0],name=(entry&&entry[1])||'color';
-  return [hex,name,(entry&&entry[2])||columnStem(name)];
+  return [hex,name,(entry&&entry[2])||columnIdOf(entry)];
 }
 function normalizePalette(){PALETTE=PALETTE.map(normalizePaletteEntry);}
 // The ground column is explicit: bg pins the dark endpoint, fg pins the light
@@ -458,7 +458,7 @@ function initPicker(){const sw=document.getElementById('swatch');if(!sw)return;s
 function addColor(){const h=curHex();const name=document.getElementById('newname').value.trim();
   if(!name){notify('name the color before adding it',true);return;}
   if(PALETTE.some(p=>p[1].toLowerCase()===name.toLowerCase())){notify('a color named "'+name+'" already exists — select it and use Update selected to change its value',true);return;}
-  PALETTE.push([h,name,columnStem(name)]);const healed=healGone(name,h);document.getElementById('newname').value='';selectedIdx=null;closePicker();
+  PALETTE.push([h,name,columnIdOf([h,name])]);const healed=healGone(name,h);document.getElementById('newname').value='';selectedIdx=null;closePicker();
   renderPalette();buildTable();buildUITable();
   if(healed){renderCode();applyGround();if(document.getElementById('pkgbody'))buildPkgTable();buildPkgPreview();}
   notify(healed?('added "'+name+'" and reconnected its assignments'):('added "'+name+'"'),false);}
@@ -1313,7 +1313,7 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  A(!!renamed&&renamed.closest('.fstrip').dataset.column===redColumn,'a renamed color stays in the same strip');
  PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#0d0b0a','bg2'],['#0d0b0a','bg-alt']];MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';selectedIdx=null;renderPalette();
  const bg2Chip=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='bg2');
- A(!!bg2Chip&&bg2Chip.closest('.fstrip').dataset.column==='bg'&&!!bg2Chip.querySelector('.rm')&&!bg2Chip.querySelector('.lock'),'same-hex bg2 remains a normal removable color column chip');
+ A(!!bg2Chip&&bg2Chip.closest('.fstrip').dataset.column==='bg2'&&!!bg2Chip.querySelector('.rm')&&!bg2Chip.querySelector('.lock'),'same-hex bg2 remains a normal removable color column chip');
  if(bg2Chip){bg2Chip.click();document.getElementById('newhexstr').value='#101820';document.getElementById('newname').value='bg2';updateColor();}
  A(MAP['bg']==='#0d0b0a','editing same-hex bg2 does not repoint the real bg assignment');
  A(PALETTE.some(p=>p[1]==='bg2'&&p[0]==='#101820'),'editing same-hex bg2 updates only that palette tile');
