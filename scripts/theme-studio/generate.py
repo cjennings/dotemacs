@@ -1,5 +1,7 @@
 import json, os, re
+from app_inventory import add_inventory_apps, apply_default_face_seeds, apply_package_overrides, face_rows
 from default_faces import DefaultFaces
+from face_specs import ui_face_spec
 HERE=os.path.dirname(os.path.abspath(__file__))
 
 def strip_exports(src):
@@ -87,9 +89,9 @@ UI_FACES=[["cursor","cursor","Aa|"],["region","region (selection)","selected tex
  ["show-paren-mismatch","show-paren-mismatch",") ("],["link","link","https://"],
  ["error","error","error!"],["warning","warning","warning"],
  ["success","success","ok"],["vertical-border","vertical-border","|"]]
-UIMAP={f[0]:{"fg":None,"bg":None,"bold":False,"italic":False,"underline":False,"strike":False} for f in UI_FACES}
+UIMAP={f[0]:ui_face_spec() for f in UI_FACES}
 if DEFAULTS.available:
-    UIMAP={f[0]:dict({"fg":None,"bg":None,"bold":False,"italic":False,"underline":False,"strike":False},**DEFAULTS.seed(f[0],False)) for f in UI_FACES}
+    UIMAP={f[0]:ui_face_spec(DEFAULTS.seed(f[0],False)) for f in UI_FACES}
 
 # Optional palette seed: THEME_STUDIO_SEED=<file.json> seeds the tool's starting
 # palette / assignments / bold / italic / UI from a theme.json (path relative to
@@ -413,54 +415,35 @@ SHR_FACES=("shr-h1 shr-h2 shr-h3 shr-h4 shr-h5 shr-h6 shr-text shr-link shr-sele
 SHR_SEED={
  "shr-h1":{"fg":"gold","bold":True,"height":1.4},"shr-h2":{"fg":"blue","bold":True,"height":1.2},"shr-h3":{"fg":"blue","bold":True},"shr-h4":{"fg":"silver","bold":True},"shr-h5":{"fg":"steel","bold":True},"shr-h6":{"fg":"pewter","bold":True},
  "shr-text":{"fg":"#cdced1"},"shr-link":{"fg":"blue","underline":True},"shr-selected-link":{"fg":"gold","bold":True,"underline":True},"shr-code":{"fg":"terracotta","bg":"bg-dim"},"shr-mark":{"fg":"#000000","bg":"gold"},"shr-strike-through":{"fg":"pewter","strike":True},"shr-sup":{"fg":"steel","height":0.8},"shr-abbreviation":{"fg":"steel","italic":True,"underline":True}}
-def _faces(names,prefix,seed):
-    out=[]
-    for f in names:
-        lbl=(f[len(prefix):] if f.startswith(prefix) else f).replace("-face","").replace("-"," ")
-        out.append([f,lbl,seed.get(f,{})])
-    return out
-APPS={"org-mode":{"label":"org-mode","preview":"org","faces":_faces(ORG_FACES,"org-",ORG_SEED)},
- "magit":{"label":"magit","preview":"magit","faces":_faces(MAGIT_FACES,"magit-",MAGIT_SEED)},
- "elfeed":{"label":"elfeed","preview":"elfeed","faces":_faces(ELFEED_FACES,"elfeed-",ELFEED_SEED)},
- "mu4e":{"label":"mu4e","preview":"mu4e","faces":_faces(MU4E_FACES,"mu4e-",MU4E_SEED)},
- "ghostel":{"label":"ghostel","preview":"ghostel","faces":_faces(GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED)},
- "dashboard":{"label":"dashboard","preview":"dashboard","faces":_faces(DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED)},
- "lsp-mode":{"label":"lsp-mode","preview":"lsp","faces":_faces(LSP_FACES,"lsp-",LSP_SEED)},
- "git-gutter":{"label":"git-gutter","preview":"gitgutter","faces":_faces(GITGUTTER_FACES,"git-gutter:",GITGUTTER_SEED)},
- "flycheck":{"label":"flycheck","preview":"flycheck","faces":_faces(FLYCHECK_FACES,"flycheck-",FLYCHECK_SEED)},
- "dired":{"label":"dired","preview":"dired","faces":_faces(DIRED_FACES,"dired-",DIRED_SEED)},
- "dirvish":{"label":"dirvish","preview":"dirvish","faces":_faces(DIRVISH_FACES,"dirvish-",DIRVISH_SEED)},
- "calibredb":{"label":"calibredb","preview":"calibredb","faces":_faces(CALIBREDB_FACES,"calibredb-",CALIBREDB_SEED)},
- "erc":{"label":"erc","preview":"erc","faces":_faces(ERC_FACES,"erc-",ERC_SEED)},
- "org-drill":{"label":"org-drill","preview":"orgdrill","faces":_faces(ORGDRILL_FACES,"org-drill-",ORGDRILL_SEED)},
- "org-noter":{"label":"org-noter","preview":"orgnoter","faces":_faces(ORGNOTER_FACES,"org-noter-",ORGNOTER_SEED)},
- "signel":{"label":"signel","preview":"signel","faces":_faces(SIGNEL_FACES,"signel-",SIGNEL_SEED)},
- "pearl":{"label":"pearl","preview":"pearl","faces":_faces(PEARL_FACES,"pearl-",PEARL_SEED)},
- "slack":{"label":"slack","preview":"slack","faces":_faces(SLACK_FACES,"slack-",SLACK_SEED)},
- "telega":{"label":"telega","preview":"telega","faces":_faces(TELEGA_FACES,"telega-",TELEGA_SEED)},
- "shr":{"label":"shr (HTML: nov/eww/mail)","preview":"shr","faces":_faces(SHR_FACES,"shr-",SHR_SEED)}}
+APPS={"org-mode":{"label":"org-mode","preview":"org","faces":face_rows(ORG_FACES,"org-",ORG_SEED)},
+ "magit":{"label":"magit","preview":"magit","faces":face_rows(MAGIT_FACES,"magit-",MAGIT_SEED)},
+ "elfeed":{"label":"elfeed","preview":"elfeed","faces":face_rows(ELFEED_FACES,"elfeed-",ELFEED_SEED)},
+ "mu4e":{"label":"mu4e","preview":"mu4e","faces":face_rows(MU4E_FACES,"mu4e-",MU4E_SEED)},
+ "ghostel":{"label":"ghostel","preview":"ghostel","faces":face_rows(GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED)},
+ "dashboard":{"label":"dashboard","preview":"dashboard","faces":face_rows(DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED)},
+ "lsp-mode":{"label":"lsp-mode","preview":"lsp","faces":face_rows(LSP_FACES,"lsp-",LSP_SEED)},
+ "git-gutter":{"label":"git-gutter","preview":"gitgutter","faces":face_rows(GITGUTTER_FACES,"git-gutter:",GITGUTTER_SEED)},
+ "flycheck":{"label":"flycheck","preview":"flycheck","faces":face_rows(FLYCHECK_FACES,"flycheck-",FLYCHECK_SEED)},
+ "dired":{"label":"dired","preview":"dired","faces":face_rows(DIRED_FACES,"dired-",DIRED_SEED)},
+ "dirvish":{"label":"dirvish","preview":"dirvish","faces":face_rows(DIRVISH_FACES,"dirvish-",DIRVISH_SEED)},
+ "calibredb":{"label":"calibredb","preview":"calibredb","faces":face_rows(CALIBREDB_FACES,"calibredb-",CALIBREDB_SEED)},
+ "erc":{"label":"erc","preview":"erc","faces":face_rows(ERC_FACES,"erc-",ERC_SEED)},
+ "org-drill":{"label":"org-drill","preview":"orgdrill","faces":face_rows(ORGDRILL_FACES,"org-drill-",ORGDRILL_SEED)},
+ "org-noter":{"label":"org-noter","preview":"orgnoter","faces":face_rows(ORGNOTER_FACES,"org-noter-",ORGNOTER_SEED)},
+ "signel":{"label":"signel","preview":"signel","faces":face_rows(SIGNEL_FACES,"signel-",SIGNEL_SEED)},
+ "pearl":{"label":"pearl","preview":"pearl","faces":face_rows(PEARL_FACES,"pearl-",PEARL_SEED)},
+ "slack":{"label":"slack","preview":"slack","faces":face_rows(SLACK_FACES,"slack-",SLACK_SEED)},
+ "telega":{"label":"telega","preview":"telega","faces":face_rows(TELEGA_FACES,"telega-",TELEGA_SEED)},
+ "shr":{"label":"shr (HTML: nov/eww/mail)","preview":"shr","faces":face_rows(SHR_FACES,"shr-",SHR_SEED)}}
 # Phase 6: merge the generated all-package inventory (refresh with build-inventory.el).
 # Bespoke apps stay; every other installed package becomes an editable generic app.
 _inv_path=os.path.join(HERE,"package-inventory.json")
-if os.path.exists(_inv_path):
-    _INV=json.load(open(_inv_path))
-    _BESPOKE={"magit","elfeed","org","org-mode","mu4e","ghostel","dashboard","lsp-mode","git-gutter","flycheck","dired","dirvish","calibredb","erc","org-drill","org-noter","signel","pearl","slack","telega","shr"}
-    for _pkg in sorted(_INV):
-        if _pkg in _BESPOKE or _pkg in APPS: continue
-        APPS[_pkg]={"label":_pkg,"preview":"generic","faces":[
-            [f,(f[len(_pkg)+1:] if f.startswith(_pkg+"-") else f).replace("-face","").replace("-"," "),{}]
-            for f in _INV[_pkg]]}
-if DEFAULTS.available:
-    for _app in APPS.values():
-        for _row in _app["faces"]:
-            _row[2]=DEFAULTS.seed(_row[0],False)
+add_inventory_apps(APPS, _inv_path)
+apply_default_face_seeds(APPS, DEFAULTS)
 # Apply seed theme package overrides when THEME_STUDIO_SEED is set: each full
 # per-face spec (color + structure) replaces the hardcoded face seed before render.
-if _seed and _d.get('packages'):
-    for _app,_pkfaces in _d['packages'].items():
-        if _app in APPS:
-            for _row in APPS[_app]['faces']:
-                if _row[0] in _pkfaces: _row[2]=_pkfaces[_row[0]]
+if _seed:
+    apply_package_overrides(APPS, _d.get('packages'))
 
 def add_palette_color(value, label=None):
     if not value: return

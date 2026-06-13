@@ -13,7 +13,9 @@ import unittest
 from collections import Counter, defaultdict
 
 import generate  # importable without side effects: the file write is __main__-guarded
+from app_inventory import face_rows
 from default_faces import DefaultFaces
+from face_specs import package_face_spec, ui_face_spec
 
 
 class StripExports(unittest.TestCase):
@@ -117,7 +119,7 @@ class AssembledPage(unittest.TestCase):
 class FacesHelper(unittest.TestCase):
     def test_strips_prefix_and_derives_label_and_merges_seed(self):
         # Normal: the prefix comes off the label, and the per-face seed is attached.
-        rows = generate._faces(["org-todo", "org-done"], "org-", {"org-todo": {"fg": "gold"}})
+        rows = face_rows(["org-todo", "org-done"], "org-", {"org-todo": {"fg": "gold"}})
         self.assertEqual(rows, [
             ["org-todo", "todo", {"fg": "gold"}],
             ["org-done", "done", {}],
@@ -125,18 +127,43 @@ class FacesHelper(unittest.TestCase):
 
     def test_label_drops_face_suffix_and_spaces_remaining_dashes(self):
         # Boundary: "-face" is removed and the rest of the dashes become spaces.
-        rows = generate._faces(["lsp-rename-placeholder-face"], "lsp-", {})
+        rows = face_rows(["lsp-rename-placeholder-face"], "lsp-", {})
         self.assertEqual(rows[0][1], "rename placeholder")
 
     def test_name_without_the_prefix_is_left_intact(self):
         # Boundary: a name that doesn't start with the prefix keeps its full text
         # (only "-face" removal and dash-spacing apply).
-        rows = generate._faces(["shr-text"], "org-", {})
+        rows = face_rows(["shr-text"], "org-", {})
         self.assertEqual(rows[0], ["shr-text", "shr text", {}])
 
     def test_empty_names_gives_empty_list(self):
         # Error/Boundary: nothing in, nothing out.
-        self.assertEqual(generate._faces([], "org-", {"org-todo": {"fg": "gold"}}), [])
+        self.assertEqual(face_rows([], "org-", {"org-todo": {"fg": "gold"}}), [])
+
+
+class FaceSpecDefaults(unittest.TestCase):
+    def test_ui_face_spec_fills_style_fields(self):
+        self.assertEqual(ui_face_spec({"bg": "#ffffff", "bold": True}), {
+            "fg": None,
+            "bg": "#ffffff",
+            "bold": True,
+            "italic": False,
+            "underline": False,
+            "strike": False,
+        })
+
+    def test_package_face_spec_fills_structure_fields(self):
+        self.assertEqual(package_face_spec({"inherit": "base", "height": 1.2}), {
+            "fg": None,
+            "bg": None,
+            "bold": False,
+            "italic": False,
+            "underline": False,
+            "strike": False,
+            "inherit": "base",
+            "height": 1.2,
+            "box": None,
+        })
 
 
 class DefaultFaceAdapter(unittest.TestCase):
