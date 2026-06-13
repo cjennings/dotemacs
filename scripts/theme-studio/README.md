@@ -62,6 +62,8 @@ Node; the DOM glue is covered by the browser hash gates.
 - `build-inventory.el` — refreshes `package-inventory.json` from a running
   Emacs.
 - `theme-studio.html` — generated output. Regenerate; don't hand-edit.
+  Use `make check-generated` before review if you want to verify the committed
+  page matches the generator without leaving the tree dirty.
 
 ## What it captures
 
