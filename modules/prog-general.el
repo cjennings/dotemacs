@@ -298,6 +298,22 @@ This is what makes universal snippets like =<cj= work in any buffer."
   (yas-reload-all)
   (yas-global-mode 1))
 
+;; Most of the snippet keys start with "<" (=<cj=, =<for=, =<main=…), mirroring
+;; org-tempo.  But `electric-pair-mode' pairs "<" into "<>" wherever the mode's
+;; syntax table gives "<" paren syntax (org, and the prog modes that enable
+;; pairing), so typing "<cj" lands as "<cj>"; expanding the "<cj" key then
+;; strands the ">" after the snippet — the cj-comment fence comes out as
+;; "#+end_src>", which breaks the cj-scan fence parser.  Inhibit pairing for the
+;; open angle bracket globally; defer to the default for every other character.
+(defun cj/--electric-pair-inhibit-angle (char)
+  "Return non-nil to stop `electric-pair-mode' from pairing the angle CHAR.
+Inhibit the open angle bracket so \"<\"-prefixed yasnippet keys expand cleanly;
+defer to `electric-pair-default-inhibit' for any other CHAR."
+  (or (eq char ?<)
+      (electric-pair-default-inhibit char)))
+
+(setq electric-pair-inhibit-predicate #'cj/--electric-pair-inhibit-angle)
+
 ;; --------------------- Display Color On Color Declaration --------------------
 ;; display the actual color as highlight to color hex code
 
