@@ -44,10 +44,16 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
-** TODO [#B] ai-term adaptive side/bottom window placement :feature:solo:
+** TODO [#B] ai-term adaptive side/bottom window placement :feature:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 The ai-term window should dock from whichever edge conserves more screen space, chosen at display time from the frame's aspect ratio: when the frame is wider than it is tall, dock from the right; when it is square or taller than wide, dock from the bottom. Compare the frame's pixel width against its height in the display-buffer rule to pick the edge.
 
 ** TODO [#B] Keymap consolidation — resolve decisions, run Phase 1-2 :feature:refactor:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 Spec: [[file:docs/design/keybinding-console-safety-spec.org][keybinding-console-safety-spec.org]]. Phase 0 (revert 4a1ecf64) is done and pushed. Decisions D1-D5 are open TODOs in the spec; D2/D4/D5 gate the primary work (Phase 1 prune via Appendix D, Phase 2 consolidate + retire the translation block), while D1/D3 (the console-safe prefix) gate only the optional Phase 3 and can stay open indefinitely. Resolve D2/D4/D5, then run Phase 1-2. Appendix D is the keybinding pruning checklist. Add a =#+TODO: TODO | DONE SUPERSEDED CANCELLED= header line to the spec if adopting those decision keywords (rulesets convention update, 2026-06-12).
 
 ** TODO [#D] Desktop quick-capture: Note + Recipe types :feature:solo:
@@ -95,24 +101,39 @@ Implemented 2026-06-06 in =modules/calibredb-epub-config.el=:
 *** TODO Embed Calibre DB metadata into the EPUB files
 Surfaced 2026-06-06 while building the bookmark naming: the metadata embedded in the EPUB files' OPF is worse than Calibre's database metadata. nov reads the embedded OPF and got truncated titles ("Frege" vs the filename's "Frege: A Guide for the Perplexed"), author-sort "Last, First" forms ("Christie, Agatha"), and lost punctuation ("A.B.C." -> "A B C"). The filenames (from Calibre's curated DB) are the good copy. Fix on the Calibre side: select all (or by library), run "Edit metadata -> Embed metadata into book files" so the DB metadata is written into each EPUB's OPF. Consider auditing author vs author_sort first. After embedding, the in-file metadata matches the library and any tool reading the files (nov, other readers, re-imports) gets the good data. Not an Emacs task; Calibre-side bulk maintenance.
 
-** TODO [#A] Lock screen silently fails — slock is X11-only :bug:quick:
+** DOING [#A] Lock screen silently fails — slock is X11-only :bug:quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 =modules/system-commands.el:105= binds the lockscreen command to =slock=, which can't grab a Wayland session; =cj/system-cmd= launches it detached with output silenced, so C-; ! l does nothing and the screen never locks. Security issue: Craig believes the screen locks when it doesn't. Fix: =hyprlock= (or =swaylock=), ideally resolved per session type via =env-wayland-p= so an X11 fallback survives for other machines. From the 2026-06 config audit.
 Fixed 2026-06-13: lockscreen-cmd resolves to =loginctl lock-session= on Wayland (logind Lock → hypridle → hyprlock, the path idle/sleep locking already uses), =slock= on X11; also added the missing =(require 'host-environment)=. Live in the daemon; manual lock test under the Manual testing parent.
 
-** TODO [#A] mu4e: cmail can't trash, no account can refile :bug:quick:solo:
+** DOING [#A] mu4e: cmail can't trash, no account can refile :bug:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 =modules/mail-config.el:217-220= — the cmail context (primary account) sets only drafts/sent, so D falls back to default "/trash" which doesn't exist under ~/.mail (=/cmail/Trash= does); and NO context sets =mu4e-refile-folder=, so r targets nonexistent "/archive" everywhere. Accepting mu4e's offer to create the maildir strands mail in a directory mbsync never syncs — messages silently vanish from the server's view. Add =mu4e-trash-folder= to cmail + per-context =mu4e-refile-folder=. From the 2026-06 config audit.
 Fixed 2026-06-13: cmail gets =mu4e-trash-folder= "/cmail/Trash"; refile is a per-message function (=cj/mu4e--refile-folder=) instead of a per-context string — mu4e context :vars are sticky, so a per-context refile leaks one account's archive folder into another. cmail → "/cmail/Archive"; gmail/dmail signal a =user-error= rather than move mail into an unsynced phantom folder (Craig chose the fail-safe over syncing [Gmail]/All Mail — the All Mail option means a multi-GB pull + cross-folder duplicates; revisit if local Gmail archiving is wanted). Applies on next mu4e open; pure dispatch helper covered by tests.
 
 ** TODO [#A] calendar-sync drops final occurrences and resurrects cancelled meetings :bug:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 RFC 5545 conformance holes in =modules/calendar-sync.el=, all agenda-visible (from the 2026-06 config audit):
 - =:973,1015,1024= — UNTIL treated as exclusive (strict =calendar-sync--before-date-p=); RFC and Google make it inclusive, so the LAST instance of every UNTIL-bounded series vanishes. Tests assert loose count ranges, so it's unpinned. Allow equality.
 - =:578= — comma-separated EXDATE lists (Google emits them) never parse; the exclusion drops silently and cancelled occurrences reappear on the agenda. Split on "," before parsing; no comma-case test exists.
 - =:902= — timed events without DTEND render as all-day (time lost); multi-day all-day spans collapse to one day (end date unused, exclusive-DTEND unhandled). Emit start-time-only stamps and org date ranges.
 
 ** TODO [#A] Native compilation disabled config-wide; GC at stock 800KB :bug:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 From the 2026-06 config audit (verified against the live daemon). =early-init.el:69= =(setq native-comp-deferred-compilation nil)= — the obsolete alias of =native-comp-jit-compilation= — turns JIT native compilation OFF entirely, not "synchronous" as the comment claims: 19 .eln files exist for 184 packages, ~100 of 121 modules run interpreted for the daemon's lifetime, and system-defaults.el:42-44's speed-3/8-jobs/always-compile settings are dead. Plus =early-init.el:113-116= restores =gc-cons-threshold= to the captured STOCK default (800000, verified) post-startup — frequent small GC pauses forever. Together these plausibly feed the filed org-capture 15-20s task more than anything in the capture path itself. Actions: retest the old "Selecting deleted buffer" race on 30.2 and re-enable JIT (or AOT sweep); set a deliberate 16-64MB threshold (or gcmh). Check both before burning time on the capture-perf debug task.
 
-** TODO [#A] Global yes-or-no-p fset defeats every strong confirmation :bug:quick:
+** DOING [#A] Global yes-or-no-p fset defeats every strong confirmation :bug:quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 =modules/system-defaults.el:203= =(fset 'yes-or-no-p 'y-or-n-p)= — verified live. Several modules deliberately chose yes-or-no-p as the strong tier for irreversible actions: shutdown/reboot (=system-commands.el:74=, whose comment explicitly says "so a stray RET/space can't trigger them"), "permanently destroy files" (=dwim-shell-config.el:804=), file overwrites (=custom-buffer-file.el:159,199=, =music-config.el:374=). The fset makes all of them single-keystroke — the two-tier design is dead. Drop the fset, or provide a real =cj/confirm-strong= (typed "yes") for the irreversible set. From the 2026-06 config audit.
 Fixed 2026-06-13 (Craig chose the surgical option): added =cj/confirm-strong= to system-lib.el (binds =use-short-answers= nil for one =yes-or-no-p= call → typed "yes"); removed the redundant fset (kept =use-short-answers t= so benign prompts stay single-key); routed the 6 irreversible sites through it (shutdown/reboot, permanent-destroy, file overwrites). Note: the fset is baked into the running daemon and can't be cleared from Lisp, so the typed-"yes" tier goes live only after a daemon restart — manual confirm under the Manual testing parent. TDD; tests green.
 
