@@ -189,6 +189,15 @@ function clearPalettePlan(palette,ground){
   return {palette:keep,removed};
 }
 
+function deletePaletteColumnPlan(palette,ground,columnId){
+  const normalized=palette.map(normalizePaletteEntryCore),removed=[],keep=[];
+  for(const entry of normalized){
+    if(groundRoleOfEntry(entry,ground)||columnIdOf(entry)!==columnId)keep.push(entry);
+    else removed.push({hex:entry[0],name:entry[1]});
+  }
+  return {palette:keep,removed};
+}
+
 function areAllLocked(keys,locked){
   const has=k=>locked instanceof Set?locked.has(k):Array.isArray(locked)&&locked.includes(k);
   return !!(keys&&keys.length)&&keys.every(has);
@@ -281,4 +290,4 @@ function paletteOptionList(cur,palette,ground){
   return out;
 }
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

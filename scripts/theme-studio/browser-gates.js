@@ -320,6 +320,7 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  if(blueRight)blueRight.click();
  const moved=[...document.querySelectorAll('#pals .fstrip')].map(s=>s.dataset.column);
  A(moved.indexOf('blue')>moved.indexOf('gray'),'right arrow moves a color column after its neighbor');
+ A(!document.querySelector('#pals .fstrip[data-column="ground"] .cdel'),'ground column has no delete button');
  const redChip=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='red');
  A(!!redChip&&!!redChip.querySelector('.rm')&&!!redChip.querySelector('.nm'),'a column chip keeps remove + rename controls');
  const redColumn=redChip&&redChip.closest('.fstrip').dataset.column;
@@ -332,6 +333,17 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  if(bg2Chip){bg2Chip.click();document.getElementById('newhexstr').value='#101820';document.getElementById('newname').value='bg2';updateColor();}
  A(MAP['bg']==='#0d0b0a','editing same-hex bg2 does not repoint the real bg assignment');
  A(PALETTE.some(p=>p[1]==='bg2'&&p[0]==='#101820'),'editing same-hex bg2 updates only that palette tile');
+ PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#c0402a','red','red'],['#3a6ea5','blue','blue'],['#92acc2','blue+1','blue'],['#808080','gray','gray']];
+ MAP['kw']='#92acc2';lastGone={};selectedIdx=PALETTE.findIndex(p=>p[1]==='blue+1');renderPalette();
+ const del=document.querySelector('#pals .fstrip[data-column="blue"] .cdel');
+ A(!!del,'normal column has a delete button');
+ if(del)del.click();
+ A(!PALETTE.some(p=>p[2]==='blue'),'column delete removes every entry with the stable column id');
+ A(PALETTE.some(p=>p[1]==='red')&&PALETTE.some(p=>p[1]==='gray'),'column delete leaves neighboring columns alone');
+ A(PALETTE.some(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})==='bg')&&PALETTE.some(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})==='fg'),'column delete leaves ground entries alone');
+ A(MAP['kw']==='#92acc2','column delete leaves assignments on removed hexes');
+ A(lastGone['blue']==='#3a6ea5'&&lastGone['blue+1']==='#92acc2','column delete records every removed name for recovery');
+ A(selectedIdx===null,'column delete clears selected color');
  PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#c0402a','red','red'],['#3a6ea5','blue','blue'],['#92acc2','blue+1','blue']];
  MAP['kw']='#3a6ea5';selectedIdx=2;clearPalette();
  A(PALETTE.length===2&&PALETTE.every(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})),'clear palette leaves only bg and fg tiles');

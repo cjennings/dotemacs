@@ -129,6 +129,10 @@ derived from hue, chroma, lightness, or the visible color name.
   `grey80`, `orange3`, and `orchid4` group by their text stem. Imported names
   that begin with `bg` or `fg` are normal colors unless they are exact ground
   endpoints or explicitly use the `ground` column id.
+- **Deleting.** Normal columns have a header delete control that removes every
+  tile in that column. The ground column is pinned and cannot be deleted. Face
+  assignments that used a deleted tile stay on that old hex and appear as
+  recoverable "(gone)" values, matching individual chip deletion.
 - **The count control** under each non-ground column sets how many steps sit on
   each side of the column's base. Setting N regenerates the column as a symmetric
   base ±N tonal ramp via `ramp()` — lighter and darker steps on the base's hue

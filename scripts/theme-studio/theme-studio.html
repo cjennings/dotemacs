@@ -31,8 +31,8 @@
  .fhead{min-height:17px;width:128px;display:flex;align-items:center;justify-content:center;gap:3px;color:#b4b1a2;font:9pt monospace;text-align:center}
  .fhead .ctitle{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:none;color:#b4b1a2;font:9pt monospace;text-align:center;cursor:pointer;padding:0}
  .fhead .ctitle:hover{color:#e8bd30}
- .fhead .cmove{width:18px;height:17px;background:#161412;border:1px solid #252321;border-radius:3px;color:#8a9496;font:10pt monospace;line-height:13px;padding:0;cursor:pointer}
- .fhead .cmove:hover:not(:disabled){color:#e8bd30;border-color:#3a3a3a}
+ .fhead .cmove,.fhead .cdel{width:18px;height:17px;background:#161412;border:1px solid #252321;border-radius:3px;color:#8a9496;font:10pt monospace;line-height:13px;padding:0;cursor:pointer}
+ .fhead .cmove:hover:not(:disabled),.fhead .cdel:hover{color:#e8bd30;border-color:#3a3a3a}
  .fhead .cmove:disabled{opacity:.28;cursor:default}
  .fcount{margin-top:3px;font:9pt monospace;color:#8a9496;text-align:center}
  .fcount input{width:40px;background:#0d0b0a;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:2px 4px;font:9pt monospace;text-align:center}
@@ -607,6 +607,15 @@ function clearPalettePlan(palette,ground){
   return {palette:keep,removed};
 }
 
+function deletePaletteColumnPlan(palette,ground,columnId){
+  const normalized=palette.map(normalizePaletteEntryCore),removed=[],keep=[];
+  for(const entry of normalized){
+    if(groundRoleOfEntry(entry,ground)||columnIdOf(entry)!==columnId)keep.push(entry);
+    else removed.push({hex:entry[0],name:entry[1]});
+  }
+  return {palette:keep,removed};
+}
+
 function areAllLocked(keys,locked){
   const has=k=>locked instanceof Set?locked.has(k):Array.isArray(locked)&&locked.includes(k);
   return !!(keys&&keys.length)&&keys.every(has);
@@ -857,7 +866,7 @@ function buildTable(){
 function clearPalette(){
   normalizePalette();
   const plan=clearPalettePlan(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
-  plan.removed.forEach(({hex,name})=>{lastGone[name.toLowerCase()]=hex;});
+  plan.removed.forEach(({hex,name})=>rememberGone(hex,name));
   PALETTE=plan.palette;selectedIdx=null;
   renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();renderCode();applyGround();
   notify('cleared palette to bg and fg',false);
@@ -879,6 +888,7 @@ function repointHex(oldHex,newHex){
 // On adding a color, if its name matches a recently-deleted one, re-bind the
 // stranded assignments to the new hex. Returns true when a heal context existed.
 function healGone(name,newHex){const k=name.toLowerCase();if(!(k in lastGone))return false;const g=lastGone[k];delete lastGone[k];repointHex(g,newHex);return true;}
+function rememberGone(hex,name){if(name)lastGone[name.toLowerCase()]=hex;}
 function normalizePaletteEntry(entry){
   const hex=entry&&entry[0],name=(entry&&entry[1])||'color';
   return [hex,name,(entry&&entry[2])||columnIdOf(entry)];
@@ -937,7 +947,7 @@ function paletteChip(i,nearest){
   d.title=name+' '+hex+(nde===Infinity||nde===undefined?'':' — nearest ΔE '+nde.toFixed(3));
   const rm=locked?`<span class="lock" title="${role==='bg'?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
   d.innerHTML=`${rm}<input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
-  if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();if(name)lastGone[name.toLowerCase()]=hex;PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
+  if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();rememberGone(hex,name);PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
   d.querySelector('.nm').onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
   d.onclick=(e)=>{if(e.target.closest('.rm')||e.target.closest('.nm'))return;selectColor(i);};
   return d;
@@ -973,14 +983,24 @@ function moveColumn(columnId,dir){
   selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();
   notify('moved "'+columnId+'" '+(dir<0?'left':'right'),false);
 }
+function deleteColumn(columnId,label){
+  normalizePalette();
+  const plan=deletePaletteColumnPlan(PALETTE,{bg:MAP['bg'],fg:MAP['p']},columnId);
+  if(!plan.removed.length){notify('nothing to delete in "'+(label||columnId)+'"',true);return;}
+  plan.removed.forEach(({hex,name})=>rememberGone(hex,name));
+  PALETTE=plan.palette;selectedIdx=null;
+  renderPalette();buildTable();buildUITable();renderCode();applyGround();
+  notify('deleted column "'+(label||columnId)+'" — '+plan.removed.length+' color(s) now show "(gone)" where used',false);
+}
 function columnHeader(f,position,count){
   const h=document.createElement('div');h.className='fhead';
   const label=(f.members.find(m=>m.hex.toLowerCase()===f.base.toLowerCase())||{}).name||f.column||f.base;
-  h.innerHTML=`<button class="cmove left" title="move column left" ${position===0?'disabled':''}>&#8249;</button><button class="ctitle" title="select base color"></button><button class="cmove right" title="move column right" ${position===count-1?'disabled':''}>&#8250;</button>`;
+  h.innerHTML=`<button class="cmove left" title="move column left" ${position===0?'disabled':''}>&#8249;</button><button class="ctitle" title="select base color"></button><button class="cmove right" title="move column right" ${position===count-1?'disabled':''}>&#8250;</button><button class="cdel" title="delete column">×</button>`;
   h.querySelector('.ctitle').textContent=label;
   h.querySelector('.ctitle').onclick=()=>selectColumnBase(f);
   h.querySelector('.left').onclick=(e)=>{e.stopPropagation();moveColumn(f.column,-1);};
   h.querySelector('.right').onclick=(e)=>{e.stopPropagation();moveColumn(f.column,1);};
+  h.querySelector('.cdel').onclick=(e)=>{e.stopPropagation();deleteColumn(f.column,label);};
   return h;
 }
 // Render the palette as structural color columns: pinned ground column, then
@@ -2039,6 +2059,7 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  if(blueRight)blueRight.click();
  const moved=[...document.querySelectorAll('#pals .fstrip')].map(s=>s.dataset.column);
  A(moved.indexOf('blue')>moved.indexOf('gray'),'right arrow moves a color column after its neighbor');
+ A(!document.querySelector('#pals .fstrip[data-column="ground"] .cdel'),'ground column has no delete button');
  const redChip=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='red');
  A(!!redChip&&!!redChip.querySelector('.rm')&&!!redChip.querySelector('.nm'),'a column chip keeps remove + rename controls');
  const redColumn=redChip&&redChip.closest('.fstrip').dataset.column;
@@ -2051,6 +2072,17 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  if(bg2Chip){bg2Chip.click();document.getElementById('newhexstr').value='#101820';document.getElementById('newname').value='bg2';updateColor();}
  A(MAP['bg']==='#0d0b0a','editing same-hex bg2 does not repoint the real bg assignment');
  A(PALETTE.some(p=>p[1]==='bg2'&&p[0]==='#101820'),'editing same-hex bg2 updates only that palette tile');
+ PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#c0402a','red','red'],['#3a6ea5','blue','blue'],['#92acc2','blue+1','blue'],['#808080','gray','gray']];
+ MAP['kw']='#92acc2';lastGone={};selectedIdx=PALETTE.findIndex(p=>p[1]==='blue+1');renderPalette();
+ const del=document.querySelector('#pals .fstrip[data-column="blue"] .cdel');
+ A(!!del,'normal column has a delete button');
+ if(del)del.click();
+ A(!PALETTE.some(p=>p[2]==='blue'),'column delete removes every entry with the stable column id');
+ A(PALETTE.some(p=>p[1]==='red')&&PALETTE.some(p=>p[1]==='gray'),'column delete leaves neighboring columns alone');
+ A(PALETTE.some(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})==='bg')&&PALETTE.some(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})==='fg'),'column delete leaves ground entries alone');
+ A(MAP['kw']==='#92acc2','column delete leaves assignments on removed hexes');
+ A(lastGone['blue']==='#3a6ea5'&&lastGone['blue+1']==='#92acc2','column delete records every removed name for recovery');
+ A(selectedIdx===null,'column delete clears selected color');
  PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#c0402a','red','red'],['#3a6ea5','blue','blue'],['#92acc2','blue+1','blue']];
  MAP['kw']='#3a6ea5';selectedIdx=2;clearPalette();
  A(PALETTE.length===2&&PALETTE.every(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})),'clear palette leaves only bg and fg tiles');
