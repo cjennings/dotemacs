@@ -694,10 +694,12 @@ function stepRepointPlan(oldRanked,newMembers){
 // columns are emitted in first-seen palette order. No color sorting happens here.
 function sortColumnMembers(column){return Object.assign({},column,{members:[...column.members]});}
 function sortColumns(columns){return columns.map(sortColumnMembers);}
+function lightestFirstMembers(members){return [...members].sort((a,b)=>oklchOf(b.hex).L-oklchOf(a.hex).L);}
 
 // Dropdown order for color selection mirrors the visual palette organization:
-// ground first, then structural columns in display order. Stored palette order
-// stays untouched; this is selection-only organization.
+// bg/fg first, then structural columns in display order. Within each group,
+// choices run lightest-to-darkest. Stored palette order stays untouched; this is
+// selection-only organization.
 function paletteOptionList(cur,palette,ground){
   const have=cur===''||palette.some(p=>p[0]===cur)||[ground&&ground.bg,ground&&ground.fg].filter(Boolean).includes(cur);
   const out=[['','— default —']],seen=new Set();
@@ -706,8 +708,8 @@ function paletteOptionList(cur,palette,ground){
   const grouped=columnsFromPalette(palette,ground||{});
   const groundMembers=grouped.ground.map(g=>({hex:g.hex,name:g.name||g.role}))
     .concat(palette.filter(entry=>groundRoleOfEntry(entry,ground)==='step').map(([hex,name])=>({hex,name})));
-  sortColumnMembers({base:(ground&&ground.bg)||'',members:groundMembers}).members.forEach(m=>add(m.hex,m.name));
-  sortColumns(grouped.columns).forEach(f=>f.members.forEach(m=>add(m.hex,m.name)));
+  groundMembers.forEach(m=>add(m.hex,m.name));
+  sortColumns(grouped.columns).forEach(f=>lightestFirstMembers(f.members).forEach(m=>add(m.hex,m.name)));
   return out;
 }
 // Pure color/UI-boundary helpers (normHex, ratingColor, textOn), inlined from

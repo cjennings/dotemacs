@@ -59,6 +59,29 @@ test('paletteOptionList: Normal — color choices follow visual column ordering'
   assert.ok(list.findIndex(([, name]) => name === 'gray') < list.findIndex(([, name]) => name === 'red'), 'later columns stay later');
 });
 
+test('paletteOptionList: Normal — colors within each column are lightest to darkest', () => {
+  const pal = [
+    ['#111111', 'bg', 'ground'],
+    ['#eeeeee', 'fg', 'ground'],
+    ['#444444', 'gray-dark', 'gray'],
+    ['#cccccc', 'gray-light', 'gray'],
+    ['#888888', 'gray-mid', 'gray'],
+    ['#330000', 'red-dark', 'red'],
+    ['#dd8888', 'red-light', 'red'],
+  ];
+  const list = paletteOptionList('', pal, { bg: '#111111', fg: '#eeeeee' });
+  assert.deepEqual(list.slice(0, 3).map(([, name]) => name), ['— default —', 'bg', 'fg']);
+  assert.deepEqual(
+    list.filter(([, name]) => name.startsWith('gray')).map(([, name]) => name),
+    ['gray-light', 'gray-mid', 'gray-dark'],
+  );
+  assert.ok(list.findIndex(([, name]) => name === 'gray-dark') < list.findIndex(([, name]) => name === 'red-light'), 'column order is still left-to-right');
+  assert.deepEqual(
+    list.filter(([, name]) => name.startsWith('red')).map(([, name]) => name),
+    ['red-light', 'red-dark'],
+  );
+});
+
 test('paletteOptionList: Boundary — assignment-only ground colors are selectable', () => {
   const list = paletteOptionList('', [['#67809c', 'blue']], { bg: '#0d0b0a', fg: '#f0fef0' });
   assert.ok(list.some(([hex, name]) => hex === '#0d0b0a' && name === 'bg'));
