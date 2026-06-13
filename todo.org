@@ -44,6 +44,21 @@ Tags are additive. For example, a small wrong-behavior fix can be
 =:bug:quick:=, and a feature that requires internal restructuring can be
 =:feature:refactor:=.
 * Emacs Open Work
+** TODO [#B] Unified popup placement and dismissal rules :feature:
+All transient popups should follow one set of principles. Placement: when the Emacs frame is wider than tall, the popup rises from the right; when square or taller, from the bottom — settle the aspect-ratio threshold and the pop-out percentage. Dismissal: C-c C-c when there's an accept action, C-c C-k when there's a cancel, otherwise =q= closes the window. This generalizes two existing tasks — ai-term adaptive placement (the aspect-ratio docking) and the messenger window/key unification spec (the C-c C-c / C-c C-k dismissal) — into one config-wide policy. From the roam inbox.
+
+** TODO [#C] Pull a fullscreen terminal window away with C-; b + arrow :feature:
+When a terminal fills the frame, =C-; b= then a right or down arrow should shrink the window from that edge, reducing its width or height so another buffer can share the screen without leaving the terminal. Relates to the ai-term adaptive placement and unified-popup tasks. From the roam inbox.
+
+** TODO [#C] Remove unused system-power keybindings :refactor:quick:
+=modules/system-commands.el= binds shutdown (=C-; ! s=), reboot (=C-; ! r=), restart-Emacs (=C-; ! e=) and friends under the =C-; != prefix. Craig rarely uses them and wants the key real-estate back. Drop the bindings he doesn't use; the completing-read menu can still reach the rare ones. Confirm the exact set to keep before unbinding. From the roam inbox.
+
+** TODO [#C] Dirvish: free D for hard-delete, move duplicate :feature:quick:
+In dirvish, keep =d= = delete (=dired-do-delete=), move duplicate (=cj/dirvish-duplicate-file=, currently =D=) to another key, and bind =D= = =sudo rm -rf= for a forced hard delete — capital for the more destructive op. Craig's note says "duplicate on 2"; confirm that's the intended key, and guard the sudo path carefully before wiring. From the roam inbox.
+
+** TODO [#C] Swap buffer delete/diff keys — destructive on capital :refactor:quick:solo:
+=modules/custom-buffer-file.el:515= binds =d= = =cj/delete-buffer-and-file= and =D= = =cj/diff-buffer-with-file=. Destructive commands should be the capital, and diff is the one hit often (when saving a buffer changed on disk). Swap them: =D= = delete, =d= = diff. From the roam inbox.
+
 ** TODO [#B] ai-term adaptive side/bottom window placement :feature:quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-13
@@ -245,7 +260,7 @@ Keep #seedtest, #selftest, the default-on-open check, the dupre-revised round-tr
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-06
 :END:
-pressing g has should refresh. find another binding for Telegram.
+On the dashboard, =g= should refresh the buffer (=dashboard-refresh-buffer=); =g= currently opens Telegram (=cj/telega=, dashboard-config.el:88), so move Telegram to another key. F1 (=cj/dashboard-only=) should also run a refresh at the end, so re-showing the dashboard always lands on fresh content. F1-refresh folded in from the roam inbox 2026-06-13.
 ** TODO [#B] TTY-accessible personal C-; keymap :feature:solo:quick:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-05
@@ -4507,6 +4522,260 @@ Read [[file:docs/theme-studio-palette-columns-spec.org][docs/theme-studio-palett
 :END:
 Reported by .emacs.d 2026-06-12 01:01: the dedicated pager number (+15045173983, the Claude Pager Google Voice number on signal-cli) returns "User ... is not registered" on every send — Signal appears to have deregistered it (GV numbers get periodically re-verified). Re-registration requires captcha/SMS, which only you can do. Until then every page-signal call fails; .emacs.d's config-audit page fell back to email. Wrapper lives at claude-templates/bin/page-signal.
 
+** Emacs Packages — Curl-Friendly Web Service Wrappers
+Ideas for new Emacs packages following the same pattern as wttrin: HTTP GET to a simple web service, render results in a buffer, optionally show summary in the mode-line. All of these share the async fetch + caching infrastructure already proven in wttrin.
+Captured On: [2026-04-04 Sat]
+*** TODO Stock Market / Finance Package (Finnhub or Alpha Vantage)
+Build a stock watchlist and quote viewer for Emacs. User defines a list of symbols; package fetches quotes and renders a formatted table in a dedicated buffer. Optional mode-line ticker showing one or more symbols rotating on a timer.
+
+**** Features
+- Customizable watchlist: user defines a list of stock symbols in a defcustom; package fetches and displays all of them in a single buffer
+- Formatted quote table: symbol, company name, current price, daily change (absolute and percent), volume — color-coded green/red for gains/losses
+- ASCII sparkline charts: inline mini-charts showing intraday or multi-day price movement using Unicode block characters (▁▂▃▅▇ style)
+- Mode-line ticker: rotating display of one or more symbols with price and change indicator, similar to wttrin's weather widget — click to open the full watchlist buffer
+- Detail view: press RET on a symbol to see extended data — open/high/low/close, 52-week range, market cap, P/E ratio (data availability depends on backend)
+- Auto-refresh with market awareness: background timer fetches new data during market hours; pauses on weekends and after-hours to conserve API calls
+- Unit/currency preference: display prices in local currency if the backend supports it
+- Cache layer: same pattern as wttrin — serve cached data instantly, refresh in background, show staleness indicator when data is old
+- Interactive symbol lookup: ~M-x stock-add-symbol~ with completion against a symbol database or search endpoint
+
+**** What you'd learn
+- JSON parsing in elisp (~json-parse-buffer~, ~json-read~) — these APIs return JSON, not plain text, so this is the main new skill vs. wttrin
+- ASCII chart rendering — drawing sparklines or simple price charts with Unicode block characters in a buffer
+- API key management in elisp — storing keys in ~auth-source~ or custom variables, passing them as query params
+
+**** Where the complexity lives
+- Rendering: No pre-formatted ASCII comes back from the API. You'd build the table layout and any chart visualization yourself. This is the bulk of the work.
+- Market hours awareness: Knowing when to fetch (pre-market, regular, after-hours, weekends) to avoid wasting API calls.
+- Rate limiting: Free tiers are tight. Finnhub gives 60 calls/min which is generous; Alpha Vantage gives only 25/day on the free tier. Caching strategy matters more here than in wttrin.
+
+**** Candidate backends
+- Finnhub (finnhub.io): Free API key, 60 calls/min, real-time US quotes. JSON only. Best rate limit of the free options.
+- Alpha Vantage (alphavantage.co): Free API key, 25 calls/day. Supports CSV output which is trivial to parse — no JSON needed. Good for daily summaries, bad for frequent polling.
+- Twelve Data (twelvedata.com): Free key, 800 calls/day, 8/min. Covers stocks, forex, crypto, ETFs. JSON and CSV.
+
+**** Downsides
+- API key requirement adds friction for users (signup, config). Not as frictionless as wttrin.
+- Rate limits mean you can't poll aggressively. Stale data is the norm on free tiers.
+- Financial APIs change or shut down. Yahoo Finance's unofficial API has broken repeatedly over the years. Even paid services deprecate endpoints. Expect maintenance.
+- Finnhub and Alpha Vantage are US-market-centric. International coverage varies.
+
+**** Effort: Medium-High
+The fetch/cache layer is straightforward (reuse wttrin patterns). The rendering layer (tables, charts, color-coding gains/losses) is where most of the time goes. Expect this to be a real project, not a weekend hack.
+
+**** Name candidates (backronyms)
+Pick one. All are recursive (self-referential) in the style of CHIME.
+- BULL — *BULL Updates Live Listings*
+- MINT — *MINT Indexes Noteworthy Tickers*
+- QUOTE — *QUOTE Updates Ongoing Ticker Estimates*
+- ASSET — *ASSET Surfaces Stock Exchange Tickers*
+- MOAT — *MOAT Monitors Active Tickers*
+- TRADE — *TRADE Reveals Active Daily Equities*
+- BELL — *BELL Exhibits Live Listings*
+- CHART — *CHART Highlights Asset Rate Tickers*
+- BOARD — *BOARD Oversees Asset Rate Data*
+- VAULT — *VAULT Aggregates Underlying Listing Tickers*
+
+*** TODO rate.sx Wrapper — Cryptocurrency Rates
+Wrap Igor Chubin's rate.sx service. This is the lowest-effort, highest-pattern-match option — rate.sx works exactly like wttr.in. Returns colored ASCII tables with sparkline charts. Same ~User-Agent: curl~ trick, same ANSI escape codes.
+
+**** Features
+- Full crypto dashboard: ~M-x rate-sx~ opens a buffer with a colored ASCII table of top cryptocurrencies — name, price, 24h change, market cap, and sparkline charts — all rendered by the service
+- Single coin lookup: ~M-x rate-sx-coin~ prompts for a coin name (e.g., ~eth~, ~btc~) and displays its detailed view
+- Plain price fetch: query ~rate.sx/1BTC~ to get a single numeric price — useful for mode-line display or programmatic use from other elisp
+- Mode-line widget: show the price of one or more coins in the mode-line with periodic background refresh, similar to wttrin's weather indicator
+- Customizable coin list: user picks which coins appear in the dashboard via a defcustom
+- Currency base selection: rate.sx supports displaying prices in different fiat currencies
+- ANSI color rendering: reuse wttrin's ~xterm-color~ pipeline to convert the service's colored ASCII output into Emacs faces
+- Cache with background refresh: same timer-based pattern as wttrin — data stays warm, buffer opens instantly
+
+**** What you'd learn
+- Very little new — this is almost a copy of wttrin with different URL construction. Good first project if you want to validate the pattern before tackling stocks.
+- Could explore sharing infrastructure between wttrin and this package (common async fetch, caching, ANSI rendering).
+
+**** Where the complexity lives
+- Minimal. The service does the formatting. Your job is URL construction, fetch, ANSI-to-faces conversion (already solved in wttrin via ~xterm-color~), and buffer display.
+- Coin selection UX: letting users pick which coins to show, custom vs. top-N, etc.
+
+**** Downsides
+- Single point of failure: rate.sx is one person's side project. If Chubin takes it down, the package is dead. No fallback.
+- Crypto-only. No traditional stocks, forex, or commodities.
+- Less useful than a stock package for most people.
+
+**** Effort: Low
+Could reuse 70-80% of wttrin's code. A weekend project if you're focused.
+
+*** TODO Frankfurter Currency Exchange Package
+Wrap the Frankfurter API (frankfurter.dev) for fiat currency conversion and historical rates. ECB data, open source, no API key.
+
+**** Features
+- Quick conversion: ~M-x currency-convert~ prompts for amount, base currency, and target currency — displays the result in the echo area (e.g., "100 USD = 91.34 EUR")
+- Multi-target conversion table: convert one amount against several currencies at once, rendered as an aligned table in a dedicated buffer
+- Historical rate lookup: query a specific date's exchange rate — useful for expense reports, invoicing, or curiosity
+- Rate trend view: fetch a date range and display a table or ASCII sparkline showing how a currency pair moved over days/weeks/months
+- Latest rates dashboard: ~M-x currency-latest~ shows today's rates for a user-defined set of currency pairs in a buffer
+- Interactive currency selection: completing-read over the ~30 supported currencies with full names (e.g., "USD — United States Dollar")
+- Mode-line rate display: optionally show one currency pair's rate in the mode-line with daily background refresh
+- Cache layer: rates only update once per business day, so caching is especially effective — fetch once, serve all day
+
+**** What you'd learn
+- JSON parsing in elisp (the API returns JSON, not formatted text)
+- Table rendering — building aligned currency tables with ~format~ and text properties
+- Historical data display — the API supports date ranges, so you could show rate trends over time
+
+**** Where the complexity lives
+- Rendering: You'd build the table and any trend visualization yourself.
+- Date handling in elisp for historical queries (~encode-time~, ~format-time-string~, etc.).
+- UX: interactive base/target currency selection with completion.
+
+**** Downsides
+- ECB data updates once per business day. No real-time rates — this is reference data, not trading data.
+- Covers ~30 currencies (major fiats). No crypto, no exotic currencies.
+- Frankfurter is open-source and self-hostable, which is good for longevity, but the public instance could still go away.
+
+**** Effort: Low-Medium
+JSON parsing adds a step vs. wttrin's plain text, but the API is clean and well-documented. Straightforward project.
+
+*** TODO ipinfo.io — IP and Geolocation Lookup
+~curl ipinfo.io~ returns JSON with your public IP, city, region, country, ISP, and timezone. No auth needed for basic lookups (1000 requests/day unauthenticated).
+
+**** Features
+- My IP: ~M-x ipinfo~ fetches your public IP and geolocation, displays a formatted summary in a buffer or the echo area — IP, city, region, country, ISP, timezone, coordinates
+- Arbitrary IP lookup: ~M-x ipinfo-lookup~ prompts for an IP address and shows the same geolocation detail
+- Copy IP to kill ring: one-keystroke convenience for grabbing your public IP
+- Open in browser map: command to open the returned lat/long coordinates in OpenStreetMap or Google Maps via ~browse-url~
+- Hostname resolution: the API also returns the reverse DNS hostname for an IP
+- Mode-line IP display: optionally show your current public IP in the mode-line (useful when switching between networks/VPNs)
+- Org-mode integration: insert IP/geo info as an org property block or table row at point
+
+**** What you'd learn
+- Minimal new skills — simple JSON response, single fetch, render in buffer or echo area.
+- Could add map integration (open coordinates in browser or an Emacs map package).
+
+**** Where the complexity lives
+- Almost nowhere. This is the simplest possible package. Fetch JSON, format it, display it.
+- If you want to look up arbitrary IPs (not just your own), add a prompt with completion history.
+
+**** Downsides
+- Very niche utility. You look up your IP occasionally, not daily.
+- Free tier is generous (1000/day) but authenticated lookups require a token for enriched data.
+- Privacy-conscious users may not want to send their IP to a third party (though they already do by virtue of connecting).
+
+**** Effort: Very Low
+An afternoon project. Good as a learning exercise for the fetch-parse-render pattern if you haven't done JSON APIs in elisp before.
+
+*** TODO icanhazdadjoke.com — Dad Jokes in Emacs
+~curl -H "Accept: text/plain" https://icanhazdadjoke.com~ returns a single plain-text joke. No auth, no key, no rate limit concerns for casual use.
+
+**** Features
+- Random joke: ~M-x dad-joke~ fetches a random joke and displays it in the echo area — minimal disruption, maximum groan
+- Joke buffer: ~M-x dad-joke-buffer~ opens a dedicated buffer with a joke, nicely formatted with a large font face. Press ~n~ for the next joke, ~q~ to quit
+- Search jokes: ~M-x dad-joke-search~ prompts for a term (e.g., "cat") and displays matching jokes in a buffer — the API supports ~?term=~ search
+- Startup joke: optional hook to display a dad joke in the echo area or scratch buffer on Emacs startup
+- Org-mode insertion: ~M-x dad-joke-insert~ inserts a joke at point — for lightening up documentation or commit messages
+- Kill ring: ~M-x dad-joke-yank~ fetches a joke and puts it directly in the kill ring for pasting elsewhere
+
+**** What you'd learn
+- Nothing technically new — this is the simplest possible HTTP-GET-to-buffer pattern.
+- Good excuse to experiment with fun presentation: display in echo area, dedicated buffer, or even as a startup message.
+
+**** Where the complexity lives
+- It doesn't. Fetch a string, display it. The API also supports search (~?term=dog~) if you want to add that.
+
+**** Downsides
+- Toy project. Zero practical utility beyond morale.
+- The joke quality is... dad jokes.
+
+**** Effort: Trivial
+An hour, maybe two if you add search and a nice buffer layout. Publishable on MELPA as a novelty package.
+
+*** TODO qrenco.de — QR Code Generator
+Chubin's QR code service. ~curl qrenco.de/hello~ returns a QR code rendered in Unicode block characters. Encodes arbitrary text, URLs, WiFi credentials, etc.
+
+**** Features
+- Encode text: ~M-x qr-encode~ prompts for a string and displays the QR code in a dedicated buffer using Unicode block characters
+- Encode region: ~M-x qr-encode-region~ encodes the currently selected text — quick way to QR-ify a URL, password, or snippet
+- Encode URL at point: ~M-x qr-encode-url~ detects the URL under point (via ~thing-at-point~) and generates a QR code for it
+- WiFi QR codes: ~M-x qr-wifi~ prompts for SSID, password, and encryption type, then generates the standard WiFi QR format (~WIFI:T:WPA;S:MyNetwork;P:password;;~) — scan to join a network
+- Buffer font management: automatically sets the buffer to a monospace font with consistent Unicode block rendering (same approach as wttrin's Liberation Mono override)
+- Copy as text: yank the QR code's block characters to the kill ring for pasting into emails, READMEs, or chat
+- Adjustable size: the service supports size parameters — expose this as a prefix argument or defcustom
+
+**** What you'd learn
+- Handling Unicode block character output (not ANSI colors this time, but character-level rendering)
+- Interactive input patterns — prompting for text to encode, or encoding the current region/URL at point
+
+**** Where the complexity lives
+- Font and character width: QR codes require a monospace font where the block characters render at consistent widths. Some Emacs font configurations break this. You'd need to set the buffer font explicitly (like wttrin does).
+- The service sometimes returns ANSI codes for inverted colors. May need ~xterm-color~ or manual processing.
+
+**** Downsides
+- Same single-point-of-failure risk as rate.sx — one person's service.
+- QR codes in a terminal/buffer are inherently lower resolution than image-based ones. Scanning reliability depends on terminal font size and screen.
+- Niche use case. Most people generate QR codes infrequently.
+
+**** Effort: Low
+Similar to rate.sx in scope. The fetch is trivial; font handling and display are the main considerations.
+
+*** TODO dns.toys — Multi-Tool Utility via DNS
+dns.toys answers queries over DNS instead of HTTP. ~dig 100USD-EUR.fx @dns.toys~ returns currency conversion, ~dig mumbai.time @dns.toys~ returns world time, ~dig 42km-mi.unit @dns.toys~ does unit conversion. Also supports base conversion, math constants, and more.
+
+**** Features
+- Currency conversion: ~M-x dns-toys-currency~ prompts for amount and currency pair (e.g., "100 USD to EUR"), displays result in echo area
+- World time: ~M-x dns-toys-time~ prompts for a city name and shows the current local time — faster than searching online, no browser needed
+- Unit conversion: ~M-x dns-toys-unit~ prompts for a value and unit pair (e.g., "42 km to mi"), returns the conversion
+- Base conversion: ~M-x dns-toys-base~ converts between decimal, hex, octal, and binary (e.g., "100 dec to hex")
+- Math constants: ~M-x dns-toys-constant~ looks up pi, e, tau, etc. — niche but handy in a calc session
+- Unified command: ~M-x dns-toys~ with a smart prompt that detects query type from input format, dispatching to the right DNS query automatically
+- Echo area results: all results display in the echo area by default for quick non-disruptive answers, with an optional dedicated buffer for history
+- Async queries: use ~start-process~ with sentinels so ~dig~ calls don't block Emacs
+
+**** What you'd learn
+- Calling external processes from elisp (~call-process~ or ~start-process~ to invoke ~dig~) instead of ~url-retrieve~. This is a meaningfully different integration pattern from wttrin.
+- Parsing DNS TXT record output — dig returns structured but noisy output; you'd extract the answer section.
+- Building a multi-function package — this one service covers currency, time, units, and base conversion, so the UX needs a dispatch mechanism (separate commands, or a unified prompt with type detection).
+
+**** Where the complexity lives
+- Output parsing: ~dig~ output is not designed for human consumption. You'd parse the ANSWER SECTION, strip TTL/class/type fields, and extract the payload string.
+- Latency: DNS queries are fast but ~call-process~ on ~dig~ has subprocess overhead. For interactive use this is fine; for mode-line updates you'd want async (~start-process~ with a sentinel).
+- Feature breadth: The temptation is to wrap every dns.toys feature. Scoping to a focused set (currency + time + units) keeps it manageable.
+
+**** Downsides
+- Requires ~dig~ installed (standard on Linux/macOS, not on Windows). Limits portability.
+- dns.toys is a single maintainer's project. Same fragility concern as rate.sx and qrenco.de.
+- DNS protocol means no rich formatting — just short text strings. The results are useful but visually plain.
+- Some networks/firewalls block non-standard DNS queries, which would silently break the package.
+
+**** Effort: Low-Medium
+The individual queries are trivial. The interesting work is building a clean multi-function UX and handling the process-based (vs. HTTP-based) integration pattern. Good project for learning elisp process management.
+
+*** TODO cheat.sh Integration — Programming Cheat Sheets
+~curl cheat.sh/tar~ returns a syntax-highlighted cheat sheet. Supports language-specific queries like ~cheat.sh/python/lambda~. Already has some Emacs integrations (cheat-sh.el exists) but could be worth a custom implementation if existing packages don't fit your workflow.
+
+**** Features
+- Quick lookup: ~M-x cheat-sh~ prompts for a topic (e.g., "tar", "git/stash") and displays a syntax-highlighted cheat sheet in a dedicated buffer
+- Language-scoped queries: ~M-x cheat-sh-lang~ prompts for language then topic (e.g., ~python/lambda~, ~go/goroutine~) with two-stage completion
+- Context-aware lookup: detect the current buffer's major mode and scope the query to that language automatically — in a Python buffer, querying "lambda" goes to ~cheat.sh/python/lambda~
+- ANSI-to-faces rendering: convert the service's syntax-highlighted ANSI output to proper Emacs font-lock faces using ~xterm-color~ (same pipeline as wttrin)
+- Navigation: browse related topics from within the buffer — follow-up queries without returning to the minibuffer. Previous/next topic history with ~p~ / ~n~
+- Completion against the topic list: fetch and cache ~cheat.sh/:list~ to provide completing-read over all available topics
+- Offline cache: optionally cache previously viewed cheat sheets for offline access or instant re-display
+- Region query: select a command or function name and look it up directly with ~M-x cheat-sh-region~
+
+**** What you'd learn
+- ANSI syntax highlighting → Emacs faces (same skill as wttrin)
+- Deep completion support: cheat.sh has a massive topic tree. Building good interactive completion for ~cheat.sh/{language}/{topic}~ is a UX challenge.
+
+**** Where the complexity lives
+- Completion and navigation: the value is in making it fast to find the right cheat sheet. ~cheat.sh/:list~ returns thousands of entries.
+- Existing packages: ~cheat-sh.el~ already exists on MELPA. You'd need a reason to build your own (better caching, offline support, integration with your workflow).
+
+**** Downsides
+- Overlaps with existing Emacs packages. Check ~cheat-sh.el~ before building.
+- The service aggregates from many sources. Quality is inconsistent across topics.
+
+**** Effort: Medium
+If building from scratch. Low if extending or wrapping an existing package. The completion UX is where the effort goes.
 * Emacs Resolved
 ** DONE [#B] Fix likely =elpa-mirror-location= path bug :bug:quick:
 CLOSED: [2026-05-03 Sun]
