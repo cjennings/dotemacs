@@ -333,6 +333,11 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  if(redChip){
   const redName=redChip.querySelector('.nm');selectedIdx=null;redName.click();
   A(selectedIdx!==null&&PALETTE[selectedIdx][1]==='red','single-clicking a tile name selects the whole tile');
+  const chipHex=chip=>rgb2hex(...getComputedStyle(chip).backgroundColor.match(/\d+/g).slice(0,3).map(Number));
+  openPicker();setHex('#00ff00');
+  A(chipHex(redChip)==='#00ff00','picker edits preview on the selected palette chip');
+  closePicker();
+  A(chipHex(redChip)==='#c0402a'&&PALETTE[selectedIdx][0]==='#c0402a','closing picker restores selected chip without mutating palette');
   A(redName.readOnly===true&&!redName.classList.contains('editing'),'single-clicking a tile name does not enter name edit mode');
   redName.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
   A(redName.readOnly===false&&redName.classList.contains('editing'),'double-clicking a tile name enters edit mode');
