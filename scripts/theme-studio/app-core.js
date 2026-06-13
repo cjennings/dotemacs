@@ -121,81 +121,43 @@ function lMax(hue,chroma,fgSet,target){
   return {L:loL,status:at(loL).clamped?'clamp':'ok'};
 }
 
-// --- color families (color-families spec, Phase 1) ---------------------------
-// Families are a display grouping derived from the hex every render — never from
-// names — so renaming a color can't move it. The flat palette stays the editable
-// truth; these pure functions group it, regenerate a family's ramp, and plan the
+// --- color columns (color-families spec, current UI model) -------------------
+// Columns are structural, not inferred by color. Generated ramp entries are named
+// base-1/base/base+1 and remain in that base column regardless of their hex. A
+// manually-added color starts as its own singleton column. The flat palette stays
+// the editable truth; these pure functions group it, regenerate a ramp, and plan
 // assignment re-point across a regenerate.
 
 function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
 function nameOfHex(palette,hex){const p=palette.find(p=>p[0].toLowerCase()===hex.toLowerCase());return p?p[1]:null;}
-function hueDist(a,b){const d=Math.abs(a-b);return Math.min(d,360-d);}
+function familyStem(name){return (name||'color').replace(/[+-]\d+$/,'');}
+function familyOffset(name){const m=(name||'').match(/([+-]\d+)$/);return m?parseInt(m[1],10):0;}
+function columnIdOf(entry){return (entry&&entry[2])||familyStem(entry&&entry[1]);}
 
-// A color reads as neutral below this chroma. Lightness-scaled (the Munsell
-// insight): the mid-tones need more chroma to read as a hue. Floored at both ends
-// rather than tapering to zero, so pale warm grays stay neutral (and pure white,
-// C=0 at L=1, doesn't evade a zero threshold) while pale chromatic tints stay
-// colored. Tuned on real palettes (Codex + Fable color-sorting reviews).
-function neutralThreshold(L){
-  if(L<=0.2)return 0.020;
-  if(L<0.6)return 0.020+0.015*(L-0.2)/0.4;
-  if(L<0.85)return 0.035-0.017*(L-0.6)/0.25;
-  return 0.018;
-}
-// Lightness-conditioned compatibility of two chromatic colors (Fable's LCCL):
-// hue must match tightly at equal lightness and may drift across a lightness gap,
-// because a tonal ramp drifts in hue with lightness by design. The low-chroma noise
-// term widens the hue tolerance where hue is ill-defined (pale tints). A chroma
-// clause keeps a vivid accent out of a soft family at the same lightness. <=1 is
-// compatible. Source: ~/color-sorting-fable.org.
-function pairRatio(a,b){
-  const dL=Math.abs(a.L-b.L),dH=hueDist(a.H,b.H);
-  const noise=Math.min(45,Math.atan(0.015/Math.max(Math.min(a.C,b.C),1e-6))*180/Math.PI);
-  return Math.max(dH/(12+60*dL+noise),Math.abs(a.C-b.C)/(0.08+0.3*dL));
-}
-// Complete-linkage agglomerative clustering on pairRatio: greedily merge the two
-// clusters whose worst cross-pair is most compatible, stopping when no merge has
-// every cross-pair compatible. Complete linkage makes single-linkage chaining
-// structurally impossible — two ramps can't fuse through their converging pale
-// ends because their mid-lightness members stay far apart.
-function clusterChromatic(ms){
-  let cl=ms.map(m=>[m]);
-  const cd=(A,B)=>Math.max(...A.flatMap(a=>B.map(b=>pairRatio(a,b))));
-  for(;;){
-    let best=null;
-    for(let i=0;i<cl.length;i++)for(let j=i+1;j<cl.length;j++){const d=cd(cl[i],cl[j]);if(!best||d<best.d)best={d,i,j};}
-    if(!best||best.d>1)break;
-    cl[best.i]=cl[best.i].concat(cl[best.j]);cl.splice(best.j,1);
-  }
-  return cl;
-}
-// A family from its members: base is the most-saturated member (tie toward
-// mid-lightness), the anchor for a generated ramp.
-function makeFamily(ms,neutral){
-  let base=ms[0];
-  for(const m of ms)if(m.C>base.C||(m.C===base.C&&Math.abs(m.L-0.5)<Math.abs(base.L-0.5)))base=m;
-  return {base:base.hex,neutral:!!neutral,members:ms.map(m=>({hex:m.hex,name:m.name}))};
-}
-// Group a flat palette into the ground strip plus families. ground is {bg,fg}:
-// those two hexes form the pinned ground strip even when absent from the palette,
-// and a palette chip at a ground hex is not duplicated into a family. Near-neutrals
-// (chroma below the lightness-scaled threshold) form one neutral family; the rest
-// cluster by lightness-conditioned complete linkage (clusterChromatic).
+// Group a flat palette into the ground strip plus structural columns. ground is
+// {bg,fg}; those endpoint hexes form the pinned ground column even when absent
+// from the palette, and ground-N entries are reserved for that column. Everything
+// else groups by its stable column id, not by OKLCH hue/chroma or display name.
+// Legacy two-field entries fall back to their generated-name stem until edited.
 function familiesFromPalette(palette,ground){
   const bg=ground&&ground.bg,fg=ground&&ground.fg;
   const gset=new Set([bg,fg].filter(Boolean).map(h=>h.toLowerCase()));
   const groundStrip=[];
   if(bg)groundStrip.push({hex:bg,role:'bg',name:nameOfHex(palette,bg)});
   if(fg)groundStrip.push({hex:fg,role:'fg',name:nameOfHex(palette,fg)});
-  const neutrals=[],chromatic=[];
-  for(const [hex,name] of palette){
+  const byColumn=new Map(),families=[];
+  for(const entry of palette){
+    const [hex,name]=entry;
     if(gset.has(hex.toLowerCase()))continue;
-    const c=oklchOf(hex),m={hex,name,L:c.L,C:c.C,H:c.H};
-    (c.C<neutralThreshold(c.L)?neutrals:chromatic).push(m);
+    if(/^ground-\d+$/i.test(name||''))continue;
+    const column=columnIdOf(entry);
+    if(!byColumn.has(column))byColumn.set(column,{column,members:[]});
+    byColumn.get(column).members.push({hex,name,offset:familyOffset(name),column});
   }
-  const families=[];
-  if(neutrals.length)families.push(makeFamily(neutrals,true));
-  for(const cl of clusterChromatic(chromatic))families.push(makeFamily(cl,false));
+  for(const f of byColumn.values()){
+    const base=(f.members.find(m=>m.offset===0)||f.members[0]).hex;
+    families.push({base,column:f.column,stem:f.column,members:f.members.map(m=>({hex:m.hex,name:m.name,column:m.column}))});
+  }
   return {ground:groundStrip,families};
 }
 // Regenerate a family's members as a symmetric ramp around the base: n=0 is the
@@ -234,22 +196,25 @@ function stepRepointPlan(oldRanked,newMembers){
   return {map,removed};
 }
 
-// Order a family's members dark to light by OKLCH lightness.
-function sortFamilyMembers(fam){return Object.assign({},fam,{members:[...fam.members].sort((a,b)=>oklchOf(a.hex).L-oklchOf(b.hex).L)});}
-// Order families for display: neutrals first (by base lightness), then chromatic
-// by base hue, ties broken by base lightness then base hex. Each family's members
-// are lightness-sorted. Display-only — the stored palette order is untouched.
-function sortFamilies(families){
-  const keyed=families.map(f=>{const c=oklchOf(f.base);return {f,neutral:!!f.neutral,H:c.H,L:c.L,base:f.base};});
-  keyed.sort((a,b)=>{
-    if(a.neutral!==b.neutral)return a.neutral?-1:1;
-    if(a.neutral&&b.neutral)return a.L-b.L;
-    const ah=Math.round(a.H),bh=Math.round(b.H);   // a hue hair shouldn't outrank lightness
-    if(ah!==bh)return ah-bh;
-    if(a.L!==b.L)return a.L-b.L;
-    return a.base.toLowerCase()<b.base.toLowerCase()?-1:a.base.toLowerCase()>b.base.toLowerCase()?1:0;
-  });
-  return keyed.map(k=>sortFamilyMembers(k.f));
+// Preserve structural order. Generated ramps are inserted in offset order, and
+// columns are emitted in first-seen palette order. No color sorting happens here.
+function sortFamilyMembers(fam){return Object.assign({},fam,{members:[...fam.members]});}
+function sortFamilies(families){return families.map(sortFamilyMembers);}
+
+// Dropdown order for color selection mirrors the visual palette organization:
+// ground first, then structural columns in display order. Stored palette order
+// stays untouched; this is selection-only organization.
+function paletteOptionList(cur,palette,ground){
+  const have=cur===''||palette.some(p=>p[0]===cur)||[ground&&ground.bg,ground&&ground.fg].filter(Boolean).includes(cur);
+  const out=[['','— default —']],seen=new Set();
+  if(!have)out.push([cur,'(gone) '+cur]);
+  const add=(hex,name)=>{if(!hex)return;const key=hex.toLowerCase()+'|'+(name||'');if(seen.has(key))return;seen.add(key);out.push([hex,name||hex]);};
+  const grouped=familiesFromPalette(palette,ground||{});
+  const groundMembers=grouped.ground.map(g=>({hex:g.hex,name:g.name||g.role}))
+    .concat(palette.filter(([,name])=>/^ground-\d+$/i.test(name||'')).map(([hex,name])=>({hex,name})));
+  sortFamilyMembers({base:(ground&&ground.bg)||'',members:groundMembers}).members.forEach(m=>add(m.hex,m.name));
+  sortFamilies(grouped.families).forEach(f=>f.members.forEach(m=>add(m.hex,m.name)));
+  return out;
 }
 
-export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, familiesFromPalette, regenFamily, rankByLightness, stepRepointPlan, sortFamilies, sortFamilyMembers };
+export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, familiesFromPalette, regenFamily, rankByLightness, stepRepointPlan, sortFamilies, sortFamilyMembers };

@@ -95,29 +95,24 @@ Three tiers of faces, plus the palette:
   per face, shown in a live mock Emacs buffer.
 - **Package faces** — per-package face tables with a live preview (below).
 
-## Color families
+## Color columns
 
-The palette is displayed as **families**: colors grouped into vertical columns by
-their actual color, dark at the top and light at the bottom, columns arranged left
-to right. Grouping is derived from the hex on every render — never from the name —
-so renaming a color to anything never moves it between columns. The flat palette
-underneath is unchanged (export stays a flat `[hex, name]` list); families are a
-view over it, and the per-chip rename/remove still work.
+The palette is displayed as **columns**. The ground column is pinned first: `bg`
+at one end, `fg` at the other, with optional `ground-N` span colors between them.
+Every other color stays in the column where it was created. Columns are not
+derived from hue, chroma, lightness, or the visible color name.
 
-- **Grouping.** Chromatic colors bucket by their nearest perceptual hue (red,
-  orange, yellow, green, teal, blue, purple, pink). Near-neutrals — grays, the
-  background and foreground ramps — collapse into one neutral column ordered by
-  lightness, using a lightness-scaled chroma threshold so a faint pale tint keeps
-  its hue while a faint mid gray reads as neutral. Columns sort by hue; the ground
-  strip (the `bg` and `fg` assignments) pins first, neutrals next. (Hue-adjacent
-  warm colors like olive-greens and golds can still share a column — a known
-  limitation, since by hue they really are adjacent.)
-- **The count control** under each chromatic column sets how many steps sit on
-  each side of the family's base (its most-saturated color). Setting N regenerates
-  the family as a symmetric base ±N tonal ramp via `ramp()` — lighter and darker
-  steps on the base's hue with chroma easing toward the extremes — *replacing* the
-  column's current colors. N=0 collapses to the base alone.
-- **Editing a base** recolors the whole family: change a base color and the family
+- **Grouping.** Each palette entry carries a stable column id. New colors start
+  their own column; generated ramp steps inherit the base color's column id.
+  Renaming a color only changes its label, so a renamed tile stays in its original
+  column. Older two-field palette entries still load by falling back to the
+  generated-name stem (`blue-1`, `blue`, `blue+1` -> `blue`).
+- **The count control** under each non-ground column sets how many steps sit on
+  each side of the column's base. Setting N regenerates the column as a symmetric
+  base ±N tonal ramp via `ramp()` — lighter and darker steps on the base's hue
+  with chroma easing toward the extremes — *replacing* the column's current
+  colors. N=0 collapses to the base alone.
+- **Editing a base** recolors the whole column: change a base color and the column
   regenerates from it at the same count.
 - **References follow.** When a regenerate changes a step's hex, any face assigned
   to that step is re-pointed to the new hex. A step *removed* by lowering the count
@@ -205,7 +200,7 @@ The export (and what a build step consumes):
 ```json
 {
   "name": "dupre",
-  "palette": [["#67809c", "blue"], ["#e8bd30", "gold"]],
+  "palette": [["#67809c", "blue", "blue"], ["#e8bd30", "gold", "gold"]],
   "assignments": {"kw": "#67809c", "str": "#5d9b86", "bg": "#000000", "p": "#ffffff"},
   "bold": ["kw", "fnd"],
   "italic": [],
@@ -222,6 +217,10 @@ The export (and what a build step consumes):
 
 - `assignments` maps syntax category keys to hexes; `bg` is the `default` face
   background, `p` the foreground.
+- `palette` is a flat list of `[hex, name, columnId]`. `name` is the editable
+  display label; `columnId` is the durable grouping key that keeps generated
+  colors in their original column even if they are renamed. Older `[hex, name]`
+  entries still import and are normalized on save.
 - `ui` and `packages` faces carry `fg`/`bg` (hex or `null`), `bold`, `italic`,
   `underline`, `strike`, and for package faces `inherit` (a face name or
   `null`), `height` (a float, omitted at 1.0), and `source` (`"default"` seeded,

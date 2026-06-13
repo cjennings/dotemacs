@@ -26,6 +26,7 @@
  .pals{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;align-items:flex-start}
  .fstrip{display:flex;flex-direction:column;gap:6px;padding:5px;border-radius:7px;border:1px solid transparent}
  .fstrip.ground{border-color:#252321;background:#161412}
+ .fhead{min-height:17px;max-width:128px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#b4b1a2;font:9pt monospace;text-align:center}
  .fcount{margin-top:3px;font:9pt monospace;color:#8a9496;text-align:center}
  .fcount input{width:40px;background:#0d0b0a;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:2px 4px;font:9pt monospace;text-align:center}
  .palwarn{display:none;margin-top:8px;font:10pt monospace;color:#cb6b4d}
@@ -35,7 +36,7 @@
  .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none}
  .pchip .hx{font-size:10pt;opacity:.8} .pchip .rm{position:absolute;top:2px;right:5px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:bold;opacity:.7}
  .pchip .lock{position:absolute;top:3px;right:5px;font-size:10px;opacity:.6}
- .palctl{margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+ .palctl{margin:0 0 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
  .palctl input[type=text]{background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace}
  .palctl input[type=text]::placeholder{color:#b4b1a2;opacity:1}
  .palctl{position:relative}
@@ -70,7 +71,8 @@
  #palmsg{font:10pt monospace;opacity:0;transition:opacity .35s;margin-left:6px}
  #export{width:100%;height:180px;margin-top:10px;background:#0d0b0a;color:#a4ac64;border:1px solid #252321;border-radius:6px;font:10pt monospace;padding:10px}
  .filebar{margin:6px 0 0;display:flex;gap:8px;align-items:center}
- #pagetitle{font-size:30px;color:#cdced1;font-weight:normal;border:none;margin:4px 0 18px;padding:0}
+ #pagetitle{font-size:30px;color:#cdced1;font-weight:normal;border:none;margin:0;padding:0}
+ .topbar{display:flex;gap:24px;align-items:flex-start;justify-content:space-between;margin:4px 0 18px}
  .cols{display:flex;gap:28px;align-items:flex-start} .cols.stretch{align-items:stretch}
  .pane{min-width:0} .pane.grow{flex:1} .pane.saveload{flex:0 0 auto;margin-left:auto}
  .pane h1{margin-top:0}
