@@ -9,7 +9,7 @@
 ;; Eager reason: registers the C-; ! system-command keymap; high-impact commands
 ;;   that should run only by command (command-loaded target).
 ;; Top-level side effects: defines a system-command keymap under cj/custom-keymap.
-;; Runtime requires: keybindings, rx.
+;; Runtime requires: keybindings, host-environment, rx.
 ;; Direct test load: yes (requires keybindings explicitly).
 ;;
 ;; System commands for logout, lock, suspend, shutdown, reboot, and Emacs
@@ -17,7 +17,7 @@
 ;;
 ;; Commands include:
 ;; - Logout (terminate user session)
-;; - Lock screen (slock)
+;; - Lock screen (hyprlock on Wayland, slock on X11)
 ;; - Suspend (systemctl suspend)
 ;; - Shutdown (systemctl poweroff)
 ;; - Reboot (systemctl reboot)
@@ -34,6 +34,14 @@
 ;; the load-time reference void if anything required `system-commands'
 ;; before `keybindings'.  Make the dependency explicit.
 (require 'keybindings)
+;; `host-environment' provides `env-wayland-p', referenced at load time by the
+;; `lockscreen-cmd' defvar below to pick the session-appropriate locker. A hard
+;; require keeps the module loadable on its own (tests, byte-compile) rather
+;; than relying on init.el's load order.
+(require 'host-environment)
+;; `system-lib' provides `cj/confirm-strong', used at runtime by the `strong'
+;; confirm branch of `cj/system-cmd' for irreversible actions (shutdown/reboot).
+(require 'system-lib)
 (eval-when-compile (require 'subr-x))
 (require 'rx)
 
@@ -71,7 +79,7 @@ If CMD is deemed dangerous, ask for confirmation."
        ;; Strong confirm for irreversible actions (shutdown, reboot):
        ;; require an explicit "yes", so a stray RET/space can't trigger them.
        ((eq confirm 'strong)
-        (unless (yes-or-no-p (format "Really run %s (%s)? " label cmdstr))
+        (unless (cj/confirm-strong (format "Really run %s (%s)? " label cmdstr))
           (user-error "Aborted")))
        ;; Quick (Y/n) confirm for recoverable actions (logout, suspend).
        (confirm
@@ -102,7 +110,13 @@ actions like shutdown and reboot), nil for no confirmation."
 
 ;; Define system commands
 (cj/defsystem-command cj/system-cmd-logout   logout-cmd "loginctl terminate-user $(whoami)" t)
-(cj/defsystem-command cj/system-cmd-lock     lockscreen-cmd "slock")
+;; slock is X11-only and can't grab a Wayland session.  On Wayland, lock via
+;; the session manager (`loginctl lock-session') rather than spawning a locker
+;; directly: logind emits the Lock signal, hypridle catches it and runs its
+;; lock_cmd (hyprlock), the same path idle/before-sleep locking already uses.
+;; X11 machines keep slock.
+(cj/defsystem-command cj/system-cmd-lock     lockscreen-cmd
+  (if (env-wayland-p) "loginctl lock-session" "slock"))
 (cj/defsystem-command cj/system-cmd-suspend  suspend-cmd "systemctl suspend" t)
 (cj/defsystem-command cj/system-cmd-shutdown shutdown-cmd "systemctl poweroff" strong)
 (cj/defsystem-command cj/system-cmd-reboot   reboot-cmd "systemctl reboot" strong)

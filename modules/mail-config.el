@@ -48,6 +48,31 @@
 (defvar message-send-mail-function nil)
 (defvar message-sendmail-envelope-from nil)
 
+(declare-function mu4e-message-field "mu4e-message")
+
+;; Refile (archive) target dispatch.  A per-context `mu4e-refile-folder' string
+;; is unsafe: mu4e context :vars are sticky, so a value set when one context is
+;; active leaks into a later context that doesn't set its own -- archiving one
+;; account's mail into another's folder.  A single function evaluated per
+;; message at refile time avoids that.  Only cmail has a real synced Archive
+;; folder; the Gmail-backed accounts (gmail, dmail) sync no archive maildir, so
+;; refiling them would move mail into an unsynced, server-invisible folder
+;; (silent loss) -- signal instead.
+(defun cj/mu4e--refile-folder-for-maildir (maildir)
+  "Return the refile (archive) folder for MAILDIR, or signal when none exists.
+MAILDIR is a mu4e :maildir string such as \"/cmail/INBOX\"."
+  (cond
+   ((not (stringp maildir))
+    (user-error "Cannot refile: message has no maildir"))
+   ((string-prefix-p "/cmail" maildir) "/cmail/Archive")
+   (t
+    (user-error "No archive folder syncs for this account; refile disabled to avoid moving mail into an unsynced folder"))))
+
+(defun cj/mu4e--refile-folder (msg)
+  "Refile-folder function for `mu4e-refile-folder'.
+Dispatch on MSG's maildir via `cj/mu4e--refile-folder-for-maildir'."
+  (cj/mu4e--refile-folder-for-maildir (and msg (mu4e-message-field msg :maildir))))
+
 (defcustom cj/smtpmail-debug-enabled nil
   "Non-nil means enable verbose SMTP transport debug logging.
 
@@ -217,7 +242,8 @@ Prompts user for the action when executing."
           :vars '((user-mail-address    . "c@cjennings.net")
                   (user-full-name       . "Craig Jennings")
                   (mu4e-drafts-folder   . "/cmail/Drafts")
-                  (mu4e-sent-folder     . "/cmail/Sent")))
+                  (mu4e-sent-folder     . "/cmail/Sent")
+                  (mu4e-trash-folder    . "/cmail/Trash")))
 
          (make-mu4e-context
           :name "deepsat.com"
@@ -231,6 +257,12 @@ Prompts user for the action when executing."
                   (mu4e-sent-folder         . "/dmail/Sent")
                   (mu4e-starred-folder      . "/dmail/Starred")
                   (mu4e-trash-folder        . "/dmail/Trash")))))
+
+  ;; Refile target is computed per message (see `cj/mu4e--refile-folder'), not
+  ;; set per context, because mu4e context :vars are sticky and would leak one
+  ;; account's archive folder into another.  cmail archives to /cmail/Archive;
+  ;; gmail/dmail signal rather than move mail into an unsynced folder.
+  (setq mu4e-refile-folder #'cj/mu4e--refile-folder)
 
   (setq mu4e-maildir-shortcuts
         '(("/cmail/Inbox"       . ?i)

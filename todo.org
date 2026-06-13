@@ -97,9 +97,11 @@ Surfaced 2026-06-06 while building the bookmark naming: the metadata embedded in
 
 ** TODO [#A] Lock screen silently fails — slock is X11-only :bug:quick:
 =modules/system-commands.el:105= binds the lockscreen command to =slock=, which can't grab a Wayland session; =cj/system-cmd= launches it detached with output silenced, so C-; ! l does nothing and the screen never locks. Security issue: Craig believes the screen locks when it doesn't. Fix: =hyprlock= (or =swaylock=), ideally resolved per session type via =env-wayland-p= so an X11 fallback survives for other machines. From the 2026-06 config audit.
+Fixed 2026-06-13: lockscreen-cmd resolves to =loginctl lock-session= on Wayland (logind Lock → hypridle → hyprlock, the path idle/sleep locking already uses), =slock= on X11; also added the missing =(require 'host-environment)=. Live in the daemon; manual lock test under the Manual testing parent.
 
 ** TODO [#A] mu4e: cmail can't trash, no account can refile :bug:quick:solo:
 =modules/mail-config.el:217-220= — the cmail context (primary account) sets only drafts/sent, so D falls back to default "/trash" which doesn't exist under ~/.mail (=/cmail/Trash= does); and NO context sets =mu4e-refile-folder=, so r targets nonexistent "/archive" everywhere. Accepting mu4e's offer to create the maildir strands mail in a directory mbsync never syncs — messages silently vanish from the server's view. Add =mu4e-trash-folder= to cmail + per-context =mu4e-refile-folder=. From the 2026-06 config audit.
+Fixed 2026-06-13: cmail gets =mu4e-trash-folder= "/cmail/Trash"; refile is a per-message function (=cj/mu4e--refile-folder=) instead of a per-context string — mu4e context :vars are sticky, so a per-context refile leaks one account's archive folder into another. cmail → "/cmail/Archive"; gmail/dmail signal a =user-error= rather than move mail into an unsynced phantom folder (Craig chose the fail-safe over syncing [Gmail]/All Mail — the All Mail option means a multi-GB pull + cross-folder duplicates; revisit if local Gmail archiving is wanted). Applies on next mu4e open; pure dispatch helper covered by tests.
 
 ** TODO [#A] calendar-sync drops final occurrences and resurrects cancelled meetings :bug:solo:
 RFC 5545 conformance holes in =modules/calendar-sync.el=, all agenda-visible (from the 2026-06 config audit):
@@ -112,6 +114,7 @@ From the 2026-06 config audit (verified against the live daemon). =early-init.el
 
 ** TODO [#A] Global yes-or-no-p fset defeats every strong confirmation :bug:quick:
 =modules/system-defaults.el:203= =(fset 'yes-or-no-p 'y-or-n-p)= — verified live. Several modules deliberately chose yes-or-no-p as the strong tier for irreversible actions: shutdown/reboot (=system-commands.el:74=, whose comment explicitly says "so a stray RET/space can't trigger them"), "permanently destroy files" (=dwim-shell-config.el:804=), file overwrites (=custom-buffer-file.el:159,199=, =music-config.el:374=). The fset makes all of them single-keystroke — the two-tier design is dead. Drop the fset, or provide a real =cj/confirm-strong= (typed "yes") for the irreversible set. From the 2026-06 config audit.
+Fixed 2026-06-13 (Craig chose the surgical option): added =cj/confirm-strong= to system-lib.el (binds =use-short-answers= nil for one =yes-or-no-p= call → typed "yes"); removed the redundant fset (kept =use-short-answers t= so benign prompts stay single-key); routed the 6 irreversible sites through it (shutdown/reboot, permanent-destroy, file overwrites). Note: the fset is baked into the running daemon and can't be cleared from Lisp, so the typed-"yes" tier goes live only after a daemon restart — manual confirm under the Manual testing parent. TDD; tests green.
 
 ** TODO [#B] theme-studio preview face mislinks (org, erc, flycheck) :bug:quick:solo:
 :PROPERTIES:
@@ -4281,6 +4284,17 @@ What we're verifying: the Hyprland Super+Shift+N popup is single-window, offers 
 - Re-open and pick Event (e): it prompts for a date and files to the schedule
 - Re-open and hit q (or C-g) at the menu: the popup frame closes (no orphan)
 Expected: single window at every step; menu limited to Task/Bug/Event; Task/Bug land in the inbox; aborting at the menu closes the frame; the frame still closes on normal finalize and C-c C-k.
+*** TODO Lock screen actually locks on Wayland
+What we're verifying: C-; ! l locks the screen on Wayland. slock (X11-only) never worked here; the locker now runs loginctl lock-session, which logind turns into a Lock signal that hypridle handles by running hyprlock — the same path idle/sleep locking already uses. Fix in modules/system-commands.el, live in the daemon.
+- Press C-; ! l (or run M-x cj/system-cmd-lock)
+- The screen should lock with hyprlock
+- Unlock with your password
+Expected: the screen locks immediately and unlocks with your password. (Before the fix it printed "Running lockscreen-cmd..." and nothing happened.)
+*** TODO Irreversible actions require a typed "yes" after a daemon restart
+What we're verifying: the strong-confirm tier is restored for irreversible actions. The global (fset 'yes-or-no-p 'y-or-n-p) was removed and those sites now call cj/confirm-strong, which forces a typed "yes"/"no". The fset is baked into the running daemon and can't be cleared from Lisp, so this only takes effect after a restart. Ordinary yes-or-no-p prompts stay single-key (use-short-answers t).
+- Restart the Emacs daemon (clean state)
+- Trigger an irreversible action, e.g. M-x cj/system-cmd-shutdown (then abort), or attempt to overwrite a file via the rename/move commands
+Expected: the irreversible prompt requires typing the full word "yes" (not a single y); a benign yes-or-no-p prompt elsewhere still accepts a single keystroke.
 *** 2026-06-11 Thu @ 18:29:39 -0500 Verified UI-face preview and contrast survive a ground bg change
 Craig walked the repro: mode-line with its own fg/bg kept its preview bg and ratio through a ground change; ground-dependent rows re-rated; package-faces contrast column updated. Pass. Closed the [#A] contrast-cell and [#B] preview-bg parents.
 *** 2026-06-11 Thu @ 18:29:39 -0500 Verified seeded package-face defaults, with steel tuning
