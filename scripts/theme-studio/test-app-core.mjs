@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify,
+  nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify,
 } from './app-core.js';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
@@ -82,6 +82,13 @@ test('buildPkgmap: Normal — seeds faces, resolving names and applying defaults
   assert.equal(m['org-mode']['org-todo'].height, 1);
   assert.equal(m['org-mode']['org-done'].inherit, 'org-todo');
   assert.equal(m['org-mode']['org-done'].fg, null);
+});
+
+test('normalizePkgFace: Normal — fills every package face field', () => {
+  assert.deepEqual(normalizePkgFace({ fg: 'blue', bold: true, inherit: 'base' }, 'default', PAL), {
+    fg: '#67809c', bg: null, bold: true, italic: false, underline: false,
+    strike: false, inherit: 'base', height: 1, box: null, source: 'default',
+  });
 });
 
 test('buildPkgmap: Boundary — a face with no default dict still seeds blank', () => {

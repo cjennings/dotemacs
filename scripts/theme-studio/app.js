@@ -105,12 +105,12 @@ function clearUnlocked(){
   buildTable();renderCode();notify('cleared unlocked elements to default',false);
 }
 function clearUnlockedUI(){
-  clearUnlockedRows(UI_FACES,f=>'ui:'+f[0],f=>{UIMAP[f[0]]={fg:null,bg:null,bold:false,italic:false,underline:false,strike:false};});
+  clearUnlockedRows(UI_FACES,f=>'ui:'+f[0],f=>{UIMAP[f[0]]=uiFaceBlank();});
   buildUITable();buildMockFrame();notify('cleared unlocked UI faces to default',false);
 }
 function clearUnlockedPkg(){
   const app=curApp();
-  clearUnlockedRows(APPS[app].faces,f=>'pkg:'+app+':'+f[0],f=>{PKGMAP[app][f[0]]={fg:null,bg:null,bold:false,italic:false,underline:false,strike:false,inherit:null,height:1,source:'cleared'};});
+  clearUnlockedRows(APPS[app].faces,f=>'pkg:'+app+':'+f[0],f=>{PKGMAP[app][f[0]]=normalizePkgFace({source:'cleared'},'cleared');});
   pkgChanged();notify('cleared unlocked '+app+' faces to default',false);
 }
 function buildTable(){
@@ -564,7 +564,8 @@ function buildMockFrame(){
 function uiSelect(face,attr){const cur=UIMAP[face][attr]||'';
   return mkColorDropdown(ddList(cur),cur,h=>{UIMAP[face][attr]=h||null;paintUI(face);buildMockFrame();});}
 const BASE_INHERITS=['fixed-pitch','variable-pitch','default','link','bold','italic','shadow'];
-function seedFace(d){return {fg:pname(d.fg),bg:pname(d.bg),bold:!!d.bold,italic:!!d.italic,underline:!!d.underline,strike:!!d.strike,inherit:d.inherit||null,height:d.height||1,box:d.box||null,source:'default'};}
+function uiFaceBlank(){return {fg:null,bg:null,bold:false,italic:false,underline:false,strike:false};}
+function seedFace(d){return normalizePkgFace({fg:pname(d.fg),bg:pname(d.bg),bold:d.bold,italic:d.italic,underline:d.underline,strike:d.strike,inherit:d.inherit,height:d.height,box:d.box},'default');}
 function curApp(){const s=document.getElementById('appsel');return s&&s.value?s.value:Object.keys(APPS)[0];}
 function pkgEffFg(app,face,seen){return effResolve(PKGMAP,app,face,'fg',seen);}
 function pkgEffBg(app,face,seen){return effResolve(PKGMAP,app,face,'bg',seen);}
