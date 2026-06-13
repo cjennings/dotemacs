@@ -83,7 +83,7 @@ function mkLockCell(lockKey,els){
     (els||[]).forEach(el=>{if(!el)return;
       if(el.tagName==='SELECT'||el.tagName==='BUTTON'||el.tagName==='INPUT')el.disabled=on;
       else{el.dataset.locked=on?'1':'';el.classList.toggle('locked',on);}});}
-  lk.onclick=()=>{LOCKED.has(lockKey)?LOCKED.delete(lockKey):LOCKED.add(lockKey);paint();};
+  lk.onclick=()=>{LOCKED.has(lockKey)?LOCKED.delete(lockKey):LOCKED.add(lockKey);paint();updateLockToggles();};
   paint();td.appendChild(lk);return td;}
 // B/I/U/S style buttons shared by the UI and package tables. isOn(attr) reads the
 // current state of an attribute, onToggle(attr) flips it and repaints. Returns
@@ -100,6 +100,23 @@ function mkStyleButtons(isOn,onToggle){
 function clearUnlockedRows(items,keyFn,resetFn){
   for(const it of items){const k=keyFn(it);if(k===null)continue;if(!LOCKED.has(k))resetFn(it);}
 }
+function syntaxLockKeys(){return CATS.map(c=>c[0]);}
+function uiLockKeys(){return UI_FACES.map(f=>'ui:'+f[0]);}
+function pkgLockKeys(){const app=curApp();return APPS[app].faces.map(f=>'pkg:'+app+':'+f[0]);}
+function tierLockKeys(tier){return tier==='syntax'?syntaxLockKeys():tier==='ui'?uiLockKeys():pkgLockKeys();}
+function updateLockToggle(tier){
+  const ids={syntax:'syntaxlocktoggle',ui:'uilocktoggle',pkg:'pkglocktoggle'},b=document.getElementById(ids[tier]);if(!b)return;
+  const keys=tierLockKeys(tier),all=keys.length&&keys.every(k=>LOCKED.has(k));
+  b.textContent=all?'unlock all':'lock all';
+}
+function updateLockToggles(){updateLockToggle('syntax');updateLockToggle('ui');updateLockToggle('pkg');}
+function toggleAllLocks(tier){
+  const keys=tierLockKeys(tier),all=keys.length&&keys.every(k=>LOCKED.has(k));
+  keys.forEach(k=>all?LOCKED.delete(k):LOCKED.add(k));
+  if(tier==='syntax')buildTable();else if(tier==='ui')buildUITable();else buildPkgTable();
+  updateLockToggles();
+  notify((all?'unlocked ':'locked ')+(tier==='pkg'?'package':tier)+' rows',false);
+}
 function clearUnlocked(){
   clearUnlockedRows(CATS,c=>(c[0]==='bg'||c[0]==='p')?null:c[0],c=>{MAP[c[0]]='';});
   buildTable();renderCode();notify('cleared unlocked elements to default',false);
@@ -112,6 +129,19 @@ function clearUnlockedPkg(){
   const app=curApp();
   clearUnlockedRows(APPS[app].faces,f=>'pkg:'+app+':'+f[0],f=>{PKGMAP[app][f[0]]=normalizePkgFace({source:'cleared'},'cleared');});
   pkgChanged();notify('cleared unlocked '+app+' faces to default',false);
+}
+function clearPalette(){
+  normalizePalette();
+  const keep=[],ground={bg:MAP['bg'],fg:MAP['p']};
+  PALETTE.filter(entry=>!groundRoleOfEntry(entry,ground)).forEach(([hex,name])=>{if(name)lastGone[name.toLowerCase()]=hex;});
+  const addEndpoint=(role,hex,name)=>{
+    const found=PALETTE.find(entry=>groundRoleOfEntry(entry,ground)===role);
+    keep.push(found||[hex,name,'ground']);
+  };
+  addEndpoint('bg',MAP['bg'],'bg');addEndpoint('fg',MAP['p'],'fg');
+  PALETTE=keep;selectedIdx=null;
+  renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();renderCode();applyGround();
+  notify('cleared palette to bg and fg',false);
 }
 function buildTable(){
   const tb=document.getElementById('legbody');tb.innerHTML='';
@@ -138,6 +168,7 @@ function buildTable(){
     const c2=document.createElement('td');c2.className='cat';c2.textContent=label;c2.style.cursor='pointer';c2.title='flash this category in the code';c2.onclick=()=>flashTokens(kind);
     tr.appendChild(c2);tr.appendChild(lkTd);tr.appendChild(c0);tr.appendChild(stTd);tr.appendChild(crTd);tr.appendChild(exTd);
     tb.appendChild(tr);}
+  updateLockToggle('syntax');
 }
 let selectedIdx=null;
 // When a named palette color is deleted, remember its hex keyed by name so that
@@ -644,6 +675,7 @@ function buildPkgTable(){
     tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cx,cr);tb.appendChild(tr);
   }
   applyTableSort('pkgbody');
+  updateLockToggle('pkg');
 }
 function ofs(app,face){const f=PKGMAP[app][face]||{},fg=effFg(pkgEffFg(app,face)),bg=pkgEffBg(app,face);const dec=(f.underline?'underline ':'')+(f.strike?'line-through':'');const bx=boxCss(f.box,bg||MAP['bg']);return `color:${fg};${bg?'background:'+bg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};text-decoration:${dec.trim()||'none'};font-size:${(f.height||1)}em${bx?';box-shadow:'+bx:''}`;}
 function os(app,face,txt){return `<span data-face="${face}" style="${ofs(app,face)}">${txt}</span>`;}
@@ -989,6 +1021,7 @@ function buildUITable(){
     tr.appendChild(c0);tr.appendChild(cL);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);paintUI(face);
   }
   applyTableSort('uibody');
+  updateLockToggle('ui');
 }
 // Generic header-click sort, shared by all three tables. Reads a swatch
 // dropdown's value, a select value, a numeric input, or cell text (numeric when
@@ -1050,6 +1083,15 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  {const app=curApp(),pf=APPS[app].faces.map(r=>r[0]),p1=pf[0],p2=pf[1];
   PKGMAP[app][p1].fg='#111111';PKGMAP[app][p2].fg='#222222';LOCKED.clear();LOCKED.add('pkg:'+app+':'+p1);clearUnlockedPkg();
   A(PKGMAP[app][p1].fg==='#111111','pkg-clear-keeps-locked');A(PKGMAP[app][p2].fg===null,'pkg-clear-wipes-unlocked');}
+ {LOCKED.clear();buildTable();const b=document.getElementById('syntaxlocktoggle');A(b&&b.textContent==='lock all','syntax toggle starts as lock all');b.click();
+  A(syntaxLockKeys().every(k=>LOCKED.has(k))&&b.textContent==='unlock all','syntax lock-all locks every syntax row and flips label');b.click();
+  A(syntaxLockKeys().every(k=>!LOCKED.has(k))&&b.textContent==='lock all','syntax unlock-all clears every syntax lock and flips label');}
+ {LOCKED.clear();buildUITable();const b=document.getElementById('uilocktoggle');A(b&&b.textContent==='lock all','ui toggle starts as lock all');b.click();
+  A(uiLockKeys().every(k=>LOCKED.has(k))&&b.textContent==='unlock all','ui lock-all locks every UI row and flips label');b.click();
+  A(uiLockKeys().every(k=>!LOCKED.has(k))&&b.textContent==='lock all','ui unlock-all clears every UI lock and flips label');}
+ {LOCKED.clear();buildPkgTable();const b=document.getElementById('pkglocktoggle');A(b&&b.textContent==='lock all','pkg toggle starts as lock all');b.click();
+  A(pkgLockKeys().every(k=>LOCKED.has(k))&&b.textContent==='unlock all','pkg lock-all locks every current package row and flips label');b.click();
+  A(pkgLockKeys().every(k=>!LOCKED.has(k))&&b.textContent==='lock all','pkg unlock-all clears every current package lock and flips label');}
  document.title='LOCKTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='locktest';d.textContent='LOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Sort gate (open with #sorttest): all three tables now share srtTable/cellVal.
@@ -1294,7 +1336,7 @@ if(location.hash==='#healtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
 // ground column plus structural columns, chips keep their controls, and renaming
 // a color leaves it in the same strip because the column id is stable.
 if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
- const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveSel=selectedIdx;
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveG=Object.assign({},lastGone),saveSel=selectedIdx;
  MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg'],['#c0402a','red'],['#3a6ea5','blue'],['#808080','gray']];selectedIdx=null;renderPalette();
  const strips=[...document.querySelectorAll('#pals .fstrip')];
@@ -1322,7 +1364,14 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  if(bg2Chip){bg2Chip.click();document.getElementById('newhexstr').value='#101820';document.getElementById('newname').value='bg2';updateColor();}
  A(MAP['bg']==='#0d0b0a','editing same-hex bg2 does not repoint the real bg assignment');
  A(PALETTE.some(p=>p[1]==='bg2'&&p[0]==='#101820'),'editing same-hex bg2 updates only that palette tile');
- PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);selectedIdx=saveSel;renderPalette();
+ PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#c0402a','red','red'],['#3a6ea5','blue','blue'],['#92acc2','blue+1','blue']];
+ MAP['kw']='#3a6ea5';selectedIdx=2;clearPalette();
+ A(PALETTE.length===2&&PALETTE.every(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})),'clear palette leaves only bg and fg tiles');
+ A(!PALETTE.some(p=>p[1]==='red'||p[1]==='blue'||p[1]==='blue+1'),'clear palette removes normal color columns and spans');
+ A(MAP['kw']==='#3a6ea5','clear palette leaves existing assignments on gone hexes');
+ A(lastGone['blue']==='#3a6ea5'&&lastGone['blue+1']==='#92acc2','clear palette records removed names for recovery');
+ A(selectedIdx===null,'clear palette clears selected color');
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);lastGone=saveG;selectedIdx=saveSel;renderPalette();
  document.title='COLUMNTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='columntest';d.textContent='COLUMNTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Count-control gate (open with #counttest): the per-column count regenerates the
