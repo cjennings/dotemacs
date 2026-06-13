@@ -67,8 +67,8 @@ Node; the DOM glue is covered by the browser hash gates.
 
 Three tiers of faces, plus the palette:
 
-- **Palette** — named colors, shown grouped into hue *families* (see Color
-  families below). Add by hex or with the in-page color picker
+- **Palette** — named colors, shown grouped into stable structural columns. Add
+  by hex or with the in-page color picker
   (saturation/value square, hue slider, palette reuse chips, live contrast
   readout, and an any / AA+ / AAA legibility mask). Remove and rename per chip;
   the colors serving as background and foreground are locked.

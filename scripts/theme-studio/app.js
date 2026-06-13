@@ -67,7 +67,7 @@ function mkColorDropdown(options,cur,onPick){
   t.setValue=h=>{cur=h;paint();};
   return t;}
 // Standard option list for a swatch dropdown: a "default" entry, then the
-// palette in the same ground/family order as the palette panel. If cur is set
+// palette in the same ground/column order as the palette panel. If cur is set
 // but no longer in the palette, surface it as a "(gone)" entry so the row still
 // shows what it points at. Shared by all three tiers.
 function ddList(cur){return paletteOptionList(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']});}
@@ -158,7 +158,7 @@ function repointHex(oldHex,newHex){
 function healGone(name,newHex){const k=name.toLowerCase();if(!(k in lastGone))return false;const g=lastGone[k];delete lastGone[k];repointHex(g,newHex);return true;}
 function normalizePaletteEntry(entry){
   const hex=entry&&entry[0],name=(entry&&entry[1])||'color';
-  return [hex,name,(entry&&entry[2])||familyStem(name)];
+  return [hex,name,(entry&&entry[2])||columnStem(name)];
 }
 function normalizePalette(){PALETTE=PALETTE.map(normalizePaletteEntry);}
 // The ground column is explicit: bg pins the dark endpoint, fg pins the light
@@ -229,12 +229,12 @@ function renderPalette(){
   normalizePalette();
   const p=document.getElementById('pals');p.innerHTML='';
   const {warnings,overflow,nearest}=paletteWarnings(PALETTE,DELTAE_MIN,5);
-  const {ground,families}=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+  const {ground,columns}=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
   const used=new Set();
   const idxOf=(hex,name)=>{for(let i=0;i<PALETTE.length;i++)if(!used.has(i)&&PALETTE[i][0]===hex&&PALETTE[i][1]===name){used.add(i);return i;}return -1;};
   const strip=(cls)=>{const s=document.createElement('div');s.className='fstrip'+(cls||'');p.appendChild(s);return s;};
   if(ground.length){
-    const gs=strip(' ground');gs.dataset.family='ground';
+    const gs=strip(' ground');gs.dataset.column='ground';
     const gh=document.createElement('div');gh.className='fhead';gh.textContent='ground';gs.appendChild(gh);
     gs.appendChild(groundSpanControl());
     groundColumnMembers().forEach(m=>{
@@ -247,53 +247,53 @@ function renderPalette(){
   // The too-similar warning stays on the full flat palette: a generated ramp's
   // steps are a stepL apart (well above the warning's ΔE threshold), so they never
   // trigger it, and any pair that does is a genuine near-duplicate worth flagging.
-  sortFamilies(families).forEach(f=>{
-    const s=strip('');s.dataset.family=f.column||f.base;
+  sortColumns(columns).forEach(f=>{
+    const s=strip('');s.dataset.column=f.column||f.base;
     const h=document.createElement('div');h.className='fhead';
     h.textContent=(f.members.find(m=>m.hex.toLowerCase()===f.base.toLowerCase())||{}).name||f.column||f.base;
     s.appendChild(h);
-    s.appendChild(familyCountControl(f));
+    s.appendChild(columnCountControl(f));
     f.members.forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest));});
   });
   renderPaletteWarnings(warnings,overflow);
   buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
 }
-// The per-family count control under a chromatic strip. Its value is the family's
-// current per-side reach; setting N regenerates the family as base ±N.
-function familyCountControl(f){
+// The per-column count control under a chromatic strip. Its value is the column's
+// current per-side reach; setting N regenerates the column as base ±N.
+function columnCountControl(f){
   const per=Math.max(0,...rankByLightness(f.members.map(m=>m.hex),f.base).map(m=>Math.abs(m.offset)));
   const d=document.createElement('div');d.className='fcount';
-  d.innerHTML=`<span title="set the family span: N generated steps on each side of the base — this replaces the column">span &#177; <input type="number" min="0" max="4" value="${per}"></span>`;
-  d.querySelector('input').onchange=(e)=>setFamilyCount(f.base,Math.max(0,Math.min(4,parseInt(e.target.value,10)||0)));
+  d.innerHTML=`<span title="set the column span: N generated steps on each side of the base — this replaces the column">span &#177; <input type="number" min="0" max="4" value="${per}"></span>`;
+  d.querySelector('input').onchange=(e)=>setColumnCount(f.base,Math.max(0,Math.min(4,parseInt(e.target.value,10)||0)));
   return d;
 }
-// Regenerate a family as a symmetric base ±N ramp, replacing its current members.
+// Regenerate a column as a symmetric base ±N ramp, replacing its current members.
 // References to a surviving position (matched by signed lightness rank) follow the
 // new hex; references to a position removed by lowering N leave their old hex,
 // which is no longer in the palette and so renders as "(gone)".
 // Replace oldHexes in the palette with a fresh base ±n ramp, repointing surviving
 // references and leaving removed ones on their now-gone hex. Returns the removed
 // count, or null on a bad base. Shared by the count control and the base edit.
-function regenFamilyInPlace(oldHexes,baseHex,baseName,n,columnId){
-  const r=regenFamily(baseHex,n,{});
+function regenColumnInPlace(oldHexes,baseHex,baseName,n,columnId){
+  const r=regenColumn(baseHex,n,{});
   if(r.error){notify('cannot regenerate from '+baseHex,true);return null;}
   const plan=stepRepointPlan(rankByLightness(oldHexes,baseHex),r.members);
   const oldSet=new Set(oldHexes.map(h=>h.toLowerCase()));
   let at=PALETTE.length;
   for(let i=0;i<PALETTE.length;i++)if(oldSet.has(PALETTE[i][0].toLowerCase())){at=i;break;}
   for(let i=PALETTE.length-1;i>=0;i--)if(oldSet.has(PALETTE[i][0].toLowerCase()))PALETTE.splice(i,1);
-  const col=columnId||familyStem(baseName);
+  const col=columnId||columnStem(baseName);
   const entries=r.members.map(m=>[m.hex,m.offset===0?baseName:baseName+(m.offset>0?'+'+m.offset:String(m.offset)),col]);
   PALETTE.splice(Math.min(at,PALETTE.length),0,...entries);
   for(const [o,nw] of plan.map)repointHex(o,nw);
   return plan.removed.length;
 }
-function setFamilyCount(baseHex,n){
-  const {families}=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
-  const fam=families.find(f=>f.base.toLowerCase()===baseHex.toLowerCase());
-  if(!fam)return;
-  const baseName=(fam.members.find(m=>m.hex.toLowerCase()===baseHex.toLowerCase())||{}).name||'color';
-  const removed=regenFamilyInPlace(fam.members.map(m=>m.hex),baseHex,baseName,n,fam.column);
+function setColumnCount(baseHex,n){
+  const {columns}=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+  const column=columns.find(f=>f.base.toLowerCase()===baseHex.toLowerCase());
+  if(!column)return;
+  const baseName=(column.members.find(m=>m.hex.toLowerCase()===baseHex.toLowerCase())||{}).name||'color';
+  const removed=regenColumnInPlace(column.members.map(m=>m.hex),baseHex,baseName,n,column.column);
   if(removed===null)return;
   selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();
   notify('regenerated "'+baseName+'" to ±'+n+(removed?(' — '+removed+' removed step(s) show "(gone)" where used'):''),false);
@@ -307,17 +307,17 @@ function updateColor(){
   const newHex=curHex();
   const newName=(document.getElementById('newname').value.trim())||PALETTE[i][1];
   if(PALETTE.some((p,j)=>j!==i&&p[1].toLowerCase()===newName.toLowerCase())){notify('another color is already named "'+newName+'" — names must be unique',true);return;}
-  // If the edited color is a family base with a ramp, recolor the whole family: regenerate from the new base at the same count.
-  const fams=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).families;
-  const fam=fams.find(f=>f.base.toLowerCase()===oldHex.toLowerCase());
-  const count=fam?Math.max(0,...rankByLightness(fam.members.map(m=>m.hex),fam.base).map(m=>Math.abs(m.offset))):0;
-  const columnId=PALETTE[i][2]||familyStem(PALETTE[i][1]);
+  // If the edited color is a column base with a ramp, recolor the whole column: regenerate from the new base at the same count.
+  const columns=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).columns;
+  const column=columns.find(f=>f.base.toLowerCase()===oldHex.toLowerCase());
+  const count=column?Math.max(0,...rankByLightness(column.members.map(m=>m.hex),column.base).map(m=>Math.abs(m.offset))):0;
+  const columnId=PALETTE[i][2]||columnStem(PALETTE[i][1]);
   PALETTE[i]=[newHex,newName,columnId];
   repointHex(oldHex,newHex);
-  if(fam&&count>0){
-    const oldHexes=fam.members.map(m=>m.hex.toLowerCase()===oldHex.toLowerCase()?newHex:m.hex);
-    regenFamilyInPlace(oldHexes,newHex,newName,count,fam.column||columnId);
-    closePicker();selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();notify('recolored "'+newName+'" family from the new base',false);return;
+  if(column&&count>0){
+    const oldHexes=column.members.map(m=>m.hex.toLowerCase()===oldHex.toLowerCase()?newHex:m.hex);
+    regenColumnInPlace(oldHexes,newHex,newName,count,column.column||columnId);
+    closePicker();selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();notify('recolored "'+newName+'" column from the new base',false);return;
   }
   closePicker();renderPalette();buildTable();buildUITable();renderCode();applyGround();notify('updated "'+newName+'"',false);
 }
@@ -414,7 +414,7 @@ function initPicker(){const sw=document.getElementById('swatch');if(!sw)return;s
 function addColor(){const h=curHex();const name=document.getElementById('newname').value.trim();
   if(!name){notify('name the color before adding it',true);return;}
   if(PALETTE.some(p=>p[1].toLowerCase()===name.toLowerCase())){notify('a color named "'+name+'" already exists — select it and use Update selected to change its value',true);return;}
-  PALETTE.push([h,name,familyStem(name)]);const healed=healGone(name,h);document.getElementById('newname').value='';selectedIdx=null;closePicker();
+  PALETTE.push([h,name,columnStem(name)]);const healed=healGone(name,h);document.getElementById('newname').value='';selectedIdx=null;closePicker();
   renderPalette();buildTable();buildUITable();
   if(healed){renderCode();applyGround();if(document.getElementById('pkgbody'))buildPkgTable();buildPkgPreview();}
   notify(healed?('added "'+name+'" and reconnected its assignments'):('added "'+name+'"'),false);}
@@ -1209,7 +1209,7 @@ if(location.hash==='#healtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
  document.title='HEALTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='healtest';d.textContent='HEALTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
-// Family-strip gate (open with #familytest): the palette renders as a pinned
+// Column-strip gate (open with #familytest): the palette renders as a pinned
 // ground column plus structural columns, chips keep their controls, and renaming
 // a color leaves it in the same strip because the column id is stable.
 if(location.hash==='#familytest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
@@ -1217,21 +1217,21 @@ if(location.hash==='#familytest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg'],['#c0402a','red'],['#3a6ea5','blue'],['#808080','gray']];selectedIdx=null;renderPalette();
  const strips=[...document.querySelectorAll('#pals .fstrip')];
- A(strips.length&&strips[0].dataset.family==='ground','ground column is pinned first');
+ A(strips.length&&strips[0].dataset.column==='ground','ground column is pinned first');
  A(strips[0].querySelectorAll('.pchip').length===2,'ground column carries bg + fg endpoints');
  A(!!strips[0].querySelector('.fhead + .fcount + .pchip'),'span control sits between header and tiles for ground');
  A(strips.length>=4,'ground + red + blue + gray columns, got '+strips.length);
  const redChip=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='red');
- A(!!redChip&&!!redChip.querySelector('.rm')&&!!redChip.querySelector('.nm'),'a family chip keeps remove + rename controls');
- const redFamily=redChip&&redChip.closest('.fstrip').dataset.family;
+ A(!!redChip&&!!redChip.querySelector('.rm')&&!!redChip.querySelector('.nm'),'a column chip keeps remove + rename controls');
+ const redColumn=redChip&&redChip.closest('.fstrip').dataset.column;
  const ri=PALETTE.findIndex(p=>p[1]==='red');PALETTE[ri][1]='zztop-absurd';renderPalette();
  const renamed=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='zztop-absurd');
- A(!!renamed&&renamed.closest('.fstrip').dataset.family===redFamily,'a renamed color stays in the same strip');
+ A(!!renamed&&renamed.closest('.fstrip').dataset.column===redColumn,'a renamed color stays in the same strip');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);selectedIdx=saveSel;renderPalette();
  document.title='FAMILYTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='familytest';d.textContent='FAMILYTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
-// Count-control gate (open with #counttest): the per-family count regenerates the
-// family — count up adds symmetric steps, count down drops the extremes, a
+// Count-control gate (open with #counttest): the per-column count regenerates the
+// column — count up adds symmetric steps, count down drops the extremes, a
 // reference to a surviving step follows the new hex, a reference to a removed step
 // is left on its old (now-gone) hex.
 if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
@@ -1241,44 +1241,44 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  setGroundSpan(2);
  A(MAP['bg']==='#204060'&&MAP['p']==='#f0fef0','spanning ground keeps bg/fg assignments on endpoints');
  A(PALETTE.some(p=>p[1]==='ground-1')&&PALETTE.some(p=>p[1]==='ground-2'),'spanning ground adds interior ground-N entries');
- A(document.querySelector('#pals .fstrip[data-family="ground"] .fhead + .fcount + .pchip'),'ground span control renders before tiles');
+ A(document.querySelector('#pals .fstrip[data-column="ground"] .fhead + .fcount + .pchip'),'ground span control renders before tiles');
  setGroundSpan(1);
  A(!PALETTE.some(p=>p[1]==='ground-2'),'lowering ground span removes dropped interior steps');
  PALETTE=[['#204060','bg'],['#f0fef0','fg']];
- regenFamily('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
- const innerOld=regenFamily('#67809c',2).members.find(m=>m.offset===1).hex; // survives a count change
- const outerOld=regenFamily('#67809c',2).members.find(m=>m.offset===2).hex; // dropped on count-down
+ regenColumn('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
+ const innerOld=regenColumn('#67809c',2).members.find(m=>m.offset===1).hex; // survives a count change
+ const outerOld=regenColumn('#67809c',2).members.find(m=>m.offset===2).hex; // dropped on count-down
  UIMAP['region']={fg:null,bg:innerOld,bold:false,italic:false,underline:false,strike:false};
  UIMAP['highlight']={fg:null,bg:outerOld,bold:false,italic:false,underline:false,strike:false};
  selectedIdx=null;renderPalette();
- setFamilyCount('#67809c',1);
+ setColumnCount('#67809c',1);
  const palHexes=new Set(PALETTE.map(p=>p[0].toLowerCase()));
  A(!palHexes.has(outerOld.toLowerCase()),'outer step removed from palette on count down');
  A(UIMAP['highlight'].bg.toLowerCase()===outerOld.toLowerCase(),'a removed-step reference stays on its old (gone) hex');
- const newInner=regenFamily('#67809c',1).members.find(m=>m.offset===1).hex;
+ const newInner=regenColumn('#67809c',1).members.find(m=>m.offset===1).hex;
  A(UIMAP['region'].bg.toLowerCase()===newInner.toLowerCase(),'a surviving-step reference followed the regenerate, got '+UIMAP['region'].bg);
- setFamilyCount('#67809c',3);
- const want3=regenFamily('#67809c',3).members.map(m=>m.hex.toLowerCase());
+ setColumnCount('#67809c',3);
+ const want3=regenColumn('#67809c',3).members.map(m=>m.hex.toLowerCase());
  const have=new Set(PALETTE.map(p=>p[0].toLowerCase()));
  A(want3.every(h=>have.has(h)),'count up to 3 adds all 7 ramp colors to the palette');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
  document.title='COUNTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='counttest';d.textContent='COUNTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
-// Base-edit + ground-edit gate (open with #baseedittest): editing a family base
-// recolors the whole family at the same count and references follow; editing a
+// Base-edit + ground-edit gate (open with #baseedittest): editing a column base
+// recolors the whole column at the same count and references follow; editing a
 // ground swatch writes the bg/fg assignment.
 if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),saveSel=selectedIdx;
  MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg']];
- regenFamily('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
+ regenColumn('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
  UIMAP['region']={fg:null,bg:'#67809c',bold:false,italic:false,underline:false,strike:false};
  renderPalette();buildUITable();
  selectedIdx=PALETTE.findIndex(p=>p[0].toLowerCase()==='#67809c');
  document.getElementById('newhexstr').value='#3a8a8a';document.getElementById('newname').value='teal';
  updateColor();
- const fam=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).families[0];
- A(fam&&fam.members.some(m=>m.hex.toLowerCase()==='#3a8a8a'),'family base recolored to the new hex');
+ const column=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).columns[0];
+ A(column&&column.members.some(m=>m.hex.toLowerCase()==='#3a8a8a'),'column base recolored to the new hex');
  A(fam&&fam.members.length===5,'count preserved (±2 → 5 members), got '+(fam&&fam.members.length));
  A(!new Set(PALETTE.map(p=>p[0].toLowerCase())).has('#67809c'),'old base removed from palette');
  A(UIMAP['region'].bg.toLowerCase()==='#3a8a8a','a reference to the base followed to the new base hex');
@@ -1291,7 +1291,7 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  document.title='BASEEDITTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='baseedittest';d.textContent='BASEEDITTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Round-trip gate (open with #roundtriptest): export stays a flat palette with
-// stable column ids, and import does not need color-derived family reconstruction.
+// stable column ids, and import does not need color-derived column reconstruction.
 if(location.hash==='#roundtriptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const before=JSON.stringify(exportObj());
  applyImported(before);
