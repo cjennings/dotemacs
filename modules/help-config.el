@@ -50,24 +50,34 @@
 
 ;; ------------------------------------ Info -----------------------------------
 
-  (defun cj/open-with-info-mode ()
-	"Open the current buffer's file in Info mode if it's a valid info file.
+(defun cj/--info-open-plan (modified-p save-confirmed-p)
+  "Decide how to open a buffer in Info given its MODIFIED-P state.
+SAVE-CONFIRMED-P is the answer to the save prompt, meaningful only when
+MODIFIED-P.  Returns `open', `save-then-open', or `cancel'."
+  (cond ((not modified-p) 'open)
+        (save-confirmed-p 'save-then-open)
+        (t 'cancel)))
+
+(defun cj/open-with-info-mode ()
+  "Open the current buffer's file in Info mode if it's a valid info file.
 
 Preserves any unsaved changes and checks if the file exists."
-	(interactive)
-	(let ((file-name (buffer-file-name)))
-	  (when file-name
-		(if (and (file-exists-p file-name)
-				 (string-match-p "\\.info\\'" file-name))
-			(progn
-			  (when (buffer-modified-p)
-				(if (y-or-n-p "Buffer has unsaved changes. Save before opening in Info? ")
-					(save-buffer)
-				  (message "Operation canceled")
-				  (cl-return-from cj/open-with-info-mode)))
-			  (kill-buffer (current-buffer))
-			  (info file-name))
-		  (message "Not a valid info file: %s" file-name)))))
+  (interactive)
+  (let ((file-name (buffer-file-name)))
+    (when file-name
+      (if (and (file-exists-p file-name)
+               (string-match-p "\\.info\\'" file-name))
+          (let ((modified (buffer-modified-p)))
+            (pcase (cj/--info-open-plan
+                    modified
+                    (and modified
+                         (y-or-n-p "Buffer has unsaved changes. Save before opening in Info? ")))
+              ('cancel (message "Operation canceled"))
+              (plan
+               (when (eq plan 'save-then-open) (save-buffer))
+               (kill-buffer (current-buffer))
+               (info file-name))))
+        (message "Not a valid info file: %s" file-name)))))
 
 (defun cj/browse-info-files ()
   "Browse and open .info or .info.gz files from user-emacs-directory."
@@ -96,7 +106,6 @@ Preserves any unsaved changes and checks if the file exists."
   (:map Info-mode-map
 		("m" . bookmark-set) ;; Rebind 'm' from Info-menu to bookmark-set
 		("M" . Info-menu))   ;; Move Info-menu to 'M' instead
-  :preface
   :init
   ;; Add personal info files BEFORE Info mode initializes
   ;; (let ((personal-info-dir (expand-file-name "assets/info" user-emacs-directory)))
@@ -104,11 +113,7 @@ Preserves any unsaved changes and checks if the file exists."
   ;;    (setq Info-directory-list (list personal-info-dir))))
   ;; the above makes the directory the info list. the below adds it to the default list
   ;;	(add-to-list 'Info-default-directory-list personal-info-dir)))
-  :hook
-  (info-mode . info-persist-history-mode)
-  :config
-  ;; Make .info files open with our custom function
-  (add-to-list 'auto-mode-alist '("\\.info\\'" . cj/open-with-info-mode)))
+  )
 
 (provide 'help-config)
 ;;; help-config.el ends here.

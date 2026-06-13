@@ -948,11 +948,13 @@ Nothing requires =modules/ledger-config.el= (verified by grep), so .dat/.ledger/
 ** TODO [#B] eww quick-add bookmarks split the store and break the default file :bug:quick:solo:
 =modules/eww-config.el:116-126= — quick-add let-binds =eww-bookmarks-directory= to ~/.emacs.d/eww-bookmarks/ (creating a DIRECTORY at the path where the daemon's default store expects a FILE ~/.emacs.d/eww-bookmarks). After one quick-add, B reads an unreadable path and quick-added bookmarks are invisible post-restart. Drop the let-binding or setq the directory once in :config so both commands share one store. From the 2026-06 config audit.
 
-** DOING [#B] help-config: three defects in one small file :bug:quick:solo:
+** DONE [#B] help-config: three defects in one small file :bug:quick:solo:
+CLOSED: [2026-06-13 Sat]
 From the 2026-06 config audit, =modules/help-config.el=:
 - =:67= — =cl-return-from= inside a plain =defun= (no cl-block): declining the save prompt signals "No catch for tag" instead of canceling. =cl-defun= or restructure.
 - =:108= — =:hook (info-mode . info-persist-history-mode)= is dead twice: Info's hook is =Info-mode-hook= (capital I), and =info-persist-history-mode= doesn't exist anywhere. Implement the intent or delete.
 - =:111= — auto-mode-alist maps .info to an interactive command that KILLS the buffer mid find-file — programmatic =find-file-noselect= of any .info destroys buffers and pops Info windows. Drop the entry; keep the explicit command. Zero test coverage on this module (the two broken paths are exactly the untested ones).
+Fixed 2026-06-13: (1) extracted the save/cancel/open decision into a pure =cj/--info-open-plan= and routed =cj/open-with-info-mode= through it — no more =cl-return-from=, declining cancels cleanly; (2) deleted the dead =:hook= and the empty =:preface=; (3) dropped the destructive =auto-mode-alist= .info entry (kept =cj/open-with-info-mode= as an M-x command and =cj/browse-info-files= on C-h i). New test-help-config.el covers the planner (open / save-then-open / cancel) — 3 green; module loads clean. Stale daemon state (the .info auto-mode entry + the bogus info-mode-hook entry) cleared by hand so the running session is correct without a restart. Interactive Info open + find-file-no-longer-destructive are a VERIFY.
 
 ** TODO [#B] modeline runs synchronous git on the redisplay path, unguarded :bug:solo:
 =modules/modeline-config.el:173,154,145= — the mode-line :eval calls vc-backend/vc-state/vc-working-revision (synchronous git) on TTL expiry; a slow or unmounted filesystem stalls ALL redisplay. The cache key computes =file-truename= on every render (the "one stat per refresh" comment is wrong), and nothing is condition-case-wrapped, so a signal lands inside the mode-line eval. Defer the truename behind the TTL check; wrap the fetch in condition-case caching nil. From the 2026-06 config audit.
@@ -4350,6 +4352,12 @@ From the 2026-06-11 messenger-unification brainstorm. Google Voice has no offici
 
 ** TODO Manual testing and validation
 Exercised once the phases above land.
+*** VERIFY info-mode open is non-destructive and cancels cleanly
+What we're verifying: opening a .info file no longer auto-kills the buffer, and the explicit cj/open-with-info-mode prompt cancels cleanly on decline. Fixed in modules/help-config.el; stale daemon state already cleared, so this also survives a fresh restart.
+- find-file a .info file (e.g. one under elpa) — it should open as an ordinary buffer, not vanish into Info
+- In that buffer, edit something, then M-x cj/open-with-info-mode; at the save prompt answer no
+- Repeat M-x cj/open-with-info-mode on an unmodified .info buffer
+Expected: find-file leaves the buffer intact (no auto-kill); declining the save prompt prints "Operation canceled" with no "No catch for tag" error; on an unmodified buffer it opens the file in Info.
 *** VERIFY dwim-shell zip/backup/menu-key behave
 What we're verifying: single-file zip makes a valid <name>.zip, the dated backup gets a real timestamp, and the dwim-shell menu is reachable on M-D in plain dired. Fixed in modules/dwim-shell-config.el, reloaded into the daemon.
 - In dired, mark a single file, run the dwim-shell menu (M-D), pick Zip
