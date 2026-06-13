@@ -18,7 +18,7 @@ STYLES_CSS</style>
   <h1>palette</h1>
   <div class="palctl">
    <div id="swatch" class="swatch" title="open color picker"></div>
-   <input type="text" id="newhexstr" placeholder="#rrggbb" value="#888888" oninput="syncHex()" onkeydown="if(event.key==='Enter')applyEdit()" style="width:110px">
+   <input type="text" id="newhexstr" placeholder="#rrggbb" value="#67809c" oninput="syncHex()" onkeydown="if(event.key==='Enter')applyEdit()" style="width:110px">
    <input type="text" id="newname" placeholder="name" onkeydown="if(event.key==='Enter')applyEdit()">
    <button onclick="addColor()">+ add color</button>
    <button onclick="updateColor()">&#8635; update selected</button>
@@ -36,7 +36,7 @@ STYLES_CSS</style>
      <div class="ocrow"><label title="hue angle, degrees">H</label><input type="range" id="okH" min="0" max="360" step="1"><input type="number" id="okHn" min="0" max="360" step="1"></div>
      <div class="pclamp" id="pkclamp"></div>
     </div>
-    <div class="pinfo"><span id="pkhex">#888888</span><span id="pkcon"></span></div>
+    <div class="pinfo"><span id="pkhex">#67809c</span><span id="pkcon"></span></div>
     <div class="pinfo2"><span id="pkoklch" title="OKLCH perceptual coordinates: lightness L (0..1), chroma C, hue H in degrees"></span><span id="pkapca"></span></div>
     <div class="pmode">limit <button data-m="any" class="on">any</button><button data-m="aa">AA+</button><button data-m="aaa">AAA</button></div>
     <div id="pkchips" class="pkchips"></div>
