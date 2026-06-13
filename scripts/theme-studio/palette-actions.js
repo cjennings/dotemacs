@@ -28,7 +28,12 @@ function normalizePaletteEntry(entry){
   const hex=entry&&entry[0],name=(entry&&entry[1])||'color';
   return [hex,name,(entry&&entry[2])||columnIdOf(entry)];
 }
-function normalizePalette(){PALETTE=PALETTE.map(normalizePaletteEntry);}
+function ensureGroundEndpoints(){
+  const ground={bg:MAP['bg'],fg:MAP['p']};
+  if(ground.bg&&!PALETTE.some(entry=>groundRoleOfEntry(entry,ground)==='bg'))PALETTE.unshift([ground.bg,'bg','ground']);
+  if(ground.fg&&!PALETTE.some(entry=>groundRoleOfEntry(entry,ground)==='fg'))PALETTE.push([ground.fg,'fg','ground']);
+}
+function normalizePalette(){PALETTE=PALETTE.map(normalizePaletteEntry);ensureGroundEndpoints();}
 // The ground column is explicit: bg pins the top endpoint, fg pins the bottom
 // endpoint, and generated ground-N steps live between them.
 function groundColumnMembers(){

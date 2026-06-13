@@ -896,7 +896,12 @@ function normalizePaletteEntry(entry){
   const hex=entry&&entry[0],name=(entry&&entry[1])||'color';
   return [hex,name,(entry&&entry[2])||columnIdOf(entry)];
 }
-function normalizePalette(){PALETTE=PALETTE.map(normalizePaletteEntry);}
+function ensureGroundEndpoints(){
+  const ground={bg:MAP['bg'],fg:MAP['p']};
+  if(ground.bg&&!PALETTE.some(entry=>groundRoleOfEntry(entry,ground)==='bg'))PALETTE.unshift([ground.bg,'bg','ground']);
+  if(ground.fg&&!PALETTE.some(entry=>groundRoleOfEntry(entry,ground)==='fg'))PALETTE.push([ground.fg,'fg','ground']);
+}
+function normalizePalette(){PALETTE=PALETTE.map(normalizePaletteEntry);ensureGroundEndpoints();}
 // The ground column is explicit: bg pins the top endpoint, fg pins the bottom
 // endpoint, and generated ground-N steps live between them.
 function groundColumnMembers(){
@@ -2062,11 +2067,18 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  A(strips[0].querySelectorAll('.pchip').length===2,'ground column carries bg + fg endpoints');
  A(!!strips[0].querySelector('.fhead + .fcount + .pchip'),'span control sits between header and tiles for ground');
  A(strips.length>=4,'ground + red + blue + gray columns, got '+strips.length);
- const blueHead=strips.find(s=>s.dataset.column==='blue')&&strips.find(s=>s.dataset.column==='blue').querySelector('.ctitle');
+ PALETTE=[['#3a6ea5','blue','blue']];MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';selectedIdx=null;renderPalette();
+ const fgChip=[...document.querySelectorAll('#pals .fstrip[data-column="ground"] .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='fg');
+ A(!!fgChip&&!fgChip.querySelector('.nm').disabled,'missing fg endpoint is normalized into a selectable real chip');
+ if(fgChip)fgChip.click();
+ A(selectedIdx!==null&&PALETTE[selectedIdx]&&PALETTE[selectedIdx][1]==='fg'&&document.getElementById('newhexstr').value.toLowerCase()==='#f0fef0','clicking normalized fg selects it and updates the color editor');
+ PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg'],['#c0402a','red'],['#3a6ea5','blue'],['#808080','gray']];selectedIdx=null;renderPalette();
+ const resetStrips=[...document.querySelectorAll('#pals .fstrip')];
+ const blueHead=resetStrips.find(s=>s.dataset.column==='blue')&&resetStrips.find(s=>s.dataset.column==='blue').querySelector('.ctitle');
  A(!!blueHead,'normal column header has a selectable title');
  if(blueHead)blueHead.click();
  A(selectedIdx!==null&&PALETTE[selectedIdx][1]==='blue'&&document.getElementById('newhexstr').value.toLowerCase()==='#3a6ea5','clicking a column title selects its base color');
- const blueRight=strips.find(s=>s.dataset.column==='blue')&&strips.find(s=>s.dataset.column==='blue').querySelector('.cmove.right');
+ const blueRight=resetStrips.find(s=>s.dataset.column==='blue')&&resetStrips.find(s=>s.dataset.column==='blue').querySelector('.cmove.right');
  if(blueRight)blueRight.click();
  const moved=[...document.querySelectorAll('#pals .fstrip')].map(s=>s.dataset.column);
  A(moved.indexOf('blue')>moved.indexOf('gray'),'right arrow moves a color column after its neighbor');
