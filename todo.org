@@ -950,8 +950,10 @@ From the 2026-06 config audit, =modules/help-config.el=:
 ** TODO [#B] Stale elpa gptel shadows the local fork — likely the gptel-magit root :bug:quick:solo:
 =elpa/gptel-0.9.8.5= is still installed alongside the =~/code/gptel= fork (=ai-config.el:383=); package activation puts the elpa dir + autoloads on load-path, so which copy wins depends on ordering, and a mixed load (fork .el + elpa .elc) produces "impossible" bugs. =gptel-magit= (elpa) declares gptel as a dependency, so IT may be pulling the stale copy — check this first when working the open "[#B] Investigate gptel-magit not working properly" task. Fix: =package-delete= the elpa gptel + remove from .localrepo so the fork is the only copy on disk. From the 2026-06 config audit.
 
-** TODO [#B] vertico-prescient clobbers orderless filtering :bug:quick:solo:
+** DONE [#B] vertico-prescient clobbers orderless filtering :bug:quick:solo:
+CLOSED: [2026-06-13 Sat]
 =modules/selection-framework.el:250= — =vertico-prescient-mode= defaults =vertico-prescient-enable-filtering t=, overriding =completion-styles= to prescient inside vertico sessions; the orderless config at :151 is dead exactly where it matters. Set =vertico-prescient-enable-filtering nil= — orderless matches, prescient sorts (and this resolves the dead =vertico-sort-function= finding in the buffer/window-libs child the other way around). From the 2026-06 config audit.
+Fixed 2026-06-13: added =:custom (vertico-prescient-enable-filtering nil)= to the vertico-prescient use-package. Live daemon confirmed filtering nil + =completion-styles (orderless basic)= with the mode re-enabled — orderless matches, prescient sorts. No ERT test (framework defcustom, unexercisable in the stubbed-use-package harness); the in-session matching check is a VERIFY under Manual testing and validation.
 
 ** TODO [#B] 2026-06 full config audit — findings backlog :refactor:
 Module-by-module review of all 121 modules + init/early-init, holistic passes (startup/perf, stability, UX consistency, package strategy), and spin-offs into pearl, chime, emacs-wttrin. Method: parallel read-only review agents per module group; key claims spot-verified (incl. against the live daemon) before filing. Run 2026-06-11/12, COMPLETE. Tally: ~165 module findings + ~40 holistic + 30 spin-off ≈ 235 total; 40 high-impact bugs filed as standalone tasks above this parent; the rest live in the group children below. Spin-off findings delivered as inbox handoffs to pearl, chime, and emacs-wttrin (2026-06-12-0057). Start with the synthesis child below for the recommended attack order.
@@ -4338,6 +4340,11 @@ From the 2026-06-11 messenger-unification brainstorm. Google Voice has no offici
 
 ** TODO Manual testing and validation
 Exercised once the phases above land.
+*** VERIFY orderless matching works inside a vertico session
+What we're verifying: vertico-prescient no longer overrides completion-styles, so orderless's space-separated, out-of-order matching is live in the minibuffer (prescient still sorts). Fixed in modules/selection-framework.el, applied live in the daemon.
+- Run a command with a vertico minibuffer (e.g. M-x, or C-x b)
+- Type two space-separated fragments out of order, e.g. "mode buf" to match "switch-to-buffer-other-... mode" style candidates
+Expected: candidates match on both fragments regardless of order (orderless), and the ordering still reflects prescient frecency. Before the fix, space-separated out-of-order input would not match.
 *** VERIFY C-; b d diffs, C-; b D deletes
 What we're verifying: the buffer-and-file keymap now puts diff on the easy lowercase key and the destructive delete on the capital. Swapped in modules/custom-buffer-file.el and re-bound live in the daemon.
 - Open a file buffer and edit it without saving
