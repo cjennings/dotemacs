@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify,
+  clearPalettePlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
 } from './app-core.js';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
@@ -74,6 +75,53 @@ test('paletteOptionList: Error — a cur outside palette and ground is surfaced 
   const list = paletteOptionList('#123456', PAL, { bg: '#0d0b0a', fg: '#f0fef0' });
   assert.deepEqual(list[0], ['', '— default —']);
   assert.deepEqual(list[1], ['#123456', '(gone) #123456']);
+});
+
+test('clearPalettePlan: Normal — removes non-ground colors and records recoverable names', () => {
+  const plan = clearPalettePlan([
+    ['#0d0b0a', 'bg', 'ground'],
+    ['#f0fef0', 'fg', 'ground'],
+    ['#67809c', 'blue', 'blue'],
+    ['#92acc2', 'blue+1', 'blue'],
+  ], { bg: '#0d0b0a', fg: '#f0fef0' });
+  assert.deepEqual(plan.palette, [['#0d0b0a', 'bg', 'ground'], ['#f0fef0', 'fg', 'ground']]);
+  assert.deepEqual(plan.removed, [{ hex: '#67809c', name: 'blue' }, { hex: '#92acc2', name: 'blue+1' }]);
+});
+
+test('clearPalettePlan: Boundary — synthesizes missing bg and fg endpoints', () => {
+  const plan = clearPalettePlan([['#67809c', 'blue', 'blue']], { bg: '#000000', fg: '#ffffff' });
+  assert.deepEqual(plan.palette, [['#000000', 'bg', 'ground'], ['#ffffff', 'fg', 'ground']]);
+  assert.deepEqual(plan.removed, [{ hex: '#67809c', name: 'blue' }]);
+});
+
+test('clearPalettePlan: Boundary — same-hex imported colors are not ground endpoints', () => {
+  const plan = clearPalettePlan([
+    ['#0d0b0a', 'bg2', 'bg2'],
+    ['#0d0b0a', 'bg', 'ground'],
+    ['#f0fef0', 'fg', 'ground'],
+  ], { bg: '#0d0b0a', fg: '#f0fef0' });
+  assert.deepEqual(plan.palette, [['#0d0b0a', 'bg', 'ground'], ['#f0fef0', 'fg', 'ground']]);
+  assert.deepEqual(plan.removed, [{ hex: '#0d0b0a', name: 'bg2' }]);
+});
+
+test('groundColumnMembersFromPalette: Normal — sorts bg, ground-N steps, then fg', () => {
+  const members = groundColumnMembersFromPalette([
+    ['#ffffff', 'bg', 'ground'],
+    ['#333333', 'ground-2', 'ground'],
+    ['#bbbbbb', 'ground-1', 'ground'],
+    ['#000000', 'fg', 'ground'],
+  ], { bg: '#ffffff', fg: '#000000' });
+  assert.deepEqual(members.map(m => m.name), ['bg', 'ground-1', 'ground-2', 'fg']);
+});
+
+test('lock helpers: Normal — label and toggle operate on the full key set', () => {
+  const keys = ['a', 'b', 'c'];
+  assert.equal(areAllLocked(keys, new Set(['a', 'b'])), false);
+  assert.equal(lockToggleLabel(keys, new Set(['a', 'b'])), 'lock all');
+  const locked = toggleLockSet(keys, new Set(['a']));
+  assert.deepEqual([...locked].sort(), keys);
+  assert.equal(lockToggleLabel(keys, locked), 'unlock all');
+  assert.deepEqual([...toggleLockSet(keys, locked)].sort(), []);
 });
 
 test('buildPkgmap: Normal — seeds faces, resolving names and applying defaults', () => {
@@ -193,4 +241,16 @@ test('inline-integrity: theme-studio.html contains the app-core.js body verbatim
   const body = stripExports(readFileSync(here + 'app-core.js', 'utf8'));
   const html = readFileSync(here + 'theme-studio.html', 'utf8');
   assert.ok(html.includes(body), 'generated page is missing the app-core.js body verbatim');
+});
+
+test('inline-integrity: theme-studio.html contains palette-actions.js verbatim', () => {
+  const body = stripExports(readFileSync(here + 'palette-actions.js', 'utf8'));
+  const html = readFileSync(here + 'theme-studio.html', 'utf8');
+  assert.ok(html.includes(body), 'generated page is missing palette-actions.js verbatim');
+});
+
+test('inline-integrity: theme-studio.html contains browser-gates.js verbatim', () => {
+  const body = stripExports(readFileSync(here + 'browser-gates.js', 'utf8'));
+  const html = readFileSync(here + 'theme-studio.html', 'utf8');
+  assert.ok(html.includes(body), 'generated page is missing browser-gates.js verbatim');
 });

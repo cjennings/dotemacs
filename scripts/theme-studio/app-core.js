@@ -160,6 +160,46 @@ function nameOfGroundRole(palette,ground,role){
   return found?found[1]:null;
 }
 
+function normalizePaletteEntryCore(entry){
+  const hex=entry&&entry[0],name=(entry&&entry[1])||'color';
+  return [hex,name,(entry&&entry[2])||columnIdOf(entry)];
+}
+
+function groundColumnMembersFromPalette(palette,ground){
+  const byRole={bg:null,fg:null,steps:[]};
+  for(const entry of palette){
+    const role=groundRoleOfEntry(entry,ground);
+    if(role==='bg'||role==='fg')byRole[role]={hex:entry[0],name:entry[1]};
+    else if(role==='step')byRole.steps.push({hex:entry[0],name:entry[1]});
+  }
+  const stepIndex=m=>{const x=(m.name||'').match(/^ground-(\d+)$/i);return x?parseInt(x[1],10):Infinity;};
+  byRole.steps.sort((a,b)=>stepIndex(a)-stepIndex(b));
+  return [byRole.bg||{hex:ground&&ground.bg,name:'bg'},...byRole.steps,byRole.fg||{hex:ground&&ground.fg,name:'fg'}].filter(m=>m.hex);
+}
+
+function clearPalettePlan(palette,ground){
+  const normalized=palette.map(normalizePaletteEntryCore),removed=[],keep=[];
+  normalized.filter(entry=>!groundRoleOfEntry(entry,ground)).forEach(([hex,name])=>{if(name)removed.push({hex,name});});
+  const addEndpoint=(role,hex,name)=>{
+    const found=normalized.find(entry=>groundRoleOfEntry(entry,ground)===role);
+    if(found)keep.push(found);else if(hex)keep.push([hex,name,'ground']);
+  };
+  addEndpoint('bg',ground&&ground.bg,'bg');
+  addEndpoint('fg',ground&&ground.fg,'fg');
+  return {palette:keep,removed};
+}
+
+function areAllLocked(keys,locked){
+  const has=k=>locked instanceof Set?locked.has(k):Array.isArray(locked)&&locked.includes(k);
+  return !!(keys&&keys.length)&&keys.every(has);
+}
+function lockToggleLabel(keys,locked){return areAllLocked(keys,locked)?'unlock all':'lock all';}
+function toggleLockSet(keys,locked){
+  const next=new Set(locked||[]),all=areAllLocked(keys,next);
+  (keys||[]).forEach(k=>all?next.delete(k):next.add(k));
+  return next;
+}
+
 // Group a flat palette into the ground strip plus structural columns. ground is
 // {bg,fg}; those endpoint hexes form the pinned ground column even when absent
 // from the palette, and ground-N entries are reserved for that column. Everything
@@ -241,4 +281,4 @@ function paletteOptionList(cur,palette,ground){
   return out;
 }
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry };
+export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, areAllLocked, lockToggleLabel, toggleLockSet };

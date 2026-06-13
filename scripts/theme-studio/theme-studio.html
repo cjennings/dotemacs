@@ -578,6 +578,46 @@ function nameOfGroundRole(palette,ground,role){
   return found?found[1]:null;
 }
 
+function normalizePaletteEntryCore(entry){
+  const hex=entry&&entry[0],name=(entry&&entry[1])||'color';
+  return [hex,name,(entry&&entry[2])||columnIdOf(entry)];
+}
+
+function groundColumnMembersFromPalette(palette,ground){
+  const byRole={bg:null,fg:null,steps:[]};
+  for(const entry of palette){
+    const role=groundRoleOfEntry(entry,ground);
+    if(role==='bg'||role==='fg')byRole[role]={hex:entry[0],name:entry[1]};
+    else if(role==='step')byRole.steps.push({hex:entry[0],name:entry[1]});
+  }
+  const stepIndex=m=>{const x=(m.name||'').match(/^ground-(\d+)$/i);return x?parseInt(x[1],10):Infinity;};
+  byRole.steps.sort((a,b)=>stepIndex(a)-stepIndex(b));
+  return [byRole.bg||{hex:ground&&ground.bg,name:'bg'},...byRole.steps,byRole.fg||{hex:ground&&ground.fg,name:'fg'}].filter(m=>m.hex);
+}
+
+function clearPalettePlan(palette,ground){
+  const normalized=palette.map(normalizePaletteEntryCore),removed=[],keep=[];
+  normalized.filter(entry=>!groundRoleOfEntry(entry,ground)).forEach(([hex,name])=>{if(name)removed.push({hex,name});});
+  const addEndpoint=(role,hex,name)=>{
+    const found=normalized.find(entry=>groundRoleOfEntry(entry,ground)===role);
+    if(found)keep.push(found);else if(hex)keep.push([hex,name,'ground']);
+  };
+  addEndpoint('bg',ground&&ground.bg,'bg');
+  addEndpoint('fg',ground&&ground.fg,'fg');
+  return {palette:keep,removed};
+}
+
+function areAllLocked(keys,locked){
+  const has=k=>locked instanceof Set?locked.has(k):Array.isArray(locked)&&locked.includes(k);
+  return !!(keys&&keys.length)&&keys.every(has);
+}
+function lockToggleLabel(keys,locked){return areAllLocked(keys,locked)?'unlock all':'lock all';}
+function toggleLockSet(keys,locked){
+  const next=new Set(locked||[]),all=areAllLocked(keys,next);
+  (keys||[]).forEach(k=>all?next.delete(k):next.add(k));
+  return next;
+}
+
 // Group a flat palette into the ground strip plus structural columns. ground is
 // {bg,fg}; those endpoint hexes form the pinned ground column even when absent
 // from the palette, and ground-N entries are reserved for that column. Everything
@@ -764,13 +804,12 @@ function pkgLockKeys(){const app=curApp();return APPS[app].faces.map(f=>'pkg:'+a
 function tierLockKeys(tier){return tier==='syntax'?syntaxLockKeys():tier==='ui'?uiLockKeys():pkgLockKeys();}
 function updateLockToggle(tier){
   const ids={syntax:'syntaxlocktoggle',ui:'uilocktoggle',pkg:'pkglocktoggle'},b=document.getElementById(ids[tier]);if(!b)return;
-  const keys=tierLockKeys(tier),all=keys.length&&keys.every(k=>LOCKED.has(k));
-  b.textContent=all?'unlock all':'lock all';
+  b.textContent=lockToggleLabel(tierLockKeys(tier),LOCKED);
 }
 function updateLockToggles(){updateLockToggle('syntax');updateLockToggle('ui');updateLockToggle('pkg');}
 function toggleAllLocks(tier){
-  const keys=tierLockKeys(tier),all=keys.length&&keys.every(k=>LOCKED.has(k));
-  keys.forEach(k=>all?LOCKED.delete(k):LOCKED.add(k));
+  const all=areAllLocked(tierLockKeys(tier),LOCKED);
+  LOCKED=toggleLockSet(tierLockKeys(tier),LOCKED);
   if(tier==='syntax')buildTable();else if(tier==='ui')buildUITable();else buildPkgTable();
   updateLockToggles();
   notify((all?'unlocked ':'locked ')+(tier==='pkg'?'package':tier)+' rows',false);
@@ -787,19 +826,6 @@ function clearUnlockedPkg(){
   const app=curApp();
   clearUnlockedRows(APPS[app].faces,f=>'pkg:'+app+':'+f[0],f=>{PKGMAP[app][f[0]]=normalizePkgFace({source:'cleared'},'cleared');});
   pkgChanged();notify('cleared unlocked '+app+' faces to default',false);
-}
-function clearPalette(){
-  normalizePalette();
-  const keep=[],ground={bg:MAP['bg'],fg:MAP['p']};
-  PALETTE.filter(entry=>!groundRoleOfEntry(entry,ground)).forEach(([hex,name])=>{if(name)lastGone[name.toLowerCase()]=hex;});
-  const addEndpoint=(role,hex,name)=>{
-    const found=PALETTE.find(entry=>groundRoleOfEntry(entry,ground)===role);
-    keep.push(found||[hex,name,'ground']);
-  };
-  addEndpoint('bg',MAP['bg'],'bg');addEndpoint('fg',MAP['p'],'fg');
-  PALETTE=keep;selectedIdx=null;
-  renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();renderCode();applyGround();
-  notify('cleared palette to bg and fg',false);
 }
 function buildTable(){
   const tb=document.getElementById('legbody');tb.innerHTML='';
@@ -828,6 +854,14 @@ function buildTable(){
     tb.appendChild(tr);}
   updateLockToggle('syntax');
 }
+function clearPalette(){
+  normalizePalette();
+  const plan=clearPalettePlan(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+  plan.removed.forEach(({hex,name})=>{lastGone[name.toLowerCase()]=hex;});
+  PALETTE=plan.palette;selectedIdx=null;
+  renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();renderCode();applyGround();
+  notify('cleared palette to bg and fg',false);
+}
 let selectedIdx=null;
 // When a named palette color is deleted, remember its hex keyed by name so that
 // recreating a color with the same name can re-bind the assignments still pointing
@@ -853,16 +887,7 @@ function normalizePalette(){PALETTE=PALETTE.map(normalizePaletteEntry);}
 // The ground column is explicit: bg pins the top endpoint, fg pins the bottom
 // endpoint, and generated ground-N steps live between them.
 function groundColumnMembers(){
-  const ground={bg:MAP['bg'],fg:MAP['p']};
-  const byRole={bg:null,fg:null,steps:[]};
-  for(const entry of PALETTE){
-    const role=groundRoleOfEntry(entry,ground);
-    if(role==='bg'||role==='fg')byRole[role]={hex:entry[0],name:entry[1]};
-    else if(role==='step')byRole.steps.push({hex:entry[0],name:entry[1]});
-  }
-  const stepIndex=m=>{const x=(m.name||'').match(/^ground-(\d+)$/i);return x?parseInt(x[1],10):Infinity;};
-  byRole.steps.sort((a,b)=>stepIndex(a)-stepIndex(b));
-  return [byRole.bg||{hex:MAP['bg'],name:'bg'},...byRole.steps,byRole.fg||{hex:MAP['p'],name:'fg'}];
+  return groundColumnMembersFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
 }
 function groundSpanCount(){return PALETTE.filter(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='step').length;}
 function groundSpanControl(){
@@ -1750,6 +1775,10 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  {LOCKED.clear();buildPkgTable();const b=document.getElementById('pkglocktoggle');A(b&&b.textContent==='lock all','pkg toggle starts as lock all');b.click();
   A(pkgLockKeys().every(k=>LOCKED.has(k))&&b.textContent==='unlock all','pkg lock-all locks every current package row and flips label');b.click();
   A(pkgLockKeys().every(k=>!LOCKED.has(k))&&b.textContent==='lock all','pkg unlock-all clears every current package lock and flips label');}
+ {LOCKED.clear();const app=curApp(),faces=APPS[app].faces.map(r=>r[0]),filter=document.getElementById('pkgfilter');
+  if(filter&&faces.length>1){filter.value=faces[0];buildPkgTable();const b=document.getElementById('pkglocktoggle');b.click();
+    A(faces.every(face=>LOCKED.has('pkg:'+app+':'+face)),'pkg lock-all covers the whole package even when filtered');
+    filter.value='';buildPkgTable();}}
  document.title='LOCKTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='locktest';d.textContent='LOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Sort gate (open with #sorttest): all three tables now share srtTable/cellVal.
@@ -2101,9 +2130,10 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
 // Round-trip gate (open with #roundtriptest): export stays a flat palette with
 // stable column ids, and import does not need color-derived column reconstruction.
 if(location.hash==='#roundtriptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
- const saveP=PALETTE.slice(),saveM=Object.assign({},MAP);
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveL=new Set(LOCKED);
  PALETTE=[['#ffffff','bg','ground'],['#000000','fg','ground'],['#224466','blue','blue'],['#446688','renamed-blue','blue']];
  MAP['bg']='#ffffff';MAP['p']='#000000';
+ LOCKED=new Set(['kw','ui:region','pkg:'+curApp()+':'+APPS[curApp()].faces[0][0]]);
  const before=JSON.stringify(exportObj());
  applyImported(before);
  const after=JSON.stringify(exportObj());
@@ -2111,7 +2141,8 @@ if(location.hash==='#roundtriptest'){let ok=true;const notes=[];const A=(c,n)=>{
  const obj=JSON.parse(after);
  A(Array.isArray(obj.palette)&&obj.palette.every(e=>Array.isArray(e)&&e.length>=3&&typeof e[2]==='string'),'exported palette carries flat [hex,name,columnId] entries');
  A(obj.palette.some(e=>e[1]==='renamed-blue'&&e[2]==='blue'),'renamed color keeps its stable column id through export/import');
- PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);
+ A(obj.locks&&obj.locks.includes('kw')&&obj.locks.includes('ui:region'),'lock state survives export/import');
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);LOCKED=saveL;
  document.title='ROUNDTRIPTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='roundtriptest';d.textContent='ROUNDTRIPTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 </script>

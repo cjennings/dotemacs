@@ -48,7 +48,9 @@ the spliced page script, and the browser hash gates in headless Chrome
 Chromium-family browser; without one they report SKIPPED rather than passing
 silently. The pure color math and the extracted picker logic (`planeCell`,
 `paletteWarnings`) live in `colormath.js` so they are unit-tested directly in
-Node; the DOM glue is covered by the browser hash gates.
+Node; palette-column plans and lock-set plans live in `app-core.js` so edge
+cases are unit-tested directly. The DOM glue is covered by the browser hash
+gates.
 
 ## Files
 
@@ -57,6 +59,9 @@ Node; the DOM glue is covered by the browser hash gates.
 - `theme-studio.template.html` — static page shell with placeholders for the
   inlined CSS/JS/data. Edit here for layout markup.
 - `face_data.py` — bespoke package face lists and seed defaults.
+- `palette-actions.js` — stateful palette-panel actions and rendering, inlined
+  into the generated page.
+- `browser-gates.js` — the browser hash-gate test harness, also inlined.
 - `app_inventory.py`, `face_specs.py`, `default_faces.py` — generator helpers for
   package inventory, face-spec defaults, and captured Emacs defaults.
 - `samples.py` — the six language code samples and the default syntax
@@ -78,7 +83,10 @@ Three tiers of faces, plus the palette:
   by hex or with the in-page color picker
   (saturation/value square, hue slider, palette reuse chips, live contrast
   readout, and an any / AA+ / AAA legibility mask). Remove and rename per chip;
-  the colors serving as background and foreground are locked.
+  the colors serving as background and foreground are locked. `clear palette`
+  removes every non-ground color and leaves only the `bg` and `fg` tiles; existing
+  face assignments remain on their old hexes and show as "(gone)" until a color
+  with the same name is recreated.
 
   The picker also shows perceptual readouts beside the WCAG ratio: the OKLCH
   coordinates (lightness, chroma, hue°) and the APCA Lc contrast against the
@@ -96,10 +104,12 @@ Three tiers of faces, plus the palette:
 - **Syntax** — every font-lock / tree-sitter category (keyword, string,
   function, type, comment, and the rest), each with normal/bold/italic and a
   contrast rating. Click a category to flash its tokens in the code; click a
-  token to flash its row.
+  token to flash its row. `lock all` flips to `unlock all` when every row in the
+  tier is locked; `clear unlocked` leaves locked rows untouched.
 - **UI faces** — cursor, region, mode-line, fringe, line numbers, isearch, paren
   match, link, error/warning/success, and the rest, foreground and background
-  per face, shown in a live mock Emacs buffer.
+  per face, shown in a live mock Emacs buffer. The same lock-all and clear
+  unlocked controls apply to the UI face tier.
 - **Package faces** — per-package face tables with a live preview (below).
 
 ## Color columns
@@ -114,6 +124,11 @@ derived from hue, chroma, lightness, or the visible color name.
   Renaming a color only changes its label, so a renamed tile stays in its original
   column. Older two-field palette entries still load by falling back to the
   generated-name stem (`blue-1`, `blue`, `blue+1` -> `blue`).
+  Generic Emacs names like `color-22` stay separate base columns unless they
+  already carry an explicit column id. Numbered named colors such as `blue1`,
+  `grey80`, `orange3`, and `orchid4` group by their text stem. Imported names
+  that begin with `bg` or `fg` are normal colors unless they are exact ground
+  endpoints or explicitly use the `ground` column id.
 - **The count control** under each non-ground column sets how many steps sit on
   each side of the column's base. Setting N regenerates the column as a symmetric
   base ±N tonal ramp via `ramp()` — lighter and darker steps on the base's hue
@@ -159,7 +174,9 @@ Pick an application from the dropdown to edit its faces. Each row has a
 foreground and background dropdown, bold/italic toggles, an `inherit` dropdown
 (base faces like `fixed-pitch`/`link` plus the app's own faces), a relative
 height stepper, a contrast readout, and a per-face reset. There's a per-app
-reset and a text filter for the large sets.
+reset and a text filter for the large sets. Package `lock all` / `unlock all`
+applies to the whole currently selected package, not only the rows visible under
+the text filter.
 
 Twenty applications have bespoke previews that exercise nearly all of their
 faces: org-mode (a document plus an agenda view), magit (a status buffer plus
