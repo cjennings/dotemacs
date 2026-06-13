@@ -207,11 +207,13 @@ From the roam inbox: the =save= button currently behaves too much like =export=.
 :END:
 From the roam inbox: the =show= button for the raw JSON export does not fit the main theme-design workflow, but it may still be useful for debugging. Decide whether to hide it behind a debugging affordance, rename it, or remove it. Quick UI cleanup once the desired debugging surface is chosen; not marked solo because it is a workflow preference call.
 
-** TODO [#C] theme-studio separate tile selection from name editing :feature:quick:solo:
+** DONE [#C] theme-studio separate tile selection from name editing :feature:quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-13
 :END:
 From the roam inbox: clicking a palette tile should have predictable intent. Single-click anywhere on a tile should select the whole color tile for editing/assignment. Double-clicking the name should enter name-edit mode with the cursor at the beginning of the name. Add browser-gate coverage for both paths so accidental single-click name edits do not regress.
+
+Shipped 2026-06-13: tile names are read-only until double-clicked; single-click selects the tile, and =#columntest= pins single-click vs double-click behavior.
 
 ** TODO [#B] theme-studio spans should stop at bg and fg bounds :bug:quick:solo:
 :PROPERTIES:

@@ -323,6 +323,15 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  A(!document.querySelector('#pals .fstrip[data-column="ground"] .cdel'),'ground column has no delete button');
  const redChip=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='red');
  A(!!redChip&&!!redChip.querySelector('.rm')&&!!redChip.querySelector('.nm'),'a column chip keeps remove + rename controls');
+ if(redChip){
+  const redName=redChip.querySelector('.nm');selectedIdx=null;redName.click();
+  A(selectedIdx!==null&&PALETTE[selectedIdx][1]==='red','single-clicking a tile name selects the whole tile');
+  A(redName.readOnly===true&&!redName.classList.contains('editing'),'single-clicking a tile name does not enter name edit mode');
+  redName.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+  A(redName.readOnly===false&&redName.classList.contains('editing'),'double-clicking a tile name enters edit mode');
+  A(redName.selectionStart===0&&redName.selectionEnd===0,'double-clicking places the cursor at the beginning of the name');
+  redName.blur();
+ }
  const redColumn=redChip&&redChip.closest('.fstrip').dataset.column;
  const ri=PALETTE.findIndex(p=>p[1]==='red');PALETTE[ri][1]='zztop-absurd';renderPalette();
  const renamed=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='zztop-absurd');

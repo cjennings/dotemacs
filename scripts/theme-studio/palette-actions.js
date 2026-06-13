@@ -81,10 +81,16 @@ function paletteChip(i,nearest){
   const d=document.createElement('div');d.className='pchip'+(i===selectedIdx?' sel':'');d.style.background=hex;
   d.title=name+' '+hex+(nde===Infinity||nde===undefined?'':' — nearest ΔE '+nde.toFixed(3));
   const rm=locked?`<span class="lock" title="${role==='bg'?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
-  d.innerHTML=`${rm}<input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
+  d.innerHTML=`${rm}<input class="nm" value="${name}" readonly style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
   if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();rememberGone(hex,name);PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
-  d.querySelector('.nm').onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
-  d.onclick=(e)=>{if(e.target.closest('.rm')||e.target.closest('.nm'))return;selectColor(i);};
+  const nm=d.querySelector('.nm');
+  const finishNameEdit=()=>{nm.readOnly=true;nm.classList.remove('editing');};
+  nm.onclick=(e)=>{e.preventDefault();e.stopPropagation();selectColor(i);};
+  nm.ondblclick=(e)=>{e.preventDefault();e.stopPropagation();nm.readOnly=false;nm.classList.add('editing');nm.focus();nm.setSelectionRange(0,0);};
+  nm.onblur=finishNameEdit;
+  nm.onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();nm.blur();}else if(e.key==='Escape'){e.preventDefault();nm.value=PALETTE[i][1];nm.blur();}};
+  nm.onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
+  d.onclick=(e)=>{if(e.target.closest('.rm'))return;selectColor(i);};
   return d;
 }
 function paletteIndexByHexName(hex,name){

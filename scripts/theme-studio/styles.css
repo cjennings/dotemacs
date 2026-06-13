@@ -40,7 +40,8 @@
  .palwarn .pwh{font-weight:bold;margin-bottom:2px}
  .palwarn .pwl{opacity:.92}
  .pchip{width:128px;height:58px;border-radius:6px;border:1px solid #555;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab}
- .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none}
+ .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none;cursor:pointer}
+ .pchip input.nm.editing{cursor:text;text-align:left}
  .pchip .hx{font-size:10pt;opacity:.8} .pchip .rm{position:absolute;top:2px;right:5px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:bold;opacity:.7}
  .pchip .lock{position:absolute;top:3px;right:5px;font-size:10px;opacity:.6}
  .palctl{margin:0 0 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
