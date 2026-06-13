@@ -6,7 +6,6 @@ STYLES_CSS</style>
  <div class="saveload">
   <div class="filebar end">
    <label style="color:#b4b1a2">theme name</label><input type="text" id="themename" value="" placeholder="untitled" oninput="updateTitle()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:200px">
-   <button id="savebtn" onclick="saveTheme()" style="display:none">&#128190; save</button>
    <button onclick="exportTheme()">&#11015; export</button>
    <button class="fbtn" onclick="importTheme()">&#11014; import</button><input type="file" id="fileinput" accept=".json" onchange="importFile(event)" style="display:none">
    <button id="jsonbtn" onclick="toggleJSON()">show</button>

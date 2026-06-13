@@ -255,7 +255,7 @@ The export (and what a build step consumes):
 - `palette` is a flat list of `[hex, name, columnId]`. `name` is the editable
   display label; `columnId` is the durable grouping key that keeps generated
   colors in their original column even if they are renamed. Older `[hex, name]`
-  entries still import and are normalized on save.
+  entries still import and are normalized on export.
 - `ui` and `packages` faces carry `fg`/`bg` (hex or `null`), `bold`, `italic`,
   `underline`, `strike`, and for package faces `inherit` (a face name or
   `null`), `height` (a float, omitted at 1.0), and `source` (`"default"` seeded,
@@ -265,8 +265,7 @@ The export (and what a build step consumes):
   `theme.json` to start from a prior theme; a file with no `packages` key still
   loads.
 
-`export` always downloads a fresh file; `save` (shown once a name is entered)
-writes the same file in place via the File System Access API.
+`export` downloads the current theme JSON using the theme name as the filename.
 
 ## Build step — `build-theme.el`
 
