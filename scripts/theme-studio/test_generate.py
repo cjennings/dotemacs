@@ -123,6 +123,35 @@ class AssembledPage(unittest.TestCase):
         self.assertEqual(generate.HTML.count("</script>"), 1)
 
 
+class LanguageSamples(unittest.TestCase):
+    def _tokens(self, lang):
+        return [tok for line in generate.SAMPLES[lang] for tok in line]
+
+    def test_rust_and_zig_are_available_in_the_language_selector(self):
+        self.assertIn("Rust", generate.SAMPLES)
+        self.assertIn("Zig", generate.SAMPLES)
+
+    def test_rust_sample_exercises_language_specific_categories(self):
+        tokens = self._tokens("Rust")
+        cats = {k for k, _ in tokens}
+        text = "".join(t for _, t in tokens)
+        for cat in ("dec", "ty", "bi", "kw", "op", "var"):
+            self.assertIn(cat, cats)
+        self.assertIn("'a", text)
+        self.assertIn("trait", text)
+        self.assertIn("vec!", text)
+
+    def test_zig_sample_exercises_language_specific_categories(self):
+        tokens = self._tokens("Zig")
+        cats = {k for k, _ in tokens}
+        text = "".join(t for _, t in tokens)
+        for cat in ("bi", "kw", "ty", "con", "op", "prop"):
+            self.assertIn(cat, cats)
+        self.assertIn("comptime", text)
+        self.assertIn("@import", text)
+        self.assertIn("error.MissingColor", text)
+
+
 class FacesHelper(unittest.TestCase):
     def test_strips_prefix_and_derives_label_and_merges_seed(self):
         # Normal: the prefix comes off the label, and the per-face seed is attached.

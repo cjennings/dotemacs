@@ -64,7 +64,7 @@ gates.
 - `browser-gates.js` — the browser hash-gate test harness, also inlined.
 - `app_inventory.py`, `face_specs.py`, `default_faces.py` — generator helpers for
   package inventory, face-spec defaults, and captured Emacs defaults.
-- `samples.py` — the six language code samples and the default syntax
+- `samples.py` — the language code samples and the default syntax
   category→color map (`COLS`). `generate.py` reads the part before the `cols=`
   marker.
 - `package-inventory.json` — generated map of every installed package to the
