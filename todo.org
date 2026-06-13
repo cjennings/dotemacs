@@ -903,11 +903,13 @@ From the 2026-06 config audit, =modules/slack-config.el=:
 ** TODO [#B] dirvish M (mark all files) marks every other file :bug:quick:solo:
 =modules/dirvish-config.el:218= — =dired-mark= advances point to the next line itself; the loop's extra =forward-line 1= then skips it, so consecutive files are marked alternately. Live mis-marking on a key that feeds batch operations (delete/copy on marked files) — data-loss adjacent. Drop the manual forward-line when a mark was made (or =dired-unmark-all-marks= + mark dirs + =dired-toggle-marks=). The trivial line-predicate helper is tested; the loop isn't — add the marked-count test. From the 2026-06 config audit.
 
-** TODO [#B] dwim-shell: zip overwrites its own name, backup timestamp never expands, dired menu key dead :bug:quick:solo:
+** DONE [#B] dwim-shell: zip overwrites its own name, backup timestamp never expands, dired menu key dead :bug:quick:solo:
+CLOSED: [2026-06-13 Sat]
 From the 2026-06 config audit, =modules/dwim-shell-config.el=:
 - =:338= — single-file zip is =zip -r '<<fne>>.<<e>>' '<<f>>'= — reconstructs the input filename as the archive ("Zip file structure invalid"; directories produce =foo.=). Should be ='<<fne>>.zip'= like the tar-gzip sibling.
 - =:549= — backup destination single-quotes =$(date ...)= so the substitution is literal: =foo.txt.$(date +%Y%m%d_%H%M%S).bak=. Move it outside the quotes or format-time-string in Elisp.
 - =:932= — dired-mode binding "M-S-d" is unreachable (Meta+Shift+d generates M-D); the dirvish binding two lines down is correctly "M-D". Fix + the stale commentary at dirvish-config.el:30.
+Fixed 2026-06-13: zip single-file template now ='<<fne>>.zip'=; backup uses =format-time-string= in Elisp (real =YYYYMMDD_HHMMSS= stamp, dropped the now-unneeded =date= util); dired key M-S-d→M-D + dirvish-config.el:30 doc corrected. Both command strings extracted into top-level builders (=cj/dwim-shell--zip-single-file-command=, =cj/dwim-shell--dated-backup-command=) so they're unit-testable without the dwim-shell-command package — the command defuns live in its use-package :config, which the batch harness doesn't load. 2 builder tests green in make; live daemon confirms all three (backup stamp, .zip, dired M-D). Real backup/zip run + the dired keypress are a VERIFY.
 
 ** TODO [#B] Go: format key void-functions, go-mode :config never runs :bug:quick:solo:
 =modules/prog-go.el:99,113-118= — .go maps to go-ts-mode so the go-mode package never loads, and =gofmt= isn't autoloaded in go-mode 1.6.0 — C-; f signals void-function, and the :config (exec-path += ~/go/bin, =gofmt-command "goimports"=) never executes. Wrapper that requires go-mode first (or autoload gofmt), move the setup to top level. From the 2026-06 config audit.
@@ -4342,6 +4344,12 @@ From the 2026-06-11 messenger-unification brainstorm. Google Voice has no offici
 
 ** TODO Manual testing and validation
 Exercised once the phases above land.
+*** VERIFY dwim-shell zip/backup/menu-key behave
+What we're verifying: single-file zip makes a valid <name>.zip, the dated backup gets a real timestamp, and the dwim-shell menu is reachable on M-D in plain dired. Fixed in modules/dwim-shell-config.el, reloaded into the daemon.
+- In dired, mark a single file, run the dwim-shell menu (M-D), pick Zip
+- Mark a file, run the menu, pick "Backup with date"
+- Open a plain dired buffer (not dirvish) and press M-D
+Expected: zip produces foo.zip (a valid archive, openable); backup produces foo.ext.YYYYMMDD_HHMMSS.bak with a real date; M-D opens the dwim-shell command menu in plain dired (before the fix it did nothing there).
 *** VERIFY markdown live preview renders in the browser
 What we're verifying: F2 in a markdown buffer runs the custom cj/markdown-preview (not markdown-mode's own command) and the impatient-mode strapdown preview actually renders. Fixed in modules/markdown-config.el, reloaded into the daemon.
 - Open a .md file with some markdown content

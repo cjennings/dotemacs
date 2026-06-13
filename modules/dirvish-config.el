@@ -27,7 +27,7 @@
 ;; - p: Copy absolute file path
 ;; - P: Print the file at point via CUPS
 ;; - S: Study — start an org-drill session on the .org file at point
-;; - M-S-d (Meta-Shift-d): DWIM shell commands menu
+;; - M-D (Meta-Shift-d): DWIM shell commands menu
 ;; - TAB: Toggle subtree expansion
 ;; - F11: Toggle sidebar view
 
