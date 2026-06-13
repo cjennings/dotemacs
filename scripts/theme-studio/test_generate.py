@@ -259,5 +259,37 @@ class PackageFaceCoverage(unittest.TestCase):
         self.assertEqual(dict(sorted(actual.items())), self.ALLOWED_DUPLICATES)
 
 
+class GeneratedDefaults(unittest.TestCase):
+    def package_seed(self, app, face):
+        for row_face, _label, seed in generate.APPS[app]["faces"]:
+            if row_face == face:
+                return seed
+        self.fail(f"{app}/{face} is not in generated APPS")
+
+    def test_ground_defaults_match_emacs_q_light_default(self):
+        self.assertEqual(generate.MAP["bg"], "#ffffff")
+        self.assertEqual(generate.MAP["p"], "#000000")
+        self.assertEqual(generate.PALETTE[:2], [["#ffffff", "bg", "ground"], ["#000000", "fg", "ground"]])
+
+    def test_ui_defaults_preserve_own_overlay_and_modeline_specs(self):
+        self.assertEqual(generate.UIMAP["lazy-highlight"]["bg"], "#afeeee")
+        self.assertIsNone(generate.UIMAP["lazy-highlight"]["fg"])
+        self.assertEqual(generate.UIMAP["mode-line"]["box"], {"style": "released", "width": 1, "color": None})
+        self.assertEqual(generate.UIMAP["mode-line-inactive"]["inherit"], "mode-line")
+        self.assertEqual(generate.UIMAP["mode-line-inactive"]["box"], {"style": "line", "width": 1, "color": "#bfbfbf"})
+
+    def test_representative_package_inherits_are_selected(self):
+        self.assertEqual(self.package_seed("elfeed", "elfeed-search-filter-face")["inherit"], "mode-line-buffer-id")
+        self.assertEqual(self.package_seed("ghostel", "ghostel-default")["inherit"], "default")
+
+    def test_syntax_defaults_capture_font_lock_styles(self):
+        self.assertEqual(generate.MAP["kw"], "#d3d3d3")
+        self.assertTrue(generate.BOLD["kw"])
+        self.assertFalse(generate.ITALIC_MAP["kw"])
+        self.assertEqual(generate.MAP["str"], "#696969")
+        self.assertFalse(generate.BOLD["str"])
+        self.assertTrue(generate.ITALIC_MAP["str"])
+
+
 if __name__ == "__main__":
     unittest.main()
