@@ -22,6 +22,7 @@ STYLES_CSS</style>
    <input type="text" id="newname" placeholder="name" onkeydown="if(event.key==='Enter')applyEdit()">
    <button onclick="addColor()">+ add color</button>
    <button onclick="updateColor()">&#8635; update selected</button>
+   <button onclick="clearPalette()" title="remove every palette color except the bg and fg tiles">clear palette</button>
    <span id="palmsg"></span>
    <div id="picker" class="picker">
     <div class="prow">
@@ -48,7 +49,7 @@ STYLES_CSS</style>
 <h1>code/color assignments</h1>
 <div class="cols">
  <section class="pane">
-  <div class="legctl"><button class="fbtn" onclick="clearUnlocked()" title="reset every unlocked element to default (reads as plain foreground text); locked rows are left untouched">clear unlocked</button></div>
+  <div class="legctl"><button id="syntaxlocktoggle" class="fbtn" onclick="toggleAllLocks('syntax')" title="lock or unlock every syntax row">lock all</button><button class="fbtn" onclick="clearUnlocked()" title="reset every unlocked element to default (reads as plain foreground text); locked rows are left untouched">clear unlocked</button></div>
   <table class="leg" id="legtable"><thead><tr><th onclick="srtTable('legbody',0)">elements &#9651;</th><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',2)">color &#9651;</th><th>style</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
@@ -59,7 +60,7 @@ STYLES_CSS</style>
 <h1>ui faces</h1>
 <div class="cols stretch">
  <section class="pane">
-  <div class="legctl"><button class="fbtn" onclick="clearUnlockedUI()" title="reset every unlocked UI face to default (no foreground/background); locked rows are left untouched">clear unlocked</button></div>
+  <div class="legctl"><button id="uilocktoggle" class="fbtn" onclick="toggleAllLocks('ui')" title="lock or unlock every UI face row">lock all</button><button class="fbtn" onclick="clearUnlockedUI()" title="reset every unlocked UI face to default (no foreground/background); locked rows are left untouched">clear unlocked</button></div>
   <table class="leg" id="uitable"><thead><tr><th onclick="srtTable('uibody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('uibody',2)">foreground &#9651;</th><th onclick="srtTable('uibody',3)">background &#9651;</th><th>style</th><th onclick="srtTable('uibody',5)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th>preview</th><th title="face :box (border)">box</th></tr></thead><tbody id="uibody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
@@ -72,6 +73,7 @@ STYLES_CSS</style>
  <label style="color:#b4b1a2">application</label><select id="appsel" class="chip" style="width:auto;font:bold 10pt monospace"></select>
  <label style="color:#b4b1a2">filter</label><input id="pkgfilter" type="text" placeholder="face name" oninput="buildPkgTable()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:160px">
  <button onclick="resetApp()">&#8635; reset all</button>
+ <button id="pkglocktoggle" class="fbtn" onclick="toggleAllLocks('pkg')" title="lock or unlock every face row in the current package">lock all</button>
  <button class="fbtn" onclick="clearUnlockedPkg()" title="reset every unlocked face in this app to default (no fg/bg); locked rows are left untouched">clear unlocked</button>
 </div>
 <div class="cols stretch">
