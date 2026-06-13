@@ -64,6 +64,12 @@ test('paletteOptionList: Boundary — assignment-only ground colors are selectab
   assert.ok(list.some(([hex, name]) => hex === '#f0fef0' && name === 'fg'));
 });
 
+test('paletteOptionList: Boundary — bg-like imported colors remain selectable outside ground', () => {
+  const pal = [['#0d0b0a', 'bg2'], ['#0d0b0a', 'bg', 'ground'], ['#f0fef0', 'fg', 'ground']];
+  const list = paletteOptionList('', pal, { bg: '#0d0b0a', fg: '#f0fef0' });
+  assert.deepEqual(list.slice(0, 4), [['', '— default —'], ['#0d0b0a', 'bg'], ['#f0fef0', 'fg'], ['#0d0b0a', 'bg2']]);
+});
+
 test('paletteOptionList: Error — a cur outside palette and ground is surfaced as gone', () => {
   const list = paletteOptionList('#123456', PAL, { bg: '#0d0b0a', fg: '#f0fef0' });
   assert.deepEqual(list[0], ['', '— default —']);

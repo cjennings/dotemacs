@@ -165,12 +165,12 @@ function normalizePalette(){PALETTE=PALETTE.map(normalizePaletteEntry);}
 // endpoint, and generated ground-N steps live between them.
 function groundColumnMembers(){
   const members=[];
-  for(const [hex,name] of PALETTE)if(hex.toLowerCase()===MAP['bg'].toLowerCase()||hex.toLowerCase()===MAP['p'].toLowerCase()||/^ground-\d+$/i.test(name||''))members.push({hex,name});
-  if(!members.some(m=>m.hex.toLowerCase()===MAP['bg'].toLowerCase()))members.push({hex:MAP['bg'],name:'bg'});
-  if(!members.some(m=>m.hex.toLowerCase()===MAP['p'].toLowerCase()))members.push({hex:MAP['p'],name:'fg'});
+  for(const entry of PALETTE)if(groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']}))members.push({hex:entry[0],name:entry[1]});
+  if(!PALETTE.some(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='bg'))members.push({hex:MAP['bg'],name:'bg'});
+  if(!PALETTE.some(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='fg'))members.push({hex:MAP['p'],name:'fg'});
   return members.sort((a,b)=>oklab2oklch(srgb2oklab(a.hex)).L-oklab2oklch(srgb2oklab(b.hex)).L);
 }
-function groundSpanCount(){return PALETTE.filter(([,name])=>/^ground-\d+$/i.test(name||'')).length;}
+function groundSpanCount(){return PALETTE.filter(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='step').length;}
 function groundSpanControl(){
   const d=document.createElement('div');d.className='fcount';
   d.innerHTML=`<span title="number of ground colors between bg and fg">span <input type="number" min="0" max="8" value="${groundSpanCount()}"></span>`;
@@ -178,7 +178,7 @@ function groundSpanControl(){
   return d;
 }
 function setGroundSpan(n){
-  const old=PALETTE.filter(([,name])=>/^ground-\d+$/i.test(name||''));
+  const old=PALETTE.filter(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='step');
   const bg=srgb2oklab(MAP['bg']),fg=srgb2oklab(MAP['p']);
   const entries=[];
   for(let i=1;i<=n;i++){
@@ -190,8 +190,8 @@ function setGroundSpan(n){
     const next=entries.find(([,name])=>name===oldName);
     if(next&&next[0].toLowerCase()!==oldHex.toLowerCase())repointHex(oldHex,next[0]);
   }
-  for(let i=PALETTE.length-1;i>=0;i--)if(/^ground-\d+$/i.test(PALETTE[i][1]||''))PALETTE.splice(i,1);
-  let at=PALETTE.findIndex(([hex])=>hex.toLowerCase()===MAP['bg'].toLowerCase());
+  for(let i=PALETTE.length-1;i>=0;i--)if(groundRoleOfEntry(PALETTE[i],{bg:MAP['bg'],fg:MAP['p']})==='step')PALETTE.splice(i,1);
+  let at=PALETTE.findIndex(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='bg');
   if(at<0)at=0; else at+=1;
   PALETTE.splice(Math.min(at,PALETTE.length),0,...entries);
   selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();
@@ -212,10 +212,11 @@ function renderPaletteWarnings(warnings,overflow){
 // Families sort deterministically, so the old move-arrow / drag reordering is gone.
 function paletteChip(i,nearest){
   const [hex,name]=PALETTE[i],tc=textOn(hex),nde=nearest[i];
-  const locked=(hex===MAP['bg']||hex===MAP['p']);
+  const role=groundRoleOfEntry(PALETTE[i],{bg:MAP['bg'],fg:MAP['p']});
+  const locked=(role==='bg'||role==='fg');
   const d=document.createElement('div');d.className='pchip'+(i===selectedIdx?' sel':'');d.style.background=hex;
   d.title=name+' '+hex+(nde===Infinity||nde===undefined?'':' — nearest ΔE '+nde.toFixed(3));
-  const rm=locked?`<span class="lock" title="${hex===MAP['bg']?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
+  const rm=locked?`<span class="lock" title="${role==='bg'?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
   d.innerHTML=`${rm}<input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
   if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();if(name)lastGone[name.toLowerCase()]=hex;PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
   d.querySelector('.nm').onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
@@ -232,9 +233,7 @@ function selectColumnBase(f){
   if(i>=0)selectColor(i);
 }
 function isGroundEntry(entry){
-  const [hex,name]=entry;
-  const lower=(hex||'').toLowerCase();
-  return lower===MAP['bg'].toLowerCase()||lower===MAP['p'].toLowerCase()||/^ground-\d+$/i.test(name||'');
+  return !!groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']});
 }
 function moveColumn(columnId,dir){
   normalizePalette();
@@ -345,7 +344,7 @@ function applyEdit(){if(selectedIdx!==null)updateColor();else addColor();}
 function selectColor(i){selectedIdx=i;const [hex,name]=PALETTE[i];setHex(hex);document.getElementById('newname').value=name;renderPalette();notify('editing "'+name+'" — change the value, then Enter (or Update selected) to save',false);}
 function updateColor(){
   if(selectedIdx===null){notify('click a palette color to select it first',true);return;}
-  const i=selectedIdx,oldHex=PALETTE[i][0];
+  const i=selectedIdx,oldHex=PALETTE[i][0],oldRole=groundRoleOfEntry(PALETTE[i],{bg:MAP['bg'],fg:MAP['p']});
   const newHex=curHex();
   const newName=(document.getElementById('newname').value.trim())||PALETTE[i][1];
   if(PALETTE.some((p,j)=>j!==i&&p[1].toLowerCase()===newName.toLowerCase())){notify('another color is already named "'+newName+'" — names must be unique',true);return;}
@@ -355,7 +354,9 @@ function updateColor(){
   const count=column?Math.max(0,...rankByLightness(column.members.map(m=>m.hex),column.base).map(m=>Math.abs(m.offset))):0;
   const columnId=PALETTE[i][2]||columnStem(PALETTE[i][1]);
   PALETTE[i]=[newHex,newName,columnId];
-  repointHex(oldHex,newHex);
+  const duplicateOldHex=PALETTE.some((p,j)=>j!==i&&p[0].toLowerCase()===oldHex.toLowerCase());
+  if(oldRole==='bg'||oldRole==='fg')repointHex(oldHex,newHex);
+  else if(!duplicateOldHex&&oldHex!==MAP['bg']&&oldHex!==MAP['p'])repointHex(oldHex,newHex);
   if(column&&count>0){
     const oldHexes=column.members.map(m=>m.hex.toLowerCase()===oldHex.toLowerCase()?newHex:m.hex);
     regenColumnInPlace(oldHexes,newHex,newName,count,column.column||columnId);
@@ -1298,6 +1299,12 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  const ri=PALETTE.findIndex(p=>p[1]==='red');PALETTE[ri][1]='zztop-absurd';renderPalette();
  const renamed=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='zztop-absurd');
  A(!!renamed&&renamed.closest('.fstrip').dataset.column===redColumn,'a renamed color stays in the same strip');
+ PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#0d0b0a','bg2'],['#0d0b0a','bg-alt']];MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';selectedIdx=null;renderPalette();
+ const bg2Chip=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='bg2');
+ A(!!bg2Chip&&bg2Chip.closest('.fstrip').dataset.column==='bg'&&!!bg2Chip.querySelector('.rm')&&!bg2Chip.querySelector('.lock'),'same-hex bg2 remains a normal removable color column chip');
+ if(bg2Chip){bg2Chip.click();document.getElementById('newhexstr').value='#101820';document.getElementById('newname').value='bg2';updateColor();}
+ A(MAP['bg']==='#0d0b0a','editing same-hex bg2 does not repoint the real bg assignment');
+ A(PALETTE.some(p=>p[1]==='bg2'&&p[0]==='#101820'),'editing same-hex bg2 updates only that palette tile');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);selectedIdx=saveSel;renderPalette();
  document.title='COLUMNTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='columntest';d.textContent='COLUMNTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}

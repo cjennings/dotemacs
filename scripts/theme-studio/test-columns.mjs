@@ -5,7 +5,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns } from './app-core.js';
+import { columnsFromPalette, regenColumn, groundRoleOfEntry, rankByLightness, stepRepointPlan, sortColumns } from './app-core.js';
 
 const columnOf = (columns, name) => columns.find(f => f.members.some(m => m.name === name));
 
@@ -84,6 +84,23 @@ test('columnsFromPalette: Boundary - ground entries and ground-N steps stay out 
   const { ground, columns } = columnsFromPalette(pal, { bg: '#0d0b0a', fg: '#f0fef0' });
   assert.ok(ground.some(g => g.hex.toLowerCase() === '#0d0b0a'));
   assert.ok(!columns.some(f => f.members.some(m => m.name === 'bg' || m.name === 'ground-1')));
+});
+
+test('columnsFromPalette: Boundary - imported bg-like names are not ground just because their hex matches bg', () => {
+  const pal = [['#0d0b0a', 'bg2'], ['#0d0b0a', 'bg-alt'], ['#0d0b0a', 'bg', 'ground'], ['#f0fef0', 'fg', 'ground']];
+  const { ground, columns } = columnsFromPalette(pal, { bg: '#0d0b0a', fg: '#f0fef0' });
+  assert.deepEqual(ground.map(g => [g.role, g.name]), [['bg', 'bg'], ['fg', 'fg']]);
+  assert.ok(columnOf(columns, 'bg2'), 'bg2 remains in a normal imported color column');
+  assert.ok(columnOf(columns, 'bg-alt'), 'bg-alt remains in a normal imported color column');
+});
+
+test('groundRoleOfEntry: Boundary - exact ground roles only, not bg-prefix names', () => {
+  const ground = { bg: '#0d0b0a', fg: '#f0fef0' };
+  assert.equal(groundRoleOfEntry(['#0d0b0a', 'bg'], ground), 'bg');
+  assert.equal(groundRoleOfEntry(['#0d0b0a', 'ground'], ground), 'bg');
+  assert.equal(groundRoleOfEntry(['#0d0b0a', 'bg2'], ground), null);
+  assert.equal(groundRoleOfEntry(['#0d0b0a', 'bg-alt'], ground), null);
+  assert.equal(groundRoleOfEntry(['#444444', 'ground-1'], ground), 'step');
 });
 
 // --- regenColumn ------------------------------------------------------------
