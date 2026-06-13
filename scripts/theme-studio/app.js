@@ -67,9 +67,10 @@ function mkColorDropdown(options,cur,onPick){
   t.setValue=h=>{cur=h;paint();};
   return t;}
 // Standard option list for a swatch dropdown: a "default" entry, then the
-// palette. If cur is set but no longer in the palette, surface it as a "(gone)"
-// entry so the row still shows what it points at. Shared by all three tiers.
-function ddList(cur){return optList(cur,PALETTE);}
+// palette in the same ground/family order as the palette panel. If cur is set
+// but no longer in the palette, surface it as a "(gone)" entry so the row still
+// shows what it points at. Shared by all three tiers.
+function ddList(cur){return paletteOptionList(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']});}
 // Shared lock toggle for any table row. lockKey is namespaced per tier (bare
 // syntax kind, 'ui:'+face, 'pkg:'+app+':'+face). els are the row's editable
 // controls — native selects/buttons/inputs are disabled; the custom swatch
@@ -155,6 +156,47 @@ function repointHex(oldHex,newHex){
 // On adding a color, if its name matches a recently-deleted one, re-bind the
 // stranded assignments to the new hex. Returns true when a heal context existed.
 function healGone(name,newHex){const k=name.toLowerCase();if(!(k in lastGone))return false;const g=lastGone[k];delete lastGone[k];repointHex(g,newHex);return true;}
+function normalizePaletteEntry(entry){
+  const hex=entry&&entry[0],name=(entry&&entry[1])||'color';
+  return [hex,name,(entry&&entry[2])||familyStem(name)];
+}
+function normalizePalette(){PALETTE=PALETTE.map(normalizePaletteEntry);}
+// The ground column is explicit: bg pins the dark endpoint, fg pins the light
+// endpoint, and generated ground-N steps live between them.
+function groundColumnMembers(){
+  const members=[];
+  for(const [hex,name] of PALETTE)if(hex.toLowerCase()===MAP['bg'].toLowerCase()||hex.toLowerCase()===MAP['p'].toLowerCase()||/^ground-\d+$/i.test(name||''))members.push({hex,name});
+  if(!members.some(m=>m.hex.toLowerCase()===MAP['bg'].toLowerCase()))members.push({hex:MAP['bg'],name:'bg'});
+  if(!members.some(m=>m.hex.toLowerCase()===MAP['p'].toLowerCase()))members.push({hex:MAP['p'],name:'fg'});
+  return members.sort((a,b)=>oklab2oklch(srgb2oklab(a.hex)).L-oklab2oklch(srgb2oklab(b.hex)).L);
+}
+function groundSpanCount(){return PALETTE.filter(([,name])=>/^ground-\d+$/i.test(name||'')).length;}
+function groundSpanControl(){
+  const d=document.createElement('div');d.className='fcount';
+  d.innerHTML=`<span title="number of ground colors between bg and fg">span <input type="number" min="0" max="8" value="${groundSpanCount()}"></span>`;
+  d.querySelector('input').onchange=(e)=>setGroundSpan(Math.max(0,Math.min(8,parseInt(e.target.value,10)||0)));
+  return d;
+}
+function setGroundSpan(n){
+  const old=PALETTE.filter(([,name])=>/^ground-\d+$/i.test(name||''));
+  const bg=srgb2oklab(MAP['bg']),fg=srgb2oklab(MAP['p']);
+  const entries=[];
+  for(let i=1;i<=n;i++){
+    const t=i/(n+1);
+    const lab={L:bg.L+(fg.L-bg.L)*t,a:bg.a+(fg.a-bg.a)*t,b:bg.b+(fg.b-bg.b)*t};
+    entries.push([lrgb2hex(oklab2lrgb(lab.L,lab.a,lab.b)),'ground-'+i,'ground']);
+  }
+  for(const [oldHex,oldName] of old){
+    const next=entries.find(([,name])=>name===oldName);
+    if(next&&next[0].toLowerCase()!==oldHex.toLowerCase())repointHex(oldHex,next[0]);
+  }
+  for(let i=PALETTE.length-1;i>=0;i--)if(/^ground-\d+$/i.test(PALETTE[i][1]||''))PALETTE.splice(i,1);
+  let at=PALETTE.findIndex(([hex])=>hex.toLowerCase()===MAP['bg'].toLowerCase());
+  if(at<0)at=0; else at+=1;
+  PALETTE.splice(Math.min(at,PALETTE.length),0,...entries);
+  selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();
+  notify('set ground span to '+n,false);
+}
 // Pairwise OKLab ΔE over the palette. Returns the sub-threshold pairs (sorted
 // closest-first) and each color's nearest-neighbor distance for its chip title.
 // Pure pairwise ΔE analysis lives in colormath.js (paletteWarnings); this renders it.
@@ -180,31 +222,38 @@ function paletteChip(i,nearest){
   d.onclick=(e)=>{if(e.target.closest('.rm')||e.target.closest('.nm'))return;selectColor(i);};
   return d;
 }
-// Render the palette as hue families: the pinned ground strip, then hue-sorted
-// family strips, each dark to light. Grouping is derived from the hex by
-// familiesFromPalette every render, so renaming a color never moves it. The flat
-// PALETTE stays the editable truth; chips keep their per-chip controls.
+// Render the palette as structural color columns: pinned ground column, then
+// first-seen palette columns. Grouping uses the stable column id stored on each
+// palette entry, so renaming a color never moves it.
 function renderPalette(){
+  normalizePalette();
   const p=document.getElementById('pals');p.innerHTML='';
   const {warnings,overflow,nearest}=paletteWarnings(PALETTE,DELTAE_MIN,5);
   const {ground,families}=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
   const used=new Set();
   const idxOf=(hex,name)=>{for(let i=0;i<PALETTE.length;i++)if(!used.has(i)&&PALETTE[i][0]===hex&&PALETTE[i][1]===name){used.add(i);return i;}return -1;};
   const strip=(cls)=>{const s=document.createElement('div');s.className='fstrip'+(cls||'');p.appendChild(s);return s;};
-  const gs=strip(' ground');gs.dataset.family='ground';
-  ground.forEach(g=>{
-    const i=PALETTE.findIndex((pp,k)=>!used.has(k)&&pp[0]===g.hex);
-    if(i>=0){used.add(i);gs.appendChild(paletteChip(i,nearest));}
-    else{const tc=textOn(g.hex),sw=document.createElement('div');sw.className='pchip';sw.style.background=g.hex;sw.title=(g.role||'')+' '+g.hex;
-      sw.innerHTML=`<input class="nm" value="${g.role||''}" disabled style="color:${tc}"><div class="hx" style="color:${tc}">${g.hex}</div>`;gs.appendChild(sw);}
-  });
+  if(ground.length){
+    const gs=strip(' ground');gs.dataset.family='ground';
+    const gh=document.createElement('div');gh.className='fhead';gh.textContent='ground';gs.appendChild(gh);
+    gs.appendChild(groundSpanControl());
+    groundColumnMembers().forEach(m=>{
+      const i=idxOf(m.hex,m.name);
+      if(i>=0)gs.appendChild(paletteChip(i,nearest));
+      else{const tc=textOn(m.hex),sw=document.createElement('div');sw.className='pchip';sw.style.background=m.hex;sw.title=(m.name||'ground')+' '+m.hex;
+        sw.innerHTML=`<input class="nm" value="${m.name||'ground'}" disabled style="color:${tc}"><div class="hx" style="color:${tc}">${m.hex}</div>`;gs.appendChild(sw);}
+    });
+  }
   // The too-similar warning stays on the full flat palette: a generated ramp's
   // steps are a stepL apart (well above the warning's ΔE threshold), so they never
   // trigger it, and any pair that does is a genuine near-duplicate worth flagging.
   sortFamilies(families).forEach(f=>{
-    const s=strip(f.neutral?' neutral':'');s.dataset.family=f.base;
+    const s=strip('');s.dataset.family=f.column||f.base;
+    const h=document.createElement('div');h.className='fhead';
+    h.textContent=(f.members.find(m=>m.hex.toLowerCase()===f.base.toLowerCase())||{}).name||f.column||f.base;
+    s.appendChild(h);
+    s.appendChild(familyCountControl(f));
     f.members.forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest));});
-    if(!f.neutral)s.appendChild(familyCountControl(f));
   });
   renderPaletteWarnings(warnings,overflow);
   buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
@@ -214,7 +263,7 @@ function renderPalette(){
 function familyCountControl(f){
   const per=Math.max(0,...rankByLightness(f.members.map(m=>m.hex),f.base).map(m=>Math.abs(m.offset)));
   const d=document.createElement('div');d.className='fcount';
-  d.innerHTML=`<span title="generate a symmetric ramp of N steps each side of this family's base — this replaces the family">&#177; <input type="number" min="0" max="4" value="${per}"></span>`;
+  d.innerHTML=`<span title="set the family span: N generated steps on each side of the base — this replaces the column">span &#177; <input type="number" min="0" max="4" value="${per}"></span>`;
   d.querySelector('input').onchange=(e)=>setFamilyCount(f.base,Math.max(0,Math.min(4,parseInt(e.target.value,10)||0)));
   return d;
 }
@@ -225,7 +274,7 @@ function familyCountControl(f){
 // Replace oldHexes in the palette with a fresh base ±n ramp, repointing surviving
 // references and leaving removed ones on their now-gone hex. Returns the removed
 // count, or null on a bad base. Shared by the count control and the base edit.
-function regenFamilyInPlace(oldHexes,baseHex,baseName,n){
+function regenFamilyInPlace(oldHexes,baseHex,baseName,n,columnId){
   const r=regenFamily(baseHex,n,{});
   if(r.error){notify('cannot regenerate from '+baseHex,true);return null;}
   const plan=stepRepointPlan(rankByLightness(oldHexes,baseHex),r.members);
@@ -233,7 +282,8 @@ function regenFamilyInPlace(oldHexes,baseHex,baseName,n){
   let at=PALETTE.length;
   for(let i=0;i<PALETTE.length;i++)if(oldSet.has(PALETTE[i][0].toLowerCase())){at=i;break;}
   for(let i=PALETTE.length-1;i>=0;i--)if(oldSet.has(PALETTE[i][0].toLowerCase()))PALETTE.splice(i,1);
-  const entries=r.members.map(m=>[m.hex,m.offset===0?baseName:baseName+(m.offset>0?'+'+m.offset:String(m.offset))]);
+  const col=columnId||familyStem(baseName);
+  const entries=r.members.map(m=>[m.hex,m.offset===0?baseName:baseName+(m.offset>0?'+'+m.offset:String(m.offset)),col]);
   PALETTE.splice(Math.min(at,PALETTE.length),0,...entries);
   for(const [o,nw] of plan.map)repointHex(o,nw);
   return plan.removed.length;
@@ -243,7 +293,7 @@ function setFamilyCount(baseHex,n){
   const fam=families.find(f=>f.base.toLowerCase()===baseHex.toLowerCase());
   if(!fam)return;
   const baseName=(fam.members.find(m=>m.hex.toLowerCase()===baseHex.toLowerCase())||{}).name||'color';
-  const removed=regenFamilyInPlace(fam.members.map(m=>m.hex),baseHex,baseName,n);
+  const removed=regenFamilyInPlace(fam.members.map(m=>m.hex),baseHex,baseName,n,fam.column);
   if(removed===null)return;
   selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();
   notify('regenerated "'+baseName+'" to ±'+n+(removed?(' — '+removed+' removed step(s) show "(gone)" where used'):''),false);
@@ -259,13 +309,14 @@ function updateColor(){
   if(PALETTE.some((p,j)=>j!==i&&p[1].toLowerCase()===newName.toLowerCase())){notify('another color is already named "'+newName+'" — names must be unique',true);return;}
   // If the edited color is a family base with a ramp, recolor the whole family: regenerate from the new base at the same count.
   const fams=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).families;
-  const fam=fams.find(f=>!f.neutral&&f.base.toLowerCase()===oldHex.toLowerCase());
+  const fam=fams.find(f=>f.base.toLowerCase()===oldHex.toLowerCase());
   const count=fam?Math.max(0,...rankByLightness(fam.members.map(m=>m.hex),fam.base).map(m=>Math.abs(m.offset))):0;
-  PALETTE[i]=[newHex,newName];
+  const columnId=PALETTE[i][2]||familyStem(PALETTE[i][1]);
+  PALETTE[i]=[newHex,newName,columnId];
   repointHex(oldHex,newHex);
   if(fam&&count>0){
     const oldHexes=fam.members.map(m=>m.hex.toLowerCase()===oldHex.toLowerCase()?newHex:m.hex);
-    regenFamilyInPlace(oldHexes,newHex,newName,count);
+    regenFamilyInPlace(oldHexes,newHex,newName,count,fam.column||columnId);
     closePicker();selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();notify('recolored "'+newName+'" family from the new base',false);return;
   }
   closePicker();renderPalette();buildTable();buildUITable();renderCode();applyGround();notify('updated "'+newName+'"',false);
@@ -363,13 +414,13 @@ function initPicker(){const sw=document.getElementById('swatch');if(!sw)return;s
 function addColor(){const h=curHex();const name=document.getElementById('newname').value.trim();
   if(!name){notify('name the color before adding it',true);return;}
   if(PALETTE.some(p=>p[1].toLowerCase()===name.toLowerCase())){notify('a color named "'+name+'" already exists — select it and use Update selected to change its value',true);return;}
-  PALETTE.push([h,name]);const healed=healGone(name,h);document.getElementById('newname').value='';selectedIdx=null;closePicker();
+  PALETTE.push([h,name,familyStem(name)]);const healed=healGone(name,h);document.getElementById('newname').value='';selectedIdx=null;closePicker();
   renderPalette();buildTable();buildUITable();
   if(healed){renderCode();applyGround();if(document.getElementById('pkgbody'))buildPkgTable();buildPkgPreview();}
   notify(healed?('added "'+name+'" and reconnected its assignments'):('added "'+name+'"'),false);}
 function themeName(){return (document.getElementById('themename').value||'theme').trim()||'theme';}
 function fileSlug(){return slugify(themeName());}
-function exportObj(){const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);const o={name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};if(LOCKED.size)o.locks=[...LOCKED];const pk=packagesForExport(PKGMAP);if(Object.keys(pk).length)o.packages=pk;return o;}
+function exportObj(){normalizePalette();const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);const o={name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};if(LOCKED.size)o.locks=[...LOCKED];const pk=packagesForExport(PKGMAP);if(Object.keys(pk).length)o.packages=pk;return o;}
 function exportState(){const t=document.getElementById('export');t.value=JSON.stringify(exportObj(),null,1);t.style.display='block';t.focus();t.select();}
 function toggleJSON(){const t=document.getElementById('export'),b=document.getElementById('jsonbtn');if(t.style.display==='block'){t.style.display='none';b.textContent='show';}else{exportState();b.textContent='hide';}}
 function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': theme';const sb=document.getElementById('savebtn');if(sb){sb.style.display=n||fileHandle?'':'none';sb.title=fileHandle?'overwrite the imported/saved file':'choose where to save';}}
@@ -380,7 +431,7 @@ async function saveTheme(){const data=JSON.stringify(exportObj(),null,1);
   try{if(!fileHandle)fileHandle=await window.showSaveFilePicker({suggestedName:fileSlug()+'.json',types:[{description:'theme JSON',accept:{'application/json':['.json']}}]});
     const w=await fileHandle.createWritable();await w.write(data);await w.close();notify('saved "'+themeName()+'"',false);updateTitle();
   }catch(e){if(e&&e.name!=='AbortError')notify('save failed: '+e.message,true);}}
-function applyImported(text){const d=JSON.parse(text);lastGone={};if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette;if(d.assignments)Object.assign(MAP,d.assignments);
+function applyImported(text){const d=JSON.parse(text);lastGone={};if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette.map(normalizePaletteEntry);if(d.assignments)Object.assign(MAP,d.assignments);
   BOLD={};(d.bold||[]).forEach(k=>BOLD[k]=true);ITALIC={};(d.italic||[]).forEach(k=>ITALIC[k]=true);
   LOCKED=new Set(d.locks||[]);
   if(d.ui)Object.assign(UIMAP,d.ui);
@@ -979,7 +1030,7 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const curCell=Q('[data-face="cursor"]');
  A(curCell&&curCell.textContent.trim().length===1,'cursor-on-glyph');
  const laz=Q('[data-face="lazy-highlight"]');
- A(laz&&/underline/.test(laz.getAttribute('style')||''),'overlay-honors-style');
+ A(laz&&/background:\s*(?!transparent)/.test(laz.getAttribute('style')||''),'overlay-honors-background-style');
  A([...document.querySelectorAll('#mockframe .fr')].some(e=>e.textContent.trim()),'fringe-indicator-present');
  const mlbar=Q('[data-face="mode-line"]');
  A(mlbar&&/box-shadow/.test(mlbar.getAttribute('style')||''),'mode-line-box');
@@ -1051,6 +1102,7 @@ if(location.hash==='#readouttest'){const hex='#67809c';document.getElementById('
 // out-of-scope face keeps the single-pair readout, and an empty set reads "no fg set".
 if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveMAP=Object.assign({},MAP),saveUI=JSON.parse(JSON.stringify(UIMAP));
+ CATS.forEach(c=>{if(c[0]!=='bg'&&c[0]!=='p')MAP[c[0]]='';});
  MAP['p']='#f0fef0';MAP['kw']='#67809c';MAP['str']='#a3b18a';MAP['bg']='#000000';
  UIMAP['region']={fg:null,bg:'#202830',bold:false,italic:false,underline:false,strike:false};
  buildUITable();
@@ -1157,17 +1209,18 @@ if(location.hash==='#healtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
  document.title='HEALTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='healtest';d.textContent='HEALTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
-// Family-strip gate (open with #familytest): the palette renders as the pinned
-// ground strip plus hue families, chips keep their controls, and renaming a color
-// to anything leaves it in the same strip (grouping is by hex, not name).
+// Family-strip gate (open with #familytest): the palette renders as a pinned
+// ground column plus structural columns, chips keep their controls, and renaming
+// a color leaves it in the same strip because the column id is stable.
 if(location.hash==='#familytest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveSel=selectedIdx;
  MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg'],['#c0402a','red'],['#3a6ea5','blue'],['#808080','gray']];selectedIdx=null;renderPalette();
  const strips=[...document.querySelectorAll('#pals .fstrip')];
- A(strips.length&&strips[0].classList.contains('ground'),'ground strip is pinned first');
- A(strips[0].querySelectorAll('.pchip').length===2,'ground strip carries bg + fg');
- A(strips.length>=4,'ground + neutral + red + blue strips, got '+strips.length);
+ A(strips.length&&strips[0].dataset.family==='ground','ground column is pinned first');
+ A(strips[0].querySelectorAll('.pchip').length===2,'ground column carries bg + fg endpoints');
+ A(!!strips[0].querySelector('.fhead + .fcount + .pchip'),'span control sits between header and tiles for ground');
+ A(strips.length>=4,'ground + red + blue + gray columns, got '+strips.length);
  const redChip=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='red');
  A(!!redChip&&!!redChip.querySelector('.rm')&&!!redChip.querySelector('.nm'),'a family chip keeps remove + rename controls');
  const redFamily=redChip&&redChip.closest('.fstrip').dataset.family;
@@ -1183,8 +1236,15 @@ if(location.hash==='#familytest'){let ok=true;const notes=[];const A=(c,n)=>{if(
 // is left on its old (now-gone) hex.
 if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),saveSel=selectedIdx;
- MAP['bg']='#000000';MAP['p']='#f0fef0';
- PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg']];
+ MAP['bg']='#204060';MAP['p']='#f0fef0';
+ PALETTE=[['#204060','bg'],['#f0fef0','fg']];
+ setGroundSpan(2);
+ A(MAP['bg']==='#204060'&&MAP['p']==='#f0fef0','spanning ground keeps bg/fg assignments on endpoints');
+ A(PALETTE.some(p=>p[1]==='ground-1')&&PALETTE.some(p=>p[1]==='ground-2'),'spanning ground adds interior ground-N entries');
+ A(document.querySelector('#pals .fstrip[data-family="ground"] .fhead + .fcount + .pchip'),'ground span control renders before tiles');
+ setGroundSpan(1);
+ A(!PALETTE.some(p=>p[1]==='ground-2'),'lowering ground span removes dropped interior steps');
+ PALETTE=[['#204060','bg'],['#f0fef0','fg']];
  regenFamily('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
  const innerOld=regenFamily('#67809c',2).members.find(m=>m.offset===1).hex; // survives a count change
  const outerOld=regenFamily('#67809c',2).members.find(m=>m.offset===2).hex; // dropped on count-down
@@ -1217,7 +1277,7 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  selectedIdx=PALETTE.findIndex(p=>p[0].toLowerCase()==='#67809c');
  document.getElementById('newhexstr').value='#3a8a8a';document.getElementById('newname').value='teal';
  updateColor();
- const fam=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).families.find(f=>!f.neutral);
+ const fam=familiesFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).families[0];
  A(fam&&fam.members.some(m=>m.hex.toLowerCase()==='#3a8a8a'),'family base recolored to the new hex');
  A(fam&&fam.members.length===5,'count preserved (±2 → 5 members), got '+(fam&&fam.members.length));
  A(!new Set(PALETTE.map(p=>p[0].toLowerCase())).has('#67809c'),'old base removed from palette');
@@ -1230,14 +1290,14 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
  document.title='BASEEDITTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='baseedittest';d.textContent='BASEEDITTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
-// Round-trip gate (open with #roundtriptest): export stays a flat palette and
-// import needs no family reconstruction, so export → import → export is identical.
+// Round-trip gate (open with #roundtriptest): export stays a flat palette with
+// stable column ids, and import does not need color-derived family reconstruction.
 if(location.hash==='#roundtriptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const before=JSON.stringify(exportObj());
  applyImported(before);
  const after=JSON.stringify(exportObj());
  A(before===after,'export → import → export is byte-identical');
  const obj=JSON.parse(after);
- A(Array.isArray(obj.palette)&&obj.palette.every(e=>Array.isArray(e)&&e.length===2),'exported palette is still a flat [hex,name] list');
+ A(Array.isArray(obj.palette)&&obj.palette.every(e=>Array.isArray(e)&&e.length>=3&&typeof e[2]==='string'),'exported palette carries flat [hex,name,columnId] entries');
  document.title='ROUNDTRIPTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='roundtriptest';d.textContent='ROUNDTRIPTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}

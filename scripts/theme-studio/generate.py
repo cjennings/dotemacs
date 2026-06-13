@@ -1,4 +1,4 @@
-import json, os
+import json, os, re
 HERE=os.path.dirname(os.path.abspath(__file__))
 
 def strip_exports(src):
@@ -38,10 +38,102 @@ src=open(os.path.join(HERE,'samples.py')).read()
 exec(src[:src.index('cols=')], ns)
 SAMPLES={"Elisp":ns['ELS'],"Go":ns['GOS'],"Python":ns['PYS'],"TypeScript":ns['TSS'],"Java":ns['JAS'],"C":ns['CS'],"C++":ns['CPS'],"Shell":ns['SHS']}
 COLS=ns['COLS']
-MAP={k:v[0] for k,v in COLS.items()}; BOLD={k:v[1] for k,v in COLS.items()}; MAP['str']='#5d9b86'; MAP['bg']='#000000'
-PALETTE=[["#67809c","blue"],["#e8bd30","gold"],["#9b5fd0","regal"],["#2ba178","emerald"],["#5d9b86","sage"],
- ["#cb6b4d","terracotta"],["#be9e74","tan"],["#ffffff","white"],["#a9b2bb","silver"],["#838d97","steel"],
- ["#5e6770","pewter"],["#2f343a","gunmetal"],["#264364","navy"],["#000000","ground"],["#1a1714","bg-dim"]]
+DEFAULT_FACES_PATH=os.path.join(HERE,'emacs-default-faces.json')
+DEFAULT_FACES=json.load(open(DEFAULT_FACES_PATH)) if os.path.exists(DEFAULT_FACES_PATH) else None
+DEFAULT_COLOR_HEX={}
+if DEFAULT_FACES:
+    for _data in DEFAULT_FACES.get('faces',{}).values():
+        for _block in ('chosenGuiLight','effectiveGuiLight'):
+            _d=_data.get(_block,{}) or {}
+            for _attr in ('foreground','background','distantForeground'):
+                if _d.get(_attr) and _d.get(_attr+'Hex'):
+                    DEFAULT_COLOR_HEX[str(_d[_attr]).lower().replace(' ','')]=_d[_attr+'Hex']
+MAP={k:'' for k in COLS}; MAP['bg']='#000000'; MAP['p']='#ffffff'
+BOLD={k:False for k in COLS}
+ITALIC_MAP={k:False for k in COLS}
+def column_id(name):
+    return re.sub(r'[+-]\d+$', '', name or 'color')
+
+def normalize_palette(palette):
+    return [[p[0], p[1] if len(p) > 1 else 'color', p[2] if len(p) > 2 else column_id(p[1] if len(p) > 1 else 'color')]
+            for p in palette]
+
+def default_face(face, effective=True):
+    if not DEFAULT_FACES: return {}
+    data=DEFAULT_FACES.get('faces',{}).get(face,{})
+    return data.get('effectiveGuiLight' if effective else 'chosenGuiLight',{}) or {}
+
+def default_color(face, attr='foreground', effective=True):
+    d=default_face(face,effective)
+    return d.get(attr+'Hex') or d.get(attr)
+
+def emacs_box_to_theme(box):
+    if not box: return None
+    if isinstance(box,dict): return box
+    if not isinstance(box,list): return None
+    vals={}
+    i=0
+    while i+1<len(box):
+        vals[box[i]]=box[i+1]; i+=2
+    width=vals.get(':line-width',1)
+    if isinstance(width,list) and width and width[0]=='cons': width=width[1]
+    if isinstance(width,(int,float)): width=abs(int(width)) or 1
+    else: width=1
+    style=vals.get(':style')
+    color=vals.get(':color')
+    if color:
+        color=DEFAULT_COLOR_HEX.get(str(color).lower().replace(' ',''),color)
+    if style=='released-button': return {"style":"released","width":width,"color":None}
+    if style=='pressed-button': return {"style":"pressed","width":width,"color":None}
+    return {"style":"line","width":width,"color":color}
+
+def face_seed(face, effective=False):
+    d=default_face(face,effective)
+    out={}
+    fg=d.get('foregroundHex') or d.get('foreground')
+    bg=d.get('backgroundHex') or d.get('background')
+    if fg: out['fg']=fg
+    if bg: out['bg']=bg
+    if d.get('weight')=='bold': out['bold']=True
+    if d.get('slant')=='italic': out['italic']=True
+    if d.get('underline'): out['underline']=True
+    if d.get('strike'): out['strike']=True
+    if d.get('inherit'): out['inherit']=d.get('inherit')
+    if d.get('height') and d.get('height')!=1: out['height']=d.get('height')
+    box=emacs_box_to_theme(d.get('box'))
+    if box: out['box']=box
+    return out
+
+def color_label(value, fallback):
+    if not value: return fallback
+    names={}
+    if DEFAULT_FACES:
+        for face,data in DEFAULT_FACES.get('faces',{}).items():
+            for block in ('chosenGuiLight','effectiveGuiLight'):
+                d=data.get(block,{}) or {}
+                for attr in ('foreground','background','distantForeground'):
+                    hx=d.get(attr+'Hex')
+                    nm=d.get(attr)
+                    if hx and nm and not str(nm).startswith('#'): names.setdefault(hx.lower(), str(nm).lower().replace(' ','-'))
+    return names.get(str(value).lower(), fallback)
+
+if DEFAULT_FACES:
+    MAP['bg']=default_color('default','background') or MAP['bg']
+    MAP['p']=default_color('default','foreground') or MAP['p']
+    for cat,faces in DEFAULT_FACES.get('syntax-map',{}).items():
+        faces=faces or []
+        if cat in ('bg','p') or not faces: continue
+        face=faces[0]
+        c=default_color(face,'foreground')
+        if c: MAP[cat]=c
+        eff=default_face(face,True)
+        BOLD[cat]=eff.get('weight')=='bold'
+        ITALIC_MAP[cat]=eff.get('slant')=='italic'
+else:
+    BOLD={k:v[1] for k,v in COLS.items()}
+    ITALIC_MAP={k:False for k in COLS}
+
+PALETTE=[[MAP['bg'],"bg","ground"],[MAP['p'],"fg","ground"]]
 CATS=[["bg","bg (ground)","Aa Bb 123"],["p","fg","other / whitespace"],["kw","keyword","class  def  if  return"],["bi","builtin","len  echo  printf"],
  ["pp","preprocessor","#include  #define"],["fnd","function · def","resolve  push"],
  ["fnc","function · call","printf  rsync  get"],["dec","decorator","@dataclass"],
@@ -61,25 +153,19 @@ UI_FACES=[["cursor","cursor","Aa|"],["region","region (selection)","selected tex
  ["show-paren-mismatch","show-paren-mismatch",") ("],["link","link","https://"],
  ["error","error","error!"],["warning","warning","warning"],
  ["success","success","ok"],["vertical-border","vertical-border","|"]]
-UIMAP={"cursor":{"fg":None,"bg":"#a9b2bb"},"region":{"fg":None,"bg":"#264364"},
- "hl-line":{"fg":None,"bg":"#1a1714"},"highlight":{"fg":None,"bg":"#2f343a"},
- "mode-line":{"fg":"#cdced1","bg":"#2f343a"},"mode-line-inactive":{"fg":"#838d97","bg":"#1a1714"},
- "fringe":{"fg":None,"bg":"#0d0b0a"},"line-number":{"fg":"#5e6770","bg":None},
- "line-number-current-line":{"fg":"#e8bd30","bg":"#1a1714"},"minibuffer-prompt":{"fg":"#67809c","bg":None},
- "isearch":{"fg":"#0d0b0a","bg":"#e8bd30"},"lazy-highlight":{"fg":"#0d0b0a","bg":"#838d97"},
- "isearch-fail":{"fg":"#cb6b4d","bg":None},"show-paren-match":{"fg":None,"bg":"#264364"},
- "show-paren-mismatch":{"fg":"#0d0b0a","bg":"#cb6b4d"},"link":{"fg":"#67809c","bg":None},
- "error":{"fg":"#cb6b4d","bg":None},"warning":{"fg":"#e8bd30","bg":None},
- "success":{"fg":"#5d9b86","bg":None},"vertical-border":{"fg":"#2f343a","bg":None}}
+UIMAP={f[0]:{"fg":None,"bg":None,"bold":False,"italic":False,"underline":False,"strike":False} for f in UI_FACES}
+if DEFAULT_FACES:
+    UIMAP={f[0]:dict({"fg":None,"bg":None,"bold":False,"italic":False,"underline":False,"strike":False},**face_seed(f[0],False)) for f in UI_FACES}
 
 # Optional palette seed: THEME_STUDIO_SEED=<file.json> seeds the tool's starting
 # palette / assignments / bold / italic / UI from a theme.json (path relative to
 # this dir), instead of the hardcoded defaults above. Unset leaves them unchanged.
 # Placed after every default it overrides (notably UIMAP) so the merge has targets.
 # Mirrors what the in-page Import does, so reseed and import agree.
-LOCKS=[]; ITALIC=[]
-# sterling is the default theme; THEME_STUDIO_SEED=<file>.json overrides to view another.
-_seed=os.environ.get('THEME_STUDIO_SEED') or 'sterling.json'
+LOCKS=[]; ITALIC=[k for k,v in ITALIC_MAP.items() if v]
+# THEME_STUDIO_SEED=<file>.json opens an existing theme as the starting point.
+# Unset starts empty: only bg/fg are in the palette.
+_seed=os.environ.get('THEME_STUDIO_SEED')
 _d={}
 if _seed:
     _d=json.load(open(os.path.join(HERE,_seed)))
@@ -90,14 +176,14 @@ if _seed:
     if _d.get('ui'):
         for _k,_v in _d['ui'].items(): UIMAP[_k]=_v
     if 'locks' in _d: LOCKS=_d['locks']
-# These faces carry a fixed style in Emacs's built-in definitions (verified with
-# emacs -Q), independent of any theme: link / lazy-highlight / show-paren-match
-# are underlined; error / warning / success are bold. Seed the defaults to match.
-UIMAP["link"]["underline"]=True
-for _f in ("lazy-highlight","show-paren-match"): UIMAP[_f]["underline"]=True
-for _f in ("error","warning","success"): UIMAP[_f]["bold"]=True
-# The mode line carries a 3D released-button box by default in Emacs.
-for _f in ("mode-line","mode-line-inactive"): UIMAP[_f]["box"]={"style":"released","width":1,"color":None}
+PALETTE=normalize_palette(PALETTE)
+if not DEFAULT_FACES:
+    # These faces carry a fixed style in Emacs's built-in definitions. Fallback
+    # only; normal generation uses emacs-default-faces.json above.
+    UIMAP["link"]["underline"]=True
+    for _f in ("lazy-highlight","show-paren-match"): UIMAP[_f]["underline"]=True
+    for _f in ("error","warning","success"): UIMAP[_f]["bold"]=True
+    for _f in ("mode-line","mode-line-inactive"): UIMAP[_f]["box"]={"style":"released","width":1,"color":None}
 # Tier-3 package faces (Phase 2): complete own-defface sets for org/magit/elfeed,
 # built from face-name lists + a curated seed-color map. Prominent faces are
 # seeded; the long tail seeds to the default foreground for the user to tune.
@@ -141,7 +227,11 @@ MAGIT_FACES=("magit-section-heading magit-section-secondary-heading magit-sectio
  "magit-reflog-merge magit-reflog-checkout magit-reflog-reset magit-reflog-rebase "
  "magit-reflog-cherry-pick magit-reflog-remote magit-reflog-other magit-sequence-pick "
  "magit-sequence-stop magit-sequence-part magit-sequence-head magit-sequence-drop magit-sequence-done "
- "magit-sequence-onto magit-sequence-exec magit-left-margin").split()
+ "magit-sequence-onto magit-sequence-exec magit-left-margin "
+ "git-commit-comment-action git-commit-comment-branch-local git-commit-comment-branch-remote "
+ "git-commit-comment-detached git-commit-comment-file git-commit-comment-heading git-commit-keyword "
+ "git-commit-nonempty-second-line git-commit-overlong-summary git-commit-summary "
+ "git-commit-trailer-token git-commit-trailer-value").split()
 ELFEED_FACES=("elfeed-search-date-face elfeed-search-title-face elfeed-search-unread-title-face "
  "elfeed-search-feed-face elfeed-search-tag-face elfeed-search-unread-count-face "
  "elfeed-search-filter-face elfeed-search-last-update-face elfeed-log-date-face "
@@ -426,22 +516,59 @@ if os.path.exists(_inv_path):
         APPS[_pkg]={"label":_pkg,"preview":"generic","faces":[
             [f,(f[len(_pkg)+1:] if f.startswith(_pkg+"-") else f).replace("-face","").replace("-"," "),{}]
             for f in _INV[_pkg]]}
-# Apply the seed theme's package overrides (sterling by default): each full per-face
-# spec (color + structure) replaces the hardcoded face seed before the page renders.
+if DEFAULT_FACES:
+    for _app in APPS.values():
+        for _row in _app["faces"]:
+            _row[2]=face_seed(_row[0],False)
+# Apply seed theme package overrides when THEME_STUDIO_SEED is set: each full
+# per-face spec (color + structure) replaces the hardcoded face seed before render.
 if _seed and _d.get('packages'):
     for _app,_pkfaces in _d['packages'].items():
         if _app in APPS:
             for _row in APPS[_app]['faces']:
                 if _row[0] in _pkfaces: _row[2]=_pkfaces[_row[0]]
+
+def add_palette_color(value, label=None):
+    if not value: return
+    if any((p[0] or '').lower()==str(value).lower() for p in PALETTE): return
+    name=label or color_label(value,'color-'+str(len(PALETTE)))
+    base=name
+    n=2
+    used={p[1].lower() for p in PALETTE}
+    while name.lower() in used:
+        name=base+'-'+str(n); n+=1
+    PALETTE.append([value,name,column_id(name)])
+
+if DEFAULT_FACES:
+    for _k,_v in MAP.items():
+        add_palette_color(_v, 'bg' if _k=='bg' else 'fg' if _k=='p' else None)
+    for _face,_spec in UIMAP.items():
+        add_palette_color(_spec.get('fg'))
+        add_palette_color(_spec.get('bg'))
+    for _app in APPS.values():
+        for _face,_label,_spec in _app['faces']:
+            add_palette_color(_spec.get('fg'))
+            add_palette_color(_spec.get('bg'))
+
+PALETTE=normalize_palette(PALETTE)
 HTML = """<!doctype html><meta charset=utf-8><title>theme-studio</title>
 <style>
 STYLES_CSS</style>
-<h1 id="pagetitle">Untitled: theme</h1>
-<div class="cols">
+<div class="topbar">
+ <h1 id="pagetitle">Untitled: theme</h1>
+ <div class="saveload">
+  <div class="filebar end">
+   <label style="color:#b4b1a2">theme name</label><input type="text" id="themename" value="" placeholder="untitled" oninput="updateTitle()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:200px">
+   <button id="savebtn" onclick="saveTheme()" style="display:none">&#128190; save</button>
+   <button onclick="exportTheme()">&#11015; export</button>
+   <button class="fbtn" onclick="importTheme()">&#11014; import</button><input type="file" id="fileinput" accept=".json" onchange="importFile(event)" style="display:none">
+   <button id="jsonbtn" onclick="toggleJSON()">show</button>
+  </div>
+  <textarea id="export" style="display:none" readonly></textarea>
+ </div>
+</div>
  <section class="pane grow">
   <h1>palette</h1>
-  <div class="pals" id="pals"></div>
-  <div class="palwarn" id="palwarn"></div>
   <div class="palctl">
    <div id="swatch" class="swatch" title="open color picker"></div>
    <input type="text" id="newhexstr" placeholder="#rrggbb" value="#888888" oninput="syncHex()" onkeydown="if(event.key==='Enter')applyEdit()" style="width:110px">
@@ -468,21 +595,9 @@ STYLES_CSS</style>
     <div id="pkchips" class="pkchips"></div>
    </div>
   </div>
+  <div class="pals" id="pals"></div>
+  <div class="palwarn" id="palwarn"></div>
  </section>
- <section class="pane saveload">
-  <h1>export, import, and save</h1>
-  <div class="filebar end">
-   <label style="color:#b4b1a2">theme name</label><input type="text" id="themename" value="" placeholder="untitled" oninput="updateTitle()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:200px">
-  </div>
-  <div class="filebar end">
-   <button id="savebtn" onclick="saveTheme()" style="display:none">&#128190; save</button>
-   <button onclick="exportTheme()">&#11015; export</button>
-   <button class="fbtn" onclick="importTheme()">&#11014; import</button><input type="file" id="fileinput" accept=".json" onchange="importFile(event)" style="display:none">
-   <button id="jsonbtn" onclick="toggleJSON()">show</button>
-  </div>
-  <textarea id="export" style="display:none" readonly></textarea>
- </section>
-</div>
 <h1>code/color assignments</h1>
 <div class="cols">
  <section class="pane">

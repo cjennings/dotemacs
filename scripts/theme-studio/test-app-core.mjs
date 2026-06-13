@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, slugify,
+  nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify,
 } from './app-core.js';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
@@ -42,6 +42,32 @@ test('optList: Error — a cur not in the palette is surfaced as (gone) first', 
   assert.deepEqual(list[0], ['', '— default —']);
   assert.deepEqual(list[1], ['#123456', '(gone) #123456']);
   assert.deepEqual(list.slice(2), PAL);
+});
+
+test('paletteOptionList: Normal — color choices follow visual column ordering', () => {
+  const pal = [
+    ['#67809c', 'blue'],
+    ['#0d0b0a', 'bg'],
+    ['#808080', 'gray'],
+    ['#c0402a', 'red'],
+    ['#f0fef0', 'fg'],
+  ];
+  const list = paletteOptionList('#67809c', pal, { bg: '#0d0b0a', fg: '#f0fef0' });
+  assert.deepEqual(list.slice(0, 3), [['', '— default —'], ['#0d0b0a', 'bg'], ['#f0fef0', 'fg']]);
+  assert.ok(list.findIndex(([, name]) => name === 'blue') < list.findIndex(([, name]) => name === 'gray'), 'palette column order is preserved');
+  assert.ok(list.findIndex(([, name]) => name === 'gray') < list.findIndex(([, name]) => name === 'red'), 'later columns stay later');
+});
+
+test('paletteOptionList: Boundary — assignment-only ground colors are selectable', () => {
+  const list = paletteOptionList('', [['#67809c', 'blue']], { bg: '#0d0b0a', fg: '#f0fef0' });
+  assert.ok(list.some(([hex, name]) => hex === '#0d0b0a' && name === 'bg'));
+  assert.ok(list.some(([hex, name]) => hex === '#f0fef0' && name === 'fg'));
+});
+
+test('paletteOptionList: Error — a cur outside palette and ground is surfaced as gone', () => {
+  const list = paletteOptionList('#123456', PAL, { bg: '#0d0b0a', fg: '#f0fef0' });
+  assert.deepEqual(list[0], ['', '— default —']);
+  assert.deepEqual(list[1], ['#123456', '(gone) #123456']);
 });
 
 test('buildPkgmap: Normal — seeds faces, resolving names and applying defaults', () => {
