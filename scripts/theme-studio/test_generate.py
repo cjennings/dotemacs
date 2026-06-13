@@ -12,6 +12,7 @@ import os
 import unittest
 
 import generate  # importable without side effects: the file write is __main__-guarded
+from default_faces import DefaultFaces
 
 
 class StripExports(unittest.TestCase):
@@ -135,6 +136,65 @@ class FacesHelper(unittest.TestCase):
     def test_empty_names_gives_empty_list(self):
         # Error/Boundary: nothing in, nothing out.
         self.assertEqual(generate._faces([], "org-", {"org-todo": {"fg": "gold"}}), [])
+
+
+class DefaultFaceAdapter(unittest.TestCase):
+    def setUp(self):
+        self.defaults = DefaultFaces({
+            "faces": {
+                "sample": {
+                    "chosenGuiLight": {
+                        "foreground": "gray20",
+                        "foregroundHex": "#333333",
+                        "background": "white",
+                        "backgroundHex": "#ffffff",
+                        "weight": "bold",
+                        "slant": "italic",
+                        "underline": True,
+                        "inherit": "parent",
+                        "box": [":line-width", ["cons", 2, 2], ":style", "released-button"],
+                    },
+                    "effectiveGuiLight": {"foreground": "black", "foregroundHex": "#000000"},
+                },
+                "boxed": {
+                    "chosenGuiLight": {
+                        "box": [":line-width", -3, ":color", "gray20"],
+                    },
+                    "effectiveGuiLight": {},
+                },
+            }
+        })
+
+    def test_seed_uses_own_face_attributes_and_converts_boxes(self):
+        self.assertEqual(self.defaults.seed("sample", effective=False), {
+            "fg": "#333333",
+            "bg": "#ffffff",
+            "bold": True,
+            "italic": True,
+            "underline": True,
+            "inherit": "parent",
+            "box": {"style": "released", "width": 2, "color": None},
+        })
+
+    def test_color_reads_effective_hex_by_default(self):
+        self.assertEqual(self.defaults.color("sample"), "#000000")
+
+    def test_line_box_keeps_width_and_resolves_named_color(self):
+        self.assertEqual(self.defaults.seed("boxed")["box"], {
+            "style": "line",
+            "width": 3,
+            "color": "#333333",
+        })
+
+    def test_label_uses_captured_color_name_when_present(self):
+        self.assertEqual(self.defaults.label("#333333", "fallback"), "gray20")
+
+    def test_missing_snapshot_is_safe(self):
+        defaults = DefaultFaces(None)
+        self.assertFalse(defaults.available)
+        self.assertEqual(defaults.face("missing"), {})
+        self.assertEqual(defaults.seed("missing"), {})
+        self.assertEqual(defaults.label("#000000", "fallback"), "fallback")
 
 
 if __name__ == "__main__":

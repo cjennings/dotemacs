@@ -1,4 +1,5 @@
 import json, os, re
+from default_faces import DefaultFaces
 HERE=os.path.dirname(os.path.abspath(__file__))
 
 def strip_exports(src):
@@ -39,15 +40,7 @@ exec(src[:src.index('cols=')], ns)
 SAMPLES={"Elisp":ns['ELS'],"Go":ns['GOS'],"Python":ns['PYS'],"TypeScript":ns['TSS'],"Java":ns['JAS'],"C":ns['CS'],"C++":ns['CPS'],"Shell":ns['SHS']}
 COLS=ns['COLS']
 DEFAULT_FACES_PATH=os.path.join(HERE,'emacs-default-faces.json')
-DEFAULT_FACES=json.load(open(DEFAULT_FACES_PATH)) if os.path.exists(DEFAULT_FACES_PATH) else None
-DEFAULT_COLOR_HEX={}
-if DEFAULT_FACES:
-    for _data in DEFAULT_FACES.get('faces',{}).values():
-        for _block in ('chosenGuiLight','effectiveGuiLight'):
-            _d=_data.get(_block,{}) or {}
-            for _attr in ('foreground','background','distantForeground'):
-                if _d.get(_attr) and _d.get(_attr+'Hex'):
-                    DEFAULT_COLOR_HEX[str(_d[_attr]).lower().replace(' ','')]=_d[_attr+'Hex']
+DEFAULTS=DefaultFaces.from_path(DEFAULT_FACES_PATH)
 MAP={k:'' for k in COLS}; MAP['bg']='#000000'; MAP['p']='#ffffff'
 BOLD={k:False for k in COLS}
 ITALIC_MAP={k:False for k in COLS}
@@ -58,75 +51,16 @@ def normalize_palette(palette):
     return [[p[0], p[1] if len(p) > 1 else 'color', p[2] if len(p) > 2 else column_id(p[1] if len(p) > 1 else 'color')]
             for p in palette]
 
-def default_face(face, effective=True):
-    if not DEFAULT_FACES: return {}
-    data=DEFAULT_FACES.get('faces',{}).get(face,{})
-    return data.get('effectiveGuiLight' if effective else 'chosenGuiLight',{}) or {}
-
-def default_color(face, attr='foreground', effective=True):
-    d=default_face(face,effective)
-    return d.get(attr+'Hex') or d.get(attr)
-
-def emacs_box_to_theme(box):
-    if not box: return None
-    if isinstance(box,dict): return box
-    if not isinstance(box,list): return None
-    vals={}
-    i=0
-    while i+1<len(box):
-        vals[box[i]]=box[i+1]; i+=2
-    width=vals.get(':line-width',1)
-    if isinstance(width,list) and width and width[0]=='cons': width=width[1]
-    if isinstance(width,(int,float)): width=abs(int(width)) or 1
-    else: width=1
-    style=vals.get(':style')
-    color=vals.get(':color')
-    if color:
-        color=DEFAULT_COLOR_HEX.get(str(color).lower().replace(' ',''),color)
-    if style=='released-button': return {"style":"released","width":width,"color":None}
-    if style=='pressed-button': return {"style":"pressed","width":width,"color":None}
-    return {"style":"line","width":width,"color":color}
-
-def face_seed(face, effective=False):
-    d=default_face(face,effective)
-    out={}
-    fg=d.get('foregroundHex') or d.get('foreground')
-    bg=d.get('backgroundHex') or d.get('background')
-    if fg: out['fg']=fg
-    if bg: out['bg']=bg
-    if d.get('weight')=='bold': out['bold']=True
-    if d.get('slant')=='italic': out['italic']=True
-    if d.get('underline'): out['underline']=True
-    if d.get('strike'): out['strike']=True
-    if d.get('inherit'): out['inherit']=d.get('inherit')
-    if d.get('height') and d.get('height')!=1: out['height']=d.get('height')
-    box=emacs_box_to_theme(d.get('box'))
-    if box: out['box']=box
-    return out
-
-def color_label(value, fallback):
-    if not value: return fallback
-    names={}
-    if DEFAULT_FACES:
-        for face,data in DEFAULT_FACES.get('faces',{}).items():
-            for block in ('chosenGuiLight','effectiveGuiLight'):
-                d=data.get(block,{}) or {}
-                for attr in ('foreground','background','distantForeground'):
-                    hx=d.get(attr+'Hex')
-                    nm=d.get(attr)
-                    if hx and nm and not str(nm).startswith('#'): names.setdefault(hx.lower(), str(nm).lower().replace(' ','-'))
-    return names.get(str(value).lower(), fallback)
-
-if DEFAULT_FACES:
-    MAP['bg']=default_color('default','background') or MAP['bg']
-    MAP['p']=default_color('default','foreground') or MAP['p']
-    for cat,faces in DEFAULT_FACES.get('syntax-map',{}).items():
+if DEFAULTS.available:
+    MAP['bg']=DEFAULTS.color('default','background') or MAP['bg']
+    MAP['p']=DEFAULTS.color('default','foreground') or MAP['p']
+    for cat,faces in DEFAULTS.data.get('syntax-map',{}).items():
         faces=faces or []
         if cat in ('bg','p') or not faces: continue
         face=faces[0]
-        c=default_color(face,'foreground')
+        c=DEFAULTS.color(face,'foreground')
         if c: MAP[cat]=c
-        eff=default_face(face,True)
+        eff=DEFAULTS.face(face,True)
         BOLD[cat]=eff.get('weight')=='bold'
         ITALIC_MAP[cat]=eff.get('slant')=='italic'
 else:
@@ -154,8 +88,8 @@ UI_FACES=[["cursor","cursor","Aa|"],["region","region (selection)","selected tex
  ["error","error","error!"],["warning","warning","warning"],
  ["success","success","ok"],["vertical-border","vertical-border","|"]]
 UIMAP={f[0]:{"fg":None,"bg":None,"bold":False,"italic":False,"underline":False,"strike":False} for f in UI_FACES}
-if DEFAULT_FACES:
-    UIMAP={f[0]:dict({"fg":None,"bg":None,"bold":False,"italic":False,"underline":False,"strike":False},**face_seed(f[0],False)) for f in UI_FACES}
+if DEFAULTS.available:
+    UIMAP={f[0]:dict({"fg":None,"bg":None,"bold":False,"italic":False,"underline":False,"strike":False},**DEFAULTS.seed(f[0],False)) for f in UI_FACES}
 
 # Optional palette seed: THEME_STUDIO_SEED=<file.json> seeds the tool's starting
 # palette / assignments / bold / italic / UI from a theme.json (path relative to
@@ -177,7 +111,7 @@ if _seed:
         for _k,_v in _d['ui'].items(): UIMAP[_k]=_v
     if 'locks' in _d: LOCKS=_d['locks']
 PALETTE=normalize_palette(PALETTE)
-if not DEFAULT_FACES:
+if not DEFAULTS.available:
     # These faces carry a fixed style in Emacs's built-in definitions. Fallback
     # only; normal generation uses emacs-default-faces.json above.
     UIMAP["link"]["underline"]=True
@@ -516,10 +450,10 @@ if os.path.exists(_inv_path):
         APPS[_pkg]={"label":_pkg,"preview":"generic","faces":[
             [f,(f[len(_pkg)+1:] if f.startswith(_pkg+"-") else f).replace("-face","").replace("-"," "),{}]
             for f in _INV[_pkg]]}
-if DEFAULT_FACES:
+if DEFAULTS.available:
     for _app in APPS.values():
         for _row in _app["faces"]:
-            _row[2]=face_seed(_row[0],False)
+            _row[2]=DEFAULTS.seed(_row[0],False)
 # Apply seed theme package overrides when THEME_STUDIO_SEED is set: each full
 # per-face spec (color + structure) replaces the hardcoded face seed before render.
 if _seed and _d.get('packages'):
@@ -531,7 +465,7 @@ if _seed and _d.get('packages'):
 def add_palette_color(value, label=None):
     if not value: return
     if any((p[0] or '').lower()==str(value).lower() for p in PALETTE): return
-    name=label or color_label(value,'color-'+str(len(PALETTE)))
+    name=label or DEFAULTS.label(value,'color-'+str(len(PALETTE)))
     base=name
     n=2
     used={p[1].lower() for p in PALETTE}
@@ -539,7 +473,7 @@ def add_palette_color(value, label=None):
         name=base+'-'+str(n); n+=1
     PALETTE.append([value,name,column_id(name)])
 
-if DEFAULT_FACES:
+if DEFAULTS.available:
     for _k,_v in MAP.items():
         add_palette_color(_v, 'bg' if _k=='bg' else 'fg' if _k=='p' else None)
     for _face,_spec in UIMAP.items():
