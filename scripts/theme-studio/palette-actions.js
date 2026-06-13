@@ -87,6 +87,7 @@ function paletteChip(i,nearest){
   const role=groundRoleOfEntry(PALETTE[i],{bg:MAP['bg'],fg:MAP['p']});
   const locked=(role==='bg'||role==='fg');
   const d=document.createElement('div');d.className='pchip'+(i===selectedIdx?' sel':'');d.style.background=hex;
+  d.dataset.paletteIndex=String(i);
   d.title=name+' '+hex+(nde===Infinity||nde===undefined?'':' — nearest ΔE '+nde.toFixed(3));
   const rm=locked?`<span class="lock" title="${role==='bg'?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
   d.innerHTML=`${rm}<input class="nm" value="${name}" readonly style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
@@ -101,6 +102,13 @@ function paletteChip(i,nearest){
   d.onclick=(e)=>{if(e.target.closest('.rm'))return;selectColor(i);};
   return d;
 }
+function setChipPreviewColor(i,hex){
+  const chip=document.querySelector('#pals .pchip[data-palette-index="'+i+'"]');if(!chip)return;
+  const tc=textOn(hex);chip.style.background=hex;
+  chip.querySelectorAll('.nm,.hx,.rm,.lock').forEach(e=>e.style.color=tc);
+}
+function previewSelectedChip(hex){if(selectedIdx===null)return;setChipPreviewColor(selectedIdx,hex);}
+function restoreSelectedChip(){if(selectedIdx===null||!PALETTE[selectedIdx])return;setChipPreviewColor(selectedIdx,PALETTE[selectedIdx][0]);}
 function paletteIndexByHexName(hex,name){
   for(let i=0;i<PALETTE.length;i++)if(PALETTE[i][0]===hex&&PALETTE[i][1]===name)return i;
   return -1;
