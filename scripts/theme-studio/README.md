@@ -52,8 +52,13 @@ Node; the DOM glue is covered by the browser hash gates.
 
 ## Files
 
-- `generate.py` — emits the HTML+JS, and embeds the package data. Edit here to
-  change layout or behavior.
+- `generate.py` — assembles the generated page from the source JS/CSS, data, and
+  template.
+- `theme-studio.template.html` — static page shell with placeholders for the
+  inlined CSS/JS/data. Edit here for layout markup.
+- `face_data.py` — bespoke package face lists and seed defaults.
+- `app_inventory.py`, `face_specs.py`, `default_faces.py` — generator helpers for
+  package inventory, face-spec defaults, and captured Emacs defaults.
 - `samples.py` — the six language code samples and the default syntax
   category→color map (`COLS`). `generate.py` reads the part before the `cols=`
   marker.
