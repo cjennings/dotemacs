@@ -47,6 +47,11 @@
   :init
   (vertico-mode))
 
+;; Save each completion session so `vertico-repeat' (the second C-s in
+;; `cj/consult-line-or-repeat') has a session to resume.  `vertico-repeat-save'
+;; is autoloaded, so this defers loading vertico-repeat until the first minibuffer.
+(add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
+
 (use-package marginalia
   :demand t
   :custom
