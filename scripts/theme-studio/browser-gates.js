@@ -409,6 +409,8 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  UIMAP['region']={fg:null,bg:innerOld,bold:false,italic:false,underline:false,strike:false};
  UIMAP['highlight']={fg:null,bg:outerOld,bold:false,italic:false,underline:false,strike:false};
  selectedIdx=null;renderPalette();
+ const blueSpanInput=document.querySelector('#pals .fstrip[data-column="blue"] .fcount input');
+ A(blueSpanInput&&blueSpanInput.max==='8','normal column span control allows up to 8 per side');
  setColumnCount('#67809c',1);
  const palHexes=new Set(PALETTE.map(p=>p[0].toLowerCase()));
  A(!palHexes.has(outerOld.toLowerCase()),'outer step removed from palette on count down');
@@ -418,7 +420,7 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  setColumnCount('#67809c',3);
  const want3=regenColumn('#67809c',3).members.map(m=>m.hex.toLowerCase());
  const have=new Set(PALETTE.map(p=>p[0].toLowerCase()));
- A(want3.every(h=>have.has(h)),'count up to 3 adds all 7 ramp colors to the palette');
+ A(want3.every(h=>have.has(h)),'count up to 3 adds all 7 span colors to the palette');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
  document.title='COUNTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='counttest';d.textContent='COUNTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
