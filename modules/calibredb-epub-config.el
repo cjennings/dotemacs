@@ -112,7 +112,7 @@ which re-applies `calibredb-search-filter' instead."
 (use-package calibredb
   :commands calibredb
   :bind
-  ("M-B" . calibredb)  ;; Meta+Shift+b emits the uppercase event; overrides backward-word
+  ("M-S-b" . calibredb)  ;; was M-B, overrides backward-word
   ;; use built-in filter by tag, add clear-filters
   (:map calibredb-search-mode-map
 		("l" . calibredb-filter-by-tag)
