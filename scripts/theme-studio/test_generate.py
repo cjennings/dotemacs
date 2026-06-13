@@ -170,6 +170,9 @@ class FaceSpecDefaults(unittest.TestCase):
         self.assertEqual(generate.column_id("color-129"), "color-129")
         self.assertEqual(generate.column_id("blue-1"), "blue")
         self.assertEqual(generate.column_id("blue+1"), "blue")
+        self.assertEqual(generate.column_id("blue1"), "blue")
+        self.assertEqual(generate.column_id("grey80"), "grey")
+        self.assertEqual(generate.column_id("orchid3"), "orchid")
 
 
 class DefaultFaceAdapter(unittest.TestCase):

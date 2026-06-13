@@ -57,6 +57,14 @@ test('columnsFromPalette: Boundary - explicit color-N column ids are preserved',
   assert.deepEqual(columns[0].members.map(m => m.name), ['color-22', 'color-23']);
 });
 
+test('columnsFromPalette: Boundary - external numeric color names group by text stem', () => {
+  const pal = [['#0000ee', 'blue1'], ['#0000cd', 'blue2'], ['#bebebe', 'grey80'], ['#c0c0c0', 'grey81'], ['#cd69c9', 'orchid3']];
+  const { columns } = columnsFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
+  assert.deepEqual(columns.map(f => f.column), ['blue', 'grey', 'orchid']);
+  assert.deepEqual(columnOf(columns, 'blue1').members.map(m => m.name), ['blue1', 'blue2']);
+  assert.deepEqual(columnOf(columns, 'grey80').members.map(m => m.name), ['grey80', 'grey81']);
+});
+
 test('columnsFromPalette: Normal - palette order controls column order', () => {
   const pal = [['#67809c', 'blue'], ['#e8bd30', 'gold'], ['#5d9b86', 'green']];
   const { columns } = columnsFromPalette(pal, { bg: '#000000', fg: '#ffffff' });

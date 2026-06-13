@@ -51,7 +51,8 @@ def column_id(name):
     name = name or 'color'
     if re.fullmatch(r'color-\d+', name):
         return name
-    return re.sub(r'[+-]\d+$', '', name)
+    name = re.sub(r'[+-]\d+$', '', name)
+    return re.sub(r'\d+$', '', name) or 'color'
 
 def normalize_palette(palette):
     return [[p[0], p[1] if len(p) > 1 else 'color', p[2] if len(p) > 2 else column_id(p[1] if len(p) > 1 else 'color')]
