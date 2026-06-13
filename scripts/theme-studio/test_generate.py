@@ -10,6 +10,7 @@ Run: python3 -m unittest test_generate   (from scripts/theme-studio/)
 """
 import os
 import unittest
+from collections import Counter, defaultdict
 
 import generate  # importable without side effects: the file write is __main__-guarded
 from default_faces import DefaultFaces
@@ -195,6 +196,40 @@ class DefaultFaceAdapter(unittest.TestCase):
         self.assertEqual(defaults.face("missing"), {})
         self.assertEqual(defaults.seed("missing"), {})
         self.assertEqual(defaults.label("#000000", "fallback"), "fallback")
+
+
+class PackageFaceCoverage(unittest.TestCase):
+    ALLOWED_DUPLICATES = {
+        "magit-left-margin": ["magit", "magit-section"],
+        "magit-section-child-count": ["magit", "magit-section"],
+        "magit-section-heading": ["magit", "magit-section"],
+        "magit-section-heading-selection": ["magit", "magit-section"],
+        "magit-section-highlight": ["magit", "magit-section"],
+        "magit-section-secondary-heading": ["magit", "magit-section"],
+    }
+
+    def app_faces(self):
+        rows = []
+        for app, data in generate.APPS.items():
+            for face, _label, _seed in data["faces"]:
+                rows.append((face, app))
+        return rows
+
+    def inventory_faces(self):
+        inventory = generate.DEFAULTS.data.get("package-inventory", {})
+        return {face for faces in inventory.values() for face in faces}
+
+    def test_every_inventory_face_has_a_theme_studio_row(self):
+        app_face_names = {face for face, _app in self.app_faces()}
+        self.assertEqual(sorted(self.inventory_faces() - app_face_names), [])
+
+    def test_duplicate_rows_are_intentional(self):
+        counts = Counter(face for face, _app in self.app_faces())
+        actual = defaultdict(list)
+        for face, app in self.app_faces():
+            if counts[face] > 1:
+                actual[face].append(app)
+        self.assertEqual(dict(sorted(actual.items())), self.ALLOWED_DUPLICATES)
 
 
 if __name__ == "__main__":
