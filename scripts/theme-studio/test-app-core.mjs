@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify,
-  clearPalettePlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
+  clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
 } from './app-core.js';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
@@ -102,6 +102,29 @@ test('clearPalettePlan: Boundary — same-hex imported colors are not ground end
   ], { bg: '#0d0b0a', fg: '#f0fef0' });
   assert.deepEqual(plan.palette, [['#0d0b0a', 'bg', 'ground'], ['#f0fef0', 'fg', 'ground']]);
   assert.deepEqual(plan.removed, [{ hex: '#0d0b0a', name: 'bg2' }]);
+});
+
+test('deletePaletteColumnPlan: Normal — removes one stable column and keeps ground plus neighbors', () => {
+  const plan = deletePaletteColumnPlan([
+    ['#0d0b0a', 'bg', 'ground'],
+    ['#f0fef0', 'fg', 'ground'],
+    ['#c0402a', 'red', 'red'],
+    ['#3a6ea5', 'blue', 'blue'],
+    ['#92acc2', 'blue+1', 'blue'],
+    ['#808080', 'gray', 'gray'],
+  ], { bg: '#0d0b0a', fg: '#f0fef0' }, 'blue');
+  assert.deepEqual(plan.palette.map(p => p[1]), ['bg', 'fg', 'red', 'gray']);
+  assert.deepEqual(plan.removed, [{ hex: '#3a6ea5', name: 'blue' }, { hex: '#92acc2', name: 'blue+1' }]);
+});
+
+test('deletePaletteColumnPlan: Boundary — never deletes ground entries', () => {
+  const plan = deletePaletteColumnPlan([
+    ['#0d0b0a', 'bg', 'ground'],
+    ['#555555', 'ground-1', 'ground'],
+    ['#f0fef0', 'fg', 'ground'],
+  ], { bg: '#0d0b0a', fg: '#f0fef0' }, 'ground');
+  assert.deepEqual(plan.palette.map(p => p[1]), ['bg', 'ground-1', 'fg']);
+  assert.deepEqual(plan.removed, []);
 });
 
 test('groundColumnMembersFromPalette: Normal — sorts bg, ground-N steps, then fg', () => {

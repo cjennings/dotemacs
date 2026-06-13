@@ -1,7 +1,7 @@
 function clearPalette(){
   normalizePalette();
   const plan=clearPalettePlan(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
-  plan.removed.forEach(({hex,name})=>{lastGone[name.toLowerCase()]=hex;});
+  plan.removed.forEach(({hex,name})=>rememberGone(hex,name));
   PALETTE=plan.palette;selectedIdx=null;
   renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();renderCode();applyGround();
   notify('cleared palette to bg and fg',false);
@@ -23,6 +23,7 @@ function repointHex(oldHex,newHex){
 // On adding a color, if its name matches a recently-deleted one, re-bind the
 // stranded assignments to the new hex. Returns true when a heal context existed.
 function healGone(name,newHex){const k=name.toLowerCase();if(!(k in lastGone))return false;const g=lastGone[k];delete lastGone[k];repointHex(g,newHex);return true;}
+function rememberGone(hex,name){if(name)lastGone[name.toLowerCase()]=hex;}
 function normalizePaletteEntry(entry){
   const hex=entry&&entry[0],name=(entry&&entry[1])||'color';
   return [hex,name,(entry&&entry[2])||columnIdOf(entry)];
@@ -81,7 +82,7 @@ function paletteChip(i,nearest){
   d.title=name+' '+hex+(nde===Infinity||nde===undefined?'':' — nearest ΔE '+nde.toFixed(3));
   const rm=locked?`<span class="lock" title="${role==='bg'?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
   d.innerHTML=`${rm}<input class="nm" value="${name}" style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
-  if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();if(name)lastGone[name.toLowerCase()]=hex;PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
+  if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();rememberGone(hex,name);PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
   d.querySelector('.nm').onchange=(e)=>{PALETTE[i][1]=e.target.value;buildTable();buildUITable();};
   d.onclick=(e)=>{if(e.target.closest('.rm')||e.target.closest('.nm'))return;selectColor(i);};
   return d;
@@ -117,14 +118,24 @@ function moveColumn(columnId,dir){
   selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();
   notify('moved "'+columnId+'" '+(dir<0?'left':'right'),false);
 }
+function deleteColumn(columnId,label){
+  normalizePalette();
+  const plan=deletePaletteColumnPlan(PALETTE,{bg:MAP['bg'],fg:MAP['p']},columnId);
+  if(!plan.removed.length){notify('nothing to delete in "'+(label||columnId)+'"',true);return;}
+  plan.removed.forEach(({hex,name})=>rememberGone(hex,name));
+  PALETTE=plan.palette;selectedIdx=null;
+  renderPalette();buildTable();buildUITable();renderCode();applyGround();
+  notify('deleted column "'+(label||columnId)+'" — '+plan.removed.length+' color(s) now show "(gone)" where used',false);
+}
 function columnHeader(f,position,count){
   const h=document.createElement('div');h.className='fhead';
   const label=(f.members.find(m=>m.hex.toLowerCase()===f.base.toLowerCase())||{}).name||f.column||f.base;
-  h.innerHTML=`<button class="cmove left" title="move column left" ${position===0?'disabled':''}>&#8249;</button><button class="ctitle" title="select base color"></button><button class="cmove right" title="move column right" ${position===count-1?'disabled':''}>&#8250;</button>`;
+  h.innerHTML=`<button class="cmove left" title="move column left" ${position===0?'disabled':''}>&#8249;</button><button class="ctitle" title="select base color"></button><button class="cmove right" title="move column right" ${position===count-1?'disabled':''}>&#8250;</button><button class="cdel" title="delete column">×</button>`;
   h.querySelector('.ctitle').textContent=label;
   h.querySelector('.ctitle').onclick=()=>selectColumnBase(f);
   h.querySelector('.left').onclick=(e)=>{e.stopPropagation();moveColumn(f.column,-1);};
   h.querySelector('.right').onclick=(e)=>{e.stopPropagation();moveColumn(f.column,1);};
+  h.querySelector('.cdel').onclick=(e)=>{e.stopPropagation();deleteColumn(f.column,label);};
   return h;
 }
 // Render the palette as structural color columns: pinned ground column, then
