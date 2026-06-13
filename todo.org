@@ -195,6 +195,30 @@ Spec draft: [[file:docs/theme-studio-palette-generator-spec.org][theme-studio-pa
 
 Build a constraint-first palette generator for Theme Studio: start from bg/fg, generate editable palette columns in OKLCH, preview candidate columns before applying them, and apply proposals by append/replace/regenerate modes while preserving stable column ids and existing assignments where possible. V1 is palette-only, not automatic face assignment; generator output becomes normal editable columns after apply.
 
+** TODO [#B] theme-studio save button does not overwrite the current theme file :bug:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
+From the roam inbox: the =save= button currently behaves too much like =export=. The intended workflow is: after a theme file has been opened or saved once, pressing =save= or using the save keybinding overwrites that same file instead of downloading a fresh export. If browser security prevents overwriting a previously exported download without a file handle, make that limitation explicit in the UI and reconsider whether the separate save button should remain. This needs a small product decision around export-vs-save semantics before implementation.
+
+** TODO [#C] theme-studio reconsider the JSON show button :feature:quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
+From the roam inbox: the =show= button for the raw JSON export does not fit the main theme-design workflow, but it may still be useful for debugging. Decide whether to hide it behind a debugging affordance, rename it, or remove it. Quick UI cleanup once the desired debugging surface is chosen; not marked solo because it is a workflow preference call.
+
+** TODO [#C] theme-studio separate tile selection from name editing :feature:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
+From the roam inbox: clicking a palette tile should have predictable intent. Single-click anywhere on a tile should select the whole color tile for editing/assignment. Double-clicking the name should enter name-edit mode with the cursor at the beginning of the name. Add browser-gate coverage for both paths so accidental single-click name edits do not regress.
+
+** TODO [#B] theme-studio spans should stop at bg and fg bounds :bug:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
+From the roam inbox: spanning a color should not generate colors beyond the current ground endpoints. No generated color should be darker than =bg= or lighter than =fg=. If the darker side hits =#000000=, do not create duplicate black tiles; if the lighter side hits =#ffffff=, do not create duplicate white tiles. Apply this to normal column spans and ground spans as appropriate, then pin with Node tests for the ramp/column plan and a browser gate for the palette UI.
+
 ** DONE [#B] theme-studio delete entire color column :feature:quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-13
@@ -210,6 +234,18 @@ Shipped 2026-06-13 in commit =2cf730d5=: normal column headers have a delete but
 :LAST_REVIEWED: 2026-06-10
 :END:
 When splitting with C-x 2 (=split-window-below=) or C-x 3 (=split-window-right=), the new/other window should default to the =*dashboard*= buffer instead of mirroring the current buffer. Advise =split-window-below= / =split-window-right= (or rebind the keys) to select the dashboard in the freshly-created window. Keep point in the original window.
+
+** TODO [#B] rulesets page-me notifications should name the source project :feature:quick:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
+From the roam inbox: the page-me workflow should always identify which project emitted the notification. Add or request a project/source label in the rulesets notification path so a page is actionable when multiple agents/projects are active. Not marked solo here because the implementation likely belongs in the rulesets project rather than this Emacs config.
+
+** TODO [#C] archsetup Waybar Wi-Fi module should show no-internet state :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
+From the roam inbox: the Waybar Wi-Fi module should distinguish "connected to an access point" from "connected and has internet." Add a no-internet state or indicator to the archsetup Waybar configuration. Not marked quick/solo because it needs the archsetup environment and live network-state verification.
 
 ** DONE [#B] theme-studio palette ramps + contrast safety v1 :feature:
 CLOSED: [2026-06-13 Sat]
