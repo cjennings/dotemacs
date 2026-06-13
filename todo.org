@@ -154,7 +154,8 @@ From the 2026-06 config audit (verified against the live daemon). =early-init.el
 =modules/system-defaults.el:203= =(fset 'yes-or-no-p 'y-or-n-p)= — verified live. Several modules deliberately chose yes-or-no-p as the strong tier for irreversible actions: shutdown/reboot (=system-commands.el:74=, whose comment explicitly says "so a stray RET/space can't trigger them"), "permanently destroy files" (=dwim-shell-config.el:804=), file overwrites (=custom-buffer-file.el:159,199=, =music-config.el:374=). The fset makes all of them single-keystroke — the two-tier design is dead. Drop the fset, or provide a real =cj/confirm-strong= (typed "yes") for the irreversible set. From the 2026-06 config audit.
 Fixed 2026-06-13 (Craig chose the surgical option): added =cj/confirm-strong= to system-lib.el (binds =use-short-answers= nil for one =yes-or-no-p= call → typed "yes"); removed the redundant fset (kept =use-short-answers t= so benign prompts stay single-key); routed the 6 irreversible sites through it (shutdown/reboot, permanent-destroy, file overwrites). Note: the fset is baked into the running daemon and can't be cleared from Lisp, so the typed-"yes" tier goes live only after a daemon restart — manual confirm under the Manual testing parent. TDD; tests green.
 
-** TODO [#B] theme-studio preview face mislinks (org, erc, flycheck) :bug:quick:solo:
+** DONE [#B] theme-studio preview face mislinks (org, erc, flycheck) :bug:quick:solo:
+CLOSED: [2026-06-13 Sat]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-11
 :END:
@@ -165,6 +166,7 @@ Found by Craig 2026-06-11 during the manual-test walk (org case), then a full au
 3. app.js:720 (flycheck) — swapped: brackets carry flycheck-delimited-error and the content flycheck-error-delimiter. In flycheck's delimiters highlighting style the delimiter strings get error-delimiter and the enclosed text gets delimited-error; swap them.
 
 Pin with a browser-gate assertion that these preview elements link the right faces (e.g. the org headline-todo span sits after an org-todo span; the erc my-message line uses input-face).
+Fixed 2026-06-13: org heading three now has an =org-todo= keyword before =org-headline-todo=, flycheck delimiters/content are mapped to =flycheck-error-delimiter= / =flycheck-delimited-error= correctly, and ERC own/remote message text use =erc-input-face= / =erc-default-face=. Added =#previewlinktest= to pin all three mappings.
 
 ** TODO [#B] theme-studio UI face inheritance needs a spec :feature:
 :PROPERTIES:
@@ -178,13 +180,15 @@ Package faces model =inherit= explicitly, but UI faces currently expose only fg/
 :END:
 When splitting with C-x 2 (=split-window-below=) or C-x 3 (=split-window-right=), the new/other window should default to the =*dashboard*= buffer instead of mirroring the current buffer. Advise =split-window-below= / =split-window-right= (or rebind the keys) to select the dashboard in the freshly-created window. Keep point in the original window.
 
-** TODO [#B] theme-studio palette ramps + contrast safety v1 :feature:
+** DONE [#B] theme-studio palette ramps + contrast safety v1 :feature:
+CLOSED: [2026-06-13 Sat]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10
 :END:
 The v1 build from [[file:docs/theme-studio-palette-ramps-spec.org][theme-studio-palette-ramps-spec.org]] (Ready, Codex-reviewed). Two coupled features: a ramp generator (one base color → harmonized tonal ramp) and background-contrast safety (worst-case floor over a face's foreground set + safe-lightness guidance).
 
 All five phases + the README close-out landed 2026-06-09 (commits 1d51a332, 9da6c663, e7021bfe, 1d8b9f9e, 843bbf08, 23926837); =make theme-studio-test= green (78 node tests, 12 browser gates). Code-complete and self-verified. Remaining: the aesthetic and real-Emacs-fidelity sign-off under the Manual testing parent below (does a ramp harmonize, does the safe band read clearly, does a "safe" tint actually read behind real syntax). Mark this DONE once that passes.
+Retired 2026-06-13: this parent is no longer active planning work. The useful pieces are already in the current tool, and later structural-column work replaced the standalone ramp workflow.
 *** 2026-06-09 Tue @ 18:40:20 -0500 Ramp generator core landed
 Phase 1 (commit =1d51a332=). =ramp(baseHex, {n, stepL, chromaEase})= in app-core.js → ={steps: [{hex, clamped, offset}], adjusted}= or ={steps: [], error: 'bad-hex'}=. Holds the OKLCH hue, steps lightness by =stepL=, quadratic chroma-ease toward the extremes, gamut-clamps each step; knobs clamp to range with the clamped knob named in =adjusted= (n=2/stepL=0.08/chromaEase=0.5 defaults). 10 node tests (mid/near-white/near-black bases, hue-hold, chroma ease, knob clamping, malformed hex), suite 55→65, =make theme-studio-test= green. The app-core integrity stripper now drops =import= lines too.
 *** 2026-06-09 Tue @ 19:06:46 -0500 Ramp UI in palette landed
@@ -198,13 +202,15 @@ Phase 5 (commit =843bbf08=). The OKLCH picker gets a "safe for" selector over th
 *** 2026-06-09 Tue @ 19:06:46 -0500 README + test-surface close-out landed
 Commit =23926837=. README documents the ramp controls and defaults, the worst-case floor / limiting foreground, the five covered faces, the safe-lightness guidance, and WCAG-drives-PASS-FAIL with APCA as a diagnostic; the browser-gate list is updated. =make theme-studio-test= carries all new node tests and the #ramptest/#contrasttest/#safetest gates. All acceptance criteria met.
 
-** TODO [#B] theme-studio color families :feature:
+** DONE [#B] theme-studio color columns :feature:
+CLOSED: [2026-06-13 Sat]
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-11
 :END:
 Show the palette as hue-grouped strips (dark→light) over the existing flat, individually-editable palette. Grouping is by OKLCH hue from the hex, so renaming a color never moves it. A per-strip count control generates a symmetric ramp (N → base ±N) from the strip's most-saturated color; regenerate is authoritative, repointing surviving-step references by lightness rank and leaving removed-step references a visible "(gone)". The ground strip is synthesized from the bg/fg assignments and pinned first; the standalone ramp panel is removed. Designed in [[file:docs/theme-studio-color-families-spec.org][docs/theme-studio-color-families-spec.org]]. Codex-reviewed Ready 2026-06-10 after response folded: pivoted from name-derived families to hex-derived families over a flat palette, which designs out the name-grammar/import-inference and chip-ownership blockers. All review findings dispositioned; both open decisions resolved. Builds on and supersedes the palette-ramps v1 ramp UI.
 
 All six phases landed 2026-06-10 (commits ebe18d51, 74db9a52, 111687b0, e7ae18c4, 77783126, f6ab0001, 9daeff15, and the Phase 6 commit); =make theme-studio-test= green (98 node tests, 16 browser gates). Code-complete and self-verified. The hue-adjacent warm-color grouping limitation is filed as a separate research task (=~/color-sorting.org=). Remaining: the manual aesthetic/fidelity sign-off under the Manual testing parent (hue grouping reads right, regenerate-replace reads as deliberate, removed-step "(gone)" is clear). Mark this DONE once that passes.
+Retired 2026-06-13: the current implementation no longer uses color-derived hue families. Palette entries carry stable structural column ids, generated colors stay in their originating column, renames do not move tiles, and =#columntest= / =#roundtriptest= pin the behavior.
 *** 2026-06-10 Wed @ 01:17:45 -0500 Family model core landed
 Phase 1 (commit =ebe18d51=, grouping reworked in =77783126=). =familiesFromPalette=, =regenFamily=, =rankByLightness=, =stepRepointPlan= in app-core.js, pure and hex-derived. Grouping started as gap-clustering + flat neutral threshold; after the design discussion it became nearest-hue-anchor bucketing (no single-linkage chaining) + a lightness-scaled neutral threshold (pale tints keep their hue, mid grays go neutral). regenFamily handles n=0 without ramp()'s clamp; stepRepointPlan maps survivors / lists removed by signed lightness rank. 20 node tests including the green/yellow split and the no-chaining case. Open: hue-adjacent warm colors still merge — research task above (=~/color-sorting.org=).
 *** 2026-06-10 Wed @ 01:17:45 -0500 Family sort core landed
