@@ -512,8 +512,8 @@ Signals an error if:
   "m" #'cj/move-buffer-and-file
   "r" #'cj/rename-buffer-and-file
   "p" #'cj/copy-buffer-source-as-kill
-  "d" #'cj/delete-buffer-and-file
-  "D" #'cj/diff-buffer-with-file
+  "d" #'cj/diff-buffer-with-file
+  "D" #'cj/delete-buffer-and-file
   "c" cj/copy-buffer-content-map
   "n" #'cj/copy-buffer-name
   "l" #'cj/copy-link-to-buffer-file
