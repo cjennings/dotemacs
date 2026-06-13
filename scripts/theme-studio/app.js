@@ -321,8 +321,9 @@ function updateColor(){
   }
   closePicker();renderPalette();buildTable();buildUITable();renderCode();applyGround();notify('updated "'+newName+'"',false);
 }
-function curHex(){return normHex(document.getElementById('newhexstr').value)||'#888888';}
-let pkH=0,pkS=0,pkV=0.5,pickerOn=false;
+const DEFAULT_PICKER_HEX='#67809c';
+let [pkH,pkS,pkV]=rgb2hsv(...hex2rgb(DEFAULT_PICKER_HEX)),pickerOn=false;
+function curHex(){return normHex(document.getElementById('newhexstr').value)||DEFAULT_PICKER_HEX;}
 let pkMode='any';   // contrast mask: any / aa / aaa (what constraint to mask)
 let pkModel='hsv';  // color model for editing: hsv / oklch (orthogonal to pkMode)
 const OKLCH_CMAX=0.4; // chroma axis range for the C×L plane (and the C dial); past sRGB at most hues, so the gamut grey shows the reachable region
@@ -383,7 +384,7 @@ function setOklchInputs(L,C,H){
   const put=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;};
   put('okL',L.toFixed(3));put('okLn',L.toFixed(3));put('okC',C.toFixed(3));put('okCn',C.toFixed(3));
   const h=String(Math.round(H));put('okH',h);put('okHn',h);}
-function oklchInputsFromHex(hex){const lch=oklab2oklch(srgb2oklab(normHex(hex)||'#888888'));setOklchInputs(lch.L,lch.C,lch.H);}
+function oklchInputsFromHex(hex){const lch=oklab2oklch(srgb2oklab(normHex(hex)||DEFAULT_PICKER_HEX));setOklchInputs(lch.L,lch.C,lch.H);}
 function readOklch(){return [parseFloat(document.getElementById('okL').value)||0,parseFloat(document.getElementById('okC').value)||0,parseFloat(document.getElementById('okH').value)||0];}
 function pkClampStatus(on){const s=document.getElementById('pkclamp');if(!s)return;s.classList.toggle('show',on);s.textContent=on?'chroma clamped to sRGB':'';}
 function pkOklchSet(){const [L,C,H]=readOklch();const {hex,clamped}=oklch2hex(L,C,H);
