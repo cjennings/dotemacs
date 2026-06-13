@@ -161,14 +161,19 @@ function normalizePaletteEntry(entry){
   return [hex,name,(entry&&entry[2])||columnIdOf(entry)];
 }
 function normalizePalette(){PALETTE=PALETTE.map(normalizePaletteEntry);}
-// The ground column is explicit: bg pins the dark endpoint, fg pins the light
+// The ground column is explicit: bg pins the top endpoint, fg pins the bottom
 // endpoint, and generated ground-N steps live between them.
 function groundColumnMembers(){
-  const members=[];
-  for(const entry of PALETTE)if(groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']}))members.push({hex:entry[0],name:entry[1]});
-  if(!PALETTE.some(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='bg'))members.push({hex:MAP['bg'],name:'bg'});
-  if(!PALETTE.some(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='fg'))members.push({hex:MAP['p'],name:'fg'});
-  return members.sort((a,b)=>oklab2oklch(srgb2oklab(a.hex)).L-oklab2oklch(srgb2oklab(b.hex)).L);
+  const ground={bg:MAP['bg'],fg:MAP['p']};
+  const byRole={bg:null,fg:null,steps:[]};
+  for(const entry of PALETTE){
+    const role=groundRoleOfEntry(entry,ground);
+    if(role==='bg'||role==='fg')byRole[role]={hex:entry[0],name:entry[1]};
+    else if(role==='step')byRole.steps.push({hex:entry[0],name:entry[1]});
+  }
+  const stepIndex=m=>{const x=(m.name||'').match(/^ground-(\d+)$/i);return x?parseInt(x[1],10):Infinity;};
+  byRole.steps.sort((a,b)=>stepIndex(a)-stepIndex(b));
+  return [byRole.bg||{hex:MAP['bg'],name:'bg'},...byRole.steps,byRole.fg||{hex:MAP['p'],name:'fg'}];
 }
 function groundSpanCount(){return PALETTE.filter(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='step').length;}
 function groundSpanControl(){
@@ -1332,6 +1337,12 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(MAP['bg']==='#204060'&&MAP['p']==='#f0fef0','spanning ground keeps bg/fg assignments on endpoints');
  A(PALETTE.some(p=>p[1]==='ground-1')&&PALETTE.some(p=>p[1]==='ground-2'),'spanning ground adds interior ground-N entries');
  A(document.querySelector('#pals .fstrip[data-column="ground"] .fhead + .fcount + .pchip'),'ground span control renders before tiles');
+ MAP['bg']='#ffffff';MAP['p']='#000000';
+ PALETTE=[['#ffffff','bg'],['#bbbbbb','ground-1','ground'],['#777777','ground-2','ground'],['#000000','fg']];
+ renderPalette();
+ const groundNames=[...document.querySelectorAll('#pals .fstrip[data-column="ground"] .pchip .nm')].map(e=>e.value);
+ A(groundNames.join('|')==='bg|ground-1|ground-2|fg','ground column order is bg, ground steps, fg even when bg is lighter: '+groundNames.join('|'));
+ MAP['bg']='#204060';MAP['p']='#f0fef0';
  setGroundSpan(1);
  A(!PALETTE.some(p=>p[1]==='ground-2'),'lowering ground span removes dropped interior steps');
  PALETTE=[['#204060','bg'],['#f0fef0','fg']];
