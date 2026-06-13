@@ -14,7 +14,7 @@ from collections import Counter, defaultdict
 
 import generate  # importable without side effects: the file write is __main__-guarded
 from app_inventory import face_rows
-from default_faces import DefaultFaces
+from default_faces import DefaultFaces, changed_summary
 from face_specs import package_face_spec, ui_face_spec
 
 
@@ -223,6 +223,45 @@ class DefaultFaceAdapter(unittest.TestCase):
         self.assertEqual(defaults.face("missing"), {})
         self.assertEqual(defaults.seed("missing"), {})
         self.assertEqual(defaults.label("#000000", "fallback"), "fallback")
+
+    def test_summary_reports_default_drift_fields(self):
+        defaults = DefaultFaces({
+            "meta": {"emacs-version": "30.2", "package-unresolved-face-count": 2},
+            "ui-faces": ["sample"],
+            "package-inventory": {"pkg": ["pkg-face"]},
+            "faces": {
+                "default": {
+                    "effectiveGuiLight": {
+                        "foregroundHex": "#000000",
+                        "backgroundHex": "#ffffff",
+                    },
+                    "chosenGuiLight": {},
+                },
+                "sample": {
+                    "chosenGuiLight": {"backgroundHex": "#ffffff"},
+                    "effectiveGuiLight": {},
+                },
+                "pkg-face": {
+                    "chosenGuiLight": {"inherit": "base-face"},
+                    "effectiveGuiLight": {},
+                },
+            },
+        })
+        self.assertEqual(defaults.summary(), {
+            "emacsVersion": "30.2",
+            "default": {"foreground": "#000000", "background": "#ffffff"},
+            "faceCount": 3,
+            "packageFaceCount": 1,
+            "packageUnresolvedFaceCount": 2,
+            "uiOwnSeeds": {"sample": {"bg": "#ffffff"}},
+            "packageInherits": {"pkg-face": "base-face"},
+        })
+
+    def test_changed_summary_reports_only_changed_top_level_keys(self):
+        self.assertEqual(changed_summary({"a": 1, "b": 2}, {"a": 1, "b": 3, "c": 4}), {
+            "b": {"before": 2, "after": 3},
+            "c": {"before": None, "after": 4},
+        })
 
 
 class PackageFaceCoverage(unittest.TestCase):

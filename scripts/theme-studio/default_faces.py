@@ -99,6 +99,30 @@ class DefaultFaces:
             return fallback
         return self.color_names.get(str(value).lower(), fallback)
 
+    def summary(self) -> dict[str, Any]:
+        if not self.data:
+            return {}
+        inventory = self.data.get("package-inventory", {})
+        package_faces = sorted({face for faces in inventory.values() for face in faces})
+        package_inherits = {
+            face: self.seed(face).get("inherit")
+            for face in package_faces
+            if self.seed(face).get("inherit")
+        }
+        ui_faces = self.data.get("ui-faces", [])
+        return {
+            "emacsVersion": self.data.get("meta", {}).get("emacs-version"),
+            "default": {
+                "foreground": self.color("default", "foreground"),
+                "background": self.color("default", "background"),
+            },
+            "faceCount": len(self.data.get("faces", {})),
+            "packageFaceCount": len(package_faces),
+            "packageUnresolvedFaceCount": self.data.get("meta", {}).get("package-unresolved-face-count", 0),
+            "uiOwnSeeds": {face: self.seed(face) for face in ui_faces if self.seed(face)},
+            "packageInherits": package_inherits,
+        }
+
     def _build_color_hex(self) -> dict[str, str]:
         out: dict[str, str] = {}
         if not self.data:
@@ -126,3 +150,11 @@ class DefaultFaces:
                     if hex_value and name and not str(name).startswith("#"):
                         out.setdefault(hex_value.lower(), str(name).lower().replace(" ", "-"))
         return out
+
+
+def changed_summary(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
+    changed = {}
+    for key in sorted(set(before) | set(after)):
+        if before.get(key) != after.get(key):
+            changed[key] = {"before": before.get(key), "after": after.get(key)}
+    return changed
