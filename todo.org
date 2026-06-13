@@ -203,7 +203,7 @@ Add a column-level delete affordance to the palette. Deleting a normal color col
 
 Acceptance notes: add a browser gate proving a column delete removes all entries with that stable =columnId=, leaves other columns alone, leaves ground non-deletable, and preserves any references to deleted hexes as gone values.
 
-Shipped 2026-06-13 in commit =549cf7e4=: normal column headers have a delete button, ground has no delete affordance, deleted names feed =lastGone= for recovery, and =#columntest= pins the behavior.
+Shipped 2026-06-13 in commit =2cf730d5=: normal column headers have a delete button, ground has no delete affordance, deleted names feed =lastGone= for recovery, and =#columntest= pins the behavior.
 
 ** TODO [#B] Split window opens the dashboard in the other window :feature:quick:solo:
 :PROPERTIES:
