@@ -130,5 +130,16 @@ Callers that must have a secret layer their own error on top."
          (secret (plist-get (car (apply #'auth-source-search spec)) :secret)))
     (if (functionp secret) (funcall secret) secret)))
 
+;; ---------------------------- Strong Confirmation ----------------------------
+
+(defun cj/confirm-strong (prompt)
+  "Ask PROMPT, requiring a full typed \"yes\" or \"no\" answer.
+For irreversible actions -- file destruction, overwrites, power-off.  The
+global default makes `yes-or-no-p' a single keystroke (`use-short-answers'
+is t); this binds it to nil for the one call so the prompt demands the
+long-form answer, keeping a stray RET or space from confirming."
+  (let ((use-short-answers nil))
+    (yes-or-no-p prompt)))
+
 (provide 'system-lib)
 ;;; system-lib.el ends here

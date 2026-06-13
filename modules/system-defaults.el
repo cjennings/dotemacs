@@ -200,8 +200,9 @@ appears only once per session."
 (setq confirm-nonexistent-file-or-buffer nil) ;; don't ask if a file I visit with C-x C-f or C-x b doesn't exist
 (setq ad-redefinition-action 'accept)         ;; silence warnings about advised functions getting redefined.
 (setq large-file-warning-threshold nil)       ;; open files regardless of size
-(fset 'yes-or-no-p 'y-or-n-p)                 ;; require a single letter for binary answers
-(setq use-short-answers t)                    ;; same as above with Emacs 28+
+(setq use-short-answers t)                    ;; single-key y/n for ordinary yes-or-no-p prompts
+                                              ;; (irreversible actions use `cj/confirm-strong', which
+                                              ;; forces a typed "yes" by binding this nil for that call)
 (setq auto-revert-verbose nil)                ;; turn off auto revert messages
 (setq custom-safe-themes t)                   ;; treat all themes as safe (stop asking)
 (setq server-client-instructions nil)         ;; I already know what to do when done with the frame

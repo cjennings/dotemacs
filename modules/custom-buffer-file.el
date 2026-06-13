@@ -48,6 +48,7 @@
 ;; mm-decode for email viewing (mm-handle-type is a macro, needs early require)
 (require 'mm-decode)
 (require 'external-open) ;; for cj/xdg-open, cj/open-this-file-with
+(require 'system-lib)   ;; cj/confirm-strong (overwrite confirms), used below
 
 ;; cj/kill-buffer-and-window and cj/kill-other-window-buffer defined in undead-buffers.el
 (declare-function cj/kill-buffer-and-window "undead-buffers")
@@ -156,7 +157,7 @@ When called interactively, prompts for confirmation if target file exists."
     (condition-case _
         (cj/--move-buffer-and-file dir nil)
       (file-already-exists
-       (if (yes-or-no-p (format "File %s exists; overwrite? " target))
+       (if (cj/confirm-strong (format "File %s exists; overwrite? " target))
            (cj/--move-buffer-and-file dir t)
          (message "File not moved"))))))
 
@@ -196,7 +197,7 @@ When called interactively, prompts for confirmation if target file exists."
   (condition-case err
       (cj/--rename-buffer-and-file new-name nil)
     (file-already-exists
-     (if (yes-or-no-p (format "File %s exists; overwrite? " new-name))
+     (if (cj/confirm-strong (format "File %s exists; overwrite? " new-name))
          (cj/--rename-buffer-and-file new-name t)
        (message "File not renamed")))
     (error
@@ -338,7 +339,6 @@ Do not save the deleted text in the kill ring."
   (kill-new (buffer-name))
   (message "Copied: %s" (buffer-name)))
 
-(require 'system-lib)
 (declare-function ansi-color-apply-on-region "ansi-color")
 
 (defun cj/--diff-with-difftastic (file1 file2 buffer)

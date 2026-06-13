@@ -95,6 +95,7 @@
 (require 'user-constants)
 (require 'keybindings)  ;; provides cj/custom-keymap
 (require 'cj-window-toggle-lib)  ;; side-window size memory (F10 toggle)
+(require 'system-lib)            ;; cj/confirm-strong (overwrite confirms)
 
 ;;; Settings (no Customize)
 
@@ -371,7 +372,7 @@ Offers completion over existing names but allows new names."
          (filename (if (string-suffix-p ".m3u" chosen) chosen (concat chosen ".m3u")))
          (full (expand-file-name filename cj/music-m3u-root)))
     (when (and (file-exists-p full)
-               (not (yes-or-no-p (format "Overwrite %s? " filename))))
+               (not (cj/confirm-strong (format "Overwrite %s? " filename))))
       (user-error "Aborted saving playlist"))
     (with-current-buffer (cj/music--ensure-playlist-buffer)
       (let ((emms-source-playlist-ask-before-overwrite nil))
@@ -924,7 +925,7 @@ For URL tracks: decoded URL."
          (file (expand-file-name (concat safe "_Radio.m3u") cj/music-m3u-root))
          (content (format "#EXTM3U\n#EXTINF:-1,%s\n%s\n" name url)))
     (when (and (file-exists-p file)
-               (not (yes-or-no-p (format "Overwrite %s? " (file-name-nondirectory file)))))
+               (not (cj/confirm-strong (format "Overwrite %s? " (file-name-nondirectory file)))))
       (user-error "Aborted creating radio station"))
     (with-temp-file file
       (insert content))
