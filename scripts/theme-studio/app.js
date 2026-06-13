@@ -166,14 +166,15 @@ function updateColor(){
   const newHex=curHex();
   const newName=(document.getElementById('newname').value.trim())||PALETTE[i][1];
   if(PALETTE.some((p,j)=>j!==i&&p[1].toLowerCase()===newName.toLowerCase())){notify('another color is already named "'+newName+'" — names must be unique',true);return;}
+  const isGroundEdit=oldRole==='bg'||oldRole==='fg';
   // If the edited color is a column base with a ramp, recolor the whole column: regenerate from the new base at the same count.
   const columns=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).columns;
-  const column=columns.find(f=>f.base.toLowerCase()===oldHex.toLowerCase());
+  const column=isGroundEdit?null:columns.find(f=>f.base.toLowerCase()===oldHex.toLowerCase());
   const count=column?Math.max(0,...rankByLightness(column.members.map(m=>m.hex),column.base).map(m=>Math.abs(m.offset))):0;
-  const columnId=PALETTE[i][2]||columnStem(PALETTE[i][1]);
+  const columnId=isGroundEdit?'ground':(PALETTE[i][2]||columnStem(PALETTE[i][1]));
   PALETTE[i]=[newHex,newName,columnId];
   const duplicateOldHex=PALETTE.some((p,j)=>j!==i&&p[0].toLowerCase()===oldHex.toLowerCase());
-  if(oldRole==='bg'||oldRole==='fg')repointHex(oldHex,newHex);
+  if(isGroundEdit)repointHex(oldHex,newHex);
   else if(!duplicateOldHex&&oldHex!==MAP['bg']&&oldHex!==MAP['p'])repointHex(oldHex,newHex);
   if(column&&count>0){
     const oldHexes=column.members.map(m=>m.hex.toLowerCase()===oldHex.toLowerCase()?newHex:m.hex);
