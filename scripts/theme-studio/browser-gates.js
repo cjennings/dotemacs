@@ -439,6 +439,16 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  document.getElementById('newhexstr').value='#101010';document.getElementById('newname').value='ground';
  updateColor();
  A(MAP['bg'].toLowerCase()==='#101010','editing the bg swatch wrote the bg assignment, got '+MAP['bg']);
+ // fg edit: even when a normal column shares the old fg hex, editing fg must not regenerate that column as fg-*.
+ MAP['bg']='#0d0b0a';MAP['p']='#e0e0e0';
+ PALETTE=[['#0d0b0a','bg','ground'],['#e0e0e0','fg','ground'],['#c0c0c0','silver-1','silver'],['#e0e0e0','silver','silver'],['#f4f4f4','silver+1','silver']];
+ selectedIdx=PALETTE.findIndex(p=>p[1]==='fg');
+ document.getElementById('newhexstr').value='#d8d8d8';document.getElementById('newname').value='fg';
+ updateColor();
+ A(MAP['p'].toLowerCase()==='#d8d8d8','editing the fg swatch wrote the fg assignment, got '+MAP['p']);
+ A(PALETTE.some(p=>p[1]==='silver'&&p[2]==='silver'),'editing fg does not rename a same-hex normal column base');
+ A(!PALETTE.some(p=>/^fg[+-]\d+$/.test(p[1])),'editing fg does not generate fg span tiles from a same-hex normal column');
+ A(PALETTE.find(p=>p[1]==='fg')[2]==='ground','editing fg preserves the ground column id');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
  document.title='BASEEDITTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='baseedittest';d.textContent='BASEEDITTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
