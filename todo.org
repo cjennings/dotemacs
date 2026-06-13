@@ -4327,6 +4327,14 @@ From the 2026-06-11 messenger-unification brainstorm. Google Voice has no offici
 
 ** TODO Manual testing and validation
 Exercised once the phases above land.
+*** TODO org-capture quick-capture popup behaves correctly
+What we're verifying: the Hyprland Super+Shift+N popup is single-window, offers only the sensible templates, files to the inbox, and never orphans its frame (archsetup request, 2026-06-12; fix in modules/org-capture-config.el, live in the daemon). The menu-subset / inbox-target / abort-close parts need archsetup's one-line script change to call cj/quick-capture (note sent 2026-06-12); the single-window part is live regardless.
+- Press Super+Shift+N to open the quick-capture popup
+- The *Org Select* menu should fill the frame as one window (no top sliver of your last-visited buffer, one modeline) and list only Task / Bug / Event
+- Pick Task (t): the CAPTURE buffer also fills the frame as one window; finishing with C-c C-c files it to the global inbox under "Inbox" (not a project's todo.org)
+- Re-open and pick Event (e): it prompts for a date and files to the schedule
+- Re-open and hit q (or C-g) at the menu: the popup frame closes (no orphan)
+Expected: single window at every step; menu limited to Task/Bug/Event; Task/Bug land in the inbox; aborting at the menu closes the frame; the frame still closes on normal finalize and C-c C-k.
 *** 2026-06-11 Thu @ 18:29:39 -0500 Verified UI-face preview and contrast survive a ground bg change
 Craig walked the repro: mode-line with its own fg/bg kept its preview bg and ratio through a ground change; ground-dependent rows re-rated; package-faces contrast column updated. Pass. Closed the [#A] contrast-cell and [#B] preview-bg parents.
 *** 2026-06-11 Thu @ 18:29:39 -0500 Verified seeded package-face defaults, with steel tuning
