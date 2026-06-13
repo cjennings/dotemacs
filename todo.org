@@ -166,6 +166,12 @@ Found by Craig 2026-06-11 during the manual-test walk (org case), then a full au
 
 Pin with a browser-gate assertion that these preview elements link the right faces (e.g. the org headline-todo span sits after an org-todo span; the erc my-message line uses input-face).
 
+** TODO [#B] theme-studio UI face inheritance needs a spec :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
+Package faces model =inherit= explicitly, but UI faces currently expose only fg/bg/style fields in the table and generated theme output. Before implementing UI-face inheritance, write and review a small spec that defines: which UI faces get an inherit selector, how own defaults from =emacs-default-faces.json= appear versus effective inherited values, how export/import stores cleared vs inherited vs explicit values, how preview resolution follows UI inherit chains, and what browser gates prove the behavior. This touches the UI model, generated defaults, export format, preview rendering, and reset semantics, so it should not be slipped in as a refactor.
+
 ** TODO [#B] Split window opens the dashboard in the other window :feature:quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10
@@ -942,7 +948,7 @@ Nothing requires =modules/ledger-config.el= (verified by grep), so .dat/.ledger/
 ** TODO [#B] eww quick-add bookmarks split the store and break the default file :bug:quick:solo:
 =modules/eww-config.el:116-126= — quick-add let-binds =eww-bookmarks-directory= to ~/.emacs.d/eww-bookmarks/ (creating a DIRECTORY at the path where the daemon's default store expects a FILE ~/.emacs.d/eww-bookmarks). After one quick-add, B reads an unreadable path and quick-added bookmarks are invisible post-restart. Drop the let-binding or setq the directory once in :config so both commands share one store. From the 2026-06 config audit.
 
-** TODO [#B] help-config: three defects in one small file :bug:quick:solo:
+** DOING [#B] help-config: three defects in one small file :bug:quick:solo:
 From the 2026-06 config audit, =modules/help-config.el=:
 - =:67= — =cl-return-from= inside a plain =defun= (no cl-block): declining the save prompt signals "No catch for tag" instead of canceling. =cl-defun= or restructure.
 - =:108= — =:hook (info-mode . info-persist-history-mode)= is dead twice: Info's hook is =Info-mode-hook= (capital I), and =info-persist-history-mode= doesn't exist anywhere. Implement the intent or delete.
