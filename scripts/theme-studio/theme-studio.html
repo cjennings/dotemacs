@@ -746,7 +746,7 @@ function mkStyleButtons(isOn,onToggle){
     const b=document.createElement('button');b.className='sbtn'+(isOn(at)?' on':'');b.textContent='a';
     b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';
     b.style.textDecoration=at==='underline'?'underline':at==='strike'?'line-through':'none';b.title=at;
-    b.onclick=()=>onToggle(at);return b;});}
+    b.onclick=()=>{onToggle(at);b.classList.toggle('on',!!isOn(at));};return b;});}
 // Reset every unlocked row in a tier to its default. keyFn maps a row entry to
 // its lock key, or null to skip the row entirely (syntax bg and the default fg);
 // resetFn does the actual clearing. Locked rows are left untouched.
@@ -1735,6 +1735,18 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  UIMAP['line-number-current-line'].bold=true;buildMockFrame();
  const curNum=Q('[data-face="line-number-current-line"]');
  A(curNum&&/font-weight:\s*bold/.test(curNum.getAttribute('style')||''),'line-number-honors-weight');
+ UIMAP['region'].bold=false;buildUITable();
+ const uiBold=[...document.querySelectorAll('#uibody tr')].find(r=>r.dataset.face==='region').querySelector('.sbtn[title="bold"]');
+ A(uiBold&&!uiBold.classList.contains('on'),'ui style button starts off when model is false');
+ uiBold.click();
+ A(uiBold.classList.contains('on')&&UIMAP['region'].bold===true,'ui style button visual state turns on with model');
+ uiBold.click();
+ A(!uiBold.classList.contains('on')&&UIMAP['region'].bold===false,'ui style button visual state turns off with model');
+ const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].bold=false;buildPkgTable();
+ const pkgBtn=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"] .sbtn[title="bold"]');
+ A(pkgBtn()&&!pkgBtn().classList.contains('on'),'pkg style button starts off when model is false');
+ pkgBtn().click();
+ A(pkgBtn()&&pkgBtn().classList.contains('on')&&PKGMAP[app][face].bold===true,'pkg style button visual state turns on after rebuild');
  document.title='MOCKTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='mocktest';d.textContent='MOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 if(location.hash.startsWith('#pick')){openPicker();const m=location.hash.slice(5);if(m){const b=document.querySelector('.pmode button[data-m="'+m+'"]');if(b)b.click();}}
