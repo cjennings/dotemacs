@@ -182,6 +182,8 @@ Design import handling for unstructured color sources such as Emacs themes, CSS 
 - Preserve declared structure whenever an imported entry has a =columnId=.
 - For unstructured legacy imports with no =columnId=, avoid silent hue clustering and avoid treating arbitrary =color-N= names as one long ramp; each =color-N= should become its own base column.
 - Keep meaningful generated ramp-name inference for names like =blue-1= / =blue= / =blue+1=.
+- Group external numeric color-name variants for compact display: =blue1= / =blue2= / =blue3= infer column =blue=; =grey80= / =grey81= infer column =grey=; =orchid3= infers =orchid=. This is display organization, not proof that the colors are an authored Theme Studio span.
+- If a numeric external base is spanned later, generate from the actual base name, e.g. =blue1-1= / =blue1= / =blue1+1=, while keeping those generated tiles in the inferred =blue= column.
 - Add explicit organization tools rather than hidden inference: group selected colors into a column, suggest hue groups as a preview/action, sort imported colors for inspection, and promote a color from an import bucket into a normal column.
 - Consider a compact imported/captured bucket UI for large unstructured imports while preserving per-color column ids internally.
 
