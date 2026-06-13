@@ -187,6 +187,14 @@ Design import handling for unstructured color sources such as Emacs themes, CSS 
 - Add explicit organization tools rather than hidden inference: group selected colors into a column, suggest hue groups as a preview/action, sort imported colors for inspection, and promote a color from an import bucket into a normal column.
 - Consider a compact imported/captured bucket UI for large unstructured imports while preserving per-color column ids internally.
 
+** TODO [#B] theme-studio palette generator :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
+Spec draft: [[file:docs/theme-studio-palette-generator-spec.org][theme-studio-palette-generator-spec.org]].
+
+Build a constraint-first palette generator for Theme Studio: start from bg/fg, generate editable palette columns in OKLCH, preview candidate columns before applying them, and apply proposals by append/replace/regenerate modes while preserving stable column ids and existing assignments where possible. V1 is palette-only, not automatic face assignment; generator output becomes normal editable columns after apply.
+
 ** TODO [#B] Split window opens the dashboard in the other window :feature:quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10

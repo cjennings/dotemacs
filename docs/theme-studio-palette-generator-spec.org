@@ -1,0 +1,241 @@
+#+TITLE: Theme Studio Palette Generator -- Spec
+#+AUTHOR: Codex
+#+DATE: 2026-06-13
+#+TODO: TODO | DONE SUPERSEDED CANCELLED
+
+* Metadata
+| Status   | draft |
+|----------+-------|
+| Owner    | Codex |
+|----------+-------|
+| Reviewer | Craig |
+|----------+-------|
+| Related  | [[file:../todo.org::*theme-studio palette generator][theme-studio palette generator task]] |
+|----------+-------|
+
+* Summary
+Theme Studio needs a palette generator designed for dense Emacs themes, not a generic graphic-design palette toy. It should start from bg/fg, generate editable color columns in OKLCH, constrain candidate colors for readable text and UI use, and let the user preview/apply changes without losing existing assignments.
+
+The generator is a panel over the existing palette-column model. It proposes columns, spans, and lightness/chroma bands; the user chooses whether to append, replace, or regenerate selected unlocked columns.
+
+* Problem / Context
+Theme Studio now has stable palette columns, spans, contrast metrics, OKLCH editing, and default face inventories. That gives enough substrate to generate palettes, but the workflow is still manual: each accent must be chosen, spanned, checked for contrast, checked for distinguishability, assigned, and then adjusted by eye.
+
+Most palette generators optimize for attractive swatches, posters, or branding. Emacs themes have different constraints. The colors are mostly foreground text over a fixed dark or light ground, often shown in dense code, with UI backgrounds, selections, diffs, search hits, diagnostics, and package faces layered on top. A pretty palette can still be unusable if several accents collapse in low chroma, miss the bg contrast target, or produce harsh UI tints.
+
+The generator should therefore treat color theory as a candidate source, then filter candidates through Theme Studio's theme-specific constraints.
+
+* Goals and Non-Goals
+** Goals
+- Generate editable palette columns from bg/fg, a base hue, an accent count, span count, chroma controls, and contrast targets.
+- Keep OKLCH as the default generation space so lightness and chroma behave perceptually.
+- Offer harmony modes that are useful for syntax themes: syntax-balanced, analogous, split-complementary, triadic, tetradic, warm/cool balanced, and manual hues.
+- Preview proposed palettes before applying them.
+- Apply proposals in scoped ways: append as new columns, replace selected columns, regenerate spans only, or regenerate unlocked generator-owned columns.
+- Preserve stable column ids and existing assignments where possible.
+- Expose enough metrics to explain why generated colors were clamped, muted, rejected, or adjusted.
+
+** Non-Goals
+- Automatically assign every face in the theme. Seeding and advisory features remain separate.
+- Import palettes from external files. Import organization has its own spec/task.
+- Replace the existing manual picker or per-column span controls.
+- Generate terminal/ANSI palettes in v1.
+- Support advanced appearance models like CAM16-UCS or Jzazbz in v1.
+
+** Scope tiers
+- v1: OKLCH-based generator panel, candidate preview, apply modes, generator-owned column metadata, tests, and README docs.
+- Out of scope: fully automatic theme assignment, image/screenshot extraction, CSS/theme import, terminal colors.
+- vNext: OKHSL/OKHSV editing/generation mode, low-contrast preset bands, CVD-aware candidate scoring, named style presets, terminal/ANSI palette derivation.
+
+* Design
+For the user, the generator is a compact panel above the palette columns. The user sets the ground pair, picks a scheme, picks a base hue or manual hues, chooses accent count and span count, adjusts chroma/style bias, chooses a contrast target, then clicks preview. The preview renders proposed columns as temporary strips with metric badges. Applying the preview either appends columns, replaces selected columns, regenerates spans on selected columns, or updates generator-owned unlocked columns.
+
+For the implementer, the generator is a pure planning layer plus a thin DOM panel. The planner accepts the current palette state and a generator config, returns a proposal object, and never mutates global state. The proposal contains column plans with stable ids, base hexes, generated member hexes, names, clamp flags, contrast/readability diagnostics, and rejected candidate notes. The apply step converts an accepted proposal into the existing palette-column entries and uses the existing repoint behavior where a column is being replaced.
+
+The generator should use OKLCH for v1. It chooses hue positions from a scheme, then finds a useful lightness/chroma pair for each accent against the current bg. A "syntax-balanced" mode should be the default because it matches the product better than classical harmony. It spaces hues around the wheel, but it keeps colors in a text-safe lightness band and reduces chroma when needed to preserve readability and distinguishability.
+
+The panel should not feel like a separate app. The proposed columns should look like columns, with the same span direction and tile affordances as real palette columns, but visually marked as a preview. The user should be able to click a proposed tile to inspect it in the picker before applying.
+
+** Generator config
+The v1 config fields:
+
+- scheme: syntax-balanced, analogous, split-complementary, triadic, tetradic, warm-cool, manual
+- baseHue: degrees, used by non-manual schemes
+- manualHues: list of degrees, used by manual mode
+- accentCount: integer, default 8, range 3-12
+- spanCount: integer, default current column span default, range 0-4
+- textLightnessBand: min/max OKLCH L for text accents
+- uiTintLightnessBand: min/max OKLCH L for background/highlight tints
+- chroma: global target chroma
+- chromaBias: subdued, balanced, vivid
+- contrastTarget: none, WCAG AA, WCAG AAA, APCA target
+- deltaEMin: default to the existing palette warning threshold unless overridden
+- locks: respect locked columns, respect locked assignments
+
+** Proposal object
+The planner returns:
+
+#+begin_src js
+{
+  config,
+  columns: [
+    {
+      columnId,
+      name,
+      baseHex,
+      members: [{ hex, name, offset, clamped, metrics }],
+      diagnostics: [{ level, message }]
+    }
+  ],
+  rejected: [{ hue, reason, nearestColumnId }],
+  summary: { generated, clamped, rejected, minContrast, minDeltaE }
+}
+#+end_src
+
+This shape is intentionally close to existing column/ramp data. It should be easy to unit test and easy to render as a preview.
+
+** Display
+The generator panel sits between the palette controls and the real color columns. It has:
+
+- scheme segmented control
+- base hue control
+- accent count and span count numeric controls
+- chroma/style controls
+- contrast target control
+- preview, append, replace selected, regenerate spans, and clear preview buttons
+- summary row showing min contrast, min DeltaE, clamped count, and rejected count
+
+The preview renders as temporary columns. They are visually distinct from committed columns but use the same tile size, naming, and lightness order. Applying the preview re-renders the real palette and clears the preview.
+
+** Apply modes
+- Append: add all proposed columns after existing columns, suffixing names/ids on collision.
+- Replace selected: replace selected normal columns one-for-one by visual order; extra proposed columns append, extra selected columns are removed only after confirmation.
+- Regenerate spans only: keep selected column ids and base colors, update span count/knobs.
+- Regenerate generator-owned: update only columns marked as generator-owned and unlocked.
+
+The ground column remains pinned. The generator may read bg/fg and recommend ground-tint spans, but v1 does not rewrite bg/fg unless the user explicitly includes that later.
+
+** Persistence
+Generated columns become normal palette columns after apply, but they carry optional metadata:
+
+#+begin_src js
+{ source: "generator", generator: { scheme, version, generatedAt } }
+#+end_src
+
+The metadata is advisory. Editing or renaming a generated column should not break the palette. A later regenerate-generator-owned action can use the metadata, but normal manual editing always wins.
+
+* Alternatives Considered
+** Drag a generic harmony wheel into the palette
+- Good, because it is familiar from design tools and visually appealing.
+- Bad, because it optimizes hue relationships before text readability, which is backwards for Theme Studio.
+- Neutral, because a hue wheel can still be a useful input control inside a constraint-first generator.
+
+** Classical palette generator only
+- Good, because analogous/complementary/triadic/tetradic modes are easy to explain.
+- Bad, because they do not know about bg/fg, contrast, syntax density, UI tints, or low-chroma distinguishability.
+- Neutral, because those modes are still useful as candidate hue layouts.
+
+** Full automatic theme seeding
+- Good, because it could produce a near-complete theme in one action.
+- Bad, because it crosses into role assignment, package defaults, and guide-support behavior that already have separate tasks/specs.
+- Neutral, because the palette generator can become one input to the seeding engine later.
+
+** Add many color spaces now
+- Good, because OKHSL/OKHSV may be friendlier than raw OKLCH sliders for some users.
+- Bad, because v1 already has the right perceptual foundation, and extra spaces would increase UI and test surface before the generation workflow is proven.
+- Neutral, because OKHSL/OKHSV are good vNext candidates.
+
+* Decisions [0/4]
+** TODO Default to syntax-balanced OKLCH generation
+- Owner / by-when: Craig / spec review
+- Context: Generic harmony modes produce attractive swatches but do not optimize for readable code text.
+- Decision: We will make syntax-balanced the default scheme and OKLCH the default generation space.
+- Consequences: Easier to generate useful Emacs themes first; harder to present the feature as a conventional color-wheel generator.
+
+** TODO Keep generation separate from face assignment
+- Owner / by-when: Craig / spec review
+- Context: Automatic assignment would touch syntax, UI, package faces, seeding, locks, and guide-support rules.
+- Decision: We will generate palette columns only in v1 and leave assignment/seeding to existing or separate workflows.
+- Consequences: Easier to ship a focused generator; harder because the user still must map colors onto faces.
+
+** TODO Use preview-first apply modes
+- Owner / by-when: Craig / spec review
+- Context: Generator output can disrupt a carefully tuned palette if it mutates immediately.
+- Decision: We will render proposals as temporary preview columns and require an explicit append/replace/regenerate apply action.
+- Consequences: Easier to inspect and avoid destructive changes; harder because the UI needs a proposal state and apply semantics.
+
+** TODO Defer OKHSL/OKHSV to vNext
+- Owner / by-when: Craig / spec review
+- Context: OKHSL/OKHSV may be friendlier interaction models, but OKLCH already supports the required perceptual generation math.
+- Decision: We will ship OKLCH generation first and consider OKHSL/OKHSV after v1 is usable.
+- Consequences: Easier to keep v1 small and rigorous; harder because some users may find OKLCH controls less familiar.
+
+* Implementation phases
+** Phase 1 -- Planner core
+Add pure generator functions in app-core.js or a new generator module. Inputs are current palette, ground, generator config, and locks. Outputs are proposal objects. Unit tests cover scheme hue placement, OKLCH candidate generation, gamut clamp reporting, naming/id collision handling, and no mutation of input state.
+
+** Phase 2 -- Candidate scoring
+Add scoring and adjustment for contrast target, DeltaE separation, chroma bias, and text lightness band. Unit tests cover rejected candidates, clamped colors, low-chroma distinguishability, and deterministic output for fixed config.
+
+** Phase 3 -- Generator panel and preview rendering
+Add the panel, controls, preview columns, summary metrics, and clear-preview behavior. Browser gate: preview creates temporary columns without changing the committed palette.
+
+** Phase 4 -- Apply modes
+Implement append, replace selected, regenerate spans only, and regenerate generator-owned modes. Browser gates cover collision suffixing, locked column preservation, selected-column replacement, and generator-owned regeneration.
+
+** Phase 5 -- Persistence and import/export
+Round-trip optional generator metadata without requiring it for normal palette behavior. Existing imports without metadata continue to work. Browser gate extends roundtrip coverage.
+
+** Phase 6 -- Documentation and cleanup
+Document the generator in README and note the limits: palette only, no automatic face assignment. Remove any dead prototype code and keep make test green.
+
+* Acceptance criteria
+- [ ] A user can preview a syntax-balanced palette from current bg/fg without mutating the real palette.
+- [ ] A user can append generated columns and then edit/reorder/span them like normal columns.
+- [ ] A user can replace selected columns with a generated proposal without losing locked columns.
+- [ ] Generated colors report clamp, contrast, and DeltaE diagnostics.
+- [ ] Export/import preserves committed generated columns and optional generator metadata.
+- [ ] Existing manual palette workflows still work without opening the generator panel.
+- [ ] Theme Studio tests cover planner functions, preview rendering, apply modes, and round-trip behavior.
+
+* Readiness dimensions
+- Data model & ownership: The proposal is transient and generator-owned until applied. Applied columns become normal user-editable palette columns with optional advisory generator metadata.
+- Errors, empty states & failure: Invalid config disables preview with an inline message naming the bad field. Rejected candidates appear in the summary rather than silently disappearing. Replace-selected asks for confirmation before removing unmatched selected columns.
+- Security & privacy: N/A because generation is local, deterministic color math with no credentials or external requests.
+- Observability: The preview summary shows generated, clamped, rejected, min contrast, and min DeltaE counts. Each tile exposes diagnostics in its title or detail panel.
+- Performance & scale: Expected accent counts are small, 3-12 bases with up to 4 steps each. Candidate search should stay synchronous; if broader searches are added later, add progress/cancel.
+- Reuse & lost opportunities: Reuse OKLCH, gamut clamp, ramp, contrast, APCA, DeltaE, locks, column ids, and existing browser gates. Do not invent a second color math stack.
+- Architecture fit & weak points: The weak point is proposal/apply state in the DOM app. Keep planner pure and make the DOM layer only render/apply proposal objects.
+- Config surface: Public knobs are scheme, hue/manual hues, accent count, span count, lightness bands, chroma bias, contrast target, DeltaE threshold, and lock behavior. Defaults should favor readable dark-theme syntax.
+- Documentation plan: Update scripts/theme-studio/README.md with generator controls, apply modes, limits, and how generated columns become normal columns.
+- Dev tooling: Existing scripts/theme-studio make test remains the gate. Add node tests for planner/scoring and browser hash gates for preview/apply.
+- Rollout, compatibility & rollback: The generator is additive. Existing palettes load unchanged. Applied columns can be manually deleted or replaced; optional metadata can be ignored by old code.
+- External APIs & deps: N/A for v1. No network or external package dependency is needed.
+
+* Risks, Rabbit Holes, and Drawbacks
+- Candidate search can become a rabbit hole. V1 should use deterministic bounded search around target OKLCH bands, not open-ended optimization.
+- "Syntax-balanced" could become subjective. Keep it documented as a default heuristic, not a claim of universal taste.
+- Preview/apply modes can overcomplicate the UI. If the panel feels heavy, hide advanced knobs behind a disclosure and keep preview/apply visible.
+- Optional generator metadata could drift from manual edits. Treat it as advisory only.
+
+* Testing / Verification / Rollout
+Use the existing Theme Studio test stack:
+
+- Node tests for planner/scoring/collision/immutability.
+- Browser hash gate for preview-only non-mutation.
+- Browser hash gate for append/replace/regenerate apply modes.
+- Round-trip gate for generator metadata.
+- Manual Chrome pass on a dark palette and a light palette.
+
+* References / Appendix
+- [[file:design/theme-studio-color-harmony.org][theme-studio color harmony explainer]]
+- [[file:design/theme-studio-perceptual-color-metrics-spec.org][perceptual color metrics spec]]
+- [[file:theme-studio-palette-ramps-spec.org][palette ramps and contrast safety spec]]
+- [[file:theme-studio-palette-columns-spec.org][palette columns spec]]
+- [[file:../todo.org::*theme-studio import organization workflow needs a spec][import organization task]]
+
+* Review and iteration history
+** 2026-06-13 Saturday @ 16:31:01 -0500 -- Codex -- author
+- What: Initial draft using the spec-create workflow.
+- Why: Palette generation has real design trade-offs around color space, preview/apply behavior, assignment boundaries, and how much generator state should persist.
+- Artifacts: [[file:../todo.org::*theme-studio palette generator][theme-studio palette generator task]].
