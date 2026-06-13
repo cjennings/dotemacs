@@ -37,6 +37,12 @@ APP_CORE_BODY=strip_exports(open(os.path.join(HERE,'app-core.js')).read())
 # test-app-util.mjs. Its `import rl` line is stripped on inline (rl is already in
 # the page from the colormath core).
 APP_UTIL_BODY=strip_exports(open(os.path.join(HERE,'app-util.js')).read())
+# Palette panel actions and rendering. This is stateful browser code, split from
+# app.js because color-column behavior changes often and benefits from locality.
+PALETTE_ACTIONS_BODY=strip_exports(open(os.path.join(HERE,'palette-actions.js')).read())
+# Browser hash gates, split from app.js so the application code is not buried
+# under the test harness while still shipping one self-contained HTML file.
+BROWSER_GATES_BODY=strip_exports(open(os.path.join(HERE,'browser-gates.js')).read())
 ns={}
 src=open(os.path.join(HERE,'samples.py')).read()
 exec(src[:src.index('cols=')], ns)
@@ -190,6 +196,8 @@ def fill_data(s):
     return (s.replace("COLORMATH_J",COLORMATH_BODY)
      .replace("APP_CORE_J",APP_CORE_BODY)
      .replace("APP_UTIL_J",APP_UTIL_BODY)
+     .replace("PALETTE_ACTIONS_J",PALETTE_ACTIONS_BODY)
+     .replace("BROWSER_GATES_J",BROWSER_GATES_BODY)
      .replace("SAMPLES_J",json.dumps(SAMPLES))
      .replace("PALETTE_J",json.dumps(PALETTE)).replace("CATS_J",json.dumps(CATS))
      .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP)).replace("APPS_J",json.dumps(APPS))

@@ -73,6 +73,7 @@ class ColormathInlining(unittest.TestCase):
 class AssembledPage(unittest.TestCase):
     PLACEHOLDERS = [
         "STYLES_CSS", "APP_JS", "APP_CORE_J", "APP_UTIL_J",
+        "PALETTE_ACTIONS_J", "BROWSER_GATES_J",
         "COLORMATH_J", "SAMPLES_J", "PALETTE_J", "CATS_J",
         "UIFACES_J", "UIMAP_J", "APPS_J", "BOLD_J", "MAP_J",
     ]
@@ -94,6 +95,12 @@ class AssembledPage(unittest.TestCase):
     def test_page_carries_the_app_util_body_verbatim(self):
         # app-util.js inlines verbatim after its import line is stripped.
         self.assertIn(generate.APP_UTIL_BODY, generate.HTML)
+
+    def test_page_carries_palette_actions_verbatim(self):
+        self.assertIn(generate.PALETTE_ACTIONS_BODY, generate.HTML)
+
+    def test_page_carries_browser_gates_verbatim(self):
+        self.assertIn(generate.BROWSER_GATES_BODY, generate.HTML)
 
     def test_app_util_inlined_body_has_no_import_line(self):
         # The `import rl` line must be gone, or the page <script> is invalid.
