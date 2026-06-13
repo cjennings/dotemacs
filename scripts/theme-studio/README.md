@@ -139,9 +139,10 @@ derived from hue, chroma, lightness, or the visible color name.
   the start of the name.
 - **The count control** under each non-ground column sets how many steps sit on
   each side of the column's base. Setting N regenerates the column as a symmetric
-  base ±N tonal ramp via `ramp()` — lighter and darker steps on the base's hue
-  with chroma easing toward the extremes — *replacing* the column's current
-  colors. N=0 collapses to the base alone.
+  base ±N span: N interior OKLab steps from black to the base and N interior
+  OKLab steps from the base to white. Pure black/white endpoint duplicates and
+  rounded base duplicates are skipped. The current UI caps N at 8; N=0 collapses
+  to the base alone.
 - **Editing a base** recolors the whole column: change a base color and the column
   regenerates from it at the same count.
 - **References follow.** When a regenerate changes a step's hex, any face assigned

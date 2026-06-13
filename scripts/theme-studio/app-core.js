@@ -9,7 +9,7 @@
 // where normHex (app-util.js) and the colormath helpers are already present from
 // the bodies inlined above this one.
 import { normHex } from './app-util.js';
-import { oklch2hex, srgb2oklab, oklab2oklch, contrast } from './colormath.js';
+import { oklch2hex, srgb2oklab, oklab2oklch, oklab2lrgb, lrgb2hex, inGamut, contrast } from './colormath.js';
 
 // Resolve a palette name (or a raw #hex) to a hex; null when the name is unknown.
 function nameToHex(n,palette){if(!n)return null;if(/^#/.test(n))return n;const p=palette.find(p=>p[1]===n);return p?p[0]:null;}
@@ -137,6 +137,11 @@ function lMax(hue,chroma,fgSet,target){
 function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
 function isReservedGroundLikeName(name){return /^(bg|fg)(?:[-_+].+|\d.*)$/i.test(name||'');}
 function isPureEndpointHex(hex){const h=(hex||'').toLowerCase();return h==='#ffffff'||h==='#000000';}
+function interpOklabHex(a,b,t,offset){
+  const lab={L:a.L+(b.L-a.L)*t,a:a.a+(b.a-a.a)*t,b:a.b+(b.b-a.b)*t};
+  const lrgb=oklab2lrgb(lab.L,lab.a,lab.b);
+  return {hex:lrgb2hex(lrgb),offset,clamped:!inGamut(lrgb)};
+}
 function columnStem(name){name=name||'color';if(/^color-\d+$/.test(name))return name;name=name.replace(/[+-]\d+$/,'');return name.replace(/\d+$/,'')||'color';}
 function columnOffset(name){const m=(name||'').match(/([+-]\d+)$/);return m?parseInt(m[1],10):0;}
 function legacyColumnStem(name){return isReservedGroundLikeName(name)?name:columnStem(name);}
@@ -234,17 +239,23 @@ function columnsFromPalette(palette,ground){
   }
   return {ground:groundStrip,columns};
 }
-// Regenerate a column's members as a symmetric ramp around the base: n=0 is the
-// base alone (without ramp()'s 1-4 clamp), n>=1 is base plus ramp() steps, sorted
-// by offset. {members:[{hex,offset,clamped}]} or {members:[],error:'bad-hex'}.
+// Regenerate a column's members as a symmetric span around the base: n=0 is the
+// base alone, n>=1 divides the OKLab intervals black..base and base..white into
+// n interior steps per side. Pure black/white endpoint duplicates and rounded
+// base duplicates are skipped. {members:[{hex,offset,clamped}]} or
+// {members:[],error:'bad-hex'}.
 function regenColumn(baseHex,n,opts){
   const hex=typeof baseHex==='string'?normHex(baseHex):null;
   if(!hex)return {members:[],error:'bad-hex'};
-  const k=Math.min(4,Math.max(0,Math.round(n||0)));
+  const k=Math.min(8,Math.max(0,Math.round(n||0)));
   if(k===0)return {members:[{hex,offset:0,clamped:false}]};
-  const r=ramp(hex,Object.assign({},opts,{n:k}));
-  if(r.error)return {members:[],error:r.error};
-  const members=[...r.steps.filter(s=>!isPureEndpointHex(s.hex)),{hex,offset:0,clamped:false}].sort((a,b)=>a.offset-b.offset);
+  const base=srgb2oklab(hex),black=srgb2oklab('#000000'),white=srgb2oklab('#ffffff'),steps=[];
+  for(let i=1;i<=k;i++){
+    const dark=interpOklabHex(black,base,i/(k+1),i-k-1);
+    const light=interpOklabHex(base,white,i/(k+1),i);
+    steps.push(dark,light);
+  }
+  const members=[...steps.filter(s=>!isPureEndpointHex(s.hex)&&s.hex.toLowerCase()!==hex),{hex,offset:0,clamped:false}].sort((a,b)=>a.offset-b.offset);
   return {members};
 }
 // Rank a column's current member hexes by lightness and give each a signed offset

@@ -176,9 +176,8 @@ function renderPalette(){
         sw.innerHTML=`<input class="nm" value="${m.name||'ground'}" disabled style="color:${tc}"><div class="hx" style="color:${tc}">${m.hex}</div>`;gs.appendChild(sw);}
     });
   }
-  // The too-similar warning stays on the full flat palette: a generated ramp's
-  // steps are a stepL apart (well above the warning's ΔE threshold), so they never
-  // trigger it, and any pair that does is a genuine near-duplicate worth flagging.
+  // The too-similar warning stays on the full flat palette, so large spans can
+  // still expose genuinely hard-to-distinguish neighboring colors.
   const ordered=sortColumns(columns);
   ordered.forEach((f,pos)=>{
     const s=strip('');s.dataset.column=f.column||f.base;
@@ -194,11 +193,11 @@ function renderPalette(){
 function columnCountControl(f){
   const per=Math.max(0,...rankByLightness(f.members.map(m=>m.hex),f.base).map(m=>Math.abs(m.offset)));
   const d=document.createElement('div');d.className='fcount';
-  d.innerHTML=`<span title="set the column span: N generated steps on each side of the base — this replaces the column">span &#177; <input type="number" min="0" max="4" value="${per}"></span>`;
-  d.querySelector('input').onchange=(e)=>setColumnCount(f.base,Math.max(0,Math.min(4,parseInt(e.target.value,10)||0)));
+  d.innerHTML=`<span title="set the column span: N generated steps on each side of the base — this replaces the column">span &#177; <input type="number" min="0" max="8" value="${per}"></span>`;
+  d.querySelector('input').onchange=(e)=>setColumnCount(f.base,Math.max(0,Math.min(8,parseInt(e.target.value,10)||0)));
   return d;
 }
-// Regenerate a column as a symmetric base ±N ramp, replacing its current members.
+// Regenerate a column as a symmetric base ±N span, replacing its current members.
 // References to a surviving position (matched by signed lightness rank) follow the
 // new hex; references to a position removed by lowering N leave their old hex,
 // which is no longer in the palette and so renders as "(gone)".

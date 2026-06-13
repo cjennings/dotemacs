@@ -121,9 +121,15 @@ test('regenColumn: Normal - n steps each side plus the base, ordered by offset',
   assert.equal(r.members.find(m => m.offset === 0).hex, '#67809c');
 });
 
-test('regenColumn: Boundary - n=0 is the base alone, no ramp() clamp to 1', () => {
+test('regenColumn: Boundary - n=0 is the base alone', () => {
   const r = regenColumn('#67809c', 0);
   assert.deepEqual(r.members, [{ hex: '#67809c', offset: 0, clamped: false }]);
+});
+
+test('regenColumn: Boundary - span count is capped at eight per side', () => {
+  const r = regenColumn('#67809c', 10);
+  assert.equal(r.members.length, 17);
+  assert.deepEqual(r.members.map(m => m.offset), [-8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8]);
 });
 
 test('regenColumn: Error - a malformed base returns a structured bad-hex', () => {
@@ -131,8 +137,14 @@ test('regenColumn: Error - a malformed base returns a structured bad-hex', () =>
 });
 
 test('regenColumn: Boundary - generated pure white and black endpoint steps are skipped', () => {
-  assert.ok(!regenColumn('#e0e0e0', 4).members.some(m => m.offset !== 0 && m.hex === '#ffffff'));
-  assert.ok(!regenColumn('#101010', 4).members.some(m => m.offset !== 0 && m.hex === '#000000'));
+  assert.ok(!regenColumn('#fefefe', 8).members.some(m => m.offset !== 0 && m.hex === '#ffffff'));
+  assert.ok(!regenColumn('#010101', 8).members.some(m => m.offset !== 0 && m.hex === '#000000'));
+});
+
+test('regenColumn: Normal - changing span count redistributes steps between endpoint and base', () => {
+  const one = regenColumn('#67809c', 1).members.find(m => m.offset === 1).hex;
+  const two = regenColumn('#67809c', 2).members.find(m => m.offset === 1).hex;
+  assert.notEqual(one, two);
 });
 
 // --- rankByLightness --------------------------------------------------------
