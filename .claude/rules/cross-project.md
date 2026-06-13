@@ -39,6 +39,41 @@ Two acceptable outcomes:
 
 Don't assume which one was meant. Either guess is wrong half the time and the cost of asking once is one short turn.
 
+## Changing a Rulesets-Owned Synced File from a Downstream Project
+
+Some files in every project are owned by rulesets and overwritten by the
+template sync at each session start: workflows under `.ai/workflows/`, scripts
+under `.ai/scripts/`, rules under `.claude/rules/`, `protocols.org` — anything
+whose canonical home is `~/code/rulesets/`. When work in a downstream project
+needs one of these files to change, a local edit alone is a stopgap that the
+next sync reverts. The durable change happens only in the rulesets canonical.
+
+The process, every time:
+
+1. **Make the change locally** in the downstream project so it's usable
+   immediately.
+2. **Send rulesets a copy** of the edited file:
+   `inbox-send rulesets --file <edited-file>`.
+3. **Include an intro note** (a second `inbox-send rulesets --text` or
+   `--file`) covering what changed, why, and any companion files that need
+   reconciling, so the rulesets session can update the canonical and re-sync
+   without re-deriving the intent.
+
+Don't wait for the user to spell these steps out — recognizing that an edit
+targets a synced file and propagating it is the agent's job. The rulesets
+session applies its own value gate on arrival, so sending is a proposal, not
+a bypass.
+
+This doesn't conflict with the stop-and-ask rule at the top of this file:
+ask-first governs doing work inside another project's scope. Dropping a
+proposal in its inbox is the sanctioned alternative to that, so a proactive
+inbox-send needs no confirmation.
+
+Worked example: the 2026-06-12 `spec-create.org` decisions-as-TODO change —
+`.emacs.d` edited its local copy as a stopgap, sent the edited file plus an
+intro note naming the two companion workflows to reconcile, and rulesets
+updated the canonical the same evening.
+
 ## Recovery When It Goes Wrong
 
 If you do the work first and the boundary issue surfaces afterwards:

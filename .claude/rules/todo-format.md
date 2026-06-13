@@ -5,6 +5,34 @@ Applies to: `**/*.org` (org-mode todo and inbox files)
 How task entries are structured in org-mode todo files (`todo.org`,
 `inbox.org`, any GTD-style org file). Same shape across every project.
 
+## Priority and Tag Scheme Header
+
+Every project's `todo.org` opens with a top-level section named
+`[Projectname] Priority Scheme` (e.g. `* Rulesets Priority Scheme`,
+`* Work Priority Scheme`), placed above the first `* <Project> Open Work`
+section. It declares two things so the rest of the file is legible without
+guessing:
+
+1. **Priorities** — what `[#A]` through `[#D]` mean for this project. At
+   minimum, what makes something `[#A]` (urgent / blocking) versus `[#D]`
+   (someday / watchlist).
+2. **Tags** — the tag vocabulary in use. Name each tag and what it marks.
+   For code projects the typical set is `:feature:`, `:bug:`, `:test:`,
+   `:refactor:`, plus the effort/autonomy tags `:quick:` and `:solo:`. A
+   project may add, drop, or rename tags to fit its work — the requirement
+   is that the set is declared, not that it matches a fixed list.
+
+The section is mandatory. A `todo.org` without it leaves `[#A]` and the tags
+undefined, so task-audit can't enforce a vocabulary, task-review can't grade
+against agreed semantics, and process-inbox can't file new tasks correctly
+(its Phase B.1 already checks for this scheme). Each project defines the
+scheme its own way; the floor is that priorities and tags are both spelled
+out under the header.
+
+When a project's `todo.org` lacks the section, add it before filing or
+grading further tasks — propose the priority semantics and tag set from the
+project's existing usage, and confirm with Craig.
+
 ## The Rule
 
 A todo entry has two parts:
