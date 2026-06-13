@@ -99,3 +99,4 @@ __pycache__/
 
 # editor/image backup files
 *.bak
+smoke/

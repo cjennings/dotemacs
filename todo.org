@@ -47,6 +47,12 @@ Tags are additive. For example, a small wrong-behavior fix can be
 ** TODO [#B] ai-term adaptive side/bottom window placement :feature:solo:
 The ai-term window should dock from whichever edge conserves more screen space, chosen at display time from the frame's aspect ratio: when the frame is wider than it is tall, dock from the right; when it is square or taller than wide, dock from the bottom. Compare the frame's pixel width against its height in the display-buffer rule to pick the edge.
 
+** TODO [#B] Keymap consolidation — resolve decisions, run Phase 1-2 :feature:refactor:solo:
+Spec: [[file:docs/design/keybinding-console-safety-spec.org][keybinding-console-safety-spec.org]]. Phase 0 (revert 4a1ecf64) is done and pushed. Decisions D1-D5 are open TODOs in the spec; D2/D4/D5 gate the primary work (Phase 1 prune via Appendix D, Phase 2 consolidate + retire the translation block), while D1/D3 (the console-safe prefix) gate only the optional Phase 3 and can stay open indefinitely. Resolve D2/D4/D5, then run Phase 1-2. Appendix D is the keybinding pruning checklist. Add a =#+TODO: TODO | DONE SUPERSEDED CANCELLED= header line to the spec if adopting those decision keywords (rulesets convention update, 2026-06-12).
+
+** TODO [#D] Desktop quick-capture: Note + Recipe types :feature:solo:
+Deferred 2026-06-13 — build when the need triggers, not ahead of use. Add generic Note (timestamped datetree) and Recipe (skeleton with Ingredients/Instructions + :SOURCE:) capture types to =cj/quick-capture= in =modules/org-capture-config.el=: one template each with an absolute target plus its key in the desktop subset; reuse the existing frame-cleanup. Full design in the archsetup handoff (2026-06-13 note in the inbox/sessions).
+
 ** TODO [#A] Calibre Open Work
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-06
@@ -764,10 +770,6 @@ Tie this into the existing coverage work:
 ** TODO [#B] Messenger window/key unification :feature:
 Spec: [[file:docs/design/messenger-unification-spec.org][messenger-unification-spec.org]] (Draft, 2026-06-11). One library (=cj-messenger-lib.el=) gives every messenger the same shape: chat windows rise from the bottom (the signel rule, generalized), C-c C-c confirms, C-c C-k cancels, C-c C-a attaches — dispatched per backend through a registry + minor mode. Signel already conforms (reference backend); telega and slack join in phases 2-3; ERC later. All eight decisions settled 2026-06-11 (cancel closes an idle window; telega's filter-cancel shadow accepted; slack rooms join the bottom rule). Spec held open — Craig has more ideas to fold in before it's marked Ready.
 
-** DONE [#B] cj/undo-kill-buffer off-by-one on plain invocation :bug:quick:solo:
-CLOSED: [2026-06-12 Fri]
-Fixed in =modules/ui-navigation.el=: indexing is now =(nth (1- arg) ...)=, so a numeric prefix is 1-based and plain M-S-z re-opens the most-recently-killed file (was opening the second). Rewrote the two undo-kill tests to exercise the real no-prefix path (arg=1 -> first) and a 1-based numeric prefix; both red against the bug, green after. Full suite: no new failures (the 4 pre-existing dupre-theme failures are the separate task below). Live-reloaded into the daemon.
-
 ** TODO [#C] cj/undo-kill-buffer skip-visited uses delq (eq) on path strings :bug:quick:solo:
 =modules/ui-navigation.el= — the visited-file filter calls =(delq buf-file recently-killed-list)= where =buf-file= is a fresh string from =expand-file-name=, never =eq= to the =recentf-list= entries, so already-open files are never skipped (the skip logic is dead). Use =delete= (equal-based). Found 2026-06-12 while fixing the off-by-one above; the two bugs cancel exactly when one file is open, which is why it went unnoticed.
 
@@ -783,10 +785,6 @@ Also =jumper.el:178= — the promised single-location toggle never toggles back 
 ** TODO [#B] C-s C-s vertico-repeat path never works :bug:quick:solo:
 =modules/selection-framework.el:263= — =cj/consult-line-or-repeat= calls =vertico-repeat= on the second consecutive C-s, but nothing adds =vertico-repeat-save= to =minibuffer-setup-hook= (grep: zero hits config-wide), so it always signals "No Vertico session". Add the hook next to the vertico use-package block. From the 2026-06 config audit.
 
-** DONE [#B] dashboard-config setq wipes recentf-exclude list :bug:quick:solo:
-CLOSED: [2026-06-12 Fri]
-Fixed in =modules/dashboard-config.el=: extracted the EMMS exclusion into =cj/--dashboard-exclude-emms-from-recentf= (the =:config= side-effect was not reachable for a test) and switched =setq= to =add-to-list=, so the five exclusions system-defaults adds earlier in init order survive. Two ERT tests in =tests/test-dashboard-config-recentf-exclude.el= (preserves prior entries / adds the pattern); the preservation test was red before, green after. Live-reloaded into the daemon and restored the five wiped entries in the running session.
-
 ** TODO [#B] auth-config: unguarded gpg-connect-agent call + compile-time require :bug:quick:solo:
 From the 2026-06 config audit. =modules/auth-config.el:88= — bare =(call-process "gpg-connect-agent" ...)= in a =:demand t= :config signals file-missing and aborts init on machines without the binary; guard with =cj/executable-find-or-warn=. =auth-config.el:36= — =user-constants= is required only =eval-when-compile= but =authinfo-file= is read at load time; works from .el source, fails from standalone .elc. Use a runtime require (system-defaults.el:32-35 documents this exact trap).
 
@@ -795,10 +793,6 @@ From the 2026-06 config audit. =modules/auth-config.el:88= — bare =(call-proce
 
 ** TODO [#B] markdown live preview clobbered by markdown-mode :bug:quick:solo:
 =modules/markdown-config.el:54= defines bare =markdown-preview=, which markdown-mode redefines the moment the first .md loads — the impatient-mode live preview is dead and F2 silently runs the package command (agent verified in the live daemon). Also =:61= guards on =(boundp 'httpd-process)=, a variable that doesn't exist in simple-httpd — use =(httpd-running-p)=. And the =:config= =(setq imp-set-user-filter 'markdown-html)= at line 41 is doubly dead (function-not-variable, symbol names nothing) — delete. Rename to =cj/markdown-preview=, rebind F2. From the 2026-06 config audit.
-
-** DONE [#B] org-roam dailies template writes FILETAGS and TITLE on one line :bug:quick:solo:
-CLOSED: [2026-06-12 Fri]
-Fixed in =modules/org-roam-config.el=: extracted the dailies head into the =cj/--org-roam-dailies-head= defconst (so it is unit-testable, the value was unreachable inside the use-package =:custom= form) and gave it real newlines — =#+FILETAGS: Journal\n#+TITLE: %<%Y-%m-%d>\n=. Two ERT tests in =tests/test-org-roam-config-dailies-head.el= assert FILETAGS and TITLE sit on separate lines and the head ends in a newline (both red before, green after). Live-reloaded into the daemon. Open follow-up for Craig: existing malformed daily files (with the run-together first line) are data, not code — sweep them by hand if desired.
 
 ** TODO [#B] agenda sources: roam Projects missing, no existence filtering :bug:solo:
 From the 2026-06 config audit, =modules/org-agenda-config.el=:
@@ -816,12 +810,6 @@ From the 2026-06 config audit, =modules/calendar-sync.el=:
 - =:1309= — agenda file written via =with-temp-file= directly on the target (truncate-in-place); org-agenda/chime reading mid-write sees a partial calendar, hourly. Write temp + =rename-file= (atomic same-fs). Same for =--save-state= :258.
 - =:1284= — curl runs without =--fail=: an HTTP 404/500 error page exits 0 and the HTML proceeds into conversion.
 - =:1229-1233= — =--parse-ics= returns nil for both garbage and a valid calendar with zero in-window events, so healthy near-empty calendars report "parse failed" in =calendar-sync-status=. Distinguish the cases.
-
-** DONE [#B] drill-refile clobbers global org-refile-targets with an invalid spec :bug:quick:solo:
-CLOSED: [2026-06-12 Fri]
-Fixed in =modules/org-drill-config.el=: =cj/drill-refile= now =let=-binds =org-refile-targets= (the session-wide value survives) and supplies =(directory-files drill-dir t "\\.org$")= as the file list instead of the bound =drill-dir= symbol (org reads a bound symbol as a directory string, which yielded nothing). Rewrote the stale test (it asserted the buggy =(assoc 'drill-dir ...)=) into two: targets are a real .org file list, and the global is not clobbered. Both red before, green after. Live-reloaded into the daemon.
-
-Follow-up 2026-06-12 (Codex review): the first fix reinvented file-listing with a raw =directory-files= call, bypassing the shared validated entry point =cj/--drill-files-or-error= — no missing/unreadable-dir =user-error=, silent fall-through on an empty dir, and it included leading-dot =.org= files the rest of the module excludes. Re-routed through =cj/--drill-files-or-error= + =expand-file-name=; the test was rewritten into three (validated-helper targets, no global clobber, =user-error= on a missing dir).
 
 ** TODO [#B] ERC: double mention notifications + tautological server list :bug:quick:solo:
 From the 2026-06 config audit, =modules/erc-config.el=:
@@ -858,10 +846,7 @@ From the 2026-06 config audit, =modules/dwim-shell-config.el=:
 
 ** TODO [#B] prog hooks mutate global state per buffer :bug:quick:solo:
 From the 2026-06 config audit: =prog-go.el:64=, =prog-c.el:73=, =prog-shell.el:77= call global =(electric-pair-mode t)= from buffer setup hooks — one Go/C/shell buffer turns on pairing in org/text everywhere (python/webdev correctly use =electric-pair-local-mode=). =prog-general.el:79-80= — =display-line-numbers-type 'relative= setq/setq-default run from the hook AFTER the mode is enabled, so the first prog buffer of a session gets absolute numbers. Local-mode for the three; move the line-number setqs to top level.
-
-** CANCELLED [#B] M-S- launcher keys dead: eww, elfeed, calibredb unreachable :bug:quick:solo:
-CLOSED: [2026-06-13 Sat]
-Not a bug. The audit used =key-binding=, which ignores =key-translation-map=, so it read the M-S- launcher chords as dead. They work in GUI: =keyboard-compat.el= installs a =key-translation-map= entry (=M-E -> M-S-e=, etc.) in GUI frames, so Meta+Shift+letter reaches eww/elfeed/calibredb. The "fix" =4a1ecf64= bound =M-E= directly and broke them instead; reverted here. The real console-reachability problem (the chords are dead outside GUI) is the subject of [[file:docs/design/keybinding-console-safety-spec.org][the keybinding-console-safety spec]].
+The global electric-pair this turns on also paired "<" in org, stranding a ">" after "<"-key snippets (=#+end_src>=, broke cj-scan). That symptom is fixed separately (=d9c90e83=, an =electric-pair-inhibit-predicate= for "<"). This task remains the root fix: pairing should not be global at all.
 
 ** TODO [#B] ai-rewrite: chosen directive never reaches the request :bug:solo:
 =modules/ai-rewrite.el:64= — the directive is let-bound around =(call-interactively #'gptel-rewrite)=, but gptel-rewrite is a transient prefix that returns when the menu shows; the send resolves the directive AFTER the binding unwound (verified against ~/code/gptel/gptel-rewrite.el:780-799). The picker's choice is silently dropped — the module's core feature is inert. Set =gptel--rewrite-directive= buffer-locally (restore via =gptel-post-rewrite-functions=) or use a self-removing global hook entry. From the 2026-06 config audit.
@@ -1456,46 +1441,6 @@ Expected outcome:
   document why.
 - Add a note to the local repository docs so future package failures do not
   lead to permanent insecure defaults.
-
-** DONE [#B] Signel Client Open Work
-CLOSED: [2026-06-12 Fri]
-:PROPERTIES:
-:LAST_REVIEWED: 2026-06-12
-:END:
-Parent task for the Emacs Signal client bring-up. Engine: signal-cli (linked secondary device). Front end: a fork of signel at =~/code/signel=, wired through =modules/signal-config.el=. Design: [[file:docs/design/signal-client.org][docs/design/signal-client.org]].
-
-Closed 2026-06-12: the bring-up shipped (dated history below). The signel project now has its own =.ai/= scope, so all open signel/signal-cli issues moved to [[file:~/code/signel/todo.org][the signel todo]] and are tracked there flat (the three open children here — handle-error leak, link-with-QR, groups in picker — moved in that pass). Work on =modules/signal-config.el= stays in this file.
-
-*** 2026-06-12 Fri @ 07:34:05 -0500 Signel notify-only-for-unviewed-conversation shipped
-Wire =cj/signal--should-notify-p= (done) into signel's =signel--handle-receive= notify block (signel.el:277), route through Craig's notify script instead of bare =notifications-notify=, and gate sound behind a defcustom that defaults off. Spec addendum (the four notify details + wiring architecture) accepted 2026-06-11 — see [[file:docs/design/signal-client.org][signal-client.org]] "Notification slice".
-
-Built 2026-06-11 (TDD; fork commit e263367, dotemacs 9afc6128): =signel-notify-function= customization point in the fork; =cj/signel--notify= + =cj/signal--format-notify-body= + =cj/signel-notify-sound= in signal-config.el, wired in =:config= with a load-time =cj/executable-find-or-warn=. 17 new ERT tests green; full launch smoke clean; live-reloaded into the daemon and a synthetic toast fired through the script path. The two manual checks moved to the Manual testing and validation parent.
-
-*** 2026-05-26 Tue @ 20:06:58 -0500 Decided: fork signel rather than depend on it
-signel is on MELPA but stale (one-author v0.1, all commits in a Jan-2026 burst, unattended tracker, no PRs). The spec needs internal edits (notify behavior, input-clobber fix), which are clean in a fork and hacky via advice, and a dead upstream means no divergence cost. Rejected: adopt-from-MELPA + advice, build-from-scratch, signal-cli-rest-api (Docker), MCP-tool, ERC bridge. Full rationale in the design doc.
-
-*** 2026-05-26 Tue @ 20:06:58 -0500 Linked as secondary device; contact parser verified against live shape
-Installed signal-cli 0.14.4.1 (AUR; imported AsamK's signing key FA10826A... to clear the makepkg verification). Linked the account via QR. Built and unit-tested the pure helper layer in =modules/signal-config.el= (contact-list parsing, notify-when-not-viewing predicate) with =tests/test-signal-config.el=. Confirmed the live =listContacts= shape: givenName/familyName are top-level in 0.14, not under profile as first assumed; corrected the parser and verified it produces a picker entry for all 94 real contacts. Sent a request to archsetup to add signal-cli to the standard install.
-
-*** 2026-05-27 Wed @ 22:08:40 -0500 Shipped initiate-message workflow: picker + Note-to-Self + keymap
-=cj/signel-message= (=C-; M m=) names contacts via =completing-read= over the cj-owned =cj/signel--contact-cache=, with "Note to Self" pinned first.  =cj/signel-message-self= (=C-; M s=) sends straight to =signel-account=.  Daemon guard =cj/signel--ensure-started= auto-starts the daemon when =signel-account= is set and =user-error='s with the remedy when it isn't; on start it pre-warms the cache.  =cj/signel--fetch-contacts= rides the new RPC callback contract (=signel--send-rpc= with success-callback), the result feeds =cj/signal--parse-contacts=, and =cj/signel-refresh-contacts= (=C-; M no leaf=) clears + refetches.  Cold-cache invocations =accept-process-output= up to =cj/signel-fetch-timeout= seconds (3s default) and =user-error= on timeout so a wedged daemon can't hang Emacs.  Prefix keymap =cj/signel-prefix-map= bound under =C-; M= via =keybindings.el='s =cj/custom-keymap=: m / s / d / q / SPC.  15 new ERT tests in =tests/test-signal-config.el= cover ensure-started branches, fetch contract, cache empty-vs-failure, refresh, picker happy-path + cold-cache resolves + cold-cache timeout, message-self, and the prefix map bindings.
-
-*** 2026-05-27 Wed @ 21:55:57 -0500 Added JSON-RPC success-result dispatch in the signel fork
-Fork commit 4740d97 added =signel--request-handler-map= (id → success callback), extended =signel--send-rpc= with an optional =success-callback= that registers under the new request id, and gave =signel--dispatch= a result branch that invokes the callback and removes the handler.  Error responses also remhash the handler entry, and =signel-start= / =signel-stop= both =clrhash= the map so reconnect is reliably empty.  Backward-compatible: existing callers that don't pass a callback hit the same code path as before.  Five ERT tests in this project (=tests/test-signel-rpc-dispatch.el=, dotemacs commit bfec0eab) lock the contract: Normal (result invokes callback + cleanup, send-rpc registers), Boundary (unknown id is a no-op), Error (error response cleans up handler), reconnect (=signel-stop= empties the map).  Refactor audit surfaced a separate pre-existing leak in =signel--handle-error= (request-buffer-map entries aren't removed on error); filed as the [#C] follow-up below.
-
-*** 2026-05-27 Wed @ 22:08:40 -0500 Shipped clobber fix for both insert paths
-Fork commit 5ec56c0 added =signel--pending-input= (capture from input-marker to point-max) and =signel--restore-input= (re-insert after the redrawn prompt; nil-safe), and wired both into =signel--insert-msg= (the receive path) and =signel--insert-system-msg= (the error path).  A mid-type send now survives both an incoming message and a system-error insertion.  Four ERT tests in =tests/test-signel-input-preservation.el= cover the helpers (typed text, empty) and both insert paths via a temp =signel-chat-mode= buffer.
-
-*** 2026-05-27 Wed @ 22:08:40 -0500 use-package wired with C-; M keymap and local account config
-=use-package signel :load-path "~/code/signel" :ensure nil= already wired earlier with =signel-auto-open-buffer nil=.  Account source is =signel-account= set from =cj/signal-private-config-file= (=signal-config.local.el=, gitignored) loaded in =:config=, decided in the workflow spec.  Keymap prefix =C-; M= attached via =with-eval-after-load 'keybindings= so the binding survives load-order.
-
-*** 2026-06-06 Sat @ 12:29:24 -0500 Fixed C-; M load-order bug via canonical register-prefix-map
-Root cause: signal-config.el was the only feature module that violated the prefix-registration contract documented in =keybindings.el:41-45=.  Every other prefix map uses =(require 'keybindings)= + a top-level =(cj/register-prefix-map "X" map)=; signal-config had neither, mutating =cj/custom-keymap= directly through a =(with-eval-after-load 'keybindings (when (boundp 'cj/custom-keymap) ...))= form.  The =boundp= guard turned a load-order miss into a SILENT no-op — no error, the binding just never happened — which is why a live-reload (keybindings definitely loaded by then) papered over it.
-Fix: added =(require 'keybindings)= at the top of signal-config.el and replaced the guarded form with =(cj/register-prefix-map "M" cj/signel-prefix-map "signal messages")=, matching the 25+ other prefix maps.
-Verified: (1) new contract test =test-signal-config-prefix-map-registered-under-c-semi-m= asserts =C-; M= resolves to =cj/signel-prefix-map= (35/35 green); (2) full =emacs --batch= init.el launch — the exact failing scenario — now shows =C-; M= bound; (3) clean byte-compile; (4) live-reloaded into the daemon, binding confirmed.  No unit-level red was possible: the =boundp= guard is robust under all standard test timings, which is the CLAUDE.md launch-only-failure class.
-
-*** 2026-05-28 Thu @ 03:09:18 -0500 Chat buffer docks bottom 30% and C-c C-k cancels
-=display-buffer-alist= entry in =modules/signal-config.el= matches =^\*Signel: = chat buffers and routes them through =display-buffer-at-bottom= with =window-height . 0.3=, so the chat docks to the bottom 30% of the frame.  The signel fork's =signel-chat= switched from =switch-to-buffer= to =pop-to-buffer= so the rule can apply (=switch-to-buffer= ignores =display-buffer-alist=).  =C-c C-c= was already bound to =signel--send-input= in the mode; =C-c C-k= now binds =signel--cancel-input=, a new fork helper that clears the editable region between =signel--input-marker= and =point-max= and then calls =quit-window=.  Buffer stays alive so chat history above the marker survives revisits; cleared input means the next visit lands on a fresh prompt.  Five ERT tests in =tests/test-signel-cancel-input.el= (clears pending, empty-area no-op, quit-window called, buffer preserved, keymap binding) and two new tests in =tests/test-signal-config.el= (entry shape + regex match set).  Dotemacs commit 998e9c7a, fork commit df02d79.
 
 ** DOING [#B] Migrate All Terminals From Vterm to Ghostel
 :PROPERTIES:
@@ -4328,9 +4273,10 @@ From the 2026-06-11 messenger-unification brainstorm. Google Voice has no offici
 ** TODO Manual testing and validation
 Exercised once the phases above land.
 *** TODO org-capture quick-capture popup behaves correctly
-What we're verifying: the Hyprland Super+Shift+N popup is single-window, offers only the sensible templates, files to the inbox, and never orphans its frame (archsetup request, 2026-06-12; fix in modules/org-capture-config.el, live in the daemon). The menu-subset / inbox-target / abort-close parts need archsetup's one-line script change to call cj/quick-capture (note sent 2026-06-12); the single-window part is live regardless.
+What we're verifying: the Hyprland Super+Shift+N popup is single-window, offers only the sensible templates, files to the inbox, never orphans its frame, and runs the capture in the popup even when launched from a focused main frame (archsetup request 2026-06-12; fixes in modules/org-capture-config.el incl. the frame-targeting focus-race fix, all pushed and live). archsetup verified the base case on ratio 2026-06-12; the focus-race fix landed after.
 - Press Super+Shift+N to open the quick-capture popup
-- The *Org Select* menu should fill the frame as one window (no top sliver of your last-visited buffer, one modeline) and list only Task / Bug / Event
+- The *Org Select* menu should fill the popup frame as one window (no top sliver of your last-visited buffer, one modeline) and list only Task / Bug / Event — and NOT split your main frame (the focus-race fix)
+- It should show no "C — Customize org-capture-templates" row
 - Pick Task (t): the CAPTURE buffer also fills the frame as one window; finishing with C-c C-c files it to the global inbox under "Inbox" (not a project's todo.org)
 - Re-open and pick Event (e): it prompts for a date and files to the schedule
 - Re-open and hit q (or C-g) at the menu: the popup frame closes (no orphan)
@@ -4480,12 +4426,6 @@ Task: survey the modes/modules Craig works in and identify where a =?= -> curate
 
 ** TODO [#C] the preview splits an already split window into 3 temporarily.
 looks strange. potentially problematic for ai-terms.
-
-** DONE [#C] Project-aware bug capture via C-c c t :feature:
-CLOSED: [2026-06-12 Fri]
-Relocated from the global capture inbox 2026-06-06. When inside a projectile project, C-c c t (Task) files into that project's root todo.org under the "<Project> Open Work" header. If the project has no todo.org, fall back to the global inbox-file and warn naming the project.
-
-Implemented 2026-06-06 in =modules/org-capture-config.el=: a shared project-aware =function= capture target (=cj/--org-capture-project-location=) used by =C-c c t= (Task, =* TODO=) and a new =C-c c b= (Bug, =* TODO [#C]=). Matches an existing top-level "... Open Work" heading (so ~/.emacs.d hits "Emacs Open Work") and creates "<Capitalized project> Open Work" only when absent. Outside a project / no todo.org -> global inbox under "Inbox" (with a warning in the no-todo.org case). 15 ERT tests in =tests/test-org-capture-config-project-target.el=; daemon e2e confirmed a real capture lands "** TODO [#C] ..." prepended under Open Work. Manual verify filed under the Manual testing and validation parent. NOTE: the matching "<Project> Resolved Work" header for the wrap-up workflow is a separate concern, not handled here.
 
 ** VERIFY [#C] Palette-columns spec review
 SCHEDULED: <2026-06-12 Fri>
@@ -7821,3 +7761,64 @@ CLOSED: [2026-06-11 Thu]
 In the UI faces table, the preview cell for a face with its own bg renders with the ground bg instead. Repro: set mode-line fg=black, bg=blue — the preview cell should be black text on blue, but shows black on black (the live buffer mode-line is fine). Root cause: =applyGround= (app.js:300) blankets EVERY =.ex= element's background to =MAP['bg']=, and the preview cell =cP= shares =className='ex'= (app.js:753), so it clobbers the per-face bg =paintUI= sets (app.js:739) — runs on load and on every ground change. Fix: stop applyGround from touching the UI-face preview cells (scope its =.ex= selector to the code/example cells, give the preview cell its own class, or re-run paintUI after). The contrast cell shares the same staleness, so confirm both.
 *** 2026-06-10 Wed @ 14:40:22 -0500 Fixed by the applyGround scoping under the contrast-cell task
 Same root cause as the [#A] contrast-cell task, fixed there in one change: =applyGround= scopes its blanket to =#legbody .ex= + the code panes and repaints UI faces through =paintUI=. #contrasttest pins the preview-bg survival. Awaiting the same repro check.
+** DONE [#B] cj/undo-kill-buffer off-by-one on plain invocation :bug:quick:solo:
+CLOSED: [2026-06-12 Fri]
+Fixed in =modules/ui-navigation.el=: indexing is now =(nth (1- arg) ...)=, so a numeric prefix is 1-based and plain M-S-z re-opens the most-recently-killed file (was opening the second). Rewrote the two undo-kill tests to exercise the real no-prefix path (arg=1 -> first) and a 1-based numeric prefix; both red against the bug, green after. Full suite: no new failures (the 4 pre-existing dupre-theme failures are the separate task below). Live-reloaded into the daemon.
+** DONE [#B] dashboard-config setq wipes recentf-exclude list :bug:quick:solo:
+CLOSED: [2026-06-12 Fri]
+Fixed in =modules/dashboard-config.el=: extracted the EMMS exclusion into =cj/--dashboard-exclude-emms-from-recentf= (the =:config= side-effect was not reachable for a test) and switched =setq= to =add-to-list=, so the five exclusions system-defaults adds earlier in init order survive. Two ERT tests in =tests/test-dashboard-config-recentf-exclude.el= (preserves prior entries / adds the pattern); the preservation test was red before, green after. Live-reloaded into the daemon and restored the five wiped entries in the running session.
+** DONE [#B] org-roam dailies template writes FILETAGS and TITLE on one line :bug:quick:solo:
+CLOSED: [2026-06-12 Fri]
+Fixed in =modules/org-roam-config.el=: extracted the dailies head into the =cj/--org-roam-dailies-head= defconst (so it is unit-testable, the value was unreachable inside the use-package =:custom= form) and gave it real newlines — =#+FILETAGS: Journal\n#+TITLE: %<%Y-%m-%d>\n=. Two ERT tests in =tests/test-org-roam-config-dailies-head.el= assert FILETAGS and TITLE sit on separate lines and the head ends in a newline (both red before, green after). Live-reloaded into the daemon. Open follow-up for Craig: existing malformed daily files (with the run-together first line) are data, not code — sweep them by hand if desired.
+** DONE [#B] drill-refile clobbers global org-refile-targets with an invalid spec :bug:quick:solo:
+CLOSED: [2026-06-12 Fri]
+Fixed in =modules/org-drill-config.el=: =cj/drill-refile= now =let=-binds =org-refile-targets= (the session-wide value survives) and supplies =(directory-files drill-dir t "\\.org$")= as the file list instead of the bound =drill-dir= symbol (org reads a bound symbol as a directory string, which yielded nothing). Rewrote the stale test (it asserted the buggy =(assoc 'drill-dir ...)=) into two: targets are a real .org file list, and the global is not clobbered. Both red before, green after. Live-reloaded into the daemon.
+
+Follow-up 2026-06-12 (Codex review): the first fix reinvented file-listing with a raw =directory-files= call, bypassing the shared validated entry point =cj/--drill-files-or-error= — no missing/unreadable-dir =user-error=, silent fall-through on an empty dir, and it included leading-dot =.org= files the rest of the module excludes. Re-routed through =cj/--drill-files-or-error= + =expand-file-name=; the test was rewritten into three (validated-helper targets, no global clobber, =user-error= on a missing dir).
+** CANCELLED [#B] M-S- launcher keys dead: eww, elfeed, calibredb unreachable :bug:quick:solo:
+CLOSED: [2026-06-13 Sat]
+Not a bug. The audit used =key-binding=, which ignores =key-translation-map=, so it read the M-S- launcher chords as dead. They work in GUI: =keyboard-compat.el= installs a =key-translation-map= entry (=M-E -> M-S-e=, etc.) in GUI frames, so Meta+Shift+letter reaches eww/elfeed/calibredb. The "fix" =4a1ecf64= bound =M-E= directly and broke them instead; reverted here. The real console-reachability problem (the chords are dead outside GUI) is the subject of [[file:docs/design/keybinding-console-safety-spec.org][the keybinding-console-safety spec]].
+** DONE [#B] Signel Client Open Work
+CLOSED: [2026-06-12 Fri]
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-12
+:END:
+Parent task for the Emacs Signal client bring-up. Engine: signal-cli (linked secondary device). Front end: a fork of signel at =~/code/signel=, wired through =modules/signal-config.el=. Design: [[file:docs/design/signal-client.org][docs/design/signal-client.org]].
+
+Closed 2026-06-12: the bring-up shipped (dated history below). The signel project now has its own =.ai/= scope, so all open signel/signal-cli issues moved to [[file:~/code/signel/todo.org][the signel todo]] and are tracked there flat (the three open children here — handle-error leak, link-with-QR, groups in picker — moved in that pass). Work on =modules/signal-config.el= stays in this file.
+
+*** 2026-06-12 Fri @ 07:34:05 -0500 Signel notify-only-for-unviewed-conversation shipped
+Wire =cj/signal--should-notify-p= (done) into signel's =signel--handle-receive= notify block (signel.el:277), route through Craig's notify script instead of bare =notifications-notify=, and gate sound behind a defcustom that defaults off. Spec addendum (the four notify details + wiring architecture) accepted 2026-06-11 — see [[file:docs/design/signal-client.org][signal-client.org]] "Notification slice".
+
+Built 2026-06-11 (TDD; fork commit e263367, dotemacs 9afc6128): =signel-notify-function= customization point in the fork; =cj/signel--notify= + =cj/signal--format-notify-body= + =cj/signel-notify-sound= in signal-config.el, wired in =:config= with a load-time =cj/executable-find-or-warn=. 17 new ERT tests green; full launch smoke clean; live-reloaded into the daemon and a synthetic toast fired through the script path. The two manual checks moved to the Manual testing and validation parent.
+
+*** 2026-05-26 Tue @ 20:06:58 -0500 Decided: fork signel rather than depend on it
+signel is on MELPA but stale (one-author v0.1, all commits in a Jan-2026 burst, unattended tracker, no PRs). The spec needs internal edits (notify behavior, input-clobber fix), which are clean in a fork and hacky via advice, and a dead upstream means no divergence cost. Rejected: adopt-from-MELPA + advice, build-from-scratch, signal-cli-rest-api (Docker), MCP-tool, ERC bridge. Full rationale in the design doc.
+
+*** 2026-05-26 Tue @ 20:06:58 -0500 Linked as secondary device; contact parser verified against live shape
+Installed signal-cli 0.14.4.1 (AUR; imported AsamK's signing key FA10826A... to clear the makepkg verification). Linked the account via QR. Built and unit-tested the pure helper layer in =modules/signal-config.el= (contact-list parsing, notify-when-not-viewing predicate) with =tests/test-signal-config.el=. Confirmed the live =listContacts= shape: givenName/familyName are top-level in 0.14, not under profile as first assumed; corrected the parser and verified it produces a picker entry for all 94 real contacts. Sent a request to archsetup to add signal-cli to the standard install.
+
+*** 2026-05-27 Wed @ 22:08:40 -0500 Shipped initiate-message workflow: picker + Note-to-Self + keymap
+=cj/signel-message= (=C-; M m=) names contacts via =completing-read= over the cj-owned =cj/signel--contact-cache=, with "Note to Self" pinned first.  =cj/signel-message-self= (=C-; M s=) sends straight to =signel-account=.  Daemon guard =cj/signel--ensure-started= auto-starts the daemon when =signel-account= is set and =user-error='s with the remedy when it isn't; on start it pre-warms the cache.  =cj/signel--fetch-contacts= rides the new RPC callback contract (=signel--send-rpc= with success-callback), the result feeds =cj/signal--parse-contacts=, and =cj/signel-refresh-contacts= (=C-; M no leaf=) clears + refetches.  Cold-cache invocations =accept-process-output= up to =cj/signel-fetch-timeout= seconds (3s default) and =user-error= on timeout so a wedged daemon can't hang Emacs.  Prefix keymap =cj/signel-prefix-map= bound under =C-; M= via =keybindings.el='s =cj/custom-keymap=: m / s / d / q / SPC.  15 new ERT tests in =tests/test-signal-config.el= cover ensure-started branches, fetch contract, cache empty-vs-failure, refresh, picker happy-path + cold-cache resolves + cold-cache timeout, message-self, and the prefix map bindings.
+
+*** 2026-05-27 Wed @ 21:55:57 -0500 Added JSON-RPC success-result dispatch in the signel fork
+Fork commit 4740d97 added =signel--request-handler-map= (id → success callback), extended =signel--send-rpc= with an optional =success-callback= that registers under the new request id, and gave =signel--dispatch= a result branch that invokes the callback and removes the handler.  Error responses also remhash the handler entry, and =signel-start= / =signel-stop= both =clrhash= the map so reconnect is reliably empty.  Backward-compatible: existing callers that don't pass a callback hit the same code path as before.  Five ERT tests in this project (=tests/test-signel-rpc-dispatch.el=, dotemacs commit bfec0eab) lock the contract: Normal (result invokes callback + cleanup, send-rpc registers), Boundary (unknown id is a no-op), Error (error response cleans up handler), reconnect (=signel-stop= empties the map).  Refactor audit surfaced a separate pre-existing leak in =signel--handle-error= (request-buffer-map entries aren't removed on error); filed as the [#C] follow-up below.
+
+*** 2026-05-27 Wed @ 22:08:40 -0500 Shipped clobber fix for both insert paths
+Fork commit 5ec56c0 added =signel--pending-input= (capture from input-marker to point-max) and =signel--restore-input= (re-insert after the redrawn prompt; nil-safe), and wired both into =signel--insert-msg= (the receive path) and =signel--insert-system-msg= (the error path).  A mid-type send now survives both an incoming message and a system-error insertion.  Four ERT tests in =tests/test-signel-input-preservation.el= cover the helpers (typed text, empty) and both insert paths via a temp =signel-chat-mode= buffer.
+
+*** 2026-05-27 Wed @ 22:08:40 -0500 use-package wired with C-; M keymap and local account config
+=use-package signel :load-path "~/code/signel" :ensure nil= already wired earlier with =signel-auto-open-buffer nil=.  Account source is =signel-account= set from =cj/signal-private-config-file= (=signal-config.local.el=, gitignored) loaded in =:config=, decided in the workflow spec.  Keymap prefix =C-; M= attached via =with-eval-after-load 'keybindings= so the binding survives load-order.
+
+*** 2026-06-06 Sat @ 12:29:24 -0500 Fixed C-; M load-order bug via canonical register-prefix-map
+Root cause: signal-config.el was the only feature module that violated the prefix-registration contract documented in =keybindings.el:41-45=.  Every other prefix map uses =(require 'keybindings)= + a top-level =(cj/register-prefix-map "X" map)=; signal-config had neither, mutating =cj/custom-keymap= directly through a =(with-eval-after-load 'keybindings (when (boundp 'cj/custom-keymap) ...))= form.  The =boundp= guard turned a load-order miss into a SILENT no-op — no error, the binding just never happened — which is why a live-reload (keybindings definitely loaded by then) papered over it.
+Fix: added =(require 'keybindings)= at the top of signal-config.el and replaced the guarded form with =(cj/register-prefix-map "M" cj/signel-prefix-map "signal messages")=, matching the 25+ other prefix maps.
+Verified: (1) new contract test =test-signal-config-prefix-map-registered-under-c-semi-m= asserts =C-; M= resolves to =cj/signel-prefix-map= (35/35 green); (2) full =emacs --batch= init.el launch — the exact failing scenario — now shows =C-; M= bound; (3) clean byte-compile; (4) live-reloaded into the daemon, binding confirmed.  No unit-level red was possible: the =boundp= guard is robust under all standard test timings, which is the CLAUDE.md launch-only-failure class.
+
+*** 2026-05-28 Thu @ 03:09:18 -0500 Chat buffer docks bottom 30% and C-c C-k cancels
+=display-buffer-alist= entry in =modules/signal-config.el= matches =^\*Signel: = chat buffers and routes them through =display-buffer-at-bottom= with =window-height . 0.3=, so the chat docks to the bottom 30% of the frame.  The signel fork's =signel-chat= switched from =switch-to-buffer= to =pop-to-buffer= so the rule can apply (=switch-to-buffer= ignores =display-buffer-alist=).  =C-c C-c= was already bound to =signel--send-input= in the mode; =C-c C-k= now binds =signel--cancel-input=, a new fork helper that clears the editable region between =signel--input-marker= and =point-max= and then calls =quit-window=.  Buffer stays alive so chat history above the marker survives revisits; cleared input means the next visit lands on a fresh prompt.  Five ERT tests in =tests/test-signel-cancel-input.el= (clears pending, empty-area no-op, quit-window called, buffer preserved, keymap binding) and two new tests in =tests/test-signal-config.el= (entry shape + regex match set).  Dotemacs commit 998e9c7a, fork commit df02d79.
+** DONE [#C] Project-aware bug capture via C-c c t :feature:
+CLOSED: [2026-06-12 Fri]
+Relocated from the global capture inbox 2026-06-06. When inside a projectile project, C-c c t (Task) files into that project's root todo.org under the "<Project> Open Work" header. If the project has no todo.org, fall back to the global inbox-file and warn naming the project.
+
+Implemented 2026-06-06 in =modules/org-capture-config.el=: a shared project-aware =function= capture target (=cj/--org-capture-project-location=) used by =C-c c t= (Task, =* TODO=) and a new =C-c c b= (Bug, =* TODO [#C]=). Matches an existing top-level "... Open Work" heading (so ~/.emacs.d hits "Emacs Open Work") and creates "<Capitalized project> Open Work" only when absent. Outside a project / no todo.org -> global inbox under "Inbox" (with a warning in the no-todo.org case). 15 ERT tests in =tests/test-org-capture-config-project-target.el=; daemon e2e confirmed a real capture lands "** TODO [#C] ..." prepended under Open Work. Manual verify filed under the Manual testing and validation parent. NOTE: the matching "<Project> Resolved Work" header for the wrap-up workflow is a separate concern, not handled here.
