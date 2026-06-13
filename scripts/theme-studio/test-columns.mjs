@@ -92,6 +92,14 @@ test('columnsFromPalette: Boundary - imported bg-like names are not ground just 
   assert.deepEqual(ground.map(g => [g.role, g.name]), [['bg', 'bg'], ['fg', 'fg']]);
   assert.ok(columnOf(columns, 'bg2'), 'bg2 remains in a normal imported color column');
   assert.ok(columnOf(columns, 'bg-alt'), 'bg-alt remains in a normal imported color column');
+  assert.deepEqual(columns.map(f => f.column), ['bg2', 'bg-alt']);
+});
+
+test('columnsFromPalette: Boundary - bg and fg prefixed legacy names are independent bases, not generated steps', () => {
+  const pal = [['#101010', 'bg-1'], ['#202020', 'bg-2'], ['#eeeeee', 'fg-1'], ['#dddddd', 'fg-alt']];
+  const { columns } = columnsFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
+  assert.deepEqual(columns.map(f => f.column), ['bg-1', 'bg-2', 'fg-1', 'fg-alt']);
+  assert.deepEqual(columns.map(f => f.members.map(m => m.name)), [['bg-1'], ['bg-2'], ['fg-1'], ['fg-alt']]);
 });
 
 test('groundRoleOfEntry: Boundary - exact ground roles only, not bg-prefix names', () => {

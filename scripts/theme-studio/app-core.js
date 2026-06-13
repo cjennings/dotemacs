@@ -135,9 +135,12 @@ function lMax(hue,chroma,fgSet,target){
 // assignment re-point across a regenerate.
 
 function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
+function isReservedGroundLikeName(name){return /^(bg|fg)(?:[-_+].+|\d.*)$/i.test(name||'');}
 function columnStem(name){name=name||'color';if(/^color-\d+$/.test(name))return name;name=name.replace(/[+-]\d+$/,'');return name.replace(/\d+$/,'')||'color';}
 function columnOffset(name){const m=(name||'').match(/([+-]\d+)$/);return m?parseInt(m[1],10):0;}
-function columnIdOf(entry){return (entry&&entry[2])||columnStem(entry&&entry[1]);}
+function legacyColumnStem(name){return isReservedGroundLikeName(name)?name:columnStem(name);}
+function legacyColumnOffset(name){return isReservedGroundLikeName(name)?0:columnOffset(name);}
+function columnIdOf(entry){return (entry&&entry[2])||legacyColumnStem(entry&&entry[1]);}
 function groundRoleOfEntry(entry,ground){
   if(!entry)return null;
   const [hex,name]=entry,col=entry[2],n=(name||'').toLowerCase(),h=(hex||'').toLowerCase();
@@ -171,9 +174,9 @@ function columnsFromPalette(palette,ground){
   for(const entry of palette){
     const [hex,name]=entry;
     if(groundRoleOfEntry(entry,ground))continue;
-    const column=columnIdOf(entry);
+    const column=columnIdOf(entry),offset=entry[2]?columnOffset(name):legacyColumnOffset(name);
     if(!byColumn.has(column))byColumn.set(column,{column,members:[]});
-    byColumn.get(column).members.push({hex,name,offset:columnOffset(name),column});
+    byColumn.get(column).members.push({hex,name,offset,column});
   }
   for(const f of byColumn.values()){
     const base=(f.members.find(m=>m.offset===0)||f.members[0]).hex;
