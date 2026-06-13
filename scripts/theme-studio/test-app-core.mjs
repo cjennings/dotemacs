@@ -143,21 +143,21 @@ test('deletePaletteColumnPlan: Normal — removes one stable column and keeps gr
 test('deletePaletteColumnPlan: Boundary — never deletes ground entries', () => {
   const plan = deletePaletteColumnPlan([
     ['#0d0b0a', 'bg', 'ground'],
-    ['#555555', 'ground-1', 'ground'],
+    ['#555555', 'ground+1', 'ground'],
     ['#f0fef0', 'fg', 'ground'],
   ], { bg: '#0d0b0a', fg: '#f0fef0' }, 'ground');
-  assert.deepEqual(plan.palette.map(p => p[1]), ['bg', 'ground-1', 'fg']);
+  assert.deepEqual(plan.palette.map(p => p[1]), ['bg', 'ground+1', 'fg']);
   assert.deepEqual(plan.removed, []);
 });
 
-test('groundColumnMembersFromPalette: Normal — sorts bg, ground-N steps, then fg', () => {
+test('groundColumnMembersFromPalette: Normal — sorts bg, ground+N steps, then fg', () => {
   const members = groundColumnMembersFromPalette([
     ['#ffffff', 'bg', 'ground'],
-    ['#333333', 'ground-2', 'ground'],
-    ['#bbbbbb', 'ground-1', 'ground'],
+    ['#333333', 'ground+2', 'ground'],
+    ['#bbbbbb', 'ground+1', 'ground'],
     ['#000000', 'fg', 'ground'],
   ], { bg: '#ffffff', fg: '#000000' });
-  assert.deepEqual(members.map(m => m.name), ['bg', 'ground-1', 'ground-2', 'fg']);
+  assert.deepEqual(members.map(m => m.name), ['bg', 'ground+1', 'ground+2', 'fg']);
 });
 
 test('lock helpers: Normal — label and toggle operate on the full key set', () => {

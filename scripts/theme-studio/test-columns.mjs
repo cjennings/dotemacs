@@ -79,11 +79,11 @@ test('columnsFromPalette: Boundary - ground hex absent from the palette still fo
   assert.ok(ground.some(g => g.role === 'fg'));
 });
 
-test('columnsFromPalette: Boundary - ground entries and ground-N steps stay out of normal columns', () => {
-  const pal = [['#0d0b0a', 'bg', 'ground'], ['#444444', 'ground-1', 'ground'], ['#67809c', 'blue']];
+test('columnsFromPalette: Boundary - ground entries and ground+N steps stay out of normal columns', () => {
+  const pal = [['#0d0b0a', 'bg', 'ground'], ['#444444', 'ground+1', 'ground'], ['#67809c', 'blue']];
   const { ground, columns } = columnsFromPalette(pal, { bg: '#0d0b0a', fg: '#f0fef0' });
   assert.ok(ground.some(g => g.hex.toLowerCase() === '#0d0b0a'));
-  assert.ok(!columns.some(f => f.members.some(m => m.name === 'bg' || m.name === 'ground-1')));
+  assert.ok(!columns.some(f => f.members.some(m => m.name === 'bg' || m.name === 'ground+1')));
 });
 
 test('columnsFromPalette: Boundary - imported bg-like names are not ground just because their hex matches bg', () => {
@@ -108,7 +108,8 @@ test('groundRoleOfEntry: Boundary - exact ground roles only, not bg-prefix names
   assert.equal(groundRoleOfEntry(['#0d0b0a', 'ground'], ground), 'bg');
   assert.equal(groundRoleOfEntry(['#0d0b0a', 'bg2'], ground), null);
   assert.equal(groundRoleOfEntry(['#0d0b0a', 'bg-alt'], ground), null);
-  assert.equal(groundRoleOfEntry(['#444444', 'ground-1'], ground), 'step');
+  assert.equal(groundRoleOfEntry(['#444444', 'ground+1'], ground), 'step');
+  assert.equal(groundRoleOfEntry(['#555555', 'ground-1'], ground), 'step');
 });
 
 // --- regenColumn ------------------------------------------------------------
@@ -127,6 +128,11 @@ test('regenColumn: Boundary - n=0 is the base alone, no ramp() clamp to 1', () =
 
 test('regenColumn: Error - a malformed base returns a structured bad-hex', () => {
   assert.deepEqual(regenColumn('nope', 2), { members: [], error: 'bad-hex' });
+});
+
+test('regenColumn: Boundary - generated pure white and black endpoint steps are skipped', () => {
+  assert.ok(!regenColumn('#e0e0e0', 4).members.some(m => m.offset !== 0 && m.hex === '#ffffff'));
+  assert.ok(!regenColumn('#101010', 4).members.some(m => m.offset !== 0 && m.hex === '#000000'));
 });
 
 // --- rankByLightness --------------------------------------------------------

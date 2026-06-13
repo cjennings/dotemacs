@@ -386,16 +386,22 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  PALETTE=[['#204060','bg'],['#f0fef0','fg']];
  setGroundSpan(2);
  A(MAP['bg']==='#204060'&&MAP['p']==='#f0fef0','spanning ground keeps bg/fg assignments on endpoints');
- A(PALETTE.some(p=>p[1]==='ground-1')&&PALETTE.some(p=>p[1]==='ground-2'),'spanning ground adds interior ground-N entries');
+ A(PALETTE.some(p=>p[1]==='ground+1')&&PALETTE.some(p=>p[1]==='ground+2'),'spanning ground adds interior ground+N entries');
  A(document.querySelector('#pals .fstrip[data-column="ground"] .fhead + .fcount + .pchip'),'ground span control renders before tiles');
  MAP['bg']='#ffffff';MAP['p']='#000000';
- PALETTE=[['#ffffff','bg'],['#bbbbbb','ground-1','ground'],['#777777','ground-2','ground'],['#000000','fg']];
+ PALETTE=[['#ffffff','bg'],['#bbbbbb','ground+1','ground'],['#777777','ground+2','ground'],['#000000','fg']];
  renderPalette();
  const groundNames=[...document.querySelectorAll('#pals .fstrip[data-column="ground"] .pchip .nm')].map(e=>e.value);
- A(groundNames.join('|')==='bg|ground-1|ground-2|fg','ground column order is bg, ground steps, fg even when bg is lighter: '+groundNames.join('|'));
+ A(groundNames.join('|')==='bg|ground+1|ground+2|fg','ground column order is bg, ground steps, fg even when bg is lighter: '+groundNames.join('|'));
  MAP['bg']='#204060';MAP['p']='#f0fef0';
  setGroundSpan(1);
- A(!PALETTE.some(p=>p[1]==='ground-2'),'lowering ground span removes dropped interior steps');
+ A(!PALETTE.some(p=>p[1]==='ground+2'),'lowering ground span removes dropped interior steps');
+ PALETTE=[['#204060','bg'],['#f0fef0','fg'],['#e0e0e0','near-white','near-white']];
+ setColumnCount('#e0e0e0',4);
+ A(!PALETTE.some(p=>p[0].toLowerCase()==='#ffffff'&&p[1]!=='fg'),'spanning a near-white base skips generated pure-white tiles');
+ PALETTE=[['#204060','bg'],['#f0fef0','fg'],['#101010','near-black','near-black']];
+ setColumnCount('#101010',4);
+ A(!PALETTE.some(p=>p[0].toLowerCase()==='#000000'&&p[1]!=='bg'),'spanning a near-black base skips generated pure-black tiles');
  PALETTE=[['#204060','bg'],['#f0fef0','fg']];
  regenColumn('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
  const innerOld=regenColumn('#67809c',2).members.find(m=>m.offset===1).hex; // survives a count change
