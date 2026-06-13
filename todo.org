@@ -2963,11 +2963,13 @@ configuration (=text-config=, =diff-config=, =ledger-config=,
 :END:
 Craig, 2026-06-11 manual-test walk: the color picker's background is hard to distinguish from the page background. Give the picker panel a visibly distinct background or a highlighted border so it stands out. Pin with a gate asserting the picker element carries the distinct style.
 
-** TODO [#C] theme-studio Rust + Zig language previews :feature:
+** DONE [#C] theme-studio Rust + Zig language previews :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-11
 :END:
 Requested by Craig 2026-06-11: add Rust and Zig code samples to the language previews (samples.py currently carries Elisp, Go, Python, TypeScript, Java, C, C++, Shell). Each sample should exercise the treesit token categories distinctive to its language (Rust: lifetimes, macros, attributes, traits; Zig: comptime, builtins, error unions), then regenerate theme-studio.html and extend the test surface.
+
+Shipped 2026-06-13: Rust and Zig were added to =samples.py= and =generate.py=, with generator tests pinning the language-specific category coverage.
 
 ** TODO [#C] theme-studio face-consistency check :feature:
 :PROPERTIES:
