@@ -1843,10 +1843,10 @@ if(location.hash==='#healtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
  document.title='HEALTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='healtest';d.textContent='HEALTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
-// Column-strip gate (open with #familytest): the palette renders as a pinned
+// Column-strip gate (open with #columntest): the palette renders as a pinned
 // ground column plus structural columns, chips keep their controls, and renaming
 // a color leaves it in the same strip because the column id is stable.
-if(location.hash==='#familytest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveSel=selectedIdx;
  MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg'],['#c0402a','red'],['#3a6ea5','blue'],['#808080','gray']];selectedIdx=null;renderPalette();
@@ -1862,8 +1862,8 @@ if(location.hash==='#familytest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  const renamed=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='zztop-absurd');
  A(!!renamed&&renamed.closest('.fstrip').dataset.column===redColumn,'a renamed color stays in the same strip');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);selectedIdx=saveSel;renderPalette();
- document.title='FAMILYTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='familytest';d.textContent='FAMILYTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ document.title='COLUMNTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='columntest';d.textContent='COLUMNTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Count-control gate (open with #counttest): the per-column count regenerates the
 // column — count up adds symmetric steps, count down drops the extremes, a
 // reference to a surviving step follows the new hex, a reference to a removed step
