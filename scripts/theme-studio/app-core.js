@@ -121,7 +121,7 @@ function lMax(hue,chroma,fgSet,target){
   return {L:loL,status:at(loL).clamped?'clamp':'ok'};
 }
 
-// --- color columns (color-families spec, current UI model) -------------------
+// --- color columns -----------------------------------------------------------
 // Columns are structural, not inferred by color. Generated ramp entries are named
 // base-1/base/base+1 and remain in that base column regardless of their hex. A
 // manually-added color starts as its own singleton column. The flat palette stays
@@ -130,40 +130,40 @@ function lMax(hue,chroma,fgSet,target){
 
 function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
 function nameOfHex(palette,hex){const p=palette.find(p=>p[0].toLowerCase()===hex.toLowerCase());return p?p[1]:null;}
-function familyStem(name){return (name||'color').replace(/[+-]\d+$/,'');}
-function familyOffset(name){const m=(name||'').match(/([+-]\d+)$/);return m?parseInt(m[1],10):0;}
-function columnIdOf(entry){return (entry&&entry[2])||familyStem(entry&&entry[1]);}
+function columnStem(name){return (name||'color').replace(/[+-]\d+$/,'');}
+function columnOffset(name){const m=(name||'').match(/([+-]\d+)$/);return m?parseInt(m[1],10):0;}
+function columnIdOf(entry){return (entry&&entry[2])||columnStem(entry&&entry[1]);}
 
 // Group a flat palette into the ground strip plus structural columns. ground is
 // {bg,fg}; those endpoint hexes form the pinned ground column even when absent
 // from the palette, and ground-N entries are reserved for that column. Everything
 // else groups by its stable column id, not by OKLCH hue/chroma or display name.
 // Legacy two-field entries fall back to their generated-name stem until edited.
-function familiesFromPalette(palette,ground){
+function columnsFromPalette(palette,ground){
   const bg=ground&&ground.bg,fg=ground&&ground.fg;
   const gset=new Set([bg,fg].filter(Boolean).map(h=>h.toLowerCase()));
   const groundStrip=[];
   if(bg)groundStrip.push({hex:bg,role:'bg',name:nameOfHex(palette,bg)});
   if(fg)groundStrip.push({hex:fg,role:'fg',name:nameOfHex(palette,fg)});
-  const byColumn=new Map(),families=[];
+  const byColumn=new Map(),columns=[];
   for(const entry of palette){
     const [hex,name]=entry;
     if(gset.has(hex.toLowerCase()))continue;
     if(/^ground-\d+$/i.test(name||''))continue;
     const column=columnIdOf(entry);
     if(!byColumn.has(column))byColumn.set(column,{column,members:[]});
-    byColumn.get(column).members.push({hex,name,offset:familyOffset(name),column});
+    byColumn.get(column).members.push({hex,name,offset:columnOffset(name),column});
   }
   for(const f of byColumn.values()){
     const base=(f.members.find(m=>m.offset===0)||f.members[0]).hex;
-    families.push({base,column:f.column,stem:f.column,members:f.members.map(m=>({hex:m.hex,name:m.name,column:m.column}))});
+    columns.push({base,column:f.column,stem:f.column,members:f.members.map(m=>({hex:m.hex,name:m.name,column:m.column}))});
   }
-  return {ground:groundStrip,families};
+  return {ground:groundStrip,columns};
 }
-// Regenerate a family's members as a symmetric ramp around the base: n=0 is the
+// Regenerate a column's members as a symmetric ramp around the base: n=0 is the
 // base alone (without ramp()'s 1-4 clamp), n>=1 is base plus ramp() steps, sorted
 // by offset. {members:[{hex,offset,clamped}]} or {members:[],error:'bad-hex'}.
-function regenFamily(baseHex,n,opts){
+function regenColumn(baseHex,n,opts){
   const hex=typeof baseHex==='string'?normHex(baseHex):null;
   if(!hex)return {members:[],error:'bad-hex'};
   const k=Math.min(4,Math.max(0,Math.round(n||0)));
@@ -173,7 +173,7 @@ function regenFamily(baseHex,n,opts){
   const members=[...r.steps,{hex,offset:0,clamped:false}].sort((a,b)=>a.offset-b.offset);
   return {members};
 }
-// Rank a family's current member hexes by lightness and give each a signed offset
+// Rank a column's current member hexes by lightness and give each a signed offset
 // from the base (the matching hex, or the nearest by lightness if the base isn't
 // present). Lets a regenerate match old positions to new ramp offsets.
 function rankByLightness(memberHexes,baseHex){
@@ -198,8 +198,8 @@ function stepRepointPlan(oldRanked,newMembers){
 
 // Preserve structural order. Generated ramps are inserted in offset order, and
 // columns are emitted in first-seen palette order. No color sorting happens here.
-function sortFamilyMembers(fam){return Object.assign({},fam,{members:[...fam.members]});}
-function sortFamilies(families){return families.map(sortFamilyMembers);}
+function sortColumnMembers(column){return Object.assign({},column,{members:[...column.members]});}
+function sortColumns(columns){return columns.map(sortColumnMembers);}
 
 // Dropdown order for color selection mirrors the visual palette organization:
 // ground first, then structural columns in display order. Stored palette order
@@ -209,12 +209,12 @@ function paletteOptionList(cur,palette,ground){
   const out=[['','— default —']],seen=new Set();
   if(!have)out.push([cur,'(gone) '+cur]);
   const add=(hex,name)=>{if(!hex)return;const key=hex.toLowerCase()+'|'+(name||'');if(seen.has(key))return;seen.add(key);out.push([hex,name||hex]);};
-  const grouped=familiesFromPalette(palette,ground||{});
+  const grouped=columnsFromPalette(palette,ground||{});
   const groundMembers=grouped.ground.map(g=>({hex:g.hex,name:g.name||g.role}))
     .concat(palette.filter(([,name])=>/^ground-\d+$/i.test(name||'')).map(([hex,name])=>({hex,name})));
-  sortFamilyMembers({base:(ground&&ground.bg)||'',members:groundMembers}).members.forEach(m=>add(m.hex,m.name));
-  sortFamilies(grouped.families).forEach(f=>f.members.forEach(m=>add(m.hex,m.name)));
+  sortColumnMembers({base:(ground&&ground.bg)||'',members:groundMembers}).members.forEach(m=>add(m.hex,m.name));
+  sortColumns(grouped.columns).forEach(f=>f.members.forEach(m=>add(m.hex,m.name)));
   return out;
 }
 
-export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, familiesFromPalette, regenFamily, rankByLightness, stepRepointPlan, sortFamilies, sortFamilyMembers };
+export { nameToHex, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers };
