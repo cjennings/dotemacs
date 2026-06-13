@@ -107,7 +107,6 @@
  <div class="saveload">
   <div class="filebar end">
    <label style="color:#b4b1a2">theme name</label><input type="text" id="themename" value="" placeholder="untitled" oninput="updateTitle()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:200px">
-   <button id="savebtn" onclick="saveTheme()" style="display:none">&#128190; save</button>
    <button onclick="exportTheme()">&#11015; export</button>
    <button class="fbtn" onclick="importTheme()">&#11014; import</button><input type="file" id="fileinput" accept=".json" onchange="importFile(event)" style="display:none">
    <button id="jsonbtn" onclick="toggleJSON()">show</button>
@@ -1229,30 +1228,22 @@ function fileSlug(){return slugify(themeName());}
 function exportObj(){normalizePalette();const a={};CATS.forEach(c=>a[c[0]]=MAP[c[0]]);const o={name:themeName(),palette:PALETTE,assignments:a,bold:Object.keys(BOLD).filter(k=>BOLD[k]),italic:Object.keys(ITALIC).filter(k=>ITALIC[k]),ui:UIMAP};if(LOCKED.size)o.locks=[...LOCKED];const pk=packagesForExport(PKGMAP);if(Object.keys(pk).length)o.packages=pk;return o;}
 function exportState(){const t=document.getElementById('export');t.value=JSON.stringify(exportObj(),null,1);t.style.display='block';t.focus();t.select();}
 function toggleJSON(){const t=document.getElementById('export'),b=document.getElementById('jsonbtn');if(t.style.display==='block'){t.style.display='none';b.textContent='show';}else{exportState();b.textContent='hide';}}
-function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': theme';const sb=document.getElementById('savebtn');if(sb){sb.style.display=n||fileHandle?'':'none';sb.title=fileHandle?'overwrite the imported/saved file':'choose where to save';}}
-let fileHandle=null;
+function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': theme';}
 function exportTheme(){const blob=new Blob([JSON.stringify(exportObj(),null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileSlug()+'.json';a.click();}
-async function saveTheme(){const data=JSON.stringify(exportObj(),null,1);
-  if(!window.showSaveFilePicker){exportTheme();notify('saved via download (browser has no Save-File support)',false);return;}
-  try{if(!fileHandle)fileHandle=await window.showSaveFilePicker({suggestedName:fileSlug()+'.json',types:[{description:'theme JSON',accept:{'application/json':['.json']}}]});
-    const w=await fileHandle.createWritable();await w.write(data);await w.close();notify('saved "'+themeName()+'"',false);updateTitle();
-  }catch(e){if(e&&e.name!=='AbortError')notify('save failed: '+e.message,true);}}
 function applyImported(text){const d=JSON.parse(text);lastGone={};if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette.map(normalizePaletteEntry);if(d.assignments)Object.assign(MAP,d.assignments);
   BOLD={};(d.bold||[]).forEach(k=>BOLD[k]=true);ITALIC={};(d.italic||[]).forEach(k=>ITALIC[k]=true);
   LOCKED=new Set(d.locks||[]);
   if(d.ui)Object.assign(UIMAP,d.ui);
   PKGMAP=seedPkgmap();if(d.packages)mergePackagesInto(PKGMAP,d.packages);
   renderPalette();buildTable();buildUITable();buildPkgTable();buildPkgPreview();renderCode();applyGround();updateTitle();}
-// File-input fallback (no File System Access API): no writable handle, so save still prompts.
 function importFile(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{applyImported(r.result);fileHandle=null;updateTitle();}catch(e){alert('bad theme file: '+e.message);}};
+  r.onload=()=>{try{applyImported(r.result);updateTitle();}catch(e){alert('bad theme file: '+e.message);}};
   r.readAsText(f);ev.target.value='';}
-// Preferred import: keep the file handle so a later save overwrites the same file.
 async function importTheme(){
   if(!window.showOpenFilePicker){const fi=document.getElementById('fileinput');if(fi)fi.click();return;}
   try{const [h]=await window.showOpenFilePicker({types:[{description:'theme JSON',accept:{'application/json':['.json']}}]});
-    const file=await h.getFile();applyImported(await file.text());fileHandle=h;updateTitle();
-    notify('imported "'+(themeName()||file.name)+'" — save now overwrites it',false);
+    const file=await h.getFile();applyImported(await file.text());updateTitle();
+    notify('imported "'+(themeName()||file.name)+'"',false);
   }catch(e){if(e&&e.name!=='AbortError')notify('import failed: '+e.message,true);}}
 // The blanket covers only the code panes and syntax example cells. UI-face
 // preview cells also carry .ex, but a face with its own bg must keep it, so
