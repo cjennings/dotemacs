@@ -56,8 +56,10 @@ When a terminal fills the frame, =C-; b= then a right or down arrow should shrin
 ** TODO [#C] Dirvish: free D for hard-delete, move duplicate :feature:quick:
 In dirvish, keep =d= = delete (=dired-do-delete=), move duplicate (=cj/dirvish-duplicate-file=, currently =D=) to another key, and bind =D= = =sudo rm -rf= for a forced hard delete — capital for the more destructive op. Craig's note says "duplicate on 2"; confirm that's the intended key, and guard the sudo path carefully before wiring. From the roam inbox.
 
-** TODO [#C] Swap buffer delete/diff keys — destructive on capital :refactor:quick:solo:
+** DONE [#C] Swap buffer delete/diff keys — destructive on capital :refactor:quick:solo:
+CLOSED: [2026-06-13 Sat]
 =modules/custom-buffer-file.el:515= binds =d= = =cj/delete-buffer-and-file= and =D= = =cj/diff-buffer-with-file=. Destructive commands should be the capital, and diff is the one hit often (when saving a buffer changed on disk). Swap them: =D= = delete, =d= = diff. From the roam inbox.
+Swapped 2026-06-13: =cj/buffer-and-file-map= now binds =d= = =cj/diff-buffer-with-file=, =D= = =cj/delete-buffer-and-file=. keymap-lookup test added; live daemon re-bound by hand (defvar-keymap won't reassign a bound var on reload). Keypress check is a VERIFY under Manual testing and validation.
 
 ** TODO [#B] ai-term adaptive side/bottom window placement :feature:quick:solo:
 :PROPERTIES:
@@ -4336,6 +4338,12 @@ From the 2026-06-11 messenger-unification brainstorm. Google Voice has no offici
 
 ** TODO Manual testing and validation
 Exercised once the phases above land.
+*** VERIFY C-; b d diffs, C-; b D deletes
+What we're verifying: the buffer-and-file keymap now puts diff on the easy lowercase key and the destructive delete on the capital. Swapped in modules/custom-buffer-file.el and re-bound live in the daemon.
+- Open a file buffer and edit it without saving
+- Press C-; b d
+- Press C-; b D, then cancel at the delete confirmation
+Expected: C-; b d runs the diff (buffer vs saved file); C-; b D starts delete-buffer-and-file (offers to delete the file). Before the swap these were reversed.
 *** TODO C-s C-s repeats the last search
 What we're verifying: the second consecutive C-s repeats the previous consult-line search instead of erroring "No Vertico session". Fix in modules/selection-framework.el (vertico-repeat-save now on minibuffer-setup-hook), live in the daemon.
 - Press C-s, type a search term, RET to dismiss (or just narrow then exit)
