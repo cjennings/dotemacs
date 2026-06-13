@@ -251,6 +251,11 @@
 
 (use-package vertico-prescient
   :demand t
+  :custom
+  ;; orderless does the matching; prescient only sorts.  Without this,
+  ;; vertico-prescient-mode's default filtering overrides completion-styles to
+  ;; prescient inside vertico sessions, leaving the orderless config above dead.
+  (vertico-prescient-enable-filtering nil)
   :config
   (vertico-prescient-mode))
 
