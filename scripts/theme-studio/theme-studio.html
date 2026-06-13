@@ -28,7 +28,12 @@
  .pals{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;align-items:flex-start}
  .fstrip{display:flex;flex-direction:column;gap:6px;padding:5px;border-radius:7px;border:1px solid transparent}
  .fstrip.ground{border-color:#252321;background:#161412}
- .fhead{min-height:17px;max-width:128px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#b4b1a2;font:9pt monospace;text-align:center}
+ .fhead{min-height:17px;width:128px;display:flex;align-items:center;justify-content:center;gap:3px;color:#b4b1a2;font:9pt monospace;text-align:center}
+ .fhead .ctitle{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;border:none;color:#b4b1a2;font:9pt monospace;text-align:center;cursor:pointer;padding:0}
+ .fhead .ctitle:hover{color:#e8bd30}
+ .fhead .cmove{width:18px;height:17px;background:#161412;border:1px solid #252321;border-radius:3px;color:#8a9496;font:10pt monospace;line-height:13px;padding:0;cursor:pointer}
+ .fhead .cmove:hover:not(:disabled){color:#e8bd30;border-color:#3a3a3a}
+ .fhead .cmove:disabled{opacity:.28;cursor:default}
  .fcount{margin-top:3px;font:9pt monospace;color:#8a9496;text-align:center}
  .fcount input{width:40px;background:#0d0b0a;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:2px 4px;font:9pt monospace;text-align:center}
  .palwarn{display:none;margin-top:8px;font:10pt monospace;color:#cb6b4d}
@@ -855,6 +860,49 @@ function paletteChip(i,nearest){
   d.onclick=(e)=>{if(e.target.closest('.rm')||e.target.closest('.nm'))return;selectColor(i);};
   return d;
 }
+function paletteIndexByHexName(hex,name){
+  for(let i=0;i<PALETTE.length;i++)if(PALETTE[i][0]===hex&&PALETTE[i][1]===name)return i;
+  return -1;
+}
+function selectColumnBase(f){
+  const baseMember=f.members.find(m=>m.hex.toLowerCase()===f.base.toLowerCase())||f.members[0];
+  const i=paletteIndexByHexName(baseMember.hex,baseMember.name);
+  if(i>=0)selectColor(i);
+}
+function isGroundEntry(entry){
+  const [hex,name]=entry;
+  const lower=(hex||'').toLowerCase();
+  return lower===MAP['bg'].toLowerCase()||lower===MAP['p'].toLowerCase()||/^ground-\d+$/i.test(name||'');
+}
+function moveColumn(columnId,dir){
+  normalizePalette();
+  const columns=sortColumns(columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).columns);
+  const pos=columns.findIndex(f=>f.column===columnId);
+  const next=columns[pos+dir];
+  if(pos<0||!next)return;
+  const moving=[],rest=[];
+  PALETTE.forEach(entry=>{
+    if(!isGroundEntry(entry)&&columnIdOf(entry)===columnId)moving.push(entry);
+    else rest.push(entry);
+  });
+  const nextPositions=[];
+  rest.forEach((entry,i)=>{if(!isGroundEntry(entry)&&columnIdOf(entry)===next.column)nextPositions.push(i);});
+  if(!nextPositions.length)return;
+  const at=dir<0?nextPositions[0]:nextPositions[nextPositions.length-1]+1;
+  PALETTE=rest.slice(0,at).concat(moving,rest.slice(at));
+  selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();
+  notify('moved "'+columnId+'" '+(dir<0?'left':'right'),false);
+}
+function columnHeader(f,position,count){
+  const h=document.createElement('div');h.className='fhead';
+  const label=(f.members.find(m=>m.hex.toLowerCase()===f.base.toLowerCase())||{}).name||f.column||f.base;
+  h.innerHTML=`<button class="cmove left" title="move column left" ${position===0?'disabled':''}>&#8249;</button><button class="ctitle" title="select base color"></button><button class="cmove right" title="move column right" ${position===count-1?'disabled':''}>&#8250;</button>`;
+  h.querySelector('.ctitle').textContent=label;
+  h.querySelector('.ctitle').onclick=()=>selectColumnBase(f);
+  h.querySelector('.left').onclick=(e)=>{e.stopPropagation();moveColumn(f.column,-1);};
+  h.querySelector('.right').onclick=(e)=>{e.stopPropagation();moveColumn(f.column,1);};
+  return h;
+}
 // Render the palette as structural color columns: pinned ground column, then
 // first-seen palette columns. Grouping uses the stable column id stored on each
 // palette entry, so renaming a color never moves it.
@@ -880,11 +928,10 @@ function renderPalette(){
   // The too-similar warning stays on the full flat palette: a generated ramp's
   // steps are a stepL apart (well above the warning's ΔE threshold), so they never
   // trigger it, and any pair that does is a genuine near-duplicate worth flagging.
-  sortColumns(columns).forEach(f=>{
+  const ordered=sortColumns(columns);
+  ordered.forEach((f,pos)=>{
     const s=strip('');s.dataset.column=f.column||f.base;
-    const h=document.createElement('div');h.className='fhead';
-    h.textContent=(f.members.find(m=>m.hex.toLowerCase()===f.base.toLowerCase())||{}).name||f.column||f.base;
-    s.appendChild(h);
+    s.appendChild(columnHeader(f,pos,ordered.length));
     s.appendChild(columnCountControl(f));
     f.members.forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest));});
   });
@@ -1875,6 +1922,14 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  A(strips[0].querySelectorAll('.pchip').length===2,'ground column carries bg + fg endpoints');
  A(!!strips[0].querySelector('.fhead + .fcount + .pchip'),'span control sits between header and tiles for ground');
  A(strips.length>=4,'ground + red + blue + gray columns, got '+strips.length);
+ const blueHead=strips.find(s=>s.dataset.column==='blue')&&strips.find(s=>s.dataset.column==='blue').querySelector('.ctitle');
+ A(!!blueHead,'normal column header has a selectable title');
+ if(blueHead)blueHead.click();
+ A(selectedIdx!==null&&PALETTE[selectedIdx][1]==='blue'&&document.getElementById('newhexstr').value.toLowerCase()==='#3a6ea5','clicking a column title selects its base color');
+ const blueRight=strips.find(s=>s.dataset.column==='blue')&&strips.find(s=>s.dataset.column==='blue').querySelector('.cmove.right');
+ if(blueRight)blueRight.click();
+ const moved=[...document.querySelectorAll('#pals .fstrip')].map(s=>s.dataset.column);
+ A(moved.indexOf('blue')>moved.indexOf('gray'),'right arrow moves a color column after its neighbor');
  const redChip=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='red');
  A(!!redChip&&!!redChip.querySelector('.rm')&&!!redChip.querySelector('.nm'),'a column chip keeps remove + rename controls');
  const redColumn=redChip&&redChip.closest('.fstrip').dataset.column;
