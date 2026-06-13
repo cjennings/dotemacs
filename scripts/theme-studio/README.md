@@ -115,7 +115,7 @@ Three tiers of faces, plus the palette:
 ## Color columns
 
 The palette is displayed as **columns**. The ground column is pinned first: `bg`
-at one end, `fg` at the other, with optional `ground-N` span colors between them.
+at one end, `fg` at the other, with optional `ground+N` span colors between them.
 Every other color stays in the column where it was created. Columns are not
 derived from hue, chroma, lightness, or the visible color name.
 

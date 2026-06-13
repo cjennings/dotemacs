@@ -35,7 +35,7 @@ function ensureGroundEndpoints(){
 }
 function normalizePalette(){PALETTE=PALETTE.map(normalizePaletteEntry);ensureGroundEndpoints();}
 // The ground column is explicit: bg pins the top endpoint, fg pins the bottom
-// endpoint, and generated ground-N steps live between them.
+// endpoint, and generated ground+N steps live between them.
 function groundColumnMembers(){
   return groundColumnMembersFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
 }
@@ -50,10 +50,13 @@ function setGroundSpan(n){
   const old=PALETTE.filter(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='step');
   const bg=srgb2oklab(MAP['bg']),fg=srgb2oklab(MAP['p']);
   const entries=[];
+  let step=1;
   for(let i=1;i<=n;i++){
     const t=i/(n+1);
     const lab={L:bg.L+(fg.L-bg.L)*t,a:bg.a+(fg.a-bg.a)*t,b:bg.b+(fg.b-bg.b)*t};
-    entries.push([lrgb2hex(oklab2lrgb(lab.L,lab.a,lab.b)),'ground-'+i,'ground']);
+    const hex=lrgb2hex(oklab2lrgb(lab.L,lab.a,lab.b));
+    if(hex.toLowerCase()==='#ffffff'||hex.toLowerCase()==='#000000')continue;
+    entries.push([hex,'ground+'+(step++),'ground']);
   }
   for(const [oldHex,oldName] of old){
     const next=entries.find(([,name])=>name===oldName);

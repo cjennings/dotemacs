@@ -136,6 +136,7 @@ function lMax(hue,chroma,fgSet,target){
 
 function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
 function isReservedGroundLikeName(name){return /^(bg|fg)(?:[-_+].+|\d.*)$/i.test(name||'');}
+function isPureEndpointHex(hex){const h=(hex||'').toLowerCase();return h==='#ffffff'||h==='#000000';}
 function columnStem(name){name=name||'color';if(/^color-\d+$/.test(name))return name;name=name.replace(/[+-]\d+$/,'');return name.replace(/\d+$/,'')||'color';}
 function columnOffset(name){const m=(name||'').match(/([+-]\d+)$/);return m?parseInt(m[1],10):0;}
 function legacyColumnStem(name){return isReservedGroundLikeName(name)?name:columnStem(name);}
@@ -145,7 +146,7 @@ function groundRoleOfEntry(entry,ground){
   if(!entry)return null;
   const [hex,name]=entry,col=entry[2],n=(name||'').toLowerCase(),h=(hex||'').toLowerCase();
   const bg=(ground&&ground.bg||'').toLowerCase(),fg=(ground&&ground.fg||'').toLowerCase();
-  if(/^ground-\d+$/i.test(name||''))return 'step';
+  if(/^ground[+-]\d+$/i.test(name||''))return 'step';
   if(col==='ground'){
     if(bg&&h===bg)return 'bg';
     if(fg&&h===fg)return 'fg';
@@ -172,7 +173,7 @@ function groundColumnMembersFromPalette(palette,ground){
     if(role==='bg'||role==='fg')byRole[role]={hex:entry[0],name:entry[1]};
     else if(role==='step')byRole.steps.push({hex:entry[0],name:entry[1]});
   }
-  const stepIndex=m=>{const x=(m.name||'').match(/^ground-(\d+)$/i);return x?parseInt(x[1],10):Infinity;};
+  const stepIndex=m=>{const x=(m.name||'').match(/^ground[+-](\d+)$/i);return x?parseInt(x[1],10):Infinity;};
   byRole.steps.sort((a,b)=>stepIndex(a)-stepIndex(b));
   return [byRole.bg||{hex:ground&&ground.bg,name:'bg'},...byRole.steps,byRole.fg||{hex:ground&&ground.fg,name:'fg'}].filter(m=>m.hex);
 }
@@ -211,7 +212,7 @@ function toggleLockSet(keys,locked){
 
 // Group a flat palette into the ground strip plus structural columns. ground is
 // {bg,fg}; those endpoint hexes form the pinned ground column even when absent
-// from the palette, and ground-N entries are reserved for that column. Everything
+// from the palette, and ground+N entries are reserved for that column. Everything
 // else groups by its stable column id, not by OKLCH hue/chroma or display name.
 // Legacy two-field entries fall back to their generated-name stem until edited.
 function columnsFromPalette(palette,ground){
@@ -243,7 +244,7 @@ function regenColumn(baseHex,n,opts){
   if(k===0)return {members:[{hex,offset:0,clamped:false}]};
   const r=ramp(hex,Object.assign({},opts,{n:k}));
   if(r.error)return {members:[],error:r.error};
-  const members=[...r.steps,{hex,offset:0,clamped:false}].sort((a,b)=>a.offset-b.offset);
+  const members=[...r.steps.filter(s=>!isPureEndpointHex(s.hex)),{hex,offset:0,clamped:false}].sort((a,b)=>a.offset-b.offset);
   return {members};
 }
 // Rank a column's current member hexes by lightness and give each a signed offset
