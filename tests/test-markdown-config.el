@@ -9,6 +9,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'cl-lib)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 
@@ -49,6 +50,15 @@
           (should (string-match-p "<!DOCTYPE html>" (buffer-string)))
           (should (string-match-p "<xmp" (buffer-string))))
       (kill-buffer src))))
+
+;;; cj/markdown-preview (guard: refuse when the httpd listener is down)
+
+(ert-deftest test-markdown-preview-errors-when-server-down ()
+  "Error: `cj/markdown-preview' signals a user-error when the simple-httpd
+listener is not running, rather than opening a preview against a dead server.
+Also pins the rename off the bare `markdown-preview' that markdown-mode shadows."
+  (cl-letf (((symbol-function 'httpd-running-p) (lambda () nil)))
+    (should-error (cj/markdown-preview) :type 'user-error)))
 
 (provide 'test-markdown-config)
 ;;; test-markdown-config.el ends here

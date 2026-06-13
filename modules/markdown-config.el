@@ -21,7 +21,7 @@
 		 ("\\.md\\'"       . markdown-mode)
          ("\\.markdown\\'" . markdown-mode))
   :bind (:map markdown-mode-map
-			  ("<f2>" . markdown-preview)) ;; use same key as compile for consistency
+			  ("<f2>" . cj/markdown-preview)) ;; use same key as compile for consistency
   :init (setq markdown-command "multimarkdown"))
 
 ;; Register markdown as a known org-src-block language so `org-lint'
@@ -36,9 +36,7 @@
 ;; allows for live previews of your html
 ;; see: https://github.com/skeeto/impatient-mode
 (use-package impatient-mode
-  :defer t
-  :config
-  (setq imp-set-user-filter 'markdown-html))
+  :defer t)
 
 ;;;; --------------------- WIP: Markdown-Preview ---------------------
 
@@ -51,14 +49,14 @@ Idempotent: re-running while the server is already up is a no-op."
   (message "markdown preview server running on http://localhost:8080/imp"))
 
 ;; the filter to apply to markdown before impatient-mode pushes it to the server
-(defun markdown-preview ()
+(defun cj/markdown-preview ()
   "Open the current buffer as a live HTML preview at http://localhost:8080/imp.
 The simple-httpd listener must already be running -- see
 `cj/markdown-preview-server-start'.  Starting a network listener as a
 side effect of opening a preview is surprising, so the server start
 lives in a separate command."
   (interactive)
-  (unless (and (boundp 'httpd-process) httpd-process)
+  (unless (httpd-running-p)
     (user-error "markdown preview server not running; run `M-x cj/markdown-preview-server-start' first"))
   (impatient-mode 1)
   (setq imp-user-filter #'cj/markdown-html)

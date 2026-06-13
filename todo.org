@@ -857,8 +857,10 @@ From the 2026-06 config audit. =modules/auth-config.el:88= — bare =(call-proce
 ** TODO [#B] system-defaults: top-level server-start unguarded in batch :bug:quick:solo:
 =modules/system-defaults.el:140= — raw module load under =--batch= (make validate-modules on a machine with no daemon socket) starts a server from a batch process; the suite only passes because the testutil stubs it. Wrap in =(unless noninteractive ...)= — the repo's established guard for this defect class; same guard stops the =custom-file= =make-temp-file= at line 104 littering temp files per batch load. From the 2026-06 config audit.
 
-** TODO [#B] markdown live preview clobbered by markdown-mode :bug:quick:solo:
+** DONE [#B] markdown live preview clobbered by markdown-mode :bug:quick:solo:
+CLOSED: [2026-06-13 Sat]
 =modules/markdown-config.el:54= defines bare =markdown-preview=, which markdown-mode redefines the moment the first .md loads — the impatient-mode live preview is dead and F2 silently runs the package command (agent verified in the live daemon). Also =:61= guards on =(boundp 'httpd-process)=, a variable that doesn't exist in simple-httpd — use =(httpd-running-p)=. And the =:config= =(setq imp-set-user-filter 'markdown-html)= at line 41 is doubly dead (function-not-variable, symbol names nothing) — delete. Rename to =cj/markdown-preview=, rebind F2. From the 2026-06 config audit.
+Fixed 2026-06-13: renamed the defun to =cj/markdown-preview= and rebound =<f2>=; guard is now =(httpd-running-p)=; deleted the dead =(setq imp-set-user-filter 'markdown-html)= (impatient-mode use-package is now =:defer t= only). Added a guard test (server-down → user-error); 4/4 green; live daemon confirms =cj/markdown-preview= defined and guarding. Browser-render check is a VERIFY.
 
 ** TODO [#B] agenda sources: roam Projects missing, no existence filtering :bug:solo:
 From the 2026-06 config audit, =modules/org-agenda-config.el=:
@@ -4340,6 +4342,12 @@ From the 2026-06-11 messenger-unification brainstorm. Google Voice has no offici
 
 ** TODO Manual testing and validation
 Exercised once the phases above land.
+*** VERIFY markdown live preview renders in the browser
+What we're verifying: F2 in a markdown buffer runs the custom cj/markdown-preview (not markdown-mode's own command) and the impatient-mode strapdown preview actually renders. Fixed in modules/markdown-config.el, reloaded into the daemon.
+- Open a .md file with some markdown content
+- M-x cj/markdown-preview-server-start (starts simple-httpd on :8080)
+- Press F2 in the markdown buffer
+Expected: a browser opens http://localhost:8080/imp showing the rendered markdown, and edits to the buffer update the preview live. Pressing F2 before starting the server gives a user-error telling you to start it.
 *** VERIFY orderless matching works inside a vertico session
 What we're verifying: vertico-prescient no longer overrides completion-styles, so orderless's space-separated, out-of-order matching is live in the minibuffer (prescient still sorts). Fixed in modules/selection-framework.el, applied live in the daemon.
 - Run a command with a vertico minibuffer (e.g. M-x, or C-x b)
