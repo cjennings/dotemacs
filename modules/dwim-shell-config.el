@@ -198,6 +198,18 @@ file list."
              (replace-regexp-in-string "'" "'\\\\''" (expand-file-name f))))
    files "\n"))
 
+(defun cj/dwim-shell--zip-single-file-command ()
+  "Return the zip command template for a single marked file.
+The archive is named =<fne>.zip=, not a reconstruction of the input filename
+\(which produced invalid archives, and a `foo.' name for a directory)."
+  "zip -r '<<fne>>.zip' '<<f>>'")
+
+(defun cj/dwim-shell--dated-backup-command ()
+  "Return the cp command template for a timestamped backup of marked file(s).
+The timestamp is interpolated here with `format-time-string' so it can't sit
+dead inside the shell's single quotes the way a literal =$(date ...)= did."
+  (format "cp -p '<<f>>' '<<f>>.%s.bak'" (format-time-string "%Y%m%d_%H%M%S")))
+
 ;; ----------------------------- Dwim Shell Command ----------------------------
 
 (use-package dwim-shell-command
@@ -337,7 +349,7 @@ Otherwise, unzip it to an appropriately named subdirectory "
 	(interactive)
 	(dwim-shell-command-on-marked-files
 	 "Zip" (if (eq 1 (seq-length (dwim-shell-command--files)))
-			   "zip -r '<<fne>>.<<e>>' '<<f>>'"
+			   (cj/dwim-shell--zip-single-file-command)
 			 "zip -r '<<archive.zip(u)>>' '<<*>>'")
 	 :utils "zip"))
 
@@ -547,8 +559,8 @@ clipboard contents cannot inject shell commands."
 	(interactive)
 	(dwim-shell-command-on-marked-files
 	 "Backup with date"
-	 "cp -p '<<f>>' '<<f>>.$(date +%Y%m%d_%H%M%S).bak'"
-	 :utils '("cp" "date")))
+	 (cj/dwim-shell--dated-backup-command)
+	 :utils '("cp")))
 
   (defun cj/dwim-shell-commands-optimize-image-for-web ()
 	"Optimize image(s) for web (reduce file size)."
@@ -930,7 +942,7 @@ gpg: decryption failed: No pinentry"
 
   ;; Bind menu to keymaps after function is defined
   (with-eval-after-load 'dired
-    (keymap-set dired-mode-map "M-S-d" #'dwim-shell-commands-menu))  ;; was M-D, overrides kill-word
+    (keymap-set dired-mode-map "M-D" #'dwim-shell-commands-menu))  ;; Meta-Shift-d; matches the dirvish binding below
   (with-eval-after-load 'dirvish
     (keymap-set dirvish-mode-map "M-D" #'dwim-shell-commands-menu)))
 
