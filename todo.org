@@ -195,6 +195,14 @@ Spec draft: [[file:docs/theme-studio-palette-generator-spec.org][theme-studio-pa
 
 Build a constraint-first palette generator for Theme Studio: start from bg/fg, generate editable palette columns in OKLCH, preview candidate columns before applying them, and apply proposals by append/replace/regenerate modes while preserving stable column ids and existing assignments where possible. V1 is palette-only, not automatic face assignment; generator output becomes normal editable columns after apply.
 
+** TODO [#B] theme-studio delete entire color column :feature:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
+Add a column-level delete affordance to the palette. Deleting a normal color column removes the base color and every generated/imported tile in that column from the screen and from =PALETTE=. Ground remains pinned and non-deletable. Existing assignments that referenced removed tiles should follow the current deleted-color behavior: they remain on the old hex and appear as recoverable =(gone)= values rather than silently repointing.
+
+Acceptance notes: add a browser gate proving a column delete removes all entries with that stable =columnId=, leaves other columns alone, leaves ground non-deletable, and preserves any references to deleted hexes as gone values.
+
 ** TODO [#B] Split window opens the dashboard in the other window :feature:quick:solo:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-10
