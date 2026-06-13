@@ -222,12 +222,18 @@ Decided 2026-06-11 (Craig): #0d0b0a is the canonical background — the three dr
 *** TODO org-todo color mismatch: test expects #ff2a00, theme renders #a7502d
 =dupre-theme-org-todo= (test:130) asserts the org-todo foreground is "#ff2a00" (intense-red), but the theme renders "#a7502d" (red-1). Design call: should org-todo be the bright intense-red or the muted red-1? Fix whichever side loses the decision.
 ** TODO [#B] theme-studio guide-support features :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 From the color-assignment guide work (2026-06-08): make the tool support the guide without mandating it — everything a seed, an advisory, or a view, never a gate. Two specs to write, both deriving from the rewritten guide and its seed table ([[file:scripts/theme-studio/theme-coloring-guide.org][theme-coloring-guide.org]]).
 *** 2026-06-08 Mon @ 19:08:00 -0500 Seeding-engine spec written and Ready
 [[file:docs/design/theme-studio-seeding-engine-spec.org][theme-studio-seeding-engine-spec.org]] — role table + face→role maps for syntax/UI/org, OKLCH shade generation, reseed dupre-revised to the compact mapping. Codex-reviewed, Ready. Implementation tracked under the seeding-engine parent below.
 *** TODO Guide-support views and advisories spec
 Five optional surfaces, all dismissible and non-blocking, in one collapsible panel where they advise: (1) CVD-simulation toggle on previews (deuteranopia/protanopia/tritanopia); (2) squint/blur preview toggle; (3) lightness-ramp view + palette advisories (accent count over 6-8, roles separated only by red/green) — depends on the OKLCH/ΔE core; (4) definition-vs-call / weight advisories; (5) state-over-syntax preview (region/search/diff tint over real syntax-colored text). Sequence: rewritten guide reviewed → seeding-engine spec → this. Advisories (3, 4) layer on the perceptual-metrics feature.
 ** TODO [#B] theme-studio seeding engine :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 Spec (Ready): [[file:docs/design/theme-studio-seeding-engine-spec.org][spec]]. Role table → guide-correct defaults for syntax/UI/org; reseed dupre-revised.json to the compact mapping; opens seeded with an all-tier reseed button. Depends on the perceptual-metrics colormath.js core for OKLCH shade generation, so it runs after that feature's Phase 1.
 *** TODO Seed model + seed() + #seedtest :solo:
 Phase 1. Palette anchors + OKLCH shade generation (reusing colormath.js), the ROLES table, and the three face→role maps as data; pure seed(). Gate: #seedtest asserts representative syntax/UI/org faces resolve correctly (bi→blue-grey, fnd→gold+bold, region bg-only, link underlined, org-level-1 strongest, org-code literal lane) and a non-org bespoke package (magit) keeps its curated seed.
@@ -792,22 +798,41 @@ Tie this into the existing coverage work:
 :LAST_REVIEWED: 2026-06-01
 :END:
 ** TODO [#B] Messenger window/key unification :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 Spec: [[file:docs/design/messenger-unification-spec.org][messenger-unification-spec.org]] (Draft, 2026-06-11). One library (=cj-messenger-lib.el=) gives every messenger the same shape: chat windows rise from the bottom (the signel rule, generalized), C-c C-c confirms, C-c C-k cancels, C-c C-a attaches — dispatched per backend through a registry + minor mode. Signel already conforms (reference backend); telega and slack join in phases 2-3; ERC later. All eight decisions settled 2026-06-11 (cancel closes an idle window; telega's filter-cancel shadow accepted; slack rooms join the bottom rule). Spec held open — Craig has more ideas to fold in before it's marked Ready.
 
 ** TODO [#C] cj/undo-kill-buffer skip-visited uses delq (eq) on path strings :bug:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 =modules/ui-navigation.el= — the visited-file filter calls =(delq buf-file recently-killed-list)= where =buf-file= is a fresh string from =expand-file-name=, never =eq= to the =recentf-list= entries, so already-open files are never skipped (the skip logic is dead). Use =delete= (equal-based). Found 2026-06-12 while fixing the off-by-one above; the two bugs cancel exactly when one file is open, which is why it went unnoticed.
 
-** TODO [#B] reconcile-open-repos skips any repo with a dot in its name :bug:solo:
+** DOING [#B] reconcile-open-repos skips any repo with a dot in its name :bug:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 =modules/reconcile-open-repos.el:174= — discovery regexp ="^[^.]+$"= matches only dot-free names, so =~/code/mcp.el=, =capture.el=, =google-contacts.el=, =auto-dim-other-buffers.el= etc. are never reconciled while M-P still reports "Complete." Replace with =directory-files-no-dot-files-regexp= + a hidden-dir check; add a regression test with a dotted repo name. From the 2026-06 config audit.
+*** 2026-06-13 Sat @ 11:01:44 -0500 Fixed: regexp swapped + hidden-dir check
+=cj/find-git-repos= now iterates =directory-files-no-dot-files-regexp= (keeps dotted names, drops =.=/=..=) plus a =string-prefix-p "."= guard for hidden dirs. Regression test =test-find-git-repos-boundary-dotted-repo-name-found= (mcp.el/capture.el/plain-repo → 3 found); existing hidden-dirs-skipped test stays green; 11/11. Live daemon confirmed all six dotted repos under ~/code now discovered (mcp.el, gptel-mcp.el, capture.el, google-contacts.el, google-maps.el, auto-dim-other-buffers.el). Awaiting Craig's confirm → DONE.
 
 ** TODO [#B] jumper: register collisions and dead-marker errors :bug:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 Two related defects from the 2026-06 config audit:
 - =modules/jumper.el:155= — removal shifts the vector without renumbering registers, so a later store allocates a register still held by a surviving location and silently overwrites it. Allocate the first free register char in the live slice; =set-register nil= on removal so freed markers don't pin buffers.
 - =modules/jumper.el:117,132= — guards check =(markerp marker)= but not =(buffer-live-p (marker-buffer marker))=; after killing a buffer holding a location, M-SPC SPC and M-SPC j signal wrong-type errors. Treat dead entries as skippable/removable.
 Also =jumper.el:178= — the promised single-location toggle never toggles back ('already-there branch should =jump-to-register= z when set).
 
-** TODO [#B] C-s C-s vertico-repeat path never works :bug:quick:solo:
+** DOING [#B] C-s C-s vertico-repeat path never works :bug:quick:solo:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-13
+:END:
 =modules/selection-framework.el:263= — =cj/consult-line-or-repeat= calls =vertico-repeat= on the second consecutive C-s, but nothing adds =vertico-repeat-save= to =minibuffer-setup-hook= (grep: zero hits config-wide), so it always signals "No Vertico session". Add the hook next to the vertico use-package block. From the 2026-06 config audit.
+*** 2026-06-13 Sat @ 10:59:52 -0500 Fixed: vertico-repeat-save hooked
+Added top-level =(add-hook 'minibuffer-setup-hook #'vertico-repeat-save)= after the vertico use-package block (placed top-level, not inside use-package, so the stub-use-package test exercises it; =vertico-repeat-save= is autoloaded, deferring the load to first minibuffer). New test asserts hook membership; 5/5 green; evaled into the live daemon (=:on-hook= now t). Awaiting Craig's confirm → DONE.
 
 ** TODO [#B] auth-config: unguarded gpg-connect-agent call + compile-time require :bug:quick:solo:
 From the 2026-06 config audit. =modules/auth-config.el:88= — bare =(call-process "gpg-connect-agent" ...)= in a =:demand t= :config signals file-missing and aborts init on machines without the binary; guard with =cj/executable-find-or-warn=. =auth-config.el:36= — =user-constants= is required only =eval-when-compile= but =authinfo-file= is read at load time; works from .el source, fails from standalone .elc. Use a runtime require (system-defaults.el:32-35 documents this exact trap).
@@ -4296,6 +4321,16 @@ From the 2026-06-11 messenger-unification brainstorm. Google Voice has no offici
 
 ** TODO Manual testing and validation
 Exercised once the phases above land.
+*** TODO C-s C-s repeats the last search
+What we're verifying: the second consecutive C-s repeats the previous consult-line search instead of erroring "No Vertico session". Fix in modules/selection-framework.el (vertico-repeat-save now on minibuffer-setup-hook), live in the daemon.
+- Press C-s, type a search term, RET to dismiss (or just narrow then exit)
+- Press C-s again, then C-s a second time without any command in between
+Expected: the second C-s reopens the last search (vertico-repeat) rather than signalling "No Vertico session".
+*** TODO reconcile-open-repos includes dot-named repos
+What we're verifying: M-P (reconcile open repos) now visits repos whose directory name has a dot (mcp.el, capture.el, etc.), which the old "^[^.]+$" filter silently skipped. Fix in modules/reconcile-open-repos.el, live in the daemon; live-daemon check already confirmed discovery, this is the through-the-command spot-check.
+- Run M-P (or M-x cj/reconcile-open-repos)
+- Watch the per-repo progress / final summary
+Expected: dot-named repos under ~/code (mcp.el, gptel-mcp.el, capture.el, google-contacts.el, …) appear in the reconciliation pass, not just dot-free ones.
 *** TODO org-capture quick-capture popup behaves correctly
 What we're verifying: the Hyprland Super+Shift+N popup is single-window, offers only the sensible templates, files to the inbox, never orphans its frame, and runs the capture in the popup even when launched from a focused main frame (archsetup request 2026-06-12; fixes in modules/org-capture-config.el incl. the frame-targeting focus-race fix, all pushed and live). archsetup verified the base case on ratio 2026-06-12; the focus-race fix landed after.
 - Press Super+Shift+N to open the quick-capture popup
