@@ -148,6 +148,9 @@ derived from hue, chroma, lightness, or the visible color name.
   to that step is re-pointed to the new hex. A step *removed* by lowering the count
   leaves its references showing "(gone)" — visible and recoverable, never a silent
   jump to a different color.
+- **Dropdown order.** Color dropdowns show the default entry, then `bg` and `fg`,
+  then palette columns from left to right. Within each column's dropdown group,
+  colors are ordered lightest to darkest.
 
 The standalone ramp generator is gone; fanning a color into a ramp is now "add the
 color, then raise its column's count."
