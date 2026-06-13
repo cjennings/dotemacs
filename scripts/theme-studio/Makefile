@@ -13,7 +13,7 @@ HERE := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 # Optional palette seed for `gen` / `open`: make gen SEED=dupre.json
 SEED ?=
 
-.PHONY: help test check coverage gen open
+.PHONY: help test check check-generated coverage gen open
 
 .DEFAULT_GOAL := help
 
@@ -21,6 +21,7 @@ help:
 	@echo "theme-studio targets:"
 	@echo "  make test                - Full suite: Python + Node + browser hash gates"
 	@echo "  make check               - Fast gate: regenerate + Python + Node (no browser)"
+	@echo "  make check-generated     - Verify committed theme-studio.html is current"
 	@echo "  make coverage            - JS (node) + generate.py (uvx coverage) numbers"
 	@echo "  make gen [SEED=x.json]   - Regenerate theme-studio.html (optionally from a seed)"
 	@echo "  make open [SEED=x.json]  - Regenerate and open the page in Chrome"
@@ -30,6 +31,14 @@ test:
 
 check:
 	@./run-tests.sh --no-browser
+
+check-generated:
+	@tmp="$$(mktemp)"; \
+	cp theme-studio.html "$$tmp"; \
+	restore() { cp "$$tmp" theme-studio.html; rm -f "$$tmp"; }; \
+	if ! python3 generate.py >/dev/null; then restore; exit 1; fi; \
+	if cmp -s theme-studio.html "$$tmp"; then rm -f "$$tmp"; echo "theme-studio.html is current"; \
+	else restore; echo "theme-studio.html is stale; run make gen and commit it" >&2; exit 1; fi
 
 coverage:
 	@echo "== JS coverage (node --experimental-test-coverage) =="
