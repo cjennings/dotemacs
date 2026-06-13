@@ -351,12 +351,133 @@ Captured On: %U" :prepend t)
 ;; aborts, so the popup never lingers. Frames not named "org-capture" are
 ;; untouched — normal in-Emacs captures keep their windows.
 
+(defun cj/org-capture--popup-frame-p ()
+  "Return non-nil when the selected frame is the quick-capture popup."
+  (equal (frame-parameter nil 'name) "org-capture"))
+
 (defun cj/org-capture--delete-popup-frame ()
   "Delete the current frame when it is the quick-capture popup."
-  (when (equal (frame-parameter nil 'name) "org-capture")
+  (when (cj/org-capture--popup-frame-p)
     (delete-frame)))
 
 (add-hook 'org-capture-after-finalize-hook #'cj/org-capture--delete-popup-frame)
+
+;; The popup opens a fresh emacsclient frame still showing the daemon's last
+;; buffer.  `org-mks' shows the *Org Select* menu via
+;; `switch-to-buffer-other-window', and `org-capture-place-template' shows the
+;; CAPTURE-* buffer via `pop-to-buffer' with a split action — both split the
+;; small floating frame, so two reverse-video modelines read like tmux bars and
+;; the working buffer leaks into a popup that should only show capture UI.  A
+;; frame-scoped `display-buffer-alist' entry forces both into the frame's sole
+;; window.  Gated on the "org-capture" frame name, so normal in-Emacs captures
+;; keep their windows.
+
+(defun cj/org-capture--popup-sole-window-p (frame-name buffer-name)
+  "Return non-nil when BUFFER-NAME in a frame named FRAME-NAME is capture popup UI.
+Capture popup UI is the *Org Select* template menu or a CAPTURE-* buffer
+shown in the quick-capture frame (FRAME-NAME equal to \"org-capture\")."
+  (and (equal frame-name "org-capture")
+       (stringp buffer-name)
+       (or (equal buffer-name "*Org Select*")
+           (string-prefix-p "CAPTURE-" buffer-name))))
+
+(defun cj/org-capture--popup-display-condition (buffer-name &optional _action)
+  "`display-buffer' CONDITION matching capture UI in the quick-capture popup.
+BUFFER-NAME is the buffer's name; the selected frame supplies the frame name."
+  (cj/org-capture--popup-sole-window-p (frame-parameter nil 'name) buffer-name))
+
+(defun cj/org-capture--display-sole-window (buffer _alist)
+  "`display-buffer' ACTION showing BUFFER as the only window of the frame.
+Used for the quick-capture popup so the template menu and capture buffer
+never split the small floating frame."
+  (let ((window (frame-root-window)))
+    (delete-other-windows window)
+    (set-window-buffer window buffer)
+    window))
+
+(add-to-list 'display-buffer-alist
+             '(cj/org-capture--popup-display-condition
+               cj/org-capture--display-sole-window))
+
+;; The desktop quick-capture popup is launched globally (no browser selection,
+;; no mu4e message, no pdf/epub buffer), so most templates make no sense there:
+;; the context fields (%:link, %i) come up empty or point at the daemon's last
+;; buffer, and the pdf templates error outright.  `cj/quick-capture' offers only
+;; Task, Bug, and Event; Task and Bug file to the global inbox rather than a
+;; project todo.org, since a desktop capture has no meaningful project context.
+;; It also closes the popup frame on every exit path (abort, error, finalize) —
+;; `org-capture' only runs `org-capture-after-finalize-hook' on a completed
+;; capture, so a q/C-g at the template menu or an erroring template would
+;; otherwise orphan the frame.  The Hyprland script calls this instead of
+;; `org-capture'.
+
+(defun cj/--org-capture-popup-templates (templates inbox)
+  "Return the desktop-popup subset of TEMPLATES: Task, Bug, Event.
+Task (\"t\") and Bug (\"b\") are retargeted to INBOX's \"Inbox\" headline;
+Event (\"e\") passes through unchanged.  All other templates are dropped.
+Template bodies and properties are preserved."
+  (delq nil
+        (mapcar
+         (lambda (entry)
+           (pcase (car-safe entry)
+             ((or "t" "b")
+              ;; (KEY DESC TYPE TARGET TEMPLATE . PROPS) -> retarget TARGET
+              (append (list (nth 0 entry) (nth 1 entry) (nth 2 entry)
+                            (list 'file+headline inbox "Inbox"))
+                      (nthcdr 4 entry)))
+             ("e" entry)
+             (_ nil)))
+         templates)))
+
+(defun cj/org-capture--popup-frame ()
+  "Return a live frame named \"org-capture\" (the quick-capture popup), or nil."
+  (seq-find (lambda (f)
+              (and (frame-live-p f)
+                   (equal (frame-parameter f 'name) "org-capture")))
+            (frame-list)))
+
+(defun cj/quick-capture ()
+  "Org-capture entry point for the Hyprland desktop popup (frame \"org-capture\").
+Offers only Task, Bug, and Event; Task and Bug file to the global inbox.
+Closes the popup frame on abort or error so a stray selection never orphans it.
+
+Selects the \"org-capture\" frame by name before capturing rather than trusting
+the ambient selected frame: the launching =emacsclient -c -e= runs before
+Hyprland settles focus on the new float, so =(selected-frame)= is still the
+daemon's main frame and the capture would otherwise land there."
+  (interactive)
+  (let ((frame (cj/org-capture--popup-frame)))
+    (condition-case err
+        (progn
+          (when frame (select-frame-set-input-focus frame))
+          (let ((org-capture-templates
+                 (cj/--org-capture-popup-templates org-capture-templates inbox-file)))
+            (org-capture)))
+      (quit (cj/org-capture--delete-popup-frame))
+      (error (message "Quick-capture: %s" (error-message-string err))
+             (cj/org-capture--delete-popup-frame)))))
+
+;; The template menu's "C — Customize org-capture-templates" special makes no
+;; sense in the desktop popup (it would open a Customize buffer in the floating
+;; frame).  Strip it from the menu when the selection runs in the popup frame,
+;; keeping "q — Abort".  `org-mks' is the menu primitive; advising it (gated on
+;; the frame name) catches the capture template selection without touching
+;; org-mks's other callers.
+
+(defun cj/--org-capture-popup-strip-specials (specials)
+  "Remove the \"C\" Customize entry from org-mks SPECIALS, keeping the rest.
+SPECIALS is the org-mks specials alist (e.g. the Customize and Abort entries)."
+  (delq nil (mapcar (lambda (s) (unless (equal (car-safe s) "C") s)) specials)))
+
+(defun cj/org-capture--popup-mks-advice (orig table title &optional prompt specials)
+  "Around-advice for `org-mks': hide the Customize special in the quick-capture popup.
+ORIG is the real `org-mks'; TABLE TITLE PROMPT SPECIALS are its arguments."
+  (funcall orig table title prompt
+           (if (cj/org-capture--popup-frame-p)
+               (cj/--org-capture-popup-strip-specials specials)
+             specials)))
+
+(advice-add 'org-mks :around #'cj/org-capture--popup-mks-advice)
 
 (provide 'org-capture-config)
 ;;; org-capture-config.el ends here.
