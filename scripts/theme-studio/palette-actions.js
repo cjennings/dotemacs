@@ -122,15 +122,17 @@ function deleteColumn(columnId,label){
   normalizePalette();
   const plan=deletePaletteColumnPlan(PALETTE,{bg:MAP['bg'],fg:MAP['p']},columnId);
   if(!plan.removed.length){notify('nothing to delete in "'+(label||columnId)+'"',true);return;}
+  const title=label||columnId;
+  if(!confirm('Delete color column "'+title+'"?\n\nThis removes '+plan.removed.length+' palette color(s). Existing face assignments will stay on their old hex values and show as "(gone)".'))return;
   plan.removed.forEach(({hex,name})=>rememberGone(hex,name));
   PALETTE=plan.palette;selectedIdx=null;
   renderPalette();buildTable();buildUITable();renderCode();applyGround();
-  notify('deleted column "'+(label||columnId)+'" — '+plan.removed.length+' color(s) now show "(gone)" where used',false);
+  notify('deleted column "'+title+'" — '+plan.removed.length+' color(s) now show "(gone)" where used',false);
 }
 function columnHeader(f,position,count){
   const h=document.createElement('div');h.className='fhead';
   const label=(f.members.find(m=>m.hex.toLowerCase()===f.base.toLowerCase())||{}).name||f.column||f.base;
-  h.innerHTML=`<button class="cmove left" title="move column left" ${position===0?'disabled':''}>&#8249;</button><button class="ctitle" title="select base color"></button><button class="cmove right" title="move column right" ${position===count-1?'disabled':''}>&#8250;</button><button class="cdel" title="delete column">×</button>`;
+  h.innerHTML=`<button class="cmove left" title="move column left" ${position===0?'disabled':''}>&#8249;</button><button class="ctitle" title="select base color"></button><button class="cmove right" title="move column right" ${position===count-1?'disabled':''}>&#8250;</button><button class="cdel" title="delete column with confirmation">×</button>`;
   h.querySelector('.ctitle').textContent=label;
   h.querySelector('.ctitle').onclick=()=>selectColumnBase(f);
   h.querySelector('.left').onclick=(e)=>{e.stopPropagation();moveColumn(f.column,-1);};

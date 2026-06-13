@@ -336,8 +336,14 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#c0402a','red','red'],['#3a6ea5','blue','blue'],['#92acc2','blue+1','blue'],['#808080','gray','gray']];
  MAP['kw']='#92acc2';lastGone={};selectedIdx=PALETTE.findIndex(p=>p[1]==='blue+1');renderPalette();
  const del=document.querySelector('#pals .fstrip[data-column="blue"] .cdel');
- A(!!del,'normal column has a delete button');
+  A(!!del,'normal column has a delete button');
+ const beforeDelete=PALETTE.map(p=>p.join('|')).join('||'),oldConfirm=window.confirm;
+ window.confirm=()=>false;
  if(del)del.click();
+ A(PALETTE.map(p=>p.join('|')).join('||')===beforeDelete,'canceling column delete leaves the palette unchanged');
+ window.confirm=()=>true;
+ if(del)del.click();
+ window.confirm=oldConfirm;
  A(!PALETTE.some(p=>p[2]==='blue'),'column delete removes every entry with the stable column id');
  A(PALETTE.some(p=>p[1]==='red')&&PALETTE.some(p=>p[1]==='gray'),'column delete leaves neighboring columns alone');
  A(PALETTE.some(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})==='bg')&&PALETTE.some(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})==='fg'),'column delete leaves ground entries alone');
