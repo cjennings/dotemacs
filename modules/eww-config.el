@@ -67,7 +67,7 @@
 (use-package eww
   :ensure nil ;; built-in
   :bind
-  (("M-E" . eww)  ;; Meta+Shift+e emits the uppercase event; overrides forward-sentence
+  (("M-S-e" . eww)  ;; was M-E, overrides forward-sentence
    :map eww-mode-map
    ("<" . eww-back-url)
    (">" . eww-forward-url)
