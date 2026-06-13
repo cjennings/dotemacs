@@ -42,6 +42,21 @@ test('columnsFromPalette: Boundary - legacy two-field entries fall back to name 
   assert.ok(columnOf(columns, 'green'));
 });
 
+test('columnsFromPalette: Boundary - legacy color-N entries become separate base columns', () => {
+  const pal = [['#111111', 'color-22'], ['#222222', 'color-23'], ['#333333', 'color-129']];
+  const { columns } = columnsFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
+  assert.deepEqual(columns.map(f => f.column), ['color-22', 'color-23', 'color-129']);
+  assert.deepEqual(columns.map(f => f.members.map(m => m.name)), [['color-22'], ['color-23'], ['color-129']]);
+});
+
+test('columnsFromPalette: Boundary - explicit color-N column ids are preserved', () => {
+  const pal = [['#111111', 'color-22', 'captured'], ['#222222', 'color-23', 'captured']];
+  const { columns } = columnsFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
+  assert.equal(columns.length, 1);
+  assert.equal(columns[0].column, 'captured');
+  assert.deepEqual(columns[0].members.map(m => m.name), ['color-22', 'color-23']);
+});
+
 test('columnsFromPalette: Normal - palette order controls column order', () => {
   const pal = [['#67809c', 'blue'], ['#e8bd30', 'gold'], ['#5d9b86', 'green']];
   const { columns } = columnsFromPalette(pal, { bg: '#000000', fg: '#ffffff' });
