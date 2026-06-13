@@ -136,7 +136,7 @@ function lMax(hue,chroma,fgSet,target){
 
 function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
 function nameOfHex(palette,hex){const p=palette.find(p=>p[0].toLowerCase()===hex.toLowerCase());return p?p[1]:null;}
-function columnStem(name){name=name||'color';return /^color-\d+$/.test(name)?name:name.replace(/[+-]\d+$/,'');}
+function columnStem(name){name=name||'color';if(/^color-\d+$/.test(name))return name;name=name.replace(/[+-]\d+$/,'');return name.replace(/\d+$/,'')||'color';}
 function columnOffset(name){const m=(name||'').match(/([+-]\d+)$/);return m?parseInt(m[1],10):0;}
 function columnIdOf(entry){return (entry&&entry[2])||columnStem(entry&&entry[1]);}
 
