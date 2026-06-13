@@ -1,0 +1,87 @@
+<!doctype html><meta charset=utf-8><title>theme-studio</title>
+<style>
+STYLES_CSS</style>
+<div class="topbar">
+ <h1 id="pagetitle">Untitled: theme</h1>
+ <div class="saveload">
+  <div class="filebar end">
+   <label style="color:#b4b1a2">theme name</label><input type="text" id="themename" value="" placeholder="untitled" oninput="updateTitle()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:200px">
+   <button id="savebtn" onclick="saveTheme()" style="display:none">&#128190; save</button>
+   <button onclick="exportTheme()">&#11015; export</button>
+   <button class="fbtn" onclick="importTheme()">&#11014; import</button><input type="file" id="fileinput" accept=".json" onchange="importFile(event)" style="display:none">
+   <button id="jsonbtn" onclick="toggleJSON()">show</button>
+  </div>
+  <textarea id="export" style="display:none" readonly></textarea>
+ </div>
+</div>
+ <section class="pane grow">
+  <h1>palette</h1>
+  <div class="palctl">
+   <div id="swatch" class="swatch" title="open color picker"></div>
+   <input type="text" id="newhexstr" placeholder="#rrggbb" value="#888888" oninput="syncHex()" onkeydown="if(event.key==='Enter')applyEdit()" style="width:110px">
+   <input type="text" id="newname" placeholder="name" onkeydown="if(event.key==='Enter')applyEdit()">
+   <button onclick="addColor()">+ add color</button>
+   <button onclick="updateColor()">&#8635; update selected</button>
+   <span id="palmsg"></span>
+   <div id="picker" class="picker">
+    <div class="prow">
+     <div id="sv" class="sv"><canvas id="svmask" class="svmask"></canvas><div id="svsafe" class="svsafe" style="display:none"></div><div id="svcur" class="svcur"></div></div>
+     <div id="hue" class="hue"><div id="huecur" class="huecur"></div></div>
+    </div>
+    <div class="pmodel">edit <button data-pm="hsv" class="on">HSV</button><button data-pm="oklch">OKLCH</button></div>
+    <div class="pmodel" title="in OKLCH mode, shade the lightness too light to keep this overlay face readable over its foreground set">safe for <select id="safefor" onchange="setSafeFace(this.value)"><option value="">none</option></select></div>
+    <div class="oklchctl" id="oklchctl">
+     <div class="ocrow"><label title="perceptual lightness">L</label><input type="range" id="okL" min="0" max="1" step="0.001"><input type="number" id="okLn" min="0" max="1" step="0.001"></div>
+     <div class="ocrow"><label title="chroma (colorfulness)">C</label><input type="range" id="okC" min="0" max="0.4" step="0.001"><input type="number" id="okCn" min="0" max="0.4" step="0.001"></div>
+     <div class="ocrow"><label title="hue angle, degrees">H</label><input type="range" id="okH" min="0" max="360" step="1"><input type="number" id="okHn" min="0" max="360" step="1"></div>
+     <div class="pclamp" id="pkclamp"></div>
+    </div>
+    <div class="pinfo"><span id="pkhex">#888888</span><span id="pkcon"></span></div>
+    <div class="pinfo2"><span id="pkoklch" title="OKLCH perceptual coordinates: lightness L (0..1), chroma C, hue H in degrees"></span><span id="pkapca"></span></div>
+    <div class="pmode">limit <button data-m="any" class="on">any</button><button data-m="aa">AA+</button><button data-m="aaa">AAA</button></div>
+    <div id="pkchips" class="pkchips"></div>
+   </div>
+  </div>
+  <div class="pals" id="pals"></div>
+  <div class="palwarn" id="palwarn"></div>
+ </section>
+<h1>code/color assignments</h1>
+<div class="cols">
+ <section class="pane">
+  <div class="legctl"><button class="fbtn" onclick="clearUnlocked()" title="reset every unlocked element to default (reads as plain foreground text); locked rows are left untouched">clear unlocked</button></div>
+  <table class="leg" id="legtable"><thead><tr><th onclick="srtTable('legbody',0)">elements &#9651;</th><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',2)">color &#9651;</th><th>style</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th></tr></thead><tbody id="legbody"></tbody></table>
+ </section>
+ <section class="pane grow">
+  <div class="langbar"><label style="color:#b4b1a2">language</label><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode()"></select></div>
+  <pre id="codepre"></pre>
+ </section>
+</div>
+<h1>ui faces</h1>
+<div class="cols stretch">
+ <section class="pane">
+  <div class="legctl"><button class="fbtn" onclick="clearUnlockedUI()" title="reset every unlocked UI face to default (no foreground/background); locked rows are left untouched">clear unlocked</button></div>
+  <table class="leg" id="uitable"><thead><tr><th onclick="srtTable('uibody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('uibody',2)">foreground &#9651;</th><th onclick="srtTable('uibody',3)">background &#9651;</th><th>style</th><th onclick="srtTable('uibody',5)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th>preview</th><th title="face :box (border)">box</th></tr></thead><tbody id="uibody"></tbody></table>
+ </section>
+ <section class="pane grow" style="display:flex;flex-direction:column">
+  <div class="langbar"><label style="color:#b4b1a2">live buffer preview</label></div>
+  <div id="mockframe" class="mock"></div>
+ </section>
+</div>
+<h1>package faces</h1>
+<div class="pkgbar">
+ <label style="color:#b4b1a2">application</label><select id="appsel" class="chip" style="width:auto;font:bold 10pt monospace"></select>
+ <label style="color:#b4b1a2">filter</label><input id="pkgfilter" type="text" placeholder="face name" oninput="buildPkgTable()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:160px">
+ <button onclick="resetApp()">&#8635; reset all</button>
+ <button class="fbtn" onclick="clearUnlockedPkg()" title="reset every unlocked face in this app to default (no fg/bg); locked rows are left untouched">clear unlocked</button>
+</div>
+<div class="cols stretch">
+ <section class="pane">
+  <table class="leg" id="pkgtable"><thead><tr><th onclick="srtTable('pkgbody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th onclick="srtTable('pkgbody',5)">contrast &#9651;</th><th onclick="srtTable('pkgbody',6)">inherit &#9651;</th><th onclick="srtTable('pkgbody',7)">size &#9651;</th><th title="face :box (border)">box</th><th></th></tr></thead><tbody id="pkgbody"></tbody></table>
+ </section>
+ <section class="pane grow" style="display:flex;flex-direction:column">
+  <div class="langbar"><label id="pkgprevlabel" style="color:#b4b1a2">preview</label></div>
+  <div id="pkgpreview" class="mock" style="overflow:auto"></div>
+ </section>
+</div>
+<script>
+APP_JS</script>
