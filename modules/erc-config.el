@@ -28,8 +28,10 @@
 ;; Load cl-lib at compile time and runtime (lightweight, already loaded in most configs)
 (require 'cl-lib)
 (require 'keybindings)  ;; provides cj/custom-keymap
-(eval-when-compile (require 'erc)
-                   (require 'user-constants))
+(eval-when-compile (require 'erc))
+;; user-constants is required at runtime, not just compile time: `user-whole-name'
+;; is read at load time below (erc-user-full-name), so a standalone .elc needs it.
+(require 'user-constants)
 
 ;; ------------------------------------ ERC ------------------------------------
 ;; Server definitions and connection settings
@@ -97,7 +99,7 @@ Change this value to use a different nickname.")
   (let ((server-buffers '()))
 	(dolist (buf (erc-buffer-list))
 	  (with-current-buffer buf
-		(when (eq (buffer-local-value 'erc-server-process buf) erc-server-process)
+		(when (and (erc-server-buffer-p) (erc-server-process-alive))
 		  (unless (member (buffer-name) server-buffers)
 			(push (buffer-name) server-buffers)))))
 
@@ -222,7 +224,6 @@ Auto-adds # prefix if missing.  Offers completion from configured channels."
 	 match
 	 move-to-prompt
 	 noncommands
-	 notifications
 	 readonly
 	 services
 	 stamp
