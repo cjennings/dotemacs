@@ -339,22 +339,28 @@ function udeco(o){return `font-weight:${o.bold?'bold':'normal'};font-style:${o.i
 // A face's :box, rendered as an inset box-shadow (no layout shift). Returns the
 // box-shadow VALUE (or '' for no box). 'line' is a flat border in the box color
 // (or the face's own color when unset); 'released'/'pressed' are the 3D button
-// styles Emacs draws, derived from the background so they read on any color.
+// styles Emacs draws, derived from explicit box color when set, otherwise the
+// background so they read on any color.
 function boxCss(b,bg){if(!b||!b.style)return '';const w=b.width||1;
   if(b.style==='released'||b.style==='pressed'){
-    // Emacs derives the 3D edges from the face's background (reliefColors,
-    // ported from xterm.c); the translucent pair is only the no-bg fallback.
-    const r=bg?reliefColors(bg):{hl:null,sh:null};
+    // Emacs derives the 3D edges from a base color (reliefColors, ported from
+    // xterm.c); the translucent pair is only the no-color fallback.
+    const r=(b.color||bg)?reliefColors(b.color||bg):{hl:null,sh:null};
     const hl=r.hl||'#ffffff33',sh=r.sh||'#00000066';
     const [a,z]=b.style==='released'?[hl,sh]:[sh,hl];
     return `inset ${w}px ${w}px 0 ${a},inset -${w}px -${w}px 0 ${z}`;}
   return `inset 0 0 0 ${w}px ${b.color||'currentColor'}`;}
-// The per-row box control: none / line / raised / pressed. get()/set() read and
-// write the face's box object (null = no box).
-function mkBoxSelect(get,set){const s=document.createElement('select');s.className='chip';s.style.cssText='width:84px;font:10pt monospace';
+// The per-row box control: none / line / raised / pressed plus optional line
+// color. get()/set() read and write the face's box object (null = no box).
+function mkBoxControl(get,set){const wrap=document.createElement('div');wrap.className='boxctl';
+  const s=document.createElement('select');s.className='chip';s.style.cssText='width:84px;font:10pt monospace';
   [['','no box'],['line','line'],['released','raised'],['pressed','pressed']].forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;s.appendChild(o);});
-  const cur=get();s.value=cur&&cur.style?cur.style:'';
-  s.onchange=()=>set(s.value?{style:s.value,width:1,color:null}:null);return s;}
+  const dd=mkColorDropdown(ddList((get()&&get().color)||''),(get()&&get().color)||'',h=>{const cur=get();if(!cur)return;set(Object.assign({},cur,{color:h||null}));});
+  function paint(){const cur=get();s.value=cur&&cur.style?cur.style:'';dd.setValue(cur&&cur.color?cur.color:'');
+    const off=!cur||!cur.style||wrap.dataset.locked==='1';dd.dataset.locked=off?'1':'';dd.classList.toggle('locked',off);if(dd.syncLocked)dd.syncLocked();}
+  s.onchange=()=>{const cur=get();set(s.value?{style:s.value,width:cur&&cur.width||1,color:cur&&cur.color||null}:null);paint();};
+  wrap.syncLocked=()=>{const locked=wrap.dataset.locked==='1';s.disabled=locked;paint();};
+  wrap.append(s,dd);paint();return wrap;}
 function flashRow(tr){if(!tr)return;tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}
 function flashEl(el){if(!el)return;el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});el.classList.remove('flashtok');void el.offsetWidth;el.classList.add('flashtok');}
 // Flash every matching element but scroll only the first into view, so a face
@@ -470,9 +476,9 @@ function buildPkgTable(){
     const ci=document.createElement('td');const isel=document.createElement('select');isel.className='chip';isel.style.cssText='width:150px;font:10pt monospace';inh.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});isel.value=f.inherit||'';isel.onchange=()=>{f.inherit=isel.value||null;f.source='user';pkgChanged();};ci.appendChild(isel);
     const ch=document.createElement('td');const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.value=f.height||1;hin.className='hstep';hin.onchange=()=>{f.height=parseFloat(hin.value)||1;f.source='user';pkgChanged();};ch.appendChild(hin);
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=effFg(pkgEffFg(app,face)),ebg=effBg(pkgEffBg(app,face)),r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
-    const cx=document.createElement('td');const boxSel=mkBoxSelect(()=>f.box,b=>{f.box=b;f.source='user';pkgChanged();});cx.appendChild(boxSel);
+    const cx=document.createElement('td');const boxCtl=mkBoxControl(()=>f.box,b=>{f.box=b;f.source='user';pkgChanged();});cx.appendChild(boxCtl);
     const cr=document.createElement('td');const rb=document.createElement('button');rb.className='sbtn';rb.textContent='↺';rb.title='reset to default';rb.onclick=()=>{PKGMAP[app][face]=seedFace(def);pkgChanged();};cr.appendChild(rb);
-    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkBtns,isel,hin,boxSel,rb]);
+    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkBtns,isel,hin,boxCtl,rb]);
     tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cx,cr);tb.appendChild(tr);
   }
   applyTableSort('pkgbody');
@@ -817,8 +823,8 @@ function buildUITable(){
     stBtns.forEach(b=>cS.appendChild(b));
     const cC=document.createElement('td');cC.id='uicr-'+face;cC.style.whiteSpace='nowrap';cC.style.fontSize='10pt';
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
-    const cX=document.createElement('td');const boxSel=mkBoxSelect(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();});cX.appendChild(boxSel);
-    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stBtns,boxSel]);
+    const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();});cX.appendChild(boxCtl);
+    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stBtns,boxCtl]);
     tr.appendChild(c0);tr.appendChild(cL);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);paintUI(face);
   }
   applyTableSort('uibody');
