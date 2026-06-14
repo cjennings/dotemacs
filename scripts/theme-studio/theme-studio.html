@@ -153,7 +153,7 @@
 <h1>code/color assignments</h1>
 <div class="cols">
  <section class="pane">
-  <div class="legctl"><button id="syntaxlocktoggle" class="fbtn" onclick="toggleAllLocks('syntax')" title="lock or unlock every syntax row">lock all</button><button class="fbtn" onclick="resetUnlocked()" title="reset every unlocked syntax element to its captured default; locked rows are left untouched">&#8635; reset unlocked</button><button class="fbtn" onclick="clearUnlocked()" title="erase every unlocked element to default (reads as plain foreground text); locked rows are left untouched">erase unlocked</button></div>
+  <div class="legctl"><button id="syntaxlocktoggle" class="fbtn" onclick="toggleAllLocks('syntax')" title="lock or unlock every syntax row">lock all</button><button class="fbtn" onclick="resetUnlocked()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlocked()" title="erase, preserving locked rows">erase</button></div>
   <table class="leg" id="legtable"><thead><tr><th onclick="srtTable('legbody',0)">elements &#9651;</th><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',2)">color &#9651;</th><th>style</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
@@ -164,7 +164,7 @@
 <h1>ui faces</h1>
 <div class="cols stretch">
  <section class="pane">
-  <div class="legctl"><button id="uilocktoggle" class="fbtn" onclick="toggleAllLocks('ui')" title="lock or unlock every UI face row">lock all</button><button class="fbtn" onclick="resetUnlockedUI()" title="reset every unlocked UI face to its captured default; locked rows are left untouched">&#8635; reset unlocked</button><button class="fbtn" onclick="clearUnlockedUI()" title="erase every unlocked UI face to default (no foreground/background); locked rows are left untouched">erase unlocked</button></div>
+  <div class="legctl"><button id="uilocktoggle" class="fbtn" onclick="toggleAllLocks('ui')" title="lock or unlock every UI face row">lock all</button><button class="fbtn" onclick="resetUnlockedUI()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlockedUI()" title="erase, preserving locked rows">erase</button></div>
   <table class="leg" id="uitable"><thead><tr><th onclick="srtTable('uibody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('uibody',2)">foreground &#9651;</th><th onclick="srtTable('uibody',3)">background &#9651;</th><th>style</th><th onclick="srtTable('uibody',5)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th>preview</th><th title="face :box (border)">box</th></tr></thead><tbody id="uibody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
@@ -176,9 +176,9 @@
 <div class="pkgbar">
  <label style="color:#b4b1a2">application</label><select id="appsel" class="chip" style="width:auto;font:bold 10pt monospace"></select>
  <label style="color:#b4b1a2">filter</label><input id="pkgfilter" type="text" placeholder="face name" oninput="buildPkgTable()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:160px">
- <button onclick="resetApp()" title="reset every unlocked face in this app to its package default; locked rows are left untouched">&#8635; reset unlocked</button>
+ <button onclick="resetApp()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button>
  <button id="pkglocktoggle" class="fbtn" onclick="toggleAllLocks('pkg')" title="lock or unlock every face row in the current package">lock all</button>
- <button class="fbtn" onclick="clearUnlockedPkg()" title="erase every unlocked face in this app to default (no fg/bg); locked rows are left untouched">erase unlocked</button>
+ <button class="fbtn" onclick="clearUnlockedPkg()" title="erase, preserving locked rows">erase</button>
 </div>
 <div class="cols stretch">
  <section class="pane">
@@ -855,7 +855,7 @@ function mkStyleButtons(isOn,onToggle){
     b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';
     b.style.textDecoration=at==='underline'?'underline':at==='strike'?'line-through':'none';b.title=at;
     b.onclick=()=>{onToggle(at);b.classList.toggle('on',!!isOn(at));};return b;});}
-// Reset every unlocked row in a tier to its default. keyFn maps a row entry to
+// Apply a batch action to every editable row in a tier. keyFn maps a row entry to
 // its lock key, or null to skip the row entirely (syntax bg and the default fg);
 // resetFn does the actual clearing. Locked rows are left untouched.
 function clearUnlockedRows(items,keyFn,resetFn){
@@ -879,25 +879,25 @@ function toggleAllLocks(tier){
 }
 function clearUnlocked(){
   clearUnlockedRows(CATS,c=>(c[0]==='bg'||c[0]==='p')?null:c[0],c=>{MAP[c[0]]='';});
-  buildTable();renderCode();notify('erased unlocked elements to default',false);
+  buildTable();renderCode();notify('erased editable syntax elements',false);
 }
 function resetUnlocked(){
   clearUnlockedRows(CATS,c=>c[0],c=>{const k=c[0];MAP[k]=DEFAULT_MAP[k]||'';BOLD[k]=!!DEFAULT_BOLD[k];ITALIC[k]=!!DEFAULT_ITALIC[k];});
   buildTable();buildUITable();buildPkgTable();buildPkgPreview();renderCode();applyGround();repaintCovered();
-  notify('reset unlocked syntax elements to captured defaults',false);
+  notify('reset editable syntax elements to captured defaults',false);
 }
 function clearUnlockedUI(){
   clearUnlockedRows(UI_FACES,f=>'ui:'+f[0],f=>{UIMAP[f[0]]=uiFaceBlank();});
-  buildUITable();buildMockFrame();notify('erased unlocked UI faces to default',false);
+  buildUITable();buildMockFrame();notify('erased editable UI faces',false);
 }
 function resetUnlockedUI(){
   clearUnlockedRows(UI_FACES,f=>'ui:'+f[0],f=>{UIMAP[f[0]]=JSON.parse(JSON.stringify(DEFAULT_UIMAP[f[0]]||uiFaceBlank()));});
-  buildUITable();buildMockFrame();notify('reset unlocked UI faces to captured defaults',false);
+  buildUITable();buildMockFrame();notify('reset editable UI faces to captured defaults',false);
 }
 function clearUnlockedPkg(){
   const app=curApp();
   clearUnlockedRows(APPS[app].faces,f=>'pkg:'+app+':'+f[0],f=>{PKGMAP[app][f[0]]=normalizePkgFace({source:'cleared'},'cleared');});
-  pkgChanged();notify('erased unlocked '+app+' faces to default',false);
+  pkgChanged();notify('erased editable '+app+' faces',false);
 }
 function buildTable(){
   const tb=document.getElementById('legbody');tb.innerHTML='';
@@ -1759,7 +1759,7 @@ function renderTelegaPreview(){const a='telega',L=[];
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}
 function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=effFg(pkgEffFg(app,face)),ebg=pkgEffBg(app,face);h+=`<div data-face="${face}" style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
 function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e','lsp','gitgutter','flycheck','dired','dirvish','calibredb','erc','orgdrill','orgnoter','signel','pearl','slack','telega','shr'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():pv==='lsp'?renderLspPreview():pv==='gitgutter'?renderGitGutterPreview():pv==='flycheck'?renderFlycheckPreview():pv==='dired'?renderDiredPreview():pv==='dirvish'?renderDirvishPreview():pv==='calibredb'?renderCalibredbPreview():pv==='erc'?renderErcPreview():pv==='orgdrill'?renderOrgdrillPreview():pv==='orgnoter'?renderOrgnoterPreview():pv==='signel'?renderSignelPreview():pv==='pearl'?renderPearlPreview():pv==='slack'?renderSlackPreview():pv==='telega'?renderTelegaPreview():pv==='shr'?renderShrPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
-function resetApp(){const app=curApp();for(const [face,label,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset unlocked '+app+' faces to package defaults',false);}
+function resetApp(){const app=curApp();for(const [face,label,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset editable '+app+' faces to package defaults',false);}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 // --- worst-case readout for the covered overlay faces (spec Phase 4) ---------
 // Default WCAG target for the worst-case verdict (AA). AAA is selectable.
@@ -1841,7 +1841,7 @@ function pkgSelftest(){
 if(location.hash==='#selftest')pkgSelftest();
 // Lock-mechanism gate (open with #locktest): two behaviors the refactor must
 // preserve, across all three tiers. (1) Locking a row disables its controls via
-// the shared mkLockCell. (2) reset/erase batch actions update unlocked rows but
+// the shared mkLockCell. (2) reset/erase batch actions update editable rows but
 // leave locked rows (syntax bare-kind, ui:, pkg: keys) untouched.
 if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  LOCKED.clear();buildTable();
