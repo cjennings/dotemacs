@@ -986,11 +986,13 @@ From the 2026-06 config audit, =modules/erc-config.el=:
 - =:238= — =user-whole-name= read at load but =user-constants= only required at compile time (same trap as auth-config/keyboard-macros).
 Fixed 2026-06-14: removed =notifications= from =erc-modules= (kept the custom =cj/erc-notify-on-mention=, so one notification per mention); rewrote =cj/erc-connected-servers= to filter on =(erc-server-buffer-p)= + =(erc-server-process-alive)= instead of the tautological self-eq; moved =user-constants= to a runtime require. New test-erc-config-connected-servers.el (live-server-only + empty cases) 2 green; module byte-compiles. erc-config not reloaded into the daemon (live IRC session) — takes effect on restart. VERIFY for the one-notification + real-server-list behavior.
 
-** TODO [#B] slack-config lifecycle gaps :bug:quick:solo:
+** DONE [#B] slack-config lifecycle gaps :bug:quick:solo:
+CLOSED: [2026-06-14 Sun]
 From the 2026-06 config audit, =modules/slack-config.el=:
 - =:265= — w / @ / # bound to commands neither autoloaded nor in :commands — void-function before slack loads. Add to :commands.
 - =:246= — =cj/slack-close-all-buffers= reads =slack-current-buffer= (declared but unbound) without the boundp guard its sibling has — void-variable on C-; S Q before slack loads.
 - =:259= — raw =global-set-key= for C-; S bypasses =cj/register-prefix-map= (signal/erc use it); invisible to the keybindings registry and the planned unification enumeration.
+Fixed 2026-06-14: added =slack-message-write-another-buffer=, =slack-message-embed-mention=, =slack-message-embed-channel= to =:commands= (w/@/# now autoload); guarded =cj/slack-close-all-buffers= with =buffer-local-boundp= (no void-variable on C-; S Q before slack loads); switched =global-set-key= to =(cj/register-prefix-map "S" cj/slack-keymap "slack")= (+require keybindings). New test-slack-config-close-all.el green; module loads, C-; S registered in the registry. Not reloaded into the live daemon (active slack session) — restart to apply. VERIFY for the pre-load key safety.
 
 ** TODO [#B] erc-yank silently publishes >5-line pastes as public gists :bug:
 =modules/erc-config.el:345= — C-y in any ERC buffer auto-creates a public gist for anything over 5 lines: clipboard content goes to a public URL with no confirmation, and no executable-find guard for =gist= (errors mid-send if absent). Privacy trap. Add a =yes-or-no-p= gate or drop the package for plain C-y. From the 2026-06 config audit.
@@ -4451,6 +4453,12 @@ From the 2026-06-11 messenger-unification brainstorm. Google Voice has no offici
 
 ** TODO Manual testing and validation
 Exercised once the phases above land.
+*** VERIFY slack keys are safe before slack loads
+What we're verifying: the C-; S slack keys don't error before slack has started, and the prefix shows in which-key. Fixed in modules/slack-config.el; restart to apply (not reloaded into the live session).
+- Restart Emacs but do NOT run cj/slack-start
+- Press C-; S Q (close all), and C-; S w / @ / # (these previously void-function'd or void-variable'd before load)
+- Press C-; S and check which-key shows the "slack" prefix
+Expected: C-; S Q reports "Closed 0 Slack buffers" with no error; w/@/# either run or autoload slack cleanly (no void-function); the which-key popup lists the slack prefix.
 *** VERIFY ERC fires one mention notification and lists real servers
 What we're verifying: a mention pops a single desktop notification (not two), and cj/erc-connected-servers lists only live server connections. Fixed in modules/erc-config.el; takes effect after an Emacs restart (not reloaded into the live IRC session).
 - Restart Emacs and reconnect ERC

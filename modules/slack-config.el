@@ -45,6 +45,7 @@
 
 (require 'system-lib)  ;; provides cj/auth-source-secret-value
 (require 'cl-lib)
+(require 'keybindings)  ;; provides cj/register-prefix-map
 
 (defvar slack-current-buffer)
 (defvar slack-message-compose-buffer-mode-map)
@@ -120,7 +121,9 @@ or more panes; this pins the choice to any non-selected window."
   :defer t
   :commands (slack-start slack-select-rooms slack-select-unread-rooms
              slack-im-select slack-thread-show-or-create
-             slack-insert-emoji slack-register-team)
+             slack-insert-emoji slack-register-team
+             slack-message-write-another-buffer
+             slack-message-embed-mention slack-message-embed-channel)
   :custom
   ;; Disabled: emojify-mode in lui buffers causes (wrong-type-argument listp)
   ;; errors on emoji characters during lui-scroll-post-command's recenter call.
@@ -243,7 +246,8 @@ swallows exceptions via `websocket-try-callback'."
   (interactive)
   (let ((count 0))
     (dolist (buf (buffer-list))
-      (when (buffer-local-value 'slack-current-buffer buf)
+      (when (and (buffer-local-boundp 'slack-current-buffer buf)
+                 (buffer-local-value 'slack-current-buffer buf))
         (let ((win (get-buffer-window buf t)))
           (when (and win (not (window-dedicated-p win)))
             (delete-window win)))
@@ -256,7 +260,7 @@ swallows exceptions via `websocket-try-callback'."
 (defvar cj/slack-keymap (make-sparse-keymap)
   "Keymap for Slack commands under C-; S.")
 
-(global-set-key (kbd "C-; S") cj/slack-keymap)
+(cj/register-prefix-map "S" cj/slack-keymap "slack")
 
 (define-key cj/slack-keymap (kbd "s") #'cj/slack-start)
 (define-key cj/slack-keymap (kbd "c") #'slack-select-unread-rooms)
