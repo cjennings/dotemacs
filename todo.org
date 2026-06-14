@@ -195,6 +195,14 @@ Spec draft: [[file:docs/theme-studio-palette-generator-spec.org][theme-studio-pa
 
 Build a constraint-first palette generator for Theme Studio: start from bg/fg, generate editable palette columns in OKLCH, preview candidate columns before applying them, and apply proposals by append/replace/regenerate modes while preserving stable column ids and existing assignments where possible. V1 is palette-only, not automatic face assignment; generator output becomes normal editable columns after apply.
 
+** TODO [#B] theme-studio semantic theme architecture :feature:theme-studio:spec:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-14
+:END:
+Spec draft: [[file:docs/theme-studio-semantic-theme-architecture-spec.org][theme-studio-semantic-theme-architecture-spec.org]].
+
+Design a Modus-inspired layered Theme Studio output path: palette data, semantic role mappings, face templates, and a generated theme wrapper. Keep the current flat JSON-to-theme converter as the compatibility/default path while proving a layered, self-contained generated theme. Include advisory semantic rules as a possible validation layer, not v1 enforcement.
+
 *** TODO [#C] theme-studio palette generator source modes for base-only vs ground-aware palettes :feature:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-14
@@ -970,11 +978,13 @@ From the 2026-06 config audit, =modules/calendar-sync.el=:
 - =:1284= — curl runs without =--fail=: an HTTP 404/500 error page exits 0 and the HTML proceeds into conversion.
 - =:1229-1233= — =--parse-ics= returns nil for both garbage and a valid calendar with zero in-window events, so healthy near-empty calendars report "parse failed" in =calendar-sync-status=. Distinguish the cases.
 
-** TODO [#B] ERC: double mention notifications + tautological server list :bug:quick:solo:
+** DONE [#B] ERC: double mention notifications + tautological server list :bug:quick:solo:
+CLOSED: [2026-06-14 Sun]
 From the 2026-06 config audit, =modules/erc-config.el=:
 - =:281= — =erc-modules= includes the built-in =notifications= module AND :config adds =cj/erc-notify-on-mention= to the same hook — every mention fires two desktop notifications. Pick one path (keep the custom one, slated for messenger unification).
 - =:100= — =cj/erc-connected-servers=: inside =with-current-buffer=, the free =erc-server-process= is the buffer's own local value, so the eq test is tautologically true — returns ALL ERC buffers (channels, dead connections). Use =erc-server-buffer-p= + =erc-server-process-alive=.
 - =:238= — =user-whole-name= read at load but =user-constants= only required at compile time (same trap as auth-config/keyboard-macros).
+Fixed 2026-06-14: removed =notifications= from =erc-modules= (kept the custom =cj/erc-notify-on-mention=, so one notification per mention); rewrote =cj/erc-connected-servers= to filter on =(erc-server-buffer-p)= + =(erc-server-process-alive)= instead of the tautological self-eq; moved =user-constants= to a runtime require. New test-erc-config-connected-servers.el (live-server-only + empty cases) 2 green; module byte-compiles. erc-config not reloaded into the daemon (live IRC session) — takes effect on restart. VERIFY for the one-notification + real-server-list behavior.
 
 ** TODO [#B] slack-config lifecycle gaps :bug:quick:solo:
 From the 2026-06 config audit, =modules/slack-config.el=:
@@ -4441,6 +4451,12 @@ From the 2026-06-11 messenger-unification brainstorm. Google Voice has no offici
 
 ** TODO Manual testing and validation
 Exercised once the phases above land.
+*** VERIFY ERC fires one mention notification and lists real servers
+What we're verifying: a mention pops a single desktop notification (not two), and cj/erc-connected-servers lists only live server connections. Fixed in modules/erc-config.el; takes effect after an Emacs restart (not reloaded into the live IRC session).
+- Restart Emacs and reconnect ERC
+- Have someone mention your nick in a channel (or trigger erc-text-matched-hook)
+- Run M-x cj/erc-connected-servers with one server connected and a few channels open
+Expected: exactly one desktop notification per mention; cj/erc-connected-servers reports just the connected server(s), not every channel/query buffer.
 *** VERIFY modeline still shows the git branch and state
 What we're verifying: the VC-cache simplification didn't change what the modeline shows on a normal repo. Fixed in modules/modeline-config.el (live in the daemon after reload).
 - Open a file inside a git repo
