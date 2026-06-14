@@ -110,7 +110,7 @@ function mkStyleButtons(isOn,onToggle){
     b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';
     b.style.textDecoration=at==='underline'?'underline':at==='strike'?'line-through':'none';b.title=at;
     b.onclick=()=>{onToggle(at);b.classList.toggle('on',!!isOn(at));};return b;});}
-// Reset every unlocked row in a tier to its default. keyFn maps a row entry to
+// Apply a batch action to every editable row in a tier. keyFn maps a row entry to
 // its lock key, or null to skip the row entirely (syntax bg and the default fg);
 // resetFn does the actual clearing. Locked rows are left untouched.
 function clearUnlockedRows(items,keyFn,resetFn){
@@ -134,25 +134,25 @@ function toggleAllLocks(tier){
 }
 function clearUnlocked(){
   clearUnlockedRows(CATS,c=>(c[0]==='bg'||c[0]==='p')?null:c[0],c=>{MAP[c[0]]='';});
-  buildTable();renderCode();notify('erased unlocked elements to default',false);
+  buildTable();renderCode();notify('erased editable syntax elements',false);
 }
 function resetUnlocked(){
   clearUnlockedRows(CATS,c=>c[0],c=>{const k=c[0];MAP[k]=DEFAULT_MAP[k]||'';BOLD[k]=!!DEFAULT_BOLD[k];ITALIC[k]=!!DEFAULT_ITALIC[k];});
   buildTable();buildUITable();buildPkgTable();buildPkgPreview();renderCode();applyGround();repaintCovered();
-  notify('reset unlocked syntax elements to captured defaults',false);
+  notify('reset editable syntax elements to captured defaults',false);
 }
 function clearUnlockedUI(){
   clearUnlockedRows(UI_FACES,f=>'ui:'+f[0],f=>{UIMAP[f[0]]=uiFaceBlank();});
-  buildUITable();buildMockFrame();notify('erased unlocked UI faces to default',false);
+  buildUITable();buildMockFrame();notify('erased editable UI faces',false);
 }
 function resetUnlockedUI(){
   clearUnlockedRows(UI_FACES,f=>'ui:'+f[0],f=>{UIMAP[f[0]]=JSON.parse(JSON.stringify(DEFAULT_UIMAP[f[0]]||uiFaceBlank()));});
-  buildUITable();buildMockFrame();notify('reset unlocked UI faces to captured defaults',false);
+  buildUITable();buildMockFrame();notify('reset editable UI faces to captured defaults',false);
 }
 function clearUnlockedPkg(){
   const app=curApp();
   clearUnlockedRows(APPS[app].faces,f=>'pkg:'+app+':'+f[0],f=>{PKGMAP[app][f[0]]=normalizePkgFace({source:'cleared'},'cleared');});
-  pkgChanged();notify('erased unlocked '+app+' faces to default',false);
+  pkgChanged();notify('erased editable '+app+' faces',false);
 }
 function buildTable(){
   const tb=document.getElementById('legbody');tb.innerHTML='';
@@ -777,7 +777,7 @@ function renderTelegaPreview(){const a='telega',L=[];
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}
 function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=effFg(pkgEffFg(app,face)),ebg=pkgEffBg(app,face);h+=`<div data-face="${face}" style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
 function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e','lsp','gitgutter','flycheck','dired','dirvish','calibredb','erc','orgdrill','orgnoter','signel','pearl','slack','telega','shr'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():pv==='lsp'?renderLspPreview():pv==='gitgutter'?renderGitGutterPreview():pv==='flycheck'?renderFlycheckPreview():pv==='dired'?renderDiredPreview():pv==='dirvish'?renderDirvishPreview():pv==='calibredb'?renderCalibredbPreview():pv==='erc'?renderErcPreview():pv==='orgdrill'?renderOrgdrillPreview():pv==='orgnoter'?renderOrgnoterPreview():pv==='signel'?renderSignelPreview():pv==='pearl'?renderPearlPreview():pv==='slack'?renderSlackPreview():pv==='telega'?renderTelegaPreview():pv==='shr'?renderShrPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
-function resetApp(){const app=curApp();for(const [face,label,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset unlocked '+app+' faces to package defaults',false);}
+function resetApp(){const app=curApp();for(const [face,label,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset editable '+app+' faces to package defaults',false);}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 // --- worst-case readout for the covered overlay faces (spec Phase 4) ---------
 // Default WCAG target for the worst-case verdict (AA). AAA is selectable.

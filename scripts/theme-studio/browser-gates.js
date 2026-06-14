@@ -22,7 +22,7 @@ function pkgSelftest(){
 if(location.hash==='#selftest')pkgSelftest();
 // Lock-mechanism gate (open with #locktest): two behaviors the refactor must
 // preserve, across all three tiers. (1) Locking a row disables its controls via
-// the shared mkLockCell. (2) reset/erase batch actions update unlocked rows but
+// the shared mkLockCell. (2) reset/erase batch actions update editable rows but
 // leave locked rows (syntax bare-kind, ui:, pkg: keys) untouched.
 if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  LOCKED.clear();buildTable();
