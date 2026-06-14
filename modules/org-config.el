@@ -63,23 +63,8 @@
 ;; -------------------------- Org Appearance Settings --------------------------
 
 (defun cj/org-appearance-settings()
-  "Set foreground, background, and font styles for org mode."
+  "Set org-mode appearance options (org faces are left to the theme)."
   (interactive)
-  ;; org-hide should use fix-pitch to align indents for proportional fonts
-  (set-face-attribute 'org-hide nil :inherit 'fixed-pitch)
-  (set-face-attribute 'org-meta-line nil :inherit 'shadow)
-
-  ;; Remove foreground and background from block faces
-  (set-face-attribute 'org-block nil :foreground 'unspecified :background 'unspecified)
-  (set-face-attribute 'org-block-begin-line nil :foreground 'unspecified :background 'unspecified)
-  (set-face-attribute 'org-block-end-line nil :foreground 'unspecified :background 'unspecified)
-
-  ;; Get rid of the background on column views
-  (set-face-attribute 'org-column nil :background 'unspecified)
-  (set-face-attribute 'org-column-title nil :background 'unspecified)
-
-  ;; make sure org-links are underlined
-  (set-face-attribute 'org-link nil :underline t)
 
   (setq org-ellipsis " ▾")                                  ;; change ellipses to down arrow
   (setq org-hide-emphasis-markers t)                        ;; hide emphasis markers (org-appear shows them when editing)
