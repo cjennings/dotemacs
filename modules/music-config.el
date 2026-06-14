@@ -722,54 +722,6 @@ For URL tracks: decoded URL."
 
   (setq emms-track-description-function #'cj/music--track-description)
 
-  ;; Playlist faces
-  (defface cj/music-header-face
-    '((((class color) (background dark))
-       (:foreground "#969385"))
-      (((class color) (background light))
-       (:foreground "gray50")))
-    "Face for playlist header labels.")
-
-  (defface cj/music-header-value-face
-    '((((class color) (background dark))
-       (:foreground "#d0cbc0"))
-      (((class color) (background light))
-       (:foreground "gray30")))
-    "Face for playlist header values.")
-
-  (defface cj/music-mode-on-face
-    '((((class color) (background dark))
-       (:foreground "#d7af5f"))
-      (((class color) (background light))
-       (:foreground "DarkGoldenrod")))
-    "Face for active mode indicators in the playlist header.")
-
-  (defface cj/music-mode-off-face
-    '((((class color) (background dark))
-       (:foreground "#58574e"))
-      (((class color) (background light))
-       (:foreground "gray70")))
-    "Face for inactive mode indicators in the playlist header.")
-
-  (defface cj/music-keyhint-face
-    '((((class color) (background dark))
-       (:foreground "#8a9496"))
-      (((class color) (background light))
-       (:foreground "gray50")))
-    "Face for keybinding hints in the playlist header.")
-
-  (custom-set-faces
-   '(emms-playlist-track-face
-     ((((class color) (background dark))
-       (:foreground "#8a9496"))
-      (((class color) (background light))
-       (:foreground "gray50"))))
-   '(emms-playlist-selected-face
-     ((((class color) (background dark))
-       (:foreground "#d7af5f" :weight bold))
-      (((class color) (background light))
-       (:foreground "DarkGoldenrod" :weight bold)))))
-
   ;; Multi-line header overlay
   (defvar-local cj/music--header-overlay nil
     "Overlay displaying the playlist header.")

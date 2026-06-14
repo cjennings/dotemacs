@@ -513,15 +513,9 @@ Uses feh on X11, swww on Wayland."
 
 ;;; ----------------------------- Dired Text Greying ----------------------------
 
-;; The right-column file-size attribute uses `shadow' (#969385). Match the
-;; visible text faces to it so the column reads as one tone, with icon color
-;; supplying the only accent. `default' is remapped buffer-locally inside
-;; dired/dirvish so plain files match too — no global side effects.
-
-(with-eval-after-load 'dired
-  (set-face-attribute 'dired-directory nil :foreground 'unspecified :inherit 'shadow)
-  (set-face-attribute 'dired-symlink   nil :foreground 'unspecified :inherit 'shadow)
-  (set-face-attribute 'dired-header    nil :foreground 'unspecified :inherit 'shadow))
+;; `default' is remapped buffer-locally to `shadow' inside dired/dirvish (see
+;; `cj/--dired-text-greyout' below) so plain files read grey, with icon color
+;; the only accent.  The dired text faces themselves are left to the theme.
 
 (defun cj/--dired-text-greyout ()
   "Buffer-local: render `default' in `shadow' so plain files read grey."

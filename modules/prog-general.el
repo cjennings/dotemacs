@@ -336,13 +336,8 @@ defer to `electric-pair-default-inhibit' for any other CHAR."
 (use-package highlight-indent-guides
   :hook (prog-mode . cj/highlight-indent-guides-enable)
   :config
-  ;; Disable auto face coloring to use explicit faces for better visibility across themes
+  ;; Disable auto face coloring; the guide faces are left to the theme
   (setq highlight-indent-guides-auto-enabled nil)
-
-  ;; Set explicit face backgrounds and foreground for the indentation guides
-  (set-face-background 'highlight-indent-guides-odd-face "darkgray")
-  (set-face-background 'highlight-indent-guides-even-face "darkgray")
-  (set-face-foreground 'highlight-indent-guides-character-face "dimgray")
 
   (defun cj/highlight-indent-guides-enable ()
 	"Enable highlight-indent-guides with preferred settings for programming modes."
