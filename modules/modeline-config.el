@@ -75,12 +75,7 @@ Example: `my-very-long-name.el' → `my-ver...me.el'"
 ;; -------------------------- Modeline Segments --------------------------------
 
 (defvar-local cj/modeline-buffer-name
-  '(:eval (let* ((state (cond
-                         (buffer-read-only       'read-only)
-                         (overwrite-mode         'overwrite)
-                         ((buffer-modified-p)    'modified)
-                         (t                      'unmodified)))
-                 (color (alist-get state cj/buffer-status-colors))
+  '(:eval (let* ((color (cj/buffer-status-color (cj/buffer-status-state)))
                  (name (buffer-name))
                  (truncated-name (cj/modeline-string-cut-middle name)))
             (propertize truncated-name
