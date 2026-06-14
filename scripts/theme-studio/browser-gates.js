@@ -253,7 +253,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
 // highlight and shadow from the face's effective bg per Emacs's relief
 // algorithm, and pressed draws the shadow edge first.
 if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
- const saveUI=JSON.parse(JSON.stringify(UIMAP));
+ const saveUI=JSON.parse(JSON.stringify(UIMAP)),saveP=PALETTE.slice(),savePK=JSON.parse(JSON.stringify(PKGMAP));
  UIMAP['mode-line']={fg:'#d8dee9',bg:'#30343c',bold:false,italic:false,underline:false,strike:false,box:{style:'released',width:1,color:null}};
  buildUITable();
  const pv=document.getElementById('uiprev-mode-line');
@@ -265,7 +265,19 @@ if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(bs2&&bs2.includes('rgb(15, 17, 22)')&&bs2.includes('rgb(113, 118, 127)')&&bs2.indexOf('rgb(15, 17, 22)')<bs2.indexOf('rgb(113, 118, 127)'),'pressed swaps the pair (shadow edge first): '+bs2);
  UIMAP['mode-line'].box={style:'line',width:1,color:'#ff0000'};paintUI('mode-line');
  A(pv&&pv.style.boxShadow.includes('rgb(255, 0, 0)'),'line style keeps its explicit color: '+(pv&&pv.style.boxShadow));
- for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();
+ UIMAP['mode-line'].box={style:'released',width:1,color:'#ff0000'};paintUI('mode-line');
+ const bs3=pv&&pv.style.boxShadow;
+ A(bs3&&bs3.includes('rgb(255, 42, 42)')&&bs3.includes('rgb(143, 0, 0)'),'released style derives relief from explicit box color: '+bs3);
+ PALETTE=[['#ff0000','red','red'],['#30343c','slate','slate']];
+ buildUITable();
+ const mlrow=document.querySelector('#uibody tr[data-face="mode-line"]'),boxCell=mlrow&&mlrow.cells[7],boxSel=boxCell&&boxCell.querySelector('select'),boxDd=boxCell&&boxCell.querySelector('.cdd');
+ if(boxSel&&boxDd){boxSel.value='line';boxSel.dispatchEvent(new Event('change',{bubbles:true}));boxDd.click();const redRow=[...document.querySelectorAll('.cddpop .cddrow')].find(r=>r.textContent.includes('red'));if(redRow)redRow.click();}
+ A(UIMAP['mode-line'].box&&UIMAP['mode-line'].box.color==='#ff0000','UI box color dropdown writes box.color');
+ const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].box={style:'line',width:1,color:null};buildPkgTable();
+ const prow=document.querySelector('#pkgbody tr[data-face="'+face+'"]'),pbox=prow&&prow.cells[8],pdd=pbox&&pbox.querySelector('.cdd');
+ if(pdd){pdd.click();const redRow=[...document.querySelectorAll('.cddpop .cddrow')].find(r=>r.textContent.includes('red'));if(redRow)redRow.click();}
+ A(PKGMAP[app][face].box&&PKGMAP[app][face].box.color==='#ff0000','package box color dropdown writes box.color');
+ PALETTE=saveP;PKGMAP=savePK;for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();buildPkgTable();
  document.title='BEVELTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='beveltest';d.textContent='BEVELTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Preview-link gate (open with #previewlinktest): known bespoke-preview face

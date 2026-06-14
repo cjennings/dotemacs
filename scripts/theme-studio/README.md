@@ -111,7 +111,8 @@ Three tiers of faces, plus the palette:
   match, link, error/warning/success, and the rest, foreground and background
   per face, shown in a live mock Emacs buffer. `reset` restores captured UI face
   defaults; `erase` blanks editable rows to no explicit fg/bg. Both preserve
-  locked rows.
+  locked rows. Box controls include style plus an optional color; raised/pressed
+  boxes derive their relief edges from that color when set.
 - **Package faces** — per-package face tables with a live preview (below).
 
 ## Color columns
@@ -191,7 +192,7 @@ not a tool bug.
 Pick an application from the dropdown to edit its faces. Each row has a
 foreground and background dropdown, bold/italic toggles, an `inherit` dropdown
 (base faces like `fixed-pitch`/`link` plus the app's own faces), a relative
-height stepper, a contrast readout, and a per-face reset. There's a per-app
+height stepper, a contrast readout, box style/color controls, and a per-face reset. There's a per-app
 reset and a text filter for the large sets. Package `reset` restores editable
 rows to the captured package defaults; `erase` blanks editable rows to no
 fg/bg/style/inherit override. Both preserve locked rows. Package

@@ -23,6 +23,9 @@
  .cstep.locked .cdd{cursor:default;opacity:.85;box-shadow:inset 0 0 0 2px #e8bd3088}
  .lockbtn{background:none;border:none;cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;opacity:.5;filter:grayscale(1)}
  .lockbtn.on{opacity:1;filter:none}
+ .boxctl{display:flex;align-items:center;gap:5px}
+ .boxctl .cdd{width:108px}
+ .boxctl .cstepbtn{width:18px}
  .legctl{margin:0 0 8px;display:flex;gap:8px;align-items:center}
  .cat{color:#b4b1a2} .ex{font-size:17px}
  .sbtn{width:26px;height:24px;border:1px solid #3a3a3a;border-radius:3px;background:#eaeaea;color:#111;cursor:pointer;font-size:15px;margin-right:2px;padding:0}
