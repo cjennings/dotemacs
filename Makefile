@@ -29,6 +29,7 @@ EMACS ?= emacs
 TEST_DIR = tests
 MODULE_DIR = modules
 EMACS_HOME = $(HOME)/.emacs.d
+OUT ?= themes
 
 # Test files
 UNIT_TESTS = $(filter-out $(TEST_DIR)/test-integration-%.el, $(wildcard $(TEST_DIR)/test-*.el))
@@ -46,7 +47,7 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 # No colors - using plain text symbols instead
 
 .PHONY: help targets test test-all test-unit test-integration test-file test-name \
-        test-bash theme-studio-test theme-studio-check theme-studio-coverage theme-studio-gen theme-studio-open \
+        test-bash theme-studio-test theme-studio-check theme-studio-coverage theme-studio-gen theme-studio-open theme-studio-theme theme-studio-theme-load theme-studio-theme-reload \
         benchmark coverage coverage-summary coverage-clean \
         validate-parens validate-modules compile compile-file lint profile \
         clean clean-compiled clean-tests reset
@@ -75,6 +76,9 @@ help:
 	@echo "    make theme-studio-coverage - JS + generate.py coverage numbers"
 	@echo "    make theme-studio-gen      - Regenerate theme-studio.html (SEED=x.json optional)"
 	@echo "    make theme-studio-open     - Regenerate and open the page in Chrome"
+	@echo "    make theme-studio-theme JSON=/path/theme.json - Convert JSON export to themes/<name>-theme.el"
+	@echo "    make theme-studio-theme-load THEME=name       - Disable all custom themes, then load THEME"
+	@echo "    make theme-studio-theme-reload JSON=/path.json - Convert JSON, then cleanly reload its theme"
 	@echo ""
 	@echo "  Coverage:"
 	@echo "    make coverage          - Generate simplecov JSON and summarize modules"
@@ -143,6 +147,30 @@ theme-studio-gen:
 
 theme-studio-open:
 	@$(MAKE) -C scripts/theme-studio open SEED='$(SEED)'
+
+theme-studio-theme:
+ifndef JSON
+	@echo "Error: JSON parameter required"
+	@echo "Usage: make theme-studio-theme JSON=/path/to/theme.json [OUT=themes]"
+	@exit 1
+endif
+	@$(MAKE) -C scripts/theme-studio theme JSON='$(abspath $(JSON))' OUT='$(abspath $(OUT))'
+
+theme-studio-theme-load:
+ifndef THEME
+	@echo "Error: THEME parameter required"
+	@echo "Usage: make theme-studio-theme-load THEME=theme [OUT=themes]"
+	@exit 1
+endif
+	@$(MAKE) -C scripts/theme-studio theme-load THEME='$(THEME)' OUT='$(abspath $(OUT))'
+
+theme-studio-theme-reload:
+ifndef JSON
+	@echo "Error: JSON parameter required"
+	@echo "Usage: make theme-studio-theme-reload JSON=/path/to/theme.json [OUT=themes] [THEME=name]"
+	@exit 1
+endif
+	@$(MAKE) -C scripts/theme-studio theme-reload JSON='$(abspath $(JSON))' OUT='$(abspath $(OUT))' THEME='$(THEME)'
 
 BANNER = ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

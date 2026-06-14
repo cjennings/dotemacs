@@ -12,8 +12,11 @@ HERE := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 # Optional palette seed for `gen` / `open`: make gen SEED=dupre.json
 SEED ?=
+OUT ?= ../../themes
+EMACS ?= emacs
+EMACSCLIENT ?= emacsclient
 
-.PHONY: help test check check-generated coverage gen open
+.PHONY: help test check check-generated coverage gen open theme theme-load theme-reload
 
 .DEFAULT_GOAL := help
 
@@ -25,6 +28,9 @@ help:
 	@echo "  make coverage            - JS (node) + generate.py (uvx coverage) numbers"
 	@echo "  make gen [SEED=x.json]   - Regenerate theme-studio.html (optionally from a seed)"
 	@echo "  make open [SEED=x.json]  - Regenerate and open the page in Chrome"
+	@echo "  make theme JSON=x.json   - Convert a Theme Studio JSON export to OUT/<name>-theme.el"
+	@echo "  make theme-load THEME=x  - Disable all custom themes, then load THEME in current Emacs"
+	@echo "  make theme-reload JSON=x - Convert JSON, then cleanly reload its theme in current Emacs"
 
 test:
 	@./run-tests.sh
@@ -68,3 +74,30 @@ open: gen
 	else \
 		echo "no Chromium-family browser found"; exit 1; \
 	fi
+
+theme:
+ifndef JSON
+	@echo "Error: JSON parameter required"
+	@echo "Usage: make theme JSON=/path/to/theme.json [OUT=../../themes]"
+	@exit 1
+endif
+	@$(EMACS) --batch -l build-theme.el --eval '(princ (concat "wrote " (build-theme/convert-file "$(JSON)" "$(OUT)") "\n"))'
+
+theme-load:
+ifndef THEME
+	@echo "Error: THEME parameter required"
+	@echo "Usage: make theme-load THEME=theme [OUT=../../themes]"
+	@exit 1
+endif
+	@$(EMACSCLIENT) -e "(progn (add-to-list 'custom-theme-load-path \"$(abspath $(OUT))\") (mapc #'disable-theme (copy-sequence custom-enabled-themes)) (load-theme '$(THEME) t) custom-enabled-themes)"
+
+theme-reload:
+ifndef JSON
+	@echo "Error: JSON parameter required"
+	@echo "Usage: make theme-reload JSON=/path/to/theme.json [OUT=../../themes] [THEME=name]"
+	@exit 1
+endif
+	@$(MAKE) theme JSON='$(JSON)' OUT='$(OUT)' EMACS='$(EMACS)'
+	@theme_name='$(THEME)'; \
+	if [ -z "$$theme_name" ]; then theme_name="$$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["name"])' '$(JSON)')"; fi; \
+	$(MAKE) theme-load THEME="$$theme_name" OUT='$(OUT)' EMACSCLIENT='$(EMACSCLIENT)'
