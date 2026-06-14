@@ -34,12 +34,14 @@
   "{
  \"name\": \"dupre-fixture\",
  \"palette\": [[\"#000000\",\"ground\"],[\"#7a9abe\",\"blue\"],[\"#84b068\",\"green\"]],
- \"assignments\": {
-  \"bg\":\"#000000\", \"p\":\"#cdced1\",
-  \"kw\":\"#7a9abe\", \"str\":\"#84b068\", \"cm\":\"#838d97\", \"dec\":\"#e8bd30\"
+ \"syntax\": {
+  \"bg\": {\"fg\":\"#000000\",\"bg\":null,\"bold\":false,\"italic\":false},
+  \"p\":  {\"fg\":\"#cdced1\",\"bg\":null,\"bold\":false,\"italic\":false},
+  \"kw\": {\"fg\":\"#7a9abe\",\"bg\":null,\"bold\":true,\"italic\":false},
+  \"str\":{\"fg\":\"#84b068\",\"bg\":null,\"bold\":false,\"italic\":false},
+  \"cm\": {\"fg\":\"#838d97\",\"bg\":null,\"bold\":false,\"italic\":true},
+  \"dec\":{\"fg\":\"#e8bd30\",\"bg\":null,\"bold\":false,\"italic\":false}
  },
- \"bold\": [\"kw\"],
- \"italic\": [\"cm\"],
  \"ui\": {
   \"region\": {\"fg\":null, \"bg\":\"#264364\"},
   \"mode-line\": {\"fg\":\"#cdced1\", \"bg\":\"#2f343a\"}
@@ -54,8 +56,10 @@
 }"
   "A self-contained theme.json exercising every tier: default, syntax (bold +
 italic + the unmappable dec key), UI, and packages (a plain face, an
-inherit+height face, and a cleared face).  Owned by the test so it can't drift
-the way Craig's downloaded exports under scripts/theme-studio/ can.")
+inherit+height face, and a cleared face).  Uses the nested \"syntax\" format the
+converter reads -- each category is an object with fg/bg/bold/italic, and bg/p
+are themselves category objects carrying fg.  Owned by the test so it can't
+drift the way Craig's downloaded exports under scripts/theme-studio/ can.")
 
 (defun test-build-theme--write-fixture (dir)
   "Write the fixture JSON into DIR and return its path."
@@ -145,9 +149,11 @@ the way Craig's downloaded exports under scripts/theme-studio/ can.")
 ;;; Syntax tier
 
 (ert-deftest test-build-theme-syntax-keyword-bold ()
-  "Normal: kw maps to font-lock-keyword-face and picks up the bold set."
-  (let* ((assignments '((kw . "#7a9abe") (str . "#84b068")))
-         (specs (build-theme/--syntax-face-specs assignments '(kw) '())))
+  "Normal: kw maps to font-lock-keyword-face and carries its bold flag.
+Each syntax category is a nested object with fg/bold/italic."
+  (let* ((syntax '((kw . ((fg . "#7a9abe") (bold . t)))
+                   (str . ((fg . "#84b068")))))
+         (specs (build-theme/--syntax-face-specs syntax)))
     (should (member '(font-lock-keyword-face ((t (:foreground "#7a9abe" :weight bold))))
                     specs))
     (should (member '(font-lock-string-face ((t (:foreground "#84b068"))))
@@ -155,7 +161,7 @@ the way Craig's downloaded exports under scripts/theme-studio/ can.")
 
 (ert-deftest test-build-theme-syntax-one-to-many ()
   "Normal: punc fans out to every punctuation/bracket/delimiter face."
-  (let ((specs (build-theme/--syntax-face-specs '((punc . "#a9b2bb")) '() '())))
+  (let ((specs (build-theme/--syntax-face-specs '((punc . ((fg . "#a9b2bb")))))))
     (dolist (face '(font-lock-punctuation-face font-lock-bracket-face
                     font-lock-delimiter-face font-lock-misc-punctuation-face))
       (should (member `(,face ((t (:foreground "#a9b2bb")))) specs)))))
@@ -164,12 +170,12 @@ the way Craig's downloaded exports under scripts/theme-studio/ can.")
   "Boundary: dec has no independent Emacs face, so it maps to nothing.
 Emacs renders decorators with font-lock-type-face, which ty already owns;
 mapping dec would clobber the type color."
-  (let ((specs (build-theme/--syntax-face-specs '((dec . "#e8bd30")) '() '())))
+  (let ((specs (build-theme/--syntax-face-specs '((dec . ((fg . "#e8bd30")))))))
     (should (null specs))))
 
 (ert-deftest test-build-theme-syntax-comment-italic ()
-  "Normal: cm in the italic set yields :slant italic on the comment face."
-  (let ((specs (build-theme/--syntax-face-specs '((cm . "#a9b2bb")) '() '(cm))))
+  "Normal: cm with its italic flag yields :slant italic on the comment face."
+  (let ((specs (build-theme/--syntax-face-specs '((cm . ((fg . "#a9b2bb") (italic . t)))))))
     (should (member '(font-lock-comment-face ((t (:foreground "#a9b2bb" :slant italic))))
                     specs))))
 
@@ -177,8 +183,9 @@ mapping dec would clobber the type color."
 ;;; Default face
 
 (ert-deftest test-build-theme-default-face ()
-  "Normal: default takes background from bg and foreground from p."
-  (should (equal (build-theme/--default-spec '((bg . "#000000") (p . "#cdced1")))
+  "Normal: default takes background from syntax.bg.fg and foreground from syntax.p.fg."
+  (should (equal (build-theme/--default-spec '((bg . ((fg . "#000000")))
+                                               (p . ((fg . "#cdced1")))))
                  '(default ((t (:foreground "#cdced1" :background "#000000")))))))
 
 ;;; ---------------------------------------------------------------------------
@@ -294,7 +301,7 @@ including an inherit+height package face."
 (ert-deftest test-build-theme-convert-file-old-json-without-packages ()
   "Boundary: a theme.json with no packages key still converts and loads."
   (test-build-theme--with-sandbox out
-    (let* ((json "{\"name\":\"noformat\",\"palette\":[[\"#000000\",\"ground\"]],\"assignments\":{\"bg\":\"#000000\",\"p\":\"#ffffff\",\"kw\":\"#67809c\"},\"bold\":[\"kw\"],\"italic\":[],\"ui\":{}}")
+    (let* ((json "{\"name\":\"noformat\",\"palette\":[[\"#000000\",\"ground\"]],\"syntax\":{\"bg\":{\"fg\":\"#000000\"},\"p\":{\"fg\":\"#ffffff\"},\"kw\":{\"fg\":\"#67809c\",\"bold\":true}},\"ui\":{}}")
            (in (expand-file-name "noformat.json" out)))
       (with-temp-file in (insert json))
       (let ((path (build-theme/convert-file in out)))
