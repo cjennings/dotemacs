@@ -94,53 +94,32 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 		   (if cj/enable-transparency "enabled" "disabled")))
 
 ;; ----------------------------------- Cursor ----------------------------------
-;; set cursor color according to mode
-;;
-;;    #f06a3f indicates a read-only document
-;;    #c48702 indicates overwrite mode
-;;    #64aa0f indicates insert and read/write mode
+;; Set the cursor color from the active theme's faces according to buffer state.
+;; The state classifier and the state->face map live in user-constants.el
+;; (cj/buffer-status-state / cj/buffer-status-faces, colored via the theme's
+;; error / warning / success faces) and are shared with the modeline buffer-name
+;; indicator, so the cursor and the modeline stay in sync.
 
 (defvar cj/-cursor-last-color nil
   "Last color applied by `cj/set-cursor-color-according-to-mode'.")
 (defvar cj/-cursor-last-buffer nil
   "Last buffer name where cursor color was applied.")
 
-(defun cj/--buffer-cursor-state ()
-  "Return the buffer-state symbol used to choose the cursor color.
-
-One of `read-only', `overwrite', `modified', or `unmodified' — keys
-of `cj/buffer-status-colors'.
-
-A live ghostel terminal (in `ghostel-mode' and an input mode that
-forwards keys — semi-char / char / line) reports `unmodified' even
-though the buffer is read-only: keystrokes go to the terminal process,
-so from the user's side the buffer is writeable and the read-only
-(orange) cursor would be misleading.  ghostel's `copy' and `emacs'
-input modes are the exception — there the buffer really is a read-only
-Emacs buffer the user navigates, so it falls through to `read-only'
-and keeps the orange cursor."
-  (cond
-   ((and (eq major-mode 'ghostel-mode)
-		 (not (memq (bound-and-true-p ghostel--input-mode) '(copy emacs))))
-	'unmodified)
-   (buffer-read-only       'read-only)
-   (overwrite-mode         'overwrite)
-   ((buffer-modified-p)    'modified)
-   (t                      'unmodified)))
-
 (defun cj/set-cursor-color-according-to-mode ()
-  "Change cursor color according to buffer state (modified, read-only, overwrite).
-Only updates for real user buffers, not internal/temporary buffers.
-A no-op on non-graphical frames -- TTY/batch sessions have no cursor color
-to set."
+  "Set the cursor color from the active theme according to buffer state.
+The state and its theme face come from `cj/buffer-status-state' and
+`cj/buffer-status-color' (shared with the modeline), so the color follows the
+loaded theme.  Only updates real user buffers, not internal/temporary ones; a
+no-op on non-graphical frames -- TTY/batch sessions have no cursor color to set."
   (when (display-graphic-p)
-    ;; Only update cursor for real buffers (not internal ones like *temp*, *Echo Area*, etc.)
-    (unless (string-prefix-p " " (buffer-name))  ; Internal buffers start with space
-      (let ((color (alist-get (cj/--buffer-cursor-state) cj/buffer-status-colors)))
-        ;; Only skip if BOTH color AND buffer are the same (optimization)
-        ;; This allows color to update when buffer state changes
-        (unless (and (string= color cj/-cursor-last-color)
-                     (string= (buffer-name) cj/-cursor-last-buffer))
+    ;; Only update cursor for real buffers (not internal ones like *temp*, *Echo Area*).
+    (unless (string-prefix-p " " (buffer-name))  ; internal buffers start with a space
+      (let ((color (cj/buffer-status-color (cj/buffer-status-state))))
+        ;; Skip only when BOTH color and buffer are unchanged (so the color still
+        ;; updates when the buffer state changes).
+        (when (and color
+                   (not (and (equal color cj/-cursor-last-color)
+                             (equal (buffer-name) cj/-cursor-last-buffer))))
           (set-cursor-color color)
           (setq cj/-cursor-last-color color
                 cj/-cursor-last-buffer (buffer-name)))))))
