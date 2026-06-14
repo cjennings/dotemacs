@@ -21,10 +21,9 @@ function pkgSelftest(){
 }
 if(location.hash==='#selftest')pkgSelftest();
 // Lock-mechanism gate (open with #locktest): two behaviors the refactor must
-// preserve, across all three tiers. (1) Locking a row disables its control via
-// the shared mkLockCell — syntax uses a swatch div (data-locked), UI a native
-// select (.disabled). (2) clear-unlocked wipes unlocked rows to default but
-// leaves locked rows (syntax bare-kind, ui:, pkg: keys) untouched.
+// preserve, across all three tiers. (1) Locking a row disables its controls via
+// the shared mkLockCell. (2) reset/erase batch actions update unlocked rows but
+// leave locked rows (syntax bare-kind, ui:, pkg: keys) untouched.
 if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  LOCKED.clear();buildTable();
  {const k=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p')[0];
@@ -50,13 +49,24 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
   A(PKGMAP[app][face].fg==='#888888','pkg left arrow steps to darker color');}
  {const ks=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p'),k1=ks[0],k2=ks[1];
   MAP[k1]='#111111';MAP[k2]='#222222';LOCKED.clear();LOCKED.add(k1);clearUnlocked();
-  A(MAP[k1]==='#111111','syntax-clear-keeps-locked');A(MAP[k2]==='','syntax-clear-wipes-unlocked');}
+  A(MAP[k1]==='#111111','syntax-erase-keeps-locked');A(MAP[k2]==='','syntax-erase-wipes-unlocked');}
+ {const ks=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p'),k1=ks[0],k2=ks[1];
+  MAP[k1]='#111111';MAP[k2]='#222222';LOCKED.clear();LOCKED.add(k1);resetUnlocked();
+  A(MAP[k1]==='#111111','syntax-reset-keeps-locked');A(MAP[k2]===DEFAULT_MAP[k2],'syntax-reset-restores-unlocked-default');}
  {const f1=UI_FACES[0][0],f2=UI_FACES[1][0];
   UIMAP[f1].fg='#111111';UIMAP[f2].fg='#222222';LOCKED.clear();LOCKED.add('ui:'+f1);clearUnlockedUI();
-  A(UIMAP[f1].fg==='#111111','ui-clear-keeps-locked');A(UIMAP[f2].fg===null,'ui-clear-wipes-unlocked');}
+  A(UIMAP[f1].fg==='#111111','ui-erase-keeps-locked');A(UIMAP[f2].fg===null,'ui-erase-wipes-unlocked');}
+ {const f1=UI_FACES[0][0],f2=UI_FACES[1][0];
+  UIMAP[f1].fg='#111111';UIMAP[f2].fg='#222222';LOCKED.clear();LOCKED.add('ui:'+f1);resetUnlockedUI();
+  A(UIMAP[f1].fg==='#111111','ui-reset-keeps-locked');A(JSON.stringify(UIMAP[f2])===JSON.stringify(DEFAULT_UIMAP[f2]),'ui-reset-restores-unlocked-default');}
  {const app=curApp(),pf=APPS[app].faces.map(r=>r[0]),p1=pf[0],p2=pf[1];
   PKGMAP[app][p1].fg='#111111';PKGMAP[app][p2].fg='#222222';LOCKED.clear();LOCKED.add('pkg:'+app+':'+p1);clearUnlockedPkg();
-  A(PKGMAP[app][p1].fg==='#111111','pkg-clear-keeps-locked');A(PKGMAP[app][p2].fg===null,'pkg-clear-wipes-unlocked');}
+  A(PKGMAP[app][p1].fg==='#111111','pkg-erase-keeps-locked');A(PKGMAP[app][p2].fg===null,'pkg-erase-wipes-unlocked');}
+ {const app=curApp(),rows=APPS[app].faces,p1=rows[0][0],p2=rows[1][0],d2=rows[1][2];
+  PKGMAP[app][p1].fg='#111111';PKGMAP[app][p2]=normalizePkgFace({fg:'#222222',bg:'#333333',bold:true,source:'user'},'user');
+  LOCKED.clear();LOCKED.add('pkg:'+app+':'+p1);resetApp();
+  A(PKGMAP[app][p1].fg==='#111111','pkg-reset-keeps-locked');
+  A(JSON.stringify(PKGMAP[app][p2])===JSON.stringify(seedFace(d2)),'pkg-reset-restores-unlocked-default');}
  {LOCKED.clear();buildTable();const b=document.getElementById('syntaxlocktoggle');A(b&&b.textContent==='lock all','syntax toggle starts as lock all');b.click();
   A(syntaxLockKeys().every(k=>LOCKED.has(k))&&b.textContent==='unlock all','syntax lock-all locks every syntax row and flips label');b.click();
   A(syntaxLockKeys().every(k=>!LOCKED.has(k))&&b.textContent==='lock all','syntax unlock-all clears every syntax lock and flips label');}

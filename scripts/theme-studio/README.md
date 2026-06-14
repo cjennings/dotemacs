@@ -105,11 +105,14 @@ Three tiers of faces, plus the palette:
   function, type, comment, and the rest), each with normal/bold/italic and a
   contrast rating. Click a category to flash its tokens in the code; click a
   token to flash its row. `lock all` flips to `unlock all` when every row in the
-  tier is locked; `clear unlocked` leaves locked rows untouched.
+  tier is locked. `reset unlocked` restores unlocked rows to the captured syntax
+  defaults; `erase unlocked` blanks unlocked rows. Both leave locked rows
+  untouched.
 - **UI faces** — cursor, region, mode-line, fringe, line numbers, isearch, paren
   match, link, error/warning/success, and the rest, foreground and background
-  per face, shown in a live mock Emacs buffer. The same lock-all and clear
-  unlocked controls apply to the UI face tier.
+  per face, shown in a live mock Emacs buffer. `reset unlocked` restores captured
+  UI face defaults; `erase unlocked` blanks unlocked rows to no explicit fg/bg.
+  Both leave locked rows untouched.
 - **Package faces** — per-package face tables with a live preview (below).
 
 ## Color columns
@@ -190,9 +193,11 @@ Pick an application from the dropdown to edit its faces. Each row has a
 foreground and background dropdown, bold/italic toggles, an `inherit` dropdown
 (base faces like `fixed-pitch`/`link` plus the app's own faces), a relative
 height stepper, a contrast readout, and a per-face reset. There's a per-app
-reset and a text filter for the large sets. Package `lock all` / `unlock all`
-applies to the whole currently selected package, not only the rows visible under
-the text filter.
+reset and a text filter for the large sets. Package `reset unlocked` restores unlocked
+rows to the captured package defaults; `erase unlocked` blanks unlocked rows to
+no fg/bg/style/inherit override. Both leave locked rows untouched. Package
+`lock all` / `unlock all` applies to the whole currently selected package, not
+only the rows visible under the text filter.
 
 Twenty applications have bespoke previews that exercise nearly all of their
 faces: org-mode (a document plus an agenda view), magit (a status buffer plus

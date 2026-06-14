@@ -1,7 +1,8 @@
 const SAMPLES=SAMPLES_J, CATS=CATS_J, UI_FACES=UIFACES_J, APPS=APPS_J;
 let MAP=MAP_J, PALETTE=PALETTE_J, BOLD=BOLD_J, ITALIC=ITALIC_J, UIMAP=UIMAP_J;
-let LOCKED=new Set(LOCKS_J);   // syntax categories whose element↔color is decided (dropdown disabled, skipped by clear-unlocked)
+let LOCKED=new Set(LOCKS_J);   // rows whose choice is decided (controls disabled, skipped by erase/reset batch actions)
 const DELTAE_MIN=0.02; // OKLab ΔE below this = colors too close to tell apart (perceptual-metrics spec)
+const DEFAULT_MAP=Object.assign({},MAP), DEFAULT_BOLD=Object.assign({},BOLD), DEFAULT_ITALIC=Object.assign({},ITALIC), DEFAULT_UIMAP=JSON.parse(JSON.stringify(UIMAP));
 // --- tier-3 package faces: pure state helpers (Phase 1) ---
 // Thin wrappers over the pure logic in app-core.js (inlined further down),
 // passing the live module state. packagesForExport / mergePackagesInto live in
@@ -133,16 +134,25 @@ function toggleAllLocks(tier){
 }
 function clearUnlocked(){
   clearUnlockedRows(CATS,c=>(c[0]==='bg'||c[0]==='p')?null:c[0],c=>{MAP[c[0]]='';});
-  buildTable();renderCode();notify('cleared unlocked elements to default',false);
+  buildTable();renderCode();notify('erased unlocked elements to default',false);
+}
+function resetUnlocked(){
+  clearUnlockedRows(CATS,c=>c[0],c=>{const k=c[0];MAP[k]=DEFAULT_MAP[k]||'';BOLD[k]=!!DEFAULT_BOLD[k];ITALIC[k]=!!DEFAULT_ITALIC[k];});
+  buildTable();buildUITable();buildPkgTable();buildPkgPreview();renderCode();applyGround();repaintCovered();
+  notify('reset unlocked syntax elements to captured defaults',false);
 }
 function clearUnlockedUI(){
   clearUnlockedRows(UI_FACES,f=>'ui:'+f[0],f=>{UIMAP[f[0]]=uiFaceBlank();});
-  buildUITable();buildMockFrame();notify('cleared unlocked UI faces to default',false);
+  buildUITable();buildMockFrame();notify('erased unlocked UI faces to default',false);
+}
+function resetUnlockedUI(){
+  clearUnlockedRows(UI_FACES,f=>'ui:'+f[0],f=>{UIMAP[f[0]]=JSON.parse(JSON.stringify(DEFAULT_UIMAP[f[0]]||uiFaceBlank()));});
+  buildUITable();buildMockFrame();notify('reset unlocked UI faces to captured defaults',false);
 }
 function clearUnlockedPkg(){
   const app=curApp();
   clearUnlockedRows(APPS[app].faces,f=>'pkg:'+app+':'+f[0],f=>{PKGMAP[app][f[0]]=normalizePkgFace({source:'cleared'},'cleared');});
-  pkgChanged();notify('cleared unlocked '+app+' faces to default',false);
+  pkgChanged();notify('erased unlocked '+app+' faces to default',false);
 }
 function buildTable(){
   const tb=document.getElementById('legbody');tb.innerHTML='';
@@ -767,7 +777,7 @@ function renderTelegaPreview(){const a='telega',L=[];
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}
 function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 monospace">';for(const [face,label,def] of APPS[app].faces){const f=PKGMAP[app][face],efg=effFg(pkgEffFg(app,face)),ebg=pkgEffBg(app,face);h+=`<div data-face="${face}" style="color:${efg};${ebg?'background:'+ebg+';':''}font-weight:${f.bold?'bold':'normal'};font-style:${f.italic?'italic':'normal'};font-size:${(f.height||1)}em">${esc(label)}</div>`;}return h+'</div>';}
 function buildPkgPreview(){const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;const pv=APPS[app].preview;const bespoke=['org','magit','elfeed','ghostel','dashboard','mu4e','lsp','gitgutter','flycheck','dired','dirvish','calibredb','erc','orgdrill','orgnoter','signel','pearl','slack','telega','shr'].includes(pv);p.innerHTML=pv==='org'?renderOrgPreview():pv==='magit'?renderMagitPreview():pv==='elfeed'?renderElfeedPreview():pv==='ghostel'?renderGhostelPreview():pv==='dashboard'?renderDashboardPreview():pv==='mu4e'?renderMu4ePreview():pv==='lsp'?renderLspPreview():pv==='gitgutter'?renderGitGutterPreview():pv==='flycheck'?renderFlycheckPreview():pv==='dired'?renderDiredPreview():pv==='dirvish'?renderDirvishPreview():pv==='calibredb'?renderCalibredbPreview():pv==='erc'?renderErcPreview():pv==='orgdrill'?renderOrgdrillPreview():pv==='orgnoter'?renderOrgnoterPreview():pv==='signel'?renderSignelPreview():pv==='pearl'?renderPearlPreview():pv==='slack'?renderSlackPreview():pv==='telega'?renderTelegaPreview():pv==='shr'?renderShrPreview():genericPreview(app);p.style.background=MAP['bg'];p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=bespoke?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';}
-function resetApp(){const app=curApp();PKGMAP[app]={};for(const [face,label,d] of APPS[app].faces)PKGMAP[app][face]=seedFace(d);pkgChanged();}
+function resetApp(){const app=curApp();for(const [face,label,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset unlocked '+app+' faces to package defaults',false);}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 // --- worst-case readout for the covered overlay faces (spec Phase 4) ---------
 // Default WCAG target for the worst-case verdict (AA). AAA is selectable.
