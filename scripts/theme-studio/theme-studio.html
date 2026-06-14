@@ -10,7 +10,11 @@
  table.leg th{cursor:pointer;color:#b4b1a2;text-align:left;padding:4px 12px;user-select:none;font-weight:normal}
  table.leg th:hover{color:#e8bd30}
  select.chip{appearance:none;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 14px monospace;width:160px;cursor:pointer}
- .cdd{display:inline-flex;align-items:center;gap:7px;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 13px monospace;width:160px;cursor:pointer;box-sizing:border-box;overflow:hidden;white-space:nowrap}
+ .cstep{display:inline-flex;align-items:center;gap:4px}
+ .cstepbtn{width:22px;height:28px;padding:0;border:1px solid #3a3a3a;border-radius:4px;background:#1f1c19;color:#e8bd30;font:bold 14px monospace;cursor:pointer}
+ .cstepbtn:disabled{opacity:.28;cursor:default;color:#8f8977}
+ .cstep.locked .cstepbtn{opacity:.28;cursor:default}
+ .cdd{display:inline-flex;align-items:center;gap:7px;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 13px monospace;width:150px;cursor:pointer;box-sizing:border-box;overflow:hidden;white-space:nowrap}
  .cddsw{display:inline-block;width:13px;height:13px;border-radius:3px;border:1px solid #0007;flex:none}
  .cddpop{position:fixed;z-index:200;background:#161412;border:1px solid #3a3a3a;border-radius:6px;box-shadow:0 12px 34px #000c;max-height:60vh;overflow:auto;padding:4px}
  .cddrow{display:flex;align-items:center;gap:9px;padding:4px 9px;cursor:pointer;color:#cdced1;font:12px monospace;border-radius:4px;white-space:nowrap}
@@ -18,7 +22,7 @@
  .cddrow.sel{outline:1px solid #e8bd30;outline-offset:-1px}
  .cddrow .cddnm{flex:1}
  .cddrow .cddhx{opacity:.55;margin-left:10px}
- .cdd.locked{cursor:default;opacity:.85;box-shadow:inset 0 0 0 2px #e8bd3088}
+ .cstep.locked .cdd{cursor:default;opacity:.85;box-shadow:inset 0 0 0 2px #e8bd3088}
  .lockbtn{background:none;border:none;cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;opacity:.5;filter:grayscale(1)}
  .lockbtn.on{opacity:1;filter:none}
  .legctl{margin:0 0 8px;display:flex;gap:8px;align-items:center}
@@ -723,6 +727,24 @@ function paletteOptionList(cur,palette,ground){
   sortColumns(grouped.columns).forEach(f=>lightestFirstMembers(f.members).forEach(m=>add(m.hex,m.name)));
   return out;
 }
+function spanNeighborHex(cur,palette,ground,dir){
+  if(!cur)return null;
+  const wanted=(cur||'').toLowerCase(),groups=[],byLight=(a,b)=>oklchOf(a.hex).L-oklchOf(b.hex).L;
+  const addGroup=members=>{
+    const seen=new Set(),g=[];
+    members.filter(m=>m&&m.hex).sort(byLight).forEach(m=>{const h=m.hex.toLowerCase();if(!seen.has(h)){seen.add(h);g.push(m);}});
+    if(g.length)groups.push(g);
+  };
+  addGroup(groundColumnMembersFromPalette(palette,ground||{}));
+  sortColumns(columnsFromPalette(palette,ground||{}).columns).forEach(f=>addGroup(f.members));
+  for(const g of groups){
+    const i=g.findIndex(m=>(m.hex||'').toLowerCase()===wanted);
+    if(i<0)continue;
+    const next=g[i+(dir>0?1:-1)];
+    return next?next.hex:null;
+  }
+  return null;
+}
 // Pure color/UI-boundary helpers (normHex, ratingColor, textOn), inlined from
 // app-util.js. textOn uses rl from the colormath core above.
 // Pure color/UI-boundary helpers: hex-input parsing, the contrast-rating status
@@ -770,12 +792,24 @@ let _ddPop=null;
 function closeColorDropdown(){if(_ddPop){_ddPop.remove();_ddPop=null;}}
 document.addEventListener('pointerdown',e=>{if(_ddPop&&!e.target.closest('.cdd')&&!e.target.closest('.cddpop'))closeColorDropdown();});
 function mkColorDropdown(options,cur,onPick){
+  const wrap=document.createElement('div');wrap.className='cstep';
+  const left=document.createElement('button'),right=document.createElement('button');
+  left.className='cstepbtn';right.className='cstepbtn';left.type=right.type='button';
+  left.textContent='‹';right.textContent='›';left.title='move to next darker color in this column';right.title='move to next lighter color in this column';
   const t=document.createElement('div');t.className='cdd';t.tabIndex=0;
   const nameOf=h=>{const o=options.find(p=>p[0]===h);return o?o[1]:(h||'none');};
+  function step(dir){if(wrap.dataset.locked==='1')return;const next=spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},dir);if(!next)return;cur=next;paint();onPick(next);}
+  function paintStepButtons(){
+    const locked=wrap.dataset.locked==='1';
+    left.disabled=locked||!spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},-1);
+    right.disabled=locked||!spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},1);
+  }
   function paint(){t.style.background=cur||'#161412';t.style.color=cur?textOn(cur):'#b4b1a2';t.dataset.val=cur||'';
-    t.innerHTML=`<span class="cddsw" style="background:${cur||'transparent'}"></span>${esc(nameOf(cur))}`;}
+    t.innerHTML=`<span class="cddsw" style="background:${cur||'transparent'}"></span>${esc(nameOf(cur))}`;paintStepButtons();}
   paint();
-  t.onclick=(e)=>{e.stopPropagation();if(t.dataset.locked==='1')return;if(_ddPop){closeColorDropdown();return;}
+  left.onclick=e=>{e.stopPropagation();step(-1);};
+  right.onclick=e=>{e.stopPropagation();step(1);};
+  t.onclick=(e)=>{e.stopPropagation();if(wrap.dataset.locked==='1')return;if(_ddPop){closeColorDropdown();return;}
     const pop=document.createElement('div');pop.className='cddpop';
     for(const [hex,name] of options){const row=document.createElement('div');row.className='cddrow'+(hex===cur?' sel':'');
       row.innerHTML=`<span class="cddsw" style="background:${hex||'transparent'}"></span><span class="cddnm">${esc(name)}</span><span class="cddhx">${hex||''}</span>`;
@@ -788,7 +822,10 @@ function mkColorDropdown(options,cur,onPick){
     if(r.bottom+ph>window.innerHeight-6)pop.style.top=Math.max(6,r.top-ph-2)+'px';
     _ddPop=pop;};
   t.setValue=h=>{cur=h;paint();};
-  return t;}
+  wrap.setValue=h=>{cur=h;paint();};
+  wrap.syncLocked=paintStepButtons;
+  wrap.appendChild(left);wrap.appendChild(t);wrap.appendChild(right);paintStepButtons();
+  return wrap;}
 // Standard option list for a swatch dropdown: a "default" entry, then the
 // palette in the same ground/column order as the palette panel. If cur is set
 // but no longer in the palette, surface it as a "(gone)" entry so the row still
@@ -805,7 +842,7 @@ function mkLockCell(lockKey,els){
     lk.title=on?'locked — click to unlock':'click to lock this decision';
     (els||[]).forEach(el=>{if(!el)return;
       if(el.tagName==='SELECT'||el.tagName==='BUTTON'||el.tagName==='INPUT')el.disabled=on;
-      else{el.dataset.locked=on?'1':'';el.classList.toggle('locked',on);}});}
+      else{el.dataset.locked=on?'1':'';el.classList.toggle('locked',on);if(el.syncLocked)el.syncLocked();}});}
   lk.onclick=()=>{LOCKED.has(lockKey)?LOCKED.delete(lockKey):LOCKED.add(lockKey);paint();updateLockToggles();};
   paint();td.appendChild(lk);return td;}
 // B/I/U/S style buttons shared by the UI and package tables. isOn(attr) reads the
@@ -1800,16 +1837,26 @@ if(location.hash==='#selftest')pkgSelftest();
 if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  LOCKED.clear();buildTable();
  {const k=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p')[0];
-  const tr=document.querySelector('#legbody tr[data-kind="'+k+'"]'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
-  A(dd.dataset.locked!=='1','syntax-dd-starts-unlocked');lb.click();
-  A(dd.dataset.locked==='1'&&dd.classList.contains('locked'),'syntax-lock-disables-dd');lb.click();
-  A(dd.dataset.locked!=='1','syntax-unlock-reenables-dd');}
+  const tr=document.querySelector('#legbody tr[data-kind="'+k+'"]'),step=tr.querySelector('.cstep'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
+  A(step.dataset.locked!=='1','syntax-dd-starts-unlocked');lb.click();
+  A(step.dataset.locked==='1'&&step.classList.contains('locked')&&step.querySelector('.cstepbtn').disabled,'syntax-lock-disables-dd');lb.click();
+  A(step.dataset.locked!=='1'&&!step.classList.contains('locked'),'syntax-unlock-reenables-dd');}
  LOCKED.clear();buildUITable();
  {const f=UI_FACES[0][0];
-  const tr=document.querySelector('#uibody tr[data-face="'+f+'"]'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
-  A(dd.dataset.locked!=='1','ui-dd-starts-unlocked');lb.click();
-  A(dd.dataset.locked==='1'&&dd.classList.contains('locked'),'ui-lock-disables-dd');lb.click();
-  A(dd.dataset.locked!=='1','ui-unlock-reenables-dd');}
+  const tr=document.querySelector('#uibody tr[data-face="'+f+'"]'),step=tr.querySelector('.cstep'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
+  A(step.dataset.locked!=='1','ui-dd-starts-unlocked');lb.click();
+  A(step.dataset.locked==='1'&&step.classList.contains('locked')&&step.querySelector('.cstepbtn').disabled,'ui-lock-disables-dd');lb.click();
+  A(step.dataset.locked!=='1'&&!step.classList.contains('locked'),'ui-unlock-reenables-dd');}
+ {PALETTE=[['#000000','bg','ground'],['#ffffff','fg','ground'],['#222222','gray-dark','gray'],['#888888','gray-mid','gray'],['#dddddd','gray-light','gray']];MAP['bg']='#000000';MAP['p']='#ffffff';MAP['kw']='#888888';LOCKED.clear();buildTable();
+  const tr=document.querySelector('#legbody tr[data-kind="kw"]'),btns=tr.querySelectorAll('.cstepbtn');btns[1].click();
+  A(MAP['kw']==='#dddddd'&&tr.querySelector('.cdd').dataset.val==='#dddddd','syntax right arrow steps to lighter color');btns[0].click();
+  A(MAP['kw']==='#888888','syntax left arrow steps to darker color');}
+ {UIMAP['region'].bg='#888888';LOCKED.clear();buildUITable();const tr=document.querySelector('#uibody tr[data-face="region"]'),btns=tr.cells[3].querySelectorAll('.cstepbtn');btns[1].click();
+  A(UIMAP['region'].bg==='#dddddd','ui right arrow steps to lighter color');btns[0].click();
+  A(UIMAP['region'].bg==='#888888','ui left arrow steps to darker color');}
+ {const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].fg='#888888';LOCKED.clear();buildPkgTable();const tr=document.querySelector('#pkgbody tr[data-face="'+face+'"]'),btns=tr.cells[2].querySelectorAll('.cstepbtn');btns[1].click();
+  A(PKGMAP[app][face].fg==='#dddddd','pkg right arrow steps to lighter color');btns[0].click();
+  A(PKGMAP[app][face].fg==='#888888','pkg left arrow steps to darker color');}
  {const ks=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p'),k1=ks[0],k2=ks[1];
   MAP[k1]='#111111';MAP[k2]='#222222';LOCKED.clear();LOCKED.add(k1);clearUnlocked();
   A(MAP[k1]==='#111111','syntax-clear-keeps-locked');A(MAP[k2]==='','syntax-clear-wipes-unlocked');}
