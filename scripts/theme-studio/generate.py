@@ -44,12 +44,17 @@ APP_CORE_BODY=strip_exports(read_text('app-core.js'))
 # test-app-util.mjs. Its `import rl` line is stripped on inline (rl is already in
 # the page from the colormath core).
 APP_UTIL_BODY=strip_exports(read_text('app-util.js'))
+# Pure palette-generator planner and its browser UI panel, split from the shared
+# app core so generation behavior and panel wiring can evolve locally.
+PALETTE_GENERATOR_CORE_BODY=strip_exports(read_text('palette-generator-core.js'))
+PALETTE_GENERATOR_UI_BODY=strip_exports(read_text('palette-generator-ui.js'))
 # Palette panel actions and rendering. This is stateful browser code, split from
 # app.js because color-column behavior changes often and benefits from locality.
 PALETTE_ACTIONS_BODY=strip_exports(read_text('palette-actions.js'))
 # Browser hash gates, split from app.js so the application code is not buried
 # under the test harness while still shipping one self-contained HTML file.
 BROWSER_GATES_BODY=strip_exports(read_text('browser-gates.js'))
+COLOR_NAMES=read_json('color-names.json')
 ns={}
 src=read_text('samples.py')
 exec(src[:src.index('cols=')], ns)
@@ -183,7 +188,7 @@ MAP,BOLD,ITALIC_MAP=initial_maps(COLS,DEFAULTS)
 PALETTE=[[MAP['bg'],"bg","ground"],[MAP['p'],"fg","ground"]]
 CATS=[["bg","bg (ground)","Aa Bb 123"],["p","fg","other / whitespace"],["kw","keyword","class  def  if  return"],["bi","builtin","len  echo  printf"],
  ["pp","preprocessor","#include  #define"],["fnd","function · def","resolve  push"],
- ["fnc","function · call","printf  rsync  get"],["dec","decorator","@dataclass"],
+ ["fnc","function · call","printf  rsync  get"],["dec","decorator → type","@dataclass"],
  ["ty","type / class","int  str  Order  Queue"],["prop","property / field","id  name  items"],
  ["con","constant","None  nil  NULL  true"],["num","number","8080  100  -1"],
  ["str","string",'"dupre"  "fmt"'],["esc","escape","\\n  \\t"],["re","regexp","/^#[0-9a-f]+/"],
@@ -261,8 +266,11 @@ def fill_data(s):
     return (s.replace("COLORMATH_J",COLORMATH_BODY)
      .replace("APP_CORE_J",APP_CORE_BODY)
      .replace("APP_UTIL_J",APP_UTIL_BODY)
+     .replace("PALETTE_GENERATOR_CORE_J",PALETTE_GENERATOR_CORE_BODY)
+     .replace("PALETTE_GENERATOR_UI_J",PALETTE_GENERATOR_UI_BODY)
      .replace("PALETTE_ACTIONS_J",PALETTE_ACTIONS_BODY)
      .replace("BROWSER_GATES_J",BROWSER_GATES_BODY)
+     .replace("COLOR_NAMES_J",json.dumps(COLOR_NAMES))
      .replace("SAMPLES_J",json.dumps(SAMPLES))
      .replace("PALETTE_J",json.dumps(PALETTE)).replace("CATS_J",json.dumps(CATS))
      .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP)).replace("APPS_J",json.dumps(APPS))

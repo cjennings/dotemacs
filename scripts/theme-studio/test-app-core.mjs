@@ -7,12 +7,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, spanNeighborHex, slugify,
+  nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, optList, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
 } from './app-core.js';
+import { planPaletteGenerator, entriesForGeneratedColumn } from './palette-generator-core.js';
+import { oklch2hex, deltaE } from './colormath.js';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const PAL = [['#67809c', 'blue'], ['#e8bd30', 'gold']];
+const COLOR_NAMES = JSON.parse(readFileSync(new URL('./color-names.json', import.meta.url), 'utf8'));
 
 test('nameToHex: Normal — resolves a palette name to its hex', () => {
   assert.equal(nameToHex('blue', PAL), '#67809c');
@@ -180,6 +183,381 @@ test('deletePaletteColumnPlan: Boundary — never deletes ground entries', () =>
   assert.deepEqual(plan.removed, []);
 });
 
+test('planPaletteGenerator: Normal — builds deterministic preview columns without mutating palette', () => {
+  const pal = [['#0d0b0a', 'bg', 'ground'], ['#f0fef0', 'fg', 'ground'], ['#67809c', 'blue', 'blue']];
+  const before = JSON.stringify(pal);
+  const plan = planPaletteGenerator(pal, { bg: '#0d0b0a', fg: '#f0fef0' }, {
+    sourceMode: 'bg-fg',
+    scheme: 'syntax-balanced',
+    baseHue: 250,
+    accentCount: 5,
+    spanCount: 2,
+    chromaMode: 'balanced',
+    contrastMode: 'aa',
+  });
+  assert.equal(JSON.stringify(pal), before, 'planner is pure');
+  assert.equal(plan.sourceMode, 'bg-fg');
+  assert.equal(plan.scheme, 'syntax-balanced');
+  assert.equal(plan.columns.length, 5);
+  assert.equal(plan.summary.generated, 5);
+  assert.equal(plan.summary.rejected, 0);
+  assert.ok(plan.summary.minContrast >= 4.5);
+  assert.ok(!/^generated-/.test(plan.columns[0].name), 'generated bases get nearest color names');
+  assert.equal(plan.columns[0].members.length, 1);
+  assert.ok(plan.columns.every(c => c.columnId && c.members.some(m => m.offset === 0 && m.hex === c.baseHex)));
+});
+
+test('planPaletteGenerator: Normal — random scheme varies candidate bases for inspiration', () => {
+  const pal = [['#0d0b0a', 'bg', 'ground'], ['#f0fef0', 'fg', 'ground']];
+  const seq = [0.10, 0.80, 0.35, 0.65, 0.90, 0.20, 0.48, 0.72, 0.04, 0.55, 0.30, 0.88];
+  let at = 0;
+  const rng = () => seq[at++ % seq.length];
+  const a = planPaletteGenerator(pal, { bg: '#0d0b0a', fg: '#f0fef0' }, { scheme: 'random', accentCount: 4, spanCount: 0, rng });
+  const b = planPaletteGenerator(pal, { bg: '#0d0b0a', fg: '#f0fef0' }, { scheme: 'random', accentCount: 4, spanCount: 0, rng });
+  assert.equal(a.scheme, 'random');
+  assert.equal(a.columns.length, 4);
+  assert.notDeepEqual(a.columns.map(c => c.baseHex), b.columns.map(c => c.baseHex));
+  assert.ok(a.columns.every(c => c.contrast >= 4.5));
+  assert.ok(a.columns.some(c => c.C >= 0.11), 'random candidates include more saturated colors than the quiet default');
+});
+
+test('planPaletteGenerator: Boundary — omitted scheme defaults to random', () => {
+  const plan = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, { accentCount: 1, spanCount: 0, rng: () => 0.25 });
+  assert.equal(plan.scheme, 'random');
+});
+
+test('planPaletteGenerator: Boundary — omitted accent count defaults to five', () => {
+  const plan = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, { spanCount: 0, rng: () => 0.25 });
+  assert.equal(plan.accentCount, 5);
+  assert.equal(plan.columns.length, 5);
+});
+
+test('planPaletteGenerator: Boundary — accent count is clamped to the supported range', () => {
+  const low = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, { accentCount: -4, spanCount: 0, rng: () => 0.25 });
+  const high = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, { accentCount: 99, spanCount: 0, rng: () => 0.25 });
+  assert.equal(low.accentCount, 1);
+  assert.equal(low.columns.length, 1);
+  assert.equal(high.accentCount, 12);
+  assert.equal(high.columns.length, 12);
+});
+
+test('planPaletteGenerator: Boundary — unknown source mode falls back to bg/fg', () => {
+  const plan = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, {
+    sourceMode: 'mystery',
+    baseHue: 17,
+    accentCount: 1,
+    spanCount: 0,
+  });
+  assert.equal(plan.sourceMode, 'bg-fg');
+  assert.notEqual(Math.round(plan.baseHue), 17);
+});
+
+test('planPaletteGenerator: Normal — intent near palette uses base columns as anchors', () => {
+  const pal = [
+    ['#0d0b0a', 'bg', 'ground'],
+    ['#f0fef0', 'fg', 'ground'],
+    ['#67809c', 'blue', 'blue'],
+    ['#e8bd30', 'gold', 'gold'],
+    ['#ffffff', 'blue+1', 'blue'],
+  ];
+  const plan = planPaletteGenerator(pal, { bg: '#0d0b0a', fg: '#f0fef0' }, {
+    intent: 'near-palette',
+    sourceMode: 'palette',
+    vibe: 'balanced',
+    accentCount: 4,
+    spanCount: 0,
+    rng: () => 0.5,
+  });
+  const anchorHues = ['#67809c', '#e8bd30'].map(hex => Math.round(planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, { sourceMode: 'selected', selectedHex: hex, accentCount: 1, spanCount: 0, rng: () => 0.1 }).baseHue));
+  assert.equal(plan.intent, 'near-palette');
+  assert.equal(plan.sourceMode, 'palette');
+  assert.equal(plan.columns.length, 4);
+  assert.ok(plan.columns.every(c => anchorHues.some(h => Math.abs((((c.hue - h + 540) % 360) - 180)) <= 20)));
+  assert.ok(plan.columns.every(c => c.C >= 0.075 && c.C <= 0.13));
+});
+
+test('planPaletteGenerator: Normal — intent fill gaps targets underused hue regions', () => {
+  const pal = [['#67809c', 'blue', 'blue'], ['#e8bd30', 'gold', 'gold'], ['#cb6b4d', 'terra', 'terra']];
+  const plan = planPaletteGenerator(pal, { bg: '#000000', fg: '#ffffff' }, {
+    intent: 'fill-gaps',
+    sourceMode: 'palette',
+    vibe: 'muted',
+    accentCount: 3,
+    spanCount: 0,
+    rng: () => 0.5,
+  });
+  assert.equal(plan.intent, 'fill-gaps');
+  assert.equal(plan.columns.length, 3);
+  assert.ok(plan.columns.every(c => c.C <= 0.09), 'muted vibe keeps chroma lower');
+  assert.ok(new Set(plan.columns.map(c => Math.round(c.hue))).size > 1, 'gap fill proposes multiple hue regions');
+});
+
+test('planPaletteGenerator: Normal — fill gaps chooses missing perceptual colors', () => {
+  const anchor = (L,C,H) => oklch2hex(L, C, H).hex;
+  const pal = [
+    [anchor(0.25, 0.08, 40), 'dark-warm', 'dark-warm'],
+    [anchor(0.75, 0.08, 40), 'light-warm', 'light-warm'],
+    [anchor(0.50, 0.08, 220), 'mid-cool', 'mid-cool'],
+  ];
+  const plan = planPaletteGenerator(pal, { bg: '#000000', fg: '#ffffff' }, {
+    intent: 'fill-gaps',
+    sourceMode: 'palette',
+    vibe: 'balanced',
+    contrastMode: 'none',
+    accentCount: 5,
+    spanCount: 0,
+    rng: () => 0.5,
+  });
+  const Ls = plan.columns.map(c => c.L), nearestAnchor = plan.columns.map(c => Math.min(...pal.map(p => deltaE(c.baseHex, p[0]))));
+  assert.equal(plan.columns.length, 5);
+  assert.ok(Math.max(...Ls) - Math.min(...Ls) > 0.35, 'candidate spread includes lightness, not hue alone');
+  assert.ok(nearestAnchor.every(d => d > 0.14), 'candidates stay perceptually away from existing anchors: '+nearestAnchor.join(','));
+});
+
+test('planPaletteGenerator: Boundary — fill gaps with no anchors falls back to random-style candidates', () => {
+  const seq = [0.10, 0.20, 0.30, 0.40, 0.50, 0.60];
+  let at = 0;
+  const plan = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, {
+    intent: 'fill-gaps',
+    sourceMode: 'none',
+    vibe: 'balanced',
+    accentCount: 3,
+    spanCount: 0,
+    rng: () => seq[at++ % seq.length],
+  });
+  assert.equal(plan.columns.length, 3);
+  assert.ok(new Set(plan.columns.map(c => Math.round(c.hue))).size > 1);
+});
+
+test('planPaletteGenerator: Normal — fill hue gaps rewards underrepresented hue regions', () => {
+  const ground = { bg: '#000000', fg: '#ffffff' };
+  const baseCfg = { sourceMode: 'bg-fg', vibe: 'balanced', contrastMode: 'aa', accentCount: 5, spanCount: 0, rng: () => 0.5 };
+  const plain = planPaletteGenerator([], ground, { ...baseCfg, intent: 'fill-gaps' });
+  const hueAware = planPaletteGenerator([], ground, { ...baseCfg, intent: 'fill-hue-gaps' });
+  const yellowish = c => c.hue >= 45 && c.hue <= 105;
+  assert.equal(hueAware.intent, 'fill-hue-gaps');
+  assert.notDeepEqual(hueAware.columns.map(c => Math.round(c.hue)), plain.columns.map(c => Math.round(c.hue)));
+  assert.ok(hueAware.columns.some(yellowish), 'hue-aware fill should surface a yellow/gold region early');
+  assert.ok(!plain.columns.some(yellowish), 'plain perceptual fill stays available as a separate behavior');
+});
+
+test('planPaletteGenerator: Normal — intent complements generates opposite anchor colors', () => {
+  const plan = planPaletteGenerator([['#67809c', 'blue', 'blue']], { bg: '#000000', fg: '#ffffff' }, {
+    intent: 'complements',
+    sourceMode: 'palette',
+    vibe: 'bold',
+    accentCount: 2,
+    spanCount: 0,
+    rng: () => 0.5,
+  });
+  assert.equal(plan.intent, 'complements');
+  assert.ok(plan.columns.every(c => c.C >= 0.12));
+  assert.ok(plan.columns.every(c => Math.abs((((c.hue - (plan.baseHue + 180) + 540) % 360) - 180)) <= 20));
+});
+
+test('planPaletteGenerator: Normal — intent bridges generates colors between anchors', () => {
+  const pal = [['#67809c', 'blue', 'blue'], ['#e8bd30', 'gold', 'gold'], ['#cb6b4d', 'terra', 'terra']];
+  const plan = planPaletteGenerator(pal, { bg: '#000000', fg: '#ffffff' }, {
+    intent: 'bridges',
+    sourceMode: 'palette',
+    vibe: 'balanced',
+    accentCount: 3,
+    spanCount: 0,
+    rng: () => 0.5,
+  });
+  assert.equal(plan.intent, 'bridges');
+  assert.equal(plan.columns.length, 3);
+  assert.ok(new Set(plan.columns.map(c => Math.round(c.hue))).size > 1);
+  assert.ok(plan.columns.every(c => c.C >= 0.075 && c.C <= 0.13));
+});
+
+test('planPaletteGenerator: Normal — harmony intents generate expected hue families', () => {
+  const planFor = intent => planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, {
+    intent,
+    sourceMode: 'selected',
+    selectedHex: '#67809c',
+    baseHue: 250,
+    vibe: 'balanced',
+    accentCount: 4,
+    spanCount: 0,
+    rng: () => 0.5,
+  });
+  const cfg = intent => planFor(intent).columns.map(c => Math.round(c.hue));
+  const base = Math.round(planFor('triadic').baseHue);
+  const dist = (a, b) => Math.abs((((a - b + 540) % 360) - 180));
+  assert.ok(cfg('complementary').every(h => dist(h, (base + 180) % 360) <= 1));
+  assert.deepEqual(cfg('triadic').slice(0, 3).map(h => Math.round((h - base + 360) % 360)), [0, 120, 240]);
+  assert.deepEqual(cfg('square').map(h => Math.round((h - base + 360) % 360)), [0, 90, 180, 270]);
+  assert.deepEqual(cfg('tetradic').map(h => Math.round((h - base + 360) % 360)), [0, 60, 180, 240]);
+  assert.ok(new Set(cfg('rainbow')).size === 4);
+  assert.ok(cfg('monochromatic').every(h => dist(h, base) <= 3));
+  assert.ok(cfg('split-complementary').slice(0, 2).every(h => dist(h, (base + 150) % 360) <= 1 || dist(h, (base + 210) % 360) <= 1));
+  assert.ok(cfg('analogous').slice(0, 2).every(h => dist(h, (base + 330) % 360) <= 1 || dist(h, (base + 30) % 360) <= 1));
+});
+
+test('planPaletteGenerator: Normal — harmony intents work with palette anchors', () => {
+  const pal = [['#67809c', 'blue', 'blue'], ['#e8bd30', 'gold', 'gold']];
+  const intents = ['complementary', 'analogous', 'split-complementary', 'triadic', 'tetradic', 'square', 'monochromatic', 'rainbow'];
+  for (const intent of intents) {
+    const plan = planPaletteGenerator(pal, { bg: '#000000', fg: '#ffffff' }, {
+      intent,
+      sourceMode: 'palette',
+      vibe: 'balanced',
+      accentCount: 4,
+      spanCount: 0,
+      rng: () => 0.5,
+    });
+    assert.equal(plan.sourceMode, 'palette', intent);
+    assert.equal(plan.intent, intent);
+    assert.equal(plan.columns.length, 4, intent);
+    assert.ok(plan.columns.every(c => c.contrast >= 4.5), intent);
+  }
+});
+
+test('planPaletteGenerator: Boundary — empty palette source falls back to configured hue', () => {
+  const plan = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, {
+    intent: 'near-palette',
+    sourceMode: 'palette',
+    baseHue: 123,
+    vibe: 'balanced',
+    accentCount: 2,
+    spanCount: 0,
+    rng: () => 0.5,
+  });
+  assert.equal(plan.sourceMode, 'palette');
+  assert.equal(plan.columns.length, 2);
+  assert.ok(Math.abs(plan.baseHue - 123) < 0.001);
+  assert.ok(plan.columns.every(c => Math.abs((((c.hue - 123 + 540) % 360) - 180)) <= 20));
+});
+
+test('planPaletteGenerator: Boundary — invalid selected source falls back to bg/fg', () => {
+  const plan = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, {
+    intent: 'near-selected',
+    sourceMode: 'selected',
+    selectedHex: 'not-a-color',
+    baseHue: 22,
+    accentCount: 1,
+    spanCount: 0,
+  });
+  assert.equal(plan.sourceMode, 'bg-fg');
+  assert.notEqual(Math.round(plan.baseHue), 22);
+});
+
+test('planPaletteGenerator: Boundary — high contrast can reject every candidate', () => {
+  const plan = planPaletteGenerator([], { bg: '#777777', fg: '#ffffff' }, {
+    intent: 'random',
+    sourceMode: 'none',
+    vibe: 'pastel',
+    contrastMode: 'aaa',
+    accentCount: 4,
+    spanCount: 0,
+    rng: () => 0.5,
+  });
+  assert.equal(plan.columns.length, 0);
+  assert.equal(plan.rejected.length, 4);
+  assert.equal(plan.summary.rejected, 4);
+  assert.equal(plan.summary.minContrast, null);
+});
+
+test('planPaletteGenerator: Boundary — contrast none keeps otherwise rejected candidates', () => {
+  const plan = planPaletteGenerator([], { bg: '#777777', fg: '#ffffff' }, {
+    intent: 'random',
+    sourceMode: 'none',
+    vibe: 'pastel',
+    contrastMode: 'none',
+    accentCount: 4,
+    spanCount: 0,
+    rng: () => 0.5,
+  });
+  assert.equal(plan.columns.length, 4);
+  assert.equal(plan.rejected.length, 0);
+  assert.ok(plan.summary.minContrast < 7);
+});
+
+test('planPaletteGenerator: Normal — warm and cool vibes bias candidate hue families', () => {
+  const warm = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, { intent: 'random', vibe: 'warm', accentCount: 4, spanCount: 0, rng: () => 0.25 });
+  const cool = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, { intent: 'random', vibe: 'cool', accentCount: 4, spanCount: 0, rng: () => 0.25 });
+  assert.ok(warm.columns.every(c => c.hue < 90 || c.hue > 340), 'warm stays in red/orange/yellow hue families');
+  assert.ok(cool.columns.every(c => c.hue > 140 && c.hue < 310), 'cool stays in green/cyan/blue/violet hue families');
+});
+
+test('planPaletteGenerator: Normal — added vibes produce distinct chroma ranges', () => {
+  const mk = vibe => planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, { intent: 'random', vibe, accentCount: 1, spanCount: 0, rng: () => 0.5 }).columns[0].C;
+  assert.ok(mk('pastel') < mk('deep'));
+  assert.ok(mk('jewel') > mk('balanced'));
+  assert.ok(mk('neon') > mk('jewel'));
+  assert.ok(mk('strange') > mk('bold'));
+});
+
+test('planPaletteGenerator: Boundary — selected source uses the selected color hue', () => {
+  const plan = planPaletteGenerator([['#67809c', 'blue', 'blue']], { bg: '#101010', fg: '#f0f0f0' }, {
+    sourceMode: 'selected',
+    selectedHex: '#e8bd30',
+    accentCount: 3,
+    spanCount: 0,
+  });
+  assert.equal(plan.sourceMode, 'selected');
+  assert.equal(plan.columns.length, 3);
+  assert.equal(plan.columns[0].members.length, 1);
+  assert.ok(Math.abs(plan.baseHue - 91) < 8, 'gold-ish selected color drives the hue base');
+});
+
+test('planPaletteGenerator: Boundary — generated names avoid palette collisions', () => {
+  const plan = planPaletteGenerator([['#111111', 'steel-blue', 'steel-blue']], { bg: '#000000', fg: '#ffffff' }, {
+    sourceMode: 'selected',
+    selectedHex: '#67809c',
+    accentCount: 2,
+    spanCount: 0,
+    rng: () => 0.5,
+    colorNames: COLOR_NAMES,
+  });
+  assert.ok(plan.columns.every(c => !/^generated/.test(c.name)), 'generated candidates use nearest color names');
+  assert.equal(new Set(plan.columns.map(c => c.name)).size, 2, 'nearest names are uniqued');
+  assert.ok(plan.columns.every(c => !/[+-]\d+$/.test(c.name)), 'unique generated base names do not look like span offsets');
+});
+
+test('color name table: Normal — uses filtered X11/CSS-style names', () => {
+  assert.ok(COLOR_NAMES.length > 100);
+  assert.ok(COLOR_NAMES.some(([name]) => name === 'steel-blue'));
+  assert.ok(COLOR_NAMES.some(([name]) => name === 'dark-olive'));
+  assert.ok(!COLOR_NAMES.some(([name]) => name === 'dark-olive-green'));
+  assert.ok(COLOR_NAMES.some(([name]) => name === 'medium-aquamarine'));
+  assert.ok(COLOR_NAMES.some(([name]) => name === 'medium-turquoise'));
+  assert.ok(COLOR_NAMES.every(([name]) => !/\d+$/.test(name)), 'numbered variants are excluded');
+  assert.ok(COLOR_NAMES.every(([, hex]) => /^#[0-9a-f]{6}$/.test(hex)), 'colors are normalized hex');
+});
+
+test('planPaletteGenerator: Boundary — missing neutral source falls back to configured hue', () => {
+  const plan = planPaletteGenerator([], {}, { baseHue: 42, accentCount: 1, spanCount: 0 });
+  assert.ok(Math.abs(plan.baseHue - 42) < 0.001);
+  assert.equal(plan.columns.length, 1);
+});
+
+test('planPaletteGenerator: Normal — analogous and triadic schemes choose distinct hue layouts', () => {
+  const base = { baseHue: 30, accentCount: 3, spanCount: 0 };
+  const analogous = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, { ...base, scheme: 'analogous' });
+  const triadic = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, { ...base, scheme: 'triadic' });
+  assert.notDeepEqual(
+    analogous.columns.map(c => Math.round(c.hue)),
+    triadic.columns.map(c => Math.round(c.hue)),
+  );
+  assert.ok(Math.abs(triadic.columns[1].hue - ((triadic.columns[0].hue + 120) % 360)) < 1);
+});
+
+test('entriesForGeneratedColumn: Normal — converts one preview column to stable palette entries', () => {
+  const plan = planPaletteGenerator([], { bg: '#000000', fg: '#ffffff' }, { accentCount: 1, spanCount: 1 });
+  const entries = entriesForGeneratedColumn(plan.columns[0]);
+  assert.equal(entries.length, 1);
+  assert.ok(entries.every(e => e[2] === plan.columns[0].columnId));
+  assert.deepEqual(entries.map(e => e[1]), [plan.columns[0].name]);
+});
+
+test('entriesForGeneratedColumn: Boundary — empty and partial columns are safe', () => {
+  assert.deepEqual(entriesForGeneratedColumn(null), []);
+  assert.deepEqual(entriesForGeneratedColumn({ name: 'candidate', members: [{ hex: '#123456', name: 'candidate' }] }), [['#123456', 'candidate', 'candidate']]);
+  assert.deepEqual(entriesForGeneratedColumn({ members: [{ hex: '#abcdef', name: 'unnamed' }] }), [['#abcdef', 'unnamed', 'generated']]);
+});
+
 test('groundColumnMembersFromPalette: Normal — sorts bg, ground+N steps, then fg', () => {
   const members = groundColumnMembersFromPalette([
     ['#ffffff', 'bg', 'ground'],
@@ -319,6 +697,18 @@ test('inline-integrity: theme-studio.html contains the app-core.js body verbatim
   assert.ok(html.includes(body), 'generated page is missing the app-core.js body verbatim');
 });
 
+test('inline-integrity: theme-studio.html contains palette-generator-core.js verbatim', () => {
+  const body = stripExports(readFileSync(here + 'palette-generator-core.js', 'utf8'));
+  const html = readFileSync(here + 'theme-studio.html', 'utf8');
+  assert.ok(html.includes(body), 'generated page is missing palette-generator-core.js verbatim');
+});
+
+test('inline-integrity: theme-studio.html contains palette-generator-ui.js verbatim', () => {
+  const body = stripExports(readFileSync(here + 'palette-generator-ui.js', 'utf8'));
+  const html = readFileSync(here + 'theme-studio.html', 'utf8');
+  assert.ok(html.includes(body), 'generated page is missing palette-generator-ui.js verbatim');
+});
+
 test('inline-integrity: theme-studio.html contains palette-actions.js verbatim', () => {
   const body = stripExports(readFileSync(here + 'palette-actions.js', 'utf8'));
   const html = readFileSync(here + 'theme-studio.html', 'utf8');
@@ -329,4 +719,53 @@ test('inline-integrity: theme-studio.html contains browser-gates.js verbatim', (
   const body = stripExports(readFileSync(here + 'browser-gates.js', 'utf8'));
   const html = readFileSync(here + 'theme-studio.html', 'utf8');
   assert.ok(html.includes(body), 'generated page is missing browser-gates.js verbatim');
+});
+
+// resolveSyntaxFg: an unset syntax category resolves through the Emacs inherit
+// chain (the way the generated theme renders), not to the flat default fg.
+test('resolveSyntaxFg: a set category uses its own foreground', () => {
+  assert.equal(resolveSyntaxFg('kw', { kw: { fg: '#aaaaaa' } }, '#ffffff'), '#aaaaaa');
+});
+test('resolveSyntaxFg: unset cmd inherits cm (comment-delimiter -> comment)', () => {
+  assert.equal(resolveSyntaxFg('cmd', { cm: { fg: '#888888' }, cmd: { fg: null } }, '#ffffff'), '#888888');
+});
+test('resolveSyntaxFg: unset doc inherits str (doc -> string)', () => {
+  assert.equal(resolveSyntaxFg('doc', { str: { fg: '#00aa00' }, doc: { fg: null } }, '#ffffff'), '#00aa00');
+});
+test('resolveSyntaxFg: unset prop inherits var (property-name -> variable-name)', () => {
+  assert.equal(resolveSyntaxFg('prop', { var: { fg: '#0000aa' }, prop: { fg: null } }, '#ffffff'), '#0000aa');
+});
+test('resolveSyntaxFg: unset fnc inherits fnd (function-call -> function-name)', () => {
+  assert.equal(resolveSyntaxFg('fnc', { fnd: { fg: '#aa00aa' }, fnc: { fg: null } }, '#ffffff'), '#aa00aa');
+});
+test('resolveSyntaxFg: dec is pinned to ty even when dec has its own fg', () => {
+  assert.equal(resolveSyntaxFg('dec', { ty: { fg: '#9b5fd0' }, dec: { fg: '#e8bd30' } }, '#ffffff'), '#9b5fd0');
+});
+test('resolveSyntaxFg: an unset chain bottoms out at the default fg', () => {
+  assert.equal(resolveSyntaxFg('cmd', { cm: { fg: null }, cmd: { fg: null } }, '#ffffff'), '#ffffff');
+});
+test('resolveSyntaxFg: a category with no inherit and no fg uses the default fg', () => {
+  assert.equal(resolveSyntaxFg('kw', { kw: { fg: null } }, '#ffffff'), '#ffffff');
+});
+
+// resolveUiAttr: an unset ui face attribute resolves through the Emacs built-in
+// ui inherit chain (mode-line-inactive -> mode-line, line-number-current-line ->
+// line-number), returning null when nothing up the chain is set (caller floors it).
+test('resolveUiAttr: a set ui face uses its own attribute', () => {
+  assert.equal(resolveUiAttr('mode-line', 'fg', { 'mode-line': { fg: '#111111' } }), '#111111');
+});
+test('resolveUiAttr: unset mode-line-inactive inherits mode-line', () => {
+  assert.equal(resolveUiAttr('mode-line-inactive', 'bg',
+    { 'mode-line': { bg: '#222222' }, 'mode-line-inactive': { bg: null } }), '#222222');
+});
+test('resolveUiAttr: unset line-number-current-line inherits line-number', () => {
+  assert.equal(resolveUiAttr('line-number-current-line', 'fg',
+    { 'line-number': { fg: '#333333' }, 'line-number-current-line': { fg: null } }), '#333333');
+});
+test('resolveUiAttr: returns null when nothing up the chain is set', () => {
+  assert.equal(resolveUiAttr('mode-line-inactive', 'fg',
+    { 'mode-line': { fg: null }, 'mode-line-inactive': { fg: null } }), null);
+});
+test('resolveUiAttr: a face with no inherit and an unset attribute returns null', () => {
+  assert.equal(resolveUiAttr('region', 'bg', { 'region': { bg: null } }), null);
 });

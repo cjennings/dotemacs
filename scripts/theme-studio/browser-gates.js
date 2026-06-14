@@ -25,6 +25,7 @@ if(location.hash==='#selftest')pkgSelftest();
 // the shared mkLockCell. (2) reset/erase batch actions update editable rows but
 // leave locked rows (syntax bare-kind, ui:, pkg: keys) untouched.
 if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const cssRgb=h=>{const [r,g,b]=hex2rgb(h);return 'rgb('+r+', '+g+', '+b+')';};
  LOCKED.clear();buildTable();
  {const k=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p')[0];
   const tr=document.querySelector('#legbody tr[data-kind="'+k+'"]'),step=tr.querySelector('.cstep'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
@@ -41,6 +42,15 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
   const tr=document.querySelector('#uibody tr[data-face="region"]'),fg=tr.cells[2].querySelector('.cdd'),bg=tr.cells[3].querySelector('.cdd');
   A(fg.classList.contains('is-default'),'compact default color button has default outline class');
   A(!bg.classList.contains('is-default'),'compact assigned color button does not have default outline class');}
+ {setSyntaxFg('kw','');buildTable();
+  const dd=document.querySelector('#legbody tr[data-kind="kw"] .cdd');
+  A(dd&&dd.style.backgroundColor===cssRgb(MAP['p']),'syntax default fg swatch shows inherited fg color');}
+ {UIMAP['fringe'].bg=null;buildUITable();
+  const dd=document.querySelector('#uibody tr[data-face="fringe"]').cells[3].querySelector('.cdd');
+  A(dd&&dd.style.backgroundColor===cssRgb(MAP['bg']),'ui default bg swatch shows inherited ground color');}
+ {const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].fg=null;PKGMAP[app][face].inherit=null;buildPkgTable();
+  const dd=document.querySelector('#pkgbody tr[data-face="'+face+'"]').cells[2].querySelector('.cdd');
+  A(dd&&dd.style.backgroundColor===cssRgb(MAP['p']),'package default fg swatch shows inherited/default fg color');}
  {PALETTE=[['#000000','bg','ground'],['#ffffff','fg','ground'],['#222222','gray-dark','gray'],['#888888','gray-mid','gray'],['#dddddd','gray-light','gray']];setSyntaxFg('bg','#000000');setSyntaxFg('p','#ffffff');setSyntaxFg('kw','#888888');LOCKED.clear();buildTable();
   const tr=document.querySelector('#legbody tr[data-kind="kw"]'),btns=tr.querySelectorAll('.cstepbtn');btns[1].click();
   A(MAP['kw']==='#dddddd'&&tr.querySelector('.cdd').dataset.val==='#dddddd','syntax right arrow steps to lighter color');btns[0].click();
@@ -134,6 +144,12 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A([...document.querySelectorAll('#mockframe .fr')].some(e=>e.textContent.trim()),'fringe-indicator-present');
  const mlbar=Q('[data-face="mode-line"]');
  A(mlbar&&/box-shadow/.test(mlbar.getAttribute('style')||''),'mode-line-box');
+ const textBox=Q('.mbuftext'),border=Q('[data-face="vertical-border"]'),mock=document.getElementById('mockframe');
+ if(textBox&&border&&mock){
+   const tr=textBox.getBoundingClientRect(),br=border.getBoundingClientRect();
+   const ch=parseFloat(getComputedStyle(textBox).fontSize)*0.65;
+   A(br.left-tr.right<=ch*4.8,'vertical-border-near-text');
+ }else A(false,'vertical-border-layout-elements-present');
  UIMAP['line-number-current-line'].bold=true;buildMockFrame();
  const curNum=Q('[data-face="line-number-current-line"]');
  A(curNum&&/font-weight:\s*bold/.test(curNum.getAttribute('style')||''),'line-number-honors-weight');
@@ -151,6 +167,62 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(pkgBtn()&&pkgBtn().classList.contains('on')&&PKGMAP[app][face].bold===true,'pkg style button visual state turns on after rebuild');
  document.title='MOCKTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='mocktest';d.textContent='MOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Palette-generator gate (open with #generatortest): previewing is non-mutating,
+// clicking a generated tile loads the existing selector, adding creates a normal
+// singleton base column, and appending a preview column commits all span members
+// under one stable column id.
+if(location.hash==='#generatortest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const before=JSON.stringify(PALETTE);
+ A(document.getElementById('genaccents').value==='5','default accent count is 5');
+ A(document.getElementById('gensource').value==='palette','default generator source is palette');
+ A(document.querySelector('label:has(#genintent)').title==='what kind of candidate colors to look for','intent label hover explains the control');
+ A(document.getElementById('genintent').title.includes('Pure exploration'),'intent select hover explains random');
+ A([...document.getElementById('genintent').options].some(o=>o.value==='fill-hue-gaps'),'fill hue gaps intent is available');
+ document.getElementById('genintent').value='fill-hue-gaps';syncGeneratorControls();
+ A(document.getElementById('genintent').title.includes('underrepresented hue regions'),'fill hue gaps hover explains hue bonus');
+ document.getElementById('genintent').value='near-palette';syncGeneratorControls();
+ A(document.getElementById('genintent').title.includes('current palette base colors'),'intent select hover updates for selected intent');
+ A(!document.getElementById('genscheme'),'legacy scheme control is removed from the generator UI');
+ A(!document.getElementById('genhue'),'legacy base hue control is removed from the generator UI');
+ document.getElementById('genaccents').value='3';
+ document.getElementById('genintent').value='fill-gaps';
+ document.getElementById('genvibe').value='warm';
+ document.getElementById('gensource').value='palette';
+ previewGenerator();
+ A(GEN_PROPOSAL&&GEN_PROPOSAL.intent==='fill-gaps'&&GEN_PROPOSAL.vibe==='warm'&&GEN_PROPOSAL.sourceMode==='palette','intent/vibe/source feed the generator proposal');
+ A(JSON.stringify(PALETTE)===before,'preview does not mutate palette');
+ A(document.querySelectorAll('#genpreview .gencol').length===3,'renders requested preview columns');
+ A(parseInt(getComputedStyle(document.querySelector('#genpreview .genchip')).width,10)===128,'generated candidate tile width matches palette tiles');
+ A(parseInt(getComputedStyle(document.querySelector('#genpreview .genchip')).height,10)===58,'generated candidate tile height matches palette tiles');
+ A([...document.querySelectorAll('#genpreview .gencol')].every(c=>c.querySelectorAll('.genchip').length===1),'preview columns show only one base tile each');
+ const tile=document.querySelector('#genpreview .genchip[data-col="0"][data-member="0"]');
+ A(!!tile,'base generated tile exists');
+ const tileHex=tile&&tile.dataset.hex,tileName=tile&&tile.dataset.name;
+  if(tile)tile.click();
+ A(document.getElementById('newhexstr').value===tileHex,'generated tile loads selector hex');
+ A(document.getElementById('newname').value===tileName,'generated tile loads selector name');
+ document.getElementById('genaccents').value='2';
+ previewGenerator();
+ A(document.querySelectorAll('#genpreview .gencol').length===2,'preview again replaces old preview columns');
+ A(!document.querySelector('#genpreview .genchip.sel'),'preview again clears generated tile selection');
+ document.getElementById('genaccents').value='3';
+ previewGenerator();
+ addColor();
+ A(PALETTE.some(p=>p[0]===tileHex&&p[1]===tileName),'add color commits selected generated tile');
+ const afterSingle=PALETTE.length;
+ previewGenerator();
+ const append=document.querySelector('#genpreview .genappend[data-col="0"]');
+ A(!!append,'append generated column button exists');
+ if(append)append.click();
+ A(PALETTE.length===afterSingle+1,'append commits one generated base color');
+ const added=PALETTE.slice(-1);
+ A(new Set(added.map(p=>p[2])).size===1,'appended generated span has one stable column id');
+ A(!/[+-]\d+$/.test(added[0][1]),'appended generated color is a base name, not a signed span neighbor');
+ GEN_PROPOSAL={summary:{generated:1,rejected:0,minContrast:null},columns:[{name:'medium-aquamarine',members:[{name:'medium-aquamarine',hex:'#66cdaa',offset:0,columnId:'medium-aquamarine'}]}]};
+ renderGeneratorPreview();
+ A(document.querySelector('#genpreview .genchip .gn').textContent==='medium aquamarine','generated tile names display spaces instead of hyphens');
+ document.title='GENERATORTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='generatortest';d.textContent='GENERATORTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 if(location.hash.startsWith('#pick')){openPicker();const m=location.hash.slice(5);if(m){const b=document.querySelector('.pmode button[data-m="'+m+'"]');if(b)b.click();}}
 if(location.hash==='#cursortest'){document.getElementById('newhexstr').value='#67809c';openPicker();const sc=document.getElementById('svcur'),hc=document.getElementById('huecur');const L=parseFloat(sc.style.left||'0'),T=parseFloat(sc.style.top||'0'),H=parseFloat(hc.style.top||'0');const ok=L>1&&T>1&&H>1;document.title='CURSORTEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='cursortest';d.textContent='CURSORTEST '+(ok?'PASS':'FAIL')+' left='+sc.style.left+' top='+sc.style.top+' hue='+hc.style.top;document.body.appendChild(d);}
 if(location.hash.startsWith('#app')){const ap=location.hash.slice(4),s=document.getElementById('appsel');if(s&&ap){s.value=ap;pkgChanged();}}
@@ -219,15 +291,27 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  UIMAP['region']={fg:null,bg:'#202830',bold:false,italic:false,underline:false,strike:false};
  buildUITable();
  const cell=document.getElementById('uicr-region');
- A(cell&&/^worst:/.test(cell.textContent),'region shows the worst-case readout: '+(cell&&cell.textContent));
- A(cell&&cell.textContent.includes('#67809c'),'limiting fg is keyword blue: '+(cell&&cell.textContent));
- A(cell&&/\b(PASS|FAIL)\b/.test(cell.textContent),'readout carries a verdict');
+ A(cell&&/^\d+\.\d (PASS|FAIL)$/.test(cell.textContent.trim()),'region shows compact worst-case readout: '+(cell&&cell.textContent));
+ A(cell&&!cell.textContent.includes('#67809c'),'compact readout omits limiting fg details: '+(cell&&cell.textContent));
+ A(cell&&cell.title.includes('kw (keyword) #67809c'),'hover names failing keyword blue: '+(cell&&cell.title));
+ const badge=document.querySelector('#uiprev-region .crerr');
+ A(badge&&badge.textContent.trim()===cell.textContent.trim(),'region preview shows failing contrast badge: '+(badge&&badge.textContent));
+ A(badge&&badge.title.includes('kw (keyword) #67809c'),'preview badge hover carries failures: '+(badge&&badge.title));
+ const firstFail=badge&&badge.title.split('\n')[1];
+ A(firstFail&&firstFail.includes('kw (keyword) #67809c'),'failures are sorted from worst first: '+firstFail);
  const fl=floor('#202830',fgSetForFace('region').set);
  A(fl.limitingHex==='#67809c','floor limiting is blue, got '+fl.limitingHex);
  A(Math.abs(fl.ratio-contrast('#67809c','#202830'))<1e-9,'floor ratio matches blue-on-bg');
+ UIMAP['region']={fg:'#f0fef0',bg:'#202830',bold:false,italic:false,underline:false,strike:false};
+ buildUITable();
+ const pairCell=document.getElementById('uicr-region'),pairWant=contrast('#f0fef0','#202830');
+ A(pairCell&&Math.abs(parseFloat(pairCell.textContent)-pairWant)<0.06,'region with explicit fg rates its own fg/bg pair: got '+(pairCell&&pairCell.textContent.trim())+' want '+pairWant.toFixed(1));
+ A(!document.querySelector('#uiprev-region .crerr'),'region with explicit fg does not show covered-text error badge');
+ A(pairCell&&!pairCell.title.includes('#67809c'),'region explicit fg hover omits underlying syntax failures: '+(pairCell&&pairCell.title));
  const ml=document.getElementById('uicr-mode-line');
  A(worstCellHtml('mode-line')===null,'mode-line is out of scope (single-pair)');
  A(ml&&/^\d/.test(ml.textContent.trim()),'mode-line cell is a numeric ratio: '+(ml&&ml.textContent));
+ UIMAP['region']={fg:null,bg:'#202830',bold:false,italic:false,underline:false,strike:false};
  setSyntaxFg('p','');CATS.forEach(c=>{if(c[0]!=='bg')setSyntaxFg(c[0],'');});buildUITable();
  const empty=document.getElementById('uicr-region');
  A(empty&&empty.textContent.trim()==='no fg set','empty set reads the no-set message: '+(empty&&empty.textContent));

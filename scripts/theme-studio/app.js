@@ -1,4 +1,5 @@
 const SAMPLES=SAMPLES_J, CATS=CATS_J, UI_FACES=UIFACES_J, APPS=APPS_J;
+const COLOR_NAMES=COLOR_NAMES_J;
 let MAP=MAP_J, PALETTE=PALETTE_J, SYNTAX=SYNTAX_J, UIMAP=UIMAP_J;
 let LOCKED=new Set(LOCKS_J);   // rows whose choice is decided (controls disabled, skipped by erase/reset batch actions)
 const DELTAE_MIN=0.02; // OKLab ΔE below this = colors too close to tell apart (perceptual-metrics spec)
@@ -28,9 +29,13 @@ APP_CORE_J
 // Pure color/UI-boundary helpers (normHex, ratingColor, textOn), inlined from
 // app-util.js. textOn uses rl from the colormath core above.
 APP_UTIL_J
+// Pure palette-generator planner and browser-side generator panel.
+PALETTE_GENERATOR_CORE_J
+PALETTE_GENERATOR_UI_J
 // The contrast-cell readout shared by every table: a WCAG ratio colored by its
-// AA/AAA rating, with the rating word. Callers compute r for their own fg/bg.
-function crHtml(r){return `<span style="color:${ratingColor(r)}">${r.toFixed(1)}  ${rating(r)}</span>`;}
+// table verdict. Callers compute r for their own fg/bg.
+function verdictFor(r,target=4.5){return r>=target?'PASS':'FAIL';}
+function crHtml(r,target=4.5){const v=verdictFor(r,target);return `<span style="color:${ratingColor(r)}">${r.toFixed(1)} ${v}</span>`;}
 // Effective fg/bg with the standard fallback: an unset foreground reads as the
 // default fg (MAP['p']), an unset background as the ground (MAP['bg']). All three
 // tiers resolve their raw value through these before measuring or rendering.
@@ -61,21 +66,25 @@ function mkColorDropdown(options,cur,onPick,opts={}){
   left.textContent='‹';right.textContent='›';left.title='move to next darker color in this column';right.title='move to next lighter color in this column';
   const t=document.createElement('div');t.className='cdd'+(opts.compact?' compact':'');t.tabIndex=0;
   const nameOf=h=>{const o=options.find(p=>p[0]===h);return o?o[1]:(h||'none');};
+  const displayHex=h=>h||(opts.defaultHex||'');
+  const displayName=h=>h?nameOf(h):(opts.defaultName||nameOf(h));
   function step(dir){if(wrap.dataset.locked==='1')return;const next=spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},dir);if(!next)return;cur=next;paint();onPick(next);}
   function paintStepButtons(){
     const locked=wrap.dataset.locked==='1';
     left.disabled=locked||!spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},-1);
     right.disabled=locked||!spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},1);
   }
-  function paint(){const nm=nameOf(cur),ttl=cur?(nm+' '+cur):nm;t.style.background=cur||'#161412';t.style.color=cur?textOn(cur):'#b4b1a2';t.dataset.val=cur||'';t.title=ttl;t.classList.toggle('is-default',!cur);
-    t.innerHTML=opts.compact?`<span class="cddsw" style="background:${cur||'transparent'}"></span>`:`<span class="cddsw" style="background:${cur||'transparent'}"></span>${esc(nm)}`;paintStepButtons();}
+  function paint(){const shown=displayHex(cur),nm=displayName(cur),ttl=cur?(nm+' '+cur):(nm+(shown?' -> '+shown:''));t.style.background=shown||'#161412';t.style.color=shown?textOn(shown):'#b4b1a2';t.dataset.val=cur||'';t.title=ttl;t.classList.toggle('is-default',!cur);
+    t.innerHTML=opts.compact?`<span class="cddsw" style="background:${shown||'transparent'}"></span>`:`<span class="cddsw" style="background:${shown||'transparent'}"></span>${esc(nm)}`;paintStepButtons();}
   paint();
   left.onclick=e=>{e.stopPropagation();step(-1);};
   right.onclick=e=>{e.stopPropagation();step(1);};
   t.onclick=(e)=>{e.stopPropagation();if(wrap.dataset.locked==='1')return;if(_ddPop){closeColorDropdown();return;}
     const pop=document.createElement('div');pop.className='cddpop';
     for(const [hex,name] of options){const row=document.createElement('div');row.className='cddrow'+(hex===cur?' sel':'');
-      row.innerHTML=`<span class="cddsw" style="background:${hex||'transparent'}"></span><span class="cddnm">${esc(name)}</span><span class="cddhx">${hex||''}</span>`;
+      const shown=displayHex(hex),nm=hex?name:(opts.defaultName||name);
+      row.style.background=hex?'':shown;row.style.color=shown?textOn(shown):'';
+      row.innerHTML=`<span class="cddsw" style="background:${shown||'transparent'}"></span><span class="cddnm">${esc(nm)}</span><span class="cddhx">${hex||shown||''}</span>`;
       row.onclick=(ev)=>{ev.stopPropagation();cur=hex;paint();closeColorDropdown();onPick(hex);};
       pop.appendChild(row);}
     document.body.appendChild(pop);const r=t.getBoundingClientRect();
@@ -182,8 +191,8 @@ function buildTable(){
     function rowBg(){return syntaxFace(kind).bg||MAP['bg'];}
     function styleEx(){const s=syntaxFace(kind);exTd.style.color=rowFg();exTd.style.background=rowBg();exTd.style.fontWeight=s.bold?'bold':'normal';exTd.style.fontStyle=s.italic?'italic':'normal';exTd.style.textDecoration=(s.underline?'underline ':'')+(s.strike?'line-through':'')||'none';exTd.style.boxShadow=boxCss(s.box,rowBg());}
     function styleCr(){const r=contrast(rowFg(),rowBg());crTd.innerHTML=crHtml(r);}
-    const dd=mkColorDropdown(list,cur,(hex)=>{const s=syntaxFace(kind);s.fg=hex||null;syncSyntaxCache(kind);styleEx();styleCr();renderCode();if(kind==='bg'||kind==='p'){applyGround();buildTable();buildPkgTable();buildPkgPreview();}repaintCovered();},{compact:true});
-    const bgd=mkColorDropdown(ddList(sf.bg||''),sf.bg||'',hex=>{const s=syntaxFace(kind);s.bg=hex||null;styleEx();styleCr();renderCode();repaintCovered();},{compact:true});
+    const dd=mkColorDropdown(list,cur,(hex)=>{const s=syntaxFace(kind);s.fg=hex||null;syncSyntaxCache(kind);styleEx();styleCr();renderCode();if(kind==='bg'||kind==='p'){applyGround();buildTable();buildPkgTable();buildPkgPreview();}repaintCovered();},{compact:true,defaultHex:rowFg()});
+    const bgd=mkColorDropdown(ddList(sf.bg||''),sf.bg||'',hex=>{const s=syntaxFace(kind);s.bg=hex||null;styleEx();styleCr();renderCode();repaintCovered();},{compact:true,defaultHex:rowBg()});
     styleEx();styleCr();
     const stTd=document.createElement('td');
     const stBtns=mkStyleButtons(at=>syntaxFace(kind)[at],at=>{const s=syntaxFace(kind);s[at]=!s[at];styleEx();renderCode();});
@@ -200,7 +209,7 @@ function buildTable(){
 PALETTE_ACTIONS_J
 function notify(msg,err){const m=document.getElementById('palmsg');if(!m)return;m.textContent=msg;m.style.color=err?'#cb6b4d':'#8a9496';m.style.opacity='1';clearTimeout(m._t);m._t=setTimeout(()=>{m.style.opacity='0';},err?4000:2800);}
 function applyEdit(){if(selectedIdx!==null)updateColor();else addColor();}
-function selectColor(i){selectedIdx=i;const [hex,name]=PALETTE[i];setHex(hex);document.getElementById('newname').value=name;renderPalette();notify('editing "'+name+'" — change the value, then Enter (or Update selected) to save',false);}
+function selectColor(i){selectedIdx=i;GEN_SELECTION=null;const [hex,name]=PALETTE[i];setHex(hex);document.getElementById('newname').value=name;renderPalette();renderGeneratorPreview();notify('editing "'+name+'" — change the value, then Enter (or Update selected) to save',false);}
 function updateColor(){
   if(selectedIdx===null){notify('click a palette color to select it first',true);return;}
   const i=selectedIdx,oldHex=PALETTE[i][0],oldRole=groundRoleOfEntry(PALETTE[i],{bg:MAP['bg'],fg:MAP['p']});
@@ -319,8 +328,9 @@ function initPicker(){const sw=document.getElementById('swatch');if(!sw)return;s
 function addColor(){const h=curHex();const name=document.getElementById('newname').value.trim();
   if(!name){notify('name the color before adding it',true);return;}
   if(PALETTE.some(p=>p[1].toLowerCase()===name.toLowerCase())){notify('a color named "'+name+'" already exists — select it and use Update selected to change its value',true);return;}
-  PALETTE.push([h,name,columnIdOf([h,name])]);const healed=healGone(name,h);document.getElementById('newname').value='';selectedIdx=null;closePicker();
+  PALETTE.push([h,name,columnIdOf([h,name])]);const healed=healGone(name,h);document.getElementById('newname').value='';selectedIdx=null;GEN_SELECTION=null;closePicker();
   refreshPaletteState({code:healed,ground:healed,pkgPreview:healed});
+  renderGeneratorPreview();
   notify(healed?('added "'+name+'" and reconnected its face references'):('added "'+name+'"'),false);}
 function themeName(){return (document.getElementById('themename').value||'theme').trim()||'theme';}
 function fileSlug(){return slugify(themeName());}
@@ -366,7 +376,7 @@ function boxCss(b,bg){if(!b||!b.style)return '';const w=b.width||1;
     const [a,z]=b.style==='released'?[hl,sh]:[sh,hl];
     return `inset ${w}px ${w}px 0 ${a},inset -${w}px -${w}px 0 ${z}`;}
   return `inset 0 0 0 ${w}px ${b.color||'currentColor'}`;}
-function syntaxStyle(k){const s=syntaxFace(k),fg=(k==='bg'?MAP['p']:effFg(s.fg)),bg=s.bg||null,dec=(s.underline?'underline ':'')+(s.strike?'line-through':''),
+function syntaxStyle(k){const s=syntaxFace(k),fg=(k==='bg'?MAP['p']:resolveSyntaxFg(k,SYNTAX,MAP['p'])),bg=s.bg||null,dec=(s.underline?'underline ':'')+(s.strike?'line-through':''),
   bx=boxCss(s.box,bg||MAP['bg']);
   return `color:${fg};${bg?'background:'+bg+';':''}font-weight:${s.bold?'bold':'normal'};font-style:${s.italic?'italic':'normal'};text-decoration:${dec.trim()||'none'}${bx?';box-shadow:'+bx:''}`;}
 // The per-row box control: none / line / raised / pressed plus optional line
@@ -374,7 +384,7 @@ function syntaxStyle(k){const s=syntaxFace(k),fg=(k==='bg'?MAP['p']:effFg(s.fg))
 function mkBoxControl(get,set,opts={}){const wrap=document.createElement('div');wrap.className='boxctl';
   const s=document.createElement('select');s.className='chip';s.style.cssText='width:84px;font:10pt monospace';
   [['','no box'],['line','line'],['released','raised'],['pressed','pressed']].forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;s.appendChild(o);});
-  const dd=mkColorDropdown(ddList((get()&&get().color)||''),(get()&&get().color)||'',h=>{const cur=get();if(!cur)return;set(Object.assign({},cur,{color:h||null}));},{compact:!!opts.compact});
+  const dd=mkColorDropdown(ddList((get()&&get().color)||''),(get()&&get().color)||'',h=>{const cur=get();if(!cur)return;set(Object.assign({},cur,{color:h||null}));},{compact:!!opts.compact,defaultHex:opts.defaultHex});
   function paint(){const cur=get();s.value=cur&&cur.style?cur.style:'';dd.setValue(cur&&cur.color?cur.color:'');
     const off=!cur||!cur.style||wrap.dataset.locked==='1';dd.dataset.locked=off?'1':'';dd.classList.toggle('locked',off);if(dd.syncLocked)dd.syncLocked();}
   s.onchange=()=>{const cur=get();set(s.value?{style:s.value,width:cur&&cur.width||1,color:cur&&cur.color||null}:null);paint();};
@@ -444,7 +454,7 @@ function buildMockFrame(){
   let buf='';
   lines.forEach((L,i)=>{
     const isc=L.cur;
-    const nFg=isc?(lnc.fg||fg):(ln.fg||fg), nBg=isc?(lnc.bg||'transparent'):(ln.bg||'transparent');
+    const nFg=isc?(resolveUiAttr('line-number-current-line','fg',UIMAP)||fg):(ln.fg||fg), nBg=isc?(resolveUiAttr('line-number-current-line','bg',UIMAP)||'transparent'):(ln.bg||'transparent');
     const rowFace=isc?hl:null,rowStyle=rowFace?uiCss(rowFace,rowFace.fg||'inherit',rowFace.bg||'transparent'):'background:transparent';
     let cd;
     if(isc)cd=withCursor(L.t);
@@ -459,9 +469,9 @@ function buildMockFrame(){
     const nFace=isc?'line-number-current-line':'line-number';
     buf+=`<div class="ln" ${rowFace?'data-face="hl-line" ':''}style="${rowStyle}"><span class="fr" data-face="fringe" style="${uiCss(frng,frng.fg||fg,frng.bg||bg)};text-align:center;font-size:10px;overflow:hidden" title="fringe">${L.cont?'&#8618;':''}</span><span class="num" data-face="${nFace}" style="${uiCss(isc?lnc:ln,nFg,nBg)}">${i+1}</span><span class="cd">${cd||'&nbsp;'}</span></div>`;
   });
-  let html=`<div class="mbuf" style="display:flex;background:${bg}"><div style="flex:1;min-width:0">${buf}</div><div data-face="vertical-border" title="vertical-border" style="width:3px;flex:0 0 auto;background:${vb.fg||vb.bg||'#2f343a'}"></div></div>`;
+  let html=`<div class="mbuf" style="background:${bg}"><div class="mbuftext">${buf}</div><div class="vborder" data-face="vertical-border" title="vertical-border" style="background:${vb.fg||vb.bg||'#2f343a'}"></div></div>`;
   html+=`<div class="bar" data-face="mode-line" style="${uiCss(ml,ml.fg||bg,ml.bg||fg)}">  init.el      (Emacs Lisp)      L5      git:main  </div>`;
-  html+=`<div class="bar" data-face="mode-line-inactive" style="${uiCss(mli,mli.fg||fg,mli.bg||bg)}">  *Messages*      (Fundamental)  </div>`;
+  html+=`<div class="bar" data-face="mode-line-inactive" style="${uiCss(mli,resolveUiAttr('mode-line-inactive','fg',UIMAP)||fg,resolveUiAttr('mode-line-inactive','bg',UIMAP)||bg)}">  *Messages*      (Fundamental)</div>`;
   html+=`<div class="echo" style="color:${fg}"><span data-face="minibuffer-prompt" style="${uiCss(mb,mb.fg||fg,mb.bg||null)}">I-search:</span> count   <span data-face="isearch-fail" style="${uiCss(isf,isf.fg||fg,isf.bg||'transparent')}">zzz [no match]</span></div>`;
   html+=`<div class="echo"><span data-face="link" style="${uiCss(lnk,lnk.fg||fg,lnk.bg||null)}">https://gnu.org</span>   <span data-face="error" style="${uiCss(err,err.fg||fg,err.bg||null)}">error</span>   <span data-face="warning" style="${uiCss(wrn,wrn.fg||fg,wrn.bg||null)}">warning</span>   <span data-face="success" style="${uiCss(suc,suc.fg||fg,suc.bg||null)}">ok</span></div>`;
   fr.innerHTML=html;fr.style.background=bg;fr.style.color=fg;
@@ -471,7 +481,7 @@ function buildMockFrame(){
 // native <select> rendered swatch colors unreliably on Linux Chrome, so it is
 // gone. '' (the default entry) maps back to null in the stored model.
 function uiSelect(face,attr){const cur=UIMAP[face][attr]||'';
-  return mkColorDropdown(ddList(cur),cur,h=>{UIMAP[face][attr]=h||null;paintUI(face);buildMockFrame();},{compact:true});}
+  return mkColorDropdown(ddList(cur),cur,h=>{UIMAP[face][attr]=h||null;paintUI(face);buildMockFrame();},{compact:true,defaultHex:attr==='fg'?effFg(null):effBg(null)});}
 const BASE_INHERITS=['fixed-pitch','variable-pitch','default','link','bold','italic','shadow'];
 function uiFaceBlank(){return {fg:null,bg:null,bold:false,italic:false,underline:false,strike:false};}
 function seedFace(d){return normalizePkgFace({fg:pname(d.fg),bg:pname(d.bg),bold:d.bold,italic:d.italic,underline:d.underline,strike:d.strike,inherit:d.inherit,height:d.height,box:d.box},'default');}
@@ -488,8 +498,8 @@ function buildPkgTable(){
     if(flt&&!(face.toLowerCase().includes(flt)||label.toLowerCase().includes(flt)))continue;
     const f=PKGMAP[app][face],tr=document.createElement('tr');tr.dataset.face=face;
     const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.title=face;c0.style.cursor='pointer';c0.onclick=()=>flashPkgPreview(face);
-    const fgd=mkColorDropdown(ddList(f.fg||''),f.fg||'',h=>{f.fg=h||null;f.source='user';pkgChanged();},{compact:true}),
-          bgd=mkColorDropdown(ddList(f.bg||''),f.bg||'',h=>{f.bg=h||null;f.source='user';pkgChanged();},{compact:true});
+    const fgd=mkColorDropdown(ddList(f.fg||''),f.fg||'',h=>{f.fg=h||null;f.source='user';pkgChanged();},{compact:true,defaultHex:effFg(pkgEffFg(app,face))}),
+          bgd=mkColorDropdown(ddList(f.bg||''),f.bg||'',h=>{f.bg=h||null;f.source='user';pkgChanged();},{compact:true,defaultHex:effBg(pkgEffBg(app,face))});
     const cf=document.createElement('td');cf.appendChild(fgd);
     const cb=document.createElement('td');cb.appendChild(bgd);
     const cw=document.createElement('td');
@@ -624,17 +634,31 @@ function renderGhostelPreview(){const a='ghostel',L=[];
   L.push(os(a,'ghostel-default','default terminal output, 256-color text and a blinking ')+os(a,'ghostel-fake-cursor','cursor')+'.');
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}
 function renderDashboardPreview(){const a='dashboard',L=[];
-  L.push(os(a,'dashboard-text-banner','   ___ _ __ ___   __ _  ___ ___'));
-  L.push(os(a,'dashboard-banner-logo-title','   Welcome back, Craig'));
+  L.push(os(a,'dashboard-text-banner','        [ dashboard banner image ]'));
+  L.push(os(a,'dashboard-banner-logo-title','Emacs: The Editor That Saves Your Soul'));
   L.push('');
-  L.push(os(a,'dashboard-heading','Recent Files'));
-  L.push('  '+os(a,'dashboard-items-face','init.el'));
-  L.push('  '+os(a,'dashboard-items-face','notes.org'));
+  L.push(os(a,'dashboard-navigator',' Code   Files   Terminal  󰃭 Agenda'));
+  L.push(os(a,'dashboard-navigator',' Feeds   Books  󰑴 Flashcards  󰝚 Music'));
+  L.push(os(a,'dashboard-navigator',' Email   IRC   Telegram'));
+  L.push(os(a,'dashboard-navigator',' Slack   Linear'));
+  L.push('');
+  L.push('');
+  L.push(os(a,'dashboard-heading','Projects:'));
+  L.push('    ~/');
+  L.push('    ~/.emacs.d/');
+  L.push('    ~/projects/work/');
+  L.push('    ~/org/roam/');
+  L.push('    ~/projects/home/');
+  L.push('');
   L.push(os(a,'dashboard-heading','Bookmarks'));
-  L.push('  '+os(a,'dashboard-no-items-face','-- no items --'));
+  L.push('    Cesar Aira, The Little Buddhist Monk & the Proof');
+  L.push('    Edward Abbey, The Fool’s Progress: An Honest Novel');
+  L.push('    Agatha Christie, The A.B.C. Murders');
   L.push('');
-  L.push(os(a,'dashboard-navigator','[ Projects ]  [ Recent ]  [ Agenda ]'));
-  L.push(os(a,'dashboard-footer-icon-face','*')+' '+os(a,'dashboard-footer-face','Happy hacking, Craig!'));
+  L.push(os(a,'dashboard-heading','Recent Files:'));
+  L.push('    theme-theme.el');
+  L.push('    todo.org');
+  L.push('    theme-studio-palette-generator-spec.org');
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}
 function renderMu4ePreview(){const a='mu4e',L=[];
   L.push(os(a,'mu4e-title-face','mu4e')+'  '+os(a,'mu4e-context-face','[Personal]')+'  '+os(a,'mu4e-ok-face','online')+'  '+os(a,'mu4e-warning-face','2 retry')+'  '+os(a,'mu4e-modeline-face','12/340'));
@@ -827,25 +851,47 @@ let WORST_TARGET=4.5;
 // The live v1 foreground set for a covered overlay face: the syntax-token colors
 // (every assignable category except the ground) plus the default foreground.
 function fgSetForFace(face){
-  const syntaxAssignments=CATS.filter(c=>c[0]!=='bg'&&c[0]!=='p').map(c=>({role:c[0],hex:effFg(syntaxFace(c[0]).fg)}));
+  const syntaxAssignments=CATS.filter(c=>c[0]!=='bg'&&c[0]!=='p').map(c=>({role:c[0],name:c[1],hex:effFg(syntaxFace(c[0]).fg)}));
   return fgSetFor(face,{covered:COVERED_FACES,syntaxAssignments,defaultFg:MAP['p']});
 }
-// The worst-case contrast cell for a covered face: the floor over its foreground
-// set against its effective background, naming the limiting foreground. Returns
-// null for an out-of-scope face so the caller keeps the single-pair readout.
-function worstCellHtml(face){
+function coveredContrastReport(face){
+  if(uf(face).fg)return null;
   const r=fgSetForFace(face);
   if(r.reason==='out-of-scope')return null;
-  if(r.reason==='empty'||!r.set.length)return '<span title="this overlay has no syntax foreground set yet">no fg set</span>';
-  const bg=effBg(uf(face).bg),fl=floor(bg,r.set),verdict=fl.ratio>=WORST_TARGET?'PASS':'FAIL';
-  const s='worst: '+fl.limitingLabel+' '+fl.limitingHex+' — '+fl.ratio.toFixed(1)+' '+verdict;
-  return `<span style="color:${ratingColor(fl.ratio)}" title="${esc(s)}">${esc(s)}</span>`;
+  if(r.reason==='empty'||!r.set.length)return {empty:true};
+  const bg=effBg(uf(face).bg);
+  const rows=r.set.map(f=>{
+    const ratio=contrast(f.hex,bg);
+    return {label:f.label,name:f.name||f.label,hex:f.hex,ratio,verdict:verdictFor(ratio,WORST_TARGET)};
+  }).sort((a,b)=>a.ratio-b.ratio);
+  return {bg,rows,worst:rows[0],failures:rows.filter(x=>x.ratio<WORST_TARGET)};
+}
+function failureTitle(report){
+  if(!report||!report.failures||!report.failures.length)return '';
+  const lines=['failing covered-text contrasts against '+report.bg+':'];
+  report.failures.forEach(f=>lines.push(`${f.ratio.toFixed(1)} FAIL  ${f.label} (${f.name}) ${f.hex}`));
+  return lines.join('\n');
+}
+// The worst-case contrast cell for a covered face: the floor over its foreground
+// set against its effective background. Returns null for an out-of-scope face so
+// the caller keeps the single-pair readout.
+function worstCellHtml(face){
+  const report=coveredContrastReport(face);
+  if(report===null)return null;
+  if(report.empty)return '<span title="this overlay has no syntax foreground set yet">no fg set</span>';
+  return `<span style="color:${ratingColor(report.worst.ratio)}" title="${esc(failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1))}">${report.worst.ratio.toFixed(1)} ${report.worst.verdict}</span>`;
 }
 // Repaint every covered overlay face (their floors depend on the syntax palette,
 // so a syntax-color edit has to refresh them even though it doesn't rebuild the table).
 function repaintCovered(){COVERED_FACES.forEach(f=>{if(UIMAP[f]&&document.getElementById('uicr-'+f))paintUI(f);});}
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=effFg(o.fg);pv.style.background=effBg(o.bg);pv.style.fontWeight=o.bold?'bold':'normal';pv.style.fontStyle=o.italic?'italic':'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';pv.style.boxShadow=boxCss(o.box,effBg(o.bg));
-  const cr=document.getElementById('uicr-'+face);if(cr){const w=worstCellHtml(face);if(w!==null){cr.innerHTML=w;}else{const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}}
+  const report=coveredContrastReport(face);
+  pv.querySelectorAll('.crerr').forEach(e=>e.remove());
+  pv.title='';
+  if(report&&report.failures&&report.failures.length){
+    const badge=document.createElement('span');badge.className='crerr';badge.textContent=report.worst.ratio.toFixed(1)+' FAIL';badge.title=failureTitle(report);pv.title=badge.title;pv.appendChild(badge);
+  }
+  const cr=document.getElementById('uicr-'+face);if(cr){cr.title='';if(report!==null){if(report.empty){cr.title='this overlay has no syntax foreground set yet';cr.innerHTML='<span title="this overlay has no syntax foreground set yet">no fg set</span>';}else{const title=failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1);cr.title=title;cr.innerHTML=`<span style="color:${ratingColor(report.worst.ratio)}" title="${esc(title)}">${report.worst.ratio.toFixed(1)} ${report.worst.verdict}</span>`;}}else{const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}}
 function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
@@ -877,6 +923,7 @@ function srtTable(tbId,col){tableSort[tbId]={col,asc:!(tableSort[tbId]&&tableSor
 function applyTableSort(tbId){const s=tableSort[tbId];if(!s)return;const tb=document.getElementById(tbId);if(!tb)return;const dir=s.asc?1:-1;const r=[...tb.rows];r.sort((a,b)=>{const x=cellVal(a.cells[s.col]),y=cellVal(b.cells[s.col]);return ((typeof x==='number'&&typeof y==='number')?x-y:(x<y?-1:x>y?1:0))*dir;});r.forEach(x=>tb.appendChild(x));}
 function initApp(){
   buildLangSel();buildAppSel();renderPalette();rebuildColorTables();renderCode();applyGround();
+  initGeneratorControls();
   updateTitle();initPicker();buildPkgPreview();syncMockHeight();syncPkgHeight();
 }
 initApp();

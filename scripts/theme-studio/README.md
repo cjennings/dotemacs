@@ -30,6 +30,34 @@ During color work, disable Hyprland inactive-window dimming so colors read true:
 hyprctl keyword decoration:dim_inactive false
 ```
 
+## Build A Theme
+
+Convert a Theme Studio JSON export into a loadable Emacs theme:
+
+```bash
+make theme-studio-theme JSON=/path/to/theme.json
+```
+
+That writes `themes/<name>-theme.el`, where `<name>` comes from the JSON
+`name` field. To write somewhere else:
+
+```bash
+make theme-studio-theme JSON=/path/to/theme.json OUT=/tmp/themes
+```
+
+To apply a generated theme in the current Emacs session after disabling every
+enabled custom theme:
+
+```bash
+make theme-studio-theme-load THEME=theme
+```
+
+To rebuild a JSON export and cleanly reload the theme named by that JSON:
+
+```bash
+make theme-studio-theme-reload JSON=/path/to/theme.json
+```
+
 ## Tests
 
 ```bash

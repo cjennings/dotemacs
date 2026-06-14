@@ -1,0 +1,262 @@
+#+TITLE: Theme Studio Semantic Theme Architecture -- Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-14
+#+TODO: TODO | DONE SUPERSEDED CANCELLED
+
+* Metadata
+| Status   | draft |
+|----------+-------|
+| Owner    | Craig |
+|----------+-------|
+| Reviewer | Craig |
+|----------+-------|
+| Related  | [[file:../todo.org::*theme-studio semantic theme architecture][theme-studio semantic theme architecture task]] |
+|----------+-------|
+
+* Summary
+Theme Studio currently exports JSON into a flat generated Emacs theme: every face receives resolved hex colors and attributes directly. That is faithful to the current UI state, but it loses the middle layer that makes themes like Modus easy to reason about: named palette entries, semantic color roles, reusable face templates, and a thin generated wrapper.
+
+This spec proposes a future Theme Studio output architecture that can preserve those layers. The v1 goal is not to replace the current flat exporter immediately; it is to define the model, converter shape, migration path, and test surface needed to support a more maintainable theme system.
+
+* Problem / Context
+Theme Studio has grown from a color picker into a full theme workbench: palette columns, syntax assignments, UI faces, package faces, generated candidates, contrast checks, locks, and a JSON-to-Emacs-theme converter. The converter currently emits direct =custom-theme-set-faces= specs. That works, but it makes the generated theme hard to maintain outside Theme Studio because the meaning of each color is already flattened away.
+
+The design discussion around Modus showed a different structure. Modus keeps concrete theme files small and pushes the durable logic into a shared engine: palettes define available colors, semantic mappings define what those colors mean, face specs use semantic names, and a theme constructor resolves everything when the theme loads.
+
+Theme Studio does not need to become Modus, but it can borrow the architecture. This would make generated themes easier to inspect, easier to customize by hand, and more able to support rules such as "comments and comment delimiters should normally share a color" without forcing every rule into the UI.
+
+* Goals and Non-Goals
+** Goals
+- Define a layered Theme Studio theme architecture: palette data, semantic role mapping, face templates, and generated theme wrapper.
+- Preserve the current flat exporter as a compatibility path until the layered output is proven.
+- Allow semantic roles to group multiple faces under one design decision.
+- Allow advisory semantic rules that detect inconsistent mappings, such as comment and comment delimiter diverging.
+- Keep the generated output loadable by normal Emacs =load-theme=.
+- Make the design testable with pure converter tests and real Emacs theme-load tests.
+- Make future Theme Studio features, such as face-seeding and role-aware palette generation, easier to build.
+
+** Non-Goals
+- Do not enforce any specific semantic design rule in v1. The comment/comment-delim rule is an example of what the layer can express, not a required policy.
+- Do not replace Theme Studio's current JSON format in one step.
+- Do not require users to edit generated Elisp by hand.
+- Do not implement a full Modus-compatible theme engine.
+- Do not automatically reassign faces based on semantic rules.
+- Do not remove direct per-face overrides from Theme Studio.
+
+** Scope tiers
+- v1: Specify the layered model, add optional export fields or an intermediate converter model, generate a loadable layered theme file, preserve current flat output, add tests, document the architecture.
+- Out of scope: UI for editing all semantic roles, automatic role inference from arbitrary imported themes, rule enforcement, Modus compatibility.
+- vNext: Role editor UI, advisory rule panel, role-aware palette generator integration, semantic imports, user-defined rule packs, derivative theme wrappers.
+
+* Design
+The architecture has four layers.
+
+Palette data is the color inventory. It answers "what named colors exist?" A Theme Studio palette entry already has most of this information: hex, display name, and stable column id. The layered exporter should preserve that as named Elisp data rather than immediately substituting every hex into every face.
+
+Semantic role mapping assigns design meaning to palette entries. It answers "what does this color do?" Examples include =syntax-keyword=, =syntax-comment=, =ui-region-bg=, =org-todo-fg=, and =mode-line-bg=. A role may point to a palette color, a literal hex, or another role. The important shift is that faces stop depending directly on "blue" or "#67809c"; they depend on "keyword" or "org-todo foreground".
+
+Face templates map Emacs faces to semantic roles and structural attributes. They answer "which faces use which roles?" A template can say =font-lock-comment-face= uses =syntax-comment=, =font-lock-comment-delimiter-face= uses =syntax-comment-delimiter=, and =org-todo= uses =org-todo-fg= plus =org-todo-bg= with bold and box attributes. Templates are where syntax, UI, and package face coverage live.
+
+The generated theme wrapper ties the layers together. It declares the theme, binds palette and semantic role values, expands the face templates, calls =custom-theme-set-faces= and =custom-theme-set-variables= where needed, then provides the theme. For users, the result is still a normal loadable Emacs theme.
+
+For the user, this does not need to introduce a new workflow immediately. Theme Studio can still export JSON and build a theme. The difference is that the generated Elisp becomes more intelligible:
+
+#+begin_src emacs-lisp
+(defconst theme-palette
+  '((bg "#000000")
+    (fg "#e0e0e0")
+    (blue "#67809c")))
+
+(defconst theme-semantics
+  '((syntax-keyword blue)
+    (syntax-comment fg-muted)
+    (ui-region-bg blue)))
+
+(custom-theme-set-faces
+ 'theme
+ `(font-lock-keyword-face ((,c :foreground ,syntax-keyword)))
+ `(region ((,c :background ,ui-region-bg))))
+#+end_src
+
+For implementers, the converter gains an intermediate representation:
+
+#+begin_src text
+theme.json
+  -> palette model
+  -> semantic role model
+  -> face template model
+  -> generated theme file
+#+end_src
+
+The current JSON can be projected into this model conservatively. If a face has no semantic role, the converter can synthesize a private role for that face, or fall back to a direct literal. That lets the layered exporter coexist with the current state format while the UI catches up.
+
+** Palette data
+Palette data should be owned by the palette panel. It persists user-authored color names, hexes, and column ids. Generated span members remain palette entries, but the exporter may choose whether to expose every span member as a public named color or treat some as generated/private names.
+
+The palette layer should avoid face knowledge. It should not know that =blue= is a keyword or that =gold= is an Org title. That meaning belongs to the semantic layer.
+
+** Semantic role mapping
+Semantic roles are owned by the theme design layer. Some roles can be generated from existing Theme Studio assignments:
+
+- syntax rows become roles such as =syntax-keyword= and =syntax-string=.
+- UI rows become roles such as =ui-region-fg=, =ui-region-bg=, and =ui-mode-line-bg=.
+- package rows become roles such as =org-todo-fg= or =magit-branch-fg= when those roles are worth naming.
+
+The role map should support three value kinds:
+
+- palette reference: =syntax-keyword -> blue=
+- role reference: =syntax-comment-delimiter -> syntax-comment=
+- literal: =warning-underline -> "#ff0000"=
+
+Role references are what make rules and shared intent useful. If comment and comment delimiter should move together, =syntax-comment-delimiter= can point at =syntax-comment=. If the user intentionally separates them, the mapping can become explicit and the advisory can report that it was intentionally diverged.
+
+** Semantic rules
+The semantic layer can support rules because it knows relationships that the flat face table does not. A rule can be advisory, enforced, or ignored, but v1 should only define the mechanism and ship rules as documentation/test fixtures unless a specific rule is agreed later.
+
+Example advisory rules:
+
+- =syntax-comment= and =syntax-comment-delimiter= normally use the same foreground.
+- =org-headline-done= should normally be no brighter than active headline faces.
+- =region= with explicit foreground/background should be checked as its own pair, while bg-only region should be checked against covered text.
+- warning/error/success roles should stay distinguishable by DeltaE and not only by text label.
+
+The comment/comment-delim rule is a note, not a v1 requirement. The spec deliberately does not mandate it because Theme Studio should preserve deliberate design choices even when they differ from the guide.
+
+** Face templates
+Face templates should be data, not ad hoc emitted strings. They need to represent:
+
+- target face symbol
+- foreground role or literal
+- background role or literal
+- inherit face or role
+- structural attributes: bold, italic, underline, strike, height, box
+- optional conditions such as display class, if the project later supports them
+
+The first implementation can keep one template table inside =build-theme.el=. Later, this can move into generated files or a shared Theme Studio runtime.
+
+Templates should support both semantic and direct output. This keeps migration safe:
+
+#+begin_src emacs-lisp
+(font-lock-keyword-face :foreground syntax-keyword)
+(some-face :foreground "#aabbcc") ; direct fallback
+#+end_src
+
+** Generated theme wrapper
+The wrapper is the loadable artifact. It should be self-contained unless we intentionally introduce a shared runtime.
+
+Two wrapper styles are viable:
+
+- Single-file layered output: every generated theme contains its palette, semantic map, resolver, templates, and =custom-theme-set-faces= call.
+- Shared runtime plus thin generated wrapper: a common =theme-studio-theme.el= library resolves roles and expands templates, while each generated theme mostly supplies data.
+
+V1 should prefer single-file layered output. It is easier to test, easier to share, and avoids requiring a generated theme user to install Theme Studio runtime files. A shared runtime can be introduced later if duplication becomes painful.
+
+* Alternatives Considered
+** Keep only the flat exporter
+- Good, because it is simple, already works, and exactly reflects the current UI state.
+- Bad, because it loses role intent and makes hand inspection or downstream customization harder.
+- Neutral, because it should remain the compatibility and debugging baseline.
+
+** Generate a full Modus-style engine
+- Good, because it is a proven architecture for serious Emacs themes.
+- Bad, because Modus solves a broader package-quality problem than Theme Studio needs, and copying its engine would add complexity before we know the required seams.
+- Neutral, because Modus remains the reference for structuring palette, semantics, and wrappers.
+
+** Add semantic roles only in JSON, still emit flat Elisp
+- Good, because it lets Theme Studio reason about roles without changing the generated theme format.
+- Bad, because users inspecting the generated theme still see only flattened direct specs.
+- Neutral, because this may be a useful intermediate phase.
+
+** Make semantic rules mandatory
+- Good, because it can preserve consistency and prevent accidental drift.
+- Bad, because theme design often has deliberate exceptions, and hard rules can fight the user's eye.
+- Neutral, because some rules may later become opt-in enforcement once proven.
+
+* Decisions [3/3]
+** DONE Output layered themes without replacing flat output immediately
+- Context: The current flat exporter is useful and working. The layered architecture is broader and should not block current Theme Studio iteration.
+- Decision: We will add layered output as an additional converter path or mode before considering it the default.
+- Consequences: Easier rollback and comparison; harder because tests must cover two output paths during the transition.
+
+** DONE Treat semantic rules as advisory in v1
+- Context: The semantic layer can express design relationships, but not every relationship should be forced.
+- Decision: We will model rules as advisory validation data in v1 and avoid enforcement unless a separate product decision promotes a rule.
+- Consequences: Easier to preserve user intent; harder because inconsistent themes can still be exported.
+
+** DONE Prefer self-contained generated layered themes for v1
+- Context: A shared runtime would reduce generated file size, but it creates another dependency for loading a generated theme.
+- Decision: We will prefer a self-contained layered theme file in v1.
+- Consequences: Easier sharing and loading; harder because each generated theme duplicates resolver/template code.
+
+* Implementation phases
+** Phase 1 -- Intermediate model
+Add a pure intermediate representation in the converter: palette entries, semantic roles, face templates, and resolved face specs. Keep existing flat output unchanged.
+
+** Phase 2 -- Semantic projection
+Project current Theme Studio JSON into semantic roles. Start with syntax and core UI roles, then package roles only where names are clear and useful. Preserve direct literals as fallback.
+
+** Phase 3 -- Layered renderer
+Generate a self-contained layered =*-theme.el= from the intermediate model. The generated file should still load with normal =load-theme= and should produce the same effective faces as the flat renderer for covered data.
+
+** Phase 4 -- Advisory rule surface
+Add pure rule checks over the semantic map. Output diagnostics in tests or converter warnings first; defer UI display.
+
+** Phase 5 -- Tests and comparison tooling
+Add tests that convert the same JSON through flat and layered paths, load both themes in isolated Emacs sessions, and compare representative effective face attributes.
+
+** Phase 6 -- Documentation and rollout
+Document the architecture, Makefile target, and compatibility story. Keep flat output as the default until manual inspection and tests show the layered output is trustworthy.
+
+* Acceptance criteria
+- [ ] The current flat JSON-to-theme converter still works.
+- [ ] A layered converter can generate a self-contained loadable =*-theme.el=.
+- [ ] The layered generated theme preserves default, syntax, UI, and package face attributes for representative fixtures.
+- [ ] The layered generated file exposes palette data and semantic mappings in readable Elisp.
+- [ ] Semantic role references resolve deterministically, including role-to-role references.
+- [ ] Cycles in semantic role references fail with an actionable converter error.
+- [ ] Advisory rules can report findings without blocking output.
+- [ ] Documentation explains the four layers and how they relate to the current flat exporter.
+
+* Readiness dimensions
+- Data model & ownership: Palette data remains owned by Theme Studio's palette model. Semantic roles are owned by the theme design layer. Face templates are owned by the converter/runtime. Generated theme wrappers are build artifacts.
+- Errors, empty states & failure: Missing roles, invalid palette references, and role cycles must name the role and input file. Unknown faces should fall back to direct specs or fail only when a strict mode is explicitly requested.
+- Security & privacy: N/A because theme files contain colors and face names, not credentials or private content.
+- Observability: Converter output should say whether it wrote flat or layered output and list advisory rule findings. Later UI can display semantic findings.
+- Performance & scale: Expected scale is hundreds to low thousands of faces. Role resolution should be linear with cycle detection; tests should include a large package-face fixture.
+- Reuse & lost opportunities: Reuse =build-theme.el= parsing, face attr construction, box conversion, and Makefile targets. Do not duplicate Emacs face attribute rules.
+- Architecture fit & weak points: The converter is the right first integration point because it can prove the model without changing the browser UI. Weak point: projecting semantics from flat assignments may create artificial roles; mitigate by marking generated/private roles distinctly.
+- Config surface: New converter mode or Make target, likely =theme-studio-theme-layered= or =MODE=layered=. Defaults keep current flat output.
+- Documentation plan: Update Theme Studio README and add a short architecture note. Cross-link this spec from the theme converter task.
+- Dev tooling: Extend existing =make theme-studio-theme= or add a sibling target. Add ERT coverage for converter behavior and a comparison test between flat/layered outputs.
+- Rollout, compatibility & rollback: Keep flat output as default. Layered output is opt-in until proven. Rollback is switching the Make target/mode back to flat.
+- External APIs & deps: No external APIs. Emacs =custom-theme-set-faces= and =load-theme= semantics are the only runtime dependency.
+
+* Risks, Rabbit Holes, and Drawbacks
+- Role projection may invent names that look meaningful but are only direct mappings from one face. Keep generated/private role names visibly distinct.
+- A role editor UI could become a second Theme Studio. Defer UI until the converter model proves useful.
+- Advisory rules can become noisy. Start with a small list, no enforcement, and clear wording.
+- Self-contained output duplicates helper code. Accept that cost until sharing/runtime needs are clearer.
+
+* Testing / Verification / Rollout
+The test surface should start in =tests/test-build-theme.el= or a sibling converter test. Required tests:
+
+- role reference resolution
+- cycle detection
+- layered output loads in Emacs
+- flat/layered equivalence for representative fixture faces
+- advisory rule returns findings but does not block output
+- generated file remains self-contained
+
+Rollout should keep the current flat output path as the default and add a separate layered target. Manual verification should compare a real Theme Studio JSON through both outputs in a current Emacs session.
+
+* References / Appendix
+- Modus Themes source: [[https://github.com/protesilaos/modus-themes][github.com/protesilaos/modus-themes]]
+- Current converter: [[file:../scripts/theme-studio/build-theme.el][scripts/theme-studio/build-theme.el]]
+- Current Theme Studio README: [[file:../scripts/theme-studio/README.md][scripts/theme-studio/README.md]]
+- Package-face model spec: [[file:design/theme-studio-package-faces-spec.org][theme-studio-package-faces-spec.org]]
+
+* Review and iteration history
+** 2026-06-14 Sunday @ 14:37:00 -0500 -- Craig -- author
+- What: Initial draft for a Modus-inspired layered Theme Studio output architecture.
+- Why: Craig asked how palette data, semantic role mappings, face templates, and generated wrappers could work together, including whether the semantic layer can support advisory consistency rules.
+- Artifacts: [[file:theme-studio-semantic-theme-architecture-spec.org][this spec]].

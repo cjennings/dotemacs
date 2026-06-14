@@ -40,6 +40,7 @@
  .boxctl .cstepbtn{width:18px}
  .legctl{margin:0 0 8px;display:flex;gap:8px;align-items:center}
  .cat{color:#b4b1a2} .ex{font-size:17px}
+ .crerr{display:inline-block;margin-left:8px;padding:0 4px;border-radius:3px;background:#2b130e;color:#cb6b4d;border:1px solid #7b3324;font:9pt monospace;vertical-align:middle}
  .sbtn{width:26px;height:24px;border:1px solid #3a3a3a;border-radius:3px;background:#eaeaea;color:#111;cursor:pointer;font-size:15px;margin-right:2px;padding:0}
  .sbtn.on{background:#0d0b0a;color:#cdced1;border-color:#8a9496}
  .pals{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;align-items:flex-start}
@@ -96,6 +97,24 @@
  .svsafe{position:absolute;left:0;width:100%;background:rgba(203,107,77,0.30);border-bottom:2px solid #cb6b4d;pointer-events:none;z-index:2}
  .palctl button,.filebar button,.fbtn{background:#252321;color:#e8bd30;border:1px solid #3a3a3a;border-radius:4px;padding:6px 12px;font:10pt monospace;cursor:pointer}
  #palmsg{font:10pt monospace;opacity:0;transition:opacity .35s;margin-left:6px}
+ .genctl{margin:0 0 14px;padding:8px 10px;border:1px solid #252321;border-radius:7px;background:#11100e}
+ .genrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;color:#b4b1a2;font:10pt monospace}
+ .genrow label{display:flex;gap:5px;align-items:center}
+ .genrow label.disabled{opacity:.45}
+ .genrow select,.genrow input{background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:4px 6px;font:10pt monospace}
+ .genrow input:disabled{opacity:.55;cursor:default}
+ .genrow input{width:48px}
+ .genrow button{background:#252321;color:#e8bd30;border:1px solid #3a3a3a;border-radius:4px;padding:5px 10px;font:10pt monospace;cursor:pointer}
+ #genmsg{color:#8a9496}
+ .genpreview{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-top:8px}
+ .gencol{display:flex;flex-direction:column;gap:6px;padding:5px;border:1px dashed #3a3a3a;border-radius:7px}
+ .genhead{width:128px;display:flex;gap:4px;align-items:center;justify-content:center;color:#b4b1a2;font:9pt monospace}
+ .genhead span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:center;white-space:nowrap}
+ .genappend{width:22px;height:22px;padding:0;border:1px solid #3a3a3a;border-radius:4px;background:#252321;color:#e8bd30;font:bold 12px monospace;cursor:pointer}
+ .genchip{width:128px;height:58px;border-radius:6px;border:1px solid #555;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font:10pt monospace;line-height:1.15;text-align:center;box-sizing:border-box;padding:3px 5px;overflow:hidden}
+ .genchip.sel{outline:2px solid #e8bd30;outline-offset:2px}
+ .genchip .gn{font-weight:bold;white-space:normal;overflow-wrap:normal;max-width:116px}
+ .genchip .gh{opacity:.8;white-space:nowrap}
  #export{width:100%;height:180px;margin-top:10px;background:#0d0b0a;color:#a4ac64;border:1px solid #252321;border-radius:6px;font:10pt monospace;padding:10px}
  .filebar{margin:6px 0 0;display:flex;gap:8px;align-items:center}
  #pagetitle{font-size:30px;color:#cdced1;font-weight:normal;border:none;margin:0;padding:0}
@@ -110,7 +129,10 @@
  #pkgbody td{padding:3px 8px}
  #codepre{width:100%;box-sizing:border-box}
  .mock{border:1px solid #252321;border-radius:8px;overflow:hidden;font:12pt/1.7 monospace;display:flex;flex-direction:column}
- .mock .mbuf{flex:1} .mock .ln{display:flex;align-items:stretch;white-space:pre}
+ .mock .mbuf{flex:1;display:flex;align-items:stretch;overflow:auto}
+ .mock .mbuftext{flex:0 1 auto;width:max-content;max-width:calc(100% - 4ch - 3px);padding-right:4ch;box-sizing:border-box;overflow:hidden}
+ .mock .vborder{width:3px;flex:0 0 auto}
+ .mock .ln{display:flex;align-items:stretch;white-space:pre}
  .mock .fr{width:14px;flex:0 0 auto;border-right:1px solid #ffffff14} .mock .num{width:36px;flex:0 0 auto;text-align:right;padding-right:10px}
  .mock .cd{flex:1;padding-left:8px} .mock .bar,.mock .echo{padding:4px 10px;white-space:pre}
  #codepre [data-k],.mock [data-k],.mock [data-face]{cursor:pointer}

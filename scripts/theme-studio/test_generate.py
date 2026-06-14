@@ -78,9 +78,11 @@ class ColormathInlining(unittest.TestCase):
 class AssembledPage(unittest.TestCase):
     PLACEHOLDERS = [
         "STYLES_CSS", "APP_JS", "APP_CORE_J", "APP_UTIL_J",
+        "PALETTE_GENERATOR_CORE_J", "PALETTE_GENERATOR_UI_J",
         "PALETTE_ACTIONS_J", "BROWSER_GATES_J",
         "COLORMATH_J", "SAMPLES_J", "PALETTE_J", "CATS_J",
         "UIFACES_J", "UIMAP_J", "APPS_J", "SYNTAX_J", "MAP_J",
+        "COLOR_NAMES_J",
     ]
 
     def test_every_placeholder_is_substituted(self):
@@ -100,6 +102,12 @@ class AssembledPage(unittest.TestCase):
     def test_page_carries_the_app_util_body_verbatim(self):
         # app-util.js inlines verbatim after its import line is stripped.
         self.assertIn(generate.APP_UTIL_BODY, generate.HTML)
+
+    def test_page_carries_palette_generator_core_verbatim(self):
+        self.assertIn(generate.PALETTE_GENERATOR_CORE_BODY, generate.HTML)
+
+    def test_page_carries_palette_generator_ui_verbatim(self):
+        self.assertIn(generate.PALETTE_GENERATOR_UI_BODY, generate.HTML)
 
     def test_page_carries_palette_actions_verbatim(self):
         self.assertIn(generate.PALETTE_ACTIONS_BODY, generate.HTML)

@@ -33,6 +33,51 @@ function mergePackagesInto(map,pkgs){if(!pkgs)return;for(const app in pkgs){if(!
 // against an inherit cycle (returns null rather than recursing forever).
 function effResolve(map,app,face,attr,seen){seen=seen||{};const f=map[app]&&map[app][face];if(!f||seen[face])return null;seen[face]=1;if(f[attr])return f[attr];if(f.inherit&&map[app][f.inherit])return effResolve(map,app,f.inherit,attr,seen);return null;}
 
+// Emacs built-in inherit chains for the syntax categories theme studio exposes.
+// An unset category foreground resolves the way the generated theme renders in
+// Emacs: build-theme.el writes no override for an unset face, so Emacs falls back
+// to the face's own :inherit -- comment-delimiter->comment, doc->string,
+// property-name->variable-name, function-call->function-name -- not to the
+// default foreground.
+const SYNTAX_INHERIT={cmd:'cm',doc:'str',prop:'var',fnc:'fnd'};
+
+// Effective foreground for a syntax category, following the Emacs inherit chain.
+// SYNTAX maps category -> face object with an optional `fg`; DEFAULTFG is the
+// theme's default foreground (the chain's floor). `dec` (decorator) is pinned to
+// `ty`: Emacs has no decorator face and renders decorators with
+// font-lock-type-face, so a dec color set in the studio would never reach Emacs.
+function resolveSyntaxFg(cat,syntax,defaultFg){
+  let k=(cat==='dec')?'ty':cat;
+  const seen={};
+  while(k&&!seen[k]){
+    seen[k]=1;
+    const fg=syntax[k]&&syntax[k].fg;
+    if(fg)return fg;
+    k=SYNTAX_INHERIT[k];
+  }
+  return defaultFg;
+}
+
+// Emacs built-in inherit chains for the ui faces whose parent is also a studio ui
+// face, so an unset attribute previews the way Emacs renders it: mode-line-inactive
+// inherits mode-line, line-number-current-line inherits line-number.
+const UI_INHERIT={'mode-line-inactive':'mode-line','line-number-current-line':'line-number'};
+
+// First set value of ATTR ('fg'/'bg') for ui FACE, walking UI_INHERIT; null when
+// nothing up the chain is set. The caller applies its own floor (default fg,
+// ground, or transparent), since that floor differs per attribute and face.
+function resolveUiAttr(face,attr,uimap){
+  let f=face;
+  const seen={};
+  while(f&&!seen[f]){
+    seen[f]=1;
+    const v=uimap[f]&&uimap[f][attr];
+    if(v)return v;
+    f=UI_INHERIT[f];
+  }
+  return null;
+}
+
 // Standard swatch-dropdown option list: a default entry, then the palette. When
 // cur is set but no longer in the palette, surface it as a "(gone)" entry first.
 function optList(cur,palette){const have=cur===''||palette.some(p=>p[0]===cur);return [['','— default —'],...(have?palette:[[cur,'(gone)'],...palette])];}
@@ -93,9 +138,9 @@ function fgSetFor(face,state){
   const syn=((state&&state.syntaxAssignments)||[]).filter(a=>a&&a.hex);
   if(!syn.length)return {set:[],reason:'empty'};
   const byHex=new Map();
-  const add=(hex,label,isRole)=>{const k=hex.toLowerCase(),cur=byHex.get(k);if(!cur)byHex.set(k,{hex:k,label});else if(isRole&&cur.label==='default')cur.label=label;};
-  if(state&&state.defaultFg)add(state.defaultFg,'default',false);
-  for(const a of syn)add(a.hex,a.role||a.hex,true);
+  const add=(hex,label,name,isRole)=>{const k=hex.toLowerCase(),cur=byHex.get(k);if(!cur)byHex.set(k,{hex:k,label,name:name||label});else if(isRole&&cur.label==='default'){cur.label=label;cur.name=name||label;}};
+  if(state&&state.defaultFg)add(state.defaultFg,'default','default',false);
+  for(const a of syn)add(a.hex,a.role||a.hex,a.name||a.role||a.hex,true);
   return {set:[...byHex.values()]};
 }
 
@@ -322,4 +367,4 @@ function spanNeighborHex(cur,palette,ground,dir){
   return null;
 }
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, spanNeighborHex, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, optList, paletteOptionList, spanNeighborHex, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

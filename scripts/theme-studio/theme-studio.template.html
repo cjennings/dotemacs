@@ -42,6 +42,19 @@ STYLES_CSS</style>
     <div id="pkchips" class="pkchips"></div>
    </div>
   </div>
+  <div class="genctl" id="genctl">
+   <div class="genrow">
+    <label>intent <select id="genintent"></select></label>
+    <label>vibe <select id="genvibe"></select></label>
+    <label>source <select id="gensource"></select></label>
+    <label title="how many base columns to propose">accent count <input id="genaccents" type="number" min="1" max="12" step="1" value="5"></label>
+    <label>contrast <select id="gencontrast"></select></label>
+    <button onclick="previewGenerator()">preview</button>
+    <button onclick="clearGeneratorPreview()">clear preview</button>
+    <span id="genmsg"></span>
+   </div>
+   <div id="genpreview" class="genpreview"></div>
+  </div>
   <div class="pals" id="pals"></div>
   <div class="palwarn" id="palwarn"></div>
  </section>
