@@ -327,5 +327,6 @@ html=f'''<!doctype html><meta charset=utf-8><title>dupre revision — canonical<
 <table class="leg" id="legtable"><thead><tr><th></th><th onclick="srt(1)">color &#9651;</th><th onclick="srt(2)">hex &#9651;</th><th onclick="srt(3)">category &#9651;</th><th>example</th></tr></thead><tbody>{legend}</tbody></table>
 <h1>palette</h1>
 {palette}\n<script>let D={{}};function srt(c){{const t=document.querySelector("#legtable tbody");const r=[...t.rows];D[c]=!D[c];r.sort((a,b)=>{{const x=a.cells[c].innerText.trim().toLowerCase(),y=b.cells[c].innerText.trim().toLowerCase();return (x<y?-1:x>y?1:0)*(D[c]?1:-1)}});r.forEach(x=>t.appendChild(x))}}</script>'''
-open("/tmp/dupre-canon.html","w").write(html)
+with open("/tmp/dupre-canon.html","w") as out:
+    out.write(html)
 print("wrote /tmp/dupre-canon.html")

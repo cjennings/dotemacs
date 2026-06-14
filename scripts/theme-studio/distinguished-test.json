@@ -1,5 +1,5 @@
 {
- "name": "distinguished-revised",
+ "name": "distinguished",
  "palette": [
   [
    "#f0fef0",
@@ -14,52 +14,17 @@
   [
    "#151311",
    "bg+0",
-   "bg"
+   "bg+0"
   ],
   [
    "#252321",
    "bg+1",
-   "bg"
+   "bg+1"
   ],
   [
    "#474544",
    "bg+2",
-   "bg"
-  ],
-  [
-   "#494e4f",
-   "steel-3",
-   "steel"
-  ],
-  [
-   "#5d6466",
-   "steel-2",
-   "steel"
-  ],
-  [
-   "#737c7e",
-   "steel-1",
-   "steel"
-  ],
-  [
-   "#8a9496",
-   "steel",
-   "steel"
-  ],
-  [
-   "#a3adae",
-   "steel+1",
-   "steel"
-  ],
-  [
-   "#bdc5c7",
-   "steel+2",
-   "steel"
-  ],
-  [
-   "#d9dfe0",
-   "steel+3",
-   "steel"
+   "bg+2"
   ],
   [
    "#58574e",
@@ -87,24 +52,19 @@
    "gray"
   ],
   [
-   "#1d2833",
-   "blue-4",
-   "blue"
+   "#8a9496",
+   "steel",
+   "steel"
   ],
   [
-   "#2c3c4e",
-   "blue-3",
-   "blue"
+   "#acb0b3",
+   "steel+1",
+   "steel"
   ],
   [
-   "#3e5269",
-   "blue-2",
-   "blue"
-  ],
-  [
-   "#516983",
-   "blue-1",
-   "blue"
+   "#c0c7ca",
+   "steel+2",
+   "steel"
   ],
   [
    "#67809c",
@@ -112,23 +72,13 @@
    "blue"
   ],
   [
-   "#7f98b4",
+   "#b2c3cc",
    "blue+1",
    "blue"
   ],
   [
-   "#9ab1cb",
+   "#d9e2ff",
    "blue+2",
-   "blue"
-  ],
-  [
-   "#b6cae0",
-   "blue+3",
-   "blue"
-  ],
-  [
-   "#d5e3f3",
-   "blue+4",
    "blue"
   ],
   [
@@ -207,38 +157,8 @@
    "yellow"
   ],
   [
-   "#7d2618",
-   "intense-red-3",
-   "intense-red"
-  ],
-  [
-   "#ae1900",
-   "intense-red-2",
-   "intense-red"
-  ],
-  [
-   "#d62100",
-   "intense-red-1",
-   "intense-red"
-  ],
-  [
    "#ff2a00",
    "intense-red",
-   "intense-red"
-  ],
-  [
-   "#ff745c",
-   "intense-red+1",
-   "intense-red"
-  ],
-  [
-   "#ffa290",
-   "intense-red+2",
-   "intense-red"
-  ],
-  [
-   "#ffc9be",
-   "intense-red+3",
    "intense-red"
   ]
  ],
@@ -271,7 +191,7 @@
    "box": null
   },
   "bi": {
-   "fg": "#d7af5f",
+   "fg": "#ffd75f",
    "bg": null,
    "bold": true,
    "italic": false,
@@ -280,7 +200,7 @@
    "box": null
   },
   "pp": {
-   "fg": "#a3adae",
+   "fg": "#acb0b3",
    "bg": null,
    "bold": true,
    "italic": true,
@@ -316,7 +236,7 @@
    "box": null
   },
   "ty": {
-   "fg": "#a4ac64",
+   "fg": "#ccc768",
    "bg": null,
    "bold": true,
    "italic": false,
@@ -334,7 +254,7 @@
    "box": null
   },
   "con": {
-   "fg": "#d7af5f",
+   "fg": "#ffd75f",
    "bg": null,
    "bold": true,
    "italic": false,
@@ -343,7 +263,7 @@
    "box": null
   },
   "num": {
-   "fg": "#ffd700",
+   "fg": null,
    "bg": null,
    "bold": false,
    "italic": false,
@@ -397,16 +317,16 @@
    "box": null
   },
   "cmd": {
-   "fg": "#969385",
+   "fg": "#474544",
    "bg": null,
    "bold": false,
-   "italic": true,
+   "italic": false,
    "underline": false,
    "strike": false,
    "box": null
   },
   "var": {
-   "fg": "#7f98b4",
+   "fg": "#b2c3cc",
    "bg": null,
    "bold": false,
    "italic": true,
@@ -448,30 +368,30 @@
   },
   "highlight": {
    "fg": null,
-   "bg": "#2f343a"
+   "bg": "#28005c"
   },
   "mode-line": {
-   "fg": "#000000",
-   "bg": "#67809c"
+   "fg": "#d0cbc0",
+   "bg": "#474544"
   },
   "mode-line-inactive": {
-   "fg": "#67809c",
-   "bg": "#000000"
+   "fg": "#969385",
+   "bg": "#252321"
   },
   "fringe": {
    "fg": "#969385",
    "bg": "#151311"
   },
   "line-number": {
-   "fg": "#969385",
+   "fg": "#58574e",
    "bg": null
   },
   "line-number-current-line": {
-   "fg": null,
+   "fg": "#d7af5f",
    "bg": null
   },
   "minibuffer-prompt": {
-   "fg": "#ffd75f",
+   "fg": "#a4ac64",
    "bg": null
   },
   "isearch": {
@@ -495,57 +415,43 @@
    "bg": "#a7502d"
   },
   "link": {
-   "fg": "#7f98b4",
-   "bg": null,
-   "underline": true
+   "fg": "#b2c3cc",
+   "bg": null
   },
   "error": {
-   "fg": null,
-   "bg": null
+   "fg": "#ce4343",
+   "bg": null,
+   "bold": true
   },
   "warning": {
-   "fg": null,
-   "bg": null
+   "fg": "#f0c97e",
+   "bg": null,
+   "bold": true
   },
   "success": {
-   "fg": null,
-   "bg": null
+   "fg": "#a4ac64",
+   "bg": null,
+   "bold": true
   },
   "vertical-border": {
    "fg": "#474544",
    "bg": null
   }
  },
- "locks": [
-  "kw",
-  "bg",
-  "p",
-  "bi",
-  "pp",
-  "fnd",
-  "ty",
-  "con",
-  "str",
-  "var",
-  "cm",
-  "doc",
-  "cmd"
- ],
  "packages": {
   "org-mode": {
    "org-document-title": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.5
+    "source": "default"
    },
    "org-document-info": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -561,19 +467,18 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": "fixed-pitch",
+    "inherit": null,
     "source": "default"
    },
    "org-level-1": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.3
+    "source": "default"
    },
    "org-level-2": {
     "fg": null,
@@ -583,8 +488,7 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.2
+    "source": "default"
    },
    "org-level-3": {
     "fg": null,
@@ -594,8 +498,7 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.15
+    "source": "default"
    },
    "org-level-4": {
     "fg": null,
@@ -605,8 +508,7 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.1
+    "source": "default"
    },
    "org-level-5": {
     "fg": null,
@@ -639,7 +541,7 @@
     "source": "default"
    },
    "org-level-8": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -671,7 +573,7 @@
    "org-todo": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -681,7 +583,7 @@
    "org-done": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -691,7 +593,7 @@
    "org-priority": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -739,7 +641,7 @@
     "source": "default"
    },
    "org-property-value": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -755,7 +657,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": "fixed-pitch",
+    "inherit": null,
     "source": "default"
    },
    "org-checkbox-statistics-todo": {
@@ -781,7 +683,7 @@
    "org-warning": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -789,7 +691,7 @@
     "source": "default"
    },
    "org-link": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -799,7 +701,7 @@
     "source": "default"
    },
    "org-footnote": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -809,17 +711,17 @@
     "source": "default"
    },
    "org-date": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": "fixed-pitch",
+    "inherit": null,
     "source": "default"
    },
    "org-sexp-date": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -859,7 +761,7 @@
     "source": "default"
    },
    "org-cite": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -869,7 +771,7 @@
     "source": "default"
    },
    "org-cite-key": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -885,7 +787,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": "fixed-pitch",
+    "inherit": null,
     "source": "default"
    },
    "org-block-begin-line": {
@@ -895,7 +797,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": "fixed-pitch",
+    "inherit": null,
     "source": "default"
    },
    "org-block-end-line": {
@@ -905,7 +807,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": "fixed-pitch",
+    "inherit": null,
     "source": "default"
    },
    "org-code": {
@@ -915,17 +817,17 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": "fixed-pitch",
+    "inherit": null,
     "source": "default"
    },
    "org-verbatim": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": "fixed-pitch",
+    "inherit": null,
     "source": "default"
    },
    "org-inline-src-block": {
@@ -935,14 +837,14 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": "fixed-pitch",
+    "inherit": null,
     "source": "default"
    },
    "org-quote": {
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -952,7 +854,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -969,19 +871,19 @@
     "source": "default"
    },
    "org-table": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": "fixed-pitch",
+    "inherit": null,
     "source": "default"
    },
    "org-table-header": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1021,7 +923,7 @@
    "org-column-title": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1031,7 +933,7 @@
    "org-list-dt": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1045,7 +947,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": "fixed-pitch",
+    "inherit": null,
     "source": "default"
    },
    "org-ellipsis": {
@@ -1101,7 +1003,7 @@
    "org-dispatcher-highlight": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1109,18 +1011,17 @@
     "source": "default"
    },
    "org-agenda-structure": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.1
+    "source": "default"
    },
    "org-agenda-structure-secondary": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -1132,7 +1033,7 @@
    "org-agenda-structure-filter": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1140,31 +1041,29 @@
     "source": "default"
    },
    "org-agenda-date": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.05
+    "source": "default"
    },
    "org-agenda-date-today": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.05
+    "source": "default"
    },
    "org-agenda-date-weekend": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1174,7 +1073,7 @@
    "org-agenda-date-weekend-today": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1222,7 +1121,7 @@
     "source": "default"
    },
    "org-agenda-calendar-sexp": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -1232,7 +1131,7 @@
     "source": "default"
    },
    "org-agenda-calendar-daterange": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -1284,7 +1183,7 @@
    "org-agenda-filter-category": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1294,7 +1193,7 @@
    "org-agenda-filter-effort": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1304,7 +1203,7 @@
    "org-agenda-filter-regexp": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1314,7 +1213,7 @@
    "org-agenda-filter-tags": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1334,7 +1233,7 @@
    "org-scheduled-today": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1374,7 +1273,7 @@
    "org-imminent-deadline": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1402,7 +1301,7 @@
     "source": "default"
    },
    "org-mode-line-clock": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -1414,7 +1313,7 @@
    "org-mode-line-clock-overrun": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1426,7 +1325,7 @@
    "magit-section-heading": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1436,7 +1335,7 @@
    "magit-section-secondary-heading": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1536,7 +1435,7 @@
    "magit-diff-file-heading": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1546,7 +1445,7 @@
    "magit-diff-file-heading-highlight": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1564,7 +1463,7 @@
     "source": "default"
    },
    "magit-diff-hunk-heading": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -1754,9 +1653,9 @@
     "source": "default"
    },
    "magit-branch-current": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1764,7 +1663,7 @@
     "source": "default"
    },
    "magit-branch-local": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -1786,7 +1685,7 @@
    "magit-branch-remote-head": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1814,9 +1713,9 @@
     "source": "default"
    },
    "magit-head": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1844,7 +1743,7 @@
     "source": "default"
    },
    "magit-filename": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -1934,7 +1833,7 @@
     "source": "default"
    },
    "magit-log-date": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -1956,7 +1855,7 @@
    "magit-header-line": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1986,7 +1885,7 @@
    "magit-process-ok": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -1996,7 +1895,7 @@
    "magit-process-ng": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2054,7 +1953,7 @@
     "source": "default"
    },
    "magit-blame-heading": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2094,7 +1993,7 @@
     "source": "default"
    },
    "magit-blame-date": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2166,7 +2065,7 @@
    "magit-signature-bad": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2254,7 +2153,7 @@
     "source": "default"
    },
    "magit-reflog-checkout": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2294,7 +2193,7 @@
     "source": "default"
    },
    "magit-reflog-remote": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2304,7 +2203,7 @@
     "source": "default"
    },
    "magit-reflog-other": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2344,7 +2243,7 @@
     "source": "default"
    },
    "magit-sequence-head": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2526,7 +2425,7 @@
   },
   "elfeed": {
    "elfeed-search-date-face": {
-    "fg": "#8a9496",
+    "fg": "#aaa",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2536,7 +2435,7 @@
     "source": "default"
    },
    "elfeed-search-title-face": {
-    "fg": null,
+    "fg": "#000",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2556,7 +2455,7 @@
     "source": "default"
    },
    "elfeed-search-feed-face": {
-    "fg": null,
+    "fg": "#aa0",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2566,7 +2465,7 @@
     "source": "default"
    },
    "elfeed-search-tag-face": {
-    "fg": null,
+    "fg": "#070",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2576,7 +2475,7 @@
     "source": "default"
    },
    "elfeed-search-unread-count-face": {
-    "fg": null,
+    "fg": "#000",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2586,13 +2485,13 @@
     "source": "default"
    },
    "elfeed-search-filter-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "mode-line-buffer-id",
     "source": "default"
    },
    "elfeed-search-last-update-face": {
@@ -2606,7 +2505,17 @@
     "source": "default"
    },
    "elfeed-log-date-face": {
-    "fg": "#8a9496",
+    "fg": null,
+    "bg": null,
+    "bold": false,
+    "italic": false,
+    "underline": false,
+    "strike": false,
+    "inherit": "font-lock-type-face",
+    "source": "default"
+   },
+   "elfeed-log-error-level-face": {
+    "fg": "#ff0000",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2615,18 +2524,8 @@
     "inherit": null,
     "source": "default"
    },
-   "elfeed-log-error-level-face": {
-    "fg": null,
-    "bg": null,
-    "bold": true,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
    "elfeed-log-warn-level-face": {
-    "fg": null,
+    "fg": "#daa520",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2636,7 +2535,7 @@
     "source": "default"
    },
    "elfeed-log-info-level-face": {
-    "fg": null,
+    "fg": "#00bfff",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2646,7 +2545,7 @@
     "source": "default"
    },
    "elfeed-log-debug-level-face": {
-    "fg": null,
+    "fg": "#ee00ee",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2658,9 +2557,9 @@
   },
   "mu4e": {
    "mu4e-title-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2668,9 +2567,9 @@
     "source": "default"
    },
    "mu4e-context-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2690,7 +2589,7 @@
    "mu4e-ok-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2700,7 +2599,7 @@
    "mu4e-warning-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2708,9 +2607,9 @@
     "source": "default"
    },
    "mu4e-header-title-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2718,9 +2617,9 @@
     "source": "default"
    },
    "mu4e-header-key-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2738,7 +2637,7 @@
     "source": "default"
    },
    "mu4e-header-face": {
-    "fg": "#cdced1",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2770,7 +2669,7 @@
    "mu4e-unread-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2808,10 +2707,10 @@
     "source": "default"
    },
    "mu4e-draft-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -2823,22 +2722,22 @@
     "bold": false,
     "italic": false,
     "underline": false,
-    "strike": true,
+    "strike": false,
     "inherit": null,
     "source": "default"
    },
    "mu4e-related-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
     "source": "default"
    },
    "mu4e-contact-face": {
-    "fg": "#cdced1",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -2858,9 +2757,9 @@
     "source": "default"
    },
    "mu4e-url-number-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2868,11 +2767,11 @@
     "source": "default"
    },
    "mu4e-link-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": true,
+    "underline": false,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -2901,7 +2800,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -2910,7 +2809,7 @@
    "mu4e-highlight-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -2926,128 +2825,33 @@
     "strike": false,
     "inherit": null,
     "source": "default"
-   },
-   "mu4e-moved-face": {
-    "fg": "#8a9496",
-    "bg": null,
-    "bold": false,
-    "italic": true,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-attach-number-face": {
-    "fg": "#67809c",
-    "bg": null,
-    "bold": true,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-1-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-2-face": {
-    "fg": "#8a9496",
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-3-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-4-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-5-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-6-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-7-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-compose-header-face": {
-    "fg": "#67809c",
-    "bg": null,
-    "bold": true,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
    }
   },
   "ghostel": {
    "ghostel-default": {
-    "fg": "#cdced1",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    },
    "ghostel-fake-cursor": {
-    "fg": "#000000",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "line",
+     "width": 1,
+     "color": null
+    }
    },
    "ghostel-fake-cursor-box": {
     "fg": null,
@@ -3056,7 +2860,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "cursor",
     "source": "default"
    },
    "ghostel-color-black": {
@@ -3066,7 +2870,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-black",
     "source": "default"
    },
    "ghostel-color-red": {
@@ -3076,7 +2880,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-red",
     "source": "default"
    },
    "ghostel-color-green": {
@@ -3086,7 +2890,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-green",
     "source": "default"
    },
    "ghostel-color-yellow": {
@@ -3096,17 +2900,17 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-yellow",
     "source": "default"
    },
    "ghostel-color-blue": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-blue",
     "source": "default"
    },
    "ghostel-color-magenta": {
@@ -3116,7 +2920,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-magenta",
     "source": "default"
    },
    "ghostel-color-cyan": {
@@ -3126,7 +2930,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-cyan",
     "source": "default"
    },
    "ghostel-color-white": {
@@ -3136,77 +2940,77 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-white",
     "source": "default"
    },
    "ghostel-color-bright-black": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-bright-black",
     "source": "default"
    },
    "ghostel-color-bright-red": {
-    "fg": "#de4949",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-bright-red",
     "source": "default"
    },
    "ghostel-color-bright-green": {
-    "fg": "#84b068",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-bright-green",
     "source": "default"
    },
    "ghostel-color-bright-yellow": {
-    "fg": "#eed376",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-bright-yellow",
     "source": "default"
    },
    "ghostel-color-bright-blue": {
-    "fg": "#7a9abe",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-bright-blue",
     "source": "default"
    },
    "ghostel-color-bright-magenta": {
-    "fg": "#b07fd0",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-bright-magenta",
     "source": "default"
    },
    "ghostel-color-bright-cyan": {
-    "fg": "#7fc0a8",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-bright-cyan",
     "source": "default"
    },
    "ghostel-color-bright-white": {
@@ -3216,7 +3020,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "ansi-color-bright-white",
     "source": "default"
    }
   },
@@ -3224,51 +3028,51 @@
    "dashboard-banner-logo-title": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    },
    "dashboard-text-banner": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "dashboard-heading": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "dashboard-items-face": {
-    "fg": "#cdced1",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "widget-button",
     "source": "default"
    },
    "dashboard-navigator": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "dashboard-no-items-face": {
@@ -3278,7 +3082,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "widget-button",
     "source": "default"
    },
    "dashboard-footer-face": {
@@ -3288,7 +3092,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-doc-face",
     "source": "default"
    },
    "dashboard-footer-icon-face": {
@@ -3298,7 +3102,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "dashboard-footer-face",
     "source": "default"
    }
   },
@@ -3316,7 +3120,7 @@
    "lsp-signature-highlight-function-argument": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3345,7 +3149,7 @@
    },
    "lsp-face-highlight-write": {
     "fg": null,
-    "bg": "#3d2f4a",
+    "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
@@ -3366,7 +3170,7 @@
    "lsp-face-rename": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3376,7 +3180,7 @@
    "lsp-rename-placeholder-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3387,17 +3191,17 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
     "source": "default"
    },
    "lsp-inlay-hint-parameter-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -3407,7 +3211,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -3417,14 +3221,14 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
     "source": "default"
    },
    "lsp-installation-buffer-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3446,53 +3250,53 @@
   },
   "git-gutter": {
    "git-gutter:added": {
-    "fg": null,
+    "fg": "#00ff00",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    },
    "git-gutter:modified": {
-    "fg": null,
+    "fg": "#ff00ff",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    },
    "git-gutter:deleted": {
-    "fg": null,
+    "fg": "#ff0000",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    },
    "git-gutter:unchanged": {
     "fg": null,
-    "bg": null,
+    "bg": "#ffff00",
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    },
    "git-gutter:separator": {
-    "fg": "#8a9496",
+    "fg": "#00ffff",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    }
   },
@@ -3502,7 +3306,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -3512,17 +3316,17 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
    },
    "flycheck-info": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -3534,7 +3338,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "error",
     "source": "default"
    },
    "flycheck-fringe-warning": {
@@ -3544,17 +3348,17 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "warning",
     "source": "default"
    },
    "flycheck-fringe-info": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "success",
     "source": "default"
    },
    "flycheck-delimited-error": {
@@ -3584,7 +3388,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "error",
     "source": "default"
    },
    "flycheck-error-list-warning": {
@@ -3594,21 +3398,21 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "warning",
     "source": "default"
    },
    "flycheck-error-list-info": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "success",
     "source": "default"
    },
    "flycheck-error-list-error-message": {
-    "fg": "#cdced1",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3618,13 +3422,13 @@
     "source": "default"
    },
    "flycheck-error-list-checker-name": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-function-name-face",
     "source": "default"
    },
    "flycheck-error-list-column-number": {
@@ -3648,39 +3452,44 @@
     "source": "default"
    },
    "flycheck-error-list-filename": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "mode-line-buffer-id",
     "source": "default"
    },
    "flycheck-error-list-id": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-type-face",
     "source": "default"
    },
    "flycheck-error-list-id-with-explainer": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
-    "source": "default"
+    "inherit": "flycheck-error-list-id",
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "flycheck-error-list-highlight": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3695,14 +3504,19 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    }
   },
   "dired": {
    "dired-header": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3710,9 +3524,9 @@
     "source": "default"
    },
    "dired-directory": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3730,9 +3544,9 @@
     "source": "default"
    },
    "dired-broken-symlink": {
-    "fg": "#de4949",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3782,7 +3596,7 @@
    "dired-marked": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3792,7 +3606,7 @@
    "dired-flagged": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3812,7 +3626,7 @@
    "dired-warning": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3828,7 +3642,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "dirvish-free-space": {
@@ -3838,7 +3652,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-constant-face",
     "source": "default"
    },
    "dirvish-hl-line": {
@@ -3848,7 +3662,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "highlight",
     "source": "default"
    },
    "dirvish-hl-line-inactive": {
@@ -3858,11 +3672,11 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "region",
     "source": "default"
    },
    "dirvish-file-modes": {
-    "fg": "#8a9496",
+    "fg": "#6b6b6b",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3878,27 +3692,27 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-constant-face",
     "source": "default"
    },
    "dirvish-file-user-id": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-preprocessor-face",
     "source": "default"
    },
    "dirvish-file-group-id": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "dirvish-file-user-id",
     "source": "default"
    },
    "dirvish-file-size": {
@@ -3906,13 +3720,13 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
-    "inherit": null,
+    "inherit": "completions-annotations",
     "source": "default"
    },
    "dirvish-file-time": {
-    "fg": null,
+    "fg": "#979797",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -3928,7 +3742,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "dirvish-file-link-number",
     "source": "default"
    },
    "dirvish-file-device-number": {
@@ -3938,7 +3752,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "dirvish-file-link-number",
     "source": "default"
    },
    "dirvish-subtree-guide": {
@@ -3946,29 +3760,29 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
-    "inherit": null,
+    "inherit": "dired-ignored",
     "source": "default"
    },
    "dirvish-subtree-state": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
-    "inherit": null,
+    "inherit": "dired-ignored",
     "source": "default"
    },
    "dirvish-collapse-dir-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "dired-directory",
     "source": "default"
    },
    "dirvish-collapse-empty-dir-face": {
@@ -3978,7 +3792,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "dirvish-collapse-file-face": {
@@ -3988,41 +3802,46 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    },
    "dirvish-emerge-group-title": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "dired-ignored",
     "source": "default"
    },
    "dirvish-media-info-heading": {
-    "fg": "#67809c",
-    "bg": null,
-    "bold": true,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "dirvish-media-info-property-key": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": [
+     "dired-header",
+     "bold"
+    ],
+    "source": "default"
+   },
+   "dirvish-media-info-property-key": {
+    "fg": null,
+    "bg": null,
+    "bold": false,
+    "italic": false,
+    "underline": false,
+    "strike": false,
+    "inherit": [
+     "italic"
+    ],
     "source": "default"
    },
    "dirvish-narrow-match-face-0": {
-    "fg": null,
+    "fg": "#223fbf",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4032,7 +3851,7 @@
     "source": "default"
    },
    "dirvish-narrow-match-face-1": {
-    "fg": "#67809c",
+    "fg": "#8f0075",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4042,7 +3861,7 @@
     "source": "default"
    },
    "dirvish-narrow-match-face-2": {
-    "fg": null,
+    "fg": "#145a00",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4052,7 +3871,7 @@
     "source": "default"
    },
    "dirvish-narrow-match-face-3": {
-    "fg": null,
+    "fg": "#804000",
     "bg": null,
     "bold": true,
     "italic": false,
@@ -4068,7 +3887,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-negation-char-face",
     "source": "default"
    },
    "dirvish-proc-running": {
@@ -4078,7 +3897,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "warning",
     "source": "default"
    },
    "dirvish-proc-finished": {
@@ -4088,7 +3907,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "success",
     "source": "default"
    },
    "dirvish-proc-failed": {
@@ -4098,17 +3917,17 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "error",
     "source": "default"
    },
    "dirvish-git-commit-message-face": {
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
-    "underline": false,
+    "italic": false,
+    "underline": true,
     "strike": false,
-    "inherit": null,
+    "inherit": "dired-ignored",
     "source": "default"
    },
    "dirvish-vc-added-state": {
@@ -4118,7 +3937,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "vc-locally-added-state",
     "source": "default"
    },
    "dirvish-vc-edited-state": {
@@ -4128,7 +3947,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "vc-edited-state",
     "source": "default"
    },
    "dirvish-vc-removed-state": {
@@ -4138,27 +3957,27 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "vc-removed-state",
     "source": "default"
    },
    "dirvish-vc-conflict-state": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "vc-conflict-state",
     "source": "default"
    },
    "dirvish-vc-locked-state": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "vc-locked-state",
     "source": "default"
    },
    "dirvish-vc-missing-state": {
@@ -4168,12 +3987,12 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "vc-missing-state",
     "source": "default"
    },
    "dirvish-vc-needs-merge-face": {
     "fg": null,
-    "bg": null,
+    "bg": "#efcbcf",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -4188,7 +4007,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "vc-needs-update-state",
     "source": "default"
    },
    "dirvish-vc-unregistered-face": {
@@ -4198,15 +4017,15 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-constant-face",
     "source": "default"
    }
   },
   "calibredb": {
    "calibredb-search-header-library-name-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4244,7 +4063,7 @@
     "source": "default"
    },
    "calibredb-search-header-sort-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4256,7 +4075,7 @@
    "calibredb-search-header-highlight-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4274,9 +4093,9 @@
     "source": "default"
    },
    "calibredb-title-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4294,7 +4113,7 @@
     "source": "default"
    },
    "calibredb-format-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4336,7 +4155,7 @@
    "calibredb-mark-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4354,7 +4173,7 @@
     "source": "default"
    },
    "calibredb-publisher-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4374,7 +4193,7 @@
     "source": "default"
    },
    "calibredb-language-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4387,7 +4206,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -4414,7 +4233,7 @@
     "source": "default"
    },
    "calibredb-file-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4436,7 +4255,7 @@
    "calibredb-highlight-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4444,9 +4263,9 @@
     "source": "default"
    },
    "calibredb-current-page-button-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4466,7 +4285,7 @@
    "calibredb-title-detailed-view-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4474,9 +4293,9 @@
     "source": "default"
    },
    "calibredb-edit-annotation-header-title-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4488,7 +4307,7 @@
    "erc-header-line": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4506,7 +4325,7 @@
     "source": "default"
    },
    "erc-notice-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4516,7 +4335,7 @@
     "source": "default"
    },
    "erc-default-face": {
-    "fg": "#cdced1",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4528,7 +4347,7 @@
    "erc-current-nick-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4538,7 +4357,7 @@
    "erc-my-nick-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4556,7 +4375,7 @@
     "source": "default"
    },
    "erc-nick-default-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4576,7 +4395,7 @@
     "source": "default"
    },
    "erc-button-nick-default-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4609,7 +4428,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -4618,7 +4437,7 @@
    "erc-keyword-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4648,7 +4467,7 @@
    "erc-dangerous-host-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4658,7 +4477,7 @@
    "erc-error-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4676,9 +4495,9 @@
     "source": "default"
    },
    "erc-prompt-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4686,9 +4505,9 @@
     "source": "default"
    },
    "erc-command-indicator-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4696,7 +4515,7 @@
     "source": "default"
    },
    "erc-information": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4706,7 +4525,7 @@
     "source": "default"
    },
    "erc-button": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4718,7 +4537,7 @@
    "erc-bold-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4729,7 +4548,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -4740,13 +4559,13 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": true,
+    "underline": false,
     "strike": false,
     "inherit": null,
     "source": "default"
    },
    "erc-inverse-face": {
-    "fg": "#000000",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4756,7 +4575,7 @@
     "source": "default"
    },
    "erc-spoiler-face": {
-    "fg": "#000000",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4798,8 +4617,8 @@
   },
   "org-drill": {
    "org-drill-hidden-cloze-face": {
-    "fg": "#000000",
-    "bg": "#8a9496",
+    "fg": null,
+    "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
@@ -4810,7 +4629,7 @@
    "org-drill-visible-cloze-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4821,7 +4640,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -4862,7 +4681,7 @@
     "source": "default"
    },
    "signel-my-msg-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4884,7 +4703,7 @@
    "signel-error-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4894,9 +4713,9 @@
   },
   "pearl": {
    "pearl-preamble-summary": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4917,7 +4736,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -4956,9 +4775,9 @@
   },
   "slack": {
    "slack-room-info-title-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4968,7 +4787,7 @@
    "slack-room-info-title-room-name-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4976,9 +4795,9 @@
     "source": "default"
    },
    "slack-room-info-section-title-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4986,7 +4805,7 @@
     "source": "default"
    },
    "slack-room-info-section-label-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -4998,7 +4817,7 @@
    "slack-room-unread-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5006,9 +4825,9 @@
     "source": "default"
    },
    "slack-message-output-header": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5016,7 +4835,7 @@
     "source": "default"
    },
    "slack-message-output-text": {
-    "fg": "#cdced1",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5026,7 +4845,7 @@
     "source": "default"
    },
    "slack-message-output-reaction": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5038,7 +4857,7 @@
    "slack-message-output-reaction-pressed": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5049,7 +4868,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -5058,7 +4877,7 @@
    "slack-new-message-marker-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5066,9 +4885,9 @@
     "source": "default"
    },
    "slack-all-thread-buffer-thread-header-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5076,7 +4895,7 @@
     "source": "default"
    },
    "slack-message-mention-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5088,7 +4907,7 @@
    "slack-message-mention-me-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5098,7 +4917,7 @@
    "slack-message-mention-keyword-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5106,7 +4925,7 @@
     "source": "default"
    },
    "slack-channel-button-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5118,7 +4937,7 @@
    "slack-mrkdwn-bold-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5129,7 +4948,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -5161,7 +4980,7 @@
     "bold": false,
     "italic": false,
     "underline": false,
-    "strike": true,
+    "strike": false,
     "inherit": null,
     "source": "default"
    },
@@ -5169,7 +4988,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -5186,9 +5005,9 @@
     "source": "default"
    },
    "slack-attachment-header": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5216,9 +5035,9 @@
     "source": "default"
    },
    "slack-attachment-field-title": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5226,7 +5045,7 @@
     "source": "default"
    },
    "slack-message-attachment-preview-header-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5256,7 +5075,7 @@
     "source": "default"
    },
    "slack-message-action-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5298,7 +5117,7 @@
    "slack-button-primary-block-element-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5308,7 +5127,7 @@
    "slack-button-danger-block-element-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5316,7 +5135,7 @@
     "source": "default"
    },
    "slack-select-block-element-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5326,7 +5145,7 @@
     "source": "default"
    },
    "slack-overflow-block-element-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5336,7 +5155,7 @@
     "source": "default"
    },
    "slack-date-picker-block-element-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5346,9 +5165,9 @@
     "source": "default"
    },
    "slack-dialog-title-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5356,7 +5175,7 @@
     "source": "default"
    },
    "slack-dialog-element-label-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5369,7 +5188,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -5398,7 +5217,7 @@
    "slack-dialog-submit-button-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5446,9 +5265,9 @@
     "source": "default"
    },
    "slack-user-profile-header-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5456,7 +5275,7 @@
     "source": "default"
    },
    "slack-user-profile-property-name-face": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5476,7 +5295,7 @@
     "source": "default"
    },
    "slack-search-result-message-header-face": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5488,7 +5307,7 @@
    "slack-search-result-message-username-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5508,7 +5327,7 @@
    "slack-modeline-channel-has-unreads-face": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5528,9 +5347,9 @@
   },
   "telega": {
    "telega-root-heading": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5550,7 +5369,7 @@
    "telega-unread-unmuted-modeline": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5558,7 +5377,7 @@
     "source": "default"
    },
    "telega-username": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5620,7 +5439,7 @@
    "telega-unmuted-count": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5630,7 +5449,7 @@
    "telega-mention-count": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5638,7 +5457,7 @@
     "source": "default"
    },
    "telega-has-chatbuf-brackets": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5668,7 +5487,7 @@
     "source": "default"
    },
    "telega-link": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5678,7 +5497,7 @@
     "source": "default"
    },
    "telega-blue": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5698,7 +5517,7 @@
     "source": "default"
    },
    "telega-msg-heading": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5708,9 +5527,9 @@
     "source": "default"
    },
    "telega-msg-user-title": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5720,7 +5539,7 @@
    "telega-msg-self-title": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5731,7 +5550,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -5741,14 +5560,14 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
     "source": "default"
    },
    "telega-msg-inline-reply": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5780,7 +5599,7 @@
    "telega-entity-type-bold": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5791,7 +5610,7 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -5802,7 +5621,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": true,
+    "underline": false,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -5813,7 +5632,7 @@
     "bold": false,
     "italic": false,
     "underline": false,
-    "strike": true,
+    "strike": false,
     "inherit": null,
     "source": "default"
    },
@@ -5841,14 +5660,14 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
     "source": "default"
    },
    "telega-entity-type-mention": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5858,7 +5677,7 @@
     "source": "default"
    },
    "telega-entity-type-hashtag": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5888,7 +5707,7 @@
     "source": "default"
    },
    "telega-entity-type-texturl": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5908,7 +5727,7 @@
     "source": "default"
    },
    "telega-reaction": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5920,7 +5739,7 @@
    "telega-reaction-chosen": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5940,7 +5759,7 @@
    "telega-reaction-paid-chosen": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5948,7 +5767,7 @@
     "source": "default"
    },
    "telega-highlight-text-face": {
-    "fg": "#000000",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5960,7 +5779,7 @@
    "telega-button-highlight": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5968,9 +5787,9 @@
     "source": "default"
    },
    "telega-chat-prompt": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5978,7 +5797,7 @@
     "source": "default"
    },
    "telega-chat-prompt-aux": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -5998,7 +5817,7 @@
     "source": "default"
    },
    "telega-topic-button": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6010,7 +5829,7 @@
    "telega-filter-active": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6018,7 +5837,7 @@
     "source": "default"
    },
    "telega-filter-button-active": {
-    "fg": "#000000",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6028,7 +5847,7 @@
     "source": "default"
    },
    "telega-filter-button-inactive": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6048,7 +5867,7 @@
     "source": "default"
    },
    "telega-checklist-stats-todo": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6058,7 +5877,7 @@
     "source": "default"
    },
    "telega-box-button": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6068,8 +5887,8 @@
     "source": "default"
    },
    "telega-box-button-active": {
-    "fg": "#000000",
-    "bg": "#67809c",
+    "fg": null,
+    "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6078,7 +5897,7 @@
     "source": "default"
    },
    "telega-box-button-default-active": {
-    "fg": "#000000",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6088,7 +5907,7 @@
     "source": "default"
    },
    "telega-box-button-default-passive": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6098,8 +5917,8 @@
     "source": "default"
    },
    "telega-box-button-primary-active": {
-    "fg": "#000000",
-    "bg": "#67809c",
+    "fg": null,
+    "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6108,7 +5927,7 @@
     "source": "default"
    },
    "telega-box-button-primary-passive": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6118,7 +5937,7 @@
     "source": "default"
    },
    "telega-box-button-success-active": {
-    "fg": "#000000",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6138,7 +5957,7 @@
     "source": "default"
    },
    "telega-box-button-danger-active": {
-    "fg": "#000000",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6158,7 +5977,7 @@
     "source": "default"
    },
    "telega-box-button-ui-active": {
-    "fg": "#000000",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6178,8 +5997,8 @@
     "source": "default"
    },
    "telega-box-button2-active": {
-    "fg": "#000000",
-    "bg": "#67809c",
+    "fg": null,
+    "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6188,7 +6007,7 @@
     "source": "default"
    },
    "telega-box-button2-passive": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6208,9 +6027,9 @@
     "source": "default"
    },
    "telega-describe-item-title": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6218,9 +6037,9 @@
     "source": "default"
    },
    "telega-describe-section-title": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6228,7 +6047,7 @@
     "source": "default"
    },
    "telega-describe-subsection-title": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6268,7 +6087,7 @@
     "source": "default"
    },
    "telega-enckey-11": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6278,7 +6097,7 @@
     "source": "default"
    },
    "telega-palette-builtin-blue": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6318,9 +6137,9 @@
     "source": "default"
    },
    "telega-webpage-title": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6328,7 +6147,7 @@
     "source": "default"
    },
    "telega-webpage-subtitle": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6340,7 +6159,7 @@
    "telega-webpage-header": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6388,7 +6207,7 @@
     "source": "default"
    },
    "telega-webpage-marked": {
-    "fg": "#000000",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6403,12 +6222,12 @@
     "bold": false,
     "italic": false,
     "underline": false,
-    "strike": true,
+    "strike": false,
     "inherit": null,
     "source": "default"
    },
    "telega-webpage-chat-link": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6418,7 +6237,7 @@
     "source": "default"
    },
    "telega-link-preview-sitename": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6428,9 +6247,9 @@
     "source": "default"
    },
    "telega-link-preview-title": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6442,29 +6261,27 @@
    "shr-h1": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.4
+    "source": "default"
    },
    "shr-h2": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.2
+    "source": "default"
    },
    "shr-h3": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6474,7 +6291,7 @@
    "shr-h4": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6482,9 +6299,9 @@
     "source": "default"
    },
    "shr-h5": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6494,7 +6311,7 @@
    "shr-h6": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6502,7 +6319,7 @@
     "source": "default"
    },
    "shr-text": {
-    "fg": "#cdced1",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6512,11 +6329,11 @@
     "source": "default"
    },
    "shr-link": {
-    "fg": "#67809c",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": true,
+    "underline": false,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -6524,9 +6341,9 @@
    "shr-selected-link": {
     "fg": null,
     "bg": null,
-    "bold": true,
+    "bold": false,
     "italic": false,
-    "underline": true,
+    "underline": false,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -6542,7 +6359,7 @@
     "source": "default"
    },
    "shr-mark": {
-    "fg": "#000000",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6557,12 +6374,12 @@
     "bold": false,
     "italic": false,
     "underline": false,
-    "strike": true,
+    "strike": false,
     "inherit": null,
     "source": "default"
    },
    "shr-sup": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6572,10 +6389,10 @@
     "source": "default"
    },
    "shr-abbreviation": {
-    "fg": "#8a9496",
+    "fg": null,
     "bg": null,
     "bold": false,
-    "italic": true,
+    "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -6594,8 +6411,8 @@
   },
   "2048-game": {
    "twentyfortyeight-face-1024": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#ffd700",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6604,8 +6421,8 @@
     "source": "default"
    },
    "twentyfortyeight-face-128": {
-    "fg": null,
-    "bg": null,
+    "fg": "#ffffff",
+    "bg": "#8b0000",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6614,8 +6431,8 @@
     "source": "default"
    },
    "twentyfortyeight-face-16": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#ffa500",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6624,8 +6441,8 @@
     "source": "default"
    },
    "twentyfortyeight-face-2": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#f0e68c",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6634,8 +6451,8 @@
     "source": "default"
    },
    "twentyfortyeight-face-2048": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#ffff00",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6644,8 +6461,8 @@
     "source": "default"
    },
    "twentyfortyeight-face-256": {
-    "fg": null,
-    "bg": null,
+    "fg": "#ffffff",
+    "bg": "#8b008b",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6654,8 +6471,8 @@
     "source": "default"
    },
    "twentyfortyeight-face-32": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#ff4500",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6664,8 +6481,8 @@
     "source": "default"
    },
    "twentyfortyeight-face-4": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#deb887",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6674,8 +6491,8 @@
     "source": "default"
    },
    "twentyfortyeight-face-512": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#ff00ff",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6684,8 +6501,8 @@
     "source": "default"
    },
    "twentyfortyeight-face-64": {
-    "fg": null,
-    "bg": null,
+    "fg": "#ffffff",
+    "bg": "#b22222",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6694,8 +6511,8 @@
     "source": "default"
    },
    "twentyfortyeight-face-8": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#cd8500",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -6706,9 +6523,9 @@
   },
   "alert": {
    "alert-high-face": {
-    "fg": null,
+    "fg": "#ff8c00",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6716,7 +6533,7 @@
     "source": "default"
    },
    "alert-low-face": {
-    "fg": null,
+    "fg": "#00008b",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6726,9 +6543,9 @@
     "source": "default"
    },
    "alert-moderate-face": {
-    "fg": null,
+    "fg": "#ffd700",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6746,7 +6563,7 @@
     "source": "default"
    },
    "alert-trivial-face": {
-    "fg": null,
+    "fg": "#9400d3",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6756,9 +6573,9 @@
     "source": "default"
    },
    "alert-urgent-face": {
-    "fg": null,
+    "fg": "#ff0000",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -6768,7 +6585,7 @@
   },
   "all-the-icons": {
    "all-the-icons-blue": {
-    "fg": null,
+    "fg": "#6a9fb5",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6778,7 +6595,7 @@
     "source": "default"
    },
    "all-the-icons-blue-alt": {
-    "fg": null,
+    "fg": "#2188b6",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6788,7 +6605,7 @@
     "source": "default"
    },
    "all-the-icons-cyan": {
-    "fg": null,
+    "fg": "#75b5aa",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6798,7 +6615,7 @@
     "source": "default"
    },
    "all-the-icons-cyan-alt": {
-    "fg": null,
+    "fg": "#0595bd",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6808,7 +6625,7 @@
     "source": "default"
    },
    "all-the-icons-dblue": {
-    "fg": null,
+    "fg": "#446674",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6818,7 +6635,7 @@
     "source": "default"
    },
    "all-the-icons-dcyan": {
-    "fg": null,
+    "fg": "#48746d",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6828,7 +6645,7 @@
     "source": "default"
    },
    "all-the-icons-dgreen": {
-    "fg": null,
+    "fg": "#6d8143",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6838,7 +6655,7 @@
     "source": "default"
    },
    "all-the-icons-dmaroon": {
-    "fg": null,
+    "fg": "#72584b",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6848,7 +6665,7 @@
     "source": "default"
    },
    "all-the-icons-dorange": {
-    "fg": null,
+    "fg": "#915b2d",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6858,7 +6675,7 @@
     "source": "default"
    },
    "all-the-icons-dpink": {
-    "fg": null,
+    "fg": "#7e5d5f",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6868,7 +6685,7 @@
     "source": "default"
    },
    "all-the-icons-dpurple": {
-    "fg": null,
+    "fg": "#694863",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6878,7 +6695,7 @@
     "source": "default"
    },
    "all-the-icons-dred": {
-    "fg": null,
+    "fg": "#843031",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6888,7 +6705,7 @@
     "source": "default"
    },
    "all-the-icons-dsilver": {
-    "fg": null,
+    "fg": "#838484",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6898,7 +6715,7 @@
     "source": "default"
    },
    "all-the-icons-dyellow": {
-    "fg": null,
+    "fg": "#b48d56",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6908,7 +6725,7 @@
     "source": "default"
    },
    "all-the-icons-green": {
-    "fg": null,
+    "fg": "#90a959",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6918,7 +6735,7 @@
     "source": "default"
    },
    "all-the-icons-lblue": {
-    "fg": null,
+    "fg": "#677174",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6928,7 +6745,7 @@
     "source": "default"
    },
    "all-the-icons-lcyan": {
-    "fg": null,
+    "fg": "#2c7d6e",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6938,7 +6755,7 @@
     "source": "default"
    },
    "all-the-icons-lgreen": {
-    "fg": null,
+    "fg": "#3d6837",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6948,7 +6765,7 @@
     "source": "default"
    },
    "all-the-icons-lmaroon": {
-    "fg": null,
+    "fg": "#ce7a4e",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6958,7 +6775,7 @@
     "source": "default"
    },
    "all-the-icons-lorange": {
-    "fg": null,
+    "fg": "#ffa500",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6968,7 +6785,7 @@
     "source": "default"
    },
    "all-the-icons-lpink": {
-    "fg": null,
+    "fg": "#ff505b",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6978,7 +6795,7 @@
     "source": "default"
    },
    "all-the-icons-lpurple": {
-    "fg": null,
+    "fg": "#e69dd6",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6988,7 +6805,7 @@
     "source": "default"
    },
    "all-the-icons-lred": {
-    "fg": null,
+    "fg": "#eb595a",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -6998,7 +6815,7 @@
     "source": "default"
    },
    "all-the-icons-lsilver": {
-    "fg": null,
+    "fg": "#7f7869",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7008,7 +6825,7 @@
     "source": "default"
    },
    "all-the-icons-lyellow": {
-    "fg": null,
+    "fg": "#ff9300",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7018,7 +6835,7 @@
     "source": "default"
    },
    "all-the-icons-maroon": {
-    "fg": null,
+    "fg": "#8f5536",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7028,7 +6845,7 @@
     "source": "default"
    },
    "all-the-icons-orange": {
-    "fg": null,
+    "fg": "#d4843e",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7038,7 +6855,7 @@
     "source": "default"
    },
    "all-the-icons-pink": {
-    "fg": null,
+    "fg": "#fc505b",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7048,7 +6865,7 @@
     "source": "default"
    },
    "all-the-icons-purple": {
-    "fg": null,
+    "fg": "#68295b",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7058,7 +6875,7 @@
     "source": "default"
    },
    "all-the-icons-purple-alt": {
-    "fg": null,
+    "fg": "#5d54e1",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7068,7 +6885,7 @@
     "source": "default"
    },
    "all-the-icons-red": {
-    "fg": null,
+    "fg": "#ac4142",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7078,7 +6895,7 @@
     "source": "default"
    },
    "all-the-icons-red-alt": {
-    "fg": null,
+    "fg": "#843031",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7088,7 +6905,7 @@
     "source": "default"
    },
    "all-the-icons-silver": {
-    "fg": null,
+    "fg": "#716e68",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7098,7 +6915,7 @@
     "source": "default"
    },
    "all-the-icons-yellow": {
-    "fg": null,
+    "fg": "#ffcc0e",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7120,7 +6937,7 @@
     "source": "default"
    },
    "company-echo-common": {
-    "fg": null,
+    "fg": "#8b1a1a",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7136,7 +6953,10 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": [
+     "company-tooltip-selection",
+     "company-tooltip"
+    ],
     "source": "default"
    },
    "company-preview-common": {
@@ -7146,7 +6966,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "company-tooltip-common-selection",
     "source": "default"
    },
    "company-preview-search": {
@@ -7156,12 +6976,12 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "company-tooltip-common-selection",
     "source": "default"
    },
    "company-tooltip": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#fff8dc",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -7170,7 +6990,7 @@
     "source": "default"
    },
    "company-tooltip-annotation": {
-    "fg": null,
+    "fg": "#8b1a1a",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7186,11 +7006,11 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "company-tooltip-annotation",
     "source": "default"
    },
    "company-tooltip-common": {
-    "fg": null,
+    "fg": "#8b0000",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7206,7 +7026,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "company-tooltip-common",
     "source": "default"
    },
    "company-tooltip-deprecated": {
@@ -7215,7 +7035,7 @@
     "bold": false,
     "italic": false,
     "underline": false,
-    "strike": false,
+    "strike": true,
     "inherit": null,
     "source": "default"
    },
@@ -7226,7 +7046,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "highlight",
     "source": "default"
    },
    "company-tooltip-quick-access": {
@@ -7236,7 +7056,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "company-tooltip-annotation",
     "source": "default"
    },
    "company-tooltip-quick-access-selection": {
@@ -7246,12 +7066,12 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "company-tooltip-annotation-selection",
     "source": "default"
    },
    "company-tooltip-scrollbar-thumb": {
     "fg": null,
-    "bg": null,
+    "bg": "#cd5c5c",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -7261,7 +7081,7 @@
    },
    "company-tooltip-scrollbar-track": {
     "fg": null,
-    "bg": null,
+    "bg": "#f5deb3",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -7276,7 +7096,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "highlight",
     "source": "default"
    },
    "company-tooltip-search-selection": {
@@ -7286,12 +7106,12 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "highlight",
     "source": "default"
    },
    "company-tooltip-selection": {
     "fg": null,
-    "bg": null,
+    "bg": "#add8e6",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -7370,7 +7190,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "error",
     "source": "default"
    },
    "consult-async-finished": {
@@ -7380,7 +7200,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "success",
     "source": "default"
    },
    "consult-async-running": {
@@ -7390,7 +7210,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "consult-narrow-indicator",
     "source": "default"
    },
    "consult-async-split": {
@@ -7400,7 +7220,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-negation-char-face",
     "source": "default"
    },
    "consult-bookmark": {
@@ -7410,7 +7230,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-constant-face",
     "source": "default"
    },
    "consult-buffer": {
@@ -7430,7 +7250,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-function-name-face",
     "source": "default"
    },
    "consult-grep-context": {
@@ -7440,7 +7260,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "consult-help": {
@@ -7450,7 +7270,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "consult-highlight-mark": {
@@ -7460,7 +7280,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "consult-highlight-match",
     "source": "default"
    },
    "consult-highlight-match": {
@@ -7470,7 +7290,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "match",
     "source": "default"
    },
    "consult-key": {
@@ -7480,7 +7300,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "consult-line-number": {
@@ -7490,7 +7310,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "consult-key",
     "source": "default"
    },
    "consult-line-number-prefix": {
@@ -7500,7 +7320,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "line-number",
     "source": "default"
    },
    "consult-line-number-wrapped": {
@@ -7510,7 +7330,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-warning-face",
     "source": "default"
    },
    "consult-narrow-indicator": {
@@ -7520,7 +7340,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "warning",
     "source": "default"
    },
    "consult-preview-insertion": {
@@ -7530,7 +7350,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "region",
     "source": "default"
    },
    "consult-preview-line": {
@@ -7540,7 +7360,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "consult-preview-insertion",
     "source": "default"
    },
    "consult-preview-match": {
@@ -7550,11 +7370,11 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "isearch",
     "source": "default"
    },
    "consult-separator": {
-    "fg": null,
+    "fg": "#ccc",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7572,7 +7392,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "completions-annotations",
     "source": "default"
    },
    "embark-collect-candidate": {
@@ -7582,7 +7402,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    },
    "embark-collect-group-separator": {
@@ -7591,18 +7411,18 @@
     "bold": false,
     "italic": false,
     "underline": false,
-    "strike": false,
-    "inherit": null,
+    "strike": true,
+    "inherit": "shadow",
     "source": "default"
    },
    "embark-collect-group-title": {
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": false,
+    "italic": true,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "embark-keybinding": {
@@ -7612,7 +7432,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "success",
     "source": "default"
    },
    "embark-keybinding-repeat": {
@@ -7622,14 +7442,14 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-builtin-face",
     "source": "default"
    },
    "embark-keymap": {
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": false,
+    "italic": true,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -7642,7 +7462,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "match",
     "source": "default"
    },
    "embark-target": {
@@ -7652,7 +7472,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "highlight",
     "source": "default"
    },
    "embark-verbose-indicator-documentation": {
@@ -7662,7 +7482,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "completions-annotations",
     "source": "default"
    },
    "embark-verbose-indicator-shadowed": {
@@ -7672,18 +7492,19 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "embark-verbose-indicator-title": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "height": 1.1
    }
   },
   "emms": {
@@ -7758,8 +7579,8 @@
     "source": "default"
    },
    "emms-metaplaylist-mode-current-face": {
-    "fg": null,
-    "bg": null,
+    "fg": "#ffffff",
+    "bg": "#cd0000",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -7768,7 +7589,7 @@
     "source": "default"
    },
    "emms-metaplaylist-mode-face": {
-    "fg": null,
+    "fg": "#cd0000",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7778,8 +7599,8 @@
     "source": "default"
    },
    "emms-playlist-selected-face": {
-    "fg": null,
-    "bg": null,
+    "fg": "#ffffff",
+    "bg": "#0000cd",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -7788,7 +7609,7 @@
     "source": "default"
    },
    "emms-playlist-track-face": {
-    "fg": null,
+    "fg": "#0000ff",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -7806,7 +7627,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "isearch",
     "source": "default"
    }
   },
@@ -7904,9 +7725,9 @@
   },
   "hl-todo": {
    "hl-todo": {
-    "fg": null,
+    "fg": "#cc9393",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -7920,7 +7741,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    }
   },
@@ -7932,7 +7753,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-variable-name-face",
     "source": "default"
    }
   },
@@ -7944,7 +7765,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-function-call-face",
     "source": "default"
    },
    "llama-deleted-argument": {
@@ -7955,7 +7776,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "line",
+     "width": 1,
+     "color": "#ff0000"
+    }
    },
    "llama-llama-macro": {
     "fg": null,
@@ -7964,7 +7790,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "llama-mandatory-argument": {
@@ -7974,7 +7800,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-variable-use-face",
     "source": "default"
    },
    "llama-optional-argument": {
@@ -7984,14 +7810,14 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-type-face",
     "source": "default"
    }
   },
   "lv": {
    "lv-separator": {
     "fg": null,
-    "bg": null,
+    "bg": "#cccccc",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -8070,7 +7896,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "bold",
     "source": "default"
    },
    "malyon-face-error": {
@@ -8080,7 +7906,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "error",
     "source": "default"
    },
    "malyon-face-italic": {
@@ -8090,7 +7916,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "italic",
     "source": "default"
    },
    "malyon-face-plain": {
@@ -8100,7 +7926,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    },
    "malyon-face-reverse": {
@@ -8110,7 +7936,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    }
   },
@@ -8122,7 +7948,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "warning",
     "source": "default"
    },
    "marginalia-char": {
@@ -8132,7 +7958,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "marginalia-key",
     "source": "default"
    },
    "marginalia-date": {
@@ -8142,7 +7968,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "marginalia-key",
     "source": "default"
    },
    "marginalia-documentation": {
@@ -8152,7 +7978,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "completions-annotations",
     "source": "default"
    },
    "marginalia-file-name": {
@@ -8162,7 +7988,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "marginalia-documentation",
     "source": "default"
    },
    "marginalia-file-owner": {
@@ -8172,7 +7998,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-preprocessor-face",
     "source": "default"
    },
    "marginalia-file-priv-dir": {
@@ -8182,7 +8008,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "marginalia-file-priv-exec": {
@@ -8192,7 +8018,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-function-name-face",
     "source": "default"
    },
    "marginalia-file-priv-link": {
@@ -8202,7 +8028,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "marginalia-file-priv-no": {
@@ -8212,7 +8038,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "marginalia-file-priv-other": {
@@ -8222,7 +8048,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-constant-face",
     "source": "default"
    },
    "marginalia-file-priv-rare": {
@@ -8232,7 +8058,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-variable-name-face",
     "source": "default"
    },
    "marginalia-file-priv-read": {
@@ -8242,7 +8068,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-type-face",
     "source": "default"
    },
    "marginalia-file-priv-write": {
@@ -8252,7 +8078,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-builtin-face",
     "source": "default"
    },
    "marginalia-function": {
@@ -8262,7 +8088,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-function-name-face",
     "source": "default"
    },
    "marginalia-installed": {
@@ -8272,7 +8098,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "success",
     "source": "default"
    },
    "marginalia-key": {
@@ -8282,7 +8108,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "marginalia-lighter": {
@@ -8292,7 +8118,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "marginalia-size",
     "source": "default"
    },
    "marginalia-list": {
@@ -8302,7 +8128,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-constant-face",
     "source": "default"
    },
    "marginalia-mode": {
@@ -8312,7 +8138,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "marginalia-key",
     "source": "default"
    },
    "marginalia-modified": {
@@ -8322,7 +8148,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-negation-char-face",
     "source": "default"
    },
    "marginalia-null": {
@@ -8332,7 +8158,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-comment-face",
     "source": "default"
    },
    "marginalia-number": {
@@ -8342,7 +8168,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-constant-face",
     "source": "default"
    },
    "marginalia-off": {
@@ -8352,7 +8178,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "error",
     "source": "default"
    },
    "marginalia-on": {
@@ -8362,7 +8188,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "success",
     "source": "default"
    },
    "marginalia-size": {
@@ -8372,7 +8198,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "marginalia-number",
     "source": "default"
    },
    "marginalia-string": {
@@ -8382,7 +8208,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-string-face",
     "source": "default"
    },
    "marginalia-symbol": {
@@ -8392,7 +8218,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-type-face",
     "source": "default"
    },
    "marginalia-true": {
@@ -8402,7 +8228,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-builtin-face",
     "source": "default"
    },
    "marginalia-type": {
@@ -8412,7 +8238,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "marginalia-key",
     "source": "default"
    },
    "marginalia-value": {
@@ -8422,7 +8248,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "marginalia-key",
     "source": "default"
    },
    "marginalia-version": {
@@ -8432,7 +8258,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "marginalia-number",
     "source": "default"
    }
   },
@@ -8444,7 +8270,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-doc-face",
     "source": "default"
    },
    "markdown-bold-face": {
@@ -8454,7 +8280,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "bold",
     "source": "default"
    },
    "markdown-code-face": {
@@ -8464,7 +8290,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "fixed-pitch",
     "source": "default"
    },
    "markdown-comment-face": {
@@ -8474,7 +8300,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-comment-face",
     "source": "default"
    },
    "markdown-footnote-marker-face": {
@@ -8484,7 +8310,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-markup-face",
     "source": "default"
    },
    "markdown-footnote-text-face": {
@@ -8494,7 +8320,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-comment-face",
     "source": "default"
    },
    "markdown-gfm-checkbox-face": {
@@ -8504,7 +8330,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-builtin-face",
     "source": "default"
    },
    "markdown-header-delimiter-face": {
@@ -8514,17 +8340,19 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-markup-face",
     "source": "default"
    },
    "markdown-header-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": [
+     "font-lock-function-name-face"
+    ],
     "source": "default"
    },
    "markdown-header-face-1": {
@@ -8534,7 +8362,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-header-face",
     "source": "default"
    },
    "markdown-header-face-2": {
@@ -8544,7 +8372,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-header-face",
     "source": "default"
    },
    "markdown-header-face-3": {
@@ -8554,7 +8382,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-header-face",
     "source": "default"
    },
    "markdown-header-face-4": {
@@ -8564,7 +8392,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-header-face",
     "source": "default"
    },
    "markdown-header-face-5": {
@@ -8574,7 +8402,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-header-face",
     "source": "default"
    },
    "markdown-header-face-6": {
@@ -8584,7 +8412,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-header-face",
     "source": "default"
    },
    "markdown-header-rule-face": {
@@ -8594,7 +8422,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-markup-face",
     "source": "default"
    },
    "markdown-highlight-face": {
@@ -8604,12 +8432,12 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "highlight",
     "source": "default"
    },
    "markdown-highlighting-face": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#ffff00",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -8624,7 +8452,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-markup-face",
     "source": "default"
    },
    "markdown-html-attr-name-face": {
@@ -8634,7 +8462,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-variable-name-face",
     "source": "default"
    },
    "markdown-html-attr-value-face": {
@@ -8644,7 +8472,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-string-face",
     "source": "default"
    },
    "markdown-html-entity-face": {
@@ -8654,7 +8482,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-variable-name-face",
     "source": "default"
    },
    "markdown-html-tag-delimiter-face": {
@@ -8664,7 +8492,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-markup-face",
     "source": "default"
    },
    "markdown-html-tag-name-face": {
@@ -8674,7 +8502,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-type-face",
     "source": "default"
    },
    "markdown-inline-code-face": {
@@ -8684,7 +8512,10 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": [
+     "markdown-code-face",
+     "font-lock-constant-face"
+    ],
     "source": "default"
    },
    "markdown-italic-face": {
@@ -8694,7 +8525,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "italic",
     "source": "default"
    },
    "markdown-language-info-face": {
@@ -8704,7 +8535,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-string-face",
     "source": "default"
    },
    "markdown-language-keyword-face": {
@@ -8714,7 +8545,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-type-face",
     "source": "default"
    },
    "markdown-line-break-face": {
@@ -8722,9 +8553,9 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-constant-face",
     "source": "default"
    },
    "markdown-link-face": {
@@ -8734,7 +8565,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "link",
     "source": "default"
    },
    "markdown-link-title-face": {
@@ -8744,7 +8575,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-comment-face",
     "source": "default"
    },
    "markdown-list-face": {
@@ -8754,7 +8585,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-markup-face",
     "source": "default"
    },
    "markdown-markup-face": {
@@ -8764,7 +8595,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "markdown-math-face": {
@@ -8774,7 +8605,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-string-face",
     "source": "default"
    },
    "markdown-metadata-key-face": {
@@ -8784,7 +8615,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-variable-name-face",
     "source": "default"
    },
    "markdown-metadata-value-face": {
@@ -8794,7 +8625,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-string-face",
     "source": "default"
    },
    "markdown-missing-link-face": {
@@ -8804,7 +8635,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-warning-face",
     "source": "default"
    },
    "markdown-plain-url-face": {
@@ -8814,7 +8645,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-link-face",
     "source": "default"
    },
    "markdown-pre-face": {
@@ -8824,7 +8655,10 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": [
+     "markdown-code-face",
+     "font-lock-constant-face"
+    ],
     "source": "default"
    },
    "markdown-reference-face": {
@@ -8834,7 +8668,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "markdown-markup-face",
     "source": "default"
    },
    "markdown-strike-through-face": {
@@ -8843,7 +8677,7 @@
     "bold": false,
     "italic": false,
     "underline": false,
-    "strike": false,
+    "strike": true,
     "inherit": null,
     "source": "default"
    },
@@ -8854,7 +8688,9 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": [
+     "markdown-code-face"
+    ],
     "source": "default"
    },
    "markdown-url-face": {
@@ -8864,13 +8700,13 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-string-face",
     "source": "default"
    }
   },
   "nerd-icons": {
    "nerd-icons-blue": {
-    "fg": null,
+    "fg": "#6a9fb5",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -8880,7 +8716,7 @@
     "source": "default"
    },
    "nerd-icons-blue-alt": {
-    "fg": null,
+    "fg": "#2188b6",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -8890,7 +8726,7 @@
     "source": "default"
    },
    "nerd-icons-cyan": {
-    "fg": null,
+    "fg": "#75b5aa",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -8900,7 +8736,7 @@
     "source": "default"
    },
    "nerd-icons-cyan-alt": {
-    "fg": null,
+    "fg": "#0595bd",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -8910,7 +8746,7 @@
     "source": "default"
    },
    "nerd-icons-dblue": {
-    "fg": null,
+    "fg": "#446674",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -8920,7 +8756,7 @@
     "source": "default"
    },
    "nerd-icons-dcyan": {
-    "fg": null,
+    "fg": "#48746d",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -8930,7 +8766,7 @@
     "source": "default"
    },
    "nerd-icons-dgreen": {
-    "fg": null,
+    "fg": "#6d8143",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -8940,7 +8776,7 @@
     "source": "default"
    },
    "nerd-icons-dmaroon": {
-    "fg": null,
+    "fg": "#72584b",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -8950,7 +8786,7 @@
     "source": "default"
    },
    "nerd-icons-dorange": {
-    "fg": null,
+    "fg": "#915b2d",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -8960,7 +8796,7 @@
     "source": "default"
    },
    "nerd-icons-dpink": {
-    "fg": null,
+    "fg": "#7e5d5f",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -8970,7 +8806,7 @@
     "source": "default"
    },
    "nerd-icons-dpurple": {
-    "fg": null,
+    "fg": "#694863",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -8980,7 +8816,7 @@
     "source": "default"
    },
    "nerd-icons-dred": {
-    "fg": null,
+    "fg": "#843031",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -8990,7 +8826,7 @@
     "source": "default"
    },
    "nerd-icons-dsilver": {
-    "fg": null,
+    "fg": "#838484",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9000,7 +8836,7 @@
     "source": "default"
    },
    "nerd-icons-dyellow": {
-    "fg": null,
+    "fg": "#b48d56",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9010,7 +8846,7 @@
     "source": "default"
    },
    "nerd-icons-green": {
-    "fg": null,
+    "fg": "#90a959",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9020,7 +8856,7 @@
     "source": "default"
    },
    "nerd-icons-lblue": {
-    "fg": null,
+    "fg": "#677174",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9030,7 +8866,7 @@
     "source": "default"
    },
    "nerd-icons-lcyan": {
-    "fg": null,
+    "fg": "#2c7d6e",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9040,7 +8876,7 @@
     "source": "default"
    },
    "nerd-icons-lgreen": {
-    "fg": null,
+    "fg": "#3d6837",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9050,7 +8886,7 @@
     "source": "default"
    },
    "nerd-icons-lmaroon": {
-    "fg": null,
+    "fg": "#ce7a4e",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9060,7 +8896,7 @@
     "source": "default"
    },
    "nerd-icons-lorange": {
-    "fg": null,
+    "fg": "#ffa500",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9070,7 +8906,7 @@
     "source": "default"
    },
    "nerd-icons-lpink": {
-    "fg": null,
+    "fg": "#ff505b",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9080,7 +8916,7 @@
     "source": "default"
    },
    "nerd-icons-lpurple": {
-    "fg": null,
+    "fg": "#e69dd6",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9090,7 +8926,7 @@
     "source": "default"
    },
    "nerd-icons-lred": {
-    "fg": null,
+    "fg": "#eb595a",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9100,7 +8936,7 @@
     "source": "default"
    },
    "nerd-icons-lsilver": {
-    "fg": null,
+    "fg": "#7f7869",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9110,7 +8946,7 @@
     "source": "default"
    },
    "nerd-icons-lyellow": {
-    "fg": null,
+    "fg": "#ff9300",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9120,7 +8956,7 @@
     "source": "default"
    },
    "nerd-icons-maroon": {
-    "fg": null,
+    "fg": "#8f5536",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9130,7 +8966,7 @@
     "source": "default"
    },
    "nerd-icons-orange": {
-    "fg": null,
+    "fg": "#d4843e",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9140,7 +8976,7 @@
     "source": "default"
    },
    "nerd-icons-pink": {
-    "fg": null,
+    "fg": "#fc505b",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9150,7 +8986,7 @@
     "source": "default"
    },
    "nerd-icons-purple": {
-    "fg": null,
+    "fg": "#68295b",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9160,7 +8996,7 @@
     "source": "default"
    },
    "nerd-icons-purple-alt": {
-    "fg": null,
+    "fg": "#5d54e1",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9170,7 +9006,7 @@
     "source": "default"
    },
    "nerd-icons-red": {
-    "fg": null,
+    "fg": "#ac4142",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9180,7 +9016,7 @@
     "source": "default"
    },
    "nerd-icons-red-alt": {
-    "fg": null,
+    "fg": "#843031",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9190,7 +9026,7 @@
     "source": "default"
    },
    "nerd-icons-silver": {
-    "fg": null,
+    "fg": "#716e68",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9200,7 +9036,7 @@
     "source": "default"
    },
    "nerd-icons-yellow": {
-    "fg": null,
+    "fg": "#ffcc0e",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9224,9 +9060,9 @@
   },
   "orderless": {
    "orderless-match-face-0": {
-    "fg": null,
+    "fg": "#223fbf",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -9234,9 +9070,9 @@
     "source": "default"
    },
    "orderless-match-face-1": {
-    "fg": null,
+    "fg": "#8f0075",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -9244,9 +9080,9 @@
     "source": "default"
    },
    "orderless-match-face-2": {
-    "fg": null,
+    "fg": "#145a00",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -9254,9 +9090,9 @@
     "source": "default"
    },
    "orderless-match-face-3": {
-    "fg": null,
+    "fg": "#804000",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -9364,7 +9200,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "org-warning",
     "source": "default"
    },
    "org-superstar-header-bullet": {
@@ -9384,17 +9220,17 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    },
    "org-superstar-leading": {
-    "fg": null,
+    "fg": "#bebebe",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "default",
     "source": "default"
    }
   },
@@ -9402,7 +9238,7 @@
    "prescient-primary-highlight": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -9414,21 +9250,21 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
-    "inherit": null,
+    "inherit": "prescient-primary-highlight",
     "source": "default"
    }
   },
   "rainbow-delimiters": {
    "rainbow-delimiters-base-error-face": {
-    "fg": null,
+    "fg": "#88090b",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "rainbow-delimiters-base-face",
     "source": "default"
    },
    "rainbow-delimiters-base-face": {
@@ -9438,97 +9274,97 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "unspecified",
     "source": "default"
    },
    "rainbow-delimiters-depth-1-face": {
-    "fg": null,
+    "fg": "#707183",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "rainbow-delimiters-base-face",
     "source": "default"
    },
    "rainbow-delimiters-depth-2-face": {
-    "fg": null,
+    "fg": "#7388d6",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "rainbow-delimiters-base-face",
     "source": "default"
    },
    "rainbow-delimiters-depth-3-face": {
-    "fg": null,
+    "fg": "#909183",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "rainbow-delimiters-base-face",
     "source": "default"
    },
    "rainbow-delimiters-depth-4-face": {
-    "fg": null,
+    "fg": "#709870",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "rainbow-delimiters-base-face",
     "source": "default"
    },
    "rainbow-delimiters-depth-5-face": {
-    "fg": null,
+    "fg": "#907373",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "rainbow-delimiters-base-face",
     "source": "default"
    },
    "rainbow-delimiters-depth-6-face": {
-    "fg": null,
+    "fg": "#6276ba",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "rainbow-delimiters-base-face",
     "source": "default"
    },
    "rainbow-delimiters-depth-7-face": {
-    "fg": null,
+    "fg": "#858580",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "rainbow-delimiters-base-face",
     "source": "default"
    },
    "rainbow-delimiters-depth-8-face": {
-    "fg": null,
+    "fg": "#80a880",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "rainbow-delimiters-base-face",
     "source": "default"
    },
    "rainbow-delimiters-depth-9-face": {
-    "fg": null,
+    "fg": "#887070",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "rainbow-delimiters-base-face",
     "source": "default"
    },
    "rainbow-delimiters-mismatched-face": {
@@ -9538,7 +9374,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "rainbow-delimiters-unmatched-face",
     "source": "default"
    },
    "rainbow-delimiters-unmatched-face": {
@@ -9548,7 +9384,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "rainbow-delimiters-base-error-face",
     "source": "default"
    }
   },
@@ -9560,12 +9396,12 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "highlight",
     "source": "default"
    },
    "symbol-overlay-face-1": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#1e90ff",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -9574,8 +9410,8 @@
     "source": "default"
    },
    "symbol-overlay-face-2": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#ff69b4",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -9584,8 +9420,8 @@
     "source": "default"
    },
    "symbol-overlay-face-3": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#ffff00",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -9594,8 +9430,8 @@
     "source": "default"
    },
    "symbol-overlay-face-4": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#da70d6",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -9604,8 +9440,8 @@
     "source": "default"
    },
    "symbol-overlay-face-5": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#ff0000",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -9614,8 +9450,8 @@
     "source": "default"
    },
    "symbol-overlay-face-6": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#fa8072",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -9624,8 +9460,8 @@
     "source": "default"
    },
    "symbol-overlay-face-7": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#00ff7f",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -9634,8 +9470,8 @@
     "source": "default"
    },
    "symbol-overlay-face-8": {
-    "fg": null,
-    "bg": null,
+    "fg": "#000000",
+    "bg": "#40e0d0",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -9652,7 +9488,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "bold",
     "source": "default"
    },
    "tmr-duration": {
@@ -9672,7 +9508,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "error",
     "source": "default"
    },
    "tmr-finished": {
@@ -9682,7 +9518,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "error",
     "source": "default"
    },
    "tmr-is-acknowledged": {
@@ -9692,7 +9528,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "success",
     "source": "default"
    },
    "tmr-must-be-acknowledged": {
@@ -9702,7 +9538,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "warning",
     "source": "default"
    },
    "tmr-start-time": {
@@ -9712,7 +9548,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "success",
     "source": "default"
    },
    "tmr-tabulated-acknowledgement": {
@@ -9722,7 +9558,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "bold",
     "source": "default"
    },
    "tmr-tabulated-description": {
@@ -9732,11 +9568,11 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-doc-face",
     "source": "default"
    },
    "tmr-tabulated-end-time": {
-    "fg": null,
+    "fg": "#800040",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9746,7 +9582,7 @@
     "source": "default"
    },
    "tmr-tabulated-remaining-time": {
-    "fg": null,
+    "fg": "#603f00",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9756,7 +9592,7 @@
     "source": "default"
    },
    "tmr-tabulated-start-time": {
-    "fg": null,
+    "fg": "#004476",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -9774,17 +9610,17 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "highlight",
     "source": "default"
    },
    "transient-argument": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-string-face",
     "source": "default"
    },
    "transient-delimiter": {
@@ -9794,13 +9630,13 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "transient-disabled-suffix": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
+    "fg": "#000000",
+    "bg": "#ff0000",
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -9808,9 +9644,9 @@
     "source": "default"
    },
    "transient-enabled-suffix": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
+    "fg": "#000000",
+    "bg": "#00ff00",
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -9824,7 +9660,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "transient-higher-level": {
@@ -9835,7 +9671,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "line",
+     "width": 1,
+     "color": "grey60"
+    }
    },
    "transient-inactive-argument": {
     "fg": null,
@@ -9844,7 +9685,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "transient-inactive-value": {
@@ -9854,27 +9695,27 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "transient-inapt-argument": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "transient-inapt-suffix": {
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": false,
+    "italic": true,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "transient-key": {
@@ -9884,67 +9725,67 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-builtin-face",
     "source": "default"
    },
    "transient-key-exit": {
-    "fg": null,
+    "fg": "#aa2222",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "transient-key",
     "source": "default"
    },
    "transient-key-noop": {
-    "fg": null,
+    "fg": "#cccccc",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "transient-key",
     "source": "default"
    },
    "transient-key-recurse": {
-    "fg": null,
+    "fg": "#2266ff",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "transient-key",
     "source": "default"
    },
    "transient-key-return": {
-    "fg": null,
+    "fg": "#aaaa11",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "transient-key",
     "source": "default"
    },
    "transient-key-stack": {
-    "fg": null,
+    "fg": "#dd4488",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "transient-key",
     "source": "default"
    },
    "transient-key-stay": {
-    "fg": null,
+    "fg": "#22aa22",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "transient-key",
     "source": "default"
    },
    "transient-mismatched-key": {
@@ -9955,7 +9796,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "line",
+     "width": 1,
+     "color": "#ff00ff"
+    }
    },
    "transient-nonstandard-key": {
     "fg": null,
@@ -9965,7 +9811,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "line",
+     "width": 1,
+     "color": "#00ffff"
+    }
    },
    "transient-unreachable": {
     "fg": null,
@@ -9974,7 +9825,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "transient-unreachable-key": {
@@ -9984,17 +9835,20 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": [
+     "shadow",
+     "transient-key"
+    ],
     "source": "default"
    },
    "transient-value": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-string-face",
     "source": "default"
    }
   },
@@ -10006,7 +9860,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "highlight",
     "source": "default"
    },
    "vertico-group-separator": {
@@ -10015,18 +9869,18 @@
     "bold": false,
     "italic": false,
     "underline": false,
-    "strike": false,
-    "inherit": null,
+    "strike": true,
+    "inherit": "vertico-group-title",
     "source": "default"
    },
    "vertico-group-title": {
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": false,
+    "italic": true,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    },
    "vertico-multiline": {
@@ -10036,7 +9890,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "shadow",
     "source": "default"
    }
   },
@@ -10048,17 +9902,17 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-comment-face",
     "source": "default"
    },
    "web-mode-annotation-html-face": {
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": false,
+    "italic": true,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-annotation-face",
     "source": "default"
    },
    "web-mode-annotation-tag-face": {
@@ -10066,33 +9920,33 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-annotation-face",
     "source": "default"
    },
    "web-mode-annotation-type-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-annotation-face",
     "source": "default"
    },
    "web-mode-annotation-value-face": {
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": false,
+    "italic": true,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-annotation-face",
     "source": "default"
    },
    "web-mode-block-attr-name-face": {
-    "fg": null,
+    "fg": "#8fbc8f",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -10102,7 +9956,7 @@
     "source": "default"
    },
    "web-mode-block-attr-value-face": {
-    "fg": null,
+    "fg": "#5f9ea0",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -10118,7 +9972,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-comment-face",
     "source": "default"
    },
    "web-mode-block-control-face": {
@@ -10128,7 +9982,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-preprocessor-face",
     "source": "default"
    },
    "web-mode-block-delimiter-face": {
@@ -10138,12 +9992,12 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-preprocessor-face",
     "source": "default"
    },
    "web-mode-block-face": {
     "fg": null,
-    "bg": null,
+    "bg": "#ffffe0",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -10158,13 +10012,13 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-string-face",
     "source": "default"
    },
    "web-mode-bold-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -10178,7 +10032,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-builtin-face",
     "source": "default"
    },
    "web-mode-comment-face": {
@@ -10188,13 +10042,13 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-comment-face",
     "source": "default"
    },
    "web-mode-comment-keyword-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -10208,7 +10062,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-constant-face",
     "source": "default"
    },
    "web-mode-css-at-rule-face": {
@@ -10218,7 +10072,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-constant-face",
     "source": "default"
    },
    "web-mode-css-color-face": {
@@ -10228,7 +10082,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-builtin-face",
     "source": "default"
    },
    "web-mode-css-comment-face": {
@@ -10238,7 +10092,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-comment-face",
     "source": "default"
    },
    "web-mode-css-function-face": {
@@ -10248,7 +10102,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-builtin-face",
     "source": "default"
    },
    "web-mode-css-priority-face": {
@@ -10258,7 +10112,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-builtin-face",
     "source": "default"
    },
    "web-mode-css-property-name-face": {
@@ -10268,7 +10122,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-variable-name-face",
     "source": "default"
    },
    "web-mode-css-pseudo-class-face": {
@@ -10278,7 +10132,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-builtin-face",
     "source": "default"
    },
    "web-mode-css-selector-class-face": {
@@ -10288,7 +10142,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "web-mode-css-selector-face": {
@@ -10298,7 +10152,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "web-mode-css-selector-tag-face": {
@@ -10308,7 +10162,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "web-mode-css-string-face": {
@@ -10318,22 +10172,22 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-string-face",
     "source": "default"
    },
    "web-mode-css-variable-face": {
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": false,
+    "italic": true,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-variable-name-face",
     "source": "default"
    },
    "web-mode-current-column-highlight-face": {
     "fg": null,
-    "bg": null,
+    "bg": "#3e3c36",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -10342,8 +10196,8 @@
     "source": "default"
    },
    "web-mode-current-element-highlight-face": {
-    "fg": null,
-    "bg": null,
+    "fg": "#ffffff",
+    "bg": "#000000",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -10352,7 +10206,7 @@
     "source": "default"
    },
    "web-mode-doctype-face": {
-    "fg": null,
+    "fg": "#bebebe",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -10363,7 +10217,7 @@
    },
    "web-mode-error-face": {
     "fg": null,
-    "bg": null,
+    "bg": "#ff0000",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -10378,7 +10232,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-function-name-face",
     "source": "default"
    },
    "web-mode-folded-face": {
@@ -10386,7 +10240,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -10398,7 +10252,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-function-name-face",
     "source": "default"
    },
    "web-mode-function-name-face": {
@@ -10408,7 +10262,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-function-name-face",
     "source": "default"
    },
    "web-mode-html-attr-custom-face": {
@@ -10418,7 +10272,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-html-attr-name-face",
     "source": "default"
    },
    "web-mode-html-attr-engine-face": {
@@ -10428,7 +10282,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-block-delimiter-face",
     "source": "default"
    },
    "web-mode-html-attr-equal-face": {
@@ -10438,11 +10292,11 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-html-attr-name-face",
     "source": "default"
    },
    "web-mode-html-attr-name-face": {
-    "fg": null,
+    "fg": "#8b8989",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -10458,21 +10312,21 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-string-face",
     "source": "default"
    },
    "web-mode-html-entity-face": {
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": false,
+    "italic": true,
     "underline": false,
     "strike": false,
     "inherit": null,
     "source": "default"
    },
    "web-mode-html-tag-bracket-face": {
-    "fg": null,
+    "fg": "#242424",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -10488,11 +10342,11 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-html-tag-face",
     "source": "default"
    },
    "web-mode-html-tag-face": {
-    "fg": null,
+    "fg": "#8b8989",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -10508,7 +10362,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-block-control-face",
     "source": "default"
    },
    "web-mode-html-tag-unclosed-face": {
@@ -10516,14 +10370,14 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-html-tag-face",
     "source": "default"
    },
    "web-mode-inlay-face": {
     "fg": null,
-    "bg": null,
+    "bg": "#ffffe0",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -10538,7 +10392,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-string-face",
     "source": "default"
    },
    "web-mode-interpolate-color2-face": {
@@ -10548,7 +10402,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-string-face",
     "source": "default"
    },
    "web-mode-interpolate-color3-face": {
@@ -10558,7 +10412,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-string-face",
     "source": "default"
    },
    "web-mode-interpolate-color4-face": {
@@ -10568,14 +10422,14 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-string-face",
     "source": "default"
    },
    "web-mode-italic-face": {
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": false,
+    "italic": true,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -10588,7 +10442,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-comment-face",
     "source": "default"
    },
    "web-mode-javascript-string-face": {
@@ -10598,7 +10452,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-string-face",
     "source": "default"
    },
    "web-mode-json-comment-face": {
@@ -10608,11 +10462,11 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-comment-face",
     "source": "default"
    },
    "web-mode-json-context-face": {
-    "fg": null,
+    "fg": "#cd69c9",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -10622,7 +10476,7 @@
     "source": "default"
    },
    "web-mode-json-key-face": {
-    "fg": null,
+    "fg": "#dda0dd",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -10638,12 +10492,12 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-string-face",
     "source": "default"
    },
    "web-mode-jsx-depth-1-face": {
     "fg": null,
-    "bg": null,
+    "bg": "#000053",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -10653,7 +10507,7 @@
    },
    "web-mode-jsx-depth-2-face": {
     "fg": null,
-    "bg": null,
+    "bg": "#001970",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -10663,7 +10517,7 @@
    },
    "web-mode-jsx-depth-3-face": {
     "fg": null,
-    "bg": null,
+    "bg": "#002984",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -10673,7 +10527,7 @@
    },
    "web-mode-jsx-depth-4-face": {
     "fg": null,
-    "bg": null,
+    "bg": "#49599a",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -10683,7 +10537,7 @@
    },
    "web-mode-jsx-depth-5-face": {
     "fg": null,
-    "bg": null,
+    "bg": "#9499b7",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -10698,11 +10552,11 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-keyword-face",
     "source": "default"
    },
    "web-mode-param-name-face": {
-    "fg": null,
+    "fg": "#cdc9c9",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -10718,7 +10572,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-comment-face",
     "source": "default"
    },
    "web-mode-part-face": {
@@ -10728,7 +10582,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-block-face",
     "source": "default"
    },
    "web-mode-part-string-face": {
@@ -10738,7 +10592,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-string-face",
     "source": "default"
    },
    "web-mode-preprocessor-face": {
@@ -10748,7 +10602,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-preprocessor-face",
     "source": "default"
    },
    "web-mode-script-face": {
@@ -10758,14 +10612,14 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-part-face",
     "source": "default"
    },
    "web-mode-sql-keyword-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
-    "italic": false,
+    "bold": true,
+    "italic": true,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -10778,7 +10632,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-string-face",
     "source": "default"
    },
    "web-mode-style-face": {
@@ -10788,11 +10642,11 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "web-mode-part-face",
     "source": "default"
    },
    "web-mode-symbol-face": {
-    "fg": null,
+    "fg": "#eeb422",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -10808,7 +10662,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-type-face",
     "source": "default"
    },
    "web-mode-underline-face": {
@@ -10816,7 +10670,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -10828,7 +10682,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-variable-name-face",
     "source": "default"
    },
    "web-mode-warning-face": {
@@ -10838,12 +10692,12 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "font-lock-warning-face",
     "source": "default"
    },
    "web-mode-whitespace-face": {
     "fg": null,
-    "bg": null,
+    "bg": "#68228b",
     "bold": false,
     "italic": false,
     "underline": false,
@@ -10870,7 +10724,7 @@
     "italic": false,
     "underline": false,
     "strike": false,
-    "inherit": null,
+    "inherit": "region",
     "source": "default"
    }
   }

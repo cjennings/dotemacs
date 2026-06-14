@@ -9,13 +9,17 @@ placeholder filled and carries the colormath body verbatim.
 Run: python3 -m unittest test_generate   (from scripts/theme-studio/)
 """
 import os
+import io
+import tempfile
+import runpy
 import unittest
 from collections import Counter, defaultdict
+from contextlib import redirect_stdout
 
 import generate  # importable without side effects: the file write is __main__-guarded
 from app_inventory import face_rows
 from default_faces import DefaultFaces, changed_summary
-from face_specs import package_face_spec, ui_face_spec
+from face_specs import face_spec, package_face_spec, ui_face_spec
 
 
 class StripExports(unittest.TestCase):
@@ -52,7 +56,8 @@ class StripExports(unittest.TestCase):
 
 class ColormathInlining(unittest.TestCase):
     def setUp(self):
-        self.cm_src = open(os.path.join(generate.HERE, "colormath.js")).read()
+        with open(os.path.join(generate.HERE, "colormath.js")) as src:
+            self.cm_src = src.read()
 
     def test_colormath_export_is_a_single_line(self):
         # The strip is line-based, so a multi-line `export { ... }` would leave the
@@ -75,7 +80,7 @@ class AssembledPage(unittest.TestCase):
         "STYLES_CSS", "APP_JS", "APP_CORE_J", "APP_UTIL_J",
         "PALETTE_ACTIONS_J", "BROWSER_GATES_J",
         "COLORMATH_J", "SAMPLES_J", "PALETTE_J", "CATS_J",
-        "UIFACES_J", "UIMAP_J", "APPS_J", "BOLD_J", "MAP_J",
+        "UIFACES_J", "UIMAP_J", "APPS_J", "SYNTAX_J", "MAP_J",
     ]
 
     def test_every_placeholder_is_substituted(self):
@@ -186,6 +191,7 @@ class FaceSpecDefaults(unittest.TestCase):
             "italic": False,
             "underline": False,
             "strike": False,
+            "box": None,
         })
 
     def test_package_face_spec_fills_structure_fields(self):
@@ -209,6 +215,137 @@ class FaceSpecDefaults(unittest.TestCase):
         self.assertEqual(generate.column_id("blue1"), "blue")
         self.assertEqual(generate.column_id("grey80"), "grey")
         self.assertEqual(generate.column_id("orchid3"), "orchid")
+
+
+class GeneratorStateHelpers(unittest.TestCase):
+    def test_initial_maps_use_column_fallbacks_without_defaults_snapshot(self):
+        cols = {"kw": [None, True], "str": [None, False]}
+        color_map, bold, italic = generate.initial_maps(cols, DefaultFaces(None))
+        self.assertEqual(color_map["bg"], "#000000")
+        self.assertEqual(color_map["p"], "#ffffff")
+        self.assertTrue(bold["kw"])
+        self.assertFalse(bold["str"])
+        self.assertFalse(italic["kw"])
+
+    def test_build_uimap_uses_fallback_styles_without_defaults_snapshot(self):
+        uimap = generate.build_uimap(generate.UI_FACES, DefaultFaces(None))
+        self.assertTrue(uimap["link"]["underline"])
+        self.assertEqual(uimap["mode-line"]["box"], {"style": "released", "width": 1, "color": None})
+
+    def test_build_syntax_uses_map_and_style_fallbacks_without_defaults_snapshot(self):
+        syntax = generate.build_syntax(
+            {"kw": [None, True]},
+            {"kw": "#d3d3d3"},
+            {"kw": True},
+            {"kw": False},
+            DefaultFaces(None),
+        )
+        self.assertEqual(syntax["kw"]["fg"], "#d3d3d3")
+        self.assertTrue(syntax["kw"]["bold"])
+        self.assertFalse(syntax["kw"]["italic"])
+
+    def test_builtin_fallback_styles_fill_known_emacs_styles(self):
+        uimap = {
+            name: ui_face_spec()
+            for name in (
+                "link", "lazy-highlight", "show-paren-match",
+                "error", "warning", "success",
+                "mode-line", "mode-line-inactive",
+            )
+        }
+        generate.apply_builtin_fallback_styles(uimap)
+        self.assertTrue(uimap["link"]["underline"])
+        self.assertTrue(uimap["lazy-highlight"]["underline"])
+        self.assertTrue(uimap["show-paren-match"]["underline"])
+        self.assertTrue(uimap["error"]["bold"])
+        self.assertTrue(uimap["warning"]["bold"])
+        self.assertTrue(uimap["success"]["bold"])
+        self.assertEqual(uimap["mode-line"]["box"], {"style": "released", "width": 1, "color": None})
+        self.assertEqual(uimap["mode-line-inactive"]["box"], {"style": "released", "width": 1, "color": None})
+
+    def test_seed_basics_replace_palette_ui_and_locks(self):
+        palette = [["#ffffff", "bg", "ground"]]
+        uimap = {"region": ui_face_spec()}
+        data = {
+            "palette": [["#101010", "bg", "ground"], ["#eeeeee", "fg", "ground"]],
+            "ui": {"region": ui_face_spec({"bg": "#67809c"})},
+            "locks": ["region"],
+        }
+        seeded_palette, seeded_ui, locks = generate.apply_seed_basics(data, palette, uimap, [])
+        self.assertEqual(seeded_palette, data["palette"])
+        self.assertEqual(seeded_ui["region"]["bg"], "#67809c")
+        self.assertEqual(locks, ["region"])
+
+    def test_load_seed_data_reads_relative_json_seed(self):
+        with tempfile.NamedTemporaryFile("w", dir=generate.HERE, suffix=".json", delete=False) as tmp:
+            tmp.write('{"locks":["kw"]}')
+            name = os.path.basename(tmp.name)
+        try:
+            self.assertEqual(generate.load_seed_data(name), {"locks": ["kw"]})
+        finally:
+            os.unlink(tmp.name)
+
+    def test_syntax_seed_updates_known_roles_and_map(self):
+        syntax = {"kw": face_spec(), "str": face_spec({"fg": "#111111"})}
+        color_map = {"kw": "", "str": "#111111"}
+        generate.apply_syntax_seed({
+            "syntax": {
+                "kw": {"fg": "#222222", "bold": True},
+                "unknown": {"fg": "#ff0000"},
+            }
+        }, syntax, color_map)
+        self.assertEqual(syntax["kw"]["fg"], "#222222")
+        self.assertTrue(syntax["kw"]["bold"])
+        self.assertEqual(color_map["kw"], "#222222")
+        self.assertNotIn("unknown", syntax)
+
+    def test_seed_package_overrides_replace_known_package_faces(self):
+        apps = {"demo": {"faces": [["demo-face", "face", {"fg": "#111111"}]]}}
+        generate.apply_seed_packages(apps, {
+            "packages": {"demo": {"demo-face": {"fg": "#222222", "source": "user"}}}
+        }, "seed.json")
+        self.assertEqual(apps["demo"]["faces"][0][2]["fg"], "#222222")
+        self.assertEqual(apps["demo"]["faces"][0][2]["source"], "user")
+
+    def test_palette_color_names_are_unique_and_stable_columns(self):
+        palette = [["#111111", "blue", "blue"]]
+        defaults = DefaultFaces(None)
+        generate.add_palette_color(palette, defaults, "#222222", "blue")
+        self.assertEqual(palette[-1], ["#222222", "blue-2", "blue"])
+
+    def test_default_palette_collection_includes_box_colors(self):
+        palette = [["#000000", "bg", "ground"], ["#ffffff", "fg", "ground"]]
+        defaults = DefaultFaces(None)
+        generate.add_default_palette_colors(
+            palette,
+            {"bg": "#000000", "p": "#ffffff", "kw": "#111111"},
+            {"kw": face_spec({"fg": "#111111", "bg": "#222222", "box": {"color": "#333333"}})},
+            {"region": ui_face_spec({"fg": "#444444", "bg": "#555555", "box": {"color": "#666666"}})},
+            {"demo": {"faces": [["demo-face", "face", {"fg": "#777777", "bg": "#888888", "box": {"color": "#999999"}}]]}},
+            defaults,
+        )
+        colors = {entry[0] for entry in palette}
+        for color in ("#333333", "#666666", "#999999"):
+            self.assertIn(color, colors)
+
+    def test_render_theme_studio_writes_html_to_requested_path(self):
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            path = tmp.name
+        try:
+            out = io.StringIO()
+            with redirect_stdout(out):
+                generate.render_theme_studio(path)
+            self.assertIn("wrote " + path, out.getvalue())
+            with open(path) as generated:
+                self.assertIn("<!doctype html>", generated.read().lower())
+        finally:
+            os.unlink(path)
+
+    def test_generate_script_entrypoint_writes_default_output(self):
+        out = io.StringIO()
+        with redirect_stdout(out):
+            runpy.run_path(generate.__file__, run_name="__main__")
+        self.assertIn("wrote " + generate.OUT, out.getvalue())
 
 
 class DefaultFaceAdapter(unittest.TestCase):
@@ -368,11 +505,11 @@ class GeneratedDefaults(unittest.TestCase):
 
     def test_syntax_defaults_capture_font_lock_styles(self):
         self.assertEqual(generate.MAP["kw"], "#d3d3d3")
-        self.assertTrue(generate.BOLD["kw"])
-        self.assertFalse(generate.ITALIC_MAP["kw"])
+        self.assertTrue(generate.SYNTAX["kw"]["bold"])
+        self.assertFalse(generate.SYNTAX["kw"]["italic"])
         self.assertEqual(generate.MAP["str"], "#696969")
-        self.assertFalse(generate.BOLD["str"])
-        self.assertTrue(generate.ITALIC_MAP["str"])
+        self.assertFalse(generate.SYNTAX["str"]["bold"])
+        self.assertTrue(generate.SYNTAX["str"]["italic"])
 
 
 if __name__ == "__main__":

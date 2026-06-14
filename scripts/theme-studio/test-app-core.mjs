@@ -41,7 +41,7 @@ test('optList: Boundary — empty cur is "have", so no (gone) entry', () => {
 test('optList: Error — a cur not in the palette is surfaced as (gone) first', () => {
   const list = optList('#123456', PAL);
   assert.deepEqual(list[0], ['', '— default —']);
-  assert.deepEqual(list[1], ['#123456', '(gone) #123456']);
+  assert.deepEqual(list[1], ['#123456', '(gone)']);
   assert.deepEqual(list.slice(2), PAL);
 });
 
@@ -97,7 +97,7 @@ test('paletteOptionList: Boundary — bg-like imported colors remain selectable 
 test('paletteOptionList: Error — a cur outside palette and ground is surfaced as gone', () => {
   const list = paletteOptionList('#123456', PAL, { bg: '#0d0b0a', fg: '#f0fef0' });
   assert.deepEqual(list[0], ['', '— default —']);
-  assert.deepEqual(list[1], ['#123456', '(gone) #123456']);
+  assert.deepEqual(list[1], ['#123456', '(gone)']);
 });
 
 test('spanNeighborHex: Normal — steps lighter and darker within the current column', () => {

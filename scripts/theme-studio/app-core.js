@@ -35,7 +35,7 @@ function effResolve(map,app,face,attr,seen){seen=seen||{};const f=map[app]&&map[
 
 // Standard swatch-dropdown option list: a default entry, then the palette. When
 // cur is set but no longer in the palette, surface it as a "(gone)" entry first.
-function optList(cur,palette){const have=cur===''||palette.some(p=>p[0]===cur);return [['','— default —'],...(have?palette:[[cur,'(gone) '+cur],...palette])];}
+function optList(cur,palette){const have=cur===''||palette.some(p=>p[0]===cur);return [['','— default —'],...(have?palette:[[cur,'(gone)'],...palette])];}
 
 // Turn a theme name into a safe filename slug: collapse runs of disallowed
 // characters to a single dash, trim leading/trailing dashes, fall back to 'theme'.
@@ -294,7 +294,7 @@ function lightestFirstMembers(members){return [...members].sort((a,b)=>oklchOf(b
 function paletteOptionList(cur,palette,ground){
   const have=cur===''||palette.some(p=>p[0]===cur)||[ground&&ground.bg,ground&&ground.fg].filter(Boolean).includes(cur);
   const out=[['','— default —']],seen=new Set();
-  if(!have)out.push([cur,'(gone) '+cur]);
+  if(!have)out.push([cur,'(gone)']);
   const add=(hex,name)=>{if(!hex)return;const key=hex.toLowerCase()+'|'+(name||'');if(seen.has(key))return;seen.add(key);out.push([hex,name||hex]);};
   const grouped=columnsFromPalette(palette,ground||{});
   const groundMembers=grouped.ground.map(g=>({hex:g.hex,name:g.name||g.role}))

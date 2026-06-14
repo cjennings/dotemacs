@@ -3,52 +3,224 @@
  "palette": [
   [
    "#000F08",
+   "onyx",
    "onyx"
   ],
   [
    "#00080F",
+   "cyan-black",
    "cyan-black"
   ],
   [
    "#030b18",
+   "blue-black",
    "blue-black"
   ],
   [
    "#010b1b",
-   "blue-black2"
+   "blue-black2",
+   "blue-black"
   ],
   [
    "#020d20",
+   "navy",
    "navy"
   ],
   [
    "#67809c",
+   "dupre-blue",
    "dupre-blue"
   ]
  ],
- "assignments": {
-  "p": "#cdced1",
-  "kw": "#cdced1",
-  "bi": "#cdced1",
-  "pp": "#cdced1",
-  "fnd": "#cdced1",
-  "fnc": "#cdced1",
-  "dec": "#cdced1",
-  "ty": "#cdced1",
-  "prop": "#cdced1",
-  "con": "#cdced1",
-  "num": "#cdced1",
-  "str": "#cdced1",
-  "esc": "#cdced1",
-  "re": "#cdced1",
-  "doc": "#cdced1",
-  "cm": "#cdced1",
-  "cmd": "#cdced1",
-  "var": "#cdced1",
-  "op": "#cdced1",
-  "punc": "#cdced1",
-  "bg": "#000F08"
- },
- "bold": [],
- "italic": []
+ "syntax": {
+  "bg": {
+   "fg": "#000F08",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "p": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "kw": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "bi": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "pp": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "fnd": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "fnc": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "dec": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "ty": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "prop": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "con": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "num": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "str": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "esc": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "re": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "doc": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "cm": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "cmd": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "var": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "op": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "punc": {
+   "fg": "#cdced1",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  }
+ }
 }

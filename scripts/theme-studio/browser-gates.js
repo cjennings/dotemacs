@@ -37,7 +37,11 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
   A(step.dataset.locked!=='1','ui-dd-starts-unlocked');lb.click();
   A(step.dataset.locked==='1'&&step.classList.contains('locked')&&step.querySelector('.cstepbtn').disabled,'ui-lock-disables-dd');lb.click();
   A(step.dataset.locked!=='1'&&!step.classList.contains('locked'),'ui-unlock-reenables-dd');}
- {PALETTE=[['#000000','bg','ground'],['#ffffff','fg','ground'],['#222222','gray-dark','gray'],['#888888','gray-mid','gray'],['#dddddd','gray-light','gray']];MAP['bg']='#000000';MAP['p']='#ffffff';MAP['kw']='#888888';LOCKED.clear();buildTable();
+ {UIMAP['region'].fg=null;UIMAP['region'].bg='#888888';buildUITable();
+  const tr=document.querySelector('#uibody tr[data-face="region"]'),fg=tr.cells[2].querySelector('.cdd'),bg=tr.cells[3].querySelector('.cdd');
+  A(fg.classList.contains('is-default'),'compact default color button has default outline class');
+  A(!bg.classList.contains('is-default'),'compact assigned color button does not have default outline class');}
+ {PALETTE=[['#000000','bg','ground'],['#ffffff','fg','ground'],['#222222','gray-dark','gray'],['#888888','gray-mid','gray'],['#dddddd','gray-light','gray']];setSyntaxFg('bg','#000000');setSyntaxFg('p','#ffffff');setSyntaxFg('kw','#888888');LOCKED.clear();buildTable();
   const tr=document.querySelector('#legbody tr[data-kind="kw"]'),btns=tr.querySelectorAll('.cstepbtn');btns[1].click();
   A(MAP['kw']==='#dddddd'&&tr.querySelector('.cdd').dataset.val==='#dddddd','syntax right arrow steps to lighter color');btns[0].click();
   A(MAP['kw']==='#888888','syntax left arrow steps to darker color');}
@@ -48,11 +52,11 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
   A(PKGMAP[app][face].fg==='#dddddd','pkg right arrow steps to lighter color');btns[0].click();
   A(PKGMAP[app][face].fg==='#888888','pkg left arrow steps to darker color');}
  {const ks=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p'),k1=ks[0],k2=ks[1];
-  MAP[k1]='#111111';MAP[k2]='#222222';LOCKED.clear();LOCKED.add(k1);clearUnlocked();
+  setSyntaxFg(k1,'#111111');setSyntaxFg(k2,'#222222');LOCKED.clear();LOCKED.add(k1);clearUnlocked();
   A(MAP[k1]==='#111111','syntax-erase-keeps-locked');A(MAP[k2]==='','syntax-erase-wipes-unlocked');}
  {const ks=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p'),k1=ks[0],k2=ks[1];
-  MAP[k1]='#111111';MAP[k2]='#222222';LOCKED.clear();LOCKED.add(k1);resetUnlocked();
-  A(MAP[k1]==='#111111','syntax-reset-keeps-locked');A(MAP[k2]===DEFAULT_MAP[k2],'syntax-reset-restores-unlocked-default');}
+  setSyntaxFg(k1,'#111111');setSyntaxFg(k2,'#222222');LOCKED.clear();LOCKED.add(k1);resetUnlocked();
+  A(MAP[k1]==='#111111','syntax-reset-keeps-locked');A(MAP[k2]===DEFAULT_SYNTAX[k2].fg,'syntax-reset-restores-unlocked-default');}
  {const f1=UI_FACES[0][0],f2=UI_FACES[1][0];
   UIMAP[f1].fg='#111111';UIMAP[f2].fg='#222222';LOCKED.clear();LOCKED.add('ui:'+f1);clearUnlockedUI();
   A(UIMAP[f1].fg==='#111111','ui-erase-keeps-locked');A(UIMAP[f2].fg===null,'ui-erase-wipes-unlocked');}
@@ -109,6 +113,22 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(Q('[data-face="region"] [data-k]'),'region-keeps-token-colors');
  const curCell=Q('[data-face="cursor"]');
  A(curCell&&curCell.textContent.trim().length===1,'cursor-on-glyph');
+ UIMAP['cursor']={fg:'#112233',bg:'#aabbcc',bold:false,italic:false,underline:false,strike:false,box:null};buildMockFrame();
+ const curStyled=Q('[data-face="cursor"]'),curSt=curStyled&&curStyled.getAttribute('style')||'';
+ A(curSt.includes('#112233')&&curSt.includes('#aabbcc'),'cursor preview honors fg and bg: '+curSt);
+ UIMAP['hl-line']={fg:'#112233',bg:'#aabbcc',bold:false,italic:false,underline:false,strike:false,box:null};buildMockFrame();
+ const hlStyled=Q('[data-face="hl-line"]'),hlSt=hlStyled&&hlStyled.getAttribute('style')||'';
+ A(hlSt.includes('#112233')&&hlSt.includes('#aabbcc'),'hl-line preview honors fg and bg: '+hlSt);
+ UIMAP['link']={fg:'#112233',bg:'#aabbcc',bold:false,italic:false,underline:true,strike:false,box:null};buildMockFrame();
+ const linkStyled=Q('[data-face="link"]'),linkSt=linkStyled&&linkStyled.getAttribute('style')||'';
+ A(linkSt.includes('#112233')&&linkSt.includes('#aabbcc'),'inline UI face preview honors fg and bg: '+linkSt);
+ const missing=UI_FACES.map(f=>f[0]).filter(f=>!Q('[data-face="'+f+'"]'));
+ A(missing.length===0,'all UI faces are represented in live buffer preview: '+missing.join(','));
+ buildTable();buildUITable();buildPkgTable();
+ [['#legbody tr[data-kind="kw"]',5],['#uibody tr[data-face="mode-line"]',7],['#pkgbody tr',8]].forEach(([sel,idx])=>{
+   const cell=document.querySelector(sel)?.cells[idx],ctl=cell&&cell.querySelector('.boxctl');
+   A(cell&&ctl&&ctl.getBoundingClientRect().width<=cell.getBoundingClientRect().width,'box control fits its table cell for '+sel);
+ });
  const laz=Q('[data-face="lazy-highlight"]');
  A(laz&&/background:\s*(?!transparent)/.test(laz.getAttribute('style')||''),'overlay-honors-background-style');
  A([...document.querySelectorAll('#mockframe .fr')].some(e=>e.textContent.trim()),'fringe-indicator-present');
@@ -194,8 +214,8 @@ if(location.hash==='#readouttest'){const hex='#67809c';document.getElementById('
 // out-of-scope face keeps the single-pair readout, and an empty set reads "no fg set".
 if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveMAP=Object.assign({},MAP),saveUI=JSON.parse(JSON.stringify(UIMAP));
- CATS.forEach(c=>{if(c[0]!=='bg'&&c[0]!=='p')MAP[c[0]]='';});
- MAP['p']='#f0fef0';MAP['kw']='#67809c';MAP['str']='#a3b18a';MAP['bg']='#000000';
+ CATS.forEach(c=>{if(c[0]!=='bg'&&c[0]!=='p')setSyntaxFg(c[0],'');});
+ setSyntaxFg('p','#f0fef0');setSyntaxFg('kw','#67809c');setSyntaxFg('str','#a3b18a');setSyntaxFg('bg','#000000');
  UIMAP['region']={fg:null,bg:'#202830',bold:false,italic:false,underline:false,strike:false};
  buildUITable();
  const cell=document.getElementById('uicr-region');
@@ -208,7 +228,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  const ml=document.getElementById('uicr-mode-line');
  A(worstCellHtml('mode-line')===null,'mode-line is out of scope (single-pair)');
  A(ml&&/^\d/.test(ml.textContent.trim()),'mode-line cell is a numeric ratio: '+(ml&&ml.textContent));
- MAP['p']='';CATS.forEach(c=>{if(c[0]!=='bg')MAP[c[0]]='';});buildUITable();
+ setSyntaxFg('p','');CATS.forEach(c=>{if(c[0]!=='bg')setSyntaxFg(c[0],'');});buildUITable();
  const empty=document.getElementById('uicr-region');
  A(empty&&empty.textContent.trim()==='no fg set','empty set reads the no-set message: '+(empty&&empty.textContent));
  // A two-color face (own fg AND own bg) rates its own pair, never the ground bg.
@@ -225,7 +245,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  // two-color ratio alone, and must re-rate a ground-dependent face's cell.
  UIMAP['fringe']={fg:'#ddeeff',bg:null,bold:false,italic:false,underline:false,strike:false};
  buildUITable();
- MAP['bg']='#440000';applyGround();
+ setSyntaxFg('bg','#440000');applyGround();
  const pv=document.getElementById('uiprev-mode-line');
  A(pv&&pv.style.background==='rgb(170, 187, 204)','ground change keeps a face own preview bg: got '+(pv&&pv.style.background));
  const twoAfter=document.getElementById('uicr-mode-line');
@@ -246,7 +266,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
   A(prow&&pf&&Math.abs(parseFloat(pf.textContent)-pfWant)<0.06,'default-fg change re-rates a p-fallback face: got '+(pf&&pf.textContent.trim())+' want '+pfWant.toFixed(1));
  }else A(false,'syntax table has a p row with a dropdown');
  if(pLocked){LOCKED.add('p');buildTable();}
- for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();applyGround();
+ for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);syncSyntaxFromCache();for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();applyGround();
  document.title='CONTRASTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='contrasttest';d.textContent='CONTRASTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Bevel gate (open with #beveltest): released/pressed boxes derive their
@@ -303,7 +323,7 @@ if(location.hash==='#previewlinktest'){let ok=true;const notes=[];const A=(c,n)=
 // lightness band for a selected covered face and hides it when no face is selected.
 if(location.hash==='#safetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveMAP=Object.assign({},MAP);
- MAP['p']='#f0fef0';MAP['kw']='#67809c';MAP['bg']='#000000';
+ setSyntaxFg('p','#f0fef0');setSyntaxFg('kw','#67809c');setSyntaxFg('bg','#000000');
  document.getElementById('newhexstr').value='#202830';openPicker();setPkModel('oklch');
  setSafeFace('region');
  const band=document.getElementById('svsafe');
@@ -311,24 +331,24 @@ if(location.hash==='#safetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(band&&parseFloat(band.style.height)>0,'safe band has a positive height: '+(band&&band.style.height));
  setSafeFace('');
  A(band&&band.style.display==='none','safe band hidden when no face is selected');
- for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);
+ for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);syncSyntaxFromCache();
  setPkModel('hsv');closePicker();
  document.title='SAFETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='safetest';d.textContent='SAFETEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Gone-rebind gate (open with #healtest): deleting a named color then recreating
-// the name re-points the assignments stranded on the old hex to the new color.
+// the name re-points face references stranded on the old hex to the new color.
 if(location.hash==='#healtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),savePK=JSON.parse(JSON.stringify(PKGMAP)),saveG=Object.assign({},lastGone),saveSel=selectedIdx;
- PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue']];MAP['kw']='#67809c';lastGone={};selectedIdx=null;renderPalette();buildTable();
+ PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue']];setSyntaxFg('kw','#67809c');lastGone={};selectedIdx=null;renderPalette();buildTable();
  const blue=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='blue');
  A(!!(blue&&blue.querySelector('.rm')),'blue chip has a remove button');
  if(blue&&blue.querySelector('.rm'))blue.querySelector('.rm').click();
  A(!PALETTE.some(p=>p[1]==='blue'),'blue was deleted');
  A(lastGone['blue']==='#67809c','delete recorded the gone name->hex');
  document.getElementById('newhexstr').value='#5a7a9a';document.getElementById('newname').value='blue';selectedIdx=null;addColor();
- A(MAP['kw']==='#5a7a9a','assignment re-bound to the recreated name, got '+MAP['kw']);
+ A(MAP['kw']==='#5a7a9a','face reference re-bound to the recreated name, got '+MAP['kw']);
  A(!('blue' in lastGone),'heal consumed the gone entry');
- PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);PKGMAP=savePK;lastGone=saveG;selectedIdx=saveSel;
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);PKGMAP=savePK;lastGone=saveG;selectedIdx=saveSel;
  renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
  document.title='HEALTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='healtest';d.textContent='HEALTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
@@ -337,14 +357,14 @@ if(location.hash==='#healtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
 // a color leaves it in the same strip because the column id is stable.
 if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveG=Object.assign({},lastGone),saveSel=selectedIdx;
- MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';
+ setSyntaxFg('bg','#0d0b0a');setSyntaxFg('p','#f0fef0');
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg'],['#c0402a','red'],['#3a6ea5','blue'],['#808080','gray']];selectedIdx=null;renderPalette();
  const strips=[...document.querySelectorAll('#pals .fstrip')];
  A(strips.length&&strips[0].dataset.column==='ground','ground column is pinned first');
  A(strips[0].querySelectorAll('.pchip').length===2,'ground column carries bg + fg endpoints');
  A(!!strips[0].querySelector('.fhead + .fcount + .pchip'),'span control sits between header and tiles for ground');
  A(strips.length>=4,'ground + red + blue + gray columns, got '+strips.length);
- PALETTE=[['#3a6ea5','blue','blue']];MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';selectedIdx=null;renderPalette();
+ PALETTE=[['#3a6ea5','blue','blue']];setSyntaxFg('bg','#0d0b0a');setSyntaxFg('p','#f0fef0');selectedIdx=null;renderPalette();
  const fgChip=[...document.querySelectorAll('#pals .fstrip[data-column="ground"] .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='fg');
  A(!!fgChip&&!fgChip.querySelector('.nm').disabled,'missing fg endpoint is normalized into a selectable real chip');
  if(fgChip)fgChip.click();
@@ -380,14 +400,14 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  const ri=PALETTE.findIndex(p=>p[1]==='red');PALETTE[ri][1]='zztop-absurd';renderPalette();
  const renamed=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='zztop-absurd');
  A(!!renamed&&renamed.closest('.fstrip').dataset.column===redColumn,'a renamed color stays in the same strip');
- PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#0d0b0a','bg2'],['#0d0b0a','bg-alt']];MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';selectedIdx=null;renderPalette();
+ PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#0d0b0a','bg2'],['#0d0b0a','bg-alt']];setSyntaxFg('bg','#0d0b0a');setSyntaxFg('p','#f0fef0');selectedIdx=null;renderPalette();
  const bg2Chip=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='bg2');
  A(!!bg2Chip&&bg2Chip.closest('.fstrip').dataset.column==='bg2'&&!!bg2Chip.querySelector('.rm')&&!bg2Chip.querySelector('.lock'),'same-hex bg2 remains a normal removable color column chip');
  if(bg2Chip){bg2Chip.click();document.getElementById('newhexstr').value='#101820';document.getElementById('newname').value='bg2';updateColor();}
  A(MAP['bg']==='#0d0b0a','editing same-hex bg2 does not repoint the real bg assignment');
  A(PALETTE.some(p=>p[1]==='bg2'&&p[0]==='#101820'),'editing same-hex bg2 updates only that palette tile');
  PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#c0402a','red','red'],['#3a6ea5','blue','blue'],['#92acc2','blue+1','blue'],['#808080','gray','gray']];
- MAP['kw']='#92acc2';lastGone={};selectedIdx=PALETTE.findIndex(p=>p[1]==='blue+1');renderPalette();
+ setSyntaxFg('kw','#92acc2');lastGone={};selectedIdx=PALETTE.findIndex(p=>p[1]==='blue+1');renderPalette();
  const del=document.querySelector('#pals .fstrip[data-column="blue"] .cdel');
   A(!!del,'normal column has a delete button');
  const beforeDelete=PALETTE.map(p=>p.join('|')).join('||'),oldConfirm=window.confirm;
@@ -400,17 +420,20 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  A(!PALETTE.some(p=>p[2]==='blue'),'column delete removes every entry with the stable column id');
  A(PALETTE.some(p=>p[1]==='red')&&PALETTE.some(p=>p[1]==='gray'),'column delete leaves neighboring columns alone');
  A(PALETTE.some(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})==='bg')&&PALETTE.some(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})==='fg'),'column delete leaves ground entries alone');
- A(MAP['kw']==='#92acc2','column delete leaves assignments on removed hexes');
+ A(MAP['kw']==='#92acc2','column delete leaves face references on removed hexes');
+ buildTable();
+ const goneTitle=document.querySelector('#legbody tr[data-kind="kw"] .cdd')?.title||'';
+ A(goneTitle==='(gone) #92acc2','gone color hover has one hex value: '+goneTitle);
  A(lastGone['blue']==='#3a6ea5'&&lastGone['blue+1']==='#92acc2','column delete records every removed name for recovery');
  A(selectedIdx===null,'column delete clears selected color');
  PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#c0402a','red','red'],['#3a6ea5','blue','blue'],['#92acc2','blue+1','blue']];
- MAP['kw']='#3a6ea5';selectedIdx=2;clearPalette();
+ setSyntaxFg('kw','#3a6ea5');selectedIdx=2;clearPalette();
  A(PALETTE.length===2&&PALETTE.every(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})),'clear palette leaves only bg and fg tiles');
  A(!PALETTE.some(p=>p[1]==='red'||p[1]==='blue'||p[1]==='blue+1'),'clear palette removes normal color columns and spans');
- A(MAP['kw']==='#3a6ea5','clear palette leaves existing assignments on gone hexes');
+ A(MAP['kw']==='#3a6ea5','clear palette leaves existing face references on gone hexes');
  A(lastGone['blue']==='#3a6ea5'&&lastGone['blue+1']==='#92acc2','clear palette records removed names for recovery');
  A(selectedIdx===null,'clear palette clears selected color');
- PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);lastGone=saveG;selectedIdx=saveSel;renderPalette();
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();lastGone=saveG;selectedIdx=saveSel;renderPalette();
  document.title='COLUMNTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='columntest';d.textContent='COLUMNTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Count-control gate (open with #counttest): the per-column count regenerates the
@@ -419,18 +442,18 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
 // is left on its old (now-gone) hex.
 if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),saveSel=selectedIdx;
- MAP['bg']='#204060';MAP['p']='#f0fef0';
+ setSyntaxFg('bg','#204060');setSyntaxFg('p','#f0fef0');
  PALETTE=[['#204060','bg'],['#f0fef0','fg']];
  setGroundSpan(2);
  A(MAP['bg']==='#204060'&&MAP['p']==='#f0fef0','spanning ground keeps bg/fg assignments on endpoints');
  A(PALETTE.some(p=>p[1]==='ground+1')&&PALETTE.some(p=>p[1]==='ground+2'),'spanning ground adds interior ground+N entries');
  A(document.querySelector('#pals .fstrip[data-column="ground"] .fhead + .fcount + .pchip'),'ground span control renders before tiles');
- MAP['bg']='#ffffff';MAP['p']='#000000';
+ setSyntaxFg('bg','#ffffff');setSyntaxFg('p','#000000');
  PALETTE=[['#ffffff','bg'],['#bbbbbb','ground+1','ground'],['#777777','ground+2','ground'],['#000000','fg']];
  renderPalette();
  const groundNames=[...document.querySelectorAll('#pals .fstrip[data-column="ground"] .pchip .nm')].map(e=>e.value);
  A(groundNames.join('|')==='bg|ground+1|ground+2|fg','ground column order is bg, ground steps, fg even when bg is lighter: '+groundNames.join('|'));
- MAP['bg']='#204060';MAP['p']='#f0fef0';
+ setSyntaxFg('bg','#204060');setSyntaxFg('p','#f0fef0');
  setGroundSpan(1);
  A(!PALETTE.some(p=>p[1]==='ground+2'),'lowering ground span removes dropped interior steps');
  PALETTE=[['#204060','bg'],['#f0fef0','fg'],['#e0e0e0','near-white','near-white']];
@@ -458,7 +481,7 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  const want3=regenColumn('#67809c',3).members.map(m=>m.hex.toLowerCase());
  const have=new Set(PALETTE.map(p=>p[0].toLowerCase()));
  A(want3.every(h=>have.has(h)),'count up to 3 adds all 7 span colors to the palette');
- PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
  document.title='COUNTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='counttest';d.textContent='COUNTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Base-edit + ground-edit gate (open with #baseedittest): editing a column base
@@ -466,7 +489,7 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
 // ground swatch writes the bg/fg assignment.
 if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),saveSel=selectedIdx;
- MAP['bg']='#0d0b0a';MAP['p']='#f0fef0';
+ setSyntaxFg('bg','#0d0b0a');setSyntaxFg('p','#f0fef0');
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg']];
  regenColumn('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
  UIMAP['region']={fg:null,bg:'#67809c',bold:false,italic:false,underline:false,strike:false};
@@ -485,7 +508,7 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  updateColor();
  A(MAP['bg'].toLowerCase()==='#101010','editing the bg swatch wrote the bg assignment, got '+MAP['bg']);
  // fg edit: even when a normal column shares the old fg hex, editing fg must not regenerate that column as fg-*.
- MAP['bg']='#0d0b0a';MAP['p']='#e0e0e0';
+ setSyntaxFg('bg','#0d0b0a');setSyntaxFg('p','#e0e0e0');
  PALETTE=[['#0d0b0a','bg','ground'],['#e0e0e0','fg','ground'],['#c0c0c0','silver-1','silver'],['#e0e0e0','silver','silver'],['#f4f4f4','silver+1','silver']];
  selectedIdx=PALETTE.findIndex(p=>p[1]==='fg');
  document.getElementById('newhexstr').value='#d8d8d8';document.getElementById('newname').value='fg';
@@ -494,24 +517,28 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  A(PALETTE.some(p=>p[1]==='silver'&&p[2]==='silver'),'editing fg does not rename a same-hex normal column base');
  A(!PALETTE.some(p=>/^fg[+-]\d+$/.test(p[1])),'editing fg does not generate fg span tiles from a same-hex normal column');
  A(PALETTE.find(p=>p[1]==='fg')[2]==='ground','editing fg preserves the ground column id');
- PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
  document.title='BASEEDITTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='baseedittest';d.textContent='BASEEDITTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Round-trip gate (open with #roundtriptest): export stays a flat palette with
 // stable column ids, and import does not need color-derived column reconstruction.
 if(location.hash==='#roundtriptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const stable=o=>Array.isArray(o)?o.map(stable):(o&&typeof o==='object'?Object.fromEntries(Object.keys(o).sort().map(k=>[k,stable(o[k])])):o);
+ const diff=(a,b,p='')=>{if(JSON.stringify(a)===JSON.stringify(b))return '';if(typeof a!==typeof b||!a||!b||typeof a!=='object')return p+': '+JSON.stringify(a)+' != '+JSON.stringify(b);
+  const ks=[...new Set([...Object.keys(a),...Object.keys(b)])].sort();for(const k of ks){const d=diff(a[k],b[k],p?p+'.'+k:k);if(d)return d;}return p;};
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveL=new Set(LOCKED);
  PALETTE=[['#ffffff','bg','ground'],['#000000','fg','ground'],['#224466','blue','blue'],['#446688','renamed-blue','blue']];
- MAP['bg']='#ffffff';MAP['p']='#000000';
+ setSyntaxFg('bg','#ffffff');setSyntaxFg('p','#000000');
  LOCKED=new Set(['kw','ui:region','pkg:'+curApp()+':'+APPS[curApp()].faces[0][0]]);
  const before=JSON.stringify(exportObj());
  applyImported(before);
  const after=JSON.stringify(exportObj());
- A(before===after,'export → import → export is byte-identical');
+ const bObj=stable(JSON.parse(before)),aObj=stable(JSON.parse(after));
+ A(JSON.stringify(bObj)===JSON.stringify(aObj),'export → import → export is semantically stable: '+diff(bObj,aObj));
  const obj=JSON.parse(after);
  A(Array.isArray(obj.palette)&&obj.palette.every(e=>Array.isArray(e)&&e.length>=3&&typeof e[2]==='string'),'exported palette carries flat [hex,name,columnId] entries');
  A(obj.palette.some(e=>e[1]==='renamed-blue'&&e[2]==='blue'),'renamed color keeps its stable column id through export/import');
  A(obj.locks&&obj.locks.includes('kw')&&obj.locks.includes('ui:region'),'lock state survives export/import');
- PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);LOCKED=saveL;
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();LOCKED=saveL;
  document.title='ROUNDTRIPTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='roundtriptest';d.textContent='ROUNDTRIPTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}

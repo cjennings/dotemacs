@@ -12,13 +12,13 @@ STYLE_DEFAULTS: dict[str, Any] = {
     "italic": False,
     "underline": False,
     "strike": False,
+    "box": None,
 }
 
 PACKAGE_DEFAULTS: dict[str, Any] = {
     **STYLE_DEFAULTS,
     "inherit": None,
     "height": 1,
-    "box": None,
 }
 
 

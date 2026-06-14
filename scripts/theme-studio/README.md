@@ -102,11 +102,11 @@ Three tiers of faces, plus the palette:
   snaps to the reachable color and shows a clamp note. The palette also warns
   when two colors fall below a perceptual ΔE threshold, hard to tell apart.
 - **Syntax** — every font-lock / tree-sitter category (keyword, string,
-  function, type, comment, and the rest), each with normal/bold/italic and a
-  contrast rating. Click a category to flash its tokens in the code; click a
-  token to flash its row. `lock all` flips to `unlock all` when every row in the
-  tier is locked. `reset` restores editable rows to the captured syntax defaults;
-  `erase` blanks editable rows. Both preserve locked rows.
+  function, type, comment, and the rest), each with foreground, background,
+  style, box, and a contrast rating. Click a category to flash its tokens in the
+  code; click a token to flash its row. `lock all` flips to `unlock all` when
+  every row in the tier is locked. `reset` restores editable rows to the captured
+  syntax defaults; `erase` blanks editable rows. Both preserve locked rows.
 - **UI faces** — cursor, region, mode-line, fringe, line numbers, isearch, paren
   match, link, error/warning/success, and the rest, foreground and background
   per face, shown in a live mock Emacs buffer. `reset` restores captured UI face
@@ -114,6 +114,10 @@ Three tiers of faces, plus the palette:
   locked rows. Box controls include style plus an optional color; raised/pressed
   boxes derive their relief edges from that color when set.
 - **Package faces** — per-package face tables with a live preview (below).
+
+Color dropdowns in the face tables use compact square swatches to save horizontal
+space. Hovering a swatch shows the color name and hex; clicking it opens the full
+palette dropdown.
 
 ## Color columns
 
@@ -199,6 +203,14 @@ fg/bg/style/inherit override. Both preserve locked rows. Package
 `lock all` / `unlock all` applies to the whole currently selected package, not
 only the rows visible under the text filter.
 
+Org TODO keyword colors are normal Org face resolution, not a separate automatic
+palette generator. Org checks `org-todo-keyword-faces` for an exact keyword match
+first. If no exact face is configured, keywords before the `|` separator in
+`org-todo-keywords` use `org-todo`; keywords after `|` use `org-done`. For
+example, in `(sequence "TODO" "WAIT" "|" "DONE" "CANCELLED")`, `TODO` and
+`WAIT` fall back to `org-todo`, while `DONE` and `CANCELLED` fall back to
+`org-done`. Fast-selection keys such as `WAIT(w)` do not affect the face.
+
 Twenty applications have bespoke previews that exercise nearly all of their
 faces: org-mode (a document plus an agenda view), magit (a status buffer plus
 blame, reflog, sequence, bisect, and signature rows), elfeed (a search list and
@@ -246,9 +258,14 @@ The export (and what a build step consumes):
 {
   "name": "dupre",
   "palette": [["#67809c", "blue", "blue"], ["#e8bd30", "gold", "gold"]],
-  "assignments": {"kw": "#67809c", "str": "#5d9b86", "bg": "#000000", "p": "#ffffff"},
-  "bold": ["kw", "fnd"],
-  "italic": [],
+  "syntax": {
+    "bg": {"fg": "#000000", "bg": null, "bold": false, "italic": false,
+           "underline": false, "strike": false, "box": null},
+    "p":  {"fg": "#ffffff", "bg": null, "bold": false, "italic": false,
+           "underline": false, "strike": false, "box": null},
+    "kw": {"fg": "#67809c", "bg": null, "bold": true, "italic": false,
+           "underline": false, "strike": false, "box": null}
+  },
   "ui": {"region": {"fg": null, "bg": "#264364"}, "cursor": {"fg": null, "bg": "#a9b2bb"}},
   "packages": {
     "org-mode": {
@@ -260,17 +277,19 @@ The export (and what a build step consumes):
 }
 ```
 
-- `assignments` maps syntax category keys to hexes; `bg` is the `default` face
-  background, `p` the foreground.
+- `syntax` maps syntax category keys to full face specs. `syntax.bg.fg` is the
+  `default` face background, and `syntax.p.fg` is the `default` face foreground.
+  Other syntax categories fan out to the font-lock / tree-sitter faces listed in
+  `build-theme.el`.
 - `palette` is a flat list of `[hex, name, columnId]`. `name` is the editable
   display label; `columnId` is the durable grouping key that keeps generated
-  colors in their original column even if they are renamed. Older `[hex, name]`
-  entries still import and are normalized on export.
+  colors in their original column even if they are renamed.
 - `ui` and `packages` faces carry `fg`/`bg` (hex or `null`), `bold`, `italic`,
-  `underline`, `strike`, and for package faces `inherit` (a face name or
-  `null`), `height` (a float, omitted at 1.0), and `source` (`"default"` seeded,
-  `"user"` edited, `"cleared"`). The converter writes `underline` as
-  `:underline t` and `strike` as `:strike-through t`.
+  `underline`, `strike`, and `box`; package faces also carry `inherit` (a face
+  name or `null`), `height` (a float, omitted at 1.0), and `source`
+  (`"default"` seeded, `"user"` edited, `"cleared"`). The converter writes
+  `underline` as `:underline t`, `strike` as `:strike-through t`, and `box` as an
+  Emacs `:box` plist.
 - The theme name is both the `name` field and the download filename. Import a
   `theme.json` to start from a prior theme; a file with no `packages` key still
   loads.
@@ -281,10 +300,9 @@ The export (and what a build step consumes):
 
 `build-theme.el` converts a `theme.json` into a single self-contained
 `themes/<name>-theme.el` deftheme. JSON in, valid Emacs faces out, across all
-four tiers: `default` from `assignments.bg`/`.p`, the syntax categories mapped
-to their font-lock / tree-sitter faces (with the `bold`/`italic` sets applied),
-the UI faces passed through, and the package faces with `:inherit`/`:height`
-and weight/slant written.
+four tiers: `default` from `syntax.bg`/`syntax.p`, the syntax categories mapped
+to their font-lock / tree-sitter faces, the UI faces passed through, and the
+package faces with `:inherit`/`:height` and weight/slant written.
 
 ```bash
 emacs --batch -l scripts/theme-studio/build-theme.el \
