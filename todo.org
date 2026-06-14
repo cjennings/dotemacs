@@ -195,6 +195,16 @@ Spec draft: [[file:docs/theme-studio-palette-generator-spec.org][theme-studio-pa
 
 Build a constraint-first palette generator for Theme Studio: start from bg/fg, generate editable palette columns in OKLCH, preview candidate columns before applying them, and apply proposals by append/replace/regenerate modes while preserving stable column ids and existing assignments where possible. V1 is palette-only, not automatic face assignment; generator output becomes normal editable columns after apply.
 
+*** TODO [#C] theme-studio palette generator source modes for base-only vs ground-aware palettes :feature:
+:PROPERTIES:
+:LAST_REVIEWED: 2026-06-14
+:END:
+Tentative follow-up from walking through the generator algorithms. Consider splitting the current =source: palette= behavior into two explicit source modes, names TBD:
+- =base color palette= — current behavior; use non-ground base color columns only and ignore bg, fg, ground spans, and color spans.
+- =ground and base palette= — use bg/fg plus non-ground base color columns as generator anchors, useful when colored ground endpoints should shape fill-gap or harmony choices.
+
+This may be cancelled if the extra distinction makes the generator harder to understand. Before implementing, decide final names and whether ground-aware source should include only bg/fg or also ground span steps.
+
 ** TODO [#B] theme-studio save button does not overwrite the current theme file :bug:
 :PROPERTIES:
 :LAST_REVIEWED: 2026-06-13
@@ -1031,8 +1041,10 @@ From the 2026-06 config audit, =modules/help-config.el=:
 - =:111= — auto-mode-alist maps .info to an interactive command that KILLS the buffer mid find-file — programmatic =find-file-noselect= of any .info destroys buffers and pops Info windows. Drop the entry; keep the explicit command. Zero test coverage on this module (the two broken paths are exactly the untested ones).
 Fixed 2026-06-13: (1) extracted the save/cancel/open decision into a pure =cj/--info-open-plan= and routed =cj/open-with-info-mode= through it — no more =cl-return-from=, declining cancels cleanly; (2) deleted the dead =:hook= and the empty =:preface=; (3) dropped the destructive =auto-mode-alist= .info entry (kept =cj/open-with-info-mode= as an M-x command and =cj/browse-info-files= on C-h i). New test-help-config.el covers the planner (open / save-then-open / cancel) — 3 green; module loads clean. Stale daemon state (the .info auto-mode entry + the bogus info-mode-hook entry) cleared by hand so the running session is correct without a restart. Interactive Info open + find-file-no-longer-destructive are a VERIFY.
 
-** TODO [#B] modeline runs synchronous git on the redisplay path, unguarded :bug:solo:
+** DONE [#B] modeline runs synchronous git on the redisplay path, unguarded :bug:solo:
+CLOSED: [2026-06-14 Sun]
 =modules/modeline-config.el:173,154,145= — the mode-line :eval calls vc-backend/vc-state/vc-working-revision (synchronous git) on TTL expiry; a slow or unmounted filesystem stalls ALL redisplay. The cache key computes =file-truename= on every render (the "one stat per refresh" comment is wrong), and nothing is condition-case-wrapped, so a signal lands inside the mode-line eval. Defer the truename behind the TTL check; wrap the fetch in condition-case caching nil. From the 2026-06 config audit.
+Fixed 2026-06-14 (Approach A): dropped =file-truename= from =cj/modeline-vc-cache-key= (key is now =(file show-remote)=, no per-render stat; a moved symlink is caught at the next TTL refresh when vc-backend resolves the link fresh). Wrapped =cj/modeline-vc-fetch= in =condition-case ... (error nil)= so a git signal on a slow/unmounted FS degrades to no-VC-info instead of breaking redisplay. Rewrote the two truename cache-key tests to assert the cheap key; added a fetch-swallows-vc-errors test. 9 modeline vc tests green; live daemon confirms the 2-element key and nil-on-error fetch.
 
 ** TODO [#B] Stale elpa gptel shadows the local fork — likely the gptel-magit root :bug:quick:solo:
 =elpa/gptel-0.9.8.5= is still installed alongside the =~/code/gptel= fork (=ai-config.el:383=); package activation puts the elpa dir + autoloads on load-path, so which copy wins depends on ordering, and a mixed load (fork .el + elpa .elc) produces "impossible" bugs. =gptel-magit= (elpa) declares gptel as a dependency, so IT may be pulling the stale copy — check this first when working the open "[#B] Investigate gptel-magit not working properly" task. Fix: =package-delete= the elpa gptel + remove from .localrepo so the fork is the only copy on disk. From the 2026-06 config audit.
@@ -4429,6 +4441,11 @@ From the 2026-06-11 messenger-unification brainstorm. Google Voice has no offici
 
 ** TODO Manual testing and validation
 Exercised once the phases above land.
+*** VERIFY modeline still shows the git branch and state
+What we're verifying: the VC-cache simplification didn't change what the modeline shows on a normal repo. Fixed in modules/modeline-config.el (live in the daemon after reload).
+- Open a file inside a git repo
+- Glance at the mode-line VC segment
+Expected: the branch name and state still render as before (e.g. "main" with the usual state face). The change only drops a per-render stat and guards against git errors; normal display is unchanged.
 *** VERIFY info-mode open is non-destructive and cancels cleanly
 What we're verifying: opening a .info file no longer auto-kills the buffer, and the explicit cj/open-with-info-mode prompt cancels cleanly on decline. Fixed in modules/help-config.el; stale daemon state already cleared, so this also survives a fresh restart.
 - find-file a .info file (e.g. one under elpa) — it should open as an ordinary buffer, not vanish into Info

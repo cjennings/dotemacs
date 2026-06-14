@@ -98,5 +98,12 @@
       (should (text-property-any 0 (length rendered)
                                  'mouse-face 'mode-line-highlight rendered)))))
 
+(ert-deftest test-modeline-config-vc-fetch-swallows-vc-errors ()
+  "Error: a signal from the VC backend is swallowed (returns nil) rather than
+propagating into the mode-line redisplay path, where it would break all redisplay."
+  (cl-letf (((symbol-function 'file-remote-p) (lambda (&rest _) nil))
+            ((symbol-function 'vc-backend) (lambda (&rest _) (error "git boom"))))
+    (should (null (cj/modeline-vc-fetch "/tmp/project/file.el")))))
+
 (provide 'test-modeline-config-vc-cache)
 ;;; test-modeline-config-vc-cache.el ends here
