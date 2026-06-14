@@ -100,3 +100,7 @@ __pycache__/
 # editor/image backup files
 *.bak
 smoke/
+
+# theme-studio working/scratch artifacts (not source of truth)
+/scripts/theme-studio/WIP.json
+/themes/theme-theme.el
