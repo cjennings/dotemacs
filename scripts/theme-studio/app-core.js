@@ -303,5 +303,23 @@ function paletteOptionList(cur,palette,ground){
   sortColumns(grouped.columns).forEach(f=>lightestFirstMembers(f.members).forEach(m=>add(m.hex,m.name)));
   return out;
 }
+function spanNeighborHex(cur,palette,ground,dir){
+  if(!cur)return null;
+  const wanted=(cur||'').toLowerCase(),groups=[],byLight=(a,b)=>oklchOf(a.hex).L-oklchOf(b.hex).L;
+  const addGroup=members=>{
+    const seen=new Set(),g=[];
+    members.filter(m=>m&&m.hex).sort(byLight).forEach(m=>{const h=m.hex.toLowerCase();if(!seen.has(h)){seen.add(h);g.push(m);}});
+    if(g.length)groups.push(g);
+  };
+  addGroup(groundColumnMembersFromPalette(palette,ground||{}));
+  sortColumns(columnsFromPalette(palette,ground||{}).columns).forEach(f=>addGroup(f.members));
+  for(const g of groups){
+    const i=g.findIndex(m=>(m.hex||'').toLowerCase()===wanted);
+    if(i<0)continue;
+    const next=g[i+(dir>0?1:-1)];
+    return next?next.hex:null;
+  }
+  return null;
+}
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, spanNeighborHex, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

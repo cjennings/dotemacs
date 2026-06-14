@@ -28,16 +28,26 @@ if(location.hash==='#selftest')pkgSelftest();
 if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  LOCKED.clear();buildTable();
  {const k=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p')[0];
-  const tr=document.querySelector('#legbody tr[data-kind="'+k+'"]'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
-  A(dd.dataset.locked!=='1','syntax-dd-starts-unlocked');lb.click();
-  A(dd.dataset.locked==='1'&&dd.classList.contains('locked'),'syntax-lock-disables-dd');lb.click();
-  A(dd.dataset.locked!=='1','syntax-unlock-reenables-dd');}
+  const tr=document.querySelector('#legbody tr[data-kind="'+k+'"]'),step=tr.querySelector('.cstep'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
+  A(step.dataset.locked!=='1','syntax-dd-starts-unlocked');lb.click();
+  A(step.dataset.locked==='1'&&step.classList.contains('locked')&&step.querySelector('.cstepbtn').disabled,'syntax-lock-disables-dd');lb.click();
+  A(step.dataset.locked!=='1'&&!step.classList.contains('locked'),'syntax-unlock-reenables-dd');}
  LOCKED.clear();buildUITable();
  {const f=UI_FACES[0][0];
-  const tr=document.querySelector('#uibody tr[data-face="'+f+'"]'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
-  A(dd.dataset.locked!=='1','ui-dd-starts-unlocked');lb.click();
-  A(dd.dataset.locked==='1'&&dd.classList.contains('locked'),'ui-lock-disables-dd');lb.click();
-  A(dd.dataset.locked!=='1','ui-unlock-reenables-dd');}
+  const tr=document.querySelector('#uibody tr[data-face="'+f+'"]'),step=tr.querySelector('.cstep'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
+  A(step.dataset.locked!=='1','ui-dd-starts-unlocked');lb.click();
+  A(step.dataset.locked==='1'&&step.classList.contains('locked')&&step.querySelector('.cstepbtn').disabled,'ui-lock-disables-dd');lb.click();
+  A(step.dataset.locked!=='1'&&!step.classList.contains('locked'),'ui-unlock-reenables-dd');}
+ {PALETTE=[['#000000','bg','ground'],['#ffffff','fg','ground'],['#222222','gray-dark','gray'],['#888888','gray-mid','gray'],['#dddddd','gray-light','gray']];MAP['bg']='#000000';MAP['p']='#ffffff';MAP['kw']='#888888';LOCKED.clear();buildTable();
+  const tr=document.querySelector('#legbody tr[data-kind="kw"]'),btns=tr.querySelectorAll('.cstepbtn');btns[1].click();
+  A(MAP['kw']==='#dddddd'&&tr.querySelector('.cdd').dataset.val==='#dddddd','syntax right arrow steps to lighter color');btns[0].click();
+  A(MAP['kw']==='#888888','syntax left arrow steps to darker color');}
+ {UIMAP['region'].bg='#888888';LOCKED.clear();buildUITable();const tr=document.querySelector('#uibody tr[data-face="region"]'),btns=tr.cells[3].querySelectorAll('.cstepbtn');btns[1].click();
+  A(UIMAP['region'].bg==='#dddddd','ui right arrow steps to lighter color');btns[0].click();
+  A(UIMAP['region'].bg==='#888888','ui left arrow steps to darker color');}
+ {const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].fg='#888888';LOCKED.clear();buildPkgTable();const tr=document.querySelector('#pkgbody tr[data-face="'+face+'"]'),btns=tr.cells[2].querySelectorAll('.cstepbtn');btns[1].click();
+  A(PKGMAP[app][face].fg==='#dddddd','pkg right arrow steps to lighter color');btns[0].click();
+  A(PKGMAP[app][face].fg==='#888888','pkg left arrow steps to darker color');}
  {const ks=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p'),k1=ks[0],k2=ks[1];
   MAP[k1]='#111111';MAP[k2]='#222222';LOCKED.clear();LOCKED.add(k1);clearUnlocked();
   A(MAP[k1]==='#111111','syntax-clear-keeps-locked');A(MAP[k2]==='','syntax-clear-wipes-unlocked');}

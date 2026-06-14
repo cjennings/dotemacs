@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, slugify,
+  nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, optList, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
 } from './app-core.js';
 
@@ -98,6 +98,36 @@ test('paletteOptionList: Error — a cur outside palette and ground is surfaced 
   const list = paletteOptionList('#123456', PAL, { bg: '#0d0b0a', fg: '#f0fef0' });
   assert.deepEqual(list[0], ['', '— default —']);
   assert.deepEqual(list[1], ['#123456', '(gone) #123456']);
+});
+
+test('spanNeighborHex: Normal — steps lighter and darker within the current column', () => {
+  const pal = [
+    ['#222222', 'gray-dark', 'gray'],
+    ['#888888', 'gray-mid', 'gray'],
+    ['#dddddd', 'gray-light', 'gray'],
+    ['#330000', 'red-dark', 'red'],
+  ];
+  const ground = { bg: '#000000', fg: '#ffffff' };
+  assert.equal(spanNeighborHex('#888888', pal, ground, 1), '#dddddd');
+  assert.equal(spanNeighborHex('#888888', pal, ground, -1), '#222222');
+  assert.equal(spanNeighborHex('#dddddd', pal, ground, 1), null);
+  assert.equal(spanNeighborHex('#222222', pal, ground, -1), null);
+});
+
+test('spanNeighborHex: Normal — ground steps by lightness too', () => {
+  const pal = [
+    ['#ffffff', 'bg', 'ground'],
+    ['#777777', 'ground+1', 'ground'],
+    ['#000000', 'fg', 'ground'],
+  ];
+  const ground = { bg: '#ffffff', fg: '#000000' };
+  assert.equal(spanNeighborHex('#777777', pal, ground, 1), '#ffffff');
+  assert.equal(spanNeighborHex('#777777', pal, ground, -1), '#000000');
+});
+
+test('spanNeighborHex: Boundary — default and gone colors cannot step', () => {
+  assert.equal(spanNeighborHex('', PAL, { bg: '#000000', fg: '#ffffff' }, 1), null);
+  assert.equal(spanNeighborHex('#123456', PAL, { bg: '#000000', fg: '#ffffff' }, 1), null);
 });
 
 test('clearPalettePlan: Normal — removes non-ground colors and records recoverable names', () => {

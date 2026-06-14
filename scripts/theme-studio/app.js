@@ -47,12 +47,24 @@ let _ddPop=null;
 function closeColorDropdown(){if(_ddPop){_ddPop.remove();_ddPop=null;}}
 document.addEventListener('pointerdown',e=>{if(_ddPop&&!e.target.closest('.cdd')&&!e.target.closest('.cddpop'))closeColorDropdown();});
 function mkColorDropdown(options,cur,onPick){
+  const wrap=document.createElement('div');wrap.className='cstep';
+  const left=document.createElement('button'),right=document.createElement('button');
+  left.className='cstepbtn';right.className='cstepbtn';left.type=right.type='button';
+  left.textContent='‹';right.textContent='›';left.title='move to next darker color in this column';right.title='move to next lighter color in this column';
   const t=document.createElement('div');t.className='cdd';t.tabIndex=0;
   const nameOf=h=>{const o=options.find(p=>p[0]===h);return o?o[1]:(h||'none');};
+  function step(dir){if(wrap.dataset.locked==='1')return;const next=spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},dir);if(!next)return;cur=next;paint();onPick(next);}
+  function paintStepButtons(){
+    const locked=wrap.dataset.locked==='1';
+    left.disabled=locked||!spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},-1);
+    right.disabled=locked||!spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},1);
+  }
   function paint(){t.style.background=cur||'#161412';t.style.color=cur?textOn(cur):'#b4b1a2';t.dataset.val=cur||'';
-    t.innerHTML=`<span class="cddsw" style="background:${cur||'transparent'}"></span>${esc(nameOf(cur))}`;}
+    t.innerHTML=`<span class="cddsw" style="background:${cur||'transparent'}"></span>${esc(nameOf(cur))}`;paintStepButtons();}
   paint();
-  t.onclick=(e)=>{e.stopPropagation();if(t.dataset.locked==='1')return;if(_ddPop){closeColorDropdown();return;}
+  left.onclick=e=>{e.stopPropagation();step(-1);};
+  right.onclick=e=>{e.stopPropagation();step(1);};
+  t.onclick=(e)=>{e.stopPropagation();if(wrap.dataset.locked==='1')return;if(_ddPop){closeColorDropdown();return;}
     const pop=document.createElement('div');pop.className='cddpop';
     for(const [hex,name] of options){const row=document.createElement('div');row.className='cddrow'+(hex===cur?' sel':'');
       row.innerHTML=`<span class="cddsw" style="background:${hex||'transparent'}"></span><span class="cddnm">${esc(name)}</span><span class="cddhx">${hex||''}</span>`;
@@ -65,7 +77,10 @@ function mkColorDropdown(options,cur,onPick){
     if(r.bottom+ph>window.innerHeight-6)pop.style.top=Math.max(6,r.top-ph-2)+'px';
     _ddPop=pop;};
   t.setValue=h=>{cur=h;paint();};
-  return t;}
+  wrap.setValue=h=>{cur=h;paint();};
+  wrap.syncLocked=paintStepButtons;
+  wrap.appendChild(left);wrap.appendChild(t);wrap.appendChild(right);paintStepButtons();
+  return wrap;}
 // Standard option list for a swatch dropdown: a "default" entry, then the
 // palette in the same ground/column order as the palette panel. If cur is set
 // but no longer in the palette, surface it as a "(gone)" entry so the row still
@@ -82,7 +97,7 @@ function mkLockCell(lockKey,els){
     lk.title=on?'locked — click to unlock':'click to lock this decision';
     (els||[]).forEach(el=>{if(!el)return;
       if(el.tagName==='SELECT'||el.tagName==='BUTTON'||el.tagName==='INPUT')el.disabled=on;
-      else{el.dataset.locked=on?'1':'';el.classList.toggle('locked',on);}});}
+      else{el.dataset.locked=on?'1':'';el.classList.toggle('locked',on);if(el.syncLocked)el.syncLocked();}});}
   lk.onclick=()=>{LOCKED.has(lockKey)?LOCKED.delete(lockKey):LOCKED.add(lockKey);paint();updateLockToggles();};
   paint();td.appendChild(lk);return td;}
 // B/I/U/S style buttons shared by the UI and package tables. isOn(attr) reads the
