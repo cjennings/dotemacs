@@ -137,12 +137,12 @@ Uses built-in cached values for performance.")
         cj/modeline-vc-cache-set-p nil))
 
 (defun cj/modeline-vc-cache-key (file)
-  "Return the cache key for FILE.
-Includes the resolved `file-truename' so that if FILE is a symlink whose
-target moves to a different VC tree, the key changes and the cache is not
-served a stale backend.  The extra `file-truename' is one stat per refresh,
-cheap next to the VC calls the cache avoids."
-  (list file (file-truename file) cj/modeline-vc-show-remote))
+  "Return the cache key for FILE: the file path and `cj/modeline-vc-show-remote'.
+`file-truename' is deliberately omitted -- the mode-line rebuilds this key on
+every render to check cache validity, so a stat here would run per redisplay.
+A symlink whose target moves to a different VC tree is picked up at the next
+TTL refresh, when `vc-backend' resolves the link fresh."
+  (list file cj/modeline-vc-show-remote))
 
 (defun cj/modeline-vc-cache-valid-p (key now)
   "Return non-nil when cached VC data is valid for KEY at NOW."
@@ -157,18 +157,25 @@ Return a plist with `:branch' and `:state', or nil when FILE has no VC data.
 Uses `vc-git--symbolic-ref' for branch names when available (it returns the
 symbolic ref like \"main\" instead of a SHA when HEAD is on a branch), but
 falls back to `vc-working-revision' if the internal accessor is missing --
-the symbol is internal and can be renamed or removed between Emacs versions."
-  (unless (and (file-remote-p file) (not cj/modeline-vc-show-remote))
-    (when-let* ((backend (vc-backend file))
-                (branch (vc-working-revision file backend)))
-      (when (eq backend 'Git)
-        (unless (fboundp 'vc-git--symbolic-ref)
-          (require 'vc-git nil 'noerror))
-        (when (fboundp 'vc-git--symbolic-ref)
-          (when-let* ((symbolic (ignore-errors (vc-git--symbolic-ref file))))
-            (setq branch symbolic))))
-      (list :branch branch
-            :state (vc-state file backend)))))
+the symbol is internal and can be renamed or removed between Emacs versions.
+
+The whole VC probe is wrapped in `condition-case' returning nil.  These are
+synchronous git calls that, on TTL expiry, run while the mode-line is built;
+on a slow or unmounted filesystem a signal here would land in redisplay and
+break it.  Caching nil degrades to \"no VC info\" instead."
+  (condition-case nil
+      (unless (and (file-remote-p file) (not cj/modeline-vc-show-remote))
+        (when-let* ((backend (vc-backend file))
+                    (branch (vc-working-revision file backend)))
+          (when (eq backend 'Git)
+            (unless (fboundp 'vc-git--symbolic-ref)
+              (require 'vc-git nil 'noerror))
+            (when (fboundp 'vc-git--symbolic-ref)
+              (when-let* ((symbolic (ignore-errors (vc-git--symbolic-ref file))))
+                (setq branch symbolic))))
+          (list :branch branch
+                :state (vc-state file backend))))
+    (error nil)))
 
 (defun cj/modeline-vc-info ()
   "Return cached modeline VC data for the current buffer."
