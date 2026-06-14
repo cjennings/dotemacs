@@ -2,8 +2,15 @@ import json, os, re
 from app_inventory import add_inventory_apps, apply_default_face_seeds, apply_package_overrides, face_rows
 from default_faces import DefaultFaces
 from face_data import *
-from face_specs import ui_face_spec
+from face_specs import face_spec, ui_face_spec
 HERE=os.path.dirname(os.path.abspath(__file__))
+
+def read_text(name):
+    with open(os.path.join(HERE,name)) as src:
+        return src.read()
+
+def read_json(name):
+    return json.loads(read_text(name))
 
 def strip_exports(src):
     """Drop ES-module `export`/`import` lines so the body loads as a classic <script>.
@@ -22,37 +29,34 @@ def strip_exports(src):
 
 # Pure color-math core, inlined verbatim into the page so the browser runs the
 # same code the Node tests import (one source of truth).
-COLORMATH_BODY=strip_exports(open(os.path.join(HERE,'colormath.js')).read())
+COLORMATH_BODY=strip_exports(read_text('colormath.js'))
 # The app's stylesheet and script, kept as real files so they get JS/CSS tooling
 # (highlight, brace-check, lint) and so the logic is unit-testable. They are
 # inlined into the page the same way colormath.js is: a placeholder in the
 # template, filled at generate time. app.js carries the data placeholders
 # (MAP_J, PALETTE_J, COLORMATH_J, ...); those are filled after it is spliced in.
-STYLES=open(os.path.join(HERE,'styles.css')).read()
-APP_BODY=open(os.path.join(HERE,'app.js')).read()
+STYLES=read_text('styles.css')
+APP_BODY=read_text('app.js')
 # Pure package-model + dropdown logic, inlined into the page (and unit-tested via
 # test-app-core.mjs) the same way colormath.js is.
-APP_CORE_BODY=strip_exports(open(os.path.join(HERE,'app-core.js')).read())
+APP_CORE_BODY=strip_exports(read_text('app-core.js'))
 # Pure color/UI-boundary helpers (normHex/ratingColor/textOn), unit-tested via
 # test-app-util.mjs. Its `import rl` line is stripped on inline (rl is already in
 # the page from the colormath core).
-APP_UTIL_BODY=strip_exports(open(os.path.join(HERE,'app-util.js')).read())
+APP_UTIL_BODY=strip_exports(read_text('app-util.js'))
 # Palette panel actions and rendering. This is stateful browser code, split from
 # app.js because color-column behavior changes often and benefits from locality.
-PALETTE_ACTIONS_BODY=strip_exports(open(os.path.join(HERE,'palette-actions.js')).read())
+PALETTE_ACTIONS_BODY=strip_exports(read_text('palette-actions.js'))
 # Browser hash gates, split from app.js so the application code is not buried
 # under the test harness while still shipping one self-contained HTML file.
-BROWSER_GATES_BODY=strip_exports(open(os.path.join(HERE,'browser-gates.js')).read())
+BROWSER_GATES_BODY=strip_exports(read_text('browser-gates.js'))
 ns={}
-src=open(os.path.join(HERE,'samples.py')).read()
+src=read_text('samples.py')
 exec(src[:src.index('cols=')], ns)
 SAMPLES={"Elisp":ns['ELS'],"Go":ns['GOS'],"Python":ns['PYS'],"TypeScript":ns['TSS'],"Java":ns['JAS'],"C":ns['CS'],"C++":ns['CPS'],"Rust":ns['RUSTS'],"Zig":ns['ZIGS'],"Shell":ns['SHS']}
 COLS=ns['COLS']
 DEFAULT_FACES_PATH=os.path.join(HERE,'emacs-default-faces.json')
 DEFAULTS=DefaultFaces.from_path(DEFAULT_FACES_PATH)
-MAP={k:'' for k in COLS}; MAP['bg']='#000000'; MAP['p']='#ffffff'
-BOLD={k:False for k in COLS}
-ITALIC_MAP={k:False for k in COLS}
 def column_id(name):
     name = name or 'color'
     if re.fullmatch(r'color-\d+', name):
@@ -64,21 +68,117 @@ def normalize_palette(palette):
     return [[p[0], p[1] if len(p) > 1 else 'color', p[2] if len(p) > 2 else column_id(p[1] if len(p) > 1 else 'color')]
             for p in palette]
 
-if DEFAULTS.available:
-    MAP['bg']=DEFAULTS.color('default','background') or MAP['bg']
-    MAP['p']=DEFAULTS.color('default','foreground') or MAP['p']
-    for cat,faces in DEFAULTS.data.get('syntax-map',{}).items():
-        faces=faces or []
-        if cat in ('bg','p') or not faces: continue
-        face=faces[0]
-        c=DEFAULTS.color(face,'foreground')
-        if c: MAP[cat]=c
-        eff=DEFAULTS.face(face,True)
-        BOLD[cat]=eff.get('weight')=='bold'
-        ITALIC_MAP[cat]=eff.get('slant')=='italic'
-else:
-    BOLD={k:v[1] for k,v in COLS.items()}
-    ITALIC_MAP={k:False for k in COLS}
+def initial_maps(cols,defaults):
+    map_={k:'' for k in cols}
+    map_['bg']='#000000'
+    map_['p']='#ffffff'
+    bold={k:False for k in cols}
+    italic={k:False for k in cols}
+    if defaults.available:
+        map_['bg']=defaults.color('default','background') or map_['bg']
+        map_['p']=defaults.color('default','foreground') or map_['p']
+        for cat,faces in defaults.data.get('syntax-map',{}).items():
+            faces=faces or []
+            if cat in ('bg','p') or not faces:
+                continue
+            face=faces[0]
+            color=defaults.color(face,'foreground')
+            if color:
+                map_[cat]=color
+            eff=defaults.face(face,True)
+            bold[cat]=eff.get('weight')=='bold'
+            italic[cat]=eff.get('slant')=='italic'
+    else:
+        bold={k:v[1] for k,v in cols.items()}
+        italic={k:False for k in cols}
+    return map_,bold,italic
+
+def apply_builtin_fallback_styles(uimap):
+    """Fill the small set of style defaults used when no Emacs snapshot exists."""
+    uimap["link"]["underline"]=True
+    for face in ("lazy-highlight","show-paren-match"):
+        uimap[face]["underline"]=True
+    for face in ("error","warning","success"):
+        uimap[face]["bold"]=True
+    for face in ("mode-line","mode-line-inactive"):
+        uimap[face]["box"]={"style":"released","width":1,"color":None}
+
+def build_uimap(ui_faces,defaults):
+    if defaults.available:
+        return {face[0]:ui_face_spec(defaults.seed(face[0],False)) for face in ui_faces}
+    uimap={face[0]:ui_face_spec() for face in ui_faces}
+    apply_builtin_fallback_styles(uimap)
+    return uimap
+
+def build_syntax(cols,map_,bold,italic,defaults):
+    syntax={k:face_spec({"fg": map_.get(k) or None, "bold": bool(bold.get(k)), "italic": bool(italic.get(k))}) for k in cols}
+    if defaults.available:
+        for cat,faces in defaults.data.get('syntax-map',{}).items():
+            if cat in syntax and faces:
+                syntax[cat]=face_spec(defaults.seed(faces[0], False))
+        syntax['bg']=face_spec({"fg": map_['bg']})
+        syntax['p']=face_spec({"fg": map_['p']})
+    return syntax
+
+def load_seed_data(seed):
+    return read_json(seed) if seed else {}
+
+def apply_seed_basics(data,palette,uimap,locks):
+    if data.get('palette'):
+        palette=data['palette']
+    if data.get('ui'):
+        for key,value in data['ui'].items():
+            uimap[key]=value
+    if 'locks' in data:
+        locks=data['locks']
+    return palette,uimap,locks
+
+def apply_syntax_seed(data,syntax,map_):
+    if not data.get('syntax'):
+        return
+    for key,value in data['syntax'].items():
+        if key in syntax:
+            syntax[key]=face_spec(value)
+            map_[key]=syntax[key].get('fg') or ''
+
+def add_palette_color(palette,defaults,value,label=None):
+    if not value:
+        return
+    if any((p[0] or '').lower()==str(value).lower() for p in palette):
+        return
+    name=label or defaults.label(value,'color-'+str(len(palette)))
+    base=name
+    n=2
+    used={p[1].lower() for p in palette}
+    while name.lower() in used:
+        name=base+'-'+str(n); n+=1
+    palette.append([value,name,column_id(name)])
+
+def add_default_palette_colors(palette,map_,syntax,uimap,apps,defaults):
+    for key,value in map_.items():
+        add_palette_color(palette,defaults,value,'bg' if key=='bg' else 'fg' if key=='p' else None)
+    for spec in syntax.values():
+        add_palette_color(palette,defaults,spec.get('fg'))
+        add_palette_color(palette,defaults,spec.get('bg'))
+        if spec.get('box'):
+            add_palette_color(palette,defaults,spec['box'].get('color'))
+    for _face,spec in uimap.items():
+        add_palette_color(palette,defaults,spec.get('fg'))
+        add_palette_color(palette,defaults,spec.get('bg'))
+        if spec.get('box'):
+            add_palette_color(palette,defaults,spec['box'].get('color'))
+    for app in apps.values():
+        for _face,_label,spec in app['faces']:
+            add_palette_color(palette,defaults,spec.get('fg'))
+            add_palette_color(palette,defaults,spec.get('bg'))
+            if spec.get('box'):
+                add_palette_color(palette,defaults,spec['box'].get('color'))
+
+def apply_seed_packages(apps,data,seed):
+    if seed:
+        apply_package_overrides(apps,data.get('packages'))
+
+MAP,BOLD,ITALIC_MAP=initial_maps(COLS,DEFAULTS)
 
 PALETTE=[[MAP['bg'],"bg","ground"],[MAP['p'],"fg","ground"]]
 CATS=[["bg","bg (ground)","Aa Bb 123"],["p","fg","other / whitespace"],["kw","keyword","class  def  if  return"],["bi","builtin","len  echo  printf"],
@@ -100,12 +200,10 @@ UI_FACES=[["cursor","cursor","Aa|"],["region","region (selection)","selected tex
  ["show-paren-mismatch","show-paren-mismatch",") ("],["link","link","https://"],
  ["error","error","error!"],["warning","warning","warning"],
  ["success","success","ok"],["vertical-border","vertical-border","|"]]
-UIMAP={f[0]:ui_face_spec() for f in UI_FACES}
-if DEFAULTS.available:
-    UIMAP={f[0]:ui_face_spec(DEFAULTS.seed(f[0],False)) for f in UI_FACES}
+UIMAP=build_uimap(UI_FACES,DEFAULTS)
 
 # Optional palette seed: THEME_STUDIO_SEED=<file.json> seeds the tool's starting
-# palette / assignments / bold / italic / UI from a theme.json (path relative to
+# palette / syntax / UI from a theme.json (path relative to
 # this dir), instead of the hardcoded defaults above. Unset leaves them unchanged.
 # Placed after every default it overrides (notably UIMAP) so the merge has targets.
 # Mirrors what the in-page Import does, so reseed and import agree.
@@ -113,24 +211,11 @@ LOCKS=[]; ITALIC=[k for k,v in ITALIC_MAP.items() if v]
 # THEME_STUDIO_SEED=<file>.json opens an existing theme as the starting point.
 # Unset starts empty: only bg/fg are in the palette.
 _seed=os.environ.get('THEME_STUDIO_SEED')
-_d={}
-if _seed:
-    _d=json.load(open(os.path.join(HERE,_seed)))
-    if _d.get('palette'): PALETTE=_d['palette']
-    if _d.get('assignments'): MAP.update(_d['assignments'])
-    if 'bold' in _d: BOLD={k:(k in _d['bold']) for k in BOLD}
-    if 'italic' in _d: ITALIC=_d['italic']
-    if _d.get('ui'):
-        for _k,_v in _d['ui'].items(): UIMAP[_k]=_v
-    if 'locks' in _d: LOCKS=_d['locks']
+_d=load_seed_data(_seed)
+PALETTE,UIMAP,LOCKS=apply_seed_basics(_d,PALETTE,UIMAP,LOCKS)
 PALETTE=normalize_palette(PALETTE)
-if not DEFAULTS.available:
-    # These faces carry a fixed style in Emacs's built-in definitions. Fallback
-    # only; normal generation uses emacs-default-faces.json above.
-    UIMAP["link"]["underline"]=True
-    for _f in ("lazy-highlight","show-paren-match"): UIMAP[_f]["underline"]=True
-    for _f in ("error","warning","success"): UIMAP[_f]["bold"]=True
-    for _f in ("mode-line","mode-line-inactive"): UIMAP[_f]["box"]={"style":"released","width":1,"color":None}
+SYNTAX=build_syntax(COLS,MAP,BOLD,ITALIC_MAP,DEFAULTS)
+apply_syntax_seed(_d if _seed else {},SYNTAX,MAP)
 # Bespoke package face lists and seed defaults live in face_data.py.
 APPS={"org-mode":{"label":"org-mode","preview":"org","faces":face_rows(ORG_FACES,"org-",ORG_SEED)},
  "magit":{"label":"magit","preview":"magit","faces":face_rows(MAGIT_FACES,"magit-",MAGIT_SEED)},
@@ -159,33 +244,13 @@ add_inventory_apps(APPS, _inv_path)
 apply_default_face_seeds(APPS, DEFAULTS)
 # Apply seed theme package overrides when THEME_STUDIO_SEED is set: each full
 # per-face spec (color + structure) replaces the hardcoded face seed before render.
-if _seed:
-    apply_package_overrides(APPS, _d.get('packages'))
-
-def add_palette_color(value, label=None):
-    if not value: return
-    if any((p[0] or '').lower()==str(value).lower() for p in PALETTE): return
-    name=label or DEFAULTS.label(value,'color-'+str(len(PALETTE)))
-    base=name
-    n=2
-    used={p[1].lower() for p in PALETTE}
-    while name.lower() in used:
-        name=base+'-'+str(n); n+=1
-    PALETTE.append([value,name,column_id(name)])
+apply_seed_packages(APPS,_d,_seed)
 
 if DEFAULTS.available:
-    for _k,_v in MAP.items():
-        add_palette_color(_v, 'bg' if _k=='bg' else 'fg' if _k=='p' else None)
-    for _face,_spec in UIMAP.items():
-        add_palette_color(_spec.get('fg'))
-        add_palette_color(_spec.get('bg'))
-    for _app in APPS.values():
-        for _face,_label,_spec in _app['faces']:
-            add_palette_color(_spec.get('fg'))
-            add_palette_color(_spec.get('bg'))
+    add_default_palette_colors(PALETTE,MAP,SYNTAX,UIMAP,APPS,DEFAULTS)
 
 PALETTE=normalize_palette(PALETTE)
-HTML=open(os.path.join(HERE,'theme-studio.template.html')).read()
+HTML=read_text('theme-studio.template.html')
 # Fill the data placeholders. str.replace is literal (no backref interpretation),
 # so backslashes in the inlined JS survive intact — the escaping-bug class that
 # the triple-quoted string used to cause is gone now that app.js is a real file.
@@ -201,7 +266,7 @@ def fill_data(s):
      .replace("SAMPLES_J",json.dumps(SAMPLES))
      .replace("PALETTE_J",json.dumps(PALETTE)).replace("CATS_J",json.dumps(CATS))
      .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP)).replace("APPS_J",json.dumps(APPS))
-     .replace("BOLD_J",json.dumps(BOLD)).replace("MAP_J",json.dumps(MAP)).replace("LOCKS_J",json.dumps(LOCKS)).replace("ITALIC_J",json.dumps({k:True for k in ITALIC})))
+     .replace("SYNTAX_J",json.dumps(SYNTAX)).replace("MAP_J",json.dumps(MAP)).replace("LOCKS_J",json.dumps(LOCKS)))
 
 # Splice the stylesheet and script in first, then fill the data placeholders they
 # carry. The page contains app.js exactly as fill_data(APP_BODY) renders it —
@@ -210,6 +275,10 @@ HTML=fill_data(HTML.replace("STYLES_CSS",STYLES).replace("APP_JS",APP_BODY))
 APP_FILLED=fill_data(APP_BODY)
 OUT=os.path.join(HERE,'theme-studio.html')
 
+def render_theme_studio(out_path=OUT):
+    with open(out_path,"w") as out:
+        out.write(HTML)
+    print("wrote",out_path)
+
 if __name__=='__main__':
-    open(OUT,"w").write(HTML)
-    print("wrote",OUT)
+    render_theme_studio()

@@ -1,5 +1,5 @@
 {
- "name": "distinguished-revised",
+ "name": "sterling",
  "palette": [
   [
    "#f0fef0",
@@ -12,19 +12,44 @@
    "bg"
   ],
   [
-   "#151311",
-   "bg+0",
+   "#000000",
+   "bg+0-3",
    "bg"
   ],
   [
-   "#252321",
-   "bg+1",
+   "#000000",
+   "bg+0-2",
    "bg"
   ],
   [
-   "#474544",
-   "bg+2",
+   "#000000",
+   "bg+0-2",
    "bg"
+  ],
+  [
+   "#58574e",
+   "gray-2",
+   "gray"
+  ],
+  [
+   "#6c6a60",
+   "gray-1",
+   "gray"
+  ],
+  [
+   "#969385",
+   "gray",
+   "gray"
+  ],
+  [
+   "#b4b1a2",
+   "gray+1",
+   "gray"
+  ],
+  [
+   "#d0cbc0",
+   "gray+2",
+   "gray"
   ],
   [
    "#494e4f",
@@ -62,47 +87,17 @@
    "steel"
   ],
   [
-   "#58574e",
-   "gray-2",
-   "gray"
-  ],
-  [
-   "#6c6a60",
-   "gray-1",
-   "gray"
-  ],
-  [
-   "#969385",
-   "gray",
-   "gray"
-  ],
-  [
-   "#b4b1a2",
-   "gray+1",
-   "gray"
-  ],
-  [
-   "#d0cbc0",
-   "gray+2",
-   "gray"
-  ],
-  [
-   "#1d2833",
-   "blue-4",
-   "blue"
-  ],
-  [
-   "#2c3c4e",
+   "#313c48",
    "blue-3",
    "blue"
   ],
   [
-   "#3e5269",
+   "#405266",
    "blue-2",
    "blue"
   ],
   [
-   "#516983",
+   "#526982",
    "blue-1",
    "blue"
   ],
@@ -112,32 +107,32 @@
    "blue"
   ],
   [
-   "#7f98b4",
+   "#8098b3",
    "blue+1",
    "blue"
   ],
   [
-   "#9ab1cb",
+   "#9cb1c8",
    "blue+2",
    "blue"
   ],
   [
-   "#b6cae0",
+   "#bcc9d8",
    "blue+3",
    "blue"
   ],
   [
-   "#d5e3f3",
-   "blue+4",
-   "blue"
+   "#5d6142",
+   "green-3",
+   "green"
   ],
   [
-   "#646d14",
+   "#747a45",
    "green-2",
    "green"
   ],
   [
-   "#869038",
+   "#8c9350",
    "green-1",
    "green"
   ],
@@ -147,47 +142,32 @@
    "green"
   ],
   [
-   "#ccc768",
+   "#bdc581",
    "green+1",
    "green"
   ],
   [
-   "#3f1c0f",
-   "red-3",
-   "red"
+   "#d7dea6",
+   "green+2",
+   "green"
   ],
   [
-   "#7c2a09",
-   "red-2",
-   "red"
+   "#f1f7d2",
+   "green+3",
+   "green"
   ],
   [
-   "#a7502d",
-   "red-1",
-   "red"
+   "#7c6a48",
+   "yellow-3",
+   "yellow"
   ],
   [
-   "#d47c59",
-   "red",
-   "red"
-  ],
-  [
-   "#edb08f",
-   "red+1",
-   "red"
-  ],
-  [
-   "#edbca2",
-   "red+2",
-   "red"
-  ],
-  [
-   "#875f00",
+   "#9d8045",
    "yellow-2",
    "yellow"
   ],
   [
-   "#ffd700",
+   "#bb964c",
    "yellow-1",
    "yellow"
   ],
@@ -197,49 +177,134 @@
    "yellow"
   ],
   [
-   "#ffd75f",
+   "#f0c97e",
    "yellow+1",
    "yellow"
   ],
   [
-   "#f9ee98",
+   "#ffe6b6",
    "yellow+2",
    "yellow"
   ],
   [
-   "#7d2618",
-   "intense-red-3",
-   "intense-red"
+   "#ffffff",
+   "yellow+3",
+   "yellow"
   ],
   [
-   "#ae1900",
-   "intense-red-2",
-   "intense-red"
+   "#130034",
+   "violet-3",
+   "violet"
   ],
   [
-   "#d62100",
-   "intense-red-1",
-   "intense-red"
+   "#28005c",
+   "violet-2",
+   "violet"
   ],
   [
-   "#ff2a00",
-   "intense-red",
-   "intense-red"
+   "#3e0088",
+   "violet-1",
+   "violet"
   ],
   [
-   "#ff745c",
-   "intense-red+1",
-   "intense-red"
+   "#5600b7",
+   "violet",
+   "violet"
   ],
   [
-   "#ffa290",
-   "intense-red+2",
-   "intense-red"
+   "#6935cc",
+   "violet+1",
+   "violet"
   ],
   [
-   "#ffc9be",
-   "intense-red+3",
-   "intense-red"
+   "#7c5cd5",
+   "violet+2",
+   "violet"
+  ],
+  [
+   "#9181ce",
+   "violet+3",
+   "violet"
+  ],
+  [
+   "#030000",
+   "brown-3",
+   "brown"
+  ],
+  [
+   "#140500",
+   "brown-2",
+   "brown"
+  ],
+  [
+   "#2e1200",
+   "brown-1",
+   "brown"
+  ],
+  [
+   "#492201",
+   "brown",
+   "brown"
+  ],
+  [
+   "#5f381b",
+   "brown+1",
+   "brown"
+  ],
+  [
+   "#715039",
+   "brown+2",
+   "brown"
+  ],
+  [
+   "#806a5b",
+   "brown+3",
+   "brown"
+  ],
+  [
+   "#460b0d",
+   "red-4",
+   "red"
+  ],
+  [
+   "#6b0d13",
+   "red-3",
+   "red"
+  ],
+  [
+   "#8f171e",
+   "red-2",
+   "red"
+  ],
+  [
+   "#b02a2e",
+   "red-1",
+   "red"
+  ],
+  [
+   "#ce4343",
+   "red",
+   "red"
+  ],
+  [
+   "#e8605c",
+   "red+1",
+   "red"
+  ],
+  [
+   "#fd807a",
+   "red+2",
+   "red"
+  ],
+  [
+   "#ffaba4",
+   "red+3",
+   "red"
+  ],
+  [
+   "#ffd2ce",
+   "red+4",
+   "red"
   ]
  ],
  "syntax": {
@@ -289,7 +354,7 @@
    "box": null
   },
   "fnd": {
-   "fg": "#d47c59",
+   "fg": "#ce4343",
    "bg": null,
    "bold": true,
    "italic": false,
@@ -343,7 +408,7 @@
    "box": null
   },
   "num": {
-   "fg": "#ffd700",
+   "fg": "#d7af5f",
    "bg": null,
    "bold": false,
    "italic": false,
@@ -406,7 +471,7 @@
    "box": null
   },
   "var": {
-   "fg": "#7f98b4",
+   "fg": "#8098b3",
    "bg": null,
    "bold": false,
    "italic": true,
@@ -440,7 +505,7 @@
   },
   "region": {
    "fg": null,
-   "bg": "#474544"
+   "bg": "#3b3a39"
   },
   "hl-line": {
    "fg": null,
@@ -448,88 +513,118 @@
   },
   "highlight": {
    "fg": null,
-   "bg": "#2f343a"
+   "bg": "#28005c"
   },
   "mode-line": {
    "fg": "#000000",
-   "bg": "#67809c"
+   "bg": "#67809c",
+   "box": {
+    "style": "released",
+    "width": 1,
+    "color": null
+   }
   },
   "mode-line-inactive": {
    "fg": "#67809c",
-   "bg": "#000000"
+   "bg": "#000000",
+   "box": {
+    "style": "released",
+    "width": 1,
+    "color": null
+   }
   },
   "fringe": {
-   "fg": "#969385",
+   "fg": "#58574e",
    "bg": "#151311"
   },
   "line-number": {
-   "fg": "#969385",
+   "fg": "#58574e",
    "bg": null
   },
   "line-number-current-line": {
-   "fg": null,
+   "fg": "#d7af5f",
    "bg": null
   },
   "minibuffer-prompt": {
-   "fg": "#ffd75f",
+   "fg": "#d7af5f",
    "bg": null
   },
   "isearch": {
-   "fg": "#f0fef0",
-   "bg": "#646d14"
+   "fg": null,
+   "bg": "#3b3a39"
   },
   "lazy-highlight": {
-   "fg": "#000000",
-   "bg": "#ffd75f"
+   "fg": null,
+   "bg": "#28005c",
+   "underline": true
   },
   "isearch-fail": {
    "fg": "#f0fef0",
    "bg": "#a7502d"
   },
   "show-paren-match": {
-   "fg": "#f0fef0",
-   "bg": "#646d14"
+   "fg": "#000000",
+   "bg": "#a4ac64",
+   "underline": true
   },
   "show-paren-mismatch": {
    "fg": "#f0fef0",
    "bg": "#a7502d"
   },
   "link": {
-   "fg": "#7f98b4",
+   "fg": "#8098b3",
    "bg": null,
    "underline": true
   },
   "error": {
-   "fg": null,
-   "bg": null
+   "fg": "#ce4343",
+   "bg": null,
+   "bold": true
   },
   "warning": {
-   "fg": null,
-   "bg": null
+   "fg": "#f0c97e",
+   "bg": null,
+   "bold": true
   },
   "success": {
-   "fg": null,
-   "bg": null
+   "fg": "#a4ac64",
+   "bg": null,
+   "bold": true
   },
   "vertical-border": {
-   "fg": "#474544",
+   "fg": "#58574e",
    "bg": null
   }
  },
  "locks": [
   "kw",
-  "bg",
-  "p",
   "bi",
   "pp",
-  "fnd",
   "ty",
   "con",
   "str",
   "var",
   "cm",
   "doc",
-  "cmd"
+  "cmd",
+  "num",
+  "ui:mode-line",
+  "ui:mode-line-inactive",
+  "ui:link",
+  "ui:hl-line",
+  "ui:warning",
+  "ui:success",
+  "ui:error",
+  "ui:line-number-current-line",
+  "ui:minibuffer-prompt",
+  "ui:show-paren-mismatch",
+  "ui:show-paren-match",
+  "ui:vertical-border",
+  "ui:line-number",
+  "ui:fringe",
+  "ui:region",
+  "bg",
+  "p"
  ],
  "packages": {
   "org-mode": {
@@ -541,8 +636,7 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.5
+    "source": "user"
    },
    "org-document-info": {
     "fg": "#8a9496",
@@ -555,7 +649,7 @@
     "source": "default"
    },
    "org-document-info-keyword": {
-    "fg": null,
+    "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": false,
@@ -572,19 +666,17 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.3
+    "source": "user"
    },
    "org-level-2": {
-    "fg": null,
+    "fg": "#a4ac64",
     "bg": null,
     "bold": false,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.2
+    "source": "user"
    },
    "org-level-3": {
     "fg": null,
@@ -594,8 +686,7 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.15
+    "source": "user"
    },
    "org-level-4": {
     "fg": null,
@@ -605,8 +696,7 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default",
-    "height": 1.1
+    "source": "user"
    },
    "org-level-5": {
     "fg": null,
@@ -679,14 +769,14 @@
     "source": "default"
    },
    "org-done": {
-    "fg": null,
+    "fg": "#7c5cd5",
     "bg": null,
     "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "org-priority": {
     "fg": null,
@@ -721,7 +811,7 @@
    "org-special-keyword": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -793,7 +883,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -863,7 +953,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -873,7 +963,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -980,7 +1070,7 @@
    },
    "org-table-header": {
     "fg": null,
-    "bg": null,
+    "bg": "#58574e",
     "bold": true,
     "italic": false,
     "underline": false,
@@ -1761,7 +1851,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "line",
+     "width": 1,
+     "color": null
+    }
    },
    "magit-branch-local": {
     "fg": "#67809c",
@@ -1791,7 +1886,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "line",
+     "width": 1,
+     "color": null
+    }
    },
    "magit-branch-upstream": {
     "fg": null,
@@ -2752,7 +2852,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -2921,106 +3021,6 @@
     "fg": null,
     "bg": null,
     "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-moved-face": {
-    "fg": "#8a9496",
-    "bg": null,
-    "bold": false,
-    "italic": true,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-attach-number-face": {
-    "fg": "#67809c",
-    "bg": null,
-    "bold": true,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-1-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-2-face": {
-    "fg": "#8a9496",
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-3-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-4-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-5-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-6-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-cited-7-face": {
-    "fg": null,
-    "bg": null,
-    "bold": false,
-    "italic": false,
-    "underline": false,
-    "strike": false,
-    "inherit": null,
-    "source": "default"
-   },
-   "mu4e-compose-header-face": {
-    "fg": "#67809c",
-    "bg": null,
-    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3338,7 +3338,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -3346,7 +3346,7 @@
    "lsp-face-highlight-write": {
     "fg": null,
     "bg": "#3d2f4a",
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3368,7 +3368,7 @@
     "bg": null,
     "bold": true,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -3421,7 +3421,8 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "height": 0.8
    },
    "lsp-installation-buffer-face": {
     "fg": "#67809c",
@@ -3448,7 +3449,7 @@
    "git-gutter:added": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3458,7 +3459,7 @@
    "git-gutter:modified": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3468,7 +3469,7 @@
    "git-gutter:deleted": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3488,7 +3489,7 @@
    "git-gutter:separator": {
     "fg": "#8a9496",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3502,7 +3503,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -3512,7 +3513,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -3522,7 +3523,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -3675,12 +3676,17 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "flycheck-error-list-highlight": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -3695,7 +3701,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    }
   },
   "dired": {
@@ -4015,7 +4026,7 @@
     "fg": "#8a9496",
     "bg": null,
     "bold": false,
-    "italic": false,
+    "italic": true,
     "underline": false,
     "strike": false,
     "inherit": null,
@@ -4258,7 +4269,7 @@
     "bg": null,
     "bold": true,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -4451,7 +4462,8 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "height": 1.1
    },
    "calibredb-mouse-face": {
     "fg": null,
@@ -4508,7 +4520,7 @@
    "erc-notice-face": {
     "fg": "#8a9496",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4548,7 +4560,7 @@
    "erc-my-nick-prefix-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4558,7 +4570,7 @@
    "erc-nick-default-face": {
     "fg": "#67809c",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4568,7 +4580,7 @@
    "erc-nick-prefix-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4578,7 +4590,7 @@
    "erc-button-nick-default-face": {
     "fg": "#67809c",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4588,7 +4600,7 @@
    "erc-nick-msg-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4628,7 +4640,7 @@
    "erc-pal-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4708,7 +4720,7 @@
    "erc-button": {
     "fg": "#67809c",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4832,7 +4844,7 @@
    "org-noter-notes-exist-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4842,7 +4854,7 @@
    "org-noter-no-notes-exist-face": {
     "fg": null,
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -4988,7 +5000,7 @@
    "slack-room-info-section-label-face": {
     "fg": "#8a9496",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5010,7 +5022,7 @@
     "bg": null,
     "bold": true,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -5033,7 +5045,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-message-output-reaction-pressed": {
     "fg": null,
@@ -5043,7 +5060,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-message-deleted-face": {
     "fg": null,
@@ -5110,7 +5132,7 @@
     "bg": null,
     "bold": false,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -5228,7 +5250,7 @@
    "slack-message-attachment-preview-header-face": {
     "fg": "#67809c",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5263,7 +5285,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-message-action-primary-face": {
     "fg": null,
@@ -5273,7 +5300,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-message-action-danger-face": {
     "fg": null,
@@ -5283,7 +5315,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-button-block-element-face": {
     "fg": null,
@@ -5293,7 +5330,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-button-primary-block-element-face": {
     "fg": null,
@@ -5303,7 +5345,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-button-danger-block-element-face": {
     "fg": null,
@@ -5313,7 +5360,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-select-block-element-face": {
     "fg": "#67809c",
@@ -5323,7 +5375,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-overflow-block-element-face": {
     "fg": "#8a9496",
@@ -5333,7 +5390,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-date-picker-block-element-face": {
     "fg": "#67809c",
@@ -5343,7 +5405,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-dialog-title-face": {
     "fg": "#67809c",
@@ -5358,7 +5425,7 @@
    "slack-dialog-element-label-face": {
     "fg": "#8a9496",
     "bg": null,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strike": false,
@@ -5403,7 +5470,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-dialog-cancel-button-face": {
     "fg": null,
@@ -5413,7 +5485,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-dialog-select-element-input-face": {
     "fg": null,
@@ -5423,7 +5500,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "slack-user-active-face": {
     "fg": null,
@@ -6065,7 +6147,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-active": {
     "fg": "#000000",
@@ -6075,7 +6162,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-default-active": {
     "fg": "#000000",
@@ -6085,7 +6177,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-default-passive": {
     "fg": "#8a9496",
@@ -6095,7 +6192,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-primary-active": {
     "fg": "#000000",
@@ -6105,7 +6207,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-primary-passive": {
     "fg": "#67809c",
@@ -6115,7 +6222,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-success-active": {
     "fg": "#000000",
@@ -6125,7 +6237,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-success-passive": {
     "fg": null,
@@ -6135,7 +6252,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-danger-active": {
     "fg": "#000000",
@@ -6145,7 +6267,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-danger-passive": {
     "fg": null,
@@ -6155,7 +6282,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-ui-active": {
     "fg": "#000000",
@@ -6165,7 +6297,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button-ui-passive": {
     "fg": null,
@@ -6175,7 +6312,12 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "box": {
+     "style": "released",
+     "width": 1,
+     "color": null
+    }
    },
    "telega-box-button2-active": {
     "fg": "#000000",
@@ -6222,7 +6364,7 @@
     "bg": null,
     "bold": true,
     "italic": false,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"
@@ -6569,14 +6711,15 @@
     "underline": false,
     "strike": false,
     "inherit": null,
-    "source": "default"
+    "source": "default",
+    "height": 0.8
    },
    "shr-abbreviation": {
     "fg": "#8a9496",
     "bg": null,
     "bold": false,
     "italic": true,
-    "underline": false,
+    "underline": true,
     "strike": false,
     "inherit": null,
     "source": "default"

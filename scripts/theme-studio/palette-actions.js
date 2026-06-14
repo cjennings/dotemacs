@@ -3,7 +3,7 @@ function clearPalette(){
   const plan=clearPalettePlan(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
   plan.removed.forEach(({hex,name})=>rememberGone(hex,name));
   PALETTE=plan.palette;selectedIdx=null;
-  renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();renderCode();applyGround();
+  refreshPaletteState();
   notify('cleared palette to bg and fg',false);
 }
 let selectedIdx=null;
@@ -11,14 +11,19 @@ let selectedIdx=null;
 // recreating a color with the same name can re-bind the assignments still pointing
 // at the old (now "(gone)") hex. Consumed once per name; cleared on import.
 let lastGone={};
-// Re-point every assignment — syntax map, UI faces, package faces — from one hex
+// Re-point every assignment — syntax faces, UI faces, package faces — from one hex
 // to another. Used when a palette color's value is edited and when a deleted name
 // is recreated.
+function repointFaceFields(face,oldHex,newHex){
+  if(face.fg===oldHex)face.fg=newHex;
+  if(face.bg===oldHex)face.bg=newHex;
+  if(face.box&&face.box.color===oldHex)face.box.color=newHex;
+}
 function repointHex(oldHex,newHex){
   if(oldHex===newHex)return;
-  for(const k in MAP){if(MAP[k]===oldHex)MAP[k]=newHex;}
-  for(const f in UIMAP){if(UIMAP[f].fg===oldHex)UIMAP[f].fg=newHex;if(UIMAP[f].bg===oldHex)UIMAP[f].bg=newHex;}
-  for(const ap in PKGMAP)for(const fc in PKGMAP[ap]){const o=PKGMAP[ap][fc];if(o.fg===oldHex)o.fg=newHex;if(o.bg===oldHex)o.bg=newHex;}
+  for(const k in SYNTAX){repointFaceFields(SYNTAX[k],oldHex,newHex);syncSyntaxCache(k);}
+  for(const f in UIMAP)repointFaceFields(UIMAP[f],oldHex,newHex);
+  for(const ap in PKGMAP)for(const fc in PKGMAP[ap])repointFaceFields(PKGMAP[ap][fc],oldHex,newHex);
 }
 // On adding a color, if its name matches a recently-deleted one, re-bind the
 // stranded assignments to the new hex. Returns true when a heal context existed.
@@ -66,7 +71,7 @@ function setGroundSpan(n){
   let at=PALETTE.findIndex(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='bg');
   if(at<0)at=0; else at+=1;
   PALETTE.splice(Math.min(at,PALETTE.length),0,...entries);
-  selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();
+  selectedIdx=null;refreshPaletteState();
   notify('set ground span to '+n,false);
 }
 // Pairwise OKLab ΔE over the palette. Returns the sub-threshold pairs (sorted
@@ -91,7 +96,7 @@ function paletteChip(i,nearest){
   d.title=name+' '+hex+(nde===Infinity||nde===undefined?'':' — nearest ΔE '+nde.toFixed(3));
   const rm=locked?`<span class="lock" title="${role==='bg'?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
   d.innerHTML=`${rm}<input class="nm" value="${name}" readonly style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
-  if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();rememberGone(hex,name);PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;renderPalette();buildTable();buildUITable();};
+  if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();rememberGone(hex,name);PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;refreshPaletteState({code:false,ground:false});};
   const nm=d.querySelector('.nm');
   const finishNameEdit=()=>{nm.readOnly=true;nm.classList.remove('editing');};
   nm.onclick=(e)=>{e.preventDefault();e.stopPropagation();selectColor(i);};
@@ -137,7 +142,7 @@ function moveColumn(columnId,dir){
   if(!nextPositions.length)return;
   const at=dir<0?nextPositions[0]:nextPositions[nextPositions.length-1]+1;
   PALETTE=rest.slice(0,at).concat(moving,rest.slice(at));
-  selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();
+  selectedIdx=null;refreshPaletteState();
   notify('moved "'+columnId+'" '+(dir<0?'left':'right'),false);
 }
 function deleteColumn(columnId,label){
@@ -148,7 +153,7 @@ function deleteColumn(columnId,label){
   if(!confirm('Delete color column "'+title+'"?\n\nThis removes '+plan.removed.length+' palette color(s). Existing face assignments will stay on their old hex values and show as "(gone)".'))return;
   plan.removed.forEach(({hex,name})=>rememberGone(hex,name));
   PALETTE=plan.palette;selectedIdx=null;
-  renderPalette();buildTable();buildUITable();renderCode();applyGround();
+  refreshPaletteState();
   notify('deleted column "'+title+'" — '+plan.removed.length+' color(s) now show "(gone)" where used',false);
 }
 function columnHeader(f,position,count){
@@ -233,6 +238,6 @@ function setColumnCount(baseHex,n){
   const baseName=(column.members.find(m=>m.hex.toLowerCase()===baseHex.toLowerCase())||{}).name||'color';
   const removed=regenColumnInPlace(column.members.map(m=>m.hex),baseHex,baseName,n,column.column);
   if(removed===null)return;
-  selectedIdx=null;renderPalette();buildTable();buildUITable();renderCode();applyGround();
+  selectedIdx=null;refreshPaletteState();
   notify('regenerated "'+baseName+'" to ±'+n+(removed?(' — '+removed+' removed step(s) show "(gone)" where used'):''),false);
 }

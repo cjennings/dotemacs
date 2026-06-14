@@ -45,7 +45,8 @@ def add_inventory_apps(apps: dict[str, Any], inventory_path: str) -> dict[str, A
     """Add generic editable apps for installed packages not covered by bespoke previews."""
     if not os.path.exists(inventory_path):
         return apps
-    inventory = json.load(open(inventory_path))
+    with open(inventory_path) as src:
+        inventory = json.load(src)
     for pkg in sorted(inventory):
         if pkg in BESPOKE_APPS or pkg in apps:
             continue

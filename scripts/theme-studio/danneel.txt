@@ -1,0 +1,32 @@
+/* Coolors Exported Palette - https://coolors.co/bfb48f-564e58-3083dc-ef3e36-3f7d20-140400 */
+
+- CSV
+
+bfb48f,564e58,3083dc,ef3e36,3f7d20,140400
+
+- With #
+
+#bfb48f, #564e58, #3083dc, #ef3e36, #3f7d20, #140400
+
+- Array
+
+["bfb48f","564e58","3083dc","ef3e36","3f7d20","140400"]
+
+- Object
+
+{"Sand":"bfb48f","Taupe Grey":"564e58","Brilliant Azure":"3083dc","Cinnabar":"ef3e36","Green":"3f7d20","Coffee Bean":"140400"}
+
+- Extended Array
+
+[{"name":"Sand","hex":"bfb48f","rgb":[191,180,143],"cmyk":[0,6,25,25],"hsb":[46,25,75],"hsl":[46,27,65],"lab":[73,-2,20]},{"name":"Taupe Grey","hex":"564e58","rgb":[86,78,88],"cmyk":[2,11,0,65],"hsb":[288,11,35],"hsl":[288,6,33],"lab":[34,5,-5]},{"name":"Brilliant Azure","hex":"3083dc","rgb":[48,131,220],"cmyk":[78,40,0,14],"hsb":[211,78,86],"hsl":[211,71,53],"lab":[54,6,-52]},{"name":"Cinnabar","hex":"ef3e36","rgb":[239,62,54],"cmyk":[0,74,77,6],"hsb":[3,77,94],"hsl":[3,85,57],"lab":[54,66,46]},{"name":"Green","hex":"3f7d20","rgb":[63,125,32],"cmyk":[50,0,74,51],"hsb":[100,74,49],"hsl":[100,59,31],"lab":[47,-37,42]},{"name":"Coffee Bean","hex":"140400","rgb":[20,4,0],"cmyk":[0,80,100,92],"hsb":[12,100,8],"hsl":[12,100,4],"lab":[2,4,3]}]
+
+- XML
+
+<palette>
+  <color name="Sand" hex="bfb48f" r="191" g="180" b="143" />
+  <color name="Taupe Grey" hex="564e58" r="86" g="78" b="88" />
+  <color name="Brilliant Azure" hex="3083dc" r="48" g="131" b="220" />
+  <color name="Cinnabar" hex="ef3e36" r="239" g="62" b="54" />
+  <color name="Green" hex="3f7d20" r="63" g="125" b="32" />
+  <color name="Coffee Bean" hex="140400" r="20" g="4" b="0" />
+</palette>

@@ -112,6 +112,11 @@ test('groundRoleOfEntry: Boundary - exact ground roles only, not bg-prefix names
   assert.equal(groundRoleOfEntry(['#555555', 'ground-1'], ground), 'step');
 });
 
+test('groundRoleOfEntry: Boundary - renamed entries with the ground column id remain steps', () => {
+  const ground = { bg: '#ffffff', fg: '#000000' };
+  assert.equal(groundRoleOfEntry(['#777777', 'renamed-middle', 'ground'], ground), 'step');
+});
+
 // --- regenColumn ------------------------------------------------------------
 
 test('regenColumn: Normal - n steps each side plus the base, ordered by offset', () => {

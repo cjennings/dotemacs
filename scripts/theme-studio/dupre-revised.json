@@ -3,89 +3,266 @@
  "palette": [
   [
    "#67809c",
+   "blue",
    "blue"
   ],
   [
    "#e8bd30",
+   "gold",
    "gold"
   ],
   [
    "#9b5fd0",
+   "regal",
    "regal"
   ],
   [
    "#5d9b86",
+   "sage",
    "sage"
   ],
   [
    "#cb6b4d",
+   "terracotta",
    "terracotta"
   ],
   [
    "#998162",
+   "tan",
    "tan"
   ],
   [
    "#ffffff",
+   "white",
    "white"
   ],
   [
    "#a9b2bb",
+   "silver",
    "silver"
   ],
   [
    "#838d97",
+   "steel",
    "steel"
   ],
   [
    "#5e6770",
+   "pewter",
    "pewter"
   ],
   [
    "#2f343a",
+   "gunmetal",
    "gunmetal"
   ],
   [
    "#264364",
+   "navy",
    "navy"
   ],
   [
    "#000000",
+   "ground",
    "ground"
   ],
   [
    "#1a1714",
+   "bg-dim",
    "bg-dim"
   ]
  ],
- "assignments": {
-  "bg": "#000000",
-  "p": "#ffffff",
-  "kw": "#67809c",
-  "bi": "#67809c",
-  "pp": "#67809c",
-  "fnd": "#a9b2bb",
-  "fnc": "#a9b2bb",
-  "dec": "#e8bd30",
-  "ty": "#9b5fd0",
-  "prop": "#838d97",
-  "con": "#cb6b4d",
-  "num": "#cb6b4d",
-  "str": "#5d9b86",
-  "esc": "#cb6b4d",
-  "re": "#5d9b86",
-  "doc": "#5d9b86",
-  "cm": "#998162",
-  "cmd": "#998162",
-  "var": "#e8bd30",
-  "op": "#a9b2bb",
-  "punc": "#a9b2bb"
+ "syntax": {
+  "bg": {
+   "fg": "#000000",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "p": {
+   "fg": "#ffffff",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "kw": {
+   "fg": "#67809c",
+   "bg": null,
+   "bold": true,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "bi": {
+   "fg": "#67809c",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "pp": {
+   "fg": "#67809c",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "fnd": {
+   "fg": "#a9b2bb",
+   "bg": null,
+   "bold": true,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "fnc": {
+   "fg": "#a9b2bb",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "dec": {
+   "fg": "#e8bd30",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "ty": {
+   "fg": "#9b5fd0",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "prop": {
+   "fg": "#838d97",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "con": {
+   "fg": "#cb6b4d",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "num": {
+   "fg": "#cb6b4d",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "str": {
+   "fg": "#5d9b86",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "esc": {
+   "fg": "#cb6b4d",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "re": {
+   "fg": "#5d9b86",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "doc": {
+   "fg": "#5d9b86",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "cm": {
+   "fg": "#998162",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "cmd": {
+   "fg": "#998162",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "var": {
+   "fg": "#e8bd30",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "op": {
+   "fg": "#a9b2bb",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  },
+  "punc": {
+   "fg": "#a9b2bb",
+   "bg": null,
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
+  }
  },
- "bold": [
-  "kw",
-  "fnd"
- ],
- "italic": [],
  "ui": {
   "cursor": {
    "fg": null,

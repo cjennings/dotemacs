@@ -44,8 +44,10 @@ else fail_msg "Node unit tests"; grep -E 'not ok|AssertionError|Error' /tmp/ts-n
 # 4. Syntax-check the inlined page script.
 python3 - <<'PY' && node --check /tmp/ts-script.js >/dev/null 2>&1 && pass_msg "spliced page <script> parses" || fail_msg "spliced page <script> syntax"
 import re
-h = open('theme-studio.html').read()
-open('/tmp/ts-script.js', 'w').write(re.search(r'<script>(.*)</script>', h, re.S).group(1))
+with open('theme-studio.html') as src:
+    h = src.read()
+with open('/tmp/ts-script.js', 'w') as out:
+    out.write(re.search(r'<script>(.*)</script>', h, re.S).group(1))
 PY
 
 # 5. Browser hash gates.

@@ -10,9 +10,9 @@
 ;; self-contained, loadable Emacs deftheme written to themes/<name>-theme.el.
 ;;
 ;; Four tiers come out of the JSON:
-;;   - default     -- background from assignments.bg, foreground from .p
-;;   - syntax      -- assignments.<cat> -> font-lock / tree-sitter faces, with
-;;                    the bold / italic category sets applied
+;;   - default     -- background from syntax.bg, foreground from syntax.p
+;;   - syntax      -- syntax.<cat> -> font-lock / tree-sitter faces, with full
+;;                    face attrs where Emacs supports them
 ;;   - ui          -- the ui keys are already real face names; fg/bg passthrough
 ;;   - packages    -- per-package face specs with :inherit / :height / weight /
 ;;                    slant
@@ -80,8 +80,10 @@ unset."
     (let ((style (build-theme/--obj-get box 'style))
           (color (build-theme/--obj-get box 'color))
           (width (or (build-theme/--obj-get box 'width) 1)))
-      (cond ((equal style "released") (list :line-width width :style 'released-button))
-            ((equal style "pressed") (list :line-width width :style 'pressed-button))
+      (cond ((equal style "released") (append (list :line-width width :style 'released-button)
+                                              (when color (list :color color))))
+            ((equal style "pressed") (append (list :line-width width :style 'pressed-button)
+                                             (when color (list :color color))))
             ((equal style "line") (if color (list :line-width width :color color)
                                     (list :line-width width)))
             (t nil)))))
@@ -125,24 +127,31 @@ Return nil when ATTRS is empty, so cleared faces emit nothing."
 ;;; ---------------------------------------------------------------------------
 ;;; Tiers
 
-(defun build-theme/--default-spec (assignments)
-  "Build the `default' face spec from ASSIGNMENTS bg / p."
-  (let ((bg (build-theme/--obj-get assignments 'bg))
-        (fg (build-theme/--obj-get assignments 'p)))
+(defun build-theme/--default-spec (syntax)
+  "Build the `default' face spec from SYNTAX bg / p entries."
+  (let ((bg (build-theme/--obj-get (build-theme/--obj-get syntax 'bg) 'fg))
+        (fg (build-theme/--obj-get (build-theme/--obj-get syntax 'p) 'fg)))
     (build-theme/--face-spec 'default (build-theme/--attrs nil fg bg nil nil nil nil nil))))
 
-(defun build-theme/--syntax-face-specs (assignments bold italic)
-  "Build syntax-tier face specs from ASSIGNMENTS plus the BOLD and ITALIC sets.
-BOLD and ITALIC are lists of category-key symbols.  Each category fans out to
-the font-lock faces in `build-theme/--syntax-face-map'."
+(defun build-theme/--syntax-face-specs (syntax)
+  "Build syntax-tier face specs from SYNTAX.
+Each category fans out to the font-lock faces in
+`build-theme/--syntax-face-map'."
   (let (specs)
     (dolist (pair build-theme/--syntax-face-map)
       (let* ((cat (car pair))
              (faces (cdr pair))
-             (hex (build-theme/--obj-get assignments cat)))
-        (when hex
-          (let ((attrs (build-theme/--attrs nil hex nil
-                                            (memq cat bold) (memq cat italic) nil nil nil)))
+             (obj (build-theme/--obj-get syntax cat)))
+        (when obj
+          (let ((attrs (build-theme/--attrs nil
+                                            (build-theme/--obj-get obj 'fg)
+                                            (build-theme/--obj-get obj 'bg)
+                                            (build-theme/--obj-get obj 'bold)
+                                            (build-theme/--obj-get obj 'italic)
+                                            (build-theme/--obj-get obj 'underline)
+                                            (build-theme/--obj-get obj 'strike)
+                                            nil
+                                            (build-theme/--obj-get obj 'box))))
             (dolist (face faces)
               (when-let ((spec (build-theme/--face-spec face attrs)))
                 (push spec specs)))))))
@@ -190,15 +199,13 @@ the font-lock faces in `build-theme/--syntax-face-map'."
 
 (defun build-theme/--all-specs (data)
   "Build the full ordered face-spec list from parsed theme.json DATA."
-  (let ((assignments (build-theme/--obj-get data 'assignments))
-        (bold (mapcar #'intern (build-theme/--obj-get data 'bold)))
-        (italic (mapcar #'intern (build-theme/--obj-get data 'italic)))
+  (let ((syntax (build-theme/--obj-get data 'syntax))
         (ui (build-theme/--obj-get data 'ui))
         (packages (build-theme/--obj-get data 'packages)))
     (delq nil
           (append
-           (list (build-theme/--default-spec assignments))
-           (build-theme/--syntax-face-specs assignments bold italic)
+           (list (build-theme/--default-spec syntax))
+           (build-theme/--syntax-face-specs syntax)
            (build-theme/--ui-face-specs ui)
            (build-theme/--package-face-specs packages)))))
 

@@ -6,6 +6,15 @@
  pre{background:#0d0b0a;border:1px solid #252321;border-radius:8px;padding:14px 16px;font-size:12pt;overflow:auto;white-space:pre}
  table.leg{border-collapse:collapse} table.leg td{padding:4px 12px;vertical-align:middle}
  table.leg th{cursor:pointer;color:#b4b1a2;text-align:left;padding:4px 12px;user-select:none;font-weight:normal}
+ #legtable th:nth-child(3),#legtable th:nth-child(4),
+ #legtable td:nth-child(3),#legtable td:nth-child(4),
+ #uitable th:nth-child(3),#uitable th:nth-child(4),
+ #uitable td:nth-child(3),#uitable td:nth-child(4),
+ #pkgtable th:nth-child(3),#pkgtable th:nth-child(4),
+ #pkgtable td:nth-child(3),#pkgtable td:nth-child(4){width:78px;min-width:78px;max-width:78px;padding-left:4px;padding-right:4px;text-align:center}
+ #legtable th:nth-child(6),#legtable td:nth-child(6),
+ #uitable th:nth-child(8),#uitable td:nth-child(8),
+ #pkgtable th:nth-child(9),#pkgtable td:nth-child(9){width:166px;min-width:166px;max-width:166px;padding-left:6px;padding-right:6px;text-align:left}
  table.leg th:hover{color:#e8bd30}
  select.chip{appearance:none;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 14px monospace;width:160px;cursor:pointer}
  .cstep{display:inline-flex;align-items:center;gap:4px}
@@ -13,7 +22,10 @@
  .cstepbtn:disabled{opacity:.28;cursor:default;color:#8f8977}
  .cstep.locked .cstepbtn{opacity:.28;cursor:default}
  .cdd{display:inline-flex;align-items:center;gap:7px;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 13px monospace;width:150px;cursor:pointer;box-sizing:border-box;overflow:hidden;white-space:nowrap}
+ .cdd.compact{width:28px;height:28px;padding:0;justify-content:center;gap:0}
+ .cdd.compact.is-default{border-color:#8f7810;box-shadow:inset 0 0 0 1px #8f7810}
  .cddsw{display:inline-block;width:13px;height:13px;border-radius:3px;border:1px solid #0007;flex:none}
+ .cdd.compact .cddsw{width:18px;height:18px}
  .cddpop{position:fixed;z-index:200;background:#161412;border:1px solid #3a3a3a;border-radius:6px;box-shadow:0 12px 34px #000c;max-height:60vh;overflow:auto;padding:4px}
  .cddrow{display:flex;align-items:center;gap:9px;padding:4px 9px;cursor:pointer;color:#cdced1;font:12px monospace;border-radius:4px;white-space:nowrap}
  .cddrow:hover{background:#252321}
@@ -24,7 +36,7 @@
  .lockbtn{background:none;border:none;cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;opacity:.5;filter:grayscale(1)}
  .lockbtn.on{opacity:1;filter:none}
  .boxctl{display:flex;align-items:center;gap:5px}
- .boxctl .cdd{width:108px}
+ .boxctl .cdd:not(.compact){width:108px}
  .boxctl .cstepbtn{width:18px}
  .legctl{margin:0 0 8px;display:flex;gap:8px;align-items:center}
  .cat{color:#b4b1a2} .ex{font-size:17px}
