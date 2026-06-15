@@ -393,8 +393,8 @@ if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(bs3&&bs3.includes('rgb(255, 42, 42)')&&bs3.includes('rgb(143, 0, 0)'),'released style derives relief from explicit box color: '+bs3);
  PALETTE=[['#ff0000','red','red'],['#30343c','slate','slate']];
  buildUITable();
- const mlrow=document.querySelector('#uibody tr[data-face="mode-line"]'),boxCell=mlrow&&mlrow.cells[7],boxSel=boxCell&&boxCell.querySelector('select'),boxDd=boxCell&&boxCell.querySelector('.cdd');
- if(boxSel&&boxDd){boxSel.value='line';boxSel.dispatchEvent(new Event('change',{bubbles:true}));boxDd.click();const redRow=[...document.querySelectorAll('.cddpop .cddrow')].find(r=>r.textContent.includes('red'));if(redRow)redRow.click();}
+ const mlrow=document.querySelector('#uibody tr[data-face="mode-line"]'),boxCell=mlrow&&mlrow.cells[7],lineBtn=boxCell&&boxCell.querySelector('.boxbtn[data-style="line"]'),boxDd=boxCell&&boxCell.querySelector('.cdd');
+ if(lineBtn&&boxDd){lineBtn.click();boxDd.click();const redRow=[...document.querySelectorAll('.cddpop .cddrow')].find(r=>r.textContent.includes('red'));if(redRow)redRow.click();}
  A(UIMAP['mode-line'].box&&UIMAP['mode-line'].box.color==='#ff0000','UI box color dropdown writes box.color');
  const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].box={style:'line',width:1,color:null};buildPkgTable();
  const prow=document.querySelector('#pkgbody tr[data-face="'+face+'"]'),pbox=prow&&prow.cells[8],pdd=pbox&&pbox.querySelector('.cdd');
@@ -675,3 +675,24 @@ if(location.hash==='#viewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  }
  document.title='VIEWTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='viewtest';d.textContent='VIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Box-cluster gate (open with #boxtest): the box control is a 2x2 cluster of
+// four radio buttons (none / line / pressed / raised); the color swatch shows
+// only while a box style is active.
+if(location.hash==='#boxtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ LOCKED.clear();const f=UI_FACES[0][0];const saveBox=UIMAP[f].box;
+ UIMAP[f].box=null;buildUITable();
+ const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[7];
+ A(!!cell.querySelector('.boxcluster'),'box-cluster-present');
+ A(cell.querySelectorAll('.boxbtn').length===4,'four-box-buttons');
+ const dd=cell.querySelector('.cstep');
+ A(dd&&dd.style.display==='none','color-hidden-when-no-box');
+ const lineBtn=cell.querySelector('.boxbtn[data-style="line"]');lineBtn.click();
+ A(UIMAP[f].box&&UIMAP[f].box.style==='line','line-click-sets-style');
+ A(lineBtn.classList.contains('on'),'line-button-active');
+ A(dd.style.display!=='none','color-shown-when-box-active');
+ cell.querySelector('.boxbtn[data-style=""]').click();
+ A(UIMAP[f].box===null,'blank-click-clears-box');
+ A(dd.style.display==='none','color-hidden-again-after-clear');
+ UIMAP[f].box=saveBox;buildUITable();
+ document.title='BOXTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='boxtest';d.textContent='BOXTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}

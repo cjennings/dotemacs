@@ -381,15 +381,25 @@ function syntaxStyle(k){const s=syntaxFace(k),fg=(k==='bg'?MAP['p']:resolveSynta
   return `color:${fg};${bg?'background:'+bg+';':''}font-weight:${s.bold?'bold':'normal'};font-style:${s.italic?'italic':'normal'};text-decoration:${dec.trim()||'none'}${bx?';box-shadow:'+bx:''}`;}
 // The per-row box control: none / line / raised / pressed plus optional line
 // color. get()/set() read and write the face's box object (null = no box).
+// Box control: a 2x2 cluster of radio buttons for the four box styles (no box /
+// line / pressed / raised), plus a compact color swatch shown only while a box
+// style is active. Replaces the old wide select+swatch to reclaim column width.
 function mkBoxControl(get,set,opts={}){const wrap=document.createElement('div');wrap.className='boxctl';
-  const s=document.createElement('select');s.className='chip';s.style.cssText='width:84px;font:10pt monospace';
-  [['','no box'],['line','line'],['released','raised'],['pressed','pressed']].forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;s.appendChild(o);});
-  const dd=mkColorDropdown(ddList((get()&&get().color)||''),(get()&&get().color)||'',h=>{const cur=get();if(!cur)return;set(Object.assign({},cur,{color:h||null}));},{compact:!!opts.compact,defaultHex:opts.defaultHex});
-  function paint(){const cur=get();s.value=cur&&cur.style?cur.style:'';dd.setValue(cur&&cur.color?cur.color:'');
-    const off=!cur||!cur.style||wrap.dataset.locked==='1';dd.dataset.locked=off?'1':'';dd.classList.toggle('locked',off);if(dd.syncLocked)dd.syncLocked();}
-  s.onchange=()=>{const cur=get();set(s.value?{style:s.value,width:cur&&cur.width||1,color:cur&&cur.color||null}:null);paint();};
-  wrap.syncLocked=()=>{const locked=wrap.dataset.locked==='1';s.disabled=locked;paint();};
-  wrap.append(s,dd);paint();return wrap;}
+  const cluster=document.createElement('div');cluster.className='boxcluster';
+  const states=[['','no box',''],['line','line box','□'],['pressed','pressed','▼'],['released','raised','▲']];
+  const btns={};
+  states.forEach(([v,title,glyph])=>{const b=document.createElement('button');b.className='boxbtn';b.dataset.style=v;b.textContent=glyph;b.title=title;
+    b.onclick=()=>{const cur=get();set(v?{style:v,width:(cur&&cur.width)||1,color:(cur&&cur.color)||null}:null);paint();};
+    cluster.appendChild(b);btns[v]=b;});
+  const dd=mkColorDropdown(ddList((get()&&get().color)||''),(get()&&get().color)||'',h=>{const cur=get();if(!cur)return;set(Object.assign({},cur,{color:h||null}));paint();},{compact:true,defaultHex:opts.defaultHex});
+  function paint(){const cur=get(),style=cur&&cur.style?cur.style:'';
+    for(const v in btns)btns[v].classList.toggle('on',v===style);
+    dd.style.display=style?'':'none';dd.setValue(cur&&cur.color?cur.color:'');
+    const locked=wrap.dataset.locked==='1';
+    for(const v in btns)btns[v].disabled=locked;
+    const ddoff=locked||!style;dd.dataset.locked=ddoff?'1':'';dd.classList.toggle('locked',ddoff);if(dd.syncLocked)dd.syncLocked();}
+  wrap.syncLocked=()=>paint();
+  wrap.append(cluster,dd);paint();return wrap;}
 function flashRow(tr){if(!tr)return;tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}
 function flashEl(el){if(!el)return;el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});el.classList.remove('flashtok');void el.offsetWidth;el.classList.add('flashtok');}
 // Flash every matching element but scroll only the first into view, so a face

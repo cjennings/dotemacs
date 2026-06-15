@@ -14,7 +14,11 @@
  #pkgtable td:nth-child(3),#pkgtable td:nth-child(4){width:78px;min-width:78px;max-width:78px;padding-left:4px;padding-right:4px;text-align:center}
  #legtable th:nth-child(6),#legtable td:nth-child(6),
  #uitable th:nth-child(8),#uitable td:nth-child(8),
- #pkgtable th:nth-child(9),#pkgtable td:nth-child(9){width:166px;min-width:166px;max-width:166px;padding-left:6px;padding-right:6px;text-align:left}
+ #pkgtable th:nth-child(9),#pkgtable td:nth-child(9){width:76px;min-width:76px;max-width:76px;padding-left:6px;padding-right:6px;text-align:left}
+ .boxcluster{display:grid;grid-template-columns:repeat(2,1fr);gap:2px}
+ .boxbtn{width:17px;height:15px;padding:0;border:1px solid #3a3a3a;border-radius:3px;background:#1f1c19;color:#cdced1;font:11px monospace;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+ .boxbtn.on{background:#3a3320;border-color:#e8bd30;color:#e8bd30}
+ .boxbtn:disabled{opacity:.3;cursor:default}
  table.leg th:hover{color:#e8bd30}
  select.chip{appearance:none;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 14px monospace;width:160px;cursor:pointer}
  .cstep{display:inline-flex;align-items:center;gap:4px}
