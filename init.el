@@ -81,6 +81,7 @@
 (require 'ai-term)               ;; in-Emacs Claude launcher (vertical-split ghostel)
 (require 'help-utils)            ;; search: arch-wiki, devdoc, tldr, wikipedia
 (require 'help-config)           ;; info, man, help config
+(require 'face-diagnostic)       ;; describe face/font at point (cj/describe-face-at-point)
 (require 'tramp-config)          ;; remote shell connections
 
 ;; ---------------------- Added Features And Integrations ----------------------

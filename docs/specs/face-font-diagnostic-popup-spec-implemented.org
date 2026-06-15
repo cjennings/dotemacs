@@ -1,6 +1,6 @@
 :PROPERTIES:
 :ID:       98f065cf-8bd5-46a0-ac24-da94d66855ad
-:STATUS:   not-started
+:STATUS:   implemented
 :END:
 #+TITLE: Face and Font Diagnostic Popup — Spec
 #+AUTHOR: Craig Jennings
@@ -9,7 +9,7 @@
 
 * Metadata
 
-| Status   | not-started                                             |
+| Status   | implemented                                             |
 |----------+---------------------------------------------------|
 | Owner    | Craig Jennings                                    |
 |----------+---------------------------------------------------|

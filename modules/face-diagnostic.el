@@ -5,13 +5,18 @@
 ;;
 ;; Layer: 4 (Added features).
 ;; Category: O (optional command).
-;; Load shape: command-loaded (no startup side effects; pure defuns).
+;; Load shape: eager.
+;; Eager reason: none; a diagnostic command, a command-loaded deferral candidate.
+;; Top-level side effects: defines cj/face-diagnostic-mode and the
+;;   cj/describe-face-at-point command; binds no global key.
+;; Runtime requires: seq.
+;; Direct test load: yes (the pure core is tested by requiring this module).
 ;;
 ;; A read-only diagnostic for "why does the character at point paint this way?"
 ;; It separates the face stack by source (text properties, overlays, active
 ;; remaps, the default) and -- in later phases -- the merged attributes, the
 ;; real font versus the declared family, and per-face theme/config/inherit
-;; provenance.  See docs/specs/face-font-diagnostic-popup-spec.org.
+;; provenance.  See docs/specs/face-font-diagnostic-popup-spec-implemented.org.
 ;;
 ;; This file is Phase 1: the pure read model.  `cj/--face-diagnosis-at' returns
 ;; a plist with the buffer classification, the character context, and the face
@@ -290,6 +295,157 @@ mutation."
         :attributes (cj/--face-diag-merged-attributes pos buffer)
         :font (cj/--face-diag-real-font pos buffer)
         :provenance (cj/--face-diag-provenance pos buffer)))
+
+;; ------------------------------- Rendering -----------------------------------
+
+(defun cj/--face-diag-render-banner (classification)
+  "Return a one-line banner for an out-of-scope CLASSIFICATION, or \"\"."
+  (pcase classification
+    ('terminal-ansi
+     "NOTE: terminal buffer -- colors come from the ANSI palette, not the theme.\n\n")
+    ('document-shr
+     "NOTE: document buffer -- colors come from the rendered document, not the theme.\n\n")
+    ('image-no-text
+     "NOTE: image/no-text buffer -- little face information applies here.\n\n")
+    (_ "")))
+
+(defun cj/--face-diag-render-char (char)
+  "Render the CHAR context plist as a line, or a no-character notice."
+  (if (null char)
+      "Character: none at point.\n\n"
+    (format "Character: %S  (U+%04X %s, script: %s)\n\n"
+            (plist-get char :char)
+            (plist-get char :codepoint)
+            (or (plist-get char :name) "no name")
+            (or (plist-get char :script) "none"))))
+
+(defun cj/--face-diag-render-faces (faces)
+  "Render a list of FACES (symbols or specs) comma-separated, or \"(none)\"."
+  (if faces (mapconcat (lambda (f) (format "%s" f)) faces ", ") "(none)"))
+
+(defun cj/--face-diag-render-stack (stack)
+  "Render the STACK plist (faces by source) as a block."
+  (concat
+   "Face stack (highest priority first):\n"
+   (format "  text properties: %s\n"
+           (cj/--face-diag-render-faces (plist-get stack :text-property)))
+   (format "  overlays: %s\n"
+           (let ((ov (plist-get stack :overlays)))
+             (if ov
+                 (mapconcat (lambda (e)
+                              (format "%s (priority %s)"
+                                      (plist-get e :face)
+                                      (or (plist-get e :priority) "nil")))
+                            ov ", ")
+               "(none)")))
+   (format "  active remaps: %s\n"
+           (let ((rm (plist-get stack :remaps)))
+             (if rm (mapconcat (lambda (e) (format "%s" (car e))) rm ", ") "(none)")))
+   "  default: default\n\n"))
+
+(defun cj/--face-diag-render-attributes (attrs)
+  "Render the merged ATTRS plist as a block."
+  (concat
+   "Effective attributes (computed):\n"
+   (mapconcat (lambda (attr) (format "  %s: %s" attr (plist-get attrs attr)))
+              cj/--face-diag-attributes "\n")
+   "\n\n"))
+
+(defun cj/--face-diag-render-font (font attrs)
+  "Render the real FONT plist beside the merged ATTRS declared :family."
+  (let ((real (plist-get font :font))
+        (declared (plist-get attrs :family))
+        (real-family (plist-get font :family)))
+    (concat
+     (format "Real font: %s\n" real)
+     (format "Declared family: %s\n" declared)
+     (if (and (stringp real-family) (stringp declared)
+              (not (string-equal-ignore-case real-family declared)))
+         (format "  (substituted: real family %s differs from declared %s)\n\n"
+                 real-family declared)
+       "\n"))))
+
+(defun cj/--face-diag-render-provenance (prov)
+  "Render the per-face PROV list as a block."
+  (concat
+   "Provenance:\n"
+   (if prov
+       (mapconcat
+        (lambda (p)
+          (format (concat "  %s\n    themes: %s\n    config: %s\n"
+                          "    inherits: %s\n    unspecified (-> default): %s")
+                  (plist-get p :face)
+                  (or (plist-get p :themes) "(none)")
+                  (or (plist-get p :config) "(none)")
+                  (or (plist-get p :inherit-chain) "(none)")
+                  (or (plist-get p :unspecified) "(none)")))
+        prov "\n")
+     "  (no named faces)")
+   "\n"))
+
+(defun cj/--face-diag-render (diag)
+  "Render the face-diagnosis DIAG plist into a report string."
+  (concat
+   (cj/--face-diag-render-banner (plist-get diag :classification))
+   (cj/--face-diag-render-char (plist-get diag :char))
+   (cj/--face-diag-render-stack (plist-get diag :stack))
+   (cj/--face-diag-render-attributes (plist-get diag :attributes))
+   (cj/--face-diag-render-font (plist-get diag :font) (plist-get diag :attributes))
+   (cj/--face-diag-render-provenance (plist-get diag :provenance))))
+
+;; ------------------------------- Region mode ---------------------------------
+
+(defun cj/--face-diag-run-starts (beg end)
+  "Return the positions in [BEG, END) where the `face' property run begins."
+  (let ((pos beg) (starts (list beg)))
+    (while (and (setq pos (next-single-property-change pos 'face nil end))
+                (< pos end))
+      (push pos starts))
+    (nreverse starts)))
+
+(defun cj/--face-diag-render-region (beg end)
+  "Render a diagnosis for each distinct face-run in [BEG, END), capped at 20."
+  (let* ((starts (cj/--face-diag-run-starts beg end))
+         (cap 20)
+         (shown (seq-take starts cap)))
+    (concat
+     (mapconcat (lambda (pos)
+                  (concat (format "=== position %d ===\n" pos)
+                          (cj/--face-diag-render (cj/--face-diagnosis-at pos))))
+                shown "\n")
+     (when (> (length starts) cap)
+       (format "\n... %d more face-runs not shown (cap %d).\n"
+               (- (length starts) cap) cap)))))
+
+;; ------------------------------- Command -------------------------------------
+
+(define-derived-mode cj/face-diagnostic-mode special-mode "Face-Diag"
+  "Major mode for the read-only face/font diagnosis report.")
+
+(defun cj/--face-diag-display (report)
+  "Show REPORT in the read-only *Face Diagnosis* buffer; return the buffer."
+  (let ((buf (get-buffer-create "*Face Diagnosis*")))
+    (with-current-buffer buf
+      (cj/face-diagnostic-mode)
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert report)
+        (goto-char (point-min))))
+    (display-buffer buf)
+    buf))
+
+(defun cj/describe-face-at-point ()
+  "Pop up a read-only diagnosis of the face and font at point.
+With an active region, diagnose each distinct face-run in the region.  The
+report separates the face stack by source, shows the computed merged
+attributes, the real font versus the declared family, and per-face
+theme/config/inherit provenance.  Read-only; never mutates buffer or frame.
+See docs/specs/face-font-diagnostic-popup-spec-implemented.org."
+  (interactive)
+  (cj/--face-diag-display
+   (if (use-region-p)
+       (cj/--face-diag-render-region (region-beginning) (region-end))
+     (cj/--face-diag-render (cj/--face-diagnosis-at (point))))))
 
 (provide 'face-diagnostic)
 ;;; face-diagnostic.el ends here

@@ -271,5 +271,56 @@
     (let ((prov (plist-get (cj/--face-diagnosis-at (point-min)) :provenance)))
       (should (cl-some (lambda (p) (eq (plist-get p :face) 'bold)) prov)))))
 
+;;; cj/--face-diag-render
+
+(ert-deftest test-face-diag-render-has-all-groups ()
+  "Normal: the rendered report names every group and the stack's face."
+  (with-temp-buffer
+    (fundamental-mode)
+    (insert (propertize "A" 'face 'bold))
+    (let ((report (cj/--face-diag-render (cj/--face-diagnosis-at (point-min)))))
+      (should (string-match-p "Character:" report))
+      (should (string-match-p "Face stack" report))
+      (should (string-match-p "bold" report))
+      (should (string-match-p "Effective attributes" report))
+      (should (string-match-p "Real font" report))
+      (should (string-match-p "Provenance" report)))))
+
+(ert-deftest test-face-diag-render-banner-out-of-scope ()
+  "Boundary: a terminal classification renders a banner naming the ANSI source."
+  (should (string-match-p "terminal" (cj/--face-diag-render-banner 'terminal-ansi)))
+  (should (equal (cj/--face-diag-render-banner 'theme-faced) "")))
+
+(ert-deftest test-face-diag-render-no-char ()
+  "Boundary: a nil char group renders the no-character notice."
+  (should (string-match-p "none at point" (cj/--face-diag-render-char nil))))
+
+(ert-deftest test-face-diag-render-region-covers-runs ()
+  "Normal: region rendering emits a position header per distinct face-run."
+  (with-temp-buffer
+    (insert (propertize "aa" 'face 'bold))
+    (insert (propertize "bb" 'face 'italic))
+    (let ((report (cj/--face-diag-render-region (point-min) (point-max))))
+      (should (string-match-p "=== position 1 ===" report))
+      (should (string-match-p "=== position 3 ===" report)))))
+
+;;; cj/describe-face-at-point  (smoke)
+
+(ert-deftest test-face-diag-command-creates-buffer ()
+  "Normal: the command renders into the read-only *Face Diagnosis* buffer."
+  (with-temp-buffer
+    (insert (propertize "A" 'face 'bold))
+    (goto-char (point-min))
+    (cj/describe-face-at-point)
+    (let ((buf (get-buffer "*Face Diagnosis*")))
+      (unwind-protect
+          (progn
+            (should buf)
+            (with-current-buffer buf
+              (should (eq major-mode 'cj/face-diagnostic-mode))
+              (should buffer-read-only)
+              (should (string-match-p "Face stack" (buffer-string)))))
+        (when (buffer-live-p buf) (kill-buffer buf))))))
+
 (provide 'test-face-diagnostic)
 ;;; test-face-diagnostic.el ends here
