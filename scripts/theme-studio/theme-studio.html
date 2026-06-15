@@ -2963,11 +2963,15 @@ if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;con
  if(redChip){
   const redName=redChip.querySelector('.nm');selectedIdx=null;redName.click();
   A(selectedIdx!==null&&PALETTE[selectedIdx][1]==='red','single-clicking a tile name selects the whole tile');
-  const chipHex=chip=>rgb2hex(...getComputedStyle(chip).backgroundColor.match(/\d+/g).slice(0,3).map(Number));
+  // Re-query the chip from the live DOM each time: selecting re-renders the
+  // palette, so a node captured earlier is detached and getComputedStyle on it
+  // returns "" (match -> null). Look it up by the current selection index.
+  const liveChip=()=>document.querySelector('#pals .pchip[data-palette-index="'+selectedIdx+'"]');
+  const chipHex=chip=>{const m=chip&&getComputedStyle(chip).backgroundColor.match(/\d+/g);return m?rgb2hex(...m.slice(0,3).map(Number)):null;};
   openPicker();setHex('#00ff00');
-  A(chipHex(redChip)==='#00ff00','picker edits preview on the selected palette chip');
+  A(chipHex(liveChip())==='#00ff00','picker edits preview on the selected palette chip');
   closePicker();
-  A(chipHex(redChip)==='#c0402a'&&PALETTE[selectedIdx][0]==='#c0402a','closing picker restores selected chip without mutating palette');
+  A(chipHex(liveChip())==='#c0402a'&&PALETTE[selectedIdx][0]==='#c0402a','closing picker restores selected chip without mutating palette');
   A(redName.readOnly===true&&!redName.classList.contains('editing'),'single-clicking a tile name does not enter name edit mode');
   redName.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
   A(redName.readOnly===false&&redName.classList.contains('editing'),'double-clicking a tile name enters edit mode');
@@ -3077,7 +3081,7 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  updateColor();
  const column=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).columns[0];
  A(column&&column.members.some(m=>m.hex.toLowerCase()==='#3a8a8a'),'column base recolored to the new hex');
- A(fam&&fam.members.length===5,'count preserved (±2 → 5 members), got '+(fam&&fam.members.length));
+ A(column&&column.members.length===5,'count preserved (±2 → 5 members), got '+(column&&column.members.length));
  A(!new Set(PALETTE.map(p=>p[0].toLowerCase())).has('#67809c'),'old base removed from palette');
  A(UIMAP['region'].bg.toLowerCase()==='#3a8a8a','a reference to the base followed to the new base hex');
  // ground edit: select bg, change hex, MAP.bg follows

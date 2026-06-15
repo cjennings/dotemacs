@@ -70,7 +70,7 @@ else
     upper="$(echo "$t" | tr '[:lower:]' '[:upper:]')"
     res="$(timeout --kill-after=5 30 "$CHROME" --headless --no-sandbox --disable-gpu --user-data-dir="$PROF" \
       --virtual-time-budget=8000 --dump-dom "file://$HERE/theme-studio.html#$t" 2>/dev/null \
-      | grep -o "${upper}[^<]*" | head -1)"
+      | grep -oE "${upper} (PASS|FAIL)[^<]*" | head -1)"
     case "$res" in
       *PASS*) pass_msg "#$t" ;;
       *FAIL*) fail_msg "#$t -> $res" ;;
