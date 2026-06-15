@@ -201,3 +201,24 @@ test('sortColumns: Normal - preserves member order inside a column', () => {
   const members = ['#dddddd', '#222222', '#888888'];
   assert.deepEqual(sortColumns([column('gray', members)])[0].members.map(m => m.hex), members);
 });
+
+// --- regenColumn ground bounds (task: spans stop at bg/fg) -------------------
+const _lum = h => { const n=parseInt(h.slice(1),16),r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255; const f=c=>c<=0.03928?c/12.92:((c+0.055)/1.055)**2.4; return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b); };
+
+test('regenColumn: Normal - ground-bounded span stays within the bg/fg endpoints', () => {
+  const bg = '#101010', fg = '#f0f0f0';
+  const members = regenColumn('#67809c', 4, { ground: { bg, fg } }).members;
+  const lo = _lum(bg), hi = _lum(fg);
+  assert.ok(members.every(m => _lum(m.hex) >= lo - 1e-6 && _lum(m.hex) <= hi + 1e-6),
+    'every generated member sits within [bg, fg] luminance');
+});
+
+test('regenColumn: Boundary - a near-black bg yields no duplicate pure-black tiles', () => {
+  const members = regenColumn('#67809c', 8, { ground: { bg: '#000000', fg: '#ffffff' } }).members;
+  assert.ok(!members.some(m => m.offset !== 0 && (m.hex === '#000000' || m.hex === '#ffffff')),
+    'pure endpoints are not duplicated as generated steps');
+});
+
+test('regenColumn: Boundary - no ground falls back to the black/white span', () => {
+  assert.equal(regenColumn('#67809c', 2).members.length, 5);
+});

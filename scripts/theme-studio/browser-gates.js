@@ -570,9 +570,9 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  setColumnCount('#101010',4);
  A(!PALETTE.some(p=>p[0].toLowerCase()==='#000000'&&p[1]!=='bg'),'spanning a near-black base skips generated pure-black tiles');
  PALETTE=[['#204060','bg'],['#f0fef0','fg']];
- regenColumn('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
- const innerOld=regenColumn('#67809c',2).members.find(m=>m.offset===1).hex; // survives a count change
- const outerOld=regenColumn('#67809c',2).members.find(m=>m.offset===2).hex; // dropped on count-down
+ regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
+ const innerOld=regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.find(m=>m.offset===1).hex; // survives a count change
+ const outerOld=regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.find(m=>m.offset===2).hex; // dropped on count-down
  UIMAP['region']={fg:null,bg:innerOld,bold:false,italic:false,underline:false,strike:false};
  UIMAP['highlight']={fg:null,bg:outerOld,bold:false,italic:false,underline:false,strike:false};
  selectedIdx=null;renderPalette();
@@ -582,12 +582,15 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  const palHexes=new Set(PALETTE.map(p=>p[0].toLowerCase()));
  A(!palHexes.has(outerOld.toLowerCase()),'outer step removed from palette on count down');
  A(UIMAP['highlight'].bg.toLowerCase()===outerOld.toLowerCase(),'a removed-step reference stays on its old (gone) hex');
- const newInner=regenColumn('#67809c',1).members.find(m=>m.offset===1).hex;
+ const newInner=regenColumn('#67809c',1,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.find(m=>m.offset===1).hex;
  A(UIMAP['region'].bg.toLowerCase()===newInner.toLowerCase(),'a surviving-step reference followed the regenerate, got '+UIMAP['region'].bg);
  setColumnCount('#67809c',3);
- const want3=regenColumn('#67809c',3).members.map(m=>m.hex.toLowerCase());
+ const want3=regenColumn('#67809c',3,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.map(m=>m.hex.toLowerCase());
  const have=new Set(PALETTE.map(p=>p[0].toLowerCase()));
  A(want3.every(h=>have.has(h)),'count up to 3 adds all 7 span colors to the palette');
+ {const _lum=h=>{const n=parseInt(h.slice(1),16),r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255;const f=c=>c<=0.03928?c/12.92:((c+0.055)/1.055)**2.4;return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b);};
+  const lo=_lum(MAP['bg']),hi=_lum(MAP['p']),blue=PALETTE.filter(p=>p[2]==='blue').map(p=>_lum(p[0]));
+  A(blue.length&&blue.every(L=>L>=lo-1e-6&&L<=hi+1e-6),'generated span stays within the bg/fg bounds');}
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
  document.title='COUNTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='counttest';d.textContent='COUNTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
@@ -598,7 +601,7 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),saveSel=selectedIdx;
  setSyntaxFg('bg','#0d0b0a');setSyntaxFg('p','#f0fef0');
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg']];
- regenColumn('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
+ regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
  UIMAP['region']={fg:null,bg:'#67809c',bold:false,italic:false,underline:false,strike:false};
  renderPalette();buildUITable();
  selectedIdx=PALETTE.findIndex(p=>p[0].toLowerCase()==='#67809c');

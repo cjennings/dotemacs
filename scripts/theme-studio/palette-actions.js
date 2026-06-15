@@ -218,7 +218,7 @@ function columnCountControl(f){
 // references and leaving removed ones on their now-gone hex. Returns the removed
 // count, or null on a bad base. Shared by the count control and the base edit.
 function regenColumnInPlace(oldHexes,baseHex,baseName,n,columnId){
-  const r=regenColumn(baseHex,n,{});
+  const r=regenColumn(baseHex,n,{ground:{bg:MAP['bg'],fg:MAP['p']}});
   if(r.error){notify('cannot regenerate from '+baseHex,true);return null;}
   const plan=stepRepointPlan(rankByLightness(oldHexes,baseHex),r.members);
   const oldSet=new Set(oldHexes.map(h=>h.toLowerCase()));

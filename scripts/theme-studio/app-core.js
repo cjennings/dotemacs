@@ -265,14 +265,24 @@ function columnsFromPalette(palette,ground){
 // base duplicates are skipped. {members:[{hex,offset,clamped}]} or
 // {members:[],error:'bad-hex'}.
 function regenColumn(baseHex,n,opts){
+  opts=opts||{};
   const hex=typeof baseHex==='string'?normHex(baseHex):null;
   if(!hex)return {members:[],error:'bad-hex'};
   const k=Math.min(8,Math.max(0,Math.round(n||0)));
   if(k===0)return {members:[{hex,offset:0,clamped:false}]};
-  const base=srgb2oklab(hex),black=srgb2oklab('#000000'),white=srgb2oklab('#ffffff'),steps=[];
+  // Bound the span to the ground endpoints when given: the dark side ramps toward
+  // the darker ground (bg), the light side toward the lighter ground (fg), so no
+  // generated step is darker than bg or lighter than fg. Falls back to pure
+  // black/white when no ground is supplied. isPureEndpointHex still dedupes the
+  // black/white case when bg/fg are themselves pure.
+  const g=opts.ground||{};
+  const gb=(g.bg&&normHex(g.bg))?srgb2oklab(normHex(g.bg)):srgb2oklab('#000000');
+  const gf=(g.fg&&normHex(g.fg))?srgb2oklab(normHex(g.fg)):srgb2oklab('#ffffff');
+  const darkEnd=gb.L<=gf.L?gb:gf, lightEnd=gb.L<=gf.L?gf:gb;
+  const base=srgb2oklab(hex),steps=[];
   for(let i=1;i<=k;i++){
-    const dark=interpOklabHex(black,base,i/(k+1),i-k-1);
-    const light=interpOklabHex(base,white,i/(k+1),i);
+    const dark=interpOklabHex(darkEnd,base,i/(k+1),i-k-1);
+    const light=interpOklabHex(base,lightEnd,i/(k+1),i);
     steps.push(dark,light);
   }
   const members=[...steps.filter(s=>!isPureEndpointHex(s.hex)&&s.hex.toLowerCase()!==hex),{hex,offset:0,clamped:false}].sort((a,b)=>a.offset-b.offset);

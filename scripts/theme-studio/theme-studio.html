@@ -758,14 +758,24 @@ function columnsFromPalette(palette,ground){
 // base duplicates are skipped. {members:[{hex,offset,clamped}]} or
 // {members:[],error:'bad-hex'}.
 function regenColumn(baseHex,n,opts){
+  opts=opts||{};
   const hex=typeof baseHex==='string'?normHex(baseHex):null;
   if(!hex)return {members:[],error:'bad-hex'};
   const k=Math.min(8,Math.max(0,Math.round(n||0)));
   if(k===0)return {members:[{hex,offset:0,clamped:false}]};
-  const base=srgb2oklab(hex),black=srgb2oklab('#000000'),white=srgb2oklab('#ffffff'),steps=[];
+  // Bound the span to the ground endpoints when given: the dark side ramps toward
+  // the darker ground (bg), the light side toward the lighter ground (fg), so no
+  // generated step is darker than bg or lighter than fg. Falls back to pure
+  // black/white when no ground is supplied. isPureEndpointHex still dedupes the
+  // black/white case when bg/fg are themselves pure.
+  const g=opts.ground||{};
+  const gb=(g.bg&&normHex(g.bg))?srgb2oklab(normHex(g.bg)):srgb2oklab('#000000');
+  const gf=(g.fg&&normHex(g.fg))?srgb2oklab(normHex(g.fg)):srgb2oklab('#ffffff');
+  const darkEnd=gb.L<=gf.L?gb:gf, lightEnd=gb.L<=gf.L?gf:gb;
+  const base=srgb2oklab(hex),steps=[];
   for(let i=1;i<=k;i++){
-    const dark=interpOklabHex(black,base,i/(k+1),i-k-1);
-    const light=interpOklabHex(base,white,i/(k+1),i);
+    const dark=interpOklabHex(darkEnd,base,i/(k+1),i-k-1);
+    const light=interpOklabHex(base,lightEnd,i/(k+1),i);
     steps.push(dark,light);
   }
   const members=[...steps.filter(s=>!isPureEndpointHex(s.hex)&&s.hex.toLowerCase()!==hex),{hex,offset:0,clamped:false}].sort((a,b)=>a.offset-b.offset);
@@ -1662,7 +1672,7 @@ function columnCountControl(f){
 // references and leaving removed ones on their now-gone hex. Returns the removed
 // count, or null on a bad base. Shared by the count control and the base edit.
 function regenColumnInPlace(oldHexes,baseHex,baseName,n,columnId){
-  const r=regenColumn(baseHex,n,{});
+  const r=regenColumn(baseHex,n,{ground:{bg:MAP['bg'],fg:MAP['p']}});
   if(r.error){notify('cannot regenerate from '+baseHex,true);return null;}
   const plan=stepRepointPlan(rankByLightness(oldHexes,baseHex),r.members);
   const oldSet=new Set(oldHexes.map(h=>h.toLowerCase()));
@@ -3073,9 +3083,9 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  setColumnCount('#101010',4);
  A(!PALETTE.some(p=>p[0].toLowerCase()==='#000000'&&p[1]!=='bg'),'spanning a near-black base skips generated pure-black tiles');
  PALETTE=[['#204060','bg'],['#f0fef0','fg']];
- regenColumn('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
- const innerOld=regenColumn('#67809c',2).members.find(m=>m.offset===1).hex; // survives a count change
- const outerOld=regenColumn('#67809c',2).members.find(m=>m.offset===2).hex; // dropped on count-down
+ regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
+ const innerOld=regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.find(m=>m.offset===1).hex; // survives a count change
+ const outerOld=regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.find(m=>m.offset===2).hex; // dropped on count-down
  UIMAP['region']={fg:null,bg:innerOld,bold:false,italic:false,underline:false,strike:false};
  UIMAP['highlight']={fg:null,bg:outerOld,bold:false,italic:false,underline:false,strike:false};
  selectedIdx=null;renderPalette();
@@ -3085,12 +3095,15 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  const palHexes=new Set(PALETTE.map(p=>p[0].toLowerCase()));
  A(!palHexes.has(outerOld.toLowerCase()),'outer step removed from palette on count down');
  A(UIMAP['highlight'].bg.toLowerCase()===outerOld.toLowerCase(),'a removed-step reference stays on its old (gone) hex');
- const newInner=regenColumn('#67809c',1).members.find(m=>m.offset===1).hex;
+ const newInner=regenColumn('#67809c',1,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.find(m=>m.offset===1).hex;
  A(UIMAP['region'].bg.toLowerCase()===newInner.toLowerCase(),'a surviving-step reference followed the regenerate, got '+UIMAP['region'].bg);
  setColumnCount('#67809c',3);
- const want3=regenColumn('#67809c',3).members.map(m=>m.hex.toLowerCase());
+ const want3=regenColumn('#67809c',3,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.map(m=>m.hex.toLowerCase());
  const have=new Set(PALETTE.map(p=>p[0].toLowerCase()));
  A(want3.every(h=>have.has(h)),'count up to 3 adds all 7 span colors to the palette');
+ {const _lum=h=>{const n=parseInt(h.slice(1),16),r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255;const f=c=>c<=0.03928?c/12.92:((c+0.055)/1.055)**2.4;return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b);};
+  const lo=_lum(MAP['bg']),hi=_lum(MAP['p']),blue=PALETTE.filter(p=>p[2]==='blue').map(p=>_lum(p[0]));
+  A(blue.length&&blue.every(L=>L>=lo-1e-6&&L<=hi+1e-6),'generated span stays within the bg/fg bounds');}
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
  document.title='COUNTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='counttest';d.textContent='COUNTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
@@ -3101,7 +3114,7 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),saveSel=selectedIdx;
  setSyntaxFg('bg','#0d0b0a');setSyntaxFg('p','#f0fef0');
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg']];
- regenColumn('#67809c',2).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
+ regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
  UIMAP['region']={fg:null,bg:'#67809c',bold:false,italic:false,underline:false,strike:false};
  renderPalette();buildUITable();
  selectedIdx=PALETTE.findIndex(p=>p[0].toLowerCase()==='#67809c');
