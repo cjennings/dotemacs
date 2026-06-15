@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Sequence
 from typing import Any
 
 
@@ -38,7 +39,7 @@ def face_label(face: str, prefix: str) -> str:
     return label.replace("-face", "").replace("-", " ")
 
 
-def face_rows(names: list[str], prefix: str, seed: dict[str, dict[str, Any]]) -> list[list[Any]]:
+def face_rows(names: Sequence[str], prefix: str, seed: dict[str, dict[str, Any]]) -> list[list[Any]]:
     return [[face, face_label(face, prefix), seed.get(face, {})] for face in names]
 
 

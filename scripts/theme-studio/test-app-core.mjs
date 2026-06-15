@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, optList, paletteOptionList, spanNeighborHex, slugify,
+  nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
 } from './app-core.js';
 import { planPaletteGenerator, entriesForGeneratedColumn } from './palette-generator-core.js';
@@ -31,21 +31,6 @@ test('nameToHex: Boundary/Error — null, empty, and unknown names give null', (
   assert.equal(nameToHex('', PAL), null);
   assert.equal(nameToHex(undefined, PAL), null);
   assert.equal(nameToHex('chartreuse', PAL), null);
-});
-
-test('optList: Normal — default entry then the whole palette', () => {
-  assert.deepEqual(optList('#67809c', PAL), [['', '— default —'], ...PAL]);
-});
-
-test('optList: Boundary — empty cur is "have", so no (gone) entry', () => {
-  assert.deepEqual(optList('', PAL), [['', '— default —'], ...PAL]);
-});
-
-test('optList: Error — a cur not in the palette is surfaced as (gone) first', () => {
-  const list = optList('#123456', PAL);
-  assert.deepEqual(list[0], ['', '— default —']);
-  assert.deepEqual(list[1], ['#123456', '(gone)']);
-  assert.deepEqual(list.slice(2), PAL);
 });
 
 test('paletteOptionList: Normal — color choices follow visual column ordering', () => {

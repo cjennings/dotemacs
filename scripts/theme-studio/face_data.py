@@ -161,7 +161,6 @@ MU4E_FACES=("mu4e-title-face mu4e-context-face mu4e-modeline-face mu4e-ok-face m
  "mu4e-header-title-face mu4e-header-key-face mu4e-header-value-face mu4e-header-face mu4e-header-highlight-face mu4e-header-marks-face "
  "mu4e-unread-face mu4e-flagged-face mu4e-replied-face mu4e-forwarded-face mu4e-draft-face mu4e-trashed-face mu4e-related-face "
  "mu4e-contact-face mu4e-special-header-value-face mu4e-url-number-face mu4e-link-face "
- ""
  "mu4e-footer-face mu4e-region-code mu4e-system-face mu4e-highlight-face mu4e-compose-separator-face").split()
 MU4E_SEED={
  "mu4e-title-face":{"fg":"blue","bold":True},"mu4e-context-face":{"fg":"blue","bold":True},"mu4e-modeline-face":{"fg":"silver"},"mu4e-ok-face":{"fg":"sage","bold":True},"mu4e-warning-face":{"fg":"gold","bold":True},

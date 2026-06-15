@@ -458,7 +458,7 @@ if(location.hash==='#healtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
 // Column-strip gate (open with #columntest): the palette renders as a pinned
 // ground column plus structural columns, chips keep their controls, and renaming
 // a color leaves it in the same strip because the column id is stable.
-if(location.hash==='#columntest'||location.hash==='#familytest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#columntest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveG=Object.assign({},lastGone),saveSel=selectedIdx;
  setSyntaxFg('bg','#0d0b0a');setSyntaxFg('p','#f0fef0');
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg'],['#c0402a','red'],['#3a6ea5','blue'],['#808080','gray']];selectedIdx=null;renderPalette();

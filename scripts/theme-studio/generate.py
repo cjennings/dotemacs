@@ -212,7 +212,7 @@ UIMAP=build_uimap(UI_FACES,DEFAULTS)
 # this dir), instead of the hardcoded defaults above. Unset leaves them unchanged.
 # Placed after every default it overrides (notably UIMAP) so the merge has targets.
 # Mirrors what the in-page Import does, so reseed and import agree.
-LOCKS=[]; ITALIC=[k for k,v in ITALIC_MAP.items() if v]
+LOCKS=[]
 # THEME_STUDIO_SEED=<file>.json opens an existing theme as the starting point.
 # Unset starts empty: only bg/fg are in the palette.
 _seed=os.environ.get('THEME_STUDIO_SEED')
