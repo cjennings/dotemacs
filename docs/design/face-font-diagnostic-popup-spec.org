@@ -1,0 +1,193 @@
+#+TITLE: Face and Font Diagnostic Popup — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-14
+#+TODO: TODO | DONE SUPERSEDED CANCELLED
+
+* Metadata
+
+| Status   | draft                                             |
+|----------+---------------------------------------------------|
+| Owner    | Craig Jennings                                    |
+|----------+---------------------------------------------------|
+| Related  | [[file:../../todo.org][todo.org: Face and font diagnostic popup at point]] |
+
+* Summary
+
+A read-only command that, for the character at point in an ordinary buffer, pops up everything that determines how that character is painted: the full face stack, the effective merged attributes, the real font versus the declared family, and where each attribute came from (theme, config, or inheritance). It exists to answer one question fast — "why does this text look wrong under the theme, and is the fault the theme, my config, or a fallback?"
+
+* Problem / Context
+
+Theme work in this config keeps hitting the same wall: a glyph renders in the wrong color and there's no quick way to see why. The cursor showed gold in auto-dimmed buffers; elfeed rendered all-white ignoring its theme assignments. Each of those is a different layer failing — a face remap, an overlay, an unspecified attribute falling through to the default — and the built-in tools don't separate those layers or trace provenance.
+
+What paints a character is a merge of several sources resolved by the redisplay engine: the default face, then text-property faces (=face= / =font-lock-face=), then overlay faces stacked by priority, all rewritten by any =face-remapping-alist= entries, and finally a font chosen by the fontset that can differ from the face's declared =:family=. To debug a theme issue you need to see each layer, the merged result, and — for each face — whether its current attributes came from the active theme, from config, or from an =:inherit= chain that bottoms out at the default.
+
+=describe-char= and =C-u C-x ​== show the character, its faces as links, and the font, but they don't separate the stack by source, don't surface active remaps, and don't trace attribute provenance. The gap is exactly the part that distinguishes a theme bug from a config bug.
+
+* Goals and Non-Goals
+
+** Goals
+- For the character at point, show the face stack separated by source (text-property, overlay-by-priority, active remaps, default).
+- Show the effective merged attributes — the value that wins for each attribute.
+- Show the real font (=font-at=) next to the face's declared =:family=, to expose fontset substitution.
+- For each face, trace provenance: which theme(s) and/or config set each attribute, the =:inherit= chain, and the unspecified→fallback resolution.
+- Present it in a read-only, navigable help-style buffer obeying the project's unified popup placement and dismissal rules.
+- Degrade gracefully in out-of-scope buffers: show what can be read plus a banner naming the foreign color source — never a bare refusal.
+
+** Non-Goals
+- No editing of faces, themes, or attributes. This is a diagnostic, not an editor; theme-studio owns editing.
+- No reimplementation of =describe-char='s general character report (display tables, composition, char properties beyond faces).
+- No coverage of color sources outside the theme/face system as first-class (terminal ANSI palettes, document HTML/CSS, image buffers) — surfaced, not analyzed.
+- No persistence, history, or export of diagnostic output.
+
+** Scope tiers
+- v1: char-at-point diagnosis with an optional region-scan mode; the five info groups below; the help-style popup; graceful out-of-scope handling.
+- Out of scope: terminal-ANSI buffers, image/PDF buffers, and shr/document-rendered buffers as analyzed targets (they get the banner + best-effort dump).
+- vNext: interactivity — "send this face to theme-studio", jump-to-theme-spec actions, and any write path. Logged to todo.org.
+
+* Design
+
+The command — call it =cj/describe-face-at-point= (final name an open detail) — reads the character at point and builds a report buffer in five groups. It never mutates buffer or frame state.
+
+** For the user (what the popup shows)
+
+1. *Character context.* The character, its codepoint and Unicode name, and its script. Script is what explains fontset routing, so it earns its place even though it's one line.
+
+2. *Face stack, by source.* The layers that contribute, in merge order, each labeled by where it comes from:
+   - text-property faces: the =face= and =font-lock-face= properties at point, in list order, anonymous specs shown inline;
+   - overlay faces: every overlay covering point that carries a =face=, sorted by overlay priority, with a best-effort owner label;
+   - active remaps: the =face-remapping-alist= entries that apply to faces in the stack (this is the auto-dim layer);
+   - the default face underneath.
+   Source separation is the diagnostic — "is this from a text property, an overlay, or a remap?" is half the answer.
+
+3. *Effective merged attributes.* The winning value per attribute (family, height, weight, slant, foreground, background, underline, overline, strike-through, box, inverse-video). This is what actually paints.
+
+4. *Real font vs declared family.* The font =font-at= reports as actually used, next to the merged =:family=. A mismatch means the fontset substituted (emoji, CJK, a missing glyph) — a common "why is this one character different" cause.
+
+5. *Per-face provenance.* For each named face in the stack: which theme(s) set its attributes (=theme-face= property), whether config overrode it (=saved-face= / =customized-face= / a runtime =set-face-attribute=), the =:inherit= chain, and for each unspecified attribute the resolution trace — "=:foreground= unspecified → not set by any theme → no inherit → default fg." That last trace is the direct read on the elfeed-white class of bug.
+
+The report is a read-only buffer in a dedicated mode, with named faces rendered as buttons that re-run the command's per-face section or call =describe-face= (navigation only — no edits in v1).
+
+** For the implementer (how it's built)
+
+A pure core plus a thin interactive wrapper, per the project's interactive/internal split:
+
+- =cj/--face-diagnosis-at (pos &optional buffer)= → a plist describing the five groups. No prompts, no display. This is the testable unit.
+- =cj/describe-face-at-point= (interactive) → calls the core at point, renders the plist into the help buffer, places the window per the unified popup rules.
+- Region mode → maps the core over the distinct face-runs in the active region and concatenates.
+
+Data sources, by group:
+- Stack: =get-text-property= for =face= / =font-lock-face=; =overlays-at= filtered to those with a =face=, sorted by =overlay-get … 'priority=; =face-remapping-alist= (buffer-local) intersected with the stack; =get-char-property= as a cross-check on the merged text-prop+overlay face.
+- Merged attributes: see the open decision below — Emacs exposes no single "final merged plist" call, so the core folds the ordered stack itself.
+- Real font: =font-at=, then =query-font= / =font-info= for its family and name; nil under =--batch=, handled as "unavailable".
+- Provenance: =(get FACE 'theme-face)= for theme spec history, =saved-face= / =customized-face= / =face--attribute-from-frame= comparisons for config overrides, and =face-attribute= with the inherit-following argument to produce the resolution trace.
+
+Buffer classification (group 0, decides scope handling): a predicate inspects =major-mode= derivation and known markers to bucket the buffer as theme-faced (analyze fully), terminal-ANSI, document-shr, or image/no-text. Out-of-scope buckets still render groups 1–2 best-effort and prepend a banner naming the color source.
+
+* Alternatives Considered
+
+** Presentation: childframe / posframe popup
+- Good, because it floats near point and looks modern.
+- Bad, because the report is tall and structured; a childframe is cramped, doesn't scroll naturally, and fights the existing unified-popup policy.
+- Neutral, because a posframe could wrap the same render function later if wanted.
+
+** Presentation: which-key-style transient strip
+- Good, because it's lightweight.
+- Bad, because it can't hold five groups of structured, navigable, copyable text. Wrong tool for a report.
+
+** Reuse: extend describe-char instead of a new command
+- Good, because describe-char already resolves faces and the font and renders links.
+- Bad, because its output is fixed and character-report-shaped; the value here is source-separation and provenance, which would mean rewriting most of its body anyway. Better to study =descr-text.el= for the font/face resolution mechanics and build a focused command than to graft onto a general one.
+- Neutral, because we still reuse the same primitives it uses (=font-at=, =get-char-property=).
+
+** Scope: analyze every buffer uniformly
+- Good, because no classifier to write.
+- Bad, because in a terminal or an shr buffer the provenance trace is misleading — the color isn't from the theme, so "theme didn't set it" reads as a theme bug when it isn't. The banner exists precisely to stop that false read.
+
+* Decisions  [6/7]
+** DONE Granularity: char-at-point with optional region scan
+- Context: precise diagnosis wants one character; occasionally you want a whole region surveyed.
+- Decision: We will default to the character at point and offer a region-scan mode over the distinct face-runs when a region is active.
+- Consequences: easier — the common case is one precise report; harder — region mode must dedupe face-runs and concatenate without flooding the buffer.
+
+** DONE Provenance is core v1
+- Context: provenance (theme vs config vs inherit, unspecified→fallback) is the whole reason to build this over describe-char.
+- Decision: We will treat the per-face provenance trace as required v1 content, not a follow-up.
+- Consequences: easier — the tool actually answers theme-vs-config; harder — provenance extraction is the most intricate part and carries Emacs-version risk on the =theme-face= / =saved-face= internals.
+
+** DONE Include the real-font (fontset) layer
+- Context: a face's =:family= can differ from the font actually chosen for a glyph.
+- Decision: We will show =font-at='s real font next to the declared family.
+- Consequences: easier — catches substitution bugs; harder — =font-at= is nil in batch, so tests must tolerate "unavailable".
+
+** DONE Presentation: read-only help-style buffer under the unified popup rules
+- Context: the report is tall and structured and benefits from scrolling, copy, and face links.
+- Decision: We will render into a dedicated read-only buffer and place/dismiss it via the project's unified popup placement and dismissal rules.
+- Consequences: easier — idiomatic, navigable, consistent with other popups; harder — depends on the unified-popup policy, whose placement thresholds are still being settled in its own task.
+
+** DONE Interactivity is vNext
+- Context: a "send face to theme-studio" bridge is attractive but is editing-adjacent.
+- Decision: We will ship v1 read-only; the theme-studio bridge and any write path are vNext.
+- Consequences: easier — v1 stays a safe pure diagnostic; harder — users must round-trip through theme-studio by hand until vNext.
+
+** DONE Out-of-scope buffers: classify and show everything, with a banner
+- Context: a hard refuse in a terminal/shr/image buffer is unhelpful and hides information.
+- Decision: We will classify the buffer, render what we can, and prepend a banner naming the foreign color source instead of refusing.
+- Consequences: easier — maximal information always, and the boundary teaches itself; harder — the classifier must recognize the buffer buckets reliably enough that the banner isn't wrong.
+
+** TODO Effective-attribute computation approach
+- Owner / by-when: Claude / before Phase 2 implementation.
+- Context: Emacs exposes no public call returning the final merged attribute plist for a position (text props + overlays + remaps as the C redisplay merges them). The tool has to produce the "what actually paints" values itself.
+- Decision: We will (proposed) fold the ordered stack manually with =face-attribute=, treating overlays-over-text-props-over-default and applying remaps, and label the merged result as "computed" — accepting that exotic edge cases (relative heights, deep =:inherit= ordering) may diverge slightly from the engine. Alternative under consideration: lift the resolution mechanics from =descr-text.el= / =face-at-point= rather than hand-rolling.
+- Consequences: easier — a single explicit merge we can unit-test; harder — fidelity to the real engine isn't guaranteed for corner cases, so the spec stays "Ready with caveats" until the approach is pinned.
+
+*** Discussion
+- Open until the implementer compares a hand-folded merge against =describe-char='s font/face resolution on a few fixtures (auto-dim default remap, an overlay-with-priority, an unspecified-inherit face) and confirms they agree or documents where they don't.
+
+* Implementation phases
+
+** Phase 1 — Core read model + buffer classifier
+=cj/--face-diagnosis-at= returns the plist for groups 0–2 (classification, character context, face stack by source). Pure, no display. Unit-tested against temp-buffer fixtures with planted text properties, overlays, and remaps. Tree stays green.
+
+** Phase 2 — Merged attributes + real font
+Extend the core with group 3 (effective merged attributes, per the resolved computation decision) and group 4 (=font-at= vs declared family, "unavailable" under batch). Unit-tested on the merge fixtures.
+
+** Phase 3 — Provenance trace
+Add group 5: theme/config/inherit provenance and the unspecified→fallback resolution per face. Tested with fixtures that set a face via a loaded theme, via =set-face-attribute=, and leave one attribute unspecified.
+
+** Phase 4 — Render + popup wiring
+The interactive =cj/describe-face-at-point=, the read-only mode with face buttons, region-scan mode, and placement/dismissal via the unified popup rules. Smoke-tested live; the render function tested on a captured plist.
+
+* Acceptance criteria
+- [ ] On a normal prog/text buffer, the popup shows all five groups for the character at point.
+- [ ] An overlay face (e.g. region) at point appears in the stack, labeled as an overlay, above the text-property faces.
+- [ ] An active =face-remapping-alist= remap (e.g. under auto-dim) appears as the remap layer and is reflected in the merged result.
+- [ ] A face with an unspecified =:foreground= shows the resolution trace down to its actual fallback.
+- [ ] A glyph using a substituted font (e.g. an emoji) shows a real-font ≠ declared-family mismatch.
+- [ ] In a terminal/shr/image buffer, the popup shows a banner naming the color source and still renders what it can.
+- [ ] The core (=cj/--face-diagnosis-at=) returns its plist with no prompts and no display side effects, and passes under =make test= (=--batch=).
+
+* Readiness dimensions
+- Data model & ownership: all data is read live from buffer/overlay/face/font state; nothing user-authored, generated, or persisted. The report plist is ephemeral.
+- Errors, empty states & failure: no character at point (empty buffer / eob) → a clear "nothing at point" message; =font-at= nil under batch → "font: unavailable (batch)"; out-of-scope buffer → banner, not error. No silent data loss (read-only tool).
+- Security & privacy: N/A — reads visible buffer text and face metadata; logs nothing; no credentials.
+- Observability: the tool *is* the observability surface. Its own failures surface as in-buffer messages naming the missing piece (e.g. "font backend unavailable").
+- Performance & scale: single character is trivial; region mode is bounded by distinct face-runs in the region — cap or warn past a threshold so a whole-buffer region doesn't generate a huge report. No live/remote dependency.
+- Reuse & lost opportunities: reuses =font-at=, =get-char-property=, =face-attribute=, =theme-face=/=saved-face= internals, and the project's unified-popup policy and interactive/internal split. Studies =descr-text.el= rather than forking it.
+- Architecture fit & weak points: integration points are the unified-popup placement policy (in flux) and the face/theme internals (=theme-face=, =saved-face=) which are version-sensitive — isolate them behind small accessors so an Emacs-version change touches one place.
+- Config surface: the region-run cap is the one likely knob, with a safe default. Possibly a toggle for whether out-of-scope buffers render best-effort or just the banner.
+- Documentation plan: a docstring on the command, the keybinding noted in the keybinding map, and a CLAUDE.md/notes pointer only if a non-obvious gotcha surfaces. No user manual needed.
+- Dev tooling: existing =make test= / byte-compile / live-reload loop; no new targets.
+- Rollout, compatibility & rollback: additive new command + one keybinding; nothing persisted or migrated; rollback is removing the module. No compatibility surface.
+- External APIs & deps: N/A — pure Emacs primitives, no external API or package dependency.
+
+* Risks, Rabbit Holes, and Drawbacks
+- *Merge fidelity* (the open decision): a hand-folded attribute merge may diverge from the redisplay engine on exotic cases. Dodge: validate against =describe-char= on a handful of fixtures; label the result "computed"; don't claim pixel-exactness.
+- *Provenance internals*: =theme-face= / =saved-face= are not a stable public contract. Dodge: isolate behind accessors; tolerate missing properties as "unknown source" rather than erroring.
+- *Unified-popup dependency*: that policy's placement thresholds aren't settled. Dodge: code to the policy's interface, accept whatever defaults it lands on; don't invent a parallel placement scheme here.
+- *Overlay owner labeling*: overlays don't record their creator. Dodge: best-effort label from known marker properties; fall back to "(overlay)" without guessing.
+
+* Review and iteration history
+** 2026-06-14 Sun @ 22:30:00 -0500 — Claude (for Craig) — author
+- What: initial draft.
+- Why: theme debugging keeps hitting layered face/font issues with no tool that separates the layers or traces provenance; agreed to spec before building.
+- Artifacts: [[file:../../todo.org][todo.org: Face and font diagnostic popup at point]]; motivating bugs — gold-text-in-auto-dim, elfeed-ignores-theme.
