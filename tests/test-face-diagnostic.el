@@ -218,5 +218,58 @@
       (should (equal (plist-get (plist-get diag :attributes) :foreground) "#abcdef"))
       (should (equal (plist-get (plist-get diag :font) :font) "unavailable")))))
 
+;;; provenance accessors
+
+(ert-deftest test-face-diag-face-themes ()
+  "Normal: theme names come from the face's theme-face property, newest first."
+  (make-face 'fd-test-themed)
+  (put 'fd-test-themed 'theme-face '((user spec1) (dupre spec2)))
+  (should (equal (cj/--face-diag-face-themes 'fd-test-themed) '(user dupre))))
+
+(ert-deftest test-face-diag-config-source ()
+  "Normal/Boundary: saved-face -> saved, customized-face -> customized, else nil."
+  (make-face 'fd-test-saved)
+  (put 'fd-test-saved 'saved-face '(spec))
+  (make-face 'fd-test-cust)
+  (put 'fd-test-cust 'customized-face '(spec))
+  (make-face 'fd-test-plain)
+  (should (eq (cj/--face-diag-config-source 'fd-test-saved) 'saved))
+  (should (eq (cj/--face-diag-config-source 'fd-test-cust) 'customized))
+  (should-not (cj/--face-diag-config-source 'fd-test-plain)))
+
+(ert-deftest test-face-diag-inherit-chain ()
+  "Normal: a single-symbol :inherit produces a nearest-first chain."
+  (make-face 'fd-test-parent)
+  (make-face 'fd-test-child)
+  (set-face-attribute 'fd-test-child nil :inherit 'fd-test-parent)
+  (should (equal (cj/--face-diag-inherit-chain 'fd-test-child) '(fd-test-parent))))
+
+(ert-deftest test-face-diag-inherit-chain-none ()
+  "Boundary: a face with no :inherit has an empty chain."
+  (make-face 'fd-test-noinherit)
+  (should-not (cj/--face-diag-inherit-chain 'fd-test-noinherit)))
+
+(ert-deftest test-face-diag-unspecified-attrs ()
+  "Normal: a bare face leaves attributes unspecified, so they fall to default."
+  (make-face 'fd-test-bare)
+  (should (memq :foreground (cj/--face-diag-unspecified-attrs 'fd-test-bare))))
+
+(ert-deftest test-face-diag-provenance-covers-stack-and-default ()
+  "Normal: provenance covers the stack's named faces and always the default."
+  (with-temp-buffer
+    (insert (propertize "x" 'face 'bold))
+    (let ((faces (mapcar (lambda (p) (plist-get p :face))
+                         (cj/--face-diag-provenance (point-min)))))
+      (should (memq 'bold faces))
+      (should (memq 'default faces)))))
+
+(ert-deftest test-face-diagnosis-at-includes-provenance ()
+  "Normal: the assembled core carries the provenance group for stack faces."
+  (with-temp-buffer
+    (fundamental-mode)
+    (insert (propertize "x" 'face 'bold))
+    (let ((prov (plist-get (cj/--face-diagnosis-at (point-min)) :provenance)))
+      (should (cl-some (lambda (p) (eq (plist-get p :face) 'bold)) prov)))))
+
 (provide 'test-face-diagnostic)
 ;;; test-face-diagnostic.el ends here

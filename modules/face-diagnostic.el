@@ -208,18 +208,88 @@ the real family differs from the merged :family."
                         "unknown")
               :family (ignore-errors (font-get font :family)))))))
 
+;; ------------------------------ Provenance -----------------------------------
+;; Where a named face's attributes come from: which themes set it, whether
+;; config saved/customized it, its :inherit chain, and which attributes stay
+;; unspecified so they fall through to the default.  The theme-face and
+;; saved-face properties are version-sensitive internals, read behind small
+;; accessors and treated as absent rather than erroring when missing.
+
+(defun cj/--face-diag-face-themes (face)
+  "Return the themes that set FACE, newest first, from its `theme-face' property."
+  (when (symbolp face)
+    (mapcar #'car (get face 'theme-face))))
+
+(defun cj/--face-diag-config-source (face)
+  "Return how config set FACE: `saved', `customized', or nil.
+`saved' is a persisted customize (saved-face); `customized' is an unsaved
+customize this session.  A plain `set-face-attribute' leaves no marker and so
+reads as nil."
+  (cond
+   ((get face 'saved-face) 'saved)
+   ((get face 'customized-face) 'customized)
+   (t nil)))
+
+(defun cj/--face-diag-inherit-chain (face)
+  "Return FACE's :inherit chain as a list of faces, nearest first.
+Follows single-symbol :inherit links, guarding against cycles; a list-valued
+:inherit is recorded and the walk stops there."
+  (let ((chain '()) (cur face) (seen '()))
+    (while (and cur (symbolp cur) (facep cur) (not (memq cur seen)))
+      (push cur seen)
+      (let ((inh (face-attribute cur :inherit nil)))
+        (cond
+         ((or (null inh) (eq inh 'unspecified)) (setq cur nil))
+         ((symbolp inh) (setq chain (append chain (list inh))) (setq cur inh))
+         ((listp inh) (setq chain (append chain inh)) (setq cur nil))
+         (t (setq cur nil)))))
+    chain))
+
+(defun cj/--face-diag-unspecified-attrs (face)
+  "Return attributes still unspecified on FACE after inherit-following.
+These fall through to the default face -- the direct read on an
+\"attribute never set\" bug like the all-white elfeed case."
+  (when (facep face)
+    (seq-filter (lambda (attr)
+                  (eq (face-attribute face attr nil t) 'unspecified))
+                cj/--face-diag-attributes)))
+
+(defun cj/--face-diag-face-provenance (face)
+  "Return the provenance plist for the named FACE.
+Keys: :face, :themes (list), :config (`saved'/`customized'/nil),
+:inherit-chain (list of faces), :unspecified (attributes falling to default)."
+  (list :face face
+        :themes (cj/--face-diag-face-themes face)
+        :config (cj/--face-diag-config-source face)
+        :inherit-chain (cj/--face-diag-inherit-chain face)
+        :unspecified (cj/--face-diag-unspecified-attrs face)))
+
+(defun cj/--face-diag-provenance (pos &optional buffer)
+  "Return per-face provenance for the named faces in the stack at POS in BUFFER.
+A list of provenance plists for the distinct real faces contributing at POS:
+text-property and overlay face symbols, then the default."
+  (let* ((tp (seq-filter #'symbolp (cj/--face-diag-text-property-faces pos buffer)))
+         (ov (delq nil (mapcar (lambda (e)
+                                 (let ((f (plist-get e :face)))
+                                   (and (symbolp f) f)))
+                               (cj/--face-diag-overlay-faces pos buffer))))
+         (faces (seq-filter #'facep (seq-uniq (append ov tp '(default))))))
+    (mapcar #'cj/--face-diag-face-provenance faces)))
+
 ;; ------------------------------- Assembled core ------------------------------
 
 (defun cj/--face-diagnosis-at (pos &optional buffer)
-  "Return the face-diagnosis plist for POS in BUFFER (groups 0-4).
+  "Return the face-diagnosis plist for POS in BUFFER (groups 0-5).
 Keys: :classification (symbol), :char (plist or nil at end-of-buffer), :stack
-\(plist), :attributes (computed merged plist), :font (real-font plist).  Pure:
-no prompts, no display, no buffer or frame mutation."
+\(plist), :attributes (computed merged plist), :font (real-font plist),
+:provenance (per-face list).  Pure: no prompts, no display, no buffer or frame
+mutation."
   (list :classification (cj/--face-diag-classify-buffer buffer)
         :char (cj/--face-diag-char-context pos buffer)
         :stack (cj/--face-diag-stack pos buffer)
         :attributes (cj/--face-diag-merged-attributes pos buffer)
-        :font (cj/--face-diag-real-font pos buffer)))
+        :font (cj/--face-diag-real-font pos buffer)
+        :provenance (cj/--face-diag-provenance pos buffer)))
 
 (provide 'face-diagnostic)
 ;;; face-diagnostic.el ends here
