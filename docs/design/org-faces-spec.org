@@ -1,0 +1,150 @@
+#+TITLE: Org Header-Row Faces — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-15
+#+TODO: TODO | DONE SUPERSEDED CANCELLED
+
+* Metadata
+| Status   | draft                                                          |
+|----------+----------------------------------------------------------------|
+| Owner    | Craig Jennings                                                 |
+|----------+----------------------------------------------------------------|
+| Reviewer | Craig Jennings                                                 |
+|----------+----------------------------------------------------------------|
+| Related  | [[file:../../todo.org][todo.org: org-faces module + theme-studio app]] |
+|----------+----------------------------------------------------------------|
+
+* Summary
+
+A small config module, =org-faces-config.el=, that defines named, theme-agnostic faces for org's TODO keywords and priority cookies, wires them through =org-todo-keyword-faces= and =org-priority-faces=, and a matching theme-studio app titled "org-faces" so each is an editable, previewable element. It makes the agenda header row (keyword plus priority) a per-element themeable layer that reads as clearly custom, not built-in org.
+
+* Problem / Context
+
+Per-keyword and per-priority coloring was stripped from =org-config.el= earlier, so today every keyword (TODO, DOING, …) renders in org's built-in =org-todo= / =org-done=, and every priority cookie ([#A] through [#D]) renders in the single =org-priority= face — one color for all four. There's no way to color them individually.
+
+The dupre theme does carry a parallel custom set (=dupre-org-todo=, =dupre-org-priority-a..d=, with =-dim= variants), but it's theme-specific and currently unwired, so it colors nothing. And theme-studio has no surface for these at all: its org-mode app exposes only the built-in =org-priority=, and the preview shows a single [#A].
+
+The immediate driver is theme-testing the agenda: the header row is the densest, most-scanned part of the agenda, and right now its keyword/priority colors can't be tuned in theme-studio or distinguished from built-in org faces. The user wants each keyword and priority to be its own themeable element, in its own clearly-custom namespace, surfaced in its own theme-studio section.
+
+* Goals and Non-Goals
+
+** Goals
+- Each keyword (TODO, PROJECT, DOING, WAITING, VERIFY, STALLED, DELEGATED, FAILED, DONE, CANCELLED) and each priority (A-D) gets its own named face.
+- The faces live in one module (=org-faces-config.el=), in their own prefix, wired through =org-todo-keyword-faces= and =org-priority-faces=.
+- theme-studio surfaces them as a dedicated "org-faces" app (own section, alongside elfeed and mu4e) with one editable row per face and a header-row preview.
+- They render correctly on any theme (sensible defaults) and are overridden by the generated theme.
+
+** Non-Goals
+- Not editing the built-in org faces — the org-mode app keeps those.
+- Not a general org face overhaul; only the header-row keyword + priority set.
+- Not retiring or deleting the legacy =dupre-org-*= faces from dupre-faces.el in v1 — auto-dim is only repointed away from them (decision below).
+
+** Scope tiers
+- v1: =org-faces-config.el= (base + =-dim= faces, wiring, init load); =org-faces-*-dim= wired into auto-dim (replacing the orphaned dupre-org-* entries); the theme-studio "org-faces" app (faces, preview, seeds).
+- Out of scope: built-in org faces; non-keyword/priority org elements; terminal/document-rendered color sources.
+- vNext (log to todo.org): retire or migrate the legacy =dupre-org-*= faces in dupre-faces.el; a grouped-subsection preview.
+
+* Design
+
+A new bespoke app, "org-faces", joins theme-studio's application list next to elfeed and mu4e. Its faces are the config's custom header-row set, not org's built-ins, and the =org-faces-= prefix says so on every row.
+
+** For the user
+
+Pick "org-faces" in theme-studio's application dropdown. The face table lists each keyword and each priority as a normal editable row — foreground, background, style toggles, box, lock — exactly like every other package face. The preview renders agenda-style lines: each keyword shown in its own face, then a =[#A] [#B] [#C] [#D]= row in the four priority faces, so the ramp is visible and any cookie is click-to-select. Setting a color there writes it into the generated theme; once that theme loads, the real agenda's keywords and priorities pick it up. Because the faces are named =org-faces-todo=, =org-faces-priority-a=, and so on, it's obvious this is the config's layer rather than built-in org.
+
+** For the implementer
+
+=org-faces-config.el= defines one =defface= per keyword and per priority (=org-faces-todo= … =org-faces-cancelled=, =org-faces-priority-a= … =org-faces-priority-d=), each with a default foreground so the row is colored out of the box. It then sets =org-todo-keyword-faces= to map each keyword string to its face and =org-priority-faces= to map =?A..?D= to the priority faces. The module is required after org so the faces exist before org applies the maps; the =defface=​s themselves load eagerly, which is what org needs.
+
+theme-studio side, all mechanical against the existing bespoke-app machinery:
+- =face_data.py=: =ORGFACES_FACES= (the face-name list) and =ORGFACES_SEED= (default colors mirroring =org-faces-config.el=).
+- =generate.py=: one row in the =_BESPOKE_APPS= spec, =("org-faces","org-faces","orgfaces",ORGFACES_FACES,"org-faces-",ORGFACES_SEED)=.
+- =app_inventory.py=: add =org-faces= to =BESPOKE_APPS=.
+- =app.js=: =renderOrgFacesPreview= building the keyword lines and the priority-cookie row with =os('org-faces', face, text)=, registered under =orgfaces= in =PACKAGE_PREVIEWS=.
+- =build-theme.el= needs no change — the package tier already emits these faces.
+
+The =org-faces-= prefix is also theme-studio's label-strip prefix, so rows read as "todo", "priority a", etc.
+
+* Alternatives Considered
+
+** Reuse the existing dupre-org-* names
+- Good, because no new faces are defined.
+- Bad, because the names are theme-specific (dupre) and the goal is a theme-agnostic, clearly-custom namespace; they'd still need all the theme-studio wiring.
+- Neutral, because the auto-dim mappings already reference them, which both helps (dim variants exist) and hurts (couples the new layer to one theme).
+
+** Inline specs in org-todo-keyword-faces (no named faces)
+- Good, because it's the least code and needs no defface.
+- Bad, because theme-studio can only theme *named* faces; inline specs can't be edited or previewed there, which defeats the whole point.
+- Neutral, because org supports both forms equally at runtime.
+
+** Put these in the existing org-mode app rather than a new app
+- Good, because one fewer app in the dropdown.
+- Bad, because it blurs the built-in-vs-custom line the user explicitly wants drawn.
+- Neutral, because the preview would grow rather than a new one being added.
+
+* Decisions [4/4]
+
+** DONE Face prefix
+- Context: the prefix is the public face namespace and theme-studio's label-strip; it must read as custom, not built-in org.
+- Decision: We will use =org-faces-= (e.g. =org-faces-todo=, =org-faces-priority-a=).
+- Consequences: easier — cohesive with the module and section name, and a clean label-strip prefix; harder — it still begins with "org", so a newcomer could misread it as built-in.
+
+** DONE defface defaults vs inherit-only
+- Context: should the header row be colored on any theme, or only once a theme sets these faces?
+- Decision: We will give each face a real default =:foreground= so it's colored out of the box, overridable by the theme.
+- Consequences: easier — works on stock Emacs and any theme, and the theme-studio seed matches the live default; harder — the defaults are theme-blind, so a theme that doesn't override them shows the generic colors rather than its own palette.
+
+** DONE Auto-dim dim variants
+- Context: dupre defines =dupre-org-*= and auto-dim remaps them to =-dim= variants in unfocused windows; rewiring to =org-faces-*= would drop that dim treatment unless it's carried over.
+- Decision: We will include =org-faces-*-dim= variants in v1 and wire them into auto-dim, replacing the now-orphaned =dupre-org-*= entries in =auto-dim-config.el=, so keywords and priorities stay legible when a window is dimmed. The legacy =dupre-org-*= faces in =dupre-faces.el= are left defined-but-unused; retiring them stays vNext.
+- Consequences: easier — the dim treatment carries onto the new layer and dupre's mapping stops referencing orphaned faces; harder — doubles the face count (base + dim), touches =auto-dim-config.el=, and under the dupre theme the new faces use their defaults until dupre themes =org-faces-*=.
+
+** DONE Keyword coverage
+- Context: the vocabulary has 10 keywords; dupre only ever defined faces for 8.
+- Decision: We will give all 10 keywords (including DELEGATED and CANCELLED) their own face.
+- Consequences: easier — full control, no surprise fallbacks; harder — two more faces to seed and maintain.
+
+* Implementation phases
+
+** Phase 1 — org-faces.el module
+Define the base and =-dim= =defface=​s (all 10 keywords + A-D, each with real default foregrounds) and the =org-todo-keyword-faces= / =org-priority-faces= wiring, require it after org. Done when the agenda colors each keyword and priority through the new base faces. Verify with a full Emacs launch (the wiring is :config-adjacent).
+
+** Phase 2 — auto-dim integration
+In =auto-dim-config.el=, replace the =dupre-org-*= → =dupre-org-*-dim= entries with =org-faces-*= → =org-faces-*-dim=, so dimmed windows render the new layer through its dim variants. Done when an unfocused window shows keywords/priorities in their dim colors.
+
+** Phase 3 — theme-studio org-faces app
+Add the =face_data.py= face list and seed (base + dim), the =generate.py= spec row, the =app_inventory.py= entry, and the =app.js= preview plus registration. Done when "org-faces" appears in the dropdown next to elfeed/mu4e, the rows edit, the preview renders, and =make theme-studio-test= is green.
+
+** Phase 4 — generated-theme round-trip
+Set a color for an =org-faces-*= face in theme-studio, =make deploy-wip=, and confirm the real agenda picks it up. Done when the round-trip lands the color in Emacs.
+
+* Acceptance criteria
+- [ ] Each keyword (TODO … CANCELLED) renders in a distinct =org-faces-*= face in the agenda.
+- [ ] [#A]-[#D] render in distinct =org-faces-priority-*= faces.
+- [ ] theme-studio shows an "org-faces" app beside elfeed/mu4e, one row per face, with a header-row preview.
+- [ ] A color set in theme-studio for an =org-faces-*= face appears on the real agenda after =deploy-wip=.
+- [ ] =org-faces-config.el= byte-compiles clean and the theme-studio suite is green.
+
+* Readiness dimensions
+- Data model & ownership: faces are user-authored defaults (=org-faces-config.el=) overridden by the generated theme; theme-studio edits the package-tier specs; =org-todo-keyword-faces= / =org-priority-faces= own the keyword/priority wiring.
+- Errors, empty states & failure: a keyword with no mapping falls back to org's built-in =org-todo= / =org-done= — acceptable, not silent data loss. N/A otherwise (no I/O).
+- Security & privacy: N/A — faces only.
+- Observability: the live agenda and the theme-studio preview are the visible surface; a wrong color is self-evident.
+- Performance & scale: N/A — about a dozen faces.
+- Reuse & lost opportunities: rides org's built-in keyword/priority face hooks and build-theme's existing package tier; no converter changes.
+- Architecture fit & weak points: same bespoke-app pattern as elfeed/mu4e. Weak point is load order — faces must exist before org applies the map; eager =defface= at module load covers it.
+- Config surface: =org-todo-keyword-faces=, =org-priority-faces= (set by the module), plus the faces themselves; all overridable.
+- Documentation plan: a header comment in =org-faces-config.el= and this spec; no user-facing docs needed.
+- Dev tooling: existing =make theme-studio-test= and =make deploy-wip= cover build and round-trip.
+- Rollout, compatibility & rollback: additive; rollback is removing the module and the theme-studio app. It re-introduces keyword/priority coloring that was deliberately stripped earlier, now as a named themeable layer.
+- External APIs & deps: =org-todo-keyword-faces= and =org-priority-faces= are standard org defcustoms (verified); build-theme's package tier already emits inherit/box/style (verified this session).
+
+* Risks, Rabbit Holes, and Drawbacks
+- Poor default colors fight unset themes. Dodge: seed conservatively, lean on theme override.
+- Load order: the faces must be defined before org renders the agenda. Dodge: eager defface, require before/with org.
+- Scope creep into the dupre/auto-dim migration. Dodge: it's explicitly vNext with its own decision.
+
+* Review and iteration history
+** 2026-06-15 Mon @ 01:51:57 -0500 — Craig — author
+- What: initial draft.
+- Why: the A-D priority request generalized into a clearly-custom, theme-studio-surfaced header-row face layer; the prefix, default-color policy, and dupre/auto-dim reconciliation are real trade-offs worth settling on paper first.
+- Artifacts: [[file:../../todo.org][todo.org org-faces task]]; theme-studio bespoke-app machinery (face_data.py, generate.py, app.js).

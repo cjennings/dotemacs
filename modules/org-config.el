@@ -132,6 +132,72 @@ edge, less the tag width.")
 (add-hook 'org-mode-hook #'cj/org--manage-tag-display-prop)
 (font-lock-add-keywords 'org-mode cj/org-right-align-tags-keyword t)
 
+;; ------------------------ Org Table Header Highlighting --------------------
+;; Org faces the whole table -- header rows included -- with `org-table'; it has
+;; no in-buffer header-row face.  `org-table-header' is used only by the sticky
+;; header line of `org-table-header-line-mode'.  This font-lock keyword prepends
+;; `org-table-header' onto a table's header rows (the non-hline rows above its
+;; first hline), so the themed header style lands in place in the buffer.
+
+(declare-function org-at-table-p "org")
+(declare-function org-at-table-hline-p "org")
+(declare-function org-table-begin "org-table")
+(declare-function org-table-end "org-table")
+
+(defcustom cj/org-fontify-table-headers t
+  "When non-nil, highlight org table header rows with the `org-table-header' face.
+A header row is a non-hline table row above its table's first hline.  Org has no
+in-buffer header-row face of its own, so this supplies one, deferring its whole
+appearance to the themed `org-table-header' face."
+  :type 'boolean
+  :group 'org)
+
+(defun cj/--org-table-first-hline-position ()
+  "Return the start position of the first hline in the table at point, or nil.
+Point must be inside an org table."
+  (save-excursion
+    (let ((end (org-table-end))
+          (found nil))
+      (goto-char (org-table-begin))
+      (while (and (not found) (< (point) end))
+        (when (org-at-table-hline-p)
+          (setq found (line-beginning-position)))
+        (forward-line 1))
+      found)))
+
+(defun cj/--org-table-header-row-p ()
+  "Return non-nil if the line at point is a header row of its org table.
+A header row is a non-hline table row positioned above the table's first hline.
+A table with no hline has no header rows."
+  (and (org-at-table-p)
+       (not (org-at-table-hline-p))
+       (let ((hline (cj/--org-table-first-hline-position)))
+         (and hline (< (line-beginning-position) hline)))))
+
+(defun cj/--org-fontify-table-header-matcher (limit)
+  "Font-lock matcher for the next org table header row before LIMIT.
+Returns non-nil when a header row is found, with match group 0 spanning the
+whole row line."
+  (let (beg end found)
+    (while (and (not found)
+                (re-search-forward "^[ \t]*|.*$" limit t))
+      (setq beg (match-beginning 0)
+            end (match-end 0))
+      (save-excursion
+        (goto-char beg)
+        (when (cj/--org-table-header-row-p)
+          (setq found t))))
+    (when found
+      (set-match-data (list beg end))
+      t)))
+
+(defconst cj/org-table-header-keyword
+  '((cj/--org-fontify-table-header-matcher (0 'org-table-header prepend)))
+  "Font-lock keyword prepending `org-table-header' onto org table header rows.")
+
+(when cj/org-fontify-table-headers
+  (font-lock-add-keywords 'org-mode cj/org-table-header-keyword t))
+
 ;; ----------------------------- Org TODO Settings ---------------------------
 
 (defun cj/org-todo-settings ()
