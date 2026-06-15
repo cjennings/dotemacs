@@ -8,7 +8,7 @@
 ;; Load shape: eager.
 ;; Eager reason: none; a diagnostic command, a command-loaded deferral candidate.
 ;; Top-level side effects: defines cj/face-diagnostic-mode and the
-;;   cj/describe-face-at-point command; binds no global key.
+;;   cj/describe-face-at-point command; binds it to C-h F in help-map.
 ;; Runtime requires: seq.
 ;; Direct test load: yes (the pure core is tested by requiring this module).
 ;;
@@ -446,6 +446,11 @@ See docs/specs/face-font-diagnostic-popup-spec-implemented.org."
    (if (use-region-p)
        (cj/--face-diag-render-region (region-beginning) (region-end))
      (cj/--face-diag-render (cj/--face-diagnosis-at (point))))))
+
+;; Bound on C-h F (Face) in the help cluster.  This shadows helpful-function,
+;; which also sits on C-h F here; face-diagnostic loads after help-config, so
+;; this binding wins.
+(keymap-set help-map "F" #'cj/describe-face-at-point)
 
 (provide 'face-diagnostic)
 ;;; face-diagnostic.el ends here

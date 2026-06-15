@@ -322,5 +322,11 @@
               (should (string-match-p "Face stack" (buffer-string)))))
         (when (buffer-live-p buf) (kill-buffer buf))))))
 
+;;; keybinding
+
+(ert-deftest test-face-diag-bound-on-c-h-F ()
+  "Normal: loading the module binds C-h F to the diagnostic command."
+  (should (eq (keymap-lookup help-map "F") 'cj/describe-face-at-point)))
+
 (provide 'test-face-diagnostic)
 ;;; test-face-diagnostic.el ends here
