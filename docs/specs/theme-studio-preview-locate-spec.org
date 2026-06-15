@@ -1,0 +1,148 @@
+:PROPERTIES:
+:ID:       fbcf0e20-1328-42b4-aa36-3401509e7816
+:STATUS:   not-started
+:END:
+#+TITLE: Theme Studio Preview Element Locate — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-15
+#+TODO: TODO | DONE SUPERSEDED CANCELLED
+
+* Metadata
+| Status   | not-started                                                    |
+|----------+----------------------------------------------------------------|
+| Owner    | Craig Jennings                                                 |
+|----------+----------------------------------------------------------------|
+| Reviewer | Craig Jennings                                                 |
+|----------+----------------------------------------------------------------|
+| Related  | [[file:../../todo.org][todo.org: theme-studio preview locate + org-agenda app]] |
+|----------+----------------------------------------------------------------|
+
+* Summary
+
+A general theme-studio preview interaction: turn every rendered preview element into a map back to the assignment that controls it. Hovering an element shows where its color comes from -- the owning app (section), the face (element), and the current value and attributes. Clicking an element whose face is assigned on the current pane flashes it and scrolls to its assignment row. Elements styled by faces that belong to other panes are not clickable; the hover still names their section and element, so the user navigates there manually.
+
+* Problem / Context
+
+Previews render representative text styled by many faces, but there is no way to go from "this rendered bit looks wrong" to "which assignment controls it." You scan the swatch grid and guess. The gap widens as previews get richer: the planned org-agenda preview renders a realistic agenda whose lines mix scheduling and deadline faces (org-agenda's own) with TODO keywords and priorities (org-faces) and tags (org-mode). A colored substring there could belong to any of three panes, and nothing tells you which, or what its current value is.
+
+* Goals and Non-Goals
+
+** Goals
+- Hover any previewed element to see its section (owning app), element (face name), and current value/attributes.
+- Click an element whose face is assigned on the current pane to flash it and scroll/select its assignment row.
+- Leave off-pane elements non-clickable, with the hover still naming section and element so the user can navigate there.
+- A face -> (owning app, value, attributes) registry built from the app/face model, read by previews for both hover content and the clickable test.
+- Let previews render substrings in faces owned by other panes live from the shared state (the org-agenda agenda mock is the first to need this); those render correctly and are the hover-only, non-clickable elements.
+
+** Non-Goals
+- No editing from the preview -- the assignment row still owns edits.
+- No auto-switching panes on click; off-pane elements are deliberately inert (decided).
+- No change to the face data model; the registry is derived from existing app/face assignments.
+- Not a search/filter over faces; this is point-and-identify, not query.
+
+** Scope tiers
+- v1: the face registry; hover tooltips (section + element + value/attributes) on every previewed element; click-to-row for current-pane faces; off-pane elements non-clickable; the os() preview tag that carries each element's face; one existing preview wired as the showcase.
+- Out of scope: cross-pane click navigation; editing from the preview; persisting any of this.
+- vNext: a "reveal in pane" affordance for off-pane elements (switch pane + scroll) if the hover-only model proves too manual.
+
+* Design
+
+** For the user
+Move the pointer over any colored element in a preview. A tooltip names the section it belongs to (the app, e.g. "org-faces"), the element (the face, e.g. "org-faces-todo"), and its current value and attributes (e.g. foreground #8fbf73, bold). If that face is one you can edit on the pane you are looking at, click it: the element flashes and the pane scrolls to and highlights its assignment row, ready to tune. If the element is colored by a face from another pane -- a keyword in the agenda is owned by org-faces, a tag by org-mode -- clicking does nothing, but the tooltip has already told you which section and element to go find. Every preview becomes a legend you can interrogate.
+
+** For the implementer
+- Registry: a derived map from face name to its owning app, current value, and resolved attributes, built from the same app/face assignment state the editor already holds. One source for hover content and the is-on-this-pane test. Rebuilt when assignments change.
+- Preview tagging: the os(app, face, text) preview helper already wraps each element in a span keyed by face; extend it to also carry the face name and owning app as data attributes so hover and click can resolve without re-parsing.
+- Hover: a tooltip (or info strip) that reads the registry for the hovered element's face and shows section + element + value/attributes.
+- Click: if the element's face is owned by the current pane, flash the element and scroll/select its assignment row; otherwise the element is non-interactive (cursor and affordance reflect that).
+- Cross-pane rendering: os() resolves a face's current color from the registry regardless of which pane owns it, so a preview can faithfully render off-pane faces (the agenda mock's keywords/priorities/tags) while marking them non-clickable.
+
+* Alternatives Considered
+
+** Click off-pane elements and auto-switch panes to their row
+- Good, because one click takes you straight to any assignment.
+- Bad, because it makes a click yank you out of the pane you are studying, and the cross-pane jump is disorienting in a dense preview; the hover already names where to go.
+- Rejected: off-pane elements are non-clickable (decided); the hover carries the wayfinding.
+
+** Hover shows only the face name, not the value
+- Good, because it is the least to build.
+- Bad, because "which face" without "what value" still makes you go look it up; the value/attributes in the tooltip is what closes the loop.
+- Rejected: hover includes value and attributes (decided).
+
+** Scope it to the org-agenda preview only
+- Good, because no general machinery.
+- Bad, because every preview has the same go-from-render-to-assignment gap; baking it into one preview means rebuilding it for the next.
+- Rejected: general feature (decided); org-agenda is the first showcase.
+
+* Decisions [5/5]
+
+** DONE General feature, not org-agenda-scoped
+- Context: the interaction was raised for the agenda preview but applies to every preview.
+- Decision: We build it as a general theme-studio preview capability; the org-agenda app is its first showcase.
+- Consequences: easier -- every preview gains it; harder -- the registry and tagging must be general, not hand-fitted to one preview.
+
+** DONE Click scope: current-pane faces only
+- Context: a previewed element may be colored by a face owned by another pane.
+- Decision: Only elements whose face is assigned on the current pane are clickable (flash + scroll to its row). Off-pane elements are non-clickable.
+- Consequences: easier -- click always has a local target, no cross-pane jump; harder -- off-pane elements rely on the hover for wayfinding.
+
+** DONE Hover content: section + element + value/attributes
+- Context: identifying a face is only half the answer; you also want its current value.
+- Decision: The hover tooltip shows the owning app (section), the face (element), and the current value and attributes.
+- Consequences: easier -- closes the loop without a trip to the row; harder -- the registry must resolve value/attributes, not just the name.
+
+** DONE Face registry as the single source
+- Context: hover content and the clickable test both need face -> owning-app + value.
+- Decision: A derived registry maps each face to its owning app, value, and attributes, rebuilt from the assignment state; previews read it.
+- Consequences: easier -- one place feeds hover, click, and cross-pane rendering; harder -- it must stay in sync with edits.
+
+** DONE Cross-pane live rendering
+- Context: a faithful agenda renders keywords/priorities/tags owned by other panes.
+- Decision: os() resolves any face's current color from the registry, so previews render off-pane faces live; those elements are the non-clickable, hover-only ones.
+- Consequences: easier -- previews read real and the agenda mock is possible; harder -- the preview must distinguish own-pane (clickable) from off-pane (hover-only) elements.
+
+* Implementation phases
+
+** Phase 1 — Face registry
+Build the derived face -> (owning app, value, attributes) map from the app/face assignment state, rebuilt on change. Unit-tested against a constructed assignment model.
+
+** Phase 2 — Preview tagging + cross-pane resolution
+Extend os() so each previewed element carries its face name and owning app, and resolves its color from the registry regardless of owning pane. Tested on a preview that references an off-pane face.
+
+** Phase 3 — Hover
+Tooltip showing section + element + value/attributes for the hovered element, from the registry. Browser-gate tested.
+
+** Phase 4 — Click
+Flash + scroll/select the assignment row for a current-pane element; off-pane elements non-clickable (cursor/affordance reflects it). Browser-gate tested; one existing preview wired as the showcase.
+
+* Acceptance criteria
+- [ ] Hovering any previewed element shows its section, element, and current value/attributes.
+- [ ] Clicking a current-pane element flashes it and scrolls/selects its assignment row.
+- [ ] Clicking an off-pane element does nothing and is visibly non-interactive.
+- [ ] A preview can render an off-pane face's real color (cross-pane resolution) and that element is hover-only.
+- [ ] The registry resolves every previewed face to its owning app, and updates when an assignment changes.
+
+* Readiness dimensions
+- Data model & ownership: the registry is derived, not authoritative; the app/face assignment state remains the source of truth.
+- Errors, empty states & failure: an element whose face resolves to no owning app falls back to hover-only with an "unassigned" note rather than a dead click.
+- Security & privacy: N/A -- browser-local theme editor state.
+- Observability: the tooltip is the surface; a face that fails to resolve shows that in the tooltip.
+- Performance & scale: the registry is rebuilt on assignment change, not per hover; hover/click read it in O(1) by face name.
+- Reuse & lost opportunities: reuses the existing os() preview helper and the assignment state; every current and future preview benefits.
+- Architecture fit & weak points: the registry is the new shared structure; the weak point is keeping it in sync with edits, addressed by rebuilding on change.
+- Config surface: none beyond the existing theme-studio build.
+- Documentation plan: the theme-studio test suite and this spec; a note in the tool's help if the interaction isn't self-evident.
+- Dev tooling: existing make theme-studio-test and the browser-gate harness.
+- Rollout, compatibility & rollback: additive; rollback removes the tagging and the registry. Existing previews keep working without the interaction.
+- External APIs & deps: none -- browser JS plus the existing generate pipeline.
+
+* Risks, Rabbit Holes, and Drawbacks
+- Registry staleness: a stale registry mislabels a hover. Dodge: rebuild on assignment change; derive, never cache independently.
+- Tooltip noise on dense previews: hovering everything could be busy. Dodge: tooltip on deliberate hover only, not a persistent overlay.
+- Distinguishing own-pane vs off-pane reliably: the click affordance depends on it. Dodge: the registry's owning-app field is the single test.
+
+* Review and iteration history
+** 2026-06-15 Mon — Craig — author
+- What: initial draft.
+- Why: breaking the org-agenda faces into their own pane surfaced the need to go from a rendered preview element back to its assignment; the interaction (hover-identifies, click-locates-on-pane, off-pane-inert) is general and worth settling before the agenda preview consumes it.
+- Artifacts: the org-faces app (the bespoke-app pattern); the planned org-agenda app (first consumer); os() preview helper.
