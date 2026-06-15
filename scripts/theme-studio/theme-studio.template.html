@@ -58,7 +58,9 @@ STYLES_CSS</style>
   <div class="pals" id="pals"></div>
   <div class="palwarn" id="palwarn"></div>
  </section>
-<h1>code/color assignments</h1>
+<h1>assignment</h1>
+<div class="pkgbar"><label style="color:#b4b1a2">view</label><select id="viewsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="onViewChange()"></select></div>
+<div id="view-code" class="viewblock">
 <div class="cols">
  <section class="pane">
   <div class="legctl"><button id="syntaxlocktoggle" class="fbtn" onclick="toggleAllLocks('syntax')" title="lock or unlock every syntax row">lock all</button><button class="fbtn" onclick="resetUnlocked()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlocked()" title="erase, preserving locked rows">erase</button></div>
@@ -69,7 +71,8 @@ STYLES_CSS</style>
   <pre id="codepre"></pre>
  </section>
 </div>
-<h1>ui faces</h1>
+</div>
+<div id="view-ui" class="viewblock" style="display:none">
 <div class="cols stretch">
  <section class="pane">
   <div class="legctl"><button id="uilocktoggle" class="fbtn" onclick="toggleAllLocks('ui')" title="lock or unlock every UI face row">lock all</button><button class="fbtn" onclick="resetUnlockedUI()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlockedUI()" title="erase, preserving locked rows">erase</button></div>
@@ -80,9 +83,9 @@ STYLES_CSS</style>
   <div id="mockframe" class="mock"></div>
  </section>
 </div>
-<h1>package faces</h1>
+</div>
+<div id="view-pkg" class="viewblock" style="display:none">
 <div class="pkgbar">
- <label style="color:#b4b1a2">application</label><select id="appsel" class="chip" style="width:auto;font:bold 10pt monospace"></select>
  <label style="color:#b4b1a2">filter</label><input id="pkgfilter" type="text" placeholder="face name" oninput="buildPkgTable()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:160px">
  <button onclick="resetApp()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button>
  <button id="pkglocktoggle" class="fbtn" onclick="toggleAllLocks('pkg')" title="lock or unlock every face row in the current package">lock all</button>
@@ -96,6 +99,7 @@ STYLES_CSS</style>
   <div class="langbar"><label id="pkgprevlabel" style="color:#b4b1a2">preview</label></div>
   <div id="pkgpreview" class="mock" style="overflow:auto;min-height:60vh"></div>
  </section>
+</div>
 </div>
 <script>
 APP_JS</script>

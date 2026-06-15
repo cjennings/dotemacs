@@ -485,10 +485,25 @@ function uiSelect(face,attr){const cur=UIMAP[face][attr]||'';
 const BASE_INHERITS=['fixed-pitch','variable-pitch','default','link','bold','italic','shadow'];
 function uiFaceBlank(){return {fg:null,bg:null,bold:false,italic:false,underline:false,strike:false};}
 function seedFace(d){return normalizePkgFace({fg:pname(d.fg),bg:pname(d.bg),bold:d.bold,italic:d.italic,underline:d.underline,strike:d.strike,inherit:d.inherit,height:d.height,box:d.box},'default');}
-function curApp(){const s=document.getElementById('appsel');return s&&s.value?s.value:Object.keys(APPS)[0];}
+function curApp(){const s=document.getElementById('viewsel');const v=s&&s.value;return (v&&v[0]!=='@')?v:Object.keys(APPS)[0];}
 function pkgEffFg(app,face,seen){return effResolve(PKGMAP,app,face,'fg',seen);}
 function pkgEffBg(app,face,seen){return effResolve(PKGMAP,app,face,'bg',seen);}
-function buildAppSel(){const s=document.getElementById('appsel');if(!s)return;s.innerHTML='';for(const app in APPS){const o=document.createElement('option');o.value=app;o.textContent=APPS[app].label;s.appendChild(o);}s.onchange=pkgChanged;}
+// One dropdown drives the whole assignment panel: two editor entries (@code,
+// @ui) then a non-selectable "package faces" optgroup holding every app, in
+// APPS order. onViewChange shows exactly one of the three view blocks.
+function buildViewSel(){const s=document.getElementById('viewsel');if(!s)return;s.innerHTML='';
+  const mk=(v,t)=>{const o=document.createElement('option');o.value=v;o.textContent=t;return o;};
+  s.appendChild(mk('@code','color/code assignments'));
+  s.appendChild(mk('@ui','ui faces'));
+  const og=document.createElement('optgroup');og.label='package faces';
+  for(const app in APPS)og.appendChild(mk(app,APPS[app].label));
+  s.appendChild(og);}
+function onViewChange(){const s=document.getElementById('viewsel');const v=(s&&s.value)||'@code';
+  const show=(id,on)=>{const e=document.getElementById(id);if(e)e.style.display=on?'':'none';};
+  show('view-code',v==='@code');show('view-ui',v==='@ui');show('view-pkg',v[0]!=='@');
+  if(v==='@code')renderCode();
+  else if(v==='@ui'){buildUITable();buildMockFrame();syncMockHeight();}
+  else pkgChanged();}
 function pkgChanged(){buildPkgTable();buildPkgPreview();syncPkgHeight();}
 function buildPkgTable(){
   const app=curApp(),tb=document.getElementById('pkgbody');if(!tb)return;tb.innerHTML='';
@@ -992,9 +1007,10 @@ function cellVal(td){if(!td)return '';const dd=td.querySelector('.cdd');if(dd)re
 function srtTable(tbId,col){tableSort[tbId]={col,asc:!(tableSort[tbId]&&tableSort[tbId].col===col&&tableSort[tbId].asc)};applyTableSort(tbId);}
 function applyTableSort(tbId){const s=tableSort[tbId];if(!s)return;const tb=document.getElementById(tbId);if(!tb)return;const dir=s.asc?1:-1;const r=[...tb.rows];r.sort((a,b)=>{const x=cellVal(a.cells[s.col]),y=cellVal(b.cells[s.col]);return ((typeof x==='number'&&typeof y==='number')?x-y:(x<y?-1:x>y?1:0))*dir;});r.forEach(x=>tb.appendChild(x));}
 function initApp(){
-  buildLangSel();buildAppSel();renderPalette();rebuildColorTables();renderCode();applyGround();
+  buildLangSel();buildViewSel();renderPalette();rebuildColorTables();renderCode();applyGround();
   initGeneratorControls();
   updateTitle();initPicker();buildPkgPreview();syncMockHeight();syncPkgHeight();
+  onViewChange();
 }
 initApp();
 addEventListener('resize',()=>{syncMockHeight();syncPkgHeight();});
