@@ -79,19 +79,21 @@ focus cue on a split-displayed dashboard, accepted as a fair trade."
 		  ;; Org TODO-keyword + priority faces dim to their own -dim variant
 		  ;; (a darker shade of the same colour) rather than the flat gray, so
 		  ;; a dimmed window's keywords stay recognizable.  Faces are defined
-		  ;; in themes/dupre-faces.el and wired in modules/org-config.el.
-		  (dupre-org-todo                   . (dupre-org-todo-dim          . nil))
-		  (dupre-org-project                . (dupre-org-project-dim       . nil))
-		  (dupre-org-doing                  . (dupre-org-doing-dim         . nil))
-		  (dupre-org-waiting                . (dupre-org-waiting-dim       . nil))
-		  (dupre-org-verify                 . (dupre-org-verify-dim        . nil))
-		  (dupre-org-stalled                . (dupre-org-stalled-dim       . nil))
-		  (dupre-org-failed                 . (dupre-org-failed-dim        . nil))
-		  (dupre-org-done                   . (dupre-org-done-dim          . nil))
-		  (dupre-org-priority-a             . (dupre-org-priority-a-dim    . nil))
-		  (dupre-org-priority-b             . (dupre-org-priority-b-dim    . nil))
-		  (dupre-org-priority-c             . (dupre-org-priority-c-dim    . nil))
-		  (dupre-org-priority-d             . (dupre-org-priority-d-dim    . nil))))
+		  ;; and wired in modules/org-faces-config.el.
+		  (org-faces-todo                   . (org-faces-todo-dim          . nil))
+		  (org-faces-project                . (org-faces-project-dim       . nil))
+		  (org-faces-doing                  . (org-faces-doing-dim         . nil))
+		  (org-faces-waiting                . (org-faces-waiting-dim       . nil))
+		  (org-faces-verify                 . (org-faces-verify-dim        . nil))
+		  (org-faces-stalled                . (org-faces-stalled-dim       . nil))
+		  (org-faces-delegated              . (org-faces-delegated-dim     . nil))
+		  (org-faces-failed                 . (org-faces-failed-dim        . nil))
+		  (org-faces-done                   . (org-faces-done-dim          . nil))
+		  (org-faces-cancelled              . (org-faces-cancelled-dim     . nil))
+		  (org-faces-priority-a             . (org-faces-priority-a-dim    . nil))
+		  (org-faces-priority-b             . (org-faces-priority-b-dim    . nil))
+		  (org-faces-priority-c             . (org-faces-priority-c-dim    . nil))
+		  (org-faces-priority-d             . (org-faces-priority-d-dim    . nil))))
   (add-hook 'auto-dim-other-buffers-never-dim-buffer-functions
             #'cj/auto-dim--never-dim-dashboard-p)
   (auto-dim-other-buffers-mode 1))
