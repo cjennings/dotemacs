@@ -671,6 +671,7 @@ if(location.hash==='#viewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
   const firstApp=Object.keys(APPS)[0];sel.value=firstApp;onViewChange();
   A(!vis('view-code')&&!vis('view-ui')&&vis('view-pkg'),'pkg-view-only');
   A(curApp()===firstApp,'curApp-returns-selected-app');
+  A(!document.querySelector('#pkgbody .sbtn[title="reset to default"]'),'no-per-row-reset-button');
  }
  document.title='VIEWTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='viewtest';d.textContent='VIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
