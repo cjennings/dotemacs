@@ -145,76 +145,6 @@ Suppresses org-mode hooks to avoid loading packages not available in batch."
   (test-org-agenda--with-org-buffer "* DONE Finished task\n"
     (should (integerp (cj/org-skip-subtree-if-keyword '("TODO" "DONE" "CANCELLED"))))))
 
-;;; ---------- cj/org-agenda-skip-subtree-if-not-overdue ----------
-
-;;; Normal Cases
-
-(ert-deftest test-org-agenda-config-skip-overdue-normal-past-scheduled-keeps ()
-  "Entry scheduled in the past with TODO keyword is overdue — keep it."
-  (test-org-agenda--with-org-buffer
-      (concat "* TODO Overdue task\n"
-              "SCHEDULED: " (test-org-timestamp-days-ago 7) "\n")
-    (should (null (cj/org-agenda-skip-subtree-if-not-overdue)))))
-
-(ert-deftest test-org-agenda-config-skip-overdue-normal-future-scheduled-skips ()
-  "Entry scheduled in the future is not overdue — skip it."
-  (test-org-agenda--with-org-buffer
-      (concat "* TODO Future task\n"
-              "SCHEDULED: " (test-org-timestamp-days-ahead 7) "\n")
-    (should (integerp (cj/org-agenda-skip-subtree-if-not-overdue)))))
-
-(ert-deftest test-org-agenda-config-skip-overdue-normal-past-deadline-keeps ()
-  "Entry with past deadline and TODO keyword is overdue — keep it."
-  (test-org-agenda--with-org-buffer
-      (concat "* TODO Missed deadline\n"
-              "DEADLINE: " (test-org-timestamp-days-ago 3) "\n")
-    (should (null (cj/org-agenda-skip-subtree-if-not-overdue)))))
-
-(ert-deftest test-org-agenda-config-skip-overdue-normal-done-task-skips ()
-  "Done task should be skipped even if overdue."
-  (test-org-agenda--with-org-buffer
-      (concat "* DONE Completed task\n"
-              "SCHEDULED: " (test-org-timestamp-days-ago 7) "\n")
-    (should (integerp (cj/org-agenda-skip-subtree-if-not-overdue)))))
-
-(ert-deftest test-org-agenda-config-skip-overdue-normal-habit-skips ()
-  "Habit should be skipped even if overdue."
-  (test-org-agenda--with-org-buffer
-      (concat "* TODO Daily habit\n"
-              "SCHEDULED: " (test-org-timestamp-days-ago 7) "\n"
-              ":PROPERTIES:\n"
-              ":STYLE: habit\n"
-              ":END:\n")
-    (should (integerp (cj/org-agenda-skip-subtree-if-not-overdue)))))
-
-(ert-deftest test-org-agenda-config-skip-overdue-normal-no-todo-keyword-skips ()
-  "Entry without a TODO keyword should be skipped."
-  (test-org-agenda--with-org-buffer
-      (concat "* Just a heading\n"
-              "SCHEDULED: " (test-org-timestamp-days-ago 7) "\n")
-    (should (integerp (cj/org-agenda-skip-subtree-if-not-overdue)))))
-
-;;; Boundary Cases
-
-(ert-deftest test-org-agenda-config-skip-overdue-boundary-today-scheduled-skips ()
-  "Entry scheduled today is NOT overdue (not strictly before today) — skip."
-  (test-org-agenda--with-org-buffer
-      (concat "* TODO Today task\n"
-              "SCHEDULED: " (test-org-timestamp-today) "\n")
-    (should (integerp (cj/org-agenda-skip-subtree-if-not-overdue)))))
-
-(ert-deftest test-org-agenda-config-skip-overdue-boundary-no-date-skips ()
-  "Entry with TODO but no scheduled/deadline date — not overdue, skip."
-  (test-org-agenda--with-org-buffer "* TODO Undated task\n"
-    (should (integerp (cj/org-agenda-skip-subtree-if-not-overdue)))))
-
-(ert-deftest test-org-agenda-config-skip-overdue-boundary-future-deadline-skips ()
-  "Entry with future deadline is not overdue — skip."
-  (test-org-agenda--with-org-buffer
-      (concat "* TODO Future deadline\n"
-              "DEADLINE: " (test-org-timestamp-days-ahead 14) "\n")
-    (should (integerp (cj/org-agenda-skip-subtree-if-not-overdue)))))
-
 ;;; ---------- "d" command SCHEDULE block: CANCELLED skip ----------
 
 ;;; Normal Cases
@@ -268,17 +198,18 @@ regression where one block diverges from the others on the format."
 
 ;;; Normal Cases
 
-(ert-deftest test-org-agenda-config-d-command-has-six-blocks-in-expected-order ()
-  "Normal: the \"d\" command runs six blocks in the expected order --
-OVERDUE -> HIGH PRIORITY -> VERIFICATION -> SCHEDULE -> IN-PROGRESS -> PRIORITY B."
+(ert-deftest test-org-agenda-config-d-command-has-five-blocks-in-expected-order ()
+  "Normal: the \"d\" command runs five blocks in the expected order --
+SCHEDULE -> HIGH PRIORITY -> VERIFICATION -> IN-PROGRESS -> PRIORITY B.
+The schedule (calendar) leads; the former OVERDUE block was dropped
+because it duplicated the past-due items the schedule already shows."
   (let* ((entry (assoc "d" org-agenda-custom-commands))
          (blocks (nth 2 entry))
          (shapes (mapcar (lambda (b) (list (car b) (cadr b))) blocks)))
     (should (equal shapes
-                   '((alltodo "")
+                   '((agenda "")
                      (tags "PRIORITY=\"A\"")
                      (todo "VERIFY")
-                     (agenda "")
                      (todo "DOING")
                      (alltodo ""))))))
 

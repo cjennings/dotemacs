@@ -289,9 +289,6 @@ If the current buffer isn't an org buffer, inform the user."
 (defvar cj/main-agenda-hipri-title "HIGH PRIORITY UNRESOLVED TASKS"
   "String to announce the high priority section of the main agenda.")
 
-(defvar cj/main-agenda-overdue-title "OVERDUE"
-  "String to announce the overdue section of the main agenda.")
-
 (defvar cj/main-agenda-schedule-title "SCHEDULE"
   "String to announce the schedule section of the main agenda.")
 
@@ -322,28 +319,6 @@ lands in one place.")
         subtree-end
 	  nil)))
 
-(defun cj/org-agenda-skip-subtree-if-not-overdue ()
-  "Skip an agenda subtree if it is not an overdue deadline or scheduled task.
-An entry is considered overdue if it has a scheduled or deadline date strictly
-before today, is not marked as done, and is not a habit."
-  (let* ((subtree-end (save-excursion (org-end-of-subtree t)))
-		 (todo-state (org-get-todo-state))
-		 (style (org-entry-get nil "STYLE"))
-		 (deadline (org-entry-get nil "DEADLINE"))
-		 (scheduled (org-entry-get nil "SCHEDULED"))
-		 (today (org-time-string-to-absolute (format-time-string "%Y-%m-%d")))
-		 (deadline-day (and deadline (org-time-string-to-absolute deadline)))
-		 (scheduled-day (and scheduled (org-time-string-to-absolute scheduled))))
-	(if (or (not todo-state) ; no todo keyword
-			(member todo-state org-done-keywords) ; done/completed tasks
-			(string= style "habit"))
-		subtree-end  ; skip if done or habit
-	  (let ((overdue (or (and deadline-day (< deadline-day today))
-						 (and scheduled-day (< scheduled-day today)))))
-		(if overdue
-			nil  ; do not skip, keep this entry
-		  subtree-end)))))  ; skip if not overdue
-
 (defun cj/org-skip-subtree-if-priority (priority)
   "Skip an agenda subtree if it has a priority of PRIORITY.
 PRIORITY may be one of the characters ?A, ?B, or ?C."
@@ -364,19 +339,7 @@ KEYWORDS must be a list of strings."
 
 (setq org-agenda-custom-commands
 	  '(("d" "Daily Agenda with Tasks"
-		 ((alltodo ""
-				   ((org-agenda-skip-function #'cj/org-agenda-skip-subtree-if-not-overdue)
-					(org-agenda-overriding-header cj/main-agenda-overdue-title)
-					(org-agenda-prefix-format cj/--main-agenda-prefix-format)))
-		  (tags "PRIORITY=\"A\""
-				((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
-				 (org-agenda-overriding-header cj/main-agenda-hipri-title)
-				 (org-agenda-prefix-format cj/--main-agenda-prefix-format)))
-		  (todo "VERIFY"
-				((org-agenda-skip-function 'cj/org-skip-subtree-if-habit)
-				 (org-agenda-overriding-header cj/main-agenda-verify-title)
-				 (org-agenda-prefix-format cj/--main-agenda-prefix-format)))
-		  (agenda ""
+		 ((agenda ""
 				  ((org-agenda-start-day "0d")
 				   (org-agenda-span 8)
 				   (org-agenda-start-on-weekday nil)
@@ -386,6 +349,14 @@ KEYWORDS must be a list of strings."
 					'(org-agenda-skip-entry-if 'todo '("CANCELLED")))
 				   (org-agenda-overriding-header cj/main-agenda-schedule-title)
 				   (org-agenda-prefix-format cj/--main-agenda-prefix-format)))
+		  (tags "PRIORITY=\"A\""
+				((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
+				 (org-agenda-overriding-header cj/main-agenda-hipri-title)
+				 (org-agenda-prefix-format cj/--main-agenda-prefix-format)))
+		  (todo "VERIFY"
+				((org-agenda-skip-function 'cj/org-skip-subtree-if-habit)
+				 (org-agenda-overriding-header cj/main-agenda-verify-title)
+				 (org-agenda-prefix-format cj/--main-agenda-prefix-format)))
 		  (todo "DOING"
 				((org-agenda-skip-function 'cj/org-skip-subtree-if-habit)
 				 (org-agenda-overriding-header cj/main-agenda-doing-title)

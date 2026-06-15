@@ -145,6 +145,24 @@ calling `org-agenda'."
     (should build-called)
     (should (equal agenda-args '("a" "d")))))
 
+;;; org-agenda-custom-commands "d" daily structure
+
+(defun test-org-agenda--daily-blocks ()
+  "Return the block list of the \"d\" daily agenda command."
+  (nth 2 (assoc "d" org-agenda-custom-commands)))
+
+(ert-deftest test-org-agenda-daily-schedule-block-is-first ()
+  "Normal: the schedule (calendar) block leads the daily agenda."
+  (should (eq (car (nth 0 (test-org-agenda--daily-blocks))) 'agenda)))
+
+(ert-deftest test-org-agenda-daily-has-no-overdue-block ()
+  "Normal: no overdue block.  It duplicated the past-due
+scheduled/deadline items the schedule block already surfaces on
+today's line (org-scheduled-past-days/org-deadline-past-days are
+large), so the standalone OVERDUE section was redundant."
+  (let ((flat (flatten-tree (test-org-agenda--daily-blocks))))
+    (should-not (memq 'cj/org-agenda-skip-subtree-if-not-overdue flat))))
+
 ;;; cj/add-timestamp-to-org-entry
 
 (ert-deftest test-org-agenda-add-timestamp-inserts-on-next-line ()
