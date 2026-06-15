@@ -154,7 +154,7 @@ def add_palette_color(palette,defaults,value,label=None):
     name=label or defaults.label(value,'color-'+str(len(palette)))
     base=name
     n=2
-    used={p[1].lower() for p in palette}
+    used={(p[1] if len(p) > 1 else '').lower() for p in palette}
     while name.lower() in used:
         name=base+'-'+str(n); n+=1
     palette.append([value,name,column_id(name)])
@@ -221,28 +221,33 @@ PALETTE,UIMAP,LOCKS=apply_seed_basics(_d,PALETTE,UIMAP,LOCKS)
 PALETTE=normalize_palette(PALETTE)
 SYNTAX=build_syntax(COLS,MAP,BOLD,ITALIC_MAP,DEFAULTS)
 apply_syntax_seed(_d if _seed else {},SYNTAX,MAP)
-# Bespoke package face lists and seed defaults live in face_data.py.
-APPS={"org-mode":{"label":"org-mode","preview":"org","faces":face_rows(ORG_FACES,"org-",ORG_SEED)},
- "magit":{"label":"magit","preview":"magit","faces":face_rows(MAGIT_FACES,"magit-",MAGIT_SEED)},
- "elfeed":{"label":"elfeed","preview":"elfeed","faces":face_rows(ELFEED_FACES,"elfeed-",ELFEED_SEED)},
- "mu4e":{"label":"mu4e","preview":"mu4e","faces":face_rows(MU4E_FACES,"mu4e-",MU4E_SEED)},
- "ghostel":{"label":"ghostel","preview":"ghostel","faces":face_rows(GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED)},
- "auto-dim-other-buffers":{"label":"auto-dim","preview":"autodim","faces":face_rows(AUTODIM_FACES,"auto-dim-other-buffers-",AUTODIM_SEED)},
- "dashboard":{"label":"dashboard","preview":"dashboard","faces":face_rows(DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED)},
- "lsp-mode":{"label":"lsp-mode","preview":"lsp","faces":face_rows(LSP_FACES,"lsp-",LSP_SEED)},
- "git-gutter":{"label":"git-gutter","preview":"gitgutter","faces":face_rows(GITGUTTER_FACES,"git-gutter:",GITGUTTER_SEED)},
- "flycheck":{"label":"flycheck","preview":"flycheck","faces":face_rows(FLYCHECK_FACES,"flycheck-",FLYCHECK_SEED)},
- "dired":{"label":"dired","preview":"dired","faces":face_rows(DIRED_FACES,"dired-",DIRED_SEED)},
- "dirvish":{"label":"dirvish","preview":"dirvish","faces":face_rows(DIRVISH_FACES,"dirvish-",DIRVISH_SEED)},
- "calibredb":{"label":"calibredb","preview":"calibredb","faces":face_rows(CALIBREDB_FACES,"calibredb-",CALIBREDB_SEED)},
- "erc":{"label":"erc","preview":"erc","faces":face_rows(ERC_FACES,"erc-",ERC_SEED)},
- "org-drill":{"label":"org-drill","preview":"orgdrill","faces":face_rows(ORGDRILL_FACES,"org-drill-",ORGDRILL_SEED)},
- "org-noter":{"label":"org-noter","preview":"orgnoter","faces":face_rows(ORGNOTER_FACES,"org-noter-",ORGNOTER_SEED)},
- "signel":{"label":"signel","preview":"signel","faces":face_rows(SIGNEL_FACES,"signel-",SIGNEL_SEED)},
- "pearl":{"label":"pearl","preview":"pearl","faces":face_rows(PEARL_FACES,"pearl-",PEARL_SEED)},
- "slack":{"label":"slack","preview":"slack","faces":face_rows(SLACK_FACES,"slack-",SLACK_SEED)},
- "telega":{"label":"telega","preview":"telega","faces":face_rows(TELEGA_FACES,"telega-",TELEGA_SEED)},
- "shr":{"label":"shr (HTML: nov/eww/mail)","preview":"shr","faces":face_rows(SHR_FACES,"shr-",SHR_SEED)}}
+# Bespoke package face lists and seed defaults live in face_data.py. Each entry
+# is (key, label, preview, FACES, prefix, SEED); add an app by adding one row.
+_BESPOKE_APPS=[
+ ("org-mode","org-mode","org",ORG_FACES,"org-",ORG_SEED),
+ ("magit","magit","magit",MAGIT_FACES,"magit-",MAGIT_SEED),
+ ("elfeed","elfeed","elfeed",ELFEED_FACES,"elfeed-",ELFEED_SEED),
+ ("mu4e","mu4e","mu4e",MU4E_FACES,"mu4e-",MU4E_SEED),
+ ("ghostel","ghostel","ghostel",GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED),
+ ("auto-dim-other-buffers","auto-dim","autodim",AUTODIM_FACES,"auto-dim-other-buffers-",AUTODIM_SEED),
+ ("dashboard","dashboard","dashboard",DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED),
+ ("lsp-mode","lsp-mode","lsp",LSP_FACES,"lsp-",LSP_SEED),
+ ("git-gutter","git-gutter","gitgutter",GITGUTTER_FACES,"git-gutter:",GITGUTTER_SEED),
+ ("flycheck","flycheck","flycheck",FLYCHECK_FACES,"flycheck-",FLYCHECK_SEED),
+ ("dired","dired","dired",DIRED_FACES,"dired-",DIRED_SEED),
+ ("dirvish","dirvish","dirvish",DIRVISH_FACES,"dirvish-",DIRVISH_SEED),
+ ("calibredb","calibredb","calibredb",CALIBREDB_FACES,"calibredb-",CALIBREDB_SEED),
+ ("erc","erc","erc",ERC_FACES,"erc-",ERC_SEED),
+ ("org-drill","org-drill","orgdrill",ORGDRILL_FACES,"org-drill-",ORGDRILL_SEED),
+ ("org-noter","org-noter","orgnoter",ORGNOTER_FACES,"org-noter-",ORGNOTER_SEED),
+ ("signel","signel","signel",SIGNEL_FACES,"signel-",SIGNEL_SEED),
+ ("pearl","pearl","pearl",PEARL_FACES,"pearl-",PEARL_SEED),
+ ("slack","slack","slack",SLACK_FACES,"slack-",SLACK_SEED),
+ ("telega","telega","telega",TELEGA_FACES,"telega-",TELEGA_SEED),
+ ("shr","shr (HTML: nov/eww/mail)","shr",SHR_FACES,"shr-",SHR_SEED),
+]
+APPS={key:{"label":label,"preview":preview,"faces":face_rows(faces,prefix,seed)}
+      for key,label,preview,faces,prefix,seed in _BESPOKE_APPS}
 # Phase 6: merge the generated all-package inventory (refresh with build-inventory.el).
 # Bespoke apps stay; every other installed package becomes an editable generic app.
 _inv_path=os.path.join(HERE,"package-inventory.json")
