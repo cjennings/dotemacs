@@ -107,7 +107,7 @@ Buffer classification (group 0, decides scope handling): a predicate inspects =m
 - Good, because no classifier to write.
 - Bad, because in a terminal or an shr buffer the provenance trace is misleading — the color isn't from the theme, so "theme didn't set it" reads as a theme bug when it isn't. The banner exists precisely to stop that false read.
 
-* Decisions  [6/7]
+* Decisions  [7/7]
 ** DONE Granularity: char-at-point with optional region scan
 - Context: precise diagnosis wants one character; occasionally you want a whole region surveyed.
 - Decision: We will default to the character at point and offer a region-scan mode over the distinct face-runs when a region is active.
@@ -138,14 +138,14 @@ Buffer classification (group 0, decides scope handling): a predicate inspects =m
 - Decision: We will classify the buffer, render what we can, and prepend a banner naming the foreign color source instead of refusing.
 - Consequences: easier — maximal information always, and the boundary teaches itself; harder — the classifier must recognize the buffer buckets reliably enough that the banner isn't wrong.
 
-** TODO Effective-attribute computation approach
+** DONE Effective-attribute computation approach
 - Owner / by-when: Claude / before Phase 2 implementation.
 - Context: Emacs exposes no public call returning the final merged attribute plist for a position (text props + overlays + remaps as the C redisplay merges them). The tool has to produce the "what actually paints" values itself.
-- Decision: We will (proposed) fold the ordered stack manually with =face-attribute=, treating overlays-over-text-props-over-default and applying remaps, and label the merged result as "computed" — accepting that exotic edge cases (relative heights, deep =:inherit= ordering) may diverge slightly from the engine. Alternative under consideration: lift the resolution mechanics from =descr-text.el= / =face-at-point= rather than hand-rolling.
+- Decision: We fold the ordered, remap-expanded stack manually with =face-attribute=, treating overlays-over-text-props-over-default and applying remaps, and label the merged result as "computed" — accepting that exotic edge cases (relative heights, deep =:inherit= ordering) may diverge slightly from the engine. Alternative under consideration: lift the resolution mechanics from =descr-text.el= / =face-at-point= rather than hand-rolling.
 - Consequences: easier — a single explicit merge we can unit-test; harder — fidelity to the real engine isn't guaranteed for corner cases, so the spec stays "Ready with caveats" until the approach is pinned.
 
 *** Discussion
-- Open until the implementer compares a hand-folded merge against =describe-char='s font/face resolution on a few fixtures (auto-dim default remap, an overlay-with-priority, an unspecified-inherit face) and confirms they agree or documents where they don't.
+- Resolved 2026-06-15: implemented as the hand-fold in =cj/--face-diag-merged-attributes= (overlays over text-props over default, remaps expanded ahead of their base), labeled "computed". Pinned by fixtures in =test-face-diagnostic.el= -- overlay-over-text-prop, a default remap, and a face-symbol attribute all resolve correctly. Exotic relative-height / deep-inherit cases may still diverge, accepted per the decision.
 
 * Implementation phases
 

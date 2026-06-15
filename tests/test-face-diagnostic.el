@@ -163,5 +163,60 @@
       (should-not (plist-get diag :char))
       (should (eq (plist-get (plist-get diag :stack) :default) 'default)))))
 
+;;; cj/--face-diag-merged-attributes
+
+(ert-deftest test-face-diag-merged-explicit-text-prop ()
+  "Normal: an explicit text-property attribute is the winning merged value."
+  (with-temp-buffer
+    (insert (propertize "x" 'face '(:foreground "#abcdef" :weight bold)))
+    (let ((attrs (cj/--face-diag-merged-attributes (point-min))))
+      (should (equal (plist-get attrs :foreground) "#abcdef"))
+      (should (eq (plist-get attrs :weight) 'bold)))))
+
+(ert-deftest test-face-diag-merged-overlay-wins-over-text-prop ()
+  "Normal: a higher-priority overlay attribute beats the text-property face."
+  (with-temp-buffer
+    (insert (propertize "x" 'face '(:foreground "blue")))
+    (let ((ov (make-overlay 1 2)))
+      (overlay-put ov 'face '(:foreground "red"))
+      (overlay-put ov 'priority 10)
+      (should (equal (plist-get (cj/--face-diag-merged-attributes 1) :foreground)
+                     "red")))))
+
+(ert-deftest test-face-diag-merged-applies-default-remap ()
+  "Normal: a remap of the default face shows up in the merged attributes."
+  (with-temp-buffer
+    (insert "x")
+    (setq face-remapping-alist '((default :foreground "#123456")))
+    (should (equal (plist-get (cj/--face-diag-merged-attributes 1) :foreground)
+                   "#123456"))))
+
+(ert-deftest test-face-diag-merged-bold-face-symbol ()
+  "Boundary: a face symbol in the stack contributes its set attributes."
+  (with-temp-buffer
+    (insert (propertize "x" 'face 'bold))
+    (should (eq (plist-get (cj/--face-diag-merged-attributes 1) :weight) 'bold))))
+
+;;; cj/--face-diag-real-font
+
+(ert-deftest test-face-diag-real-font-unavailable-in-batch ()
+  "Boundary: font-at is nil under batch, so the real font reads \"unavailable\"."
+  (with-temp-buffer
+    (insert "x")
+    (let ((font (cj/--face-diag-real-font 1)))
+      (should (equal (plist-get font :font) "unavailable"))
+      (should-not (plist-get font :family)))))
+
+;;; cj/--face-diagnosis-at  (groups 0-4)
+
+(ert-deftest test-face-diagnosis-at-includes-attributes-and-font ()
+  "Normal: the assembled core carries the merged attributes and font groups."
+  (with-temp-buffer
+    (fundamental-mode)
+    (insert (propertize "x" 'face '(:foreground "#abcdef")))
+    (let ((diag (cj/--face-diagnosis-at (point-min))))
+      (should (equal (plist-get (plist-get diag :attributes) :foreground) "#abcdef"))
+      (should (equal (plist-get (plist-get diag :font) :font) "unavailable")))))
+
 (provide 'test-face-diagnostic)
 ;;; test-face-diagnostic.el ends here
