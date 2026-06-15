@@ -696,3 +696,13 @@ if(location.hash==='#boxtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c)
  UIMAP[f].box=saveBox;buildUITable();
  document.title='BOXTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='boxtest';d.textContent='BOXTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Style-cluster gate (open with #styletest): the B/I/U/S style buttons sit in a
+// 2x2 cluster (multi-toggle), mirroring the box cluster's square layout.
+if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ buildUITable();const f=UI_FACES[0][0];
+ const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[4];
+ const cluster=cell.querySelector('.stylecluster');
+ A(!!cluster,'style-cluster-present');
+ A(cluster&&cluster.querySelectorAll('.sbtn').length===4,'four-style-buttons-in-cluster');
+ document.title='STYLETEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='styletest';d.textContent='STYLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}

@@ -196,7 +196,7 @@ function buildTable(){
     styleEx();styleCr();
     const stTd=document.createElement('td');
     const stBtns=mkStyleButtons(at=>syntaxFace(kind)[at],at=>{const s=syntaxFace(kind);s[at]=!s[at];styleEx();renderCode();});
-    stBtns.forEach(b=>stTd.appendChild(b));
+    const stCluster=document.createElement('div');stCluster.className='stylecluster';stBtns.forEach(b=>stCluster.appendChild(b));stTd.appendChild(stCluster);
     const c0=document.createElement('td');c0.appendChild(dd);
     const cB=document.createElement('td');cB.appendChild(bgd);
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>syntaxFace(kind).box,b=>{syntaxFace(kind).box=b;styleEx();renderCode();},{compact:true});cX.appendChild(boxCtl);
@@ -529,7 +529,7 @@ function buildPkgTable(){
     const cb=document.createElement('td');cb.appendChild(bgd);
     const cw=document.createElement('td');
     const pkBtns=mkStyleButtons(at=>f[at],at=>{f[at]=!f[at];f.source='user';pkgChanged();});
-    pkBtns.forEach(b=>cw.appendChild(b));
+    const pkCluster=document.createElement('div');pkCluster.className='stylecluster';pkBtns.forEach(b=>pkCluster.appendChild(b));cw.appendChild(pkCluster);
     const ci=document.createElement('td');const isel=document.createElement('select');isel.className='chip';isel.style.cssText='width:150px;font:10pt monospace';inh.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});isel.value=f.inherit||'';isel.onchange=()=>{f.inherit=isel.value||null;f.source='user';pkgChanged();};ci.appendChild(isel);
     const ch=document.createElement('td');const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.value=f.height||1;hin.className='hstep';hin.onchange=()=>{f.height=parseFloat(hin.value)||1;f.source='user';pkgChanged();};ch.appendChild(hin);
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=effFg(pkgEffFg(app,face)),ebg=effBg(pkgEffBg(app,face)),r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
@@ -996,7 +996,7 @@ function buildUITable(){
     const cB=document.createElement('td');cB.appendChild(bgSel);
     const cS=document.createElement('td');
     const stBtns=mkStyleButtons(at=>UIMAP[face][at],at=>{UIMAP[face][at]=!UIMAP[face][at];paintUI(face);buildMockFrame();});
-    stBtns.forEach(b=>cS.appendChild(b));
+    const uiCluster=document.createElement('div');uiCluster.className='stylecluster';stBtns.forEach(b=>uiCluster.appendChild(b));cS.appendChild(uiCluster);
     const cC=document.createElement('td');cC.id='uicr-'+face;cC.style.whiteSpace='nowrap';cC.style.fontSize='10pt';
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});cX.appendChild(boxCtl);

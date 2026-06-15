@@ -21,6 +21,8 @@
  .boxbtn{width:17px;height:15px;padding:0;border:1px solid #3a3a3a;border-radius:3px;background:#1f1c19;color:#cdced1;font:11px monospace;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
  .boxbtn.on{background:#3a3320;border-color:#e8bd30;color:#e8bd30}
  .boxbtn:disabled{opacity:.3;cursor:default}
+ .stylecluster{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;width:max-content}
+ .stylecluster .sbtn{margin:0}
  table.leg th:hover{color:#e8bd30}
  select.chip{appearance:none;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 14px monospace;width:160px;cursor:pointer}
  .cstep{display:inline-flex;align-items:center;gap:4px}
@@ -1431,7 +1433,7 @@ function buildTable(){
     styleEx();styleCr();
     const stTd=document.createElement('td');
     const stBtns=mkStyleButtons(at=>syntaxFace(kind)[at],at=>{const s=syntaxFace(kind);s[at]=!s[at];styleEx();renderCode();});
-    stBtns.forEach(b=>stTd.appendChild(b));
+    const stCluster=document.createElement('div');stCluster.className='stylecluster';stBtns.forEach(b=>stCluster.appendChild(b));stTd.appendChild(stCluster);
     const c0=document.createElement('td');c0.appendChild(dd);
     const cB=document.createElement('td');cB.appendChild(bgd);
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>syntaxFace(kind).box,b=>{syntaxFace(kind).box=b;styleEx();renderCode();},{compact:true});cX.appendChild(boxCtl);
@@ -2006,7 +2008,7 @@ function buildPkgTable(){
     const cb=document.createElement('td');cb.appendChild(bgd);
     const cw=document.createElement('td');
     const pkBtns=mkStyleButtons(at=>f[at],at=>{f[at]=!f[at];f.source='user';pkgChanged();});
-    pkBtns.forEach(b=>cw.appendChild(b));
+    const pkCluster=document.createElement('div');pkCluster.className='stylecluster';pkBtns.forEach(b=>pkCluster.appendChild(b));cw.appendChild(pkCluster);
     const ci=document.createElement('td');const isel=document.createElement('select');isel.className='chip';isel.style.cssText='width:150px;font:10pt monospace';inh.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});isel.value=f.inherit||'';isel.onchange=()=>{f.inherit=isel.value||null;f.source='user';pkgChanged();};ci.appendChild(isel);
     const ch=document.createElement('td');const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.value=f.height||1;hin.className='hstep';hin.onchange=()=>{f.height=parseFloat(hin.value)||1;f.source='user';pkgChanged();};ch.appendChild(hin);
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=effFg(pkgEffFg(app,face)),ebg=effBg(pkgEffBg(app,face)),r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
@@ -2473,7 +2475,7 @@ function buildUITable(){
     const cB=document.createElement('td');cB.appendChild(bgSel);
     const cS=document.createElement('td');
     const stBtns=mkStyleButtons(at=>UIMAP[face][at],at=>{UIMAP[face][at]=!UIMAP[face][at];paintUI(face);buildMockFrame();});
-    stBtns.forEach(b=>cS.appendChild(b));
+    const uiCluster=document.createElement('div');uiCluster.className='stylecluster';stBtns.forEach(b=>uiCluster.appendChild(b));cS.appendChild(uiCluster);
     const cC=document.createElement('td');cC.id='uicr-'+face;cC.style.whiteSpace='nowrap';cC.style.fontSize='10pt';
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});cX.appendChild(boxCtl);
@@ -3198,4 +3200,14 @@ if(location.hash==='#boxtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c)
  UIMAP[f].box=saveBox;buildUITable();
  document.title='BOXTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='boxtest';d.textContent='BOXTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Style-cluster gate (open with #styletest): the B/I/U/S style buttons sit in a
+// 2x2 cluster (multi-toggle), mirroring the box cluster's square layout.
+if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ buildUITable();const f=UI_FACES[0][0];
+ const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[4];
+ const cluster=cell.querySelector('.stylecluster');
+ A(!!cluster,'style-cluster-present');
+ A(cluster&&cluster.querySelectorAll('.sbtn').length===4,'four-style-buttons-in-cluster');
+ document.title='STYLETEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='styletest';d.textContent='STYLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 </script>
