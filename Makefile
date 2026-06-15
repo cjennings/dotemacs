@@ -47,7 +47,7 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 # No colors - using plain text symbols instead
 
 .PHONY: help targets test test-all test-unit test-integration test-file test-name \
-        test-bash theme-studio-test theme-studio-check theme-studio-coverage theme-studio-gen theme-studio-open theme-studio-theme theme-studio-theme-load theme-studio-theme-reload \
+        test-bash theme-studio-test theme-studio-check theme-studio-coverage theme-studio-gen theme-studio-open theme-studio-theme theme-studio-theme-load theme-studio-theme-reload deploy-wip \
         benchmark coverage coverage-summary coverage-clean \
         validate-parens validate-modules compile compile-file lint profile \
         clean clean-compiled clean-tests reset
@@ -79,6 +79,7 @@ help:
 	@echo "    make theme-studio-theme JSON=/path/theme.json - Convert JSON export to themes/<name>-theme.el"
 	@echo "    make theme-studio-theme-load THEME=name       - Disable all custom themes, then load THEME"
 	@echo "    make theme-studio-theme-reload JSON=/path.json - Convert JSON, then cleanly reload its theme"
+	@echo "    make deploy-wip            - Build WIP.json into the theme, load it live, ping silently"
 	@echo ""
 	@echo "  Coverage:"
 	@echo "    make coverage          - Generate simplecov JSON and summarize modules"
@@ -171,6 +172,18 @@ ifndef JSON
 	@exit 1
 endif
 	@$(MAKE) -C scripts/theme-studio theme-reload JSON='$(abspath $(JSON))' OUT='$(abspath $(OUT))' THEME='$(THEME)'
+
+# Path to the theme-studio work-in-progress export.
+WIP_JSON = scripts/theme-studio/WIP.json
+
+# Build WIP.json into themes/WIP-theme.el, load it into the running Emacs
+# daemon, and fire a silent desktop notification when done.  Requires the
+# daemon to be up (the load goes through emacsclient).  Only notifies on
+# success — a build or load failure aborts make before the ping.
+deploy-wip:
+	@$(MAKE) theme-studio-theme-reload JSON='$(WIP_JSON)' OUT='$(OUT)' THEME=WIP
+	@notify success "WIP theme deployed" "Built WIP.json and loaded it into Emacs." --silent
+	@echo "[i] WIP theme deployed and loaded into the running daemon."
 
 BANNER = ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
