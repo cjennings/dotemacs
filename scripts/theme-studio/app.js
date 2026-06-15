@@ -83,7 +83,7 @@ function mkColorDropdown(options,cur,onPick,opts={}){
     const pop=document.createElement('div');pop.className='cddpop';
     for(const [hex,name] of options){const row=document.createElement('div');row.className='cddrow'+(hex===cur?' sel':'');
       const shown=displayHex(hex),nm=hex?name:(opts.defaultName||name);
-      row.style.background=hex?'':shown;row.style.color=shown?textOn(shown):'';
+      row.style.background=hex?'':shown;row.style.color=dropdownRowTextColor(hex,shown,textOn);
       row.innerHTML=`<span class="cddsw" style="background:${shown||'transparent'}"></span><span class="cddnm">${esc(nm)}</span><span class="cddhx">${hex||shown||''}</span>`;
       row.onclick=(ev)=>{ev.stopPropagation();cur=hex;paint();closeColorDropdown();onPick(hex);};
       pop.appendChild(row);}

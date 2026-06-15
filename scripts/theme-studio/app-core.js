@@ -78,6 +78,17 @@ function resolveUiAttr(face,attr,uimap){
   return null;
 }
 
+// Text color for a swatch-dropdown popup row. A row showing a real palette color
+// sits on the popup's own fixed background, so its name/hex text must inherit the
+// popup foreground (return '' to use the CSS color). Coloring it for contrast
+// against the swatch instead picks near-black text for a mid/dark swatch, which
+// is unreadable on the dark popup. Only the "default" row, filled solid with
+// SHOWN, uses a contrast color computed against that fill.
+function dropdownRowTextColor(hex,shown,textOnFn){
+  if(hex)return '';
+  return shown?textOnFn(shown):'';
+}
+
 // Standard swatch-dropdown option list: a default entry, then the palette. When
 // cur is set but no longer in the palette, surface it as a "(gone)" entry first.
 function optList(cur,palette){const have=cur===''||palette.some(p=>p[0]===cur);return [['','— default —'],...(have?palette:[[cur,'(gone)'],...palette])];}
@@ -367,4 +378,4 @@ function spanNeighborHex(cur,palette,ground,dir){
   return null;
 }
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, optList, paletteOptionList, spanNeighborHex, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, optList, paletteOptionList, spanNeighborHex, slugify, ramp, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
