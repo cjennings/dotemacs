@@ -209,9 +209,9 @@ whole row line."
                                       "DELEGATED(x)" "|"
                                       "FAILED(f!)" "DONE(d!)" "CANCELLED(c!)")))
 
-  ;; Keyword and priority colors are left to the active theme's standard org
-  ;; faces (org-todo / org-done / org-priority) so they follow whatever theme is
-  ;; loaded rather than hard-wiring the dupre-org-* faces.
+  ;; Keyword and priority faces are defined and wired in org-faces-config.el
+  ;; (loaded just after this module): each keyword and priority maps to its own
+  ;; org-faces-* face, which the active theme recolors.
   (setq org-highest-priority ?A)
   (setq org-lowest-priority ?D)
   (setq org-default-priority ?D)

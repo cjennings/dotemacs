@@ -82,7 +82,7 @@ The hardest slot is *blue keywords*: a deep dupre blue (#67809c) is intrinsicall
 
 - The session's exploration tooling was a set of throwaway =/tmp/gen-*.py= scripts that render palette + 4-language code samples to HTML and open them in a browser; they include WCAG-contrast and CIEDE2000 (perceptual distance) helpers. Those /tmp files won't survive a reboot — re-derive the helpers (WCAG: relative luminance with the sRGB linearization, contrast = (L1+0.05)/(L2+0.05); CIEDE2000 for separation). The math is also embedded in =tests/test-dupre-theme.el= (the WCAG half).
 - modus reference palette: =/usr/share/emacs/30.2/etc/themes/modus-vivendi-theme.el= (and the operandi/tinted variants alongside it).
-- dupre lineage: dupre ← distinguished (emacs, Kim Silkebaekken) ← vim-distinguished. The dupre palette lives in =themes/dupre-palette.el= + =themes/dupre-faces.el=; swatch PNG at =themes/dupre-palette.png=.
+- dupre lineage: dupre ← distinguished (emacs, Kim Silkebaekken) ← vim-distinguished. The dupre theme has since been retired from the tree (recoverable from git history); WIP, the active theme-studio theme, descends from its palette.
 - The key perceptual lessons from the session (also in the anchor): thin colored text desaturates (muted hues grey out as glyphs — bold helps); a near-black ground forces depth-vs-AAA as a hard tradeoff; Hyprland inactive-window dimming silently shifts colors (disable with =hyprctl keyword decoration:dim_inactive false= during color work).
 
 * Open questions

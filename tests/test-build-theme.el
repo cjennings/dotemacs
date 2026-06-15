@@ -1,4 +1,4 @@
-;;; test-build-theme.el --- Tests for the theme.json -> dupre-*.el converter -*- lexical-binding: t -*-
+;;; test-build-theme.el --- Tests for the theme.json -> deftheme converter -*- lexical-binding: t -*-
 
 ;;; Commentary:
 
@@ -74,7 +74,7 @@ drift the way Craig's downloaded exports under scripts/theme-studio/ can.")
      (unwind-protect (progn ,@body)
        (delete-directory ,var t))))
 
-;; --- WCAG contrast helpers (mirror of the dupre-theme test helpers) ---
+;; --- WCAG contrast helpers ---
 
 (defun test-build-theme--channel-luminance (c)
   "Linearize an 8-bit channel value C (0-255) per the WCAG formula."

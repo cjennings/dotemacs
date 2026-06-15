@@ -27,10 +27,10 @@
 ;;   emacs --batch -l build-theme.el \
 ;;     --eval '(build-theme/convert-file "dupre-revised.json" "themes")'
 ;;
-;; The output is a flat generated deftheme, not the hand-authored
-;; palette/faces/theme trio that the original dupre theme ships -- a theme.json
-;; carries resolved per-face hex, not dupre's semantic-mapping layer, so a flat
-;; deftheme is the faithful output and never clobbers the curated dupre files.
+;; The output is a flat generated deftheme: a theme.json carries resolved
+;; per-face hex, so the converter emits one custom-theme-set-faces with a
+;; literal value per face.  Giving generated themes a palette + assignments
+;; structure is tracked in its own spec.
 
 ;;; Code:
 

@@ -16,8 +16,8 @@
 ;; Dims windows that do not have focus so the selected window stands out,
 ;; using a local fork of auto-dim-other-buffers (the fork adds a focus-change
 ;; debounce).  The dimmed faces (auto-dim-other-buffers and
-;; auto-dim-other-buffers-hide) live in the active theme
-;; (themes/dupre-faces.el) so they track theme switches.
+;; auto-dim-other-buffers-hide) live in the active theme (the generated
+;; theme-studio theme) so they track theme switches.
 ;;
 ;; Terminal buffers (ghostel) do not participate in window dimming: ghostel
 ;; bakes its color palette into the native module per-terminal, not per-window,
