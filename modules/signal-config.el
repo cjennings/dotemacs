@@ -339,7 +339,7 @@ that on first use."
     map)
   "Signel \"Messages\" prefix keymap, bound under `C-; M'.
 Leaves =l= unbound for now -- the future =cj/signel-link= command lands
-in a later pass.  See =docs/design/signal-client.org= scope summary.")
+in a later pass.  See =docs/specs/signal-client-spec-doing.org= scope summary.")
 
 ;; Register the messages prefix under C-; M via the documented helper.
 ;; keybindings.el owns cj/custom-keymap; the (require 'keybindings) above

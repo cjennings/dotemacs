@@ -10,7 +10,7 @@
 ;;
 ;; Used by org-agenda-config and org-refile-config which previously
 ;; carried parallel hand-rolled implementations of this exact shape.
-;; See docs/design/cache-helper-design.org for the API contract,
+;; See docs/specs/cache-helper-design-spec-implemented.org for the API contract,
 ;; consumer migration shape, and rationale for the deliberate "nil
 ;; cached value reads as invalid" decision.
 ;;

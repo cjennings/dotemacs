@@ -5,7 +5,7 @@
 * Scope reviewed
 
 - =.ai/workflows/spec-review.org=.
-- =docs/design/signal-client.org=, including the base design, open-question dispositions, initiate-message workflow, architecture additions, accepted caveats, test plan, scope summary, and readiness rubric.
+- =docs/specs/signal-client-spec-doing.org=, including the base design, open-question dispositions, initiate-message workflow, architecture additions, accepted caveats, test plan, scope summary, and readiness rubric.
 - =modules/signal-config.el=, including =cj/signal--parse-contacts=, notify-suppression helpers, private config loading, and current =use-package signel= wiring.
 - =~/code/signel/signel.el=, including =signel-start=, =signel--send-rpc=, =signel--dispatch=, =signel--handle-error=, =signel--handle-receive=, =signel--insert-msg=, =signel--insert-system-msg=, =signel--send-input=, =signel-chat=, and dashboard commands.
 - =tests/test-signal-config.el=, covering contact parsing and notify-suppression helpers.

@@ -433,7 +433,7 @@ The tool is where the rules get applied, by eye and increasingly by metric.
   Contrast Algorithm, [[https://github.com/Myndex/apca-w3][Myndex]]), and pairwise ΔE (perceptual color-difference)
   diagnostics make "use chroma to express salience" and "low contrast does not
   mean low distinguishability" checkable instead of eyeballed. See
-  [[file:../../docs/design/theme-studio-perceptual-color-metrics-spec.org][docs/design/theme-studio-perceptual-color-metrics-spec.org]].
+  [[id:15db8ae3-fc14-49f3-9ed5-d5ff59790904][docs/specs/theme-studio-perceptual-color-metrics-spec-implemented.org]].
 - *Seeding:* the seed table is the contract the tool seeds from: syntax, UI, and
   org tiers each start from guide-correct defaults, leaving you to retune hues
   rather than build a theme from blank.

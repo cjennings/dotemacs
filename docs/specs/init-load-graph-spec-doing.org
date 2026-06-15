@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       e1fd137e-e164-42f4-a658-f4d32fbe3228
+:STATUS:   doing
+:END:
 #+TITLE: Design: Untangle the init.el Load Graph
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-04
@@ -174,7 +178,7 @@ Foundation modules should be able to load in batch mode without package,
 network, timer, or UI-package side effects.
 
 Adding a new Layer 1 module requires a coordinated update to the
-=system-lib.el= dependency budget in [[file:utility-consolidation.org][utility-consolidation.org]].
+=system-lib.el= dependency budget in [[id:fc2e3926-b4a1-4b45-92eb-20841e13f655][utility-consolidation-spec-doing.org]].
 
 Topic libraries introduced by the utility project join Layer 1 only when their
 first consumer is foundation-eager. Otherwise they are Layer 2 and loaded by an
@@ -391,7 +395,7 @@ Worked example:
 ;; Runtime requires: user-constants, seq, subr-x.
 ;; Direct test load: yes (batch-safe; private config is optional).
 ;;
-;; See also: docs/design/init-load-graph.org, tests/test-calendar-sync.el.
+;; See also: docs/specs/init-load-graph-spec-doing.org, tests/test-calendar-sync.el.
 ;;
 ;;; Code:
 #+end_src
@@ -448,7 +452,7 @@ Inventory rules:
 - Every module required by =init.el= must be represented before Phase 2 starts.
 - Discoveries during later phases update the inventory.
 - This inventory is independent from the helper inventory owned by
-  [[file:utility-consolidation.org][utility-consolidation.org]].
+  [[id:fc2e3926-b4a1-4b45-92eb-20841e13f655][utility-consolidation-spec-doing.org]].
 
 Exit criteria:
 
@@ -643,7 +647,7 @@ rollback shapes.
 This sibling project can run beside Phase 2. When explicit-dependency work finds
 a generic duplicated helper, the sibling project owns the extraction commit when
 the helper is in scope for that project. See
-[[file:utility-consolidation.org][utility-consolidation.org]] for candidate
+[[id:fc2e3926-b4a1-4b45-92eb-20841e13f655][utility-consolidation-spec-doing.org]] for candidate
 helpers, naming rules, dependency budgets, migration phases, and test policy.
 
 * Testing Strategy

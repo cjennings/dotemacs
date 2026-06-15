@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       c713b431-ae14-498d-aba9-b84d52f981b6
+:STATUS:   not-started
+:END:
 #+TITLE: Design: debug-profiling.el module
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-04-26

@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       4bfc2011-8ffc-4765-8886-91df12141171
+:STATUS:   not-started
+:END:
 #+TITLE: Messenger Unification — Shared Window Placement and Key Conventions
 #+AUTHOR: Craig Jennings & Claude
 #+DATE: 2026-06-11

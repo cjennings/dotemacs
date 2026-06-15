@@ -4,7 +4,7 @@
 ;; Unit tests for the TTL+building cache helper.  Covers cache-make /
 ;; cache-valid-p / cache-value-or-rebuild / cache-building-p /
 ;; cache-invalidate against the contract in
-;; docs/design/cache-helper-design.org.
+;; docs/specs/cache-helper-design-spec-implemented.org.
 
 ;;; Code:
 

@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       76979608-956e-474f-90a8-8d0c958101a0
+:STATUS:   implemented
+:END:
 #+TITLE: Design: Flycheck modeline customization
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-15

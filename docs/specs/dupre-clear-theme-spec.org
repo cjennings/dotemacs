@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       20df7f50-4759-47ba-9782-8dd25a2e173e
+:STATUS:   not-started
+:END:
 #+TITLE: dupre-clear — a contrast-first AAA sibling theme
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-07

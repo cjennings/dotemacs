@@ -6,7 +6,7 @@
 ;; `cj/signal--notify-body-max') and `cj/signel--notify' routing (the
 ;; suppression gate, the notify-script path with the sound flag, and
 ;; the `notifications-notify' fallback).  Spec: the "Notification
-;; slice" addendum in docs/design/signal-client.org.  No signal-cli or
+;; slice" addendum in docs/specs/signal-client-spec-doing.org.  No signal-cli or
 ;; linked account needed.
 
 ;;; Code:

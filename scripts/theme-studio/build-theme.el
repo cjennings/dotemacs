@@ -6,7 +6,7 @@
 
 ;; The last link in the theme-studio pipeline: turn a theme.json exported by
 ;; the tool (see scripts/theme-studio/README.md and
-;; docs/design/theme-studio-package-faces-spec.org) into a single,
+;; docs/specs/theme-studio-package-faces-spec-doing.org) into a single,
 ;; self-contained, loadable Emacs deftheme written to themes/<name>-theme.el.
 ;;
 ;; Four tiers come out of the JSON:

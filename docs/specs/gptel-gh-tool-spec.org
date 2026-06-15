@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       a124dd0f-1f40-4533-aeb8-595d93e20865
+:STATUS:   not-started
+:END:
 #+TITLE: Design: Wrap the gh CLI as a GPTel tool
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-16
@@ -1052,7 +1056,7 @@ Items intentionally deferred:
 - [[file:gptel-agentic-tool-ideas.org][gptel-agentic-tool-ideas.org]] -- broader agentic-tool design;
   =gh= sits alongside the MCP integration as the
   collaboration tier.
-- [[file:mcp-el-gptel-integration.org][mcp-el-gptel-integration.org]] -- sibling design; same
+- [[id:b4c274c5-8572-4a7b-b657-d315712bd6af][mcp-el-gptel-integration-spec-doing.org]] -- sibling design; same
   confirm-on-write pattern for safety.
 - [[https://cli.github.com/manual/][gh CLI manual]] -- subcommand reference.
 - =gh --version 2.92.0= help output -- verified flag semantics

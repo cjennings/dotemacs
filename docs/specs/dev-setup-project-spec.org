@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       596fce5d-1bab-46e7-8567-d4a2e0923091
+:STATUS:   not-started
+:END:
 #+TITLE: Design: cj/dev-setup-project
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-04-22

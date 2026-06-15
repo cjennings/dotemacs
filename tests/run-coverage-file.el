@@ -9,7 +9,7 @@
 ;; Per-file isolation matches the project's `make test-unit' pattern:
 ;; each test file runs in its own Emacs process, so tests that work
 ;; under `make test' will also work under `make coverage'.  See
-;; docs/design/coverage.org for the rationale.
+;; docs/specs/coverage-spec-implemented.org for the rationale.
 
 ;;; Code:
 

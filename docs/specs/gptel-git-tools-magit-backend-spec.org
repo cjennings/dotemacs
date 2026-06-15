@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       bd47c9a8-aae1-4a3d-ad5b-b8767f2fd580
+:STATUS:   not-started
+:END:
 #+TITLE: Design: gptel git tools on a magit backend
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-16

@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       7d7f4486-fad7-4f0a-bd9a-775bd4cd8f7e
+:STATUS:   implemented
+:END:
 #+TITLE: Design: Coverage Reporting
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-04-22

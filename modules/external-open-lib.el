@@ -12,7 +12,7 @@
 ;; instead of the feature module.
 ;;
 ;; Pulled out of `external-open.el' as part of utility-consolidation
-;; Phase 4.  See `docs/design/utility-consolidation.org'.
+;; Phase 4.  See `docs/specs/utility-consolidation-spec-doing.org'.
 
 ;;; Code:
 

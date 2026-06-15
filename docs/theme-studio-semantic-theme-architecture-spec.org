@@ -253,7 +253,7 @@ Rollout should keep the current flat output path as the default and add a separa
 - Modus Themes source: [[https://github.com/protesilaos/modus-themes][github.com/protesilaos/modus-themes]]
 - Current converter: [[file:../scripts/theme-studio/build-theme.el][scripts/theme-studio/build-theme.el]]
 - Current Theme Studio README: [[file:../scripts/theme-studio/README.md][scripts/theme-studio/README.md]]
-- Package-face model spec: [[file:design/theme-studio-package-faces-spec.org][theme-studio-package-faces-spec.org]]
+- Package-face model spec: [[id:8f37a1fd-cfd3-4b25-92e5-772468092bdc][theme-studio-package-faces-spec-doing.org]]
 
 * Review and iteration history
 ** 2026-06-14 Sunday @ 14:37:00 -0500 -- Craig -- author

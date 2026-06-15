@@ -4,7 +4,7 @@
 
 * Purpose
 
-Living per-module inventory for the [[file:init-load-graph.org][init.el load-graph refactor]]. The
+Living per-module inventory for the [[id:e1fd137e-e164-42f4-a658-f4d32fbe3228][init.el load-graph refactor]]. The
 spec's module-category table is the seed; this file is the per-module truth as
 each module is inspected and classified. A module moves from [[*Pending
 classification][Pending classification]] into [[*Classified modules][Classified

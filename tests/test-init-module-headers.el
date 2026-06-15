@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; Enforces the module load-graph header standard from
-;; docs/design/init-load-graph.org against every module that has been
+;; docs/specs/init-load-graph-spec-doing.org against every module that has been
 ;; classified so far.  Classification proceeds in batches; a module joins
 ;; `test-init-header--classified-modules' once its header declares the
 ;; contract.  When that list reaches parity with the modules required by

@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       6388588c-dac2-4c52-97ad-2343ba1443fc
+:STATUS:   not-started
+:END:
 #+TITLE: Design: gptel network tools
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-16
@@ -7,7 +11,7 @@
 
 Draft.  Brainstorm output captured from a =/brainstorm= session on
 2026-05-16.  Sibling to
-=docs/design/gptel-git-tools-magit-backend.org= and the broader theme
+=docs/specs/gptel-git-tools-magit-backend-spec.org= and the broader theme
 hierarchy under =** TODO [#B] GPTel Tool Work= in =todo.org=.
 
 The conventional vs tail-sample exploration covered three categories

@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       98f065cf-8bd5-46a0-ac24-da94d66855ad
+:STATUS:   not-started
+:END:
 #+TITLE: Face and Font Diagnostic Popup — Spec
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-14
@@ -5,7 +9,7 @@
 
 * Metadata
 
-| Status   | draft                                             |
+| Status   | not-started                                             |
 |----------+---------------------------------------------------|
 | Owner    | Craig Jennings                                    |
 |----------+---------------------------------------------------|

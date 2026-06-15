@@ -272,7 +272,7 @@ Use the existing Theme Studio test stack:
 
 * References / Appendix
 - [[file:design/theme-studio-color-harmony.org][theme-studio color harmony explainer]]
-- [[file:design/theme-studio-perceptual-color-metrics-spec.org][perceptual color metrics spec]]
+- [[id:15db8ae3-fc14-49f3-9ed5-d5ff59790904][perceptual color metrics spec]]
 - [[file:theme-studio-palette-ramps-spec.org][palette ramps and contrast safety spec]]
 - [[file:theme-studio-palette-columns-spec.org][palette columns spec]]
 - [[file:../todo.org::*theme-studio import organization workflow needs a spec][import organization task]]

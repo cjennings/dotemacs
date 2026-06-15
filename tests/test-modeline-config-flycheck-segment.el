@@ -5,7 +5,7 @@
 ;; a guarded reference to `flycheck-mode-line-status-text', and that
 ;; the guard requires both `mode-line-window-selected-p' and
 ;; `bound-and-true-p flycheck-mode'.  See
-;; docs/design/flycheck-modeline-customization.org for the design.
+;; docs/specs/flycheck-modeline-customization-spec-implemented.org for the design.
 
 ;;; Code:
 

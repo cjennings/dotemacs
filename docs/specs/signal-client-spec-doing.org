@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       0cabd6ee-c458-47b5-a8af-3ee054b25821
+:STATUS:   doing
+:END:
 #+TITLE: Design: Signal client in Emacs (forked signel)
 #+DATE: 2026-05-26
 #+STATUS: Draft

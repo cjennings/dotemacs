@@ -1,10 +1,14 @@
+:PROPERTIES:
+:ID:       35578114-8c29-43af-97a2-fdfea01a802e
+:STATUS:   implemented
+:END:
 #+TITLE: Org Header-Row Faces — Spec
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-15
 #+TODO: TODO | DONE SUPERSEDED CANCELLED
 
 * Metadata
-| Status   | draft                                                          |
+| Status   | implemented                                                          |
 |----------+----------------------------------------------------------------|
 | Owner    | Craig Jennings                                                 |
 |----------+----------------------------------------------------------------|

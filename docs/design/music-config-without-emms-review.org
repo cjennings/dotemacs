@@ -3,7 +3,7 @@
 #+DATE: 2026-05-15
 #+OPTIONS: toc:nil num:nil
 
-Spec reviewed: =docs/design/music-config-without-emms.org=
+Spec reviewed: =docs/specs/music-config-without-emms-spec.org=
 Third pass.  This review answers the single question: is the spec in
 shape to start =/start-work= against?
 

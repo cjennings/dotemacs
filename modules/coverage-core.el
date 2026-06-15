@@ -17,7 +17,7 @@
 ;; intersects the results, and displays a report buffer.  Languages
 ;; plug in via the backend registry (see `cj/coverage-backends').
 ;;
-;; See docs/design/coverage.org for the design rationale.
+;; See docs/specs/coverage-spec-implemented.org for the design rationale.
 
 ;;; Code:
 

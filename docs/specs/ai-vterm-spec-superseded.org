@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       3abd0270-e87c-42b7-9b3a-ef60300db99d
+:STATUS:   superseded
+:END:
 #+TITLE: Design: ai-vterm — in-Emacs Claude launcher
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-07

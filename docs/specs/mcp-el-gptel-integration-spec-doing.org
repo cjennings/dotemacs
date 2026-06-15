@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       b4c274c5-8572-4a7b-b657-d315712bd6af
+:STATUS:   doing
+:END:
 #+TITLE: Design: Wire mcp.el into GPTel for MCP server access
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-16
@@ -1420,7 +1424,7 @@ C= so existing GPTel keys aren't disturbed (rev 3).
 - [[file:gptel-tools-shortlist.org][gptel-tools-shortlist.org]] -- local-tools shortlist; MCP servers
   slot in as the "external" tier.
 - [[file:gptel-agentic-tool-ideas.org][gptel-agentic-tool-ideas.org]] -- broader agentic-tool design.
-- [[file:gptel-gh-tool.org][gptel-gh-tool.org]] -- sibling design; same confirm-on-write
+- [[id:a124dd0f-1f40-4533-aeb8-595d93e20865][gptel-gh-tool-spec.org]] -- sibling design; same confirm-on-write
   pattern.
 - [[https://github.com/lizqwerscott/mcp.el][lizqwerscott/mcp.el]] -- upstream.
 - [[https://github.com/lizqwerscott/gptel-mcp.el][lizqwerscott/gptel-mcp.el]] -- considered and declined; see §

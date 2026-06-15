@@ -12,7 +12,7 @@
 ;; google-docs-work, google-keep), with write-confirmation gating and a
 ;; doctor for diagnosing prerequisites.
 ;;
-;; Design doc: docs/design/mcp-el-gptel-integration.org
+;; Design doc: docs/specs/mcp-el-gptel-integration-spec-doing.org
 ;;
 ;; File organization (seven sections, populated by phases):
 ;;   1. Constants and defcustoms         <- this phase

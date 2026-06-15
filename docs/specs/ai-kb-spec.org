@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       03742426-35ce-41c5-aed7-d4e248e91833
+:STATUS:   not-started
+:END:
 #+TITLE: Design: AI Knowledge Base (ai-kb)
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-24

@@ -3,7 +3,7 @@
 ;;; Commentary:
 ;; signel's receive handler (signel.el in the fork at ~/code/signel)
 ;; raised notifications through a hardwired `notifications-notify'
-;; call.  The notification slice (docs/design/signal-client.org,
+;; call.  The notification slice (docs/specs/signal-client-spec-doing.org,
 ;; "Notification slice" addendum) replaces that with
 ;; `signel-notify-function', a customization point called with
 ;; CHAT-ID, SENDER, and BODY so a config layer can add suppression or

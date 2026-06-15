@@ -1,0 +1,157 @@
+:PROPERTIES:
+:ID:       eaac7707-ed05-43df-9e51-b17c1d672531
+:STATUS:   not-started
+:END:
+#+TITLE: Theme-Studio Structured Theme Output — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-15
+#+TODO: TODO | DONE SUPERSEDED CANCELLED
+
+* Metadata
+| Status   | not-started                                                          |
+|----------+----------------------------------------------------------------|
+| Owner    | Craig Jennings                                                 |
+|----------+----------------------------------------------------------------|
+| Reviewer | Craig Jennings                                                 |
+|----------+----------------------------------------------------------------|
+| Related  | [[file:../../todo.org][todo.org: theme-studio output + dupre retirement]]      |
+|----------+----------------------------------------------------------------|
+
+* Summary
+
+Replace build-theme.el's flat deftheme (literal hex on every face) with a structured two-file output: a palette file naming each color, and a theme file whose face assignments reference the palette through a binding. A hue change becomes one edit that propagates to every face on that color, the output reads meaningfully, and the same assignments paired with a different palette make a variant. The hand-authored dupre theme is retired in the same effort: it survives only as the fallback and a structural reference now that a theme-studio export (WIP) is the active theme.
+
+* Problem / Context
+
+build-theme.el converts a theme-studio theme.json into a deftheme, and it does so flat: one =custom-theme-set-faces= with a literal hex per face and no color layer above it (the converter's own header says "Do not hand-edit; re-run the converter"). It is faithful but unreadable, and a single hue change touches every face that used that color, scattered across the file. The structure that made the hand-authored dupre theme maintainable — a palette of named colors, faces referencing those names, organized by category — is discarded at generation time.
+
+dupre carried that structure in a three-file split (theme / palette / faces), and that structure was the value. But it is theme-specific source the user no longer wants to hand-maintain. WIP, a theme-studio export, is already the active theme (=persist/emacs-theme= reads "WIP"); dupre is now only =fallback-theme-name= and a reference. theme.json already carries a named palette — a list of =[hex name family]= triples — so the data needed to generate a structured theme already exists; only the converter throws it away.
+
+The driver: make generated themes inherit dupre's structural virtues in a generated-appropriate shape, and remove dupre.
+
+* Goals and Non-Goals
+
+** Goals
+- build-theme emits two files: =NAME-palette.el= (named colors) and =NAME-theme.el= (deftheme entry plus assignments that reference palette names).
+- A hue change is one edit in theme.json's palette, re-exported, and reaches every face on that color.
+- Assignments are separable from palette, so a palette swap yields a variant theme.
+- Faces are grouped and commented by tier (default, syntax, ui, packages) for readability.
+- Output stays one-way generated (do-not-hand-edit banner); theme.json is canonical.
+- dupre is removed: the three theme files and its test deleted, =fallback-theme-name= moved to a built-in, references and comments updated.
+
+** Non-Goals
+- No semantic-role layer (accent/err/keyword → palette) in v1 — deferred, but the format leaves room for it.
+- No OKLCH ramps, perceptual palette renaming, or auto light/dark variants.
+- No change to theme-studio's editing UI.
+- Not changing the theme-studio model: the palette already exists in theme.json; v1 reads it, it does not redesign it.
+
+** Scope tiers
+- v1: build-theme two-file structured output; the palette file from theme.json's palette list; face assignments referencing palette names via a binding, one-off hexes left literal; tier organization; regenerate the active theme in the new format; retire dupre and move the fallback.
+- vNext: a semantic-role layer; per-face palette-name carriage in theme-studio (preserve intent when two roles share a hex); palette-swap variant tooling.
+
+* Design
+
+** For the user
+Tune in theme-studio and export, as today. The generated theme is now two files. The palette file lists every named color once. The theme file maps each face to a color by name, grouped by area (syntax, UI, packages) so it reads like a description of the theme rather than a hex dump. To shift a hue, change it in theme-studio and re-export; every face on that color moves together. The same theme file paired with a different palette file is a variant — the lineage that took distinguished to dupre, made explicit.
+
+** For the implementer
+build-theme/--render splits into two emitters fed by the parsed theme.json:
+- Palette emitter: from theme.json's =palette= list of =[hex name family]=, write =NAME-palette.el= — a =defconst NAME-palette= (or a set of named constants) mapping name to hex, optionally grouped by family with section comments, ending in =(provide 'NAME-palette)=.
+- Theme emitter: write =NAME-theme.el= — the =deftheme=, =(require 'NAME-palette)=, then =custom-theme-set-faces= wrapped in a binding over the palette names (a =let= built from the palette, mirroring dupre-with-colors) so face specs reference names. Each face's stored hex is reverse-mapped to a palette name by exact match; a hex absent from the palette stays a literal string. Faces grouped by tier with comments. End =(provide-theme 'NAME)=.
+Both files carry the generated/do-not-hand-edit banner. =NAME-theme.el= requires =NAME-palette.el=, so the themes directory must be on the load path at theme-load time (the existing dupre arrangement already does this for the themes dir).
+
+* Alternatives Considered
+
+** Keep the flat per-face-hex output
+- Good: no converter change; the output is trivially correct.
+- Bad: unreadable, and a hue change is scattered across every face — the maintainability problem this spec exists to fix.
+- Neutral: it is generated, so "unreadable" matters only when a human reads or hand-tweaks it, which the structured format is meant to enable.
+
+** Three-file split (theme / palette / faces), exactly like dupre
+- Good: maximal separation; the deftheme boilerplate is isolated.
+- Bad: a generated theme's deftheme wrapper is a few lines — a third file is more ceremony than generated output needs.
+- Neutral: could become warranted in vNext if the assignments file grows unwieldy.
+
+** Carry a palette-name reference per face in theme.json (no reverse-map)
+- Good: preserves the designer's intended name even when two roles share a hex.
+- Bad: a theme-studio model and export change, larger than v1; the reverse-map gets the same readable output from data that already exists.
+- Neutral: the better long-term design; logged as vNext.
+
+* Decisions [6/6]
+
+** DONE Two-file output shape
+- Context: an Emacs theme needs =NAME-theme.el= for discovery; the palette wants to be independently swappable.
+- Decision: Two files — =NAME-palette.el= (named colors) and =NAME-theme.el= (deftheme entry plus assignments). The assignments ride with the deftheme rather than getting a third file.
+- Consequences: easier — palette swaps for variants, one place to retune hues, less ceremony than dupre's three files; harder — the theme file still mixes deftheme boilerplate with assignments.
+
+** DONE Faces reference the palette via a binding
+- Context: faces must name colors, not inline hex, for the one-edit-propagates property.
+- Decision: The theme file wraps =custom-theme-set-faces= in a =let= over the palette names (mirroring dupre-with-colors) and face specs reference the names.
+- Consequences: easier — readable specs, single source of color truth; harder — the converter must build the binding and reverse-map face hexes to names.
+
+** DONE Derive the palette layer by reverse-mapping face hex to palette names
+- Context: theme.json stores resolved hex per face but already carries a named palette list (=[hex name family]=).
+- Decision: build-theme reads the palette list to emit the palette file and reverse-maps each face's hex to a palette name by exact match; a hex with no palette entry stays a literal string.
+- Consequences: easier — no theme-studio model change, uses data that already exists; harder — a hex shared by two intended roles collapses to one name (intent loss), which per-face name carriage would fix in vNext.
+
+** DONE Semantic-role layer deferred
+- Context: dupre had roles (accent/err/keyword → palette) above the palette; the user may want them later.
+- Decision: No role layer in v1. The format keeps the palette binding so a role binding can slot above it later without reshaping the output.
+- Consequences: easier — smaller v1, fewer indirection layers to reason about; harder — role intent is not captured yet, so a role rename is a vNext addition.
+
+** DONE Retire dupre, move the fallback to a built-in
+- Context: WIP (a theme-studio export) is already active; dupre is only =fallback-theme-name= and a reference; the fallback has no further fallback, so it must be guaranteed present.
+- Decision: Delete the three dupre files and =test-dupre-theme.el=; set =fallback-theme-name= to "modus-vivendi" (built-in, always available); update the persistence/commands tests and the stale comments in auto-dim-config.el and org-config.el.
+- Consequences: easier — removes hand-maintained theme source, retires the four already-failing dupre palette tests; harder — the fallback loses chosen dimming colors (acceptable for a rare last resort), and dupre's look survives only in git and in WIP's lineage.
+
+** DONE Generated files stay one-way; theme.json is canonical
+- Context: the current converter already declares its output do-not-hand-edit.
+- Decision: Both generated files keep the generated banner; hue changes and palette swaps happen in theme-studio (or by generating from another theme.json), not by editing the output.
+- Consequences: easier — no source-of-truth ambiguity, regeneration is always safe; harder — a quick hand-tweak to the palette file is overwritten on the next export, so experiments route through theme-studio.
+
+* Implementation phases
+
+** Phase 1 — palette emitter
+Emit =NAME-palette.el= from theme.json's palette list: name→hex constants (grouped by family with comments), =(provide 'NAME-palette)=, generated banner. Done when the palette file loads and exposes every named color.
+
+** Phase 2 — theme emitter with palette references
+Rewrite build-theme/--render to emit =NAME-theme.el=: deftheme, require the palette, =custom-theme-set-faces= inside a =let= over the palette, face specs referencing names (reverse-mapped from hex; literals for one-offs), tier grouping and comments, =provide-theme=. Done when a theme.json round-trips to a loading theme whose faces render identically to the old flat output. Update test-build-theme.el to the two-file shape.
+
+** Phase 3 — regenerate the active theme
+Regenerate WIP (the active theme) in the new format via deploy-wip; confirm it loads and looks unchanged in the live daemon. Done when the round-trip lands with no visible difference.
+
+** Phase 4 — retire dupre
+Set =fallback-theme-name= to "modus-vivendi"; update test-ui-theme-commands.el and test-ui-theme-persistence.el; fix the stale comments in auto-dim-config.el and org-config.el; delete themes/dupre-theme.el, dupre-palette.el, dupre-faces.el and tests/test-dupre-theme.el. Done when the suite is green, startup uses WIP, and the fallback resolves to modus-vivendi. (Independent of Phases 1-3 — can land first since WIP is already active in the old format.)
+
+* Acceptance criteria
+- [ ] build-theme produces =NAME-palette.el= and =NAME-theme.el= for a given theme.json.
+- [ ] The generated theme loads and its faces render identically to the prior flat output for the same theme.json.
+- [ ] Changing one palette color in theme.json and re-exporting updates every face that used it.
+- [ ] The palette file names every distinct palette color; one-off face hexes remain literal.
+- [ ] dupre's files and test are gone; startup uses WIP; =fallback-theme-name= resolves to a present theme; suite green.
+
+* Readiness dimensions
+- Data model & ownership: theme.json (theme-studio) is canonical; the palette list is the color source; build-theme owns the generated files; both are one-way output.
+- Errors, empty states & failure: a face hex absent from the palette falls back to a literal — no failure, just an unnamed color. A missing palette file fails the theme load loudly (require error) rather than silently mis-coloring.
+- Security & privacy: N/A — color data only.
+- Observability: the live theme and theme-studio preview are the visible surface; a wrong reverse-map shows as a wrong color.
+- Performance & scale: N/A — tens of colors, ~150 faces, generated once per export.
+- Reuse & lost opportunities: rides the existing palette list and build-theme tiers; sets up palette-swap variants and a future role layer.
+- Architecture fit & weak points: mirrors dupre's proven palette/faces separation. Weak point is the hex→name reverse-map collapsing shared hexes — bounded by leaving one-offs literal and deferring name carriage to vNext.
+- Config surface: =fallback-theme-name= changes value; the themes load-path must include the generated palette file.
+- Documentation plan: the generated banner plus this spec; no user-facing docs.
+- Dev tooling: existing =make theme-studio-theme=, =deploy-wip=, and the build-theme test suite cover build and round-trip.
+- Rollout, compatibility & rollback: Phase 4 (dupre removal) is independent and reversible via git; Phases 1-3 change only generated output, rollback is reverting build-theme. The active theme (WIP) keeps working in the old format until regenerated.
+- External APIs & deps: =deftheme=, =custom-theme-set-faces=, =provide-theme=, =custom-theme-load-path= — all standard; modus-vivendi is built in.
+
+* Risks, Rabbit Holes, and Drawbacks
+- Reverse-map ambiguity: one hex, several intended roles, collapses to one name. Dodge: leave one-offs literal; defer per-face name carriage to vNext.
+- Identical render is the bar: the structured output must produce the same face attributes as the flat output. Dodge: a converter test that diffs resolved face specs old-vs-new for a fixture theme.json.
+- Load-path for the palette file: =NAME-theme.el= requiring =NAME-palette.el= needs the themes dir on the path at load time. Dodge: reuse dupre's existing arrangement.
+- Scope creep into the role layer or OKLCH work. Dodge: both are explicit Non-Goals / vNext.
+
+* Review and iteration history
+** 2026-06-15 Mon — Craig — author
+- What: initial draft.
+- Why: the dupre retirement turned into a question of what shape theme-studio's generated themes should take; the palette-vs-flat format, the file split, and the reverse-map approach are real trade-offs worth settling before touching build-theme.el.
+- Artifacts: scripts/theme-studio/build-theme.el (current flat renderer), scripts/theme-studio/theme.json (palette list already present), themes/dupre-* (the structural reference being retired).

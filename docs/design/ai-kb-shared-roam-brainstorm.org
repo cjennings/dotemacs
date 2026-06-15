@@ -410,7 +410,7 @@ This layer answers:
 * Possible next task
 
 Convert this brainstorm into a concrete design delta for the existing
-=docs/design/ai-kb.org= and the open =Implement ai-kb= task:
+=docs/specs/ai-kb-spec.org= and the open =Implement ai-kb= task:
 
 - add agent query triggers;
 - specify personal-roam access boundaries;

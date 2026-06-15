@@ -1,3 +1,7 @@
+:PROPERTIES:
+:ID:       8f37a1fd-cfd3-4b25-92e5-772468092bdc
+:STATUS:   doing
+:END:
 #+TITLE: theme-studio — package faces (tier 3), starting with org-mode
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-07

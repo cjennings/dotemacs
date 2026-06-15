@@ -4,7 +4,7 @@
 
 * Status
 
-Living inventory. Phase 1 of [[file:utility-consolidation.org][utility-consolidation.org]]. Records the current state of helpers identified in the spec's Candidate Extraction Table plus any new candidates discovered during module walkthroughs. Decisions become concrete tasks in =todo.org= for Phase 2+.
+Living inventory. Phase 1 of [[id:fc2e3926-b4a1-4b45-92eb-20841e13f655][utility-consolidation-spec-doing.org]]. Records the current state of helpers identified in the spec's Candidate Extraction Table plus any new candidates discovered during module walkthroughs. Decisions become concrete tasks in =todo.org= for Phase 2+.
 
 * Scope
 
@@ -82,7 +82,7 @@ Caller counts in the inventory below reflect grep results from 2026-05-10. The c
 
 | Symbol | File | Vis | Deps | Side effects | Proposed home / name | Callers (modules) | Tests | Pri | Decision | Rationale |
 |--------+------+-----+------+--------------+----------------------+-------------------+-------+-----+----------+-----------|
-| =cj/modeline-vc-cache-*= helpers (key/get/put/clear/valid-p) | =modeline-config.el:108-140= | private | buffer-local vars | mutates buffer-local state | =cj-cache.el= / =cj/cache-valid-p=, =cj/cache-get=, =cj/cache-put=, =cj/cache-clear= | 1 (within file) | =test-modeline-config-vc-cache.el= | Medium | Defer | Good pattern, but variable-local cache shape differs from the agenda/refile caches. Needs design before extraction. Spec calls out a Phase 5 design addendum at =docs/design/cache-helper-design.org=. |
+| =cj/modeline-vc-cache-*= helpers (key/get/put/clear/valid-p) | =modeline-config.el:108-140= | private | buffer-local vars | mutates buffer-local state | =cj-cache.el= / =cj/cache-valid-p=, =cj/cache-get=, =cj/cache-put=, =cj/cache-clear= | 1 (within file) | =test-modeline-config-vc-cache.el= | Medium | Defer | Good pattern, but variable-local cache shape differs from the agenda/refile caches. Needs design before extraction. Spec calls out a Phase 5 design addendum at =docs/specs/cache-helper-design-spec-implemented.org=. |
 | agenda/refile cache vars and build flags | =org-agenda-config.el=, =org-refile-config.el= | n/a | timers, file scans | scans filesystem, sets vars | =cj-cache.el= / =cj/cache-value-or-rebuild= | 2 | none | Medium | Defer | TTL/build/invalidate lifecycle; higher risk than the modeline cache. Same Phase 5 work. |
 
 ** Logging / Warnings
@@ -144,7 +144,7 @@ These become =todo.org= entries (or update existing ones) as Phase 2 starts.
 
 ** Deferred (track in =todo.org= but no commit yet)
 
-- Cache abstraction (modeline + agenda/refile) -- needs Phase 5 design addendum at =docs/design/cache-helper-design.org=.
+- Cache abstraction (modeline + agenda/refile) -- needs Phase 5 design addendum at =docs/specs/cache-helper-design-spec-implemented.org=.
 - =cj/--open-with-is-launcher-p= -- move when external-open ownership is finalized.
 - =cj/log-silently= rename -- low value; do during incidental =system-lib= work.
 - HTML/text helpers (=strip-html=, =clean-text=) -- defer until a second consumer.
