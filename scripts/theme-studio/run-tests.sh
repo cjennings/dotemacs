@@ -55,7 +55,9 @@ CHROME=""
 for c in google-chrome-stable google-chrome chromium chromium-browser; do
   if command -v "$c" >/dev/null 2>&1; then CHROME="$c"; break; fi
 done
-HASHES="selftest cursortest readouttest deltatest oklchtest planetest locktest sorttest mocktest contrasttest safetest healtest columntest counttest baseedittest roundtriptest beveltest previewlinktest generatortest autodimtest"
+# Derive the gate list from the gate blocks themselves so it can't drift: a gate
+# added to browser-gates.js runs automatically, and one removed stops being run.
+HASHES="$(grep -oE "location\.hash==='#[a-z]+test'" browser-gates.js | sed -E "s/.*#([a-z]+test)'/\1/" | sort -u | tr '\n' ' ')"
 if [ "$NO_BROWSER" = 1 ]; then
   skip_msg "browser hash gates (--no-browser)"
 elif [ -z "$CHROME" ]; then

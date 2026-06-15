@@ -57,7 +57,7 @@ BROWSER_GATES_BODY=strip_exports(read_text('browser-gates.js'))
 COLOR_NAMES=read_json('color-names.json')
 ns={}
 src=read_text('samples.py')
-exec(src[:src.index('cols=')], ns)
+exec(src[:src.index('# THEME_STUDIO_DATA_END')], ns)
 SAMPLES={"Elisp":ns['ELS'],"Go":ns['GOS'],"Python":ns['PYS'],"TypeScript":ns['TSS'],"Java":ns['JAS'],"C":ns['CS'],"C++":ns['CPS'],"Rust":ns['RUSTS'],"Zig":ns['ZIGS'],"Shell":ns['SHS']}
 COLS=ns['COLS']
 DEFAULT_FACES_PATH=os.path.join(HERE,'emacs-default-faces.json')

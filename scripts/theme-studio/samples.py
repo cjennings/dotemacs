@@ -288,6 +288,9 @@ ZIGS=[
  [('punc','}')],
 ]
 
+# THEME_STUDIO_DATA_END: generate.py execs only the lines above this marker (the
+# code samples and COLS). Everything below is the standalone /tmp/dupre-canon.html
+# preview generator, run only when samples.py is executed directly.
 cols="".join(f'<div class="col"><h2>{n}</h2><pre>{render(s)}</pre></div>' for n,s in [("Elisp",ELS),("Go",GOS),("Python",PYS),("TypeScript",TSS),("Java",JAS),("C",CS),("C++",CPS),("Rust",RUSTS),("Zig",ZIGS),("Shell",SHS)])
 legend_rows=[
  ("keyword (bold)","kw","class def if return import"),("builtin","bi","len range print"),
