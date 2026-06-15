@@ -1,13 +1,12 @@
-;;; test-org-capture-config-popup-window.el --- Quick-capture popup single-window tests -*- lexical-binding: t; -*-
+;;; test-org-capture-config-popup-window.el --- Quick-capture popup tests -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the pure predicate behind the quick-capture popup single-window
-;; fix.  The Hyprland Super+Shift+N popup opens an emacsclient frame named
-;; "org-capture"; in that frame the *Org Select* template menu and the
-;; CAPTURE-* buffer must fill the frame's sole window instead of splitting it.
-;; `cj/org-capture--popup-sole-window-p' is the frame+buffer decision; the
-;; display-buffer action that acts on it is exercised by hand (window ops),
-;; not here.
+;; Tests for the Hyprland Super+Shift+N quick-capture popup.  The popup opens an
+;; emacsclient frame named "org-capture" and runs `cj/quick-capture', which
+;; captures a single Task into the global inbox with no template menu.  Covered
+;; here: the sole-window predicate and display action (the CAPTURE-* buffer
+;; fills the frame), the single-Task template builder, frame discovery and focus
+;; (the emacsclient focus race), and frame cleanup on every exit path.
 
 ;;; Code:
 
@@ -18,18 +17,6 @@
 (require 'user-constants)
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (require 'org-capture-config)
-
-(defconst test-org-capture-popup--sample-templates
-  '(("t" "Task" entry (function cj/--org-capture-project-location)
-     "* TODO %?" :prepend t)
-    ("b" "Bug" entry (function cj/--org-capture-project-location)
-     "* TODO [#C] %?" :prepend t)
-    ("e" "Event" entry (file+headline schedule-file "Scheduled Events")
-     "* %?" :prepend t :prepare-finalize cj/org-capture-format-event-headline)
-    ("m" "Mu4e Email" entry (file+headline inbox-file "Inbox") "* TODO %?" :prepend t)
-    ("L" "Link" entry (file+headline inbox-file "Inbox") "* %?" :immediate-finish t)
-    ("d" "Drill Question" entry (file ignore) "* Item :drill:\n%?" :prepend t))
-  "A representative org-capture-templates list for popup-subset tests.")
 
 ;;; cj/org-capture--popup-sole-window-p
 
@@ -73,9 +60,6 @@ Components integrated:
 - display-buffer / display-buffer-alist (real)
 
 Validates the popup frame ends with one window showing the CAPTURE buffer."
-  ;; The batch frame is auto-named (\"F1\"), which cannot be restored by name
-  ;; (\"F<num> usurped by Emacs\"); reset to nil to return it to auto-naming,
-  ;; keeping the test independent of execution order.
   (let ((buf (get-buffer-create "CAPTURE-itest")))
     (unwind-protect
         (progn
@@ -87,76 +71,47 @@ Validates the popup frame ends with one window showing the CAPTURE buffer."
       (set-frame-parameter nil 'name nil)
       (when (buffer-live-p buf) (kill-buffer buf)))))
 
-;;; cj/--org-capture-popup-templates  (pure subset/retarget)
+;;; cj/--quick-capture-template  (single Task into the inbox)
 
-(ert-deftest test-org-capture-config-popup-templates-keeps-tbe ()
-  "Normal: only Task, Bug, Event survive, preserving order."
-  (should (equal (mapcar #'car (cj/--org-capture-popup-templates
-                                test-org-capture-popup--sample-templates "/inbox.org"))
-                 '("t" "b" "e"))))
-
-(ert-deftest test-org-capture-config-popup-templates-retargets-task-bug ()
-  "Normal: Task and Bug retarget to the inbox \"Inbox\" headline; body + props kept."
-  (let* ((result (cj/--org-capture-popup-templates
-                  test-org-capture-popup--sample-templates "/inbox.org"))
-         (task (assoc "t" result))
-         (bug (assoc "b" result)))
+(ert-deftest test-org-capture-config-quick-capture-template ()
+  "Normal: the quick-capture template is a single Task into INBOX's Inbox."
+  (let* ((tmpl (cj/--quick-capture-template "/inbox.org"))
+         (task (assoc "t" tmpl)))
+    (should (equal (mapcar #'car tmpl) '("t")))
+    (should (equal (nth 1 task) "Task"))
+    (should (eq (nth 2 task) 'entry))
     (should (equal (nth 3 task) '(file+headline "/inbox.org" "Inbox")))
-    (should (equal (nth 3 bug) '(file+headline "/inbox.org" "Inbox")))
     (should (equal (nth 4 task) "* TODO %?"))
-    (should (equal (nth 4 bug) "* TODO [#C] %?"))
     (should (memq :prepend task))))
 
-(ert-deftest test-org-capture-config-popup-templates-event-unchanged ()
-  "Boundary: Event passes through untouched, schedule-file target and props intact."
-  (let ((event (assoc "e" (cj/--org-capture-popup-templates
-                           test-org-capture-popup--sample-templates "/inbox.org"))))
-    (should (equal (nth 3 event) '(file+headline schedule-file "Scheduled Events")))
-    (should (memq :prepare-finalize event))))
+;;; cj/quick-capture  (single Task; stubbed org-capture)
 
-(ert-deftest test-org-capture-config-popup-templates-drops-context-templates ()
-  "Boundary: context-dependent templates (mu4e, link, drill) are dropped."
-  (let ((result (cj/--org-capture-popup-templates
-                 test-org-capture-popup--sample-templates "/inbox.org")))
-    (should-not (assoc "m" result))
-    (should-not (assoc "L" result))
-    (should-not (assoc "d" result))))
-
-(ert-deftest test-org-capture-config-popup-templates-empty ()
-  "Error/Boundary: empty or all-dropped input yields nil without raising."
-  (should-not (cj/--org-capture-popup-templates nil "/inbox.org"))
-  (should-not (cj/--org-capture-popup-templates
-               '(("L" "Link" entry (file+headline f "Inbox") "* %?")) "/inbox.org")))
-
-;;; cj/quick-capture  (binds the subset; integration with a stubbed org-capture)
-
-(ert-deftest test-integration-org-capture-quick-capture-binds-subset ()
-  "Integration: cj/quick-capture runs org-capture with only Task/Bug/Event,
-Task and Bug retargeted to the inbox.
+(ert-deftest test-integration-org-capture-quick-capture-binds-task-only ()
+  "Integration: cj/quick-capture runs org-capture with a single Task template
+targeting the inbox, dispatched by key.
 
 Components integrated:
 - cj/quick-capture (real)
-- cj/--org-capture-popup-templates (real)
-- org-capture (MOCKED — records the dynamically-bound templates)"
-  (let ((org-capture-templates test-org-capture-popup--sample-templates)
-        captured)
+- cj/--quick-capture-template (real)
+- org-capture (MOCKED — records the bound templates and dispatch key)"
+  (let (captured key)
     (cl-letf (((symbol-function 'org-capture)
-               (lambda (&rest _) (setq captured org-capture-templates))))
+               (lambda (&optional _goto k) (setq captured org-capture-templates key k))))
       (cj/quick-capture))
-    (should (equal (mapcar #'car captured) '("t" "b" "e")))
+    (should (equal (mapcar #'car captured) '("t")))
     (should (equal (nth 3 (assoc "t" captured)) (list 'file+headline inbox-file "Inbox")))
-    (should (equal (nth 3 (assoc "b" captured)) (list 'file+headline inbox-file "Inbox")))))
+    (should (equal (nth 4 (assoc "t" captured)) "* TODO %?"))
+    (should (equal key "t"))))
 
 (ert-deftest test-integration-org-capture-quick-capture-closes-frame-on-abort ()
-  "Integration: when selection aborts (org-capture signals), cj/quick-capture
+  "Integration: when capture aborts (org-capture signals), cj/quick-capture
 deletes the popup frame instead of leaving it orphaned.
 
 Components integrated:
 - cj/quick-capture (real)
 - org-capture (MOCKED — signals user-error \"Abort\")
 - cj/org-capture--delete-popup-frame (MOCKED — records the call)"
-  (let ((org-capture-templates test-org-capture-popup--sample-templates)
-        (deleted 0))
+  (let ((deleted 0))
     (cl-letf (((symbol-function 'org-capture)
                (lambda (&rest _) (user-error "Abort")))
               ((symbol-function 'cj/org-capture--delete-popup-frame)
@@ -166,8 +121,7 @@ Components integrated:
 
 (ert-deftest test-integration-org-capture-quick-capture-closes-frame-on-quit ()
   "Integration: a C-g (quit) during capture also closes the popup frame."
-  (let ((org-capture-templates test-org-capture-popup--sample-templates)
-        (deleted 0))
+  (let ((deleted 0))
     (cl-letf (((symbol-function 'org-capture)
                (lambda (&rest _) (signal 'quit nil)))
               ((symbol-function 'cj/org-capture--delete-popup-frame)
@@ -178,30 +132,12 @@ Components integrated:
 (ert-deftest test-integration-org-capture-quick-capture-keeps-frame-on-success ()
   "Integration: a successful capture (no signal) does NOT delete the frame —
 the finalize hook owns that."
-  (let ((org-capture-templates test-org-capture-popup--sample-templates)
-        (deleted 0))
+  (let ((deleted 0))
     (cl-letf (((symbol-function 'org-capture) (lambda (&rest _) nil))
               ((symbol-function 'cj/org-capture--delete-popup-frame)
                (lambda () (cl-incf deleted))))
       (cj/quick-capture))
     (should (= deleted 0))))
-
-;;; cj/--org-capture-popup-strip-specials  (drop the Customize menu entry)
-
-(ert-deftest test-org-capture-config-popup-strip-specials-removes-customize ()
-  "Normal: the \"C\" Customize entry is removed, \"q\" Abort kept, order intact."
-  (should (equal (cj/--org-capture-popup-strip-specials
-                  '(("C" "Customize org-capture-templates") ("q" "Abort")))
-                 '(("q" "Abort")))))
-
-(ert-deftest test-org-capture-config-popup-strip-specials-no-customize ()
-  "Boundary: specials without a \"C\" entry pass through unchanged."
-  (should (equal (cj/--org-capture-popup-strip-specials '(("q" "Abort")))
-                 '(("q" "Abort")))))
-
-(ert-deftest test-org-capture-config-popup-strip-specials-empty ()
-  "Error/Boundary: nil specials yields nil without raising."
-  (should-not (cj/--org-capture-popup-strip-specials nil)))
 
 ;;; cj/org-capture--popup-frame-p
 
@@ -211,26 +147,6 @@ the finalize hook owns that."
     (should (cj/org-capture--popup-frame-p)))
   (cl-letf (((symbol-function 'frame-parameter) (lambda (&rest _) "emacs")))
     (should-not (cj/org-capture--popup-frame-p))))
-
-;;; cj/org-capture--popup-mks-advice  (frame-gated specials stripping)
-
-(ert-deftest test-org-capture-config-popup-mks-advice-strips-in-popup ()
-  "Integration: in the popup frame, org-mks receives specials without \"C\"."
-  (let (seen)
-    (cl-letf (((symbol-function 'cj/org-capture--popup-frame-p) (lambda () t)))
-      (cj/org-capture--popup-mks-advice
-       (lambda (_table _title _prompt specials) (setq seen specials))
-       nil nil nil '(("C" "Customize org-capture-templates") ("q" "Abort"))))
-    (should (equal seen '(("q" "Abort"))))))
-
-(ert-deftest test-org-capture-config-popup-mks-advice-keeps-elsewhere ()
-  "Integration: in a normal frame, org-mks receives the specials untouched."
-  (let (seen)
-    (cl-letf (((symbol-function 'cj/org-capture--popup-frame-p) (lambda () nil)))
-      (cj/org-capture--popup-mks-advice
-       (lambda (_table _title _prompt specials) (setq seen specials))
-       nil nil nil '(("C" "Customize org-capture-templates") ("q" "Abort"))))
-    (should (equal seen '(("C" "Customize org-capture-templates") ("q" "Abort"))))))
 
 ;;; cj/org-capture--popup-frame  (find the popup frame by name)
 
@@ -254,8 +170,7 @@ the finalize hook owns that."
 (ert-deftest test-integration-org-capture-quick-capture-selects-named-frame ()
   "Integration: cj/quick-capture selects the \"org-capture\" frame found by name,
 not whatever frame happens to be selected (the emacsclient -c focus race)."
-  (let ((org-capture-templates test-org-capture-popup--sample-templates)
-        (focused nil))
+  (let ((focused nil))
     (cl-letf (((symbol-function 'cj/org-capture--popup-frame) (lambda () 'popup-frame))
               ((symbol-function 'select-frame-set-input-focus)
                (lambda (f) (setq focused f)))
@@ -266,8 +181,7 @@ not whatever frame happens to be selected (the emacsclient -c focus race)."
 (ert-deftest test-integration-org-capture-quick-capture-no-frame-still-captures ()
   "Integration: when no popup frame is found, cj/quick-capture skips the focus
 call and still runs the capture (no error)."
-  (let ((org-capture-templates test-org-capture-popup--sample-templates)
-        (focused 'unset)
+  (let ((focused 'unset)
         (captured nil))
     (cl-letf (((symbol-function 'cj/org-capture--popup-frame) (lambda () nil))
               ((symbol-function 'select-frame-set-input-focus)
