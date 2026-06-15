@@ -227,6 +227,7 @@ APPS={"org-mode":{"label":"org-mode","preview":"org","faces":face_rows(ORG_FACES
  "elfeed":{"label":"elfeed","preview":"elfeed","faces":face_rows(ELFEED_FACES,"elfeed-",ELFEED_SEED)},
  "mu4e":{"label":"mu4e","preview":"mu4e","faces":face_rows(MU4E_FACES,"mu4e-",MU4E_SEED)},
  "ghostel":{"label":"ghostel","preview":"ghostel","faces":face_rows(GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED)},
+ "auto-dim-other-buffers":{"label":"auto-dim","preview":"autodim","faces":face_rows(AUTODIM_FACES,"auto-dim-other-buffers-",AUTODIM_SEED)},
  "dashboard":{"label":"dashboard","preview":"dashboard","faces":face_rows(DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED)},
  "lsp-mode":{"label":"lsp-mode","preview":"lsp","faces":face_rows(LSP_FACES,"lsp-",LSP_SEED)},
  "git-gutter":{"label":"git-gutter","preview":"gitgutter","faces":face_rows(GITGUTTER_FACES,"git-gutter:",GITGUTTER_SEED)},

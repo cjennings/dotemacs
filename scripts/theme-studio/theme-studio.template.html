@@ -65,7 +65,7 @@ STYLES_CSS</style>
   <table class="leg" id="legtable"><thead><tr><th onclick="srtTable('legbody',0)">elements &#9651;</th><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',2)">fg &#9651;</th><th onclick="srtTable('legbody',3)">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
-  <div class="langbar"><label style="color:#b4b1a2">language</label><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode()"></select></div>
+  <div class="langbar"><label style="color:#b4b1a2">language</label><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode();buildPkgPreview()"></select></div>
   <pre id="codepre"></pre>
  </section>
 </div>

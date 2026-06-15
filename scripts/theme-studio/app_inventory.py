@@ -14,6 +14,7 @@ BESPOKE_APPS = {
     "org-mode",
     "mu4e",
     "ghostel",
+    "auto-dim-other-buffers",
     "dashboard",
     "lsp-mode",
     "git-gutter",

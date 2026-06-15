@@ -828,7 +828,47 @@ function renderTelegaPreview(){const a='telega',L=[];
   L.push('Webpage '+os(a,'telega-webpage-title','Title')+' '+os(a,'telega-webpage-subtitle','Subtitle')+' '+os(a,'telega-webpage-header','Header')+' '+os(a,'telega-webpage-subheader','Subheader')+' '+os(a,'telega-webpage-outline','outline')+' '+os(a,'telega-webpage-fixed','fixed')+' '+os(a,'telega-webpage-preformatted','pre')+' '+os(a,'telega-webpage-marked','marked')+' '+os(a,'telega-webpage-strike-through','strike')+' '+os(a,'telega-webpage-chat-link','chat-link'));
   return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}
 function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 monospace">';for(const [face,label] of APPS[app].faces)h+=`<div data-face="${face}" style="${ofs(app,face)}">${esc(label)}</div>`;return h+'</div>';}
+// Bespoke split preview: a focused window beside its auto-dimmed twin, both
+// showing the language selected at the top of the page (kept in sync via the
+// langsel onchange, which re-runs buildPkgPreview).  The left pane carries the
+// real per-token syntax colors; the right pane shows what auto-dim does -- every
+// default/font-lock face remaps to the single `auto-dim-other-buffers' face, so
+// the same code collapses to one faded foreground on the dim background.  The
+// trailing row demonstrates `auto-dim-other-buffers-hide' (org hidden text whose
+// foreground matches the background, so it vanishes in a dimmed window).
+function renderAutodimPreview(){
+  const a='auto-dim-other-buffers';
+  const langsel=document.getElementById('langsel');
+  const lang=(langsel&&langsel.value)||Object.keys(SAMPLES)[0];
+  const lines=(SAMPLES[lang]||[]).slice(0,9);
+  let lit='';
+  for(const line of lines){
+    if(!line.length){lit+='\n';continue;}
+    for(const [k,t] of line)lit+=`<span data-k="${k}" style="${syntaxStyle(k)}">${esc(t)}</span>`;
+    lit+='\n';}
+  const dimFg=effFg(pkgEffFg(a,'auto-dim-other-buffers')),dimBg=pkgEffBg(a,'auto-dim-other-buffers')||'#000000';
+  let dim='';
+  for(const line of lines){
+    if(!line.length){dim+='\n';continue;}
+    for(const [,t] of line)dim+=esc(t);
+    dim+='\n';}
+  const hideFg=effFg(pkgEffFg(a,'auto-dim-other-buffers-hide')),hideBg=pkgEffBg(a,'auto-dim-other-buffers-hide')||dimBg;
+  const foldText='··· folded body (hidden when dimmed) ···';
+  const accent=uf('cursor').bg||'#67809c';
+  const pane=(label,body,bg,focused)=>
+    `<div style="flex:1;min-width:20ch;border:${focused?'2px solid '+accent:'1px solid #2a2a2a'};border-radius:4px;overflow:hidden">`
+    +`<div style="text-align:center;font:bold 10pt monospace;padding:4px;color:${focused?'#cdced1':'#8a8a8a'};background:${focused?'#1a1a1a':'#0a0a0a'};border-bottom:1px solid #2a2a2a">${label}</div>`
+    +`<div style="padding:10px 12px;font:12pt/1.6 monospace;white-space:pre;background:${bg}">${body}</div></div>`;
+  const litBody=lit+'\n'+`<span style="color:#5e6770">${esc(foldText)}</span>`;
+  const dimBody=`<span data-face="auto-dim-other-buffers" style="color:${dimFg}">${dim}</span>\n`
+    +`<span data-face="auto-dim-other-buffers-hide" style="color:${hideFg};background:${hideBg}">${esc(foldText)}</span>`;
+  return `<div style="display:flex;gap:12px;padding:12px 16px;background:${MAP['bg']}">`
+    +pane('normal',litBody,MAP['bg'],true)
+    +pane('auto-dim',dimBody,dimBg,false)
+    +`</div>`;
+}
 const PACKAGE_PREVIEWS={
+  autodim:renderAutodimPreview,
   org:renderOrgPreview,magit:renderMagitPreview,elfeed:renderElfeedPreview,ghostel:renderGhostelPreview,
   dashboard:renderDashboardPreview,mu4e:renderMu4ePreview,lsp:renderLspPreview,gitgutter:renderGitGutterPreview,
   flycheck:renderFlycheckPreview,dired:renderDiredPreview,dirvish:renderDirvishPreview,calibredb:renderCalibredbPreview,

@@ -223,6 +223,25 @@ if(location.hash==='#generatortest'){let ok=true;const notes=[];const A=(c,n)=>{
  A(document.querySelector('#genpreview .genchip .gn').textContent==='medium aquamarine','generated tile names display spaces instead of hyphens');
  document.title='GENERATORTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='generatortest';d.textContent='GENERATORTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Auto-dim gate (open with #autodimtest): the bespoke split preview shows the
+// selected language in both panes -- the left in real syntax colors, the right
+// collapsed to the single auto-dim-other-buffers face -- and tracks the langsel.
+if(location.hash==='#autodimtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const langs=Object.keys(SAMPLES),ls=document.getElementById('langsel');
+ ls.value=langs[0];
+ const box=document.createElement('div');box.innerHTML=renderAutodimPreview();
+ A(box.innerHTML.includes('>normal<'),'left pane has a "normal" header');
+ A(box.innerHTML.includes('>auto-dim<'),'right pane has an "auto-dim" header');
+ A(box.querySelectorAll('[data-k]').length>0,'focused pane carries per-token syntax spans');
+ const dimFace=box.querySelector('[data-face="auto-dim-other-buffers"]');
+ A(!!dimFace,'dimmed pane uses the auto-dim-other-buffers face');
+ A(dimFace&&dimFace.querySelectorAll('[data-k]').length===0,'dimmed code is uniform, no per-token syntax');
+ A(!!box.querySelector('[data-face="auto-dim-other-buffers-hide"]'),'the hide face is represented');
+ if(langs.length>1){const t1=box.textContent;ls.value=langs[1];
+  const box2=document.createElement('div');box2.innerHTML=renderAutodimPreview();
+  A(box2.textContent!==t1,'preview tracks the language selector');ls.value=langs[0];}
+ document.title='AUTODIMTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='autodimtest';d.textContent='AUTODIMTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 if(location.hash.startsWith('#pick')){openPicker();const m=location.hash.slice(5);if(m){const b=document.querySelector('.pmode button[data-m="'+m+'"]');if(b)b.click();}}
 if(location.hash==='#cursortest'){document.getElementById('newhexstr').value='#67809c';openPicker();const sc=document.getElementById('svcur'),hc=document.getElementById('huecur');const L=parseFloat(sc.style.left||'0'),T=parseFloat(sc.style.top||'0'),H=parseFloat(hc.style.top||'0');const ok=L>1&&T>1&&H>1;document.title='CURSORTEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='cursortest';d.textContent='CURSORTEST '+(ok?'PASS':'FAIL')+' left='+sc.style.left+' top='+sc.style.top+' hue='+hc.style.top;document.body.appendChild(d);}
 if(location.hash.startsWith('#app')){const ap=location.hash.slice(4),s=document.getElementById('appsel');if(s&&ap){s.value=ap;pkgChanged();}}

@@ -143,6 +143,12 @@ GHOSTEL_SEED={
  "ghostel-color-blue":{"fg":"blue"},"ghostel-color-magenta":{"fg":"regal"},"ghostel-color-cyan":{"fg":"sage"},"ghostel-color-white":{"fg":"silver"},
  "ghostel-color-bright-black":{"fg":"steel"},"ghostel-color-bright-red":{"fg":"#de4949"},"ghostel-color-bright-green":{"fg":"#84b068"},"ghostel-color-bright-yellow":{"fg":"#eed376"},
  "ghostel-color-bright-blue":{"fg":"#7a9abe"},"ghostel-color-bright-magenta":{"fg":"#b07fd0"},"ghostel-color-bright-cyan":{"fg":"#7fc0a8"},"ghostel-color-bright-white":{"fg":"white"}}
+# auto-dim-other-buffers: non-selected windows recede to a faded fg on a near-black
+# bg.  The -hide face keeps org hidden text invisible in a dimmed window (fg=bg).
+AUTODIM_FACES=("auto-dim-other-buffers auto-dim-other-buffers-hide").split()
+AUTODIM_SEED={
+ "auto-dim-other-buffers":{"fg":"#5e6770","bg":"#000000"},
+ "auto-dim-other-buffers-hide":{"fg":"#000000","bg":"#000000"}}
 DASHBOARD_FACES=("dashboard-banner-logo-title dashboard-text-banner dashboard-heading "
  "dashboard-items-face dashboard-navigator dashboard-no-items-face dashboard-footer-face dashboard-footer-icon-face").split()
 DASHBOARD_SEED={
