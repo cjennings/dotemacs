@@ -685,6 +685,33 @@ function renderMu4ePreview(){const a='mu4e',L=[];
   L.push(os(a,'mu4e-compose-header-face','Subject:')+' new mail');
   L.push(os(a,'mu4e-compose-separator-face','--text follows this line--'));
   return previewLines(L);}
+function renderOrgFacesPreview(){const a='org-faces',L=[];
+  L.push('Agenda header row -- one face per keyword and priority (this config, not built-in org):');
+  L.push('');
+  L.push(os(a,'org-faces-todo','TODO')+'      Draft the spec            '+os(a,'org-faces-priority-a','[#A]'));
+  L.push(os(a,'org-faces-project','PROJECT')+'   Theme studio overhaul     '+os(a,'org-faces-priority-b','[#B]'));
+  L.push(os(a,'org-faces-doing','DOING')+'     Wire the faces            '+os(a,'org-faces-priority-c','[#C]'));
+  L.push(os(a,'org-faces-waiting','WAITING')+'   On review                 '+os(a,'org-faces-priority-d','[#D]'));
+  L.push(os(a,'org-faces-verify','VERIFY')+'    Confirm the round-trip');
+  L.push(os(a,'org-faces-stalled','STALLED')+'   Blocked on upstream');
+  L.push(os(a,'org-faces-delegated','DELEGATED')+' Handed to Kostya');
+  L.push(os(a,'org-faces-failed','FAILED')+'    Could not reproduce');
+  L.push(os(a,'org-faces-done','DONE')+'      Shipped the module');
+  L.push(os(a,'org-faces-cancelled','CANCELLED')+' Dropped the approach');
+  L.push('');
+  L.push('Unfocused (auto-dim) -- the -dim variants auto-dim remaps onto in non-selected windows:');
+  L.push('');
+  L.push(os(a,'org-faces-todo-dim','TODO')+'      Draft the spec            '+os(a,'org-faces-priority-a-dim','[#A]'));
+  L.push(os(a,'org-faces-project-dim','PROJECT')+'   Theme studio overhaul     '+os(a,'org-faces-priority-b-dim','[#B]'));
+  L.push(os(a,'org-faces-doing-dim','DOING')+'     Wire the faces            '+os(a,'org-faces-priority-c-dim','[#C]'));
+  L.push(os(a,'org-faces-waiting-dim','WAITING')+'   On review                 '+os(a,'org-faces-priority-d-dim','[#D]'));
+  L.push(os(a,'org-faces-verify-dim','VERIFY')+'    Confirm the round-trip');
+  L.push(os(a,'org-faces-stalled-dim','STALLED')+'   Blocked on upstream');
+  L.push(os(a,'org-faces-delegated-dim','DELEGATED')+' Handed to Kostya');
+  L.push(os(a,'org-faces-failed-dim','FAILED')+'    Could not reproduce');
+  L.push(os(a,'org-faces-done-dim','DONE')+'      Shipped the module');
+  L.push(os(a,'org-faces-cancelled-dim','CANCELLED')+' Dropped the approach');
+  return previewLines(L);}
 function renderLspPreview(){const a='lsp-mode',L=[];
   L.push(os(a,'lsp-signature-face','process(')+os(a,'lsp-signature-highlight-function-argument','items: list')+os(a,'lsp-signature-face',') -> None'));
   L.push(os(a,'lsp-signature-posframe',' docs: iterate over items and process each one '));
@@ -873,7 +900,7 @@ function renderAutodimPreview(){
 const PACKAGE_PREVIEWS={
   autodim:renderAutodimPreview,
   org:renderOrgPreview,magit:renderMagitPreview,elfeed:renderElfeedPreview,ghostel:renderGhostelPreview,
-  dashboard:renderDashboardPreview,mu4e:renderMu4ePreview,lsp:renderLspPreview,gitgutter:renderGitGutterPreview,
+  dashboard:renderDashboardPreview,mu4e:renderMu4ePreview,orgfaces:renderOrgFacesPreview,lsp:renderLspPreview,gitgutter:renderGitGutterPreview,
   flycheck:renderFlycheckPreview,dired:renderDiredPreview,dirvish:renderDirvishPreview,calibredb:renderCalibredbPreview,
   erc:renderErcPreview,orgdrill:renderOrgdrillPreview,orgnoter:renderOrgnoterPreview,signel:renderSignelPreview,
   pearl:renderPearlPreview,slack:renderSlackPreview,telega:renderTelegaPreview,shr:renderShrPreview

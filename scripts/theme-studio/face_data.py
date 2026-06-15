@@ -149,6 +149,22 @@ AUTODIM_FACES=("auto-dim-other-buffers auto-dim-other-buffers-hide").split()
 AUTODIM_SEED={
  "auto-dim-other-buffers":{"fg":"#5e6770","bg":"#000000"},
  "auto-dim-other-buffers-hide":{"fg":"#000000","bg":"#000000"}}
+# org-faces-config.el: custom, clearly-not-builtin faces for the agenda header
+# row -- one face per TODO keyword and per priority cookie, plus a -dim variant
+# auto-dim remaps to in non-selected windows.  Seed mirrors the module defaults.
+ORGFACES_FACES=("org-faces-todo org-faces-project org-faces-doing org-faces-waiting org-faces-verify "
+ "org-faces-stalled org-faces-delegated org-faces-failed org-faces-done org-faces-cancelled "
+ "org-faces-priority-a org-faces-priority-b org-faces-priority-c org-faces-priority-d "
+ "org-faces-todo-dim org-faces-project-dim org-faces-doing-dim org-faces-waiting-dim org-faces-verify-dim "
+ "org-faces-stalled-dim org-faces-delegated-dim org-faces-failed-dim org-faces-done-dim org-faces-cancelled-dim "
+ "org-faces-priority-a-dim org-faces-priority-b-dim org-faces-priority-c-dim org-faces-priority-d-dim").split()
+ORGFACES_SEED={
+ "org-faces-todo":{"fg":"#8fbf73","bold":True},"org-faces-project":{"fg":"#7a9abe","bold":True},"org-faces-doing":{"fg":"#e8c668","bold":True},"org-faces-waiting":{"fg":"#c9b08a","bold":True},"org-faces-verify":{"fg":"#d98a5a","bold":True},
+ "org-faces-stalled":{"fg":"#9a8fb0","bold":True},"org-faces-delegated":{"fg":"#7fc0a8","bold":True},"org-faces-failed":{"fg":"#d05a5a","bold":True},"org-faces-done":{"fg":"#6f7a82","bold":True},"org-faces-cancelled":{"fg":"#6f7a82","bold":True,"strike":True},
+ "org-faces-priority-a":{"fg":"#7aa0d0","bold":True},"org-faces-priority-b":{"fg":"#e8c668"},"org-faces-priority-c":{"fg":"#8fbf73"},"org-faces-priority-d":{"fg":"#8a8a8a"},
+ "org-faces-todo-dim":{"fg":"#5f7a4d","bold":True},"org-faces-project-dim":{"fg":"#4f6680","bold":True},"org-faces-doing-dim":{"fg":"#9a8544","bold":True},"org-faces-waiting-dim":{"fg":"#87745c","bold":True},"org-faces-verify-dim":{"fg":"#8f5a3c","bold":True},
+ "org-faces-stalled-dim":{"fg":"#665e75","bold":True},"org-faces-delegated-dim":{"fg":"#547d6c","bold":True},"org-faces-failed-dim":{"fg":"#8a3c3c","bold":True},"org-faces-done-dim":{"fg":"#4a5158","bold":True},"org-faces-cancelled-dim":{"fg":"#4a5158","bold":True,"strike":True},
+ "org-faces-priority-a-dim":{"fg":"#4f6a8a","bold":True},"org-faces-priority-b-dim":{"fg":"#9a8544"},"org-faces-priority-c-dim":{"fg":"#5f7a4d"},"org-faces-priority-d-dim":{"fg":"#5a5a5a"}}
 DASHBOARD_FACES=("dashboard-banner-logo-title dashboard-text-banner dashboard-heading "
  "dashboard-items-face dashboard-navigator dashboard-no-items-face dashboard-footer-face dashboard-footer-icon-face").split()
 DASHBOARD_SEED={
