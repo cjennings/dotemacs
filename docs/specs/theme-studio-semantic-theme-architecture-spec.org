@@ -1,16 +1,20 @@
+:PROPERTIES:
+:ID:       fe980b12-451a-4d8b-a550-d99f9ec49f45
+:STATUS:   not-started
+:END:
 #+TITLE: Theme Studio Semantic Theme Architecture -- Spec
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-14
 #+TODO: TODO | DONE SUPERSEDED CANCELLED
 
 * Metadata
-| Status   | draft |
+| Status   | not-started |
 |----------+-------|
 | Owner    | Craig |
 |----------+-------|
 | Reviewer | Craig |
 |----------+-------|
-| Related  | [[file:../todo.org::*theme-studio semantic theme architecture][theme-studio semantic theme architecture task]] |
+| Related  | [[file:../../todo.org::*theme-studio semantic theme architecture][theme-studio semantic theme architecture task]] |
 |----------+-------|
 
 * Summary

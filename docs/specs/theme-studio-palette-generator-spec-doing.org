@@ -1,16 +1,20 @@
+:PROPERTIES:
+:ID:       2df157b8-c7c1-47a9-b080-d9586c6f424c
+:STATUS:   doing
+:END:
 #+TITLE: Theme Studio Palette Generator -- Spec
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-14
 #+TODO: TODO | DONE SUPERSEDED CANCELLED
 
 * Metadata
-| Status   | draft |
+| Status   | doing |
 |----------+-------|
 | Owner    | Craig |
 |----------+-------|
 | Reviewer | Craig |
 |----------+-------|
-| Related  | [[file:../todo.org::*theme-studio palette generator][theme-studio palette generator task]] |
+| Related  | [[file:../../todo.org::*theme-studio palette generator][theme-studio palette generator task]] |
 |----------+-------|
 
 * Summary
@@ -275,20 +279,20 @@ Use the existing Theme Studio test stack:
 - [[id:15db8ae3-fc14-49f3-9ed5-d5ff59790904][perceptual color metrics spec]]
 - [[file:theme-studio-palette-ramps-spec.org][palette ramps and contrast safety spec]]
 - [[file:theme-studio-palette-columns-spec.org][palette columns spec]]
-- [[file:../todo.org::*theme-studio import organization workflow needs a spec][import organization task]]
+- [[file:../../todo.org::*theme-studio import organization workflow needs a spec][import organization task]]
 
 * Review and iteration history
 ** 2026-06-13 Saturday @ 16:31:01 -0500 -- Craig -- author
 - What: Initial draft using the spec-create workflow.
 - Why: Palette generation has real design trade-offs around color space, preview/apply behavior, assignment boundaries, and how much generator state should persist.
-- Artifacts: [[file:../todo.org::*theme-studio palette generator][theme-studio palette generator task]].
+- Artifacts: [[file:../../todo.org::*theme-studio palette generator][theme-studio palette generator task]].
 
 ** 2026-06-14 Sunday @ 00:44:00 -0500 -- Craig -- author
 - What: Reworked the draft around preview-first generation, existing color selector integration, generated tile add-as-column behavior, and source-mode defaults.
 - Why: Craig clarified the desired UX: generated colors should be inspectable/tunable through the existing selector, and committing one generated color should create a normal base column.
-- Artifacts: [[file:../todo.org::*theme-studio palette generator][theme-studio palette generator task]].
+- Artifacts: [[file:../../todo.org::*theme-studio palette generator][theme-studio palette generator task]].
 
 ** 2026-06-14 Sunday @ 01:07:00 -0500 -- Craig -- author
 - What: Folded Craig's inline comments into the design, clarifying source/scheme controls, guidance text, the meaning of schemes, configurable accent count, and rejected-candidate behavior. Removed the comment/source blocks.
 - Why: The generator UI needed to say what the user actually sees before implementation can proceed.
-- Artifacts: [[file:../todo.org::*theme-studio palette generator][theme-studio palette generator task]].
+- Artifacts: [[file:../../todo.org::*theme-studio palette generator][theme-studio palette generator task]].
