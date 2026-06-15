@@ -44,7 +44,6 @@
  .lockbtn{background:none;border:none;cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;opacity:.5;filter:grayscale(1)}
  .lockbtn.on{opacity:1;filter:none}
  .boxctl{display:flex;align-items:center;gap:5px}
- .boxctl .cdd:not(.compact){width:108px}
  .boxctl .cstepbtn{width:18px}
  .legctl{margin:0 0 8px;display:flex;gap:8px;align-items:center}
  .cat{color:#b4b1a2} .ex{font-size:17px}
@@ -2416,7 +2415,7 @@ function buildPkgPreview(){
   p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};
   const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=renderer?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';
 }
-function resetApp(){const app=curApp();for(const [face,label,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset editable '+app+' faces to package defaults',false);}
+function resetApp(){const app=curApp();for(const [face,,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset editable '+app+' faces to package defaults',false);}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 // --- worst-case readout for the covered overlay faces (spec Phase 4) ---------
 // Default WCAG target for the worst-case verdict (AA). AAA is selectable.
@@ -2532,13 +2531,13 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const cssRgb=h=>{const [r,g,b]=hex2rgb(h);return 'rgb('+r+', '+g+', '+b+')';};
  LOCKED.clear();buildTable();
  {const k=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p')[0];
-  const tr=document.querySelector('#legbody tr[data-kind="'+k+'"]'),step=tr.querySelector('.cstep'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
+  const tr=document.querySelector('#legbody tr[data-kind="'+k+'"]'),step=tr.querySelector('.cstep'),lb=tr.querySelector('.lockbtn');
   A(step.dataset.locked!=='1','syntax-dd-starts-unlocked');lb.click();
   A(step.dataset.locked==='1'&&step.classList.contains('locked')&&step.querySelector('.cstepbtn').disabled,'syntax-lock-disables-dd');lb.click();
   A(step.dataset.locked!=='1'&&!step.classList.contains('locked'),'syntax-unlock-reenables-dd');}
  LOCKED.clear();buildUITable();
  {const f=UI_FACES[0][0];
-  const tr=document.querySelector('#uibody tr[data-face="'+f+'"]'),step=tr.querySelector('.cstep'),dd=tr.querySelector('.cdd'),lb=tr.querySelector('.lockbtn');
+  const tr=document.querySelector('#uibody tr[data-face="'+f+'"]'),step=tr.querySelector('.cstep'),lb=tr.querySelector('.lockbtn');
   A(step.dataset.locked!=='1','ui-dd-starts-unlocked');lb.click();
   A(step.dataset.locked==='1'&&step.classList.contains('locked')&&step.querySelector('.cstepbtn').disabled,'ui-lock-disables-dd');lb.click();
   A(step.dataset.locked!=='1'&&!step.classList.contains('locked'),'ui-unlock-reenables-dd');}

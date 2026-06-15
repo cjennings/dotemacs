@@ -937,7 +937,7 @@ function buildPkgPreview(){
   p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};
   const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=renderer?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';
 }
-function resetApp(){const app=curApp();for(const [face,label,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset editable '+app+' faces to package defaults',false);}
+function resetApp(){const app=curApp();for(const [face,,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset editable '+app+' faces to package defaults',false);}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 // --- worst-case readout for the covered overlay faces (spec Phase 4) ---------
 // Default WCAG target for the worst-case verdict (AA). AAA is selectable.
