@@ -32,6 +32,11 @@
 (defvar dashboard-bookmarks-item-format "%s"
   "Format to use when showing the base of the file name.")
 
+;; `el' is bound dynamically by dashboard's section-insertion machinery, which the
+;; override below plugs into.  Declare it so the byte-compiler reads the
+;; references as that special variable rather than a free variable.
+(defvar el)
+
 (defun dashboard-insert-bookmarks (list-size)
   "Add the list of LIST-SIZE items of bookmarks."
   (require 'bookmark)
@@ -65,101 +70,6 @@
   "Offset to adjust banner title centering.
 Positive values shift left, negative values shift right.
 Adjust this if the title doesn't appear centered under the banner image.")
-
-(defconst cj/dashboard--configured-startupify-list
-  '(dashboard-insert-banner
-    dashboard-insert-banner-title
-    dashboard-insert-newline
-    dashboard-insert-navigator
-    ;; dashboard-insert-init-info  ; Disabled: package count and startup time
-    dashboard-insert-newline
-    dashboard-insert-items)
-  "Normal dashboard sections for this configuration.")
-
-(defconst cj/dashboard--theme-test-startupify-list
-  '(dashboard-insert-banner
-    dashboard-insert-banner-title
-    dashboard-insert-newline
-    dashboard-insert-navigator
-    dashboard-insert-newline
-    dashboard-insert-init-info
-    dashboard-insert-newline
-    dashboard-insert-items
-    dashboard-insert-newline
-    dashboard-insert-footer)
-  "Dashboard sections used while checking theme face coverage.")
-
-(defconst cj/dashboard--configured-items
-  '((projects . 5)
-    (bookmarks . 5)
-    (recents . 10))
-  "Normal dashboard item sections for this configuration.")
-
-(defconst cj/dashboard--theme-test-items
-  '((projects . 5)
-    (bookmarks . 5)
-    (recents . 10)
-    (theme-test-empty . 1))
-  "Dashboard item sections used while checking theme face coverage.")
-
-(defconst cj/dashboard--configured-item-generators
-  '((projects . dashboard-insert-projects)
-    (bookmarks . dashboard-insert-bookmarks)
-    (recents . dashboard-insert-recents))
-  "Normal dashboard item generators for this configuration.")
-
-;; Forward declarations: these are dashboard's own variables, assigned by the
-;; layout-toggle commands below before the dashboard package loads.
-(defvar dashboard-startupify-list)
-(defvar dashboard-item-generators)
-(defvar dashboard-items)
-(defvar dashboard-set-footer)
-
-(defun cj/dashboard-insert-theme-test-empty (_list-size)
-  "Insert an empty Dashboard section to display `dashboard-no-items-face'."
-  (dashboard-insert-section
-   "No Items:"
-   nil
-   1
-   'theme-test-empty
-   nil
-   #'ignore
-   ""))
-
-(defconst cj/dashboard--theme-test-item-generators
-  (append cj/dashboard--configured-item-generators
-          '((theme-test-empty . cj/dashboard-insert-theme-test-empty)))
-  "Dashboard item generators used while checking theme face coverage.")
-
-(defun cj/dashboard-refresh ()
-  "Refresh and show the dashboard buffer, keeping the window at the top."
-  (when (fboundp 'dashboard-refresh-buffer)
-    (dashboard-refresh-buffer))
-  (when (get-buffer "*dashboard*")
-    (switch-to-buffer "*dashboard*")
-    (goto-char (point-min))
-    (set-window-start (selected-window) (point-min))))
-
-(defun cj/dashboard-restore-configured-layout ()
-  "Restore the normal dashboard layout after theme-face testing."
-  (interactive)
-  (setq dashboard-startupify-list cj/dashboard--configured-startupify-list)
-  (setq dashboard-item-generators cj/dashboard--configured-item-generators)
-  (setq dashboard-items cj/dashboard--configured-items)
-  (setq dashboard-set-footer nil)
-  (cj/dashboard-refresh))
-
-(defun cj/dashboard-show-theme-test-layout ()
-  "Show all Dashboard elements useful for live theme inspection.
-This temporarily enables init info, footer, and a deliberately empty section so
-the live dashboard exposes `dashboard-no-items-face'.  Use
-`cj/dashboard-restore-configured-layout' to return to the normal layout."
-  (interactive)
-  (setq dashboard-startupify-list cj/dashboard--theme-test-startupify-list)
-  (setq dashboard-item-generators cj/dashboard--theme-test-item-generators)
-  (setq dashboard-items cj/dashboard--theme-test-items)
-  (setq dashboard-set-footer t)
-  (cj/dashboard-refresh))
 
 ;; --------------------------- Launcher Definitions ----------------------------
 ;; Single source of truth for the dashboard launchers.  Both the navigator
@@ -229,11 +139,11 @@ doesn't leak into this display when the buffer is taller than the
 window."
   (interactive)
   (if (get-buffer "*dashboard*")
-	  (progn
-		(switch-to-buffer "*dashboard*")
-		(cj/kill-all-other-buffers-and-windows))
-	(when (fboundp 'dashboard-open)
-	  (dashboard-open)))
+      (progn
+        (switch-to-buffer "*dashboard*")
+        (cj/kill-all-other-buffers-and-windows))
+    (when (fboundp 'dashboard-open)
+      (dashboard-open)))
   (goto-char (point-min))
   (set-window-start (selected-window) (point-min)))
 
@@ -254,11 +164,23 @@ system-defaults) are preserved rather than overwritten."
   :custom
   (dashboard-projects-backend 'projectile)
 
-  (dashboard-item-generators cj/dashboard--configured-item-generators)
+  (dashboard-item-generators
+   '((projects . dashboard-insert-projects)
+     (bookmarks . dashboard-insert-bookmarks)
+     (recents . dashboard-insert-recents)))
 
-  (dashboard-items cj/dashboard--configured-items)
+  (dashboard-items '((projects . 5)
+                     (bookmarks . 5)
+                     (recents . 10)))
 
-  (dashboard-startupify-list cj/dashboard--configured-startupify-list)
+  (dashboard-startupify-list
+   '(dashboard-insert-banner
+     dashboard-insert-banner-title
+     dashboard-insert-newline
+     dashboard-insert-navigator
+     ;; dashboard-insert-init-info  ; Disabled: package count and startup time
+     dashboard-insert-newline
+     dashboard-insert-items))
   :config
 
   ;; == banner
@@ -287,10 +209,11 @@ system-defaults) are preserved rather than overwritten."
   (setq dashboard-recentf-show-base t)                                ;; show filename, not full path
   (setq dashboard-recentf-item-format "%s")
   (cj/--dashboard-exclude-emms-from-recentf)                            ;; exclude EMMS history from recent files
-  (setq dashboard-set-footer nil)                                     ;; don't show footer and quotes
 
   ;; == navigation
-  (setq dashboard-set-navigator t)
+  ;; footer and navigator visibility are controlled by `dashboard-startupify-list'
+  ;; above (footer omitted, navigator included); the dashboard-set-* toggles are
+  ;; obsolete as of dashboard 1.9.0.
   (setq dashboard-navigator-buttons (cj/dashboard--navigator-rows))
 
   ;; == content
