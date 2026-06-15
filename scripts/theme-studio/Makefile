@@ -99,5 +99,5 @@ ifndef JSON
 endif
 	@$(MAKE) theme JSON='$(JSON)' OUT='$(OUT)' EMACS='$(EMACS)'
 	@theme_name='$(THEME)'; \
-	if [ -z "$$theme_name" ]; then theme_name="$$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["name"])' '$(JSON)')"; fi; \
+	if [ -z "$$theme_name" ]; then theme_name="$$(basename '$(JSON)' .json)"; fi; \
 	$(MAKE) theme-load THEME="$$theme_name" OUT='$(OUT)' EMACSCLIENT='$(EMACSCLIENT)'

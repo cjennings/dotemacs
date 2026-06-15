@@ -320,6 +320,25 @@ including an inherit+height package face."
   (test-build-theme--with-sandbox out
     (should-error (build-theme/convert-file (expand-file-name "does-not-exist.json" out) out))))
 
+(ert-deftest test-build-theme-name-from-filename-not-json-field ()
+  "Normal/Regression: the output name comes from the JSON file's basename, not
+its internal name field, so each draft exports under its own name (a WIP.json
+becomes WIP-theme.el, never theme-theme.el)."
+  (test-build-theme--with-sandbox out
+    ;; The fixture's internal name field is \"dupre-fixture\"; the file is sterling.json.
+    (let ((in (expand-file-name "sterling.json" out)))
+      (with-temp-file in (insert test-build-theme--fixture-json))
+      (let ((path (build-theme/convert-file in out)))
+        (should (string-suffix-p "sterling-theme.el" path))
+        (should-not (string-match-p "dupre-fixture" path))
+        (let ((custom-theme-load-path (cons out custom-theme-load-path))
+              (load-path (cons out load-path)))
+          (unwind-protect
+              (progn
+                (load-theme 'sterling t)
+                (should (string= (face-attribute 'default :background nil t) "#000000")))
+            (disable-theme 'sterling)))))))
+
 (ert-deftest test-build-theme-generated-default-meets-wcag-aa ()
   "Error/Regression: the generated default face stays legible.
 A WCAG-AA (>= 4.5:1) assertion on the round-tripped result -- proves the whole

@@ -246,11 +246,13 @@ Signal a `file-missing' error when JSON-FILE does not exist."
 
 (defun build-theme/convert-file (json-file &optional out-dir)
   "Convert JSON-FILE (a theme.json export) into a deftheme file.
-Write themes/<name>-theme.el, where <name> is the JSON name field, into
-OUT-DIR (default: the themes/ directory of this repo).  Return the written
-path."
+Write themes/<name>-theme.el, where <name> is JSON-FILE's basename, into
+OUT-DIR (default: the themes/ directory of this repo).  The basename names the
+theme so each export lands under its own file (sterling.json -> sterling-theme.el),
+rather than colliding on whatever the JSON's internal name field happens to be.
+Return the written path."
   (let* ((data (build-theme/--parse json-file))
-         (name (build-theme/--obj-get data 'name))
+         (name (file-name-base json-file))
          (specs (build-theme/--all-specs data))
          (dir (or out-dir
                   (expand-file-name
