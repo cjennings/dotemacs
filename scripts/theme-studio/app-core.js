@@ -417,4 +417,23 @@ function appViewKeysSorted(apps){
       String((apps[b]&&apps[b].label)||b), undefined, {sensitivity:'base'}));
 }
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+// Which of the six per-face setting boxes (fg, bg, style, inherit, height, box)
+// differ from the face's seed default, so the table can mark a non-default box.
+// A non-default height looks identical to the default in the number input, so the
+// mark is the only at-a-glance signal.  cur and def are face objects; the caller
+// resolves fg/bg to hex first so a palette-name-vs-hex difference doesn't read as a
+// change.  The four style attributes collapse to one "style" flag.
+function faceBoxNonDefaults(cur,def){
+  cur=cur||{}; def=def||{};
+  const eq=(a,b)=>(a??null)===(b??null);
+  return {
+    fg: !eq(cur.fg,def.fg),
+    bg: !eq(cur.bg,def.bg),
+    style: ['bold','italic','underline','strike'].some(a=>!!cur[a]!==!!def[a]),
+    inherit: !eq(cur.inherit,def.inherit),
+    height: (cur.height||1)!==(def.height||1),
+    box: JSON.stringify(cur.box??null)!==JSON.stringify(def.box??null),
+  };
+}
+
+export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

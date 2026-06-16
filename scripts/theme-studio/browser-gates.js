@@ -698,6 +698,27 @@ if(location.hash==='#viewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  }
  document.title='VIEWTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='viewtest';d.textContent='VIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Non-default-marker gate (open with #ndtest): a per-face setting cell gets the
+// .nd corner flag only when its value differs from the face's seed default. Cell
+// order in a pkg row: 0 label, 1 lock, 2 fg, 3 bg, 4 style, 5 contrast, 6 inherit,
+// 7 size, 8 box.
+if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ LOCKED.clear();
+ const app=curApp(),row=APPS[app].faces[0],face=row[0];
+ PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
+ const tr0=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
+ A(tr0&&![...tr0.cells].some(c=>c.classList.contains('nd')),'default-face-has-no-marker');
+ PKGMAP[app][face].height=1.7;PKGMAP[app][face].source='user';buildPkgTable();
+ const tr1=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
+ A(tr1.cells[7].classList.contains('nd'),'nondefault-height-marks-size-box');
+ A(!tr1.cells[4].classList.contains('nd'),'unchanged-style-box-stays-unmarked');
+ PKGMAP[app][face].height=(row[2]&&row[2].height)||1;PKGMAP[app][face].bold=!((row[2]&&row[2].bold));buildPkgTable();
+ const tr2=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
+ A(tr2.cells[4].classList.contains('nd'),'toggled-bold-marks-style-box');
+ A(!tr2.cells[7].classList.contains('nd'),'restored-height-unmarks-size-box');
+ PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
+ document.title='NDTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='ndtest';d.textContent='NDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Box-cluster gate (open with #boxtest): the box control is a 2x2 cluster of
 // four radio buttons (none / line / pressed / raised); the color swatch shows
 // only while a box style is active.

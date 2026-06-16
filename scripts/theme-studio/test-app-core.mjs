@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
-  galleryModel, appViewKeysSorted,
+  galleryModel, appViewKeysSorted, faceBoxNonDefaults,
 } from './app-core.js';
 import { planPaletteGenerator, entriesForGeneratedColumn } from './palette-generator-core.js';
 import { oklch2hex, deltaE } from './colormath.js';
@@ -845,4 +845,36 @@ test('appViewKeysSorted: empty or nullish input yields an empty list', () => {
 test('appViewKeysSorted: an app with no label falls back to its key for ordering', () => {
   const apps = { zebra: {}, apple: { label: 'apple' } };
   assert.deepEqual(appViewKeysSorted(apps), ['apple', 'zebra']);
+});
+
+// faceBoxNonDefaults: which of the six per-face setting boxes differ from the
+// face's seed default, so the table can mark them.  fg/bg are compared as the
+// caller passes them (already hex-resolved), the rest by value.
+test('faceBoxNonDefaults: a face equal to its default flags nothing', () => {
+  const f = { fg: '#abc', bg: null, bold: false, italic: false, underline: false, strike: false, inherit: null, height: 1, box: null };
+  assert.deepEqual(faceBoxNonDefaults(f, { ...f }),
+    { fg: false, bg: false, style: false, inherit: false, height: false, box: false });
+});
+test('faceBoxNonDefaults: a non-1 height flags only the height box', () => {
+  const def = { height: 1 };
+  assert.deepEqual(faceBoxNonDefaults({ height: 1.1 }, def),
+    { fg: false, bg: false, style: false, inherit: false, height: true, box: false });
+});
+test('faceBoxNonDefaults: a set fg over an empty default flags fg', () => {
+  assert.equal(faceBoxNonDefaults({ fg: '#8ea85e' }, {}).fg, true);
+  assert.equal(faceBoxNonDefaults({}, {}).fg, false);
+});
+test('faceBoxNonDefaults: any style attr differing flags the style box once', () => {
+  assert.equal(faceBoxNonDefaults({ bold: true }, { bold: false }).style, true);
+  assert.equal(faceBoxNonDefaults({ strike: true }, {}).style, true);
+  assert.equal(faceBoxNonDefaults({ bold: true }, { bold: true }).style, false);
+});
+test('faceBoxNonDefaults: inherit and box differences are flagged', () => {
+  assert.equal(faceBoxNonDefaults({ inherit: 'bold' }, { inherit: null }).inherit, true);
+  assert.equal(faceBoxNonDefaults({ box: { style: 'line' } }, { box: null }).box, true);
+  assert.equal(faceBoxNonDefaults({ box: { style: 'line' } }, { box: { style: 'line' } }).box, false);
+});
+test('faceBoxNonDefaults: nullish inputs flag nothing', () => {
+  assert.deepEqual(faceBoxNonDefaults(null, null),
+    { fg: false, bg: false, style: false, inherit: false, height: false, box: false });
 });

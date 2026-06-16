@@ -23,6 +23,11 @@
  .stylecluster .sbtn{margin:0}
  table.leg th:hover{color:#e8bd30}
  select.chip{appearance:none;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 14px monospace;width:160px;cursor:pointer}
+ /* Non-default marker: a small gold corner flag on a per-face setting cell whose
+    value differs from the face's default. The size box looks identical default
+    or not, so the flag is the only at-a-glance cue that a value was changed. */
+ td.nd{position:relative}
+ td.nd::after{content:'';position:absolute;top:0;right:0;width:0;height:0;border-top:8px solid #e8bd30;border-left:8px solid transparent;pointer-events:none}
  .cstep{display:inline-flex;align-items:center;gap:4px}
  .cstepbtn{width:22px;height:28px;padding:0;border:1px solid #3a3a3a;border-radius:4px;background:#1f1c19;color:#e8bd30;font:bold 14px monospace;cursor:pointer}
  .cstepbtn:disabled{opacity:.28;cursor:default;color:#8f8977}

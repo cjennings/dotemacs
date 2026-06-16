@@ -539,9 +539,14 @@ function buildPkgTable(){
   const app=curApp(),tb=document.getElementById('pkgbody');if(!tb)return;tb.innerHTML='';
   const flt=(document.getElementById('pkgfilter').value||'').trim().toLowerCase();
   const inh=[''].concat(BASE_INHERITS).concat(APPS[app].faces.map(r=>r[0]));
-  for(const [face,label] of APPS[app].faces){
+  for(const row of APPS[app].faces){
+    const face=row[0],label=row[1];
     if(flt&&!(face.toLowerCase().includes(flt)||label.toLowerCase().includes(flt)))continue;
     const f=PKGMAP[app][face],tr=document.createElement('tr');tr.dataset.face=face;
+    const def=normalizePkgFace(row[2]||{},'default',PALETTE);
+    const nd=faceBoxNonDefaults(
+      {fg:nameToHex(f.fg,PALETTE),bg:nameToHex(f.bg,PALETTE),bold:f.bold,italic:f.italic,underline:f.underline,strike:f.strike,inherit:f.inherit,height:f.height,box:f.box},
+      {fg:nameToHex(def.fg,PALETTE),bg:nameToHex(def.bg,PALETTE),bold:def.bold,italic:def.italic,underline:def.underline,strike:def.strike,inherit:def.inherit,height:def.height,box:def.box});
     const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.title=face;c0.style.cursor='pointer';c0.onclick=()=>flashPkgPreview(face);
     const fgd=mkColorDropdown(ddList(f.fg||''),f.fg||'',h=>{f.fg=h||null;f.source='user';pkgChanged();},{compact:true,defaultHex:effFg(pkgEffFg(app,face))}),
           bgd=mkColorDropdown(ddList(f.bg||''),f.bg||'',h=>{f.bg=h||null;f.source='user';pkgChanged();},{compact:true,defaultHex:effBg(pkgEffBg(app,face))});
@@ -555,6 +560,8 @@ function buildPkgTable(){
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=effFg(pkgEffFg(app,face)),ebg=effBg(pkgEffBg(app,face)),r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
     const cx=document.createElement('td');const boxCtl=mkBoxControl(()=>f.box,b=>{f.box=b;f.source='user';pkgChanged();},{compact:true});cx.appendChild(boxCtl);
     const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkBtns,isel,hin,boxCtl]);
+    if(nd.fg)cf.classList.add('nd');if(nd.bg)cb.classList.add('nd');if(nd.style)cw.classList.add('nd');
+    if(nd.inherit)ci.classList.add('nd');if(nd.height)ch.classList.add('nd');if(nd.box)cx.classList.add('nd');
     tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cx);tb.appendChild(tr);
   }
   applyTableSort('pkgbody');
