@@ -108,6 +108,10 @@ Overrides default prog-mode keybindings with Go-specific commands."
 ;; go-ts-mode configuration (treesit-based Go editing)
 
 (use-package go-mode
+  ;; .go opens the built-in go-ts-mode, so nothing ever triggers the go-mode
+  ;; package — gofmt was never autoloaded (void-function on C-; f) and :config
+  ;; never ran. Autoload gofmt so the first format pulls go-mode and its :config.
+  :commands (gofmt)
   :hook ((go-ts-mode . cj/go-setup)
          (go-ts-mode . cj/go-mode-keybindings))
   :mode (("\\.go\\'" . go-ts-mode)      ;; .go files use go-ts-mode
