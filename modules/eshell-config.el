@@ -101,7 +101,8 @@ pairs where COMMAND is the `cd' string `eshell/alias' should run."
 
   (add-hook 'eshell-mode-hook
             (lambda ()
-              (add-to-list 'eshell-visual-commands '("lf" "ranger" "tail" "htop" "gotop" "mc" "ncdu" "top"))
+              (dolist (cmd '("lf" "ranger" "tail" "htop" "gotop" "mc" "ncdu" "top"))
+                (add-to-list 'eshell-visual-commands cmd))
               (add-to-list 'eshell-visual-subcommands '("git" "log" "diff" "show"))
               (add-to-list 'eshell-visual-options '("git" "--help" "--paginate"))
 
@@ -162,20 +163,25 @@ pairs where COMMAND is the `cd' string `eshell/alias' should run."
 
 (use-package xterm-color
   :after eshell
+  ;; Two hooks. eshell-before-prompt is the real hook name; use-package appends
+  ;; "-hook", so writing eshell-before-prompt-hook here registered on a
+  ;; nonexistent eshell-before-prompt-hook-hook and never ran. The eshell-mode
+  ;; hook scopes TERM=xterm-256color to eshell-spawned processes only (a global
+  ;; setenv would leak it to every start-process regardless of terminal).
   :hook
-  (eshell-before-prompt-hook . (lambda ()
-                                 (setq xterm-color-preserve-properties t)))
-  ;; Scope `TERM=xterm-256color' to eshell-spawned processes only by
-  ;; binding the env var on the eshell mode hook.  The previous global
-  ;; `setenv' at config-time changed `process-environment' for the
-  ;; whole Emacs process, so every subsequent `start-process' inherited
-  ;; `xterm-256color' regardless of whether the receiver was a terminal
-  ;; that could actually interpret the escapes.
-  :hook
-  (eshell-mode . (lambda ()
-                   (setq-local process-environment
-                               (cons "TERM=xterm-256color"
-                                     process-environment)))))
+  ((eshell-before-prompt . (lambda ()
+                             (setq xterm-color-preserve-properties t)))
+   (eshell-mode . (lambda ()
+                    (setq-local process-environment
+                                (cons "TERM=xterm-256color"
+                                      process-environment)))))
+  :config
+  ;; Wire xterm-color into eshell's output pipeline (per its README): install
+  ;; the filter and drop eshell's own ANSI handler. Without this the escapes are
+  ;; never interpreted and TERM=xterm-256color only leaks raw codes.
+  (add-to-list 'eshell-preoutput-filter-functions 'xterm-color-filter)
+  (setq eshell-output-filter-functions
+        (remove 'eshell-handle-ansi-color eshell-output-filter-functions)))
 
 (use-package eshell-syntax-highlighting
   :after esh-mode
