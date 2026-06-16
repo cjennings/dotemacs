@@ -569,6 +569,7 @@ if(location.hash==='#columntest'){let ok=true;const notes=[];const A=(c,n)=>{if(
 // is left on its old (now-gone) hex.
 if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),saveSel=selectedIdx;
+ paletteShowFull=true;  // this gate asserts span tiles, so render the full palette
  setSyntaxFg('bg','#204060');setSyntaxFg('p','#f0fef0');
  PALETTE=[['#204060','bg'],['#f0fef0','fg']];
  setGroundSpan(2);
@@ -839,10 +840,20 @@ if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(cluster&&cluster.querySelectorAll('.sbtn').length===4,'four-style-buttons-in-cluster');
  document.title='STYLETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='styletest';d.textContent='STYLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Palette default-state gate (open with #paldefaulttest): the studio opens with
+// the palette collapsed to base colors so the span tints don't crowd the first
+// view. initApp() ran at page load, so the live toggle reflects the opening state.
+if(location.hash==='#paldefaulttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const tg=document.getElementById('paltoggle');
+ A(!!tg,'palette toggle present after boot');
+ A(tg&&tg.textContent==='▶','palette opens collapsed to base colors (arrow shows right-pointing ▶)');
+ document.title='PALDEFAULTTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='paldefaulttest';d.textContent='PALDEFAULTTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Palette display-toggle gate (open with #paltoggletest): the arrow control
 // collapses each column to its base color and expands back to full spans.
 if(location.hash==='#paltoggletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP);
+ paletteShowFull=true;  // start expanded so the first click collapses to base-only
  setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
  PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground']];
  regenColumn('#67809c',2,{ground:groundPair()}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset),'blue']));

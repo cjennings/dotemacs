@@ -1128,6 +1128,7 @@ function cellVal(td){if(!td)return '';const dd=td.querySelector('.cdd');if(dd)re
 function srtTable(tbId,col){tableSort[tbId]={col,asc:!(tableSort[tbId]&&tableSort[tbId].col===col&&tableSort[tbId].asc)};applyTableSort(tbId);}
 function applyTableSort(tbId){const s=tableSort[tbId];if(!s)return;const tb=document.getElementById(tbId);if(!tb)return;const dir=s.asc?1:-1;const r=[...tb.rows];r.sort((a,b)=>{const x=cellVal(a.cells[s.col]),y=cellVal(b.cells[s.col]);return ((typeof x==='number'&&typeof y==='number')?x-y:(x<y?-1:x>y?1:0))*dir;});r.forEach(x=>tb.appendChild(x));}
 function initApp(){
+  paletteShowFull=false;  // open collapsed to base colors; the arrow expands the spans
   buildLangSel();buildViewSel();renderPalette();rebuildColorTables();renderCode();applyGround();
   initGeneratorControls();
   updateTitle();initPicker();buildPkgPreview();syncMockHeight();syncPkgHeight();
