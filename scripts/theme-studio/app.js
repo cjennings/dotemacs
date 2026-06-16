@@ -519,14 +519,14 @@ function curApp(){const s=document.getElementById('viewsel');const v=s&&s.value;
 function pkgEffFg(app,face,seen){return effResolve(PKGMAP,app,face,'fg',seen);}
 function pkgEffBg(app,face,seen){return effResolve(PKGMAP,app,face,'bg',seen);}
 // One dropdown drives the whole assignment panel: two editor entries (@code,
-// @ui) then a non-selectable "package faces" optgroup holding every app, in
-// APPS order. onViewChange shows exactly one of the three view blocks.
+// @ui) then a non-selectable "package faces" optgroup holding every app,
+// alphabetically by label. onViewChange shows exactly one of the three view blocks.
 function buildViewSel(){const s=document.getElementById('viewsel');if(!s)return;s.innerHTML='';
   const mk=(v,t)=>{const o=document.createElement('option');o.value=v;o.textContent=t;return o;};
   s.appendChild(mk('@code','color/code assignments'));
   s.appendChild(mk('@ui','ui faces'));
   const og=document.createElement('optgroup');og.label='package faces';
-  for(const app in APPS)og.appendChild(mk(app,APPS[app].label));
+  for(const app of appViewKeysSorted(APPS))og.appendChild(mk(app,APPS[app].label));
   s.appendChild(og);}
 function onViewChange(){const s=document.getElementById('viewsel');const v=(s&&s.value)||'@code';
   const show=(id,on)=>{const e=document.getElementById(id);if(e)e.style.display=on?'':'none';};

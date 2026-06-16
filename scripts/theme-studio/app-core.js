@@ -407,4 +407,14 @@ function spanNeighborHex(cur,palette,ground,dir){
   return null;
 }
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+// The package apps for the assignment-view dropdown, keyed and sorted by display
+// label (case-insensitive). generate.py builds APPS as bespoke apps first then
+// inventory apps, so the raw key order isn't alphabetical; this orders the list
+// the reader scans. An app missing a label falls back to its key.
+function appViewKeysSorted(apps){
+  return Object.keys(apps||{}).sort((a,b)=>
+    String((apps[a]&&apps[a].label)||a).localeCompare(
+      String((apps[b]&&apps[b].label)||b), undefined, {sensitivity:'base'}));
+}
+
+export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

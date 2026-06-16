@@ -674,8 +674,8 @@ if(location.hash==='#roundtriptest'){let ok=true;const notes=[];const A=(c,n)=>{
  const d=document.createElement('div');d.id='roundtriptest';d.textContent='ROUNDTRIPTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // View-selector gate (open with #viewtest): the assignment panel is driven by a
 // single #viewsel dropdown -- two editor entries (@code, @ui) then a "package
-// faces" optgroup of every app, in order -- and switching it shows exactly one
-// of the three view blocks.
+// faces" optgroup of every app, alphabetically by label -- and switching it
+// shows exactly one of the three view blocks.
 if(location.hash==='#viewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const sel=document.getElementById('viewsel');
  A(!!sel,'viewsel-exists');
@@ -685,7 +685,7 @@ if(location.hash==='#viewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
   const og=sel.querySelector('optgroup');
   A(og&&og.label==='package faces','package-faces-optgroup');
   if(og){const appOpts=[...og.querySelectorAll('option')].map(o=>o.value);
-   A(JSON.stringify(appOpts)===JSON.stringify(Object.keys(APPS)),'optgroup-lists-apps-in-order');}
+   A(JSON.stringify(appOpts)===JSON.stringify(appViewKeysSorted(APPS)),'optgroup-lists-apps-alphabetically');}
   const vis=id=>{const e=document.getElementById(id);return !!e&&e.style.display!=='none';};
   sel.value='@code';onViewChange();
   A(vis('view-code')&&!vis('view-ui')&&!vis('view-pkg'),'code-view-only');

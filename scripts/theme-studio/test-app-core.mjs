@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
-  galleryModel,
+  galleryModel, appViewKeysSorted,
 } from './app-core.js';
 import { planPaletteGenerator, entriesForGeneratedColumn } from './palette-generator-core.js';
 import { oklch2hex, deltaE } from './colormath.js';
@@ -822,4 +822,27 @@ test('dropdownRowTextColor: the filled default row contrasts against its fill', 
 });
 test('dropdownRowTextColor: a default row with no fill inherits (empty)', () => {
   assert.equal(dropdownRowTextColor('', '', stubTextOn), '');
+});
+
+// appViewKeysSorted: the assignment-view dropdown lists package apps
+// alphabetically by display label, independent of the APPS build order
+// (generate.py emits bespoke apps first, then inventory apps).
+test('appViewKeysSorted: sorts app keys by display label, case-insensitive', () => {
+  const apps = { dashboard: { label: 'Dashboard' }, magit: { label: 'Magit' },
+                 alert: { label: 'alert' }, 'web-mode': { label: 'web-mode' } };
+  assert.deepEqual(appViewKeysSorted(apps), ['alert', 'dashboard', 'magit', 'web-mode']);
+});
+test('appViewKeysSorted: bespoke-then-inventory build order comes out alphabetical', () => {
+  const apps = { magit: { label: 'Magit' }, dashboard: { label: 'Dashboard' },
+                 alert: { label: 'alert' }, consult: { label: 'consult' } };
+  assert.deepEqual(appViewKeysSorted(apps), ['alert', 'consult', 'dashboard', 'magit']);
+});
+test('appViewKeysSorted: empty or nullish input yields an empty list', () => {
+  assert.deepEqual(appViewKeysSorted({}), []);
+  assert.deepEqual(appViewKeysSorted(null), []);
+  assert.deepEqual(appViewKeysSorted(undefined), []);
+});
+test('appViewKeysSorted: an app with no label falls back to its key for ordering', () => {
+  const apps = { zebra: {}, apple: { label: 'apple' } };
+  assert.deepEqual(appViewKeysSorted(apps), ['apple', 'zebra']);
 });
