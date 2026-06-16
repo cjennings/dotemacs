@@ -38,7 +38,7 @@ desktop branch; on a laptop the agent would land below instead."
   (let ((name "agent [display-rule-test]"))
     (test-ai-term--cleanup name)
     (unwind-protect
-        (cl-letf (((symbol-function 'env-laptop-p) (lambda () nil)))
+        (cl-letf (((symbol-function 'cj/--ai-term-default-direction) (lambda (&rest _) 'right)))
           (test-ai-term--with-clean-frame
             (let* ((buf (get-buffer-create name))
                    (win (display-buffer buf)))
