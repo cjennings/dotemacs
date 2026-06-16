@@ -709,3 +709,23 @@ if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(cluster&&cluster.querySelectorAll('.sbtn').length===4,'four-style-buttons-in-cluster');
  document.title='STYLETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='styletest';d.textContent='STYLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Palette display-toggle gate (open with #paltoggletest): the arrow control
+// collapses each column to its base color and expands back to full spans.
+if(location.hash==='#paltoggletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP);
+ setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
+ PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground']];
+ regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset),'blue']));
+ renderPalette();
+ const tg=document.getElementById('paltoggle');
+ A(!!tg,'palette-toggle-present');
+ const blueChips=()=>document.querySelectorAll('#pals .fstrip[data-column="blue"] .pchip').length;
+ A(blueChips()===5,'full-mode-shows-base-and-spans');
+ tg.click();
+ A(blueChips()===1,'base-only-shows-just-the-base');
+ A(document.getElementById('paltoggle').textContent==='▶','base-only-shows-right-arrow');
+ document.getElementById('paltoggle').click();
+ A(blueChips()===5,'toggling-back-restores-spans');
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();renderPalette();
+ document.title='PALTOGGLETEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='paltoggletest';d.textContent='PALTOGGLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}

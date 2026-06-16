@@ -48,6 +48,7 @@
  .legctl{margin:0 0 8px;display:flex;gap:8px;align-items:center}
  .cat{color:#b4b1a2} .ex{font-size:17px}
  .crerr{display:inline-block;margin-left:8px;padding:0 4px;border-radius:3px;background:#2b130e;color:#cb6b4d;border:1px solid #7b3324;font:9pt monospace;vertical-align:middle}
+ .paltoggle{align-self:flex-start;width:22px;height:22px;padding:0;border:1px solid #3a3a3a;border-radius:4px;background:#1f1c19;color:#e8bd30;font:12px monospace;line-height:1;cursor:pointer;margin-right:6px}
  .sbtn{width:17px;height:15px;border:1px solid #3a3a3a;border-radius:3px;background:#eaeaea;color:#111;cursor:pointer;font-size:13px;line-height:1;margin-right:2px;padding:0}
  .sbtn.on{background:#0d0b0a;color:#cdced1;border-color:#8a9496}
  .pals{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;align-items:flex-start}
@@ -1624,9 +1625,17 @@ function columnHeader(f,position,count){
 // Render the palette as structural color columns: pinned ground column, then
 // first-seen palette columns. Grouping uses the stable column id stored on each
 // palette entry, so renaming a color never moves it.
+// Palette display mode: full (every span tile) or base-only (one tile per
+// column), toggled by the arrow control to conserve vertical space.
+let paletteShowFull=true;
 function renderPalette(){
   normalizePalette();
   const p=document.getElementById('pals');p.innerHTML='';
+  const tg=document.createElement('button');tg.className='paltoggle';tg.id='paltoggle';
+  tg.textContent=paletteShowFull?'▼':'▶';
+  tg.title=paletteShowFull?'showing full palette with spans — click for base colors only':'showing base colors only — click for the full palette';
+  tg.onclick=()=>{paletteShowFull=!paletteShowFull;renderPalette();};
+  p.appendChild(tg);
   const {warnings,overflow,nearest}=paletteWarnings(PALETTE,DELTAE_MIN,5);
   const {ground,columns}=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
   const used=new Set();
@@ -1636,7 +1645,7 @@ function renderPalette(){
     const gs=strip(' ground');gs.dataset.column='ground';
     const gh=document.createElement('div');gh.className='fhead';gh.textContent='ground';gs.appendChild(gh);
     gs.appendChild(groundSpanControl());
-    groundColumnMembers().forEach(m=>{
+    (paletteShowFull?groundColumnMembers():groundColumnMembers().filter(m=>!/^ground[+-]\d+$/i.test(m.name||''))).forEach(m=>{
       const i=idxOf(m.hex,m.name);
       if(i>=0)gs.appendChild(paletteChip(i,nearest));
       else{const tc=textOn(m.hex),sw=document.createElement('div');sw.className='pchip';sw.style.background=m.hex;sw.title=(m.name||'ground')+' '+m.hex;
@@ -1650,7 +1659,7 @@ function renderPalette(){
     const s=strip('');s.dataset.column=f.column||f.base;
     s.appendChild(columnHeader(f,pos,ordered.length));
     s.appendChild(columnCountControl(f));
-    f.members.forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest));});
+    (paletteShowFull?f.members:f.members.filter(m=>m.hex.toLowerCase()===f.base.toLowerCase())).forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest));});
   });
   renderPaletteWarnings(warnings,overflow);
   buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
@@ -3222,4 +3231,24 @@ if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(cluster&&cluster.querySelectorAll('.sbtn').length===4,'four-style-buttons-in-cluster');
  document.title='STYLETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='styletest';d.textContent='STYLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Palette display-toggle gate (open with #paltoggletest): the arrow control
+// collapses each column to its base color and expands back to full spans.
+if(location.hash==='#paltoggletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP);
+ setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
+ PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground']];
+ regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset),'blue']));
+ renderPalette();
+ const tg=document.getElementById('paltoggle');
+ A(!!tg,'palette-toggle-present');
+ const blueChips=()=>document.querySelectorAll('#pals .fstrip[data-column="blue"] .pchip').length;
+ A(blueChips()===5,'full-mode-shows-base-and-spans');
+ tg.click();
+ A(blueChips()===1,'base-only-shows-just-the-base');
+ A(document.getElementById('paltoggle').textContent==='▶','base-only-shows-right-arrow');
+ document.getElementById('paltoggle').click();
+ A(blueChips()===5,'toggling-back-restores-spans');
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();renderPalette();
+ document.title='PALTOGGLETEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='paltoggletest';d.textContent='PALTOGGLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 </script>

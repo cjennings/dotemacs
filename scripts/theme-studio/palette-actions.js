@@ -170,9 +170,17 @@ function columnHeader(f,position,count){
 // Render the palette as structural color columns: pinned ground column, then
 // first-seen palette columns. Grouping uses the stable column id stored on each
 // palette entry, so renaming a color never moves it.
+// Palette display mode: full (every span tile) or base-only (one tile per
+// column), toggled by the arrow control to conserve vertical space.
+let paletteShowFull=true;
 function renderPalette(){
   normalizePalette();
   const p=document.getElementById('pals');p.innerHTML='';
+  const tg=document.createElement('button');tg.className='paltoggle';tg.id='paltoggle';
+  tg.textContent=paletteShowFull?'▼':'▶';
+  tg.title=paletteShowFull?'showing full palette with spans — click for base colors only':'showing base colors only — click for the full palette';
+  tg.onclick=()=>{paletteShowFull=!paletteShowFull;renderPalette();};
+  p.appendChild(tg);
   const {warnings,overflow,nearest}=paletteWarnings(PALETTE,DELTAE_MIN,5);
   const {ground,columns}=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
   const used=new Set();
@@ -182,7 +190,7 @@ function renderPalette(){
     const gs=strip(' ground');gs.dataset.column='ground';
     const gh=document.createElement('div');gh.className='fhead';gh.textContent='ground';gs.appendChild(gh);
     gs.appendChild(groundSpanControl());
-    groundColumnMembers().forEach(m=>{
+    (paletteShowFull?groundColumnMembers():groundColumnMembers().filter(m=>!/^ground[+-]\d+$/i.test(m.name||''))).forEach(m=>{
       const i=idxOf(m.hex,m.name);
       if(i>=0)gs.appendChild(paletteChip(i,nearest));
       else{const tc=textOn(m.hex),sw=document.createElement('div');sw.className='pchip';sw.style.background=m.hex;sw.title=(m.name||'ground')+' '+m.hex;
@@ -196,7 +204,7 @@ function renderPalette(){
     const s=strip('');s.dataset.column=f.column||f.base;
     s.appendChild(columnHeader(f,pos,ordered.length));
     s.appendChild(columnCountControl(f));
-    f.members.forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest));});
+    (paletteShowFull?f.members:f.members.filter(m=>m.hex.toLowerCase()===f.base.toLowerCase())).forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest));});
   });
   renderPaletteWarnings(warnings,overflow);
   buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
