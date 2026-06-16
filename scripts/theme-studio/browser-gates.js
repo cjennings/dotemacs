@@ -557,7 +557,7 @@ if(location.hash==='#columntest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  window.confirm=oldConfirm;
  A(!PALETTE.some(p=>p[2]==='blue'),'column delete removes every entry with the stable column id');
  A(PALETTE.some(p=>p[1]==='red')&&PALETTE.some(p=>p[1]==='gray'),'column delete leaves neighboring columns alone');
- A(PALETTE.some(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})==='bg')&&PALETTE.some(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})==='fg'),'column delete leaves ground entries alone');
+ A(PALETTE.some(p=>groundRoleOfEntry(p,groundPair())==='bg')&&PALETTE.some(p=>groundRoleOfEntry(p,groundPair())==='fg'),'column delete leaves ground entries alone');
  A(MAP['kw']==='#92acc2','column delete leaves face references on removed hexes');
  buildTable();
  const goneTitle=document.querySelector('#legbody tr[data-kind="kw"] .cdd')?.title||'';
@@ -566,7 +566,7 @@ if(location.hash==='#columntest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  A(selectedIdx===null,'column delete clears selected color');
  PALETTE=[['#0d0b0a','bg','ground'],['#f0fef0','fg','ground'],['#c0402a','red','red'],['#3a6ea5','blue','blue'],['#92acc2','blue+1','blue']];
  setSyntaxFg('kw','#3a6ea5');selectedIdx=2;clearPalette();
- A(PALETTE.length===2&&PALETTE.every(p=>groundRoleOfEntry(p,{bg:MAP['bg'],fg:MAP['p']})),'clear palette leaves only bg and fg tiles');
+ A(PALETTE.length===2&&PALETTE.every(p=>groundRoleOfEntry(p,groundPair())),'clear palette leaves only bg and fg tiles');
  A(!PALETTE.some(p=>p[1]==='red'||p[1]==='blue'||p[1]==='blue+1'),'clear palette removes normal color columns and spans');
  A(MAP['kw']==='#3a6ea5','clear palette leaves existing face references on gone hexes');
  A(lastGone['blue']==='#3a6ea5'&&lastGone['blue+1']==='#92acc2','clear palette records removed names for recovery');
@@ -601,9 +601,9 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  setColumnCount('#101010',4);
  A(!PALETTE.some(p=>p[0].toLowerCase()==='#000000'&&p[1]!=='bg'),'spanning a near-black base skips generated pure-black tiles');
  PALETTE=[['#204060','bg'],['#f0fef0','fg']];
- regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
- const innerOld=regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.find(m=>m.offset===1).hex; // survives a count change
- const outerOld=regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.find(m=>m.offset===2).hex; // dropped on count-down
+ regenColumn('#67809c',2,{ground:groundPair()}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
+ const innerOld=regenColumn('#67809c',2,{ground:groundPair()}).members.find(m=>m.offset===1).hex; // survives a count change
+ const outerOld=regenColumn('#67809c',2,{ground:groundPair()}).members.find(m=>m.offset===2).hex; // dropped on count-down
  UIMAP['region']={fg:null,bg:innerOld,bold:false,italic:false,underline:false,strike:false};
  UIMAP['highlight']={fg:null,bg:outerOld,bold:false,italic:false,underline:false,strike:false};
  selectedIdx=null;renderPalette();
@@ -613,10 +613,10 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  const palHexes=new Set(PALETTE.map(p=>p[0].toLowerCase()));
  A(!palHexes.has(outerOld.toLowerCase()),'outer step removed from palette on count down');
  A(UIMAP['highlight'].bg.toLowerCase()===outerOld.toLowerCase(),'a removed-step reference stays on its old (gone) hex');
- const newInner=regenColumn('#67809c',1,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.find(m=>m.offset===1).hex;
+ const newInner=regenColumn('#67809c',1,{ground:groundPair()}).members.find(m=>m.offset===1).hex;
  A(UIMAP['region'].bg.toLowerCase()===newInner.toLowerCase(),'a surviving-step reference followed the regenerate, got '+UIMAP['region'].bg);
  setColumnCount('#67809c',3);
- const want3=regenColumn('#67809c',3,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.map(m=>m.hex.toLowerCase());
+ const want3=regenColumn('#67809c',3,{ground:groundPair()}).members.map(m=>m.hex.toLowerCase());
  const have=new Set(PALETTE.map(p=>p[0].toLowerCase()));
  A(want3.every(h=>have.has(h)),'count up to 3 adds all 7 span colors to the palette');
  {const _lum=h=>{const n=parseInt(h.slice(1),16),r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255;const f=c=>c<=0.03928?c/12.92:((c+0.055)/1.055)**2.4;return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b);};
@@ -632,13 +632,13 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),saveSel=selectedIdx;
  setSyntaxFg('bg','#0d0b0a');setSyntaxFg('p','#f0fef0');
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg']];
- regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
+ regenColumn('#67809c',2,{ground:groundPair()}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
  UIMAP['region']={fg:null,bg:'#67809c',bold:false,italic:false,underline:false,strike:false};
  renderPalette();buildUITable();
  selectedIdx=PALETTE.findIndex(p=>p[0].toLowerCase()==='#67809c');
  document.getElementById('newhexstr').value='#3a8a8a';document.getElementById('newname').value='teal';
  updateColor();
- const column=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).columns[0];
+ const column=columnsFromPalette(PALETTE,groundPair()).columns[0];
  A(column&&column.members.some(m=>m.hex.toLowerCase()==='#3a8a8a'),'column base recolored to the new hex');
  A(column&&column.members.length===5,'count preserved (±2 → 5 members), got '+(column&&column.members.length));
  A(!new Set(PALETTE.map(p=>p[0].toLowerCase())).has('#67809c'),'old base removed from palette');
@@ -746,7 +746,7 @@ if(location.hash==='#paltoggletest'){let ok=true;const notes=[];const A=(c,n)=>{
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP);
  setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
  PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground']];
- regenColumn('#67809c',2,{ground:{bg:MAP['bg'],fg:MAP['p']}}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset),'blue']));
+ regenColumn('#67809c',2,{ground:groundPair()}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset),'blue']));
  renderPalette();
  const tg=document.getElementById('paltoggle');
  A(!!tg,'palette-toggle-present');

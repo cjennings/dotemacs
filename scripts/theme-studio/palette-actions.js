@@ -1,6 +1,6 @@
 function clearPalette(){
   normalizePalette();
-  const plan=clearPalettePlan(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+  const plan=clearPalettePlan(PALETTE,groundPair());
   plan.removed.forEach(({hex,name})=>rememberGone(hex,name));
   PALETTE=plan.palette;selectedIdx=null;
   refreshPaletteState();
@@ -34,17 +34,17 @@ function normalizePaletteEntry(entry){
   return [hex,name,(entry&&entry[2])||columnIdOf(entry)];
 }
 function ensureGroundEndpoints(){
-  const ground={bg:MAP['bg'],fg:MAP['p']};
-  if(ground.bg&&!PALETTE.some(entry=>groundRoleOfEntry(entry,ground)==='bg'))PALETTE.unshift([ground.bg,'bg','ground']);
-  if(ground.fg&&!PALETTE.some(entry=>groundRoleOfEntry(entry,ground)==='fg'))PALETTE.push([ground.fg,'fg','ground']);
+  const g=groundPair();
+  if(g.bg&&!PALETTE.some(entry=>groundRoleOfEntry(entry,g)==='bg'))PALETTE.unshift([g.bg,'bg','ground']);
+  if(g.fg&&!PALETTE.some(entry=>groundRoleOfEntry(entry,g)==='fg'))PALETTE.push([g.fg,'fg','ground']);
 }
 function normalizePalette(){PALETTE=PALETTE.map(normalizePaletteEntry);ensureGroundEndpoints();}
 // The ground column is explicit: bg pins the top endpoint, fg pins the bottom
 // endpoint, and generated ground+N steps live between them.
 function groundColumnMembers(){
-  return groundColumnMembersFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+  return groundColumnMembersFromPalette(PALETTE,groundPair());
 }
-function groundSpanCount(){return PALETTE.filter(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='step').length;}
+function groundSpanCount(){return PALETTE.filter(entry=>groundRoleOfEntry(entry,groundPair())==='step').length;}
 function groundSpanControl(){
   const d=document.createElement('div');d.className='fcount';
   d.innerHTML=`<span title="number of ground colors between bg and fg">span <input type="number" min="0" max="8" value="${groundSpanCount()}"></span>`;
@@ -52,7 +52,7 @@ function groundSpanControl(){
   return d;
 }
 function setGroundSpan(n){
-  const old=PALETTE.filter(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='step');
+  const old=PALETTE.filter(entry=>groundRoleOfEntry(entry,groundPair())==='step');
   const bg=srgb2oklab(MAP['bg']),fg=srgb2oklab(MAP['p']);
   const entries=[];
   let step=1;
@@ -67,8 +67,8 @@ function setGroundSpan(n){
     const next=entries.find(([,name])=>name===oldName);
     if(next&&next[0].toLowerCase()!==oldHex.toLowerCase())repointHex(oldHex,next[0]);
   }
-  for(let i=PALETTE.length-1;i>=0;i--)if(groundRoleOfEntry(PALETTE[i],{bg:MAP['bg'],fg:MAP['p']})==='step')PALETTE.splice(i,1);
-  let at=PALETTE.findIndex(entry=>groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']})==='bg');
+  for(let i=PALETTE.length-1;i>=0;i--)if(groundRoleOfEntry(PALETTE[i],groundPair())==='step')PALETTE.splice(i,1);
+  let at=PALETTE.findIndex(entry=>groundRoleOfEntry(entry,groundPair())==='bg');
   if(at<0)at=0; else at+=1;
   PALETTE.splice(Math.min(at,PALETTE.length),0,...entries);
   selectedIdx=null;refreshPaletteState();
@@ -89,7 +89,7 @@ function renderPaletteWarnings(warnings,overflow){
 // Families sort deterministically, so the old move-arrow / drag reordering is gone.
 function paletteChip(i,nearest,used,scopes){
   const [hex,name]=PALETTE[i],tc=textOn(hex),nde=nearest[i];
-  const role=groundRoleOfEntry(PALETTE[i],{bg:MAP['bg'],fg:MAP['p']});
+  const role=groundRoleOfEntry(PALETTE[i],groundPair());
   const locked=(role==='bg'||role==='fg');
   const d=document.createElement('div');d.className='pchip'+(i===selectedIdx?' sel':'');d.style.background=hex;
   d.dataset.paletteIndex=String(i);
@@ -126,11 +126,11 @@ function selectColumnBase(f){
   if(i>=0)selectColor(i);
 }
 function isGroundEntry(entry){
-  return !!groundRoleOfEntry(entry,{bg:MAP['bg'],fg:MAP['p']});
+  return !!groundRoleOfEntry(entry,groundPair());
 }
 function moveColumn(columnId,dir){
   normalizePalette();
-  const columns=sortColumns(columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).columns);
+  const columns=sortColumns(columnsFromPalette(PALETTE,groundPair()).columns);
   const pos=columns.findIndex(f=>f.column===columnId);
   const next=columns[pos+dir];
   if(pos<0||!next)return;
@@ -149,7 +149,7 @@ function moveColumn(columnId,dir){
 }
 function deleteColumn(columnId,label){
   normalizePalette();
-  const plan=deletePaletteColumnPlan(PALETTE,{bg:MAP['bg'],fg:MAP['p']},columnId);
+  const plan=deletePaletteColumnPlan(PALETTE,groundPair(),columnId);
   if(!plan.removed.length){notify('nothing to delete in "'+(label||columnId)+'"',true);return;}
   const title=label||columnId;
   if(!confirm('Delete color column "'+title+'"?\n\nThis removes '+plan.removed.length+' palette color(s). Existing face assignments will stay on their old hex values and show as "(gone)".'))return;
@@ -184,8 +184,8 @@ function renderPalette(){
   tg.onclick=()=>{paletteShowFull=!paletteShowFull;renderPalette();};
   p.appendChild(tg);
   const {warnings,overflow,nearest}=paletteWarnings(PALETTE,DELTAE_MIN,5);
-  const {ground,columns}=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
-  const usedHexes=usedPaletteHexes(PALETTE,SYNTAX,UIMAP,PKGMAP,{bg:MAP['bg'],fg:MAP['p']});
+  const {ground,columns}=columnsFromPalette(PALETTE,groundPair());
+  const usedHexes=usedPaletteHexes(PALETTE,SYNTAX,UIMAP,PKGMAP,groundPair());
   // Per-view-area scopes for the hover "view area > element" usage list. Area
   // names match the view dropdown; elements use each tier's display label.
   const usageScopes=[
@@ -237,7 +237,7 @@ function columnCountControl(f){
 // references and leaving removed ones on their now-gone hex. Returns the removed
 // count, or null on a bad base. Shared by the count control and the base edit.
 function regenColumnInPlace(oldHexes,baseHex,baseName,n,columnId){
-  const r=regenColumn(baseHex,n,{ground:{bg:MAP['bg'],fg:MAP['p']}});
+  const r=regenColumn(baseHex,n,{ground:groundPair()});
   if(r.error){notify('cannot regenerate from '+baseHex,true);return null;}
   const plan=stepRepointPlan(rankByLightness(oldHexes,baseHex),r.members);
   const oldSet=new Set(oldHexes.map(h=>h.toLowerCase()));
@@ -251,7 +251,7 @@ function regenColumnInPlace(oldHexes,baseHex,baseName,n,columnId){
   return plan.removed.length;
 }
 function setColumnCount(baseHex,n){
-  const {columns}=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+  const {columns}=columnsFromPalette(PALETTE,groundPair());
   const column=columns.find(f=>f.base.toLowerCase()===baseHex.toLowerCase());
   if(!column)return;
   const baseName=(column.members.find(m=>m.hex.toLowerCase()===baseHex.toLowerCase())||{}).name||'color';

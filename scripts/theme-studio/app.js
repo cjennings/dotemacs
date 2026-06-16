@@ -41,6 +41,10 @@ function crHtml(r,target=4.5){const v=verdictFor(r,target);return `<span style="
 // tiers resolve their raw value through these before measuring or rendering.
 function effFg(v){return v||MAP['p'];}
 function effBg(v){return v||MAP['bg'];}
+// The ground pair (background + default foreground), passed to every app-core
+// helper that needs to resolve ground roles. Was the literal {bg:MAP['bg'],
+// fg:MAP['p']} repeated across app.js, palette-actions.js, and the browser gates.
+function groundPair(){return {bg:MAP['bg'],fg:MAP['p']};}
 function cid(l){return l.replace(/\W/g,'');}
 function buildLangSel(){const s=document.getElementById('langsel');s.innerHTML='';for(const lang in SAMPLES){const o=document.createElement('option');o.value=lang;o.textContent=lang;s.appendChild(o);}}
 function renderCode(){
@@ -68,11 +72,11 @@ function mkColorDropdown(options,cur,onPick,opts={}){
   const nameOf=h=>{const o=options.find(p=>p[0]===h);return o?o[1]:(h||'none');};
   const displayHex=h=>h||(opts.defaultHex||'');
   const displayName=h=>h?nameOf(h):(opts.defaultName||nameOf(h));
-  function step(dir){if(wrap.dataset.locked==='1')return;const next=spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},dir);if(!next)return;cur=next;paint();onPick(next);}
+  function step(dir){if(wrap.dataset.locked==='1')return;const next=spanNeighborHex(cur,PALETTE,groundPair(),dir);if(!next)return;cur=next;paint();onPick(next);}
   function paintStepButtons(){
     const locked=wrap.dataset.locked==='1';
-    left.disabled=locked||!spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},-1);
-    right.disabled=locked||!spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},1);
+    left.disabled=locked||!spanNeighborHex(cur,PALETTE,groundPair(),-1);
+    right.disabled=locked||!spanNeighborHex(cur,PALETTE,groundPair(),1);
   }
   function paint(){const shown=displayHex(cur),nm=displayName(cur),ttl=cur?(nm+' '+cur):(nm+(shown?' -> '+shown:''));t.style.background=shown||'#161412';t.style.color=shown?textOn(shown):'#b4b1a2';t.dataset.val=cur||'';t.title=ttl;t.classList.toggle('is-default',!cur);t.classList.toggle('gone',!!cur&&nameOf(cur)==='(gone)');
     t.innerHTML=opts.compact?`<span class="cddsw" style="background:${shown||'transparent'}"></span>`:`<span class="cddsw" style="background:${shown||'transparent'}"></span>${esc(nm)}`;paintStepButtons();}
@@ -84,7 +88,7 @@ function mkColorDropdown(options,cur,onPick,opts={}){
     // then one row per family) instead of a long vertical list. galleryModel is
     // the shared pure layout (app-core.js).
     const pop=document.createElement('div');pop.className='cddpop cddgrid';
-    const model=galleryModel(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+    const model=galleryModel(cur,PALETTE,groundPair());
     const pick=(hex)=>{cur=hex;paint();closeColorDropdown();onPick(hex);};
     const head=document.createElement('div');head.className='cddghead';
     const def=document.createElement('button');def.type='button';
@@ -118,7 +122,7 @@ function mkColorDropdown(options,cur,onPick,opts={}){
 // palette in the same ground/column order as the palette panel. If cur is set
 // but no longer in the palette, surface it as a "(gone)" entry so the row still
 // shows what it points at. Shared by all three tiers.
-function ddList(cur){return paletteOptionList(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']});}
+function ddList(cur){return paletteOptionList(cur,PALETTE,groundPair());}
 // Shared lock toggle for any table row. lockKey is namespaced per tier (bare
 // syntax kind, 'ui:'+face, 'pkg:'+app+':'+face). els are the row's editable
 // controls — native selects/buttons/inputs are disabled; the custom swatch
@@ -228,13 +232,13 @@ function applyEdit(){if(selectedIdx!==null)updateColor();else addColor();}
 function selectColor(i){selectedIdx=i;GEN_SELECTION=null;const [hex,name]=PALETTE[i];setHex(hex);document.getElementById('newname').value=name;renderPalette();renderGeneratorPreview();notify('editing "'+name+'" — change the value, then Enter (or Update selected) to save',false);}
 function updateColor(){
   if(selectedIdx===null){notify('click a palette color to select it first',true);return;}
-  const i=selectedIdx,oldHex=PALETTE[i][0],oldRole=groundRoleOfEntry(PALETTE[i],{bg:MAP['bg'],fg:MAP['p']});
+  const i=selectedIdx,oldHex=PALETTE[i][0],oldRole=groundRoleOfEntry(PALETTE[i],groundPair());
   const newHex=curHex();
   const newName=(document.getElementById('newname').value.trim())||PALETTE[i][1];
   if(PALETTE.some((p,j)=>j!==i&&p[1].toLowerCase()===newName.toLowerCase())){notify('another color is already named "'+newName+'" — names must be unique',true);return;}
   const isGroundEdit=oldRole==='bg'||oldRole==='fg';
   // If the edited color is a column base with a ramp, recolor the whole column: regenerate from the new base at the same count.
-  const columns=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']}).columns;
+  const columns=columnsFromPalette(PALETTE,groundPair()).columns;
   const column=isGroundEdit?null:columns.find(f=>f.base.toLowerCase()===oldHex.toLowerCase());
   const count=column?Math.max(0,...rankByLightness(column.members.map(m=>m.hex),column.base).map(m=>Math.abs(m.offset))):0;
   const columnId=isGroundEdit?'ground':(PALETTE[i][2]||columnStem(PALETTE[i][1]));
