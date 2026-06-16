@@ -101,22 +101,9 @@ confused when several built-ins are overridden in the same test."
       (when (file-exists-p dst) (delete-file dst)))))
 
 ;;; cj/dired-mark-all-visible-files
-
-(ert-deftest test-dirvish-mark-all-visible-skips-directories ()
-  "Normal: directory lines are skipped, file lines are marked."
-  (let ((marks 0))
-    (with-temp-buffer
-      ;; Real dired listing has lines like "  drwxr... dir/" or "  -rw... file".
-      ;; The helper `cj/--dired-line-is-directory-p' matches "<space>d".
-      (insert "  drwxr-xr-x  subdir\n"
-              "  -rw-r--r--  file1.txt\n"
-              "  -rw-r--r--  file2.txt\n")
-      (goto-char (point-min))
-      (cl-letf (((symbol-function 'dired-mark)
-                 (lambda (&rest _) (cl-incf marks))))
-        (cj/dired-mark-all-visible-files)))
-    ;; 2 file lines marked; the directory line + the trailing empty line skipped.
-    (should (= marks 2))))
+;; Covered by test-dirvish-config-mark-all-visible.el, which exercises the loop
+;; against a real Dired buffer (the previous fake-buffer mock coupled to the
+;; retired regex helper).
 
 ;;; cj/dired-copy-path-as-kill
 

@@ -204,28 +204,20 @@ used by `cj/dirvish-open-html-in-eww'."
 
 ;;; ------------------------ Dired Mark All Visible Files -----------------------
 
-(defun cj/--dired-line-is-directory-p (line)
-  "Return non-nil when LINE is a Dired listing of a directory.
-
-Dired prefixes each file line with a one-character mark column followed
-by `ls -l' output, so a directory line reads as `<mark> drwx...' (mark,
-space, `d').  Header lines (`  /path/to:'), `total N' lines, and empty
-lines all fail this match.
-
-Pure helper used by `cj/dired-mark-all-visible-files'."
-  (and line (string-match-p "\\`. d" line)))
-
 (defun cj/dired-mark-all-visible-files ()
   "Mark all visible files in Dired mode."
   (interactive)
   (save-excursion
     (goto-char (point-min))
     (while (not (eobp))
-      (let ((line (buffer-substring-no-properties
-                   (line-beginning-position) (line-end-position))))
-        (unless (cj/--dired-line-is-directory-p line)
-          (dired-mark 1)))
-      (forward-line 1))))
+      ;; dired-mark advances point itself, so only advance manually on the
+      ;; lines it isn't called for (directories, headers, totals). Use
+      ;; dired-get-filename to identify real file lines; it returns nil on
+      ;; non-file lines (no error with the second arg).
+      (let ((fn (dired-get-filename nil t)))
+        (if (and fn (not (file-directory-p fn)))
+            (dired-mark 1)
+          (forward-line 1))))))
 
 ;;; ------------------------ Dirvish Duplicate File Copy ------------------------
 
