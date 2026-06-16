@@ -5,9 +5,34 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { normHex, ratingColor, textOn } from './app-util.js';
+import { normHex, ratingColor, textOn, contrastTitle } from './app-util.js';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
+
+// contrastTitle: the hover text for a contrast number, naming the color tier
+// (green AAA / grey AA / red fail) so the verdict word can be dropped from the cell.
+test('contrastTitle: green tier (>=7) names AAA', () => {
+  const t = contrastTitle(8.2);
+  assert.match(t, /green/i);
+  assert.match(t, /AAA/);
+  assert.match(t, /^8\.2:1/);
+});
+test('contrastTitle: grey tier (4.5..7) passes AA, not AAA', () => {
+  const t = contrastTitle(5.4);
+  assert.match(t, /grey|gray/i);
+  assert.match(t, /AA/);
+  assert.match(t, /not AAA|below AAA/i);
+});
+test('contrastTitle: red tier (<4.5) fails AA', () => {
+  const t = contrastTitle(3.1);
+  assert.match(t, /red/i);
+  assert.match(t, /fail/i);
+});
+test('contrastTitle: boundaries — 7 is green, 4.5 is grey, just under is red', () => {
+  assert.match(contrastTitle(7), /green/i);
+  assert.match(contrastTitle(4.5), /grey|gray/i);
+  assert.match(contrastTitle(4.49), /red/i);
+});
 
 test('normHex: Normal — adds the #, lowercases, accepts an existing #', () => {
   assert.equal(normHex('67809C'), '#67809c');

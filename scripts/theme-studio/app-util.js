@@ -17,4 +17,14 @@ function ratingColor(r){return r>=7?'#5d9b86':r>=4.5?'#a9b2bb':'#cb6b4d';}
 // Pick black or white text for a background hex, by WCAG relative luminance.
 function textOn(h){const L=rl(h);return ((L+0.05)/0.05)>(1.05/(L+0.05))?'#000':'#fff';}
 
-export { normHex, ratingColor, textOn };
+// Hover text for a contrast ratio. The number's color already encodes the tier
+// (ratingColor: green AAA, grey AA, red fail), so the cell drops the PASS/FAIL
+// word and this explains the color on hover.
+function contrastTitle(r){
+  const n=r.toFixed(1)+':1';
+  if(r>=7)   return n+' (green): passes WCAG AA and AAA';
+  if(r>=4.5) return n+' (grey): passes WCAG AA, not AAA';
+  return n+' (red): fails WCAG AA';
+}
+
+export { normHex, ratingColor, textOn, contrastTitle };

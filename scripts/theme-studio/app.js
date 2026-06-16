@@ -35,7 +35,7 @@ PALETTE_GENERATOR_UI_J
 // The contrast-cell readout shared by every table: a WCAG ratio colored by its
 // table verdict. Callers compute r for their own fg/bg.
 function verdictFor(r,target=4.5){return r>=target?'PASS':'FAIL';}
-function crHtml(r,target=4.5){const v=verdictFor(r,target);return `<span style="color:${ratingColor(r)}">${r.toFixed(1)} ${v}</span>`;}
+function crHtml(r){return `<span style="color:${ratingColor(r)}" title="${esc(contrastTitle(r))}">${r.toFixed(1)}</span>`;}
 // Effective fg/bg with the standard fallback: an unset foreground reads as the
 // default fg (MAP['p']), an unset background as the ground (MAP['bg']). All three
 // tiers resolve their raw value through these before measuring or rendering.

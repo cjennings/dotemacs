@@ -964,6 +964,16 @@ function ratingColor(r){return r>=7?'#5d9b86':r>=4.5?'#a9b2bb':'#cb6b4d';}
 
 // Pick black or white text for a background hex, by WCAG relative luminance.
 function textOn(h){const L=rl(h);return ((L+0.05)/0.05)>(1.05/(L+0.05))?'#000':'#fff';}
+
+// Hover text for a contrast ratio. The number's color already encodes the tier
+// (ratingColor: green AAA, grey AA, red fail), so the cell drops the PASS/FAIL
+// word and this explains the color on hover.
+function contrastTitle(r){
+  const n=r.toFixed(1)+':1';
+  if(r>=7)   return n+' (green): passes WCAG AA and AAA';
+  if(r>=4.5) return n+' (grey): passes WCAG AA, not AAA';
+  return n+' (red): fails WCAG AA';
+}
 // Pure palette-generator planner and browser-side generator panel.
 // Pure palette-generator planner. It depends on the shared palette-column model
 // from app-core.js, but owns candidate hue selection, naming, contrast filtering,
@@ -1382,7 +1392,7 @@ function initGeneratorControls(){
 // The contrast-cell readout shared by every table: a WCAG ratio colored by its
 // table verdict. Callers compute r for their own fg/bg.
 function verdictFor(r,target=4.5){return r>=target?'PASS':'FAIL';}
-function crHtml(r,target=4.5){const v=verdictFor(r,target);return `<span style="color:${ratingColor(r)}">${r.toFixed(1)} ${v}</span>`;}
+function crHtml(r){return `<span style="color:${ratingColor(r)}" title="${esc(contrastTitle(r))}">${r.toFixed(1)}</span>`;}
 // Effective fg/bg with the standard fallback: an unset foreground reads as the
 // default fg (MAP['p']), an unset background as the ground (MAP['bg']). All three
 // tiers resolve their raw value through these before measuring or rendering.
@@ -3369,6 +3379,17 @@ if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){
  PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
  document.title='NDTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='ndtest';d.textContent='NDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Contrast-cell gate (open with #crtest): the per-face contrast column shows a
+// bare colored number (no PASS/FAIL word); the WCAG verdict lives in the hover.
+if(location.hash==='#crtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const app=curApp(),face=APPS[app].faces[0][0];buildPkgTable();
+ const cell=document.querySelector('#pkgbody tr[data-face="'+face+'"]').cells[5];
+ const span=cell&&cell.querySelector('span');
+ A(span&&/^\d+\.\d$/.test(span.textContent.trim()),'contrast cell is a bare number: '+(span&&span.textContent));
+ A(span&&!/PASS|FAIL/.test(span.textContent),'no PASS/FAIL word in the contrast cell');
+ A(span&&span.title&&/(passes|fails) WCAG/i.test(span.title),'contrast cell carries a WCAG hover: '+(span&&span.title));
+ document.title='CRTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='crtest';d.textContent='CRTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Box-cluster gate (open with #boxtest): the box control is a 2x2 cluster of
 // four radio buttons (none / line / pressed / raised); the color swatch shows
 // only while a box style is active.

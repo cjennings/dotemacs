@@ -719,6 +719,17 @@ if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){
  PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
  document.title='NDTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='ndtest';d.textContent='NDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Contrast-cell gate (open with #crtest): the per-face contrast column shows a
+// bare colored number (no PASS/FAIL word); the WCAG verdict lives in the hover.
+if(location.hash==='#crtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const app=curApp(),face=APPS[app].faces[0][0];buildPkgTable();
+ const cell=document.querySelector('#pkgbody tr[data-face="'+face+'"]').cells[5];
+ const span=cell&&cell.querySelector('span');
+ A(span&&/^\d+\.\d$/.test(span.textContent.trim()),'contrast cell is a bare number: '+(span&&span.textContent));
+ A(span&&!/PASS|FAIL/.test(span.textContent),'no PASS/FAIL word in the contrast cell');
+ A(span&&span.title&&/(passes|fails) WCAG/i.test(span.title),'contrast cell carries a WCAG hover: '+(span&&span.title));
+ document.title='CRTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='crtest';d.textContent='CRTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Box-cluster gate (open with #boxtest): the box control is a 2x2 cluster of
 // four radio buttons (none / line / pressed / raised); the color swatch shows
 // only while a box style is active.
