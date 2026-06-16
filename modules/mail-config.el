@@ -161,6 +161,12 @@ Prompts user for the action when executing."
                (display-buffer-reuse-window display-buffer-same-window)
                (inhibit-same-window . nil)))
 
+;; Keep global font-lock out of the mu4e buffers.  mu4e paints header lines, the
+;; main menu, and view headers with manual `face' text properties; global
+;; font-lock strips them (the same failure the dashboard hit), leaving the
+;; buffers unthemed.  Excluding these modes keeps mu4e's faces.
+(cj/exclude-from-global-font-lock 'mu4e-headers-mode 'mu4e-main-mode 'mu4e-view-mode)
+
 (use-package mu4e
   :ensure nil  ;; mu4e gets installed by installing 'mu' via the system package manager
   :load-path "/usr/share/emacs/site-lisp/mu4e/"

@@ -17,6 +17,7 @@
 
 ;;; Code:
 
+(require 'system-lib)  ;; cj/exclude-from-global-font-lock
 (eval-when-compile (require 'undead-buffers))
 (declare-function cj/make-buffer-undead "undead-buffers" (string))
 (autoload 'cj/make-buffer-undead "undead-buffers" nil t)
@@ -168,7 +169,7 @@ system-defaults) are preserved rather than overwritten."
 ;; running the banner and headings fall back to the default face.  Excluding
 ;; dashboard-mode lets those text-property faces survive.  (Item and navigator
 ;; colors ride a `dashboard-items-face' overlay, which font-lock leaves alone.)
-(setq font-lock-global-modes '(not dashboard-mode))
+(cj/exclude-from-global-font-lock 'dashboard-mode)
 
 (use-package dashboard
   :demand t

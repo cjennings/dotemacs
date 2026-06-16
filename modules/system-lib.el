@@ -141,5 +141,28 @@ long-form answer, keeping a stray RET or space from confirming."
   (let ((use-short-answers nil))
     (yes-or-no-p prompt)))
 
+(defun cj/--font-lock-global-modes-excluding (current mode)
+  "Return CURRENT `font-lock-global-modes' with MODE added to the exclusion.
+CURRENT has one of three shapes: t (font-lock on in all modes), a
+\(not M...) exclusion list, or an (M...) inclusion list.  Pure: returns
+the new value and mutates nothing."
+  (cond
+   ((eq current t) (list 'not mode))
+   ((and (consp current) (eq (car current) 'not))
+    (if (memq mode (cdr current)) current
+      (cons 'not (cons mode (cdr current)))))
+   ((consp current) (delq mode (copy-sequence current)))
+   (t current)))
+
+(defun cj/exclude-from-global-font-lock (&rest modes)
+  "Exclude MODES from `global-font-lock-mode'.
+Some major modes (dashboard, mu4e) paint their buffers with manual `face'
+text properties; global font-lock then strips those, leaving the buffer
+unthemed.  Excluding the mode keeps its faces.  Additive, so each caller
+contributes its own modes regardless of load order."
+  (dolist (mode modes)
+    (setq font-lock-global-modes
+          (cj/--font-lock-global-modes-excluding font-lock-global-modes mode))))
+
 (provide 'system-lib)
 ;;; system-lib.el ends here
