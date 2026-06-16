@@ -767,3 +767,19 @@ if(location.hash==='#gonetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);syncSyntaxFromCache();buildUITable();
  document.title='GONETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='gonetest';d.textContent='GONETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Tile-usage-hover gate (open with #usagetest): a tile's title lists the
+// "view area > element" pairings that use its color, under the name/hex line.
+if(location.hash==='#usagetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP));
+ setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
+ PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground'],['#67809c','blue','blue']];
+ const f0=UI_FACES[0][0],f0label=UI_FACES[0][1]||f0;
+ for(const f in UIMAP)UIMAP[f]={fg:null,bg:null,bold:false,italic:false,underline:false,strike:false};
+ UIMAP[f0]={fg:null,bg:'#67809c',bold:false,italic:false,underline:false,strike:false};
+ renderPalette();
+ const blueChip=document.querySelector('#pals .fstrip[data-column="blue"] .pchip');
+ A(blueChip&&blueChip.title.includes('ui faces > '+f0label),'hover-title-lists-ui-face-usage');
+ A(blueChip&&blueChip.title.split('\n').length>1,'usage-list-on-its-own-line-under-current-info');
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);syncSyntaxFromCache();renderPalette();
+ document.title='USAGETEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='usagetest';d.textContent='USAGETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}

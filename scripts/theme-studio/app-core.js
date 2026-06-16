@@ -255,6 +255,23 @@ function usedPaletteHexes(palette,syntax,uimap,pkgmap,ground){
   for(const app in (pkgmap||{}))for(const face in pkgmap[app])addFace(pkgmap[app][face]);
   return used;
 }
+// Enumerate where a palette color is used, as "area > element" strings. scopes
+// is [{area, faces:{element: faceObj}}] -- one scope per view area (color/code,
+// ui faces, each package app), element keyed by its display label. A face counts
+// if any of fg / bg / box-color resolves (by hex or palette name) to the target.
+function paletteUsages(hex,scopes,palette){
+  const target=(hex||'').toLowerCase();
+  if(!target)return [];
+  const out=[];
+  for(const {area,faces} of (scopes||[])){
+    for(const element in (faces||{})){
+      const f=faces[element];if(!f)continue;
+      const vals=[f.fg,f.bg,f.box&&f.box.color];
+      if(vals.some(v=>{const h=nameToHex(v,palette);return h&&h.toLowerCase()===target;}))out.push(area+' > '+element);
+    }
+  }
+  return out;
+}
 function columnsFromPalette(palette,ground){
   const bg=ground&&ground.bg,fg=ground&&ground.fg;
   const groundStrip=[];
@@ -367,4 +384,4 @@ function spanNeighborHex(cur,palette,ground,dir){
   return null;
 }
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

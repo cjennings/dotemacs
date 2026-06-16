@@ -5,7 +5,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { columnsFromPalette, usedPaletteHexes, regenColumn, groundRoleOfEntry, rankByLightness, stepRepointPlan, sortColumns } from './app-core.js';
+import { columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, groundRoleOfEntry, rankByLightness, stepRepointPlan, sortColumns } from './app-core.js';
 
 const columnOf = (columns, name) => columns.find(f => f.members.some(m => m.name === name));
 
@@ -236,4 +236,20 @@ test('usedPaletteHexes: Normal - records ground, syntax-by-hex, ui-by-name, pkg 
 test('usedPaletteHexes: Boundary - empty maps leave only the ground endpoints', () => {
   const used = usedPaletteHexes([['#101010','bg','ground'],['#f0f0f0','fg','ground']], {}, {}, {}, { bg: '#101010', fg: '#f0f0f0' });
   assert.deepEqual([...used].sort(), ['#101010', '#f0f0f0']);
+});
+
+// --- paletteUsages (hover "view area > element") ----------------------------
+test('paletteUsages: Normal - lists area > element for every assignment of the color', () => {
+  const palette = [['#67809c','blue','blue']];
+  const scopes = [
+    { area: 'color/code assignments', faces: { keyword: { fg: '#67809c' }, string: { fg: '#aabbcc' } } },
+    { area: 'ui faces', faces: { region: { bg: 'blue' } } },
+    { area: 'magit', faces: { branch: { fg: '#999999', box: { color: '#67809c' } } } },
+  ];
+  assert.deepEqual(paletteUsages('#67809c', scopes, palette).sort(),
+    ['color/code assignments > keyword', 'magit > branch', 'ui faces > region'].sort());
+});
+
+test('paletteUsages: Boundary - a color used nowhere returns an empty list', () => {
+  assert.deepEqual(paletteUsages('#123456', [{ area: 'ui faces', faces: { region: { bg: '#000000' } } }], []), []);
 });
