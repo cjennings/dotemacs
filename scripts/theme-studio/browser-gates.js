@@ -748,6 +748,23 @@ if(location.hash==='#navtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c)
  }
  document.title='NAVTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='navtest';d.textContent='NAVTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Markdown-preview gate (open with #mdtest): markdown-mode has a dedicated README
+// renderer, and every data-face it emits is a real markdown-mode face.
+if(location.hash==='#mdtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ A(APPS['markdown-mode']&&APPS['markdown-mode'].preview==='markdown','markdown-mode wired to the markdown preview');
+ A(!!PACKAGE_PREVIEWS['markdown'],'markdown renderer registered');
+ if(PACKAGE_PREVIEWS['markdown']&&APPS['markdown-mode']){
+  const box=document.createElement('div');box.innerHTML=PACKAGE_PREVIEWS['markdown']();
+  const valid=new Set(APPS['markdown-mode'].faces.map(r=>r[0]));
+  const used=[...box.querySelectorAll('[data-face]')].map(e=>e.dataset.face);
+  A(used.length>=15,'preview exercises many faces ('+used.length+')');
+  const bad=used.filter(f=>!valid.has(f));
+  A(bad.length===0,'every data-face is a real markdown face; bad='+bad.join(','));
+  for(const f of ['markdown-header-face-1','markdown-bold-face','markdown-inline-code-face','markdown-blockquote-face','markdown-gfm-checkbox-face','markdown-table-face'])
+   A(used.includes(f),'preview includes '+f);
+ }
+ document.title='MDTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='mdtest';d.textContent='MDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Box-cluster gate (open with #boxtest): the box control is a 2x2 cluster of
 // four radio buttons (none / line / pressed / raised); the color swatch shows
 // only while a box style is active.

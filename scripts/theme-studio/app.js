@@ -955,8 +955,47 @@ function renderAutodimPreview(){
     +pane('auto-dim',dimBody,dimBg,false)
     +`</div>`;
 }
+function renderMarkdownPreview(){const a='markdown-mode',L=[];
+  const dl='markdown-header-delimiter-face',mk='markdown-markup-face';
+  L.push(os(a,mk,'---'));
+  L.push(os(a,'markdown-metadata-key-face','title:')+' '+os(a,'markdown-metadata-value-face','Project Name'));
+  L.push(os(a,'markdown-metadata-key-face','version:')+' '+os(a,'markdown-metadata-value-face','1.2.0'));
+  L.push(os(a,mk,'---'));
+  L.push('');
+  L.push(os(a,dl,'#')+' '+os(a,'markdown-header-face-1','Project Name'));
+  L.push('');
+  L.push(os(a,'markdown-comment-face','&lt;!-- a one-line tagline --&gt;'));
+  L.push('A library for '+os(a,'markdown-bold-face','**doing things**')+' and '+os(a,'markdown-italic-face','*other things*')+'.');
+  L.push('');
+  L.push(os(a,dl,'##')+' '+os(a,'markdown-header-face-2','Installation'));
+  L.push('');
+  L.push('Run '+os(a,'markdown-inline-code-face','`npm install project`')+' to get started.');
+  L.push('');
+  L.push(os(a,mk,'```')+os(a,'markdown-language-keyword-face','sh'));
+  L.push(os(a,'markdown-pre-face','  git clone https://example.com/project.git'));
+  L.push(os(a,'markdown-pre-face','  cd project; make'));
+  L.push(os(a,mk,'```'));
+  L.push('');
+  L.push(os(a,dl,'###')+' '+os(a,'markdown-header-face-3','Usage'));
+  L.push('');
+  L.push(os(a,'markdown-list-face','- ')+'See the '+os(a,'markdown-link-face','[docs]')+os(a,'markdown-url-face','(https://example.com/docs)')+' for details.');
+  L.push(os(a,'markdown-list-face','- ')+'Or browse '+os(a,'markdown-plain-url-face','https://example.com')+' directly.');
+  L.push(os(a,'markdown-gfm-checkbox-face','- [x]')+' shipped     '+os(a,'markdown-gfm-checkbox-face','- [ ]')+' planned');
+  L.push('');
+  L.push(os(a,'markdown-blockquote-face','> A note worth quoting, with a footnote')+os(a,'markdown-footnote-marker-face','[^1]')+os(a,'markdown-blockquote-face','.'));
+  L.push('');
+  L.push(os(a,'markdown-table-face','| Option | Default |'));
+  L.push(os(a,'markdown-table-face','|--------|---------|'));
+  L.push(os(a,'markdown-table-face','| debug  | false   |'));
+  L.push('');
+  L.push(os(a,'markdown-hr-face','---'));
+  L.push('');
+  L.push(os(a,'markdown-strike-through-face','~~deprecated~~')+'  '+os(a,'markdown-highlight-face','==important==')+'  '+os(a,'markdown-math-face','$E = mc^2$'));
+  L.push(os(a,'markdown-html-tag-delimiter-face','&lt;')+os(a,'markdown-html-tag-name-face','kbd')+os(a,'markdown-html-tag-delimiter-face','&gt;')+'Ctrl-C'+os(a,'markdown-html-tag-delimiter-face','&lt;/')+os(a,'markdown-html-tag-name-face','kbd')+os(a,'markdown-html-tag-delimiter-face','&gt;'));
+  L.push(os(a,'markdown-footnote-marker-face','[^1]:')+' '+os(a,'markdown-footnote-text-face','the footnote text.'));
+  return previewLines(L);}
 const PACKAGE_PREVIEWS={
-  autodim:renderAutodimPreview,
+  autodim:renderAutodimPreview,markdown:renderMarkdownPreview,
   org:renderOrgPreview,magit:renderMagitPreview,elfeed:renderElfeedPreview,ghostel:renderGhostelPreview,
   dashboard:renderDashboardPreview,mu4e:renderMu4ePreview,orgfaces:renderOrgFacesPreview,lsp:renderLspPreview,gitgutter:renderGitGutterPreview,
   flycheck:renderFlycheckPreview,dired:renderDiredPreview,dirvish:renderDirvishPreview,calibredb:renderCalibredbPreview,

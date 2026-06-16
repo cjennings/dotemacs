@@ -35,6 +35,13 @@ BESPOKE_APPS = {
 }
 
 
+# Inventory apps (not in BESPOKE_APPS) default to the generic preview. A few have
+# a dedicated PACKAGE_PREVIEWS renderer in app.js, keyed by name here.
+PREVIEW_KEYS = {
+    "markdown-mode": "markdown",
+}
+
+
 def face_label(face: str, prefix: str) -> str:
     label = face[len(prefix) :] if face.startswith(prefix) else face
     return label.replace("-face", "").replace("-", " ")
@@ -55,7 +62,7 @@ def add_inventory_apps(apps: dict[str, Any], inventory_path: str) -> dict[str, A
             continue
         apps[pkg] = {
             "label": pkg,
-            "preview": "generic",
+            "preview": PREVIEW_KEYS.get(pkg, "generic"),
             "faces": [[face, face_label(face, pkg + "-"), {}] for face in inventory[pkg]],
         }
     return apps
