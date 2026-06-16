@@ -34,12 +34,17 @@
  .cdd.compact.is-default{border-color:#8f7810;box-shadow:inset 0 0 0 1px #8f7810}
  .cddsw{display:inline-block;width:13px;height:13px;border-radius:3px;border:1px solid #0007;flex:none}
  .cdd.compact .cddsw{width:18px;height:18px}
- .cddpop{position:fixed;z-index:200;background:#161412;border:1px solid #3a3a3a;border-radius:6px;box-shadow:0 12px 34px #000c;max-height:60vh;overflow:auto;padding:4px}
- .cddrow{display:flex;align-items:center;gap:9px;padding:4px 9px;cursor:pointer;color:#cdced1;font:12px monospace;border-radius:4px;white-space:nowrap}
- .cddrow:hover{background:#252321}
- .cddrow.sel{outline:1px solid #e8bd30;outline-offset:-1px}
- .cddrow .cddnm{flex:1}
- .cddrow .cddhx{opacity:.55;margin-left:10px}
+ .cddpop{position:fixed;z-index:200;background:#161412;border:1px solid #3a3a3a;border-radius:6px;box-shadow:0 12px 34px #000c;max-height:70vh;overflow:auto;padding:8px}
+ .cddghead{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+ .cddgdef{font:bold 11px monospace;color:#cdced1;background:#161412;border:1px solid #3a3a3a;border-radius:4px;padding:3px 10px;cursor:pointer}
+ .cddgdef:hover{background:#252321}
+ .cddgdef.sel{outline:1px solid #e8bd30;outline-offset:1px}
+ .cddglbl{font:11px monospace;color:#c66}
+ .cddgrow{display:flex;gap:3px;margin-bottom:3px}
+ .cddgc{display:inline-block;width:22px;height:22px;border-radius:3px;border:1px solid #0007;padding:0;cursor:pointer;flex:none}
+ .cddgc:hover{outline:1px solid #fff8;outline-offset:1px}
+ .cddgc.sel{outline:2px solid #e8bd30;outline-offset:1px}
+ .cddgc.gone{border:2px solid #c66}
  .cstep.locked .cdd{cursor:default;opacity:.85;box-shadow:inset 0 0 0 2px #e8bd3088}
  .lockbtn{background:none;border:none;cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;opacity:.5;filter:grayscale(1)}
  .lockbtn.on{opacity:1;filter:none}
@@ -869,6 +874,29 @@ function paletteOptionList(cur,palette,ground){
   sortColumns(grouped.columns).forEach(f=>lightestFirstMembers(f.members).forEach(m=>add(m.hex,m.name)));
   return out;
 }
+// Grid model for the gallery color picker. Mirrors the palette panel layout: a
+// ground row (bg/fg + ground steps) then one row per color family, members run
+// dark->light to match the panel. cur marks the one selected cell. The leading
+// "default" entry (clears the assignment) and, when cur points at a color no
+// longer in the palette, a "(gone)" entry live outside the family grid so every
+// dropdown choice stays reachable. Pure — shares columnsFromPalette / sortColumns
+// with the panel and the option list.
+function galleryModel(cur,palette,ground){
+  const want=(cur||'').toLowerCase(),sel=h=>(h||'').toLowerCase()===want;
+  const byLightAsc=(a,b)=>oklchOf(a.hex).L-oklchOf(b.hex).L;
+  const cell=m=>({hex:m.hex,name:m.name||m.hex,selected:sel(m.hex)});
+  const rows=[];
+  const groundCells=groundColumnMembersFromPalette(palette,ground||{})
+    .filter(m=>m&&m.hex).sort(byLightAsc).map(cell);
+  if(groundCells.length)rows.push({kind:'ground',cells:groundCells});
+  sortColumns(columnsFromPalette(palette,ground||{}).columns).forEach(f=>{
+    const cells=[...f.members].filter(m=>m&&m.hex).sort(byLightAsc).map(cell);
+    if(cells.length)rows.push({kind:'column',column:f.column,cells});
+  });
+  const have=cur===''||cur==null||rows.some(r=>r.cells.some(c=>sel(c.hex)));
+  const gone=(cur&&!have)?{hex:cur,name:'(gone)',selected:true}:null;
+  return {default:{hex:'',selected:cur===''||cur==null},gone,rows};
+}
 function spanNeighborHex(cur,palette,ground,dir){
   if(!cur)return null;
   const wanted=(cur||'').toLowerCase(),groups=[],byLight=(a,b)=>oklchOf(a.hex).L-oklchOf(b.hex).L;
@@ -1369,18 +1397,34 @@ function mkColorDropdown(options,cur,onPick,opts={}){
   left.onclick=e=>{e.stopPropagation();step(-1);};
   right.onclick=e=>{e.stopPropagation();step(1);};
   t.onclick=(e)=>{e.stopPropagation();if(wrap.dataset.locked==='1')return;if(_ddPop){closeColorDropdown();return;}
-    const pop=document.createElement('div');pop.className='cddpop';
-    for(const [hex,name] of options){const row=document.createElement('div');row.className='cddrow'+(hex===cur?' sel':'');
-      const shown=displayHex(hex),nm=hex?name:(opts.defaultName||name);
-      row.style.background=hex?'':shown;row.style.color=dropdownRowTextColor(hex,shown,textOn);
-      row.innerHTML=`<span class="cddsw" style="background:${shown||'transparent'}"></span><span class="cddnm">${esc(nm)}</span><span class="cddhx">${hex||shown||''}</span>`;
-      row.onclick=(ev)=>{ev.stopPropagation();cur=hex;paint();closeColorDropdown();onPick(hex);};
-      pop.appendChild(row);}
+    // 2D gallery: a grid of swatches in the palette-panel shape (ground strip,
+    // then one row per family) instead of a long vertical list. galleryModel is
+    // the shared pure layout (app-core.js).
+    const pop=document.createElement('div');pop.className='cddpop cddgrid';
+    const model=galleryModel(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+    const pick=(hex)=>{cur=hex;paint();closeColorDropdown();onPick(hex);};
+    const head=document.createElement('div');head.className='cddghead';
+    const def=document.createElement('button');def.type='button';
+    def.className='cddgdef'+(model.default.selected?' sel':'');
+    def.textContent=opts.defaultName||'default';def.title='clear — use the default';
+    def.onclick=(ev)=>{ev.stopPropagation();pick('');};head.appendChild(def);
+    if(model.gone){const g=document.createElement('span');g.className='cddgc gone sel';
+      g.style.background=model.gone.hex;g.title='(gone) '+model.gone.hex;head.appendChild(g);
+      const gl=document.createElement('span');gl.className='cddglbl';gl.textContent='(gone) '+model.gone.hex;head.appendChild(gl);}
+    pop.appendChild(head);
+    for(const row of model.rows){const rr=document.createElement('div');rr.className='cddgrow';
+      for(const c of row.cells){const sw=document.createElement('button');sw.type='button';
+        sw.className='cddgc'+(c.selected?' sel':'');sw.style.background=c.hex;
+        sw.dataset.hex=c.hex;sw.dataset.name=c.name;sw.title=c.name+' '+c.hex;
+        sw.onclick=(ev)=>{ev.stopPropagation();pick(c.hex);};rr.appendChild(sw);}
+      pop.appendChild(rr);}
     document.body.appendChild(pop);const r=t.getBoundingClientRect();
     pop.style.left=r.left+'px';pop.style.minWidth=r.width+'px';
     pop.style.top=(r.bottom+2)+'px';
     const ph=pop.getBoundingClientRect().height;
     if(r.bottom+ph>window.innerHeight-6)pop.style.top=Math.max(6,r.top-ph-2)+'px';
+    const pr=pop.getBoundingClientRect();
+    if(pr.right>window.innerWidth-6)pop.style.left=Math.max(6,window.innerWidth-6-pr.width)+'px';
     _ddPop=pop;};
   t.setValue=h=>{cur=h;paint();};
   wrap.setValue=h=>{cur=h;paint();};
@@ -2938,7 +2982,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  const pdd=document.querySelector('#legbody tr[data-kind="p"] .cdd');
  if(pdd){pdd.click();
   const pHex=PALETTE.find(p=>p[0]!==MAP['p'])[0];
-  const prow=[...document.querySelectorAll('.cddpop .cddrow')].find(r=>r.querySelector('.cddhx').textContent===pHex);
+  const prow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>c.dataset.hex===pHex);
   if(prow)prow.click();
   const pf=document.getElementById('uicr-fringe'),pfWant=contrast(pHex,'#aabbcc');
   A(prow&&pf&&Math.abs(parseFloat(pf.textContent)-pfWant)<0.06,'default-fg change re-rates a p-fallback face: got '+(pf&&pf.textContent.trim())+' want '+pfWant.toFixed(1));
@@ -2969,15 +3013,46 @@ if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  PALETTE=[['#ff0000','red','red'],['#30343c','slate','slate']];
  buildUITable();
  const mlrow=document.querySelector('#uibody tr[data-face="mode-line"]'),boxCell=mlrow&&mlrow.cells[7],lineBtn=boxCell&&boxCell.querySelector('.boxbtn[data-style="line"]'),boxDd=boxCell&&boxCell.querySelector('.cdd');
- if(lineBtn&&boxDd){lineBtn.click();boxDd.click();const redRow=[...document.querySelectorAll('.cddpop .cddrow')].find(r=>r.textContent.includes('red'));if(redRow)redRow.click();}
+ if(lineBtn&&boxDd){lineBtn.click();boxDd.click();const redRow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>(c.dataset.name||'').includes('red'));if(redRow)redRow.click();}
  A(UIMAP['mode-line'].box&&UIMAP['mode-line'].box.color==='#ff0000','UI box color dropdown writes box.color');
  const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].box={style:'line',width:1,color:null};buildPkgTable();
  const prow=document.querySelector('#pkgbody tr[data-face="'+face+'"]'),pbox=prow&&prow.cells[8],pdd=pbox&&pbox.querySelector('.cdd');
- if(pdd){pdd.click();const redRow=[...document.querySelectorAll('.cddpop .cddrow')].find(r=>r.textContent.includes('red'));if(redRow)redRow.click();}
+ if(pdd){pdd.click();const redRow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>(c.dataset.name||'').includes('red'));if(redRow)redRow.click();}
  A(PKGMAP[app][face].box&&PKGMAP[app][face].box.color==='#ff0000','package box color dropdown writes box.color');
  PALETTE=saveP;PKGMAP=savePK;for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();buildPkgTable();
  document.title='BEVELTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='beveltest';d.textContent='BEVELTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Gallery gate (open with #gallerytest): the color dropdown opens a 2D grid in
+// the palette-panel shape. Driven on a throwaway dropdown so no real face state
+// is mutated. Covers: grid opens, every palette color has a cell, a cell click
+// fires onPick + updates the trigger, the pick highlights on reopen, the default
+// chip clears.
+if(location.hash==='#gallerytest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ let picked='__none__';
+ const dd=mkColorDropdown(ddList(''),'',(hex)=>{picked=hex;},{});
+ document.body.appendChild(dd);
+ const trig=dd.querySelector('.cdd');trig.click();
+ const pop=document.querySelector('.cddpop.cddgrid');
+ A(pop,'dropdown opens a grid popup');
+ const cells=pop?[...pop.querySelectorAll('.cddgc')]:[];
+ A(cells.length>=PALETTE.length,'grid covers every palette color: '+cells.length+' cells for '+PALETTE.length+' palette colors');
+ A(pop&&pop.querySelector('.cddgdef'),'grid has a default chip');
+ A(pop&&pop.querySelector('.cddgrow'),'grid lays the colors out in rows');
+ const target=PALETTE.find(p=>p[0]!==MAP['bg'])||PALETTE[0];
+ const cell=cells.find(c=>c.dataset.hex===target[0]);
+ A(cell,'the target color has a cell');
+ if(cell){cell.click();
+  A(picked===target[0],'clicking a cell calls onPick with the color: '+picked);
+  A(trig.dataset.val===target[0],'the trigger button updates to the picked color: '+trig.dataset.val);
+  trig.click();
+  const sel=document.querySelector('.cddpop.cddgrid .cddgc.sel');
+  A(sel&&sel.dataset.hex===target[0],'the picked color is highlighted on reopen: '+(sel&&sel.dataset.hex));
+  closeColorDropdown();}
+ trig.click();const defc=document.querySelector('.cddpop.cddgrid .cddgdef');if(defc)defc.click();
+ A(picked==='','the default chip clears the assignment: '+JSON.stringify(picked));
+ dd.remove();closeColorDropdown();
+ document.title='GALLERYTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='gallerytest';d.textContent='GALLERYTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Preview-link gate (open with #previewlinktest): known bespoke-preview face
 // mappings stay wired to the face that Emacs actually uses.
 if(location.hash==='#previewlinktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};

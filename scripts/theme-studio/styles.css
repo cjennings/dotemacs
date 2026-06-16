@@ -32,12 +32,17 @@
  .cdd.compact.is-default{border-color:#8f7810;box-shadow:inset 0 0 0 1px #8f7810}
  .cddsw{display:inline-block;width:13px;height:13px;border-radius:3px;border:1px solid #0007;flex:none}
  .cdd.compact .cddsw{width:18px;height:18px}
- .cddpop{position:fixed;z-index:200;background:#161412;border:1px solid #3a3a3a;border-radius:6px;box-shadow:0 12px 34px #000c;max-height:60vh;overflow:auto;padding:4px}
- .cddrow{display:flex;align-items:center;gap:9px;padding:4px 9px;cursor:pointer;color:#cdced1;font:12px monospace;border-radius:4px;white-space:nowrap}
- .cddrow:hover{background:#252321}
- .cddrow.sel{outline:1px solid #e8bd30;outline-offset:-1px}
- .cddrow .cddnm{flex:1}
- .cddrow .cddhx{opacity:.55;margin-left:10px}
+ .cddpop{position:fixed;z-index:200;background:#161412;border:1px solid #3a3a3a;border-radius:6px;box-shadow:0 12px 34px #000c;max-height:70vh;overflow:auto;padding:8px}
+ .cddghead{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+ .cddgdef{font:bold 11px monospace;color:#cdced1;background:#161412;border:1px solid #3a3a3a;border-radius:4px;padding:3px 10px;cursor:pointer}
+ .cddgdef:hover{background:#252321}
+ .cddgdef.sel{outline:1px solid #e8bd30;outline-offset:1px}
+ .cddglbl{font:11px monospace;color:#c66}
+ .cddgrow{display:flex;gap:3px;margin-bottom:3px}
+ .cddgc{display:inline-block;width:22px;height:22px;border-radius:3px;border:1px solid #0007;padding:0;cursor:pointer;flex:none}
+ .cddgc:hover{outline:1px solid #fff8;outline-offset:1px}
+ .cddgc.sel{outline:2px solid #e8bd30;outline-offset:1px}
+ .cddgc.gone{border:2px solid #c66}
  .cstep.locked .cdd{cursor:default;opacity:.85;box-shadow:inset 0 0 0 2px #e8bd3088}
  .lockbtn{background:none;border:none;cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;opacity:.5;filter:grayscale(1)}
  .lockbtn.on{opacity:1;filter:none}

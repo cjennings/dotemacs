@@ -80,18 +80,34 @@ function mkColorDropdown(options,cur,onPick,opts={}){
   left.onclick=e=>{e.stopPropagation();step(-1);};
   right.onclick=e=>{e.stopPropagation();step(1);};
   t.onclick=(e)=>{e.stopPropagation();if(wrap.dataset.locked==='1')return;if(_ddPop){closeColorDropdown();return;}
-    const pop=document.createElement('div');pop.className='cddpop';
-    for(const [hex,name] of options){const row=document.createElement('div');row.className='cddrow'+(hex===cur?' sel':'');
-      const shown=displayHex(hex),nm=hex?name:(opts.defaultName||name);
-      row.style.background=hex?'':shown;row.style.color=dropdownRowTextColor(hex,shown,textOn);
-      row.innerHTML=`<span class="cddsw" style="background:${shown||'transparent'}"></span><span class="cddnm">${esc(nm)}</span><span class="cddhx">${hex||shown||''}</span>`;
-      row.onclick=(ev)=>{ev.stopPropagation();cur=hex;paint();closeColorDropdown();onPick(hex);};
-      pop.appendChild(row);}
+    // 2D gallery: a grid of swatches in the palette-panel shape (ground strip,
+    // then one row per family) instead of a long vertical list. galleryModel is
+    // the shared pure layout (app-core.js).
+    const pop=document.createElement('div');pop.className='cddpop cddgrid';
+    const model=galleryModel(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+    const pick=(hex)=>{cur=hex;paint();closeColorDropdown();onPick(hex);};
+    const head=document.createElement('div');head.className='cddghead';
+    const def=document.createElement('button');def.type='button';
+    def.className='cddgdef'+(model.default.selected?' sel':'');
+    def.textContent=opts.defaultName||'default';def.title='clear — use the default';
+    def.onclick=(ev)=>{ev.stopPropagation();pick('');};head.appendChild(def);
+    if(model.gone){const g=document.createElement('span');g.className='cddgc gone sel';
+      g.style.background=model.gone.hex;g.title='(gone) '+model.gone.hex;head.appendChild(g);
+      const gl=document.createElement('span');gl.className='cddglbl';gl.textContent='(gone) '+model.gone.hex;head.appendChild(gl);}
+    pop.appendChild(head);
+    for(const row of model.rows){const rr=document.createElement('div');rr.className='cddgrow';
+      for(const c of row.cells){const sw=document.createElement('button');sw.type='button';
+        sw.className='cddgc'+(c.selected?' sel':'');sw.style.background=c.hex;
+        sw.dataset.hex=c.hex;sw.dataset.name=c.name;sw.title=c.name+' '+c.hex;
+        sw.onclick=(ev)=>{ev.stopPropagation();pick(c.hex);};rr.appendChild(sw);}
+      pop.appendChild(rr);}
     document.body.appendChild(pop);const r=t.getBoundingClientRect();
     pop.style.left=r.left+'px';pop.style.minWidth=r.width+'px';
     pop.style.top=(r.bottom+2)+'px';
     const ph=pop.getBoundingClientRect().height;
     if(r.bottom+ph>window.innerHeight-6)pop.style.top=Math.max(6,r.top-ph-2)+'px';
+    const pr=pop.getBoundingClientRect();
+    if(pr.right>window.innerWidth-6)pop.style.left=Math.max(6,window.innerWidth-6-pr.width)+'px';
     _ddPop=pop;};
   t.setValue=h=>{cur=h;paint();};
   wrap.setValue=h=>{cur=h;paint();};

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
+  galleryModel,
 } from './app-core.js';
 import { planPaletteGenerator, entriesForGeneratedColumn } from './palette-generator-core.js';
 import { oklch2hex, deltaE } from './colormath.js';
@@ -68,6 +69,56 @@ test('paletteOptionList: Normal — colors within each column are lightest to da
     list.filter(([, name]) => name.startsWith('red')).map(([, name]) => name),
     ['red-light', 'red-dark'],
   );
+});
+
+const GALLERY_PAL = [
+  ['#111111', 'bg', 'ground'],
+  ['#eeeeee', 'fg', 'ground'],
+  ['#444444', 'gray-dark', 'gray'],
+  ['#cccccc', 'gray-light', 'gray'],
+  ['#888888', 'gray-mid', 'gray'],
+  ['#330000', 'red-dark', 'red'],
+  ['#dd8888', 'red-light', 'red'],
+];
+const GALLERY_GROUND = { bg: '#111111', fg: '#eeeeee' };
+const allCells = m => m.rows.flatMap(r => r.cells);
+
+test('galleryModel: Normal — ground row then one row per family, default cell present', () => {
+  const m = galleryModel('#888888', GALLERY_PAL, GALLERY_GROUND);
+  assert.equal(m.default.hex, '');
+  assert.equal(m.gone, null);
+  assert.equal(m.rows[0].kind, 'ground');
+  assert.deepEqual(m.rows[0].cells.map(c => c.hex), ['#111111', '#eeeeee']);
+  const cols = m.rows.filter(r => r.kind === 'column');
+  assert.equal(cols.length, 2, 'one row per color family');
+  assert.deepEqual(
+    cols.find(r => r.column === 'gray').cells.map(c => c.hex),
+    ['#444444', '#888888', '#cccccc'],
+    'family members run dark to light',
+  );
+});
+
+test('galleryModel: Normal — exactly the current color is selected', () => {
+  const m = galleryModel('#888888', GALLERY_PAL, GALLERY_GROUND);
+  const selected = allCells(m).filter(c => c.selected);
+  assert.deepEqual(selected.map(c => c.hex), ['#888888']);
+  assert.equal(m.default.selected, false);
+});
+
+test('galleryModel: Boundary — empty cur selects the default cell, nothing in the grid', () => {
+  const m = galleryModel('', GALLERY_PAL, GALLERY_GROUND);
+  assert.equal(m.default.selected, true);
+  assert.equal(m.gone, null);
+  assert.equal(allCells(m).filter(c => c.selected).length, 0);
+});
+
+test('galleryModel: Error — a cur outside the palette surfaces a selected (gone) cell', () => {
+  const m = galleryModel('#abcdef', GALLERY_PAL, GALLERY_GROUND);
+  assert.ok(m.gone, 'gone cell exists');
+  assert.equal(m.gone.hex, '#abcdef');
+  assert.equal(m.gone.name, '(gone)');
+  assert.equal(m.gone.selected, true);
+  assert.equal(allCells(m).filter(c => c.selected).length, 0, 'no grid cell claims the gone color');
 });
 
 test('paletteOptionList: Boundary — assignment-only ground colors are selectable', () => {

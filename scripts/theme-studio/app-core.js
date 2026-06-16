@@ -365,6 +365,29 @@ function paletteOptionList(cur,palette,ground){
   sortColumns(grouped.columns).forEach(f=>lightestFirstMembers(f.members).forEach(m=>add(m.hex,m.name)));
   return out;
 }
+// Grid model for the gallery color picker. Mirrors the palette panel layout: a
+// ground row (bg/fg + ground steps) then one row per color family, members run
+// dark->light to match the panel. cur marks the one selected cell. The leading
+// "default" entry (clears the assignment) and, when cur points at a color no
+// longer in the palette, a "(gone)" entry live outside the family grid so every
+// dropdown choice stays reachable. Pure — shares columnsFromPalette / sortColumns
+// with the panel and the option list.
+function galleryModel(cur,palette,ground){
+  const want=(cur||'').toLowerCase(),sel=h=>(h||'').toLowerCase()===want;
+  const byLightAsc=(a,b)=>oklchOf(a.hex).L-oklchOf(b.hex).L;
+  const cell=m=>({hex:m.hex,name:m.name||m.hex,selected:sel(m.hex)});
+  const rows=[];
+  const groundCells=groundColumnMembersFromPalette(palette,ground||{})
+    .filter(m=>m&&m.hex).sort(byLightAsc).map(cell);
+  if(groundCells.length)rows.push({kind:'ground',cells:groundCells});
+  sortColumns(columnsFromPalette(palette,ground||{}).columns).forEach(f=>{
+    const cells=[...f.members].filter(m=>m&&m.hex).sort(byLightAsc).map(cell);
+    if(cells.length)rows.push({kind:'column',column:f.column,cells});
+  });
+  const have=cur===''||cur==null||rows.some(r=>r.cells.some(c=>sel(c.hex)));
+  const gone=(cur&&!have)?{hex:cur,name:'(gone)',selected:true}:null;
+  return {default:{hex:'',selected:cur===''||cur==null},gone,rows};
+}
 function spanNeighborHex(cur,palette,ground,dir){
   if(!cur)return null;
   const wanted=(cur||'').toLowerCase(),groups=[],byLight=(a,b)=>oklchOf(a.hex).L-oklchOf(b.hex).L;
@@ -384,4 +407,4 @@ function spanNeighborHex(cur,palette,ground,dir){
   return null;
 }
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

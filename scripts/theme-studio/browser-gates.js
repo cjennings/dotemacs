@@ -363,7 +363,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  const pdd=document.querySelector('#legbody tr[data-kind="p"] .cdd');
  if(pdd){pdd.click();
   const pHex=PALETTE.find(p=>p[0]!==MAP['p'])[0];
-  const prow=[...document.querySelectorAll('.cddpop .cddrow')].find(r=>r.querySelector('.cddhx').textContent===pHex);
+  const prow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>c.dataset.hex===pHex);
   if(prow)prow.click();
   const pf=document.getElementById('uicr-fringe'),pfWant=contrast(pHex,'#aabbcc');
   A(prow&&pf&&Math.abs(parseFloat(pf.textContent)-pfWant)<0.06,'default-fg change re-rates a p-fallback face: got '+(pf&&pf.textContent.trim())+' want '+pfWant.toFixed(1));
@@ -394,15 +394,46 @@ if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  PALETTE=[['#ff0000','red','red'],['#30343c','slate','slate']];
  buildUITable();
  const mlrow=document.querySelector('#uibody tr[data-face="mode-line"]'),boxCell=mlrow&&mlrow.cells[7],lineBtn=boxCell&&boxCell.querySelector('.boxbtn[data-style="line"]'),boxDd=boxCell&&boxCell.querySelector('.cdd');
- if(lineBtn&&boxDd){lineBtn.click();boxDd.click();const redRow=[...document.querySelectorAll('.cddpop .cddrow')].find(r=>r.textContent.includes('red'));if(redRow)redRow.click();}
+ if(lineBtn&&boxDd){lineBtn.click();boxDd.click();const redRow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>(c.dataset.name||'').includes('red'));if(redRow)redRow.click();}
  A(UIMAP['mode-line'].box&&UIMAP['mode-line'].box.color==='#ff0000','UI box color dropdown writes box.color');
  const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].box={style:'line',width:1,color:null};buildPkgTable();
  const prow=document.querySelector('#pkgbody tr[data-face="'+face+'"]'),pbox=prow&&prow.cells[8],pdd=pbox&&pbox.querySelector('.cdd');
- if(pdd){pdd.click();const redRow=[...document.querySelectorAll('.cddpop .cddrow')].find(r=>r.textContent.includes('red'));if(redRow)redRow.click();}
+ if(pdd){pdd.click();const redRow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>(c.dataset.name||'').includes('red'));if(redRow)redRow.click();}
  A(PKGMAP[app][face].box&&PKGMAP[app][face].box.color==='#ff0000','package box color dropdown writes box.color');
  PALETTE=saveP;PKGMAP=savePK;for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();buildPkgTable();
  document.title='BEVELTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='beveltest';d.textContent='BEVELTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+// Gallery gate (open with #gallerytest): the color dropdown opens a 2D grid in
+// the palette-panel shape. Driven on a throwaway dropdown so no real face state
+// is mutated. Covers: grid opens, every palette color has a cell, a cell click
+// fires onPick + updates the trigger, the pick highlights on reopen, the default
+// chip clears.
+if(location.hash==='#gallerytest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ let picked='__none__';
+ const dd=mkColorDropdown(ddList(''),'',(hex)=>{picked=hex;},{});
+ document.body.appendChild(dd);
+ const trig=dd.querySelector('.cdd');trig.click();
+ const pop=document.querySelector('.cddpop.cddgrid');
+ A(pop,'dropdown opens a grid popup');
+ const cells=pop?[...pop.querySelectorAll('.cddgc')]:[];
+ A(cells.length>=PALETTE.length,'grid covers every palette color: '+cells.length+' cells for '+PALETTE.length+' palette colors');
+ A(pop&&pop.querySelector('.cddgdef'),'grid has a default chip');
+ A(pop&&pop.querySelector('.cddgrow'),'grid lays the colors out in rows');
+ const target=PALETTE.find(p=>p[0]!==MAP['bg'])||PALETTE[0];
+ const cell=cells.find(c=>c.dataset.hex===target[0]);
+ A(cell,'the target color has a cell');
+ if(cell){cell.click();
+  A(picked===target[0],'clicking a cell calls onPick with the color: '+picked);
+  A(trig.dataset.val===target[0],'the trigger button updates to the picked color: '+trig.dataset.val);
+  trig.click();
+  const sel=document.querySelector('.cddpop.cddgrid .cddgc.sel');
+  A(sel&&sel.dataset.hex===target[0],'the picked color is highlighted on reopen: '+(sel&&sel.dataset.hex));
+  closeColorDropdown();}
+ trig.click();const defc=document.querySelector('.cddpop.cddgrid .cddgdef');if(defc)defc.click();
+ A(picked==='','the default chip clears the assignment: '+JSON.stringify(picked));
+ dd.remove();closeColorDropdown();
+ document.title='GALLERYTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='gallerytest';d.textContent='GALLERYTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Preview-link gate (open with #previewlinktest): known bespoke-preview face
 // mappings stay wired to the face that Emacs actually uses.
 if(location.hash==='#previewlinktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
