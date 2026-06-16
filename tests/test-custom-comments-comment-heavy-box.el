@@ -64,8 +64,8 @@ Returns the buffer string for assertions."
     (should (string-match-p "^;; \\*" result))
     ;; Middle line should contain centered text
     (should (string-match-p "Section Header" result))
-    ;; Should have side borders
-    (should (string-match-p "^\\*.*\\*$" result))))
+    ;; Interior side-border lines carry the comment prefix/suffix (not a bare *)
+    (should (string-match-p "^;; \\*.*\\* ;;$" result))))
 
 (ert-deftest test-heavy-box-elisp-custom-decoration ()
   "Should use custom decoration character."
@@ -83,8 +83,8 @@ Returns the buffer string for assertions."
   (let ((result (test-heavy-box-at-column 0 ";;" "" "*" "" 70)))
     ;; Should still generate 5 lines
     (should (= 5 (length (split-string result "\n" t))))
-    ;; Middle line should just have side borders and spaces
-    (should (string-match-p "^\\*.*\\*$" result))))
+    ;; Middle line should just have side borders and spaces, comment-prefixed
+    (should (string-match-p "^;; \\*.*\\* ;;$" result))))
 
 (ert-deftest test-heavy-box-elisp-at-column-0 ()
   "Should work at column 0."

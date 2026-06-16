@@ -409,47 +409,57 @@ LENGTH is the total width of each line."
   (let* ((current-column-pos (current-column))
          (comment-char (if (equal cmt-start ";") ";;" cmt-start))
          (comment-end-char (if (string-empty-p cmt-end) comment-char cmt-end))
-         (available-width (- length current-column-pos
-                            (length comment-char)
-                            (length comment-end-char)
-                            2))  ; spaces around content
-         (border-line (make-string available-width (string-to-char decoration-char)))
-         (text-length (length text))
-         (padding-each-side (max 1 (/ (- available-width text-length) 2)))
-         (right-padding (if (= (% (- available-width text-length) 2) 0)
-                           padding-each-side
-                         (1+ padding-each-side))))
-    ;; Top border
-    (insert comment-char " " border-line " " comment-end-char)
-    (newline)
+         (min-length (+ current-column-pos
+                        (length comment-char)
+                        2  ; spaces around content
+                        (length comment-end-char)
+                        6)))  ; 3 border chars + text space + 3 border chars
+    (when (< length min-length)
+      (error "Length %d is too small to generate comment (minimum %d)" length min-length))
+    (let* ((available-width (- length current-column-pos
+                              (length comment-char)
+                              (length comment-end-char)
+                              2))  ; spaces around content
+           (border-line (make-string available-width (string-to-char decoration-char)))
+           (text-available (- available-width 4))  ; 2 side decorations, 2 spaces
+           (text-length (length text))
+           (padding-each-side (max 1 (/ (- text-available text-length) 2)))
+           (right-padding (if (= (% (- text-available text-length) 2) 0)
+                             padding-each-side
+                           (1+ padding-each-side)))
+           ;; Interior side-border lines repeat the comment prefix and suffix so
+           ;; the empty/text rows stay valid comments in line-comment languages
+           ;; (elisp, Python). Previously they began with a bare decoration char.
+           (empty-line (concat comment-char " " decoration-char
+                               (make-string (- available-width 2) ?\s)
+                               decoration-char " " comment-end-char)))
+      ;; Top border
+      (insert comment-char " " border-line " " comment-end-char)
+      (newline)
 
-    ;; Empty line with side borders
-    (dotimes (_ current-column-pos) (insert " "))
-    (insert decoration-char)
-    (dotimes (_ available-width) (insert " "))
-    (insert " " decoration-char)
-    (newline)
+      ;; Empty line with side borders
+      (dotimes (_ current-column-pos) (insert " "))
+      (insert empty-line)
+      (newline)
 
-    ;; Centered text line
-    (dotimes (_ current-column-pos) (insert " "))
-    (insert decoration-char " ")
-    (dotimes (_ padding-each-side) (insert " "))
-    (insert text)
-    (dotimes (_ right-padding) (insert " "))
-    (insert " " decoration-char)
-    (newline)
+      ;; Centered text line
+      (dotimes (_ current-column-pos) (insert " "))
+      (insert comment-char " " decoration-char " ")
+      (dotimes (_ padding-each-side) (insert " "))
+      (insert text)
+      (dotimes (_ right-padding) (insert " "))
+      (insert " " decoration-char " " comment-end-char)
+      (newline)
 
-    ;; Empty line with side borders
-    (dotimes (_ current-column-pos) (insert " "))
-    (insert decoration-char)
-    (dotimes (_ available-width) (insert " "))
-    (insert " " decoration-char)
-    (newline)
+      ;; Empty line with side borders
+      (dotimes (_ current-column-pos) (insert " "))
+      (insert empty-line)
+      (newline)
 
-    ;; Bottom border
-    (dotimes (_ current-column-pos) (insert " "))
-    (insert comment-char " " border-line " " comment-end-char)
-    (newline)))
+      ;; Bottom border
+      (dotimes (_ current-column-pos) (insert " "))
+      (insert comment-char " " border-line " " comment-end-char)
+      (newline))))
 
 (defun cj/comment-heavy-box ()
   "Insert a heavy box comment with blank lines around centered text.
