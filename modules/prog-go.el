@@ -61,7 +61,7 @@ Install with: go install github.com/go-delve/delve/cmd/dlv@latest")
   (setq-local tab-width 4)              ;; Go standard tab width
   (setq-local standard-indent 4)        ;; indent 4 spaces per level
   (setq-local indent-tabs-mode t)       ;; use real tabs (Go convention)
-  (electric-pair-mode t)                ;; match delimiters automatically
+  (electric-pair-local-mode t)          ;; match delimiters automatically
 
   ;; Enable LSP if available
   (when (and (fboundp 'lsp-deferred)

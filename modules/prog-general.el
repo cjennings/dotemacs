@@ -72,12 +72,16 @@
 ;; --------------------- General Programming Mode Settings ---------------------
 ;; keybindings, minor-modes, and prog-mode settings
 
+;; Set the line-number type and width before any prog buffer enables
+;; display-line-numbers-mode. Setting them inside the hook ran after the mode
+;; turned on, so the first prog buffer of a session got absolute numbers.
+(setq display-line-numbers-type 'relative)      ;; numbers relative to point
+(setq-default display-line-numbers-width 3)     ;; 3 chars reserved for numbers
+
 (defun cj/general-prog-settings ()
   "Keybindings, minor modes, and settings for programming mode."
   (interactive)
   (display-line-numbers-mode)                   ;; show line numbers
-  (setq display-line-numbers-type 'relative)    ;; display numbers relative to 'the point'
-  (setq-default display-line-numbers-width 3)   ;; 3 characters reserved for line numbers
   (turn-on-visual-line-mode)                    ;; word-wrapping
   (auto-fill-mode)                              ;; auto wrap at the fill column set
   (local-set-key (kbd "M-;") 'comment-dwim)     ;; comment/uncomment region as appropriate

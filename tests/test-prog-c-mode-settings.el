@@ -16,7 +16,7 @@
   "Normal: cj/c-mode-settings applies the documented buffer-local values."
   (with-temp-buffer
     (cl-letf (((symbol-function 'auto-fill-mode) (lambda (&rest _) nil))
-              ((symbol-function 'electric-pair-mode) (lambda (&rest _) nil))
+              ((symbol-function 'electric-pair-local-mode) (lambda (&rest _) nil))
               ((symbol-function 'lsp-deferred) (lambda (&rest _) nil))
               ((symbol-function 'executable-find) (lambda (_) nil)))
       (cj/c-mode-settings))
@@ -31,7 +31,7 @@
   (let ((lsp-calls 0))
     (with-temp-buffer
       (cl-letf (((symbol-function 'auto-fill-mode) (lambda (&rest _) nil))
-                ((symbol-function 'electric-pair-mode) (lambda (&rest _) nil))
+                ((symbol-function 'electric-pair-local-mode) (lambda (&rest _) nil))
                 ((symbol-function 'lsp-deferred) (lambda () (cl-incf lsp-calls)))
                 ((symbol-function 'executable-find) (lambda (_) "/usr/bin/clangd")))
         (cj/c-mode-settings)))
@@ -42,7 +42,7 @@
   (let ((lsp-calls 0))
     (with-temp-buffer
       (cl-letf (((symbol-function 'auto-fill-mode) (lambda (&rest _) nil))
-                ((symbol-function 'electric-pair-mode) (lambda (&rest _) nil))
+                ((symbol-function 'electric-pair-local-mode) (lambda (&rest _) nil))
                 ((symbol-function 'lsp-deferred) (lambda () (cl-incf lsp-calls)))
                 ((symbol-function 'executable-find) (lambda (_) nil)))
         (cj/c-mode-settings)))

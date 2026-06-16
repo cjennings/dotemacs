@@ -74,7 +74,7 @@ Install with: sudo pacman -S shellcheck")
   (setq-local sh-basic-offset 2)        ;; 2 spaces (common shell convention)
   (setq-local tab-width 2)              ;; tab displays as 2 spaces
   (setq-local fill-column 80)           ;; wrap at 80 columns
-  (electric-pair-mode t)                ;; automatic quote/bracket pairing
+  (electric-pair-local-mode t)          ;; automatic quote/bracket pairing
 
   ;; Enable LSP if available (skip remote files - slow and prompts for project root)
   (when (and (fboundp 'lsp-deferred)

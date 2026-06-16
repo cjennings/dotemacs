@@ -70,7 +70,7 @@
   (setq-local fill-column 80)               ;; wrap at 80 columns
   (setq-local comment-auto-fill-only-comments t) ;; only auto-fill inside comments
   (auto-fill-mode)                          ;; auto-fill multiline comments
-  (electric-pair-mode)                      ;; automatic parenthesis pairing
+  (electric-pair-local-mode)                ;; automatic parenthesis pairing
 
   ;; Enable LSP if available
   (when (and (fboundp 'lsp-deferred)

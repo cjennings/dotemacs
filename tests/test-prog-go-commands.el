@@ -27,19 +27,19 @@
   "Normal: tab-width 4, standard-indent 4, indent-tabs-mode t (Go convention)."
   (with-temp-buffer
     (cl-letf (((symbol-function 'company-mode) #'ignore)
-              ((symbol-function 'electric-pair-mode) #'ignore))
+              ((symbol-function 'electric-pair-local-mode) #'ignore))
       (cj/go-setup)
       (should (= tab-width 4))
       (should (= standard-indent 4))
       (should indent-tabs-mode))))
 
 (ert-deftest test-prog-go-setup-enables-mode-helpers ()
-  "Normal: company-mode and electric-pair-mode are both called."
+  "Normal: company-mode and electric-pair-local-mode are both called."
   (with-temp-buffer
     (let ((called nil))
       (cl-letf (((symbol-function 'company-mode)
                  (lambda (&rest _) (push 'company called)))
-                ((symbol-function 'electric-pair-mode)
+                ((symbol-function 'electric-pair-local-mode)
                  (lambda (arg) (push (cons 'pair arg) called))))
         (cj/go-setup))
       (should (memq 'company called))
@@ -50,7 +50,7 @@
   (with-temp-buffer
     (let ((started nil))
       (cl-letf (((symbol-function 'company-mode) #'ignore)
-                ((symbol-function 'electric-pair-mode) #'ignore)
+                ((symbol-function 'electric-pair-local-mode) #'ignore)
                 ((symbol-function 'lsp-deferred)
                  (lambda (&rest _) (setq started t)))
                 ((symbol-function 'executable-find)
@@ -63,7 +63,7 @@
   (with-temp-buffer
     (let ((started nil))
       (cl-letf (((symbol-function 'company-mode) #'ignore)
-                ((symbol-function 'electric-pair-mode) #'ignore)
+                ((symbol-function 'electric-pair-local-mode) #'ignore)
                 ((symbol-function 'lsp-deferred)
                  (lambda (&rest _) (setq started t)))
                 ((symbol-function 'executable-find) (lambda (_) nil)))
