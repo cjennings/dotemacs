@@ -161,6 +161,15 @@ system-defaults) are preserved rather than overwritten."
   (require 'recentf)
   (add-to-list 'recentf-exclude "/emms/history"))
 
+;; Keep global font-lock out of the dashboard buffer.  Dashboard colors its
+;; banner title (`dashboard-banner-logo-title') and section headings
+;; (`dashboard-heading') with the `face' text property; `global-font-lock-mode'
+;; owns `face' and strips manually-applied ones it didn't set, so with font-lock
+;; running the banner and headings fall back to the default face.  Excluding
+;; dashboard-mode lets those text-property faces survive.  (Item and navigator
+;; colors ride a `dashboard-items-face' overlay, which font-lock leaves alone.)
+(setq font-lock-global-modes '(not dashboard-mode))
+
 (use-package dashboard
   :demand t
   :hook (emacs-startup . cj/dashboard-only)
