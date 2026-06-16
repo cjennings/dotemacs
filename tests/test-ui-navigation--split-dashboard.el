@@ -54,6 +54,27 @@
     (should (eq (car captured) #'split-window-right))
     (should (eq (cadr captured) 'dashboard))))
 
+(ert-deftest test-ui-navigation-split-from-dashboard-p ()
+  "Normal/Boundary: only the dashboard buffer routes the companion to *scratch*."
+  (should (cj/--split-from-dashboard-p "*dashboard*"))
+  (should-not (cj/--split-from-dashboard-p "todo.org"))
+  (should-not (cj/--split-from-dashboard-p "*scratch*")))
+
+(ert-deftest test-ui-navigation-split-companion-scratch-from-dashboard ()
+  "Normal: splitting from the dashboard yields the *scratch* buffer, not the
+dashboard again."
+  (cl-letf (((symbol-function 'cj/--split-from-dashboard-p) (lambda (_) t))
+            ((symbol-function 'get-scratch-buffer-create) (lambda () 'scratch))
+            ((symbol-function 'cj/--dashboard-buffer) (lambda () 'dashboard)))
+    (should (eq (cj/--split-companion-buffer) 'scratch))))
+
+(ert-deftest test-ui-navigation-split-companion-dashboard-otherwise ()
+  "Normal: splitting from any other buffer yields the dashboard."
+  (cl-letf (((symbol-function 'cj/--split-from-dashboard-p) (lambda (_) nil))
+            ((symbol-function 'get-scratch-buffer-create) (lambda () 'scratch))
+            ((symbol-function 'cj/--dashboard-buffer) (lambda () 'dashboard)))
+    (should (eq (cj/--split-companion-buffer) 'dashboard))))
+
 (ert-deftest test-ui-navigation-dashboard-buffer-returns-existing ()
   "Boundary: cj/--dashboard-buffer returns an existing *dashboard* without opening."
   (let ((db (get-buffer-create "*dashboard*"))

@@ -118,15 +118,30 @@ window.  Return the new window."
       (set-window-buffer new buffer))
     new))
 
+(defun cj/--split-from-dashboard-p (buffer-name)
+  "Return non-nil when BUFFER-NAME is the dashboard.
+Splitting from the dashboard shows *scratch* in the new window instead of
+the dashboard again."
+  (equal buffer-name "*dashboard*"))
+
+(defun cj/--split-companion-buffer ()
+  "Buffer to show in the new window after a C-x 2 / C-x 3 split.
+The dashboard, or the *scratch* buffer when splitting from the dashboard."
+  (if (cj/--split-from-dashboard-p (buffer-name))
+      (get-scratch-buffer-create)
+    (cj/--dashboard-buffer)))
+
 (defun cj/split-below-with-dashboard ()
-  "Split below and show the dashboard in the new window; stay in this one."
+  "Split below and show the companion buffer in the new window; stay in this one.
+The companion is the dashboard, or *scratch* when splitting from the dashboard."
   (interactive)
-  (cj/--split-show-buffer #'split-window-below (cj/--dashboard-buffer)))
+  (cj/--split-show-buffer #'split-window-below (cj/--split-companion-buffer)))
 
 (defun cj/split-right-with-dashboard ()
-  "Split right and show the dashboard in the new window; stay in this one."
+  "Split right and show the companion buffer in the new window; stay in this one.
+The companion is the dashboard, or *scratch* when splitting from the dashboard."
   (interactive)
-  (cj/--split-show-buffer #'split-window-right (cj/--dashboard-buffer)))
+  (cj/--split-show-buffer #'split-window-right (cj/--split-companion-buffer)))
 
 (keymap-global-set "C-x 2" #'cj/split-below-with-dashboard)
 (keymap-global-set "C-x 3" #'cj/split-right-with-dashboard)
