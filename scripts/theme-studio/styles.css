@@ -47,9 +47,16 @@
  .cat{color:#b4b1a2} .ex{font-size:17px}
  .crerr{display:inline-block;margin-left:8px;padding:0 4px;border-radius:3px;background:#2b130e;color:#cb6b4d;border:1px solid #7b3324;font:9pt monospace;vertical-align:middle}
  .paltoggle{align-self:flex-start;width:22px;height:22px;padding:0;border:1px solid #3a3a3a;border-radius:4px;background:#1f1c19;color:#e8bd30;font:12px monospace;line-height:1;cursor:pointer;margin-right:6px}
- .pchip.unused{outline:2px dashed #cb6b4d;outline-offset:-2px}
- .fstrip.unused-col{outline:1px dashed #cb6b4d;outline-offset:2px;border-radius:8px}
- .cdd.gone{outline:2px solid #e0533f;outline-offset:-2px}
+ /* Barber-pole flag: a ring of two alternating contrasting colors, drawn with a
+    masked repeating gradient so it overlays without shifting layout. Distinct
+    color pairs keep "unused" (gold/black) and "gone" (red/white) tellable apart. */
+ .pchip.unused::after,.fstrip.unused-col::after,.cdd.gone::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(45deg,var(--barberA) 0 6px,var(--barberB) 6px 12px);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+ .pchip.unused{--barberA:#e8bd30;--barberB:#0d0b0a}
+ .pchip.unused::after{padding:3px;border-radius:6px}
+ .fstrip.unused-col{position:relative;--barberA:#e8bd30;--barberB:#0d0b0a}
+ .fstrip.unused-col::after{padding:3px;border-radius:8px}
+ .cdd.gone{position:relative;--barberA:#e0533f;--barberB:#f5f5f5}
+ .cdd.gone::after{padding:2px;border-radius:5px}
  .sbtn{width:17px;height:15px;border:1px solid #3a3a3a;border-radius:3px;background:#eaeaea;color:#111;cursor:pointer;font-size:13px;line-height:1;margin-right:2px;padding:0}
  .sbtn.on{background:#0d0b0a;color:#cdced1;border-color:#8a9496}
  .pals{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;align-items:flex-start}
