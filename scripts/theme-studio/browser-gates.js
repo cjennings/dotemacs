@@ -765,6 +765,19 @@ if(location.hash==='#mdtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){
  }
  document.title='MDTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='mdtest';d.textContent='MDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// mu4e-preview gate (open with #mupreviewtest): the mu4e preview is a realistic
+// headers list + message view, and every data-face it emits is a real mu4e face.
+if(location.hash==='#mupreviewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const box=document.createElement('div');box.innerHTML=renderMu4ePreview();
+ const valid=new Set((APPS['mu4e']&&APPS['mu4e'].faces||[]).map(r=>r[0]));
+ const used=[...box.querySelectorAll('[data-face]')].map(e=>e.dataset.face);
+ A(used.length>=20,'preview exercises many faces ('+used.length+')');
+ const bad=used.filter(f=>!valid.has(f));
+ A(bad.length===0,'every data-face is a real mu4e face; bad='+bad.join(','));
+ for(const f of ['mu4e-unread-face','mu4e-flagged-face','mu4e-replied-face','mu4e-draft-face','mu4e-trashed-face','mu4e-header-highlight-face','mu4e-header-marks-face','mu4e-contact-face','mu4e-compose-separator-face'])
+  A(used.includes(f),'preview includes '+f);
+ document.title='MUPREVIEWTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='mupreviewtest';d.textContent='MUPREVIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Box-cluster gate (open with #boxtest): the box control is a 2x2 cluster of
 // four radio buttons (none / line / pressed / raised); the color swatch shows
 // only while a box style is active.

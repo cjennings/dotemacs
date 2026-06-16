@@ -722,25 +722,35 @@ function renderDashboardPreview(){const a='dashboard',L=[];
   L.push('    theme-studio-palette-generator-spec.org');
   return previewLines(L);}
 function renderMu4ePreview(){const a='mu4e',L=[];
-  L.push(os(a,'mu4e-title-face','mu4e')+'  '+os(a,'mu4e-context-face','[Personal]')+'  '+os(a,'mu4e-ok-face','online')+'  '+os(a,'mu4e-warning-face','2 retry')+'  '+os(a,'mu4e-modeline-face','12/340'));
+  const pad=(s,n)=>{s=String(s);return s.length>=n?s.slice(0,n):s+' '.repeat(n-s.length);};
+  // One header line: the flags column in mu4e-header-marks-face, the rest of the
+  // row in the message's state face (unread, replied, flagged, ...).
+  const row=(flags,date,from,subj,face)=>
+    os(a,'mu4e-header-marks-face',pad(flags,4))+os(a,face,pad(date,12)+pad(from,17)+subj);
+  // status / context bar
+  L.push(os(a,'mu4e-title-face','mu4e')+'   '+os(a,'mu4e-context-face','[Personal]')+'   '+os(a,'mu4e-ok-face','online')+'   '+os(a,'mu4e-warning-face','2 retrying')+'   '+os(a,'mu4e-modeline-face','[12/340]'));
   L.push('');
-  L.push(os(a,'mu4e-header-title-face','Date        Flags  From          Subject'));
-  L.push(os(a,'mu4e-header-value-face','2026-06-08')+'  '+os(a,'mu4e-header-marks-face','N')+'    '+os(a,'mu4e-unread-face','Christine')+'     '+os(a,'mu4e-unread-face','Unread message'));
-  L.push(os(a,'mu4e-header-value-face','2026-06-07')+'  '+os(a,'mu4e-header-marks-face','R')+'    '+os(a,'mu4e-header-face','Bob')+'           '+os(a,'mu4e-replied-face','Replied thread'));
-  L.push(os(a,'mu4e-header-value-face','2026-06-06')+'  '+os(a,'mu4e-header-marks-face','F')+'    '+os(a,'mu4e-header-face','Carol')+'         '+os(a,'mu4e-forwarded-face','Forwarded note'));
-  L.push(os(a,'mu4e-header-value-face','2026-06-05')+'  '+os(a,'mu4e-header-marks-face','D')+'    '+os(a,'mu4e-draft-face','(draft)')+'       '+os(a,'mu4e-draft-face','Draft in progress'));
-  L.push(os(a,'mu4e-header-value-face','2026-06-04')+'  '+os(a,'mu4e-header-marks-face','T')+'    '+os(a,'mu4e-trashed-face','Dan')+'           '+os(a,'mu4e-moved-face','Trashed and moved'));
-  L.push(os(a,'mu4e-header-highlight-face','2026-06-03  !    Evan          Flagged ')+os(a,'mu4e-flagged-face','important')+os(a,'mu4e-related-face',' (related)'));
+  // column header + the message list, one row per state
+  L.push(os(a,'mu4e-header-title-face',pad('Flags',4)+pad('Date',12)+pad('From',17)+'Subject'));
+  L.push(row('N','2026-06-14','Christine Park','Re: quarterly numbers','mu4e-unread-face'));
+  L.push(row('','2026-06-13','Bob Lin','Lunch on Friday?','mu4e-header-face'));
+  // current line at point: the whole row gets the highlight background
+  L.push(os(a,'mu4e-header-highlight-face',row('R','2026-06-13','dev-list','merged the parser fix','mu4e-replied-face')));
+  L.push(row('F','2026-06-12','Carol Reyes','Fwd: the signed contract','mu4e-forwarded-face'));
+  L.push(row('D','2026-06-11','(draft)','Notes to finish later','mu4e-draft-face'));
+  L.push(row('T','2026-06-10','spam@nowhere','You have won a prize','mu4e-trashed-face'));
+  L.push(row('','2026-06-09','Erin (cc)','thread you follow','mu4e-related-face'));
+  L.push(row('!','2026-06-08','Frank Diaz','budget needs sign-off','mu4e-flagged-face'));
   L.push('');
-  L.push(os(a,'mu4e-header-key-face','From:')+'   '+os(a,'mu4e-contact-face','Christine &lt;christine@example.com&gt;'));
-  L.push(os(a,'mu4e-header-key-face','To:')+'     '+os(a,'mu4e-special-header-value-face','craig, list@gnu.org'));
-  L.push(os(a,'mu4e-header-key-face','Attach:')+' '+os(a,'mu4e-attach-number-face','[1]')+' report.pdf   link '+os(a,'mu4e-url-number-face','[2]')+' '+os(a,'mu4e-link-face','https://gnu.org'));
+  // a message view below the list
+  L.push(os(a,'mu4e-header-key-face','From:')+'    '+os(a,'mu4e-contact-face','Christine Park &lt;christine@example.com&gt;'));
+  L.push(os(a,'mu4e-header-key-face','To:')+'      '+os(a,'mu4e-special-header-value-face','craig, dev-list@gnu.org'));
+  L.push(os(a,'mu4e-header-key-face','Subject:')+' '+os(a,'mu4e-header-value-face','Re: quarterly numbers'));
   L.push('');
-  L.push('  body with a '+os(a,'mu4e-highlight-face','search hit')+' and '+os(a,'mu4e-region-code','code region')+'.');
-  L.push('  '+os(a,'mu4e-cited-1-face','&gt; level 1')+' '+os(a,'mu4e-cited-2-face','&gt;&gt; 2')+' '+os(a,'mu4e-cited-3-face','&gt;&gt;&gt; 3')+' '+os(a,'mu4e-cited-4-face','&gt; 4')+' '+os(a,'mu4e-cited-5-face','&gt; 5')+' '+os(a,'mu4e-cited-6-face','&gt; 6')+' '+os(a,'mu4e-cited-7-face','&gt; 7'));
-  L.push('  '+os(a,'mu4e-system-face','*** system message ***')+'   '+os(a,'mu4e-footer-face','-- sent with mu4e'));
+  L.push('  Body with a '+os(a,'mu4e-highlight-face','search hit')+', a link '+os(a,'mu4e-url-number-face','[1]')+' '+os(a,'mu4e-link-face','https://example.com')+', and a '+os(a,'mu4e-region-code','code region')+'.');
+  L.push('  '+os(a,'mu4e-system-face','*** mu: 340 messages indexed ***'));
+  L.push('  '+os(a,'mu4e-footer-face','-- Sent with mu4e'));
   L.push('');
-  L.push(os(a,'mu4e-compose-header-face','Subject:')+' new mail');
   L.push(os(a,'mu4e-compose-separator-face','--text follows this line--'));
   return previewLines(L);}
 function renderOrgFacesPreview(){const a='org-faces',L=[];
