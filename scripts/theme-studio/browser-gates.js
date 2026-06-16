@@ -793,6 +793,21 @@ if(location.hash==='#gnustest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
   A(used.includes(f),'preview includes '+f);
  document.title='GNUSTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='gnustest';d.textContent='GNUSTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// picker-distinct gate (open with #pickertest): the color picker panel must stand
+// out from the page background. It carries a highlighted gold accent border, and its
+// background is meaningfully lighter than the body so the two are easy to tell apart.
+if(location.hash==='#pickertest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const pk=document.getElementById('picker');A(!!pk,'picker element exists');
+ if(pk){const cs=getComputedStyle(pk),body=getComputedStyle(document.body);
+  const bc=(cs.borderTopColor.match(/\d+/g)||[]).slice(0,3).map(Number);
+  const pkbg=(cs.backgroundColor.match(/\d+/g)||[]).slice(0,3).map(Number);
+  const bdbg=(body.backgroundColor.match(/\d+/g)||[]).slice(0,3).map(Number);
+  A(bc.join(',')==='232,189,48','picker carries the gold accent border (got '+cs.borderTopColor+')');
+  const lift=pkbg.map((c,i)=>c-bdbg[i]);
+  A(lift.every(d=>d>=12),'picker background is clearly lighter than the page (per-channel lift '+lift.join(',')+')');
+ }
+ document.title='PICKERTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='pickertest';d.textContent='PICKERTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Box-cluster gate (open with #boxtest): the box control is a 2x2 cluster of
 // four radio buttons (none / line / pressed / raised); the color swatch shows
 // only while a box style is active.
