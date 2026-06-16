@@ -391,22 +391,30 @@ fallback when `cj/--ai-term-last-size' is nil."
   :type 'number
   :group 'ai-term)
 
-(defun cj/--ai-term-default-direction ()
-  "Return the host-appropriate default split direction for the agent window.
+(defun cj/--ai-term-direction-for-aspect (pixel-width pixel-height)
+  "Return the space-conserving dock direction for a frame of PIXEL-WIDTH by
+PIXEL-HEIGHT.  `right' when the frame is wider than tall (dock from the right
+edge), `below' when it is square or taller (dock from the bottom)."
+  (if (> pixel-width pixel-height) 'right 'below))
 
-`below' on a laptop (bottom horizontal split), `right' on a desktop
-(right-side vertical split).  Detected via `env-laptop-p'."
-  (if (env-laptop-p) 'below 'right))
+(defun cj/--ai-term-default-direction (&optional frame)
+  "Return the default split direction for the agent window.
+
+Chosen at display time from FRAME's pixel aspect ratio (FRAME defaults to the
+selected frame): `right' on a landscape frame, `below' on a square or portrait
+one -- whichever edge conserves more screen space."
+  (let ((frame (or frame (selected-frame))))
+    (cj/--ai-term-direction-for-aspect (frame-pixel-width frame)
+                                       (frame-pixel-height frame))))
 
 (defun cj/--ai-term-default-size ()
-  "Return the host-appropriate default size fraction for the agent window.
+  "Return the default size fraction paired with the chosen direction.
 
-`cj/ai-term-laptop-height' on a laptop, `cj/ai-term-desktop-width'
-on a desktop -- pairing with the axis chosen by
-`cj/--ai-term-default-direction'."
-  (if (env-laptop-p)
-      cj/ai-term-laptop-height
-    cj/ai-term-desktop-width))
+`cj/ai-term-desktop-width' (a width fraction) when the default direction is
+`right', `cj/ai-term-laptop-height' (a height fraction) when it is `below'."
+  (if (eq (cj/--ai-term-default-direction) 'right)
+      cj/ai-term-desktop-width
+    cj/ai-term-laptop-height))
 
 (defvar cj/--ai-term-last-direction nil
   "Last user-chosen direction for the AI-term display.
