@@ -103,6 +103,34 @@ nudging until any other key.  Bound to `C-; b <left>/<right>/<up>/<down>'."
   (consult-buffer))
 (keymap-global-set "M-S-h" #'cj/split-and-follow-below)  ;; was M-H
 
+(defun cj/--dashboard-buffer ()
+  "Return the *dashboard* buffer, creating it if needed, without changing windows."
+  (or (get-buffer "*dashboard*")
+      (save-window-excursion
+        (when (fboundp 'dashboard-open) (dashboard-open))
+        (get-buffer "*dashboard*"))))
+
+(defun cj/--split-show-buffer (split-fn buffer)
+  "Split with SPLIT-FN, show BUFFER in the new window, keep point in the current
+window.  Return the new window."
+  (let ((new (funcall split-fn)))
+    (when (and (window-live-p new) buffer)
+      (set-window-buffer new buffer))
+    new))
+
+(defun cj/split-below-with-dashboard ()
+  "Split below and show the dashboard in the new window; stay in this one."
+  (interactive)
+  (cj/--split-show-buffer #'split-window-below (cj/--dashboard-buffer)))
+
+(defun cj/split-right-with-dashboard ()
+  "Split right and show the dashboard in the new window; stay in this one."
+  (interactive)
+  (cj/--split-show-buffer #'split-window-right (cj/--dashboard-buffer)))
+
+(keymap-global-set "C-x 2" #'cj/split-below-with-dashboard)
+(keymap-global-set "C-x 3" #'cj/split-right-with-dashboard)
+
 ;; ------------------------- Split Window Reorientation ------------------------
 
 (defun toggle-window-split ()
