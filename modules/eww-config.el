@@ -119,11 +119,8 @@
 	(unless (derived-mode-p 'eww-mode)
 	  (user-error "Not in EWW buffer"))
 	(when-let ((title (plist-get eww-data :title)))
-	  (let ((eww-bookmarks-directory (expand-file-name "eww-bookmarks" user-emacs-directory)))
-		(unless (file-exists-p eww-bookmarks-directory)
-		  (make-directory eww-bookmarks-directory t))
-		(eww-add-bookmark)
-		(message "Bookmarked: %s" title))))
+	  (eww-add-bookmark)
+	  (message "Bookmarked: %s" title)))
 
   (defun cj/eww-copy-url ()
 	"Copy the current EWW URL to clipboard."
